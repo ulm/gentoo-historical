@@ -245,12 +245,16 @@
   <xsl:for-each select='document("/proj/en/metastructure/herds/herds.xml")/herds/herd[name/text()=current()/@name]'>
     <tr>
       <ti>
+    <!-- The herds.xml?select= is not working currently, we are waiting
+         until the necessary dyn/ page is fixed.
         <uri>
-	  <xsl:attribute name="link">
-	    /proj/en/metastructure/herds/herds.xml?select=<xsl:value-of select="name"/>
-	  </xsl:attribute>
-	  <xsl:value-of select="name"/>
-	</uri>
+          <xsl:attribute name="link">
+            /proj/en/metastructure/herds/herds.xml?select=<xsl:value-of select="name"/>
+          </xsl:attribute>
+          <xsl:value-of select="name"/>
+        </uri>
+    -->
+        <xsl:value-of select="name"/>
       </ti>
       <ti>
 	<xsl:for-each select="maintainer/email">
