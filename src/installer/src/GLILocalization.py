@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLISayWhat.py,v 1.1 2005/02/18 07:15:01 agaffney Exp $
+$Id: GLILocalization.py,v 1.1 2005/02/18 16:39:38 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -13,7 +13,7 @@ messages.
 import codecs
 import os
 
-class SayWhat:
+class Localization:
 
 	messages = None
 
