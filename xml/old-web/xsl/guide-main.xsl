@@ -389,9 +389,9 @@ User Docs:<br/>
 						<br/><br/>
 						Developer Resources:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
-						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
+						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><font color="#ff0000">(updated!)</font><br/>
 						<a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/>
-						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><font color="#ff0000">(updated!)</font><br/>
+						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
 						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
