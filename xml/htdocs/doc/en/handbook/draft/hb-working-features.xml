@@ -1,0 +1,354 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/Attic/hb-working-features.xml,v 1.3 2004/07/18 17:28:51 neysx Exp $ -->
+
+<sections>
+<section>
+<title>DistCC</title>
+<subsection>
+<title>What is DistCC?</title>
+<body>
+
+<p>
+<c>distcc</c> is a program to distribute compilations across several, not 
+necessarily identical, machines on a network. The <c>distcc</c> client sends all
+necessary information to the available DistCC servers (running <c>distccd</c>)
+so they can compile pieces of source code for the client. The net result is a
+faster compilation time.
+</p>
+
+<p>
+You can find more elaborate information about <c>distcc</c> (and information on
+how to have it work with Gentoo) in our <uri link="/doc/en/distcc.xml">Gentoo
+Distcc Documentation</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Installing DistCC</title>
+<body>
+
+<p>
+Distcc ships with a graphical monitor to monitor tasks that your computer is
+sending away for compilation. If you use Gnome then put 'gnome' in your
+<c>USE</c> setting. However, if you don't use Gnome and would still like to have
+the monitor then you should put 'gtk' in your <c>USE</c> setting.
+</p>
+
+<p>
+Installing distcc is, as is with all software available through Gentoo's
+Portage, extremely easy:
+</p>
+
+<note>
+From now on, as you now know how to install binary packages if you want, we will
+omit the <c>--usepkg</c> option throughout the rest of the Gentoo Handbook.
+</note>
+
+<pre caption="Installing Distcc">
+# <i>emerge distcc</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating Portage Support</title>
+<body>
+
+<p>
+Well, if installation is easy, the rest should be easy too :) So let us quickly
+activate the Portage support for <c>distcc</c>.
+</p>
+
+<p>
+First, open <path>/etc/make.conf</path> and edit the <c>FEATURES</c> variable so
+it contains the <c>distcc</c> keyword. Next, edit the <c>MAKEOPTS</c> variable
+so it reads <c>-jX</c> with <c>X</c> the number of CPUs that run <c>distccd</c>
+(including the current host) plus one:
+</p>
+
+<pre caption="Possible MAKEOPTS setting in /etc/make.conf">
+<comment># Suppose you have 2 single-CPU distccd hosts excluding this host:</comment>
+MAKEOPTS="-j4"
+</pre>
+
+<p>
+Now, still inside <path>/etc/make.conf</path>, uncomment the
+<c>PORTAGE_TMPDIR</c> line and add the following line at the end
+of the file:
+</p>
+
+<pre caption="Add an extra, distcc-specific variable to /etc/make.conf">
+<comment># Don't forget to uncomment the PORTAGE_TMPDIR variable</comment>
+DISTCC_DIR=${PORTAGE_TMPDIR}/portage/.distcc
+</pre>
+
+<p>
+Now run <c>distcc-config</c> and enter the list of available DistCC servers. For
+a simple example we assume that the available DistCC servers are
+<c>192.168.1.102</c> (the current host), <c>192.168.1.103</c> and 
+<c>192.168.1.104</c> (two "remote" hosts):
+</p>
+
+<pre caption="Configuring distcc to use three available DistCC servers">
+# <i>distcc-config --set-hosts "192.168.1.102 192.168.1.103 192.168.1.104"</i>
+</pre>
+
+<p>
+Of course, don't forget to run the <c>distccd</c> daemon too:
+</p>
+
+<pre caption="Starting the distcc daemon">
+# <i>/etc/init.d/distccd start</i>
+</pre>
+
+<p>
+Congratulations, your system will now use distributed compiling! For more
+in-depth information about DistCC and Gentoo, please read our <uri
+link="/doc/en/distcc.xml">Gentoo DistCC Documentation</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>ccache</title>
+<subsection>
+<title>What is ccache?</title>
+<body>
+
+<p>
+<c>ccache</c> is a fast compiler cache. When you compile a program, it will
+cache intermediate results so that, when you ever recompile the same program,
+the compilation time is greatly reduced. In common compilations this can result
+in 5 to 10 times faster compilation times.
+</p>
+
+<p>
+If you are interested in the ins and outs of <c>ccache</c>, please visit the
+<uri link="http://ccache.samba.org">ccache homepage</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Installing ccache</title>
+<body>
+
+<p>
+Installing <c>ccache</c> with Gentoo is a breeze. Just emerge it and you're done
+:)
+</p>
+
+<pre caption="Installing ccache">
+# <i>emerge ccache</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating Portage Support</title>
+<body>
+
+<p>
+First, edit <path>/etc/make.conf</path> and alter the <c>FEATURES</c> variable
+so that it contains the <c>ccache</c> keyword:
+</p>
+
+<pre caption="Editing FEATURES in /etc/make.conf">
+FEATURES="ccache"
+</pre>
+
+<p>
+Next, edit (or create) the <c>CCACHE_SIZE</c> variable (also in
+<path>/etc/make.conf</path>) so it contains the amount of diskspace you want to
+sacrifice for <c>ccache</c>:
+</p>
+
+<pre caption="Editing CCACHE_SIZE in /etc/make.conf">
+CCACHE_SIZE="2G"
+</pre>
+
+<p>
+As of now, Portage will use <c>ccache</c> to speed up compilations where
+possible. If you are uncertain that <c>ccache</c> works, you can run <c>ccache
+-s</c> to view the <c>ccache</c> statistics:
+</p>
+
+<pre caption="Viewing ccache statistics">
+# <i>ccache -s</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Binary Packages</title>
+<subsection>
+<title>Creating binary packages</title>
+<body>
+
+<p>
+We have already discussed how to work with prebuilt packages, but how do you
+create your own prebuilt packages?
+</p>
+
+<p>
+If the package is already installed, you can use the <c>quickpkg</c> command
+which will make a tarball of the installed files. This is very interesting for
+backup purposes!
+</p>
+
+<pre caption="Using quickpkg">
+# <i>quickpkg gnumeric</i>
+</pre>
+
+<p>
+If the package isn't installed yet, you can install it using <c>emerge</c> and
+ask to build a binary package too. <c>emerge</c> uses the <c>--buildpkg</c>
+option (<c>-b</c> in short) for this:
+</p>
+
+<pre caption="Installing gnumeric and building binary packages too">
+# <i>emerge --buildpkg gnumeric</i>
+</pre>
+
+<p>
+If you want Portage to do this by default, you should set the <c>buildpkg</c>
+keyword in the <c>FEATURES</c> variable declared in <path>/etc/make.conf</path>.
+</p>
+
+<pre caption="Automatically creating binary packages">
+FEATURES="buildpkg"
+</pre>
+
+<p>
+If you don't want to install the software, but only build the package, you can
+use the <c>--buildpkgonly</c> option (<c>-B</c> in short):
+</p>
+
+<pre caption="Building a binary package for gnumeric">
+# <i>emerge --buildpkgonly gnumeric</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Security Related Features</title>
+<subsection>
+<title>Sandbox</title>
+<body>
+
+<p>
+While building and installing packages, Portage uses a <e>sandbox</e> to protect
+your live system. This means that, as long as the package isn't installed on
+your system, the package cannot touch any file outside the sandbox. This 
+ensures that Portage knows what files are created and modified by a package.
+</p>
+
+<p>
+When the package compilation is finished, Portage will "preinstall" the package
+in the sandbox, registering what files are placed and where. It will then move
+those files from the sandbox on your live system.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>User Privileges</title>
+<body>
+
+<p>
+Portage also supports building packages as non-root user (more precisely, as
+user "portage", group "portage"). This improves the security during the
+build process. You can opt to use user privileges with or without sandboxing. Of
+course, it goes without saying that user privileges and sandboxing is the most
+preferred method :)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating sandbox and/or userpriv</title>
+<body>
+
+<p>
+Portage will use <c>sandbox</c> per default. If you want <c>userpriv</c>, you
+should add it to the <c>FEATURES</c> variable. Note that activating
+<c>userpriv</c> will drop <c>sandbox</c> support, unless you also activate
+<c>usersandbox</c>:
+</p>
+
+<pre caption="Activating userpriv and usersandbox">
+FEATURES="userpriv usersandbox"
+</pre>
+
+<warn>
+Do <e>not</e> remove <c>sandbox</c> from the <c>FEATURES</c> variable!
+</warn>
+
+</body>
+</subsection>
+<subsection>
+<title>Strict Checking</title>
+<body>
+
+<p>
+Portage can be asked to react strongly to possibly dangerous conditions (such as
+missing or incorrect Manifest files). To activate this strict checking, add the
+<c>strict</c> keyword to the <c>FEATURES</c> variable:
+</p>
+
+<pre caption="Activating strict checking">
+FEATURES="strict"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Smart File System Permissions</title>
+<body>
+
+<p>
+Portage can be told to automatically deal with potentially dangerous file
+permissions that could pose a security risk. It does this by removing the
+"group" and "other" readable bits on setuid files and removing the "other"
+readable bit on setgid files in the pre install phase.  To activate the
+smart file permissions, add the <c>sfperms</c> keyword to the
+<c>FEATURES</c> variable:
+</p>
+
+<pre caption="Activating smart file system permissions">
+FEATURES="sfperms"
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Other Features</title>
+<subsection>
+<title>Portage Help</title>
+<body>
+
+<p>
+There are several other keywords you can place in the <c>FEATURES</c> variable.
+Most of them are targeted towards developers and less interesting for the casual
+user. If you are interested in learning more about these features (or Portage
+generally), don't forget to read the <path>make.conf</path> manpage we provide.
+</p>
+
+<pre caption="More Portage-related information">
+# <i>man make.conf</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>
