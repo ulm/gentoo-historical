@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.6 2003/03/06 22:20:34 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.7 2003/03/07 05:53:57 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -19,6 +19,8 @@ my $PORTDIR_OVERLAY = "/usr/portage_custom";
 
 my $ARCH = `uname -a`;
 $ARCH = (split/ /, $ARCH)[10];
+$ARCH =~ s/sparc64/sparc/;
+
 
 my ($ACCEPT_KEYWORDS) = grep(/^ACCEPT_KEYWORDS/, get_file("/etc/make.conf"))
 || "none";
@@ -81,6 +83,7 @@ sub wanted {
 			}
 			elsif (m/^HOMEPAGE="([^"]+)"/) {
 				$page = "$1\0";
+				$page =~ s|http://||g;
 				$gotpage++;
 			}
 			elsif (m/^KEYWORDS="([^"]+)"/) {
@@ -105,7 +108,7 @@ sub wanted {
 }
 
 sub ebuild_path_to_name {
-# Take a path to an ebuild, turn it to the category/name-version
+# Take a path to an ebuild, turn it to the category, name, version
 	return ($1, $2, $3) if $_[0] =~ m/
 	([\w0-9-]+)						# Category
 	\/								# Slash
@@ -132,3 +135,6 @@ sub get_file {
 	close MOO;
 	return @contents;
 }
+
+
+/msg chanserv akick #chatzone del 1

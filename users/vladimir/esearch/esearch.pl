@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.5 2003/03/06 22:22:27 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.6 2003/03/07 05:53:57 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 #
@@ -46,7 +46,15 @@ unless ($regex) {
 }
 
 # Grab our DB
-my @packages = get_file("packages.txt");
+my @packages;
+if ( -e "packages.txt" ) {
+	@packages = get_file("packages.txt");
+}
+else {
+	print RED "Please regenerate your db by typing ./edb.pl", RESET, "\n";
+	exit;
+}
+
 
 # First line of the DB is our arch, followed by any accepted keywords
 #   as set in /etc/make.conf
@@ -73,7 +81,7 @@ for (@packages) {
 	
 	for (@ACCEPT_KEYWORDS) {
 	# Check if any accepted keywords exist
-		$keyworks++ if $keywords =~ /[" ]$_[" ]/;
+		$keyworks++ if $keywords =~ / $_ /;
 	}
 
 	# Remove leading and trailing space in keywords
@@ -97,8 +105,8 @@ for (@packages) {
 	print "]\n";
 	
 	# Print our description and home page
-	print "Description : $desc\n";
-	print "Home page   : $homepage", RESET, "\n\n";
+	print "    Description : $desc\n";
+	print "    Home page   : $homepage", RESET, "\n\n";
 	
 }
 
