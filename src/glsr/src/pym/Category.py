@@ -3,13 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Category.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: Category.py,v 1.3 2004/07/19 00:48:20 hadfield Exp $
 #
 
 __modulename__ = "Category"
 
 import MySQL
 import Config
+from Logging import err
 from GLSRBackend import GLSRBackend as Parent
 
 class Category(Parent):
@@ -44,7 +45,29 @@ class Category(Parent):
 
     def Modify(self, details):
 
-        return Parent.Modify(self, details.keys(), details)
+
+        if not details["parent_id"] > 0:
+            details["parent_id"] = 0
+
+        return Parent.Create(self, details, ["name"])
+
+    
+    def Remove(self):
+
+        # check for child cats and scripts that are under the cat and
+        # scripts under child cats of the parent.
+        # Note: I think that deleting scripts too might be a bit risky.
+        
+        for child_id in self.Children():
+            child = Category(child_id)
+            child.Remove()
+
+        return Parent.Remove(self)
+
+
+    def Modify(self, details):
+
+        return Parent.Modify(self, details, ["name"])
 
 
     def List(self, parent_id = -1):
@@ -63,3 +86,13 @@ class Category(Parent):
                               self.tablename) +
                              "WHERE %s_parent_id = " % self.tablename + "%s",
                              self.id, fetch="all").values())
+
+    def Name(self):
+
+        results = self.GetDetails()
+        if results != None:
+            return results["%s_name" % self.tablename]
+        
+        else:
+            err("Invalid User ID!", __modulename__)
+            return False
