@@ -1,0 +1,420 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/en/alsa-guide.xml">
+<title>Gentoo Linux ALSA Guide</title>
+<author title="Author"><mail link="zu@pandora.be">
+	Vincent Verleye</mail>
+</author>
+
+<author title="Editor"><mail link="zhen@gentoo.org">
+	John P. Davis</mail>
+</author>
+
+<author title="번역"><mail link="sarang4u@empal.com">
+	이만우(나빌레라)</mail>
+</author>
+
+<author title="Moderator"><mail link="seo@gentoo.org">
+	Jungmin Seo</mail>
+</author>
+
+<abstract>
+	이 문서는 여러분이 Advanced Linux Sound Architecture(ASLA)를 젠투리눅스에서 설정하는 방법을 담고 있습니다.
+	그리고 젠투리눅스 데스크탑 가이드 문서에는 데스크탑을 설정하는데 필요한 더 많은 정보가 담겨 있습니다.
+</abstract>
+
+<version>1.0</version>
+<date>30 Oct 2002</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+	<title>ALSA란 무엇인가?</title>
+<body>
+	<p>
+		The Advanced Linux Sound Architecture(ALSA) 는 리눅스 사운드 시스템의 많은 부분을 재작성하여
+		보다 좋은 사운드 시스템을 구축하려는 프로젝트 입니다.
+		ALSA는 리눅스 커널 2.6.x 버전에서는 커널에 포함될것입니다. 
+</p>
+
+<p>
+	ALSA는 리눅스에서 오디오와 MIDI를 지원합니다.
+</p>
+ 
+<p>
+	<uri>http://www.alsa-project.org</uri> 에서 ALSA의 아래와 같은 프로젝트 결과물들을 얻을 수 있습니다.
+	
+	Quoted from <uri>http://www.alsa-project.org</uri>, ALSA has the following features:
+	<ul><li>거의 모든 사운드카드의 멀티채널 오디오 인터페이스를 지원하는 보다 효율적인 오디오 인터페이스 </li>
+		<li>사운드 카드 드라이버의 완전한 모듈화</li>
+		<li>SMP와 thread-safe한 디자인</li>
+		<li>간단한 어플리케이션 프로그래밍이 가능하고 상위 레벨의 기능을 잘 지원하는 사용자 영역의 라이브러리(alsa-lib)</li>
+		<li>예전의 OSS API지원, 대부분의 OSS프로그램들과 바이너리 수준에서 호환 가능함</li>
+	</ul>
+ 그리고 그곳에서는 ALSA의, Full Duplex playback(역주: 전이중역재생 -이상한 한자어..-.-), 여러장의 사운드카드 동시에 사용하기, 
+하드웨어 믹싱, 외부믹서 호환 등 보다 많은 정보를 얻을 수 있습니다.
+</p>
+</body>
+</section>
+<section>
+	<title>왜 ALSA를 사용해야 하는가?</title>
+<body>
+	<p>
+		여러분의 소리카드가 리눅스 커널 2.4.x 버전이나, 상업용 OSS/4Front 소리 드라이버 시스템에서 지원한다면,
+		<uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri> 
+		에서 <e>모듈목록</e>을 볼 수 있을 것입니다. 
+</p> 
+<p>
+	그러나 OSS/4Front 드라이버는 사용에 제한이 있습니다.(상용이기때문에)
+	ALSA는 이같은 제약을 받지 않는 오픈소스 입니다.
+	ALSA는 GPL 과 LGPL 을 적용하는 사운드 드라이버 시스템입니다. 
+	그러면서도 매우 훌륭한 수준의 레코딩과 역재생, MIDI시퀀싱을 지원하는 드라이버입니다.
+</p> 
+</body>
+</section>
+<section>
+	<title>어떤카드가 ALSA를 지원하는가?</title>
+<body>
+	<p>
+		ALSA는 많은(새로운) 사운드카드를 가능한 오픈소스 드라이버로 지원하려 애쓰고 있습니다.
+		그러나 몇몇 밴더의 사운드카드는 오로지 바이너리 파일로만 패키지를 받으실수 밖에 없습니다.
+</p>
+
+<p>
+	이 링크를 보면 여러분의 사운드카드가 지원이 되는지 안되는지를 알 수 있습니다.<uri>http://www.alsa-project.org/alsa-doc/</uri>.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title> 설치</title>
+<section>
+	<title> 커널 모듈</title>
+<body>
+	<p>
+		우리는 아직 2.4.x 대의 커널 소스를 사용하고 있습니다. 그래서, 커널모듈과 ALSA모듈을 따로 빌드해야 합니다.
+</p>
+<p>
+	먼저, ALSA를 사용하기 위해 커널을 다시 빌드해야 합니다.
+	커널에 있는 Sound Card Support 의 세팅을 모두 모듈(M)로 바꿉니다. (역주: 커널에 포함(*)시켜서는 안됩니다.)
+	이렇게 하면 <c>soundcore.o</c>가 생깁니다.
+</p>
+<p>
+	<note>
+		가능하다면, 커널의 Sound Card Support 부분은 모듈(M)보다는 커널에 포함(Y)시킵니다. 
+		그러나 ALSA의 공식 문서에는 모듈로 하라고 나옵니다. 왜냐면 ALSA가 알아서 로딩을 시도한다고 합니다.
+</note>
+</p>
+<p>
+	Sound Card Support 부분만 빼고 나머지 사운드 카드 모듈 부분의 설정을 모두 해제해서 지우고, 커널의 설정을 마무리합니다.
+	리부팅하기 싫다면 다음과 같이 입력합니다.
+</p>
+<pre>
+# <c>cd /usr/src/linux</c>
+# <c>cp .config ~</c>
+# <c>make mrproper</c>
+# <c>cp ~/.config .</c>
+# <c>make menuconfig</c>
+</pre>
+<p>
+	<e>Sound Card Support</e> 부분을 모듈(M)으로 고르고, 나머지 사운드 드라이버 모듈은 모두 설정 해제 합니다. (역주:몇번째냐..ㅡ.ㅡ;)
+	커널 설정을 저장하고 나옵니다.
+	그리고 커널을 다시 빌드 합니다.
+</p>
+<pre>
+# <c>make dep clean</c>
+# <c>make bzImage modules modules_install</c>
+</pre>
+<p>
+	이 마지막줄은 새 모듈을 인스톨 하기 전에 이전에 설치된 모든 모듈을 삭제 합니다.
+	심지어 이전에 있던 ALSA드라이버까지 지웁니다.
+</p>
+<p>
+	<impo>
+		무슨뜻이냐면, 여러분이 커널을 다시 빌드하면 반드시  <c>alsa-driver</c> 도 재컴파일 해야 한다는 뜻입니다.
+</impo>
+</p>
+<p>
+	<note>
+		그러나, <c>nvidia-kernel</c> 을 다시 인스톨 하는 경우에는 <c>make modules modules_install</c> 가
+		<path>/lib/modules/*/video</path>라는 별개의 디렉토리를 삭제 하므로 ALSA를 다시 인스톨 할 필요는
+		없습니다. (역주: 그러나, 만일의 경우를 대비해, 커널을 리비들하면 ALSA는 무조건 다시 인스톨하는게 정신건강에 좋다.^^)
+</note>
+</p>
+</body>
+</section>
+
+<section>
+	<title>ALSA modules ALSA모듈</title>
+<body>
+
+	<p>
+		ALSA를 인스톨할 차례입니다. 여러분의 소리카드가 PCI이면, 여러분의 사운드 카드 이름을
+		/proc/pci 에서 아래와 같이 입력해 찾을 수 있습니다.
+<pre>#<c>cat /proc/pci  | grep audio</c></pre>
+</p>
+
+<p>
+	<warn>
+		만약 여러분의 시스템에 ALSA가 아닌 사운드 모듈이 올라가 있다면 <e>지금</e> 모듈을 내리십시오.
+		 <c>lsmod</c>를 이용해 체크해보고, <c>rmmod</c>이용해 모듈을 내리면 됩니다.
+</warn>
+</p>
+
+<p>
+	우리는 그냥 단순하게 <c>emerge alsa-driver</c> 라고 입력하면, 모든 ALSA사운드 드라이버가 컴파일 됩니다.
+</p>
+<p>
+	그러나 시간을 절약하기 위해서 여러분의 사운드카드의 <e>모듈이름</e>을 
+	<uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> 에서 찾습니다.
+	저의 경우 <c>CT5880</c> 칩을 쓰는 gigabyte-7zx 메인보드의 내장 사운드카드인데, 드라이버 이름은 snd-ens1371입니다.
+	그럼 ALSA드라이버를 emerge하기 전에 환경변수를 아래와 같이 세팅합니다.
+</p>
+
+<p>
+<pre>
+# <c>env ALSA_CARDS='ens1371' emerge alsa-driver</c> 
+</pre>
+</p>
+<p>
+	<note>
+		한개 이상의 사운드 카드 드라이버를 설치하고 싶으면, 스페이스로 구분해서 여러개를 환경변수에
+		설정하면 됩니다. 
+		이렇게 : <c>env ALSA_CARDS='emu10k1 intel8x0 ens1370' emerge alsa-driver</c>
+</note>
+
+<note>
+	만약에 OSS 호환을 원한다면, <i>alsa-oss</i> 도 같이 emerge합니다. 이것은 ALSA/OSS 호환 랩퍼(wrapper) 입니다.
+</note>
+
+</p>
+<p>
+	이 작업이 끝나면, ALSA모듈은 여러분의 시스템에 인스톨 된것입니다.
+</p>
+</body>
+</section>
+<section>
+	<title> ALSA설정.</title>
+<body>
+	<p>
+		ALSA가 제대로 동작하기 위해 약간의 설정을 해줘야 합니다.
+		몇개의 파일을 고쳐서, 여러분의 시스템이 ALSA모듈을 인식하게 해줘야 합니다.
+</p>
+<p>
+	먼저 <path>/etc/modules.d/alsa</path>을 수정합니다.
+</p>
+<warn>
+	<path>/etc/modules.conf</path>을 고칠 필요는 없습니다. 대신에 <path>/etc/modules.d</path> 안에 있는 파일을 고쳐주면 됩니다.
+	(역주: update-modules를 실행하면 자동으로 등록됩니다.)
+</warn>
+<p>
+	파일의 꼭대기에 있는 ALSA portion을 확인합니다.
+	여러분이 가지고 있는 사운드카드의 최대 개수를 적으면 되는데, 보통 일반적으로 한개입니다.
+</p>
+<p>
+<pre caption="At the top of /etc/modules.d/alsa">
+# Alsa 0.9.X kernel modules' configuration file.
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/kr/Attic/alsa-guide.xml,v 1.1 2002/11/24 16:08:36 seo Exp $
+
+# ALSA portion
+alias char-major-116 snd
+<c>options snd snd_major=116 snd_cards_limit=1</c>
+# OSS/Free portion
+alias char-major-14 soundcore
+
+##
+## IMPORTANT:
+</pre>
+</p>
+<p>
+	ALSA가 사용할 소리드라이버를 설정합니다. 같은 파일에서 아래와 같이 수정합니다.
+<pre caption="A bit lower in /etc/modules.d/alsa">
+## and then run `update-modules' command.
+## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
+##
+##  ALSA portion
+<c>alias snd-card-0 snd-ens1371</c>
+<c>## If you have more than one, add:
+## alias snd-card-1 snd-intel8x0
+## alias snd-card-2 snd-ens1370</c>
+##  OSS/Free portion
+## alias sound-slot-0 snd-card-0
+## alias sound-slot-1 snd-card-1
+##
+</pre>
+</p>
+<p>
+	<note>
+		만약 한개이상의 소리카드를 가지고 있다면, <c>snd_cards_limit</c>의 값을 맞게 고치고, 다른 사운드카드의 장치명을 써줍니다.
+		여러개의 사운드 카드에 대해서는 아직 실험을 안해봤는데, 여러분은 이것에 대한 예제를 
+		<uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/alsa-howto.html">ALSA Howto</uri>의
+		<uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/c1660.htm">Chapter 6</uri> 에서
+		찾아보실수 있습니다.
+</note>
+</p>
+<p>
+	마지막으로 이 파일에서 할 일은, 파일의 아래쪽에 주석처리 되지 않은 아래의 몇줄입니다.
+<pre caption="at the very bottom of /etc/modules.d/alsa">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+</pre>
+</p>
+<p>
+	<path>/etc/modules.d/alsa</path> 을 두번 체크하고, 모든것이 완료 되었다면 
+	<c>update-modules</c> 을 실행합니다.
+<pre>
+# <c>update-modules</c>
+</pre>
+</p>
+<note>
+	<c>update-modules</c> 을 실행하고 나면 <path>/etc/modules.d/alsa</path> 의 내용이 <path>/etc/modules.conf</path>
+	로 포함됩니다.
+</note>
+<p>
+	/etc/devfsd.conf 파일에 alsa 디바이스와 퍼미션이 제대로 등록되었는지도 검사해 보아야 합니다.
+</p>
+<pre>
+# nano -w /etc/devfsd.conf
+</pre>
+<pre>
+# ALSA/OSS stuff
+# Comment/change these if you want to change the permissions on
+# the audio devices
+LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
+REGISTER        sound/.*     PERMISSIONS root.audio 660
+REGISTER        snd/.*       PERMISSIONS root.audio 660
+</pre>
+<note>
+	devfsd.conf는 /dev/sound 의 퍼미션을 root.audio로 한다는것에 유념하시기 바랍니다. 그러므로 root가 아닌 사용자들은 audio그룹안에
+	들어가야 합니다.
+</note>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Starting ALSA ALSA 시작하기.</title>
+<section>
+	<title>Adding alsasound to a runlevel 런레벨에 alsa 집어 넣기</title>
+<body>
+	<p>
+		부팅할때 ALSA를 시작하려면, 다음과 같이 하면 됩니다.
+<pre>
+# <c>rc-update add alsasound boot</c>
+</pre>
+</p>
+<p>
+	<warn>
+		alsa사운드는 boot런레벨입니다. default가 아닙니다.
+</p>
+</body>
+</section>
+<section>
+	<title>Running and unmuting 실행하고, 뮤트 끄기.</title>
+<body>
+	<p>
+		우리가 리눅스 유저인 이상 우리는 리부팅하는걸 싫어합니다. (역주: 난아닌데...^^)
+		그래서 우리는 alsasound 스크립트를 수동으로 재시작 할 수 있습니다.
+</p>
+<pre>
+# <c>/etc/init.d/alsasound start</c>
+</pre>
+<p>
+	ALSA 가 이제 실행됩니다. 모두 완료 되면 lsmod 명령으로 ALSA 모듈이 올라갔는지 확인해 볼 수 있습니다.
+	그러나, 아직 소리는 나지 않습니다. 왜냐면, 채널이 전부 음소거 되어 있기 때문입니다. 
+	그래서 우리는 <c>alsa-utils</c> 이 필요합니다.
+</p>
+<pre>
+# <c>emerge alsa-utils</c>
+# <c>amixer</c>
+</pre>
+<p>
+	<warn>
+		만일 "amixer: Mixer attach default error: No such file or directory"라는 에러를 만나게 되면,
+		수동으로 <c>snd-mixer-oss</c> 와 <c>snd-pcm-oss</c> 를 insmod해줘야 합니다.
+		그런다음에 amixer를 다시 실행합니다. 
+</warn>
+</p>
+<pre caption="only if you get an error when running amixer">
+# <c>insmod snd-mixer-oss</c>
+# <c>insmod snd-pcm-oss</c>
+# <c>amixer</c>
+</pre>
+<p>
+	이렇게 하면, 이제 음소거가 해제 됩니다. 
+</p>
+<p>
+<pre>
+# <c>amixer set Master 100 unmute</c>
+# <c>amixer set PCM 100 unmute</c>
+# <c>aplay /usr/kde/3/share/sounds/pop.wav</c> <codenote>(pop.wav is part of KDE)</codenote>
+</pre>
+</p>
+이제 소리가 플레이 명령에 의해서 작동하는것을 확인해야 합니다.
+음악을 들으려면 실제로 사운드가 작동해야 합니다.
+그래서, <c>alsamixer</c> 라는 ncurses 기반의 프로그램을 이용해 볼륨을 조정합니다.
+<p>
+	XMMS 를 지원하는 <c>alsa-xmms</c> 도 emerge 하게 될것입니다.
+</p>
+시스템을 재부팅하고 나면, <e>alsasound</e> init 스크립트가 볼륨세팅 내용을 적절하게 불러옵니다.
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Final Notes마지막 과정</title>
+<section>
+	<title>After kernel-upgrades..커널업그레이드 후에..</title>
+<body>
+	<p>
+		커널을 리빌드한 후에 아니면 커널을 업그레이드 한 후에, 여러분은 ALSA모듈도 다시 빌드 해야 합니다.
+	</p>
+	<p>
+		비록 이미 <c>alsa-driver</c>, <c>alsa-libs</c> ,<c>alsa-utils</c> 를 설치했다 하여도, 
+		우선은 인스톨을 다시 하고, <path>/lib/modules/*/kernel/sound/pci/</path> 에 드라이버를 추가해야 합니다.
+</p>
+<pre caption="needed after each kernel compile">
+emerge alsa-driver
+</pre>
+</body>
+</section>
+<section>
+	<title>/etc/modules.autoload</title>
+<body>
+	<p>
+		ALSA때문에 이 파일을 수정할 필요는 없습니다. <c>rc-update add alsasound boot</c> 를 한후에, 
+		여러분의 시스템은 부팅시에 모듈을 알아서 올립니다.
+</p>
+<p>
+	<c>snd-pcm-oss</c> 나 <c>snd-mixer-oss</c> 파일을 이 파일에 추가할 필요는 없습니다.
+	<uri link="http://www.djcj.org/LAU/guide/alsbook/faq1.html">this FAQ</uri> 에서 추가 내용을 보실 수 있습니다.
+	
+</p>
+</body>
+</section>
+<section>
+	<title>More links..추가 링크..</title>
+<body>
+	<p>
+		아래의 링크에서 더 많은 정보를 얻으실 수 있습니다 : 
+</p>
+<p>
+<ul>
+<li><uri link="http://www.gentoo.org/doc/desktop.html">The Gentoo Linux Desktop Configuration Guide</uri></li>
+<li><uri link="http://www.alsa-project.org">ALSA Project Homepage</uri></li>
+<li><uri link="http://www.alsa-project.org/documentation.php3">ALSA Users Documentation</uri></li>
+<li><uri link="http://www.djcj.org">ALSA Howto's and FAQ's</uri></li>
+<li><uri link="http://tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri></li>
+<li><uri link="http://linux-sound.org/">Sound and MIDI Software For Linux</uri></li>
+</ul>
+</p>
+</body>
+</section>
+</chapter>
+</guide>
