@@ -10,13 +10,13 @@
     <!-- Inside /book -->
     <xsl:call-template name="bookcontent" />
   </xsl:if>
-  <xsl:if test="local-name() = 'chapter'">
-    <!-- Inside /book/chapter -->
-    <xsl:call-template name="bookchaptercontent" />
+  <xsl:if test="local-name() = 'part'">
+    <!-- Inside /book/part -->
+    <xsl:call-template name="bookpartcontent" />
   </xsl:if>
-  <xsl:if test="local-name() = 'section'">
-    <!-- Inside /book/chapter/section -->
-    <xsl:call-template name="bookchaptersectioncontent" />
+  <xsl:if test="local-name() = 'chapter'">
+    <!-- Inside /book/part/chapter -->
+    <xsl:call-template name="bookpartchaptercontent" />
   </xsl:if>
 </xsl:template>
 
