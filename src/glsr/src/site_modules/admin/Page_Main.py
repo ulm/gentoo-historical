@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.6 2004/07/22 12:59:13 port001 Exp $
+# $Id: Page_Main.py,v 1.7 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : "form"}
@@ -71,16 +71,16 @@ class Page_Main(Parent):
                 error_reporting = "False"
         else:
             error_reportig = "False"
-                                                                                                                              
+
         if error_reporting == "False":
             error_report_list = []
-                                                                                                                              
-        tmpl = TemplateHandler.New()
-        tmpl.Compile(
+
+        tmpl = TemplateHandler.Template()
+        tmpl.compile(
             self.template,
             {"GLSR_URL":                Config.URL,
              "USERS_ONLINE":       	users_online,
              "ERROR_REPORTING":         error_reporting},
             {"ERROR_REPORT_LIST":       error_report_list,
 	     "USERS_ONLINE_LIST":       users_online_list})
-        tmpl.Print()
+        print tmpl.output()

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.1 2004/07/03 21:51:35 port001 Exp $
+# $Id: Page_Script.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("script","category","language"), "params" : "form"}
@@ -46,14 +46,14 @@ class Page_Script(Parent):
 
     def display(self):
 
-        AdminScriptTemplate = TemplateHandler.New()
-        AdminScriptTemplate.Compile(
+        AdminScriptTemplate = TemplateHandler.Template()
+        AdminScriptTemplate.compile(
             self.template,
             {"GLSR_URL":	Config.URL,
              "MESSAGE":		"Operation not yet implemented :-).",
              "WARN_MESSAGE": 	0,
              "TOTAL_SCRIPTS": 	0})
-        AdminScriptTemplate.Print()
+        print AdminScriptTemplate.output()
         
 
     def __displaySearchResults(self):
@@ -85,17 +85,17 @@ class Page_Script(Parent):
         if not len(results):
             warn_message = 1
 
-        ScriptResultsTemplate = TemplateHandler.New()
-        ScriptResultsTemplate.Compile(Config.Template["admin_script_results"],
+        ScriptResultsTemplate = TemplateHandler.Template()
+        ScriptResultsTemplate.compile(Config.Template["admin_script_results"],
                                           {"GLSR_URL":	Config.URL,
                                            "TOTAL_SCRIPTS":	len(results),
                                            "WARN_MESSAGE":	warn_message},
                                           {"SCRIPT_LOOP": 	results})
-        ScriptResultsTemplate.Print()
+        print ScriptResultsTemplate.output()
 
     def __displaySearchForm(self):
         
-        ScriptSearchTemplate = TemplateHandler.New()
-        ScriptSearchTemplate.Compile(Config.Template["admin_script_search"],
+        ScriptSearchTemplate = TemplateHandler.Template()
+        ScriptSearchTemplate.compile(Config.Template["admin_script_search"],
                                      {"GLSR_URL":	Config.URL})
-        ScriptSearchTemplate.Print()
+        print ScriptSearchTemplate.output()

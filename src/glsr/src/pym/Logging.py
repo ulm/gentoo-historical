@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.6 2004/07/24 19:23:22 hadfield Exp $
+# $Id: Logging.py,v 1.7 2004/08/22 23:23:39 hadfield Exp $
 #
 
 import traceback
@@ -86,11 +86,11 @@ def err(msg, modname):
         if modname != "Template":
             import Template as TemplateHandler
 
-            FooterTemplate = TemplateHandler.New()
-            FooterTemplate.Compile(Config.Template["footer"],
+            FooterTemplate = TemplateHandler.Template()
+            FooterTemplate.compile(Config.Template["footer"],
                                    {"GLSR_VERSION":     Config.Version,
                                     "CONTACT":          Config.Contact})
-            FooterTemplate.Print()
+            print FooterTemplate.output()
     
 def FlushErrorReportLog():
     """Blank the ErrorReport log"""

@@ -3,12 +3,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_User.py,v 1.1 2004/07/03 21:51:35 port001 Exp $
+# $Id: Page_User.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("user",), "params" : "form, uid"}
 
-import Template as TemplateHandler
 import Config
 import MySQL
 from User import User

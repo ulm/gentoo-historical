@@ -3,12 +3,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_News.py,v 1.1 2004/07/03 21:51:35 port001 Exp $
+# $Id: Page_News.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("news",), "params" : "form, uid"}
 
-import Template as TemplateHandler
 import Config
 from User import User
 from News import News
@@ -40,12 +39,12 @@ class Page_News(Parent):
         for id in self.form.getlist("delete_btn"):
             if self.obj.SetID(id):
                 self.obj.Remove()
-		count += 1
+                count += 1
         
         if count > 1:
             self.message = "%s Announcements Successfully Deleted" % count
         else:
-    	    self.message = "%s Announcement Successfully Deleted" % count
+            self.message = "%s Announcement Successfully Deleted" % count
         
         self.show_all()
         
@@ -58,7 +57,7 @@ class Page_News(Parent):
         
     def display(self):
 
-        self.tmpl.Param("ANNOUNCE_MODE", self.announce_mode)
+        self.tmpl.param("ANNOUNCE_MODE", self.announce_mode)
         Parent.display(self)
 
 

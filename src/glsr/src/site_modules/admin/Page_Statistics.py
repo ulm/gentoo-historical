@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Statistics.py,v 1.1 2004/07/06 13:14:26 port001 Exp $
+# $Id: Page_Statistics.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("stat", None), "params" : ""}
@@ -28,8 +28,8 @@ class Page_Statistics(Parent):
 
     def display(self):
 
-        tmpl = TemplateHandler.New()
-        tmpl.Compile(
+        tmpl = TemplateHandler.Template()
+        tmpl.compile(
             self.template,
             {"GLSR_URL":		Config.URL,
              "USER_COUNT":		Stat.UserCount(),
@@ -40,4 +40,4 @@ class Page_Statistics(Parent):
              "COMMENT_COUNT":		Stat.CommentCount(),
              "DBSIZE":			Stat.DBSize()
 	    })
-        tmpl.Print()
+        print tmpl.output()

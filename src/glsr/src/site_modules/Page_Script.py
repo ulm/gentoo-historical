@@ -3,14 +3,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.2 2004/07/19 01:01:31 hadfield Exp $
+# $Id: Page_Script.py,v 1.3 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("yourscripts",), "params" : "form, uid"}
 
 import string
 
-import Template as TemplateHandler
 import Config
 from Script import Script
 from Language import Language
@@ -71,7 +70,7 @@ class Page_Script(Parent):
 
         self.options = self.options + ["show_parent", "show_subscript"]
         self.options.remove("delete")
-        self.tmpl.Param("SHOW_PARENT", "0")
+        self.tmpl.param("SHOW_PARENT", "0")
 
         Parent.selectDisplay(self)
     
@@ -88,11 +87,11 @@ class Page_Script(Parent):
         lang_obj = Language()
         cat_obj = Category()
         
-        self.tmpl.Param("LANGUAGE_LOOP", lang_obj.List(), "l")
-        self.tmpl.Param("CATEGORY_LOOP", cat_obj.List(), "l")
+        self.tmpl.param("LANGUAGE_LOOP", lang_obj.List(), "l")
+        self.tmpl.param("CATEGORY_LOOP", cat_obj.List(), "l")
 
         for key, value in self.sub_attributes.items():
-            self.tmpl.Param(string.upper(key), value)
+            self.tmpl.param(string.upper(key), value)
 
         Parent.display(self)
 
@@ -127,7 +126,7 @@ class Page_Script(Parent):
         
     def show_parent(self):
 
-        self.tmpl.Param("SHOW_PARENT", "1")
+        self.tmpl.param("SHOW_PARENT", "1")
         parent = self.obj.ListScripts({"id": self.script_id})[0]
         loop = []
         

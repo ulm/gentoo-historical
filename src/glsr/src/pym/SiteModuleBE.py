@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: SiteModuleBE.py,v 1.2 2004/07/19 01:00:22 hadfield Exp $
+# $Id: SiteModuleBE.py,v 1.3 2004/08/22 23:23:39 hadfield Exp $
 #
 
 import string
@@ -14,7 +14,7 @@ import MySQL
 
 class SiteModuleBE:
 
-    tmpl = TemplateHandler.New()
+    tmpl = TemplateHandler.Template()
 
     message = ""
     warn_message = 0
@@ -86,19 +86,19 @@ class SiteModuleBE:
     
     def display(self):
 
-        self.tmpl.Param("GLSR_URL", Config.URL)
-        self.tmpl.Param("TOTAL", len(eval("self.%s_arr" % self.class_type)))
-        self.tmpl.Param("MODIFY", self.modify_obj)
-        self.tmpl.Param("ADD_FORM", self.add_obj)
-        self.tmpl.Param("MESSAGE", self.message)
-        self.tmpl.Param("WARN_MESSAGE", self.warn_message)
-        self.tmpl.Param("MAIN_LOOP", eval("self.%s_arr" % self.class_type),"l")
+        self.tmpl.param("GLSR_URL", Config.URL)
+        self.tmpl.param("TOTAL", len(eval("self.%s_arr" % self.class_type)))
+        self.tmpl.param("MODIFY", self.modify_obj)
+        self.tmpl.param("ADD_FORM", self.add_obj)
+        self.tmpl.param("MESSAGE", self.message)
+        self.tmpl.param("WARN_MESSAGE", self.warn_message)
+        self.tmpl.param("MAIN_LOOP", eval("self.%s_arr" % self.class_type),"l")
 
         for key, value in self.obj_attributes.items():
-            self.tmpl.Param(string.upper(key), value)
+            self.tmpl.param(string.upper(key), value)
 
-        self.tmpl.Compile(self.template)
-        self.tmpl.Print()
+        self.tmpl.compile(self.template)
+        print self.tmpl.output()
         
     def show_all(self):
         

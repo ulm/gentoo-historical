@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.1 2004/07/13 15:13:34 hadfield Exp $
+# $Id: Page_Main.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : ""}
@@ -54,11 +54,11 @@ class Page_Main(Parent):
         if error_reporting == "False":
             error_report_list = []
 
-        tmpl = TemplateHandler.New()
-        tmpl.Compile(
+        tmpl = TemplateHandler.Template()
+        tmpl.compile(
             self.template,
             {"GLSR_URL":                Config.URL,
              "USER_ONLINE_LIST":        user_online_list,
              "ERROR_REPORTING":         error_reporting},
             {"ERROR_REPORT_LIST":       error_report_list})
-        tmpl.Print()
+        print tmpl.output()
