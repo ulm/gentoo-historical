@@ -56,150 +56,111 @@ my $password = $config{'password'};
 my $server   = $config{'server'};
 my $rows     = $config{'rows'};
 
-my $help     = '';
-my $show     = '';
-my $add      = '';
-my $newdev   = '';
-my $selfname = $0;
-my $cclist   = '';
-my $list     = '';
-my $update   = '';
-my $change   = '';
-my $attach   = '';
-my $grab     = '';
-my $devrel   = '';
-my $reporter = '';
-my $closed = '';
+my $help       = '';
+my $show       = '';
+my $add        = '';
+my $newdev     = '';
+my $selfname   = $0;
+my $cclist     = '';
+my $list       = '';
+my $update     = '';
+my $change     = '';
+my $attach     = '';
+my $grab       = '';
+my $devrel     = '';
+my $reporter   = '';
+my $closed     = '';
 my $closedwith = '';
 GetOptions(
-    'help'       => \$help,
-    'cclist=s'   => \$cclist,
-    'list=s'     => \$list,
-    'reporter=s' => \$reporter,
-    'closedby=s' => \$closed,
+    'help'         => \$help,
+    'cclist=s'     => \$cclist,
+    'list=s'       => \$list,
+    'reporter=s'   => \$reporter,
+    'closedby=s'   => \$closed,
     'closedwith=s' => \$closedwith,
-    'add'        => \$add,
-    'newdev'     => \$newdev,
-    'devrel'     => \$devrel,
-    'update=s'   => \$update,
-    'change=s'   => \$change,
-    'attach=s'   => \$attach,
-    'grab=s'     => \$grab,
-    'show=s'     => \$show,
+    'add'          => \$add,
+    'newdev'       => \$newdev,
+    'devrel'       => \$devrel,
+    'update=s'     => \$update,
+    'change=s'     => \$change,
+    'attach=s'     => \$attach,
+    'grab=s'       => \$grab,
+    'show=s'       => \$show,
 );
 
-if    ($help)     { helpme() }
-elsif ($cclist)   { cclist_bugs($cclist) }
-elsif ($list)     { list_bugs($list) }
-elsif ($reporter) { reporter($reporter) }
-elsif ($closed)   { closed_by($closed) }
+if    ($help)       { helpme() }
+elsif ($cclist)     { cclist_bugs($cclist) }
+elsif ($list)       { list_bugs($list) }
+elsif ($reporter)   { reporter($reporter) }
+elsif ($closed)     { closed_by($closed) }
 elsif ($closedwith) { closed_with($closedwith) }
-elsif ($show)     { show_bug($show) }
-elsif ($add)      { add_bug() }
-elsif ($newdev)   { new_dev() }
-elsif ($update)   { update_bug($update) }
-elsif ($change)   { change_status($change) }
-elsif ($attach)   { add_attach($attach) }
-elsif ($grab)     { download_attach($grab) }
-elsif ($devrel)   { dev_rel() }
+elsif ($show)       { show_bug($show) }
+elsif ($add)        { add_bug() }
+elsif ($newdev)     { new_dev() }
+elsif ($update)     { update_bug($update) }
+elsif ($change)     { change_status($change) }
+elsif ($attach)     { add_attach($attach) }
+elsif ($grab)       { download_attach($grab) }
+elsif ($devrel)     { dev_rel() }
 else { helpme() }
 
 sub helpme {
     print "Usage: $selfname\n";
     print "\t\t--list=loginID\tList bugs assigned to given loginID\n";
+    print "\t\t--cclist=loginID\tList bugs with loginID as a CC\n";
     print "\t\t--reporter=loginID\tList bugs reported by loginID\n";
     print "\t\t--closedby=loginID\tList bugs closed with bugowner loginID\n";
-    print "\t\t--closedwith=loginID\tList bugs closed with bugowner or cc of loginID\n";
+    print
+"\t\t--closedwith=loginID\tList bugs closed with bugowner or cc of loginID\n";
     print "\t\t--add\tAdd a new bug\n";
     print "\t\t--newdev\tAdd a new developer\n";
     print "\t\t--devrel\tAdd Developer Relations report\n";
     print "\t\t--update=BugID\tUpdate (comment on) given bug\n";
     print "\t\t--change=BugID\tChange bug status (fixed,invalid,etc)\n";
     print "\t\t--attach=BugID\tAdd an attachment to a bug\n";
+    print "\t\t--grab=BugID\tGrab attachment from a bug\n";
     print "\t\t--show=BugID\tShow the contents of bug BugID\n";
     print "\t\t--help\tPrint this sad usage info\n";
     print "\n\nStill need to add nice die messages...\n\n";
 }
 
 sub list_bugs {
-
-    # Unfortunately, I can't find a simple method for retrieving this list
-    require LWP::UserAgent;
     my $bugfor = shift;
-    $bugfor =~ s/\@/\%40/m;
+    chomp($bugfor);
+    my $mech = connect_bugz();
+    $mech->form_number(1);
+    $mech->field( 'email1', $bugfor );
+    $mech->field( 'email2', "" );
+    $mech->untick( 'emailreporter2', '1' );
+    $mech->select( 'order',      'Bug Number' );
+    $mech->select( 'emailtype1', 'exact' );
+    $mech->submit();
 
-    my $ua = LWP::UserAgent->new(
-        env_proxy  => 1,
-        keep_alive => 1,
-        timeout    => 30,
-    );
-    my $request = HTTP::Request->new( 'GET',
-"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailassigned_to1=1&emailtype1=substring&email1=$bugfor&emailassigned_to2=1&emailreporter2=1&emailcc2=1&emailtype2=substring&email2=$bugfor&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&cmdtype=doit&order=Reuse+same+sort+as+last+time&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
-    );
-    my $response = $ua->request($request);
-    die "Error while getting ", $response->request->uri, " -- ",
-      $response->status_line, "\nAborting"
-      unless $response->is_success;
+    $mech->follow_link( text_regex => qr/CSV/ );
 
-    my $content = $response->content;
-    my @baseline = split( /\n/, $content );
-    my $rowcount;
-    foreach my $line ( sort @baseline ) {
-        $line =~ s/\"//mg;
-        my @rowline = split( /,/, $line );
-        next if ( $rowline[0] =~ m/bug_id/ );
-        next if ( $rowline[0] eq "" );
-        next if ( $rowline[0] =~ /^\n$/ );
-        $rowcount = $rowcount + 4;
-        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
-        if ( $rowcount >= $rows ) {
-            print "Press Enter to Continue";
-            my $junk = <STDIN>;
-            $rowcount = 0;
-        }
-    }
-    exit();
+    my $content = $mech->content();
+    display_csv($content);
 
 }
 
 sub cclist_bugs {
-
-    # Unfortunately, I can't find a simple method for retrieving this list
-    require LWP::UserAgent;
     my $bugfor = shift;
-    $bugfor =~ s/\@/\%40/m;
+    chomp($bugfor);
+    my $mech = connect_bugz();
+    $mech->form_number(1);
+    $mech->field( 'email1', $bugfor );
+    $mech->field( 'email2', "" );
+    $mech->untick( 'emailassigned_to1', '1' );
+    $mech->tick( 'emailcc1', '1' );
+    $mech->untick( 'emailreporter2', '1' );
+    $mech->select( 'order',      'Bug Number' );
+    $mech->select( 'emailtype1', 'exact' );
+    $mech->submit();
 
-    my $ua = LWP::UserAgent->new(
-        env_proxy  => 1,
-        keep_alive => 1,
-        timeout    => 30,
-    );
-    my $request = HTTP::Request->new( 'GET',
-"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
-    );
-    my $response = $ua->request($request);
-    die "Error while getting ", $response->request->uri, " -- ",
-      $response->status_line, "\nAborting"
-      unless $response->is_success;
+    $mech->follow_link( text_regex => qr/CSV/ );
 
-    my $content = $response->content;
-    my @baseline = split( /\n/, $content );
-    my $rowcount;
-    foreach my $line ( sort @baseline ) {
-        $line =~ s/\"//mg;
-        my @rowline = split( /,/, $line );
-        next if ( $rowline[0] =~ m/bug_id/ );
-        next if ( $rowline[0] eq "" );
-        next if ( $rowline[0] =~ /^\n$/ );
-        $rowcount = $rowcount + 4;
-        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
-        if ( $rowcount >= $rows ) {
-            print "Press Enter to Continue";
-            my $junk = <STDIN>;
-            $rowcount = 0;
-        }
-    }
-    exit();
+    my $content = $mech->content();
+    display_csv($content);
 
 }
 
@@ -405,15 +366,8 @@ sub show_bug {
 
     my $BUG = shift;
     chomp($BUG);
-    use WWW::Mechanize;
-    my $mech = WWW::Mechanize->new();
-    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
-    $mech->submit_form(
-        fields => {
-            Bugzilla_login    => $login,
-            Bugzilla_password => $password,
-        }
-    );
+    my $mech = connect_bugz();
+
     $mech->submit_form(
         form_number => 2,
         fields      => { id => "$BUG", }
@@ -593,16 +547,7 @@ sub dev_rel {
 sub reporter {
 
     my $bugfor = shift;
-
-    use WWW::Mechanize;
-    my $mech = WWW::Mechanize->new();
-    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
-    $mech->submit_form(
-        fields => {
-            Bugzilla_login    => $login,
-            Bugzilla_password => $password,
-        }
-    );
+    my $mech   = connect_bugz();
 
     $mech->form_number(1);
     $mech->field( 'email1', $bugfor );
@@ -617,136 +562,93 @@ sub reporter {
     $mech->follow_link( text_regex => qr/CSV/ );
 
     my $content = $mech->content();
-    my @baseline = split( /\n/, $content );
-    my $rowcount;
-    foreach my $line ( sort @baseline ) {
-        $line =~ s/\"//mg;
-        my @rowline = split( /,/, $line );
-        next if ( $rowline[0] =~ m/bug_id/ );
-        next if ( $rowline[0] eq "" );
-        next if ( $rowline[0] =~ /^\n$/ );
-        $rowcount = $rowcount + 4;
-        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
-        if ( $rowcount >= $rows ) {
-            print "Press Enter to Continue";
-            my $junk = <STDIN>;
-            $rowcount = 0;
-        }
-    }
+    display_csv($content);
 }
 
 sub closed_by {
-my $owner = shift;
-chomp($owner);
+    my $owner = shift;
+    chomp($owner);
+    my $mech = connect_bugz();
 
-use WWW::Mechanize;
-    my $mech = WWW::Mechanize->new();
-    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
-    $mech->submit_form(
-        fields => {
-            Bugzilla_login    => $login,
-            Bugzilla_password => $password,
-        }
+    $mech->form_number(1);
+    my @status = ( RESOLVED, VERIFIED, CLOSED );
+    my @resolution = ( FIXED, INVALID, WONTFIX, CANTFIX,
+        NEEDINFO,  TEST-REQUEST, LATER, REMIND,
+        DUPLICATE, WORKSFORME,   MOVED, UPSTREAM
     );
+    $mech->select( 'bug_status', \@status );
+    $mech->select( 'resolution', \@resoltion );
+    $mech->field( 'email1', $owner );
+    $mech->field( 'email2', "" );
+    $mech->tick( 'emailassigned_to1', '1' );
+    $mech->untick( 'emailreporter2', '1' );
+    $mech->select( 'order',      'Bug Number' );
+    $mech->select( 'emailtype1', 'exact' );
+    $mech->submit();
 
+    $mech->follow_link( text_regex => qr/CSV/ );
 
- $mech->form_number (1);
- my @status = ( RESOLVED,VERIFIED,CLOSED);
- my @resolution = (FIXED,
-        INVALID,
-        WONTFIX,
-        CANTFIX,
-        NEEDINFO,
-        TEST-REQUEST,
-        LATER,
-        REMIND,
-        DUPLICATE,
-        WORKSFORME,
-        MOVED,
-	UPSTREAM);
-$mech->select('bug_status',\@status);
-$mech->select('resolution',\@resoltion);
- $mech->field('email1',$owner);
- $mech->field('email2',"");
- $mech->tick('emailassigned_to1','1');
- $mech->untick('emailreporter2','1');
- $mech->select('order','Bug Number');
- $mech->select('emailtype1','exact');
- $mech->submit();
+    my $content = $mech->content();
+    display_csv($content);
 
- $mech->follow_link( text_regex => qr/CSV/ );
-
- my $content = $mech->content();
-my @baseline = split( /\n/, $content );
-my $results = @baseline;
-$results--;
-print "$results bugs found\n";
-    my $rowcount= 1;
-    foreach my $line ( sort @baseline ) {
-        $line =~ s/\"//mg;
-        my @rowline = split( /,/, $line );
-        next if ( $rowline[0] =~ m/bug_id/ );
-        next if ( $rowline[0] eq "" );
-        next if ( $rowline[0] =~ /^\n$/ );
-        $rowcount = $rowcount + 4;
-        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
-        if ( $rowcount >= $rows ) {
-            print "Press Enter to Continue";
-            my $junk = <STDIN>;
-            $rowcount = 0;
-        }
-    }
 }
 
-
 sub closed_with {
-my $owner = shift;
-chomp($owner);
+    my $owner = shift;
+    chomp($owner);
+    my $mech = connect_bugz();
 
-use WWW::Mechanize;
-    my $mech = WWW::Mechanize->new();
-    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
-    $mech->submit_form(
+    $mech->form_number(1);
+    my @status = ( RESOLVED, VERIFIED, CLOSED );
+    my @resolution = ( FIXED, INVALID, WONTFIX, CANTFIX,
+        NEEDINFO,  TEST-REQUEST, LATER, REMIND,
+        DUPLICATE, WORKSFORME,   MOVED, UPSTREAM
+    );
+    $mech->select( 'bug_status', \@status );
+    $mech->select( 'resolution', \@resoltion );
+    $mech->field( 'email1', $owner );
+    $mech->field( 'email2', "" );
+    $mech->tick( 'emailassigned_to1', '1' );
+    $mech->tick( 'emailcc1',          '1' );
+    $mech->untick( 'emailreporter2', '1' );
+    $mech->select( 'order',      'Bug Number' );
+    $mech->select( 'emailtype1', 'substring' );
+    $mech->submit();
+
+    $mech->follow_link( text_regex => qr/CSV/ );
+
+    my $content = $mech->content();
+    display_csv($content);
+}
+
+sub connect_bugz {
+    use WWW::Mechanize;
+    my $mechver = $WWW::Mechanize::VERSION;
+    if ( $mechver <= 1.01 ) {
+        print
+"\n\nbugger requires that you have at least version 1.02 of WWW::Mechanize\nPlease emerge -U WWW-Mechanize before using bugger.\n\n";
+        exit();
+    }
+    my $agent = WWW::Mechanize->new();
+    $agent->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
+    $agent->submit_form(
         fields => {
             Bugzilla_login    => $login,
             Bugzilla_password => $password,
         }
     );
+    return ($agent);
+}
 
+sub display_csv {
+    my $content = shift;
+    chomp($content);
 
- $mech->form_number (1);
- my @status = ( RESOLVED,VERIFIED,CLOSED);
- my @resolution = (FIXED,
-        INVALID,
-        WONTFIX,
-        CANTFIX,
-        NEEDINFO,
-        TEST-REQUEST,
-        LATER,
-        REMIND,
-        DUPLICATE,
-        WORKSFORME,
-        MOVED,
-	UPSTREAM);
-$mech->select('bug_status',\@status);
-$mech->select('resolution',\@resoltion);
- $mech->field('email1',$owner);
- $mech->field('email2',"");
- $mech->tick('emailassigned_to1','1');
- $mech->tick('emailcc1','1');
- $mech->untick('emailreporter2','1');
- $mech->select('order','Bug Number');
- $mech->select('emailtype1','substring');
- $mech->submit();
-
- $mech->follow_link( text_regex => qr/CSV/ );
-
- my $content = $mech->content();
-my @baseline = split( /\n/, $content );
-my $results = @baseline;
-$results--;
-print "$results bugs found\n";
-    my $rowcount= 1;
+    my @baseline = split( /\n/, $content );
+    my $returncount = @baseline;
+    $returncount--;
+    print "$returncount items returned\n";
+    my $rowcount = 1;
     foreach my $line ( sort @baseline ) {
         $line =~ s/\"//mg;
         my @rowline = split( /,/, $line );
