@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.14 2004/03/16 02:38:19 esammer Exp $
+$Id: GLI.py,v 1.15 2004/03/27 16:42:38 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -30,7 +30,7 @@ class InstallProfile(xml.sax.ContentHandler):
 	_kernel_initrd = False
 	_kernel_bootsplash = False
 	_kernel_source_pkg = ""
-	_users = ()
+	_users = []
 	_root_pass_hash = ""
 	_time_zone = ""
 	_custom_stage3_tarball_uri = ""
@@ -69,47 +69,37 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		Called when the SAX parser encounters an XML closing element.
 		"""
+		# Instead of using 19 if/elif statements, use a jump table (well, pseudo jump table)
+		fntable = 	{	'gli-profile/cron-daemon': self.set_cron_daemon_pkg,
+					'gli-profile/logging-daemon': self.set_logging_daemon_pkg,
+					'gli-profile/boot-loader_mbr': self.set_boot_loader_mbr,
+					'gli-profile/boot-loader': self.set_boot_loader_pkg,
+					'gli-profile/kernel-config': self.set_kernel_config_uri,
+					'gli-profile/kernel-initrd': self.set_kernel_initrd,
+					'gli-profile/kernel-bootsplash': self.set_kernel_bootsplash,
+					'gli-profile/kernel-source': self.set_kernel_source_pkg,
+					'gli-profile/root-pass-hash': self.set_root_pass_hash,
+					'gli-profile/time-zone': self.set_time_zone,
+					'gli-profile/custom-stage3-tarball': self.set_custom_stage3_tarball_uri,
+					'gli-profile/install-stage': self.set_install_stage,
+					'gli-profile/portage-tree-sync': self.set_portage_tree_sync,
+					'gli-profile/portage-snapshot': self.set_portage_tree_snapshot_uri,
+					'gli-profile/domainname': self.set_domainname,
+					'gli-profile/hostname': self.set_hostname,
+					'gli-profile/nisdomainname': self.set_nisdomainname
+				}
 
 		path = self._xml_element_path()
 
-		if path == 'gli-profile/cron-daemon':
-			self.set_cron_daemon_pkg(self._xml_current_data)
-		elif path == 'gli-profile/logging-daemon':
-			self.set_logging_daemon_pkg(self._xml_current_data)
-		elif path == 'gli-profile/boot-loader_mbr':
-			self.set_boot_loader_mbr(self._xml_current_data)
-		elif path == 'gli-profile/boot-loader':
-			self.set_boot_loader_pkg(self._xml_current_data)
-		elif path == 'gli-profile/kernel-modules/module':
-			self.get_kernel_modules().append(self._xml_current_data)
-		elif path == 'gli-profile/kernel-config':
-			self.set_kernel_config_uri(self._xml_current_data)
-		elif path == 'gli-profile/kernel-initrd':
-			self.set_kernel_initrd(self._xml_current_data)
-		elif path == 'gli-profile/kernel-bootsplash':
-			self.set_kernel_bootsplash(self._xml_current_data)
-		elif path == 'gli-profile/kernel-source':
-			self.set_kernel_source_pkg(self._xml_current_data)
-		elif path == 'gli-profile/users':
-			self.get_users().append(self._xml_current_data)
-		elif path == 'gli-profile/root-pass-hash':
-			self.set_root_pass_hash(self._xml_current_data)
-		elif path == 'gli-profile/time-zone':
-			self.set_time_zone(self._xml_current_data)
-		elif path == 'gli-profile/custom-stage3-tarball':
-			self.set_custom_stage3_tarball_uri(self._xml_current_data)
-		elif path == 'gli-profile/install-stage':
-			self.set_install_stage(self._xml_current_data)
-		elif path == 'gli-profile/portage-tree-sync':
-			self.set_portage_tree_sync(self._xml_current_data)
-		elif path == 'gli-profile/portage-snapshot':
-			self.set_portage_snapshot(self._xml_current_data)
-		elif path == 'gli-profile/domainname':
-			self.set_domainname(self._xml_current_data)
-		elif path == 'gli-profile/hostname':
-			self.set_hostname(self._xml_current_data)
-		elif path == 'gli-profile/nisdomainname':
-			self.set_nisdomainname(self._xml_current_data)
+		# This is a normal case
+		if path in fntable.keys():
+			fntable[path](self._xml_current_data)
+		else:
+			# Handle the special cases
+			if path == 'gli-profile/kernel-modules/module':
+				self.get_kernel_modules().append(self._xml_current_data)
+			elif path == 'gli-profile/users/user':
+				self.add_user(self._xml_current_data, self._xml_current_attr)
 
 		self._xml_current_data = ""
 		self._xml_current_attr = None
@@ -124,7 +114,7 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		# This converts data to a string instead of being Unicode
 		# Maybe we should use Unicode strings instead of normal strings?
-		self._xml_current_data += str(data)
+		self._xml_current_data += string.strip(str(data))
 
 	def _xml_element_path(self):
 		"""
@@ -276,58 +266,93 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns users"
 		return self._users
 
+	def add_user(self, username='', attr=None):
+		"""
+		This will take a username (that is a string) and a set of attributes and it will verify everything is valid
+		and convert it into a 7-tuple set. Then it adds this tuple into the users list.
+		username and hash are manditory. All other attributes are optional. Or this method will
+		take a 7-tuple set, verify it's correctness and then append it to the _users list.
+		All items are strings except <uid>, which is an integer, and groups, which is a tuple. 
+
+		"""
+		hash = ''
+		shell = None
+		groups = None
+		shell = None
+		homedir = None
+		uid = None
+		comment = None
+
+		if type(username) == tuple:
+			if len(username) != 7:
+				raise "UserError", "Wrong format for user tuple!"
+
+			username_tmp = username[0]
+			hash = username[1]
+			groups = username[2]
+			shell = username[3]
+			homedir = username[4]
+			uid = username[5]
+			comment = username[6]
+			username = username_tmp
+
+			if type(groups) != tuple:
+				if groups != None:
+					groups = tuple(groups.split(','))
+		else:
+			for attrName in attr.getNames():
+				if attrName == 'groups':
+					groups = tuple(str(attr.getValue(attrName)).split(','))
+				elif attrName == 'shell':
+					shell = str(attr.getValue(attrName))
+				elif attrName == 'hash':
+					hash = str(attr.getValue(attrName))
+				elif attrName == 'homedir':
+					homedir = str(attr.getValue(attrName))
+				elif attrName == 'uid':
+					uid = int(attr.getValue(attrName))
+				elif attrName == 'comment':
+					comment = str(attr.getValue(attrName))
+
+		allowable_nonalphnum_characters = '_-'
+
+		if not GLIUtility._is_realstring(username):
+			raise "UserError", "username must be a non-empty string"
+
+		if username[0] not in (string.lowercase + string.uppercase):
+			raise "UsersError", "A username must start with a letter!"
+
+		for x in username:
+			if x not in (string.lowercase + string.uppercase + string.digits + allowable_nonalphnum_characters):
+				raise "UsersError", "A username must contain only letters, numbers, or these symbols: " + allowable_nonalphnum_characters
+
+		for user in self._users:
+			if username == user[0]:
+				raise "UserError", "This username already exists!"
+
+		if (hash == None) or (hash == ''):
+			raise "UserError", "A password hash must be given for every user!"
+
+		self._users.append((username,hash,groups,shell,homedir,uid,comment))
+
+	def remove_user(self, username):
+		"""
+		Remove "username" from the _users list.
+		"""
+		for user in self._users:
+			if username == user[0]:
+				self._users.remove(user)
+				break
+
 	def set_users(self, users):
 		"""
-		users is a tuple of users.
-		A 'user' is defined as a tuple with the following format: ( <user_name>, <user_pass_hash>, ( <user_group1>, <user_group2> ), <user_shell_uri>, <user_homedir>, <uid>, <user_comment> ). 
-		Therefore, a user is a tuple embeded in a list containing all users.
-		All items are strings except <uid> which is an integer.
-		<user_name> and <user_pass_hash> are NOT optional, the rest are (by passing None)
-		
+		users is a tuple(user) of tuple's. This sets _users to this set of tuples.
 		"""
-		
-		if type(users) != tuple:
-			raise "UsersError", "users variable must be a tuple!"
-			
-		for user in users:
-			# Test for proper user name stuff
-			allowable_nonalphnum_characters = '_-'
-			if type(user[0]) != str:
-				raise "UsersError", "A username must be a string!"
-			if not user[0][0] in string.lowercase:
-				raise "UsersError", "A username must start with a letter!"
-			for char in user[0]:
-				if not char in (string.lowercase + string.numbers + allowable_nonalphnum_characters):
-					raise "UsersError", "A username must contain only letters, numbers, or these symbols: " + allowable_nonalphnum_characters
-			
-			# Check data type for user's password hash
-			if type(user[1]) != str:
-				raise "UsersError", "A user's password hash must be a string!"
-				
-			# Check data types for groups
-			if type(user[2]) != tuple and (user[2] != None):
-				raise "UsersError", "A user's groups must be a tuple or None for no groups!"
-			for group in user[2]:
-				if type(group) != str:
-					raise "UsersError", "A user's group data must be a string!"
-					
-			# Check data type for user's shell
-			if type(user[3]) != str and (user[3] != None):
-				raise "UsersError", "The path to a user's shell must be a string or None for '/bin/bash'!"
-				
-			# Check data type for user's home dir
-			if type(user[4]) != str and (user[4] != None):
-				raise "UsersError", "A user's home directory must be a string or None for '/home/username'!"
-			
-			# Check data type for user's ID
-			if (type(user[5]) != int) and (user[5] != None):
-				raise "UsersError", "A user's ID must be an integer or None for next available UID!"
-			
-			# Check data type for user's comment
-			if type(user[6]) != str and (user[6] != None):
-				raise "UsersError", "A user's comment must be a string or None for no comment!"
-		
-		self._users = users
+		self._users = []
+
+		if users != None:
+			for user in users:
+				self.add_user(user)
 
 	def get_root_pass_hash(self):
 		"returns root_pass_hash"
@@ -635,3 +660,70 @@ class InstallProfile(xml.sax.ContentHandler):
 				
 		# Set network_interfaces
 		self._network_interfaces = network_interfaces
+
+	def serialize(self):
+		"""
+		This method serializes the configuration data and output a nice XML document.
+
+		NOTE: this method currently does not serialize: _partition_tables, _network_interfaces, or _kernel_modules
+
+		"""
+		import xml.dom.minidom
+		xmldoc = ""
+		xmltab = {	'cron-daemon':		("", self.get_cron_daemon_pkg),
+				'logging-daemon':	("", self.get_logging_daemon_pkg),
+				'boot-loader_mbr':	(True, self.get_boot_loader_mbr),
+				'boot-loader':		("", self.get_boot_loader_pkg),
+				'kernel-config':	("", self.get_kernel_config_uri),
+				'kernel-initrd':	(False, self.get_kernel_initrd),
+				'kernel-bootsplash':	(False, self.get_kernel_bootsplash),
+				'kernel-source':	("", self.get_kernel_source_pkg),
+				'root-pass-hash':	("", self.get_root_pass_hash),
+				'time-zone':		("", self.get_time_zone),
+				'custom-stage3-tarball': ("", self.get_custom_stage3_tarball_uri),
+				'install-stage':	(1, self.get_install_stage),
+				'portage-tree-sync':	(True, self.get_portage_tree_sync),
+				'portage-snapshot':	("", self.get_portage_tree_snapshot_uri),
+				'domainname':		("localdomain", self.get_domainname),
+				'hostname':		("localhost", self.get_hostname),
+				'nisdomainname':	("", self.get_nisdomainname)
+		}
+
+		xmldoc += "<?xml version=\"1.0\"?>"
+
+		xmldoc += "<gli-profile>"
+
+		# Normal cases
+		for key in xmltab.keys():
+			tmptuple = xmltab[key]
+			if tmptuple[1]() != tmptuple[0]:
+				xmldoc += "<%s>%s</%s>" % (key, tmptuple[1](), key)
+
+		# Other cases
+		if self.get_users() != []:
+			xmldoc += "<users>"
+			users = self.get_users()
+			for user in users:
+				attrstr = ""
+				username = user[0]
+
+				if user[1] != None:
+					attrstr += "hash=\"%s\" " % user[1]
+				if user[2] != None:
+					attrstr += "groups=\"%s\" " % string.join(user[2],',')
+				if user[3] != None:
+					attrstr += "shell=\"%s\" " % user[3]
+				if user[4] != None:
+					attrstr += "homedir=\"%s\" " % user[4]
+				if user[5] != None:
+					attrstr += "uid=\"%s\" " % user[5]
+				if user[6] != None:
+					attrstr += "comment=\"%s\" " % user[6]
+
+				xmldoc += "<user %s>%s</user>" % (string.strip(attrstr), username)
+			xmldoc += "</users>"
+
+		xmldoc += "</gli-profile>"
+
+		dom = xml.dom.minidom.parseString(xmldoc)
+		return dom.toprettyxml()
