@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-alpha-disk.xml,v 1.8 2004/11/20 17:37:34 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-alpha-disk.xml,v 1.9 2005/01/08 17:39:36 neysx Exp $ -->
 
 <sections>
 
-<version>1.9</version>
-<date>2004-08-30</date>
+<version>1.10</version>
+<date>2004-12-30</date>
 
 <section>
 <title>Introduction aux périphériques de bloc</title>
@@ -151,7 +151,7 @@ beaucoup d'espace libre sur une partition et plus du tout sur une autre.
 </subsection>
 </section>
 <section id="fdisk">
-<title>Partitionner votre disque avec fdisk</title>
+<title>Partitionner votre disque avec fdisk (uniquement SRM)</title>
 <subsection>
 <body>
 
@@ -236,10 +236,11 @@ Do you want to create a disklabel? (y/n) <i>y</i>
 </pre>
 
 <p>
-Nous allons commencer par supprimer tous les «&nbsp;slices&nbsp;» <e>excepté</e>
-le «&nbsp;slice&nbsp;» c.  La suite montre comment supprimer un
-«&nbsp;slice&nbsp;» (dans l'exemple, nous utilisons a). Répétez la procédure pour
-supprimer tous les autres «&nbsp;slices&nbsp;» (de nouveau, excepté le
+Nous allons commencer par supprimer tous les «&nbsp;slices&nbsp;»
+<e>excepté</e> le «&nbsp;slice&nbsp;» c (requis par l'utilisation de
+«&nbsp;label&nbsp;» disque de type BSD).  La suite montre comment supprimer un
+«&nbsp;slice&nbsp;» (dans l'exemple, nous utilisons a). Répétez la procédure
+pour supprimer tous les autres «&nbsp;slices&nbsp;» (de nouveau, excepté le
 «&nbsp;slice&nbsp;» c).
 </p>
 
@@ -293,9 +294,10 @@ séparée.  Cependant, le premier cylindre ne peut pas être utilisé vu que l'i
 
 <p>
 Nous allons créer un «&nbsp;slice&nbsp;» de mémoire virtuelle qui commence au
-troisième cylindre, avec une taille totale de 1 Go.  Utilisez <c>n</c> pour créer
-un nouveau «&nbsp;slice&nbsp;».  Après avoir créé le «&nbsp;slice&nbsp;», nous
-allons changer son type à <c>1</c> (chiffre un) pour indiquer <e>swap</e>.
+troisième cylindre, avec une taille totale de 1&nbsp;Go.  Utilisez <c>n</c>
+pour créer un nouveau «&nbsp;slice&nbsp;».  Après avoir créé le
+«&nbsp;slice&nbsp;», nous allons changer son type à <c>1</c> (chiffre un) pour
+indiquer <e>swap</e>.
 </p>
 
 <pre caption="Création du « slice » de mémoire virtuelle">
@@ -381,6 +383,245 @@ BSD disklabel command (m for help): <i>p</i>
 <p>
 Quittez <c>fdisk</c> en tapant <c>w</c>.  Ceci va également sauvez votre plan
 de «&nbsp;slice&nbsp;».
+</p>
+
+<pre caption="Sauver et quitter fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Maintenant que vos «&nbsp;slice&nbsp;» sont créés, vous pouvez continuer avec
+<uri link="#filesystems">Création des systèmes de fichiers</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk">
+<title>Utiliser fdisk pour partitionner votre disque (uniquement ARC/AlphaBIOS)</title>
+<subsection>
+<body>
+
+<p>
+Cette section décrit comment partitionner votre disque selon le plan
+précédemment indiqué, c'est-à-dire&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partition de démarrage («&nbsp;boot&nbsp;»)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partition de mémore virtuelle («&nbsp;swap&nbsp;»)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partition principale</ti>
+</tr>
+</table>
+
+<p>
+Vous pouvez utiliser un autre plan de partitionnement si vous le désirez.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Identifier les disques disponibles</title>
+<body>
+
+<p>
+Pour déterminer quels disques sont disponibles sur votre système, utilisez les
+commandes suivantes&nbsp;:
+</p>
+
+<pre caption="Identifier les disques disponibles">
+# <i>dmesg | grep 'drive$'</i>        <comment>(Disques IDE.)</comment>
+# <i>dmesg | grep 'scsi'</i>          <comment>(Disques SCSI.)</comment>
+</pre>
+
+<p>
+Le résultat de ces commandes devrait vous permettre de voir quels disques sont
+installés ainsi que leur chemin d'accès dans <path>/dev</path>. La suite de ce
+texte utilise un disque SCSI <path>/dev/sda</path> à titre d'exemple.
+</p>
+
+<p>
+Lancez <c>fdisk</c> :
+</p>
+
+<pre caption="Lancer fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Supprimer toutes les partitions</title>
+<body>
+
+<p>
+Si votre disque est complètement vierge, vous devez d'abord créer un label de
+disque DOS.
+</p>
+
+<pre caption="Créer un label de disque DOS">
+Command (m for help): <i>o</i>
+Building a new DOS disklabel.
+</pre>
+
+<p>
+Si le disque contient déjà des partitions, commenez par toutes les supprimer.
+L'exemple suivant utilise <c>1</c> pour supprimer la première partition,
+répétez l'opération pour les autres partitions.
+</p>
+
+<p>
+Utilisez <c>p</c> pour afficher la liste des partitions et <c>d</c> pour
+supprimer une partition.
+</p>
+
+<pre caption="Supprimer une partition">
+command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1         478      489456   83  Linux
+/dev/sda2             479        8727     8446976    5  Extended
+/dev/sda5             479        1433      977904   83  Linux Swap
+/dev/sda6            1434        8727     7469040   83  Linux
+
+command (m for help): <i>d</i>
+Partition number (1-6): <i>1</i>
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition de démarrage («&nbsp;boot&nbsp;»)</title>
+<body>
+
+<p>
+Sur un système Alpha qui utilise MILO pour démarrer, il faut créer une petite
+partition vfat.
+</p>
+
+<pre caption="Créer la partition de démarrage">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-8727, default 1): <i>1</i>
+Last cylinder or +size or +sizeM or +sizeK (1-8727, default 8727): <i>+16M</i>
+
+Command (m for help): <i>t</i>
+Selected partition 1
+Hex code (type L to list codes): <i>6</i>
+Changed system type of partition 1 to 6 (FAT16)
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition de mémoire virtuelle</title>
+<body>
+
+<p>
+Nous allons créer une partition de mémoire virtuelle d'un Go qui commence au
+troisième cylindre. Utilisez <c>n</c> pour créer une nouvelle partition.
+</p>
+
+<pre caption="Créer la partition de mémoire virtuelle">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>2</i>
+First cylinder (17-8727, default 17): <i>17</i>
+Last cylinder or +size or +sizeM or +sizeK (17-8727, default 8727): <i>+1000M</i>
+
+Command (m for help): <i>t</i>
+Partition number (1-4): <i>1</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 2 to 82 (Linux swap)
+</pre>
+
+<p>
+Votre table de partitions devrait maintenant ressembler à&nbsp;:
+</p>
+
+<pre caption="Table de partition après la création du swap">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition principale</title>
+<body>
+
+<p>
+Il nous reste à créer la partition principale. Utilisez <c>n</c> une nouvelle
+fois.
+</p>
+
+<pre caption="Créer la partition principale">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>3</i>
+First cylinder (972-8727, default 972): <i>972</i>
+Last cylinder or +size or +sizeM or +sizeK (972-8727, default 8727): <i>8727</i>
+</pre>
+
+<p>
+Votre table de partitions devrait maintenant ressembler à&nbsp;:
+</p>
+
+<pre caption="Table de partition après la création de la partition principale">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+/dev/sda3             972        8727     7942144   83  Linux
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Sauver la table des partitions et quitter</title>
+<body>
+
+<p>
+Tapez <c>w</c> pour enregistrer votre table de partitions et quitter fdisk.
 </p>
 
 <pre caption="Sauver et quitter fdisk">
