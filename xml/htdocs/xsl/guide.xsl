@@ -248,7 +248,7 @@
   </tr>
   <tr>
     <td colspan="2" align="right" class="infohead" width="100%" bgcolor="#7a5ada">
-      Copyright 2001-2004 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-2004 Gentoo Foundation, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
@@ -786,7 +786,7 @@
   </tr>
   <tr>
     <td align="right" class="infohead" width="100%" colspan="3" bgcolor="#7a5ada">
-      Copyright 2001-2004 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-2004 Gentoo Foundation, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
