@@ -1,6 +1,6 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.8 2003/10/13 05:05:58 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.9 2003/10/29 20:20:31 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
@@ -225,7 +225,7 @@ pre_build() {
 	
 		DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-etdyn-ssp-${3}.tar.bz2"
 	
-		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} != 1 ]
+		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} = 1 ]
 		then
 			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
 		else
@@ -236,7 +236,7 @@ pre_build() {
 	then
 		DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-selinux-${3}.tar.bz2"
 	
-		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} != 1 ]
+		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} = 1 ]
 		then
 			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
 		else
