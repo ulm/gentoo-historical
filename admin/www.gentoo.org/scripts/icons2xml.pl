@@ -117,18 +117,6 @@ opendir(DIR, $searchpath);
 #	     
 @files = sort (grep /l33t_/, @files);
 #
-# Check if there are new icons since last time
-#
-if (-e "$outfile") {
-if (-e "$searchpath/.iconlist.old")
-	{
-	open (LAST, "$searchpath/.iconlist.old");
-	@oldiconlist = <LAST>;
-	close (LAST);
-	if (@oldiconlist == @files) {exit}
-	}}
-
-#
 #
 #
 foreach $line (@files) {
@@ -200,9 +188,3 @@ $footer = "</table>
 #
 #
 print OUT $footer;
-#
-# Generate new iconlist
-#
-open (NEW, ">$searchpath/.iconlist.old") || print "cannot create $searchpath/.iconlist.old";
-	foreach $newicon (@files) {print NEW $newicon."\n";}
-	close (NEW);
