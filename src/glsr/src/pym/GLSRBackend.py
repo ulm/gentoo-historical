@@ -3,13 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.2 2004/06/27 19:58:59 hadfield Exp $
+# $Id: GLSRBackend.py,v 1.3 2004/07/13 15:06:41 hadfield Exp $
 #
 
 __modulename__ = "GLSRBackend"
 
 import string
 import operator
+import types
 
 import MySQL
 import Config
@@ -26,11 +27,22 @@ class GLSRBackend:
     def Create(self, details, keys = ()):
         """ Creates the row with 'details'. Keys contains a list of restraints.
         So, if you can't have two identical 'name's then add 'name' to the list
-        of keys and it won't add the field. """
+        of keys and it won't add the field. If you have two or more fields that
+        can't be used in combination then make a sub tuple in keys """
 
         # Check restrictions
         for field in keys:
-            if self.Exists(field, details[field]):
+            
+            if type(field) == types.TupleType:
+                try:
+                    for f in field:
+                        if not self.Exists(f, details[f]):
+                            raise
+                    return True
+                except:
+                    continue
+                    
+            elif self.Exists(field, details[field]):
                 return True
 
         fields = string.join(map(lambda x: "%s_%s" % (self.tablename, x),
@@ -47,6 +59,24 @@ class GLSRBackend:
                     " (%s) VALUES (%s)" % (fields, values),
                     details.values(), fetch="none")
 
+        # Get the id for the record that was just inserted
+        cmp = string.join(map(lambda x: "%s_%s=%%s" % (self.tablename, x),
+                              details.keys()), " AND ")
+
+        if cmp != "":
+            
+            results = MySQL.Query(
+                "SELECT %s_id FROM %s%s " %
+                (self.tablename, Config.MySQL["prefix"], self.tablename) +
+                "WHERE %s" % cmp, details.values(), fetch="all")
+
+            if len(results) > 1:
+                """ Ambiguous results. We can't get an id """
+                return True
+            else:
+                self.id = results[0]["%s_id" % self.tablename]
+            
+        
 
     def Remove(self):
 
@@ -112,6 +142,7 @@ class GLSRBackend:
 
         return (result != None)
 
+        
     def SetID(self, id):
 
         if self.Exists("id", id):
