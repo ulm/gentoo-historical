@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.19 2005/01/04 22:20:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.20 2005/01/04 22:42:32 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -167,15 +167,19 @@ class ArchitectureTemplate:
 			
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
+		pass
 		
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
+		pass
 		
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
+		pass
 
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
+		pass
 	
 	def configure_make_conf(self):
 		"Configures make.conf"

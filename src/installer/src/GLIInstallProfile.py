@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.25 2005/01/04 00:24:27 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.26 2005/01/04 22:42:32 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -831,24 +831,6 @@ class InstallProfile:
 	def get_rc_conf(self):
 		""" Return a dictionary of the make.conf """
 		return self._rc_conf
-
-	def set_ignore_install_step_depends(self, xml_path, ignore_depends, xml_attr):
-		""" 
-		Set _ignore_install_step_depends to ignore_depends, if it is a bool, if not, convert
-		it first, then set _ignore_install_step_depends to val.
-		"""
-		# Check the data type
-		if type(ignore_depends) != bool:
-			if type(ignore_depends) == str:
-				ignore_depends = GLIUtility.strtobool(ignore_depends)
-			else:
-				raise GLIException("IgnoreInstallStepDepends", 'fatal', 'set_ignore_install_step_depends',  "Input must be type 'bool'!")
-		
-		self._ignore_install_step_depends = ignore_depends
-
-	def get_ignore_install_step_depends(self):
-		""" Return _ignore_install_step_depends """
-		return self._ignore_install_step_depends
 
 	def set_install_rp_pppoe(self, xml_path, install_rp_pppoe, xml_attr):
 		"""
