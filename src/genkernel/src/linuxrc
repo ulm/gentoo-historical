@@ -28,7 +28,7 @@ then
         mount -t devfs devfs /dev
 fi
 
-KV="`uname -r`"
+KV="`cat /proc/sys/kernel/osrelease`"
 KV_FINE="${KV:0:3}"
 CMDLINE="`cat /proc/cmdline`"
 
@@ -113,16 +113,18 @@ getkeymap() {
 
 modules_scan() {
 	local type
+	local mod_extention
 	type=${1}; shift
+	if [ ${KV_FINE} = "2.6" ]
+	then
+		mod_extention="ko"
+	else
+		mod_extention="o"
+	fi
 	for x in "$@"
 	do
-		blurb "---- Scanning for ${x}..."
-		if [ ${KV_FINE} = "2.6" ]
-		then
-			insmod -f /modules/${type}/${x}.ko > /dev/null 2>&1
-		else
-			insmod -f /modules/${type}/${x}.o > /dev/null 2>&1
-		fi
+		blurb "---- Scanning for ${x}.${mod_extention}..."
+		insmod -f /modules/${type}/${x}.${mod_extention} > /dev/null 2>&1
 		if [ $? -eq 0 ]
 		then
 			backup
