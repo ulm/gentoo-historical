@@ -136,7 +136,24 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  <xsl:value-of select="func:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
+                  <xsl:value-of select="func:gettext('Updated')"/>&#160;
+                  <xsl:choose>
+                    <xsl:when test="($part != 0) and ($chap != 0)">
+                      <xsl:variable name="filename" select="/book/part[$part]/chapter[$chap]/include/@href"/>
+                      <xsl:variable name="datevalue" select="document($filename)/sections/date"/>
+                      <xsl:choose>
+                        <xsl:when test="$datevalue">
+                          <xsl:value-of select="$datevalue"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:value-of select="/book/date"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="/guide/date|/book/date"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
                 </td>
               </tr>
               <tr>
