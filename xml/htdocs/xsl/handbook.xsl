@@ -133,10 +133,13 @@
       <!-- Content -->
       [ <a href="?chap=0&amp;sect=0">Home</a> ]
       <!-- Next Section -->
-      <xsl:if test="chapter">
-        [ Next Section &gt; ]
+      <xsl:if test="name() = 'book'">
+        [ <a href="?chap=1">Next Section &gt;</a> ]
       </xsl:if>
-      <xsl:if test="section">
+      <xsl:if test="name() = 'chapter'">
+        [ <a href="?chap={$chap}&amp;sect=1">Next Section &gt;</a> ]
+      </xsl:if>
+      <xsl:if test="name() = 'section'">
         <xsl:choose>
           <xsl:when test="number($sect) = count(section)">
             [ Next Section &gt; ]
@@ -146,34 +149,24 @@
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
-      <xsl:if test="subsection">
-        <xsl:choose>
-          <xsl:when test="number($sect) = last()">
-            [ Next Section &gt; ]
-          </xsl:when>
-          <xsl:otherwise>
-            [ <a href="?chap={$chap}&amp;sect={$nextsect}">Next Section &gt;</a> ]
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:if>
       <!-- Next Chapter -->
-      <xsl:if test="chapter">
-        [ <a href="?chap={$nextchap}&amp;sect=0">Next Chapter &gt;&gt;</a> ]
+      <xsl:if test="name() = 'book'">
+        [ <a href="?chap={$nextchap}">Next Chapter &gt;&gt;</a> ]
       </xsl:if>
-      <xsl:if test="section">
+      <xsl:if test="name() = 'chapter'">
         <xsl:choose>
           <xsl:when test="number($chap) = last()">
-            [ Next Chapter &gt;&gt; ] 
+            [ Next Chapter &gt;&gt; ]
           </xsl:when>
           <xsl:otherwise>
             [ <a href="?chap={$nextchap}&amp;sect=0">Next Chapter &gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
-      <xsl:if test="subsection">
+      <xsl:if test="name() = 'section'">
         <xsl:choose>
-          <xsl:when test="number($chap) = count(/book/chapter)">
-            [ Next Chapter &gt;&gt; ]
+          <xsl:when test="count(/book/chapter) = number($chap)">
+            [ Next Chapter &gt;&gt; ] 
           </xsl:when>
           <xsl:otherwise>
             [ <a href="?chap={$nextchap}&amp;sect=0">Next Chapter &gt;&gt;</a> ]
@@ -204,33 +197,38 @@
 <xsl:template name="bookchaptersectioncontent">
   <xsl:call-template name="menubar" />
   <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
-  <xsl:if test="subsection/title">
+  <xsl:variable name="doc" select="include/@href"/>
+  <xsl:variable name="FILE" select="document(concat('../english/handbook/',$doc))" />
+  <xsl:if test="$FILE/section/subsection/title">
     <b>Content: </b>
     <ul>
-      <xsl:for-each select="subsection/title">
+      <xsl:for-each select="$FILE/section/subsection/title">
         <xsl:param name="pos" select="position()" />
         <li><a href="#{$pos}" class="altlink"><xsl:value-of select="." /></a></li>
       </xsl:for-each>
     </ul>
   </xsl:if>
-  <xsl:apply-templates select="body|subsection" />
+  <xsl:apply-templates select="$FILE/section/body|$FILE/section/subsection" />
   
   <xsl:call-template name="menubar" />
 </xsl:template>
 
 <!-- Subsection inside a section -->
-<xsl:template match="/book/chapter/section/subsection">
+<!-- The current guide.xsl doesnt allow subsections in normal guides, so
+     only book's are allowed to use subsections -->
+<xsl:template match="subsection">
   <xsl:param name="pos" select="position()" />
   <a name="{$pos}"/>
   <xsl:if test="title">
-    <h2 class="secthead"><xsl:value-of select="$sect" />.<xsl:number level="multiple" format="a. " select="position()" /><xsl:value-of select="title" /></h2>
+    <p class="chaphead"><span class="chapnum"><xsl:value-of select="$sect" />.<xsl:number level="multiple" format="a. " select="position()" /></span><xsl:value-of select="title" /></p>
   </xsl:if>
   <xsl:apply-templates select="body|subsubsection" />
 </xsl:template>
 
 <!-- Subsubsection inside a subsection -->
-<xsl:template match="/book/chapter/section/subsection/subsubsection">
-  <h3 class="subsecthead"><xsl:value-of select="title" /></h3>
+<xsl:template match="subsubsection">
+  <xsl:param name="pos" select="position()"/>
+  <p class="secthead"><xsl:value-of select="title" /></p>
   <xsl:apply-templates select="body" />
 </xsl:template>
 
