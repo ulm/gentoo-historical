@@ -321,30 +321,24 @@ def set_boot_loader():
 	if code == DLG_OK: install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
 
 def set_timezone():
-# This section will be for setting the timezone. It pulls from /usr/share/zoneinfo/zone.tab.
+# This section will be for setting the timezone.
 	zonepath = "/usr/share/zoneinfo"
+	skiplist = ["zone.tab","iso3166.tab","posixrules"]
 	while 1:
 		tzlist = []
 		for entry in os.listdir(zonepath):
-			if entry[-4:] == ".tab": continue
-			if os.path.isdir(zonepath + "/" + entry): entry += " -->"
-			tzlist.append(entry)
+			if entry not in skiplist:
+				if os.path.isdir(zonepath + "/" + entry): entry += "/"
+				tzlist.append(entry)
 		tzlist.sort()
-		code, tznum = d.menu("Enter a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
+		code, tznum = d.menu("Select a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
 		if code == DLG_OK:
-			tzchoice = tzlist[int(tznum)-1]
-			if tzchoice[-3:] == "-->":
-				zonepath += "/" + tzchoice[:-4]
-				continue
-			else:
-				zonepath += "/" + tzchoice
-				break
+			zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
+			if tzlist[int(tznum)-1][-1:] != "/": break
 		else:
-			if zonepath == "/usr/share/zoneinfo":
-				return
-			slashloc = zonepath.rfind("/")
-			zonepath = zonepath[:slashloc-1]
-			continue
+			if zonepath == "/usr/share/zoneinfo": return
+			slashloc = zonepath[:-1].rfind("/")
+			zonepath = zonepath[:slashloc]
 	install_profile.set_time_zone(None, zonepath[20:], None)
 
 def set_networking():
