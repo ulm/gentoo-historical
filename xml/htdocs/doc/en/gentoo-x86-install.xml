@@ -41,8 +41,8 @@
 	approaches, depending upon how much of the system you want to custom-build from
 	scratch.
 	</abstract>
-<version>2.3.20</version>
- <date>6 March 2003</date>
+<version>2.4</version>
+ <date>19 March 2003</date>
   <chapter>
     <title>About the Install</title>
     <section>
@@ -372,86 +372,424 @@ Thu Feb 27 09:04:42 CST 2003
     </section>
   </chapter>
   <chapter>
-    <title>Partition Configuration</title>
+    <title>Filesystems, partitions and block devices</title>
     <section>
+		<title>Introduction to block devices</title>
       <body>
-        <p>Now that the kernel can see the network card and disk controllers, it is time
-				to set up disk partitions for Gentoo Linux.
-				</p>
-                
-				<p>Here is a quick overview of the standard Gentoo Linux partition layout.
-				We're going to create at least three partitions: a swap partition, a root
-				partition (to hold the bulk of Gentoo Linux), and a special boot partition.
-				The boot partition is designed to hold the boot loader information as well as
-				your Linux kernel(s).  The boot partition gives us a safe place to store
-				everything related to booting Linux. During normal day-to-day Gentoo Linux use,
-				your boot partition should remain <e>unmounted</e>. A working kernel will enable you to recover from most forms of
-filesystem corruption. Having your kernel in a non-mounted partition
-will prevent filesystem corruption from affecting it.
-				</p>
-        <p>Now, on to filesystem types.  Right now, you have five filesystem options:
-				XFS, ext2, ext3 (ext2 with journaling), jfs,  and ReiserFS.  ext2 is the tried and true Linux
-				filesystem but doesn't have metadata journaling.  ext3 is the new version of
-				ext2 with both metadata journaling and ordered data writes, effectively
-				providing data journaling as well.  ReiserFS is a B*-tree based filesystem
-				that has very good small file performance, and greatly outperforms both ext2 and
-				ext3 when dealing with small files (files less than 4k), often by a factor of
-				10x-15x. ReiserFS also scales extremely well and has metadata journaling.
-				As of kernel 2.4.18+, ReiserFS is finally rock-solid and highly recommended.
-				XFS is a filesystem with metadata journaling that
-				is fully supported under Gentoo Linux's <path>xfs-sources</path> kernel, but 
-				is generally not recommended due to its tendency to lose recently-modified
-				data if your system locks up or unexpectedly reboots (as a result of power failure, for instance)
-				Finally, jfs is IBM's own high performance journaling filesystem. Since it is obscure, we cannot comment either positively nor negatively on its stability.</p>
-        <p>If you're looking for the most standard filesystem, use ext2.  If you're looking
-				for the most rugged journaling filesystem, use ext3.  If you're looking for a
-				high-performance filesystem with journaling support, use ReiserFS;  both ext3 and ReiserFS are 
-				mature and refined.  
-				Here are our basic recommended filesystem
-				sizes and types:
-				</p>
-        <table>
-          <tr>
-            <th>Partition</th>
-            <th>Size</th>
-            <th>Type</th>
-            <th>example device</th>
-          </tr>
-          <tr>
-            <ti>boot partition, containing kernel(s) and boot information</ti>
-            <ti>100 Megabytes</ti>
-            <ti>ext2/3 highly recommended (easiest); if ReiserFS then mount with <c>-o notail</c></ti>
-            <ti>/dev/hda1</ti>
-          </tr>
-          <tr>
-            <ti>swap partition (no longer a 128 Megabyte limit, now 2GB)</ti>
-            <ti>Generally, configure a swap area that is between one to two times the size of the physical RAM
-			in your system.</ti>
-            <ti>Linux swap</ti>
-            <ti>/dev/hda2</ti>
-          </tr>
-          <tr>
-            <ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
-            <ti>&gt;=1.5 Gigabytes</ti>
-            <ti>ReiserFS, ext3 recommended; ext2 ok</ti>
-            <ti>/dev/hda3</ti>
-          </tr>
-        </table>
+<p>
+In this section, we'll take a good look at disk-oriented aspects of Gentoo Linux and Linux in general, including
+Linux filesystems, partitions and block devices. Then, once you're familar with the ins and outs of disks and
+filesystems, you'll be guided through the process of setting up partitions and filesystems for your Gentoo Linux
+install.
+</p>
+<p>
+To begin, I'll introduce "block devices".  The most famous block device is
+probably the one that represents the first IDE drive in a Linux system:
+</p>
+<pre caption="/dev/hda, the block device representing the primary master IDE drive in your system">
+/dev/hda
+</pre>
 
-   	
-		<p>At this point, create your partitions using <c>fdisk</c>.  Note that your partitions
-			should be of type 82 for swap and 83 for regular filesystems (whether ReiserFS, ext2/3 or other). </p>
-        <note><c>cfdisk</c> is included on the install CD, and it is <i>considerably</i> easier to use than
-			<c>fdisk</c>. Just type <c>cfdisk</c> to run it; by default, cfdisk will work with <b>/dev/hda</b>. If /dev/hda is not the hard disk you want to partition, give the right value to cfdisk as a parameter. For example: <c>cfdisk /dev/hde</c></note>
-        <note>If <c>fdisk</c> or <c>cfdisk</c> instruct you to do so, please reboot to allow your system to detect the
-new partition configuration.</note>
-        <note>If you are using RAID your partitions will be a little different.  You
+<p>
+If your system uses SCSI drives, then your first hard drive will be:
+</p>
+
+<pre caption="/dev/sda, the block device representing the first logical SCSI drive in your system">
+/dev/sda
+</pre>
+
+<p>The block devices above represent an <i>abstract</i> interface to the disk.
+User programs can use these block devices to interact with your disk without
+worrying about whether your drivers are IDE, SCSI or something else.  The
+program can simply address the storage on the disk as a bunch of contiguous,
+randomly-accessible 512-byte blocks.  </p>
+</body>
+</section>
+<section>
+<title>Partitions and fdisk</title>
+<body>
+<p> Under Linux, we create filesystems by using a special command called
+<c>mkfs</c> (or <c>mke2fs</c>, <c>mkreiserfs</c>, etc,) specifying a particular
+block device as a command-line argument.  </p>
+
+<p> However, although it is theoretically possible to use a "whole disk" block
+device (one that represents the <i>entire</i> disk) like <c>/dev/hda</c> or
+<c>/dev/sda</c> to house a single filesystem, this is almost never done in
+practice.  Instead, full disk block devices are split up into smaller, more
+manageable block devices called "partititons".  Partitions are created using a
+tool called <c>fdisk</c>, which is used to create and edit the partition table
+that's stored on each disk.  The partition table defines exactly how to split
+up the full disk.  </p>
+
+<p> We can take a look at a disk's partition table by running <c>fdisk</c>,
+specifying a block device that represents a full disk as an argument: </p>
+
+<note>Alternate interfaces to the disk's partition table include <c>cfdisk</c>,
+<c>parted</c> and <c>partimage</c></note>
+
+<pre caption="Starting up fdisk">
+# fdisk /dev/hda 
+</pre>
+<p>
+or
+</p>
+<pre caption="Starting up fdisk to look at the partition table on /dev/sda">
+# fdisk /dev/sda
+</pre>
+
+<impo>
+<b>Note that you should <i>not</i> save or make any changes to a disk's
+partition table if any of its partitions contain filesystems that are in use or
+contain important data.  Doing so will generally cause data on the disk to be
+lost.</b>
+</impo>
+
+<p>
+Once in fdisk, you'll be greeted with a prompt that looks like this:
+</p>
+
+<pre caption="The fdisk prompt">
+Command (m for help): 
+</pre>
+
+
+<p>
+Type <c>p</c> to display your disk's current partition configuration:
+</p>
+
+<pre caption="An example partition configuration">
+Command (m for help): p
+
+Disk /dev/hda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        49    264600   82  Linux swap
+/dev/hda3            50        70    158760   83  Linux
+/dev/hda4            71      2184  15981840    5  Extended
+/dev/hda5            71       209   1050808+  83  Linux
+/dev/hda6           210       348   1050808+  83  Linux
+/dev/hda7           349       626   2101648+  83  Linux
+/dev/hda8           627       904   2101648+  83  Linux
+/dev/hda9           905      2184   9676768+  83  Linux
+
+Command (m for help): 
+</pre>
+
+<p> This particular disk is configured to house seven Linux filesystems (each
+with a corresponding partition listed as "Linux") as well as a swap partition
+(listed as "Linux swap").  </p>
+
+<p>
+Notice the name of the corresponding partition block
+devices on the left hand side, starting with <c>/dev/hda1</c> and going up to
+<c>/dev/hda9</c>. In the early days of the PC, partitioning software only
+allowed a maximum of four partitions (called "primary" partitions).  This was
+too limiting, so a workaround called an <i>extended partitioning</i> was
+created.  An extended partition is very similar to a primary partition, and
+counts towards the primary partition limit of four.  However, extended
+partitions can hold any number of so-called <i>logical</i> partitions inside
+them, providing an effective means of working around the four partition limit.
+</p>
+
+<p>
+All partitions <c>hda5</c> and higher are logical partitions. The numbers 1
+through 4 are reserved for primary or extended partitions.  </p>
+
+<p> So, In our example, <c>hda1</c> through <c>hda3</c> are primary partitions.
+<c>hda4</c> is an extended partition that contains logical partitions
+<c>hda5</c> through <c>hda9</c>. So, in this example, you would never actually
+<i>use</i> <c>/dev/hda4</c> for storing any filesystems directly -- it simply
+acts as a container for partitions <c>hda5</c> through <c>hda9</c>.  </p>
+
+<p> Also, notice that each partition has an "Id", also called a "partition
+type".  Whenever you create a new partition, you should ensure that the
+partition type is set correctly. '83' is the correct partition type for
+partitions that will be housing Linux filesystems, and '82' is the correct
+partition type for Linux swap partitions.  You set the partition type using the
+<c>t</c> option in <c>fdisk</c>.  The Linux kernel uses the partition type
+setting to auto-detect fileystems and swap devices on the disk at boot-time.
+</p>
+</body>
+</section>
+<section>
+<title>Using fdisk to set up partitions</title>
+<body>
+
+<p>Now that you've had your introduction to the way disks and partitioning is
+done under Linux, it's time to walk you through the process of setting up disk
+partitions for your Gentoo Linux installation. After we walk you through the
+process of creating partitions on your disk, your partition configuration will
+look like this: </p>
+
+<pre caption="The partition configuration that you will have after following these steps">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1   *         1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+/dev/hda3            82      3876  28690200   83  Linux
+
+Command (m for help):
+</pre>
+
+<p>In our suggested "newbie" partition configuration, we have three partitions.
+The first one (<c>/dev/hda1</c>) at the beginning of the disk is a small
+partition called a boot partition.  The boot partition's purpose is to hold all
+the critical data related to booting -- GRUB boot loader information (if you
+will be using GRUB) as well as your Linux kernel(s).  The boot partition gives
+us a safe place to store everything related to booting Linux. During normal
+day-to-day Gentoo Linux use, your boot partition should remain <e>unmounted</e>
+for safety. Again, the boot partition is <c>/dev/hda1</c>. If you are setting
+up a SCSI system, your boot partition will likely end up being
+<c>/dev/sda1</c>.</p> 
+
+<p>The second partition (<c>/dev/hda2</c>) is used to for swap space. The
+kernel uses swap space as virtual memory when RAM becomes low. This partition,
+relatively speaking, isn't very big either, typically somewhere around 512MB.
+Again, if you're setting up a SCSI system, this partition will likely end up
+being <c>/dev/sda2</c>.  </p>
+
+<p>The third partition (<c>/dev/hda3</c>) is quite large and takes up the rest
+of the disk. This partition is called our "root" partition and will be used to
+store your main filesystem that houses Gentoo Linux itself. On a SCSI system,
+this partition would likely end up being <c>/dev/sda3</c>.</p>
+
+
+<p>Before we partition the disk, here's a quick technical overview of the
+suggested partition and filesystem configuration to use when installing Gentoo
+Linux:</p>
+
+<table>
+	<tr>
+	<th>Partition</th>
+	<th>Size</th>
+	<th>Type</th>
+	<th>example device</th>
+	</tr>
+	<tr>
+	<ti>boot partition, containing kernel(s) and boot information</ti>
+	<ti>100 Megabytes</ti>
+	<ti>ext2/3 highly recommended (easiest); if ReiserFS then mount with <c>-o notail</c></ti>
+	<ti>/dev/hda1</ti>
+	</tr>
+	<tr>
+	<ti>swap partition (no longer a 128 Megabyte limit, now 2GB)</ti>
+	<ti>Generally, configure a swap area that is between one to two times the size of the physical RAM
+	in your system.</ti>
+	<ti>Linux swap</ti>
+	<ti>/dev/hda2</ti>
+	</tr>
+	<tr>
+	<ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
+	<ti>&gt;=1.5 Gigabytes</ti>
+	<ti>ReiserFS, ext3 recommended; ext2 ok</ti>
+	<ti>/dev/hda3</ti>
+	</tr>
+</table>
+
+<p>OK, now to create the partitions as in the example and table above. First,
+enter fdisk by typing <c>fdisk /dev/hda1</c> or <c>fdisk /dev/sda1</c>,
+depending on whether you're using IDE or SCSI. Then, type <c>p</c> to view your
+current partition configuration.  Is there anything on the disk that you need
+to keep? If so, <b>stop now</b>.  If you continue with these directions, <b>all
+existing data on your disk will be erased.</b></p>
+
+<impo>Following these instructions below will cause all prior data on your disk
+to <b>be erased</b>! If there is anything on your drive, please be sure that it
+is non-critical information that you don't mind losing. Also make sure that you
+<b>have selected the correct drive</b> so that you don't mistakenly wipe data
+from the wrong drive.</impo>
+
+<p>Now, it's time to delete any existing partitions. To do this, type <c>d</c>
+and hit Enter. You will then be prompted for the partition number you would like
+to delete. To delete a pre-existing <c>/dev/hda1</c>, you would type:</p>
+
+<pre caption="Deleting a partition">
+Command (m for help): d
+Partition number (1-4): 1
+</pre>
+
+<p>The partition has been scheduled for deletion. It will no longer show up if
+you type <c>p</c>, but it will not be erased until your changes have been
+saved.  If you made a mistake and want to abort without saving your changes,
+type <c>q</c> immediately and hit enter and your partition will not be
+deleted.</p>
+<!-- NOTE: THis is not sufficient documentation to cover ATA Raid and I just
+find it confusing, so I'm commenting it out (drobbins)
+<note>If you are using RAID your partitions will be a little different.  You
 will have the partitions like this: <path>/dev/ataraid/discX/partY</path> X are
 the arrays you have made, so if you only have made 1 array, then it will be
 disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
-        <p>Once you've created your partitions, it is time to initialize
-			the filesystems that will be used to house your data.</p>
-        
+-->
+<p>Now, assuming that you do indeed want to wipe out all the partitions on your
+system, repeatedly type <c>p</c> to print out a partition listing and then type
+<c>d</c> and the number of the partition to delete it. Eventually, you'll end up
+with a partition table with nothing in it:</p>
+
+<pre caption="An empty partition table">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+
+Command (m for help):
+</pre>
+
+<p>Now that the in-memory partition table is empty, we're ready to create a
+boot partition. To do this, type <c>n</c> to create a new partition, then
+<c>p</c> to tell fdisk you want a primary partition. Then type <c>1</c> to
+create the first primary partition. When prompted for the first cylinder, hit
+enter. When prompted for the last cylinder, type <c>+100M</c> to create a
+partition 100MB in size. You can see output from these steps below:</p>
+
+<pre caption="Steps to create our boot partition">
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+p
+Partition number (1-4): 1
+First cylinder (1-3876, default 1):
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): +100M
+</pre>
+
+<p>Now, when you type <c>p</c>, you should see the following partition printout:</p>
+
+<pre caption="Our first partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+</pre>
+
+<p>Next, let's create the swap partition. To do this, type <c>n</c> to create a
+new partition, then <c>p</c> to tell fdisk that you want a primary partition. Then
+type <c>2</c> to create the second primary partition, <c>/dev/hda2</c> in our case.
+When prompted for the first cylinder, hit enter. When prompted for the last cylinder,
+type <c>+512M</c> to create a partition 512MB in size. After you've done this, type
+<c>t</c> to set the partition type, and then type in <c>82</c> to set the partition
+type to "Linux Swap". After completing these steps, typing <c>p</c> should display
+a partition table that looks similar to this:</p>
+
+<pre caption="Our swap partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+</pre>
+
+<p>Finally, let's create the root partition. To do this, type <c>n</c> to
+create a new partition, then <c>p</c> to tell fdisk that you want a primary
+partition. Then type <c>3</c> to create the second primary partition,
+<c>/dev/hda3</c> in our case.  When prompted for the first cylinder, hit enter.
+When prompted for the last cylinder, hit enter to create a partition that takes
+up the rest of the remaining space on your disk.  After completing these steps,
+typing <c>p</c> should display a partition table that looks similar to
+this:</p>
+
+<pre caption="Our root partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+/dev/hda3            82      3876  28690200   83  Linux
+</pre>
+
+<p>
+Finally, we need to set the "bootable" flag on our boot partition and then write
+our changes to disk. To tag <c>/dev/hda1</c> as a "bootable" partition, type
+<c>a</c> at the menu and then type in <c>1</c> for the partition number. If you
+type <c>p</c> now, you'll now see that <c>/dev/hda1</c> has a <c>*</c> in the "Boot"
+column. Now, let's write our changes to disk. To do this, type <c>w</c> and hit
+enter. Your disk partitions are now properly configured for a Gentoo Linux
+install. 
+</p>
+
+<note>If <c>fdisk</c> or <c>cfdisk</c> instruct you to do so, please reboot to
+allow your system to detect the new partition configuration.</note>
+</body>
+</section>
+<section>
+<title>Creating filesystems</title>
+<body>
+<p>Now that the partitions have been created, it's time to set up filesystems on
+the boot and root partitions so that they can be mounted and used to store data. 
+We will also configure the swap partition to serve as swap storage.
+</p>
+
+<p>Gentoo Linux supports a variety of different types of filesystems; each type has
+its strengths and weaknesses and its own set of performance characteristics. Currently,
+we support the creation of ext2, ext3, XFS, JFS and ReiserFS filesystems.</p>
+
+<p>ext2 is the tried and true Linux filesystem but doesn't have metadata
+journaling, which means that routine ext2 filesystem checks at startup time can
+be quite time-consuming. There is now quite a selection of newer-generation
+<i>journaled</i> filesystems that can be checked for consistency very quickly
+and are thus generally preferred over their non-journaled counterparts.
+Journaled filesystems prevent long delays when you boot your system and your
+filesystem happens to be in an <i>inconsistent</i> state.</p>
+
+<p>ext3 is the journaled version of the ext2 filesystem, providing metadata
+journaling for fast recovery in addition to other enhanced journaling modes
+like full data and ordered data journaling. ext3 is a very good and reliable
+filesystem. While it isn't a performance leader, it offers generally decent
+performance under most conditions and for filesystems of a typical size. Because
+it does not extensively employ the use of "trees" in its internal design, it
+doesn't scale very well, meaning that it is not an ideal choice for very large
+filesystems, or situations where you will be handling very large files or large quantities of 
+files in a single directory. When used within its design parameters, ext3 is
+an excellent filesystem.</p>
+
+<p>ReiserFS is a B*-tree based filesystem that has very good overall
+performance and greatly outperforms both ext2 and ext3 when dealing with small
+files (files less than 4k), often by a factor of 10x-15x. ReiserFS also scales
+extremely well and has metadata journaling.  As of kernel 2.4.18+, ReiserFS is
+now rock-solid and highly recommended for use both as a general-purpose
+filesystem and for extreme cases such as the creation of large filesystems, the
+use of many small files, very large files, and directories containing tens of
+thousands of files. ReiserFS is the filesystem we recommend by default for all
+non-boot partitions.</p>
+
+<p>XFS is a filesystem with metadata journaling that is fully supported under
+Gentoo Linux's <path>xfs-sources</path> kernel. It comes with a robust
+feature-set and is optimized for scalability. We only recommend using this
+filesystem on Linux systems with high-end SCSI and/or fibre channel storage and
+a uninterruptible power supply. Because XFS aggressively caches in-transit data
+in RAM, improperly designed programs (those that don't take proper precautions
+when writing files to disk, and there are quite a few of them) can lose a good
+deal of data if the system goes down unexpectedly.</p>  
+
+<p>JFS is IBM's own high performance journaling filesystem.  It has recently
+become production-ready, and there hasn't been a sufficient track record to
+comment either positively nor negatively on its general stability at this
+point.</p>
+
+<p>If you're looking for the most rugged journaling filesystem, use ext3.  If
+you're looking for a good general-purpose high-performance filesystem with
+journaling support, use ReiserFS;  both ext3 and ReiserFS are mature,
+refined and recommended for general use.</p>
+
+<!-- Corner case, confusing
 		<p>But before creating filesystems, you may want to initialize the
 			beginning of your partition using <c>dd</c> if you are using a pre-existing partition that has been used before. 
 			This is particularly helpful when you're going to create a new XFS filesystem on a partition that previously contained
@@ -467,13 +805,43 @@ disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
 	Be careful and check twice which partition you specify for zeroing.
 	If you make a mistake it might result in a loss of data.
 	</warn>
-	<p>Now, initialize your swap partition as follows:</p>
+-->
+
+<p>Based on our example above, we will use the following commands to initialize
+all our partitions for use:</p>
+
+<pre caption="Initializing our partitions (example)">
+# mke2fs -j /dev/hda1
+# mkswap /dev/hda2
+# mkreiserfs /dev/hda3
+</pre>
+
+<p>We choose ext3 for our <c>/dev/hda1</c> boot partition because it is a robust journaling
+filesystem supported by all major boot loaders. We used <c>mkswap</c> for our <c>/dev/hda2
+</c> swap partition -- the choice is obvious here. And for our main root filesystem on
+<c>/dev/hda3</c> we choose ReiserFS, since it is a solid journaling filesystem offering excellent
+performance. Now, go ahead and initialize your partitions. Here are the various commands
+available to create various filesystem types:</p>
+
+	<p>To initialize the swap partition:</p>
 <pre caption="Initializing Swap">
 # <c>mkswap /dev/hda2</c>
 </pre>
-        <p>You can use the <c>mke2fs</c> command to create ext2 filesystems.</p>
+<p>You can use the <c>mke2fs</c> command to create ext2 filesystems.</p>
 <pre caption="Creating an ext2 Filesystem">
 # <i>mke2fs /dev/hda1</i>
+</pre>
+<p>If you would like to use ext3, you can create ext3 filesystems using
+	<c>mke2fs -j</c>.</p>
+<pre caption="Creating an ext3 Filesystem">
+# <c>mke2fs -j /dev/hda3</c>
+</pre>
+        <note>You can find out more about using ext3 under Linux 2.4 at
+	<uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
+        <p>To create ReiserFS filesystems, use the <c>mkreiserfs</c> command.</p>
+<p>Use <c>mkreiserfs</c> to create a ReiserFS filesystem</p>
+<pre caption="Creating a ReiserFS Filesystem">
+# <c>mkreiserfs /dev/hda3</c>
 </pre>
         <p>To create an XFS filesystem, use the <c>mkfs.xfs</c> command.</p>
 <pre caption="Creating a XFS Filesystem">
@@ -486,17 +854,7 @@ disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
 	partition, so, for example, if you have a 20 GB partition you will need
 	a minimum agcount of 5. The <c>-l size=32m</c> command increases the
 	journal size to 32 Mb, increasing performance.</note>
-        <p>If you would like to use ext3, you can create ext3 filesystems using
-	<c>mke2fs -j</c>.</p>
-<pre caption="Creating an ext3 Filesystem">
-# <c>mke2fs -j /dev/hda3</c>
-</pre>
-        <note>You can find out more about using ext3 under Linux 2.4 at
-	<uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
-        <p>To create ReiserFS filesystems, use the <c>mkreiserfs</c> command.</p>
-<pre caption="Creating a ReiserFS Filesystem">
-# <c>mkreiserfs /dev/hda3</c>
-</pre>
+
 	<p>To create JFS filesystems, use the <c>mkfs.jfs</c> command.</p>
 <pre caption="Creating a JFS Filesystem">
 # <c>mkfs.jfs /dev/hda3</c>
@@ -508,49 +866,64 @@ disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
     <title>Mount Partitions</title>
     <section>
       <body>
-        <p>Now, we will activate our new swap, since we may need the additional virtual memory that it
+        <p>Now, we will activate our newly-initialized swap volume, since we may need the additional virtual memory that it
 			provides later:
 			</p>
 <pre caption="Activating Swap">
 # <c>swapon /dev/hda2</c>
 </pre>
+
         <p>Next, we will create the <path>/mnt/gentoo</path> and <path>/mnt/gentoo/boot</path> mount points,
-			and we will mount our filesystems to these mount points. </p>
+			and we will mount our filesystems to these mount points. One our boot and root filesystems are
+		mounted, any files we copy or create inside <path>/mnt/gentoo</path> will be placed on our new filesystems.
+			Note that if you are setting up Gentoo
+   			Linux with separate <path>/usr</path> or <path>/var</path> filesystems, these would get mounted to
+   			<path>/mnt/gentoo/usr</path> and <path>/mnt/gentoo/var</path> respectively.
+			</p>
+ 
+			 <impo>If your <e>boot</e> partition (the one holding the kernel) is ReiserFS, be sure to mount it
+			with the <c>-o notail</c> option so GRUB gets properly installed. Make sure 
+			that <c>notail</c> ends up in your new <path>/etc/fstab</path> boot partition entry, too.
+			We will get to that in a bit.
+			</impo>
+
 <pre caption="Creating Mount Points">
 # <c>mkdir /mnt/gentoo</c>
 # <c>mount /dev/hda3 /mnt/gentoo</c>
 # <c>mkdir /mnt/gentoo/boot</c>
 # <c>mount /dev/hda1 /mnt/gentoo/boot</c>
 </pre>
-        <p>
-			If you are setting up Gentoo
-   			Linux with a separate <path>/usr</path> or <path>/var</path>, these would get mounted to
-   			<path>/mnt/gentoo/usr</path> and <path>/mnt/gentoo/var</path>, respectively.
-			</p>
-                <impo>If your <e>boot</e> partition (the one holding the kernel) is ReiserFS, be sure to mount it
-			with the <c>-o notail</c> option so GRUB gets properly installed.  Make sure 
-			that <c>notail</c> ends up in your new <path>/etc/fstab</path> boot partition entry, too.
-			We will get to that in a bit.
-			</impo>
-        <impo>If you are having problems mounting your boot partition with ext2, try using
+
+                      <impo>If you are having problems mounting your boot partition with ext2, try using
 		   	<c>mount /dev/hXX /mnt/gentoo/boot -t ext2 </c> </impo>
       </body>
     </section>
   </chapter>
   <chapter>
-    <title>Obtaining the Desired 'stage-x' Tarball</title>
+    <title>Stage tarballs and chroot</title>
     <section>
+		<title>Selecting the desired stage tarball</title>
       <body>
-      	<p>If you are using the 3stages LiveCD to install, you already have all of the stage
-	tarballs available on the CD.
-	If this is the case, copy the tarball of your choice to <mnt>/mnt/gentoo</mnt>
-	</p>
 
-	<p>Alternatively, if you have the basic LiveCD, the stage1 tarball is still available on
-	the CD in <path>/mnt/cdrom/gentoo</path>. You will have to download the other stages though,
-	and the best place to which to download them is <path>/mnt/gentoo</path>.
-	</p>
-	
+<p>
+Now, you need to decide which one you would like to use as a
+basis for the install if you haven't already.</p>
+
+<p>If you are using the &quot;from scratch, build everything&quot; install
+method, you will want to use the <path>stage1-x86-1.4_rc3.tar.bz2</path> image.
+If you're using one of our bigger CDs like the "3stages" ISO, you will also
+have a choice of a stage2 and stage3 image.  These images allow you to save
+time at the expense of configurability (we've already chosen compiler
+optimizations and default USE variables for you.) The stages on the CD are
+accessible at <path>/mnt/cdrom/gentoo</path>, and you can type <c>ls /mnt/cdrom/gentoo</c>
+to see what's available on your CD.</p>
+
+<p>If you would like to perform an install using a stage tarball that is
+<i>not</i> on your CD , this is still possible, but you'll need to download the
+stage you want using the following instructions. If you already have the stage
+tarball you want to use (most users), then proceed to the "Extracting the stage
+tarball" section.</p>
+
 <pre caption="Downloading Required Stages">
 # <c>cd /mnt/gentoo</c>
 <comment>Use lynx to get the URL for your tarball:</comment>
@@ -565,40 +938,51 @@ Save the file and quit the browser
 </pre>
       </body>
     </section>
-  </chapter>
-  <chapter>
-    <title>Unpacking the Stage Tarball</title>
     <section>
+		<title>Extracting the stage tarball</title>
       <body>
-        <p>Now it is time to extract the compressed stage tarball of your choice
-	   to <path>/mnt/gentoo</path>. You only need to unpack the stage tarball
-	   for the stage you want to start at. So, if you wanted to perform a
-	   stage3 install of Gentoo, then you would unpack the stage3 tarball.
-	Next, we will <c>chroot</c> over to the new Gentoo Linux build installation to &quot;enter&quot; the new
-			Gentoo Linux system.
-			</p>
-        <impo>Be sure to use the <c>p</c> option with <c>tar</c>.  Forgetting to do this will
-			cause certain files to have incorrect permissions.</impo>
-        <p>If you are using the &quot;from scratch, build everything&quot; install method,
-			you will want to use the <path>stage1-x86-1.4_rc3.tar.bz2</path> image.
-			If you're using one of our bigger CDs, you will also have a choice of a stage2 and stage3 image.
-			These images allow you to save time at the expense of configurability (we've already chosen
-			compiler optimizations and default USE variables for you.)  
-			</p>
+
+<p>Now it is time to extract the compressed stage tarball of your choice to
+<path>/mnt/gentoo/</path>. Remember, you only need to unpack <b>one</b> stage
+tarball, either a stage1, stage2 or stage3.  So, if you wanted to perform a
+stage3 install of Gentoo, then you would just unpack the stage3 tarball.
+Unpack the stage tarball as follows:</p>
+
+<impo>Be sure to use the <c>p</c> option with <c>tar</c>.  Forgetting to do this will
+cause certain files to have incorrect permissions.</impo>
+
 <pre caption="Unpacking the Stages">
 # <c>cd /mnt/gentoo</c>
-# <c>tar -xvjpf /mnt/cdrom/gentoo/stage?-*.tbz2</c>
-# <c>mount -o bind /proc /mnt/gentoo/proc</c>
-# <c>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</c>
+<comment>Change "stage3" to "stage2" or "stage1" if you want to start from these stages instead.</comment>
+<comment>If you downloaded your stage tarball, change the path below to begin with "/mnt/gentoo/"
+instead of "/mnt/cdrom/gentoo/".</comment>
+# <c>tar -xvjpf /mnt/cdrom/gentoo/stage3-*.tbz2</c>
 </pre>
-<pre caption="Entering the chroot Environment">
+
+<p>If you downloaded your stage tarball to <path>/mnt/gentoo</path>, you can now delete it by typing
+<c>rm /mnt/gentoo/stage*.tbz2</c>.</p>
+</body>
+</section>
+<section>
+<title>Entering the chroot</title>
+<body>
+<p>
+Next, we will <c>chroot</c> over to the new Gentoo Linux build installation to &quot;enter&quot; the new
+Gentoo Linux system.
+</p>
+
+<pre caption="Prepping and entering the chroot environment">
+# <c>mount /proc /mnt/gentoo/proc</c>
+# <c>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</c>
 # <c>chroot /mnt/gentoo /bin/bash</c>
 # <c>env-update</c>
 Regenerating /etc/ld.so.cache...
 # <c>source /etc/profile</c>
 <comment>(The above points your shell to the new paths and updated binaries.)</comment>
 </pre>
-        <p>After you execute these commands, you will be &quot;inside&quot; your new Gentoo Linux environment.</p>
+        <p>After you execute these commands, you will be &quot;inside&quot; your new Gentoo Linux environment in <path>/mnt/gentoo</path>.
+		We can perform the rest of the installation process inside the chroot.
+		</p>
       </body>
     </section>
   </chapter>
@@ -606,22 +990,17 @@ Regenerating /etc/ld.so.cache...
     <title>Getting the Current Portage Tree using sync</title>
     <section>
       <body>
-        <p>Now, you will need to run <c>emerge sync</c>.  This will make sure that
-			you have the most current copy of the Portage tree. </p>
+	  
+<p>Now, you will need to run <c>emerge sync</c>. This command tells Portage to download
+the most recent copy of the Gentoo Linux Portage tree.
+The Portage tree
+and contains all the scripts (called ebuilds) used to build every package
+under Gentoo Linux. Currently, we have ebuild scripts for close to 4000 packages. nce <c>emerge sync</c>
+completes, you will have a complete Portage tree in <path>/usr/portage</path>.</p>
+
 <pre caption="Updating Using sync">
 # <c>emerge sync</c>
-# <c>export CONFIG_PROTECT="-*"</c>
-# <c>export USE="-* bootstrap build"</c>
-# <c>emerge portage</c>
-# <c>unset USE</c>
 </pre>
-        <p>The Portage tree will be downloaded and stored in <path>/usr/portage</path>;
-			it is about 90Mb in size without tarballs.
-			</p>
-	<note>The <c>export CONFIG_PROTECT=&quot;-*&quot;</c> line ensures that any new scripts
-			installed to <path>/etc</path> will overwrite the old scripts (stored in
-			<path>sys-apps/baselayout</path>), bypassing Portage's new config file
-			management support.  Type <c>emerge --help config</c> for more details.</note>
  
       </body>
     </section>
@@ -630,34 +1009,36 @@ Regenerating /etc/ld.so.cache...
     <title>Setting Gentoo optimizations (make.conf)</title>
     <section>
       <body>
-        <p>Now that you have a working copy of the Portage tree, 
-			it is time to customize the optimization and optional build-time settings to use
-			on your Gentoo Linux system.  First 
-			edit the file <path>/etc/make.conf</path>.  In this file, you should set your 
-			<c>USE</c> flags, which specify optional functionality that you would 
-			like to be built into packages if available; generally, the defaults (an <e>empty</e>
-			or unset <c>USE</c> variable) are fine.  
-			More information on <c>USE</c> flags can be found
-			<uri link="http://www.gentoo.org/doc/en/use-howto.xml">here</uri>.
-			A complete list of current USE flags can be found
-			<uri link="http://www.gentoo.org/dyn/use-index.xml">here</uri>.
-			</p>
-        <p>You also should set appropriate <c>CHOST</c>, <c>CFLAGS</c> and 
-			<c>CXXFLAGS</c> settings for the kind of system that you are creating 
-			(commented examples can be found further down in the file.)  These settings
-			will be used to tell the C and C++ compiler how to optimize the code that
-			is generated on your system. It is common for users with Athlon XP processors
-			to specify a "-march=athlon-xp" setting in their CFLAGS and CXXFLAGS settings
-			so that all packages built will be optimized for the instruction set and
-			performance characteristics of their CPU, for example. The <path>/etc/make.conf</path>
-			file contains a general guide for the proper settings of CFLAGS and CXXFLAGS.</p>
+
+<p>Now that you have a working copy of the Portage tree, it is time to
+customize the optimization and optional build-time settings to use on your
+Gentoo Linux system. Portage will use these settings when compiling any
+programs for you. To do this, edit the file <path>/etc/make.conf</path>.  In
+this file, you should set your <c>USE</c> flags, which specify optional
+functionality that you would like to be built into packages if available;
+generally, the defaults (an <e>empty</e> or unset <c>USE</c> variable) are
+fine.  More information on <c>USE</c> flags can be found <uri
+link="http://www.gentoo.org/doc/en/use-howto.xml">here</uri>.  A complete list
+of current USE flags can be found <uri
+link="http://www.gentoo.org/dyn/use-index.xml">here</uri>.  </p>
+
+<p>You also should set appropriate <c>CHOST</c>, <c>CFLAGS</c> and 
+<c>CXXFLAGS</c> settings for the kind of system that you are creating 
+(commented examples can be found further down in the file.)  These settings
+will be used to tell the C and C++ compiler how to optimize the code that
+is generated on your system. It is common for users with Athlon XP processors
+to specify a "-march=athlon-xp" setting in their CFLAGS and CXXFLAGS settings
+so that all packages built will be optimized for the instruction set and
+performance characteristics of their CPU, for example. The <path>/etc/make.conf</path>
+file contains a general guide for the proper settings of CFLAGS and CXXFLAGS.</p>
 			
-        <p>If necessary, you can also set proxy information here if you are behind a 
-			firewall.
-			</p>
+<p>If necessary, you can also set proxy information here if you are behind a 
+firewall. Use the following command to edit <path>/etc/make.conf</path> using <c>nano</c>,
+a simple visual editor.
+</p>
 <pre caption="Setting make.conf Options">
 # <c>nano -w /etc/make.conf</c>
-<comment>(Adjust these settings)</comment>
+<comment>(Edit CHOST, CFLAGS, CXXFLAGS and any necessary USE or proxy settings)</comment>
 </pre>
         <note>
 			People who need to substantially customize the build process should take a look at
@@ -667,7 +1048,8 @@ Regenerating /etc/ld.so.cache...
 			<comment>override</comment> the entries in <path>make.globals</path>.  If you're
 			interested in customizing USE settings, look in <path>/etc/make.profile/make.defaults</path>.
 			If you want to turn off any USE settings found here, add an appropriate <c>USE=&quot;-foo&quot;</c>
-			in /etc/make.conf (to turn off the <c>foo</c> USE setting.)
+			in <path>/etc/make.conf</path> to turn off any <c>foo</c> USE setting enabled by default
+			in <path>/etc/make.globals</path> or <path>/etc/make.profile/make.defaults</path>.
 			</note>
       </body>
     </section>
@@ -676,14 +1058,16 @@ Regenerating /etc/ld.so.cache...
     <title>Starting from Stage1</title>
     <section>
       <body>
+	  	<note>If you are not starting from a stage1 tarball, skip this section.</note>
         <p>The stage1 tarball is for complete customization and optimization. If you have picked this tarball, 
-		you are most likely looking to have an uber-optimized system. Have fun, because optimization
+		you are most likely looking to have an uber-optimized and up-to-date system. Have fun, because optimization
 		is what Gentoo Linux is all about! Installing from a stage1 takes a lot of time, but the result
 		is a system that has been optimized from the ground up for your specific machine and needs.
 		</p>
         <p>Now, it is time to start the &quot;bootstrap&quot; process.  This process takes about two hours on
 			my 1200Mhz AMD Athlon system.
-During this time, the extracted build image will be prepared and the GNU compiler suite and Libraries will be built.			</p>
+During this time, the GNU C library, compiler suite and other key system programs will be built. Start the bootstrap
+as follows:</p>
 <pre caption="Bootstrapping">
 # <c>cd /usr/portage</c>
 # <c>scripts/bootstrap.sh</c>
@@ -709,16 +1093,17 @@ During this time, the extracted build image will be prepared and the GNU compile
     </section>
   </chapter>
   <chapter>
-    <title>Starting from Stage2</title>
+    <title>Starting from Stage2 and continuing Stage1</title>
     <section>
       <body>
-        <p>The stage2 tarball already has the bootstrapping done for you. All that you have
+	  	
+		<note>This section is for those continuing a stage1 install or starting at stage2. If
+		this is not you (ie. you're using a stage3,) then skip this section.
+        </note>
+		
+		<p>The stage2 tarball already has the bootstrapping done for you. All that you have
 		to do is install the rest of the system.
 			</p>
-        <note>
- If you have not already edited /etc/make.conf to fit your specifications,
-now would be a good time to do so.
-			</note>
 <pre caption="Installing the Rest of the System">
 # <c>emerge -p system</c>
 <comment>(lists the packages to be installed)</comment>
@@ -743,16 +1128,25 @@ now would be a good time to do so.
     <title>Starting from Stage3</title>
     <section>
       <body>
-        <p>The stage3 tarball is already configured for your system. There is not much to do for this stage,
-	but it is a very good idea to update your system to the newest available packages. </p>
+  		<note>This section is for those <b>starting</b> with stage3, and not for those who have started
+		with stage1 or stage2 who should skip this section.</note>
+	 <p>The stage3 tarball provides a fully-functional basic Gentoo system, so no building is required.
+	 However, since the stage3 tarball is pre-built, it may be slightly out-of-date. If this is a concern
+	 for you, you can update your stage3 to contain the most up-to-date versions of all system packages
+	 by performing the following steps. Note that this could take a long time if your stage3 is very old;
+	 otherwise, this process will generally be quick and will allow you to benefit from the very latest
+	 Gentoo updates and fixes.
+	 In any case, feel free to skip these
+	 steps and proceed to the next section if you like.
+	</p>
 		
-        <note>If you have not already edited <path>/etc/make.conf</path> to fit your specifications,
-	now would be a good time to do so. </note>
 <pre caption="Getting up-to-date">
-# <c>emerge sync</c>
-# <c>emerge -up world</c>
-<comment>(lists the packages to be installed)</comment>
-# <c>emerge -u world</c>
+# <c>export CONFIG_PROTECT="-*"</c>
+# <c>emerge -up system</c>
+<comment>(lists the packages that would be installed)</comment>
+# <c>emerge -u system</c>
+<comment>(actually merges the packages)</comment>
+# <c>unset CONFIG_PROTECT</c>
 </pre>
       </body>
     </section>
