@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.20 2005/01/04 22:42:32 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.21 2005/01/05 05:02:00 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -12,7 +12,7 @@ The only definitions that are filled in here are architecture independent.
 
 """
 
-import GLIUtility
+import GLIUtility, os, string, sys, shutil
 from GLIException import *
 # Until I switch my partition code to GLIUtility.spawn()
 import commands
@@ -78,7 +78,7 @@ class ArchitectureTemplate:
 		if not GLIUtility.exit_success(status):
 			raise GLIException("RunlevelAddError", 'warning', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 
-	def _emerge(package, binary=False, binary_only=False):
+	def _emerge(self, package, binary=False, binary_only=False):
 		if binary_only:
 			return GLIUtility.spawn("emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir)
 		elif binary:
@@ -86,13 +86,13 @@ class ArchitectureTemplate:
 		else:
 			return GLIUtility.spawn("emerge " + package, display_on_tty8=True, chroot=self._chroot_dir)
 
-	def _edit_config(filename, newvalues, delimeter='=', quotes_around_value=True):
+	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True):
 		"""
 		filename = file to be editted
 		newvlaues = a dictionary of VARIABLE:VALUE pairs
 		"""
-		if not os.path.isfile(filename):
-			raise GLIException("NoSuchFileError", 'notice','edit_config',filename + ' does not exist!')
+		if not GLIUtility.is_file(filename):
+			raise GLIException("NoSuchFileError", 'notice','_edit_config',filename + ' does not exist!')
 	
 		f = open(filename)
 		file = f.readlines()
@@ -412,7 +412,7 @@ class ArchitectureTemplate:
 		for key in options.keys():
 		
 			# Add/Edit it into rc.conf
-			self._edit_config(self._chroot_dir + "/etc/rc.conf", key, option[key])
+			self._edit_config(self._chroot_dir + "/etc/rc.conf", key, options[key])
 			
 	def setup_network_post(self):
 		"Sets up the network for the first boot"

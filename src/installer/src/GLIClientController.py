@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.35 2005/01/04 02:50:02 codeman Exp $
+$Id: GLIClientController.py,v 1.36 2005/01/05 05:02:00 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -40,7 +40,7 @@ class GLIClientController(Thread):
 		self.set_configuration(configuration)
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
-		self._install_step = -1
+		self._install_step = 0
 		self._pretend = pretend
 		self.setDaemon(True)
 

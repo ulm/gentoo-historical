@@ -590,7 +590,7 @@ while 1:
 			type = notification.get_type()
 			data = notification.get_data()
 			if type == "exception":
-				print "Exception received"
+				print "Exception received:" + data
 			elif type == "int":
 				if data == GLIClientController.NEXT_STEP_READY:
 					next_step_waiting = False
