@@ -6,6 +6,9 @@
 <author title="Autore">
  <mail link="mirror-admin@gentoo.org">Gentoo Mirror Administrators</mail>
 </author>
+<author title="Redazione">
+ <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
 <author title="Traduzione">
  <mail link="dragoon@interfree.it">Gerasimos Grammatikopoulos aka KiTaSuMbA</mail>
 </author>
@@ -14,13 +17,13 @@
 </author>
 
 <abstract>
-Questo documento spiega come impostare un mirror ufficiale rsync.
+Questo documento spiega come impostare un mirror ufficiale rsync e un vostro mirror locale.
 </abstract>
 
 <license/>
 
-<version>1.4</version>
-<date>29 Giugno 2004</date>
+<version>1.7</version>
+<date>2 Ottobre 2004</date>
 
 <chapter>
 <title>Richiesta hardware</title> 
@@ -35,11 +38,11 @@ Gentoo Linux ha due differenti tipi di mirror: mirror principali di rotazione e 
 <p>
 Attualmente abbiamo abbastanza mirror della comunità, mentre stiamo cercando ulteriori mirror principali di rotazione. Le specifiche per i mirror principali di rotazione includono:
 </p>
+
 <ul>
 <li>Minimo un processore Pentium 4 2GHz (o equivalente)</li>
 <li>Minimo 1GB di RAM (1.5GB - 2GB è ideale)</li>
 <li>10GB di spazio su disco (IDE va bene)</li>
-
 </ul>
 
 <p>
@@ -265,6 +268,10 @@ A: Di nuovo, vedere la sezione Script di Esempio.
 <section>
 <body>
 
+<note>
+Troverete file di esempio di configurazione e di script nel pacchetto gentoo-rsync-mirror. Eseguite <c>emerge gentoo-rsync-mirror</c>
+</note>
+
 <p>
 Attualmente, avere un mirror del nostro Portage tree richiede circa 250Mb, quindi non consuma molto spazio; avendo almeno 500Mb disponibili dovrebbe permettere future espansioni. Impostare un mirror del Portage tree è semplice -- prima, assicuratevi che sul vostro mirror è installato rsync. Quindi, impostate il vostro file rsyncd.conf in maniera simile alla seguente:
 </p>
@@ -326,8 +333,8 @@ echo "End: "`date` >> $0.log 2>&amp;1
 
 <pre caption="/etc/init.d/rsyncd">
 #!/sbin/runscript
-# Copyright 1999-2004 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2 or later
 # &#36;Header: /var/cvsroot/gentoo-x86/net-misc/rsync/files/rsyncd.init.d,v 1.2 2004/05/02 22:45:02 mholzer Exp &#36;
 depend() {
 need net
@@ -373,6 +380,118 @@ In alcuni casi, ci sono utenti che abusano del sistema mirror rsync, sincronizza
 
 <p>
 Se usate questo script, ricordatevi di ruotare giornalmente i vostri log file rsync, e modificare lo script per abbinare la posizione del vostro file rsyncd.conf. Questo script è testato su Gentoo Linux, ma dovrebbe funzionare su altre architetture che supportano sia rsync che perl.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Impostare un vostro mirror rsync locale</title>
+<section>
+<title>Introduzione</title>
+<body>
+
+<p>
+Molti utenti eseguono Gentoo su parecchie macchine e necessitano di eseguire <c>emerge --sync</c> su tutte. Usare i mirror pubblici è semplicemente una perdita di larghezza di banda. Sincronizzare solo una macchina su un mirror pubblico e tutte le altre su quella, conserverebbe risorse sui mirror di Gentoo e conserverebbe la larghezza di banda degli utenti.
+</p>
+
+<p>
+Tutto quello che dovete fare è scegliere quale tra le vostre macchine sarà il vostro mirror sync locale, e impostarla. Dovete scegliere un computer che possa gestire il carico della CPU e del disco che richiede un'operazione di rsync. Inoltre il vostro mirror locale deve essere disponibile quando uno dei vostri computer sincronizzi il portage tree. Dovrebbe avere un indirizzo IP statico o un nome che risolva al vostro server. Configurare un DHCP e/o un server DNS va oltre lo scopo di questa guida.
+</p>
+
+</body>
+</section>
+<section>
+<title>Impostare il server</title>
+<body>
+
+<p>
+Non c'è nessun pacchetto extra da installare poichè il software richiesto è già presente sul vostro computer. Impostare il vostro mirror rsync locale è un aspetto della configurazione del demone di <e>rsyncd</e> per rendere disponibile alla sincronizzazione la vostra directory <path>/usr/portage</path>. Create il seguente file di configurazione <path>/etc/rsync/rsyncd.conf</path>:
+</p>
+
+<pre caption="Esempio di /etc/rsync/rsyncd.conf">
+pid file = /var/run/rsyncd.pid
+max connections = 5
+use chroot = yes
+uid = nobody
+gid = nobody
+<comment># Opzionale: limitare l'accesso alle vostre macchine Gentoo</comment>
+hosts allow = 192.168.0.1 192.168.0.2 192.168.1.0/24
+hosts deny  = *
+
+[portage]
+path=/usr/portage
+comment=Gentoo Portage
+exclude=distfiles/ packages/
+</pre>
+
+<p>
+Non dovete utilizzare le opzioni <c>hosts allow</c> e <c>hosts deny</c>. Di default, tutti i client dovrebbero essere ammessi a connettersi. L'ordine con cui scrivete queste opzioni non è rilevante. Il server controllerà sempre l'opzione <c>hosts allow</c>, e darà la connessione se l'host è uno di quelli elencati. Poi il server controllerà l'opzione <c>hosts deny</c>, e rifiuterà la connessione se non ha trovato nessun host. A nessun host che non rappresenta nulla verrà data la connessione. Per ulteriori informazioni leggere la man page (<c>man rsyncd.conf</c>).
+</p>
+
+<p>
+Ora, fate partire il vostro demone rsync con il seguente comando da root:
+</p>
+
+<pre caption="Fare partire il demone rsync">
+<comment>(Ora parte il demone)</comment>
+# <i>/etc/init.d/rsyncd start</i>
+<comment>(Aggiungere il demone al vostro runlevel di default)</comment>
+# <i>rc-update add rsyncd default</i>
+</pre>
+
+<p>
+Provate il vostro mirror rsync. Non dovete necessariamente provare da un'altra macchina, ma sarebbe una buona idea. Se il vostro server non è conosciuto con un nome da tutti gli altri vostri computer, potete usare il suo indirizzo IP.
+</p>
+
+<pre caption="Provare il vostro mirror">
+<comment>(Potete usare il nome del server o il suo IP)</comment>
+# <i>rsync 192.168.0.1::</i>
+portage         Gentoo Portage
+# <i>rsync your_server_name::portage</i>
+<comment>(Dovreste vedere il contenuto di /usr/portage sul vostro mirror)</comment>
+</pre>
+
+<p>
+Il vostro mirror sync è impostato. Eseguite <c>emerge --sync</c> come avete fatto finora per aggiornare il vostro server.
+</p>
+
+<note>
+Notate che la maggior parte degli amministratori di un mirror pubblico considera come abuso la sincronizzazione fatta più di una volta o due al giorno.
+</note>
+
+</body>
+</section>
+<section>
+<title>Configurare i vostri client</title>
+<body>
+
+<p>
+Ora, fate usare agli altri vostri computer il vostro mirror rsync locale invece di uno pubblico. Modificate il vostro <path>/etc/make.conf</path> e fate si che la variabile <c>SYNC</c> punti al vostro server.
+</p>
+
+<pre caption="Definire SYNC in /etc/make.conf">
+<comment>(Usate indirizzo IP del vostro server)</comment>
+SYNC="rsync://<i>192.168.0.1</i>/portage"
+<comment>(O usate il nome del vostro server)</comment>
+SYNC="rsync://<i>your_server_name</i>/portage"
+</pre>
+
+<p>
+Potete controllare che il vostro computer è stato impostato correttamente e sincronizzato verso il vostro mirror rsync locale:
+</p>
+
+<pre caption="Controllare e sincronizzare">
+<comment>(Controllate che la variabile SYNC è stata impostata)</comment>
+# <i>emerge --info|grep SYNC</i>
+SYNC="rsync://your_server_name/portage"
+<comment>(Sincronizzate verso il vostro mirror locale)</comment>
+# <i>emerge --sync</i>
+</pre>
+
+<p>
+Questo è tutto! Tutti i vostri computer useranno il vostro mirror rsync locale ogni volta che eseguiranno <c>emerge --sync</c>.
 </p>
 
 </body>
