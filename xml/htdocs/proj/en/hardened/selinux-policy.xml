@@ -1,0 +1,352 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/hardened/index.xml">
+<title>Hardened Gentoo</title>
+<subtitle>SELinux Policy Overview</subtitle>
+<author title="Author">
+   <mail link="pebenito@gentoo.org">Chris PeBenito</mail>
+</author>
+<abstract>
+The SELinux policy describes the access permissions for the entire system.
+</abstract>
+
+<version>1.0</version>
+<date>13 September 2003</date>
+
+<chapter><title>SELinux Types</title>
+<section><body>
+<p>
+   A type is a security attribute given to objects such as files, and network
+   ports, etc.  The type of a process is commonly referred to as its domain.
+   The SELinux policy is primarily composed of type enforcement rules, which
+   describe how domains are allowed to interact with objects, and how domains
+   are allowed to interact with other domains.  A type is generally suffixed
+   with a &#39;_t&#39;, such as <i>sysadm_t</i>.  This is the most important
+   attribute for a process or object, as most policy decisions are based on
+   the source and target types.
+</p>
+</body></section>
+
+</chapter>
+
+<chapter><title>SELinux Roles</title>
+
+<section><body>
+<p>
+   A role describes the set of functions a user can use.  In SELinux terms,
+   the domains that a user can directly access is determined by their role.
+   For example, a system administrator that is using the system for regular
+   user tasks should not be running in the <i>sysadm_r</i> role, but in the
+   <i>user_r</i> role.  If they need to administrate the system, then a role
+   change to <i>sysadm_r</i> is required.  A role is generally suffixed with
+   a &#39;_r&#39;, such as <i>portage_r</i>.
+</p>
+</body></section>
+
+</chapter>
+
+<chapter><title>SELinux Identities</title>
+
+<section><title>What is a SELinux Identity?</title><body>
+<p>
+   The SELinux identity is similar to a Linux username.  The change of identity
+   should be limited to very specific cases, since the role-based access control
+   relies on the SELinux identity.  Therfore, in general, a user&#8217;s SELinux
+   identity will not change during a session.  The user ID in Linux can be
+   changed by set(e)uid, making it inappropriate for a SELinux identity.
+   Usually the identity should match the Linux username.  If a Linux user
+   has no specifed SELinux identity, they will be given the generic 
+   <i>user_u</i> identity.  A given SELinux identity is allowed a set of roles.
+</p>
+</body></section>
+
+<section><title>Configuring up SELinux Identities</title><body>
+<p>
+   SELinux identities are contained in the users file in the policy directory.
+   The syntax for the file is simple.  For example, to allow the user
+   <i>pebenito</i> the roles <i>user_r</i> and <i>sysadm_r</i>, add to the end of
+   the file something like:
+</p>
+<pre>user pebenito roles { user_r sysadm_r };</pre>
+<p>
+   Then load the policy.  There must also be a Linux username <i>pebenito</i>.
+   If a user does not have a <i>user</i> line in the file, their identity will
+   be <i>user_u</i>, and only be allowed the <i>user_r</i> role.
+</p>
+
+<impo>
+   All users that are specified in the users file should at least be allowed
+   the <i>user_r</i> and/or <i>staff_r</i> role.  Otherwise, they will not be
+   able to log in remotely.
+</impo>
+
+</body></section>
+
+</chapter>
+
+<chapter><title>SELinux Contexts</title>
+<section><body>
+<p>
+   Using the above three security models together is called a SELinux
+   context.  A context takes the form <i>identity</i>:<i>role</i>:<i>type</i>.
+   Each context in the system is represented in the kernel by a security
+   ID (SID).  The SELinux context is the most important value for determining
+   access.
+</p>
+</body></section>
+
+<section><title>Object Contexts</title><body>
+<p>
+   A typical <i>ls --context</i> may have an output similar to this:
+</p>
+<pre>
+drwxr-xr-x  root     root     system_u:object_r:bin_t          bin
+drwxr-xr-x  root     root     system_u:object_r:boot_t         boot
+drwxr-xr-x  root     root     system_u:object_r:device_t       dev
+drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
+</pre>
+<p>
+   The first three columns are the typical linux permissions, user and group.
+   The fourth column is the file or directory&#39;s security context.  Objects
+   are given the generic <i>object_r</i> role.  From the other two fields of
+   the context, it can be seen that the files are in the system identity,
+   and have four different types, <i>bin_t</i>, <i>boot_t</i>, <i>device_t</i>,
+   and <i>etc_t</i>.
+</p>
+</body></section>
+
+<section><title>Process Contexts</title><body>
+<p>
+   A typical <i>ps ax --context</i> may have an output similar to this:
+</p>
+<pre>
+  PID    SID CONTEXT                                  COMMAND
+    1      7 system_u:system_r:init_t                 [init]
+    2      1 system_u:system_r:kernel_t               [keventd]
+    3      1 system_u:system_r:kernel_t               [ksoftirqd_CPU0]
+    4      1 system_u:system_r:kernel_t               [kswapd]
+    5      1 system_u:system_r:kernel_t               [bdflush]
+    6      1 system_u:system_r:kernel_t               [kupdated]
+  706    282 system_u:system_r:syslogd_t              [syslog-ng]
+  712    284 system_u:system_r:httpd_t                [apache]
+  791    287 system_u:system_r:sshd_t                 [sshd]
+  814    288 system_u:system_r:crond_t                [cron]
+  826    291 system_u:system_r:getty_t                [agetty]
+  827    291 system_u:system_r:getty_t                [agetty]
+  828    291 system_u:system_r:getty_t                [agetty]
+  829    291 system_u:system_r:getty_t                [agetty]
+  830    291 system_u:system_r:getty_t                [agetty]
+  831    284 system_u:system_r:httpd_t                [apache]
+  832    284 system_u:system_r:httpd_t                [apache]
+  833    284 system_u:system_r:httpd_t                [apache]
+23093    287 system_u:system_r:sshd_t                 [sshd]
+23095    308 user_u:user_r:user_t                     [bash]
+23124    287 system_u:system_r:sshd_t                 [sshd]
+23126    308 user_u:user_r:user_t                     [bash]
+23198    287 system_u:system_r:sshd_t                 [sshd]
+23204    308 user_u:user_r:user_t                     [bash]
+23274    287 system_u:system_r:sshd_t                 [sshd]
+23275    315 pebenito:staff_r:staff_t                 [bash]
+23290    315 pebenito:staff_r:staff_t                 ps ax --context
+</pre>
+<p>
+   In this example, the typical process information is displayed, in addition
+   to the process&#39;s SID and equivalent context.  By inspection, all of the
+   system&#39;s kernel processes and daemons run under the <i>system_u</i> identity,
+   and <i>system_r</i> role.  The individual domains depend on the program.
+   There are a few users logged in over ssh, using the generic <i>user_u</i>
+   identity.  Finally there is a user with the identity <i>pebenito</i> logged in
+   with the <i>staff_r</i> role, running in the <i>staff_t</i> domain.
+</p>
+</body></section>
+
+</chapter>
+
+<chapter>
+<title>SELinux Policy Files</title>
+<section><body>
+<p>
+   The SELinux policy usually resides in <i>/etc/security/selinux/src/policy</i>.
+   It is comprised of several files and directories for generating the policy.
+   For easing the creation of the policy, macros from the m4 text processor
+   are used to reuse common rules.  The policy files are processed
+   by m4, and then the policy compiler <i>checkpolicy</i> verifies that
+   there are no syntactic errors, and creates a binary policy file.  The binary
+   policy then can be loaded into a running SELinux kernel.
+</p>
+</body></section>
+<section><title>Makefile</title><body>
+<p>
+   The policy Makefile handles the compiling and installation of policy.  It
+   has four targets of interest.
+</p>
+<table>
+<tr><th>Command</th><th>Description</th></tr>
+<tr><ti>make policy</ti>
+    <ti>Compiles the current policy into the binary policy file.</ti></tr>
+<tr><ti>make install</ti>
+    <ti>Compiles and installs the current policy into the /etc/security/selinux/src directory.</ti></tr>
+<tr><ti>make load</ti>
+    <ti>Compile, install, and load the current policy into the current running kernel.</ti></tr>
+<tr><ti>make initrd</ti>
+    <ti>Compile, install, and create an initial ramdisk for the initial policy load.</ti></tr>
+<tr><ti>make relabel</ti>
+    <ti>Relabels the filesystems using the file contexts in the policy</ti></tr>
+</table>
+</body></section>
+
+<section><title>assert.te</title><body>
+<p>
+   The rules in this file will be checked in the final phase of
+   compilation.  If a permission granted in the policy matches one of
+   these assertions, the policy compiler will reject the policy.  This can
+   aid in ensuring certain accesses are never allowed.
+</p>
+</body></section>
+
+<section><title>attrib.te</title><body>
+<p>
+   A type attribute can be used to identify a set of types with a similar
+   property.  Each type can have any number of attributes, and each
+   attribute can be associated with any number of types.  Attributes are
+   explicitly declared in this file, and can then be associated with particular
+   types in type declarations.  Attribute names can then be used throughout
+   the configuration to express the set of types that are associated with
+   the attribute.
+</p>
+</body></section>
+
+<section><title>constraints</title><body>
+<p>
+   This file defines additional constraints on permissions
+   in the form of expressions that must be satisfied in order
+   for specified permissions to be granted.  These constraints
+   are used to further refine the type enforcement tables and
+   the role allow rules.  Typically, these constraints are used
+   to restrict changes in user identity or role to certain domains.
+</p>
+</body></section>
+
+<section><title>domains/</title><body>
+<p>
+   This directory contains the type enforcement rules.  This directory contains
+   the files <i>admin.te</i>, <i>staff.te</i>, and <i>user.te</i>, which
+   contain the access vectors for the <i>sysadm_r</i>, <i>staff_r</i>, and 
+   <i>user_r</i> roles.  The <i>program/</i> directory consists of all of the
+   active policies for various programs and daemons.  The <i>misc/</i> directory
+   contains all other policy files.
+</p>
+</body></section>
+
+<section><title>file_contexts/</title><body>
+<p>
+   This directory contains the files that describe the security contexts
+   for all files on persistent filesystems.  It contains the file <i>types.fc</i>
+   which has all of the security contexts for the general system.  The
+   directory <i>program/</i> contains the security contexts for the daemons
+   in the <i>domains/program/</i> directory.  These are one-to-one mapped; 
+   for example, the domains/program/syslogd.te policy file corresponds to the
+   file_contexts/program/syslogd.fc security contexts file.
+</p>
+</body></section>
+
+<section><title>flask/</title><body>
+<p>
+   This directory contains contains configuration files independent of the
+   policy.  These files contain definitions corresponding to definitions
+   in the kernel headers.  These files <e>should not</e> be modified.
+</p>
+</body></section>
+
+<section><title>fs_use</title><body>
+<p>
+   This file describes the labelling behavior for files on various filesystem
+   types.  For example, ext3 uses persistent labelling, while tmpfs uses
+   transitional security IDs.  In general, this file should <e>not</e>
+   need to be modified.
+</p>
+</body></section>
+
+<section><title>genfs_contexts</title><body>
+<p>
+   This file contains the security contexts for files in a filesystem that
+   do not support persistent file labels, such as <i>/proc</i>.
+</p>
+</body></section>
+
+<section><title>initial_sid_contexts</title><body>
+<p>
+   This file contains the initial context for each security ID.  In general,
+   this file should <e>not</e> need to be modified.
+</p>
+</body></section>
+
+<section><title>macros/</title><body>
+<p>
+   This directory contains the m4 macros used to ease creation and maintenance
+   of the policy.  It contains the macro file <i>admin_macros.te</i> for
+   describing administration domains, such as <i>sysadm_t</i>.  The
+   <i>user_macros.te</i> contains macros used in user domains such as <i>user_t</i>
+   and <i>staff_t</i>.  The <i>global_macros.te</i> contains macros used throughout
+   the entire policy.
+</p>
+</body></section>
+
+<section><title>mls</title><body>
+<p>
+   This file contains the configuration for SELinux multi-level security.
+   Multi-level Security is experimental, and is not supported by Gentoo.
+</p>
+</body></section>
+
+<section><title>net_contexts</title><body>
+<p>
+   This file defines the security contexts of network objects such as ports,
+   interfaces, and nodes.  This will need to be modified if daemons run on
+   nonstandard ports.
+</p>
+</body></section>
+
+<section><title>rbac</title><body>
+<p>
+   This file contains the role-based access control rules.  It describes
+   the base allowed role transitions.  Additional transitions are allowed
+   in the type enforcement files, especially <i>user.te</i> and <i>staff.te</i>.
+</p>
+</body></section>
+
+<section><title>tmp/</title><body>
+<p>
+   This directory is used for holding intermediate files when compiling the
+   policy.  It can be safely removed, if needed.
+</p>
+</body></section>
+
+<section><title>types/</title><body>
+<p>
+   This directory contains files for declaring general types of the system
+   which do not appear in the individual program policies.
+</p>
+</body></section>
+
+<section><title>users</title><body>
+<p>
+   This file describes the SELinux identities, and the roles they can enter.
+</p>
+</body></section>
+</chapter>
+
+<chapter>
+<title>References</title>
+<section><body>
+<p>
+   <uri link="http://www.nsa.gov/selinux">U.S. National Security Agency</uri>,
+   SELinux Policy README
+</p>
+</body></section>
+</chapter>
+
+</guide>
