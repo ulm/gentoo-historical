@@ -1,0 +1,380 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/it/gentoo-x86-tipsntricks.xml" lang="it">
+<title>Suggerimenti e trucchi per l'installazione Gentoo/x86</title>
+<author title="Autore Originale">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Traduzione">
+    <mail link="matteo.visconti@solka.it">Matteo Visconti</mail>
+</author>
+
+<abstract>
+L'installazione di Gentoo permette approcci molto differenti ai diversi
+metodi di installazione. Essendo quasi impossibile descrivere ogni singolo
+suggerimento nelle istruzioni di installazione, questo documento cerca di
+descrivere tutti i trucchi inviati al fine di essere integrati nella 
+normale procedura di installazione.
+</abstract>
+
+<license/>
+
+<version>1.2</version>
+<date>1 maggio 2004</date>
+
+<chapter>
+<title>Introduzione</title>
+<section>
+<title>Premessa</title>
+<body>
+
+<p>
+Questo documento contiene diversi suggerimenti e trucchi per l'installazione
+Gentoo/x86. Molti di questi sono trattati in maniera ridotta - devono essere
+considerati come un'aggiunta alle istruzioni di installazione, non come dei
+sostituti.
+</p>
+
+</body>
+</section>
+<section>
+<title>Contenuti</title>
+<body>
+
+<p>
+<b>Installazione avanzata</b>
+</p>
+
+<ul>
+  <li><uri link="#software-raid">Software RAID</uri></li>
+  <li><uri link="#ata-raid-2.4">ATA RAID con il kernel 2.4</uri></li>
+</ul>
+
+<p>
+<b>Semplificare l'installazione</b>
+</p>
+
+<ul>
+  <li><uri link="#leave_terminal">Abbandonare il terminale</uri></li>
+</ul>
+
+<p>
+<b>Risolvere gli errori o i problemi</b>
+</p>
+
+<ul>
+  <li><uri link="#checking-disks">Test approfonditi dei tuoi hard-disk</uri></li>
+</ul>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Installazione avanzata</title>
+<section id="software-raid">
+<title>Software RAID</title>
+<body>
+
+<note>
+Se non sai cos'è un software raid, leggi il <uri
+link="http://it.tldp.org/HOWTO/Software-RAID-HOWTO.html">Software-RAID-HOWTO</uri>.
+</note>
+
+<p>
+Dopo che hai avviato il sistema dal LiveCD, carica i moduli appropriati. Per
+esempio, se hai intenzione di usare il RAID-1:
+</p>
+
+<pre caption="Caricare il modulo RAID-1">
+# <i>modprobe raid1</i>
+</pre>
+
+<p>
+Quando partizioni i tuoi dischi, fa attenzione che le tue partizioni usino
+<c>fd</c> (Linux raid autodetect) come Partition Type invece di <c>84</c> 
+(Linux native).
+Puoi modificare il tipo di partizione premendo <c>t</c> in <c>fdisk</c>.
+</p>
+
+<p>
+Dopo aver partizionato, crea il file <path>/etc/raidtab</path> (sì, nell'ambiente
+del LiveCD) e inserisci i comandi necessari per la tua configurazione RAID.
+Per esempio, per avere la tua partizione di boot, swap e root in mirror (RAID-1)
+utilizzando <path>/dev/sda</path> e <path>/dev/sdb</path>, puoi usare:
+</p>
+
+<pre caption="/etc/raidtab per la configurazione RAID-1">
+raiddev /dev/md0
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda1
+    raid-disk 0
+  device /dev/sdb1
+    raid-disk 1
+
+raiddev /dev/md1
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda2
+    raid-disk 0
+  device /dev/sdb2
+    raid-disk 1
+
+raiddev /dev/md2
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda3
+    raid-disk 0
+  device /dev/sdb3
+    raid-disk 1
+</pre>
+
+<p>
+Ora crea i dispositivi RAID necessari per ogni dispositivo RAID che hai
+elencato in <path>/etc/raidtab</path>
+</p>
+
+<pre caption="Creare i dispositivi RAID">
+# <i>mkraid /dev/md0</i>
+# <i>mkraid /dev/md1</i>
+# <i>mkraid /dev/md2</i>
+</pre>
+
+<p>
+Il driver del Software RAID Linux creerà i metadispositivi. Puoi vedere l'avanzamento
+della procedura in <path>/proc/mdstat</path>. Prima di procedere, aspetta che i 
+metadispositivi siano creati.
+</p>
+
+<p>
+Da ora in avanti, userai <path>/dev/md0</path> per la partizione di boot,
+<path>/dev/md1</path> per quella di swap e <path>/dev/md2</path> per quella
+di root.
+</p>
+
+<p>
+Dopo aver montato <path>/dev/md2</path> su <path>/mnt/gentoo</path>, non dimenticare
+di copiare <path>/etc/raidtab</path> in <path>/mnt/gentoo/etc</path>.
+</p>
+
+<p>
+Quando configurerai il tuo kernel, ricordati di selezionare il supporto appropriato
+per il RAID <e>nel</e> tuo kernel e <e>non</e> come modulo.
+</p>
+
+<p>
+Quando installi dei tool aggiuntivi, fai l'emerge dei <c>raidtools</c>.
+Nota che questo non è possibile su tutti i LiveCD e quindi potresti trovarti
+nella situazione di non poter installare Gentoo su un Software RAID utilizzando
+un'installazione senza rete!
+</p>
+
+<p>
+Quando configuri il tuo bootloader, fa attenzione che sia installato nel MBR
+di <e>entrambi</e> i dischi, se usi il mirroring.
+</p>
+
+</body>
+</section>
+<section id="ata-raid-2.4">
+<title>ATA RAID con il kernel 2.4</title>
+<body>
+
+<p>
+Fa attenzione di avviare il tuo LiveCD utilizzando l'opzione <c>doataraid</c>.
+Quando lo hai avviato, controlla il contenuto di <path>/dev/ataraid</path>.
+Dovrebbe contenere diverse directory <path>disc*</path> per ogni hard-disk utilizzato
+in ATA RAID. Un disco intero è indicato come <path>disc</path>, mentre le partizioni
+sono indicate come <path>part*</path>.
+</p>
+
+<p>
+Scrivi i vari file <path>/dev/ataraid/disc*/*</path> dei dispositivi sui quali
+vuoi installare Gentoo. Dovrai sostituire l'indicazione <path>/dev/hda</path>
+negli esempi dell'installazione con il percorso sopraccitato.
+</p>
+
+<p>
+Prima di effettuare il chroot, fai il bind-mount di <path>/dev</path> nel
+nuovo ambiente:
+</p>
+
+<pre caption="Bind-mount di /dev">
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+<p>
+Quando configuri il tuo kernel, ricordati di abilitare il supporto per il tuo
+chipset ATA RAID e le relative opzioni. Per esempio, un sistema ATA RAID
+comune è il <e>Promise FastTrack built-in RAID</e> nel cui caso hai bisogno
+necessariamente delle <c>Promise FastTrack Options</c> compilate nel tuo
+kernel.
+</p>
+
+<p>
+Quando configuri GRUB, hai bisogno di creare prima il dischetto di avvio di GRUB.
+Non è difficile come credi. Prima installa GRUB come dovresti, ma quando sei al
+punto di installare GRUB nel MBR, segui le istruzioni seguenti:
+</p>
+
+<pre caption="Creare un dischetto di avvio di GRUB">
+# <i>cd /boot/grub</i>
+# <i>dd if=stage1 of=/dev/fd0 bs=512 count=1</i>
+# <i>dd if=stage2 of=/dev/fd0 bs=512 seek=1</i>
+</pre>
+
+<p>
+Hai ancora bisogno di scrivere il tuo file <path>grub.conf</path>. Ciò non è
+diverso dalle istruzioni di installazione, devi solo fare attenzione che l'indicazione
+<c>root=</c> punti al dispositivo ATA RAID.
+</p>
+
+<p>
+Dopo aver terminato l'installazione, avvia il sistema con il dischetto di GRUB.
+Ti troverai davanti il prompt dei comandi di GRUB. Ora configuralo per avviarlo
+dal dispositivo ATA RAID.
+</p>
+
+<pre caption="Installare GRUB sul dispositivo ATA RAID">
+grub&gt; root (hd0,x)
+grub&gt; setup (hd0)
+grub&gt; quit
+</pre>
+
+<p>
+Ora riavvia (dopo aver rimosso il dischetto di GRUB).
+</p>
+
+<p>
+Gli utenti di LILO possono seguire tranquillamente le istruzioni indicate
+nella guida all'installazione.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Semplificare l'installazione</title>
+<section id="leave_terminal">
+<title>Abbandonare il terminale</title>
+<body>
+
+<p>
+Molte persone vogliono allontanarsi dal sistema quando sta compilando. In
+alcuni casi questo è piuttosto difficile perchè l'installazione è effettuata
+in un'ambiente pubblico dove non ci si può fidare. In questo caso, puoi
+effettuare la compilazione in background ed uscire da tutti i terminali.
+</p>
+
+<p>
+Ci sono diverse possibili soluzioni per questo. La prima è di usare <c>screen</c>.
+Dopo aver avviato il LiveCD, imposta la tua password di root e avvia una sessione 
+di screen:
+</p>
+
+<note>
+Non tutti i LiveCD contengono screen. In questo caso, dovrai usare uno degli altri 
+metodi indicati in questa sezione.
+</note>
+
+<pre caption="Avviare una sessione di screen">
+# <i>screen -S gentoo</i>
+</pre>
+
+<p>
+Una volta che sei all'interno di una sessione di screen puoi effettuare l'intera
+installazione. Quando vuoi abbandonare il tuo terminale, premi <c>Ctrl-a, d</c> 
+(cioè control e a premuti contemporaneamnte, e poi d) per <e>isolare</e> la tua 
+sessione di screen. Ora puoi uscire tranquillamente dal tuo sistema.
+</p>
+
+<p>
+Per ottenere di nuovo l'accesso al tuo terminale, effettua il login come root e <e>fissa</e> 
+la sessione avviata di screen:
+</p>
+
+<pre caption="Fissare una sessione di screen">
+# <i>screen -x gentoo</i>
+</pre>
+
+<p>
+Se non puoi usare screen, c'è ancora un modo per abbandonare il tuo terminale.
+Segui le istruzioni di installazione, ma quando sei al punto dove una lunga 
+compilazione sta per essere eseguita (per esempio <c>./scripts/bootstrap.sh</c>), 
+usa <c>nohup</c> che permette che un processo continui anche quando effettui il 
+logout. Non dimenticare l' "&amp;" finale, altrimenti il processo non sarà posto
+in background! Ricorda dove sei (il comando <c>pwd</c> te lo dirà) perchè ti servirà 
+più tardi.
+</p>
+
+<pre caption="Usare nohup">
+# <i>pwd</i>
+/usr/portage
+# <i>nohup ./scripts/bootstrap.sh &amp;</i>
+</pre>
+
+<p>
+Ora esci (<c>exit</c>) dall'ambiente in cui hai effettuato il chroot e dalla
+sessione del LiveCD. La compilazione continuerà in background.
+</p>
+
+<p>
+Quando vuoi controllare la compilazione, effettua il login come root (nel LiveCD) 
+ed effettua il chroot nel tuo ambiente precedente e vai alla directory da dove 
+sei uscito:
+</p>
+
+<pre caption="Effettuare il chroot nell'ambiente precedente">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update &amp;&amp; source /etc/profile</i>
+# <i>cd /usr/portage</i>
+</pre>
+
+<p>
+Ora usa il comando <c>less</c> sul file <path>nohup.out</path> che è situato in 
+questa directory. La compilazione inserisce il suo output in questo file, così 
+se vuoi controllare l'avanzamento, digita <c>less nohup.out</c> e premi <c>F</c> 
+per seguire i cambiamenti. Quando la compilazione è terminata, puoi continuare 
+al passo successivo delle istruzioni di installazione.
+</p>
+
+<p>
+Se non desideri più seguire la compilazione, premi <c>Ctrl-C</c> seguito da <c>q</c>. 
+Non bloccherà il processo di compilazione, solo quello di <c>less</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Risolvere gli errori o i problemi</title>
+<section id="checking-disks">
+<title>Test approfonditi dei tuoi dischi</title>
+<body>
+
+<p>
+Se pensi che il tuo disco necessiti di essere controllato accuratamente per errori 
+di densità (settori danneggiati e cose simili), puoi usare l'opzione <c>-c</c> quando 
+installi un filesystem ext2 o ext3 (usando <c>mke2fs</c>). Ciò effettuerà un test 
+di lettura e segnerà tutti i settori danneggiati come tali. Se sei veramente paranoico, 
+usa <c>-c -c</c> per effettuare un test di lettura/scrittura più approfondito.
+</p>
+
+<pre caption="Controllare la densità del disco">
+# <i>mke2fs -j -c /dev/hda3</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+</guide>
