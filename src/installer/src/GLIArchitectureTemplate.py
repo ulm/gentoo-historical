@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.37 2005/01/19 08:14:17 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.38 2005/01/19 17:38:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -197,8 +197,8 @@ class ArchitectureTemplate:
 					
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
-					#if not GLIUtility.exitsuccess(ret):
-						#raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
+					if not GLIUtility.exitsuccess(ret):
+						raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 		sorted_list = []
 		for key in parts_to_mount.keys(): sorted_list.append(key)
 		sorted_list.sort()
