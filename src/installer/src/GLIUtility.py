@@ -221,7 +221,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		wrapper = open(chroot+"/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash\n\nsource /etc/profile\n" + cmd)
 		wrapper.close()
-		cmd = "chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh 2>&1 && rm " + chroot + "/tmp/spawn.sh"
+		cmd = "chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh 2>&1"
 	else:
 		cmd += " 2>&1 "
 	if logfile != None:
