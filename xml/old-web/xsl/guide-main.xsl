@@ -401,7 +401,7 @@ Otros:<br/>
 				En Español:<br/>#gentoo-es<br/><br/>
 				På norsk:<br/>#gentoo-no <br/><br/>
 				På svenska:<br/>#gentoo-se <br/><br/>
-				In het Nederlands:<br/>#gentoo-nl <br/><br/>
+				In het Nederlands:<br/>#gentoo-nl <br/>#gentoo-be<br/><br />
 				Auf Deutsch:<br/>#gentoo.de <br/><br/>
 				Em Português:<br />#gentoo-pt<br /><br />
 				Japanese Discussion:<br /> #gentoo-ja<br/><br/>
