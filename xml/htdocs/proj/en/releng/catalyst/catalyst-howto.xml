@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/catalyst/Attic/catalyst-howto.xml,v 1.8 2004/05/18 00:14:57 zhen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/catalyst/Attic/catalyst-howto.xml,v 1.9 2004/06/14 00:53:11 zhen Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -12,36 +12,18 @@
 </author>
 
 <abstract>
-	The purpose of this guide is to explain how to use Catalyst to
-	build custom LiveCDs, stages, and other release components.
+	This guide will outline the process used to build installation stages, LiveCDs, and GRP
+	using Catalyst.
 </abstract>
 
 <license/>
 
 <version>DRAFT</version>
-<date>03 May 2004</date>
+<date>13 June 2004</date>
 
 <chapter>
 	<title>Introduction</title>
 	
-	<section>
-		<title>What is Catalyst?</title>
-		<body>
-			<p>Some of you may be asking, "what is Catalyst?". Simply put,
-			Catalyst is the Gentoo Release Engineering Team's release metatool.
-			The releng team uses Catalyst to build everything from stages to LiveCDs,
-			along with some other things in between. So what does this have to do with
-			you as the user? Choice is a hallmark of the Gentoo experience. Everything
-			that Gentoo does allows for the user to make the final choice. Gentoo does not lock
-			you into a specific GUI, like KDE or GNOME, we let you choose. With Catalyst, 
-			Gentoo no longer locks you into what you use to create the soul of your system.
-			Catalyst provides the end to the means of complete customization by allowing
-			you to customize the very installation media that is used to install Gentoo.
-			If you want to change what is in the installation stages or create your
-			own bootable LiveCDs then Catalyst is what you have been waiting for. </p>
-		</body>
-	</section>
-
 	<section>
 		<title>Goals of this Guide</title>
 		<body>
@@ -148,7 +130,7 @@ sharedir="/usr/lib/catalyst"
 		for example, can be set.</li>
 	</ul>
 
-			<p>An example <c>envscript</c> could look like the following: </p>
+			<p>An <c>envscript</c> could look like the following: </p>
 			
 			<pre caption="Example envscript">
 # my envscript
@@ -160,15 +142,9 @@ export MAKEOPTS="-j4"
 			environment variables in the envscript as it may have undesired effects on the building process.
 			</note>
 
-			<p>After editing <path>/etc/catalyst/catalyst.conf</path> to your liking, sit back, relax, and
-			read on grasshopper. If you are interested in researching what each option does in depth,
-			the <uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri> is a great
-			place to start. </p>
-			
-			<note>If you keep your Catalyst config file in a location other than
-			<path>/etc/catalyst/catalyst.conf</path>, you will have to set the environment
-			variable <c>clst_conf</c> to the location of your Catalyst config file. This can be done
-			like so: <c>export clst_conf="/path/to/my/catalyst_config"</c>. </note>
+			<p>Although the default location for the Catalyst configuration file is
+			<path>/etc/catalyst</path>, the environment variable <c>clst_conf</c> can
+			be set to reflect a different location. </p>
 			
 		</body>
 	</section>
@@ -179,19 +155,18 @@ export MAKEOPTS="-j4"
 	<section>
 		<title>Catalyst Specfiles</title>
 		<body>
-			<p>Catalyst without a specfile is possible, but only if you have an affinity for carpal tunnel
-			syndrome. For example, if you wanted to build a stage1 installation tarball, you would have to call
-			Catalyst with the following options via the command line: </p>
+			<p>There are two ways to tell Catalyst how to do its job. The first way
+			is to specify everything on the commandline:</p>
 			
-			<pre caption="Using Catalyst the long way">
+			<pre caption="Catalyst with the command line">
 # catalyst subarch=x86 version_stamp=20040403 target=stage1 profile=default-x86-2004.0 \
 > rel_type=default snapshot=20040403 source_subpath=default/stage2-x86-20040218
 			</pre>
+			
+			<p>The second way is to dump all of the options into a specfile and tell
+			Catalyst to read the options out of it:</p>
 
-			<p>I think that you catch my drift. Now, the same can be accomplished using a specfile for that stage1
-			installation stage: </p>
-
-			<pre caption="Using Catalyst with a spec file">
+			<pre caption="Catalyst with a spec file">
 # catalyst -f x86-stage1.spec
 
 <codenote>below is the contents of x86-stage1.spec</codenote>
@@ -204,10 +179,11 @@ rel_type: default
 snapshot: 20040403
 source_subpath: default/stage2-x86-20040218
 			</pre>
-	
-			<p>So what do all of these mean? Again, more indepth information can be found in the
-			<uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri>. A quick
-			synopsis is as follows: </p>
+
+			<p>Those options are the core values that must be present in any Catalyst build. Some
+			targets, most notably the livecd-stage2 target, require many more arguments on top of these,
+			but those will be covered in their respective parts of this document. The below table briefly
+			describes the function of each of these core values: </p>
 			
 			<table>
 				<tr>
@@ -245,24 +221,11 @@ source_subpath: default/stage2-x86-20040218
 					<ti>source_subpath</ti>
 					<ti>Where Catalyst can find the seed stage for the target to be built.</ti>
 				</tr>
+				<tr>
+					<ti>distcc_hosts (optional)</ti>
+					<ti>hosts to use for distcc distributed building (if enabled in /etc/catalyst/catalyst.conf)</ti>
+				</tr>
 			</table>
-			
-			<p>Those options make up the core of any specfile. Different targets will require some more
-			specialized options stacked on top of the default options, most notably the GRP, livecd-stage1, and
-			livecd-stage2 targets. Each of those targets and their specfiles will be covered in their respective
-			parts of this guide. </p>
-
-			<p>There do exist some global, but not required, specfile options. The most recent version
-			of Catalyst only includes one at this time, and it is for distcc build support.
-			The <c>distcc_hosts</c> option specifies which hosts distcc should use for distributed
-			building: </p>
-
-			<pre caption="distcc_hosts specfile option">
-distcc_hosts: 127.0.0.1 192.168.0.2 192.168.0.3 192.168.0.4/3
-			</pre>
-
-			<p>Ok, so now we have the specfile basics. Next, add a generous heaping of Portage snapshot,
-			and preheat your CPU to 350. </p>
 			
 		</body>
 	</section>
@@ -270,35 +233,49 @@ distcc_hosts: 127.0.0.1 192.168.0.2 192.168.0.3 192.168.0.4/3
 	<section>
 		<title>Portage Snapshots</title>
 		<body>
-			<p>Instead of using your live Portage tree, commonly found in <path>/usr/portage/profiles</path>,
-			Catalyst opts to use something called a Portage snapshot. A Portage snapshot is simply
-			a compressed tarball snapshot of your Portage tree. The advantage of using a a Portage
-			snapshot over a live tree is portability. Using snapshots makes it much easier to duplicate
+			<p>Instead of using the build host's live Portage tree,
+			Catalyst opts to use a Portage snapshot instead. The snapshot is simply a compressed tarball of
+			<path>/usr/portage</path>. The advantage of using a a Portage
+			snapshot over a live tree is portability. Snapshots make it easier to duplicate
 			builds across machines since all that is needed is the applicable spec file and the Portage
 			snapshot used in the build. </p>
 
-			<p>Creation of the Portage snapshot is rather straightforward. Before creating the snapshot,
-			make sure that you have tweaked the tree to your liking (e.g. marking an ebuild stable).
-			There are two ways to create a snapshot. One way is straight from the command line: </p>
+			<p>Snapshots can be created by passing the options to Catalyst either on the command line or
+			via a spec file. </p>
 
-			<pre caption="Portage snapshot creation from the command line">
-# catalyst target=snapshot version_stamp=20040408
-			</pre>
+			<p>Catalyst supports the use of a Portage overlay for snapshot creation. Specify the location
+			of the overlay by passing the option <c>portdir_overlay</c> to Catalyst when creating the
+			snapshot. </p>
+			
+			<p>The snapshot target accepts the following options: </p>
 
-			<p>The other way is to use a specfile: </p>
+			<table>
+				<tr>
+					<th>Variable</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<ti>target</ti>
+					<ti>target to build - must be set to &quot;snapshot&quot;</ti>
+				</tr>
+				<tr>
+					<ti>version_stamp</ti>
+					<ti>identifier for the snapshot, commonly a date</ti>
+				</tr>
+				<tr>
+					<ti>portdir_overlay</ti>
+					<ti>optional value specifying the location of a Portage overlay directory</ti>
+				</tr>
+			</table>
 
-			<pre caption="Portage snapshot creation using a specfile">
-<codenote>specfile contents</codenote>
+			<p>An example snapshot target specfile: </p>
 
+			<pre caption="Example snapshot target specfile">
 target: snapshot
-version_stamp: 20040408
-
-<codenote>using catalyst to call the specfile</codenote>
-
-catalyst -f snapshot.spec
+version_stamp: 20040612
+portdir_overlay: /tmp/portdir_overlay
 			</pre>
-
-			<p>Specfiles are covered, Portage snapshots are covered, so now its time to build. </p>
+		
 		</body>
 	</section>
 	
@@ -311,13 +288,20 @@ catalyst -f snapshot.spec
 		<title>Overview</title>
 		<body>
 			
-			<p>Installation stages comprise the core of any Gentoo Linux system. The ability to customize
-			and create a set of installation stages let's you customize your Gentoo system from
-			the ground up.</p>
+			<p>Installation stages are the most simplistic Catalyst target to build. The only specfile
+			options that they take are the core values, so there is not much room for error! </p>
+		
+		</body>
+	</section>
 
-			<p>All installation stages use something called a <e>seed stage</e> to build from. The seed
-			stage can be thought of as the base of which everything else gets added on to. Each stage to be
-			built requires a specific seed stage:</p>
+	<section>
+		<title>Seed Stages</title>
+		<body>
+			
+			<p>Catalyst is capable of creating three stages - a stage1, a stage2, and a stage3. Each of these
+			stages needs a "seed stage" to build it. A seed stage is the base from which the target
+			stage is built. For example, a stage3 is a stage2 tarball that has finished an <c>emerge system</c>.
+			Therefore, the seed for a stage3 tarball is a stage2. </p>
 
 			<table>
 				<tr>
@@ -338,34 +322,14 @@ catalyst -f snapshot.spec
 				</tr>
 			</table>
 
-		</body>
-	</section>
+			<p>The only seed stage that needs to be fetched from the Internet is the stage3 tarball to build
+			the stage1 tarball. Once the stage1 tarball is built, Catalyst can use its own built stages
+			as the seed stages.</p>
 
-	<section>
-		<title>Seed Stages</title>
-		<body>
-			
-			<p>Each installation stages requires a seed stage that it can be built from. Usually,
-			the only seed stage that has to be downloaded from one of the Gentoo
-			<uri link="/main/en/mirrors.xml">mirrors</uri> is the stage2 installation stage to build
-			the stage1 installation stage. From that point forward, the stages that are created with 
-			Catalyst become seed stages themselves. Of course, if you really want to download each seed
-			stage you are more than welcome to. </p>
-
-			<p>If your installation of Catalyst is a new one, there might be some directories that have to be
-			created before the seed stage can be fetched, otherwise fetching a seed stage is easy: </p>
-
-			<pre caption="Creating necessary directories and fetching the seed stage">
-<codenote>substitute $rel_type for its respective value set the specfile</codenote>
-# mkdir -p /var/tmp/catalyst/builds/$rel_type
-
-<codenote>now fetch the seed stage</codenote>
-# cd /var/tmp/catalyst/builds/$rel_type
-# wget http://gentoo.oregonstate.edu/releases/x86/2004.0/stages/x86/stage3-x86-20040218.tar.bz2
-
-<codenote>go back to the previous directory that you were in</codenote>
-# cd -
-			</pre>
+			<p>Seed stages are stored in the build directory for the <c>rel_type</c> that is specified in the
+			specfile. A generic path (using Catalyst variables, substitute as needed) would be
+			<c>$clst_storedir/builds/$clst_rel_type/$target-$subarch-$version_stamp</c>. A real word example 
+			would be something like <c>/var/tmp/catalyst/builds/default/stage1-x86-20040611</c>. </p>
 
 		</body>
 	</section>
