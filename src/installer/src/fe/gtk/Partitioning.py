@@ -113,10 +113,10 @@ resize partitions.
 		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		self.part_button_properties = gtk.Button(" Properties ")
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
-		self.part_button_box.pack_start(self.part_button_properties, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_button_box.pack_start(self.part_button_properties, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		part_button_dump_info = gtk.Button(" Dump to console (debug) ")
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE)
+		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the resize slider and the Entry widgets below it
@@ -267,53 +267,25 @@ resize partitions.
 		self.part_info_box.show_all()
 		self.part_button_box.show_all()
 		self.part_mount_info_box.show_all()
-#		self.part_button_create.connect("clicked", self.part_button_save_clicked)
+		props = PartProperties.PartProperties(self, self.active_device, int(minor), start, end, 0, 0, type, self.active_device_bytes_in_sector)
+		props.run()
 
 	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
-		self.info_partition.set_text(dev + " (unallocated space)")
-		if self.devices[self.active_device].get_partition_at(start, ignore_extended=0) != 0:
-			self.info_type.set_text("Logical")
-		else:
-			self.info_type.set_text("Primary")
-		self.info_filesystem.set_text("Unallocated space")
-		self.info_start.set_text(str(start))
-		self.info_end.set_text(str(end))
-		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
-		self.info_size.set_text(str(part_size) + " MB")
+		props = PartProperties.PartProperties(self, self.active_device, -1, start, end, 0, 0, "", self.active_device_bytes_in_sector)
+		props.run()
 
-		min_size = 0
-		max_size = end - start
-		hpaned_width = self.resize_hpaned.get_allocation().width
-		hpaned_pos = hpaned_width
-		if max_size > end:
-			hpaned_pos = int(float(float(end) / float(max_size)) * hpaned_width) - 5
-		self.resize_hpaned.set_position(hpaned_pos)
-		self.resize_info_part_size.set_text(str(part_size))
-		self.resize_info_unalloc_size.set_text("0")
-		self.active_part_min_size = min_size
-		self.active_part_max_size = max_size
-		self.active_part_cur_size = max_size
-		self.active_part_start_cyl = start
+#		self.info_partition.set_text(dev + " (unallocated space)")
+#		if self.devices[self.active_device].get_partition_at(start, ignore_extended=0) != 0:
+#			self.info_type.set_text("Logical")
+#		else:
+#			self.info_type.set_text("Primary")
+#		self.info_filesystem.set_text("Unallocated space")
+#		self.info_start.set_text(str(start))
+#		self.info_end.set_text(str(end))
+#		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
+#		self.info_size.set_text(str(part_size) + " MB")
 		self.active_part_minor = -1
-		self.resize_part_space.set_division(0)
-		self.resize_part_space.set_colors(self.colors['ext3'], self.colors['ext3'])
-		self.part_button_create.set_label(" Create ")
-		self.part_info_box.show_all()
-		self.resize_box.show_all()
-		self.part_button_delete.set_sensitive(gtk.FALSE)
-		self.part_button_create.set_sensitive(gtk.TRUE)
-		if self.devices[self.active_device].get_extended_partition():
-			if self.devices[self.active_device].get_partition_at(start, ignore_extended=0) != 0:
-				self.resize_info_part_type.set_active(1)
-			else:
-				self.resize_info_part_type.set_active(0)
-			self.resize_info_part_type.set_sensitive(gtk.FALSE)
-		else:
-			self.resize_info_part_type.set_active(0)
-			self.resize_info_part_type.set_sensitive(gtk.TRUE)
-		self.resize_info_part_filesystem.set_active(0)
-		self.part_button_box.show_all()
-#		self.part_button_create.connect("clicked", self.part_button_create_clicked)
+#		self.part_button_box.show_all()
 
 	def part_resized(self, widget, allocation):
 		newwidth = allocation.width
@@ -452,7 +424,7 @@ resize partitions.
 		self.resize_part_space.get_child().expose_event(None, None)
 
 	def part_button_properties_clicked(self, widget, data=None):
-		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, 0, 0, 0, 0)
+		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, 0, 0, 0, 0, 0)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
