@@ -400,7 +400,7 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td>
-                              <a href="http://www.linuxworldexpo.com">
+                              <a href="http://www.linuxworldexpo.com" target="_blank">
 							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe" border="0"/>
 							  </a>
                             </td>
