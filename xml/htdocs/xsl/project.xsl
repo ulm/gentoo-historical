@@ -6,7 +6,13 @@
 <xsl:template match="/project">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
         <guide  link="index.xml" type="project">
-                <title><xsl:apply-templates select="name"/></title>
+                <title>
+                  <xsl:choose>
+                    <xsl:when test="longname"><xsl:value-of select="longname"/>
+		    </xsl:when>
+                    <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
+                  </xsl:choose>
+                </title>
 		<author title="script generated">Gentoo Project</author>
 		<abstract><xsl:apply-templates select="description"/></abstract>
 		<version>1.0</version>
@@ -76,6 +82,27 @@
 			</table></body></section>
 		</chapter>
 		</xsl:if>		
+		<xsl:if test="plannedproject">
+		<chapter>
+			<title>Planned subprojects</title>
+			<section><body>
+			<p>The <xsl:value-of select="normalize-space(/project/name/text())"/>
+			project has the following subprojects planned:
+			</p>
+			<table><tr>
+				 <th>Project</th>
+				 <th>Description</th>
+			       </tr>
+			       <xsl:for-each select="plannedproject">
+			         <tr>
+				   <ti><xsl:value-of select="@name"/></ti>
+				   <ti><xsl:apply-templates select="node()"/></ti>
+				 </tr>
+			       </xsl:for-each>
+			</table></body></section>
+		</chapter>
+		</xsl:if>		
+
 		<xsl:apply-templates select='extrachapter[@position="subproject"]'/>
 		<xsl:if test="herd">
 		<chapter>
@@ -105,7 +132,7 @@
 <xsl:template match="longdescription|goals">
 	<xsl:apply-templates select="node()|@*" />
 </xsl:template>
-<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*">
+<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*|plannedproject//node()|plannedproject//@*">
 	<xsl:copy>
 		<xsl:apply-templates select="node()|@*"/>
 	</xsl:copy>
