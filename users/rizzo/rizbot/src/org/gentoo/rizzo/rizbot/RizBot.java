@@ -35,7 +35,7 @@ import java.io.*;
  * RizBot extends PircBot to connect to IRC.  It duplicates PieSpy, and adds
  * JMegaHal and ReminderBot features.
  *
- * $Id: RizBot.java,v 1.2 2005/02/28 19:19:53 rizzo Exp $
+ * $Id: RizBot.java,v 1.3 2005/03/10 16:49:33 rizzo Exp $
  */
 public class RizBot extends PircBot implements Runnable {
 
@@ -51,8 +51,16 @@ public class RizBot extends PircBot implements Runnable {
             throw new IOException("Output directory (" + config.outputDirectory + ") does not exist.");
         }
 
-        hal = new JMegaHal();
-        hal.addDocument("file:///home/dseiler/cvs/gentoo/gentoo/users/rizzo/rizbot/h2g2_dialogue.txt");
+        File file = new File("brain.ser");
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+            hal = (JMegaHal)in.readObject();
+            in.close();
+        } catch (Exception e) {
+            hal = new JMegaHal();
+            hal.addDocument("file:///home/dseiler/cvs/gentoo/gentoo/users/rizzo/rizbot/h2g2_dialogue.txt");
+        }
+
 
         dispatchThread = new Thread(this);
         dispatchThread.start();
@@ -67,6 +75,15 @@ public class RizBot extends PircBot implements Runnable {
             // If the bot's nickname was mentioned, generate a random reply
             String sentence = hal.getSentence();
             sendMessage(channel, sentence);
+        } else if (message.equalsIgnoreCase("!save")) {
+            // Save the brain
+            try {
+                ObjectOutput out = new ObjectOutputStream(new FileOutputStream("brain.ser"));
+                out.writeObject(hal);
+                out.close();
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
         } else {
             // Otherwise, make the bot learn the message
             hal.add(message);
