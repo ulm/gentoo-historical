@@ -309,7 +309,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-articles.html">Articles</a> |
 						</xsl:otherwise>
 					</xsl:choose>
-					<a class="menulink" href="/doc/build.html">Download/Install</a> |
+					Install: <a class="menulink" href="/doc/build.html">x86</a> / <a class="menulink" href="/doc/gentooppc-quickstart.html">PowerPC</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='docs'">
@@ -376,6 +376,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 						</xsl:if>
 						Download Mirrors:<br/>
 							<a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/>
+							<a class="altlink" href="ftp://ftp.gtlib.cc.gatech.edu/pub/gentoo">gatech.edu (USA)</a><br/>
 							<a class="altlink" href="http://gentoo.latinux.org">latinux.org (Venezuela)</a><br/>
 							<a class="altlink" href="http://mirrors.sunsite.dk/gentoo/">sunsite.dk (Denmark)</a><br/>
 							<a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/>
@@ -383,13 +384,14 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/>
 							<a class="altlink" href="http://ftp.gentoo.no/">gentoo.no (Norway)</a><br/>
 							<a class="altlink" href="ftp://ftp.gentoo.no/pub/linux/distributions/gentoo/">gentoo.no (Norway/ftp)</a><br/>
-							<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/><br/>
+							<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/>
+							<a class="altlink" href="/doc/mirroring.html">(how to set up an rsync mirror)</a><br/><br/>
 
 <a href="http://www.qksrv.net/click-477620-5033206" target="_top" >
 <img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
 User Docs:<br/>
 						<a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/>
-						<a class="altlink" href="/doc/gentooppc-quickstart.html">Gentoo/PPC Quickstart Guide</a> <font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/gentooppc-quickstart.html">PowerPC Install Instructions</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
 						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
 						<a class="altlink" href="/doc/portage-manual.html">Portage Manual</a> <font color="#ff0000">(new!)</font><br/>
