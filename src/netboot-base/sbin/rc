@@ -1,0 +1,86 @@
+#!/bin/sh
+# Copyright 1999-2004 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/src/netboot-base/sbin/rc,v 1.1 2004/10/06 14:44:47 vapier Exp $
+
+. /sbin/functions.sh
+
+case $1 in
+	# Boot time
+	sysinit)
+
+		echo
+		echo -e "${GOOD}Gentoo Linux${GENTOO_VERS}; ${BRACKET}http://www.gentoo.org/${NORMAL}"
+		echo -e " Copyright 1999-2004 Gentoo Foundation; Distributed under the GPL"
+		echo
+
+		ebegin "Setting hostname to netboot"
+		/bin/hostname netboot
+		eend $? "Failed to set hostname"
+
+		ebegin "Remouting / read-write"
+		/bin/mount -n -o rw,remount /
+		eend $? "Failed to remount /"
+
+		ebegin "Mounting proc at /proc"
+		/bin/mount -n -t proc none /proc
+		eend $? "Failed to mount /proc"
+
+		if grep -q sysfs /proc/filesystems
+		then
+			mkdir -p /sys
+			ebegin "Mounting sysfs at /sys"
+			mount -n -t sysfs none /sys
+			eend $?
+		fi
+
+		mkdir -p /dev/pts /dev/shm
+		ebegin "Mounting other filesystems"
+		/bin/mount -a
+		eend $? "Failed to mount the others filesystems"
+
+		ln -sf /proc/mounts /etc/mtab
+
+		ebegin "Starting devfsd"
+		/sbin/devfsd /dev > /dev/null
+		eend $? "Failed to start devfsd"
+		
+		ebegin "Starting syslogd"
+		/sbin/syslogd -m 0
+		eend $? "Failed to start logger"
+
+		cat /etc/motd
+
+		;;
+
+	# Reboot time
+	reboot)
+
+		echo
+
+		# Stopping syslog
+		ebegin "Stopping syslogd"
+		killall -15 syslogd 2>&1 > /dev/null
+		eend $? "Failed to stop logger"
+
+		# Stopping devfsd 
+		ebegin "Stopping devfsd"
+		killall -15 devfsd 2>&1 > /dev/null
+		eend $? "Failed to stop devfsd"
+
+		# Umount everything
+		ebegin "Unmounting all filesystems"
+		/bin/umount -a -r 2>&1 > /dev/null
+		ret=$?
+		eend ${ret} "Failed to unmount filesystems"
+		if [ ${ret} -ne 0 ]
+		then
+			ebegin "Retrying unmount"
+			/bin/umount -a -r 2>&1 > /dev/null
+			eend ${ret} "Failed to unmount again; giving up"
+		fi
+
+		;;
+
+	*)
+esac
