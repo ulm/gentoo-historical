@@ -1,7 +1,7 @@
 """This is probably overkill for packages.gentoo.org, but perhaps it can be
 used elsewhere"""
 
-__version__ = '$Revision: 1.1 $'
+__revision__ = '$Revision: 1.2 $'
 # $Source: /var/cvsroot/gentoo/src/packages/bugs.py,v $
 
 # importers may want to override this.  This is the current(?)
@@ -13,44 +13,6 @@ STATUS = {'UNCONFIRMED': 'UNCONFIRMED',
     'RESOLVED': 'RESOLVED',
     'VERIFIED': 'VERIFIED',
     'CLOSED': 'CLOSED'}
-    
-def parse_csv(line):
-    """parse a line of CSV"""
-    data = []
-    indata = 0
-    inquote = 0
-    line = line.strip()
-    cdata = ''
-    prev_char = ''
-    for char in line:
-        if char == ',':
-            if indata:
-                if not inquote:
-                    data.append(cdata)
-                    cdata = ''
-                    indata = 0
-                else:
-                    cdata = cdata + char
-            elif prev_char == '' or prev_char == ',':
-                data.append('')
-        elif char == '"':
-            if indata:
-                data.append(cdata)
-                indata = 0
-                cdata = ''
-                inquote = 0
-            else:
-                indata = 1
-                inquote = 1
-        elif indata:
-            cdata = cdata + char
-        else:
-            indata = 1
-            cdata = cdata = char
-        prev_char = char
-    if prev_char != '"':
-        data.append(cdata)
-    return data
     
 class Bug:
     """a bugzilla bug"""
@@ -64,6 +26,10 @@ class Bug:
         self.status = status
         self.resolution = resolution
         self.short_desc = short_desc
+
+        self.data = (self.bug_id, self.severity, self.priority,
+            self.rep_platform, self.assigned_to, self.status, self.resolution,
+            self.short_desc)
         
     def to_dict(self):
         """convert to dict"""
@@ -78,8 +44,16 @@ class Bug:
             
     def to_tuple(self):
         """convert to tuple"""
-        return [self.bug_id, self.severity, self.priority, self.rep_platform, 
-            self.assigned_to, self.status, self.resolution, self.short_desc]
+        return self.data
+
+    def __iter__(self):
+        """Same as above"""
+        for field in self.data:
+            yield field
+            
+    def __getitem__(self, index):
+        """Makes me look like a tuple or list"""
+        return self.data[index]
         
 class BugFactory:
     """create bugs from dict data"""
@@ -87,8 +61,8 @@ class BugFactory:
         """to shut pylint up"""
         pass
         
-    def fromDict(self, mapping):
-        """from dict => BugFactory.fromDict(mapping).to_dict() == mapping"""
+    def from_dict(self, mapping):
+        """from_dict => BugFactory.from_dict(mapping).to_dict() == mapping"""
         bug_id = mapping.get("bug_id", "unknown")
         severity = mapping.get("severity")
         priority = mapping.get("priority")
@@ -101,67 +75,66 @@ class BugFactory:
         return Bug(bug_id, severity, priority, rep_platform, assigned_to, 
             status, resolution, short_desc)
             
-    def fromListOfDicts(self, buglist):
+    def from_list_of_dicts(self, buglist):
         """when you have a list of dicts"""
-        all = []
-        for mapping in buglist:
-            all.append(self.fromDict(mapping))
-        return all
-        
-    def fromCSV(self, csv_file):
+        return [self.from_dict(mapping) for mapping in buglist]
+
+    def from_list_of_lists(self, lists):
+        """Return list of bugs from list of lists.  Lists must be in same
+        order as call to Bug.__init__()
+        """
+        return [Bug(*bug_list) for bug_list in lists]
+
+    from_db_query = from_list_of_lists
+
+    def from_csv(self, csv_file):
         """fp should be a file object with CSV data in the format as returned
         by bugzlla"""
         
-        all = []
-        for line in csv_file.readlines()[1:]:
-            mapping = {}
-            fields = parse_csv(line) 
-            if len(fields) < 7:
-                continue # wtf?
-            #print fields
-            (mapping['bug_id'], mapping['severity'], mapping['priority'], 
-                mapping['rep_platform'], mapping['assigned_to'],
-                mapping['status'], mapping['resolution'], 
-                mapping['short_desc']) = fields[:8]
-            all.append(self.fromDict(mapping))
-        
-        return all
-
+        import csv
+        reader = csv.reader(csv_file)
+        return [Bug(*data[:8]) for data in reader]
 
 class HTMLWriter:
     """convert list of bugs to HTML"""
     def __init__(self, bugs, bugzilla_site=None):
         """where <bugs> is a list of Bugs"""
-        html = '<table class="buglist">\n'
-        html = ('%s<tr class="heading"><th class="bug_id">Bug ID</th>'
-            '<th class="severity">Severity</th><th class="priority">'
-            'Priority</th><th class="platform">Platform</th>'
+
+        table_begin = '<table class="buglist">'
+        table_heading = ('<tr class="heading">'
+            '<th class="bug_id">Bug ID</th>'
+            '<th class="severity">Severity</th>'
+            '<th class="priority">Priority</th>'
+            '<th class="platform">Platform</th>'
             #'<th class="assigned_to">Assigned To</th>'
             '<th class="status">Status</th>'
             #'<th class="resolution">Resolution</th>'
             '<th class="description">Description</th>'
-            '</tr>\n' % html)
+            '</tr>')
+        rows = []
         for bug in bugs:
             bug_dict = bug.to_dict()
-            html = html + '<tr class="bug">'
             if bugzilla_site:
-                html = html + ('<td class="bug_id">'
+                bug_id = ('<td class="bug_id">'
                     '<a href="http://%s/show_bug.cgi?id=%s">'
                     '%s</td>' % (bugzilla_site, bug_dict['bug_id'],
                     bug_dict['bug_id']))
             else:
-                html = html + '<td class="bug_id">%(bug_id)s</td>' % bug_dict
+                bug_id = '<td class="bug_id">%(bug_id)s</td>' % bug_dict
             
-            html = html + ('<td class="severity">%(severity)s</td>'
+            bug_data = ('<td class="severity">%(severity)s</td>'
                 '<td class="priority">%(priority)s</td>'
                 '<td class="platform">%(rep_platform)s'
                 #'<td class="assigned_to">%(assigned_to)s</td>'
                 '<td class="status">%(status)s</td>'
                 #'<td class="resolution">%(resolution)s</td>'
                 '<td class="description">%(short_desc)s</td>'
-                '</tr>\n' % bug_dict)
-        html = html + '</table>\n'
-        self.html = html
+                % bug_dict)
+            row = '<tr class="bug">%(bug_id)s%(bug_data)s</tr>' % locals()
+            rows.append(row) 
+        table_end = '</table>'
+        self.html = '\n    '.join([table_begin, table_heading] + rows + 
+            [table_end])
     
     def __str__(self):
         return self.html
