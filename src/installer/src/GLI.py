@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.12 2004/02/21 22:41:34 npmccallum Exp $
+$Id: GLI.py,v 1.13 2004/02/21 22:48:05 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -158,7 +158,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		# Check to make sure the device exists
 		return os.access(path, os.F_OK)
 		
-	def _is_uri(self, uri)
+	def _is_uri(self, uri):
 		"Check to see if the string is a valid URI. Returns bool."
 		
 		# Make sure it is a string
@@ -176,7 +176,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		colon_location = uri.find(':')
 		if not ( 6 > colon_location > 2):
 			return False
-		if uri[colon_location + 1:colon_location + 3] != "//"
+		if uri[colon_location + 1:colon_location + 3] != "//":
 			return False
 		
 		# Check for valid uri type
@@ -187,7 +187,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
 		
 			# Check for hostname or ip address
-			if (not self._is_hostname(uri.split('/')[2]) and (not self._is_ip(uri.split('/')[2])):
+			if (not self._is_hostname(uri.split('/')[2])) and (not self._is_ip(uri.split('/')[2])):
 				return False
 		
 			# Check to make sure the rest is a propper path
@@ -444,10 +444,10 @@ class InstallProfile(xml.sax.ContentHandler):
 			allowable_nonalphnum_characters = '_-'
 			if type(user[0]) != str:
 				raise "UsersError", "A username must be a string!"
-			if not user[0][0] in string.lowercase
+			if not user[0][0] in string.lowercase:
 				raise "UsersError", "A username must start with a letter!"
 			for char in user[0]:
-				if not char in (string.lowercase + string.numbers + allowable_nonalphnum_characters)
+				if not char in (string.lowercase + string.numbers + allowable_nonalphnum_characters):
 					raise "UsersError", "A username must contain only letters, numbers, or these symbols: " + allowable_nonalphnum_characters
 			
 			# Check data type for user's password hash
@@ -659,7 +659,7 @@ class InstallProfile(xml.sax.ContentHandler):
 						raise "ParitionTableError", "The minor you specified (" + minor + ") is not an integer!"
 					
 					# Make sure that a minor number is valid
-					if minor < 1
+					if minor < 1:
 						raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
 				
 					# Make sure that <size>, <type> and <mount point> are all set
@@ -731,7 +731,7 @@ class InstallProfile(xml.sax.ContentHandler):
 				raise "NetworkInterfacesError", "Improper device name!"
 			
 			# For 'eth' type devices:
-			if device_type = "eth":
+			if device_type == "eth":
 			
 				# Do the same for both pre and post tuples
 				for i in range(2):
