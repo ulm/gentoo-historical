@@ -109,10 +109,13 @@
         <ti>
           <xsl:for-each select="project/dev[not(@role='lead')]">
             <xsl:sort select="text()"/>
-            <xsl:value-of select="text()"/>
-            <xsl:if test="not(position()=last())">
-            <xsl:text>, </xsl:text>
-            </xsl:if>
+	    <xsl:variable name="nick" select="text()"/>
+            <xsl:if test="count(following-sibling::dev[text()=$nick])=0">
+              <xsl:value-of select="text()"/>
+              <xsl:if test="not(position()=last())">
+              <xsl:text>, </xsl:text>
+              </xsl:if>
+	    </xsl:if>
           </xsl:for-each>
         </ti>
         <ti>
