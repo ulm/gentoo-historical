@@ -14,8 +14,8 @@ Linux 1.2.  The Gentoo Linux installation process supports various installation
 approaches, depending upon how much of the system you want to custom-build from
 scratch.</abstract>
 
-<version>1.52</version>
-<date>19 July 2002</date>
+<version>1.6</version>
+<date>05 Sep 2002</date>
 
 <chapter>
 <title>About the Install</title>
@@ -274,16 +274,20 @@ XFS, ext2, ext3 (journaling) and ReiserFS.  ext2 is the tried and true Linux
 filesystem but doesn't have metadata journaling.  ext3 is the new version of
 ext2 with both metadata journaling and ordered data writes, effectively
 providing data journaling as well.  ReiserFS is a B*-tree based filesystem
-that promises very good small file performance, and greatly outperforms both ext2 and
+that has very good small file performance, and greatly outperforms both ext2 and
 ext3 when dealing with small files (files less than 4k), often by a factor of
-10x-15x. ReiserFS has metadata journaling, but no data journaling.  XFS
-is a high-performance enterprise-class filesystem with metadata journaling that
-is fully supported under Gentoo Linux.
+10x-15x. ReiserFS also scales extremely well and has metadata journaling.
+As of kernel 2.4.18+, ReiserFS is finally rock-solid and highly recommended.
+XFS is an filesystem with metadata journaling that
+is fully supported under Gentoo Linux's <path>xfs-sources</path> kernel.
 </p><p>
 If you're looking for the most standard filesystem, use ext2.  If you're looking
 for the most rugged journalled filesystem, use ext3.  If you're looking for a
-high-performance filesystem with journaling support, use XFS;  both ext3 and XFS are 
-mature and refined.  All filesystems are production-ready. Here are our basic recommended filesystem
+high-performance filesystem with journaling support, use ReiserFS;  both ext3 and ReiserFS are 
+mature and refined.  Please be careful with XFS; this filesystem has a tendency to fry lots of data
+if the system crashes or you lose power. Originally, it seemed like a promising filesystem but it
+now appears that this tendency to lose data is a major achilles' heel.
+Here are our basic recommended filesystem
 sizes and types:</p>
 
   <table>
@@ -308,13 +312,13 @@ sizes and types:</p>
   <tr>
   	<ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
 	<ti>&gt;=1.5 Gigabytes</ti>
-	<ti>XFS, ext3 recommended; ext2 ok</ti>
+	<ti>ReiserFS, ext3 recommended; ext2 ok</ti>
   	<ti>/dev/hda3</ti>
   </tr>
  </table>
 
 <note>At this point, create your partitions using fdisk.  Note that your partitions
-should be of type 82 if swap and 83 for regular filesystems (whether XFS, ReiserFS <e>or</e> ext2).
+should be of type 82 if swap and 83 for regular filesystems (whether ReiserFS <e>or</e> ext2/3).
 </note>
 
 <p>Once you've created your partitions using <c>fdisk</c>, it's time to initialize
@@ -326,22 +330,6 @@ the filesystems that will be used to house our data.  Initialize swap as follows
 <pre>
 # <i>mke2fs /dev/hda1</i>
 </pre>
-<p>To create an XFS filesystem, use the <c>mkfs.xfs</c> command:</p>
-<pre>
-# <i>mkfs.xfs /dev/hda3</i>
-</pre>
-<note>
-You may want to add a couple of additional flags to the <c>mkfs.xfs</c> command: <c>-d agcount=3 -l size=32m</c>. 
-The <c>-d agcount=3</c> command will lower
-the number of allocation groups.  XFS will insist on using at least 1 allocation group per 4 GB of your partition,
-so, for example, if you hava a 20 GB partition you will need a minimum agcount of 5.  The <c>-l size=32m</c> command
-increases the journal size to 32 Mb, increasing performance.
-</note>
-<warn>
-If you are installing an XFS partition over a previous ReiserFS partition, later attempts to mount may fail without
-an explicit <c>mount -t xfs</c>.  The solution is to zero out the partition before creating the XFS filesystem:
-<c>dd if=/dev/zero of=/dev/hd<comment>x</comment> bs=1k</c>. 
-</warn>
 <p>If you'd like to use ext3, you can create ext3 filesystems using <c>mke2fs -j</c>:</p>
 <pre>
 # <i>mke2fs -j /dev/hda3</i>
@@ -351,7 +339,6 @@ an explicit <c>mount -t xfs</c>.  The solution is to zero out the partition befo
 # <i>mkreiserfs /dev/hda3</i>
 </pre>
 
-<note>As of 2.4.18 ReiserFS support can now be considered stable.</note>
 <note>You can find out more about using ext3 under Linux 2.4 at <uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
 </body>
 </section>
@@ -589,8 +576,8 @@ Otherwise, you'll need to merge Linux source ebuilds.  Here are the ones we curr
 offer:</p>
 <table>
 <tr><th>ebuild</th><th>description</th></tr>
-<tr><ti><path>gentoo-sources</path></ti><ti>Our own performance and functionality-enhanced kernel based on -ac (now includes the release version of XFS)</ti></tr>
-<tr><ti><path>xfs-sources</path></ti><ti>A snapshot of the SGI XFS CVS Linux source tree; this is the kernel to run if you want bleeding edge(cvs) xfs support, (currently the XFS build in gentoo-sources is the recommended release version)</ti></tr>
+<tr><ti><path>gentoo-sources</path></ti><ti>Our own performance and functionality-enhanced kernel based on the stock kernel (as of 5 Sep 2002, no longer includes  XFS)</ti></tr>
+<tr><ti><path>xfs-sources</path></ti><ti>The official SGI XFS kernel with a few additions like EVMS</ti></tr>
 <tr><ti><path>openmosix-sources</path></ti><ti>A stock Linux kernel source tree patched with support for the GPL <uri link="http://www.openmosix.com">openMosix</uri> load-balancing/clustering technology</ti></tr>
 <tr><ti><path>usermode-sources</path></ti><ti>A stock Linux kernel source tree patched with support for User-Mode Linux.  ("Linux inside Linux" technology)</ti></tr>
 <tr><ti><path>vanilla-sources</path></ti><ti>A stock Linux kernel source tree, just like you'd get from kernel.org</ti></tr>
@@ -643,7 +630,7 @@ Such stability will come at a price:
 you will lose many of the nifty features that
 are new to the 2.4 series kernels (such as XFS and tmpfs
 filesystems, iptables, and more), although the 2.2 kernel sources can be
-patched with Reiserfs and devfs support.  
+patched with ReiserFS and devfs support.  
 Gentoo linux bootscripts require either tmpfs or ramdisk support in the kernel, so 
 2.2 kernel users need to make sure that ramdisk support is compiled in (ie, not a module).
 It is <comment>vital</comment> that a <e>gentoo=notmpfs</e> flag be added to the kernel
