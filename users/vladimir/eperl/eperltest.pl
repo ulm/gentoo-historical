@@ -1,9 +1,24 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.3 2003/03/05 05:04:04 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.4 2003/03/06 13:54:27 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
-# Distributed under the GPL v2 or later
-# Please be careful with this, don't use it if you're not reasonably fluent
-#  with Perl.
+# Distributed under the GPL v2 or later, and all that cruft
+# 
+# eperl.pl applies Perl code to all ebuilds in Portage, displays and prompts
+#   to accept changes, then runs echangelog upon leaving each directory.
+#
+# Please be careful with this, and watch all changes closely.
+# By using it, you accepts all responsibility for your actions.
+# Please have ECHANGELOG_USER set properly.
+#
+# Usage: eperl.pl '<code>' 'ChangeLog reason'
+# 
+# <code> being Perl code that may modify $_, which is each individual line of
+#        all ebuilds.
+#
+# Examples:
+# eperl.pl 's/Copyright (\d{4}-)2003/Copyright ${1}2004/' 'Updated Copyrights'
+# eperl.pl 's/[~-]?x86//g if /^KEYWORDS/' 'x86 abandoned, ppc better afterall'
+# eperl.pl 's/python/perl/g' 'Act of God'
 #
 use strict;
 use File::Find;
@@ -52,6 +67,7 @@ find(
 #  Subroutines
 #
 sub wanted {
+# Runs once for each ebuild
 	# We want only proper ebuilds
 	return if /skel\.ebuild$/ || !/\.ebuild$/;
 	
@@ -115,6 +131,7 @@ sub apply_code {
 	for (@_) {
 		# Don't want to change CVS Header lines
 		next if /\$Header:/;
+		chomp;
 		my $temp = $_;
 		eval qq/
 			# This var gets interpolated and run as code
@@ -123,8 +140,8 @@ sub apply_code {
 			# This checks for changes, and prints each line if there are any
 			if (\$temp ne \$_) {
 				\$changes++;
-				print RED "<-", RESET, "\$temp";
-				print RED "->", RESET, "\$_";
+				print RED "<-", RESET, "\$temp\n";
+				print RED "->", RESET, "\$_\n";
 			}
 			return 1;
 		# This dies if it didn't make it to "return 1", ie, $code b0rked

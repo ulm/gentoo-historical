@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.6 2003/03/05 05:04:04 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.7 2003/03/06 13:54:26 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 # Please be careful with this, don't use it if you're not reasonably fluent
@@ -115,6 +115,7 @@ sub apply_code {
 	for (@_) {
 		# Don't want to change CVS Header lines
 		next if /\$Header:/;
+		chomp;
 		my $temp = $_;
 		eval qq/
 			# This var gets interpolated and run as code
@@ -123,8 +124,8 @@ sub apply_code {
 			# This checks for changes, and prints each line if there are any
 			if (\$temp ne \$_) {
 				\$changes++;
-				print RED "<-", RESET, "\$temp";
-				print RED "->", RESET, "\$_";
+				print RED "<-", RESET, "\$temp\n";
+				print RED "->", RESET, "\$_\n";
 			}
 			return 1;
 		# This dies if it didn't make it to "return 1", ie, $code b0rked
