@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.1 2003/03/05 01:13:28 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.2 2003/03/05 01:43:12 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 # Please be careful with this, don't use it if you're not reasonably fluent
@@ -16,11 +16,14 @@ use Term::ANSIColor qw(:constants);
 # Consider that echangelog is dependent on CVS, this should end with gentoo-x86
 my $PORTDIR = "/usr/gentoo-x86";
 
+# Turn off all changes
+my $debug = 1;
+
 ###############################################################################
 #  Setup of globals 'n stuff
 #
 $SIG{INT} = \&catch_zap;
-my $term = new Term::ReadLine 'eregex.pl';
+my $term = new Term::ReadLine 'eperl.pl';
 my $path_changes = 0;
 my $path = "";
 
@@ -73,16 +76,18 @@ sub wanted {
 		
 		if($response =~ /^y/i) {
 			# This lets us know if we need to run echangelog later
-			$path_changes += $changes;
+			$path_changes++ if $changes;
 			
 			# Write the new ebuild to *_new.ebuild
 			print RED "Saving changes...", RESET, "\n";
-			#put_file("$path/${ebuild}_new.ebuild", @new_contents);
+			put_file("$path/${ebuild}_new.ebuild", @new_contents) unless $debug;
 			
 			# Overwrite the old ebuild with the new
-			#rename("$path/${ebuild}_new.ebuild", "$path/${ebuild}.ebuild")
-			#  or die "Couldn't rename $path/${ebuild}_new.ebuild to " .
-			#         "$path/${ebuild}.ebuild";
+			unless($debug) {
+				rename("$path/${ebuild}_new.ebuild", "$path/${ebuild}.ebuild")
+				  or die "Couldn't rename $path/${ebuild}_new.ebuild to " .
+				         "$path/${ebuild}.ebuild";
+			}
 
 			print YELLOW "Done", RESET, "\n\n";
 		}
@@ -143,11 +148,13 @@ sub put_file {
 sub postprocess {
 	if($path_changes) {
 		# Run echangelog in the ebuild dir
-		print RED "Updating ChangeLog in $path for $path_changes changes...";
-		print RESET "\n\n";
+		print RED "Updating ChangeLog in $path for $path_changes ";
+		print "changed files...", RESET "\n\n";
 		chdir $path or die "Couldn't chdir to $path: $!\n";
-		#system("echangelog", "$ARGV[1]") == 0
-		#  or die "Couldn't echangelog $ARGV[1]";
+		unless($debug) {
+			system("echangelog", "$ARGV[1]") == 0
+			  or die "Couldn't echangelog $ARGV[1]";
+		}
 		$path_changes = 0;
 	}
 }
