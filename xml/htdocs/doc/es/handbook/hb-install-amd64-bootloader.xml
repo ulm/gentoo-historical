@@ -4,158 +4,280 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.2 2004/11/23 13:34:15 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.3 2005/02/28 13:27:22 chiguire Exp $ -->
 
 <sections>
 
-<version>1.15</version>
-<date>2004-10-20</date>
+<version>1.19</version>
+<date>2005-02-15</date>
 
 <section>
-<title>Making your Choice</title>
+<title>Realizando su elección</title>
 <subsection>
-<title>Introduction</title>
+<title>Introducción</title>
 <body>
 
 <p>
-Now that your kernel is configured and compiled and the necessary system
-configuration files are filled in correctly, it is time to install a
-program that will fire up your kernel when you start the system. Such a
-program is called a <e>bootloader</e>.
+Ahora que su kernel está configurado y compilado y los archivos de
+configuración necesarios han sido llenados correctamente, ha llegado
+la hora de instalar el programa que iniciará el kernel cuando arranque
+el sistema. Este programa es conocido como <e>gestor de arranque</e>.
 </p>
-
 </body>
 </subsection>
+
 <subsection>
-<title>Optional: Framebuffer</title>
+<title>Opcional: Memoria de imagen (Framebuffer)</title>
 <body>
 
+<!-- Verbatim copy from x86 bootloader framebuffer explanation -->
+
 <p>
-<e>If</e> you have configured your kernel with framebuffer support, you
-have to add a <c>video</c>-statement to your bootloader configuration
-file if you require framebuffer.
+<e>Si</e> ha configurado su kernel con soporte framebuffer (o ha utilizado 
+la configuración predeterminada de <c>genkernel</c>)  puede  activarlo 
+añadiendo el parámetro <c>vga</c> y/o <c>video</c> al archivo de configuración 
+del gestor de inicio.
 </p>
 
 <p>
-For the <c>video</c>-statement, a simplified syntax is used. Most of the time
-it's sufficient to use <c>video=vesafb</c>. 
+Lo primero que necesita es conocer que tipo de dispositivo de framebuffer 
+está utilizando. Si está utilizando un kernel parcheado por Gentoo 
+(como puede ser <c>gentoo-sources</c>) tiene la posibilidad de seleccionar 
+<c>vesafb-tng</c> como tipo de controlador para vesa (<e>VESA driver
+type</e>), éste viene predeterminado en las fuentes del kernel. Si este es su 
+caso, está utilizando <c>vesafb-tng</c> y no necesita el parámetro <c>vga</c>.
+Si no es así, está utilizando el controlador <c>vesafb</c> y necesita el 
+parámetro <c>vga</c>.
+ </p>
+
+<p>
+El parámetro <c>vga</c> controla la resolución y la profundidad de color
+de su framebuffer utilizando <c>vesafb</c>. Como se indica en
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> (el cual se instala
+cuando instalas un paquete con las fuentes del kernel) necesita pasar el 
+número VESA correspondiente con la resolución y profundidad de color
+que quiera.
 </p>
 
 <p>
-More information can be found in 
-<path>/usr/src/linux/Documentation/fb/vesafb.txt</path>.
+La siguiente lista muestra las resoluciones y profundidad de color disponibles
+y su correspondiente valor para el parámetro <c>vga</c>.
 </p>
 
+<table>
+<tr>
+  <ti></ti>
+  <th>640x480</th>
+  <th>800x600</th>
+  <th>1024x768</th>
+  <th>1280x1024</th>
+</tr>
+<tr>
+  <th>256</th>
+  <ti>0x301</ti>
+  <ti>0x303</ti>
+  <ti>0x305</ti>
+  <ti>0x307</ti>
+</tr>
+<tr>
+  <th>32k</th>
+  <ti>0x310</ti>
+  <ti>0x313</ti>
+  <ti>0x316</ti>
+  <ti>0x319</ti>
+</tr>
+<tr>
+  <th>64k</th>
+  <ti>0x311</ti>
+  <ti>0x314</ti>
+  <ti>0x317</ti>
+  <ti>0x31A</ti>
+</tr>
+<tr>
+  <th>16M</th>
+  <ti>0x312</ti>
+  <ti>0x315</ti>
+  <ti>0x318</ti>
+  <ti>0x31B</ti>
+</tr>
+</table>
 
 <p>
-Remember (or write down) your value; you will need it shortly.
+El parámetro <c>video</c> controla las opciones de visualización. Necesita 
+que se le indique el controlador de framebuffer (<c>vesafb</c> para kernels 
+2.6, o <c>vesa</c> para kernels 2.4) seguido de los parámetro de control que 
+quiera activar. Todas las variables se pueden encontrar en 
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path>, pero aquí le 
+informamos sobre las más utilizadas:
 </p>
 
+<table>
+<tr>
+  <th>Control</th>
+  <th>Descripción</th>
+</tr>
+<tr>
+  <ti>ywrap</ti>
+  <ti>
+    Asume que su tarjeta gráfica puede volver sobre su memoria. (e.j. continuar
+    al principio cuando se aproxima al final)
+  </ti>
+</tr>
+<tr>
+  <ti>mtrr</ti>
+  <ti>
+    Configura los registros MTRR
+  </ti>
+</tr>
+<tr>
+  <ti><c>mode</c></ti>
+  <ti>
+    (solamente <c>vesafb-tng</c>)<br/>
+    Configura la resolución, la profundidad de color y la tasa de refresco. Por ejemplo,
+    <c>1024x768-32@85</c> para una resolución de 1024x768,  profundidad de color 
+    32 bit y una tasa de refresco de 85 Hz.
+  </ti>
+</tr>
+</table>
+
+<p>
+El resultado de estas dos configuraciones podría ser algo como: <c>vga=0x318
+video=vesafb:mtrr,ywrap</c> o <c>video=vesafb:mtrr,ywrap,1024x768-32@85</c>. 
+Recuerde (o anote) está configuración. La necesitará dentro de poco.
+</p>
+
+<p>
+Ahora continué con la instalación de <uri link="#grub">GRUB</uri>.
+</p>
 </body>
 </subsection>
 </section>
-<section>
-<title>Using GRUB</title>
+
+<section id="grub">
+<title>Usando GRUB</title>
 <subsection>
-<title>Understanding GRUB's terminology</title>
+<title>Comprendiendo la terminología de GRUB</title>
 <body>
 
 <p>
-The most critical part of understanding GRUB is getting comfortable with
-how GRUB refers to hard drives and partitions. Your Linux partition
-<path>/dev/hda1</path> is called <path>(hd0,0)</path> under GRUB. Notice the 
-parenthesis around the <path>hd0,0</path> - they are required.
+La parte más crítica para la comprensión de GRUB, es el habituarse
+a la manera en que GRUB se refiere a los discos duros y las
+particiones. Su partición Linux <path>/dev/hda1</path> es denominada
+<path>(hd0,0)</path> por GRUB. Note los paréntesis alrededor de
+<path>hd0,0</path>, que son obligatorios.
 </p>
 
 <p>
-Hard drives count from zero rather than "a" and partitions start at zero 
-rather than one. Be aware too that with the hd devices, only hard drives are 
-counted, not atapi-ide devices such as cdrom players and burners.  Also, the 
-same construct is used with scsi drives. (Normally they get higher numbers 
-than ide drives except when the bios is configured to boot from scsi devices.)
+La numeración de los discos duros comienza con un cero, en lugar de
+utilizar una "a" y las particiones empiezan con cero en lugar de con
+un uno. Advertimos también que entre los dispositivos hd, sólo se
+cuentan los discos duros y no los dispositivos atapi-ide como cdroms y
+grabadoras. Además, la especificación es igual para dispositivos
+scsi. (Usualmente son asignados números mayores, excepto cuando el
+bios está configurado para arrancar desde los dispositivos scsi).
 </p>
 
 <p>
-Assuming you have a hard drive on <path>/dev/hda</path>, a cdrom player on 
-<path>/dev/hdb</path>, a burner on <path>/dev/hdc</path>, a second hard drive 
-on <path>/dev/hdd</path> and no SCSI hard drive, <path>/dev/hdd7</path> gets 
-translated to <path>(hd1,6)</path>. It might sound tricky and tricky it is 
-indeed, but as we will see, GRUB offers a tab completion mechanism
-that comes handy for those of you having a lot of hard drives and
-partitions and who are a little lost in the GRUB numbering scheme.
+Asumiendo que tiene un disco duro en <path>/dev/hda</path>, un lector
+de cdrom en <path>/dev/hdb</path>, una grabadora en
+<path>/dev/hdc</path>, un segundo disco duro en <path>/dev/hdd</path>
+y ningún disco duro scsi, la partición <path>/dev/hdd7</path> que
+descrita como <path>(hd1,6)</path>. A lo mejor puede sonar raro y bien
+podría serlo, pero como veremos, GRUB ofrece un mecanismo de
+terminación por tabulador que es de gran ayuda para los que tienen una
+gran cantidad de discos duros y que andan algo perdidos con este
+esquema de numeración.
 </p>
 
 <p>
-Having gotten the feel for that, it is time to install GRUB.
+Habiéndole tomado la medida, es hora de instalar GRUB.
 </p>
-
 </body>
 </subsection>
+
 <subsection>
-<title>Installing GRUB</title>
+<title>Instalando GRUB</title>
 <body>
 
 <p>
-To install GRUB, let's first emerge it. 
+Para instalar GRUB, primero lo instalamos con emerge:
 </p>
 
-<pre caption = "Installing GRUB">
-# <i>emerge --usepkg grub-static</i>
-# <i>cp -Rpv /usr/share/grub/i386-pc/* /boot/grub</i>
+<pre caption = "Instalando GRUB">
+# <i>emerge grub</i>
 </pre>
 
 <p>
-Although GRUB is now installed, we still need to write up a
-configuration file for it and install GRUB in the MBR so that GRUB 
-automatically boots your newly created kernel. Create 
-<path>/boot/grub/grub.conf</path> with <c>nano</c> (or, if applicable, another 
-editor):
+Aunque GRUB esté instalado, todavía necesitamos crear un archivo de
+configuración para él e instalar GRUB en nuestro MBR para que pueda
+arrancar automáticamente nuestro kernel recién creado.  Cree el archivo 
+<path>/boot/grub/grub.conf</path> con <c>nano</c>, o cualquier otro 
+editor:
 </p>
 
-<pre caption = "Creating /boot/grub/grub.conf">
+<pre caption = "Creando el archivo /boot/grub/grub.conf">
 # <i>nano -w /boot/grub/grub.conf</i>
 </pre>
 
 <p>
-Now we are going to write up a <path>grub.conf</path>. Below you'll
-find two possible <path>grub.conf</path> for the partitioning example we use 
-in this guide, with kernel image <path>kernel-2.6.5-gentoo</path>. We've only
-extensively commented the first <path>grub.conf</path>. 
+Ahora vamos a escribir el <path>grub.conf</path>. A continuación
+encontrará dos posibles archivos <path>grub.conf</path> para el
+ejemplo de particiones que manejamos en esta guía, con una imagen 
+de kernel <path>kernel-2.4.26-gentoo-r9</path>. Sólo hemos comentado 
+exhaustivamente el primer <path>grub.conf</path>. Asegúrese de utilizar
+el nombre de <e>su</e> archivo de imagen del kernel y, si
+es necesario, el nombre de <e>su</e> imagen initrd. 
 </p>
 
 <ul>
   <li>
-    The first <path>grub.conf</path> is for people who have not used 
-    <c>genkernel</c> to build their kernel
+    El primer <path>grub.conf</path> es para quienes no hayan usado
+    <c>genkernel</c> para construir su kernel
   </li>
   <li>
-    The second <path>grub.conf</path> is for people who have used
-    <c>genkernel</c> to build their kernel
+    El segundo <path>grub.conf</path> es para quienes hayan utilizado
+    <c>genkernel</c> para construir su kernel.
   </li>
 </ul>
 
-<pre caption = "grub.conf for non-genkernel users">
-<comment># Which listing to boot as default. 0 is the first, 1 the second etc.</comment>
+<pre caption = "grub.conf para quienes no hayan usado genkernel">
+<comment># Cual título arrancar por defecto. 0 es el primero, 1 el segundo, etc.</comment>
 default 0
-<comment># How many seconds to wait before the default listing is booted.</comment>
+<comment># Cuantos segundos esperar antes de arrancar el título por defecto.</comment>
 timeout 30
-<comment># Nice, fat splash-image to spice things up :)
-# Comment out if you don't have a graphics card installed</comment>
+<comment># Una bella, hermosa imagen para ensalzar las cosas un poco :)
+# Coméntela si no tiene una tarjeta gráfica instalada </comment>
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
 title=Gentoo Linux 2.6.5
-<comment># Partition where the kernel image (or operating system) is located</comment>
+<comment># Partición donde se encuentra la imagen del kernel (o sistema operativo)</comment>
 root (hd0,0)
 kernel /kernel-2.6.5-gentoo root=/dev/hda3
 
-<comment># The next four lines are only if you dualboot with a Windows system.</comment>
-<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+<comment># Las siguientes cuatro líneas sólo se usan en caso de arranque dual con un sistema Windows.</comment>
+<comment># En este caso, Windows reside en la partición /dev/hda6.</comment>
 title=Windows XP
 rootnoverify (hd0,5)
 makeactive
 chainloader +1
 </pre>
 
+<pre caption = "grub.conf para usuarios del genkernel">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.6.5
+root (hd0,0)
+kernel /kernel-2.6.5-gentoo root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initrd-2.6.5-gentoo
+
+<comment># Solo en caso de arranque dual</comment>
+title=Windows XP
+root (hd0,5)
+makeactive
+chainloader +1
+</pre>
 
 <pre caption = "grub.conf for genkernel users">
 default 0
@@ -174,187 +296,190 @@ makeactive
 chainloader +1
 </pre>
 
-
 <note>
-If you use a different partitioning scheme and/or kernel image, adjust 
-accordingly. However, make sure that anything that follows a GRUB-device 
-(such as <path>(hd0,0)</path>) is relative to the mountpoint, not the root. In 
-other words, <path>(hd0,0)/grub/splash.xpm.gz</path> is in reality 
-<path>/boot/grub/splash.xpm.gz</path> since <path>(hd0,0)</path> is 
+Si usa un esquema de particiones y/o imagen de kernel distinta, haga
+los ajustes respectivos. Sin embargo, asegúrese que cualquier cosa que
+siga un dispositivo GRUB (tal como <path>(hd0,0)</path>) sea relativa
+al punto de montaje y no de la raíz. En otras palabras,
+<path>(hd0,0)/grub/splash.xpm.gz</path> es en realidad
+<path>/boot/grub/splash.xpm.gz</path> ya que <path>(hd0,0)</path> es
 <path>/boot</path>.
 </note>
 
 <p>
-If you need to pass any additional options to the kernel, simply add
-them to the end of the kernel command. We're already passing one option
-(<c>root=/dev/hda3</c> or <c>real_root=/dev/hda3</c>), but you can pass others 
-as well. As an example we use the <c>video</c> statement for framebuffer we 
-discussed previously:
-</p>
-
-<pre caption = "Adding the video-statement as a kernel option">
-title=Gentoo Linux
-  root (hd0,0)
-  kernel /kernel-2.6.5-gentoo root=/dev/hda3 video=vesafb
-</pre>
-
-<p>
-<c>genkernel</c> users should know that their kernels use the same boot options
-as is used for the LiveCD. For instance, if you have SCSI devices, you should
-add <c>doscsi</c> as kernel option.
+Si necesita pasar algún parámetro adicional al kernel, sencillamente
+agréguelo al final de la línea de comando del kernel. Ya estamos
+pasando una opción (<c>root=/dev/hda3</c> o
+<c>real_root=/dev/hda3</c>), pero se pueden pasar otras también,
+como los parámetros <c>video</c> y/o <c>vga</c> de los que 
+hablamos previamente.
 </p>
 
 <p>
-Now save the <path>grub.conf</path> file and exit. We still need to install GRUB
-in the MBR (Master Boot Record) though.
+Los usuarios de <c>genkernel</c> deben saber que sus kernels usan las
+mismas opciones de arranque que el LiveCD. Por ejemplo, si tiene
+dispositivos scsi, debería agregar el parámetro <c>doscsi</c> al kernel.
 </p>
 
 <p>
-The GRUB developers recommend the use of <c>grub-install</c>. However, if for
-some reason <c>grub-install</c> fails to work correctly you still have the
-option to manually install GRUB.
+Ahora grabe el archivo <path>grub.conf</path> y salga. Aún necesita instalar
+GRUB en el MBR (Master Boot Record) para que GRUB se ejecute automáticamente
+cuando arranque su sistema.
 </p>
 
 <p>
-Continue with <uri link="#grub-install-auto">Default: Setting up GRUB using
-grub-install</uri> or <uri link="#grub-install-manual">Alternative: Setting up
-GRUB using manual instructions</uri>.
+Los desarrolladores de GRUB recomiendan utilizar <c>grub-install</c>. Sin embargo, 
+si por alguna razón <c>grub-install</c> no funciona correctamente todavía tiene
+la opción de instalar GRUB manualmente.
 </p>
 
+<p>
+Continué con <uri link="#grub-install-auto">Por defecto: Configurando 
+GRUB utilizando grub-install</uri> o <uri link="#grub-install-manual">Alternativa: Configurando 
+GRUB a mano, utilizando instrucciones</uri>.
+</p>
 </body>
 </subsection>
+
 <subsection id="grub-install-auto">
-<title>Default: Setting up GRUB using grub-install</title>
+<title>Por defecto: Configurando GRUB utilizando grub-install</title>
 <body>
 
 <p>
-To install GRUB you will need to issue the <c>grub-install</c> command. However,
-<c>grub-install</c> won't work off-the-shelf since we are inside a chrooted
-environment. We need to update <path>/etc/mtab</path> (the file with information
-about all mounted filesystems) first: luckily there is an easy way to accomplish
-this - just copy over <path>/proc/mounts</path> to <path>/etc/mtab</path>:
+Para instalar GRUB necesita ejecutar el comando <c>grub-install</c>. Sin 
+embargo <c>grub-install</c> no funcionará tal cual se instala, ya que estamos 
+dentro de un entorno chroot.  Antes de seguir, necesitará actualizar 
+<path>/etc/mtab</path> (el archivo que contiene la información relativa a 
+todos los sistemas de archivos montados): afortunadamente hay una manera 
+sencilla de realizar esto, simplemente copie <path>/proc/mounts</path> a 
+<path>/etc/mtab</path>:
 </p>
 
-<pre caption="Updating /etc/mtab">
+<pre caption="Actualizando /etc/mtab">
 # <i>cp /proc/mounts /etc/mtab</i>
 </pre>
 
 <p>
-Now we can install GRUB using <c>grub-install</c>:
+Ahora podemos instalar GRUB utilizando <c>grub-install</c>:
 </p>
 
-<pre caption="Running grub-install">
+<pre caption="Ejecutando grub-install">
 # <i>grub-install --root-directory=/boot /dev/hda</i>
 </pre>
 
 <p>
-If you have more questions regarding GRUB, please consult the <uri
-link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> or the <uri
-link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
+Si tiene alguna pregunta más acerca de GRUB, por favor consulte el <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">FAQ de GRUB (en inglés)</uri> o el <uri
+link="http://www.gnu.org/software/grub/manual/">Manual de GRUB (en inglés)</uri>.
 </p>
 
 <p>
-Continue with <uri link="#reboot">Rebooting the System</uri>.
+Continúe con <uri link="#reboot">Reiniciando el sistema</uri>.
 </p>
-
 </body>
 </subsection>
+
 <subsection id="grub-install-manual">
 <title>Alternative: Setting up GRUB using manual instructions</title>
 <body>
 
 <p>
-To start configuring GRUB, you type in <c>grub</c>. You'll be presented
-with the <path>grub&gt;</path> grub command-line prompt. Now, you need to type 
-in the right commands to install the GRUB boot record onto your hard drive.
+Para comenzar a configurar GRUB, debe ejecutar los comandos dentro de <c>grub</c>.
+Conocerá al interprete de comandos propio de grub. Ahora necesita ejecutar los 
+comandos necesarios para instalar el registro de arranque de GRUB en su disco duro.
 </p>
 
-<pre caption =" Starting the GRUB shell">
+<pre caption =" Iniciando el intérprete de comandos de GRUB">
 # <i>grub</i>
 </pre>
 
 <note>
-If your system does not have any floppy drives, add the <c>--no-floppy</c>
-option to the above command to prevent grub from probing the (non-existing) 
-floppy drives.
+Si su sistema no tiene dispositivo de disquetes, añada la opción
+<c>--no-floppy</c> al comando anterior para evitar que grub intente
+probar los dispositivos (no existentes) de disquetes.
 </note>
 
 <p>
-In the example configuration we want to install GRUB so that it reads its 
-information from the boot-partition <path>/dev/hda1</path>, and installs the 
-GRUB boot record on the hard drive's MBR (master boot record) so that the first
-thing we see when we turn on the computer is the GRUB prompt. Of course, if you
-haven't followed the example configuration during the installation,
-change the commands accordingly.
+En el ejemplo de configuración queremos instalar GRUB para que lea
+la información de la partición de arranque <path>/dev/hda1</path>, e 
+instala el registro de arranque de  GRUB en el MBR (Master Boot Record) 
+de su disco duro para que lo primero que veamos aparecer al encender
+el ordenador sea GRUB. Por supuesto, si no ha seguido el ejemplo de 
+configuración durante la instalación, cambie los comandos de acuerdo
+a su modelo.
 </p>
 
 <p>
-The tab completion mechanism of GRUB can be used from within GRUB.
-For instance, if you type in "<c>root (</c>" followed by a TAB, you will
-be presented with a list of devices (such as <path>hd0</path>). If you
-type in "<c>root (hd0,</c>" followed by a TAB, you will receive a list
-of available partitions to choose from (such as <path>hd0,0</path>).
+El mecanismo de completar comandos por tabulación de GRUB puede
+utilizarse dentro de GRUB. Por ejemplo, si escribe "<c>root (</c>"
+seguido de una tabulación, notará que se le presenta una lista de
+dispositivos (como pueda ser <path>hd0</path>). Si tecleamos "<c>root
+(hd0,</c>" seguido de una tabulación  recibiremos una lista de
+particiones disponibles para elegir (como pueda ser
+<path>hd0,0</path>).
 </p>
 
 <p>
-By using the tab completion, setting up GRUB should be not that hard.
-Now go on, configure GRUB, shall we? :-)
+Utilizando este mecanismo de completar por tabulación, configurar GRUB
+no debería resultar tan duro. Ahora vamos por ello, ¡configuremos
+GRUB!
 </p>
 
-<pre caption =" Installing GRUB in the MBR">
-grub&gt; <i>root (hd0,0)</i>          <comment>(Specify where your /boot partition resides)</comment>
-grub&gt; <i>setup (hd0)</i>           <comment>(Install GRUB in the MBR)</comment>
-grub&gt; <i>quit</i>                  <comment>(Exit the GRUB shell)</comment>
+<pre caption =" Instalando GRUB en el MBR">
+grub&gt; <i>root (hd0,0)</i>          <comment>(Especifique donde tiene su partición /boot)</comment>
+grub&gt; <i>setup (hd0)</i>           <comment>(Instalamos GRUB en el MBR)</comment>
+grub&gt; <i>quit</i>                  <comment>(Salimos del intérprete de comandos de GRUB)</comment>
 </pre>
 
 <note>
-If you want to install GRUB in a certain partition instead of the MBR,
-you have to alter the <c>setup</c> command so it points to the right
-partition. For instance, if you want GRUB installed in
-<path>/dev/hda3</path>, then the command becomes <c>setup (hd0,2)</c>.
-Few users however want to do this.
+Si quiere instalar GRUB en una partición concreta en lugar del MBR,
+debe modificar el comando <c>setup</c> para que apunte a la 
+partición correcta. Por ejemplo, si quiere que GRUB se instale en 
+<path>/dev/hda3</path>, el comando adecuado sería <c>setup (hd0,2)</c>.
+Sin embargo, pocos usuarios querrán hacer esto. 
 </note>
 
 <p>
-If you have more questions regarding GRUB, please consult the <uri
-link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> or the <uri
-link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
+Si tiene alguna pregunta más acerca de GRUB, por favor consulte el <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">FAQ de GRUB</uri> o el <uri
+link="http://www.gnu.org/software/grub/manual/">Manual de GRUB</uri>.
 </p>
 
 <p>
-Continue with <uri link="#reboot">Rebooting the System</uri>.
+Continué con <uri link="#reboot">Reiniciando el sistema</uri>.
 </p>
-
 </body>
 </subsection>
+
 </section>
 <section id="reboot">
-<title>Rebooting the System</title>
+<title>Reiniciando el Sistema</title>
 <subsection>
 <body>
 
 <p>
-Exit the chrooted environment and unmount all mounted partitions. Then type in 
-that one magical command you have been waiting for: <c>reboot</c>.
+Salga del entorno chroot y desmonte todas las particiones que continúen 
+montadas. Después podemos ejecutar el mágico comando que hemos
+estado esperando: <c>reboot</c>.
 </p>
 
-<pre caption="Unmounting all partitions and rebooting">
+<pre caption="Desmontando todas las particiones y reiniciando">
 # <i>exit</i>
-# <i>cd</i>
-# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
-# <i>reboot</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
 </pre>
 
 <p>
-Of course, don't forget to remove the bootable CD, otherwise the CD will be
-booted again instead of your new Gentoo system.
+Por supuesto, no olvide quitar el CD arrancable, o el CD será
+arrancado de nuevo en lugar de su nuevo sistema Gentoo.
 </p>
 
 <p>
-Once rebooted in your Gentoo installation, finish up with <uri
-link="?part=1&amp;chap=11">Finalizing your Gentoo Installation</uri>.
+Una vez que haya reiniciado su instalación de Gentoo, termínela con
+<uri link="?part=1&amp;chap=11">Finalizando su instalación de
+Gentoo</uri>.
 </p>
-
 </body>
 </subsection>
 </section>
