@@ -309,7 +309,8 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-articles.html">Articles</a> |
 						</xsl:otherwise>
 					</xsl:choose>
-					<a class="menulink" href="/doc/build.html">Download/Install</a> |
+					Install: <a class="menulink" href="/doc/build.html">x86</a> / 
+					<a class="menulink" href="/doc/gentooppc-quickstart.html">PowerPC</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='docs'">
