@@ -2,42 +2,39 @@
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/en/grp-build.xml">
+<guide link="/doc/en/stage-building-guide.xml">
 
-<author title = "Author">
-<mail link = "zhen@gentoo.org">John P. Davis</mail></author>
+<author title = "Author"><mail link = "zhen@gentoo.org">John P. Davis</mail></author>
+<author title = "Author"><mail link = "avenj@gentoo.org">Jon Portnoy</mail></author>
+<author title = "Editor"><mail link = "peesh@gentoo.org">Jorge Paulo</mail></author>
 
-<version>1.0</version>
-<date>18 Feb 2003</date>
+<version>1.1</version>
+<date>15 Jun 2003</date>
 
-<abstract>This guide is an explanation on how to build GRP stages for
-Gentoo Linux releases.</abstract>
+<abstract>This guide is an explanation of how to build stages for
+Gentoo Linux.</abstract>
 
 <chapter>
 	<title>Preliminaries</title>
 	<section>
 		<title>Introduction</title>
 		<body>
-		<p>This guide is an explanation on how to build release-ready
-		GRP stages for Gentoo Linux. This guide assumes a couple of
-		things: </p>
-
-		<ul>
-		<li>You are a Gentoo Linux Developer.</li>
-		<li>You have access to the <i>gentoo-src</i> module of CVS.</li>
-		</ul>
+		<p>This guide is an explanation of how to build fresh
+		stages for Gentoo Linux using stager, our stage-building application.</p>
 
 	</body>
 	</section>
 	<section>
-		<title>Getting the source</title>
+		<title>Getting The Source</title>
 		<body>
 		<p>Before building anything, it is necessary to get the required source, tools, etc.
 		First of all, make sure that you have the <i>gentoo-src</i> module checked out of CVS
 		and that it is up to date. The build scripts change frequently, so make sure that you stay current.
+		If you do not have access to the gentoo-src module, a snapshot of stager can be found at
+		<uri>http://cvs.gentoo.org/~avenj/stager/</uri>.
 		Additionally, the most recent experimental stage1 tarball is 
-		required. This can
-		usually be found at <uri>http://www.ibiblio.org/gentoo/experimental/x86/stages</uri>. The tarball that you will be looking for is <i>stage1-x86-1.4_pre<i>DATE</i></i>.tar.bz2, where <i>DATE</i> is the most current date possible. 
+		required. This can usually be found at <path>experimental/x86/stages</path> on any Gentoo mirror. The tarball that you will be looking for is 
+		<i>stage1-x86-1.4_pre<i>DATE</i></i>.tar.bz2, where <i>DATE</i> is the most recent date available. 
 		</p>
 		
 		</body>
@@ -49,63 +46,56 @@ Gentoo Linux releases.</abstract>
 	<section>
 		<title>First Steps</title>
 		<body>
-		<p>First, create a directory on a nice big partition to hold all of the build stuffs. I created mine
-		in <path>/usr/src/grp</path>, but of course, yours can be different. Next, copy the <path>stager</path>
+		<p>First create a directory on a nice big partition to hold all of the build files. Next, copy the <path>stager</path>
 		directory from <i>gentoo-src</i> into this new
-		directory. Finially, create a directory inside of the <path>grp/stager</path> drive called <i>stages</i>
+		directory (which will be referred to as <path>/usr/src/build</path> in this document). Alternatively, extract the tarball of the snapshot into this directory. 
+		Finally, create a directory inside <path>/usr/src/build</path> called <i>stages</i>
 		and put the experimental stage1 tarball in there.
 		</p>
 
 		<pre caption="Getting Ready">
-# <c>mkdir /usr/src/grp </c>
-<codenote>You can change the above drive to whatever you want, but I will
-reference it as what I have written.
-</codenote>
+# <c>mkdir /usr/src/build </c>
+<codenote>You can change the above path to whatever you want.</codenote>
 
-# <c>cp -R /<comment>path-to-gentoo-src</comment>/stager/ /usr/src/grp </c>
-# <c>cd /usr/src/grp/stager; mkdir stages </c>
-# <c>mv stage1-x86-1.4_pre20030214.tar.bz2 /usr/src/grp/stager/stages </c>
+# <c>cp -R /gentoo-src/stager/ /usr/src/build</c>
+# <c>cd /usr/src/build/stager ; mkdir stages</c>
+# <c>mv stage1-x86-1.4_preDATE.tar.bz2 /usr/src/build/stager/stages</c>
 
 		</pre>
 
 		</body>
 	</section>
 
+
 	<section>
-		<title>Pre-Build Configuration</title>
+		<title>Building</title>
 		<body>
-		<p>Once everything is in the correct place, modify the <c>dostage.sh</c> script to fit your application.
+		<p>First we need to build a stage2 tarball that uses generic optimizations. This tarball
+		will be used to build any new fresh stages, including a fresh stage1.
 		</p>
 
-		<pre caption="Modifying the dostage.sh script">
-<codenote>change SOURCE to stage1-x86-1.4_preFOO</codenote>
-SOURCE=stage1-x86-1.4_pre20030214.tar.bz2
-<codenote>You can change DEST to whatever you desire, but for testing, it is easier to keep it
-the same as SOURCE</codenote>
-DEST=stage1-x86-1.4_pre20030214.tar.bz2
+		<pre caption="Building stage2">
+# <c>./stager x86 2 orig dest</c>
+<codenote>Above, orig refers to the date in the name of the experimental tarball.</codenote>
+<codenote>Dest refers to the date of the new tarball. Replace these accordingly.</codenote>		
 		</pre>
 
-		<p>After that is complete, make sure to change the m/arch in the for loop to match your architecture.
+		<p>Once this build finishes, you should have a fresh stage2 tarball alongside your original stage1 tarball in the <path>stages</path>
+		directory. Now you can build a new stage1 from your stage2 using basically the same method:
 		</p>
+
+		<pre caption="Building new stage1">
+# <c>./stager x86 1 dest dest</c>
+		</pre>
+
+		<p>Tada - you've built a fresh stage1 alongside your original stage1 and new stage2. Now you can build non-generic tarballs that are
+		optimized for specific CPU sub-types. Be warned that these optimized tarballs <i>cannot</i> be used to build other stages. Only
+		generic tarballs should be used to build other stages. Building for other sub-types is the same - merely replace x86 with the specific sub-type.
+		For a list of subtypes, execute stager without any arguments.</p>
 
 		</body>
 	</section>
 
-	<section>
-		<title>Build!</title>
-		<body>
-
-		<p>Make sure that you are root, and run <c>dostage.sh</c>. The script will take care of creating
-		the chroot environment, and it will build all of the stages for you.
-		</p>
-
-		<p>After the build completes, remove the <path>packages</path> and <path>build</path> directories
-		from under the stages directory so that you don't get any precompiled packages for a
-		different arch in your next build.
-		</p>
-		
-		</body>
-	</section>
 </chapter>
 
 <chapter>
@@ -120,16 +110,20 @@ DEST=stage1-x86-1.4_pre20030214.tar.bz2
 			<th>Function</th>
 		</tr>
 		<tr>
-			<ti><mail link="bcowan@gentoo.org">Brad Cowan</mail></ti>
+			<ti><mail link="avenj@gentoo.org">Jon Portnoy</mail></ti>
 			<ti>Gentoo Linux Release Manager</ti>
 		</tr>
 		<tr>
 			<ti><mail link="jhhudso@gentoo.org">Jared Hudson</mail></ti>
-			<ti>Stage Builds</ti>
+			<ti>Release quality assurance</ti>
 		</tr>
 		<tr>
 			<ti><mail link="zhen@gentoo.org">John Davis</mail></ti>
-			<ti>Documentation Coordinator/ Author</ti>
+			<ti>Author</ti>
+		</tr>
+		<tr>
+			<ti><mail link="avenj@gentoo.org">Jon Portnoy</mail></ti>
+			<ti>Author</ti>
 		</tr>
 		</table>
 		
