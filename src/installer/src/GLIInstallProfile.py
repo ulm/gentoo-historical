@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.9 2004/05/10 16:35:43 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.10 2004/05/25 14:11:53 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -26,7 +26,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		self._logging_daemon_pkg = ""
 		self._boot_loader_mbr = True
 		self._boot_loader_pkg = ""
-		self._kernel_modules = ()
+		self._kernel_modules = []
 		self._kernel_config_uri = ""
 		self._kernel_initrd = False
 		self._kernel_bootsplash = False
@@ -113,7 +113,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			else:
 				# Handle the special cases
 				if path == 'gli-profile/kernel-modules/module':
-					self.get_kernel_modules().append(self._xml_current_data)
+					self._add_kernel_module(self._xml_current_data)
 				elif path == 'gli-profile/users/user':
 					self.add_user(self._xml_current_data, self._xml_current_attr)
 				elif path == 'gli-profile/make-conf/variable':
@@ -216,20 +216,26 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_modules"
 		return self._kernel_modules
 
+	def _add_kernel_module(self, kernel_module):
+		"Add a kernel module to the list of kernel modules"
+
+		if type(kernel_module) != str:
+			raise "KernelModuleError", "The kernel module must be a string!"
+
+		self._kernel_modules.append(kernel_module)
+		
 	def set_kernel_modules(self, kernel_modules):
 		"kernel_modules is a tuple of strings containing names of modules to automatically load at boot time. (ie. '( 'ide-scsi', )')"
 		
 		# Check type
 		if type(kernel_modules) != tuple:
 			raise "KernelModulesError", "Must be a tuple!"
-			
+		
+		self._kernel_modules = []
+	
 		# Check tuple data type
 		for module in kernel_modules:
-			if type(module) != str:
-				raise "KernelModulesError", "Kernel modules tuple must contain strings!"
-		
-		# Set the data
-		self._kernel_modules = kernel_modules
+			self._add_kernel_module(module)
 
 	def get_kernel_config_uri(self):
 		"returns kernel_config_uri"
@@ -783,6 +789,13 @@ class InstallProfile(xml.sax.ContentHandler):
 				else:
 					xmldoc += "<device ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</device>" % (interfaces[iface][0], interfaces[iface][1], interfaces[iface][2], iface)
 			xmldoc += "</network-interfaces>"
+
+		if self.get_kernel_modules() != []:
+			kernel_modules = self.get_kernel_modules()
+			xmldoc += "<kernel-modules>";
+			for module in kernel_modules:
+				xmldoc += "<module>%s</module>" % module
+			xmldoc += "</kernel-modules>";
 
 		xmldoc += "</gli-profile>"
 
