@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.14 2004/11/21 06:42:32 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.15 2004/12/10 05:46:15 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -271,6 +271,10 @@ class ArchitectureTemplate:
 		newfstab += "none        /dev/shm  tmpfs   defaults          0 0\n"
 		if GLIUtility.is_device("/dev/cdroms/cdrom0"):
 			newfstab += "/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0\n"
+
+		for netmount in self._install_profile.get_network_mounts():
+			if netmount['type'] == "nfs":
+				newfstab += netmount['host'] + ":" + netmount['export'] + "\t" + netmount['mountpoint'] + "\tnfs\t" + netmount['mountopts'] + "\t0 0\n"
 			
 		file_name = self._client_configuration.get_root_mount_point() + "/etc/fstab"	
 		try:
