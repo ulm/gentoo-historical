@@ -1,50 +1,66 @@
 package bugger;
 
+use WWW::Bugzilla;
+my $bugver = $WWW::Bugzilla::VERSION;
+if ($bugver < 0.4 ) {
+print "bugger requires at least WWW::Bugzilla 0.4.\nPlease emerge a newer version\n\n";
+exit()
+}
+use WWW::Mechanize;
+my $mechver = $WWW::Mechanize::VERSION;
+if ($mechver < 1.02 ) {
+print "bugger requires at least WWW::Mechanize 1.02.\nPlease emerge a newer version\n\n";
+exit()
+}
+
+use HTML::Strip;
+my $stripver = $HTML::Strip::VERSION;
+if ($stripver < 1.02 ) {
+print "bugger requires at least HTML::Strip 1.02.\nPlease emerge a newer version\n\n";
+exit()
+}
 
 sub list_bugs {
 
-    # Unfortunately, I can't find a simple method for retrieving this list
-    require LWP::UserAgent;
     my %buglist;
     my $bugcount = 0;
     my $bugfor = shift;
     my $stype = shift;
-    $bugfor =~ s/\@/\%40/m;
+chomp($bugfor);
 
-    my $ua = LWP::UserAgent->new(
-        env_proxy  => 1,
-        keep_alive => 1,
-        timeout    => 30,
-    );
-    my $request;
+
+    my $mech = connect_mech();
+    $mech->form_number(1);
+    $mech->field( 'email2', "" );
+
     if ($stype eq "cc") {
-    $request = HTTP::Request->new( 'GET',
-"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
-    );
+    $mech->field( 'email1', $bugfor );
+    $mech->untick( 'emailassigned_to1', '1' );
+    $mech->tick( 'emailcc1', '1' );
+    $mech->select( 'emailtype1', 'exact' );
     } elsif ($stype eq "assigned") {
-    $request = HTTP::Request->new( 'GET',
-"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailassigned_to1=1&emailtype1=substring&email1=$bugfor&emailassigned_to2=1&emailreporter2=1&emailcc2=1&emailtype2=substring&email2=$bugfor&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&cmdtype=doit&order=Reuse+same+sort+as+last+time&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
-    );
-    } else {
-    my @words = split(/ /,$bugfor);
-    my $strung = "";
-    my $wordcount = 0;
-    foreach my $word (@words) {
-	$strung .= "&field$wordcount-0-0=product&type$wordcount-0-0=substring&value$wordcount-0-0=$word&field$wordcount-0-1=component&type$wordcount-0-1=substring&value$wordcount-0-1=$word&field$wordcount-0-2=short_desc&type$wordcount-0-2=substring&value$wordcount-0-2=$word&field$wordcount-0-3=status_whiteboard&type$wordcount-0-3=substring&value$wordcount-0-3=$word";
-	$wordcount++;
-    }
-    my $addon="&ctype=csv";
-    $request = HTTP::Request->new( 'GET',
-    "http://bugs.gentoo.org/buglist.cgi?bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=RESOLVED&bug_status=VERIFIED&bug_status=CLOSED$strung$addon"
-    );
-    
-    }
-    my $response = $ua->request($request);
-    die "Error while getting ", $response->request->uri, " -- ",
-      $response->status_line, "\nAborting"
-      unless $response->is_success;
+    $mech->field( 'email1', $bugfor );
+    $mech->tick( 'emailassigned_to1', '1' );
+    $mech->select( 'emailtype1', 'exact' );
+    } elsif ($stype eq "reporter") {
+    $mech->field( 'email1', $bugfor );
+    $mech->untick( 'emailassigned_to1', '1' );
+    $mech->tick( 'emailreporter1', '1' );
+    $mech->select( 'emailtype1', 'exact' );
+    } elsif ($stype eq "keyword") {
+    $mech->field( 'email1', "" );
+    $mech->untick( 'emailassigned_to1', '1' );
+    $mech->field('long_desc',$bugfor);
+    $mech->select('long_desc_type','anywordssubstr' );
+}
+$mech->untick( 'emailreporter2', '1' );
 
-    my $content = $response->content;
+
+$mech->select( 'order',      'Bug Number' );
+    $mech->submit();
+
+    $mech->follow_link( text_regex => qr/CSV/ );
+    my $content = $mech->content;
     my @baseline = split( /\n/, $content );
     foreach my $line ( sort @baseline ) {
         $line =~ s/\"//mg;
@@ -63,7 +79,6 @@ sub list_bugs {
 
 
 sub add_bug {
-    use WWW::Bugzilla;
 
     # Recreating the form is just fun
     my $bugz = WWW::Bugzilla->new(
@@ -257,8 +272,6 @@ sub add_attach {
 
 sub show_bug {
     my $BUG = shift;
-    use WWW::Mechanize;
-    use HTML::Strip;
 
     my $agent = WWW::Mechanize->new();
     $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
@@ -352,7 +365,6 @@ sub show_bug {
 
 sub download_attach {
     my $BUG = shift;
-    use WWW::Mechanize;
     my $downdir = $config{'downdir'} || "/tmp";
     my $agent = WWW::Mechanize->new();
     $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
@@ -407,6 +419,43 @@ sub clearscreen {
 
     my $clear_string = `clear`;
     print $clear_string;
+}
+
+sub connect_mech {
+    my $agent = WWW::Mechanize->new();
+    $agent->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
+    $agent->submit_form(
+        fields => {
+            Bugzilla_login    => $main::login,
+            Bugzilla_password => $main::password,
+        }
+    );
+    return ($agent);
+}
+
+sub display_csv {
+    my $content = shift;
+    chomp($content);
+
+    my @baseline = split( /\n/, $content );
+    my $returncount = @baseline;
+    $returncount--;
+    print "$returncount items returned\n";
+    my $rowcount = 1;
+    foreach my $line ( sort @baseline ) {
+        $line =~ s/\"//mg;
+        my @rowline = split( /,/, $line );
+        next if ( $rowline[0] =~ m/bug_id/ );
+        next if ( $rowline[0] eq "" );
+        next if ( $rowline[0] =~ /^\n$/ );
+        $rowcount = $rowcount + 4;
+        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
+        if ( $rowcount >= $rows ) {
+            print "Press Enter to Continue";
+            my $junk = <STDIN>;
+            $rowcount = 0;
+        }
+    }
 }
 
 1;
