@@ -11,7 +11,7 @@
 
 <abstract>This guide informs on how to make use of prelink support in portage 2.0.46 and later.</abstract>
 
-<version>1.2</version>
+<version>1.3</version>
 <date>1 Jan 2003</date>
 
 <chapter>
@@ -22,7 +22,7 @@
 
 <p>Most common applications make use of shared libraries. These shared libraries need to be loaded into memory at runtime and the various symbol references need to be resolved. For most small programs this dynamic linking is very quick. But for programs written in C++ and have many library dependencies, the dynamic linking can take a fair amount of time.</p>
 
-<p>On most systems, libraries are not changed very often, and when a program is run the operations taken to link the program are the same every time. Prelink takes advantage of this by carrying out the linking and storing it in the executable, in effect prelinking it. In order for the linker, you need ld-linux.so in glibc; to recognise the prelinking you need glibc&gt;=2.3</p>
+<p>On most systems, libraries are not changed very often, and when a program is run the operations taken to link the program are the same every time. Prelink takes advantage of this by carrying out the linking and storing it in the executable, in effect prelinking it. In order for the linker, you need ld-linux.so in glibc; to recognize the prelinking you need glibc&gt;=2.3</p>
 
 <p>Prelinking can cut the startup times of applications. For example, a typical KDE program's loading time can be cut by as much as 50%. The only maintenance required is re-running prelink every time a library is upgraded for a pre-linked executable.</p>
 
@@ -62,7 +62,7 @@
 # <c>emerge rsync</c>
 </pre>
 
-<p>Next make sure you have portage-2.0.46 or better installed. This is needed so that portage can recognise the prelinked binaries and thus uninstall them correctly when requested. This is because prelinking changes the MD5sum of a binary.</p>
+<p>Next make sure you have portage-2.0.46 or better installed. This is needed so that portage can recognize the prelinked binaries and thus uninstall them correctly when requested. This is because prelinking changes the MD5sum of a binary.</p>
 
 <pre caption = "Checking Portage Version">
 # <c>emerge ">=portage-2.0.46"</c>
@@ -74,7 +74,11 @@
 # <c>emerge prelink</c>
 </pre>
 
-<warn>If you get an error in this emerge please contact me, <mail link="cretin@gentoo.org">Stefan Jones</mail>, and don't continue, as prelinking could destroy your system.</warn>
+<p>A number of people get errors in emerging prelink because of the failed tests. The tests were put in for safety reasons, prelink's Beauvoir is undefined if you disable them. The emerge errors are usually only dependent on the core packages; binutils, gcc, and glibc. Try remerging those packages in that order.</p>
+
+<note>Tip: If you get an error try compiling and testing prelink yourself (./configure ; make ; make test ). On a failure you can view the *.log files in the testsuite directory. They may provide you with some useful clues.</note>
+
+<p>If you have a set of steps which reproduces the emerge error on another system please email them to <mail link="cretin@gentoo.org">Stefan Jones</mail>.</p>
 
 </body>
 </section>
@@ -84,7 +88,7 @@
 <body>
 
 <p>Portage automatically generates the file "/etc/prelink.conf" which tells prelink which files to prelink.</p>
-<p>Unfortunately you cannot prelink files which where compiled by old versions of binutils. Most of these applications come from precompiled, binary only packages which are installed in /opt. Making the following file will tell prelink not to attempt to prelink them.</p>
+<p>Unfortunately you cannot prelink files which where compiled by old versions of binutils. Most of these applications come from pre-compiled, binary only packages which are installed in /opt. Making the following file will tell prelink not to attempt to prelink them.</p>
 
 <pre caption="/etc/env.d/99prelink">
 PRELINK_PATH_MASK="/opt"
@@ -110,6 +114,8 @@ PRELINK_PATH_MASK="/opt"
 # <c>prelink -afmR</c>
 </pre>
 
+<warn>It has been observed that if you are low on diskspace and you pelink your entire system then there is a possibility that your binaries may be truncated. The result being a b0ked system. Use the "file" or "readelf" command to check the state of a binary file.</warn>
+
 <p>The options explained:</p>
 
 <p><b>-a</b></p><p>All, prelinks all the binaries</p>
@@ -118,7 +124,7 @@ PRELINK_PATH_MASK="/opt"
 
 <p><b>-m</b></p><p>Conserve the virtual memory space. This is needed if you have a lot of libraries which need to be prelinked.</p>
 
-<p><b>-R</b></p><p>Random, randomise the address ordering, this enhances security against buffer overflows</p>
+<p><b>-R</b></p><p>Random, randomize the address ordering, this enhances security against buffer overflows</p>
 
 <p>For more options and details see <i>man prelink</i></p>
 
@@ -146,19 +152,17 @@ emerge ">=media-libs/svgalib-1.9.16"
 emerge ">=x11-base/xfree-4.2.1-r2"
 <codenote>For libpcap.so.0.6</codenote>
 emerge ">=net-libs/libpcap-0.7.1-r2"
+<codenote>For the lcms library, /usr/lib/liblcms.so.1</codenote>
+emerge ">=media-libs-1.09"
 </pre>
 
 <note>Many libraries link statically to zlib and/or tcp-wrappers so, first try emerging those and remerging the problem library.</note>
 
-<p>For the QT library libXinerama.a either add
-<pre caption = "Addition for libXinerama">
-myconf="-no-xinerama ${myconf}"
-</pre>
-somewhere at the beginning of the src_compile function in /usr/portage/x11-libs/qt/qt-3.x.x.ebuild of your QT ebuild or add <i>-fPIC</i> to your CFLAGS while emerging QT.</p>
+<p>If you are having trouble with prelinking QT/KDE first try upgrading to >=x11-base/xfree-4.2.1-r2 and >=x11-libs/qt-3.1.0-r1. If QT still fails then try compiling QT without xinerama support by adding myconf="-no-xinerama ${myconf}" in the qt ebuild.</p>
 
 <p>Here are the libraries that haven't been fixed or cannot be fixed:</p>
 <ul>
-<li>The libraries in the wine package, including winex.</li>
+<li>The libraries in the wine package, including winex. It wouldn't speed up MS Windows executables anyway.</li>
 <li>The library in media-video/mjpegtools, /usr/lib/liblavfile-1.6.so.0</li>
 </ul>
 
@@ -189,9 +193,21 @@ somewhere at the beginning of the src_compile function in /usr/portage/x11-libs/
 <section>
 <title>I have problems with Nvidia openGL libraries</title>
 <body>
-<p>The accelerated openGL libraries which come in the nvidia-glx package have been compiled in a non-standard way and so prelink will throw up warnings. This is nothing to worry about. You can always revert to the xfree versions if you don't need 3D acceleration.</p> 
+<p>The accelerated openGL libraries which come in the nvidia-glx package have been compiled in a non-standard way and so prelink will throw up warnings. This is nothing to worry about and cannot be fixed by anyone except nvidia. You can always revert to the xfree version of libGL.so if you don't need 3D acceleration. The nvidia xfree driver works fine though.</p> 
 </body>
 </section>
+
+<section>
+<title>When I prelink my system some static binaries don't work anymore</title>
+<body>
+
+<p>Where glibc is concerned, there is no such thing as a 100% static binary. If you statically compile a binary with glibc it may still depend on other system files. Below is an explanation by Dick Howell,</p>
+
+<pre caption="Regarding static compiling">I suppose the idea is that everything will be in the downloaded file, so nothing depends on the local libraries on the target system. Unfortunately with Linux, and I think anything else using GLIBC, this still isn't quite true. There's this "libnss" (name service switch, some people seem to call it network security system) which provides functions for accessing various databases for authentication, network information, and other things. It's supposed to make application programs independent of the separately configured actual network environment of the machine. A nice idea, but changes to GLIBC can lead to problems loading it. And you can't statically link "libnss", since it is configured for each machine individually. The problem comes, I think, mainly from statically linking other GLIBC libraries, notably "libpthread", "libm", and "libc", from which come incompatible calls to "libnss" functions.</pre>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -202,6 +218,7 @@ somewhere at the beginning of the src_compile function in /usr/portage/x11-libs/
 
 </body>
 </section>
+
 </chapter>
 
 </guide>
