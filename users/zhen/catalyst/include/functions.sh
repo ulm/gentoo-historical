@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.5 2003/10/13 00:12:30 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.6 2003/10/13 00:20:20 zhen Exp $
 
 usage() {
 	einfo "Catalyst: Gentoo Linux Stage Building tool ${VERSION}"
@@ -113,6 +113,14 @@ snap() {
 
 } #end snap
 
-enter_chroot() {                                                                                 install -d ${CHROOTDIR}                                                                      cd ${CHROOTDIR}                                                                              mount_all                                                                                    einfo "Chrooting to ${CHROOTDIR}..."                                                         $CHROOT ${CHROOTDIR}                                                                         umount_all                                                                                                                                                                            } #end enter
+enter_chroot() {
+	install -d
+	${CHROOTDIR}
+	cd ${CHROOTDIR}
+	mount_all
+	einfo "Chrooting to ${CHROOTDIR}..."
+	$CHROOT ${CHROOTDIR}
+	umount_all
+} #end enter
 
 # vim ts=4
