@@ -1,13 +1,16 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/udev-guide.xml,v 1.7 2004/04/25 16:44:49 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/udev-guide.xml,v 1.8 2004/04/26 09:52:41 swift Exp $ -->
 
 <guide link="/doc/en/udev-guide.xml">
 <title>Gentoo udev Guide</title>
 
 <author title="Author">
-    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Contributor">
+  <mail link="g.guidi@sns.it">Gregorio Guidi</mail>
 </author>
 
 <abstract>
@@ -16,8 +19,8 @@ This document explains what udev is and how you can use udev to fit your needs.
 
 <license/>
 
-<version>0.6</version>
-<date>Apr 25, 2004</date>
+<version>0.7</version>
+<date>April 26, 2004</date>
 
 <chapter>
 <title>What is udev?</title>
@@ -175,22 +178,25 @@ the udev application which performs the necessary actions on the
 <body>
 
 <p>
-To be able to use udev on Gentoo, you must install 
-<c>sys-apps/baselayout-1.8.6.13-r1</c> or later and <c>sys-fs/udev</c>.
-If necessary, edit <path>/etc/portage/package.keywords</path> so that your
-system uses the ~ARCH tree for <c>sys-fs/udev</c>:
+udev is meant to be used in combination with a 2.6 kernel (like
+<c>development-sources</c> or <c>gentoo-dev-sources</c>). If you're using such a
+kernel then you just have to make sure that you have a recent
+<c>sys-apps/baselayout</c> version. That's all you need.
 </p>
 
-<pre caption="/etc/portage/package.keywords">
-sys-fs/udev ~x86
+<pre caption="Installing udev">
+# <i>emerge udev</i>
 </pre>
 
 <p>
-If you haven't done so already, also install <c>sys-apps/hotplug</c>.
+udev will install <c>hotplug-base</c> as one of it's dependencies. If you 
+intend to use hotplug to execute specific actions when you plug in your 
+favorite USB or IEEE1394 device then you should also emerge the whole bunch 
+of hotplug scripts.
 </p>
 
-<pre caption="Installing necessary tools">
-# <i>emerge baselayout udev hotplug</i>
+<pre caption="Installing optional hotplug scripts">
+# <i>emerge hotplug</i>
 </pre>
 
 <p>
@@ -239,8 +245,7 @@ nicely with Gentoo!
 </warn>
 
 <p>
-First of all we'll deactivate the rules that save the device file nodes.
-From <c>sys-apps/baselayout-1.8.6.13-r1</c> onwards, you can edit the
+We'll deactivate the rules hat save the device file nodes: edit the 
 <c>RC_DEVICE_TARBALL</c> variable in <path>/etc/conf.d/rc</path> and set it to
 <c>no</c>:
 </p>
@@ -250,46 +255,123 @@ RC_DEVICE_TARBALL="no"
 </pre>
 
 <p>
-We also need to manually create some device node files in order for our system
-to perform a succesful boot:
-</p>
-
-<pre caption="Creating necessary device node files">
-# <i>mknod -m 660 /dev/console c 5 1</i>
-# <i>mknod -m 660 /dev/null c 1 3</i>
-</pre>
-
-<p>
-If you have included devfs support in your kernel, you can deactivate it from
-the bootloader configuration: add <c>devfs=nomount</c> as kernel parameter. 
-</p>
-
-<p>
-If you want to use devfs and deactivate udev, add <c>gentoo=noudev</c> as kernel
+If you have included devfs support in your kernel, you can deactivate it in
+the bootloader configuration: add <c>devfs=nomount</c> as a kernel parameter. If
+you want to use devfs and deactivate udev, add <c>gentoo=noudev</c> as kernel
 parameter.
 </p>
 
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>Known Issues</title>
 <section>
-<title>Current Issues</title>
+<title>Missing device node files at boot</title>
 <body>
 
-<note>
-Please report the <e>temporary fixes</e> to current issues to the Gentoo 
-Documentation Project by using the <uri link="http://bugs.gentoo.org">Gentoo 
-Bugzilla</uri> website.
-</note>
-
 <p>
-Q. My system doesn't display anything when booting using udev
+If you can't boot succesfully because you get an error about
+<path>/dev/null</path> not found, or because the initial console is missing, the
+problem is that you lack some device files that must be available <e>before</e>
+<path>/dev</path> is mounted and handled by udev. This is common on Gentoo
+machines installed from old media.
 </p>
 
 <p>
-A. If this is the case, then you will need to create the
-<path>/dev/console</path> and <path>/dev/null</path> devices as mentioned in our
-Configuration section.
+If you run <c>sys-apps/baselayout-1.8.12</c> or later, this problem is
+alleviated since the boot process should still manage to complete. However, to
+get rid of those annoying warnings, you should create he missing devices nodes
+as described below.
 </p>
+
+<p>
+To see which devices nodes are present before the <path>/dev</path> filesystem
+is mounted, run the following commands:
+</p>
+
+<pre caption="Listing device nodes available at boot">
+# <i>mkdir test</i>
+# <i>mount --bind / test</i>
+# <i>cd test/dev</i>
+# <i>ls</i>
+</pre>
+
+<p>
+The devices needed for a succesful boot are <path>/dev/null</path> and
+<path>/dev/console</path>. If they didn't show up in the previous test, you have
+to create them manually. Issue the following commands in the <path>test/</path>
+directory created previously:
+</p>
+
+<pre caption="Creating necessary device node files">
+# <i>mknod -m 660 dev/console c 5 1</i>
+# <i>mknod -m 660 dev/null c 1 3</i>
+</pre>
+
+<p>
+When you're finished, don't forget to unmount the <path>test/</path> directory:
+</p>
+
+<pre caption="Unmounting the test/ directory">
+# <i>umount test</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>udev and nvidia</title>
+<body>
+
+<p>
+If you use the proprietary driver from nVidia and the X server fails to start on
+a udev-only system, then make sure you have:
+</p>
+
+<ul>
+  <li>
+    the <c>nvidia</c> module listed in
+    <path>/etc/modules.autoload.d/kernel-2.6</path>
+  </li>
+  <li>
+    a version of <c>nvidia-kernel</c> equal to or greater han
+    <c>media-video/nvidia-kernel-1.0.5336-r2</c>
+  </li>
+  <li>
+    a version of baselayout equal to or greater than
+    <c>sys-apps/baselayout-1.8.12</c>
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Other issues</title>
+<body>
+
+<p>
+If device nodes are not created when a module is loaded from
+<path>/etc/modules.autoload.d/kernel-2.6</path> but they appear when you load
+the module manually with modprobe then you should try upgrading to
+<c>sys-apps/baselayout-1.8.12</c> or later.
+</p>
+
+<p>
+Support for the framebuffer devices (<path>/dev/fb/*</path>) comes with the
+kernel starting from version 2.6.6-rc2.
+</p>
+
+<p>
+For kernels older than 2.6.4 you have to explicitly include support for the
+<path>/dev/pts</path> filesystem.
+</p>
+
+<pre caption="Enabling the /dev/pts filesystem">
+File systems ---&gt;
+  Pseudo filesystems ---&gt;
+    [*] /dev/pts file system for Unix98 PTYs
+</pre>
 
 </body>
 </section>
@@ -309,6 +391,12 @@ application.
 <p>
 <uri link="http://webpages.charter.net/decibelshelp/LinuxHelp_UDEVPrimer.html">Decibel's 
 UDEV Primer</uri> is an in-depth document about udev and Gentoo.
+</p>
+
+<p>
+<uri link="http://www.reactivated.net/udevrules.php">Writing udev rules</uri> by
+fellow Gentoo developer Daniel Drake is an excellent document to learn how to
+customize your udev installation.
 </p>
 
 </body>
