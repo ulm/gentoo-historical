@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.3 2004/04/06 20:58:16 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.4 2004/04/12 15:01:41 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -33,7 +33,7 @@ class InstallProfile(xml.sax.ContentHandler):
 	_users = []
 	_root_pass_hash = ""
 	_time_zone = ""
-	_custom_stage3_tarball_uri = ""
+	_stage_tarball_uri = ""
 	_install_stage = 1
 	_portage_tree_sync_type = "sync"
 	_portage_tree_snapshot_uri = ""
@@ -87,7 +87,7 @@ class InstallProfile(xml.sax.ContentHandler):
 					'gli-profile/kernel-source': self.set_kernel_source_pkg,
 					'gli-profile/root-pass-hash': self.set_root_pass_hash,
 					'gli-profile/time-zone': self.set_time_zone,
-					'gli-profile/custom-stage3-tarball': self.set_custom_stage3_tarball_uri,
+					'gli-profile/stage-tarball': self.set_stage_tarball_uri,
 					'gli-profile/install-stage': self.set_install_stage,
 					'gli-profile/portage-tree-sync': self.set_portage_tree_sync_type,
 					'gli-profile/portage-snapshot': self.set_portage_tree_snapshot_uri,
@@ -410,22 +410,22 @@ class InstallProfile(xml.sax.ContentHandler):
 			
 		self._time_zone = time_zone
 
-	def get_custom_stage3_tarball_uri(self):
-		"returns custom_stage3_tarball_uri"
-		return self._custom_stage3_tarball_uri
+	def get_stage_tarball_uri(self):
+		"returns stage_tarball_uri"
+		return self._stage_tarball_uri
 
-	def set_custom_stage3_tarball_uri(self, custom_stage3_tarball_uri):
-		"custom_stage3_tarball_uri is a string that is the full path to your own custom stage3 tarball. (ie. '/path/to/mytarball.tar.bz2')"
+	def set_stage_tarball_uri(self, stage_tarball_uri):
+		"stage_tarball_uri is a string that is the full path to the tarball you wish to use. (ie. 'file:///path/to/mytarball.tar.bz2')"
 
 		# Check type
-		if type(custom_stage3_tarball_uri) != str:
-			raise "CustomStage3TarballURIError", "Must be a string!"
+		if type(stage_tarball_uri) != str:
+			raise "StageTarballURIError", "Must be a string!"
 
 		# Check validity
-		if not GLIUtility.is_uri(custom_stage3_tarball_uri):
+		if not GLIUtility.is_uri(stage_tarball_uri):
 			raise "CustomStage3TarballURIError", "Invalid URI!"
 		
-		self._custom_stage3_tarball_uri = custom_stage3_tarball_uri
+		self._stage_tarball_uri = stage_tarball_uri
 
 	def get_install_stage(self):
 		"returns install_stage"
@@ -716,7 +716,7 @@ class InstallProfile(xml.sax.ContentHandler):
 				'kernel-source':	self.get_kernel_source_pkg,
 				'root-pass-hash':	self.get_root_pass_hash,
 				'time-zone':		self.get_time_zone,
-				'custom-stage3-tarball':self.get_custom_stage3_tarball_uri,
+				'custom-stage3-tarball':self.get_stage_tarball_uri,
 				'install-stage':	self.get_install_stage,
 				'portage-tree-sync':	self.get_portage_tree_sync_type,
 				'portage-snapshot':	self.get_portage_tree_snapshot_uri,
