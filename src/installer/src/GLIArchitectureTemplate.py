@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.80 2005/03/29 05:56:30 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.81 2005/03/29 07:09:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -869,6 +869,8 @@ class ArchitectureTemplate:
 		#temp hack to unmount the new root.
 		ret = GLIUtility.spawn("umount "+self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 		#insert code here to unmount the swap partition, if there is one.
+
+		GLIUtility.spawn("rm /tmp/compile_output.log && rm " + install_logfile)
 		
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
