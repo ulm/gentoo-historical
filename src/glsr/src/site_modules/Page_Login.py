@@ -5,24 +5,25 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Page_Login.py,v 1.4 2004/11/03 14:09:30 port001 Exp $
 #
 
 import os
 
-import Session as SessionHandler
+import Config
 from User import User
+import Session as SessionHandler
 from site_modules import SiteModule
 
 class Page_Login(SiteModule):
 
     def __init__(self, form, uid = 0):
 
-        #self.pages = ["login", "logout", "*"]
-        self.pages = []
+        self.pages = ["login", "perform_login", "logout"]
         self.page = form.getvalue("page")
         self.form = form
         
+        self.template = Config.Template["login"]
         self.username = self.form.getvalue("username")
         self.password = self.form.getvalue("password")
         self.alias = ""
@@ -58,14 +59,14 @@ class Page_Login(SiteModule):
         self._check_session()
 
         # Is the user logging in or logging out?
-        if self.page == "login":
+        if self.page == "perform_login":
 
             if self._login_user():
                 self.alias = self.form.getvalue("username")
                 self.uid = self.user_obj.GetUid(self.alias)
         
-            self.page = "main"
-        
+            self.template = Config.Template["main"]
+ 
         elif self.page == "logout":
         
             if self.ThisSession.ValidateSession(self.uid, self.sess):
@@ -73,10 +74,11 @@ class Page_Login(SiteModule):
         
             self.uid = 0
             self.alias = ""
-            self.page = "main"
+            self.template = Config.Template["main"]
 
-        return self.page, self.alias, self.uid, self.user_obj.GetType()
-
+        # we fell through, the user wants to login
+        self.tmpl.compile(self.template)
+        return self.tmpl 
 
     def _login_user(self):
 

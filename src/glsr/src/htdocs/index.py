@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.9 2004/09/30 03:09:36 hadfield Exp $
+# $Id: index.py,v 1.10 2004/11/03 14:09:30 port001 Exp $
 #
 
 """
@@ -57,13 +57,16 @@ def main():
     page = form.getvalue("page")
 
     # Verify login credentials and log users in and out.
-    login = Page_Login.Page_Login(form)
-    (page, username, uid, user_type) = login.display()
+    #login = Page_Login.Page_Login(form)
+    #(page, username, uid, user_type) = login.display()
 
     tmpl_page = None
     show_border = True
 
     for Module in site_modules.__all__:
+ 
+        # hack, will fix this tomorrow.
+        uid = 0
 
         module_object = eval("%s.%s(form, uid)" % (Module, Module))
 
@@ -110,10 +113,7 @@ def main():
     if show_border:
         tmpl_head = TemplateHandler.Template()
         tmpl_head.compile(Config.Template["header"],
-                          {"GLSR_URL":          Config.URL,
-                           "USER_ALIAS":        username,
-                           "USER_ID":           uid,
-                           "USER_TYPE":         user_type})
+                          {"GLSR_URL":          Config.URL})
         print tmpl_head.output()
 
     print tmpl_page.output()

@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.7 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Config.py,v 1.8 2004/11/03 14:09:30 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -40,6 +40,7 @@ Template = {
     "create_script":            t_prefix + "Create_Script.tpl",
     "view_script":              t_prefix + "View_Script.tpl",
     "view_scripts":             t_prefix + "View_Scripts.tpl",
+    "login":			t_prefix + "Login.tpl",
     "admin_header":             t_prefix + "admin/Header.tpl",	
     "admin_main":               t_prefix + "admin/Main.tpl",
     "admin_user":               t_prefix + "admin/User.tpl",

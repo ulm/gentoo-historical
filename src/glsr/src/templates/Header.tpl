@@ -12,27 +12,6 @@
     <td align="left" valign="top" height="125"><table width="100%" height="125"  border="0" cellpadding="0" cellspacing="0" background="{GLSR_URL}images/header-bk.png">
       <tr>
         <td><img src="{GLSR_URL}images/glogo.png" width="193" height="125"><img src="{GLSR_URL}images/splogo-beta.png" width="350" height="125"></td>
-        <td align="right" valign="bottom">
-        
-	{IF USER_ALIAS == ""}
-        <form name="login_form" method="post" action="index.py?page=login">
-	<input type="hidden" name="page" value="login" />
-	<table border="0" cellspacing="5" cellpadding="0">
-          <tr>
-            <td class="style3">Username:</td>
-            <td><input class="login_form_element" name="username" type="text" size="15" maxlength="15"></td>
-          </tr>
-          <tr>
-            <td class="style3">Password:</td>
-            <td><input class="login_form_element" name="password" type="password" size="15" maxlength="15"></td>
-          </tr>
-          <tr>
-            <td colspan="2" align="right"><input class="form_element" name="login" value="Login" type="submit" /></td>
-          </tr>
-        </table>
-        </form>
-        {!IF}
-        </td>
       </tr>
     </table></td>
   </tr>
