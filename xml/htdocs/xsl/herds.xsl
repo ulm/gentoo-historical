@@ -2,6 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:output encoding="iso-8859-1" method="xml" indent="yes"/>
   <xsl:param name="select" select="string('all')"/>
+  <xsl:variable name="link">herds.xml</xsl:variable>
   <xsl:include href="util.xsl"/>
   <xsl:template match="/herds">
     <xsl:processing-instruction name="xml-stylesheet">type=&quot;text/xsl&quot; href=&quot;/xsl/guide.xsl&quot;</xsl:processing-instruction>
@@ -60,9 +61,9 @@
                 <title>Maintainers</title>
                 <body>
                   <ul>
-                    <xsl:apply-templates select="maintainer">
-                      <xsl:sort select="email"/>
-                    </xsl:apply-templates>
+                    <xsl:call-template name="getmaintainers">
+                      <xsl:with-param name="herd" select="name"/>
+                    </xsl:call-template>
                   </ul>
                 </body>
               </section>
@@ -163,9 +164,9 @@
         <title>Maintainers</title>
         <body>
           <ul>
-            <xsl:apply-templates select="maintainer">
-              <xsl:sort select="email"/>
-            </xsl:apply-templates>
+            <xsl:call-template name="getmaintainers">
+              <xsl:with-param name="herd" select="name"/>
+            </xsl:call-template>
           </ul>
         </body>
       </section>
@@ -173,7 +174,7 @@
         <title>Info</title>
         <body>
           More info on the <xsl:value-of select="name"/> herd can be found
-          <uri><xsl:attribute name="link">?select=<xsl:value-of select="name"/></xsl:attribute>
+          <uri><xsl:attribute name="link"><xsl:value-of select="$link"/>?select=<xsl:value-of select="name"/></xsl:attribute>
             here
           </uri>
         </body>
@@ -203,5 +204,46 @@
   <xsl:template match="role">
     <xsl:text> - </xsl:text>
     <xsl:value-of select="text()"/>
+  </xsl:template>
+
+  <xsl:template name="projmaintainers">
+    <xsl:param name="project" select="/proj/en/metastructure/gentoo.xml"/>
+    <xsl:for-each select="document($project)/project/dev">
+      <xsl:sort select="text()"/>
+      <li>
+        <xsl:value-of select="text()"/>@gentoo.org
+        <xsl:text> </xsl:text>
+        <xsl:call-template name="fullname">
+          <xsl:with-param name="nick" select="text()"/>
+          <xsl:with-param name="parent" select="&quot;true&quot;"/>
+        </xsl:call-template>
+        <xsl:if test="@role">
+          -
+          <xsl:value-of select="@role"/>
+        </xsl:if>
+      </li>
+    </xsl:for-each>
+  </xsl:template>
+  <xsl:template name="getmaintainers">
+    <xsl:param name="herd" select="no-herd"/>
+    <xsl:for-each select="/herds/herd[name=$herd]">
+      <xsl:choose>
+        <xsl:when test="maintainingproject">
+          <xsl:call-template name="projmaintainers">
+            <xsl:with-param name="project" select="maintainingproject/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:when test="maintainersof">
+          <xsl:call-template name="getmaintainers">
+            <xsl:with-param name="herd" select="maintainersof/@herd"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates select="maintainer">
+            <xsl:sort select="email"/>
+          </xsl:apply-templates>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:for-each>
   </xsl:template>
 </xsl:stylesheet>
