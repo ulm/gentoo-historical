@@ -408,11 +408,13 @@
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
                     <br/>
-                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
-                    <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
                     <br/>
-                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
+                    <br/>
+                    <a class="altlink" href="/security/en/glsa/index.xml">Security Announcements</a>
+                    <br/>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
                     <br/>
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
                     <br/>
@@ -420,11 +422,11 @@
                     <br/>
                     <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
                     <br/>
-                    <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
-                    <br/>
-                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
+                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
                     <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
