@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.26 2004/11/22 00:42:02 agaffney Exp $
+$Id: GLIClientController.py,v 1.27 2004/11/22 06:54:12 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -17,6 +17,10 @@ Steps (based on the ClientConfiguration):
 import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue, GLIArchitectureTemplate, GLINotification
 from GLIException import *
 from threading import Thread, Event
+
+# Global constants for notifications
+NEXT_STEP_READY = 1
+INSTALL_DONE = 2
 
 class GLIClientController(Thread):
 
@@ -91,9 +95,9 @@ class GLIClientController(Thread):
 						self._install_steps[self._install_step]()
 					self._install_event.clear()
 					if self.has_more_steps():
-						self.addNotification("int", 1)
+						self.addNotification("int", NEXT_STEP_READY)
 					else:
-						self.addNotification("int", 2)
+						self.addNotification("int", INSTALL_DONE)
 				except GLIException, error:
 					self.addNotification("exception", error)
 					self._install_event.clear()

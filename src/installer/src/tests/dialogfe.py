@@ -52,9 +52,9 @@ def signal_handler(signum, frame):
 		if type == "exception":
 			exception_waiting = data
 		elif type == "int":
-			if data == 1: # Install step done
+			if data == GLIClientController.NEXT_STEP_READY:
 				next_step_waiting = True
-			if data == 2: # Install complete
+			if data == GLIClientController.INSTALL_DONE:
 				install_done = True
 
 def run(cmd):
