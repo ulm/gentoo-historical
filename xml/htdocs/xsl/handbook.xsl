@@ -26,7 +26,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html"/>
-  <meta http-equiv="REFRESH" content="0; URL=/doc/en/"/>
+  <meta http-equiv="REFRESH" content="8; URL=/doc/en/"/>
   <title>Please use main index</title>
 </head>
 <body>
