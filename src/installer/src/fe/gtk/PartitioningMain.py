@@ -51,3 +51,6 @@ class Panel(GLIScreen.GLIScreen):
 		else:
 			self.switch_screen(None, self.active_page)
 #		self.notebook.show_all()
+
+	def deactivate(self):
+		self.notebook.get_nth_page(self.notebook.get_current_page()).deactivate()
