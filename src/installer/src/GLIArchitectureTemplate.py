@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.83 2005/04/03 00:25:41 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.84 2005/04/03 01:44:33 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -365,7 +365,7 @@ class ArchitectureTemplate:
 				mountpoint = parts[device][partition]['mountpoint']
 				minor = str(parts[device][partition]['minor'])
 				partition_type = parts[device][partition]['type']
-				mountopts = parts[device][partition]['mountopts']
+				mountopts = parts[device][partition]['mountopts'] or "defaults"
 				if mountpoint:
 					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
 						exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
