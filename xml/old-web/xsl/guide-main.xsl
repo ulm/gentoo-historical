@@ -257,8 +257,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<tr><td class="logobg" valign="top" align="center" height="36"><a href="/index.html"><img border="0" src="/images/gbot-s.gif"/></a></td></tr>
 	</table>
 			</td>
-			
-			<td colspan="2" valign="bottom" align="left" bgcolor="#000000">
+			<td valign="bottom" align="left" bgcolor="#000000">
 				<p class="menu">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
@@ -338,7 +337,10 @@ of your sale will go towards further Gentoo Linux development.</p>
 					</xsl:choose>
 				</p>
 			</td>
-		</tr>
+			<td valign="middle" align="center">
+				<p class="menu"><a href="http://www.uwyn.com" alt="Our sponsor, UWYN bvba"><img border="0" src="/images/uwyn_sponsor.png"/></a></p>
+			</td>
+	</tr>
 		<tr>
 			<td valign="top" align="right" width="1%" bgcolor="#dddaec">
 				<!--<table width="100%" height="100%" cellspacing="0" cellpadding="0" border="0">-->
