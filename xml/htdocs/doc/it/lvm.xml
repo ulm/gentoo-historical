@@ -1,0 +1,269 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="../../xsl/guide.xsl" type="text/xsl"?>
+
+<guide link = "/doc/it/lvm.xml">
+<title>Installazione di Gentoo con LVM</title>
+<author title="Author"><mail link="avi@CFFtechnologies.com">Avi Schwartz</mail></author>
+<author title="Traduttore"><mail link="bsolar@bluewin.ch">Christian Apolloni</mail></author>
+<author title="Traduttore" >
+Team Italiano
+</author>
+
+<abstract>In questa guida descrivo come ho configurato la mia stazione Gentoo usando il Logical Volume Manager (LVM).
+Nonostante tutti gli esempi siano per la mia installazione specifica, può servire come punto di partenza per la vostra installazione.
+</abstract>
+
+<version>1.0</version>
+<date>4 Maggio 2002</date>
+
+<chapter>
+	<title>Prefazione</title>
+	<body>
+		<p>Questa guida descrive la mia esperienza nel configurare il mio sistema Gentoo usando il Logical Volume Manager (LVM). Ciò significa che probabilmente dovrete cambiare i drive, i nomi delle partizioni e le loro dimensioni per adattarle al vostro setup e ai vostri bisogni.</p>
+
+		<impo>
+			Questo documento non è da intendere come tutorial per LVM. Serve solamente come supplemento al documento sull'installazione di Gentoo e quindi fa riferimento ai passaggi della guida d'installazione generica. Assicuratevi di leggere la Guida all'Installazione di Gentoo <b>prima</b> di cominciare il processo di installazione.
+		</impo>
+
+		<note>Per un LVM HOWTO completo consultate 
+		      <uri>http://www.sistina.com/lvm_howtos/lvm_howto</uri>/</note>
+	</body>
+
+	<section>
+		<title>Partizioni</title>
+		<body>
+			<p>Ho 2 dischi SCSI, ciascuno di 36 GB, e un terzo disco IDE di 100 GB. In questo esempio, non uso il disco IDE dato che il mio scopo è di muovere i dati che contiene nell' LVM prima di riformattarlo e aggiungerlo al volume group.</p>
+
+			<p>I nomi delle partizioni nel mio sistema sono:</p>
+
+			<ul>
+				<li>/dev/sda1  --  /boot</li>
+				<li>/dev/sda2  --  /</li>
+				<li>/dev/sda3  --  Sarà  usato dal LVM</li>
+				<li>/dev/sdb1  --  Sarà  usato dal LVM</li>
+			</ul>
+
+			<p>OK, tempo di cominciare...</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter><title>Installazione</title>
+<section>
+<body>
+<ol>
+ <p><li>
+	Seguite i passaggi da 1 a 5 della guida di installazione.
+ </li></p>
+
+ <p><li>
+	I passaggi da 3 a 9 di questo documento rimpiazzano il passagio 6 (Setup delle partizioni) della guida di installazione.
+ </li></p>
+
+ <p><li>
+	Create una piccola partizione /boot. In questo esempio /boot non sarà gestito da LVM. Questa partizione conterrà il vostro kernel e Grub. Io ho creato una partizione di 100 MB, abbastanza per un bel po' di generazioni di kernel.
+ </li></p>
+
+ <p><li>
+	Create una partizione / (root). Se siete interessati a mettere la vostra partizione root sotto gestione del LVM, consultate la sezione risorse alla fine per un link ad un mini-howto su come farlo. La dimensione della partizione root non ha bisogno di essere grande se terrete /opt /usr /home /var e /tmp in un LVM Volume Group (vg).
+
+    	<note>
+		Inoltre raccomando di NON mettere le seguenti directory in una partizione LVM:
+		<ul>
+			<li>/etc</li>
+			<li>/lib</li>
+			<li>/mnt</li>
+    			<li>/proc</li>
+			<li>/sbin</li>
+			<li>/dev</li>
+			<li>/root</li>
+		</ul>
+
+    		<p>In questo modo, sarete ancora in grado di entrare nel vostro sistema (non messo bene, ma in qualche modo ancora utilizzabile come root) se qualcosa andasse terribilmente male.</p>
+    	</note>
+ </li></p>
+
+ <p><li>
+	Assumendo che le partizioni /boot e root non usino l'intero disco fisico, create una terza partizione e settatela come 8e (Linux LVM).
+    	Se avete più dischi fisici che volete usare con LVM, create una partizione dello stesso tipo all'interno di ciascuno (8e).
+
+    	<note>Potete anche preparare un intero device invece di una partizione.</note>
+ </li></p>
+
+ <p><li>
+	Preparare le partizioni.
+
+<pre>
+pvcreate /dev/sda3
+pvcreate /dev/sdb1
+</pre>
+ </li></p>
+
+ <p><li>
+	Setup del volume group.
+    	<impo>
+		vgcreate non riconosce i link che puntano alle partizioni fisiche, quindi usate
+
+<pre>
+ls -l /dev/hd* and or /dev/sd*
+</pre>
+
+    		Per trovare i device reali.
+	</impo>
+
+    	<p>Nel mio caso /dev/sda1 and /dev/sda2 sono le partizioni /boot e root quindi mi interessano solo /dev/sda3 e /dev/sdb1.
+    	/dev/sda3 punta a /dev/scsi/host1/bus0/target0/lun0/part3 e
+    	/dev/sdb1 punta a /dev/scsi/host1/bus0/target1/lun0/part1. Quindi il mio
+	vgcreate sarà  come segue:</p>
+
+<pre>
+vgcreate vg /dev/scsi/host1/bus0/target0/lun0/part2 \
+            /dev/scsi/host1/bus0/target1/lun0/part1
+</pre>
+ </li></p>
+
+ <p><li>
+	Create i volumi logici.  I volumi logici sono l'equivalente delle partizioni che create usando fdisk in un ambiente non LVM. Nel mio esempio
+    	creo le seguenti partizioni:
+
+    	<table>
+    	<tr>
+		<th>Directory</th>
+		<th>Dimensione</th>
+    	</tr>
+    	<tr>
+		<ti>/usr</ti><ti>10 GB</ti>
+    	</tr>
+    	<tr>
+		<ti>/home</ti><ti>5 GB</ti>
+    	</tr>
+    	<tr>
+		<ti>/opt</ti><ti>5 GB</ti>
+    	</tr>
+    	<tr>
+        	<ti>/var</ti><ti>10 GB</ti>
+    	</tr>
+    	<tr>
+		<ti>/tmp</ti><ti>2 GB</ti>
+    	</tr>
+    	</table>
+
+    	<p>Dato che userò LVM non ho dato molta importanza alle dimensioni delle partizioni dato che posso in ogni momento muoverne lo spazio quando necessario.</p>
+
+    	<note>
+		Terje Kvernes ha commentato correttamente che è più facile ingrandire una partizione piuttosto che ridurla. Potreste quindi iniziare con partizioni più piccole e aumentarne le dimensioni quando necessario.
+	</note>
+
+    	<note>
+		Ho anche creato una partizione swap in LVM. Probabilmente vi troverete meglio a non usare LVM per lo swap, ma avevo voglia di provarci :-)
+	</note>
+
+<pre>
+lvcreate -L10G -nusr vg
+lvcreate -L5G -nhome vg
+...
+lvcreate -L2G -ntmp vg
+</pre>
+ </li></p>
+
+ <p><li>
+	Formattate i volumi logici nello stesso modo che con delle partizioni regolari:
+    
+    	<p>Prima, occupiamoci de volume logico swap:</p>
+
+<pre>
+    mkswap /dev/vg/swap
+</pre>
+
+    	<p>Io uso ext3 nel resto dei volumi logici:</p>
+
+<pre>
+    mke2fs -j /dev/vg/usr
+    ...
+</pre>
+
+    	<note>
+		Il resto del documento d'installazione è per la maggior parte uguale quindi non lo riprenderò qui tranne per indicare delle differenze.
+	</note>
+ </li></p>
+
+ <p><li>
+	Seguite il passaggio 7 (Mount delle partizioni) del documento di installazione cambiando
+    	/dev/vg/nome_partizione in /dev/hdxx (tranne naturalmente per le partizioni boot e root dato che non sono nell' LVM).
+ </li></p>
+
+ <p><li>
+	Passaggio 14 (Passaggi finali: kernel e system logger) - Assicuratevi di configurare il vostro kernel con il supporto per LVM. Potete trovare questa opzione nell'entrata chiamata
+
+    	<p>Multi-device support (RAID and LVM)</p>
+
+    	<p>inoltre assicuratevi di effettuare il merge del pacchetto lvm-user.</p>
+ </li></p>
+
+ <p><li>
+	Passaggio 16 (Passaggi finali: /etc/fstab) - Aggiungete le vostre partizioni LVM ad /etc/fstab
+    	come necessario. Ancora, ecco alcune linee dalla mia macchina:
+
+<pre>
+/dev/sda1   /boot   ext3    noauto,noatime 1 1
+/dev/sda2   /       ext3    noatime        0 0
+/dev/vg/opt /opt    ext3    noatime        0 0
+/dev/vg/usr /usr    ext3    noatime        0 0
+...
+</pre>
+
+    	<p>Sei avete configurato LVM come modulo quando avete configurato il kernel, aggiungete ad /etc/modules.autoload la linea</p>
+
+<pre>
+lvm-mod
+</pre>
+ </li></p>
+
+ <p><li>
+	Passaggio 17 (Installazione completata!) - Non dimenticate di effettuare l'umount di tutte le vostre partizioni LVM e come buona misura eseguite prima di fare il reboot:
+
+<pre>
+vgchange -an
+</pre>
+ </li></p>
+
+ <p><li>
+	Riavviate la vostra macchina ma attenti, il processo di boot probabilmente vi darà molti messaggi d'errore dato che lo script localmount fallirà a riconoscere il fatto che LVM è in uso. Una volta entrati nel vostro sistema,
+	eseguite il seguente comando:
+
+<pre>
+vgscan
+</pre>
+
+    Questo genererà  /etc/lvmtab, che lo script localmount usa per controllare se deve avviare LVM.  Riavviate la vostra macchina e adesso tutte le partizioni dovrebbero essere visibili e montate.
+ </li></p>
+</ol>
+</body>
+</section>
+</chapter>
+
+<chapter>
+	<title>Risorse</title>
+    <section>
+	<body>
+		<p>Il LVM HOWTO:
+		<uri>http://www.sistina.com/lvm_howtos/lvm_howto/</uri></p>
+		<p>Articoli di Daniel Robbins su LVM a IBM's DeveloperWorks:
+		<uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
+		<uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri></p>
+		<p>Come fare il boot con il root FS sotto LVM:
+		<uri>http://www.the-infinite.org/archive/docs/lvm/howto-boot-off-root-lv.txt</uri></p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+	<title>Riconoscimenti</title>
+    <section>
+	<body>
+		Vorrei ringraziare <mail link="bangert@gentoo.org">Thilo Bangert</mail>
+		e <mail link="terjekv@math.uio.no">Terje Kvernes</mail> per il loro aiuto e i loro commenti su questo documento.
+	</body>
+    </section>
+</chapter>
+</guide>
