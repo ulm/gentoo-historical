@@ -11,7 +11,7 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.7 2005/01/26 02:18:55 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.8 2005/01/26 05:37:02 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_tb(req):
@@ -35,9 +35,6 @@ def error_tb(req):
     (tbtype, value, traceb) = sys.exc_info()
     tblines = traceback.format_exception(tbtype, value, traceb)
     # FIXME: multine line statements are getting chopped off somewhere in the traceback module.
-
-    if str(tbtype) == 'exceptions.SystemExit':
-        return
 
     if Config.ErrorReporting == True:
     # FIXME: Print the exception directly to the ErrorReportLog so we don't need to rely on Logging to be enabled
@@ -121,5 +118,3 @@ def error_tb(req):
                      </tr>\n
                      </table>\n
                   """)
-
-    sys.exit(0)
