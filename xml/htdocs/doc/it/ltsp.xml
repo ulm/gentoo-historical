@@ -15,6 +15,9 @@
 <author title="Traduzione">
     <mail link="bernardo@linux.it">Bernardo Damele</mail>
 </author>
+<author title="Traduzione">
+	<mail link="siggy@gentoo.org">Luca Mercuri </mail>
+</author>
 <author title="Traduzione">Team Italiano</author>
 
 <abstract>
@@ -23,8 +26,8 @@ Questa guida mostra come configurare un server LTSP con Gentoo.
 
 <license/>
 
-<version>1.5</version>
-<date>12 Maggio 2004</date>
+<version>1.9</version>
+<date>18 Ottobre 2004</date>
 <chapter>
 <title>Introduzione</title>
 <section>
@@ -65,11 +68,11 @@ link="http://www.gentoo.org/doc/it/index.xml">Documentazione Gentoo</uri>.
 </p>
 
 <p>
-Quindi cominciate con un semplice passo, installando le core util di ltsp:
+Quindi cominciate con un semplice passo, installando il pacchetto ltsp:
 </p>
 
 <pre caption="Emerge LTSP">
-# <i>emerge ltsp-core</i>
+# <i>emerge ltsp</i>
 </pre>
 
 <p>
@@ -138,8 +141,8 @@ dovete aggiungere queste due righe alla fine:
 </p>
 
 <pre caption="/etc/exports">
-/opt/ltsp/i386             192.168.0.0/255.255.255.0(ro,no_root_squash,async)
-/var/opt/ltsp/swapfiles    192.168.0.0/255.255.255.0(rw,no_root_squash,async)
+/opt/ltsp-4.1/i386            192.168.0.0/255.255.255.0(ro,no_root_squash,async)
+/var/opt/ltsp/swapfiles  	  192.168.0.0/255.255.255.0(rw,no_root_squash,async)
 </pre>
 
 <note>
@@ -165,20 +168,25 @@ Ora fate partire NFS.
 <p>
 TFTP richiede qualche configurazione per farlo funzionare bene.
 Prima di tutto editate il file <path>/etc/conf.d/in.tftpd</path>
-per impostare il path del demone tftp:
+per impostare le opzioni e il path del demone tftp:
 </p>
 
 <pre caption="/etc/conf.d/in.tftpd">
 INTFTPD_PATH="/tftpboot"
-INTFTPD_OPTS="${INTFTPD_PATH}"
+INTFTPD_OPTS="-s ${INTFTPD_PATH}"
 </pre>
 
 <p>
+La flag -s specifica che TFTP verrà caricato in chroot mode (raccomandato). Questo significa
+che non avrai bisogno di includere la path <path>/tftpboot</path> per esempio nella configurazione
+del DHCP.
+</p>
+	
+<p>
 Ora configurate xinetd per far partire TFTP e abilitare le connessioni
-da remoto. Prima di tutto controllate che il file <path>/etc/xinetd.d/tftp</path>
-sia stato creato quando avete eseguito emerge di tftp. Di default TFPT non
-sarà caricato da xinetd, quindi per cambiare questo editate 
+da remoto. Di default TFPT non sarà caricato da xinetd, quindi per cambiare questo editate 
 <path>/etc/xinetd.d/tftp</path> e rimpiazzate <c>disable=yes</c> con <c>disable=no</c>.
+Se il file non esiste createlo con i contenuti sotto indicati.
 </p>
 
 <pre caption="/etc/xinetd.d/tftp">
@@ -190,6 +198,7 @@ service tftp
         wait = yes
         user = root
         server = /usr/sbin/in.tftpd
+        server_args = -s /tftpboot
 }
 </pre>
 
@@ -225,7 +234,7 @@ Date un'occhiata a questo esempio:
 <pre caption="/etc/hosts">
 127.0.0.1        localhost
 192.168.0.254    server      server.yourdomain.com
-192.168.0.1      ws-1        ws-1.yourdomain.com
+192.168.0.1      ws001       ws001.yourdomain.com
 </pre>
 
 </body>
@@ -260,8 +269,8 @@ option log-servers            192.168.0.254;
 option domain-name            "yourdomain.com";
 
 <codenote>Opzioni di path di LTSP</codenote>
-option root-path              "192.168.0.254:/opt/ltsp/i386";
-filename                      "/lts/vmlinuz-2.4.19-ltsp-1";
+option root-path              "192.168.0.254:/opt/ltsp-4.1/i386";
+filename                      "/lts/vmlinuz-2.4.26-ltsp-2";
 
 <codenote>Se le vostre workstations hanno una scheda ISA NIC scommentate</codenote>
 <codenote>le seguenti linee e adattate il driver e l'IO</codenote>
@@ -273,7 +282,7 @@ filename                      "/lts/vmlinuz-2.4.19-ltsp-1";
 shared-network WORKSTATIONS {
   subnet 192.168.0.0 netmask 255.255.255.0 {
     <codenote>Distribuisce IP dinamici alle workstations</codenote>
-    range dynamic-bootp 192.168.1.1 192.168.1.16;
+    range dynamic-bootp 192.168.0.1 192.168.0.16;
     <codenote>Specifica configurazione per le workstations con PXE</codenote>
     #host ws001 {
     #  hardware ethernet     00:E0:06:E8:00:84;
@@ -353,10 +362,10 @@ per accettare anche connessioni remote.
 </p>
 
 <p>
-Per prima cosa modificate il vostro file <path>Xaccess</path>, scommentando la seguente riga:
+Per prima cosa modificate il vostro file <path>/etc/X11/xdm/Xaccess</path>, scommentando la seguente riga:
 </p>
 
-<pre caption="Xaccess">
+<pre caption="/etc/X11/xdm/Xaccess">
 #*		#qualsiasi host può ottenere la finestra di login
 </pre>
 
@@ -409,14 +418,15 @@ l'X server via CTRL-ALT-BACKSPACE non verrà riavviato il display manager.
 <body>
 
 <p>
-Se le vostre workstation non supportano il boot via PXE, allora dovrete creare
-un floppy di boot, che è necessario per far partire la vostra macchina. Andate a
-<uri>http://www.rom-o-matic.net/5.0.9/</uri>, selezionate il vostro NIC, premete
-<e>Get ROM</e> e scrivete l'immagine sul floppy:
+Se le vostre workstation non supportano il boot via PXE, allora potete creare
+un floppy di boot che può essere utilizzato per avviare le vostre workstation e 
+conneterle al terminal server. Andate a
+<uri>http://www.rom-o-matic.net/</uri>, selezionate l'ultima versione, selezionate
+il vostro NIC, premete <e>Get ROM</e> e scrivete l'immagine sul floppy:
 </p>
 
 <pre caption="Write floppy image">
-# <i>cat nicfile.lzdsk > /dev/fd0</i>
+# <i>cat nicfile.zdsk > /dev/fd0</i>
 </pre>
 
 </body>
