@@ -1,0 +1,506 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-alpha-kernel.xml,v 1.1 2004/06/08 12:54:21 sergey Exp $ -->
+
+<!-- REV: 1.3 -->
+
+<sections>
+
+<section>
+<title>Временная зона</title>
+<body>
+
+<p>
+Сначала вы должны выбрать временную зону, чтобы система знала, где вы находитесь.
+Найдите нужную зону в <path>/usr/share/zoneinfo</path> и сделайте симлинк в  
+<path>/etc/localtime</path> с помощью <c>ln</c>:
+</p>
+
+<pre caption="Установка временной зоны">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Допустим, что вы хотите использовать GMT)</comment>
+# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Установка исходников</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux - это то, вокруг чего формируются все дистрибутивы. Это
+слой между программами пользователя и вашими аппаратными средствами. Gentoo предоставляет
+на выбор пользователю несколько исходников ядра. Полный их список с описанем
+можно найти в <uri link="/doc/en/gentoo-kernel.xml">Gentoo Kernel
+Guide</uri>. 
+</p>
+
+<p>
+Для alpha систем существуют такие ядра, как <c>vanilla-sources</c>
+(исходники ядра по умолчанию, в том виде, как их предоставляю linux-kernel
+ разработчики),
+<c>alpha-sources</c> (ядро оптимизированное для alpha платформы),
+<c>compaq-sources</c> (исходники ядра, которое использует RedHat для Alpha и
+		которое поддерживаетя фирмой Compaq)
+
+</p>
+<p>
+Выберите себе ядро и установите его себе командой <c>emerge</c>.
+</p>
+
+<p>
+В следующем примере мы поставим <c>vanilla-source</c>, но это только пример и вы
+можете заменить его на другое ядро по своему выбору:
+</p>
+
+<pre caption="Установка исходников ядра">
+# <i>emerge vanilla-sources</i>
+</pre>
+
+<p>
+Если вы зайдете в папку <path>/usr/src</path>, то должны увидеть ссылку
+<path>linux</path> которая указываeт на исходники ядра:
+</p>
+
+<pre caption="Просмотр папки с исходниками ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.25-gentoo
+</pre>
+
+<p>
+Если у вас не так (т.е. ссылка указывает на другое ядро) 
+надо изменить ссылку, прежде чем продолжить:
+</p>
+
+<pre caption="Смена ссылки на исходники ядра">
+# <i>rm /usr/src/linux </i>
+# <i>cd /usr/src</i>
+# <i>ln -s linux-2.4.25-gentoo linux</i>
+</pre>
+
+<p>
+Теперь можно настроить и скомпилировать исходники ядра. Вы можете использовать
+скрипт <c>genkernel</c>, который сформирует стандартное ядро, используемое на
+LiveCD. Далее мы расскажем как в "ручную" настроить ядро, т.к. это лучший способ
+для оптимизации вашей системы.
+</p>
+
+<p>
+Если вы хотите вручную настроить ядро, то переходите к разделу <uri
+link="#manual">По умолчанию: Ручная настройка</uri>. Если вы  хотите использовать 
+<c>genkernel</c>,то читайте <uri link="#genkernel">Альтернатива: Использование 
+genkernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>По умолчанию: Ручная настройка</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Ручная настройка ядра является одним из самых сложных вопросов для пользователей Linux. 
+Зато после настройки нескольких ядер, вам уже будет казаться, что в этом ни чего трудного нет ;)
+</p>
+
+<p>
+Однако есть одна <e>истина</e>: когда вы запускаете ручную настройку ядра, вы должны знать свой компьютер.
+Большую часть информации можно получить просмотрев <path>/proc/pci</path> (или использовать <c>lspci</c> если это возможно). 
+Вы также можете запустить <c>lsmod</c> для просмотра модулей ядра используемых
+LiveCD (это послужит хорошей подсказкой, на предмет того какие опции надо
+		включить).
+</p>
+
+<p>
+Теперь войдите в директорию с исходниками ядра и дайте команду <c>make menuconfig</c>. 
+Это откроет меню настроек.
+</p>
+
+<pre caption="Вызов меню настроек">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Перед вами появятся несколько секций настроек. Мы сначала перечислим опции, которые надо активировать
+(иначе Gentoo не будет работать, или будет работать не так как надо).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Активация нужных опций</title>
+<body>
+
+<p>
+Прежде всего разрешите использование разработанных и экспериментальных кодов/драйверов.
+Если этого не сделать, иначе вы не увидите некоторых важных опций:
+</p>
+
+<pre caption="Выбор эксперементальных кодов/драйверов">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers"
+</pre>
+
+<p>
+Теперь войдите в <c>File Systems</c> и выберите поддержку всех нужных вам файловых систем.
+<e>Не</e> компилируйте их как модули, иначе система Gentoo не сможет смонтировать эти разделы.
+Также выберите <c>Virtual memory</c>, <c>/proc
+file system</c>, <c>/dev file system</c> + <c>Automatically mount at boot</c>:
+</p>
+
+<pre caption="Выбор необходимых файловых систем">
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+
+<comment>(Отмените эту опции если у вы не изпользуете ядро версии 2.6)</comment>
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(Выберите одну или несколько опций нужных вашей системе)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<note>
+Пользователи ядра версии 2.6 найдут некоторые из этих опций в <c>Pseudo
+filesystems</c>, который является подменю <c>File systems</c>.
+</note>
+
+<p>
+Если вы используете PPPoE или dial-up подключение для соединения с Internet, вам нужно включить в ядре следующие опции:
+</p>
+
+<pre caption="Выбор нужных драйверов PPPoE">
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<note>
+Пользователи ядра версии 2.6 найдут некоторые из этих опций в <c>Networking
+support</c>, который является подменю <c>Device Drivers</c>.
+</note>
+
+<p>
+Две опции сжатия данных не являются необходимыми, но и вреда от них тоже не
+будет. То же отностится и к опции <c>PPP over Ethernet</c> которая нужна только
+для <c>rp-pppoe</c>, сконфигурированного для работы с PPPoE в ядре.
+</p>
+
+<p>
+Если вам надо использовать ethernet-карты, то не забудьте включить в ядре их поддержку.
+</p>
+
+<p>
+Рекомендуется включить следующие опции, специфичные для Alpha платформы:
+</p>
+
+<pre caption="Alpha-спецефичные опции">
+General setup ---&gt;
+  &lt;*&gt; SRM environment through procfs
+  &lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+    &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+  Ethernet (10 or 100 Mbit) ---&gt;
+    &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+    &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+    &lt;M&gt; EtherExpressPro/100 support (eepro100)
+    &lt;M&gt; EtherExpressPro/100 support (e100)
+  Ethernet (1000 Mbit) ---&gt;
+    &lt;M&gt; Alteon AceNIC
+      [*] Omit support for old Tigon I
+    &lt;M&gt; Broadcom Tigon3
+  [*] FDDI driver support
+  &lt;M&gt; Digital DEFEA and DEFPA
+  &lt;*&gt; PPP support
+    &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+  [*] Support for console on serial port
+  [*] Direct Rendering Manager
+
+File systems ---&gt;
+  &lt;*&gt; Kernel automounter version 4 support
+  Network File Systems ---&gt;
+    &lt;*&gt; NFS
+      [*] NFSv3 client
+      &lt;*&gt; NFS server
+      [*] NFSv3 server
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*] Alpha OSF partition support
+  Native Language Support
+    &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+  &lt;M&gt; Sound card support
+    &lt;M&gt; OSS sound modules
+      [*] Verbose initialisation
+      [*] Persistent DMA buffers
+      &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+Когда вы закончите настройку ядра, можете переходить к разделу <uri
+link="#compiling">Компиляция и установка</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь ваше ядро настроено, настало время его скомпилировать и  установить.
+Выйдете из программы конфигурации и выполните команду <c>make dep &amp;&amp; make bzImage modules modules_install</c>:
+</p>
+
+<pre caption="Компиляция ядра">
+<comment>(Для версии 2.4)</comment>
+# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
+
+<comment>(Для версии 2.6)</comment>
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+Когда ядро будет скомпилировано, скопируйте образ ядра в
+<path>/boot</path>.
+</p>
+
+<pre caption="Установка ядра">
+# <i>cp arch/i386/boot/bzImage /boot/kernel-2.4.25-gentoo</i>
+# <i>cp System.map /boot/System.map-2.4.25-gentoo</i>
+</pre>
+
+<p>
+Также на всякий случай стоит скопировать ваш конфигурационный файл ядра в
+<path>/boot</path>:)
+</p>
+
+<pre caption="Создание резервной копии конфигурационного файла ядра">
+# <i>cp .config /boot/config-2.4.25-gentoo</i>
+</pre>
+
+<p>
+Теперь переходите к <uri link="#doc_chap4">Установка отдельных модулей ядра</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>Альтернатива: Использование genkernel</title>
+<body>
+
+<p>
+Если вы читаете эти строки, значит вы хотите использовать наш скрипт<c>genkernel</c>
+для настройки своего ядра.
+</p>
+
+<p>
+Теперь когда исходники ядра установлены, настало время скомпилировать ядро используя скрипт <c>genkernel.</c>
+<c>genkernel</c> создаст ядро почти идентичное тому, что используется на LiveCD. 
+Т.е. при использовании <c>genkernel</c> для сборки  ядра, 
+ваша система будет искать новые устройства при каждой загрузке, подобно LiveCD.
+Поскольку genkernel не требует ручной настройки ядра, это идеальное решение для 
+пользователей которые не могут жить без комфортной настройки своего ядра.
+</p>
+
+<p>
+Рассмотрим как использовать genkernel. Сначала выполним emerge genkernel:
+</p>
+
+<pre caption="Emerging genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Теперь соберем ядро запустив <c>genkernel all</c>. Так как <c>genkernel</c>
+будет собирать ядро поддерживающее почти все оборудование, этот процесс может
+занять приличное время.
+</p>
+
+<p>
+Если ваш загрузчный (boot) раздел не использует ext2 или ext3, то вам придется
+вручную настроить ядро, запустив <c>genkernel --menuconfig all</c> и добавить
+поддержку вашей файловой системы <e>в</e> ядро (т.е. <e>не</e> модулем).
+</p>
+
+<pre caption="Запуск genkernel">
+# <i>genkernel all</i>
+GenKernel v3.0.1_beta10
+* ARCH: Alpha 
+* KERNEL VER: 2.4.24
+* kernel: configuring source
+* kernel: running mrproper
+<comment>(Output removed to increase readability)</comment>
+* Kernel compiled successfully!
+* Required Kernel Params:
+*   : root=/dev/ram0 init=/linuxrc real_root=/dev/$ROOT
+*     where $ROOT is the devicenode for your root partition as
+*     you should have specified in /etc/fstab
+*              
+* You MUST tell your bootloader to use the generated initrd
+*              
+* Recommended Kernel Params:
+*   : vga=0x317 splash=verbose
+*              
+* Do NOT report kernel bugs (configs included) as genkernel bugs.
+* Make sure you have the latest genkernel before reporting bugs
+*              
+* For more info see /usr/share/genkernel/README
+</pre>
+
+<p>
+Когда <c>genkernel</c> завершится, будет создано ядро, полный набор модулей и 
+<e>загрузочный диск</e> (initrd). Мы будем использовать ядро
+и initrd когда во время настройки загрузчика системы, далее в этом руководстве. 
+Запишите именя ядра и initrd так как они нам понадобятся при настройке конфигурационного
+файла загрузчика. initrd буде запущен сразу после загрузки
+для автоматического определения устройств (точно так же как и в Live CD), прежде
+чем ваша система перейдет к настоящей загрузке
+</p>
+
+<pre caption="Проверяем название созданного ядра и initrd">
+# <i>ls /boot/kernel* /boot/initrd*</i>
+</pre>
+
+<p>
+Теперь давайте сделаем нашу систему еще ближе к Live 
+CD -- соберем <c>hotplug</c>. В то время как initrd автоматически находит оборудование для загрузки системы, <c>hotplug</c> автоматически все остальное.
+Установим <c>hotplug</c>, командой:
+</p>
+
+<pre caption="Установка и актчвация hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Установка отдельных модулей ядра</title>
+<subsection>
+<title>Установка дополнительных модулей</title>
+<body>
+
+<p>
+Наконец вы должны установить пакеты для любых других дополнительных устройств в вашей системе. 
+Ниже приведен список ядро-зависимых ebuild'ов доступных для установки:
+</p>
+
+<table>
+<tcolumn width="1in"/>
+<tcolumn width="4in"/>
+<tcolumn width="2in"/>
+<tr>
+  <th>Ebuild</th>
+  <th>Цель</th>
+  <th>Команда</th>
+</tr>
+<tr>
+  <ti>xfree-drm</ti>
+  <ti>
+    Граффическое ускорение для ATI Radeon до 9200, Rage128, Matrox, Voodoo и
+	других карт для XFree86. Проверьте опцию <c>IUSE_VIDEO_CARDS</c> в 
+	<path>/usr/portage/x11-base/xfree-drm</path>, чтбы узнать что писать в поле
+	<c>ваша_карта</c>.
+  </ti>
+  <ti><c>VIDEO_CARDS="ваша_карта" emerge xfree-drm</c></ti>
+</tr>
+</table>
+
+<p>
+Будьте осторожны! Некоторые их этих ebuilds могут потянуть за собой большое
+количество зависимостей. Проверьте
+какие пакеты будут установлены, используя  <c>emerge 
+--pretend</c>. Например для пакета <c>xfree-drm</c>:
+</p>
+
+<pre caption="Просмотр списка пакетов для установки">
+# <i>emerge --pretend xfree-drm</i>
+</pre>
+</body>
+</subsection>
+<subsection>
+<title>Конфигурация модулей</title>
+<body>
+
+<p>
+Если вы хотите, чтобы модули загружались автоматически при запуске системы, вы
+должны прописать их в 
+<path>/etc/modules.autoload.d/kernel-2.4</path> (или <path>kernel-2.6</path>). 
+Так же можно добавить дополнительные опции.
+</p>
+
+<p>
+Для просмотра всех доступных модулей запустите комманду <c>find</c>, заменив
+"&lt;kernel version&gt;" на версию ядра, которое вы только что собрали:
+</p>
+
+<pre caption="Просмотр доступных модулей">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+Например, если вы хотите автоматически загружать модуль <c>3c59x.o</c>,
+отредактируйте файл <path>kernel-2.4</path> или <path>kernel-2.6</path> и
+пропишите туда имя модуля.
+</p>
+
+<pre caption="Редактируем /etc/modules.autoload.d/kernel-2.4">
+<comment>(Пример для ядра 2.4)</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 или kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Теперь запустите <c>modules-update</c>, чтобы внести изменения в файл
+<path>/etc/modules.conf</path>:
+</p>
+
+<pre caption="Запуск modules-update">
+# <i>modules-update</i>
+</pre>
+
+<p>
+Теперь можете продолжить установку и перейти к разделу <uri
+link="?part=1&amp;chap=8">Настройка системы</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
