@@ -61,8 +61,8 @@
 		</ti>
 		<ti>
 		  <xsl:choose>
-		    <xsl:when test="visibleLocation">
-		      <xsl:value-of select="visibleLocation"/>
+		    <xsl:when test="location">
+		      <xsl:value-of select="location"/>
 		    </xsl:when>
 		    <xsl:otherwise></xsl:otherwise>
 		  </xsl:choose>
