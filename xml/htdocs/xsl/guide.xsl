@@ -133,7 +133,20 @@
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
-				<tr>
+		<tr>
+                  <td align="center">
+                    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
+                      <img src="http://www.ibiblio.org/gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                    </a>
+                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
+                  </td>
+		</tr>
+		<tr>
+                    <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                    </td>
+                </tr>
+		<tr>
                   <td align="center">
                     <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
                       <img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/>
@@ -142,27 +155,6 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
-                  </td>
-                </tr>
-		<tr>
-			<td>
-				<p class="alttext">
-				<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
-				largest directory of Web developers and other marketing-oriented firms. Use
-				Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
-				that meets your exact needs.
-				<br/><br/>
-				<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
-				get noticed world-wide!
-				<br/><br/>
-				When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
-				will donate a portion of revenue to the Gentoo Linux free software project.
-				</p>
-			</td>
-			</tr>
-			      <tr>
                   <td>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
@@ -219,7 +211,7 @@
                 </tr>
               </table>
             </td>
-            <td valign="bottom" align="left" bgcolor="#000000">
+            <td valign="bottom" align="left" bgcolor="#000000" colspan="2">
               <p class="menu">
 	      	<xsl:choose>
 			<xsl:when test="/mainpage/@id='news'">
@@ -596,6 +588,19 @@
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
+		<tr>
+                  <td align="center">
+                    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
+                      <img src="http://www.ibiblio.org/gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                    </a>
+                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
+                  </td>
+		</tr>
+		<tr>
+                  <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
 				<tr>
                   <td align="center">
                     <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
@@ -605,27 +610,6 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
-                  </td>
-                </tr>
-		<tr>
-			<td>
-			<p class="alttext">
-				<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
-					largest directory of Web developers and other marketing-oriented firms. Use
-					Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
-					that meets your exact needs.
-					<br/><br/>
-					<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
-					get noticed world-wide!
-					<br/><br/>
-					When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
-					will donate a portion of revenue to the Gentoo Linux free software project.
-				</p>
-			</td>
-		</tr>
-		<tr>
                   <td>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
