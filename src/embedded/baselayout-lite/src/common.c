@@ -26,38 +26,16 @@ int is_started(char *script) {
 }
 
 int mark_started(char *script) {
-	//int ret;
-	//char *command = NULL;
 	char *init_script = NULL;
-	//char *cmdline[] = { NULL, "start", 0 };
-
-	/* start everything with "before *", and mark it as started */
-	//printf("Starting %s\n", script);
-
 	asprintf(&init_script, "%s%s", INIT_DIR, script);
-	//asprintf(&command, "%s%s start", INIT_DIR, script);
-	//cmdline[0]=command;
-	//printf("%d: %s %s %s %s\n",
-	//	__LINE__, cmdline[0], cmdline[1], cmdline[2], cmdline[3]);
-	/* so we can get return values and decide if we should call mark_started() */
-	//if ((ret=system(command)) == 0) {
-		//printf("%d\n", __LINE__);
-		//printf("%s: Succesfully started %s\n", __func__, script);
-		mkdir("/var/lib/", 0755);
-		mkdir("/var/lib/init.d/", 0755);
-		mkdir("/var/lib/init.d/started/", 0755);
-		chdir("/var/lib/init.d/started/");
-		//printf("symlinking %s to %s", init_script, basename(script));
-		symlink(init_script, basename(script));
-		//free(command);
-		free(init_script);
-		return TRUE;
-	//}
-	//printf("%d\n", __LINE__);
-	//printf("Failed to start %s (%s)(return value=%d)\n", script, strerror(errno), ret);
-	//free(command);
+	mkdir("/var/lib/", 0755);
+	mkdir("/var/lib/init.d/", 0755);
+	mkdir("/var/lib/init.d/started/", 0755);
+	chdir("/var/lib/init.d/started/");
+	//printf("symlinking %s to %s", init_script, basename(script));
+	symlink(init_script, basename(script));
 	free(init_script);
-	return FALSE;
+	return TRUE;
 }
 
 int start_script(char *script) {

@@ -73,9 +73,7 @@ int main(int argc, char **argv) {
 		
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
-		//printf("%s\n", svc_script->d_name);
 		snprintf(path, sizeof(path)-1, "%s/%s", RUNLEVEL_DIR, svc_script->d_name);
-		//printf("%s\n", path);
 		if ((f1=fopen(path, "r")) == NULL) {
 			perror(path);
 			fclose(f1);
@@ -88,24 +86,17 @@ int main(int argc, char **argv) {
 			}
 		}
 		fclose(f1);
-		//printf("%d\n", __LINE__);
 	}
 	
-	//printf("%d\n", __LINE__);
 	/* We've started what should be the first thing, now we need to start
 	 * everything else. We will start off in the order that readdir gives them
 	 * to us, and hope to hell that runscript does the right thing */
 	rewinddir(rlvldir);
-	//printf("%d\n", __LINE__);
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		//printf("rewind: %s\n", svc_script->d_name);
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
-		//if(is_started(svc_script->d_name) == TRUE)
-		//	continue;
-		//else {
-			start_script(svc_script->d_name);
-		//}
+		start_script(svc_script->d_name);
 	}
 	
 	closedir(rlvldir);

@@ -37,7 +37,6 @@ int main(int argc, char **argv) {
 			/* these are non-optional deps that have to be started before */
 			//printf("need: %s\n", line);
 			word=strtok(line, " ");
-			//printf("%s\n", word);
 			while((word=strtok(NULL, " ")) != NULL) {
 				char *alias;
 				char *dep = NULL;
@@ -65,7 +64,6 @@ int main(int argc, char **argv) {
 		} else if(strstr(line, "\tuse")) {
 			/* optional deps that have to be started before if they are in RUNLEVEL_DIR */
 			word=strtok(line, " ");
-			//printf("%s\n", word);
 			while((word=strtok(NULL, " ")) != NULL) {
 				char *dep = NULL;
 
@@ -97,20 +95,11 @@ int main(int argc, char **argv) {
 
 int runscript(char *init_script, char *func_to_run) {
 	char *command = NULL;
-	//char *confd_file;
 	
 	if(is_started(init_script)==TRUE) {
 		//printf("%s is already running\n", init_script);
 		return 0;
 	}
-	
-	//confd_file=(void *)malloc(FILENAME_MAX);
-	//memset(confd_file, 0, FILENAME_MAX);
-
-	/* figure out the conf.d file we need to source */
-	//sscanf(init_script, INIT_DIR"%s\n", confd_file);
-	//printf("%s%s\n", CONFD_DIR, confd_file);
-	
 	
 	/* here we glue all the bits together
 	 *	we source /sbin/functions.sh to get some common init script functions
@@ -120,7 +109,6 @@ int runscript(char *init_script, char *func_to_run) {
 	 */
 	asprintf(&command,
 		"/bin/sh -c \". %s ; [ -e \"%s%s\" ] && . %s%s ; . %s ; %s\"",
-		//SHFUNCS, CONFD_DIR, confd_file, CONFD_DIR, confd_file,
 		SHFUNCS,
 		CONFD_DIR, basename(init_script),
 		CONFD_DIR, basename(init_script),
@@ -131,8 +119,6 @@ int runscript(char *init_script, char *func_to_run) {
 	mark_started(basename(init_script));
 
 	free(command);
-	//free(confd_file);
-
 	return 0;
 }
 
@@ -174,7 +160,6 @@ int in_runlevel(char *script) {
  * work in INIT_DIR since what we need may not be in RUNLEVEL_DIR
  */
 int find_alias(char *alias, char *script) {
-	//int ret;
 	char *aliasline;
 	DIR *initdir;
 	struct dirent *svc_script;
