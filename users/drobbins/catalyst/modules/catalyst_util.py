@@ -16,7 +16,7 @@ pkgdir				PKGDIR			default (package cache dir)
 distdir				DISTDIR			default (/usr/portage/distfiles)
 subarch				SUBARCH			user (from spec)
 rel_version			REL_VERSION		user (from spec) (was MAINVERSION)
-rel_type			REL_TYPE		user (from spec)
+rel_type			REL_TYPE		user (from spec) (was BUILDTYPE)
 version_stamp			VERSION_STAMP		user (from spec)
 snapshot			SNAPSHOT		user (from spec)
 source_tarball			SOURCE_TARBALL		user (from spec)
@@ -31,11 +31,17 @@ class generic_target:
 		self.settings=myset
 		self.envmap={"CFLAGS":"cflags" }
 	def path(self):
+		#temp file paths: 
+		#/var/tmp/catalyst/default-x86-1.4/stage1-pentium4-20030911/work
+		#/var/tmp/catalyst/default-x86-1.4/stage1-pentium4-20030911/packages (if there is a package cache)
+		
+		#final paths:
+		#snapshots/portage-20030911.tar.bz2
 		#builds/default-x86-1.4/stage1-pentium4-20030911.tar.bz2
 		#builds/default-x86-1.4/stage2-pentium4-20030911.tar.bz2
 		#builds/default-x86-1.4/stage3-pentium4-20030911.tar.bz2
-		#builds/default-x86-1.4/grp-pentium4-20030911/cd1
-		#builds/default-x86-1.4/grp-pentium4-20030911/cd2
+		#builds/default-x86-1.4/grp-pentium4-20030911/cd1/packages/All
+		#builds/default-x86-1.4/grp-pentium4-20030911/cd2/packages/All
 		#builds/default-x86-1.4/livecd-20030911.tar.bz2
 		#builds/buildtype-mainarch-mainversion/buildtype-subarch-version_stamp
 		#now where to put the work files.
