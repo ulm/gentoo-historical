@@ -45,7 +45,7 @@ def listkernels():
 # kernel version found in /usr/src. e.g: setsymlink("2.4.24")
 def setsymlink(version):
 	newpath=""
-	if os.path.isfile("/usr/src/linux") and \
+	if os.path.exists("/usr/src/linux") and \
 		not os.path.islink("/usr/src/linux"):
 			warn("/usr/src/linux is not a symlink!")
 			sys.exit()
@@ -68,7 +68,7 @@ def setsymlink(version):
 			info("Pointing /usr/src/linux to /usr/src/linux-" + version)
 			newpath = "/usr/src/linux-" + version
 		
-	if os.path.isfile("/usr/src/linux"):
+	if os.path.islink("/usr/src/linux"):
 		ret = os.system("rm /usr/src/linux")
 		if ret:
 			warn ("Unable to remove the /usr/src/linux symlink!")
