@@ -513,8 +513,18 @@ while 1:
 			item['fn']()
 			continue
 	if menuitem == "Install!":
-		waiting_for_install = True
-		d.gauge_start(text="Install progress:", percent=0)
-		while waiting_for_install: pass
-		d.msgbox("Install done!")
-		sys.exit()
+		cc.start()
+		cc.start_install()
+		while 1:
+			if cc.has_more_steps(): cc.next_step()
+			while 1:
+				if next_step_waiting: continue
+				if exception_waiting:
+					# Code to determine Exception type and act on it
+					pass
+
+#		waiting_for_install = True
+#		d.gauge_start(text="Install progress:", percent=0)
+#		while waiting_for_install: pass
+#		d.msgbox("Install done!")
+#		sys.exit()
