@@ -770,9 +770,9 @@ the Samba articles by Daniel Robbins at
 <pre>
 # <i>emerge net-fs/samba</i>
 # <i>rc-update add samba default</i>
-# <i>cd /etc/smb</i>
-# <i>cp /etc/smb/smb.conf.example /etc/smb/smb.conf</i>
-# <i>nano -w /etc/smb/smb.conf</i>
+# <i>cd /etc/samba</i>
+# <i>cp smb.conf.example smb.conf</i>
+# <i>nano -w smb.conf</i>
 </pre>
 <pre caption="smb.conf -- workgroup">
 # workgroup = NT-Domain-Name or Workgroup-Name, eg: REDHAT4
@@ -795,7 +795,7 @@ the Samba articles by Daniel Robbins at
 I have fairly minimal Samba needs.  I just want to be able to share
 files between my linux and windows machines, and I want to use my
 linux box as a print server (using <c>cups</c>).  After installing,
-it suffices to make a few minor edits to the <path>/etc/smb/smb.conf</path>
+it suffices to make a few minor edits to the <path>/etc/samba/smb.conf</path>
 file.  Specifically, the <e>workgroup</e> variable needs to match the
 workgroup for the windows network (I usually use "OLYMPUS", but "WORKGROUP"
 is the default on windows if I
@@ -820,9 +820,8 @@ listed in <path>/etc/passwd</path>.
 <p>
 For each user that you want to be able to use samba from a windows machine
 you need to run the <c>smbpasswd</c> command.  Samba stores passwords in
-<path>/etc/smb/private/smbpasswd</path>, which will be created for you 
-the first time you run the <c>smbpasswd</c> command, albeit with the 
-cosmetic "error" seen above.
+<path>/etc/samba/private/smbpasswd</path>, which will be created for you 
+the first time you run the <c>smbpasswd</c> command.
 </p>
 <pre>
 # <i>/etc/init.d/samba start</i>
@@ -833,7 +832,7 @@ Start samba, and you should be able to connect to your Gentoo Linux
 box from any of your windows machines and see the home directory for
 whatever user you connect as and also whatever printers you have set up.
 If you can't connect, take a look at 
-<path>/usr/share/doc/samba-2.2.0a/textdocs/DIAGNOSIS.txt.gz</path>
+<path>/usr/share/doc/samba-2.2.3a/full_docs/textdocs/DIAGNOSIS.txt.gz</path>
 for additional help.
 </p>
 </body>
@@ -853,69 +852,63 @@ Squirrelmail, that I can access remotely using any web browser.</p>
 <p>The first step is to install a web server.  Most of the
 rest of the world uses Apache; we will too.  We will also
 install PHP (PHP4, actually) at the same time, since Squirrelmail
-is a PHP program.</p>
+is a PHP program.  The version numbers shown in the code listing
+below might be different by the time you read this.  Please
+adjust them accordingly.  Don't just copy and paste the commands
+into your terminal!</p>
 <pre>
-# <i>emerge net-www/apache dev-lang/php</i>
+# <i>emerge net-www/apache dev-lang/php net-www/mod_ssl</i>
+# <i>ebuild /var/db/pkg/dev-lang/php-4.1.2-r7/php-4.1.2-r7.ebuild config</i>
+# <i>ebuild /var/db/pkg/net-www/mod_ssl-2.8.8/mod_ssl-2.8.8.ebuild config</i>
 # <i>nano -w /etc/apache/conf/apache.conf</i>
 </pre>
-<impo>You want to make sure that "ssl" is in your USE
-variables if you want Apache to have SSL support.  If 
-you want to check your e-mail remotely without sending
-your password across the internet unencrypted, then you
-<e>do</e> want SSL!.</impo>
-<p>You should take a good look at <path>/etc/apache/conf/apached.conf</path>,
-since Apache is very customizable.  By default the Apache server
-root (where the Apache server first looks for html files when
-you connect to http://www.servername.foo or http://localhost) 
-is <path>/home/httpd</path>;
+<impo>You want to make sure that you install mod_ssl if you want
+Apache to have SSL support.  If  you want to check your e-mail
+remotely without sending your password across the internet unencrypted,
+then you <e>do</e> want SSL!.</impo>
+<p>You should take a good look at <path>/etc/apache/conf/apache.conf</path>,
+since Apache is very customizable.  By default the Apache document root
+(where it first looks for html files when you connect to
+http://www.servername.foo or http://localhost) is <path>/home/httpd/htdocs</path>;
 feel free to relocate it if you wish.</p>
 <pre caption="/etc/apache/conf/apache.conf">
 # Do NOT add a slash at the end of the directory path.
 #
-ServerRoot "/home/httpd" <comment>(edit this line if desired)</comment>
+DocumentRoot "/home/httpd/htdocs" <comment>(edit this line if desired)</comment>
 
 </pre>
 <pre>
-# <i>rc-update add httpd default</i>
- * httpd added to runlevel default...
+# <i>rc-update add apache default</i>
+ * apache added to runlevel default...
  * Caching service dependencies...               [ ok ]
  * rc-update complete.
 # <i>nano -w /etc/conf.d/apache</i>
 </pre>
-<p>Use <c>rc-update</c> to add Apache to the default runlevel,
-and then edit <path>/etc/conf.d/apache</path> to add 
-the following lines so that Apache 
+<p>Use <c>rc-update</c> to add Apache to the default runlevel,  and then
+edit <path>/etc/conf.d/apache</path> to add the following lines so that Apache
 automatically loads the SSL and PHP modules at start-up.</p>
-<pre caption="/etc/conf.d/apache -- add to the end for Apache SSL and PHP">
-#Apache options
-HTTPD_OPTS="-D SSL -D PHP4"
+<pre caption="/etc/conf.d/apache">
+APACHE_OPTS="-D SSL -D PHP4"
 </pre>
 <pre>
-# <i>/etc/init.d/httpd start</i>
+# <i>/etc/init.d/apache start</i>
  * Starting Apache...                            [ OK ]
 # <i>lynx localhost</i>
 </pre>
-<pre caption="working Apache server">
-      Test Page for the SSL/TLS-aware Apache Installation on Web Site (p1 of 2)
-                               Hey, it worked !
-                    The SSL/TLS-aware Apache webserver was
-                    successfully installed on this website.
-</pre>
 <p>You can check to make sure your Apache web server is working
-by using any browser to connect to localhost, and you should see
-results similar to that above.  To make sure that SSL support
+by using any browser to connect to localhost.  To make sure that SSL support
 is functional, use a browser to connect to <uri>http<comment>s</comment>://localhost</uri>.
 The <c>https</c> prefix tells the browser to make a <e>secure</e> connection
-to the server using SSL.  The result is a page that should look the same as
-the one above, but graphical browsers will have a padlock icon somewhere indicating
-the secure connection.</p>
+to the server using SSL.  Graphical browsers will have a padlock icon somewhere
+indicating the secure connection.</p>
 <note>When making a secure connection to your server, you will most likely receive
-a warning that the site's security certificate is not recognized.  The Apache ebuild
-installs a self-signed security certificate.  See the <c>mod_ssl</c> manual: 
-<uri>http://localhost/manual/mod/mod_ssl/ssl_intro.html#ToC5</uri>.  For personal
-use a self-signed certificate is just fine.</note>
+a warning that the site's security certificate is not recognized.  The mod_ssl ebuild
+installs a self-signed security certificate, which is intended to be used for
+testing purposes only.  See the <c>mod_ssl</c> manual: 
+<uri>http://localhost/doc/mod_ssl-2.8.8/html</uri>.  For personal use a self-signed
+certificate is just fine.</note>
 <p>Now we need to make sure that PHP is working correctly.  The first step
-is to create a simple PHP file and put it in the Apache server root directory.</p>
+is to create a simple PHP file and put it in the Apache DocumentRoot directory.</p>
 <pre>
 # <i>echo "&lt;? phpinfo(); ?&gt;" > /home/httpd/htdocs/test.php</i>
 # <i>lynx http://localhost/test.php</i>
@@ -1016,12 +1009,12 @@ place, is straightforward.</p>
 # <i>cd squirrelmail</i>
 # <i>./configure</i>
 </pre>
-<note>If your Apache server root is not <path>/home/httpd</path>,
+<note>If your Apache DocumentRoot is not <path>/home/httpd/htdocs</path>,
 you will want to edit the <path>net-mail/squirrelmail</path> ebuild
-to point to your httpd root.</note>
+to point there.</note>
 <p>For squirrelmail to work correctly, you need to make sure that
 all of the files are owned by the user that Apache runs
-as (the squirrelmail ebuild assumes that user is "nobody").  
+as (the squirrelmail ebuild assumes that user is "apache").
 Use <c>./configure</c> to select option <e>2</e>.</p>
 <pre caption="Squirrelmail configuration -- Server settings">
 SquirrelMail Configuration : Read: config.php
@@ -1068,26 +1061,8 @@ Command >>
 <p>I use the data directory in the package, although it would be
 better security to use one outside the Apache document tree.  I
 also use <path>/tmp</path> as my directory to store attachments.</p>
-<p>You also need to make a minor change to the Apache's configuration
-so that it knows that <path>index.php</path> should be executed upon
-entering a directory that has such a file in it.</p>
-<pre>
-# <i>nano -w /etc/apache/conf/apache.conf</i>
-# <i>/etc/init.d/httpd restart</i>
- * Stopping apache...              [ ok ] 
- * Starting apache...              [ ok ]
-</pre>
-<pre caption="/etc/apache/conf/apache.conf">
-#
-# DirectoryIndex: Name of the file or files to use as a pre-written HTML
-# directory index.  Separate multiple entries with spaces.
-#
-&lt;IfModule mod_dir.c&gt;
-    DirectoryIndex index.html index.htm <comment>index.php</comment>
-&lt;/IfModule&gt;
 
-</pre>
-<p>Browse to <uri>https://localhost/squirrelmail/</uri>, and it should work!</p>
+<p>Now you can browse to <uri>https://localhost/squirrelmail/</uri>, and it should work!</p>
 <pre>
 # <i>lynx https://localhost/squirrelmail/</i>
 </pre>
