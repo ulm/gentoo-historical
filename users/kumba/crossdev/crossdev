@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/kumba/crossdev/Attic/crossdev,v 1.13 2004/10/25 10:09:57 kumba Exp $
+# $Header: /var/cvsroot/gentoo/users/kumba/crossdev/Attic/crossdev,v 1.14 2005/01/09 19:09:13 kumba Exp $
 
 
 #// Set user-defined data
@@ -189,6 +189,7 @@ ParseCommandLine() {
 			--arch=*)	CMDARCH="$(echo ${CMDLINE} | cut -d\= -f2)"		;;
 			--clean|-C)	CMDCLEAN="yes"						;;
 			--help|-h)	displayHelp;		exit 0;				;;
+			--ip28)		CMDMIPSIP28="yes"					;;
 			--kernel|-k)	CMDKERNEL="yes"						;;
 			--nptl|-n)	CMDNPTL="yes"						;;
 			--overwrite|-O)	CMDOVERWRITE="yes"					;;
@@ -433,6 +434,12 @@ displayHelp() {
 	echo -e ""
 	echo -e "    ${GREEN}--help${XX}	(${GREEN}-h${XX} short option)"
 	echo -e "		Display help (this screen)."
+
+	echo -e ""
+	echo -e "    ${GREEN}--ip28${XX}	(no short option available)"
+	echo -e "		Passes \"ip28\" to USE to enable building of a gcc that can produce"
+	echo -e "		proper code to build a kernel for use on SGI IP28 machines.  Only use"
+	echo -e "		if you know what you're doing."
 
 	echo -e ""
 	echo -e "    ${GREEN}--kernel${XX}	(${GREEN}-k${XX} short option)"
@@ -975,6 +982,15 @@ DisplayInfo() {
 	binfon "Building Kernel Compiler..."
 	if [ "${CMDKERNEL}" = "yes" ]; then
 		echo -e "\t\t${CYAN}Yes${XX}"
+
+		#// If building a kernel compiler AND building mips
+		#// AND building IP28-aware compiler, display.
+		if [ "${TARGETARCH}" = "mips64" ]; then
+			binfon "Building IP28 compiler..."
+			[ "${CMDMIPSIP28}" = "yes" ] \
+				&& echo -e "\t\t${CYAN}Yes${XX}" \
+				|| echo -e "\t\tNo"
+		fi
 	else
 		echo -e "\t\tNo"
 
@@ -1108,11 +1124,22 @@ UnpackSource() {
 	fi
 
 
-	#// Check for nptl support
-	local tmp_use_nptl
-	[ ! -z "${CMDNPTL}" ] \
-		&& tmp_use_nptl="nptl" \
-		|| tmp_use_nptl="-nptl"
+	#// Things to do if not building a kernel compiler
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		#// Check for nptl support
+		local tmp_use_nptl=""
+		[ ! -z "${CMDNPTL}" ] \
+			&& tmp_use_nptl="nptl" \
+			|| tmp_use_nptl="-nptl"
+	else
+		#// Things to do if we are building a kernel compiler
+		#//
+		#// IP28?
+		local tmp_use_ip28=""
+		[ ! -z "${CMDMIPSIP28}" ] \
+			&& tmp_use_ip28="ip28" \
+			|| tmp_use_ip28="-ip28"
+	fi
 
 
 	#// Fetch & Unpack Packages
@@ -1128,7 +1155,7 @@ UnpackSource() {
 
 	showInfo "Unpacking ${CROSS_PORTDIR}/${GCC_CAT}/${GCC_NAME}/${GCC_PDIR}.ebuild..."
 	doebuild "${CROSS_PORTDIR}/${GCC_CAT}/${GCC_NAME}/${GCC_PDIR}.ebuild" "unpack" \
-		 "-${GENTOO_KEYW} ${CROSS_KEYW}" "${CROSS_KEYW}" "${FUNCNAME}" "${LINENO}"
+		 "-${GENTOO_KEYW} ${CROSS_KEYW} ${tmp_use_ip28}" "${CROSS_KEYW}" "${FUNCNAME}" "${LINENO}"
 
 	if [ "${CMDKERNEL}" != "yes" ]; then
 		#// Check in glibc ebuild tries to avoid a glibc downgrade, but since we're cross-compiling
