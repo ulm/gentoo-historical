@@ -436,6 +436,9 @@ User Docs:<br/>
 							<xsl:when test="@category='linux'">
 								<img src="/images/icon-penguin.png"/>
 							</xsl:when>
+							<xsl:when test="@category='moo'">
+								<img src="/images/icon-cow.png"/>
+							</xsl:when>
 							</xsl:choose>
 							</td><td valign="top">
 							<xsl:choose>
