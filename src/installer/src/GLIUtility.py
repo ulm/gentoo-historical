@@ -244,6 +244,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 def exitsuccess(status):
 	if status == 0:
 		return True
+	print "exitsuccess(): status = " + str(status)
 
 	return False
 
