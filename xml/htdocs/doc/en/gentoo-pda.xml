@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/en/gentoo-pda.xml">
+  <title>Handspring Visor Guide</title>
+  <author title="Author">
+    <mail link="zhen@gentoo.org">John P. Davis</mail>
+  </author>
+  <author title="Author">Steven Hay</author>
+  <abstract>This guide covers the configuration of many popular PDAs for
+use under Gentoo Linux.
+</abstract>
+  <version>1.0</version>
+  <date>07 December 2002</date>
+  <chapter>
+    <title>PDA Independent Setup</title>
+    <section>
+      <title>USB Kernel Configuration</title>
+      <body>
+        <p>The first thing you must do is see if your kernel supports your USB
+hardware properly, and if not, install the appropriate drivers.  This
+HOWTO assumes that you know the basics of configuring a kernel.</p>
+        <p>If you do not already have the sources to the Linux kernel on your hard drive, now would
+be the time to go and get them. I will not cover the different kernels that Gentoo offers,
+so if you would like more information, please consult the
+<uri link="http://www.gentoo.org/doc/en/gentoo-x86-install.xml">Installation Guide</uri>.
+</p>
+        <pre caption="Necessary USB Kernel Options">
+# <c>cd /usr/src/linux</c>
+# <c>make menuconfig</c>
+</pre>
+        <p> Here are the options you should be looking for:
+<ul><li>USB support (CONFIG_USB)</li><li>The preliminary USB Device Filesystem (CONFIG_USB_DEVICEFS)</li><li>The appropriate controller - UHCI, or OHCI (CONFIG_USB_UHCI, or CONFIG_USB_OHCI)</li><li>USB Serial Converter support (CONFIG_USB_SERIAL)</li><li>USB Handspring Visor Driver (CONFIG_USB_SERIAL_VISOR) (serial converter's sub-option)
+[or pick another appropriate driver]</li></ul>
+</p>
+        <note>If possible, compile these as modules, and add them to
+<path> /etc/modules.autoload</path> so that they can be automatically
+loaded at boot time.
+</note>
+      </body>
+    </section>
+    <section>
+      <title>Setting Up devfsd</title>
+      <body>
+        <note>The below entries are for setting up syncing for a USB Palm Pilot/Handspring. You may
+not have to follow these directions if you are using another PDA.
+</note>
+        <p> Ok, so first make the following symlinks; this makes <e>most</e> of the available syncing programs
+work.
+</p>
+        <pre caption="Creating symlinks">
+# <c>ln -s /dev/usb/tts/1 /dev/palm</c>
+# <c>ln -s /dev/usb/tts/1 /dev/pilot</c>
+</pre>
+        <p>Then add the following code to /etc/devfsd.conf.</p>
+        <pre caption="Editing /etc/devfsd.conf">
+<comment>#configure USB added by YOU! </comment>
+REGISTER        ^usb            PERMISSIONS     0.0     0777
+REGISTER        ^usb/tts        PERMISSIONS     0.0     0777
+#REGISTER        ^usb/tts/1      EXECUTE       /bin/su YOU -c	&quot;/usr/bin/jpilot -sync&quot;
+#REGISTER       ^usb/tts/1       EXECUTE       /bin/su YOU -c	&quot;/usr/bin/coldsync -p /dev/usb/tts/ -mb /home/YOU/palmbackup&quot;
+REGISTER        ^usb/tts/[0-9]  PERMISSIONS     0.0     0777
+</pre>
+        <p> We will come back to this later.  Basically, this sets up
+permissions for USB to be accessible by anyone, making it
+potentially insecure.</p>
+      </body>
+    </section>
+    <section>
+      <title>Serial Configuration</title>
+      <body>
+        <p>I'll assume your Palm cradle plugs into the first serial port
+(/dev/ttyS0, or /dev/tts/0 in &quot;devfs&quot; notation).
+</p>
+        <pre caption="Adding serial device">
+# <c>groupadd serial</c>
+# <c>chown root.serial /dev/tts/0</c>
+# <c>chmod g+rw /dev/tts/0</c>
+# <c>ls -l /dev/tts/0</c>
+# crw-rw----    1 root     serial     4,  64 Dec 31  1969 /dev/tts/0
+# <c>ln -s /dev/tts/0 /dev/pilot</c>
+# <c>nano -w /etc/group</c> <comment>(add appropriate users to the serial group)</comment>
+</pre>
+        <p>We've added a &quot;serial&quot; group to the system, and you should add any users who need
+to use the serial port (any Palm pilot users) to the serial group.  We've given
+the serial group &quot;rw&quot; permissions on <path>/dev/tts/0</path>, and for future
+reference we have made a <path>/dev/pilot</path> symbolic link to
+<path>/dev/tts/0</path>.  Thanks to recent changes in how devfs is handled on
+Gentoo these changes will persist after rebooting.
+</p>
+        <note>
+Users of pre-rc6-r13 can either upgrade <path>sys-apps/baselayout</path>
+and <path>sys-apps/devfsd</path> (and merge in any &quot;._cfg*&quot; files in
+<path>/etc</path> that result), or simply add the appropriate permissions
+and symlink in <path>/etc/devfsd.conf</path>.
+</note>
+      </body>
+    </section>
+    <section>
+      <title>Restarting devfsd</title>
+      <body>
+        <p> Now you need to restart the <e>devfsd</e> daemon.  If your
+config file has errors, you may need to start the daemon again
+manually because it will stop running.</p>
+        <pre caption="Restarting devfsd">
+# <i>killall -HUP devfsd</i>
+</pre>
+      </body>
+    </section>
+    <section>
+      <title>Miscellaneous Gentoo Procedures</title>
+      <body>
+        <p>Before compiling any programs that you will be using for your PDA, it is a good idea
+to add the <e>pda</e> USE variable to <path>/etc/make.conf</path>. Doing this will ensure
+that any programs you have will have their optional PDA (if availible) support built-in.
+</p>
+        <pre caption="Editing /etc/make.conf">
+# <c>vim /etc/make.conf</c>
+<comment>You are looking for this line</comment>
+USE=&quot;use1 use2 etc <e>pda</e>&quot;
+</pre>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Handspring/Palm Syncing</title>
+    <section>
+      <title>General Information</title>
+      <body>
+        <p>You will need software to synchronize the data on your PDA.
+So far, we have setup the hardware side of the house, now its time for
+the (hopefully) easier software side.  There are two major categories
+for syncing software; some are rather low-level and simply perform the
+synchronization download, others are more robust palm environments to
+edit and view the data on your palmtop.</p>
+      </body>
+    </section>
+    <section>
+      <title>Coldsync</title>
+      <body>
+        <p>Coldsync is considered a <i>low-level</i> program, because it
+doesn't do anything fancy like some of the ones covered later.  This
+may or may not be what you are looking for.  Coldsync can be found at
+<uri>http://www.coldsync.org/</uri>It was written as a replacement for
+pilot-link.  To install this program, do the following:</p>
+        <pre caption="Installing ColdSync">
+# <c>emerge coldsync</c>
+</pre>
+        <p>Now, after making sure all of your modules are loaded, press
+the sync button on the cradle and within a few seconds, execute
+coldsync with proper options as a user this time:</p>
+        <pre caption="Using ColdSync">
+# <c>mkdir ~/palmbackup/</c>
+<comment>press the sync button</comment>
+# <c>coldsync -p /dev/usb/tts/1 -mb ~/palmbackup/</c>
+</pre>
+      </body>
+    </section>
+    <section>
+      <title>Pilot-link</title>
+      <body>
+        <p>Pilot-Link can be found at
+<uri>http://www.gnu-designs.com/pilot-link</uri>. This utility is beyond the
+scope of this tutorial because I chose not to use this program
+directly.  However, I've read that the execution command is
+something like this:</p>
+        <pre caption="Using Pilot-Link">
+# <c>mkdir ~/palmbackup/</c>
+<comment>press the sync button</comment>
+# <c>pilot-xfer -p /dev/usb/tts/1 -b ~/palmbackup/</c>
+</pre>
+      </body>
+    </section>
+    <section>
+      <title>Higher-Level Syncing Software</title>
+      <body>
+        <p>There are a few Palm desktop equivalents. I will go over how to use
+JPilot, which uses the pilot-link libraries.  You can try them out at
+your own pleasure:
+<ul><li><uri>http://www.moshpit.org/pilotmgr/</uri>Pilotmanager</li><li><uri>http://www.jpilot.org/</uri>J-Pilot</li><li><uri>http://www.slac.com/pilone/kpilot_home/</uri>KPilot (KDE)</li><li><uri>http://www.gnome.org/projects/gnome-pilot/</uri>Gnome-Pilot (GNOME)</li></ul>
+</p>
+      </body>
+    </section>
+    <section>
+      <title>J-Pilot</title>
+      <body>
+        <p> J-Pilot is easy.  Emerge it and run it, play around with it.  To
+install, type:</p>
+        <pre caption="Installing JPilot">
+# <c>emerge jpilot</c>
+</pre>
+        <p>Now as a user, go ahead and sync your palm first, then run the
+software: </p>
+        <pre caption="Syncing your PDA">
+# <c>jpilot-sync</c>
+# <c>jpilot</c>
+</pre>
+        <note>If syncing doesn't work, look at the error message; you
+may need to make a symlink, set your permissions properly in devfsd,
+or pass an argument.  See the manpage.
+</note>
+      </body>
+    </section>
+    <section>
+      <title>Smooth, Sexy Automation</title>
+      <body>
+        <p>Now you should go and look at your devfsd configuration file
+again.  If you hadn't guessed by the commented out code, this is how
+you get the pilot to sync automatically when you press the button.
+When that device shows up, you can setup devfsd to automatically
+execute something.  Below, I have an example setup for user YOU:</p>
+        <pre caption="Editing /etc/devfsd.conf">
+#configure USB  added by YOU!
+REGISTER        ^usb            PERMISSIONS     0.0     0777
+REGISTER        ^usb/tts        PERMISSIONS     0.0     0777
+REGISTER        ^usb/tts/1      EXECUTE       /bin/su YOU -c	&quot;/usr/bin/jpilot -sync&quot;
+</pre>
+        <note>The daemon is run as root. Notice that it uses su
+to change to the person who owns the pilot before syncing, and doesn't
+require a password to do so.
+</note>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Final Notes</title>
+    <section>
+      <title>References</title>
+      <body>
+        <p>Additional info:
+<ul><li><uri>http://www.linuxpda.com/visor/howto/current/t1.html</uri> Handspring-Visor with Linux mini-HOWTO</li><li><uri>http://www.linux-usb.org/USB-guide/book1.html</uri> Linux USB Guide</li></ul>
+</p>
+      </body>
+    </section>
+  </chapter>
+</guide>
