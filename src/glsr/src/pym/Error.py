@@ -11,7 +11,7 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.12 2005/01/26 23:54:33 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.13 2005/01/26 23:59:15 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_uncaught(req):
@@ -25,12 +25,7 @@ def error_uncaught(req):
     import State
     import Config
     from Logging import logwrite
-
-    try:
-        req.clear_output()
-    except SequencingError:
-        pass
-    
+   
     (tbtype, value, traceb) = sys.exc_info()
     tblines = traceback.format_exception(tbtype, value, traceb)
     # FIXME: multine line statements are getting chopped off somewhere in the traceback module.
