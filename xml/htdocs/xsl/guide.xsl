@@ -454,6 +454,8 @@
                     <br/>
                     <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
                     <br/>
+                    <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
+                    <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
                     <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
