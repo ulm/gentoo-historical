@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-portage.xml,v 1.34 2004/08/28 11:30:43 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-portage.xml,v 1.35 2004/08/29 10:56:31 swift Exp $ -->
 
 <sections>
 <section>
@@ -759,18 +759,68 @@ filesystem successfully. The three flags specify the following reasons:
 <body>
 
 <p>
-Gentoo places its packages in two possible stadia called <e>ARCH</e> and
-<e>~ARCH</e>. Don't take this literally: the stadia depend on the architecture
-you are using. In other words, for x86-based systems you have <e>x86</e> and
-<e>~x86</e>, for ppc-based systems you have <e>ppc</e> and <e>~ppc</e> etc.
+When a Gentoo developer puts an ebuild online it informs Portage how to treat
+the package depending on the architecture and stability of the software title.
+He does so by defining a variable called <c>KEYWORDS</c> inside the ebuild.
+This variable contains one or more architectures and marks them with a special
+flag. An explanation of the available flags is given in the next table.
 </p>
 
+<table>
+<tr>
+  <th>Flag</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>ARCH</ti>
+  <ti>Known to work well on the given architecture</ti>
+</tr>
+<tr>
+  <ti>~ARCH</ti>
+  <ti>
+    Probably works well but needs some further testing on the given
+    architecture
+  </ti>
+</tr>
+<tr>
+  <ti>-ARCH</ti>
+  <ti>Known not to work on the given architecture</ti>
+</tr>
+<tr>
+  <ti>-*</ti>
+  <ti>Known not to work or being extremely dangerous on any architecture</ti>
+</tr>
+</table>
+
 <p>
-The <e>~ARCH</e> stadium means that the package works for the developer in
-charge of the package, but that the package hasn't been tested thoroughly enough
-by the community to be placed in <e>ARCH</e>. <e>~ARCH</e> packages usually go
-to <e>ARCH</e> after being bugfree for a sufficient amount of time.
+Let's take a look at an example:
 </p>
+
+<pre caption="Example KEYWORDS setting">
+KEYWORDS="x86 -sparc ~alpha ~ppc"
+</pre>
+
+<p>
+This example can be read as follows:
+</p>
+
+<ul>
+  <li>
+    The ebuild works well on the x86 architecture
+  </li>
+  <li>
+    The ebuild doesn't work on the sparc architecture
+  </li>
+  <li>
+    The ebuild probably works on the alpha architecture but needs more testing
+  </li>
+  <li>
+    The ebuild probably works on the ppc architecture but needs more testing
+  </li>
+  <li>
+    The ebuild might work on the other architectures but hasn't been tried yet
+  </li>
+</ul>
 
 <p>
 Your system will use <e>ARCH</e> packages per default. If you want to live on
@@ -819,7 +869,34 @@ A package can be masked due to several reasons:
 </ol>
 
 <p>
-If the package is masked because of the first reason, and you <e>really</e>
+Portage will inform you why a certain package cannot be installed:
+</p>
+
+<ul>
+  <li>
+    <b>~arch keyword</b>: the package is known to work on the given architecture
+    but requires more testing while your system requires that a package is 
+    known to work well
+  </li>
+  <li>
+    <b>-arch keyword</b>: the package is known not to work on the given 
+    architecture
+  </li>
+  <li>
+    <b>-* keyword</b>: the package is known not to work on any architecture
+  </li>
+  <li>
+    <b>package.mask</b>: the package is listed in the <path>package.mask</path>
+    file, meaning that it breaks something, crashes your system, has severe
+    security issues or worse
+  </li>
+  <li>
+    <b>profile</b>: the package is not available for your profile
+  </li>
+</ul>
+
+<p>
+If the package is masked because of <b>~arch keyword</b>, and you <e>really</e>
 want to install it (knowing that there <e>is</e> a reason why it isn't
 available in <e>ARCH</e>), you can accept the <e>~ARCH</e> version of any
 package by adding it to your <path>/etc/portage/package.keywords</path> file:
@@ -834,7 +911,33 @@ package by adding it to your <path>/etc/portage/package.keywords</path> file:
 </pre>
 
 <p>
-A package is hardmasked if it is listed in
+Similarly, if you want to install a package marked <b>-arch keyword</b> or <b>-*
+keyword</b> regardless of all the warnings we might put in front of you, edit
+<path>/etc/portage/package.keywords</path> and add the package with the required
+keyword:
+</p>
+
+<pre caption="Accepting the -arch or -* version of a package">
+<comment>(Create the /etc/portage directory if it doesn't exist yet)</comment>
+# <i>mkdir /etc/portage</i>
+
+# <i>echo "app-office/gnumeric -x86" &gt;&gt; /etc/portage/package.keywords</i>
+<comment>(or)</comment>
+# <i>echo "app-office/gnumeric -*" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+If you only want to allow the merging of such a package for a specific version
+or version range, you can use the "&lt;, &lt;=, =, &gt;= or &gt;" operands:
+</p>
+
+<pre caption="Accepting a specific ~arch-marked version of a package">
+# <i>echo "=app-office/gnumeric-2.0 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+</pre>
+
+<p>
+A package is masked due to <b>package.mask</b> if it is listed in
 <path>/usr/portage/profiles/package.mask</path>. If you read this file, you
 will also read the reason why the package is hardmasked (it is usually added as
 a comment). If you want to install the package nevertheless (despite all the
@@ -863,8 +966,8 @@ or when these versions break something else in your environment.
 </p>
 
 <p>
-To hard-mask a package, create <path>/etc/portage/package.mask</path> and list the
-package in it (use the same format as mentioned above).
+To hard-mask a package, create <path>/etc/portage/package.mask</path> and list 
+the package in it (use the same format as mentioned above).
 </p>
 
 <pre caption="Hard-masking a package">
@@ -873,6 +976,31 @@ package in it (use the same format as mentioned above).
 
 # <i>echo "&gt;app-office/gnumeric-1.2.10" &gt;&gt; /etc/portage/package.mask</i>
 </pre>
+
+<p>
+When Portage tells you that it cannot install a package due to <b>profile</b> it
+means that you are working with a certain profile that doesn't allow the package
+to be installed. But what is this "profile"?
+</p>
+
+<p>
+A profile contains a list of package names and a set of default configuration
+options to be used by Portage. Those files tell Portage which packages
+and which specific versions of those packages to allow, disallow, or
+treat as required.  Users can switch profiles by changing a single symlink
+(<path>/etc/make.profile</path>).
+</p>
+
+<p>
+You cannot override a package that is blocked due to <b>profile</b>; if you
+really want to use it, switch to the required profile.
+</p>
+
+<p>
+You will find more information in our <uri
+link="/proj/en/releng/docs/cascading-profiles.xml">Cascading Profiles
+Document</uri>.
+</p>
 
 </body>
 </subsection>
