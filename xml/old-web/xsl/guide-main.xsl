@@ -722,12 +722,12 @@ Otros:<br/>
     <br/>
   </xsl:template>
   <xsl:template match="chapter">
-    <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable>
+    <xsl:variable name="chid"><xsl:number/></xsl:variable>
     <xsl:choose>
       <xsl:when test="title">
         <p class="chaphead">
           <font class="chapnum">
-            <a name="{$chapid}"><xsl:number/>.</a>
+            <a name="doc_chap{$chid}"><xsl:number/>.</a>
           </font>
           <xsl:value-of select="title"/>
         </p>
@@ -736,27 +736,32 @@ Otros:<br/>
         <xsl:if test="/guide">
           <p class="chaphead">
             <font class="chapnum">
-              <a name="{$chapid}"><xsl:number/>.</a>
+              <a name="doc_chap{$chid}"><xsl:number/>.</a>
             </font>
           </p>
         </xsl:if>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:apply-templates select="body"/>
+    <xsl:apply-templates select="body">
+      <xsl:with-param name="chid" select="$chid"/>
+    </xsl:apply-templates>
     <xsl:apply-templates select="section">
-      <xsl:with-param name="chapid" select="$chapid"/>
+      <xsl:with-param name="chid" select="$chid"/>
     </xsl:apply-templates>
   </xsl:template>
   <xsl:template match="section">
-    <xsl:param name="chapid"/>
+    <xsl:param name="chid"/>
     <xsl:if test="title">
-      <xsl:variable name="sectid"><xsl:value-of select="$chapid"/>_sect<xsl:number/></xsl:variable>
+      <xsl:variable name="sectid"><xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
       <p class="secthead">
         <a name="{$sectid}"><xsl:value-of select="title"/> </a>
       </p>
     </xsl:if>
-    <xsl:apply-templates select="body"/>
+    <xsl:apply-templates select="body">
+      <xsl:with-param name="chid" select="$chid"/>
+    </xsl:apply-templates>
   </xsl:template>
+<!--  
   <xsl:template match="subsection">
     <xsl:param name="chapid"/>
     <xsl:if test="title">
@@ -767,11 +772,13 @@ Otros:<br/>
     </xsl:if>
     <xsl:apply-templates select="body"/>
   </xsl:template>
+-->
   <xsl:template match="figure">
+    <xsl:with-param name="chid"/>
     <xsl:variable name="fignum">
-      <xsl:number level="any"/>
+      <xsl:number level="any" from="chapter" count="figure"/>
     </xsl:variable>
-    <xsl:variable name="figid">doc_fig<xsl:number/></xsl:variable>
+    <xsl:variable name="figid">doc_chap<xsl:value-of select="$chid"/>_fig<xsl:value-of select="$fignum"/></xsl:variable>
     <br/>
     <a name="{$figid}"/>
     <table cellspacing="0" cellpadding="0" border="0">
@@ -780,10 +787,10 @@ Otros:<br/>
           <p class="caption">
             <xsl:choose>
               <xsl:when test="@caption">
-				Figure <xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+				Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
 			</xsl:when>
               <xsl:otherwise>
-				Figure <xsl:value-of select="$fignum"/>
+				Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
 			</xsl:otherwise>
             </xsl:choose>
           </p>
@@ -884,7 +891,10 @@ Otros:<br/>
     </font>
   </xsl:template>
   <xsl:template match="body">
-    <xsl:apply-templates/>
+    <xsl:param name="chid"/>
+    <xsl:apply-templates>
+      <xsl:with-param name="chid" select="$chid"/>
+    </xsl:apply-templates>
   </xsl:template>
   <xsl:template match="c">
     <font class="code">
@@ -897,10 +907,11 @@ Otros:<br/>
     </p>
   </xsl:template>
   <xsl:template match="pre">
+    <xsl:param name="chid"/>
     <xsl:variable name="prenum">
-      <xsl:number level="any"/>
+      <xsl:number level="any" from="chapter" count="pre"/>
     </xsl:variable>
-    <xsl:variable name="preid">doc_pre<xsl:number level="any"/></xsl:variable>
+    <xsl:variable name="preid">doc_chap<xsl:value-of select="$chid"/>_pre<xsl:value-of select="$prenum"/></xsl:variable>
     <a name="{$preid}"/>
     <table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
       <tr>
@@ -908,10 +919,10 @@ Otros:<br/>
           <p class="caption">
             <xsl:choose>
               <xsl:when test="@caption">
-			Code listing <xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+			Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
 		</xsl:when>
               <xsl:otherwise>
-			Code listing <xsl:value-of select="$prenum"/>
+			Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
 		</xsl:otherwise>
             </xsl:choose>
           </p>
@@ -948,8 +959,11 @@ Otros:<br/>
     </xsl:choose>
   </xsl:template>
   <xsl:template match="p">
+    <xsl:param name="chid"/>
     <p>
-      <xsl:apply-templates/>
+      <xsl:apply-templates>
+        <xsl:with-param name="chid" select="$chid"/>
+      </xsl:apply-templates>
     </p>
   </xsl:template>
   <xsl:template match="e">
