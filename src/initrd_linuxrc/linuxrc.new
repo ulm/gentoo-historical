@@ -12,6 +12,7 @@ mount /proc
 
 echo "${GOOD} Gentoo initrd startup..."
 
+CMDLINE=`cat /proc/cmdline`
 # Scan CMDLINE for any specified real_root= or cdroot arguments
 for x in "${CMDLINE}"
 do
@@ -55,9 +56,11 @@ then
 	mount -t tmpfs tmpfs /newroot
 	mkdir /newroot/dev /newroot/mnt /newroot/mnt/cdrom /newroot/mnt/.init.d /newroot/mnt/gentoo
 	[ ! -e /newroot/dev/.devfsd ] && mount -t devfs devfs /newroot/dev
+	devfsd /newroot/dev
 	findcdmount /newroot/dev/cdroms/*
 	if [ "${REAL_ROOT}" = "" ]
 	then
+		kill_devfsd
 		umount /newroot/dev/
 		umount /newroot
 		# shouldn't be anything in here b/c it was on tmpfs
@@ -71,6 +74,7 @@ fi
 if [ "${CDROOT}" -eq "0" ]
 then
 	[ ! -e /dev/.devfsd ] && mount -t devfs devfs /dev
+	devfsd /newroot/dev
 fi
 
 while true
@@ -130,7 +134,9 @@ then
 	mkdir initrd proc tmp sys
 	chmod 1777 tmp
 	(cd /newroot/mnt/cdrom; cp -a ${ROOT_TREES} /newroot)
+	kill_devfsd
 else
+	kill_devfsd
 	umount /proc
 	umount /dev
 	mkdir /newroot/initrd
