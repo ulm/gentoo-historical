@@ -1,6 +1,6 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.1 2003/10/08 04:29:10 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.2 2003/10/10 01:33:53 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
@@ -232,7 +232,7 @@ pre_build() {
 	#copy resolv.conf
 	cp /etc/resolv.conf ${CHROOTDIR}/etc || die
 
-	if [ $1 = "2" ]
+	if [ $1 = "2" ] && [ ${BUILDTYPE} = "hardened" ]
 	then
 		# copy our bootstrap file
 		cp -a ${BASEDIR}/bin/bootstrap.sh ${CHROOTDIR}/usr/portage || die
@@ -307,7 +307,10 @@ EOF
 			then
 				emerge --oneshot --nodeps --usepkg --buildpkg ccache || exit 1
 			fi
-			emerge --oneshot --nodeps hardened-gcc || exit 1
+			if [ ${BUILDTYPE} = "hardened" ]
+			then
+				emerge --oneshot --nodeps hardened-gcc || exit 1
+			fi
 			export CONFIG_PROTECT="-*"
 			export MAKEOPTS="-j${jobs}"
 			emerge system --usepkg --buildpkg || exit 1

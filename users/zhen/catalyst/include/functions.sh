@@ -1,10 +1,10 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.1 2003/10/08 19:21:01 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.2 2003/10/10 01:33:53 zhen Exp $
 
 usage() {
-	einfo "Catalyst: Gentoo Hardened Stage Building tool v${VERSION}"
+	einfo "Catalyst: Gentoo Linux Stage Building tool v${VERSION}"
 	einfo "Copyright 2003, Gentoo Technologies. Licensed under the GPLv2"
 	echo
 	einfo "Syntax: catalyst <arch> <stage> srcver destver"
@@ -17,7 +17,7 @@ usage() {
 
 print_build() { 
 	echo
-	einfo "Gentoo Hardened stager (Catalyst) V${VERSION} starting."
+	einfo "Gentoo Linux staging tool (Catalyst) V${VERSION} starting."
 	einfo "Tarball Settings:"
 	einfo  " Architecture: ${MAINARCH}"
 	einfo  " Sub-architecture: ${SUBARCH}"
