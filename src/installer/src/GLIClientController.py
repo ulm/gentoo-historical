@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.11 2004/08/25 21:53:50 samyron Exp $
+$Id: GLIClientController.py,v 1.12 2004/08/31 15:34:34 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -87,7 +87,7 @@ class GLIClientController(Thread):
 		modules = self._configuration.get_kernel_modules()
 		for module in modules:
 			try:
-				ret = GLIUtility.run_cmd('modprobe ' + module, quiet=True)
+				ret = GLIUtility.spawn('modprobe ' + module, quiet=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise KernelModuleError('warning', 'load_kernel_modules', 'Could not load module: ' + module)
 				else:
@@ -100,10 +100,10 @@ class GLIClientController(Thread):
 		self._logger.log("Setting root password.")
 		if self._configuration.get_root_passwd() == "":
 			passwd = GLIUtility.generate_random_password()
-			status = GLIUtility.run_cmd('echo "root:' + passwd + '" | chpasswd',quiet=True)
+			status = GLIUtility.spawn('echo "root:' + passwd + '" | chpasswd',quiet=True)
 		else:
 			# The password specified in the configuration is encrypted.
-			status = GLIUtility.run_cmd('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
+			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
 		if not GLIUtility.exitsuccess(status):
 			raise PasswordError('warning', 'set_root_passwd()',"Could not set the root password!")
@@ -122,9 +122,9 @@ class GLIClientController(Thread):
 					interface = "eth0"
 
 				if interface:
-					status = GLIUtility.run_cmd("dhcpcd " + interface, quiet=True)
+					status = GLIUtility.spawn("dhcpcd " + interface, quiet=True)
 				else:
-					status = GLIUtility.run_cmd("dhcpcd", quiet=True)
+					status = GLIUtility.spawn("dhcpcd", quiet=True)
 
 				if not GLIUtility.exitsuccess(status):
 					raise DHCPError('fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
@@ -132,7 +132,7 @@ class GLIClientController(Thread):
 			elif type == "manual" and self._configuration.get_interactive():
 				# Drop to bash shell and let them configure it themselves
 				print "Please configure & test your network device."
-				GLIUtility.run_bash()
+				GLIUtility.spawn_bash()
 			elif type == "manual" and not self._interactive.get_interactive():
 				print "You cannot manually configure the network in non-interactive mode!"
 				print "Please fix either the network settings or the interactive mode!"
@@ -149,7 +149,7 @@ class GLIClientController(Thread):
 
 	def enable_ssh(self):
 		if self._configuration.get_enable_ssh():
-			status = GLIUtility.run_cmd("/etc/init.d/sshd start", quiet=True)
+			status = GLIUtility.spawn("/etc/init.d/sshd start", quiet=True)
 			if not GLIUtility.exitsuccess(status):
 				raise SSHError('warning','enable_ssh',"Could not start SSH daemon!")
 			else:

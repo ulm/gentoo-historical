@@ -156,7 +156,7 @@ def is_eth_device(device):
 		return False
 
 	# Create a regular expression to test the specified device.
-	expr = re.compile('^eth([0-9]{1,2})(:[0-9]{1,2})?$')
+	expr = re.compile('^(eth|wlan|ppp)([0-9]{1,2})(:[0-9]{1,2})?$')
 
 	# Run the match
 	res = expr.match(device)
@@ -189,7 +189,7 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
-	status = run_cmd("ifconfig " + options, quiet=True)
+	status = spawn("ifconfig " + options, quiet=True)
 
 	if not exitsuccess(status):
 		return False
@@ -200,14 +200,14 @@ def set_default_route(route):
 	if not is_ip(route):
 		raise IPAddressError('fatal', 'set_default_route', "The default route must be an IP address!")
 
-	status = run_cmd("route add default gw " + route, quiet=True)
+	status = spawn("route add default gw " + route, quiet=True)
 
 	if not exitsuccess(status):
 		return False
 
 	return True
 
-def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
+def spawn(cmd,quiet=False,logfile=None,display_on_tty8=False):
 	pid = os.fork()
 	if pid == 0:
 		if quiet and logfile != None:
@@ -240,19 +240,19 @@ def exitsuccess(status):
 
 	return False
 
-def run_bash():
+def spawn_bash():
 	os.putenv("PROMPT_COMMAND","echo \"Type 'exit' to return to the installer.\"")
-	return run_cmd("bash")
+	return spawn("bash")
 
 def get_uri(uri, path):
 	uri = uri.strip()
 	status = 1
 
 	if re.match('^(ftp|http(s)?)://',uri):
-		status = run_cmd("wget --quiet " + uri + " -O " + path)
+		status = spawn("wget --quiet " + uri + " -O " + path)
 
 	elif re.match('^rsync://', uri):
-		status = run_cmd("rsync --quiet " + uri + " " + path)
+		status = spawn("rsync --quiet " + uri + " " + path)
 
 	elif re.match('^file://', uri):
 		file = uri[7:]
@@ -279,7 +279,7 @@ def get_uri(uri, path):
 	return False
 
 def test_network(host):
-	status = run_cmd("ping -c 3 " + host,quiet=True)
+	status = spawn("ping -c 3 " + host,quiet=True)
 
 	if not exitsuccess(status):
 		return False
@@ -311,18 +311,18 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 		tar_options = tar_options + "p"
 
 	# Unpack the tarball
-	exitstatus = run_cmd("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
+	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
 
 	if not exitsuccess(exitstatus):
 		raise UnpackTarballError('fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
 
 def emerge(package, binary=False, binary_only=False):
 	if binary_only:
-		return run_cmd("emerge -K " + package, display_on_tty8=True)
+		return spawn("emerge -K " + package, display_on_tty8=True)
 	elif binary:
-		return run_cmd("emerge -k " + package, display_on_tty8=True)
+		return spawn("emerge -k " + package, display_on_tty8=True)
 	else:
-		return run_cmd("emerge " + package, display_on_tty8=True)
+		return spawn("emerge " + package, display_on_tty8=True)
 
 def generate_random_password():
 	s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890$%^&*[]{}-=+_,|'\"<>:/"

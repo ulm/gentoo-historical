@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.1 2004/08/25 04:39:33 samyron Exp $
+$Id: GLIArchitectureTemplate.py,v 1.2 2004/08/31 15:34:34 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -63,7 +63,7 @@ class ArchitectureTemplate:
 
 		# If we are doing a stage 1 install, then bootstrap 
 		if self._install_profile.get_install_stage() == 1:
-			exitstatus = GLIUtility.run_cmd("/usr/portage/scripts/bootstrap.sh", True)
+			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise Stage1Error('fatal','stage1', "Bootstrapping failed!")
 
@@ -88,11 +88,11 @@ class ArchitectureTemplate:
 		# Fetch and unpack the stage tarball here.
 		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._configuration.get_root_mount_point(),keep_permissions=True)
 
-		ret = GLIUtility.run_cmd("cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf",True)
+		ret = GLIUtility.spawn("cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf",True)
 		if not GLIUtility.exitsuccess(ret):
 			raise CopyError('warning','preinstall','Could not copy resolv.conf!',True)
 
-		ret = GLIUtility.run_cmd("mount -t proc none /mnt/gentoo /proc")
+		ret = GLIUtility.spawn("mount -t proc none /mnt/gentoo /proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise MountError('fatal','preinstall','Could not mount /proc')
 

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.15 2004/08/26 04:27:16 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.16 2004/08/31 15:34:34 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -20,7 +20,7 @@ Usage:
 
 """
 
-import xml.sax, string, GLIUtility
+import xml.sax, string, re, GLIUtility
 from GLIException import *
 
 class ClientConfiguration(xml.sax.ContentHandler):
@@ -61,7 +61,6 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._dns_servers = ()
 		self._network_type = None
 		self._network_data = ()
-		self._default_gateway = ()
 		self._enable_ssh = False
 		self._root_passwd = ""
 		self._interactive = True
@@ -136,13 +135,14 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		if attr == None:
 			attr = self._xml_current_attr
 
-		interface = ip = broadcast = netmask = None
+		interface = ip = broadcast = netmask = gateway = None
 
 		if type(attr) == tuple:
 			interface = attr[0]
 			ip = attr[1]
 			broadcast = attr[2]
 			netmask = attr[3]
+			gateway = attr[4]
 		else:
 			for key in attr.keys():
 				if key == 'interface':
@@ -153,11 +153,13 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					broadcast = str(attr.get('broadcast'))
 				elif key == 'netmask':
 					netmask = str(attr.get('netmask'))
+				elif key == 'gateway':
+					gateway = str(attr.get('gateway'))
 
 		if not GLIUtility.is_eth_device(interface):
 			raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
 
-		network_data = (interface, ip, broadcast, netmask)
+		network_data = (interface, ip, broadcast, netmask, gateway)
 
 		if network_type == 'static' and attr == None:
 			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
@@ -176,6 +178,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		ip = network_info[1]
 		broadcast = network_info[2]
 		netmask = network_info[3]
+		gateway = network_info[4]
 
 		if not GLIUtility.is_eth_device(interface):
 			raise InterfaceError('fatal','set_network_data', "Interface " + interface + " must be a valid device!")
@@ -184,42 +187,25 @@ class ClientConfiguration(xml.sax.ContentHandler):
 			if not GLIUtility.is_ip(ip):
 				raise IPAddressError('fatal','set_network_data', 'The specified IP ' + ip + ' is not a valid IP Address!')
 
+		if gateway != None:
+			if not GLIUtility.is_ip(gateway):
+				raise IPAddressError('fatal', 'set_network_data', "The gateway IP provided is not a valid gateway!!")
+
 		if broadcast != None:
 			if not GLIUtility.is_ip(broadcast):
 				raise IPAddressError('fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
 		else:
-			# Guess the broadcast... just in case (probably need the gateway, to guess)
+			# Guess the broadcast... just in case (probably need the gateway..)
 			pass
 
 		if netmask != None:
 			if not GLIUtility.is_ip(netmask):
 				raise IPAddressError('fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
 		else:
-			# Guess the netmask... just in case (probably need the gateway.. to guess)
+			# Guess the netmask... just in case (probably need the gateway..)
 			pass
 
 		self._network_data = network_info
-
-	def set_default_gateway(self, gateway, interface=""):
-		"""
-		This sets the default gateway to a tuple of the format:
-		(<interface>, <gateway ip address>)
-		"""
-
-		if interface == "":
-			if self._xml_current_attr != None and self._xml_current_attr.has_key('interface'):
-				interface = self._xml_current_attr.getValue('interface')
-
-		if interface[0:3] not in ('eth', 'ppp', 'wla'):
-			raise DefaultGatewayError('fatal','set_default_gateway', "Invalid interface!")
-
-		if not GLIUtility.is_ip(gateway):
-			raise IPAddressError('fatal', 'set_default_gateway', "The IP Provided is not valid!")
-
-		self._default_gateway = (interface, gateway)
-
-	def get_default_gateway(self):
-		return self._default_gateway
 
 	def set_dns_servers(self, nameservers):
 		if type(nameservers) == str:
@@ -297,7 +283,6 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/log-file': self.set_log_file,
 					'client-configuration/network': self.set_network_type,
 					'client-configuration/dns-servers': self.set_dns_servers,
-					'client-configuration/default-gateway': self.set_default_gateway,
 					'client-configuration/enable-ssh': self.set_enable_ssh,
 					'client-configuration/root-passwd': self.set_root_passwd,
 					'client-configuration/interactive': self.set_interactive,
@@ -363,9 +348,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		net_type = self.get_network_type()
 		if net_type == "static":
 			net_info = self.get_network_data()
-			data +=  "<network interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
-			gateway = self.get_default_gateway()
-			data += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gateway[0], gateway[1])
+			data +=  "<network interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\" gateway=\"%s\">%s</network>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_info[4], net_type)
 			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
 		elif net_type == "dhcp":
 			net_info = self.get_network_data()
