@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.26 2005/01/04 22:42:32 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.27 2005/01/04 23:29:07 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -47,7 +47,6 @@ class InstallProfile:
 		parser.addHandler('gli-profile/filesystem-tools', self.set_filesystem_tools_pkgs)
 		parser.addHandler('gli-profile/hostname', self.set_hostname)
 		parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
-		parser.addHandler('gli-profile/ignore-depends', self.set_ignore_install_step_depends)
 		parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
 		parser.addHandler('gli-profile/users/user', self.add_user)
 		parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
@@ -88,7 +87,6 @@ class InstallProfile:
 		self._network_interfaces = {}
 		self._make_conf = {}
 		self._rc_conf = {}
-		self._ignore_install_step_depends = False
 		self._install_rp_pppoe = False
 		self._filesystem_tools = ()
 		self._install_pcmcia_cs = False
@@ -656,7 +654,6 @@ class InstallProfile:
 				'domainname':		self.get_domainname,
 				'hostname':		self.get_hostname,
 				'nisdomainname':	self.get_nisdomainname,
-				'ignore-depends':	self.get_ignore_install_step_depends,
 				'install-rp-pppoe':	self.get_install_rp_pppoe,
 				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
 				'mta':			self.get_mta,
