@@ -126,7 +126,8 @@ void Wizard::init() {
 #define REQUIRED cur->setRequired(TRUE);
 #define DEFAULT	cur->setOn(TRUE);
 #define SEPERATOR(name) new QListViewItem(lstLicenses, name);
-	//Nvidia??
+	//Nvidia?? "Gentoo has detected that your computer has an nVidia video card. 3D applications may be slow unless you install an accelerated driver from nVidia. Do you wish to do this now?"
+	//Include Flash??
 	ITEM("DIVX")
 	ITEM("MOTIF")			// Is this really required since KDE's MOTIF using is compile-time?
 	SEPERATOR("  --- Optional ---")
@@ -252,6 +253,7 @@ bool Wizard::apply_harddisk(bool hascancel) {	// returns true if Cancel is selec
 		return TRUE;
 	if(applyconfirm == QMessageBox::No)
 		return FALSE;
+	if(InstallStep) cancel_install();
 	if(optHDClean->isOn()) {
 		// TODO: don't ask if partition table is invalid/clear/previous-HDClean-applied-already
 		applyconfirm = QMessageBox::warning(0, caption(), "<p ALIGN=justify>You have chosen to install a Gentoo Linux PC Only. This will erase any previous operating system such as Microsoft Windows, and also any data on your system.</p><BR><CENTER>Are you sure you want to do this?</CENTER>", QMessageBox::Yes, QMessageBox::No, hascancel ? QMessageBox::Cancel : QMessageBox::NoButton);
@@ -361,18 +363,40 @@ bool Wizard::do_cancel() {
 	if(InstallStep)
 		if(QMessageBox::warning(0, caption(), "<p align=\"justify\">You have already started the installation process. If you cancel, your computer <b>probably</b> won't work anymore.</p><BR><CENTER>Cancel anyway?</CENTER>", QMessageBox::Yes, QMessageBox::No) == QMessageBox::No)
 			return FALSE;
+	cancel_install();
+	this->close();
 	return TRUE;
 }
 
 void Wizard::cmdCancel_clicked() {
-	if(do_cancel()) {
-		cancel_install();
-		this->close();
-	}
+	do_cancel();
 }
 
 void Wizard::closeEvent(QCloseEvent *e) {
 	if(!do_cancel())
 		return e->ignore();
 	e->accept();
+}
+
+
+void Wizard::InGenReport() {
+
+}
+
+
+void Wizard::doStatus() {
+	// TODO: Weigh each part differently?
+	int ResizeStep = 0;
+	int FormatStep = 0;
+	int InstallStep = (int) ((long long) 255 *
+									  filesystem_use("/mnt/gentoo") / SrcUsedSpace);
+	int BootDiskStep = 0;
+	int TotalStep = (ResizeStep + FormatStep + InstallStep + BootDiskStep) / 4;
+	
+	pbStatResize->setProgress(ResizeStep);
+	pbStatFormat->setProgress(FormatStep);
+	pbStatInstall->setProgress(InstallStep);
+	pbStatBootdisk->setProgress(BootDiskStep);
+	pbStatTotal->setProgress(TotalStep);
+	pbTotalBg->setProgress(TotalStep);
 }

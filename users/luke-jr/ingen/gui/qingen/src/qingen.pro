@@ -1,5 +1,7 @@
 SOURCES	+= main.cpp
+HEADERS	+= main.h
 SOURCES += ui/objects.cpp
+#SUBDIRS = sys
 #SOURCES += ui/wizard.cpp
 #HEADERS += ui/wizard.h
 FORMS	= ui/wizard.ui
@@ -11,5 +13,5 @@ IMAGES	= images/ed-side.png \
 	images/status-icon.png \
 	images/users-icon.png
 TEMPLATE	=app
-CONFIG	+= qt warn_on
+CONFIG	+= qt warn_on debug
 LANGUAGE	= C++
