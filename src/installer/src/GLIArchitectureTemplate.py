@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.41 2005/01/26 06:24:37 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.42 2005/02/04 00:03:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -27,6 +27,7 @@ class ArchitectureTemplate:
 		# better to store it in a variable than to call
 		# this method 100000 times.
 		self._chroot_dir = self._client_configuration.get_root_mount_point()
+		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
 
 		# These must be filled in by the subclass. _steps is a list of
 		# functions, that will carry out the installation. They must be
@@ -78,9 +79,11 @@ class ArchitectureTemplate:
 		# Do it
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, chroot=self._chroot_dir)
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("RunlevelAddError", 'warning', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
+			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
+		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
 
 	def _emerge(self, package, binary=False, binary_only=False):
+		#Error checking of this function is to be handled by the parent function.
 		if binary_only:
 			return GLIUtility.spawn("emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir)
 		elif binary:
@@ -119,29 +122,33 @@ class ArchitectureTemplate:
 		f.writelines(file)
 		f.flush()
 		f.close()
-
+		self._logger.log("Edited Config file "+filename)
 
 	def stage1(self):
 		"Stage 1 install -- bootstraping"
 
 		# If we are doing a stage 1 install, then bootstrap 
 		if self._install_profile.get_install_stage() == 1:
-			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir)
+			self._logger.mark()
+			self._logger.log("Starting bootstrap.")
+			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=true)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
-		
+			self._logger.log("Bootstrap complete.")
 	def stage2(self):
 		# If we are doing a stage 1 or 2 install, then emerge system
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
+			self._logger.mark()
+			self._logger.log("Starting emerge system.")
 			exitstatus = self._emerge("system")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
-
+			self._logger.log("Emerge system complete.")
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
 		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
-
+		self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
 	def prepare_chroot(self):
 		# Copy resolv.conf to new env
 		try:
@@ -154,7 +161,7 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -o bind /dev " + self._chroot_dir + "/dev")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
-		
+		self._logger.log("Chroot environment ready.")
 		# Set USE flags here
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
 		# Then you should be done... at least with the preinstall.
@@ -167,7 +174,7 @@ class ArchitectureTemplate:
 			status = self._emerge(package)
 			if not GLIUtility.exitsuccess(status):
 				raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
-
+			self._logger.log("Emerged package: "+package)
 # **************************************************************************************
 
 			
@@ -198,7 +205,8 @@ class ArchitectureTemplate:
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
 					if not GLIUtility.exitsuccess(ret):
-						raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
+						addNotification("warning", "Could not activate swap: "+device+minor)
+					#	raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 		sorted_list = []
 		for key in parts_to_mount.keys(): sorted_list.append(key)
 		sorted_list.sort()
@@ -211,10 +219,10 @@ class ArchitectureTemplate:
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if exitstatus != 0:
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
-			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint)
+			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint, display_on_tty8=true)
 			if not GLIUtility.exitsuccess(ret):
-				raise GLIException("MountError", 'warning','mount_local_partitions','Could not mount a partition')
-						
+				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
+			self._logger.log("Mounted mountpoint:"+mountpoint)
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
 		"""
@@ -235,20 +243,23 @@ class ArchitectureTemplate:
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 					if exitstatus != 0:
 						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
-				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint)
+				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint, display_on_tty8=true)
 				if not GLIUtility.exitsuccess(ret):
-					raise GLIException("MountError", 'warning','mount_network_shares','Could not mount an NFS partition')
-		
+					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
+				self._logger.log("Mounted netmount at mountpoint:"+mountpoint)
+
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
+		#WARNING: There will no longer be sources on the future livecds.  this will have to change!
 		if not GLIUtility.is_file(self._chroot_dir+"/usr/portage/distfiles"):
 			exitstatus = GLIUtility.spawn("mkdir -p /usr/portage/distfiles",chroot=self._chroot_dir)
 			if exitstatus != 0:
 				raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
-		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/")
+		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/", display_on_tty8=true)
 		if exitstatus != 0:
 			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
-
+		self._logger.log("Distfiles copied from cd.")
+		
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
 		# This will not work until we find out how the new GRP format will function.
@@ -265,6 +276,7 @@ class ArchitectureTemplate:
 		
 			# Add/Edit it into make.conf
 			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: options[key]})
+		self._logger.log("Make.conf configured")
 
 	def install_portage_tree(self):
 		"Get/update the portage tree"
@@ -280,18 +292,20 @@ class ArchitectureTemplate:
 				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/")
 				# FIXME TEMPORARY FIX FOR NON-GRP SETTING
 				self.fetch_sources_from_cd()
+			self._logger.log("Portage tree install was custom.")
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
-			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir)
+			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=true)
 			if exitstatus != 0:
 				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tre', "Failed to retrieve portage tree!")
-				
+			self._logger.log("Portage tree sync'd using webrsync")
 		# Otherwise, just run emerge sync
 		else:
 			exitstatus = self._emerge("sync")
 			if exitstatus != 0:
 				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
-		
+			self._logger.log("Portage tree sync'd")
+			
 	def set_timezone(self):
 		"Sets the timezone for the new environment"
 		# Set symlink
@@ -299,6 +313,7 @@ class ArchitectureTemplate:
 			os.symlink(self._chroot_dir + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._chroot_dir + "/etc/localtime")
 		if not (self._install_profile.get_time_zone() == "UTC"):
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
+		self._logger.log("Timezone set.")
 		
 	def configure_fstab(self):
 		"Configures fstab"
@@ -327,19 +342,6 @@ class ArchitectureTemplate:
 						newfstab += "0 0\n"
 				if partition_type == "linux-swap":
 					newfstab += device+minor+"\t none            swap            sw              0 0\n"
-		#for partition in partitions:
-		#	if not GLIUtility.is_file(self._chroot_dir+partition):
-		#		exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
-		#		if exitstatus != 0:
-		#			raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
-		#	newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
-		#	newfstab += "\t " + partitions[partition][2] + "\t "
-		#	if partition == "/boot":
-		#		newfstab += "1 2\n"
-		#	elif partition == "/":
-		#		newfstab += "0 1\n"
-		#	else:
-		#		newfstab += "0 0\n"
 		newfstab += "none        /proc     proc    defaults          0 0\n"
 		newfstab += "none        /dev/shm  tmpfs   defaults          0 0\n"
 		if GLIUtility.is_device("/dev/cdroms/cdrom0"):
@@ -357,36 +359,43 @@ class ArchitectureTemplate:
 		f = open(file_name, 'w')
 		f.writelines(newfstab)
 		f.close()
-
+		self._logger.log("fstab configured.")
 
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
-		exitstatus = self._emerge(self._install_profile.get_kernel_source_pkg())
-		if exitstatus != 0:
-			raise GLIException("EmergeKernelSourcesError", 'warning','emerge_kernel_sources',"Could not retrieve kernel sources!")
-		try:
-			os.stat(self._chroot_dir + "/usr/src/linux")
-		except:
-			kernels = os.listdir(self._chroot_dir+"/usr/src")
-			found_a_kernel = False
-			counter = 0
-			while not found_a_kernel:
-				if kernels[counter][0:6]=="linux-":
-					exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",chroot=self._chroot_dir)
-					found_a_kernel = True
-				else:
-					counter = counter + 1
+		kernel_pkg = self._install_profile.get_kernel_source_pkg()
+		if kernel_pkg:
+			exitstatus = self._emerge(kernel_pkg)
+			if exitstatus != 0:
+				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
+			try:
+				os.stat(self._chroot_dir + "/usr/src/linux")
+			except:
+				kernels = os.listdir(self._chroot_dir+"/usr/src")
+				found_a_kernel = False
+				counter = 0
+				while not found_a_kernel:
+					if kernels[counter][0:6]=="linux-":
+						exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",chroot=self._chroot_dir)
+						if exitstatus != 0:
+							raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not make a /usr/src/linux symlink")
+						found_a_kernel = True
+					else:
+						counter = counter + 1
+			self._logger.log("Kernel sources:"+kernel_pkg+" emerged and /usr/src/linux symlinked.")
 
 	def build_kernel(self):
 		"Builds kernel"
+		self._logger.mark()
+		self._logger.log("Starting build_kernel")
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 		if kernel_config_uri == "":  #use genkernel if no specific config
 		
 			exitstatus = self._emerge("genkernel")
 			if exitstatus != 0:
-				raise GLIException("EmergeGenKernelError", 'warning','build_kernel', "Could not emerge genkernel!")
-			
+				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
+			self._logger.log("Genkernel emerged.  Beginning kernel compile.")
 			# Null the genkernel_options
 			genkernel_options = ""
 	
@@ -402,9 +411,10 @@ class ArchitectureTemplate:
 				genkernel_options = genkernel_options + " --no-bootsplash"
 			# Run genkernel in chroot
 			print "genkernel all " + genkernel_options
-			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir)
+			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=true)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
+			self._logger.log("Genkernel complete.")
 		else:  #CUSTOM CONFIG
 			#Copy the kernel .config to the proper location in /usr/src/linux
 			try:
@@ -424,15 +434,17 @@ class ArchitectureTemplate:
 			f.writelines(kernel_compile_script)
 			f.close()
 			#Build the kernel
-			exitstatus = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/root/kernel_script")
-			exitstatus = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir)
-			if exitstatus != 0:
+			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/root/kernel_script")
+			exitstatus2 = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir, display_on_tty8=true)
+			if (exitstatus1 != 0) or (exitstatus2 != 0):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
 						
 			#i'm sure i'm forgetting something here.
 			#cleanup
 			exitstatus = GLIUtility.spawn("rm "+self._chroot_dir+"/root/kernel_script")
 			#it's not important if this fails.
+			self._logger.log("Custom kernel complete")
+			
 	def install_logging_daemon(self):
 		"Installs and sets up logger"
 		# Get loggin daemon info
@@ -445,7 +457,7 @@ class ArchitectureTemplate:
 
 			# Add Logging Daemon to default runlevel
 			self._add_to_runlevel(logging_daemon_pkg)
-
+			self._logger.log("Logging daemon installed: "+logging_daemon_pkg)
 	def install_cron_daemon(self):
 		"Installs and sets up cron"
 		# Get cron daemon info
@@ -461,10 +473,10 @@ class ArchitectureTemplate:
 		
 			# If the Cron Daemon is not vixie-cron, run crontab			
 			if cron_daemon_pkg != "vixie-cron":
-				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir)
+				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=true)
 				if exitstatus != 0:
 					raise GLIException("CronDaemonError", 'warning', 'install_cron_daemon', "Failure making crontab!")
-
+			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
 		# Get the list of file system tools to be installed
@@ -479,6 +491,7 @@ class ArchitectureTemplate:
 			exitstatus = self._emerge(package)
 			if exitstatus != 0:
 				raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
+			self._logger.log("FileSystemTool "+package+" was emerged successfully.")
 
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
@@ -487,7 +500,7 @@ class ArchitectureTemplate:
 			exitstatus = self._emerge("rp-pppoe")
 			if exitstatus != 0:
 				raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
-				
+			self._logger.log("rp-pppoe emerged but not set up.")	
 		# Should we add a section here to automatically configure rp-pppoe?
 		# I think it should go into the setup_network_post section
 		# What do you guys think?
@@ -502,16 +515,19 @@ class ArchitectureTemplate:
 				
 			# Add pcmcia-cs to the default runlevel
 			self._add_to_runlevel(pcmcia)
+			self._logger.log("PCMCIA_CS emerged and configured.")
 
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
-		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update')
+		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=true)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 			
 		self.configure_make_conf()
 		self.configure_fstab()
+		self.configure_rc_conf()
+		self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
 	def configure_rc_conf(self):
 		"Configures rc.conf"
@@ -523,7 +539,8 @@ class ArchitectureTemplate:
 		
 			# Add/Edit it into rc.conf
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {key: options[key]})
-			
+		self._logger.log("rc.conf configured.")
+		
 	def setup_network_post(self):
 		"Sets up the network for the first boot"
 		# Get hostname, domainname and nisdomainname
@@ -677,10 +694,11 @@ class ArchitectureTemplate:
 							
 	def set_root_password(self):
 		"Sets the root password"
-		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e')
+		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e', quiet=true)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("SetRootPasswordError", 'warning', 'set_root_password', "Failure to set root password!")
-
+		self._logger.log("Root Password set on the new system.")
+		
 	def set_users(self):
 		"Sets up the new users for the system"
 		# Loop for each user
@@ -729,10 +747,11 @@ class ArchitectureTemplate:
 				options.append('-c "' + comment + '"')
 				
 			# Add the user
-			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir)
+			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir, quiet=true)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
-
+			self._logger.log("User "+username+"was added.")
+			
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
 		pass

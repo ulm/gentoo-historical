@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.42 2005/01/26 03:59:44 codeman Exp $
+$Id: GLIClientController.py,v 1.43 2005/02/04 00:03:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -76,7 +76,7 @@ class GLIClientController(Thread):
 					step()
 			except GLIException, error:
 				if error.get_error_level() != 'fatal':
-					self._logger.log("Error:", error.get_function_name() + ": " + error.get_error_msg())
+					self._logger.log("Error: "+ error.get_function_name() + ": " + error.get_error_msg())
 					self.output("Non-fatal error... continuing...")
 				else:
 					raise error
@@ -101,8 +101,7 @@ class GLIClientController(Thread):
 				'ppc':		'ppcArchitectureTemplate',
 				'ppc64':	'ppc64ArchitectureTemplate'
 			}
-		#self._configuration._architecture_template = "x86"  #can I take this out yet?
-		
+				
 		if self._configuration._architecture_template not in templates.keys():
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
 
@@ -117,7 +116,7 @@ class GLIClientController(Thread):
 		self._install_steps = self._arch_template.get_install_steps()
 		self.addNotification("int", NEXT_STEP_READY)
 #		self._install_event.wait()
-#		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
+
 		while 1:
 			self._install_event.wait()
 			if self._install_step <= (len(self._install_steps) - 1):

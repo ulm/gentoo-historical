@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.21 2005/01/26 03:59:44 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.22 2005/02/04 00:03:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -362,6 +362,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		f = open(file_name, 'w')
 		f.writelines(newgrubconf)
 		f.close()
+		self._logger.log("Grub installed and configured.")
 
 	def _install_lilo(self):
 		boot_device = ""
@@ -430,7 +431,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus = GLIUtility.spawn("/sbin/lilo",chroot=self._chroot_dir)
 		if exitstatus != 0:
 			raise GLIException("LiloInstallError", 'fatal', '_install_lilo', "Running lilo failed!")
-
+		self._logger.log("Lilo installed, configured, and run.")
+		
 	def _lilo_add_windows(self, newliloconf):
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
