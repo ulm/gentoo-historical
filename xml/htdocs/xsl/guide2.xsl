@@ -403,7 +403,7 @@
                     <br/>
                     <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
                     <br/>
-                    <a class="altlink" href="/main/en/devlist.xml">Developer List</a>
+                    <a class="altlink" href="/proj/en/devrel/roll-call/devlist.xml">Developer List</a>
                     <br/>
                     <a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
                     <br/>
