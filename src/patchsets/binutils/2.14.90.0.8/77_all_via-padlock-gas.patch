@@ -1,0 +1,124 @@
+Index: gas/config/tc-i386.c
+===================================================================
+RCS file: /cvs/src/src/gas/config/tc-i386.c,v
+retrieving revision 1.149
+retrieving revision 1.149.6.1
+diff -u -p -r1.149 -r1.149.6.1
+--- gas/config/tc-i386.c	22 Nov 2003 02:35:30 -0000	1.149
++++ gas/config/tc-i386.c	12 Mar 2004 10:41:20 -0000	1.149.6.1
+@@ -1,6 +1,6 @@
+ /* i386.c -- Assemble code for the Intel 80386
+    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+-   2000, 2001, 2002, 2003
++   2000, 2001, 2002, 2003, 2004
+    Free Software Foundation, Inc.
+ 
+    This file is part of GAS, the GNU Assembler.
+@@ -3123,7 +3124,6 @@ output_interseg_jump ()
+   md_number_to_chars (p + size, (valueT) i.op[0].imms->X_add_number, 2);
+ }
+ 
+-
+ static void
+ output_insn ()
+ {
+@@ -3151,10 +3151,23 @@ output_insn ()
+       char *p;
+       unsigned char *q;
+ 
+-      /* All opcodes on i386 have either 1 or 2 bytes.  We may use third
+-	 byte for the SSE instructions to specify a prefix they require.  */
+-      if (i.tm.base_opcode & 0xff0000)
+-	add_prefix ((i.tm.base_opcode >> 16) & 0xff);
++      /* All opcodes on i386 have either 1 or 2 bytes, PadLock instructions
++	 have 3 bytes.  We may use one more higher byte to specify a prefix
++	 the instruction requires.  */
++      if ((i.tm.cpu_flags & CpuPadLock) != 0
++	  && (i.tm.base_opcode & 0xff000000) != 0)
++        {
++	  unsigned int prefix;
++	  prefix = (i.tm.base_opcode >> 24) & 0xff;
++
++	  if (prefix != REPE_PREFIX_OPCODE
++	      || i.prefix[LOCKREP_PREFIX] != REPE_PREFIX_OPCODE)
++	    add_prefix (prefix);
++	}
++      else
++	if ((i.tm.cpu_flags & CpuPadLock) == 0
++	    && (i.tm.base_opcode & 0xff0000) != 0)
++	  add_prefix ((i.tm.base_opcode >> 16) & 0xff);
+ 
+       /* The prefix bytes.  */
+       for (q = i.prefix;
+@@ -3175,7 +3188,14 @@ output_insn ()
+ 	}
+       else
+ 	{
+-	  p = frag_more (2);
++	  if ((i.tm.cpu_flags & CpuPadLock) != 0)
++	    {
++	      p = frag_more (3);
++	      *p++ = (i.tm.base_opcode >> 16) & 0xff;
++	    }
++	  else
++	    p = frag_more (2);
++
+ 	  /* Put out high byte first: can't use md_number_to_chars!  */
+ 	  *p++ = (i.tm.base_opcode >> 8) & 0xff;
+ 	  *p = i.tm.base_opcode & 0xff;
+Index: gas/config/tc-i386.h
+===================================================================
+RCS file: /cvs/src/src/gas/config/tc-i386.h,v
+retrieving revision 1.45
+retrieving revision 1.45.6.1
+diff -u -p -r1.45 -r1.45.6.1
+--- gas/config/tc-i386.h	21 Nov 2003 14:38:06 -0000	1.45
++++ gas/config/tc-i386.h	12 Mar 2004 10:41:20 -0000	1.45.6.1
+@@ -1,6 +1,6 @@
+ /* tc-i386.h -- Header file for tc-i386.c
+    Copyright 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
+-   2001, 2002, 2003
++   2001, 2002, 2003, 2004
+    Free Software Foundation, Inc.
+ 
+    This file is part of GAS, the GNU Assembler.
+@@ -194,13 +194,14 @@ typedef struct
+ #define CpuSSE2	       0x2000	/* Streaming SIMD extensions 2 required */
+ #define Cpu3dnow       0x4000	/* 3dnow! support required */
+ #define CpuPNI	       0x8000	/* Prescott New Instructions required */
++#define CpuPadLock    0x10000	/* VIA PadLock required */
+ 
+   /* These flags are set by gas depending on the flag_code.  */
+ #define Cpu64	     0x4000000   /* 64bit support required  */
+ #define CpuNo64      0x8000000   /* Not supported in the 64bit mode  */
+ 
+   /* The default value for unknown CPUs - enable all features to avoid problems.  */
+-#define CpuUnknownFlags (Cpu086|Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuSledgehammer|CpuMMX|CpuSSE|CpuSSE2|CpuPNI|Cpu3dnow|CpuK6|CpuAthlon)
++#define CpuUnknownFlags (Cpu086|Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuSledgehammer|CpuMMX|CpuSSE|CpuSSE2|CpuPNI|Cpu3dnow|CpuK6|CpuAthlon|CpuPadLock)
+ 
+   /* the bits in opcode_modifier are used to generate the final opcode from
+      the base_opcode.  These bits also are used to detect alternate forms of
+Index: include/opcode/i386.h
+===================================================================
+RCS file: /cvs/src/src/include/opcode/i386.h,v
+retrieving revision 1.40
+retrieving revision 1.40.12.2
+diff -u -p -r1.40 -r1.40.12.2
+--- include/opcode/i386.h	23 Jun 2003 20:15:33 -0000	1.40
++++ include/opcode/i386.h	12 Mar 2004 13:45:24 -0000	1.40.12.2
+@@ -1361,6 +1361,15 @@ static const template i386_optab[] = {
+ {"sysret",   0, 0x0f07,    X, CpuK6,	lq_Suf|DefaultSize,	{ 0, 0, 0} },
+ {"swapgs",   0, 0x0f01, 0xf8, Cpu64,	NoSuf|ImmExt,		{ 0, 0, 0} },
+ 
++/* VIA PadLock extensions. */
++{"xstorerng", 0, 0x0fa7c0, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++{"xcryptecb", 0, 0xf30fa7c8, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++{"xcryptcbc", 0, 0xf30fa7d0, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++{"xcryptcfb", 0, 0xf30fa7e0, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++{"xcryptofb", 0, 0xf30fa7e8, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++/* alias for xstorerng */
++{"xstore", 0, 0x0fa7c0, X, Cpu686|CpuPadLock, NoSuf|IsString, { 0, 0, 0} },
++
+ /* sentinel */
+ {NULL, 0, 0, 0, 0, 0, { 0, 0, 0} }
+ };

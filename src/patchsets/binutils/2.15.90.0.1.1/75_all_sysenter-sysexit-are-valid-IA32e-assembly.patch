@@ -1,0 +1,108 @@
+From: Jakub Jelinek <jakub@redhat.com>
+Subject: [PATCH] Allow sysenter/sysexit in x86-64 assembly, disassemble swapgs properly
+To: binutils@sources.redhat.com
+Date: Fri, 12 Mar 2004 07:56:02 +0100
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+
+Hi!
+
+This patch fixes 2 things:
+1) sysenter/sysexit were not allowed in x86-64 -64 assembly, while
+   they are present on IA32e and e.g. Linux kernel needs to work around
+   this by using .byte   0xf, 0x35 instead of sysexit.
+2) swapgs instruction has been disassembled improperly as invlpg %ax.
+
+Ok to commit?
+
+2004-03-12  Jakub Jelinek  <jakub@redhat.com>
+
+	* i386-dis.c (grps): Use INVLPG_Fixup instead of OP_E for invlpg.
+	(INVLPG_Fixup): New function.
+	(PNI_Fixup): Remove ATTRIBUTE_UNUSED from sizeflag.
+
+	* opcode/i386.h (i386_optab): Remove CpuNo64 from sysenter and
+	sysexit.
+
+--- opcodes/i386-dis.c.jj	2004-03-12 09:08:10.000000000 +0100
++++ opcodes/i386-dis.c	2004-03-12 09:53:51.980982397 +0100
+@@ -1,6 +1,6 @@
+ /* Print i386 instructions for GDB, the GNU debugger.
+    Copyright 1988, 1989, 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+-   2001, 2002, 2003 Free Software Foundation, Inc.
++   2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+ 
+ This file is part of GDB.
+ 
+@@ -94,6 +94,7 @@ static void OP_3DNowSuffix (int, int);
+ static void OP_SIMD_Suffix (int, int);
+ static void SIMD_Fixup (int, int);
+ static void PNI_Fixup (int, int);
++static void INVLPG_Fixup (int, int);
+ static void BadOp (void);
+ 
+ struct dis_private {
+@@ -1360,7 +1361,7 @@ static const struct dis386 grps[][8] = {
+     { "smswQ",	Ev, XX, XX },
+     { "(bad)",	XX, XX, XX },
+     { "lmsw",	Ew, XX, XX },
+-    { "invlpg",	Ew, XX, XX },
++    { "invlpg",	INVLPG_Fixup, w_mode, XX, XX },
+   },
+   /* GRP8 */
+   {
+@@ -4106,7 +4107,7 @@ SIMD_Fixup (int extrachar, int sizeflag 
+ }
+ 
+ static void
+-PNI_Fixup (int extrachar ATTRIBUTE_UNUSED, int sizeflag ATTRIBUTE_UNUSED)
++PNI_Fixup (int extrachar ATTRIBUTE_UNUSED, int sizeflag)
+ {
+   if (mod == 3 && reg == 1)
+     {
+@@ -4131,6 +4132,21 @@ PNI_Fixup (int extrachar ATTRIBUTE_UNUSE
+ }
+ 
+ static void
++INVLPG_Fixup (int bytemode, int sizeflag)
++{
++  if (*codep == 0xf8)
++    {
++      char *p = obuf + strlen (obuf);
++
++      /* Override "invlpg".  */
++      strcpy (p - 6, "swapgs");
++      codep++;
++    }
++  else
++    OP_E (bytemode, sizeflag);
++}
++
++static void
+ BadOp (void)
+ {
+   /* Throw away prefixes and 1st. opcode byte.  */
+--- include/opcode/i386.h.jj	2003-07-02 17:01:57.000000000 +0200
++++ include/opcode/i386.h	2004-03-12 09:25:03.015089553 +0100
+@@ -1,6 +1,6 @@
+ /* opcode/i386.h -- Intel 80386 opcode table
+    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+-   2000, 2001
++   2000, 2001, 2002, 2003, 2004
+    Free Software Foundation, Inc.
+ 
+ This file is part of GAS, the GNU Assembler, and GDB, the GNU Debugger.
+@@ -896,8 +896,8 @@ static const template i386_optab[] = {
+ {"cmpxchg8b",1,0x0fc7, 1, Cpu586, NoSuf|Modrm,		{ LLongMem, 0, 0} },
+ 
+ /* Pentium II/Pentium Pro extensions.  */
+-{"sysenter",0, 0x0f34, X, Cpu686|CpuNo64, NoSuf,	{ 0, 0, 0} },
+-{"sysexit", 0, 0x0f35, X, Cpu686|CpuNo64, NoSuf,	{ 0, 0, 0} },
++{"sysenter",0, 0x0f34, X, Cpu686, NoSuf,		{ 0, 0, 0} },
++{"sysexit", 0, 0x0f35, X, Cpu686, NoSuf,		{ 0, 0, 0} },
+ {"fxsave",  1, 0x0fae, 0, Cpu686, FP|Modrm,		{ LLongMem, 0, 0} },
+ {"fxrstor", 1, 0x0fae, 1, Cpu686, FP|Modrm,		{ LLongMem, 0, 0} },
+ {"rdpmc",   0, 0x0f33, X, Cpu686, NoSuf,		{ 0, 0, 0} },
+
+	Jakub
+
+
