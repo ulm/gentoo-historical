@@ -21,13 +21,14 @@
 			<title>Project listing</title>
 			<section><body>
 			<table>
-			  <!--tr>
-			    <th>toplevel</th>
-			    <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
-			    <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
-			    <th>members</th>
-			    <th>description</th>
-			  </tr-->
+			  <xsl:if test="$showlevel&lt;=1">
+			    <tr>
+			      <th>toplevel</th>
+			      <th>lead</th>
+			      <th>members</th>
+			      <th>description</th>
+			    </tr>
+			  </xsl:if>
 			  <xsl:call-template name="projlist">
 			    <xsl:with-param name="ref" select="string(text())"/>
 			    <xsl:with-param name="level" select="0"/>
@@ -63,7 +64,7 @@
 <xsl:template name="projlist">
   <xsl:param name="ref" select=""/>
   <xsl:param name="level" select="1"/>
-  <xsl:if test='number($level)=1'>
+  <xsl:if test='(number($level)=1) and ($showlevel>1)'>
     <tr>
       <th>toplevel</th>
       <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
@@ -151,7 +152,7 @@
 
 <xsl:template name="extraproj">
   <xsl:param name="level" select="1"/>
-  <xsl:if test='number($level)=1'>
+  <xsl:if test='(number($level)=1) and ($showlevel>1)'>
     <tr>
       <th>toplevel</th>
       <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
