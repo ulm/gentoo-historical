@@ -67,7 +67,7 @@ class Installer:
 		# I'm feeling lazy
 		self.client_profile.set_interactive(None, True, None)
 		self.client_profile.set_architecture_template(None, "x86", None)
-		self.client_profile.set_log_file(None, "/tmp/install.log", None)
+		self.client_profile.set_log_file(None, "/var/log/install.log", None)
 		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
 		self.client_profile.set_root_passwd(None, GLIUtility.hash_password("blah"), None)
 		self.client_profile.set_enable_ssh(None, False, None)
