@@ -1,0 +1,1551 @@
+<?xml version='1.0' encoding="utf-8"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="grsecurity.xml">
+<title>Gentoo Linux Grsecurity Guide</title>
+<author title="Editor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Contributor">
+  <mail link="solar@gentoo.org">solarx</mail>
+</author>
+<abstract>
+This guide shows you how to setup and configure
+grsecurity with Access Control Lists
+</abstract>
+<version>1.0</version>
+<date>22 May 2003</date>
+
+<chapter>
+<title>Introduction</title>
+
+<section>
+<title>What Is an ACL System?</title>
+<body>
+
+<p>
+An ACL (Access Control List) system is an implementation that provides 
+fine grained access control for your computer. It tells the operating 
+system which access rights each user or process has to a particular object 
+(file, capability, socket, ...). 
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Why use an ACL System?</title>
+<body>
+
+<p>
+You need an ACL system if you want to restrict access to the 
+previously mentioned objects to <e>any</e> user, including root, or if
+you want to control what processes can and can't do. This 
+is what is called a Mandatory Access Control (MAC) model. It gives you
+great flexibility and control over your users and processes.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>What is grSecurity?</title>
+<body>
+
+<p>
+grSecurity is a patch for the Linux kernel which implements an ACL
+system, amongst other changes that tighten the kernel security. It is
+very popular and well tested, and contains lots of security
+enhancements.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>What does grSecurity really provide?</title>
+<body>
+
+<!-- It's doesn't provide this yet :)
+
+<p>
+It provides RBAC, <e>Role Based Access Control</e>, which means that
+certain restrictions are configured against a common role. Users and
+processes who take part in such a role are automatically restricted to 
+the possibilities of that role. You can have roles based on several
+items: users, groups, IP-addresses, ...
+</p>
+
+-->
+
+<p>
+The grSecurity MAC system provides process-based configuration, supports several
+permissions (read, write, append, execute, view, read-only ptrace) and
+flags (hide, protect, override) for each object. It provides ACLs for
+resources, sockets, files and processes. It includes an easy,
+intelligent learningmode which will propose ACLs for you. As is needed
+for every secure environment, you also have a full-featured auditing
+possibility. And best of all: it's not using an unreadable configuration
+syntax!
+</p>
+
+<p>
+grSecurity also has better chroot restrictions, improved protection
+against buffer exploits, a tight address space protection scheme (PaX),
+improved auditing possibilities, randomisation-improvements for the 
+TCP/IP-stack and PIDs, <path>/proc</path> restrictions, ...
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+
+<chapter>
+<title>Installing the kernel</title>
+<section>
+<body>
+
+<p>
+Since grSecurity is a kernelpatch, you need to install, configure and
+use a Linux kernel with the grSecurity patch in it. On Gentoo, several
+kernel-ebuilds provide grSecurity. You can choose between 
+<c>gentoo-sources</c>, <c>hardened-sources</c> and <c>xfs-sources</c>.
+We recommend the <c>hardened-sources</c> ebuild, but any one of them will do
+just fine.
+</p>
+
+<pre caption="Installing the gentoo-hardened kernelsources">
+# <i>USE="-selinux" emerge hardened-sources</i>
+</pre>
+
+<p>
+Now wasn't that easy ? :)
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Kernel configuration</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Configuring a grSecurity-enhanced kernel isn't much more difficult than
+configuring a normal, vanilla kernel. In fact, you should first
+configure the kernel as you would with a vanilla kernel and test it so
+you know everything works as expected. 
+</p>
+
+<pre caption="Configuring the kernel">
+<codenote>Make sure /usr/src/linux points to the correct sourcetree</codenote>
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+You'll notice that there are 2 new sections in comparison with the
+vanilla kernel: <i>Cryptography support (CryptoAPI)</i> and
+<i>Grsecurity</i>. In this document, we will only talk about the latter
+section.
+</p>
+
+</body>
+</section>
+<section>
+<title>Security level</title>
+<body>
+
+<p>
+Here you can select one of the predefined security levels. You have the
+choice between <i>Low, Medium, High</i> and <i>Customized</i>. To know
+what <i>Low, Medium</i> and <i>High</i> contain, read the Help that you
+can select on the bottom right of your screen. 
+</p>
+
+<p>
+We will mainly focus on <i>Customized</i> here, since that will give us
+the opportunity to go through all possible grSecurity sections step by
+step.
+</p>
+
+</body>
+</section>
+<section>
+<title>Address Space Protection (PaX)</title>
+<body>
+
+<p>
+Lots of exploits and known disfunctionalities are based on how the Linux
+kernel handles memory. The Address Space is the first 3 Gb of the
+virtual memory that Linux can address, and is solely used for
+applications. Protecting this area is one of the most important tasks of
+the grSecurity patches.
+</p>
+
+<p>
+Linux per default doesn't know about executables pages: if a page is
+readable, it is executable. Because of this flaw known exploits
+can inject executable code in memory regions which shouldn't really be
+executable. If you select <c>Enforce non-executable pages</c> you receive
+some new features who fix this implementation. However, do note that
+some tools assume that memory assignment functions return executable 
+memory (which they should not).
+</p>
+
+<p>
+Such tools (<c>xfree</c> for instance) will break if we enforce
+non-executable pages. Luckily, we can enable/disable this feature on a
+per file basis using <c>chpax</c>.
+</p>
+
+<p>
+There are 2 implementations available:
+</p>
+
+<ul>
+<li>
+<c>Paging based non-executable pages</c> is an implementation based 
+on the paging features of the CPU. There is however variable performance
+impact on the ix86 architecture, so you should carefully test your
+applications before using this.
+</li>
+<li>
+<c>Segmentation based non-executable pages</c> has little performance
+impact, but will split the address space in 2, meaning that applications
+will only have a 1.5 Gb address space instead of the normal 3 Gb.
+</li>
+</ul>
+
+<p>
+Some tools require to execute very small snippets of code from a
+non-executable memory page; activating any of the above implementations
+will break these tools (some parts of <c>gcc</c> and the Linux kernel
+use this). If you activate <c>Emulate trampolines</c> then you can use
+<c>chpax</c> to enable the trampoline emulation for these programs
+without losing the protection provided by any of the above
+implementations. If you don't select this, you can still use those tools
+if you disable any of the above implementations using <c>chpax</c>.
+</p>
+
+<p>
+If you select <c>Restrict mprotect()</c>, programs will not be able to
+switch between several possible page protection modes. You should select
+this if you use any of the above implementations. Again, <c>chpax</c>
+comes to the rescue if you want to control this on a per file basis.
+</p>
+
+<p>
+There are still "loopholes" in which attackers can execute malicious
+code. Activating <c>Disallow ELF text relocations</c> will force your
+system to use PIC (<e>Position Independent Code</e>) ELF libraries only.
+If you are confident that your system only uses PIC ELF libraries (which
+is most of the time <e>not</e> the case) you can activate this feature.
+Note that you cannot use <c>prelink</c> on those systems.
+</p>
+
+<p>
+Several exploits are only effective if they know certain addresses in
+the attacked program. Activating <c>Address Space Layout
+Randomization</c> will give you the following algorithms that randomize
+the memory addresses. With this activated, the exploits will most likely
+just crash the application, which you can catch and react upon.
+</p>
+
+<ul>
+<li>
+<c>Randomize kernel stack base</c> will randomize's every task's kernel
+stack on every system call. This can however lead to unexpected stack
+overflows, so test it first. You cannot use this on a per file basis.
+</li>
+<li>
+<c>Randomize user stack base</c> will randomize every task's userland
+stack. This may lead to programs that use lots of memory (address space
+size minus 1/6th). You can control this using <c>chpax</c> on a per file
+basis.
+</li>
+<li>
+<c>Randomize mmap() base</c> will randomize the location of dynamically
+loaded libraries, making it harder for an attacker to execute library
+code for his purposes. This randomization is also true for dynamic ELF
+files. You can control this using <c>chpax</c> on a per file basis.
+If you select <c>Randomize ET_EXEC base</c> too, then normal ELF
+executables will also have a randomized base address. This will cause
+performance degradation though, so this should be used as a transistion
+solution until all programs are relinked as dynamic ELF files.
+</li>
+</ul>
+
+<p>
+To make it harder for attackers to insert malicious code into the 
+running kernel you can select <c>Deny writing to /dev/kmem, /dev/mem
+and /dev/port</c>. There are however special cases, notably for
+<c>xfree</c>-, <c>vmware</c>- and Savage video card users. Please read 
+the accompanying "&lt; Help &gt;". 
+</p>
+
+<p>
+To disable the possibility for tools to modify the running kernel (using
+ioperm and iopl calls) you should select <c>Disable privileged I/O</c>.
+There are some tools who need this, such as (again) <c>xfree</c>.
+</p>
+
+<p>
+If you use one of the randomisation algorithms for address space layout,
+you <e>must</e> select <c>Remove addresses from /proc/pid/maps</c>, as
+this would otherwise make the randomisation useless.
+</p>
+
+<p>
+If you want to control who can know about loaded modules and kernel
+symbols, you should select <c>Hide kernel symbols</c>, compile your own
+kernel (don't use precompiled ones), use the ACL system to hide files
+like the kernel image and <path>System.map</path> and remove
+<path>/proc/kcore</path> (we'll get to this later).
+</p>
+
+</body>
+</section>
+<section>
+<title>ACL Options</title>
+<body>
+
+<p>
+Here you can configure a small set of general ACL options, namely hiding
+kernelprocesses, setting the maximum tries before (ACL) password lockout and
+the time to wait after the maximum (ACL) password failures.
+</p>
+
+</body>
+</section>
+<section>
+<title>Filesystem Protections</title>
+<body>
+
+<p>
+There are several possible enhancements you can add to tighten your
+security. As you can probably figure out, protecting your filesystem is
+a very important part.
+</p>
+
+<p>
+The <path>/proc</path> filesystem is a big source of information and
+sometimes subject of exploits. By selecting <c>Proc restrictions</c> you
+can choose any of the following restrictions:
+</p>
+
+<ul>
+<li>
+<c>Restrict to user only</c> will make sure users can only view
+information about their own processes and will not be able to read
+network- and kernelrelated information.
+</li>
+<li>
+<c>Additional restrictions</c> will also hide cpu- and
+device-information.
+</li>
+</ul>
+
+<p>
+With <c>Linking restrictions</c> enabled, users will only be able to
+follow symlinks in the world-writeable +t directories if they are the
+owner of that directory. Also hardlinking to files you do not own is not
+possible anymore. You can control this setting with a sysctl option.
+</p>
+
+<p>
+With <c>FIFO restrictions</c> enabled, users will only be able to write
+to FIFOs in world-writeable +t directories if they are the owner (of the
+FIFO or directory). You can control this setting with a sysctl option.
+</p>
+
+<p>
+If you use chroot-jails on your system, enabling the <c>Chroot jail
+restrictions</c> would be a good action. It will give you the choice of
+activating several chroot restrictions. All choices can be controlled by
+setting the appropriate sysctl option.
+</p>
+
+</body>
+</section>
+<section>
+<title>Kernel Auditing</title>
+<body>
+
+<p>
+In this section you can configure the amount of logging that the kernel
+provides. All settings can be controlled by setting the appropriate
+sysctl option.
+</p>
+
+<p>
+With <c>Single group for auditing</c>, logging will only operate on the
+group you specify (unless you use sysctl, then you need to echo the GID
+into the proper <path>/proc</path> entry.
+</p>
+
+<p>
+All other options should be clear from their name. Read the "&lt; Help
+&gt;" for more information.
+</p>
+
+</body>
+</section>
+<section>
+<title>Executable Protections</title>
+<body>
+
+<p>
+Since most exploits work through or with running processes, protecting
+the executables is a must. All options can be controlled by their
+appropriate sysctl setting.
+</p>
+
+<p>
+With <c>Enforce RLIMIT_NPROC</c> resource limits on processes will be
+checked during execve() calls. Otherwise only fork() calls will force a
+check.
+</p>
+
+<p>
+With <c>Dmesg(8) restriction</c>, non-users will not be able to use
+<c>dmesg</c> to view the log buffer.
+</p>
+
+<p>
+With <c>Randomized PIDs</c> and <path>/proc</path> restrictions (which
+we discussed earlier) attackers will have to guess the PIDs from daemons
+etc.
+</p>
+
+<p>
+With <c>Trusted path execution</c> users in the mentioned GID will only
+be able to execute binaries from root-owned, non-writeable directories.
+With <c>Partially restrict non-root users</c>, this behaviour is
+slightly different: users that are not in the mentioned GID will only be
+allowed to execute files in directories they own and that are not
+group/world writeable, or unwriteable directories owned by root.
+</p>
+
+<p>
+If you use sysctl, you need to echo this GID into the proper
+<path>/proc</path> entry.
+</p>
+
+</body>
+</section>
+<section>
+<title>Network Protections</title>
+<body>
+
+<p>
+The default Linux TCP/IP-stack has some properties that makes it more
+vulnerable to prediction-based hacks. By randomizing several items
+predicting the behaviour will be a <e>lot</e> more difficult. All
+options can be controlled through their respective sysctl option.
+</p>
+
+<p>
+<c>Larger entropy pools</c> doubles the poolsize. This is recommended if
+you use any other options here.
+</p>
+
+<p>
+<c>Truly random TCP ISN selection</c> will randomize the <e>TCP Initial
+Sequence Numbers</e>. This is what OpenBSD does by default.
+</p>
+
+<p>
+<c>Randomized IP IDs</c> hinders OS fingerprinting and will keep your
+machine from being a bounce for an untraceable portscan. This is a port
+of OpenBSD's random ip id code.
+</p>
+
+<p>
+<c>Randomized TCP source ports</c> will randomize the dynamically
+generated source port (connect()). Otherwise a simple increment will be
+used.
+</p>
+
+<p>
+<c>Randomized RPC XIDs</c> will randomize the XIDs for RPC requests.
+Otherwise a simple increment will be used.
+</p>
+
+<p>
+<c>Altered Ping IDs</c> will alter the ICMP Echo Replies so that their
+IDs are equal to the ID of the ICMP Echo Requests they respond to.
+</p>
+
+<p>
+With <c>Socket restrictions</c> you select a GID on your system in which
+members will have restricted socket access depending on the following
+choices:
+</p>
+
+<ul>
+<li>
+<c>Deny any sockets to group</c> will make sure members will not be able
+to do any networking.
+</li>
+<li>
+<c>Deny client sockets to group</c> will make sure members will not be
+able to connect to other hosts.
+</li>
+<li>
+<c>Deny server sockets to group</c> will make sure members will not be
+able to run server applications from your machine.
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Sysctl support</title>
+<body>
+
+<p>
+With this selected, you will be able to activate or deactivate
+grSecurity options on the fly on your running system without having to
+recompile your kernel. However, this does require you to be extra
+carefull with what you do, since this feature reduces the effectiveness
+of the added security if there is no ACL system in place.
+</p>
+
+</body>
+</section>
+<section>
+<title>Logging options</title>
+<body>
+
+<p>
+In this section you can limit how fast and how much messages the
+kernel will generate in a certain timeframe.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>ACL Configuration and Specification</title>
+<section>
+<title>With all the above, why do we still need ACLs?</title>
+<body>
+
+<p>
+First of all, ACLs provide you with greater flexibility and more
+control, even if you don't use the sysctl optoins. Perhaps you aren't
+convinced now, but after reading the following sections, I'm sure you
+will be :)
+</p>
+
+<p>
+If you use the sysctl options, you <e>must</e> use an ACL system.
+Otherwise an attacker can simply deactivate all protections we provide.
+</p>
+
+<warn>
+You <e>must</e> make sure that all initscripts are read-only and that 
+root doesn't have access to adding modules or performing raw i/o 
+operations. All sysctl options must be set at startup, and after setting
+all these options, the grsec_lock entry <e>must</e> be activated.
+</warn>
+
+</body>
+</section>
+<section>
+<title>ACL Structures</title>
+<body>
+
+<p>
+grSecurity's ACL structures are defined in or referenced by
+<path>/etc/grsec/acl</path>. In these structures you define what
+processes (subjects) should adhere to what restrictions based on the
+requested file, capability, resource or IP (objects).
+</p>
+
+<p>
+grSecurity's ACL structure is pretty straight-forward:
+</p>
+
+<pre caption="ACL Structure Template">
+&lt;path of subject process&gt; &lt;optional subject modes&gt; {
+       &lt;file object&gt; &lt;optional object modes&gt;
+       [+|-]&lt;capability&gt;
+       &lt;resource name&gt; &lt;soft limit&gt; &lt;hard limit&gt;
+       connect {
+              &lt;ip&gt;/&lt;netmask&gt;:&lt;low port&gt;-&lt;high port&gt; &lt;type&gt; &lt;proto&gt;
+       }
+
+       bind {
+              &lt;ip&gt;/&lt;netmask&gt;:&lt;low port&gt;-&lt;high port&gt; &lt;type&gt; &lt;proto&gt;
+       }
+}
+</pre>
+
+<p>
+All paths must be absolute. Also, when we speak of paths, both files and
+directories are possible.
+</p>
+
+<p>
+The <i>&lt;optional subject modes&gt;</i> and <i>&lt;optional object
+modes&gt;</i> are described further down in this document.
+</p>
+
+<p>
+The <i>&lt;file object&gt;</i> defines what file or directory will be
+restricted to the process.
+</p>
+
+<p>
+Structures that do not have the <i>o</i> in their subject mode inherit
+object restrictions from parent directories. This means that if you place
+restrictions on, for instance, "<path>/</path>" and 
+"<path>/usr/bin/sendmail</path>", then "<path>/usr/bin/sendmail</path>" will
+also have the restrictions that you assigned to "<path>/</path>" right
+next to the restrictions you entered for "<path>/usr/bin/sendmail</path>".
+</p>
+
+<p>
+If a subject has object restrictions which are also restricted by a
+parent ACL structure, then the restriction of the first subject have 
+higher priority than the inherited restrictions on those objects.
+</p>
+
+</body>
+</section>
+<section>
+<title>Subject modes</title>
+<body>
+
+<p>
+The following table describes all the possible subject modes:
+</p>
+
+<table>
+<tr><th>Mode</th><th>Description</th></tr>
+<tr><ti>h</ti><ti>This process is hidden and only viewable by processes with the v mode.</ti></tr>
+<tr><ti>v</ti><ti>This process can view hidden processes.</ti></tr>
+<tr><ti>p</ti><ti>This process is protected;  it can only be killed by processes with the k mode.</ti></tr>
+<tr><ti>k</ti><ti>This process can kill protected processes.</ti></tr>
+<tr><ti>l</ti><ti>Enables learning mode for this process.</ti></tr>
+<tr><ti>P</ti><ti>DISABLES the PAGEEXEC (Paging based on non-executable
+pages) feature of PaX on this subject</ti></tr>
+<tr><ti>S</ti><ti>DISABLES the SEGMEXEC (Segmentation based on
+non-executable pages) feature of PaX on this subject</ti></tr>
+<tr><ti>M</ti><ti>DISABLES the MPROTECT (Restrict mprotect()) feature of PaX
+on this subject</ti></tr>
+<tr><ti>R</ti><ti>DISABLES the RANDMMAP (Randomize mmap() base) feature 
+of PaX on this subject</ti></tr>
+<tr><ti>G</ti><ti>ENABLES the EMUTRAMP (Emulate trampolines) feature of
+PaX on this subject</ti></tr>
+<tr><ti>X</ti><ti>ENABLES the RANDEXEC (Randomize ET_EXEC base) feature 
+of PaX on this subject</ti></tr>
+<tr><ti>O</ti><ti>Override the mmap() and ptrace() checks for this subject</ti></tr>
+<tr><ti>A</ti><ti>Protect the shared memory of this subject. No other processes but processes contained within this subject may access the shared memory of this subject.</ti></tr>
+<tr><ti>K</ti><ti>When processes belonging to this subject generate an alert, kill the process</ti></tr>
+<tr><ti>C</ti><ti>When processes belonging to this subject generate an alert, kill the process and all processes belonging to the IP of the attacker (if there was an IP attached to the process)</ti></tr>
+<tr><ti>T</ti><ti>Ensures this process can never execute any trojaned code</ti></tr>
+<tr><ti>o</ti><ti>Override ACL inheritance for this process. </ti></tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>Object modes</title>
+<body>
+
+<p>
+The following table explains the possible object modes.
+</p>
+
+<table>
+<tr><th>Mode</th><th>Description</th></tr>
+<tr><ti>r</ti><ti>This object can be opened for reading. This is default
+if no flags are given.</ti></tr>
+<tr><ti>w</ti><ti>This object can be opened for writing or appending.</ti></tr>
+<tr><ti>x</ti><ti>This object can be executed (or mmapd with PROT_EXEC into a task).</ti></tr>
+<tr><ti>a</ti><ti>This object can be opened for appending.</ti></tr>
+<tr><ti>h</ti><ti>This object is hidden.</ti></tr>
+<tr><ti>t</ti><ti>This object can be ptraced, but cannot modify the running task. This is referred to as a read-only ptrace.</ti></tr>
+<tr><ti>i</ti><ti>This mode only applies to binaries. When the object is executed, it inherits the ACL of the subject in which it was contained. </ti></tr>
+<tr><ti>R</ti><ti>Audit successful reads to this object</ti></tr>
+<tr><ti>W</ti><ti>Audit successful writes to this object</ti></tr>
+<tr><ti>X</ti><ti>Audit successful execs of this object</ti></tr>
+<tr><ti>A</ti><ti>Audit successful appends to this object</ti></tr>
+<tr><ti>F</ti><ti>Audit successful finds of this object</ti></tr>
+<tr><ti>I</ti><ti>Audit successful ACL inherits of this object</ti></tr>
+</table>
+</body>
+</section>
+<section>
+<title>Flow of matches</title>
+<body>
+
+<p>
+On every event, the kernel will check the ACLs for the executed process
+(and <e>if</e> that isn't available <e>or</e> it inherits permissions, 
+it will check the ACLs for the directory that process is located in 
+and so on untill it reaches the ACL for <path>/</path>) and the requested
+object (or the parent ACLs if there is no ACL for the object). Only if
+both ACLs allow the event it will be executed.
+</p>
+
+</body>
+</section>
+<section>
+<title>Resource Restrictions</title>
+<body>
+
+<p>
+You can also define restrictons on system resources. grSecurity supports
+the following resource definitions:
+</p>
+
+<table>
+<tr><th>Resource</th><th>Description</th></tr>
+<tr><ti>RES_CPU</ti><ti>CPU time in milliseconds</ti></tr>
+<tr><ti>RES_FSIZE</ti><ti>Maximum file size in bytes</ti></tr>
+<tr><ti>RES_DATA</ti><ti>Maximum data size in bytes</ti></tr>
+<tr><ti>RES_STACK</ti><ti>Maximum stack size in bytes</ti></tr>
+<tr><ti>RES_CORE</ti><ti>Maximum core size in bytes</ti></tr>
+<tr><ti>RES_RSS</ti><ti>Maximum resident set size in bytes</ti></tr>
+<tr><ti>RES_NPROC</ti><ti>Maximum number of processes</ti></tr>
+<tr><ti>RES_NOFILE</ti><ti>Maximum number of open files</ti></tr>
+<tr><ti>RES_MEMLOCK</ti><ti>Maximum locked-in-memory in bytes</ti></tr>
+<tr><ti>RES_AS</ti><ti>Address space limit in bytes</ti></tr>
+<tr><ti>RES_LOCKS</ti><ti>Maximum file locks</ti></tr>
+</table>
+
+<p>
+After the system resource you must define 2 values. The first one is the 
+"soft limit", meaning that the user running that process will receive a 
+warning that he has crossed the resource limit. The second one is the
+"hard limit", which is the actual enforced limit.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Building the ACLs</title>
+<section>
+<title>Example: The Default ACL</title>
+<body>
+
+<p>
+You have to define a default ACL for your system first. The following
+can be used as default ACL:
+</p>
+
+<pre caption = "Default ACL: /">
+/ {
+    /
+    /opt                    rx     
+    /home                   rwx
+    /mnt                    r
+    /dev
+    /dev/mem                h     
+    /dev/kmem               h
+    /dev/port               h     
+    /dev/null               rw
+    /dev/pts                rw     
+    /dev/ptmx               rw
+    /dev/dsp                rw
+    /dev/mixer              rw     
+    /dev/console            rw
+    /dev/log                h     
+    /dev/zero               rw
+    /dev/random             r     
+    /dev/urandom            r
+    /dev/input              rw
+    /dev/initctl            rw
+    /dev/psaux              rw
+    /dev/tty                rw
+    /dev/tty?               rw
+    /dev/tty1?              rw     
+    /dev/vc                 rw
+    /bin                    rx     
+    /sbin                   rx
+    /lib                    rx     
+    /lib/security           rx
+    /usr                    rx     
+    /usr/lib                rx
+    /boot                   r     
+    /etc/grsec              h
+    /etc                    rx     
+    /etc/init.d             rx
+    /etc/shadow-            h     
+    /etc/shadow             h
+    /etc/postfix            r     
+    /proc                   rwx
+    /proc/sys               r     
+    /proc/kcore             h
+    /root                   r     
+    /root/.bash_history     ra
+    /root/.history          ra     
+    /tmp                    rw
+    /var                    rx     
+    /var/cache              rw
+    /var/run                rw     
+    /var/tmp                rw
+    /var/log                h     
+    /var/log/wtmp           a
+    /var/spool              rw     
+    /var/spool/postfix/lib  rx
+    /etc/ld.so.preload      rw     
+    /mnt/.init.d            rwx
+
+    -CAP_ALL
+}
+</pre>
+
+<p>
+The reason that a default ACL is needed is because of the forementioned
+inheritance. Note that permissions on an ACL system is controlled both
+by the ACL on an object <e>and</e> the DAC (Discretionary Access
+Control) permission (rwxrwxrwx). Only if both systems agree access is 
+granted.
+</p>
+
+<p>
+As you can see we hide certain files and directories. Files that should 
+only be appended to are forced to be append-only. We also remove all
+possible capabilities (which are described in the Appendix of this
+document).
+</p>
+
+</body>
+</section>
+<section>
+<title>Example: init</title>
+<body>
+
+<p>
+<c>init</c> needs a different ACL:
+</p>
+
+<pre caption="The init ACL">
+/sbin/init o {
+    /var/run/utmp       rw
+    /var/log/wtmp       w
+    /var/log 
+    /sbin/rc            x
+    /sbin/agetty        x
+    /lib                rx
+    /etc/ld.so.preload  r
+    /etc/ld.so.cache    r
+    /etc/ioctl.save     r
+    /etc/inittab        r
+    /etc 
+    /dev/log            rw
+    /dev/initctl        w
+    /dev/console        rw
+    /dev/vc             rw
+    /sbin/init          x
+    /sbin/sulogin       x
+    /                   h
+    
+    -CAP_ALL
+    +CAP_SYS_TTY_CONFIG
+    +CAP_DAC_OVERIDE
+    +CAP_DAC_SEARCH
+    
+    connect {
+        disabled
+    }
+    
+    bind    {
+        disabled
+    }
+}
+</pre>
+    
+<p>
+As mentioned before, the subject mode "o" overrides the default ACL
+settings. Here, we make sure that <c>init</c> can <e>only</e> edit
+<path>/var/log/utmp</path>, <path>/var/log/wtmp</path>,
+<path>/dev/log</path>, <path>/dev/initctl</path>,
+<path>/dev/console</path> and <path>/dev/vc</path>. Furthermore we make
+sure that <c>init</c> cannot find any other file by making
+<path>/</path> hidden.
+</p>
+
+<p>
+We also define what capabilities init may use: none, except
+<c>CAP_SYS_TTY_CONFIG</c>, <c>CAP_DAC_OVERRIDE</c> and
+<c>CAP_DAC_SEARCH</c>.
+</p>
+
+<p>
+Finally, since <c>init</c> has nothing to do with networking, we make
+sure it cannot bind on or connect to an IP-address/port.
+</p>
+
+</body>
+</section>
+<section>
+<title>Example: apache</title>
+<body>
+
+<pre caption = "Apache's ACL">
+/usr/sbin/apache oXA { 
+    /usr/share          r
+    /etc                r
+    /etc/grsec          h
+    /etc/ld.so.cache    r
+    /tmp                rwx
+    /lib                rx
+    /usr/lib            rx
+    /usr/sbin/apache    x
+    /var/log/apache     a
+    /var/run/apache.pid w
+    /var/www            rx
+    /www                rx
+    /dev/null           rw
+    /bin/bash           x
+    /home               r
+    /home/httpd/cgi-bin rx
+    /
+
+    -CAP_ALL        
+    +CAP_DAC_OVERRIDE
+    +CAP_KILL        
+    +CAP_SETGID
+    +CAP_SETUID        
+    +CAP_NET_BIND_SERVICE
+
+    connect {
+        0.0.0.0/0:53  stream  dgram  ip  tcp  udp
+    }
+
+    bind    {
+        0.0.0.0/0:80  stream  tcp  
+        0.0.0.0/0:443 stream  tcp
+    }
+}
+</pre>
+
+<p>
+Here we allow <c>apache</c> to only append to
+<path>/var/log/apache</path>. We hide <path>/etc/grsec</path> for
+obvious reasons.
+</p>
+
+<p>
+We also allow <c>apache</c> to connect to a DNS server, and bind to 2
+ports: 80 (http) and 443 (https).
+</p>
+
+<p>
+You can see that the subject mode is different from <c>init</c>'s:
+<c>oXA</c>. This means that we override the default ACL, enable the
+RANDEXEC feature of PaX and restrict the use of it's shared memory to
+objects described in this ACL.
+</p>
+
+</body>
+</section>
+<section>
+<title>Example: tcpd</title>
+<body>
+
+<pre caption = "tcpd ACL">
+/usr/sbin/tcpd Xo {
+	/usr/share/zoneinfo/America/New_York    r
+	/usr/bin/cvs                            x
+	/lib/libc-2.3.1.so                      rx
+	/lib/ld-2.3.1.so                        x
+	/etc/ld.so.preload                      r
+	/etc/ld.so.cache                        r
+	/dev/log                                rw
+	/usr/sbin/tcpd                          x
+	/etc/grsec                              h
+	/                                       h
+    
+	-CAP_ALL
+    
+	RES_FSIZE           0       0
+	RES_DATA        19252   19252
+	RES_STACK       21480   21480
+	RES_RSS             0       0
+	RES_NPROC           2       2
+	RES_NOFILE          8       8
+	RES_MEMLOCK         0       0
+	RES_AS        1884448 1884448
+	RES_LOCKS           0       0
+    
+	connect {
+		10.0.0.1:113 stream tcp
+	}
+	bind {
+		10.0.0.2:0  stream tcp
+	}
+}
+</pre>
+
+<p>
+Again we disable inheritance and enable RANDEXEC. However, we also set
+resource restrictions:
+</p>
+
+<ul>
+<li>The maximum file size is 0.</li>
+<li>The maximum data size is restricted to 19252 bytes (18 Kb).</li>
+<li>The maximum stack size is restricted to 21480 bytes (20 Kb).</li>
+<li>The maximum resident set size is 0.</li>
+<li>The maximum number of processes it spawns is restricted to 2.</li>
+<li>The maximum number of open files is restricted to 8.</li>
+<li>The maximum locked-in-memory is 0.</li>
+<li>The address space limit is restricted to 1884448 bytes (1.8 Mb).</li>
+<li>The maximum number of file locks is 0.</li>
+</ul>
+</body>
+</section>
+</chapter>
+
+
+-->
+
+<chapter>
+<title>Using gradm and the Learning Mode</title>
+<section>
+<title>What is the Learning Mode?</title>
+<body>
+
+<p>
+The chances are that you don't know what ACLs you should place on your
+system. Luckily for you there is a learning mode in grSecurity.
+</p>
+
+<p>
+In the learning mode grSecurity will audit everything a certain process
+does, and log it into a temporary ACL. Afterwards, you can dump it
+into an ACL file and, if necessary, make further adjustements.
+</p>
+
+<p>
+This allows you to create an ACL system optimized for your environment.
+</p>
+
+</body>
+</section>
+<section>
+<title>What is gradm?</title>
+<body>
+
+<p>
+<c>gradm</c> is a tool which helps you maintain ACLs on a (running)
+system. With it, you can enable the ACL system (<c>-E</c>), reload the
+ACLs (<c>-R</c>), remove an execution ban from a given uid/filename
+(<c>-M</c>), parse the learning logs (<c>-L</c>), display permissions on
+an object by a subject (<c>-T</c>), disable the ACL system (<c>-D</c>),
+go into ACL Admin Mode (<c>-a</c>) and set a password for the admin mode
+(<c>-P</c>).
+</p>
+
+</body>
+</section>
+<section>
+<title>Playing with the learning mode</title>
+<body>
+
+<p>
+The learning mode is process based, meaning that you can monitor a
+single process while the rest of the system remains protected as usual.
+</p>
+
+<p>
+To enable process-base learning mode on a subject we would first need to
+add it to our ACL system.
+</p>
+
+<note>
+We can change the flags on an ACL at any given time when we are in admin
+mode.
+</note>
+
+<pre caption = "Possible ACL for a process">
+/path/to/executable lo {
+    /               h
+    /etc/grsec      h
+
+    -CAP_ALL
+
+    connect {
+        disabled
+    }
+
+    bind    {
+        disabled
+    }
+</pre>
+
+<p>
+A more restrictive ACL for learning mode might look like this:
+</p>
+
+<pre caption = "Learning ACL Template">
+/path/to/executable loXA {
+    /               h
+    /etc/grsec      h
+    /dev/mem        h
+    /dev/kmem       h
+    /dev/port       h
+    /proc/kcore     h
+    
+    -CAP_ALL
+    
+    RES_FSIZE       0 0
+    RES_DATA        0 0
+    RES_RSS         0 0
+    RES_NOFILE      0 0
+    RES_MEMLOCK     0 0
+    RES_STACK       0 0
+    RES_AS          0 0
+    RES_NPROC       0 0
+    RES_LOCKS       0 0
+    
+    connect {
+        disabled
+    }
+
+    bind {
+        disabled
+    }
+}
+</pre>
+
+<p>
+Now we reload the grSecurity ACL system with <c>gradmn</c>.
+</p>
+
+<pre caption = "Reloading the ACL system">
+# <i>gradm -R</i>
+</pre>
+
+<p>
+You should now use this application as thouroughly as possible, since
+the learning mode uses a threshold-based system to determine the ACLs.
+If the application is something that uses authentification you should
+log on/off to that service which will cause it to do its necessary
+authentification calls.
+</p>
+
+<p>
+Also starting and stopping the application or service is advised.
+</p>
+
+<pre caption = "Restarting the service">
+# <i>/etc/init.d/your_service start</i>
+# <i>/etc/init.d/your_service stop</i>
+</pre>
+
+<p>
+Starting the service is needed so that the ACL system knows of the 
+possible configuration files the application/service uses. Stopping it
+will let the ACL system know about the files that the application
+unlinks.
+</p>
+
+<p>
+According to the grSecurity documentation this process should be
+repeated about 4 times.
+</p>
+
+<p>
+When you think the tool has been run long enough, go in admin mode with 
+<c>gradm -a</c> (or disable the ACL system with <c>gradm -D</c>) and dump
+the ACLs into a file. The following will append the new learned ACLs to
+<path>output.acl</path>. 
+</p>
+
+<pre caption = "Saving learnt ACLs">
+<codenote>You may need to change the logfile depending on your syslog service</codenote>
+# <i>gradm -L /var/log/kern.log -O output.acl</i>
+</pre>
+
+<p>
+You should read the proposed ACL thouroughly and make changes if deemed
+necessary. If you know your service will be doing name service lookups
+you might want to add the following to the final ACLs result.
+</p>
+
+<pre caption = "Adding name lookup permission">
+    connect {
+        0.0.0.0/0:53    stream  dgram  ip  tcp  udp
+    }
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Playing with sysctl</title>
+<section>
+<title>What is sysctl?</title>
+<body>
+
+<p>
+With sysctl, you can "talk" to the kernel by inserting values in files
+provided by <path>/proc</path>, or with the <c>sysctl</c> command. It 
+provides you with a flexible way to change kernelvariables on the fly
+without the need for recompiling and rebooting a kernel.
+</p>
+
+</body>
+</section>
+<section>
+<title>Sysctl and grSecurity</title>
+<body>
+
+<p>
+As you read previously, several grSecurity options can be enabled/disabled 
+on the fly using sysctl. There are 4 ways in which you can change the 
+sysctl variables.
+</p>
+
+<p>
+The first one is hardcoding the values in <path>/etc/sysctl.conf</path>, 
+using the following syntax:
+</p>
+
+<pre caption = "/etc/sysctl.conf syntax">
+# This is a comment
+place.of.the.variable = value
+</pre>
+
+<p>
+For instance, to deny using pivotroot in chrootjails, you would set 
+the following:
+</p>
+
+<pre caption = "/etc/sysctl.conf example">
+# Deny pivotroot on chroot
+kernel.grsecurity.chroot_deny_pivot = 1 
+</pre>
+
+<p>
+The second one (and recommended one) is to edit 
+<path>/etc/conf.d/grsecurity</path>. It works essentially the same as 
+<path>/etc/sysctl.conf</path>, but is cleaner and more "Gentoo-style": 
+to activate a certain sysctl, you should list its name in the 
+<c>ENABLED</c> variable. 
+</p>
+
+<p>
+You will find more information on <path>/etc/conf.d/grsecurity</path> 
+in the next chapter.
+</p>
+
+<p>
+Another way is by using <c>sysctl</c>. For instance, to randomize PIDs,
+you can use:
+</p>
+
+<pre caption = "sysctl usage">
+# <i>sysctl -w kernel.grsecurity.rand_pids=1</i>
+</pre>
+
+<p>
+The fourth way is by <c>echo</c>'ing the variable's value into the
+appropriate file in <path>/proc/sys</path>. For instance, to restrict the
+usage of <c>dmesg</c>:
+</p>
+
+<pre caption = "Using /proc/sys">
+# <i>echo 1 > /proc/sys/kernel/grsecurity/dmesg</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installing Gentoo's ACLs</title>
+<section>
+<body>
+
+<p>
+Now that you know how to write or change ACLs, it is time to install the
+Gentoo ACLs on your system. Don't forget to use a kernel with grSecurity
+compiled-in!
+</p>
+
+<p>
+As you probably know, installing something with Gentoo is easy. This
+isn't different with the base Gentoo policy.
+</p>
+
+<note>
+Currently all grSecurity related ebuilds are in <c>~x86</c>. If you use
+any other <c>ACCEPT_KEYWORDS</c> setting, you must add 
+<c>ACCEPT_KEYWORDS="~x86"</c> in front of the <c>emerge</c> command listed
+below.
+</note>
+
+<pre caption = "Installing Gentoo's base policy">
+# <i>emerge chpax gradm grsecurity-base-policy</i>
+</pre>
+
+<p>
+To configure the system any further, you can choose between setting the
+sysctl options yourself, or edit <path>/etc/conf.d/grsecurity</path>.
+In this file you should set all the sysctl options; check the examples
+in that file. Be sure to take your time on this one; it is a very 
+important step.
+</p>
+
+<p>
+Activate all requested sysctl options by listing them in the 
+<c>ENABLED</c> variable. You probably just want to enable all
+settings, otherwise you wouldn't have selected them during the
+kernel configuration in the first place :)
+</p>
+
+<p>
+Don't forget to set the GID-values for the options you've selected
+during the kernel configuration that required one. By using sysctl,
+the kernel doesn't know what you have filled in during the kernel
+configuration. Also don't forget to uncomment the variables you don't 
+need.
+</p>
+
+<p>
+Now you need to add our grsecurity initscript to the default runlevel so
+that it will use the configuration.
+</p>
+
+<pre caption = "Running the grSecurity initscript">
+# <i>rc-update add grsecurity default</i>
+# <i>/etc/init.d/grsecurity start</i>
+</pre>
+
+<p>
+You'll notice that the ACLs on the system are still not activated. This 
+is because it is the sysadmin's job to determine when the system should 
+have an ACL policy enforced. Before activating the ACL system you should
+set an admin password with <c>gradm -P</c>. Then you can activate the 
+ACL system with <c>gradm -E</c>.
+</p>
+
+<pre caption = "Activating the ACL system">
+# <i>gradm -P</i>
+Setting up grsecurity ACL password
+Password: 
+Re-enter Password:
+Password written in /etc/grsec/pw.
+# <i>gradm -E</i>
+</pre>
+
+<p>
+To lock the grSecurity options, you should set 
+<c>kernel.grsecurity.lock = 1</c>. However, this is a <e>lock</e> in the
+pure meaning of it's word. If you activate it, you <e>won't</e> be able
+to make changes to the ACL system (<e>including</e> activating,
+restarting or shutting down) or grSecurity options. So you <e>must</e> 
+activate the ACL system <e>before</e> setting the lock.
+</p>
+
+<warn>
+If you want to debug your ACL system or test it, <e>don't</e> activate
+the lock, only the ACL system. 
+</warn>
+
+<pre caption = "Locking the system">
+# <i>sysctl kernel.grsecurity.lock=1</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Appendix</title>
+<section>
+	<title>Capability Names and Descriptions</title>
+	<body>
+<pre caption="Capability Names and Descriptions">
+00. CAP_CHOWN
+In a system with the [_POSIX_CHOWN_RESTRICTED] option defined, 
+this overrides the restriction of changing file ownership and 
+group ownership.
+
+01. CAP_DAC_OVERRIDE
+Override all DAC access, including ACL execute access 
+if [_POSIX_ACL] is defined. 
+Excluding DAC access covered by CAP_LINUX_IMMUTABLE.
+
+02. CAP_DAC_READ_SEARCH	
+Overrides all DAC restrictions, regarding read and search on files 
+and directories, including ACL restrictions, if [_POSIX_ACL] is 
+defined. Excluding DAC access covered by CAP_LINUX_IMMUTABLE.
+
+03. CAP_FOWNER
+Overrides all restrictions about allowed operations on files, where 
+file owner ID must be equal to the user ID, except where CAP_FSETID 
+is applicable. It doesn't override MAC and DAC restrictions.
+
+04. CAP_FSETID
+Overrides the following restrictions, that the effective user ID shall
+match the file owner ID, when setting the S_ISUID and S_ISGID bits on 
+that file; that the effective group ID (or one of the supplementary 
+group IDs) shall match the file owner ID when setting the S_ISGID bit 
+on that file; that the S_ISUID and S_ISGID bits are cleared on 
+successful return from chown(2) (not implemented).
+
+05. CAP_KILL
+Overrides the restriction, that the real or effective user ID of a 
+process, sending a signal, must match the real or effective user ID 
+of the process, receiving the signal.
+
+06. CAP_SETGID 
+Allows setgid(2) manipulation;
+Allows setgroups(2);
+Allows forged gids on socket credentials passing.
+
+07. CAP_SETUID
+Allows set*uid(2) manipulation (including fsuid);
+Allows forged pids on socket credentials passing.
+
+08. CAP_SETPCAP
+Transfer any capability in your permitted set to any pid, remove any 
+capability in your permitted set from any pid.
+
+09. CAP_LINUX_IMMUTABLE
+Allow modification of S_IMMUTABLE and S_APPEND file attributes.
+
+10. CAP_NET_BIND_SERVICE 
+Allows binding to TCP/UDP sockets below 1024;
+Allows binding to ATM VCIs below 32.
+
+11. CAP_NET_BROADCAST
+Allow broadcasting, listen to multicast.
+
+12. CAP_NET_ADMIN 
+Allow interface configuration;
+Allow administration of IP firewall, masquerading and accounting;
+Allow setting debug option on sockets;
+Allow modification of routing tables;
+Allow setting arbitrary process / process group ownership on sockets;
+Allow binding to any address for transparent proxying;
+Allow setting TOS (type of service);
+Allow setting promiscuous mode;
+Allow clearing driver statistics;
+Allow multicasting;
+Allow read/write of devicespecific registers;
+Allow activation of ATM control sockets.
+
+13.  CAP_NET_RAW 
+Allow use of RAW sockets;
+Allow use of PACKET sockets.
+
+14.  CAP_IPC_LOCK 
+Allow locking of shared memory segments;
+Allow mlock and mlockall (which doesn't really have anything to do 
+with IPC).
+
+15.  CAP_IPC_OWNER
+Override IPC ownership checks.
+
+16.  CAP_SYS_MODULE 
+Insert and remove kernel modules  modify kernel without limit;
+Modify cap_bset.
+
+17.  CAP_SYS_RAWIO 
+Allow ioperm/iopl access;
+Allow sending USB messages to any device via /proc/bus/usb.
+
+18.  CAP_SYS_CHROOT
+Allow use of chroot().
+
+19.  CAP_SYS_PTRACE
+Allow ptrace() of any process.
+
+20.  CAP_SYS_PACCT
+Allow configuration of process accounting.
+
+21.  CAP_SYS_ADMIN 
+Allow configuration of the secure attention key;
+Allow administration of the random device;
+Allow examination and configuration of disk quotas;
+Allow configuring the kernel's syslog (printk behaviour);
+Allow setting the domainname;
+Allow setting the hostname;
+Allow calling bdflush();
+Allow mount() and umount(), setting up new smb connection;
+Allow some autofs root ioctls;
+Allow nfsservctl; Allow VM86_REQUEST_IRQ;
+Allow to read/write pci config on alpha; Allow irix_prctl on mips 
+(setstacksize);
+Allow flushing all cache on m68k (sys_cacheflush);
+Allow removing semaphores; Used instead of CAP_CHOWN to "chown" IPC 
+message queues, semaphores and shared memory;
+Allow locking/unlocking of shared memory segment;
+Allow turning swap on/off;
+Allow forged pids on socket credentials passing;
+Allow setting readahead and flushing buffers on block devices;
+Allow setting geometry in floppy driver;
+Allow turning DMA on/off in xd driver;
+Allow administration of md devices (mostly the above, but 
+some extra ioctls);
+Allow tuning the ide driver;
+Allow access to the nvram device;
+Allow administration of apm_bios, serial and bttv (TV) device;
+Allow manufacturer commands in isdn CAPI support driver;
+Allow reading nonstandardized portions of pci configuration space;
+Allow DDI debug ioctl on sbpcd driver;
+Allow setting up serial ports;
+Allow sending raw qic117 commands;
+Allow enabling/disabling tagged queuing on SCSI controllers and 
+sending arbitrary SCSI commands;
+Allow setting encryption key on loopback filesystem.
+
+22.   CAP_SYS_BOOT
+Allow use of reboot().
+
+23.   CAP_SYS_NICE 
+Allow raising priority and setting priority on other 
+(different UID) processes;
+Allow use of FIFO and roundrobin (realtime) scheduling on own 
+processes and setting the scheduling algorithm used by another process.
+
+24.   CAP_SYS_RESOURCE 
+Override resource limits. Set resource limits;
+Override quota limits;
+Override reserved space on ext2 filesystem;
+Modify data journaling mode on ext3 filesystem 
+(uses journaling resources); NOTE: ext2 honors fsuid when checking for
+resource overrides, so you can override using fsuid too;
+Override size restrictions on IPC message queues;
+Allow more than 64hz interrupts from the realtime clock;
+Override max number of consoles on console allocation;
+Override max number of keymaps.
+
+25.   CAP_SYS_TIME 
+Allow manipulation of system clock;
+Allow irix_stime on mips;
+Allow setting the realtime clock.
+
+26.   CAP_SYS_TTY_CONFIG
+Allow configuration of tty devices; Allow vhangup() of tty.
+
+27.   CAP_MKNOD
+Allow the privileged aspects of mknod().
+
+28.   CAP_LEASE
+Allow taking of leases on files.
+</pre>
+
+</body>
+</section>
+</chapter>
+</guide>
