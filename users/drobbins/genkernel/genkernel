@@ -25,7 +25,7 @@ fi
 KD=`readlink -f /usr/src/linux`
 KV="${KD##*/}"
 KV="${KV##linux-}"
-GK_VERSION=1.7
+GK_VERSION=1.8
 GK_SHARE=/usr/share/genkernel
 [ ! -e /sbin/functions.sh ] && die "Can't find /sbin/functions.sh; exiting."
 source /sbin/functions.sh
@@ -159,7 +159,7 @@ compile() {
 	make modules_install >/var/log/genkernel.log 2>&1 || die; eend
 	mount /boot > /dev/null 2>&1
 	ebegin "Moving bzImage to /boot/kernel-${KV}"
-        cp arch/i386/boot/bzImage /boot/kernel-${KV}
+        cp arch/i386/boot/bzImage /boot/kernel-${KV} || die; eend
 	ebegin "Copying System.map to /boot/System.map-${KV}"
 	cp System.map /boot/System.map-${KV}
 	rm -f /boot/System.map.old
@@ -215,18 +215,20 @@ EOF
         done
 	eend
 }
+
 initrd() {
         ebegin "Creating initrd"
 	local modc i mods mymod
 	for modc in storage firewire ataraid pcmcia usb
         do
+		install -d ${TEMP}/kernel-initrd/modules/${modc}
 		mods=`echo $modc | tr [:lower:] [:upper:]`_MODULES
 		for i in ${!mods}
 		do
 			mymod=`find /lib/modules/${KV} -name "${i}.o"`
 			if [ -z "${mymod}" ]
 			then
-				echo "Error: ${i}.o not found; skipping..."
+				echo "Warning: ${i}.o not found; skipping..."
 				continue
 			fi
 			cp $mymod ${TEMP}/kernel-initrd/modules/${modc} 
@@ -277,6 +279,7 @@ finish() {
 	einfo "Please specify /boot/kernel-${KV} and /boot/initrd-${KV}"
 	einfo "when customizing your boot loader configuration files."
 	echo
+	einfo "A detailed log can be found at /var/log/genkernel.log."
 	rm -rf /tmp/KV
 	rm -rf ${TEMP}/kernel-initrd
 	rm -rf ${TEMP}/${BUSYBOX_DIR}
