@@ -12,13 +12,16 @@ playing with your mind =)
 </p>
 
 <p>
-All Gentoo installations can succeed with a working Internet connection.
+Gentoo can always be installed with a working Internet connection.
 If you want to install Gentoo without one, you need to use one of the
 following installation mediums:
 </p>
 
 <ul>
-  <li>Gentoo x86 2-CD Installation LiveCD set (all subarchitectures)</li>
+  <li>
+    Gentoo x86 2-CD Installation LiveCD set (including all subarchitectures, 
+    like i486, i586, pentium, athlon-xp, etc.)
+  </li>
 </ul>
 
 </body>
@@ -53,17 +56,30 @@ with the networking configuration parts below.
 
 </body>
 </subsubsection>
+<subsubsection>
+<title>Networking from non-Gentoo Installation Mediums</title>
+<body>
+
+<p>
+Most information in this section is meant for users who booted from a
+Gentoo LiveCD. However, you can install Gentoo from several other media.
+If you are in such a situation, make sure that the used medium has a
+working Internet connection and continue with the next section.
+</p>
+
+</body>
+</subsubsection>
 </subsection>
 <subsection>
-<title>Default: Automatic Network Detection</title>
+<title>Automatic Network Detection</title>
 <subsubsection>
 <title>Maybe it just works?</title>
 <body>
 
 <p>
-If your system is plugged into an Ethernet network, it is very likely
-that your networking configuration has already been set up automatically
-for you. If so, you should be able to take advantage of the many
+If your system is plugged into an Ethernet network with a DHCP server, it is 
+very likely that your networking configuration has already been set up 
+automatically for you. If so, you should be able to take advantage of the many
 included network-aware commands on the LiveCD such as <c>ssh</c>, <c>scp</c>, 
 <c>ping</c>, <c>irssi</c>, <c>wget</c> and <c>links</c>, among others.
 </p>
@@ -74,6 +90,7 @@ should list some network interfaces besides lo, such as eth0:
 </p>
 
 <pre caption="/sbin/ifconfig for a working network card">
+# <i>/sbin/ifconfig</i>
 eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
           inet addr:192.168.0.2  Bcast:192.168.0.255  Mask:255.255.255.0
           inet6 addr: fe80::50:ba8f:617a/10 Scope:Link
@@ -111,7 +128,7 @@ section. If not, bad luck, you'll have to persue a bit harder :)
 </subsubsection>
 </subsection>
 <subsection>
-<title>Alternative: Automatic Network Configuration</title>
+<title>Automatic Network Configuration</title>
 <body>
 
 <p>
@@ -124,33 +141,143 @@ automatically is to run the <c>net-setup</c> script:
 </pre>
 
 <p>
-Now test your network as we described above. Still no luck? Well then
-it's time to manually configure the network. Otherwise continue with the
-next section. 
+<c>net-setup</c> will ask you some questions about your network
+environment. When all is done, you should have a working network
+connection. Test your network connection as stated before. If the tests
+are positive, congratulations! You are now ready to install Gentoo. Skip
+the rest of this section and continue with the Gentoo installation.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Alternative: Manual Network Configuration</title>
+<title>Manual Network Configuration</title>
+<subsubsection>
+<title>Loading the Appropriate Network Modules</title>
+<body>
+
+<p>
+When the Live CD boots, it tries to detect all your hardware devices and
+loads the appropiate kernel modules (drivers) to support your hardware. In the
+vast majority of cases, it does a very good job. However, in some cases,
+it may not auto-load the kernel modules you need.
+</p>
+
+<p>
+If <c>net-setup</c> failed, then you can safely assume that your
+networkcard wasn't found immediately. This means you will have to load
+the appropriate kernel modules manually.
+</p>
+
+<p>
+To find out what kernel modules we provide for networking, use
+<c>ls</c>:
+</p>
+
+<pre caption="Searching for provided modules">
+# <i>ls /lib/modules/`uname -r`/kernel/drivers/net</i>
+</pre>
+
+<p>
+If you find a driver for your network card, use <c>modprobe</c> to load
+the kernel module:
+</p>
+
+<pre caption="Using modprobe to load a kernel module">
+<comment>(As an example, we load the pcnet32 kernel)</comment>
+# <i>modprobe pcnet32</i>
+</pre>
+
+<p>
+To check if your network card is now detected, use <c>ifconfig</c>. A
+detected network card would result in something like this:
+</p>
+
+<pre caption="Testing availability of your network card, succesfull">
+# <i>ifconfig eth0</i>
+eth0      Link encap:Ethernet  HWaddr FE:FD:00:00:00:00  
+          BROADCAST NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+</pre>
+
+<p>
+If however you receive the following error, the network card is not
+detected:
+</p>
+
+<pre caption="Testing availability of your network card, failed">
+# <i>ifconfig eth0</i>
+eth0: error fetching interface information: Device not found
+</pre>
+
+<p>
+Assuming that you now have a detected network card, we continue with
+configuring your network. There are two possibilities here: or you use
+DHCP (to automatically obtain the necessary information) or you use a
+static IP.
+</p>
+
+<p>
+You can retry <c>net-setup</c> again (which should work now), but for
+the hardcore people amongst you, we explain how to configure your
+network manually.
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Using DHCP</title>
+<body>
+
+<p>
+DHCP (Dynamic Host Configuration Protocol) makes it possible to
+automatically receive networking information (IP address, netmask,
+broadcast address, gateway, nameservers etc.). This only works if you
+have a DHCP server in your network (or if your provider provides a DHCP
+service). To have a network interface receive this information automatically, 
+use <c>dhcpcd</c>:
+</p>
+
+<pre caption="Using dhcpcd">
+# <i>dhcpcd eth0</i>
+</pre>
+
+<p>
+If this works (try pinging some internet server, like <uri
+link="http://www.google.com">Google</uri>), then you are all set and
+ready to continue. Skip the rest of this section.
+</p>
+
+</body>
+</subsubsection>
 <subsubsection>
 <title>Understanding Network Terminology</title>
 <body>
+
+<note>
+If you know your IP address, broadcast address, netmask and nameservers,
+then you can skip this part and continue with <e>Using ifconfig and
+route</e>.
+</note>
 
 <p>
 If all above fails, you will have to configure your network manually.
 Have no fear, it is far from difficult. But we are going to explain a
 certain amount of networking to you as you will need it to be able to
-configure your network satisfactory. When you're done reading this, you
-will know what a <e>gateway</e> is, what a <e>netmask</e> serves for and
-how a <e>broadcast</e> address is formed.
+configure your network to your satisfaction. When you're done reading this, you
+will know what a <e>gateway</e> is, what a <e>netmask</e> serves for,
+how a <e>broadcast</e> address is formed and why you need
+<e>nameservers</e>.
 </p>
 
 <p>
 In a network, hosts are identified by their <e>IP address</e> (Internet
 Protocol address). Such an address is a combination of four numbers
 between 0 and 255. Well, at least that is how we perceive it. In
-reality, such an IP address consists of 32 bits (ones and zeros). Lets
+reality, such an IP address consists of 32 bits (ones and zeros). Let's
 view an example:
 </p>
 
@@ -162,7 +289,157 @@ IP Address (bits):      11000000 10101000 00000000 00000010
 </pre>
 
 <p>
-Such an IP address ...
+Such an IP address is unique for each host. To be able to make a
+distinction between hosts inside a network, and hosts outside a network,
+the IP address is divided in two parts: the <e>network</e> part and the
+<e>host</e> part. 
+</p>
+
+<p>
+The seperation is written down with the <e>netmask</e>, a collection of
+ones followed by a collection of zeros. The part of the IP that can be
+mapped on the ones is the network-part, the other one is the host-part.
+As is usual, the netmask can be written down as an IP-address.
+</p>
+
+<pre caption="Example of network/host seperation">
+IP-address:    192      168      0         2
+            11000000 10101000 00000000 00000010
+Netmask:    11111111 11111111 11111111 00000000
+               255      255     255        0
+           +--------------------------+--------+
+                    Network              Host
+</pre>
+
+<p>
+In other words, 192.168.0.14 is still part of our example network, but
+192.168.1.2 is not.
+</p>
+
+<p>
+The <e>broadcast</e> address is an IP-address with the same network-part
+as your network, but with only ones as host-part. Every host on your
+network listens to this IP address. It is truely meant for broadcasting
+packets.
+</p>
+
+<pre caption="Broadcast address">
+IP-address:    192      168      0         2
+            11000000 10101000 00000000 00000010
+Broadcast:  11000000 10101000 00000000 11111111
+               192      168      0        255
+           +--------------------------+--------+
+                     Network             Host
+</pre>
+
+<p>
+To be able to surf on the internet, you must know which hosts shares the
+Internet connection. This host is called the <e>gateway</e>. Since it is
+a regular host, it has a regular IP address (for instance 192.168.0.1).
+</p>
+
+<p>
+We previously stated that every host has its own IP address. To be able
+to reach this host by a name (instead of an IP address) you need a
+service that translates a name (such as <e>dev.gentoo.org</e>) to an IP
+address (such as <e>64.5.62.82</e>). Such a service is called a name
+service. To use such a service, you must define the necessary <e>name
+servers</e> in <path>/etc/resolv.conf</path>.
+</p>
+
+<p>
+In some cases, your gateway also serves as nameserver. Otherwise you
+will have to enter the nameservers provided by your ISP.
+</p>
+
+<p>
+To summarise, you will need the following information before continuing:
+</p>
+
+<table>
+<tr>
+  <th>Network Item</th>
+  <th>Example</th>
+</tr>
+<tr>
+  <ti>Your IP address</ti>
+  <ti>192.168.0.2</ti>
+</tr>
+<tr>
+  <ti>Netmask</ti>
+  <ti>255.255.255.0</ti>
+</tr>
+<tr>
+  <ti>Broadcast</ti>
+  <ti>192.168.0.255</ti>
+</tr>
+<tr>
+  <ti>Gateway</ti>
+  <ti>192.168.0.1</ti>
+</tr>
+<tr>
+  <ti>Nameserver(s)</ti>
+  <ti>195.130.130.5, 195.130.130.133</ti>
+</tr>
+</table>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Using ifconfig and route</title>
+<body>
+
+<p>
+Setting up your network consists of three steps. First we assign
+ourselves an IP address using <c>ifconfig</c>. Then we setup routing to
+the gateway using <c>route</c>. Then we finish up by placing the
+nameserver IPs in <path>/etc/resolv.conf</path>.
+</p>
+
+<p>
+To assign an IP address, you will need your IP address, broadcast
+address and netmask. Then execute the following command, substituting
+<c>${IP_ADDR}</c> with your IP address, <c>${BROADCAST}</c> with your
+broadcast address and <c>${NETMASK}</c> with your netmask:
+</p>
+
+<pre caption="Using ifconfig">
+# <i>ifconfig eth0 ${IP_ADDR} broadcast ${BROADCAST} netmask ${NETMASK} up</i>
+</pre>
+
+<p>
+Now set up routing using <c>route</c>. Substitute <c>${GATEWAY}</c> with
+your gateway IP address:
+</p>
+
+<pre caption="Using route">
+# <i>route add default gw ${GATEWAY}</i>
+</pre>
+
+<p>
+Now open <path>/etc/resolv.conf</path> with your favorite editor (in our
+example, we use <c>nano</c>):
+</p>
+
+<pre caption="Creating /etc/resolv.conf">
+# <i>nano -w /etc/resolv.conf</i>
+</pre>
+
+<p>
+Now fill in your nameserver(s) using the following as a template. Make
+sure you substitute <c>${NAMESERVER1}</c> and <c>${NAMESERVER2}</c> with
+the appropriate nameserver addresses:
+</p>
+
+<pre caption="/etc/resolv.conf template">
+nameserver ${NAMESERVER1}
+nameserver ${NAMESERVER2}
+</pre>
+
+<p>
+That's it. Now test your network by pinging some Internet server (like
+<uri link="http://www.google.com">Google</uri>). If this works,
+congratulations then. You are now ready to install Gentoo.
 </p>
 
 </body>
