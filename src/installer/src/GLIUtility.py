@@ -21,6 +21,14 @@ def is_realstring(string_a):
 	
 	return True
 
+def is_numeric(x):
+	try:
+		float(x)
+	except ValueError:
+		return False
+	else:
+		return True
+
 def is_ip(ip):
 	"Check to see if a string is a valid ip. Returns bool."
 	

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.18 2004/11/04 16:45:44 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.19 2004/11/16 05:28:54 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1033,6 +1033,10 @@ class InstallProfile:
 				for attrName in attr.getNames():
 					part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
+		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = int(part_entry['end'])
+		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = int(part_entry['start'])
+		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = int(part_entry['mb'])
+		if GLIUtility.is_numeric(part_entry['minor']): part_entry['minor'] = int(part_entry['minor'])
 		self._temp_partition_table[part_entry['minor']] = part_entry
 
 	def set_mta(self, xml_path, mta, xml_attr):
