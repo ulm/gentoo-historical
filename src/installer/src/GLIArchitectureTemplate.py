@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.47 2005/02/14 04:07:30 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.48 2005/02/18 23:52:38 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -12,7 +12,7 @@ The only definitions that are filled in here are architecture independent.
 
 """
 
-import GLIUtility, os, string, sys, shutil, re
+import GLIUtility, GLILogger, os, string, sys, shutil, re
 from GLIException import *
 # Until I switch my partition code to GLIUtility.spawn()
 import commands

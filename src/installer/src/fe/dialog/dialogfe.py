@@ -623,7 +623,7 @@ while 1:
 	for item in fn:
 		menu_list.append(item['text'])
 	menu_list.append("Install!")
-	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=20, menu_height=13, cancel="Exit")
+	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=30, menu_height=18, cancel="Exit")
 	if code != DLG_OK:
 		if d.yesno("Do you really want to exit before the install is complete?") == DLG_YES:
 			if d.yesno("Do you want to save the InstallProfile XML file?") == DLG_YES:
@@ -650,6 +650,8 @@ while 1:
 #				continue
 #			if notification.get_type() == "int" and notification.get_data() == GLIClientController.NEXT_STEP_READY:
 #				break
+		d.gauge_start("Installation Started!", title="Installation progress")
+		num_steps_completed = 1
 		while 1:
 			notification = cc.getNotification()
 			if notification == None:
@@ -664,10 +666,16 @@ while 1:
 				if data == GLIClientController.NEXT_STEP_READY:
 					next_step_waiting = False
 					next_step = cc.get_next_step_info()
-					print "Next step: " + next_step
+					num_steps = cc.get_num_steps()
+					i = (num_steps_completed*100)/num_steps
+					d.gauge_update(i, "On step %d of %d. Current step: %s" % (num_steps_completed, num_steps, next_step), update_text=1)
+					num_steps_completed += 1
+					#print "Next step: " + next_step
 					if cc.has_more_steps():
 						cc.next_step()
 					continue
 				if data == GLIClientController.INSTALL_DONE:
+					d.gauge_update(100, "Install completed!", update_text=1)
+					d.gauge_stop()
 					print "Install done!"
 					sys.exit(0)

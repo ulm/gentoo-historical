@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.44 2005/02/06 04:51:25 codeman Exp $
+$Id: GLIClientController.py,v 1.45 2005/02/18 23:52:38 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -90,7 +90,7 @@ class GLIClientController(Thread):
 			print "You can not do a non-interactive install without an InstallProfile!"
 			sys.exit(1)
 
-		self.output("Starting install now...")
+		#self.output("Starting install now...")
 
 		templates = {	'x86':		'x86ArchitectureTemplate',
 				'sparc':	'sparcArchitectureTemplate',
