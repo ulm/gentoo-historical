@@ -34,7 +34,7 @@
 	    <xsl:for-each select="needed">
 	      <!-- Key by priority; then alphabetically...
 		   No @priority is treated lowest, so this works as we need it to. -->
-	      <xsl:sort select="summary/@priority" order="descending"/>
+	      <xsl:sort select="summary/@priority" order="ascending"/>
 	      <!-- Yes, this is messy; but XSLT doesn't natively
 		   support case-insensitive sorting. This does it. -->
 	      <xsl:sort select="translate(summary, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
