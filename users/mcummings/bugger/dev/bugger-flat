@@ -373,90 +373,39 @@ sub add_attach {
 
 sub show_bug {
     my $BUG = shift;
+    chomp($BUG);
     use WWW::Mechanize;
+    my $mech = WWW::Mechanize->new();
+    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
+    $mech->submit_form(
+        fields => {
+            Bugzilla_login    => $login,
+            Bugzilla_password => $password,
+        }
+    );
+    $mech->submit_form(
+        form_number => 2,
+        fields      => { id => "$BUG", }
+    );
+    $mech->follow_link( text_regex => qr/format for printing/i );
     use HTML::Strip;
 
-    my $agent = WWW::Mechanize->new();
-    $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
-    my $TextBody = $agent->content();
+    my $TextBody = $mech->content();
     our $hs = HTML::Strip->new();
     my $hrcount;
 
-    my @blocks = split( /\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
-    my $rowcount;
-    my @bugtext;
-
-# In block 1, the only piece of information we care about is the line with the words bugzilla bug #number
-    my $block1 = $blocks[1];
-    $block1 =~ s/\n//mg;
-    $block1 =~ s/^.*Bugzilla Bug/Bugzilla Bug/igm;
-    $block1 =~ s/\<\/font\>.*$/\<\/front\>/img;
-    my $Line = $hs->parse($block1);
-    $hs->eof;
-
-    push @bugtext, $Line;
-
-    # Here we handle all of the header information
-    my $block4 = $blocks[4];
-    $block4 =~ s/\n//mg;
-    my $linecount;
-    my @blockset = split( / align\=\"right\"/, $block4 );
-
-    # lines of interest
-    # line 4 - reporter
-    my $reporter = clean_line( $blockset[3] );
-
-    push @bugtext, $reporter;
-
-    # line 10 - cc
-    my $ccline = clean_line( $blockset[9] );
-    $ccline =~ s/Remove select.*//gm;
-
-    push @bugtext, $ccline;
-
-    # line 11 - status
-    my $status = clean_line( $blockset[10] );
-
-    push @bugtext, $status;
-
-    # line 12 - priority *
-    my $priority = clean_line( $blockset[11] );
-
-    push @bugtext, $priority;
-
-    # line 13 - resolution
-    my $resolution = clean_line( $blockset[12] );
-
-    push @bugtext, $resolution;
-
-    # line 14 - severity *
-    my $severity = clean_line( $blockset[13] );
-
-    push @bugtext, $severity;
-
-    # line 15 - assigned
-    my $assigned = clean_line( $blockset[14] );
-
-    push @bugtext, $assigned;
-
-    # line 16  - URL
-    my $URL = clean_line( $blockset[15] );
-
-    push @bugtext, $URL;
-
-    #my $block6 = clean_line($blocks[6]);
-    my $block6 = $blocks[6];
-    $block6 =~ s/\<div \>/\n/mg;
-    $block6 =~ s/\<pre\>/\n/mg;
-    $block6 =~ s/\n\n/\n/mg;
-    my $cleaned = $hs->parse($block6);
-    $hs->eof;
-
-    my @tmpclean = split( /\n/, $cleaned );
-    push @bugtext, @tmpclean;
-    foreach my $outline (@bugtext) {
-        print "$outline\n";
+    my $intext = $hs->parse("$TextBody");
+    my @sintext = split( /\n/, $intext );
+    for ( my $lcount = 58 ; $lcount <= @sintext ; $lcount++ ) {
+        chomp( $sintext[$lcount] );
+        $sintext[$lcount] =~ s/\s+/ /mg;
+        next if ( $sintext[$lcount] =~ m/^\s+$/ );
+        next if ( $sintext[$lcount] =~ m/^\n/ );
+        next if ( $sintext[$lcount] =~ m/^\s{0,}\n$/ );
+        last if ( $sintext[$lcount] =~ m/Bugzilla Version/ );
+        print "$sintext[$lcount]\n";
         $rowcount++;
+
         if ( $rowcount >= $rows ) {
             print "Press Enter to Continue";
             my $junk = <STDIN>;
@@ -464,6 +413,7 @@ sub show_bug {
         }
     }
 }
+
 
 sub download_attach {
     my $BUG = shift;
@@ -522,4 +472,90 @@ sub clearscreen {
 
     my $clear_string = `clear`;
     print $clear_string;
+
+}
+sub new_dev {
+    use WWW::Bugzilla;
+
+    # Recreating the form is just fun
+    my $bugz = WWW::Bugzilla->new(
+        server   => $server,
+        email    => $login,
+        product  => "New Gentoo Developers",
+        password => $password,
+    );
+    $bugz->version("All");
+    $bugz->component("New Developers");
+    my $rep_platform = $bugz->available('rep_platform');
+    clearscreen();
+    my @platforms = $bugz->available('platform');
+    foreach my $platf (@platforms) { print "$platf\n"; }
+    print "Platform: ";
+    my $arch = <STDIN>;
+    chomp($arch);
+    $bugz->platform($arch);
+    clearscreen();
+
+    print "Assigned to: ";
+    my $assigned = <STDIN>;
+    chomp($assigned);
+    $bugz->assigned_to($assigned);
+    clearscreen();
+    print "Summary: ";
+    my $summary = <STDIN>;
+    chomp($summary);
+    $bugz->summary($summary);
+    clearscreen();
+    print "Long Description: (CTL-D to end)\n";
+    my @description = <STDIN>;
+    my $longd       = "@description";
+    $bugz->description($longd);
+
+    clearscreen();
+    print "Adding dev...\n";
+    my $bugnumber = $bugz->commit;
+    print "Bug $bugnumber added.\n\n";
+}
+
+sub dev_rel {
+    use WWW::Bugzilla;
+
+    # Recreating the form is just fun
+    my $bugz = WWW::Bugzilla->new(
+        server   => $server,
+        email    => $login,
+        product  => "Developer Relations",
+        password => $password,
+    );
+    $bugz->version("unspecified");
+    $bugz->component("Default");
+    my $rep_platform = $bugz->available('rep_platform');
+    clearscreen();
+    my @platforms = $bugz->available('platform');
+    foreach my $platf (@platforms) { print "$platf\n"; }
+    print "Platform: ";
+    my $arch = <STDIN>;
+    chomp($arch);
+    $bugz->platform($arch);
+    clearscreen();
+
+    print "Assigned to: ";
+    my $assigned = <STDIN>;
+    chomp($assigned);
+    $bugz->assigned_to($assigned);
+    clearscreen();
+    print "Summary: ";
+    my $summary = <STDIN>;
+    chomp($summary);
+    $bugz->summary($summary);
+    clearscreen();
+    print "Long Description: (CTL-D to end)\n";
+    my @description = <STDIN>;
+    my $longd       = "@description";
+    $bugz->description($longd);
+
+    clearscreen();
+    print "Adding developer relations report...\n";
+    my $bugnumber = $bugz->commit;
+    print "Bug $bugnumber added.\n\n";
 }
