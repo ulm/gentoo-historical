@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- Identity xsl transformation to allow downloading of other documents
   without the automatic translation kicking in -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
 <xsl:include href="util.xsl"/>
+
+<xsl:variable name="rollcall" select='document("/proj/en/devrel/roll-call/userinfo.xml")'/>
 
 <xsl:template match="/project">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
@@ -181,6 +183,7 @@
 		<ti>
 			<xsl:call-template name="fullname">
 				<xsl:with-param name="nick" select="$nick"></xsl:with-param>
+        <xsl:with-param name="rollcall"><xsl:copy-of select="$rollcall"/></xsl:with-param>
 			</xsl:call-template>
 		
 		</ti>
@@ -217,6 +220,7 @@
 		<xsl:call-template name="fullname">
 			<xsl:with-param name="nick"><xsl:value-of select="@lead"/></xsl:with-param>
 			<xsl:with-param name="fallback">true</xsl:with-param>
+      <xsl:with-param name="rollcall"><xsl:copy-of select="$rollcall"/></xsl:with-param>
 		</xsl:call-template>
 	</xsl:if></ti>
 	<ti><xsl:apply-templates select="node()"/>
@@ -235,6 +239,7 @@
 			<xsl:call-template name="fullname">
 				<xsl:with-param name="nick"><xsl:value-of select='/project/dev[@role="lead"]'/></xsl:with-param>
 				<xsl:with-param name="fallback">true</xsl:with-param>
+        <xsl:with-param name="rollcall"><xsl:copy-of select="$rollcall"/></xsl:with-param>
 			</xsl:call-template>
 		</xsl:if>
 		</ti>
@@ -331,6 +336,7 @@
 	    <xsl:call-template name="fullname">
 		<xsl:with-param name="nick" select="normalize-space(text())"/>
 		<xsl:with-param name="parent" select='"true"'/>
+    <xsl:with-param name="rollcall"><xsl:copy-of select="$rollcall"/></xsl:with-param>
 	    </xsl:call-template>
 	    -
 	    <xsl:value-of select="@role"/>

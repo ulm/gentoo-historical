@@ -1,12 +1,15 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-  <xsl:output encoding="iso-8859-1" method="xml" indent="yes"/>
+  <xsl:output encoding="UTF-8" method="xml" indent="yes"/>
   <xsl:param name="select" select="string('all')"/>
   <xsl:variable name="link">herds.xml</xsl:variable>
   <xsl:include href="util.xsl"/>
+  
+  <xsl:variable name="rollcall" select='document("/proj/en/devrel/roll-call/userinfo.xml")'/>
+  
   <xsl:template match="/herds">
     <xsl:processing-instruction name="xml-stylesheet">type=&quot;text/xsl&quot; href=&quot;/xsl/guide.xsl&quot;</xsl:processing-instruction>
-    <guide link="index.xml" type="project">
+    <guide link="{$link}" type="project">
       <xsl:choose>
         <xsl:when test="$select=&quot;all&quot;">
           <title>Herds</title>
@@ -130,6 +133,7 @@
         <xsl:call-template name="fullname">
           <xsl:with-param name="nick" select="substring-before(maintainer[1]/email,&quot;@gentoo.org&quot;)"/>
           <xsl:with-param name="parent" select="&quot;true&quot;"/>
+          <xsl:with-param name="rollcall" select="$rollcall"/>
         </xsl:call-template>
       </ti>
       <ti>
@@ -193,6 +197,7 @@
       <xsl:call-template name="fullname">
         <xsl:with-param name="nick" select="substring-before(email,&quot;@&quot;)"/>
         <xsl:with-param name="parent" select="&quot;true&quot;"/>
+        <xsl:with-param name="rollcall" select="$rollcall"/>
       </xsl:call-template>
       <xsl:apply-templates select="role"/>
     </li>
@@ -218,6 +223,7 @@
         <xsl:call-template name="fullname">
           <xsl:with-param name="nick" select="text()"/>
           <xsl:with-param name="parent" select="&quot;true&quot;"/>
+          <xsl:with-param name="rollcall" select="$rollcall"/>
         </xsl:call-template>
         <xsl:if test="@role">
           -

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
+                xmlns:func="http://exslt.org/functions"
+                xmlns:exslt="http://exslt.org/common"
+                extension-element-prefixes="func exslt" >
 
 <xsl:output encoding="UTF-8" method="xml" doctype-system="/dtd/guide.dtd"/>
 
@@ -10,9 +12,16 @@
 <!-- Selection parameter -->
 <xsl:param name="catid">0</xsl:param>
 
+<xsl:variable name="userfile" select="document('/proj/en/devrel/roll-call/userinfo.xml')"/>
+
 <xsl:template match="dynamic">
-  <xsl:variable name="metadoc"><xsl:value-of select="@metadoc"/></xsl:variable>
-  <xsl:variable name="lang"><xsl:value-of select="document($metadoc)//@lang"/></xsl:variable>
+  <xsl:variable name="metadoc"  select="document(@metadoc)"/>
+  <xsl:variable name="pmetadoc">
+    <xsl:if test="exslt:node-set($metadoc)/metadoc/@parent">
+      <xsl:copy-of select="document(exslt:node-set($metadoc)/metadoc/@parent)"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="lang" select="exslt:node-set($metadoc)/metadoc/@lang"/>
 <mainpage id="docs" lang="{$lang}">
   <title><xsl:value-of select="title"/></title>
   <author title="Author">Gentoo Documentation Project</author>
@@ -32,8 +41,9 @@
     <xsl:when test="catid and not($catid = 0)">
       <!-- ID selected -->
       <xsl:apply-templates select="catid[text() = $catid]">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="lang"    select="$lang"/>
+        <xsl:with-param name="metadoc"  select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
         <xsl:with-param name="unfold">yes</xsl:with-param>
       </xsl:apply-templates>
     </xsl:when>
@@ -46,8 +56,9 @@
 
       <ul>
       <xsl:apply-templates select="catid">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="lang"    select="$lang"/>
+        <xsl:with-param name="metadoc"  select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
         <xsl:with-param name="unfold">no</xsl:with-param>
       </xsl:apply-templates>
       </ul>
@@ -58,8 +69,9 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates>
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="lang"    select="$lang"/>
+        <xsl:with-param name="metadoc"  select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
       </xsl:apply-templates>
     </xsl:otherwise>
   </xsl:choose>
@@ -68,20 +80,22 @@
 
 <xsl:template match="catid">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="unfold"/>
   <xsl:variable name="categorie"><xsl:value-of select="text()"/></xsl:variable>
   <xsl:choose>
     <xsl:when test="$unfold = 'yes'">
       <chapter>
-        <title><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $categorie]"/></title>
+        <title><xsl:value-of select="exslt:node-set($metadoc)/metadoc/categories/cat[@id = $categorie]"/></title>
         <xsl:call-template name="categories">
           <xsl:with-param name="metadoc"   select="$metadoc"/>
+          <xsl:with-param name="pmetadoc"  select="$pmetadoc"/>
           <xsl:with-param name="lang"      select="$lang"/>
           <xsl:with-param name="categorie" select="$categorie"/>
         </xsl:call-template>
         <section><body>
-        <xsl:if test="document($metadoc)/metadoc/@parent">
+        <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
           <br/><p>¹ <xsl:value-of select="func:gettext('untranslated', $lang)"/></p>
         </xsl:if>
         </body></section>
@@ -89,7 +103,7 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:variable name="cat_id" select="text()"/>
-      <li><uri link="?catid={$cat_id}"><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $categorie]"/></uri></li>
+      <li><uri link="?catid={$cat_id}"><xsl:value-of select="exslt:node-set($metadoc)/metadoc/categories/cat[@id = $categorie]"/></uri></li>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -100,14 +114,15 @@
 
 <xsl:template name="categories">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="categorie"/>
   <!-- Non parental categories -->
-  <xsl:if test="document($metadoc)/metadoc/docs/doc[memberof = $categorie]">
+  <xsl:if test="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $categorie]">
   <section>
   <body>
  
-    <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $categorie]">
+    <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $categorie]">
       <xsl:choose>
         <xsl:when test="bugs/bug[@stopper = 'yes']">
           <!-- Ignore showstopper -->
@@ -115,20 +130,22 @@
         <xsl:otherwise>
           <p><b>
           <xsl:call-template name="documentname">
-            <xsl:with-param name="metadoc" select="$metadoc"/>
-            <xsl:with-param name="lang"    select="$lang"/>
-            <xsl:with-param name="fileid"  select="fileid/text()"/>
-            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-            <xsl:with-param name="docid"   select="@id"/>
+            <xsl:with-param name="metadoc"  select="$metadoc"/>
+            <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+            <xsl:with-param name="lang"     select="$lang"/>
+            <xsl:with-param name="fileid"   select="fileid/text()"/>
+            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+            <xsl:with-param name="docid"    select="@id"/>
           </xsl:call-template>
           </b><xsl:value-of select="func:gettext('SpaceBeforeColon', $lang)"/>: <xsl:call-template name="documentabstract">
-            <xsl:with-param name="metadoc" select="$metadoc"/>
-            <xsl:with-param name="lang"    select="$lang"/>
-            <xsl:with-param name="fileid"  select="fileid/text()"/>
-            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-            <xsl:with-param name="docid"   select="@id"/>
+            <xsl:with-param name="metadoc"  select="$metadoc"/>
+            <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+            <xsl:with-param name="lang"     select="$lang"/>
+            <xsl:with-param name="fileid"   select="fileid/text()"/>
+            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+            <xsl:with-param name="docid"    select="@id"/>
           </xsl:call-template>
           </p>
         </xsl:otherwise>
@@ -140,13 +157,13 @@
   </xsl:if>
 
   <!-- Parental categories -->
-  <xsl:for-each select="document($metadoc)/metadoc/categories/cat[@parent = $categorie]">
+  <xsl:for-each select="exslt:node-set($metadoc)/metadoc/categories/cat[@parent = $categorie]">
     <xsl:variable name="currentcat"><xsl:value-of select="@id"/></xsl:variable>
     <section>
       <title><xsl:value-of select="text()"/></title>
       <body>
 
-        <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $currentcat]">
+        <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $currentcat]">
           <xsl:choose>
             <xsl:when test="bugs/bug[@stopper = 'yes']">
 
@@ -155,6 +172,7 @@
               <p><b>
               <xsl:call-template name="documentname">
                 <xsl:with-param name="metadoc"  select="$metadoc"/>
+                <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
                 <xsl:with-param name="lang"     select="$lang"/>
                 <xsl:with-param name="fileid"   select="fileid/text()"/>
                 <xsl:with-param name="vpart"    select="fileid/@vpart"/>
@@ -163,6 +181,7 @@
               </xsl:call-template>
               </b><xsl:value-of select="func:gettext('SpaceBeforeColon', $lang)"/>: <xsl:call-template name="documentabstract">
                 <xsl:with-param name="metadoc"  select="$metadoc"/>
+                <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
                 <xsl:with-param name="lang"     select="$lang"/>
                 <xsl:with-param name="fileid"   select="fileid/text()"/>
                 <xsl:with-param name="vpart"    select="fileid/@vpart"/>
@@ -181,15 +200,16 @@
 
 <xsl:template name="documentname">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="fileid"/>
   <xsl:param name="vpart"/>
   <xsl:param name="vchap"/>
   <xsl:param name="docid"/>
-  <xsl:variable name="link"><xsl:value-of select="document($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
+  <xsl:variable name="link"><xsl:value-of select="exslt:node-set($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
+  <xsl:variable name="dlink" select="document($link)"/>
   <xsl:variable name="footnote">
-    <xsl:variable name="parentmetadoc" select="document($metadoc)/metadoc/@parent"/>
-    <xsl:variable name="parentfile" select="document($parentmetadoc)/metadoc/files/file[@id = $fileid]"/>
+    <xsl:variable name="parentfile" select="exslt:node-set($pmetadoc)/metadoc/files/file[@id = $fileid]"/>
     <xsl:if test="$link = $parentfile">&#160;¹</xsl:if>
   </xsl:variable>
 
@@ -197,15 +217,15 @@
     <xsl:when test="$vpart">
       <xsl:choose>
         <xsl:when test="$vchap">
-          <uri link="{$link}?part={$vpart}&amp;chap={$vchap}"><xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/title"/></uri>
+          <uri link="{$link}?part={$vpart}&amp;chap={$vchap}"><xsl:value-of select="exslt:node-set($dlink)/book/part[position()=$vpart]/chapter[position()=$vchap]/title"/></uri>
         </xsl:when>
         <xsl:otherwise>
-          <uri link="{$link}?part={$vpart}"><xsl:value-of select="document($link)/book/part[position() = $vpart]/title"/></uri>
+          <uri link="{$link}?part={$vpart}"><xsl:value-of select="exslt:node-set($dlink)/book/part[position() = $vpart]/title"/></uri>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <uri link="{$link}"><xsl:value-of select="document($link)/guide/title|document($link)/book/title|document($link)/mainpage/title"/></uri>
+      <uri link="{$link}"><xsl:value-of select="exslt:node-set($dlink)//title[1]"/></uri>
     </xsl:otherwise>
   </xsl:choose>
   <xsl:copy-of select="$footnote"/>
@@ -213,12 +233,13 @@
 
 <xsl:template name="documentabstract">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="fileid"/>
   <xsl:param name="vpart"/>
   <xsl:param name="vchap"/>
   <xsl:param name="docid"/>
-  <xsl:variable name="link"><xsl:value-of select="document($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
+  <xsl:variable name="link"><xsl:value-of select="exslt:node-set($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
 
   <xsl:choose>
     <xsl:when test="$vpart">
@@ -232,13 +253,14 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:if test="not(document($link)/mainpage)"><xsl:value-of select="document($link)/guide/abstract|document($link)/book/abstract"/></xsl:if>
+      <xsl:value-of select="document($link)/guide/abstract|document($link)/book/abstract"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
 <xsl:template match="listing">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <chapter>
   <title><xsl:value-of select="func:gettext('GLinuxDoc', $lang)"/></title>
@@ -247,13 +269,14 @@
 
   <xsl:for-each select="list">
     <xsl:call-template name="list">
-      <xsl:with-param name="metadoc" select="$metadoc"/>
-      <xsl:with-param name="lang"    select="$lang"/>
-      <xsl:with-param name="catid"   select="text()"/>
+      <xsl:with-param name="metadoc"  select="$metadoc"/>
+      <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+      <xsl:with-param name="lang"     select="$lang"/>
+      <xsl:with-param name="catid"    select="text()"/>
     </xsl:call-template>
   </xsl:for-each>
 
-  <xsl:if test="document($metadoc)/metadoc/@parent">
+  <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
     <br/><p>¹ <xsl:value-of select="func:gettext('untranslated', $lang)"/></p>
   </xsl:if>
   
@@ -264,10 +287,11 @@
 
 <xsl:template match="list" name="list">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="catid" select="text()"/>
-  <ul><b><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
-    <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $catid]">
+  <ul><b><xsl:value-of select="exslt:node-set($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
+    <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $catid]">
       <xsl:choose>
         <xsl:when test="bugs/bug[@stopper = 'yes']">
           <!-- Ignore showstopper case -->
@@ -275,22 +299,24 @@
         <xsl:otherwise>
           <li>
           <xsl:call-template name="documentname">
-            <xsl:with-param name="metadoc" select="$metadoc"/>
-            <xsl:with-param name="lang"    select="$lang"/>
-            <xsl:with-param name="fileid"  select="fileid"/>
-            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-            <xsl:with-param name="docid"   select="@id"/>
+            <xsl:with-param name="metadoc"  select="$metadoc"/>
+            <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+            <xsl:with-param name="lang"     select="$lang"/>
+            <xsl:with-param name="fileid"   select="fileid"/>
+            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+            <xsl:with-param name="docid"    select="@id"/>
           </xsl:call-template>
           </li>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
-    <xsl:for-each select="document($metadoc)/metadoc/categories/cat[@parent = $catid]">
+    <xsl:for-each select="exslt:node-set($metadoc)/metadoc/categories/cat[@parent = $catid]">
       <xsl:call-template name="list">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="lang"    select="$lang"/>
-        <xsl:with-param name="catid"   select="@id"/>
+        <xsl:with-param name="metadoc"  select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
+        <xsl:with-param name="catid"    select="@id"/>
       </xsl:call-template>
     </xsl:for-each>
   </ul>
@@ -298,8 +324,8 @@
 
 <xsl:template match="overview">
   <xsl:param name="metadoc"/>
+  <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
-  <xsl:variable name="parentmetadoc" select="document($metadoc)/metadoc/@parent"/>
   <chapter id="members">
   <title><xsl:value-of select="func:gettext('members', $lang)"/></title>
   <section>
@@ -312,11 +338,10 @@
       <th><xsl:value-of select="func:gettext('email', $lang)"/></th>
       <th><xsl:value-of select="func:gettext('position', $lang)"/></th>
     </tr>
-    <xsl:for-each select="document($metadoc)/metadoc/members/lead">
+    <xsl:for-each select="exslt:node-set($metadoc)/metadoc/members/lead">
       <xsl:variable name="nickname" select="text()"/>
-      <xsl:variable name="userfile">/proj/en/devrel/roll-call/userinfo.xml</xsl:variable>
-      <xsl:variable name="fullname" select="concat(concat(document($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' '), document($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/>
-      <xsl:variable name="email"    select="document($userfile)/userlist/user[@username = $nickname]/email"/>
+      <xsl:variable name="fullname" select="concat(exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' ', exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/>
+      <xsl:variable name="email"    select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email"/>
       <tr>
         <ti><xsl:value-of select="$fullname"/></ti>
         <ti><xsl:value-of select="$nickname"/></ti>
@@ -324,19 +349,18 @@
         <ti><xsl:value-of select="func:gettext('lead', $lang)"/></ti>
       </tr>
     </xsl:for-each>
-    <xsl:for-each select="document($metadoc)/metadoc/members/member">
+    <xsl:for-each select="exslt:node-set($metadoc)/metadoc/members/member">
       <xsl:variable name="nickname" select="text()"/>
-      <xsl:variable name="userfile">/proj/en/devrel/roll-call/userinfo.xml</xsl:variable>
       <xsl:variable name="fullname">
         <xsl:choose>
           <xsl:when test="@fullname"><xsl:value-of select="@fullname"/></xsl:when>
-          <xsl:otherwise><xsl:value-of select="concat(concat(document($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' '), document($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/></xsl:otherwise>
+          <xsl:otherwise><xsl:value-of select="concat(exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' ', exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/></xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
       <xsl:variable name="email">
         <xsl:choose>
           <xsl:when test="@mail"><xsl:value-of select="@mail"/></xsl:when>
-          <xsl:otherwise><xsl:value-of select="document($userfile)/userlist/user[@username = $nickname]/email"/></xsl:otherwise>
+          <xsl:otherwise><xsl:value-of select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email"/></xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
       <tr>
@@ -361,23 +385,24 @@
   <tr>
     <th><xsl:value-of select="func:gettext('filename', $lang)"/></th>
     <th><xsl:value-of select="func:gettext('version', $lang)"/></th>
-    <xsl:if test="$parentmetadoc">
+    <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
       <th><xsl:value-of select="func:gettext('original', $lang)"/></th>
     </xsl:if>
     <th><xsl:value-of select="func:gettext('editing', $lang)"/></th>
   </tr>
-  <xsl:for-each select="document($metadoc)/metadoc/files/file">
+  <xsl:for-each select="exslt:node-set($metadoc)/metadoc/files/file">
   <xsl:sort select="text()"/>
-  <xsl:variable name="fileurl" select="text()"/>
-  <xsl:variable name="fileid"  select="@id"/>
-      <xsl:variable name="parentfile" select="document($parentmetadoc)/metadoc/files/file[@id = $fileid]"/>
+  <xsl:variable name="fileurl"    select="text()"/>
+  <xsl:variable name="dfile"      select="document($fileurl)"/>
+  <xsl:variable name="fileid"     select="@id"/>
+  <xsl:variable name="parentfile" select="exslt:node-set($pmetadoc)/metadoc/files/file[@id = $fileid]"/>
   <tr>
   <!-- Add ?passthru=1 to handbook files, i.e. those with <sections> as a root element
        because they can't be rendered as-is; at the moment, they give an Err 500.
        Of course, we could update guide.xsl to make them "renderable" -->
   <ti>
   <xsl:choose>
-    <xsl:when test="document($fileurl)/sections">
+    <xsl:when test="exslt:node-set($dfile)/sections">
       <uri link="{$fileurl}?passthru=1"><xsl:value-of select="$fileurl"/></uri>
     </xsl:when>
     <xsl:otherwise>
@@ -387,12 +412,12 @@
   <!-- Untranslated file -->
   <xsl:if test="$parentfile and $parentfile = $fileurl">&#160;¹</xsl:if>
   </ti>
-    <xsl:variable name="version"><xsl:value-of select="translate(document($fileurl)//version[1],'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/></xsl:variable>
+    <xsl:variable name="version"><xsl:value-of select="translate(exslt:node-set($dfile)//version[1],'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/></xsl:variable>
     <ti><xsl:value-of select="$version"/></ti>
     <!-- Original version column:
          display only when current metadoc has a master metadoc (parent attribute)
          When metadoc has no master defined, it is the master and column is not displayed -->
-    <xsl:if test="$parentmetadoc">
+    <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
       <ti>
         <xsl:choose>
           <xsl:when test="$parentfile and $parentfile != $fileurl">
@@ -433,16 +458,17 @@
     <th><xsl:value-of select="func:gettext('document', $lang)"/></th>
     <th><xsl:value-of select="func:gettext('bugid', $lang)"/></th>
   </tr>
-  <xsl:for-each select="document($metadoc)/metadoc/docs/doc[bugs/bug/@stopper = 'yes']">
+  <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[bugs/bug/@stopper = 'yes']">
     <tr>
       <ti>
         <xsl:call-template name="documentname">
-          <xsl:with-param name="metadoc" select="$metadoc"/>
-          <xsl:with-param name="lang"    select="$lang"/>
-          <xsl:with-param name="fileid"  select="fileid/text()"/>
-          <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-          <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-          <xsl:with-param name="docid"   select="@id"/>
+          <xsl:with-param name="metadoc"  select="$metadoc"/>
+          <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+          <xsl:with-param name="lang"     select="$lang"/>
+          <xsl:with-param name="fileid"   select="fileid/text()"/>
+          <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+          <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+          <xsl:with-param name="docid"    select="@id"/>
         </xsl:call-template>
       </ti>
       <ti>
@@ -469,16 +495,17 @@
     <th><xsl:value-of select="func:gettext('document', $lang)"/></th>
     <th><xsl:value-of select="func:gettext('bugid', $lang)"/></th>
   </tr>
-  <xsl:for-each select="document($metadoc)/metadoc/docs/doc[bugs/bug[not(@stopper = 'yes')]]">
+  <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[bugs/bug[not(@stopper = 'yes')]]">
     <tr>
       <ti>
         <xsl:call-template name="documentname">
-          <xsl:with-param name="metadoc" select="$metadoc"/>
-          <xsl:with-param name="lang"    select="$lang"/>
-          <xsl:with-param name="fileid"  select="fileid/text()"/>
-          <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-          <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-          <xsl:with-param name="docid"   select="@id"/>
+          <xsl:with-param name="metadoc"  select="$metadoc"/>
+          <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+          <xsl:with-param name="lang"     select="$lang"/>
+          <xsl:with-param name="fileid"   select="fileid/text()"/>
+          <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+          <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+          <xsl:with-param name="docid"    select="@id"/>
         </xsl:call-template>
       </ti>
       <ti>
@@ -494,7 +521,7 @@
   </xsl:for-each>
   </table>
 
-  <xsl:if test="$parentmetadoc">
+  <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
     <br/><p>¹ <xsl:value-of select="func:gettext('untranslated', $lang)"/></p>
   </xsl:if>
 

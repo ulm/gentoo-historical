@@ -1,12 +1,16 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:exslt="http://exslt.org/common"
+                extension-element-prefixes="exslt">
 
 <xsl:template name="fullname">
   <xsl:param name="nick" select="none"/>
   <xsl:param name="fallback" select="false"/>
   <xsl:param name="parent" select="false"/>
+  <xsl:param name="rollcall" select='document("/proj/en/devrel/roll-call/userinfo.xml")'/>
   <xsl:if test='not($nick="none")'>
-    <xsl:variable name="user" select='document("/proj/en/devrel/roll-call/userinfo.xml")//user[@username=translate($nick, "ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'/>
+    <xsl:variable name="user" select='exslt:node-set($rollcall)//user[@username=translate($nick, "ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'/>
     <xsl:choose>
       <xsl:when test='$user'>
         <xsl:for-each select='$user'>
