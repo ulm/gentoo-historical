@@ -11,10 +11,10 @@
 source ~/.bashrc
 
 cd ${WEBROOT}
-cvs -Q update -dP
+cvs -z0 -Q update -dP
 
 # now get the images
 cd ${WEBROOT}/../images/
-cvs -Q update -dP
+cvs -z0 -Q update -dP
 
 #done

@@ -10,7 +10,7 @@ export CVS_RSH=ssh
 
 cd ~/gentoo-x86 
 echo ">>> Updating cvs..."
-cvs -z3 -q update -dP
+cvs -z0 -q update -dP
 yesterday=`date -d "1 day ago 00:00" -R`
 today=`date -d "00:00" -R`
 cvsdate=-d\'${yesterday}\<${today}\'
