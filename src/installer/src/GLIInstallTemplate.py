@@ -559,12 +559,64 @@ class GLIInstallTemplate:
 		self._depends("emerge_system")
 		
 		exitstatus = self._run('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chpasswd -e', True)
+		if exitstatus != 0:
+			raise "SetRootPasswordError", "Failure to set root password!"
 
 	def set_users(self):
 		"Sets up the new users for the system"
-		# Dependency checking		
+		# Dependency checking
 		self._depends("emerge_system")
-
+		
+		# Loop for each user
+		for user in self._install_profile.get_users():
+		
+			# Get values from the tuple
+			username = user[0]
+			password_hash = user[1]
+			groups = user[2]
+			shell = user[3]
+			home_dir = user[4]
+			uid = user[5]
+			comment = user[6]
+			
+			options = [ "-m", "-p " + password_hash  ]
+			
+			# If the groups are specified
+			if groups:
+			
+				# If just one group is listed as a string, make it a list
+				if groups == str:
+					groups = [ groups ]
+					
+				# If only 1 group is listed
+				if len(groups) == 1:
+					options.append("-G " + groups[0])
+					
+				# If there is more than one group
+				elif len(groups) > 1:
+					options.append('-G "' + string.join(groups, ",") + '"')
+			
+			# If a shell is specified
+			if shell:
+				options.append("-s " + shell)
+				
+			# If a home dir is specified
+			if home_dir:
+				options.append("-d " + home_dir)
+				
+			# If a UID is specified
+			if uid:
+				options.append("-u " + str(uid))
+				
+			# If a comment is specified
+			if comment:
+				options.append('-c "' + comment + '"')
+				
+			# Add the user
+			exitstatus = self._run('useradd ' + string.join(options) + ' ' + username, True)
+			if exitstatus != 0:
+				raise "AddUserError", "Failure to add user " + username
+				
 	def unmount_devices(self):
 		"Unmounts mounted devices after installation"
 		# Dependency checking		
