@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.3 2003/10/11 19:28:46 drobbins Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.4 2003/10/11 22:34:55 zhen Exp $
 
 usage() {
 	einfo "Catalyst: Gentoo Linux Stage Building tool ${VERSION}"
@@ -97,5 +97,20 @@ makeconf() {
 
 } #end makeconf()
 
-# vim ts=4
+snap() {
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
+	SNAPBALL=${SNAPDIR}/portage-${1}.tar.bz2
 
+	install -d ${SNAPDIR}
+	einfo "Cleaning up build directory..."
+	rm -rf ${CHROOTDIR}
+	install -d ${CHROOTDIR}
+	einfo "Creating Portage tree snapshot..."	
+	rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
+	einfo "Creating Portage tree tarball..."
+	( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
+	einfo "done!"
+
+} #end snap
+
+# vim ts=4
