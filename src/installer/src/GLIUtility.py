@@ -106,7 +106,7 @@ def is_file(file):
 	# Check to make sure the device exists
 	return os.access(file, os.F_OK)
 		
-def is_uri(uri):
+def is_uri(uri, checklocal=True):
 	"Check to see if the string is a valid URI. Returns bool."
 	
 	# Make sure it is a string
@@ -140,9 +140,10 @@ def is_uri(uri):
 
 	# If we are dealing with a local uri
 	else:
+		if checklocal:
 		# Check for file validity
-		if not is_file(uri[colon_location + 3:]):
-			return False
+			if not is_file(uri[colon_location + 3:]):
+				return False
 				
 		
 	return True

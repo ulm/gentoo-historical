@@ -29,6 +29,7 @@ cc = GLIClientController.GLIClientController(pretend=True)
 exception_waiting = None
 next_step_waiting = False
 install_done = False
+local_install = True
 
 DLG_OK = 0
 DLG_YES = 0
@@ -64,7 +65,7 @@ def set_partitions():
 	drives.sort()
 #	use_existing = False
 #	if not devices:
-	use_existing = (d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
+	use_existing = local_install #(d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
 	for drive in drives:
 		devices[drive] = GLIStorageDevice.Device(drive)
 		if use_existing: devices[drive].set_partitions_from_disk()
@@ -189,7 +190,7 @@ def set_install_stage():
 			install_profile.set_grp_install(None, True, None)
 		install_profile.set_install_stage(None, install_stage, None)
 	tarball_options = ("Use Local", "Specify URI")
-	code, tarball_option = d.menu("Select a local stage " + install_stage + " tarball or manually specify a URI?", choices=dmenu_list_to_choices(tarball_options))
+	code, tarball_option = d.menu("Select a local stage " + install_stage + " tarball or manually specify a URI:", choices=dmenu_list_to_choices(tarball_options))
 	if code == DLG_OK:
 		tarball_option = tarball_options[int(tarball_option)-1]
 		if tarball_option == "Use Local":
@@ -199,34 +200,59 @@ def set_install_stage():
 				local_tarballs.sort()
 				code, stage_tarball = d.menu("Select a local tarball:", choices=dmenu_list_to_choices(local_tarballs))
 				if code != DLG_OK: return
+				stage_tarball = local_tarballs[int(stage_tarball)-1]
 			else:
 				d.msgbox("There don't seem to be any local tarballs available.  Hit OK to manually specify a URI.")
 				tarball_option = "Specify URI"
 		if tarball_option != "Use Local": 
 			code, stage_tarball = d.inputbox("Specify the stage tarball URI or local file:", init=install_profile.get_stage_tarball_uri())
-
-	try:
-		if code == DLG_OK: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-	except:
-		d.msgbox("The specified URI is invalid")
+	#If Doing a local install, check for valid file:/// uri
+	if code == DLG_OK:
+		if stage_tarball:
+			if not GLIUtility.is_uri(stage_tarball, checklocal=local_install):
+				d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+			else install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+		else: d.msgbox("No URI was specified!")
+		#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 def set_portage_tree():
 # This section will ask whether to sync the tree, whether to use a snapshot, etc.
-	menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "None (snapshot or NFS mount)"]
+	menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "None (local snapshot or NFS mount)"]
 	code, portage_tree_sync = d.menu("How do you want to sync the portage tree?", choices=dmenu_list_to_choices(menulist))
 	if code != DLG_OK: return
 	portage_tree_sync = menulist[int(portage_tree_sync)-1]
 	#FIX ME when python 2.4 comes out.
 	if portage_tree_sync == "Normal 'emerge sync'": install_profile.set_portage_tree_sync_type(None, "sync", None)
 	if portage_tree_sync == "Webrsync (rsync is firewalled)": install_profile.set_portage_tree_sync_type(None, "webrsync", None)
-	if portage_tree_sync == "None (snapshot or NFS mount)": install_profile.set_portage_tree_sync_type(None, "custom", None)
-	if portage_tree_sync == "None (snapshot or NFS mount)":
-		if d.yesno("Do you want to use a portage tree snapshot?") == DLG_YES:
+	if portage_tree_sync == "None (local snapshot or NFS mount)":
+		install_profile.set_portage_tree_sync_type(None, "custom", None)		
+		snapshot_options = ("Use Local", "Specify URI")
+		code, snapshot_option = d.menu("Select a local portage snapshot or manually specify a location:", choices=dmenu_list_to_choices(snapshot_options))
+		snapshot_option = snapshot_options[int(snapshot_option)-1]
+		if snapshot_option == "Use Local":
+			snapshot_dir = "/mnt/cdrom/snapshots"
+			if os.path.isdir(snapshot_dir) and os.listdir(stages_dir):
+				local_snapshots = glob.glob(snapshot_dir + "/portage*.bz2")
+				if len(local_snapshots) == 1:
+					snapshot = local_snapshots[0]
+				else:
+					local_snapshots.sort()
+					code, snapshot = d.menu("Select a local portage snapshot:", choices=dmenu_list_to_choices(local_snapshots))
+					if code != DLG_OK: return
+					snapshot = local_snapshots[int(snapshot)-1]
+			else:
+				d.msgbox("There don't seem to be any local portage snapshots available.  Hit OK to manually specify a URI.")
+				snapshot_option = "Specify URI"
+		if snapshot_option != "Use Local":
 			code, snapshot = d.inputbox("Enter portage tree snapshot URI", init=install_profile.get_portage_tree_snapshot_uri())
-			try:
-				if code == DLG_OK: install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
-			except:
-				d.msgbox("The specified URI is invalid")
+		if code == DLG_OK:
+			if snapshot: 
+				if not GLIUtility.is_uri(snapshot, checklocal=local_install):
+					d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+				else install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
+			
+			else: d.msgbox("No URI was specified!")
+		#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 def set_make_conf():
 # This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
@@ -591,8 +617,12 @@ if d.yesno("Are we running in Pretend mode? Yes means safe, No means actually in
 	cc._pretend = False
 else:
 	cc._pretend = True
+	
+if d.yesno("Are the profiles being generated to be used for an install on the current computer?") == DLG_NO:
+	local_install = False
+	
 
-if d.yesno("Do you want to use the ClientController?") == DLG_YES:
+if d.yesno("Do you want to use the ClientController? (if doing an install, say YES)") == DLG_YES:
 	client_config_xml_file = None
 	while 1:
 		if d.yesno("Do you have a previously generated XML file for the ClientConfiguration?") == DLG_YES:

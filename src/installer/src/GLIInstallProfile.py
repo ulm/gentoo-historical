@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.34 2005/03/25 20:45:57 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.35 2005/03/26 04:00:06 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -194,9 +194,9 @@ class InstallProfile:
 		if type(kernel_config_uri) != str:
 			raise GLIException("KernelConfigURIError", 'fatal', 'set_kernel_config_uri',  "Must be a string!")
 
-		# Check validity
-		if not GLIUtility.is_uri(kernel_config_uri):
-			raise GLIException("KernelConfigURIError", 'fatal', 'set_kernel_config_uri',  "Invalid URI!")
+		# Check validity (now done in the FE)
+		#if not (kernel_config_uri):
+		#	raise GLIException("KernelConfigURIError", 'fatal', 'set_kernel_config_uri',  "Empty Kernel URI!")
 
 		self._kernel_config_uri = kernel_config_uri
 
@@ -379,9 +379,9 @@ class InstallProfile:
 		if type(stage_tarball_uri) != str:
 			raise GLIException("StageTarballURIError", 'fatal', 'set_stage_tarball_uri',  "Must be a string!")
 
-		# Check validity
-		if stage_tarball_uri and not GLIUtility.is_uri(stage_tarball_uri):
-			raise GLIException("CustomStage3TarballURIError", 'fatal', 'set_stage_tarball_uri',  "Invalid URI!")
+		# Check validity (now done in the FE)
+		#if not stage_tarball_uri:
+		#	raise GLIException("CustomStage3TarballURIError", 'fatal', 'set_stage_tarball_uri',  "Empty URI!")
 		
 		self._stage_tarball_uri = stage_tarball_uri
 
@@ -432,9 +432,9 @@ class InstallProfile:
 		if type(portage_tree_snapshot_uri) != str:
 			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Must be a string!")
 
-		# Check validity
-		if portage_tree_snapshot_uri and not GLIUtility.is_uri(portage_tree_snapshot_uri):
-			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Invalid URI!")
+		# Check validity  (now done in the FE)
+		#if not portage_tree_snapshot_uri:
+		#	raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Invalid URI!")
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
 
