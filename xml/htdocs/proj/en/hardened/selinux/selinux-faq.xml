@@ -10,8 +10,8 @@
 Frequently asked questions and HOWTOs for SELinux
 </abstract>
 <license/>
-<version>1.1</version>
-<date>23 February 2004</date>
+<version>1.2</version>
+<date>17 April 2004</date>
 
 <chapter><title>HOWTO: Load policy into a running SELinux kernel</title>
 <section><body>
@@ -27,8 +27,10 @@ Frequently asked questions and HOWTOs for SELinux
 
 <chapter><title>HOWTO: Change roles</title>
 <section><body>
-This requires your user have access to the target role.  This example
-is for changing to the <i>sysadm_r</i> role.
+<p>
+  This requires your user have access to the target role.  This example
+  is for changing to the <i>sysadm_r</i> role.
+</p>
 <pre>
 # <c>newrole -r sysadm_r</c>
 </pre>
@@ -80,89 +82,6 @@ is for changing to the <i>sysadm_r</i> role.
 </body></section>
 </chapter>
 
-<chapter><title>HOWTO: Install kernel modules into the SELinux initrd</title>
-<section><title>Makefile initrd options</title><body>
-<p>
-   In the policy Makefile, under the comments at the beginning of the file
-   are the configuration options for the initrd.  The default settings do not
-   install any kernel modules into the initrd.  The settings must be altered
-   to install the modules.
-</p>
-<pre caption="Default initrd options">
-# initrd options
-MKINITRD = /sbin/mkinitrd
-# kernel version, defaults to current running kernel
-KV = $(shell uname -r)
-INITRD = /boot/initrd.gz
-# extra options
-EXTRAOPT = -f --omit-scsi-modules --omit-raid-modules --omit-lvm-modules
-</pre>
-</body></section>
-<section><title>Set the initrd filename</title>
-<body>
-<p>
-  First, the initrd filename must be modified to have a kernel version.
-  Modify the <i>INITRD</i> line to add in the kernel version.
-</p>
-<pre>
-# initrd options
-MKINITRD = /sbin/mkinitrd
-# kernel version, defaults to current running kernel
-KV = $(shell uname -r)
-INITRD = /boot/initrd<comment>-$(KV)</comment>.gz
-# extra options
-EXTRAOPT = -f --omit-scsi-modules --omit-raid-modules --omit-lvm-modules
-</pre>
-<p>
-  During creation of the initrd, <i>$(KV)</i> will be replaced with the kernel
-  version, resulting in the initrd having a name such as <i>initrd-2.4.21-selinux-r3.gz</i>.
-</p>
-</body></section>
-<section><title>Enable the modules</title>
-<body>
-<p>
-  Next, the appropriate modules must be enabled.  Remove the respective
-  <i>--omit-*</i> options from the <i>EXTRAOPT</i> line.  Other available options
-  can be found in the mkinitrd man page, and can be added to the
-  <i>EXTRAOPT</i> line.
-</p>
-<pre>
-# initrd options
-MKINITRD = /sbin/mkinitrd
-# kernel version, defaults to current running kernel
-KV = $(shell uname -r)
-INITRD = /boot/initrd-$(KV).gz
-# extra options
-EXTRAOPT = -f <comment>--omit-scsi-modules --omit-raid-modules --omit-lvm-modules</comment>
-</pre>
-<p>
-  For example, to enable SCSI modules, remove the <i>--omit-scsi-modules</i>
-  option.
-</p>
-</body></section>
-<section><title>Build the initrd</title>
-<body>
-<p>
-  Finally, the initrd can be built.  If the initrd is for the current running
-  kernel, the initrd can be built as usual.  Otherwise, the version must be
-  specified on the command line, using <i>KV=</i>.  Run one of the following
-  in the policy directory:
-</p>
-<pre caption="Build options">
-<comment>For building an initrd for the current running kernel:</comment>
-# <c>make initrd</c>
-
-<comment>For building for another kernel version, for example 2.4.21-selinux-r3:</comment>
-# <c>make initrd KV=2.4.21-selinux-r3</c>
-</pre>
-<p>
-  Now the bootloader will have to be modified to use the new initrd.  Each time
-  a new kernel is installed, or the policy is changed, the initrd should be
-  regenerated.
-</p>
-</body></section>
-</chapter>
-
 <chapter><title>HOWTO: Start daemons in the correct domain</title>
 <section><body>
 <p>
@@ -176,6 +95,20 @@ EXTRAOPT = -f <comment>--omit-scsi-modules --omit-raid-modules --omit-lvm-module
 # <c>run_init /etc/init.d/ntpd start</c>
 # <c>run_init /etc/init.d/apache2 restart</c>
 # <c>run_init /etc/init.d/named stop</c>
+</pre>
+</body></section>
+<section><title>Gentoo run_init integration</title><body>
+<p>
+  <i>run_init</i> has been integrated into Gentoo's init script system.  With
+  SELinux installed, services can be started and stopped as usual, but will
+  now authenticate the user.
+</p>
+<pre caption="Integrated run_init example">
+# /etc/init.d/sshd restart
+Authenticating root.
+Password:
+ * Stopping sshd...                       [ ok ]
+ * Starting sshd...                       [ ok ]
 </pre>
 </body></section>
 </chapter>
@@ -287,6 +220,34 @@ Capability LSM initialized
   This means that the Capability LSM module couldn't register as the primary
   module, since SELinux is the primary module.  The third message means that it
   registers with SELinux as a secondary module.  This is normal.
+</p>
+</body></section>
+</chapter>
+
+<chapter><title>FAQ: Invalid contexts while relabeling</title>
+<section><title>"When I try to relabel, it fails with invalid contexts."</title><body>
+<pre caption="Invalid contexts example">
+# make relabel
+/usr/sbin/setfiles file_contexts/file_contexts `mount | awk '/(ext[23]| xfs).*rw/{print $3}'`
+/usr/sbin/setfiles:  read 559 specifications
+/usr/sbin/setfiles:  invalid context system_u:object_r:default_t on line number 39
+/usr/sbin/setfiles:  invalid context system_u:object_r:urandom_device_t on line number 120
+/usr/sbin/setfiles:  invalid context system_u:object_r:fonts_t on line number 377
+/usr/sbin/setfiles:  invalid context system_u:object_r:fonts_t on line number 378
+/usr/sbin/setfiles:  invalid context system_u:object_r:krb5_conf_t on line number 445
+/usr/sbin/setfiles:  invalid context system_u:object_r:system_cron_spool_t on line number 478
+/usr/sbin/setfiles:  invalid context system_u:object_r:system_cron_spool_t on line number 479
+/usr/sbin/setfiles:  invalid context system_u:object_r:system_cron_spool_t on line number 492
+/usr/sbin/setfiles:  invalid context system_u:object_r:system_cron_spool_t on line number 493
+/usr/sbin/setfiles:  invalid context system_u:object_r:system_cron_spool_t on line number 494
+Exiting after 10 errors.
+make: *** [relabel] Error 1
+</pre>
+<p>
+  First ensure that /selinux is mounted.  If selinuxfs is not mounted, setfiles
+  cannot validate any contexts, causing it to believe all contexts are
+  invalid.  If /selinux is mounted, then most likely there is new policy that
+  has not yet been loaded; therefore, the contexts have not yet become valid.
 </p>
 </body></section>
 </chapter>
