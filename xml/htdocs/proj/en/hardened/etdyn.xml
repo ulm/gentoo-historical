@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE guide SYSTEM "dtd/guide.dtd">
+<guide link="/proj/en/hardened/etdyn.xml">
+
+<author title="Author">
+	<mail link="pageexec@freemail.hu">The PaX Team</mail>
+</author>
+<author title="Contributor">
+	<mail link="solar@gentoo.org">solar</mail>
+</author>
+<author title="Contributor">
+	<mail link="pappy@gentoo.org">Alexander Gabert</mail>
+</author>
+<author title="Editor">
+	<mail link="zhen@gentoo.org">John Davis</mail>
+</author>
+<author title="Editor">
+	<mail link="klasikahl@gentoo.org">Zack Gilburd</mail>
+</author>
+<abstract>
+This guide contains documentation and examples on how to create dynamic ELF executables.
+These guidelines are required to achieve full Address Space Layout Randomization.
+</abstract>
+
+<version>1.1</version>
+<date>5 Aug 2003</date>
+
+<chapter>
+	<title>Introduction</title>
+	<body>
+   <p>One of the features of PaX is Address Space Layout Randomization (ASLR)
+   that allows the kernel to randomize the addresses of various areas in
+   the task's address space. While most of ASLR requires no changes in
+   userland, randomizing the main executable's base address presents a
+   challenge as traditionally such ELF executables of the ET_EXEC kind
+   do not contain enough relocation information. Nevertheless, PaX provides
+   two ways to solve this problem: RANDEXEC and RANDMMAP. </p>
+
+   <p>RANDEXEC works by mapping the ET_EXEC ELF file in a special way in memory
+   and requires no changes in userland (except for actually enabling it on
+   a given file, as this feature is disabled by default). The drawback of
+   this approach is that it is slow (the kernel compilation benchmark sees
+   a 3 times slow down for example) and prone to false positive detections
+   of so-called return-to-libc style attacks (which renders it unusable on
+   such executables). </p> 
+   
+   <warn>Therefore this method mainly exists to prove a point
+   and is not intended for production use.</warn>
+
+   <p>RANDMMAP on the other hand works on ELF files of the ET_DYN kind which is
+   normally used for dynamically linkable libraries. This approach has none
+   of the drawbacks that plague RANDEXEC because such ET_DYN ELF files have
+   enough relocation information and the dynamic linker has no problem with
+   relocating them (and there is no performance penalty at runtime), nor is
+   there a chance for false positive attack detections as none is done in the
+   first place. This means that protecting against the return-to-libc style
+   attack (in case the information about the randomization can leak to the
+   attacker) requires other approaches, which is not discussed here.</p>
+
+   <p>It should be clear by now that the preferable way of randomizing the main
+   executable's base address is via RANDMMAP and not RANDEXEC. This in turn
+   means that we need a way to produce ET_DYN ELF executables instead of the
+   ET_EXEC kind. The following parts describe the process in detail and
+   hopefully provide enough information so that modifying existing packages
+   to produce ET_DYN ELF targets will not be a problem. Software authors
+   and/or package maintainers are encouraged to provide such make targets
+   themselves in the future.</p>
+
+	</body>
+</chapter>
+
+<chapter>
+	<title>How to produce ET_DYN ELF executables</title>
+	<body>
+
+   <p>The following discussion assumes that the GNU toolchain (such as gcc and
+   ld) is used to produce the target file, other languages and tools should
+   follow the same principles however. The process has two main steps, first
+   compilation then linking, both of which need to be modified for producing
+   an ET_DYN ELF executable.</p>
+
+   <p>Compilation has to be modified in order to produce position independent
+   code (PIC) which in turn allows the linker to not emit so-called text
+   relocations in the final ET_DYN ELF file. Although this step is not
+   strictly required (it does not affect the relocatability of the result),
+   it is useful as this allows for another security related hardening: PaX
+   normally makes it impossible to make an executable file mapping writable,
+   however for text relocations it has to make an exception. If there are
+   no such ET_DYN ELF files on a system, this exception can be removed and
+   then the only way to introduce new executable code into a task's address
+   space will be via file creation and mapping (which can be prevented by
+   other methods such as ACL systems). Producing PIC is very easy, one just
+   has to add the -fPIC switch to the compiler command line. This will not
+   get rid of all text relocations however as there are other sources of
+   (position dependent) code contributing to the final ET_DYN ELF file that
+   will lead us to the next step.</p>
+   
+   <p>Linking the main executable is governed by a special script called the
+   'specs' file ('gcc -v' tells us what is used by default). Studying it in
+   detail is beyond our scope, but let's note the fact that there are more
+   object files linked into the result than one has specified on the linker
+   command line. These extra objects are necessary for implementing such
+   features as calling constructors/destructors or the low-level entry point
+   of the code (the main() C function is not the actual entry point of an ELF
+   executable). </p>
+
+   <p>Linking an ET_DYN ELF file is initiated by specifying the -shared switch
+   on the gcc command line which in turn will affect what extra object files
+   go into the result. Since our actual goal is to produce the main executable
+   (vs. a shared library), we have to make sure that we link in all extra
+   objects normally expected by an ET_EXEC target and not necessarily those
+   specified by the specs file for libraries. Luckily there is only one extra
+   object we have to take care of: crt1.o (we will ignore profiling and not
+   care about gcrt1.o). It is no coincidence that crt1.o is not linked into
+   shared libraries as this object contains (among others) the low-level entry
+   point and startup code that invokes the C library startup code which in
+   turn calls main(). 
+   <warn>Initiating the building of ET_DYN executables on Gentoo does not require us to put -shared in our CFLAGS or LDFLAGS</warn></p>
+
+   <p>Making crt1.o position independent is easy, we just have to make use of the
+   GOT (in keeping with the tradition of the glibc naming convention for the
+   position independent version of the extra object files, we will call it
+   crt1S.o). There is one last issue to take care of: a dynamically linked
+   executable requires a special program header that specifies the dynamic
+   linker to be mapped into memory by the kernel on task creation. As we can
+   see it from the specs file, having the -shared switch on the linker command
+   line will omit the dynamic linker specification and would produce an
+   unusable ET_DYN ELF file. The solution is simple, we follow the approach
+   of glibc which is also an executable ET_DYN ELF file: the dynamic linker
+   is specified in an object file that contains the full path to the dynamic
+   linker in a specific ELF section that ld will recognize and convert into
+   the corresponding program header.</p>
+
+   <p>The above method is demonstrated on a simple 'hello world' program that
+   is included with this document. The source code of the main executable
+   is in a.c, our PIC crt1 is in crt1S.S (it has to be written in assembly,
+   the code is directly derived from glibc 2.2) and finally interp.c defines
+   the dynamic linker (technically it could be put into crt1S.S as well to
+   reduce the number of extra files to a minimum). The makefile is very
+   simple as well, it compiles each source file into an object file and then
+   links them together. One important thing to note is the order of the
+   object files on the linker command line: crt1S.o must come first (that is,
+   before any object file of the application) and interp.o should follow it
+   directly as this will result in the interpreter program header getting
+   emitted before the PT_LOAD headers (which is the normal program header
+   ordering in ET_EXEC files, although it is not strictly necessary). Since
+   crt1S.o and interp.o are constant (they do not depend on the application
+   code) they can be compiled once and put into the same directory where
+   the other systemwide crt* files are.</p>
+	</body>
+</chapter>
+
+<chapter>
+	<title>ET_DYN ELF executables (The Gentoo Way)</title>
+	<body>
+
+   <p>On Gentoo this is accomplished by merging <i>hardened-gcc</i>: </p>
+
+   <pre caption = "Emerging hardened-gcc">
+<c># emerge hardened-gcc</c>
+</pre>
+   
+   <p><i>hardened-gcc</i> is an umbrella package for non-mainstream gcc modifications
+   The <i>hardened-gcc</i> packages was initially created by Alexander Gabert 
+   for this special purpose we are serving here: rolling out the etdyn
+   specs file and interp.o together with the position independent
+   crt1S.o.  But this package is not limited to that purpose.  
+   It was designed to be the be used for any future changes to gentoo-hardened systems 
+   regarding the improvement of gcc compiling binaries that are more secure 
+   than the default product coming out when the vanilla gcc is used. And it can be used for ebuild packages to
+   "trigger" some alternative action once they "realize" that they are
+   getting built on a system equipped with a modified gcc for enforcing
+   gentoo hardened protection measures. Straight this means that when a
+   package is found to be breaking when used with the hardened-gcc changes,
+   the particular ebuild of that failing package can and will be modified
+   by our gentoo-hardened developers to put some "check" logic into it when
+   the hardened-gcc is found on the target system. </p>
+
+   <p>As an example lets try the rebuilding our chpax binary as an ET_DYN
+   shared executable. We can use the file(1) command to determine if we 
+   in fact we are building our executables as ET_EXEC or ET_DYN.</p> 
+   
+   <p>The first example here we have chpax built as an ET_DYN and the second 
+   one is chpax built as an ET_EXEC.</p>
+
+	<pre caption = "Example files">
+<c># file /sbin/chpax</c>
+/sbin/chpax: ELF 32-bit LSB shared object, Intel 80386, version 1 \
+(GNU/Linux), stripped
+/sbin/chpax: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), for \
+GNU/Linux 2.0.0, dynamically linked (uses shared libs), stripped
+</pre>
+
+	</body>
+</chapter>
+
+
+<comment>To keep the bugs down for us we really dont want the
+end user mucking with the specs -solar </comment>
+<comment>
+   <p>We can further simplify the building of ET_DYN executables by modifying
+   a few sections of the default gcc specs file as demonstrated in the
+   specs.2.95.3 and specs.3.2.3 files (for the respective gcc versions).
+   To use the new specs file we can either replace the default one or pass
+   it on the gcc command line via the -specs switch (in the latter case we
+   could further trim down the new specs file and keep only the sections
+   that we changed: *cpp, *cc1, *endfile, *link and *startfile). From now
+   on invoking gcc as 'gcc -et_dyn' will produce an ET_DYN executable (the
+   same goes for g++).</p>
+
+   <p>Readers interested in rebuilding entire distributions are encouraged to
+   take a look at the Adamantix (http://www.adamantix.org) and Hardened
+   Gentoo projects (http://www.gentoo.org/proj/en/hardened/).</p>
+</comment>
+<chapter>      
+	<title>Credits</title>
+	<section>       
+		<title>Works Cited</title>
+		<body>
+			<ul><li><uri link="http://pageexec.virtualave.net">PaX Homepage</uri></li></ul>
+			<ul><li><uri link="http://pageexec.virtualave.net/docs/index.html">PaX Documentation</uri></li></ul>
+			<ul><li>Collective Work.  PaX - Gentoo Wiki.</li></ul>
+		</body>
+	</section>
+</chapter>
+
+</guide>
