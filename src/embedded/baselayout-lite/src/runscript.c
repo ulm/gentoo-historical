@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
 				 */
 				find_alias(alias, word);
 				printf("%s\n", alias);
+				free(alias);
 			}
 		} else if(strstr(line, "\tuse")) {
 			/* optional deps that have to be started before if they are in RUNLEVEL_DIR */
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
-
+	free(line);
 	runscript(argv[1], argv[2]);
 
 	return 0;
@@ -123,6 +124,7 @@ int in_runlevel(char *script) {
 			continue;
 		if((ret=strcmp(svc_script->d_name, script)) == 0) {
 			/* we have a match */
+			free(alias);
 			return TRUE;
 		}
 		printf("%s: %s-%s\n", __func__, script, svc_script->d_name);
@@ -130,6 +132,7 @@ int in_runlevel(char *script) {
 			printf("%s\n", alias);
 		//printf("%s==%s:%d\n", svc_script->d_name, script, ret);
 	}
+	free(alias);
 	return FALSE;
 
 }
@@ -164,10 +167,14 @@ int find_alias(char *alias, char *script) {
 				printf("%s: %s\n", svc_script->d_name, aliasline);
 				if(strcmp(aliasline, script) == 0) {
 					strcpy(alias, aliasline);
+					free(svc_script_path);
+					free(line);
 					return TRUE;
 				}
 			}
 		}
+		free(svc_script_path);
+		free(line);
 	}
 	return FALSE;
 }

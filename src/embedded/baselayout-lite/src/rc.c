@@ -60,7 +60,10 @@ int main(int argc, char **argv) {
 	
 	/* we only support 1 runlevel dir for boot+shutdown, so resolve deps for that
 	   dir then do stuff */
-	rlvldir=opendir(RUNLEVEL_DIR);
+	if ((rlvldir=opendir(RUNLEVEL_DIR)) == NULL) {
+		perror(RUNLEVEL_DIR);
+		exit(EXIT_FAILURE);
+	}
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		FILE *f1;
 		char path[500];
@@ -73,19 +76,32 @@ int main(int argc, char **argv) {
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
 		//printf("%s\n", svc_script->d_name);
-		sprintf(path, "%s/%s", RUNLEVEL_DIR, svc_script->d_name);
+		snprintf(path, sizeof(path)-1, "%s/%s", RUNLEVEL_DIR, svc_script->d_name);
 		//printf("%s\n", path);
-		f1=fopen(path, "r");
-		while(fgets(line, 499, f1)) {
+		if ((f1=fopen(path, "r")) == NULL) {
+			perror(path);
+			exit(EXIT_FAILURE);
+		}
+		
+		while(fgets(line, sizeof(line)-1, f1)) {
 			if(strstr(line, "before *")) {
 				/* start everything with "before *", and mark it as started */
 				printf("Starting %s\n", svc_script->d_name);
+#if 1
 				snprintf(command, 999, "%s%s start", INIT_DIR, svc_script->d_name);
 				system(command);
-				
+#else
+				snprintf(command, 999, "%s%s", INIT_DIR, svc_script->d_name);
+				{
+					char *cmdline[] = { "start", 0 };
+					/* so we can get return values and decide if we should call mark_started() */
+				 	execvp(command, cmdline);
+				}
+#endif
 				mark_started(svc_script->d_name);
 			}
 		}
+		free(command);
 	}
 	/* We've started what should be the first thing, now we need to start
 	 * everything else. We will start off in the order that readdir gives them
@@ -102,6 +118,7 @@ int main(int argc, char **argv) {
 			memset(command, 0, 1000);
 			snprintf(command, 999, "%s%s start", INIT_DIR, svc_script->d_name);
 			system(command);
+			free(command);
 			mark_started(svc_script->d_name);
 		}
 	}
