@@ -1,8 +1,7 @@
-<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/altinstall.xml,v 1.7 2004/04/22 19:54:05 chiguire Exp $ -->
+﻿<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/altinstall.xml,v 1.8 2004/05/31 13:23:19 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 	  
-
 <guide link="/doc/es/altinstall.xml">
 <title>Método alternativo de instalación de Gentoo Linux (HOWTO)</title>
 <author title="Contributor"><mail link="gerrynjr@gentoo.org">Gerald Normandin Jr.</mail></author>
@@ -16,7 +15,6 @@
 <author title="Editor"><mail link="swift@gentoo.org">Sven Vermeulen</mail></author>
 <author title="Reviewer"><mail link="antifa@gentoo.org">Ken Nowack</mail></author>
 <author title="Editor"><mail link="blubber@gentoo.org">Tiemo Kieft</mail></author>
-
 <author title="Traductor"><mail link="pdmp@interhoster.com">Pedro Del Medico P.</mail></author>
 <author title="Editor-Es"><mail link="bass@gentoo.org">José Alberto Suárez López</mail></author>
 <author title="Editor-Es Adjunto"><mail link="chiguire@gentoo.org">John
@@ -46,7 +44,7 @@ desde su ordenador (o simplemente no es el que le gusta) ahora tiene ayuda al
 respecto. Este documento servirá para proveerle de un repositorio de técnicas y 
 métodos alternativos para la instalación de Gentoo Linux. O si lo
 prefiere, servirá como medio para publicar su más novedoso método de
-instalación. Si usted posee alguna técnica de instalación, la cual
+instalación. Si posee alguna técnica de instalación, la cual
 considera útil para sí mismo, o conoce de alguna otra manera adecuada
 para instalar Gentoo Linux, por favor, no dude en documentarla y <mail
 link="antifa@gentoo.org">enviármela</mail>.
@@ -165,7 +163,8 @@ recibirá errores del tipo: "/home/root: not found" o algo de este
 tipo.
 </p>
 
-<p>Después tecleo <c>exit</c> y hago <c>su</c> para volver otra vez a
+<p>
+Después tecleo <c>exit</c> y hago <c>su</c> para volver otra vez a
 root. Esto carga el cambio que se produjo con el comando
 usermod. Ahora cree el punto de montaje <path>/mnt/gentoo</path>
 utilizando <c>mkdir</c>: </p>
@@ -182,7 +181,7 @@ Sin embargo, cuando tenga que montar el sistema proc,
 sustituya el comando por:
 </p>
 
-<pre caption = "Montando con bind el pseudo sistema de archivos /proc">
+<pre caption = "Montando el pseudo sistema de archivos /proc con bind">
 # <i>mount -o bind /proc /mnt/gentoo/proc</i>
 </pre>
 </body>
@@ -208,181 +207,6 @@ ordenador donde vaya a instalarlo, o cópielo en un CD.
 </p>
 
 <p>
-También necesita una lista de paquetes para la fase de
-paquetes. Coloque el siguiente guión <c>dl-list.sh</c> en el mismo lugar
-(medio físico) que la imagen de portage, lo necesitará posteriormente.
-</p>
-
-<pre caption="dl-list.sh">
-#!/bin/bash
-
-# set your defaults here:
-user_defs() {
- 
-  # portage directory (without a trailing "/"):
-  portage_dir="/usr/portage"
- 
-  # default download mirror (without a trailing "/"):
-  gentoo_mirror="http://www.ibiblio.org/pub/Linux/distributions/gentoo"
- 
-  # default sourceforge mirror (unc, telia, belnet):
-  sourceforge_mirror="unc"
- 
-  # fix gnu mirror entries
-  gnu_url="ftp:\/\/ftp.gnu.org\/pub\/gnu"
- 
-}
-
-
-#------------------------------------------------------------
-
-# function to remove temporary files
-cleanup() {
- 
-  rm -f $temp_file_1 $temp_file_2
-  exit $1
- 
-}
-
-# set user defaults
-user_defs
-
-# set the complete url for the sourceforge mirror
-# (the \'s are needed because this goes in a sed command)
-sourceforge_mirror_complete="http:\/\/$sourceforge_mirror.dl.sourceforge.net\/sourceforge"
-
-# initialize counters
-num_files=0
-num_alt_urls=0
-total_size=0
-
-# initialize lists (arrays)
-declare -a def_urls_arr
-declare -a alt_urls_arr
-
-# create 2 temporary files
-temp_file_1=`mktemp -t dl-list.XXXXXX` || cleanup 1
-temp_file_2=`mktemp -t dl-list.XXXXXX` || cleanup 1
-
-# run "emerge -p &lt;args&gt;" (too easy to forget the "-p" in the command line...)
-emerge -p $@ &gt; $temp_file_1 || cleanup 1
-
-# remove the lines that do not contain the word "ebuild"
-sed -n -e '/ebuild/p' $temp_file_1 &gt; $temp_file_2
-
-# count how many lines were left
-num_ebuilds=`wc -l $temp_file_2 | sed -e 's/\(.*\) \(.*\)/\1/'`
-
-# extract the useful information from those lines: category, package and version
-#sed -e 's:\(.*\) \(.*\)/\(.*\)-\([0-9].*\) \(.*\) \(.*\):\2 \3 \4:' $temp_file_2 &gt; $temp_file_1
-sed -e 's:\(.*\) \(.*\)/\(.*\)-\([0-9].*\):\2 \3 \4:' $temp_file_2 &gt; $temp_file_1
-
-# display starting message :)
-echo -n "Generating list " &gt;&amp;2
-
-# process each package in turn
-while read category package version rest
-do
- 
-  # form the name of the digest file
-
-digest_file="$portage_dir/$category/$package/files/digest-$package-$version"
- 
-  # process the contents of the digest file
-  while read md5_flag md5_sum file_name file_size
-  do
-   
-    # form the default url to download the file
-    def_urls_arr[$num_files]="$gentoo_mirror/distfiles/$file_name"
-   
-    # increment the file counter
-    num_files=$(($num_files + 1))
-   
-    # update the size accumulator (in kilobytes)
-    total_size=$(($total_size + $file_size / 1024))
-   
-  done &lt; $digest_file
-
-  # form the "ebuild depend" command line
-  ebuild_depend_cmd="ebuild $portage_dir/$category/$package/$package-${version}.ebuild depend"
-
-  # execute the "ebuild depend" command
-  $ebuild_depend_cmd || cleanup 1
-
-  # form the name of the dependency file
-  dependency_file="/var/cache/edb/dep/$category/$package-$version"
-
-  # read in the 4th line from the dependency file,
-  # which contains the official download urls
-  alt_urls=`head -n 4 $dependency_file | tail -n 1`
- 
-  # ignore empty url list
-  if [ -n "$alt_urls" ]
-  then
-   
-    # split the urls list into $1..$N
-    set $alt_urls
-   
-    # process each url in turn
-    for i in $@
-    do
-     
-      # remove the (use)? strings from the url list
-      alt_url_tmp=`echo "$i" | sed -e '/\?$/d'`
-     
-      # remove the "mirror://gnome" urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/gnome/d'`
-     
-      # remove the "mirror://kde" urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/kde/d'`
-     
-      # remove the "mirror://gentoo" urls (already included)
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/gentoo/d'`
-     
-      # translate the "mirror://sourceforge" urls into valid urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e "s/mirror:\/\/sourceforge/$sourceforge_mirror_complete/"`
-
-      # translate the "mirror://gnu" urls into valid urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e "s/mirror:\/\/gnu/$gnu_url/"`
-      # ignore empty urls
-      if [ -n "$alt_url_tmp" ]
-      then
-       
-        # add the url to the list
-        alt_urls_arr[$num_alt_urls]=$alt_url_tmp
-       
-        # increment the alternate url counter
-        num_alt_urls=$(($num_alt_urls + 1))
-       
-      fi
-     
-    done
-   
-  fi
-
-  # a progress bar :)
-  echo -n "." &gt;&amp;2
-
-done &lt; $temp_file_1
-
-# display ending message :)
-echo " done." &gt;&amp;2
-
-# display default urls list
-for i in ${def_urls_arr[@]}; do echo $i; done | sort
-
-# display alternate urls list
-for i in ${alt_urls_arr[@]}; do echo $i; done | sort
-
-# display totals
-echo "Totals:" $num_ebuilds "ebuilds," $num_files "files," $num_files "default urls," \n
-$num_alt_urls "alternate urls," "${total_size}Kb." &lt;&amp;2
-
-# remove temporary files and exit
-cleanup 0
-</pre>
-
-<p>
 Siga todas las instrucciones de la documentación sobre la instalación
 de Gentoo hasta <c>chroot /mnt/gentoo</c> en el paso 8. Si solamente
 tiene un CD-ROM acuérdese de usar la opción <c>cdcache</c> en el
@@ -392,7 +216,7 @@ portage.
 
 <p>
 Abra una nueva consola (Alt-F2). Continuaremos con la documentación de
-instalación hasta la ejecución del guión bootstrap.sh.
+instalación hasta la ejecución del guión <c>bootstrap.sh</c>.
 </p>
 
 <warn>
@@ -405,9 +229,7 @@ manualmente.
 <p>
 Vuelva a la primera consola (Alt-F1, sin chroot) y monte el segundo CD
 en <path>/mnt/gentoo/mnt/cdrom2</path>. Copie el tarball de portage
-desde el cdrom2 y descomprímalo en
-<path>/mnt/gentoo/usr/portage</path>. Además, grabe el guión
-<c>dl-list.sh</c> situándolo en<path>/usr/sbin</path> y hágalo ejecutable.
+desde el cdrom2 y descomprímalo en <path>/mnt/gentoo/usr/portage</path>. 
 </p>
 
 <pre caption="Montar la imagen del cd">
@@ -415,14 +237,12 @@ desde el cdrom2 y descomprímalo en
 # <i>mkdir /mnt/gentoo/mnt/cdrom2</i>
 # <i>mount /dev/cdroms/cdrom0 /mnt/gentoo/mnt/cdrom2</i>
 # <i>cp /mnt/gentoo/mnt/cdrom2/portage-$date.tar.bz2 /mnt/gentoo/usr/portage</i>
-# <i>cp /mnt/gentoo/mnt/cdrom2/dl-list.sh /mnt/gentoo/usr/sbin</i>
 # <i>cd /mnt/gentoo/usr/portage</i>
 # <i>tar xvjpf portage-$date.tar.bz2</i>
-# <i>chmod +x /mnt/gentoo/usr/sbin/dl-list.sh</i>
 </pre>
 
 <p>
-Cambie a la consola de F2. Ahora, si intenta ejecutar bootstrap.sh,
+Cambie a la consola de F2. Ahora, si intenta ejecutar <c>bootstrap.sh</c>,
 este fallará porque no es capaz de descargar ningún archivo. Iremos a
 buscar estos archivos a otro sitio y los situaremos en
 /usr/portage/distfiles (en la consola F2).
@@ -438,21 +258,31 @@ dependencias.
 con su árbol de portage.
 </note>
 
- <p>
-Ahora utilice el guión <c>dl-list.sh</c> para generar la lista de paquetes
-que necesita. Después copie esta lista en un disquete.
-</p>
-
-<pre caption="Usando dl-list.sh">
-# <i>dl-list.sh glibc baselayout texinfo gettext zlib binutils gcc ncurses > stage1.list</i>
+<pre caption="Obteniendo la lista de descargas">
+<comment>(No olvide colocar el 2 delante de &gt;)</comment>
+# <i>emerge -fp glibc baselayout texinfo gettext zlib binutils gcc ncurses 2&gt; stage1.list</i>
 # <i>mount -t vfat /dev/fd0 /mnt/floppy</i>
 # <i>cp /mnt/gentoo/stage1.list /mnt/floppy</i>
 # <i>umount /mnt/floppy</i>
 </pre>
 
 <p>
-Lleve el disquete a un ordenador que tenga un acceso rápido (a la red)
-y suministre la lista a wget:
+Lleve el disquete a un ordenador que tenga un acceso rápido (a la red). Si
+echa un vistazo al archivo <path>stage1.list</path>, podrá ver que contiene
+una serie de URLs para descargar. Por desgracia, esta lista de posibles URLs 
+para cada paquete no es lo que queremos. Eliminaremos todas, menos la 
+primera, de las URLs (por paquete):
+</p>
+
+<pre caption="Eliminando URLs">
+<comment>(Este guión depende del formato de salida dado por el emerge
+el cual puede cambiar en un futuro sin aviso previo - utilícelo con
+precaución</comment>
+# <i>cut -f 1 -d ' ' stage1.list > stage1.download</i>
+</pre>
+
+<p>
+Ahora utilice <c>wget</c> para obtener la lista de las fuentes mencionadas:
 </p>
 
 <pre caption="Usando wget para obtener las fuentes de los paquetes">
@@ -510,7 +340,7 @@ en<path>/etc/dhcp/dhcpd.conf</path>.
 
 <note>
 Esto proporciona una dirección IP estática para el cliente y la ruta
-imagen de arranque PXE, aquí pxegrub. Usted tendrá que reemplazar la
+imagen de arranque PXE, aquí pxegrub. Tendrá que reemplazar la
 dirección MAC de la tarjeta del Ethernet del cliente y el directorio
 donde pondrá los archivos del cliente, por los que vaya a usar.
 </note>
@@ -538,7 +368,7 @@ INTFTPD_OPTS="-u ${INTFTPD_USER} -l -vvvvvv -p -c -s ${INTFTPD_PATH}"
 
 <p>
 Configurar GRUB: para habilitar arranques PXE, yo uso GRUB. Debe
-compilarlo usted mismo para habilitar la compilación de la imagen PXE
+compilarlo uno mismo para habilitar la compilación de la imagen PXE
 ... pero es bastante fácil. Primero, coja la última versión del código
 fuente de GRUB (<c>emerge -f grub</c> situará el tarball en
 <path>/usr/portage/distfiles</path>). Copie el tarball en
@@ -616,7 +446,7 @@ Reinicie el servidor con un LiveCD de Gentoo. Siga el procedimiento de
 instalación estándar como se explica en la guía de instalación de
 Gentoo PERO con las siguientes diferencias. Cuando monte el sistema de
 archivos, haga lo siguiente (donde hdaX es la partición en la cual
-usted creó el directorio <path>/diskless</path>). No necesita montar ninguna otra
+creó el directorio <path>/diskless</path>). No necesita montar ninguna otra
 partición, ya que todos los archivos residirán en el directorio
 <path>/diskless/eta</path>.
 </p>
@@ -632,7 +462,7 @@ stage3. Monte <path>/proc</path> en su directorio
 instalación hasta la configuración del kernel.
 </p>
 
-<warn>Sea cuidadoso cuando extraiga su tarball stage. Usted no quiere
+<warn>Sea cuidadoso cuando extraiga su tarball stage. No quiere
 terminar extrayéndolo sobre su instalación existente.
 </warn>
 
@@ -655,7 +485,7 @@ junto a las otras recomendadas en el manual de instalación.
 <pre caption="Opciones de menuconfig">
 - Your network card device support
 
-- Under "Networking options" :
+- Bajo "Networking options" :
 
 [*] TCP/IP networking
 [*] IP: kernel level autoconfiguration
@@ -663,7 +493,7 @@ junto a las otras recomendadas en el manual de instalación.
 [*] IP: BOOTP support
 
 
-- Under "File systems --> Network File Systems" :
+- Bajo "File systems --> Network File Systems" :
 
 &lt;*&gt; NFS file system support
 [*] Provide NFSv3 client support
@@ -708,7 +538,7 @@ método de arranque - antes CD-ROM o floppy. Para ayudarle con esto,
 consulte los manuales de su hardware o la página web de los
 proveedores. La tarjeta de red debería conseguir una dirección IP
 usando DHCP y descargar la imagen PXE del grub usando TFTP. Entonces,
-usted debería ver un bonito menú de arranque del grub blanco y negro
+debería ver un bonito menú de arranque del grub blanco y negro
 en el que seleccionará el kernel de arranque y presione intro. Si todo
 está bien, el kernel debería arrancar, montando el sistema de archivos
 del root usando NFS y poniendo a su disposición el símbolo de sistema
@@ -760,7 +590,7 @@ La partición de root es el sistema de fichero montado bajo
 <path>/</path>. Una rápida ejecución de  mount en mi sistema muestra
 de qué estoy hablando. Usamos también <c>df</c> (disco libre) para ver cuánto
 espacio nos queda y como reajustar su tamaño. ¡Tenga en cuenta que no
-es obligatorio redistribuir la partición de su root! Usted podría
+es obligatorio redistribuir la partición de su root! Podría
 redistribuir cualquier cosa soportada por nuestro redistribuidor, pero
 hablemos de eso más tarde.
 </p>
@@ -794,7 +624,7 @@ mayoría de los usuarios. ¡Así que, vamos a particionarlo!
 
 <p>
 Parted es una aplicación suministrada por la fundación GNU, un antiguo
-y respetable gran proyecto cuyo software está usted usando en este
+y respetable gran proyecto cuyo software está usando en este
 mismo momento. De todas formas, hay una herramienta que ahora nos es
 extremadamente útil. Se llama <c>parted</c>, editor de particiones y podemos
 conseguirlo en <uri>http://www.gnu.org/software/parted/</uri>.
@@ -815,7 +645,7 @@ encontramos un problema. Queremos reajustar el tamaño de nuestra
 partición root de Linux, por tanto, debemos iniciar desde un disquete
 un sistema linux mínimo y usar un <c>parted</c> previamente compilado y
 copiado a un disquete para redimensionar <path>/</path>. De todas
-formas, si puede desmontar la partición estando aún en Linux, es usted
+formas, si puede desmontar la partición estando aún en Linux, es
 afortunado, no necesitará hacer lo siguiente. Sólo compile <c>parted</c> y
 ejecútelo en una partición desmontada que elija para reajustar su
 tamaño. Así es como yo lo hice en mi sistema.
@@ -836,7 +666,7 @@ inserte un nuevo disquete en la disquetera para el siguiente paso.
 <note>
 Observe de nuevo que Linux es sinónimo de "Hay más de una forma de
 hacerlo". Su objetivo es ejecutar parted en una partición desmontada
-para que pueda funcionar. Usted podría utilizar algún software de
+para que pueda funcionar. Podría utilizar algún software de
 discos de inicio diferente de tomsrtbt. No debería necesitar hacer
 este paso, es sólo desmontar el sistema de archivos que desea
 reparticionar en su sesión de Linux y ejecutar parted en ella.
@@ -866,7 +696,7 @@ export CFLAGS="-O3 -pipe -fomit-frame-pointer -static" &amp;&amp; ./configure
 </pre>
 
 <p>
-Enhorabuena, está usted preparado para reiniciar y redistribuir su
+Enhorabuena, está preparado para reiniciar y redistribuir su
 partición. Hágalo sólo después de echarle un vistazo a la
 documentación de parted en el website de GNU. El reajuste de tamaño
 suele tardar unos 30 minutos para los discos duros más largos, sea
@@ -920,7 +750,7 @@ para limpiar su entorno:
 </p>
 
 <pre caption = "Limpiando el entorno durante chroot">
-# <i>env -i chroot /mnt/gentoo /bin/bash</i>
+# <i>env -i /usr/sbin/chroot /mnt/gentoo /bin/bash</i>
 </pre>
 
 <p>
