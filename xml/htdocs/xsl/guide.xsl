@@ -1136,7 +1136,16 @@
 <!-- expand templates to handle things like <uri link="http://bar"><c>foo</c></uri> -->
 <xsl:choose>
   <xsl:when test="@link">
-    <a href="{@link}"><xsl:apply-templates/></a>
+    <xsl:choose>
+      <xsl:when test="substring(@link,1,1) = '?'">
+        <!-- We are dealing with a handbook link -->
+        <!-- TODO: don't hardcode handbook.xml because of draft -->
+        <a href="handbook.xml{@link}"><xsl:apply-templates/></a>
+      </xsl:when>
+      <xsl:otherwise>
+        <a href="{@link}"><xsl:apply-templates/></a>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:when>
   <xsl:otherwise>
     <xsl:variable name="loc" select="."/>
