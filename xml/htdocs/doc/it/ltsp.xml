@@ -13,8 +13,9 @@
     <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
 <author title="Traduzione">
-    <mail link="siggy@siggy.info">Luca Mercuri</mail>
+    <mail link="bernardo@linux.it">Bernardo Damele</mail>
 </author>
+<author title="Traduzione">Team Italiano</author>
 
 <abstract>
 Questa guida mostra come configurare un server LTSP con Gentoo.
@@ -22,8 +23,8 @@ Questa guida mostra come configurare un server LTSP con Gentoo.
 
 <license/>
 
-<version>1.3</version>
-<date>11 Dicembre 2003</date>
+<version>1.4</version>
+<date>11 Aprile 2004</date>
 <chapter>
 <title>Introduzione</title>
 <section>
@@ -114,8 +115,15 @@ Dopo che il processo di emerge sarà completato tutti i servizi dovranno essere 
 <p>
 Per analizzare i problemi semplicemente, il logger di sistema deve essere
 configurato per accettare connessioni remote. Leggi la documentazione
-del tuo logger per sapere come è possibile fare questo.
+del tuo logger per sapere come è possibile fare questo. Ad esempio, se stai
+utilizzando sysklogd tutto cio' che hai da fare e' editare il file
+<path>/etc/conf.d/sysklogd</path> ed aggiungere "-r" alla linea SYSLOGD:
 </p>
+
+<pre caption="/etc/conf.d/sysklogd">
+SYSLOGD="-m 0 -r"
+KLOGD="-c 3 -2"
+</pre>
 
 </body>
 </section>
@@ -155,12 +163,42 @@ Ora facciamo partire NFS.
 <body>
 
 <p>
-Di default TFTP non verrà inizializzato, per cambiarlo
-editiamo <path>/etc/xinetd.d/tftp</path> e modifichiamo <c>disable=yes</c>
-con <c>disable=no</c>. Dopo di ciò facciamo partire xinetd.
+TFTP richiede qualche configurazione per farlo funzionare bene.
+Prima di tutto editate il file <path>/etc/conf.d/in.tftpd</path>
+per impostare il path del demone tftp:
 </p>
 
-<pre caption="Starting xinetd">
+<pre caption="/etc/conf.d/in.tftpd">
+INTFTPD_PATH="/tftpboot"
+INTFTPD_OPTS="${INTFTPD_PATH}"
+</pre>
+
+<p>
+Ora configurate xinetd per far partire TFTP e abilitare le connessioni
+da remoto. Prima di tutto controllate che il file <path>/etc/xinetd.d/tftp</path>
+sia stato creato quando avete eseguito emerge di tftp. Di default TFPT non
+sara' caricato da xinetd, quindi per cambiare questo editate 
+<path>/etc/xinetd.d/tftp</path> e rimpiazzate <c>disable=yes</c> con <c>disable=no</c>.
+</p>
+
+<pre caption="/etc/xinetd.d/tftp">
+service tftp
+{
+        disable = no
+        socket_type = dgram
+        protocol = udp
+        wait = yes
+        user = root
+        server = /usr/sbin/in.tftpd
+}
+</pre>
+
+<p>
+Adesso editate <path>/etc/xinetd.conf</path> e commentate la linea
+<c>only_from = localhost</c> anteponendoci un <c>#</c>. Per finire avviate xinetd.
+</p>
+
+<pre caption="Avviare xinetd">
 # <i>rc-update add xinetd default</i>
 # <i>/etc/init.d/xinetd start</i>
 </pre>
@@ -249,7 +287,9 @@ shared-network WORKSTATIONS {
 Se le tue workstation supportano PXE, tu dovresti elencarle tutte come
 ho fatto con <e>host ws001</e> (non dimenticare di scommentarla). Non
 dare loro un indirizzo nel range dinamico, altrimenti potrebbe succedere
-che più workstation abbiano lo stesso indirizzo IP.
+che più workstation abbiano lo stesso indirizzo IP (il che e' un problema).
+Ricorda, se copi-incolli il precedente esempio, rimpiazza ogni "//" commento
+con "##", oppure dhcp fallira' all'avvio.
 </p>
 
 <p>
@@ -283,6 +323,23 @@ Ci sono molte opzioni per configurare le tue workstation, visita
 per una completa descrizione di <path>/opt/ltsp/i386/etc/lts.conf</path>.
 </p>
 
+<p>
+Come suggerimento per iniziare, puoi voler copiare
+<path>/opt/ltsp/i386/etc/lts.conf.example</path> su
+<path>/opt/ltsp/i386/etc/lts.conf</path> ed editarlo da li'. Puoi quindi voler
+provare a cambiare l'opzione <c>SCREEN_01</c> per leggere <c>SCREEN_01 = startx</c>.
+Per usare un mouse USB su un client remoto, aggiungi le seguenti linee e cambia il
+valore di X_MOUSE_* come segue:
+</p>
+
+<pre caption="/opt/ltsp/i386/etc/lts.conf">
+MODULE_01          = usb-uhci
+MODULE_02          = mousedev
+MODULE_03          = usbmouse
+X_MOUSE_PROTOCOL   = "IMPS/2"
+X_MOUSE_DEVICE     = "/dev/input/mice"
+</pre>
+  	 
 </body>
 </section>
 
@@ -338,6 +395,11 @@ Ora possiamo far partire il displaymanager:
 Al momento ci sono dei problemi con XDM e GDM. L'autore usa KDM per risolvere
 questi problemi.
 </warn>
+
+<p>
+Ricordate che se il vostro display manager e' gia' in esecuzione, riavviando
+l'X server via CTRL-ALT-BACKSPACE non riavviera' il display manager.
+</p>
 
 </body>
 </section>
@@ -473,4 +535,3 @@ energia."
 </section>
 </chapter>
 </guide>
-
