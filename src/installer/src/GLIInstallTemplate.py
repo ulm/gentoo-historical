@@ -24,7 +24,7 @@ class GLIInstallTemplate
 					print "Warning: You chose to ignore install step dependencies.  The " + dependency + " was not met.  Ignoring."
 				#If ignore is off, then raise exception
 				else:
-					raise "InstallTemplateError: Install step dependency not met!"
+					raise "InstallTemplateError",  "Install step dependency not met!"
 
 	def _exec_in_chroot(self, command):
 		"Runs a command in the chroot environment."
@@ -37,13 +37,14 @@ class GLIInstallTemplate
 
 			# Chroot to /mnt/gentoo and run the command, then exit
 			os.chroot("/mnt/gentoo")
-			os.system(command)
-			sys.exit()
+			exitstatus = os.system(command)
+			sys.exit(exitstatus)
 
 		# If you are the parent process, just wait for the child
 		# Kids can be so slow sometimes... 
 		else:
-			os.wait()
+			child_exitstatus = os.wait()[1]
+			return(child_exitstatus)
 
 	def _edit_config(file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
 		"""This allows one to edit a config file non-destructively.
@@ -112,10 +113,10 @@ class GLIInstallTemplate
 					file.append('#' + key + delimeter + '"' + value + '"' + '\n')
 				else:
 					file.append('#' + key + delimeter + value + '\n')
-					
+		
+		# Write lines back out to file	
 		f = open(file_name, 'w')
-		for line in file:
-			f.write(line)
+		f.writelines(file)
 		f.close()
 
 	def setup_network_pre(self, install_profile, client_configuration):
@@ -168,7 +169,9 @@ class GLIInstallTemplate
 
 	def set_timezone(self, install_profile, client_configuration):
 		"Sets the timezone for the new environment"
-		pass
+		
+		# Set symlink
+		os.symlink("../usr/share/zoneinfo/" + install_profile.get_time_zone(), "/mnt/gentoo/etc/localtime")
 
 	def configure_fstab(self, install_profile, client_configuration):
 		"Configures fstab"
