@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.47 2005/03/16 06:17:35 codeman Exp $
+$Id: GLIClientController.py,v 1.48 2005/03/29 23:54:41 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -133,6 +133,10 @@ class GLIClientController(Thread):
 					self._install_event.clear()
 			else:
 				break
+
+		# This keeps the thread running until the FE exits
+		self._install_event.clear()
+		self._install_event.wait()
 
 	def get_num_steps(self):
 		return len(self._install_steps)
@@ -284,4 +288,3 @@ class GLIClientController(Thread):
 		except:
 			# This should only ever happen if the frontend is not checking for notifications
 			pass
-#		os.kill(os.getpid(), signal.SIGUSR1)
