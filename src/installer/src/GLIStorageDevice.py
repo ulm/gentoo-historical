@@ -76,7 +76,7 @@ class Device:
 	def clear_partitions(self):
 		self._partitions = {}
 
-	def add_partition(self, minor, start, end, type):
+	def add_partition(self, minor, start, end, type, mountpoint='', mountopts=''):
 		free_start, free_end = self.get_free_space(start)
 		minor = int(minor)
 		if not free_end:
@@ -99,7 +99,7 @@ class Device:
 					self._partitions[i].set_minor(i+1)
 					self._partitions[i+1] = self._partitions[i]
 					if i == minor: stopscooting = 1
-		self._partitions[minor] = Partition(self, minor, '', start, end, 0, type)
+		self._partitions[minor] = Partition(self, minor, '', start, end, 0, type, mountpoint=mountpoint, mountopts=mountopts)
 
 	def remove_partition(self, minor):
 		del self._partitions[int(minor)]
@@ -323,17 +323,16 @@ class Partition:
 				self._resizeable == True
 			else:
 				parted_part = self._device._parted_disk.get_partition(self._minor)
-				parted_fs = parted_part.geom.file_system_open()
+				try:
+					parted_fs = parted_part.geom.file_system_open()
+				except:
+					self._resizeable = False
+					return
 				resize_constraint = parted_fs.get_resize_constraint()
 				min_size = resize_constraint.min_size
 				if int(min_size) != min_size: min_size = int(min_size) + 1
 				self._min_sectors_for_resize = min_size
 				self._resizeable = True
-#			elif type == "":
-#				self._min_cylinders_for_resize = 1
-#				self._resizeable = True
-#		else:
-#			self._resizeable = True
 
 	def is_extended(self):
 		if self._type == "extended":
@@ -352,12 +351,6 @@ class Partition:
 			return None
 		logicals = []
 		start = self._start
-#		while not start > self._end:
-#			part = self._device.get_partition_at(start)
-#			print "part=" + str(part)
-#			if not part: break
-#			logicals.append(part)
-#			start = self._device._partitions[part].get_end() + 1
 		parts = self._device._partitions.keys()
 		parts.sort()
 		for part in parts:
@@ -438,11 +431,11 @@ class Partition:
 		if free_start - 1 == self._end:
 			if self.is_logical():
 				if free_end <= self._device._partitions[self.get_extended_parent()]._end:
-					return free_end
+					return free_end - self._start
 				else:
-					return self._end
+					return self._end - self._start
 			else:
-				return free_end
+				return free_end - self._start
 
 	def resize(self, start, end):
 		part_at_start = self._device.get_partition_at(int(start))

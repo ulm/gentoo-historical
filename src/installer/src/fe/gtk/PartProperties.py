@@ -13,7 +13,7 @@ class PartProperties(gtk.Window):
 		self.end = end
 		if minor == -1:
 			self.min_size = 0
-			self.max_size = end - start - 1
+			self.max_size = end - start + 1
 		else:
 			self.min_size = min_size
 			self.max_size = max_size
@@ -22,7 +22,7 @@ class PartProperties(gtk.Window):
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
-		self.set_default_size(600,400)
+		self.set_default_size(400,300)
 #		self.set_geometry_hints(None, min_width=800, min_height=600, max_width=800, max_height=600)
 		if self.minor == -1:
 			self.set_title("New partition on " + device)
@@ -34,6 +34,7 @@ class PartProperties(gtk.Window):
 
 		self.resize_box = gtk.VBox(gtk.FALSE, 0)
 		self.resize_hpaned = gtk.HPaned()
+#		self.resize_hpaned.set_size_request(400, -1)
 		self.resize_hpaned.connect("size-allocate", self.part_resized)
 		self.resize_part_space_frame = gtk.Frame()
 		self.resize_part_space_frame.set_shadow_type(gtk.SHADOW_IN)
@@ -50,13 +51,14 @@ class PartProperties(gtk.Window):
 		self.resize_hpaned.set_position(0)
 		self.resize_box.pack_start(self.resize_hpaned, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box = gtk.HBox(gtk.FALSE, 0)
-		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		self.resize_info_part_size = gtk.Entry(max=9)
 		self.resize_info_part_size.set_width_chars(7)
 		self.resize_info_part_size.connect("insert-text", self.validate_keypress)
 		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part_size")
-		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
+		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		resize_text_box.pack_start(gtk.Label("  "), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		resize_text_box.pack_start(gtk.Label("Unalloc. size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
 		self.resize_info_unalloc_size = gtk.Entry(max=9)
 		self.resize_info_unalloc_size.set_width_chars(7)
@@ -64,8 +66,8 @@ class PartProperties(gtk.Window):
 		self.resize_info_unalloc_size.connect("focus-out-event", self.update_slider_and_entries, "unalloc-size")
 		resize_text_box.pack_start(self.resize_info_unalloc_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		self.resize_box.pack_start(resize_text_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		self.globalbox.pack_start(self.resize_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
+		self.resize_box.pack_start(resize_text_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.globalbox.pack_start(self.resize_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
 		self.part_info_box = gtk.HBox(gtk.FALSE, 0)
 		part_info_table = gtk.Table(6, 2, gtk.FALSE)
@@ -137,8 +139,6 @@ class PartProperties(gtk.Window):
 				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
 			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s, start = %s, end = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos), str(self.start), str(self.end))
-#			self.resize_info_part_size.set_text(str(part_size))
-#			self.resize_info_unalloc_size.set_text("0")
 			self.info_partition.set_text(self.device + " (unallocated)")
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors['ext3'], self.controller.colors['ext3'])
@@ -162,6 +162,10 @@ class PartProperties(gtk.Window):
 				self.resize_info_part_type.set_active(1)
 			self.resize_info_part_type.set_sensitive(gtk.FALSE)
 			self.resize_info_part_filesystem.set_sensitive(gtk.FALSE)
+			for i, fs in enumerate(self.controller.supported_filesystems):
+				if fs == self.fstype:
+					self.resize_info_part_filesystem.set_active(i)
+					break
 			hpaned_width = self.resize_hpaned.get_allocation().width
 			hpaned_pos = hpaned_width - 5
 			if self.max_size > self.end:
@@ -171,23 +175,8 @@ class PartProperties(gtk.Window):
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors[self.fstype])
 			self.resize_hpaned.set_sensitive(gtk.FALSE)
-
-#			start = tmppart.get_start()
-#			end = tmppart.get_end()
-#			self.info_start.set_text(str(start))
-#			self.info_end.set_text(str(end))
-#			part_size = int(round(float(self.bytes_in_sector) * (self.end - self.start + 1) / 1024 / 1024))
-#			self.info_size.set_text(str(part_size) + " MB")
-#			self.part_mount_point_entry.set_text(tmppart.get_mountpoint())
-#			self.part_mount_opts_entry.set_text(tmppart.get_mountopts())
-#			self.active_part_minor = tmppart.get_minor()
-#			self.part_button_create.set_label(" Save ")
-#			self.resize_box.hide_all()
-#			self.part_button_delete.set_sensitive(gtk.TRUE)
-#			self.part_button_create.set_sensitive(gtk.TRUE)
-#			self.part_info_box.show_all()
-#			self.part_button_box.show_all()
-#			self.part_mount_info_box.show_all()
+			self.part_mount_point_entry.set_text(tmppart.get_mountpoint())
+			self.part_mount_opts_entry.set_text(tmppart.get_mountopts())
 
 	def make_visible(self):
 		self.show_all()
@@ -205,19 +194,19 @@ class PartProperties(gtk.Window):
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
 #			start = self.active_part_start_cyl
-			end = int(self.start + part_size - 1)
+			end = int(self.start + part_size + 1) # - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				free_start, free_end = self.controller.devices[self.device].get_free_space(self.start)
 				self.controller.devices[self.device].add_partition(self.controller.devices[self.device].get_free_minor_at(self.start, end), free_start, free_end, "extended")
 			minor = self.controller.devices[self.device].get_free_minor_at(self.start, end)
 			type = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-			self.controller.devices[self.device].add_partition(minor, self.start, end, type)
+			self.controller.devices[self.device].add_partition(minor, self.start, end, type, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
 			self.controller.part_selected(None, self.device, minor)
 		else:
 			tmppart = self.controller.devices[self.device].get_partitions()[self.minor]
-#			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
-#			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
+			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
+			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
 
 		self.destroy()
 
@@ -245,12 +234,13 @@ class PartProperties(gtk.Window):
 			editable.stop_emission("insert-text")
 
 	def update_slider_and_entries(self, widget, event, which_one):
-		print "Entry " + which_one + " has been updated"
+#		print "Entry " + which_one + " has been updated"
+		pass
 
 	def filesystem_changed(self, widget, data=None):
 		fs = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.resize_part_space.set_colors(self.controller.colors[fs], self.controller.colors[fs])
-		self.resize_part_space.get_child().expose_event(None, None)
+		if self.minor == -1: self.resize_part_space.get_child().expose_event(None, None)
 
 	def delete_event(self, widget, event, data=None):
 		return gtk.FALSE
