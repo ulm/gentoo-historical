@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.3 2004/07/13 15:06:41 hadfield Exp $
+# $Id: GLSRBackend.py,v 1.4 2004/07/19 00:50:38 hadfield Exp $
 #
 
 __modulename__ = "GLSRBackend"
@@ -24,12 +24,9 @@ class GLSRBackend:
         else:
             self.id = 0
 
-    def Create(self, details, keys = ()):
-        """ Creates the row with 'details'. Keys contains a list of restraints.
-        So, if you can't have two identical 'name's then add 'name' to the list
-        of keys and it won't add the field. If you have two or more fields that
-        can't be used in combination then make a sub tuple in keys """
-
+    def __SetupQuery(self, details, keys, encrypt):
+        """ Setup the query strings for the Create and Modify functions """
+        
         # Check restrictions
         for field in keys:
             
@@ -45,19 +42,40 @@ class GLSRBackend:
             elif self.Exists(field, details[field]):
                 return True
 
-        fields = string.join(map(lambda x: "%s_%s" % (self.tablename, x),
+        fields = string.join(map(lambda x: "%s_%s=%%s" % (self.tablename, x),
                                  details.keys()), ", ")
-        
-        values = string.join(
-            operator.repeat(['%s'], len(details.keys())), ", ")
-        
-        if fields == "" or values == "":  # No fields to set?
-            return False
 
-        MySQL.Query("INSERT INTO %s%s" %
+        encrypt_fields = string.join(
+            map(lambda x: "%s_%s=PASSWORD(%%s)" % (self.tablename, x[0]),
+                encrypt.iteritems()), ", ")
+
+        if fields == "" and encrypt_fields == "":
+            return True
+
+        # String to join the encrypt_fields and fields string
+        joiner = ""
+        if fields != "" and encrypt_fields != "":
+            joiner = ", "
+
+        return (fields, joiner, encrypt_fields)
+        
+    def Create(self, details, keys = (), encrypt = {}):
+        """ Creates the row with 'details'. Keys contains a list of restraints.
+        So, if you can't have two identical 'name's then add 'name' to the list
+        of keys and it won't add the field. If you have two or more fields that
+        can't be used in combination then make a sub tuple in keys.
+        The encrypt parameter is used for things like password fields that
+        you may want to encrypt. """
+
+        fields = self.__SetupQuery(details, keys, encrypt)
+
+        if type(fields) != types.TupleType:
+            return True
+        
+        MySQL.Query("INSERT INTO %s%s SET " %
                     (Config.MySQL["prefix"], self.tablename) +
-                    " (%s) VALUES (%s)" % (fields, values),
-                    details.values(), fetch="none")
+                    "%s%s%s" % (fields[0], fields[1], fields[2]),
+                    details.values() + encrypt.values(), fetch="none")
 
         # Get the id for the record that was just inserted
         cmp = string.join(map(lambda x: "%s_%s=%%s" % (self.tablename, x),
@@ -76,7 +94,6 @@ class GLSRBackend:
             else:
                 self.id = results[0]["%s_id" % self.tablename]
             
-        
 
     def Remove(self):
 
@@ -89,19 +106,21 @@ class GLSRBackend:
                     fetch="none")
 
 
-    def Modify(self, fields, details):
+    def Modify(self, details, keys = (), encrypt = {}):
         """ Modify the specified 'fields' if they were set in 'details' """
 
         if not self.id:
             return False
 
-        for key in fields:
-            if key in details.keys():
-                MySQL.Query("UPDATE %s%s" %
-                            (Config.MySQL["prefix"], self.tablename) +
-                            " SET %s_%s = " % (self.tablename, key) +
-                            "%%s WHERE %s_id = " % self.tablename +
-                            "%s", (details[key], self.id), fetch="none")
+        fields = self.__SetupQuery(details, keys, encrypt)
+
+        if type(fields) != types.TupleType:
+            return True
+
+        MySQL.Query("UPDATE %s%s SET " %
+                    (Config.MySQL["prefix"], self.tablename) +
+                    "%s%s%s" % (fields[0], fields[1], fields[2]),
+                    details.values() + encrypt.values(), fetch="none")
 
 
     def List(self, constraint = {}):
@@ -134,7 +153,8 @@ class GLSRBackend:
 
     
     def Exists(self, field, value):
-        
+        """ Tests if a record with the specified field values exists in
+        the table. """
         result = MySQL.Query("SELECT %s_%s FROM %s%s WHERE %s_%s = " %
                              (self.tablename, field, Config.MySQL["prefix"],
                               self.tablename, self.tablename, field) +
