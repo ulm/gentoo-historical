@@ -3,59 +3,104 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Search.py,v 1.2 2004/08/22 23:25:12 hadfield Exp $
+# $Id: Page_Search.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
 #
 
-MetaData = {"page" : ("search",), "params" : ""}
-
-import Template as TemplateHandler
-import Session
 import Config
-from User import User
-from Logging import ReturnErrorReports
-from SiteModuleBE import SiteModuleBE as Parent
+from site_modules import SiteModule
 
-def Display():
+import Script
+import User
+import Category
+import Language
 
-    page = Page_Search()
-    page.selectDisplay()
+__modulename__ = "Page_Search"
 
-class Page_Search(Parent):
+class Page_Search(SiteModule):
 
-    template = Config.Template["script_search"]
+    def __init__(self, form = None, uid = 0):
+
+        self.pages = ["script_search"]
+        self.template = Config.Template["script_search"]
+        self.form = form
+
+    def _set_params(self):
+        
+        if self.form.has_key("search"):
+            scripts = self._search()
+
+        elif self.form.has_key("search_submitter_id"):
+            scripts = self._search_submitter()
+
+        elif self.form.has_key("list_all"):
+            scripts = self._list_all()
+
+        else:
+            return
+
+        self.template = Config.Template["view_scripts"]
+        submitter_id = self.form.getvalue("search_submitter_id", 0)
+
+        row = "even"
+        for script in scripts:
+
+            user_obj = User.User(script["script_submitter_id"])
+            
+            category_obj = Category.Category(script["script_category_id"])
+            language_obj = Language.Language(script["script_language_id"])
+
+            script.update({"script_submitter": user_obj.GetAlias(),
+                           "script_category": category_obj.Name(),
+                           "script_language": language_obj.Name(),
+                           "row": row})
+            
+            if row == "even":
+                row = "odd"
+            else:
+                row = "even"
+        
+        self.tmpl.param("MAIN_LOOP_LEN", len(scripts))
+        self.tmpl.param("MAIN_LOOP", scripts, "loop")
+
     
-    def selectDisplay(self):
+    def _search(self):
 
-        self.display()
+        script_obj = Script.Script()
+        terms = {}
 
+        if self.form.has_key("name"):
+            terms["name"] = self.form.getvalue("name")
+
+        if self.form.has_key("descr"):
+            terms["descr"] = self.form.getvalue("descr")
+
+        if self.form.has_key("submitter"):
+
+            user_obj = User.User()
+            user_id = user_obj.GetUid(self.form.getvalue("submitter"))
+            terms["submitter_id"] = user_id
+
+        recent_only = self.form.getvalue("most_recent")
+
+        return script_obj.Search(terms)
+
+    def _search_submitter(self):
+
+        script_obj = Script.Script()
+        submitter_id = self.form.getvalue("search_submitter_id")
+        scripts = script_obj.ListScripts({"submitter_id": submitter_id})
+        
+        return scripts
+
+    def _list_all(self):
+
+        script_obj = Script.Script()
+        return script_obj.ListScripts()
+        
+        
     def display(self):
 
-        error_reporting = "True"
-        error_report_list = []
-        user_online_list = ""
-        sess_obj = Session.New()
-        sessions = sess_obj.ListSessionsOnline(Config.WhoIsOnlineOffset)
-
-        if len(sessions) == 0:
-            user_online_list = "No registered accounts active."
-        else:
-            for session in sessions:
-                user_obj = User(session["session_user_id"])
-                user_online_list = "%s %s" % (user_online_list,
-                                              user_obj.GetAlias())
-
-        if Config.ErrorReporting == True:
-            error_report_list = ReturnErrorReports()
-            if error_report_list == False:
-                error_reporting = "False"
-        else:
-            error_reportig = "False"
-
-        if error_reporting == "False":
-            error_report_list = []
-
-        tmpl = TemplateHandler.Template()
-        tmpl.compile(
-            self.template,
-            {"GLSR_URL":                Config.URL})
-        print tmpl.output()
+        self._set_params()
+        
+        self.tmpl.compile(self.template)
+        return self.tmpl

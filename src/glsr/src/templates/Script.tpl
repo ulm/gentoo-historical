@@ -29,14 +29,15 @@
         </tr>
         {LOOP MAIN_LOOP}
 	<tr>
+	  <!-- 012345678901234567 -->
           <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=yourscripts&show_parent=True&script_id={MAIN_LOOP.script_id}">{MAIN_LOOP.script_name}</a></td>
           <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=yourscripts&show_subscript=True&script_id={MAIN_LOOP.subscript_id}">{MAIN_LOOP.subscript_version}</a></td>
+
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.category}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_rank}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.language}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_date}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approvedby}&nbsp;</td>
-          <!-- <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approved}&nbsp;</td> -->
 	</tr>
         {!LOOP}
       </table>
@@ -48,7 +49,7 @@
       {IF MODIFY != 0}      
       <!-- The form to add a new script -->
       <input type="hidden" name="script_id" value="{MODIFY}" />
-      <table width="45%" class="standard_table">
+      <table width="90%" class="standard_table">
         <tr>
           <td colspan="" class="header">{IF ADD_FORM == 0}Add New Script{ELSE}Modify Script{!IF}</td>
         </tr>
@@ -79,19 +80,20 @@
            <font class="instructional">Category:</font><br />
            <select name="category_id">
              <option value="0">Select a Category</option>
-             {LOOP CATEGORY_LOOP}
+             {LOOP CATEGORY_LOOP}<!-- 012345678901234567 -->
              <option value="{CATEGORY_LOOP.category_id}" {IF CATEGORY_LOOP.category_id == CATEGORY_ID}selected{!IF}>{CATEGORY_LOOP.category_name}</option>
              {!LOOP}
            </select>
           </td>
         </tr>
         
-        <tr>
+	<tr>
           <td class="standard_cell">
            <font class="instructional">Language:</font><br />
            <select name="language_id">
              <option value="0">Select a Language</option>
              {LOOP LANGUAGE_LOOP}
+             <!-- {LANGUAGE_LOOP.language_name} -->
              <option value="{LANGUAGE_LOOP.language_id}" {IF LANGUAGE_LOOP.language_id == LANGUAGE_ID}selected{!IF}>{LANGUAGE_LOOP.language_name}</option>
              {!LOOP}
            </select>
@@ -101,7 +103,7 @@
         <tr>
           <td class="standard_cell">
            <font class="instructional">Body:</font><br />
-           <textarea rows="15" cols="50" class="text" name="body">{BODY}</textarea>
+           <textarea rows="15" style="width: 100%;" class="text" name="body">{BODY}</textarea>
           </td>
         </tr>
         <tr>
@@ -114,8 +116,9 @@
 
 
       {IF SHOW_PARENT != 0}
-      <br />      
-      <input type="submit" class="button" name="show_modify" value="New Version" />
+      <br />
+      <input type="hidden" name="show_modify" value="{PARENT_SCRIPT_ID}" />
+      <input type="submit" class="button" name="" value="New Version" />
       {!IF}
       
       </form>

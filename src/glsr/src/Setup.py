@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.3 2004/06/27 19:57:12 hadfield Exp $
+# $Id: Setup.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
 #
 
 import sys
@@ -83,12 +83,12 @@ print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["comment_table"])
 comment_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	%s_id		MEDIUMINT(6)	unsigned NOT NULL auto_increment,
 	%s_submitter_id	MEDIUMINT(5)	unsigned NOT NULL,
+	%s_script_id	MEDIUMINT(6)	unsigned NOT NULL,
+	%s_subscript_id	INT(10)		unsigned NULL,
 	%s_date		DATETIME	NULL,
-	%s_subject	VARCHAR(30)	NULL,
 	%s_lastedited	DATETIME	NULL,
+	%s_subject	VARCHAR(30)	NULL,
 	%s_body		TEXT		NOT NULL,
-	%s_ofscript	MEDIUMINT(6)	unsigned NOT NULL,
-	%s_ofversion	INT(10)		unsigned NULL,
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
                  tuple(operator.repeat([Config.MySQL["comment_table"]], 12)))

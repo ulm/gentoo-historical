@@ -5,8 +5,20 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.8 2004/08/22 23:23:39 hadfield Exp $
+# $Id: index.py,v 1.9 2004/09/30 03:09:36 hadfield Exp $
 #
+
+"""
+The main page dispatcher for glsr.
+
+This script simply prints the header, determines the page and calls the
+appropriate page handler, and prints out the footer.
+
+It also manages session handling and errors.
+"""
+
+__modulename__ = "index"
+
 
 import os
 import sys
@@ -14,8 +26,8 @@ import cgi
 
 sys.path.insert(0, "/usr/local/share/glsr/pym/")
 sys.path.insert(0, "/usr/local/share/glsr/")
-sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr/pym")
-sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr")
+sys.path.insert(0, "../pym")
+sys.path.insert(0, "../")
 
 from Error import exception_handler
 sys.excepthook = exception_handler
@@ -25,101 +37,99 @@ sys.stderr = stderrRedirect()
 
 import Config
 from Function import start_timer, stop_timer, eval_timer
-from Logging import logwrite
+from GLSRException import GLSRException
+import Logging as LogHandler
 import Session as SessionHandler
 import Template as TemplateHandler
 from User import User
 from Validation import CheckPageRequest
 
 import site_modules
+from site_modules import Redirect
 from site_modules import *
-
-__modulename__ = "index"
 
 def main():
 
     t_start = start_timer()
 
+    #print "Content-type:text/html\n\n",
     form = cgi.FieldStorage()
     page = form.getvalue("page")
 
-    ThisSession = SessionHandler.New()
-    user_obj = User()
-    
-    uid = 0
-    sess = 0
-    alias = ""
-    
-    if os.environ.has_key("HTTP_COOKIE"):
+    # Verify login credentials and log users in and out.
+    login = Page_Login.Page_Login(form)
+    (page, username, uid, user_type) = login.display()
 
-        if ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"]):
-            (uid, sess) = ThisSession.LoadCookieData(os.environ["HTTP_COOKIE"])
+    tmpl_page = None
+    show_border = True
 
-            if not user_obj.SetID(uid):
-                uid = 0
-            else:
-                user_obj.UpdateIP(os.environ['REMOTE_ADDR'])
-                ThisSession.UpdateTS(uid, sess)
-                alias = user_obj.GetAlias()
-
-    if page == "login":
-        
-        if Page_Login.Login_User(form.getvalue("username"),
-                                 form.getvalue("password")):
-            alias = form.getvalue("username")
-            uid = user_obj.GetUid(alias)
-        
-        page = "main"
-        
-    elif page == "logout":
-        
-        if ThisSession.ValidateSession(uid, sess):
-            ThisSession.RemoveCookie(sess)
-        
-        uid = 0
-        alias = ""
-        page = "main"
-
-    if Config.HTMLHeadersSent == False:
-        print "Content-type:text/html\n\n"
-        Config.HTMLHeadersSent = True
-    
-    AdminHeaderTemplate = TemplateHandler.Template()
-    AdminHeaderTemplate.compile(Config.Template["header"],
-                                {"GLSR_URL":	Config.URL,
-                                 "USER_ALIAS":	alias,
-                                 "USER_TYPE":	user_obj.GetType()})
-    print AdminHeaderTemplate.output()
-
-    # Display the specified page
-    if CheckPageRequest(page) == "Invalid":
-        print "Invalid action!"
-
-    found = False
     for Module in site_modules.__all__:
 
-        MetaData = eval(Module + ".MetaData")
+        module_object = eval("%s.%s(form, uid)" % (Module, Module))
 
-        for p in MetaData["page"]:
+        try:
+            for mod_page in module_object.pages:
+                if page == mod_page:
+                    try:
+                        #verifyFormInputs(form, module_object.required)
+                        tmpl_page = module_object.display()
+                        show_border = module_object.show_border
+                        raise 'PageFound'
 
-            if page == p:
-                exec "%s.Display(%s)" % (Module, MetaData["params"])
-                found = True
-                
-    if not found:
-        print "No such page."
+                    except Redirect, location_str:
+                        print "Location: %s\n\n" % location_str
+                        sys.exit(0)
 
+                    except GLSRException, error:
+                        output_str = error.__str__()
+                        output_str = output_str.replace("\n", "<br />")
+                        output_str = output_str.replace(" ", "&nbsp;")
+                        LogHandler.err(output_str,
+                                       module_object.__modulename__)
+                        sys.exit(0)
 
-    FooterTemplate = TemplateHandler.Template()
-    FooterTemplate.compile(Config.Template["footer"],
-			   {"GLSR_VERSION":	Config.Version,
-                            "GLSR_URL":		Config.URL,
-			    "CONTACT":		Config.Contact})
-    print FooterTemplate.output()
+                    #except Exception, errmsg:
+                    #    LogHandler.err(errmsg, module_object.__modulename__)
+                    #    sys.exit(0)
+                    
+        except 'PageFound':
+            break
 
-    logwrite("Request for page '%s' completed in %.5f(s)" %
-             (page, eval_timer(t_start, stop_timer())),
-             __modulename__, "Info")
+    if tmpl_page == None:
+        failover = eval("%s.%s(form, username)" %
+                        (site_modules.failover, site_modules.failover))
+        tmpl_page = failover.display()
+        
+    if tmpl_page == "nodisplay":
+        sys.exit(0)
+
+    if Config.HTMLHeadersSent == False:
+        print "Content-type:text/html\n\n",
+        Config.HTMLHeadersSent = True
+
+    if show_border:
+        tmpl_head = TemplateHandler.Template()
+        tmpl_head.compile(Config.Template["header"],
+                          {"GLSR_URL":          Config.URL,
+                           "USER_ALIAS":        username,
+                           "USER_ID":           uid,
+                           "USER_TYPE":         user_type})
+        print tmpl_head.output()
+
+    print tmpl_page.output()
+
+    if show_border:
+        tmpl_foot = TemplateHandler.Template()
+        tmpl_foot.compile(Config.Template["footer"],
+                          {"GLSR_VERSION":	Config.Version,
+                           "GLSR_URL":		Config.URL,
+                           "CONTACT":		Config.Contact})
+        print tmpl_foot.output()
+
+    LogHandler.logwrite("Request for page '%s' completed in %.5f(s)" %
+                        (page, eval_timer(t_start, stop_timer())),
+                        __modulename__, "Info")
 
 if __name__ == "__main__":
+
     main()

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_Script.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
 #
 
 MetaData = {"page" : ("script","category","language"), "params" : "form"}
@@ -50,7 +50,7 @@ class Page_Script(Parent):
         AdminScriptTemplate.compile(
             self.template,
             {"GLSR_URL":	Config.URL,
-             "MESSAGE":		"Operation not yet implemented :-).",
+             "MESSAGE":		"",
              "WARN_MESSAGE": 	0,
              "TOTAL_SCRIPTS": 	0})
         print AdminScriptTemplate.output()

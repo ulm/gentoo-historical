@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: SiteModuleBE.py,v 1.3 2004/08/22 23:23:39 hadfield Exp $
+# $Id: SiteModuleBE.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
 #
 
 import string
@@ -33,8 +33,11 @@ class SiteModuleBE:
     options = ["show_all", "show_add", "show_modify",
                "add", "modify", "delete"]
 
-    def __init__(self, form = {}, uid = 0):
+    def __init__(self, form = None, uid = 0):
 
+        if form == None:
+            form = {}
+        
         self.form_inputs = form.keys()
         self.form = form
         self.uid = uid

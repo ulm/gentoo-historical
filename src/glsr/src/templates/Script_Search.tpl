@@ -1,6 +1,6 @@
       <form name="script_search_form" method="GET" action="index.py">
-      <input type="hidden" name="page" value="script">
-           
+      <input type="hidden" name="page" value="script_search">
+      
       <table width="600px" class="standard_table">
         <tr>
           <td class="header">Script Search</td>
@@ -89,7 +89,7 @@
         </tr>
         <tr>
           <td colspan="2" class="standard_cell">
-            <input type="submit" class="button" name="script_search" value="Search" /></td>
+            <input type="submit" class="button" name="search" value="Search" /></td>
         </tr>
       </table>
 

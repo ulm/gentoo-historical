@@ -3,136 +3,137 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.3 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_Script.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
 #
 
-MetaData = {"page" : ("yourscripts",), "params" : "form, uid"}
-
-import string
-
 import Config
-from Script import Script
-from Language import Language
-from Category import Category
-from SiteModuleBE import SiteModuleBE as Parent
+import Script
+import Category
+import Language
+from site_modules import SiteModule, Redirect
 
-from Language import Language
+__modulename__ = "Page_Script"
 
-def Display(form, uid):
+class Page_Script(SiteModule):
 
-    page = Page_Script(form, uid)
-    page.selectDisplay()
+    def __init__(self, form = None, uid = 0):
 
-class Page_Script(Parent):
+        self.pages = [None, "create_script", "save_script"]
+        self.page = form.getvalue("page")
+        self.template = Config.Template["create_script"]
+        self.form = form
 
-    class_type = "script"
-    script_arr = []
-    template = Config.Template["script"]
-    obj_attributes = {"name": "", "descr": "",
-                      "language_id": 0, "category_id": 0}
+        self.script_id = form.getvalue("script_id", "0")
+
+        # Set the scripts parent id automatically if the script already has id.
+        if self.script_id == "0":
+            self.parent_script_id = form.getvalue("parent_script_id", "0")
+        else:
+            script_obj = Script.SubScript(self.script_id)
+            self.parent_script_id = script_obj.GetParentID()
+
+        if self.form.has_key("save_script"):
+            self.required = {}
+
+
+    def _set_params(self):
+
+        self.tmpl.param("SCRIPT_ID", self.script_id)
+        self.tmpl.param("PARENT_SCRIPT_ID", self.parent_script_id)
+        
+        if self.script_id == "0":
+            
+            self.tmpl.param("MESSAGE", "")
+            
+            self.tmpl.param("NAME", "")
+            self.tmpl.param("DESCR", "")
+            self.tmpl.param("VERSION", "1.0")
+
+            category_obj = Category.Category()
+            language_obj = Language.Language()
+            self.tmpl.param("CATEGORY_LOOP", category_obj.List(), "loop")
+            self.tmpl.param("LANGUAGE_LOOP", language_obj.List(), "loop")
+            self.tmpl.param("BODY", "")
+            self.tmpl.param("CHANGELOG", "")
+
+        else:
+
+            subscript_obj = Script.SubScript(self.script_id)
+            script_obj = Script.Script(self.parent_script_id)
+            script_details = script_obj.GetDetails()
+            subscript_details = subscript_obj.GetDetails()
+            
+            self.tmpl.param("MESSAGE", "")
+            
+            self.tmpl.param("NAME", script_details["script_name"])
+            self.tmpl.param("DESCR", script_details["script_descr"])
+            self.tmpl.param("VERSION", subscript_details["subscript_version"])
+
+            category_obj = Category.Category()
+            language_obj = Language.Language()
+            self.tmpl.param("CATEGORY_LOOP", category_obj.List(), "loop")
+            self.tmpl.param("LANGUAGE_LOOP", language_obj.List(), "loop")
+            self.tmpl.param("BODY", subscript_details["subscript_body"])
+            self.tmpl.param("CHANGELOG",
+                            subscript_details["subscript_changelog"])
+
+    def _action_save(self):
+
+        # Setup/save the parent script.
+        script_details = {"name": self.form.getvalue("name"),
+                          "descr": self.form.getvalue("descr"),
+                          "category_id": self.form.getfirst("category_ids"),
+                          "language_id": self.form.getvalue("language_id")}
+
+        if self.parent_script_id == "0":
+            script_obj = Script.Script()
+            script_obj.Create(script_details)
+            self.parent_script_id = script_obj.id
+
+        else:
+            script_obj = Script.Script(self.parent_script_id)
+            script_obj.Modify(script_details)
+
+        # Setup/save the subscript.
+        subscript_details = {"version": self.form.getvalue("version"),
+                             "body": self.form.getvalue("body"),
+                             "changelog": self.form.getvalue("changelog")}
+
+        # Does the script need approval?
+        if Config.RequireApproval or self.form.has_key("get_script_reviewed"):
+            subscript_details["approved"] = "0"
+
+        else:
+            subscript_details["approved"] = "1"
+
+        if self.script_id == "0":
+            subscript_details["parent_id"] = self.parent_script_id
+            subscript_obj = Script.SubScript()
+            subscript_obj.Create(subscript_details)
+            self.script_id = subscript_obj.id
+
+        else:
+            subscript_obj = Script.SubScript(self.script_id)
+            subscript_obj.Modify(self.parent_script_id, subscript_details)
+
+
+    def _select_action(self):
+
+        if self.page == "save_script":
+            self._action_save()
+
     
-    sub_attributes = {"body": "", "parent_id": 0, "version": "1.0"}
-    
-    obj = Script()
-
-    messages = {"add": "Script Successfully Created",
-                "modify": "Script Successfully Created"}
-
-    def __init__(self, form, uid):
-        
-        self.script_id = form.getvalue("script_id")
-        Parent.__init__(self, form, uid)
-    
-    def add(self):
-
-        self.setAttributes()
-        self.obj_attributes.update({"submitter_id": self.uid})
-        self.obj.Create(self.obj_attributes)
-        
-        self.sub_attributes.update({"parent_id": self.obj.id})
-        self.obj.CreateSub(self.sub_attributes)
-        
-        self.message = self.messages["add"]
-
-        self.show_all()
-
-    def modify(self):
-
-        self.setAttributes()
-        self.sub_attributes.update({"parent_id": self.obj.id})
-        self.obj.CreateSub(self.sub_attributes)
-
-        self.message = self.messages["modify"]
-
-        self.show_all()
-
-    def selectDisplay(self):
-
-        self.options = self.options + ["show_parent", "show_subscript"]
-        self.options.remove("delete")
-        self.tmpl.param("SHOW_PARENT", "0")
-
-        Parent.selectDisplay(self)
-    
-    def setAttributes(self):
-        
-        for key in self.obj_attributes.keys():
-            self.obj_attributes[key] = self.form.getvalue(key)
-
-        for key in self.sub_attributes.keys():
-            self.sub_attributes[key] = self.form.getvalue(key)
-        
     def display(self):
 
-        lang_obj = Language()
-        cat_obj = Category()
+        self._select_action()
+
+        if (self.form.has_key("save_script") or
+            self.form.has_key("publish_script") or
+            self.form.has_key("get_script_reviewed")):
+            raise Redirect, ("index.py?page=create_script&script_id=%s" %
+                             self.script_id + "&parent_script_id=%s" %
+                             self.parent_script_id)
         
-        self.tmpl.param("LANGUAGE_LOOP", lang_obj.List(), "l")
-        self.tmpl.param("CATEGORY_LOOP", cat_obj.List(), "l")
-
-        for key, value in self.sub_attributes.items():
-            self.tmpl.param(string.upper(key), value)
-
-        Parent.display(self)
-
-    def show_all(self):
-
-        self.__make_loop(self.obj.ListScripts({"submitter_id": self.uid}))
-
-    def __make_loop(self, array):
-
-        row = "even"
-        for record in array:
-
-            if record["subscript_approved"] == "0":
-                record["subscript_approvedby"] = "Not Approved"
-
-            language_obj = Language(record["script_language_id"])
-            category_obj = Category(record["script_category_id"])
-            record.update({"row": row,
-                           "language": language_obj.Name(),
-                           "category": category_obj.Name()})
-
-            exec "self.%s_arr.append(record)" % self.class_type
-
-            if row == "even":
-                row = "odd"
-            else:
-                row = "even"
-
-        if not len(eval("self.%s_arr" % self.class_type)):
-            self.warn_message = 1
-            
-        
-    def show_parent(self):
-
-        self.tmpl.param("SHOW_PARENT", "1")
-        parent = self.obj.ListScripts({"id": self.script_id})[0]
-        loop = []
-        
-        for sub in self.obj.ListSubs({"parent_id": self.script_id}):
-            tmp_dict = parent
-            tmp_dict.update(sub)
-            loop.append(tmp_dict)
-
-        self.__make_loop(loop)
+        self._set_params()
+        self.tmpl.compile(self.template)
+        return self.tmpl

@@ -3,62 +3,27 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_Main.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
 #
 
-MetaData = {"page" : ("main", None), "params" : ""}
-
-import Template as TemplateHandler
-import Session
 import Config
-from User import User
-from Logging import ReturnErrorReports
-from SiteModuleBE import SiteModuleBE as Parent
+from site_modules import SiteModule
 
-def Display():
+class Page_Main(SiteModule):
 
-    page = Page_Main()
-    page.selectDisplay()
+    __modulename__ = "Page_Main"
 
-class Page_Main(Parent):
+    def __init__(self, form = None, uid = 0):
 
-    template = Config.Template["main"]
-    
-    def selectDisplay(self):
+        self.pages = [None, "main"]
+        self.template = Config.Template["main"]
 
-        self.display()
+    def _set_params(self):
+
+        self.tmpl.param("GLSR_URL", Config.URL)
 
     def display(self):
 
-        error_reporting = "True"
-        error_report_list = []
-        user_online_list = ""
-        sess_obj = Session.New()
-        sessions = sess_obj.ListSessionsOnline(Config.WhoIsOnlineOffset)
-
-        if len(sessions) == 0:
-            user_online_list = "No registered accounts active."
-        else:
-            for session in sessions:
-                user_obj = User(session["session_user_id"])
-                user_online_list = "%s %s" % (user_online_list,
-                                              user_obj.GetAlias())
-
-        if Config.ErrorReporting == True:
-            error_report_list = ReturnErrorReports()
-            if error_report_list == False:
-                error_reporting = "False"
-        else:
-            error_reportig = "False"
-
-        if error_reporting == "False":
-            error_report_list = []
-
-        tmpl = TemplateHandler.Template()
-        tmpl.compile(
-            self.template,
-            {"GLSR_URL":                Config.URL,
-             "USER_ONLINE_LIST":        user_online_list,
-             "ERROR_REPORTING":         error_reporting},
-            {"ERROR_REPORT_LIST":       error_report_list})
-        print tmpl.output()
+        self._set_params()
+        self.tmpl.compile(self.template)
+        return self.tmpl

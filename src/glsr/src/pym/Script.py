@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.3 2004/07/19 00:57:41 hadfield Exp $
+# $Id: Script.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
 #
 
 __modulename__ = "Script"
@@ -23,38 +23,64 @@ class Script(Parent):
     tablename = Config.MySQL["script_table"]
 
     def Create(self, details):
-        """Add a new script to the database"""
+        """Add a new script to the database."""
 
         details.update({"rank": 0})
         return Parent.Create(self, details, (("submitter_id", "name"),))
 
-    def CreateSub(self, details):
-        """Add a new subscript"""
+#     def CreateSub(self, parent_id, details):
+#         """Add a new subscript"""
 
-        if not details["parent_id"] or details["parent_id"] == "0":
-            err("Invalid Parent ID", __modulename__)
-            return False
+#         if not parent_id or parent_id == "0":
+#             err("Invalid Parent ID", __modulename__)
+#             return False
         
-        self.tablename = Config.MySQL["subscript_table"]
+#         self.tablename = Config.MySQL["subscript_table"]
 
-        details.update({"date":  strftime("%Y-%m-%d", gmtime()),
-                        "approved": 0})
-        retval = Parent.Create(self, details)
+#         details.update({"date":  strftime("%Y-%m-%d", gmtime())})
+#         retval = Parent.Create(self, details)
         
-        self.tablename = Config.MySQL["script_table"]
-        return retval
-        
-    def ListSubs(self, constraint = {}):
+#         self.tablename = Config.MySQL["script_table"]
+#         return retval
 
+#     def ModifySub(self, script_id, parent_id, details):
+#         """Add a new subscript."""
+
+#         if not details["parent_id"] or details["parent_id"] == "0":
+#             err("Invalid Parent ID", __modulename__)
+#             return False
+
+#         self.tablename = Config.MySQL["subscript_table"]
+#         self.SetID(script_id)
+        
+#         details.update({"date":  strftime("%Y-%m-%d", gmtime()),
+#                         "approved": 0})
+#         retval = Parent.Modify(self, details)
+        
+#         self.tablename = Config.MySQL["script_table"]
+#         return retval
+            
+    def ListSubs(self, constraint = None):
+        """Returns a list of all subscripts."""
+
+        if constraint is None:
+            constraint = {}
+        
         self.tablename = Config.MySQL["subscript_table"]
         retval = self.List(constraint)
         self.tablename = Config.MySQL["script_table"]
 
         return retval
 
-    def ListScripts(self, script_restrict = {}, subscript_restrict = {}):
-        """ Returns a list of each script combined with its most recent
-        subscript. """
+    def ListScripts(self, script_restrict = None, subscript_restrict = None):
+        """Returns a list of each script combined with its most recent
+        subscript."""
+
+        if script_restrict is None:
+            script_restrict = {}
+
+        if subscript_restrict is None:
+            subscript_restrict = {}
         
         script_arr = self.List(script_restrict)
         subscript_arr = self.ListSubs(subscript_restrict)
@@ -104,11 +130,14 @@ class Script(Parent):
         scripts = MySQL.Query("SELECT * FROM %s%s %s" %
                               (Config.MySQL["prefix"], self.tablename, qStr))
 
+        # FIXME: This won't work because submitter is not in the script table,
+        # submitter_id is. Thus we can't obtain a partial match on the
+        # submitter name so easily.
         found = []
         for script in scripts:
             for key in ["name", "descr", "submitter"]:
                 if key in Terms.keys():
-                    if script[key].find(Terms[key]) != -1:
+                    if script["script_%s" % key].find(Terms[key]) != -1:
                         found.append(script)
 
 
@@ -177,3 +206,42 @@ class Script(Parent):
         return qStr
 
 
+
+
+class SubScript(Parent):
+
+    tablename = Config.MySQL["subscript_table"]
+
+    def Create(self, details):
+        """Add a new subscript"""
+
+        if not details["parent_id"] or details["parent_id"] == "0":
+            err("Invalid Parent ID", __modulename__)
+            return False
+
+        details.update({"date":  strftime("%Y-%m-%d", gmtime())})
+        return Parent.Create(self, details)
+
+    def Modify(self, script_id, parent_id, details):
+        """Add a new subscript."""
+
+        if not details["parent_id"] or details["parent_id"] == "0":
+            err("Invalid Parent ID", __modulename__)
+            return False
+
+        details.update({"date":  strftime("%Y-%m-%d", gmtime()),
+                        "approved": 0})
+        return Parent.Modify(self, details)
+            
+    def Approve(self, uid):
+        """Mark script as approved"""
+
+        return Parent.Modify(self, {"approved": 1,
+                                    "approvedby": uid})
+
+    def GetParentID(self):
+
+        return self.GetDetails()["subscript_parent_id"]
+        
+
+        

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.4 2004/07/19 00:50:38 hadfield Exp $
+# $Id: GLSRBackend.py,v 1.5 2004/09/30 03:09:36 hadfield Exp $
 #
 
 __modulename__ = "GLSRBackend"
@@ -14,6 +14,7 @@ import types
 
 import MySQL
 import Config
+from GLSRException import GLSRException
 
 class GLSRBackend:
 
@@ -89,7 +90,7 @@ class GLSRBackend:
                 "WHERE %s" % cmp, details.values(), fetch="all")
 
             if len(results) > 1:
-                """ Ambiguous results. We can't get an id """
+                # Ambiguous results. We can't get an id.
                 return True
             else:
                 self.id = results[0]["%s_id" % self.tablename]
@@ -143,8 +144,8 @@ class GLSRBackend:
     def GetDetails(self):
 
         if not self.id:
-            # An error should probably be thrown here.
             return None
+            #raise GLSRException("", "ID is not set")
         
         return MySQL.Query("SELECT * FROM %s%s" %
                            (Config.MySQL["prefix"], self.tablename) +
@@ -155,6 +156,7 @@ class GLSRBackend:
     def Exists(self, field, value):
         """ Tests if a record with the specified field values exists in
         the table. """
+        
         result = MySQL.Query("SELECT %s_%s FROM %s%s WHERE %s_%s = " %
                              (self.tablename, field, Config.MySQL["prefix"],
                               self.tablename, self.tablename, field) +
@@ -162,7 +164,7 @@ class GLSRBackend:
 
         return (result != None)
 
-        
+
     def SetID(self, id):
 
         if self.Exists("id", id):
