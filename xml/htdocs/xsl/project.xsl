@@ -204,7 +204,15 @@
 	<xsl:value-of select="realname/familyname/text()"/>
 </xsl:template>
 <xsl:template match="extraproject">
-	<tr><ti><xsl:value-of select="@name"/></ti>
+  <tr>
+  <xsl:choose>
+    <xsl:when test="@link">
+      <ti><uri link="{@link}"><xsl:value-of select="@name"/></uri></ti>
+    </xsl:when>
+    <xsl:otherwise>
+      <ti><xsl:value-of select="@name"/></ti>
+    </xsl:otherwise>
+  </xsl:choose>
 	<ti><xsl:if test="@lead">
 		<xsl:call-template name="fullname">
 			<xsl:with-param name="nick"><xsl:value-of select="@lead"/></xsl:with-param>
