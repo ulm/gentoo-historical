@@ -66,7 +66,7 @@
   </xsl:choose>
 </title>
 </head>
-<body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
+<body style="margin:0px;" bgcolor="#ffffff">
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr>
@@ -275,7 +275,7 @@
     </xsl:when>
   </xsl:choose>
 </head>
-<body style="margin-left:0px;margin-top:0px;" bgcolor="#000000">
+<body style="margin:0px;" bgcolor="#000000">
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <tr>
