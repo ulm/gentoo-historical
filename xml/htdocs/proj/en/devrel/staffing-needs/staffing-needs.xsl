@@ -17,6 +17,7 @@
 	    The following table contains a list of open vacancies for
 	    both existing Gentoo developers and those wishing to
 	    become a Gentoo developer.
+	    Priorities are sorted from highest to lowest.
 	  </p>
 	  <p>
 	    If you are interested in helping out with any of the
