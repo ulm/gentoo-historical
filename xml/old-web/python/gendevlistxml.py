@@ -17,7 +17,7 @@ import time, sys
 
 # xml boilerplate
 header = """<?xml version='1.0'?>
-<mainpage id="packages">
+<mainpage id="devlist">
 <title>Gentoo Linux Developers</title>
 <author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
 
