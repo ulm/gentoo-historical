@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Language.py,v 1.2 2004/06/30 19:48:34 port001 Exp $
+# $Id: Page_Language.py,v 1.1 2004/07/03 21:44:28 port001 Exp $
 #
 
 MetaData = {"page" : ("language",), "params" : "form"}

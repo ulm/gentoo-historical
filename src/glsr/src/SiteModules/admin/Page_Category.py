@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Category.py,v 1.1 2004/06/27 23:24:58 hadfield Exp $
+# $Id: Page_Category.py,v 1.1 2004/07/03 21:44:28 port001 Exp $
 #
 
 MetaData = {"page" : ("category",), "params" : "form, uid"}
