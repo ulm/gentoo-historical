@@ -4,7 +4,7 @@ CREATE TABLE ebuild
 	name VARCHAR(45),
 	version VARCHAR(30) NOT NULL,
 	when_found TIMESTAMP,
-	arch VARCHAR(80),
+	arch VARCHAR(160),
 	changelog MEDIUMTEXT,
 	PRIMARY KEY (category,name,version)
 )
