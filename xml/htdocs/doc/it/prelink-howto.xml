@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/prelink-howto.xml,v 1.4 2004/09/27 15:05:59 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/prelink-howto.xml,v 1.5 2005/02/23 01:18:31 so Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/it/prelink-howto.xml" lang="it">
 <title>Gentoo Linux Prelink Guide</title>
@@ -22,16 +22,19 @@
 <author title="Traduzione">
   <mail link="myzelf@omnidea.it">Gilberto De Faveri</mail>
 </author>
+<author title="Revisione">
+  <mail link="posta@massimo.biz">Massimo Canali</mail>
+</author>
 
 <abstract>
-Questa guida documenta come utilizzare il supporto al prelink in portage
-2.0.46 e successivi.
+Questa guida documenta come utilizzare il supporto al prelink in portage 2.0.46
+e successivi.
 </abstract>
 
 <license/>
 
-<version>1.4</version>
-<date>7 Settembre 2003</date>
+<version>1.9</version>
+<date>2005-02-05</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -41,59 +44,63 @@ Questa guida documenta come utilizzare il supporto al prelink in portage
 
 <p>
 Le più comuni applicazioni utilizzano librerie condivise. Queste librerie
-condivise devono essere caricate in memoria a runtime ed i vari simboli e
-riferimenti devono essere risolti. Per la maggior parte dei piccoli programmi
-tale linking dinamico è molto veloce, ma per i programmi scritti in C++ che
-dipendono da molte librerie, il linking dinamico può richiedere una discreta
-quantità di tempo.
+condivise devono essere caricate in memoria durante l'esecuzione ed i vari
+simboli e riferimenti devono essere risolti. Per la maggior parte dei piccoli
+programmi tale linking dinamico è molto veloce, ma per i programmi scritti in
+C++ che dipendono da molte librerie, il linking dinamico può richiedere una
+discreta quantità di tempo.
 </p>
 
 <p>
-Nella maggior parte dei sistemi le librerie non vengono modificate molto
-spesso e, quando un programma è avviato, le operazioni effettuate per il linking
-sono sempre le stesse. Il prelink sfrutta questa particolarità estraendo le
-informazioni relative al linking e memorizzandole nell'eseguibile, prelinkandolo,
-appunto. Affinchè il linker - serve ld-linux.so nelle glibc - riconosca il
-prelinking, sono necessarie le glibc-2.3.1-r2 o più recenti.
+Nella maggior parte dei sistemi le librerie non vengono modificate molto spesso
+e, quando un programma è avviato, le operazioni effettuate per il linking sono
+sempre le stesse. Il prelink sfrutta questa particolarità estraendo le
+informazioni relative al linking e memorizzandole nell'eseguibile,
+prelinkandolo, appunto. Per il funzionamento del linker serve ld-linux.so nelle
+glibc; per riconoscere il prelinking, sono necessarie le glibc-2.3.1-r2 o più
+recenti.
 </p>
 
 <p>
-Il prelinking può accorciare il tempo di apertura delle applicazioni.
-Ad esempio, il tempo di caricamento di un qualsiasi programma KDE può
-essere abbreviato fino al 50%. Le uniche operazioni di manutenzione richieste
-prevedono di lanciare prelink ogni volta che una libreria di un eseguibile
-prelinkato viene aggiornata.
+Il prelinking può accorciare il tempo di apertura delle applicazioni. Ad
+esempio, il tempo di caricamento di un qualsiasi programma KDE può essere
+abbreviato fino al 50%. Le uniche operazioni di manutenzione richieste prevedono
+di lanciare prelink ogni volta che una libreria di un eseguibile prelinkato
+viene aggiornata.
 </p>
 
 </body>
 </section>
+
 <section>
 <title>In breve</title>
 <body>
 
 <ul>
   <li>
-	Il prelinking viene effettuato attraverso un programma chiamato, incredibilmente,
-	<path>prelink</path>, che modifica gli eseguibili per farli partire più velocemente.
+    Il prelinking viene effettuato attraverso un programma chiamato,
+    incredibilmente, <path>prelink</path>, che modifica gli eseguibili per farli
+    partire più velocemente.
   </li>
   <li>
-	Se una libreria da cui dipende un'applicazione viene modificata dopo il prelink,
-	è necessario prelinkare nuovamente l'eseguibile, altrimenti si perdono i vantaggi
-	in termini di prestazioni. In altre parole, ogni volta che viene aggiornato con
-	portage un pacchetto che aggiorna delle librerie, è necessario effettuare
-	nuovamente il prelink.
+    Se una libreria da cui dipende un'applicazione viene modificata dopo il
+    prelink, è necessario prelinkare nuovamente l'eseguibile, altrimenti si
+    perdono i vantaggi in termini di prestazioni. In altre parole, ogni volta
+    che viene aggiornato con portage un pacchetto che aggiorna delle
+    librerie, è necessario effettuare
+    nuovamente il prelink.
   </li>
   <li>
-	I cambiamenti agli eseguibili sono completamente reversibili. <path>prelink</path>
-	ha una funzione undo.
+    I cambiamenti agli eseguibili sono completamente
+    reversibili. <path>prelink</path> ha una funzione di undo.
   </li>
   <li>
-	Le più recenti versioni di Portage trattano correttamente, attraverso
-	<path>prelink</path>, i cambiamenti di MD5sum e mtime degli eseguibili.
+    Le più recenti versioni di Portage trattano correttamente, attraverso
+    <path>prelink</path>, i cambiamenti di MD5sum e mtime degli eseguibili.
   </li>
   <li>
-	E' necessario avere installate le glibc-2.3.1-r2 o superiore con i
-	binari compilati con binutils-2.13.90.0.xx o superiore.
+    È necessario avere installate le glibc-2.3.1-r2 o versioni successive con i
+    binari compilati con binutils-2.13.90.0.xx o versioni successive.
   </li>
 </ul>
 
@@ -102,21 +109,16 @@ prelinkato viene aggiornata.
 </chapter>
 
 <chapter>
-<title>Impostare il prelink</title>
+<title>Impostare il Prelink</title>
 <section>
 <title>Installare i programmi</title>
 <body>
 
 <note>
-Si presume si abbia a disposizione un sistema Gentoo-1.4 compilato con
-gcc-3.2 o superiore e binutils-2.13.90.0.xx o superiore. Questi sono i
-requisiti minimi per effettuare il prelinking degli eseguibili.
+Si presume si abbia a disposizione un sistema Gentoo-1.4 compilato con gcc-3.2 o
+superiore e binutils-2.13.90.0.xx o superiore. Questi sono i requisiti minimi
+per effettuare il prelinking degli eseguibili.
 </note>
-
-<warn>
-E' necessario avere installato le glibc-2.3.1-r2 o superiore, altrimenti
-<path>prelink</path> corromperà gli eseguibili!
-</warn>
 
 <p>
 Per prima cosa aggiorna il tuo portage tree, visto che molte delle applicazioni
@@ -124,13 +126,13 @@ necessarie sono nuove e vengono continuamente aggiunti nuovi bug-fixes.
 </p>
 
 <pre caption = "Aggiornamento del portage tree">
-# <i>emerge sync</i>
+# <i>emerge --sync</i>
 </pre>
 
 <p>
-A questo punto verifica di avere installato portage-2.0.26 o superiore. Questo
-è necessario perchè portage riconosca gli eseguibili prelinkati e quindi li
-disinstalli correttamente quando richiesto, poichè il prelinking modifica la
+A questo punto verifica di avere installato portage-2.0.26 o superiore. Questo è
+necessario perché portage riconosca gli eseguibili prelinkati e quindi li
+disinstalli correttamente quando richiesto, poiché il prelinking modifica la
 MD5sum di un binario.
 </p>
 
@@ -139,9 +141,8 @@ MD5sum di un binario.
 </pre>
 
 <p>
-Ora è possibile emergere i tool di prelinking. L'installazione
-verifica automaticamente che nel sistema il prelink possa essere
-attivato in modo sicuro.
+Ora è possibile emergere i tool di prelinking. L'installazione verifica
+automaticamente che nel sistema il prelink possa essere attivato in modo sicuro.
 </p>
 
 <pre caption = "Installazione di prelink">
@@ -149,50 +150,50 @@ attivato in modo sicuro.
 </pre>
 
 <p>
-Molte persone hanno problemi emergendo prelink perchè i test effettuati
+Molte persone hanno problemi emergendo prelink perché i test effettuati
 falliscono. I test sono stati inseriti per motivi di sicurezza e il
-comportamento di prelink è imprevedibile se vengono disabilitati. Gli
-errori di emerge sono di solito relativi a pacchetti fondamentali come
-binutils, gcc e glibc. Prova a ri-emergerli in quest'ordine.
+comportamento di prelink è imprevedibile se vengono disabilitati. Gli errori di
+emerge sono di solito relativi a pacchetti fondamentali come binutils, gcc e
+glibc. Prova a ri-emergerli in questo ordine.
 </p>
 
 <note>
 Tip: Se ottieni degli errori prova a compilare e testare <c>prelink</c>
-manualmente (<c>./configure</c> ; <c>make</c> ; <c>make check</c> ). In caso
-di problemi consulta i file *.log nella directory testsuite, che potrebbero
-fornire alcuni utili suggerimenti.
+manualmente (<c>./configure</c> ; <c>make</c> ; <c>make check</c> ). In caso di
+problemi consulta i file *.log nella directory testsuite, che potrebbero fornire
+alcuni utili suggerimenti.
 </note>
 
 <p>
-Se puoi riprodurre passo passo un errore di emerge su un altro sistema
-manda una mail a <mail link="cretin@gentoo.org">Stefan Jones</mail>.
+Se puoi riprodurre passo passo un errore di emerge su un altro sistema manda una
+mail a <mail link="cretin@gentoo.org">Stefan Jones</mail>.
 </p>
 
 </body>
 </section>
+
 <section>
 <title>Configurazione</title>
 <body>
 
 <p>
-Portage genera automaticamente il file <path>/etc/prelink.conf</path>
-da cui <path>prelink</path> rileva i files da prelinkare.
+Portage genera automaticamente il file <path>/etc/prelink.conf</path> da cui
+<path>prelink</path> rileva i files da prelinkare.
 </p>
 
 <p>
-Purtroppo non è possibile abilitare il prelink per file compilati con
-vecchie versioni di binutils. La maggior parte di queste applicazioni
-proviene da pacchetti precompilati o binary-only, che sono installati
-in <path>/opt</path>. Creando il seguente file possiamo evitare che
-prelink tenti di prelinkarli.
+Purtroppo non è possibile abilitare il prelink per file compilati con vecchie
+versioni di binutils. La maggior parte di queste applicazioni proviene da
+pacchetti precompilati o binary-only, che sono installati in <path>/opt</path>.
+Creando il seguente file possiamo evitare che prelink tenti di prelinkarli.
 </p>
 
-<pre caption="/etc/env.d/99prelink">
+<pre caption="/etc/env.d/60prelink">
 PRELINK_PATH_MASK="/opt"
 </pre>
 
 <note>
-E' possibile aggiungere altre directory separandole con i due punti (:).
+È possibile aggiungere altre directory separandole con i due punti (:).
 </note>
 
 </body>
@@ -211,15 +212,15 @@ directory elencate da <path>/etc/prelink.conf</path>.
 </p>
 
 <pre caption = "Prelink dei file elencati">
-# <i>prelink -afmR</i>
+# <i>prelink -amR</i>
 </pre>
 
 <warn>
-E' stato osservato che se si dispone di poco spazio libero su disco e si
-prelinka l'intero sistema è possibile che gli eseguibili vengano troncati.
-Il risultato finale è un sistema corrotto. Utilizza i comandi <c>file</c> o
-<c>readelf</c> per verificare lo stato dei file binari. In alternativa,
-controlla lo spazio libero su disco con <c>df -h</c> prima di procedere.
+È stato osservato che se si dispone di poco spazio libero su disco e si prelinka
+l'intero sistema è possibile che gli eseguibili vengano troncati. Il risultato
+finale è un sistema corrotto. Utilizza i comandi <c>file</c> o <c>readelf</c>
+per verificare lo stato dei file binari. In alternativa, controlla lo spazio
+libero su disco con <c>df -h</c> prima di procedere.
 </warn>
 
 <table>
@@ -231,29 +232,19 @@ controlla lo spazio libero su disco con <c>df -h</c> prima di procedere.
   <ti>"All": prelinka tutti i binari.</ti>
 </tr>
 <tr>
-  <th>-f</th>
-  <ti>
-	Forza <path>prelink</path> a prelinkare nuovamente i
-	binari già prelinkati. E' necessario perchè altrimenti
-	<path>prelink</path> si blocca se sono presenti vecchi
-	file prelinkati e le librerie da cui dipendono sono
-	cambiate.
-  </ti>
-</tr>
-<tr>
   <th>-m</th>
   <ti>
-	Conserva lo spazio in memoria virtuale. E' necessario
-	se ci sono molte librerie che hanno bisogno di essere
-	prelinkate.
+    Conserva lo spazio in memoria virtuale. È necessario
+    se ci sono molte librerie che hanno bisogno di essere
+    prelinkate.
   </ti>
 </tr>
 <tr>
   <th>-R</th>
   <ti>
-	Random -- rende casuale l'ordinamento degli
-	indirizzi, in modo da aumentare la sicurezza
-	verso i buffer overflow.
+    Random -- rende casuale l'ordinamento degli
+    indirizzi, in modo da aumentare la sicurezza
+    verso i buffer overflow.
   </ti>
 </tr>
 </table>
@@ -264,22 +255,40 @@ Per maggiori opzioni e gli altri dettagli, utilizzare <c>man prelink</c>.
 
 </body>
 </section>
+<section>
+<title>Incrementare le Prestazioni di KDE dopo il Prelinkings</title>
+<body>
+
+<p>
+Dopo il prelinking è possibile ridurre il tempo di caricamento di KDE. Se KDE
+rileva di essere stato prelinkato allora disabiliterà il caricamento di
+<c>kdeinit</c> (visto che non è più necessario) con un incremento delle sue
+prestazioni.
+</p>
+
+<p>
+Per fare in modo che KDE rilevi il prelinking impostare
+<c>KDE_IS_PRELINKED="true"</c> in <path>/etc/env.d/99kde-env</path>.
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
-<title>Problemi noti e soluzioni</title>
+<title>Problemi Noti e Soluzioni</title>
 <section>
 <title>&quot;Impossibile prelinkare con librerie condivise non-PIC&quot;</title>
 <body>
 
 <p>
-La causa di questo problema è l'errata compilazione di librerie condivise,
-senza l'opzione -fPIC di gcc per tutti i relativi file oggetto.
+La causa di questo problema è l'errata compilazione di librerie condivise, senza
+l'opzione -fPIC di gcc per tutti i relativi file oggetto.
 </p>
 
 <p>
-Segue una lista delle librerie problematiche e dei relativi pacchetti da ri-emergere
-in caso di errore.
+Segue una lista delle librerie problematiche e dei relativi pacchetti da
+ri-emergere in caso di errore.
 </p>
 
 <pre caption = "Soluzioni">
@@ -292,9 +301,6 @@ in caso di errore.
 <codenote>Per svgalib, /usr/lib/libsvga.so.xx</codenote>
 # <i>emerge ">=media-libs/svgalib-1.9.16"</i>
 
-<codenote>Per la libreria XFree openGL, libGLU.so.1</codenote>
-# <i>emerge ">=x11-base/xfree-4.2.1-r2"</i>
-
 <codenote>Per libpcap.so.0.6</codenote>
 # <i>emerge ">=net-libs/libpcap-0.7.1-r2"</i>
 
@@ -303,27 +309,20 @@ in caso di errore.
 </pre>
 
 <note>
-Molte librerie sono linkate staticamente a zlib e/o tcp-wrappers, quindi
-per prima cosa emergere quelle liberie e quindi ri-emergere le librerie
-che presentano il problema.
+Molte librerie sono linkate staticamente a zlib e/o tcp-wrappers, quindi per
+prima cosa emergere quelle librerie e quindi ri-emergere le librerie che
+presentano il problema.
 </note>
 
 <p>
-Se si hanno problemi prelinkando QT/KDE, provare prima aggiornando a
->=x11-base/xfree-4.2.1-r2 e >=x11-libs/qt-3.1.0-r1. Se QT fallisce ancora
-provare compilando QT senza il supporto xinerama, aggiungendo
-myconf="-no-xinerama ${myconf}" nell'ebuild di qt.
-</p>
-
-<p>
-Qui ci sono le librerie che non sono state corrette o non possono
-essere corrette:
+Qui ci sono le librerie che non sono state corrette o non possono essere
+corrette:
 </p>
 
 <ul>
   <li>
-	Le librerie nel pacchetto wine, incluso winex. Il prelinking
-	non velocizzerebbe comunque gli eseguibili MS Windows.
+    Le librerie nel pacchetto wine, incluso winex. Il prelinking
+    non velocizzerebbe comunque gli eseguibili MS Windows.
   </li>
   <li>
     Le librerie in media-video/mjpegtools,
@@ -339,46 +338,19 @@ preferibilmente, una patch per aggiungere <c>-fPIC</c> alle relative CFLAGS.
 </body>
 </section>
 <section>
-<title>Interruzione durate il prelink di un file, ad esempio &quot;1631 Aborted ....&quot;</title>
-<body>
-
-<p>
-E' necessario utilizzare l'opzione <c>-f</c> di <path>prelink</path>,
-in modo da prelinkare nuovamente da zero l'intero sistema. Prova con
-<c>prelink -af</c>.
-</p>
-
-</body>
-</section>
-<section>
 <title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected
 reloc type...&quot;</title>
 <body>
 
 <p>
-Questo problema è stato risolto in <c>sys-libs/glibc-2.3.1-r2</c>
-il 2002/11/18, ri-emergi le glibc se sono più vecchie.
+Questo problema è stato risolto in <c>sys-libs/glibc-2.3.1-r2</c> il 2002/11/18,
+ri-emergi le glibc se sono più vecchie.
 </p>
 
 <p>
-E' stato rilevato anche che <c>prelink -u -a -m</c> ; <c>prelink -a -m</c>
-può aiutare. Se tutte le altre soluzioni falliscono eseguire semplicemente
+È stato rilevato anche che <c>prelink -u -a -m</c> ; <c>prelink -a -m</c> può
+aiutare. Se tutte le altre soluzioni falliscono eseguire semplicemente
 <c>prelink -u &lt;file&gt;</c>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Le librerie Nvidia openGL causano problemi</title>
-<body>
-
-<p>
-Le librerie accelerate openGL del pacchetto nvidia-glx sono state
-compilate in modo non standard, per cui <path>prelink</path> segnala
-alcuni warnings. Non c'è da preoccuparsi, e d'altronde il problema potrebbe
-essere risolto solo da Nvidia. E' sempre possibile tornare alla versione
-xfree di libGL.so, se non è richiesta l'accelerazione 3D. Ad ogni modo,
-il driver xfree nvidia funziona senza problemi.
 </p>
 
 </body>
@@ -388,42 +360,41 @@ il driver xfree nvidia funziona senza problemi.
 <body>
 
 <p>
-Quando si ha a che fare con le glibc, non si ottiene mai un binario statico al 100%.
-Anche se si compila staticamente un binario con glibc, potrebbe ancora dipendere
-da altri file di sistema. Ecco una spiegazione di Dick Howell,
+Quando si ha a che fare con le glibc, non si ottiene mai un binario statico al
+100%. Anche se si compila staticamente un binario con glibc, potrebbe ancora
+dipendere da altri file di sistema. Ecco una spiegazione di Dick Howell,
 </p>
 
 <p>
-&quot;Generalmente si presuppone che tutto il necessario sia contenuto
-nel file scaricato, in modo che l'applicazione non dipenda da librerie
-installate sul sistema locale.
-Sfortunatamente in Linux, e credo in qualsiasi altro sistema usi le glibc,
-ciò non è del tutto vero. Ad esempio "libnss" (name service switch, chiamata
-da alcuni network security system), che fornisce delle funzioni per accedere a
-diversi database per l'autenticazione, informazioni di rete ed altro, dovrebbe
-creare applicazioni indipendenti dall'effettivo ambiente di rete
-di una macchina. Una bella idea, ma modifiche alle glibc possono generare
-problemi nel tentativo di caricarla. E non è possibile linkare staticamente
-"libnss", poichè è configurata per ogni macchina individualmente. Credo che
-il problema derivi principalmente dal linkare staticamente altre librerie
-glibc, in particolare "libpthread", "libm" e "libc", da cui provengono
-chiamate incompatibili a funzioni di "libnss".&quot;
+&quot;Generalmente si presuppone che tutto il necessario sia contenuto nel file
+scaricato, in modo che l'applicazione non dipenda da librerie installate sul
+sistema locale. Sfortunatamente in Linux, e credo in qualsiasi altro sistema usi
+le glibc, ciò non è del tutto vero. Ad esempio "libnss" (name service switch,
+chiamata da alcuni network security system), che fornisce delle funzioni per
+accedere a diversi database per l'autenticazione, informazioni di rete ed altro,
+dovrebbe creare applicazioni indipendenti dall'effettivo ambiente di rete di una
+macchina. Una bella idea, ma modifiche alle glibc possono generare problemi nel
+tentativo di caricarla. E non è possibile linkare staticamente "libnss", poiché
+è configurata per ogni macchina individualmente. Credo che il problema derivi
+principalmente dal linkare staticamente altre librerie glibc, in particolare
+"libpthread", "libm" e "libc", da cui provengono chiamate incompatibili a
+funzioni di "libnss".&quot;
 </p>
 
 </body>
 </section>
 <section>
-<title>Prelink si blocca con l'errore &quot;prelink: dso.c:306: fdopen_dso: Assertion
+<title>Prelink si blocca con l'errore &quot;prelink: dso.c:306: fdopen_dso:
+Assertion
 `j == k' failed.&quot;</title>
 <body>
 
 <p>
 Questo problema è noto e ben documentato <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=13878">qui</uri>.
-Prelink non funziona con eseguibili compressi in formato UPX.
-Per ora (prelink-20021213) non esiste alcuna soluzione eccetto
-quella di nascondere a prelink gli eseguibili in questione.
-Leggi la <uri link="#doc_chap2_sect2">sezione Configurazione</uri>
+link="http://bugs.gentoo.org/show_bug.cgi?id=13878">qui</uri>. Prelink non
+funziona con eseguibili compressi in formato UPX. Per ora (prelink-20021213) non
+esiste alcuna soluzione eccetto quella di nascondere a prelink gli eseguibili in
+questione. Leggi la <uri link="#doc_chap2_sect2">sezione Configurazione</uri>
 per sapere come farlo facilmente.
 </p>
 
@@ -434,11 +405,11 @@ per sapere come farlo facilmente.
 <body>
 
 <p>
-Per prelinkare su un sistema con grsecurity che utilizza chiamate
-mmap() casuali è necessario disattivare "randomized mmap()
-base" per <path>/lib/ld-2.3.*.so</path>. Per fare ciò, utilizzare
-il tool <c>chpax</c> quando tali file non sono in uso
-(ad esempio, facendo il boot da un CD di ripristino).
+Per prelinkare su un sistema con grsecurity che utilizza chiamate mmap() casuali
+è necessario disattivare "randomized mmap() base" per
+<path>/lib/ld-2.3.*.so</path>. Per fare ciò, utilizzare il tool <c>chpax</c>
+quando tali file non sono in uso (ad esempio, facendo il boot da un CD di
+ripristino).
 </p>
 
 </body>
@@ -452,12 +423,11 @@ il tool <c>chpax</c> quando tali file non sono in uso
 
 <p>
 Il prelinking può velocizzare notevolmente il tempo di avvio di numerose
-applicazioni complesse e portage supporta nativamente questa tecnologia.
-Inoltre il prelinking è sicuro, perchè è sempre possibile annullarlo per i binari
-che presentano problemi. Ricorda che, se le glibc o altre librerie
-prelinkate vengono aggiornate, è necessario eseguire
-nuovamente <path>prelink</path>!
-Buona fortuna!
+applicazioni complesse e portage supporta nativamente questa tecnologia. Inoltre
+il prelinking è sicuro, perché è sempre possibile annullarlo per i binari che
+presentano problemi. Ricorda che, se le glibc o altre librerie prelinkate
+vengono aggiornate, è necessario eseguire nuovamente <path>prelink</path>! Buona
+fortuna!
 </p>
 
 </body>
