@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.26 2004/12/15 15:22:45 port001 Exp $
+# $Id: index.py,v 1.27 2004/12/16 15:43:31 port001 Exp $
 #
 
 """The main page dispatcher for glsr.
@@ -186,6 +186,11 @@ class PageDispatch:
 
         if self._tmpl_page == None:
             
+            self._page = self._failover
+
+            LogHandler.logwrite("Request fell through to failover page '%s'" %
+                                 self._page, __modulename__, "Info")
+
             failover_page = eval(self._failover + "(" +
                                  "form = self._form," +
                                  "alias = self._user_detail[\"alias\"])")
@@ -237,6 +242,11 @@ class PageDispatch:
 
     def log_request(self):
 
+        LogHandler.logwrite("Received request for page '%s'" % self._page,
+                             __modulename__, "Info")
+
+    def log_request_end(self):
+
         LogHandler.logwrite("Request for page '%s', " % self._page +
                             "domain '%s' completed in %.5f(s)" %
                             (self._domain, eval_timer(self._t_start,
@@ -247,10 +257,11 @@ if __name__ == "__main__":
 
     Dispatcher = PageDispatch()
 
+    Dispatcher.log_request()
     Dispatcher.check_session()
     Dispatcher.check_access()
     Dispatcher.select_module()
     Dispatcher.dispatch_header()
     Dispatcher.dispatch_page()
     Dispatcher.dispatch_footer()
-    Dispatcher.log_request()
+    Dispatcher.log_request_end()

@@ -3,41 +3,35 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Statistics.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_Statistics.py,v 1.3 2004/12/16 15:43:31 port001 Exp $
 #
 
-MetaData = {"page" : ("stat", None), "params" : ""}
-
-import Template as TemplateHandler
-import Config
 import Stat
-from SiteModuleBE import SiteModuleBE as Parent
+import Config
+from site_modules import SiteModule
 
-def Display():
+class Page_Statistics(SiteModule):
 
-    page = Page_Statistics()
-    page.selectDisplay()
+    __modulename__ = "Page_Statistics"
 
-class Page_Statistics(Parent):
+    def __init__(self, **args):
 
-    template = Config.Template["admin_statistics"]
-    
-    def selectDisplay(self):
+        self.pages = ["stat"]
+        self.template = Config.Template["admin_statistics"]
 
-        self.display()
+    def _set_params(self):
+
+        self.tmpl.param("GLSR_URL", Config.URL)
+        self.tmpl.param("USER_COUNT", Stat.UserCount())
+        self.tmpl.param("SESSION_COUNT", Stat.SessionCount())
+        self.tmpl.param("SCRIPT_COUNT", Stat.ScriptCount())
+        self.tmpl.param("SUBSCRIPT_COUNT", Stat.SubScriptCount())
+        self.tmpl.param("CATEGORY_COUNT", Stat.CategoryCount())
+        self.tmpl.param("COMMENT_COUNT", Stat.CommentCount())
+        self.tmpl.param("DBSIZE", Stat.DBSize())
 
     def display(self):
 
-        tmpl = TemplateHandler.Template()
-        tmpl.compile(
-            self.template,
-            {"GLSR_URL":		Config.URL,
-             "USER_COUNT":		Stat.UserCount(),
-             "SESSION_COUNT":		Stat.SessionCount(),
-             "SCRIPT_COUNT":		Stat.ScriptCount(),
-             "SUBSCRIPT_COUNT":		Stat.SubScriptCount(),
-             "CATEGORY_COUNT":		Stat.CategoryCount(),
-             "COMMENT_COUNT":		Stat.CommentCount(),
-             "DBSIZE":			Stat.DBSize()
-	    })
-        print tmpl.output()
+        self._set_params()
+        self.tmpl.compile(self.template)
+        return self.tmpl
