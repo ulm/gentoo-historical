@@ -1,0 +1,426 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link = "/doc/en/gnupg-user.xml">
+	<title>
+		GnuPG Gentoo user guide
+	</title>
+	<author title="Writer">
+		<mail link="gustavo@felisberto.net">
+			Gustavo Felisberto
+		</mail>
+	</author>
+
+	<abstract>
+		This small guide will give you teach you the basics of using the GnuPG, a tool for secure communication.
+	</abstract>
+	
+	<version>
+		0.1
+	</version>
+	
+	<date>
+		6 December 2002
+	</date>
+
+<chapter>
+	<title>Introduction</title>
+	<section>
+		<title>What you get in this guide</title>
+		<body>
+			<p>
+				This guide assumes that you are familiar with public-key cryptography, encryption, and digital signatures. If this is not the case give a look at the  <uri link="http://www.gnupg.org/(en)/documentation/guides.html"> GnuPG handbook</uri> chapter 2.
+			</p>
+			<p>
+				This guide will teach you how to install gnupg, how to create your keypair, how to add keys to your keyring, how to submit your public key to keyserver, how to (sign/encrypt)/(verify/decode) messages you send/receive. And how to encrypt files in your local computer to prevent people to read their contents
+			</p>
+		</body>
+	</section>
+	<section>
+		<title>Installation of required software</title>
+		<body>
+			<p>
+				At a very basic level you need to <c>emerge gnupg</c> if you which to have a e-mail client using gnupg you can use Mozilla mail, pine (<c>emerge pinepgp</c>), evolution (evolution is a gnome Microsoft Outlook work alike, do a <c>emerge -p evolution</c> to see if you don't mind the dependencies) and KDE's own kmail (kmail is part of the kdenetwork package).
+			</p>
+			<p>
+				Kgpg might also interest you if you use kde, this small program allows you to generate keypairs, import keys from ASCII files, sign imported keys, export keys and a few more features (it lacks importing keys from keyservers, but you will learn how to that from the command line.
+			</p>
+		</body>
+	</section>
+</chapter>
+<chapter>
+	<title>Generating your key and adding keys to public keyring</title>
+	<section>
+		<title>Creating your key</title>
+		<body>
+			<p>To do that just run <c>gpg --gen-key</c>, the first time you run it it will create some directories, run it again to create the keys:
+<pre caption = "key generation process" >#<i>gpg --gen-key</i>
+gpg (GnuPG) 1.0.7; Copyright (C) 2002 Free Software Foundation, Inc.
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it
+under certain conditions. See the file COPYING for details.
+
+Please select what kind of key you want:
+   (1) DSA and ElGamal (default)
+   (2) DSA (sign only)
+   (4) ElGamal (sign and encrypt)
+   (5) RSA (sign only)
+   Your selection?<i>1</i></pre>
+			</p>
+			<p>
+				Here you have chance to choose the type of key you want to use, most users will go for the default DSA and ElGamal. Next is the key size, remember that big is better, but don't use larger than 2048 with DSA/ElGamal keys. Normally 1024 is more than enough for normal e-mail if you are not a terrorist or something :)
+			</p>
+			<p>
+				After size comes the expiry date, here small is better, but most users can go for a key that never expires or to something like 1 or 2 years.
+				<pre caption = "Choosing key size" >
+DSA keypair will have 1024 bits.
+About to generate a new ELG-E keypair.
+              minimum keysize is  768 bits
+              default keysize is 1024 bits
+    highest suggested keysize is 2048 bits
+    What keysize do you want? (1024) <i>2048</i>
+Requested keysize is 2048 bits       
+Please specify how long the key should be valid.
+         0 = key does not expire
+	 &lt;n&gt;= key expires in n days
+	 &lt;n&gt;w = key expires in n weeks
+	 &lt;n&gt;m = key expires in n months
+	 &lt;n&gt;y = key expires in n years
+	 Key is valid for? (0) <i>0</i>
+Key does not expire at all
+</pre>
+			</p>
+			<p>
+				Now it is time to enter some data about yourself. Remember that if you are going to send your public key to people you have to use your real address here.
+				<pre caption = "Entering user information" >
+					Is this correct (y/n)? <i>y</i>
+                        
+You need a User-ID to identify your key; the software constructs the user id
+from Real Name, Comment and Email Address in this form:
+"Heinrich Heine (Der Dichter) &lt;heinrichh@duesseldorf.de&gt;"
+
+Real name: <i>John Doe</i>
+Email address: <i>john@nowhere.someplace.flick</i>
+Comment: <i>The Real John Doe</i>                 
+You selected this USER-ID:
+"John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
+
+Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? <i>O</i> 
+You need a Passphrase to protect your secret key.    
+
+Enter passphrase: 
+</pre>
+			</p>
+			<p>
+				Now enter your key password two times. It is a good idea to use a strong password. Remember that if someone ever gets old of your private key and cracks your password he will be able to send messages signed by "you" that everyone will think that were sent by you.
+			</p>
+			<p>
+				After that GnuPG will generate your key, moving the mouse or having a mp3 playing in the background will help speedup the process because it will generate random data.
+			</p>
+			
+		</body>
+	</section>
+	<section>
+		<title>Generating a revocation certificate</title>
+		<body>
+			<impo>This part is very important and you should do it NOW.</impo>
+			<p>
+				After creating your keys you should create a revocation certificate, this allows you in the future to revoke your key in case something nasty happens to your key (someone gets hold of your key/passphrase.
+				<pre caption = "Generating revoke certificate">
+#<i>gpg --list-keys</i>
+/home/humpback/.gnupg/pubring.gpg
+---------------------------------
+pub  1024D/75447B14 2002-12-08 John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
+sub  2048g/96D6CDAD 2002-12-08
+
+bash-2.05a$ gpg --output revoke.asc --gen-revoke <i>75447B14</i>
+
+sec  1024D/75447B14 2002-12-08   John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
+
+Create a revocation certificate for this key? <i>y</i>
+Please select the reason for the revocation:   
+  0 = No reason specified
+  1 = Key has been compromised
+  2 = Key is superseded
+  3 = Key is no longer used
+  Q = Cancel
+(Probably you want to select 1 here)
+Your decision?<i> 1 </i>
+Enter an optional description; end it with an empty line:
+> <i>Someone cracked me and got my key and passphrase</i>
+>                                                 
+Reason for revocation: Key has been compromised
+Someone cracked me and got my key and passphrase
+Is this okay? <i>y</i>
+               
+You need a passphrase to unlock the secret key for
+user: "John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
+1024-bit DSA key, ID 75447B14, created 2002-12-08
+
+ASCII armored output forced.
+Revocation certificate created.
+
+Please move it to a medium which you can hide away; if Mallory gets
+access to this certificate he can use it to make your key unusable.
+It is smart to print this certificate and store it away, just in case
+your media become unreadable.  But have some caution:  The print system of
+your machine might store the data and make it available to others!
+</pre>
+			</p>
+			<p>
+				The <c>gpg --list-keys</c> command lists keys in your public keyring, you use it to see the ID of your key so that you can create the revoke certificate. Now it is a good idea to copy all the .gnupg directory and the revocation ASCII armor (revoke.asc) to some secure medium (two floppy's or a CD-r you store in safe location). Remember that revoke.asc can be used to revoke your keys and make them unusable in the future.
+			</p>
+			<note>If you have several e-mail's that you would like to use with this key you can run <c>gpg --edit-key YOUR_ID</c> and then use the <c>adduid</c> command, it will ask you for the name, email and comment of the second ID you will be using</note>	
+		</body>
+	</section>
+	<section>
+		<title>Exporting keys</title>
+		<body>
+			<p>To export your key you type something like <c>gpg --armor --output john.asc --export john@nowhere.someplace.flick</c> you can almost always use the ID or something that identifies the key (here we used the e-mail), he now have a john.asc that we can send our friends, place in our web page so that people can communicate safely with us.
+			</p>
+		</body>
+	</section>
+	<section>
+		<title>Importing keys</title>
+		<body>
+			<p>To add files your your public keyring you must first import it, then you should check the key fingerprint, and after you very the fingerprint you should validate it.
+				<note>
+					You should be careful when verifying keys, this is one of the weak points of public key cryptography.
+				</note>
+				Now we will be adding Luis Pinto's (a friend of mine) public key to our public keyring. After giving Luis Pinto a call and asked him for his key i noted it in a paper, and compared it to the output of the <c>fpr</c> command, it was a good key so i added it to the public keyring. In this particular case Luis's key will expire in 2003-12-01 so i am asked if i want my signature to expire at the same time.
+				<pre caption = "Importing and signing keys">
+#<i>gpg --import luis.asc</i>
+gpg: key 462405BB: public key imported
+gpg: Total number processed: 1
+gpg:               imported: 1
+humpback@sam humpback $ <i>gpg --list-keys </i>     
+/home/humpback/.gnupg/pubring.gpg
+---------------------------------
+pub  1024D/75447B14 2002-12-08 John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
+sub  2048g/96D6CDAD 2002-12-08
+
+pub  1024D/462405BB 2002-12-01 Luis Pinto &lt;lmpinto@student.dei.uc.pt&gt;
+	uid                            Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
+sub  4096g/922175B3 2002-12-01 [expires: 2003-12-01]
+
+humpback@sam humpback $ <i>gpg --edit-key lmpinto@dei.uc.pt</i>
+gpg (GnuPG) 1.0.7; Copyright (C) 2002 Free Software Foundation, Inc.
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it
+under certain conditions. See the file COPYING for details.
+
+
+gpg: checking the trustdb
+gpg: checking at depth 0 signed=0 ot(-/q/n/m/f/u)=0/0/0/0/0/1
+pub  1024D/462405BB  created: 2002-12-01 expires: 2003-12-01 trust: -/-
+sub  4096g/922175B3  created: 2002-12-01 expires: 2003-12-01
+(1)  Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
+(2). Luis Pinto &lt;lmpinto@student.dei.uc.pt&gt;
+
+Command> <i>fpr</i>
+pub  1024D/462405BB 2002-12-01 Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
+             Fingerprint: F056 3697 ADE3 CF98 B80B  8494 0AD3 E57B 4624 05BB
+	     
+Command> <i>sign</i>
+Really sign all user IDs? <i>y</i>
+                           
+pub  1024D/462405BB  created: 2002-12-01 expires: 2003-12-01 trust: -/-
+             Fingerprint: F056 3697 ADE3 CF98 B80B  8494 0AD3 E57B 4624 05BB
+
+	     Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
+	     Luis Pinto &lt;lmpinto@student.dei.uc.pt&gt;
+
+This key is due to expire on 2003-12-01.
+Do you want your signature to expire at the same time? (Y/n) <i>Y</i>
+How carefully have you verified the key you are about to sign actually belongs
+to the person named above?  If you don't know what to answer, enter "0".
+
+   (0) I will not answer. (default)
+   (1) I have not checked at all.
+   (2) I have done casual checking.
+   (3) I have done very careful checking.
+
+   Your selection? <i>3</i>
+Are you really sure that you want to sign this key
+with your key: "John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
+
+I have checked this key very carefully.
+
+Really sign? <i>y</i>
+              
+You need a passphrase to unlock the secret key for
+user: "John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
+1024-bit DSA key, ID 75447B14, created 2002-12-08
+
+Command> <i>check</i>
+uid  Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
+sig!3       462405BB 2002-12-01   [self-signature]
+sig!3       75447B14 2002-12-08   John Doe (The Real John Doe) &lt;john@nowhe
+uid  Luis Pinto &lt;lmpinto@student.dei.uc.pt&gt;
+sig!3       462405BB 2002-12-01   [self-signature]
+sig!3       75447B14 2002-12-08   John Doe (The Real John Doe) &lt;john@nowhe
+
+</pre>
+</p>
+
+
+		</body>
+	</section>
+				
+</chapter>
+<chapter>
+	<title>Exchanging keys with keyservers</title>
+	<section>
+		<title>Sending keys to keyservers</title>
+		<body>
+		<p>
+			Now that you have your key it is probably a good idea to send it to the world keyserver. There are a lot of keyservers in the world and most of them exchange keys between them. Here we are going to send Luis's key to the pgp.mit.edu server. This uses HTTP, so if you need to use a proxy for HTTP traffic don't forget to set it (<c>export http_proxy=http://proxy_host:port/</c>). The command for sending the key is:  <c>gpg --keyserver pgp.mit.edu --keyserver-options honor-http-proxy --send-key john@nowhere.someplace.flick</c> . If you don't need a HTTP proxy you can remove the <e>--keyserver-options honor-http-proxy</e>.
+			
+		</p>
+		<p>
+			You can also send other persons keys that you have signed to the keyserver. We could send Luis Pinto key to the keyserver, this way someone that trusts your key can use the signature you placed there to trust Luis key.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Getting Keys from keyservers</title>
+		<body>
+		<p>
+			Now we are going to search for Gustavo Felisberto's key and add it to the keyring of John Doe (just in case you did not notice Gustavo Felisberto is the person writing this guide :) ).
+			<pre caption = "Searching keys from keyservers">
+#<i>gpg --keyserver pgp.mit.edu --keyserver-options honor-http-proxy \
+	--search-keys humpback@felisberto.net</i>
+gpg: searching for "humpback@felisberto.net" from HKP server pgp.mit.edu
+Keys 1-5 of 5 for "humpback@felisberto.net"
+(1)	Gustavo Felisberto (apt-get install anarchy) &lt;humpback@felisberto.net&gt; 1024
+	  created 2002-12-06, key B9F2D52A
+(2)	Gustavo Felisberto &lt;humpback@altavista.net&gt; 1024
+	  created 1999-08-03, key E97E0B46
+(3)	Gustavo A.S.R. Felisberto &lt;humpback@altavista.net&gt; 1024
+	  created 1998-12-10, key B59AB043
+(4)	Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
+	  created 1998-08-26, key 39EB133D
+(5)	Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
+	  created 1998-06-14, key AE02AF87
+	  Enter number(s), N)ext, or Q)uit &gt;<i>1</i>
+gpg: requesting key B9F2D52A from HKP keyserver pgp.mit.edu
+gpg: key B9F2D52A: public key imported
+gpg: Total number processed: 1
+gpg:               imported: 1
+  </pre>
+  I have some other keys there that i no longer use (i did not backup them and they got lost in some re-install of the system). Now you should sign the key if you trust it. My key fingerprint is:<e>17 D2 36 A4 24 52 60 5B  0D 8A 56 ED 0F 2B 2E B4  B9 F2 D5 2A</e> .
+  </p>
+  </body>
+  </section>
+</chapter>
+<chapter>
+	<title>Working with documents</title>
+	<section>
+		<title>Encrypting and signing</title>
+		<body>
+			<p>Lets say that you have a file that you wish to send Luis, you can encrypt it, sign it or encrypt it and sign it. Encypting means that only Luis will be able to open it, the signature tells Luis that it was really you who creatted the file.</p>
+			<p>The next three comands will do just that, encrypt, sign and encrypt/sign.</p>
+			<pre caption = "Cheking keys in files and decoding them">
+#<i>gpg --output doc.gpg --encrypt --recipient lmpinto@dei.uc.pt doc_to_encrypt</i>
+#<i>gpg --output doc.gpg --sign --recipient lmpinto@dei.uc.pt doc_to_sign</i>
+#<i>gpg --output doc.gpg --encrypt --sign --recipient \
+		lmpinto@dei.uc.pt doc_to_encrypt_and_sign</i>
+</pre>
+			<p>This will create binary files, if for some reason you wish to create ascii files, just add a <c>--clearsign</c> to the beggining of the command</p>
+		</body>
+	</section>
+	<section>
+		<title>Decrypting and verifying signatures</title>
+		<body>
+			<p>You have received a file from a friend and it is encrypted to you. The command to decrypt them is <c>gpg --output document --decrypt encrypted_doc.gpg</c> this will decrypt the document and verify the signature (if there is one).
+			</p>
+		</body>
+	</section>
+
+
+</chapter>
+<chapter>
+	<title>GnuPG interfaces</title>
+	<section>
+		<title>kgpg</title>
+		<body>
+			<p>kgpg is a nice gui for gpg. In the main screen you can past text that you wich to sign or encrypt, you can also past ascii armored text that you wich to decrypt.
+			</p>
+			<p>
+				<figure link="kgpg1.png" short="kgpg main window"/>
+			</p>
+			<p>
+				In this image you can see kgpg main window with a ascii armored encrypted text pasted into it. From here you can decrypt it (you will have to provide your password), encrypt other files, past new text to sign....
+			</p>
+			<p>
+				<figure link="kgpg2.png" short="kgpg key manage window"/>
+			</p>
+			<p>
+				Now you can see the keymanaging window. From here we see our all good key for John Doe. The two trusted keys for Gustavo and Luis, and the untrusted key for Daniel Robbins ( i still have not given him a call to check his fingerprint :) ).
+			</p>
+			<p>
+				The only drawback i have found with kgpg is that it will not work with keyservers directly, but that is probably going to change in the future, and you already learned how to do that from the command line.
+			</p>
+			<p>
+				<figure link="kmail_security.png" short="kmail security options OpenGPG"/>
+			</p>
+			<p>
+				<figure link="kmail_identity.png" short="kmail identity options OpenGPG key"/>
+			</p>
+			
+	</body>
+</section>
+<section>
+	<title>Mozilla Enigmail</title>
+	<body>
+		<p>Mozilla's version from 1.0 up (i think) comes with Enigmail, a plugin for the mail client that is preatty simple to configure, you just go to Preferences -&gt; Privacy &amp; Security -&gt; Enigmail. There you enter your key e-mail and thats it.
+		</p>
+		<p>Mails that come with pgp or gpg signature that you don't have/trust will be marked with a bronken pen. Others that have good signatures with a appear with a nice straigh pen. Enigmail even comes with the ability to get keys from keyservers, but if it has problems it will print some very weired messages (but you still remenber how to use the command line right?).
+		</p>
+	</body>
+</section>
+<section>
+	<title>Kmail</title>
+	<body>
+		<p>Kmail is also preatty easy to setup. I will just post a few pictures on how to set it up. Basicly you have to tell him to use GPG and then wich key to use in signing.
+			
+		</p>
+	</body>
+</section>
+</chapter>
+<chapter>
+	<title>Final toughts and Credits and Copyright</title>
+	<section>
+		<title>Some problems</title>
+		<body>
+			<p>I had some problems with photo's in keys. Chek the version you are using. If you have GnuPG 1.2.1-r1 and up you are probably ok, older versions may have problems. Also most keyservers dont like keys with photo's.
+			</p>
+		</body>
+	</section>
+	<section>
+		<title>What is not here</title>
+		<body>
+			<p>Gpg is a very complex tool, it lets you do much more that what i have said here. This doc is for the user that is just starting to GnuPG, for much more you should check the <uri link="http://www.gnupg.org">GnuPG Website</uri>, there is lots off info there.
+			</p>
+			<p>I don't talk of other tools like pgp4pine, gpgpine, evolution and maybe Windows tools, i will probably extend this doc in the future.</p>
+		</body>
+	</section>
+	<section>
+		<title>Credits</title>
+		<body>
+			<p>John Michael Ashley's <uri link="http://www.gnupg.org">GnuPG Handbook</uri> is simply wounderfull. It is a very good dock for begginers. At some point in the process of writing this one was a shortned here, stretched there version of his.</p>
+			<p>Everyone in the #gentoo-doc team you guys rock.</p>
+			<p>Tiago Serra for getting me back to the privacy track.</p>
+		</body>
+	</section>
+	<section>
+		<title>Copyright</title>
+		<body>
+			<p>Copyright by Gustavo Felisberto. Gentoo Inc. is allowed to publish this document as it sees fit.
+			</p>
+		</body>
+	</section>
+
+</chapter>
+
+</guide>
