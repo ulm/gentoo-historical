@@ -1,0 +1,549 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/it/devfs-guide.xml">
+<title>Device File System Guide</title>
+<author title="Author">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Reviewer">
+    <mail link="seemant@gentoo.org">Seemant Kulleen</mail>
+</author>
+<author title="Traduttore">
+    <mail link="emorelli@gentoo.it">Enrico Morelli</mail>
+</author>
+<author title="Traduttore">Team Italiano</author>
+
+<abstract>
+    In questo documento troverete informazioni  su cos'è realmente
+    devfs e sul suo utilizzo .
+</abstract>
+
+<version>0.1</version>
+<date>11 Settembre 2003</date>
+<chapter>
+    <title>Cos'è devfs?</title>
+    <section>
+        <title>I (bei?) vecchi tempi</title>
+        <body>
+        <p>
+            Implementazioni tradizionali di Linux provvedono ai loro
+            utenti un abstract device path, chiamato <path>/dev</path>.
+            In questa directory, gli utenti possono trovare i <e>device nodes</e>,
+            file speciali che rappresentano le periferiche presenti nei
+            loro sistemi. Per intenderci, <path>/dev/hda</path> rappresenta
+            la prima periferica IDE del nostro sistema. Attraverso questi
+            device file, gli utenti possono creare programmi che interagiscono
+            con l'hardware come se fosse un file regolare invece che attraverso
+            speciali API.
+        </p>
+
+        <p>
+            I device file sono suddivisi in due gruppi chiamati 
+            periferiche a <e>caratteri</e> (character devices) e periferiche a <e>blocchi</e> (block devices). Il primo gruppo racchiude l'hardware la cui
+            scrittura/lettura non è bufferizzata. Il secondo gruppo, quindi,
+            racchiude invece l'hardware la cui scrittura/lettura è bufferizzata.
+            Le periferiche di ambedue i gruppi possono leggere un carattere alla volta o
+            in blocchi. Per questo, la nomenclatura potrebbe confondere ed infatti
+            non è corretta.
+        </p>
+
+        <p>
+            Se date un'occhiata a certi device file, potreste trovare
+            qualcosa del genere:
+        </p>
+<pre caption = "Controllare le informazioni di un device file">
+# <i>ls -l /dev/hda</i>
+brw-rw----    1 root     disk       3,   0 Jul  5  2000 /dev/hda
+</pre>
+ 
+        <p>
+            Nell'esempio precedente abbiamo visto che <path>/dev/hda</path>
+            è una periferica a blocchi (block device). Comunque, molto
+            importanti sono i due numeri speciali assegnati al device file:
+            <path>3, 0</path>. Questa coppia di numeri è chiamata 
+            <e>major-minor</e> ed è usata dal kernel per mappare un
+            device file alla periferica reale. Il major corrisponde a
+            certi device mentre il minor a subdevice. Sembra un pò
+            confuso? Non lo è.
+        </p>
+    
+        <p>
+            Due esempi sono <path>/dev/hda4</path> e <path>/dev/tty5</path>.
+            Il primo device file corrisponde alla quarta partizione della
+            prima periferica IDE. La sua coppia major-minor è <path>3, 4</path>.
+            In altre parole, il minor corrisponde alla partizione dove il
+            major corrisponde alla periferica. Il secondo esempio ha <path>4, 5</path> come coppia major-minor.
+            In questo caso, il major corrisponde ad un terminal driver, mentre
+            il minor corrisponde al numero del terminale (in questo caso, al
+            quinto terminale).
+        </p>
+    </body>
+</section>
+
+<section>
+    <title>I problemi</title>
+    <body>
+        <p>
+            Se fate un rapido controllo in <path>/dev</path>, troverete
+            che sono listate non solo le vostre periferiche, ma <e>tutte</e>
+            le possibili periferiche voi possiate immaginare. In altre parole,
+            sono presenti device file anche per periferiche che non avete.
+            Il controllo di un numero così elevato di device group è quanto mai
+            difficoltoso. Immaginate di dover cambiare i permessi di tutti i 
+            device file che hanno una corrispondente periferica sul vostro sistema,
+            e lasciare il resto dei device file come sono.
+        </p>
+        <p>
+            Quando aggiungete nuovo hardware sul vostro sistema che non ha
+            un device file per la nuova periferica, dovrete crearne uno. Utenti esperti sanno che 
+            questo può essere fatto con <c>./MAKEDEV</c> all'interno
+            della directory <path>/dev</path>, ma conoscete immediatamente quale device
+            dovete creare?
+        </p>
+
+        <p>
+           Quando avete programmi che interagiscono con hardware usando
+           i device file, non potete avere la root partition montata
+           in sola lettura, mentre non c'è ulteriore necessità di averla
+           montata in lettura-scrittura. E non potete avere <path>/dev</path>
+           su una partizione separata, dato che <c>mount</c> necessita
+           di <path>/dev</path> per montare le partizioni.
+        </p>
+        </body>
+</section>
+<section>
+    <title>Le soluzioni</title>
+    <body>
+        <p>
+            Come potete immaginare, gli sviluppatori del kernel hanno
+            trovato un certo numero di soluzioni ai summenzionati problemi.
+            Comunque molte di queste hanno altri difetti come descritto in
+            <uri>http://www.atnf.csiro.au/people/rgooch/linux/docs/devfs.html#faq-why</uri>.
+            Non faremo una panoramica su queste implementazioni, ma ci
+            focalizzeremo su quella che è diventata parte dei sorgenti
+            ufficiali del kernel: devfs.
+        </p>
+    </body>
+    </section>
+    <section>
+        <title>devfs vince completamente</title>
+        <body>
+        <p>
+            devfs risolve tutti i problemi elencati. Provvede solo
+            le periferiche esistenti, aggiunge nuovi nodi quando trova
+            nuove periferiche e rende possibile montare il root
+            filesystem in sola lettura. Risolve anche altri problemi
+            che non abbiamo discusso perché di minore interesse per
+            gli utenti...
+        </p>
+
+        <p>
+            Inoltre, con devfs non dobbiamo preoccuparci della
+            coppia major/minor. E' ancora supportata (per 
+            compatibilità  all'indietro), ma non è necessaria.
+            Questo rende possibile per Linux il supporto di 
+            ancora più periferiche, dato che non ci sono più
+            limiti (i numeri hanno sempre dei confini :)
+        </p>
+    </body>
+    </section>
+</chapter>
+<chapter>
+    <title>Navigare attraverso l'albero dei device</title>
+    <section>
+        <title>Directory</title>
+        <body>
+
+            <p>
+                Una delle prime cose che potreste notare è che devfs usa
+                directory per raggruppare insieme le periferiche.
+                Questo migliora la leggibilità dato che tutte le periferiche
+                dello stesso tipo occupano la stessa directory.
+            </p>
+
+            <p>
+                Per intenderci, tutte le periferiche IDE sono all'interno
+                della directory <path>/dev/ide/</path>, così come tutte
+                le periferiche SCSI sono in <path>/dev/scsi/</path>.
+                Dischi SCSI e IDE sono visti nello stesso modo, il che
+                significa che entrambe hanno la stessa struttura di
+                sottodirectory.
+            </p>
+
+            <p>
+                Dischi IDE e SCSI sono controllati da un adattatore 
+                (integrato su scheda madre o su schede separate),
+                chiamato <e>host</e>.
+                Ogni adattatore può avere diversi canali. Un canale 
+                è chiamato <e>bus</e>. Su ogni canale, è possibile
+                avere diversi ID. Ogni ID identifica un disco.
+                Questo ID è chiamato <e>target</e>. Alcuni device
+                SCSI possono avere lun multipli (<e>Logial Unit Numbers</e>),
+                device che possono controllare multipli media simultaneamente
+                (hi-end tapedrives). Voi avrete principalmente
+                un singolo lun, <path>lun0/</path>.
+            </p>
+            
+            <p>
+                Così, mentre prima avevamo <path>/dev/hda4</path>, ora 
+                abbiamo <path>/dev/ide/host0/bus0/target0/lun0/part4</path>.
+                Questo è molto più semplice... no, non discutete con me...
+                <e>è</e> semplice...
+            </p>
+
+            <note>
+                Potete anche usare una nomenclatura più Unix-like per 
+                gli hard disk, come <path>c0b0t0u0p2</path>. Possono
+                essere trovati in <path>/dev/ide/hd</path>, <path>/dev/scsi/hd</path>, ecc.
+            </note>
+
+            <p>
+                Per darvi  un'idea delle directory, questa è una lista
+                delle directory che ho sul mio portatile:
+            </p>
+<pre caption = "Directory in /dev">
+cdroms/     cpu/        discs/          floppy/
+ide/        input/      loop/           misc/
+netlink/    printers/   pts/            pty/
+scsi/       sg/         shm/            sound/
+sr/         usb/        vc/             vcc/
+</pre>
+    </body>
+</section>
+<section>
+    <title>Compatibilità all'indietro usando devfs</title>
+    <body>
+    <p>
+        Usare questo nuovo schema sembra divertente, ma alcuni tools
+        e programmi continuano ad usare il vecchio schema.
+        Per assicurare la compatibilità è stato creato <c>devfsd</c>.
+        Questo daemon crea link simbolici con i vecchi nomi che puntano
+        ai nuovi device file.
+    </p>
+<pre caption = "Link simbolico">
+$ <i>ls -l /dev/hda4</i>
+lr-xr-xr-x    1 root     root           33 Aug 25 12:08 /dev/hda4 -> ide/host0/bus0/target0/lun0/part4
+</pre>
+
+    <p>
+        Con <c>devfsd</c>, potete anche configurare i permessi, creare
+        nuovi device file, definire azioni, ecc. Tutto questo è descritto
+        nel prossimo capitolo.
+    </p>
+    </body>
+    </section>
+</chapter>
+<chapter>
+    <title>Amministrare l'albero dei device</title>
+    <section>
+        <title>Riavvio di devfsd</title>
+        <body>
+            <p>
+                Quando modificate il file <path>/etc/devfsd.conf</path>,
+                e volete forzare queste modifiche nel vostro sistema,
+                non dovete riavviare la macchina. A seconda delle vostre
+                necessità, potete usare uno dei seguenti segnali:
+            </p>
+            <p>
+                <b>SIGHUP</b> forzerà <c>devfsd</c> a rileggere il file
+                di configurazione, ricaricare gli shared objects e generare 
+                il REGISTER degli eventi per ogni nodo in vita 
+                nell'albero dei device.
+            </p>
+            <p>
+                <b>SIGUSR1</b> come il precedente, ma non verrà rigenerato
+                il REGISTER degli eventi.
+            </p>
+            <p>
+                Per inviare un segnale, usate semplicemente <c>kill</c>
+                o <c>killall</c>:
+            </p>
+<pre caption = "Inviare un segnale SIGHUP a devfsd">
+# <i>kill -s SIGHUP `pidof devfsd`</i>
+<comment>o</comment>
+# <i>killall -s SIGHUP devfsd</i>
+</pre>
+
+        </body>
+    </section>
+    <section>
+        <title>Rimuovere la compatibilità attraverso i symlink</title>
+        <body>
+
+        <warn>
+            Attualmente, Gentoo non può vivere senza la compatibilità 
+            attraverso i symlink.
+        </warn>
+
+        <p>
+            Se volete rimuovere la compatibilità ottenuta con la creazione
+            dei numerosi symlink in <path>/dev</path> dal vostro
+            sistema Gentoo (dato che Gentoo attiva la compatibilità di default),
+            editate <path>/etc/devfsd.conf</path> e rimuovete le seguenti
+            due righe:
+        </p>
+<pre caption = "/etc/devfsd.conf per la compatibilità all'indietro">
+<comment># Comment the following two lines out to remove the symlinks</comment>
+REGISTER        .*  MKOLDCOMPAT
+UNREGISTER      .*  RMOLDCOMPAT
+</pre>
+
+        <p>
+            Dovrete quindi riavviare il vostro sistema per rendere attive
+            le modifiche.
+        </p>
+    </body>
+</section>
+
+<section>
+    <title>Rimuovere la funzionalità di autoload</title>
+    <body>
+
+        <p>
+            Quando caricate un modulo, devfs creerà automaticamente un
+            device file. Se non volete questo comportamento, rimuovete
+            la seguente riga da <path>/etc/devfsd.conf</path>:
+        </p>
+<pre caption = "/etc/devfsd.conf, funzionalità autoload">
+LOOKUP      .*  MODLOAD
+</pre>
+    </body>
+</section>
+</chapter>
+
+<chapter>
+    <title>Punti riguardanti i permessi</title>
+    <section>
+        <title>Set/cambio dei permessi usando PAM</title>
+        <body>
+            <p>
+               Anche se potete settare i permessi in <path>/etc/devfsd.conf</path>,
+               vi raccomandiamo di usare PAM (<e>Pluggable Authentication Modules</e>).
+               Questo perché PAM ha l'ultima parola sui permessi e può
+               ignorare le modifiche apportate a <path>/etc/devfsd.conf</path>.
+            </p>
+
+            <p>
+                PAM usa il file <path>/etc/security/console.perms</path>
+                per i permessi. Il file consiste in due parti: la prima descrive
+                i gruppi e la seconda i permessi.
+            </p>
+
+            <p>
+                Date prima un'occhiata alla parte relativa ai gruppi.
+                Ecco un esempio di come si presenta il sound-group:
+            </p>
+<pre caption = "Sound group in /etc/security/console.perms">
+&lt;sound&gt;=/dev/dsp* /dev/audio* /dev/midi* \
+    /dev/mixer* /dev/sequencer* \
+    /dev/sound/* /dev/snd/* /dev/beep \
+    /dev/admm* \
+    /dev/adsp* /dev/aload* /dev/amidi* /dev/dmfm* \
+    /dev/dmmidi* /dev/sndstat
+</pre>                  
+
+
+            <p>
+                La sintassi è abbastanza semplice: si parte con un group-name
+                e si finisce con una lista di device che appartengono a questo
+                gruppo.
+            </p>
+
+            <p>
+                Ora, i gruppi non sono veramente utili se non potete
+                farci niente. Così la prossima parte descrive come
+                maneggiare i permessi.
+            </p>
+<pre caption = "Permissi per il sound group in /etc/security/console.perms">
+&lt;console&gt;  0600 &lt;sound&gt;      0600 root.audio
+</pre>
+
+            <p>
+                Il primo campo è il controllo sul terminale. Su molti
+                sistemi, questo è il console-group. PAM controllerà  questo
+                campo ad ogni login. Se il login avviene su un device
+                contenuto nel console-group, PAM controllerà e possibilmente
+                cambierà i permessi di qualche device file.
+            </p>
+            
+            <p>
+                Il secondo campo contiene i permessi che vengono
+                assegnati al device file dopo un login corretto.
+                Quando una persona esegue un login sul sistema, e
+                i device file sono di proprietà del proprietario/gruppo
+                di default, PAM cambierà il proprietario nello user
+                loginato e setterà i permessi a quelli nel secondo campo.
+                In questo caso sarà usato 0600 (l'utente ha accesso in
+                lettura/scrittura, tutti gli altri non hanno permessi).
+            </p>
+
+            <p>
+                Il terzo campo contiene il device-group i cui permessi
+                saranno cambiati. In questo caso, il sound-group
+                (tutte le periferiche relative al suono) subiranno
+                cambiamenti.
+            </p>
+
+            <p>
+                Il quarto campo definisce i permessi che verranno
+                assegnati al device file una volta tornato allo stato
+                iniziale. In altre parole, se la persona che ha
+                la proprietà su tutti i device file esce dal sistema
+                (esegue un logout), PAM riporterà i permessi allo stato
+                di default, descritti in questo quarto campo.
+            </p>
+
+            <p>
+                Il quinto campo definisce il proprietario (col gruppo se
+                volete) assegnato al device una volta tornato allo
+                stato iniziale. In altre parole, se la persona proprietaria
+                di tutti i device esce dal sistema (esegue un logout),
+                PAM riassegnerà la proprietà dei device a quella iniziale,
+                come definita in questo quinto campo.
+            </p>
+
+        </body>
+    </section>
+    
+    <section>
+        <title>Set/cambio permessi con devfsd</title>
+        <body>
+            <p>
+                Se realmente volete settare i permessi attraverso
+                <path>/etc/devfsd.conf</path>, usate la sintassi
+                del seguente esempio:
+            </p>
+  <pre caption = "Permissi in /etc/devfsd.conf">
+REGISTER    ^cdroms/.*  PERMISSIONS root.cdrom 0660
+</pre>
+            <p>
+                Il secondo campo è il device group, partendo da <path>/dev</path>.
+                E' un'espressione regolare attraverso la quale potete
+                selezionare diversi device file con una sola regola.
+            </p>
+            
+            <p>
+                Il quarto campo è il proprietario del device file.
+                A differenza delle PAM, questo non cambia (a meno
+                che non sia menzionato in <path>console.perms</path>
+                dato che PAM vince sempre).
+            </p>
+
+            <p>
+                Il quinto campo contiene i permessi del device file.
+            </p>
+
+        </body>
+    </section>
+
+    <section>
+        <title>Settare i permessi manualmente e farli salvare a devfsd</title>
+        <body>
+
+            <p>
+                Questo è il comportamento di default per Gentoo: se
+                cambiate proprietario (con <c>chown</c>) e  permessi
+                (con <c>chmod</c>) di alcuni device file, <c>devfsd</c>
+                salverà le informazioni al momento dello shutdown
+                del sistema. Questo perché il file <path>/etc/devfsd.conf</path>
+                contiene le seguenti righe:
+            </p>
+
+<pre caption = "/etc/devfsd.conf per il salvataggio dei permessi">
+REGISTER        ^pt[sy]/.*   IGNORE
+CHANGE          ^pt[sy]/.*   IGNORE
+CREATE          ^pt[sy]/.*   IGNORE
+DELETE          ^pt[sy]      IGNORE
+REGISTER        ^log         IGNORE
+CHANGE          ^log         IGNORE
+CREATE          ^log         IGNORE
+DELETE          ^log         IGNORE
+REGISTER        .*           COPY    /lib/dev-state/$devname $devpath
+CHANGE          .*           COPY    $devpath /lib/dev-state/$devname
+CREATE          .*           COPY    $devpath /lib/dev-state/$devname
+DELETE          .*           CFUNCTION GLOBAL unlink
+/lib/dev-state/$devname
+RESTORE         /lib/dev-state
+</pre>
+ 
+
+        <p>
+            In altre parole, le modifiche ai device file sono copiate
+            in <path>/lib/dev-state</path> durante lo shutdown del
+            sistema e ripristinate in <path>/dev</path> all'avvio
+            del sistema.
+        </p>
+
+        <p>
+            Un'altra possibilità è di montare <path>/lib/dev-state</path>
+            in <path>/dev</path> al momento dell'avvio. Per fare questo
+            dovete essere sicuri che devfs non venga montato automaticamente
+            (il che significa che dovrete ricompilare il kernel) e 
+            che esista <path>/dev/console</path>.
+            Quindi, da qualche parte all'inizio degli script di avvio
+            del vostro sistema, dovete mettere:
+        </p>
+<pre caption = "Mountare /lib/dev-state in /dev">
+mount --bind /dev /lib/dev-state
+mount -t devfs none /dev
+devfsd /dev
+</pre>
+
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Risorse</title>
+    <section>
+        <body>
+
+            <p>
+                Per maggiori informazioni su devfs, controllate le seguenti
+                risorse.
+            </p>
+
+            <p>
+                Le manpage di devfsd.conf spiegano la sintassi
+                del file <path>/etc/devfsd.conf</path>.
+                Per vederle, digitate <c>man devfsd.conf</c>.
+            </p>
+
+            <p>
+                Le <uri link="http://www.atnf.csiro.au/people/rgooch/linux/docs/devfs.html">devfs FAQ</uri> spiegano tutto ciò che riguarda devfs.
+                Contengono anche informazioni sulla struttura interna
+                dei devfs e come i driver possono supportare devfs.
+            </p>
+
+            <p>
+                Su <uri link="http://www.linuxjournal.com">LinuxJournal</uri> 
+                c'è un interessante articolo su <uri
+link="http://www.linuxjournal.com/article.php?sid=6035">devfs for
+Management and Administration</uri>.
+            </p>
+
+            <p>
+                Daniel Robbins ha scritto una serie di articoli per 
+                IBM's DeveloperWorks sui filesystem avanzati.
+                Tre di questi riguardano devfs:
+            </p>
+
+   <ul>
+<li><uri
+link="http://www-106.ibm.com/developerworks/linux/library/l-fs4/">Introduction
+to devfs</uri></li>
+<li><uri
+link="http://www-106.ibm.com/developerworks/linux/library/l-fs5/">Setting
+up devfs</uri></li>
+<li><uri
+link="http://www-106.ibm.com/developerworks/linux/library/l-fs6/">Implementing
+devfs</uri></li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>         
+
