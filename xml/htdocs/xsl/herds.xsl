@@ -170,6 +170,7 @@
           </ul>
         </body>
       </section>
+<!--
       <section>
         <title>Info</title>
         <body>
@@ -179,6 +180,7 @@
           </uri>
         </body>
       </section>
+-->
     </chapter>
   </xsl:template>
   <xsl:template match="description">
