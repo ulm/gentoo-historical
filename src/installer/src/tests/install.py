@@ -4,6 +4,7 @@ import sys
 import GLIUtility
 import GLIArchitectureTemplate
 import GLIInstallProfile
+import GLIClientConfiguration
 
 def usage():
 	print "Usage: " + sys.argv[0] + " <installprofile.xml> [command [command ...]]\n"
@@ -44,12 +45,18 @@ if not GLIUtility.is_file(xmlfile):
 	usage()
 	sys.exit(1)
 
+client_profile = GLIClientConfiguration.ClientConfiguration()
+client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
 install_profile = GLIInstallProfile.InstallProfile()
 install_profile.parse(xmlfile)
-archtemplate = GLIArchitectureTemplate.ArchitectureTemplate(install_profile=install_profile)
+
+template =  __import__('templates' + '/' + 'x86ArchitectureTemplate')
+archtemplate = getattr(template, 'x86ArchitectureTemplate')(client_profile, install_profile, False)
+
+#archtemplate = GLIArchitectureTemplate.ArchitectureTemplate(install_profile=install_profile)
 
 operations = {
-              'partition': archtemplate.do_partitioning,
+              'partition': archtemplate.partition,
               'mount': archtemplate.mount_local_partitions,
               'mount_net': archtemplate.mount_network_shares,
               'unpack': archtemplate.unpack_stage_tarball,
