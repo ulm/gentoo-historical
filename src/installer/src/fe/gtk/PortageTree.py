@@ -61,9 +61,9 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
 		self.radio_syncs[self.active_selection].set_active(gtk.TRUE)
-		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_snapshot_tarball_uri())
+		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_snapshot_uri())
 
 	def deactivate(self):
 		self.controller.install_profile.set_portage_tree_sync_type(None, self.active_selection, None)
-		self.controller.install_profile.set_portage_snapshot_tarball_uri(self.entry_portage_snapshot_uri.get_text())
+		self.controller.install_profile.set_portage_snapshot_uri(self.entry_portage_snapshot_uri.get_text())
 		return True
