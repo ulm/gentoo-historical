@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.4 2004/07/09 21:09:10 port001 Exp $
+# $Id: Page_Main.py,v 1.5 2004/07/10 01:10:32 port001 Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : "form"}
@@ -13,6 +13,7 @@ import Session
 import Config
 from User import User
 from SiteModuleBE import SiteModuleBE as Parent
+from Logging import ReturnErrorReports, FlushErrorReportLog
 
 def Display(form):
 
