@@ -25,7 +25,10 @@
     <xsl:when test="($LANG = 'fr') and (document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str])">
       <func:result select="document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str]" />
     </xsl:when>
-    <xsl:when test="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]">
+    <xsl:when test="($LANG = 'it') and (document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str])">
+      <func:result select="document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str]" />
+    </xsl:when>
+   <xsl:when test="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]">
       <func:result select="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]" />
     </xsl:when>
     <xsl:otherwise>
