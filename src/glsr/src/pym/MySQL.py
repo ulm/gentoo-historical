@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.5 2004/07/19 00:56:18 hadfield Exp $
+# $Id: MySQL.py,v 1.6 2004/07/24 19:03:28 hadfield Exp $
 #
 
 import sys
@@ -30,7 +30,7 @@ def Connect():
                              db=Config.MySQL["db"])
     except OperationalError, errmsg:
         err(errmsg, __modulename__)
-	sys.exit(1)
+        sys.exit(1)
 
     return db.cursor(MySQLdb.cursors.DictCursor), db
 
@@ -41,7 +41,7 @@ def ValidateArgs(table, args):
     for key,val in args.iteritems():
         retval.append(val[:Const.FIELD_LEN[table][key]])
     return retval
-	
+
 def Query(query, args=None, fetch="all"):
     """ Returns a list of dictionaries of {column: value} pairs.
     Each dictionary in the list represents one record for the query.
@@ -68,7 +68,7 @@ def _InitQuery(query, args):
 def _Fetch((cursor, t_start), query, args, fetch):
     if fetch == "one":
         result = cursor.fetchone()
-	logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
+        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
     elif fetch == "none":
         logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
         return

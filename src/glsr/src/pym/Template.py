@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.4 2004/07/07 01:39:57 port001 Exp $
+# $Id: Template.py,v 1.5 2004/07/24 19:03:28 hadfield Exp $
 
 import sys
 import string
@@ -19,9 +19,9 @@ class New:
 
     def __init__(self):
         
-	self.Template = ""
-	self.Contents = []
-	self.Output = []
+        self.Template = ""
+        self.Contents = []
+        self.Output = []
         self.__Loops = {}
         self.__Terms = {}
 
@@ -32,16 +32,16 @@ class New:
         except IOError, errmsg:
 
             err(errmsg, __modulename__)            
-	    sys.exit(1)
+            sys.exit(1)
 
         return self.Contents
-	
+
     def __Clear(self):
 
         self.Template = ""
-	self.Contents = []
-	self.Output = []
-	
+        self.Contents = []
+        self.Output = []
+
     def __processLoops(self, file, Loops):
         """Processes all top level loops. Returns 'file' with all loops
         processed"""

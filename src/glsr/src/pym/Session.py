@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.1 2004/06/04 06:38:36 port001 Exp $
+# $Id: Session.py,v 1.2 2004/07/24 19:03:28 hadfield Exp $
 #
 
 __modulename__ = "Session"
@@ -32,15 +32,15 @@ class New:
                              fetch="all")
         ran = Random()
         
-	while 1:
+        while 1:
             num = ran.randint(0, 10000000000000000000000000)
     
             while i < 30:
                 sessid = sessid + ran.choice(chars + str(num))
                 i += 1
-	    
-	    if sessid not in result:
-	        break
+    
+            if sessid not in result:
+                break
     
         return sessid
 
@@ -85,7 +85,7 @@ class New:
         # Who the fuck designed cookies? This is fucking stupid! 
         chocchip["glsr_sessid"] = None
         chocchip["glsr_sessid"]["max-age"] = 0
-	chocchip["glsr_uid"] = None
+        chocchip["glsr_uid"] = None
         chocchip["glsr_uid"]["max-age"] = 0
 
         print chocchip
@@ -137,10 +137,10 @@ class New:
 
         o_sessid =  p_sessid.match(sessid)
         if not o_sessid:
-	    return "Invalid"
+            return "Invalid"
         o_uid = p_uid.match(str(uid))
         if not o_uid:
-	    return "Invalid"
+            return "Invalid"
 
         return "Valid"
 
@@ -148,10 +148,10 @@ class New:
 
         import Cookie
 
-	custardcream = Cookie.SimpleCookie()
-	custardcream.load(HTTP_COOKIE)
+        custardcream = Cookie.SimpleCookie()
+        custardcream.load(HTTP_COOKIE)
 
-	return (custardcream["glsr_uid"].value,
+        return (custardcream["glsr_uid"].value,
                 custardcream["glsr_sessid"].value)
 
     def ValidateSession(self, uid, sessid):
