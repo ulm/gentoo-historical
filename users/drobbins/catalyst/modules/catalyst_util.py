@@ -115,6 +115,8 @@ def die(msg=None):
 		print "catalyst: "+msg
 	sys.exit(1)
 
+def warn(msg):
+	print "catalyst: "+msg
 
 modes=["snap","enter","umount","livecd","stage"]
 modesdesc={ 	"snap":"Create a snapshot of the Portage tree for building",
@@ -130,7 +132,24 @@ def usage():
 	for x in modes:
 		print x+":",modesdesc[x]
 	die()
-	
+
+def read_settings(myset,myfn):
+	"""Grab local settings from a specified file myfn, dump values we are interested in to settings dictionary myset"""
+	if not os.path.exists(myfn):
+		raise OSError, "Cannot find settings file "+myfn
+	valdict={}
+	#this next line might throw an exception; it runs the file myfn as python code
+	#and dumps all variable definitions in the valdict dictionary.
+	try:
+		execfile(myfn,valdict,valdict)
+	except:
+		raise ValueError, "Error parsing settings file: "+myfn
+	#now we look inside the valdict dictionary and grab the settings we're interested
+	#in.
+	for x in ["buildtype","portdir","distdir","ccache"]:
+		if valdict.has_key(x):
+			myset[x]=valdict[x]
+
 def mainloop():
 	global subarches
 	#argument processing
@@ -141,9 +160,20 @@ def mainloop():
 		#non-root callers can still get -h and --help to work.
 		die("This script requires root privileges to operate.")	
 	elif sys.argv[1] in modes:
-		pass
+		#set up internal configuration settings dictionary
+		myset=settings()
+		verify_os(myset)
 		#initial mode selection ok, now validate any additional arguments
 		#later, we will perform the specified actions
+		if os.environ.has_key("HOME"):
+			#reading ~/.catalystrc is more an example than anything
+			if os.path.exists(os.environ["HOME"]+"/.catalystrc"):
+				read_settings(myset,os.environ["HOME"]+"/.catalystrc")
+		else:
+			warn("HOME environment variable not defined, skipping ~/.catalystrc.")		
+		myset.dump()
+		print "Done!"
+		sys.exit(0)
 	else:
 		usage()
 
