@@ -385,9 +385,11 @@
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
                     <br/>
+                    <a class="hotlink" href="/main/en/performance.xml">Performance benchmarks</a>
+                    <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
                     <br/>
-                    <a class="hotlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
                     <br/>
                     <a class="altlink" href="/main/en/devlist.xml">Developer List</a>
                     <br/>
