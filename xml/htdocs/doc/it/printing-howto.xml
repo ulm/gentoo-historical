@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?> 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/printing-howto.xml,v 1.8 2004/09/06 20:31:46 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/printing-howto.xml,v 1.9 2004/09/29 22:13:14 mush Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/it/printing-howto.xml" lang="it"> 
@@ -35,8 +35,8 @@ Questo documento tratta sia la stampa in locale che in rete.
 
 <license/>
 
-<version>1.14</version>
-<date>2 Luglio 2004</date>
+<version>1.18</version>
+<date>11 Settembre 2004</date>
 
 <chapter> 
 <title>Installazione di CUPS e foomatic</title> 
@@ -139,23 +139,18 @@ di caricare i moduli necessari:
 
 <p>
 Dopo aver caricato con successo i moduli, collegare la stampante e controllare
-<path>/var/log/messages</path> per verificare che sia stata rilevata.
+<c>dmesg</c> per verificare che sia stata rilevata.
 </p> 
 
-<note>
-Se si sta utilizzando qualcosa di diverso rispetto a sysklogd, il file di log del kernel
-sarà differente.
-</note>
-
 <pre caption = "Controllo dei Mesaggi del Kernel">
-# <i>tail /var/log/messages</i>
+# <i>dmesg | tail</i>
 </pre> 
 
 <p>
 Si dovrebbe trovare qualcosa di simile a questo:
 </p>
 
-<pre caption = "Contenuto di /var/log/messages">
+<pre caption = "Output di dmesg">
 hub.c: USB new device connect on bus2/2, assigned device number 2 
 printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104
 </pre>
@@ -219,6 +214,20 @@ Prima di configurare la stampante con CUPS, possiamo testarla con alcuni
 comandi di basso livello.
 </p> 
 
+<note>
+Alcune stampanti (specialmente quelle basate su <uri 
+link="http://pnm2ppa.sourceforge.net">PPA</uri> come le HP serie 720, 820 e 1000)
+non accettano input ASCII. Se si utilizza una di queste stampanti, quindi
+<e>basata su PPA</e>, bisogna tener conto che questo test fallirà anche se
+la stampante funziona correttamente.
+</note>
+
+<note>
+Alcune stampanti (ad esempio diverse HP LaserJet) necessitano di un ^L (Control-L)
+alla fine del file per avviare la stampa.
+In assenza del ^L il cat funziona e la stampante riceve i dati, ma non inizia a stampare.
+</note>
+
 <pre caption = "Test di Stampa Utilizzando cat">
 # <i>touch test.txt</i>
 # <i>echo "Hello World" > test.txt</i>
@@ -227,12 +236,6 @@ comandi di basso livello.
 <comment> In alternativa, per le stampanti su porta parallela: </comment>
 # <i>cat test.txt > /dev/lp0 </i>
 </pre>
-
-<note>
-Alcune stampanti (ad esempio diverse HP LaserJet) necessitano di un ^L (Control-L)
-alla fine del file per avviare la stampa.
-In assenza del ^L il cat funziona e la stampante riceve i dati, ma non inizia a stampare.
-</note>
 
 </body>
 </section>
@@ -258,21 +261,26 @@ omni, hpijs, pnm2ppa.
 
 <p>
 Per molte stampanti, escluse le HP Inkjet, sarà possibile utilizzare i
-i driver standard di Linux per le stampanti. Visitare il
+i driver standard di Linux. Visitare il
 <uri link="http://www.linuxprinting.org/printer_list.cgi"> database di supporto
 per stampanti di linuxprinting.org</uri> per trovare informazioni sulla propria stampante.
 Leggere la documentazione fornita con qualsiasi driver si scarichi per informazioni
 sull'installazione e la licenza.
 </p> 
 
-<impo>
+<p>
 Se si utilizza una stampante HP Inkjet, è necessario installare il driver per stampante
 <c>hpijs</c>. Questo driver si occupa dell'interpretazione del Postscript
 necessaria per far funzionare la stampante HP. Il driver <c>hpijs</c> è soltanto per
 le stampanti HP Inkjet, ma è disponibile in Portage per comodità. La documentazione di HP per
 il driver <c>hpijs</c> sarà messa in <path>/usr/share/doc/hpijs-&lt;version&gt;</path>.
 L'autore raccomanda <e>caldamente</e> di leggerla.
-</impo>
+</p>
+
+<p>
+Se si sta utiizzando una stampante basata su PPA è necessario installare il
+driver <c>pnm2ppa</c>.
+</p>
 
 <pre caption="Installazione di hpijs">
 # <i>emerge hpijs</i>
@@ -363,11 +371,6 @@ che si sta utilizzando.
 # <i>foomatic-configure -s cups -p Epson-Stylus_Color_980 -c file:/dev/lp0 -n Epson -d gimp-print-ijs </i>
 </pre>
 
-<impo>
-In caso di problemi far riferimento alla <uri link="http://www.linuxprinting.org/foomatic/USAGE">documentazione di foomatic</uri>
-o all'home-page di <uri link="http://www.linuxprinting.org">linuxprinting.org</uri> per maggiori informazioni.
-</impo>
-
 </body> 
 </section>
 </chapter> 
@@ -384,10 +387,16 @@ browser web sulla porta 631 del server di stampa.
 </p>
 
 <p>
-CUPS è dotato di un file di configurazione per il daemon che sarebbe opportuno,
-ma non indispensabile, modificare. Se si vuol dargli un'occhiata, il file è:
-<path>/etc/cups/cupsd.conf</path>.
+CUPS è dotato di un file di configurazione per il daemon che andrebbe modificato,
+almeno per permettere una nomenclatura di tipo URI dei dispositivi. Aprire con
+un editor di testo <path>/etc/cups/cupsd.conf</path> ed impostare <c>FileDevice</c> a
+<c>Yes</c>:
 </p>
+
+<pre caption="Impostare FileDevice a Yes">
+# <i>nano -w /etc/cups/cupsd.conf</i>
+<comment>(Imposta FileDevice a Yes)</comment>
+</pre>
 
 <p>
 Se si vogliono configurare i client utilizzando il nuovo server di stampa
@@ -437,11 +446,14 @@ programma.
 <body>
 
 <p>
-Prima di iniziare, dobbiamo installare le estensioni di stampa CUPS per The Gimp.
+Per poter stampare da The Gimp è necessario (re)installare il package <c>gimp</c> con
+la flag USE "gimpprint" attiva. Così facendo verrà installato <c>gimp-print</c> se non è
+già presente.
 </p>
 
-<pre caption="Installazione di gimp-print">
-# <i>emerge gimp-print </i>
+<pre caption="Installazione di gimp con funzionalità di stampa">
+<comment>(Accertarsi di avere USE="gimpprint" abilitata)</comment>
+# <i>emerge gimp</i>
 </pre>
 
 <p>
