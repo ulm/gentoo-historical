@@ -460,6 +460,116 @@ class GLIInstallTemplate:
 		# Dependency checking		
 		self._depends("unpack_tarball")
 
+		#
+		# SET DEFAULT GATEWAY
+		#
+
+		# Get default gateway
+		default_gateway = self._install_profile.get_default_gateway()
+		
+		# If the default gateway exists, add it
+		if default_gateway:
+			self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "gateway", default_gateway)
+			
+		#
+		# SET RESOLV INFO
+		#
+
+		# Get dns servers and domain info
+		dns_servers = self._install_profile.get_dns_servers()
+		domainname = self._install_profile.get_domainname()
+		
+		# If dns servers are set
+		if dns_servers:
+			
+			# Clear the list
+			resolv_output = []
+			
+			# Parse each dns server
+			for dns_server in dns_servers:
+				# Add the server to the output
+				resolv_output.append("nameserver " + dns_server +"\n")
+			
+			# If the domainname is set, then also output it
+			if domainname:
+				resolv_output.append("search " + domainname + "\n)
+				
+		# Output to file
+		resolve_conf = open(self._client_configuration.root_mount_point + "/etc/resolv.conf", "w")
+		resolve_conf.write_lines(resolv_output)
+		resolve_conf.close()
+		
+		#
+		# PARSE INTERFACES
+		#
+
+		# Fetch interfaces
+		interfaces = self._install_profile.get_network_interfaces_post()
+		
+		# Parse each interface
+		for interface in interfaces.keys():
+		
+			# If we are going to load the network at boot...
+			if interfaces[interface][2]:
+				
+				# Add it to the default runlevel
+					exitstatus = self._run("rc-update add net." + interface + " default", True)
+					if exitstatus != 0:
+						raise "NetStartupError", "Cannot add interface " + interface + " to the default runlevel!"
+
+			# Set what kind of interface it is
+			interface_type = interface[:3]
+		
+			# Check to see if there is a startup script for this interface, if there isn't link to the proper script
+			try:
+				os.stat(self._client_configuration.root_mount_point + "/etc/net." + interface)
+			except:
+				os.symlink("net." + interface_type +  "0", self._client_configuration.root_mount_point + "/etc/net." + interface)				
+		
+			#
+			# ETHERNET
+			#
+			if interface_type == "eth":
+
+				#
+				# STATIC IP
+				#
+				# If the post-install device info is not None, then it is a static ip addy
+				if interfaces[interface][1]:
+					ip = interfaces[interface][1][0]
+					broadcast = interfaces[interface][1][1]
+					netmask = interfaces[interface][1][2]
+					aliases = interfaces[interface][1][3]
+					alias_ips = []
+					alias_broadcasts = []
+					alias_netmasks = []
+					
+					# Write the static ip config to /etc/conf.d/net
+					self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
+					
+					# If aliases are set
+					if aliases:
+					
+						# Parse aliases to format alias info
+						for alias in aliases:
+							alias_ips.append(alias[0])
+							alias_broadcasts.append(alias[1])
+							alias_netmasks.append(allias[2])
+						
+						# Once the alias info has been gathered, then write it out
+						# Alias ips first
+						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
+						# Alias broadcasts next
+						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
+						# Alias netmasks last
+						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
+
+				#
+				# DHCP IP
+				#
+				else:
+					self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "iface_" + interface, "dhcp")
+							
 	def set_root_password(self):
 		"Sets the root password"
 		# Dependency checking		
