@@ -1,0 +1,386 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-ppc-kernel.xml,v 1.1 2004/06/08 13:26:19 sergey Exp $ -->
+
+<!-- REV: 1.3 -->
+
+<sections>
+
+<section>
+<title>Временная зона</title>
+<body>
+
+<p>
+Сначала вы должны выбрать временную зону, чтобы система знала, где вы находитесь.
+Найдите нужную зону в <path>/usr/share/zoneinfo</path> и сделайте симлинк в  
+<path>/etc/localtime</path> с помощью <c>ln</c>:
+</p>
+
+<pre caption="Установка временной зоны">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Допустим, что вы хотите использовать GMT)</comment>
+# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Установка исходников</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux - это то, вокруг чего формируются все дистрибутивы. Это
+слой между программами пользователя и вашими аппаратными средствами. Gentoo предоставляет
+на выбор пользователю несколько исходников ядра. Полный их список с описанем
+можно найти в <uri link="/doc/en/gentoo-kernel.xml">Gentoo Kernel
+Guide</uri>. 
+</p>
+
+<p>
+Для PPC систем существуют такие ядра, как <c>ppc-sources</c>, 
+<c>ppc-sources-benh</c>,
+<c>ppc-sources-dev</c>, <c>ppc-sources-crypto</c> и
+<c>ppc-development-sources</c>. Последнее ядро доступно если вы выпоняете
+установку без доступа к сети. Чтож давайте выполним установки исходников ядра:
+</p>
+
+<pre caption="Установка исходников ядра">
+# <i>emerge ppc-development-sources</i>
+</pre>
+
+<p>
+Если вы зайдете в папку <path>/usr/src</path>, то должны увидеть ссылку
+<path>linux</path> которая указываeт на исходники ядра:
+</p>
+
+<pre caption="Просмотр папки с исходниками ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.1
+</pre>
+
+<p>
+Если у вас не так (т.е. ссылка указывает на другое ядро) 
+надо изменить ссылку, прежде чем продолжить:
+</p>
+
+<pre caption="Смена ссылки на исходники ядра">
+# <i>rm /usr/src/linux </i>
+# <i>cd /usr/src</i>
+# <i>ln -s linux-2.6.1 linux</i>
+</pre>
+
+<p>
+Теперь можно настроить и скомпилировать исходники ядра. Вы можете использовать
+скрипт <c>genkernel</c>, который сформирует стандартное ядро, используемое на
+LiveCD. Далее мы расскажем как в "ручную" настроить ядро, т.к. это лучший способ
+для оптимизации вашей системы.
+</p>
+
+<p>
+Теперь перейдем к разделу <uri
+link="#manual">По умолчанию: Ручная настройка</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>По умолчанию: Ручная настройка</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Ручная настройка ядра является одним из самых сложных вопросов для пользователей Linux. 
+Зато после настройки нескольких ядер, вам уже будет казаться, что в этом ни чего трудного нет ;)
+</p>
+
+<p>
+Однако есть одна <e>истина</e>: когда вы запускаете ручную настройку ядра, вы должны знать свой компьютер.
+Большую часть информации можно получить просмотрев <path>/proc/pci</path> (или использовать <c>lspci</c> если это возможно). 
+Вы также можете запустить <c>lsmod</c> для просмотра модулей ядра используемых
+LiveCD (это послужит хорошей подсказкой, на предмет того какие опции надо
+		включить).
+</p>
+
+<p>
+Теперь войдите в директорию с исходниками ядра и дайте команду <c>make menuconfig</c>. 
+Это откроет меню настроек.
+</p>
+
+<pre caption="Вызов меню настроек">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Перед вами появятся несколько секций настроек. Мы сначала перечислим опции, которые надо активировать
+(иначе Gentoo не будет работать, или будет работать не так как надо).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Активация нужных опций</title>
+<body>
+
+<p>
+Прежде всего разрешите использование разработанных и экспериментальных кодов/драйверов.
+Если этого не сделать, иначе вы не увидите некоторых важных опций:
+</p>
+
+<pre caption="Выбор эксперементальных кодов/драйверов">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers"
+</pre>
+
+<p>
+Убедитесь, что вы компилируете ядро для правильного типа процессора:
+</p>
+
+<pre caption="ВЫбор правильного семейства процессоров">
+Processor type and features ---&gt;
+  Subarchitecture Type (<i>PC Compatible</i>) ---&gt;
+  <comment>(Измените в соответствии с вашей системой)</comment>
+  Processor family (<i>Athlon/Duron/K7</i>) ---&gt;
+</pre>
+
+<p>
+Теперь войдите в <c>File Systems</c> и выберите поддержку всех нужных вам файловых систем.
+<e>Не</e> компилируйте их как модули, иначе система Gentoo не сможет смонтировать эти разделы.
+Также выберите <c>Virtual memory</c>, <c>/proc
+file system</c>, <c>/dev file system</c> + <c>Automatically mount at boot</c>:
+</p>
+
+<pre caption="Выбор необходимых файловых систем">
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+
+<comment>(Отмените эту опции если у вы не изпользуете ядро версии 2.6)</comment>
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(Выберите одну или несколько опций нужных вашей системе)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<note>
+Пользователи ядра версии 2.6 найдут некоторые из этих опций в <c>Pseudo
+filesystems</c>, который является подменю <c>File systems</c>.
+</note>
+
+<p>
+Если вы используете PPPoE или dial-up подключение для соединения с Internet, вам нужно включить в ядре следующие опции:
+</p>
+
+<pre caption="Выбор нужных драйверов PPPoE">
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<note>
+Пользователи ядра версии 2.6 найдут некоторые из этих опций в <c>Networking
+support</c>, который является подменю <c>Device Drivers</c>.
+</note>
+
+<p>
+Две опции сжатия данных не являются необходимыми, но и вреда от них тоже не
+будет. То же отностится и к опции <c>PPP over Ethernet</c> которая нужна только
+для <c>rp-pppoe</c>, сконфигурированного для работы с PPPoE в ядре.
+</p>
+
+<p>
+Если вам надо использовать ethernet-карты, то не забудьте включить в ядре их поддержку.
+</p>
+<p>
+Сперва отключите ADB :
+</p>
+
+<pre caption="Отключение ADB">
+Macintosh Device Drivers ---&gt;
+  [ ] Support for ADB raw keycodes
+</pre>
+
+<p>
+Также выберите правильную поддержку RTC(<e>отключите</e> опцию <c>Enhanced RTC</c>):
+</p>
+
+<pre caption="Установка правильной поддержки RTC">
+Character devices ---&gt;
+  [ ] Enhanced RTC
+
+General setup ---&gt;
+  [*] Support for /dev/rtc
+</pre>
+
+<p>
+Пользователям машин OldWorld, если нужна поддержка HFS могут скопировать откомпилированное ядро в разделы MacOS.
+</p>
+
+<pre caption="Установка поддержки HFS">
+File Systems ---&gt;
+  [*] HFS Support
+</pre>
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь ваше ядро настроено, настало время его скомпилировать и  установить.
+Выйдете из программы конфигурации и выполните команду <c>make dep &amp;&amp;
+make vmlinux modules modules_install</c>, а для Pegasos - <c>make dep &amp;&amp; make zImage
+modules modules_install</c>:
+</p>
+
+<pre caption="Компиляция ядра">
+(Apple/IBM)  # <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+(Pegasos)    # <i>make dep &amp;&amp; make zImage modules modules_install</i>
+</pre>
+
+<p>
+Когда ядро будет скомпилировано, скопируйте образ ядра в
+<path>/boot</path>.
+</p>
+
+<pre caption="Установка ядра">
+(Apple/IBM)  # <i>cp vmlinux /boot/kernel-2.4.24</i>
+(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/kernel-2.4.24</i>
+</pre>
+
+<p>
+Не забудть скопировать System.map
+</p>
+
+<pre caption="Копируем System.map">
+# <i>cp System.map /boot/System.map-2.4.24</i>
+</pre>
+
+<p>
+Также на всякий случай стоит скопировать ваш конфигурационный файл ядра в
+<path>/boot</path>:)
+</p>
+
+<pre caption="Создание резервной копии конфигурационного файла ядра">
+# <i>cp .config /boot/config-2.4.25-gentoo</i>
+</pre>
+
+<p>
+Теперь переходите к <uri link="#doc_chap4">Установка отдельных модулей ядра</uri>.
+</p>
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Установка отдельных модулей ядра</title>
+<subsection>
+<title>Установка дополнительных модулей</title>
+<body>
+
+<p>
+Наконец вы должны установить пакеты для любых других дополнительных устройств в вашей системе. 
+Ниже приведен список ядро-зависимых ebuild'ов доступных для установки:
+</p>
+
+<table>
+<tcolumn width="1in"/>
+<tcolumn width="4in"/>
+<tcolumn width="2in"/>
+<tr>
+  <th>Ebuild</th>
+  <th>Цель</th>
+  <th>Команда</th>
+</tr>
+<tr>
+  <ti>xfree-drm</ti>
+  <ti>
+    Граффическое ускорение для ATI Radeon до 9200, Rage128, Matrox, Voodoo и
+	других карт для XFree86. Проверьте опцию <c>IUSE_VIDEO_CARDS</c> в 
+	<path>/usr/portage/x11-base/xfree-drm</path>, чтбы узнать что писать в поле
+	<c>ваша_карта</c>.
+  </ti>
+  <ti><c>VIDEO_CARDS="ваша_карта" emerge xfree-drm</c></ti>
+</tr>
+</table>
+
+<p>
+Будьте осторожны! Некоторые их этих ebuilds могут потянуть за собой большое
+количество зависимостей. Проверьте
+какие пакеты будут установлены, используя  <c>emerge 
+--pretend</c>. Например для пакета <c>xfree-drm</c>:
+</p>
+
+<pre caption="Просмотр списка пакетов для установки">
+# <i>emerge --pretend xfree-drm</i>
+</pre>
+</body>
+</subsection>
+<subsection>
+<title>Конфигурация модулей</title>
+<body>
+
+<p>
+Если вы хотите, чтобы модули загружались автоматически при запуске системы, вы
+должны прописать их в 
+<path>/etc/modules.autoload.d/kernel-2.4</path> (или <path>kernel-2.6</path>). 
+Так же можно добавить дополнительные опции.
+</p>
+
+<p>
+Для просмотра всех доступных модулей запустите комманду <c>find</c>, заменив
+"&lt;kernel version&gt;" на версию ядра, которое вы только что собрали:
+</p>
+
+<pre caption="Просмотр доступных модулей">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+Например, если вы хотите автоматически загружать модуль <c>3c59x.o</c>,
+отредактируйте файл <path>kernel-2.4</path> или <path>kernel-2.6</path> и
+пропишите туда имя модуля.
+</p>
+
+<pre caption="Редактируем /etc/modules.autoload.d/kernel-2.4">
+<comment>(Пример для ядра 2.4)</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 или kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Теперь запустите <c>modules-update</c>, чтобы внести изменения в файл
+<path>/etc/modules.conf</path>:
+</p>
+
+<pre caption="Запуск modules-update">
+# <i>modules-update</i>
+</pre>
+
+<p>
+Теперь можете продолжить установку и перейти к разделу <uri
+link="?part=1&amp;chap=8">Настройка системы</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
