@@ -63,7 +63,7 @@ operations = {
               'build_kernel': archtemplate.build_kernel,
               'logger': archtemplate.install_logging_daemon,
               'crond': archtemplate.install_cron_daemon,
-              'fstools': archtemplate.intsall_filesystem_tools,
+              'fstools': archtemplate.install_filesystem_tools,
               'network': archtemplate.setup_network_post,
               'bootloader': archtemplate.install_bootloader,
               'config_files': archtemplate.update_config_files,
