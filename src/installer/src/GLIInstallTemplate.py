@@ -1,8 +1,34 @@
 import os, sys
 
-class GLIInstallTemplate
+class GLIInstallTemplate:
 
-	def _depends(self, install_profile, client_configureation, depends):
+	_install_profile = None
+	_client_configuration = None
+	
+	def __init__(self, install_profile, client_configuration):
+		"Sets the install_profile and client_configuration referances"
+		
+		self._install_profile = install_profile
+		self._client_configuration = client_configuration
+
+	def _emerge_sync(self):
+		"A private method to run emerge sync in the chroot environment"
+		
+		# Run the sync and return the exitstatus
+		return self._exec_in_chroot("emerge sync")
+		
+	def _emerge(self, package, binary=False, binary_only=False):
+		"A private method to emerge a program in the chroot environment"
+		
+		# Decide which to run
+		if binary:
+			return self._exec_in_chroot("emerge -k " + package)
+		elif binary_only:
+			return self._exec_in_chroot("emerge -K " + package)
+		else:
+			return self._exec_in_chroot("emerge " + package)	
+
+	def _depends(self, depends):
 		"A private method for dependency checking (returns bool)"
 
 		# Type checking
@@ -17,10 +43,10 @@ class GLIInstallTemplate
 		for dependency in depends:
 
 			# If the dependency has not been satisfied, check to see if 'ignore' has been turned on
-			if not dependency in client_configuration.install_steps_completed:
+			if not dependency in self._client_configuration.install_steps_completed:
 
 				#If ignore is on, just print a warning
-				if install_profile.ignore_install_step_depends:
+				if self._install_profile.get_ignore_install_step_depends():
 					print "Warning: You chose to ignore install step dependencies.  The " + dependency + " was not met.  Ignoring."
 				#If ignore is off, then raise exception
 				else:
@@ -119,99 +145,101 @@ class GLIInstallTemplate
 		f.writelines(file)
 		f.close()
 
-	def setup_network_pre(self, install_profile, client_configuration):
+	def setup_network_pre(self):
 		"Sets up the network on the live CD environment"
 		pass
 
-	def partition_local_devices(self, install_profile, client_configuration):
+	def partition_local_devices(self):
 		"Partitions local devices (hard drives, memory sticks, etc)"
 		pass
 
-	def mount_local_partitions(self, install_profile, client_configuration):
+	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
 		pass
 
-	def mount_network_shares(self, install_profile, client_configuration):
+	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
 		pass
 
-	def unpack_tarball(self, install_profile, client_configuration):
+	def unpack_tarball(self):
 		"Unpacks the appropriate stage tarball"
 		pass
 
-	def fetch_sources_from_cd(self, install_profile, client_configuration):
+	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
 		pass
 
-	def fetch_grp_from_cd(self, install_profile, client_configuration):
+	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
 		pass
 
-	def prepare_chroot(self, install_profile, client_configuration):
+	def prepare_chroot(self):
 		"Copies resolve.conf to the chroot environment and mounts /dev and /proc"
 		pass
 
-	def configure_make_conf(self, install_profile, client_configuration):
+	def configure_make_conf(self):
 		"Configures make.conf"
 		pass
 
-	def emerge_sync(self, install_profile, client_configuration):
+	def emerge_sync(self):
 		"Get/update the portage tree"
 		pass
 
-	def bootstrap(self, install_profile, client_configuration):
+	def bootstrap(self):
 		"Stage 1 install -- bootstraping"
 		pass
 
-	def emerge_system(self, install_profile, client_configuration):
+	def emerge_system(self):
 		"Stage 1 and 2 install -- build system"
 		pass
 
-	def set_timezone(self, install_profile, client_configuration):
+	def set_timezone(self):
 		"Sets the timezone for the new environment"
 		
+		self._depends("unpack_tarball")
+		
 		# Set symlink
-		os.symlink("../usr/share/zoneinfo/" + install_profile.get_time_zone(), "/mnt/gentoo/etc/localtime")
+		os.symlink("../usr/share/zoneinfo/" + self._install_profile.get_time_zone(), "/mnt/gentoo/etc/localtime")
 
-	def configure_fstab(self, install_profile, client_configuration):
+	def configure_fstab(self):
 		"Configures fstab"
 		pass
 
-	def emerge_kernel_sources(self, install_profile, client_configuration):
+	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
 		pass
 
-	def build_kernel(self, install_profile, client_configuration):
+	def build_kernel(self):
 		"Builds kernel"
 		pass
 
-	def setup_network_post(self, install_profile, client_configuration):
+	def setup_network_post(self):
 		"Sets up the network for the first boot"
 		pass
 
-	def install_system_utilities(self, install_profile, client_configuration):
+	def install_system_utilities(self):
 		"Installs and sets up logger, cron, fstools, rp-pppoe, pcmcia-cs"
 		pass
 
-	def install_bootloader(self, install_profile, client_configuration):
+	def install_bootloader(self):
 		"Installs and configures bootloader"
 		pass
 
-	def configure_rc_conf(self, install_profile, client_configuration):
+	def configure_rc_conf(self):
 		"Configures rc.conf"
 		pass
 
-	def update_config_files(self, install_profile, client_configuration):
+	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		pass
 
-	def set_root_password(self, install_profile, client_configuration):
+	def set_root_password(self):
 		"Sets the root password"
 		pass
 
-	def set_users(self, install_profile, client_configuration):
+	def set_users(self):
 		"Sets up the new users for the system"
 		pass
 
-	def unmount_devices(self, install_profile, client_configuration):
+	def unmount_devices(self):
 		"Unmounts mounted devices after installation"
