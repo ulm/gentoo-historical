@@ -113,10 +113,10 @@ def set_partitions():
 							tmpdev.remove_partition(int(tmpminor))
 							break
 					elif part_action == "Mount Point":
-						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						code, answer = d.inputbox("Enter a mountpoint for partition" + str(tmpminor), init=tmppart.get_mountopts())
 						if code == DLG_OK: tmppart.set_mountpoint(answer)
 					elif part_action == "Mount Options":
-						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						code, answer = d.inputbox("Enter your options for partition" + str(tmpminor), init=tmppart.get_mountopts())
 						if code == DLG_OK: tmppart.set_mountopts(answer)
 	if d.yesno("Would you like to save changes?") == DLG_YES:
 		parts_tmp = {}
