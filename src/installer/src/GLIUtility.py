@@ -394,3 +394,7 @@ def edit_config(filename, newvalues, delimeter='=', quotes_around_value=True):
 	f.writelines(file)
 	f.flush()
 	f.close()
+
+def get_value_from_config(filename, value):
+	return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
+	
