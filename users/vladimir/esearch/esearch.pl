@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.4 2003/03/06 22:20:34 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.5 2003/03/06 22:22:27 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 #
@@ -117,7 +117,7 @@ sub get_file {
 sub print_usage {
 	print BOLD;
 	print "\nesearch.pl - Lightweight, extremely fast Portage search";
-	print RESET, "\n";
+	print RESET, "\n\n";
 	print BOLD YELLOW "Usage:", RESET, "\n";
 	print "   esearch.pl [options] search string\n";
 	print BOLD YELLOW "Options:", RESET, "\n";
@@ -125,5 +125,6 @@ sub print_usage {
 	print "   --regex|r		Use Perl regular expressions\n";
 	print "   --searchall|S	Search all fields\n";
 	print "   --showmasked|m	Show masked packages\n\n";
-	print "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>\n\n";
+	print BOLD "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>";
+	print RESET, "\n\n";
 }
