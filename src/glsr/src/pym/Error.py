@@ -9,7 +9,7 @@
     the possibility of breakage from importing a dodgy module
     a function might not use. """
 
-__revision__ = "$Id: Error.py,v 1.4 2004/11/10 16:33:33 port001 Exp $"
+__revision__ = "$Id: Error.py,v 1.5 2004/11/14 23:00:31 port001 Exp $"
 __rating__ = "9.09/10"
 __modulename__ = "Error"
 
@@ -26,12 +26,22 @@ def exception_handler(tbtype, value, traceb):
     lines = traceback.format_exception(tbtype, value, traceb)
 
     if Config.ErrorReporting == True:
+
+        contents = []
+
         try:
-            error_log = open(Config.ErrorReportLog, "a")
-            error_log.write("%s||Unknown||Uncaught exception, \
-                            see glsr.log entry for this date and time.\n" \
+            readfd = open(Config.ErrorReportLog, "r")
+            contents = readfd.readlines()
+            readfd.close()
+        except IOError:
+            pass
+
+        try:
+            writefd = open(Config.ErrorReportLog, "w")
+            writefd.write("%s||Unknown||Uncaught exception, see glsr.log entry for this date and time.\n" \
                             % strftime("%d %b %Y %H:%M:%S", gmtime()))
-            error_log.close()
+            writefd.write("".join(contents))
+            writefd.close()
         except IOError:
             pass
 

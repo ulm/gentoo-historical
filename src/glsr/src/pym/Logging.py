@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.12 2004/11/10 16:33:33 port001 Exp $
+# $Id: Logging.py,v 1.13 2004/11/14 23:00:31 port001 Exp $
 #
 
 import traceback
@@ -21,12 +21,23 @@ def err(msg, modname):
     """
 
     if Config.ErrorReporting == True:
+
+        contents = []
+
         try:
-            fd = open(Config.ErrorReportLog, "a")
-            fd.write("%s||%s||%s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()),
-                                       modname, msg))
-            fd.close()
-        except:
+            readfd = open(Config.ErrorReportLog, "r")
+            contents = readfd.readlines()
+            readfd.close()
+        except IOError:
+            pass
+
+        try:
+            writefd = open(Config.ErrorReportLog, "w")
+            writefd.write("%s||%s||%s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()),
+                                                                      modname, msg))
+            writefd.write("".join(contents))
+            writefd.close()
+        except IOError:
             pass
 
     logwrite(msg, modname, "Error")
@@ -139,9 +150,10 @@ def logwrite(msg, modname, type):
         except:
             pass
 
-def ReturnErrorReports():
+def ReturnErrorReports(list_offset):
 
-    Reports = []
+    reports = []
+    count = 0
 
     try:
         fd = open(Config.ErrorReportLog, "r")
@@ -156,18 +168,23 @@ def ReturnErrorReports():
         if line == "\n":
             continue
 
+        if count == list_offset:
+            break
+
         try:
             (date, module, error) = line.split("||", 2)
-            Reports.append({"row": row, "date": date, "module": module,
+            reports.append({"row": row, "date": date, "module": module,
                             "error": error.strip()})
         except:
-            Reports.append({"row": row, "date": "N/A", "module": "N/A",
+            reports.append({"row": row, "date": "N/A", "module": "N/A",
                             "error": "Corrupt report"})
 
         if row == "even":
             row = "odd"
         else:
             row = "even"
+
+        count += 1
 
     if not len(Reports):
         return False

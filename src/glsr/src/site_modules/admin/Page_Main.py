@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.9 2004/11/12 20:37:49 port001 Exp $
+# $Id: Page_Main.py,v 1.10 2004/11/14 23:00:31 port001 Exp $
 #
 
 import Config
@@ -60,7 +60,16 @@ class Page_Main(SiteModule):
             self.tmpl.param("USERS_ONLINE_LIST", users_online_list, "loop")
 
         if Config.ErrorReporting == True:
-            error_report_list = ReturnErrorReports()
+            list_offset = int()
+            if self.form.has_key("error_report_offset"):
+                list_offset = self.form.getvalue("error_report_offset")
+                if str(list_offset).lower() == "all":
+                    list_offset = -1
+                else:
+                    list_offset = int(list_offset)
+            else:
+                list_offset = -1
+            error_report_list = ReturnErrorReports(list_offset)
             if error_report_list == False:
                 self.tmpl.param("ERROR_REPORTING", "False")
                 self.tmpl.param("ERROR_REPORT_LIST", [], "loop")

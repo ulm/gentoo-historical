@@ -27,6 +27,8 @@
       | <a class="menulink" href="index.py?page=script_search&search_submitter_id={USER_ID}">View Your Scripts</a> 
       | <a class="menulink" href="index.py?page=create_script&show_add=True">Create New Script</a> 
       | <a class="menulink" href="index.py?page=logout">Logout [{USER_ALIAS}]</a>
+      {ELSE}
+      | <a class="menulink" href="index.py?page=login">Login</a>
       {!IF}
       
     </span></td>

@@ -30,6 +30,7 @@
       </tr>
       {!LOOP}
       <tr>
+         <td class="standard_cell" align="left"><a href="index.py?domain=admin&page=main&error_report_offset=all">Show all</a></td>
          <td class="standard_cell" colspan="3" align="right"><input type="submit" class="button" name="flush_error_reports" value="Flush Log" />&nbsp;&nbsp;</td>
       </tr>
     </table>
