@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.9 2005/01/25 21:25:38 hadfield Exp $
+# $Id: Template.py,v 1.10 2005/01/26 05:46:28 hadfield Exp $
 #
 
 """The template handler module.
@@ -100,8 +100,11 @@ class Template:
             if index != -1:
                 rest = "[%s]" % index + rest
 
-            value = eval("values[param_name]%s" % rest)
-
+            try:
+                value = eval("values[param_name]%s" % rest)
+            except KeyError, errmsg:
+                raise TemplateError, errmsg
+            
             # Convert value to a string and then do the replace.
             repl_text = repl_text.replace("{%s}" % variable, "%s" % value)
             
