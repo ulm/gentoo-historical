@@ -1,17 +1,25 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.1 2003/09/10 15:16:00 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.2 2003/09/10 19:24:26 zhen Exp $
 
 # please note that you SHOULD not tinker with variables in here unless
 # you ABSOLUTELY know what you are doing. Please use files/catalyst.conf instead.
 
 VERSION="1.0"
 BASEDIR=`pwd`
+CONFIG=${BASEDIR}/files/catalyst.conf
 DESTBALL=${BASEDIR}/stages/stage${2}-${DESTARCH}-h-${4}.tar.bz2
 SRCBALL=${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-h-${SRCVER}.tar.bz2
 
-source ${BASEDIR}/files/catalyst.conf
+if [ -e ${CONFIG} ]
+then
+	source ${CONFIG}
+else
+	eerror"!!! Config file ${CONFIG} not found!!"
+	exit 1
+fi
+
 source /sbin/functions.sh
 
 usage() {
@@ -183,68 +191,72 @@ prechecks() {
 	fi
 }
 
+check_special() {
+	
+	if [ $1 = "snap" ]
+	then
+		[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${2}" || CHROOTDIR="$TMPDIR/snap-${2}"
+		SNAPBALL=${SNAPDIR}/portage-${2}.tar.bz2
+
+		install -d ${SNAPDIR}
+		einfo "Cleaning up build directory..."
+		rm -rf ${CHROOTDIR}
+		install -d ${CHROOTDIR}
+		einfo "Creating Portage tree snapshot..."	
+		rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
+		einfo -n "Creating Portage tree tarball..."
+		( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
+		echo " done."
+		exit 0
+	fi
+
+	if [ $1 = "umount" ]
+	then
+		einfo "Unmounting..."
+		umount_all
+		exit 0
+
+	fi
+	
+	if [ $1 = "enter" ]
+	then
+		install -d ${CHROOTDIR}
+		cd ${CHROOTDIR}
+		mount_all
+		einfo "Chrooting to ${CHROOTDIR}..."
+		$CHROOT ${CHROOTDIR}
+		umount_all
+		exit 0
+	fi
+}
+
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]
 then
 	usage
 	exit 1
 fi
 
+# more or less a sanity check
 prechecks
 
-if [ "$1" = "enter" -o "$1" = "umount" -o "$1" = "snap" ]
+if [ "$1" = "enter" ] || [ "$1" = "umount" ] || [ "$1" = "snap" ]
 then
-	SPECIALMODE=$1
+	check_special $1 $2
 	shift
 fi
 
-#unset so chroot doesn't get our custom setting
+# all of the special preconditions should be filled, so start
+# the body of the program now
+
+# unset so chroot doesn't get our custom setting
 unset PORTDIR DISTDIR
 [ ! -e "$MY_PORTDIR" ] && die "Portage dir $MY_PORTDIR not found, exiting."
 [ ! -e "$MY_DISTDIR" ] && die "Distdir $MY_DISTDIR not found; exiting."
 
-# setup how the special modes are handled
-if [ "$SPECIALMODE" = "snap" ]
-then
-	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
-	SNAPBALL=${SNAPDIR}/portage-${1}.tar.bz2
-else
-	MY_DIST_LOCALS=${BASEDIR}/dists/${4}
-	install -d $MY_DIST_LOCALS
-	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/stage-${2}-${4}" || CHROOTDIR="$TMPDIR/stage-${2}-${4}"
-	SNAPBALL=${SNAPDIR}/portage-${4}.tar.bz2
-fi
-
-if [ "$SPECIALMODE" = "snap" ]
-then
-	install -d ${SNAPDIR}
-	einfo "Cleaning up build directory..."
-	rm -rf ${CHROOTDIR}
-	install -d ${CHROOTDIR}
-	einfo "Creating Portage tree snapshot..."	
-	rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
-	einfo -n "Creating Portage tree tarball..."
-	( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
-	echo " done."
-	exit 0
-fi
-
-if [ "$SPECIALMODE" = "umount" ]
-then
-	einfo "Unmounting..."
-	umount_all
-	exit 0
-
-install -d ${CHROOTDIR}
-cd ${CHROOTDIR}
-
-elif [ "$SPECIALMODE" = "enter" ]
-then
-	mount_all
-	einfo "Chrooting to ${CHROOTDIR}..."
-	$CHROOT ${CHROOTDIR}
-	umount_all
-	exit 0
-fi
+MY_DIST_LOCALS=${BASEDIR}/dists/${4}
+install -d $MY_DIST_LOCALS
+[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/stage-${2}-${4}" || CHROOTDIR="$TMPDIR/stage-${2}-${4}"
+SNAPBALL=${SNAPDIR}/portage-${4}.tar.bz2
 
 case "${1}" in
 	amd64)
