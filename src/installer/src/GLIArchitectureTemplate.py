@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.54 2005/03/14 22:19:45 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.55 2005/03/16 06:17:35 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -59,6 +59,7 @@ class ArchitectureTemplate:
                                  (self.install_bootloader, "Configuring and installing bootloader"),
                                  (self.update_config_files, "Updating config files"),
                                  (self.configure_rc_conf, "Updating /etc/rc.conf"),
+								 (self.set_services, "Setting up services for startup"),
 								 (self.set_users, "Add additional users.")
                                 ]
 
@@ -76,7 +77,7 @@ class ArchitectureTemplate:
 		"Adds the script named 'script_name' to the runlevel 'runlevel' in the chroot environement"
 		
 		# Do it
-		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, chroot=self._chroot_dir)
+		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, display_on_tty8=True, chroot=self._chroot_dir)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
@@ -192,7 +193,16 @@ class ArchitectureTemplate:
 			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
 			else:
 				self._logger.log("Emerged package: "+package)
-# **************************************************************************************
+
+	def set_services(self):
+		"Will set the list of services to runlevel default.  This is a temporary solution!"
+
+		services = self._install_profile.get_services()
+		for service in services:
+			status = self._add_to_runlevel(service)
+			if not GLIUtility.exitsuccess(status):
+				self._logger.log("Could not add " + package + "to startup!")
+			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
 
 			
 	def mount_local_partitions(self):
@@ -431,6 +441,8 @@ class ArchitectureTemplate:
 			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
+			self._add_to_runlevel("hotplug")
+			self._add_to_runlevel("coldplug", runlevel="boot")
 			self._logger.log("Genkernel complete.")
 		else:  #CUSTOM CONFIG
 			#Copy the kernel .config to the proper location in /usr/src/linux

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.46 2005/03/01 06:42:39 agaffney Exp $
+$Id: GLIClientController.py,v 1.47 2005/03/16 06:17:35 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -208,9 +208,9 @@ class GLIClientController(Thread):
 					interface = "eth0"
 
 				if interface:
-					status = GLIUtility.spawn("dhcpcd " + interface, quiet=True)
+					status = GLIUtility.spawn("dhcpcd -n " + interface, quiet=True)
 				else:
-					status = GLIUtility.spawn("dhcpcd", quiet=True)
+					status = GLIUtility.spawn("dhcpcd -n", quiet=True)
 
 				if not GLIUtility.exitsuccess(status):
 					raise GLIException("DHCPError", 'fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")

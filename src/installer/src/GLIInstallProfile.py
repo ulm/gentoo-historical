@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.30 2005/01/19 21:55:09 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.31 2005/03/16 06:17:35 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -76,10 +76,10 @@ class InstallProfile:
 		self._users = []
 		self._root_pass_hash = ""
 		self._time_zone = ""
-		self._stage_tarball_uri = "file:///mnt/cdrom/stages/"
+		self._stage_tarball_uri = ""
 		self._install_stage = 1
 		self._portage_tree_sync_type = "sync"
-		self._portage_tree_snapshot_uri = "file:///mnt/cdrom/snapshots/portage-20040710.tar.bz2"
+		self._portage_tree_snapshot_uri = ""
 		self._domainname = "localdomain"
 		self._hostname = "localhost"
 		self._nisdomainname = ""
