@@ -185,7 +185,7 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
                   <p class="alttext">
 		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
@@ -716,7 +716,7 @@
           </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
                   <p class="alttext">
 		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
