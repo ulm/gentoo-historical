@@ -279,7 +279,7 @@ for category in fsort(db.keys()):
 		pkg_out=open(pkg_file,"w")
 		header="""<?xml version='1.0'?>
 		<mainpage id="packages">
-		<title>Gentoo Linux Packages""" + pkg + """</title>
+		<title>Package listing: """ + category+"/"+pkg + """</title>
 		<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
 		<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
 		<version>Current</version>
