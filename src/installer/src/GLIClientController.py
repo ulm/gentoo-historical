@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.29 2004/11/23 05:35:42 agaffney Exp $
+$Id: GLIClientController.py,v 1.30 2004/11/30 21:38:57 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -21,6 +21,8 @@ from threading import Thread, Event
 # Global constants for notifications
 NEXT_STEP_READY = 1
 INSTALL_DONE = 2
+
+TEMPLATE_DIR = 'templates'
 
 class GLIClientController(Thread):
 
@@ -84,9 +86,33 @@ class GLIClientController(Thread):
 
 		self.output("Starting install now...")
 
+		templates = {	'x86':		'x86ArchitectureTemplate',
+				'sparc':	'sparcArchitectureTemplate',
+				'amd64':	'amd64ArchitectureTemplate',
+				'mips':		'mipsArchitectureTemplate',
+				'hppa':		'hppaArchitectureTemplate',
+				'alpha':	'alphaArchitectureTemplate',
+				'ppc':		'ppcArchitectureTemplate',
+				'ppc64':	'ppc64ArchitectureTemplate'
+			}
+
+		
+		if self._configuration._architecture_template not in templates.keys():
+			self.addNotification(Notification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
+
+		try:
+			print "Using", templates[self._configuration._architecture_template]
+			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration._architecture_template])
+			self._arch_template = getattr(template, templates[self._configuration._architecture_template])(self._configuration, self._install_profile, self._pretend)
+			print "self._arch_template =", self._arch_template
+		except ImportError:
+			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!')))
+		except AttributeError:
+			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'This architecture template was not defined properly!')))
+
 		self.addNotification("int", NEXT_STEP_READY)
 		self._install_event.wait()
-		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
+#		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		self._install_steps = self._arch_template.get_install_steps()
 		while 1:
 			self._install_event.wait()
