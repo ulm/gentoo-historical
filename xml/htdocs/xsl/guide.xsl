@@ -138,7 +138,7 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  <xsl:value-of select="func:gettext('Updated')"/>&#173;
+                  <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
                   <xsl:choose>
                     <xsl:when test="/book">
                       <!-- In a book: look for max(/date, include_files/sections/date) -->
@@ -195,7 +195,8 @@
               <tr>
                 <td class="alttext">
                   <!-- Abstract (summary) of the document -->
-                  <b><xsl:value-of select="func:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
+                  <b><xsl:value-of select="func:gettext('Summary')"/>: </b>
+                  <xsl:apply-templates select="abstract"/>
                 </td>
               </tr>
               <tr>
@@ -968,7 +969,7 @@
     <a name="{@id}"/>
   </xsl:if>
   <p class="secthead">
-    <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
+    <a name="{$sectid}"><xsl:value-of select="title"/></a>
   </p>
 </xsl:if>
 <xsl:apply-templates select="body">
