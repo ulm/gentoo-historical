@@ -8,6 +8,52 @@ subarches=["amd64", "hppa", "hppa1.1", "hppa2.0", "x86", "i386", "i486", "i586",
 "athlon", "athlon-xp", "athlon-mp", "pentium-mmx", "pentium3", "pentium4", "ppc", "g3",
 "g4", "sparc", "sparc64", "mips", "alpha", "ev4", "ev5", "ev56", "pca56", "ev6", "ev67" ]
 
+#this target stuff is not completed, but I've added it as a general template.
+
+class generic_target:
+	def __init__(self,myset):
+		self.settings=myset
+	def path(self):
+		return "stages/stage1-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+	def unpack(self):
+		#unpack stages
+	def mount_all(self):
+		#mount mount points
+	def umount_all(self):
+		#umount mount points
+	def prep(self):
+		#prepare stage for packing up
+	def clean(self):
+		#clean up temporary build directory
+	def pack(self):
+		#tar up anything like a stage and put in right place
+	def build(self):
+		self.unpack()
+		self.setup()
+		self.mount_all()
+		retval=self.build() #check for failure
+		self.umount_all()
+		self.prep()
+		self.pack()
+		self.clean()
+
+class stage2(generic_target):
+	#subclass of generic_target
+	def path(self):
+		return "stages/stage2-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+
+class stage3(generic_target):
+	def path(self):
+		return "stages/stage3-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+
+class grp(generic_target):
+	def path(self):
+		return "stages/stage3-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+
+class livecd(target):
+	def path(self):
+		return "stages/stage3-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+
 class settings:
 	def __init__(self):
 		self.vals={}
