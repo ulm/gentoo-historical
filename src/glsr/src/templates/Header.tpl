@@ -38,13 +38,15 @@
   </tr>
   <tr>
     <td height="25" align="left" valign="center" bgcolor="#000000"><span class="menu">
+      <a class="menulink" href="index.py?page=main">Main</a> |
       <a class="menulink" href="index.py?page=news">News</a> |
       <a class="menulink" href="index.py?page=scriptview">View Scripts</a> |
       <a class="menulink" href="index.py?page=search">Search</a> |
       <a class="menulink" href="index.py?page=memberlist">Member List</a>
       {IF USER_ALIAS != ""}
       | <a class="menulink" href="index.py?page=profile">Profile</a>
-      | <a class="menulink" href="index.py?page=addscript">Add New Script</a> 
+      | <a class="menulink" href="index.py?page=yourscripts&show_all=True">View Your Scripts</a> 
+      | <a class="menulink" href="index.py?page=yourscripts&show_add=True">Create New Script</a> 
       | <a class="menulink" href="index.py?page=logout">Logout [{USER_ALIAS}]</a>
       {!IF}
       

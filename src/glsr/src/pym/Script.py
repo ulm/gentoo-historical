@@ -4,13 +4,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.1 2004/06/04 06:38:35 port001 Exp $
+# $Id: Script.py,v 1.2 2004/07/13 15:13:34 hadfield Exp $
 #
 
 __modulename__ = "Script"
 
 import types
 import string
+from time import strftime, gmtime
 
 import MySQL
 import Config
@@ -20,18 +21,60 @@ class Script(Parent):
 
     tablename = Config.MySQL["script_table"]
 
-    def Create(self, submitter, category, name, descr, body):
+    def Create(self, details):
         """Add a new script to the database"""
 
-        return Parent.Create(self,
-                             {"submitter":	submitter,
-                              "category":	category,
-                              "rank":		0,
-                              "name":		name,
-                              "descr":		description,
-                              "body":		body})
+        details.update({"rank": 0, "submitter_id": 0})
+        return Parent.Create(self, details, (("submitter_id", "name"),))
 
     
+    def CreateSub(self, details):
+        """Add a new subscript"""
+
+        self.tablename = Config.MySQL["subscript_table"]
+
+        details.update({"date":  strftime("%Y-%m-%d", gmtime()),
+                        "approved": 0})
+        retval = Parent.Create(self, details)
+        
+        self.tablename = Config.MySQL["script_table"]
+        return retval
+        
+    def ListSubs(self):
+
+        self.tablename = Config.MySQL["subscript_table"]
+        retval = self.List()
+        self.tablename = Config.MySQL["script_table"]
+
+        return retval
+
+    def CombineLists(self):
+        """ Returns a list of each script combined with its most recent
+        subscript. """
+        
+        script_arr = self.List()
+        subscript_arr = self.ListSubs()
+
+        recent_scripts = {}
+        # Strip out all but the most recent scripts from subscript_arr
+        for subscript in subscript_arr:
+            parent = subscript["subscript_parent_id"]
+            try:
+                if (recent_scripts[parent]["subscript_version"] <
+                    subscript["subscript_version"]):
+                    recent_scripts[parent] = subscript
+            except KeyError:
+                recent_scripts.update({parent:subscript})
+
+        #print len(recent_scripts.keys())
+        for parent,script in recent_scripts.iteritems():
+            for i in range(0, len(script_arr)):
+                if script_arr[i]["script_id"] == parent:
+                    script_arr[i].update(script)
+
+        #print script_arr
+        return script_arr
+        
     def Approve(self, uid):
         """Mark script as approved"""
 
