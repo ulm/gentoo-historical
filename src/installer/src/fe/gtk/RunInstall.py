@@ -92,7 +92,7 @@ class RunInstall(gtk.Window):
 				return False
 
 	def tail_logfile(self):
-		if select.select([my_pipe], None, None, 0)[0]:
+		if select.select([self.tail_pipe], None, None, 0)[0]:
 			line = self.tail_pipe.readline()
 			self.textbuffer.set_text(self.textbuffer.get_text(0, self.textbuffer.get_char_count()-1) + line)
 
