@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.12 2004/08/25 19:38:10 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.13 2004/08/25 21:42:13 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -59,7 +59,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 		# Initialize some variables so we never reference a variable that never exists.
 		self._dns_servers = ()
-		self._network_type = ""
+		self._network_type = None
 		self._network_data = ()
 		self._default_gateway = ()
 		self._enable_ssh = False

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.9 2004/08/25 19:38:10 samyron Exp $
+$Id: GLIClientController.py,v 1.10 2004/08/25 21:42:13 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -50,9 +50,6 @@ class GLIClientController(Thread):
 		if self._configuration == None and not interactive:
 			print "You can not do a non-interactive install without a ClientConfiguration!"
 			sys.exit(1)
-		elif self._install_profile == None and not interactive:	
-			print "You can not do a non-interactive install without an InstallProfile!"
-			sys.exit(1)
 
 		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.get_install_profile, self.enable_ssh]
 		# Do Pre-install client-specific things here.
@@ -69,6 +66,11 @@ class GLIClientController(Thread):
 
 		# Wait for the self._install_event to be set before starting the installation.
 		self._install_event.wait()
+
+		if self._install_profile == None and not interactive:	
+			print "You can not do a non-interactive install without an InstallProfile!"
+			sys.exit(1)
+
 		print "Starting install now..."
 
 	def set_proxys(self):
@@ -108,7 +110,7 @@ class GLIClientController(Thread):
 
 	def configure_networking(self):
 		# Do networking setup right here.
-		if self._configuration.get_network_type() != "none":
+		if self._configuration.get_network_type() != None:
 			type = self._configuration.get_network_type()
 			if type == "dhcp":
 				# Run dhcpcd.
