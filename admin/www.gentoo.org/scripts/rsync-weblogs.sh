@@ -11,7 +11,7 @@
 
 RSYNC="/usr/bin/rsync"
 LOCALDIR="/var/log/apache/*"
-RSYNCSERVER="monitor.gentoo.org::web-logs"
+RSYNCSERVER="crane.gentoo.org::web-logs"
 REMOTEDIR="/$HOSTNAME/"
 RSYNCOPTIONS=""
 
