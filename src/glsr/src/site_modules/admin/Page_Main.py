@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.12 2004/12/25 21:35:00 port001 Exp $
+# $Id: Page_Main.py,v 1.13 2004/12/25 23:51:02 port001 Exp $
 #
 
 import State
@@ -27,19 +27,17 @@ class Page_Main(SiteModule):
     
     def _set_params(self):
 
-        users_online_list = []
-        row = 'even'
+        registered_sessions_online = []
+        row = "even"
 
-        # Count active users
-        active_sessions = Session.get_active(Config.WhoIsOnlineOffset)
+        (user_list, guest_count) = Session.get_active(Config.WhoIsOnlineOffset)
 
-        if len(active_sessions) == 0:
-            self.tmpl.param('USERS_ONLINE', 'False')
-            self.tmpl.param('USERS_ONLINE_LIST', [], 'loop')
+        if len(user_list) == 0 and guest_count == 0:
+            self.tmpl.param('REGISTERED_SESSIONS_ONLINE', [], 'loop')
         else:
-            self.tmpl.param('USERS_ONLINE', 'True')
-            for session in active_sessions:
-                ThisUser = User(session['session_user_id'])
+            self.tmpl.param('GUEST_SESSIONS_ONLINE', guest_count)
+            for user in user_list:
+                ThisUser = User(user)
                 alias = ThisUser.GetAlias()
                 ip = ThisUser.GetLastIP()
 
@@ -48,15 +46,16 @@ class Page_Main(SiteModule):
                 elif ip == False:
                     ip = 'N/A'
 
-                users_online_list.append({'row': row,
-                                          'user': alias,
-                                          'ip': ip})
+                registered_sessions_online.append({'row': row,
+                                                   'user': alias,
+                                                   'ip': ip})
                 if row == 'even':
                     row = 'odd'
                 else:
                     row = 'even'
 
-            self.tmpl.param('USERS_ONLINE_LIST', users_online_list, 'loop')
+            self.tmpl.param('REGISTERED_SESSIONS_ONLINE', registered_sessions_online, 'loop')
+	    self.tmpl.param('REGISTERED_SESSIONS_ONLINE_COUNT', len(registered_sessions_online))
 
         if Config.ErrorReporting == True:
             list_offset = int()

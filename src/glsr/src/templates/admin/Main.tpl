@@ -53,35 +53,31 @@
     </form>
 
     <table width="90%" class="standard_table">
-      <tr>
-        {IF USERS_ONLINE != "False"}
-        <td colspan="2" class="header">Who Is Online</td>
-        {ELSE}
-        <td class="header">Who Is Online</td>
-        {!IF}
-      </tr>
-      {IF USERS_ONLINE != "False"}
-      <tr>
-        <td class="sub_header">User</td>
-        <td class="sub_header">IP Address</td>
-      </tr>
-      {!IF}
-      {IF USERS_ONLINE != "False"}
-      {LOOP USERS_ONLINE_LIST}
-      <tr>
-        <td class="standard_row_{USERS_ONLINE_LIST.row}">{USERS_ONLINE_LIST.user}</td>
-        <td class="standard_row_{USERS_ONLINE_LIST.row}">{USERS_ONLINE_LIST.ip}</td>
-      </tr>
-      {!LOOP}
-      <tr>
-         <td class="standard_cell" colspan="2"></td>
-      </tr>
-      {ELSE}
-      <tr>
-         <td class="standard_cell">No registered accounts active.</td>
-      </tr>
-      {!IF}
+     <tr>
+      <td class="header" colspan="2">
+       Who Is Online
+      </td>
+     </tr>
+     <tr>
+      <td class="standard_cell" colspan="2">
+       There are currently {REGISTERED_SESSIONS_ONLINE_COUNT} users and {GUEST_SESSIONS_ONLINE} guests online.       
+      </td>
+     </tr>
+     {IF REGISTERED_SESSIONS_ONLINE_COUNT > 0}
+     <tr>
+      <td class="sub_header">User</td>
+      <td class="sub_header">IP Address</td>
+     </tr>
+     {LOOP REGISTERED_SESSIONS_ONLINE}
+     <tr>
+      <td class="standard_row_{REGISTERED_SESSIONS_ONLINE.row}">{REGISTERED_SESSIONS_ONLINE.user}</td>
+      <td class="standard_row_{REGISTERED_SESSIONS_ONLINE.row}">{REGISTERED_SESSIONS_ONLINE.ip}</td>
+     </tr>
+     {!LOOP}
+     <tr>
+      <td class="standard_cell" colspan="2"></td>
+     </tr>
+     {!IF}
     </table>
-    </form>
     <br />
 

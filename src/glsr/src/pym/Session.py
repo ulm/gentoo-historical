@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.5 2004/12/25 02:27:33 port001 Exp $
+# $Id: Session.py,v 1.6 2004/12/25 23:51:02 port001 Exp $
 #
 
 __modulename__ = "Session"
@@ -173,14 +173,21 @@ class Session:
         return MySQLHandler.query("SELECT %s_user_id FROM %s " % (self.tablename, self.full_tablename) +
 	                          "WHERE %s_id " % self.tablename +
                                   "= %s", self._sid, fetch="one")["%s_user_id" % self.tablename]
-
     def get_active(self, grace):
 
-        #FIXME: Make mysql do the counting
-        return MySQLHandler.query("SELECT %s_id, %s_user_id FROM %s " %
-                                  (self.tablename, self.tablename,
-                                  self.full_tablename) +
-                                  "WHERE (UNIX_TIMESTAMP() - %s_time) <= " %
-                                  self.tablename + "%s", grace, fetch="all")
+        guest_count = 0
+        user_list = []
+
+        result =  MySQLHandler.query("SELECT %s_user_id FROM %s " %
+                                     (self.tablename, self.full_tablename) +
+                                     "WHERE (UNIX_TIMESTAMP() - %s_time) <= " %
+                                     self.tablename + "%s", grace, fetch="all")
+        for session in result:
+            if session['session_user_id'] == 0:
+                guest_count += 1
+            else:
+                user_list.append(session['session_user_id'])
+
+        return (user_list, guest_count)
 
     get_active = classmethod(get_active)
