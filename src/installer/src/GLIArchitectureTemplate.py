@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.75 2005/03/27 08:02:24 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.76 2005/03/27 19:07:09 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -44,11 +44,11 @@ class ArchitectureTemplate:
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
                                  (self.prepare_chroot, "Preparing chroot"),
-								 (self.install_portage_tree, "Portage tree voodoo"),
+                                 (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.stage1, "Performing bootstrap"),
                                  (self.stage2, "Performing 'emerge system'"),
                                  (self.set_root_password, "Set the root password"),
-								 (self.set_timezone, "Setting timezone"),
+                                 (self.set_timezone, "Setting timezone"),
                                  (self.emerge_kernel_sources, "Emerge kernel sources"),
                                  (self.build_kernel, "Building kernel"),
                                  (self.install_logging_daemon, "Logger"),
@@ -58,10 +58,10 @@ class ArchitectureTemplate:
                                  (self.install_bootloader, "Configuring and installing bootloader"),
                                  (self.update_config_files, "Updating config files"),
                                  (self.configure_rc_conf, "Updating /etc/rc.conf"),
-								 (self.set_services, "Setting up services for startup"),
-								 (self.set_users, "Add additional users."),
-								 (self.install_packages, "Installing additional packages."),
-								 (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
+                                 (self.set_services, "Setting up services for startup"),
+                                 (self.set_users, "Add additional users."),
+                                 (self.install_packages, "Installing additional packages."),
+                                 (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
                                 ]
 
 
