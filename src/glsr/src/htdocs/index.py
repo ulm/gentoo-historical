@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.36 2005/01/25 23:21:25 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.37 2005/01/25 23:23:02 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -39,7 +39,7 @@ import Config
 from User import User
 from Error import error_tb
 from Session import Session
-from Logging import logwrite
+from Logging import logwrite, err
 from SiteModule import Redirect
 from Template import Template
 from GLSRException import GLSRException
@@ -203,8 +203,8 @@ class _PageDispatch:
             output_str = error.__str__()
             output_str = output_str.replace("\n", "<br />")
             output_str = output_str.replace(" ", "&nbsp;")
-            LogHandler.err(output_str,
-                           module_object.__modulename__)
+            err(output_str,
+                module_object.__modulename__)
             sys.exit(0)
 
     def _send_headers(self):
