@@ -1,77 +1,78 @@
 import gtk
 import GLIScreen
-from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
-    """
-    The Bootloader section of the installer.
-    
-    @author:    John N. Laliberte <allanonl@bu.edu>
-    @license:   GPL
-    """
-    # Attributes:
-    title="Bootloader"
-    # Operations
-    def __init__(self, controller):
-	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+	title = "Bootloader"
+	active_selection = None
+	install_in_mbr = True
+	boot_loaders = {}
 
-        content_str = """
-This is where you select either grub or lilo.
-[short explanation here] This will always install in the MBR. Fix later.
+	def __init__(self, controller):
+		GLIScreen.GLIScreen.__init__(self, controller)
+		vert = gtk.VBox(gtk.FALSE, 0)
+		vert.set_border_width(10)
+
+		content_str = """Here, you will select which bootloader you would like to use. Each option has
+a brief description beside it.
 """
-	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		content_label = gtk.Label(content_str)
+		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
-	widgets=Widgets()
-	
-	# This will always install it in the MBR! CAUTION.
-	options=["grub","lilo"]
-	self.bootloaders=options
-	self.bootloader_widgets=[]
-	
-	i=0
-	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,self.callback,options[0],options[0])
-	self.bootloader_widgets.append(new_boxt)
-	new_boxt.set_active(gtk.TRUE)
-	hBoxed=widgets.hBoxIt(new_boxt) 
-	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for counter in range(len(options)):
-	 if i!=0:
-	  new_box=widgets.radioButton(new_boxt,self.callback,options[counter],options[counter])
-	  self.bootloader_widgets.append(new_box)
-          #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
-          new_box.show()
-	  hBoxed=widgets.hBoxIt(new_box)			  
-	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-	 else:
-	  i=-1
-    	self.add_content(vert)
+		self.boot_loaders['grub'] = gtk.RadioButton(None, "grub")
+		self.boot_loaders['grub'].set_name("grub")
+		self.boot_loaders['grub'].connect("toggled", self.stage_selected, "grub")
+		self.boot_loaders['grub'].set_size_request(100, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.boot_loaders['grub'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This is the more popular bootloader. If you are installing on AMD64, this is\nyour only choice"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 
-    def callback(self, widget, data=None):
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-      self.controller.install_profile.set_boot_loader_pkg(None, widget.get_name(), None)
-      # Hard coded to always install in the MBR...need to add another question
-      # for this later on.
-      self.controller.install_profile.set_boot_loader_mbr(None, True, None)
-      print "current bootloader: "+self.controller.install_profile.get_boot_loader_pkg()
-      
-    def activate(self):
-	# grab from the install profile
-	bootloader=self.controller.install_profile.get_boot_loader_pkg()
-	print "Bootloader from profile: " + bootloader
-	
-	# now select it
-	for count in range(len(self.bootloaders)):
-	    if(bootloader==self.bootloaders[count]):
-		# This is it, select it.
-		self.bootloader_widgets[count].set_active(gtk.TRUE)
-		
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.boot_loaders['lilo'] = gtk.RadioButton(self.boot_loaders['grub'], "lilo")
+		self.boot_loaders['lilo'].set_name("lilo")
+		self.boot_loaders['lilo'].connect("toggled", self.stage_selected, "lilo")
+		self.boot_loaders['lilo'].set_size_request(100, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.boot_loaders['lilo'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This bootloader isn't as flexible as grub, but some people still prefer it"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
+		self.boot_loaders['none'] = gtk.RadioButton(self.boot_loaders['grub'], "None")
+		self.boot_loaders['none'].set_name("none")
+		self.boot_loaders['none'].connect("toggled", self.stage_selected, "none")
+		self.boot_loaders['none'].set_size_request(100, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.boot_loaders['none'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Choose this if you don't want a bootloader installed"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
+		self.check_install_in_mbr = gtk.CheckButton("Install in MBR")
+		self.check_install_in_mbr.connect("toggled", self.mbr_selected)
+		self.check_install_in_mbr.set_size_request(100, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.check_install_in_mbr, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This controls whether the bootloader is installed in the MBR or not"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
+		self.add_content(vert)
+
+	def stage_selected(self, widget, data=None):
+		self.active_selection = data
+
+	def mbr_selected(self, widget, data=None):
+		self.install_in_mbr = self.check_install_in_mbr.get_active()
+
+	def activate(self):
+		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
+		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
+		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
+		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
+		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.active_selection = self.controller.install_profile.get_boot_loader_pkg() or "grub"
+		self.boot_loaders[self.active_selection].set_active(gtk.TRUE)
+		self.check_install_in_mbr.set_active(self.install_in_mbr)
+
+	def deactivate(self):
+		self.controller.install_profile.set_boot_loader_pkg(None, self.active_selection, None)
+		self.controller.install_profile.set_boot_loader_mbr(None, self.install_in_mbr, None)
+		return True
