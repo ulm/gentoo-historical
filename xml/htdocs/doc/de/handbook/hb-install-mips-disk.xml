@@ -1,0 +1,470 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- English CVS Version: 1.6 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-mips-disk.xml,v 1.1 2004/10/24 15:30:46 dertobi123 Exp $ -->
+
+<sections>
+<section>
+<title>Einführung in Block Devices</title>
+<subsection>
+<title>Block Devices</title>
+<body>
+
+<p>
+Wir werden einen guten Einblick in die Festplatten bezogenen Aspekte von Gentoo
+Linux und Linux im allgemeinen, inklusive Linux Dateisystemen, Partitionen und
+Block Devices erhalten.
+Dann, sobald Sie mit den Vor- und Nachteilen von Festplatten und Dateisystemen
+vertraut sind, werden Sie durch den Prozess des Partitionierens und der
+Dateisystemerstellung für Ihre Gentoo Linux Installation geführt.
+</p>
+
+<p>
+Zu Beginn werden wir Ihnen <e>Block Devices</e> vorstellen. Das berühmteste
+Block Device is warscheinlich das, welches das erste SCSI Laufwerk in einem
+Linux System repräsentiert, namentlich <path>/dev/sda</path>.
+</p>
+
+<p>
+Das obige Block Device repräsentiert ein abstraktes Interface zur Festplatte.
+Benutzerprogramme können diese Block Device benutzen, um Ihre Festplatte
+anzusprechen, ohne sich darum zu kümmern, ob Ihre Festplatten IDE, SCSI oder
+irgendwas anderes sind. Das Programm kann den Speicherplatz auf der Festplatte
+einfach als eine Anhäufung von zusammenhängenden, zufällig zugreifbaren
+512-Byte Blöcken ansprechen.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Partitionen</title>
+<body>
+
+<p>
+Obwohl es theoretisch möglich ist eine ganze Festplatte zu nutzen, um Ihr Linux
+System zu beherbergen, wird dies in der Praxis so gut wie nie gemacht.
+Stattdessen werden komplette Festplatten Block Devices in kleinere, besser
+verwaltbare Block Devices unterteilt. Sie werden <e>Partitionen</e> genant.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Erstellung eines Partitionsschemas</title>
+<subsection>
+<title>Wie viele und wie groß?</title>
+<body>
+
+<p>
+Die Anzahl an Partitionen hängt von Ihrer Umgebung ab.
+Wenn Sie z.B. eine Menge User haben, wollen Sie
+höchst wahrscheinlich Ihr <path>/home</path> separat halten, da es die
+Sicherheit erhöht und Backups einfacher macht. Wenn Sie Gentoo installieren um
+als Mailserver zu fungieren, sollten Sie <path>/var</path> separat halten, da
+alle Mails in <path>/var</path> gespeichert werden. Eine gute Wahl des
+Dateisystems maximiert dann zusätzlich die Performance. Gameserver sollten ein
+separates <path>/opt</path> haben, da die meisten Game Server dort installiert
+werden. Der Grund ist ähnlich wie bei <path>/home</path>:
+Sicherheit und Backups.
+</p>
+
+<p>
+Wie Sie sehen können, hängt es sehr stark davon ab, was Sie erreichen wollen.
+Separate Partitionen oder Volumes haben folgende Vorteile:
+</p>
+
+<ul>
+<li>
+  Sie können das Filesystem mit der höchsten Performance für jede Partition oder
+  jedes Volume auswählen
+</li>
+<li>
+  Ihr System behält noch freien Speicherplatz, selbst wenn ein defektes Tool
+  ununterbrochen Dateien auf eine Partition oder ein Volume schreibt
+</li>
+<li>
+  Falls nötig können Dateisystem Checks zeitlich verkürzt werden, in dem
+  mehrere Checks parallel durchgeführt werden können (obwohl dieser Vorteil eher
+  mit mehreren Festplatten als mit mehreren Partitionen zum Tragen kommt)
+</li>
+<li>
+  Die Sicherheit kann erhöht werden, indem Sie einige Partitionen oder Volumes
+  read-only, nosuid (setuid bits werden ignoriert), noexec (executable bits
+  werden ignoriert) etc mounten.
+</li>
+</ul>
+
+<p>
+Wie dem auch sei, mehrere Partitionen haben einen großen Nachteil: wenn sie nicht
+ordentlich konfiguriert werden, könnte das Resultat ein System sein, welches viel
+Speicherplatz auf der einen Partition und keinen auf einer anderen frei hat.
+Weiterhin gibt es ein 15 Partitionen Limit bei SCSI und SATA.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk">
+<title>Benutzen von fdisk auf MIPS zur Partitionierung Ihrer Festplatte</title>
+<subsection>
+<title>Erstellen eines SGI Disk Label</title>
+<body>
+
+<p>
+Alle Festplatten in einem SGI System benötigen ein <c>SGI Disk Label</c>, das
+eine ähnliche Funktion zu einem Sun &amp; MS-DOS Disklabel hat. Es speichert
+Informationen über die Partitionen einer Festplatte. Die Erstellung eines neuen
+SGI Disk Label erstellt zwei spezielle Partitionen auf der Festplatte:
+</p>
+
+<ul>
+  <li>
+    <e>SGI Volume Header</e> (Neunte Partition): Diese Partition ist wichtig.
+    Hier wird Ihr Kernel Image abgelegt. Um hier Kernel Images ablegen zu
+    können, müssen Sie das Tool <c>dvhtool</c> benutzen. Sie können Kernel von
+    dieser Partition dann via SGI PROM booten.
+  </li>
+  <li>
+    <e>SGI Volume</e> (Elfte Partition): Diese Partition hat den gleichen
+    Zweck wie die dritte Partition des Sun Disklabel, "Whole Disk". Diese
+    Partition umspannt die gesamte Festplatte und sollte nicht angefasst werden.
+    Sie hat keinen speziellen Zweck, ausser das PROM in etwas undokumentierter
+    Art und Weise zu unterstützen (oder es wird auf gewisse Weise von IRIX
+    verwendet).
+  </li>
+</ul>
+
+<warn>
+Der SGI Volume Header <e>muss</e> bei Zylinder 0 beginnen. Wenn dies fehlschlägt
+führt das dazu, dass Sie nicht von der Festplatte booten können.
+</warn>
+
+<p>
+Das Folgende ist ein beispielhafter Auszug aus einer <c>fdisk</c> Sitzung. Lesen
+Sie ihn, und passen ihn an Ihre Anforderungen an ...
+</p>
+
+<pre caption="Erstellen eines SGI Disklabel">
+# <i>fdisk /dev/sda</i>
+
+Command (m for help): <i>x</i>
+
+Expert command (m for help): <i>m</i>
+Command action
+   b   move beginning of data in a partition
+   c   change number of cylinders
+   d   print the raw data in the partition table
+   e   list extended partitions
+   f   fix partition order
+   g   create an IRIX (SGI) partition table
+   h   change number of heads
+   m   print this menu
+   p   print the partition table
+   q   quit without saving changes
+   r   return to main menu
+   s   change number of sectors/track
+   v   verify the partition table
+   w   write table to disk and exit
+
+Expert command (m for help): <i>g</i>
+Building a new SGI disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content will be unrecoverably lost.
+
+Expert command (m for help): <i>r</i>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (SGI disk label): 64 heads, 32 sectors, 17482 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+----- partitions -----
+Pt#     Device  Info     Start       End   Sectors  Id  System
+ 9:  /dev/sda1               0         4     10240   0  SGI volhdr
+11:  /dev/sda2               0     17481  35803136   6  SGI volume
+----- Bootinfo -----
+Bootfile: /unix
+----- Directory Entries -----
+
+Command (m for help):
+</pre>
+
+<note>
+Wenn Ihre Festplatte bereits ein SGI Disklabel hat, erlaubt fdisk nicht die
+Erstellung eines Neuen. Es gibt zwei Möglichkeiten dies zu umgehen: Eine ist ein
+Sun oder MS-DOS Disklabel zu erstellen, die Änderungen auf die Festplatte zu
+schreiben und fdisk neuzustarten. Die Zweite ist, die Partition mit dem
+folgendem Kommando mit Null Data zu beschreiben:
+<c>dd if=/dev/zero of=/dev/sda bs=512 count=1</c>.
+</note>
+
+</body>
+</subsection>
+<subsection>
+<title>Den SGI Volume Header an die richtige Größe anpassen</title>
+<body>
+
+<p>
+Nachdem Sie ein SGI Disklabel erstellt haben, können Sie Partitionen erstellen.
+Im obigen Beispiel sind bereits Partitionen erstellt worden. Dies sind die
+speziellen, vorhin angesprochenen Partitionen, welche im Normalfall nicht
+geändert werden sollten. Um Gentoo zu installieren müssen Sie Kernel Images
+direkt in den Volume Header laden, da es noch keinen unterstützten SGI Bootloader
+im Portage gibt. Der Volume Header selbst kann bis zu <e>acht</e> Images jeder
+Größe beinhalten, jedes Image darf einen bis zu acht Zeichen langen Namen
+tragen.
+</p>
+
+<p>
+Der Prozess zur Vergrößerung des Volume Header ist nicht unbedingt geradeaus, es
+gehört ein kleiner Trick dazu. Sie können den Volume Header auf Grund von fdisks
+Verhalten nicht einfach löschen und neu anlegen.. Im unten abgebildeten Beispiel
+erstellen wir einen 50MB großen Volume Header in Verbindung mit einer 50 MB
+großen /boot Partition. Das aktuelle Layout Ihrer Festplatte weicht möglicherweise
+ab, dies hier dient nur zu Illustrationszwecken.
+</p>
+
+<pre caption="Die Größe des SGI Volume Header richtig ändern">
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>1</i>
+First cylinder (5-8682, default 5): <i>51</i>
+Last cylinder (51-8682, default 8682): <i>101</i>
+<comment>(Beachten Sie, dass fdisk nur die Wiedererstellung der Partition #1 bei einem minimalen Zylinder von 5 erlaubt)</comment>
+<comment>Wenn Sie versucht hätten den SGI Volume Header auf diesem Weg zu löschen &amp; neu zu erstellen,
+wäre Ihnen das gleiche Problem begegnet)</comment>
+<comment>(In unserem Beispiel möchten wir, dass /boot 50MB groß ist. Wir beginnen bei Zylinder 51 (der Volume Header muss bei
+Zylinder 0 anfangen) und setzen den Endzylinder auf 101, damit erreichen wir etwa 50 MB (+/- 1-5 MB))</comment>
+
+Command (m for help): <i>d</i>
+Partition number (1-16): <i>9</i>
+<comment>(Löschen der Partition #9 (SGI Volume Header))</comment>
+
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>9</i>
+First cylinder (0-50, default 0): <i>0</i>
+Last cylinder (0-50, default 50): <i>50</i>
+<comment>(Wiedererstellen der Partition #9, diese endet direkt vor Partition #1)</comment>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Abschliessendes Partitionslayout</title>
+<body>
+
+<p>
+Nachdem Sie dies getan haben, können Sie die restlichen Partitonen nach Ihren
+Wünschen anlegen. Wenn Sie alle Partitionen angelegt haben achten Sie darauf,
+die Partition ID Ihrer Swap Partition auf <c>82</c> zu setzen. Per Standard
+wird diese als <c>83</c>, Linux Native, gesetzt.
+</p>
+
+<p>
+Nachdem Ihre Partitionen nun erstellt sind, können Sie mit dem
+<uri link="#filesystems">Erstellen der Dateisysteme</uri> fortfahren
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Erstellen der Dateisysteme</title>
+<subsection>
+<title>Einleitung</title>
+<body>
+
+<p>
+Jetzt sind Ihre Partitionen erstellt, so dass es nun an der Zeit ist
+Dateisysteme anzulegen. Wenn Sie mit dem zufrieden sind, was wir Ihnen
+vorschlagen, dann fahren Sie mit <uri link="#filesystems-apply">Dateisystem
+auf einer Partition anlegen</uri> fort. Wenn nicht, lesen Sie weiter, um
+ein wenig mehr über Dateisysteme zu lernen ...
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Dateisysteme?</title>
+<body>
+
+<p>
+Verschiedene Dateisysteme sind verfügbar. Für die MIPS Architektur sind ext2 und
+ext3 als stabil bekannt.
+</p>
+
+<p>
+<b>ext2</b> ist das erprobte und wahre Linux Dateisystem, unterstützt aber kein
+Metadata Journaling, was bedeutet, dass routinemäßige Dateisystem Checks beim
+Booten sehr zeitaufwändig sein können. Es gibt mittlerweile eine Auswahl an
+journalisierenden Dateisystemen neuerer Generation, die die Konsistenzchecks sehr
+schnell erledigen und dadurch im Vergleich mit den nicht-journalisierenden
+Gegenstücken vorzuziehen sind. Jounalisierende Dateisysteme verhindern lange
+Verzögerungen beim Booten, wenn sich das Dateisystem in einem inkonsistenten
+Zustand befindet.
+</p>
+
+<p>
+<b>ext3</b> ist die journalisierende Version des ext2 Dateisystem, die Metadata
+Journaling für schnelle Wiederherstellung sowie andere verbesserte Journaling
+Modi wie "full data" und "ordered data" Jornaling unterstützt. ext3 ist ein sehr
+gutes und verlässliches Dateisystem. Es hat eine zusätzliche b-tree Indexing
+Option die in fast allen Situationen hohe Performance ermöglicht. Kurz gesagt:
+ext3 ist ein excellentes Dateisystem.
+</p>
+
+<p>
+<b>ReiserFS</b> ist ein B*-tree basierendes Dateisystem mit einer guten
+Performance und überholt sowohl ext2 und ext3 im Umgang mit kleinen Dateien
+(Dateien kleiner als 4k) oftmals mit einem Faktor von 10x-15x. ReiserFS skaliert
+extrem gut und hat Metadata Journaling. Seit Kernel 2.4.18+ ist ReiserFS
+stabil und sowohl als Dateisystem für generelle Anwendungen, als auch für
+extreme Fälle wie große Dateisysteme, den Gebrauch mit vielen kleinen Dateien,
+den Gebrauch mit sehr großen Dateien und Verzeichnissen mit tausenden von
+Dateien brauchbar.
+</p>
+
+<p>
+<b>XFS</b> ist ein Dateisytem mit metadata journaling, das mit einem robusten
+Feature-Set kommt und auf Skalierbarkeit ausgelegt ist. Wir empfehlen den Einsatz
+dieses Dateisystems nur auf Linux Systemen mit High-End SCSI und/oder Fibre Channel
+Storage und einer redundaten Stromversorgung. Da XFS agressiv vom RAM gebraucht
+macht, können unsachgemäß designte Programme (solche die keine
+Vorsichtsmaßnahmen treffen, wenn Sie auf die Festplatte schreiben und davon
+gibt es einige) dazu führen, dass eine ganze Menge Daten verloren gehen, wenn
+das System unerwartet ausfällt.
+</p>
+
+<p>
+<b>JFS</b> ist IBMs Hochleistungs Journaling Dateisystem. Es ist vor kurzem
+einsatzbereit geworden und es gibt noch keine ausreichende Spur, so dass seine
+allgemeine Stabilität an diesem Punkt weder positiv noch negativ kommentiert
+werden kann.
+</p>
+
+</body>
+</subsection>
+<subsection id="filesystems-apply">
+<title>Eine Partition mit einem Dateisystem formatieren</title>
+<body>
+
+<p>
+Um ein Dateisystem auf einer Partition oder einem Volume zu erstellen, gibt es
+für jedes Dateisystem Tools:
+</p>
+
+<table>
+<tr>
+  <th>Dateisystem</th>
+  <th>Kommando</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mke2fs</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mke2fs -j</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+Um die Boot Partition (<path>/dev/sda1</path> in unserem Beispiel) als ext2 und
+die Root Partition (<path>/dev/sda3</path> in unserem Beispiel) als ext3 (wie in
+unserem Beispiel) zu formatieren, führen Sie folgende Kommandos aus:
+</p>
+
+<pre caption="Eine Partition mit einem Dateisystem formatieren">
+# <i>mke2fs /dev/sda1</i>
+# <i>mke2fs -j /dev/sda3</i>
+</pre>
+
+<p>
+Erstellen Sie nun die Dateisysteme auf Ihren neu erstellten Partionen (oder
+logischen Volumes).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Aktivieren der Swap Partition</title>
+<body>
+
+<p>
+<c>mkswap</c> ist das Kommando, mit dem Sie die Swap Partition initialisieren:
+</p>
+
+<pre caption="Erstellen der Swap Signatur">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+Um die Swap Partition zu aktivieren, benutzen Sie <c>swapon</c>:
+</p>
+
+<pre caption="Aktivieren der Swap Partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+Erstellen und aktivieren Sie jetzt Ihre Swap Partition.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Mounten</title>
+<body>
+
+<p>
+Nachdem Ihre Partitionen nun initialisiert sind und ein Dateisystem beinhalten,
+ist es an der Zeit diese Partitionen zu mounten. Benutzen Sie das <c>mount</c>
+Kommando. Vergessen Sie nicht die notwendigen Mount Verzeichnisse für jede
+erstellte Partition anzulegen. Als Beispiel mounten wir die root und boot
+Partition:
+</p>
+
+<pre caption="Mounten von Partitionen">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/boot</i>
+# <i>mount /dev/sda1 /mnt/gentoo/boot</i>
+</pre>
+
+<note>
+Wenn Sie <path>/tmp</path> auf eine separate Partition legen möchten, stellen
+Sie sicher, dass Sie die Berechtigungen nach dem mounten ändern:
+<c>chmod 1777 /mnt/gentoo/tmp</c>. Dies gilt auch für <path>/var/tmp</path>.
+</note>
+
+<p>
+Sie müssen auch noch das proc Dateisystem (ein virtuelles Interface zum Kernel)
+auf <path>/proc</path> mounten. Zunächst müssen wir jedoch alle Dateien auf der
+Partition ablegen.
+</p>
+
+<p>
+Fahren Sie mit der <uri link="?part=1&amp;chap=5">Installation der Gentoo
+Installations Dateien </uri> fort.
+</p>
+
+</body>
+</section>
+</sections>
