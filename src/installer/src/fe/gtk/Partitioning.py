@@ -311,7 +311,7 @@ resize partitions.
 					msgdlg.run()
 					msgdlg.destroy()
 				else:
-					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="The installer could not read the partition table on any detected drives. You will be forced to use the ugly mode.")
+	msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="The installer could not read the partition table on any detected drives. You will be forced to use the ugly mode.")
 					msgdlg.run()
 					msgdlg.destroy()
 #					self._parent.switch_screen(None, 1) # Switch to ugly screen

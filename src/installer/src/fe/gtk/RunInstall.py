@@ -8,6 +8,7 @@ import gtk
 import gobject
 import sys
 import time
+import os
 
 class RunInstall(gtk.Window):
 
@@ -27,10 +28,18 @@ class RunInstall(gtk.Window):
 		self.globalbox.set_border_width(10)
 
 		self.notebook = gtk.Notebook()
+
 		self.tailpage = gtk.VBox(False, 0)
+		self.textbuffer = gtk.TextBuffer()
+		self.textbuffer.set_text("testing\ntesting again..\n\ntesting testing")
+		self.textview = gtk.TextView(self.textbuffer)
+		self.tailpage.pack_start(self.textview, expand=True, fill=True)
 		self.notebook.append_page(self.tailpage, tab_label=gtk.Label("Output"))
+
 		self.docpage = gtk.VBox(False, 0)
+		# documentation
 		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
+
 		self.globalbox.add(self.notebook)
 
 		self.progress = gtk.ProgressBar()
@@ -43,7 +52,10 @@ class RunInstall(gtk.Window):
 
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
+
+		self.tail_pipe = os.popen("tail -F /tmp/compile_output.log")
 		gobject.timeout_add(1000, self.poll_notifications)
+		gobject.idle_add(self.tail_logfile)
 
 	def poll_notifications(self):
 		notification = self.controller.cc.getNotification()
@@ -52,6 +64,9 @@ class RunInstall(gtk.Window):
 		ntype = notification.get_type()
 		ndata = notification.get_data()
 		if ntype == "exception":
+			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured during the install. Consult the output display for more information.")
+			msgdlg.run()
+			msgdlg.destroy()
 			print "Exception received:"
 			print ndata
 		elif ntype == "int":
@@ -69,8 +84,14 @@ class RunInstall(gtk.Window):
 			if ndata == GLIClientController.INSTALL_DONE:
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
+				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install completed successfully!")
+				msgdlg.run()
+				msgdlg.destroy()
 				print "Install done!"
 				return False
+
+	def tail_logfile(self):
+		pass
 
 	def make_visible(self):
 		self.show_all()
