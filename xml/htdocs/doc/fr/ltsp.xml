@@ -1,0 +1,473 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "../../dtd/guide.dtd">
+
+<guide link="/doc/fr/ltsp.xml">
+<title>Gentoo - Guide LTSP</title>
+<author title="Auteur">
+    <mail link="lanius@gentoo.org">Heinrich Wendel</mail>
+</author>
+<author title="Auteur">
+    <mail link="josiah@ritchietribe.net">Josiah Ritchie</mail>
+</author>
+<author title="Correcteur">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Traducteur">
+    <mail link="cam@cameuh.net">Camille Huot</mail>
+</author>
+
+<license/>
+
+<abstract>
+Ce guide vous explique comment mettre en place un serveur LTSP sous
+Gentoo.
+</abstract>
+<version>1.1</version>
+<date>26 juillet 2003</date>
+<chapter>
+<title>Introduction</title>
+<section>
+<title>LTSP: qu'est-ce que c'est ?</title>
+<body>
+<p>
+LTSP est l'abbréviation de "Linux Terminal Server Project" ("Projet
+de Serveur de Terminaux Linux"). Une fois installé sur un serveur, il
+peut fournir des environnements identiques à plusieurs stations de
+travail. Toutes les applications tournent sur le serveur, ce qui vous
+permet de ré-utiliser de vieux PCs en les convertissant en terminaux
+X. Cela réduit les coûts et la maintenance, surtout dans un milieu 
+dans lequel chaque station doit avoir un environnement de
+travail identique, par exemple dans une école ou une grande entreprise.
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Installation</title>
+<section>
+<title>Préliminaires</title>
+<body>
+<p>
+Tous les exemples de ce document supposent que l'IP de votre serveur
+est 192.168.0.254, que votre nom de domaine est yourdomain.com et que
+votre réseau d'IPs est 192.168.0.0/24.
+</p>
+</body>
+</section>
+<section>
+<title>Installation</title>
+<body>
+
+<p>
+Premièrement, vous devez déjà avoir un système Gentoo fonctionnel. 
+Pour cela, veuillez lire le manuel d'installation de Gentoo pour votre
+architecture sur <uri link="http://www.gentoo.org/doc/fr/index.xml">
+le site de documentation de Gentoo</uri>.
+</p>
+
+<p>
+Ensuite, commençons par l'étape la plus facile, installer les outils
+LTSP de base:
+</p>
+
+<pre caption="Emerger LTSP">
+# <i>emerge ltsp-core</i>
+</pre>
+
+<p>
+Les dépendances suivantes seront installées:
+</p>
+
+<ul>
+<li><b>XFree</b>: Devinez pourquoi ça s'appelle un terminal "X" :)</li>
+<li><b>DHCP</b>: DHCP est un protocole de configuration automatique
+pour les ordinateurs utilisant TCP/IP, utilisé par LTSP pour assigner
+les IPs aux stations.</li>
+<li><b>NFS</b>: NFS est un protocole permettant l'accès à un disque 
+dur distant via le réseau, utilisé par LTSP pour monter un système de
+base sur les stations.</li>
+<li><b>TFTP</b>: TFTP est un protocole simple de transfert de 
+fichiers, utilisé par LTSP pour transférer le noyau de démarrage aux 
+stations.</li>
+<li><b>XINETD</b>: Xinetd est un remplaçant puissant de inetd avec
+des caractéristiques avancées, utilisé par LTSP pour lancer TFTP.</li>
+</ul>
+
+<note>
+Si vous avez "kde" ou "gnome" dans votre variable USE, cela installera
+un système KDE ou GNOME complet.
+</note>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Configuration</title>
+<body>
+
+<p>
+Une fois que l'emerge a fini son travail, tous les services doivent
+alors être configurés:
+</p>
+
+</body>
+<section>
+<title>Journal système</title>
+<body>
+
+<p>
+Pour analyser les problèmes plus facilement, le système de 
+journalisation doit être configuré pour accepter les connexions 
+distantes. Veuillez lire la documentation de votre système de logs
+(syslog par exemple) pour savoir comment faire.
+</p>
+
+</body>
+</section>
+<section>
+<title>NFS</title>
+<body>
+
+<p>
+L'étape suivante est d'éditer votre fichier <path>/etc/exports</path>,
+afin de permettre aux stations de monter leur système de fichiers
+racine. Il devrait y avoir au moins deux lignes:
+</p>
+
+<pre caption="/etc/exports">
+/opt/ltsp/i386             192.168.0.0/255.255.255.0(ro,no_root_squash,async)
+/var/opt/ltsp/swapfiles    192.168.0.0/255.255.255.0(rw,no_root_squash,async)
+</pre>
+
+<note>
+Vous devez modifier l'adresse et le masque pour que cela corresponde 
+à l'adresse et au masque de votre réseau.
+</note>
+
+<p>
+Maintenant lancez NFS:
+</p>
+
+<pre caption="Lancement de NFS">
+# <i>rc-update add nfs default</i>
+# <i>/etc/init.d/nfs start</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>xinetd/tftp</title>
+<body>
+
+<p>
+Par défaut TFTP n'est pas lancé. Pour changer cela, éditer le fichier
+<path>/etc/xinetd.d/tftp</path> et remplacez <c>disable=yes</c> par
+<c>disable=no</c>. Ensuite, lancez xinetd.
+</p>
+
+<pre caption="Lancement de xinetd">
+# <i>rc-update add xinetd default</i>
+# <i>/etc/init.d/xinetd start</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Résolution de noms</title>
+<body>
+
+<p>
+Afin que la station puisse atteindre n'importe quelle machine, il lui 
+faut un serveur DNS valide. Il y a plusieurs façons de résoudre ce 
+problème. La première est de configurer un serveur DNS sur le réseau 
+local, la deuxième (plus simple) est d'avoir un fichier 
+<path>/etc/hosts</path> identique sur chaque station. Nous utiliserons
+la deuxième méthode.
+</p>
+
+<p>
+Toutes les stations doivent être listées dans le fichier
+<path>/etc/hosts</path>. Voici un exemple:
+</p>
+
+<pre caption="/etc/hosts">
+127.0.0.1        localhost
+192.168.0.254    server      server.yourdomain.com
+192.168.0.1      ws-1        ws-1.yourdomain.com
+</pre>
+
+</body>
+</section>
+<section>
+<title>Configuration DHCP</title>
+<body>
+
+<p>
+C'est l'étape la plus compliquée à mon avis, vous devez créer une
+configuration DHCP (<path>/etc/dhcp/dhcpd.conf</path>) correcte. En
+voici un exemple:
+</p>
+
+<pre caption="dhcpd.conf">
+<codenote>Quelques options générales</codenote>
+default-lease-time            21600;
+max-lease-time                21600;
+use-host-decl-names           on;
+ddns-update-style             ad-hoc;
+
+<codenote>Options pour Bootp</codenote>
+allow booting;
+allow bootp;
+
+<codenote>Options de définition du réseau</codenote>
+option subnet-mask            255.255.255.0;
+option broadcast-address      192.168.0.255;
+option routers                192.168.0.254;
+option domain-name-servers    192.168.0.254;
+option log-servers            192.168.0.254;
+option domain-name            "yourdomain.com";
+
+<codenote>Options de chemins pour LTSP</codenote>
+option root-path              "192.168.0.254:/opt/ltsp/i386";
+filename                      "/lts/vmlinuz-2.4.19-ltsp-1";
+
+<codenote>Si vos stations ont des cartes réseau ISA, décommentez les</codenote>
+<codenote>lignes suivantes et modifiez le nom du driver et l'IO</codenote>
+#option option-128 code 128 = string;
+#option option-129 code 129 = text;
+#option option-128 e4:45:74:68:00:00;
+#option option-129 "NIC=ne IO=0x300";
+
+shared-network WORKSTATIONS {
+  subnet 192.168.0.0 netmask 255.255.255.0 {
+    <codenote>Alloue des IPs dynamiques aux stations</codenote>
+    range dynamic-bootp 192.168.1.1 192.168.1.16;
+    <codenote>Configuration spécifique à une station pour le boot PXE</codenote>
+    #host ws001 {
+    #  hardware ethernet     00:E0:06:E8:00:84;
+    #  fixed-address         192.168.0.1;
+    #}
+  }
+}
+</pre>
+
+<p>
+Si vos stations supportent le PXE, vous devriez lister chacune d'entre
+elles de la même manière que nous l'avons fait pour <e>host ws001</e>
+(n'oubliez pas de décommenter). Ne leur donnez pas une adresse 
+comprise dans l'intervalle d'IPs dynamiques spécifié au dessus, car 
+sinon plusieurs stations pourraient obtenir la même adresse IP (ce qui
+poserait des problèmes).
+</p>
+
+<p>
+Pour plus d'informations à ce propos, vous pouvez lire le manuel 
+officiel de DHCP: <uri>http://www.dhcp-handbook.com/</uri>.
+</p>
+
+<p>
+Maintenant lancez DHCP:
+</p>
+
+<pre caption="Lancement de DHCP">
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<note>
+DHCPd a besoin des options CONFIG_PACKET et CONFIG_FILTER activées
+dans le noyau pour pouvoir fonctionner.
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Configuration de LTSP</title>
+<body>
+
+<p>
+Il y a beaucoup d'options pour configurer vos stations, allez jeter un
+oeil sur 
+<uri>http://www.ltsp.org/documentation/ltsp-3.0-4-en.html#AEN903</uri>
+pour une description complète du fichier 
+<path>/opt/ltsp/i386/etc/lts.conf</path>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Gestionnaire de sessions graphiques</title>
+<body>
+
+<p>
+Vous devez maintenant modifier la configuration de votre gestionnaire
+de sessions graphiques pour que lui aussi accepte les connexions
+distantes.
+</p>
+
+<p>
+<b>XDM</b>: Dans le fichier <path>/etc/X11/xdm/xdm-config</path>, 
+commentez <c>DisplayManager.requestPort: 0</c>.
+</p>
+
+<p>
+<b>KDM</b>: Dans le fichier 
+<path>/usr/kde/3.1/share/config/kdm/kdmrc</path>, cherchez la section
+<c>[Xdmcp]</c> et remplacez <c>Enable = false</c> par <c>Enable = 
+true</c>.
+</p>
+
+<p>
+<b>GDM</b>: Dans le fichier <path>/etc/X11/gdm/gdm.conf</path>, 
+cherchez la section <c>[xdmcp]</c> et remplacez <c>Enable = false</c>
+par <c>Enable = True</c>.
+</p>
+
+<p>
+Pour lancez le gestionnaire de sessions graphiques:
+</p>
+
+<pre caption="Lancement de xdm">
+# <i>rc-update add xdm default</i>
+# <i>/etc/init.d/xdm start</i>
+</pre>
+
+<warn>
+Il semble qu'il y ait des problèmes actuellement avec XDM et GDM.
+L'auteur utilise KDM pour résoudre ces problèmes.
+</warn>
+
+</body>
+</section>
+
+<section>
+<title>Créer une disquette de démarrage</title>
+<body>
+
+<p>
+Si vos stations ne supportent pas le démarrage avec PXE, vous devez créer 
+la disquette nécessaire pour démarrer vos stations. Allez
+sur le site <uri>http://www.rom-o-matic.net/5.0.9/</uri>, sélectionnez
+votre carte réseau, cliquez sur <e>Get ROM</e> et enregistrez l'image
+sur une disquette:
+</p>
+
+<pre caption="Enregistrer l'image sur une disquette">
+# <i>cat nicfile.lzdsk > /dev/fd0</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Problèmes</title>
+<body>
+
+<p>
+Beaucoup de choses peuvent être à l'origine d'un problème.
+Heureusement, plusieurs ressources peuvent vous aider
+à résoudre vos problèmes:
+</p>
+
+<ul>
+<li>La documentation officielle: 
+<uri>http://www.ltsp.org/documentation/</uri>, surtout la section
+Troubleshooting.</li>
+<li>Le canal IRC Gentoo: irc.freenode.net #gentoo -- Ndt: voir aussi 
+#gentoofr (officiel) et #frgentoo.</li>
+<li>Le canal IRC LSTP: irc.freenode.net #ltsp.</li>
+<li>Les listes de diffusion LTSP: 
+<uri>http://ltsp.org/mailinglists.php</uri> qui sont bourrées 
+d'informations.</li>
+</ul>
+</body>
+</chapter>
+
+<chapter>
+<title>FAQ</title>
+<body>
+<p>
+<b>Q:</b> Mes stations ont des processeurs Pentium II, mais mon 
+serveur compile avec <c>march=athlon-xp</c>, cela va-t-il fonctionner ?
+</p>
+
+<p>
+<b>R:</b> Ce n'est pas un problème, car toutes les applications 
+tournent sur le serveur.
+</p>
+
+<p>
+<b>Q:</b> Quel processeur et combien de RAM dois-je mettre dans mon 
+serveur ?
+</p>
+
+<p>
+<b>R:</b> Ce document contient quelques suggestions: 
+<uri>http://ltsp.org/documentation/server_suggestions.html</uri>.
+</p>
+
+<p>
+<b>Q:</b> Avez-vous plus d'information sur PXE ?
+</p>
+
+<p>
+<b>R:</b> Oui, jetez un oeil à 
+<uri>http://ltsp.org/documentation/eproms.txt</uri> et
+<uri>http://ltsp.org/documentation/pxe.howto.html</uri>.
+</p>
+
+<p>
+<b>Q:</b> Est-ce possible d'utiliser des programmes en 3D accélérée 
+sur les stations ?
+</p>
+
+<p>
+<b>R:</b> Si vous utilisez des cartes nVidia, jetez un oeil à
+<uri>http://ltsp.org/documentation/nvidia.txt</uri>.
+</p>
+
+<p>
+<b>Q:</b> Dans certaines applications les polices sont ignobles, que
+faire ?
+</p>
+
+<p>
+<b>R:</b> Vous devez mettre en place un serveur de polices (Ndt: 
+XFontServer), ajoutez <c>USE_XFS=Y</c> à votre fichier 
+<path>lts.conf</path>, éditez <path>/etc/X11/fs/config</path> et 
+décommentez <c>no-listen: tcp</c>, remplacez <c>XFS_PORT="-1"</c> par
+<c>XFS_PORT="7100"</c> dans <path>/etc/conf.d/xfs</path> et lancez 
+XFS: <c>/etc/init.d/xfs start</c>.
+</p>
+
+</body>
+</chapter>
+
+<chapter>
+<title>Glossaire</title>
+<body>
+
+<p>
+<b><uri link="http://www.ltsp.org">LTSP</uri></b>:
+"LTSP fournit un moyen simple d'utiliser des stations à bas prix en
+tant que terminaux graphiques ou console avec un serveur GNU/Linux."
+</p>
+
+<p>
+<b><uri link="http://www.webopedia.com/TERM/P/PXE.html">PXE</uri></b>:
+"Abbréviation de Pre-Boot Execution Environment. PXE est un composant
+de la spécification WfM d'Intel. Il permet à une station de démarrer
+sur un serveur du réseau au lieu de démarrer sur le système 
+d'exploitation du disque dur local. Une station pourvue de PXE 
+connecte sa carte réseau au réseau local via un cavalier, ce qui 
+permet de laisser la station connectée au réseau même lorsque 
+l'alimentation est éteinte."
+</p>
+
+</body>
+</chapter>
+</guide>
