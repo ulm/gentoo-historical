@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.16 2004/10/28 18:51:52 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.17 2004/11/01 02:49:51 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -539,9 +539,10 @@ class InstallProfile:
 			# Else, if the device is a valid remote device (hostname or ip)
 			elif GLIUtility.is_ip(device) or GLIUtility.is_hostname(device):
 			
+				pass
 				# Make sure that only the mount point is set
-				if type(partition_tables[device]) != str:
-					raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
+			#	if type(partition_tables[device]) != str:
+			#		raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
 
 			# If the device is not a local or remote device, then it is invalid
 			else:
@@ -623,7 +624,7 @@ class InstallProfile:
 
 		self._network_interfaces = {}
 		for device in network_interfaces:
-			self.add_network_interface(device, network_interfaces[device])
+			self.add_network_interface(None, device, network_interfaces[device])
 
 	def serialize(self):
 		"""
@@ -1029,4 +1030,4 @@ class InstallProfile:
 				for attrName in attr.getNames():
 					part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
-		self._temp_partition_table[int(part_entry['minor'])] = part_entry
+		self._temp_partition_table[part_entry['minor']] = part_entry
