@@ -320,7 +320,7 @@ class GLIInstallTemplate:
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
 		# Dependency checking		
-		self._depends("partition_local_drives")
+		self._depends("partition_local_devices")
 
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
