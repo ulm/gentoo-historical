@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/distcc.xml,v 1.7 2003/10/09 13:36:14 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/distcc.xml,v 1.8 2003/10/11 17:21:58 swift Exp $ -->
 
 <guide link="/doc/en/distcc.xml">
 
@@ -28,8 +28,8 @@
 
 <license/>
 
-<version>1.2.2</version>
-<date>October 9, 2003</date>
+<version>1.2.3</version>
+<date>October 11, 2003</date>
 
 <abstract>This document serves as a HOWTO for using distcc with Gentoo.</abstract>
 
@@ -41,23 +41,46 @@
 			<p>Distcc is a program designed to distribute compiling tasks across a network to participating hosts.	It is comprised of a server, <c>distccd</c> and a client program, <c>distcc</c>.  Distcc can work transparently with <uri link="http://ccache.samba.org">ccache</uri> and  Portage with a little set up.</p>
 		</body>
 	</section>
-	
-	<section>
-		<title>Dependencies</title>
-		<body>
-			<pre caption="Distcc dependencies">
-&gt;=sys-apps/portage-2.0.46-r11
-&gt;=sys-devel/gcc-config-1.3.1
-sys-apps/shadow
-<codenote>Distcc has the following optional dependencies when you have gtk in your USE flags (As of version 2.8)</codenote>
-&gt;=x11-libs/gtk+-2.2.1
-			</pre>
-		</body>
-	</section>
 </chapter>
 
 <chapter>
-	<title>Setup</title>
+        <title>Setup</title>
+	<section>
+		<title>Dependencies</title>
+		<body>
+                        <pre caption="Distcc dependencies (2.8 through 2.10)">
+&gt;=sys-apps/portage-2.0.46-r11
+<codenote>Distcc-2.11 and on require &gt;=sys-apps/portage-2.0.49-r6</codenote>
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>(As of version 2.8 and up until 2.11) And the following optional dependencies when you have <i>gtk</i> in your <i>USE</i> flags</codenote>
+&gt;=x11-libs/gtk+-2.2.1
+</pre>
+                        <pre caption="Distcc Dependencies (post 2.11.1)">
+&gt;=sys-apps/portage-2.0.49-r6
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>In this revision you may chose between a Gnome and GTK GUI monitor, they have the following added dependencies</codenote>
+<codenote>For GTK:</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+<codenote>For Gnome:</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+&gt;=gnome-base/libgnomeui-2.0.0.0
+&gt;=gnome-base/libgnome-2.0.0
+</pre>
+                </body>
+        </section>
+        <section>
+                <title>Installing Distcc</title>
+                <body>
+                        <p>Installing Distcc is very easy.  Simply set your USE flags and <i>emerge distcc</i>.  But, there's a couple of options you should know about.</p>
+                        <p>Distcc ships with a graphical monitor to monitor tasks that your computer is sending away for compilation.  If you use Gnome then put 'gnome' in your USE flags.  However, if you don't use Gnome and would still like to have the monitor then you should put 'gtk' in your USE flags.</p>
+		</body>
+	</section>
 	<section>
 		<title>Setting up Portage to use Distcc</title>
 		<body>
@@ -66,40 +89,40 @@ sys-apps/shadow
 # <i>emerge distcc</i>
 # <i>nano -w /etc/make.conf</i>
 </pre>
+                        <impo>If you use distcc-2.11.1 or greater with &gt;=portage-2.0.49-r6, then all you need to do as far as setup is to set your hosts (see next code block), modify MAKEOPTS in <path>/etc/make.conf</path>, and add 'distcc' to FEATURES in <path>/etc/make.conf</path>.</impo>
                         <note>Edit your FEATURES flags to include &quot;distcc&quot;</note>
-                        <note>Set <c>DISTCC_DIR=${PORTAGE_TMPDIR}/portage/.distcc</c></note>
-                        <note>You should also uncomment the DISTCC_TMPDIR line in <path>/etc/conf.d/distccd</path>.</note>
-                        
+                        <note>You should also uncomment the DISTCC_TMPDIR line in <path>/etc/make.conf</path>.</note>
+                        <note>Set <i>DISTCC_DIR=${PORTAGE_TMPDIR}/portage/.distcc</i> near the end of the file (last line is okay)</note>
 
 			<p>Next you have to specify what hosts you want to use.  To do this you can use the <c>distcc-config</c> command to set the list of hosts. Here is an example of some hosts that might be in your list:</p>
 			<pre caption="Examples of host definitions">
-192.168.0.1        192.168.0.2                     192.168.0.3
-192.168.0.1/2      192.168.0.2                     192.168.0.3/10
-192.168.0.1:4000/2 192.168.0.2/1                   192.168.0.3:3632/4
-@192.168.0.1       @192.168.0.2:/usr/bin/distccd   192.168.0.3
-			</pre>
+192.168.0.1          192.168.0.2                       192.168.0.3
+192.168.0.1/2        192.168.0.2                       192.168.0.3/10
+192.168.0.1:4000/2   192.168.0.2/1                     192.168.0.3:3632/4
+@192.168.0.1         @192.168.0.2:/usr/bin/distccd     192.168.0.3
+</pre>
 			<p>It may all look complicated, but in most cases a variant of line 1 or 2 will work.  An explanation of each line is: Line 1 is just a space-delimited list of hosts that will use default everything.  Line 2 is a list of hosts that specifies the maximum number of jobs (by use of the /N) to send that host at any given time (specified with the <c>/n</c>).  Since most people won't be using lines 3 or 4, I'll <uri link="http://distcc.samba.org/man/distcc_1.html">point you to</uri> the distcc docs for more information.</p>
 			<p>A sample command to set the hosts (for line 1) is:</p>
 			<pre caption="Sample command to set the hosts">
 # <i>/usr/bin/distcc-config --set-hosts "192.168.0.1 192.168.0.2 192.168.0.3"</i>
-			</pre>
+</pre>
 
                         <p>The final step to integrating distcc into Portage is to re-open your <path>/etc/make.conf</path> and edit <c>MAKEOPTS</c> to include <c>-jN</c> (where N is an integer).  Typically you will want to set this to the total number of processors in your network plus one.</p>
 			<pre caption="Final steps in make.conf">
 # <i>nano -w /etc/make.conf</i>
 MAKEOPTS=-jN
-			</pre>
+</pre>
                         <impo>Don't forget to start the distcc daemon! <c>/etc/init.d/distccd start</c></impo>
 		</body>
 	</section>
 	<section>
 		<title>Setting up Distcc to Work With Automake</title>
 		<body>
-			<p>This is in some cases easier than the Portage setup.  What you have to do is update your <c>PATH</c> environment variable to include <path>/usr/lib/distcc/bin</path> before where gcc (<path>/usr/bin</path>).  However, there is a caveat.  If you use ccache you have to put distcc after the ccache part.  Like so:</p>
+                        <p>This is in some cases easier than the Portage setup.  What you have to do is update your <c>PATH</c> environmental variable to include <path>/usr/lib/distcc/bin</path> before where gcc (<path>/usr/bin</path>).  However, there is a caveat.  If you use ccache you have to put distcc after the ccache part.  Like so:</p>
 			<pre caption="Setting your path">
 # <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
-			</pre>
-			<p>Then, as you would normally type <c>make</c>, you would type <c>make -jN</c> (where N is an integer).  A safe number to use for N varries on your network and the types of computers you are using to compile.  For me, I have a dual processor P3 and a K6-2/400 that compile everything for my desktop (a 1200MHz Athlon Thunderbird) and I use -j5.  Test your own settings to find the right number.</p>
+</pre>
+                        <p>Then, as you would normally type <c>make</c>, you would type <c>make -jN</c> (where N is an integer).  A safe number to use for N varies on your network and the types of computers you are using to compile.  For me, I have a dual processor P3 and a K6-2/400 that compile everything for my desktop (a 1200MHz Athlon Thunderbird) and I use -j5.  Test your own settings to find the right number.</p>
 		</body>
 	</section>
 </chapter>
@@ -124,78 +147,46 @@ MAKEOPTS=-jN
 <chapter>
 	<title>Using Distcc to Bootstrap</title>
 	<section>
-		<title>Step 1: Build the Tarball</title>
+                <title>Step 1: Setup on New Box</title>
 		<body>
-		<p>This section is helpful if you want to use Distcc during the Gentoo installation. Surprisingly it isn't that hard. What you'll need is another computer running Gentoo and a way to transfer a tarball to your new system (I use scp).</p>
-		<p>First you have to build a tarball of Distcc and include a library (<path>/usr/lib/libpopt.so.*</path>).</p>
-		<pre caption="Building the tarball">
-# <i>USE='-gtk -selinux' emerge --buildpkg distcc</i>
-# <i>mkdir -p /tmp/distcc/usr/lib</i>
-# <i>cp /usr/portage/packages/sys-devel/distcc-DISTCC_VERSION.tbz2 /tmp/distcc/</i>
-# <i>cp /usr/lib/libpopt.so.* /tmp/distcc/usr/lib</i>
-# <i>cd /tmp/distcc</i>
-# <i>tar cfzv distcc.tar.gz *</i>
-<codenote>Be sure you replace DISTCC_VERSION with the version (and Gentoo revision) of Distcc, <i>like 2.10-r1</i></codenote>
-		</pre>
-		</body>
-	</section>
-	<section>
-		<title>Step 2: Setup on New Box</title>
-		<body>
-		<impo>Do not forget to start sshd and reset the root password for the LiveCD!</impo>
 		<p>Next, you have to boot your new box with a Gentoo Linux LiveCD and follow all of the steps up until the bootstrapping. Then proceed with a little preliminary setup on the new box.</p>
 		<pre caption="Preliminary Setup">
 <codenote>Here we add distcc to FEATURES</codenote>
-# <i>echo "FEATURES=\"\${FEATURES} distcc\"" &gt;&gt; /etc/make.conf</i>
-<codenote>You can also use <i>nano</i> to edit <path>/etc/make.conf</path> and manually add distcc to FEATURES.</codenote>
-# <i>echo "MAKEOPTS=\"\${MAKEOPTS} -jN\"" &gt;&gt; /etc/make.conf</i>
-<codenote>Just like above, you can use <i>nano</i> to edit <path>/etc/make.conf</path> and manually change MAKEOPTS.</codenote>
-		</pre>
+# <i>nano -w /etc/make.conf</i>
+<codenote>Add &quot;distcc&quot; to FEATURES</codenote>
+<codenote>Modify MAKEOPTS in <path>/etc/make.conf to include -jN (as described above)</path></codenote>
+</pre>
 		<p>Then add the distcc user to your <path>/etc/passwd</path>:</p>
 		<pre caption="Add the distcc user to /etc/passwd">
 # <i>echo "distcc:x:240:2:distccd:/dev/null:/bin/false" &gt;&gt;/etc/passwd</i>
 <codenote>Do not forget the `<i>&gt;&gt;</i>'</codenote>
-		</pre>
+</pre>
 		</body>
 	</section>
 	<section>
-		<title>Step 3: Copy the Tarball</title>
+                <title>Step 2: Getting Distcc</title>
 		<body>
-		<p>Next you will want to copy the distcc tarball that you made.</p>
-		<pre caption="Copy the tarball to the new box">
-<codenote>Execute this on the "old" box</codenote>
-# <i>scp /tmp/distcc/distcc.tar.gz root@ip.of.new.box:/mnt/gentoo/</i>
-<codenote>Substitute <i>ip.of.new.box</i> for your new box's IP</codenote>
-		</pre>
+                <p>Next you will want to issue the following command inside the chroot on the new box.</p>
+                <pre caption="Getting Distcc on the new box">
+# <i>emerge --nodeps distcc</i>
+</pre>
 		</body>
 	</section>
-	
 	<section>
-		<title>Step 4: Unpacking the Tarball</title>
-		<body>
-		<pre caption="Unpack the tarball">
-# <i>tar xvfz distcc.tar.gz</i>
-# <i>tar xvfjp distcc-DISTCC_VERSION.tbz2</i>
-<codenote>Be sure you replace DISTCC_VERSION with the version (and Gentoo revision) of Distcc, <i>like 2.10-r1</i></codenote>
-		</pre>
-		</body>
-	</section>
-	
-	<section>
-		<title>Step 5: Setting Up Distcc Itself</title>
+                <title>Step 3: Setting Up Distcc Itself</title>
 		<body>
 		<p>Now set up distcc itself...</p>
 		<pre caption="Final distcc setup">
 # <i>/usr/bin/distcc-config --install</i>
 # <i>/usr/bin/distcc-config --set-hosts "localhost host1 host2 host3 ..."</i>
-                </pre>  
+</pre>  
 		<p>distcc should be set up now to bootstrap! Continue the official install guide, and don't forget to re-emerge distcc after <c>emerge system</c>.</p>
 		</body>
 	</section>
 </chapter>
 
 <chapter>
-        <title>Known Problems With Distcc</title>
+        <title>Troubleshooting</title>
         <section>
                 <title>Mozilla and Xfree</title>
                 <body>
@@ -224,15 +215,15 @@ MAKEOPTS=-jN
 		<title>Distcc Monitors</title>
 		<body>
 			<p>Distcc ships with two monitors.  The text-based one is always built, it is called <c>distccmon-text</c>.  Running it for the first time can be a bit confusing, but it is really quite easy to use.  If you run the program with no parameter it will run once.  However, if you pass it a number it will update every N seconds, where N is the argument you passed.</p>
-			<p>The other monitor is only turned on if you enabled <c>gtk</c> in your <c>USE</c> flags.  This one is GTK+ based and runs in an X environment, and it is quite lovely.</p>
+                        <p>The other monitor is only turned on if you enabled <c>gtk</c> or <c>gnome</c> in your <c>USE</c> flags.  This one is GTK+ based and runs in an X environment, and it is quite lovely.</p>
 			<p>There is a caveat to using these programs.  If you want to monitor any emerge, you have to start the monitor like so:</p>
 			<pre caption="Starting the monitors">
-# <i>DISTCC_DIR=/path/to/distccdir portage distccmon-text N</i>
+# <i>DISTCC_DIR=/path/to/distccdir distccmon-text N</i>
 <codenote>Or you can start the graphical monitor...</codenote>
-# <i>DISTCC_DIR=/path/to/distccdir portage distccmon-gnome</i>
-			</pre>
-                        <note>If you aren't using Portage you do not need to specify DISTCC_DIR (i.e., just type distccmon-text N).</note>
+# <i>DISTCC_DIR=/path/to/distccdir distccmon-gnome</i>
+</pre>
                         <impo>If you are using Portage and used the above example, this will be <c>DISTCC_DIR=/var/tmp/portage/.distcc</c>.</impo>
+                        <note>If you aren't using Portage you do not need to specify DISTCC_DIR (i.e., just type distccmon-text N).</note>
 		</body>
 	</section>
 </chapter>
