@@ -61,17 +61,18 @@ The currently supported operators include:
 
 """
 
-__revision__ = '$Id: Template.py,v 1.15 2005/03/19 19:09:30 hadfield Exp $'
+__revision__ = '$Id: Template.py,v 1.16 2005/03/20 01:24:56 hadfield Exp $'
 __modulename__ = 'Template'
 
+import md5
 import os
 import re
-import md5
 import string
-import types
+import thread
 
 import Config
 from GLSRException import TemplateModuleError
+from Logging import logwrite
 
 class Template:
     """Template handler class."""
@@ -108,16 +109,9 @@ class Template:
             self._contents = open(self._template_name, "r").readlines()
             
         except IOError, errmsg:
-            raise TemplateModuleError('Caught an IOError exception', 'errmsg')
+            raise TemplateModuleError('Caught an IOError exception', errmsg)
 
         return self._contents
-	
-    def clear(self):
-        """Re-initializes all of the template variables."""
-        
-        self._template_name = ""
-        self._contents = []
-        self._output = []
 	
     def _sub(self, variable, repl_text, values, index = -1):
         """Substitute all occurences of 'variable' in repl_text with the value.
@@ -159,6 +153,13 @@ class Template:
 
         return repl_text
         
+    def clear(self):
+        """Re-initializes all of the template variables."""
+        
+        self._template_name = ""
+        self._contents = []
+        self._output = []
+	
     def compile(self, template_name, terms = None, loops = None, cache = None):
         """Processes the template.
 
@@ -205,9 +206,9 @@ class Template:
             # Build the output variable
             self._output = string.split(full_file, "\n")
 
-            # Write cache file
-            # FIXME: This need to be split into a thread
-            self._write_cache(digest)
+            if self._use_cache:
+                # Write cache file
+                thread.start_new_thread(self._write_cache, (digest,))
 
     def _add_tmpl_values(self, loop):
         """Adds values to the loop to make loops easier to use.
@@ -267,9 +268,12 @@ class Template:
             loop = loop_array[i]
             content_start_len = len(content)
             
-            # FIXME: Throw exception if find returns -1
             start_pos = loop["char_pos"]
             end_pos = content.find("{!LOOP}", start_pos)
+            if end_pos == -1:
+                raise TemplateModuleError("Unable to find end of loop '%'." %
+                                          loop)
+            
             loop_text = content[start_pos + len("{LOOP %s}" % loop["expr"]):
                                   end_pos]
             
@@ -328,9 +332,12 @@ class Template:
             cur_if = if_array[i]
             content_start_len = len(content)
 
-            # FIXME: Throw exception if find returns -1
             start_pos = cur_if["char_pos"]
             end_pos = content.find("{!IF}", start_pos)
+            if end_pos == -1:
+                raise TemplateModuleError("Unable to find end of loop '%'." %
+                                          cur_if)
+            
             if_text = content[start_pos + len("{IF %s}" % cur_if["expr"]):
                               end_pos]
             else_text = ""
@@ -379,17 +386,18 @@ class Template:
         The same goes for IF's.
         """
     
-        def region_sort(x, y):
-            if x["nested"] < y["nested"]: return -1
-            if x["nested"] > y["nested"]: return 0
-            if x["char_pos"] < y["char_pos"]: return -1
-            if x["char_pos"] > y["char_pos"]: return 0
+        def region_sort(reg1, reg2):
+            if reg1["nested"] < reg2["nested"]:
+                return -1
+            if reg1["nested"] > reg2["nested"]:
+                return 0
+            if reg1["char_pos"] < reg2["char_pos"]:
+                return -1
+            if reg1["char_pos"] > reg2["char_pos"]:
+                return 0
             return 1
         
-        # Count the number of regions by counting the number of region closes
-        num_of_regions = len(filter(lambda x: x != region_close, regions))
-
-        # Now determine which regions have nested regions, and how many nested
+        # Determine which regions have nested regions, and how many nested
         # regions we have. This will be used to determine processing order.
         start_pos = 0  # Used for marking the character position of the region.
         region_array = []
@@ -422,7 +430,8 @@ class Template:
                 else:
                     nest_count -= 1
 
-                if nest_count == 0: break
+                if nest_count == 0:
+                    break
         
         region_array.sort(region_sort)
         return region_array
@@ -434,11 +443,13 @@ class Template:
         will return True or False.
         """
 
-        vars = r'(?:%s|%s)' % (self._var_regex, self._literal_regex)
-        expr_regex = r'(%s) (==|!=|<|>) (%s)' % (vars, vars)
+        variables = r'(?:%s|%s)' % (self._var_regex, self._literal_regex)
+        expr_regex = r'(%s) (==|!=|<|>) (%s)' % (variables, variables)
 
-        # FIXME: Raise an exception if match is None here.
         match = re.search(expr_regex, expr)
+
+        if match is None:
+            raise TemplateModuleError("Error parsing IF expression.")
 
         lhs = self._value_of(match.group(1), index)
         rhs = self._value_of(match.group(3), index)
@@ -464,36 +475,42 @@ class Template:
         return value
 
     def _check_cache(self, digest):
-
+        """Verify the existence of the cache with digest 'digest'."""
+        
         if not os.path.exists(Config.TmplCacheDir):
             raise TemplateModuleError('Template cache directory missing')
             
-        for file in os.listdir(Config.TmplCacheDir):
-            if file.endswith('.cache'):
-                if digest == file.split('.')[0]:
+        for filename in os.listdir(Config.TmplCacheDir):
+            if filename.endswith('.cache'):
+                if digest == filename.split('.')[0]:
                     return True
 
         return False
 
     def _read_cache(self, digest):
-
+        """Load the cached template and store it in _output."""
+        
         try:
-            readfd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'), 'r')
+            readfd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'),
+                          'r')
             self._output = readfd.readlines()
             readfd.close()
-        except IOError, e:
-            raise TemplateModuleError('Failed to open template cache file', e)
+        
+        except IOError, err:
+            raise TemplateModuleError('Failed to open template cache file', err)
             
     def _write_cache(self, digest):
+        """Write the cached file to disk."""
 
         try:
-            writefd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'), 'w')
+            writefd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'),
+                           'w')
             writefd.write('\n'.join(self._output))
             writefd.close()
-        except IOError, e:
-            # FIXME: Use logwrite when this func get threaded
-            #logwrite("Cache write failed: '%s'" % e, __modulename__, 'Error')
-            raise TemplateModuleError('Template cache write failed', e)
+        
+        except IOError, err:
+            logwrite("Cache write failed: '%s'" % err, __modulename__, 'Error')
+            raise TemplateModuleError('Template cache write failed', err)
 
     def param(self, key, value, param_type = "term"):
         """Add a new parameter, either a 'loop' or a 'term'."""
@@ -511,4 +528,3 @@ class Template:
             raise TemplateModuleError('No compiled template data found')
 
         return "\n".join(self._output)
-
