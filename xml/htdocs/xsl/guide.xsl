@@ -268,10 +268,10 @@
 		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store</a> |
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='where'">
-				<a class="highlight" href="/main/en/where.xml"> Get Gentoo</a>
+				<a class="highlight" href="/main/en/where.xml"> Get Gentoo!</a>
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/where.xml"> Get Gentoo</a> 
+				<a class="menulink" href="/main/en/where.xml"> Get Gentoo!</a> 
 			</xsl:otherwise>
 		</xsl:choose>
 		</p>
@@ -336,7 +336,7 @@
 				<br/>
 				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
 				<br/>
-				<a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
+				<a class="altlink" href="/main/en/where.xml#doc_chap3">Download Mirrors</a>
 				<br/>
 				<a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
 				<br/>
