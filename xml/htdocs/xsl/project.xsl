@@ -106,7 +106,7 @@
 <xsl:template match="longdescription|goals">
 	<xsl:apply-templates select="node()|@*" />
 </xsl:template>
-<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*">
+<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*">
 	<xsl:copy>
 		<xsl:apply-templates select="node()|@*"/>
 	</xsl:copy>
@@ -163,7 +163,8 @@
 			<xsl:with-param name="fallback">true</xsl:with-param>
 		</xsl:call-template>
 	</xsl:if></ti>
-	<ti><xsl:value-of select="text()"/></ti></tr>
+	<ti><xsl:apply-templates select="node()"/>
+	</ti></tr>
 </xsl:template>
 <xsl:template match="subproject">
 	<xsl:variable name="ref" select='string(@ref)'/>
