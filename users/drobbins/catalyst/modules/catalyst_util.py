@@ -2,7 +2,7 @@
 # Copyright 2003 Gentoo Technologies, Inc.; http://www.gentoo.org
 # Released under the GNU General Public License version 2
 
-import sys,os,string
+import sys,os,string,stat
 
 subarches=["amd64", "hppa", "hppa1.1", "hppa2.0", "x86", "i386", "i486", "i586", "i686",
 "athlon", "athlon-xp", "athlon-mp", "pentium-mmx", "pentium3", "pentium4", "ppc", "g3",
@@ -13,6 +13,7 @@ subarches=["amd64", "hppa", "hppa1.1", "hppa2.0", "x86", "i386", "i486", "i586",
 class generic_target:
 	def __init__(self,myset):
 		self.settings=myset
+		self.envmap={"CFLAGS":"cflags" }
 	def path(self):
 		return "stages/stage1-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
 	def read_spec_file(self,myfile):
@@ -22,15 +23,35 @@ class generic_target:
 		#export env vars here
 		return os.system(myscript+" "+string.join(myargs," "))
 		pass
+	def export_variables(self):
+		#export environment variables
+		#export:
+		# CFLAGS, HOSTUSE, CHOST, MAINARCH, PROFILE, MAKEOPTS, BASEDIR, CHROOTDIR, FEATURES
+		
 	def build(self):
 		#do the actual stage1 building
 		return execute_script("targets/stage1/build.sh")
 	def unpack(self):
 		#unpack stages
 	def mount_all(self):
-		#mount mount points
+		#mount mount points; let's handle this from python
 	def umount_all(self):
-		#umount mount points
+		#umount mount points; let's handle this from python
+	def mount_safety_check(self,mypath):
+		#check and verify that none of our paths in mypath are mounted. We don't want to clean up with things still
+		#mounted, and this allows us to check. returns 1 on ok, 0 on "something is still mounted" case.
+		paths=["usr/portage/packages","/usr/portage/distfiles", "/var/tmp/distfiles", "/proc", "/root/.ccache", "/dev"]
+		if not os.path.exists(mypath):
+			return 1 
+		mypstat=os.stat(mypath)[ST_DEV]
+		for x in paths:
+			if not os.path.exists(x):
+				continue
+			teststat=os.stat(x)[ST_DEV]
+			if teststat!=mypstat:
+				#something is still mounted
+				return 0
+		return 1
 	def prep(self):
 		#prepare stage for packing up
 	def clean(self):
@@ -38,11 +59,13 @@ class generic_target:
 	def pack(self):
 		#tar up anything like a stage and put in right place
 	def run(self):
+		self.mount_safety_check()
 		self.unpack()
 		self.setup()
 		self.mount_all()
 		retval=self.build() #check for failure
 		self.umount_all()
+		self.mount_safety_check()
 		self.prep()
 		self.pack()
 		self.clean()
