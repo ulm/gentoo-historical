@@ -270,6 +270,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
 						</xsl:otherwise>
 					</xsl:choose>
+					<font color="#ff0000"><a class="menulink" href="/doc/shots.html">ScreenShots</a></font> |
 					<a class="menulink" href="/doc/build.html">Download/Install</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
@@ -311,18 +312,17 @@ of your sale will go towards further Gentoo Linux development.</p>
 <a href="http://www.qksrv.net/click-477620-5033206" target="_top" >
 <img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
 User Docs:<br/>
-						<font color="#ff0000">Updated!</font> <a class="altlink" href="/doc/faq.html">FAQ</a><br/>
-						<font color="#ff0000">Updated 18 Oct 2001:</font> <a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
-						<font color="#ff0000">Updated!</font> <a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
+						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
+						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
+						<a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
-						<font color="#ff0000">Updated!</font> <a class="altlink" href="/doc/build.html">"From Source" CD Install Guide</a><br/>
-						<a class="altlink" href="/doc/nvidia_tsg.html">nvidia Troubleshooting Guide</a><br/>
+						<font color="#ff0000"><a class="altlink" href="/doc/build.html">"From Source" CD Install Guide</a></font><br/>
 						<br/>
 										<a href="http://www.qksrv.net/click-477620-57886" target="_top" >
 					<img src="http://www.qksrv.net/image-477620-57886" width="88" height="31" alt="Online Auto Loans" border="0"/></a><br/><br/>	
 						Developer Docs:<br/>
 						<font color="#ff0000">New!</font> <a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
-						<font color="#ff0000">Updated 21 Sep 2001:</font> <a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
+						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
 						<br/>
 	
