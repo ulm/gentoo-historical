@@ -14,6 +14,7 @@
 #include <qpixmap.h>
 #include <qevent.h>
 #include <qlistbox.h>
+#include <qxml.h> 
 
 void Wizard::display_license(const char *license) {
 	// display selected license
@@ -158,52 +159,57 @@ void Wizard::init() {
 	
 	lvwSoftwareComponents->header()->hide();
 	lvwSoftwareComponents->setSorting(-1);
+	connect(lvwSoftwareComponents, SIGNAL(clicked(QListViewItem *)), this, SLOT(SoftwareChanged(QListViewItem *)));
+#define ANYITEM(parent, name, pkgname) \
+	curc = new SoftwareListItem( parent , name , pkgname );
+#define ROOTITEM(name, pkgname)	ANYITEM(lvwSoftwareComponents, name , pkgname )
 #define SECTION(name) \
 	curc = cura = new QCheckListItem(lvwSoftwareComponents, name ,	\
 									 QCheckListItem::CheckBoxController);
-#define ITEM(name)	\
-	curc = new QCheckListItem(cura, name , QCheckListItem::CheckBox);	\
+#define ITEM(name, pkgname)	\
+	ANYITEM(cura, name , pkgname ) \
     cura->setState(QCheckListItem::NoChange);
 #define SUBSECTION(name) \
 	curc = curb = new QCheckListItem(cura, name , QCheckListItem::CheckBoxController);
-#define SUBITEM(name) \
-	curc = new QCheckListItem(curb, name , QCheckListItem::CheckBox);
+#define SUBITEM(name, pkgname) ANYITEM(curb, name , pkgname )
 #define DEFAULT	curc->setOn(TRUE);
 	
 	SECTION("Accessories")
-			ITEM("Common Utilities")			DEFAULT
+			ITEM("Common Utilities", "kde-base/kdeutils")		DEFAULT
 	SECTION("Games")
-			ITEM("Common Games")				DEFAULT
-			ITEM("ArmageTRON")					DEFAULT
-			ITEM("Frozen Bubble")				DEFAULT
+			ITEM("Common Games", "kde-base/kdegames")			DEFAULT
+			ITEM("ArmageTRON", "games-action/armagetron")		DEFAULT
+			ITEM("Frozen Bubble", "games-arcade/frozen-bubble")	DEFAULT
 	SECTION("Desktop Themes")
-			ITEM("Common Themes")				DEFAULT
-			ITEM("Liquid")
+			ITEM("Common Themes", "kde-base/kdeartwork")		DEFAULT
+			ITEM("Liquid", "x11-themes/mosfet-liquid-widgets")
 	SECTION("Multimedia")
-			ITEM("Common Multimedia")			DEFAULT
-			ITEM("CD Burner")
-			ITEM("Multimedia Player")			DEFAULT		//VLC?
+			ITEM("Common Multimedia", "kde-base/kdemultimedia")	DEFAULT
+			ITEM("CD Burner", "app-cdr/k3b")
+//			ITEM("Multimedia Player")			DEFAULT		//VLC?
 			SUBSECTION("Video Compression")
-			    SUBITEM("Quicktime")			DEFAULT
-			    SUBITEM("RealMedia")			DEFAULT
-			    SUBITEM("DivX")					DEFAULT
-		    	SUBITEM("Other Codecs")			DEFAULT
+//			    SUBITEM("Quicktime")			DEFAULT
+			    SUBITEM("RealMedia", "media-plugins/realvideo-codecs")	DEFAULT
+			    SUBITEM("DivX", "media-libs/divx4linux")		DEFAULT
+		    	SUBITEM("Other Codecs", "media-libs/win32codecs")	DEFAULT
 	SECTION("System Tools")
-			ITEM("Common Administration Tools")	DEFAULT
-			ITEM("Windows Compatibility")		DEFAULT
-			ITEM("Partition Manipulator")				//QtParted
+			ITEM("Common Administration Tools", "kde-base/kdeadmin")	DEFAULT
+			ITEM("Windows Compatibility", "app-emulation/wine")	DEFAULT
+			ITEM("Partition Manipulator", "sys-apps/qtparted")
 	SECTION("Internet")
-			ITEM("Instant Messenger")			DEFAULT		//Psi
-			ITEM("Advanced Downloader")					//KGet?
-			ITEM("IRC Client")						//ksirc/KVirc?
-	SECTION("Office Suite")
+			ITEM("Instant Messenger", "net-im/psi")				DEFAULT
+			ITEM("IRC Client", "")						//ksirc/KVirc?
+	ROOTITEM("Office Suite", "app-office/koffice")
 			
 #undef DEFAULT
 #undef SUBITEM
 #undef SUBSECTION
 #undef ITEM
 #undef SECTION
+#undef ROOTITEM
+#undef ANYITEM
 	
+	BuildExcludePkgs();
 			
 	/*	cmdBack->setIconSet(QPixmap("images/back.png"));
 	cmdNext->setIconSet(QPixmap("images/next.png")); */
@@ -378,25 +384,74 @@ void Wizard::closeEvent(QCloseEvent *e) {
 	e->accept();
 }
 
-
-void Wizard::InGenReport() {
-
-}
-
-
 void Wizard::doStatus() {
 	// TODO: Weigh each part differently?
-	int ResizeStep = 0;
-	int FormatStep = 0;
-	int InstallStep = (int) ((long long) 255 *
-									  filesystem_use("/mnt/gentoo") / SrcUsedSpace);
-	int BootDiskStep = 0;
-	int TotalStep = (ResizeStep + FormatStep + InstallStep + BootDiskStep) / 4;
+	// TODO: Does format take long enough to even have a %?
+	int ResizeP = 0, FormatP = 0, InstallP = 0, BootDiskP = 0, TotalP;
 	
-	pbStatResize->setProgress(ResizeStep);
-	pbStatFormat->setProgress(FormatStep);
-	pbStatInstall->setProgress(InstallStep);
-	pbStatBootdisk->setProgress(BootDiskStep);
-	pbStatTotal->setProgress(TotalStep);
-	pbTotalBg->setProgress(TotalStep);
+	if (InstallStep > 20)
+		InstallP = (int) ((long long) 255 *
+									  filesystem_use("/mnt/gentoo") / SrcUsedSpace);
+	
+	TotalP = (ResizeP + FormatP + InstallP + BootDiskP) / 4;
+	
+	pbStatResize->setProgress(ResizeP);
+	pbStatFormat->setProgress(FormatP);
+	pbStatInstall->setProgress(InstallP);
+	pbStatBootdisk->setProgress(BootDiskP);
+	pbStatTotal->setProgress(TotalP);
+	pbTotalBg->setProgress(TotalP);
+}
+
+void Wizard::InGenReport() {
+	QString InGenCmd, InGenPar;
+	int pos;
+	
+	InGenStdout += InGenProc->readStdout();
+	while(1 + (pos = InGenStdout.find("\n"))) {
+		InGenCmd = InGenStdout.left(pos);
+		InGenStdout = InGenStdout.mid(pos + 1);
+		if(1 + (pos = InGenCmd.find(" "))) {
+			InGenPar = InGenCmd.mid(pos + 1);
+			InGenCmd = InGenCmd.left(pos);
+		} else
+			InGenPar = "";
+		if (InGenCmd == "SetStage")
+			if (InGenPar == "Software") {
+				printf("Entering software installation stage...\n");
+				InstallStep = 21;
+				this->doStatus();
+			}
+		// TODO: Other stuff needed?
+	}
+}
+
+void Wizard::BuildExcludePkgs() {
+	QFile tmpfile("/.ingen/exclude_pkgs");
+	QTextStream tmpstream(&tmpfile);
+	QListViewItemIterator swii(lvwSoftwareComponents);
+	QListViewItem *curitem;
+	SoftwareListItem *curitemsw;
+	
+	if (!tmpfile.open(IO_WriteOnly)) {
+		// TODO: Real onError?
+		printf("I need to write /.ingen/exclude_pkgs ! FAILED!");
+		return;
+	}
+	tmpstream << "*/qingen\n";	// TODO: where is this? =p
+	for (swii = QListViewItemIterator(lvwSoftwareComponents);
+	                                                   (curitem = swii.current()); ++swii) {
+		if (curitem->rtti() == 1702) {
+			curitemsw = static_cast<SoftwareListItem*>(curitem);
+			if(!curitemsw->isOn())
+				tmpstream << curitemsw->Package() << "\n";
+		}
+	}
+	tmpfile.close();
+}
+
+void Wizard::SoftwareChanged(QListViewItem *item) {
+	// TODO: it'd be nice to only modify the existing file to preserve anything else that might have changed it...
+	BuildExcludePkgs();
+	item = item;	// Kill the warning
 }

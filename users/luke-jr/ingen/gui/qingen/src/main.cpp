@@ -11,6 +11,7 @@ Wizard *QInGenWizard;
 QProcess *InGenProc;
 long long SrcUsedSpace;
 QTimer *UpdateStatus;
+QString InGenStdout;
 
 int main( int argc, char ** argv ) {
 	QInGenApp = new QApplication(argc, argv);
@@ -35,7 +36,7 @@ void begin_install() {
 	InGenProc->addArgument("ingen");
 	InGenProc->addArgument("LaunchInGen");
 	InGenProc->connect(InGenProc, SIGNAL(readyReadStdout()), QInGenWizard, SLOT(InGenReport()));
-
+	InGenStdout = QString::null;
 	if (!InGenProc->start()) {
 		// TODO: What happens if this fails? o.o;;;
 		printf("InGen failed to start! :(\n");
@@ -48,7 +49,8 @@ void begin_install() {
 }
 
 void cancel_install() {
-	InGenProc->kill();
+	if (InGenProc->isRunning())
+		InGenProc->kill();
     InstallStep = 0;
 }
 

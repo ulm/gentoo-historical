@@ -1,9 +1,7 @@
-SOURCES	+= main.cpp
-HEADERS	+= main.h
-SOURCES += ui/objects.cpp
-#SUBDIRS = sys
-#SOURCES += ui/wizard.cpp
-#HEADERS += ui/wizard.h
+SOURCES	+= main.cpp \
+	ui/objects.cpp
+HEADERS	+= main.h \
+	ui/objects.h
 FORMS	= ui/wizard.ui
 IMAGES	= images/ed-side.png \
 	images/harddisk-icon.png \
