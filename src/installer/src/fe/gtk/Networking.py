@@ -1,8 +1,10 @@
-import gtk
+import gtk,gobject
 import os
 import re
 import GLIScreen
 import GLIUtility
+import commands, string
+import copy
 from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
@@ -11,307 +13,268 @@ class Panel(GLIScreen.GLIScreen):
     
     @author:    John N. Laliberte <allanonl@bu.edu>
     @license:   GPL
+    (starting from agaffney's template of NetworkMounts)
     """
     # Attributes:
     title="Networking Settings"
+    columns = []
+    networking = []
+    active_entry = -1
+    
     # Operations
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
-
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
 
         content_str = """
 This is where you setup Networking.
 [short explanation of what to do here]
 """
-	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.ethernet_devices = self.get_ethernet_devices()
+	
+	vert = gtk.VBox(gtk.FALSE, 0)
+	vert.set_border_width(10)
+	
+	self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+	for i in range(0, len(self.networking)):
+		self.treedata.append([i, self.networking[i]['host'], self.networking[i]['export'], self.networking[i]['type'], self.networking[i]['mountpoint'], self.networking[i]['mountopts']])
+	self.treedatasort = gtk.TreeModelSort(self.treedata)
+	self.treeview = gtk.TreeView(self.treedatasort)
+	self.treeview.connect("cursor-changed", self.selection_changed)
+	self.columns.append(gtk.TreeViewColumn("Device    ", gtk.CellRendererText(), text=1))
+	self.columns.append(gtk.TreeViewColumn("IP Address", gtk.CellRendererText(), text=2))
+	self.columns.append(gtk.TreeViewColumn("Mask      ", gtk.CellRendererText(), text=3))
+	self.columns.append(gtk.TreeViewColumn("Broadcast ", gtk.CellRendererText(), text=4))
+	self.columns.append(gtk.TreeViewColumn("Default Gateway", gtk.CellRendererText(), text=5))
+	col_num = 0
+	for column in self.columns:
+		column.set_resizable(gtk.TRUE)
+		column.set_sort_column_id(col_num)
+		self.treeview.append_column(column)
+		col_num += 1
+	self.treewindow = gtk.ScrolledWindow()
+	self.treewindow.set_size_request(-1, 200)
+	self.treewindow.set_shadow_type(gtk.SHADOW_IN)
+	self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+	self.treewindow.add(self.treeview)
+	vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
+	self.networking_info_box = gtk.HBox(gtk.FALSE, 0)
+	networking_info_table = gtk.Table(5, 3, gtk.FALSE)
+	networking_info_table.set_col_spacings(10)
+	networking_info_table.set_row_spacings(6)
+	
+	# Device
+	networking_info_device_label = gtk.Label("Device:")
+	networking_info_device_label.set_alignment(0.0, 0.5)
+	networking_info_table.attach(networking_info_device_label, 0, 1, 0, 1)
+	self.networking_info_device = gtk.combo_box_new_text()
+	# Device drop-down
+	for device in self.ethernet_devices:
+		self.networking_info_device.append_text(device)
+	self.networking_info_device.set_active(0)
+	networking_info_table.attach(self.networking_info_device, 1, 2, 0, 1)
+	
+	# IP Address
+	networking_info_ip_label = gtk.Label("IP Address:")
+	networking_info_ip_label.set_alignment(0.0, 0.5)
+	networking_info_table.attach(networking_info_ip_label, 0, 1, 1, 2)
 	widgets=Widgets()
-        
-	self.interfaces={}
-	self.default_gateway={}
+	# DHCP Checkbox
+	self.dhcp_checkbox=gtk.CheckButton("DHCP")
+	self.dhcp_checkbox.connect("toggled", self.checkbutton, "check button 1")
+	networking_info_table.attach(widgets.hBoxIt2(gtk.TRUE,0,self.dhcp_checkbox), 2, 3, 0, 1)
+	self.networking_info_ip = gtk.Entry()
+	self.networking_info_ip.set_width_chars(25)
+	networking_info_table.attach(self.networking_info_ip, 1, 2, 1, 2)
 	
-	self.textBoxen=[] # the list of textboxen so we can get data later	 
-	self.lastSelected="NOT_SET" #set default selected device
+	# Mask
+	networking_info_mask_label = gtk.Label("Mask:")
+	networking_info_mask_label.set_alignment(0.0, 0.5)
+	networking_info_table.attach(networking_info_mask_label, 0, 1, 2, 3)
+	self.mask=gtk.Entry()
+	self.mask.set_width_chars(25)
+	networking_info_table.attach(self.mask, 1, 2, 2, 3)
 	
-	# ethernet device drop-down
-	#self.interfaces=self.get_ethernet_devices()
-	self.menu_list=self.get_ethernet_devices()
-	self.menu=widgets.createComboEntry(self,"networkdevs",self.menu_list.keys())
-	ethernet_menu_hBoxed = widgets.hBoxThese(gtk.FALSE,10,[gtk.Label("Current Devices"),self.menu])
-	ethernet_menu_hBoxed=widgets.hBoxIt(ethernet_menu_hBoxed)
+	# Broadcast
+	networking_info_broadcast_label = gtk.Label("Broadcast:")
+	networking_info_broadcast_label.set_alignment(0.0, 0.5)
+	networking_info_table.attach(networking_info_broadcast_label, 0, 1, 3, 4)
+	self.networking_info_broadcast = gtk.Entry()
+	self.networking_info_broadcast.set_width_chars(30)
+	networking_info_table.attach(self.networking_info_broadcast, 1, 2, 3, 4)
 	
-	# static frame creation
-	static_frame = gtk.Frame()
-	static_frame.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-	static_frame.show()
+	# Default Gateway
+	networking_info_gateway_label = gtk.Label("Default Gateway:")
+	networking_info_gateway_label.set_alignment(0.0, 0.5)
+	networking_info_table.attach(networking_info_gateway_label, 0, 1, 4, 5)
+	self.networking_info_gateway = gtk.Entry()
+	self.networking_info_gateway.set_width_chars(30)
+	networking_info_table.attach(self.networking_info_gateway, 1, 2, 4, 5)
 	
-	# static table
-	static_table=gtk.Table(4,2,gtk.FALSE)
-	static_table.set_col_spacing(0,10)
+	# Pack it all
+	self.networking_info_box.pack_start(networking_info_table, expand=gtk.FALSE, fill=gtk.FALSE)
+	vert.pack_start(self.networking_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+	# The bottom box of buttons
+	networking_button_box = gtk.HBox(gtk.FALSE, 0)
+	networking_button_new = gtk.Button(" _New ")
+	networking_button_new.connect("clicked", self.new_device)
+	networking_button_box.pack_start(networking_button_new, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.networking_button_update = gtk.Button(" _Update ")
+	self.networking_button_update.connect("clicked", self.update_device)
+	self.networking_button_update.set_sensitive(gtk.FALSE)
+	networking_button_box.pack_start(self.networking_button_update, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.networking_button_delete = gtk.Button(" _Delete ")
+	self.networking_button_delete.connect("clicked", self.delete_device)
+	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	networking_button_box.pack_start(self.networking_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 	
-	# static table - radio button select
-	static_radio_button=widgets.radioButton(None,self.callback,"Static Ethernet",1)
-	#static_radio_button.set_active(gtk.TRUE)
-	self.static_radio_button=static_radio_button
-	static_radio_button_hBoxed=widgets.hBoxIt(static_radio_button) 	
-	
-	# static table - populate the table with labels and entry boxes
-	list=["Ip Address","Mask","Broadcast","Default Gateway"]
-	self.fill_left_static_table(static_table,list)
-	self.fill_right_static_table(static_table,list)
-	static_table_hBoxed=widgets.hBoxIt2(gtk.TRUE,20,static_table)
-	
-	# static table - checkbox for default gateway
-	static_default_gateway = gtk.CheckButton("Default gateway")
-	static_default_gateway.connect("toggled", self.defaultcheckcall, "default_check")
-	# make it so its disabled to begin with.
-	self.textBoxen[3].set_sensitive(gtk.FALSE)
-	static_default_gateway_hBoxed = widgets.hBoxThese(gtk.FALSE,10,[static_default_gateway])
-	self.static_default_gateway = static_default_gateway
-	# set it so there is no default gateway to begin with
-	self.static_default_gateway_status={}
-	
-	# dhcp frame creation
-	dhcp_frame = gtk.Frame()
-	dhcp_frame.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-	dhcp_frame.show()
-	
-	# dhcp table
-	dhcp_table=gtk.Table(4,2,gtk.FALSE)
-	dhcp_table.set_col_spacing(0,10)
-	dhcp_table_hBoxed=widgets.hBoxIt2(gtk.TRUE,20,dhcp_table)
-	
-	# dhcp table - radio button select
-	dhcp_radio_button=widgets.radioButton(static_radio_button,self.callback,"Dhcp Ethernet",1)
-	dhcp_radio_button.set_active(gtk.TRUE)
-	self.dhcp_radio_button=dhcp_radio_button
-	dhcp_radio_button_hBoxed=widgets.hBoxIt(dhcp_radio_button) 
-	
-	# add the radio buttons to the correct frames
-	static_frame.add(widgets.vBoxThese(gtk.FALSE,0,[static_radio_button_hBoxed,
-							static_table_hBoxed,
-							static_default_gateway_hBoxed]))
-	dhcp_frame.add(widgets.vBoxThese(gtk.FALSE,0,[dhcp_radio_button_hBoxed,dhcp_table_hBoxed]))
-	
-	# add the ethernet menu to the window
-	vert.pack_start(ethernet_menu_hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	# add static and dhcp frames to the window
-	vert.pack_start(widgets.hBoxThese(gtk.TRUE,0,[static_frame,dhcp_frame]),expand=gtk.FALSE,fill=gtk.FALSE,padding=10)
-	
-	# hide the frames because there is no default selection
-	# this is because they *may* not have an ethernet device in their system
-	
+	vert.pack_start(networking_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
 	self.add_content(vert)
-    
-    def defaultcheckcall(self,widget,data=None):
-	print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-	# ONLY enable it if nothing else has it set.
-	if ("OFF","ON")[widget.get_active()]=="ON" and len(self.static_default_gateway_status.keys())==0:
-	    self.textBoxen[3].set_sensitive(gtk.TRUE)
-	    self.static_default_gateway_status[self.lastSelected]=1
-	
-	# if its on, and its already been set, display an error message.
-	elif ("OFF","ON")[widget.get_active()]=="ON" and not self.static_default_gateway_status.has_key(self.lastSelected):
-	    widgets=Widgets()
-	    print "should display error"
-	    error=widgets.error_Box("Error","You have already selected a default gateway!")
-	    result=error.run()
-	    if(result==gtk.RESPONSE_ACCEPT):
-		# close the box
-		error.destroy()
-		# deselect the checkbox
-		widget.set_active(0)
-		
-	# case when you return to a device that *is* the default gateway
-	elif ("OFF","ON")[widget.get_active()]=="ON" and self.static_default_gateway_status.has_key(self.lastSelected):
-	    widget.set_active(1)
-	    self.textBoxen[3].set_sensitive(gtk.TRUE)
-	    
-	elif ("OFF","ON")[widget.get_active()]=="OFF" and self.static_default_gateway_status.has_key(self.lastSelected):
-	    # remove it from the dictionary
-	    self.static_default_gateway_status.clear()
-	    # remove ability to type in the box
-	    self.textBoxen[3].set_sensitive(gtk.FALSE)
-	    
-	else:
-	    self.textBoxen[3].set_sensitive(gtk.FALSE)
-	    
-	
-    def callback(self, widget, data=None):
-      
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-      if ("OFF","ON")[widget.get_active()]=="ON" and data=="Dhcp Ethernet":
 
-       # deactivate the boxen for entering data into.
-       for count in range(len(self.textBoxen)-1):  
-	   if count==0:
-	       self.textBoxen[count].set_text("dhcp")
-	   #else:
-	       #self.textBoxen[count].set_text=""
-	   self.textBoxen[count].set_sensitive(gtk.FALSE)
-      else:
-	  # activate them all
-	for count in range(len(self.textBoxen)-1):
-	    self.textBoxen[count].set_sensitive(gtk.TRUE)
-    
-    def set_networking_interfaces(self):
-        widgets=Widgets()
-	try:
-	    print "Setting network interfaces..."
-	    print "interfaces: "+ str(self.interfaces)
-	    self.controller.install_profile.set_network_interfaces(self.interfaces)
-	except:
-	    error=widgets.error_Box("Error","One of your ip addresses is not valid!")
-	    result=error.run()
-	    if(result==gtk.RESPONSE_ACCEPT):
-		# close the box
-		error.destroy()
+    def disable_all_fields(self):
+	if(self.networking_info_ip.get_text()!="dhcp"):
+	    self.dhcp_checkbox.set_sensitive(gtk.FALSE)
+	    self.networking_info_ip.set_text("")
 	
-    # call back for when they change eth device
-    def callback2(self,widget,data=None):
-     print "This callback is being called for: " + widget.get_text()
-     previously_selected_item=self.lastSelected
-     currently_selected_item=self.get_active_text(self.menu)
-     print "Previously selected item: "+previously_selected_item
-     print "Currently selected item: "+currently_selected_item
-     
-     # only save the data if its been selected before ( later add if they are blank remove it )
-     if previously_selected_item!="NOT_SET":
-	 # save the data only if the entries are not blank!
-	 if self.textBoxen[0].get_text()=="" and self.textBoxen[1].get_text()=="" and self.textBoxen[2].get_text()=="":
-	     # remove it from the list if its there
-	     # not done yet.
-	     holder=""
-	 else:
-	    self.interfaces[previously_selected_item]=(self.textBoxen[0].get_text(),self.textBoxen[1].get_text(),
-							self.textBoxen[2].get_text() )
-	    print "Saved data: " + str(self.interfaces[previously_selected_item])
-	 
-	    # determine if default gateway is selected, if so, save it and adjust global
-	    if self.static_default_gateway_status==1:
-		self.default_gateway[previously_selected_item]=self.textBoxen[3]
-	
-	    # load the selected data ( -1 b/c do not include default gateway )
-	    if currently_selected_item in self.interfaces.keys():
-	       for count in range(len(self.textBoxen)-1):
-		    self.textBoxen[count].set_text(self.interfaces[currently_selected_item][count])
+	self.networking_info_ip.set_sensitive(gtk.FALSE)
 	    
-	       # Do they have DHCP ? ( if so, must activate the checkbox.
-	       first_entry=self.interfaces[currently_selected_item][0]
-	       # if dhcp is active, and dhcp of the new selected is NOT dhcp, deselect
-	       if self.dhcp_radio_button.get_active()==1 and first_entry!="dhcp":
-		   # deselect dhcp
-		   self.static_radio_button.set_active(1)
-	       # if dhcp is not active, and dhcp of the new IS dhcp, select dhcp
-	       if self.dhcp_radio_button.get_active()==0 and first_entry=="dhcp":
-		   # select dhcp
-		   self.dhcp_radio_button.set_active(1)
-	   
-	       # is this device the default gateway? if so, activate the checkbox and load the data
-	       if self.lastSelected in self.static_default_gateway_status.keys():
-		   self.static_default_gateway.set_active(1)
-	       else:
-		   self.static_default_gateway.set_active(0)
-	    else:
-		 # if its not in the list, its not set, so blank all the boxen
-		 for count in range(len(self.textBoxen)-1):
-		     self.textBoxen[count].set_text("")
-		 
-	 self.set_networking_interfaces()
-	 
-     self.lastSelected=currently_selected_item
-     
-    # call back for when they activate the entry box
-    def entrycallback(self,widget,data=None):
-     print "Entry contents of: %s\n" % data.get_text()
-     # hack, with this any textbox could be dhcp
-     if GLIUtility.is_ip(data.get_text())==False and data.get_text()!="dhcp":
-	 self.change_to_pink(data)
-	 # disable the dropdown
-	 self.menu.set_sensitive(gtk.FALSE)
-	 
-     elif GLIUtility.is_ip(data.get_text())==True:
-	 self.resetBackground(data)
-	 # if its the only box with an ip format error, re-enable the box
-	 if self.checkAllBoxes()==True:
-	     print "got here"
-	     self.menu.set_sensitive(gtk.TRUE)
-    
-    def checkAllBoxes(self):
-	return_value=True
-	# if default gateway is selected, also check that box!
-	for count in range(len(self.textBoxen)-1):
-	    if GLIUtility.is_ip(self.textBoxen[count].get_text())==False:
-		return_value=False
-	return return_value
-    
-    def get_ethernet_devices(self):
-	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
-	    list={}
-	    for device in get.readlines():
-		device=device.strip()
-		if device!="lo":
-		    list[device]=("","","")
-	    return list
-    
-    def fill_left_static_table(self,table,list):
-	""" Attaches the stuff into the left frame of the table.
-	"""
-	i=0
-	for item in list:
-	 table.attach(gtk.Label(item),0,1,i,i+1)
-	 i=i+1
-    
-    def fill_right_static_table(self,table,list):
-	""" Attaches the stuff into the right frame of the table
-	"""
-	widgets=Widgets()
-	i=0
-	for count in range(len(list)):
-	 tb=widgets.textBox3(self.entrycallback,15,list[count])
-	 tb.set_name(str(count))
-	 self.textBoxen.append(tb)
-	 table.attach(tb,1,2,i,i+1)
-	 i=i+1
-    
-    def get_active_text(self,combobox):
-      model = combobox.get_model()
-      active = combobox.get_active()
-      if active < 0:
-          return None
-      return model[active][0]
-    
-    def resetBackgrounds(self):
-	for count in range(len(self.textBoxen)-1):
-	    self.textBoxen[count].modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("white"))
-    
-    def resetBackground(self,textBox):
-	textBox.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("white"))
+	self.networking_info_broadcast.set_text("")
+	self.networking_info_gateway.set_text("")
+	self.mask.set_text("")
 	
-    def findAndHighlight(self):
-	for count in range(len(self.textBoxen)-1):
-	    if GLIUtility.is_ip(self.textBoxen[count].get_text())==False:
-		# change the background of the textbox
-		self.textBoxen[count].modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("pink"))
-		#textBox.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("blue"))
-    
-    def change_to_pink(self,textBox):
-	textBox.modify_base(gtk.STATE_NORMAL,gtk.gdk.color_parse("pink"))
-    
+	self.mask.set_sensitive(gtk.FALSE)
+	self.networking_info_broadcast.set_sensitive(gtk.FALSE)
+	self.networking_info_gateway.set_sensitive(gtk.FALSE)
+	self.networking_info_device.set_sensitive(gtk.FALSE)
+	
+
+    def enable_all_fields(self):
+	self.networking_info_broadcast.set_text("")
+	self.networking_info_gateway.set_text("")
+	self.mask.set_text("")
+	self.networking_info_ip.set_text("")
+	
+	self.networking_info_broadcast.set_sensitive(gtk.TRUE)
+	self.networking_info_gateway.set_sensitive(gtk.TRUE)
+	self.networking_info_device.set_sensitive(gtk.TRUE)
+	self.dhcp_checkbox.set_sensitive(gtk.TRUE)
+	self.mask.set_sensitive(gtk.TRUE)
+	self.networking_info_ip.set_sensitive(gtk.TRUE)
+
+    def refresh_list_at_top(self):
+	self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+	for i in range(0, len(self.networking)):
+		self.treedata.append([i, self.networking[i]['type'], self.networking[i]['host'],
+				      self.networking[i]['export'], self.networking[i]['mountpoint'], 
+				      self.networking[i]['mountopts']])
+	self.treedatasort = gtk.TreeModelSort(self.treedata)
+	self.treeview.set_model(self.treedatasort)
+	self.treeview.show_all()
+
+    def selection_changed(self, treeview, data=None):
+	treeselection = treeview.get_selection()
+	treemodel, treeiter = treeselection.get_selected()
+	row = treemodel.get(treeiter, 0)
+	self.active_entry = row[0]
+	mount = self.networking[self.active_entry]
+	self.enable_all_fields()
+	# find the correct device and select it!
+	for count in range(len(self.ethernet_devices)):
+	    if self.ethernet_devices[count] == mount['type']:
+		# this is it!
+		self.networking_info_device.set_active(count)
+		
+	self.networking_info_ip.set_text(mount['host'])
+	self.mask.set_text(mount['export'])
+	self.networking_info_broadcast.set_text(mount['mountpoint'])
+	self.networking_info_gateway.set_text(mount['mountopts'])
+	self.networking_button_update.set_sensitive(gtk.TRUE)
+	self.networking_button_delete.set_sensitive(gtk.TRUE)
+	#self.mount_button_populate.set_sensitive(gtk.TRUE)
+
+    def new_device(self, button, data=None):
+	self.active_entry = -1
+	self.networking_button_update.set_sensitive(gtk.TRUE)
+	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	# if the checkbutton is checked, uncheck it cause its a new device!
+	if(self.dhcp_checkbox.get_active()):
+	    self.dhcp_checkbox.set_active(gtk.FALSE)
+	    
+	self.enable_all_fields()
+	self.networking_info_device.grab_focus()
+
+    def update_device(self, button, data=None):
+	current_devices=[]
+	for item in self.networking:
+	    current_devices.append(item['type'])
+	    
+	if self.ethernet_devices[self.networking_info_device.get_active()] not in current_devices:
+	    if self.active_entry == -1:
+		    self.networking.append({ 'type': self.ethernet_devices[self.networking_info_device.get_active()],
+					    'host': self.networking_info_ip.get_text(), 
+					    'export': self.mask.get_text(),
+					    'mountpoint': self.networking_info_broadcast.get_text(), 
+					    'mountopts': self.networking_info_gateway.get_text() })
+		    self.active_entry = -1
+		    self.networking_button_update.set_sensitive(gtk.FALSE)
+		    self.networking_button_delete.set_sensitive(gtk.FALSE)
+	    else:
+		    self.networking[self.active_entry]['type'] = self.ethernet_devices[self.networking_info_device.get_active()]
+		    self.networking[self.active_entry]['host'] = self.networking_info_ip.get_text()
+		    self.networking[self.active_entry]['export'] = self.mask.get_text()
+		    self.networking[self.active_entry]['mountpoint'] = self.networking_info_broadcast.get_text()
+		    self.networking[self.active_entry]['mountopts'] = self.networking_info_gateway.get_text()
+	    self.refresh_list_at_top()
+	    self.disable_all_fields()
+	else:
+	    widgets=Widgets()
+	    msgdialog=widgets.error_Box("Duplicate Entry","You already entered configuration for this device! \n Delete it first.")
+	    result = msgdialog.run()
+	    if result == gtk.RESPONSE_ACCEPT:
+		msgdialog.destroy()
+
+    def delete_device(self, button, data=None):
+	self.networking.pop(self.active_entry)
+	self.active_entry = -1
+	self.networking_button_update.set_sensitive(gtk.FALSE)
+	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	self.refresh_list_at_top()
+	self.disable_all_fields()
+
     def activate(self):
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-    
+	#self.networking = copy.deepcopy(self.controller.install_profile.get_network_mounts())
+	self.refresh_list_at_top()
+	self.disable_all_fields()
+
     def deactivate(self):
-	widgets=Widgets()
-	try:
-	    self.set_networking_interfaces()	    
-	    return True
-	except:
-	    widgets.error_Box("Error","One or more of your ip addresses are not formed correctly!")
+	#self.controller.install_profile.set_network_mounts(self.networking)
+	return True
+    
+    def get_ethernet_devices(self):
+	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
+	    #list={}
+	    devices=[]
+	    for device in get.readlines():
+		device=device.strip()
+		if device!="lo":
+		    devices.append(device)
+		    #list[device]=("","","")
+	    #return list
+	    return devices
+	    
+    def checkbutton(self,widget, data=None):
+	print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+	if(("OFF", "ON")[widget.get_active()]=="ON"):
+	    self.networking_info_ip.set_text("dhcp")
+	    self.disable_all_fields()
+	else:
+	    self.networking_info_ip.set_text("")
+	    self.enable_all_fields()
+	    
