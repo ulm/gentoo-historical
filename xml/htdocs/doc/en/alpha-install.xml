@@ -1,0 +1,628 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<guide link="relative_link_to_your_guide">
+<title>Gentoo Alpha Installation Guide</title>
+<author title="Gentoo Alpha Developer"><mail link="taviso@gentoo.org">
+	Tavis Ormandy</mail>
+</author>
+<author title="Senior Gentoo Alpha Developer"><mail link="agriffis@gentoo.org">
+	Aron Griffis</mail>
+</author>
+
+<abstract>This guide introduces the installation procedure for Gentoo Linux on
+Alpha hardware.</abstract>
+
+<version>1.0</version>
+<date>22 Apr 2003</date>
+<chapter>
+<title>Introduction</title>
+<section>
+	<title>Introducing Gentoo Linux on Alpha</title>
+	<body>
+	<p>
+Alpha is the name given to Digital Equipment's 64-bit RISC architecture, a high-performance architecture supported by Linux since 1995. Gentoo Linux was ported to Alpha by Bjoern Brauel in 2002 and has been evolving ever since.
+	</p>
+	<p>
+Gentoo is demanding in terms of hardware requirements, although Gentoo has been succesfully installed on as little as an AlphaStation 200, its not reccomended without an abundance of patience. A list of Alpha models known to support Linux is available <uri link="http://www.alphalinux.org/faq/FAQ-5.html">here</uri>, not all of these machines have been tested with Gentoo Linux, although we strive to support them all.
+	</p>
+	<note>
+If you do successfully install Gentoo on a machine not listed here, please tell us about it, either by email or by installing the <i>gentoo-stats</i> package.
+	</note>
+	</body>
+</section>
+</chapter>
+<chapter>
+<title>Preparing for Installation</title>
+<section>
+	<title>Booting your Alpha</title>
+	<body>
+	<p>
+	<title>Firmware</title>
+	</p>
+	<p>
+Firmware is the software started when your Alpha system is first powered on, it is loosely synonymous with the BIOS software on PC systems. There are two different types of firmware on Alpha machines, SRM and ARCs. 
+	</p>
+	<p><impo>
+Some Alpha systems are capable of using Both SRM and ARCs, if this describes your system, you should follow the instructions <uri link="http://www.alphalinux.org/faq/x31.html">here</uri> on switching to SRM. If your system already uses SRM, you are all set.</impo>
+	</p>
+<table>
+<tr><th>SRM console</th><ti>Based on the Alpha Console Subsystem specification, which provides an operating environment for OpenVMS, Tru64 UNIX, and Linux operating systems.</ti></tr>
+<tr><th>ARCs console</th><ti>Includes <i>ARC</i>, <i>AlphaBIOS</i>, and <i>ARCSBIOS</i> consoles. Based on the Advanced RISC Computing (ARC) specification, which provides an operating environment for Windows NT.</ti></tr>
+</table>
+	<p>
+	<note>
+	If your system can only use ARCs (Ruffian, nautilus, xl, etc.), you can still use Gentoo Linux with the <i>MILO</i> Bootloader, a HOWTO is available <uri link="http://www.tldp.org/HOWTO/MILO-HOWTO.html">here</uri>.
+	</note>
+	</p>
+</body>
+</section>
+<section>
+<title>Using an Existing Linux Installation</title>
+	<body>
+	<p>
+	If you already have a Linux Distribution installed on your Alpha, you can use it to prepare and install Gentoo Linux. Any of the popular distributions will work just fine, debian, SuSE, RedHat, Slackware, etc. The main requirement is the `chroot` command, use the command below to verify it exists on your machine.
+	</p>
+	<pre caption="Checking for chroot">
+# <i>which chroot</i>
+/usr/bin/chroot
+	</pre>
+	<p>
+	Your Network connection will also need to be available from the Host installation, you can test this with the command below.
+	</p>
+	<pre caption="Checking for a working Network">
+# <i>ping -c 1 gentoo.org</i>
+PING gentoo.org (128.193.0.34): 56 octets data
+64 octets from 128.193.0.34: icmp_seq=0 ttl=51 time=174.7 ms
+
+--- gentoo.org ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max = 174.7/174.7/174.7 ms
+	</pre>
+	<p>
+	If your Alpha already has network setup and working correctly, you can skip the next section and start Preparing disks.
+	</p>
+	</body>
+</section>
+<section>
+<title>Booting using the Gentoo LiveCD</title>
+<body>
+	<p>
+If your system can boot from a CD-ROM, Gentoo provides a bootable cd image which will boot using aboot automatically. The LiveCD image is available <uri link="http://distro.ibiblio.org/pub/linux/distributions/gentoo/releases/1.4_rc1/alpha/">here</uri> as a compressed iso image. The following command will boot using the CD-ROM.
+	</p>
+<pre caption="Booting from a CD-ROM using SRM">
+ >>> <i>boot dqa0 -flags 0</i>
+</pre>
+<p>
+<note>where <i>dqa0</i> is your CD-ROM drive in SRM notation.</note>
+</p>
+</body>
+</section>
+<section>
+<title>Netboot using TFTP</title>
+<body>
+	<p>
+	<impo>agriffis' section</impo>
+	</p>
+</body>
+</section>
+<section>
+	<title>Network Setup</title>
+	<body>
+	<p>
+	Now that your machine has booted, you will need to setup your networking. If your using the Gentoo LiveCD, this will give you access to utilities like ssh, scp, irssi and wget during the installation.
+	</p>
+	<p>
+	Type in the following commands, replacing $IFACE with your network interface (eth0, for example), $IPNUM with your IP address, $BCAST with your broadcast address, and $NMASK with your network mask. For the route command, replace $GTWAY with your default gateway.
+	</p>
+<pre caption="Configuring your network">
+	# <i>/sbin/ifconfig $IFACE $IPNUM broadcast $BCAST netmask $NMASK</i>
+	# <i>/sbin/route add default gw $GTWAY </i>
+</pre>
+	<p>
+	You can test your network configuration by running /sbin/ifconfig -a
+
+	if this looks aky, you can try pinging some hosts on the internet.
+	</p>
+	</body>
+</section>
+<section>
+	<title>Preparing Disk Layout</title>
+	<body>
+	<p>
+		Figure out what disks you have by running
+	</p>
+	<p>
+	<pre caption="Identifying Available Disks">
+# <i>dmesg | grep 'drive$'</i> <codenote>For IDE</codenote>
+# <i>dmesg | grep 'scsi'</i>  <codenote>For SCSI</codenote>
+	</pre>
+	</p>
+	<p>
+	From this output, you should be able to see what disks were detected, and their entry in the /dev filing system.
+	</p>
+	<note>The remainder of the instructions here assume thet you are using SCSI and have chosen to install on disk 0.</note>
+	<p>
+	<pre caption="Starting fdisk">
+# <i>fdisk /dev/scsi/host0/bus0/target0/lun0/disc</i>
+</pre>
+	</p>
+	<p>
+Fdisk will let you edit the BSD disklabel on the disk.  You should
+start by deleting <b>all</b> partitions except 'c' (the whole-disk
+partition).
+	</p>
+	<p>
+You can now start partitioning by adding a swap partition as partition 'a' starting
+at cylinder 3. Typically you will need twice the size of available RAM,
+however sometimes this isn't practical.  Use your best judgment.  The
+partition type (set using 't') should be 1 (swap).
+	</p>
+<warn>It is very important that the above partition doesn't start
+at cylinder 1, as you will need room at the beginning of the disk 
+for the aboot image.</warn>
+	<p>
+Add an ext2 partition as partition 'b' starting at the first cylinder
+after your swap partition and ending one cylinder *before* the end of
+the disk.</p>
+<p>
+<impor>You should always set the partition type to be 8 (ext2), no matter which filesystem you plan on using.</impor>
+	</p>
+	<note>fdisk has a bug and will allow you to create a partition
+that goes beyond the end of the disk by one cylinder.  Make sure
+to set the end at the reported maximum minus 1.</note>
+	<p>
+	Here is an example setup since I know the above is confusing.
+	</p>
+<pre caption="Example fdisk session">
+# <i>fdisk /dev/scsi/host0/bus0/target0/lun0/disc</i>
+Detected an OSF/1 disklabel on /dev/scsi/host0/bus0/target0/lun0/disc,
+entering disklabel mode.
+
+BSD disklabel command (m for help): <i>p</i>
+
+8 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]                                    
+  a:        1       235*      234*    4.2BSD     1024  8192    16
+  b:      235*      469*      234*      swap
+  c:        1      5290*     5289*    unused        0     0
+  d:      469*     2076*     1607*    unused        0     0
+  e:     2076*     3683*     1607*    unused        0     0
+  f:     3683*     5290*     1607*    unused        0     0
+  g:      469*     1749*     1280     4.2BSD     1024  8192    16
+  h:     1749*     5290*     3541*    unused        0     0
+
+BSD disklabel command (m for help): <i>d</i>
+Partition (a-h): <i>a</i>
+
+<codenote> repeat for b, d, e, f, g, h but NOT c </codenote>
+
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]                                    
+  c:        1      5290*     5289*    unused        0     0
+
+BSD disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>a</i>
+First cylinder (1-5290, default 1): <i>3</i>
+Last cylinder or +size or +sizeM or +sizeK (3-5290, default 5290): <i>+1000M</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>a</i>
+Hex code (type L to list codes): <i>1</i>
+
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]                                    
+  a:        3      1003      1001       swap
+  c:        1      5290*     5289*    unused        0     0
+D disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>b</i>
+First cylinder (1-5290, default 1): <i>1004</i>
+Last cylinder or +size or +sizeM or +sizeK (1004-5290, default 5290): <i>5289</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>b</i>
+Hex code (type L to list codes): <i>8</i>
+
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]                                    
+  a:        3      1003      1001       swap
+  b:     1004      5289      4286       ext2
+  c:        1      5290*     5289*    unused        0     0
+
+</pre>
+<p>
+<note>At this point you can use 'w' to write the partition table and 'q' to
+quit from fdisk.</note>
+</p>
+<p>
+You can now Enable the swap partition, allowing us to use it during the bootstrap process.
+</p>
+<pre caption="Setting up Swap partition">
+    # <i>mkswap /dev/scsi/host0/bus0/target0/lun0/part1</i>
+    # <i>swapon /dev/scsi/host0/bus0/target0/lun0/part1</i>
+</pre>
+<p>
+Now setup your root partition, This example will create and mount an ext3 filesystem (journaled ext2).
+</p>
+<pre caption="Creating Filesystems">
+    # <i>mke2fs -j /dev/scsi/host0/bus0/target0/lun0/part2</i>
+    # <i>mkdir /target</i>
+    # <i>mount /dev/scsi/host0/bus0/target0/lun0/part2/target</i>
+</pre>
+<p>
+<warn>Hope there wasn't anything on that disk that you needed... ;-)</warn>
+</p>
+<p>
+<note>The above and below instructions assume that you're using ext3 as
+    your primary filesystem.  This works well because aboot can read the
+    ext2/ext3 partitions, however it comes at a price: ext3 is quite slow
+    compared to xfs or reiserfs. If you want to use reiserfs or xfs for your
+    primary partition (the partition type is still 8), then you should create
+    an additional 20M ext2 partition to mount as /boot.  You can create that
+    partition as 'b' and make 'd' be the primary large partition.
+    Additionally you will need to modify the aboot instructions below by
+    putting aboot's configuration in /boot/etc/aboot.conf where aboot can
+    retrieve it.
+</note>
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+	<title>Installing Gentoo</title>
+<section>
+	<title>Unpacking the Stage 1 tarball</title>
+	<body>
+	<p>
+Now that your disks are ready to install gentoo, we need to collect the stage 1 tarball which creates the directory structure and base layout required for bootstrapping.
+</p>
+<pre caption="Getting the Stage1 tarball">
+    # <i>tftp -g -l /target/stage1-alpha-1.4.tar.gz -r \
+    /home/tftp/stage1-alpha-1.4.tar.gz tftp_host</i> <codenote>fetching via tftp</codenote>
+    # <i>wget http://distro.ibiblio.org/pub/linux/distributions\
+    /gentoo/releases/1.4_rc1/alpha/stage1-alpha-1.4-r1.tbz2</i> <codenote>fetching with wget</codenote>
+    
+    # <i>cd /target </i>
+    # <i>tar -jxvpf stage1-alpha-1.4-r1.tbz2  </i>
+</pre>
+<p>
+	<note>You can also fetch using scp, using removable media, or with lynx</note>
+	</p><p><note>
+	Remember the p option to tar, this will make sure the correct permissions are set.</note></p>
+<p>
+You should now mount the /proc filing system, which is used during bootstrapping
+</p>
+<pre caption="Mounting proc filing system">
+    # <i>mount --bind /proc /target/proc</i>
+</pre>
+<p>
+Create a resolv.conf in the target area so that name resolution works, you can base it on the template below, or copy your existing one from /etc.
+</p>
+<pre>
+# <i>cat > /target/etc/resolv.conf</i>      <codenote> create a new resolv.conf</codenote>
+<i>domain example.net
+nameserver     123.12.12.106
+nameserver     13.340.0.12
+^D</i>
+# <i>cp /etc/resolv.conf /target/etc/resolv.conf</i> <codenote> copy existing</codenote>
+</pre>
+<p>
+You can now set a hostname, and get it to be set on boot.
+</p>
+<pre caption="Setting a hostname">
+    # <i>hostname my_hostname.domain.com </i>
+    # <i>echo my_hostname.domain.com > /target/etc/hostname</i>
+</pre>
+<p>
+Chroot to the target area:
+</p>
+<pre>
+    # <i>chroot /target /bin/bash </i>
+    # <i>env-update</i>
+    # <i>. /etc/profile</i>
+</pre>
+<p>
+You are now inside the new gentoo system, and you're ready to commence bootstrap!
+</p>
+</body>
+</section>
+<section>
+	<title>Bootstrap</title>
+	<body>
+	<p>
+	First of all, you must fetch a copy of the portage tree, this is approximately 100M, but only needs to be done once.
+	<pre caption="Fetching portage tree">
+# <i>emerge sync</i>
+	</pre>
+If you have networking correctly setup then the above command will
+populate your /usr/portage directory and fetch the bootstrap script.
+	</p>
+	<p>
+Now is a good time to edit /etc/make.conf to your liking, you should first use the command below to examine your processor features. Take note of your cpu model, you will need it later.
+	</p>
+<pre caption="editing /etc/make.conf">
+    # <i>cat /proc/cpuinfo</i>    <codenote>Check processor details</codenote>
+    # <i>alias nano='nano -w'</i> <codenote>Useful for configuration files</codenote>
+    # <i>nano /etc/make.conf</i>
+</pre>
+<p>
+There are a few things you will need to change before you continue, your USE flags determine how different packages are installed, you should use "zlib" unless you have a good reason not to, and should set "ev6" if your processor is an ev6 or greater.
+</p>
+<p>
+<pre caption="make.conf settings">
+    USE="zlib ev6"
+    <codenote>if you neglect zlib then some of gnome won't build... it's a</codenote>
+    <codenote>bug...  only USE ev6 if you really have ev6+</codenote>
+
+    CHOST="alpha-unknown-linux-gnu"
+    CFLAGS="-mcpu=cpu_type -O3 -pipe"
+    <codenote>where your_cpu_type is determined from /proc/cpuinfo</codenote>
+    ACCEPT_KEYWORDS="~alpha"
+    <codenote>optional, enables potentially unstable packages</codenote>
+</pre>
+</p>
+<p>
+Your now all set to start the bootstrap process, use the command below to start it.
+	<pre caption="starting bootstrap">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+	</pre>
+</p>
+<p>
+Bootstrap is a lengthy process, this table should give you a rough idea of how long its going to take.
+</p>
+<p>
+	<table>
+	<tr>
+		<th>System</th>
+		<th>Estimated Bootstrap Duration</th>
+	</tr>
+	<tr>
+		<ti>Brisbane</ti>
+		<ti>4hours</ti>
+	</tr>
+	<tr>
+		<ti>Ruffian</ti>
+		<ti>5hours</ti>
+	</tr>
+	<tr>
+		<ti>Avanti</ti>
+		<ti>36hours</ti>
+	</tr>
+	<tr>
+		<ti>164LX</ti>
+		<ti>4hours</ti>
+	</tr>
+	</table>
+</p>
+</body>
+</section>
+<section>
+	<title>Emerging System</title>
+	<body>
+	<p>
+Now that bootstrap has completed, you can use emerge to install your base gentoo system, you can start by finding out what will be merged:
+	</p>
+	<p>
+	<pre>
+# <i>emerge system --pretend</i>
+   	</pre>
+	</p>
+	<p>
+Next do the actual emerge, making sure to unprotect config files (this
+one time only...)
+<pre caption="install system">
+# <i>CONFIG_PROTECT='' emerge system</i>
+</pre>
+</p>
+<note>
+This will take a long time again, so be patient!</note>
+<p>
+<note>The export CONFIG_PROTECT="" line ensures that any new scripts installed to /etc will overwrite the old scripts (stored in sys-apps/baselayout), bypassing Portage's new config file management support. Type emerge --help config for more details.</note>
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Final steps</title>
+<section>
+	<title>Installing a System logger</title>
+	<body>
+	<p>
+You should now install a system logger, and a cron daemon. There are a few to choose from, the example below uses syslog-ng and vcron.
+	</p>
+	<pre caption="System logger and crond">
+    # <i>emerge syslog-ng vcron</i>
+    # <i>rc-update add syslog-ng default</i>
+    # <i>rc-update add vcron default</i>
+    </pre>
+    <p>
+    Before moving onto Kernel installation, you should edit your /etc/fstab, set the localtime and set your root password.
+    </p>
+    <note>Setting localtime will make sure your users get useful ouput from uname -a</note>
+    <pre caption="Final Settings">
+    # <i>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</i>
+    # <i>passwd root</i>
+    # <i>nano /etc/fstab</i>
+    </pre>
+    <p>
+In the fstab, you should comment out /dev/BOOT since we're not using a
+separate boot partition.  /dev/ROOT and /dev/SWAP should be deleted
+(use ctrl-k) and replaced with something like the following.
+	<pre caption="fstab settings">
+    /dev/scsi/host0/bus0/target0/lun0/part1  none  swap  sw      0 0
+    /dev/scsi/host0/bus0/target0/lun0/part2  /     ext3  noatime 0 0
+    </pre>
+    </p>
+	<note>noatime will stop access times from being stored, improving performance</note>
+</body>
+</section>
+<section>
+<title>Installing a Kernel</title>
+<body>
+	<p>
+You now need to choose and install a kernel, there are three choices for the alpha users, vanilla-sources, alpha-sources and compaq-sources. alpha-sources contains a patchset specifically for alpha-users, including extra functionality and bugfixes. vanilla-sources are the same sources you would get from kernel.org. compaq-sources is the kernel shipped with Red Hat Linux 7.2 for Alpha, maintained yb Compaq as part of the Alpha Tools.
+	</p>
+	<p>
+	<pre caption="Getting a kernel">
+# <i>emerge --pretend alpha-sources</i>
+# <i>emerge alpha-sources</i>
+	</pre>
+	</p>
+	<p>
+As soon as your kernel source tree is available you can start building your own custom kernel. There is a list of reccomended options below.
+</p><p>	<pre caption="Building a Linux kernel">
+# <i>cd /usr/src/linux</i>
+# <i>make mrproper menuconfig </i>
+<codenote>&lt; chose the settings for your kernel &gt;</codenote>
+# <i>make dep vmlinux modules modules_install</i>
+</pre>
+</p><p>
+<pre caption="Reccomended Kernel Settings">
+    General setup
+        (Select Your system from the list) Alpha system type (http://www.alphalinux.org/docs/goldrush/)
+        &lt;*&gt; SRM environment through procfs
+    Plug and Play configuration
+        &lt;*&gt; Plug and Play support
+            &lt;M&gt; ISA Plug and Play support
+    SCSI support
+        SCSI low-level drivers
+            &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+            &lt;*&gt; Qlogic ISP SCSI support
+    Network device support
+        Ethernet (10 or 100 Mbit)
+            &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+            &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+            &lt;M&gt; EtherExpressPro/100 support (eepro100)
+            &lt;M&gt; EtherExpressPro/100 support (e100)
+        Ethernet (1000 Mbit)
+            &lt;M&gt; Alteon AceNIC
+                [*] Omit support for old Tigon I
+            &lt;M&gt; Broadcom Tigon3
+        [*] FDDI driver support
+            &lt;M&gt; Digital DEFEA and DEFPA
+        &lt;*&gt; PPP support
+            &lt;*&gt; PPP Deflate compression
+    Character devices
+        [*] Support for console on serial port
+        [*] Direct Rendering Manager
+    File systems
+        &lt;*&gt; Kernel automounter version 4 support
+        &lt;*&gt; Reiserfs support
+        &lt;*&gt; Ext3 journalling file system support
+        [*] /dev file system support
+            [*] Automatically mount at boot
+        &lt;*&gt; UFS file system support
+        &lt;*&gt; XFS filesystem support
+        Network File Systems
+            &lt;*&gt; NFS
+                [*] NFSv3 client
+            &lt;*&gt; NFS server
+                [*] NFSv3 server
+        Partition Types
+            [*] Advanced partition selection
+                [*] Alpha OSF partition support
+        Native Language Support
+            &lt;*&gt; NLS ISO 8859-1
+    Sound
+        &lt;M&gt; Sound card support
+            &lt;M&gt; OSS sound modules
+                [*] Verbose initialisation
+                [*] Persistent DMA buffers
+                &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+</p>
+<p>
+You can now install the kernel into /boot, the method below allows you to install several kernels and swap between them easily
+	</p>
+<p>
+	<warn>In <i>General Setup</i> If the "<i>use srm as bootloader</i>" option is available, you <b>must</b> select it.
+	</warn>
+</p>
+	<pre caption="Installing your new kernel">
+# <i>gzip -9c vmlinux > /boot/vmlinuz-2.4.xx-alpha</i> <codenote> or -vanilla/-compaq, depending on kernel</codenote>
+# <i>cp System.map /boot/System.map-2.4.xx-alpha</i>
+# <i>cp .config /boot/config-2.4.xx-alpha</i>
+# <i>cd /boot</i>
+# <i>ln -s vmlinuz-2.4.xx-alpha vmlinuz</i>
+# <i>ln -s System.map-2.4.xx-alpha System.map</i>
+	</pre>
+</body>
+</section>
+<section>
+<title>Installing the aboot bootloader</title>
+	<body>
+	<p>
+	<impo>agriffis' section</impo>
+	</p>
+	</body>
+</section>
+<section>
+	<title>Rebooting Your system</title>
+	<body>
+	<p>
+	Now that you've installed your bootloader, you are ready to reboot your machine into your new gentoo system.
+	</p>
+	<pre caption="rebooting">
+    # <i>exit</i>
+    # <i>umount /target/proc</i>
+    # <i>umount /target</i>
+    # <i>sync</i>
+    # <i>halt</i>
+    <codenote>&lt; You should now get back to the SRM console &gt;</codenote>
+    >>><i>boot -fl "i"</i>
+    aboot> <i>b /boot/vmlinux.gz</i>
+	</pre>
+	<p><note>If the internal clock on your machine is set incorrectly, you might want to set it now using the date command, or with rdate, a utility to set the clock via ntp (emerge rdate). You can choose a ntp server from <uri link="http://www.eecis.udel.edu/~mills/ntp/servers.html">this</uri> directory</note>
+	</p>
+	</body>
+</section>
+<section>
+	<title>Configuring Networking</title>
+	<body>
+	<p>
+	You should now be using your new Gentoo installation!
+	You now need to set your final network configuration, your Alpha workstation will probably use one of the Network Cards below, so use whichever one applies to you.
+	</p>
+	<pre caption="Modprobe network driver">
+    # <i>modprobe tulip</i>
+    # <i>modprobe eepro100</i>
+
+    <codenote>When you have identified which one you need, use the command below to finalise it.</codenote>
+    
+    # <i>echo tulip >> /etc/modules.autoload</i>
+	</pre>	
+	<p>
+Next configure the network interface, you should follow the instructions in the comments of the following file.
+	</p>
+	<p>
+	<pre caption="Network settings">
+    # <i>nano -w /etc/conf.d/net</i>
+    # <i>/etc/init.d/net.eth0 start</i>
+    # <i>rc-update add net.eth0 default</i> <codenote>Make sure Networking start at boot.</codenote>
+    	</pre>
+<impo>Some tulip network cards will not function correctly with the tulip drivers, if you have a card like this you should try the de4x5 driver.</impo>
+	</p>
+	</body>
+</section>
+</chapter>
+<chapter>
+	<title>After Installation has Completed</title>
+<section>
+	<title>Installing Xfree</title>
+	<body>
+	<p>
+	If you would like a graphical environment (kde, gnome, etc) on your Alpha workstation, now would be a great time to install XFree. This will take a while, so be patient!
+	</p>
+	<pre caption="Installing X">
+# <i>emerge -pv xfree</i>
+# <i>emerge xfree</i>
+	</pre>
+	</body>
+</section>
+</chapter>
+</guide>
