@@ -20,6 +20,7 @@ Each option has a brief description beside it.
 		self.radio_stages[1] = gtk.RadioButton(None, "Stage 1")
 		self.radio_stages[1].set_name("1")
 		self.radio_stages[1].connect("toggled", self.stage_selected, "1")
+		self.radio_stages[1].set_size_request(100, -1)
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.radio_stages[1], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("The entire system will be compiled from scratch with your CHOST and CFLAGS settings"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
@@ -27,6 +28,7 @@ Each option has a brief description beside it.
 		self.radio_stages[2] = gtk.RadioButton(self.radio_stages[1], "Stage 2")
 		self.radio_stages[2].set_name("2")
 		self.radio_stages[2].connect("toggled", self.stage_selected, "2")
+		self.radio_stages[2].set_size_request(100, -1)
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.radio_stages[2], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("Most of the system will be compiled with your CHOST and CFLAGS settings. Don't use\nthis option unless you have a good reason"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
@@ -34,6 +36,7 @@ Each option has a brief description beside it.
 		self.radio_stages[3] = gtk.RadioButton(self.radio_stages[1], "Stage 3")
 		self.radio_stages[3].set_name("3")
 		self.radio_stages[3].connect("toggled", self.stage_selected, "3")
+		self.radio_stages[3].set_size_request(100, -1)
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.radio_stages[3], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("The base system will be installed using precompiled packages. You can recompile later\nwith your custom settings if you choose. This is the fastest option"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
@@ -57,6 +60,7 @@ Each option has a brief description beside it.
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.radio_stages[int(self.controller.install_profile.get_install_stage())].set_active(gtk.TRUE)
+		self.active_selection = int(self.controller.install_profile.get_install_stage())
 		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
 
 	def deactivate(self):
