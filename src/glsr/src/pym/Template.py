@@ -30,13 +30,16 @@
 
 """
 
-__revision__ = '$Id: Template.py,v 1.12 2005/01/27 04:19:15 port001 Exp $'
+__revision__ = '$Id: Template.py,v 1.13 2005/03/10 20:57:16 port001 Exp $'
 __modulename__ = 'Template'
 
+import os
 import re
+import md5
 import string
 import types
 
+import Config
 from GLSRException import TemplateModuleError
 
 class Template:
@@ -126,35 +129,42 @@ class Template:
         and evaluating all IFs.
         """
 
-        import re
-        
-        self._template_name = template_name
-        self._read()
+        digest = md5.new(str(template_name) + str(terms) + str(loops)).hexdigest()
 
-        if terms is not None:
-            for name, term in terms.iteritems():
-                self.param(name, term, "term")
+        if self._check_cache(digest):
+            self._read_cache(digest):        
+        else:
+            self._template_name = template_name
+            self._read()
 
-        if loops is not None:
-            for name, loop in loops.iteritems():
-                self.param(name, loop, "loop")
+            if terms is not None:
+                for name, term in terms.iteritems():
+                    self.param(name, term, "term")
 
-        full_file = string.join(self._contents);
+            if loops is not None:
+                for name, loop in loops.iteritems():
+                    self.param(name, loop, "loop")
 
-        # Strip out all comments
-        full_file = re.sub(r'(?s)\{\*.*?\*\}', '', full_file)
+            full_file = string.join(self._contents);
 
-        # Process all variable tags (i.e. non LOOP, non IF tags)
-        full_file = self._evaluate_vars(full_file)
+            # Strip out all comments
+            full_file = re.sub(r'(?s)\{\*.*?\*\}', '', full_file)
 
-        # Evaluate all LOOPs and their nested IFs
-        full_file = self._evaluate_loops(full_file)
+            # Process all variable tags (i.e. non LOOP, non IF tags)
+            full_file = self._evaluate_vars(full_file)
 
-        # Evaluate the rest of the IFs that weren't in any loops
-        full_file = self._evaluate_ifs(full_file)
+            # Evaluate all LOOPs and their nested IFs
+            full_file = self._evaluate_loops(full_file)
 
-        # Build the output variable
-        self._output = string.split(full_file, "\n")
+            # Evaluate the rest of the IFs that weren't in any loops
+            full_file = self._evaluate_ifs(full_file)
+
+            # Build the output variable
+            self._output = string.split(full_file, "\n")
+
+            # Write cache file
+            # FIXME: This need to be split into a thread
+            self._write_cache(digest)
 
     def _add_tmpl_values(self, loop):
         """Adds values to the loop to make loops easier to use.
@@ -410,6 +420,38 @@ class Template:
 
         return value
 
+        def _check_cache(self, digest):
+
+        if not os.path.exists(Config.TmplCacheDir):
+            raise TemplateModuleError('Template cache directory missing')
+            
+        for file in os.listdir(Config.TmplCacheDir):
+            if file.endswith('.cache'):
+                if digest == file.split('.')[0]:
+                    return True
+
+        return False
+
+    def _read_cache(self, digest):
+
+        try:
+            readfd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'), 'r')
+            self._output = readfd.readlines()
+            readfd.close()
+        except IOError, e:
+            raise TemplateModuleError('Failed to open template cache file', e)
+            
+    def _write_cache(self, digest):
+
+        try:
+            writefd = open(os.path.join(Config.TmplCacheDir, digest + '.cache'), 'w')
+            writefd.write('\n'.join(self._output))
+            writefd.close()
+        except IOError, e:
+            # FIXME: Use logwrite when this func get threaded
+            #logwrite("Cache write failed: '%s'" % e, __modulename__, 'Error')
+            raise TemplateModuleError('Template cache write failed', e)
+
     def param(self, key, value, param_type = "term"):
         """Add a new parameter, either a 'loop' or a 'term'."""
         
@@ -419,11 +461,10 @@ class Template:
         elif string.lower(param_type) in ("t", "term"):
             self._terms.update({key: value})
 
-
     def output(self):
         """Returns the resulting template."""
 
-        if self._template_name == "":
+        if len(self._output) == 0:
             raise TemplateModuleError('No compiled template data found')
 
         return "\n".join(self._output)

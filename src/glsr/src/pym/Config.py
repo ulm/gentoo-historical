@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.21 2005/03/09 01:16:31 port001 Exp $
+# $Id: Config.py,v 1.22 2005/03/10 20:57:16 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -61,7 +61,8 @@ URL = "http://scriptstest.gentoo.org/"
 #URL = "http://buffmuthers.com/projects/glsr/htdocs/"
 Contact = "port001@gentoo.org"
 
-Memcache = False # Not supported yet
+TmplCacheDir = "/var/www/scripts.gentoo.org/htdocs/tmpl_cache"
+#TmplCacheDir = "/var/www/localhost/htdocs/glsr/tmpl_cache"
 
 Logging = True
 LogFile = "/var/www/scripts.gentoo.org/htdocs/log/glsr.log"
