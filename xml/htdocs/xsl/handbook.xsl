@@ -116,7 +116,7 @@
   <xsl:variable name="nextchap" select="number($chap) + 1" />
   <xsl:if test="$style != 'printable'">
     <hr />
-    <p class="alttext">
+    <p>
       <!-- Previous Parts -->
       <xsl:choose>
         <xsl:when test="number($prevpart) &lt; 1">
@@ -146,7 +146,7 @@
       </xsl:if>
       <xsl:if test="name() = 'chapter'">
         <xsl:choose>
-          <xsl:when test="number($chap) = count(section)">
+          <xsl:when test="last() = position()">
             [ Next Chapter &gt; ]
           </xsl:when>
           <xsl:otherwise>
