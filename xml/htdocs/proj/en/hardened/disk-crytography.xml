@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/Attic/disk-crytography.xml,v 1.1 2004/09/15 09:25:40 tigger Exp $ -->
+
+<guide link="/proj/en/hardened/disk-cryptography.xml">
+
+<title>disk cryptography with dm-crypt</title>
+<author title="Author">
+        <mail link="tigger@gentoo.org">tigger</mail>
+</author>
+
+<abstract>On-the-fly disk cryptography with dm-crypt</abstract>
+
+<license/>
+
+<version>0.1</version>
+<date>Sep 14 2004</date>
+
+<chapter>
+<title>Introduction - Disk Cryptograpy with dm-crypt</title>
+<section>
+<body>
+
+<p>
+This guide aims to briefly explain how disk cryptography works and to
+guide you through setting up encrypted partitions or disks on your
+machine.
+</p>
+<p>
+Please be aware that you will need to un-mask a specific version of
+baselayout to get this stuff working at the moment. While we're happy
+that the code should work fine, we want wider testing before we unleash
+it on everyone. If you don't like being an early tester or you can't
+afford to lose the data you want to encrypt can't be lost (you have
+backups anyway though right?) then please don't try this, it might
+just break.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Prequisites</title>
+<section>
+<body>
+<p>
+Before beginning to encrypt things you need to make sure you have kernel
+and userland support for dm-crypt and the mappings it sets up.
+</p>
+<p>
+Under Gentoo this is pretty easy. The version of baselayout which
+includes the "making it easy" functionality is currently masked, as
+noted above. So the first thing you do is unmask that version of
+baselayout so you can install it:
+</p>
+<pre caption="Unmasking our dm-crypt friendly baselayout ebuild">
+# mkdir -p /etc/portage
+# echo '=sys-apps/baselayout-x-x' >> /etc/portage/package.unmask
+</pre>
+<p>
+Now remerge baselayout to get the changes to the init scripts. When its
+merged, we need to run etc-update to update the init scripts.
+</p>
+<note>Make sure you accept the changes to the init scripts when
+etc-update'ing. If you reject the new versions this isn't going to work
+:)</note>
+<pre caption="Remerge baselayout">
+# emerge sys-apps/baselayout
+# etc-update
+</pre>
+<p>
+You'll need to check that your kernel has support for dm-crypt. At the
+moment this is only available for 2.6 series kernels as it uses device
+mapper. If you're not able to use a 2.6 kernel for some reason, you
+won't be able to make use of this guide I'm afraid :(
+</p>
+<p>
+Assuming you do have a 2.6 kernel, you need to check that support for
+dm-crypt and the crypto algorithms you'd like to use are enabled.
+</p>
+<pre caption="Making sure dm-crypt and algorithms are enabled">
+Device Drivers ---&gt;
+  Multiple devices driver support (RAID and LVM) ---&gt;
+    [*] Multiple devices driver support (RAID and LVM)
+      &lt; >   RAID support
+      &lt;*>   Device mapper support
+      &lt;*>     Crypt target support
+<comment>You should enable any of these you plan on using. The author
+recommends the use of MD5 and SHA1 for hashing and AES for encryption.
+</comment>
+Cryptographic options ---&gt;
+  &lt;M>   MD5 digest algorithm
+  &lt;M>   SHA1 digest algorithm
+  &lt;M>   AES cipher algorithms
+</pre>
+<p>
+If you didn't have any of those options, obviously you'll need to
+recompile and install the new kernel (which is out of scope for this
+document).
+</p>
+<p>
+The last thing that needs to be done before you're ready to start
+encrypting things is installing the userland side of dm-crypt. This is a
+package called cryptsetup and it is available via portage.
+</p>
+<pre caption="Merging cryptsetup">
+# emerge cryptsetup
+</pre>
+<p>
+Thats the lot...you're good to go :)
+</p>
+</body> 
+</section>
+</chapter>
+
+<chapter>
+<title>Starting easy - Encrypting swap devices</title>
+<section>
+<body>
+<p>
+Ok, lets start at the shallow end. The easiest way to test out the init
+scripts on your system is to try setting up an encrypted swap device. If
+you make a mess of this, it won't do much damage (if any).
+</p>
+<p>
+The new baselayout will have added a new file in /etc/conf.d called
+cryptfs. This is the file were you setup any dm-crypt mappings you'd
+like to use.
+</p>
+<p>
+To start with just add a line for your swap device. Following the
+comments in the file we can do:
+</p>
+<pre caption="Setting up an encrypted swap device">
+# vi /etc/conf.d/cryptfs
+</pre>
+<pre caption="An example swap line">
+swap=crypt-swap source='/dev/main/swap'
+</pre>
+<p>
+Thats it! So...what does it mean? Well, each line in the cryptfs file
+represents either a filesystem or a swap device. Swap lines begin with
+swap= and filesystems begin with mount=. So far so good. The bit after
+the = is the name of the crypt mapping you'd like to make. Now this can
+be anything you like really, but I like to name my mappings crypt-* so
+that its obvious to me that they are encrypted. 
+</p>
+<p>
+The source= parameter specifies the path to the device you'd like to
+encrypt. In the example line above, the user uses an LVM swap partition
+at /dev/main/swap. You can find out where your swap partition is by
+looking in /etc/fstab for the line with 'swap' in the type field. It
+doesn't matter if the device is LVM or not, dm-crypt doesn't care.
+</p>
+<p>
+Once you've added the line to cryptfs you need to edit your /etc/fstab
+to look at the crypt-mapping instead of the real device.
+</p>
+<pre caption="Edit fstab">
+# vi /etc/fstab
+</pre>
+<pre caption="Example change">
+/dev/main/swap none swap sw 0 0
+<comment>becomes</comment>
+/dev/mapper/crypt-swap none swap sw 0 0
+</pre>
+<p>
+Thats it. You have now setup encrypted swap! Try rebooting.. :)
+</p>
+</body>
+</section>
+</chapter>
+</guide>
