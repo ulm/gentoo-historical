@@ -398,7 +398,7 @@
 							</td>
                             <td valign="middle">
 			Please visit the Gentoo Linux developers and special guest Emmett Plant, CEO of
-			<a href="http://www.vorbis.com/" link="_blank">Vorbis</a>, at the <a href="http://www.gdconf.com/" target="_blank">Game Developers Conference 2003</a> in San
+			<a href="http://www.xiph.org/" link="_blank">Xiph.org</a>, at the <a href="http://www.gdconf.com/" target="_blank">Game Developers Conference 2003</a> in San
 			Jose, CA from March 6th through 8th. Emmett and the Gentoo Linux crew will be
 			presenting at the <a href="http://www.nvidia.com/" target="_blank">NVIDIA</a> booth, touting the advantages of using
 			free software for game development and supporting Linux as a gaming platform.
