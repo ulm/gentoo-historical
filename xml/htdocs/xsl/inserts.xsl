@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func">
+                xmlns:func="http://exslt.org/functions" 
+                xmlns:date="http://exslt.org/dates-and-times"
+                extension-element-prefixes="func date">
 
 <func:function name="func:gettext">
   <xsl:param name="str"/>
+  <xsl:param name="LANG" select="//*[1]/@lang"/>
   
 <!-- For Debugging:
 <xsl:message>LANG=<xsl:value-of select="$LANG" /> || Param=<xsl:value-of select="$str" /></xsl:message>
@@ -49,6 +52,10 @@
 
 
 <!-- D A T E   F O R M A T T I N G   R O U T I N E S -->
+
+<func:function name="func:today">
+  <func:result select="substring(date:date(),1,10)"/>
+</func:function>
 
 <func:function name="func:format-date">
   <xsl:param name="datum" />
@@ -107,8 +114,8 @@
           <func:result select="func:format-date-fr($mensis, $Y, $M, $D)" />
         </xsl:when>
 
-        <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish -->
-        <xsl:when test="$lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr'">
+        <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish / Vietnamese -->
+        <xsl:when test="$lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr' or $lingua='vi'">
           <func:result select="concat($D, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $Y)"/>
         </xsl:when>
 
@@ -179,9 +186,6 @@
 
 <!-- Top element name e.g. "book" -->
 <xsl:param name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:param>
-
-<!-- Value of top element's lang attribute e.g. "en" -->
-<xsl:param name="LANG"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
 <!-- Value of top element's link attribute e.g. "handbook.xml" -->
 <xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param>
