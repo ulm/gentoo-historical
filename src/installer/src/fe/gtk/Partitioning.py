@@ -194,45 +194,14 @@ resize partitions.
 		self.info_end.set_text(str(end))
 		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
-#		self.part_mount_point_entry.set_text(tmppart.get_mountpoint())
-#		self.part_mount_opts_entry.set_text(tmppart.get_mountopts())
 		self.active_part_minor = tmppart.get_minor()
-#		self.part_button_create.set_label(" Save ")
-#		self.resize_box.hide_all()
 		self.part_button_delete.set_sensitive(gtk.TRUE)
-#		self.part_button_create.set_sensitive(gtk.TRUE)
 		self.part_info_box.show_all()
 		self.part_button_box.show_all()
-#		self.part_mount_info_box.show_all()
-#		props = PartProperties.PartProperties(self, self.active_device, int(minor), start, end, 0, 0, type, self.active_device_bytes_in_sector)
-#		props.run()
 
 	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
 		props = PartProperties.PartProperties(self, self.active_device, -1, start, end, 0, 0, "", self.active_device_bytes_in_sector)
 		props.run()
-
-#	def part_resized(self, widget, allocation):
-#		newwidth = allocation.width
-#		hpaned_width = self.resize_hpaned.get_allocation().width - 5
-#		hpaned_pos = self.resize_hpaned.get_position()
-#		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-#		part_size_cyl = round(self.active_part_max_size * part_space)
-#		part_size_mib = int(round(part_size_cyl * self.active_device_bytes_in_sector / 1024 / 1024))
-#		self.resize_info_part_size.set_text(str(part_size_mib))
-#		part_unalloc_cyl = self.active_part_max_size - part_size_cyl
-#		part_unalloc_mib = int(round(part_unalloc_cyl * self.active_device_bytes_in_sector / 1024 / 1024))
-#		self.resize_info_unalloc_size.set_text(str(part_unalloc_mib))
-
-	def validate_keypress(self, editable, new_text, new_text_length, position):
-		if new_text == ".": return
-		try:
-			float(new_text)
-		except:
-			editable.stop_emission("insert-text")
-
-	def update_slider_and_entries(self, widget, event, which_one):
-		print "Entry " + which_one + " has been updated"
-
 
 	def part_button_delete_clicked(self, button, data=None):
 		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to delete " + self.active_device + str(self.active_part_minor))
@@ -245,30 +214,6 @@ resize partitions.
 				if len(self.devices[self.active_device].get_partitions()[ext_part].get_logicals()) == 0:
 					self.devices[self.active_device].remove_partition(ext_part)
 			self.drive_changed(None)
-
-#	def part_button_create_clicked(self, button, data=None):
-#		if self.active_part_minor == -1:
-#			hpaned_width = self.resize_hpaned.get_allocation().width - 5
-#			hpaned_pos = self.resize_hpaned.get_position()
-#			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-#			part_size_cyl = round(self.active_part_max_size * part_space)
-#			start = self.active_part_start_cyl
-#			end = int(start + part_size_cyl + 1) # - 1
-#			if self.resize_info_part_type.get_active() == 1 and self.devices[self.active_device].get_extended_partition() == 0: # Logical and no extended partition
-#				free_start, free_end = self.devices[self.active_device].get_free_space(start)
-#				self.devices[self.active_device].add_partition(self.devices[self.active_device].get_free_minor_at(start, end), free_start, free_end, "extended")
-#			minor = self.devices[self.active_device].get_free_minor_at(start, end)
-#			type = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-#			self.devices[self.active_device].add_partition(minor, start, end, type)
-#			self.draw_part_box()
-#			self.part_selected(None, self.active_device, minor)
-#		else:
-#			tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
-#			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
-#			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
-
-	def part_button_resetsize_clicked(self, button, data=None):
-		pass
 
 	def draw_part_box(self):
 		partlist = self.devices[self.active_device].get_ordered_partition_list()
@@ -342,13 +287,7 @@ resize partitions.
 		pp = pprint.PrettyPrinter(indent=4)
 		pp.pprint(self.devices[self.active_device].get_install_profile_structure())
 
-#	def filesystem_changed(self, widget, data=None):
-#		fs = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-#		self.resize_part_space.set_colors(self.colors[fs], self.colors[fs])
-#		self.resize_part_space.get_child().expose_event(None, None)
-
 	def part_button_properties_clicked(self, widget, data=None):
-#		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, 0, 0, 0, 0, 0)
 		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
 		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_start(), tmppart.get_end(), tmppart.get_min_sectors_for_resize(), tmppart.get_max_sectors_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector)
 		props.run()
