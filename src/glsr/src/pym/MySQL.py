@@ -1,22 +1,20 @@
-# Copyright 2004 Ian Leitch
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.12 2005/01/26 20:59:57 port001 Exp $
-#
 
-__modulename__ = "MySQL"
+__revision__ = '$Id: MySQL.py,v 1.13 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'MySQL'
 
-import sys
 from time import strftime, gmtime
 
 import MySQLdb
 from _mysql_exceptions import MySQLError, OperationalError
 
-import Config
 import Const
-from Error import error
+import Config
 from Logging import logwrite
+from GLSRException import MySQLModuleError
 from Function import start_timer, stop_timer, eval_timer
 
 class MySQL:
@@ -36,8 +34,7 @@ class MySQL:
                                  passwd=Config.MySQL["passwd"],
                                  db=Config.MySQL["db"])
         except OperationalError, errmsg:
-            error(errmsg, __modulename__)
-            sys.exit(0)
+            raise MySQLModuleError("Caught an OperationError exception from module 'MySQLdb'", errmsg)
                                                                         
         self._cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
 
@@ -60,9 +57,8 @@ class MySQL:
         try:
             self._cursor.execute(self._query, self._args)
         except MySQLError, errmsg:
-            error("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, self._query, self._args),
-                __modulename__)
-            sys.exit(0)
+            raise MySQLModuleError("Caught an MySQLError exception from module 'MySQLdb'", 
+                                   "%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, self._query, self._args))
                                                                                 
         self._db.commit()
         

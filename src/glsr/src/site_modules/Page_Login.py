@@ -1,17 +1,17 @@
-#!/usr/bin/python
-#
-# Copyright 2004 Ian Leitch
-# Copyright 2004 Scott Hadfield
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 2004-2005 Scott Hadfield
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.13 2005/01/26 02:18:55 port001 Exp $
-#
+
+__revision__ = '$Id: Page_Login.py,v 1.14 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Page_Login'
 
 import State
 import Config
 from User import User
-from SiteModule import SiteModule, Redirect
+from SiteModule import SiteModule
+from GLSRException import Redirect
 
 class Page_Login(SiteModule):
 
@@ -52,7 +52,7 @@ class Page_Login(SiteModule):
                 self._alias = self._req.Values.getvalue('username')
                 self._uid = self._user_obj.GetUid(self._alias)
         
-            raise Redirect, 'index.py?page=main'
+            raise Redirect('index.py?page=main', __modulename__)
  
         elif self._page == 'logout':
         
@@ -61,7 +61,7 @@ class Page_Login(SiteModule):
             self._uid = 0
             self._alias = ''
 
-            raise Redirect, 'index.py?page=main'
+            raise Redirect('index.py?page=main', __modulename__)
 
         # we fell through, the user wants to login
         self._tmpl.compile(self._template)

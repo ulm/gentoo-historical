@@ -3,14 +3,14 @@
 # Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Register.py,v 1.1 2005/01/26 03:59:01 hadfield Exp $
-#
+
+__revision__ = '$Id: Register.py,v 1.2 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Register'
 
 import Config
-from SiteModule import SiteModule, Redirect
 from User import User
-
-__modulename__ = 'Register'
+from SiteModule import SiteModule
+from GLSRException import Redirect
 
 class Register(SiteModule):
 
@@ -25,7 +25,7 @@ class Register(SiteModule):
     def _check_passwd(self, password1, password2):
 
         if password1 != password2:
-            # An error should be raised here.
+            # FIXME: An error should be raised here.
             return False
 
         return True
@@ -64,7 +64,7 @@ class Register(SiteModule):
         password2 = self._req.Values.getvalue("password2")
 
         if None in (alias, email, password1, password2):
-            # raise error here because one of the required fields wasn't filled.
+            # FIXME: raise error here because one of the required fields wasn't filled.
             raise
 
         self._check_alias(alias)
@@ -111,7 +111,7 @@ class Register(SiteModule):
         self._select_action()
 
         if self._page == 'create_user':
-            raise Redirect, "index.py?page=login"
+            raise Redirect('index.py?page=login', __modulename__)
         
         self._set_params()
         self._tmpl.compile(self._template)

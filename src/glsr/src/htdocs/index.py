@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.40 2005/01/26 23:54:33 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.41 2005/01/27 04:19:15 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -36,11 +36,9 @@ import Config
 from User import User
 from Session import Session
 from Logging import logwrite
-from SiteModule import Redirect
 from Template import Template
-from GLSRException import GLSRException
+from Error import error_uncaught
 from Validation import CheckPageRequest
-from Error import error_uncaught, error
 from Function import start_timer, stop_timer, eval_timer, _Values
 
 class RequestHandler(cgi.Handler):
@@ -142,7 +140,7 @@ class _PageDispatch:
                     "Request for page '%s', domain 'admin'" % self._page +
                     " denied for IP address '%s'" % os.environ["REMOTE_ADDR"],
                     __modulename__, "Warn")
-                sys.exit(0) 
+                os.abort()
 
     def _load_module(self, module):
 
@@ -193,23 +191,8 @@ class _PageDispatch:
                              "alias = self._user_detail[\"alias\"]," +
                              "session = self._user_detail[\"session\"])")
 
-        try:
-            self._tmpl_page = module_object.display()
-            self._show_border = module_object.show_border
-                                                                                                    
-        except Redirect, location_str:
-            logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
-            self._req.add_header("Location", location_str)
-            self._send_headers()
-            sys.exit(0)
-                                                                                                    
-        except GLSRException, error:
-            output_str = error.__str__()
-            output_str = output_str.replace("\n", "<br />")
-            output_str = output_str.replace(" ", "&nbsp;")
-            error(output_str,
-                module_object.__modulename__)
-            sys.exit(0)
+        self._tmpl_page = module_object.display()
+        self._show_border = module_object.show_border
 
     def _send_headers(self):
 

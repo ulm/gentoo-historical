@@ -1,15 +1,15 @@
-# Copyright 2004 Ian Leitch
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Admin.py,v 1.5 2005/01/26 20:59:57 port001 Exp $
-#
 
-__modulename__ = "Admin"
+__revision__ = '$Id: Admin.py,v 1.6 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Admin'
 
-from MySQL import MySQL
 import Config
-from Error import error
+from MySQL import MySQL
+from GLSRException import AdminModuleError
+
 from time import strftime, gmtime
 
 MySQLHandler = MySQL()
@@ -23,8 +23,7 @@ def optimize_tables():
 
     for result in MySQLHandler.query("OPTIMIZE TABLES %s" % tables_str[:-2], fetch="all"):
         if result["Msg_type"] == "error":
-            error("Optimization error: %s" % result["Msg_text"], __modulename__)
-            sys.exit(0)
+            raise AdminModuleError('Optimization Error', result['Msg_text'])
 
     MySQLHandler.query("UPDATE %s%s SET %s_table_opt = " %
                (Config.MySQL["prefix"], Config.MySQL["state_table"], Config.MySQL["state_table"])

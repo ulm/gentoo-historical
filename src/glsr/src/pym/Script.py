@@ -1,22 +1,19 @@
-#!/usr/bin/env python2
-#
-# Copyright 2004 Ian Leitch
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.7 2005/01/26 20:59:57 port001 Exp $
-#
 
-__modulename__ = "Script"
+__revision__ = '$Id: Script.py,v 1.8 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Script'
 
 import types
 import string
 from time import strftime, gmtime
 
 import Config
-from Error import error
 from MySQL import MySQL
 from GLSRBackend import GLSRBackend as Parent
+from GLSRException import ScriptModuleError
 
 MySQLHandler = MySQL()
 
@@ -197,8 +194,7 @@ class SubScript(Parent):
         """Add a new subscript"""
 
         if not details["parent_id"] or details["parent_id"] == "0":
-            error("Invalid Parent ID", __modulename__)
-            return False
+            raise ScriptModuleError('Invalid parent ID')
 
         details.update({"date":  strftime("%Y-%m-%d", gmtime())})
         return Parent.Create(self, details)
@@ -207,8 +203,7 @@ class SubScript(Parent):
         """Add a new subscript."""
 
         if not details["parent_id"] or details["parent_id"] == "0":
-            error("Invalid Parent ID", __modulename__)
-            return False
+            raise ScriptModuleError('Invalid parent ID')
 
         details.update({"date":  strftime("%Y-%m-%d", gmtime()),
                         "approved": 0})

@@ -2,10 +2,9 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.16 2005/01/25 01:12:45 hadfield Exp $
+# $Id: Function.py,v 1.17 2005/01/27 04:19:15 port001 Exp $
 #
 
-import sys
 from time import time
 
 import State
@@ -37,31 +36,6 @@ def dprint(str):
 
     print "DEBUG:%s\n" % str
     return True
-
-class stderr_redirect:
-
-    def write(self, msg):
-
-        if Config.Debug == True:
-
-            if State.HTMLHeadersSent == False:
-                print "Content-type:text/html\n\n"
-                State.HTMLHeadersSent = True
-
-            print "<font color=\"FF0000\"><b>DEBUG:</b></font> %s <br />" % str(msg).strip()
-        
-        else:
-            sys.__stderr__.write(msg)
-
-def values(self, key, *args):
-
-    if self.params.has_key(key):
-        return self.params[key]
-    else:
-        if len(args) >= 1:
-            return args[0]
-
-        return None
 
 class _Values:
 

@@ -3,14 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.12 2004/12/30 03:05:19 port001 Exp $
+# $Id: Page_Script.py,v 1.13 2005/01/27 04:19:15 port001 Exp $
 #
 
 import Config
 from Category import Category
 from Language import Language
 from Script import Script, SubScript
-from SiteModule import SiteModule, Redirect
+from SiteModule import SiteModule
 
 __modulename__ = 'Page_Script'
 
@@ -125,9 +125,9 @@ class Page_Script(SiteModule):
         if (self._req.Values.getvalue('save_script') != None or
             self._req.Values.getvalue('publish_script') != None or
             self._req.Values.getvalue('get_script_reviewed') != None):
-            raise Redirect, ("index.py?page=create_script&script_id=%s" %
-                             self._script_id + "&parent_script_id=%s" %
-                             self._parent_script_id)
+            raise Redirect("index.py?page=create_script&script_id=%s" %
+                            self._script_id + "&parent_script_id=%s" %
+                            self._parent_script_id, __modulename__)
         
         self._set_params()
         self._tmpl.compile(self._template)

@@ -1,20 +1,17 @@
-Config.WaitThreadsTimeout * State.ActiveThreads# Copyright 2004 Ian Leitch
-# Copyright 2004 Scott Hadfield
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 2004-2005 Scott Hadfield
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Threading.py,v 1.5 2005/01/26 20:59:57 port001 Exp $
-#
 
-__modulename__ = "Threading"
+__revision__ = '$Id: Threading.py,v 1.6 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Threading'
 
-import sys
 from time import time
 from threading import Thread, Condition
 
 import State
 import Config
-from Error import error
 
 class Threader:
     """ A class for running functions in seperate threads.
@@ -46,15 +43,3 @@ class Threader:
         self._condition.notify()
         self._condition.release()
         State.ActiveThreads -= 1
-
-def wait_threads():
-
-    max_time = int("%0d" % time()) + (Config.WaitThreadsTimeout * State.ActiveThreads)
-
-    while 1:
-        if State.ActiveThreads == 0:
-            return
-        if int("%0d" % time()) >= max_time:
-            error("Timed out waiting for %d threads" % State.ActiveThreads,
-                                                          __modulename__)
-            sys.exit(0)

@@ -1,9 +1,7 @@
-# Copyright 2004 Ian Leitch
-# Copyright 2004 Scott Hadfield
-# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Copyright 2004-2005 Ian Leitch
+# Copyright 2004-2005 Scott Hadfield
+# Copyright 1999-2005 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-#
-# $Id: Template.py,v 1.11 2005/01/26 20:59:57 port001 Exp $
 #
 
 """The template handler module.
@@ -32,13 +30,14 @@
 
 """
 
-import string
+__revision__ = '$Id: Template.py,v 1.12 2005/01/27 04:19:15 port001 Exp $'
+__modulename__ = 'Template'
+
 import re
+import string
 import types
 
-from Error import error
-
-__modulename__ = "Template"
+from GLSRException import TemplateModuleError
 
 class Template:
     """Template handler class."""
@@ -69,7 +68,7 @@ class Template:
             self._contents = open(self._template_name, "r").readlines()
             
         except IOError, errmsg:
-            raise TemplateError, errmsg
+            raise TemplateModuleError('Caught an IOError exception', 'errmsg')
 
         return self._contents
 	
@@ -103,7 +102,7 @@ class Template:
             try:
                 value = eval("values[param_name]%s" % rest)
             except KeyError, errmsg:
-                raise TemplateError, errmsg
+                raise TemplateModuleError('Caught an KeyError exception', errmsg)
             
             # Convert value to a string and then do the replace.
             repl_text = repl_text.replace("{%s}" % variable, "%s" % value)
@@ -425,21 +424,7 @@ class Template:
         """Returns the resulting template."""
 
         if self._template_name == "":
-            raise TemplateError, "No compiled template data found."
+            raise TemplateModuleError('No compiled template data found')
 
         return "\n".join(self._output)
-    
-
-class TemplateError(Exception):
-    """The standard template exception."""
-    
-    def __init__(self, errmsg = ""):
-        
-        self.errmsg = errmsg
-
-    def __str__(self):
-
-        import sys
-        error(self.errmsg, __modulename__)            
-        sys.exit(0)
 

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2  
 #
-# $Id: SiteModule.py,v 1.4 2005/01/25 01:05:52 hadfield Exp $  
+# $Id: SiteModule.py,v 1.5 2005/01/27 04:19:15 port001 Exp $  
 #
 
 __modulename__ = 'SiteModule'
@@ -194,5 +194,3 @@ class SiteModule:
         
         self._tmpl.compile(self._template)
         return self._tmpl
-
-class Redirect(Exception): pass
