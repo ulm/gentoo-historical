@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.20 2004/11/14 03:02:48 agaffney Exp $
+$Id: GLIClientController.py,v 1.21 2004/11/21 06:15:42 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -82,11 +82,15 @@ class GLIClientController(Thread):
 			if self._install_step <= (len(self._install_steps) - 1):
 				try:
 					self._install_steps[self._install_step]()
+					self.addNotification("int", 1) # Install step done
 				except GLIException, error:
 					self.addNotification("exception", error)
 			else:
 				break
 			self._install_event.clear()
+
+	def get_next_step_into(self):
+		pass
 
 	def next_step(self):
 		self._install_step = self._install_step + 1

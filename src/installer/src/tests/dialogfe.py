@@ -47,9 +47,14 @@ def signal_handler(signum, frame):
 
 	while 1:
 		notification = cc.getNotification()
+		type = notification.get_type()
+		data = notification.get_data()
 		if notification == None: break
-		if notification.get_type() == "exception":
-			exception_waiting = notification.get_data()
+		if type == "exception":
+			exception_waiting = data
+		elif type == "int":
+			if data == 1: # Install step done
+				next_step_waiting = True
 
 #	gauge_progress += 10
 #	d.gauge_update(gauge_progress, text="Install progress:", update_text=1)
