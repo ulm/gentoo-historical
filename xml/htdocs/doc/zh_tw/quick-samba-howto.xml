@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='big5'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/quick-samba-howto.xml,v 1.8 2005/02/06 06:11:41 ccpz Exp $ -->
-<!-- rev 1.15 by ccpz -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/quick-samba-howto.xml,v 1.9 2005/02/16 13:45:04 ccpz Exp $ -->
+<!-- rev 1.16 by ccpz -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="quick-samba-howto.xml" lang="zh_tw">
@@ -27,8 +27,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.10</version>
-<date>2004-12-21</date>
+<version>1.11</version>
+<date>2005-02-07</date>
 
 <chapter>
 <title>這份指南的介紹</title>
@@ -101,7 +101,7 @@
 <ul>
   <li>在 Samba server 方面
     <ul>
-      <li>安裝設定 CLAM-AV</li>
+      <li>安裝設定 CLAMAV</li>
       <li>安裝設定 Samba</li>
       <li>安裝設定 CUPS</li>
       <li>將印表機加到 CUPS</li>
@@ -167,7 +167,7 @@ app-antivirus/clamav 也會被使用到，其他的經簡單改寫後應該能與 Samba 合作。
 </p>
 
 <pre caption="Samba 使用下列 USE">
-kerberos mysql xml acl cups ldap pam readline python oav
+kerberos mysql xml acl cups ldap pam readline python oav libclamav
 </pre>
 
 <p>
@@ -252,6 +252,12 @@ emerge Samba 時，依照網路及指定需求，以下提到的 USE 參數會定義哪些要或哪些不要 e
     (SAVI), Symantec CarrierScan, and Trend Micro (VSAPI). 
   </ti>
 </tr>
+<tr>
+  <th><b>libclamav</b></th>
+  <ti>
+    啟動 ClamAV 病毒掃描。
+  </ti>
+</tr>
 </table>
 
 <p>
@@ -298,6 +304,7 @@ emerge Samba 時，依照網路及指定需求，以下提到的 USE 參數會定義哪些要或哪些不要 e
   <li>cups</li>
   <li>readline</li>
   <li>pam</li>
+  <li>libclamav</li>
 </ul>
 
 <p>
@@ -306,7 +313,7 @@ emerge Samba 時，依照網路及指定需求，以下提到的 USE 參數會定義哪些要或哪些不要 e
 
 <pre caption="Emerge Samba">
 <comment>(注意 USE 參數！)</comment>
-# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql&quot; emerge net-fs/samba</i>
+# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql libclamav&quot; emerge net-fs/samba</i>
 </pre>
 
 <note>
@@ -329,7 +336,7 @@ emerge Samba 時，依照網路及指定需求，以下提到的 USE 參數會定義哪些要或哪些不要 e
 在這份指南中使用的掃毒程式是 Clam AV。
 </p>
 
-<pre caption="Emerge clam-av">
+<pre caption="Emerge clamav">
 # <i>emerge app-antivirus/clamav</i>
 </pre>
 
@@ -408,13 +415,9 @@ guest ok = yes
 # 你也可以只對某些分享資源做掃毒，只要把該設定移到你所指定的分享資源即可。
 </comment>
 
-<comment># For Samba 3.x</comment>
+<comment># For Samba 3.x，這會啟動 ClamAV 在存取時掃描</comment>
 vfs object = vscan-clamav
 vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
-
-<comment># For Samba 2.2.x</comment>
-vfs object = /usr/lib/samba/vfs/vscan-clamav.so
-vfs options = config-file = /etc/samba/vscan-clamav.conf
 
 <comment># 現在設定我們的印表機驅動程式</comment>
 [print$]
@@ -469,6 +472,10 @@ path = /home/samba/public
 我們下面會說到 <c>cupsaddsmb</c>，及可能產生的問題，您可以參考。
 使用一個專用的列印使用者，像是 <c>printeruser</c> 、 <c>printer</c> 、
 <c>printme</c> 或其他，隨便你想怎麼取都可以。
+</warn>
+
+<warn>
+在 <c>[global]</c> 區域啟動 ClamAV 存取掃描會大幅度的降低 Samba 伺服器的效能。
 </warn>
 
 <p>
@@ -564,12 +571,30 @@ max lru files entries = 100
 lru file entry lifetime = 5
 
 <comment>; clamd 的 socket 的名字(預設: /var/run/clamd)</comment>
-clamd socket name = /var/run/clamd
+clamd socket name = /tmp/clamd
+
+<comment>; ScannerDaemon 使用的 port</comment>
+oav port = 8127
 </pre>
 
 <p>
 一般來說，立刻啟動掃毒是個好主意。把 <c>clamd</c> service 加到 <e>default</e> runlevel，
-且現在立刻啟動。
+且現在立刻啟動。這個 service 有兩個程序：freshclam 在 clamd 為目前的防毒服務時保
+持病毒定義資料庫為最新的狀態，而 clamd 為真正的防毒服務。首先你要先設定登錄檔的
+路徑，讓它可以符合你的需求。
+</p>
+  	 
+<pre caption="檢查登錄檔的路徑">
+# <i>vim /etc/clamd.conf</i>
+<comment>(檢查 "LogFile /var/log/clamd.log" 這行)</comment>
+# <i>vim /etc/freshclam.conf</i>
+<comment>(檢查 "UpdateLogFile /var/log/freshclam.log" 這行)</comment>
+# <i>vim /etc/conf.d/clamd</i>
+<comment>(設定 "START_CLAMD=yes" 及 "START_FRESHCLAM=yes")</comment>
+</pre>
+  	 
+<p>
+現在啟動病毒掃描。
 </p>
 
 <pre caption="將 clamd 加到開機自動執行然後啟動它">
