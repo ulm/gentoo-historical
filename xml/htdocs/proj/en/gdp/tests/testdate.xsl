@@ -32,8 +32,8 @@ This page shows how dates could be formatted for each language
 <license/>
 
 <version>1.2</version>
-<!--<date><xsl:value-of select="func:today()"/></date>-->
-<date>2005-01-14</date>
+<date><xsl:value-of select="func:today()"/></date>
+<!--<date>2005-01-14</date>-->
 
 <chapter>
 <title>Introduction</title>
