@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.2 2004/07/09 12:58:42 port001 Exp $
+# $Id: Logging.py,v 1.3 2004/07/09 18:34:21 port001 Exp $
 #
 
 import traceback
@@ -128,6 +128,7 @@ def logwrite(msg, modname, type):
 def ReturnErrorReports():
 
     Reports = []
+    row = "even"
 
     try:
         fd = open(Config.ErrorReportLog, "r")
@@ -137,10 +138,21 @@ def ReturnErrorReports():
         return False
 
     for line in contents:
+        if line == "\n":
+            continue
+
         try:
             (date, module, error) = line.split("||", 2)
-            Reports.append({"date": date, "module": module, "error": error.strip()})
+            Reports.append({"row": row, "date": date, "module": module, "error": error.strip()})
         except:
-            pass
+            Reports.append({"row": row, "date": "N/A", "module": "N/A", "error": "Corrupt report"})
+
+        if row == "even":
+            row = "odd"
+        else:
+            row = "even"
+
+    if not len(Reports):
+        return False
 
     return Reports

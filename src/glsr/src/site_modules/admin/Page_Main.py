@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.2 2004/07/06 13:13:33 port001 Exp $
+# $Id: Page_Main.py,v 1.3 2004/07/09 18:34:21 port001 Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : ""}
@@ -29,6 +29,8 @@ class Page_Main(Parent):
 
     def display(self):
 
+        error_reporting = "True"
+        error_report_list = []
         user_online_list = ""
         sess_obj = Session.New()
         sessions = sess_obj.ListSessionsOnline(Config.WhoIsOnlineOffset)
@@ -41,9 +43,21 @@ class Page_Main(Parent):
                 user_online_list = "%s %s" % (user_online_list,
                                               user_obj.GetAlias())
 
+        if Config.ErrorReporting == True:
+            error_report_list = ReturnErrorReports()
+            if error_report_list == False:
+                error_reporting = "False"
+        else:
+            error_reportig = "False"
+                                                                                                                              
+        if error_reporting == "False":
+            error_report_list = []
+                                                                                                                              
         tmpl = TemplateHandler.New()
         tmpl.Compile(
             self.template,
-            {"GLSR_URL":		Config.URL,
-             "USER_ONLINE_LIST":	user_online_list})
+            {"GLSR_URL":                Config.URL,
+             "USER_ONLINE_LIST":        user_online_list,
+             "ERROR_REPORTING":         error_reporting},
+            {"ERROR_REPORT_LIST":       error_report_list})
         tmpl.Print()

@@ -1,4 +1,4 @@
-      <table width="80%" border="0" cellspacing="0" cellpadding="0" class="section_table">
+      <table width="90%" border="0" cellspacing="0" cellpadding="0" class="section_table">
         <tr>
           <td height="50" background="{GLSR_URL}images/header-bk.png"><span class="section_header_text">&nbsp;&nbsp;Site Statistics</span></td><td width="50%" height="50" align="right" valign="middle" background="{GLSR_URL}images/header-bk.png"><img src="{GLSR_URL}images/dialog-info.png" width="48" height="48"></td>
         </tr>
