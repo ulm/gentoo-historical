@@ -4,20 +4,15 @@
 
 <xsl:template match="/changelog">
 	<xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
+  &lt;!DOCTYPE mainpage SYSTEM "/dtd/guide.dtd"&gt;
 	<mainpage id="changelog">
 	<title>Gentoo Linux Development Changelog for <xsl:value-of select="entry/date"/></title>
 	<author title="script">cvs-xml.xsl</author>
 
-	<standout>
-		<title>About the Development Changelog</title>
-		<body>
-			This page contains a daily Changelog, listing all modifications made to our
-			CVS tree on <xsl:value-of select="entry/date"/> (yesterday).
-		</body>
-	</standout>
 	<version>1.0.0</version>
 	<date><xsl:value-of select="entry/date"/></date>
 	<chapter>
+    <title>Gentoo Linux Development Changelog</title>
 		<xsl:apply-templates select="entry"/>
 	</chapter>
 	</mainpage>
