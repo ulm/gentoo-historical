@@ -422,7 +422,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td width="100" align="middle" valign="center">
+                              <td width="100" align="center" valign="middle">
                                 <xsl:choose>
                                   <xsl:when test="document(.)/news/@category='alpha'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-alpha.gif" alt="AlphaServer GS160"/>
