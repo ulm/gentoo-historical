@@ -283,7 +283,7 @@ sub show_bug {
     my $block4 = $blocks[4];
     $block4 =~ s/\n//mg;
     my $linecount;
-    my @blockset = split( / align\=\"right\"/, $block4 );
+    my @blockset = split( /\salign\=\"right\"/, $block4 );
 
     # lines of interest
     # line 4 - reporter
