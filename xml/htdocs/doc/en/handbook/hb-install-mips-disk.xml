@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-mips-disk.xml,v 1.10 2005/01/04 18:11:20 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-mips-disk.xml,v 1.11 2005/02/14 14:59:19 swift Exp $ -->
 
 <sections>
 
-<version>1.6</version>
-<date>2004-09-14</date>
+<version>1.7</version>
+<date>2005-02-14</date>
 
 <section>
 <title>Introduction to Block Devices</title>
@@ -110,7 +110,7 @@ limit for SCSI and SATA.
 <section>
 <title>Using fdisk on MIPS to Partition your Disk</title>
 <subsection>
-<title>Creating an SGI Disk Label</title>
+<title>SGI Machines: Creating an SGI Disk Label</title>
 <body>
 
 <p>
@@ -122,11 +122,13 @@ partitions on the disk:
 
 <ul>
   <li>
-    <e>SGI Volume Header</e> (9th partition): This partition is important. It
+<!--    <e>SGI Volume Header</e> (9th partition): This partition is important. It
     is where the kernel images will go. To store kernel images, you will utilize
     the tool known as <c>dvhtool</c> to copy kernel images to this partition. 
     You will then be able to boot kernels from this partition via the SGI PROM 
-    Monitor.
+    Monitor.	-->
+    <e>SGI Volume Header</e> (9th partition): This partition is important. It
+    is where the arcboot bootloader will go.
   </li>
   <li>
     <e>SGI Volume</e> (11th partition): This partition is similar in purpose to
@@ -200,11 +202,8 @@ second is to overwrite the partition table with null data via the following
 command: <c>dd if=/dev/zero of=/dev/sda bs=512 count=1</c>.
 </note>
 
-</body>
-</subsection>
-<subsection>
-<title>Getting the SGI Volume Header to just the right size</title>
-<body>
+<!-- This has been dropped in favour of using arcboot
+<p>Getting the SGI Volume Header to just the right size</p>
 
 <p>
 Now that an SGI Disklabel is created, partitions may now be defined. In the
@@ -217,7 +216,7 @@ with each image allowed eight-character names.
 </p>
 
 <p>
-The process of making the volume header larger isn't exactly straight-forward --
+The process of making the volume header larger isn't exactly straight-forward - -
 there's a bit of a trick to it. One cannot simply delete and re-add the volume
 header due to odd fdisk behavior. In the example provided below, we'll create a
 50MB Volume header in conjunction with a 50MB /boot partition. The actual layout
@@ -229,35 +228,39 @@ Command (m for help): <i>n</i>
 Partition number (1-16): <i>1</i>
 First cylinder (5-8682, default 5): <i>51</i>
  Last cylinder (51-8682, default 8682): <i>101</i>
-<comment>(Notice how fdisk only allows Partition #1 to be re-created starting at a minimum of cylinder 5)</comment>
-<comment>(Had you attempted to delete &amp; re-create the SGI Volume Header this way, this is the same issue
- you would have encountered.)</comment>
-<comment>(In our example, we want /boot to be 50MB, so we start it at cylinder 51 (the Volume Header needs to 
- start at cylinder 0, remember?), and set its ending cylinder to 101, which will roughly be 50MB (+/- 1-5MB))</comment>
+
+<comment>(Notice how fdisk only allows Partition #1 to be re-created starting at a
+minimum of cylinder 5?  Had you attempted to delete &amp; re-create the SGI
+Volume Header this way, this is the same issue you would have encountered.
+In our example, we want /boot to be 50MB, so we start it at cylinder 51 (the 
+Volume Header needs to start at cylinder 0, remember?), and set its ending 
+cylinder to 101, which will roughly be 50MB (+/- 1-5MB).)</comment>
 
 Command (m for help): <i>d</i>
 Partition number (1-16): <i>9</i>
+
 <comment>(Delete Partition #9 (SGI Volume Header))</comment>
 
 Command (m for help): <i>n</i>
 Partition number (1-16): <i>9</i>
 First cylinder (0-50, default 0): <i>0</i>
  Last cylinder (0-50, default 50): <i>50</i>
+
 <comment>(Re-Create Partition #9, ending just before Partition #1)</comment>
 </pre>
-
-</body>
-</subsection>
-<subsection>
-<title>Final partition layout</title>
-<body>
-
+-->
 <p>
+If you're unsure how to use <c>fdisk</c> have a look down further at the
+instructions for partitioning on Cobalts.  The concepts are exactly the same --
+just remember to leave the volume header and whole disk partitions alone.
+</p>
+
+<!-- <p>  Perhaps part of the above commented-out block?
 Once this is done, you are safe to create the rest of your partitions as you see
 fit. After all your partitions are laid out, make sure you set the partition ID
 of your swap partition to <c>82</c>, which is Linux Swap. By default, it will be
 <c>83</c>, Linux Native. 
-</p>
+</p> -->
 
 <p>
 Now that your partitions are created, you can now continue with <uri
@@ -266,7 +269,245 @@ link="#filesystems">Creating Filesystems</uri>.
 
 </body>
 </subsection>
+
+<subsection>
+<title>Cobalt Machines: Partitioning your drive</title>
+<body>
+
+<p>
+On Cobalt machines, the BOOTROM expects to see a MS-DOS MBR, so partitioning the
+drive is relatively straightforward -- in fact, it's done the same way as you'd
+do for an Intel x86 machine.  <e>However</e> there are some things you need to
+bear in mind.
+</p>
+
+<ul>
+  <li>
+    Cobalt firmware will expect <path>/dev/hda1</path> to be a Linux partition
+    formatted <e>EXT2 Revision 0</e>.  <e>EXT2 Revision 1 partitions will NOT
+    WORK!</e>  (The Cobalt BOOTROM only understands EXT2r0)
+  </li>
+  <li>
+    The above said partition must contain a gzipped ELF image,
+    <path>vmlinux.gz</path> in the root of that partition, which it loads as the
+    kernel
+  </li>
+</ul>
+
+<p>
+For that reason, I recommend creating a ~20MB <path>/boot</path> partition
+formatted EXT2r0 upon which you can install CoLo &amp; your kernels.  This
+allows you to run a modern filesystem (EXT3 or ReiserFS) for your root
+filesystem.
+</p>
+
+<p>
+I will assume you have created <path>/dev/hda1</path> to mount later as a
+<path>/boot</path> partition.  If you wish to make this <path>/</path>, you'll
+need to keep the PROM's expectations in mind.
+</p>
+
+<p>
+So, continuing on... To create the partitions you type <c>fdisk /dev/hda</c> at
+the prompt.  The main commands you need to know are these:
+</p>
+
+<ul>
+  <li>
+    <c>o</c>: Wipe out old partition table, starting with an empty MS-DOS
+    partition table
+  </li>
+  <li>
+    <c>n</c>: New Partition
+  </li>
+  <li>
+    <c>t</c>: Change Partition Type
+    <ul>
+      <li>Use type <c>82</c> for Linux Swap, <c>83</c> for Linux FS</li>
+    </ul>
+  </li>
+  <li>
+    <c>d</c>: Delete a partition
+  </li>
+  <li>
+    <c>p</c>: Display (print) Partition Table
+  </li>
+  <li>
+    <c>q</c>: Quit -- leaving old partition table as is.
+  </li>
+  <li>
+    <c>w</c>: Quit -- writing partition table in the process.
+  </li>
+</ul>
+
+<pre caption="Partitioning the disk">
+# <i>fdisk /dev/hda</i>
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+
+<comment>(Start by clearing out any existing partitions)</comment>
+Command (m for help): <i>o</i>
+Building a new DOS disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content won't be recoverable.
+
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+Warning: invalid flag 0x0000 of partition table 4 will be corrected by w(rite)
+
+<comment>(You can now verify the partition table is empty using the 'p' command)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+
+<comment>(Create the /boot partition)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+
+<comment>(Just press ENTER here to accept the default)</comment>
+
+First cylinder (1-19870, default 1):
+Last cylinder or +size or +sizeM or +sizeK (1-19870, default 19870): <i>+20M</i>
+
+<comment>(and now if we type 'p' again, we should see the new partition)</comment>
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/hda1               1          40       20128+  83  Linux
+
+<comment>(The rest, I prefer to put in an extended partition, so I'll create that)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>e</i>
+Partition number (1-4): <i>2</i>
+
+<comment>(Again, the default is fine, just press ENTER.)</comment>
+
+First cylinder (41-19870, default 41):
+Using default value 41
+
+<comment>(We want to use the whole disk here, so just press ENTER again)</comment>
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870):
+Using default value 19870
+
+<comment>(Now, the / partition -- I use separate partitions for /usr, /var,
+etc... so / can be small.  Adjust as per your preference.)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (41-19870, default 41):<i>&lt;Press ENTER&gt;</i>
+Using default value 41
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870): <i>+500M</i>
+
+<comment>(... and similar for any other partitions ...)</comment>
+
+<comment>(Last but not least, the swap space.  I recommend at least 250MB swap,
+preferrably 1GB)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (17294-19870, default 17294): <i>&lt;Press ENTER&gt;</i>
+Using default value 17294
+Last cylinder or +size or +sizeM or +sizeK (1011-19870, default 19870): <i>&lt;Press ENTER&gt;</i>
+Using default value 19870
+
+<comment>(Now, if we check our partition table, everything should mostly be ship
+shape except for one thing...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/hda1               1          21       10552+  83  Linux
+/dev/hda2              22       19870    10003896    5  Extended
+/dev/hda5              22        1037      512032+  83  Linux
+/dev/hda6            1038        5101     2048224+  83  Linux
+/dev/hda7            5102        9165     2048224+  83  Linux
+/dev/hda8            9166       13229     2048224+  83  Linux
+/dev/hda9           13230       17293     2048224+  83  Linux
+/dev/hda10          17294       19870     1298776+  83  Linux
+
+<comment>(Notice how #10, our swap partition is still type 83?)</comment>
+
+Command (m for help): <i>t</i>
+Partition number (1-10): <i>10</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 10 to 82 (Linux swap)
+
+<comment>(That should fix it... just to verify...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/hda1               1          21       10552+  83  Linux
+/dev/hda2              22       19870    10003896    5  Extended
+/dev/hda5              22        1037      512032+  83  Linux
+/dev/hda6            1038        5101     2048224+  83  Linux
+/dev/hda7            5102        9165     2048224+  83  Linux
+/dev/hda8            9166       13229     2048224+  83  Linux
+/dev/hda9           13230       17293     2048224+  83  Linux
+/dev/hda10          17294       19870     1298776+  82  Linux Swap
+
+<comment>(Now, we write out the new partition table.)</comment>
+
+Command (m for help): <i>w</i>
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+#
+</pre>
+
+<p>
+And that's all there is to it.  You should now be right to proceed onto the
+next stage: <uri link="#filesystems">Creating Filesystems</uri>.
+</p>
+
+</body>
+</subsection>
 </section>
+
 <section id="filesystems">
 <title>Creating Filesystems</title>
 <subsection>
@@ -288,8 +529,8 @@ Otherwise read on to learn about the available filesystems...
 <body>
 
 <p>
-Several filesystems are available. Ext2 and ext3 are found stable on the
-MIPS architectures, others are experimental. 
+Several filesystems are available.  ReiserFS, EXT2 and EXT3 are found stable
+on the MIPS architectures, others are experimental.
 </p>
 
 <p>
@@ -391,6 +632,19 @@ Now create the filesystems on your newly created partitions (or logical
 volumes).
 </p>
 
+<warn>
+If you're installing on a Cobalt server, remember <path>/dev/hda1</path> MUST be
+of type <e>EXT2 revision 0</e>; Anything else (e.g. EXT2 revision 1, EXT3,
+ReiserFS, XFS, JFS and others) <e>WILL NOT WORK!</e>
+You can format the partition using the command: <c>mke2fs -r 0 /dev/hda1</c>.
+</warn>
+
+<warn>
+Also, be aware that arcboot currently is not able to read any filesystem other
+than EXT2, EXT3 and ISO9660 (recent versions).  For that reason,
+<path>/boot</path> on SGI machines must also reside on an EXT2 or EXT3 partition.
+</warn>
+
 </body>
 </subsection>
 <subsection>
@@ -398,7 +652,7 @@ volumes).
 <body>
 
 <p>
-<c>mkswap</c> is the command that is used to initialize swap partitions:
+<c>mkswap</c> is the command that is used to create and initialize swap partitions:
 </p>
 
 <pre caption="Creating a Swap signature">
