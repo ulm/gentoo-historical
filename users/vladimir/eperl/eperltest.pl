@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.4 2003/03/05 01:13:28 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.1 2003/03/05 01:13:28 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 # Please be careful with this, don't use it if you're not reasonably fluent
@@ -65,27 +65,24 @@ sub wanted {
 		
 		# See if the user wants to accept the changes
 		my $response = $term->readline("Accept $changes changes? [no] ");
-		
 		if($response =~ /^q/i) {
-		# Want to quit?
 			&postprocess;
 			print GREEN "User requested quit", RESET, "\n";
 			exit;
 		}
 		
 		if($response =~ /^y/i) {
-		# Apply changes
 			# This lets us know if we need to run echangelog later
 			$path_changes += $changes;
 			
 			# Write the new ebuild to *_new.ebuild
 			print RED "Saving changes...", RESET, "\n";
-			put_file("$path/${ebuild}_new.ebuild", @new_contents);
+			#put_file("$path/${ebuild}_new.ebuild", @new_contents);
 			
 			# Overwrite the old ebuild with the new
-			rename("$path/${ebuild}_new.ebuild", "$path/${ebuild}.ebuild")
-			  or die "Couldn't rename $path/${ebuild}_new.ebuild to " .
-			         "$path/${ebuild}.ebuild";
+			#rename("$path/${ebuild}_new.ebuild", "$path/${ebuild}.ebuild")
+			#  or die "Couldn't rename $path/${ebuild}_new.ebuild to " .
+			#         "$path/${ebuild}.ebuild";
 
 			print YELLOW "Done", RESET, "\n\n";
 		}
@@ -145,17 +142,16 @@ sub put_file {
 
 sub postprocess {
 	if($path_changes) {
-	# Run echangelog in the ebuild dir if there have been changes
+		# Run echangelog in the ebuild dir
 		print RED "Updating ChangeLog in $path for $path_changes changes...";
 		print RESET "\n\n";
 		chdir $path or die "Couldn't chdir to $path: $!\n";
-		system("echangelog", "$ARGV[1]") == 0
-		  or die "Couldn't echangelog $ARGV[1]";
+		#system("echangelog", "$ARGV[1]") == 0
+		#  or die "Couldn't echangelog $ARGV[1]";
 		$path_changes = 0;
 	}
 }
 
 sub catch_zap {
-# Don't need people exiting partway through a change
 	print BOLD RED "Please exit by typing 'q'", RESET, "\n";
 }
