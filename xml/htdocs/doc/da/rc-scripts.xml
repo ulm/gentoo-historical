@@ -1,0 +1,677 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/da/rc-scripts.xml">
+<title>Gentoo Linux 1.0 Init Systemet</title>
+<author title="Forfatter"><mail link="azarah@gentoo.org">Martin Schlemmer</mail></author>
+<author title="Redaktør"><mail link="seemant@gentoo.org">Seemant Kulleen</mail></author>
+<author title="Oversætter"><mail link="aaby@gentoo.org">Arne Mejlholm</mail></author>
+<author title="Redaktør"><mail link="broeman@gentoo.org">Jesper Brodersen</mail></author>
+<author title="Redaktør"><mail link="aaby@gentoo.org">Arne Mejlholm</mail></author>
+
+<abstract>Denne guide er en introduktion til Gentoo Linux'ses init-system,
+desuden forklarer den også nogle af detaljerne omkring at
+skrive rc-scripts.</abstract>
+  
+<license/>
+
+<version>1.0.2</version>
+<date>1 September 2003</date>
+
+<chapter>
+<title>Introduktion</title>
+<section>
+<body>
+
+<p>
+Gentoo Linux bruger et init-system der hovedsageligt bliver styret
+gennem afhængigheder. Det bør være nemt at vedligeholde, dog
+kraftfuldt og fleksibelt nok til at sætte hvad som helst op. Dette bør
+ikke betragtes som en introduktion til hvordan det virker indefra; derimod,
+er det en hurtig guide til at komme op og køre med Gentoo's init-system.
+Til dem der er interesseret i hvordan det virker indefra
+... så læs kildekoden ;-)
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Runlevels</title>
+<section>
+<body>
+
+<p>I modsætning til andre init-systemer har Gentoos runleveler ikke
+absurde navne eller tal, men er derimod lavet til formålet og bundet
+til standard runlevelerne ved start.
+
+<note>Som standard er der tre runleveler: <e>&quot;boot&quot;</e>, <e>&quot;default&quot;</e>
+og <e>&quot;nonetwork&quot;</e>.</note>
+</p>
+
+<p>&quot;boot&quot; (opstarts) runlevelen bør være standard til de fleste
+opsætninger og som navnet siger, er det den første runlevel, der bliver
+kørt ved opstart. Derefter kommer <e>&quot;default&quot;</e>
+(standard) som navnet også siger, er det den hovedsagelige runlevel
+der køres efter opstart. Til sidst er <e>&quot;nonetwork&quot;</e>
+(intet netværk) som fungerer udelukkende som et eksempel.
+</p>
+
+<p>Runlevelerne hører til i <path>/etc/runlevels</path>, i et
+underbibliotek opkaldt efter runlevelen; dette underbibliotek er
+fyldt med symbolske sammenkædninger til ydelser der ejes af runlevelen.
+
+<note>Den foretrukne måde at tilføje eller fjerne ydelser bliver
+diskuteret i sektionen &quot;Værktøjer/hjælpescript&quot;.</note>
+</p>
+
+<p>Som det allerede er nævnt kan navnet ændres til hvad der nu end
+passer brugeren, da reglen til indgangen i <path>/etc/inittab</path>
+også ændres til at afspejle default-runlevelens nye navn.
+
+<impo>En undtagelse til reglen der bør blive lagt mærke til, er 
+<e>&quot;boot&quot;</e> runlevelen.</impo>
+
+<warn>Du bør venligst IKKE ændre navnet på <e>&quot;boot&quot;</e>
+runlevelen, da dette vil få ting til at gå i stykker!</warn>
+</p>
+
+<p>Scriptet <path>/sbin/rc</path> får alt dette til at virke og kan
+bruges til hurtigt at skifte mellem virtuelle runleveler.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Virtuelle runleveler</title>
+<body>
+
+<p>Fordi runleveler ikke er bliver bundet statisk til dem, der er i
+init, kan der være mange flere runleveler end det antal, init
+understøtter. Dette gør brugeren i stand til at lave profiler eller
+virtuelle runleveler, alt afhængigt af behovet.
+</p>
+
+<p>For eksempel kan en laptop bruger have to forskellige runleveler, kaldet &quot;online&quot;
+og &quot;offline&quot;. Dette vil tillade en aktiv runlevel, når PCMCIA
+netkortet er sat i og en anden aktiv runlevel når det ikke er. PCMCIA
+scriptet kan så blive konfigureret til at kalde <c>&quot;/sbin/rc
+online&quot;</c> eller <c>&quot;/sbin/rc offline&quot;</c> som det nu
+er passende, for at starte eller stoppe de rigtige ydelser alt
+afhængigt af statusen af PCMCIA netkortet.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Runleveler og XFree86</title>
+<body>
+
+<p>I Gentoos ånd har vi ikke en runlevel forbundet til X, men hellere
+et opstartsscript. Det kaldes &quot;xdm&quot; og kan tilføjes til
+enhver runlevel, hvis brugeren ønsker det.
+
+<note>Det bør være stadard runlevel som brugeren ønsker at have den i</note>
+
+<warn>At tilføje den til boot-runlevelen kan resultere i uønskede bi-effekter.</warn>
+</p>
+   
+<p>Som standard, hvis du kom til at køre xdm, gdm eller kdm før dine
+gettyer blev startet, ville X blive startet på den næste tilgængelige
+konsol. På langsommere bokse er dette ikke noget problem hvis "Desktop
+Manager"-ydelsen bliver startet i slutningen af runlevelens init
+proces. Gettyerne vil starte før X og den vil så starte på konsol 7
+som den bør. På hurtigere bokse vil dette ikke være tilfældet. X
+starter før den getty der normalt starter på konsol nr. 2. Når
+gettyen starter, tager den kontrollen af tastaturet og Desktop
+Manageren mister keyboard understøttelse.
+</p>
+
+<p>Dette løses ved at have DM'ens opstartsscript på en af initernes
+ekstra runleveler, nemlig runlevel 'a'. Da runlevel 'a' ikke er en
+rigtig runlevel, kalder vores &quot;xdm&quot; script bare
+<c>&quot;telinit a&quot;</c>. Dette programlægger alle ydelserne i
+runlevel 'a' til at køre efter den nuværende runlevel, dvs. efter at
+alle gettyerne er oppe.
+
+<note>Mere info om runlevel 'a' kan findes ved at læse inits man sider.</note>
+</p>
+   
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>RC-Scripts</title>
+<section>
+<body>
+
+<p>RC-Scripts er script der definerer de basale funktioner i hver
+ydelse og afhængighederne for opstart. De hører til i <path>/etc/init.d/</path>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Basalt Layout for et rc-script</title>
+   
+<body>
+<pre caption="rc-script layout">
+#!/sbin/runscript
+ 
+depend() {
+    need bar
+}
+ 
+start() {
+    ebegin &quot;Starting foo&quot;
+    /sbin/foo
+    eend $? &quot;Failed to start foo&quot;
+}
+ 
+stop() {
+    ebegin &quot;Stopping foo&quot;
+    kill $(cat /var/run/foo.pid)
+    eend $? &quot;Failed to stop foo&quot;
+}
+</pre>
+
+<p>
+<note>Oversætteren er &quot;/sbin/runscript&quot;.</note>
+<note>&quot;depend&quot; funktionen er valgfri.</note>
+<note>Ethvert rc-script har brug for minimum &quot;start&quot; funktionen.</note>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Kontrol af opstart</title>
+<body>
+
+<p>Den generelle rækkefølge for opstart af ydelser i en runlevel er
+alfabetisk. Dette er pga. den rækkefølge som outputtet fra <path>/bin/ls</path> generer.
+</p>
+
+<p>Den primære metode til at afvige fra standard opstartsrækkefølgen
+er afhængigheder. Som et alternativ, hvis der ikke er nogen sammenhæng
+mellem ydelserne, kan ordenstyper bruges.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Afhængighedstyper</title>
+<section>
+<body>
+
+<p>De fleste ydelser har forbindelse eller er afhængige af andre ydelser.
+</p>
+
+<p>Postfix for eksempel, har brug for at netværket er oppe at køre, på
+samme måde som en system logger.
+</p>
+
+<p>Samba på den anden side har brug for at netværket er oppe. Hvis
+CUPS er nødvendig for at der kan printes derimod, skal cupsd startes
+før samba. Bemærk at cups er ikke kritisk for at starte samba.
+</p>
+
+<p>Vi har således to måder til at udtrykke afhængigheder mellem
+forskellige ydelser. Disse afhængigheder er altid gyldige, hvis
+runlevelen som en helhed har ændret sig og hvis en ydelse bliver
+startet eller stoppet efter boot.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>NEED afhængighedstypen</title>
+<body>
+
+<p>Denne bruges hvis en ydelse er kritisk for opstarten af af din
+nuværende ydelse.
+</p>
+
+<pre caption="at tilføje logger og net som en NEED afhængighed">
+depend() {
+    need net logger
+}
+</pre>
+
+<p>
+<note>Ydelserne nævnt efter <e>NEED</e> er kritiske for at den
+nuværende ydelse bliver startet i den rigtige rækkefølge.  Den
+nuværende ydelse vil således ikke kunne starte hvis nogen af
+afhængighederne ikke starter.
+</note>
+
+<impo>Enhver ydelse i en <e>NEED</e> linie vil blive startet også
+selvom den IKKE er tilføjet to den nuværende eller 
+<e>&quot;boot&quot;</e> runlevel.</impo>
+
+<e>NEED</e> er derfor en &quot;stærk&quot; afhængighed.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>USE-afhængighedstypen</title>
+<body>
+
+<p>Ydelsen er ikke kritisk for opstarten af den nuværende ydelse, men
+bør startes inden den nuværende bliver brugt.
+</p>
+
+<pre caption="at tilføje portmap som en USE afhængighed til netmount">
+depend() {
+    use portmap
+}
+</pre>
+
+<p>Netmount kan som standard klare NFS mountning, men er kun afhængig
+af portmap, hvis den bliver tilføjet til den nuværende eller boot
+runlevelen. Enhver bruger med en eller flere NFS mount-punkter, bør som
+standard tilføje portmap til default-runlevelen, og derved få
+netmount til at se portmap som en USE afhængighed og starte den før
+sig selv.
+</p>
+
+<p>
+<impo>Enhver ydelse i <e>USE</e> linien <e>*skal*</e> være tilføjet til
+den nuværerende eller boot-runlevel for at blive betragtet som en gyldig
+<e>USE</e>-afhængighed.</impo>
+
+<e>USE</e> er derfor en &quot;svag&quot; afhængighed.
+</p>
+
+<p>
+<note>Hvis en vilkårlig ydelse i en <e>USE</e> linie ikke starter, så
+starter den nuværende ydelse stadig, idet at ydelsen i <e>USE</e>
+linien ikke er kritisk for opstarten.</note>
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>At kontrollere opstartsrækkefølgen uden afhængigheder</title>
+<section>
+<body>
+
+<p>Hvis der ikke eksisterer noget afhængighedsforhold mellem to
+ydelser, men det stadig er nødvendigt eller ønskeligt eksplisit at
+starte en ydelse efter en anden, kan man bruge <e>AFTER</e> og
+<e>BEFORE</e> forholdene.
+
+<note>Disse to typer er kun gyldige under et runlevel skift.</note>
+</p>
+
+<p>Disse to kan som en mulighed understøtte &quot;*&quot; globben for at
+inkludere alle andre ydelser:
+</p>
+
+<pre caption="et glob eksempel med AFTER">
+depend() {
+    after *
+}
+</pre>
+
+<p>Dette vil medføre at local starter <e>*efter*</e> alle andre ydelser.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>BEFORE rækkefølge typen</title>
+<body>
+
+<p>Den nuværende ydelse bliver startet <e>*før*</e> de ydelser der er
+listet i <e>BEFORE</e> linien.
+</p>
+
+<pre caption="lad foo starte før bar (et udsnit af foo)">
+depend() {
+   before bar
+}
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>AFTER rækkefølge typen</title>
+<body>
+
+<p>Den nuværende ydelse bliver startet <e>*efter*</e> dem der er
+listet i <e>AFTER</e> linien.
+</p>
+
+<pre caption="lad bar starte efter foo (et udsnit af bar)">
+depend() {
+    after foo
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Virtuelle ydelser</title>
+<section>
+<body>
+
+<p>Ydelser kommer, som de fleste ting i unix-verdenen i dag, med mange
+forskellige farver og smag. Det er som regel op til
+brugeren/administratoren af vælge hvilken en der bliver brugt.
+</p>
+
+<p>System loggere er et eksampel. Da dette blev skrevet havde Gentoo
+Linux brugere fire forskellige at vælge imellem. Alle ydelser der har
+brug for at en system logger kører før opstart kan nu ikke <e>NEED</e>
+alle fire. At <e>USE</e> dem er også for svagt.
+</p>
+
+<p>Dette er hvor virtuelle ydelser og <e>PROVIDE</e> typen kommer ind
+i sammenhængen.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>PROVIDE-typen</title>
+<body>
+
+<p><e>PROVIDE</e>-typen definerer en virtuel ydelser, som andre
+ydelser kan <e>NEED</e> eller <e>USE</e>.
+</p>
+
+<pre caption="sysklogd provid'er logger">
+depend() {
+    provide logger
+}
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>LOGGER, den virtuelle ydelse</title>
+<body>
+
+<p><e>LOGGER</e> er en prædefineret virtuel ydelse, som bliver
+providet af alle system loggerne. Den kan bruges med enten <e>NEED</e> eller <e>USE</e> afhængigheds typerne.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>NET, den virtuelle ydelse</title>
+<body>
+
+<p><e>NET</e>-ydelsen er en anden virtuel ydelse, men ikke ligesom
+<e>LOGGER</e>, den <e>PROVIDER</e> ikke en anden ydelse.
+</p>
+
+<p>
+<impo>For at provide <e>NET</e> den virtuelle ydelse, skal en ydelse:
+<ul>
+<li>Være tilføjet til den nuværende eller boot-runlevelen</li>
+<li>Have &quot;net.&quot; overstået.</li>
+<li>Den del efter &quot;net.&quot; skal være navngivet efter det
+faktiske netværksgrænseflade (net.eth0 eller net.ppp1 eksempelvis).</li>
+</ul>
+</impo>
+</p>
+
+<p>For at enhver gyldig net.* ydelse vil $IFACE blive navnet på
+ netværksgrænsefladen
+(&quot;eth0&quot; for net.eth0 som eksempel).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Standard kommandolinie muligheder</title>
+<section>
+<body>
+
+<p>Enhver ydelse kan bliver kaldt med enhver af de standard muligheder
+der eksisterer. Alle dem der nævnes er allerede defineret, bortset fra
+<e>START</e> og <e>STOP</e>, som brugeren bør definere som funktioner
+i hans rc-script.
+
+<impo><e>start()</e> funktionen <e>skal</e> være defineret.</impo>
+<note><e>stop()</e> funktionen er mindre vigtig og kan udelades.</note>
+</p>
+
+<p>
+<note>Generelt definerer brugeren kun <e>start()</e>,<e>stop()</e> og
+<e>restart()</e>. Resten er internt og bør ikke bruges.</note>
+</p>
+
+<pre caption="At starte httpd ydelsen">
+# <c>/etc/init.d/httpd start</c>
+</pre>
+
+<p>
+<note>Kommandolinie muligheder kan blive sat i rækkefølge.</note>
+</p>
+
+<pre caption="pause/start net.eth0">
+# <c>/etc/init.d/net.eth0 pause start</c>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>START/STOP muligheden</title>
+<body>
+
+<p><e>START</e>-ydelsen inklusiv enhver ydelse som den afhænger af.
+</p>
+
+<p><e>STOP</e>-ydelsen inklusiv enhver ydelse som den afhænger af.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>RESTART muligheden</title>
+<body>
+
+<p>Ydelsen skal være startet for at <e>RESTART</e> virker.
+Den vil genstarte ydelsen sammen med alle de ydelser den er afhængige
+af den.
+
+<impo>Hvis en skræddersyet <e>restart()</e> funktion er defineret, så
+bør brugeren bruge <e>&quot;svc_start()&quot;</e>
+og <e>&quot;svc_stop()&quot;</e> for at starte og stoppe denne ydelse.</impo>
+
+<note>Dette bliver gjort for at håndtere alle afhængige ydelser korrekt.</note>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>PAUSE muligheden</title>
+<body>
+
+<p>Dette vil stoppe denne ydelse, men til forskel fra <e>STOP</e>, vil
+ingen af de afhængige ydelser blive stoppet.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>ZAP muligheden</title>
+<body>
+
+<p>Resetter statusen på ydelsen til stoppet.
+
+<note>Bemærk at ingen af kommandoerne i <e>stop()</e> funktionen
+bliver eksekveret. Brugeren bør derfor lave en nødvendig oprydning.</note>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>INEED/NEEDSME mulighederne</title>
+<body>
+
+<p><e>INEED</e> lister de ydelser som denne ydelse <e>NEED</e>s (kræver).
+</p>
+
+<p><e>NEEDSME</e> lister de ydelser som <e>NEED</e>(kræver) denne ydelse.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>IUSE/USESME mulighederne</title>
+<body>
+
+<p><e>IUSE</e> lister de ydelser som den ydelse, <e>USE</e> (bruges).
+</p>
+
+<p><e>USESME</e> lister de ydelser som <e>USE</e> (bruges) af ydelser.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>BROKEN muligheden</title>
+<body>
+
+<p>Denne lister de manglende ydelser (hvis der er nogen) som denne
+ydelse <e>NEED</e>s (kræver).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>At tilføje skræddersyede kommandolinie muligheder</title>
+<section>
+<body>
+
+<p>Det er relativt nemt at tilføje skræddersyede kommandolinie
+muligheder. En funktion med mulighedens navn skal være defineret i
+rc-scriptet og være tilføjet til <e>$opts</e> variablen som det er
+vist nedenfor.
+</p>
+
+<pre caption="foo som en skræddersyet mulighed">
+opts=&quot;${opts} foo&quot;
+ 
+foo() {
+    ............
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfiguration</title>
+<section>
+<body>
+
+<p>Konfiguration bør generelt blive gjort via miljøvariabler. Disse
+bør derimod ikke blive defineret i rc-scriptet, men i en af tre mulige
+konfigurationsfiler.
+</p>
+
+<p>En der er specifik for rc-scriptet og to globale konfiguration filer:
+</p>
+
+<pre caption="konfiguration filer for rc-script">
+<path>/etc/conf.d/&lt;name of rc-script&gt;</path>
+<path>/etc/conf.d/basic</path>
+<path>/etc/rc.conf</path>
+</pre>
+
+<p>
+<note>Disse tre konfigurationsfiler bliver automatisk "kodet" i den
+nævnte rækkefølge.</note>
+
+<impo>Alle <e>NET</e> ydelser "koder" også <path>/etc/conf.d/net</path></impo>
+<!-- source er oversat til kode, det er langt fra optimalt -->
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Værktøjer/hjælpescript</title>
+
+<section>
+<title>Rc-update værktøjet</title>
+<body>
+
+<p>rc-update er det primære værktøj til at tilføje og fjerne ydelser
+til og fra en runlevel. Den kalder også &quot;depscan.sh&quot; for at
+opdatere afhængighedscachen.
+</p>
+
+<pre caption="tilføj metalog til default runlevel'en">
+# <c>rc-update add metalog default</c>
+</pre>
+
+<pre caption="fjern metalog fra default runlevel'en">
+# <c>rc-update del metalog default</c>
+</pre>
+
+<p>
+<note>At køre rc-update uden argumenter giver mere hjælp.</note>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Hjælpescriptet depscan.sh</title>
+<body>
+
+<p>For at have alle aspekter med, nævner vi lige depscan.sh her. Det
+bruges til at skabe en afhængigheds cache der basalt set er et kort
+over afhængigheder imellem ydelser.
+</p>
+
+<p>Det bør køres når et nyt rc-script bliver tilføjet til
+<path>/etc/init.d/</path>, men da rc-update kalder det automatisk,
+bør de fleste brugere ikke have brug for at køre det.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
+
