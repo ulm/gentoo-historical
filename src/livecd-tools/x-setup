@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/x-setup,v 1.9 2005/02/11 00:51:43 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/x-setup,v 1.10 2005/02/17 13:45:22 wolf31o2 Exp $
 
 # Check for an xorg.conf
 if [ ! -e /etc/X11/xorg.conf ]
@@ -27,24 +27,34 @@ get_video_cards() {
 	VIDEO_CARDS=`/sbin/lspci | grep VGA`
 	NUM_CARDS=`echo ${VIDEO_CARDS} | wc -l`
 	if [ ${NUM_CARDS} -eq 1 ]; then
-		NVIDIA=`echo ${VIDEO_CARDS} | grep NV`
+		NVIDIA=`echo ${VIDEO_CARDS} | grep "nVidia Corporation"`
 		ATI=`echo ${VIDEO_CARDS} | grep "ATI Technologies"`
 		if [ -n "${NVIDIA}" ]; then
 			NVIDIA_CARD=`echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}'`
-			if [ `echo ${NVIDIA_CARD} | cut -dV -f2` -ge 4 ]; then
-				echo "NVIDIA card detected."
-				GLTYPE=nvidia
+			if [ -n "${NVIDIA_CARD}" ]; then
+				if [ `echo ${NVIDIA_CARD} | cut -dV -f2` -ge 4 ]; then
+					echo "NVIDIA card detected."
+					GLTYPE=nvidia
+				else
+					echo "No OpenGL-capable card found."
+					GLTYPE=xorg-x11
+				fi
 			else
 				echo "No OpenGL-capable card found."
 				GLTYPE=xorg-x11
 			fi
 		elif [ -n "${ATI}" ]; then
 			ATI_CARD=`echo ${ATI} | awk 'BEGIN {RS=" "} /(R|RV|RS)\d{3}/ {print $1}'`
-			if [ `echo ${ATI_CARD} | cut -dS -f2` -ge 350 ] || \
-				[ `echo ${ATI_CARD} | cut -dV -f2` -ge 250 ] || \
-				[ `echo ${ATI_CARD} | cut -dR -f2` -ge 200 ]; then
-					echo "ATI card detected."
-					GLTYPE=ati
+			if [ -n "${ATI_CARD}" ]; then
+				if [ `echo ${ATI_CARD} | cut -dS -f2` -ge 350 ] || \
+					[ `echo ${ATI_CARD} | cut -dV -f2` -ge 250 ] || \
+					[ `echo ${ATI_CARD} | cut -dR -f2` -ge 200 ]; then
+						echo "ATI card detected."
+						GLTYPE=ati
+				else
+					echo "No OpenGL-capable card found."
+					GLTYPE=xorg-x11
+				fi
 			else
 				echo "No OpenGL-capable card found."
 				GLTYPE=xorg-x11
