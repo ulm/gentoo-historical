@@ -1,0 +1,434 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-config.xml,v 1.1 2004/01/27 15:37:29 chiguire Exp $ -->
+
+<sections>
+<section>
+<title>Zona horaria</title>
+<body>
+
+<p>
+Ahora necesita seleccionar su zona horaria para que su sistema sepa donde está
+localizado. Busque su zona horaria en <path>/usr/share/zoneinfo</path>, después
+haga un enlace simbólico a <path>/etc/localtime</path> usando <c>ln</c>:
+</p>
+
+<pre caption="Configurando la información de la zona horaria">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suponga que quiere usar GMT:)</comment>
+# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Información del Sistema de Ficheros</title>
+<subsection>
+<title>Que es el fstab?</title>
+<body>
+
+<p>
+Bajo linux, todas las particiones usadas por el sistema deben estar listadas en
+<path>/etc/fstab</path>. Este fichero contiene los puntos de montaje de esas
+particiones (dónde son vistas en la estructura del sistema de ficheros), como
+deben ser montadas (opciones especiales) y cuando (automáticamente o no, si los usuarios pueden montarlas o no, etc.).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Creando el /etc/fstab</title>
+<body>
+
+<p>
+<path>/etc/fstab</path> usa una sintaxis especial. Cada línea está formada por
+seis campos, separados por espacios en blanco (espacio(s), tabuladores o una
+combinación). Cada campo tiene su propio significado:
+</p>
+
+<ul>
+<li>
+  El primer campo muestra la <b>partición</b> descrita (la ruta al fichero de
+  dispositivo)
+</li>
+<li>
+  El segundo campo muestra el <b>punto de montaje</b> donde la partición debe
+  montarse
+</li>
+<li>
+  El tercer campo muestra el <b>sistema de ficheros</b> usado por la partición
+</li>
+<li>
+  El cuarto campo muestra las <b>opciones de montaje</b> usadas por 
+  <c>mount</c> cuando trata de montar la partición. Como cada sistema de
+  ficheros tiene sus propias opciones de montaje, le animamos a leer la página
+  man de mount (<c>man mount</c>) para un listado completo. Las opciones
+  múltiples están separadas por comas.
+</li>
+<li>
+  El quinto campo es usado por <c>dump</c> para determinar si la partición
+  requiere ser volcada o no. En general puede dejar esto como <c>0</c> (cero).
+</li>
+<li>
+  El sexto campo es usado por <c>fsck</c> para determinar el órden en que los
+  sistemas de ficheros deben ser comprobados si el sistema no se apagó
+  correctamente. La partición raíz debe tener un <c>1</c> mientras que el resto
+  puede tener <c>2</c> (o <c>0</c> en el caso en que la comprobación del
+  sistema de ficheros no sea necesaria.
+</li>
+</ul>
+
+<p>
+Entonces ejecute <c>nano</c> (o su editor favorito) para crear su
+<path>/etc/fstab</path>:
+</p>
+
+<pre caption="Abriendo el fichero /etc/fstab">
+# <i>nano -w /etc/fstab</i>
+</pre>
+
+<p>
+Vamos a ver como anotaremos las opciones para la partición /boot 
+<path>/boot</path>. Esto es solo un ejemplo, así que si su arquitectura no
+requiere una partición <path>/boot</path>, no lo copie al pie de la letra.
+</p>
+
+<p>
+En nuestro ejemplo de particionamiento x86 estándar <path>/boot</path> es la 
+partición <path>/dev/hda1</path>, con un sistema de ficheros <c>ext2</c>.
+Esta no debe ser montada automáticamente (<c>noauto</c>) pero necesita ser
+comprobada. Entonces escribiríamos:
+</p>
+
+<pre caption="Una línea /boot de ejemplo para el /etc/fstab">
+/dev/hda1   /boot     ext2    noauto        1 2
+</pre>
+
+<p>
+Para aumentar el rendimiento, la mayoría de usuarios podrían querer agregar la
+opción <c>noatime</c> como opción de montaje, que desemboca en un sistema más
+rápido, puesto que los tiempos de acceso no son registrados (de todas formas,
+no necesitará esto en general):
+</p>
+
+<pre caption="Una línea /boot mejorada para el /etc/fstab">
+/dev/hda1   /boot     ext2    noauto,noatime    1 2
+</pre>
+
+<p>
+Si seguimos estos pasos, acabaríamos con las siguientes tres líneas (para
+<path>/boot</path>, <path>/</path> y la partición de swap):
+</p>
+
+<pre caption="Tres líneas del /etc/fstab">
+/dev/hda1   /boot     ext2    noauto,noatime    1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+</pre>
+
+<p>
+Para finalizar, debería agregar una línea para <path>/proc</path>, <c>tmpfs</c>
+(requerido) y sus dispositivos CD-ROM (y por supuesto, si tiene otras
+particiones o dispositivos, para ellos también):
+</p>
+
+<pre caption="Un ejemplo de /etc/fstab completo">
+/dev/hda1   /boot     ext2    noauto,noatime    1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+
+none        /proc     proc    defaults          0 0
+none        /dev/shm  tmpfs   defaults          0 0
+
+/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+</pre>
+
+<p>
+<c>auto</c> provoca que <c>mount</c> intente adivinar el sistema de archivos
+(se recomienda para los dispositivos extraíbles ya que pueden ser creados con
+distintos sistemas de ficheros) y <c>user</c> hace posible a los usuarios que
+no pertenezcan a root monten el CD.
+</p>
+
+<p>
+Ahora haga uso del ejemplo anterior, para crear su <path>/etc/fstab</path>.
+Si es un usuario de SPARC, además debería añadir la siguiente línea a su 
+<path>/etc/fstab</path>:
+</p>
+
+<pre caption="Añadiendo el sistema de ficheros openprom al /etc/fstab">
+none        /proc/openprom  openpromfs    defaults      0 0
+</pre>
+
+<p>
+Si necesita <c>usbfs</c>, Añada la siguiente línea al <path>/etc/fstab</path>:
+</p>
+
+<pre caption="Añadiendo el sistema de ficheros usbfs al /etc/fstab">
+none        /proc/bus/usb   usbfs         defaults      0 0
+</pre>
+
+<p>
+Repase su <path>/etc/fstab</path>, guarde los cambios y salga para continuar.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Información de red</title>
+<subsection>
+<title>Nombre de Host, Nombre de Dominio, etc.</title>
+<body>
+
+<p>
+Una de las elecciones que un usuario ha de hacer es el nombre de su PC. Esto
+parece muy fácil, pero <e>muchos</e> usuarios tienen dificultades eligiendo el
+nombre apropiado para su PC-Linux. Para acelerar las cosas, sepa que el nombre
+que elija puede cambiarlo mas tarde. Para el caso que nos preocupa, usted puede
+llamar su sistema simplemente <c>tux</c> y su dominio <c>redcasera</c>.
+</p>
+
+<p>
+Usaremos esos nombres en los siguientes ejemplos. Primero ajustaremos el nombre
+de host:
+</p>
+
+<pre caption="Ajustando el nombre de Host">
+# <i>echo tux &gt; /etc/hostname</i>
+</pre>
+
+<p>
+En segundo lugar ajustaremos el nombre del dominio:
+</p>
+
+<pre caption="Ajustando el nombre de dominio">
+# <i>echo redcasera &gt; /etc/dnsdomainname</i>
+</pre>
+
+<p>
+Si dispone de un dominio NIS (si no sabe lo que es, entonces no lo tiene),
+necesita definirlo también: 
+</p>
+
+<pre caption="Ajustando el nombre del dominio NIS">
+# <i>echo nis.redcasera &gt; /etc/nisdomainname</i>
+</pre>
+
+<p>
+Ahora añada el guión <c>domainname</c> al nivel de arranque por defecto:
+</p>
+
+<pre caption="Agregando domainname al nivel de arranque por defecto">
+# <i>rc-update add domainname default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurando su Red</title>
+<body>
+
+<p>
+Antes de llegar a experimentar esa sensación "Hey, ya lo tengo todo", debes
+recordar que la red que configuraste en el inicio de la instalación de Gentoo 
+fue tan solo para la instalación. A partir de ahora vamos a configurar la red
+permanentemente para su sistema Gentoo.
+</p>
+
+<p>
+Toda la información de red esta reunida en <path>/etc/conf.d/net</path>. Este
+fichero usa una directa, aunque no intuitiva sintaxis si no sabes como
+configurar una red manualmente. Pero no te asustes, te lo explicaremos todo :)
+</p>
+
+<p>
+Primero abra <path>/etc/conf.d/net</path> con su editor favorito (Se usará 
+<c>nano</c> en este ejemplo):
+</p>
+
+<pre caption="Abriendo /etc/conf.d/net para su edición">
+# <i>nano -w /etc/conf.d/net</i>
+</pre>
+
+<p>
+La primera variable que encontrará es <c>iface_eth0</c>. Usa la siguiente 
+sintaxis:
+</p>
+
+<pre caption="Sintaxis de la variable iface_eth0">
+iface_eth0="<i>&lt;su dirección ip&gt;</i> broadcast <i>&lt;su dirección broadcast&gt;</i> netmask <i>&lt;su máscara de red&gt;</i>"
+</pre>
+
+<p>
+Si usa DHCP (obtención automática de IP), debe asignar la variable
+<c>iface_eth0</c> a <c>dhcp</c>. No obstante, si necesita configurar su red
+manualmente y no está familiarizado con los términos usados, por favor lea la
+sección <uri link="?part=1&amp;chap=3#doc_chap4_sect3">Entendiendo la
+terminología de red</uri> si no lo ha hecho ya.
+</p>
+
+<p>
+Déjenos darle dos ejemplos; el primero usa DHCP, el segundo IP estática
+(192.168.0.2) con la máscara de red 255.255.255.0, broadcast 192.168.0.255 y la pasarela 192.168.0.1:
+</p>
+
+<pre caption="Ejemplos de /etc/conf.d/net">
+<comment>(Para DHCP:)</comment>
+iface_eth0="dhcp"
+
+<comment>(Para IP estática:)</comment>
+iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
+gateway="eth0/192.168.0.1"
+</pre>
+
+<p>
+Si posee distintas interfaces de red, cree variables <c>iface_eth</c> extra, 
+como <c>iface_eth1</c>, <c>iface_eth2</c> etc. La variable <c>gateway</c>
+no debe ser redefinida ya que solo puede asignar una pasarela por computadora.
+</p>
+
+<p>
+Ahora guarde la configuración y salga para continuar.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Inicio automático de red en el arranque</title>
+<body>
+
+<p>
+Para disponer de su interfaz de red activada en el arranque, necesita agregarla
+al nivel de ejecución por defecto (default). Si dispone de interfaces PCMCIA
+debe saltarse este paso puesto que las interfaces PCMCIA son iniciadas por el
+script de inicialización PCMCIA
+</p>
+
+<pre caption="Agregando net.eth0 al nivel de ejecución default">
+# <i>rc-update add net.eth0 default</i>
+</pre>
+
+<p>
+Si tiene distintas interfaces de red, necesitara crear los apropiados
+<path>net.eth1</path>, <path>net.eth2</path> etc. scripts de inicio. Puede usar
+<c>ln</c> para hacer esto:
+</p>
+
+<pre caption="Creando scripts de inicio extra">
+# <i>cd /etc/init.d</i>
+# <i>ln -s net.eth0 net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Anotando la Información de la Red</title>
+<body>
+
+<p>
+Necesita informar a su Linux sobre su red. Esto se define en 
+<path>/etc/hosts</path> y ayuda a resolver la IP de los nombres de host para
+las máquinas que no se resuelven por su servidor de nombres. Por ejemplo, si su
+red interna consiste en tres PCs llamados <c>jenny</c> (192.168.0.5), 
+<c>benny</c> (192.168.0.6) y <c>tux</c> (192.168.0.7 - este sistema) abra
+<path>/etc/hosts</path> y complete los valores:
+</p>
+
+<pre caption="Abriendo /etc/hosts">
+# <i>nano -w /etc/hosts</i>
+</pre>
+
+<pre caption="Completando la información de red">
+127.0.0.1     localhost
+192.168.0.5   jenny
+192.168.0.6   benny
+192.168.0.7   tux
+</pre>
+
+<p>
+Si su sistema es el único sistema (o los servidores de nombres se encargan
+de todas las resoluciones) una única línea es suficiente:
+</p>
+
+<pre caption="/etc/hosts para un solo PC o varios plenamente integrados">
+127.0.0.1     localhost   tux
+</pre>
+
+<p>
+Guarde y salga del editor para continuar.
+</p>
+
+<p>
+Si no tiene PCMCIA, puede continuar con <uri
+link="#doc_chap4">Información del Sistema</uri>. Los usuarios de PCMCIA
+deberían leer el siguiente apartado sobre PCMCIA.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Hacer funcionar el PCMCIA</title>
+<body>
+
+<p>
+Los usuarios de PCMCIA deben instalar primero el paquete <c>pcmcia-cs</c>:
+</p>
+
+<pre caption="Instalando pcmcia-cs">
+# <i>emerge --usepkg pcmcia-cs</i>
+</pre>
+
+<p>
+Cuando <c>pcmcia-cs</c> esté instalado, agregue <c>pcmcia</c> al nivel de
+arranque <e>default</e>:
+</p>
+
+<pre caption="Agregando pcmcia al nivel de arranque por defecto">
+# <i>rc-update add pcmcia default</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Información del sistema</title>
+<body>
+
+<p>
+Gentoo usa el fichero <path>/etc/rc.conf</path> para una configuración general
+del sistema. Abra el <path>/etc/rc.conf</path> y disfrute de todos los
+comentarios que hay en él :)
+</p>
+
+<pre caption="Abriendo el fichero /etc/rc.conf">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+
+<p>
+Como puede ver, este fichero está bien comentado para ayudarle a ajustar las
+variables de configuración necesarias. Tenga especial cuidad con <c>KEYMAP</c>:
+si selecciona un <c>KEYMAP</c> incorrecto, conseguirá extraños resultados
+escribiendo en su teclado.
+</p>
+
+<note>
+Los usuarios de sistemas SPARC basados en USB y los clones de SPARC podrían
+necesitar seleccionar un mapeo del teclado i386 (como "us") en vez de el
+"sunkeymap".
+</note>
+
+<p>
+Cuando haya acabado de configurar el <path>/etc/rc.conf</path>, guarde y salga,
+entonces puede continuar con <uri link="?part=1&amp;chap=9">Configurando el
+Gestor de Arranque</uri>.
+</p>
+
+</body>
+</section>
+</sections>
