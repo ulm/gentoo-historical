@@ -1,15 +1,20 @@
-# Copyright 2004 Ian Leitch
+Config.WaitThreadsTimeout * State.ActiveThreads# Copyright 2004 Ian Leitch
 # Copyright 2004 Scott Hadfield
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Threading.py,v 1.3 2004/11/09 18:56:22 port001 Exp $
+# $Id: Threading.py,v 1.4 2004/11/10 15:32:44 port001 Exp $
 #
 
 __modulename__ = "Threading"
 
+import sys
+from time import time
 from threading import Thread, Condition
+
 import State
+import Config
+from Logging import err
 
 class Threader:
     """ A class for running functions in seperate threads.
@@ -44,7 +49,12 @@ class Threader:
 
 def wait_threads():
 
+    max_time = int("%0d" % time()) + (Config.WaitThreadsTimeout * State.ActiveThreads)
+
     while 1:
-        # FIXME: Implement a timeout
         if State.ActiveThreads == 0:
             return
+        if int("%0d" % time()) >= max_time:
+            err("Timed out waiting for %d threads" % State.ActiveThreads,
+                                                          __modulename__)
+            sys.exit(0)

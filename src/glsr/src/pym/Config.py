@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.8 2004/11/03 14:09:30 port001 Exp $
+# $Id: Config.py,v 1.9 2004/11/10 15:32:44 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -83,3 +83,6 @@ HTMLHeadersSent = False
 
 # Should all scripts being submitted require approval by an admin?
 RequireApproval = False
+
+# Time in seconds we should wait for each thread
+WaitThreadsTimeout = 3
