@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.21 2005/01/05 05:02:00 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.22 2005/01/05 07:52:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -18,7 +18,6 @@ from GLIException import *
 import commands
 
 class ArchitectureTemplate:
-
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		self._client_configuration = configuration
 		self._install_profile = install_profile
@@ -167,8 +166,33 @@ class ArchitectureTemplate:
 			
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
-		pass
-		
+		#{   1: {   'end': 1999871,          'format': False,            'mb': 0,
+		#'mountopts': '',   'mountpoint': '',   'start': 63,    'type': 'linux-swap'},
+		#2: {   'end': 240121727, 'format': False,  'mb': 0, 'mountopts': '',  
+		#'mountpoint': '',  'start': 1999872,  'type': 'ext3'}}
+		#{'/dev/hdz': {1: {'end': 4, 'mb': 0, 'format': False, 'start': 0, 'mountopts': '', 'mountpoint': '', 'type': 'ext2', 'minor': 1}, 2: {'end': 129, 'mb': 0, 'format': False, 'start': 5, 'mountopts': '', 'mountpoint': '', 'type': 'linux-swap', 'minor': 2}, 3: {'end': 12579, 'mb': 0, 'format': False, 'start': 130, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 3}, 4: {'end': 24320, 'mb': 0, 'format': False, 'start': 12580, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 4}}}
+
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+		#in parts['/dev/hda']
+			for partition in parts[device]:
+				print parts[device][partition]
+				mountpoint = parts[device][partition]['mountpoint']
+				mountopts = parts[device][partition]['mountopts']
+				minor = str(parts[device][partition]['minor'])
+				partition_type = parts[device][partition]['type']
+				if mountpoint:
+					if mountopts:
+						mountopts = "-o "+mountopts+" "
+					if partition_type:
+						partition_type = "-t "+partition_type+" "
+					ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint)
+					if not GLIUtility.exitsuccess(ret):
+						raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
+				if partition_type == "linux-swap":
+					ret = GLIUtility.spawn("swapon "+device+minor)
+					if not GLIUtility.exitsuccess(ret):
+						raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
 		pass
@@ -623,6 +647,10 @@ class ArchitectureTemplate:
 			if not GLIUtility.exit_success(exitstatus):
 				raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
 
+	def install_bootloader(self):
+		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
+		pass
+		
 	def _cylinders_to_sectors(self, minor, start, end, sectors_in_cylinder):
 		cylinders = int(end) - int(start) + 1
 		total_sectors = cylinders * int(sectors_in_cylinder)
