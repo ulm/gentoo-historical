@@ -9,8 +9,8 @@
     the possibility of breakage from importing a dodgy module
     a function might not use. """
 
-__revision__ = "$Id: Error.py,v 1.2 2004/07/24 16:10:08 port001 Exp $"
-__rating__ = "9.06/10"
+__revision__ = "$Id: Error.py,v 1.3 2004/07/24 16:11:22 port001 Exp $"
+__rating__ = "9.09/10"
 __modulename__ = "Error"
 
 def exception_handler(tbtype, value, traceb):
