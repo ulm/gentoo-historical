@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.10 2004/08/17 15:32:04 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.11 2004/08/24 22:01:21 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -21,6 +21,7 @@ Usage:
 """
 
 import xml.sax, string, GLIUtility
+from GLIException import *
 
 class ClientConfiguration(xml.sax.ContentHandler):
 
@@ -65,6 +66,9 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._root_passwd = ""
 		self._interactive = True
 		self._kernel_modules = ()
+		self._ftp_proxy = ""
+		self._http_proxy = ""
+		self._rsync_proxy = ""
 
 		# Internal SAX state info
 		self._xml_elements = [];
@@ -82,7 +86,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	
 	def set_profile_uri(self, profile_uri):
 		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
-			raise "URIError", "The URI specified is not valid!"
+			raise URIError('fatal', 'set_profile_uri',"The URI specified is not valid!")
 
 		self._profile_uri = profile_uri
 
@@ -127,41 +131,40 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 	shared_client_configuration = classmethod(shared_client_configuration)
 
-	def set_network_type(self, type):
-		if type == 'static' and self._xml_current_attr != None:
-			attr = self._xml_current_attr
+	def set_network_type(self, network_type, attr=None):
+		if network_type == 'static' and (attr != None or self._xml_current_attr != None):
 			ip = broadcast = netmask = interface = ""
 
-			for attrName in attr.getNames():
-				if attrName == 'ip':
-					ip = str(attr.getValue(attrName))
-				elif attrName == 'broadcast':
-					broadcast = str(attr.getValue(attrName))
-				elif attrName == 'netmask':
-					netmask = str(attr.getValue(attrName))
-				elif attrName == 'interface':
-					interface = str(attr.getValue(attrName))
+			if attr == None:
+				attr = self._xml_current_attr
 
-			self.set_network_data((interface, ip, broadcast, netmask))
-		elif type == 'static':
-			raise "NoInterfaceError","No interface information specified!"
+			if type(attr) != tuple:
+				for attrName in attr.keys():
+					if attrName == 'ip':
+						ip = str(attr.get(attrName))
+					elif attrName == 'broadcast':
+						broadcast = str(attr.get(attrName))
+					elif attrName == 'netmask':
+						netmask = str(attr.get(attrName))
+					elif attrName == 'interface':
+						interface = str(attr.get(attrName))
 
-		elif type == "dhcp" and self._xml_current_attr != None:
+				attr = (interface, ip, broadcast, netmask)
+
+			self.set_network_data(attr)
+
+		elif network_type == 'static':
+			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
+
+		elif network_type == "dhcp" and self._xml_current_attr != None:
 			if 'interface' in self._xml_current_attr.getNames():
 				interface = str(self._xml_current_attr.getValue('interface'))
 				if not GLIUtility.is_eth_device(interface):
-					raise "InterfaceError", "Interface " + interface + " must be a valid device!"
+					raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
 				else:
 					self._network_data = (interface, None, None, None)
 
-		self._network_type = type
-
-	def set_network_type_nocheck(self, type):
-		"""
-		This sets the network type, but allows all of the checking
-		to be done from the frontend.
-		"""
-		self._network_type = type
+		self._network_type = network_type
 
 	def get_network_type(self):
 		return self._network_type
@@ -176,12 +179,20 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		netmask = network_info[3]
 
 		if not GLIUtility.is_eth_device(interface):
-			raise "InterfaceError", "Interface " + interface + " must be a valid device!"
+			raise InterfaceError('fatal','set_network_data', "Interface " + interface + " must be a valid device!")
 	
-		if ip != None and broadcast != None and netmask != None:
-			if not GLIUtility.is_ip(broadcast) and not GLIUtility.is_ip(netmask) and not GLIUtility.is_ip(ip):
-				raise "IPError", "broadcast, netmask and ip address must be valid IP addresses!"
-		
+		if ip != None:
+			if not GLIUtility.is_ip(ip):
+				raise IPAddressError('fatal','set_network_data', 'The specified IP is not a valid IP Address!')
+
+		if broadcast != None:
+			if not GLIUtility.is_ip(broadcast):
+				raise IPAddressError('fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
+
+		if netmask != None:
+			if not GLIUtility.is_ip(netmask):
+				raise IPAddressError('fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
+
 		self._network_data = network_info
 
 	def set_default_gateway(self, gateway, interface=""):
@@ -195,10 +206,10 @@ class ClientConfiguration(xml.sax.ContentHandler):
 				interface = self._xml_current_attr.getValue('interface')
 
 		if interface[0:3] not in ('eth', 'ppp', 'wla'):
-			raise "DefaultGateway", "Invalid interface!"
+			raise DefaultGatewayError('fatal','set_default_gateway', "Invalid interface!")
 
 		if not GLIUtility.is_ip(gateway):
-			raise "DefaultGateway", "The IP Provided is not valid!"
+			raise IPAddressError('fatal', 'set_default_gateway', "The IP Provided is not valid!")
 
 		self._default_gateway = (interface, gateway)
 
@@ -245,6 +256,24 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_kernel_modules(self):
 		return self._kernel_modules
 
+	def set_ftp_proxy(self, proxy):
+		self._ftp_proxy = proxy
+
+	def get_ftp_proxy(self):
+		return self._ftp_proxy
+
+	def set_http_proxy(self, proxy):
+		self._http_proxy = proxy
+
+	def get_http_proxy(self):
+		return self._http_proxy
+
+	def set_rsync_proxy(self, proxy):
+		self._rsync_proxy = proxy
+
+	def get_rsync_proxy(self):
+		return self._rsync_proxy
+
 	def startElement(self, name, attr): 
 		"""
 		XML SAX start element handler
@@ -267,7 +296,10 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/enable-ssh': self.set_enable_ssh,
 					'client-configuration/root-passwd': self.set_root_passwd,
 					'client-configuration/interactive': self.set_interactive,
-					'client-configuration/kernel-modules': self.set_kernel_modules
+					'client-configuration/kernel-modules': self.set_kernel_modules,
+					'client-configuration/ftp-proxy': self.set_ftp_proxy,
+					'client-configuration/http-proxy': self.set_http_proxy,
+					'client-configuration/rsync-proxy': self.set_rsync_proxy,
 				}
 
 		path = self._xml_element_path()
@@ -312,7 +344,10 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'log-file': self.get_log_file,
 					'enable-ssh': self.get_enable_ssh,
 					'root-passwd': self.get_root_passwd,
-					'interactive': self.get_interactive
+					'interactive': self.get_interactive,
+					'ftp-proxy': self.get_ftp_proxy,
+					'http-proxy': self.get_http_proxy,
+					'rsync-proxy': self.get_rsync_proxy,
 				}
 		data = "<client-configuration>"
 

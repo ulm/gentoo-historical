@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.6 2004/08/23 19:57:17 samyron Exp $
+$Id: GLIClientController.py,v 1.7 2004/08/24 22:01:21 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -15,6 +15,7 @@ Steps (based on the ClientConfiguration):
 """
 
 import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, sys
+from GLIException import *
 from threading import Thread, Event
 
 class GLIClientController(Thread):
@@ -25,8 +26,6 @@ class GLIClientController(Thread):
 			print "Using /etc/gli.conf..."
 			configuration = GLIClientConfiguration.ClientConfiguration()
 			configuration.parse('/etc/gli.conf')
-		else:
-				print "Configuration file not found and no function given to generate a valid configuration."
 
 		if install_profile == None:
 			if configuration != None:
@@ -78,8 +77,9 @@ class GLIClientController(Thread):
 			# The password specified in the configuration is encrypted.
 			status = GLIUtility.run_cmd('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
+		print "exit status =", status
 		if not GLIUtility.exitsuccess(status):
-			raise "PasswordError","Could not set the root password!"
+			raise PasswordError('warning', 'set_root_passwd()',"Could not set the root password!")
 
 	def configure_networking(self):
 		# Do networking setup right here.
@@ -95,7 +95,7 @@ class GLIClientController(Thread):
 					status = GLIUtility.run_cmd("dhcpcd", quiet=True)
 
 				if not GLIUtility.exitsuccess(status):
-					raise "DHCPError", "Failed to get a dhcp address for " + interface + "."
+					raise DHCPError('fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
 
 			elif type == "manual" and self._configuration.get_interactive():
 				# Drop to bash shell and let them configure it themselves
@@ -109,17 +109,17 @@ class GLIClientController(Thread):
 				# Configure the network from the settings they gave.
 				net_info = self._configuration.get_network_info()
 				if not GLIUtility.set_ip(net_info[0], net_info[1], net_info[2], net_info[3]):
-					raise "SetIPError", "Could not set the IP address!"
+					raise SetIPError('fatal', 'configure_networking', "Could not set the IP address!")
 
 				route = self._configuration.get_default_gateway()[1]
 				if not GLIUtility.set_default_route(route):
-					raise "DefaultRouteError", "Could not set the default route!"
+					raise DefaultRouteError('fatal','configure_networking', "Could not set the default route!")
 
 	def enable_ssh(self):
 		if self._configuration.get_enable_ssh():
 			status = GLIUtility.run_cmd("/etc/init.d/sshd start", quiet=True)
 			if not GLIUtility.exitsuccess(status):
-				raise "SSHError","Could not start SSH daemon"
+				raise SSHError('warning','enable_ssh',"Could not start SSH daemon!")
 			else:
 				print "GLI: SSH Started."
 

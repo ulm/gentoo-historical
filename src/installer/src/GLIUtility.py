@@ -7,6 +7,7 @@ The GLIUtility module contians all utility functions used throughout GLI.
 """
 
 import string, os, re, signal, time, shutil, sys, random
+from GLIException import *
 
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
@@ -140,7 +141,7 @@ def is_uri(uri):
 
 def strtobool(input):
 	if type(input) != str:
-		raise "InputError", "The input must be a string!"
+		raise InputError('fatal','strtobool',"The input must be a string!")
 
 	if string.lower(input) == 'true':
 		return True
@@ -181,10 +182,10 @@ def is_nfs(device):
 
 def set_ip(dev, ip, broadcast, netmask):
 	if not is_ip(ip) or not is_ip(netmask) or not is_ip(broadcast):
-		raise "IPAddressError", "ip, netmask and broadcast must be a valid IP!"
+		raise IPAddressError('fatal','set_ip', "ip, netmask and broadcast must be a valid IP's!")
 
 	if not is_eth_device(dev):
-		raise "EthDeviceError", "dev must be a valid ethernet device!"
+		raise EthDeviceError('fatal','set_ip',"dev must be a valid ethernet device!")
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
@@ -197,7 +198,7 @@ def set_ip(dev, ip, broadcast, netmask):
 
 def set_default_route(route):
 	if not is_ip(route):
-		raise "IPAddressError", "The default route must be an IP address!"
+		raise IPAddressError('fatal', 'set_default_route', "The default route must be an IP address!")
 
 	status = run_cmd("route add default gw " + route, quiet=True)
 
@@ -220,21 +221,18 @@ def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
 			try:
 				tty = os.open("/dev/vc/8", os.O_RDWR)
 				oldstdout = sys.stdout
+				oldstderr = sys.stderr
 				os.dup2(tty,sys.stdout.fileno())
+				os.dup2(tty,sys.stderr.fileno())
 			except OSError:
 				print "Could not open on tty8. Are you running as root?"
 				tty = None
 
-		ret = os.system(cmd)
+		os.execv('/bin/bash',['/bin/bash', '-c', cmd])
+		sys.exit(1) # Should never be reached.
 
-		if display_on_tty8 and tty != None:
-			os.close(tty)
-			sys.stdout = oldstdout
-
-		sys.exit(ret)
-	else:
-		status = os.waitpid(pid,0)
-		return status[1]
+	ret = os.waitpid(pid,0)[1]
+	return ret
 
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
@@ -316,7 +314,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	exitstatus = run_cmd("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
 
 	if not exitsuccess(exitstatus):
-		raise "UnpackTarballError", "Could not unpack tarball!"
+		raise UnpackTarballError('fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
 
 def emerge(package, binary=False, binary_only=False):
 	if binary_only:
