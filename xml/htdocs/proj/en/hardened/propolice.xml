@@ -14,8 +14,8 @@
    applications. It is a implemented as a patch to GCC.
 </abstract>
 
-<version>0.3</version>
-<date>24 March 2003</date>
+<version>0.4</version>
+<date>28 May 2003</date>
 
 <chapter>
 <title>What is ProPolice?</title>
@@ -83,7 +83,7 @@
    and a header file). There is also an optional diff that will cause
    stack protection to be enabled by default. I do not recommend this
    latter patch be applied, as it tends to cause problems with a number
-   of things, including kernel compilation. The <c>gcc-3.2.2-r3 ebuild</c>
+   of things, including kernel compilation. The <c>gcc-3.2.3-r1 ebuild</c>
    in portage is now patched for propolice support.
 </p>
 <p>
@@ -109,36 +109,21 @@
 <p>
 <b>Portage/glibc</b><br/><br/>
    The first, and probably most significant problem stems from portage
-   and glibc. If glibc is built with stack protection, portage's sandbox
+   and <c>glibc 2.3.1i</c>. If <c>glibc 2.3.1</c> is built with stack protection, portage's sandbox
    will break, and you will no longer be able to emerge packages.
 </p>
-<p>I have narrowed the problem down, and it seems to be a bug in the sandbox
-   code itself, rather than in glibc.  What happens here is that any program 
-   linked against libpthread will segfault when executed through the sandbox.
+<p>When using a propolice built <c>glibc 2.3.1</c>, any program
+   linked against <c>libpthread</c> will segfault when executed through the sandbox.
    Since tar is linked to libpthread, the emerge will fail while trying to
    unpack the package archive.  I'm still working on tracking down the source
-   of this bug.  If anyone has any ideas or fixes for this problem, please
-   let me know.
+   of this bug. 
+</p>
+<p>However, <c>glibc 2.3.2</c> seems to be unaffected by this bug.  I recommend that
+   anyone using a propolice built system upgrade to <c>glibc 2.3.2</c>.  This will 
+   allow you to use the sandbox feature of portage.  
 </p>
 <p>Until a suitable fix for this sandbox problem is discovered, there are a
    couple different approaches to take:
-</p>
-<p>Recently, <c>-fstack-protector</c>
-   has been been added to the <c>ALLOWED_FLAGS</c> that are not stripped by 
-   a <c>strip-flags</c> declaration in an ebuild.  For this reason, by default
-   glibc will be built with stack protection, thus breaking the sandbox.  In 
-   order to maintain a usable system (i.e. one you can use portage on), you 
-   <b>MUST</b> add <c>FEATURES=-sandbox</c> to your <path>/etc/make.conf</path> 
-   file.  In this approach, you will lose the benefits of the sandbox, but gain
-   the benefit of a protected glibc.  If you take this approach, please do not
-   send bug reports about portage segfaulting when you try to emerge packages.
-   We know about the problem, and we're working on a fix for it.
-</p>
-<p>The next approach you can take is to filter the <c>-fstack-protector</c> flag
-   from the glibc ebuild.  To do this, you must add <c>-fstack-protector</c> to 
-   the <c>filter-flags</c> list in the glibc ebuild.  If you take this approach,
-   you will maintain the sandbox, but lose out on a stack protected glibc.  The
-   choice is yours.
 </p>
 <p>
 <b>XFree86</b><br/><br/>
@@ -153,6 +138,25 @@
    <c>4.3.0-r2</c> XFree86 ebuild.
 </p>
 <p>
+<b>Kernel</b><br/><br/>
+   By default the kernel is not able to be compiled with -fstack-protector.  I have
+   put together a patch that will allow this however.  It is based on the patch by
+   Hiroaki Etoh.  This patch adds a propolice.c file to the kernel setting up the
+   <c>__guard</c> and <c>__stack_smash_handler</c> functions required by propolice.  Since we don't
+   enable propolice by default in Gentoo, we need to add -fstack-protector to the 
+   kernel makefiles.  For this I have added a configuration option under 
+   <c>Processor Type and Features</c> called <c>ProPolice Stack Smashing Protection</c>
+   for all architectures supported by propolice.  If you wish to build your kernel with
+   this protection, enable this option to add <c>-fstack-protector</c> to your build.
+</p>
+<p>In my initial testing of this kernel, it showed no noticable performance decrease
+   from a standard unprotected kernel.  Benchmarking was done with <c>lmbench</c>.
+   These results and more will be posted shortly.
+</p>
+<p>This patch is available in the <c>Files</c> section of this document, and will soon
+   included by default in the <c>hardened-sources</c> kernel.
+</p>
+<p>
 <b>Other Problems</b><br/><br/>
    There are a few other programs that will not successfully build with
    stack protection enabled. This include grub, cracklib (part of the
@@ -165,7 +169,7 @@
 <b>Building an entire system with stack protection</b><br/><br/>
    It is now possible to bootstrap and build an entire machine with ProPolice
    stack-smashing protection.  All you need to do at this point is be sure to
-   use the <c>gcc-3.2.2-r3</c> ebuild (you will need to unmask it, also remember
+   use the <c>gcc-3.2.3-r1</c> ebuild (you will need to unmask it, also remember
    it is in the unstable branch), and add <c>-fstack-protector</c> to your
    <c>CFLAGS</c> in <path>/etc/make.conf</path>.  Things should be quite
    stable at this point, but please report any problems you run into.
@@ -192,12 +196,11 @@
 <section>
 <body>
 <p>
-   These files are now included in the portage tree, and are no longer necessary.
-   I have left the link here temporarily for informational purposes.  You 
-   <b>DO NOT</b> need any of these files for a ProPolice protected system.
+   This patch should apply cleanly to the 2.4.20 and 2.4.21-rc kernels (among others).
+   It will add a ProPolice build option to your kernel config.
 </p>
 <p>
-   <uri link="http://frogger974.homelinux.org/propolice/">Modified ebuilds</uri> 
+   <uri link="http://frogger974.homelinux.org/propolice/2.4.20-propolice-build.patch">2.4.20-propolice-build.patch</uri> 
 </p>
 </body>
 </section>
