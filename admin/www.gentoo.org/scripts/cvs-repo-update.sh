@@ -11,16 +11,20 @@
 source ~/.bashrc
 
 WORKDIR=/home/httpd
+RSYNC="RSYNC_RSH=ssh rsync"
 
 # create the directory if this is the first time this has run
 mkdir -p ${WORKDIR}/cvsroot
 
 # grab a recent copy of the cvs modules for viewcvs
 
-RSYNC_RSH=ssh rsync -a cvs.gentoo.org:/home/cvsroot/gentoo \
+${RSYNC} -a cvs.gentoo.org:/home/cvsroot/gentoo \
 --exclude /home/cvsroot/gentoo/admin/ ${WORKDIR}/cvsroot/gentoo
 
-RSYNC_RSH=ssh rsync -a cvs.gentoo.org:/home/cvsroot/gentoo-x86 \
+${RSYNC} -a cvs.gentoo.org:/home/cvsroot/gentoo-x86 \
 ${WORKDIR}/cvsroot/gentoo-x86
+
+${RSYNC} -a cvs.gentoo.org:/home/cvsroot/gentoo-src \
+${WORKDIR}/cvsroot/gentoo-src
 
 #done
