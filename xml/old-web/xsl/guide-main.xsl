@@ -313,6 +313,7 @@ Documentation en Français:<br/>
 <a class="altlink" href="/doc/desktop-fr.html">Guide de Bureau</a><br/>
 <a class="altlink" href="/doc/use-howto-fr.html">HOWTO sur les variables USE</a><br/>
 <a class="altlink" href="/doc/java-fr.html">Guide Gentoo Java</a><br/>
+<a class="altlink" href="/doc/nano-basics-guide-fr.html">Guide de base sur Nano</a><br/>
 <a class="altlink" href="/doc/altinstall-fr.html">Guide d'Installation Alternative</a><br/>
 <a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide nVidia</a><br/>
 <br/><br/>
