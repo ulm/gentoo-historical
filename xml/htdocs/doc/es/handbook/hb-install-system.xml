@@ -1,0 +1,434 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-system.xml,v 1.1 2004/01/27 00:19:17 chiguire Exp $ -->
+
+<sections>
+<section>
+<title>Chrooting</title>
+<subsection>
+<title>Opcional: Seleccionando servidores espejo</title>
+<body>
+
+<p>
+Si has iniciado desde el LiveCD de Gentoo, puedes usar <c>mirrorselect</c>
+para actualizar <path>/etc/make.conf</path>. Con esto conseguiremos
+servidores espejo rápidos para descargar el Portage y el código fuente:
+</p>
+
+<pre caption="Seleccionando servidores espejo rápidos">
+# <i>mirrorselect -a -s4 -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+Si por alguna razón  <c>mirrorselect</c> falla, no te preocupes. Este paso es
+completamente opcional. Si <c>mirrorselect</c> falla, los valores por defecto te
+servirán.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Copiar la información DNS</title>
+<body>
+
+<p>
+Aún queda una cosa que hacer antes de entrar en el nuevo entorno,
+copiar la información sobre los DNS en <path>/etc/resolv.conf</path>. Necesitas hacer
+esto para asegurarte de que la red continúe funcionando después de entrar en el nuevo
+entorno. <path>/etc/resolv.conf</path> contiene los DNS para tu red.
+</p>
+
+<pre caption="Copiando los DNS">
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Montar /dev</title>
+<body>
+
+<p>
+Los usuarios de Knoppix (y la gente que instala gentoo desde un medio de instalación que
+no use DevFS) deben montar la estructura <path>/dev</path>. Si
+usas uno de nuestros LiveCD puedes saltarte este paso.
+</p>
+
+<pre caption="Montar /dev con bind">
+# <i>mkdir /mnt/gentoo/dev</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Entrando al nuevo entorno</title>
+<body>
+
+<p>
+Ahora que todas las particiones están inicializadas y el sistema base
+instalado, es hora de entrar en nuestro nuevo entorno de instalación
+<e>chrooting</e>. Esto significa pasar desde el actual
+entorno de instalación (LiveCD o otro medio de instalación) hacia tu 
+entorno de instalación (o sea, las particiones inicializadas).
+</p>
+
+<p>
+El cambio de raíz se hace en tres pasos. Primero cambiamos la raíz
+desde <path>/</path> (en el medio de instalación) a <path>/mnt/gentoo</path>
+(en tus particiones) usando <c>chroot</c>. Después crearemos un nuevo entorno
+usando <c>env-update</c>, el cual, en esencia crea las variables de entorno.
+Finalmente, cargamos esas variables en memoria tecleando <c>source</c> <path>/etc/profile</path> .
+</p>
+
+<pre caption = "Entrando al nuevo entorno">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+¡Enhorabuena! Estás dentro de tu nuevo entorno Gentoo Linux.
+Por supuesto aún no hemos terminado, todavía quedan unas cuantas
+secciones ;)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Actualizando el Portage</title>
+<body>
+
+<p>
+Si<e>no</e> estás usando GRP, debes descargar una imagen reciente del Portage
+desde Internet. <c>emerge sync</c> lo hará por ti. Los usuarios de GRP deben saltarse
+este paso y continuar con <uri link="#doc_chap1_sect6">Configurando la variable USE</uri>.
+</p>
+
+<pre caption="Actualizando el Portage">
+# <i>emerge sync</i>
+</pre>
+
+<p>
+Si eres advertido que está disponible una nueva versión de Portage y debes
+actualizarlo, puedes ignorar esta advertencia sin miedo. El Portage
+sera actualizado durante la instalación.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurando la variable USE</title>
+<body>
+
+<p>
+<c>USE</c> es una de las variables más importantes que Gentoo proporciona a sus usuarios.
+Muchos programas pueden ser compilados con o sin soporte opcional para ciertas
+cosas. Por ejemplo, algunos programas pueden ser compilados con soporte gtk,o con
+soporte qt. Otros programas pueden ser compilados con o sin soporte SSL. Algunos programas 
+pueden ser compilados con soporte framebuffer en lugar de soporte X11
+(servidor X).
+</p>
+
+<p>
+Muchas distribuciones compilan sus paquetes con el mayor soporte posible,
+aumentando el tamaño de los programas y su tiempo de carga, sin mencionar una cantidad 
+enorme de dependencias. Con Gentoo puedes definir con que opciones debe ser compilado 
+un paquete. Ahí es donde actúa la variable <c>USE</c>.
+</p>
+
+<p>
+En la variable <c>USE</c> definimos palabras clave que son mapeadas a opciones
+de compilación. Por ejemplo <e>ssl</e> compilará los programas que lo
+requieran con soporte ssl.<e>-X</e> quitara el soporte para el servidor X (nótese el signo menos
+delante). <e>gnome gtk -kde -qt</e> compilará tus programas con soporte para gnome
+y gtk, pero sin soporte para kde (y qt), haciendo tu sistema completamente compatible
+con GNOME.
+</p>
+
+<p>
+Los valores por defecto de la variable <c>USE</c> se encuentran
+en <path>/etc/make.profile/make.defaults</path>. Lo que tu pongas en
+<path>/etc/make.conf</path> es calculado contra estos valores. Si pones
+algún valor en tu <c>USE</c>, es añadido a la lista por defecto. Si eliminas
+algo en tu variable <c>USE</c>, poniéndole un signo menos delante, es
+eliminado de la lista por defecto (si estaba en ella claro). <e>Nunca</e> cambies
+nada en <path>/etc/make.profile</path> ya que se sobreescribe cuando
+actualizas el Portage!
+</p>
+
+<p>
+Puedes encontrar una descripción más amplia sobre la variable
+<c>USE</c> en la segunda parte del Libro de mano de Gentoo <uri
+link="?part=2&amp;chap=1">Capítulo 1: USE flags</uri>. Puedes
+encontrar una descripción más amplia sobre las opciones de la variable
+USE en tu sistema, en <path>/usr/portage/profiles/use.desc</path>.
+</p>
+
+<pre caption="Viendo las opciones disponibles">
+# <i>less /usr/portage/profiles/use.desc</i>
+</pre>
+
+<p>
+Como ejemplo, te mostramos unas opciones USE para un sistema basado en KDE con DVD
+ALSA y soporte para grabar CD's.
+</p>
+
+<pre caption="Abriendo /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="Configurando la variable USE">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Usando compilación distribuida</title>
+<body>
+
+<p>
+Si estás interesado en usar varios ordenadores para compilar tu sistema, 
+deberías revisar <uri link="/doc/en/distcc.xml">Guía de DistCC </uri>. 
+Usando <c>distcc</c> puedes usar varios ordenadores para ayudarte a compilar
+el sistema.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Diferencias entre stage1, stage2 y stage3</title>
+<body>
+
+<p>
+Ahora toma asiento y reflexiona sobre los pasos previos. Te hemos pedido que
+seleccionaras el <e>stage1</e>, <e>stage2</e> o <e>stage3</e> y advertido
+que tu elección es importante para los futuros pasos de la instalación. Bien, esta
+es la primera vez que tu elección define los siguientes pasos.
+</p>
+
+<ul>
+<li>
+  Si eliges <e>stage1</e>, debes seguir <e>los dos</e> pasos de
+  este capítulo (empezando con <uri link="#doc_chap3">Pasando desde stage1
+  a stage2</uri>)
+</li>
+<li>
+  Si eliges el <e>stage2</e> puedes saltarte el primer paso
+  y empezar inmediatamente con el segundo (<uri link="#doc_chap4">Pasando
+  desde stage2 a stage3</uri>)
+</li>
+<li>
+  Si eliges <e>stage3</e> (con o sin GRP) puedes saltarte este paso
+  y continuar con la siguiente sección: <uri
+  link="?part=1&amp;chap=7">Configurando el Kernel</uri>
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Pasando del stage1 a stage2</title>
+<subsection>
+<title>Introducción al Bootstrapping</title>
+<body>
+
+<p>
+¿Así que quieres compilar todo desde cero? Muy bien, vamos :)
+</p>
+
+<p>
+En este paso, haremos el <e>bootstrap</e>. Tardará bastante
+tiempo, pero el resultado es un sistema que está optimizado específicamente
+para tu máquina desde la base.
+</p>
+
+<p>
+Lo que <e>bootstrapping</e> significa es: compilar la librería GNU C, la colección
+de compiladores GNU y otros programas del sistema. La colección de compiladores GNU
+debe ser compilada dos veces: La primera con el compilador "genérico" que
+nosotros proveemos, y una segunda vez con el compilador que tu mismo acabas de compilar.
+</p>
+
+<p>
+Antes de empezar el bootstrap, te indicamos una lista de opciones
+que puedes querer o no activar. Si no quieres leerlas, continúa con <uri
+link="#doc_chap3_sect4">Bootstrapping el sistema</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Disminuyendo el tiempo de compilación</title>
+<body>
+
+<p>
+Si quieres hacer más rápido el bootstrapping, puedes inhabilitar temporalmente
+el soporte para java. Esto quiere decir que el la colección de compiladores GNU
+y la librería GNU C será compilada sin soporte java (lo cual disminuye el tiempo
+de compilación considerablemente). A su vez, también significa que no tendrás el
+compilador GNU de java (<c>gcj</c>). Esto <e>no</e> significa que tu
+sistema no vaya a poder usar applets java o otras cosas relacionadas con java.
+</p>
+
+<p>
+Para quitar el soporte java temporalmente, define <e>USE="-java"</e> antes de
+lanzar el guión bootstrap.
+</p>
+
+<pre caption = "Quitando el soporte java">
+# <i>export USE="-java"</i>
+</pre>
+
+<p>
+No olvides inhabilitar la variable USE después del bootstrapping:
+</p>
+
+<pre caption="Inhabilitando la variable USE">
+# <i>unset USE</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Descargar primero el código fuente</title>
+<body>
+
+<p>
+Si no has copiado todo el código fuente anteriormente, el guión
+bootstrap descargará todos los archivos necesarios. Creo que no es necesario decir
+que sólo funcionará si tienes conexión a Internet :-) Si quieres descargar
+primero el código fuente y después hacer el bootstrap del sistema (por si no quieres
+tener la conexión a Internet abierta durante la compilación )
+usa la opción <e>-f</e> del guión bootstrap, la cual
+descargará todo el código fuente por ti (la letra 'f' viene del verbo ingles fetch).
+</p>
+
+<pre caption = "Descargando el código fuente necesario">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh -f</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Bootstrapping el sistema</title>
+<body>
+
+<p>
+Bien, coge el teclado y teclea los siguientes comandos para empezar
+el bootstrap. Mientras, distráete con alguna cosa (por ejemplo hostigar
+a los desarrolladores de Gentoo en #gentoo), porque este paso tardará
+un ratito largo.
+</p>
+
+<pre caption = "Bootstrapping el sistema">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+</pre>
+
+<p>
+Si has alterado la variable <c>CHOST</c> en <path>/etc/make.conf</path>
+necesitas reinicializar algunas variables para que <c>gcc</c>
+trabaje más rápido:
+</p>
+
+<pre caption="Reinicializando las variables de entorno">
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+Sigue con <uri link="#doc_chap4">Pasando de stage2
+a stage3</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Pasando desde stage2 a stage3</title>
+<subsection>
+<title>Introducción</title>
+<body>
+
+<p>
+Si estás leyendo esta sección, significa que tienes un sistema con el
+bootstrap realizado (ya sea porque lo hiciste anteriormente o porque
+estés usando el <e>stage2</e>). Es el momento de compilar todos los
+paquetes del sistema.
+</p>
+
+<p>
+¿<e>Todos</e> los paquetes del sistema? Realmente no. En este paso compilarás
+los paquetes del sistema para los cuales no hay otra alternativa a usar.
+Algunos paquetes del sistema tienen varias alternativas (como los
+gestores de registro del sistema) y Gentoo da la oportunidad de
+elegir, no queremos forzarte a usar uno.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Viendo que hará 'emerge system'</title>
+<body>
+
+<p>
+Si quieres saber que paquetes serán instalados, ejecuta <c>emerge
+--pretend system</c>. Esto te mostrará un listado con todos los paquetes que serán compilados.
+Como esta lista es algo extensa, puedes usar un paginador como <c>less</c> o
+<c>more</c> para moverte por la lista.
+</p>
+
+<pre caption = "Ver que hará 'emerge system'">
+# <i>emerge --pretend system | less</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Descargando el código fuente</title>
+<body>
+
+<p>
+Si lo deseas,  <c>emerge</c> puede descargar todo el código fuente antes de
+continuar (por si no quieres tener le conexión activa mientras compilas el sistema)
+Puedes usar la opción <e>--fetchonly</e> de <c>emerge</c> la cual descargará
+todo el código fuente por ti.
+</p>
+
+<pre caption = "Descargando el código fuente">
+# <i>emerge --fetchonly system</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Compilando el sistema</title>
+<body>
+
+<p>
+Para empezar a compilar el sistema, ejecuta  <c>emerge system</c>. Ahora puedes hacer
+cualquier cosa para mantener tu mente ocupada, porque este paso tardará un buen rato en
+terminar.
+</p>
+
+<pre caption = "Compilando el Sistema">
+# <i>emerge system</i>
+</pre>
+
+<p>
+Cuando la compilación haya concluido, continúa con <uri
+link="?part=1&amp;chap=7">Configurando el Kernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
