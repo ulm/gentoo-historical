@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="utf-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/altinstall.xml,v 1.2 2004/11/13 13:02:53 broeman Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/altinstall.xml,v 1.3 2005/01/09 13:47:18 aaby Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/da/altinstall.xml" lang="da">
@@ -57,8 +57,8 @@ f.eks. mangel af en CDROM eller en computer, der kan boote CD'er.
 
 <license/>
 
-<version>0.50</version>
-<date>25. Oktober 2004</date>
+<version>0.55</version>
+<date>2005-01-08</date>
 
 <chapter>
 <title>Om dette dokument</title>
@@ -185,7 +185,7 @@ passwd root</c>. Dette lader dig ændre root-kodeordet for Knoppix.
 </p>
 
 <p>
-Derefter, su'er jeg til root og taster <c>usermod -d /root -m
+Derefter, <c>su</c>'er jeg til root og taster <c>usermod -d /root -m
 root</c>. Dette sætter brugeren roots hjemmefolder til /root ("the
 Gentoo way") fra /home/root ("the Knoppix way"). Hvis du ikke gør
 dette, vil du modtage fejl, når du emerger, som f.eks. "/home/root:
@@ -213,6 +213,22 @@ kommando, i stedet for:
 
 <pre caption="Bind-mounting af proc pseudo filsystemet">
 # <i>mount -o bind /proc /mnt/gentoo/proc</i>
+</pre>
+
+<p>
+Du bliver også nødt til at bind-mounte enhedstræet for at kunne udrede
+problemer med rettigheder til forskellige enhedsfiler.
+</p>
+  	 
+<!--
+If this doesn't seem to work, #71901 mentions the following command:
+mount -o remount,rw,nosuid /dev/hd* /mnt/hd*
+before all. Looks weird to me, but if this doesn't work, we might want to try
+that.
+-->
+  	 
+<pre caption="Bind-mounting af enhedstræet">
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
 </pre>
 
 </body>
@@ -257,16 +273,16 @@ til det kørende bootstrap.sh script.
 Gå tilbage til den første konsol (Alt-F1, uden chroot) og mount en
 anden CD på <path>/mnt/gentoo/mnt/cdrom2</path>. Kopier portage
 tarballen fra cdrom2 og udpak den til
-<path>/mnt/gentoo/usr/portage</path>.
+<path>/mnt/gentoo/usr</path>.
 </p>
 
 <pre caption="Mount af snapshot cd">
 # <i>umount /mnt/cdrom</i>
 # <i>mkdir /mnt/gentoo/mnt/cdrom2</i>
 # <i>mount /dev/cdroms/cdrom0 /mnt/gentoo/mnt/cdrom2</i>
-# <i>cp /mnt/gentoo/mnt/cdrom2/portage-$date.tar.bz2 /mnt/gentoo/usr/portage</i>
-# <i>cd /mnt/gentoo/usr/portage</i>
-# <i>tar xvjpf portage-$date.tar.bz2</i>
+# <i>cp /mnt/gentoo/mnt/cdrom2/portage-$date.tar.bz2 /mnt/gentoo/usr</i>
+# <i>cd /mnt/gentoo/usr</i>
+# <i>tar -xvjpf portage-$date.tar.bz2</i>
 </pre>
 
 <p>
@@ -371,8 +387,15 @@ for din klient og folderen, hvor du vil indsætte klientens filer med den,
 du bruger.
 </note>
 
+<p>
+Til DHCPd, kør da <c>emerge dhcp</c> (eller enhver anden DHCP server
+du har lyst til). Vær sikker på at det korrekte interface er valgt i
+<path>/etc/conf.d/dhcp</path>.
+</p>
+
 <pre caption="dhcp.conf">
 option option-150 code 150 = text ;
+ddns-update-style none ;
 host eta {
 hardware ethernet 00:00:00:00:00:00;
 fixed-address <i>ip.add.re.ss</i>;
@@ -408,8 +431,8 @@ indstillingsfil.
 # <i>tar zxvf grub-0.92.tar.gz</i>
 # <i>cd grub-0.92</i>
 # <i>./configure --help</i>
-<codenote>I indstillingerne vil du se en liste af understøttede drivere til netværksgrænseflader. </codenote>
-<codenote>Vælg den driver som understøtter dit kort. Herefter refereret som $nic</codenote>
+<codenote>(I indstillingerne vil du se en liste af understøttede drivere til netværksgrænseflader. </codenote>
+<codenote>Vælg den driver som understøtter din klients kort. Herefter refereret som $nic)</codenote>
 # <i>./configure --enable-diskless --enable-$nic</i>
 # <i>make</i>
 # <i>cd stage2</i>
@@ -521,7 +544,9 @@ anbefalede fra installationsinstruktionerne.
 </pre>
 
 <p>
-Derefter opsæt din diskfrie klients <path>/etc/fstab</path>.
+Gem kernen i din chrootede <path>/</path> (ikke i <path>/boot</path>)
+som pxegrub opsætningen fra før definerede. Derefter opsæt din
+diskfrie klients <path>/etc/fstab</path>.
 </p>
 
 <pre caption="/etc/fstab">
@@ -541,7 +566,14 @@ Du ønsker også at forhindre klienten i at køre et tjek på filsystemet:
 </pre>
   	 
 <p>
-
+Installer <c>nfs-utils</c> siden din klient vil være meget afhængig af den.
+</p>
+  	 
+<pre caption="Installering nfs-utils">
+# <i>emerge nfs-utils</i>
+</pre>
+  	 
+<p>
 Boot-loader. Installer ikke en anden boot-loader, fordi vi har allerede en -
 pxegrub. Afslut simpelthen installationen og genstart serveren. Start de services
 som du behøver for at starte den nye klient: DHCP, TFTPD, and NFS.
@@ -549,7 +581,7 @@ som du behøver for at starte den nye klient: DHCP, TFTPD, and NFS.
 
 <pre caption="Opstart af services">
 # <i>/etc/init.d/dhcp start</i>
-# <i>/etc/init.d/tftpd start</i>
+# <i>/etc/init.d/in.tftpd start</i>
 # <i>/etc/init.d/nfs start</i>
 </pre>
 
