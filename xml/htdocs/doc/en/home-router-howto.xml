@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.2 2004/07/22 14:32:26 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.3 2004/07/22 16:09:18 vapier Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/home-router-howto.xml">
@@ -36,7 +36,7 @@ This guide will show you how to setup Network Address Translation (NAT)
 on the router (kernel and iptables), add and configure common services 
 (Domain Name System (DNS) via dnsmasq, dhcp via dhcpcd, ADSL via 
 rp-pppoe), and conclude with more elaborate and fun things that can be 
-done (port forwarding, traffic shaping, http/ftp hosting, caching, etc...).
+done (port forwarding, traffic shaping, proxies/caching, etc...).
 </p>
 
 <p>
@@ -56,6 +56,7 @@ The conventions used in this guide are:
  <li>eth1 - NIC connected to the Wide Area Network (WAN)</li>
  <li>LAN utilizes the private 192.168.0.xxx network</li>
  <li>router is hardcoded to the standard 192.168.0.1 IP</li>
+ <li>router is running Linux 2.4 or 2.6; you're on your own with 2.0/2.2</li>
 </ul>
 
 <impo>
@@ -144,7 +145,7 @@ is left to the reader as a fun exercise however).
 </pre>
 <note>
 Somethings may be slightly different in a 2.4 vs 2.6 kernel, but you 
-should be able to figure it out :).  2.2 + ipchains is not covered here.
+should be able to figure it out :).
 </note>
 
 </body>
@@ -201,9 +202,11 @@ ifconfig_eth1=( "adsl" )</comment>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
 
-<p>
-You should be all set to go now.
-</p>
+<warn>
+When the DSL interface comes up, it will create ppp0.  Although your NIC 
+is called eth1, the IP is actually bound to ppp0.  From now on, when you 
+see examples that utilize 'eth1', substitute with 'ppp0'.
+</warn>
 
 </body>
 </section>
@@ -426,14 +429,127 @@ don't, just run <c>emerge iptables</c>.
 <p>
 Once you've typed out all of that, the rest of your network should now 
 be able to use the internet as if they were directly connected 
-themselves.
+themselves.  
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Fun Things (for a rainy day)</title>
+
+<section>
+<title>Intro</title>
+<body>
+<p>
+Believe it or not, you're done :).  From here on out, I'll cover a bunch 
+of common topics that may interest you.  Everything in this chapter is 
+completely optional.
+</p>
+</body>
+</section>
+
+<section>
+<title>Port Forwarding</title>
+<body>
+<p>
+Sometimes you would like to be able to host services on a computer behind 
+the router, or just to make your life easier when connecting remotely.  
+Perhaps you want to run a FTP, HTTP, SSH, or VNC server on one or more 
+machines behind your router and be able to connect to them all.  The only 
+caveat is that you can only have one service/machine combo per port.  
+For example, there is no practical way to setup three FTP servers behind 
+your router and then try to connect to them all through port 21; only one 
+can be on port 21 while the others would have to be on say port 123 and 
+port 567.
 </p>
 
 <p>
-Believe it or not, you're done :).  The only thing left involves adding 
-extra services to make your life (or the lives of your users) easier.
+All the port forwarding rules are of the form <c>iptables -t nat -A PREROUTING 
+[-p protocol] --dport [external port on router] -i eth1 -j DNAT --to [ip/port 
+to forward to]</c>.  iptables does not accept hostnames when port forwarding.  
+If you are forwarding an external port to the same port on the internal machine, 
+you can omit the destination port.  See the iptables(8) page for more information.
 </p>
 
+<pre>
+<comment>Forward port 2 to ssh on an internal host</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i eth1 -j DNAT --to 192.168.0.2:22</i>
+
+<comment>FTP forwarding to an internal host</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i eth1 -j DNAT --to 192.168.0.56</i>
+
+<comment>HTTP forwarding to an internal host</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 -j DNAT --to 192.168.0.56</i>
+
+<comment>VNC forwarding for internal hosts</comment>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i eth1 -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i eth1 -j DNAT --to 192.168.0.3:5900</i>
+<comment>If you want to VNC in to 192.168.0.3, then just add ':1' to the router's hostname</comment>
+
+<comment>Bittorrent forwarding</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i eth1 -j DNAT --to 192.168.0.2</i>
+</pre>
+
+<note>
+If you have other common / cool examples, please <uri link="mailto:vapier@gentoo.org">e-mail me</uri>.
+</note>
+</body>
+</section>
+
+<section>
+<title>Traffic Shaping</title>
+<body>
+<p>
+</p>
+</body>
+</section>
+
+<section>
+<title>Identd (for IRC)</title>
+<body>
+<p>
+Internet Relay Chat utilizes the ident service pretty heavily.  Now that 
+the IRC clients are behind the router, we need a way to host ident for 
+both the router and the clients.  One such server has been created 
+called <c>midentd</c>.
+</p>
+
+<pre caption="Setting up ident">
+# <i>emerge midentd</i>
+# <i>rc-update add midentd default</i>
+# <i>/etc/init.d/midentd start</i>
+</pre>
+
+<p>
+There are a few other ident servers in portage.  Depending on your needs, 
+I would recommend checking out <c>oidentd</c> and <c>fakeidentd</c>.
+</p>
+</body>
+</section>
+
+<section>
+<title>Mail Server</title>
+<body>
+<p>
+</p>
+</body>
+</section>
+
+<section>
+<title>HTTP Proxy</title>
+<body>
+<p>
+</p>
+</body>
+</section>
+
+<section>
+<title>POP Scanning</title>
+<body>
+<p>
+</p>
 </body>
 </section>
 
