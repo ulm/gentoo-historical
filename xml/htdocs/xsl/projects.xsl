@@ -61,7 +61,7 @@
 </xsl:template>
 
 <xsl:template name="projlist">
-  <xsl:param name="ref" select=""/>
+  <xsl:param name="ref"/>
   <xsl:param name="level" select="1"/>
   <xsl:if test='(number($level)=1) and ($showlevel>1)'>
     <tr>
@@ -73,7 +73,7 @@
       <th>description</th>
     </tr>
   </xsl:if>
-  <xsl:for-each select="document($ref)">
+  <xsl:for-each select="document(string($ref))">
     <xsl:if test="($level > 0) and ($level &lt;=$showlevel)">
       <tr>
         <ti>
@@ -131,7 +131,7 @@
       </tr>
     </xsl:if>
     <xsl:for-each select="project/subproject">
-      <xsl:sort select="document(@ref)/project/name"/>
+      <xsl:sort select="document(string(@ref))/project/name"/>
       <xsl:call-template name="projlist">
         <xsl:with-param name="ref" select="string(@ref)"/>
         <xsl:with-param name="level" select="$level + 1"/>
