@@ -218,7 +218,7 @@ def set_default_route(route):
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
-		cmd = "echo -e '#!/bin/bash\n\nsource /etc/profile\n" + cmd + "' > " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh"
+		cmd = "echo -e '#!/bin/bash\n\nsource /etc/profile\n" + cmd + "' > " + chroot + "/tmp/spawn.sh && chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh"
 
 	if quiet and logfile != None:
 		cmd += " >> " + logfile + " 2>&1"
@@ -231,9 +231,10 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			cmd += " | tee -a " + logfile
 
 	if display_on_tty8:
-		if not is_file("/tmp/tty8_fifo"):
-			spawn("mkfifo /tmp/tty8_fifo")
-		cmd += " | tee /tmp/tty8_fifo"
+#		if not is_file("/tmp/tty8_fifo"):
+#			spawn("mkfifo /tmp/tty8_fifo")
+#		cmd += " | tee /tmp/tty8_fifo"
+		cmd += " | tee -a /tmp/tty8_log"
 
 	ret, output = commands.getstatusoutput(cmd)
 	if return_output:
