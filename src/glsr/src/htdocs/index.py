@@ -1,11 +1,9 @@
 #!/usr/bin/python -t
 #
-# Copyright 2004 Ian Leitch
-# Copyright 2004 Scott Hadfield
+# Copyright 2004-2005 Ian Leitch
+# Copyright 2004-2005 Scott Hadfield
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-#
-# $Id: index.py,v 1.34 2005/01/25 00:58:34 hadfield Exp $
 #
 
 """
@@ -17,7 +15,8 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__modulename__ = "index"
+__revision__ = '$Id:'
+__modulename__ = 'index'
 
 import os
 import sys
@@ -32,17 +31,15 @@ sys.path.insert(0, "/usr/local/share/glsr/")
 sys.path.insert(0, "../pym")
 sys.path.insert(0, "../")
 
-from Error import exception_handler
-sys.excepthook = exception_handler
-
 from Function import stderr_redirect
 #sys.stderr = stderr_redirect()
 
 import State
 import Config
 from User import User
-import Logging as LogHandler
+from Error import error_tb
 from Session import Session
+from Logging import logwrite
 from SiteModule import Redirect
 from Template import Template
 from GLSRException import GLSRException
@@ -69,10 +66,9 @@ class RequestHandler(cgi.Handler):
         Dispatcher.dispatch_footer()
         Dispatcher.log_request_end()
 
-#    def traceback(self):
-#
-#        WRITE ME
+    def traceback(self, req):
 
+        error_tb(req)
 
 class _PageDispatch:
 
@@ -138,7 +134,7 @@ class _PageDispatch:
             if deny == True:
                 self._send_headers()
                 print "Access Denied"
-                LogHandler.logwrite(
+                logwrite(
                     "Request for page '%s', domain 'admin'" % self._page +
                     " denied for IP address '%s'" % os.environ["REMOTE_ADDR"],
                     __modulename__, "Warn")
@@ -183,8 +179,8 @@ class _PageDispatch:
             matched_module = self._failover["module"]
             self._load_module(matched_module)
             self._page = self._failover["page"]
-            LogHandler.logwrite("Request fell through to failover page '%s'" %
-                                 self._page, __modulename__, "Info")
+            logwrite("Request fell through to failover page '%s'" %
+                      self._page, __modulename__, "Info")
 
         module_object = eval(matched_module + "(" +
                              "self._req," +
@@ -198,7 +194,7 @@ class _PageDispatch:
             self._show_border = module_object.show_border
                                                                                                     
         except Redirect, location_str:
-            LogHandler.logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
+            logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
             self._req.add_header("Location", location_str)
             self._send_headers()
             sys.exit(0)
@@ -257,17 +253,17 @@ class _PageDispatch:
 
     def log_request(self):
 
-        LogHandler.logwrite("Received request for page '%s'" % self._page,
-                             __modulename__, "Info")
+        logwrite("Received request for page '%s'" % self._page,
+                  __modulename__, "Info")
 
     def log_request_end(self):
 
-        LogHandler.logwrite("Request for page '%s', " % self._page +
-                            "domain '%s' completed in %.5f(s)" %
-                            (self._domain, eval_timer(self._t_start,
-                                                      stop_timer())),
-                            __modulename__, "Info")
+        logwrite("Request for page '%s', " % self._page +
+                 "domain '%s' completed in %.5f(s)" %
+                 (self._domain, eval_timer(self._t_start,
+                                           stop_timer())),
+                   __modulename__, "Info")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     setattr(cgi.Request, _Values.__name__, _Values)
     fcgi.Server({fcgi.FCGI_RESPONDER: RequestHandler}).run()
