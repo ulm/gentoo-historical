@@ -6,7 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, signal, time, shutil, sys, random
+import string, os, re, signal, time, shutil, sys, random, commands
 from GLIException import *
 
 def is_realstring(string_a):
@@ -207,8 +207,9 @@ def set_default_route(route):
 
 	return True
 
-def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False):
+def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
 	pid = os.fork()
+	cmd_output = None
 	if pid == 0:
 		if chroot != None:
 			cmd = "chroot " + chroot + " " + cmd
@@ -222,6 +223,8 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 				cmd += " | tee " + logfile
 			else:
 				cmd += " | tee -a " + logfile
+		if return_output:
+			cmd += " | tee /tmp/toreturn.log"
 
 		if display_on_tty8:
 			try:
@@ -238,7 +241,12 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		sys.exit(1) # Should never be reached.
 
 	ret = os.waitpid(pid,0)[1]
-	return ret
+	if return_output:
+		cmd_output = commands.getoutput("cat /tmp/toreturn.log")
+		commands.system("rm /tmp/toreturn.log")
+		return ret, cmd_output
+	else:
+		return ret
 
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
