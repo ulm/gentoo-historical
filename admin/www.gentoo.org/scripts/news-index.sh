@@ -27,7 +27,7 @@ mydate=`date +"%d %b %Y"`
 
 # again, for backwards compatibility, we keep this in place.
 cd ${WEBROOT}
-for x in `ls news/200*.xml | sort -r`
+for x in `ls ${WEBROOT}/news/200*.xml | sort -r`
 do
 	echo "<uri>/$x</uri>" >> ${WEBROOT}/dyn/news-index.xml
 done
@@ -38,7 +38,7 @@ echo "News index generated :)"
 for x in ${ARCHES}
 do
 	cd ${WEBROOT}/proj/en/${x}
-	for y in `ls news/200*.xml | sort -r`
+	for y in `ls  ${WEBROOT}/news/200*.xml | sort -r`
 	do
 		echo "<uri>/${y}</uri>" >> ${WEBROOT}/dyn/${x}-news-index.xml
 	done
