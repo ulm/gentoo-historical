@@ -20,3 +20,6 @@ class GLIScreen(gtk.VBox):
 
 	def activate(self):
 		pass
+
+	def deactivate(self):
+		return True

@@ -254,6 +254,8 @@ class Installer:
 		self.active=1
 
 	def loadPanel(self, panel = 0):
+		if not self.panels[self._cur_panel].deactivate():
+			return
 		self._cur_panel = panel
 		self.right_pane_box.set_current_page(panel)
 		self.panels[panel].activate()
