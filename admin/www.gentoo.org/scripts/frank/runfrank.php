@@ -1,11 +1,11 @@
 #!/usr/bin/php -q
-<?php /* $Id: runfrank.php,v 1.1 2003/03/18 21:56:06 klieber Exp $ */
+<?php /* $Id: runfrank.php,v 1.2 2003/03/18 21:57:52 klieber Exp $ */
 /**
  * Frank
  *
  * The Gentoo mirror checking script
  *
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  * @author A.Sleep <a.sleep@asleep.net>
  * @copyright (c) 2003 A.Sleep/Gentoo - GPL Version 2.0
  */
@@ -22,8 +22,8 @@ $cfg['ImagePath'] = 'http://www.gentoo.org/images/';
 /**
  * Output filename
  */
-#$cfg['OutputFile'] = '${WEBROOT}/dyn/mirrorhealth.xml';
-$cfg['OutputFile'] = './mirrorhealth.xml';
+$cfg['OutputFile'] = '${WEBROOT}/dyn/mirrorhealth.xml';
+#$cfg['OutputFile'] = './mirrorhealth.xml';
 
 /**
  * The Red image
