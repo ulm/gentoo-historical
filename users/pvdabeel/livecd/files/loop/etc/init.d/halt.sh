@@ -1,4 +1,4 @@
-# $Header: /var/cvsroot/gentoo/users/pvdabeel/livecd/files/loop/etc/init.d/halt.sh,v 1.1 2004/02/13 00:53:19 pvdabeel Exp $
+# $Header: /var/cvsroot/gentoo/users/pvdabeel/livecd/files/loop/etc/init.d/halt.sh,v 1.1.1.1 2004/02/13 00:53:19 pvdabeel Exp $
 
 #we try to deactivate swap first because it seems to need devfsd running
 #to work.  The TERM and KILL stuff will zap devfsd, so...
