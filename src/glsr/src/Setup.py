@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.8 2004/12/21 18:50:43 port001 Exp $
+# $Id: Setup.py,v 1.9 2005/01/25 00:58:34 hadfield Exp $
 #
 
 import sys
@@ -14,6 +14,7 @@ import getpass
 from time import strftime, gmtime
 
 sys.path.insert(0, "/usr/local/share/glsr/pym")
+sys.path.insert(0, "pym")
 
 import Config
 import Const

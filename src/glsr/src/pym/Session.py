@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.6 2004/12/25 23:51:02 port001 Exp $
+# $Id: Session.py,v 1.7 2005/01/25 00:58:34 hadfield Exp $
 #
 
 __modulename__ = "Session"
@@ -99,10 +99,10 @@ class Session:
                            self._sid, fetch="none")
 
     def _save_session(self):
-
-         MySQLHandler.query("INSERT INTO %s (%s_id) " % 
-                            (self.full_tablename, self.tablename) +
-                            "VALUES (%s)", self._sid, fetch="none")
+        
+        MySQLHandler.query("INSERT INTO %s (%s_id) " % 
+                           (self.full_tablename, self.tablename) +
+                           "VALUES (%s)", self._sid, fetch="none")
 
     def _resume(self):
 
@@ -126,7 +126,7 @@ class Session:
         if result == None:
             return False
         elif result["%s_user_id" % self.tablename] == 0:
-	    return False
+            return False
 
         return True
 
@@ -170,9 +170,11 @@ class Session:
 
     def get_uid(self):
 
-        return MySQLHandler.query("SELECT %s_user_id FROM %s " % (self.tablename, self.full_tablename) +
-	                          "WHERE %s_id " % self.tablename +
-                                  "= %s", self._sid, fetch="one")["%s_user_id" % self.tablename]
+        return MySQLHandler.query("SELECT %s_user_id FROM %s " %
+                                  (self.tablename, self.full_tablename) +
+                                  "WHERE %s_id = " % self.tablename +
+                                  "%s", self._sid, fetch="one")["%s_user_id" %
+                                                                self.tablename]
     def get_active(self, grace):
 
         guest_count = 0

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.9 2004/12/16 14:06:26 port001 Exp $
+# $Id: User.py,v 1.10 2005/01/25 00:58:34 hadfield Exp $
 #
 
 __modulename__ = "User"
@@ -97,11 +97,10 @@ class User(Parent):
 
         rank = 0
         
-        result = MySQLHandler.query("SELECT rank FROM %s%s WHERE %s_submitter_id = " %
-                                   (Config.MySQL["prefix"],
-                                    Config.MySQL["script_table"],
-                                    Config.MySQL["script_table"]) +
-                                    "%s", (self.id), fetch="all")
+        result = MySQLHandler.query(
+            "SELECT rank FROM %s%s WHERE %s_submitter_id = " %
+            (Config.MySQL["prefix"], Config.MySQL["script_table"],
+             Config.MySQL["script_table"]) + "%s", (self.id), fetch="all")
 
         for tuple in result:
             rank = rank + tuple[0]

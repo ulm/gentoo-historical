@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.33 2004/12/30 03:05:19 port001 Exp $
+# $Id: index.py,v 1.34 2005/01/25 00:58:34 hadfield Exp $
 #
 
 """
@@ -54,8 +54,8 @@ class RequestHandler(cgi.Handler):
     def process(self, req):
 
         # OK, this is pretty hacky but its the best solution I could
-	# come up with atm. Rewrite later.
-	req.Values = req._Values()
+        # come up with atm. Rewrite later.
+        req.Values = req._Values()
         req.Values._store_params(req.params)
 
         Dispatcher = _PageDispatch(req)
@@ -187,8 +187,8 @@ class _PageDispatch:
                                  self._page, __modulename__, "Info")
 
         module_object = eval(matched_module + "(" +
-	                     "self._req," +
-			     "page = self._page," +
+                             "self._req," +
+                             "page = self._page," +
                              "uid = self._user_detail[\"uid\"]," +
                              "alias = self._user_detail[\"alias\"]," +
                              "session = self._user_detail[\"session\"])")
@@ -198,7 +198,7 @@ class _PageDispatch:
             self._show_border = module_object.show_border
                                                                                                     
         except Redirect, location_str:
-	    LogHandler.logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
+            LogHandler.logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
             self._req.add_header("Location", location_str)
             self._send_headers()
             sys.exit(0)
@@ -218,7 +218,7 @@ class _PageDispatch:
             self._req.set_header("Content-Type", "text/html; charset=utf-8")
             State.HTMLHeadersSent = True # not needed anymore?
 
-	self._req.output_headers()
+        self._req.output_headers()
 
     def dispatch_header(self):
 
@@ -250,9 +250,9 @@ class _PageDispatch:
         if self._show_border:
             tmpl_foot = Template()
             tmpl_foot.compile(Config.Template["footer"],
-                              {"GLSR_VERSION":	Config.Version,
-                               "GLSR_URL":	Config.URL,
-                               "CONTACT":	Config.Contact})
+                              {"GLSR_VERSION":  Config.Version,
+                               "GLSR_URL":      Config.URL,
+                               "CONTACT":       Config.Contact})
             print tmpl_foot.output()
 
     def log_request(self):
