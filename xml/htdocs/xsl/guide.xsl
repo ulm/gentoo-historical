@@ -67,13 +67,10 @@
 			<xsl:apply-templates select="author"/>
 
 		</p> -->
-                    <form><b>Contents</b>:
-	<select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10"><xsl:for-each select="chapter"><xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><!--		<xsl:variable name="me"><xsl:value-of select="/guide/@link"/></xsl:variable>--><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option><!--
-		&#160;<xsl:number/>&#160;<a class="altlink" href="#{$chapid}"><xsl:value-of select="title"/></a><br/>
-	<xsl:value-of select="/guide/@link"/>
-	<option value="showdoc.html?i=1514&p=1">Select											
+                    <form name="contents" action="http://www.gentoo.org"><b>Contents</b>:
+	<select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10"><xsl:for-each select="chapter"><xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
 
-				--></xsl:for-each></select></form>
+				</xsl:for-each></select></form>
                     <xsl:apply-templates select="chapter"/>
                     <br/>
                     <br/>
