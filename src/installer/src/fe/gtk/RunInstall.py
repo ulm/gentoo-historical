@@ -55,9 +55,10 @@ class RunInstall(gtk.Window):
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
 
-		self.tail_pipe = os.popen("tail -F /tmp/compile_output.log 2>&1")
+		self.output_log = None
+#os.popen("tail -F /tmp/compile_output.log 2>&1")
 		gobject.timeout_add(1000, self.poll_notifications)
-		gobject.idle_add(self.tail_logfile)
+		gobject.timeout_add(1000, self.tail_logfile)
 
 	def poll_notifications(self):
 		notification = self.controller.cc.getNotification()
@@ -80,7 +81,6 @@ class RunInstall(gtk.Window):
 					self.progress.set_fraction(round(float(self.which_step)/num_steps, 2))
 					self.progress.set_text(self.controller.cc.get_next_step_info())
 					self.which_step += 1
-#					time.sleep(1)
 					self.controller.cc.next_step()
 				return True
 			if ndata == GLIClientController.INSTALL_DONE:
@@ -93,11 +93,19 @@ class RunInstall(gtk.Window):
 				return False
 
 	def tail_logfile(self):
-		if select.select([self.tail_pipe], [], [], 0)[0]:
-			line = self.tail_pipe.readline()
+		if not self.output_log:
+			try:
+				self.output_log = open("/tmp/compile_output.log")
+			except:
+				return True
+#		if select.select([self.output_log], [], [], 0)[0]:
+		while 1:
+			line = self.output_log.readline()
+			if not line: break
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
+
 		return True
 
 	def make_visible(self):

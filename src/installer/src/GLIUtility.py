@@ -320,7 +320,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 		tar_options = tar_options + "p"
 
 	# Unpack the tarball
-	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log") # change this to the logfile variable
+	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log", append_log=True) # change this to the logfile variable
 
 	if not exitsuccess(exitstatus):
 		raise GLIException("UnpackTarballError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
