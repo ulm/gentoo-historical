@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.27 2005/01/07 05:07:23 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.28 2005/01/07 05:23:19 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -462,7 +462,7 @@ class ArchitectureTemplate:
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
-		status = GLIUtility.spawn('echo "-5" | etc-update', chroot=self._chroot_dir)
+		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update')
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 			
