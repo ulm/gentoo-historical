@@ -1082,7 +1082,7 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            Code listing <xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
             Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
