@@ -387,6 +387,9 @@ Otros:<br/>
 <a class="altlink" href="/doc/project-xml-es.html">Proyectos XML</a><br/>
 <a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/>
 <br/><br/>
+Gebruikers Documentatie in het Nederlands: <br/>
+<a class="altlink" href="/doc/build-nl.html">Installatie Handleiding</a><br/>
+<br/><br/>
 	
 						Mailing Lists:<br/><br/><a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/><br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
