@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.34 2005/01/04 01:16:35 codeman Exp $
+$Id: GLIClientController.py,v 1.35 2005/01/04 02:50:02 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -66,7 +66,7 @@ class GLIClientController(Thread):
 			print "You can not do a non-interactive install without a ClientConfiguration!"
 			sys.exit(1)
 
-		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.get_install_profile, self.enable_ssh]
+		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.enable_ssh]
 		# Do Pre-install client-specific things here.
 		while len(steps) > 0:
 			try:
@@ -229,7 +229,7 @@ class GLIClientController(Thread):
 
 
 
-	def get_install_profile(self):
+	def load_install_profile(self):
 		install_profile=None
 		if self._install_profile == None:
 			if self._configuration != None:
