@@ -1,6 +1,6 @@
 # einfo.py
 # Distributed AS-IS, without warranty. Licensed under the GPL v2 or newer.
-# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.5 2004/05/14 04:57:06 jhuebel Exp $
+# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.6 2004/07/19 14:31:45 jhuebel Exp $
 
 __module_name__ = "einfo"
 __module_version__ = "0.3"
@@ -184,6 +184,8 @@ def einfo(word, word_el, userdata):
 			chanmsg(commands.getstatusoutput("/usr/bin/uptime")[1])
 		elif word[1] == "date":
 			chanmsg(commands.getstatusoutput("/bin/date")[1])
+		elif word[1] == "utc":
+			chanmsg(commands.getstatusoutput("/bin/date --universal")[1])
 		else:
 			xchat.prnt("Unknown usage of /einfo")
 			return xchat.EAT_ALL
@@ -220,6 +222,7 @@ def einfo_help(word, word_el, userdata):
 	print "   free     = memory usage"
 	print "   uptime   = uptime statistics"
 	print "   date     = display local date/time"
+	print "   utc      = display UTC date/time"
 	print " "
 
 xchat.hook_command("einfo", einfo, help="/einfo [ help | all | portage | uname | gentoo | cflags | chost | featuers | keywords | use | allvars ]")
