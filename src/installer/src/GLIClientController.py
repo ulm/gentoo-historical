@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.38 2005/01/16 04:04:36 agaffney Exp $
+$Id: GLIClientController.py,v 1.39 2005/01/18 08:03:23 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -175,10 +175,7 @@ class GLIClientController(Thread):
 
 	def set_root_passwd(self):
 		self._logger.log("Setting root password.")
-		if self._configuration.get_root_passwd() == "":
-			passwd = GLIUtility.generate_random_password()
-			status = GLIUtility.spawn('echo "root:' + passwd + '" | chpasswd',quiet=True)
-		else:
+		if self._configuration.get_root_passwd() != "":
 			# The password specified in the configuration is encrypted.
 			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
