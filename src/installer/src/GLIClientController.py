@@ -54,9 +54,13 @@ class GLIClientController:
 		return self._configuration
 
 	def run(self):
+		# This method will use the InstallProfile to install the system with the specified options. The 
+		# configuration comes later, with execute_profile()
 		pass
 
 	def execute_profile(self):
+		# This method will use the InstallProfile to apply the specified options. It is basically the 
+		# configuration after the machine has been installed.
 		pass
 
 if __name__ == '__main__':
