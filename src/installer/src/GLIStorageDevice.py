@@ -219,6 +219,7 @@ class Device:
 			tmppart = self._partitions[part]
 			if tmppart.is_extended():
 				return part
+		return 0
 
 	def get_num_sectors(self):
 		return int(self._total_sectors)
@@ -299,33 +300,33 @@ class Partition:
 		self._format = format
 		if blocks == 0:
 			self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
-		if existing:
-			parted_part = device._parted_disk.get_partition(minor)
-			if type == "ntfs":
-				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
-				self._resizeable == True
-			elif type == "ext2" or type == "ext3":
-				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
-				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
-				free_cyl = int(int(block_size) * int(free_blocks) / self._device._cylinder_bytes)
-				free_cyl = int(free_cyl)
-				free_cyl = free_cyl - 200 # just to be safe
-				self._min_cylinders_for_resize = (self._end - self._start + 1) - free_cyl
-				self._resizeable == True
-			elif type == "fat16" or type == "fat32":
-				parted_part = self._device._parted_disk.get_partition(self._minor)
-				parted_fs = parted_part.geom.file_system_open()
-				resize_constraint = parted_fs.get_resize_constraint()
-				min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
-				if int(min_size) != min_size: min_size = int(min_size) + 1
-				self._min_cylinders_for_resize = min_size
-				self._resizeable = True
-			elif type == "":
-				self._min_cylinders_for_resize = 1
-				self._resizeable = True
-		else:
-			self._resizeable = True
+#		if existing:
+#			parted_part = device._parted_disk.get_partition(minor)
+#			if type == "ntfs":
+#				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+#				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+#				self._resizeable == True
+#			elif type == "ext2" or type == "ext3":
+#				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
+#				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
+#				free_cyl = int(int(block_size) * int(free_blocks) / self._device._cylinder_bytes)
+#				free_cyl = int(free_cyl)
+#				free_cyl = free_cyl - 200 # just to be safe
+#				self._min_cylinders_for_resize = (self._end - self._start + 1) - free_cyl
+#				self._resizeable == True
+#			elif type == "fat16" or type == "fat32":
+#				parted_part = self._device._parted_disk.get_partition(self._minor)
+#				parted_fs = parted_part.geom.file_system_open()
+#				resize_constraint = parted_fs.get_resize_constraint()
+#				min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
+#				if int(min_size) != min_size: min_size = int(min_size) + 1
+#				self._min_cylinders_for_resize = min_size
+#				self._resizeable = True
+#			elif type == "":
+#				self._min_cylinders_for_resize = 1
+#				self._resizeable = True
+#		else:
+#			self._resizeable = True
 
 	def is_extended(self):
 		if self._type == "extended":
@@ -340,18 +341,29 @@ class Partition:
 		return False
 
 	def get_logicals(self):
+		if not self.is_extended():
+			return None
 		logicals = []
 		start = self._start
-		while not start > self._end:
-			part = self._device.get_partition_at(start)
-			if not part: break
+#		while not start > self._end:
+#			part = self._device.get_partition_at(start)
+#			print "part=" + str(part)
+#			if not part: break
+#			logicals.append(part)
+#			start = self._device._partitions[part].get_end() + 1
+		parts = self._device._partitions.keys()
+		parts.sort()
+		for part in parts:
+			if part < 5: continue
 			logicals.append(part)
-			start = self._device._partitions[part].get_end() + 1
 		logicals.sort()
 		return logicals
 
 	def get_extended_parent(self):
-		return self._device.get_partition_at(self._start, ignore_extended=0)
+		if not self.is_logical():
+			return None
+		else:
+			return self._device.get_partition_at(self._start, ignore_extended=0)
 
 	def set_start(self, start):
 		self._start = int(start)
@@ -404,15 +416,6 @@ class Partition:
 		return int(self._blocks)
 
 	def get_min_cylinders_for_resize(self):
-#		min_size = self._start + 1
-#		if not self._format:
-#			parted_part = self._device._parted_disk.get_partition(self._minor)
-#			parted_fs = parted_part.geom.file_system_open()
-#			resize_constraint = parted_fs.get_resize_constraint()
-#			min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
-#			if int(min_size) != min_size: min_size = int(min_size) + 1
-#		min_size = min_size + self._start
-#################################################
 		if self.is_extended():
 			min_size = self._start
 			for part in self._device._partitions:

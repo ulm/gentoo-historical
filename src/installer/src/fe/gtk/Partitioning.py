@@ -7,7 +7,7 @@ import PartitionButton
 class Panel(GLIScreen.GLIScreen):
 
 	title = "Partitioning"
-	part_buttons = []
+	part_buttons = {}
 	drives = []
 	devices = {}
 	active_device = ""
@@ -18,7 +18,8 @@ class Panel(GLIScreen.GLIScreen):
 	active_part_cur_size = 0
 	active_part_start_cyl = 0
 	active_part_minor = 0
-	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
+	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
+	supported_filesystems = ['ext2', 'ext3', 'reiserfs', 'linux-swap', 'fat32', 'ntfs']
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -31,10 +32,10 @@ On this screen, you will be presented with a list of detected partitionable devi
 a device will show you the current partitions on it (if any) and allow you to add, remove, and
 resize partitions.
 """
- 	
+ 
 		content_label = gtk.Label(content_str)
-#		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0) # This was removed for screen space
-		container = gtk.HBox(gtk.FALSE, 10)
+		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0) # This was removed for screen space
+		container = gtk.HBox(gtk.FALSE, 0)
 		detected_dev_label = gtk.Label("Devices:")
 		container.pack_start(detected_dev_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		self.detected_dev_combo = gtk.combo_box_new_text()
@@ -120,16 +121,28 @@ resize partitions.
 		self.resize_hpaned.set_position(0)
 		self.resize_box.pack_start(self.resize_hpaned, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box = gtk.HBox(gtk.FALSE, 0)
-		resize_text_box.pack_start(gtk.Label("Partition size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-		self.resize_info_part_size = gtk.Entry(max=11)
-		self.resize_info_part_size.set_width_chars(8)
+		resize_text_box.pack_start(gtk.Label("Type:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		self.resize_info_part_type = gtk.combo_box_new_text()
+		self.resize_info_part_type.append_text("Primary")
+		self.resize_info_part_type.append_text("Logical")
+		self.resize_info_part_type.set_active(0)
+		resize_text_box.pack_start(self.resize_info_part_type, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		resize_text_box.pack_start(gtk.Label("Filesystem:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		self.resize_info_part_filesystem = gtk.combo_box_new_text()
+		for fs in self.supported_filesystems:
+			self.resize_info_part_filesystem.append_text(fs)
+		self.resize_info_part_filesystem.set_active(0)
+		resize_text_box.pack_start(self.resize_info_part_filesystem, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		self.resize_info_part_size = gtk.Entry(max=9)
+		self.resize_info_part_size.set_width_chars(7)
 		self.resize_info_part_size.connect("insert-text", self.validate_keypress)
 		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part_size")
 		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		resize_text_box.pack_start(gtk.Label("Unallocated size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-		self.resize_info_unalloc_size = gtk.Entry(max=11)
-		self.resize_info_unalloc_size.set_width_chars(8)
+		resize_text_box.pack_start(gtk.Label("Unalloc. size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		self.resize_info_unalloc_size = gtk.Entry(max=9)
+		self.resize_info_unalloc_size.set_width_chars(7)
 		self.resize_info_unalloc_size.connect("insert-text", self.validate_keypress)
 		self.resize_info_unalloc_size.connect("focus-out-event", self.update_slider_and_entries, "unalloc-size")
 		resize_text_box.pack_start(self.resize_info_unalloc_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -145,6 +158,9 @@ resize partitions.
 		self.part_button_delete = gtk.Button(" Remove Partition ")
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		part_button_dump_info = gtk.Button(" Dump to console ")
+		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
+		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE)
 		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the color key at the bottom
@@ -261,26 +277,28 @@ resize partitions.
 		self.resize_box.show_all()
 		self.part_button_delete.set_sensitive(gtk.FALSE)
 		self.part_button_create.set_sensitive(gtk.TRUE)
+		if self.devices[self.active_device].get_extended_partition():
+			if self.devices[self.active_device].get_partition_at(start, ignore_extended=0) != 0:
+				self.resize_info_part_type.set_active(1)
+			else:
+				self.resize_info_part_type.set_active(0)
+			self.resize_info_part_type.set_sensitive(gtk.FALSE)
+		else:
+			self.resize_info_part_type.set_active(0)
+			self.resize_info_part_type.set_sensitive(gtk.TRUE)
+		self.resize_info_part_filesystem.set_active(0)
 		self.part_button_box.show_all()
 
 	def part_resized(self, widget, allocation):
 		newwidth = allocation.width
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		hpaned_pos = self.resize_hpaned.get_position()
-#		print "hpaned_width is " + str(hpaned_width) + ", hpaned_pos is " + str(hpaned_pos)
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-		free_space = float(hpaned_width - hpaned_pos) / hpaned_width
 		part_size_cyl = round(self.active_part_max_size * part_space)
 		part_size_mib = int(round(part_size_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
-#		print "part_size_cyl is " + str(part_size_cyl) + ", part_size_mib is " + str(part_size_mib)
 		self.resize_info_part_size.set_text(str(part_size_mib))
-		part_free_cyl = part_size_cyl - self.active_part_min_size
-		part_free_mib = int(round(part_free_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
-#		print "part_free_cyl is " + str(part_free_cyl) + ", part_free_mib is " + str(part_free_mib)
-#		self.resize_info_part_free.set_text(str(part_free_mib))
 		part_unalloc_cyl = self.active_part_max_size - part_size_cyl
 		part_unalloc_mib = int(round(part_unalloc_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
-#		print "part_unalloc_cyl is " + str(part_unalloc_cyl) + ", part_unalloc_mib is " + str(part_unalloc_mib)
 		self.resize_info_unalloc_size.set_text(str(part_unalloc_mib))
 
 	def validate_keypress(self, editable, new_text, new_text_length, position):
@@ -300,7 +318,11 @@ resize partitions.
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
 			self.devices[self.active_device].remove_partition(self.active_part_minor)
-			self.draw_part_box()
+			if self.active_part_minor > 4:
+				ext_part = self.devices[self.active_device].get_extended_partition()
+				if len(self.devices[self.active_device].get_partitions()[ext_part].get_logicals()) == 0:
+					self.devices[self.active_device].remove_partition(ext_part)
+			self.drive_changed(None)
 
 	def part_button_create_clicked(self, button, data=None):
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
@@ -309,9 +331,11 @@ resize partitions.
 		part_size_cyl = round(self.active_part_max_size * part_space)
 		start = self.active_part_start_cyl
 		end = int(start + part_size_cyl)
+		if self.resize_info_part_type.get_active() == 1 and self.devices[self.active_device].get_extended_partition() == 0: # Logical and no extended partition
+			free_start, free_end = self.devices[self.active_device].get_free_space(start)
+			self.devices[self.active_device].add_partition(self.devices[self.active_device].get_free_minor_at(start, end), free_start, free_end, "extended")
 		minor = self.devices[self.active_device].get_free_minor_at(start, end)
-		type = "ext3"
-		print "start=" + str(start) + ", end=" + str(end) + ", minor=" + str(minor)
+		type = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.devices[self.active_device].add_partition(minor, start, end, type)
 		self.draw_part_box()
 		self.part_selected(None, self.active_device, minor)
@@ -323,11 +347,14 @@ resize partitions.
 		partlist = self.devices[self.active_device].get_ordered_partition_list()
 		tmpparts = self.devices[self.active_device].get_partitions()
 		cylinders = self.devices[self.active_device].get_num_cylinders()
-		for button in self.part_buttons:
+		for button in self.part_buttons.keys():
 			self.part_table.remove(self.part_buttons[button])
 		self.part_table.resize(1, 100)
 		self.part_buttons = {}
 		last_percent = 0
+		last_log_percent = 0
+		extended_part = 0
+		extended_table = None
 		for part in partlist:
 			if re.compile("^Free Space").match(part) != None:
 				new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part).groups()
@@ -335,25 +362,57 @@ resize partitions.
 				percent = (float(partsize) / float(cylinders)) * 100
 				if percent > 0 and percent < 1: percent = 1
 				percent = int(percent)
-				self.part_buttons['free_' + new_start + '_' + new_end] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-				self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
-				self.part_table.attach(self.part_buttons['free_' + new_start + '_' + new_end], last_percent, (last_percent + percent), 0, 1)
-				last_percent = last_percent + percent
+				if self.devices[self.active_device].get_partition_at(int(new_start), ignore_extended=0):
+					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
+					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
+					last_log_percent = last_log_percent + percent
+				else:
+					self.part_buttons['free_' + new_start + '_' + new_end] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+					if self.devices[self.active_device].get_partitions().has_key(1) and self.devices[self.active_device].get_partitions().has_key(2) and self.devices[self.active_device].get_partitions().has_key(3) and self.devices[self.active_device].get_partitions().has_key(4):
+						self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.show_no_more_primary_message)
+					else:
+						self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
+					self.part_table.attach(self.part_buttons['free_' + new_start + '_' + new_end], last_percent, (last_percent + percent), 0, 1)
+					last_percent = last_percent + percent
 			elif re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part) != None:
 				tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part).groups()
-				if tmpparts[int(tmpminor)].is_logical(): continue
 				partsize = tmpparts[int(tmpminor)].get_end() - tmpparts[int(tmpminor)].get_start() + 1
 				percent = (float(partsize) / float(cylinders)) * 100
 				if percent > 0 and percent < 1: percent = 1
 				percent = int(percent)
 				if tmpparts[int(tmpminor)].is_extended():
-					self.part_buttons[int(tmpminor)] = gtk.Button()
+					extended_table = gtk.Table(1, percent)
+					extended_table.set_border_width(3)
+					extended_part = int(tmpminor)
+					self.part_buttons[int(tmpminor)] = extended_table
+					self.part_table.attach(self.part_buttons[int(tmpminor)], last_percent, (last_percent + percent), 0, 1)
+					last_percent = last_percent + percent
+				elif tmpparts[int(tmpminor)].is_logical():
+					tmpbutton = PartitionButton.Partition(color1=self.colors[tmpparts[int(tmpminor)].get_type()], color2=self.colors[tmpparts[int(tmpminor)].get_type()], label="", division=0)
+					if percent >= 15:
+						tmpbutton.set_label(tmpdevice + tmpminor)
+					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
+					last_log_percent = last_log_percent + percent
+					tmpbutton.connect("clicked", self.part_selected, tmpdevice, tmpminor)
 				else:
 					self.part_buttons[int(tmpminor)] = PartitionButton.Partition(color1=self.colors[tmpparts[int(tmpminor)].get_type()], color2=self.colors[tmpparts[int(tmpminor)].get_type()], label="", division=0)
-				self.part_buttons[int(tmpminor)].connect("clicked", self.part_selected, tmpdevice, tmpminor)
-				self.part_table.attach(self.part_buttons[int(tmpminor)], last_percent, (last_percent + percent), 0, 1)
-				last_percent = last_percent + percent
+					if percent >= 15:
+						self.part_buttons[int(tmpminor)].set_label(tmpdevice + tmpminor)
+					self.part_buttons[int(tmpminor)].connect("clicked", self.part_selected, tmpdevice, tmpminor)
+					self.part_table.attach(self.part_buttons[int(tmpminor)], last_percent, (last_percent + percent), 0, 1)
+					last_percent = last_percent + percent
 		self.part_table.show_all()
+
+	def show_no_more_primary_message(self, button, data=None):
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="You cannot create more than 4 primary partitions. If you need more partitions, delete one or more and create logical partitions.")
+		msgdlg.run()
+		msgdlg.destroy()
+
+	def dump_part_info_to_console(self, button, data=None):
+		import pprint
+		pp = pprint.PrettyPrinter(indent=4)
+		pp.pprint(self.devices[self.active_device].get_install_profile_structure())
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
@@ -362,3 +421,11 @@ resize partitions.
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.drive_changed(None)
+
+	def deactivate(self):
+		parts_tmp = {}
+		for part in self.devices.keys():
+			parts_tmp[part] = self.devices[part].get_install_profile_structure()
+		self.controller.install_profile.set_partition_tables(parts_tmp)
+
+		return True
