@@ -91,7 +91,7 @@ class Installer:
 		self.window.add(self.globalbox)
 		self.headerbox = gtk.HBox(gtk.FALSE, 0)
 		headerimg = gtk.Image()
-		headerimg.set_from_file(self.__full_path + '/header.png')
+		headerimg.set_from_file(self.__full_path + '/installer-banner-800x64.png') # '/header.png')
 		self.headerbox.add(headerimg)
 		self.topbox = gtk.HBox(gtk.FALSE, 0)
 		self.bottombox = gtk.HBox(gtk.FALSE, 0)
