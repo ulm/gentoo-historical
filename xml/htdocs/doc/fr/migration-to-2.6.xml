@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/migration-to-2.6.xml,v 1.2 2004/12/23 11:11:14 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/migration-to-2.6.xml,v 1.3 2005/01/13 09:32:39 cam Exp $ -->
 
 <guide link="/doc/fr/migration-to-2.6.xml" lang="fr">
 
@@ -31,8 +31,8 @@ Ce document vous assistera dans le processus de migration de Linux 2.4 vers
 Linux 2.6, de devfs vers udev et de OSS vers ALSA.
 </abstract>
 
-<version>0.1.5</version>
-<date>2004-12-22</date>
+<version>0.2.0</version>
+<date>2005-01-09</date>
 
 <chapter>
 <title>Introduction</title>
@@ -558,7 +558,7 @@ commande <c>renice</c> et ses astuces pour ce type d'applications.
 </section>
 <section>
 <title>Le fichier de configuration de X11 devrait maintenant utiliser
-/dev/input/mice</title>
+/dev/input/mice pour les souris PS/2 et USB</title>
 <body>
 
 <p>
@@ -609,6 +609,78 @@ Section "InputDevice"
 	Option      "Device" "/dev/input/mice"
 EndSection
 </pre>
+
+</body>
+</section>
+<section>
+<title>Les nouveaux pilotes ATA série («&nbsp;serial ATA&nbsp;») nomment les
+périphériques différemment</title>
+<body>
+
+<p>
+Si vous utilisiez les pilotes ATA série originaux de Linux 2.4, vous avez sans
+doute remarqué que vos périphériques SATA ont des noms tels que
+<c>/dev/hde</c>.
+</p>
+
+<p>
+Linux 2.6 utilise de nouveaux pilotes SATA (libata). Ceux-ci sont
+basés sur l'infrastructure SCSI du noyau, ce qui implique que vos disques SATA
+apparaîtront désormais comme des périphériques SCSI. Votre premier disque SATA
+se nommera donc <c>/dev/sda</c>. Vous devrez mettre à jour votre fichier
+<c>/etc/fstab</c> pour refléter ces changements. Vous devrez aussi vous
+souvenir de ces nouveaux noms lorsque vous choisirez le paramètre
+root/real_root relatif au démarrage du noyau.
+</p>
+
+<note>
+Puisque libata a été rétrointégré dans les versions récentes de Linux 2.4, vous
+êtes peut-être déjà familier avec ce nouveau schéma de noms de périphériques.
+</note>
+
+</body>
+</section>
+<section>
+<title>Bootsplash n'est plus développé</title>
+<body>
+
+<p>
+Si vous utilisiez le noyau <c>gentoo-sources-2.4</c>, peut-être utilisiez-vous
+la fonctionnalité <e>bootsplash</e> pour obtenir une console de type
+«&nbsp;framebuffer&nbsp;» en couleurs.
+</p>
+
+<p>
+À cause de problèmes dans sa conception, le développeur de bootsplash semble
+avoir perdu son intérêt pour ce projet. Toutefois, le développeur Gentoo
+<e>Michal Januszewski</e> développe actuellement le successeur de bootsplash,
+nommé <c>gensplash</c>, qui est inclus dans le noyau gentoo-dev-sources.
+Vous pouvez lire le guide <uri
+link="http://dev.gentoo.org/~spock/projects/gensplash/archive/gensplash-in-5-easy-steps.txt">Gensplash
+in 5 easy steps</uri> écrit par Michal si vous souhaitez vous familiariser
+avec gensplash.
+</p>
+
+</body>
+</section>
+<section>
+<title>Les pilotes I2C sont maintenant inclus dans le noyau</title>
+<body>
+
+<p>
+Si vous utilisiez <c>lm-sensors</c> pour surveiller la température de votre
+système et son niveau de consommation d'énergie, vous aviez également installé
+le paquet logiciel <c>i2c</c> qui fournit le support nécessaire pour le
+matériel.
+</p>
+
+<p>
+Les pilotes pour le matériel I2C sont maintenant inclus dans le noyau
+2.6&nbsp;; vous n'avez donc plus besoin du paquet externe i2c. Souvenez-vous
+que vous devez compiler dans le noyau le support spécifique à votre matériel
+I2C. Une fois cela fait, vous pourrez utiliser <c>lm-sensors</c> comme à
+l'habitude.
+</p>
 
 </body>
 </section>
@@ -905,63 +977,6 @@ nvidia
 
 </body>
 </section>
-<section>
-<title>Configuration des modules ALSA</title>
-<body>
-
-<p>
-Vous avez sans doute remarqué qu'en suivant les instructions ci-dessus, vous
-avez compilé ALSA comme un ensemble de modules. Cela permet de configurer le
-comportement de ALSA plus aisément. Toutefois, cela nous oblige aussi à choisir
-les modules qui doivent être chargés. Ouvrez <path>/etc/modules.d/alsa</path>
-dans votre éditeur de texte&nbsp;:
-</p>
-
-<pre caption="Ouvrir /etc/modules.d/alsa avec nano">
-# <i>nano -w /etc/modules.d/alsa</i>
-</pre>
-
-<p>
-Recherchez la section étiquetée <e>IMPORTANT</e>. Dans la plupart des cas,
-vous n'aurez qu'à décommenter et à modifier les alias pour snd-card-0 et
-snd-slot-0.
-</p>
-
-<pre caption="Exemple d'un extrait de /etc/modules.d/alsa">
-## IMPORTANT:
-## You need to customise this section for your specific sound card(s)
-## and then run `update-modules' command.
-## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
-##
-##  ALSA portion
-
-# Mon portable utilise le pilote snd-maestro3.
-alias snd-card-0 snd-maestro3
-
-##  OSS/Free portion
-
-# Habituellement, il suffit de décommenter la ligne suivante :
-alias sound-slot-0 snd-card-0
-</pre>
-
-<p>
-Pour en savoir plus sur le nom du pilote à utiliser, consultez le <uri
-link="/doc/fr/alsa-guide.xml">Guide ALSA pour Gentoo Linux</uri>.  N'oubliez
-pas d'ajouter le préfixe <e>snd-</e> à ce nom lorsque vous éditez le fichier de
-configuration.
-</p>
-
-<p>
-Finalement, assurez-vous que le script d'initialisation <c>alsasound</c> est
-exécuté lors du démarrage&nbsp;:
-</p>
-
-<pre caption="Ajouter alsasound au niveau d'exécution «&nbsp;boot&nbsp;»">
-# <i>rc-update add alsasound boot</i>
-</pre>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
@@ -997,25 +1012,42 @@ essai&nbsp;!
 </body>
 </section>
 <section>
-<title>Sortir les canaux ALSA du mode muet</title>
+<title>Configurer les canaux ALSA et les sortir du mode muet</title>
 <body>
 
 <p>
-Par défaut, les canaux ALSA sont muets. Vous n'entendrez donc rien lorsque vous
-jouerez un son pour la première fois. Vous devez sortir ces canaux du mode
-muet. Exécutez le programme <c>alsamixer</c> à partir d'une console et utilisez
-les flèches pour choisir un canal et ajuster son volume, et la touche M pour
-activer et désactiver le mode muet. Consultez le <uri
-link="/doc/fr/alsa-guide.xml">Guide ALSA pour Gentoo Linux</uri> pour plus de
-détails, incluant des méthodes alternatives pour la gestion des canaux ALSA.
+Nous allons maintenant procéder à la configuration d'ALSA et sortir les
+canaux audio du mode muet. Les paquets logiciels ALSA fournissent un
+utilitaire qui rend cette tâche fort aisée&nbsp;:
 </p>
 
+<pre caption="Lancer l'utilitaire de configuration automatique d'ALSA">
+# <i>alsaconf</i>
+</pre>
+
+<p>
+La manière de procéder est simple&nbsp;: permettez la mise à jour automatique
+du fichier <e>/etc/modules.d/alsa</e>, puis acceptez qu'ALSA soit rechargé.
+Le programme alsaconf a alors fini son travail. Toutefois, vous devrez
+exécuter cet utilitaire plusieurs fois si votre système comporte plus d'un
+périphérique audio.
+</p>
+
+<p>
+Vous devriez maintenant ajouter le script d'initialisation <c>alsasound</c> au
+niveau d'exécution «&nbsp;boot&nbsp;», afin que les volumes des canaux audio
+soient sauvegardés lors de l'extinction de votre ordinateur et restaurés lors
+du démarrage.
+</p>
+
+<pre caption="Ajouter alsasound au niveau d'exécution «&nbsp;boot&nbsp;»">
+# <i>rc-update add alsasound boot</i>
+</pre>
+
 <note>
-Le script d'initialisation alsasound que nous avons ajouté au niveau
-d'exécution «&nbsp;boot&nbsp;» sauvegardera les niveaux du mixeur lors de
-l'extinction de l'ordinateur et les restaurera lorsque vous démarrerez à
-nouveau. Vous n'aurez pas à ajuster le volume chaque fois que vous
-démarrerez&nbsp;!
+L'utilitaire <c>alsaconf</c> choisit le volume initial de votre périphérique
+audio. Si ce volume est inapproprié, vous pouvez le régler avec le programme
+<c>alsamixer</c>.
 </note>
 
 </body>
@@ -1136,6 +1168,82 @@ anicroche. Envoyez-nous vos commentaires par <mail
 link="dsd@gentoo.org">courriel</mail> afin que ce guide soit fin prêt pour la
 sortie de Gentoo 2005.0.
 </p>
+
+</body>
+</section>
+<section>
+<title>Désinstaller Linux 2.4</title>
+<body>
+
+<p>
+Après quelque temps passé avec Linux 2.6, vous concluerez peut-être que vous
+n'avez plus besoin du tout de Linux 2.4. Les étapes nécessaires à la
+désinstallation de Linux 2.4 de votre système sont détaillées ci-dessous. Ne
+suivez ces instructions que si vous êtes certain de ne plus avoir l'intention
+d'utiliser Linux 2.4&nbsp;!
+</p>
+
+<p>
+Les sources des noyaux 2.4 peuvent être supprimées en utilisant emerge comme
+vous le faites d'habitude. Par exemple, si des versions 2.4 des paquets
+vanilla-sources et gentoo-sources sont installées sur votre système, vous
+pouvez utiliser la commande suivante pour les désinstaller tout en gardant
+intactes les versions 2.6&nbsp;:
+</p>
+
+<pre caption="Exemple&nbsp;: désinstaller les sources de Linux 2.4">
+# <i>emerge unmerge =vanilla-sources-2.4.* =gentoo-sources-2.4.*</i>
+</pre>
+
+<p>
+Portage ne supprimera pas complètement les sources des noyaux 2.4 puisque des
+fichiers temporaires sont créés après l'installation des sources pendant la
+compilation du noyau. Il est tout à fait sûr de supprimer manuellement
+ces fichiers avec la commande suivante&nbsp;:
+</p>
+
+<pre caption="Supprimer les fichiers temporaires restant">
+# <i>rm -rf /usr/src/linux-2.4.*</i>
+</pre>
+
+<p>
+Vous pouvez aussi supprimer les modules et les fichiers qui contiennent des
+informations relatives à vos anciens noyaux 2.4, ces composants ne sont plus
+nécessaires.
+</p>
+
+<pre caption="Supprimer les modules 2.4 installés précédemment">
+# <i>rm -rf /lib/modules/2.4.*</i>
+</pre>
+
+<p>
+Les images binaires des noyaux 2.4 que vous utilisiez pour démarrer votre
+système peuvent également être supprimées. Pour ce faire, vous devez monter
+votre partition <c>/boot</c>, puis supprimer les images. Vous devez aussi
+mettre à jour la configuration de votre chargeur de démarrage afin d'y
+supprimer les références à ces anciennes images.
+</p>
+
+<!-- Bug #77755 ("alsa-drivers" -> "alsa-driver") already fixed below. -->
+<p>
+Certains utilisateurs de Linux 2.4 auront installé le paquet logiciel
+<c>alsa-driver</c> afin de bénificier des nouvelles capacités audio de Linux
+2.6. Si vous êtes l'un de ces utilisateurs et que vous avez suivi notre
+suggestion qui consiste à installer ALSA à partir des sources d'un noyau 2.6
+(plutôt que d'utiliser le paquet <c>alsa-driver</c>), vous pouvez maintenant
+supprimer ce paquet afin d'éviter d'éventuels conflits dans le futur.
+</p>
+
+<p>
+Enfin, les utilisateurs de <c>lm-sensors</c> auront tous installé le
+paquet <c>i2c</c> afin d'obtenir les pilotes de périphériques. Comme mentionné
+plus tôt, les pilotes I2C sont maintenant inclus dans le noyau. Le paquet peut
+donc être désinstallé afin de prévenir d'éventuels conflits.
+</p>
+
+<pre caption="Désinstaller alsa-driver et i2c"> 
+# <i>emerge unmerge alsa-driver i2c</i>
+</pre>
 
 </body>
 </section>
