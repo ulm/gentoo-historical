@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.12 2004/11/16 07:07:59 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.13 2004/11/19 03:02:27 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -90,13 +90,12 @@ class ArchitectureTemplate:
 
 		self._configuration.add_install_steps_completed("stage2")
 
-	def preinstall(self):
-		if not os.path.isdir(self._configuration.get_root_mount_point()):
-			os.makedirs(self._configuration.get_root_mount_point())
+	def unpack_stage_tarball(self):
+		if not os.path.isdir(self._chroot_dir):
+			os.makedirs(self._chroot_dir)
+		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, keep_permissions=True)
 
-		# Fetch and unpack the stage tarball here.
-		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._configuration.get_root_mount_point(),keep_permissions=True)
-
+	def prepare_chroot(self):
 		ret = GLIUtility.spawn("cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf",True)
 		if not GLIUtility.exitsuccess(ret):
 			raise CopyError('warning','preinstall','Could not copy resolv.conf!',True)
@@ -109,8 +108,8 @@ class ArchitectureTemplate:
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
 		# Then you should be done... at least with the preinstall.
 
-	def notify_frontend(self):
-		os.kill(os.getpid(), SIGUSR1)
+	def notify_frontend(self, type, data):
+		self._cc.addNotification(type, data)
 
 	def install_packages(self):
 		"Will install any extra software!"
