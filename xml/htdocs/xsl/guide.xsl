@@ -224,18 +224,18 @@
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='about'">
-				<a class="highlight" href="/main/en/about.xml"> About </a> |
+				<a class="highlight" href="/main/en/about.xml">About</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/about.xml"> About </a> |
+				<a class="menulink" href="/main/en/about.xml">About</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='contract'">
-				<a class="highlight" href="/main/en/contract.xml"> Social Contract</a> |
+				<a class="highlight" href="/main/en/contract.xml">Social Contract</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/contract.xml"> Social Contract</a> |
+				<a class="menulink" href="/main/en/contract.xml">Social Contract</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
@@ -249,10 +249,10 @@
 <a class="menulink" href="http://forums.gentoo.org">Forums</a> |
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='lists'">
-				<a class="highlight" href="/main/en/lists.xml"> Lists</a> |
+				<a class="highlight" href="/main/en/lists.xml">Lists</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/lists.xml"> Lists</a> |
+				<a class="menulink" href="/main/en/lists.xml">Lists</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 <a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
@@ -268,10 +268,10 @@
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='where'">
-				<a class="highlight" href="/main/en/where.xml"> Get Gentoo!</a>
+				<a class="highlight" href="/main/en/where.xml">Get Gentoo!</a>
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/where.xml"> Get Gentoo!</a> 
+				<a class="menulink" href="/main/en/where.xml">Get Gentoo!</a> 
 			</xsl:otherwise>
 		</xsl:choose>
 		</p>
