@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/prelink-howto.xml,v 1.14 2005/03/18 10:00:49 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/prelink-howto.xml,v 1.15 2005/03/25 11:36:43 neysx Exp $ -->
 
 <guide link="/doc/fr/prelink-howto.xml" lang="fr">
 <title>Guide pour le Prelink sous Gentoo</title>
@@ -30,8 +30,8 @@ ultérieur.
 
 <license/>
 
-<version>1.10</version>
-<date>2005-03-18</date>
+<version>1.11</version>
+<date>2005-03-25</date>
 
 <chapter>
 <title>Introduction</title>
@@ -50,13 +50,10 @@ considérable.
 </p>
 
 <p>
-Sur la plupart des systèmes, les bibliothèques ne changent pas souvent et
-quand un programme est en cours d'exécution l'opération de liaison est
-toujours la même. Le prelink utilise ceci à son avantage en évitant la liaison
-et en l'enregistrant dans l'exécutable.
-Comme pour la liaison, vous avez besoin de ld-linux.so dans la
-glibc et, pour pouvoir utiliser le prelink, vous devez avoir une version de la
-glibc &gt;=glibc-2.3.1-r2.
+Sur la plupart des systèmes, les bibliothèques ne changent pas souvent et quand
+un programme est en cours d'exécution l'opération de liaison est toujours la
+même. Le prelink utilise ceci à son avantage en évitant la liaison et en
+l'enregistrant dans l'exécutable.
 </p>
 
 <p>
@@ -74,21 +71,31 @@ exécutable prelinké.
 <body>
 
 <ul>
-<li>Le prelink s'effectue via un programme appelé, de manière originale,
-<path>prelink</path>. Il modifie le binaire afin de lui permettre de démarrer
-plus rapidement.</li>
-<li>Si une application prelinkée voit une de ses bibliothèques modifiée (mise à
-jour), alors il faut relancer <path>prelink</path> sur l'application, dans le
-cas contraire vous n'obtiendrez aucune amélioration de vitesse. En fait, à
-chaque fois que vous mettez à jour via Portage un paquet qui met à jour des
-bibliothèques, vous devez relancer <path>prelink</path> sur ces
-bibliothèques.</li>
-<li>Les modifications effectuées sur le binaire sont complètement réversibles.
-Prelink a une fonction d'annulation.</li>
-<li>Les versions récentes de Portage peuvent gérer, via <path>prelink</path>,
-les changements de MD5sum et mtime des binaires.</li>
-<li>Vous devez avoir installé glibc-2.3.1-r2 ou ultérieur et compilé vos
-binaires avec binutils-2.13.90.0.xx ou ultérieur.</li>
+  <li>
+    Le prelink s'effectue via un programme appelé, de manière originale,
+    <c>prelink</c>. Il modifie le binaire afin de lui permettre de démarrer
+    plus rapidement.
+  </li>
+  <li>
+    Si une application prelinkée voit une de ses bibliothèques modifiée (mise à
+    jour), alors il faut relancer <c>prelink</c> sur l'application, dans le cas
+    contraire vous n'obtiendrez aucune amélioration de vitesse. En fait, à
+    chaque fois que vous mettez à jour via Portage un paquet qui met à jour des
+    bibliothèques, vous devez relancer <c>prelink</c> sur ces bibliothèques.
+  </li>
+  <li>
+    Les modifications effectuées sur le binaire sont complètement réversibles.
+    Prelink a une fonction d'annulation.
+  </li>
+  <li>
+    Les versions récentes de Portage peuvent gérer, via <c>prelink</c>,
+    les changements de MD5sum et mtime des binaires.
+  </li>
+  <li>
+    Il n'est pas nécessaire de définir <c>FEATURES="prelink"</c> dans le
+    fichier <path>make.conf</path>, car Portage utilise prelink automatiquement
+    quand le programme <c>prelink</c> est installé sur votre système.
+  </li>
 </ul>
 
 </body>
@@ -101,36 +108,9 @@ binaires avec binutils-2.13.90.0.xx ou ultérieur.</li>
 <title>Installation des programmes</title>
 <body>
 
-<note>
-Je considère que vous avez un système Gentoo 1.4 et qu'il a été compilé avec
-gcc-3.2 ou ultérieur et binutils-2.13.90.0.xx ou ultérieur. Ceci est nécessaire
-afin que vos binaires puissent être passés à <path>prelink</path>.
-</note>
-
 <p>
-Mettez tout d'abord à jour votre arborescence de Portage, car beaucoup
-d'applications nécessaires sont nouvelles et des corrections de bogues sont
-constamment ajoutées.
-</p>
-
-<pre caption="Mise à jour de l'arborescence de Portage">
-# <i>emerge --sync</i>
-</pre>
-
-<p>
-Ensuite, assurez-vous de la présence de portage-2.0.46 ou ultérieur. Elle est
-nécessaire afin que portage puisse reconnaître les binaires prelinkés et ainsi
-les désinstaller correctement lorsque que c'est requis, car
-<path>prelink</path> change le MD5sum des binaires.
-</p>
-
-<pre caption="Vérifier la version de Portage">
-# <i>emerge ">=portage-2.0.46"</i>
-</pre>
-
-<p>
-Vous pouvez maintenant installer le programme de prelink. Le processus d'emerge
-vérifie automatiquement que votre système peut utiliser <path>prelink</path> en
+Vous devez d'abord installer le programme <c>prelink</c>. Le processus d'emerge
+vérifie automatiquement que votre système peut utiliser <c>prelink</c> en
 toute sécurité.
 </p>
 
@@ -163,7 +143,25 @@ link="cretin@gentoo.org">Stefan Jones</mail>.
 
 </body>
 </section>
+<section>
+<title> Préparer votre système</title>
+<body>
 
+<p>
+Ensuite, vous devez activer l'option <c>pic</c> dans votre variable USE dans le
+fichier <path>/etc/make.conf</path>. N'oubliez pas d'exécuter la commande
+<c>emerge --update --deep --newuse world</c> pour que l'option que vous venez
+d'ajouter soit intégrée à votre système.
+</p>
+
+<p>
+Veuillez aussi vérifier que l'option de compilation <c>-fPIC</c> <e>n'est
+pas</e> définie dans les variables CFLAGS et CXXFLAGS. Si vous avez utilisé
+cette option, vous devrez recompiler tout votre système sans elle.
+</p>
+
+</body>
+</section>
 <section>
 <title>Configuration</title>
 <body>
