@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.3 2004/07/07 01:39:57 port001 Exp $
+# $Id: User.py,v 1.4 2004/07/19 00:58:45 hadfield Exp $
 #
 
 from time import strftime, gmtime
@@ -25,8 +25,10 @@ class User(Parent):
         """ Add a new user to the database,
             details contains [alias, fullname, email, type, passwd] """
 
+        passwd = details["passwd"]
+        del details["passwd"]
         details.update({"rank": 0, "joined": strftime("%Y-%m-%d", gmtime())})
-        return Parent.Create(self, details)
+        return Parent.Create(self, details, encrypt = {"passwd": passwd})
 
     
     def Modify(self, details):
@@ -36,14 +38,17 @@ class User(Parent):
 
         if details["passwd"] == None:
             del details["passwd"]
-        
-        return Parent.Modify(self, details.keys(), details)
+            passwd = details["passwd"]
+
+            return Parent.Modify(self, details, encrypt = {"passwd": passwd})
+        else:
+            return Parent.Modify(self, details)
 
 
     def UpdateIP(self, ipaddr):
         """Update lastip for given uid"""
 
-        return Parent.Modify(self, ["lastip"], {"lastip": ipaddr})
+        return Parent.Modify(self, {"lastip": ipaddr})
 
 
     def AliasExists(self, alias):
@@ -55,9 +60,10 @@ class User(Parent):
     def GetUid(self, alias):
         """Return UID for given alias"""
 
-        result = MySQL.Query("SELECT %s_id FROM %s%s" %
+        result = MySQL.Query("SELECT %s_id FROM %s%s WHERE %s_alias=" %
                              (self.tablename, Config.MySQL["prefix"],
-                              self.tablename), fetch="one")
+                              self.tablename, self.tablename) +
+                             "%s", alias, fetch="one")
 
         if result == None:
             return False
