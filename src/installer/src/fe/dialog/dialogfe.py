@@ -88,7 +88,7 @@ def set_partitions():
 				if code != DLG_OK: continue
 				minor = devices[drive_to_partition].get_partition_at(int(new_start) - 1) + 1
 				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-				code, type = d.menu("Type for new partition", choices=dmenu_list_to_choices(part_types))
+				code, type = d.menu("Type for new partition (reiserfs not supported!)", choices=dmenu_list_to_choices(part_types))
 				if code != DLG_OK: continue
 				type = part_types[int(type)-1]
 				if type == "other":
@@ -103,7 +103,7 @@ def set_partitions():
 					tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part_to_edit).groups()
 					tmppart = partitions[int(tmpminor)]
 					tmptitle = tmpdevice + tmpminor + ": " + str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-					menulist = ["Delete", "Mount Point", "Mount Options"]
+					menulist = ["Delete", "Mount Point", "Mount Options", "Type", "Format"]
 					code, part_action = d.menu(tmptitle, choices=dmenu_list_to_choices(menulist), cancel="Back")
 					if code != DLG_OK: break
 					part_action = menulist[int(part_action)-1]
@@ -119,6 +119,20 @@ def set_partitions():
 					elif part_action == "Mount Options":
 						code, answer = d.inputbox("Enter your options for partition" + str(tmpminor), init=tmppart.get_mountopts())
 						if code == DLG_OK: tmppart.set_mountopts(answer)
+					elif part_action == "Type":
+						part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
+						code, type = d.menu("Type for partition (reiserfs not supported!)", choices=dmenu_list_to_choices(part_types))
+						if code != DLG_OK: continue
+						type = part_types[int(type)-1]
+						if type == "other":
+							code, type = d.inputbox("Partition's type?")
+						tmppart.set_type(type)
+					elif part_action == "Format":
+						answer = d.yesno("Do you want to format this partition?")
+						if code == DLG_OK: tmppart.set_format(answer)
+						
+						
+						
 	if d.yesno("Would you like to save changes?") == DLG_YES:
 		parts_tmp = {}
 		for part in devices.keys():
