@@ -2,8 +2,8 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__version__ = "$Revision: 1.2 $"
-# $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $"
+__revision__ = "$Revision: 1.3 $"
+# $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
 import os
@@ -16,15 +16,14 @@ from cgi import escape
 from urllib import quote
 
 # import portage, but temporarily redirect stderr
-try:
-    portage
-except NameError:
+if 'portage' not in dir():
     null = open('/dev/null', 'w')
     tmp = sys.stderr
     sys.stderr = null
     sys.path = ["/usr/lib/portage/pym"]+sys.path
     import portage
     sys.stderr = tmp
+    sys.path = sys.path[1:]
 
 tree = portage.portdbapi('/usr/portage')
 
@@ -33,7 +32,7 @@ def is_masked(ebuild):
 
     return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
     
-def is_new(db,ebuild):
+def is_new(db, ebuild):
     """Check for newness. An ebuild is considered new if it is the
     only ebuild with that category/name in ebuild and it has no prevarch"""
     
@@ -59,7 +58,8 @@ def changelog_to_html(changelog):
 
 def homepage_to_html(homepage):
     """convert HOMEPAGE entry to HTML"""
-    if not homepage.strip(): return "?"
+    if not homepage.strip(): 
+        return "?"
     homepage = homepage.replace('|',' ')
     pieces = homepage.split()
     count = len(pieces)
@@ -73,6 +73,7 @@ def homepage_to_html(homepage):
         ['</span>'])
 
 def license_to_html(license):
+    """Create link to license[s]"""
     if not license.strip(): return "?"
     license = license.replace('|',' ')
     pieces = license.split()
@@ -80,9 +81,9 @@ def license_to_html(license):
         'licenses/%s">%s</a>' % (piece, piece) for piece in pieces]
     return '<br>\n'.join(html)
 
-def package_to_html(pkginfo,db):
-    """This function needs a database (db) connection because it performs a query_to_dict
-    on the package"""
+def package_to_html(pkginfo, db):
+    """This function needs a database (db) connection because it performs a 
+    query_to_dict on the package"""
     
     table_begin = '<table class="ebuild">'
     name = '<tr><td class="fields">%s</td></tr>' % pkginfo['name']
@@ -90,9 +91,8 @@ def package_to_html(pkginfo,db):
         '<img align="right" alt="" src="%s/%s.png">'
         '<b>Description: </b>%s</td></tr>' % (config.ICONS, 
         pkginfo['category'], escape(pkginfo['description'])))
-    ebuilds = get_recent_releases(pkginfo,db)
+    ebuilds = get_recent_releases(pkginfo, db)
     releases = '<tr><td>%s</td></tr>' % archs_to_html(ebuilds, 'Releases')
-    bug_string = ''
     #bug_string = ('<br><h3>Related bugs:</h3>\n%s' 
     #    % bugs_to_html(pkginfo['name']))
     general = '<tr><td>%s</td></tr>' % general_info_to_html(pkginfo)
@@ -101,6 +101,7 @@ def package_to_html(pkginfo,db):
     return '\n\t'.join([table_begin, rows, table_end])
 
 def archs_to_html(ebuilds, heading = None):
+    """Create table for availability on each architecture"""
     heading = heading or '&nbsp;'
     table_begin = '<table class="releases">'
     header_row = ''.join(['<tr><td><b>%s</b></td>' % heading] +
@@ -133,6 +134,9 @@ def archs_to_html(ebuilds, heading = None):
     return '\n\t'.join([table_begin] + [header_row] + rows + [table_end])
     
 def ebuild_to_html(ebinfo, new=0, show_bugs=0):
+    """Convert ebuild (dict) to html, if new, print out a "this is new" notice
+    if show_bugs, show bugs for this particular ebuild (requires access to
+    bugzilla"""
     if new:
         new_string = """ &nbsp;&nbsp;<span class="new">new!</span> """
     else:
@@ -166,7 +170,8 @@ def ebuild_to_html(ebinfo, new=0, show_bugs=0):
     if 1 == 1:
         bug_string = ''
     else:
-        bug_string = '<br><h3>Related bugs:</h3>%s' % bugs_to_html(ebinfo['name'])
+        bug_string = '<br><h3>Related bugs:</h3>%s' \
+            % bugs_to_html(ebinfo['name'])
             
     return '\n\t'.join([table_begin, 
         name_and_date, 
@@ -228,7 +233,7 @@ def bugs_to_html(package):
     else:
         return "None"
                 
-def get_most_recent(db,max=config.MAXPERPAGE,arch="",branch=""):
+def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch=""):
     c = db.cursor()
     extra = ''
     if arch:
@@ -253,9 +258,10 @@ def get_most_recent(db,max=config.MAXPERPAGE,arch="",branch=""):
     return results
     
 def query_to_dict(d):
+    """Convert a SQL query to a dict"""
     einfo = {}
-    keys = ('category','name','version','time','description','changelog',
-        'arch','homepage','license')
+    keys = ('category', 'name', 'version', 'time', 'description', 'changelog',
+        'arch', 'homepage', 'license')
     for i in range(len(keys)):
         try:
             einfo[keys[i]] = d[i]
@@ -263,20 +269,19 @@ def query_to_dict(d):
             continue
     return einfo
 
-def get_recent_releases(pkg,db,max=config.MAX_RECENT_RELEASES):
+def get_recent_releases(pkg, db, max=config.MAX_RECENT_RELEASES):
     """Return MAX_RECENT_RELEASES most recent releases for pkg.  Returns and
     ebuild-type dict"""
     c = db.cursor()
-    query = """SELECT category,name,version,when_found,NULL,changelog,arch ,NULL,NULL
-    FROM ebuild WHERE name="%s" AND 
-    category="%s" ORDER BY version DESC LIMIT %s
-    """ % (pkg['name'],pkg['category'],max)
+    query = ('SELECT category,name,version,when_found,NULL,changelog,arch ,'
+        'NULL,NULL FROM ebuild WHERE name="%s" AND category="%s" ORDER BY '
+        'version DESC LIMIT %s' % (pkg['name'],pkg['category'],max))
     c.execute(query)
     results = c.fetchall()
     #print results
     return [ query_to_dict(i) for i in results ]
     
-def ebuilds_to_rss(fp,ebuilds,simple=False,subtitle=""):
+def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
     """write out ebuild info to RSS file (fp)"""
     fp.write("""<?xml version="1.0" encoding="utf-8"?>
         <rss version="0.92">
@@ -320,13 +325,14 @@ if __name__ == '__main__':
         if sys.argv[1] == '-g':
             ebuilddb.main()
     except IndexError:
-            pass
+        pass
             
     db = ebuilddb.db_connect()
-    branches = ('','stable','testing')
+    branches = ('', 'stable', 'testing')
     for arch in [''] + config.ARCHLIST:
         for branch in branches:
-            fullpath = os.path.join(config.LOCALHOME,"archs",arch,branch,config.INDEX)
+            fullpath = os.path.join(config.LOCALHOME, "archs", arch, branch, 
+                config.INDEX)
             index = open(fullpath,'w')
             if arch:
                 sarch = arch
@@ -340,19 +346,21 @@ if __name__ == '__main__':
             index.write("""<table border="0" cellpadding="0" cellspacing="5" 
                 width="100%">\n""")
             index.write("""<tr><td valign="top">\n""")
-            index.write('<!--#include file="archnav.html" -->\n\n</td></tr>\n<tr><td>') 
-            results = get_most_recent(db,arch=arch,branch=branch)
+            index.write('<!--#include file="archnav.html" -->\n\n</td></tr>\n'
+                '<tr><td>') 
+            results = get_most_recent(db, arch=arch, branch=branch)
             ebuilds = [ query_to_dict(i) for i in results ]
             for ebuild in ebuilds:
-                new = is_new(db,ebuild)
+                new = is_new(db, ebuild)
                 pkgfilename = "%s/%s-%s.html" % (
                     config.EBUILD_FILES,ebuild['name'],ebuild['version'])
-                ebuild_html = ebuild_to_html(ebuild,new)
-                if arch == '' and branch == '':  # and not os.path.exists(pkgfilename):
+                ebuild_html = ebuild_to_html(ebuild, new)
+                if arch == '' and branch == '':
                     pkgfile = open(pkgfilename,'w')
                     pkgfile.write(ebuild_html)
                     pkgfile.close()
-                    ebuildfilename = "%s/%s/%s/%s-%s.ebuild" % (ebuilddb.config.PORTAGE_DIR,
+                    ebuildfilename = "%s/%s/%s/%s-%s.ebuild" \
+                        % (ebuilddb.config.PORTAGE_DIR,
                         ebuild['category'],ebuild['name'],ebuild['name'],
                         ebuild['version'])
                     os.system('touch -r %s %s || touch -d "today -1 year" %s' 
@@ -361,15 +369,17 @@ if __name__ == '__main__':
                 try:
                     index.write('%s\n\n' % (ebuild_html))
                 except IOError:
-                    pass
+                    continue
             index.write("""</table>\n""")
             index.close()
             
-            subtitle = ' %s %s' % (arch,branch)
-            rss = open(os.path.join(config.LOCALHOME,"archs",arch,branch,config.RSS),'w')
-            ebuilds_to_rss(rss,ebuilds,simple=False,subtitle=subtitle)
+            subtitle = ' %s %s' % (arch, branch)
+            rss = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
+                config.RSS), 'w')
+            ebuilds_to_rss(rss, ebuilds, simple=False, subtitle=subtitle)
             rss.close()
         
-            rss2 = open(os.path.join(config.LOCALHOME,"archs",arch,branch,config.RSS2),'w')
-            ebuilds_to_rss(rss2,ebuilds,simple=True,subtitle=subtitle)
+            rss2 = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
+                config.RSS2), 'w')
+            ebuilds_to_rss(rss2, ebuilds, simple=True, subtitle=subtitle)
             rss.close()
