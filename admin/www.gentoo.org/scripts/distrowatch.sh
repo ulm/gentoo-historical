@@ -1,33 +1,21 @@
-#!/bin/sh
+#!/bin/bash
 #
-# this file creates a list of packages from the Portage tree
-# for distrowatch to pull from.
+# $Header: /var/cvsroot/gentoo/admin/www.gentoo.org/scripts/distrowatch.sh,v 1.4 2003/03/14 05:03:14 rajiv Exp $
 #
-#############################################################
-#                                                           #
-#   THE gweb ACCOUNT MUST BE ABLE TO RUN emerge sync IN     #
-#   ORDER FOR THIS TO WORK                                  #
-#                                                           #
-#############################################################
+# this file creates a list of packages from the Portage tree for distrowatch
+#
 
-# used for testing
-#SCRIPTDIR="./"
-#TARGETDIR="/tmp/"
+[ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
+[ -z "${WEBSCRIPTS}" ] && echo "\$WEBSCRIPTS not set; exiting" && exit 1
 
-# used for production
-SCRIPTDIR="/home/httpd/scripts/"
-TARGETDIR="/home/httpd/gentoo/xml/htdocs/dyn/"
-
-# emerge sync needs to be run using sudo so gweb can do it.
-sudo /usr/bin/emerge sync > /dev/null 2>&1
+echo ">>> Updating distrowatch lists..."
 
 # gentoo_pkglist_x86.txt contains the stable branch packages
-${SCRIPTDIR}pkglist.py 1> ${TARGETDIR}gentoo_pkglist_x86.txt 2> /dev/null
-
-# wait 5 minutes to let the above stuff finish
-sleep 300
+echo ">>> Generating stable package list..."
+ACCEPT_KEYWORDS="x86" ${WEBSCRIPTS}/pkglist.py 1> ${WEBROOT}/dyn/gentoo_pkglist_x86.txt 2> /dev/null
 
 # gentoo_pkglist_X86.txt contains the unstable branch packages (note capital X)
-ACCEPT_KEYWORDS="~x86" ${SCRIPTDIR}pkglist.py 1> ${TARGETDIR}gentoo_pkglist_X86.txt 2> /dev/null
+echo ">>> Generating unstable package list..."
+ACCEPT_KEYWORDS="~x86" ${WEBSCRIPTS}/pkglist.py 1> ${WEBROOT}/dyn/gentoo_pkglist_X86.txt 2> /dev/null
 
-
+echo ">>> Done."
