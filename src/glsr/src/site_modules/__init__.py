@@ -3,7 +3,8 @@ __all__ = {
     "Page_Main": ["main"],
     "Page_Script": ["create_script", "save_script"],
     "Page_Search": ["script_search"],
-    "View_Script": ["view_script", "post_comment"]
+    "View_Script": ["view_script", "post_comment"],
+    "Memberlist": ["memberlist"]
     }
 
 # The page to display when all else fails.

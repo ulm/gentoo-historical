@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.16 2004/12/25 01:36:24 port001 Exp $
+# $Id: Config.py,v 1.17 2005/01/25 00:51:59 hadfield Exp $
 #
 
 __modulename__ = "Config"
@@ -27,7 +27,7 @@ MySQL = {
     }
 
 t_prefix = "/usr/local/share/glsr/templates/"
-#t_prefix = "/var/www/localhost/htdocs/glsr/templates/"
+#t_prefix = "/var/www/buffmuthers.com/htdocs/projects/glsr/templates/"
 
 Template = {
     "test":                     t_prefix + "test.tpl",
@@ -42,6 +42,7 @@ Template = {
     "view_script":              t_prefix + "View_Script.tpl",
     "view_scripts":             t_prefix + "View_Scripts.tpl",
     "login":			t_prefix + "Login.tpl",
+    "memberlist":               t_prefix + "Memberlist.tpl",
     "admin_header":             t_prefix + "admin/Header.tpl",	
     "admin_main":               t_prefix + "admin/Main.tpl",
     "admin_user":               t_prefix + "admin/User.tpl",
@@ -55,19 +56,21 @@ Template = {
     "admin_statistics":         t_prefix + "admin/Statistics.tpl"
     }
 
-URL = "http://localhost/glsr/"
-#URL = "http://www.buffmuthers.com/projects/glsr/htdocs/"
+URL = "http://localhost/glsr/htdocs/"
+#URL = "http://buffmuthers.com/projects/glsr/htdocs/"
 Contact = "port001@gentoo.org"
 
 Memcache = False # Not supported yet
 
 Logging = True
 LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
+#LogFile = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/glsr.log"
 
 Debug = True
 
 ErrorReporting = True
 ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
+#ErrorReportLog = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/error_reports.log"
 
 # Default report list offset
 ErrorReportListOffset = 5
