@@ -112,6 +112,17 @@ modules from /lib/modules, again using <c>modprobe</c>:</p>
 
 <p>Above, we modprobe the <c>aic7xxx</c> SCSI driver and then make sure that SCSI CD-ROM (<c>sr_mod</c>)
 and disk (<c>sd_mod</c>) support is loaded.</p>
+
+<p> If you are using hardware RAID, you will want to load the modules for ATA-RAID and for your RAID controller</p>
+
+<pre>
+# <i>insmod ataraid</i>
+# <i>insmod pdcraid</i>
+	<comment>(Promise Raid Controller)</comment>
+# <i>insmod hptraid</i>
+	<comment>(Highpoint Raid Controller)</comment>
+</pre>
+
 <note><c>hdparm</c> is included on the Gentoo iso.  
 If any of your drives require tweaking, now
 would be a good time to do so.  On reasonably modern hardware
@@ -323,6 +334,12 @@ sizes and types:</p>
 
 <note>At this point, create your partitions using fdisk.  Note that your partitions
 should be of type 82 if swap and 83 for regular filesystems (whether XFS, ReiserFS <e>or</e> ext2).
+</note>
+<note>If you are using RAID your partitions will be a little different. 
+You will have the partitions like this:
+<path>/dev/ataraid/discX/partY</path>
+X is the arrays you have made, so if you only have made 1 array, then it will 
+be disc0.Y is the partition number as in <path>/dev/hdaY</path>
 </note>
 
 <p>Once you've created your partitions using <c>fdisk</c>, it's time to initialize
@@ -646,6 +663,10 @@ under "SCSI support" enable "SCSI support", "SCSI CD-ROM support" and
 also choose to use modules, then <c>echo -e "ide-scsi\nsg\nsr_mod"
 >> /etc/modules.autoload</c> to have them automatically added at boot time.
 </impo>
+<impo>If you are using hardware RAID you will need to enable a couple more options in the kernel:
+For Highpoint RAID controllers select hpt366 chipset support, support for IDE RAID controllers and Highpoint 
+370 software RAID.For Promise RAID controllers select PROMISE PDC202{46|62|65|67|68|69|70} support, support for IDE RAID 
+controllers and Support Promise software RAID (Fasttrak(tm))</impo>
 <note>
 For those who prefer it, 
 it is now possible to install Gentoo Linux with a 2.2 kernel.
@@ -888,10 +909,9 @@ possibilities).
 <title>Final steps: harddrive settings (hdparm)</title>
 <body>
 <p>
-Unfortunately, hdparm tweaks such as you performed at the
-beginning of this installation are not remembered between
-reboots.  An easy fix is to add the necessary hdparm tweak
-to <path>/etc/conf.d/local.start</path>:
+Add your <i>hdparm</i> tweaks to
+to <path>/etc/conf.d/local.start</path>,
+so that they are initialized at every boot.
 </p>
 <pre>
 # <i>nano -w /etc/conf.d/local.start</i>
@@ -919,7 +939,11 @@ Hard drives count from zero rather than "a", and partitions start at zero rather
 <p>The easiest way to install grub is to simply type <c>grub</c> at your chrooted shell prompt:
 </p><pre>
 # <i>grub</i>
-</pre><p>You'll be presented with the <c>grub&gt;</c> grub command-line prompt.  Now, you need to type in the
+</pre>
+<impo>If you are using hardware RAID this part will not work at this time.
+Skip to the section on making your <path>menu.lst</path>. After that we will complete the
+grub setup for RAID controllers</impo>
+<p>You'll be presented with the <c>grub&gt;</c> grub command-line prompt.  Now, you need to type in the
 right commands to install the GRUB boot record onto your hard drive.  In my example configuration,
 I want to install the GRUB boot record on my hard drive's MBR (master boot record), so that 
 the first thing I see when I turn on the computer is the GRUB prompt.  In my case, the commands
@@ -953,6 +977,11 @@ title=My example Gentoo Linux
 root (hd0,0) 
 kernel /boot/bzImage root=/dev/hda3 
 
+<comment> #Below is for setup using hardware RAID</comment>
+title=My Gentoo Linux on RAID
+root (hd0,0)
+kernel /boot/bzImage root=/dev/ataraid/discX/partY
+
 <comment># Below needed only for people who dual-boot</comment>
 title=Windows NT Workstation
 root (hd0,5) 
@@ -978,13 +1007,30 @@ loader.</note> <p>Also, if you need to pass any options to the kernel, simply
 add them to the end of the <c>kernel</c> command.  We're already passing one option
 (<c>root=/dev/hda3</c>), but you can pass others as well.  In particular, you can
 turn off devfs by default (not recommended unless you know what you're doing) by
-adding the <c>gentoo=nodevfs</c> option to the <c>kernel</c> command.
+adding the <c>gentoo=nodevfs</c> option to the <c>kernel</c> command.</p>
 
 <note>Unlike in earlier versions of Gentoo Linux, you no longer have to add 
 <c>devfs=mount</c> to the end of the <c>kernel</c> line to enable devfs.  In rc6
 devfs is enabled by default.
 </note>
-</p>
+<p>If you are using hardware RAID, you must make a grub boot disk. With hardware RAID
+if you try to install grub from your chrooted shell it will fail. So we will make a grub
+boot disk, and when you reboot the first time we will install grub to the mbr. Make your
+bootdisk like this:</p>
+
+<pre>
+# <i>mke2fs /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy</i>
+# <i>mkdir /mnt/floppy/boot</i>
+# <i>cp /usr/share/grub/i386-pc/stage1 /mnt/floppy/boot/grub</i>
+# <i>cp /usr/share/grub/i386-pc/stage2 /mnt/floppy/boot/grub</i>
+
+# <i>grub</i>
+
+grub&gt; <i>root (fd0)</i>
+grub&gt; <i>setup (fd0)</i>
+grub&gt; <i>quit</i>
+</pre>
 
 </body>
 </section>
@@ -1012,6 +1058,9 @@ After rebooting, it is a good idea to run the <c>update-modules</c> command to c
 the <path>/etc/modules.conf</path> file.  Instead of modifying this file directly, you should
 generally make changes to the files in <path>/etc/modules.d</path>.
 </note>
+<impo>Remember if you are running hardware RAID, you must use the bootdisk for the first reboot.
+then go back and install grub the way everyone else did the first time. You are done, congratulations</impo>
+
 <p>If you have any questions or would like to get involved with Gentoo Linux development, 
 consider joining our gentoo-user and gentoo-dev mailing lists
 (there's a "click to subscribe" link on our <uri link="http://www.gentoo.org">main page</uri>).
