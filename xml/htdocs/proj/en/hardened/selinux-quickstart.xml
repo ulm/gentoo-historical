@@ -38,7 +38,7 @@ main installation guide</uri>, and use the standard LiveCD
 and stage 1 of mainline Gentoo.  After you have done "emerge sync", then
 switch your profile to the SELinux profile:</p>
 
-<pre>
+<pre caption="Change profile">
 # rm -f /etc/make.profile
 # ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile
 </pre>
@@ -87,25 +87,27 @@ installation guide for futher kernel options.</p>
 </pre>
 
 <p>Now compile and install the kernel and modules as described in the
-installation guide.  Continue with the installation guide.  When configuring
-/etc/fstab, devpts must also be enabled to mount at boot.  Add this to /etc/fstab:</p>
-<pre>
+installation guide.  When choosing a cron daemon, you must use vcron.
+Right now vcron is the only cron patched for SELinux. Continue with the
+installation guide.  When configuring /etc/fstab, devpts must also be
+enabled to mount at boot.  Add this to /etc/fstab:</p>
+<pre caption="devpts entry in /etc/fstab">
 none	/dev/pts	devpts	gid=5,mode=620	0 0
 </pre>
 
 <p>Before exiting the chroot and rebooting at the end of the install guide,
 compile and install policy, and label filesystems.</p>
 
-<pre>
+<pre caption="Install policy and label filesystems">
 # cd /etc/security/selinux/src/policy
-# make policy
 # make install
-# make relabel
+# make file_contexts/file_contexts
+# setfiles file_contexts/file_contexts -r / /
 </pre>
 <p>Reboot using the new SELinux kernel.  Relabel again to ensure all files
 are labeled correctly (some files may have been created during shutdown and
 reboot)</p>
-<pre>
+<pre caption="Relabel filesystems">
 # cd /etc/security/selinux/src/policy
 # make relabel
 </pre>
@@ -202,7 +204,6 @@ sys-apps/vcron (currently the only cron patched for SELinux)</p>
 
 <pre caption="Install policy and label">
 # cd /etc/security/selinux/src/policy
-# make policy
 # make install
 # make relabel
 </pre>
@@ -216,10 +217,54 @@ reboot)</p>
 </body>
 </section>
 </chapter>
+<chapter><title>HowTo</title>
+<section><title>Load policy into a running SELinux kernel</title>
+<body>
+This requires you to be in the sysadm_r role.
+<pre>
+# cd /etc/security/selinux/src/policy
+# make load
+</pre>
+</body>
+</section>
+<section><title>Change roles</title>
+<body>
+This requires your user have access to the target role.  This example
+is for changing to the sysadm_r role.
+<pre>
+# newrole -r sysadm_r
+</pre>
+</body>
+</section>
+<section><title>Specify available roles for a user</title>
+<body>
+<p>Modify the users file (/etc/security/selinux/src/policy/users).
+For example, to allow the user 'pebenito' the ability to have roles
+user_r and sysadm_r, add to the end of the file add something like:</p>
+
+<pre>user pebenito roles { user_r sysadm_r };</pre>
+
+<p>Then <uri link="#doc_chap2_sect1">load</uri> the policy.  If a user
+doesnt have a 'user' line in the file, they will only be allowed
+the user_r role.</p>
+<impo>All users that are specified in the users file should at least be
+allowed the user_r and/or staff_r role.  Otherwise, they will not be
+able to log in remotely.</impo>
+</body>
+</section>
+<section><title>Relabel filesystems</title>
+<body>
+This requires you to be in the sysadm_r role.
+<pre>
+# cd /etc/security/selinux/src/policy
+# make relabel
+</pre>
+</body>
+</section>
+</chapter>
 <chapter>
 <title>FAQ/Troubleshooting</title>
-<section>
-<title>"My selinux-small compile fails with a message similar to this:"</title>
+<section><title>"My selinux-small compile fails with a message similar to this:"</title>
 <body>
 <pre>
  * Compiling checkpolicy
@@ -246,8 +291,7 @@ the correct kernel sources (selinux-sources-2.4.20-r4 in this example):</p>
 # ln -sf /usr/src/linux-2.4.20-selinux-r4 /usr/src/linux</pre>
 </body>
 </section>
-<section>
-<title>"I can log in at the console, but not over ssh."</title>
+<section><title>"I can log in at the console, but not over ssh."</title>
 <body>
 <p>The openssh is most likely not labeled correctly, so it isnt running in the
 right context.  Relabel, then restart sshd.</p>
@@ -257,22 +301,52 @@ right context.  Relabel, then restart sshd.</p>
 </pre>
 </body>
 </section>
-<section>
-<title>"I cant 'newrole -r sysadm_r' from my user."</title>
+<section><title>"I cant 'newrole -r sysadm_r' from my user."</title>
 <body>
-<p>The user must be allowed to use the sysadm_r role.  Modify the users file
-(/etc/security/selinux/src/policy/users).  To allow the user 'pebenito' the
-ability to newrole to sysadm_r, add to the end of the file add something
-like:</p>
+<p>The user must be allowed to use the sysadm_r role.  <uri link="#doc_chap2_sect3">Modify</uri>
+the users file to allow them to change to the target role.  Then 
+<uri link="#doc_chap2_sect1">load</uri> the policy.</p>  
 
-<pre>user pebenito roles { user_r sysadm_r };</pre>
-
-<p>Then reload the policy:</p>
-<pre>
-# cd /etc/security/selinux/src/policy
-# make policy
-# make install
-# make load
+<p>In the default policy, some role transitions are denied, such as
+user_r to sysadm_r.  If you want to allow this transition, the policy
+must be changed.</p>
+</body>
+</section>
+<section><title>When I boot, I get an insmod denial looks like this:</title>
+<body>
+<pre>avc:  denied  { search } for  pid=230 exe=/sbin/insmod path=/var dev=03:02 ino=163201
+scontext=system_u:system_r:insmod_t tcontext=system_u:object_r:file_t tclass=dir
+</pre>
+<p>This usually happens if you have a separate /var partition.  The /var
+partition probably will have the context system_u:object_r:var_t when mounted
+and system_u:object_r:file_t when unmounted.  The way to fix this is to umount
+the /var partition and <uri link="#doc_chap2_sect4">relabel</uri>.  Then /var
+will have the correct context regardless if the /var partition is mounted
+or not.</p>
+</body>
+</section>
+<section><title>When I boot, devfsd get a denial that looks like this:</title>
+<body>
+<pre>avc:  denied  { write } for  pid=148 exe=/sbin/devfsd path=/log dev=00:07 ino=421
+scontext=system_u:system_r:devfsd_t tcontext=system_u:object_r:device_t tclass=sock_file
+</pre>
+<p>This means that your devfsd is restoring /dev/log from the devfs save state,
+and therefore it has the incorrect context.  Normally this shouldn't happen,
+as /dev/log should be created by the syslog (and will have the correct context).
+Newer versions of the devfsd.conf file should ignore /dev/log, and not save it.
+To ennsure that your devfsd.conf is in fact ignoring /dev/log, make sure
+these lines are in your devfsd.conf file (around line 42):</p>
+<pre caption="Devfsd.conf contents">
+DELETE          ^pt[sy]      IGNORE<i>
+REGISTER        ^log         IGNORE
+CHANGE          ^log         IGNORE
+CREATE          ^log         IGNORE
+DELETE          ^log         IGNORE</i>
+REGISTER        .*           COPY    /lib/dev-state/$devname $devpath
+</pre>
+<p>Then, ensure that /dev/log is not in the devfs save state:</p>
+<pre caption="Remove /dev/log from save state">
+# rm -f /lib/dev-state/log
 </pre>
 </body>
 </section>
