@@ -311,7 +311,7 @@
 				<br/><br/>
 				Installation:
 				<br/>
-				<a class="altlink" href="/doc/en/build.xml">Gentoo Linux/x86</a>
+				<a class="altlink" href="/doc/en/gentoo-x86-install.xml">Gentoo Linux/x86</a>
 				<br/>
 				<a class="altlink" href="/doc/en/gentoo-ppc-install.xml">Gentoo Linux/PowerPC</a>
 				<br/>
