@@ -1,0 +1,210 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/rsync.xml">
+<title>Gentoo Linux rsync Mirrors Policy</title>
+<author title="Author"><mail link="datashark@gentoo.org">Anto'nio Meireles</mail></author>
+
+<abstract>this is where you need to put a meaningful description of what this document is for</abstract>
+
+<version>RC1</version>
+<date>4 Dec 2003</date>
+
+<chapter>
+<title>Requirements</title>
+<section>
+<title>Minimum Bandwidth</title>
+<body>
+<p> To properly host a mirror you should have a minimum of T1 bandwidth.
+ADSL and cable connections do not generally make adequate connections for rsync hosts due to their limited upstream performance.</p>
+</body>
+</section>
+<section>
+<title>Minimum User Count</title>
+<body>
+<p> We ask that you please have a minimum of 20 concurrent user connections available.</p>
+</body>
+</section>
+<section>
+<title>Update Frequency</title>
+<body>
+<p> It is <e>very</e> important that this is beeing followed strictly, as we use a round robin style DNS to select the users' rsync server. Updates must occur at :00 and :30 of each hour, 24 hours a day.</p>
+<impo>This must be strictly enforced, as an out of sync server with this type of setup generate a much higher amount of traffic for all servers involved in the process (see included FAQ for more details).</impo>
+</body>
+</section>
+<section>
+<title>MOTD (<path>/etc/rsync/rsyncd.motd</path>)</title>
+<body>
+<p>We would also ask that <e>unless absolutely not possible</e>, please have some sort of motd file that gives your server's name and address, and possibly a location. This will enable both users to find appropriate mirrors if they choose to not use the round robin style, and also, if any problems are noticed, they 'll be much easier to identify and rectify when users hit from round robin DNS.
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Implementation details</title>
+<section>
+<body>
+<p>for new rsync mirror requests, the procedure will be as follows:</p>
+<p>someone asks to be a mirror, then we verify in the next 48/72 hours that he is syncing correctly each 30 minutes, and accordingly with this policy.</p>
+<pre caption="Verification Proceedure">
+   1.  we receive a request for a new mirror.
+   2.  we reply with query for more info about mirror.
+   3.  we receive reply with info.
+   4.  reply with okay, accepted.
+   5.  now configured correctly
+   6.  verified
+</pre>
+<p>If all steps went smoothly, we will then set up an official rsync[num].[countrycode].gentoo.org DNS entry and add you to our DNS round-robin for rsync.gentoo.org and rsync.[countrycode].gentoo.org. We'll also set up cvs.gentoo.org's QoS so that you get "preferred" access to our rsync server. Shortly after you've been added to our DNS, you should start to see rsync traffic.
+
+Additionally, you, the mirror admin will be added to the gentoo-mirrors mailing list (low traffic) so that you could folllow closely all issues associated with rsync mirrors.
+
+For already existing mirrors mirrors, they're admins will be added to the gentoo-mirrors mailing list.
+
+After that, we'd expect that in a short space of time,say, 30 days, all official Gentoo rsync mirrors will be running according with this policy.
+</p>
+<note>
+Thanks for helping out Gentoo Linux users and developers! :)
+</note>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Paralell Tasks</title>
+<section>
+<body>
+<p>We will have soon a rrdtool created page that will simply have links to graphs (ordered by continent, then country, then server) of official rsync mirrors availability (these graphs will be made from sping output) .
+One will check these graphs at least once a day, and unreacheable boxes will be put out of the RR DNS scheme until the problems become rectified..
+
+We will have scripts checking that every 30 minutes all mirrors are, in fact, syncing with us.
+</p>
+<warn>
+If a mirror systematically have erroneous behauviour, and after the admin beeing contacted and the situation doesn 't improve, then that mirror box is taken of the  RR scheme permanentely
+</warn>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Short FAQ</title>
+<section>
+<title> Q: Is it important that I sync my mirror at :00 and :30 of each hour?</title>
+<body>
+<p>A: Yes it is important. As each user rsyncs against a mirror they transfer the difference between that mirror and what is on their file system. If your mirror is different and an user is using a round robbin hostname then you increase the amount of bandwidth needed for the user, you, and all other mirrors.
+
+For example:
+
+A user is configured to rsync with <path>rsync://rsync.gentoo.org/gentoo-portage</path> .
+
+Lets pretend that rsync.gentoo.org is a DNS Round Robbin for <path>rsync1.gentoo.org</path>, <path>rsync2.gentoo.org</path>, and <path>rsync3.gentoo.org</path>.
+
+Then, lets pretend that rsync1 and rsync3 sync at the reccomended times but rsync2 only syncs once at midnight and the current time is in the afternoon.
+</p>
+<ol>
+<li>The user syncs against rsync1 and brings their /usr/portage tree current. Lets say this used 5 megs of bandwidth.</li>
+<li>The uses syncs again, this time against rsync2. This time they have just made their portage tree no longer current and whatever bandwidth used to make their portage tree current in step 1 has been undone. Lets say the difference was 5 megs.</li>
+<li>The user syncs against rsync3 this time and once again brings their portage tree current again. Because rsync2 is a stale version of the portage tree the user had to transfer the 5 megs again.</li>
+</ol>
+<p> In the above example the user had to transfer 5 megs * 3 = 15 megs of bandwidth which is 3 times what he needed to and will hurt his overall impression of the Gentoo Portage system.
+
+Also rsync2 and rsync3 both tranfered 5 megs more than they needed to if rsync2 had been current.
+
+Muliptly that by the number of users using DNS Round Robbin and you've just wasted a lot of bandwidth which increases the bandwidth cost of not just your mirror but everyone else's mirror too.
+
+We understand that we allways will have some clock drift between each mirror, and each mirror won't sync at exactly the same time. In order to try to keep that window as small as possible, we encourage you to run a NTP daemon to minimize drift.
+
+If that isn't reason enough to run ntpd then you should know that your log files will carry more weight in the court of law if you can show that the clock on your server is right and in sync with the rest of the world.
+
+If you don't want to run ntpd all the time then at least consider running ntpdate at least once a day from cron.
+</p>
+</body>
+</section>
+<section>
+<title>Q) How do I find the mirror nearest to me?</title>
+<body>
+<p>A) netselect was designed to do this for you. If you haven't already run <c>emerge netselect</c> then do it.
+Then run: <c>netselect rsync.gentoo.org</c>. After a minute or so netselect will print an IP address.
+Take this address and use it as the only parameter for rsync with two colons appended to it. eg: <c>rsync 1.2.3.4::</c>.
+You should be able to find out which mirror that is from the banner message. Update your /etc/make.conf accordingly.
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Example Scripts</title>
+<section>
+<body>
+<p>Right now, mirroring our Portage tree requires around 60Mb, so it isn't space intensive; having at least 200Mb free should allow for growing room. Setting up a Portage tree mirror is simple -- first, ensure that your mirror has rsync installed. Then, set up your rsyncd.conf file to look something like this:</p>
+<pre caption="rsyncd.conf">
+#uid = nobody
+#gid = nobody
+use chroot = no
+max connections = 20
+pid file = /var/run/rsyncd.pid
+motd file = /etc/rsync/rsyncd.motd
+transfer logging = yes
+log format = %t %a %m %f %b
+syslog facility = local3
+timeout = 300
+
+[gentoo-x86-portage]
+path = /space/gentoo/rsync
+comment = Gentoo Linux Portage tree
+
+
+[gentoo-portage]
+path = /gentoo/rsync
+comment = Gentoo Linux Portage tree mirror
+exclude = distfiles
+</pre>
+<p>Above, the gentoo-x86-portage mirror points to the same data as gentoo-portage. Although we have recently changed the official name of our mirror to gentoo-portage, gentoo-x86-portage is still needed for backwards compatibility, so include both entries.</p>
+<p>Now, you need to mirror the Gentoo Linux Portage tree. You should use the following script to do so: </p>
+<pre caption="rsync-gentoo-portage.sh">
+#!/bin/bash
+
+RSYNC="/usr/bin/rsync"
+OPTS="--quiet --recursive --links --perms --times --devices
+--compress --delete --timeout=600"
+SRC="rsync://rsync1.us.gentoo.org/gentoo-portage"
+DST="/space/gentoo/rsync/"
+
+echo "Started update at" `date` >> $0.log 2>&amp;1
+logger -t rsync "re-rsyncing the gentoo-portage tree"
+${RSYNC} ${OPTS} ${SRC} ${DST} >> $0.log 2>&amp;1
+
+echo "End: "`date` >> $0.log 2>&amp;1 
+</pre>
+<pre caption="/etc/initd/rsyncd">
+#!/sbin/runscript
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2
+or later
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/rsync.xml,v 1.1 2002/12/05 05:17:56 stocke2 Exp $
+
+depend() {
+need net
+}
+
+# FYI: --sparce seems to cause problems.
+RSYNCOPTS="--daemon --safe-links --compress --bwlimit=700
+--timeout=1800"
+
+start() {
+ebegin "Starting rsync daemon"
+start-stop-daemon --start --quiet --pidfile /var/run/rsyncd.pid
+--nicelevel 15 --exec /usr/bin/rsync -- ${RSYNCOPTS}
+eend $?
+}
+
+stop() {
+ebegin "Stopping rsync daemon"
+start-stop-daemon --stop --quiet --pidfile /var/run/rsyncd.pid
+eend $?
+} 
+</pre>
+<p>Your rsyncd.motd can contain anything reasonable, such as information about the host providing the Portage mirror and an administrative contact. After you have been approved as an official rsync mirror your host will be aliased with a name of the form :
+<path>rsync[num].[country code].gentoo.org</path>
+</p>
+<note>Your official alias is the only mandatory info that you must put on your rsyncd.motd.</note>
+</body>
+</section>
+</chapter>
+</guide>
