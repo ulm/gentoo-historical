@@ -1368,9 +1368,7 @@
 <xsl:template match="license">
 <tt>
   <br/>
-  The contents of this document are licensed under the
-  <a href="http://creativecommons.org/licenses/by-sa/2.0">Creative Commons - Attribution / Share Alike</a>
-  license.
+  <xsl:apply-templates select="func:gettext('License')"/>
 </tt>
 </xsl:template>
 
