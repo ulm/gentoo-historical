@@ -24,12 +24,17 @@
 #
 # 3.  have also updated the size of the tarball that gets displayed in the xml file
 #
+# Build 12th Mar. 2003 by Fir3fly
+# 
+# added 
+# 1.  Date format adapted to gentoo.org web standart
 #
+# 2.  Added verification if there are actual new icons before generating a new page/tar
 #
 if ($#ARGV < 0)
 	{
-#
-# define default output file here
+    #
+    # define default output file here
 	$outfile = "index.xml";
 	
 	} else {
@@ -50,7 +55,8 @@ $iconpath = "http://www.gentoo.org/images/icons/";
 # html tags
 #
 @timenow = localtime(time);
-$today = $timenow[3].".".$timenow[4].".".($timenow[5]+1900);
+@month = ( 'Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez');
+$today = $timenow[3]." ".$month[($timenow[4])]." ".($timenow[5]+1900);
 
 $header = "<?xml version='1.0'?>
 <?xml-stylesheet href=\"/xsl/guide.xsl\" type=\"text/xsl\"?>
@@ -107,13 +113,21 @@ opendir(DIR, $searchpath);
 	    @files = grep(!/^\.\.?$/,readdir(DIR));
 		closedir(DIR);
 #
-# open output file
-#
-open (OUT, ">$outfile") || die "unable to open $outfile";	    
-#
 # sorting
 #	     
 @files = sort (grep /l33t_/, @files);
+#
+# Check if there are new icons since last time
+#
+if (-e "$outfile") {
+if (-e "$searchpath/.iconlist.old")
+	{
+	open (LAST, "$searchpath/.iconlist.old");
+	@oldiconlist = <LAST>;
+	close (LAST);
+	if (@oldiconlist == @files) {exit}
+	}}
+
 #
 #
 #
@@ -121,6 +135,10 @@ foreach $line (@files) {
 	($current_category = $line) =~ m/(.{4})_(.{3})_(.+)/g;
 	push @{$categorised_filenames{$2}}, $line;
 	}
+#
+# open output file
+#
+open (OUT, ">$outfile") || die "unable to open $outfile";
 #
 # start XML page
 #
@@ -159,7 +177,7 @@ if (-e "$searchpath/icons.tar.bz2" ) {unlink ("$searchpath/icons.tar.bz2") || pr
 #
 # create new tarball
 #
-system `tar -cjf $searchpath/icons.tar.bz2 $searchpath/*.png`;
+#system `tar -cjf $searchpath/icons.tar.bz2 $searchpath/*.png`;
 #
 # get size of tarball
 #
@@ -182,3 +200,9 @@ $footer = "</table>
 #
 #
 print OUT $footer;
+#
+# Generate new iconlist
+#
+open (NEW, ">$searchpath/.iconlist.old") || print "cannot create $searchpath/.iconlist.old";
+	foreach $newicon (@files) {print NEW $newicon."\n";}
+	close (NEW);
