@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/draft/2005.0/Attic/hb-install-ppc-disk.xml,v 1.2 2005/03/10 18:12:36 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/draft/2005.0/Attic/hb-install-ppc-disk.xml,v 1.3 2005/03/20 22:32:34 so Exp $ -->
 
 <sections>
 
 <version>1.21</version>
-<date>12-12-2004</date>
+<date>2004-12-12</date>
 
 <section>
 <title>Introduzione ai dispositivi a blocchi</title>
@@ -57,13 +57,15 @@ Se non si è interessati a elaborare uno schema di partizionamento per il sistem
   <th>Partizione NewWorld</th>
   <th>Partizione OldWorld</th>
   <th>Partizione Pegasos</th>
+  <th>Partition RS/6000</th>
   <th>Filesystem</th>
   <th>Dimensioni</th>
   <th>Descrizione</th>
 </tr>
 <tr>
   <ti><path>/dev/hda1</path></ti>
-  <ti>/dev/hda1</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Non applicabile)</ti>
   <ti>(Non applicabile)</ti>
   <ti>(Partition Map)</ti>
   <ti>32k</ti>
@@ -73,25 +75,46 @@ Se non si è interessati a elaborare uno schema di partizionamento per il sistem
   <ti><path>/dev/hda2</path></ti>
   <ti>(Non necessaria)</ti>
   <ti>(Non applicabile)</ti>
+  <ti>(Non applicabile)</ti>
   <ti>(bootstrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
 </tr>
 <tr>
+  <ti>(Not applicable</ti>
+  <ti>(Not applicable)</ti>
+  <ti>(Not applicable)</ti>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>(PReP Boot)</ti>
+  <ti>800k</ti>
+  <ti>Type 0x41</ti>
+</tr>
+<tr>
+  <ti>(Not needed)</ti>
+  <ti>(Not needed)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Not needed)</ti>
+  <ti>ext2</ti>
+  <ti>32MB</ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/hda2</path></ti>
-  <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/sda2</path></ti>
   <ti>(swap)</ti>
   <ti>512M</ti>
-  <ti>partizione di Swap</ti>
+  <ti>partizione di Swap, Type 0x82</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
-  <ti>ext3</ti>
+  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3, xfs</ti>
   <ti>Resto del disco</ti>
-  <ti>Partizione di Root</ti>
+  <ti>Partizione di Root, Type 0x83</ti>
 </tr>
 </table>
 
@@ -100,9 +123,16 @@ Ci possono essere alcune partizioni chiamate: <path>Apple_Driver43,
 Apple_Driver_ATA, Apple_FWDriver, Apple_Driver_IOKit,
 Apple_Patches</path>. Se non si ha intenzione di utilizzare MacOS 9 si possono 
 cancellare, in quanto MacOS X e Linux non ne hanno bisogno.
-Per cancellarle si deve utilizzare parted, poiché mac-fdisk non è ancora in grado
+Per cancellarle si deve utilizzare <c>parted</c>, poiché mac-fdisk non è ancora in grado
 di farlo.
 </note>
+
+<warn>
+<c>parted</c> può ridimensionare le partizioni. Sul CD di installazione ci sono 
+patch per ridurre filesystem HFS+. Non è possibile ridurre filesystem HFS+ 
+journaled, anche se il journaling è stato spento su Mac OS X. Tutto ciò che si 
+riduce con parted, lo si fa a proprio rischio. Assicuratevi di fare un backup dei vostri dati.
+</warn>
 
 <p>
 Se si è interessati ad avere informazioni su quanto dovrebbe essere grande una partizione, o anche su quante partizioni si ha bisogno, seguono alcuni suggerimenti. Altrimenti continuare con <uri
@@ -154,7 +184,7 @@ Le partizioni multiple hanno però un grosso svantaggio: se non sono configurate
 </subsection>
 </section>
 <section id="fdisk">
-<title>Default: usare mac-fdisk (Apple/IBM) per partizionare il disco</title>
+<title>Default: usare mac-fdisk (Apple) per partizionare il disco</title>
 <body>
 
 <p>
@@ -179,9 +209,9 @@ da una <c>p</c>. In questo caso <c>2p</c>.
 </p>
 
 <note>
-Questa <e>non</e> è una partizione di "boot". Non viene utilizzata per niente da Linux;
+Questa <e>non</e> è una partizione di <path>/boot</path>. Non viene utilizzata per niente da Linux;
 non si deve creare nessun filesystem in essa e non deve mai essere montata.
-Gli utilizzatori di PPC non hanno bisogno di una partizione extra per <path>/boot</path>.
+Gli utilizzatori di Apple non hanno bisogno di una partizione extra per <path>/boot</path>.
 </note>
 
 <p>
@@ -244,20 +274,19 @@ per il disco.
 
 <p>
 Per vedere la tabella delle partizioni premere <c>print</c> in qualsiasi momento all'interno
-di parted. Le modifiche non vengono salvate finché non si esce dal programma; se si cambia
-idea o se si fa un errore è possibile premere <c>Ctrl-c</c> in qualsiasi momento per 
-interrompere parted.
+di parted. Se si cambia idea o se si fa un errore è possibile premere <c>Ctrl-c</c> 
+in qualsiasi momento per interrompere parted.
 </p>
 
 <p>
 Se si vuole installare pure MorphOS su un sistema Pegasos, creare un filesystem
-affs1 con il nome "BI0" (BI zero) all'inizio del disco. 50MB dovrebbero essere più che sufficienti
+affs1 con il nome "BI0" (BI zero) all'inizio del disco. 32MB dovrebbero essere più che sufficienti
 per contenere il kernel di MorphOS. Se si utilizza un sistema Pegasos I o se si vuole
 usare reiserfs o xfs, si deve memorizzare il kernel di Linux in questa partizione
-(i sistemi Pegasos II possono avviare da partizioni ext2/etx3). Per creare la partizione
+(i sistemi Pegasos II possono solo avviare da partizioni ext2/etx3 o affs1). Per creare la partizione
 eseguire <c>mkpart primary affs1 START END</c> dove <c>START</c> e <c>END</c> devono
-essere sostituiti con l'inizio e la fine (in MB) della partizione (per esempio <c>5 55</c>
-crea una partizione da 50MB che comincia dal quinto MB e finisce al MB 55.
+essere sostituiti con l'inizio e la fine (in MB) della partizione (per esempio <c>0 32</c>
+crea una partizione da 32MB che comincia da 0MB e finisce al MB 32.
 </p>
 
 <p>
@@ -343,15 +372,15 @@ Per creare un filesystem su una partizione o volume, sono disponibili tool per o
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
-  <ti><c>mkreiserfs</c></ti>
+  <ti><c>mkfs.reiserfs</c></ti>
 </tr>
 <tr>
   <ti>xfs</ti>
@@ -364,7 +393,7 @@ Per esempio, per avere la partizione principale (in questo caso <path>/dev/hda4<
 </p>
 
 <pre caption="Applicare un filesystem su una partizione">
-# <i>mke2fs -j /dev/hda4</i>
+# <i>mkfs.ext3 /dev/hda4</i>
 </pre>
 
 <p>
