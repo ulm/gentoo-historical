@@ -143,7 +143,7 @@ class PartProperties(gtk.Window):
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors['ext3'], self.controller.colors['ext3'])
 			if self.controller.devices[self.device].get_extended_partition():
-				if self.controller.devices[self.device].get_partition_at(start, ignore_extended=0) != 0:
+				if self.controller.devices[self.device].get_partition_at(self.start, ignore_extended=0) != 0:
 					self.resize_info_part_type.set_active(1)
 				else:
 					self.resize_info_part_type.set_active(0)

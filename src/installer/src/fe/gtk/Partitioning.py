@@ -57,6 +57,7 @@ resize partitions.
 		part_table_frame = gtk.Frame()
 		part_table_frame.set_shadow_type(gtk.SHADOW_IN)
 		self.part_table = gtk.Table(1, 1, gtk.FALSE)
+		self.part_table.set_size_request(-1, 40)
 		part_table_frame.add(self.part_table)
 		vert.pack_start(part_table_frame, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
