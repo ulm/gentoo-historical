@@ -1,6 +1,6 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.3 2003/10/11 19:28:46 drobbins Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.4 2003/10/12 01:12:03 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
@@ -200,12 +200,34 @@ pre_build() {
 	fi
 	
 	# necessary internal definitions
-	DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-etdyn-ssp-${3}.tar.bz2"
-	if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} != 1 ]
+	
+	if [ ${BUILDTYPE} = "hardened" ]
 	then
-		SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
+	
+		DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-etdyn-ssp-${3}.tar.bz2"
+	
+		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} != 1 ]
+		then
+			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
+		else
+			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-etdyn-ssp-${SRCVER}.tar.bz2"
+		fi
+
+	elif [ ${BUILDTYPE} = "selinux" ]
+	then
+		DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-selinux-${3}.tar.bz2"
+	
+		if [ ${DESTSTAGE} = 2 ] && [ ${SRCSTAGE} != 1 ]
+		then
+			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
+		else
+			SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-selinux-${SRCVER}.tar.bz2"
+		fi
+
 	else
-		SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-etdyn-ssp-${SRCVER}.tar.bz2"
+		DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-${3}.tar.bz2"
+		SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-${SRCVER}.tar.bz2"
+
 	fi
 
 	einfo "Cleaning up build directory..."
