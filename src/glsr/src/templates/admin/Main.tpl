@@ -9,6 +9,9 @@
     <br />
 
     {IF ERROR_REPORTING != "False"}
+    <form name="error_report_list" method="GET" action="index.py">
+    <input type="hidden" name="page" value="main">
+
     <table width="90%" class="standard_table">
       <tr>
         <td colspan="3" class="header">Error Reports</td>
@@ -26,9 +29,10 @@
       </tr>
       {!LOOP}
       <tr>
-         <td class="standard_cell" colspan="3" align="right"><input type="submit" class="button" name="flush" value="Flush Log" />&nbsp;&nbsp;</td>
+         <td class="standard_cell" colspan="3" align="right"><input type="submit" class="button" name="error_reports" value="Flush Log" />&nbsp;&nbsp;</td>
       </tr>
     </table>
+    </form>
     <br />
     {!IF}
 

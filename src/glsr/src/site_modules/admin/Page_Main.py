@@ -3,10 +3,10 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.3 2004/07/09 18:34:21 port001 Exp $
+# $Id: Page_Main.py,v 1.4 2004/07/09 21:09:10 port001 Exp $
 #
 
-MetaData = {"page" : ("main", None), "params" : ""}
+MetaData = {"page" : ("main", None), "params" : "form"}
 
 import Template as TemplateHandler
 import Session
@@ -14,16 +14,21 @@ import Config
 from User import User
 from SiteModuleBE import SiteModuleBE as Parent
 
-def Display():
+def Display(form):
 
     page = Page_Main()
-    page.selectDisplay()
+    page.selectDisplay(form)
 
 class Page_Main(Parent):
 
     template = Config.Template["admin_main"]
     
-    def selectDisplay(self):
+    def selectDisplay(self, form):
+
+        # Not sure if this is the right place for this...
+        flush = form.getvalue("error_reports")
+        if flush:
+            FlushErrorReportLog()
 
         self.display()
 
