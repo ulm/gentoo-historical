@@ -358,6 +358,8 @@
 				<br/>
 				<a class="hotlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
 				<br/>
+                                <a class="altlink" href="/main/en/devlist.xml">Developer List</a>
+                                <br/>
 				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
 				<br/>
 				<a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
