@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.13 2004/11/14 23:00:31 port001 Exp $
+# $Id: Logging.py,v 1.14 2004/12/18 18:49:51 port001 Exp $
 #
 
 import traceback
@@ -186,7 +186,7 @@ def ReturnErrorReports(list_offset):
 
         count += 1
 
-    if not len(Reports):
+    if not len(reports):
         return False
 
-    return Reports
+    return reports

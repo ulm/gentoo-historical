@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Admin.py,v 1.3 2004/12/16 14:06:26 port001 Exp $
+# $Id: Admin.py,v 1.4 2004/12/18 18:49:51 port001 Exp $
 #
 
 __modulename__ = "Admin"
@@ -32,8 +32,8 @@ def optimize_tables():
     
 def get_optimize_days():   
 
-    result = MySQL.Query("SELECT %s_table_opt FROM %s%s " %
-                      (Config.MySQL["state_table"], Config.MySQL["prefix"], Config.MySQL["state_table"]),
-                       fetch = "one")
+    result = MySQLHandler.query("SELECT %s_table_opt FROM %s%s " %
+                               (Config.MySQL["state_table"], Config.MySQL["prefix"], Config.MySQL["state_table"]),
+                                fetch = "one")
 
     return result["state_table_opt"]

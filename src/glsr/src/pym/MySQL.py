@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.9 2004/12/18 02:14:12 port001 Exp $
+# $Id: MySQL.py,v 1.10 2004/12/18 18:49:51 port001 Exp $
 #
 
 __modulename__ = "MySQL"
@@ -26,7 +26,6 @@ class MySQL:
         self._cursor = None
         self._t_start = 0
         self._fetch = ""
-	self._result = None
 
     def _connect(self):
 
@@ -67,16 +66,17 @@ class MySQL:
         self._db.commit()
         
     def _get_result(self):
-                                                                                                                                      
+
         if self._fetch == "one":
-            self._result = self._cursor.fetchone()
             logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query")
+            return self._cursor.fetchone()
         elif self._fetch == "none":
             self._result = None
             logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query")
+            return None
         else:
-            self._result = self._cursor.fetchall()
             logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query") 
+            return self._cursor.fetchall()
 
     def query(self, query, args=None, fetch="all"):
         """ Returns a list of dictionaries of {column: value} pairs.
@@ -89,9 +89,7 @@ class MySQL:
         self._fetch = fetch
 
         self._init_query()
-        self._get_result()
-
-        return self._result
+        return self._get_result()
 
     validate_args = classmethod(validate_args)
 
