@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Setup.py,v 1.5 2004/10/29 02:00:01 hadfield Exp $
 #
 
 import sys
@@ -120,6 +120,7 @@ subscript_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	%s_body		TEXT		NOT NULL,
 	%s_changelog	TEXT		NOT NULL,
 	%s_date		DATETIME	NULL,
+        %s_status	enum('draft', 'pending', 'published') default 'draft',
 	%s_approved	TINYINT(1)	NOT NULL default '-1',
 	%s_approvedby	MEDIUMINT(5)	unsigned NULL,
 	PRIMARY		KEY(%s_id),
