@@ -1,14 +1,17 @@
 #!/usr/bin/perl
 use Tk;
-use Tk::widgets qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
+use Tk::widgets
+  qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
+
 #use bugger;
 #use diagnostics;
 my $selfname = $0;
+
 package main;
 use subs qw/splash search initconfig launch_win init_main_win/;
 use vars qw/$BW $mw $mw2 $hlist/;
 
-if ($selfname =~ m/bugger-tk/) {use bugger; main::start()}
+if ( $selfname =~ m/bugger-tk/ ) { use bugger; main::start() }
 
 sub start {
 
@@ -33,23 +36,27 @@ sub start {
 
     our $configfile = "$ENV{'HOME'}/.bugger-config";
 
-    unless (( -f $configfile ) && (-s $configfile)) { main::initconfig(); }
-	else {main::init_main_win()}
+    unless ( ( -f $configfile ) && ( -s $configfile ) ) {
+        main::initconfig("1");
+    }
+    else { main::init_main_win() }
     MainLoop;
 }
 
 sub init_main_win {
-my $conf = new Config::General(
-    -AutoTrue          => 1,
-    -AllowMultiOptions => "yes",
-    -ExtendedAccess    => 1,
-    -ConfigFile        => "$configfile",
-    -IncludeRelative   => 1,
-);
-my %config   = $conf->getall;
-our $login    = $config{'login'};
-our $password = $config{'password'};
-our $server   = $config{'server'};
+    my $conf = new Config::General(
+        -AutoTrue          => 1,
+        -AllowMultiOptions => "yes",
+        -ExtendedAccess    => 1,
+        -ConfigFile        => "$configfile",
+        -IncludeRelative   => 1,
+    );
+    my %config = $conf->getall;
+    our $login    = $config{'login'};
+    our $password = $config{'password'};
+    our $server   = $config{'server'};
+    our $downdir  = $config{'downdir'} || "/tmp";
+    our $runmode  = $config{'mode'};
 
     our $mw = new MainWindow;
     my $search_string = '';
@@ -108,7 +115,7 @@ our $server   = $config{'server'};
     $tb2->ToolButton(
         -image   => 'navhome22',
         -tip     => 'home',
-        -command => \&home
+        -command => \&initconfig
     );
     $tb2->ToolButton(
         -image   => 'actreload22',
@@ -118,7 +125,7 @@ our $server   = $config{'server'};
     $tb2->ToolButton(
         -image   => 'actexit22',
         -tip     => 'quit',
-        -command => sub {&quit; $mw->withdraw; exit;}
+        -command => sub { &quit; $mw->withdraw; exit; }
     );
 
     our $hlist = $mw->Scrolled(
@@ -251,7 +258,7 @@ sub launch_win {
         $tb->ToolButton(
             -image   => 'actexit22',
             -tip     => 'quit',
-            -command =>  sub{$mw2->withdraw}  
+            -command => sub { $mw2->withdraw }
         );
         $mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
         my $text = $mw2->Scrolled(
@@ -265,9 +272,10 @@ sub launch_win {
         $text->insert( '0.0',    "$bugtext{header}\n\n", 'bold' );
         $text->insert( 'insert', "\tReporter: ",         'bold' );
         $text->insert( 'insert', "$bugtext{reporter}\n" );
-        # Removed because it doesn't appear in the text formatted 
-	# version of the show bug page - MPC
-	#$text->insert( 'insert', "\tCC List: ", 'bold' );
+
+        # Removed because it doesn't appear in the text formatted
+        # version of the show bug page - MPC
+        #$text->insert( 'insert', "\tCC List: ", 'bold' );
         #$text->insert( 'insert', "$bugtext{cclist}\n" );
         $text->insert( 'insert', "\tStatus: ", 'bold' );
         $text->insert( 'insert', "$bugtext{status}\n" );
@@ -293,7 +301,8 @@ sub launch_win {
         my @menubuttons;
         foreach (qw/update close/) {
             my $pos        = ucfirst;
-            my $menubutton = $mw2->Menubutton( qw/-underline 0 -relief raised/,
+            my $menubutton =
+              $mw2->Menubutton( qw/-underline 0 -relief raised/,
                 -text => $pos );
             push @menubuttons, $menubutton;
             my $menu = $menubutton->menu(qw/-tearoff 0/);
@@ -304,10 +313,12 @@ sub launch_win {
             );
 ###
         }
-	foreach my $key (@menubuttons){
-	$key->pack(qw/-side left/);}
-	#$menubuttons[0]->pack();
-	#$menubuttons[0]->pack();
+        foreach my $key (@menubuttons) {
+            $key->pack(qw/-side left/);
+        }
+
+        #$menubuttons[0]->pack();
+        #$menubuttons[0]->pack();
 
         ###$menubuttons[0]->grid(qw/-row 0 -column 1 -sticky s/);
         ###$menubuttons[1]->grid(qw/-row 0 -column 1 -sticky s/);
@@ -320,7 +331,7 @@ sub launch_win {
         #-command => sub{$comment->Save("/tmp/mike")}
         #);
 
-    MainLoop;
+        MainLoop;
     }
     return;
 }
@@ -346,6 +357,8 @@ sub splash {
 
 sub initconfig {
 
+    my $runtype = shift;
+
     #my $configfile = shift;
     my $conf = new Config::General(
         -AutoTrue          => 1,
@@ -362,7 +375,7 @@ sub initconfig {
     my $ConnectInfo =
       $CONF_WIN->Labelframe( -text => 'Connection Information' );
     my $Login;
-    my $logid = "";
+    my $logid = $login || "";
     $Login = $ConnectInfo->LabEntry(
         -label        => "Login ID: ",
         -validate     => 'key',
@@ -371,8 +384,8 @@ sub initconfig {
     );
     $Login->pack(qw/-fill x -expand 1/);
 
-    my $passphrase = "";
-    my $pass       = $ConnectInfo->LabEntry(
+    my $passphrase = $password || "";
+    my $pass = $ConnectInfo->LabEntry(
         -label           => "Password: ",
         -validate        => 'key',
         -show            => '*',
@@ -385,8 +398,8 @@ sub initconfig {
     );
     $pass->pack(qw/-fill x -expand 1/);
 
-    my $servername = '';
-    my $serv       = $ConnectInfo->LabEntry(
+    my $servername = $server || "";
+    my $serv = $ConnectInfo->LabEntry(
         -label           => "Bugzilla Server",
         -validate        => 'key',
         -validatecommand => sub {
@@ -397,12 +410,10 @@ sub initconfig {
         -textvariable => \$servername
     );
     $serv->pack(qw/-fill x -expand 1/);
-    
-    
-    my $downdir = '';
+
     my $down = $ConnectInfo->LabEntry(
-	-label => "Download Directory",
-	-validate => 'key',
+        -label           => "Download Directory",
+        -validate        => 'key',
         -validatecommand => sub {
             my ( $proposed, $changes, $current, $index, $type ) = @_;
             return length($proposed) >= 0 ? 1 : 0;
@@ -411,27 +422,27 @@ sub initconfig {
         -textvariable => \$downdir
     );
     my $browsebut = $ConnectInfo->Button(
-    	-text => "Browse...",
-	-command => sub {dirDialog($CONF_WIN,$down)});
+        -text    => "Browse...",
+        -command => sub { dirDialog( $CONF_WIN, $down ) }
+    );
     $down->pack(qw/-fill x -expand 1 -side left/);
     $browsebut->pack(qw/-side left/);
 
-    #my $seperator = $ConnectInfo->Label()->pack(qw/-side left -anchor w -expand 1/);
-    
-    my $modevar = "tkmode";
+#my $seperator = $ConnectInfo->Label()->pack(qw/-side left -anchor w -expand 1/);
+
+    my $modevar = $runmode || "tkmode";
     my $tkmode = $ConnectInfo->Radiobutton(
-    	-text => 'Run TK by default',
-	-variable => \$modevar,
-	-value => 'tkmode'
+        -text     => 'Run TK by default',
+        -variable => \$modevar,
+        -value    => 'tkmode'
     );
     my $flatmode = $ConnectInfo->Radiobutton(
-	-text => 'Run console by default',
-	-variable => \$modevar,
-	-value => 'flatmode'
+        -text     => 'Run console by default',
+        -variable => \$modevar,
+        -value    => 'flatmode'
     );
-    $tkmode->pack( qw/-anchor w/, -fill => 'x');
-    $flatmode->pack( qw/-anchor w/, -fill => 'x');
-    
+    $tkmode->pack( qw/-anchor w/,   -fill => 'x' );
+    $flatmode->pack( qw/-anchor w/, -fill => 'x' );
 
     my $frame = $CONF_WIN->Frame;
     $frame->lower;
@@ -448,77 +459,82 @@ sub initconfig {
     $tb->ToolButton(
         -image   => 'filesave22',
         -tip     => 'save',
-        -command => sub { 
-		my $message = "";
-		chomp($logid);
-		chomp($passphrase);
-		chomp($servername);
-		unless ((($logid) && ($logid =~ m/\S\@\S/g))
-		&& (($passphrase) && ($passphrase =~ m/\S+/g))
-		&& (($servername) && ($servername =~ m/\S+\.\S+/g)))
-		  { 
-		  $message .= "Check that you included the following:\n";
-		  $message .= "\n* You must provide a login ID in the form of someone\@somewhere.blah\n";
-		  $message .= "\n* You must provide a password for connecting\n";
-		  #print "I was looking at:\n$logid\n$passphrase\n$servername\n";
-		  $message .= "\n* You must provide a server to connect to\n";}
-		  else {$message = ""}
-		if ($message =~ m/\S/g) {
-		  main::conf_pop($message);
-		  $message = "";
-		}
-		else
-		{
-		my %contents;
-		$contents{'server'} = "$servername";
-		$contents{'login'} = "$logid";
-		$contents{'password'} = "$passphrase";
-		$contents{'rows'} = "20";
-		$contents{'downdir'} = "$downdir"|| "/tmp";
-		$contents{'mode'} = "$modevar";
-		$conf->save_file("$configfile",\%contents)
-			or die "Can't save configfile! $!\n";
-		my $mode = '0600';
-		my @files = $configfile;
-		chmod oct($mode), @files;
-		main::conf_pop("Configuration saved!");
-		$CONF_WIN->withdraw; 
-		main::init_main_win()
-		}
-		}
+        -command => sub {
+            my $message = "";
+            chomp($logid);
+            chomp($passphrase);
+            chomp($servername);
+            unless ( ( ($logid) && ( $logid =~ m/\S\@\S/g ) )
+                && ( ($passphrase) && ( $passphrase =~ m/\S+/g ) )
+                && ( ($servername) && ( $servername =~ m/\S+\.\S+/g ) ) )
+            {
+                $message .= "Check that you included the following:\n";
+                $message .=
+"\n* You must provide a login ID in the form of someone\@somewhere.blah\n";
+                $message .= "\n* You must provide a password for connecting\n";
+
+                #print "I was looking at:\n$logid\n$passphrase\n$servername\n";
+                $message .= "\n* You must provide a server to connect to\n";
+            }
+            else { $message = "" }
+            if ( $message =~ m/\S/g ) {
+                main::conf_pop($message);
+                $message = "";
+            }
+            else {
+                my %contents;
+                $contents{'server'}   = "$servername";
+                $contents{'login'}    = "$logid";
+                $contents{'password'} = "$passphrase";
+                $contents{'rows'}     = "20";
+                $contents{'downdir'}  = "$downdir" || "/tmp";
+                $contents{'mode'}     = "$modevar";
+                $conf->save_file( "$configfile", \%contents )
+                  or die "Can't save configfile! $!\n";
+                my $mode  = '0600';
+                my @files = $configfile;
+                chmod oct($mode), @files;
+                main::conf_pop("Configuration saved!");
+                $CONF_WIN->withdraw;
+                if ( $runtype == 1 ) { main::init_main_win() }
+            }
+          }
 
     );
 
 }
 
 sub conf_pop {
-my $message = shift;
-my $button = $CONF_WIN->messageBox(
-	'-icon' => "error",
-	-type  => "OK",
-	-title => "ERROR",
-	-message => "$message"
-	);
-$message = "";
+    my $message = shift;
+    my $button  = $CONF_WIN->messageBox(
+        '-icon'  => "error",
+        -type    => "OK",
+        -title   => "ERROR",
+        -message => "$message"
+    );
+    $message = "";
 }
+
 sub callsome {
-    # This is the block where we will do the actual config writing for the first time. 
+
+# This is the block where we will do the actual config writing for the first time.
     open( FILE, ">$configfile" );
     close(FILE);
     return;
 }
 
 sub dirDialog {
-    my $w = shift;
+    my $w   = shift;
     my $ent = shift;
     my $dir;
     $dir = $w->chooseDirectory;
-    if (defined $dir and $dir ne '') {
-	$ent->delete(0, 'end');
-	$ent->insert(0, $dir);
-	$ent->xview('end');
+    if ( defined $dir and $dir ne '' ) {
+        $ent->delete( 0, 'end' );
+        $ent->insert( 0, $dir );
+        $ent->xview('end');
     }
 }
+
 sub entry_flash {
     my ( $w, $fg, $bg ) = @_;
     $w->focusForce;

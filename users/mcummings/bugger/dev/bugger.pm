@@ -2,61 +2,65 @@ package bugger;
 
 use WWW::Bugzilla;
 my $bugver = $WWW::Bugzilla::VERSION;
-if ($bugver < 0.4 ) {
-print "bugger requires at least WWW::Bugzilla 0.4.\nPlease emerge a newer version\n\n";
-exit()
+if ( $bugver < 0.4 ) {
+    print
+"bugger requires at least WWW::Bugzilla 0.4.\nPlease emerge a newer version\n\n";
+    exit();
 }
 use WWW::Mechanize;
 my $mechver = $WWW::Mechanize::VERSION;
-if ($mechver < 1.02 ) {
-print "bugger requires at least WWW::Mechanize 1.02.\nPlease emerge a newer version\n\n";
-exit()
+if ( $mechver < 1.02 ) {
+    print
+"bugger requires at least WWW::Mechanize 1.02.\nPlease emerge a newer version\n\n";
+    exit();
 }
 
 use HTML::Strip;
 my $stripver = $HTML::Strip::VERSION;
-if ($stripver < 1.02 ) {
-print "bugger requires at least HTML::Strip 1.02.\nPlease emerge a newer version\n\n";
-exit()
+if ( $stripver < 1.02 ) {
+    print
+"bugger requires at least HTML::Strip 1.02.\nPlease emerge a newer version\n\n";
+    exit();
 }
 
 sub list_bugs {
 
     my %buglist;
     my $bugcount = 0;
-    my $bugfor = shift;
-    my $stype = shift;
-chomp($bugfor);
-
+    my $bugfor   = shift;
+    my $stype    = shift;
+    chomp($bugfor);
 
     my $mech = connect_mech();
     $mech->form_number(1);
     $mech->field( 'email2', "" );
 
-    if ($stype eq "cc") {
-    $mech->field( 'email1', $bugfor );
-    $mech->untick( 'emailassigned_to1', '1' );
-    $mech->tick( 'emailcc1', '1' );
-    $mech->select( 'emailtype1', 'exact' );
-    } elsif ($stype eq "assigned") {
-    $mech->field( 'email1', $bugfor );
-    $mech->tick( 'emailassigned_to1', '1' );
-    $mech->select( 'emailtype1', 'exact' );
-    } elsif ($stype eq "reporter") {
-    $mech->field( 'email1', $bugfor );
-    $mech->untick( 'emailassigned_to1', '1' );
-    $mech->tick( 'emailreporter1', '1' );
-    $mech->select( 'emailtype1', 'exact' );
-    } elsif ($stype eq "keyword") {
-    $mech->field( 'email1', "" );
-    $mech->untick( 'emailassigned_to1', '1' );
-    $mech->field('long_desc',$bugfor);
-    $mech->select('long_desc_type','anywordssubstr' );
-}
-$mech->untick( 'emailreporter2', '1' );
+    if ( $stype eq "cc" ) {
+        $mech->field( 'email1', $bugfor );
+        $mech->untick( 'emailassigned_to1', '1' );
+        $mech->tick( 'emailcc1', '1' );
+        $mech->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "assigned" ) {
+        $mech->field( 'email1', $bugfor );
+        $mech->tick( 'emailassigned_to1', '1' );
+        $mech->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "reporter" ) {
+        $mech->field( 'email1', $bugfor );
+        $mech->untick( 'emailassigned_to1', '1' );
+        $mech->tick( 'emailreporter1', '1' );
+        $mech->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "keyword" ) {
+        $mech->field( 'email1', "" );
+        $mech->untick( 'emailassigned_to1', '1' );
+        $mech->field( 'long_desc', $bugfor );
+        $mech->select( 'long_desc_type', 'anywordssubstr' );
+    }
+    $mech->untick( 'emailreporter2', '1' );
 
-
-$mech->select( 'order',      'Bug Number' );
+    $mech->select( 'order', 'Bug Number' );
     $mech->submit();
 
     $mech->follow_link( text_regex => qr/CSV/ );
@@ -69,11 +73,13 @@ $mech->select( 'order',      'Bug Number' );
         next if ( $rowline[0] eq "" );
         next if ( $rowline[0] =~ /^\n$/ );
         $bugcount++;
-        $buglist{$bugcount}= {'BugID' => "$rowline[0]",
-		'Priority' => "$rowline[1]",
-		'Description' => "$rowline[7]"};
+        $buglist{$bugcount} = {
+            'BugID'       => "$rowline[0]",
+            'Priority'    => "$rowline[1]",
+            'Description' => "$rowline[7]"
+        };
     }
-    return(%buglist);
+    return (%buglist);
 
 }
 
@@ -81,7 +87,7 @@ sub show_bug {
     my $BUG = shift;
     chomp($BUG);
     my $mech = connect_mech();
-$mech->submit_form(
+    $mech->submit_form(
         form_number => 2,
         fields      => { id => "$BUG", }
     );
@@ -89,12 +95,11 @@ $mech->submit_form(
 
     my $TextBody = $mech->content();
 
-
     our $hs = HTML::Strip->new();
     my $hrcount;
 
     my @blocks = split( /\<\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
-    
+
     my @fulltext;
     $fulltext[0] = $hs->parse("$blocks[2]");
     $fulltext[1] = $hs->parse("$blocks[3]");
@@ -104,41 +109,64 @@ $mech->submit_form(
     $fulltext[0] =~ s/\n\n/\n/mg;
     $fulltext[1] =~ s/\n\n/\n/mg;
     my @sintext = split( /\n/, $fulltext[0] );
-my ($header,$reporter,$status,$priority,$resolution,$severity,$assigned,$URL,$textblock);
-#my $ccline;
-foreach my $TextLine (@sintext) {
-	if ($TextLine =~ m/Bug $BUG/) { $header = clean_line( $TextLine ) }
-	elsif ($TextLine =~ m/reported by: /i) {$TextLine =~ s/reported by: //i; $reporter = clean_line( $TextLine );}
-	# Removed for now because CC: line doesn't appear in the text formatted
-	# version of the show bugs page on bugzie
-	#elsif ($TextLine =~ m/CC:/i) {$TextLine =~ s/CC://i; $ccline = $TextLine;}
-	elsif ($TextLine =~ m/status:/i) {$TextLine =~ s/status: //i; $status = clean_line( $TextLine );}
-	elsif ($TextLine =~ m/priority:/i) {$TextLine =~ s/priority: //i; $priority = clean_line( $TextLine );}
-	elsif ($TextLine =~ m/resolution:/i) {$TextLine =~ s/resolution: //i; $resolution = clean_line( $TextLine );}
-	elsif ($TextLine =~ m/severity:/i) {$TextLine =~ s/severity: //i; $severity = clean_line( $TextLine );}
-	elsif ($TextLine =~ m/assigned to:/i) {$TextLine =~ s/assigned to: //i; $assigned = clean_line( $TextLine );}
-	elsif ($TextLine =~ m/URL:/i) {$TextLine =~ s/URL //i; $URL = clean_line( $TextLine );}
-	else {next}
-}
+    my (
+        $header,   $reporter, $status, $priority, $resolution,
+        $severity, $assigned, $URL,    $textblock
+    );
+
+    #my $ccline;
+    foreach my $TextLine (@sintext) {
+        if ( $TextLine =~ m/Bug $BUG/ ) { $header = clean_line($TextLine) }
+        elsif ( $TextLine =~ m/reported by: /i ) {
+            $TextLine =~ s/reported by: //i;
+            $reporter = clean_line($TextLine);
+        }
+
+     # Removed for now because CC: line doesn't appear in the text formatted
+     # version of the show bugs page on bugzie
+     #elsif ($TextLine =~ m/CC:/i) {$TextLine =~ s/CC://i; $ccline = $TextLine;}
+        elsif ( $TextLine =~ m/status:/i ) {
+            $TextLine =~ s/status: //i;
+            $status = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/priority:/i ) {
+            $TextLine =~ s/priority: //i;
+            $priority = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/resolution:/i ) {
+            $TextLine =~ s/resolution: //i;
+            $resolution = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/severity:/i ) {
+            $TextLine =~ s/severity: //i;
+            $severity = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/assigned to:/i ) {
+            $TextLine =~ s/assigned to: //i;
+            $assigned = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/URL:/i ) {
+            $TextLine =~ s/URL //i;
+            $URL = clean_line($TextLine);
+        }
+        else { next }
+    }
     %bugtext = (
-	'header' => "$header",
-	'reporter' => "$reporter",
-	#'cclist' => "$ccline",
-	'status' => "$status",
-	'priority' => "$priority",
-	'resolution' => "$resolution",
-	'severity' => "$severity",
-	'assigned' => "$assigned",
-	'URL' => "$URL",
-	'textblock' => "$fulltext[1]",
-	);
+        'header'   => "$header",
+        'reporter' => "$reporter",
 
+        #'cclist' => "$ccline",
+        'status'     => "$status",
+        'priority'   => "$priority",
+        'resolution' => "$resolution",
+        'severity'   => "$severity",
+        'assigned'   => "$assigned",
+        'URL'        => "$URL",
+        'textblock'  => "$fulltext[1]",
+    );
 
-
-    return(%bugtext);
+    return (%bugtext);
 }
-
-
 
 sub add_bug {
 
@@ -332,11 +360,10 @@ sub add_attach {
 # The following is a horrid hack, but I'm trying to keep the number of dependancies
 # to a minimum in this package. So...
 
-
 sub download_attach {
-    my $BUG = shift;
+    my $BUG     = shift;
     my $downdir = $config{'downdir'} || "/tmp";
-    my $agent = WWW::Mechanize->new();
+    my $agent   = WWW::Mechanize->new();
     $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
     my $TextBody = $agent->content();
     my @TextBody = split( /\n/, $TextBody );
