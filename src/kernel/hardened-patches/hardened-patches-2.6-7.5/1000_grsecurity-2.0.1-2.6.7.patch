@@ -8306,8 +8306,8 @@ diff -urN linux-2.6.7/grsecurity/Makefile linux-2.6.7/grsecurity/Makefile
 +
 diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 --- linux-2.6.7/grsecurity/gracl.c	1969-12-31 19:00:00 -0500
-+++ linux-2.6.7/grsecurity/gracl.c	2004-06-29 15:32:19 -0400
-@@ -0,0 +1,3426 @@
++++ linux-2.6.7/grsecurity/gracl.c	2004-07-08 15:12:02 -0400
+@@ -0,0 +1,3436 @@
 +/* 
 + * grsecurity/gracl.c
 + * Copyright Brad Spengler 2001, 2002, 2003
@@ -8349,6 +8349,10 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +/* for keeping track of userspace pointers used for subjects, so we
 +   can share references in the kernel as well
 +*/
++
++static struct dentry *real_root;
++static struct vfsmount *real_root_mnt;
++
 +static struct acl_subj_map_db subj_map_set;
 +
 +static struct acl_role_label *default_role;
@@ -8489,25 +8493,21 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	return 1;
 +}
 +		
-+static __inline__ char *
++static char *
 +__d_real_path(const struct dentry *dentry, const struct vfsmount *vfsmnt,
 +		char *buf, int buflen)
 +{
 +	char *res;
-+	struct dentry *our_dentry;
-+	struct vfsmount *our_mount;
-+	struct vfsmount *rootmnt;
 +	struct dentry *root;
++	struct vfsmount *rootmnt;
 +
-+	our_dentry = (struct dentry *) dentry;
-+	our_mount = (struct vfsmount *) vfsmnt;
-+
++	/* we can't use real_root, real_root_mnt, because they belong only to the RBAC system */
 +	read_lock(&child_reaper->fs->lock);
-+	rootmnt = mntget(child_reaper->fs->rootmnt);
 +	root = dget(child_reaper->fs->root);
++	rootmnt = mntget(child_reaper->fs->rootmnt);
 +	read_unlock(&child_reaper->fs->lock);
 +
-+	res = __d_path(our_dentry, our_mount, root, rootmnt, buf, buflen);
++	res = __d_path((struct dentry *)dentry, (struct vfsmount *)vfsmnt, root, rootmnt, buf, buflen);
 +	if (unlikely(IS_ERR(res)))
 +		res = strcpy(buf, "<path too long>");
 +	dput(root);
@@ -8522,26 +8522,22 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +				PAGE_SIZE);
 +}
 +
-+static __inline__ char *
++static char *
 +d_real_path(const struct dentry *dentry, const struct vfsmount *vfsmnt,
 +	    char *buf, int buflen)
 +{
 +	char *res;
-+	struct dentry *our_dentry;
-+	struct vfsmount *our_mount;
-+	struct vfsmount *rootmnt;
 +	struct dentry *root;
++	struct vfsmount *rootmnt;
 +
-+	our_dentry = (struct dentry *) dentry;
-+	our_mount = (struct vfsmount *) vfsmnt;
-+
++	/* we can't use real_root, real_root_mnt, because they belong only to the RBAC system */
 +	read_lock(&child_reaper->fs->lock);
-+	rootmnt = mntget(child_reaper->fs->rootmnt);
 +	root = dget(child_reaper->fs->root);
++	rootmnt = mntget(child_reaper->fs->rootmnt);
 +	read_unlock(&child_reaper->fs->lock);
 +
 +	spin_lock(&dcache_lock);
-+	res = __d_path(our_dentry, our_mount, root, rootmnt, buf, buflen);
++	res = __d_path((struct dentry *)dentry, (struct vfsmount *)vfsmnt, root, rootmnt, buf, buflen);
 +	spin_unlock(&dcache_lock);
 +	if (unlikely(IS_ERR(res)))
 +		res = strcpy(buf, "<path too long>");
@@ -8644,30 +8640,43 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	unsigned long index = rhash(uid, GR_ROLE_USER, acl_role_set.r_size);
 +	struct acl_role_label *match;
 +	struct role_allowed_ip *ipp;
++	int x;
 +	__u8 i = 0;
 +
 +	match = acl_role_set.r_hash[index];
 +
-+	while (match
-+	       && (match->uidgid != uid || !(match->roletype & GR_ROLE_USER))) {
++	while (match) {
++		if ((match->roletype & (GR_ROLE_DOMAIN | GR_ROLE_USER)) == (GR_ROLE_DOMAIN | GR_ROLE_USER)) {
++			for (x = 0; x < match->domain_child_num; x++) {
++				if (match->domain_children[x] == uid)
++					goto found;
++			}
++		} else if (match->uidgid == uid && match->roletype & GR_ROLE_USER)
++			break;
 +		index = (index + (1 << i)) % acl_role_set.r_size;
 +		match = acl_role_set.r_hash[index];
 +		i = (i + 1) % 32;
 +	}
-+
++found:
 +	if (match == NULL) {
 +	      try_group:
 +		index = rhash(gid, GR_ROLE_GROUP, acl_role_set.r_size);
 +		match = acl_role_set.r_hash[index];
 +		i = 0;
 +
-+		while (match && (match->uidgid != gid
-+			   || !(match->roletype & GR_ROLE_GROUP))) {
++		while (match) {
++			if ((match->roletype & (GR_ROLE_DOMAIN | GR_ROLE_GROUP)) == (GR_ROLE_DOMAIN | GR_ROLE_GROUP)) {
++				for (x = 0; x < match->domain_child_num; x++) {
++					if (match->domain_children[x] == gid)
++						goto found2;
++				}
++			} else if (match->uidgid == gid && match->roletype & GR_ROLE_GROUP)
++				break;
 +			index = (index + (1 << i)) % acl_role_set.r_size;
 +			match = acl_role_set.r_hash[index];
 +			i = (i + 1) % 32;
 +		}
-+
++found2:
 +		if (match == NULL)
 +			match = default_role;
 +		if (match->allowed_ips == NULL)
@@ -8675,8 +8684,8 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +		else {
 +			for (ipp = match->allowed_ips; ipp; ipp = ipp->next) {
 +				if (likely
-+				    ((task->curr_ip & ipp->netmask) ==
-+				     (ipp->addr & ipp->netmask)))
++				    ((ntohl(task->curr_ip) & ipp->netmask) ==
++				     (ntohl(ipp->addr) & ipp->netmask)))
 +					return match;
 +			}
 +			match = default_role;
@@ -8686,8 +8695,8 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	} else {
 +		for (ipp = match->allowed_ips; ipp; ipp = ipp->next) {
 +			if (likely
-+			    ((task->curr_ip & ipp->netmask) ==
-+			     (ipp->addr & ipp->netmask)))
++			    ((ntohl(task->curr_ip) & ipp->netmask) ==
++			     (ntohl(ipp->addr) & ipp->netmask)))
 +				return match;
 +		}
 +		goto try_group;
@@ -8847,10 +8856,10 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +}
 +
 +static void
-+insert_acl_role_label(struct acl_role_label *role)
++__insert_acl_role_label(struct acl_role_label *role, uid_t uidgid)
 +{
 +	unsigned long index =
-+	    rhash(role->uidgid, role->roletype & (GR_ROLE_USER | GR_ROLE_GROUP), acl_role_set.r_size);
++	    rhash(uidgid, role->roletype & (GR_ROLE_USER | GR_ROLE_GROUP), acl_role_set.r_size);
 +	struct acl_role_label **curr;
 +	__u8 i = 0;
 +
@@ -8867,6 +8876,18 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	return;
 +}
 +
++static void
++insert_acl_role_label(struct acl_role_label *role)
++{
++	int i;
++
++	if (role->roletype & GR_ROLE_DOMAIN) {
++		for (i = 0; i < role->domain_child_num; i++)
++			__insert_acl_role_label(role, role->domain_children[i]);
++	} else
++		__insert_acl_role_label(role, role->uidgid);
++}
++					
 +static int
 +insert_name_entry(char *name, const ino_t inode, const dev_t device)
 +{
@@ -8976,30 +8997,21 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +}
 +
 +static int
-+init_variables(const unsigned long acl_obj_size,
-+	       const unsigned long acl_glob_size,
-+	       const unsigned long acl_subj_size,
-+	       const unsigned long acl_ip_size,
-+	       const unsigned long acl_role_size,
-+	       const unsigned long allowed_ip_size,
-+	       const unsigned long acl_trans_size,
-+	       const __u16 num_sprole_pws)
++init_variables(const struct gr_arg *arg)
 +{
 +	unsigned long stacksize;
 +
-+	subj_map_set.s_size = acl_subj_size;
-+	acl_role_set.r_size = acl_role_size;
-+	name_set.n_size = (acl_obj_size + acl_subj_size);
-+	inodev_set.n_size = (acl_obj_size + acl_subj_size);
++	subj_map_set.s_size = arg->role_db.num_subjects;
++	acl_role_set.r_size = arg->role_db.num_roles + arg->role_db.num_domain_children;
++	name_set.n_size = arg->role_db.num_objects;
++	inodev_set.n_size = arg->role_db.num_objects;
 +
 +	if (!gr_init_uidset())
 +		return 1;
 +
 +	/* set up the stack that holds allocation info */
 +
-+	stacksize = (3 * acl_obj_size) + (3 * acl_role_size) +
-+	    (6 * acl_subj_size) + acl_ip_size + (2 * acl_trans_size) +
-+	    allowed_ip_size + (2 * num_sprole_pws) + (2 * acl_glob_size) + 5;
++	stacksize = arg->role_db.num_pointers + 5;
 +
 +	if (!acl_alloc_stack_init(stacksize))
 +		return 1;
@@ -9020,6 +9032,13 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	memset(deleted_subject, 0, sizeof (struct acl_subject_label));
 +	memset(deleted_object, 0, sizeof (struct acl_object_label));
 +	memset(deleted_inodev, 0, sizeof (struct name_entry));
++
++	/* grab reference for the real root dentry and vfsmount */
++	read_lock(&child_reaper->fs->lock);
++	real_root_mnt = mntget(child_reaper->fs->rootmnt);
++	real_root = dget(child_reaper->fs->root);
++	read_unlock(&child_reaper->fs->lock);
++	
 +
 +	/* We only want 50% full tables for now */
 +
@@ -9094,6 +9113,14 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +		} while ((task2 = next_thread(task2)) != task);
 +	}
 +	read_unlock(&tasklist_lock);
++
++	/* release the reference to the real root dentry and vfsmount */
++	if (real_root)
++		dput(real_root);
++	real_root = NULL;
++	if (real_root_mnt)
++		mntput(real_root_mnt);
++	real_root_mnt = NULL;
 +
 +	/* free all object hash tables */
 +
@@ -9604,6 +9631,7 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	struct acl_role_label *r_tmp = NULL, **r_utmp, *r_utmp2, *r_last;
 +	struct sprole_pw *sptmp;
 +	struct gr_hash_struct *ghash;
++	uid_t *domainlist;
 +	unsigned long r_num;
 +	unsigned int len;
 +	char *tmp;
@@ -9612,7 +9640,7 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	__u32 num_subjs;
 +
 +	/* we need a default and kernel role */
-+	if (arg->role_db.r_entries < 2)
++	if (arg->role_db.num_roles < 2)
 +		return -EINVAL;
 +
 +	/* copy special role authentication info from userspace */
@@ -9664,7 +9692,7 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +
 +	r_utmp = (struct acl_role_label **) arg->role_db.r_table;
 +
-+	for (r_num = 0; r_num < arg->role_db.r_entries; r_num++) {
++	for (r_num = 0; r_num < arg->role_db.num_roles; r_num++) {
 +		r_last = r_tmp;
 +
 +		r_tmp = acl_alloc(sizeof (struct acl_role_label));
@@ -9694,10 +9722,10 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +			r_tmp->prev = r_last;
 +		}
 +
-+		if (r_num == (arg->role_db.r_entries - 1))
++		if (r_num == (arg->role_db.num_roles - 1))
 +			r_tmp->next = NULL;
 +
-+		len = strnlen_user(r_tmp->rolename, PATH_MAX);
++		len = strnlen_user(r_tmp->rolename, GR_SPROLE_LEN);
 +
 +		if (!len || len >= PATH_MAX) {
 +			err = -EINVAL;
@@ -9748,6 +9776,20 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +		if (err)
 +			goto cleanup;
 +
++		/* copy domain info */
++		if (r_tmp->domain_children != NULL) {
++			domainlist = acl_alloc(r_tmp->domain_child_num * sizeof(uid_t));
++			if (domainlist == NULL) {
++				err = -ENOMEM;
++				goto cleanup;
++			}
++			if (copy_from_user(domainlist, r_tmp->domain_children, r_tmp->domain_child_num * sizeof(uid_t))) {
++				err = -EFAULT;
++				goto cleanup;
++			}
++			r_tmp->domain_children = domainlist;
++		}
++
 +		err = copy_user_transitions(r_tmp);
 +		if (err)
 +			goto cleanup;
@@ -9782,10 +9824,7 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	memcpy(gr_system_salt, args->salt, GR_SALT_LEN);
 +	memcpy(gr_system_sum, args->sum, GR_SHA_LEN);
 +
-+	if (init_variables(args->role_db.o_entries, args->role_db.g_entries,
-+			   args->role_db.s_entries, args->role_db.i_entries,
-+			   args->role_db.r_entries, args->role_db.a_entries,
-+			   args->role_db.t_entries, args->num_sprole_pws)) {
++	if (init_variables(args)) {
 +		security_alert_good(GR_INITF_ACL_MSG, GR_VERSION);
 +		error = -ENOMEM;
 +		free_variables();
@@ -9962,19 +10001,13 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +{
 +	struct dentry *dentry = (struct dentry *) l_dentry;
 +	struct vfsmount *mnt = (struct vfsmount *) l_mnt;
-+	struct dentry *root;
-+	struct vfsmount *rootmnt;
 +	struct acl_object_label *retval;
 +	char *path = NULL;
 +
-+	read_lock(&child_reaper->fs->lock);
-+	rootmnt = mntget(child_reaper->fs->rootmnt);
-+	root = dget(child_reaper->fs->root);
-+	read_unlock(&child_reaper->fs->lock);
 +	spin_lock(&dcache_lock);
 +
 +	for (;;) {
-+		if (dentry == root && mnt == rootmnt)
++		if (dentry == real_root && mnt == real_root_mnt)
 +			break;
 +		if (dentry == mnt->mnt_root || IS_ROOT(dentry)) {
 +			if (mnt->mnt_parent == mnt)
@@ -9999,11 +10032,9 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	retval = full_lookup(l_dentry, l_mnt, dentry, subj, &path);
 +
 +	if (retval == NULL)
-+		retval = full_lookup(l_dentry, l_mnt, root, subj, &path);
++		retval = full_lookup(l_dentry, l_mnt, real_root, subj, &path);
 +out:
 +	spin_unlock(&dcache_lock);
-+	dput(root);
-+	mntput(rootmnt);
 +
 +	return retval;
 +}
@@ -10014,18 +10045,12 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +{
 +	struct dentry *dentry = (struct dentry *) l_dentry;
 +	struct vfsmount *mnt = (struct vfsmount *) l_mnt;
-+	struct dentry *root;
-+	struct vfsmount *rootmnt;
 +	struct acl_object_label *retval;
 +
-+	read_lock(&child_reaper->fs->lock);
-+	rootmnt = mntget(child_reaper->fs->rootmnt);
-+	root = dget(child_reaper->fs->root);
-+	read_unlock(&child_reaper->fs->lock);
 +	spin_lock(&dcache_lock);
 +
 +	for (;;) {
-+		if (dentry == root && mnt == rootmnt)
++		if (dentry == real_root && mnt == real_root_mnt)
 +			break;
 +		if (dentry == mnt->mnt_root || IS_ROOT(dentry)) {
 +			if (mnt->mnt_parent == mnt)
@@ -10050,11 +10075,9 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	retval = full_lookup(l_dentry, l_mnt, dentry, subj, &path);
 +
 +	if (retval == NULL)
-+		retval = full_lookup(l_dentry, l_mnt, root, subj, &path);
++		retval = full_lookup(l_dentry, l_mnt, real_root, subj, &path);
 +out:
 +	spin_unlock(&dcache_lock);
-+	dput(root);
-+	mntput(rootmnt);
 +
 +	return retval;
 +}
@@ -10065,18 +10088,12 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +{
 +	struct dentry *dentry = (struct dentry *) l_dentry;
 +	struct vfsmount *mnt = (struct vfsmount *) l_mnt;
-+	struct dentry *root;
-+	struct vfsmount *rootmnt;
 +	struct acl_subject_label *retval;
 +
-+	read_lock(&child_reaper->fs->lock);
-+	rootmnt = mntget(child_reaper->fs->rootmnt);
-+	root = dget(child_reaper->fs->root);
-+	read_unlock(&child_reaper->fs->lock);
 +	spin_lock(&dcache_lock);
 +
 +	for (;;) {
-+		if (unlikely(dentry == root && mnt == rootmnt))
++		if (unlikely(dentry == real_root && mnt == real_root_mnt))
 +			break;
 +		if (unlikely(dentry == mnt->mnt_root || IS_ROOT(dentry))) {
 +			if (mnt->mnt_parent == mnt)
@@ -10115,14 +10132,12 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	if (unlikely(retval == NULL)) {
 +		read_lock(&gr_inode_lock);
 +		retval =
-+		    lookup_acl_subj_label(root->d_inode->i_ino,
-+					  root->d_inode->i_sb->s_dev, role);
++		    lookup_acl_subj_label(real_root->d_inode->i_ino,
++					  real_root->d_inode->i_sb->s_dev, role);
 +		read_unlock(&gr_inode_lock);
 +	}
 +      out:
 +	spin_unlock(&dcache_lock);
-+	dput(root);
-+	mntput(rootmnt);
 +
 +	return retval;
 +}
@@ -10853,8 +10868,8 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +			found = 0;
 +			if (r->allowed_ips != NULL) {
 +				for (ipp = r->allowed_ips; ipp; ipp = ipp->next) {
-+					if ((current->curr_ip & ipp->netmask) ==
-+					     (ipp->addr & ipp->netmask))
++					if ((ntohl(current->curr_ip) & ipp->netmask) ==
++					     (ntohl(ipp->addr) & ipp->netmask))
 +						found = 1;
 +				}
 +			} else
@@ -10944,15 +10959,15 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +ssize_t
 +write_grsec_handler(struct file *file, const char * buf, size_t count, loff_t *ppos)
 +{
-+	struct gr_arg *uarg;
++	struct gr_arg_wrapper uwrap;
 +	unsigned char *sprole_salt;
 +	unsigned char *sprole_sum;
-+	int error = sizeof (struct gr_arg *);
++	int error = sizeof (struct gr_arg_wrapper);
 +	int error2 = 0;
 +
 +	down(&gr_dev_sem);
 +
-+	if (count != sizeof (struct gr_arg *)) {
++	if (count != sizeof (struct gr_arg_wrapper)) {
 +		security_alert_good(GR_DEV_ACL_MSG, count,
 +				    (int) sizeof (struct gr_arg *));
 +		error = -EINVAL;
@@ -10965,12 +10980,17 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +		gr_auth_attempts = 0;
 +	}
 +
-+	if (copy_from_user(&uarg, buf, sizeof (struct gr_arg *))) {
++	if (copy_from_user(&uwrap, buf, sizeof (struct gr_arg_wrapper))) {
 +		error = -EFAULT;
 +		goto out;
 +	}
 +
-+	if (copy_from_user(gr_usermode, uarg, sizeof (struct gr_arg))) {
++	if ((uwrap.version != GRSECURITY_VERSION) || (uwrap.size != sizeof(struct gr_arg))) {
++		error = -EINVAL;
++		goto out;
++	}
++
++	if (copy_from_user(gr_usermode, uwrap.arg, sizeof (struct gr_arg))) {
 +		error = -EFAULT;
 +		goto out;
 +	}
@@ -11513,14 +11533,6 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +	if (unlikely(!(gr_status & GR_READY)))
 +		return 0;
 +
-+	if (task->acl->mode & GR_NOPTRACE) {
-+		security_alert(GR_PTRACE_ACL_MSG, task->exec_file ?
-+			       gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt)
-+			       : "(none)", task->comm, task->pid,
-+			       DEFAULTSECARGS);
-+		return 1;
-+	}
-+
 +	read_lock(&tasklist_lock);
 +	while (tmp->pid > 0) {
 +		if (tmp == curtemp)
@@ -11572,10 +11584,8 @@ diff -urN linux-2.6.7/grsecurity/gracl.c linux-2.6.7/grsecurity/gracl.c
 +			return 0;
 +		}
 +	} else if (!(current->acl->mode & GR_OVERRIDE) &&
-+		   !(current->role->roletype & GR_ROLE_GOD)
-+		   && (current->acl != task->acl
-+		       || (current->acl != current->role->root_label
-+			   && current->pid != task->pid))) {
++		   !(current->role->roletype & GR_ROLE_GOD) &&
++		   (current->acl != task->acl)) {
 +		security_alert(GR_PTRACE_ACL_MSG,
 +			       gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt),
 +			       task->comm, task->pid, DEFAULTSECARGS);
@@ -11953,13 +11963,14 @@ diff -urN linux-2.6.7/grsecurity/gracl_cap.c linux-2.6.7/grsecurity/gracl_cap.c
 +
 diff -urN linux-2.6.7/grsecurity/gracl_fs.c linux-2.6.7/grsecurity/gracl_fs.c
 --- linux-2.6.7/grsecurity/gracl_fs.c	1969-12-31 19:00:00 -0500
-+++ linux-2.6.7/grsecurity/gracl_fs.c	2004-06-25 14:07:21 -0400
-@@ -0,0 +1,462 @@
++++ linux-2.6.7/grsecurity/gracl_fs.c	2004-07-06 21:34:25 -0400
+@@ -0,0 +1,466 @@
 +#include <linux/kernel.h>
 +#include <linux/sched.h>
 +#include <linux/types.h>
 +#include <linux/fs.h>
 +#include <linux/file.h>
++#include <linux/stat.h>
 +#include <linux/grsecurity.h>
 +#include <linux/grinternal.h>
 +#include <linux/gracl.h>
@@ -12167,6 +12178,9 @@ diff -urN linux-2.6.7/grsecurity/gracl_fs.c linux-2.6.7/grsecurity/gracl_fs.c
 +gr_acl_handle_fchmod(const struct dentry *dentry, const struct vfsmount *mnt,
 +		     mode_t mode)
 +{
++	if (unlikely(dentry->d_inode && S_ISSOCK(dentry->d_inode->i_mode)))
++		return 1;
++
 +	if (unlikely((mode != (mode_t)-1) && (mode & (S_ISUID | S_ISGID)))) {
 +		generic_fs_handler(dentry, mnt, GR_WRITE | GR_SETID,
 +				   GR_FCHMOD_ACL_MSG);
@@ -12398,12 +12412,12 @@ diff -urN linux-2.6.7/grsecurity/gracl_fs.c linux-2.6.7/grsecurity/gracl_fs.c
 +				    rolename, id, DEFAULTSECARGS);
 +	}
 +
-+	write_lock_irq(&grsec_exec_file_lock);
++	write_lock(&grsec_exec_file_lock);
 +	if (current->exec_file) {
 +		fput(current->exec_file);
 +		current->exec_file = NULL;
 +	}
-+	write_unlock_irq(&grsec_exec_file_lock);
++	write_unlock(&grsec_exec_file_lock);
 +}
 +
 +int
@@ -17510,8 +17524,8 @@ diff -urN linux-2.6.7/include/linux/fs.h linux-2.6.7/include/linux/fs.h
  extern int filp_close(struct file *, fl_owner_t id);
 diff -urN linux-2.6.7/include/linux/gracl.h linux-2.6.7/include/linux/gracl.h
 --- linux-2.6.7/include/linux/gracl.h	1969-12-31 19:00:00 -0500
-+++ linux-2.6.7/include/linux/gracl.h	2004-06-25 14:07:21 -0400
-@@ -0,0 +1,243 @@
++++ linux-2.6.7/include/linux/gracl.h	2004-07-05 15:04:57 -0400
+@@ -0,0 +1,250 @@
 +#ifndef GR_ACL_H
 +#define GR_ACL_H
 +
@@ -17523,6 +17537,7 @@ diff -urN linux-2.6.7/include/linux/gracl.h linux-2.6.7/include/linux/gracl.h
 +/* Major status information */
 +
 +#define GR_VERSION  "grsecurity 2.0.1"
++#define GRSECURITY_VERSION 0x201
 +
 +enum {
 +
@@ -17615,7 +17630,6 @@ diff -urN linux-2.6.7/include/linux/gracl.h linux-2.6.7/include/linux/gracl.h
 +
 +	struct acl_subject_label *parent_subject;
 +	struct gr_hash_struct *hash;
-+	struct acl_ip_label *ip_object;
 +	struct acl_subject_label *prev;
 +	struct acl_subject_label *next;
 +
@@ -17654,19 +17668,20 @@ diff -urN linux-2.6.7/include/linux/gracl.h linux-2.6.7/include/linux/gracl.h
 +
 +	struct role_transition *transitions;
 +	struct role_allowed_ip *allowed_ips;
++	uid_t *domain_children;
++	__u16 domain_child_num;
++
 +	struct acl_subject_label **subj_hash;
 +	__u32 subj_hash_size;
 +};
 +
 +struct user_acl_role_db {
 +	struct acl_role_label **r_table;
-+	__u32 r_entries;	/* number of entries in table */
-+	__u32 s_entries;	/* total number of subject acls */
-+	__u32 i_entries;	/* total number of ip acls */
-+	__u32 o_entries;	/* Total number of object acls */
-+	__u32 g_entries;	/* total number of globbed objects */
-+	__u32 a_entries;	/* total number of allowed ips */
-+	__u32 t_entries;	/* total number of transitions */
++	__u32 num_pointers;		/* Number of allocations to track */
++	__u32 num_roles;		/* Number of roles */
++	__u32 num_domain_children;	/* Number of domain children */
++	__u32 num_subjects;		/* Number of subjects */
++	__u32 num_objects;		/* Number of objects */
 +};
 +
 +struct acl_object_label {
@@ -17710,6 +17725,12 @@ diff -urN linux-2.6.7/include/linux/gracl.h linux-2.6.7/include/linux/gracl.h
 +	uid_t segv_uid;
 +	__u16 num_sprole_pws;
 +	__u16 mode;
++};
++
++struct gr_arg_wrapper {
++	struct gr_arg *arg;
++	__u32 version;
++	__u32 size;
 +};
 +
 +struct subject_map {
@@ -17769,8 +17790,8 @@ diff -urN linux-2.6.7/include/linux/gralloc.h linux-2.6.7/include/linux/gralloc.
 +#endif
 diff -urN linux-2.6.7/include/linux/grdefs.h linux-2.6.7/include/linux/grdefs.h
 --- linux-2.6.7/include/linux/grdefs.h	1969-12-31 19:00:00 -0500
-+++ linux-2.6.7/include/linux/grdefs.h	2004-06-25 14:07:21 -0400
-@@ -0,0 +1,116 @@
++++ linux-2.6.7/include/linux/grdefs.h	2004-07-05 15:04:57 -0400
+@@ -0,0 +1,117 @@
 +#ifndef GRDEFS_H
 +#define GRDEFS_H
 +
@@ -17794,7 +17815,8 @@ diff -urN linux-2.6.7/include/linux/grdefs.h linux-2.6.7/include/linux/grdefs.h
 +	GR_ROLE_NOPW = 0x0020,
 +	GR_ROLE_GOD = 0x0040,
 +	GR_ROLE_LEARN = 0x0080,
-+	GR_ROLE_TPE = 0x0100
++	GR_ROLE_TPE = 0x0100,
++	GR_ROLE_DOMAIN = 0x0200
 +};
 +
 +/* ACL Subject and Object mode flags */
@@ -19170,7 +19192,7 @@ diff -urN linux-2.6.7/kernel/sched.c linux-2.6.7/kernel/sched.c
  		increment = 40;
 diff -urN linux-2.6.7/kernel/signal.c linux-2.6.7/kernel/signal.c
 --- linux-2.6.7/kernel/signal.c	2004-06-16 01:19:13 -0400
-+++ linux-2.6.7/kernel/signal.c	2004-06-25 14:07:21 -0400
++++ linux-2.6.7/kernel/signal.c	2004-07-09 08:14:36 -0400
 @@ -21,6 +21,7 @@
  #include <linux/binfmts.h>
  #include <linux/security.h>
@@ -19179,7 +19201,16 @@ diff -urN linux-2.6.7/kernel/signal.c linux-2.6.7/kernel/signal.c
  #include <asm/param.h>
  #include <asm/uaccess.h>
  #include <asm/unistd.h>
-@@ -770,11 +771,13 @@
+@@ -613,6 +614,8 @@
+ 	    && (current->uid ^ t->suid) && (current->uid ^ t->uid)
+ 	    && !capable(CAP_KILL))
+ 		return error;
++	if (gr_handle_signal(t, sig))
++		return error;
+ 	return security_task_kill(t, info, sig);
+ }
+ 
+@@ -770,11 +773,13 @@
  	(((sig) < SIGRTMIN) && sigismember(&(sigptr)->signal, (sig)))
  
  
@@ -19194,7 +19225,7 @@ diff -urN linux-2.6.7/kernel/signal.c linux-2.6.7/kernel/signal.c
  	if (!irqs_disabled())
  		BUG();
  #ifdef CONFIG_SMP
-@@ -825,6 +828,8 @@
+@@ -825,6 +830,8 @@
  	ret = specific_send_sig_info(sig, info, t);
  	spin_unlock_irqrestore(&t->sighand->siglock, flags);
  
@@ -19203,58 +19234,6 @@ diff -urN linux-2.6.7/kernel/signal.c linux-2.6.7/kernel/signal.c
  	return ret;
  }
  
-@@ -1083,9 +1088,14 @@
- 		int err;
- 
- 		found = 1;
--		err = group_send_sig_info(sig, info, p);
--		if (!retval)
--			retval = err;
-+
-+		if (gr_handle_signal(p, sig))
-+			retval = -EPERM;
-+		else {
-+			err = group_send_sig_info(sig, info, p);
-+			if (!retval)
-+				retval = err;
-+		}
- 	}
- 	return found ? retval : -ESRCH;
- }
-@@ -1143,8 +1153,12 @@
- 	read_lock(&tasklist_lock);
- 	p = find_task_by_pid(pid);
- 	error = -ESRCH;
--	if (p)
--		error = group_send_sig_info(sig, info, p);
-+	if (p) {
-+		if (gr_handle_signal(p, sig))
-+			error = -EPERM;
-+		else
-+			error = group_send_sig_info(sig, info, p);
-+	}
- 	read_unlock(&tasklist_lock);
- 	return error;
- }
-@@ -1168,10 +1182,14 @@
- 		read_lock(&tasklist_lock);
- 		for_each_process(p) {
- 			if (p->pid > 1 && p->tgid != current->tgid) {
--				int err = group_send_sig_info(sig, info, p);
--				++count;
--				if (err != -EPERM)
--					retval = err;
-+				if (gr_handle_signal(p, sig))
-+					retval = -EPERM;
-+				else { 
-+					int err = group_send_sig_info(sig, info, p);
-+					++count;
-+					if (err != -EPERM)
-+						retval = err;
-+				}
- 			}
- 		}
- 		read_unlock(&tasklist_lock);
 diff -urN linux-2.6.7/kernel/sys.c linux-2.6.7/kernel/sys.c
 --- linux-2.6.7/kernel/sys.c	2004-06-16 01:18:58 -0400
 +++ linux-2.6.7/kernel/sys.c	2004-06-25 14:07:21 -0400
