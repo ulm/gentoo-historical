@@ -6,9 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string
-import os
-import re
+import string, os, re, signal, time
 
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
@@ -180,3 +178,88 @@ def is_nfs(device):
 	path = device[colon_location+1:]
 
 	return((is_ip(host) or is_hostname(host)) and is_path(path))
+
+def set_ip(dev, ip, broadcast, netmask):
+	if not is_ip(ip) or not is_ip(netmask) or not is_ip(broadcast):
+		raise "IPAddressError", "ip, netmask and broadcast must be a valid IP!"
+
+	if not is_eth_device(dev):
+		raise "EthDeviceError", "dev must be a valid ethernet device!"
+
+	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
+
+	res = run_cmd("ifconfig",options)
+
+	if res[0] == 'exit' and res[1] == 0:
+		return(0)
+	else:
+		return(1)
+
+def set_default_route(route):
+	pass
+
+def run_cmd(cmd, cmdline="",timeout=-1):
+	if type(cmd) != str:
+		raise "InputError", "cmd must be a string!"
+
+	if len(cmd.split()) > 1:
+		tmp = cmd.split()
+		cmd = tmp[0]
+		cmdline = tmp[1:]
+
+	if not type(cmdline) in (tuple, list):
+		if type(cmdline) == str:
+			cmdline = cmdline.split()
+		else:
+			raise "InputError", "cmdline must be a string, list or tuple"
+
+	if len(cmdline) == 0 or cmdline[0] != cmd:
+		if type(cmdline) == list:
+			cmdline = [cmd] + cmdline
+		else:
+			cmdline = (cmd,) + cmdline
+
+	pid = os.fork()
+	if pid == 0:
+		os.execvp(cmd, cmdline)
+	else:
+		if timeout != -1:
+			for i in range(0, timeout):
+				status = os.waitpid(pid, os.WNOHANG)
+				if status[0] != 0:
+					break
+				time.sleep(1)
+
+			if status[0] == 0:
+				os.kill(pid, signal.SIGTERM)
+
+				for i in range(0, 5):
+					status = os.waitpid(pid, os.WNOHANG)
+					if status[0] != 0:
+						break
+					time.sleep(1)
+
+				if status[0] == 0:
+					os.kill(pid, signal.SIGKILL)
+					status = os.waitpid(pid,0)
+
+
+		else:
+			status = os.waitpid(pid,0)
+
+		res = status[1]
+
+		if os.WIFSIGNALED(res):
+			return(('signal', os.WTERMSIG(res)))
+		elif os.WIFEXITED(res):
+			return(('exit', os.WEXITSTATUS(res)))
+		elif os.WIFSTOPPED(res):
+			return(('stopped', os.STOPSIG(res)))
+		elif os.WCOREDUMP(res):
+			return(('core', -1))
+		else:
+			return(('unknown', os.WEXITSTATUS(res)))
+
+def run_bash():
+	os.putenv("PROMPT_COMMAND","echo \"Type 'exit' to return to the installer.\"")
+	return run_cmd("bash")
