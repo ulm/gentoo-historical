@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="utf-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/gnupg-user.xml,v 1.7 2004/09/04 09:33:37 aaby Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/gnupg-user.xml,v 1.8 2005/03/06 12:37:30 aaby Exp $ -->
 <guide link = "/doc/da/gnupg-user.xml" lang="da">
 <title>GnuPG Gentoo brugervejledning</title>
 <author title="Forfatter">
@@ -34,8 +34,8 @@ Denne lille vejledning vil lære dig den basale brug af GnuPG, som er et redskab
 
 <license/>
 
-<version>1.0.8</version>
-<date>23. August 2004</date>
+<version>1.0.12</version>
+<date>2005-02-19</date>
 
 <chapter>
 <title>Introduktion</title>
@@ -102,7 +102,7 @@ de aktuelle nøgler:
 </p>
 
 <pre caption="genereringsprocessen af dine nøgler">
-# <i>gpg --gen-key</i>
+$ <i>gpg --gen-key</i>
 gpg (GnuPG) 1.0.7; Copyright (C) 2002 Free Software Foundation, Inc.
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
@@ -204,13 +204,13 @@ dine nøgler (nogen får fat på din nøgle/kodeord)
 </p>
 
 <pre caption="Generering af tilbagetrækkelsescertifikat">
-# <i>gpg --list-keys</i>
+$ <i>gpg --list-keys</i>
 /home/humpback/.gnupg/pubring.gpg
 ---------------------------------
 pub  1024D/75447B14 2002-12-08 John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
 sub  2048g/96D6CDAD 2002-12-08
 
-# <i>gpg --output revoke.asc --gen-revoke 75447B14</i>
+$ <i>gpg --output revoke.asc --gen-revoke 75447B14</i>
 
 sec  1024D/75447B14 2002-12-08   John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
 
@@ -305,11 +305,11 @@ til at udløbe det samme tidspunkt.
 </p>
 
 <pre caption="Importering og signering af nøgler">
-# <i>gpg --import luis.asc</i>
+$ <i>gpg --import luis.asc</i>
 gpg: key 462405BB: public key imported
 gpg: Total number processed: 1
 gpg:               imported: 1
-# <i>gpg --list-keys</i>
+$ <i>gpg --list-keys</i>
 /home/humpback/.gnupg/pubring.gpg
 ---------------------------------
 pub  1024D/75447B14 2002-12-08 John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;
@@ -319,7 +319,7 @@ pub  1024D/462405BB 2002-12-01 Luis Pinto &lt;lmpinto@student.dei.uc.pt&gt;
       uid                            Luis Pinto &lt;lmpinto@dei.uc.pt&gt;
 sub  4096g/922175B3 2002-12-01 [expires: 2003-12-01]
 
-# <i>gpg --edit-key lmpinto@dei.uc.pt</i>
+$ <i>gpg --edit-key lmpinto@dei.uc.pt</i>
 gpg (GnuPG) 1.0.7; Copyright (C) 2002 Free Software Foundation, Inc.
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
@@ -395,9 +395,9 @@ nøgle til pgp.mit.edu nøgle-serveren. Den bruger HTTP, så hvis du har
 brug for en proxy til HTTP trafik, glem ikke at sætte den. (<c>export
 http_proxy=http://proxy_host:port/</c>). Kommandoen for at sende
 nøglen er: <c>gpg --keyserver pgp.mit.edu --keyserver-options
-honor-http-proxy --send-key john@nowhere.someplace.flick</c>. Hvis du
-ikke har brug for en HTTP Proxy til HTTP trafik kan du fjerne:
-<e>--keyserver-options honor-http-proxy</e>.
+honor-http-proxy --send-key 75447B14</c> hvor <c>75447B14</c> er nøgle
+ID.  Hvis du ikke har brug for en HTTP Proxy til HTTP trafik kan du
+fjerne: <e>--keyserver-options honor-http-proxy</e>.
 </p>
 
 <p>
@@ -422,7 +422,7 @@ endnu, er Gustavo Felisberto personen, som har skrevet denne guide :)
 </p>
 
 <pre caption="Søgning på nøgler fra nøgle-server">
-# <i>gpg --keyserver pgp.mit.edu --keyserver-options honor-http-proxy --search-keys humpback@felisberto.net</i>
+$ <i>gpg --keyserver pgp.mit.edu --keyserver-options honor-http-proxy --search-keys humpback@felisberto.net</i>
 gpg: searching for "humpback@felisberto.net" from HKP server pgp.mit.edu
 Keys 1-5 of 5 for "humpback@felisberto.net"
 (1)	Gustavo Felisberto (apt-get install anarchy) &lt;humpback@felisberto.net&gt; 1024
@@ -452,6 +452,107 @@ tiden. Nu kan John Doe få den og signere den, hvis han stoler på den.
 </section>
 </chapter>
 
+<chapter id="gpg-agent">
+<title>At bruge en GPG agent</title>
+<section>
+<title>Hvad er en GPG agent?</title>
+<body>
+  	 
+<p>
+Der er tilfælde, når du arbejder med specifikke applikationer, hvor du
+bruger din GPG nøgle meget ofte, hvilket betyder at du skal taste dit
+kodeord mange gange. Adskillige applikationer understøttede før i
+tiden en mekanisme der cachede kodeord for at gøre livet nemmere for
+brugere, men dette gav desværre ikke mulighed for at dele den cache på
+tværs af programmer (hvor sikkert ville det være?) og tvang
+applikationer til at opfinde hjulet igen og igen.
+</p>
+  	 
+<p>
+En GPG agent er en separat applikation som GPG bruger til at cache
+kodeord på en standardiseret og sikker måde. Den tillader
+applikationer at bruge GPG samtidigt: hvis du indtaster dit kodeord
+imens du arbejder med en applikation, så kan den anden applikation
+arbejde uden at gentage forespørgslen om kodeordet for at låse op for
+nøglen - det er hvis GPG agenten er sat sådan op, selvfølgelig.
+</p>
+  	 
+<p>
+Gentoo tilbyder et par GPG agentapplikationer. <c>app-crypt/gpg-agent</c> kan betragtes som den mest
+refererede og er den vi vil bruge i dette dokument.
+</p>
+  	 
+</body>
+</section>
+<section>
+<title>At installere og konfigurere gpg-agent og pinentry</title>
+ <body>
+  	 
+ <p>
+Du skal selvfølgelig installere <c>gpg-agent</c> og <c>pinentry</c>,
+som er den hjælpe applikation som gpg-agent bruger til at forespørge
+kodeordet i et grafisk vindue. Det kommer i tre varianter: det kan få
+et vindue til at springe op ved brug af gtk+, Qt og curses
+bibliotekerne (afhængig af de USE flag du sætter når du emerger den).
+</p>
+  	 
+<pre caption="At installere gpg-agent og pinentry">
+# <i>emerge gpg-agent pinentry</i>
+</pre>
+  	 
+<p>
+Lav derefter en fil der hedder <path>~/.gnupg/gpg-agent.conf</path> og
+skriv de følgnede linjer som definerer standard udløbstid på kodeordet
+(f.eks. 30 minutter) og den applikation der skal kaldes når kodeordet
+skal hentes den første gang (f.eks. Qt versionen af pinentry).
+</p>
+  	 
+<pre caption="At redigere ~/.gnupg/gpg-agent.conf">
+pinentry-program /usr/bin/pinentry-qt
+no-grab
+default-cache-ttl 1800
+</pre>
+  	 
+<p>
+Konfigurer nu GnuPG til at bruge en agent når det er passende. Rediger
+<path>~/.gnupg/gpg.conf</path> og tilføj den følgende linje:
+</p>
+  	 
+<pre caption="At sætte GnuPG op til at bruge en GPG agent">
+use-agent
+</pre>
+  	 
+<p>
+Nu er dit system (næsten) klar til at bruge GPG agenten.
+</p>
+  	 
+</body>
+</section>
+<section>
+<title>Automatically Starting the GPG Agent</title>
+<body>
+  	 
+<p>
+Hvis du bruger KDE som grafisk miljø, så rediger 
+<path>/usr/kde/3.x/env/agent-startup.sh</path> (globalt) eller 
+<path>~/.kde/env/gpgagent.sh</path> (på bruger basis) og tilføj den
+følgende kommando for at få KDE til at starte GPG agenten automatisk:
+</p>
+  	 
+<pre caption="At få KDE til automatisk at starte GPG agenten">
+eval "$(gpg-agent --daemon)"
+</pre>
+  	 
+<p>
+Hvis du bruger et andet grafisk miljø, så sæt den linje (den samme som
+nævnt ovenfor) i <path>~/.xinitrc</path> (hvis du bruger
+<c>startx</c>) eller <path>~/.xsession</path> (hvis du bruger XDM/GDM/KDM/...).
+</p>
+  	 
+</body>
+</section>
+</chapter>
+
 <chapter>
 <title>Arbejde med dokumenter</title>
 <section>
@@ -470,9 +571,9 @@ De næste 3 kommandoer vil bare gøre det at, kryptere, signere og kryptere/sign
 </p>
 
 <pre caption="Krypterer og underskrivelse af filer">
-# <i>gpg --output doc.gpg --encrypt --recipient lmpinto@dei.uc.pt doc_to_encrypt</i>
-# <i>gpg --output doc.gpg --sign --recipient lmpinto@dei.uc.pt doc_to_sign</i>
-# <i>gpg --output doc.gpg --encrypt --sign --recipient lmpinto@dei.uc.pt doc_to_encrypt_and_sign</i>
+$ <i>gpg --output doc.gpg --encrypt --recipient lmpinto@dei.uc.pt doc_to_encrypt</i>
+$ <i>gpg --output doc.gpg --sign --recipient lmpinto@dei.uc.pt doc_to_sign</i>
+$ <i>gpg --output doc.gpg --encrypt --sign --recipient lmpinto@dei.uc.pt doc_to_encrypt_and_sign</i>
 </pre>
 
 <p>
@@ -501,10 +602,10 @@ verificere signaturen (hvis der er en)
 
 <p>
 Der er nogle spændende advancerede egenskaber i GnuPG. For at finde
-dem, åben <path>~/.gnupg/options</path>-filen.
+dem, åben <path>~/.gnupg/gpg.conf</path>-filen.
 </p>
 
-<pre caption="~/.gnupg/options">
+<pre caption="~/.gnupg/gpg.conf">
 #keyserver x-hkp://pgp.mit.edu
 #keyserver-options auto-key-retrieve include-disabled include-revoked
 </pre>
@@ -551,7 +652,7 @@ ville ikke blive underskrevet/krypteret, her er et eksempel på en
 besked, underskrevet på den gamle metode:
 </p>
 
-<pre>
+<pre caption="En alm. tekst signatur">
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
@@ -593,7 +694,7 @@ eller krypteret, man kan også indsætte den ASCII-beskyttede text, som
 man ønsker at dekryptere.
 </p>
 
-<figure link="http://www.ibiblio.org/web-gentoo/images/kgpg1.png" short="kgpg hoved vindue"/>
+<figure link="/images/kgpg1.png" short="kgpg main window"/>
 
 <p>
 På det her billede kan du se kgpg-hovedvinduet med ASCII beskyttet og
@@ -602,7 +703,7 @@ vil blive nødt til at give koden), kryptere andre filer, eller
 indsætte nyt text til at signere ...
 </p>
 
-<figure link="http://www.ibiblio.org/web-gentoo/images/kgpg2.png" short="kgpg nøgle administrations vindue"/>
+<figure link="/images/kgpg2.png" short="kgpg key manage window"/>
 
 <p>
 Nu kan du se nøgle-administrationsvinduet, derfra kan vi se vores gode
@@ -653,15 +754,23 @@ jo stadig huske måden at gøre det på i CLI, ikke? ;-) ).
 <body>
 
 <p>
-Kmail er også temmelig nem at sætte op, og jeg vil bare vise et par
-billeder som beskriver hvordan man gør. Egentlig er det eneste du
-behøver er bare, at fortælle kmail at den skal bruge GPG, og så hvilke
-nøgler du vil signere med.
+Hvis du har sat <c>crypt</c> USE flaget, så vil KMail blive kompileret
+med gpg understøttelse og vil være i stand til at kryptere og
+dekryptere inkommende PGP mails automatisk så vel som at kryptere
+OpenPGP/MIME mails. Hvis du også vil dekryptere OpenPGP/MIME mails
+(hvilket du nok vil) så bliver du nødt til at have en kørende GPG
+agent (ee <uri link="#gpg-agent">At bruge en GPG agent</uri>).
 </p>
 
-<figure link="http://www.gentoo.org/images/kmail_identity.png" caption="KMail identificerer OpenGPG-nøgle"/>
-<figure link="http://www.gentoo.org/images/kmail_security_openpgp.png" caption="KMail sikkerhedsvalgmuligheder OpenPGP"/>
-<figure link="http://www.gentoo.org/images/kmail_security_plugins.png" caption="KMail sikkerhedsvalgmuligheder krypteringsindstillinger"/>
+<p>
+Du kan verificere om KMail er korrekt sat op ved at gå til <c>Settings</c>,
+<c>Configure KMail</c>, <c>Security</c>, <c>Crypto Backends</c>. Der
+bør du se en GpgME-baseret backend listet og du bør være i stand tli
+at ufylde OpenPGP checkboxen. Hvis den er listet, men markeret med
+grå, så klik på <c>Rescan</c>. Hvis den GpgME-baserede backend stadig
+er markeret grå, så virker KMail ikke ordentligt.
+</p>
+
 
 </body>
 </section>
