@@ -203,7 +203,7 @@
           </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.jpg" alt="$99/mo dedicated servers" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
 		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
@@ -724,7 +724,7 @@
           </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.jpg" alt="$99/mo dedicated servers" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
 		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
