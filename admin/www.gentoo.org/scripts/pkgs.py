@@ -5,7 +5,7 @@
 
 import portage, string, os, os.path, time, sys, re
 from stat import *
-os.environ["WEBROOT"]="/home/gweb/gentoo-src/gentoo-xml/htdocs"
+os.environ["WEBROOT"]="/home/gweb/gentoo-xml/htdocs"
 
 #####################################
 # prog start, and main variable, and compiled regex's
