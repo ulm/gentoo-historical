@@ -55,6 +55,16 @@ class Device:
 	def set_partitions_from_install_profile_structure(self, ips):
 		for part in ips:
 			tmppart = ips[part]
+			existing = False
+			parted_part = self._parted_disk.get_partition(part)
+			if parted_part != None:
+				start = parted_part.geom.start / self._sectors_in_cylinder
+				end = parted_part.geom.end / self._sectors_in_cylinder
+				fs_type = ""
+				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
+				if parted_part.type == 2: fs_type = "extended"
+				if int(tmppart['start']) == int(start) and int(tmppart['end']) == int(end) and tmppart['type'] == fs_type and tmppart['format'] == False:
+					existing = True
 			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
 
 	def get_device(self):
@@ -286,21 +296,27 @@ class Partition:
 		if existing:
 			parted_part = device._parted_disk.get_partition(minor)
 			if type == "ntfs":
-				ntfsresize_output = commands.getoutput("ntfsresize --info " + device._device + str(minor))
+				min_bytes = int(commands.getoutput("ntfsresize --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
-#			elsif type == "ext2" or type == "ext3":
-#				self._min_cylinders_for_resize = -1
-#				self._resizeable == True
-#			elsif type == "":
-#				self._min_cylinders_for_resize = self._start + 1
-#				self._resizeable = True
-#			elsif type == "fat16" or type == "fat32":
-#				parted_part = self._device._parted_disk.get_partition(self._minor)
-#				parted_fs = parted_part.geom.file_system_open()
-#				resize_constraint = parted_fs.get_resize_constraint()
-#				min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
-#				if int(min_size) != min_size: min_size = int(min_size) + 1
-#				self._min_cylinders_for_resize = min_size
+			elif type == "ext2" or type == "ext3":
+				commands.system("mkdir /mnt/freespace; mount " + device._device + str(minor) + " /mnt/freespace")
+				min_bytes = int(commands.getoutput("df -B kB " + device._device + str(minor) + " | tail -n 1 | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+kB\s\+::' -e 's:kB\s.\+::'")) * 1000
+				commands.system("umount /mnt/freespace; rm -rf /mnt/freespace")
+				min_bytes = min_bytes + (100 * 1024 * 1024) # Add 100M just to be safe
+				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+				self._resizeable == True
+			elif type == "fat16" or type == "fat32":
+				parted_part = self._device._parted_disk.get_partition(self._minor)
+				parted_fs = parted_part.geom.file_system_open()
+				resize_constraint = parted_fs.get_resize_constraint()
+				min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
+				if int(min_size) != min_size: min_size = int(min_size) + 1
+				self._min_cylinders_for_resize = min_size
+				self._resizeable = True
+			elif type == "":
+				self._min_cylinders_for_resize = 1
+				self._resizeable = True
 		else:
 			self._resizeable = True
 
