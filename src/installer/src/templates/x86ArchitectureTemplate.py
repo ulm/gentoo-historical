@@ -1,14 +1,14 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.5 2005/01/06 07:29:43 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.6 2005/01/07 05:07:23 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
 This fills in x86 specific functions.
 """
 
-import GLIUtility
+import GLIUtility, string
 from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
 

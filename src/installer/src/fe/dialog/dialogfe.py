@@ -320,7 +320,7 @@ def set_networking():
 def set_cron_daemon():
 	cron_daemons = ("vixie-cron", "fcron", "dcron", "None")
 	code, menuitem = d.menu("Choose a cron daemon", choices=dmenu_list_to_choices(cron_daemons))
-	if code != DLG_OK:
+	if code == DLG_OK:
 		menuitem = cron_daemons[int(menuitem)-1]
 		if menuitem == "None": menuitem == ""
 		install_profile.set_cron_daemon_pkg(None, menuitem, None)
@@ -442,7 +442,7 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 def set_arch_template():
 	template_choices = ("x86", "amd64","sparc", "alpha", "hppa", "ppc")
 	code, menuitem = d.menu("Please Select Architecture Template:",choices=dmenu_list_to_choices(template_choices))
-	if code != DLG_OK:
+	if code == DLG_OK:
 		menuitem = template_choices[int(menuitem)-1]
 		client_profile.set_architecture_template(None, menuitem, None)
 def set_logfile():

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.26 2005/01/06 09:16:23 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.27 2005/01/07 05:07:23 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -463,7 +463,7 @@ class ArchitectureTemplate:
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
 		status = GLIUtility.spawn('echo "-5" | etc-update', chroot=self._chroot_dir)
-		if not GLIUtility.exit_success(status):
+		if not GLIUtility.exitsuccess(status):
 			raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 			
 		self.configure_make_conf()
@@ -521,7 +521,7 @@ class ArchitectureTemplate:
 				hosts_line = "localhost\t" + hostname
 
 		# Write to file
-		self._edit_config(self._chroot_dir + "/etc/hosts", {hosts_ip: hosts_line}, delimiter='\t', quotes_around_value=False)
+		self._edit_config(self._chroot_dir + "/etc/hosts", {hosts_ip: hosts_line}, delimeter='\t', quotes_around_value=False)
 
 		#
 		# SET DEFAULT GATEWAY
