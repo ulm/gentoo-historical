@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.3 2004/07/03 21:55:23 port001 Exp $
+# $Id: index.py,v 1.4 2004/07/03 23:34:49 port001 Exp $
 #
 
 import os
@@ -24,7 +24,7 @@ import Template as TemplateHandler
 from User import User
 from Validation import CheckPageRequest
 
-from site_modules import *
+import site_modules
 from site_modules.admin import *
 
 def main():
@@ -57,7 +57,7 @@ def main():
     
     if page == "login":
         
-        if SiteModules.Global.Page_Login.Login_User(form.getvalue("username"),
+        if site_modules.Page_Login.Login_User(form.getvalue("username"),
                                                     form.getvalue("password")):
             alias = form.getvalue("username")
             uid = user_obj.GetUid(alias)
@@ -82,7 +82,7 @@ def main():
 
     # Display the specified page
     found = False
-    for Module in SiteModules.Admin.__all__:
+    for Module in site_modules.admin.__all__:
         
         MetaData = eval(Module + ".MetaData")
         for p in MetaData["page"]:
