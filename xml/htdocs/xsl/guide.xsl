@@ -379,7 +379,7 @@
                     <br/>
                     <a class="altlink" href="/doc/en/index.xml#doc_chap6">Developer Docs</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs/Translations</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs</a>
                     <br/>
                     <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
                     <br/><br/>
