@@ -16,6 +16,18 @@ import time
 
 import Welcome
 import Partitioning
+import Stage
+import PortageTree
+import MakeDotConf
+import Kernel
+import Bootloader
+import Timezone
+import Networking
+import Daemons
+import ExtraPackages
+import RcDotConf
+import Users
+import InstallSummary
 
 class Installer:
 
@@ -28,19 +40,19 @@ class Installer:
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
                       { 'text': 'Partitioning', 'module': Partitioning },
-                      { 'text': 'Network Mounts', 'module': None },
-                      { 'text': 'Stage', 'module': None },
-                      { 'text': 'Portage tree', 'module': None },
-                      { 'text': 'make.conf', 'module': None },
-                      { 'text': 'Kernel', 'module': None },
-                      { 'text': 'Bootloader', 'module': None },
-                      { 'text': 'Timezone', 'module': None },
-                      { 'text': 'Networking', 'module': None },
-                      { 'text': 'Daemons', 'module': None },
-                      { 'text': 'Extra Packages', 'module': None },
-                      { 'text': 'rc.conf', 'module': None },
-                      { 'text': 'Users', 'module': None },
-                      { 'text': 'Install!', 'module': None }
+                      { 'text': 'Network Mounts', 'module': Welcome },
+                      { 'text': 'Stage', 'module': Stage },
+                      { 'text': 'Portage tree', 'module': PortageTree },
+                      { 'text': 'make.conf', 'module': MakeDotConf },
+                      { 'text': 'Kernel', 'module': Kernel },
+                      { 'text': 'Bootloader', 'module': Bootloader },
+                      { 'text': 'Timezone', 'module': Timezone },
+                      { 'text': 'Networking', 'module': Networking },
+                      { 'text': 'Daemons', 'module': Daemons },
+                      { 'text': 'Extra Packages', 'module': ExtraPackages },
+                      { 'text': 'rc.conf', 'module': RcDotConf },
+                      { 'text': 'Users', 'module': Users },
+                      { 'text': 'Install!', 'module': InstallSummary }
                     ]
 
 	def __init__(self):
