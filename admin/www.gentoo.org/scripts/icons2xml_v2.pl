@@ -48,6 +48,11 @@
 # notes
 # 1.  During testing, I noticed that -osomefile.xml doesn't parse correctly.
 #
+# Build 10 Apr. 2003 by pjp
+#
+# added
+# 1.  create subdir for category pages if the dir doesn't exist.
+#
 ############################################################
 
 #
@@ -66,7 +71,7 @@
 my $basedir = "/home/httpd/gentoo/xml/htdocs/dyn";
 my $index_page = "$basedir/icons.xml";
 my $searchpath = "/home/httpd/gentoo/xml/images/icons";
-#my $searchpath = ".";
+#
 my $iconpath = "http://www.gentoo.org/images/icons/";
 
 my $index_header = "<?xml version='1.0'?>
@@ -214,7 +219,7 @@ sub rm_tarball {
 # make a new tarball of icon files
 #
 sub new_tarball {
-	system `tar -vj --exclude=CVS --directory /home/httpd/gentoo/xml/images/icons/ --create -f /home/httpd/gentoo/xml/images/icons/icons.tar.bz2 ./`;
+	system `tar -cjf --exclude=CVS $searchpath/icons.tar.bz2 $searchpath/*.png`;
 } # new_tarball()
 
 #
@@ -234,6 +239,8 @@ sub size_tarball {
 	return $tarsize;
 } # size_tarball()
 
+#
+# Create subdirectory for category pages if it doesn't exist.
 #
 # For each category:
 # 	- add an entry to the categories index page.
@@ -271,6 +278,9 @@ sub make_xml_pages {
 </section>
 </chapter>
 </mainpage>\n";	
+
+	if (!-e $catdir) {	mkdir($catdir) || die "Couldn't create $catdir"; }
+	elsif (!-d $catdir) { die "$catdir already exists, but isn't a directory"; }
 
 	foreach $category (sort (keys(%categories))) {
 		$category_page = "$catdir/$category.xml";
