@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.7 2004/08/24 22:01:21 samyron Exp $
+$Id: GLIClientController.py,v 1.8 2004/08/25 14:23:07 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -64,9 +64,20 @@ class GLIClientController(Thread):
 			sys.exit(1)
 
 		# Do Pre-install client-specific things here.
+		
 
 		# Wait for the self._install_event to be set before starting the installation.
 		self._install_event.wait()
+
+	def set_proxys(self):
+		if self._configuration.get_ftp_proxy() != "":
+			os.environ['FTP_PROXY'] = self._configuration.get_ftp_proxy()
+
+		if self._configuration.get_http_proxy() != "":
+			os.environ['HTTP_PROXY'] = self._configuration.get_http_proxy()
+
+		if self._configuration.get_rsync_proxy() != "":
+			os.environ['RSYNC_PROXY'] = self._configuration.get_rsync_proxy()
 
 	def set_root_passwd(self):
 		print "GLI: Setting root password."

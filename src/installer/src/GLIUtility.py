@@ -340,3 +340,35 @@ def generate_random_password():
 		passwd += s[i]
 
 	return passwd
+
+def edit_config(filename, newvalues, delimeter='=', quotes_around_value=True):
+	"""
+	filename = file to be editted
+	newvlaues = a dictionary of VARIABLE:VALUE pairs
+	"""
+	if not os.path.isfile(filename):
+		raise NoSuchFileError('notice','edit_config',filename + ' does not exist!')
+
+	f = open(filename)
+	file = f.readlines()
+	f.close()
+
+	for key in newvalues.keys():
+		regexpr = '^\s*#?\s*' + key + '\s*' + delimeter + '.*$'
+		regexpr = re.compile(regexpr)
+
+		for i in range(0, len(file)):
+			if regexpr.match(file[i]):
+				if not file[i][0] == '#':
+					file[i] = '#' + file[i]
+
+		file.append('\n# Added by GLI\n')
+		if quotes_around_value:
+			file.append(key + delimeter + '"' + newvalues[key] + '"\n')
+		else:
+			file.append(key + delimeter + newvalues[key]+'\n')
+
+	f = open(filename,'w')
+	f.writelines(file)
+	f.flush()
+	f.close()
