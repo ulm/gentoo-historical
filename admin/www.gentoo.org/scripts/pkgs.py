@@ -164,6 +164,7 @@ def do_pkgentry(db,pkgname,category):
 	<th>Package Homepage</th>"""
 	if db[category][pkgname]["homepage"]:
 		nice_homepage=string.replace(db[category][pkgname]["homepage"],'&','&amp;')
+		nice_homepage=string.replace(nice_homepage,' ','</uri><uri>')
 		pkgentry += "<ti><uri>"+nice_homepage+"</uri></ti>"
 	else:
 		pkgentry += "<ti><e>(No homepage specified)</e></ti>"
