@@ -4,7 +4,8 @@
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
-<xsl:include href="handbook.xsl" /> 
+<xsl:include href="handbook.xsl" />
+<xsl:include href="inserts.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
 <xsl:preserve-space elements="pre"/>
@@ -27,18 +28,22 @@
     </xsl:choose>
   </p>
 
-  <xsl:if test="$style = 'printable'">
-    <xsl:apply-templates select="author" />
-  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="$style = 'printable'">
+      <xsl:apply-templates select="author" />
+    </xsl:when>
+    <xsl:otherwise>
+      <form name="contents" action="http://www.gentoo.org">
+        <b><xsl:value-of select="xsl:gettext('Content')"/></b>:
+        <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
+          <xsl:for-each select="chapter">
+            <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
+          </xsl:for-each>
+        </select>
+      </form>
+    </xsl:otherwise>
+  </xsl:choose>
 
-  <form name="contents" action="http://www.gentoo.org">
-    <b>Contents</b>:
-    <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
-      <xsl:for-each select="chapter">
-        <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
-      </xsl:for-each>
-    </select>
-  </form>
   <xsl:apply-templates select="chapter"/>
   <br/>
   <xsl:if test="/guide/license">
@@ -53,13 +58,13 @@
 <head>
 <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
 <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-<title>Gentoo Linux 
+<title>
   <xsl:choose>
-    <xsl:when test="/guide/@type='project'">Projects</xsl:when>
-    <xsl:when test="/guide/@type='newsletter'">Newsletter</xsl:when>
-    <xsl:otherwise>Documentation</xsl:otherwise>
+    <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
+    <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
+    <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
--- 
+--
   <xsl:choose>
     <xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
@@ -103,7 +108,7 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  Updated <xsl:value-of select="/guide/date|/book/date"/>
+                  <xsl:value-of select="xsl:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
                 </td>
               </tr>
               <tr>
@@ -125,7 +130,7 @@
               <tr>
                 <td class="alttext">
                   <!-- Abstract (summary) of the document -->
-                  <b>Summary:</b>&#160;<xsl:apply-templates select="abstract"/>
+                  <b><xsl:value-of select="xsl:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
                 </td>
               </tr>
               <tr>
@@ -133,7 +138,8 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-              <tr>
+              <!--//
+	      <tr>
                 <td align="center">
                   <!-- Begin PayPal Logo -->
                   <p class="alttext">
@@ -157,13 +163,12 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
+	      //-->
               <tr>
                 <td align="center">
-                  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
-		  php|architect is the monthly magazine for PHP professionals, available
-		  worldwide in print and electronic format. A percentage of all the sales
-		  will be donated back into the Gentoo project.
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
                 </td>
               </tr>
@@ -172,6 +177,32 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+              <p class="alttext">
+                Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
               <tr>
                 <td align="center">
                   <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
@@ -185,56 +216,31 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
-                  <p class="alttext">
-                    Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.jpg" alt="$99/mo dedicated servers" border="0"/></a>
-                  <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
-                  <p class="alttext">
-                    Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <!-- Image of the Gentoo Store -->
-                  <a href="http://store.gentoo.org"><img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/></a>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
+              <p class="alttext">
+                Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+        <tr>
+          <td align="center">
+            <a href="http://store.gentoo.org">
+              <img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="/images/line.gif" alt="line"/>
+          </td>
+        </tr>
             </table>
           </td>
         </tr>
@@ -363,7 +369,7 @@
             <a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a> 
+            <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -398,29 +404,19 @@
                     <br/><br/>
                     Installation:
                     <br/>
-                    <a class="altlink" href="/doc/en/handbook/handbook.xml?part=1">Gentoo Handbook Installation Instructions</a>
-                    <br/><br/>
-                    Older Installation Guides:
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-x86-install.xml">Gentoo Linux/x86</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-ppc-install.xml">Gentoo Linux/PowerPC</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-sparc-install.xml">Gentoo Linux/Sparc</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-hppa-install.xml">Gentoo Linux/HPPA</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-alpha-install.xml">Gentoo Linux/Alpha</a>
+                    <a class="altlink" href="/doc/en/handbook/index.xml">Gentoo Handbook</a>
                    <br/><br/>
                     Resources:
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
                     <br/>
-                    <a class="hotlink" href="/main/en/performance.xml">Performance benchmarks</a>
-                    <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
                     <br/>
-                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
+                    <br/>
+                    <a class="altlink" href="/security/en/glsa/index.xml">Security Announcements</a>
+                    <br/>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
                     <br/>
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
                     <br/>
@@ -428,11 +424,11 @@
                     <br/>
                     <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
                     <br/>
-                    <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
-                    <br/>
-                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
+                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
                     <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
@@ -447,7 +443,7 @@
                     <a class="altlink" href="/dyn/icons.xml">Icons</a>
                     <br/>
                     <a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
-                    <br/><br/>	
+                    <br/><br/>
                     Miscellaneous Resources:
                     <br/>
                     <a class="altlink" href="http://store.gentoo.org">Gentoo Linux Store</a>
@@ -484,12 +480,12 @@
                       <img src="/images/gentoo-new.gif" alt="new"/>
                     </td>
                     <td valign="middle">
-                      We produce Gentoo Linux, a special flavor of Linux that 
-                      can be automatically optimized and customized for just 
-                      about any application or need. Extreme performance, 
-                      configurability and a top-notch user and developer 
+                      We produce Gentoo Linux, a special flavor of Linux that
+                      can be automatically optimized and customized for just
+                      about any application or need. Extreme performance,
+                      configurability and a top-notch user and developer
                       community are all hallmarks of the Gentoo experience.
-                      To learn more, <b><a href="/main/en/about.xml">click 
+                      To learn more, <b><a href="/main/en/about.xml">click
                       here</a></b>.
                     </td>
                   </tr>
@@ -665,7 +661,8 @@
             </tr>
           </xsl:when>
         </xsl:choose>
-        <tr>
+        <!--//
+	<tr>
           <td align="center">
             <!-- Begin PayPal Logo -->
             <p class="alttext">
@@ -689,24 +686,12 @@
             <img src="/images/line.gif" alt="line"/>
           </td>
         </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-              <p class="alttext">
-		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
+	//-->
               <tr>
                 <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
-		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
                 </td>
               </tr>
@@ -728,11 +713,24 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.jpg" alt="$99/mo dedicated servers" border="0"/></a>
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
                   <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
                 </td>
               </tr>
@@ -913,12 +911,12 @@
 <xsl:param name="chid"/>
 <xsl:if test="title">
   <xsl:variable name="sectid">doc_chap<xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <p class="secthead">
     <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
   </p>
-</xsl:if>
-<xsl:if test="@id">
-  <a name="{@id}"/>
 </xsl:if>
 <xsl:apply-templates select="body">
   <xsl:with-param name="chid" select="$chid"/>
@@ -938,10 +936,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -988,7 +986,7 @@
   <tr>
     <td bgcolor="#bbffbb">
       <p class="note">
-        <b>Note: </b>
+        <b><xsl:value-of select="xsl:gettext('Note')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1002,7 +1000,7 @@
   <tr>
     <td bgcolor="#ffffbb">
       <p class="note">
-        <b>Important: </b>
+        <b><xsl:value-of select="xsl:gettext('Important')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1016,7 +1014,7 @@
   <tr>
     <td bgcolor="#ffbbbb">
       <p class="note">
-        <b>Warning: </b>
+        <b><xsl:value-of select="xsl:gettext('Warning')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1137,10 +1135,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Code listing <xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -1167,10 +1165,54 @@
 <xsl:choose>
   <xsl:when test="@link">
     <xsl:choose>
-      <xsl:when test="substring(@link,1,1) = '?'">
-        <!-- We are dealing with a handbook link -->
-        <!-- TODO: don't hardcode handbook.xml because of draft -->
-        <a href="handbook.xml{@link}"><xsl:apply-templates/></a>
+      <xsl:when test="($TTOP = 'book') and ($full = 0) and (starts-with(@link, '?'))">
+        <!-- Handbook link pointing to another part/chapter, normal case -->
+        <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
+      </xsl:when>
+      <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '?'))">
+        <!-- Handbook link pointing to another part/chapter
+             Handbook is being rendered in a single page (full=1)
+             Hence link needs to be rewritten as a local one
+             i.e. ?part=1&chap=3#doc_chap1 must become #book_part1_chap3__chap1   Case 1
+             or   ?part=1&chap=3           must become #book_part1_chap3          Case 2
+             or   ?part=2                  must become #book_part2                Case 3-->
+        <xsl:choose>
+          <xsl:when test="contains(@link, 'chap=') and contains(@link, '#doc_')">
+            <!-- Link points inside a chapter  (Case 1)-->
+            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:param name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
+            <xsl:param name="linkanch" select="substring-after(@link, '#doc_')" />
+            <a href="#book_part{$linkpart}_chap{$linkchap}__{$linkanch}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:when test="contains(@link, 'chap=')">
+            <!-- Link points to a chapter  (Case 2)-->
+            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:param name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
+            <a href="#book_part{$linkpart}_chap{$linkchap}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:otherwise>
+            <!-- Link points to a part  (Case 3)-->
+            <xsl:param name="linkpart" select="substring-after(@link, '=')" />
+            <a href="#book_part{$linkpart}"><xsl:apply-templates/></a>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '#'))">
+        <!-- Handbook link pointing to another same part/chapter
+             Handbook is being rendered in a single page (full=1)
+             Hence link needs to be rewritten as an internal one that is unique
+             for the whole handbook, i.e.
+             #doc_part1_chap3 becomes #book_{UNIQUEID}_part1_chap3, but
+             #anything_else_like_an_ID is left unchanged -->
+        <xsl:choose>
+          <xsl:when test="starts-with(@link, '#doc_')">
+            <xsl:param name="locallink" select="substring-after(@link, 'doc_')" />
+            <a href="#book_{generate-id(/)}_{$locallink}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:otherwise>
+            <a href="{@link}"><xsl:apply-templates/></a>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
         <a href="{@link}"><xsl:apply-templates/></a>
@@ -1208,11 +1250,6 @@
 <!-- Emphasize -->
 <xsl:template match="e">
   <span class="emphasis"><xsl:apply-templates/></span>
-</xsl:template>
-
-<!-- E-mail address -->
-<xsl:template match="mail">
-<a href="mailto:{@link}"><xsl:value-of select="."/></a>
 </xsl:template>
 
 <!-- Table -->
@@ -1280,6 +1317,11 @@
 <tt>
   The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/2.0">Creative Commons - Attribution / Share Alike</a> license.
 </tt>
+</xsl:template>
+
+<!-- GLSA Index -->
+<xsl:template match="glsaindex">
+  <xsl:apply-templates select="document('/dyn/glsa-index.xml')/guide/chapter[1]/section[1]/body"/>
 </xsl:template>
 
 </xsl:stylesheet>
