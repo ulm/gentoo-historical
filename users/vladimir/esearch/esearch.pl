@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.3 2003/03/06 12:31:14 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/esearch.pl,v 1.4 2003/03/06 22:20:34 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 #
@@ -16,17 +16,20 @@ use Getopt::Long;
 #
 my $regex      = '0';
 my $searchall  = '0';
-my $showmasked = '0';
+my $showmasked = '1';
 
 ###############################################################################
 #  Main
 #
+Getopt::Long::Configure("no_ignore_case", "bundling");
 GetOptions(
     'help|h|?'		=> sub { &print_usage; exit; },
-    'regex|r'		=> \$regex,
-    'searchall|S'	=> \$searchall,
-    'showmasked|m'	=> \$showmasked,
-);
+	
+	# These make a commandline switch toggle the user pref above
+    'regex|r'		=> sub { $regex      = $regex      ? 0 : 1 },
+    'searchall|S'	=> sub { $searchall  = $searchall  ? 0 : 1 },
+    'showmasked|m'	=> sub { $showmasked = $showmasked ? 0 : 1 },
+) or &print_usage, exit;
 
 # No arguments
 unless (scalar @ARGV > 0) {
@@ -112,20 +115,15 @@ sub get_file {
 }
 
 sub print_usage {
-	print <<EOF;
-	
-esearch.pl - Lightweight, extremely fast Portage search
-
-Usage:
-   esearch.pl [options] search string
-
-Options:
-   --help|h|?		Display this
-   --regex|r		Use Perl regular expressions
-   --searchall|s	Search all fields
-   --showmasked|m	Show masked packages
-
-Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>
-
-EOF
+	print BOLD;
+	print "\nesearch.pl - Lightweight, extremely fast Portage search";
+	print RESET, "\n";
+	print BOLD YELLOW "Usage:", RESET, "\n";
+	print "   esearch.pl [options] search string\n";
+	print BOLD YELLOW "Options:", RESET, "\n";
+	print "   --help|h|?		Display this\n";
+	print "   --regex|r		Use Perl regular expressions\n";
+	print "   --searchall|S	Search all fields\n";
+	print "   --showmasked|m	Show masked packages\n\n";
+	print "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>\n\n";
 }

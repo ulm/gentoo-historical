@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.5 2003/03/06 13:54:27 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.6 2003/03/06 22:20:34 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -14,6 +14,8 @@ use Term::ANSIColor qw(:constants);
 my @twirly = qw( / - \ | / - \ | );
 
 my $PORTDIR = "/usr/portage/";
+
+my $PORTDIR_OVERLAY = "/usr/portage_custom";
 
 my $ARCH = `uname -a`;
 $ARCH = (split/ /, $ARCH)[10];
@@ -42,7 +44,8 @@ find(
 		wanted => \&wanted,
 		no_chdir => 1
 	},
-	$PORTDIR
+	$PORTDIR,
+	$PORTDIR_OVERLAY
 );
 
 ###############################################################################
@@ -52,13 +55,11 @@ sub wanted {
 	# We want only proper ebuilds
 	return if m/skel\.ebuild$/ || ! m/\.ebuild$/;
 
-	my $ebuild = $_;
-	s/^$PORTDIR//;
+	#my $ebuild = $_;
 	my @chunks = ebuild_path_to_name($_);
 	
 	# Next file if this one has a bad name
 	return if scalar @chunks < 3;
-	
 	
 	unless(defined $done{"$chunks[0]/$chunks[1]"}) {
 	# Don't open an ebuild of the same name but different version as one
@@ -68,7 +69,7 @@ sub wanted {
 		print "\b\b$twirly[$i] ";
 		$i = 0 if ++$i == $#twirly;
 	
-		my @contents = get_file($ebuild);
+		my @contents = get_file($_);
 		print FILE "$chunks[0]/$chunks[1]\0";
 		my ($desc, $page, $key);
 		for (@contents) {
@@ -105,7 +106,7 @@ sub wanted {
 
 sub ebuild_path_to_name {
 # Take a path to an ebuild, turn it to the category/name-version
-	return ($1, $2, $3) if $_[0] =~ m/^
+	return ($1, $2, $3) if $_[0] =~ m/
 	([\w0-9-]+)						# Category
 	\/								# Slash
 	([\w0-9+-]+)					# Name
