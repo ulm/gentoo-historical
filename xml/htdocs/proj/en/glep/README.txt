@@ -24,14 +24,14 @@ Converting ReST to html or xml requires the "docutils" python package
 The Gentoo Linux docutils package includes the *glep.py* program 
 which transforms a GLEP in text form to the equivalent html version::
 
-	# glep.py glep-0001.txt glep-0001.html
+	# docutils-glep.py glep-0001.txt glep-0001.html
 
 (Incidentally, *glep.py* contains special code to verify that
 the GLEP header is reasonable.  This README lacks that header,
 so to convert this file to html using docutils you need to 
 use the more generic transformation program::
 
-	# html.py --stylesheet-path=tools/glep.css README.txt README.html
+	# docutils-html.py --stylesheet-path=tools/glep.css README.txt README.html
 
 to convert README.txt to README.html.)
 
