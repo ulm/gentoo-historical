@@ -511,7 +511,7 @@ def set_client_networking():
 
 	try:
 		client_profile.set_network_type(None, network_type, network_data)
-	except GLIException (e):
+	except GLIException, e:
 		d.msgbox(e)
 
 
