@@ -25,5 +25,8 @@ ${WEBSCRIPTS}/icons2xml_v2.pl
 # this script takes a while (5+ minutes) to run, so leave it as the last one.
 ${WEBSCRIPTS}/distrowatch.sh
 
+# this script also takes a while to run since it uploads the log files to a central server
+${WEBSCRIPTS}/rsync-weblogs.sh
+
 
 echo ">>> Nightly Web update done."
