@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.2 2004/06/27 20:04:05 hadfield Exp $
+# $Id: Template.py,v 1.3 2004/07/06 01:23:52 port001 Exp $
 
 import sys
 import string
@@ -30,16 +30,8 @@ class New:
         try:
             self.Contents = open(self.Template, "r").readlines()
         except IOError, errmsg:
-            Function.logwrite("ERROR: %s: Failed to open %s for reading '%s'" %
-                              (__modulename__, self.Template, errmsg), "Error")
 
-            print ("<html>\n<head>\n</head>\n<body>" +
-                   "<font size=3><b>FATAL ERROR: Failed to open template " +
-                   "'%s' for reading.</b><br>Please contact %s with the " %
-                   (self.Template, Config.Contact) +
-                   "given error message.</font>" +
-                   "</body>\n</html>")
-            
+            Function.err(errmsg, __modulename__)            
 	    sys.exit(1)
 
         return self.Contents
