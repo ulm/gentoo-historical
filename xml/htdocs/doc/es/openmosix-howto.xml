@@ -1,0 +1,1738 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/es/openmosix-howto.xml">
+
+<title>OpenMosix y Nodos sin disco</title>
+
+<author title="Investigador">
+    <mail link="ma53@drexel.edu">Michael Andrews</mail>
+</author>
+<author title="Revisor">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Traductor">
+    <mail link="fiam@asturlinux.org">Alberto García Hierro</mail>
+</author>
+<author title="Editor">
+    <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
+</author>
+
+<license/>
+
+<abstract>
+Este COMO le ayudará a crear un clúster openMosix usando nodos sin disco,
+¡y por supuesto Gentoo!
+</abstract>
+
+<version>1.0</version>
+<date>28 de Agosto de 2003</date>
+
+<chapter>
+<title>Introducción</title>
+
+<section>
+<title>Acerca de este COMO</title>
+<body>
+
+<p>
+Este COMO le ayudará a crear un clúster openMosix usando nodos
+<e>sin disco</e>. Estará basado en la distribución de Linux Gentoo. He
+intentado hacerlo lo más amistoso posible para el usuario, de manera que
+los novatos puedan entenderlo fácilmente; ya que, yo mismo llegué a este
+proyecto como un novato total. Mientras que un usuario con experiencia
+puede encontrar sin problemas múltiples documentos sobre openMosix, nodos sin
+disco y como unir todo esto en red; yo tuve varias dificultades que espero
+poder resolver con este COMO.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>Acerca de openMosix</title>
+<body>
+
+<p>
+OpenMosix es un parche para el kernel de Linux que permite a varias
+máquinas actuar como la imagen de un solo sistema (denominado en inglés
+SSI). El resultado de esto son múltiples máquinas pareciendo
+un sistema multiprocesador grande. En el momento de escribir esto, estoy
+usando la última liberación del parche del kernel openMosix, versión
+2.4.20, y las herramientas de usuario de openMosix 0.2.4-r4. No hay una
+gran variedad de información acerca de openMosix en 
+<uri>http://openmosix.sourceforge.net</uri>. He tenido varias dificultades
+intentando poner en clúster diferentes versiones de las fuentes del kernel
+parcheadas y me he dado cuenta de que los parches no son compatibles
+hacia atrás. OpenMosix migra procesos pesados explícitamente cuando
+está ejecutando binarios a.out o ELF, o cuando un proceso pesado se divide.
+No migrará procesos como los p-threads, o procesos pesados que usen memoria
+compartida.
+</p>
+
+<p>
+Para más información acerca de openMosix, visite su
+<uri link="http://openmosix.sourceforge.net">página web</uri>.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>Acerca del clúster</title>
+<body>
+
+<p>
+Nuestro clúster estará formado por máquinas individuales (nodos)
+compartiendo recursos de computación con el fin de incrementar la
+capacidad de procesamiento de todos los nodos. No es necesario que todos
+los nodos tengan la misma arquitectura, pero hace que la tarea de ponerlos
+en clúster sea más sencilla. Un nodo funcionará como "maestro", el que
+hospedará a las otras máquinas sin disco o "esclavos". Los nodos esclavos
+serán puramente computacionales; es decir, que sólo funcionarán como
+hardware adicional usado por el maestro. Además le será sencillo configurar
+pseudo-nodos, los cuales utilizarán la capacidad de computación del
+clúster pero no necesariamente participarán en él, como por ejemplo
+una estación de trabajo personal.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+Debería tener Gentoo instalado en el nodo maestro y espacio en disco
+suficiente para guardar los sistemas de ficheros de los esclavos
+que desee hospedar. Además, necesita las fuentes del kernel openMosix
+parcheadas convenientemente por Gentoo.
+</p>
+
+<p>
+Para conseguir estas fuentes simplemente escriba:
+</p>
+
+<pre caption="Consiguiente las fuentes del kernel parcheadas">
+# <i>emerge openmosix-sources</i>
+</pre>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Configurando los nodos maestro y esclavos</title>
+
+<section>
+<title>Acerca de los kernels</title>
+<body>
+
+<p>
+El kernel es el software que se sitúa entre el hardware y el resto de
+software cargado en su máquina, en esencia el corazón de un sistema
+operativo basado en kernel. Cuando su máquina se inicia, la BIOS ejecuta
+las instrucciones que encuentra en el espacio reservado para el inicio
+de su disco duro. Estas instrucciones son normalmente un cargador
+que se encarga de cargar su kernel. Una vez que el kernel se ha cargado,
+todos los procesos son manejados por él.
+</p>
+
+<p>
+Para más información acerca de los kernels y de su configuración
+es posible que desee echarle un vistazo a este COMO,
+<uri>http://www.tldp.org/HOWTO/Kernel-HOWTO.html</uri>.
+<!-- TODO: Change this link to es.tldp.org (currently closed)-->
+<!-- Por Hacer: Cambiar este enlance a es.tldp.org (cerrado en este momento-->
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configurando el kernel maestro</title>
+<body>
+
+<p>
+El kernel maestro puede ser tan largo y personalizado como desee, pero
+hay unas pocas opciones que necesita marcar. Entre en la configuración
+del kernel escribiendo:
+</p>
+
+<pre caption="Editando la configuración del kernel maestro">
+# <i>cd /usr/src/linux-2.4.20-openmosix-r1</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Debería encontrarse con una interfaz gráfica gris y azul que le ofrece una
+alternativa cómoda a editar el archivo<path>/usr/src/linux/.config</path>
+a mano. Si su kernel está funcionando correctamente tal vez desee salvar
+la configuración actual saliendo de la interfaz gráfica y escribiendo:
+</p>
+
+<pre caption="Haciendo una copia de seguridad de la configuración del kernel maestro">
+# <i>cp .config .config_working</i>
+</pre>
+
+<p>
+En la parte superior de la interfaz debería aparecer<c>openMosix ---</c>. Si
+esto no sucede necesitará emerger las fuentes del kernel con el parche
+openMosix (<uri link="#doc_chap1_pre1">code listing 1.1</uri>). Entre en los
+siguientes submenús y asegñurese de que las siguientes opciones están
+marcadas como parte del kernel <e>NO</e> como módulos.
+</p>
+
+<ul>
+<li>openMosix --- </li>
+<ul>
+	<li>openMosix process migration support</li>
+	<li>openMosix File-System</li>
+</ul>
+<li>Networking options ---</li>
+<ul>
+	<li>Packet Socket</li>
+	<li>Socket Filtering</li>
+	<li>TCP/IP networking</li>
+	<ul><li>IP: multicasting</li></ul>
+</ul>
+<li>File systems ---</li>
+<ul>
+	<li>/proc file system support</li>
+	<li>/dev file system support</li>
+	<ul><li>Automatically mount at boot</li></ul>
+	<li>Network File Systems ---</li>
+	<ul>
+		<li>NFS file system support</li>
+		<li>NFS server support</li>
+		<li>Provide NFSv3 server support</li>
+	</ul>
+</ul>
+</ul>
+
+<note>
+El sistema de ficheros /dev está altamente recomendado por Gentoo y por
+mi, pero no es esencial en el kernel maestro.
+</note>
+
+<note>
+Estas opciones de configuración del kernel deben añadirse a la configuración
+específica de su sistema, no reempalzarlas.
+</note>
+
+<p>
+Una vez haya reconfigurado el kernel maestro necesitará reconstruirlo
+escribiendo:
+</p>
+
+<pre caption="Recompilando el kernel maestro y sus módulos">
+# <i>make clean dep modules</i>
+# <i>make install modules_install</i>
+</pre>
+
+<p>
+Ahora que la nueva bzImage ha sido copiada en su directorio boot, todo lo
+que necesita es asegurarse de que el cargador usa esta esta imagen y reiniciar
+el sistema para usar estas nuevas opciones.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Acerca del kernel esclavo</title>
+<body>
+
+<p>
+Es recomendable que compile el kernel esclavo sin módulos, ya que cargarlos
+y configurarlos usando inicio remoto es una tarea complicada e innecesaria.
+Además, el kernel esclavo debería ser tan compacto y pequeño como
+fuese posible para hacer el arranque por red eficiente. vamos a compilar
+el kernel esclavo en el mismo sitio donde configuramos el maestro. 
+</p>
+
+<p>
+Para evitar confusiones y pérdidas de tiempo, probablemente sea una
+buena idea copiar la configuración del kernel maestro escribiendo:
+</p>
+
+<pre caption="Haciendo una copia de seguridad de la configuración del kernel maestro">
+# <i>cp /usr/src/linux/.config /usr/src/linux/.config_master</i>
+</pre>
+
+<p>
+Ahora vamos a configurar el kernel esclavo de la misma manera que hicimos
+con el maestro. Si desea comenzar con un archivo de configuración limpio,
+siempre puede recuperar el archivo <path>/usr/src/linux/.config</path>
+por defecto escribiendo:
+</p>
+
+<pre caption="Consiguiendo una configuración del kernel limpia">
+# <i>cd /usr/src/linux</i>
+# <i>make mrproper</i>
+</pre>
+
+<p>
+De otra manera, entre en la interfaz de configuración escribiendo:
+</p>
+
+<pre caption="Editando la configuración del kernel esclavo">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Deseará asegurarse de que tiene las siguientes opciones marcadas como parte
+del kernel y <e>NO</e> como módulos:
+</p>
+
+<ul>
+<li>openMosix ---</li>
+<ul>
+	<li>openMosix process migration support</li>
+	<li>openMosix File-System</li>
+</ul>
+<li>Networking options ---</li>
+<ul>
+	<li>TCP/IP networking</li>
+	<ul><li>IP: kernel level auto-configuration</li>
+		<ul>
+			<li>IP: DHCP support</li>
+			<li>IP: BOOTP support</li>
+		</ul>
+	</ul>
+</ul>
+<li>File systems ---</li>
+<ul>
+	<li>/proc file system support</li>
+	<li>/dev file system support</li>
+	<ul><li>Automatically mount at boot</li></ul>
+	<li>Network File Systems ---</li>
+	<ul>
+		<li>NFS file system support</li>
+		<ul>
+			<li>Provide NFSv3 client support</li>
+			<li>Root file system on NFS</li>
+		</ul>
+	</ul>
+</ul>
+</ul>
+
+<p>
+Ahora es necesario compilar el kernel esclavo. Tenga cuidado en este paso
+ya que no desea echar a perder los módulos que ha construido para el maestro.
+Para llevar a cabo esto escriba:
+</p>
+
+<pre caption="Compilando el kernel esclavo">
+# <i>cd /usr/src/linux</i>
+# <i>make clean dep bzImage</i>
+</pre>
+
+<p>
+Ahora copie esta bzImage en el directorio <path>/tftpboot</path> escribiendo:
+</p>
+
+<pre caption="Copiando el kernel esclavo">
+# <i>cp /usr/src/linux/arch/i386/boot/bzImage /tftpboot</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configurando el sistema de ficheros preliminar del esclavo</title>
+<body>
+
+<p>
+Los sistemas de ficheros del maestro y de los esclavos pueden modificarse
+mucho. De hecho, nosotros sólo estamos interesados en un sistema de ficheros
+preliminar con los archivos de configuración y los puntos de montaje apropiados.
+Lo primero que necesitamos hacer es crear un directorio dentro de 
+<path>/tftpboot</path> para el primer esclavo.  Cada esclavo necesita
+su propio sistema de ficheros debido a que compartir ciertos archivos del
+sistema puede provocar problemas con los permisos y cuelgues. Puede llamar
+estos directorios como más le guste, pero le sugiero que use la dirección
+IP de los esclavos ya que son únicas y no provocan ningún tipo de confusión.
+La IP estática de mi primer esclavo imaginario es <c>192.168.1.21</c>, así
+que escribo
+</p>
+
+<pre caption="Creando un directorio para la raíz remota">
+# <i>mkdir /tftpboot/192.168.1.21</i>
+</pre>
+
+<p>
+Varios archivos de configuración contenidos en <path>/etc</path> también
+necesitan ser modificados en el esclavo. Copie el directorio <path>/etc</path>
+del maestro dentro de la raíz del nuevo esclavo escribiendo:
+</p>
+
+<pre caption="Creando /etc para el sistema de ficheros del esclavo">
+# <i>cp -r /etc /tftpboot/192.168.1.21/etc</i>
+</pre>
+
+<p>
+Este sistema de ficheros no esta listo aún ya que necesita varios puntos
+de montaje. Para crearlos escriba:
+</p>
+
+<pre caption="Creando los puntos de montaje para el sistema de ficheros del esclavo">
+# <i>mkdir /tftboot/192.168.1.21/dev</i>
+# <i>mkdir /tftboot/192.168.1.21/proc</i>
+# <i>mkdir /tftboot/192.168.1.21/tmp</i>
+# <i>mkdir /tftboot/192.168.1.21/mnt</i>
+# <i>mkdir /tftboot/192.168.1.21/mnt/.initd</i>
+# <i>mkdir /tftboot/192.168.1.21/mfs</i>
+# <i>mkdir /tftboot/192.168.1.21/var/empty</i>
+# <i>mkdir /tftboot/192.168.1.21/var/lock</i>
+# <i>mkdir /tftboot/192.168.1.21/var/run</i>
+</pre>
+
+<p>
+La mayoría de estos le sonarán; <path>/mfs</path> es un directorio
+específico de openMosix que se usará luego. Directorios como 
+<path>/dev</path>,<path>/proc</path>  se poblarán cuando el esclavo se
+inicie, los demás se montarán posteriormente. Debe modificar también el
+fichero <path>/tftpboot/192.168.1.21/etc/hostname</path> de manera que
+contenga el nombre de la máquina esclava. De los binarios, las librerías
+y de otros ficheros se hablará más adelante en este COMO, antes de que
+intente iniciar el esclavo.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Opciones perdidas</title>
+<body>
+
+<p>
+Si hay opciones que no encuentra en la configuración del kernel, asegúrese
+de que tiene marcado:
+</p>
+
+<ul>
+<li>Code maturity level options ---</li>
+<ul><li>Prompt for development and/or incomplete code/drivers</li></ul>
+</ul>
+
+</body>
+</section>
+
+</chapter>
+
+
+<chapter>
+<title>Configurando el servidor DHCP</title>
+
+<section>
+<title>Acerca del servidor DHCP</title>
+<body>
+
+<p>
+DHCP significa Protocolo de Configuración Dinámica de Máquinas. El servidor
+DHCP es la primera máquina con la cual se comunicarán los esclavos cuando
+se inicien mediante PXE. El propósito principal del servidor DHCP es
+asignar una dirección IP. El servidor DHCP puede asignarlas basándose
+en la dirección MAC de las máquinas. Una vez que el esclavo tenga una
+dirección IP, el servidor DHCP le dirá al esclavo donde conseguir su
+sistema de ficheros inicial y su kernel.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+Hay varias cosas de las cuales querrá verificar su funcionamiento antes
+de empezar. En primer lugar, compruebe la conectividad de su red escribiendo:
+</p>
+
+<pre caption="Comprobando la configuración de la red">
+# <i>ifconfig eth0 enable multicast</i>
+# <i>ifconfig -a</i>
+</pre>
+
+<p>
+Deseará asegurarse de que tiene una interfaz <e>eth0</e> funcionando. Debería
+ver algo como esto:
+</p>
+
+<pre caption="Una interfaz eth0 funcionando convenientemente">
+eth0    Link encap:10Mbps Ethernet  HWaddr 00:00:00:00:00:00
+        inet addr:192.168.1.0  Bcast:192.168.255.255  Mask:255.255.255.0
+        UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+        RX packets:2875542 errors:0 dropped:0 overruns:0
+        TX packets:218647 errors:0 dropped:0 overruns:0
+        Interrupt:11 Base address:0x210
+</pre>
+
+<p>
+Es importante que se muestre <e>MULTICAST</e>, si esto no ocurre necesitará
+recompilar su kernel dándole soporte multicast.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Instalando el servidor DHCP</title>
+<body>
+
+<p>
+Si su red no tiene aún un servidor DHCP instalado, necesitará instalar
+uno escribiendo:
+</p>
+
+<pre caption="Instalando el servidor DHCP">
+# <i>emerge dhcp</i>
+</pre>
+
+<p>
+Si su red ya tiene un servidor DHCP instalado, necesitará editar el
+fichero de configuración para conseguir que el inicio PXE funcione
+correctamente.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configurando el servidor DHCP</title>
+<body>
+
+<p>
+Sólo hay un fichero de configuración que necesite editar antes de iniciar
+el servidor DHCP. Este archivo debería estar almacenado en 
+<path>/etc/dhcp</path> y debería llamarse <path>dhcpd.conf</path>.  Copie y 
+edite el archivo de ejemplo que se proporciona, escribiendo:
+</p>
+
+<pre caption="Editando el fichero de configuración del servidor DHCP">
+# <i>cp /etc/dhcp/dhcpd.conf.sample /etc/dhcp/dhcpd.conf</i>
+# <i>vim /etc/dhcp/dhcpd.conf</i>
+</pre>
+
+<p>
+La estructura general de este fichero es una configuración con
+un estilo en secciones, y tiene una pinta similar a esta:
+</p>
+
+<pre caption="Estilo de ejemplo de dhcpd.conf">
+<comment># opciones globales</comment>
+
+ddns-update-style none;
+shared-network LOCAL-NET {
+
+<comment># opciones de red compartidas</comment>
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+
+    <comment># opciones de subred</comment>
+
+    host slave{
+        <comment># opciones específicas de la máquina</comment>
+    }
+
+    group {
+        <comment># opciones específicas del grupo</comment>
+    }
+}
+}
+</pre>
+
+<p>
+La sección <c>shared-network</c> es opcional y debería usarse para las IPs que
+quiera asignar a la misma topología de red. Como mínimo debe declarar una
+sección <c>subnet</c> y la sección opcional <c>group</c> permite agrupar
+opciones entre las secciones. Las opciones globales normalmente se
+parecen a esto:
+</p>
+
+<pre caption="Opciones globales de ejemplo en dhcpd.conf">
+option subnet-mask 255.255.255.0;
+option broadcast-address 192.168.1.255;
+option routers 192.168.1.254;
+option domain-name-servers 192.168.1.1, 192.168.1.2;
+option domain-name "mydomain.org";
+</pre>
+
+<p>
+Estas opciones globales son bastante claras. A continuación puede ver
+un ejemplo de opciones específicas de subred y máquina:
+</p>
+
+<pre caption="Opciones de ejemplo endhpcd.conf para subred y máquinas">
+subnet 192.168.1.0 netmask 255.255.255.0 {
+allow bootp;
+allow booting;
+
+group {
+    next-server 192.168.1.20;
+    filename "pxelinux.0";
+
+    host slave01{
+        hardware ethernet 00:00:00:00:00:00;
+        fixed-address 192.168.1.21;
+        option host-name "slave01";
+    }
+}
+}
+</pre>
+
+<p>
+Las opciones <c>allow bootp</c> y <c>allow booting</c> son críticas si va
+a usar esta subred en particular para inicio sin disco. Las opciones 
+<c>default-lease-time</c>, <c>max-lease-time</c>, y <c>range</c> le permiten
+asignar direcciones IP dinámicamente dentro de unos rangos específicos
+y durante un periodo de tiempo específico. La declaración de <c>group</c>
+permite agrupar un <c>filename</c> y un <c>nextserver</c> específicos
+junto con unas máquinas en particular. <c>Next-server</c> indica que una
+vez que el nodo haya conseguido una IP debe preguntarle al <c>next-server</c>
+por un <c>filename</c> (fichero) en concreto. Este <c>filename</c> es relativo
+al directorio <path>/tftpboot</path> (parte de las opciones específicas
+del servidor tftp serán explicadas mas adelante). Dentro de la sección
+<c>host</c>, la opción <c>hardware ethernet</c> especifica la dirección MAC
+y después <c>fixed-address</c> asigna esa dirección MAC en particular a un
+IP fija. Incluir la opción <c>host-name</c> probablemente sea una buena
+idea y es simplemente el nombre de la máquina para un esclavo en particular.
+Existen una buenas páginas del manual de <path>dhcpd.conf</path> que
+explican opciones que están fuera del ámbito de este COMO. Puede verlas
+escribiendo:
+</p>
+
+<pre caption="Viendo las páginas del manual de dhcpd.conf">
+# <i>man dhcpd.conf</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Iniciando el servidor DHCP</title>
+<body>
+
+<p>
+Antes de iniciar el script de inicialización de dhcp, edite el archivo
+<path>/etc/conf.d/dhcp</path> de manera que sea algo parecido a esto:
+</p>
+
+<pre caption="Ejemplo de /etc/conf.d/dhcp">
+IFACE="eth0"
+<comment># inserte cualquier otra opción que necesite</comment>
+DHCPD_OPTS="-d"
+</pre>
+
+<p>
+El argumento -d es para obtener una salida explicativa. La variable <c>IFACE</c>
+es el dispositivo en el cual desea correr el servidor DHCP, en nuestro caso
+<c>eth0</c>. Añadir más argumentos a la variable <c>IFACE</c> puede ser
+útil para redes con una topología compleja con múltiples tarjetas de red. Para
+arrancar el servidor DHCP escriba.
+</p>
+
+<pre caption="Arrancando el servidor DHCP en el maestro">
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Para añadir el servidor a sus scripts de inicio escriba:
+</p>
+
+<pre caption="Añadiendo el servidor DHCP al runlevel preterminado">
+# <i>rc-update add dhcp default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Resolviendo los problemas del servidor DHCP</title>
+<body>
+
+<p>
+Si un nodo se inicia, podrá verlo en 
+<path>/var/log/daemon.log</path>. Si además, lo hace de manera correcta
+debería ver algo similar a esto.
+</p>
+
+<pre caption="Ejemplo de log del servidor dhcp">
+DHCPDISCOVER from 00:00:00:00:00:00 via eth0
+DHCPOFFER on 192.168.1.21 to 00:00:00:00:00:00 via eth0
+DHCPREQUEST for 192.168.1.21 from 00:00:00:00:00:00 via eth0
+DHCPACK on 192.168.1.21 to 00:00:00:00:00:00 via eth0
+</pre>
+
+<p>
+Si obtiene el siguiente mensaje de error, probablemente signifique que hay
+algún error en el archivo de configuración pero el servidor DHCP está
+haciendo los broadcast correctamente.
+</p>
+
+<pre caption="Ejemplo de error del servidor DHCP">
+no free leases on subnet LOCAL-NET
+</pre>
+
+<p>
+Cada vez que modifique el fichero de configuración debe reiniciar el
+servidor DHCP. Para hacerlo escriba:
+</p>
+
+<pre caption="Reiniciando el servidor DHCP en el maestro">
+# <i>/etc/init.d/dhcpd restart</i>
+</pre>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Configurando el servidor TFTP y el cargador de Linux PXE</title>
+<section>
+<title>Acerca del servidor TFTP</title>
+<body>
+
+<p>
+TFTP quiere decir Protocolo de Transferencia de Ficheros Trivial. El servidor
+TFTP va a proporcionar a los esclavos un kernel y un sistema de ficheros
+inicial. Todos los kernel de los esclavos junto sus sistemas de ficheros
+iniciales se guardarán en el servidor TFTP, así que sería una buena idea
+hacer al maestro servidor TFTP.
+</p>
+
+</body>
+
+</section>
+<section>
+<title>Acerca de PXELINUX</title>
+<body>
+
+<p>
+PXELINUX es un cargador de red equivalente a LILO o GRUB y será servido a los
+esclavos vía TFTP. En esencia, es un pequeño conjunto de instrucciones que
+que le dice al cliente donde conseguir su kernel y su sistema de ficheros inicial, además de permitirle varias opciones sobre el kernel.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+Necesitará conseguir el archivo pxelinux.o contenido en el paquete SYSLINUX
+escrito por H. Peter Anvin. Puede instalarlo escribiendo:
+</p>
+
+<pre caption="Instalando syslinux">
+# <i>emerge syslinux</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Instalando el servidor TFTP</title>
+<body>
+
+<p>
+Un servidor TFTP muy recomendado esta disponible en el paquete
+tftp-hpa. Este servidor TFTP está escrito por el mismo autor que
+SYSLINUX y funciona realmente bien con pxelinux. Para instalarlo
+simplemente escriba:
+</p>
+
+<pre caption="Instalando el servidor TFTP">
+# <i>emerge tftp-hpa</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configurando PXELINUX</title>
+<body>
+
+<p>
+Antes de iniciar el servidor TFTP, necesitará configurar pxelinux. En primer
+lugar, copie el binario de pxelinux en el directorio <path>/tftpboot</path>
+escribiendo:
+</p>
+
+<pre caption="Setting up the remote bootloader">
+# <i>cp /usr/lib/syslinux/pxelinux.0 /tftpboot</i>
+# <i>mkdir /tftpboot/pxelinux.cfg</i>
+# <i>touch /tftpboot/pxelinux.cfg/default</i>
+</pre>
+
+<p>
+Así se creará el archivo de configuración por defecto del cargador. El binario
+<path>pxelinux.0</path> buscará en el directorio <path>pxelinux.cfg</path> un
+archivo cuyo nombre es la dirección MAC del cliente en octal. Si no la
+encuentra, usará este archivo predeterminado. Por ahora, configure sólo
+este. Edítelo de manera que quede algo parecido a esto:
+</p>
+
+<pre caption="Ejemplo de pxelinux.cfg/default">
+DEFAULT gentoo_1.4
+LABEL gentoo_1.4
+KERNEL bzImage
+APPEND nfsroot=192.168.1.20:/tftpboot/192.168.1.21
+IPAPPEND 1
+</pre>
+
+<p>
+La etiqueta <c>DEFAULT</c> dirige a pxelinux a una cierta <c>LABEL</c>, así
+no es necesario teclear a mano una etiqueta cuando el cliente arranca. Si lo desea
+puede añadir mas etiquetas LABEL. La etiqueta <c>KERNEL</c> especifica
+la ruta al kernel. Esta ruta es relativa a <path>/tftpboot</path>. 
+La etiqueta <c>APPEND</c> añade al kernel las opciones de inicialización.
+Ya que compilamos el kernel esclavo con <c>NFS_ROOT_SUPPORT</c>,
+especificaremos la raiz nfs (nfsroot) aquí. La primera IP es la del maestro
+y la segunda es el directorio que habíamos creado previamente en
+<path>/tftpboot</path> para guardar el sistema de ficheros inicial del
+esclavo.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configurando el servidor TFTP</title>
+<body>
+
+<p>
+Edite <path>/etc/conf.d/in.tftpd</path>.  Necesita especificarle
+el directorio raíz de tftp con <c>INTFTPD_PATH</c> y cualquiera
+de las opciones en la línea de comandos con 
+<c>INTFTPD_OPTS</c>.  Debería quedarle algo parecido a esto:
+</p>
+
+<pre caption="Ejemplo de /etc/conf.d/in.tftpd">
+INTFTPD_PATH="/tftpboot"
+INTFTPD_OPTS="-l -v -s ${INTFTPD_PATH}"
+</pre>
+
+<p>
+la opción -l indica que este servidor escucha por sí mismo, así no es
+necesario usar inetd, la opción -v indica que los mensajes de
+error/registro serán explicativos. La opción -s /tftpboot especifica
+la raíz de su servidor tftp.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Iniciando el servidor TFTP</title>
+<body>
+
+<p>
+Para iniciar el servidor tftp escriba:
+</p>
+
+<pre caption="Iniciando el servidor TFTP del maestro">
+# <i>/etc/init.d/in.tftpd start</i>
+</pre>
+
+<p>
+Esto debería iniciar el servidor tftp con las opciones que especificó en
+el fichero <path>/etc/conf.d/in.tfpd</path>. Si desea que el servidor se
+cargue en el inicio escriba:
+</p>
+
+<pre caption="Añadiendo el servidor tftp al runlevel predeterminado del maestro">
+# <i>rc-update add in.tftpd default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Arreglando los problemas del proceso de inicio por red</title>
+<body>
+
+<p>
+Hay unas pocas cosas que puede hacer para depurar el proceso de inicio por red.
+Quizás la más importante sea usar la herramienta llamada <c>tcpdump</c>. Para
+instalar <c>tcpdump</c> escriba:
+</p>
+
+<pre caption="Instalando tcpdump">
+# <i>emerge tcpdump</i>
+</pre>
+
+<p>
+Ahora puede ponerse a la escucha del tráfico de la red y asegurarse de que
+las interacciones cliente/servidor están funcionando. Si algo va mal, hay una
+sería de cosas que le interesará verificar. Primero asegúrese de que cliente
+y servidor están físicamente conectados de una forma apropiada y de que
+los cables no están dañados. Si su cliente/servidor no está recibiendo
+peticiones en un puerto en particular asegúrese de que no hay interferencias
+causadas por un cortafuegos. Para escuchar en un dispositivo entre dos
+máquinas escriba:
+</p>
+
+<pre caption="Escuchando la interacción entre cliente y servidor usando tcpdump">
+# <i>tcpdump host </i><comment>ip_cliente</comment><i> y </i><comment>ip_servidor</comment>
+</pre>
+
+<p>
+También puede usar <c>tcpdump</c> para escuchar en un puerto en concreto, como
+por ejemplo el que usa tftp, escribiendo:
+</p>
+
+<pre caption="Eschando al servidor tftp">
+# <i>tcpdump port 69</i>
+</pre>
+
+<p>
+Un error común que podría recibir es: PXE-E32: TFTP open time-out
+Probablemente se deba al cortafuegos. Si está usando <c>TCPwrappers</c>, 
+debería revisar <path>/etc/hosts.allow</path> y 
+<path>etc/hosts.deny</path> asegurándose de que están configurados
+correctamente. El cliente debe estar autorizado a conectarse al servidor.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configurando el servidor NFS</title>
+<section>
+<title>Acerca del servidor NFS</title>
+<body>
+
+<p>
+NFS significa Sistema de Ficheros en Red. El servidor NFS se usará para
+servir directorios al esclavo. Esta parte puede ser personalizada después,
+pero pero ahora todo lo necesitamos es un nodo esclavo preliminar para
+arrancar sin disco.
+</p>
+
+</body>
+</section>
+<section>
+<title>Acerca de Portmapper</title>
+<body>
+
+<p>
+Varios servicios cliente/servidor no escuchan en un puerto en particular,
+pero en lugar de eso cuentan con RPC (Llamadas de Procedimiento Remoto).
+Cuando el servicio se inicializa escucha en un puerto aleatorio y luego lo
+registra dicho puerto con la utilidad Portmapper. NFS recae en RPCs y esto
+requiere que Portmapper esté corriendo antes de que NFS sea iniciado.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+El servidor NFS necesita soporte a nivel de kernel, en el caso de que no lo
+tenga deberá recompilar el kernel del maestro. Para asegurarse de la
+configuración del kernel del maestro escriba:
+</p>
+
+<pre caption="Comprobando las opciones específicas para">
+# <i>cat /usr/src/linux/.config | grep NFS</i>
+</pre>
+
+<p>
+Si su kernel está correctamente configurado, debería ver que la salida es
+algo similar a esto:
+</p>
+
+<pre caption="Opciones específicas de NFS correctas en el kernel del maestro">
+CONFIG_NFS_FS=y
+CONFIG_NFS_V3=y
+# CONFIG_ROOT_NFS is not set
+CONFIG_NFSD=y
+CONFIG_NFSD_V3=y
+# CONFIG_NCPFS_NFS_NS is not set
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Instalando el servidor NFS</title>
+<body>
+
+<p>
+El paquete NFS puede obtenerse a través del portage escribiendo:
+</p>
+
+<pre caption="Instalando nfs-utils">
+# <i>emerge nfs-utils</i>
+</pre>
+
+<p>
+Este paquete emergerá una utilidad para llevar a cabo el mapeo de puertos
+(portmapping) y las utilidades nfs tanto de cliente como de servidor.
+Además también manejará automáticamente las dependencias de inicialización.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configurando el servidor NFS</title>
+<body>
+
+<p>
+Los tres archivos de configuración más importantes que tiene que editar son:
+</p>
+
+<pre caption="Archivos de configuración de NFS">
+/etc/exports
+/tftpboot/192.168.1.21/etc/fstab
+/etc/conf.d/nfs
+</pre>
+
+<p>
+El archivo <path>/etc/exports</path> especifica como, a quien y que exportar
+a través de NFS. El fstab del esclavo debe alterarse para poder montar
+los sistemas de ficheros NFS que el maestro está exportando.
+</p>
+
+<p>
+Un <path>/etc/exports</path> típico para el maestro debería ser algo similar
+a esto:
+</p>
+
+<pre caption="Ejemplo de /etc/exports en el maestro">
+<comment># una línea como esta por cada esclavo</comment>
+/tftpboot/192.168.1.21   192.168.1.21(rw,no_root_squash,no_all_squash)
+<comment># si desea un registro compartido por el clúster</comment>
+/var/log   192.168.1.21(rw,no_root_squash,no_all_squash)
+</pre>
+
+<p>
+El primer campo indica el directorio a ser exportado y el campo siguiente
+indica a quien y como. La columna 'quien' le dice a NFS quien debe tener
+permiso para montar ese directorio en concreto. La columna 'como' indica
+lo que puede hacer con el sistema de ficheros el cliente que lo monta:
+<c>ro</c> para sólo lectura, <c>rw</c> para lectura/escritura.  Las opciones
+<c>no_root_squash</c> y <c>no_all_squash</c> son importantes para clientes
+sin disco que están escribiendo en él, así no son rehusados (squashed)
+al hacer peticiones de E/S. El archivo fstab del esclavo,
+<path>/tftpboot/192.168.1.21/etc/fstab</path>, debería ser algo similar a esto: 
+</p>
+
+<pre caption="Ejemplo de /etc/fstab del esclavo">
+<comment># estas entradas son esenciales</comment>
+maestro:/tftpboot/192.168.1.21   /               nfs     hard,intr,rw    0 1
+none                            /proc           proc    defaults        0 0
+none                            /mfs            mfs     dfsa=1          0 0
+<comment># útil pero superfluo</comment>
+maestro:/var/log			/var/log	nfs	hard,intr,rw	0 0
+</pre>
+
+<p>
+En este ejemplo, <c>maestro</c> no es más que el nombre de la máquina que
+hace de maestro, pero podría ser fácilmente su IP. El primer campo indica
+el directorio indica el directorio que se montará y el segundo indica
+donde. El tercer campo indica el sistema de ficheros y debe ser NFS
+para cualquier directorio NFS montado. El sistema de ficheros MFS lo usa
+openMosix y será montado en en <path>/mfs</path>. El cuarto campo indica
+varias opciones que se usarán durante el proceso de montado (vea mount(1)
+para obtener información acerca de estas opciones). Tuve dificultades
+al usar puntos de montaje blandos (soft) así que decidí hacerlos todos
+duros (hard). No vendría de más que se fijase en varias opciones
+de <path>/etc/fstab</path> para hacer su clúster más eficiente.
+</p>
+
+<p>
+El último fichero que tiene que editar es <path>/etc/conf.d/nfs</path>, que
+describe unas pocas opciones para cuando se inicia nfs. Debería parecerse
+a esto:
+</p>
+
+<pre caption="Ejemplo de configuración de /etc/init.d/nfs para el maestro">
+# Config file for /etc/init.d/nfs
+
+# Número de servidores que deben iniciarse por defecto
+RPCNFSDCOUNT=20
+
+# Opciones que se han de pasar a rpc.mountd
+RPCMOUNTDOPTS=""
+</pre>
+
+<p>
+Necesita cambiar <c>RPCNFSDCOUNT</c> al número de nodos sin disco que
+tenga su clúster.  
+</p>
+
+</body>
+</section>
+<section>
+<title>Iniciando el servidor NFS</title>
+<body>
+
+<p>
+Debería iniciar el servidor nfs con su script situado en
+<path>/etc/init.d</path> escribiendo:
+</p>
+
+<pre caption="Iniciando el servidor nfs del maestro">
+# <i>/etc/init.d/nfs start</i>
+</pre>
+
+<p>
+Si desea que este script se arranque en el inicio del sistema escriba:
+</p>
+
+<pre caption="Añadiendo el servidor nfs al runlevel predeterminado del maestro">
+# <i>rc-update add nfs default</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configurando openMosix</title>
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+Todo lo que hemos hecho hasta ahora es la preparación del inicio por red
+de un cliente sin disco completamente funcional. Ahora todo lo que tenemos
+que hacer es conseguir que este cliente se comunique vía openMosix con
+su maestro. La primera cosa que queremos hacer es asegurarnos de que
+podemos iniciar el cliente por red. Si no funciona, consulte las partes
+previas dedicadas a la resolución de problemas antes de seguir. Para
+iniciar por red el cliente:
+</p>
+
+<ul>
+<li>Encender el cliente</li>
+<li> Cambie la secuencia de inicio del cliente para iniciar a través
+de la tarjeta de red vía PXE</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Instalando las herramientas de usuario de openMosix</title>
+<body>
+
+<p>
+Para que el cluster sea capaz de migrar procesos, necesita instalar
+unos pocos binarios que trabajan en el espacio del usuario. Además,
+necesita iniciar un servidor openMosix en cada nodo para que este se
+pueda unir al cluster y utilizar el kernel openMosix. Para conseguir
+las binarios y otros archivos anteriormente mencionados escriba:
+</p>
+
+<pre caption="Instalando utilidades de usuario de openMosix">
+# <i>emerge openmosix-user</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Configurando el servidor openMosix</title>
+<body>
+
+<p>
+Solamente se necesita editar un archivo para conseguir que la migración
+de procesos via openMosix funcione. En primer lugar, necesitamos crear
+<path>/etc/mosix.map</path>.  Este archivo sirve como mapa para el cluster,
+asignando direcciones IP a los nodos. Para configurar
+<path>/etc/mosix.map</path> teclee:
+</p>
+
+<pre caption="Editando /etc/mosix.map">
+# <i>vim /etc/mosix.map</i>
+</pre>
+
+<p>
+Edite el archivo de manera que se parezca a esto:
+</p>
+
+<pre caption="Ejemplo de /etc/mosix.map">
+1	192.168.1.20	1
+2	192.168.1.21	9
+11	192.168.1.29	1
+</pre>
+
+<p>
+El primer campo especifica el número de nodo. Generalmente es una buena
+idea tener números de nodo secuenciales y con significado. El segundo campo
+asigna una dirección IP estática a un nodo en particular. El último número
+especifica un rango de direcciones IP. El mismo clúster podría implementarse también de esta
+manera:
+</p>
+
+<pre caption="Ejemplo alternativo de /etc/mosix.map">
+1	192.168.1.20	11
+</pre>
+
+<p>
+Lo cual permitirá asignamiento dinámico del número de nodo en conjunto
+con la dirección IP. Este archivo estar presente y ser idéntico en cada
+uno de los nodos, ya que este mapa representa la topología de su clúster.
+</p>
+
+<note>
+No es necesario que todos los nodos estén funcionando para que openMosix
+funcione correctamente.
+</note>
+
+</body>
+</section>
+<section>
+<title>Iniciando openMosix</title>
+<body>
+
+<p>
+Antes de iniciar openMosix, tiene que copiar parte del sistema de ficheros
+del maestro en el esclavo. Para ello escriba:
+</p>
+
+<pre caption="Creando un sistema de ficheros preliminar">
+# <i>cp -r /bin /tftpboot/192.168.1.21/bin</i>
+# <i>cp -r /sbin /tftpboot/192.168.1.21/sbin </i>
+# <i>cp -r /lib /tftpboot/192.168.1.21/lib </i>
+# <i>cp -r /usr/bin /tftpboot/192.168.1.21/usr/bin </i>
+# <i>cp -r /usr/sbin /tftpboot/192.168.1.21/usr/sbin </i>
+# <i>cp -r /usr/lib /tftpboot/192.168.1.21/usr/lib </i>
+# <i>cp /etc/mosix.map /tftpboot/192.168.1.21/etc </i>
+</pre>
+
+<p>
+Así debería tener el sistema de ficheros del esclavo sincronizado con el
+del maestro y proporcionar los binarios necesarios preservando los archivos
+específicos del esclavo. Si no tiene suficiente espacio en disco para esto
+consulte la sección 'recortando el sistema de ficheros'. Para iniciar
+openMosix en el nodo maestro escriba:
+</p>
+
+<pre caption="¡Iniciando openMosix en el maestro!">
+# <i>/etc/init.d/openmosix start</i>
+</pre>
+
+<p>
+Después en el esclavo recién reiniciado escriba lo mismo. Si todo va bien
+debería ser capaz de probar la configuración de openMosix escribiendo:
+</p>
+
+<pre caption="Usando mosctl">
+# <i>mosctl status 1</i>
+# <i>mosctl status 2</i>
+</pre>
+
+<p>
+Así sabrá si un nodo en particular está encendido y en el clúster. 
+En el caso de que funcione, obtendrá la breve pero optimista respuesta
+"up." tanto en el esclavo como en el maestro.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configurando el sistema de ficheros final de esclavo</title>
+<section>
+<title>Acerca del sistema de ficheros del esclavo</title>
+<body>
+
+<p>
+El sistema de ficheros del esclavo es totalmente funcional pero esta muy
+lejos de poder ser usado en el sentido computacional. Cualquier binario
+o librería que el esclavo necesite para ejecutar procesos las puede
+obtener del maestro a través de MFS (sistema de ficheros mosix), por lo tanto
+sólo son necesarios unos pocos archivos. En mi implementación particular,
+al iniciar el esclavo nunca se ejecuta <c>/bin/login</c> haciendo imposible
+arreglar cualquier problema que surja después de iniciar el sistema.
+</p>
+
+</body>
+</section>
+<section>
+<title>Antes de comenzar</title>
+<body>
+
+<p>
+Asegúrese de que openMosix está funcionando entre el maestro y el esclavo
+está funcionando. Además, es posible que le interese iniciar más
+esclavos y asegurarse de que no afecta al progreso de inicio o al rendimiento
+del clúster.
+</p>
+
+</body>
+</section>
+<section>
+<title>Recortando el sistema de ficheros parte 1</title>
+<body>
+
+<p>
+Al final de esta sección he incluido la disposición exacta de mi sistema
+de ficheros
+(<uri link="#doc_chap8_sect2">apéndice 2</uri>).  Puede que usted quiera
+recortar más o menos, pero la parte importante de este proceso debe de hacerse
+en 2 fases. Primero tiene que hacer es librarse de todo lo que considere
+ajeno al esclavo, excepto los archivos que le permiten acceder físicamente
+a la máquina y comprobar sus logs para ver lo que está ocurriendo.
+Vea el <uri link="#doc_chap8_pre1">apéndice 1</uri> para ver una lista
+de los ficheros ensenciales para acceder al sistema.
+</p>
+
+</body>
+</section>
+<section>
+<title>Recortando el sistema de ficheros parte 2</title>
+<body>
+
+<p>
+Si está completamente satisfecho con el funcionamiento del esclavo, puede
+proceder a eliminar los archivos que no están listados debajo. También puede
+interesarle editar <path>tftpboot/192.168.1.21/etc/inittab</path> 
+para que no aparezca ningún terminal. Sería algo así:
+</p>
+
+<pre caption="Ejemplo de /etc/inittab en el esclavo">
+id:3:initdefault:
+   
+si:S:sysinit:/sbin/rc boot
+l0:0:wait:/sbin/rc shutdown
+l1:1:wait:/sbin/rc single
+l2:2:wait:/sbin/rc nonetwork
+l3:3:wait:/sbin/rc default
+l4:4:wait:/sbin/rc default
+l5:5:wait:/sbin/rc default
+l6:6:wait:/sbin/rc reboot
+</pre>
+
+<p>
+Es posible que también tenga que editar a mano algunas de las dependencias
+de inicialización. Tuve problemas eliminando <e>checkroot</e> y <e>checkfs</e>
+de los scripts de inicialización usando el script <c>rc-update</c>. Estas
+funciones no son necesarias para los nodos sin disco y además estaban
+intentado realizar las comprobaciones del sistema de ficheros en la raíz
+NFS, lo cual no le gustaba al maestro. Le recomiendo eliminar completamente
+estos scripts de sus runlevels y asegurarse de que ninguno de los otros
+scripts los reclaman como dependencias.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Apéndice</title>
+<section>
+<title>Archivos necesarios para acceso al sistema/registros</title>
+<body>
+<pre caption="Ejemplo de archivos necesarios para acceder al esclavo">
+<comment># archivos necesarios para acceder a la máquina</comment>
+slave/bin/login
+slave/sbin/sulogin
+slave/sbin/agetty
+slave/etc/pam.d
+slave/etc/passwd
+slave/etc/securetty
+slave/etc/security
+slave/etc/shells
+slave/lib/libpam.so.0
+slave/lib/libpam_misc.so.0
+
+<comment># archivos necesarios para los registros</comment>
+slave/etc/init.d/sysklogd
+slave/etc/runlevels/default/sysklogd
+slave/sbin/klogd
+slave/sbin/syslogd
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Ejemplo de sistema de ficheros del esclavo</title>
+<body>
+
+<pre caption="Ejemplo de sistema de ficheros del esclavo">
+.:
+total 9
+drwxr-xr-x    2 root     root         1184 Mar 10 13:09 bin
+drwxr-xr-x    2 root     root           48 Mar 10 12:30 dev
+drwxr-xr-x    8 root     root          864 Mar 19 18:31 etc
+drwxr-xr-x    4 root     root         1712 Mar 10 13:12 lib
+drwxr-xr-x    2 root     root           48 Mar 10 12:30 mfs
+drwxr-xr-x    3 root     root           72 Mar 10 12:30 mnt
+drwxr-xr-x    2 root     root           48 Mar 10 12:30 proc
+drwxr-xr-x    2 root     root          640 Mar 10 12:30 sbin
+drwxr-xr-x    4 root     root          112 Mar 19 18:31 tmp
+drwxr-xr-x    6 root     root          144 Mar 10 12:30 var
+
+./bin:
+total 4132
+-rwxr-xr-x    1 root     root       295640 Mar 10 13:12 awk
+-rwxr-xr-x    1 root     root       672648 Mar 10 13:12 bash
+-rwxr-xr-x    1 root     root        14892 Mar 10 13:12 cat
+-rwxr-xr-x    1 root     root        18968 Mar 10 13:12 chgrp
+-rwxr-xr-x    1 root     root        18936 Mar 10 13:12 chmod
+-rwxr-xr-x    1 root     root        20720 Mar 10 13:12 chown
+-rwxr-xr-x    1 root     root        48700 Mar 10 13:12 cp
+-rwxr-xr-x    1 root     root        39652 Mar 10 13:12 date
+-rwxr-xr-x    1 root     root        41116 Mar 10 13:12 dd
+-rwxr-xr-x    1 root     root        30192 Mar 10 13:12 df
+-rwxr-xr-x    1 root     root        69292 Mar 10 13:12 dir
+-rwxr-xr-x    1 root     root        19532 Mar 10 13:12 dircolors
+-rwxr-xr-x    1 root     root         4008 Mar 10 13:12 dmesg
+-rwxr-xr-x    1 root     root        34120 Mar 10 13:12 du
+-rwxr-xr-x    1 root     root        12596 Mar 10 13:12 echo
+-rwxr-xr-x    1 root     root        85060 Mar 10 13:12 egrep
+-rwxr-xr-x    1 root     root        10428 Mar 10 13:12 false
+-rwxr-xr-x    1 root     root        54448 Mar 10 13:12 find
+-rwxr-xr-x    1 root     root       295640 Mar 10 13:12 gawk
+-rwxr-xr-x    1 root     root        85060 Mar 10 13:12 grep
+-rwxr-xr-x    1 root     root         9416 Mar 10 13:12 hostname
+-rwxr-xr-x    1 root     root        50892 Mar 10 13:12 install
+-rwxr-xr-x    1 root     root        23404 Mar 10 13:12 ln
+-rwxr-xr-x    1 root     root        69292 Mar 10 13:12 ls
+-r-xr-xr-x    1 root     root        10200 Mar 10 13:12 migrate
+-rwxr-xr-x    1 root     root        19996 Mar 10 13:12 mkdir
+-rwxr-xr-x    1 root     root        15236 Mar 10 13:12 mkfifo
+-rwxr-xr-x    1 root     root        19724 Mar 10 13:12 mknod
+-rwxr-xr-x    1 root     root         5040 Mar 10 13:12 mktemp
+-r-xr-xr-x    1 root     root        24480 Mar 10 13:12 mosctl
+-r-xr-xr-x    1 root     root        12580 Mar 10 13:12 mosrun
+-rwxr-xr-x    1 root     root        90464 Mar 10 13:12 mount
+-rwxr-xr-x    1 root     root        50048 Mar 10 13:12 mv
+-rwxr-xr-x    1 root     root       460100 Mar 10 13:12 nc_mosix
+-r-xr-xr-x    1 root     root        64980 Mar 10 13:12 ps
+-rwxr-xr-x    1 root     root         3724 Mar 10 13:12 readlink
+-rwxr-xr-x    1 root     root        27476 Mar 10 13:12 rm
+-rwxr-xr-x    1 root     root        12148 Mar 10 13:12 rmdir
+-rwxr-xr-x    1 root     root       519776 Mar 10 13:12 sed
+-rwxr-xr-x    1 root     root       672648 Mar 10 13:12 sh
+-rwxr-xr-x    1 root     root        12556 Mar 10 13:12 sleep
+-rwxr-xr-x    1 root     root        27512 Mar 10 13:12 stat
+-rwxr-xr-x    1 root     root        10804 Mar 10 13:12 sync
+-rwxr-xr-x    1 root     root         5948 Mar 10 13:12 tempfile
+-rwxr-xr-x    1 root     root        27160 Mar 10 13:12 touch
+-rwxr-xr-x    1 root     root        10428 Mar 10 13:12 true
+-rwxr-xr-x    1 root     root        14524 Mar 10 13:12 uname
+
+./dev:
+total 0
+
+./etc:
+total 136
+-rw-r--r--    1 root     root           44 Mar 10 13:12 adjtime
+drwxr-xr-x    2 root     root          352 Mar 10 12:30 conf.d
+drwxr-xr-x    2 root     root           72 Mar 10 12:30 devfs.d
+-rw-r--r--    1 root     root         4991 Mar 10 13:12 devfsd.conf
+drwxr-xr-x    2 root     root          160 Mar 10 12:30 dhcpc
+drwxr-xr-x    2 root     root          248 Mar 10 12:30 env.d
+-rw-r--r--    1 root     root          174 Mar 19 18:26 fstab
+-rw-r--r--    1 root     root          676 Mar 10 13:12 group
+-rw-r--r--    1 root     root           21 Mar 10 13:38 hostname
+-rw-r--r--    1 root     root          766 Mar 10 13:40 hosts
+drwxr-xr-x    2 root     root          544 Mar 10 12:30 init.d
+-rw-r--r--    1 root     root         1501 Mar 10 13:12 inittab
+-rw-r--r--    1 root     root         3753 Mar 10 13:12 inputrc
+-rw-------    1 root     root           60 Mar 19 18:31 ioctl.save
+-rw-r--r--    1 root     root        15134 Mar 10 13:12 ld.so.cache
+-rw-r--r--    1 root     root          194 Mar 10 13:12 ld.so.conf
+-rw-r--r--    1 root     root           49 Mar 19 17:01 mosix.map
+-rw-r--r--    1 root     root          256 Mar 19 18:31 mtab
+-rw-r--r--    1 root     root          772 Mar 10 13:12 profile
+-rw-r--r--    1 root     root          344 Mar 10 13:12 profile.env
+-rw-r--r--    1 root     root         1846 Mar 10 13:12 protocols
+-rw-r--r--    1 root     root         2819 Mar 10 13:12 rc.conf
+-rw-r--r--    1 root     root           71 Mar 10 13:12 resolv.conf
+-rwxr-xr-x    1 root     root        13864 Mar 10 13:12 rmt
+-rw-r--r--    1 root     root         1615 Mar 10 13:12 rpc
+drwxr-xr-x    6 root     root          152 Mar 10 12:30 runlevels
+-rw-r--r--    1 root     root        13521 Mar 10 13:12 services
+-rw-r--r--    1 root     root          381 Mar 10 13:12 sysctl.conf
+-rw-r--r--    1 root     root         2332 Mar 10 13:12 syslog.conf
+
+./etc/conf.d:
+total 44
+-rw-r--r--    1 root     root          263 Mar 10 13:12 gpm
+-rw-r--r--    1 root     root          141 Mar 10 13:12 in.tftpd
+-rw-r--r--    1 root     root          410 Mar 10 13:12 iptables
+-rw-r--r--    1 root     root          212 Mar 10 13:12 local.start
+-rw-r--r--    1 root     root          326 Mar 10 13:12 local.stop
+-rw-r--r--    1 root     root          944 Mar 10 13:12 net
+-rw-------    1 root     root         3307 Mar 10 13:12 net.ppp0
+-rw-r--r--    1 root     root          350 Mar 10 13:12 nfs
+-rw-r--r--    1 root     root         1351 Mar 10 13:12 rc
+-rw-r--r--    1 root     root          113 Mar 10 13:12 sysklogd
+-rw-r--r--    1 root     root          803 Mar 10 13:12 xfs
+
+./etc/devfs.d:
+total 0
+
+./etc/dhcpc:
+total 12
+-rw-------    1 root     root          136 Mar 10 13:12 dhcpcd-eth0.cache
+-rw-r--r--    1 root     root          449 Mar 10 13:12 dhcpcd-eth0.info
+-rw-r--r--    1 root     root          449 Mar 10 13:12 dhcpcd-eth0.info.old
+
+./etc/env.d:
+total 28
+-rw-r--r--    1 root     root          355 Mar 10 13:12 00basic
+-rw-r--r--    1 root     root           32 Mar 19 18:31 01hostname
+-rw-r--r--    1 root     root           69 Mar 10 13:12 05gcc
+-rw-r--r--    1 root     root           33 Mar 10 13:12 09opengl
+-rw-r--r--    1 root     root          182 Mar 10 13:12 10xfree
+-rw-r--r--    1 root     root           32 Mar 10 13:12 40vim
+-rw-r--r--    1 root     root           10 Mar 10 13:12 70less
+
+./etc/init.d:
+total 88
+-rwxr-xr-x    1 root     root         2851 Mar 10 13:12 bootmisc
+-rwxr-xr-x    1 root     root         1363 Mar 10 13:12 checkroot
+-rwxr-xr-x    1 root     root         1514 Mar 10 13:12 clock
+-rwxr-xr-x    1 root     root          744 Mar 10 13:12 depscan.sh
+-rwxr-xr-x    1 root     root         7002 Mar 10 13:12 functions.sh
+-rwxr-xr-x    1 root     root          822 Mar 10 13:12 hostname
+-rwxr-xr-x    1 root     root          727 Mar 10 13:12 local
+-rwxr-xr-x    1 root     root         1041 Mar 10 13:12 localmount
+-rwxr-xr-x    1 root     root          426 Mar 10 13:12 net.lo
+-rwxr-xr-x    1 root     root         2580 Mar 10 13:12 netmount
+-rwxr-xr-x    1 root     root          608 Mar 10 13:12 openmosix
+-rwxr-xr-x    1 root     root         1068 Mar 10 13:12 portmap
+-rwxr-xr-x    1 root     root           42 Mar 10 13:12 restart.sh
+-rwxr-xr-x    1 root     root          384 Mar 10 13:12 rmnologin
+-rwxr-xr-x    1 root     root        14554 Mar 10 13:12 runscript.sh
+-rwxr-xr-x    1 root     root           90 Mar 10 13:12 slave.sh
+-rwxr-xr-x    1 root     root          963 Mar 10 13:12 sysklogd
+-rwxr-xr-x    1 root     root          894 Mar 10 13:12 urandom
+
+./etc/runlevels:
+total 2
+drwxr-xr-x    2 root     root          288 Mar 10 13:34 boot
+drwxr-xr-x    2 root     root          200 Mar 10 14:18 default
+drwxr-xr-x    2 root     root           96 Mar 10 12:30 nonetwork
+drwxr-xr-x    2 root     root           72 Mar 10 12:30 single
+
+./etc/runlevels/boot:
+total 0
+lrwxrwxrwx    1 root     root           21 Mar 10 13:34 bootmisc -> ../../init.d/bootmisc
+lrwxrwxrwx    1 root     root           22 Mar 10 13:34 checkroot -> ../../init.d/checkroot
+lrwxrwxrwx    1 root     root           18 Mar 10 13:34 clock -> ../../init.d/clock
+lrwxrwxrwx    1 root     root           21 Mar 10 13:34 hostname -> ../../init.d/hostname
+lrwxrwxrwx    1 root     root           23 Mar 10 13:34 localmount -> ../../init.d/localmount
+lrwxrwxrwx    1 root     root           19 Mar 10 13:34 net.lo -> ../../init.d/net.lo
+lrwxrwxrwx    1 root     root           22 Mar 10 13:34 rmnologin -> ../../init.d/rmnologin
+lrwxrwxrwx    1 root     root           20 Mar 10 13:34 urandom -> ../../init.d/urandom
+
+./etc/runlevels/default:
+total 0
+lrwxrwxrwx    1 root     root           18 Mar 10 13:33 local -> ../../init.d/local
+lrwxrwxrwx    1 root     root           21 Mar 10 13:33 netmount -> ../../init.d/netmount
+lrwxrwxrwx    1 root     root           22 Mar 10 13:21 openmosix -> ../../init.d/openmosix
+lrwxrwxrwx    1 root     root           20 Mar 10 13:33 portmap -> ../../init.d/portmap
+lrwxrwxrwx    1 root     root           21 Mar 10 14:18 sysklogd -> ../../init.d/sysklogd
+
+./etc/runlevels/nonetwork:
+total 4
+-rwxr-xr-x    1 root     root          727 Mar 10 13:12 local
+
+./etc/runlevels/single:
+total 0
+
+./lib:
+total 5901
+-rwxr-xr-x    1 root     root         5560 Mar 10 13:12 cpp
+drwxr-xr-x    3 root     root          120 Mar 19 18:31 dev-state
+-rwxr-xr-x    1 root     root        90174 Mar 10 13:12 ld-linux.so.2
+-rwxr-xr-x    1 root     root        12977 Mar 10 13:12 libanl-2.3.1.so
+-rwxr-xr-x    1 root     root        12977 Mar 10 13:12 libanl.so.1
+-rwxr-xr-x    1 root     root      1425362 Mar 10 13:12 libc-2.3.1.so
+-rwxr-xr-x    1 root     root      1425362 Mar 10 13:12 libc.so.6
+-rwxr-xr-x    1 root     root        22093 Mar 10 13:12 libcrypt-2.3.1.so
+-rwxr-xr-x    1 root     root        22093 Mar 10 13:12 libcrypt.so.1
+-rw-r--r--    1 root     root       313338 Mar 10 13:12 libcurses.so
+-rwxr-xr-x    1 root     root        12065 Mar 10 13:12 libdl-2.3.1.so
+-rwxr-xr-x    1 root     root        12065 Mar 10 13:12 libdl.so.2
+-rwxr-xr-x    1 root     root       106005 Mar 10 13:12 libext2fs.so
+-rwxr-xr-x    1 root     root       183443 Mar 10 13:12 libm-2.3.1.so
+-rwxr-xr-x    1 root     root       183443 Mar 10 13:12 libm.so.6
+-rwxr-xr-x    1 root     root        14194 Mar 10 13:12 libmemusage.so
+-rw-r--r--    1 root     root       313338 Mar 10 13:12 libncurses.so
+-rw-r--r--    1 root     root       313338 Mar 10 13:12 libncurses.so.5
+-rw-r--r--    1 root     root       313338 Mar 10 13:12 libncurses.so.5.3
+-rwxr-xr-x    1 root     root        88950 Mar 10 13:12 libnsl-2.3.1.so
+-rwxr-xr-x    1 root     root        88950 Mar 10 13:12 libnsl.so.1
+-rwxr-xr-x    1 root     root        50016 Mar 10 13:12 libnss_compat-2.3.1.so
+-rwxr-xr-x    1 root     root        50016 Mar 10 13:12 libnss_compat.so.2
+-rwxr-xr-x    1 root     root        17237 Mar 10 13:12 libnss_dns-2.3.1.so
+-rwxr-xr-x    1 root     root        17237 Mar 10 13:12 libnss_dns.so.2
+-rwxr-xr-x    1 root     root        42990 Mar 10 13:12 libnss_files-2.3.1.so
+-rwxr-xr-x    1 root     root        42990 Mar 10 13:12 libnss_files.so.2
+-rwxr-xr-x    1 root     root        18490 Mar 10 13:12 libnss_hesiod-2.3.1.so
+-rwxr-xr-x    1 root     root        18490 Mar 10 13:12 libnss_hesiod.so.2
+-rwxr-xr-x    1 root     root        41099 Mar 10 13:12 libnss_nis-2.3.1.so
+-rwxr-xr-x    1 root     root        41099 Mar 10 13:12 libnss_nis.so.2
+-rwxr-xr-x    1 root     root        48280 Mar 10 13:12 libnss_nisplus-2.3.1.so
+-rwxr-xr-x    1 root     root        48280 Mar 10 13:12 libnss_nisplus.so.2
+-rwxr-xr-x    1 root     root         6222 Mar 10 13:12 libpcprofile.so
+-r-xr-xr-x    1 root     root        39184 Mar 10 13:12 libproc.so
+-r-xr-xr-x    1 root     root        39184 Mar 10 13:12 libproc.so.2.0.10
+-rwxr-xr-x    1 root     root        83562 Mar 10 13:12 libpthread-0.10.so
+-rwxr-xr-x    1 root     root        83562 Mar 10 13:12 libpthread.so.0
+-rwxr-xr-x    1 root     root        70819 Mar 10 13:12 libresolv-2.3.1.so
+-rwxr-xr-x    1 root     root        70819 Mar 10 13:12 libresolv.so.2
+-rwxr-xr-x    1 root     root        35371 Mar 10 13:12 librt-2.3.1.so
+-rwxr-xr-x    1 root     root        35371 Mar 10 13:12 librt.so.1
+-rwxr-xr-x    1 root     root        23317 Mar 10 13:12 libsandbox.so
+-rwxr-xr-x    1 root     root        22329 Mar 10 13:12 libthread_db-1.0.so
+-rwxr-xr-x    1 root     root        22329 Mar 10 13:12 libthread_db.so.1
+-rwxr-xr-x    1 root     root        10997 Mar 10 13:12 libutil-2.3.1.so
+-rwxr-xr-x    1 root     root        10997 Mar 10 13:12 libutil.so.1
+drwxr-xr-x    3 root     root          104 Mar 10 13:12 rcscripts
+
+./lib/dev-state:
+total 1
+srw-rw-rwT    1 root     root            0 Mar 19 18:31 log
+drwxr-xr-x    2 root     root           48 Mar 10 12:30 vc
+
+./lib/dev-state/vc:
+total 0
+
+./lib/rcscripts:
+total 13
+drwxr-xr-x    2 root     root          176 Mar 10 13:12 awk
+-rwxr-xr-x    1 root     root        10628 Mar 10 13:12 filefuncs.so
+
+./lib/rcscripts/awk:
+total 20
+-rw-r--r--    1 root     root         3585 Mar 10 13:12 cachedepends.awk
+-rw-r--r--    1 root     root         2502 Mar 10 13:12 functions.awk
+-rw-r--r--    1 root     root         7932 Mar 10 13:12 gendepends.awk
+-rw-r--r--    1 root     root         4064 Mar 10 13:12 genenviron.awk
+
+./mfs:
+total 0
+
+./mnt:
+total 0
+
+./proc:
+total 0
+
+./sbin:
+total 1304
+-rwxr-xr-x    1 root     root          744 Mar 10 13:12 depscan.sh
+-rwxr-xr-x    1 root     root        35664 Mar 10 13:12 devfsd
+-rwxr-xr-x    1 root     root         7002 Mar 10 13:12 functions.sh
+-rwxr-xr-x    1 root     root         9260 Mar 10 13:12 halt
+-rwxr-xr-x    1 root     root        30292 Mar 10 13:12 hwclock
+-rwxr-xr-x    1 root     root        60200 Mar 10 13:12 ifconfig
+-rwxr-xr-x    1 root     root        31512 Mar 10 13:12 init
+-rwxr-xr-x    1 root     root         9452 Mar 10 13:12 killall5
+-rwxr-xr-x    1 root     root        22492 Mar 10 13:12 klogd
+-rwxr-xr-x    1 root     root       463372 Mar 10 13:12 ldconfig
+-rwxr-xr-x    1 root     root         9452 Mar 10 13:12 pidof
+-rwxr-xr-x    1 root     root        30300 Mar 10 13:12 portmap
+-rwxr-xr-x    1 root     root         9260 Mar 10 13:12 poweroff
+-rwxr-xr-x    1 root     root        10786 Mar 10 13:12 rc
+-rwxr-xr-x    1 root     root         7319 Mar 10 13:12 rc-daemon.sh
+-rwxr-xr-x    1 root     root        63080 Mar 10 13:12 rpc.mountd
+-rwxr-xr-x    1 root     root         2936 Mar 10 13:12 runscript
+-rwxr-xr-x    1 root     root        14554 Mar 10 13:12 runscript.sh
+-r-xr-xr-x    1 root     root        13972 Mar 10 13:12 setpe
+-rwxr-xr-x    1 root     root       410572 Mar 10 13:12 sln
+-rwxr-xr-x    1 root     root        18876 Mar 10 13:12 start-stop-daemon
+-rwxr-xr-x    1 root     root        27748 Mar 10 13:12 syslogd
+
+./tmp:
+total 0
+
+./var:
+total 2
+drwxr-xr-x    2 root     root           48 Mar 10 12:30 empty
+drwxr-xr-x    3 root     root           96 Mar 19 18:31 lock
+drwxr-xr-x    2 root     root          464 Mar 10 12:30 log
+drwxr-xr-x    2 root     root          168 Mar 19 18:31 run
+
+./var/empty:
+total 0
+
+./var/lock:
+total 1
+drwxr-xr-x    2 root     root           72 Mar 19 18:31 subsys
+
+./var/lock/subsys:
+total 0
+-rw-r--r--    1 root     root            0 Mar 19 12:31 mosix
+
+./var/log:
+total 148
+-rw-r--r--    1 root     root            0 Mar 10 13:12 auth.log
+-rw-r--r--    1 root     root          138 Mar 10 14:03 daemon.log
+-rw-r--r--    1 root     root         8928 Mar 10 14:03 debug
+-rw-r--r--    1 root     root            0 Mar 10 13:12 imapd.log
+-rw-r--r--    1 root     root        39823 Mar 10 14:03 kern.log
+-rw-r--r--    1 root     root            0 Mar 10 13:12 lpr.log
+-rw-r--r--    1 root     root            0 Mar 10 13:12 mail.err
+-rw-r--r--    1 root     root            0 Mar 10 13:12 mail.info
+-rw-r--r--    1 root     root            0 Mar 10 13:12 mail.log
+-rw-r--r--    1 root     root            0 Mar 10 13:12 mail.warn
+-rw-r--r--    1 root     root        30804 Mar 10 14:03 messages
+-rw-r--r--    1 root     root            0 Mar 10 13:12 ppp.log
+-rw-r--r--    1 root     root        40055 Mar 10 14:03 syslog
+-rw-r--r--    1 root     root            0 Mar 10 13:12 user.log
+-rw-r--r--    1 root     root            0 Mar 10 13:12 uucp.log
+-rw-rw-r--    1 root     utmp        17280 Mar 19 18:31 wtmp
+
+./var/run:
+total 16
+-rw-r--r--    1 root     root            4 Mar 19 18:31 klogd.pid
+-rw-------    1 root     root          512 Mar 19 18:31 random-seed
+-rw-r--r--    1 root     root            4 Mar 19 18:31 syslogd.pid
+-rw-rw-r--    1 root     utmp         1536 Mar 19 18:31 utmp
+</pre>
+
+</body>
+</section>
+<section>
+<title>Notas acerca del uso de una shell remota y acceso al sistema</title>
+<body>
+
+<p>
+En otros COMOs, también ha hablado del uso de inetd en conjunción con rshd
+y rlogind o de ssh con autentificación RSA. La autentificación de rhost
+es en texto claro e insegura y ambas cosas son innecesarias para el
+funcionamiento del clúster. Estuve un poco confundido acerca de por que
+se necesitaban ya que las llamadas a procesos remotos y demás se manejan
+a nivel de kernel, hasta que me fijé en una aplicación llamada openMosix
+View. openMosix View es un conjunto de aplicaciones con interfaz gráfica
+diseñadas para hacer mas sencilla la administración del clúster. Esta
+aplicación necesita un método de acceso remoto de los mencionados
+anteriormente. Si están pensando en usar openMosix View necesitará
+añadir más archivos al sistema de ficheros de ejemplo incluido en este
+COMO, lo cual se queda fuera de su ámbito. Pienso que esto simplemente
+aclara unas pocas cosas que no me eran tan obvias la primera vez que
+las encontré.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
