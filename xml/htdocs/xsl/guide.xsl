@@ -136,7 +136,7 @@
 		<tr>
                   <td align="center">
                     <a href="http://www.netraverse.com/gentoo.htm" target="_top">
-                      <img src="http://www.ibiblio.org/gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                      <img src="http://www.ibiblio.org/web-gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
                     <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
@@ -591,7 +591,7 @@
 		<tr>
                   <td align="center">
                     <a href="http://www.netraverse.com/gentoo.htm" target="_top">
-                      <img src="http://www.ibiblio.org/gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                      <img src="http://www.ibiblio.org/web-gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
                     <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
