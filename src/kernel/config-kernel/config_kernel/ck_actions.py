@@ -1,6 +1,5 @@
 # 
 # Library of actions that config-kernel can perform
-# $Header: /var/cvsroot/gentoo/src/kernel/config-kernel/config_kernel/ck_actions.py,v 1.1 2004/03/16 03:52:52 latexer Exp $
 #
 
 import os, sys, glob
@@ -8,6 +7,7 @@ import string
 
 from tempfile import gettempdir
 from shutil import copy
+from time import sleep
 from ck_env import getenv, setenv, readEnvFile
 from ck_display import *
 
@@ -21,6 +21,7 @@ def usage():
 	printopt("-d, --display", "Show current config-kernel settings")
 	printopt("-l, --list-targets", "Show possible targets for --set-symlink")
 	printopt("--set-symlink=[target]", "Set the /usr/src/linux symlink to the target kernel")
+	printopt("--set-extraversion=[version]", "Set EXTRAVERSION to 'version' for the kernel in /usr/src/linux")
 	printopt("--allow-writable=[yes|no]", "Allow portage to make /usr/src/linux writable during emerges or not")
 	printopt("--auto-symlink=[yes|no]", "Enable/Disable portage pointing /usr/src/linux to newly merged sources")
 	printopt("--auto-config=[yes|no]", "Enable/Disable portage copying your .config into newly merged sources")
@@ -62,6 +63,71 @@ def setsymlink(version):
 		warn ("Unable to remove the /usr/src/linux symlink!")
 		sys.exit(2)
 
+# setextraversion(version) is used to change the value of EXTRAVERSION in the 
+# toplevel makefile of the kernel found in /usr/src/linux. Useful if using
+# KBUIOD_PREFIX=/some/path/$MAJOR.$MINOR.$PATCHLEVEL$EXTRAVERSION to
+# automaticallyhave lots of nice output locations.
+def setextraversion(version):
+	# List storing values which should be left on the EXTRAVERSION line
+	extraSpecial = ["rc", "pre", "alpha", "beta"]
+	
+	if not os.path.isdir("/usr/src/linux"):
+		warn ("Directory /usr/src/linux not found. Make sure this points to")
+		warn ("a valid kernel source tree before using --set-extraversion.")
+		sys.exit(2)
+	
+	if not os.path.isfile("/usr/src/linux/Makefile"):
+		warn ("No toplevel kernel Makefile detected. Make sure /usr/src/linux")
+		warn ("points to a full kernel tree")
+		sys.exit(2)
+
+	print green("Backing up original makefile to /usr/src/linux/Makefile.orig")
+	copy("/usr/src/linux/Makefile","/usr/src/linux/Makefile.orig")
+
+	# Inform them what's going on
+	if not version or version == "none":
+		version = ""
+		print green("Unsetting EXTRAVERSION...")
+	else:
+		# extraversions should really start with a '-'
+		if version[0] != "-":
+			print green("Prefixing '-' to the version specified")
+			version = "-" + version
+		print green("Setting EXTRAVERSION to '" + version + "'")
+	
+	# Used to create our sed piece looking for special elements
+	# which should be LEFT in EXTRAVERSION
+	specials = extraSpecial[0]
+	for key in extraSpecial[1:]:
+		specials = specials + "\|" + key
+
+	copy("/usr/src/linux/Makefile","/usr/src/linux/Makefile.org")
+	command = "sed -i 's:^EXTRAVERSION.*=.*\(-\(" + specials + "\)[0-9]\+\).*:EXTRAVERSION = \\1" \
+		+ version + ":' /usr/src/linux/Makefile"
+	ret = os.system(command)
+
+	# FIXME: This is a nasty bit of bash hiding in a python program. shame on me.
+	tochild , fromchild , childerror = os.popen3("grep '^KBUILD_OUTPUT.*=.*' /usr/src/linux/Makefile | grep VERSION | cut -d'=' -f2  | sed 's:$(VERSION.*::'")
+	# If we had errors, then we've probably not found anything
+	if childerror.readline():
+		return
+	
+	kbuildprefix = fromchild.readline()
+
+	# Fix for a random newline we sometimes acquire
+	if kbuildprefix[-1] == "\n":
+		kbuildprefix = kbuildprefix[:-1]
+
+	if kbuildprefix and kbuildprefix != "0":
+		newKV, error = ExtractKernelVersion("/usr/src/linux")
+		if error:
+			warn ("Error determining your new kernel version!")
+			sys.exit(2)
+		else:
+			os.mkdir(os.path.join(kbuildprefix,newKV))
+
+	return
+
 # setoutput(path) defines KBUILD_OUTPUT_PREFIX in envfile, for future
 # kernel installations using kernel-2.eclass
 def outputdir(path):
@@ -90,6 +156,13 @@ def makekoutput(path):
 
 	print green("Changing kernel found in " + path)
 	print green("to output to " + outputpath)
+	warn ("You will lose all of your compiled files in " + path)
+	warn ("Hit Control C to cancel this now.")
+	for count in range(5):
+		print red(5 - count),
+		sys.stdout.flush()
+		sleep(1)
+
 	# Backup our config
 	print green("Backing up your .config file")
 	if os.path.isfile(os.path.join(path, ".config")):
@@ -114,6 +187,8 @@ def makekoutput(path):
 		copy(os.path.join(gettempdir(), ".config"),outputpath)
 		warn ("Restoring your .config to " + path)
 		sys.exit(2)
+	else:
+		ret.close()
 
 	os.mkdir(outputpath)
 	print green("Copying your .config into " + outputpath)
