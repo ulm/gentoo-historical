@@ -58,7 +58,10 @@ class Installer:
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
 		self.install_profile = GLIInstallProfile.InstallProfile()
 		# Removed the training wheels!
-		self.cc = GLIClientController.GLIClientController() #pretend=True)
+		if sys.argv[1] == "-p" or sys.argv[1] == "--pretend":
+			self.cc = GLIClientController.GLIClientController(pretend=True)
+		else:
+			self.cc = GLIClientController.GLIClientController()
 		# I'm feeling lazy
 		self.client_profile.set_interactive(None, True, None)
 		self.client_profile.set_architecture_template(None, "x86", None)
