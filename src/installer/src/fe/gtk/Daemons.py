@@ -87,14 +87,14 @@ a brief description beside it.
 		hbox.pack_start(gtk.Label("A highly configurable replacement for syslogd/klogd"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-#		self.log_daemons['syslogkd'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "syslogkd")
-#		self.log_daemons['syslogkd'].set_name("syslogkd")
-#		self.log_daemons['syslogkd'].connect("toggled", self.logger_selected, "syslogkd")
-#		self.log_daemons['syslogkd'].set_size_request(150, -1)
-#		hbox = gtk.HBox(gtk.FALSE, 0)
-#		hbox.pack_start(self.log_daemons['syslogkd'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-#		hbox.pack_start(gtk.Label(""), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-#		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.log_daemons['sysklogd'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "sysklogd")
+		self.log_daemons['sysklogd'].set_name("sysklogd")
+		self.log_daemons['sysklogd'].connect("toggled", self.logger_selected, "sysklogd")
+		self.log_daemons['sysklogd'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.log_daemons['sysklogd'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Standard log daemons"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.add_content(vert)
 
