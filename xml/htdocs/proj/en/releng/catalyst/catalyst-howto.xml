@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/catalyst/Attic/catalyst-howto.xml,v 1.9 2004/06/14 00:53:11 zhen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/catalyst/Attic/catalyst-howto.xml,v 1.10 2004/06/15 05:56:57 zhen Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -59,7 +59,7 @@
 # emerge catalyst
 			</pre>
 
-			<p>If you would like all of the examples that come with Catalyst (highly recommended), make sure to enable the
+			<p>If you would like the examples that come with Catalyst (highly recommended), make sure to enable the
 			<c>doc</c> useflag in either your <path>/etc/portage/package.use</path> or directly on the commandline
 			when Catalyst is emerged: </p>
 
@@ -299,9 +299,7 @@ portdir_overlay: /tmp/portdir_overlay
 		<body>
 			
 			<p>Catalyst is capable of creating three stages - a stage1, a stage2, and a stage3. Each of these
-			stages needs a "seed stage" to build it. A seed stage is the base from which the target
-			stage is built. For example, a stage3 is a stage2 tarball that has finished an <c>emerge system</c>.
-			Therefore, the seed for a stage3 tarball is a stage2. </p>
+			stages requires a "seed stage" to build from: </p>
 
 			<table>
 				<tr>
@@ -322,12 +320,12 @@ portdir_overlay: /tmp/portdir_overlay
 				</tr>
 			</table>
 
-			<p>The only seed stage that needs to be fetched from the Internet is the stage3 tarball to build
-			the stage1 tarball. Once the stage1 tarball is built, Catalyst can use its own built stages
-			as the seed stages.</p>
+			<p>The only seed stage that needs to be fetched from the Internet is the stage3 tarball, which
+			is used to build the stage1 tarball. Once the stage1 tarball is built, 
+			Catalyst can use the built stages as seed stages.</p>
 
-			<p>Seed stages are stored in the build directory for the <c>rel_type</c> that is specified in the
-			specfile. A generic path (using Catalyst variables, substitute as needed) would be
+			<p>Catalyst requires that seed stages be placed in a specific directory. A generic path
+			(using Catalyst variables, substitute as needed) would be
 			<c>$clst_storedir/builds/$clst_rel_type/$target-$subarch-$version_stamp</c>. A real word example 
 			would be something like <c>/var/tmp/catalyst/builds/default/stage1-x86-20040611</c>. </p>
 
@@ -335,133 +333,50 @@ portdir_overlay: /tmp/portdir_overlay
 	</section>
 
 	<section>
-		<title>Building a Stage1 Installation Tarball</title>
+		<title>Building an Installation Tarball</title>
 		<body>
 
-			<p>The first place to start with any Catalyst project is the spec file. An example stage1
-			installation tarball specfile could look like the following: </p>
+			<p>Save target and source_subpath, the rest of the specfile remains
+			identical for each installation stage. To build an installation stage, simply
+			substitute the <c>target</c> variable for the type of stage that is being built,
+			and tweak the <c>source_subpath</c> so that it points to the correct seed stage. </p>
 			
-			<pre caption="Example stage1 specfile">
+			<pre caption="Generic installation stage specfile">
 subarch: x86
 version_stamp: 20040403
-target: stage1
+target: $target
 rel_type: default
 profile: default-x86-2004.0
 snapshot: 20040403
-source_subpath: default/stage3-x86-20040218
-
-<codenote>If you want to use distcc, add the following line:</codenote>
+source_subpath: $seed_stage
+<codenote>optional</codenote>
 distcc_hosts: host1 host2 host3
 			</pre>
 			
-			<p>Of course, modify that to your needs, referring back to the specfile section if need be. </p>
+			<p>Once the spec file is edited, start the build: </p>
 
-			<p>Ok, the next thing that we need is the seed stage. A stage1 installation tarball uses
-			a stage3 installation tarball as its seed stage. Usually, I use the most recent release stages
-			since they are more or less bugfree and up-to-date. At the time of writing, the most recent
-			release was 2004.0, and those stages are datestamped 20040218. After the seed stage has been downloaded
-			(see the above directions), we can proceed to build the stage.</p>
-
-			<p>Once the seed stage is fetched, start the build: </p>
-
-			<pre caption="Building the stage1 installation tarball">
-# catalyst -f stage1.spec
+			<pre caption="Building the an installation tarball">
+# catalyst -f spec_file.spec
 			</pre>
-
-			<p>Now, sit back, relax, and go watch a movie while the tarball builds. Build times vary from
-			machine to machine, but keep in mind that it will take some time to build no matter how fast
-			your machine is!</p>
-					
-		</body>
-	</section>
-
-	<section>
-		<title>Building a Stage2 Installation Tarball</title>
-		<body>
-			
-			<p>The stage tarball build process is similar for all stages. The only things that really change are
-			the spec file and the seed stage. </p>
-
-			<p>The first thing that needs to be done is creating the stage2 specfile. I recommend just copying
-			the contents of your stage1 specfile to a new stage2 specfile. Once that is complete, use your favorite
-			editor to tweak the stage2 specfile: </p>
-
-			<pre caption="Example stage2 specfile">
-subarch: x86
-version_stamp: 20040403
-<codenote>changed target from stage1 to stage2</codenote>
-target: stage2
-rel_type: default
-profile: default-x86-2004.0
-snapshot: 20040403
-<codenote>changed the seed stage to the freshly built stage1 installation tarball</codenote>
-source_subpath: default/stage1-x86-20040403
-
-<codenote>If you want to use distcc, add the following line:</codenote>
-distcc_hosts: host1 host2 host3
-			</pre>
-
-			<p>After the specfile is edited accordingly, execute the build process just like we did for
-			the stage1 installation tarball:</p>
-
-			<pre caption="Building the stage2 installation tarball">
-# catalyst -f stage2.spec
-			</pre>
-
-			<p>Once again, sit back and relax for a bit. The stage2 build will take even longer than the 
-			stage1 build, so go rent a game, drive around the block, or impress your significant other
-			with your elite Gentoo skills.</p>
 
 		</body>
 	</section>
 
 	<section>
-		<title>Building a Stage3 Installation Tarball</title>
+		<title>Where are my Stages?</title>
 		<body>
-			
-			<p>At this point, you should be intimately familiar with the installation stage building process.
-			So, first thing first, copy the contents of your stage2 specfile to a new stage3 specfile and
-			then edit do some editing:</p>
-
-			<pre caption="Example stage3 specfile">
-subarch: x86
-version_stamp: 20040403
-<codenote>changed target from stage2 to stage3</codenote>
-target: stage3
-rel_type: default
-profile: default-x86-2004.0
-snapshot: 20040403
-<codenote>changed the seed stage to the freshly built stage2 installation tarball</codenote>
-source_subpath: default/stage2-x86-20040403
-
-<codenote>If you want to use distcc, add the following line:</codenote>
-distcc_hosts: host1 host2 host3
-			</pre>
-
-			<p>Once edited, fire up Catalyst: </p>
-			
-			<pre caption="Building the stage3 installation tarball">
-# catalyst -f stage3.spec
-			</pre>
-
-			</body>
-		</section>
-
-		<section>
-			<title>Where are my Stages?</title>
-			<body>
 				
-				<p>Ok, the stages are finially built, so where are they? By default, Catalyst stores all built
-				stages in <c>$storedir/builds/$rel_type</c>. The <c>$storedir</c> variable can be set to whatever
-				directory that you would like it to be in <path>/etc/catalyst/catalyst.conf</path> and <c>$rel_type</c>
-				is set in the specfile that is used to build the stage. On a system
-				where <c>storedir</c> has not been redefined, and rel_type is "default", built stages can be found at
-				<path>/var/tmp/catalyst/builds/default</path>.</p>
+			<p>By default, Catalyst stores all built
+			stages in <c>$storedir/builds/$rel_type</c>. The <c>$storedir</c> variable can be set to whatever
+			directory that you would like it to be in <path>/etc/catalyst/catalyst.conf</path> and <c>$rel_type</c>
+			is set in the specfile that is used to build the stage. On a system
+			where <c>storedir</c> has not been redefined, and rel_type is "default", built stages can be found at
+			<path>/var/tmp/catalyst/builds/default</path>.</p>
 
-			</body>
-		</section>
+		</body>
+	</section>
 		
-	</chapter>
+</chapter>
 
 	<chapter>
 		<title>Gentoo Reference Platform (GRP) Sets</title>
