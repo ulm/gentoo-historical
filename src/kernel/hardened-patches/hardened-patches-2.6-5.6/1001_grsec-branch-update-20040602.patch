@@ -1,0 +1,855 @@
+--- linux-2.6.5/arch/i386/kernel/sys_i386.c	2004-06-02 12:23:39.592983272 -0400
++++ grsecurity226/arch/i386/kernel/sys_i386.c	2004-05-01 16:10:04.000000000 -0400
+@@ -69,7 +69,7 @@
+ 	}
+ 
+ 	down_write(&current->mm->mmap_sem);
+-	error = do_mmap(file, addr, len, prot, flags, pgoff << PAGE_SHIFT);
++	error = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+ 	up_write(&current->mm->mmap_sem);
+ 
+ 	if (file)
+--- linux-2.6.5/arch/i386/kernel/vmlinux.lds.S	2004-06-02 12:23:39.635976736 -0400
++++ grsecurity226/arch/i386/kernel/vmlinux.lds.S	2004-05-01 16:10:04.000000000 -0400
+@@ -87,9 +87,13 @@
+   .altinstructions : { *(.altinstructions) } 
+   __alt_instructions_end = .; 
+  .altinstr_replacement : { *(.altinstr_replacement) } 
++
++#ifndef CONFIG_PAX_KERNEXEC
+   /* .exit.text is discard at runtime, not link time, to deal with references
+      from .altinstructions and .eh_frame */
+   .exit.text : { *(.exit.text) }
++#endif
++
+   .exit.data : { *(.exit.data) }
+   . = ALIGN(4096);
+   __initramfs_start = .;
+@@ -108,6 +112,7 @@
+ 	_sinittext = .;
+ 	*(.init.text)
+ 	_einittext = .;
++	*(.exit.text)
+ 	. = ALIGN(4*1024*1024) - 1;
+ 	BYTE(0)
+   }
+--- linux-2.6.5/arch/i386/mm/fault.c	2004-06-02 12:23:39.650974456 -0400
++++ grsecurity226/arch/i386/mm/fault.c	2004-05-01 16:10:07.000000000 -0400
+@@ -861,11 +861,9 @@
+ 			return;
+ #endif
+ 
+-		case 1:
+-		default:
+-			pax_report_fault(regs, (void*)regs->eip, (void*)regs->esp);
+-			do_exit(SIGKILL);
+ 		}
++		pax_report_fault(regs, (void*)regs->eip, (void*)regs->esp);
++		do_exit(SIGKILL);
+ 	}
+ 
+ 	pte_mask = _PAGE_ACCESSED | _PAGE_USER | ((error_code & 2) << (_PAGE_BIT_DIRTY-1));
+--- linux-2.6.5/arch/ppc/kernel/syscalls.c	2004-06-02 12:23:39.831946944 -0400
++++ grsecurity226/arch/ppc/kernel/syscalls.c	2004-05-01 16:10:12.000000000 -0400
+@@ -184,7 +184,7 @@
+ 	}
+ 
+ 	down_write(&current->mm->mmap_sem);
+-	ret = do_mmap(file, addr, len, prot, flags, pgoff << PAGE_SHIFT);
++	ret = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+ 	up_write(&current->mm->mmap_sem);
+ 	if (file)
+ 		fput(file);
+--- linux-2.6.5/arch/x86_64/ia32/sys_ia32.c	2004-06-02 12:23:40.016918824 -0400
++++ grsecurity226/arch/x86_64/ia32/sys_ia32.c	2004-05-01 16:10:14.000000000 -0400
+@@ -212,6 +212,11 @@
+ 	if (a.offset & ~PAGE_MASK)
+ 		return -EINVAL; 
+ 
++#ifdef CONFIG_PAX_RANDEXEC
++	if (a.flags & MAP_MIRROR)
++		return -EINVAL;
++#endif
++
+ 	if (!(a.flags & MAP_ANONYMOUS)) {
+ 		file = fget(a.fd);
+ 		if (!file)
+--- linux-2.6.5/fs/binfmt_elf.c	2004-06-02 12:23:40.494846168 -0400
++++ grsecurity226/fs/binfmt_elf.c	2004-05-01 16:10:19.000000000 -0400
+@@ -101,7 +101,7 @@
+ 
+ #ifdef CONFIG_PAX_RANDEXEC
+ 		if (current->flags & PF_PAX_RANDEXEC)
+-			addr = do_mmap_pgoff(NULL, ELF_PAGEALIGN(start + current->mm->delta_exec), 0UL, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED | MAP_MIRROR, start);
++			addr = __do_mmap_pgoff(NULL, ELF_PAGEALIGN(start + current->mm->delta_exec), 0UL, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED | MAP_MIRROR, start);
+ 		if (BAD_ADDR(addr))
+ 			return addr;
+ #endif
+@@ -881,6 +881,14 @@
+ 	current->mm->end_code = 0;
+ 	current->mm->mmap = NULL;
+ 
++#ifdef CONFIG_PAX_DLRESOLVE
++	current->mm->call_dl_resolve = 0UL;
++#endif
++
++#if defined(CONFIG_PPC32) && defined(CONFIG_PAX_EMUSIGRT)
++	current->mm->call_syscall = 0UL;
++#endif
++
+ #ifdef CONFIG_PAX_ASLR
+ 	current->mm->delta_mmap = 0UL;
+ 	current->mm->delta_exec = 0UL;
+@@ -1016,7 +1024,7 @@
+ 				if (len > SEGMEXEC_TASK_SIZE || addr > SEGMEXEC_TASK_SIZE-len)
+ 					continue;
+ 				down_write(&current->mm->mmap_sem);
+-				error = do_mmap_pgoff(bprm->file, addr, len, elf_prot, elf_flags, (elf_ppnt->p_offset - ELF_PAGEOFFSET(elf_ppnt->p_vaddr)) >> PAGE_SHIFT);
++				error = __do_mmap_pgoff(bprm->file, addr, len, elf_prot, elf_flags, (elf_ppnt->p_offset - ELF_PAGEOFFSET(elf_ppnt->p_vaddr)) >> PAGE_SHIFT);
+ 				up_write(&current->mm->mmap_sem);
+ 			}
+ #endif
+@@ -1038,20 +1046,20 @@
+ 
+ #ifdef CONFIG_PAX_PAGEEXEC
+ 			if (current->flags & PF_PAX_PAGEEXEC)
+-				load_addr_random = do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
++				load_addr_random = __do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
+ #endif
+ 
+ #ifdef CONFIG_PAX_SEGMEXEC
+ 			if (current->flags & PF_PAX_SEGMEXEC) {
+ 				if (elf_prot & PROT_EXEC) {
+-					load_addr_random = do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), elf_ppnt->p_memsz + ELF_PAGEOFFSET(elf_ppnt->p_vaddr), PROT_NONE, MAP_PRIVATE | MAP_FIXED, 0UL);
++					load_addr_random = __do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), elf_ppnt->p_memsz + ELF_PAGEOFFSET(elf_ppnt->p_vaddr), PROT_NONE, MAP_PRIVATE | MAP_FIXED, 0UL);
+ 					if (!BAD_ADDR(load_addr_random)) {
+-						load_addr_random = do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr + SEGMEXEC_TASK_SIZE), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
++						load_addr_random = __do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr + SEGMEXEC_TASK_SIZE), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
+ 						if (!BAD_ADDR(load_addr_random))
+ 							load_addr_random -= SEGMEXEC_TASK_SIZE;
+ 					}
+ 				} else
+-					load_addr_random = do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
++					load_addr_random = __do_mmap_pgoff(NULL, ELF_PAGESTART(load_bias_random + vaddr), 0UL, elf_prot, elf_flags | MAP_MIRROR, error);
+ 			}
+ #endif
+ 
+--- linux-2.6.5/grsecurity/gracl.c	2004-06-02 12:23:40.891785824 -0400
++++ grsecurity226/grsecurity/gracl.c	2004-06-14 04:56:59.000000000 -0400
+@@ -2473,52 +2473,63 @@
+ 	if (!assigned)
+ 		return;
+ 
++	read_lock(&tasklist_lock);
++	read_lock(&grsec_exec_file_lock);
++
+ 	tsk = current->parent;
++	if (tsk == NULL) {
++		read_unlock(&grsec_exec_file_lock);
++		read_unlock(&tasklist_lock);
++		return;
++	}
++
+ 	filp = tsk->exec_file;
++	if (filp == NULL) {
++		read_unlock(&grsec_exec_file_lock);
++		read_unlock(&tasklist_lock);
++		return;
++	}
++
++	tsk->is_writable = 0;
+ 
+-	if (tsk && filp) {
+-		tsk->is_writable = 0;
++	acl_sp_role_value = (acl_sp_role_value % 65535) + 1;
++	tsk->acl_sp_role = 1;
++	tsk->acl_role_id = acl_sp_role_value;
++	tsk->role = assigned;
++	tsk->acl = chk_subj_label(filp->f_dentry, filp->f_vfsmnt, tsk->role);
+ 
+-		acl_sp_role_value = (acl_sp_role_value % 65535) + 1;
+-		tsk->acl_sp_role = 1;
+-		tsk->acl_role_id = acl_sp_role_value;
+-		tsk->role = assigned;
+-		tsk->acl =
+-		    chk_subj_label(filp->f_dentry, filp->f_vfsmnt, tsk->role);
+-
+-		/* ignore additional mmap checks for processes that are writable 
+-		   by the default ACL */
+-		obj = chk_obj_label(filp->f_dentry, filp->f_vfsmnt, default_role->root_label);
+-		if (unlikely(obj->mode & GR_WRITE))
+-			tsk->is_writable = 1;
+-		obj = chk_obj_label(filp->f_dentry, filp->f_vfsmnt, tsk->role->root_label);
+-		if (unlikely(obj->mode & GR_WRITE))
+-			tsk->is_writable = 1;
++	/* ignore additional mmap checks for processes that are writable 
++	   by the default ACL */
++	obj = chk_obj_label(filp->f_dentry, filp->f_vfsmnt, default_role->root_label);
++	if (unlikely(obj->mode & GR_WRITE))
++		tsk->is_writable = 1;
++	obj = chk_obj_label(filp->f_dentry, filp->f_vfsmnt, tsk->role->root_label);
++	if (unlikely(obj->mode & GR_WRITE))
++		tsk->is_writable = 1;
+ 
+ #ifdef CONFIG_GRKERNSEC_ACL_DEBUG
+-		printk(KERN_ALERT "Assigning special role:%s subject:%s to process (%s:%d)\n", tsk->role->rolename, tsk->acl->filename, tsk->comm, tsk->pid);
++	printk(KERN_ALERT "Assigning special role:%s subject:%s to process (%s:%d)\n", tsk->role->rolename, tsk->acl->filename, tsk->comm, tsk->pid);
+ #endif
+-	}
+ 
++	read_unlock(&grsec_exec_file_lock);
++	read_unlock(&tasklist_lock);
+ 	return;
+ }
+ 
+ ssize_t
+ write_grsec_handler(struct file *file, const char * buf, size_t count, loff_t *ppos)
+ {
+-	struct gr_arg *arg;
++	struct gr_arg *uarg;
+ 	unsigned char *sprole_salt;
+ 	unsigned char *sprole_sum;
+-	int error = sizeof (struct gr_arg);
++	int error = sizeof (struct gr_arg *);
+ 	int error2 = 0;
+ 
+ 	down(&gr_dev_sem);
+ 
+-	arg = (struct gr_arg *) buf;
+-
+-	if (count != sizeof (struct gr_arg)) {
++	if (count != sizeof (struct gr_arg *)) {
+ 		security_alert_good(GR_DEV_ACL_MSG, count,
+-				    (int) sizeof (struct gr_arg));
++				    (int) sizeof (struct gr_arg *));
+ 		error = -EINVAL;
+ 		goto out;
+ 	}
+@@ -2529,7 +2540,12 @@
+ 		gr_auth_attempts = 0;
+ 	}
+ 
+-	if (copy_from_user(gr_usermode, arg, sizeof (struct gr_arg))) {
++	if (copy_from_user(&uarg, buf, sizeof (struct gr_arg *))) {
++		error = -EFAULT;
++		goto out;
++	}
++
++	if (copy_from_user(gr_usermode, uarg, sizeof (struct gr_arg))) {
+ 		error = -EFAULT;
+ 		goto out;
+ 	}
+@@ -2698,43 +2714,17 @@
+ 			break;
+ 		}
+ 
+-		if ((current->role->auth_attempts >= CONFIG_GRKERNSEC_ACL_MAXTRIES)
+-		    && time_before_eq(current->role->expires, get_seconds())) {
+-			current->role->expires = 0;
+-			current->role->auth_attempts = 0;
+-		}
+-
+-		if (time_after(current->role->expires, get_seconds())) {
+-			error = -EBUSY;
+-			goto out;
+-		}
+-
+-		if ((current->role->roletype & GR_ROLE_SPECIAL) && 
+-		    lookup_special_role_auth
+-		    (current->role->rolename, &sprole_salt, &sprole_sum)
+-		    && ((!sprole_salt && !sprole_sum)
+-			|| !(chkpw(gr_usermode, sprole_salt, sprole_sum)))) {
++		if (current->role->roletype & GR_ROLE_SPECIAL) {
+ 			security_alert_good(GR_UNSPROLES_ACL_MSG,
+ 					    (current->parent) ? current->
+ 					    parent->role->rolename : "",
+ 					    (current->parent) ? current->
+ 					    parent->acl_role_id : 0, DEFAULTSECARGS);
+ 			gr_set_acls(1);
+-			if (current->parent)
+-				current->parent->acl_sp_role = 0;
+ 		} else {
+ 			security_alert(GR_UNSPROLEF_ACL_MSG, current->role->rolename,
+ 				       DEFAULTSECARGS);
+ 			error = -EPERM;
+-			current->role->auth_attempts++;
+-			if (current->role->auth_attempts >= CONFIG_GRKERNSEC_ACL_MAXTRIES) {
+-				current->role->expires =
+-				    get_seconds() + CONFIG_GRKERNSEC_ACL_TIMEOUT;
+-				security_alert(GR_MAXROLEPW_ACL_MSG,
+-				       CONFIG_GRKERNSEC_ACL_MAXTRIES,
+-				       current->role->rolename, DEFAULTSECARGS);
+-			}
+-
+ 			goto out;
+ 		}
+ 		break;
+@@ -2769,6 +2759,7 @@
+ 	unsigned short i;
+ 
+ 	read_lock(&tasklist_lock);
++	read_lock(&grsec_exec_file_lock);
+ 	for_each_process(task2) {
+ 		task = task2;
+ 		do {
+@@ -2781,6 +2772,7 @@
+ 			continue;
+ 
+ 		task->acl_role_id = 0;
++		task->acl_sp_role = 0;
+ 
+ 		if ((filp = task->exec_file)) {
+ 			do_set_role_label(task, task->uid, task->gid);
+@@ -2816,6 +2808,7 @@
+ 						    curr->res[i].rlim_max;
+ 					}
+ 			} else {
++				read_unlock(&grsec_exec_file_lock);
+ 				read_unlock(&tasklist_lock);
+ 				security_alert_good(GR_DEFACL_MSG, task->comm,
+ 						    task->pid);
+@@ -2831,6 +2824,7 @@
+ 		}
+ 	} while ((task = next_thread(task)) != task2);
+ 	}
++	read_unlock(&grsec_exec_file_lock);
+ 	read_unlock(&tasklist_lock);
+ 	return 0;
+ }
+@@ -3053,20 +3047,25 @@
+ 	if (unlikely(!(gr_status & GR_READY)))
+ 		return 0;
+ 
++	read_lock(&tasklist_lock);
++	read_lock(&grsec_exec_file_lock);
+ 	filp = task->exec_file;
+ 
+-	read_lock(&tasklist_lock);
+ 	while (tmp->pid > 0) {
+ 		if (tmp == curtemp)
+ 			break;
+ 		tmp = tmp->parent;
+ 	}
+-	read_unlock(&tasklist_lock);
+ 
+-	if (tmp->pid == 0 && !(current->acl->mode & GR_RELAXPTRACE))
++	if (!filp || (tmp->pid == 0 && !(current->acl->mode & GR_RELAXPTRACE))) {
++		read_unlock(&grsec_exec_file_lock);
++		read_unlock(&tasklist_lock);
+ 		return 1;
++	}
+ 
+ 	retmode = gr_search_file(filp->f_dentry, GR_NOPTRACE, filp->f_vfsmnt);
++	read_unlock(&grsec_exec_file_lock);
++	read_unlock(&tasklist_lock);
+ 
+ 	if (retmode & GR_NOPTRACE)
+ 		return 1;
+@@ -3082,7 +3081,6 @@
+ int
+ gr_handle_ptrace(struct task_struct *task, const long request)
+ {
+-	struct file *filp;
+ 	struct task_struct *tmp = task;
+ 	struct task_struct *curtemp = current;
+ 	__u32 retmode;
+@@ -3090,11 +3088,9 @@
+ 	if (unlikely(!(gr_status & GR_READY)))
+ 		return 0;
+ 
+-	filp = task->exec_file;
+-
+ 	if (task->acl->mode & GR_NOPTRACE) {
+-		security_alert(GR_PTRACE_ACL_MSG, filp ?
+-			       gr_to_filename(filp->f_dentry, filp->f_vfsmnt)
++		security_alert(GR_PTRACE_ACL_MSG, task->exec_file ?
++			       gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt)
+ 			       : "(none)", task->comm, task->pid,
+ 			       DEFAULTSECARGS);
+ 		return 1;
+@@ -3109,20 +3105,24 @@
+ 	read_unlock(&tasklist_lock);
+ 
+ 	if (tmp->pid == 0 && !(current->acl->mode & GR_RELAXPTRACE)) {
+-		security_alert(GR_PTRACE_ACL_MSG, filp ?
+-			       gr_to_filename(filp->f_dentry, filp->f_vfsmnt)
++		security_alert(GR_PTRACE_ACL_MSG, task->exec_file ?
++			       gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt)
+ 			       : "(none)", task->comm, task->pid,
+ 			       DEFAULTSECARGS);
+ 		return 1;
+ 	}
+ 
+-	if (unlikely(!filp))
++	read_lock(&grsec_exec_file_lock);
++	if (unlikely(!task->exec_file)) {
++		read_unlock(&grsec_exec_file_lock);
+ 		return 0;
++	}
+ 
+-	retmode = gr_search_file(filp->f_dentry, GR_PTRACERD | GR_NOPTRACE, filp->f_vfsmnt);
++	retmode = gr_search_file(task->exec_file->f_dentry, GR_PTRACERD | GR_NOPTRACE, task->exec_file->f_vfsmnt);
++	read_unlock(&grsec_exec_file_lock);
+ 
+ 	if (retmode & GR_NOPTRACE) {
+-		security_alert(GR_PTRACE_ACL_MSG, gr_to_filename(filp->f_dentry, filp->f_vfsmnt),
++		security_alert(GR_PTRACE_ACL_MSG, gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt),
+ 			       task->comm, task->pid, DEFAULTSECARGS);
+ 		return 1;
+ 	}
+@@ -3152,7 +3152,7 @@
+ 		       || (current->acl != current->role->root_label
+ 			   && current->pid != task->pid))) {
+ 		security_alert(GR_PTRACE_ACL_MSG,
+-			       gr_to_filename(filp->f_dentry, filp->f_vfsmnt),
++			       gr_to_filename(task->exec_file->f_dentry, task->exec_file->f_vfsmnt),
+ 			       task->comm, task->pid, DEFAULTSECARGS);
+ 		return 1;
+ 	}
+--- linux-2.6.5/grsecurity/gracl_fs.c	2004-06-02 12:23:40.914782328 -0400
++++ grsecurity226/grsecurity/gracl_fs.c	2004-06-14 23:25:23.000000000 -0400
+@@ -441,10 +441,12 @@
+ 				    rolename, id, DEFAULTSECARGS);
+ 	}
+ 
++	write_lock_irq(&grsec_exec_file_lock);
+ 	if (current->exec_file) {
+ 		fput(current->exec_file);
+ 		current->exec_file = NULL;
+ 	}
++	write_unlock_irq(&grsec_exec_file_lock);
+ }
+ 
+ int
+--- linux-2.6.5/grsecurity/grsec_chroot.c	2004-06-02 12:23:40.966774424 -0400
++++ grsecurity226/grsecurity/grsec_chroot.c	2004-06-14 23:18:12.000000000 -0400
+@@ -25,11 +25,14 @@
+ 	if (spid) {
+ 		struct task_struct *p;
+ 		p = pid_task(spid->task_list.next, PIDTYPE_PID);
++		task_lock(p);
+ 		if (unlikely(!have_same_root(current, p))) {
++			task_unlock(p);
+ 			read_unlock(&tasklist_lock);
+ 			security_alert(GR_UNIX_CHROOT_MSG, DEFAULTSECARGS);
+ 			return 0;
+ 		}
++		task_unlock(p);
+ 	}
+ 	read_unlock(&tasklist_lock);
+ #endif
+@@ -52,28 +55,29 @@
+ gr_handle_chroot_setpriority(struct task_struct *p, const int niceval)
+ {
+ #ifdef CONFIG_GRKERNSEC_CHROOT_NICE
+-	if (grsec_enable_chroot_nice && (!have_same_root(p, current)
+-					 || (have_same_root(p, current)
+-					     && (niceval < task_nice(p))
+-					     && proc_is_chrooted(current)))) {
++	if (grsec_enable_chroot_nice && (niceval < task_nice(p))
++			&& proc_is_chrooted(current)) {
+ 		security_alert(GR_PRIORITY_CHROOT_MSG, p->comm, p->pid,
+ 			       DEFAULTSECARGS);
+-		return -ESRCH;
++		return -EACCES;
+ 	}
+ #endif
+ 	return 0;
+ }
+ 
+ int
+-gr_handle_chroot_capset(const struct task_struct *target)
++gr_handle_chroot_capset(struct task_struct *target)
+ {
+ #ifdef CONFIG_GRKERNSEC_CHROOT_CAPS
++	task_lock(target);
+ 	if (grsec_enable_chroot_caps && proc_is_chrooted(current) &&
+ 	    !have_same_root(current, target)) {
+ 		security_alert(GR_CAPSET_CHROOT_MSG, target->comm, target->pid,
+ 			       DEFAULTSECARGS);
++		task_unlock(target);
+ 		return 1;
+ 	}
++	task_unlock(target);
+ #endif
+ 	return 0;
+ }
+@@ -90,19 +94,20 @@
+ }
+ 
+ int
+-gr_pid_is_chrooted(const struct task_struct *p)
++gr_pid_is_chrooted(struct task_struct *p)
+ {
+ #ifdef CONFIG_GRKERNSEC_CHROOT_FINDTASK
+-	if (!grsec_enable_chroot_findtask || (current->pid <= 1))
++	if (!grsec_enable_chroot_findtask || (current->pid <= 1) || !p)
+ 		return 0;
+ 
+-	if (p && p->fs && p->fs->root && p->fs->root->d_inode &&
+-	    child_reaper && child_reaper->fs && child_reaper->fs->root &&
+-	    child_reaper->fs->root->d_inode && current && current->fs &&
+-	    current->fs->root && current->fs->root->d_inode) {
+-		if (proc_is_chrooted(current) && !have_same_root(current, p))
++	task_lock(p);
++	if (p->fs && current->fs) {
++		if (proc_is_chrooted(current) && !have_same_root(current, p)) {
++			task_unlock(p);
+ 			return 1;
++		}
+ 	}
++	task_unlock(p);
+ #endif
+ 	return 0;
+ }
+@@ -201,25 +206,31 @@
+ 	if (pid) {
+ 		struct task_struct *p;
+ 		p = pid_task(pid->task_list.next, PIDTYPE_PID);
++		task_lock(p);
+ 		starttime64 = p->start_time;
+ 		do_div(starttime64, HZ);
+ 		starttime = (time_t) starttime64;
+ 		if (unlikely(!have_same_root(current, p) &&
+ 			     time_before((unsigned long)starttime, (unsigned long)shm_createtime))) {
++			task_unlock(p);
+ 			read_unlock(&tasklist_lock);
+ 			security_alert(GR_SHMAT_CHROOT_MSG, DEFAULTSECARGS);
+ 			return 0;
+ 		}
++		task_unlock(p);
+ 	} else {
+ 		pid = find_pid(PIDTYPE_PID, shm_lapid);
+ 		if (pid) {
+ 			struct task_struct *p;
+ 			p = pid_task(pid->task_list.next, PIDTYPE_PID);
++			task_lock(p);
+ 			if (unlikely(!have_same_root(current, p))) {
++				task_unlock(p);
+ 				read_unlock(&tasklist_lock);
+ 				security_alert(GR_SHMAT_CHROOT_MSG, DEFAULTSECARGS);
+ 				return 0;
+ 			}
++			task_unlock(p);
+ 		}
+ 	}
+ 
+@@ -337,7 +348,7 @@
+ {
+ #ifdef CONFIG_GRKERNSEC_CHROOT_CHMOD
+ 	if (grsec_enable_chroot_chmod &&
+-	    ((mode & S_ISUID) || (mode & S_ISGID)) &&
++	    ((mode & S_ISUID) || ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))) &&
+ 	    proc_is_chrooted(current)) {
+ 		security_alert(GR_CHMOD_CHROOT_MSG,
+ 			       gr_to_filename(dentry, mnt), DEFAULTSECARGS);
+--- linux-2.6.5/grsecurity/grsec_disabled.c	2004-06-02 12:23:40.974773208 -0400
++++ grsecurity226/grsecurity/grsec_disabled.c	2004-04-23 09:53:31.000000000 -0400
+@@ -400,6 +400,19 @@
+ 	return;
+ }
+ 
++__inline__ int
++gr_check_user_change(int real, int effective, int fs)
++{
++	return 0;
++}
++
++__inline__ int
++gr_check_group_change(int real, int effective, int fs)
++{
++	return 0;
++}
++
++
+ EXPORT_SYMBOL(gr_task_is_capable);
+ EXPORT_SYMBOL(gr_learn_resource);
+ EXPORT_SYMBOL(gr_set_kernel_label);
+--- linux-2.6.5/grsecurity/grsec_init.c	2004-06-02 12:23:40.997769712 -0400
++++ grsecurity226/grsecurity/grsec_init.c	2004-06-14 04:56:59.000000000 -0400
+@@ -61,6 +61,8 @@
+ 
+ spinlock_t grsec_audit_lock = SPIN_LOCK_UNLOCKED;
+ 
++rwlock_t grsec_exec_file_lock = RW_LOCK_UNLOCKED;
++
+ char *gr_shared_page[4];
+ extern struct gr_arg *gr_usermode;
+ extern unsigned char *gr_system_salt;
+--- linux-2.6.5/grsecurity/grsec_sig.c	2004-06-02 12:23:41.031764544 -0400
++++ grsecurity226/grsecurity/grsec_sig.c	2004-06-14 10:51:11.000000000 -0400
+@@ -40,7 +40,7 @@
+ 			       p->parent->euid, p->parent->gid,
+ 			       p->parent->egid, DEFAULTSECARGS);
+ 		return -EPERM;
+-	} else if (gr_pid_is_chrooted(p)) {
++	} else if (gr_pid_is_chrooted((struct task_struct *)p)) {
+ 		return -EPERM;
+ 	}
+ #endif
+--- linux-2.6.5/include/linux/grinternal.h	2004-06-02 12:23:41.560684136 -0400
++++ grsecurity226/include/linux/grinternal.h	2004-06-14 04:57:00.000000000 -0400
+@@ -83,6 +83,8 @@
+ 
+ extern spinlock_t grsec_audit_lock;
+ 
++extern rwlock_t grsec_exec_file_lock;
++
+ #define gr_task_fullpath(tsk) (tsk->exec_file ? \
+ 			gr_to_filename2(tsk->exec_file->f_dentry, \
+ 			tsk->exec_file->f_vfsmnt) : "/")
+@@ -129,6 +131,8 @@
+ 
+ #define security_alert_good(normal_msg,args...) \
+ ({ \
++	read_lock(&tasklist_lock); \
++	read_lock(&grsec_exec_file_lock); \
+ 	spin_lock(&grsec_alertgood_lock); \
+ 	\
+ 	if (!grsec_alertgood_wtime || get_seconds() - grsec_alertgood_wtime > CONFIG_GRKERNSEC_FLOODTIME) { \
+@@ -150,10 +154,14 @@
+ 	} \
+ 	\
+ 	spin_unlock(&grsec_alertgood_lock); \
++	read_unlock(&grsec_exec_file_lock); \
++	read_unlock(&tasklist_lock); \
+ })
+ 
+ #define security_alert(normal_msg,args...) \
+ ({ \
++	read_lock(&tasklist_lock); \
++	read_lock(&grsec_exec_file_lock); \
+ 	spin_lock(&grsec_alert_lock); \
+ 	\
+ 	if (!grsec_alert_wtime || get_seconds() - grsec_alert_wtime > CONFIG_GRKERNSEC_FLOODTIME) { \
+@@ -176,10 +184,14 @@
+ 	\
+ 	gr_handle_alertkill(); \
+ 	spin_unlock(&grsec_alert_lock); \
++	read_unlock(&grsec_exec_file_lock); \
++	read_unlock(&tasklist_lock); \
+ })
+ 
+ #define security_audit(normal_msg,args...) \
+ ({ \
++	read_lock(&tasklist_lock); \
++	read_lock(&grsec_exec_file_lock); \
+ 	spin_lock(&grsec_audit_lock); \
+ 	if (current->curr_ip) \
+ 		printk(KERN_INFO "grsec: From %u.%u.%u.%u: " normal_msg "\n", \
+@@ -187,6 +199,8 @@
+ 	else \
+ 		printk(KERN_INFO "grsec: " normal_msg "\n", ## args); \
+ 	spin_unlock(&grsec_audit_lock); \
++	read_unlock(&grsec_exec_file_lock); \
++	read_unlock(&tasklist_lock); \
+ })
+ 
+ #define security_learn(normal_msg,args...) \
+--- linux-2.6.5/include/linux/grsecurity.h	2004-06-02 12:23:41.578681400 -0400
++++ grsecurity226/include/linux/grsecurity.h	2004-06-14 07:56:12.000000000 -0400
+@@ -9,10 +9,10 @@
+ extern void gr_add_to_task_ip_table(struct task_struct *p);
+ extern void gr_del_task_from_ip_table(struct task_struct *p);
+ 
+-extern int gr_pid_is_chrooted(const struct task_struct *p);
++extern int gr_pid_is_chrooted(struct task_struct *p);
+ extern int gr_handle_chroot_nice(void);
+ extern int gr_handle_chroot_sysctl(const int op);
+-extern int gr_handle_chroot_capset(const struct task_struct *target);
++extern int gr_handle_chroot_capset(struct task_struct *target);
+ extern int gr_handle_chroot_setpriority(struct task_struct *p,
+ 					const int niceval);
+ extern int gr_chroot_fchdir(struct dentry *u_dentry, struct vfsmount *u_mnt);
+--- linux-2.6.5/include/linux/mm.h	2004-06-02 12:23:41.596678664 -0400
++++ grsecurity226/include/linux/mm.h	2004-05-01 16:10:23.000000000 -0400
+@@ -562,48 +562,25 @@
+ 	unsigned long len, unsigned long prot,
+ 	unsigned long flag, unsigned long pgoff);
+ 
+-extern int do_munmap(struct mm_struct *, unsigned long, size_t);
++extern unsigned long __do_mmap_pgoff(struct file *file, unsigned long addr,
++	unsigned long len, unsigned long prot,
++	unsigned long flag, unsigned long pgoff);
+ 
+ static inline unsigned long do_mmap(struct file *file, unsigned long addr,
+ 	unsigned long len, unsigned long prot,
+ 	unsigned long flag, unsigned long offset)
+ {
+ 	unsigned long ret = -EINVAL;
+-
+-#ifdef CONFIG_PAX_SEGMEXEC
+-	if ((current->flags & PF_PAX_SEGMEXEC) &&
+-	    (len > SEGMEXEC_TASK_SIZE || (addr && addr > SEGMEXEC_TASK_SIZE-len)))
+-		goto out;
+-#endif
+-
+ 	if ((offset + PAGE_ALIGN(len)) < offset)
+ 		goto out;
+ 	if (!(offset & ~PAGE_MASK))
+ 		ret = do_mmap_pgoff(file, addr, len, prot, flag, offset >> PAGE_SHIFT);
+-
+-#ifdef CONFIG_PAX_SEGMEXEC
+-	if ((current->flags & PF_PAX_SEGMEXEC) && ret < TASK_SIZE && ((flag & MAP_TYPE) == MAP_PRIVATE)
+-
+-#ifdef CONFIG_PAX_MPROTECT
+-	    && (!(current->flags & PF_PAX_MPROTECT) || ((prot & PROT_EXEC) && file && !(prot & PROT_WRITE)))
+-#endif
+-
+-	   )
+-	{
+-		unsigned long ret_m;
+-		prot = prot & PROT_EXEC ? prot : PROT_NONE;
+-		ret_m = do_mmap_pgoff(NULL, ret + SEGMEXEC_TASK_SIZE, 0UL, prot, flag | MAP_MIRROR | MAP_FIXED, ret);
+-		if (ret_m >= TASK_SIZE) {
+-			do_munmap(current->mm, ret, len);
+-			ret = ret_m;
+-		}
+-	}
+-#endif
+-
+ out:
+ 	return ret;
+ }
+ 
++extern int do_munmap(struct mm_struct *, unsigned long, size_t);
++
+ extern unsigned long do_brk(unsigned long, unsigned long);
+ 
+ static inline void
+--- linux-2.6.5/kernel/exit.c	2004-06-02 12:23:41.737657232 -0400
++++ grsecurity226/kernel/exit.c	2004-06-14 04:57:01.000000000 -0400
+@@ -24,6 +24,10 @@
+ #include <linux/proc_fs.h>
+ #include <linux/grsecurity.h>
+ 
++#ifdef CONFIG_GRKERNSEC
++extern rwlock_t grsec_exec_file_lock;
++#endif
++
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/mmu_context.h>
+@@ -234,10 +238,12 @@
+ 	write_lock_irq(&tasklist_lock);
+ 
+ #ifdef CONFIG_GRKERNSEC
++	write_lock(&grsec_exec_file_lock);
+ 	if (current->exec_file) {
+ 		fput(current->exec_file);
+ 		current->exec_file = NULL;
+ 	}
++	write_unlock(&grsec_exec_file_lock);
+ #endif
+ 
+ 	ptrace_unlink(current);
+@@ -344,10 +350,12 @@
+ 	va_end(args);
+ 
+ #ifdef CONFIG_GRKERNSEC
++	write_lock(&grsec_exec_file_lock);
+ 	if (current->exec_file) {
+ 		fput(current->exec_file);
+ 		current->exec_file = NULL;
+ 	}
++	write_unlock(&grsec_exec_file_lock);
+ #endif
+ 
+ 	gr_set_kernel_label(current);
+--- linux-2.6.5/kernel/sys.c	2004-06-02 12:23:41.830643096 -0400
++++ grsecurity226/kernel/sys.c	2004-05-10 15:52:58.000000000 -0400
+@@ -282,7 +282,7 @@
+ 	}
+ 
+ 	if (gr_handle_chroot_setpriority(p, niceval)) {
+-		error = -ESRCH;
++		error = -EACCES;
+ 		goto out;
+ 	}
+ 
+--- linux-2.6.5/mm/mmap.c	2004-06-02 12:23:41.939626528 -0400
++++ grsecurity226/mm/mmap.c	2004-05-01 16:10:24.000000000 -0400
+@@ -492,6 +492,43 @@
+ 			unsigned long len, unsigned long prot,
+ 			unsigned long flags, unsigned long pgoff)
+ {
++	unsigned long ret = -EINVAL;
++
++#ifdef CONFIG_PAX_SEGMEXEC
++	if ((current->flags & PF_PAX_SEGMEXEC) &&
++	    (len > SEGMEXEC_TASK_SIZE || (addr && addr > SEGMEXEC_TASK_SIZE-len)))
++		goto out;
++#endif
++
++	ret = __do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
++
++#ifdef CONFIG_PAX_SEGMEXEC
++	if ((current->flags & PF_PAX_SEGMEXEC) && ret < TASK_SIZE && ((flags & MAP_TYPE) == MAP_PRIVATE)
++
++#ifdef CONFIG_PAX_MPROTECT
++	    && (!(current->flags & PF_PAX_MPROTECT) || ((prot & PROT_EXEC) && file && !(prot & PROT_WRITE)))
++#endif
++
++	   )
++	{
++		unsigned long ret_m;
++		prot = prot & PROT_EXEC ? prot : PROT_NONE;
++		ret_m = __do_mmap_pgoff(NULL, ret + SEGMEXEC_TASK_SIZE, 0UL, prot, flags | MAP_MIRROR | MAP_FIXED, ret);
++		if (ret_m >= TASK_SIZE) {
++			do_munmap(current->mm, ret, len);
++			ret = ret_m;
++		}
++	}
++#endif
++
++out:
++	return ret;
++}
++
++unsigned long __do_mmap_pgoff(struct file * file, unsigned long addr,
++			unsigned long len, unsigned long prot,
++			unsigned long flags, unsigned long pgoff)
++{
+ 	struct mm_struct * mm = current->mm;
+ 	struct vm_area_struct * vma, * prev;
+ 	struct inode *inode;
+@@ -812,6 +849,7 @@
+ }
+ 
+ EXPORT_SYMBOL(do_mmap_pgoff);
++EXPORT_SYMBOL(__do_mmap_pgoff);
+ 
+ /* Get an address range which is currently unmapped.
+  * For shmat() with addr=0.
+@@ -869,14 +907,18 @@
+ 			 * Start a new search - just in case we missed
+ 			 * some holes.
+ 			 */
+-			if (start_addr != TASK_UNMAPPED_BASE) {
+ 
+ #ifdef CONFIG_PAX_RANDMMAP
+-				if (current->flags & PF_PAX_RANDMMAP)
++			if (current->flags & PF_PAX_RANDMMAP) {
++				if (start_addr != TASK_UNMAPPED_BASE + mm->delta_mmap) {
+ 					start_addr = addr = TASK_UNMAPPED_BASE + mm->delta_mmap;
+-				else
++					goto full_search;
++				}
++				return -ENOMEM;
++			} else
+ #endif
+ 
++			if (start_addr != TASK_UNMAPPED_BASE) {
+ 				start_addr = addr = TASK_UNMAPPED_BASE;
+ 				goto full_search;
+ 			}
+@@ -1601,7 +1643,7 @@
+ 	if (ret == addr && (current->flags & (PF_PAX_SEGMEXEC | PF_PAX_MPROTECT)) == PF_PAX_SEGMEXEC) {
+ 		unsigned long ret_m;
+ 
+-		ret_m = do_mmap_pgoff(NULL, addr + SEGMEXEC_TASK_SIZE, 0UL, PROT_NONE, MAP_PRIVATE | MAP_FIXED | MAP_MIRROR, addr);
++		ret_m = __do_mmap_pgoff(NULL, addr + SEGMEXEC_TASK_SIZE, 0UL, PROT_NONE, MAP_PRIVATE | MAP_FIXED | MAP_MIRROR, addr);
+ 		if (ret_m > TASK_SIZE) {
+ 			do_munmap(current->mm, addr, len);
+ 			ret = ret_m;
+ 

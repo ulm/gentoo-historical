@@ -1,0 +1,75 @@
+diff -uprN -X dontdiff linux-2.6.3-vanilla/fs/proc/proc_misc.c modules_off/linux-2.6.3-modules_off/fs/proc/proc_misc.c
+--- linux-2.6.3-vanilla/fs/proc/proc_misc.c	2004-02-18 04:57:16.000000000 +0100
++++ modules_off/linux-2.6.3-modules_off/fs/proc/proc_misc.c	2004-03-09 19:10:10.016286832 +0100
+@@ -70,6 +70,7 @@ extern int get_locks_status (char *, cha
+ #ifdef CONFIG_SGI_DS1286
+ extern int get_ds1286_status(char *);
+ #endif
++extern int module_loading_enabled;
+ 
+ static int proc_calc_metrics(char *page, char **start, off_t off,
+ 				 int count, int *eof, int len)
+@@ -334,9 +335,31 @@ static int modules_open(struct inode *in
+ {
+ 	return seq_open(file, &modules_op);
+ }
++
++static int modules_write(struct file *file, const char __user *buf,
++                                   size_t count, loff_t *ppos)
++{
++                char tmp[4];
++
++		if (!count)
++		    return -EINVAL;
++		if (count > 4)
++		    count = 4;
++		if (copy_from_user(&tmp[0], buf, count))
++		    return -EFAULT;
++		if (tmp[0]=='o') {
++		    printk(KERN_INFO "Disabled module (un)loading\n");
++		    module_loading_enabled = 0;
++		}
++		
++		return count;
++
++}
++
+ static struct file_operations proc_modules_operations = {
+ 	.open		= modules_open,
+ 	.read		= seq_read,
++	.write		= modules_write,
+ 	.llseek		= seq_lseek,
+ 	.release	= seq_release,
+ };
+diff -uprN -X dontdiff linux-2.6.3-vanilla/kernel/module.c modules_off/linux-2.6.3-modules_off/kernel/module.c
+--- linux-2.6.3-vanilla/kernel/module.c	2004-02-18 04:58:48.000000000 +0100
++++ modules_off/linux-2.6.3-modules_off/kernel/module.c	2004-03-09 18:47:10.709973264 +0100
+@@ -53,6 +53,8 @@
+ #define symbol_is(literal, string)				\
+ 	(strcmp(MODULE_SYMBOL_PREFIX literal, (string)) == 0)
+ 
++int module_loading_enabled = 1;
++
+ /* Protects module list */
+ static spinlock_t modlist_lock = SPIN_LOCK_UNLOCKED;
+ 
+@@ -667,6 +669,9 @@ sys_delete_module(const char __user *nam
+ 
+ 	if (!capable(CAP_SYS_MODULE))
+ 		return -EPERM;
++		
++	if (!module_loading_enabled)
++		return -ENOSYS;
+ 
+ 	if (strncpy_from_user(name, name_user, MODULE_NAME_LEN-1) < 0)
+ 		return -EFAULT;
+@@ -1720,6 +1725,9 @@ sys_init_module(void __user *umod,
+ 	/* Must have permission */
+ 	if (!capable(CAP_SYS_MODULE))
+ 		return -EPERM;
++		
++	if (!module_loading_enabled)
++		return -ENOSYS;
+ 
+ 	/* Only one module load at a time, please */
+ 	if (down_interruptible(&module_mutex) != 0)
