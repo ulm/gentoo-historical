@@ -1,0 +1,366 @@
+#!/bin/bash  
+# Bob Johnson, 23 March 2003 <livewire@gentoo.org>
+# Copyright 2002 Gentoo Technologies, Inc; http://www.gentoo.org
+# Released under the GNU General Public License version 2
+
+if [ ! -e /usr/src/linux ]
+then
+	echo "/usr/src/linux doesn't seem to exist. Please emerge your favorite"
+	echo "kernel source tree first."	
+	exit 1
+fi
+
+if [ ! -h /usr/src/linux ]
+then
+	echo "/usr/src/linux is not a symbolic link. Please make sure it is a"
+	echo "symbolic link to your preferred kernel source tree."
+	exit 1
+fi
+
+KD=`readlink -f /usr/src/linux`
+KV="${KD##*/}"
+KV="${KV##linux-}"
+
+source /sbin/functions.sh
+TEMP=/tmp
+KERNEL=$1
+CONFIG=/etc/kernels
+source /etc/kernels/settings 
+BUSYBOX_TARBALL=${CONFIG}/archives/busybox-0.60.5.tar.bz2
+BUSYBOX_DIR=busybox-0.60.5
+# This function check how many cpu's are present, and then set
+# -j in MAKEOPTS accordingly.
+#
+# Thanks to nall <nall@gentoo.org> for this.
+#
+MAKEOPTS="-j2"
+get_number_of_jobs() {
+	if [ ! -r /proc/cpuinfo ]
+	then
+		einfo "/proc not mounted; optimizing for uniprocessor compile..."
+	fi
+
+	CPUS="`grep -c ^[Pp]rocessor /proc/cpuinfo`"
+	# Make sure the number is valid ...
+	if [ "${CPUS}" -lt 1 ]
+	then
+		CPUS=1
+	fi
+	
+	MAKEOPTS="-j$(( $CPUS * 2 ))"
+
+}
+
+spinner() {
+	local type
+        type=${1}; shift
+        for i in "$@"
+        do  echo -n " *$GOOD Compiling kernel   $WARN $i";echo -n -e "\r";
+        usleep 100000 ;
+	done
+	spinner '|' '/' '-' '\' '|' '/' '-' '\'
+	echo -n $NORMAL
+}
+
+die() {
+        if [ -n "$1" ]
+        then
+                echo "${PROG}: error: $1"
+        else
+                echo "${PROG}: aborting."
+        fi
+        exit 1
+}
+MENUCONFIG="no"
+for x in $@
+do
+	if [ "$x" = "--config" ]
+	then
+		MENUCONFIG="yes"
+	else
+		echo "genkernel: Unrecognized option \"$x\""
+		die
+	fi		
+	shift
+done
+
+BOOTSPLASH="no"
+
+root_device() {
+	local myroot
+	local mylink	
+	myroot=`awk '/^[ \t]*[^#]/ { if ($2 == "/") { print $1; }}' /etc/fstab`
+	if [ ! -e "$myroot" ]
+	then
+		echo "I can't find the root device specified in /etc/fstab: ${myroot}."
+		echo "Please configure your /etc/fstab file correctly, and then try again. "
+		die
+	fi
+	mylink="`readlink $myroot`"
+	if [ $? -eq 0 ]
+	then
+		#expanded a symlink....
+		myroot="$mylink"
+	fi
+	ROOT_DEVICE=$myroot
+}
+
+configuration() {
+	echo "Gentoo Linux genkernel, version 1.6"
+	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins"
+	echo " Distributed under the GNU General Public License version 2"		
+	echo
+	echo "Settings:"
+#	echo " root device: ${ROOT_DEVICE}"
+	echo " compile optimization: $CPUS processor(s)"
+	echo " source tree: ${KD}"
+	echo -n " config: "
+	
+	if [ -e ${CONFIG}/config-${KV} ]
+    	then
+	    	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
+    	elif [ -e ${KD}/kernel-config ]
+	then
+		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config"
+	else
+		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config"
+	fi	 
+	
+	echo -n " initrd config: "
+	if [ -e ${KD}/settings ]
+    	then
+		echo "(kernel) ${KD}/settings"
+    		source ${KD}/settings
+	else
+		echo "(default) ${CONFIG}/settings"
+		source ${CONFIG}/settings
+	fi
+	echo
+	cd ${KD}
+	ebegin "Running \"make mrproper\""
+	#running make mrproper fixes unresolved symbol stuff when switching CPU types with
+	#the custom configure option.
+	make mrproper > /dev/null
+	eend
+	if [ -e ${CONFIG}/config-${KV} ]
+    	then
+    		cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
+    	elif [ -e ${KD}/kernel-config ]
+	then
+		cp -f ${KD}/kernel-config ${KD}/.config || die "couldn't copy 2"
+	else
+		cp -f ${CONFIG}/default-config ${KD}/.config || die "couldn't copy 3"
+	fi	 
+	ebegin "Running \"make oldconfig\""
+	while true;do echo -e "\n";done|make oldconfig >/dev/null
+	eend
+	if [ "$MENUCONFIG" = "yes" ]
+     	then 
+        	echo
+		echo "You will now be able to make customizations to your kernel configuration."
+		echo "Any changes you make will be saved in ${CONFIG}/config-${KV}."
+		echo "Your changes will also be used automatically the next time you use"
+		echo "genkernel to build the ${KV} kernel."
+		echo
+		echo "Hit enter to begin."
+		read
+		make menuconfig    
+		if [ $? -eq 0 ]
+		then
+			cp ${KD}/.config ${CONFIG}/config-${KV}
+		else
+			echo "Error running \"make menuconfig\"; exiting."
+			die
+		fi
+	fi
+}
+
+compile() {
+	local compile	
+	ebegin "Logging to /var/log/genkernel.log"; eend;
+	ebegin "Starting ${KV} build"; eend
+	ebegin "Running \"make dep\""
+	make dep  >/var/log/genkernel.log 2>&1 ||die; eend
+        ebegin "Running \"make bzImage\""
+	make $MAKEOPTS bzImage >/var/log/genkernel.log 2>&1 || die; eend
+	ebegin "Running \"make modules\""
+	make $MAKEOPTS modules >/var/log/genkernel.log 2>&1 || die; eend
+        ebegin "Running \"make modules_install\""
+	make modules_install >/var/log/genkernel.log 2>&1 || die; eend
+	mount /boot > /dev/null 2>&1
+	ebegin "Moving bzImage to /boot/kernel-${KV}"
+        cp arch/i386/boot/bzImage /boot/kernel-${KV}
+	ebegin "Copying System.map to /boot/System.map-${KV}"
+	cp System.map /boot/System.map-${KV}
+	rm -f /boot/System.map.old
+	mv -f /boot/System.map /boot/System.map.old
+	ln -s System.map-${KV} /boot/System.map
+	eend 
+}
+
+busybox() {
+	local busy
+	ebegin "Building busybox"
+	cd ${TEMP} 
+	rm -rf ${BUSYBOX_DIR} 
+	tar -xjf ${BUSYBOX_TARBALL}
+	cd ${BUSYBOX_DIR} 
+	cp Config.h Config.h.orig
+	sed -e "s://#define BB_INSMOD:#define BB_INSMOD:" \
+	-e "s://#define BB_PIVOT_ROOT:#define BB_PIVOT_ROOT:" \
+	-e "s://#define BB_LOADKMAP:#define BB_LOADKMAP:" \
+	-e "s://#define BB_LOSETUP:#define BB_LOSETUP:" \
+	-e "s://#define BB_RMMOD:#define BB_RMMOD:" Config.h.orig > Config.h
+	make clean
+	make DOSTATIC=true
+        install -d ${TEMP}/kernel-initrd
+        dd if=/dev/zero of=${TEMP}/initrd bs=1k count=5000 
+        mke2fs -F -q -N5000 ${TEMP}/initrd
+        mount -t ext2 -o loop ${TEMP}/initrd ${TEMP}/kernel-initrd
+        install -d ${TEMP}/kernel-initrd/{bin,etc,usr,proc,tmp,.initrd,new_root}
+        ln -s bin ${TEMP}/kernel-initrd/sbin
+        ln -s ../bin ${TEMP}/kernel-initrd/usr/bin
+        ln -s ../bin ${TEMP}/kernel-initrd/usr/sbin
+        install -d ${TEMP}/kernel-initrd/keymaps
+        cp ${CONFIG}/archives/keymaps/key.lst ${TEMP}/kernel-initrd/keymaps
+        tar xzf ${CONFIG}/archives/keymaps/bin-keymaps.tar.gz -C ${TEMP}/kernel-initrd/keymaps
+        (mkdir ${TEMP}/kernel-initrd/dev;cd ${TEMP}/kernel-initrd/dev;MAKEDEV generic-i386;MAKEDEV scd)
+        cat >${TEMP}/kernel-initrd/etc/fstab <<EOF
+/dev/ram0       /             auto defaults
+proc            /proc         proc   defaults  0 0
+EOF
+        cp ${TEMP}/${BUSYBOX_DIR}/busybox ${TEMP}/kernel-initrd/bin 
+        for i in '[' ash basename cat chroot clear cp dirname echo env false find \
+        grep gunzip gzip insmod ln ls loadkmap losetup lsmod mkdir mknod modprobe more mount mv \
+        pivot_root ps awk pwd rm rmdir rmmod sh sleep tar test touch true umount uname \
+        xargs yes zcat chmod chown; do
+               rm -f ${TEMP}/kernel-initrd/bin/$i
+               ln  ${TEMP}/kernel-initrd/bin/busybox ${TEMP}/kernel-initrd/bin/$i 
+        done
+	eend
+}
+initrd() {
+	local init
+        ebegin "Creating initrd"
+        install -d ${TEMP}/kernel-initrd/modules/storage
+        install -d ${TEMP}/kernel-initrd/modules/firewire
+        install -d ${TEMP}/kernel-initrd/modules/ataraid
+        install -d ${TEMP}/kernel-initrd/modules/pcmcia
+        install -d ${TEMP}/kernel-initrd/modules/usb
+
+	local mymod
+        for i in $STORAGE_MODULES
+	do
+                mymod=`find /lib/modules/${KV} -name "${i}.o"`
+                if [ -z "${mymod}" ]
+                then
+                        echo "Error: ${i}.o not found; skipping..."
+                        continue
+                fi
+                cp $mymod ${TEMP}/kernel-initrd/modules/storage 
+        done
+	for i in $FIREWIRE_MODULES
+        do
+                mymod=`find /lib/modules/${KV} -name "${i}.o"`
+                if [ -z "${mymod}" ]
+                then
+                        echo "Error: ${i}.o not found; skipping..."
+                        continue
+                fi
+                cp $mymod ${TEMP}/kernel-initrd/modules/firewire 
+	done
+        for i in $ATARAID_MODULES
+        do
+                mymod=`find /lib/modules/${KV} -name "${i}.o"`
+                if [ -z "${mymod}" ]
+                then
+                        echo "Error: ${i}.o not found; skipping..."
+                        continue
+                fi
+                cp $mymod ${TEMP}/kernel-initrd/modules/ataraid 
+        done
+        for i in $PCMCIA_MODULES
+        do
+                mymod=`find /lib/modules/${KV} -name "${i}.o"`
+                if [ -z "${mymod}" ]
+                then
+                        echo "Error: ${i}.o not found; skipping..."
+		        continue
+                fi
+                cp $mymod ${TEMP}/kernel-initrd/modules/pcmcia 
+        done
+        for i in $USB_MODULES
+        do
+                mymod=`find /lib/modules/${KV} -name "${i}.o"`
+                if [ -z "${mymod}" ]
+                then
+                        echo "Error: ${i}.o not found; skipping..."
+                        continue
+                fi
+                cp $mymod ${TEMP}/kernel-initrd/modules/usb 
+        done
+        #tweak our storage module settings based on our initrd
+        cat ${CONFIG}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
+					-e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
+        				-e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
+					-e "s/##USB_MODULES##/${USB_MODULES}/" \
+					> ${TEMP}/kernel-initrd/linuxrc
+        chmod +x ${TEMP}/kernel-initrd/linuxrc
+	umount ${TEMP}/initrd
+if [ $BOOTSPLASH = "yes" ]
+	then
+	ebegin "Adding Bootsplash Initrd"
+        cat ${BOOT_SPLASH_INITRD} >> ${TEMP}/initrd || die
+        cp -f ${TEMP}/initrd /boot/initrd-${KV}
+	eend
+	else
+	gzip -f -9 ${TEMP}/initrd
+        mv -f ${TEMP}/initrd.gz /boot/initrd-${KV}
+	eend
+fi
+}
+buildpkg() {
+	local build
+if [ "$PACKAGE" = "yes" ]
+	then
+	ebegin "Building Kernel Package"
+	mkdir ${TEMP}/genkernel
+	cp /kernel-${KV} ${TEMP}/genkernel
+	cp /initrd-${KV} ${TEMP}/genkernel
+	cp -rf /lib/modules/${KV} ${TEMP}/genkernel
+	cp -f /usr/src/linux-${KV}/.config ${TEMP}/genkernel/config
+	cd ${TEMP}
+	tar -jcvf /kernel-${KV}.tar.bz2 genkernel 2>&1 || die
+	rm -rf ${TEMP}/genkernel
+	echo $WARN " *  Copied Kernel package to /kernel-${KV}.tar.bz2"
+	eend
+	fi
+}
+finish() {
+	echo
+	einfo "Build completed successfully!"
+	echo
+	einfo "Please specify /boot/kernel-${KV} and /boot/initrd-${KV}"
+	einfo "when customizing your boot loader configuration files."
+	echo
+	rm -rf /tmp/KV
+	rm -rf ${TEMP}/kernel-initrd
+	rm -rf ${TEMP}/${BUSYBOX_DIR}
+}
+
+#root_device
+get_number_of_jobs
+configuration
+compile
+ebegin "Building busybox"
+busybox >/var/log/genkernel.log 2>&1
+eend
+ebegin "Creating initrd"
+initrd >/var/log/genkernel.log 2>&1
+eend
+buildpkg
+finish
+exit 0
+
+
