@@ -9,8 +9,8 @@
 <author title = "Author">
 <mail link = "zhen@gentoo.org">John Davis</mail></author>
 
-<version>1.2</version>
-<date>13 May 2003</date>
+<version>1.3</version>
+<date>19 May 2003</date>
 
 <abstract>This guide explains how to get USB up and running under
 Gentoo Linux.
@@ -24,12 +24,12 @@ Gentoo Linux.
 			<p>USB under GNU/Linux has always been a fairly easy, but undocumented,
 			task. Users are often confused on whether or not to use modules,
 			what the difference between UHCI, OHCI, and EHCI is, and why in the world
-			their USB device X is not working. I hope to alleviate some of those problems
+			their specific USB device is not working. This guide was written to alleviate some of those problems
 			in this guide by enlightening the user on the different aspects of the GNU/Linux
 			USB system.
 			</p>
 
-			<p>While writing this guide, I assume that you are familiar with how to compile
+			<p>While writing this guide, this guide assumes that you are familiar with how to compile
 			your kernel, as well as the basic operation of Gentoo Linux. For more information on
 			these subjects, please visit our <uri link="http://www.gentoo.org/en/docs-index.xml">
 			Documentation Index</uri>, which catalogs our current set of Gentoo specific documentation.
@@ -43,12 +43,12 @@ Gentoo Linux.
 	<section>
 		<title>Compiling USB support into the kernel</title>
 		<body>
-			<p>As you may know, there are two ways that kernel support for devices can be
+			<p>There are two ways that kernel support for devices can be
 			configured; either as modules, or statically compiled into the kernel. Modular
 			design allows for a smaller kernel size, and quicker boot times. Statically compiled
 			support allows for boot-time detection of devices as well as taking away the fuss
-			of module dependencies. Both of these methods have their ups and downs, but I would
-			suggest using modules initially because of their easy trouble-shooting nature.
+			of module dependencies. Both of these methods have their ups and downs, but the use
+			of modules is suggested because of their easy trouble-shooting nature.
 			Later, when you get everything working, you may statically compile your device support
 			for convienence.
 			</p>
@@ -98,8 +98,8 @@ Gentoo Linux.
 
 			<p>As you can see, <c>lspci</c> gives a complete listing of all PCI/ PCI Bus Masters that your computer
 			uses. The lines that are highlighted should be similar to what you are looking for in your <c>lspci</c>
-			readout. Since I am using a VIA controller, I will be using the UHCI USB driver. For other chipsets,
-			you would pick from one of the choices listed below: </p>
+			readout. Since the example controller is a VIA type controller, it would use the UHCI USB driver.
+			For other chipsets, you would pick from one of the choices listed below: </p>
 			
 			<table>
 			<tr>
@@ -120,21 +120,37 @@ Gentoo Linux.
 			</tr>
 			<tr>
 				<ti>OHCI</ti>
-				<ti>Compaq, iMacs, OPTi, SiS, ALi</ti>
+				<ti>Compaq, most PowerMacs, iMacs, and PowerBooks, OPTi, SiS, ALi</ti>
 			</tr>
 			</table>
 			
 			<p>After you have discovered what host controller your system uses, it is time to enable
 			support for your USB system in your kernel. In your kernel configuration, you will want to
-			locate the <i>USB Support</i> section, and procede from there. The options are rather straightforward,
+			locate the <i>USB Support</i> section, and proceed from there. The options are rather straightforward,
 			just remember to make everything a module, and to enable support for your host controller
 			that you discovered above. </p>
 
 			<pre caption="Kernel configuration">
+# <c>cd /usr/src/your-kernel-sources</c>
 # <c>make menuconfig</c>
+# <c>make modules && make modules_install</c>
 			</pre>
 
-			<p>After your kernel is finished compiling, install it and reboot as normal. </p>
+			<p>When the module compilation completes, the modules have to be loaded, and then
+			your USB system will be ready to use.</p>
+
+			<pre caption="Loading modules">
+<codenote>The following line loads initial usb support</codenote>
+# <c>modprobe usbcore</c>
+<codenote>If you are using an EHCI controller, execute this line:</codenote>
+# <c>modprobe ehci-hcd</c>
+<codenote>If you are using an UHCI controller, execute this line:</codenote>
+# <c>modprobe usb-uhci</c>
+<codenote>If you are using a JE controller, execute this line:</codenote>
+# <c>modprobe uhci</c>
+<codenote>If you are using an OHCI controller, execute this line:</codenote>
+# <c>modprobe usb-ohci</c>
+			</pre>
 			
 		</body>
 	</section>
@@ -173,10 +189,20 @@ Gentoo Linux.
 				</tr>
 			</table>
 
-			<p>After all of these options are comiled into your kernel as modules, install your kernel
-			and reboot. </p>
+			<pre caption="Kernel configuration">
+# <c>cd /usr/src/your-kernel-source</c>
+# <c>make menuconfig</c>
+# <c>make modules && make modules_install</c>
+			</pre>
 
-			<p>Once your new kernel is installed and you have rebooted, go ahead and plug in your USB mouse.
+			<p>After all of these options are compiled as modules, you are ready to load the modules and
+			proceed.</p>
+
+			<pre caption="Loading your modules">
+# <c>modprobe usbmouse</c>
+			</pre>
+
+			<p>Once your new modules are installed, go ahead and plug in your USB mouse.
 			If you already had the mouse plugged in while the machine is booting, no worries as it will
 			still work alright, providing that you got all of the necessary items compiled into the kernel. </p>
 
@@ -209,12 +235,12 @@ EndSection
 			</pre>
 
 			<p>Now, restart X, and your USB mouse should be working just fine. Since everything is working,
-			I would go ahead and compile your USB modules into the kernel statically. Of course, this is completely
+			go ahead and compile your USB modules into the kernel statically. Of course, this is completely
 			optional, so if you would like to keep your modules as modules, don't forget to add the necessary modules
 			to <path>/etc/modules.autoload</path> so that they are automatically loaded at boot time. </p>
 
 			<pre caption="Adding entries to /etc/modules.autoload">
-# <c>echo $'\n'mousedev $'\n'hid $'\n'usbcore $'\n'input >> /etc/modules.autoload</c>
+# <c>echo $'\n'usbmouse $'\n'usbcore $'\n'your-usb-controller-module >> /etc/modules.autoload</c>
 			</pre>
 
 		</body>
@@ -225,8 +251,8 @@ EndSection
 		<body>
 
 		<p>Yet another great feature in GNU/Linux is its digital imaging support. Not only are there
-		great photo editing programs, such as the GIMP, but there are a slew of tools that make digital
-		photography generally easier. </p>
+		great photo editing programs, such as the <uri link="http://www.gimp.org">GIMP</uri>,
+		but there are a slew of tools that make digital photography generally easier. </p>
 
 		<p>Before any digital picture editing is to take place, it would be helpful to retrieve the pictures
 		that are going to be edited. Many times, digital cameras will have a USB port, but if yours does not,
@@ -235,7 +261,8 @@ EndSection
 
 		<p>Please note that USB Mass Storage works for anything that uses USB to access an internal drive
 		of some sort, not just digital cameras. Please feel free to experiment with such things as USB
-		MP3 players, as these instuctions will work the same. </p>
+		MP3 players, as these instuctions will work the same. Additionally, note that older cameras with
+		built in serial ports WILL NOT work with this configuration.</p>
 
 		<p>The first thing that needs to be done is to compile support for <i>USB Mass Storage</i>
 		into your kernel. So, we need to <c>cd</c> to your kernel sources directory, run menuconfig, and
@@ -340,7 +367,9 @@ Please note that yours might be different. </codenote>
 			Linux kernel. If you would like to find out more about USB and linux, please visit
 			the <uri link="http://www.linux-usb.org">official Linux USB project</uri> page for more information.
 			Additionally, if you would like more Gentoo specific information, please reference the
-			many guides on our <uri link="http://www.gentoo.org/en/docs-index.xml">Documentation Index</uri>. </p>
+			many guides on our <uri link="http://www.gentoo.org/en/docs-index.xml">Documentation Index</uri>.
+			Of course, more information can always be found in the comprehensive
+			<uri link="http://forums.gentoo.org">Gentoo Linux Forums</uri>.</p>
 		</body>
 	</section>
 </chapter>
