@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/hardenedxorg.xml,v 1.3 2004/09/27 18:12:10 solar Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/hardenedxorg.xml,v 1.4 2004/10/12 01:56:25 solar Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="hardenedxorg.xml">
@@ -10,13 +10,16 @@
 <author title="Contributor">
   <mail link="co@kevquinn.com">Kevin Quinn</mail>
 </author>
+<author title="Contributor">
+  <mail link="solar@gentoo.org">Ned Ludd</mail>
+</author>
 
 <abstract>
 How to install and use Xorg on Hardened Gentoo
 </abstract>
 
-<version>1.0</version>
-<date>September 27, 2004</date>
+<version>1.1</version>
+<date>October 11, 2004</date>
 
 <chapter>
 <title>Background</title>
@@ -85,7 +88,7 @@ can avoid the elfloader verses dlloader debate entirely.  If you choose to insta
 the following command:
 </p>
 
-<pre>
+<pre caption="Install Staticly Linked Xorg">
 USE=static emerge x11-base/xorg-x11
 </pre>
 
@@ -99,20 +102,19 @@ USE=static emerge x11-base/xorg-x11
 By compiling the X server with
 </p>
 
-<pre>
+<pre caption="Use dlopen() loader">
 #define MakeDllModules YES
 </pre>
 
 <p>
 the X server can be made to use a dlopen() based
 loader to handle modules and dependancies.  This is
-the preferred method but requires slightly more work
-from the user.  To install using this method execute the
-following command:
+the newer, preferred way of installing Xorg.  To install using this 
+method execute the following command:
 </p>
 
-<pre>
-ACCEPT_KEYWORDS=~x86 USE=dlloader emerge =xorg-x11-6.8.0-r1
+<pre caption="Use Dlloader and Xorg">
+ACCEPT_KEYWORDS=~x86 USE=dlloader emerge =xorg-x11-6.8.0-r2
 </pre>
 
 </body>
@@ -126,100 +128,10 @@ ACCEPT_KEYWORDS=~x86 USE=dlloader emerge =xorg-x11-6.8.0-r1
 <body>
 
 <p>
-First setup the Xorg configuration file using The X Server
+You can setup your Xorg configuration file using The X Server
 Configuration HOWTO found at:
 <uri>http://www.gentoo.org/doc/en/xorg-config.xml</uri>
 </p>
-
-</body>
-</section>
-
-<section>
-<title>Manual Module Dependency Resolution</title>
-<body>
-
-<p>
-At this point, if you installed Xorg statically you should be ready to
-use your brand new X server.  However, if you opted to use the dlloader
-then you will need to perform minor module dependecy resolution.
-</p>
-
-<p>
-When you execute startx you should get some sort of error message similar to this:
-</p>
-
-<pre>
-dlopen: /usr/X11R6/lib64/modules/drivers/nv_drv.so: undefined symbol: vgaHWUnmapMem
-(EE) Failed to load /usr/X11R6/lib/modules/drivers/nv_drv.so
-(EE) Failed to load module "nv" (loader failed, 7)
-</pre>
-
-<p>
-We can see here that dlloader is not correctly finding and loading some modules so we
-must manually load them.  To do this we edit our /etc/X11/xorg.conf and add the modules
-as they are needed.  The section to look for in the configuration file is:
-</p>
-
-<pre>
-Section "Module"
-  Load "dbe"
-  
-  SubSection "extmod"
-    Option "omit xfree86-dga"
-  EndSubSection
-  
-  Load "type1"
-  Load "freetype"
-End Section
-</pre>
-
-<p>
-For each module that is needed, a corresponding Load "modulename" line
-must be added.  To find out the module name, the easiest thing to do is take 
-the unresolved symbol and plug it into the following command:
-</p>
-
-<pre>
-grep /usr/X11R6/lib/modules -r -l -e vgaHWUnmapMem
-</pre>
-
-<p>
-Typically this will return more than one module so to find out where the symbol
-is defined in this case use:
-</p>
-
-<pre>
-readelf -s /usr/X11R6/lib/modules/libvgahw.so | grep vgaHWUnmapMem
-</pre>
-
-<p>
-If the value (2nd field) has a number other than 0, and "Ndx" (7th field) is not "UND"
-then it is defined, and this is the module you want.  If the result has "00000000" for the value
-and "UND" for "Ndx", it's undefined.
-</p>
-
-<p>
-As a general tip if your search returns a long list of modules and <c>/usr/X11R6/lib/modules/drivers</c>
-and just one in <c>/usr/X11R6/lib/modules</c> then you want the <c>/usr/X11R6/lib/modules</c> one.
-</p>
-
-<p>
-A sample list for the "nv" module is shown below:
-</p>
-
-<pre>
-Load	"vgahw"
-Load	"fbdevhw"
-Load	"xaa"
-Load	"i2c"
-Load	"fb"
-Load	"shadowfb"
-Load	"int10"
-Load	"ddc"
-Load	"ramdac"
-Load	"vbe"
-Load	"riva128"
-</pre>
 
 </body>
 </section>
@@ -233,15 +145,17 @@ Load	"riva128"
 
 <p>
 Due to the nature of the dlloader along with the current state of development, you
-can expect to have varying degrees of success.  In its current state the dlloader does
-not work well with Hardened Gentoo.
+can expect to have varying degrees of success.
 </p>
 
 <p>
 Hardened Gentoo makes the default link strategy to resolve all symbols at load time, and enforces
 this on all shared libraries when they are built.  Normally the loader uses "lazy" resolution if requested,
 whereby symbols are resolved as and when they are used.  Unfortunately some Xorg modules have mutual
-dependencies and other issues that mean they cannot load unless lazy symbol resolution is enabled.
+dependencies and other issues that mean they cannot load unless lazy symbol resolution is enabled.  To work
+around this issue, currently Gentoo compiles the Xorg modules and the server itself with the -nonow gcc flag.
+This fixes the "dlopen: undefined symbol" errors so previous methods of manually detecting and loading modules are
+no longer needed.
 </p>
 
 <p>
@@ -265,8 +179,33 @@ logs and configs.
 
 <p>
 This is a known issue that can only be resolved by upstream vendors.
-Most notably, neither the binary Nvidia or ATI drivers work currently with the dlloader.
+Most notably, neither the binary Nvidia nor ATI drivers work currently with the dlloader.
 </p>
+
+</body>
+</section>
+
+<section>
+<title>PaX Flags</title>
+<body>
+
+<p>
+The PaX flag -M (MPROTECT) does not seem to work with Xorg as it causes a major
+slowdown.
+</p>
+
+<p>
+The PaX flags -SP (non-executable stack), as well as -R (RANDMMAP) now work with
+Xorg.  In order to have these flags stay once you set them you will need to
+edit your <c>/etc/conf.d/chpax</c> file as shown below:
+</p>
+
+<pre caption="chpax file changes">
+-PS_EXEC_EXEMPT="${PSE_misc} ${x11} ${xine} ${wine} ${java} ${openoffice} ${mplayer}"
++PS_EXEC_EXEMPT="${PSE_misc} ${xine} ${wine} ${java} ${openoffice} ${mplayer}"
+-RANDMMAP_EXEMPT="${java} ${x11}"
++RANDMMAP_EXEMPT="${java}"
+</pre>
 
 </body>
 </section>
