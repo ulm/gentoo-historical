@@ -3,6 +3,8 @@
   without the automatic translation kicking in -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output encoding="UTF-8" method="xml" indent="yes"/>
+<xsl:include href="util.xsl"/>
+
 <xsl:template match="/project">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
         <guide  link="index.xml" type="project">
@@ -93,6 +95,20 @@
 		</xsl:if>		
 		<xsl:apply-templates select='extrachapter[@position="subproject"]'/>
 
+		<xsl:if test="task">
+		<chapter>
+			<title>Project tasks</title>
+			<section><body>
+			<p>The tasks of the
+			<xsl:value-of select="normalize-space(/project/name/text())"/>
+			project are:</p>
+			</body></section>
+			<xsl:apply-templates select="task">
+			</xsl:apply-templates>
+		</chapter>			
+		</xsl:if>
+		<xsl:apply-templates select='extrachapter[@position="tasks"]'/>
+
 		<xsl:if test="resource">
 		<chapter>
 			<title>Resources</title>
@@ -135,7 +151,7 @@
 <xsl:template match="longdescription|goals">
 	<xsl:apply-templates select="node()|@*" />
 </xsl:template>
-<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*|plannedproject//node()|plannedproject//@*">
+<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*|plannedproject//node()|plannedproject//@*|uri//@*|uri//node()|mail//@*|mail//node()">
 	<xsl:copy>
 		<xsl:apply-templates select="node()|@*"/>
 	</xsl:copy>
@@ -162,7 +178,7 @@
 		</ti>
 	</tr>
 </xsl:template>
-<xsl:template name="fullname">
+<!--<xsl:template name="fullname">
 <xsl:param name="nick" select=""/>
 <xsl:param name="fallback" select="false"/>
 <xsl:if test='not($nick="")'>
@@ -177,7 +193,7 @@
 </xsl:otherwise>
 </xsl:choose>
 </xsl:if>
-</xsl:template>
+</xsl:template>-->
 
 <xsl:template match="userlist/user">
 	<xsl:value-of select="realname/firstname/text()"/>
@@ -273,6 +289,85 @@
       </li>
     </xsl:for-each>
   </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="task">
+  <section>
+    <title><xsl:value-of select="name"/> -
+      <xsl:value-of select="description"/>
+      <xsl:if test='@finished="yes"'> (finished)</xsl:if>
+    </title>
+    <body>
+      <xsl:value-of select="longdescription"/>
+      <table>
+        <tr>
+	  <th>Starting date:</th><ti><xsl:value-of select="startdate"/></ti>
+	</tr>
+	<xsl:if test="enddate">
+          <tr>
+	    <th>end date:</th><ti><xsl:value-of select="enddate"/></ti>
+	  </tr>
+	</xsl:if>
+	<xsl:for-each select="dev">
+	  <tr><th>Developer:</th><ti>
+	  <!--xsl:sort select="text()"/-->
+	    <xsl:value-of select="text()"/>
+	    <xsl:text> </xsl:text>
+	    <xsl:call-template name="fullname">
+		<xsl:with-param name="nick" select="normalize-space(text())"/>
+		<xsl:with-param name="parent" select='"true"'/>
+	    </xsl:call-template>
+	    -
+	    <xsl:value-of select="@role"/>
+	    <xsl:if test="@description">
+	      (<xsl:value-of select="@description"/>)
+	    </xsl:if>
+	  </ti></tr>
+	</xsl:for-each>
+	<xsl:for-each select="reference">
+	  <tr><th>Reference:</th>
+	    <ti><xsl:apply-templates select="uri|bug|mail"/></ti>
+	  </tr>
+	</xsl:for-each>
+	<xsl:for-each select="milestone">
+	  <xsl:sort select="enddate"/>
+	  <tr>
+	    <th>milestone (<xsl:value-of select="position()"/>)
+	      <xsl:if test='@fininished="yes"'> (Finished)</xsl:if>:
+	    </th>
+	    <ti><p>End date: <xsl:value-of select="enddate"/></p>
+	      <p><xsl:value-of select="description"/></p>
+	    </ti>
+	  </tr>      
+	</xsl:for-each>
+	<xsl:for-each select="depends">
+	  <tr><th>Depends on</th>
+	    <ti>This task depends on the
+	      <brite><xsl:value-of select="id(@ref)/name"/></brite> task
+	    </ti>
+	  </tr>
+	</xsl:for-each>
+      </table>
+    </body>
+  </section>
+</xsl:template>
+<xsl:template match="uri|mail">
+  <xsl:copy>
+    <xsl:apply-templates select="@*|node()"/>
+  </xsl:copy>
+</xsl:template>
+<xsl:template match="bug">
+  <uri>
+    <xsl:attribute name="link">http://bugs.gentoo.org/show_bug.cgi?id=<xsl:value-of select="@no"/></xsl:attribute>
+    <xsl:choose>
+      <xsl:when test="text()">
+        <xsl:value-of select="text()"/>
+      </xsl:when>
+      <xsl:otherwise>
+        bug #<xsl:value-of select="@no"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </uri>
 </xsl:template>
 
 
