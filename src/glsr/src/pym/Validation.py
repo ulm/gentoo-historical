@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Validation.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: Validation.py,v 1.3 2004/07/13 15:07:48 hadfield Exp $
 #
 
 __modulename__ = "Validation"
@@ -17,7 +17,7 @@ def CheckPageRequest(page):
 
     if page:
 
-        page_regex = "^[a-z]{1,8}$"
+        page_regex = "^[a-z]{1,13}$"
         p_page = compile(page_regex)
         o_page = p_page.match(page)
         
