@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.24 2004/12/21 14:06:42 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.25 2005/01/04 00:24:27 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -69,7 +69,7 @@ class InstallProfile:
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []
 		self._kernel_config_uri = ""
-		self._kernel_initrd = False
+		self._kernel_initrd = True
 		self._kernel_bootsplash = False
 		self._kernel_source_pkg = ""
 		self._users = []

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.32 2004/12/20 19:56:08 samyron Exp $
+$Id: GLIClientController.py,v 1.33 2005/01/04 00:24:27 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -43,6 +43,7 @@ class GLIClientController(Thread):
 		self._install_step = -1
 		self._pretend = pretend
 		self.setDaemon(True)
+		self._configuration._architecture_template = "x86"  #for our first release this will just be set here ok?
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -101,7 +102,7 @@ class GLIClientController(Thread):
 
 		
 		if self._configuration._architecture_template not in templates.keys():
-			self.addNotification(Notification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
+			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
 
 		try:
 			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration._architecture_template])
@@ -270,4 +271,3 @@ class GLIClientController(Thread):
 			# This should only ever happen if the frontend is not checking for notifications
 			pass
 #		os.kill(os.getpid(), signal.SIGUSR1)
-
