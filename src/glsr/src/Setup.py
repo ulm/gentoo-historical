@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.11 2005/01/25 19:24:34 port001 Exp $
+# $Id: Setup.py,v 1.12 2005/01/25 22:21:08 hadfield Exp $
 #
 
 import sys
@@ -44,7 +44,9 @@ user_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	%s_type		TINYINT(1)	unsigned NOT NULL default '0',
 	%s_joined	DATE		NOT NULL,
 	%s_lastip	VARCHAR(15)	NULL,
+        %s_language     VARCHAR(100)    NULL,
         %s_location     VARCHAR(100)    NULL,
+        %s_language     VARCHAR(100)    NULL,
         %s_website      VARCHAR(100)    NULL,
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
