@@ -170,12 +170,24 @@
               </tr>
               <tr>
                 <td align="center">
+                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
-                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
+		  php|architect is the monthly magazine for PHP professionals, available
+		  worldwide in print and electronic format. A percentage of all the sales
+		  will be donated back into the Gentoo project.
                   </p>
-                  <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
+                  <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
                   <p class="alttext">
-                    <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)
+                    Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
                   </p>
                 </td>
               </tr>
@@ -199,9 +211,9 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+                  <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
                   <p class="alttext">
-                    Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
                   </p>
                 </td>
               </tr>
@@ -670,57 +682,58 @@
             <img src="/images/line.gif" alt="line"/>
           </td>
         </tr>
-        <tr>
-          <td align="center">
-            <p class="alttext">
-              Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
-            </p>
-            <a href="http://www.netraverse.com/gentoo.htm" target="_top">
-              <img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
-            </a>
-            <p class="alttext">
-              <a href="http://www.netraverse.com/gentoo.htm">
-                Purchase Win4Lin "Gentoo Edition"
-              </a> 
-              and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-        <tr>
-          <td align="center">
-            <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
-              <img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/>
-            </a>
-            <p class="alttext">
-              Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-        <tr>
-          <td align="center">
-            <a href="http://www.tek.net" target="_top">
-              <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
-            </a>
-            <p class="alttext">
-              Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+              <p class="alttext">
+                Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
+              <p class="alttext">
+                Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
+              <p class="alttext">
+                Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
       </table>
     </td>
   <!--
