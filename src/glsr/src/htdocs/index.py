@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.21 2004/11/10 10:55:07 port001 Exp $
+# $Id: index.py,v 1.22 2004/11/10 16:20:02 port001 Exp $
 #
 
 """
@@ -35,6 +35,7 @@ sys.excepthook = exception_handler
 from Function import stderr_redirect
 sys.stderr = stderr_redirect()
 
+import State
 import Config
 from User import User
 import Logging as LogHandler
@@ -200,6 +201,8 @@ class PageDispatch:
                           {"GLSR_URL":          Config.URL,
                            "USER_ALIAS":	self._user_detail["alias"]})
             print tmpl_head.output()
+        
+        State.HeaderTmplSent = True
 
     def dispatch_page(self):
 

@@ -2,12 +2,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.10 2004/11/07 22:33:45 port001 Exp $
+# $Id: Logging.py,v 1.11 2004/11/10 16:20:02 port001 Exp $
 #
 
 import traceback
 from time import gmtime, strftime
 
+import State
 import Config
 
 __modulename__ = "Logging"
@@ -88,7 +89,7 @@ def err(msg, modname):
     
     # Only print the footer if we think the header got printed.
     # And don't print the footer if the error came from the Template module.
-    if Config.HTMLHeadersSent == True and modname != "Template":
+    if State.HeaderTmplSent == True and modname != "Template":
         import Template as TemplateHandler
 
         FooterTemplate = TemplateHandler.Template()
