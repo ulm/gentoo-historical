@@ -220,11 +220,8 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	if chroot != None:
 		cmd = "echo -e '#!/bin/bash\n\nsource /etc/profile\n" + cmd + "' > " + chroot + "/tmp/spawn.sh && chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh"
 
-	if quiet and logfile != None:
-		cmd += " >> " + logfile + " 2>&1"
-	elif quiet and logfile == None:
-		cmd += " >/dev/null 2>&1"
-	elif logfile != None:
+	cmd += " 2>&1 "
+	if logfile != None:
 		if append_log:
 			cmd += " | tee " + logfile
 		else:
