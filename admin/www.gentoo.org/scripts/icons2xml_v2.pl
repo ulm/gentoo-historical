@@ -138,7 +138,7 @@ new_tarball();
 $index_footer = "</table>
 <note>A tarball of all of these icons may be downloaded <uri link=\"".$iconpath."icons.tar.bz2\">here</uri> (".size_tarball().")</note>
 <p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by several other forum users.</p>	
-Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
+<p>Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
 </body>
 </section>
 </chapter>
