@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.25 2005/01/06 07:29:43 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.26 2005/01/06 09:16:23 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -291,9 +291,9 @@ class ArchitectureTemplate:
 				mountopts = parts[device][partition]['mountopts']
 				if mountpoint:
 					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
-					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
-					if exitstatus != 0:
-						raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
+						exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
+						if exitstatus != 0:
+							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
 					newfstab += device+minor+"\t "+mountpoint+"\t "+partition_type+"\t "+mountopts+"\t\t "
 					if mountpoint == "/boot":
 						newfstab += "1 2\n"
@@ -521,7 +521,7 @@ class ArchitectureTemplate:
 				hosts_line = "localhost\t" + hostname
 
 		# Write to file
-		self._edit_config(self._chroot_dir + "/etc/hosts", hosts_ip, hosts_line, True, '\t', False)
+		self._edit_config(self._chroot_dir + "/etc/hosts", {hosts_ip: hosts_line}, delimiter='\t', quotes_around_value=False)
 
 		#
 		# SET DEFAULT GATEWAY
@@ -532,7 +532,7 @@ class ArchitectureTemplate:
 		
 		# If the default gateway exists, add it
 		if default_gateway:
-			self._edit_config(self._chroot_dir + "/etc/conf.d/net", "gateway", default_gateway)
+			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"gateway": default_gateway})
 			
 		#
 		# SET RESOLV INFO
@@ -606,7 +606,7 @@ class ArchitectureTemplate:
 			#		alias_netmasks = []
 					
 					# Write the static ip config to /etc/conf.d/net
-					self._edit_config(self._chroot_dir + "/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
+					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: ip + " broadcast " + broadcast + " netmask " + netmask})
 					
 					# If aliases are set
 			#		if aliases:
@@ -629,7 +629,7 @@ class ArchitectureTemplate:
 				# DHCP IP
 				#
 				else:
-					self._edit_config(self._chroot_dir + "/etc/conf.d/net", "iface_" + interface, "dhcp")
+					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp"})
 							
 	def set_root_password(self):
 		"Sets the root password"
