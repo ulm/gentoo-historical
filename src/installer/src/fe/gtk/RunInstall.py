@@ -15,6 +15,7 @@ class RunInstall(gtk.Window):
 
 	which_step = 0
 	install_done = False
+	output_log_is_link = False
 
 	def __init__(self, controller):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -69,9 +70,9 @@ class RunInstall(gtk.Window):
 		ntype = notification.get_type()
 		ndata = notification.get_data()
 		if ntype == "exception":
-			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured during the install. Consult the output display for more information.")
-			msgdlg.run()
-			msgdlg.destroy()
+#			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured during the install. Consult the output display for more information.")
+#			msgdlg.run()
+#			msgdlg.destroy()
 			print "Exception received:"
 			print ndata
 		elif ntype == "int":
@@ -90,9 +91,9 @@ class RunInstall(gtk.Window):
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
 				print "Install done!"
-				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install completed successfully!")
-				msgdlg.run()
-				msgdlg.destroy()
+#				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install completed successfully!")
+#				msgdlg.run()
+#				msgdlg.destroy()
 				return False
 
 	def tail_logfile(self):
@@ -107,7 +108,15 @@ class RunInstall(gtk.Window):
 #		if select.select([self.output_log], [], [], 0)[0]:
 		while 1:
 			line = self.output_log.readline()
-			if not line: break
+			if not line:
+				if not self.output_log_is_link and os.path.islink("/tmp/compile_output.log"):
+					filepos = self.output_log.tell()
+					self.output_log.close()
+					self.output_log = open("/tmp/compile_output.log")
+					self.output_log.seek(filepos)
+					self.output_log_is_link = True
+					continue
+				break
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
