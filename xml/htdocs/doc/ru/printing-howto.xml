@@ -1,0 +1,429 @@
+<?xml version='1.0' encoding="UTF-8"?> 
+
+<guide link = "/doc/ru/printing-howto.xml"> 
+
+<title>Руководство по настройке системы печати.</title> 
+<author title="Author"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Copyeditor"><mail link="sunflare@gentoo.org">Phil Bordelon</mail></author> 
+<author title="Editor"><mail link="wleggette@gate.net">Wesley Leggette</mail></author>
+<author title="Переводчик"><mail link="yuribff@wolf.istc.kiev.ua">Юрий Борисов</mail></author>
+
+<abstract>
+Всеобъемлющее руководство по настройке локальной и сетевой печати в Gentoo Linux.
+</abstract> 
+
+<version>1.1.2</version> 
+<date>20 May 2003</date> 
+
+<chapter> 
+<title>Печать на локальной машине, с использованием CUPS.</title> 
+<section>
+<title>Установка CUPS и foomatic.</title>
+<body>
+
+<p>
+Настройка печати в Gentoo Linux сравнительно безболезненная задача,
+благодаря нескольким замечательным программам, таким как CUPS (Common
+Unix Printing System) и foomatic.  Обе эти программы легко доступны из
+Portage дерева и очень легки в установке для конечных
+пользователей.</p>
+
+<p>
+Заметьте, что cups кросс-десктопная система, т.е. следуя этим
+инструкциям Вы можете настроить печать и в GNOME и в KDE.  Существуют и
+другие настройки, такие как KDE's print setup, но я уверен, что CUPS
+проще и масштабируемей.
+</p>
+
+<p>
+Перед установкой CUPS, будет правильно добавить необходимые USE
+переменные в файл <path>/etc/make.conf</path>.
+</p>
+
+<pre caption = "Редактирование /etc/make.conf">
+<comment>Добавьте <i>cups</i> и <i>usb</i> (если ваш принтер подключён к USB) к вашему листу переменных USE.</comment>
+USE="cups usb other_var1 other_var2"
+</pre>
+
+<p>Для получения более полной информации об USE переменных, читайте
+<uri link = "http://www.gentoo.org/doc/en/use-howto.xml">USE HOWTO</uri>.
+</p>
+
+<pre caption = "Установка необходимых пакетов."> 
+# <c>emerge cups</c>
+# <c>emerge foomatic</c>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Установка модулей ядра.</title> 
+<body>
+
+<p>
+В зависимости от типа подключения принтера, необходимо активировать
+соответствующий параллельный или USB порт в ядре.
+</p>
+
+<p>
+Для включения поддержки USB принтера, зайдите в USB support и
+включите <c>Support for USB</c> и <c>USB Printer support</c>.  Оба этих
+модуля будут установлены как usbcore.o и printer.o в директории, где
+хранятся модули.  Я советую использовать модули, т.к. при этом нет
+необходимости перезагружать компьютер.
+</p>
+
+<note>Если вы не уверенны как компилировать ядро, официальный Linux
+Kernel-HOWTO находится <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">здесь</uri>.
+Убедитесь, что вы разобрались, как компилировать и устанавливать новые
+модули без пересборки ядра и перезагрузки компьютера.  Это
+действительно экономит время.</note>
+
+<p>После того, как ядро скомпилировано, а ваш компьютер перезапущен, время загрузить требуемые модули:</p>
+
+<pre caption = "Загрузка USB модулей."> 
+# <c>modprobe usbcore</c>
+# <c>modprobe printer</c>
+</pre> 
+
+<p>
+После того, как модули нормально загрузились, подключите принтер и
+проверьте <path>/var/log/messages</path>, что бы убедиться, что он
+обнаружен системой.
+</p>
+
+<note>Если вы используете, что-либо отличное от sysklogd, ваш файл логов ядра может быть другим.</note>
+				
+<pre caption = "Проверка сообщений ядра"> 
+# <c>tail /var/log/messages</c> 
+</pre> 
+
+<p>Вы должны увидеть, что-то вроде этого:</p>
+
+<pre caption = "Вывод /var/log/messages">
+hub.c: USB new device connect on bus2/2, assigned device number 2 
+printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104 
+</pre>
+ 
+<note>Если вы используете принтер с параллельным портом, убедитесь
+что, он подключен перед перезагрузкой.  Когда система загрузится,
+запустите <c>dmesg</c> и убедитесь, что ядро обнаружило ваш
+принтер.</note>
+
+<p>
+Перед тем как настраивать принтер с CUPS, проверим его простой 
+низкоуровневой командой.
+</p> 
+
+<pre caption = "Тест принтера с помощью cat">
+# <c>touch test.txt</c>
+# <c>echo "Hello World" > test.txt</c>
+# <c>cat test.txt > /dev/usb/lp0 </c>
+
+<comment>Для принтеров с параллельным портом:</comment>
+# <c>cat test.txt > /dev/lp0 </c>
+</pre>
+
+</body>
+</section> 
+
+<section>
+<title>Специализированные драйвера принтеров.</title> 
+<body> 
+
+<p>
+Перед тем как использовать foomatic для генерации PPD файлов, может
+возникнуть необходимость в нахождении драйверов для Вашего принтера от
+третьей стороны.  Например, Epson обеспечивает <uri
+link="http://www.epkowa.co.jp/english/linux_e/linux.html">драйверами
+принтеров</uri> для некоторых open source операционных систем.
+Однако, как в случае с Epson, многие из этих драйверов не open
+source.
+</p>
+
+<p>
+Для большинства принтеров кроме HP Inkjets, вы можете использовать
+стандартные драйвера принтера Linux.  Посетите <uri
+link="http://www.linuxprinting.org/printer_list.cgi">linuxprinting.org,
+базу данных по поддержке принтеров</uri>, для нахождения информации по
+вашему конкретному принтеру.  Обязательно прочтите документацию,
+поставляющуюся с любым драйвером, который вы скачаете, на предмет
+информации об установке и лицензии.
+</p>
+
+<impo>Если вы используете, принтер HP Inkjet, необходимо установить драйвера
+для принтера <c>hpijs</c>.  Этот драйвер управляет всеми необходимыми
+для работы принтера интерпретациями Postscript.  <c>hpijs</c>
+предназначены только для принтеров HP Inkjet, но доступны из Portage
+для вашего удобства.  Документация от HP для драйверов <c>hpijs</c>
+расположена в <path>/usr/share/doc/hpijs--&lt;version&gt;</path>.  Автор настоятельно
+рекомендует прочесть её.</impo>
+
+<pre caption = "Установка hpijs"> 
+# <c>emerge hpijs</c> 
+</pre> 
+
+<note>Если вы используете HP Laserjet, поддержка уже доступна через
+GNOME printing system.  Если вы используете не HP Inkjet printer, вам
+не надо устанавливать эти специализированные драйвера.</note>
+
+</body>
+</section>
+
+<section>
+<title>Настройка файлов PPD</title>
+<body>
+
+<p>
+Теперь время приступить к настройке принтера и CUPS.  Для корректной
+интерпретации вашим принтером языка Postscipt, CUPS необходим PPD
+(Printer Postscript Definition) файл.  Самый простой способ для
+создания PPD, это использовать foomatic.
+</p>
+
+<p>
+Три составляющие необходимо знать для корректной работы нижеследующей
+команды; вам нужен ваш printer ID, тип порта к которому подключен
+принтер, и драйвер для вашего принтера (это был бы hpijs если бы вам
+была необходима установка специальных драйверов как описано выше).
+Printer ID и драйвера могут быть <c>вычислены</c> из базы данных
+foomatic (тип порта например <path>/dev/lp0</path> или
+<path>/dev/usb/lp0</path>).
+</p>
+
+<p>Перед использованием <c>foomatic-configure</c>, не забудьте
+запустить <i>cupsdc</i>.</p>
+
+<pre caption = "Запуск cupsd">
+# <c>/etc/init.d/cupsd start</c>
+</pre>
+
+<pre caption = "Общее использование foomatic">
+# <c>grep $printer_model /usr/share/foomatic/db/source/printer/* </c>
+# <c>grep $printer_ID /usr/share/foomatic/db/source/driver/* </c>
+# <c>foomatic-configure -s cups -p $номер модели принтера -c $путь к принтеру -n имя очереди -d драйвер</c>
+</pre>
+
+<p>
+Теперь, более конкретный пример.  Следующий код предполагает у вас
+наличие принтера Epson Stylus Color 980.  Конечно, вы должны заменить
+его на свой, для вашей модели принтера.
+</p>
+
+<pre caption="Использование foomatic с Stylus Color 980">
+# <c>grep Stylus Color 980 /usr/share/foomatic/db/source/printer/* </c>
+<comment>Теперь посмотрим на строку: </comment>
+/usr/share/foomatic/db/source/printer/317865.xml:   $lt;model>Stylus Color 980&lt;/model>
+<comment>317865 это идентификатор вашего принтера. </comment>
+
+# <c>grep 317865 /usr/share/foomatic/db/source/driver/* </c>
+/usr/share/foomatic/db/source/driver/gimp-print.xml:  &lt;printer>&lt;id>printer/317865&lt;/id>&lt;/printer>
+<comment>Ваш принт драйвер - gimp-print.</comment>
+
+# <c>foomatic-configure -s cups -p 317865 -c file:/dev/lp0 -n Epson -d gimp-print </c>
+</pre>
+
+<note>Запомните, вы должны использовать <path>/dev/usb/lp0</path>, если у вас USB принтер.</note>
+
+<impo>Если у вас возникли проблемы, обратитесь к документации на
+foomatic, расположенной <uri link="http://www.linuxprinting.org/foomatic/USAGE">тут</uri> и
+посетите <uri link="http://www.linuxprinting.org">linuxprinting.org</uri> для
+получения более полной информации.</impo>
+
+</body> 
+</section> 
+
+<section> 
+<title>Настройка CUPS</title> 
+<body>
+
+<p>
+После того как принтер настроен, CUPS должен установить управление
+очередью печати.  CUPS доступен через web браузер на порту 631 принт-сервера.
+</p>
+
+<impo>CUPS имеет встроенный файл конфигурации для демона, который
+может, но не обязательно, быть модифицирован.  Возможно вы захотите
+взглянуть на него, называется он <path>/etc/cups/cupsd.conf</path>.</impo>
+
+<pre caption = "Добавление  CUPS в default runlevel, и запуск CUPS">
+# <c>rc-update add cupsd default</c>
+# <c>/etc/init.d/cupsd start</c>
+</pre>
+
+<p>CUPS демон запущен, откройте ваш браузер и зайдите
+<uri link="http://127.0.0.1:631">сюда</uri>.</p>
+
+<p>Надеюсь, что вы увидите приветствие главной страницы
+настройки.  Нажмите на <i>administration</i> вверху и введите либо ваш
+root пароль, либо пароль любого пользователя принадлежащего к группе
+<i>lp</i>.  После аутентификации, нажмите на <i>Add Printer</i> в разделе
+<i>printers</i>.  Введите требуемое имя, описание и расположение
+вашего принтера.  Вы должны выбрать имя принтера точно такое же как
+имя очереди которое вы указали для foomatic.  Теперь вы должны выбрать
+устройство, к которому подключен ваш принтер.  Выберете тип принтера.
+На следующей странице выберите ваш принтер из списка.</p>
+
+<p>
+Конфигурация закончена!  Нажмите на имя своего принтера, и
+попробуйте напечатать тестовую страницу.  Вуаля, настройка вашего
+принтера завершена!</p>
+
+<note>Если по каким либо причинам принтер не работает, зайдите в
+директорию где хранятся лог файлы CUPS, и просмотрите файл
+<i>error_log</i>.</note>
+
+</body> 
+</section>
+</chapter>
+
+<chapter>
+<title>Настройка GIMP, OpenOffice.org 1.0, и Abiword для печати с использованием CUPS.</title>
+<section>
+<title>GIMP</title>
+<body>
+
+<p>Перед началом, необходимо установить расширение для CUPS печати в Gimp.</p>
+
+<pre caption="Установка gimp-print-cups">
+# <c>emerge gimp-print-cups </c>
+</pre>
+
+<p>
+Теперь, запустите GIMP и откройте картинку, или просто пустой лист,
+это не имеет значения, т.к. нам необходим только пункт меню
+<i>File</i>.  Кликните правой клавишей на изображении и выберете
+<i>File/Print</i>.  Должен появиться диалог для печати, когда он
+появится, кликните на new printer.  Если вашего принтера нет в списке,
+введите имя своего принтера, после чего выберете тип своего
+принтера.  Ok, теперь вы установили печать из GIMP.  Поиграйтесь с
+настройками и получите удовольствие.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>OpenOffice.org1.0</title>
+<body>	
+
+<p>
+Печать из OpenOffice.org1.0 не более сложна.  Зайдите в
+<path>OpenOffice.org1.0/program</path> и запустите
+<c>spadmin</c>.  Создайте новый принтер, в окне <i>Choose a
+Driver</i>, нажмите на <i>import</i> и выберете расположение PPD
+вашего принтера, он должен быть в <path>/etc/cups/ppd</path>.
+Используйте команды принтера по умолчанию, назовите принтер, поставьте
+его принтером по умолчанию, и всё готово!  Запустите OpenOffice.org1.0
+и перейдите в экран печати, выберете свой принтер.  Напечатайте
+тестовую страницу, и теперь считайте, что всё работает.</p>
+</body>
+</section>
+
+<section>
+<title>Abiword</title>
+<body>
+
+<warn>Abiword вызывает "segfaults" и "crashes" с CUPS-1.1.15-r2.
+Рекомендуется вернуться к версии .14 как к возможному решению проблемы.</warn>
+
+<p>TODO: добавить поддержку Abiword.</p>
+
+</body>
+</section>
+
+<p>Ну всё, локальная настройка печати завершена, теперь перейдем к сетевой.</p>
+
+</chapter>
+
+<chapter>
+<title>Сетевая печать с использованием CUPS и SAMBA</title>
+<section>
+<title>Печать на Windows принтере, с Linux машины.</title>
+<body>
+
+<p>
+Первое, SAMBA должна быть установлена, для работы следующих двух
+опций сетевой печати.
+</p>
+
+<pre caption = "Установка SAMBA">
+# <c>emerge samba</c>
+</pre>
+
+<note>Для получения большей информации о SAMBA, читайте 
+официальный SAMBA HOWTO, находящийся
+<uri link="http://www.tldp.org/HOWTO/SMB-HOWTO.html">здесь</uri>.</note>
+
+<p>Первое, воспользуемся <i>foomatic</i> для создания PPD файла для
+удалённого принтера.  Не забудьте проверить совместимость вашего
+принтера с Linux по базе данных <uri link="http://www.linuxprinting.org/printer_list.cgi">linuxprinting.org</uri>.
+Теперь, скажем <i>foomatic</i> где и что за принтер, и переместим сгенерированный PPD
+в правильное место.</p>
+
+<pre caption = "Использование foomatic с Samba">
+<codenote>Найдите  модель принтера и название драйвера, используя вышеупомянутый способ.</codenote>
+# <c>foomatic-configure -s cups -p $модель принтера -c smb://user:password@server/share -n имя очереди -d hpijs</c>
+</pre>
+
+<p>Теперь, зайдите своим браузером  <uri link="http://localhost:631">сюда</uri> и вызовете конфигурационный 
+GUI CUPS.  Проделайте шаги по добавлению принтера, но на этот раз, на вопрос о 
+порте принтера, введите  <i>smb://user:password@server/share</i>.  Это укажет CUPS путь 
+к принтеру на Windows машине.</p>
+
+</body>
+</section>
+
+<section>
+<title>Использование Linux как Windows совместимый сервер печати.</title>
+<body>
+
+<p>На Linux можно построить замечательный сервер печати, хотя вообще то, на
+нём можно отлично построить любой сервер.  Первый шаг, это редактирование файла
+<path>/etc/samba/smb.conf</path> для подгона ваших установок.  Файл <i>smb.conf</i> содержит все
+установки, для того, что бы ваша Linux машина выглядела как Windows NT server
+для любых  Windows машин.  Я включил очень полезный пример <i>smb.conf</i> ниже.
+Отредактируйте, если надо, для подгонки под ваше сетевое окружение.</p>
+
+<pre caption = "Пример smb.conf">
+<c>[global]</c>
+
+      <c>workgroup = YOUR_WORKGROUP</c>
+      <c>server string = Gentoo Linux Server</c>
+      <c>encrypt passwords = True</c>
+      <c>security = user</c>
+      <c>smb passwd file = /etc/samba/private/smbpasswd</c>
+      <c>log file = /var/log/samba/log.%m</c>
+      <c>socket options = IPTOS_LOWDELAY TCP_NODELAY</c>
+      <c>domain master = Yes</c>
+      <c>local master = Yes</c>
+      <c>preferred master = Yes</c>
+      <c>os level = 65</c>
+      <c>dns proxy = No</c>
+      <c>name resolve order = lmhosts host bcast</c>
+      <c>bind interfaces only = True</c>
+      <c>interfaces = eth0</c>
+      <c>hosts deny = ALL</c>
+      <c>hosts allow = 192.168.1.4 127.0.0.1 (list of allow hosts here) </c>
+      <c>debug level = 1</c>
+      <c>create mask = 0644</c>
+      <c>directory mask = 0755</c>
+      <c>level2 oplocks = True</c>
+      <c>read raw = no</c>
+      <c>write cache size = 262144</c>
+
+<c>[printers]</c>
+<c>comment = All Printer</c>
+      <c>path = /var/spool/samba</c>
+      <c>browseable = no </c>
+
+</pre>
+
+<p>Теперь SAMBA настроена, перезапустите samba, идите к Windows машине
+и установите сетевой принтер.  Проще простого, а?</p>
+
+</body>
+</section>
+</chapter>
+</guide>
