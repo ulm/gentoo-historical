@@ -596,6 +596,7 @@ This may take a while. You now have a stage 2 Gentoo.
 Then:
 </p>
 <pre>
+# <i>export CONFIG_PROTECT=""</i>
 # <i>emerge system</i>
 </pre>
 <p>
@@ -688,6 +689,229 @@ If you haven't setup SILO on this disk and you want to boot from it:
 # <i>emerge silo</i>
 # <i>nano /etc/silo.conf</i>
 # <i>silo</i>
+</pre>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Final Configs</title>
+<section>
+<title>Timezone</title>
+<body>
+<note>It is extremely important that this step is completed. Major clock drift
+will be experienced if you do not set localtime correctly.
+</note>
+
+<p>At this point, you should have a stage3 system that's ready for final configuration.  We'll start this process by setting the timezone.  By setting the timezone before building the kernel we ensure that
+users get reasonable <c>uname -a</c> output.</p>
+<p>Look for your timezone (or GMT if you using Greenwich Mean Time) in <path>/usr/share/zoneinfo</path>.  Then, make a symbolic link by typing:
+</p><pre>
+# <i>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</i>
+</pre>
+<p>You might also want to check <path>/etc/rc.conf</path> to make sure your timezone settings
+are correct. </p>
+</body>
+</section>
+<section>
+<title>System Logger and Cron daemon</title>
+<body>
+<p>Now you need to choose a system
+logger that you would like to install.  We offer sysklogd, which is the traditional set
+of system logging daemons.  We also have msyslog and syslog-ng as well as metalog.  Power users seem
+to gravitate away from sysklogd (not very good performance) and towards the
+newer alternatives.  
+If in doubt, you may want to try metalog, since it seems to be quite popular.
+To merge your logger of choice, type <e>one</e> of the next four lines:
+</p>
+
+<pre>
+# <i>emerge app-admin/sysklogd</i>
+# <i>rc-update add sysklogd default</i>
+<comment>or</comment>
+# <i>emerge app-admin/syslog-ng</i>
+# <i>rc-update add syslog-ng default</i>
+<comment>or</comment>
+# <i>emerge app-admin/metalog</i>
+# <i>rc-update add metalog default</i>
+<comment>or</comment>
+# <i>emerge app-admin/msyslog</i>
+# <i>rc-update add msyslog default</i>
+</pre>
+<warn>
+In the case of syslog-ng you need to create 
+<path>/etc/syslog-ng/syslog-ng.conf</path>.
+See <path>/etc/syslog-ng</path> 
+for a sample configuration file.
+</warn>
+<impo>
+Metalog flushes output to the disk in blocks, so messages aren't immediately recorded into
+the system logs.  If you are trying to debug a daemon, this performance-enhancing behavior is less than helpful.  When your
+Gentoo Linux system is up and running, you can send
+metalog a USR1 signal to temporarily turn off this message buffering (meaning that 
+<i>tail -f <path>/var/log/everything/current</path></i> will now work 
+in real time, as expected), 
+and a USR2 signal to turn buffering back on
+again. 
+</impo>
+<p>Now, you may optionally choose a cron package that you'd like to use.  Right now, we offer dcron, fcron and vcron.
+If you don't know which one to choose, you might as well grab vcron.  They can be installed as follows:</p>
+<pre>
+# <i>emerge sys-apps/dcron</i>
+# <i>crontab /etc/crontab</i>
+<comment>or</comment>
+# <i>emerge sys-apps/fcron</i>
+# <i>crontab /etc/crontab</i>
+<comment>or</comment>
+# <i>emerge sys-apps/vcron</i>
+<comment>Don't forget to add your *cron to the proper init level. </comment>
+# <i>rc-update add *cron default </i>
+</pre>
+<p>For more information how how cron works under Gentoo Linux, see <uri link="http://lists.gentoo.org/pipermail/gentoo-announce/2002-April/000151.html">this announcement</uri>.</p>
+<p>For more information on starting programs and daemons at startup, see the <uri link="/doc/rc-scripts.html">rc-script guide</uri>. </p>
+</body>
+</section>
+<section>
+<title>/etc/fstab</title>
+<body>
+<p>Your Gentoo Linux system is almost ready for use.  All we need to do now is configure
+a few important system files and install the GRUB boot loader. 
+The first file we need to
+configure is <path>/etc/fstab</path>.  Remember that you should use
+the <c>notail</c> option for your boot partition if you chose to create a ReiserFS filesystem on it.
+Remember to specify <c>ext2</c>, <c>ext3</c> or <c>reiserfs</c> filesystem types as appropriate.</p>
+<p>Use something like the <path>/etc/fstab</path> listed below, but of course be sure to replace "BOOT",
+"ROOT" and "SWAP" with the actual block devices you are using (such as <c>hda1</c>, etc.)</p>
+<pre>
+<comment>
+# /etc/fstab: static file system information.
+#
+# noatime turns of atimes for increased performance (atimes normally aren't
+# needed; notail increases performance of ReiserFS (at the expense of storage
+# efficiency).  It's safe to drop the noatime options if you want and to 
+# switch between notail and tail freely.
+
+# &lt;fs&gt;           &lt;mountpoint&gt;   &lt;type&gt;   &lt;opts&gt;          &lt;dump/pass&gt;
+
+# NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
+</comment>
+/dev/BOOT           /boot       ext2	 noauto,noatime	 1 2
+/dev/ROOT           /           ext3	 noatime         0 1
+/dev/SWAP           none        swap	 sw              0 0
+/dev/cdroms/cdrom0  /mnt/cdrom  iso9660	 noauto,ro       0 0
+proc                /proc       proc	 defaults        0 0
+</pre>
+
+<warn>Please notice that <i>/boot</i> is NOT mounted at boottime. This is to protect the data in <i>/boot</i> from
+corruption. If you need to access <i>/boot</i>, please mount it!
+</warn>
+
+</body>
+</section>
+<section>
+<title>Set the root password</title>
+<body>
+<p>Before you forget, set the root password by typing:</p>
+<pre>
+# <i>passwd</i>
+</pre>
+</body>
+</section>
+<section>
+<title>/etc/hostname</title>
+<body>
+<p>Edit this file so that it contains your fully-qualified domain name on a single line, i.e. <c>mymachine.mydomain.com</c>.
+<pre>
+# <i>echo mymachine.mydomain.com > /etc/hostname</i>
+</pre>
+</p>
+</body>
+</section>
+
+<section>
+<title>/etc/hosts</title>
+<body>
+<p>This file contains a list of ip addresses and their associated hostnames.  It's used by the system to resolve the IP addresses
+of any hostnames that may not be in your nameservers.  Here's a template for this file:
+</p><pre>
+127.0.0.1      localhost
+<comment># the next line contains your IP for your local LAN, and your associated machine name</comment>
+192.168.1.1    mymachine.mydomain.com	mymachine
+</pre>
+
+<note>If you are on a DHCP network, it might be helpful to set <i>localhost</i> to your machine's
+actual hostname. This will help GNOME and many other programs in name resolution.
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Final network configuration</title>
+<body>
+<p>
+Add the names of any modules that are necessary for the proper functioning of your system to 
+<path>/etc/modules.autoload</path> file (you can also add any options you
+need to the same line.) When Gentoo Linux boots, these modules will be automatically
+loaded.  Of particular importance is your ethernet card module, if you happened to compile
+it as a module:
+</p>
+<pre caption="/etc/modules.autoload">
+3c59x
+</pre>
+<p>Edit the <path>/etc/conf.d/net</path> script to get your network configured for your
+first boot:
+</p>
+<pre>
+# <i>nano -w /etc/conf.d/net</i>
+# <i>rc-update add net.eth0 default</i>
+</pre>
+<p>
+If you have multiple network cards you need to create additional <path>net.eth<comment>x</comment></path>
+scripts for each one (<comment>x</comment> = 1, 2, ...):
+</p>
+<pre caption="Multiple network interfaces">
+# <i>cd /etc/init.d</i>
+# <i>cp net.eth0 net.eth<comment>x</comment></i>
+# <i>rc-update add net.eth<comment>x</comment> default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>configure basic settings (including the international keymap setting)</title>
+<body>
+<pre caption="basic configuration">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+<p>
+Follow the directions in the file to configure the basic settings.  
+All users will want to make sure that <c>CLOCK</c> is set to his/her
+liking.  International keyboard users will want to set the <c>KEYMAP</c>
+variable (browse <path>/usr/share/keymaps</path> to see the various
+possibilities).
+</p>
+</body>
+</section>
+
+<section>
+<title>Harddrive settings (hdparm)</title>
+<body>
+<p>
+Add your <i>hdparm</i> tweaks to
+ to <path>/etc/conf.d/local.start</path>,
+so that they are initialized at every boot.
+</p>
+<pre>
+# <i>nano -w /etc/conf.d/local.start</i>
+</pre>
+<pre caption="add hdparm tweak to /etc/conf.d/local.start">
+# This is a good place to load any misc.
+# programs on startup ( 1>&amp;2 )
+
+# turn on DMA on both harddrives
+hdparm -d 1 /dev/hda
+hdparm -d 1 /dev/hdb
 </pre>
 </body>
 </section>
