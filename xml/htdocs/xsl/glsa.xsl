@@ -350,4 +350,7 @@ Related bugreports:
 <br/>
 </xsl:template>
 
+<xsl:template match="metadata">
+</xsl:template>
+
 </xsl:stylesheet>
