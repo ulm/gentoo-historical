@@ -1,0 +1,264 @@
+Purpose: Make Portage security aware
+
+  Pri Description              Status                Deadline Dependency Bug#  Assigned
+  -------------------------------------------------------------------------------------
+	3 Signed ebuilds/packages  (Status: Not Started)          1,2
+	1 Force RESTRICTed ebuilds (Status: Not Started)          1,2        1925  rphillips <rphillips@gentoo.org>
+	  not to be mirrored 
+	2 Accepted Use Crypto      (Status: Not Started)          3          1925
+	  Policy License Agreement 
+
+*Key*:
+	Pri: Priority (1=high)
+	Description: 
+	Status: Not Started, Started, Beta, Alpha, Done	
+	Deadline: Date, or empty for no deadline
+	Dependency: comments are labled below by number
+	Bug#: Is the bug referenced within the bug tracker?
+	Assigned: Anybody working on task?
+
+******************************************************************************
+1:
+
+Date: Mon, 2 Sep 2002 09:33:29 -0700
+From: Ryan Phillips <rphillips@gentoo.org>
+To: Daniel Mettler <mettlerd@icu.unizh.ch>
+Cc: Spider <spider@gentoo.org>, "V. Alex Brennen" <vab@cryptnet.net>,
+	blizzy@gentoo.org, rphillips@gentoo.org
+Subject: Re: Strong Distro Model
+
+I just wanted to remind everyone that the encryption portion
+that is either integrated internally/externally has to have the
+ability to be turned 'off' - due to legal issues within certain countries.
+
+Having a wrapper around GPG seems like the logical approach.
+
+Here is a feature list I would like to see:
+
+	* make.conf variable that allows precidence of authentication method.
+		ie:  AUTHMETHOD=3D"gpg,md5"    or
+			 AUTHMETHOD=3D"md5"
+			=20
+	* make.conf variable that allows unsigned files to be merged, but they
+	  have to pass md5 checksums.  This is for custom ebuilds, and 3rd party
+	  ebuilds.
+	 =20
+	* Due to filesizes of signature files I think they need to be committed
+	  as binary signatures and not ascii armored... Ascii armored signatures
+	  on tons of ebuilds will produce a large portage tree.
+
+On the subject of security here are a few other things I have noted:
+
+	* Have a RESTRICT variable or keyword (or something) per ebuild that will
+	  tell ibiblio not to mirror the archive tarball.  There are certain
+	  things that should not be exported from the ibiblio site (libdecss,
+	  etc).
+
+	* Gentoo really needs an accepted license variable.  This variable should
+	  have a variable called: 'high-crypto' (just for an example) to enable
+	  strong encryption support. Bug #1925 deals with this. We shouldn't
+	  force strong encryption, openssl can be built with exportable encryption
+	  that all countries should accept.
+
+As a side note, I did submit an email to the Bureau of Export Control,
+all *opensource* crypto is allowed to be exported from ibiblio and
+mirrors legally from within the U.S.
+
+Thoughts/additions on anything?
+
+Regards,
+Ryan
+
+* Daniel Mettler <mettlerd@icu.unizh.ch> [2002-09-02 05:24]:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>=20
+> hi all,
+>=20
+> thanks for cc'ing.
+>=20
+> On Sunday 01 September 2002 10:39, Spider wrote:
+> > "V. Alex Brennen" <vab@cryptnet.net> wrote:
+> > > If you guys are serious about this I'll help you
+> > > build your keyring/wot and modify the portage
+> > > software to support a backward compatible
+> > > crypto based verification system.
+>=20
+> great, i think many people are interested in seeing this feature
+> in portage! :)
+>=20
+> > > We could
+> > > probably use gpgme.
+>=20
+ *snipped*
+
+******************************************************************************
+2:
+
+From: Daniel Mettler <mettlerd@icu.unizh.ch>
+To: Spider <spider@gentoo.org>, "V. Alex Brennen" <vab@cryptnet.net>
+Subject: Re: Strong Distro Model
+Date: Mon, 2 Sep 2002 03:16:30 +0200
+User-Agent: KMail/1.4.3
+Cc: blizzy@gentoo.org, rphillips@gentoo.org
+
+hi all,
+
+thanks for cc'ing.
+
+On Sunday 01 September 2002 10:39, Spider wrote:
+> "V. Alex Brennen" <vab@cryptnet.net> wrote:
+> > If you guys are serious about this I'll help you
+> > build your keyring/wot and modify the portage
+> > software to support a backward compatible
+> > crypto based verification system.
+
+great, i think many people are interested in seeing this feature
+in portage! :)
+
+> > We could
+> > probably use gpgme.
+
+it's probably the best gpg wrapper out there but "unfortunately"
+it is written in c whereas portage is written in python. thus
+gpgme is not really suitable for portage as spider mentioned
+(unless portage would be rewritten from scratch using c)
+
+let me share some experiences with you.
+
+when i wrote my package-signing extension for portage
+(http://www.icu.unizh.ch/~mettlerd/semesterthesis/) i was
+looking for suitable crypto libraries for python and especially
+python wrappers for gpg. i found only one such gpg wrapper which
+seemed more or less suitable:
+
+'python gnupginterface'
+https://sourceforge.net/docman/display_doc.php?docid=5499&group_id=29555
+
+as this wrapper did not look like being such a big deal nor
+actively maintained, i decided to rather just hack the needed
+things by myself. after all, gpg itself is already quite
+suitable for being used from within other apps as it offers
+options like --batch, --yes, --no etc. and especially
+- --status-fd which writes tags for "parsing" to stdout.
+
+alternatively, i was thinking about using a more "low-level"
+crypto library instead, such as the 'python cryptography
+toolkit' (http://www.amk.ca/python/code/crypto.html). the
+advantage of this would be that the whole package-signing could
+be really tightly integrated with portage. but the disadvantages
+weighted too heavy in my view (re-implement most functionalities
+of gpg, not leveraging gpg, probably lesser security than gpg
+due to narrower exposure, risk of losing interop with gpg,
+weaker performance, ...)
+
+thus i decided to use gpg directly from within portage-sec and i
+would recommend to do the same for the portage package signing
+to be developed. gpg is nice and i think we could save a lot of
+time and headache by leveraging it.
+
+(btw. i am sorry for only scratching the surface here. the paper
+eventually lightens some of the reasons behind my decisions. i
+can elaborate it in greater detail later, if desired)
+
+On Sunday 01 September 2002 10:39, Spider wrote:
+> We are quite serious about this, but due to very limited
+> portage developers, theres quite some time ahead before this
+> can be made plausible.
+
+my full understanding for this. i'd also vote for taking enough
+time to really make good decisions and a nice design with
+well-thought processes, use and test cases. right now,
+stabilization is probably more important. later, on a new
+development branch one could approach this.
+
+> Whats needed is a simple interface in portage to automatically
+> check the integrity of the .ebuild and the digest, as well as
+> the patches.
+
+yes. and perhaps some more, depending on what additional features
+portage eventually will offer for ebuild devs.
+
+btw. as my implementation was only a proof-of-concept i left out
+patch verification (integrity of patches etc. was meant to be
+ensured by the trusted ebuild dev "by contract", thus the ebuild
+dev was meant to check the integrity of the required patches
+from within the ebuild itself. this is suboptimal of course but
+from a theoretical point it was ok then).
+
+> to sign the digest would be enough to make sure the package
+> wasn't tampered with on an external server, patches are
+> equally important as the ebuild since you can sneak in
+> anything in the patch.
+
+yep.
+
+if you have some time i would recommend to read chapter iii.10
+and iii.11 (p. 22 bottom to p. 28 top) of the paper. this
+describes the core concept of package signing behind the
+portage_sec implementation i've written. whereas the
+implementation is not really meant for being used furthermore
+(prototype), the concept is imho actually quite nice (actually
+quite standard, but it's explained concisely and
+well-understandable). nevertheless i did not put every single
+thought in the paper as i was pretty short in time already ;) i
+can elaborate further details later.
+
+i would love to hear some opinions about this concept from you,
+especially about its feasibility regarding the gentoo
+development process. at the time of writing i did not know
+(still don't ;) how the gentoo dev process is really defined,
+thus i just guessed how it might work. for example i designed it
+that signing should happen on each (or some) devs own box
+(instead of on a central server). then that signature gets
+committed by cvs like any other file. this, to ensure maximum
+security (as having private keys on servers is a big risk for
+several reasons). devs' keys being signed by a master key which
+can revoke its signature if needed. etc.
+
+if somebody of you also made a concrete concept paper/sketch how
+package-signing might be done for portage i would appreciate
+very much if i could take a look at it, so we can discuss these
+different concepts together, recognize weaknesses and strengths
+and finally design/assemble a suitable concept alltogether.
+
+btw. if you were wondering about why i put some (but not too much
+either) emphasis on concepts it might explain some things if you
+take a look at xp (e.g. on http://www.extremeprogramming.org/).
+i really like some ideas of xp as a very light-weight, pragmatic
+approach to software developing.
+
+well, now... as a conclusion:
+
+i would happily join your development efforts to build a nice
+package-signing concept/extension for portage! :) i think that
+my experience from making a package-signing prototype would be
+of help for gentoo and i am very interested that portage/gentoo 
+gets a sophisticated, secure package signing feature.
+
+thus, do not hesitate to drop me a line when time has come to
+start on this! :) hmm.. actually we could already slightly start
+discussing and evaluating conceptual things, what do you think? 
+just not too heavily as i am also limited in time atm (preps for 
+exams ;)
+
+if you have any questions/remarks, feel free to ask/notify me!
+
+regards
+
+dan
+
+******************************************************************************
+3:
+
+PLEASE REMEMBER THAT EXPORT/IMPORT AND/OR USE OF STRONG CRYPTOGRAPHY
+SOFTWARE, PROVIDING CRYPTOGRAPHY HOOKS OR EVEN JUST COMMUNICATING
+TECHNICAL DETAILS ABOUT CRYPTOGRAPHY SOFTWARE IS ILLEGAL IN SOME PARTS
+OF THE WORLD. SO, WHEN YOU IMPORT THIS PACKAGE TO YOUR COUNTRY, RE-
+DISTRIBUTE IT FROM THERE OR EVEN JUST EMAIL TECHNICAL SUGGESTIONS OR
+EVEN SOURCE PATCHES TO THE AUTHOR OR OTHER PEOPLE YOU ARE STRONGLY
+ADVISED TO PAY CLOSE ATTENTION TO ANY EXPORT/IMPORT AND/OR USE LAWS
+WHICH APPLY TO YOU. THE AUTHORS OF GENTOO ARE NOT LIABLE FOR ANY
+VIOLATIONS YOU MAKE HERE. SO BE CAREFULLY YOURSELF, IT IS YOUR
+RESPONSIBILITY.  
+
