@@ -1,6 +1,7 @@
 ﻿<?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-
+ <!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gentoo-x86-tipsntricks.xml,v 1.5 2004/11/10 20:13:21 mush Exp $ -->
+ 
 <guide link="/doc/it/gentoo-x86-tipsntricks.xml" lang="it">
 <title>Suggerimenti e trucchi per l'installazione Gentoo/x86</title>
 <author title="Autore">
@@ -20,8 +21,8 @@ normale procedura di installazione.
 
 <license/>
 
-<version>1.2</version>
-<date>1 maggio 2004</date>
+<version>1.6</version>
+<date>25 settembre 2004</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -49,6 +50,7 @@ sostituti.
 <ul>
   <li><uri link="#software-raid">Software RAID</uri></li>
   <li><uri link="#ata-raid-2.4">ATA RAID con il kernel 2.4</uri></li>
+  <li><uri link="#livecd-kernel">Usare il kernel del LiveCD</uri></li>
 </ul>
 
 <p>
@@ -98,42 +100,19 @@ E' possibile modificare il tipo di partizione premendo <c>t</c> in <c>fdisk</c>.
 </p>
 
 <p>
-Dopo aver partizionato, è necessario creare il file <path>/etc/raidtab</path> (nell'ambiente
-del LiveCD) e inserire i comandi necessari per la configurazione RAID.
+Dopo aver partizionato, è necessario creare il file <path>/etc/mdadm.conf</path> (nell'ambiente
+del LiveCD) usando il comando <c>mdadm</c> che è uno strumento avanzato di <uri 
+link="http://www.linuxdevcenter.com/pub/a/linux/2002/12/05/RAID.html">gestione RAID</uri>
+(ndT: link in inglese)
+e inserire i comandi necessari per la configurazione RAID.
 Per esempio, per avere la partizione di boot, swap e root in mirror (RAID-1)
 utilizzando <path>/dev/sda</path> e <path>/dev/sdb</path>, si può usare:
 </p>
 
-<pre caption="/etc/raidtab per la configurazione RAID-1">
-raiddev /dev/md0
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda1
-    raid-disk 0
-  device /dev/sdb1
-    raid-disk 1
-
-raiddev /dev/md1
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda2
-    raid-disk 0
-  device /dev/sdb2
-    raid-disk 1
-
-raiddev /dev/md2
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda3
-    raid-disk 0
-  device /dev/sdb3
-    raid-disk 1
+<pre caption="esempio di parametri per mdadm">
+# <i>mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1</i>
+# <i>mdadm --create --verbose /dev/md1 --level=1 --raid-devices=2 /dev/sda2 /dev/sdb2</i>
+# <i>mdadm --create --verbose /dev/md2 --level=1 --raid-devices=2 /dev/sda3 /dev/sdb3</i>
 </pre>
 
 <p>
@@ -161,7 +140,7 @@ di root.
 
 <p>
 Dopo aver montato <path>/dev/md2</path> su <path>/mnt/gentoo</path>, si deve
-copiare <path>/etc/raidtab</path> in <path>/mnt/gentoo/etc</path>.
+copiare <path>/etc/mdadm.conf</path> in <path>/mnt/gentoo/etc</path>.
 </p>
 
 <p>
@@ -170,7 +149,7 @@ per il RAID <e>compilato</e> nel kernel e <e>non</e> come modulo.
 </p>
 
 <p>
-Durante l'installazione di tool aggiuntivi, è necessario l'emerge dei <c>raidtools</c>.
+Durante l'installazione di tool aggiuntivi, è necessario l'emerge di <c>mdadm</c>.
 Ciò non è possibile su tutti i LiveCD e quindi, effettuando un'installazione senza rete,
 ci si potrebbe trovare nella situazione di non poter installare Gentoo su un Software RAID.
 </p>
@@ -253,6 +232,43 @@ Riavviare (dopo aver rimosso il dischetto di GRUB).
 Gli utenti di LILO possono seguire tranquillamente le istruzioni indicate
 nella guida all'installazione.
 </p>
+
+</body>
+</section>
+
+<section id="livecd-kernel">
+<title>Usare il kernel del LiveCD</title>
+<body>
+
+ <p>
+Se non si desidera compilare un proprio kernel è possibile utilizzare quello
+del LiveCD e copiarlo nel sistema. Giunti al punto dell'installazione in cui si deve
+compilarlo, bisogna andare su un altro terminale premendo Alt-F2 ed effettuare il login
+con la password immessa ad inizio installazione.
+</p>
+
+<p>
+Copiare il kernel e i moduli nel sistema Gentoo:
+</p>
+
+<pre caption="Copiare il kernel del LiveCD">
+<comment>(${KN} è il nome del kernel, solitamente è formato da 'gentoo' o 'smp')</comment>
+cdimage ~# <i>cp /mnt/cdrom/isolinux/${KN} /mnt/cdrom/isolinux/${KN}.gz /mnt/gentoo/boot</i>
+cdimage ~# <i>mkdir -p /mnt/gentoo/lib/modules</i>
+cdiamge ~# <i>cp -Rp /lib/modules/`uname -r` /mnt/gentoo/lib/modules</i>
+</pre>
+
+<p>
+È necessario aver effettuato l'emerge di <c>hotplug</c> e averlo aggiunto al runlevel di boot.
+Per avere tutti i moduli necessari caricati durante il processo di boot di Gentoo,
+è necessario lanciare i seguenti comandi nell'ambiente in cui si è effettuato il chroot:
+</p>
+
+<pre caption="Aggiungere tutti i moduli avviati al file modules.conf">
+# <i>cat /proc/modules | cut -d ' ' -f 1 &gt;&gt; \</i>
+<i>/etc/modules.autoload.d/kernel-`uname -r | cut -d . -f -2`</i>
+# <i>modules-update</i>
+</pre>
 
 </body>
 </section>
