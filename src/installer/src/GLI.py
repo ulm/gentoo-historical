@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.10 2004/02/21 22:07:15 npmccallum Exp $
+$Id: GLI.py,v 1.11 2004/02/21 22:39:25 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -162,11 +162,11 @@ class InstallProfile(xml.sax.ContentHandler):
 		"Check to see if the string is a valid URI. Returns bool."
 		
 		# Make sure it is a string
-		if type(file) != str:
+		if type(uri) != str:
 			return False
 			
 		# Make sure it isn't null
-		if type(file) == '':
+		if type(uri) == '':
 			return False
 		
 		# Set the valid uri types
