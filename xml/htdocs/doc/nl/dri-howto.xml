@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!-- 
+English doc rev. 1.2
+-->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/nl/dri-howto.xml">
+<title>Hardware 3D Acceleratie Gids</title>
+<author title="Author">
+<mail link="donnie.berkholz@richmond.edu">Donnie Berkholz</mail>
+</author>
+<author title="Editor">
+<mail link="peesh@gentoo.org">Jorge Paulo</mail>
+</author>
+<author title="Translator">
+<mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+Dit document is een gids om 3D acceleratie werkende te krijgen met
+XFree-DRM en XFree86 onder Gentoo Linux.
+</abstract>
+
+<version>1.0.0</version>
+<date>7 Juli 2003</date>
+
+<chapter>
+<title>Inleiding</title>
+<section>
+<title>Wat is hardware 3D acceleratie en waarom zou ik dat willen?</title>
+<body>
+<p>
+Met hardware 3D acceleratie wordt je grafische processor gebruikt om
+3-dimensionele objecten weer te geven in plaats van je eigenste CPU
+waardoor veel resources gespaard worden. Ze wordt ook vaak als "hardware
+acceleratie" aangesproken versus "software acceleratie" aangezien
+in het tweede geval de CPU alle berekeningen via de Mesa software
+rendering bibliotheken moet laten gebeuren, welke zeer veel van de CPU
+tijd innemen. Alhoewel XFree86 2D hardware ondersteuning ondersteunt
+doet ze dat zeer weinig voor 3D acceleratie. Dergelijke 3-dimensionele
+hardware acceleratie is zeer handig in situaties waar 3D objecten
+gevisualiseerd moeten worden, zoals in spelletjes, 3D CAD en modelering.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Hoe verkrijg ik 3D hardware acceleratie?</title>
+<body>
+<p>
+In veel gevallen bestaan zowel open-source als binaire drivers.
+Open-source drivers zijn aangeraden aangezien we Linux gebruiken en
+open source een van de onderliggende principes is. Soms zijn binaire
+drivers de enige mogelijke optie, zoals bij de nVidia kaarten. Indien je
+een nVidia kaart hebt, lees dan de <uri
+link="/doc/en/nvidia_tsg.xml">nVidia Troubleshooting guide</uri>
+(Engels). Deze handleiding bespreekt hoe je XFree-DRMs open source
+drivers gebruikt. Ondersteunde kaarten vind je onderaan het document.
+Binaire drivers zijn media-video/mgavideo voor Matrox en
+media-video/ati-drivers voor ATI kaarten. Andere open source drivers
+zijn media-video/kyro-kernel voor KyroII kaarten en
+media-video/ati-gatos voor ATI kaarten welke probeert om beter ATIs
+videofunctionaliteit te ondersteunen.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Wat is DRI?</title>
+<body>
+<p>
+De Direct Rendering Infrastructure (<uri
+link="http://dri.sf.net">dri.sf.net</uri>), ook gekend als DRI, is een
+framework om directe toegang tot grafische kaarten op een veilige en
+efficiente manier te ondersteunen. Het bevat aanpassingen aan de X
+server, verschillende bibliotheken en de kernel. Een van de grootste
+gebruikers van DRI is OpenGL om snelle OpenGL implementaties te
+verkrijgen.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Wat is XFree-DRM en hoe is het gerelateerd aan XFree86?</title>
+<body>
+<p>
+XFree-DRM is een <e>uitbreiding</e> van XFree86 welke 3D acceleratie
+ondersteuning toevoegt voor de zaken waar XFree86 zelf er nog geen
+heeft.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Doel</title>
+<body>
+<p>
+Deze gids is voor de mensen die direct rendering niet werkende krijgen
+met enkel XFree. XFree-DRM werkt voor 3dfx, gamma, i8x0, matrox, rage128
+en sis drivers. Er is tevens ondersteuning voor mach64 in de CVS
+broncode -- zie <uri
+link="http://www.retinalburn.net/linux/dri_status.html">deze site</uri>
+en de <uri
+link="http://www.retinalburn.net/linux/dri_HOWTO.html">HOWTO</uri>.
+Aangezien de 2.4 kernels hun DRM implementatie geen XFree 4.3
+ondersteunen is xfree-drm nodig. INdien je een 2.5 kernel gebruikt wordt
+XFree 4.3 wel ondersteund, dus tenzij je grafische kaart nieuw is dat ze
+nog geen drivers heeft moet je deze gids niet lezen. Zie de <uri
+link="http://dri.sourceforge.net">DRI homepage</uri> voor meer
+informatie.
+</p>
+</body>
+</section>
+
+<section>
+<title>Feedback</title>
+<body>
+<p>
+Voor suggesties, vragen enzovoorts, e-mail <mail link="donnie.berkholz@richmond.edu">Donnie Berkholz</mail>.
+</p>
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Installeer XFree86 en configureer je kernel</title>
+<section>
+<title>Installeer XFree86</title>
+<body>
+<pre>
+# <i>emerge x11-base/xfree</i>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Configureer je kernel</title>
+<body>
+<p>
+Zoek uit welke chipset je hebt (hint: <c>lspci</c> of <c>/proc/pci</c>) 
+en activeer enkel deze chipsetondersteuning.
+</p>
+<pre caption="De AGP chipset te weten komen">
+# <i>emerge pciutils; lspci | grep AGP</i>
+# <i>00:01.0 PCI bridge: Intel Corp. 440BX/ZX/DX - 82443BX/ZX/DX AGP bridge (rev 03)</i>
+<codenote>Je output kan natuurlijk verschillend zijn indien je andere</codenote>
+<codenote>hardware hebt.</codenote>
+</pre>
+<p>
+De meeste, zoniet alle kernels zouden je chipset ondersteunen. We maken
+hier gebruik van gentoo-sources-2.4.20-r5 als demonstratie.
+</p>
+<pre>
+# <i>ls -l /usr/src/linux </i>
+lrwxrwxrwx    1 root     root           22 May 29 18:20 /usr/src/linux -> linux-2.4.20-gentoo-r5
+<codenote>Zorg ervoor dat <path>/usr/src/linux</path> naar je huidige kernel wijst.</codenote>
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+<pre caption="make menuconfig opties">
+Processor type and features ---&gt;
+&lt;*&gt; MTRR (Memory Type Range Register) support
+Character devices ---&gt;
+&lt;*&gt; /dev/agpgart (AGP Support)
+[*] Intel 440LX/BX/GX and I815/I820/I830M/I830MP/I840/I845/I850/I860 support
+<codenote>Activeer je eigen chipset in plaats van de bovenvermelde.</codenote>
+[ ] Direct Rendering Manager (XFree86 DRI support)
+</pre>
+<p>
+Zorg ervoor dat de Direct Rendering Manager (DRM) <e>af</e> staat. Het
+XFree-DRM pakket zal zijn eigen interface aanbieden. De versie van de kernel
+is namelijk gemaakt voor XFree 4.2.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Compileer en installeer je kernel</title>
+<body>
+<pre caption="Compileren van installeren van de kernel">
+# <i>make dep &amp;&amp; make clean bzImage modules modules_install</i>
+# <i>mount /boot</i>
+# <i>cp arch/i386/boot/bzImage /boot</i>
+</pre>
+<p>
+Indien je je kernel anders wil laten noemen dan bzImage, zorg er dan voor
+dat je deze naar <path>/boot/naamvanimage</path> kopieert. Vergeet niet 
+grub.conf of lilo.conf in te stellen en /sbin/lilo uit te voeren indien
+je lilo gebruikt.
+</p>
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Installeren van XFree-DRM en configureren van direct rendering</title>
+<section>
+<title>Installeren van XFree-DRM</title>
+<body>
+<pre>
+# <i>ACCEPT_KEYWORDS="~x86" emerge xfree-drm</i>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Configeren van XF86Config</title>
+<body>
+<p>
+Open <path>/etc/X11/XF86Config</path> met je favoriete text editor en pas
+deze aan zodat DRI en GLX geactiveerd worden.
+</p>
+<pre caption="XF86Config">
+...
+Section "Module"
+Load "dri"
+Load "glx"
+...
+EndSection
+...
+Section "Device"
+Driver "radeon"
+...
+EndSection
+...
+Section "DRI"
+Mode 0666
+EndSection
+</pre>
+
+<p>
+Indien je een andere driver gebruikt vervang dan "radeon" met jouw 
+driver.
+</p>
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Test 3D acceleratie</title>
+<section>
+<title>Reboot naar de nieuwe kernel</title>
+<body>
+<p>
+Reboot je computer in je nieuwe kernel. Het is nu tijd om te zien of je
+direct rendering hebt en of ze wel zo goed is als ze zeggen.
+</p>
+<pre caption="Renderen testen">
+# <i>startx</i>
+<codenote>Je moet geen modules voor je driver/agpgart laden.</codenote>
+<codenote>Deze worden automatisch geladen.</codenote>
+# <i>glxinfo | grep rendering</i>
+direct rendering: Yes
+<codenote>Indien het "No" zegt heb je geen 3D acceleratie.</codenote>
+# <i>glxgears</i>
+<codenote>Test je fps op de default grootte en dit wanneer de CPU zo kalm mogelijk is</codenote>
+</pre>
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>De CVS sources gebruiken</title>
+<section>
+<body>
+<warn>
+Doe dit niet indien het al werkt!
+</warn>
+<note>
+CVS broncode verandert constant. Je configuratie zal dus mogelijk niet
+dezelfde zijn als deze hieronder.
+</note>
+</body>
+</section>
+<section>
+<title>Heb je de CVS broncode wel nodig?</title>
+<body>
+<p>
+Allereerst moet je controleren of het xfree-drm pakket werkt. Indien dat
+niet het geval is en je hebt een redelijk recente kaart kan je de CVS
+broncode proberen. Het xfree-drm pakket ondersteunt op dit moment op
+zijn minst de Radeon 9000.
+</p>
+</body>
+</section>
+<section>
+<title>Ondersteunt de CVS broncode je kaart?</title>
+<body>
+<p>
+Controleer de <uri
+link="http://dri.sourceforge.net/dri_status.phtml">lijst</uri> van
+ondersteunde kaarten om te zien of de CVS versie je kaart ondersteunt.
+Zelfs als dat niet het geval is maar een gelijkaardige kaart is wel
+ondersteund kan je het proberen.
+</p>
+<warn>
+"Linux 2.4 ondersteunt geen agp 8x, dus ik moest een backport zoeken. De
+backport werkt... ze patcht niet direct goed, en vereist 2.4.21. Dus
+allereerst installeren we 2.4.21. Daarna patchen we de kernel. De patch
+zorg er bijvoorbeeld voor dat ik aan 1600x1200 kan werken met
+xfree-drm." (SanityInAnarchy op #gentoo)
+</warn>
+<impo>
+De patch is moeilijk om toe te passen met <uri
+link="http://www.ussg.iu.edu/hypermail/linux/kernel/0302.2/att-1618/01-agp3.diff.bz2">hier
+is de link</uri>. Indien je in je BIOS agp op 4x kan plaatsen heb je de
+patch niet nodig.
+</impo>
+</body>
+</section>
+
+
+<section>
+<title>Installeer de CVS sources</title>
+<body>
+<p>
+Volg de stappen in "Compileer en installeer je kernel." Daarna gaan
+we stap 6 van de <uri
+link="http://dri.sourceforge.net/doc/DRIcompile.html">DRI Compile
+Guide</uri> (Engels) uitvoeren tot en met stap 8.3.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Anonieme CVS download</title>
+<body>
+<p>
+Maak een directorie aan waarin je de CVS bestanden steekt:
+</p>
+<pre>
+# <i>cd ~</i>
+# <i>mkdir DRI-CVS</i>
+</pre>
+<p>
+Haal de CVS broncode binnen.
+</p>
+<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>cvs -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri login</i>
+<codenote>(druk op ENTER wanneer je naar een paswoord gevraagd wordt)</codenote>
+# <i>cvs -z3 -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri co xc</i>
+<codenote>De -z3 activeert compressie zodat je sneller alles kan downloaden.</codenote>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Updaten van je CVS broncodebestanden</title>
+<body>
+<p>
+In de toekomst zal je occasioneel je locale kopie van de DRI broncode
+downloaden om de laatste aanpassingen te zien. Dit kan je als volgt
+doen:
+</p>
+<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>cvs -z3 update -dA xc</i>
+<codenote>De -d maakt nieuwe directories aan indien nodig.</codenote>
+<codenote>De -A zorgt ervoor dat de meest recente trunk-sources gedownload worden, niet de branch sources.</codenote>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Maak een compilatiestructuur aan</title>
+<body>
+<p>
+In plaats van alle objectbestanden en bibliotheekbestanden in dezelfde
+directoriestructuur te steken gaan we een parallelle <e>build</e>
+structuur gebruiken. Deze maken we met het <c>lndir</c> commando:
+</p>
+<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>ln -s xc XFree40</i>
+# <i>mkdir build; cd build</i>
+# <i>lndir -silent -ignorelinks ../XFree40</i>
+</pre>
+<p>
+Deze compilatiestructuur zal met symbolische links uitgerust worden
+welke naar de originele bestanden verwijzen. Geavanceerde gebruikers
+zullen verschillende compilatiestructuren hebben die ze voor de
+verschillende opties testen.
+</p>
+</body>
+</section>
+
+<section>
+<title>Pas het host.def bestand aan</title>
+<body>
+<p>
+Het <path>~/DRI-CVS/build/xc/config/cf/host.def</path> bestand wordt
+gebruikt om het XFree86 compilatieproces te configureren. Je kan het
+aanpassen om je compilatieopties te configureren of aanpassingen te
+maken specifiek voor jouw systeem. Het default host.def bestand zal er
+als volgt uitzien: 
+</p>
+<pre>
+#define DefaultCCOptions -Wall
+<codenote>Voor i386:</codenote>
+#define DefaultGcc2i386Opt -O2
+<codenote>Voor Alpha:</codenote>
+#define DefaultGcc2AxpOpt -O2 -mcpu=ev6 (or similar)
+<codenote>Voor alle architecturen</codenote>
+#define LibraryCDebugFlags -O2
+#define BuildServersOnly YES
+#define XF86CardDrivers vga tdfx mga ati i810
+#define LinuxDistribution LinuxRedHat
+#define DefaultCCOptions -ansi GccWarningOptions -pipe
+#define BuildXF86DRI YES
+/* Optionally turn these on for debugging */
+/* #define GlxBuiltInTdfx YES */
+/* #define GlxBuiltInMga YES */
+/* #define GlxBuiltInR128 YES */
+/* #define GlxBuiltInRadeon YES */
+/* #define DoLoadableServer NO */
+#define SharedLibFont NO
+</pre>
+<p>
+De ProjectRoot variabele specifieert waar de XFree86 bestanden
+geinstalleerd zullen worden. We raden aan de DRI-bestanden bovenop je
+huidige XFree86 installatie te installeren - het is algemeen een veilige
+procedure en zorgt voor minder problemen later. Dit is anders dan wat we
+normaal gezien aanraden.
+</p>
+
+<p>
+Indien XFree86 4.x niet geinstalleerd is in <path>/usr/X11R6/</path> dan
+moet je het volgende toevoegen aan host.def:
+</p>
+<pre>
+#define ProjectRoot pathToYourXFree86installation
+<codenote>Merk de XF86CardDrivers regel op om er zeker van te zijn dat je kaart bekend is.</codenote>
+<codenote>Indien je 3DNow! optimalisaties wil activeren in Mesa (alsook de DRI drivers) moet je</codenote>
+<codenote>het volgende toevoegen:</codenote>
+#define MesaUse3DNow YES
+<codenote>Je moet geen AMD processor hebben om dit te activeren</codenote>
+<codenote>De DRI zal enkel 3DNow! activeren als je het hebt.</codenote>
+</pre>
+<p>
+Indien je SSE optimalisaties in Mesa wil activeren alsook de DRI
+drivers, dan moet je een 2.4.x kernel gebruiken. Mesa zal zien of SSE
+ondersteunt is maar om Mesa in DRI te krijgen moet je de 2.4.x kernel
+headers in <path>/usr/src/linux</path> hebben staan. Indien je SSE
+optimalisaties met een eerdere Linux-versie wil verkrijgen zal
+het compileren van Mesa mislukken. Indien je een 2.4.x kernel hebt moet
+je het volgende toevoegen:
+</p>
+<pre>
+#define MesaUseKatmai YES
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Compileer XFree86/DRI</title>
+<body>
+<p>
+Om de volledige DRI structuur te compileren:
+</p>
+<pre>
+# <i>cd ~/DRI-CVS/build/xc/</i>
+# <i>make World &gt;&amp; world.log</i>
+</pre>
+<p>
+Een gebruiker raadt aan om het volgende te ondernemen:
+</p>
+<pre>
+# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel</i>
+# <i>make -f Makefile.linux radeon.o</i>
+<codenote>Vervang radeon met je driver.</codenote>
+</pre>
+<p>
+Met de default compilatievlaggen is het normaal dat je veel
+waarschuwingen krijgt gedurende de compilatie. Het compileren ervan
+neemt wat tijd in zodat je alle tijd kan nemen om slashdot of zo door te
+nemen.
+</p>
+<warn>
+Gebruik niet de -j optie met make (dus geen distcc gebruiken). Deze zou
+naar het schijnt niet werken met XFree86/DRI.
+</warn>
+<p>
+Bekijk world.log en zoek naar foutmeldingen door op *** te zoeken.
+</p>
+</body>
+</section>
+
+<section>
+<title>Installeer je driver</title>
+<body>
+<p>
+Verifieer dat de DRI kernel modules voor je systeem gecompileerd werden.
+</p>
+<pre>
+# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel; ls</i>
+</pre>
+<p>
+Voor de 3dfx Voodoo moet je <path>tdfx.so</path> vinden. De Matrox
+G200/G400 is <path>mga.o</path>. ATI Rage 128 heeft <path>r128.o</path>.
+ATI Radeon heeft <path>radeon.o</path>. Intel i810 heeft
+<path>i810.o</path>. Indien de DRI kernelmodules niet gecompileerd
+werden moet je kijken of je wel de correcte Linux kernel versie hebt. De
+meest recente kernels zijn niet altijd ondersteund.
+</p>
+<p>
+Kopieer al je driver bestanden over naar je XFree86 installatie. Het is
+aangeraden de oorspronkelijke drivers te backuppen. Hierop volgt een
+voorbeeld voor een Radeon kaart. Indien je een andere kaart hebt kopieer
+je best de bijhorende bestanden. Indien je niet weet wat ze zijn,
+controleer dan de directorie waarnaartoe je ze gaat kopieren en kijk wat
+zich daarin bevindt.
+</p>
+<pre>
+# <i>cd ~/DRI-CVS/build/xc/exports/lib/modules/</i>
+# <i>cp dri/r200_dri.so /usr/X11R6/lib/modules/dri/</i>
+# <i>cp drivers/atimisc_drv.o /usr/X11R6/lib/modules/drivers/</i>
+# <i>cp drivers/radeon_drv.o /usr/X11R6/lib/modules/drivers/</i>
+# <i>cp extensions/libdri.a /usr/X11R6/lib/modules/extensions/</i>
+# <i>cp linux/libdrm.a /usr/X11R6/lib/modules/linux/</i>
+</pre>
+<p>
+Volg nu de stappen van "Configure XF86Config" hierboven.
+</p>
+<p>
+Om de correcte DRI modules in je kernel te laden moet je deze kopieren
+naar <path>/lib/modules/`uname -r`/kernel/drivers/char/drm/</path>. Voer
+daarna <c>modules-update</c> uit en herstart je X server. Indien je niet
+de kernel gebruikt welke je zal gebruiken, vervang dan <c>`uname -r`</c>
+met die kernelversie.
+</p>
+<warn>
+Zorg ervoor dat je eerst oudere DRI kernel modules uitlaadt. Sommige DRI
+modules vereisen tevens dat je eerst de agpgart module laadt alvorens ze
+zelf geladen worden.
+</warn>
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Tweak je performantie</title>
+<section>
+<title>Haal het meeste uit direct rendering</title>
+<body>
+<p>
+Enkele kleine opties kunnen de performantie tot 30 percent (of meer)
+verhogen tov de default instellingen. Je stelt deze in in
+<path>/etc/X11/XF86Config</path>.
+</p>
+<pre caption="XF86Config">
+Section "Device"
+Option     "AGPMode" "4"
+<codenote>Dit verhoogt de FPS van 609 naar 618.</codenote>
+Option     "AGPFastWrite" "True"
+<codenote>Weinig effect behalve dat je systeem iets onstabieler kan worden</codenote>
+<codenote>Het kan tevens zijn dat je dit in je BIOS moet activeren</codenote>
+Option     "EnablePageFlip" "True"
+<codenote>Dit verhoogt de FPS van 618 naar 702. Het is riskant, maar slechts</codenote>
+<codenote>weinigen hebben er problemen mee</codenote>
+...
+EndSection
+</pre>
+<p>
+Indien je nog meer instellingen wil instellen kijk je best naar de <uri
+link="http://dri.sf.net/doc/dri_driver_features.phtml">features
+listing</uri> (Engels) op de DRI Website.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Foutopsporing</title>
+<section>
+<title>Het werkt niet. Ik heb geen rendering en ik weet niet waarom.</title>
+<body>
+<p>
+Probeer <c>insmod radeon</c> alvorens je de X server opstart. Probeer
+tevens agpgart te compileren als een module in plaats van rechtstreeks
+in de kernel.
+</p>
+</body>
+</section>
+<section>
+<title>Wanneer ik startx uitvoer krijg ik de volgende fout: "[drm] failed to load kernel module agpgart"</title>
+<body>
+<p>
+Dat is omdat je agpgart in je kernel hebt gestoken in plaats van als
+module. Je kan dit negeren.
+</p>
+</body>
+</section>
+<section>
+<title>Direct rendering werkt niet en in <path>/var/log/XFree86.0.log</path> krijg ik de foutmelding dat de versie te laag is.</title>
+<body>
+<p>
+Je gebruikt niet de xfree-drm driver. Kijk of je DRM gecompileerd hebt
+en de module in de kernel gestoken hebt -- dat zou niet zo mogen zijn.
+</p>
+</body>
+</section>
+<section>
+<title>Ik heb een Radeon en ik wil TV-Out.</title>
+<body>
+<p>
+Kijk eens naar ati-gatos. <c>emerge -s gatos</c>.
+</p>
+</body>
+</section>
+<section>
+<title>Het werkt niet. Mijn kaart is enorm nieuw en cool dat deze niet eens ondersteund wordt.</title>
+<body>
+<p>
+Probeer de binaire drivers van je kaart. Voor ati-drivers heb je een
+lijst op
+<uri>http://www.schneider-digital.de/html/download_ati.html</uri>.
+Indien deze je kaart niet ondersteunen, neem dan VESA. Het is traag,
+maar het werkt. Controleer constant de drivers in de toekomst want ze
+zullen ooit je kaart ondersteunen.
+</p>
+</body>
+</section>
+<section>
+<title>Ik heb een PCI kaart en het werkt niet. Help!</title>
+<body>
+<p>
+In de sectie "Device" activeer je ForcePCIMode.
+<pre>Option "ForcePCIMode" "True"</pre></p>
+</body>
+</section>
+ 
+</chapter>
+
+
+<chapter>
+<title>Referenties</title>
+<section>
+<body>
+<p>
+Alle volgende URLs zijn Engelstalig:
+<ol>
+<li>http://forums.gentoo.org/viewtopic.php?t=46681</li>
+<li>http://forums.gentoo.org/viewtopic.php?t=29264</li>
+<li>http://dri.sourceforge.net/</li>
+<li>http://www.retinalburn.net/linux/dri_status.html</li>
+</ol>
+</p>
+</body>
+</section>
+</chapter>
+</guide>
