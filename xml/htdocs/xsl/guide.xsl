@@ -73,6 +73,9 @@
 				</xsl:for-each></select></form>
                     <xsl:apply-templates select="chapter"/>
                     <br/>
+                    <xsl:if test="/guide/license">
+                        <xsl:apply-templates select="license" />
+                    </xsl:if>
                     <br/>
 <!--content end-->
                   </td>
@@ -1115,5 +1118,10 @@
 	  </xsl:template>
 	    <xsl:template match="ignoreinguide">
 	      </xsl:template>
+<xsl:template match="license">
+<pre>
+This work is licensed under the <a href="http://creativecommons.org/licenses/by-sa/1.0">Creative Commons - Attribution / Share Alike</a> license.
+</pre>
+</xsl:template>
 
 </xsl:stylesheet>
