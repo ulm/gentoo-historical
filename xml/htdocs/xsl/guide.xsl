@@ -304,6 +304,7 @@
                       <tr>
                         <td valign="top">
                           <p class="altmenu">
+				<!-- disable search for now
 				Search gentoo.org:<table border="0" cellspacing="0" cellpadding="0"><tr><td>
 				<form method="get" action="http://www.gentoo.org/cgi-bin/perlfect/search/search.pl">
 					<input type="hidden" name="p" value="1"/>
@@ -316,6 +317,7 @@
 				</form>
 				</td></tr></table>
 				<br/>	
+				-->
 				Documentation:
 				<br/>
 				<a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
