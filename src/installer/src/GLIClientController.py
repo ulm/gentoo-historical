@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.17 2004/11/11 22:47:00 agaffney Exp $
+$Id: GLIClientController.py,v 1.18 2004/11/14 00:08:28 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -33,6 +33,8 @@ class GLIClientController(Thread):
 		self._logger = GLILogger.Logger(self._configuration.get_log_file())
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
+		self._install_steps = []
+		self._install_step = -1
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -74,6 +76,23 @@ class GLIClientController(Thread):
 			sys.exit(1)
 
 		self.output("Starting install now...")
+
+		while self._install_event.wait():
+			if self._install_step <= (len(self._install_steps) - 1):
+				self._install_steps[self._install_step]()
+			else:
+				break
+			self._install_event.clear()
+
+	def next_step(self):
+		self._install_step = self._install_step + 1
+		self._install_event.set()
+
+	def retry_step(self):
+		self._install_event.set()
+
+	def has_more_steps(self):
+		return (self._install_step < (len(self._install_steps) - 1))
 
 	def set_proxys(self):
 		if self._configuration.get_ftp_proxy() != "":
