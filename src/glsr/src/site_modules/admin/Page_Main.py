@@ -3,54 +3,45 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.7 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_Main.py,v 1.8 2004/11/06 21:58:21 port001 Exp $
 #
 
-MetaData = {"page" : ("main", None), "params" : "form"}
-
-import Template as TemplateHandler
-import Session
 import Config
+import Session
 from User import User
-from SiteModuleBE import SiteModuleBE as Parent
 from Logging import ReturnErrorReports, FlushErrorReportLog
+from site_modules import SiteModule, Redirect
 
-def Display(form):
+class Page_Main(SiteModule):
 
-    page = Page_Main()
-    page.selectDisplay(form)
+    __modulename__ = "Page_Main"
 
-class Page_Main(Parent):
+    def __init__(self, **args):
 
-    template = Config.Template["admin_main"]
+        self.pages = [None, "main"]
+        self.form = args["form"]
+        self.page = self.form.getvalue("page")
+        self.template = Config.Template["admin_main"]
     
-    def selectDisplay(self, form):
+        self.ThisSession = Session.New() 
+    
+    def _set_params(self):
 
-        # Not sure if this is the right place for this...
-        flush = form.getvalue("error_reports")
-        if flush:
-            FlushErrorReportLog()
-
-        self.display()
-
-    def display(self):
-
-        error_reporting = "True"
-        error_report_list = []
-        users_online = "True"
         users_online_list = []
         row = "even"
 
-        sess_obj = Session.New()
-        sessions = sess_obj.ListSessionsOnline(Config.WhoIsOnlineOffset)
+        # Count active users
+        active_sessions = self.ThisSession.ListSessionsOnline(Config.WhoIsOnlineOffset)
 
-        if len(sessions) == 0:
-            users_online = "False"
+        if len(active_sessions) == 0:
+            self.tmpl.param("USERS_ONLINE", "False")
+            self.tmpl.param("USERS_ONLINE_LIST", [], "loop")
         else:
-            for session in sessions:
-                user_obj = User(session["session_user_id"])
-                alias = user_obj.GetAlias()
-                ip = user_obj.GetLastIP()                
+            self.tmpl.param("USERS_ONLINE", "True")
+            for session in active_sessions:
+                ThisUser = User(session["session_user_id"])
+                alias = ThisUser.GetAlias()
+                ip = ThisUser.GetLastIP()
 
                 if alias == False:
                     alias = "N/A"
@@ -65,22 +56,30 @@ class Page_Main(Parent):
                 else:
                     row = "even"
 
+            self.tmpl.param("USERS_ONLINE_LIST", users_online_list, "loop")
+
         if Config.ErrorReporting == True:
             error_report_list = ReturnErrorReports()
             if error_report_list == False:
-                error_reporting = "False"
+                self.tmpl.param("ERROR_REPORTING", "False")
+                self.tmpl.param("ERROR_REPORT_LIST", [], "loop")
+            else:
+                self.tmpl.param("ERROR_REPORTING", "True")
+                self.tmpl.param("ERROR_REPORT_LIST", error_report_list, "loop")
         else:
-            error_reportig = "False"
+            self.tmpl.param("ERROR_REPORTING", "False")
+            self.tmpl.param("ERROR_REPORT_LIST", [], "loop")
 
-        if error_reporting == "False":
-            error_report_list = []
+        
+        self.tmpl.param("GLSR_URL", Config.URL)
 
-        tmpl = TemplateHandler.Template()
-        tmpl.compile(
-            self.template,
-            {"GLSR_URL":                Config.URL,
-             "USERS_ONLINE":       	users_online,
-             "ERROR_REPORTING":         error_reporting},
-            {"ERROR_REPORT_LIST":       error_report_list,
-	     "USERS_ONLINE_LIST":       users_online_list})
-        print tmpl.output()
+    def _select_action(self):
+
+        if self.form.getvalue("error_reports"):
+            FlushErrorReportLog()
+
+    def display(self):
+
+        self._set_params()
+        self.tmpl.compile(self.template)
+        return self.tmpl
