@@ -44,10 +44,6 @@ class RunInstall(gtk.Window):
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
 		gobject.timeout_add(1000, self.poll_notifications)
-		gobject.timeout_add(100, self.cat_fifo)
-
-	def cat_fifo(self):
-		GLIUtility.spawn("cat /tmp/tty8_fifo > /dev/null")
 
 	def poll_notifications(self):
 		notification = self.controller.cc.getNotification()

@@ -228,10 +228,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			cmd += " | tee -a " + logfile
 
 	if display_on_tty8:
-#		if not is_file("/tmp/tty8_fifo"):
-#			spawn("mkfifo /tmp/tty8_fifo")
-#		cmd += " | tee /tmp/tty8_fifo"
-		cmd += " | tee -a /tmp/tty8_log"
+		cmd += " | tee /dev/tty8"
 
 	ret, output = commands.getstatusoutput(cmd)
 	if return_output:

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.55 2005/03/16 06:17:35 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.56 2005/03/20 05:11:29 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -28,6 +28,7 @@ class ArchitectureTemplate:
 		# this method 100000 times.
 		self._chroot_dir = self._client_configuration.get_root_mount_point()
 		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
+		self._compile_logfile = "/tmp/compile_output.log"
 
 		# These must be filled in by the subclass. _steps is a list of
 		# functions, that will carry out the installation. They must be
@@ -160,11 +161,13 @@ class ArchitectureTemplate:
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
 			self._logger.log("Emerge system complete.")
+
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
 		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
 		self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
+
 	def prepare_chroot(self):
 		# Copy resolv.conf to new env
 		try:
@@ -177,6 +180,7 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -o bind /dev " + self._chroot_dir + "/dev")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
+		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
 		self._logger.log("Chroot environment ready.")
 		# Set USE flags here
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
