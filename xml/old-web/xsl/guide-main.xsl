@@ -284,6 +284,15 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-contract.html"> Social Contract</a> |
 						</xsl:otherwise>
 					</xsl:choose>
+					</xsl:choose>
+						<xsl:choose>
+						<xsl:when test="/mainpage/@id='graphics'">
+							<a class="highlight" href="/index-graphics.html"> Graphics</a> |
+						</xsl:when>
+						<xsl:otherwise>
+							<a class="menulink" href="/index-graphics.html"> Graphics</a> |
+						</xsl:otherwise>
+					</xsl:choose>
 					<a class="menulink" href="/doc/shots.html">ScreenShots</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='articles'">
@@ -374,7 +383,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
-						<a class="altlink" href="/doc/xml-guide.html">User-Mode Linux Guide <comment>(new!)</comment></a><br/>
+						<a class="altlink" href="/doc/xml-guide.html">User-Mode Linux Guide <font color="#ff0000">(new!)</font></a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<br/>
 	
