@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.8 2005/01/08 09:35:01 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.9 2005/01/10 08:29:41 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -236,8 +236,41 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			parted_disk = parted.PedDisk.new(parted_dev)
 			# First pass to delete old partitions that aren't resized
 			for part in parts_old[dev]:
+				if part > 4: continue
 				oldpart = parts_old[dev][part]
 				matchingminor = 0
+				if oldpart['type'] == "extended":
+					logical_to_resize = 0
+					for part_log in parts_old[dev]:
+						if part_log < 5: continue
+						matchingminor = 0
+						for new_part in parts_new[dev]:
+							if new_part < 5: continue
+							tmppart = parts_new[dev][new_part]
+							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
+								matchingminor = new_part
+								print "  Deleting old minor " + str(part_log) + " to be recreated later"
+								parted_disk.delete_partition(parted_disk.get_partition(part_log))
+								break
+							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
+								matchingminor = new_part
+								print "  Ignoring old minor " + str(part_log) + " to resize later"
+								break
+						if not matchingminor:
+							print "  No match found...deleting partition " + str(part_log)
+							parted_disk.delete_partition(parted_disk.get_partition(part_log))
+						else:
+							if parted_disk.get_partition(part_log).get_flag(1): # Active/boot
+								print "  Partition " + str(part_log) + " was active...noted"
+								parts_active.append(int(matchingminor))
+							if parted_disk.get_partition(part_log).get_flag(7): # LBA
+								print "  Partition " + str(part_log) + " was LBA...noted"
+								parts_lba.append(int(matchingminor))
+							logical_to_resize = 1
+					if not logical_to_resize:
+						print "  Deleting old minor " + str(part)
+						parted_disk.delete_partition(parted_disk.get_partition(part))
+					continue
 				for new_part in parts_new[dev]:
 					tmppart = parts_new[dev][new_part]
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
@@ -253,7 +286,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					print "  No match found...deleting partition " + str(part)
 					# This is broke for logical partitions
 					parted_disk.delete_partition(parted_disk.get_partition(part))
-
 				else:
 					if parted_disk.get_partition(part).get_flag(1): # Active/boot
 						print "  Partition " + str(part) + " was active...noted"
@@ -281,7 +313,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #							print "resize2fs " + device + str(minor) + " " + str(total_sectors) + "s"
 						elif type == "ntfs":
 							total_sectors = end - start + 1
-							total_bytes = int(total_sectors) * 512)
+							total_bytes = int(total_sectors) * 512
 #							commands.getstatus("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
 #							print "ntfsresize --size " + str(total_bytes) + " " + device + str(minor)
 						else:
