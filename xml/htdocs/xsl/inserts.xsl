@@ -22,12 +22,20 @@
     <!-- Repeat the following 3 lines and define 'XX' in test against $LANG to define a new supported language
                              \  /¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
                               ||                                                                               -->
+     <!-- French language -->
     <xsl:when test="($LANG = 'fr') and (document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str])">
       <func:result select="document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str]" />
     </xsl:when>
+    <!-- Italian language -->
     <xsl:when test="($LANG = 'it') and (document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str])">
       <func:result select="document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str]" />
     </xsl:when>
+    <!-- Danish language -->
+    <xsl:when test="($LANG = 'da') and (document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str])">
+      <func:result select="document(concat('/doc/',$LANG,'/inserts-',$LANG,'.xml'))/inserts/insert[@name=$str]" />
+    </xsl:when>
+
+
    <xsl:when test="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]">
       <func:result select="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]" />
     </xsl:when>
