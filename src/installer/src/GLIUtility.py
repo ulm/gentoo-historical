@@ -68,17 +68,10 @@ def is_hostname(hostname):
 	if not is_realstring(hostname):
 		return False
 			
-	# These are the characters that are not letters or numbers
-	# but are still allowed to be in a hostname.  Any others?
-	# I am allowing '.' for FQHNs.
-	non_alphanum_chars = '-_.'
-		
-	# Make sure that each 
-	for letter in hostname:
-		if not letter in (string.letters + string.digits + non_alphanum_chars):
-			return False
-			
-	return True
+	expr = re.compile('^([a-zA-Z0-9-_\.])+\.[a-zA-Z]{2,4}$')
+	res = expr.match(hostname)
+
+	return(res != None)
 		
 def is_path(path):
 	"Check to see if the string is a valid path. Returns bool."
@@ -172,3 +165,18 @@ def is_eth_device(device):
 	# Return True only if there are results
 	return(res != None)
 
+def is_nfs(device):
+	" Checks to see if device is a valid NFS device "
+
+	if not is_realstring(device):
+		return False
+
+	colon_location = device.find(':')
+
+	if colon_location == -1:
+		return False
+
+	host = device[:colon_location]
+	path = device[colon_location+1:]
+
+	return((is_ip(host) or is_hostname(host)) and is_path(path))
