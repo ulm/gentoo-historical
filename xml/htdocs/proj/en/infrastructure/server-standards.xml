@@ -8,10 +8,13 @@
 <author title="Author">
     <mail link="klieber@gentoo.org">Kurt Lieber</mail>
 </author>
+<author title="Contributor">
+    <mail link="solar@gentoo.org">solar</mail>
+</author>
 <abstract>
 This guide documents the various standards, packages and requirements that the Gentoo Infrastructure team has set for its servers.
 </abstract>
-<version>0.9</version>
+<version>$Id: server-standards.xml,v 1.8 2004/02/13 05:05:23 solar Exp $</version>
 <date>04 July, 2003</date>
 
 <chapter>
@@ -23,17 +26,17 @@ This guide documents the various standards, packages and requirements that the G
 The following packages are required to be emerged on all Gentoo infrastructure servers:
 </p>
 <ul>
-	<li><c>dev-libs/openssl</c></li>
-	<li><c>net-firewall/iptables</c></li>
-	<li><c>net-misc/cfengine</c></li>
-	<li><c>sys-apps/vcron</c></li>
-	<li><c>app-admin/sysklogd</c></li>
+	<li><c>app-admin/gentoolkit</c></li>        
 	<li><c>app-admin/sudo</c></li>
-	<li><c>net-dns/bind-tools</c></li>
-	<li><c>net-misc/ntp</c></li>
-	<li><c>app-admin/gentoolkit</c></li>
+	<li><c>app-admin/sysklogd</c></li>        
+	<li><c>dev-libs/openssl</c></li>
+	<li><c>net-dns/bind-tools</c></li>        
+	<li><c>net-firewall/iptables</c></li>
+	<li><c>net-misc/cfengine</c></li>        
 	<li><c>net-misc/keychain</c></li>
+	<li><c>net-misc/ntp</c></li>        
 	<li><c>sys-apps/lsof</c></li>
+	<li><c>sys-apps/vixie-cron</c></li>
 </ul>
 </body>
 </section>
@@ -69,6 +72,7 @@ The following services may never be installed and/or running on any Gentoo Infra
 <note>The above list is not all-inclusive and only documents the most common forbidden services.  In general, any network daemon which transmits data in an unencrypted or insecure fashion, or is otherwise considered a security risk, is forbidden from running on any Gentoo Infrastructure servers unless explicitly authorized.  The one exception to this rule is HTTP using apache.</note>
 </body>
 </section>
+
 <section>
 <title>Settings in /etc/make.conf</title>
 <body>
@@ -76,18 +80,21 @@ The following services may never be installed and/or running on any Gentoo Infra
 Servers should be configured to use the following settings in /etc/make.conf:
 </p>
 <ul>
-<li><c>USE="-* ncurses ssl crypt berkdb tcpd pam xml perl python mmx snmp"</c></li>
+<li><c>USE="-* ncurses ssl crypt berkdb tcpd pam xml perl python pic snmp mmx"</c></li>
+<li><c>FEATURES="sandbox sfperms strict buildpkg"</c> (all servers)</li>
 <li><c>CFLAGS="-march=athlon-xp -O2 -pipe -fstack-protector -fPIC"</c> (for Athlon XP servers)</li>
 <li><c>CFLAGS="-march=pentium3 -O2 -pipe -fstack-protector -fPIC"</c> (for Pentium III servers)</li>
 <li><c>CFLAGS="-march=pentium4 -O2 -pipe -fstack-protector -fPIC"</c> (for Pentium IV servers)</li>
+<li><c>LDFLAGS="-pie"</c> (all servers &gt;=gcc-3.3.2 This allows us to build Position Independent Executables to take advantage <uri link="http://pax.grsecurity.net/docs/aslr.txt">PaX ASLR</uri></li>
 </ul>
 <note>USE flags may be adjusted as necessary depending on the requirements of the individual server.  Care should always be taken to ensure a minimal set of USE flags are used on all servers.</note>
-<note>At the moment, Gentoo does not use any Pentium II or Athlon/Duron servers</note>
-<p>
-Because of the marginal difference between -O2 and -O3, we have elected to choose stability over performance when selecting CFLAGS.  Also, to assist with debugging, -fomit-frame-pointer should not be used.
-</p>
+<note>Sometimes the mmx USE flag can conflict with some of the existing mmx assembly thats used in various multimedia applications that are portage. If you notice this happening try USE="-mmx" and/or appending CFLAGS="-fomit-frame-pointer" In addition seek the help of a developer if needed.</note>
+<impo>CFLAGS="-fforce-addr" is under review and may be added in the near future.</impo>
+
+<p>Because of the marginal difference between -O2 and -O3, we have elected to choose stability over performance when selecting CFLAGS.  Also, to assist with debugging, -fomit-frame-pointer should not be used.</p>
 </body>
 </section>
+
 <section>
 <title>Settings in /etc/fstab</title>
 <body>
@@ -96,6 +103,7 @@ Servers should use either ext3 or reiserfs for all partitions, with the exceptio
 </p>
 </body>
 </section>
+
 <section>
 <title>Miscellaneous Settings</title>
 <body>
@@ -260,9 +268,10 @@ CONFIG_GRKERNSEC_SYSCTL=y
 CONFIG_GRKERNSEC_FLOODTIME=10
 CONFIG_GRKERNSEC_FLOODBURST=4
 </pre>
-<impo>
-Ensure that the hardware clock on the server is set to the correct time in UTC format as well.  Use <c>hwclock</c> to adjust.
-</impo>
+
+<note>mileage may very with CONFIG_GRKERNSEC_KMEM</note>
+<impo>Ensure that the hardware clock on the server is set to the correct time in UTC format as well.  Use <c>hwclock</c> to adjust.</impo>
+
 </body>
 </section>
 </chapter>
