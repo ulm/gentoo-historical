@@ -29,14 +29,14 @@
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/gentoo/images/gtop-s.jpg"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/gentoo/images/gbot-s.gif"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif"/>
                     </a>
                   </td>
                 </tr>
@@ -119,7 +119,7 @@
                     <table border="0" cellspacing="5" cellpadding="0">
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                       <tr>
@@ -129,7 +129,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                       <tr>
@@ -139,7 +139,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                       <tr>
@@ -148,7 +148,7 @@
 <!--
 				<tr>
 				<td>
-				<img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+				<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
 				</td>
 				</tr>
 				<tr>
@@ -162,7 +162,7 @@
 				</tr> -->
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                       <tr>
@@ -185,7 +185,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                       <tr>
@@ -200,7 +200,7 @@ of your sale will go towards further Gentoo Linux development.</p>
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                         </td>
                       </tr>
                     </table>
@@ -236,14 +236,14 @@ of your sale will go towards further Gentoo Linux development.</p>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/gentoo/images/gtop-s.jpg"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/gentoo/images/gbot-s.gif"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif"/>
                     </a>
                   </td>
                 </tr>
@@ -283,7 +283,7 @@ of your sale will go towards further Gentoo Linux development.</p>
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td height="1%" valign="top" align="right">
-                    <img src="http://www.ibiblio.org/gentoo/images/gridtest.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gridtest.gif"/>
                   </td>
                 </tr>
                 <tr>
@@ -357,7 +357,7 @@ Portage</a><br/><br/><br/>
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td>
-                              <img src="http://www.ibiblio.org/gentoo/images/gentoo-new.gif"/>
+                              <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif"/>
                             </td>
                             <td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
                           </tr>
@@ -380,22 +380,22 @@ Portage</a><br/><br/><br/>
                               <td width="100" align="middle" valign="center">
                                 <xsl:choose>
                                   <xsl:when test="@category='gentoo'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-gentoo.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
                                   </xsl:when>
                                   <xsl:when test="@category='main'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-stick.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png"/>
                                   </xsl:when>
                                   <xsl:when test="@category='ibm'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-ibm.gif"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif"/>
                                   </xsl:when>
                                   <xsl:when test="@category='linux'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-penguin.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png"/>
                                   </xsl:when>
                                   <xsl:when test="@category='moo'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-cow.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png"/>
                                   </xsl:when>
                                   <xsl:when test="@category='nvidia'">
-                                    <img src="http://www.ibiblio.org/gentoo/images/icon-nvidia.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png"/>
                                   </xsl:when>
                                 </xsl:choose>
                               </td>
@@ -435,22 +435,22 @@ Portage</a><br/><br/><br/>
                             <td width="100" align="middle" valign="top">
                               <xsl:choose>
                                 <xsl:when test="@category='gentoo'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-gentoo.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
                                 </xsl:when>
                                 <xsl:when test="@category='main'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-stick.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png"/>
                                 </xsl:when>
                                 <xsl:when test="@category='ibm'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-ibm.gif"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif"/>
                                 </xsl:when>
                                 <xsl:when test="@category='linux'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-penguin.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png"/>
                                 </xsl:when>
                                 <xsl:when test="@category='moo'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-cow.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png"/>
                                 </xsl:when>
                                 <xsl:when test="@category='nvidia'">
-                                  <img src="http://www.ibiblio.org/gentoo/images/icon-nvidia.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png"/>
                                 </xsl:when>
                               </xsl:choose>
                             </td>
@@ -490,7 +490,7 @@ Portage</a><br/><br/><br/>
               <table border="0" cellspacing="5" cellpadding="0">
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                   </td>
                 </tr>
                 <tr>
@@ -500,7 +500,7 @@ Portage</a><br/><br/><br/>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                   </td>
                 </tr>
                 <tr>
@@ -512,7 +512,7 @@ Portage</a><br/><br/><br/>
                       <input type="hidden" name="business" value="drobbins@gentoo.org"/>
                       <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
                       <input type="hidden" name="item_number" value="1000"/>
-                      <input type="hidden" name="image_url" value="http://www.ibiblio.org/gentoo/images/paypal.png"/>
+                      <input type="hidden" name="image_url" value="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/paypal.png"/>
                       <input type="hidden" name="no_shipping" value="1"/>
                       <input type="hidden" name="return" value="http://www.gentoo.org"/>
                       <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
@@ -523,7 +523,7 @@ Portage</a><br/><br/><br/>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                   </td>
                 </tr>
                 <tr>
@@ -538,7 +538,7 @@ of your sale will go towards further Gentoo Linux development.</p>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
                   </td>
                 </tr>
               </table>
