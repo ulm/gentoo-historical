@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.3 2005/01/04 22:18:18 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.4 2005/01/04 22:28:29 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -18,9 +18,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'x86'
 	#	self._install_steps = [self.stage1, self.stage2, self.stage3] um, we ain't doin this this way anymore folks.
-
-	def partition(self):
-		GLIUtility.run_bash("cfdisk")
 
 	def install_bootloader(self):
 		"Installs and configures bootloader"
