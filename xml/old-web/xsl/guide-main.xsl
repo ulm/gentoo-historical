@@ -224,10 +224,10 @@
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='about'">
-				<a class="highlight" href="/index-about.html"> About Gentoo Linux</a> |
+				<a class="highlight" href="/index-about.html"> About </a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
+				<a class="menulink" href="/index-about.html"> About </a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
@@ -238,37 +238,6 @@
 				<a class="menulink" href="/index-contract.html"> Social Contract</a> |
 			</xsl:otherwise>
 		</xsl:choose>
-		<a class="menulink" href="http://forums.gentoo.org">Forums</a> |
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='packages'">
-				<a class="highlight" href="/index-packages.html"> Packages</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/index-packages.html"> Packages</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='graphics'">
-				<a class="highlight" href="/index-graphics.html"> Graphics</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/index-graphics.html"> Graphics</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		<a class="menulink" href="/doc/shots.html">ScreenShots</a> |
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='articles'">
-				<a class="highlight" href="/index-articles.html">Articles</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/index-articles.html">Articles</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		Install:<a class="menulink" href="/doc/build.html"> x86 </a>/
-			<a class="menulink" href="/doc/gentoo-ppc-install.html">PowerPC </a>/
-			<a class="menulink" href="/doc/gentoo-sparc-install.html">SPARC </a>| 
-		FAQ:	<a class="menulink" href="/doc/faq.html">General(x86)</a> /
-			<a class="menulink" href="/doc/gentoo-ppc-faq.html">PPC</a> |
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='docs'">
 				<a class="highlight" href="/index-docs.html">Documentation</a> |
@@ -277,32 +246,18 @@
 				<a class="menulink" href="/index-docs.html">Documentation</a> |
 			</xsl:otherwise>
 		</xsl:choose>
+<a class="menulink" href="http://forums.gentoo.org">Forums</a> |
 		<xsl:choose>
-			<xsl:when test="/mainpage/@id='changelog'">
-				<a class="highlight" href="/index-changelog.html">Changelog</a> |
+			<xsl:when test="/mainpage/@id='lists'">
+				<a class="highlight" href="/index-mailinglists.html"> Lists</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/index-changelog.html">Changelog</a> |
+				<a class="menulink" href="/index-mailinglists.html"> Lists</a> |
 			</xsl:otherwise>
 		</xsl:choose>
-		<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='projects'">
-				<a class="highlight" href="/index-projects.html">Projects</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/index-projects.html">Projects</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='devlist'">
-				<a class="highlight" href="/index-devlist.html">Developers</a>
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/index-devlist.html">Developers</a>
-			</xsl:otherwise>
-		</xsl:choose> 
-		| <a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store(new!)</a></p>
+<a class="menulink" href="/doc/shots.html">ScreenShots</a> |
+			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
+		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store (new!)</a></p>
             </td>
           </tr>
           <tr>
@@ -319,33 +274,67 @@
                     <table cellspacing="0" cellpadding="5" border="0">
                       <tr>
                         <td valign="top">
-                          <p class="altmenu"><xsl:if test="/mainpage/@id='news'">
+                          <p class="altmenu">
+				Documentation:
+				<br/>
+				<a class="altlink" href="/index-about">About Gentoo Linux</a>
+				<br/>
+				<a class="altlink" href="/index-docs.html#top">User Docs</a>
+				<br/>
+				<a class="altlink" href="/index-docs.html#doc_chap1_sect2">Developer Docs</a>
+				<br/>
+				<a class="altlink" href="/index-docs.html#doc_chap1_sect3">Other Docs/Translations</a>
+				<br/>
+				<a class="altlink" href="/index-contract.html">Social Contract</a>
+				<br/><br/>
+				Installation:
+				<br/>
+				<a class="altlink" href="/doc/build.html">Gentoo Linux/x86</a>
+				<br/>
+				<a class="altlink" href="/doc/gentoo-ppc-install.html">Gentoo Linux/PowerPC</a>
+				<br/>
+				<a class="altlink" href="/doc/gentoo-sparc-install.html">Gentoo Linux/Sparc</a>
+				<br/><br/>
+				Resources:
+				<br/>
+				<a class="altlink" href="/index-mailinglists.html">Mailing lists</a>
+				<br/>
+				<a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
+				<br/>
+				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
+				<br/>
+				<a class="altlink" href="/index-mirrors.html">Download Mirrors</a>
+				<br/>
+				<a class="altlink" href="/index-irc.html">Official Gentoo IRC channels</a>
+				<br/>
+				<a class="altlink" href="/index-packages.html">Online ports database</a>
+				<br/>
+				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
+				<br/>
+				<a class="altlink" href="/index-devlist.html">Gentoo Linux developer list</a>
+				<br/><br/>
+				Graphics:
+				<br/>
+				<a class="altlink" href="/index-graphics.html">Logos and themes</a>
+				<br/>
+				<a class="altlink" href="/doc/shots.html">ScreenShots</a>
+				<br/><br/>	
+				Miscellaneous Resources:
+				<br/>
+				<a class="altlink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Gentoo Linux Store</a>
+				<br/>
+				<a class="altlink" href="/index-projects.html">Gentoo-hosted projects</a>
+				<br/>
+				<a class="altlink" href="/index-articles.html">IBM dW/Intel article archive</a>
+	
+	<xsl:if test="/mainpage/@id='news'">
+				<br/><br/>
 				Recent Gentoo Linux news:<br/>
 				<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
 				<br/><br/>
 				Recent Other News:<br/>
 				<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
-				<br/><br/>
 				</xsl:if>
-				Documentation:
-				<br />
-				<a class="altlink" href="/index-docs.html#top"> User Docs </a>
-				<br />
-				<a class="altlink" href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>
-				<br />
-				<a class="altlink" href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>
-				<br />
-				<br />
-				Resources:
-				<br />
-				<a class="altlink" href="/index-mirrors.html">Download Mirrors</a>
-				<br />
-				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
-				<br/>
-				<a class="altlink" href="http://lists.gentoo.org">Mailing lists</a>
-				<br/>
-				<a class="altlink" href="/index-irc.html">Official Gentoo IRC channels</a><br/><br/>
-				<br/><br/>
 				</p>
 				<br/><br />
                         </td>
