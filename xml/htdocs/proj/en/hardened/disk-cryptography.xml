@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/Attic/disk-cryptography.xml,v 1.1 2004/09/15 11:17:56 tigger Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/Attic/disk-cryptography.xml,v 1.2 2004/09/17 12:16:09 tigger Exp $ -->
 
 <guide link="/proj/en/hardened/disk-cryptography.xml">
 
@@ -54,7 +54,7 @@ baselayout so you can install it:
 </p>
 <pre caption="Unmasking our dm-crypt friendly baselayout ebuild">
 # mkdir -p /etc/portage
-# echo '=sys-apps/baselayout-x-x' >> /etc/portage/package.unmask
+# echo '=sys-apps/baselayout-1.11.0' >> /etc/portage/package.unmask
 </pre>
 <p>
 Now remerge baselayout to get the changes to the init scripts. When its
@@ -84,8 +84,8 @@ Device Drivers ---&gt;
       &lt; >   RAID support
       &lt;*>   Device mapper support
       &lt;*>     Crypt target support
-<comment>You should enable any of these you plan on using. The author
-recommends the use of MD5 and SHA1 for hashing and AES for encryption.
+<comment>You should enable any of the crypto algorithms you plan on using. The
+author recommends the use of SHA1 for hashing and AES for encryption.
 </comment>
 Cryptographic options ---&gt;
   &lt;M>   MD5 digest algorithm
@@ -99,8 +99,8 @@ document).
 </p>
 <p>
 The last thing that needs to be done before you're ready to start
-encrypting things is installing the userland side of dm-crypt. This is a
-package called cryptsetup and it is available via portage.
+encrypting things is installing the userland side of dm-crypt. This is
+provided by app-crypt/cryptsetup.
 </p>
 <pre caption="Merging cryptsetup">
 # emerge cryptsetup
@@ -134,7 +134,7 @@ comments in the file we can do:
 # vi /etc/conf.d/cryptfs
 </pre>
 <pre caption="An example swap line">
-swap=crypt-swap source='/dev/main/swap'
+swap=crypt-swap source='/dev/hda2'
 </pre>
 <p>
 Thats it! So...what does it mean? Well, each line in the cryptfs file
@@ -145,11 +145,11 @@ be anything you like really, but I like to name my mappings crypt-* so
 that its obvious to me that they are encrypted. 
 </p>
 <p>
-The source= parameter specifies the path to the device you'd like to
-encrypt. In the example line above, the user uses an LVM swap partition
-at /dev/main/swap. You can find out where your swap partition is by
-looking in /etc/fstab for the line with 'swap' in the type field. It
-doesn't matter if the device is LVM or not, dm-crypt doesn't care.
+The source= parameter specifies the path to the device you'd like to encrypt.
+In the example line above, the user uses /dev/hda2 as his swap partition.  You
+can find out where your swap partition is by looking in /etc/fstab for the line
+with 'swap' in the type field. It doesn't matter if the device is an LVM
+partition or not, dm-crypt doesn't care.
 </p>
 <p>
 Once you've added the line to cryptfs you need to edit your /etc/fstab
@@ -159,12 +159,122 @@ to look at the crypt-mapping instead of the real device.
 # vi /etc/fstab
 </pre>
 <pre caption="Example change">
-/dev/main/swap none swap sw 0 0
+/dev/hda2 none swap sw 0 0
 <comment>becomes</comment>
 /dev/mapper/crypt-swap none swap sw 0 0
 </pre>
 <p>
 Thats it. You have now setup encrypted swap! Try rebooting.. :)
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Understanding whats happening</title>
+<section>
+<body>
+<p>
+So now you have an encrypted swap partition :) Its probably best to understand
+a little bit about whats going on.
+</p>
+<p>
+dm-crypt works by setting up a mapping between a partition on the disk
+where the encrypted data is stored and a pseudo partition where the
+unencrypted version can be read. 
+</p>
+<p>
+dm-crypt can create mappings for any kind of partition (so if
+EVMS/LVM/LVM2 safe). The unencrypted pseudo devices appear in
+/dev/mapper/&gt;mapping name> and can then be used as if they were normal
+partitions.
+</p>
+<p>
+When you are setting up an encrypted partition there are quite a few
+options you can choose from which change how the encryption works. The
+Gentoo init scripts use sensible defaults for swap and mount so its
+fairly easy to encrypt partitions without worrying about the details of
+the encryption. We beleive our defaults to be pretty good for general
+use, so if you're not after military grade security you should be ok to
+leave them be.
+</p>
+<p>
+There are times when you will need to tweak the defaults we provide,
+however. A common example of this is for the encryption of the /tmp
+partition. Most people will probably want this file system re-created each
+time the machine is booted, and will want a random encryption key on it
+so that they don't have to type anything in on bootup (just as is done
+for swap). To allow this the cryptfs file allows you to give an
+options="" argument, and a post_mount="" argument. These options are
+described in more detail below.
+</p>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>The /etc/conf.d/cryptfs file in more detail</title>
+<section>
+<body>
+<p>
+The cryptfs file is designed to let you setup your partitions flexibly.
+I've tried to provide hooks into each stage of the process so you can
+set things up how you'd like without hacking at the init scripts.
+</p>
+<p>
+The hooks/settings are as follows:
+</p>
+<ul>
+<li>source</li>
+<li>options</li>
+<li>pre_mount</li>
+<li>post_mount</li>
+</ul>
+<p>
+Each line in the file represents either a mount point or a swap
+partition, mount= or swap= respectively. To get a working encrypted swap
+partion you only need add: swap=crypt-swap source='/dev/hda2'.
+</p>
+<p>
+The 'crypt-swap' bit is the name of the mapping that dm-crypt should
+create and is what you will need to use in the path to access the
+unencrypted partition. In this case, we'd need to change our fstab to
+use /dev/mapper/crypt-swap instead of /dev/hda2 (as was described
+above).
+</p>
+<p>
+If we want to encrypt /tmp things get a little more complicated :)
+</p>
+<p>
+For /tmp we don't want to keep it between boots (there is no point) and
+so we don't want to have a specific key for it, we'd have to type it in
+every time we boot, which is a waste of time/effort. So, we need to have
+it keyed from /dev/urandom. The way to do this is to use the options=""
+argument in the cryptfs line for /tmp. Everything in the options=""
+argument is passed directly to cryptsetup so all we need do is:
+options="-d /dev/urandom" and we're good to go.
+</p>
+<p>
+Our next problem is that because we change the key every time we boot,
+the filesystem won't exist any more (we've changed the key so the old
+device will look like garbage to the kernel). To get around this we need
+to run a mkfs on boot. The pre_mount="" option in the cryptfs lets us do
+this. So, we add pre_mount="mke2fs ${dev}" to our /tmp cryptfs line. The
+${dev} variable is replaced with the path to unencrypted end of the
+mapping at runtime.
+</p>
+<p>
+We're all set to encrypt /tmp now right? Nope...afraid not. We have
+another problem. Because we wipe the filesystem each time we boot, we
+also wipe the file permissions on /tmp which means it loses its 1777
+mode and things break because they can't write to /tmp.
+</p>
+<p>
+We have to add another flag to the /tmp cryptfs line to compensate
+for this. After the filesystem has been mounted, we need to fix the
+ownership and permissions on the mount point. We can do this using the
+post_mount="" hook. So, we add another option post_mount="chown
+root:root ${mount_point}; chmod 1777 ${mount_point}". Now, finally, we
+can have an encrypted /tmp without the hassle of typing in pass phrases.
 </p>
 </body>
 </section>
