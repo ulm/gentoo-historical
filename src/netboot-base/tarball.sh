@@ -1,10 +1,10 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/netboot-base/tarball.sh,v 1.1 2004/10/06 16:06:38 vapier Exp $
+# $Header: /var/cvsroot/gentoo/src/netboot-base/tarball.sh,v 1.2 2004/10/07 20:39:14 vapier Exp $
 
 rm -f filelist
-for d in etc sbin ; do
+for d in etc lib sbin src ; do
 	find ./${d} -type f -a ! -path '*/CVS/*' >> filelist
 done
 date=$(date +%Y%m%d)
