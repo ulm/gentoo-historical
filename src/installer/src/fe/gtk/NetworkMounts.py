@@ -54,6 +54,7 @@ class Panel(GLIScreen.GLIScreen):
 		mount_info_export_label.set_alignment(0.0, 0.5)
 		mount_info_table.attach(mount_info_export_label, 0, 1, 1, 2)
 		self.mount_info_export = gtk.ComboBoxEntry(gtk.ListStore(gobject.TYPE_STRING))
+		self.mount_info_export.get_child().connect("focus-in-event", self.populate_exports)
 		if not self.mount_info_export.get_text_column() == 0:
 			self.mount_info_export.set_text_column(0)
 		mount_info_table.attach(self.mount_info_export, 1, 2, 1, 2)

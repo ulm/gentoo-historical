@@ -160,9 +160,33 @@ class Installer:
 		self.finishbutton_label.set_use_underline(gtk.TRUE)
 		self.finishbutton.add(self.finishbuttonbox)
 
+		# Creates a new button with the label "Load".
+		self.loadbutton = gtk.Button()
+		self.loadbuttonbox = gtk.HBox(gtk.FALSE, 0)
+		self.loadbuttonimg = gtk.Image()
+		self.loadbuttonimg.set_from_file(self.__full_path + '/button_images/stock_open.png')
+		self.loadbuttonbox.pack_start(self.loadbuttonimg)
+		self.loadbutton_label = gtk.Label(" _Load ")
+		self.loadbuttonbox.pack_start(self.loadbutton_label)
+		self.loadbutton_label.set_use_underline(gtk.TRUE)
+		self.loadbutton.add(self.loadbuttonbox)
+
+		# Creates a new button with the label "Save".
+		self.savebutton = gtk.Button()
+		self.savebuttonbox = gtk.HBox(gtk.FALSE, 0)
+		self.savebuttonimg = gtk.Image()
+		self.savebuttonimg.set_from_file(self.__full_path + '/button_images/stock_save.png')
+		self.savebuttonbox.pack_start(self.savebuttonimg)
+		self.savebutton_label = gtk.Label(" _Save ")
+		self.savebuttonbox.pack_start(self.savebutton_label)
+		self.savebutton_label.set_use_underline(gtk.TRUE)
+		self.savebutton.add(self.savebuttonbox)
+
 		# We pack in the buttons
 		self.bottombox.pack_start(self.exitbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		self.bottombox.pack_start(self.helpbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_start(self.loadbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_start(self.savebutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		self.bottombox.pack_end(self.finishbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		self.bottombox.pack_end(self.forwardbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		self.bottombox.pack_end(self.backbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
@@ -186,12 +210,6 @@ class Installer:
 		for item_ in self.menuItems:
 			item = str(self.num_times+1) + ". " + item_['text']
 			self.box = gtk.HBox(gtk.FALSE,5)
-#			self.boximg = gtk.Image()
-#			if self._cur_panel != self.num_times:
-#				self.boximg.set_from_file(self.__full_path+'/dot_images/previous.png')
-#			else:
-#				self.boximg.set_from_file(self.__full_path+'/dot_images/excited.png')
-#			self.box.pack_start(self.boximg,expand=gtk.FALSE,fill=gtk.FALSE,padding=5)
 			box_string = item
 			box_label=gtk.Label(box_string)
 			box_label.set_alignment(0,0)

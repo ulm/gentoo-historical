@@ -19,7 +19,7 @@ class GLIScreen(gtk.VBox):
 		self.pack_end(content, gtk.TRUE, gtk.TRUE, 0)
 
 	def activate(self):
-		pass
+		print "Bad boy! You should really impliment this function in your subclass."
 
 	def deactivate(self):
 		return True
