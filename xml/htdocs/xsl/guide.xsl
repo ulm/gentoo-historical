@@ -250,10 +250,10 @@
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='docs'">
-				<a class="highlight" href="/main/en/docs.xml">Documentation</a> |
+				<a class="highlight" href="/main/en/docs.xml">Docs</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/docs.xml">Documentation</a> |
+				<a class="menulink" href="/main/en/docs.xml">Docs</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 <a class="menulink" href="http://forums.gentoo.org">Forums</a> |
@@ -268,6 +268,14 @@
 <a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store</a> |
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='newsletter'">
+				<a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/news/en/gwn/gwn.xml"> GWN</a> |
+			</xsl:otherwise>
+		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='where'">
 				<a class="highlight" href="/main/en/where.xml"> Get Gentoo!</a>
