@@ -8,11 +8,13 @@
 <author title="Contact Address">
   <mail link="security@gentoo.org">security@gentoo.org</mail>
 </author>
-<date><xsl:value-of select="announced"/></date>
-<version><xsl:value-of select="@id"/></version>
 <abstract>
 This is a Gentoo Linux Security Advisory
 </abstract>
+
+<version><xsl:value-of select="@id"/></version>
+<date><xsl:value-of select="announced"/></date>
+
 <chapter>
 <title>Gentoo Linux Security Advisory</title>
 <section>
