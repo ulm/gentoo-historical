@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Page_Script.py,v 1.5 2004/10/29 01:34:12 hadfield Exp $
 #
 
 import Config
@@ -22,6 +22,7 @@ class Page_Script(SiteModule):
         self.page = form.getvalue("page")
         self.template = Config.Template["create_script"]
         self.form = form
+        self.uid = uid
 
         self.script_id = form.getvalue("script_id", "0")
 
@@ -83,11 +84,12 @@ class Page_Script(SiteModule):
         script_details = {"name": self.form.getvalue("name"),
                           "descr": self.form.getvalue("descr"),
                           "category_id": self.form.getfirst("category_ids"),
-                          "language_id": self.form.getvalue("language_id")}
+                          "language_id": self.form.getvalue("language_id"),
+                          "submitter_id": self.uid}
 
         if self.parent_script_id == "0":
             script_obj = Script.Script()
-            script_obj.Create(script_details)
+            script_id = script_obj.Create(script_details)
             self.parent_script_id = script_obj.id
 
         else:
@@ -97,7 +99,7 @@ class Page_Script(SiteModule):
         # Setup/save the subscript.
         subscript_details = {"version": self.form.getvalue("version"),
                              "body": self.form.getvalue("body"),
-                             "changelog": self.form.getvalue("changelog")}
+                             "changelog": self.form.getvalue("changelog", "")}
 
         # Does the script need approval?
         if Config.RequireApproval or self.form.has_key("get_script_reviewed"):
