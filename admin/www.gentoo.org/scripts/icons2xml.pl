@@ -164,8 +164,8 @@ foreach $category (sort (keys(%categorys)))
 if (-e "$searchpath/icons.tar.bz2" ) {unlink ("$searchpath/icons.tar.bz2") || print "Removal of old tarball not successful";}
 #
 # create new tarball
-#
-#system `tar -cjf $searchpath/icons.tar.bz2 $searchpath/*.png`;
+#tar -vj --directory /home/httpd/gentoo/xml/images/icons/ --create -f icons.tar.bz2 ./
+system `tar -vj --directory $searchpath --create -f icons.tar.bz2 ./`;
 #
 # get size of tarball
 #
