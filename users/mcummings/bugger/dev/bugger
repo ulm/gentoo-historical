@@ -55,12 +55,14 @@ my $help     = '';
 my $show     = '';
 my $add      = '';
 my $selfname = $0;
+my $cclist   = '';
 my $list     = '';
 my $update   = '';
 my $change   = '';
 my $attach   = '';
 GetOptions(
     'help'     => \$help,
+    'cclist=s' => \$cclist,
     'list=s'   => \$list,
     'add'      => \$add,
     'update=s' => \$update,
@@ -70,6 +72,7 @@ GetOptions(
 );
 
 if    ($help)   { helpme() }
+elsif ($cclist) { cclist_bugs($cclist) }
 elsif ($list)   { list_bugs($list) }
 elsif ($show)   { show_bug($show) }
 elsif ($add)    { add_bug() }
@@ -81,6 +84,7 @@ else { helpme() }
 sub helpme {
     print "Usage: $selfname\n";
     print "\t\t--list=loginID\tList bugs assigned to given loginID\n";
+    print "\t\t--cclist=loginID\tList bugs with a CC: to given loginID\n";
     print "\t\t--add\tAdd a new bug\n";
     print "\t\t--update=BugID\tUpdate (comment on) given bug\n";
     print "\t\t--change=BugID\tChange bug status (fixed,invalid,etc)\n";
@@ -104,6 +108,47 @@ sub list_bugs {
     );
     my $request = HTTP::Request->new( 'GET',
 "http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailassigned_to1=1&emailtype1=substring&email1=$bugfor&emailassigned_to2=1&emailreporter2=1&emailcc2=1&emailtype2=substring&email2=$bugfor&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&cmdtype=doit&order=Reuse+same+sort+as+last+time&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
+    );
+    my $response = $ua->request($request);
+    die "Error while getting ", $response->request->uri, " -- ",
+      $response->status_line, "\nAborting"
+      unless $response->is_success;
+
+    my $content = $response->content;
+    my @baseline = split( /\n/, $content );
+    my $rowcount;
+    foreach my $line ( sort @baseline ) {
+        $line =~ s/\"//mg;
+        my @rowline = split( /,/, $line );
+        next if ( $rowline[0] =~ m/bug_id/ );
+        next if ( $rowline[0] eq "" );
+        next if ( $rowline[0] =~ /^\n$/ );
+        $rowcount = $rowcount + 4;
+        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
+        if ( $rowcount >= $rows ) {
+            print "Press Enter to Continue";
+            my $junk = <STDIN>;
+            $rowcount = 0;
+        }
+    }
+    exit();
+
+}
+
+sub cclist_bugs {
+
+    # Unfortunately, I can't find a simple method for retrieving this list
+    require LWP::UserAgent;
+    my $bugfor = shift;
+    $bugfor =~ s/\@/\%40/m;
+
+    my $ua = LWP::UserAgent->new(
+        env_proxy  => 1,
+        keep_alive => 1,
+        timeout    => 30,
+    );
+    my $request = HTTP::Request->new( 'GET',
+"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
     );
     my $response = $ua->request($request);
     die "Error while getting ", $response->request->uri, " -- ",
