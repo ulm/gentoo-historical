@@ -7,7 +7,9 @@ source /etc/livecd.defaults
 mount -o remount,rw /
 mount /proc
 
-echo "${GOOD} Initial RAMDISK Loading Starting..."
+[ -n "$QUIET" ] && echo "0" > /proc/sys/kernel/printk
+
+echo "${GOOD} Gentoo initrd startup..."
 
 for x in "${CMDLINE}"
 do
@@ -43,8 +45,21 @@ findcdmount() {
 	fi
 }
 
-mkdir /newroot
+for x in $HWOPTS
+do
+	for y in $CMDLINE
+	do
+		[ "$y" = "do${x}" ] && [ "$x" != "${HWOPTS/${x}/}" ] && MY_HWOPTS="MY_HWOPTS $x" && continue
+		[ "$y" = "no${x}" ] && MY_HWOPTS="${MY_HWOPTS/${x}/}"
+	done
+done
 
+for x in $MY_HWOPTS
+do
+	modules_scan $x
+done
+
+mkdir /newroot
 if [ "${CDROOT}" -eq "1" ]
 then
 	mount -t tmpfs tmpfs /newroot
@@ -123,6 +138,8 @@ else
 	umount /dev
 	mkdir /newroot/initrd
 fi
+
+[ -n "$QUIET" ] && echo "6" > /proc/sys/kernel/printk
 
 cd /newroot
 pivot_root . initrd
