@@ -37,10 +37,6 @@
 
 #include "baselayout-lite.h"
 
-int is_started(char *script);
-int mark_started(char *script);
-
-
 /*
  * argv[1] - runlevel (either sysinit or shutdown)
  *
@@ -64,6 +60,12 @@ int main(int argc, char **argv) {
 		perror(RUNLEVEL_DIR);
 		exit(EXIT_FAILURE);
 	}
+	
+	/* we could possibly have a mess left over from last boot */
+	/* FIXME there's got to be a better way */
+	system("mount -o remount /");
+	system("rm -rf /var/lib/init.d/started/*");
+	
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		FILE *f1;
 		char path[500];
@@ -76,14 +78,16 @@ int main(int argc, char **argv) {
 		//printf("%s\n", path);
 		if ((f1=fopen(path, "r")) == NULL) {
 			perror(path);
+			fclose(f1);
 			exit(EXIT_FAILURE);
 		}
 		
 		while(fgets(line, sizeof(line)-1, f1)) {
 			if(strstr(line, "before *")) {
-				mark_started(svc_script->d_name);
+				start_script(svc_script->d_name);
 			}
 		}
+		fclose(f1);
 		//printf("%d\n", __LINE__);
 	}
 	
@@ -97,43 +101,13 @@ int main(int argc, char **argv) {
 		//printf("rewind: %s\n", svc_script->d_name);
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
-		if(is_started(svc_script->d_name) == TRUE)
-			continue;
-		else {
-			mark_started(svc_script->d_name);
-		}
+		//if(is_started(svc_script->d_name) == TRUE)
+		//	continue;
+		//else {
+			start_script(svc_script->d_name);
+		//}
 	}
+	
+	closedir(rlvldir);
 	return 0;
-}
-
-int mark_started(char *script) {
-	int ret;
-	char *command = NULL;
-	char *init_script = NULL;
-	//char *cmdline[] = { NULL, "start", 0 };
-
-	/* start everything with "before *", and mark it as started */
-	//printf("Starting %s\n", script);
-
-	asprintf(&init_script, "%s%s", INIT_DIR, script);
-	asprintf(&command, "%s%s start", INIT_DIR, script);
-	//cmdline[0]=command;
-	//printf("%d: %s %s %s %s\n",
-	//	__LINE__, cmdline[0], cmdline[1], cmdline[2], cmdline[3]);
-	/* so we can get return values and decide if we should call mark_started() */
-	if ((ret=system(command)) == 0) {
-		//printf("%d\n", __LINE__);
-		//printf("%s: Succesfully started %s\n", __func__, script);
-		mkdir("/var/lib/", 0755);
-		mkdir("/var/lib/init.d/", 0755);
-		mkdir("/var/lib/init.d/started/", 0755);
-		chdir("/var/lib/init.d/started/");
-		symlink(init_script, basename(script));
-		free(command);
-		return TRUE;
-	}
-	//printf("%d\n", __LINE__);
-	printf("Failed to start %s (%s)(return value=%d)\n", script, strerror(errno), ret);
-	free(command);
-	return FALSE;
 }

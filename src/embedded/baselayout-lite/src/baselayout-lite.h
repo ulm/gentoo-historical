@@ -24,3 +24,5 @@
 
 
 int is_started(char *script);
+int mark_started(char *script);
+int start_script(char *script);

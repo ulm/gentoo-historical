@@ -10,9 +10,8 @@ int find_alias(char *alias, char *script);
  *
  */
 int main(int argc, char **argv) {
-
-	char *line;
-	char *word;
+	char *line = NULL;
+	char *word = NULL;
 	FILE *init_script_FILE;
 
 	/* if we don't have the right number of args, fail */
@@ -26,6 +25,7 @@ int main(int argc, char **argv) {
 	init_script_FILE=fopen(argv[1], "r");
 	if (init_script_FILE == NULL) {
 		perror(argv[1]);
+		fclose(init_script_FILE);
 		exit(EXIT_FAILURE);
 	}
 
@@ -87,7 +87,9 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
+	fclose(init_script_FILE);
 	free(line);
+	free(word);
 	runscript(argv[1], argv[2]);
 
 	exit(EXIT_SUCCESS);
@@ -95,18 +97,18 @@ int main(int argc, char **argv) {
 
 int runscript(char *init_script, char *func_to_run) {
 	char *command = NULL;
-	char *confd_file;
+	//char *confd_file;
 	
 	if(is_started(init_script)==TRUE) {
 		//printf("%s is already running\n", init_script);
 		return 0;
 	}
 	
-	confd_file=(void *)malloc(FILENAME_MAX);
-	memset(confd_file, 0, FILENAME_MAX);
+	//confd_file=(void *)malloc(FILENAME_MAX);
+	//memset(confd_file, 0, FILENAME_MAX);
 
 	/* figure out the conf.d file we need to source */
-	sscanf(init_script, INIT_DIR"%s\n", confd_file);
+	//sscanf(init_script, INIT_DIR"%s\n", confd_file);
 	//printf("%s%s\n", CONFD_DIR, confd_file);
 	
 	
@@ -118,14 +120,18 @@ int runscript(char *init_script, char *func_to_run) {
 	 */
 	asprintf(&command,
 		"/bin/sh -c \". %s ; [ -e \"%s%s\" ] && . %s%s ; . %s ; %s\"",
-		SHFUNCS, CONFD_DIR, confd_file, CONFD_DIR, confd_file,
+		//SHFUNCS, CONFD_DIR, confd_file, CONFD_DIR, confd_file,
+		SHFUNCS,
+		CONFD_DIR, basename(init_script),
+		CONFD_DIR, basename(init_script),
 		init_script, func_to_run);
 	//printf("%s\n", command);
 
 	system(command);
+	mark_started(basename(init_script));
 
 	free(command);
-	free(confd_file);
+	//free(confd_file);
 
 	return 0;
 }
@@ -187,6 +193,8 @@ int find_alias(char *alias, char *script) {
 		svc_script_FILE=fopen(svc_script_path, "r");
 		if (svc_script_FILE == NULL) {
 			perror(svc_script_path);
+			fclose(svc_script_FILE);
+			closedir(initdir);
 			return FALSE;
 		}
 
@@ -202,12 +210,16 @@ int find_alias(char *alias, char *script) {
 					strcpy(alias, aliasline);
 					free(svc_script_path);
 					free(line);
+					fclose(svc_script_FILE);
+					closedir(initdir);
 					return TRUE;
 				}
 			}
 		}
 		free(svc_script_path);
 		free(line);
+		fclose(svc_script_FILE);
 	}
+	closedir(initdir);
 	return FALSE;
 }
