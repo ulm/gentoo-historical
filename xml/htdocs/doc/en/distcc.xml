@@ -1,0 +1,294 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/en/distcc.xml">
+
+<title>Gentoo Distcc Documentation</title>
+
+<author title="Author">
+    <mail link="lisa@gentoo.org">Lisa M. Seelye</mail>
+</author>
+<author title="Reviewer">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<version>1.0</version>
+<date>5th of August 2003</date>
+
+<license/>
+
+<abstract>
+This document serves as a HOWTO for using distcc with gentoo.
+</abstract>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<title>What is distcc?</title>
+<body>
+<p>
+Distcc is a program designed to distribute compiling tasks across a 
+network to participating hosts.	It is comprised of a server, <c>distccd</c> 
+and a client program, <c>distcc</c>.  Distcc can work transparently with 
+<uri link="http://ccache.samba.org">ccache</uri> and Portage with a little 
+set up.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Dependancies</title>
+<body>
+<pre caption="Distcc Dependancies">
+&gt;=sys-apps/portage-2.0.46-r11
+&gt;=sys-devel/gcc-config-1.3.1
+&gt;sys-apps/shadow
+<codenote>(As of version 2.8) And the following optional dependancies when you have <c>gtk</c> in your <c>USE</c> flags</codenote>
+&gt;=x11-libs/gtk+-2.2.1
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Setup</title>
+<section>
+<title>Setting up Portage to use Distcc</title>
+<body>
+
+<p>
+Setting up distcc is very easy to do with Portage. Follow these simple 
+steps on each computer you want to use distcc on:
+</p>
+
+<pre caption="Integrating Distcc and Portage">
+# <i>emerge distcc</i>
+# <i>nano -w /etc/make.conf</i>
+<codenote>Edit your FEATURES flags to include &quot;distcc&quot;</codenote>
+</pre>
+
+<p>
+Next you have to specify what hosts you want to use.  To do this you can 
+use the <i>distcc-config</i> command to set that list of hosts. Here is an 
+example of some hosts that might be in your list:
+</p>
+
+<pre caption="Examples of host definitions">
+192.168.0.1        192.168.0.2                     192.168.0.3
+192.168.0.1/2      192.168.0.2                     192.168.0.3/10
+192.168.0.1:4000/2 192.168.0.2/1                   192.168.0.3:3632/4
+@192.168.0.1       @192.168.0.2:/usr/bin/distccd   192.168.0.3
+</pre>
+
+<p>
+It may all look complicated, but in most cases a variant of line 1 
+or 2 will work.  An explanation of each line is: Line 1 is just a 
+space-delimited list of hosts that will use default everything.  
+Line 2 is a list of hosts that specifies the maximum number of jobs (by 
+use of the /N) to send that host at any given time.  Since most people 
+won't be using lines 3 or 4, I'll point you to the <uri 
+link="http://distcc.samba.org/man/distcc_1.html">distcc docs</uri> for 
+more information.
+</p>
+
+<p>
+The final step to integrating distcc into Portage is to re-open your 
+<path>/etc/make.conf</path> and edit <c>MAKE_OPTS</c> to include <c>-jN</c> 
+(where N is an integer).  Typically you will want to set this to the total 
+number of processors in your network plus one.
+</p>
+
+<pre caption="Final steps in make.conf">
+# <i>nano -w /etc/make.conf</i>
+MAKE_OPTS=-jN
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Setting up Distcc to Work With Automake</title>
+<body>
+
+<p>
+This is in some cases easier than the Portage setup.  What you have to do 
+is update your <c>PATH</c> environment variable to include 
+<path>/usr/lib/distcc/bin</path> before the directory where gcc is
+situated (<path>/usr/bin</path>).  However, there is a caveat.  If you use 
+ccache you have to put distcc after the ccache part.  Like so:
+</p>
+
+<pre caption="Setting your path">
+# <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
+</pre>
+
+<p>
+Then, as you would normally type <c>make</c>, you would type <c>make -jN</c> 
+(where N is an integer).  A safe number to use for N varies on your network 
+and the types of computers you are using to compile.  For me, I have a dual 
+processor P3 and a K6-2/400 that compile everything for my desktop (a 1200MHz 
+Athlon Thunderbird) and I use -j5.  Test your own settings to find the right 
+number.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Cross-Compiling</title>
+<section>
+<title>A Note on Cross-Compiling</title>
+<body>
+
+<p>
+Cross-compiling is using one architecture to build programs for another 
+architecture.  This can be as simple as using an Athlon (i686) to build a 
+program for a K6-2 (i586), or using a Sparc to build a program for a ppc.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>A Personal Note on Cross-compiling</title>
+<body>
+
+<p>
+I'd love to be able to help out on the Gentoo Cross-compiling effort, but 
+I don't have any non-x86 machines.  I can create things that work 
+<e>in theory</e>, but I have to rely on other people to test what I write.  
+That works to an extent, but it's tough. ;-)
+</p>
+
+<p>
+In the near future I hope to acquire a Sparc of some type to put Gentoo 
+on so I can play around in-house.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Known Problems With Distcc</title>
+
+<section>
+<title>Portage Doesn't Work With Distcc</title>
+<body>
+
+<p>
+This heading is a misnomer, really.  The only thing that doens't work is 
+the monitoring programs (<c>distccmon-text</c> and <c>distccmon-gnome</c>) 
+with the standard distcc source.  The reason for this is that distcc relies 
+on the <c>TMPDIR</c> environment variable, but Portage reassigns that.
+</p>
+
+<p>
+The solution to this is a patch that changes the dependancy to 
+<c>DISTCC_TMPDIR</c>.  The patch is automatically applied to distcc.  
+If you don't want to use <path>/tmp</path> (the default) you can reassign 
+<c>DISTCC_TMPDIR</c>.
+</p>
+
+<p>
+You may also notice that distcc does not work with some packages.  
+This can be a result of several things, such as an error in the .ebuild 
+(Using <c>make</c> instead of <c>emake</c>) or an error in the program's 
+Makefile, which the next section addresses.
+</p>
+
+</body>
+</section>
+<section>
+<title>Mozilla and XFree</title>
+<body>
+
+<p>
+As you emerge various packages, you'll notice that they aren't being 
+distributed (and indeed aren't being built in parallel).  This is because 
+the developers of Mozilla and XFree .ebuilds disabled parallel building 
+because it is known to cause problems.  This isn't necessarily a distcc 
+problem.
+</p>
+
+<p>
+That isn't to say that sometimes distcc will cause a package to fail 
+to compile.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Distcc Extras</title>
+<section>
+<title>Distcc Monitors</title>
+<body>
+
+<p>
+Distcc ships with two monitors.  The text-based one is always built and 
+is called <c>distccmon-text</c>.  Running it for the first time can be a 
+bit confusing, but it is really quite easy to use.  If you run the program 
+with no parameter it will run once.  However, if you pass it a number it 
+will update every N seconds, where N is the argument you passed.
+</p>
+
+<p>
+The other monitor is only turned on if you enabled <c>gtk</c> in your 
+<c>USE</c> flags.  This one is GTK+ based and runs in an X environment, and 
+it is quite lovely.
+</p>
+
+<p>
+There is a caveat to using these programs.  If you want to monitor any 
+emerge, you have to start the monitor like so:
+</p>
+
+<pre caption="Starting the monitors">
+# <i>sudo -u portage distccmon-text N</i>
+<codenote>Or you can start the graphical monitor...</codenote>
+# <i>sudo -u portage distccmon-gnome</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Future Plans for Distcc and Gentoo</title>
+<section>
+<title>distcc-subnetscan</title>
+<body>
+
+<p>
+<c>distcc-subnetscan</c> is a perl program in development that will scan a 
+subnet for hosts that have a participating distcc daemon.  Even this will 
+be enhanced to test if the daemon on a remote host will conform to a 
+specific <c>CHOST</c> setting to make cross-compiling easier.
+</p>
+
+<p>
+The perl script is being kept at <uri link="http://dev.gentoo.org/~lisa/distcc/distcc-subnetscan/distcc-subnetscan.pl">right here</uri> 
+until a more formal home can be found.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>distcc-config</title>
+<body>
+
+<p>
+<c>distcc-config</c>, the userland configuration tool for distcc is out of 
+date.  Soon it will be rewritten to be brought up with the current version 
+of distcc.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
