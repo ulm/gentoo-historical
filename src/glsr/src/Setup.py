@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.13 2005/01/25 22:29:40 hadfield Exp $
+# $Id: Setup.py,v 1.14 2005/01/26 02:18:55 port001 Exp $
 #
 
 import sys
@@ -140,9 +140,10 @@ session_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	%s_id		VARCHAR(30)	NOT NULL,
 	%s_user_id	MEDIUMINT(5)	unsigned NOT NULL,
 	%s_time		INT(10)		NOT NULL,
+        %s_keep         TINYINT(1)      unsigned NOT NULL default '0',
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
-                 tuple(operator.repeat([Config.MySQL["session_table"]], 7)))
+                 tuple(operator.repeat([Config.MySQL["session_table"]], 8)))
 
 cursor.execute(session_table)
 db.commit()

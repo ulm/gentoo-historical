@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.12 2004/12/30 03:05:19 port001 Exp $
+# $Id: Page_Login.py,v 1.13 2005/01/26 02:18:55 port001 Exp $
 #
 
 import State
@@ -36,7 +36,10 @@ class Page_Login(SiteModule):
         self._user_obj.UpdateIP(self._req.environ['REMOTE_ADDR'])
     
         # Assign uid to current session
-        State.ThisSession.assign_uid(self._uid)
+        if self._req.Values.has_key('remember'):
+            State.ThisSession.assign_uid(self._uid, keep=1)
+        else:
+            State.ThisSession.assign_uid(self._uid)
     
         return True
 

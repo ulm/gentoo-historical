@@ -10,6 +10,9 @@
             <td><input class="login_form_element" name="password" type="password" size="15" maxlength="15"></td>
           </tr>
           <tr>
+            <td colspan="2" align="right"><font class="instructional">Remember me</font><input class="login_form_element" name="remember" type="checkbox" /></td>
+          </tr>
+          <tr>
             <td colspan="2" align="right"><input class="form_element" name="login" value="Login" type="submit" /></td>
           </tr>
         </table>
