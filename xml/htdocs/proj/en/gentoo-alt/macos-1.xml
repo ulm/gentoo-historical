@@ -1,0 +1,343 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<guide link="/doc/en/management-structure.xml">
+
+<author title = "Author">
+<mail link = "drobbins@gentoo.org">Daniel Robbins</mail></author>
+
+<version>1.0</version>
+<date>7 Jul 2003</date>
+<abstract>Portage changes necessary for full MacOS/BSD environment support</abstract>
+
+  <chapter>
+		<title>GLEP Header</title>
+		<section>
+			<body>
+				<table>
+					<tr>
+						<ti><b>GLEP:</b></ti>
+						<ti>pending</ti>
+					</tr>
+					<tr>
+						<ti><b>Title:</b></ti>
+						<ti>Portage MacOS/BSD enhancements: stage 1</ti>
+					</tr>
+					<tr>
+						<ti><b>Version</b></ti>
+						<ti> $Revision: 1.1 $ </ti>
+					</tr>
+					<tr>
+						<ti><b>Last-Modified:</b></ti>
+						<ti> $Date: 2003/07/10 06:09:35 $ </ti>
+					</tr>
+					<tr>
+						<ti><b>Author:</b></ti>
+						<ti> Daniel Robbins &lt;drobbins@gentoo.org&gt; </ti>
+					</tr>
+					<tr>
+						<ti><b>Status:</b></ti>
+						<ti>Draft</ti>
+					</tr>
+					<tr>
+						<ti><b>Content-Type:</b></ti>
+						<ti>text/xml</ti>
+					</tr>
+					<tr>
+						<ti><b>Created:</b></ti>
+						<ti>07-Jul-2003</ti>
+					</tr>
+					<tr>
+						<ti><b>Post-History:</b></ti>
+						<ti>07-Jul-2003</ti>
+					</tr>
+				</table>
+			</body>
+		</section>
+	</chapter>
+
+
+  <chapter>
+		<title>Portage MacOS/BSD enhancements: stage 1</title>
+		<section>
+			<title>Proposal goals</title>
+			<body>
+
+
+<p>
+The goal of this proposal is to outline changes to be made to Portage to
+conveniently and seamlessly support MacOS and BSD operating systems.
+</p>
+
+
+<p> Currently (as of 07 Jul 2003,) Portage does run on MacOS and BSD.
+However, it is missing convenience and maintainability features, as well as
+accepted guidelines and standards for maintaining ebuilds that run
+seamlessly on a variety of platforms. This document outlines
+enhancements that will allow Gentoo to begin to officially support MacOS
+and BSD. It covers all known relevant areas <e>except</e> cross-platform
+dependency coherency issues and "augmented environment" environment
+handling, which will be addressed in a future proposal.</p>
+
+
+			</body>
+	
+		</section>
+
+<section>
+<title>Profile-specific compression settings</title>
+
+			<body>
+
+
+<p>
+Portage currently uses gzip compression for man pages, GNU info documents,
+and auxillary documentation. This approach is not compatible with MacOS X,
+where man pages are expected to be uncompressed. It also forces a specific
+solution upon the user, which is contrary to the Gentoo philosophy. In
+addition, it unnecessarily increases the size of .tbz2 binary packages by
+causing man pages, GNU info pages, and auxillary documentation to be
+compressed once with gzip, and then re-compressed with bzip2 as part of the
+package creation process, which is inefficient.
+</p>
+
+<p>To address these issues, man page, GNU info documentation, and auxilliary
+documentation compression should be configurable on a per-profile basis,
+with allowances for local and environment-based overrides of default
+settings. To do this, several new variables can be added to Portage to
+control compression settings, that could work as follows:</p>
+
+<pre>
+e_compress="man:none info:gzip doc:bzip2"
+e_compress_doc="\.html \.txt \.ME"
+</pre>
+
+<p>Above, the <c>e_compress</c> setting tells Portage that man pages should
+not be compressed, info pages should be gzip compressed, and documentation
+should be bzip2 compressed.  The <c>e_compress_doc</c> allows one to specify
+what files are considered to be documentation by including regular
+expressions which are then matched against the basenames of all documentation
+files. A match means that the document should be compressed using bzip2
+compression, as specified in the <c>e_compress</c> variable.</p>
+
+<p>Here is how this functionality should be implemented. After the ebuild
+<c>install</c> phase completes, a new phase will be run called <c>prep</c>.
+During this phase, all man, GNU info, documentation, and potentially other
+future categories of files will be ensured to be in an <e>uncompressed</e>
+format. Any files that are found to be compressed will be automatically
+uncompressed.</p>
+
+<p>Then, the <c>merge</c> phase will be modified so that before files are
+copied to the native filesystem, the local <c>e_compress</c> and
+<c>e_compress_doc</c> settings will be applied to the appropriate files in
+the <path>image/</path> directory. After this process completes, these files
+will be moved into place and recorded in the Portage package database.</p>
+
+<p>This solution will be transparent for .tbz2 binary packages. Using this
+implementation, man pages, GNU info documents, and documentation will be
+stored in binary .tbz2 archives in an <i>uncompressed</i> format, allowing
+the files to be compressed efficiently due to the single pass of bzip2 compression
+applied to the package data. When a user installs a binary
+.tbz2 package on their local system, the documentation, man pages and GNU info
+documents will then be selectively compressed based on the user's profile
+and/or local settings. This will allow our ebuilds to adapt to the needs and
+preferences of specific profiles and/or users.
+</p>
+
+<note>The <c>e_compress</c> and <c>e_compress_doc</c> variables use a new
+suggested Portage configuration file variable convention. The variable names
+themselves are all lower-case. The <c>e_</c> prefix is used for general
+control variables of any kind that are not fully-qualified paths. Under this
+new convention, the <c>p_</c> prefix is intended to be used for variables
+that are fully-qualified paths.</note>
+
+</body>
+</section>
+<section>
+<title>New "macos" keyword</title>
+<body>
+<p>To properly support MacOS X, a new keyword is needed for use
+in the <c>ACCEPT_KEYWORDS</c>, <c>KEYWORDS</c> and dependency variables, as
+well as any <c>ARCH</c> tests. This selected keyword should be
+used as a basis for the names of all relevant infrastructure, such as IRC
+channels, Web page document filenames, archive names, and mailing lists.
+This will help to avoid confusion within the Gentoo community.</p>
+
+<p>The best short keyword to use to refer to Gentoo running on MacOS X is
+<c>macos</c>. <c>osx</c> isn't appropriate because it refers to the
+operating system version, but not its official name. <c>darwin</c> is not
+appropriate because the effort to support Gentoo running on MacOS X (a
+commercial non-free operating system, like Solaris) is fundamentally
+different from the effort to get Gentoo running on Darwin (a non-commercial
+free operating system, like NetBSD.) <c>mac</c> is not appropriate because
+it refers to Apple <i>hardware</i> (which could be running Linux, MacOS X,
+OpenDarwin or something else) rather than the operating system itself.  By
+using the <c>macos</c> keyword, we can refer to the effort to
+support Gentoo on MacOS X and future versions of MacOS specifically. We can thus make
+MacOS-specific masking and dependency decisions, and have IRC channels and
+mailing lists devoted to MacOS-specific issues. This would not be possible
+if we were to use a <c>darwin</c> or <c>mac</c> keyword.  Because of the
+selection of the <c>macos</c> keyword, the official project name for the
+"Gentoo on MacOS" effort should be "Gentoo/MacOS." This provides an
+easily-understood definition for the "Gentoo on MacOS" effort.</p>
+
+</body>
+
+</section>
+<section>
+<title>Seamless support of variant filesystem hierarchies</title>
+<body>
+
+<note>Per Grant Goodyear's comment, we should ensure that pathspec handles
+not only platform-specific variations in paths, but also application and
+version-specific variations in paths, particularly in relation to .tbz2
+consistency issues and finding a replacement for <c>has_version</c> and
+<c>best_version</c> in <path>ebuild.sh</path>.</note>
+
+<p>Supporting MacOS X raises two challenges in relation to supporting
+variant paths in Gentoo. For one, MacOS X uses a BSD-like filesystem
+hierarchy, with some Apple-specific extensions. Unlike Gentoo Linux, MacOS X
+is not FHS compliant.  In addition, Gentoo/MacOS is an "augmentation" of an
+existing commercial operating system. Unlike Gentoo Linux, Gentoo/MacOS
+needs to co-exist with an existing filesystem tree.  To fit in with existing
+MacOS X conventions, it is recommended that Gentoo/MacOS packages install
+into the <path>/opt/gentoo</path> tree.</p>
+
+<p>This raises several challenges: first, how should Portage adjust to path
+structures that are only somewhat similar to the FHS standard? Second, how
+should Portage adjust to path structures that may reside within a
+sub-tree like <path>/opt/gentoo</path>? Third, how do we add such
+flexibility without peppering ebuilds with hard-coded platform-specific
+paths amid conditional statements, which would cause our ebuilds to become
+unmaintainable?</p>
+
+<p>A general solution is needed to address these issues. This section
+documents such a solution, called "pathspec."</p>
+
+<p>Pathspec has been designed to support the <i>self-similar</i> nature of
+filesystem trees in an elegant way. The term "self-similar" is
+borrowed from mathematics, where it is often used in relation to fractals.
+Wolfgang E. Lorenz provides an excellent definition of self-similarity in
+<uri
+link="http://www.iemar.tuwien.ac.at/modul23/Fractals/pages/222selfsimilar.html">
+Fractals and Fractal Architecture</uri>:</p>
+
+<p><e>"Fractals are always self-similar, at least in some general sense -
+what does that mean? That means that on analysis of a certain structure will
+bring up the same basic elements on different scales. For example, details
+of a certain coastline look like larger parts of the whole curve; the
+characteristic - the irregularity - of this natural form remains the same
+from scale to scale. In this way fractals can also be described in terms of
+a hierarchy of self-similar components - e.g. trees and branches or town-,
+district- and local-centers."
+</e></p>
+
+<p>By recognizing that filesystem trees have self-similar characteristics,
+we gain an advantage in documenting their structure. Rather than
+documenting every detail of a filesystem, we can document the irregularity,
+and then specify how this irregularity manifests itself on different levels
+of the filesystem tree.</p>
+
+<p>For example, on a FHS system, the <path>/usr</path>,
+<path>/usr/local</path> and <path>/opt</path> trees are very similar. In
+fact, if we document the structure of <path>/usr</path>, then we have also
+documented the structure of <path>/usr/local</path>. If we document the
+structure of <path>/usr/local</path>, then we are not far away from having
+a definition of the structure of <path>/usr/X11R6</path>. All these
+sub-tree have a very similar internal structure.</p>
+
+<p>Pathspec is efficient because it does not require sub-tree definitions to
+be repeated unnecessarily. Similar structures can be defined based on
+already-defined structures by taking advantage of OOP concepts.</p>
+
+<note>This part isn't done yet.</note>
+
+</body>
+
+</section>
+<section>
+<title>Intra-tree cross-platform compatibility</title>
+<body>
+<p>As of June 2003, Portage itself (ebuild, emerge, etc.) can generally
+run under MacOS X and BSD. However, while Portage itself can run on these
+platforms, some ebuilds and eclasses currently contain Linux-specific
+conventions, particularly in how auxilliary programs like <c>xargs</c>,
+<c>find</c> and <c>tar</c> are called. These variations can cause an ebuild
+to execute correctly in a GNU environment but not in a BSD environment, or
+vice-versa.</p>
+
+<p>The general strategy to address these issues should be as follows. First,
+an emphasis should be placed on writing shell code that is truly
+cross-platform in nature. Second, when there is no suitable cross-platform
+code, Portage should provide a general framework to allow ebuilds to easily
+adapt to situations to where variant calls are needed. Here is how Portage
+addresses the situation currently. This is code from version 1.326 of
+<path>portage.py</path>:</p>
+
+<pre>
+ostype=os.uname()[0]
+if ostype=="Linux":
+        userland="GNU"
+        import missingos
+        lchown=missingos.lchown
+        os.environ["XARGS"]="xargs -r"
+elif ostype=="Darwin":
+        userland="BSD"
+        lchown=os.chown
+        os.environ["XARGS"]="xargs"     
+else:
+        print "Operating system \""+ostype+"\" currently unsupported.  Exiting." 
+        sys.exit(1)
+        
+os.environ["USERLAND"]=userland
+</pre>
+
+<p>This code ensures that all ebuilds have a <c>USERLAND</c> and
+<c>XARGS</c> variable defined in their environment. THe <c>USERLAND</c>
+variable allows ebuilds to adapt to situations where two different types of
+calls are needed for each userland environment. The <c>XARGS</c> variable
+allows ebuilds to call <c>$XARGS</c> rather than their native <c>xargs</c>
+command. By default, BSD <c>xargs</c> will not execute the specified command
+if an empty list is provided, but GNU <c>xargs</c> will. GNU <c>xargs</c>
+requires an <c>-r</c> option to mimic the generally preferrable BSD
+behavior, while under BSD, the <c>-r</c> option is not recognized and
+produces an error condition. The proper cross-platform way to call
+<c>xargs</c> is as follows:</p>
+
+<pre>
+cat foo | $XARGS ls
+</pre>
+
+<p>Here are some suggested improvements for the current system described in
+this section. First, it would be best to move to the new Portage variable
+naming convention, and rename variables from <c>USERLAND</c> to
+<c>e_userland</c> and <c>XARGS</c> to <c>e_xargs</c> respectively. This will
+help to avoid potential namespace clashes with Makefiles and other build
+scripts. In addition, the above code can be modified to use the Python
+variable <c>sys.platform</c> to determine the current operating system
+platform. Third, this system can be extended to support new cross-platform
+executable calling conventions (such as <c>xargs</c>) as they are
+identified.</p>
+
+<p>As our cross-platform support evolves, it can be expanded to support
+cross-platform user and group creation (using either <c>adduser</c>,
+<c>netinfo</c> or something else,) as well as other cross-platform issues.
+By starting this cross-platform effort, we are beginning the process of
+standardizing Portage interfaces and conventions so that can work seamlessly
+on a variety of platforms. We can expect this trend to continue in other
+areas of Portage as well.</p>
+
+<p>This solution will help ensure that inter-platform compatibility issues
+are addressed in a consistent and maintainable fashion, and allow ebuilds
+to begin to be made BSD-userland compliant.
+</p>
+</body>
+</section>
+
+</chapter>
+
+
+</guide>
+			
+
+
