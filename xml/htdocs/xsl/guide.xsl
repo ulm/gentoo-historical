@@ -265,7 +265,7 @@
 		</xsl:choose>
 <a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
-		<a class="menulink" href="/main/en/where.xml">Store</a>
+		<a class="menulink" href="/main/en/where.xml">Store</a> |
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='where'">
 				<a class="highlight" href="/main/en/where.xml"> Get Gentoo</a>
