@@ -19,6 +19,8 @@ import signal
 import time
 import string
 import re
+import glob
+import os
 
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -179,14 +181,30 @@ def set_network_mounts():
 def set_install_stage():
 # The install stage and stage tarball will be selected here
 	install_stages = ("1","2","3","3 + GRP (use binary packages)")
-	code, install_stage = d.menu("Which stage do you want to start at?", choices=dmenu_list_to_choices(install_stages))
+	code, install_stage = d.menu("Which stage do you want to start at?", choices=dmenu_list_to_choices(install_stages), cancel="Back")
 	if code == DLG_OK:
 		install_stage = install_stages[int(install_stage)-1]
 		if install_stage == "3 + GRP (use binary packages)":
 			install_stage = "3"
 			install_profile.set_grp_install(None, True, None)
 		install_profile.set_install_stage(None, install_stage, None)
-	code, stage_tarball = d.inputbox("Where is the stage tarball located (URL or local file)?", init=install_profile.get_stage_tarball_uri())
+	tarball_options = ("Use Local", "Specify URI")
+	code, tarball_option = d.menu("Select a local stage " + install_stage + " tarball or manually specify a URI?", choices=dmenu_list_to_choices(tarball_options))
+	if code == DLG_OK:
+		tarball_option = tarball_options[int(tarball_option)-1]
+		if tarball_option == "Use Local":
+			stages_dir = "/mnt/cdrom/stages"
+			if os.path.isdir(stages_dir) and os.listdir(stages_dir):
+				local_tarballs = glob.glob(stages_dir + "/stage" + install_stage + "*.bz2")
+				local_tarballs.sort()
+				code, stage_tarball = d.menu("Select a local tarball:", choices=dmenu_list_to_choices(local_tarballs))
+				if code != DLG_OK: return
+			else:
+				d.msgbox("There don't seem to be any local tarballs available.  Hit OK to manually specify a URI.")
+				tarball_option = "Specify URI"
+		if tarball_option != "Use Local": 
+			code, stage_tarball = d.inputbox("Specify the stage tarball URI or local file:", init=install_profile.get_stage_tarball_uri())
+
 	try:
 		if code == DLG_OK: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 	except:
@@ -253,12 +271,12 @@ def set_boot_loader():
 		install_profile.set_boot_loader_mbr(None, False, None)
 
 def set_timezone():
-# This section will be for setting the timezone. It will eventually pull from /usr/share/zoneinfo or something
+# This section will be for setting the timezone. It pulls from /usr/share/zoneinfo/zone.tab.
 	tzlist = []
 	file = open("/usr/share/zoneinfo/zone.tab")
 	for line in file.readlines():
 		if not line.startswith('#') and len(line) > 0:
-        		tzlist.append("%s" % line.split("\t")[2].strip())
+			tzlist.append("%s" % line.split("\t")[2].strip())
 	tzlist.sort()
 	code, tznum = d.menu("Enter a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
 	if code == DLG_OK: install_profile.set_time_zone(None, tzlist[int(tznum)-1], None)
@@ -266,7 +284,7 @@ def set_timezone():
 def set_networking():
 # This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
 	while 1:
-		menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway"]
+		menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "NIS Domain Name"]
 		code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menulist), cancel="Done")
 		if code != DLG_OK: break
 		menuitem = menulist[int(menuitem)-1]
@@ -332,7 +350,23 @@ def set_networking():
 				code, ip = d.inputbox("Enter an IP address for " + menuitem , init=interfaces[menuitem][0])
 				if code != DLG_OK: continue
 				install_profile.set_default_gateway(None, ip,{'interface': menuitem})
-				break				
+				break		
+		elif menuitem == "Hostname":
+			code, hostname = d.inputbox("Enter the desired hostname")
+			if type(hostname) != str:
+				d.msgbox("Incorrect hostname!  It must be a string.  Not saved.")
+			if code == DLG_OK: install_profile.set_hostname(None, hostname, None)
+		elif menuitem == "Domain Name":
+			code, domain = d.inputbox("Enter the desired domain name")
+			if type(domain) != str:
+				d.msgbox("Incorrect domain name!  It must be a string.  Not saved.")
+			if code == DLG_OK: install_profile.set_domainname(None, domain, None)
+		elif menuitem == "NIS Domain Name":
+			code, nisdomain = d.inputbox("Enter the desired NIS domain name (if you don't know what this is, don't enter one.)")
+			if type(nisdomain) != str:
+				d.msgbox("Incorrect NIS domain name!  It must be a string.  Not saved.")
+			if code == DLG_OK: install_profile.set_nisdomainname(None, nisdomain, None)
+
 def set_cron_daemon():
 	cron_daemons = ("vixie-cron", "fcron", "dcron", "None")
 	code, menuitem = d.menu("Choose a cron daemon", choices=dmenu_list_to_choices(cron_daemons))
