@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:exslt="http://exslt.org/common"
-                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
+                xmlns:func="http://exslt.org/functions"
+                extension-element-prefixes="exslt func" >
 
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 <!-- Include external stylesheets -->
