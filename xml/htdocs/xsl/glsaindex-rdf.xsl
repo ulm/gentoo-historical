@@ -18,7 +18,7 @@
 
 <channel rdf:about="http://www.gentoo.org/security/en/index.xml">
   <title>Gentoo Linux Security Advisories</title>
-  <link>http://www.gentoo.org/security/en/index.xml</link>
+  <link>http://www.gentoo.org/security/en/glsa/index.xml</link>
   <description>
     This index is automatically generated from XML source. Please contact the
     Gentoo Linux Security Team (security@gentoo.org) for related inquiries.
@@ -36,12 +36,29 @@
 
 <xsl:for-each select="document($src)/guide/chapter[1]/section[1]/body/table[1]/tr[position()&gt;1]">
 <item>
-  <xsl:variable name="glsalink" select="ti[1]/uri/@link"/>
+  <xsl:variable name="glsaid" select="normalize-space(ti[1]/uri/text())"/>
+  <xsl:variable name="glsalink" select="string(ti[1]/uri/@link)"/>
+  <xsl:variable name="glsapkg" select="normalize-space(ti[2]/text())"/>
+  <xsl:variable name="glsadesc" select="normalize-space(ti[3]/text())"/>
   <xsl:attribute name="rdf:about"><xsl:value-of select="$glsalink"/></xsl:attribute>
-  <title><xsl:value-of select="concat('GLSA ', normalize-space(ti[1]/uri/text()), ': ', substring-before(normalize-space(ti[2]/text()), ' '), '...')"/></title>
-  <link><xsl:value-of select="$glsalink"/></link>
+  <title>
+    <xsl:choose>
+      <xsl:when test="$glsapkg='kernel'">
+        <xsl:value-of select="concat('GLSA ', $glsaid, ': ', $glsapkg)"/>
+      </xsl:when>
+      <xsl:when test="$glsapkg!=''">
+        <xsl:value-of select="concat('GLSA ', $glsaid, ': ', substring-after($glsapkg, '/'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="concat('GLSA ', $glsaid)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </title>
+  <link>
+    <xsl:value-of select="$glsalink"/>
+  </link>
   <description>
-    <xsl:value-of select="normalize-space(ti[2]/text())"/>
+    <xsl:value-of select="$glsadesc"/>
   </description>
 </item>
 </xsl:for-each>
