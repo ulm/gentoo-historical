@@ -51,7 +51,7 @@
 	scratch.
 	</abstract>
 <version>2.6.1</version>
- <date>4th of July 2003</date>
+ <date>7th of July 2003</date>
   <chapter>
     <title>About the Install</title>
     <section>
@@ -138,6 +138,9 @@ process you're starting from, here is what is required for installation: </p>
             <ti>partition/filesystem setup, emerge sync, final configuration</ti>
           </tr>
         </table>
+        <note>Hardware ATA RAID users should read the section about
+        ATA RAID on the bottom of this document before proceeding.
+        </note>
       </body>
     </section>
   </chapter>
@@ -261,16 +264,6 @@ follow the prompts.
 			<note>
 			Support for a SCSI CD-ROMs and disks are built-in in the kernel.
 			</note>
-        <p>If you are using hardware RAID, you will need to load the 
-			ATA-RAID modules for your RAID controller.
-			</p>
-<pre caption="Loading RAID Modules">
-# <c>modprobe ataraid</c>    
-# <c>modprobe pdcraid</c>            
-<comment>(Promise Raid Controller)</comment>    
-# <c>modprobe hptraid</c>            
-<comment>(Highpoint Raid Controller)</comment>    
-</pre>
         <p>The Gentoo LiveCD should have enabled DMA on your disks, but if it did not,
 			<c>hdparm</c> can be used to set DMA on your drives. </p>
 <pre caption="Setting DMA">
@@ -729,13 +722,6 @@ you type <c>p</c>, but it will not be erased until your changes have been
 saved.  If you made a mistake and want to abort without saving your changes,
 type <c>q</c> immediately and hit enter and your partition will not be
 deleted.</p>
-<!-- NOTE: THis is not sufficient documentation to cover ATA Raid and I just
-find it confusing, so I'm commenting it out (drobbins)
-<note>If you are using RAID your partitions will be a little different.  You
-will have the partitions like this: <path>/dev/ataraid/discX/partY</path> X are
-the arrays you have made, so if you only have made 1 array, then it will be
-disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
--->
 <p>Now, assuming that you do indeed want to wipe out all the partitions on your
 system, repeatedly type <c>p</c> to print out a partition listing and then type
 <c>d</c> and the number of the partition to delete it. Eventually, you'll end up
@@ -1099,11 +1085,6 @@ going to issue <c>emerge sync</c> later on in this document which will resolve
 the problem.
 </note>
 
-<note>
-Hardware RAID users who want to use GRUB should run <c>mount -o bind /dev 
-/mnt/gentoo/dev</c> before chrooting.
-</note>
-
 <pre caption="Prepping and entering the chroot environment">
 # <c>mount -t proc proc /mnt/gentoo/proc</c>
 # <c>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</c>
@@ -1394,12 +1375,6 @@ File systems ---&gt;
   &lt;*&gt; XFS filesystem support
 <comment>(Only needed if you are using XFS.)</comment>
 </pre>
-        <p>If you are using hardware RAID you will need to enable a couple more options in the kernel:    
-			For Highpoint RAID controllers select hpt366 chipset support, support for IDE RAID controllers and Highpoint    
-			370 software RAID.For Promise RAID controllers select PROMISE PDC202{46|62|65|67|68|69|70} support,
-			support for IDE RAID    
-			controllers and Support Promise software RAID (Fasttrak(tm))
-			</p>
         <p>If you use PPPoE to connect to Internet, you will need the following
 			options in the kernel (built-in or as preferably as modules) :
 			&quot;PPP (point-to-point protocol) support&quot;, &quot;PPP support for async serial ports&quot;,
@@ -1786,17 +1761,6 @@ grub&gt; <c>setup (hd0,4)</c> <codenote>Where the boot record is installed, here
 grub&gt; <c>quit</c>
 </pre>
        
-<p>
-Hardware RAID users will have to add <c>--stage2=/boot/grub/stage2</c> to
-the <c>setup</c> command:
-</p>
-
-<pre caption = "GRUB on hardware RAID">
-grub&lt; <i>root (hd0,0)</i>
-grub&lt; <i>setup --stage2=/boot/grub/stage2 (hd0)</i>
-grub&lt; <i>quit</i>
-</pre>
-       
 	<p>Here is how the two commands work.  The first <c>root ( )</c> command tells GRUB
 			the location of your boot partition (in our example, <path>/dev/hda1</path> or 
 			<path>(hd0,0)</path> in GRUB terminology.  Then, the second <c>setup ( )
@@ -1839,11 +1803,6 @@ splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 title=My example Gentoo Linux
 root (hd0,0) 
 kernel (hd0,0)/boot/bzImage root=/dev/hda3 
-
-<comment># Below is for setup using hardware RAID</comment>
-title=My Gentoo Linux on RAID
-root (hd0,0)
-kernel (hd0,0)/boot/bzImage root=/dev/ataraid/dXpY
 
 <comment># Below needed only for people who dual-boot</comment>
 title=Windows XP
@@ -2076,4 +2035,76 @@ other=/dev/hda1
       </body>
     </section>
   </chapter>
+  <chapter>
+    <title>Gentoo On Less-Common Hardware</title>
+    <section>
+       <title>Hardware ATA RAID</title>
+       <body>
+       <p>
+       Users who want to install Gentoo on Hardware ATA RAID must pay 
+       attention to the next steps in order for them to succesfully
+       install Gentoo Linux:
+       </p>
+       <ul>
+       <li>Be sure to start the LiveCD with the <c>doataraid</c> 
+       kerneloption.</li>
+       <li>If you've forgotten to select <c>doataraid</c> during bootup, 
+       or the modules mysteriously didn't load, load them as needed:
+       <pre caption = "Loading RAID modules">
+# <i>modprobe ataraid</i>
+<comment>For Promise Raid Controllers:</comment>
+# <i>modprobe pdcraid</i> 
+<comment>For Highpoint Raid Controllers:</comment>
+# <i>modprobe phtraid</i>
+       </pre>
+       </li>
+       <li>Some ATA RAID Controllers require you to reboot after
+       partitioning; formatting will otherwise fail.</li>
+       <li>Before chrooting, mount the devicetree into the new 
+       environment:
+       <pre caption = "Mounting /dev into /mnt/gentoo/dev">
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+       </pre>
+       </li>
+       <li>During kernel configuration, select the required RAID options:
+       <pre caption = "RAID in the Linux Kernel Configuration">
+<comment>For Highpoint RAID controllers:</comment>
+ATA/IDE/MFM/RLL support  ---&gt;
+  [*] HPT36X/37X chipset support 
+  [*] Support for IDE Raid controllers
+  [*] Highpoint 370 software RAID
+<comment>For Promise RAID controllers:</comment>
+ATA/IDE/MFM/RLL support  ---&gt;
+  [*] PROMISE PDC202{46|62|65|67} support 
+  <comment>and/or</comment>
+  [*] PROMISE PDC202{68|69|70|71|75|76|77} support
+  [*] Support for IDE Raid controllers
+  [*] Support Promise software RAID (Fasttrak(tm))
+       </pre></li>
+       <li>When using GRUB add <c>--stage2=/boot/grub/stage2</c> when 
+       running <c>grub</c> to the <c>setup</c> command:
+       <pre caption = "Installing GRUB for Hardware RAID systems">
+grub&gt; <i>root (hd0,0)</i>
+grub&gt; <i>setup --stage2=/boot/grub/stage2 (hd0)</i>
+grub&gt; <i>quit</i>
+       </pre>
+       Also, in the GRUB configuration be sure to point the <c>root</c>
+       to the appropriate RAID device:
+       <pre caption = "grub.conf for RAID">
+title=My Gentoo Linux on RAID
+root (hd0,0)
+kernel (hd0,0)/boot/bzImage root=/dev/ataraid/dXpY
+       </pre></li>
+       <li>LILO users should set the <c>root</c> option to the
+       appropriate RAID device:
+       <pre caption = "lilo.conf for RAID">
+image=/boot/bzImage
+    label=linux
+    read-only
+    root=/dev/ataraid/dXpY
+       </pre></li>
+     </ul>
+   </body>
+ </section>
+</chapter>
 </guide>
