@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.14 2004/11/04 19:02:44 port001 Exp $
+# $Id: index.py,v 1.15 2004/11/05 20:28:09 port001 Exp $
 #
 
 """
@@ -22,6 +22,7 @@ __modulename__ = "index"
 import os
 import sys
 import cgi
+import __main__
 
 sys.path.insert(0, "/usr/local/share/glsr/pym/")
 sys.path.insert(0, "/usr/local/share/glsr/")
@@ -43,9 +44,7 @@ from GLSRException import GLSRException
 from Validation import CheckPageRequest
 from Function import start_timer, stop_timer, eval_timer
 
-import site_modules
 from site_modules import Redirect
-from site_modules import *
 
 class PageDispatch:
 
@@ -54,8 +53,12 @@ class PageDispatch:
         self._tmpl_page = None
         self._show_border = True
         self._t_start = 0
+        self._failover = ""
         self._form = cgi.FieldStorage()
         self._page = self._form.getvalue("page")
+        self._domain = "user"
+        if self._form.getvalue("domain") == "admin":
+            self._domain = "admin"
         self._user_detail = {"uid": 0,
                              "alias": "",
                              "session": None}
@@ -86,7 +89,26 @@ class PageDispatch:
 
     def select_module(self):
 
-        for module in site_modules.__all__:
+        module_list = []
+
+        if self._domain == "admin":
+            import site_modules.admin
+            self._failover = site_modules.admin.failover
+
+            for module in site_modules.admin.__all__:
+                module_list.append(module)
+                module_object = __import__("site_modules.admin.%s" % module, globals(), locals())
+                setattr(__main__, module, vars(module_object)[module])
+        else:
+            import site_modules
+            self._failover = site_modules.failover
+
+            for module in site_modules.__all__:
+                module_list.append(module)
+                module_object = __import__("site_modules.%s" % module, globals(), locals())
+                setattr(__main__, module, vars(module_object)[module])
+
+        for module in module_list:
 
             module_object = eval("""%s.%s(form = self._form, uid = self._user_detail["uid"], alias = self._user_detail["alias"], session = self._user_detail["session"])""" % (module, module))
 
@@ -119,9 +141,9 @@ class PageDispatch:
                 break
 
         if self._tmpl_page == None:
-            failover = eval("""%s.%s(form = self._form, alias = self._user_detail["alias"])""" %
-                                                 (site_modules.failover, site_modules.failover))
-            self._tmpl_page = failover.display()
+            failover_page = eval("""%s.%s(form = self._form, alias = self._user_detail["alias"])""" %
+                                                 (self._failover, self._failover))
+            self._tmpl_page = failover_page.display()
         
         if self._tmpl_page == "nodisplay":
             sys.exit(0)
