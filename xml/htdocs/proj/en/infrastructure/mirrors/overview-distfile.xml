@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/proj/en/infrastructure/mirrors/overview-distfile.xml">
+<title>Overview of our Distfile mirroring system</title>
+<author title="Author">
+    <mail link="klieber@gentoo.org">Kurt Lieber</mail>
+</author>
+<abstract>
+This guide describes how our distfile process flow works, including how a new tarball gets added to the distfile mirrors 
+</abstract>
+<version>0.9</version>
+<date>27 August 2003</date>
+<chapter>
+<title>Life of a source tarball</title>
+<body>
+<p>
+Source tarballs go through a number of hops before they finally reach our mirroring system.  The first hop is, of course, the home page of the application itself.  (<uri link="http://kernel.org">kernel.org</uri> for linux kernels, for example)  From there, the tarball's next stop is either the private master distfile mirror (currently eagle) or <e>dev.gentoo.org</e>, depending on the success of the <e>distfiles-get</e> script (see below).  If the tarball is placed on <e>dev.gentoo.org</e>, it is then sync'd up to the private master distfile mirror via an hourly cron job.  Once the tarball is on the private master distfile mirror, it then gets sync'd up to <e>gentoo.oregonstate.edu</e> which is the public master distfile mirror.  From there, the file propogates out to the rest of the mirrors.
+</p>
+</body>
+</chapter>
+<chapter>
+<title>Technical details and requirements for distfiles</title>
+<section>
+<title>Abstract</title>
+<body>
+<p>
+This section is a more detailed description of the <uri link="#doc_chap1">Life of a source tarball</uri> section.  The purpose of this section is to document the details of how the distfile mirror system works so that it can be recreated in case of an emergency.
+</p>
+<p>
+This section is <b>not</b> intended to be a step-by-step instruction manual.  It assumes the reader is a reasonably competent linux system administrator and understands how to set up cron jobs, configure rsyncd, etc.  It is merely intended as a guide.
+</p>
+</body>
+</section>
+<section>
+<title>Automatic Fetching of Source Tarballs</title>
+<body>
+<p>
+The master private distfile mirror needs a <e>distfiles</e> user account.  This account should be configured to run <e>~distfiles/scripts/distfiles-get</e> on a weekly basis.  This script uses portage to recurse through the Portage tree and look for SRC_URIs in the various ebuilds.  It then checks to see if it already has the tarball referenced in that SRC_URI and, if not, attempts to download it and places it in <e>/mnt/distfiles/distfiles</e> which is configured in /etc/rsync/rsyncd.conf to be available as an rsync module..  From there, <e>gentoo.oregonstate.edu</e> runs an hourly cron job that syncs this directory.  <e>gentoo.oregonstate.edu</e> has a password-protected rsync module available, the information which is only distributed to official Gentoo distfile mirrors.  Each mirror should be synchronizing with this directory once every four hours.
+</p>
+<p><b>Items Required:</b></p>
+<ul>
+	<li>A <e>distfiles</e> user account on the private master distfile mirror</li>
+	<li>The <e>distfiles-get</e> script</li>
+	<li><e>/mnt/distfiles/distfiles</e> configured as an rsync module</li>
+	<li>The necessary cron jobs set up to run the above scripts and commands at the right times.</li>
+</ul>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>When automatic fetching fails -- Adding a tarball to the distfile mirroring system</title>
+<body>
+<p>
+Occasionally, for various reasons, the <e>distfiles-get</e> script fails to pull a specific tarball.  In this case, it is the responsibility of the package maintainer to manually retrieve the file from the original location and place it in <e>/space/distfiles-local</e> on <e>dev.gentoo.org</e>.  This file is published as an rsync directory, to which the private master distfile mirror connects to and retrieves any files in the directory.  These files are synchronized to <e>~distfiles/distfiles-local</e> on the private master distfile mirror.  From there, the <e>~distfiles/scripts/distsync.sh</e> runs every 30 minutes to synchronize <e>~distfiles/distfiles-local</e> and <e>~distfiles/distfiles</e> on the private master distfile mirror.  The remainder of the procedure is as described in the section above.
+</p>
+<p><b>Items Required:</b>(in addition to the items required above)</p>
+<ul>
+	<li><e>/space/distfiles-local</e> configured as an rsync module on <e>dev.gentoo.org</e></li>
+	<li>An rsync command to synchronize <e>dev.gentoo.org::distfiles-local</e> with <e>~distfiles/distfiles-local</e> on the private master distfile mirror.</li>
+	<li>The <e>distsync.sh</e> script</li>
+	<li>The necessary cron jobs set up to run the above scripts and commands at the right times.</li>
+</ul>
+</body>
+</chapter>
+<chapter>
+<title>Cleaning up after ourselves -- Removing older tarballs from the mirrors</title>
+<body>
+<p>
+Occasionally, we need to go in and clean out old tarballs from the <e>~distfiles/distfiles</e> that are no longer required because the ebuild has been removed from Portage.  To do this, we can use the <e>distfiles-clean</e> script, which should be run under the <e>distfiles</e> user account.  This script creates a list of removable files called 'removables' in <e>~distfiles/</e>.  You should manually check the list as some ebuilds have odd entries in SRC_URI which cause <e>distfiles-clean</e> to incorrectly want to delete those tarballs.  XFree86 is often caught up in this script.
+</p>
+<p>Once you have manually validated the entries in the removables file, you can remove them from the <e>~distfiles/distfiles/</e> directory.</p>
+<ul>
+	<li><e>distfiles-clean</e> script</li>
+	<li>Manual intervention to run the script and validate the results</li>
+</ul>
+</body>
+</chapter>
+<chapter>
+<title>Distfile mirror FAQs</title>
+<body>
+<p><b>Q:</b>  How long does it take for a tarball to fully propogate out to our mirroring system?</p>
+<p><b>A:</b>  Ideally, all tarballs should be propogated out within 4 hours of making their way to <e>~distfiles/distfiles/</e> on the private master distfile mirror.  However, because of traffic delays and other issues, it can take up to 24 hours for files to fully propogate.</p> 
+</body>
+</chapter>
+</guide>
