@@ -340,9 +340,9 @@
 				<br />
 				<a class="altlink" href="/index-mirrors.html">Download Mirrors</a>
 				<br />
-				<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">Veiw our CVS via the web</a>
+				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
 				<br/>
-				<a class="altlink" href="http://lists.gentoo.org">Mailling lists</a>
+				<a class="altlink" href="http://lists.gentoo.org">Mailing lists</a>
 				<br/>
 				<a class="altlink" href="/index-irc.html">Official Gentoo IRC channels</a><br/><br/>
 				<br/><br/>
