@@ -1,9 +1,29 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.4 2003/10/12 01:12:03 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.5 2003/10/13 00:12:30 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
+start_build() {
+    # more or less a sanity check
+    SUBARCH=$1
+    DESTSTAGE="${2}"
+    DESTVER="${3}"
+    SRCFORTAR=${CHROOTDIR}
+
+    rm -f /tmp/catalyst.settings
+    include/catalyst-settings $SUBARCH > /tmp/catalyst.settings
+    source /tmp/catalyst.settings
+
+    CFLAGS="${CFLAGS} -pipe"
+    echo $CFLAGS
+
+    pre_build $2 $3 $4
+    build $2
+    post_build $2
+
+} #end start_build()
+													
 get_arch() {
 
 	if [ "${SUBARCH}" = "athlon-mp" ]
