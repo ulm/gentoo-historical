@@ -4,7 +4,7 @@ import GLIScreen
 class Panel(GLIScreen.GLIScreen):
 
 	title = "Kernel Sources"
-	active_selection = 1
+	active_selection = None
 	kernel_sources = {}
 
 	def __init__(self, controller):
@@ -18,16 +18,7 @@ a brief description beside it.
 		content_label = gtk.Label(content_str)
 		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
-		self.kernel_sources['vanilla-sources'] = gtk.RadioButton(None, "vanilla-sources")
-		self.kernel_sources['vanilla-sources'].set_name("vanilla-sources")
-		self.kernel_sources['vanilla-sources'].connect("toggled", self.stage_selected, "vanilla-sources")
-		self.kernel_sources['vanilla-sources'].set_size_request(150, -1)
-		hbox = gtk.HBox(gtk.FALSE, 0)
-		hbox.pack_start(self.kernel_sources['vanilla-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		hbox.pack_start(gtk.Label("These are the kernel sources straight from kernel.org without\npatches (except where necessary)"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-
-		self.kernel_sources['gentoo-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "gentoo-sources")
+		self.kernel_sources['gentoo-sources'] = gtk.RadioButton(None, "gentoo-sources")
 		self.kernel_sources['gentoo-sources'].set_name("gentoo-sources")
 		self.kernel_sources['gentoo-sources'].connect("toggled", self.stage_selected, "gentoo-sources")
 		self.kernel_sources['gentoo-sources'].set_size_request(150, -1)
@@ -36,7 +27,16 @@ a brief description beside it.
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-		self.kernel_sources['gentoo-dev-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "gentoo-dev-sources")
+		self.kernel_sources['vanilla-sources'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "vanilla-sources")
+		self.kernel_sources['vanilla-sources'].set_name("vanilla-sources")
+		self.kernel_sources['vanilla-sources'].connect("toggled", self.stage_selected, "vanilla-sources")
+		self.kernel_sources['vanilla-sources'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.kernel_sources['vanilla-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("These are the kernel sources straight from kernel.org without\npatches (except where necessary)"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.kernel_sources['gentoo-dev-sources'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "gentoo-dev-sources")
 		self.kernel_sources['gentoo-dev-sources'].set_name("gentoo-dev-sources")
 		self.kernel_sources['gentoo-dev-sources'].connect("toggled", self.stage_selected, "gentoo-dev-sources")
 		self.kernel_sources['gentoo-dev-sources'].set_size_request(150, -1)
@@ -45,7 +45,7 @@ a brief description beside it.
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-		self.kernel_sources['development-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "development-sources")
+		self.kernel_sources['development-sources'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "development-sources")
 		self.kernel_sources['development-sources'].set_name("development-sources")
 		self.kernel_sources['development-sources'].connect("toggled", self.stage_selected, "development-sources")
 		self.kernel_sources['development-sources'].set_size_request(150, -1)
@@ -54,7 +54,7 @@ a brief description beside it.
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-		self.kernel_sources['livecd-kernel'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "livecd-kernel")
+		self.kernel_sources['livecd-kernel'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "livecd-kernel")
 		self.kernel_sources['livecd-kernel'].set_name("livecd-kernel")
 		self.kernel_sources['livecd-kernel'].connect("toggled", self.stage_selected, "livecd-kernel")
 		self.kernel_sources['livecd-kernel'].set_size_request(150, -1)
@@ -74,7 +74,7 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-		self.active_selection = self.controller.install_profile.get_kernel_source_pkg() or "vanilla-sources"
+		self.active_selection = self.controller.install_profile.get_kernel_source_pkg() or "gentoo-sources"
 		self.kernel_sources[self.active_selection].set_active(gtk.TRUE)
 
 	def deactivate(self):
