@@ -2,9 +2,10 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.8 2004/11/04 01:48:20 port001 Exp $
+# $Id: Function.py,v 1.9 2004/11/10 16:27:05 port001 Exp $
 #
 
+import sys
 from time import time
 
 import Config
