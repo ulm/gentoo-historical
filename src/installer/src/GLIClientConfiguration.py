@@ -1,4 +1,26 @@
-class GLIClientConfiguration:
+"""
+Gentoo Linux Installer
+
+$Id: GLIClientConfiguration.py,v 1.6 2004/05/08 16:41:51 esammer Exp $
+Copyright 2004 Gentoo Technologies Inc.
+
+The GLIClientConfiguration module contains the ClientConfiguration class
+which is a singleton class that represents configuration data that is
+used by the installer client during installation. Data that is part of
+the actual install is contained in GLIInstallProfile.
+
+Usage:
+
+	from GLIClientConfiguration import ClientConfiguration
+
+	conf = ClientConfiguration.shared_client_configuration()
+
+	conf.root_mount_point('/mnt/gentoo/')
+	conf.architecture_template('x86')
+
+"""
+
+class ClientConfiguration:
 
 	SHARED_CLIENT_CONFIGURATION = None
 
