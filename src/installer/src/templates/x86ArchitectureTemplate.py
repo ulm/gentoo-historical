@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.9 2005/01/10 08:29:41 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.10 2005/01/10 08:32:35 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -324,6 +324,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #						self._run_parted_command(dev, "rm " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 						break
+			parted_disk.delete_all()
 			parted_disk.commit()
 			# Third pass to create new partition table
 			print " Third pass..."
