@@ -314,9 +314,9 @@ class Partition:
 			parted_part = device._parted_disk.get_partition(minor)
 			label_type = device._parted_disk.type.name
 			if label_type == "loop":
-				dev_node = device._device + str(minor)
-			else:
 				dev_node = device._device
+			else:
+				dev_node = device._device + str(minor)
 			if type == "ntfs":
 				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
