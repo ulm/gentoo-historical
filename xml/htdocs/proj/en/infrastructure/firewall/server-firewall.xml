@@ -1,0 +1,285 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "dtd/guide.dtd">
+
+<guide link = "/proj/en/infrastructure/sshkeys.xml">
+<title>Firewall Configuration Guide for Gentoo Infrastructure Servers</title>
+<author title="Author">
+    <mail link="lcars@gentoo.org">Andrea Barisani</mail>
+</author>
+<abstract>
+This guide documents how firewall rules script work and should be configured on Gentoo Infrastructure servers. 
+</abstract>
+<version>0.1</version>
+<date>09 August, 2003</date>
+
+<chapter>
+<title>Introduction</title>
+<body>
+<p>
+Network filters on Gentoo Infrastructure servers are activated using the Netfilter code of Linux Kernel 2.4.x configured
+with the user-space tool iptables. In order to make rules configuration and activation procedures easier and consistent 
+with Gentoo Linux initsystem a generic firewalling script with a proper configuration file has been developed.<br/><br/> 
+
+The filtering rules are activated by the "firewall" script located in the '/etc/init.d' directory, the related configuration 
+file is located as usual in the '/etc/conf.d' directory. 
+</p>
+</body>
+</chapter>
+
+<chapter>
+<title>Kernel Configuration</title>
+<body>
+<p>
+The available filtering rules are dependent on the running kernel configuration, here's a kernel configuration suitable
+for all tasks. 
+</p>
+<pre caption="kernel conf">
+#
+#   IP: Netfilter Configuration
+#
+CONFIG_IP_NF_CONNTRACK=m
+<codenote>It's always a good idea having connection tracking code compiled as a module even if it's always used. That's
+because connections database memory problems can be temporarily solved by unloading the module and unfortunately there is no 
+way to empty the database without reloading the code.</codenote>
+CONFIG_IP_NF_FTP=m
+CONFIG_IP_NF_AMANDA=m
+CONFIG_IP_NF_TFTP=m
+CONFIG_IP_NF_IRC=m
+CONFIG_IP_NF_QUEUE=m
+CONFIG_IP_NF_IPTABLES=m
+CONFIG_IP_NF_MATCH_LIMIT=m
+CONFIG_IP_NF_MATCH_MAC=m
+CONFIG_IP_NF_MATCH_PKTTYPE=m
+CONFIG_IP_NF_MATCH_MARK=m
+CONFIG_IP_NF_MATCH_MULTIPORT=m
+CONFIG_IP_NF_MATCH_TOS=m
+CONFIG_IP_NF_MATCH_ECN=m
+CONFIG_IP_NF_MATCH_DSCP=m
+CONFIG_IP_NF_MATCH_AH_ESP=m
+CONFIG_IP_NF_MATCH_LENGTH=m
+CONFIG_IP_NF_MATCH_TTL=m
+CONFIG_IP_NF_MATCH_TCPMSS=m
+CONFIG_IP_NF_MATCH_HELPER=m
+CONFIG_IP_NF_MATCH_STATE=m
+CONFIG_IP_NF_MATCH_CONNTRACK=m
+CONFIG_IP_NF_MATCH_UNCLEAN=m
+CONFIG_IP_NF_MATCH_OWNER=m
+CONFIG_IP_NF_FILTER=m
+CONFIG_IP_NF_TARGET_REJECT=m
+CONFIG_IP_NF_TARGET_MIRROR=m
+# CONFIG_IP_NF_NAT is not set
+CONFIG_IP_NF_MANGLE=m
+CONFIG_IP_NF_TARGET_TOS=m
+CONFIG_IP_NF_TARGET_ECN=m
+CONFIG_IP_NF_TARGET_DSCP=m
+CONFIG_IP_NF_TARGET_MARK=m
+CONFIG_IP_NF_TARGET_LOG=m
+CONFIG_IP_NF_TARGET_ULOG=m
+CONFIG_IP_NF_TARGET_TCPMSS=m
+# CONFIG_IP_NF_ARPTABLES is not set
+# CONFIG_IP_NF_COMPAT_IPCHAINS is not set
+# CONFIG_IP_NF_COMPAT_IPFWADM is not set
+</pre>
+
+<p>
+These are the basic modules that are loaded, additional modules can be added later in case of unusual filtering rules 
+involving non standard parameters.
+</p>
+<pre caption="/etc/modules.autoload.d/kernel-2.4">
+ip_conntrack
+ip_conntrack_ftp
+ipt_state
+iptable_mangle
+</pre>
+
+<p>
+The following configuration will set up safe values for the TCP/IP stack options. 
+For security reasons It's always a good idea ignoring broadcasts, redirects and source_route packets.
+Additionally unusual traffic will be logged. Usually filtering rules can be configured to obtain the same effect, however
+taking advantage of the TCP/IP stack "native" capabilities it's always preferrable.
+</p>
+<pre caption="/etc/sysctl.conf">
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.default.log_martians = 1
+# net.ipv4.icmp_echo_ignore_all = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+</pre>
+
+</body>
+</chapter>
+
+<chapter>
+<title>Rules Configuration</title>
+<body>
+<p>
+Filtering rules are configured in the configuration file with a series of variables defining necessary server
+informations and incoming/outgoing filtering rules. The default policy of the firewalling script is to DROP all traffic
+not specified in the configuration file.
+</p>
+
+<p>Let's see all availables statements and how they work.</p>
+
+<p>
+The IFACE variable defines the network interface where filtering rules will be applied
+</p>
+<pre>
+IFACE="eth0"
+</pre>
+
+<p>
+The MY_ADDR variable defines the address of the specified interface, any traffic originating from another address 
+on that interface will be dropped. It's allowed to specify more than one value.
+</p>
+<pre>
+MY_ADDR="10.1.7.1/32 10.1.7.2/32"
+</pre>
+
+<p>
+The SERVER_TYPE variable is used for applying a pre-defined set of "hard coded" filtering rules based on offered 
+services. Currently available keywords are "web", "ftp" and "rsync". It's allowed to specify more than one value.
+</p>
+<pre>
+SERVER_TYPE="web rsync"
+</pre>
+
+<p>
+Additionally custom filtering rules can be defined for accept or drop specified traffic. These rules are configured using
+different variables based upon protocol type (currently ICMP, TCP and UDP) and direction (IN or OUT). The argument can
+be a port number or an address:port pair. All these rules are applied before the ones generated by the SERVER_TYPE directive. 
+It's allowed to specify more than one value. 
+</p>
+<pre>
+IN_ICMP_TYPES="0/0:8 0/0:11"
+IN_TCP_PORTS="192.168.0.1/32:22 80"
+IN_UDP_PORTS="123 10.1.7.2:53"
+
+OUT_ICMP_TYPES="3/4"
+OUT_TCP_PORTS="20 21 22 25 80 rsync1.us.gentoo.org:873"
+OUT_UDP_PORTS="53 123"
+
+DROP_IN_ICMP_TYPES=""
+DROP_IN_TCP_PORTS="10.1.7.100:80"
+DROP_IN_UDP_PORTS=""
+
+DROP_OUT_ICMP_TYPES=""
+DROP_OUT_TCP_PORTS=""
+DROP_OUT_UDP_PORTS=""
+</pre>
+
+<p>
+If the SERVER_TYPE variable includes the "rsync" type an additional RSYNC_MIRRORS variable is defined for specifing the 
+mirrors that are allowed to connect to the rsync server.
+</p>
+<pre>
+RSYNC_MIRRORS="140.105.134.1 216.176.132.235"
+</pre>
+
+</body>
+</chapter>
+
+
+<chapter>
+<title>Administration</title>
+<body>
+
+<p>
+Like all init scripts the firewalling script accept the two basic arguments "start" and "stop". Additionally the "status"
+argument will show current firewall configuration.
+</p>
+
+<pre>
+# <c>/etc/init.d/firewall start</c>
+
+# <c>/etc/init.d/firewall stop</c>
+
+# <c>/etc/init.d/firewall status</c>
+<codenote>This is the same as issuing <c>/sbin/iptables -L -n -v</c></codenote> 
+</pre>
+
+<p>
+A series of procedures are defined for properly starting, stopping and modifing filtering rules preventing possible
+problems. Usually when dealing with filtering rules a lot of things can go wrong, no matter how sure the administrator
+is that the configuration is correct some problems will happen ;). The worst case scenarios that must be avoided are 
+misconfigurations or errors that will block server administrative access leaving physical access the only option for 
+solving the problem.
+</p>
+
+<p>
+For safety reasons it's required that all newly configured rules must be applied for a short time window dedicated to test
+necessary traffic. During the sleep time the ability to complete the following connections must be verified:<br/><br/> 
+
+a) current session sanity (this is done by simply typing some character and see if it is shown on the terminal)<br/>
+b) all administrative traffic (like secure shell connections)<br/><br/>
+
+After basic connectivity has been tested all other traffic can be verified.
+</p>
+
+<pre>
+# <c>/etc/init.d/firewall start ; sleep 60 ; /etc/init.d/firewall stop</c>
+</pre>
+
+</body>
+</chapter>
+
+<chapter>
+<title>Accounting</title>
+<body>
+<p>
+The Linux Netfilter code natively performs traffic accounting for all specified filtering rules, this is information is
+available by simply issuing the "status" function of the script. With the aid of a perl script and three additional arguments
+the task of saving and keeping a cumulative human readable log of accounting data is automated.
+</p>
+
+<p>Clear all accounting logs:</p>
+<pre># <c>/etc/init.d/firewall acct_reset</c></pre>
+
+<p>Update accounting logs with the latest data:</p>
+<pre># <c>/etc/init.d/firewall acct</c></pre>
+
+<p>Mail accounting logs to predefined addresses:</p>
+<pre># <c>/etc/init.d/firewall acct_mail</c></pre>
+
+<p>Here's a sample report:</p>
+<pre>
+Rule       Packets            Bytes    Target  Protocol  Src Port  Dst Port  Source Address        Destination Address
+Number
+
+-----------------------------------------------------------------------------------------------------------------
+1     	         0                0    ACCEPT       tcp                 873  216.176.132.235       0.0.0.0/0
+2     	         0                0    ACCEPT       tcp                 873  202.157.182.60        0.0.0.0/0
+3     	         0                0    ACCEPT       tcp                 873  158.36.2.10           0.0.0.0/0
+4     	         0                0    ACCEPT       tcp                 873  210.193.6.237         0.0.0.0/0
+5     	         0                0    ACCEPT       tcp                 873  81.223.20.162         0.0.0.0/0
+6     	         0                0    ACCEPT       tcp                 873  217.172.182.32        0.0.0.0/0
+7     	         0                0    ACCEPT       tcp                 873  193.136.164.248       0.0.0.0/0
+8     	         0                0    ACCEPT       tcp                 873  199.108.109.25        0.0.0.0/0
+9     	         0                0    ACCEPT       tcp                 873  172.16.200.0/24       0.0.0.0/0
+10    	         0                0    ACCEPT       tcp                 873  216.223.235.2         0.0.0.0/0
+</pre>
+
+</body>
+</chapter>
+
+<chapter>
+<title>Logging</title>
+<body>
+<p>
+</p>
+</body>
+</chapter>
+
+<chapter>
+<title>Resources</title>
+<body>
+<uri link="http://www.gentoo.org/~lcars/fw/firewall">/etc/init.d/firewall</uri><br/>
+<uri link="http://www.gentoo.org/~lcars/fw/firewall.confd">/etc/conf.d/firewall</uri><br/>
+<uri link="http://www.gentoo.org/~lcars/fw/accounting-report">/sbin/accounting-report</uri><br/>
+</body>
+</chapter>
+
+</guide>

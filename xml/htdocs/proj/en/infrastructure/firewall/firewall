@@ -1,0 +1,300 @@
+#!/sbin/runscript
+# Copyright 1999-2003 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+#
+# Gentoo Netfilter Script 0.1 2003/07/10
+# <lcars@gentoo.org>
+#
+# Changelog
+#
+# 0.1 - First draft
+#
+
+opts="${opts} status acct acct_mail acct_reset"
+
+# chains creation
+CHAINS="icmp_in icmp_out tcp_in tcp_out udp_in udp_out"
+
+if [[ ${SERVER_TYPE} ]]; then
+    for TYPE in ${SERVER_TYPE} ; do
+        CHAINS="$CHAINS ${TYPE}_in ${TYPE}_out"
+    done	
+fi    
+
+depend() {
+	need net
+}	
+
+expandVAR() {
+c=0
+for i in $1 ; do
+    (( c++ ))
+    SOURCE[$c]=`echo $i|awk -F ":" '{print $1}'`
+    PORT[$c]=`echo $i|awk -F ":" '{print $2}'`
+    if [ ! ${PORT[$c]} ]; then
+        PORT[$c]=${SOURCE[$c]}
+        SOURCE[$c]="0/0"
+    fi
+done
+}
+
+start() {
+
+	ebegin "Starting Firewall"
+
+# flush all rules...
+/sbin/iptables -t mangle -F
+/sbin/iptables -t mangle -X
+/sbin/iptables -F
+/sbin/iptables -X
+
+# create user-defined chains
+/sbin/iptables -t mangle -N WARN
+
+for CHAIN in $CHAINS ; do
+    /sbin/iptables -N $CHAIN
+done
+
+# set iptables policy
+/sbin/iptables -t mangle -P PREROUTING ACCEPT
+/sbin/iptables -P INPUT ACCEPT
+/sbin/iptables -P OUTPUT ACCEPT
+
+# define WARN action for spoofed traffic
+/sbin/iptables -t mangle -A WARN -j LOG --log-prefix 'ODD_TRAFFIC: ' --log-level debug 
+/sbin/iptables -t mangle -A WARN -j DROP 
+
+#### PREROUTING ####
+
+   RESERVED_NET="
+	0.0.0.0/8 1.0.0.0/8 2.0.0.0/8 \
+	5.0.0.0/8 \
+	7.0.0.0/8 \
+	10.0.0.0/8 \
+	23.0.0.0/8 \
+	27.0.0.0/8 \
+	31.0.0.0/8 \
+	36.0.0.0/8 37.0.0.0/8 \
+	39.0.0.0/8 \
+	41.0.0.0/8 42.0.0.0/8 \
+	58.0.0.0/8 59.0.0.0/8 60.0.0.0/8 \
+	70.0.0.0/8 71.0.0.0/8 72.0.0.0/8 73.0.0.0/8 74.0.0.0/8 75.0.0.0/8 76.0.0.0/8 \
+	77.0.0.0/8 78.0.0.0/8 79.0.0.0/8 \
+	83.0.0.0/8 84.0.0.0/8 85.0.0.0/8 86.0.0.0/8 87.0.0.0/8 88.0.0.0/8 89.0.0.0/8 \
+	90.0.0.0/8 91.0.0.0/8 92.0.0.0/8 93.0.0.0/8 94.0.0.0/8 95.0.0.0/8 96.0.0.0/8 \
+	97.0.0.0/8 98.0.0.0/8 99.0.0.0/8 100.0.0.0/8 101.0.0.0/8 102.0.0.0/8 103.0.0.0/8 \
+	104.0.0.0/8 105.0.0.0/8 106.0.0.0/8 107.0.0.0/8 108.0.0.0/8 109.0.0.0/8 110.0.0.0/8 \
+	111.0.0.0/8 112.0.0.0/8 113.0.0.0/8 114.0.0.0/8 115.0.0.0/8 116.0.0.0/8 117.0.0.0/8 \
+	118.0.0.0/8 119.0.0.0/8 120.0.0.0/8 121.0.0.0/8 122.0.0.0/8 123.0.0.0/8 124.0.0.0/8 \
+	125.0.0.0/8 126.0.0.0/8 \
+	197.0.0.0/8 \
+	222.0.0.0/8 223.0.0.0/8 240.0.0.0/8 241.0.0.0/8 242.0.0.0/8 243.0.0.0/8 244.0.0.0/8 \
+	245.0.0.0/8 246.0.0.0/8 247.0.0.0/8 248.0.0.0/8 249.0.0.0/8 250.0.0.0/8 251.0.0.0/8 \
+	252.0.0.0/8 253.0.0.0/8 254.0.0.0/8 255.0.0.0/8"
+
+for NET in $RESERVED_NET ; do
+    /sbin/iptables -t mangle -A PREROUTING -j WARN -s $NET -i ${IFACE}
+done
+
+# HA policy (if any)
+/sbin/iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP -i ${IFACE}
+/sbin/iptables -A OUTPUT -p tcp ! --syn -m state --state NEW -j DROP -o ${IFACE}
+
+#### INPUT ####
+
+# no spoofing
+for ADDR in ${MY_ADDR} ; do
+    /sbin/iptables -A INPUT -s ${ADDR} -j DROP -i ${IFACE}
+done
+
+/sbin/iptables -A INPUT -p tcp  -j ACCEPT -m state --state ESTABLISHED,RELATED
+/sbin/iptables -A INPUT -p udp  -j ACCEPT -m state --state ESTABLISHED,RELATED
+/sbin/iptables -A INPUT -p icmp -j ACCEPT -m state --state ESTABLISHED,RELATED
+
+# main input chain
+/sbin/iptables -A INPUT -p icmp -i ${IFACE} -j icmp_in
+/sbin/iptables -A INPUT -p tcp  -i ${IFACE} -j tcp_in
+/sbin/iptables -A INPUT -p udp  -i ${IFACE} -j udp_in
+/sbin/iptables -A INPUT -j LOG --log-prefix 'ODD_PROTOCOL: ' --log-level debug
+
+# icmp_in chain
+
+if [[ ${DROP_IN_ICMP_TYPES} ]]; then
+    expandVAR "$DROP_IN_ICMP_TYPES"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A icmp_in -p icmp -s ${SOURCE[$c]} --icmp-type ${PORT[$c]} -j DROP
+    done
+fi
+
+if [[ ${IN_ICMP_TYPES} ]]; then
+    expandVAR "$IN_ICMP_TYPES"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A icmp_in -p icmp -s ${SOURCE[$c]} --icmp-type ${PORT[$c]} -j ACCEPT
+    done
+fi
+
+# tcp_in chain
+
+if [[ ${DROP_IN_TCP_PORTS} ]]; then
+    expandVAR "$DROP_IN_TCP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A tcp_in -p tcp -s ${SOURCE[$c]} --dport ${PORT[$c]} -j DROP -m state --state NEW
+    done
+fi
+
+if [[ ${IN_TCP_PORTS} ]]; then
+    expandVAR "$IN_TCP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A tcp_in -p tcp -s ${SOURCE[$c]} --dport ${PORT[$c]} -j ACCEPT -m state --state NEW
+    done
+fi
+
+# udp_in chain
+
+if [[ ${DROP_IN_UDP_PORTS} ]]; then
+    expandVAR "$DROP_IN_UDP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A udp_in -p udp -s ${SOURCE[$c]} --dport ${PORT[$c]} -j DROP -m state --state NEW
+    done
+fi
+
+if [[ ${IN_UDP_PORTS} ]]; then
+    expandVAR "$IN_UDP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A udp_in -p udp -s ${SOURCE[$c]} --dport ${PORT[$c]} -j ACCEPT -m state --state NEW
+    done
+fi
+
+# template chains
+if [[ ${SERVER_TYPE} ]]; then
+    for TYPE in ${SERVER_TYPE} ; do
+        /sbin/iptables -A INPUT -i ${IFACE} -j ${TYPE}_in
+    done	
+fi
+
+# web_in
+/sbin/iptables -A web_in -p tcp --dport 80  --sport 1024: -j ACCEPT -m limit --limit 50/hour -m state --state NEW 2> /dev/null
+/sbin/iptables -A web_in -p tcp --dport 443 --sport 1024: -j ACCEPT -m state --state NEW 2> /dev/null
+
+# ftp_in
+/sbin/iptables -A ftp_in -p tcp --dport 21  --sport 1024: -j ACCEPT -m state --state NEW 2> /dev/null
+
+# rsync_in
+for MIRROR in ${RSYNC_MIRRORS} ; do
+    /sbin/iptables -A rsync_in -p tcp -s $MIRROR --dport 873 -j ACCEPT -m state --state NEW 2> /dev/null
+done
+
+#### OUTPUT ####
+
+# no spoofing
+for ADDR in ${MY_ADDR} ; do
+    /sbin/iptables -A OUTPUT ! -s ${ADDR} -j DROP -o ${IFACE}
+done
+
+/sbin/iptables -A OUTPUT -p tcp  -j ACCEPT -m state --state ESTABLISHED,RELATED
+/sbin/iptables -A OUTPUT -p udp  -j ACCEPT -m state --state ESTABLISHED,RELATED
+/sbin/iptables -A OUTPUT -p icmp -j ACCEPT -m state --state ESTABLISHED,RELATED
+
+# main output chain
+/sbin/iptables -A OUTPUT -p icmp -o ${IFACE} -j icmp_out
+/sbin/iptables -A OUTPUT -p tcp  -o ${IFACE} -j tcp_out
+/sbin/iptables -A OUTPUT -p udp  -o ${IFACE} -j udp_out
+/sbin/iptables -A OUTPUT -j LOG --log-prefix 'ODD_PROTOCOL: ' --log-level debug
+
+# icmp_out chain
+
+if [[ ${DROP_OUT_ICMP_TYPES} ]]; then
+    expandVAR "$DROP_OUT_ICMP_TYPES"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A icmp_out -p icmp -d ${SOURCE[$c]} --icmp-type ${PORT[$c]} -j DROP
+    done
+fi
+
+if [[ ${OUT_ICMP_TYPES} ]]; then
+    expandVAR "$OUT_ICMP_TYPES"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A icmp_out -p icmp -d ${SOURCE[$c]} --icmp-type ${PORT[$c]} -j ACCEPT
+    done
+fi
+
+# tcp_out chain
+
+if [[ ${DROP_OUT_TCP_PORTS} ]]; then
+    expandVAR "$DROP_OUT_TCP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A tcp_out -p tcp -d ${SOURCE[$c]} --dport ${PORT[$c]} -j DROP -m state --state NEW
+    done
+fi
+
+if [[ ${OUT_TCP_PORTS} ]]; then
+    expandVAR "$OUT_TCP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A tcp_out -p tcp -d ${SOURCE[$c]} --dport ${PORT[$c]} -j ACCEPT -m state --state NEW
+    done
+fi
+
+# udp_out chain
+
+if [[ ${DROP_OUT_UDP_PORTS} ]]; then
+    expandVAR "$DROP_OUT_UDP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A udp_out -p udp -d ${SOURCE[$c]} --dport ${PORT[$c]} -j DROP -m state --state NEW
+    done
+fi
+
+if [[ ${OUT_UDP_PORTS} ]]; then
+    expandVAR "$OUT_UDP_PORTS"
+    for c in `seq 1 $c` ; do
+        /sbin/iptables -A udp_out -p udp -d ${SOURCE[$c]} --dport ${PORT[$c]} -j ACCEPT -m state --state NEW
+    done
+fi
+
+# template chains
+if [[ ${SERVER_TYPE} ]]; then
+    for TYPE in ${SERVER_TYPE} ; do
+        /sbin/iptables -A OUTPUT -o ${IFACE} -j ${TYPE}_out 
+    done	
+fi
+
+# trustno1
+/sbin/iptables -A INPUT -j DROP -i ! lo
+/sbin/iptables -A OUTPUT -j DROP -o ! lo  
+        
+##########################################################################
+        eend $?
+}
+
+stop() {
+        ebegin "Shutting down Firewall"
+##########################################################################
+# flush all rules...
+/sbin/iptables -t mangle -F
+/sbin/iptables -t mangle -X
+/sbin/iptables -F
+/sbin/iptables -X
+##########################################################################
+        eend $?
+}
+
+status() {
+        /sbin/iptables -L -n -v
+        eend $?
+}
+
+acct () {
+	for i in $CHAINS ; do /sbin/iptables -L $i -vnxZ --line-numbers > /var/log/acct.$i ; echo `date` > /tmp/acct-time.now ; /sbin/accounting-report $i ; done
+	eend $?
+}
+
+acct_mail() {
+	echo -e "\\nAccounting: `cat /tmp/acct-time.int` - `cat /tmp/acct-time.now`\\n" > /tmp/acct.mail
+	for i in $CHAINS ; do echo -e "\\n$i chain" >> /tmp/acct.mail ; cat /var/log/acct-sum.$i >> /tmp/acct.mail ; done
+	mail -s Accounting-report root < /tmp/acct.mail
+  	eend $?
+}
+
+acct_reset() {
+	for i in $CHAINS ; do /sbin/iptables -Z ; /sbin/iptables -L $i -vnx --line-numbers > /var/log/acct.$i ; cp /var/log/acct.$i /var/log/acct-sum.$i ; done
+	echo `date` > /tmp/acct-time.int
+	eend $?
+}
