@@ -14,9 +14,9 @@ class Panel(GLIScreen.GLIScreen):
     # {section: [{category:description},...}
     data={'Applications':[{"Editors":["These are text editors that allow you to create text files.",None,None]}],
 	  'Desktops':[{"X Window System":["These are the base packages which provide support for other X-Windowing environments. ",None,
-					  {"x11-base/xorg-x11":"An X11 implementation maintained by the X.Org Foundation",
-					   "x11-base/opengl-update":"Utility to change the OpenGL interface being used",
-					   "x11-misc/xscreensaver":"a modular screensaver for X11"}
+					  {"x11-base/xorg-x11":["An X11 implementation maintained by the X.Org Foundation",True],
+					   "x11-base/opengl-update":["Utility to change the OpenGL interface being used",True],
+					   "x11-misc/xscreensaver":["a modular screensaver for X11",False]}
 					  ],
 		       "Gnome Desktop Enviroment":["GNOME is a powerful graphical user interface which is lighter than KDE.","extra_packages/GNOME-Foot.png",None],
 		       "KDE Desktop Environment":["KDE is a powerful graphical user interface which is suitable for anyone.","extra_packages/kde_icon.png",None]
@@ -117,7 +117,7 @@ This is where you emerge extra packages that your system may need.
 	def __init__(self,title,description,picture_path=None,details_dictionary=None):
 	    self.title=title
 	    self.description=description
-	    self.details_click=self.Details(self.title,details_dictionary)
+	    self.details_click=self.Details(self.title,details_dictionary,self)
 	    
 	    if picture_path!=None:
 		self.picture=gtk.Image()
@@ -139,9 +139,10 @@ This is where you emerge extra packages that your system may need.
 	    category_title.set_markup('<span weight="bold">'+self.title+'</span>')
 	    button.add(category_title)
 	    
-	    button.connect("toggled", self.Category1, "check button 1")
+	    button.connect("toggled", self.Category1, self.title)
 	    category_table.attach(Widgets().hBoxIt2(gtk.FALSE,0,button),1,2,0,1)
 	    
+	    self.button = button
 	    # the image on the left side
 	    category_hbox=gtk.HBox(gtk.FALSE,0)
 	    if self.picture==None:
@@ -167,15 +168,31 @@ This is where you emerge extra packages that your system may need.
 	    vert2.pack_start(category_hbox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	    
 	def Category1(self,widget,data=None):
-	    self.details_click.show()
+	    #self.details_click.show()
+	    print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+	    # now need to check off the default values.
+	    print data
+	    if data == self.title and ("OFF","ON")[widget.get_active()]=="ON":
+		self.details_click.activate_treeview()
+		self.details_click.toggle_default()
+	    else:
+		self.details_click.untoggle_all()
+		self.details_click.deactivate_treeview()
+	
+	def turn_off_checkbox(self,value):
+	    #self.Category1(self.button,"NO")
+	    if value != gtk.TRUE:
+		self.button.set_active(value)
 	    
 	class Details:
 	    "This is for the details window"
-	    def __init__(self,title,details_dictionary):
+	    def __init__(self,title,details_dictionary,controller):
 		self.title=title
 		self.window=gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.dictionary=details_dictionary
 		self.details_view_gui=self.create_gtk_gui()
+		#self.checkbox=checkbox
+		self.controller=controller
 		
 	    def create_gtk_gui(self):
 		
@@ -199,12 +216,22 @@ This is where you emerge extra packages that your system may need.
 		
 		if self.dictionary != None:
 		    piter = self.treestore.append(None, [None,"Expand"])
+		    print self.dictionary
+		    i=0
+		    self.toggle_f=[]
 		    for child in self.dictionary:
-			test='<span><b>'+child+'</b></span>'+"\n"+self.dictionary[child]
+			test='<span><b>'+child+'</b></span>'+"\n"+self.dictionary[child][0]
 			self.treestore.append(piter, [None,test])
+			if self.dictionary[child][1]==True:
+			    # activate the checkbox
+			    #self.col0_toggled_cb(0,"0:"+str(i),self.treestore)
+			    self.toggle_f.append(i)
+			i=i+1
+		    self.number=i
+		    print "outside here"+str(self.number)
 		else:
 		    piter = self.treestore.append(None,(None,"No Extra Packages To Select"))
-		
+		self.treeview.set_sensitive(gtk.FALSE)
 		return self.treeview
 	    
 	    def show(self):
@@ -225,6 +252,60 @@ This is where you emerge extra packages that your system may need.
 		"""
 		Sets the toggled state on the toggle button to true or false.
 		"""
-		model[path][0] = not model[path][0]
-		print "Toggle '%s' to: %s" % (model[path][1], model[path][0])
+		if path=="0":
+		    # toggle them all!
+		    value = model[path+":"+str(0)][0]
+		    for i in range(self.number):
+			newpath=path+":"+str(i)
+			model[newpath][0] = not model[path][0]
+		    model[path][0] = not model[path][0]
+		    
+		    # also untoggle the big one
+		    if model["0"][0] == True:
+			self.controller.turn_off_checkbox(gtk.TRUE)
+		    else:
+			self.controller.turn_off_checkbox(gtk.FALSE)
+		    
+		else:
+		    # toggle just that one
+		    model[path][0] = not model[path][0]
+		    print "Toggle '%s' to: %s" % (model[path][1], model[path][0])
+		    # check if the top one is set, if it is, uncheck it.
+		    if model["0"][0] == True and model[path][0]== False:
+			# uncheck it
+			model["0"][0] = False
+		    
+		    # check to see if its the last one unchecked!
+		    if model[path][0] == False:
+			value_h=False
+			for i in range(self.number):
+			    if self.treestore["0:"+str(i)][0]!=False:
+				value_h=True
+			if value_h==False:
+			    # its the last one unchecked so uncheck the big box
+			    self.controller.turn_off_checkbox(gtk.FALSE)
+		
 		return
+	    
+	    def toggle_default(self):
+		for i in range(self.number):
+		    if i in self.toggle_f:
+			# toggle it!
+			self.col0_toggled_cb(0,"0:"+str(i),self.treestore)
+	    
+	    def activate_treeview(self):
+		self.treeview.expand_all()
+		self.treeview.set_sensitive(gtk.TRUE)
+	    
+	    def deactivate_treeview(self):
+		self.treeview.collapse_all()
+		self.treeview.set_sensitive(gtk.FALSE)
+	    
+	    def untoggle_all(self):
+		# toggle them all off!
+		path="0"
+		model=self.treestore
+		for i in range(self.number):
+		    newpath=path+":"+str(i)
+		    model[newpath][0] = False
+		model[path][0] = False

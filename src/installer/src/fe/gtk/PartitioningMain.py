@@ -33,6 +33,7 @@ class Panel(GLIScreen.GLIScreen):
 
 	def switch_screen(self, widget, data=None):
 #		print "data=" + str(data) + ", active_page=" + str(self.active_page)
+		if widget and not widget.get_active(): return
 		if not self.active_page == data:
 			self.active_page = data
 			self.notebook.set_current_page(data)
@@ -46,7 +47,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 #		self.notebook.hide_all()
 		if self.active_page == -1:
-			self.switch_screen(self.notebook, 0)
+			self.switch_screen(None, 0)
 		else:
-			self.switch_screen(self.notebook, self.active_page)
+			self.switch_screen(None, self.active_page)
 #		self.notebook.show_all()
