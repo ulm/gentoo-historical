@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.20 2005/01/27 19:48:07 port001 Exp $
+# $Id: Config.py,v 1.21 2005/03/09 01:16:31 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -26,7 +26,8 @@ MySQL = {
     "state_table":	"state"
     }
 
-t_prefix = "/usr/local/share/glsr/templates/"
+t_prefix = "/var/www/scripts.gentoo.org/gentoo/src/glsr/src/templates/"
+#t_prefix = "/usr/local/share/glsr/templates/"
 #t_prefix = "/var/www/buffmuthers.com/htdocs/projects/glsr/templates/"
 
 Template = {
@@ -55,26 +56,29 @@ Template = {
     "admin_statistics":         t_prefix + "admin/Statistics.tpl"
     }
 
-URL = "http://localhost/glsr/htdocs/"
+URL = "http://scriptstest.gentoo.org/"
+#URL = "http://localhost/glsr/htdocs/"
 #URL = "http://buffmuthers.com/projects/glsr/htdocs/"
 Contact = "port001@gentoo.org"
 
 Memcache = False # Not supported yet
 
 Logging = True
-LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
+LogFile = "/var/www/scripts.gentoo.org/htdocs/log/glsr.log"
+#LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
 #LogFile = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/glsr.log"
 
 Debug = True
 
 ErrorReporting = True
-ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
+ErrorReportLog = "/var/www/scripts.gentoo.org/htdocs/log/error_reports.log"
+#ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
 #ErrorReportLog = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/error_reports.log"
 
 # Default report list offset
 ErrorReportListOffset = 5
 
-CookieDomain = "glsr.gentoo.org"
+CookieDomain = "scriptstest.gentoo.org"
 CookiePath = "/"
 CookieSecure = False
 CookieSecret = "T0mm3yT4n5"

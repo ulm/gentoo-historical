@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.42 2005/02/17 01:19:11 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.43 2005/03/09 01:16:31 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -26,10 +26,13 @@ import __main__
 import jon.cgi as cgi
 import jon.fcgi as fcgi
 
-sys.path.insert(0, "/usr/local/share/glsr/pym/")
-sys.path.insert(0, "/usr/local/share/glsr/")
-sys.path.insert(0, "../pym")
-sys.path.insert(0, "../")
+sys.path.insert(0, "/var/www/scripts.gentoo.org/gentoo/src/glsr/src/pym")
+sys.path.insert(0, "/var/www/scripts.gentoo.org/gentoo/src/glsr/src")
+
+#sys.path.insert(0, "/usr/local/share/glsr/pym/")
+#sys.path.insert(0, "/usr/local/share/glsr/")
+#sys.path.insert(0, "../pym")
+#sys.path.insert(0, "../")
 
 import State
 import Config
