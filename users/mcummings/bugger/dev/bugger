@@ -2,9 +2,9 @@
 package main;
 use vars qw($libpath);
 use Getopt::Long;
-
+use Config::General;
 # For debugging needs
-#use diagnostics;
+use diagnostics;
 
 BEGIN {
     $libpath = $0;
@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 
-use lib "$libpath";
+#use lib "$libpath";
 
 
 our $help     = '';
@@ -62,13 +62,44 @@ sub helpme {
     print "\n\nStill need to add nice die messages...\n\n";
 }
 
+decide_mode();
+sub decide_mode {
 # We should open the config file if it exists at this point and 
 # determine which mode we want to run:
 # flatmode
 # tkmode
+my $configfile = "$ENV{'HOME'}/.bugger-config";
+my ($conf,$login,$password,$server,$rows,$mode);
+my %conf;
+if ((-f $configfile) && (-s $configfile)) {
+$conf = new Config::General(
+    -AutoTrue          => 1,
+    -AllowMultiOptions => "yes",
+    -ExtendedAccess    => 1,
+    -ConfigFile        => "$configfile",
+    -IncludeRelative   => 1,
+);
+%config   = $conf->getall;
+$login    = $config{'login'};
+$password = $config{'password'};
+$server   = $config{'server'};
+$rows     = $config{'rows'};
+$mode     = $config{'mode'};
+}
 
+my $usetk = "";
 
-if ($tk)
+# Explicity demand tk
+if ($tk) {$usetk=1}
+# Didn't demand flat and mode is set to tk
+elsif (($mode eq "tkmode")&&!($flat)) {$usetk=1}
+# Didn't demand flat or tk, no mode is configured, and we are in X
+elsif (!($mode) && !($tk) && !($flat) && ($ENV{'XAUTHORITY'} =~ m/Xauth/i)) {$usetk=1}
+# OK, no mode specified and X doesn't seem to be running
+else
+{$usetk=0}
+
+if ($usetk == 1)
 {
 require "bugger-tk";
 my $child;
@@ -80,5 +111,6 @@ unless ( $child = fork ) {
 else {
 require "bugger-flat";
 start();
+}
 }
 exit;
