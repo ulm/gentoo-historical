@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.59 2004/07/30 10:29:56 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.60 2004/08/01 12:16:34 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link = "/doc/en/gentoo-security.xml">
@@ -34,15 +34,18 @@
 <author title="Editor">
 	<mail link="klasikahl@gentoo.org">Zack Gilburd</mail>
 </author>
+<author title="Editor">
+  <mail link="krispykringle@gentoo.org">Dan Margolis</mail>
+</author>
 
 <abstract>
-This guide is step-by-step guide for hardening Gentoo Linux.
+This is a step-by-step guide for hardening Gentoo Linux.
 </abstract>
 
 <license/>
 
-<version>0.4.30</version>
-<date>July 30, 2004</date>
+<version>0.4.31</version>
+<date>August 01, 2004</date>
 
 <chapter>
 <title>Introduction</title>
@@ -118,14 +121,20 @@ quality assurance purposes.
 <body>
 
 <p>
-No matter how many safeguards you implement, all can easily be circumvented if
-the attacker can gain physical access to your box.  Make sure your hardware is 
-not casually accessible. For example, you may want to place your box
-in a locked server closet.  Locking cases is a good idea too.  For the highest 
-level of security set your BIOS to restrict booting to your hard drive only.
-Disable booting from the floppy and CD-ROM drives.  For the paranoid, enabling 
-the BIOS password is a good idea.  BIOS passwords are also a good idea for 
-laptop users.
+No matter how many safeguards you implement, they can all be easily circumvented
+by an attacker with physical access to your computer. Despite this, there are
+at least some measures that can be taken to provide a degree of security against
+an attacker with physical access to your machine. Putting your hardware in a
+locked closet prevents an attacker from simply unplugging it and carting it
+off. Locking your computer's case is also a good idea, to make sure that an
+attacker cannot simply walk away with your hard drive. To prevent an attacker
+from booting from another disk, nicely circumventing your permissions and login
+restrictions, try setting the hard drive as the first boot device in your BIOS,
+and setting a BIOS password. It is also important to set a LILO or GRUB boot
+password, to prevent a malicious user from booting into single-user mode and
+gaining complete access to your system. This is covered in more detail in
+Chapter 3, under <uri link="#passwording_GRUB">Setting a GRUB password</uri>
+and <uri link="#passwording_LILO">Setting a LILO password</uri>.
 </p>
 
 </body>
@@ -133,20 +142,17 @@ laptop users.
 <section>
 <title>Daemon/Service Planning</title>
 <body>
-
 <p>
-Document what services the machine should run or is supposed to run. This will 
-help you compose a better partition scheme for the system.  It can also make 
-your intrusion detection strategy much easier. Of course you should not document
-this if you only have one or a few computers and you are the only one using 
-them e.g. if the computer is going to act as a firewall it should not run 
-<e>any</e> services except perhaps sshd.
+Start by documenting what services this machine should run. This will help you
+compose a better partition scheme for your system, and allow you to better plan
+your security measures. Of course, this is unnecessary if the machine serves a
+single simple purpose, such as a desktop, or a dedicated firewall. In those
+cases, you should not be running <e>any</e> services, except perhaps sshd.
 </p>
-
 <p>
-Document this and the current version of sshd - it will help you keep track of 
-which system to upgrade in case someone finds a security hole in sshd. This 
-will also aid in determining who should have access to the system.
+This list can also be used to aid system administration. By keeping a current
+list of version information, you will find it much easier to keep everything up
+to date if a remote vulnerability is discovered in one of your daemons.
 </p>
 
 </body>
@@ -156,28 +162,27 @@ will also aid in determining who should have access to the system.
 <body>
 
 <p>
-Golden rules:
+Partitioning rules:
 </p>
 
 <ul>
 <li>
-  Any directory tree a user should be able to write to (<path>/home</path> and 
-  <path>/tmp</path> <path>/var</path>), should be on a separate partition and 
-  use disk quotas. Portage uses <path>/var/tmp</path> to compile files so that 
-  partition should be large. This reduces the risk of a user filling up your 
-  <path>/</path> mount point.
+  Any directory tree a user should be able to write to (e.g. <path>/home</path>, 
+  <path>/tmp</path>) should be on a seperate partition and use disk quotas. This
+  reduces the risk of a user filling up your whole filesystem. Portage
+  uses <path>/var/tmp</path> to compile files, so that partition should be large.
 </li>
 <li>
-  Any directory tree where you want to install non-distribution software should
-  be on a separate partition. According to the <uri 
-  link="http://www.pathname.com/fhs/">File Hierarchy Standard</uri>, this is 
-  <path>/opt</path> or <path>/usr/local</path>. If these are separate 
+  Any directory tree where you plan to install non-distribution software on should
+  be on a seperate partition. According to the <uri link =
+  "http://www.pathname.com/fhs/">File Hierarchy Standard</uri>, this
+  is <path>/opt</path> or <path>/usr/local</path>.  If these are separate
   partitions, they will not be erased if you have to reinstall the system.
 </li>
 <li>
-  Try to move static data to its own partition, and mount that partition in 
-  read-only mode. If you're really paranoid you could try storing static data 
-  on read-only media like CDROMs.
+  For extra security, static data can be put on a seperate partition that is
+  mounted read-only. For the truly paranoid, try using read-only media like
+  CD-ROM.
 </li>
 </ul>
 
@@ -188,9 +193,9 @@ Golden rules:
 <body>
 
 <p>
-The user 'root' is the most vital user on the system and should not be used for
-anything except if it is necessary. If an attacker gains root access you can no
-longer trust your system, so reinstall.
+The user 'root' is the most vital user on the system and should not be
+used for anything except when absolutely necessary. If an attacker gains root
+access, the only way to ever trust your system again is to reinstall.
 </p>
 
 <p>
@@ -199,98 +204,103 @@ Golden rules about 'root'
 
 <ul>
 <li>
-  Always create a user for everyday use and if this user needs to have root 
-  access, add the user to the group wheel. This makes it possible for a normal
-  user to su to root.
+  Always create a user for everyday use and if this user needs to have root
+  access, add the user to the group 'wheel'. This makes it possible for a normal
+  user to <c>su</c> to root.
 </li>
 <li>
-  Never run X or any other user application as root
+  Never run X or any other user application as root. root should only be used when
+  absolutely necessary; if a vulnerability exists in an application running as a
+  user, an attacker can gain user level access. But if that application is running
+  as root, the attacker gains root access.
 </li>
 <li>
-  Always use absolute paths when logged in as root. It's possible to trick root
-  into running a different application rather than the one meant to be ran. For 
-  example if someone tampered with the PATH and root su's without using 
-  <c>su -</c>. Then root will use the path of the user.
+  Always use absolute paths when logged in as root (or always use <c>su -</c>,
+  which replaces the environmental variables of the user with those of root,
+  while being sure root's <c>PATH</c> only includes protected directories
+  like <path>/bin</path> and <path>/sbin</path>). It's possible to trick
+  root into running a different application rather than the one meant to be
+  run. If root's <c>PATH</c> is protected or root only uses absolute paths, we can
+  be sure this won't happen.
 </li>
 <li>
-  If a user only needs a few commands instead of everything that root normally 
-  can do, consider using <c>sudo</c>, but be careful with this!
+  If a user only needs to run a few commands as root, instead of everything that
+  root normally can do, consider using <c>sudo</c> instead. Just be careful who
+  you give this access to, as well!
 </li>
 <li>
-  Never leave the terminal when you are logged in as root
+  Never leave the terminal when you are logged in as root.
 </li>
 </ul>
 
 <p>
-Gentoo has general protection against normal users, trying to <c>su</c>. The 
-default PAM setting states that a users has to be a member of wheel in order 
-to be able to su.
+Gentoo has some default protection against normal users trying to <c>su</c> to
+root. The default PAM setting requires that a user be a member of the group
+"wheel" in order to be able to <c>su</c>.
 </p>
 
 </body>
 </section>
-<section>
+<section id = "security_policies">
 <title>Security policies</title>
 <body>
 
 <p>
-There are several reasons why security policies are needed.
+There are several reasons to draft a security policy for your system(s) and
+network.
 </p> 
 
 <ul>
 <li>
-  You cannot claim to have a secure network without a definition of what you 
-  think is secure
+  A good security policy allows you to outline security as a "system", rather
+  than simply a jumble of different features. For example, without a policy an
+  administrator might decide to turn off telnet, because it transmits
+  unencrypted passwords, but leave on FTP access, which has the same weakness. A
+  good security policy allows you to identify which security measures are
+  worthwhile, and which are not.
 </li>
 <li>
-  It is almost impossible to catch potential attackers, resolve network 
-  problems, or conduct audits, without spying on network traffic or looking in 
-  private home directories. And spying without the users agreement is illegal 
-  in most countries. And since about 60% of all attacks currently come from 
-  inside the organization, it is important that you keep an open eye.
+  In order to diagnose problems, conduct audits, or track down intruders, it may
+  be necessary to intercept network traffic, inspect the login and command
+  history of users, and look in home directories. Without outlining this in
+  print, and making users aware of this, such actions may actually be illegal
+  and put <e>you</e> in legal jeopardy.
 </li>
 <li>
-  You cannot expect your users to think about security, if you never explained 
-  why it was important or how they should protect themselves and their 
-  colleagues.
+  Hijacked user accounts pose one of the most common threats to system
+  security. Without explaining to users why security is important, and how to
+  practice good security (such as not writing passwords on a Post-It note on
+  their desks), it is unlikely you will have any hope of secure user accounts.
 </li>
 <li>
-  Good guidelines and network documentation always pays off, no matter what
-</li>
-<li>
-  Police or federal law enforcement can not help you catch the attacker, if 
-  they do not know your network configuration or the services that you provide.
-</li>
-<li>
-  What will you do when there has been an attack? You need to define what you 
-  are going to do and who you are going to tell about it. Are you just going 
-  to call the police/a CERT team on every occasion? They won't take you serious!
+  A well-documented network and system layout will aid you, as well as law
+  enforcement forensics examiners, if need be, in tracing an intrusion and
+  idetifying weaknesses after the fact. A security policy "issue" banner,
+  stating that your system is a private network and all unauthorized access is
+  prohibited, will also help ensure your ability to properly prosecute an
+  intruder, once he is caught.
 </li>
 </ul>
 
 <p>
-This should clearly state why it is important to create policies for systems 
-with more than one user and why it is important to educate users.
+The need for a good security policy is hopefully now more than clear.
 </p>
 
 <p>
-A policy is a document (or several documents) with answers to questions like 
-who, where, why and what. Every user on your system/network should read, 
-understand and sign it. It is important that you take the time to help the 
-users understand the policy and why the policy needs to be signed or what will 
-happens if they act directly against the policy (the policy should also state 
-this). This should be repeated at least once a year since the policy can change
-but also as a reminder to the user.
+The policy itself is a document, or several documents, that outlines the network
+and system features (such as what services are provided), acceptible use and
+forbidden use, security "best practices", and so forth. All users should be made
+aware of your security policy, as well as changes you make to keep it up to
+date. It is important that you take the time to help users understand your
+policy and why that policy needs to be signed or what will happens if they act
+directly against the policy (the policy should also state this). This should be
+repeated at least once a year, since the policy can change (but also as a
+reminder to the user of the policy itself).
 </p>
 
 <note>
 Create policies that are easy to read and be very precise on every subject.
 </note>
-
-<p>
-Most parts of a policy can be enforced directly in the operating system or 
-through firewalls and others cannot.
-</p>
 
 <p>
 A security policy should at least contain the following subjects:
@@ -314,7 +324,7 @@ A security policy should at least contain the following subjects:
   <li>PC shutdown before leaving</li>
   <li>Use of encryption</li>
   <li>Handling of keys to trusted co-workers</li>
-  <li>Handling of classified material when traveling</li>
+  <li>Handling of confidential material when traveling</li>
   </ul>
 </li>
 <li>Handling of computer equipment when traveling</li>
@@ -326,22 +336,24 @@ A security policy should at least contain the following subjects:
 </ul>
 
 <p>
-The policy for the IT-staff might be a bit different then the normal users.
+Different users may require different levels or types of access, and as such
+your policy may vary to accomodate them all.
 </p>
 
 <p>
-The security policy can become huge, and vital information can easily be 
-forgotten. The IT-staff's policy could contain information that is classified 
-for the ordinary user, so it is wise to split it up into smaller policies; i.e.
-Acceptable Use Policy, Password policy, Email policy and Remote Access policy.
+The security policy can become huge, and vital information can easily be
+forgotten. The IT-staff's policy could contain information that is confidential
+for the ordinary user, so it is wise to split it up into smaller policies;
+e.g. Acceptable Use Policy, Password policy, Email policy and Remote Access
+policy.
 </p>
 
 <p>
-One can find example policies at <uri 
-link="http://www.sans.org/resources/policies/">The SANS Security Policy 
-Project</uri>. If you have a small network and think these policies are too
-much you should look at the <uri 
-link="http://www.cis.ohio-state.edu/cgi-bin/rfc/rfc2196.html">Site Security 
+You can find example policies at <uri
+link="http://www.sans.org/resources/policies/">The SANS Security Policy
+Project</uri>. If you have a small network and think these policies are too much
+you should look at the <uri
+link="http://www.cis.ohio-state.edu/cgi-bin/rfc/rfc2196.html">Site Security
 Handbook</uri>.
 </p>
 
@@ -350,29 +362,28 @@ Handbook</uri>.
 </chapter>
 
 <chapter>
-<title>Tightening the security after/during installation</title>
+<title>Tightening security during and after installation</title>
 <section>
 <title>USE flags</title>
 <body>
 
 <p>
-The <path>make.conf</path> file contains user defined USE flags and 
-<path>/etc/make.profile/make.defaults</path> contains the default USE flags 
-for Gentoo Linux. For this guide the important flags are <c>pam</c> (Pluggable 
-Authentication Modules), <c>tcpd</c> (TCP wrappers) and <c>ssl</c> (Secure 
-Socket Layer). These are all in the default USE flags.
+The <path>make.conf</path> file contains user defined USE flags and
+<path>/etc/make.profile/make.defaults</path> contains the default USE flags for
+Gentoo Linux. For this guide's purposes, the important flags are <c>pam</c>
+(Pluggable Authentication Modules), <c>tcpd</c> (TCP wrappers), and <c>ssl</c>
+(Secure Socket Layer). These are all in the default USE flags.
 </p>
 
 </body>
 </section>
-<section>
-<title>GRUB password</title>
+<section id = "passwording_GRUB">
+<title>Password protecting GRUB</title>
 <body>
 
 <p>
-Grub supports 2 different ways of adding password restriction to its 
-configuration file (<path>/boot/grub/grub.conf</path>). One with plain text 
-password and one with md5+salt encryption.
+GRUB supports two different ways of adding password protection to your boot
+loader. The first uses plain text, while the latter uses md5+salt encryption.
 </p>
 
 <pre caption="/boot/grub/grub.conf">
@@ -381,34 +392,34 @@ password changeme
 </pre>
 
 <p>
-This will add the password <c>changeme</c> and if no password is entered simply 
-use the default boot setting.
+This will add the password <c>changeme</c>. If no password is entered at boot,
+GRUB will simply use the default boot setting.
 </p>
 
 <p>
-When adding a md5 password, you need to convert the password into crypt format 
-(<c>man crypt</c>) which is the same format as <path>/etc/shadow</path>. For 
-more information see <c>man crypt</c>. The encrypted password <e>changeme</e> 
-could look like this $1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.
+When adding an md5 password, you must convert your password into crypt format,
+which is the same format used in <path>/etc/shadow</path>. For more information
+see <c>man crypt</c>. The encrypted password <e>changeme</e>, for example, could
+look like this: <c>$1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs</c>.
 </p>
 
 <p>
-Or this you can convert it directly in the grub shell:
+You can encrypt your password directly at the GRUB shell:
 </p>
 
 <pre caption="md5crypt in grub shell">
 #<i>/sbin/grub</i>
 
-    GRUB  version 0.92  (640K lower / 3072K upper memory)
+GRUB version 0.92 (640K lower / 3072K upper memory)
 
-   [ Minimal BASH-like line editing is supported.  For the first word, TAB
-     lists possible command completions.  Anywhere else TAB lists the possible
+   [ Minimal BASH-like line editing is supported. For the first word, TAB lists
+     possible command completions. Anywhere else TAB lists the possible
      completions of a device/filename. ]
 
 grub> <i>md5crypt</i>
 
 Password: <i>********</i>
-<codenote>Typed changeme</codenote>
+<codenote>Typed changeme at the prompt</codenote> 
 Encrypted: $1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.
 
 grub> <i>quit</i>
@@ -419,55 +430,56 @@ Then, cut and paste your password to <path>/boot/grub/grub.conf</path>.
 </p>
 
 <pre caption="/boot/grub/grub.conf">
-timeout 5
+timeout 5 
 password --md5 $1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.
 </pre>
 
 <p>
-The 5 seconds timeout becomes handy if the system is remote and should be able 
-to reboot without any keyboard interaction. Learn more about grub passwords by 
+The 5 seconds timeout becomes handy if the system is remote and should be able
+to reboot without any keyboard interaction. Learn more about GRUB passwords by
 executing <c>info grub</c>.
 </p>
 
 </body>
 </section>
-<section>
-<title>LILO password</title>
+<section id = "passwording_LILO">
+<title>Password protecting LILO</title>
 <body>
 
 <p>
-LILO also supports two ways of handling passwords: global and per-image, both 
-in clear text.
+LILO also supports two ways of handling passwords: global and per-image, both in
+clear text.
 </p>
 
 <p>
-The global one is set at the top of the configuration file:
+The global password is set at the top of the configuration file, and applies to
+every boot image:
 </p>
 
 <pre caption="/etc/lilo.conf">
-password=changeme
-restricted
+password=changeme 
+restricted 
 delay=3
 </pre>
 
 <p>
-Otherwise simply add it to an image.
+The per-image password is set as below:
 </p>
 
 <pre caption="/etc/lilo.conf">
-image=/boot/bzImage
-      read-only
-      password=changeme
+image=/boot/bzImage 
+      read-only 
+      password=changeme 
       restricted
 </pre>
 
 <p>
-If the <c>restricted</c> option is not entered, it will prompt for password, 
+If the <c>restricted</c> option is not entered, it will prompt for a password
 every time.
 </p>
 
 <p>
-In order to store the new information in <path>lilo.conf</path> you need to run 
+In order to store the new information in <path>lilo.conf</path>, you must run
 <c>/sbin/lilo</c>.
 </p>
 
@@ -478,17 +490,17 @@ In order to store the new information in <path>lilo.conf</path> you need to run
 <body>
 
 <p>
-The <path>/etc/securetty</path> file allows you to specify which <c>tty</c> 
+The <path>/etc/securetty</path> file allows you to specify which <c>tty</c>
 (terminal) devices root is allowed to login in from.
 </p>
 
 <p>
-We suggest that you comment out all lines except <c>vc/1</c>. This will ensure 
+We suggest that you comment out all lines except <c>vc/1</c>. This will ensure
 that root only can login once and only on one terminal.
 </p>
 
 <note>
-Users in the wheel group can still <c>su -</c> to become root on other TTYs.
+Users in the group "wheel" can still <c>su -</c> to become root on other TTYs.
 </note>
 
 <pre caption="/etc/securetty">
@@ -505,13 +517,13 @@ vc/1
 <body>
 
 <p>
-Extra logging should be added to catch warnings or errors that might warn of an
-ongoing attack or of a successful compromise. Attackers often scan or probe 
-networks before attacking.
+Extra logging should be added to catch warnings or errors that might indicate
+an ongoing attack or a successful compromise. Attackers often scan or probe
+before attacking.
 </p>
 
 <p>
-Its also vital that the log files are easy readable and manageable.  Gentoo 
+It's also vital that your log files are easily readable and manageable. Gentoo
 Linux lets you choose between 3 different loggers when installing.
 </p>
 
@@ -522,21 +534,21 @@ Linux lets you choose between 3 different loggers when installing.
 <body>
 
 <p>
-Syslogd is the most common logger for Linux and Unix in general. It does not 
-come with log rotation. This feature is handled by running 
-<path>/usr/sbin/logrotate</path> in a cron job and configured in 
-<path>/etc/logrotate.conf</path>. How often log rotation should be done depends 
+Syslogd is the most common logger for Linux and Unix in general. It does not
+come with log rotation. This feature is handled by running
+<path>/usr/sbin/logrotate</path> in a cron job (logrotate is configured in
+<path>/etc/logrotate.conf</path>). How often log rotation should be done depends
 on the system load.
 </p>
 
 <p>
 Below is the standard <path>syslog.conf</path> with some added features. We 
 have uncommented the <c>cron</c> and <c>tty</c> lines and added a remote 
-logging server. To further enhance security you could add logs in two places.
+logging server. To further enhance security you could add logging to two places.
 </p>
 
 <pre caption="/etc/syslog.conf">
-#  /etc/syslog.conf     Configuration file for syslogd.
+#  /etc/syslog.conf      Configuration file for syslogd.
 #
 #                       For more information see syslog.conf(5)
 #                       manpage.
@@ -614,14 +626,14 @@ daemon,mail.*;\
 #       *.=debug;*.=info;\
 #       *.=notice;*.=warn       |/dev/xconsole
 
-local2.*                -/var/log/ppp.log
+local2.*                --/var/log/ppp.log
 </pre>
 
 <p>
-Attackers will most likely try to erase their tracks by editing or deleting the 
-log files. You can make it harder for the attacker by logging to one or more 
-logging servers on different machines. Get more info about syslogd by executing
-<c>man syslog</c>.
+Attackers will most likely try to erase their tracks by editing or deleting log
+files. You can make it harder for them by logging to one or more remote logging
+servers on other machines. Get more info about syslogd by executing <c>man
+syslog</c>.
 </p>
 
 </body>
@@ -631,16 +643,16 @@ logging servers on different machines. Get more info about syslogd by executing
 <body>
 
 <p>
-<uri link="http://metalog.sourceforge.net">Metalog</uri> by Frank Dennis is not 
-able to log to a remote server, but it does have advantages when it comes to 
-performance and logging flexibility. It can log by program name, urgency, 
-facility (like syslogd) and comes with regular expression matching and it can 
-launch external scripts when specific patterns are found. It is very good for 
-taking action when needed.
+<uri link="http://metalog.sourceforge.net">Metalog</uri> by Frank Dennis is not
+able to log to a remote server, but it does have advantages when it comes to
+performance and logging flexibility. It can log by program name, urgency,
+facility (like syslogd), and comes with regular expression matching with which
+you can launch external scripts when specific patterns are found. It is very good
+at taking action when needed.
 </p> 
 
 <p>
-The standard configuration is basically enough. If you want to be notified by
+The standard configuration is usually enough.  If you want to be notified by
 email whenever a password failure occurs use one of the following scripts.
 </p>
 
@@ -648,7 +660,7 @@ email whenever a password failure occurs use one of the following scripts.
 For postfix:
 </p>
 
-<pre caption = "/usr/local/sbin/mail_pwd_failures.sh for postfix">
+<pre caption="/usr/local/sbin/mail_pwd_failures.sh for postfix">
 #! /bin/sh
 echo "$3" | mail -s "Warning (program : $2)" root
 </pre>
@@ -657,7 +669,7 @@ echo "$3" | mail -s "Warning (program : $2)" root
 For qmail:
 </p>
 
-<pre caption = "/usr/local/sbin/mail_pwd_failures.sh for qmail">
+<pre caption="/usr/local/sbin/mail_pwd_failures.sh for qmail">
 #!/bin/sh
 echo "To: root
 Subject:Failure (Warning: $2) 
@@ -671,7 +683,7 @@ Remember to make the script executable by issuing <c>/bin/chmod +x
 </p>
 
 <p>
-Then uncomment the command line under Password failures in 
+Then uncomment the command line under "Password failures" in 
 <path>/etc/metalog/metalog.conf</path> like:
 </p>
 
@@ -686,15 +698,15 @@ command  = "/usr/local/sbin/mail_pwd_failures.sh"
 <body>
 
 <p>
-Syslog-ng provide some of the same features as syslog and metalog with a small 
-difference. It can filter messages based on level and content (like metalog), 
-provide remote logging like syslog, handle log from syslogd (even streams from 
-Solaris, write to a TTY, execute programs and it can act as a logging server. 
+Syslog-ng provides some of the same features as syslog and metalog with a small
+difference. It can filter messages based on level and content (like metalog),
+provide remote logging like syslog, handle logs from syslogd (even streams from
+Solaris), write to a TTY, execute programs, and it can act as a logging server.
 Basically it is the best of both loggers combined with advanced configuration.
 </p>
 
 <p>
-A classic configuration file slightly modified.
+Below is a classic configuration file slightly modified.
 </p>
 
 <pre caption="/etc/syslog-ng/syslog-ng.conf">
@@ -773,19 +785,52 @@ log { source(src); destination(console_all); };
 </pre>
 
 <p>
-Very easy to configure but also very easy to miss something in the configuration
-file since it is huge. The author still promises some extra features like 
-encryption, authentication, compression and MAC (Mandatory Access Control) 
-control. With these options it will be a perfect for network logging. since 
-the attacker cannot spy on the log.
+Syslog-ng is very easy to configure, but it is also very easy to miss something
+in the configuration file since it is huge. The author still promises some extra
+features like encryption, authentication, compression and MAC (Mandatory Access
+Control) control. With these options it will be a perfect for network logging,
+since the attacker cannot spy on the log.
 </p>
 
 <p>
-And syslog-ng does have other advantages. It does not have to run as root!.
+And syslog-ng does have one other advantage: it does not have to run as root!
 </p>
 
 </body>
 </section>
+
+<section>
+<title>Log analysis with Logcheck</title>
+<body>
+
+<p>
+Of course, keeping logs alone is only half the battle. An application such as
+Logcheck can make regular log analysis much easier. Logcheck is a script,
+accompanied by a binary called <c>logtail</c>, that runs from your cron daemon
+and checks your logs against a set of rules for suspicious activity. It then
+mails the output to root's mailbox.
+</p>
+<p>
+Logcheck uses four files to filter important log entries from the
+unimportant. These files are <path>logcheck.hacking</path>, which contains known
+hacking attack messages, <path>logcheck.violations</path>, which contains
+patterns indicating security
+violations, <path>logcheck.violations.ignore</path>, which contains keywords
+likely to be matched by the violations file, allowing normal entries to be
+ignored, and <path>logcheck.ignore</path>, which matches those entries to be
+ignored.
+</p>
+
+<warn>
+Do not leave <path>logcheck.violations.ignore</path> empty. Logcheck
+uses <c>grep</c> to parse logs, some versions of which will take an empty file
+to mean wildcard. All violations would thus be ignored.
+</warn>
+<!-- FIXME: Might want to add more details on logcheck here...I have to install
+it on Gentoo to figure out how it's configured! -->
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -794,9 +839,9 @@ And syslog-ng does have other advantages. It does not have to run as root!.
 <body>
 
 <p>
-When mounting an <c>ext2</c>, <c>ext3</c> or a <c>reiserfs</c> partition, you 
-have several options you can apply to the <path>/etc/fstab</path>. The options 
-are:
+When mounting an <c>ext2</c>, <c>ext3</c>, or <c>reiserfs</c> partition, you
+have several options you can apply to the file <path>/etc/fstab</path>. The
+options are:
 </p>
 
 <ul>
@@ -805,7 +850,7 @@ are:
   file
 </li>
 <li>
-  <c>noexec</c> - Will prevent from executing files from this partition
+  <c>noexec</c> - Will prevent execution of files from this partition
 </li>
 <li>
   <c>nodev</c> - Ignores devices
@@ -813,10 +858,9 @@ are:
 </ul>
 
 <p>
-Unfortunately these settings can easily be circumvented by executing a 
-non-direct path. However setting <path>/tmp</path> to noexec will stop about 
-99% of all script kiddies since their exploits are designed to be executed 
-directly from <path>/tmp</path>.
+Unfortunately, these settings can easily be circumvented by executing a
+non-direct path. However, setting <path>/tmp</path> to noexec will stop the
+majority of exploits designed to be executed directly from <path>/tmp</path>.
 </p>
 
 <pre caption="/etc/fstab">
@@ -832,17 +876,17 @@ proc /proc proc defaults 0 0
 </pre>
 
 <warn>
-Placing <path>/tmp</path> in <c>noexec</c> mode can prevent certain scripts 
+Placing <path>/tmp</path> in <c>noexec</c> mode can prevent certain scripts
 from executing properly.
 </warn>
 
 <note>
-Disk quotas see <uri link="#doc_chap6_sect3">Quotas section</uri>.
+For disk quotas see <uri link="#doc_chap6_sect3">the Quotas section</uri>.
 </note>
 
 <note>
-I do not set <path>/var</path> to <c>noexec</c> or <c>nosuid</c> even if files 
-normally are never executed from this mount point. The reason for this is that 
+I do not set <path>/var</path> to <c>noexec</c> or <c>nosuid</c>, even if files
+normally are never executed from this mount point. The reason for this is that
 qmail is installed in <path>/var/qmail</path> and must be allowed to execute 
 and access one SUID file. I setup <path>/usr</path> in read-only mode since I 
 never write anything there unless I want to update Gentoo. Then I remount the 
@@ -851,8 +895,9 @@ file system in read-write mode, update and remount again.
 
 <note>
 Even if you do not use qmail, Gentoo still needs the executable bit set on 
-<path>/var/tmp</path> since ebuilds are made here. But an alternative path can 
-be setup if you insist on having <path>/var</path> in <c>noexec</c> mode.
+<path>/var/tmp</path> since ebuilds are made here. But an alternative path can
+be setup if you insist on having <path>/var</path> mounted in <c>noexec</c>
+mode.
 </note>
 
 </body>
@@ -861,37 +906,37 @@ be setup if you insist on having <path>/var</path> in <c>noexec</c> mode.
 
 <chapter>
 <title>User/group limitations</title>
-<section>
+<section id = "limits_conf">
 <title>/etc/security/limits.conf</title>
 <body>
 
 <p>
-Controlling resource limitations can be very effective when trying to prevent 
-a local DoS or handling the maximum allowed logins for a group or user.
+Controlling resource usage can be very effective when trying to prevent a local
+Denial of Service or restricting the maximum allowed logins for a group or user.
 </p>
 
 <pre caption="/etc/security/limits.conf">
-*    soft core      0
-*    hard core      0
-*    hard nproc     15
-*    hard rss       10000
+*    soft core 0
+*    hard core 0
+*    hard nproc 15
+*    hard rss 10000
 *    -    maxlogins 2
-@dev hard core      100000
-@dev soft nproc     20
-@dev hard nproc     35
+@dev hard core 100000
+@dev soft nproc 20
+@dev hard nproc 35
 @dev -    maxlogins 10
 </pre>
 
 <p>
-If you find yourself trying to set <c>nproc</c> or <c>maxlogins</c> to 0, maybe 
-you should delete the user instead. The example above sets the group <c>dev</c> 
-settings for processes, core file and <c>maxlogins</c>. The rest is set to a 
-default value. 
+If you find yourself trying to set <c>nproc</c> or <c>maxlogins</c> to 0, maybe
+you should delete the user instead. The example above sets the group <c>dev</c>
+settings for processes, core file and <c>maxlogins</c>. The rest is set to a
+default value.
 </p>
 
 <note>
 <path>/etc/security/limits.conf</path> is part of the PAM package and will 
-only apply to packages that use PAM. 
+only apply to packages that use PAM.
 </note>
 
 </body>
@@ -902,9 +947,9 @@ only apply to packages that use PAM.
 
 <p>
 <path>/etc/limits</path> is very similar to the limit file 
-<path>/etc/security/limits.conf</path>. The only differences is the format and 
-it only works on users or wild cards (not groups). Lets have a look at decent 
-configuration:
+<path>/etc/security/limits.conf</path>. The only difference is is the format and
+that it only works on users or wild cards (not groups). Lets have a look at a
+sample configuration:
 </p>
 
 <pre caption="/etc/limits">
@@ -913,9 +958,9 @@ kn L10 C100000 U35
 </pre>
 
 <p>
-Here we set the default settings and a specific setting for the user kn. 
-Limits are part of the sys-apps/shadow package. It is not necessary to set any 
-limitations in this file if you have disabled <c>pam</c> in 
+Here we set the default settings and a specific setting for the user kn.  Limits
+are part of the sys-apps/shadow package. It is not necessary to set any limits
+in this file if you have disabled <c>pam</c> in
 <path>make.conf</path> or not configured PAM properly.
 </p>
 
@@ -926,22 +971,28 @@ limitations in this file if you have disabled <c>pam</c> in
 <body>
 
 <warn>
-Make sure the file systems you are working with support quotas. ReiserFS is not 
-one of them!
+Make sure the file systems you are working with support quotas. In order to use
+quotas on ReiserFS, you must patch your kernel with patches available from <uri
+link =
+"ftp://ftp.namesys.com/pub/reiserfs-for-2.4/testing/quota-2.4.20">Namesys</uri>. User
+tools are available from <uri link =
+"http://www.sf.net/projects/linuxquota/">the Linux DiskQuota
+project</uri>. While quotas do work with ReiserFS, you may encounter other
+issues while trying to use them--you have been warned!
 </warn>
 
 <p>
-Putting quotas on a file system prevents users from filling up the disk or 
-writing at all. Quotas are enabled in the kernel and added to a mount point. 
-The kernel option is enabled in the kernel configuration under 
-<c>File systems->Quota support</c>. Apply the following settings, rebuild the 
-kernel and reboot using the new kernel.
+Putting quotas on a file system restricts disk usage on a per-user or per-group
+basis.  Quotas are enabled in the kernel and added to a mount point
+in <path>/etc/fstab</path>. The kernel option is enabled in the kernel
+configuration under <c>File systems-&gt;Quota support</c>. Apply the following
+settings, rebuild the kernel and reboot using the new kernel.
 </p>
 
 <p>
-Start by installing quotas with <c>emerge quota</c>. Then modify your 
+Start by installing quotas with <c>emerge quota</c>. Then modify your
 <path>/etc/fstab</path> and add <c>usrquota</c> and <c>grpquota</c> to the 
-partitions that you want to restrict disk usage like the example below.
+partitions that you want to restrict disk usage on, like in the example below.
 </p>
 
 <pre caption="/etc/fstab">
@@ -957,8 +1008,8 @@ proc /proc proc defaults 0 0
 </pre>
 
 <p>
-On every partition that you have enabled quotas, create the quota files 
-(<path>quota.user</path> and <path>quota.group</path>) and place them in the 
+On every partition that you have enabled quotas, create the quota files
+(<path>quota.user</path> and <path>quota.group</path>) and place them in the
 root of the partition.
 </p>
 
@@ -970,7 +1021,7 @@ root of the partition.
 </pre>
 
 <p>
-This step has to be done on every partition where quotas are enabled. After 
+This step has to be done on every partition where quotas are enabled. After
 adding and configuring the quota files, we need to add the <c>quota</c> script
 to the boot runlevel.
 </p>
@@ -980,8 +1031,8 @@ to the boot runlevel.
 </pre>
 
 <p>
-We will now configure the system to check the quotas once a 
-week by adding the following line to <path>/etc/crontab</path>:
+We will now configure the system to check the quotas once a week by adding the
+following line to <path>/etc/crontab</path>:
 </p>
 
 <pre caption="Adding quota check to crontab">
@@ -989,10 +1040,10 @@ week by adding the following line to <path>/etc/crontab</path>:
 </pre>
 
 <p>
-After rebooting the machine, it is time to setup the quotas for users and 
-groups. <c>edquota -u kn</c> will start the editor defined in $EDITOR (default 
-is nano) and let you edit the quotas of the user kn. <c>edquota -g</c> will do 
-the same thing just for groups.
+After rebooting the machine, it is time to setup the quotas for users and
+groups. <c>edquota -u kn</c> will start the editor defined in $EDITOR (default
+is nano) and let you edit the quotas of the user kn. <c>edquota -g</c> will do
+the same thing for groups.
 </p>
 
 <pre caption="Setting up quota's for user kn">
@@ -1002,7 +1053,7 @@ Quotas for user kn:
 </pre>
 
 <p>
-For more detail read <c>man edquota</c> or the <uri 
+For more detail read <c>man edquota</c> or the <uri
 link="http://www.tldp.org/HOWTO/mini/Quota.html">Quota mini howto</uri>.
 </p>
 
@@ -1013,11 +1064,11 @@ link="http://www.tldp.org/HOWTO/mini/Quota.html">Quota mini howto</uri>.
 <body>
 	    
 <p>
-If the policy states that users should change their password every other week, 
-change the value <c>PASS_MAX_DAYS</c> to 14 and <c>PASS_WARN_AGE</c> to 7. It 
-is also recommended that you use password aging since brute force methods will 
-find any password, it is just a matter of time. We also encourage you to set 
-<c>LOG_OK_LOGINS</c> to yes.
+If your security policy states that users should change their password
+every other week, change the value <c>PASS_MAX_DAYS</c> to 14
+and <c>PASS_WARN_AGE</c> to 7. It is recommended that you use password
+aging since brute force methods can find any password, given enough
+time. We also encourage you to set <c>LOG_OK_LOGINS</c> to yes.
 </p>
 
 </body>
@@ -1027,17 +1078,17 @@ find any password, it is just a matter of time. We also encourage you to set
 <body>
 
 <p>
-The <path>login.access</path> file is also part of the sys-apps/shadow package, 
-which gives a login access control table. The table is used to control who can 
-and cannot login based on user name, group name or host name. Per default, all 
-users on the system are allowed to login so the file consists only of comments 
-and examples. Whether you are securing your server or workstation, we recommend 
-that you setup this file so no one other than yourself (the admin) has access to
-the console.
+The <path>login.access</path> file is also part of the sys-apps/shadow package,
+which provides a login access control table. This table is used to control who
+can and cannot login based on user name, group name or host name. By default,
+all users on the system are allowed to login, so the file consists only of
+comments and examples. Whether you are securing your server or workstation, we
+recommend that you setup this file so no one other than yourself (the admin) has
+access to the console.
 </p>
 
 <note>
-These settings does not apply for root.
+These settings do not apply for root.
 </note>
 
 <pre caption="/etc/login.access">
@@ -1046,20 +1097,20 @@ These settings does not apply for root.
 </pre>
 
 <impo>
-Be careful when configuring these options, since mistakes will leave you out 
+Be careful when configuring these options, since mistakes will leave you 
 with no access to the machine if you do not have root access.
 </impo>
 
 <note>
-These settings does not apply to SSH since SSH does not execute 
-<c>/bin/login</c> per default. This can be enabled by using the <c>UseLogin 
-yes</c> in <path>/etc/ssh/sshd_config</path>. It will make SSH use login and 
-the settings will apply.
+These settings do not apply to SSH, since SSH does not execute 
+<c>/bin/login</c> per default. This can be enabled by setting <c>UseLogin 
+yes</c> in <path>/etc/ssh/sshd_config</path>. 
 </note>
 
 <p>
 This will setup login access so members of the wheel group can login locally 
-or from the gentoo.org domain. Maybe too paranoid, but better safe than sorry.
+or from the gentoo.org domain. Maybe too paranoid, but better to be safe than 
+sorry.
 </p>
 
 </body>
@@ -1073,12 +1124,12 @@ or from the gentoo.org domain. Maybe too paranoid, but better safe than sorry.
 <body>
 
 <p>
-Normal users should not have access to configuration files or passwords. An 
-attacker can steal passwords from databases or websites and use them to deface 
-or even worse, delete data. This is why it is important that the permissions 
-are correct. If you are sure that a file is only used by root, assign it with 
-the permissions <c>0600</c> and assign the file to the correct user with 
-<c>chown</c>.
+Normal users should not have access to configuration files or passwords. An
+attacker can steal passwords from databases or websites and use them to
+deface--or even worse, delete--data. This is why it is important that your file
+permissions are correct. If you are sure that a file is only used by root,
+assign it with the permissions <c>0600</c> and assign the file to the correct
+user with <c>chown</c>.
 </p>
 
 </body>
@@ -1095,9 +1146,9 @@ the permissions <c>0600</c> and assign the file to the correct user with
 </pre>
 
 <p>
-This will create a huge file with permission of all files having either write 
-permission set to the group or everybody. Check the permissions and eliminate 
-world writable files to everyone, by executing <c>/bin/chmod o-w</c> on the 
+This will create a huge file with permission of all files having either write
+permission set to the group or everybody. Check the permissions and eliminate
+world writable files to everyone, by executing <c>/bin/chmod o-w</c> on the
 files.
 </p>
 
@@ -1108,21 +1159,20 @@ files.
 <body>
 
 <p>
-Files with the SUID or SGID bit set allows the files to execute with 
-privileges of the <e>owning</e> user or group and not the user executing the 
-file. Normally these bits are used on files that must run as root in order to 
-do what they do. These files can lead to local root compromise (if they 
-contain security holes). This is dangerous and files with the SUID or SGID 
-bits set should be avoided at any cost. If you do not use the files use 
-<c>chmod 0</c> on them or unmerge the package they came from (check which 
-package they belong to by using <c>qpkg -f</c>). If you do not already have it 
-installed simply type <c>emerge gentoolkit</c> it). Otherwise just turn the 
-SUID bit off with <c>chmod -s</c>.
+Files with the SUID or SGID bit set execute with privileges of the <e>owning</e>
+user or group and not the user executing the file. Normally these bits are used
+on files that must run as root in order to do what they do. These files can lead
+to local root compromises (if they contain security holes). This is dangerous
+and files with the SUID or SGID bits set should be avoided at any cost. If you
+do not use these files, use <c>chmod 0</c> on them or unmerge the package that
+they came from (check which package they belong to by using <c>qpkg -f</c>; if
+you do not already have it installed simply type <c>emerge
+gentoolkit</c>). Otherwise just turn the SUID bit off with <c>chmod -s</c>.
 </p>
 
 <pre caption="Finding setuid files">
 # <i>/usr/bin/find / -type f \( -perm -004000 -o -perm -002000 \) \ 
-  -exec ls -lg {} \; 2>/dev/null >suidfiles.txt</i>
+   -exec ls -lg {} \; 2>/dev/null >suidfiles.txt</i>
 </pre>
 
 <p>
@@ -1153,21 +1203,23 @@ This will create a file containing a list of all the SUID/SGID files.
 </pre>
 
 <p>
-By default Gentoo Linux does not have a lot of SUID files (it depends on what 
-you installed), but you might get a list like the one above. Most of the 
-commands should not be used by normal users, only root. Switch off the SUID 
-bit on <c>ping</c>, <c>mount</c>, <c>umount</c>, <c>chfn</c>, <c>chsh</c>, 
-<c>newgrp</c>, <c>suidperl</c>, <c>pt_chown</c> and <c>traceroute</c> by 
-<c>chmod -s</c> on every file. Don't remove the bit on <c>su</c>, 
-<c>qmail-queue</c> or <c>unix_chkpwd</c>. Removing will prevent you from 
-su'ing and receiving mail. By removing the bit you remove the possibility of a 
-normal user (or an attacker) to gain root access through any of these files.
+By default Gentoo Linux does not have a lot of SUID files (though this depends
+on what you installed), but you might get a list like the one above. Most of the
+commands should not be used by normal users, only root. Switch off the SUID bit
+on <c>ping</c>, <c>mount</c>, <c>umount</c>, <c>chfn</c>, <c>chsh</c>, <c>newgrp</c>, <c>suidperl</c>, <c>pt_chown</c>
+and <c>traceroute</c> by executing <c>chmod -s</c> on every file. Don't
+remove the bit on <c>su</c>, <c>qmail-queue</c> or <c>unix_chkpwd</c>. Removing
+setuid from those files will prevent you from <c>su</c>'ing and receiving
+mail. By removing the bit (where it is safe to do so) you remove the possibility
+of a normal user (or an attacker) gaining root access through any of these
+files.
 </p>
 
 <p>
-The only SUID files that I have on my system are <c>su</c>, <c>passwd</c>, 
-<c>gpasswd</c>, <c>qmail-queue</c>, <c>unix_chkpwd</c> and <c>pwdb_chkpwd</c>. 
-But if you are running X, you might have some more, since X needs the access.
+The only SUID files that I have on my system are <c>su</c>, <c>passwd</c>,
+<c>gpasswd</c>, <c>qmail-queue</c>, <c>unix_chkpwd</c> and <c>pwdb_chkpwd</c>.
+But if you are running X, you might have some more, since X needs the elevated
+access afforded by SUID.
 </p>
 
 </body>
@@ -1180,10 +1232,10 @@ But if you are running X, you might have some more, since X needs the access.
 <body>
 
 <p>
-PAM is a suite of shared libraries that provide an alternative way of making 
-authentication in programs. The <c>pam</c> USE flag is turned on by default. 
-Thus the PAM settings on Gentoo Linux are pretty reasonable, but there is 
-always room for improvement. First install cracklib.
+PAM is a suite of shared libraries that provide an alternative way providing
+user authentication in programs. The <c>pam</c> USE flag is turned on by
+default. Thus the PAM settings on Gentoo Linux are pretty reasonable, but there
+is always room for improvement. First install cracklib.
 </p>
 
 <pre caption="Installing cracklib">
@@ -1199,11 +1251,11 @@ session	 required pam_unix.so
 </pre>
 
 <p>
-This will add the cracklib which will ensure that the users use a minimum 
-password length of 8 characters and it consists of minimum 2 digits, 2 others 
-and there must be more than 3 characters different from the last password. 
-This forces the user to choose a good password (password policy). Check the 
-<uri link="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam-6.html#ss6.3">PAM</uri> 
+This will add the cracklib which will ensure that the user passwords are at
+least 8 characters and contain a minimum of 2 digits, 2 other characters, and
+are more than 3 characters different from the last password. This forces the
+user to choose a good password (password policy). Check the <uri
+link="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam-6.html#ss6.3">PAM</uri>
 documentation for more options.
 </p>
 
@@ -1220,13 +1272,13 @@ session	 required pam_limits.so
 </pre>
 
 <p>
-Every service not configured with a PAM file in <path>/etc/pam.d</path> will 
-use the rules in <path>/etc/pam.d/other</path> rule. The default settings are 
-set to <c>deny</c> as it should. But I like to have a lot of logs and that is 
-why I added <c>pam_warn.so</c>. The last configuration is <c>pam_limits</c> 
-which is controlled by <path>/etc/security/limits.conf</path>. See <uri 
-link="#doc_chap6_sect1">/etc/security/limits.conf section</uri> for more on 
-these settings.
+Every service not configured with a PAM file in <path>/etc/pam.d</path> will use
+the rules in <path>/etc/pam.d/other</path>. The defaults are set to <c>deny</c>,
+as they should be. But I like to have a lot of logs, which is why I
+added <c>pam_warn.so</c>. The last configuration is <c>pam_limits</c>, which is
+controlled by <path>/etc/security/limits.conf</path>. See <uri link =
+"#limits_conf">/etc/security/limits.conf section</uri> for more on these
+settings.
 </p>
 
 <pre caption="/etc/pam.d/other">
@@ -1250,13 +1302,13 @@ session  required pam_warn.so
 <body>
 
 <p>
-Is a way of controlling access to services normally run by inetd (which Gentoo 
-does not have) but it can also be used by xinetd and other services.
+This is a way of controlling access to services normally run by inetd (which
+Gentoo does not have), but it can also be used by xinetd and other services.
 </p>
 
 <note>
-The service should be executing tcpd in its server argument (in xinetd). See 
-the chapter on xinetd for more information.
+The service should be executing tcpd in its server argument (in xinetd). See the
+chapter on xinetd for more information.
 </note>
 
 <pre caption="/etc/hosts.deny">
@@ -1269,20 +1321,20 @@ time: LOCAL, .gentoo.org
 </pre>
 
 <p>
-As you can see the format is very similar to the one in 
-<path>/etc/login.access</path>. Tcpd supports a specific service and they do 
-not work in the same area of security. These settings only apply to services 
-using tcp wrappers.
+As you can see the format is very similar to the one
+in <path>/etc/login.access</path>. Tcpd supports a specific service; it does not
+overlap with <path>/etc/login.access</path>. These settings only apply to
+services using tcp wrappers.
 </p>
 
 <p>
-It is also possible to execute commands when a service is accessed (can be 
-used when activating relaying for dial in users) but its not recommended since 
-people tend to create more problems than they are trying to solve. An example 
-could be that you configure a script to send an email every time someone hits 
-the deny rule, but then an attacker could launch a DoS attack by keep hitting 
-the deny rule. This will create a lot of I/O and mails so don't do it!. Read 
-the <c>man 5 hosts_access</c> for more information.
+It is also possible to execute commands when a service is accessed (this can be
+used when activating relaying for dial-in users) but it is not recommended,
+since people tend to create more problems than they are trying to solve. An
+example could be that you configure a script to send an e-mail every time
+someone hits the deny rule, but then an attacker could launch a DoS attack by
+keep hitting the deny rule. This will create a lot of I/O and e-mails so
+don't do it!. Read the <c>man 5 hosts_access</c> for more information.
 </p>
 
 </body>
@@ -1296,32 +1348,32 @@ the <c>man 5 hosts_access</c> for more information.
 <body>
 
 <p>
-The basic rule when configuring the kernel is to remove everything, you do not 
-need. This will create a small kernel but also remove the vulnerabilities that 
-may lie inside drivers and other features.
+The basic rule when configuring the kernel is to remove everything that you do
+not need. This will not only create a small kernel but also remove the
+vulnerabilities that may lie inside drivers and other features.
 </p>
 
 <p>
-Also consider turning off loadable module support. Even though it is possible 
-to add modules (root kits) without this features, it does make it harder for 
-normal attackers to install root kits via kernel modules.
+Also consider turning off loadable module support. Even though it is possible to
+add root kits without this features, it does make it harder for normal attackers
+to install root kits via kernel modules.
 </p>
 
 </body>
 </section>
 <section>
-<title>/proc (kernel flags)</title>
+<title>The proc filesystem</title>
 <body>
 
 <p>
-Many kernel parameters can be altered through the <path>/proc</path> file 
-system or by using <c>sysctl</c>.
+Many kernel parameters can be altered through the <path>/proc</path> file system
+or by using <c>sysctl</c>.
 </p>
 
 <p>
-To dynamically change kernel parameters and variables on the fly you need 
-<c>CONFIG_SYSCTL</c> defined in your kernel. This is default in a standard 2.4 
-kernel.
+To dynamically change kernel parameters and variables on the fly, you need
+<c>CONFIG_SYSCTL</c> defined in your kernel. This is on by default in
+a standard 2.4 kernel. 
 </p>
 
 <pre caption="Drop ping packets">
@@ -1329,13 +1381,14 @@ kernel.
 </pre>
 
 <p>
-This will cause the kernel to simply ignore all ping messages also known as 
-ICMP type 0 messages. The reason for this is that an IP packet carrying the 
-ICMP message can contain payload with other information than you think. 
-Administrators use ping as a diagnostic tool and often complain if they cannot 
-ping. There is no reason for an outsider to be able to ping. But sometimes it 
-can be handy for insiders to be able to ping. Then this can be solved by 
-disabling ICMP type 0 messages in the firewall.
+This will cause the kernel to simply ignore all ping messages (also known as
+ICMP type 0 messages). The reason for this is that an IP packet carrying an ICMP
+message can contain a payload with information other than you think.
+Administrators use ping as a diagnostic tool and often complain if it is
+disabled, but there is no reason for an outsider to be able to ping. However,
+since it sometimes can be handy for insiders to be able to ping, you can disable
+ICMP type 0 messages in the firewall (allowing local administrators to continue
+to use this tool).
 </p>
 
 <pre caption="Ignore broadcast pings">
@@ -1343,11 +1396,11 @@ disabling ICMP type 0 messages in the firewall.
 </pre>
 
 <p>
-This disables response to ICMP broadcasts and will prevent Smurf attacks. The 
-Smurf attack works by sending an ICMP type 0 (ping) message to the broadcast 
-address of a network. Typically the attacker will use a spoofed source address. 
-All the computers on the network will respond to the ping message and thereby 
-flooding the spoofed host.
+This disables response to ICMP broadcasts and will prevent Smurf attacks. The
+Smurf attack works by sending an ICMP type 0 (ping) message to the broadcast
+address of a network. Typically the attacker will use a spoofed source
+address. All the computers on the network will respond to the ping message and
+thereby flood the host at the spoofed source address.
 </p>
 
 <pre caption="Disable source routed packets">
@@ -1355,11 +1408,11 @@ flooding the spoofed host.
 </pre>
 
 <p>
-Do not accept source routed packets. Attackers can use source routing to 
-generate traffic pretending to originate from inside your network, but it is 
-actually routed back along the path from which it came, so attackers can 
-compromise your network. Source routing is rarely used for legitimate purposes 
-so disable it.
+Do not accept source routed packets. Attackers can use source routing to
+generate traffic pretending to originate from inside your network, but that is
+actually routed back along the path from which it came, so attackers can
+compromise your network. Source routing is rarely used for legitimate purposes,
+so it is safe to disable it.
 </p>
 
 <pre caption="Disable redirect acceptance">
@@ -1367,8 +1420,8 @@ so disable it.
 </pre>
 
 <p>
-Disable ICMP redirect acceptance. ICMP redirects can be used to alter your 
-routing tables, possibly to a bad end.
+Do not accept ICMP redirect packets. ICMP redirects can be used to alter your
+routing tables, possibly to a malicious end.
 </p>
 
 <pre caption="Protect against bad error messages">
@@ -1390,18 +1443,17 @@ If you turn on IP forwarding, you will also get this result.
 </note>
 
 <p>
-Turn on reverse path filtering. This helps make sure that packets use 
-legitimate source addresses, by automatically rejecting incoming packets if 
-the routing table entry for their source address does not match the network 
-interface they are arriving on. This has security advantages because it 
-prevents IP spoofing.
+Turn on reverse path filtering. This helps make sure that packets use legitimate
+source addresses by automatically rejecting incoming packets if the routing
+table entry for their source address does not match the network interface they
+are arriving on. This has security advantages because it prevents IP spoofing.
 </p>
 
 <warn>
-However turning on reverse path filtering can be a problem if you use 
-asymmetric routing (packets from you to a host take a different path than 
-packets from that host to you) or if you operate a non-routing host which has 
-several IP addresses on different interfaces.
+However turning on reverse path filtering can be a problem if you use asymmetric
+routing (packets from you to a host take a different path than packets from that
+host to you) or if you operate a non-routing host which has several IP addresses
+on different interfaces.
 </warn>
 
 <pre caption="Log all spoofed, source routed and redirect packets">
@@ -1417,14 +1469,14 @@ Log spoofed packets, source routed packets and redirect packets.
 </pre>
 
 <p>
-Make sure that IP forwarding is turned off. We only want this for a multi-homed 
-host.
+Make sure that IP forwarding is turned off. We only want this for a
+multi-homed host.
 </p>
 
 <p>
-All these settings will be reset when the machine is rebooted. So I suggest 
-that you add them to <path>/etc/sysctl.conf</path> which is automatically
-sourced by the <path>/etc/init.d/bootmisc</path> init script.
+All these settings will be reset when the machine is rebooted. I suggest that
+you add them to <path>/etc/sysctl.conf</path>, which is automatically sourced by
+the <path>/etc/init.d/bootmisc</path> init script.
 </p>
 
 <p>
@@ -1448,9 +1500,9 @@ net.ipv4.ip_forward = 0
 <body>
 
 <p>
-The patch from <uri link="http://grsecurity.net">Grsecurity</uri> is standard 
-in the Gentoo kernel sources but is disabled as default. Configure your kernel 
-as you normally do and then configure the Grsecurity options. An in-depth
+The patch from <uri link="http://grsecurity.net">Grsecurity</uri> is standard in
+the Gentoo kernel sources but is disabled by default. Configure your kernel as
+you normally do and then configure the Grsecurity options. An in-depth
 explanation on the available Grsecurity options (version 1.9) is available on
 the <uri link="/proj/en/hardened">Gentoo Hardened</uri> project page.
 </p>
@@ -1458,8 +1510,8 @@ the <uri link="/proj/en/hardened">Gentoo Hardened</uri> project page.
 <p>
 Recent <c>grsec-sources</c> provide the 2.* version of Grsecurity. For more
 information on this improved Grsecurity patch set, please consult the
-documentation available on the <uri
-link="http://www.grsecurity.net/">Grsecurity homepage</uri>.
+documentation available on the <uri link="http://www.grsecurity.net/">Grsecurity
+homepage</uri>.
 </p>
 
 </body>
@@ -1469,15 +1521,14 @@ link="http://www.grsecurity.net/">Grsecurity homepage</uri>.
 <body>
 
 <p>
-<uri link="http://www.Kerneli.org">Kerneli</uri> is a patch that adds 
-encryption to the existing kernel. By patching your kernel you will get new 
-options like: Cryptographic ciphers, digest algorithms and cryptographic loop 
-filters.
+<uri link="http://www.Kerneli.org">Kerneli</uri> is a patch that adds encryption
+to the existing kernel. By patching your kernel you will get new options such as
+cryptographic ciphers, digest algorithms and cryptographic loop filters.
 </p>
 
 <warn>
-The kerneli patch is currently not in a stable version for the latest kernel, 
-so be careful when using it.
+The kerneli patch is currently not in a stable version for the latest kernel, so
+be careful when using it.
 </warn>
 
 </body>
@@ -1497,7 +1548,7 @@ so be careful when using it.
 </ul>
 
 <p>
-And there is probably a lot more. 
+And there are probably a lot more. 
 </p>
 
 </body>
@@ -1511,16 +1562,16 @@ And there is probably a lot more.
 <body>
 
 <p>
-Apache (1.3.26) comes with a pretty decent configuration file but again. We 
-need to improve some things, like binding to one address and keep it from 
-leaking information. These are the options that you should apply the 
-configuration file:
+Apache (1.3.26) comes with a pretty decent configuration file but again, we need
+to improve some things, like binding Apache to one address and preventing it
+from leaking information. Below are the options that you should apply the
+configuration file.
 </p>
 
 <p>
-If you did not disable <c>ssl</c> in your <path>/etc/make.conf</path> before 
-installing apache, you should have access to a ssl enabled server. Just add 
-the following line to enable it.
+If you did not disable <c>ssl</c> in your <path>/etc/make.conf</path> before
+installing Apache, you should have access to an ssl enabled server. Just add the
+following line to enable it.
 </p>
 
 <pre caption="/etc/conf.d/apache">
@@ -1543,14 +1594,14 @@ ServerTokens Prod
 
 <p>
 Apache is compiled with <c>--enable-shared=max</c> and 
-<c>--enable-module=all</c>. This will per default enable all modules so you 
-should comment out all modules in the <c>LoadModule</c> section 
-(<c>LoadModule</c> and <c>AddModule</c>) that you do not use. Restart the 
+<c>--enable-module=all</c>. This will by default enable all modules, so you
+should comment out all modules in the <c>LoadModule</c> section
+(<c>LoadModule</c> and <c>AddModule</c>) that you do not use. Restart the
 service by executing <c>/etc/init.d/apache restart</c>.
 </p>
 
 <p>
-One can find documentation at <uri>http://www.apache.org</uri>.
+Documentation is available at <uri>http://www.apache.org</uri>.
 </p>
 
 </body>
@@ -1563,12 +1614,13 @@ One can find documentation at <uri>http://www.apache.org</uri>.
 <p>
 One can find documentation at the <uri
 link="http://www.isc.org/products/BIND/bind9.html">Internet Software
-Consortium</uri> the BIND 9 Administrator Reference Manual is also in
+Consortium</uri>. The BIND 9 Administrator Reference Manual is also in
 the <path>doc/arm</path>.
 </p>
 
 <p>
-The newer BIND ebuilds support chrooting out of the box. After emerging <c>bind</c> follow these simple instructions:
+The newer BIND ebuilds support chrooting out of the box. After emerging 
+<c>bind</c> follow these simple instructions:
 </p>
 
 <pre caption="Chrooting BIND">
@@ -1584,10 +1636,10 @@ directory in /etc/conf.d/named. Otherwise /chroot/dns will be used.</codenote>
 <body>
 
 <p>
-Djbdns is a DNS implementation of which the author is willing to bet
-<uri link="http://cr.yp.to/djbdns/guarantee.html">money</uri> on how 
-secure it is. It is very different from how Bind 9 works but worth a try.
-More information can be obtained from <uri>http://www.djbdns.org</uri>.
+Djbdns is a DNS implementation on the security of which its author is willing to
+bet <uri link="http://cr.yp.to/djbdns/guarantee.html">money</uri>. It is very
+different from how Bind 9 works but worth a try.  More information can be
+obtained from <uri>http://www.djbdns.org</uri>.
 </p>
 
 </body>
@@ -1598,12 +1650,12 @@ More information can be obtained from <uri>http://www.djbdns.org</uri>.
 <body>
 
 <p>
-Generally, using the FTP (File Transfer Protocol) is a bad idea. It uses 
-unencrypted data, listens on 2 ports (normally port 20 and 21), and anonymous 
-logins that are what attackers are looking for (for trading warez). Since the
-FTP protocol contains several security problems (ie. passwords are sent in clear text), you should rather use 
-<c>sftp</c> or HTTP instead. If not, secure your services as good as you 
-can and prepare yourself.
+Generally, using FTP (File Transfer Protocol) is a bad idea. It uses unencrypted
+data (ie. passwords are sent in clear text), listens on 2 ports (normally port
+20 and 21), and attackers are frequently looking for anonymous logins for
+trading warez. Since the FTP protocol contains several security problems you
+should instead use <c>sftp</c> or HTTP. If this is not possible, secure your
+services as well as you can and prepare yourself.
 </p>
 
 </body>
@@ -1613,7 +1665,7 @@ can and prepare yourself.
 <body>
 
 <p>
-If you only need local applications to access the <c>mysql</c> database
+If you only need local applications to access the <c>mysql</c> database, 
 uncomment the following line in <path>/etc/mysql/my.cnf</path>.
 </p>
 
@@ -1622,7 +1674,9 @@ skip-networking
 </pre>
 
 <p>
-Disable the command <c>LOAD DATA LOCAL INFILE</c> in the same file.
+Then we disable the use of the LOAD DATA LOCAL INFILE command. This is to
+prevent against unauthorized reading from local files. This is relevant when new
+SQL Injection vulnerabilities in PHP applications are found.
 </p>
 
 <pre caption="Disable LOAD DATA LOCAL INFILE in the [mysqld] section">
@@ -1630,26 +1684,8 @@ set-variable=local-infile=0
 </pre>
 
 <p>
-The default <c>mysql</c> installation comes with an empty <c>root</c> password. 
-</p>
-
-<pre caption="Set root password">
-<i>/usr/local/mysql/bin/mysql -u root</i> 
-mysql> <i>SET PASSWORD FOR root@localhost=PASSWORD('new_password');</i>
-</pre>
-
-<note>
-It is good practice not to change passwords from the command line, for example,
-by using the <c>mysqladmin password</c> command. This is especially important
-when other users work on the server. In that case the password could be easily
-revealed, e.g.  by using the <c>ps aux</c> command or reviewing history files
-(<path>~/.history</path>, <path>~/.bash_history</path> etc), when improper
-access rights are set to them. 
-</note>
-
-<p>
 Next, we must remove the sample database (test) and all accounts except the
-local <c>root</c> account. 
+local <c>root</c> account.
 </p>
 
 <pre caption="Removing sample database and all unnecessary users">
@@ -1664,6 +1700,13 @@ mysql> <i>flush privileges;</i>
 Be careful with the above if you have already configured user accounts.
 </warn>
 
+<note>
+If you have been changing passwords from the MySQL prompt, you should always
+clean out <path>~/.mysql_history</path> and
+<path>/var/log/mysql/mysql.log</path> as they store the executed SQL commands
+with passwords in clear text.
+</note>
+
 </body>
 </section>
 <section>
@@ -1671,8 +1714,8 @@ Be careful with the above if you have already configured user accounts.
 <body>
 
 <p>
-Proftpd has had several security problems, but they seem to have fixed most of 
-them. Still apply some enhancements:
+Proftpd has had several security problems, but most of them seem to have been
+fixed. Nonetheless, it is a good idea to apply some enhancements:
 </p>
 
 <pre caption="/etc/proftpd/proftpd.conf">
@@ -1724,13 +1767,13 @@ One can find documentation at <uri>http://www.proftpd.org</uri>.
 <body>
 
 <p>
-Pure-ftpd is an branch of the original trollftpd. Modified for security reasons 
+Pure-ftpd is an branch of the original trollftpd, modified for security reasons
 and functionality by Frank Dennis.
 </p>
 
 <p>
-Use virtual users (never system accounts) by enabling the <c>AUTH</c> option. 
-Set it to <c>-lpuredb:/etc/pureftpd.pdb</c> and create your users by using 
+Use virtual users (never system accounts) by enabling the <c>AUTH</c> option.
+Set this to <c>-lpuredb:/etc/pureftpd.pdb</c> and create your users by using
 <c>/usr/bin/pure-pw</c>. 
 </p>
 
@@ -1742,14 +1785,14 @@ MISC_OTHER="-A -E -X -U 177:077 -d -4 -L100:5 -I 15"
 </pre>
 
 <p>
-And configure your <c>MISC_OTHER</c> setting for not allowing anonymous 
-(<c>-E</c>), chroot everyone (<c>-A</c>), Users can not read or write to files 
-beginning with a . (dot) (<c>-X</c>), max idle time (<c>-I</c>), limit recursion 
+Configure your <c>MISC_OTHER</c> setting to deny anonymous logins (<c>-E</c>),
+chroot everyone (<c>-A</c>), prevent users from reading or writing to files
+beginning with a . (dot) (<c>-X</c>), max idle time (<c>-I</c>), limit recursion
 (<c>-L</c>), and a reasonable <c>umask</c>.
 </p>
 
 <warn>
-Do <e>not</e> use the <c>-w</c> or <c>-W</c> options! If you want to have a 
+Do <e>not</e> use the <c>-w</c> or <c>-W</c> options! If you want to have a
 warez site, stop reading this guide!
 </warn>
 
@@ -1760,14 +1803,52 @@ One can find documentation at <uri>http://www.pureftpd.org</uri>.
 </body>
 </section>
 <section>
+<title>Vsftpd</title>
+<body>
+
+<p>
+Vsftpd (short for very secure ftp) is a small ftp daemon running a reasonably
+default configuration. It is simple and does not have as many features (like
+virtual users) as pureftp and proftp.
+</p>
+
+<pre caption="/etc/vsftpd">
+anonymous_enable=NO
+local_enable=YES
+
+#read only
+write_enable=NO
+
+#enable logging of transfers
+xferlog_std_format=YES
+
+idle_session_timeout=20
+data_connection_timeout=20
+nopriv_user=nobody
+
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chrootlist
+
+ls_recurse_enable=NO
+</pre>
+
+<p>
+As you can see, there is no way for this service to have individual permissions
+and no default chroot action. But when it comes to anonymous settings it is
+quite good. Sometimes it can be nice to have an anonymous ftp server (for
+sharing open source), and vsftpd does a really good job at this.
+</p>
+
+</body>
+</section>
+<section>
 <title>Qmail</title>
 <body>
 
 <p>
-Qmail is considered to be the most secure mail server. It is written with 
-security (and paranoia) in mind. It does not allow relaying per default and 
-have not had a security hole since 1996. Simply <c>emerge qmail</c> and go 
-configure!
+Qmail is often considered to be a very secure mail server. It is written with
+security (and paranoia) in mind. It does not allow relaying by default and has
+not had a security hole since 1996. Simply <c>emerge qmail</c> and go configure!
 </p>
 </body>
 </section>
@@ -1776,8 +1857,8 @@ configure!
 <body>
 
 <p>
-Samba is a protocol to share files with Microsoft/Novell networks and it 
-should <e>not</e> be used over the Internet. But nevertheless it needs 
+Samba is a protocol to share files with Microsoft/Novell networks and it
+should <e>not</e> be used over the Internet. Nonetheless, it still needs
 securing.
 </p>
 
@@ -1796,7 +1877,7 @@ securing.
   #Enables user authentication 
   #(don't use the share mode)
   security = user
-  
+
   #Disallow privileged accounts
   invalid users = root @wheel
 
@@ -1813,14 +1894,14 @@ securing.
 </pre>
 
 <p>
-Make sure that permissions are set correct on every share and remember to read 
+Make sure that permissions are set correct on every share and remember to read
 the <uri link="http://www.samba.org">documentation</uri>.
 </p>
 
 <p>
-Now restart the server and add the users who should have access to this 
-service. This is done though the <path>/usr/bin/smbpasswd</path> with the 
-parameter -a
+Now restart the server and add the users who should have access to this
+service. This is done though the command <path>/usr/bin/smbpasswd</path> with
+the parameter <c>-a</c>.
 </p>
 
 </body>
@@ -1830,11 +1911,11 @@ parameter -a
 <body>
 
 <p>
-The only securing that OpenSSH needs is turning on a stronger authentication 
-based on public key encryption. Too many sites (like 
+The only securing that OpenSSH needs is turning on a stronger authentication
+based on public key encryption. Too many sites (like
 <uri>http://www.sourceforge.net</uri>, <uri>http://www.php.net</uri> and 
-<uri>http://www.apache.org</uri>) have all suffered unauthorized intrusion to 
-their systems due to password leaks or bad passwords.
+<uri>http://www.apache.org</uri>) have suffered unauthorized intrusion
+due to password leaks or bad passwords.
 </p>
 
 <pre caption="/etc/ssh/sshd_config">
@@ -1869,8 +1950,8 @@ ListenAddress 127.0.0.1
 </pre>
 
 <p>
-Now all that your users have to do, is create a key (on their machine they want 
-to login from) with the following command
+Now all that your users have to do is create a key (on the machine
+they want to login from) with the following command:
 </p>
 
 <pre caption="Create a DSA keypair">
@@ -1878,7 +1959,7 @@ to login from) with the following command
 </pre>
 
 <p>
-And type in a passphrase
+And type in a passphrase.
 </p>
 
 <pre caption="Output of ssh-keygen">
@@ -1896,21 +1977,21 @@ The key fingerprint is:
 <p>
 This will add two files in your <path>~/.ssh/</path> directory called 
 <path>id_dsa</path> and <path>id_dsa.pub</path>. The file called 
-<path>id_dsa</path> is your private key and should be kept from other people 
-than yourself. The other file <path>id_dsa.pub</path> is to be distributed to 
-every server that you have access to. Add the key to the users home directory 
+<path>id_dsa</path> is your private key and should be kept from other people
+than yourself. The other file <path>id_dsa.pub</path> is to be distributed to
+every server that you have access to. Add the key to the users home directory
 in <path>~/.ssh/authorized_keys</path> and the user should be able to login.
 </p>
 
 <p>
-Now your users should guard this private key well. Put it on a media that they 
-always carry with them or keep it on their workstation (put this in the <uri 
-link="#doc_chap2_sect5">password</uri> policy).
+Now your users should guard this private key well. Put it on a media that they
+always carry with them or keep it on their workstation (put this in the <uri
+link="#security_policies">password</uri> policy).
 </p>
 
 <p>
-For more information go to the <uri link="http://www.openssh.org">OpenSSH</uri> 
-website.
+For more information go to the <uri
+link="http://www.openssh.org">OpenSSH</uri> website.
 </p>
 
 </body>
@@ -1920,16 +2001,16 @@ website.
 <body>
 
 <p>
-xinetd is a replacement for inetd (which Gentoo does not have), the internet 
-services daemon. It supports access control based on the address of the remote 
-host and the time of access. It also provide extensive logging capabilities, 
-including server start time, remote host address, remote user name, server run 
-time, and actions requested.
+xinetd is a replacement for <c>inetd</c> (which Gentoo does not have), 
+the internet services daemon. It supports access control based on the address of
+the remote host and the time of access. It also provide extensive logging 
+capabilities, including server start time, remote host address, remote user 
+name, server run time, and actions requested.
 </p>
 
 <p>
-As with all other services it is important to have a good default
-configuration.  But since <c>xinetd</c> is run as root and supports protocols
+As with all other services it is important to have a good default configuration.
+But since <c>xinetd</c> is run as root and supports protocols
 that you might not know how they work, we recommend not to use it. But if you
 want to use it anyway, here is how you can add some security to it:
 </p>
@@ -1945,12 +2026,12 @@ And edit the configuration file:
 <pre caption="/etc/xinetd.conf">
 defaults
 {
- only_from      = localhost
- instances      = 10
- log_type       = SYSLOG authpriv info
+ only_from = localhost
+ instances = 10
+ log_type = SYSLOG authpriv info
  log_on_success = HOST PID
  log_on_failure = HOST
- cps            = 25 30
+ cps = 25 30
 }
 
 # This will setup pserver (cvs) via xinetd with the following settings:
@@ -1967,75 +2048,37 @@ defaults
 # it in case of it should be disabled
 service cvspserver
 {
- socket_type    = stream
- protocol       = tcp
- instances      = 10
- protocol       = tcp
- wait           = no
- user           = cvs
- bind           = 10.0.0.2
- only_from      = 10.0.0.0
- access_times   = 8:00-17:00
- server         = /usr/sbin/tcpd
- server_args    = /usr/bin/cvs --allow-root=/mnt/cvsdisk/cvsroot pserver
- max_load       = 1.0
+ socket_type = stream
+ protocol = tcp
+ instances = 10
+ protocol = tcp
+ wait = no
+ user = cvs
+ bind = 10.0.0.2
+ only_from = 10.0.0.0
+ access_times = 8:00-17:00
+ server = /usr/sbin/tcpd
+ server_args = /usr/bin/cvs --allow-root=/mnt/cvsdisk/cvsroot pserver
+ max_load = 1.0
  log_on_failure += RECORD
- disable        = no
+ disable = no
 }
 </pre>
 
 <p>
-For more information read the <c>man 5 xinetd.conf</c>.
+For more information read <c>man 5 xinetd.conf</c>.
 </p>
 
 </body>
 </section>
-<section>
-<title>Vsftpd</title>
-<body>
 
-<p>
-Vsftpd (short for very secure ftp) is a small ftp daemon running a reasonably 
-default configuration. It is simple and does not have as many features (like 
-virtual users) as pureftp and proftp.
-</p>
-
-<pre caption="/etc/vsftpd">
-anonymous_enable=NO
-local_enable=YES
-
-#read only
-write_enable=NO
-
-#enable logging of transfers
-xferlog_std_format=YES
-
-idle_session_timeout=20
-data_connection_timeout=20
-nopriv_user=nobody
-
-chroot_list_enable=YES
-chroot_list_file=/etc/vsftpd/chrootlist
-
-ls_recurse_enable=NO
-</pre>
-
-<p>
-As you can see there is no way for this service to have individual permissions 
-and no default chroot action. But when it comes to anonymous settings it is 
-quite good. Sometimes it can be nice to have a anonymous ftp server (for 
-sharing open source) and vsftpd does a really good job at this.
-</p>
-
-</body>
-</section>
 <section>
 <title>X</title>
 <body>
 
 <p>
-Per default XFree is configured to act as a Xserver. This can be dangerous 
-since X uses unencrypted TCP connections and listens for xclients. 
+By default XFree is configured to act as a Xserver. This can be dangerous since
+X uses unencrypted TCP connections and listens for xclients.
 </p>
 
 <impo>
@@ -2047,14 +2090,15 @@ But if you depend on using your workstation as a Xserver use the
 <c>/usr/X11R6/bin/xhost</c> command with caution. This command allows clients 
 from other hosts to connect and use your display. This can become handy if you 
 need an X application from a different machine and the only way is through the 
-network. The syntax is <c>/usr/X11R6/bin/xhost +hostname</c>
+network, but it can also be exploited by an attacker. The syntax of this
+command is <c>/usr/X11R6/bin/xhost +hostname</c>
 </p>
 
 <warn>
 Do not ever use the <c>xhost +</c> feature! This will allow any client to 
 connect and take control of your X. If an attacker can get access to your X, 
-he can log your keystrokes and control your desktop. If you have to use it 
-always remember to specify a host.
+he can log your keystrokes and take control over your desktop. If you have to 
+use it always remember to specify a host.
 </warn>
 
 <p>
@@ -2067,8 +2111,8 @@ defaultserverargs="-nolisten tcp"
 </pre>
 
 <p>
-To make sure that <path>startx</path> does not get overwritten when emerging
-a new version of XFree you must protect it. Add the following line to
+To make sure that <path>startx</path> does not get overwritten when emerging a
+new version of XFree you must protect it. Add the following line to
 <path>/etc/make.conf</path>:
 </p>
 
@@ -2184,27 +2228,23 @@ and <path>/dev/random</path>.
 </body>
 </section>
 <section>
-<title>Virtual servers</title>
+<title>User Mode Linux</title>
 <body>
 
 <p>
-Another way of creating a more secure environment is by using a virtual server 
-environment. This will create a copy of the existing Linux and boots it in a 
-virtual mode. This means that if the server is compromised its only the virtual 
-server that has been compromised and not the real installation.
+Another way of creating a more secure environment is by running a virtual
+machine. A virtual machine, as the name implies, is a process that runs on top
+of your real operating system providing a hardware and operating system
+environment that appears to be its own unique machine. The security benefit is
+that if the server running on the virtual machine is compromised, only the
+virtual server is affected and not the parent installation.
 </p>
 
 <p>
-Example of virtual servers:
+For more information about how to setup User Mode Linux consult the
+<uri link="http://www.gentoo.org/doc/en/uml.xml">User Mode Linux
+Guide</uri>.
 </p>
-
-<ul>
-<li>
-  <uri link="http://user-mode-linux.sourceforge.net">User-Mode Linux</uri> and 
-  a howto about <uri link="http://www.gentoo.org/doc/uml.html">User-Mode 
-  Linux</uri>.
-</li>
-</ul>
 
 </body>
 </section>
@@ -2218,16 +2258,16 @@ Example of virtual servers:
 
 <p>
 People often think that a firewall provides the ultimate security, but they 
-are wrong. In most cases a misconfigured firewall gives worse security than 
+are wrong. In most cases a misconfigured firewall gives less security than 
 not having one at all. A firewall is also a piece of software and should be 
-treated the same way as any other piece of software, because is just as likely 
+treated the same way as any other piece of software, because it is just as likely 
 to contain bugs.
 </p>
 
 <p>
-So think before implementing one! Do you really need one? If you think you need
-one write a policy on how it should work, what type of firewall and who should 
-operate it. But first read this guide.
+So think before implementing a firewall! Do you really need one? If you think
+you need one write a policy on how it should work, what type of firewall, and
+who should operate it. But first read this guide.
 </p>
 
 <p>
@@ -2250,8 +2290,8 @@ Basically there are three types of firewalls:
 </ul>
 
 <p>
-A firewall should be a dedicated machine running no services (or <c>sshd</c> as 
-the only one) and secured the way this guide recommends it to be.
+A firewall should be a dedicated machine running no services (or <c>sshd</c> as
+the only one) and secured the way this guide recommends it be.
 </p>
 
 </body>
@@ -2261,11 +2301,11 @@ the only one) and secured the way this guide recommends it to be.
 <body>
 
 <p>
-All network traffic is in the form of packets. Large amounts of traffic also 
-split up into small packets for easy handling and then reassembled when 
-arriving at its destination. In the packet header every packet contains 
-information on how and where it should be delivered. And these informations 
-are exactly what a packing filtering firewall uses. Filtering is based on:
+All network traffic is sent in the form of packets. Large amounts of traffic is
+split up into small packets for easy handling and then reassembled when it
+arrives at its destination. In the packet header every packet contains
+information on how and where it should be delivered. And this information is
+exactly what a packing filtering firewall uses. Filtering is based on:
 </p>
 
 <ul>
@@ -2276,8 +2316,8 @@ are exactly what a packing filtering firewall uses. Filtering is based on:
 </ul>
 
 <p>
-Basically filtering is based on all data within the header of a packet and not 
-its content.
+In other words, this filtering is based on all the data within the header of a
+packet and not its content.
 </p>
 
 <p>
@@ -2286,13 +2326,12 @@ Weaknesses:
 
 <ul>
 <li>
-  Address information in a packet can potentially be a bogus IP address or as 
-  we say <e>spoofed</e> by the sender
+  Address information in a packet can potentially be a bogus IP address (or as we
+  say <e>spoofed</e>) by the sender.
 </li>
 <li>
-  Data or requests within the allowed packet may contain unwanted data that the 
-  attacker can use to exploit known bugs in the services on or behind the 
-  firewall
+  Data or requests within the allowed packet may contain unwanted data that the
+  attacker can use to exploit known bugs in the services on or behind the firewall
 </li>
 <li>Usually single point of failure</li>
 </ul>
@@ -2321,6 +2360,10 @@ Examples of free packet filters on Linux:
 </li>
 <li><uri link="http://www.smoothwall.org">SmoothWall</uri></li>
 </ul>
+<!--FIXME: should SmoothWall really be included, since it uses iptables?-->
+<note>
+It is recommended that you use iptables. Ipchains is obsoleted. 
+</note>
 
 </body>
 </section>
@@ -2329,11 +2372,11 @@ Examples of free packet filters on Linux:
 <body>
 
 <p>
-Or circuit level gateways is a firewall that validates connections before 
-allowing data to be exchanged. This means that it simply does not allow or 
-deny packets based on the packet header but determines whether the connection 
-between both ends is valid according to configurable rules before it opens a 
-session and allows data to be exchanged. Filtering is based on:
+A circuit level gateway is a firewall that validates connections before allowing
+data to be exchanged. This means that it does not simply allow or deny packets
+based on the packet header but determines whether the connection between both
+ends is valid according to configurable rules before it opens a session and
+allows data to be exchanged. Filtering is based on:
 </p>
 
 <ul>
@@ -2346,7 +2389,7 @@ session and allows data to be exchanged. Filtering is based on:
 </ul>
 
 <p>
-All traffic is validated, monitored and unwanted traffic can be dropped.
+All traffic is validated and monitored, and unwanted traffic can be dropped.
 </p>
 
 <p>
@@ -2355,8 +2398,8 @@ Weakness:
 
 <ul>
 <li>
-  Operates at the Transport Layer and may require substantial modification of 
-  the programming which normally provides transport functions
+  Operates at the Transport Layer and may require substantial modification of the
+  programs that normally provide transport functions.
 </li>
 </ul>
 
@@ -2367,16 +2410,16 @@ Weakness:
 <body>
 
 <p>
-The application level gateway is a proxy for applications, exchanging data 
-with remote systems on behalf of the clients. It is kept away from the public 
-safely behind a DMZ (De-Militarized Zone: the portion of a private network that 
-is visible through the firewall) or a firewall allowing no connections from the 
+The application level gateway is a proxy for applications, exchanging data with
+remote systems on behalf of the clients. It is kept away from the public safely
+behind a DMZ (De-Militarized Zone: the portion of a private network that is
+visible through the firewall) or a firewall allowing no connections from the
 outside. Filtering is based on:
 </p>
 
 <ul>
 <li>Allow or disallow based on source/destination IP address</li>
-<li>Based on the packets content</li>
+<li>Based on the packet's content</li>
 <li>Limiting file access based on file type or extension</li>
 </ul>
 
@@ -2387,7 +2430,7 @@ Advantages:
 <ul>
 <li>Can cache files, increasing network performance</li>
 <li>Detailed logging of all connections</li>
-<li>Scales perfectly (some proxy servers can "share" the cached data)</li>
+<li>Scales well (some proxy servers can "share" the cached data)</li>
 <li>No direct access from the outside</li>
 <li>Can even alter the packet content on the fly</li>
 </ul>
@@ -2401,9 +2444,9 @@ Weakness:
 </ul>
 
 <p>
-Application gateways are considered to be the most secure solution since it 
-does not have to run as root and the hosts behind it are not reachable from 
-the Internet.
+Application gateways are considered to be the most secure solution since they do
+not have to run as root and the hosts behind them are not reachable from the
+Internet.
 </p>
 
 <p>
@@ -2421,50 +2464,54 @@ Example of a free application gateway:
 <body>
 
 <p>
-In order to get iptables working, it has to be enabled in the kernel. I have 
-added them as modules (the <c>iptables</c> command will load them as they are 
-needed) and recompiled my kernel. For more information on how to configure your 
-kernel for iptables go to the <uri 
-link="http://iptables-tutorial.frozentux.net/chunkyhtml/kernelsetup.html">Iptables 
+In order to use iptables, it must be enabled in the kernel. I have added
+iptables as modules (the <c>iptables</c> command will load them as they are
+needed) and recompiled my kernel (but you may want to compile iptables in, if
+you intend to disable Loadable Kernel Modules as discussed previously). For more
+information on how to configure your kernel for iptables go to the <uri link =
+"http://iptables-tutorial.frozentux.net/chunkyhtml/kernelsetup.html">Iptables
 Tutorial Chapter 2: Preparations</uri>. After you have compiled your new kernel 
-(or while compiling the kernel) you have to add the <c>iptables</c> command. 
+(or while compiling the kernel), you must add the <c>iptables</c> command.
 Just <c>emerge iptables</c> and it should work.
 </p>
 
 <p>
-Now test that it works by running <c>iptables -L</c>. If it fails something is 
-wrong and you have to check you configuration once more.
+Now test that it works by running <c>iptables -L</c>. If this fails something
+is wrong and you have to check you configuration once more.
 </p>
 
 <p>
-Iptables is the new and heavily improved packet filter in the Linux 2.4.x 
-kernel. It is the successor of the previous ipchains packet filter in the 
-Linux 2.2.x kernel. One of the major improvements is that iptables is able to 
-perform stateful packet filtering. With stateful packet filtering it is 
-possible to keep track of each established TCP connection.
+Iptables is the new and heavily improved packet filter in the Linux 2.4.x
+kernel. It is the successor of the previous ipchains packet filter in the Linux
+2.2.x kernel. One of the major improvements is that iptables is able to perform 
+stateful packet filtering. With stateful packet filtering it is possible to
+keep track of each established TCP connection.
 </p>
 
 <p>
-A TCP connection consists of a series of packets containing information about 
-source IP address, destination IP address, sequence number so the packets can 
-be reassembled and not to forget data. TCP is a connection-oriented protocol 
-in contrast to UDP which is connectionless.
+A TCP connection consists of a series of packets containing information about
+source IP address, destination IP address, source port, destination port, and a
+sequence number so the packets can be reassembled without losing data. TCP is a
+connection-oriented protocol, in contrast to UDP, which is connectionless.
 </p>
 
 <p>
-By examining the TCP packet header a stateful packet filter can determine if a 
-received TCP packet is part of an already established connection or not and 
+By examining the TCP packet header, a stateful packet filter can determine if a
+received TCP packet is part of an already established connection or not and
 decide either to accept or drop the packet.
 </p>
 
 <p>
-With a stateless packet filter it is possible to fool the packet filter to 
-accept packets that should be dropped by manipulating the TCP packet headers. 
-This could be done by manipulating the SYN flag or other flags in the TCP 
-header. With stateful packet filtering it is possible to drop such packets as 
-they are not part of an already established connection. This will also stop 
-the possibility of "stealth scans" since such packets will not be part of an 
-already established connection.
+With a stateless packet filter it is possible to fool the packet filter into
+accepting packets that should be dropped by manipulating the TCP packet headers.
+This could be done by manipulating the SYN flag or other flags in the TCP header
+to make a malicious packet appear to be a part of an established connection
+(since the packet filter itself does not do connection tracking). With stateful
+packet filtering it is possible to drop such packets, as they are not part of an
+already established connection. This will also stop the possibility of
+"stealth scans", a type of portscan in which the scanner sends packets
+with flags that are far less likely to be logged by a firewall than ordinary SYN
+packets.
 </p>
 
 <p>
@@ -2505,6 +2552,14 @@ of accepted SYN packets by using the <c>-m limit --limit 1/s</c>. This will
 limit the number of SYN packets accepted to one per second and therefore 
 restricting the SYN flood on our resources.
 </p>
+
+<note>
+Another option for preventing SYN floods are <uri link =
+"http://cr.yp.to/syncookies.html">SYN cookies</uri>, which allow your computer
+to respond to SYN packetes without filling space in the connection queue. SYN
+cookies can be enabled in the Linux kernel configuration, but they are
+considered experimental at this time.
+</note>
 
 <p>
 Now some practical stuff!
@@ -2551,7 +2606,7 @@ them to as a rule to an existing chain. Iptables supports the following options.
 </tr>
 <tr>
   <ti>-F</ti>
-  <ti>Delete all rules in  chain or all chains</ti>
+  <ti>Delete all rules in chain or all chains</ti>
 </tr>
 <tr>
   <ti>-Z</ti>
@@ -2636,8 +2691,8 @@ them to as a rule to an existing chain. Iptables supports the following options.
 </table>
 
 <p>
-First we will try to block all ICMP packets to our machine, just to get 
-familiar with iptables.
+First we will try to block all ICMP packets to our machine, just to get familiar
+with iptables.
 </p>
 
 <pre caption="Block all ICMP packets">
@@ -2645,18 +2700,25 @@ familiar with iptables.
 </pre>
 
 <p>
-First we specify the chain it should be appended to next the protocol and then 
-the target. The target can be the name of a user specified chain or one of the 
-special targets <c>ACCEPT</c>, <c>DROP</c>, <c>REJECT</c>, <c>LOG</c>, 
-<c>QUEUE</c>, <c>MASQUERADE</c>. In this case we use <c>DROP</c> which will 
-drop the packet without responding to the client.
+First we specify the chain our rule should be appended to, then the protocol of
+the packets to match, and finally the target. The target can be the name of a
+user specified chain or one of the special targets <c>ACCEPT</c>, <c>DROP</c>,
+ <c>REJECT</c>, <c>LOG</c>, <c>QUEUE</c>, or <c>MASQUERADE</c>. In this case we
+ use <c>DROP</c>, which will drop the packet without responding to the client.
 </p>
 
+<note>
+The <c>LOG</c> target is what's known as "non-terminating". If a packet matches
+a rule with the <c>LOG</c> target, rather than halting evaluation, the packet
+will continue to be matched to further rules. This allows you to log packets
+while still processing them normally.
+</note>
+
 <p>
-Now try <c>ping localhost</c>. It will not be able to get any response since 
-iptables will drop all incoming ICMP messages. It will not be able to ping 
-other machines either since the ICMP reply packet will be dropped. Now flush 
-the chain to get ICMP flowing again.
+Now try <c>ping localhost</c>. You will not get any response, since iptables
+will drop all incoming ICMP messages. You will also not be able to ping other
+machines, since the ICMP reply packet will be dropped as well. Now flush the
+chain to get ICMP flowing again.
 </p>
 
 <pre caption="Flush all rules">
@@ -2664,9 +2726,9 @@ the chain to get ICMP flowing again.
 </pre>
 
 <p>
-Now lets look at the stateful packet filtering in iptables. If we wanted to 
-have a stateful inspection of packets incoming on eth0 we could enable it by 
-issuing:
+Now lets look at the stateful packet filtering in iptables. If we wanted to
+enable stateful inspection of packets incoming on eth0 we would issue the
+command:
 </p>
 
 <pre caption="Accept packets that originate from an already established connection">
@@ -2674,13 +2736,13 @@ issuing:
 </pre>
 
 <p>
-This will accept any packet from an already established connection or related 
-in the INPUT chain. And you could drop any packet that is not in the state 
-table by issuing <c>iptables -A INPUT -i eth0 -m state --state INVALID -j 
-DROP</c> just before. This enables the stateful packet filtering in iptables 
-by loading the extension state. If you wanted to allow others to connect to 
-you machine you could use the <c>--state NEW</c>. Iptables contain some modules 
-for different purposes. Some of them are: 
+This will accept any packet from an already established connection or related in
+the INPUT chain. And you could drop any packet that is not in the state table by
+issuing <c>iptables -A INPUT -i eth0 -m state --state INVALID -j DROP</c> just
+before the previous command. This enables the stateful packet filtering in
+iptables by loading the extension "state". If you wanted to allow others to
+connect to your machine, you could use the flag <c>--state NEW</c>. Iptables
+contains some modules for different purposes. Some of them are:
 </p>
 
 <table>
@@ -2976,26 +3038,26 @@ showoptions() {
 </pre>
 
 <p>
-Free advice when creating a firewall:
+Some advice when creating a firewall:
 </p>
 
 <ol>
 <li>Create your firewall policy before implementing it</li>
 <li>Keep it simple</li>
 <li>
-  Know how the protocol works (read the <uri 
-  link="http://www.ietf.org/">RFC</uri>(Request For Comments))
+Know how each protocol works (read the relevent <uri
+link="http://www.ietf.org/">RFC</uri>(Request For Comments))
 </li>
 <li>
-  Keep in mind that a firewall it just another piece of software running as root
+Keep in mind that a firewall is just another piece of software running as root.
 </li>
 <li>Test your firewall</li>
 </ol>
 
 <p>
-If you think that iptables is hard to understand or takes to long to setup a 
-decent firewall you could use <uri 
-link="http://www.shorewall.net">Shorewall</uri>. It basically uses iptables to 
+If you think that iptables is hard to understand or takes to long to setup a
+decent firewall you could use <uri
+link="http://www.shorewall.net">Shorewall</uri>. It basically uses iptables to
 generate firewall rules, but concentrates on rules and not specific protocols.
 </p>
 
@@ -3006,18 +3068,18 @@ generate firewall rules, but concentrates on rules and not specific protocols.
 <body>
 
 <p>
-Squid is a very powerful proxy server and it can filter traffic based on: time, 
-regular expressions on path/URI, source and destination IP addresses, domain, 
-browser, authenticated username, MIME type and port number (protocol). I 
-probably forgot some features, but it can be hard to cover the entire feature 
-list.
+Squid is a very powerful proxy server. It can filter traffic based on time,
+regular expressions on path/URI, source and destination IP addresses, domain,
+browser, authenticated username, MIME type, and port number (protocol). I
+probably forgot some features, but it can be hard to cover the entire list right
+here.
 </p> 
 
 <p>
-In the following example I have added a banner filter instead of a filter based 
-on porn sites. The reason for this is that Gentoo.org should <e>not</e> be 
-listed as some porn site. And I do not want to waste my time trying to find 
-some good sites for you.
+In the following example I have added a banner filter instead of a filter based
+on porn sites. The reason for this is that Gentoo.org should <e>not</e> be
+listed as some porn site. And I do not want to waste my time trying to find some
+good sites for you.
 </p>
 
 <p>
@@ -3026,17 +3088,20 @@ In this case, my policy states:
 
 <ul>
 <li>
-  Surfing (HTTP/HTTPS) is allowed during work hours (mon-fri 8-17 and sat 8-13) 
-  if they are here late they should work, not surf
+Surfing (HTTP/HTTPS) is allowed during work hours (mon-fri 8-17 and sat 8-13),
+but if employees are here late they should work, not surf
 </li>
 <li>
-  Download is not allowed (.exe, .com, .arj, .zip, .asf, .avi, .mpg, .mpeg etc)
+Downloading files is not allowed (.exe, .com, .arj, .zip, .asf, .avi, .mpg,
+.mpeg, etc)
 </li>
 <li>
-  We do not like banners so they are filtered and replaced with a transparent 
-  gif (this is where you get creative!)
+We do not like banners, so they are filtered and replaced with a transparent gif
+(this is where you get creative!).
 </li>
-<li>All other connections to and from the Internet are not allowed</li>
+<li>
+All other connections to and from the Internet are denied.
+</li>
 </ul>
 
 <p>
@@ -3112,8 +3177,9 @@ http_access deny all
 </pre>
 
 <p>
-Next fill in the files you do not want your uses to download. I have added zip, 
-viv, exe, mp3, rar, ace, avi, mov, mpg, mpeg, au, ra, arj, tar, gz and z files.
+Next fill in the files you do not want your users to download files. I have
+added zip, viv, exe, mp3, rar, ace, avi, mov, mpg, mpeg, au, ra, arj, tar, gz
+and z files.
 </p>
 
 <pre caption="/etc/squid/files.acl">
@@ -3137,13 +3203,13 @@ viv, exe, mp3, rar, ace, avi, mov, mpg, mpeg, au, ra, arj, tar, gz and z files.
 </pre>
 
 <note>
-Please note the [] with upper and lowercase of every character. This is done so 
-no one can fool it by accessing a file called AvI instead of avi
+Please note the [] with upper and lowercase of every character. This is done so
+no one can fool our filter by accessing a file called AvI instead of avi
 </note>
 
 <p>
-Next we add the regular expressions for identifying banners. You will probably 
-be a lot more creative than me:
+Next we add the regular expressions for identifying banners. You will probably
+be a lot more creative than I:
 </p>
 
 <pre caption="/etc/squid/banner-ads.acl">
@@ -3199,22 +3265,22 @@ Do not close the &lt;HTML&gt; &lt;BODY&gt; tags. This will be done by squid.
 </note>
 
 <p>
-As you can see, squid has a lot of possibilities and it is very effective at 
-both filtering and proxying. It can even use alternative squid proxies to 
-scale on very large networks. The configuration I have listed here is mostly 
-suited for a small network with 1-20 users.
+As you can see, Squid has a lot of possibilities and it is very effective at
+both filtering and proxying. It can even use alternative Squid proxies to scale
+on very large networks. The configuration I have listed here is mostly suited
+for a small network with 1-20 users.
 </p>
 
 <p>
-But combining the packet filter (iptables) and the application gateway (squid) 
-is probably the best solution, even if squid is located somewhere safe and 
-nobody can access it from the outside. We still need to be concerned by attacks 
-from the inside.
+But combining the packet filter (iptables) and the application gateway (Squid)
+is probably the best solution, even if Squid is located somewhere safe and
+nobody can access it from the outside. We still need to be concerned about
+attacks from the inside.
 </p>
 
 <p>
-Now you have to configure your clients browsers to use the proxy server. The 
-gateway will prevent the users from having any contact with the outside unless 
+Now you have to configure your clients browsers to use the proxy server. The
+gateway will prevent the users from having any contact with the outside unless
 they use the proxy.
 </p>
 
@@ -3223,8 +3289,8 @@ In Mozilla this is done in Edit->Preferences->Advanced->Proxies.
 </note>
 
 <p>
-It can also be done transparently by using iptables to forward all outbound 
-traffic to a squid proxy. This can be done by adding a forwarding/prerouting 
+It can also be done transparently by using iptables to forward all outbound
+traffic to a Squid proxy. This can be done by adding a forwarding/prerouting
 rule on the gateway:
 </p>
 
@@ -3233,10 +3299,17 @@ rule on the gateway:
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to proxyhost:3128</i>
 </pre>
 
+<note>
+If the proxy is running on the packet filtering host--though this is not
+recommended, it may be necessary if you do not have enough spare machines--use
+a <c>REDIRECT</c> target instead of <c>DNAT</c> (<c>REDIRECT</c> directs packets
+to the localhost).
+</note>
+
 </body>
 </section>
 <section>
-<title>Now what have we learned?</title>
+<title>Lessons learned</title>
 <body>
 
 <p>
@@ -3245,27 +3318,25 @@ We have learned that:
 
 <ol>
 <li>
-  A firewall can be a risk in itself. A badly configured firewall is worse than 
-  not having one at all.
+A firewall can be a risk in itself. A badly configured firewall is worse than
+not having one at all.
 </li>
-<li>How to setup a basic gateway and a transparent proxy</li>
-<li>The key to a good firewall is to know the protocol you want do allow</li>
+<li>How to setup a basic gateway and a transparent proxy.</li>
+<li>The key to a good firewall is to know the protocols you want do allow.</li>
 <li>
-  That IP traffic does not always contain legitimate data ie. ICMP packets can 
-  contain payload.
+That IP traffic does not always contain legitimate data, e.g. ICMP packets,
+which can contain a malicious payload.
 </li>
-<li>How to prevent SYN attack</li>
+<li>How to prevent SYN attack.</li>
+<li>Filtering HTTP traffic by removing offensive pictures and downloads of viruses.</li>
 <li>
-  Filtering HTTP traffic by removing offensive pictures and downloads of 
-  viruses
-</li>
-<li>
-  Combining packet filters and application gateways provides better control
+Combining packet filters and application gateways provides better control.
 </li>
 </ol>
 
 <p>
-Now, if you <e>really</e> need to, go create a firewall that matches your needs.
+Now, if you <e>really</e> need to, go create a firewall that matches
+your needs.
 </p>
 
 </body>
@@ -3279,14 +3350,21 @@ Now, if you <e>really</e> need to, go create a firewall that matches your needs.
 <body>
 
 <p>
-AIDE is a host based intrusion detection system (free alternative to Tripwire). 
-And if you already know Tripwire you should have no difficulties learning the 
-configuration file for AIDE.
+AIDE is a Host-Based Intrusion Detection System (HIDS), a free alternative to
+Tripwire (if you already know Tripwire you should have no difficulties learning
+the configuration file for AIDE). HIDS are used to detect changes to important
+system configuration files and binaries, generally by making a unique
+cryptographic hash for the files to be checked and storing it in a secure
+place. On a regular basis (such as once a day), the stored "known-good" hash is
+compared to the one generated from the current copy of each file, to determine
+if that file has changed. HIDS are a great way to detect disallowed changes to
+your system, but they take a little work to implement properly and make good use
+of.
 </p>
 
 <p>
-The configuration file is based on regular expressions, macros and rules for 
-files and directories. We have the following macros: 
+The configuration file is based on regular expressions, macros and rules for
+files and directories. We have the following macros:
 </p>
 
 <table>
@@ -3327,22 +3405,23 @@ files and directories. We have the following macros:
 </tr>
 <tr>
   <ti>endif</ti>
-  <ti>
-    Endif must be used after any of the above macros except define and undef
-  </ti>
-  <ti>@@endif</ti>
+<ti>
+Endif must be used after any of the above macros except define and undef
+</ti>
+<ti>@@endif</ti>
 </tr>
 </table>
 
 <p>
-These macros become very handy if you have more than one Gentoo box and want to 
-use AIDE on all of them. But not all machines run the same services or maybe 
-even users.
+These macros become very handy if you have more than one Gentoo box and want to
+use AIDE on all of them. But not all machines run the same services or even have
+the same users.
 </p>
 
 <p>
-Next we have sets of flags to check for on files and directories. These are a 
-combination  of permissions, file properties and cryptographic hashes/checksums.
+Next we have sets of flags to check for on files and directories. These are a
+combination of permissions, file properties and cryptographic hashes
+(i.e. checksums).
 </p>
 
 <table>
@@ -3429,31 +3508,31 @@ combination  of permissions, file properties and cryptographic hashes/checksums.
 </table>
 
 <p>
-And if AIDE is compiled with mhash support it does have a few other features:
+And if AIDE is compiled with mhash support it supports a few other features:
 </p>
 
 <table>
 <tr>
-  <th>Flag</th>
-  <th>Description</th>
+<th>Flag</th>
+<th>Description</th>
 </tr>
 <tr>
-  <ti>haval</ti>
-  <ti>haval checksum</ti>
+<ti>haval</ti>
+<ti>haval checksum</ti>
 </tr>
 <tr>
-  <ti>gost</ti>
-  <ti>gost checksum</ti>
+<ti>gost</ti>
+<ti>gost checksum</ti>
 </tr>
 <tr>
-  <ti>crc32</ti>
-  <ti>crc32 checksum</ti>
+<ti>crc32</ti>
+<ti>crc32 checksum</ti>
 </tr>
 </table>
 
 <p>
 Now you can create you own rules based on the above flags by combining them 
-like:
+like this:
 </p>
 
 <pre caption="Create a ruleset for AIDE">
@@ -3462,29 +3541,29 @@ Norm=s+n+b+md5+sha1+rmd160
 </pre>
 
 <p>
-The last thing we need to create our own configuration file is to see how to 
-add a rule to a file or directory. Basically you just type the file or dir 
-name and the rule. AIDE will add all files recursively unless you specify 
-something else.
+The last thing we need to create our own configuration file is to see how to add
+a rule to a file or directory. To enter a rule, combine the file or directory
+name and the rule. AIDE will add all files recursively unless you specify an
+alternate rule.
 </p>
 
 <table>
 <tr>
-  <th>Flag</th>
-  <th>Description</th>
+<th>Flag</th>
+<th>Description</th>
 </tr>
 <tr>
-  <ti>!</ti>
-  <ti>Don't add this file or directory.</ti>
+<ti>!</ti>
+<ti>Don't add this file or directory.</ti>
 </tr>
 <tr>
-  <ti>=</ti>
-  <ti>Add this directory, but not recursive.</ti>
+<ti>=</ti>
+<ti>Add this directory, but not recursively.</ti>
 </tr>
 </table>
 
 <p>
-So lets watch a full blown example
+So lets watch a full blown example:
 </p>
 
 <pre caption="/etc/aide/aide.conf">
@@ -3529,54 +3608,55 @@ Norm=s+n+b+md5+sha1+rmd160
 </pre>
 
 <p>
-In the above example with some macros we specify where the topdir starts and 
-where the AIDE directory is. AIDE checks the <path>/etc/aide/aide.db</path> 
-file when checking for file integrity. But when updating or creating a new 
-file it stores the information in <path>/etc/aide/aide.db.new</path>. This is 
-done so it won't automatic overwrite the old db file. The option 
-<c>report_URL</c> is not yet implemented. But the authors intention was that 
-it should be able to email or maybe even execute script.
+In the above example we specify with some macros where the topdir starts and
+where the AIDE directory is. AIDE checks the <path>/etc/aide/aide.db</path> file
+when checking for file integrity. But when updating or creating a new file it
+stores the information in <path>/etc/aide/aide.db.new</path>. This is done so it
+won't automatically overwrite the old db file. The option
+<c>report_URL</c> is not yet implemented, but the author's intention was that 
+it should be able to e-mail or maybe even execute scripts.
 </p>
 
 <p>
-After editing the configuration you should create your db file by executing 
+After editing the configuration you should create your db file by executing
 <c>aide -i</c> and then copy the file <path>/etc/aide/aide.db.new</path> to 
 <path>/etc/aide/aide.db</path> and add the check to cron by executing 
 <c>crontab -e</c> as root.
 </p>
 
 <note>
-Depending on your cpu, disk access and the flags you have set on files, it can 
-take some time.
+Depending on your CPU, disk access speed, and the flags you have set on files,
+this can take some time.
 </note>
 
 <pre caption="Shedule aide as a cronjob">
-0 3   * * * /usr/bin/aide -u
+0 3 * * * /usr/bin/aide -u
 </pre>
 
 <note>
-Remember to setup so you get roots mail. Otherwise you will never know what 
-aide reports.
+Remember to set an alias so you get roots mail. Otherwise you will never know
+what AIDE reports.
 </note>
 
 <p>
-In this case it runs once at 3am. This is done since I do not want to disturb 
-the users when working. Note I am using the <c>-u</c> (Update) option instead
-of the <c>-C</c> (Check). Since <c>-u</c> also checks the files and does not 
-overwrite the original db file it saves some time since all you need to do is 
-to copy a file when it detects some changes. Just check the changes to see if 
-it was yourself that made the changes or some attacker before you copy it!
+In this case it runs once at 3am. This is done since I do not want to disturb
+the users when they are working. Note I am using the <c>-u</c> (Update) option
+instead of the <c>-C</c> (Check). Since <c>-u</c> also checks the files and does
+not overwrite the original db file it saves some time since all you need to do
+is to copy a file when it detects some changes. Just check the changes to see if
+it was you who made the changes instead of some attacker before you copy it!
 </p>
 
 <p>
-Now there is some problems with storing the db files locally since the attacker
-will (If they know that aide is installed) most certainly try to alter the db
-file, update the db file or modify <path>/usr/bin/aide</path>. So you should 
-create a CD or other media and put a copy of the .db file and the aide binaries.
+Now there is some risk inherent with storing the db files locally, since the
+attacker will (if they know that AIDE is installed) most certainly try to alter
+the db file, update the db file or modify <path>/usr/bin/aide</path>. So you
+should create a CD or other media and put on it a copy of the .db file and the
+AIDE binaries.
 </p>
 
 <p>
-One can find information at the <uri 
+One can find information at the <uri
 link="http://www.cs.tut.fi/~rammer/aide.html">AIDE</uri> projectpage.
 </p>
 
@@ -3587,7 +3667,7 @@ link="http://www.cs.tut.fi/~rammer/aide.html">AIDE</uri> projectpage.
 <body>
 
 <p>
-Snort is a Network Intrusion Detection System (NIDS). To install and configure 
+Snort is a Network Intrusion Detection System (NIDS). To install and configure
 it use the following examples.
 </p>
 
@@ -3702,11 +3782,43 @@ config classification: kickass-porn,SCORE! Get the lotion!,1
 </pre>
 
 <p>
-More information is at the <uri link="http://www.snort.org">Snort</uri> website.
+More information is at the <uri
+link="http://www.snort.org">Snort</uri> website.
 </p>
 
 </body>
 </section>
+
+<section>
+<title>Detecting malware with chkrootkit</title>
+
+<body>
+
+<p>
+HIDS like AIDE are a great way to detect changes to your system, but it never
+hurts to have another line of defence. <c>chkrootkit</c> is a utility that scans
+common system files for the presence of rootkits--software designed to hide an
+intrudor's actions and allow him to retain his access--and scans your system for
+likely traces of keyloggers and other "malware". While <c>chkrootkit</c> (and
+alternatives like <c>rkhunter</c>) are useful tools, both for system
+maintainance and for tracking an intruder after an attack has occurred, they
+cannot guarantee your system is secure.
+</p>
+
+<p>
+The best way to use <c>chkrootkit</c> to detect an intrusion is to run it
+routinely from <c>cron</c>. To start, emerge <path>app-admin/chkrootkit</path>. 
+<c>chkrootkit</c> can be run from the command line by the command of the same
+name, or from <c>cron</c> with an entry such as this:
+</p>
+
+<pre caption="Schedule chkrootkit as a cronjob">
+0 3 * * * /usr/sbin/chkrootkit
+</pre>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -3715,15 +3827,17 @@ More information is at the <uri link="http://www.snort.org">Snort</uri> website.
 <body>
 
 <p>
-Once you have successfully installed your system and ensured a good level of 
-security you are not done. Security is an ongoing process and you have to 
-keep your system up to date with the latest security patches. 
+Once you have successfully installed your system and ensured a good level of
+security you are not done. Security is an ongoing process; the vast majority of
+intrusions result from known vulnerabilities in unpatched systems. Keeping your
+system up-to-date is the single most valuable step you can take to greater
+security.
 </p>
 
 <p>
-If you have a recent version of <c>portage</c> installed you can first sync 
-your portage tree with <c>emerge sync</c> and then issue the command 
-<c>glsa-check --list</c> to check if your system is up to date security wise.
+If you have a recent version of <c>portage</c> installed, you can first sync
+your portage tree with <c>emerge sync</c> and then issue the command
+<c>glsa-check --list</c> to check if your system is up to date security-wise.
 </p>
 
 <pre caption="Example output of glsa-check -l">
@@ -3745,7 +3859,7 @@ before using this tool AND before reporting a bug.
 </pre>
 
 <warn>
-The <c>glsa-check</c> is still experimental so if security really is your top 
+The <c>glsa-check</c> is still experimental, so if security really is your top
 priority it would be wise to double check the list with other sources.
 </warn>
 
@@ -3755,20 +3869,21 @@ system is not affected by this GLSA.
 </p>
 
 <p>
-Some people still prefer to use <c>emerge packagename</c> instead of 
+Some people still prefer to use <c>emerge packagename</c> instead of
 <c>glsa-check -f</c> so all GLSAs are listed as <c>[N]</c>.
 </p>
 
 <p>
 If you want an email each time a GLSA is released subscribe to the 
-<c>gentoo-announce</c> mailing list. Instructions for joining it and a 
-bunch of other great mailing lists can be found <uri 
-link="/main/en/lists.xml">Gentoo Linux Mailing List Overview</uri>.
+<c>gentoo-announce</c> mailing list. Instructions for joining it and many other
+great mailing lists can be found <uri link="/main/en/lists.xml">Gentoo Linux
+Mailing List Overview</uri>.
 </p>
 
 <p>
-Another great security resource is the <uri 
-link="http://www.securityfocus.com/archive/1">Bugtraq mailinglist</uri>.
+Another great security resource is the <uri
+link="http://www.securityfocus.com/archive/1">Bugtraq
+mailinglist</uri>.
 </p>
 
 </body>
