@@ -2,6 +2,7 @@ import gtk
 import os
 import re
 import GLIScreen
+import GLIUtility
 from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
@@ -36,8 +37,9 @@ This is where you setup Networking.
 	self.lastSelected="NOT_SET" #set default selected device
 	
 	# ethernet device drop-down
-	self.interfaces=self.get_ethernet_devices()
-	self.menu=widgets.createComboEntry(self,"networkdevs",self.interfaces.keys())
+	#self.interfaces=self.get_ethernet_devices()
+	self.menu_list=self.get_ethernet_devices()
+	self.menu=widgets.createComboEntry(self,"networkdevs",self.menu_list.keys())
 	ethernet_menu_hBoxed = widgets.hBoxThese(gtk.FALSE,10,[gtk.Label("Current Devices"),self.menu])
 	ethernet_menu_hBoxed=widgets.hBoxIt(ethernet_menu_hBoxed)
 	
@@ -68,8 +70,9 @@ This is where you setup Networking.
 	# make it so its disabled to begin with.
 	self.textBoxen[3].set_sensitive(gtk.FALSE)
 	static_default_gateway_hBoxed = widgets.hBoxThese(gtk.FALSE,10,[static_default_gateway])
+	self.static_default_gateway = static_default_gateway
 	# set it so there is no default gateway to begin with
-	self.static_default_gateway_status=0
+	self.static_default_gateway_status={}
 	
 	# dhcp frame creation
 	dhcp_frame = gtk.Frame()
@@ -101,24 +104,17 @@ This is where you setup Networking.
 	# hide the frames because there is no default selection
 	# this is because they *may* not have an ethernet device in their system
 	
-	
-	# make the alert
-	#image=gtk.Image()
-	#image.set_from_stock(gtk.STOCK_DIALOG_WARNING,10)
-	#self.ip_label=gtk.Label("One of your ip addresses is not valid!")
-	#packIt = widgets.hBoxThese(gtk.FALSE,10,[image,self.ip_label])
-	#packItV=widgets.hBoxIt(packIt)
-	#vert.pack_start(packItV,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	
 	self.add_content(vert)
     
     def defaultcheckcall(self,widget,data=None):
 	print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 	# ONLY enable it if nothing else has it set.
-	if ("OFF","ON")[widget.get_active()]=="ON" and self.static_default_gateway_status==0:
+	if ("OFF","ON")[widget.get_active()]=="ON" and len(self.static_default_gateway_status.keys())==0:
 	    self.textBoxen[3].set_sensitive(gtk.TRUE)
-	    self.static_default_gateway_status=1
-	if ("OFF","ON")[widget.get_active()]=="ON" and self.static_default_gateway_status==1:
+	    self.static_default_gateway_status[self.lastSelected]=1
+	
+	# if its on, and its already been set, display an error message.
+	elif ("OFF","ON")[widget.get_active()]=="ON" and not self.static_default_gateway_status.has_key(self.lastSelected):
 	    widgets=Widgets()
 	    print "should display error"
 	    error=widgets.error_Box("Error","You have already selected a default gateway!")
@@ -126,15 +122,29 @@ This is where you setup Networking.
 	    if(result==gtk.RESPONSE_ACCEPT):
 		# close the box
 		error.destroy()
+		# deselect the checkbox
+		widget.set_active(0)
+		
+	# case when you return to a device that *is* the default gateway
+	elif ("OFF","ON")[widget.get_active()]=="ON" and self.static_default_gateway_status.has_key(self.lastSelected):
+	    widget.set_active(1)
+	    self.textBoxen[3].set_sensitive(gtk.TRUE)
+	    
+	elif ("OFF","ON")[widget.get_active()]=="OFF" and self.static_default_gateway_status.has_key(self.lastSelected):
+	    # remove it from the dictionary
+	    self.static_default_gateway_status.clear()
+	    # remove ability to type in the box
+	    self.textBoxen[3].set_sensitive(gtk.FALSE)
 	    
 	else:
 	    self.textBoxen[3].set_sensitive(gtk.FALSE)
-	    # unset it here if its the selected one.
-	    self.static_default_gateway_status=0
+	    
 	
     def callback(self, widget, data=None):
+      
       print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
       if ("OFF","ON")[widget.get_active()]=="ON" and data=="Dhcp Ethernet":
+
        # deactivate the boxen for entering data into.
        for count in range(len(self.textBoxen)-1):  
 	   if count==0:
@@ -148,60 +158,96 @@ This is where you setup Networking.
 	    self.textBoxen[count].set_sensitive(gtk.TRUE)
     
     def set_networking_interfaces(self):
+        widgets=Widgets()
 	try:
+	    print "Setting network interfaces..."
+	    print "interfaces: "+ str(self.interfaces)
 	    self.controller.install_profile.set_network_interfaces(self.interfaces)
-	    self.ip_label.set_text("All ip addresses are valid.")
 	except:
-	    self.ip_label.set_text("One of your ip addresses is not valid!")
+	    error=widgets.error_Box("Error","One of your ip addresses is not valid!")
+	    result=error.run()
+	    if(result==gtk.RESPONSE_ACCEPT):
+		# close the box
+		error.destroy()
 	
     # call back for when they change eth device
     def callback2(self,widget,data=None):
-     #print "Last selected networking device: " + str(self.lastSelected)
      print "This callback is being called for: " + widget.get_text()
+     previously_selected_item=self.lastSelected
+     currently_selected_item=self.get_active_text(self.menu)
+     print "Previously selected item: "+previously_selected_item
+     print "Currently selected item: "+currently_selected_item
      
-     if self.lastSelected!="NOT_SET":
-	 # save the data
-	 self.interfaces[self.lastSelected]=[self.textBoxen[0].get_text(),self.textBoxen[1].get_text(),
-					     self.textBoxen[2].get_text() ]
-	 print "Saved data: " + str(self.interfaces[self.lastSelected])
-	 
-	 # determine if default gateway is selected, if so, save it and adjust global
-	 if self.static_default_gateway_status==1:
-	     self.default_gateway[self.lastSelected]=self.textBoxen[3]
-	 
-     # reset last selected
-     self.lastSelected=self.get_active_text(self.menu)
-     
-     if self.lastSelected!="NOT_SET":
-	 # load the selected data ( -1 b/c do not include default gateway )
-	 for count in range(len(self.textBoxen)-1):
-	     self.textBoxen[count].set_text(self.interfaces[self.lastSelected][count])
-     
-	 # Do they have DHCP ? ( if so, must activate the checkbox.
-	 first_entry=self.interfaces[self.lastSelected][0]
-	 # if dhcp is active, and dhcp of the new selected is NOT dhcp, deselect
-	 if self.dhcp_radio_button.get_active()==1 and first_entry!="dhcp":
-	     # deselect dhcp
-	     self.static_radio_button.set_active(1)
-	 # if dhcp is not active, and dhcp of the new IS dhcp, select dhcp
-	 if self.dhcp_radio_button.get_active()==0 and first_entry=="dhcp":
-	     # select dhcp
-	     self.dhcp_radio_button.set_active(1)
-	
-	 # is this device the default gateway? if so, activate the checkbox and load the data
-	 if self.lastSelected in self.default_gateway.keys():
-	     self.static_default_gateway_status.set_active(1)
+     # only save the data if its been selected before ( later add if they are blank remove it )
+     if previously_selected_item!="NOT_SET":
+	 # save the data only if the entries are not blank!
+	 if self.textBoxen[0].get_text()=="" and self.textBoxen[1].get_text()=="" and self.textBoxen[2].get_text()=="":
+	     # remove it from the list if its there
+	     # not done yet.
+	     holder=""
 	 else:
-	     self.static_default_gateway_status.set_active(0)
-	     
-     #self.set_networking_interfaces()
+	    self.interfaces[previously_selected_item]=(self.textBoxen[0].get_text(),self.textBoxen[1].get_text(),
+							self.textBoxen[2].get_text() )
+	    print "Saved data: " + str(self.interfaces[previously_selected_item])
+	 
+	    # determine if default gateway is selected, if so, save it and adjust global
+	    if self.static_default_gateway_status==1:
+		self.default_gateway[previously_selected_item]=self.textBoxen[3]
+	
+	    # load the selected data ( -1 b/c do not include default gateway )
+	    if currently_selected_item in self.interfaces.keys():
+	       for count in range(len(self.textBoxen)-1):
+		    self.textBoxen[count].set_text(self.interfaces[currently_selected_item][count])
+	    
+	       # Do they have DHCP ? ( if so, must activate the checkbox.
+	       first_entry=self.interfaces[currently_selected_item][0]
+	       # if dhcp is active, and dhcp of the new selected is NOT dhcp, deselect
+	       if self.dhcp_radio_button.get_active()==1 and first_entry!="dhcp":
+		   # deselect dhcp
+		   self.static_radio_button.set_active(1)
+	       # if dhcp is not active, and dhcp of the new IS dhcp, select dhcp
+	       if self.dhcp_radio_button.get_active()==0 and first_entry=="dhcp":
+		   # select dhcp
+		   self.dhcp_radio_button.set_active(1)
+	   
+	       # is this device the default gateway? if so, activate the checkbox and load the data
+	       if self.lastSelected in self.static_default_gateway_status.keys():
+		   self.static_default_gateway.set_active(1)
+	       else:
+		   self.static_default_gateway.set_active(0)
+	    else:
+		 # if its not in the list, its not set, so blank all the boxen
+		 for count in range(len(self.textBoxen)-1):
+		     self.textBoxen[count].set_text("")
+		 
+	 self.set_networking_interfaces()
+	 
+     self.lastSelected=currently_selected_item
      
     # call back for when they activate the entry box
     def entrycallback(self,widget,data=None):
-     #print "got here"
-     #print "widget name: "+widget.get_name()
      print "Entry contents of: %s\n" % data.get_text()
-     
+     # hack, with this any textbox could be dhcp
+     if GLIUtility.is_ip(data.get_text())==False and data.get_text()!="dhcp":
+	 self.change_to_pink(data)
+	 # disable the dropdown
+	 self.menu.set_sensitive(gtk.FALSE)
+	 
+     elif GLIUtility.is_ip(data.get_text())==True:
+	 self.resetBackground(data)
+	 # if its the only box with an ip format error, re-enable the box
+	 if self.checkAllBoxes()==True:
+	     print "got here"
+	     self.menu.set_sensitive(gtk.TRUE)
+    
+    def checkAllBoxes(self):
+	return_value=True
+	# if default gateway is selected, also check that box!
+	for count in range(len(self.textBoxen)-1):
+	    if GLIUtility.is_ip(self.textBoxen[count].get_text())==False:
+		return_value=False
+	return return_value
+    
     def get_ethernet_devices(self):
 	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
 	    list={}
@@ -237,10 +283,35 @@ This is where you setup Networking.
       if active < 0:
           return None
       return model[active][0]
-  
+    
+    def resetBackgrounds(self):
+	for count in range(len(self.textBoxen)-1):
+	    self.textBoxen[count].modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("white"))
+    
+    def resetBackground(self,textBox):
+	textBox.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("white"))
+	
+    def findAndHighlight(self):
+	for count in range(len(self.textBoxen)-1):
+	    if GLIUtility.is_ip(self.textBoxen[count].get_text())==False:
+		# change the background of the textbox
+		self.textBoxen[count].modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("pink"))
+		#textBox.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("blue"))
+    
+    def change_to_pink(self,textBox):
+	textBox.modify_base(gtk.STATE_NORMAL,gtk.gdk.color_parse("pink"))
+    
     def activate(self):
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+    
+    def deactivate(self):
+	widgets=Widgets()
+	try:
+	    self.set_networking_interfaces()	    
+	    return True
+	except:
+	    widgets.error_Box("Error","One or more of your ip addresses are not formed correctly!")
