@@ -1,3 +1,13 @@
+# Copyright 2004 Ian Leitch
+# Copyright 2004 Scott Hadfield
+# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+#
+# $Id: Threading.py,v 1.2 2004/11/09 18:01:20 port001 Exp $
+#
+
+__modulename__ = "Threading"
+
 from threading import Thread, Condition
 
 class Threader:
