@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.49 2005/03/01 06:29:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.50 2005/03/01 06:50:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -260,7 +260,7 @@ class ArchitectureTemplate:
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 					if exitstatus != 0:
 						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
-				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint, display_on_tty8=true)
+				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint, display_on_tty8=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
 				self._logger.log("Mounted netmount at mountpoint:"+mountpoint)
