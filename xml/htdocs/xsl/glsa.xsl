@@ -28,6 +28,7 @@ Linux Security Team</mail>
   <th>Package:</th>
   <ti><xsl:value-of select="package"/></ti>
 </tr>
+<xsl:if test="/affected/version">
 <tr>
   <th>Affected Version(s):</th>
   <ti>
@@ -53,6 +54,7 @@ Linux Security Team</mail>
     </xsl:for-each>
   </ti>
 </tr>
+<xsl:if test="fixed/version">
 <tr>
   <th>Fixed Version(s):</th>
   <ti>
@@ -78,6 +80,8 @@ Linux Security Team</mail>
     </xsl:for-each>
   </ti>
 </tr>
+</xsl:if>
+</xsl:if>
 <tr>
   <th>Severity:</th>
   <ti>
@@ -98,10 +102,13 @@ Linux Security Team</mail>
   <th>Exploit Type:</th>
   <ti><xsl:value-of select="exploit"/></ti>
 </tr>
+<xsl:if test="bug">
 <tr>
   <th>Bugreport:</th>
   <ti><uri link="http://bugs.gentoo.org/show_bug.cgi?id={bug}"># <xsl:value-of select="bug"/></uri></ti>
 </tr>
+</xsl:if>
+<xsl:if test="cve">
 <tr>
   <th>Common Vulnerabilities and Exposures (CVE): &#x00A0;</th>
   <ti>
@@ -115,6 +122,7 @@ Linux Security Team</mail>
     </xsl:choose>
   </ti>
 </tr>
+</xsl:if>
 </table>
 
 </body>
