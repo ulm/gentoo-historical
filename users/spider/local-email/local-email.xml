@@ -1,0 +1,450 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="local-email.xml">
+<title>Setting up an integrated local email delivery system</title>
+<author title="Senior Developer Manager">
+    <mail link="spider@gentoo.org">Spider (D.M.D. Ljungmark)</mail>
+</author>
+
+<abstract>
+This is a guide to setup an integrated email system for a normal 
+desktop setup. It will cover Local delivery, incoming email, email 
+retrieval through IMAP and spam filtering using standard unix tools.
+</abstract>
+
+<version>0.3.1</version>
+<date>10 Sep 2003</date>
+
+
+<chapter>
+<title>Introduction</title>
+<section>
+<title>Assumptions</title>
+<body>
+<p>
+For this guide I will assume a lot  about your system, and simplify even more about
+ the  how things work. The guide assumes that you are not running email services
+for a domain, but have a normal connection to the internet where your provider 
+hosts email accounts. 
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Tools</title>
+<body>
+<p> I will use some fairly standard and popular tools for this, namely 
+"postfix" "procmail" "SpamAssassin" "fetchmail" and "courier-imapd"  </p>
+</body>
+</section>
+
+<section>
+<title>Overview</title>
+<body>
+<p>The configuration documented in this guide is might seem complex, but have
+ been tested and has been found to be solid and flexible.</p>
+
+<p>For locally generated email, it first goes to the smtp server, which 
+delivers email to a users home directory via procmail. To gain access 
+to your email, we'll setup an imap server that simply serves the same directory 
+back to the user. This makes for a good solution since your email is not 
+tied to a single application, and you can at your leisure try out several 
+different applications. </p>
+
+<p>Remote email is fetched with the program <c>fetchmail</c>. Fetchmail 
+delivers the email to the local smtp daemon <c>postfix</c> for processing. 
+Once in the smtp queue, the message is handled as an ordinary email.</p>
+
+<p>Spam filtering is done inside procmail, and thus integrates
+seamlessly into the setup.</p>
+
+</body>
+</section>
+
+<section>
+<title>Preparations</title>
+<body>
+
+<p>To start with, we need to set a few USE flags. Edit 
+<c>/etc/make.conf</c>  or use <c>ufed</c> to set the flags: <c>imap</c>
+ and <c>maildir</c>.</p> 
+
+<note> Since we are only installing for local delivery and configuration there 
+is no need to use <c>ssl</c> or <c>smtp-before-pop</c> authentications.</note>
+
+<p>The reader will need to know the following data:</p>
+<p>I call the system <e>testhost</e>, the domain is called  <e>testdomain</e> and the user whom I normally login as <e>testuser</e>.</p>
+
+<note>You should make sure that you give the exact names that the system reports, using the commands <c>hostname</c> and <c>domainname</c>.</note>
+
+</body>
+</section>
+</chapter>
+
+
+
+
+<chapter>
+<title>Procmail</title>
+<section>
+<title>Installing procmail</title>
+<body>
+<p>Installing procmail is a simple task:</p>
+
+<pre caption="emerge procmail">
+#<i>emerge procmail</i>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Configuring procmail</title>
+<body>
+<p>We want to configure procmail to do the actual delivery of email into a
+users home directory. Simply make sure the following exists in 
+the file <path>/etc/procmailrc</path></p>
+
+<pre caption="/etc/procmailrc">
+# Use maildir-style mailbox in user's home directory
+DEFAULT=$HOME/.maildir/
+SHELL=/bin/sh
+
+</pre>
+
+
+</body>
+</section>
+</chapter>
+
+
+
+<chapter>
+<title>Postfix</title>
+<section>
+<title>Installing postfix</title>
+<body>
+<p>If at this point you get a block from the default package <c>ssmtp</c>,  
+unmerge that and try again with the installation of postfix.</p>
+<pre caption="installing postfix">
+# <i>emerge postfix</i>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Configuring postfix</title>
+<body>
+<p>Now it is time to fire up your favorite editor and find  and edit the file
+<path>/etc/postfix/main.cf</path>. Please note that you should just set the following 
+variables in-place, (make sure they are only set once, comment out the others) 
+or things may break.</p>
+
+
+<pre caption="/etc/postfix/main.cf">
+myhostname = testhost.testdomain
+mydomain = testdomain
+inet_interfaces = localhost
+home_mailbox = .maildir/
+mailbox_command = /usr/bin/procmail
+relayhost = smtp.myisp.com
+</pre>
+
+<note>These are the variables that are of importance. Make sure you set them, 
+and do not define them more than once. </note>
+
+<note>smtp.myisp.com is supposed to be your ISP assigned mailserver. If you have none, it should be ok to leave this empty.</note>
+
+<p>Now it is time to configure a user to receive root's email (you don't 
+read email as root, do you?). Open up <path>/etc/mail/aliases</path> and 
+at the end, add the following</p>
+
+ <pre caption="/etc/mail/aliases">
+ root:                testuser
+# trap decode to catch security attacks
+# decode:           /dev/null
+</pre>
+
+<p>After this, it's time to run <c>/usr/bin/newaliases</c> and then we are 
+ready to start.</p>
+
+<pre caption="finishing touches">
+# <i>/usr/bin/newaliases </i>
+# <i>rc-update add postfix default</i>
+# <i>/etc/init.d/postfix start</i>
+</pre>
+
+<p>Now we can test the setup by doing:</p>
+
+<pre caption="Using sendmail to test email delivery">
+# <i>echo "Email test"  | sendmail  root@localhost</i>
+# <i>ls -l /home/testuser/.maildir/new</i>
+</pre>
+
+<p>if all worked ok, there should be a file listed there. If things go
+ wrong it is time to dig out <c>netstat -la</c> , <path>/var/log/mail*</path> 
+and see if there are errors reported. </p>
+
+</body>
+</section>
+</chapter>
+ 
+
+<chapter>
+<title>Courier-imap</title>
+<section>
+<title>Installing courier-imap</title>
+<body>
+
+<p>The installation here is also simple.</p> 
+
+<pre caption="installing courier-imap">
+# <i>emerge net-mail/courier-imap</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuring courier-imap</title>
+<body>
+<p>There is not much that needs to be configured with <c>courier-imap</c>. 
+We want to restrict access a bit further, thus we'll bind the server to 
+localhost. To do this, open <path>/etc/courier-imap/imapd</path> in editor 
+of choice and change the value of <c>ADDRESS</c> to localhost, see the 
+code-listing below for an example.</p>
+ 
+<pre caption="/etc/courier-imap/imapd">
+ADDRESS=127.0.0.1
+</pre>
+
+<p>Now we add courier to the default runlevel and start it</p>
+
+<pre caption="starting the imap server">
+# <i>rc-update add courier-imapd default</i>
+# <i>/etc/init.d/courier-imapd start</i>
+</pre>
+
+<p>To test this, open your favourite email client (If you do not have a 
+favourite,  may I suggest <c>sylpheed</c>?)  and add an imap server (also 
+known as an IMAP4 server). Where it specifies "hostname" simply enter 
+"localhost" or "127.0.0.1". If things do not work at this point, reading 
+the log files should be a good place to start.
+</p>
+ 
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>SpamAssassin</title>
+<section>
+<title>Installing SpamAssassin</title>
+<body>
+<p>This chapter deals with how to install SpamAssassin into your system. This
+ is a very flexible spam filter that will integrate smoothly into the setup we have 
+in place. Its a completely optional step, but one I suggest nonetheless.</p>
+
+<p> Lets start the installation. This will install SpamAssassin on your system, 
+and configure it to run in daemon mode (which is more efficient since it will not
+ try and load perl with each received email.)
+<pre caption="Mail-SpamAssassin"> 
+# <i>emerge Mail-SpamAssassin</i>
+# <i>rc-update add spamd default</i>
+# <i>/etc/init.d/spamd start</i>
+</pre></p>
+</body>
+</section>
+
+<section>
+<title>Configuring SpamAssassin</title>
+<body>
+
+<p>This title is a bit misleading, since in this case we will not change
+ SpamAssassins configuration, but will only "merge" SpamAssassin into your 
+system. If you wish to change the filtering behavior, you will have to look in 
+<c>man spamassassin</c></p>
+
+<p> Now open up <path>/etc/procmailrc</path> in your favourite editor and modify
+ it to look as the following:</p>
+
+<pre caption="/etc/procmailrc">
+# Use maildir-style mailbox in user's home directory
+DEFAULT=$HOME/.maildir/
+SHELL=/bin/sh
+MAILDIR=$HOME/.maildir
+
+:0fw
+* &lt; 256000
+| /usr/bin/spamc -f
+ 
+</pre>
+
+
+<note> Previous versions of this document had a bad INCLUDERC that is not necessary and could actually prove harmful.</note>
+
+<note>Also note that messages above the size of 256k are not filtered to reduce CPU overhead</note>
+
+<p>Now its time to test the setup</p>
+
+<pre caption="Sending a message to root to test">
+# <i>echo "TEST"  | sendmail root@localhost</i>
+# <i>grep X-Spam /home/testuser/.maildir/new/*</i>
+X-Spam-Status: No, hits=1.0 required=5.0
+X-Spam-Level: *
+X-Spam-Checker-Version: SpamAssassin 2.55 (1.174.2.19-2003-05-19-exp)
+</pre>
+<p>Yey! It worked. </p>
+
+</body>
+</section>
+</chapter>
+
+
+
+
+
+<chapter>
+<title>Fetchmail</title>
+<section>
+<title>Installing fetchmail</title>
+<body><p>Fetchmail is a program to pull email off a remote server (IMAP or
+ POP3) and  the reinsert it locally for delivery. This makes all email go into
+ the same place, and through the same filtering rules, which makes for easier 
+ adaptation. To install :</p>
+ <pre caption="install fetchmail">
+# <i>emerge fetchmail</i>
+ </pre>
+
+</body>
+</section>
+<section>
+<title>Configuring fetchmail</title>
+<body>
+<p>As the user who's mail we wish to fetch, open and edit 
+<path>$HOME/.fetchmailrc</path> as following:</p>
+<pre caption="~/.fetchmailrc">
+set postmaster "testuser"
+set bouncemail
+set no spambounce
+set properties ""
+# set daemon 300
+poll ISP.MAILSERVER with proto POP3
+       user 'ISP-MAILLOGIN' there with password 'MAIL-PASS' is 'testuser' here options stripcr
+</pre>
+
+<note>You have to change the following items: "testuser" into your local user. 
+ISP.MAILSERVER to your remote mailserver. ISP-MAILLOGIN with the
+ username you have there, and MAIL-PASS with the accounts password.
+</note>
+
+<note> Please refer to <uri link="http://www.catb.org/~esr/fetchmail/fetchmail-man.html">
+ the fetchmail manual</uri> for more information</note>
+
+
+
+<p>Now we shall test this setup in order to make sure things work as supposed.</p>
+<pre caption="testing fetchmail">
+# <i> fetchmail -v</i>
+</pre>
+<note> You have to inspect the output for eventual errors.</note>
+
+<p>If the fetchmail configuration is working the way you want it, enable
+daemon mode by removing the # in front of <e>"set daemon 300"</e></p>
+<pre caption="fetchmailrc reviewed">
+set no spambounce
+set properties ""
+set daemon 300
+</pre>
+
+<p> Now your email will automatically be retrieved and delivered to your
+ local directory for reading at your leisure. To automatically start
+ fetchmail when you login, add the following to your <path>$HOME/.bash_login</path>
+</p>
+<pre caption="~/.bash_login">
+fetchmail  &gt;/dev/null 2&gt;&amp;1 
+</pre>
+
+<p>Or you can run fetchmail as a cron-job:</p>
+<pre caption="crontab -e">
+0 6 * * * fetchmail &gt;/dev/null 2&gt;&amp;1
+</pre>
+
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Conclusion</title>
+<section>
+<title> Hints and tips </title>
+<body>
+<p>There are many more things you can do with the tools described here
+ and others. One example is the program <c>gotmail</c> which can download email
+ from hotmail accounts and inject locally.  Or you can do massive email 
+ filtering in your local procmail rules. You can also integrate 
+ <c>bogofilter</c> into the system, or do even more filtering with specialized
+ <c>procmail</c> rules.</p>
+
+<p>The following recipe will filter out spam, then automatically sort
+ the Gentoo.org mailing-lists into different folders as mail is delivered.
+ Simply add it to <path>$HOME/.procmailrc</path></p>
+
+<pre caption="example procmail recipe for Gentoo.org mailing-list">
+:0:
+* ^X-Spam-Status: Yes
+.SPAM/
+
+:0
+* ^List-Id.*gentoo-user\.gentoo\.org
+.Gentoo-User/
+
+:0
+* ^List-Id.*gentoo-dev\.gentoo\.org
+.Gentoo-Devel/
+
+ :0
+* ^List-Id.*gentoo-announce\.gentoo\.org
+.Gentoo-Announce/
+</pre>
+
+<p>Even more information can be found in the manuals, or on the web. </p>
+
+</body>
+</section>
+
+<section>
+<title>Training SpamAssassin</title>
+<body>
+<p>SpamAssassin has a built-in bayesian filter that can be trained. Since 
+the spam-check is launched as the user in question, this will behave 
+differently for each user, and that is one of the strenghts of bayesian filtering.
+ To "teach" the filter to behave better, move all recieved spam that the
+ filter -doesnt- catch into a directory called <path>uncaught</path>. The 
+following snippet is an example cron-job to teach SpamAssassin about spam 
+in a daily basis.</p>
+
+<pre caption="cron-job to teach SpamAssassin">
+0 0 * * * /usr/bin/sa-learn --dir --spam $HOME/.maildir/.uncaught/cur &gt;/dev/null
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Final Words</title>
+<section>
+<title>Final Words</title>
+<body>
+<note>If you have any questions or additions, please 
+<mail link="spider@gentoo.org">contact me</mail> with additions or comments.</note>
+</body>
+</section>
+</chapter>
+</guide>
+
+
