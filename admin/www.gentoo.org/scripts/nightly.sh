@@ -15,9 +15,11 @@ export FEATURES="-cvs -digest"
 ${WEBSCRIPTS}/cvs-page.sh
 ${WEBSCRIPTS}/pkgs.py
 ${WEBSCRIPTS}/use-index.py
-${WEBSCRIPTS}/site-archive.sh
+# no idea why the next script was being run, so commenting it out until someone complains
+#${WEBSCRIPTS}/site-archive.sh
 ${WEBSCRIPTS}/news-index.sh
-${WEBSCRIPTS}/doc-tarball.sh
+# no idea why the next script was being run, so commenting it out until someone complains
+#${WEBSCRIPTS}/doc-tarball.sh
 ${WEBSCRIPTS}/icons2xml_v2.pl  
 # this script is called every 15 minutes now via crontab, so we'll comment it out here
 #${WEBSCRIPTS}/cvs-repo-update.sh
