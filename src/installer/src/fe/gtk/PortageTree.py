@@ -1,77 +1,64 @@
 import gtk
 import GLIScreen
-from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
-    """
-    The portage tree section of the installer.
-    
-    @author:    John N. Laliberte <allanonl@bu.edu>
-    @license:   GPL
-    """
-    # Attributes:
-    title="Portage Tree"
-    # Operations
-    def __init__(self, controller):
-	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+	title = "Stage Selection"
+	active_selection = 1
+	radio_syncs = {}
 
-        content_str = """
-This is where you select what kind of portage tree you will use.
-[short explanation here]
+	def __init__(self, controller):
+		GLIScreen.GLIScreen.__init__(self, controller)
+		vert = gtk.VBox(gtk.FALSE, 0)
+		vert.set_border_width(10)
+
+		content_str = """Here, you will select how you would like to obtain a portage tree. Each option has
+a brief description beside it.
 """
-	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		content_label = gtk.Label(content_str)
+		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.radio_syncs['sync'] = gtk.RadioButton(None, "Normal")
+		self.radio_syncs['sync'].set_name("sync")
+		self.radio_syncs['sync'].connect("toggled", self.stage_selected, "sync")
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.radio_syncs['sync'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This will run 'emerge sync' to get a local copy of the portage tree"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		self.radio_syncs['webrsync'] = gtk.RadioButton(self.radio_syncs['sync'], "Webrsync")
+		self.radio_syncs['webrsync'].set_name("webrsync")
+		self.radio_syncs['webrsync'].connect("toggled", self.stage_selected, "webrsync")
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.radio_syncs['webrsync'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This will download a portage snapshot from a Gentoo mirror and sync it locally. Use\nthis option if you are behind a nazi-ish firewall that blocks outgoing rsync traffic"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		self.radio_syncs['custom'] = gtk.RadioButton(self.radio_syncs['sync'], "None")
+		self.radio_syncs['custom'].set_name("custom")
+		self.radio_syncs['custom'].connect("toggled", self.stage_selected, "custom")
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.radio_syncs['custom'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Use this option to bypass syncing the tree. If you want to NFS mount the portage tree,\nuse this option"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+#		hbox = gtk.HBox(gtk.FALSE, 0)
+#		hbox.pack_start(gtk.Label("Stage tarball URI:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+#		self.entry_stage_tarball_uri = gtk.Entry()
+#		self.entry_stage_tarball_uri.set_width_chars(50)
+#		hbox.pack_start(self.entry_stage_tarball_uri, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+#		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=40)
 
-	widgets=Widgets()
-	
-	self.options=["Normal (emerge sync)","Webrsync (firewalled)","None (snapshop/NFS mount)"]
-	self.portage_tree=self.options
-	self.portage_tree_widgets=[]
-	
-	i=0
-	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,self.callback,self.options[0],self.options[0])
-	self.portage_tree_widgets.append(new_boxt)
-	new_boxt.set_active(gtk.TRUE)
-	hBoxed=widgets.hBoxIt(new_boxt) 
-	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for counter in range(len(self.options)):
-	 if i!=0: 
-	  new_box=widgets.radioButton(new_boxt,self.callback,self.options[counter],self.options[counter])
-	  self.portage_tree_widgets.append(new_box)
-          #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
-          new_box.show()
-	  hBoxed=widgets.hBoxIt(new_box)			  
-	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-	 else:
-	  i=-1
-     
-	self.add_content(vert)
+		self.add_content(vert)
 
-    def callback(self, widget, data=None):
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-      # the last one needs to be added to display a URI if you need snapshot etc....
-      if widget.get_name() == self.options[0]: self.controller.install_profile.set_portage_tree_sync_type(None, "sync", None)
-      if widget.get_name() == self.options[1]: self.controller.install_profile.set_portage_tree_sync_type(None, "webrsync", None)
-      if widget.get_name() == self.options[2]: self.controller.install_profile.set_portage_tree_sync_type(None, "custom", None)
-      print "current portage tree: "+self.controller.install_profile.get_portage_tree_sync_type()
-      
-    def activate(self):
-	# grab from the install profile
-	portage_tree=self.controller.install_profile.get_portage_tree_sync_type()
-	print "Portage Tree from profile: " + portage_tree
-	
-	# now select it
-	for count in range(len(self.portage_tree)):
-	    if(portage_tree=="sync"):self.portage_tree_widgets[0].set_active(gtk.TRUE)
-	    if(portage_tree=="webrsync"):self.portage_tree_widgets[1].set_active(gtk.TRUE)
-	    if(portage_tree=="custom"):self.portage_tree_widgets[2].set_active(gtk.TRUE)
-	    
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	def stage_selected(self, widget, data=None):
+		self.active_selection = data
+
+	def activate(self):
+		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
+		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
+		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
+		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
+		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.radio_syncs[self.controller.install_profile.get_portage_tree_sync_type()].set_active(gtk.TRUE)
+#		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
+
+	def deactivate(self):
+		self.controller.install_profile.set_portage_tree_sync_type(None, self.active_selection, None)
+		return True
