@@ -5,7 +5,9 @@
 
 import portage, string, os, os.path, time, sys, re
 from stat import *
-os.environ["WEBROOT"]="/home/gweb/gentoo-xml/htdocs"
+if not os.environ["WEBROOT"]:
+	print "$WEBROOT not set; exiting"
+	sys.exit(1)
 
 #####################################
 # prog start, and main variable, and compiled regex's
