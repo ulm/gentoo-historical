@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/proj/en/infrastructure/sshkeys.xml">
+<title>Logging Configuration Guide for Gentoo Infrastructure Servers</title>
+<author title="Author">
+    <mail link="klieber@gentoo.org">Kurt Lieber</mail>
+</author>
+<abstract>
+This guide documents how logging should be configured on Gentoo Infrastructure servers. 
+</abstract>
+<version>0.9</version>
+<date>14 July, 2003</date>
+
+<chapter>
+<title>Configuring sysklogd</title>
+<body>
+<p>
+sysklogd is required to be configured and running on all Gentoo Infrastructure servers.  Below are sample configuration settings for sysklogd:
+</p>
+<pre caption="/etc/syslog.conf">
+#  /etc/syslog.conf     Configuration file for syslogd.
+
+#
+# First some standard logfiles.  Log by facility.
+#
+
+auth,authpriv.*                 /var/log/auth.log
+*.*;auth,authpriv.none          -/var/log/syslog
+cron.*                         /var/log/cron.log
+daemon.*                        -/var/log/daemon.log
+local6.*                        /var/log/rsync.log
+local4.*                        /var/log/ldap.log
+local3.*                        /var/log/xinetd.log
+<codenote>Make sure that services such as rsyncd, xinetd and others are configured to use the localN log specified</codenote>
+
+#
+# Logging for the mail system. Split it up so that
+# it is easy to write scripts to parse these files.
+#
+mail.info                       -/var/log/mail.info
+mail.warn                       -/var/log/mail.warn
+mail.err                        /var/log/mail.err
+<codenote>This section should be commented out for Gentoo mail servers since qmail and exim provide their own logging facilities.</codenote>
+</pre>
+</body>
+</chapter>
+<chapter>
+<title>Configuring and running logrotate</title>
+<body>
+<p>We use <c>logrotate</c> to facilitate log rotations.</p>
+<pre caption="/etc/logrotate.conf">
+# sample logrotate configuration file
+
+/var/log/apache/*.httpd {
+
+        rotate 30
+        daily
+        postrotate
+                /etc/init.d/apache restart
+        endscript
+}
+<codenote>The section above should be ommitted if the server is not running apache</codenote>
+/var/log/*.log  {
+        rotate 14
+        daily
+        postrotate
+                /bin/kill -HUP `pidof syslogd`
+        endscript
+}
+</pre>
+<p>In general, log files should be kept around a minimum of 2 weeks, longer if disk space allows for it.</p>
+</body>
+</chapter>
+</guide>
