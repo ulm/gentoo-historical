@@ -24,6 +24,9 @@ if [ -d "${GENTOO_CVS_RAW}" ]; then
 
 	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-src/ \
 	${GENTOO_CVS_RAW}/gentoo-src/
+
+	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-projects/ \
+	${GENTOO_CVS_RAW}/gentoo-projects/
 else
 	echo "Either GENTOO_CVS_RAW isn't set or it isn't a directory" >&2
 	exit 1
