@@ -146,7 +146,7 @@
         </xsl:otherwise>
       </xsl:choose>
       <!-- Content -->
-      [ <a href="{/book/@link}?part=0&amp;chap=0">Home</a> ]
+      [ <a href="{/book/@link}?part=0&amp;chap=0"><xsl:value-of select="func:gettext('Home')"/></a> ]
       <!-- Printable
       [ <a href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable">Print</a> ]
       -->
