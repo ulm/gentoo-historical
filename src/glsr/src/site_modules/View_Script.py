@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: View_Script.py,v 1.2 2004/11/04 00:59:22 port001 Exp $
+# $Id: View_Script.py,v 1.3 2004/12/18 22:05:18 port001 Exp $
 #
 
 import time
@@ -22,7 +22,6 @@ class View_Script(SiteModule):
 
     def __init__(self, **args):
 
-        self.pages = ["view_script", "post_comment"]
         self.form = args["form"]
         self.page = self.form.getvalue("page")
         self.template = Config.Template["view_script"]

@@ -1,14 +1,14 @@
-__all__ = [
-    "Page_Login",
-    "Page_Main",
-    "Page_Script",
-    "Page_Search",
-    "View_Script"
-    ]
+__all__ = {
+    "Page_Login": ["login", "perform_login", "logout"],
+    "Page_Main": ["main"],
+    "Page_Script": ["create_script", "save_script"],
+    "Page_Search": ["script_search"],
+    "View_Script": ["view_script", "post_comment"]
+    }
 
 # The page to display when all else fails.
 # Note that this display module should not have any required form inputs.
-failover = "Page_Main"
+failover = {"module": "Page_Main", "page": "main"}
  
 class SiteModule:
     """The parent class for all site modules."""
@@ -16,8 +16,6 @@ class SiteModule:
     import Template as TemplateHandler
 
     tmpl = TemplateHandler.Template()
-    pages = []
     show_border = True
-
 
 class Redirect(Exception): pass

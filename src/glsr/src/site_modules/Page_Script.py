@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.8 2004/12/15 00:31:42 hadfield Exp $
+# $Id: Page_Script.py,v 1.9 2004/12/18 22:05:18 port001 Exp $
 #
 
 import Config
@@ -18,7 +18,6 @@ class Page_Script(SiteModule):
 
     def __init__(self, **args):
 
-        self.pages = [None, "create_script", "save_script"]
         self.form = args["form"]        
         self.page = self.form.getvalue("page")
         self.template = Config.Template["create_script"]

@@ -5,10 +5,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.27 2004/12/16 15:43:31 port001 Exp $
+# $Id: index.py,v 1.28 2004/12/18 22:05:18 port001 Exp $
 #
 
-"""The main page dispatcher for glsr.
+"""
+The main page dispatcher for glsr.
 
 This script simply prints the header, determines the page and calls the
 appropriate page handler, and prints out the footer.
@@ -42,12 +43,9 @@ import Session as SessionHandler
 import Template as TemplateHandler
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
-#from Threading import Threader, wait_threads
 from Function import start_timer, stop_timer, eval_timer
 
 from site_modules import Redirect
-
-#print "Content-type:text/html\n\n",
 
 class PageDispatch:
 
@@ -131,72 +129,53 @@ class PageDispatch:
 
     def select_module(self):
 
-        module_list = []
-        
-        if self._domain == "admin":
+        page_metadata = None
+        page_matched = False
+        matched_module = ""
 
+        if self._domain == "admin":
             import site_modules.admin
             self._failover = site_modules.admin.failover
-
-            for module in site_modules.admin.__all__:
-                module_list.append(module)
-                self._load_module(module)
-                #Threader(self._load_module, module)
+            page_metadata = site_modules.admin.__all__
         else:
             import site_modules
             self._failover = site_modules.failover
+            page_metadata = site_modules.__all__
 
-            for module in site_modules.__all__:
-                module_list.append(module)
-                self._load_module(module)
-                #Threader(self._load_module, module)
-        
-        #wait_threads()
-
-        for module in module_list:
-
-            module_object = eval(module + "(" +
-                                 "form = self._form," +
-                                 "uid = self._user_detail[\"uid\"]," +
-                                 "alias = self._user_detail[\"alias\"]," +
-                                 "session = self._user_detail[\"session\"])")
-
-            try:
-                for mod_page in module_object.pages:
-                    if self._page == mod_page:
-                        try:
-                            self._tmpl_page = module_object.display()
-                            self._show_border = module_object.show_border
-                            raise 'PageFound'
-
-                        except Redirect, location_str:
-                            print "Location: %s\n\n" % location_str
-                            sys.exit(0)
-
-                        except GLSRException, error:
-                            output_str = error.__str__()
-                            output_str = output_str.replace("\n", "<br />")
-                            output_str = output_str.replace(" ", "&nbsp;")
-                            LogHandler.err(output_str,
-                                   module_object.__modulename__)
-                            sys.exit(0)
-
-            except 'PageFound':
+        for module in page_metadata:
+            if self._page in page_metadata[module]:
+                matched_module = module
+                self._load_module(matched_module)
+                page_matched = True
                 break
 
-        if self._tmpl_page == None:
-            
-            self._page = self._failover
-
+        if not page_matched:
+            matched_module = self._failover["module"]
+            self._load_module(matched_module)
+            self._page = self._failover["page"]
             LogHandler.logwrite("Request fell through to failover page '%s'" %
                                  self._page, __modulename__, "Info")
 
-            failover_page = eval(self._failover + "(" +
-                                 "form = self._form," +
-                                 "alias = self._user_detail[\"alias\"])")
-            self._tmpl_page = failover_page.display()
-        
-        if self._tmpl_page == "nodisplay":
+        module_object = eval(matched_module + "(" +
+                             "form = self._form," +
+                             "uid = self._user_detail[\"uid\"]," +
+                             "alias = self._user_detail[\"alias\"]," +
+                             "session = self._user_detail[\"session\"])")
+
+        try:
+            self._tmpl_page = module_object.display()
+            self._show_border = module_object.show_border
+                                                                                                    
+        except Redirect, location_str:
+            print "Location: %s\n\n" % location_str
+            sys.exit(0)
+                                                                                                    
+        except GLSRException, error:
+            output_str = error.__str__()
+            output_str = output_str.replace("\n", "<br />")
+            output_str = output_str.replace(" ", "&nbsp;")
+            LogHandler.err(output_str,
+                           module_object.__modulename__)
             sys.exit(0)
 
     def _send_headers(self):
