@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/quick-samba-howto.xml,v 1.4 2005/01/05 13:51:58 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/quick-samba-howto.xml,v 1.5 2005/02/17 01:14:13 so Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<guide link="quick-samba-howto.xml" lang="it">
+<guide link="/doc/it/quick-samba-howto.xml" lang="it">
 <title>Gentoo Samba3/CUPS/Clam AV HOWTO</title>
 <author title="Autore">
   <mail link="daff at dword dot org">Andreas "daff" Ntaflos</mail>
@@ -22,8 +22,8 @@ la condivisione di file e stampanti con scansione virus.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.10</version>
-<date>2004-12-23</date>
+<version>1.11</version>
+<date>2005-02-07</date>
 
 <chapter>
 <title>Introduzione all'Howto</title>
@@ -110,7 +110,7 @@ La seguente lista contiene gli argomenti trattati in questo Howto:
 <ul>
   <li>Sul server Samba:
     <ul>
-      <li>Installazione e configurazione di CLAM-AV</li>
+      <li>Installazione e configurazione di ClamAV</li>
       <li>Installazione e configurazione di Samba</li>
       <li>Installazione e configurazione di CUPS</li>
       <li>Aggiungerela stampante a CUPS</li>
@@ -177,7 +177,7 @@ possibili per Samba.
 </p>
 
 <pre caption="Samba ha le seguenti flag USE:">
-kerberos mysql xml acl cups ldap pam readline python oav
+kerberos mysql xml acl cups ldap pam readline python oav libclamav
 </pre>
 
 <p>
@@ -276,6 +276,12 @@ richieste dal server.
     (SAVI), Symantec CarrierScan e Trend Micro (VSAPI).
   </ti>
 </tr>
+<tr>
+  <th><b>libclamav</b></th>
+  <ti>
+   Abilita ClamAV come virus scanner.
+  </ti>
+</tr>
 </table>
 
 <p>
@@ -329,6 +335,7 @@ per usare Samba o per le proprie esigenze.  In questo Howto si useranno:
   <li>cups</li>
   <li>readline</li>
   <li>pam</li>
+  <li>libclamav</li>
 </ul>
 
 <p>
@@ -338,7 +345,7 @@ le flag USE sono specificatamente incluse o escluse.
 
 <pre caption="Emerge Samba">
 <comment>(Attenzione alle USE flags!)</comment>
-# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql&quot; emerge net-fs/samba</i>
+# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql libclamav&quot; emerge net-fs/samba</i>
 </pre>
 
 <note>
@@ -362,7 +369,7 @@ consente l'accesso alla scansione virus, bisogna emergere il virus scanner.
 In questo Howto viene usato Clam AV.
 </p>
 
-<pre caption="Emerge clam-av">
+<pre caption="Emerge ClamAV">
 # <i>emerge app-antivirus/clamav</i>
 </pre>
 
@@ -446,13 +453,9 @@ guest ok = yes
 # lo scan di tutte le condivisioni, si può spostare quanto segue
 # in una specifica sezione in modo da attivare lo scan solo su di essa.</comment>
 
-<comment># Per Samba 3.x</comment>
+<comment># Per Samba 3.x. Questo abilita ClamAV </comment>
 vfs object = vscan-clamav
 vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
-
-<comment># Per Samba 2.2.x</comment>
-vfs object = /usr/lib/samba/vfs/vscan-clamav.so
-vfs options = config-file = /etc/samba/vscan-clamav.conf
 
 <comment># Ora vengono configurati i driver per la stampante</comment>
 [print$]
@@ -511,6 +514,11 @@ sembra che gli account Guest causino problemi mentre
 e dei problemi che ci possono essere.  Conviene pertanto usare un 
 account dedicato alla stampa, come <c>printeruser</c> o <c>printer</c>.
 Non fa danni e certamente protegge da molti problemi.
+</warn>
+
+<warn>
+Abilitare ClamAV a controllare i file ad ogni accesso nella sezione
+<c>[global]</c>, causerà un forte calo delle performance sul Server Samba.
 </warn>
 
 <p>
@@ -624,13 +632,31 @@ quarantine prefix = vir-
 lru file entry lifetime = 5
 
 <comment>; Nome socket per clamd (default: /var/run/clamd)</comment>
-clamd socket name = /var/run/clamd
+clamd socket name = /tmp/clamd
+
+<comment>; Porta su cui il demone di scan rimarrà in ascolto:</comment>
+oav port = 8127
 </pre>
 
 <p>
 In genere è una buona idea far partire il virus scanner immediatamente.
 Bisogna quindi aggiungerlo al runlevel <e>default</e> ed eseguire subito
-il servizio <c>clamd</c>.
+il servizio <c>clamd</c>. Il servizio ha due processi: freshclam che preleva
+le definizioni dei virus da un database aggiornato, mentre clamd è il vero
+demone anti-virus. Per prima cosa è bene impostare i percorsi dei file di log.
+</p>
+
+<pre caption="Controllare le locazioni dei logfile">
+# <i>vim /etc/clamd.conf</i>
+<comment>(Controllare la riga: "LogFile /var/log/clamd.log")</comment>
+# <i>vim /etc/freshclam.conf</i>
+<comment>(Controllare la riga: "UpdateLogFile /var/log/freshclam.log")</comment>
+# <i>vim /etc/conf.d/clamd</i>
+<comment>(Impostare "START_CLAMD=yes" e "START_FRESHCLAM=yes")</comment>
+</pre>
+
+<p>
+Ora si lancia il virus scanner.
 </p>
 
 <pre caption="Aggiungere clamd all'avvio ed eseguirlo:">
@@ -1133,3 +1159,4 @@ darci un'occhiata, magari la soluzione è proprio lì.
 </section>
 </chapter>
 </guide>
+
