@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.5 $"
+__revision__ = "$Revision: 1.6 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -320,8 +320,9 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
         
     fp.write("</channel>\n</rss>\n")
     
-def main(argv=Null):
-    argv = argv or sys.argv
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
     try:
         if argv[1] == '-g':
             ebuilddb.main()
