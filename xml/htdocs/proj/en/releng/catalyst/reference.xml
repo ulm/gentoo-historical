@@ -245,33 +245,55 @@ Script started, file is typescript
 	<tr><ti><c>boot/kernel</c></ti><ti>required</ti><ti>list</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/sources</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/config</c></ti><ti>required</ti><ti>string</ti></tr>
+	<tr><ti><c>livecd/cdfstype</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/runscript</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/archscript</c></ti><ti>required</ti><ti>string</ti></tr>
+	<tr><ti><c>livecd/empty</c></ti><ti>optional</ti><ti>list</ti></tr>
+	<tr><ti><c>livecd/rm</c></ti><ti>optional</ti><ti>list</ti></tr>
+	<tr><ti><c>livecd/unmerge</c></ti><ti>optional</ti><ti>list</ti></tr>
 	</table>
 
 	<p><b>runscripts and archscripts:</b> The <c>livecd/runscript</c> and <c>livecd/archscript</c> variables point to 
 	shell scripts that handle various chores that require direct shell interaction. For the purposes of the 
-	<c>livecd-stage2</c> target, the archscript and runscript are used to build kernel(s) for the LiveCD.</p>
+	<c>livecd-stage2</c> target, the archscript and runscript are used to build kernel(s) for the LiveCD,
+	perform some prepping and cleaning of the CD filesystem, place the bootable CD filesystem in a loopback
+	as needed, and set up the LiveCD bootloader.</p>
 	
-	<p>The reason why we have two scripts (runscript and archscript) are so that we can properly separate steps
-	arch-independent from arch-specific steps. For example, kernel building is typically handled by genkernel,
-	which provides a generic and arch-independent interface for kernel and initrd-building. Because the interface
-	is generic in nature, it can be placed in the runscript, which in turn can be shared between all architectures.</p>
+	<p>Here is an overview of the steps that are performed during the <c>livecd-stage2</c> target. Please note
+	that any references to "runscript" mean that the runscript/archscript are called (archscript runs first,
+	then optionally the runscript executes.) More detail on the interaction between runscript and archscript
+	later.</p>
+	
+	<p>
+	<ul>
+	<li><b>runscript: kernel</b> section executes with bind mounts mounted. This is where <c>genkernel</c>
+	is used to build kernels and initrds for the LiveCD.</li>
+	<li><b>runscript: preclean</b> section executes with bind mounts still mounted. This is where
+	any necessary "prep" work should be done that requires the full, non-trimmed livecd-stage2 environment intact.</li>
+	<li><b>catalyst: livecd/unmerge</b> executes with bind mounts still mounted. All specified packages
+	are unmerged from the chroot environment using <c>emerge -C</c>.</li>
+	<li><b>catalyst: bind mounts unmounted</b> for safety reasons.</li>
+	<li><b>catalyst: livecd/empty</b> executes. All specified directories are totally emptied of their contents.</li>
+	<li><b>catalyst: livecd/rm</b> executes. All specified file patterns are removed from the chroot image.</li>
+	<li><b>runscript: clean</b> executes, to perform any necessary cleaning steps (with bind mounts unmounted.)</li>
+	<li><b>runscript: bootloader</b> executes, configuring CD bootloader and copying kernels and initrds (previously built) into place.</li>
+	<li><b>runscript: cdfs</b> executes, to perform any "prep" steps on the chroot such as compression, copying it into a loopback file and placing it in the proper place on the LiveCD filesystem tree.</li>
+	</ul>
+	</p>
 
-	<p><b>run target details:</b> When the livecd-stage2 target runs, the livecd-stage1 tarball specified is unpacked to a chroot
-	directory. Then, the <c>run</c> target of the <c>archscript</c> is executed, which typically doesn't do anything except call
-	the generic
-	<c>run</c> target of the arch-independent <c>runscript</c>. The <c>run</c> target of the runscript is responsible for
+	<p>The reason why we have two scripts (runscript and archscript) are so that we can properly separate steps
+	arch-independent from arch-specific steps, which makes maintenance easier. For example, kernel building is typically handled by genkernel,
+	which provides a generic and arch-independent interface. Because genkernel supports many architectures,
+	it can be placed in the runscript, and this generic genkernel code can easily be shared among all architectures
+	simply by sharing the runscript. This works because the runscript, by design, contains no arch-specific parts.</p>
+
+	<p>The <c>kernel</c> target of the runscript is responsible for
 	building kernels, and does this by using the <path>sys-kernel/genkernel</path> package, which it merges in the
-	chroot, and then calls, passing each kernel configuration you specify in the spec file as an argument. The resultant
-	kernels and initrds are stored in the <path>/tmp/binaries</path> directory inside the chroot, which is actually a
-	bind-mount that maps to <path>[storedir]/builds/[rel_type]-[mainarch]-[rel_version]/livecd-stage2-[subarch]-[version_stamp]/binaries/</path>.
-	The <c>livecd-stage3</c> target will "pull" from this directory and place the already-built kernels and initrds on the LiveCD in the
-	proper place.</p>
-	
-	<p><b>Usage notes:</b> The most
-	recent unmasked version of genkernel will be merged by the runscript; please make sure that version 3.0.1 or later of genkernel is unmasked in your 
-	Portage tree snapshot.</p>
+	chroot, and then calls, passing each kernel configuration you specified in the spec file as arguments to each
+	<c>genkernel</c> call. The resultant
+	kernels and initrds are stored in the <path>/tmp/binaries</path> directory inside the chroot. The <c>bootloader</c>
+	section of the archscript will grab these kernels when it executes, and place them in the proper place on the LiveCD
+	filesystem tree.</p>
 	
 	<p><b>Using the kernel-related variables in the spec file:</b> For each name in the <c>boot/kernel</c> variable in the spec file (such as <c>gentoo</c>, for example), this target will
 	use <c>genkernel</c> to build a kernel and initrd. With the example <c>boot/kernel</c> entry of <c>gentoo</c>, catalyst
@@ -288,40 +310,13 @@ boot/kernel/gentoo/config: /path/to/gentoo.config
 boot/kernel/gentoo/sources: =sys-kernel/special-smp-sources-2.6.0
 boot/kernel/gentoo/config: /path/to/smp.config
 	</pre>
-	<p>Using two scripts eases maintenance and synchronizing improvements to LiveCDs between architectures. You can
+	<note>The most
+	recent unmasked version of genkernel will be merged by the runscript; please make sure that version 3.0.1 or later of genkernel is unmasked in your 
+	Portage tree snapshot.</note>
+	
+	<p>You can
 	find example runscripts and archscripts in the <path>examples/livecd/runscript</path> directory in the catalyst
 	source tree.</p>
-	
-	</body>
-	</section>
-<section>
-	<title>Livecd-stage3 Target Reference</title>
-	<body>
-	<p><b>Target name:</b> <c>livecd-stage3</c></p>
-	<p><b>Target description:</b> The third target of LiveCD building, used to create the final runtime boot
-	image and a working skeleton ISO tree.</p>
-	
-	<p><b>Requirements for building:</b> A livecd-stage2 seed tarball.</p>
-	
-	<p>The livecd-stage3 target uses the following settings:</p>
-	<table>
-	<tr><th>variable</th><th>usage</th><th>format</th></tr>
-	<tr><ti><c>subarch</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>version_stamp</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>target</c></ti><ti>required</ti><ti><c>livecd-stage1</c></ti></tr>
-	<tr><ti><c>rel_type</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>rel_version</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>snapshot</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>source_subpath</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>boot/kernel</c></ti><ti>required</ti><ti>list</ti></tr>
-	<tr><ti><c>boot/kernel/[boot/kernel:x]/sources</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>boot/kernel/[boot/kernel:x]/config</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>livecd/archscript</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>livecd/runscript</c></ti><ti>required</ti><ti>string</ti></tr>
-	<tr><ti><c>livecd/empty</c></ti><ti>optional</ti><ti>list</ti></tr>
-	<tr><ti><c>livecd/rm</c></ti><ti>optional</ti><ti>list</ti></tr>
-	<tr><ti><c>livecd/unmerge</c></ti><ti>optional</ti><ti>list</ti></tr>
-	</table>
 	
 	</body>
 	</section>
