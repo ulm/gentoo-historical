@@ -399,18 +399,6 @@
                     Installation:
                     <br/>
                     <a class="altlink" href="/doc/en/handbook/handbook.xml?part=1">Gentoo Handbook Installation Instructions</a>
-                    <br/><br/>
-                    Older Installation Guides:
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-x86-install.xml">Gentoo Linux/x86</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-ppc-install.xml">Gentoo Linux/PowerPC</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-sparc-install.xml">Gentoo Linux/Sparc</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-hppa-install.xml">Gentoo Linux/HPPA</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/gentoo-alpha-install.xml">Gentoo Linux/Alpha</a>
                    <br/><br/>
                     Resources:
                     <br/>
