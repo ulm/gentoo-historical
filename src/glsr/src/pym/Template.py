@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.3 2004/07/06 01:23:52 port001 Exp $
+# $Id: Template.py,v 1.4 2004/07/07 01:39:57 port001 Exp $
 
 import sys
 import string
@@ -11,7 +11,7 @@ import re
 import types
 
 import Config
-import Function
+from Logging import err
 
 __modulename__ = "Template"
 
@@ -31,7 +31,7 @@ class New:
             self.Contents = open(self.Template, "r").readlines()
         except IOError, errmsg:
 
-            Function.err(errmsg, __modulename__)            
+            err(errmsg, __modulename__)            
 	    sys.exit(1)
 
         return self.Contents

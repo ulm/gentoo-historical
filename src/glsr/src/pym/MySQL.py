@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.3 2004/07/06 01:16:58 port001 Exp $
+# $Id: MySQL.py,v 1.4 2004/07/07 01:39:57 port001 Exp $
 #
 
 import sys
@@ -16,7 +16,8 @@ if Config.Memcache == True:
 
 import Const
 import MySQLdb
-import Function
+from Function import start_timer, stop_timer, eval_timer
+from Logging import err, logwrite
 import Template as TemplateHandler
 
 __modulename__ = "MySQL"
@@ -28,7 +29,7 @@ def Connect():
                              passwd=Config.MySQL["passwd"],
                              db=Config.MySQL["db"])
     except OperationalError, errmsg:
-        Function.err(errmsg, __modulename__)
+        err(errmsg, __modulename__)
 	sys.exit(1)
 
     return db.cursor(MySQLdb.cursors.DictCursor), db
@@ -51,13 +52,13 @@ def Query(query, args=None, fetch="all"):
 
 
 def _InitQuery(query, args):
-    t_start = Function.start_timer()
+    t_start = start_timer()
     cursor, db = Connect()
     
     try:
         cursor.execute(query, args)
     except MySQLError, errmsg:
-        Function.err(errmsg, __modulename__)
+        err(errmsg, __modulename__)
         sys.exit(1)
 
     db.commit()
@@ -66,12 +67,12 @@ def _InitQuery(query, args):
 def _Fetch((cursor, t_start), query, args, fetch):
     if fetch == "one":
         result = cursor.fetchone()
-	Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
+	logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
     elif fetch == "none":
-        Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
+        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
         return
     else:
         result = cursor.fetchall()
-        Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
+        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
 
     return result        

@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: User.py,v 1.3 2004/07/07 01:39:57 port001 Exp $
 #
 
 from time import strftime, gmtime
@@ -15,7 +15,6 @@ __productname__ = "glsr"
 
 import MySQL
 import Config
-import Function
 from GLSRBackend import GLSRBackend as Parent
 
 class User(Parent):

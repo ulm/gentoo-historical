@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.6 2004/07/06 01:16:58 port001 Exp $
+# $Id: index.py,v 1.7 2004/07/07 01:39:57 port001 Exp $
 #
 
 import os
@@ -18,7 +18,8 @@ sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/pym")
 sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/")
 
 import Config
-import Function
+from Function import start_timer, stop_timer, eval_timer
+from Logging import logwrite
 import Session as SessionHandler
 import Template as TemplateHandler
 from User import User
@@ -31,7 +32,7 @@ __modulename__ = "admin/index"
 
 def main():
 
-    t_start = Function.start_timer()
+    t_start = start_timer()
 
     form = cgi.FieldStorage()
     page = form.getvalue("page")
@@ -107,9 +108,9 @@ def main():
 			    "CONTACT":		Config.Contact})
     FooterTemplate.Print()
 
-    Function.logwrite("Request for page '%s' completed in %.5f(s)" %
-                      (page, Function.eval_timer(t_start, Function.stop_timer())),
-                       __modulename__, "Info")
+    logwrite("Request for page '%s' completed in %.5f(s)" %
+             (page, eval_timer(t_start, stop_timer())),
+              __modulename__, "Info")
 
 if __name__ == "__main__":
     main()
