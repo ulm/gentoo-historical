@@ -137,7 +137,7 @@ def set_partitions():
 							continue
 					elif part_action == "Change type (linux, swap, etc.)":
 						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_type())
-						tmppart.set_type(answer)
+						if code == DLG_OK: tmppart.set_type(answer)
 	if d.yesno("Would you like to save changes?") == DLG_YES:
 		parts_tmp = install_profile.get_partition_tables()
 		for part in devices.keys():
