@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2004.3/hb-install-amd64-bootloader.xml,v 1.2 2005/01/11 17:27:25 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2004.3/hb-install-amd64-bootloader.xml,v 1.3 2005/02/14 15:28:42 swift Exp $ -->
 
 <sections>
 
-<version>1.16</version>
-<date>2005-01-11</date>
+<version>1.17</version>
+<date>2005-02-14</date>
 
 <section>
 <title>Making your Choice</title>
@@ -30,25 +30,122 @@ program is called a <e>bootloader</e>.
 <title>Optional: Framebuffer</title>
 <body>
 
+<!-- Verbatim copy from x86 bootloader framebuffer explanation -->
+
 <p>
-<e>If</e> you have configured your kernel with framebuffer support, you
-have to add a <c>video</c>-statement to your bootloader configuration
-file if you require framebuffer.
+<e>If</e> you have configured your kernel with framebuffer support (or you used
+<c>genkernel</c>'s default kernel configuration), you can activate it by adding
+a <c>vga</c> and/or a <c>video</c> statement to your bootloader configuration 
+file.
 </p>
 
 <p>
-For the <c>video</c>-statement, a simplified syntax is used. Most of the time
-it's sufficient to use <c>video=vesafb</c>. 
+First of all you need to know what type of framebuffer device you're using. If
+you use a Gentoo patched kernel tree (such as <c>gentoo-sources</c>) you will
+have had the possibility of selecting <c>vesafb-tng</c> as the <e>VESA driver
+type</e> (which is default for these kernel sources). If this is the case, you
+are using <c>vesafb-tng</c> and do not need to set a <c>vga</c> statement.
+Otherwise you are using the <c>vesafb</c> driver and need to set the <c>vga</c>
+statement.
 </p>
 
 <p>
-More information can be found in 
-<path>/usr/src/linux/Documentation/fb/vesafb.txt</path>.
+The <c>vga</c> statement controls the resolution and color depth of your
+framebuffer screen for <c>vesafb</c>. As stated in
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> (which gets installed
+when you install a kernel source package), you need to pass the VESA number 
+corresponding to the requested resolution and color depth to it.
 </p>
 
+<p>
+The following table lists the available resolutions and colordepths and matches
+those against the value that you need to pass on to the <c>vga</c> statement.
+</p>
+
+<table>
+<tr>
+  <ti></ti>
+  <th>640x480</th>
+  <th>800x600</th>
+  <th>1024x768</th>
+  <th>1280x1024</th>
+</tr>
+<tr>
+  <th>256</th>
+  <ti>0x301</ti>
+  <ti>0x303</ti>
+  <ti>0x305</ti>
+  <ti>0x307</ti>
+</tr>
+<tr>
+  <th>32k</th>
+  <ti>0x310</ti>
+  <ti>0x313</ti>
+  <ti>0x316</ti>
+  <ti>0x319</ti>
+</tr>
+<tr>
+  <th>64k</th>
+  <ti>0x311</ti>
+  <ti>0x314</ti>
+  <ti>0x317</ti>
+  <ti>0x31A</ti>
+</tr>
+<tr>
+  <th>16M</th>
+  <ti>0x312</ti>
+  <ti>0x315</ti>
+  <ti>0x318</ti>
+  <ti>0x31B</ti>
+</tr>
+</table>
 
 <p>
-Remember (or write down) your value; you will need it shortly.
+The <c>video</c> statement controls framebuffer display options. It needs to be
+given the framebuffer driver (<c>vesafb</c> for 2.6 kernels, or <c>vesa</c> for
+2.4 kernels) followed by the control statements you wish to enable. All
+variables are listed in <path>/usr/src/linux/Documentation/fb/vesafb.txt</path>,
+but we'll inform you about three most-used options:
+</p>
+
+<table>
+<tr>
+  <th>Control</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>ywrap</ti>
+  <ti>
+    Assume that the graphical card can wrap around its memory (i.e. continue at
+    the beginning when it has approached the end)
+  </ti>
+</tr>
+<tr>
+  <ti>mtrr</ti>
+  <ti>
+    Setup MTRR registers
+  </ti>
+</tr>
+<tr>
+  <ti><c>mode</c></ti>
+  <ti>
+    (<c>vesafb-tng</c> only)<br/>
+    Set up the resolution, color depth and refresh rate. For instance,
+    <c>1024x768-32@85</c> for a resolution of 1024x768, 32 bit color depth and a
+    refresh rate of 85 Hz.
+  </ti>
+</tr>
+</table>
+
+<p>
+The result of those two statements could be something like <c>vga=0x318
+video=vesafb:mtrr,ywrap</c> or <c>video=vesafb:mtrr,ywrap,1024x768-32@85</c>. 
+Remember (or write down) this setting; you will need it shortly.
+</p>
+
+<p>
+Now continue by installing <uri link="#grub">GRUB</uri> <e>or</e> <uri
+link="#lilo">LILO</uri>.
 </p>
 
 </body>
@@ -63,8 +160,8 @@ Remember (or write down) your value; you will need it shortly.
 <p>
 The most critical part of understanding GRUB is getting comfortable with
 how GRUB refers to hard drives and partitions. Your Linux partition
-<path>/dev/hda1</path> is called <path>(hd0,0)</path> under GRUB. Notice the 
-parenthesis around the <path>hd0,0</path> - they are required.
+<path>/dev/hda1</path> will most likely be called <path>(hd0,0)</path> under 
+GRUB. Notice the parenthesis around the <path>hd0,0</path> - they are required.
 </p>
 
 <p>
@@ -73,6 +170,8 @@ rather than one. Be aware too that with the hd devices, only hard drives are
 counted, not atapi-ide devices such as cdrom players and burners.  Also, the 
 same construct is used with scsi drives. (Normally they get higher numbers 
 than ide drives except when the bios is configured to boot from scsi devices.)
+When you ask the BIOS to boot from a different hard disk (for instance your
+primary slave), <e>that</e> harddisk is seen as <path>hd0</path>.
 </p>
 
 <p>
@@ -187,15 +286,9 @@ other words, <path>(hd0,0)/grub/splash.xpm.gz</path> is in reality
 If you need to pass any additional options to the kernel, simply add
 them to the end of the kernel command. We're already passing one option
 (<c>root=/dev/hda3</c> or <c>real_root=/dev/hda3</c>), but you can pass others 
-as well. As an example we use the <c>video</c> statement for framebuffer we 
-discussed previously:
+as well, such as the <c>video</c> statement for framebuffer as we discussed
+previously.
 </p>
-
-<pre caption = "Adding the video-statement as a kernel option">
-title=Gentoo Linux
-  root (hd0,0)
-  kernel /kernel-2.6.5-gentoo root=/dev/hda3 video=vesafb
-</pre>
 
 <p>
 <c>genkernel</c> users should know that their kernels use the same boot options
