@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License, v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.5 2003/09/18 04:57:40 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.6 2003/10/02 17:34:48 zhen Exp $
 
 # IMPORTANT NOTE:
 # This script no longer accepts an optional argument.
@@ -15,7 +15,7 @@
 # just added support for hardened profiles, hardened-gcc, etc.
 
 # (drobbins, 06 Jun 2003)
-# (zhen, 10 September 2003
+# (zhen, 02 October 2003
 
 unset STRAP_EMERGE_OPTS 
 STRAP_RUN=1
@@ -32,7 +32,8 @@ then
 	exit 1
 fi
 
-MYPROFILEDIR="`readlink -f /etc/make.profile`"
+# catalyst now supports this..
+#MYPROFILEDIR="`readlink -f /etc/make.profile`"
 if [ ! -d ${MYPROFILEDIR} ]
 then
 	echo "!!! Error:  ${MYPROFILEDIR} does not exist. Exiting."
