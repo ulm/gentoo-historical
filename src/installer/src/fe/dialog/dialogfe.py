@@ -21,6 +21,7 @@ import string
 import re
 import glob
 import os
+import platform
 
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -541,17 +542,23 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 
 #----------------------------Now for the client_config functions
 def set_arch_template():
-	template_choices = ("x86", "amd64","sparc", "alpha", "hppa", "ppc")
-	code, menuitem = d.menu("Please Select Architecture Template:",choices=dmenu_list_to_choices(template_choices))
+	subarches = { 'i386': 'x86', 'i486': 'x86', 'i586': 'x86', 'i686': 'x86', 'x86_64': 'amd64', 'parisc': 'hppa' }
+	arch = platform.machine()
+	if arch in subarches: arch = subarches[arch]
+	template_choices = ["x86", "amd64", "sparc", "alpha", "hppa", "ppc"]
+	code, menuitem = d.menu("Please Select Architecture Template:",choices=dmenu_list_to_choices(template_choices), default_item=str(template_choices.index(arch)+1))
 	if code == DLG_OK:
 		menuitem = template_choices[int(menuitem)-1]
 		client_profile.set_architecture_template(None, menuitem, None)
+
 def set_logfile():
 	code, logfile = d.inputbox("Enter the desired path for the install log:", init="/var/log/install.log")
 	if code == DLG_OK: client_profile.set_log_file(None, logfile, None)
+
 def set_root_mount_point():
 	code, rootmountpoint = d.inputbox("Enter the mount point for the chroot enviornment:", init="/mnt/gentoo")
 	if code == DLG_OK: client_profile.set_root_mount_point(None, rootmountpoint, None)
+
 def set_client_networking():
 	network_data = None
 
