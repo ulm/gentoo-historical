@@ -20,6 +20,8 @@ class Panel(GLIScreen.GLIScreen):
     columns = []
     networking = []
     active_entry = -1
+    added_devices=[]
+    gateway_set=False
     
     # Operations
     def __init__(self, controller):
@@ -59,33 +61,47 @@ This is where you setup Networking.
 	vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
 	self.networking_info_box = gtk.HBox(gtk.FALSE, 0)
-	networking_info_table = gtk.Table(5, 3, gtk.FALSE)
+	networking_info_table = gtk.Table(5, 5, gtk.FALSE)
 	networking_info_table.set_col_spacings(10)
 	networking_info_table.set_row_spacings(6)
 	
 	# Device
-	networking_info_device_label = gtk.Label("Device:")
+	networking_info_device_label = gtk.Label("Detected Devices:")
 	networking_info_device_label.set_alignment(0.0, 0.5)
 	networking_info_table.attach(networking_info_device_label, 0, 1, 0, 1)
 	self.networking_info_device = gtk.combo_box_new_text()
+	
 	# Device drop-down
 	for device in self.ethernet_devices:
 		self.networking_info_device.append_text(device)
 	self.networking_info_device.set_active(0)
 	networking_info_table.attach(self.networking_info_device, 1, 2, 0, 1)
 	
+	# or add your own device
+	networking_other_device_label=gtk.Label("or Device:")
+	networking_other_device_label.set_alignment(0.0,0.5)
+	networking_info_table.attach(networking_other_device_label,2,3,0,1)
+	self.networking_info_other_device=gtk.Entry()
+	self.networking_info_other_device.set_width_chars(5)
+	networking_info_table.attach(self.networking_info_other_device,3,4,0,1)
+	self.networking_info_device_add=gtk.Button("_Add")
+	self.networking_info_device_add.connect("clicked", self.add_device)
+	networking_info_table.attach(self.networking_info_device_add,4,5,0,1)
+	
 	# IP Address
 	networking_info_ip_label = gtk.Label("IP Address:")
 	networking_info_ip_label.set_alignment(0.0, 0.5)
 	networking_info_table.attach(networking_info_ip_label, 0, 1, 1, 2)
+	self.networking_info_ip = gtk.Entry()
+	self.networking_info_ip.set_width_chars(25)
+	networking_info_table.attach(self.networking_info_ip, 1, 2, 1, 2)
+	
 	widgets=Widgets()
 	# DHCP Checkbox
 	self.dhcp_checkbox=gtk.CheckButton("DHCP")
 	self.dhcp_checkbox.connect("toggled", self.checkbutton, "check button 1")
-	networking_info_table.attach(widgets.hBoxIt2(gtk.TRUE,0,self.dhcp_checkbox), 2, 3, 0, 1)
-	self.networking_info_ip = gtk.Entry()
-	self.networking_info_ip.set_width_chars(25)
-	networking_info_table.attach(self.networking_info_ip, 1, 2, 1, 2)
+	networking_info_table.attach(widgets.hBoxIt2(gtk.TRUE,0,self.dhcp_checkbox), 2, 3, 1, 2)
+
 	
 	# Mask
 	networking_info_mask_label = gtk.Label("Mask:")
@@ -148,7 +164,8 @@ This is where you setup Networking.
 	self.networking_info_broadcast.set_sensitive(gtk.FALSE)
 	self.networking_info_gateway.set_sensitive(gtk.FALSE)
 	self.networking_info_device.set_sensitive(gtk.FALSE)
-	
+	self.networking_info_other_device.set_sensitive(gtk.FALSE)
+	self.networking_info_device_add.set_sensitive(gtk.FALSE)
 
     def enable_all_fields(self):
 	self.networking_info_broadcast.set_text("")
@@ -163,6 +180,8 @@ This is where you setup Networking.
 	self.dhcp_checkbox.set_sensitive(gtk.TRUE)
 	self.mask.set_sensitive(gtk.TRUE)
 	self.networking_info_ip.set_sensitive(gtk.TRUE)
+	self.networking_info_other_device.set_sensitive(gtk.TRUE)
+	self.networking_info_device_add.set_sensitive(gtk.TRUE)
 
     def refresh_list_at_top(self):
 	self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
@@ -187,19 +206,23 @@ This is where you setup Networking.
 		# this is it!
 		self.networking_info_device.set_active(count)
 		
-	self.networking_info_ip.set_text(mount['host'])
-	self.mask.set_text(mount['export'])
-	self.networking_info_broadcast.set_text(mount['mountpoint'])
-	self.networking_info_gateway.set_text(mount['mountopts'])
+
 	self.networking_button_update.set_sensitive(gtk.TRUE)
 	self.networking_button_delete.set_sensitive(gtk.TRUE)
-	if(self.networking_info_ip.get_text()=="dhcp"):
+	self.networking_info_ip.set_text(str(mount['host']))
+	if(self.networking_info_ip.get_text()=="dhcp"):   
 	    self.networking_info_broadcast.set_sensitive(gtk.FALSE)
 	    self.networking_info_gateway.set_sensitive(gtk.FALSE)
 	    self.networking_info_ip.set_sensitive(gtk.FALSE)
 	    self.mask.set_sensitive(gtk.FALSE)
 	    # now check the checkbox
 	    self.dhcp_checkbox.set_active(gtk.TRUE)
+	else:
+	    self.dhcp_checkbox.set_active(gtk.FALSE)	
+	self.networking_info_ip.set_text(str(mount['host']))
+	self.mask.set_text(str(mount['export']))
+	self.networking_info_broadcast.set_text(str(mount['mountpoint']))
+	self.networking_info_gateway.set_text(str(mount['mountopts']))
 
     def new_device(self, button, data=None):
 	self.active_entry = -1
@@ -212,46 +235,63 @@ This is where you setup Networking.
 	self.enable_all_fields()
 	self.networking_info_device.grab_focus()
 
-    def update_device(self, button, data=None):
-	current_devices=[]
-	for item in self.networking:
-	    current_devices.append(item['type'])
-	    
-	if self.ethernet_devices[self.networking_info_device.get_active()] not in current_devices:
-	    if self.active_entry == -1:
-		    self.networking.append({ 'type': self.ethernet_devices[self.networking_info_device.get_active()],
-					    'host': self.networking_info_ip.get_text(), 
-					    'export': self.mask.get_text(),
-					    'mountpoint': self.networking_info_broadcast.get_text(), 
-					    'mountopts': self.networking_info_gateway.get_text() })
-		    self.active_entry = -1
-		    self.networking_button_update.set_sensitive(gtk.FALSE)
-		    self.networking_button_delete.set_sensitive(gtk.FALSE)
-	    self.refresh_list_at_top()
-	    self.disable_all_fields()
-	else:
-	    # update it
-    	    widgets=Widgets()
-	    msgdialog=widgets.error_Box2("Duplicate Entry","Replace existing data?")
-	    result = msgdialog.run()
-	    if result == gtk.RESPONSE_ACCEPT:
-		msgdialog.destroy()
-		self.networking[self.active_entry]['type'] = self.ethernet_devices[self.networking_info_device.get_active()]
-		self.networking[self.active_entry]['host'] = self.networking_info_ip.get_text()
-		self.networking[self.active_entry]['export'] = self.mask.get_text()
-		self.networking[self.active_entry]['mountpoint'] = self.networking_info_broadcast.get_text()
-		self.networking[self.active_entry]['mountopts'] = self.networking_info_gateway.get_text()
+    def update_device(self, button, data=None):   
+	if self.gateway_set==False or (self.gateway_set==True and (self.networking_info_gateway.get_text()=="" or self.networking_info_gateway.get_text()=="NOTSET" or self.networking_info_gateway.get_text()=="None")):
+	    if self.ethernet_devices[self.networking_info_device.get_active()] not in self.added_devices:
+		if self.active_entry == -1:
+			if self.networking_info_gateway.get_text()=="": self.networking_info_gateway.set_text("NOTSET")
+			else: self.gateway_set=True
+			self.networking.append({ 'type': self.ethernet_devices[self.networking_info_device.get_active()],
+						'host': self.networking_info_ip.get_text(), 
+						'export': self.mask.get_text(),
+						'mountpoint': self.networking_info_broadcast.get_text(), 
+						'mountopts': self.networking_info_gateway.get_text() })
+			self.active_entry = -1
+			self.networking_button_update.set_sensitive(gtk.FALSE)
+			self.networking_button_delete.set_sensitive(gtk.FALSE)
+			self.added_devices.append(self.ethernet_devices[self.networking_info_device.get_active()])
 		self.refresh_list_at_top()
 		self.disable_all_fields()
 	    else:
-		msgdialog.destroy()
-		print "nothing changed"
+		# update it
+		widgets=Widgets()
+		msgdialog=widgets.error_Box2("Duplicate Entry","Replace existing data?")
+		result = msgdialog.run()
+		if result == gtk.RESPONSE_ACCEPT:
+		    msgdialog.destroy()
+		    if self.networking_info_gateway.get_text()=="": self.networking_info_gateway.set_text("NOTSET")
+		    else: self.gateway_set=True
+		    self.networking[self.active_entry]['type'] = self.ethernet_devices[self.networking_info_device.get_active()]
+		    self.networking[self.active_entry]['host'] = self.networking_info_ip.get_text()
+		    self.networking[self.active_entry]['export'] = self.mask.get_text()
+		    self.networking[self.active_entry]['mountpoint'] = self.networking_info_broadcast.get_text()
+		    self.networking[self.active_entry]['mountopts'] = self.networking_info_gateway.get_text()
+		    self.refresh_list_at_top()
+		    self.disable_all_fields()
+		else:
+		    msgdialog.destroy()
+		    print "nothing changed"
+	else:
+	        widgets=Widgets()
+		msgdialog=widgets.error_Box2("Duplicate Entry","You already have a default gateway set!")
+		result = msgdialog.run()
+		if result == gtk.RESPONSE_ACCEPT:
+		    msgdialog.destroy()
+		else:
+		    msgdialog.destroy()
 
     def delete_device(self, button, data=None):
+	self.networking_info_device.set_sensitive(gtk.TRUE)
+	#print self.networking_info_device.get_active()
+	self.added_devices.remove(self.ethernet_devices[self.networking_info_device.get_active()])
+	self.networking_info_device.set_sensitive(gtk.FALSE)
+	#print self.added_devices
 	self.networking.pop(self.active_entry)
+	#print self.networking
 	self.active_entry = -1
 	self.networking_button_update.set_sensitive(gtk.FALSE)
 	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	#self.added_devices.remove(self.ethernet_devices[self.networking_info_device.get_active()])
 	self.refresh_list_at_top()
 	self.disable_all_fields()
 
@@ -261,25 +301,41 @@ This is where you setup Networking.
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-	#self.networking = copy.deepcopy(self.controller.install_profile.get_network_mounts())
 	self.refresh_list_at_top()
+	self.disable_all_fields()
+	# load the saved data ( if any )
+	interfaces=self.controller.install_profile.get_network_interfaces()
+	print interfaces
+	default_gateway=self.controller.install_profile.get_default_gateway()
+	for count in range(len(interfaces.keys())):
+	    print "in loading phase"
+	    if interfaces.keys()[count] not in self.ethernet_devices:
+		self.ethernet_devices.append(interfaces.keys()[count])
+	    if interfaces.keys()[count] not in self.added_devices:
+		host,export,mountpoint=interfaces[interfaces.keys()[count]]
+		device,mountopts=default_gateway
+		if device == interfaces.keys()[count]:
+		    self.networking.append({ 'type':interfaces.keys()[count],'host':host,'export':export,'mountpoint':mountpoint,'mountopts':mountopts})
+		    self.gateway_set=True
+		else: self.networking.append({ 'type':interfaces.keys()[count],'host':host,'export':export,'mountpoint':mountpoint,'mountopts':"NOTSET"})
+		self.added_devices.append(interfaces.keys()[count])		
+		self.refresh_list_at_top()
 	self.disable_all_fields()
 
     def deactivate(self):
-	#self.controller.install_profile.set_network_mounts(self.networking)
 	# fix the structure to correctly get into structure for setting
 	interfaces={}
 	for count in range(len(self.networking)):
-	    interfaces[self.networking[count]['type']]=(self.networking[count]['host'],self.networking[count]['export'],self.networking[0]['mountpoint'])
-	#self.networking[0]['mountopts']
+	    interfaces[self.networking[count]['type']]=(self.networking[count]['host'],self.networking[count]['export'],self.networking[count]['mountpoint'])
 	print interfaces
 	return_value = False
 	try:
 	    self.controller.install_profile.set_network_interfaces(interfaces)
 	    for count in range(len(self.networking)):
-		if interfaces[count]['mountopts']!="":
-		    # if its not blank, its the default gateway!
+		if self.networking[count]['mountopts']!="NOTSET":
+		    # if its not blank, set a default gateway!
 		    self.controller.install_profile.set_default_gateway(None,self.networking[count]['mountopts'],{'interface':self.networking[count]['type']})
+		    print ""
 	    return_value = True
 	except:
 	    widgets=Widgets()
@@ -315,4 +371,8 @@ This is where you setup Networking.
 	else:
 	    self.networking_info_ip.set_text("")
 	    self.enable_all_fields()
-	    
+    
+    def add_device(self,widget,data=None):
+	self.ethernet_devices.append(self.networking_info_other_device.get_text())
+	self.networking_info_device.append_text(self.networking_info_other_device.get_text())
+	self.networking_info_device.set_active(len(self.ethernet_devices)-1)
