@@ -17,11 +17,11 @@
   </tr>
   <tr>
     <td height="25" align="left" valign="center" bgcolor="#000000"><span class="menu">
-      <a class="menulink" href="index.py?page=main">Main</a> |
-      <a class="menulink" href="index.py?page=stat">Statistics</a> |
-      <a class="menulink" href="index.py?page=news">News Announcements</a> |
-      <a class="menulink" href="index.py?page=user">User Management</a>
-      | <a class="menulink" href="index.py?page=script">Script Management</a>
+      <a class="menulink" href="index.py?domain=admin&page=main">Main</a> |
+      <a class="menulink" href="index.py?domain=admin&page=stat">Statistics</a> |
+      <a class="menulink" href="index.py?domain=admin&page=news">News Announcements</a> |
+      <a class="menulink" href="index.py?domain=admin&page=user">User Management</a>
+      | <a class="menulink" href="index.py?domain=admin&page=script">Script Management</a>
       
       {IF USER_ALIAS != ""}
       | <a class="menulink" href="index.py?page=logout">Logout [{USER_ALIAS}]</a>
