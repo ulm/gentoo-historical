@@ -427,13 +427,28 @@ def set_additional_users():
 				continue
 				
 			elif menuitem2 == "Shell":
-				d.msgbox("Shell")
+				code, shell = d.inputbox("Enter the shell you want the user to use.  Get it right b/c there's no error checking!")
+				if code != DLG_OK: continue
+				for user in users:
+					if user[0] == menuitem: user[3] = shell
+				
 			elif menuitem2 == "Home Directory":
-				d.msgbox("homedir")
+				code, homedir = d.inputbox("Enter the user's home directory.  Get it right b/c there's no error checking!")
+				if code != DLG_OK: continue
+				for user in users:
+					if user[0] == menuitem: user[4] = homedir
+				
 			elif menuitem2 == "UID":
-				d.msgbox("UID")
+				code, uid = d.inputbox("Enter the user's UID. ")
+				if code != DLG_OK: continue
+				if type(uid) != int: continue
+				for user in users:
+					if user[0] == menuitem: user[4] = uid
 			elif menuitem2 == "Comment":
-				d.msgbox("Comment")
+				code, comment = d.inputbox("Enter the user's comment.")
+				if code != DLG_OK: continue
+				for user in users:
+					if user[0] == menuitem: user[4] = comment
 			elif menuitem2 == "Delete":
 				if d.yesno("Are you sure you want to delete the user " + menuitem + "?") == DLG_YES:
 					for i in range(0, len(users)):
