@@ -16,7 +16,7 @@ This guide will show you how to set up the Advanced Linux Sound Architecture (AL
 In addition to the Gentoo Linux Desktop Configuration Guide, this guide is supposed to give you more information on this subject. </abstract>
 
 <version>1.2</version>
-<date>09 February 2003</date>
+<date>18 February 2003</date>
 
 <chapter>
 <title>Introduction</title>
@@ -82,7 +82,7 @@ However, some vendors may provide binary-only packages.
 	<title>Kernel modules</title>
 <body>
 <p>
-Since we're still using 2.4.x kernel sources, we'll have to compile kernel modules and ALSA modules separately.
+Since we're still using 2.4.x kernel sources, we'll have to compile kernel modules and ALSA modules separately. People who are using a 2.5.x kernel can do this from within their kernel configuration, since the ALSA modules are included in the kernel sources and should be built there.
 </p>
 <p>
 First we'll make sure that our kernel configuration is ready for use with ALSA. 
@@ -138,7 +138,7 @@ in <path>/lib/modules/*/video</path> and won't get deleted by a <c>make modules 
 <p>
 Now it's time to install the ALSA drivers for your soundcard(s). If your soundcard is PCI, you can find out the name
 and type of your soundcard by looking at the output of /proc/pci
-<pre>#<c>grep audio /proc/pci</c></pre>
+<pre># <c>grep audio /proc/pci</c></pre>
 </p>
 
 <p>
@@ -153,9 +153,9 @@ We could simply do an <c>emerge alsa-driver</c> now, this would compile and inst
 </p>
 <p>
 However, to save some time, lookup the <e>Module Name</e> of your soundcard(s) on the 
-<uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> under the <e>Install</e> section. 
-Mine is <c>EMU10K1</c>, since I have an SBlive! soundcard.
-We'll set ALSA_CARDS environment to this value before emerging, so emerge will only compile the drivers we need.
+<uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> by following the <e>Details</e> link in the <e>Driver and Docs</e> column in the row of the chipset of your soundcard. 
+Mine is <c>snd-emu10k1</c>, since I have an SBlive! soundcard, with the <e>EMU10K1</e> chipset.
+We'll set ALSA_CARDS environment to the value of the module name before emerging (but without the snd prefix), so emerge will only compile the drivers we need.
 </p>
 
 <p>
@@ -164,6 +164,11 @@ We'll set ALSA_CARDS environment to this value before emerging, so emerge will o
 </pre>
 </p>
 <p>
+<note>
+You can also add this value in <path>/etc/make.conf</path>, so when you have to emerge the alsa-driver later on you can just run <c>emerge alsa-driver</c>.
+For example, like this: <c>echo 'ALSA_CARDS="emu10k1"' >> /etc/make.conf</c>
+</note>
+
 <note>
 When you want to install ALSA drivers for more than one soundcard, you could set ALSA_CARDS to a space-separated list
 of drivers; like this: <c>env ALSA_CARDS='emu10k1 intel8x0 ens1370' emerge alsa-driver</c>
@@ -196,23 +201,18 @@ Check the ALSA portion <e>at the bottom of the file</e>.
 By tweaking this line you can specify the max number of soundcards you have (generally, just one).
 </p>
 <p>
-<pre caption="At the top of /etc/modules.d/alsa">
-# Alsa 0.9.X kernel modules' configuration file.
-# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.7 2003/02/09 23:27:14 zhen Exp $
+<pre caption="At the bottom of /etc/modules.d/alsa">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
 
-# ALSA portion
-alias char-major-116 snd
-<c>options snd major=116 cards_limit=1</c>
-# OSS/Free portion
-alias char-major-14 soundcore
-
-##
-## IMPORTANT:
+# Set this to the correct number of cards.
+<c>options snd cards_limit=1</c>
 </pre>
 </p>
 <p>
 Now we'll specify the sounddriver(s) ALSA should use. In the same file, edit like this:
-<pre caption="A bit lower in /etc/modules.d/alsa">
+<pre caption="In /etc/modules.d/alsa">
 ## and then run `update-modules' command.
 ## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
 ##
@@ -236,8 +236,8 @@ of the <uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/alsa-howto.htm
 </note>
 </p>
 <p>
-Last thing to do in this file, at the very bottom, check if these lines are there and uncommented:
-<pre caption="at the very bottom of /etc/modules.d/alsa">
+Last thing to do in this file, almost at the end, check if these lines are there and uncommented:
+<pre caption="Near the end of /etc/modules.d/alsa">
 alias /dev/mixer snd-mixer-oss
 alias /dev/dsp snd-pcm-oss
 alias /dev/midi snd-seq-oss
@@ -255,10 +255,7 @@ Running <c>update-modules</c> here will insert the data from <path>/etc/modules.
 <p>
 You should also verify that /etc/devfsd.conf has the alsa devices and permissions correctly registered.
 </p>
-<pre>
-# nano -w /etc/devfsd.conf
-</pre>
-<pre>
+<pre caption="/etc/devfsd.conf">
 # ALSA/OSS stuff
 # Comment/change these if you want to change the permissions on
 # the audio devices
@@ -348,7 +345,7 @@ When you reboot your system, the <e>alsasound</e> init script will properly save
 have to be installed again, since it will put the alsa modules in 
 <path>/lib/modules/*/kernel/sound/pci/</path>.</p>
 <pre caption="needed after each kernel compile">
-emerge alsa-driver
+# <c>emerge alsa-driver</c>
 </pre>
 </body>
 </section>
@@ -369,7 +366,7 @@ You could check these for additional info:
 </p>
 <p>
 <ul>
-<li><uri link="http://www.gentoo.org/doc/desktop.html">The Gentoo Linux Desktop Configuration Guide</uri></li>
+<li><uri link="http://www.gentoo.org/doc/en/desktop.xml">The Gentoo Linux Desktop Configuration Guide</uri></li>
 <li><uri link="http://www.alsa-project.org">ALSA Project Homepage</uri></li>
 <li><uri link="http://www.alsa-project.org/documentation.php3">ALSA Users Documentation</uri></li>
 <li><uri link="http://www.djcj.org">ALSA Howto's and FAQ's</uri></li>
