@@ -45,14 +45,9 @@
           <func:result select="concat($Y, '. ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $D, '.')"/>
         </xsl:when>
 
-        <!-- Japanese -->
-        <xsl:when test="$lingua='ja'">
+        <!-- Chinese / Japanese -->
+        <xsl:when test="$lingua='zh_cn' or $lingua='zh_tw' or $lingua='ja'">
           <func:result select="concat($Y, '年 ', $M, '月 ', $D, '日 ')"/>
-        </xsl:when>
-
-        <!-- Chinese -->
-        <xsl:when test="$lingua='zh_cn' or $lingua='zh_tw'">
-          <func:result select="concat($Y, '年 ', $M, '月 ', $D, '號 ')"/>
         </xsl:when>
 
         <!-- Korean -->
