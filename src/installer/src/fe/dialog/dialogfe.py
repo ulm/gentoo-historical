@@ -5,6 +5,7 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
+import GLIStorageDevice
 import sys
 import crypt
 import random
@@ -14,6 +15,8 @@ import copy
 import signal
 #import pprint
 import time
+import string
+import re
 
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -57,19 +60,14 @@ def get_random_salt():
         return c1 + c2
 
 def set_partitions():
-	import string, re
-	try:
-		import GLIStorageDevice
-	except:
-		d.msgbox("Sorry, you don't have agaffney's kickass GLIStorageDevice module")
-		return
-
-	if d.yesno("If you continue, your previous changes (if any) will be reset. Continue?") != DLG_YES: return
-	use_existing = (d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
-
+	if not d.yesno("This will reset any changes you have made. Continue?") == DLG_YES: return
+#	devices = copy.deepcopy(install_profile.get_partition_tables())
 	devices = {}
 	drives = GLIStorageDevice.detect_devices()
 	drives.sort()
+#	use_existing = False
+#	if not devices:
+	use_existing = (d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
 	for drive in drives:
 		devices[drive] = GLIStorageDevice.Device(drive)
 		if use_existing: devices[drive].set_partitions_from_disk()
@@ -86,19 +84,26 @@ def set_partitions():
 			if re.compile("^Free Space").match(part_to_edit) != None:
 				new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part_to_edit).groups()
 				code, new_start2 = d.inputbox("New partition start (minimum " + new_start + ")?", init=new_start)
+				if code != DLG_OK: continue
 				code, new_end2 = d.inputbox("New partition end (maximum " + new_end + ")?", init=new_end)
+				if code != DLG_OK: continue
 				minor = devices[drive_to_partition].get_partition_at(int(new_start) - 1) + 1
-				code, id = d.inputbox("New partition's type?", init="ext3")
+				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
+				code, type = d.menu("Type for new partition", choices=dmenu_list_to_choices(part_types))
+				type = part_types[int(type)-1]
+				if type == "other":
+					code, type = d.inputbox("New partition's type?")
+				if code != DLG_OK: continue
 				if (int(new_start2) < int(new_start)) or (int(new_end2) > int(new_end)):
 					d.msgbox("Cannot create new partition because it is not within the bounds of the selected free space.")
 					continue
-				devices[drive_to_partition].add_partition(devices[drive_to_partition].get_free_minor_at(int(new_start2), int(new_end2)), int(new_start2), int(new_end2), id)
+				devices[drive_to_partition].add_partition(devices[drive_to_partition].get_free_minor_at(int(new_start2), int(new_end2)), int(new_start2), int(new_end2), type)
 			else:
 				while 1:
 					tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part_to_edit).groups()
 					tmppart = partitions[int(tmpminor)]
 					tmptitle = tmpdevice + tmpminor + ": " + str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-					menulist = ["Delete", "Resize", "Change type (linux, swap, etc.)"]
+					menulist = ["Delete", "Mount Point", "Mount Options"]
 					code, part_action = d.menu(tmptitle, choices=dmenu_list_to_choices(menulist), cancel="Back")
 					if code != DLG_OK: break
 					part_action = menulist[int(part_action)-1]
@@ -108,30 +113,15 @@ def set_partitions():
 							tmpdev = tmppart.get_device()
 							tmpdev.remove_partition(int(tmpminor))
 							break
-					elif part_action == "Resize":
-						min_end = tmppart.get_min_cylinders_for_resize()
-						max_end = tmppart.get_max_cylinders_for_resize()
-						tmptitle = "Resize " + part_to_edit + " (minimum end: " + str(min_end) + ", maximum end: " + str(max_end) + ")"
-						tmpinit = str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-						code, answer = d.inputbox(tmptitle, init=tmpinit)
-						if answer == None: continue
-						new_start, new_end = re.compile("^(\d+)\s*-\s*(\d+)$").match(answer).groups()
-						if int(new_end) < min_end:
-							d.msgbox("New end specified is too small")
-							continue
-						if int(new_end) > max_end:
-							d.msgbox("New end specified is too large")
-							continue
-						if not tmppart.resize(int(new_start), int(new_end)):
-							d.msgbox("Cannot resize partition because the new size conflicts with an existing partition.")
-							continue
-					elif part_action == "Change type (linux, swap, etc.)":
-						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_type())
-						if code == DLG_OK: tmppart.set_type(answer)
+					elif part_action == "Mount Point":
+						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						if code == DLG_OK: tmppart.set_mountpoint(answer)
+					elif part_action == "Mount Options":
+						code, answer = d.inputbox("Enter a type for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						if code == DLG_OK: tmppart.set_mountopts(answer)
 	if d.yesno("Would you like to save changes?") == DLG_YES:
-		parts_tmp = install_profile.get_partition_tables()
+		parts_tmp = {}
 		for part in devices.keys():
-			if GLIUtility.is_file(part) and parts_tmp.has_key(part): del parts_tmp[part]
 			parts_tmp[part] = devices[part].get_install_profile_structure()
 		install_profile.set_partition_tables(parts_tmp)
 
@@ -635,7 +625,7 @@ while 1:
 	for item in fn:
 		menu_list.append(item['text'])
 	menu_list.append("Install!")
-	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=30, menu_height=18, cancel="Exit")
+	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=25, menu_height=18, cancel="Exit")
 	if code != DLG_OK:
 		if d.yesno("Do you really want to exit before the install is complete?") == DLG_YES:
 			if d.yesno("Do you want to save the InstallProfile XML file?") == DLG_YES:
@@ -654,14 +644,6 @@ while 1:
 		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
 		cc.set_install_profile(install_profile)
 		cc.start_install()
-		# This next line gives the ClientController time to actually get to the install step loop
-#		while 1:
-#			notification = cc.getNotification()
-#			if notification == None:
-#				time.sleep(1)
-#				continue
-#			if notification.get_type() == "int" and notification.get_data() == GLIClientController.NEXT_STEP_READY:
-#				break
 		d.gauge_start("Installation Started!", title="Installation progress")
 		num_steps_completed = 1
 		while 1:
