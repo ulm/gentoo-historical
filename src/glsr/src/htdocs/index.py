@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.19 2004/11/07 22:53:55 port001 Exp $
+# $Id: index.py,v 1.20 2004/11/09 18:56:22 port001 Exp $
 #
 
 """
@@ -42,6 +42,7 @@ import Session as SessionHandler
 import Template as TemplateHandler
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
+from Threading import Threader, wait_threads
 from Function import start_timer, stop_timer, eval_timer
 
 from site_modules import Redirect
@@ -90,6 +91,17 @@ class PageDispatch:
                 self._user_detail["alias"] = self._ThisUser.GetAlias()
                 self._ThisUser.SetLoggedIn()
 
+    def _load_module(self, module):
+
+        module_object = None
+
+        if self._domain == "admin":
+            module_object = __import__("site_modules.admin.%s" % module, globals(), locals(), [module])
+        else:
+            module_object = __import__("site_modules.%s" % module, globals(), locals(), [module])
+
+        setattr(__main__, module, vars(module_object)[module])
+
     def select_module(self):
 
         module_list = []
@@ -116,16 +128,16 @@ class PageDispatch:
 
             for module in site_modules.admin.__all__:
                 module_list.append(module)
-                module_object = __import__("site_modules.admin.%s" % module, globals(), locals(), [module])
-                setattr(__main__, module, vars(module_object)[module])
+                Threader(self._load_module, module)
         else:
             import site_modules
             self._failover = site_modules.failover
 
             for module in site_modules.__all__:
                 module_list.append(module)
-                module_object = __import__("site_modules.%s" % module, globals(), locals(), [module])
-                setattr(__main__, module, vars(module_object)[module])
+                Threader(self._load_module, module)
+        
+        wait_threads()
 
         for module in module_list:
 

@@ -3,12 +3,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Threading.py,v 1.2 2004/11/09 18:01:20 port001 Exp $
+# $Id: Threading.py,v 1.3 2004/11/09 18:56:22 port001 Exp $
 #
 
 __modulename__ = "Threading"
 
 from threading import Thread, Condition
+import State
 
 class Threader:
     """ A class for running functions in seperate threads.
@@ -24,6 +25,8 @@ class Threader:
         self._condition = Condition()
         self._thread = Thread(target=self._wrapper, args=(func, args))
 
+        State.ActiveThreads += 1
+
         self._run_thread()
 
     def _run_thread(self):
@@ -37,3 +40,11 @@ class Threader:
         self._retval = func(*args)
         self._condition.notify()
         self._condition.release()
+        State.ActiveThreads -= 1
+
+def wait_threads():
+
+    while 1:
+        # FIXME: Implement a timeout
+        if State.ActiveThreads == 0:
+            return
