@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.68 2005/03/25 05:30:28 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.69 2005/03/25 06:32:53 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -85,6 +85,11 @@ class ArchitectureTemplate:
 		# These need to be changed to pull values from the make.conf stuff
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
+		make_conf = self._install_profile.get_make_conf()
+		if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
+		if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile)
+		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfle=self._compile_logfile)
 		packages = [word for word in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if "/" in word]
 		for pkg in packages:
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
@@ -403,7 +408,7 @@ class ArchitectureTemplate:
 #		if kernel_pkg:
 		if kernel_pkg == "livecd-kernel":
 			PKGDIR = "/usr/portage/packages"
-			PORTAGE_TMPDIR = "/var/tmp/portage"
+			PORTAGE_TMPDIR = "/var/tmp"
 			make_conf = self._install_profile.get_make_conf()
 			if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
 			if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
