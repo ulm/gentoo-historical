@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/en/gentoo-pda.xml">
-  <title>Handspring Visor Guide</title>
+  <title>Gentoo Linux PDA/PIM Guide</title>
   <author title="Author">
     <mail link="zhen@gentoo.org">John P. Davis</mail>
   </author>
-  <author title="Author">Steven Hay</author>
+  <author title="Contributor">Steven Hay</author>
   <abstract>This guide covers the configuration of many popular PDAs for
 use under Gentoo Linux.
 </abstract>
@@ -15,8 +14,16 @@ use under Gentoo Linux.
   <chapter>
     <title>PDA Independent Setup</title>
     <section>
-      <title>USB Kernel Configuration</title>
+      <title>Connection Configuration</title>
       <body>
+	  <p>The first thing that must be done before any information management is done, is getting your PDA to talk
+	  to your computer.
+	  </p>
+	  </body>
+	  </section>
+	  <section>
+	  <title>USB Connection</title>
+	  <body>
         <p>The first thing you must do is see if your kernel supports your USB
 hardware properly, and if not, install the appropriate drivers.  This
 HOWTO assumes that you know the basics of configuring a kernel.</p>
@@ -67,7 +74,7 @@ potentially insecure.</p>
       </body>
     </section>
     <section>
-      <title>Serial Configuration</title>
+      <title>Serial Connection</title>
       <body>
         <p>I'll assume your Palm cradle plugs into the first serial port
 (/dev/ttyS0, or /dev/tts/0 in &quot;devfs&quot; notation).
@@ -107,8 +114,102 @@ manually because it will stop running.</p>
 </pre>
       </body>
     </section>
+
+<section>
+<title>USB Internet via <i>usbd</i> <i>Sharp Zaurus owners only</i></title>
+<body>
+<p>The Zaurus has the handy feature of being able to connect to your computer like a device on the network, but it does
+not require a network card (NIC). All that you need is your Zaurus' USB cradle, and the <i>usbd</i> kernel module.
+</p>
+
+<note>Most of this information is derived from <uri>http://www.zauruszone.com/howtos/lc_generic.shtml</uri>.
+I give much thanks to Sharp's Developer website for their willingness to work with the Open Source community.
+</note>
+
+<p>The first thing that has to be done is the kernel patch. The <i>usbd</i> driver is a patch file that is patched against
+a kernel tree, and then enabled during kernel configuration. </p>
+
+<pre caption="Getting and Installing the usbd kernel patch">
+# <c>cd /usr/src</c>
+# <c>wget http://www.zauruszone.com/howtos/downloads/usbdnet-2.4.18-patch.gz</c>
+<comment>Patch for kernel 2.4.18</comment>
+# <c>wget http://www.zauruszone.com/howtos/downloads/usbdnet-2.4.19-patch.gz</c>
+<comment>Patch for kernel 2.4.19</comment>
+# <c>wget http://www.zauruszone.com/howtos/downloads/usbdnet-2.4.20-patch.gz</c>
+<comment>Patch for kernel 2.4.20</comment>
+
+<comment>Now, patch the kernel, where 2.4.x is the patch that corresponds to your kernel version</comment>
+# <c>zcat usbdnet-2.4.x.patch.gz | patch -p0</c>
+</pre>
+
+<p>Once that is done, configure your kernel and add these options:</p>
+
+<pre caption="Kernel Configuration">
+<comment>While in <path>/usr/src/linux</path></comment>
+# <c>make menuconfig</c>
+In "Code maturity level options", select "Prompt for development and/or incomplete code/drivers"
+In "USB support", section "USB Network adaptors", select (as a module) "USBD Network (Encapsulated) Host-to-Host Link (EXPERIMENTAL)"
+Then enter 04dd in USBD Network idVendor and 8004 in USBD Network idProduct
+</pre>
+
+<p>It does not matter if the <i>usbd</i> module is built as a module or into the kernel. If you do build it as
+a module, make sure that you load it after you reboot. Additionally, make sure that you have the necessary USB
+information built into your kernel, as noted above.
+</p>
+
+<p>After your kernel is configured and you have rebooted, it is time to see
+if the patch has worked and you are in business.
+</p>
+ 
+<p>After turning your Zaurus on, insert it into the cradle and hit the sync button. 
+If you check <path>/var/log/messages</path>, you should see some information like this: </p>
+
+<pre caption="/var/log/messages output">
+# <c>tail -f /var/log/messages</c>
+<comment>output</comment>
+hub.c: USB new device connect on bus1/1, assigned device number 38
+usb.c: USB device 38 (vend/prod 0x4dd/0x8004) is not claimed by any active driver.
+v0.4b sl@lineo.com, tbr@lineo.com
+usbdnet.c: v0.4b sl@lineo.com, tbr@lineo.com
+usbdnet.c: USB Host to Device Network - for Linux USB Devices using MDLM/CDC
+usb.c: registered new driver usbdnet
+</pre>
+
+<p>If all goes well with that step, move on to loading the network device:</p>
+
+<pre caption="Loading the USB network device">
+# <c>ifconfig -a</c>
+</pre>
+
+<p>One of the adapters, namely <i>usb0</i> should show up in the list</p>
+
+<p>Now it is time to setup the network on the Zaurus. USB Networking is similar to PPP in that each device on either
+end gets an IP address. The IP address on the Zaurus is set via the network setup tool. If it is not "192.168.129.201"
+then use the given IP adddress when trying to ping the Zaurus below.
+</p>
+
+<p>If when you put the Zaurus in the cradle an interface other then usb0 is created, replace all usb0 instances with that interface
+name for this section of the howto. You should be able to configure the device using the following commands: </p>
+
+<pre caption="Configuring the Zaurus">
+<comment>This is entered into your desktop's command line</comment>
+# <c>ifconfig usb0 192.168.129.1 netmask 255.255.255.255 up </c>
+# <c>route add -host 192.168.129.201 usb0 </c>
+</pre>
+
+<p>Now, try to ping the Zaurus, <c>ping 192.168.129.201</c>, if you've got a reply then you are sucessfully connected!
+</p>
+
+<note>The above steps will only get your desktop talking to the Zaurus for syncing purposes. If you
+wish to connect to the internet from the Zaurus via the USB cradle, please consult the 
+<uri link="http://www.zauruszone.com/howtos/lc_generic.shtml">Sharp Zaurus Developer</uri> website.
+</note>
+
+</body>
+</section>
+	
     <section>
-      <title>Miscellaneous Gentoo Procedures</title>
+	<title>Gentoo Procedures</title>
       <body>
         <p>Before compiling any programs that you will be using for your PDA, it is a good idea
 to add the <e>pda</e> USE variable to <path>/etc/make.conf</path>. Doing this will ensure
