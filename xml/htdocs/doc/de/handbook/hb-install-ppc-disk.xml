@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- English CVS Version: 1.5 -->
+<!-- English CVS Version: 1.8 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-ppc-disk.xml,v 1.1 2004/04/24 22:42:27 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-ppc-disk.xml,v 1.2 2004/06/20 16:14:52 dertobi123 Exp $ -->
 
 <sections>
 <section>
@@ -74,6 +74,7 @@ in diesem Handbuch benutzen:
 <tr>
   <th>Partition NewWorld</th>
   <th>Partition OldWorld</th>
+  <th>Partition Pegasos</th>
   <th>Dateisystem</th>
   <th>Größe</th>
   <th>Beschreibung</th>
@@ -81,6 +82,7 @@ in diesem Handbuch benutzen:
 <tr>
   <ti><path>/dev/hda1</path></ti>
   <ti>(nicht benötigt)</ti>
+  <th>(nicht anwendbar)</th>
   <ti>(bootstrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
@@ -88,12 +90,14 @@ in diesem Handbuch benutzen:
 <tr>
   <ti><path>/dev/hda2</path></ti>
   <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda1</path></ti>
   <ti>(swap)</ti>
   <ti>512M</ti>
   <ti>Swap Partition</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/hda2</path></ti>
   <ti><path>/dev/hda2</path></ti>
   <ti>ext3</ti>
   <ti>Rest der Festplatte</ti>
@@ -104,8 +108,9 @@ in diesem Handbuch benutzen:
 <p>
 Wenn Sie daran interessiert sind zu erfahren, wie groß eine Partition sein
 sollte, oder auch wieviele Partitionen (oder Volumes) Sie benötigen, lesen
-Sie weiter. Anderenfalls fahren Sie nun mit dem <uri link="#fdisk">Partitionieren Ihrer
-Festplatte</uri> fort.
+Sie weiter. Anderenfalls fahren Sie nun mit dem <uri link="#fdisk">Standard: Partitionieren Ihrer
+Festplatte</uri> oder <uri link="#parted">Alternativ: Benutzen von parted
+(Pegasos) zur Partitionierung</uri>.
 </p>
 
 </body>
@@ -163,7 +168,7 @@ Speicherplatz auf der einen Partition und keinen auf einer anderen frei hat.
 </subsection>
 </section>
 <section id="#fdisk">
-<title>Partitionerung der Festplatte</title>
+<title>Standard: Partitionerung der Festplatte</title>
 <body>
 
 <p>
@@ -219,6 +224,75 @@ Abschliessend schreiben Sie die Partitionstabelle mit <c>w</c> und beenden
 <p>
 Nachdem Ihre Partitionen nun erstellt sind, können Sie mit dem
 <uri link="#filesystems">Erstellen der Dateisysteme</uri> fortfahren.
+</p>
+
+</body>
+</section>
+<section id="parted">
+<title>Benutzen von parted (Pegasos) zur Partitionierung</title>
+<body>
+
+<p>
+Starten Sie <c>parted</c>:
+</p>
+
+<pre caption="parted Starten">
+# <i>parted /dev/hda</i>
+</pre>
+
+<p>
+Wenn die Festplatte unpartitioniert ist führen sie <c>mklabel amiga</c> aus, um
+ein neues Disklabel für diese Festplatte zu erstellen.
+</p>
+
+<p>
+Sie können in parted jederzeit <c>print</c> eingeben um die aktuelle
+Partitionstabelle anzuzeigen. Ihre Änderungen sind ungespeichert, solange bis
+Sie die Anwendung beenden. Sie können parted jederzeit mit <c>Ctrl-c</c>
+abbrechen, wenn sich Ihre Partitionierungsvorstellungen geändert haben.
+</p>
+
+<p>
+Wenn Sie auf Ihrem Pegasos auch MorphOS installieren möchten, erstellen Sie ein
+affs1 Dateisystem namens "BIO" (BI zero) um Anfang der Festplatte. 50MB sollten
+mehr als genug sein, um den MorphOS Kernel unterzubringen. Wenn Sie einen
+Pegasos haben und reiserfs, xfs oder jfs benutzen möchten, müssen Sie Ihren
+Linux Kernel ebenfalls auf dieser Partition ablegen (Der Pegasos II kann von
+ext2/ext3 Laufwerken booten). Um diese Partition zu erstellen führen Sie
+<c>mkpart primary affs1 START END</c> aus, wobei <c>START</c> und <c>END</c> mit
+dem Megabyte Bereich ersetzt werden sollten. (<c>5 55</c> erstellt eine 50 MB Partition
+beginnend bei 5MB und endend bei 55MB.
+</p>
+
+<p>
+Für Linux müssen Sie zwei Partitionen erstellen, ein Root-Dateisystem für alle
+Programm Dateien etc. und eine Swap Partition. Um das Root-Dateisystem zu
+erstellen, müssen Sie sich zunächst entscheiden, welches Dateisystem Sie
+benutzen möchten. Mögliche Optionen sind ext2, ext3, reiserfs, jfs und xfs.
+Wählen Sie ext3, solange Sie nicht genau wissen, was Sie tun. Führen Sie
+<c>mkpart primary ext3 START END</c> aus um eine ext3 Partition zu erstellen.
+Auch hier: Ersetzen Sie <c>START</c> und <c>END</c> mit den Megabyte Start und
+Stop Marken der Partition.
+</p>
+
+<p>
+Es ist generell empfohlen eine Swap Partition zu erstellen, die doppelt so gross
+ist, wie der verfügbare Arbeitsspeicher. Sie kommen evtl. auch mit einer
+kleineren Swap Partition aus, solange Sie nicht planen eine Vielzahl an
+Applikationen gleichzeitig auszuführen (dennoch sind mindestens 512MB
+empfohlen). Um die Swap Partition zu erstellen führen Sie 
+<c>mkpart primary linux-swap START END</c> aus.
+</p>
+
+<p>
+Notieren Sie sich die Nummern der einzelnen Partitionen, da Sie diese während
+des weiteren Installationsvorgangs benötigen. Um die Nummern anzuzeigen führen
+sie <c>print</c> aus. Ihre Partitionen werden als <path>/dev/hdaX</path>
+angesprochen, wobei X durch die Nummer der Partition zu ersetzen ist.
+</p>
+
+<p>
+Wenn Sie fertig sind, führen Sie <c>quit</c> aus.
 </p>
 
 </body>
