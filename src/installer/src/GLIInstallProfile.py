@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.14 2004/10/08 20:55:17 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.15 2004/10/08 21:04:43 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -53,8 +53,9 @@ class InstallProfile:
 		parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
 		parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
 		parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
+		parser.addHandler('gli-profile/install-packages', self.set_install_packages)
+		parser.addHandler('gli-profile/fstab/partition', self.add_fstab_partition)
 		
-
 		self._parser = parser
 
 		# Configuration information - profile data
@@ -87,6 +88,8 @@ class InstallProfile:
 		self._install_pcmcia_cs = False
 		self._dns_servers = ()
 		self._default_gateway = ()
+		self._fstab = {}
+		self._install_packages = ()
 
 	def parse(self, filename):
 		self._parser.parse(filename)
@@ -724,6 +727,18 @@ class InstallProfile:
 				xmldoc += "<module>%s</module>" % module
 			xmldoc += "</kernel-modules>";
 
+		if self.get_fstab() != {}:
+			xmldoc += "<fstab>"
+			partitions = self.get_fstab()
+			for part in partitions:
+				xmldoc += "<partition dev=\"%s\" fstype=\"%s\" options=\"%s\">%s</partition>" % (partitions[part][0],partitions[part][1],partitions[part][2],part)
+			xmldoc += "</fstab>"
+
+		if self.get_install_packages() != ():
+			xmldoc += "<install-packages>"
+			xmldoc += string.join(self.get_install_packages(), ' ')
+			xmldoc += "</install-packages>"
+ 
 		if self.get_default_gateway() != ():
 			gw = self.get_default_gateway()
 			xmldoc += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gw[0], gw[1])
@@ -910,3 +925,61 @@ class InstallProfile:
 		"""
 		return self._default_gateway
 
+ 
+	def add_fstab_partition(self, xml_path, mountpoint, attr):
+		"""
+		This adds a partition to the list of partitions to be mounted in fstab.
+		the format should be:
+		<fstab>
+			<partition dev="/dev/hda1" fstype="ext3" options="nostuff, defaults">/</partition>
+		"""
+		info = None
+		options = fstype = dev = None
+		if not GLIUtility.is_realstring(mountpoint):
+			raise "AddPartitionError", "Invalid mountpoint or mountpoint does not exist!"
+
+		
+		if type(attr) == tuple:
+			dev = attr[0]
+			fstype = attr[1]
+			options = attr[2]
+			
+		else:
+			if "dev" in attr.getNames():
+				for attrName in attr.getNames():
+					if attrName == 'dev':
+						dev = str(attr.getValue(attrName))
+					elif attrName == 'fstype':
+						fstype = str(attr.getValue(attrName))
+					elif attrName == 'options':
+						options = str(attr.getValue(attrName))	
+		info = (dev,fstype,options)
+		self._fstab[mountpoint] = info
+
+	def get_fstab(self):
+		"""
+		Returns the fstab info.
+		"""
+		return self._fstab			
+		
+	def set_install_packages(self, xml_path, install_packages, xml_attr):
+		"""
+		Set the packages to be installed for the post-installed system.
+		"""
+
+		if type(install_packages) == str:
+			install_packages = string.split(install_packages)
+		else:
+			raise "InstallPackagesError", "Invalid input!"
+
+		for install_package in install_packages:
+			if not GLIUtility.is_realstring(install_package):
+				raise "InstallPackagesError", install_package + " must be a valid string!"
+
+		self._install_packages = install_packages
+ 
+	def get_install_packages(self):
+		""" 
+		This returns a list of the packages:
+		"""
+		return self._install_packages
