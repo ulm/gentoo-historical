@@ -269,7 +269,7 @@ for category in fsort(db.keys()):
 		<chapter>""" % mytime 
 	tableheader="""
 			<section>
-				<title>Package Category """+ category+"""</title>
+				<title>Package Category <uri link=\"/dyn/pkgs/"""+ category+"""/\">"""+ category+"""</uri></title>
 				<body>
 				<p>
 	Number of packages in category: """ + str(pkg_count) + """
