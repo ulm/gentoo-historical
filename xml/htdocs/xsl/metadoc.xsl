@@ -2,6 +2,12 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
 
+<!-- Include inserts stylesheet -->
+<xsl:include href="inserts.xsl" />
+
+<!-- Selection parameter -->
+<xsl:param name="catid">0</xsl:param>
+
 <xsl:template match="dynamic">
   <xsl:variable name="metadoc"><xsl:value-of select="@metadoc"/></xsl:variable>
 <mainpage id="docs">
@@ -17,22 +23,55 @@
   </chapter>
   </xsl:if>
 
-  <xsl:apply-templates>
-    <xsl:with-param name="metadoc" select="$metadoc"/>
-  </xsl:apply-templates>
+  <xsl:choose>
+    <xsl:when test="not($catid = 0)">
+      <!-- ID selected -->
+      <xsl:apply-templates select="catid[text() = $catid]">
+        <xsl:with-param name="metadoc" select="$metadoc"/>
+        <xsl:with-param name="unfold">yes</xsl:with-param>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- No ID selected -->
+      <chapter>
+      <title><xsl:value-of select="func:gettext('GLinuxDoc')"/></title>
+      <section>
+      <body>
+
+      <ul>
+      <xsl:apply-templates select="catid">
+        <xsl:with-param name="metadoc" select="$metadoc"/>
+        <xsl:with-param name="unfold">no</xsl:with-param>
+      </xsl:apply-templates>
+      </ul>
+
+      </body>
+      </section>
+      </chapter>
+    </xsl:otherwise>
+  </xsl:choose>
 </mainpage>
 </xsl:template>
 
 <xsl:template match="catid">
   <xsl:param name="metadoc"/>
+  <xsl:param name="unfold"/>
   <xsl:variable name="categorie"><xsl:value-of select="text()"/></xsl:variable>
-  <chapter>
-    <title><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $categorie]"/></title>
-    <xsl:call-template name="categories">
-      <xsl:with-param name="metadoc" select="$metadoc"/>
-      <xsl:with-param name="categorie" select="$categorie"/>
-    </xsl:call-template>
-  </chapter>
+  <xsl:choose>
+    <xsl:when test="$unfold = 'yes'">
+      <chapter>
+        <title><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $categorie]"/></title>
+        <xsl:call-template name="categories">
+          <xsl:with-param name="metadoc" select="$metadoc"/>
+          <xsl:with-param name="categorie" select="$categorie"/>
+        </xsl:call-template>
+      </chapter>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:variable name="cat_id" select="text()"/>
+      <li><uri link="?catid={$cat_id}"><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $categorie]"/></uri></li>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="intro">
