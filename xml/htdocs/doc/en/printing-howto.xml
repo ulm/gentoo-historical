@@ -7,18 +7,20 @@
 	</author>
 	<author title="Copyeditor"><mail link="sunflare@gentoo.org">Phil Bordelon</mail>
 	</author> 
+	<author title="Editor"><mail link="wleggette@gate.net">Wesley Leggette</mail>
+	</author>
  
 	<abstract>A comprehensive printing guide for Gentoo Linux. 
 	This document covers both local and network printing.
 	</abstract> 
  
-	<version>1.1.0</version> 
-	<date>14 January 2003</date> 
+	<version>1.1.1</version> 
+	<date>3 February 2003</date> 
  
 		<chapter> 
 			<title>Local Printing Using CUPS</title> 
 			<section> 
-				<title>Installation Using CUPS</title> 
+				<title>Installing CUPS and foomatic</title> 
 				
 				<body> 
  
@@ -40,8 +42,8 @@
 				</p>
 
 				<pre caption = "Editing /etc/make.conf">
-<comment>add <i>cups</i> to your existing USE var list. </comment>
-USE="cups other_var1 other_var2
+<comment>add <i>cups</i> and <i>usb</i> (if you are using a USB printer connection) to your existing USE var list. </comment>
+USE="cups usb other_var1 other_var2
 				</pre>
 
 				<p>For more information on USE variables, please see the 
@@ -52,8 +54,14 @@ USE="cups other_var1 other_var2
 				<pre caption = "Emerging necessary packages"> 
 # <c>emerge cups</c>  
 # <c>emerge foomatic </c>
-				</pre> 
+				</pre>
+				</body>
+			</section>
+
+			<section>
+				<title>Setting up Kernel Modules</title> 
  
+				<body>
 				<p>Now that the necessary packages are installed, it is time to install the printer.
 				</p>
 				
@@ -61,9 +69,15 @@ USE="cups other_var1 other_var2
 				be necessary to enable either parallel port or USB port printer connections
 				in the kernel.
 				</p>
+
+				<p>To enable USB printer support, go to USB support and enable <c>Support for USB</c> and
+				<c>USB Printer support</c>. Enabling them both as modules will install usbcore.o and 
+				printer.o in your modules directory. I suggest using modules because you won't have
+				to restart your computer.
+				</p>
 				
 				<note>If you are not sure on how to compile the kernel, the official
-				Linux Kernel-HOWTO can be found <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">here</uri>.
+				Linux Kernel-HOWTO can be found <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">here</uri>. Make sure you find out how to compile and install new modules without having to recompile your kernel or restart your computer. It's a real timesaver.
 				</note>
  
 				<p>After the kernel is built, and your computer restarted, it is time to load the 
@@ -78,17 +92,19 @@ USE="cups other_var1 other_var2
 				<p>After the modules have loaded successfully, plug in the printer, and check
 				<path>/var/log/messages</path> to see if it was detected.
 				</p> 
- 
+
+				<note>If you are using something other than sysklogd, your kernel log file will be different.</note>
+				
 				<pre caption = "Checking Kernel Messages"> 
-# <c>tail -f /var/log/messages</c> 
+# <c>tail /var/log/messages</c> 
 				</pre> 
  
 				<p>You should see something like this:
 				</p>
    
 				<pre caption = "/var/log/messages Output">
-<c>hub.c: USB new device connect on bus2/2, assigned device number 2 </c> 
-<c>printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104 </c>
+hub.c: USB new device connect on bus2/2, assigned device number 2 
+printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104 
 				</pre>    
  
 				<note>If you are using a parallel port printer, make sure that it is
@@ -112,46 +128,65 @@ USE="cups other_var1 other_var2
 			</section> 
  
 			<section> 
-				<title>PPD File Configuration</title> 
+				<title>Special Printer Drivers</title> 
 				
 				<body> 
-				<p>Now it is time to configure the printer and CUPS. If you are using an HP Inkjet printer,
-				it is necessary to emerge the <c>hpijs</c> printer driver. 
-				This driver handles all of the Postscript interpretation necessary to make the HP printer work.
-				If you are using a non-HP printer, it may be necessary to locate the third party drivers for it.
+				<p>
+				Before you use foomatic to generate a PPD file, it may be necessary to locate the third party drivers for your printer. For example, Epson provides <uri link="http://www.epkowa.co.jp/english/linux_e/linux.html">several printer drivers</uri> for open source operating systems. However, as with Epson's, many of these special drivers are not open source.
+				</p>
+
+				<p>
+				For most printers besides HP Inkjets, you will be able to use the standard Linux printer drivers. Visit the <uri link="http://www.linuxprinting.org/printer_list.cgi">linuxprinting.org printer support database</uri> to find information on your specific printer. Make sure you read the documentation provided with any driver you download for installation and licensing information.
 				</p> 
  
-				<note>The <c>hpijs</c> driver is for HP Inkjet printers only. If you are using a HP Laserjet,
-				support may already be available via the GNOME printing system. 
-				If you are using a non HP Inkjet printer, skip down below to the configuration process.
-				</note> 
- 
+				<impo>If you are using an HP Inkjet printer,	it is necessary to emerge the <c>hpijs</c> 					printer driver. This driver handles all of the Postscript interpretation necessary to make 					the HP printer work. The <c>hpijs</c> driver is for HP Inkjet printers only, but is 					available through Portage for your convenience. The documentation from HP for the <c>hpijs</c> driver will be placed in <path>/usr/share/doc/hpijs-&lt;version&gt;</path>. The author <i>highly</i> recommends reading this.
+				</impo>
+
 				<pre caption = "Emerging hpijs"> 
 # <c>emerge hpijs</c> 
 				</pre> 
- 
-				<impo>The documentation from HP for the <c>hpijs</c> driver is in
-				<path>/usr/share/doc/hpijs-&lt;version&gt;</path>. The author <i>highly</i> recommends reading this.
-				</impo> 
- 
-				<p> In order for your printer to interpret Postscipt correctly, CUPS needs
-				a PPD (Printer Postscript Definition) file. The easiest way to generate a PPD is through foomatic.
+
+				<note>If you are using a HP Laserjet, support may already be available via the GNOME printing system. If you are using a non HP Inkjet printer, you do not need to install this special printer driver.
+				</note>
+				</body>
+			</section>
+
+			<section>
+				<title>PPD File Configuration</title>
+
+				<body>
+				<p>Now it is time to configure the printer and CUPS. In order for your printer to interpret 					Postscipt correctly, CUPS needs a PPD (Printer Postscript Definition) file. The easiest way to 					generate a PPD is through foomatic.
 				</p>
 
 				<p>Three pieces of information are necessary in order to make the below command work;
-				you need your printer model, printer device, and your print driver (if you are not using hpijs).
-				The printer ID and driver can be <c>grepped</c> from foomatic's database, and the print device is
-				what device node your printer is connected to (i.e. <path>/dev/lp0</path>).
-				The below example uses <i>hpijs</i> as its driver, but please replace <i>hpijs</i> with
-				your driver name if you are not using an HP printer.
+				you need your printer ID, printer device, and your print driver (this would be hpijs if you 					needed to install the special driver above). The printer ID and driver can be <c>grepped</c> from 					foomatic's database, and the print device is what device node your printer is connected to (i.e. 					<path>/dev/lp0</path> or <path>/dev/usb/lp0</path>).
 				</p>
 
-				<pre caption = "Using foomatic">
+				<pre caption = "General Usage of foomatic">
 # <c>grep $printer_model /usr/share/foomatic/db/source/printer/* </c>
-# <c>grep $print_device /usr/share/foomatic/db/source/driver/* </c>
-# <c>foomatic-configure -s cups -p $printer_model -c $print_device -n queue name -d hpijs </c>
+# <c>grep $printer_ID /usr/share/foomatic/db/source/driver/* </c>
+# <c>foomatic-configure -s cups -p $printer_model_number -c $print_device_path -n queue name -d driver </c>
 				</pre>
- 
+
+				<p>Now, here's a more specific example. The following code assumes that you have an Epson Stylus Color 980. Of course, you should replace this with your actual printer model.
+				</p>
+
+				<pre caption="Specific Usage of foomatic with Stylus Color 980">
+# <c>grep Stylus Color 980 /usr/share/foomatic/db/source/printer/* </c>
+<comment> Now look for the line which reads: </comment>
+/usr/share/foomatic/db/source/printer/317865.xml:   $lt;model>Stylus Color 980&lt;/model>
+<comment> 317865 is your printer ID. </comment>
+
+# <c>grep 317865 /usr/share/foomatic/db/source/driver/* </c>
+/usr/share/foomatic/db/source/driver/gimp-print.xml:  &lt;printer>&lt;id>printer/317865&lt;/id>&lt;/printer>
+<comment> Here, your print driver is gimp-print.</comment>
+
+# <c>foomatic-configure -s cups -p 317865 -c /dev/lp0 -n Epson -d gimp-print </c>
+				</pre>
+
+				<note>Remember that you may want to use <path>/dev/usb/lp0</path> if you have a USB printer.
+				</note>
+
 				<impo>If you are having problems, please refer to the foomatic documentation
 				<uri link="http://www.linuxprinting.org/foomatic/USAGE">here</uri> 
 				and the <uri link="http://www.linuxprinting.org">linuxprinting.org</uri>
