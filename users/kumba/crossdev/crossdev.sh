@@ -1,0 +1,1704 @@
+#!/bin/bash
+# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+
+
+#// Set user-defined data
+#//------------------------------------------------------------------------------------------------
+
+ReadConfiguration() {
+	#// Default configuration location && Default settings
+	DEFAULT_CONF_LOC="/etc/crossdev/crossdev.conf"
+
+	#// Install Path
+	CROSS_HOME="/home/crossdev"
+
+	#// Crossdev root bin subdir
+	#// *XXX* Not implemented yet
+	CROSS_ROOTBIN="root"
+
+	#// Location inside PORTAGE_TMPDIR to work
+	CROSS_BUILDIR="crossdevbuild"
+
+	#// Delay time before starting
+	DELAY_TIME=5
+
+	#// Minimum kernel version to pass to glibc-core via --enable-kernel
+	MIN_KV="2.4.1"
+
+	#// Extra Colors
+	USE_COLOR="yes"
+
+	#// Sparc32 ABI Defaults (v7, v8, v9, supersparc, hypersparc, or ultrasparc)
+	#// (Optimizes the sparc32 compiler for a specific instruction set)
+	#// If you use sparc32 for ultrasparc userland, use "v9" or "ultrasparc"
+	SPARCABI=v9
+
+	#// Mips ABI/ISA Defaults
+	#// ${MIPSISA} supports -mips1, -mips2, -mips3, & -mips4
+	#// ${MIPSABI} supports 32, n32, 64, o64, eabi, & meabi
+	#// Read the gcc manual to better understand these
+	MIPSISA=-mips3
+	MIPSABI=32
+
+	#// Use Portage's sandbox?
+	USE_SANDBOX="yes"
+
+	#// Read configuration (If this file exists, the above vars are overwritten)
+	if [ -f "${DEFAULT_CONF_LOC}" ]; then
+		source ${DEFAULT_CONF_LOC}
+	fi
+
+
+
+	#// The variables below shouldn't be touched
+
+	#// Toolchain Locations in Portage
+	HEADERS_LOC="sys-kernel/linux-headers"
+	BINUTILS_LOC="sys-devel/binutils"
+	GCC_LOC="sys-devel/gcc"
+	GLIBC_LOC="sys-libs/glibc"
+
+	#// My Version
+	MYVERSION="0.4"
+
+	#// Remember original PATH
+	ORIGPATH="${PATH}"
+
+	#// Needed for newer coreutils to work properly with older packages
+	export _POSIX2_VERSION=199209
+
+	#// Use Kernel Headers?
+	USE_HEADERS="yes"
+
+	#// Do we want colors?
+	if [ "${USE_COLOR}" = "yes" ]; then
+		BLUE="\033[1;34m"
+		CYAN="\033[1;36m"
+		DARKGREEN="\033[0;32m"
+		GREEN="\033[1;32m"
+		PURPLE="\033[1;35m"
+		RED="\033[1;31m"
+		WHITE="\033[1;37m"
+		YELLOW="\033[1;33m"
+		XX="\033[0;0m"
+	else
+		BLUE=
+		CYAN=
+		DARKGREEN=
+		GREEN=
+		PURPLE=
+		RED=
+		WHITE=
+		YELLOW=
+		XX=
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Error Function
+#//------------------------------------------------------------------------------------------------
+
+showError() {
+	local msg
+
+	#// See if we were given an error message to display, otherwise use default
+	if [ -z "${*}" ]; then
+		msg="failed! (Unknown)"
+	else
+		msg="${*}"
+	fi
+
+	#// Display error
+	echo -e ""
+	berror "${msg}"
+	echo -e ""
+	echo -e ""
+	export PATH="${ORIGPATH}"
+	exit 1
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Information Function
+#//------------------------------------------------------------------------------------------------
+
+showInfo() {
+
+	if [ ! -z "${*}" ]; then
+		echo -e ""
+		binfo "${WHITE}${*}${XX}"
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Parse Command Line
+#//------------------------------------------------------------------------------------------------
+
+ParseCommandLine() {
+
+	if [ -z "${*}" ]; then
+        	displayHelp
+	        exit 1
+	fi
+
+
+	#// Parse the command line
+	for CMDLINE in ${*}; do
+
+		case "${CMDLINE}" in
+			--arch=*)
+					CMDARCH="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--clean|-C)
+					CMDCLEAN="yes"
+					;;
+			--help|-h)
+					displayHelp
+					exit 0
+					;;
+			--kernel|-k)
+					CMDKERNEL="yes"
+					;;
+			--pcflags|-f)
+					CMDPCFLAGS="yes"
+					;;
+			--pretend|-p)
+					CMDPRETEND="yes"
+					;;
+			--status|-s)
+					crossdev-status
+					exit 0
+					;;
+			--uninstall=*)
+					CMDUNINSTALL="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--unstable|-u)
+					CMDUNSTABLE="yes"
+					;;
+			--vbinutils=*)
+					CMDBINUTILSVER="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--vheaders=*)
+					CMDHEADERSVER="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--vgcc=*)
+					CMDGCCVER="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--vglibc=*)
+					CMDGLIBCVER="$(echo ${CMDLINE} | cut -d\= -f2)"
+					;;
+			--xtralang|-x)
+					CMDXTRALANG="yes"
+					;;
+			*)
+					displayHelp
+					exit 1
+					;;
+		esac
+	done
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Sandbox
+#//------------------------------------------------------------------------------------------------
+
+CheckSandbox() {
+
+	local func_name="CheckSandbox()"
+
+	#// Program Locations
+	PORTAGEQ_LOC="$(which portageq)"
+	EBUILD_LOC="$(which ebuild)"
+	LIBSANDBOX_LOC="$(whereis libsandbox.so | cut -d" " -f2)"
+	if [ -z "${PORTAGEQ_LOC}" ] || [ -z "${EBUILD_LOC}" ] ; then
+		showError "${func_name}: Could not locate all of the required portage programs!"
+	fi
+
+
+	#// If we will use sandbox, set it up
+	if [ "${USE_SANDBOX}" = "yes" ]; then
+
+		#// Sandbox wrapper for "ebuild"
+		doebuild() {
+			#// $1 = path to the ebuild
+			#// $2 = command to run on ebuild
+			#// $3 = USE
+			#// $4 = ARCH
+
+			[ ! -z "${LD_PRELOAD}" ] && unset LD_PRELOAD
+			[ ! -z "${SANDBOX_ON}" ] && unset SANDBOX_ON
+
+			export USE="$3"
+			export ARCH="$4"
+			${EBUILD_LOC} $1 $2 || showError "doebuild(): Call to ${EBUILD_LOC} failed!"
+			unset USE ARCH
+
+			[ -z "${LD_PRELOAD}" ] && export LD_PRELOAD="${LIBSANDBOX_LOC}"
+			[ -z "${SANDBOX_ON}" ] && export SANDBOX_ON=1
+
+			return 0
+		}
+
+
+		#// Sandbox wrapper for "portageq"
+		doportageq() {
+			#// $1 = variable to modify
+			#// $2 = portageq command to execute
+			#// $3 = parameters to $2 as string
+			#// $4 = ACCEPT_KEYWORDS
+
+			[ ! -z "${LD_PRELOAD}" ] && unset LD_PRELOAD
+			[ ! -z "${SANDBOX_ON}" ] && unset SANDBOX_ON
+
+			#// Determine what to do
+			case "$2" in
+				envvar)
+					eval "$1=\"$(${PORTAGEQ_LOC} "$2" "$3")\""
+					;;
+				best_visible)
+					export ACCEPT_KEYWORDS="$4"
+					eval "$1=$(${PORTAGEQ_LOC} $2 $3)"
+					unset ACCEPT_KEYWORDS
+					;;
+			esac
+
+			[ -z "${LD_PRELOAD}" ] && export LD_PRELOAD="${LIBSANDBOX_LOC}"
+			[ -z "${SANDBOX_ON}" ] && export SANDBOX_ON=1
+
+			return 0
+		}
+
+
+		#// Some vars need to be exported for the sandbox
+		doportageq CROSS_LOGDIR "envvar" "PORT_LOGDIR"
+		doportageq CROSS_DISTDIR "envvar" "DISTDIR"
+		doportageq CROSS_PTMPDIR "envvar" "PORTAGE_TMPDIR"
+		doportageq CROSS_PORTDIR "envvar" "PORTDIR"
+		doportageq CROSS_MAKEOPTS "envvar" "MAKEOPTS"
+		CROSS_PTMPDIR="${CROSS_PTMPDIR}/portage"
+		[ -z "${CROSS_LOGDIR}" ] && CROSS_LOGDIR="/tmp"
+		CROSS_LOGFILE="${CROSS_LOGDIR}/crossdev-$(date '+%d.%m.%Y-%H.%M.%S').log"
+		export CROSS_LOGDIR CROSS_LOGFILE
+		export SANDBOX_LOG="${CROSS_LOGFILE}"
+		export SANDBOX_DEBUG_LOG="${SANDBOX_LOG}.debug"
+		export CROSS_PTMPDIR
+		export LD_PRELOAD="${LIBSANDBOX_LOC}"
+		export SANDBOX_LIB="${LIBSANDBOX_LOC}"
+		export SANDBOX_PREDICT=""
+		export SANDBOX_DENY=""
+		export SANDBOX_READ="/"
+		SANDBOX_WRITE="/dev/tty:/dev/pts:/dev/null:/tmp:${CROSS_HOME}:${CROSS_PTMPDIR}:"
+		SANDBOX_WRITE="${SANDBOX_WRITE}:${CROSS_LOGDIR}:${CROSS_DISTDIR}:${CROSS_PTMPDIR}/${CROSS_BUILDIR}"
+		export SANDBOX_WRITE
+
+
+		#// Arm the sandbox
+		export SANDBOX_ON="1"
+		export SANDBOX_ACTIVE="armedandready"
+	else
+		#// User doesn't want sandbox
+		doebuild() {
+			export USE="$3"
+			export ARCH="$4"
+			${EBUILD_LOC} $1 $2 || showError "doebuild(): Call to ${EBUILD_LOC} failed!"
+			unset USE ARCH
+
+			return 0
+		}
+
+		doportageq() {
+			#// Determine what to do
+			case "$2" in
+				envvar)
+					eval "$1=\"$(${PORTAGEQ_LOC} "$2" "$3")\""
+					;;
+				best_visible)
+					export ACCEPT_KEYWORDS="$4"
+					eval "$1=$(${PORTAGEQ_LOC} $2 $3)"
+					unset ACCEPT_KEYWORDS
+					;;
+			esac
+
+			return 0
+		}
+
+		#// Portage settings
+		doportageq CROSS_PTMPDIR "envvar" "PORTAGE_TMPDIR"
+		doportageq CROSS_PORTDIR "envvar" "PORTDIR"
+		doportageq CROSS_MAKEOPTS "envvar" "MAKEOPTS"
+		CROSS_PTMPDIR="${CROSS_PTMPDIR}/portage"
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Display Functions
+#//------------------------------------------------------------------------------------------------
+
+
+#// Information
+binfo() {
+	echo -e " ${BLUE}*${XX} ${*}"
+	return 0
+}
+
+#// Information (w/o newline)
+binfon() {
+	echo -en " ${BLUE}*${XX} ${*}"
+	return 0
+}
+
+#// Error
+berror() {
+	echo -e " ${RED}*${XX} ${*}"
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Help Function
+#//------------------------------------------------------------------------------------------------
+
+displayHelp() {
+	echo -e ""
+	echo -e "${GREEN}crossdev.sh ${BLUE}v${MYVERSION}${WHITE} - ${CYAN}Cross-Toolchain Generator${XX}"
+	echo -e "  By: Joshua Kinard (kumba@gentoo.org)"
+	echo -e ""
+	echo -e "${WHITE}Usage:${XX}"
+	echo -e "    ${CYAN}crossdev.sh${XX} < ${CYAN}action${XX} > [ ${GREEN}options${XX} ]"
+
+	echo -e ""
+	echo -e "${WHITE}Actions:${XX}"
+	echo -e "    ${GREEN}--arch${XX}=${CYAN}TARGET${XX}"
+	echo -e "    ${GREEN}--uninstall${XX}=${CYAN}TARGET${XX}"
+	echo -e "		Specifies the target architecture to build & install, or to uninstall"
+	echo -e "		Note: --arch and --uninstall cannot be specified together."
+
+	echo -e ""
+	echo -e "${WHITE}Supported Targets:${XX}"
+	echo -e "    ${CYAN}alpha${XX}\t- DEC Alpha Systems"
+	echo -e "    ${CYAN}amd64${XX}\t- AMD64 Systems (Opteron, Athlon64, x86_64)"
+	echo -e "    ${CYAN}hppa${XX}\t- HP PA-RISC Systems"
+	echo -e "    ${CYAN}i486${XX}\t- Above i386 but below Pentiums (i586)"
+	echo -e "    ${CYAN}i586${XX}\t- Pentium-class machines and AMD K6 machines"
+	echo -e "    ${CYAN}i686${XX}\t- Pentium II/III/IV/Celeron & AMD Athlon/Duron"
+	echo -e "    ${CYAN}sparc${XX}\t- Sparc32 systems (sun4c, sun4d, sun4m)"
+	echo -e "    ${CYAN}sparc64${XX}\t- Sparc64 systems (sun4u)"
+	echo -e "    ${CYAN}mips${XX}\t- Mips systems (Big Endian, 32-bit)"
+	echo -e "    ${CYAN}mips64${XX}\t- Mips systems (Big Endian, 64-bit)"
+	echo -e "    ${CYAN}mipsel${XX}\t- Mips systems (Little Endian, 32-bit)"
+	echo -e "    ${CYAN}mips64el${XX}\t- Mips systems (Little Endian, 64-bit)"
+	echo -e "    ${CYAN}ppc${XX}\t\t- PowerPC/Apple Macintosh Systems"
+	echo -e "    ${CYAN}ppc64${XX}\t\t- PowerPC Systems (64-bit)"
+	echo -e "    ${CYAN}ppc-eabi${XX}\t- PowerPC/Embedded Systems"
+
+	echo -e ""
+	echo -e "${WHITE}Options:${XX}"
+
+	echo -e ""
+	echo -e "    ${GREEN}--clean${XX}	(${GREEN}-C${XX} short option)"
+	echo -e "		Completely cleans out the build directory.  The build directory"
+	echo -e "		is by default located in \"crossdevbuild\" inside Portage's TMPDIR."
+	echo -e "		This can be changed by setting the CROSS_BUILDIR variable to another value."
+
+	echo -e ""
+	echo -e "    ${GREEN}--help${XX}	(${GREEN}-h${XX} short option)"
+	echo -e "		Display help (this screen)."
+
+	echo -e ""
+	echo -e "    ${GREEN}--kernel${XX}	(${GREEN}-k${XX} short option)"
+	echo -e "		Causes crossdev to build only a kernel compiler.  This will skip the"
+	echo -e "		building and installation of a cross-compiled glibc and full-gcc.  The"
+	echo -e "		resulting toolchain will only compile kernels, and will not be capable"
+	echo -e "		of building anything else."
+
+	echo -e ""
+	echo -e "    ${GREEN}--pcflags${XX}	(${GREEN}-f${XX} short options)"
+	echo -e "		Causes crossdev to use the host system's CFLAGS specified in"
+	echo -e "		/etc/make.conf instead of the internal defaults.  Please note that if"
+	echo -e "		crossdev fails to build using the portage cflags, then cut back on the"
+	echo -e "		level of optimization used or use the hardcoded defaults before reporting"
+	echo -e "		bugs."
+
+	echo -e ""
+	echo -e "    ${GREEN}--pretend${XX}	(${GREEN}-p${XX} short option)"
+	echo -e "		Gather all information necessary to start building a cross-compile"
+	echo -e "		toolchain, but exit after displaying the information."
+
+	echo -e ""
+	echo -e "    ${GREEN}--status${XX}	(${GREEN}-s${XX} short option)"
+	echo -e "		Executes an external script (${WHITE}crossdev-status.sh${XX}) which displays"
+	echo -e "		a comprehensive list of supported archs and the status of cross-compiler"
+	echo -e "		support for each arch."
+
+	echo -e ""
+	echo -e "    ${GREEN}--unstable${XX}	(${GREEN}-u${XX} short option)"
+	echo -e "		Use unstable versions of packages instead of stable ones.  Note"
+	echo -e "		that packages stiil need a ~arch keyword specific to the"
+	echo -e "		architecture of the machine."
+
+	echo -e ""
+	echo -e "    ${GREEN}--xtralang${XX}	(${GREEN}-x${XX} short option)"
+	echo -e "		Enable building of Objective C, Fortran, and ADA compilers in"
+	echo -e "		the final gcc build.  The option of building the Java compiler"
+	echo -e "		is not enabled in this script."
+
+	echo -e ""
+	echo -e "${WHITE}Version Options:${XX}"
+
+	echo -e "    ${GREEN}--vbinutils${XX}=${CYAN}x.y.z[-rXX]${XX}"
+	echo -e "    ${GREEN}--vgcc${XX}=${CYAN}x.y.z[-rXX]${XX}"
+	echo -e "    ${GREEN}--vglibc${XX}=${CYAN}x.y.z[-rXX]${XX}"
+	echo -e "    ${GREEN}--vheaders${XX}=${CYAN}x.y.z[-rXX]${XX}"
+	echo -e "		Force a specific version of binutils/gcc/glibc/headers from portage to"
+	echo -e "		use.  This will be the exact version string of any of the available packages"
+	echo -e "		in portage.  The version string expected is <package version>-<package revision>."
+	echo -e "		If the revision of the package is zero, omit it."
+
+	echo -e ""
+	echo -e ""
+	echo -e ""
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Process Command Line args
+#//------------------------------------------------------------------------------------------------
+
+ProcessCommandLine() {
+
+	#// If no arch was specified, check for special actions
+	if [ -z "${CMDARCH}" ]; then
+
+		#// If no arch specified, but clean is, then clean and exit
+		if [ "${CMDCLEAN}" = "yes" ]; then
+	        	showInfo "Cleaning out ${CROSS_PTMPDIR}/${CROSS_BUILDIR} ..."
+	        	rm -Rf ${CROSS_PTMPDIR}/${CROSS_BUILDIR}
+			echo -e ""
+			exit 0
+		fi
+
+
+		#// If no arch specified, but uninstall is, uninstall and exit
+		if [ ! -z "${CMDUNINSTALL}" ]; then
+			if [ "${CMDUNINSTALL}" = "${CROSS_ROOTBIN}" ]; then
+				showError "Invalid arch!"
+			fi
+
+			if [ -d "${CROSS_HOME}/${CMDUNINSTALL}" ]; then
+				showInfo "Removing ${CYAN}${CROSS_HOME}/${CMDUNINSTALL}${XX}..."
+				rm -Rf ${CROSS_HOME}/${CMDUNINSTALL}
+				echo -e ""
+				exit 0
+			else
+				showError "${CYAN}${CROSS_HOME}/${CMDUNINSTALL}${XX} doesn't exist, exiting!"
+			fi
+		fi
+
+
+		#// Display help and exit
+		displayHelp
+		exit 1
+	fi
+
+
+	#// Block invalid/untested/unimplemented archs
+	case "${CMDARCH}" in
+		x86)
+			showError "x86 is an invalid architecture.  Please specify i486, i586, or i686"
+			;;
+		arm)
+			showError "${CMDARCH} isn't tested/implemented yet.  Test and send patches!"
+			;;
+		help)
+			displayHelp
+			exit 0
+			;;
+		*)
+			TARGETARCH="${CMDARCH}"
+			case "${TARGETARCH}" in
+				mips|mipsel|mips64|mips64el)
+					#// mips uses different headers
+					HEADERS_LOC="sys-kernel/mips-headers"
+					;;
+			esac
+			;;
+	esac
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Display stage Function
+#//------------------------------------------------------------------------------------------------
+
+stage() {
+	if [ -z "${STAGENUM}" ]; then
+		STAGENUM=1
+	fi
+
+
+	if [ ! -z "${1}" ]; then
+		echo -e ""
+		echo -e ""
+		echo -e ""
+		binfo "${WHITE}>>> ---------------------------------------------------------------------------${XX}"
+		binfo "${WHITE}>>> Stage ${STAGENUM}: ${1}${XX}"
+		binfo "${WHITE}>>> ---------------------------------------------------------------------------${XX}"
+		STAGENUM=$((STAGENUM + 1))
+		return 0
+	fi
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Discover Information
+#//------------------------------------------------------------------------------------------------
+
+GetInfo() {
+
+	#// Host Architecture
+	HOSTARCH="$(uname -m)"
+
+
+	#// Target Arch-specific Settings
+	case "${TARGETARCH}" in
+		alpha)
+			CROSS_CFLAGS=""
+			CROSS_CHOST="alpha-unknown-linux-gnu"
+			CROSS_KEYW="alpha"
+			;;
+		amd64)
+			CROSS_CFLAGS=""
+			CROSS_CHOST="x86_64-unknown-linux-gnu"
+			CROSS_KEYW="amd64"
+			;;
+		cris)
+			CROSS_CFLAGS="-mcpu=v10 -march=v10 -mtune=v10"
+			CROSS_CHOST="cris-axis-linux-gnu"
+
+			#// cris isn't supported on Gentoo, so use x86 for keyword
+			CROSS_KEYW="x86"
+			;;
+		hppa)
+			CROSS_CFLAGS=""
+			CROSS_CHOST="hppa-unknown-linux-gnu"
+			CROSS_KEYW="hppa"
+			;;
+		i486|i586|i686)
+			CROSS_CFLAGS="-march=${TARGETARCH}"
+			CROSS_CHOST="${TARGETARCH}-pc-linux-gnu"
+			CROSS_KEYW="x86"
+			;;
+		ia64)
+			CROSS_CFLAGS=""
+			CROSS_CHOST="ia64-unknown-linux-gnu"
+			CROSS_KEYW="ia64"
+			;;
+		m68k)
+			CROSS_CFLAGS=""
+			CROSS_CHOST="m68k-unknown-linux-gnu"
+
+			#// m68k isn't supported on Gentoo, so use x86 for keyword
+			CROSS_KEYW="x86"
+			;;
+		mips|mipsel|mips64|mips64el)
+			CROSS_CFLAGS="${MIPSISA} -mabi=${MIPSABI}"
+			CROSS_CHOST="${TARGETARCH}-unknown-linux-gnu"
+			CROSS_KEYW="mips"
+			;;
+		ppc)
+			CROSS_CFLAGS="-mcpu=powerpc -mtune=powerpc"
+			CROSS_CHOST="powerpc-unknown-linux-gnu"
+			CROSS_KEYW="ppc"
+			;;
+		ppc64)
+			CROSS_CFLAGS="-mcpu=powerpc -mtune=powerpc"
+			CROSS_CHOST="powerpc64-unknown-linux-gnu"
+			CROSS_KEYW="ppc64"
+			;;
+		ppc-eabi)
+			CROSS_CFLAGS="-mcpu=powerpc -mtune=powerpc"
+			CROSS_CHOST="powerpc-unknown-eabi"
+			USE_HEADERS="no"
+			CMDKERNEL="yes"
+			CROSS_KEYW="ppc"
+			;;
+		sparc)
+			CROSS_CFLAGS="-mcpu=${SPARCABI} -mtune=${SPARCABI}"
+			CROSS_CHOST="sparc-unknown-linux-gnu"
+			CROSS_KEYW="sparc"
+			;;
+		sparc64)
+			#// sparc64 only has one abi, so just default
+			CROSS_CFLAGS="-mcpu=ultrasparc -mtune=ultrasparc"
+			CROSS_CHOST="sparc64-unknown-linux-gnu"
+			CROSS_KEYW="sparc"
+			;;
+		*)
+			showError "Invalid arch specified!"
+			;;
+	esac
+	CROSS_CFLAGS="${CROSS_CFLAGS} -O2 -pipe"
+
+
+	#// Host Arch-specific Settings
+	case "${HOSTARCH}" in
+		alpha)
+			MY_CFLAGS=""
+			MY_CHOST="alpha-unknown-linux-gnu"
+			GENTOO_KEYW="alpha"
+			;;
+		cris)
+			MY_CFLAGS="-mcpu=v10 -march=v10 -mtune=v10"
+			MY_CHOST="cris-axis-linux-gnu"
+
+			#// cris isn't supported on Gentoo, so use x86 for keyword
+			GENTOO_KEYW="x86"
+			;;
+		ia64)
+			MY_CFLAGS=""
+			MY_CHOST="ia64-unknown-linux-gnu"
+			GENTOO_KEYW="ia64"
+			;;
+		i486|i586|i686)
+			MY_CFLAGS="-march=${HOSTARCH}"
+			MY_CHOST="${HOSTARCH}-pc-linux-gnu"
+			GENTOO_KEYW="x86"
+			;;
+		m68k)
+			MY_CFLAGS=""
+			MY_CHOST="m68k-unknown-linux-gnu"
+
+			#// m68k isn't supported on Gentoo, so use x86 for keyword
+			GENTOO_KEYW="x86"
+			;;
+		mips)
+			MY_CFLAGS="-mips3 -mabi=32"
+
+			#// We need to know if our host arch is mips or mipsel
+			doportageq TMP_CHOST "envvar" "CHOST"
+			if [ ! -z "$(echo "${TMP_CHOST}" | grep "mipsel")"  ]; then
+				MY_CHOST="${TMP_CHOST}"
+			else
+				MY_CHOST="mips-unknown-linux-gnu"
+			fi
+			unset TMP_CHOST
+			GENTOO_KEYW="mips"
+			;;
+		mips64)
+			#// Full host mips64 isn't supported yet, act as if we are 64-bit kernel + 32-bit userland
+			#// This will be rather interesting to detect once mips64 supports becomes better
+			MY_CFLAGS="-mips3 -mabi=32"
+
+			#// We need to know if our host arch is mips or mipsel
+			doportageq TMP_CHOST "envvar" "CHOST"
+			if [ ! -z "$(echo "${TMP_CHOST}" | grep "mipsel")"  ]; then
+				MY_CHOST="${TMP_CHOST}"
+			else
+				MY_CHOST="mips-unknown-linux-gnu"
+			fi
+			unset TMP_CHOST
+			GENTOO_KEYW="mips"
+			;;
+		sparc)
+			MY_CFLAGS="-mcpu=v8 -mtune=v8"
+			MYCHOST="sparc-unknown-linux-gnu"
+			GENTOO_KEYW="sparc"
+			;;
+		sparc64)
+			#// Full host sparc64 isn't supported yet, act as if we are 64-bit kernel + 32-bit userland
+			MY_CFLAGS="-mcpu=ultrasparc -mtune=ultrasparc"
+			MY_CHOST="sparc-unknown-linux-gnu"
+			GENTOO_KEYW="sparc"
+			;;
+		pa-risc)
+			MY_CFLAGS=""
+			MY_CHOST="hppa-unknown-linux-gnu"
+			GENTOO_KEYW="hppa"
+			;;
+		ppc)
+			MY_CFLAGS="-mcpu=powerpc -mtune=powerpc"
+			MY_CHOST="powerpc-unknown-linux-gnu"
+			GENTOO_KEYW="ppc"
+			;;
+		ppc64)
+			MY_CFLAGS="-mcpu=powerpc -mtune=powerpc"
+			MY_CHOST="powerpc64-unknown-linux-gnu"
+			GENTOO_KEYW="ppc64"
+			;;
+		x86_64)
+			MY_CFLAGS=""
+			MY_CHOST="x86_64-unknown-linux-gnu"
+			GENTOO_KEYW="amd64"
+			;;
+		*)
+			showError "Unknown or unsupported host architecture!"
+			;;
+	esac
+	MY_CFLAGS="${MY_CFLAGS} -O2 -pipe"
+
+
+	#// Does the user wish to use portage cflags instead of the defaults? (for the host arch)
+	if [ "${CMDPCFLAGS}" = "yes" ]; then
+		MY_CFLAGS=""
+		doportageq MY_CFLAGS "envvar" "CFLAGS"
+	fi
+
+
+	#// Mips headers are keyworded exclusively for mips, and normal headers are masked on mips,
+	#// so we need to figure out what we're building on (host), and what we're going to build 
+	#// for (target), and go from there.
+	local tmp_gentoo_keyw
+	if [ "${GENTOO_KEYW}" != "mips" ]; then
+		#// We're NOT building on mips, are we building FOR mips?
+		if [ "${CROSS_KEYW}" = "mips" ]; then
+			tmp_gentoo_keyw="${CROSS_KEYW}"
+		else
+			tmp_gentoo_keyw="${GENTOO_KEYW}"
+		fi
+	else
+		#// We're building on mips, see if we're building for anything else BUT mips.
+		if [ "${CROSS_KEYW}" != "mips" ]; then
+			tmp_gentoo_keyw="${CROSS_KEYW}"
+		else
+			tmp_gentoo_keyw="${GENTOO_KEYW}"
+		fi
+	fi
+			
+
+	#// Use Unstable Packages? (adds the unstable keyword to the stable keyword)
+	if [ "${CMDUNSTABLE}" = "yes" ]; then
+		tmp_gentoo_keyw="~${tmp_gentoo_keyw} ${tmp_gentoo_keyw}"
+		local GENTOO_KEYW_TMP="~${GENTOO_KEYW} ${GENTOO_KEYW}"
+		local CROSS_KEYW_TMP="~${CROSS_KEYW} ${CROSS_KEYW}"
+	fi
+
+
+	#// Get version info
+	if [ ! -z "${CMDHEADERSVER}" ]; then
+		HEADERS_VER="${HEADERS_LOC}-${CMDHEADERSVER}"
+	else
+		doportageq HEADERS_VER "best_visible" "/ ${HEADERS_LOC}" "-* ${tmp_gentoo_keyw}"
+	fi
+	if [ ! -z "${CMDBINUTILSVER}" ]; then
+		BINUTILS_VER="${BINUTILS_LOC}-${CMDBINUTILSVER}"
+	else
+		doportageq BINUTILS_VER "best_visible" "/ ${BINUTILS_LOC}" "-* ${CROSS_KEYW_TMP}"
+	fi
+	if [ ! -z "${CMDGCCVER}" ]; then
+		GCC_VER="${GCC_LOC}-${CMDGCCVER}"
+	else
+		doportageq GCC_VER "best_visible" "/ ${GCC_LOC}" "-* ${CROSS_KEYW_TMP}"
+	fi
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		if [ ! -z "${CMDGLIBCVER}" ]; then
+			GLIBC_VER="${GLIBC_LOC}-${CMDGLIBCVER}"
+		else
+			doportageq GLIBC_VER "best_visible" "/ ${GLIBC_LOC}" "-* ${CROSS_KEYW_TMP}"
+		fi
+	fi
+
+
+	#// Verify we got something
+	if [ -z "${HEADERS_VER}" ]; then
+		if [ "${USE_HEADERS}" = "yes" ]; then
+			showError "No valid kernel headers were found.  If you're using unstable packages, then this means\n" \
+			"  that no headers were found with unstable keywords.  Mark a package as unstable, or use\n" \
+			"  stable packages."
+		fi
+	fi
+	if [ -z "${BINUTILS_VER}" ]; then
+		showError "No valid binutils packages were found.  If you're using unstable packages, then this means\n" \
+		"  that no binutils packages were found with unstable keywords.  Mark a package as unstable, or use\n" \
+		"  stable packages."
+	fi
+	if [ -z "${GCC_VER}" ]; then
+		showError "No valid gcc packages were found.  If you're using unstable packages, then this means\n" \
+		"  that no gcc packages were found with unstable keywords.  Mark a package as unstable, or use\n" \
+		"  stable packages."
+	fi
+	if [ -z "${GLIBC_VER}" ]; then
+		if [ "${CMDKERNEL}" != "yes" ]; then
+			showError "No valid glibc packages were found.  If you're using unstable packages, then this means\n" \
+			"  that no glibc packages were found with unstable keywords.  Mark a package as unstable, or use\n" \
+			"  stable packages."
+		fi
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Display Information to user before continuing
+#//------------------------------------------------------------------------------------------------
+
+DisplayInfo() {
+
+	local countdown
+
+	#// Install Location
+	CROSS_INSTALL="${CROSS_HOME}/${TARGETARCH}"
+
+
+	#// Display Settings to user
+	echo -e ""
+	echo -e ""
+	binfo "crossdev.sh v${MYVERSION} - Cross-Toolchain Generator"
+	echo -e ""
+	binfo "Host Architecture:\t\t${GREEN}${MY_CHOST}${XX}"
+	binfo "Host CFLAGS:\t\t\t${GREEN}${MY_CFLAGS}${XX}"
+	binfo "Target Architecture:\t\t${PURPLE}${CROSS_CHOST}${XX}"
+	binfo "Target CFLAGS:\t\t${PURPLE}${CROSS_CFLAGS}${XX}"
+	binfo "Install Path:\t\t${CYAN}${CROSS_INSTALL}${XX}"
+
+
+	#// Show configured stuff
+	binfon "Using unstable packages..."
+	if [ "${CMDUNSTABLE}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Enabling extra gcc langs..."
+	if [ "${CMDXTRALANG}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Using Portage CFLAGS..."
+	if [ "${CMDPCFLAGS}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Using Portage Sandbox..."
+	if [ "${USE_SANDBOX}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Building Kernel Compiler..."
+	if [ "${CMDKERNEL}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Cleaning build dir..."
+	if [ "${CMDCLEAN}" = "yes" ]; then
+		echo -e "\t${CYAN}On${XX}"
+	else
+		echo -e "\tOff"
+	fi
+
+	binfon "Pretending..."
+	if [ "${CMDPRETEND}" = "yes" ]; then
+		echo -e "\t\t${CYAN}Yes${XX}"
+	else
+		echo -e "\t\tNo"
+	fi
+
+
+	#// Packages that will be used
+	echo -e ""
+	binfo "The following packages in ${RED}${CROSS_PORTDIR}${XX} will be used:"
+	if [ "${USE_HEADERS}" = "yes" ]; then
+		echo -e "\t${DARKGREEN}${HEADERS_VER}${XX}"
+	fi
+	echo -e "\t${DARKGREEN}${BINUTILS_VER}${XX}"
+	echo -e "\t${DARKGREEN}${GCC_VER}${XX}"
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		echo -e "\t${DARKGREEN}${GLIBC_VER}${XX}"
+	fi
+	echo -e ""
+
+
+	#// Are we only pretending?
+	if [ "${CMDPRETEND}" = "yes" ]; then
+		echo -e ""
+		exit 1
+	fi
+
+
+	#// Start the cross-compile
+	echo -e ""
+	binfo "Cross-compile will begin in ${GREEN}${DELAY_TIME}${XX} seconds..."
+	binfo "(Ctrl-C to Abort)"
+	binfon ">>> ${RED}${DELAY_TIME}${XX} "
+	sleep 1
+	for countdown in $(seq $((DELAY_TIME - 1)) -1 1); do
+	        echo -ne "${RED}${countdown}${XX} "
+        	sleep 1
+	done
+	echo -e ""
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Unpack
+#//------------------------------------------------------------------------------------------------
+
+UnpackSource() {
+
+	local func_name="UnpackSource()"
+
+	# Variables to make sense of things
+	if [ "${USE_HEADERS}" = "yes" ]; then
+		HEADERS_CAT="$(echo ${HEADERS_VER} | cut -d\/ -f1)"
+		HEADERS_PDIR="$(echo ${HEADERS_VER} | cut -d\/ -f2)"
+	fi
+	HEADERS_NAME="$(echo ${HEADERS_PDIR} | cut -d- -f1,2)"
+	BINUTILS_CAT="$(echo ${BINUTILS_VER} | cut -d\/ -f1)"
+	BINUTILS_PDIR="$(echo ${BINUTILS_VER} | cut -d\/ -f2)"
+	BINUTILS_NAME="$(echo ${BINUTILS_PDIR} | cut -d- -f1)"
+	BINUTILS_DIR="${BINUTILS_PDIR/-r*/}"
+	GCC_CAT="$(echo ${GCC_VER} | cut -d\/ -f1)"
+	GCC_PDIR="$(echo ${GCC_VER} | cut -d\/ -f2)"
+	GCC_NAME="$(echo ${GCC_PDIR} | cut -d- -f1)"
+	GCC_DIR="${GCC_PDIR/-r*/}"
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		GLIBC_CAT="$(echo ${GLIBC_VER} | cut -d\/ -f1)"
+		GLIBC_PDIR="$(echo ${GLIBC_VER} | cut -d\/ -f2)"
+		GLIBC_NAME="$(echo ${GLIBC_PDIR} | cut -d- -f1)"
+	fi
+
+
+	#// Stage 1
+	stage "Preparation"
+
+
+	#// Clean before rebuilding?
+	if [ "${CMDCLEAN}" = "yes" ]; then
+		showInfo "Cleaning out ${CROSS_PTMPDIR}/${CROSS_BUILDIR}..."
+		rm -Rf ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+			showError "${func_name}: Failed to clean ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+	fi
+
+
+	#// Fetch & Unpack Packages
+	if [ "${USE_HEADERS}" = "yes" ]; then
+		showInfo "Unpacking ${CROSS_PORTDIR}/${HEADERS_CAT}/${HEADERS_NAME}/${HEADERS_PDIR}.ebuild..."
+		doebuild "${CROSS_PORTDIR}/${HEADERS_CAT}/${HEADERS_NAME}/${HEADERS_PDIR}.ebuild" "unpack" \
+			 "-${GENTOO_KEYW} ${CROSS_KEYW}" "${CROSS_KEYW}" 
+	fi
+
+	showInfo "Unpacking ${CROSS_PORTDIR}/${BINUTILS_CAT}/${BINUTILS_NAME}/${BINUTILS_PDIR}.ebuild..."
+	doebuild "${CROSS_PORTDIR}/${BINUTILS_CAT}/${BINUTILS_NAME}/${BINUTILS_PDIR}.ebuild" "unpack" \
+		 "-${GENTOO_KEYW} ${CROSS_KEYW}" "${CROSS_KEYW}"
+
+	showInfo "Unpacking ${CROSS_PORTDIR}/${GCC_CAT}/${GCC_NAME}/${GCC_PDIR}.ebuild..."
+	doebuild "${CROSS_PORTDIR}/${GCC_CAT}/${GCC_NAME}/${GCC_PDIR}.ebuild" "unpack" \
+		 "-${GENTOO_KEYW} ${CROSS_KEYW}" "${CROSS_KEYW}"
+
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		showInfo "Unpacking ${CROSS_PORTDIR}/${GLIBC_CAT}/${GLIBC_NAME}/${GLIBC_PDIR}.ebuild..."
+		doebuild "${CROSS_PORTDIR}/${GLIBC_CAT}/${GLIBC_NAME}/${GLIBC_PDIR}.ebuild" "unpack" \
+			 "-${GENTOO_KEYW} ${CROSS_KEYW}" "${CROSS_KEYW}"
+	fi
+
+
+	#// Find the directories for headers and glibc (sometimes the names aren't standard)
+	if [ "${USE_HEADERS}" = "yes" ]; then
+		if [ "${CROSS_KEYW}" = "mips" ]; then
+			#// We need this because mips-headers unpack to a slightly different name than expected
+			HEADERS_DIR="$(find ${CROSS_PTMPDIR}/${HEADERS_PDIR}/work -type d -name linux-$(echo ${HEADERS_PDIR} | \
+				       cut -d- -f3)\*  -printf %f)"
+		else
+			HEADERS_DIR="linux-$(echo ${HEADERS_PDIR} | cut -d- -f3)"
+		fi
+	fi
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		GLIBC_DIR="$(find ${CROSS_PTMPDIR}/${GLIBC_PDIR}/work -type d -name 'glibc-*' \
+			     -mindepth 1 -maxdepth 1 |head -1 |sed 's:.*/::')"
+	fi
+
+
+	#// Move packages to a temporary build location
+	cd ${CROSS_PTMPDIR}
+	if [ ! -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}" ]; then
+		mkdir -p ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+			showError "${func_name}: Failed to make directory ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+	fi
+
+	if [ "${USE_HEADERS}" = "yes" ]; then
+		if [ ! -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${HEADERS_DIR}" ]; then
+			showInfo "Copying ${CROSS_PTMPDIR}/${HEADERS_PDIR}/work/${HEADERS_DIR} -> ${CROSS_PTMPDIR}/${CROSS_BUILDIR}..."
+			cp -axf ${CROSS_PTMPDIR}/${HEADERS_PDIR}/work/${HEADERS_DIR} ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+				showError "${func_name}: Failed to copy ${CROSS_PTMPDIR}/${HEADERS_PDIR}/work/${HEADERS_DIR} to ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+		fi
+	fi
+
+	if [ ! -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${BINUTILS_DIR}" ]; then
+		showInfo "Copying ${CROSS_PTMPDIR}/${BINUTILS_PDIR}/work/${BINUTILS_DIR} -> ${CROSS_PTMPDIR}/${CROSS_BUILDIR}..."
+		cp -axf ${CROSS_PTMPDIR}/${BINUTILS_PDIR}/work/${BINUTILS_DIR} ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+			showError "${func_name}: Failed to copy ${CROSS_PTMPDIR}/${BINUTILS_PDIR}/work/${BINUTILS_DIR} to ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+	fi
+
+	if [ ! -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR}" ]; then
+		showInfo "Copying ${CROSS_PTMPDIR}/${GCC_PDIR}/work/${GCC_DIR} -> ${CROSS_PTMPDIR}/${CROSS_BUILDIR}..."
+		cp -axf ${CROSS_PTMPDIR}/${GCC_PDIR}/work/${GCC_DIR} ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+			showError "${func_name}: Failed to copy ${CROSS_PTMPDIR}/${GCC_PDIR}/work/${GCC_DIR} to ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+	fi
+
+	if [ "${CMDKERNEL}" != "yes" ]; then
+		if [ ! -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GLIBC_DIR}" ]; then
+			showInfo "Copying ${CROSS_PTMPDIR}/${GLIBC_PDIR}/work/${GLIBC_DIR} -> ${CROSS_PTMPDIR}/${CROSS_BUILDIR}..."
+			cp -axf ${CROSS_PTMPDIR}/${GLIBC_PDIR}/work/${GLIBC_DIR} ${CROSS_PTMPDIR}/${CROSS_BUILDIR} || \
+				showError "${func_name}: Failed to copy ${CROSS_PTMPDIR}/${GLIBC_PDIR}/work/${GLIBC_DIR} to ${CROSS_PTMPDIR}/${CROSS_BUILDIR}!"
+		fi
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Install Kernel headers
+#//------------------------------------------------------------------------------------------------
+
+
+InstallKernelHeaders() {
+
+	local func_name="InstallKernelHeaders()"
+
+	#// Stage 2
+	cd ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${HEADERS_DIR}
+	if [ ! -f ".complete-${TARGETARCH}" ]; then
+		stage "Installing Kernel Headers"
+		sleep 5
+	fi
+
+
+	#// Make the include folder if it doesn't exist
+	if [ ! -d "${CROSS_INSTALL}/include" ]; then
+		mkdir -p ${CROSS_INSTALL}/include || \
+			showError "${func_name}: Failed to create directory ${CROSS_INSTALL}/include!"
+	fi
+
+
+	#// Configure the kernel to get headers
+	KERNEL_ARCH="$(echo "${TARGETARCH}" | sed -e "s:[i].86:i386:g" -e "s:amd64:x86_64:g" \
+						  -e "s:hppa:parisc:g" -e "s:mipsel:mips:g" -e "s:mips64el:mips64:g")"
+
+
+	#// if .configured exists, skip, otherwise configure
+	if [ ! -f ".configured-${TARGETARCH}" ]; then
+
+		#// Clean
+		make ARCH="${KERNEL_ARCH}" CROSS_COMPILE="${MY_CHOST}-" mrproper || \
+			showError "${func_name}: Failed to run 'make mrproper'!"
+
+		#// Make oldconfig (uses defconfig)
+		showInfo "Configuring Linux Headers..."
+		yes "" | make ARCH="${KERNEL_ARCH}" CROSS_COMPILE="${MY_CHOST}-" oldconfig || \
+				showError "${func_name}: Failed to run 'make oldconfig'!"
+
+		#// Make version/symlinks
+		make ARCH="${KERNEL_ARCH}" symlinks include/linux/version.h || \
+			showError "${func_name}: Failed to create include/linux/version.h!"
+		touch .configured-${TARGETARCH}
+	fi
+
+
+	#// if .copied exists, skip, otherwise copy
+	if [ ! -f ".copied-${TARGETARCH}" ]; then
+
+		#// Copy the linux includes
+		showInfo "Copying Linux Headers to ${CROSS_INSTALL}/include..."
+		cp -axf include/linux ${CROSS_INSTALL}/include || \
+			showError "${func_name}: Failed to copy include/linux to ${CROSS_INSTALL}/include!"
+		cp -axf include/asm-${KERNEL_ARCH} ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH} || \
+			showError "${func_name}: Failed to copy include/asm-${KERNEL_ARCH} to ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH}!"
+		cp -axf include/asm-generic ${CROSS_INSTALL}/include/asm-generic || \
+			showError "${func_name}: Failed to copy include/asm-generic to ${CROSS_INSTALL}/include/asm-generic!"
+
+
+		#// If sparc64 or mips[el]64, then only our 64-bit asm folders were copied, we need 32-bit as well
+		if [ "${TARGETARCH}" = "sparc64" ] || [ "${KERNEL_ARCH}" = "mips64" ]; then
+			cp -axf include/asm-${KERNEL_ARCH/64/} ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH/64/} || \
+				showError "${func_name}: Failed to copy include/asm-${KERNEL_ARCH/64/} to ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH/64/}!"
+		fi
+
+
+		#// Make a symlink from include/asm to appropriate asm-${KERNEL_ARCH}
+		ln -sf ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH} ${CROSS_INSTALL}/include/asm || \
+			showError "${func_name}: Failed to create symlink from ${CROSS_INSTALL}/include/asm-${KERNEL_ARCH} to ${CROSS_INSTALL}/include/asm!"
+
+
+		#// All done!
+		touch .copied-${TARGETARCH}
+	fi
+
+
+	#// Complete?
+	if [ -f ".configured-${TARGETARCH}" ] && [ -f ".copied-${TARGETARCH}" ]; then
+		touch .complete-${TARGETARCH}
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Configure & Compile & Install Binutils
+#//------------------------------------------------------------------------------------------------
+
+InstallBinutils() {
+
+	local func_name="InstallBinutils()"
+
+	#// Build Binutils
+	cd ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${BINUTILS_DIR}
+	if [ ! -d "buildhere-${TARGETARCH}" ]; then
+		mkdir buildhere-${TARGETARCH}
+	fi
+	cd buildhere-${TARGETARCH}
+
+
+	#// Stage 3
+	if [ ! -f ".complete" ]; then
+		stage "Configure, Build, & Install binutils"
+		sleep 5
+	fi
+
+
+	#// if .compiled exists, skip, otherwise configure & build
+	if [ ! -f ".compiled" ]; then
+		showInfo "Configuring ${BINUTILS_VER}..."
+		CFLAGS="${MY_CFLAGS}" \
+		../configure \
+			--target=${CROSS_CHOST} \
+			--host=${MY_CHOST} \
+			--prefix=${CROSS_INSTALL} \
+			--enable-shared \
+			--enable-64-bit-bfd \
+			|| showError "${func_name}: Failed to configure!"
+
+
+		#// Build
+		showInfo "Compiling ${BINUTILS_VER}..."
+		make ${CROSS_MAKEOPTS} || \
+			showError "${func_name}: Failed to compile!"
+
+
+		#// If build was sucessful, leave a marker behind
+		touch .compiled
+	fi
+
+
+	#// if .installed exists, skip, otherwise install
+	if [ ! -f ".installed" ]; then
+		showInfo "Installing ${BINUTILS_VER}..."
+		make install || showError "${func_name}: Failed to run 'make install'!"
+		touch .installed
+	fi
+
+
+	#// Complete?
+	if [ -f ".compiled" ] && [ -f ".installed" ]; then
+		touch .complete
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Reset Path
+#//------------------------------------------------------------------------------------------------
+
+ResetPath() {
+
+	showInfo "Adding ${CROSS_INSTALL}/bin to PATH..."
+	export PATH="${CROSS_INSTALL}/bin:${PATH}"
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Configure & Compile & Install gcc-bootstrap (C-Only)
+#//------------------------------------------------------------------------------------------------
+
+InstallGccBootstrap() {
+
+	local func_name="InstallGccBootstrap()"
+
+	#// Build gcc-bootstrap
+	if [ -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR}" ]; then
+		cd ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR}
+	else
+		showError "${func_name}: Directory ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR} doesn't exist!"
+	fi
+	if [ ! -d "buildboothere-${TARGETARCH}" ]; then
+		mkdir buildboothere-${TARGETARCH} || \
+			showError "${func_name}: Failed to make directory buildboothere-${TARGETARCH}!"
+	fi
+	cd buildboothere-${TARGETARCH}
+
+
+	#// Stage 4
+	if [ ! -f ".complete" ]; then
+		stage "Configure, Build, & Install gcc-bootstrap"
+		sleep 5
+	fi
+
+
+	#// if .compiled exists, skip, otherwise configure & build
+	if [ ! -f ".compiled" ]; then
+		showInfo "Configuring ${GCC_VER} (bootstrap)..."
+
+		CFLAGS="${MY_CFLAGS} -Dinhibit_libc -static-libgcc" \
+		../configure \
+			--prefix=${CROSS_INSTALL} \
+			--host=${MY_CHOST} \
+			--target=${CROSS_CHOST} \
+			--with-newlib \
+			--disable-shared \
+			--disable-threads \
+			--enable-languages="c" \
+			--disable-multilib \
+			--disable-nls \
+			--enable-symvers=gnu \
+			--enable-__cxa_atexit \
+			--with-headers=/usr/include \
+			--enable-static \
+			|| showError "${func_name}: Failed to configure!"
+
+
+		#// gcc looks for the file, but it doesn't exist from glibc install-headers, so we create it
+		touch ${CROSS_INSTALL}/include/bits/stdio_lim.h
+
+
+		#// Build
+		showInfo "Compiling ${GCC_VER} (bootstrap)..."
+		make ${CROSS_MAKEOPTS} \
+			CFLAGS_FOR_TARGET="${CROSS_CFLAGS}" \
+			CXXFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET}" || \
+				showError "${func_name}: Failed to compile!"
+
+
+		#// If build was sucessful, leave a marker behind
+		touch .compiled
+	fi
+
+
+	#// if .installed exists, skip, otherwise install
+	if [ ! -f ".installed" ]; then
+		showInfo "Installing ${GCC_VER} (bootstrap)..."
+		make install || showError "${func_name}: Failed to run 'make install'!"
+		touch .installed
+	fi
+
+
+	#// Complete?
+	if [ -f ".compiled" ] && [ -f ".installed" ]; then
+		touch .complete
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Configure & Compile & Install glibc
+#//------------------------------------------------------------------------------------------------
+
+InstallGlibcCore() {
+
+	local myconf
+	local tmp_glibc_chost
+	local func_name="InstallGlibcCore()"
+	if [ -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GLIBC_DIR}" ]; then
+		cd ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GLIBC_DIR}
+	else
+		showError "${func_name}: Directory ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GLIBC_DIR} doesn't exist!"
+	fi
+
+
+	#// Glibc is stupid sometimes, and doesn't realize that with a static C-Only gcc,
+	#// that -lgcc_eh doesn't exist.
+	#// http://sources.redhat.com/ml/libc-alpha/2003-09/msg00104.html
+	if [ ! -f ".sed-makefile" ]; then
+		mv Makeconfig Makeconfig.orig
+		sed -e "s/gnulib := -lgcc -lgcc_eh/gnulib := -lgcc/g" Makeconfig.orig > Makeconfig
+		touch .sed-makefile
+	fi
+
+
+	#// Build glibc
+	if [ ! -d "buildhere-${TARGETARCH}" ]; then
+		mkdir buildhere-${TARGETARCH} || \
+			showError "${func_name}: Failed to create directory buildhere-${TARGETARCH}!"
+	fi
+	cd buildhere-${TARGETARCH}
+
+
+	#// Stage 5
+	if [ ! -f ".complete" ]; then
+		stage "Configure, Build, & Install glibc-core"
+		sleep 5
+	fi
+
+
+	#// If we're gonna use v9 or ultrasparc, set glibc accordingly
+	if [ "${TARGETARCH}" = "sparc" ] || [ "${TARGETARCH}" = "sparc64" ]; then
+		if [ "${SPARCABI}" = "v9" ] || [ "${SPARCABI}" = "ultrasparc" ]; then
+			tmp_glibc_chost="sparcv9-unknown-linux-gnu"
+		else
+			tmp_glibc_chost="${CROSS_CHOST}"
+		fi
+	else
+		tmp_glibc_chost="${CROSS_CHOST}"
+	fi
+
+
+	#// Hppa needs this tweak
+	if [ "${TARGETARCH}" = "hppa" ]; then
+		myconf="--enable-hacker-mode"
+	fi
+
+
+	#// if .compiled exists, skip, otherwise configure & build
+	if [ ! -f ".compiled" ]; then
+		showInfo "Configuring ${GLIBC_VER} (full)..."
+
+		#// configure will not create config-name.h if this variable isn't set for some targets
+		if [ "${TARGETARCH}" = "amd64" ]; then
+			export uname="sysdeps/x86_64"
+		elif [ "${TARGETARCH}" = "ia64" ]; then
+			export uname="sysdeps/ia64"
+		fi
+
+		BUILD_CC="gcc" \
+		CC="${CROSS_CHOST}-gcc -O2 -nostdlib -nostartfiles ${CROSS_CFLAGS}" \
+		AR="${CROSS_CHOST}-ar" \
+		RANLIB="${CROSS_CHOST}-ranlib" \
+		../configure \
+			--prefix=${CROSS_INSTALL} \
+			--host=${tmp_glibc_chost} \
+			--build=${MY_CHOST} \
+			--without-tls \
+			--without-__thread \
+			--enable-add-ons=linuxthreads \
+			--enable-clocale=gnu \
+			--enable-kernel=${MIN_KV} \
+			--without-gd \
+			--without-cvs \
+			--disable-profile \
+			--disable-debug \
+			--with-headers="${CROSS_INSTALL}/include" \
+			${myconf} \
+			|| showError "${func_name}: Failed to configure!"
+
+
+		#// This fixes a *really* annoying issue that pops up in glibc
+		#// http://sources.redhat.com/ml/crossgcc/2003-05/msg00190.html
+		make sysdeps/gnu/errlist.c || showError "${func_name}: Failed to run 'sysdeps/gnu/errlist.c'"
+		mkdir -p stdio-common
+		touch stdio-common/errlist-compat.c
+
+		#// Build
+		showInfo "Compiling ${GLIBC_VER} (full)..."
+		make PARALLELMFLAGS="${CROSS_MAKEOPTS}" || \
+			showError "${func_name}: Failed to compile!"
+
+
+		#// If build was sucessful, leave a marker behind
+		touch .compiled
+	fi
+
+
+	#// if .installed exists, skip, otherwise install
+	if [ ! -f ".installed" ]; then
+		showInfo "Installing ${GLIBC_VER} (full)..."
+		make PARALLELMFLAGS="${CROSS_MAKEOPTS}" install || \
+			showError "${func_name}: Failed to run 'make install'!"
+		touch .installed
+	fi
+
+
+	#// Complete?
+	if [ -f ".compiled" ] && [ -f ".installed" ]; then
+		export -n uname
+		touch .complete
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Configure & Compile & Install gcc-full (C,C++)
+#//------------------------------------------------------------------------------------------------
+
+InstallGccFull() {
+
+	local cross_gcclang
+	local func_name="InstallGccFull()"
+
+	#// Build gcc-full
+	if [ -d "${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR}" ]; then
+		cd ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR}
+	else
+		showError "${func_name}: Directory ${CROSS_PTMPDIR}/${CROSS_BUILDIR}/${GCC_DIR} doesn't exist!"
+	fi
+	if [ ! -d "buildfullhere-${TARGETARCH}" ]; then
+		mkdir buildfullhere-${TARGETARCH} || \
+			showError "${func_name}: Failed to create directory buildfullhere-${TARGETARCH}!"
+	fi
+	cd buildfullhere-${TARGETARCH}
+
+
+	#// Stage 6
+	if [ ! -f ".complete" ]; then
+		stage "Configure, Build, & Install gcc-full"
+		sleep 5
+	fi
+
+
+	#// Use extra languages?
+	if [ "${CMDXTRALANG}" = "yes" ]; then
+		cross_gcclang="c,c++,ada,f77,objc"
+	else
+		cross_gcclang="c,c++"
+	fi
+
+
+	#// if .compiled exists, skip, otherwise configure & build
+	if [ ! -f ".compiled" ]; then
+		showInfo "Configuring ${GCC_VER} (full)..."
+		CFLAGS="${MY_CFLAGS}" \
+		../configure \
+			--prefix=${CROSS_INSTALL} \
+			--target=${CROSS_CHOST} \
+			--host=${MY_CHOST} \
+			--disable-multilib \
+			--disable-nls \
+			--enable-shared \
+			--enable-languages="${cross_gcclang}" \
+			--without-included-gettext \
+			--with-system-zlib \
+			--enable-threads=posix \
+			--enable-long-long \
+			--enable-symvers=gnu \
+			--disable-checking \
+			--enable-cstdio=stdio \
+			--enable-clocale=generic \
+			--enable-__cxa_atexit \
+			--enable-c99 \
+			--enable-version-specific-runtime-libs \
+			--with-local-prefix=${prefix}/local \
+			--with-libs="${CROSS_INSTALL}/lib" \
+			--with-headers="${CROSS_INSTALL}/include" \
+			|| showError "${func_name}: Failed to configure!"
+
+
+		#// Build
+		showInfo "Compiling ${GCC_VER} (full)..."
+		make ${CROSS_MAKEOPTS} \
+			CFLAGS_FOR_TARGET="${CROSS_CFLAGS} -DHAVE_SYS_ERRLIST" \
+			CXXFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET}" || \
+				showError "${func_name}: Failed to compile!"
+
+
+		#// If build was sucessful, leave a marker behind
+		touch .compiled
+	fi
+
+
+	#// if .installed exists, skip, otherwise install
+	if [ ! -f ".installed" ]; then
+		showInfo "Installing ${GCC_VER} (full)..."
+		make install || showError "${func_name}: Failed to run 'make install'!"
+		touch .installed
+	fi
+
+
+	#// Complete?
+	if [ -f ".compiled" ] && [ -f ".installed" ]; then
+		touch .complete
+	fi
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// All Done! (YAY!)
+#//------------------------------------------------------------------------------------------------
+
+CompleteInstall() {
+
+	echo -e ""
+	echo -e ""
+	binfo "${WHITE}>>> --------------------------------------------------------------------------------------------${XX}"
+	binfo "${WHITE}>>> ${GREEN}${MY_CHOST}${WHITE} -> ${PURPLE}${CROSS_CHOST}${WHITE} cross-compile toolchain complete!${XX}"
+	echo -e ""
+	binfo "${WHITE}>>> Toolchain was installed in ${XX}${CYAN}${CROSS_INSTALL}${XX}"
+	binfo "${WHITE}>>> To make use of the newly installed toolchain, append ${CYAN}${CROSS_INSTALL}/bin${WHITE} to the end of your \$PATH.${XX}"
+	binfo "${WHITE}>>> --------------------------------------------------------------------------------------------${XX}"
+	echo -e ""
+	echo -e ""
+
+
+	#// Unset exported vars
+	export PATH="${ORIGPATH}"
+	export -n _POSIX2_VERSION
+
+	return 0
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// If the user Ctrl+C's, cleanup
+#//------------------------------------------------------------------------------------------------
+
+AbortSequence() {
+
+	#// Unset exported vars
+	export PATH="${ORIGPATH}"
+	export -n _POSIX2_VERSION
+
+	showError "Aborting!"
+}
+
+#//------------------------------------------------------------------------------------------------
+
+
+
+
+#// Main
+#//------------------------------------------------------------------------------------------------
+
+#// Set script defaults and read the configuration file
+ReadConfiguration
+
+#// Trap Ctrl+C
+trap "AbortSequence" SIGINT SIGQUIT
+
+#// Parse the Command Line
+ParseCommandLine "${*}"
+
+#// See if we're using the sandbox
+CheckSandbox
+
+#// Process the Command Line
+ProcessCommandLine
+
+#// Get information pertaining to our tasks
+GetInfo
+
+#// Display relevant information to the user before proceeding
+DisplayInfo
+
+#// Unpack the packages
+UnpackSource
+
+#// Configure/Install kernel headers
+if [ "${USE_HEADERS}" = "yes" ]; then
+	InstallKernelHeaders
+fi
+
+#// Configure/Build/Install binutils
+InstallBinutils
+
+#// Change our path so gcc-bootstrap can find binutils
+ResetPath
+
+#// Configure/Build/Install a minimal gcc
+InstallGccBootstrap
+
+#// If we are only building a kernel-compiler, skip these parts
+if [ "${CMDKERNEL}" != "yes" ]; then
+	InstallGlibcCore
+	InstallGccFull
+fi
+
+#// All done! (Yay)
+CompleteInstall
+
+#//------------------------------------------------------------------------------------------------
+
