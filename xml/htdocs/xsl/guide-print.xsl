@@ -22,17 +22,10 @@
     </xsl:choose>
   </title>
 </head>
-<body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
+<body style="margin-right: 35mm;" bgcolor="#ffffff">
 
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-  <tr>
-    <td width="99%" class="content" valign="top" align="left">
-      <!-- Content goes here -->
-      <xsl:call-template name="content" />
-      <br/>
-    </td>
-  </tr>
-</table>
+<!-- Content goes here -->
+<xsl:call-template name="content" />
 
 </body>
 </html>
