@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.5 2004/04/13 00:01:00 npmccallum Exp $
+$Id: GLIInstallProfile.py,v 1.6 2004/04/22 20:45:02 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -48,8 +48,10 @@ class InstallProfile(xml.sax.ContentHandler):
 	_install_rp_pppoe = False
 	_filesystem_tools = ()
 	_install_pcmcia_cs = False
-	_dns_servers = ()
-	_default_gateway = ''
+	_dns_servers_pre = ()
+	_dns_servers_post = ()
+	_default_gateway_pre = ''
+	_default_gateway_post = ''
 
 	# Internal SAX state info
 	_xml_elements = [];
@@ -98,8 +100,10 @@ class InstallProfile(xml.sax.ContentHandler):
 					'gli-profile/install-rp-pppoe': self.set_install_rp_pppoe,
 					'gli-profile/filesystem-tools': self.set_filesystem_tools_pkgs,
 					'gli-profile/install-pcmcia-cs': self.set_install_pcmcia_cs,
-					'gli-profile/dns-servers': self.set_dns_servers,
-					'gli-profile/default-gateway': self.set_default_gateway
+					'gli-profile/dns-servers-pre': self.set_dns_servers_pre,
+					'gli-profile/dns-servers-post': self.set_dns_servers_post,
+					'gli-profile/default-gateway-pre': self.set_default_gateway_pre,
+					'gli-profile/default-gateway-post': self.set_default_gateway_post,
 				}
 
 		path = self._xml_element_path()
@@ -726,7 +730,8 @@ class InstallProfile(xml.sax.ContentHandler):
 				'ignore-depends':	self.get_ignore_install_step_depends,
 				'install-rp-pppoe':	self.get_install_rp_pppoe,
 				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
-				'default-gateway':	self.get_default_gateway
+				'default-gateway-pre':	self.get_default_gateway_pre,
+				'default-gateway-post':	self.get_default_gateway_post,
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -784,10 +789,15 @@ class InstallProfile(xml.sax.ContentHandler):
 			xmldoc += string.join(self.get_filesystem_tools_pkgs(), ' ')
 			xmldoc += "</filesystem-tools>"
 
-		if self.get_dns_servers() != ():
-			xmldoc += "<dns-servers>"
-			xmldoc += string.join(self.get_dns_servers(), ' ')
-			xmldoc += "</dns-servers>"
+		if self.get_dns_servers_pre() != ():
+			xmldoc += "<dns-servers-pre>"
+			xmldoc += string.join(self.get_dns_servers_pre(), ' ')
+			xmldoc += "</dns-servers-pre>"
+
+		if self.get_dns_servers_post() != ():
+			xmldoc += "<dns-servers-post>"
+			xmldoc += string.join(self.get_dns_servers_post(), ' ')
+			xmldoc += "</dns-servers-post>"
 
 		xmldoc += "</gli-profile>"
 
@@ -915,8 +925,21 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		return self._install_pcmcia_cs
 
-	def set_dns_servers(self, dns_servers):
-		""" This sets the DNS servers for the system. The tuple will have the form:
+	def set_dns_servers_pre(self, dns_servers):
+		"""
+		Set the DNS servers for the installation
+		"""
+		self._do_set_dns_servers(dns_servers, 0)
+
+	def set_dns_servers_post(self, dns_servers):
+		"""
+		Set the DNS servers for the post-installed system.
+		"""
+		self._do_set_dns_servers(dns_servers, 1)
+
+	def _do_set_dns_servers(self, dns_servers, which):
+		"""
+		 This sets the DNS servers for the system. The tuple will have the form:
 		(<nameserver 1>, <nameserver 2>, <nameserver 3>)
 		"""
 
@@ -931,19 +954,38 @@ class InstallProfile(xml.sax.ContentHandler):
 			if not GLIUtility.is_ip(server):
 				raise "DnsServersError", server + " must be a valid IP address!"
 
-		self._dns_servers = dns_servers
-
-	def get_dns_servers(self):
+		if which == 0:
+			self._dns_servers_pre = dns_servers
+		else:
+			self._dns_servers_post = dns_servers
+			
+	def get_dns_servers_pre(self):
 		""" This returns a tuple of the form:
 			(<nameserver 1>, <nameserver 2>, <nameserver 3>)
 		"""
-		return self._dns_servers
+		return self._dns_servers_pre
 
-	def set_default_gateway(self, gateway):
+	def get_dns_servers_post(self):
+		""" This returns a tuple of the form:
+			(<nameserver 1>, <nameserver 2>, <nameserver 3>)
+		"""
+		return self._dns_servers_post
+
+	def set_default_gateway_pre(self, gateway):
 		""" 
-		Set the default gateway.
+		Set the default gateway during the installation.
 		The format of the input is: <device>/<gateway IP addr>
 		"""
+		self._do_set_default_gateway(gateway, 0)
+
+	def set_default_gateway_post(self, gateway):
+		""" 
+		Set the default gateway for the post-installed system.
+		The format of the input is: <device>/<gateway IP addr>
+		"""
+		self._do_set_default_gateway(gateway, 1)
+
+	def _do_set_default_gateway(self, gateway, which):
 		if not GLIUtility.is_realstring(gateway):
 			raise "DefaultGateway", "The gateway must be a non-empty string!"
 
@@ -960,10 +1002,20 @@ class InstallProfile(xml.sax.ContentHandler):
 		if not GLIUtility.is_ip(gateway_ip):
 			raise "DefaultGateway", "The IP Provided is not valid!"
 
-		self._default_gateway = gateway
+		if which == 0:
+			self._default_gateway_pre = gateway
+		else:
+			self._default_gateway_post = gateway
 
-	def get_default_gateway(self):
+	def get_default_gateway_pre(self):
 		"""
 		Returns the default gateway
 		"""
-		return self._default_gateway
+		return self._default_gateway_pre
+
+	def get_default_gateway_post(self):
+		"""
+		Returns the default gateway
+		"""
+		return self._default_gateway_post
+
