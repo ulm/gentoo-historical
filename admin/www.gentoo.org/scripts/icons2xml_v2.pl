@@ -287,7 +287,7 @@ sub make_xml_pages {
 		open (CATEGORY_FILE, ">$category_page") || die "unable to open $category_page";
 
 		$category_title = "$categories{$category} ($category)";
-		print INDEX_FILE "<tr><ti><uri link=\"categories/$category.xml\">$category_title</uri></ti></tr>\n";
+		print INDEX_FILE "<tr><ti><uri link=\"icons/$category.xml\">$category_title</uri></ti></tr>\n";
 		print CATEGORY_FILE "$category_header1$category_title$category_header2";
 		print CATEGORY_FILE "<tr><th>$category_title</th></tr>\n\n<tr><ti><table>\n";
 
