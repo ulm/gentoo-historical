@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
+
+<!-- English CVS Version 1.22 -->
+
+<guide link="/doc/de/gentoo-howto.html">
+<title>Gentoo Linux Entwickler HOWTO</title>
+<author title="Autor"><mail link="woodchip@gentoo.org">Donny Davies</mail></author>
+<author title="Autor"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Autor"><mail link="pete@gentoo.org">Peter Gavin</mail></author>
+<author title="Übersetzung"><mail link="js@ameds.de">Jens Schittenhelm</mail></author>
+
+<abstract>Dieses Dokument ist eine Beschreibung des Gentoo Portage Systems, es erklärt wie man neue Pakete erstellt 
+und ist quasi als Standard für die Gentoo Entwickler gedacht. Es ist noch in Arbeit und wird konstant aktualisiert und auf 
+keinen Fall vollständig. Die Übersetzung ist ebenfalls unvollständig.</abstract>
+
+
+
+<version>1.1.2-de</version>
+<date> 10. Oktober 2003</date>
+
+<chapter>
+	<title>Der Portage Verzeichnisbaum</title>
+	<section>
+		<title>Einführung</title>
+		<body><p>Der Portage Verzeichnisbaum ist normalerweise unter /usr/portage zu finden und ist hierarchisch 
+		strukturiert bestehend aus Kategorien gefolgt von Paket-Verzeichnissen. Hier ein Beispiel: Die util-linux-2.11g.ebuild 
+		Datei ist unter /usr/portage/sys-apps/util-linux zu finden. In diesem Verzeichnis können sich mehrere verschiedene Versionen 
+		neben dem util-linux-2.11g.ebuild befinden. Alle unterschiedelichen Pakete teilen sich unabhängig von ihrer Version dasselbe 
+		kategorie/paket Verzeichnis in /usr/portage. </p></body>
+	</section>
+	<section>
+		<title>Den Portage Verzeichnisbaum mit CVS auschecken</title>
+		<body><p>Falls CVS noch unbekannt für Sie ist, gibt es das <uri link="http://www.gentoo.org/doc/en/cvs-tutorial.xml">CVS Tutorial</uri>.
+		Der Portage Verzeichnisbaum befindet sich im gentoo-x86 Paket des Gento Linux Verzeichnisbaumes. Um das ganze (doch recht 
+                grosse) Paket auszuchecken, sollte mit Hilfe obiger Anleitung CVS eingerichtet werden und dann der gentoo-x86 Verzeichnisbaum
+		ausgecheckt werden.
+		</p></body>
+	</section>
+	<section>
+		<title>Was gehört nicht in den Portage Verzeichnisbaum?</title>
+		<body><p>Befor ein ebuild geschrieben wird, sollte in <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> nachgeschaut werden, 
+			ob sich nicht jemand anderes bereits die Mühe gemacht hat, das ebuild zu schreiben, welches aber noch nicht in den offiziellem
+			Portage Verzeichnisbaum übernommen wurde. Dabei sollte wie folgt vorgegangen werden: Auf der 
+			<uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> "query" auswählen, als Produkt "Gentoo Linux" markieren, als Component
+			 "ebuild" auswählen. Im Suchfeld dann den Namen des ebuilds eingeben, sowie als Status NEW, ASSIGNED, REOPENED und (wichtig!) 
+			RESOLVED markieren, dann die Suchabfrage starten.</p>
+			
+			<p>Generell sollte im Portage Verzeichnis nur die .ebuild Dateien und sehr kleine zugehörige Dateien, wie 
+			zum Beispiel Patches oder Beispielskonfigurationen gespeichert werden. Diese Dateien sollten immer unter 
+			/usr/portage/kategorie/paket/files abgespeichert werden, um das kategorie/paket Verzeichnis nicht zu 
+			unübersichtlich machen. Generell ist es für Entwickler keine gute Idee Binärdateien (Nicht-ASCII-Dateien) 
+			im CVS abzulegen. Wenn dies dennoch notwenig sein sollte (zum Beispiel eine PNG Grafik aus welchem 
+			Grund auch immer), dann sollte sie mit der -kb option in das CVS eingebracht werden:
+		<pre caption="Code Auflistung 1">
+		# cvs add -kb myphoto.png</pre>
+		Die -kb option teilt CVS mit, dass myphoto.png eine Binärdatei ist und einer besonderen
+		Behandlung bedarf. Zum Beispiel das Zusammenführen von zwei verschiedenen Binärdateien wird somit nicht erlaubt,
+		was hier auch naheliegend ist. Wenn wir schon beim Zusammenführen sind, alle Patches die dem Portage Verzeichnisbaum
+		hinzugefügt werden, sollten nicht komprimiert sein. Dies erlaubt dann CVS Veränderungen einzubringen und die Entwickler 
+		von dabei möglicherweise entstehenden Konfliken korrekt zu warnen.</p>
+		
+		<p>Nochmals zur Erinnerung: Die Pakete, die in CVS als stable eingecheckt werden, solten wirklich ohne Einschränkungen 
+		funktionieren. Es sollte sichergestellt werden, dass ein guter Satz an Standardeinstellungen gewählt wurde, der auf der Mehrheit
+		aller Systeme laufen wird und somit die Benutzer zufrieden stellt. Wenn das Paket Probleme bereitet, oder Sie nicht sicher sind,
+		wie es zum Laufen gebracht werden kann, hilft sicher ein Blick auf andere Distributionen, welche meistens ihre eigene Fassung
+		des Paketes besitzen. Gute Beispiele sind hier <uri link="http://cvs.mandrakesoft.com/cgi-bin/cvsweb.cgi/SPECS/">Mandrake</uri>
+                oder <uri link="http://www.debian.org/distrib/packages">Debian</uri>.</p>
+
+		<p>Beim Einchecken der ebuilds im CVS sollten alle Entwickler repoman commit statt cvs commit verwenden. Vor Ausführung des commit
+		sollte mit <i>lintool</i> das Digest, der Changelog und das Ebuild selbst verifiziert werden.
+		</p></body> 	
+	</section>
+        <section>
+		<title>Allgemeine CVS Commit Regeln</title>
+		<body><p><warn>Achtung <i>lintool</i> hat einige Probleme. Es sollte stattdessen <i>repoman</i> verwendet werden.</warn></p>
+		<p><ul>
+		<li>Vor einem commit immer repoman ausführen</li>
+                <li>Bitte lintool vor dem commit ausführen</li>
+		<li>Immer testen, ob package.mask in Ordnung ist, indem mit 'emerge --pretend glibc' mögliche Konflikte angezeigt werden</li>
+		<li>Immer das ChangeLog vor dem commit aktualisieren!</li>
+		<li>Um sicherzugehen, das Konflikte während dem CVS commit keine schwerwiegenden Auswirkungen auf den Portage Verzeichnisbaum
+		auftreten, sollte immer vor dem commit des eigentlichen ebuilds, das aktualisierte package.mask eincheckt werden.</li>
+		<li>Bitte sauber einchecken! Zuerst das aktualisierte package.mask, dann das ebuild, ChangeLog und die Lizenz in einem Zug, da
+		ansonsten die Benutzer bei ihren Installationen Probleme bekommen.</li></ul>
+		</p></body>
+	</section> 
+	<section>
+		<title>Das files Verzeichnis</title>
+		<body><p>Wie vorher bereits beschrieben, existiert in jedem paket Unterverzeichnis das Verzeichnis files. 
+		Alle Patches, Konfigurationsdateien oder andere Dateien, die von diesem Paket gebraucht werden, gehören 
+		hier hinein. Selbst erstellte Patches sollten mit einem Versions-Namen versehen werden, wie zum beispiel 
+		meinpaket-1.0-gentoo.diff. Die Gentoo Erweiterung im Namen informiert die Benutzer, dass dieser Patch durch
+		uns, den Gentoo Entwicklern, erstellt wurde und nicht aus einer Mailingliste oder sonst wo gezogen wurde. 
+		Auch hier sollten die  diffs nicht komprimiert werden, da CVS mit Binärdateien nicht so gut umgehen kann.</p>
+		
+		<p>Es sollte immer ein Suffix, wie z.b. mypkg-1.0 an das Ende jeder Datei gesetzt werden, die in das files Verzeicnis
+		gehören, um die einzelnen Dateien unmissverständlich den einzelnen ebuild Skripten zuzuordnen können und die Unterschiede
+		zwischen den einzelnen diffs sichtbar werden. Dies ist generell eine gute Sache :-) Natürlich kann, wenn genauere
+		Unterscheidung benötigt wird, ein anderes Suffix verwendet werden.</p>
+
+		<p>Bei einer grösseren Anzahl von Dateien empfiehlt es sich ein Unterverzeichnis wie z.B. files/mypkg-1.0 anzulegen
+		und die jeweiligen zugehörigen Dateien hier hineinzukopieren. Bei dieser Methode kann man natürlich auf das Suffix
+		bei den einzelnen Dateien verzichten, da dies bereits aus dem Verzeichnisnamen hervorgeht. Das spart einiges an Arbeit.</p>
+	        </body>
+	</section>
+</chapter>	
+
+<chapter>
+	<title>Die ebuild Skripte</title>
+	<section>
+	<title>Einführung</title>
+	<body>
+	<p>Die ebuild Skripte bilden die Grundlage des gesamten Portage Systems. Sie enthalten die gesamte Information
+	zum Herunterladen, Entpacken, Kompilieren und Installieren des Quellcodes, aber auch eventuelle Änderungen und 
+	Konfigurationen, die vor oder nach der Installation oder beim Entfernen durchgeführt werden. Während das meiste
+	von Portage in Python geschrieben ist, sind die ebuilds als bash-Skripte gehalten, da dies das Aufrufen von Befehlszeilen
+	wie auf der Kommandozeile ermöglicht. Eines der Hauptdesign-Prinzipien der ebuild Skripte ist, dass die darin aufgerufenen
+	Befehle denen der Kommandozeile entsprechen, wie wenn der Benutzer das Paket manuell installieren würde. Aus diesem
+	Grund ist die bash-Syntax eine gute Wahl.</p>
+
+	<p>Ebuild Skripte werden durch die <c>ebuild</c> und <c>emerge</c> Befehle ausgeführt. Man muss sich das 
+	<c>ebuild</c> Kommando als einfaches Handwerkzeug vorstellen. Es kann ein ebuild erstellen und installieren, 
+	aber mehr auch nicht. Es kontrolliert, ob Abhängigkeiten erfüllt sind, kann diese aber nicht selbständig auflösen. Auf
+	der anderen Seite ist <c>emerge</c> als hochspezialisierte Zentrale für <c>ebuild</c>, welches die Möglichkeit 
+	besitzt, selbständig abhängige Pakete zu installieren, wenn gewünscht als "was wäre wenn..." dem Benutzer anzeigen,
+	welche ebuilds eingeführt <e>würden</e> und vieles mehr. Allgemein sticht <c>emerge</c> den <c>ebuild</c> Befehl
+	in allen Belangen aus, bis auf einen Punkt. Mit <c>ebuild</c> kann der Benutzer inkrementell alle unterschiedlichen
+	Bereiche einer Paketinstallation (herunterladen, entpacken, kompilieren, installieren und einführen) Schritt für Schritt  
+	ausführen. Für Entwickler ist dies ein unverzichtbares Werkzeug zum debuggen, da nur so Probleme mit dem ebuild
+	auf einen kleinen Bereich des Gesamtprozesses eingegrenzt werden können.</p>
+	</body>
+</section>
+
+<section>
+<title>Die Benennung von  ebuild Dateien</title>
+	<body>
+	<p>Jeder Ebuild Dateiname besteht aus vier Abschnitten:</p>
+
+	<p>Der erste Abschnitt ist der Paketname, der nur aus Kleinbuchstaben, den Zahlen 0-9 und dem Bindestrich ('-')
+	enthalten darf. Beispiele sind: <c>util-linux</c>, <c>sysklogd</c> und <c>glibc</c>.  </p>
+
+	<p>Der zweite Abschnitt ist die Versionsnummer des Paketes, welche normalerweise mit der Versionsnummer des
+	Quellcode Tarballs übereinstimmt. Diese besteht normalerweise aus zwei oder drei Nummern, die durch Punkte
+	von einander getrennt sind, wie zum Beispiel <c>1.2</c> oder <c>4.5.2</c> (sehr lange, durch Punkte
+	voneinander getrennte Nummern werden auch unterstützt) und darf von einen einfachen Buchstaben auf die letzte
+	Zahl gefolgt werden, zum Beispiel: <c>1.4b</c> oder <c>2.6h</c>. Die Paketnummer wird mit der Versionsnummer
+	durch einen Bindestrich verbunden: <c>foo-1.0</c>, <c>bar-2.4.6</c>, etc.</p>
+
+	<impo>Wenn Sie mit dem Gedanken spielen, einen angehängten Buchstaben in Ihrer Versionsnummer zu verwenden,
+	sollten Sie darüber im klaren sein, dass dieser Buchstabe <e>nicht</e> dazu verwendet werden sollte, einen
+	eventuellen Alpha oder Beta Status anzuzeigen, da alphas und betas als <e>prereleases</e> zählen, angehängte
+	Buchstaben jedoch als <e>neuere Versionen</e>. Das ist eine grosse Unterscheidung, da Portage die Versionsnummer eines
+	ebuilds dazu verwendet, herauszufinden, ob es neuer oder älter ist als ein Paket mit gleichem Namen aus derselben
+	Kategorie. Es ist sehr wichtig, dass Versionsnummern glaubwürdig die Version eines Paketes repräsentieren, damit
+	Portage seine Abhägigkeits-Prüfungen korrekt ausführt..</impo>
+
+	<p>Der dritte Abschnitt (optional) enthält eine spezielle Suffix, entweder <c>_alpha</c>, <c>_beta</c>, <c>_pre</c> oder 
+	<c>_rc</c>. Alle diese Suffixe werden durch eine Nummer ergänzt, zum Beispiel <c>linux-2.4.0_pre10</c>. Bei identischen
+	Versionsummern geht Portage davon aus, dass <c>_alpha</c> älter als <c>_beta</c> ist, <c>_beta</c> älter als <c>_pre</c>
+	und <c>_pre</c> äter als <c>_rc</c> ist.</p>
+
+	<note>Ein <c>_rc</c> Paket ist älter als ein Paket ohne vorausgehende  Suffixe mit Unterstrich (z.B. <c>linux-2.4.0</c>)
+	und <c>linux-2.4.0</c> ist älter als ein Paket mit einem Buchstaben Präfix, hier <c>linux-2.4.0b</c>. Nochmal: Diese 
+	Versionsinformationen sind wichtig, da Portage es zur Bestimmung heranzieht, ob ein Paket oder ebuild älter oder jünger ist,
+	als ein Paket aus der selben Kategorie mit gleichem Namen.</note>
+
+	<p>Der vierte Abschnitt (ebenfalls optional) ist die Gentoo Linux spetzifische <e>Revisionsnummer</e>, welche durch <c>-r#</c>
+	angegeben wird, wobei <c>#</c> ein Integer (Zahlenwert) ist, als Beispiel: <c>package-4.5.3-r3</c>. Die Revisionsnummer ist
+	unabhängig von der Versionsnummer des Quellpaketes und kann dazu genutzt werden, die Benutzer davon in Kennntnis zu setzen, 
+	dass es sich um ein neues bzw. erweiterte Revision eines ebuilds handelt.</p>
+
+	<p>Wenn grössere Veränderungen an einem bestehenden ebuild vorgenommen werden, sollte die Datei vorher kopiert und mit einer
+	um 1 erhöhten Revisionsnummer abgespeichert werden. Die ersten Fassungen besitzen normalerweise keine Revisionsnummer, z.B.
+	<path>package-4.5.3</path>, da sie von Portage so betrachtet werden, als ob sie eine Revisionsnummer von Null haben. Das 
+	bedeutet für die Zählweise: <c>1.0</c> (erste Version), <c>1.0-r1</c>, <c>1.0-r2</c>, und so weiter.</p>
+
+	<p>Und natürlich gehen wir davon aus, dass der <e>fünfte</e> Abschnitt der ebuild Bezeichnung nicht vergessen wird,
+	es ist die <c>.ebuild</c> Endung.</p>
+	</body>
+</section>
+
+<section>
+	<title>Aufbau einer ebuild Datei</title>
+	<body><p>1. Setzen der Variablen:</p>
+	<p>Der Anfang jeder ebuild Datei besteht aus einigen Variablen, die wie folgt gesetzt werden können:</p>
+	<table>
+         <tr><ti><c>P</c></ti><ti>Der Name und die Versionsnummer des Paketes, dies muss normalerweise nicht gesetzt werden, da es von 
+         Portage durch den Dateinamen bestimmt wird</ti></tr>
+         <tr><ti><c>A</c></ti><ti>Der Name ohne Pfadangabe von dem Haupt-Quellcode des Paketes</ti></tr>
+         <tr><ti><c>S</c></ti><ti>Das Quellcode-Verzeichnis für das Paket, im Normalfall${WORKDIR}/${P}</ti></tr>
+         <tr><ti><c>DESCRIPTION</c></ti><ti>Eine kurze Beschreibung des Paketes in einem Satz</ti></tr>
+         <tr><ti><c>SRC_URI</c></ti><ti>sind die URIs für jede Quellcode-Datei in diesem Paket, welche durch Leerzeichen getrennt werden. 
+         Das Erste ist normalerweise so etwas wie: <e>ftp://ftp.company.com/pub/somepackage/${A}</e></ti></tr>
+         <tr><ti><c>HOMEPAGE</c></ti><ti>ist die Homepage des Pakets</ti></tr>
+         <tr><ti><c>DEPEND</c></ti><ti>build Abhängigkeiten, siehe dazu den Abschnitt <uri link="#dependencies">Package Dependencies</uri></ti></tr>
+         <tr><ti><c>RDEPEND</c></ti><ti>runtime Abhängigkeiten. mehr dazu im Abschnitt <uri link="#dependencies">Package Dependencies</uri></ti></tr>
+        </table>
+        
+        <p>2. ebuild Funktionen</p>
+        <p>Es gibt verschiedene Funktionen, die ein den ebuild Dateien definiert werden können, um den Prozess der Zusammenstellung und Installation
+        des Paketes steuern zu können.</p>
+
+	<table>
+	<tr><ti><c>pkg_setup</c></ti><ti>mit dieser Funktion können vorbereitende Schritte durchgeführt werden. Dazu gehört die Kontrolle des 
+	Benutzerkontos oder die Kontrolle nach einer existierenden Konfigurationsdatei. Diese Funktion muss den Wert 0 zurückgeben, damit
+	das ebuild fortgesetzt werden kann.</ti></tr>
+	<tr><ti><c>pkg_nofetch</c></ti><ti>Informiert den Benutzer über Aktionen oder Downloads, die er selbst ausführen muss (z.B. aus 		
+	Lizenzierungsgründen).</ti></tr>
+        <tr><ti><c>src_unpack</c></ti><ti>Mit dieser Funktion kann der Quellcode entpackt werden und autoconf/automake/etc. ausgeführt werden.
+	Standardmässig wird das Paket in <c>${A}</c> entpackt. Das Standard-Startverzeichnis ist  <c>${WORKDIR}</c>.</ti></tr>
+	<tr><ti><c>src_compile</c></ti><ti>Damit wird das Paket konfiguriert und kompiliert. Das Standard-Startverzeichnis ist <c>${S}</c>.</ti></tr>
+	<tr><ti><c>src_install</c></ti><ti>Mit dieser Funktion wird das Paket in <c>${D}</c> installiert. Benutzt das Paket automake, kann dies
+	mit <c>make DESTDIR=${D} install</c> vereinfacht werden. <e>Es sollte sichergestellt werden, dass die Installation aller Dateien in <c>${D}</c>
+	als root ausgeführt wird!</e></ti></tr>
+	<tr><ti><c>pkg_preinst</c></ti><ti>Die Befehle in dieser Funktion werden vor dem mergen der Dateien ausgeführt.</ti></tr>
+	<tr><ti><c>pkg_postinst</c></ti><ti>Die Befehle in dieser Funktion werden nach dem mergen der Dateien ausgeführt.</ti></tr>
+	<tr><ti><c>pkg_prerm</c></ti><ti>Die Befehle in dieser Funktion werden vor dem Entfernen der Dateien ausgeführt.</ti></tr>
+	<tr><ti><c>pkg_postrm</c></ti><ti>Die Befehle in dieser Funktion werden nach dem Entfernen der Dateien ausgeführt.</ti></tr>
+	<tr><ti><c>pkg_config</c></ti><ti>Mit dieser Funktion kann die initiale Konfiguration des Paketes nach der Installation ausgeführt werden. Alle
+	Pfade in dieser Funktion sollen mit dem Prefix ${ROOT} versehen werden. Diese Funktion wird <e>nur</e> ausgeführt, wenn der Benutzer folgenden
+	Befehl ausführt: <c>ebuild /var/db/pkg/${CATEGORY}/${PF}/${PF}.ebuild config</c>.</ti></tr>
+        </table>
+
+	<p> Folgende Funktionen können ebenfalls im ebuild verwendet werden:</p>
+
+	<table>
+	<tr><ti><c>use</c></ti><ti>Kontrolle ob, eine oder mehere gegebenen USE-Flags gesetzt sind. Ist dies der Fall, wird die Funktion die
+	USE-Flag zurückgeben. Zur Kontrolle der Existenz einer solchen Flag kann <c>[ -z "`use foobar`"]</c> ausgeführt werden.</ti></tr>
+	<tr><ti><c>has_version</c></ti><ti>Gibt 1 zurück, wenn auf dem System die geforderte version installiert ist. Als Beispiel: 
+	<c>has_version >=glibc-2.3.0</c>.</ti></tr>
+	<tr><ti><c>best_version</c></ti><ti>Gibt <i>category/package-version</i> des jeweiligen Pakets zurück. Beispiel: 
+	<c> best_version x11-libs/gtk+extra</c>.</ti></tr>
+	<tr><ti><c>use_with</c></ti><ti> Diese Funktion prüft ob eine USE-Flag gesetzt wurde und gibt enstprechend "--with-foobar" oder 
+	"--without-foobar" zurück. Bei einem Argument ist dieses sowohl der USE-Flag und der with(out) String. Andernfalls ist das erste
+	Argument der USE-Flag und das zweite Argument der with(out) String. Beispiel: <c>use_with truetype freetype</c></ti></tr>
+	<tr><ti><c>use_enable</c></ti><ti>Hat die gleiche Funktion wie use_with, gibt jedoch "--enable foobar" oder "--disable foobar" 
+	zurück.</ti></tr>
+	<tr><ti><c>check_KV</c></ti><ti>Prüft ob Portage die Kernel-Versionsnummer erkennt. Ist dies nicht der Fall wird eine Fehlermeldung
+	ausgegeben und das ebuild abgebrochen. Wenn im Script die Versionsnummer geprüft werden soll, kann <c>${KV}</c> verwendet werden, 
+	welche automatisch durch Portage definiert wird.</ti></tr>
+	<tr><ti><c>keepdir</c></ti><ti>Erstellt ein .keep Datei im gegebenen Verzeichnis, so dass dies nicht automatisch von Portage
+	wieder entfernt werden kann.</ti></tr>
+	<tr><ti><c>econf</c></ti><ti>Führt <c>./configure</c>mit den notwendigen Pfadänderungen (Prefix,host, mandir, infodir, datadir, 
+	sysconfdir, localstatedir) durch. Optionale Argumente für <c>./configure</c>können gesetzt werden.</ti></tr>
+	<tr><ti><c>einstall</c></ti><ti>Führt ein <c>make install</c> durch, sodass Portage weiss, wohin die Dateien installiert werden.</ti></tr>
+	<tr><ti><c>die</c></ti><ti>Bricht den aktuellen Prozess ab. Das übergebene Argument wird dem Benutzer als Nachricht dargestellt.</ti></tr>
+	<tr><ti><c>einfo</c></ti><ti>Kann verwendet werden, um den Benutzer über wichtige Dinge zu informieren. Das Argument das an <c>einfo</c> 
+	übergeben wird, ist die Nachricht, die der Benutzer erhält.</ti></tr>
+	</table>
+        </body>
+</section>
+
+<section>
+	<title>Regeln zum Schreiben eines ebuilds</title>
+	<body><p>Da ebuilds in Wirklichkeit nur aus einfachen Shell Skripten bestehen, sollte der zu bearbeitende Editor auf diesen Modus eingestellt
+	werden. Korrektes Einrücken sollte beachtet werden, nur Tab-Sprünge und keine Leerzeichen. Am besten den Editor so einstellen, dass die
+	Tabulatorsprünge alle vier Leerzeichen gesetzt sind. Die Klammern um die Umgebungsvariablen sollten nicht vergessen werden; d.h. <c>${P}</c>
+	anstatt nur <c>$P</c>.</p>
+
+	<p> Längere Zeilen sollten mit '\' umgebrochen werden:
+	<pre caption="Code Auflistung 2.1">
+	./configure \
+	--prefix=/usr || die "configure failed"</pre>
+	Für weitere Details kann man einen Blick in <i>skel.ebuild</i> werfen, dies befindet sich in /usr/portage.</p>
+	
+	<p>Bei der Benutzung von Vim kann folgender Code am Ende der .vimrc Datei eingetragen werden, damit sind automatisch alle Einstellungen
+	für Gentoo-Dokumente gesetzt.
+	<pre caption="Code Auflistung 2.2">
+	if (getcwd() =~ 'gentoo-x86\|gentoo-src\|portage')
+	set tabstop=4 shiftwidth=4 noexpandtab
+	endif</pre>
+	</p>
+
+	<p>Bei der Benutzung von emacs kann in das .emacsrc (GNU Emacs) oder in die init.el (XEmacs) eingetragen werden.
+  	<pre caption="Code Auflistung 2.3">
+	(defun ebuild-mode ()
+  	(shell-script-mode)
+	  (sh-set-shell "bash")
+	  (make-local-variable 'tab-width)
+	  (setq tab-width 4))
+	(setq auto-mode-alist (cons '("\\.ebuild\\'" . ebuild-mode) auto-mode-alist))
+	(setq auto-mode-alist (cons '("\\.eclass\\'" . ebuild-mode) auto-mode-alist))</pre></p>
+	</body>
+</section>
+
+<section>
+	<title>Die USE Variablen</title>
+	<body><p>Die USE-Variablen dienen dem Zweck, Portage global zu konfigurieren und automatisch bestimmte Kompilierungsoptionen an- oder abzuschalten.
+	Hier ist ein Beispiel. Wir gehen nun davon aus, dass Sie ein GNOME-Fan sind, und jedes ebuild, welches eine optionale GNOME Unterstützung anbietet, soll 
+   	dies automatisch miteinkompilieren. In diesem Fall fügen wir <c>gnome</c> in die USE variable von <i>/etc/make.conf</i> hinzu und Portage berücksichgt dies
+	bei jeder Kompilierung eines Paketes mit GNOME Unterstützung. Im umgekehrten Fall, wenn optinale GNOME Funktionen nicht gewünscht sind, editiert man
+	/etc/make.conf und stellt sicher, dass <c>gnome</c> in der USE Variable nicht gesetzt ist. Gentoo Linux besitzt eine überwältigende Anzahl von USE Optionen,
+	die es Ihnen erlauben, das System genau so zu konfigurieren, wie Sie es haben möchten.</p>
+
+	<p><note> Wenn eine USE Variable deaktiviert ist (hier im Beispiel <c>gnome</c>) wirk sich dies nur auf die <i>optinalen</i> Kompilierungsoptionen aus. Wenn 
+	Sie jedoch ein ebuild <c>emergen</c>, welches auf ein GNOME Paket angewiesen ist, wird GNOME automatisch als eine Abhängigkeit hiervon mitinstalliert,
+	falls es nicht bereits erfolgt ist. Das ist auch der Grund, weshalb man vor dem eigentlichen <c>emerge</c> ein <c>emerge --pretend</c> ausführen sollte. In
+	so einem Fall wissen Sie bereits vorher Bescheid, was alles auf Ihrem System installiert wird.</note></p>
+
+	<p>In Ihren eigenen ebuilds kann mit Hilfe der USE Variable geprüft werden, ob die entsprechende Variable vom Besitzer der Installation bereits gesetzt ist. Das 
+	<c>use</c> Kommando gibt den Namen jeder Variable zurück, die USE und seiner Befehlszeile präsent ist. Der Befehl wird normalerweise so angewendet:</p>
+	
+	<p><c>if [ "`use X`" ]; then commands; fi</c></p>
+
+	<p>USE Variablen können auch dazu verwendet werden, bestimmte Abhängigkeiten zu setzen. In unserem Beispiel wollen wir ein bestimmtes Paket nur
+	dann als erforderlich markieren, wenn eine bestimmte USE Variable gesetzt ist. Dies kann mit folgender Syntax durchgeführt werden: <c>variable? 
+	(mycat/mypackage-1.0-r1)</c> in der DEPEND Zeile Ihres ebuilds. In diesem Fall wird <c>mycat/mypackage-1.0-r1</c> nur dann erforderlich, wenn
+	die entsprechende Variable in den USE vorhanden ist. Umgekehrt ist es auch möglich, festzulegen, welche weitere Abhängigkeit verwendet werden soll, wenn
+	eine USE-Flag <i>nicht</i> gesetzt ist: <c> variable? (mycat/mypackage-1.0-r1) : (othercat/otherpackage-1.0-r5)</c>. In diesem Fall wird dann das
+	Paket <c>othercat/otherpackage-1.0-r5</c> anstatt von <c>mycat/mypackage-1.0-r1</c> installiert. Soll ein Abhängigkeit nur dann installiert werden,
+	wenn die Variable nicht vorhanden ist, verwendet man <c>!variable? (mycat/mypackage-1.0-r1)</c>. Es sollte sichergestellt werden, dass nur die oben
+	genannte Syntax verwendet wird und nicht die Bash eigene "ifs". Bash Bedingungen stören Portages Abhängigkeits-Cache, sodass die Verwendung dieser
+	zu einem funktionsunfähigem ebuild führen wird.</p>
+
+	<p>Hier noch ein wichtiger Tipp zur Verwendung von <c>USE</c>. In dem meisten Fällen besitzt das Paket bereits ein <c>./configure</c> Skript um 
+	das Paket zu konfigurieren. Optionale Bestandteile werden durch Übergabe bestimmer Argumente zur Laufzeit mitkompiliert. Zur Übergabe der USE-Flags
+	an das Konfikurationsskript geht man am besten wie folgt vor: Zunächst sollte herausgefunden werden, ob eine bestimmte <c>./configure</c> Option
+	standardmässig ein- oder abgeschaltet ist.</p>
+
+	<pre caption="Code Auflistung 2.4"> 
+	DEPEND="X? ( >=x11-base/xfree-4.3 )
+	        mysql? ( >=dev-db/mysql-3.23.49 )
+	        apache2? ( >=net-www/apache-2 ) : ( =net-www/apache-1.* )"
+
+	src_compile() {
+    		local myconf
+		use X || myconf="--disable-x11"
+		use mysql || myconf="${myconf} --disable-mysql"
+
+	    ./configure ${myconf} --prefix=/usr --host=${CHOST} || die
+	    emake || die
+	}
+	</pre>
+
+	<p>Im obigen Beispiel prüfen wir, ob die X und mysql USE Variablen abgeschaltet sind. Der Abschnitt <c>use X ||</c> kontrolliert, ob X in der USE Variable
+	vorhanden ist. Ist dies nicht der Fall, so übergibt er das Argument <c>myconf="--disable-x11"</c> an das Konfigurationsskript. Es ist nicht notwendig X11
+	und mysql explizit zu aktivieren, da diese standardmässig bereits eingeschaltet sind. Wenn jedoch eine bestimmte Option standardmässig abgeschaltet ist
+	kann man wie folgt vorgehen:</p>
+
+	<pre caption="Code Auflistung 2.5"> 
+	DEPEND="X? ( >=x11-base/xfree-4.3 )
+	        mysql? ( >=dev-db/mysql-3.23.49 )"
+
+	src_compile() {
+	    local myconf
+	    use X &amp;&amp; myconf="--enable-x11"
+	    use mysql &amp;&amp; myconf="${myconf} --enable-mysql"
+	
+	    ./configure ${myconf} --prefix=/usr --host=${CHOST} || die
+	    emake || die
+	}
+	</pre>
+	
+	<p>In diesem Beispiel werden X11 und MySQL-Unterstützung nur dann explizit aktiviert, wenn die entsprechende USE Variable vorhanden ist. Der Abschnitt
+	<c>use mysql &amp;&amp;</c> prüft, ob mysql in der USE-Flag gesetzt ist, und übergibt dann <c> myconf="${myconf} --enable-mysql"</c>.</p>
+
+	<p>Eine kontnuierlich aktualisierte Liste aller USE Variablen fidnet mann <uri link="http://www.gentoo.org/dyn/use-index.xml">hier</uri>.
+       </p></body>
+</section>
+</chapter>
+
+<chapter>
+	<title>Aufbau des Dateisystems</title>
+
+<section>
+	<title>Einführung in FHS</title>
+	<body>
+	<p>Der Aufbau des Gentoo Linux Dateisystems orientiert sich am am FHS Standard, kurz für: <i>Filesystem Hierarchy Standard</i>. Eine kurze 
+	Beschreibung dieses Standards wir hier gegeben, eine komplette Spezifikation findet man unter <uri link="http://www.pathname.com/fhs/">http://www.pathname.com/fhs/
+	</uri>.
+	</p>
+
+	<p><note>Der /opt Breich wird in Abschnitt 3.12 der FHS Spezifikation beschrieben. Abschnitt 4.4 behandelt das /usr/X11R6 Verzeichnis. KDE und GNOME werden
+	nicht spezifisch besprochen und sind in der aktuellen Fassung des FHS überhaupt nicht berücksichtigt.</note>
+	</p></body>
+</section>
+
+
+<section>
+	<title>Wohin mit meinem Paket in diesem Dateisystem?</title>
+	<body>
+	<p>Normalerweise wird bei der Verwendung von autoconf und automake das Paket standardmässig korrekt installiert, allerdings mit einigen wenigen
+	Ausnahmen:
+	<ul>
+	<li>Wenn das Programm nach /bin, /sbin, /usr/bin oder /usr/sbin installiert wird, sollten die dazugehörigen Man-Pages nach /usr/share/man kopiert werden.
+	Dies kann meistens durch Übergabe des Arguments <c>./configure --mandir=/usr/share/man</c> im ebuild Skript bewerkstelligt werden.</li>
+	<li>GNU Info Dateien gehören nach /usr/share/info, <i> auch wenn die Info-Dateien X11, GNOME oder KDE-Programme betreffen</i>. Nochmals:
+	/usr/share/info ist der <i>einzige</i> offizielle Platz für GNU Info-Dateien! Leider instellieren die meisten ./configure Skripte die GNU Dateien nach
+	/usr/info, sodass man mit Hilfe des <c>--infodir=/usr/share/info</c> Arguments nachhelfen muss.</li>
+	<li>Dokumentationen werden in ein Unterverzeichnis von /usr/share/doc installiert. Dies sollte Namen, Version und Revisionsnummer des betreffenden
+	Programmes beinhalten. Das gilt für alle Programme, GNOME, KDE, X11 wie auch der Konsole. Manchmal wird weitere Dokumentation für 
+	spezielle Zwecke in die /usr/shareHierarchy eingebunden.</li>
+	<li>X11-spezifische Programme und Bibliotheken sollten immer nach /usr installiert werden und nicht direkt nach /usr/X11R6, welches ausschliesslich
+	für das X Window System, Version 11 Release 6 vorbehalten ist. Dies ist wahrscheinlich einer genauere Interpretation der FHS Spezifikation, als
+	es in anderen Distributionen üblich ist.</li>
+	<li>GNOME und KDE Programme gehören ebenfalls nach /usr.</li>
+	</ul></p>
+
+	<impo>Manche Distributionen installieren KDE und GNOME nach /opt. Zur Zeit existiert kein Standard für die Installtion von Dateien der Desktop-Umgebungen.
+	Im Interesse einer einfachen und konsistenten Handhabung haben wir uns entschieden, alle KDE und GNOME Pakete nach /usr zu installieren.</impo>
+
+	<p>Generell sollte das ebuild seine Dateien in den /usr Verzeichnisbaum installieren. Manche Programme können mit oder ohne GNOME; KDE und X11
+	Bibliotheken kompiliert werden, was für verwirrung sorgt. Unsere Lösung, alles nach /usr zu installieren, verhindert doppelte Arbeit und unnötige Komplexität
+	für die ebuild Entwickler. Der Pfad, in den die Programmdateien installiert werden, sollte nicht an das Vorhandensein oder Fehlen von USE Variablen
+	geknüpft werden. Somit installieren die ebuilds im Portage Verzeichnisbaum in fast allen Fällen ihre Dateien nach /usr.</p>
+
+	<p><note>Das /opt Verzeichnis in Gentoo Linux ist für binäre Pakete reserviert. Als Beispiele können hier mozilla-bin, acroread und realplayer angeführt
+	werden. Die hierhin installierten Pakete benötigen in der Regel eine /etc/env.d/foo Markierungsdatei. Dies dient der Möglichkeit, Pfade und zusätzliche
+	Variablen der Laufzeitumgebung hinzuzufügen können.</note></p>
+	</body>
+</section>
+
+</chapter>
+</guide>
+ 
