@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.6 2004/11/04 00:59:22 port001 Exp $
+# $Id: Page_Login.py,v 1.7 2004/11/18 16:40:13 port001 Exp $
 #
 
 import os
@@ -13,7 +13,7 @@ import os
 import Config
 from User import User
 import Session as SessionHandler
-from site_modules import SiteModule
+from site_modules import SiteModule, Redirect
 
 class Page_Login(SiteModule):
 
@@ -42,7 +42,7 @@ class Page_Login(SiteModule):
                 self.alias = self.form.getvalue("username")
                 self.uid = self.user_obj.GetUid(self.alias)
         
-            self.template = Config.Template["main"]
+            raise Redirect, "index.py?page=main"
  
         elif self.page == "logout":
         
@@ -51,7 +51,8 @@ class Page_Login(SiteModule):
 
             self.uid = 0
             self.alias = ""
-            self.template = Config.Template["main"]
+
+            raise Redirect, "index.py?page=main"
 
         # we fell through, the user wants to login
         self.tmpl.compile(self.template)
