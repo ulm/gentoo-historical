@@ -65,7 +65,7 @@
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
     <xsl:otherwise><xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
---
+- -
   <xsl:choose>
     <xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
@@ -290,7 +290,7 @@
   </xsl:if>
   <xsl:choose>
     <xsl:when test="/mainpage | /news">
-      <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
+      <title>Gentoo Linux - - <xsl:value-of select="title"/></title>
     </xsl:when>
     <xsl:when test="/email">
       <title><xsl:value-of select="subject"/></title>

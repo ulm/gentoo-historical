@@ -310,7 +310,7 @@
     </xsl:otherwise>
   </xsl:choose>
   <xsl:if test="@id">
-    <a name="{@id}"/>
+    <a name= "{@id}"/>
   </xsl:if>
   <p class="secthead"><xsl:value-of select="title" /></p>
   <xsl:apply-templates select="body" />
