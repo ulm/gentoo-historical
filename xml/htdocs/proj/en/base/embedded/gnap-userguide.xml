@@ -15,8 +15,8 @@ to use it.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.2</version>
-<date>February 14, 2005</date>
+<version>1.5</version>
+<date>April 6, 2005</date>
 
 <chapter>
 <title>Why GNAP ?</title>
@@ -69,135 +69,9 @@ to go through the whole Catalyst process to customize a specific LiveCD.
 
 </body>
 </section>
-<section>
-<title>What you should read</title>
-<body>
-
-<p>
-If you just want to build a customized GNAP LiveCD using an existing GNAP core,
-please proceed directly to the
-<uri link="#doc_chap3">How to use a GNAP core to build a custom LiveCD</uri>
-chapter. If you want to
-build your own GNAP core, please read the following section.
-</p>
-
-</body>
-</section>
 </chapter>
 <chapter>
-<title>How to build a GNAP Core</title>
-<section>
-<title>Prerequisites</title>
-<body>
-
-<p>
-You'll need root rights (needed by Catalyst) to build a GNAP Core. You'll also
-need to have the following packages installed:
-</p>
-
-<ul>
-<li>dev-util/catalyst (tested with version 1.1.1)</li>
-<li>sys-fs/squashfs-tools (tested with version 2.0)</li>
-</ul>
-
-<p>
-Finally you'll need an uclibc/hardened stage2 tarball as seed stage.
-The current one is named <path>stage2-x86-uclibc-hardened-2004.3.tar.bz2</path>
-and it is available for download
-<uri link="http://gentoo.osuosl.org/experimental/x86/embedded/stages/">here</uri>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Catalyst spec files and support files</title>
-<body>
-
-<p>
-The <uri link="http://dev.gentoo.org/~koon/gnap/gnap-sources-current.tar.bz2">GNAP Sources</uri>
-contains the <c>gnap_make</c> build script, Catalyst configuration
-files, the portage configuration and the kernel configuration used for
-the current version of GNAP. You should download and unpack it, then
-update the <c>storedir</c> parameter in the <path>gnapcatalyst.conf</path>
-file so that it points to a temporary build directory.
-</p>
-
-</body>
-</section>
-<section>
-<title>Building a GNAP Core from scratch</title>
-<body>
-
-<p>
-Once you edited the file, you should use <c>gnap_make</c> to call the
-Catalyst stages and the tarball creation, with the <c>-s</c> parameter
-to designate the stage2 tarball seed:
-</p>
-
-<pre caption="Building a new GNAP Core tarball in one step">
-# ./gnap_make -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2
-</pre>
-
-<p>
-This will take a <e>very</e> long time to complete, and should produce
-a nice GNAP Core tarball with a version stamp based on current date.
-</p>
-
-<p>
-If you want to reuse a previously built (or officially downloaded) Portage
-snapshot, you should copy the portage-YYYYMMDD.tar.bz2 file to the
-<path>storedir/snapshots</path> subdirectory, then use the following command:
-</p>
-
-<pre caption="Building from a YYYYMMDD snapshot">
-# ./gnap_make -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 YYYYMMDD
-</pre>
-<p>
-In case of failure, or if you just want to re-run some final stages, you might
-want to specify which Catalyst stages gnap_make should call. You can do this
-by providing the snapshot timestamp to reuse, the GNAP version timestamp to 
-reuse, and the stage names (<c>snapshot</c>, <c>stage3</c>,
-<c>livecd-stage1</c>, <c>livecd-stage2</c>) and/or the special
-<c>tarball</c> target (which builds the final GNAP Core tarball) as parameters:
-</p>
-
-<pre caption="Calling only the two final stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
-# ./gnap_make 20041008 20041012 livecd-stage2 tarball
-</pre>
-
-
-</body>
-</section>
-<section>
-<title>Customizing your GNAP Core</title>
-<body>
-
-<p>
-You may want to change the kernel sources used in the GNAP Core (you may even
-have to, if the configured sources are no longer in portage). To do that, you
-should edit the <path>specs/common.conf</path> file to point to the right
-sources name and change the <path>specs/kernel.config</path> kernel
-configuration file to use.
-</p>
-
-<p>
-You can also change the subarch and profile used to build the GNAP Core
-(by default, an <e>x86</e> subarch with <e>uclibc/x86/hardened</e> profile),
-by editing the <path>specs/common.conf</path> file.
-</p>
-
-<p>
-To add new software packages, you should add them to the
-<path>specs/packages.conf</path> file. To start new daemons by default,
-you should add them to the <c>livecd/rcadd</c> option of the
-<path>specs/livecd.conf</path> file.
-</p>
-
-</body>
-</section>
-</chapter>
-<chapter>
-<title>How to use a GNAP Core to build a custom LiveCD</title>
+<title>How to use GNAP to build a custom network appliance LiveCD</title>
 <section>
 <title>Requirements</title>
 <body>
@@ -212,13 +86,30 @@ You don't need to be root to build a custom GNAP LiveCD.
 
 </body>
 </section>
+
+<section>
+<title>How it works</title>
+<body>
+
+<p>
+The gnap_overlay script takes a GNAP core tarball and one or more overlay
+sources (directories or conflet files) and either produces a bootable LiveCD
+.iso file, or writes a bootable filesystem to a removable disk device:
+</p>
+
+<figure link="gnap_overlay.png" short="gnap_overlay principle"
+        caption="How gnap_overlay works"/>
+
+</body>
+</section>
 <section>
 <title>The overlay.conf file</title>
 <body>
 
 <p>
-The overlay.conf file controls general customization options. It's the only
-mandatory file in your overlay directory. Here you can decide localization
+The overlay.conf file controls general customization options. It must be
+present either in an overlay source (as etc/overlay.conf) or directly
+specified as a <c>-c</c> parameter. In this file you can decide localization
 options and which features should be enabled on your customized LiveCD:
 </p>
 
@@ -322,25 +213,26 @@ options and which features should be enabled on your customized LiveCD:
 </body>
 </section>
 <section>
-<title>The overlay directory</title>
+<title>Overlay sources</title>
 <body>
 
 <p>
-The overlay directory contains files that will be used to replace default files
-on the LiveCD root filesystem just after startup. This directory must contain
-at least a <path>etc</path> subdirectory with a <path>etc/overlay.conf</path>
-in it.
+Starting with version 1.3, it's possible to specify multiple overlay sources
+(<c>-o</c> options). An overlay source can either be a directory or a tar.bz2 
+file containing a directory (called a conflet). Overlay directories and
+conflets contain files that will be used to replace default files on the
+LiveCD root filesystem just after startup.
 </p>
 
 <p>
-Files commonly replaced include <path>etc/hostname</path> (to set a host name),
-<path>etc/shadow</path> (to set a root password) or <path>etc/conf.d/net</path>
-(to set network configuration).
+Files commonly replaced include <path>etc/conf.d/hostname</path> (to set a
+host name), <path>etc/shadow</path> (to set a root password) or
+<path>etc/conf.d/net</path> (to set network configuration).
 </p>
 
 <note>
-The GNAP tools contain typical overlays for various roles in the examples
-subdirectory.
+In the <path>examples/</path> subdirectory of the GNAP tools, you will find
+typical overlay directories for various roles and example conflets.
 </note>
 
 <note>
@@ -358,13 +250,19 @@ fat into tour GNAP system.
 <p>
 You should use the <c>gnap_overlay</c> script from the gnap-tools package.
 For example, to build an <path>myfirewall.iso</path> LiveCD using the
-<path>gnap-0.3-20041008.tar</path> GNAP Core and the 
+<path>gnap-core-1.3.tar</path> GNAP Core and the 
 <path>overlays/myfirewall</path> overlay directory:
 </p>
 
 <pre caption="Example of gnap_overlay use">
-$ ./gnap_overlay gnap-0.3-20041008.tar overlays/myfirewall myfirewall.iso
+$ ./gnap_overlay -i myfirewall.iso -g gnap-core-1.3.tar -o overlays/myfirewall
 </pre>
+
+<note>
+In this example, the <path>overlays/myfirewall</path> directory should contain
+an <path>etc/overlay.conf</path> file, otherwise you should specify one using
+the <c>-c</c> option.
+</note>
 
 <p>
 Then you should burn this ISO file and test. CD-RW is recommended :)
@@ -389,22 +287,141 @@ will need to install a Master Boot Record on it :
 
 <p>
 You must also create an active partition on the device, using fdisk. Then
-you can call (as root) gnap_overlay to write to the disk. You'll need to know
-the name of the partition to write to, as seen by the host you use to write
-to the device. You'll also need to know the name of the partition as it will be
-seen in the GNAP system as it boots on the device. For example, a CF card can
-be seen on the host as /dev/sdb1 and by a Soekris system as /dev/hda1.
+you can call (as root) gnap_overlay to write to the disk (<c>-d</c> option).
+You'll need to know the name of the partition to write to, as seen by the
+host you use to write to the device. You'll also need to know the name of
+the partition as it will be seen in the GNAP system as it boots on the device
+(<c>-r</c>). For example, a CF card can be seen on the host as /dev/sdb1
+and by a Soekris system as /dev/hda1:
 </p>
 
 <pre caption="Writing GNAP to the disk">
-# ./gnap_overlay -t disk gnap-0.3-20041008.tar overlays/myfirewall /dev/sda1 hda1 cache
+# ./gnap_overlay -d /dev/sda1 -g gnap-core-1.3.tar -o overlays/myfirewall -r hda1 -m
 </pre>
 
 <note>
-cache is an optional parameter you can use to tell GNAP to cache the squashfs
-filesystem once at strtup to avoid multiple read access that can wear the
-device.
+<c>-m</c> is an optional parameter you can use to tell GNAP to cache the
+squashfs filesystem once at startup to avoid multiple read access that
+can wear the device.
 </note>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>How to rebuild a GNAP Core</title>
+
+<section>
+<body>
+
+<warn>
+Only advanced users that want to change the GNAP core contents (or rebuild
+the standard core with a recent portage snapshot) should read this chapter.
+Rebuilding a core takes a lot of time and you may run into problems brought
+by recently added package versions.
+</warn>
+
+</body>
+</section>
+<section>
+<title>Prerequisites</title>
+<body>
+
+<p>
+You'll need root rights (needed by Catalyst) to build a GNAP Core. You'll also
+need to have the following packages installed:
+</p>
+
+<ul>
+<li>dev-util/catalyst (tested with version 1.1.8)</li>
+<li>sys-fs/squashfs-tools (tested with version 2.0)</li>
+</ul>
+
+<p>
+Finally you'll need an uclibc/hardened stage2 tarball as seed stage.
+The current one is named <path>stage2-x86-uclibc-hardened-2004.3.tar.bz2</path>
+and it is available for download
+<uri link="http://gentoo.osuosl.org/experimental/x86/embedded/stages/">here</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Building a GNAP Core from scratch</title>
+<body>
+
+<p>
+The <uri link="http://dev.gentoo.org/~koon/gnap/gnap-sources-current.tar.bz2">GNAP Sources</uri>
+contains the <c>gnap_make</c> build script, Catalyst configuration
+files, the portage configuration and the kernel configuration used for
+the current version of GNAP. 
+</p>
+
+<p>
+You should use <c>gnap_make</c> to call all
+Catalyst stages and the tarball creation (<c>-t all</c>), with the
+<c>-s</c> parameter to designate the stage2 tarball seed, and the <c>-e</c>
+parameter designating the full path to the specs directory:
+</p>
+
+<pre caption="Building a new GNAP Core tarball in one step">
+# ./gnap_make -t all -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 -e /root/gnap-1.5/specs
+</pre>
+
+<p>
+This will take a <e>very</e> long time to complete, and should produce
+a nice GNAP Core tarball with a version stamp based on current date.
+</p>
+
+<p>
+If you want to reuse a previously built (or officially downloaded) Portage
+snapshot, you should copy the portage-YYYYMMDD.tar.bz2 file to the
+<path>/var/tmp/catalyst/snapshots</path> subdirectory, then use the
+<c>-p</c> option:
+</p>
+
+<pre caption="Building from a 20040401 snapshot">
+# ./gnap_make -t all -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 -p 20040401 -e /root/gnap-1.5/specs
+</pre>
+<p>
+In case of failure, or if you just want to re-run some final stages, you might
+want to specify which Catalyst stages gnap_make should call. You can do this
+by providing the GNAP version timestamp to reuse (<c>-v</c>) and the stage
+names (<c>snapshot</c>, <c>stage3</c>, <c>livecd-stage1</c>,
+<c>livecd-stage2</c>) and/or the special <c>tarball</c> target
+(which builds the final GNAP Core tarball) as <c>-t</c> parameters:
+</p>
+
+<pre caption="Calling only the two final stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
+# ./gnap_make -p 20041008 -v 20041012 -t livecd-stage2 -t tarball -e /root/gnap-1.5/specs
+</pre>
+
+</body>
+</section>
+<section>
+<title>Customizing your GNAP Core</title>
+<body>
+
+<p>
+You may want to change the kernel sources used in the GNAP Core (you may even
+have to, if the configured sources are no longer in portage). To do that, you
+should edit the <path>specs/common.conf</path> file to point to the right
+sources name and change the <path>specs/kernel.config</path> kernel
+configuration file to use.
+</p>
+
+<p>
+You can also change the subarch and profile used to build the GNAP Core
+(by default, an <e>x86</e> subarch with <e>uclibc/x86/hardened</e> profile),
+by editing the <path>specs/common.conf</path> file.
+</p>
+
+<p>
+To add new software packages, you should add them to the
+<path>specs/packages.conf</path> file. To start new daemons by default,
+you should add them to the <c>livecd/rcadd</c> option of the
+<path>specs/livecd.conf</path> file.
+</p>
 
 </body>
 </section>
