@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.11 2004/02/21 22:39:25 npmccallum Exp $
+$Id: GLI.py,v 1.12 2004/02/21 22:41:34 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -739,8 +739,10 @@ class InstallProfile(xml.sax.ContentHandler):
 					# If the user does not desire DHCP, then validate each ip address provided
 					if network_interfaces[device][i] != None:
 						if not self._is_ip(network_interfaces[device][i][0]):
-							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"						if not self._is_ip(network_interfaces[device][i][1]):
-							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"						if not self._is_ip(network_interfaces[device][i][2]):
+							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
+						if not self._is_ip(network_interfaces[device][i][1]):
+							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
+						if not self._is_ip(network_interfaces[device][i][2]):
 							raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
 						
 						# If gateway is set to none, check the validity of the ip
