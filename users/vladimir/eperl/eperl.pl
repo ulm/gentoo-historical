@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.8 2003/03/08 05:45:17 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.9 2003/03/08 06:16:07 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
@@ -156,19 +156,15 @@ sub apply_code {
 		next if /\$Header:/;
 		chomp;
 		my $temp = $_;
-		eval qq/
-			# This var gets interpolated and run as code
-			$code;
-			
-			# This checks for changes, and prints each line if there are any
-			if (\$temp ne \$_) {
-				\$changes++;
-				print RED "<-", RESET, "\$temp\n";
-				print RED "->", RESET, "\$_\n";
-			}
-			return 1;
 		# This dies if it didn't make it to "return 1", ie, $code b0rked
-		/ or die "Couldn't eval $code: $!\n";
+		eval "$code;return 1;" or die "Couldn't eval $code: $!\n";
+		
+		# This checks for changes, and prints each line if there are any
+		if ($temp ne $_) {
+			$changes++;
+			print RED "<-", RESET, "$temp\n";
+			print RED "->", RESET, "$_\n";
+		}
 	}
 	return ($changes, @_);
 }
