@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mainpage SYSTEM "/dtd/guide.dtd">
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format" version="1.0">
-<xsl:strip-space elements="*"/>
+<!DOCTYPE mainpage SYSTEM "/dtd/project.dtd">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
 <xsl:template match="/staffingNeeds">
-  <mainpage id="about">
-    <title>Gentoo Linux Staffing Needs</title>
+  <project>
+    <name>Staffing Needs</name>
+    <longname>Gentoo Linux Staffing Needs</longname>
+
+    <date>Current</date>
     <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
 
-    <version>Current</version>
-    <chapter>
+    <description>
+      This page lists requests for Gentoo Developers the Gentoo Recruiters have received.
+    </description>
+    <longdescription>
+      This page aims to list current open vacancies for both existing
+      Gentoo developers and those wishing to become a Gentoo developer.
+      The priorities shown are sorted from highest to lowest.
+    </longdescription>
+    <extrachapter>
+      <title>Gentoo Linux Staffing Needs</title>
       <section>
-	<title>Gentoo Linux Staffing Needs</title>
 	<body>
-	  <p>
-	    The following table contains a list of open vacancies for
-	    both existing Gentoo developers and those wishing to
-	    become a Gentoo developer.
-	    Priorities are sorted from highest to lowest.
-	  </p>
 	  <p>
 	    If you are interested in helping out with any of the
 	    following tasks, then please contact the
@@ -90,7 +93,7 @@
 	  </table>
 	</body>
       </section>
-    </chapter>
-  </mainpage>
+    </extrachapter>
+  </project>
 </xsl:template>
 </xsl:stylesheet>
