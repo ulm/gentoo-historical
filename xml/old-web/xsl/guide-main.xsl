@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="iso-8859-15"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-  <xsl:output encoding="iso-8859-15" method="html" indent="yes"/>
+  <xsl:output encoding="iso-8859-15" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
   <xsl:preserve-space elements="pre"/>
   <xsl:template match="img">
     <img src="{@src}"/>
   </xsl:template>
   <xsl:template match="/guide">
-    <html>
+      <html>
       <head>
         <link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
         <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
@@ -20,7 +20,7 @@
 	<xsl:choose><xsl:when test="subtitle"><xsl:value-of select="title"/>: <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose>
 </title>
       </head>
-      <body leftmargin="0" topmargin="0" marginheight="0" marginwidth="0" bgcolor="#ffffff">
+      <body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
 <!--<table border="0" width="100%" cellspacing="0" cellpadding="0">-->
         <table width="100%" border="0" cellspacing="0" cellpadding="0">
           <tr>
@@ -29,14 +29,14 @@
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt=""/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt =""/>
                     </a>
                   </td>
                 </tr>
@@ -178,7 +178,7 @@
                             <input type="hidden" name="no_shipping" value="1"/>
                             <input type="hidden" name="return" value="http://www.gentoo.org"/>
                             <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-                            <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" border="0" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+                            <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
                           </form>
 <!-- End PayPal Logo -->
                         </td>
@@ -227,7 +227,7 @@ of your sale will go towards further Gentoo Linux development.</p>
         <link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
         <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
       </head>
-      <body leftmargin="0" topmargin="0" marginheight="0" marginwidth="0" bgcolor="#000000">
+      <body style="margin-left:0px;margin-top:0px;" bgcolor="#000000">
 <!--<table border="0" width="100%" height="100%" cellspacing="0" cellpadding="0">-->
         <table border="0" width="100%" cellspacing="0" cellpadding="0">
           <tr>
@@ -236,14 +236,14 @@ of your sale will go towards further Gentoo Linux development.</p>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt=""/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif"/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt =""/>
                     </a>
                   </td>
                 </tr>
@@ -256,7 +256,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 						</xsl:when><xsl:otherwise><a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
 						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='contract'"><a class="highlight" href="/index-contract.html"> Social Contract</a> |
 						</xsl:when><xsl:otherwise><a class="menulink" href="/index-contract.html"> Social Contract</a> |
-						</xsl:otherwise></xsl:choose><a class="menulink" href="http://forums.gentoo.org">Forums (new!)</a> |
+						</xsl:otherwise></xsl:choose><a class="menulink" href="http://forums.gentoo.org">Forums</a> |
 					<xsl:choose><xsl:when test="/mainpage/@id='packages'"><a class="highlight" href="/index-packages.html"> Packages</a> |
 						</xsl:when><xsl:otherwise><a class="menulink" href="/index-packages.html"> Packages</a> |
 						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='graphics'"><a class="highlight" href="/index-graphics.html"> Graphics</a> |
@@ -265,7 +265,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<xsl:choose><xsl:when test="/mainpage/@id='articles'"><a class="highlight" href="/index-articles.html">Articles</a> |
 						</xsl:when><xsl:otherwise><a class="menulink" href="/index-articles.html">Articles</a> |
 						</xsl:otherwise></xsl:choose>
-					Install: <a class="menulink" href="/doc/build.html">x86</a> / <a class="menulink" href="/doc/gentooppc-quickstart.html">PowerPC</a> |
+					Install: <a class="menulink" href="/doc/build.html">x86</a> / <a class="menulink" href="/doc/gentoo-ppc-install.html">PowerPC</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose><xsl:when test="/mainpage/@id='docs'"><a class="highlight" href="/index-docs.html">Documentation</a> |
 						</xsl:when><xsl:otherwise><a class="menulink" href="/index-docs.html">Documentation</a> |
@@ -283,7 +283,7 @@ of your sale will go towards further Gentoo Linux development.</p>
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td height="1%" valign="top" align="right">
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gridtest.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gridtest.gif" alt=""/>
                   </td>
                 </tr>
                 <tr>
@@ -302,8 +302,8 @@ of your sale will go towards further Gentoo Linux development.</p>
 						<br/><br/>
 						</xsl:if>
 						Download Mirrors:<br/><a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/><a class="altlink" href="ftp://ftp.gtlib.cc.gatech.edu/pub/gentoo">gatech.edu (USA)</a><br/><a class="altlink" href="http://gentoo.latinux.org">latinux.org (Venezuela)</a><br/><a class="altlink" href="http://mirrors.sunsite.dk/gentoo/">sunsite.dk (Denmark)</a><br/><a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/><a class="altlink" href="http://gentoo.linux.no/">linux.no (Norway)</a><br/><a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/><a class="altlink" href="http://ftp.gentoo.no/">gentoo.no (Norway)</a><br/><a class="altlink" href="ftp://ftp.gentoo.no/pub/linux/distributions/gentoo/">gentoo.no (Norway/ftp)</a><br/><a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/><a class="altlink" href="/doc/mirroring.html">(how to set up an rsync mirror)</a><br/><br/><a href="http://www.qksrv.net/click-477620-5033206" target="_top"><img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
-User Docs:<br/><a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/><a class="altlink" href="/doc/gentooppc-quickstart.html">PowerPC Install Instructions</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/faq.html">FAQ</a><br/><a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/><a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/><a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/><a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/><br/><br/>
-						Developer Resources:<br/><a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/><a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><font color="#ff0000">(updated!)</font><br/><a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/><a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/><a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/><a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/><br/><br/>
+User Docs:<br/><a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/><a class="altlink" href="/doc/gentoo-ppc-install.html">PowerPC Install Instructions</a><font color="#ff0000">(updated!)</font><br/><a class="altlink" href="/doc/faq.html">FAQ</a><br/><a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/><a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><br/><a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/><a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a><br/><a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a><br/><a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><br/><a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><br/><a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a><br/><a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/><a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/><br/><br/>
+						Developer Resources:<br/><a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/><a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/><a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><br/><a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/><a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/><a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/><a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/><br/><br/>
 Documentation en Français:<br/>
 <a class="altlink" href="/doc/faq-fr.html">Foire Aux Questions</a><br/>
 <a class="altlink" href="/doc/build-fr.html">Guide d'Installation</a><br/>
@@ -323,7 +323,7 @@ Documentation Développeur:<br/>
 <a class="altlink" href="/doc/eclass-howto-fr.html">HOWTO Eclass</a><br/>
 <a class="altlink" href="/doc/ebuild-submit-fr.html">Soumettre vos ebuilds</a><br/>
 <br/><br/>
-Documentación en Español: <br/><font color="#ff0000">(new!)</font>:<br/>
+Documentación en Español: <br/>:<br/>
 Para usuarios:<br/>
 <a class="altlink" href="/doc/build-es.html">Guía de Instalación</a><br/>
 <a class="altlink" href="/doc/faq-es.html">Preguntas frecuentes</a><br/>
@@ -349,15 +349,15 @@ Otros:<br/>
 						Mailing Lists:<br/><br/><a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/><br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
 						General Discussion:<br/>#gentoo<br/><br/>
-						Gentoo Linux/PPC:<br/>#gentoo-ppc <font color="#ff0000">(new!)</font><br/><br/>
-						Gentoo Linux/Sparc:<br/>#gentoo-sparc <font color="#ff0000">(new!)</font><br/><br/>
-						Low-bandwidth chat:<br/>#gentoo-user <font color="#ff0000">(new!)</font><br/><br/>
-						Server-related chat:<br/>#gentoo-server <font color="#ff0000">(new!)</font><br/><br/>
-						En Français:<br/>#gentoofr <font color="#ff0000">(new!)</font><br/><br/>
-						En Español:<br/>#gentoo-es <font color="#ff0000">(new!)</font><br/><br/>
-						På norsk:<br/>#gentoo-no <font color="#ff0000">(new!)</font><br/><br/>
-						På svenska:<br/>#gentoo-se <font color="#ff0000">(new!)</font><br/><br/>
-						Auf Deutsch:<br/>#gentoo.de <font color="#ff0000">(new!)</font><br/><br/><br/><br/></p>
+						Gentoo Linux/PPC:<br/>#gentoo-ppc <br/><br/>
+						Gentoo Linux/Sparc:<br/>#gentoo-sparc <br/><br/>
+						Low-bandwidth chat:<br/>#gentoo-user<br/><br/>
+						Server-related chat:<br/>#gentoo-server<br/><br/>
+						En Français:<br/>#gentoofr<br/><br/>
+						En Español:<br/>#gentoo-es<br/><br/>
+						På norsk:<br/>#gentoo-no <br/><br/>
+						På svenska:<br/>#gentoo-se <br/><br/>
+						Auf Deutsch:<br/>#gentoo.de <br/><br/><br/><br/></p>
                         </td>
                       </tr>
                     </table>
@@ -374,9 +374,9 @@ Otros:<br/>
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td>
-                              <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif"/>
+                              <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif" alt="new"/>
                             </td>
-                            <td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
+                            <td valign="middle">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
                           </tr>
                         </table>
                         <br/>
@@ -394,25 +394,25 @@ Otros:<br/>
                               </td>
                             </tr>
                             <tr>
-                              <td width="100" align="middle" valign="center">
+                              <td width="100" align="center" valign="middle">
                                 <xsl:choose>
                                   <xsl:when test="@category='gentoo'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png" alt="gentoo"/>
                                   </xsl:when>
                                   <xsl:when test="@category='main'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png" alt="stick man"/>
                                   </xsl:when>
                                   <xsl:when test="@category='ibm'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif" alt="ibm"/>
                                   </xsl:when>
                                   <xsl:when test="@category='linux'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png" alt="tux"/>
                                   </xsl:when>
                                   <xsl:when test="@category='moo'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png" alt="Larry the Cow"/>
                                   </xsl:when>
                                   <xsl:when test="@category='nvidia'">
-                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png"/>
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png" alt="Nvidia"/>
                                   </xsl:when>
                                 </xsl:choose>
                               </td>
@@ -449,25 +449,25 @@ Otros:<br/>
                             </td>
                           </tr>
                           <tr>
-                            <td width="100" align="middle" valign="top">
+                            <td width="100" align="center" valign="top">
                               <xsl:choose>
                                 <xsl:when test="@category='gentoo'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png" alt="gentoo"/>
                                 </xsl:when>
                                 <xsl:when test="@category='main'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png" alt="stick man"/>
                                 </xsl:when>
                                 <xsl:when test="@category='ibm'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif" alt=""/>
                                 </xsl:when>
                                 <xsl:when test="@category='linux'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png" alt="Tux the Penguin"/>
                                 </xsl:when>
                                 <xsl:when test="@category='moo'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-cow.png" alt="Larry the Cow"/>
                                 </xsl:when>
                                 <xsl:when test="@category='nvidia'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png"/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-nvidia.png" alt="nvidia"/>
                                 </xsl:when>
                               </xsl:choose>
                             </td>
@@ -507,7 +507,7 @@ Otros:<br/>
               <table border="0" cellspacing="5" cellpadding="0">
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
                 <tr>
@@ -517,7 +517,7 @@ Otros:<br/>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
                 <tr>
@@ -533,14 +533,14 @@ Otros:<br/>
                       <input type="hidden" name="no_shipping" value="1"/>
                       <input type="hidden" name="return" value="http://www.gentoo.org"/>
                       <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-                      <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" border="0" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+                      <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
                     </form>
 <!-- End PayPal Logo -->
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
                 <tr>
@@ -555,7 +555,7 @@ of your sale will go towards further Gentoo Linux development.</p>
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
               </table>
@@ -678,7 +678,7 @@ of your sale will go towards further Gentoo Linux development.</p>
     </xsl:choose>
     <xsl:apply-templates select="body"/>
     <xsl:apply-templates select="section">
-      <xsl:with-param name="chapid" value="$chapid"/>
+      <xsl:with-param name="chapid"> value="$chapid"</xsl:with-param>
     </xsl:apply-templates>
   </xsl:template>
   <xsl:template match="section">
