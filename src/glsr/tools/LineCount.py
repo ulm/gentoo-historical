@@ -1,10 +1,10 @@
 #!/usr/bin/python
-# $Id: LineCount.py,v 1.3 2004/11/05 20:33:15 port001 Exp $
+# $Id: LineCount.py,v 1.1 2004/12/30 12:51:38 port001 Exp $
 
 import os
 
-WWW_DIR = os.path.join(os.getcwd(), "htdocs")
-GLSR_DIR = os.getcwd()
+WWW_DIR = os.path.join(os.path.join(os.getcwd(), '../src'), "htdocs")
+GLSR_DIR = os.path.join(os.getcwd(), '../src')
 
 MyFiles = ("%s/Setup.py" % GLSR_DIR, "%s/index.py" % WWW_DIR) 
 MyDirs = ("%s/pym" % GLSR_DIR, "%s/site_modules" % GLSR_DIR)
@@ -27,7 +27,7 @@ for File in FileList:
     for line in fd.readlines():
         if not line.strip(" ").startswith("#") and not line.strip(" ").startswith("\n"):
 	    FileLineCount += 1
-    print "%d\t: %s" % (FileLineCount, File)
+    print "%d\t: %s" % (FileLineCount, File.split('../src/')[1])
     LineCount += FileLineCount
     fd.close()
 
