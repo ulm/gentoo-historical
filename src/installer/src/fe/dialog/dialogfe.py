@@ -248,6 +248,14 @@ def set_kernel():
 	if code != DLG_OK: return
 	menuitem = kernel_sources[int(menuitem)-1]
 	install_profile.set_kernel_source_pkg(None, menuitem, None)
+	if d.yesno("Do you want to use genkernel to automatically generate your kernel?") == DLG_NO:
+		code, custom_kernel_uri = d.inputbox("Enter the custom kernel uri")
+		if code == DLG_OK: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+	else: 
+		if d.yesno("Do you want the bootsplash?") == DLG_YES:
+			install_profile.set_kernel_bootsplash(None, True, None)
+		else:
+			install_profile.set_kernel_bootsplash(None, False, None)
 
 def set_boot_loader():
 	boot_loaders = ("grub", "lilo")
