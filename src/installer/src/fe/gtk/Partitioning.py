@@ -248,7 +248,7 @@ resize partitions.
 
 	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
 		self.info_partition.set_text(dev + " (unallocated space)")
-		if extended:
+		if self.devices[self.active_device].get_partition_at(start, ignore_extended=0) != 0:
 			self.info_type.set_text("Logical")
 		else:
 			self.info_type.set_text("Primary")
