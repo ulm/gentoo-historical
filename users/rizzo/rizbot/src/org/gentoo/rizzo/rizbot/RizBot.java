@@ -27,6 +27,7 @@ import org.jibble.socnet.*;
 import org.jibble.reminderbot.*;
 
 import java.util.*;
+import java.util.regex.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
@@ -34,11 +35,12 @@ import java.io.*;
  * RizBot extends PircBot to connect to IRC.  It duplicates PieSpy, and adds
  * JMegaHal and ReminderBot features.
  *
- * $Id: RizBot.java,v 1.1 2005/02/28 19:03:24 rizzo Exp $
+ * $Id: RizBot.java,v 1.2 2005/02/28 19:19:53 rizzo Exp $
  */
 public class RizBot extends PircBot implements Runnable {
 
     public static final String VERSION = "RizBot 0.1.0";
+    private static final String REMINDER_FILE = "reminders.dat";
     private JMegaHal hal;
 
     public RizBot(Configuration config) throws IOException {
@@ -52,6 +54,8 @@ public class RizBot extends PircBot implements Runnable {
         hal = new JMegaHal();
         hal.addDocument("file:///home/dseiler/cvs/gentoo/gentoo/users/rizzo/rizbot/h2g2_dialogue.txt");
 
+        dispatchThread = new Thread(this);
+        dispatchThread.start();
     }
 
     // Overriden from PircBot.    
@@ -111,6 +115,8 @@ public class RizBot extends PircBot implements Runnable {
             Reminder reminder = new Reminder(channel, sender, reminderMessage, set, due);
             sendMessage(channel, sender + ": Okay, I'll remind you about that on " + new Date(reminder.getDueTime()));
             reminders.add(reminder);
+            dispatchThread.interrupt();
+        }
 
     }
 
