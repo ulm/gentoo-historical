@@ -85,19 +85,6 @@ int main(int argc, char **argv) {
 		
 		while(fgets(line, sizeof(line)-1, f1)) {
 			if(strstr(line, "before *")) {
-				/* start everything with "before *", and mark it as started */
-				printf("Starting %s\n", svc_script->d_name);
-#if 1
-				snprintf(command, 999, "%s%s start", INIT_DIR, svc_script->d_name);
-				system(command);
-#else
-				snprintf(command, 999, "%s%s", INIT_DIR, svc_script->d_name);
-				{
-					char *cmdline[] = { "start", 0 };
-					/* so we can get return values and decide if we should call mark_started() */
-				 	execvp(command, cmdline);
-				}
-#endif
 				mark_started(svc_script->d_name);
 			}
 		}
@@ -113,12 +100,6 @@ int main(int argc, char **argv) {
 		if(is_started(svc_script->d_name) == TRUE)
 			continue;
 		else {
-			char *command;
-			command=(void *)malloc(1000);
-			memset(command, 0, 1000);
-			snprintf(command, 999, "%s%s start", INIT_DIR, svc_script->d_name);
-			system(command);
-			free(command);
 			mark_started(svc_script->d_name);
 		}
 	}
@@ -126,9 +107,36 @@ int main(int argc, char **argv) {
 }
 
 int mark_started(char *script) {
+	char *command = NULL;
+	char *cmdline[] = { "start", 0 };
+
+	/* start everything with "before *", and mark it as started */
+	printf("Starting %s\n", script);
+
+	asprintf(&command, "%s%s", INIT_DIR, script);
+
+	/* so we can get return values and decide if we should call mark_started() */
+	if ((execvp(command, cmdline)) == 0) {
+		mkdir("/var/lib/init.d/started/", 0755);
+		chdir("/var/lib/init.d/started/");
+		symlink(command, basename(script));
+		free(command);
+		return TRUE;
+	}        
+	free(command);
 	return FALSE;
 }
 
 int is_started(char *script) {
+	char *script_link = NULL;
+
+	asprintf(&script_link, "/var/lib/init.d/started/%s",
+		basename(script));
+
+	if ((access(script_link, F_OK)) == 0) {
+		free(script_link);
+		return TRUE;
+	}
+	free(script_link);
 	return FALSE;
 }
