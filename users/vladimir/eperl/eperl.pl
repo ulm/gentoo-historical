@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $ Header $
+# $ Header: $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 # Please be careful with this, don't use it if you're not reasonably fluent
