@@ -1,0 +1,792 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/home-router-howto.xml,v 1.1 2004/10/28 18:16:25 dertobi123 Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/de/home-router-howto.xml">
+
+<title>Home Router Guide</title>
+
+<author title="Author">
+  <mail link="vapier@gentoo.org">Mike Frysinger</mail>
+</author>
+<author title="Übersetzung">
+  <mail link="rk@oppono.de">Robert Körner</mail>
+</author>
+
+<abstract>
+Dieses Dokument erklärt, wie man eine alte Gentoo-Maschine in einen Router 
+verwandelt, um das eigene Heimnetzwerk mit dem Internet zu verbinden.
+</abstract>
+
+<version>1.2</version>
+<date>22. September 2004</date>
+
+<chapter>
+<title>Einleitung</title>
+<section>
+<body>
+
+<p>
+Einen eigenen Router aus alten, ungenutzten Teilen zu bauen hat viele Vorteile
+gegenüber dem Kauf einer vorgefertigten Lösung von z.B. Linksys. Der weitaus
+größte ist die Kontrolle über die Verbindung. Alle anderen bleiben für die
+eigene Vorstellungskraft; beinahe alles kann in diesem Scenario getan werden,
+es ist nur eine Sache der Notwendigkeit.
+</p>
+
+<p>
+Diese Anleitung erklärt, wie man auf dem Router NAT (Network Address Translation)
+installiert (Kernel und iptables), wie gebräuchliche Dienste hinzugefügt und
+konfiguriert werden (Domain Name System (DNS) mit dnsmasq, dhcp mit dhcpcd, 
+ADSL durch rp-pppoe) und schließt mit komplizierteren und teilweise lustigeren 
+Dingen, die getan werden können (Portweiterleitung, <e>traffic shaping</e>, 
+Proxys, usw.).
+</p>
+
+<p>
+Vor dem Start warten ein paar Anforderungen, die mindestens erfüllt sein müssen.
+Zuerst wird ein Computer gebraucht, der min. 2 Netzwerkkarten beinhaltet. Als
+nächstes werden die Einwahl- und Konfigurationsdaten für die jeweilige
+Internetverbindung benötigt (können Dinge wie IP/DNS/Gateway/Benutzername/Passwort sein).
+Abschließend sind ein bisschen Zeit und eine Idee von Gentoo-Nutzung notwendig.
+</p>
+
+<p>
+Die in dieser Anleitung gebrauchten Standards sind:
+</p>
+<ul>
+  <li>eth0 - NIC (Network Interface Card) verbunden mit dem lokalen Netzwerk (LAN)</li>
+  <li>eth1 - NIC verbunden mit dem Internet (WAN)</li>
+  <li>Das LAN benutzt das private 192.168.0.xxx Netzwerk</li>
+  <li>Der Router ist auf die Standard-IP 192.168.0.1 konfiguriert</li>
+  <li>Der Router läuft unter Linux 2.4 oder 2.6; 2.0/2.2 werden nicht eingehender behandelt</li>
+</ul>
+
+<impo>
+Zur Sicherheit empfehle ich, alle ungenutzten Dienste zu stoppen, bevor die
+Firewall konfiguriert ist und läuft. Um die aktuell laufenden Dienste
+anzuzeigen, tippe <c>rc-status</c> in ein Konsolenfenster.
+</impo>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Kernel-Konfiguration (kenne dich selbst zuerst)</title>
+<section>
+<body>
+
+<p>
+Der Kernel muss die Treiber für beide NICs kennen und verwenden. Um
+festzustellen, ob die Karten bereits fertig Konfiguriert sind, starte 
+<c>ifonfig</c>. Deine Ausgabe mag leicht vom Folgenden abweichen, das ist in
+Ordnung. Was wichtig ist, ist, dass die Karten alle angezeigt werden.
+</p>
+<pre caption="Testen der NICs">
+# <i>ifconfig -a</i>
+eth0      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B8
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+          Interrupt:11 Base address:0x9800 
+
+eth1      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B9
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+          Interrupt:10 Base address:0x9400 
+</pre>
+<p>
+Wenn du deine beiden Karten nicht angezeigt bekommst und du nicht sicher 
+bist, welche du hast, versuche <c>lspci</c>. Dieses Tool bekommst du durch
+<c>emerge pciutils</c>. Suche nach <e>Ethernet controller</e> in der Ausgabe.
+Wenn du die Informationen beisammen hast, überarbeite noch einmal deine
+Kernel-Konfiguration und füge die Unterstützung für die richtigen Treiber hinzu.
+</p>
+
+<p>
+Als nächstes müssen iptables und NAT (und, wenn gewünscht, traffic shaping) 
+unterstützt werden. Die nachfolgende Liste ist geteilt in benötigte (*), 
+vorgeschlagene (x) und zum shaping (s) benötigte Fähigkeiten. Es macht keinen
+Unterschied, ob die Unterstützungen in den Kernel implementiert oder als Modul
+kompiliert werden, solange zur rechten Zeit die notwendigen Module geladen 
+werden (Laden von Modulen ist dem Leser jedoch als Spaß-Übung überlassen und
+wird nicht weiter behandelt).
+</p>
+<pre caption="Netzwerkoptionen">
+<i>Networking options  ---&gt;</i>
+<i>   [*] TCP/IP networking</i>
+<i>      [*] IP: advanced router</i>
+<i>   [*] Network packet filtering (replaces ipchains)</i>
+<comment>Wenn du 2.4.x benutzt, musst du folgendes für DHCP aktivieren:</comment>
+<i>   [*] Socket Filtering</i>
+
+<i>   IP: Netfilter Configuration  ---&gt;</i>
+<i>      [*] Connection tracking (required for masq/NAT)</i>
+<i>         [x] FTP protocol support</i>
+<i>         [x] IRC protocol support</i>
+<i>      [*] IP tables support (required for filtering/masq/NAT)</i>
+<i>         [*] IP range match support</i>
+<i>         [x] MAC address match support</i>
+<i>         [*] Multiple port match support</i>
+<i>         [*] Packet filtering</i>
+<i>            [*] REJECT target support</i>
+<i>            [x] REDIRECT target support</i>
+<i>         [*] Full NAT</i>
+<i>            [*] MASQUERADE target support</i>
+<i>         [s] Packet mangling</i>
+<i>            [s] MARK target support</i>
+<i>         [x] LOG target support</i>
+
+<i>   QoS and/or fair queueing  ---&gt;</i>
+<i>      [s] QoS and/or fair queueing</i>
+<i>         [s] HTB packet scheduler</i>
+<i>         [s] Ingress Qdisc</i>
+</pre>
+<note>
+Manches in einem 2.6er Kernel mag sich leicht von einem 2.4er unterscheiden,
+allerdings sollte es dir möglich sein, Unterschiede herauszufinden. :)
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Das WAN (a.k.a. Internet)</title>
+
+<section>
+<title>Intro</title>
+<body>
+
+<p>
+Es gibt viele Wege, um sich ins Internet zu verbinden. Daher decke ich hier 
+lediglich die ab, mit denen ich mich auskenne. Damit bleiben ADSL (PPPoE) und 
+Kabelmodems (statisch/dynamisch). Wenn es andere Methoden gibt, fühl' dich 
+ermuntert, eine kleine Anleitung zu schreiben und sie mir via E-Mail zukommen
+zu lassen (auf Englisch). Nicht auf deine Umgebung zutreffende Sektionen in 
+diesem Kapitel kannst du selbstverständlich überspringen. Dieses Kapitel
+behandelt lediglich die Verbindung des Routers mit dem Internet durch eth1.
+</p>
+</body>
+</section>
+
+<section>
+<title>ADSL und PPPoE</title>
+<body>
+
+<p>
+Die ganze einfallsreiche PPPoE Software wurde in einem Paket zusammengefasst,
+das sich <uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>
+nennt. Ein simples <c>emerge rp-pppoe</c> und alles, was benötigt wird, ist 
+installiert. Erinnerst du dich, wie ich sagte, dass du einen Benutzernamen und
+ein Passwort brauchst? Nun, ich habe nicht gelogen; also hoffe ich, dass du
+beides jetzt vorliegen hast! Öffne <path>/etc/ppp/pppoe.conf</path> in deinem
+bevorzugten Editor und konfiguriere es.
+</p>
+
+<note>
+Damit die folgenden net.eth1-Einstellungen funktionieren, musst du 
+baselayout-1.10.1 oder neuer installiert haben.
+</note>
+
+<pre caption="Konfiguration von eth1">
+<comment>(Ersetze 'vla9h924' mit deinem Benutzernamen und 'password' mit deinem
+Passwort)</comment>
+
+# <i>nano /etc/ppp/pppoe.conf</i>
+<comment># NIC, die mit deinem ADSL-Modem verbunden ist
+ETH=eth1
+# ADSL Benutzername
+USER=vla9h924</comment>
+# <i>nano /etc/ppp/pap-secrets</i>
+<comment># client server secret
+"vla9h924" * "password"</comment>
+# <i>nano /etc/conf.d/net</i>
+<comment>Füge einen Eintrag für ifconfig_eth1 hinzu und stelle ihn auf adsl:
+ifconfig_eth1=( "adsl" )</comment>
+# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+# <i>/etc/init.d/net.eth1 start</i>
+</pre>
+
+<warn>
+Wenn das DSL-Interface läuft, erstellt es ppp0. Obwohl deine NIC eth1 genannt
+wird, ist die IP tatsächlich an ppp0 gebunden. Von jetzt an, wenn du ein 
+Beispiel siehst, das 'eth1' nutzt, ersetze es mit 'ppp0'.
+</warn>
+
+</body>
+</section>
+
+<section>
+<title>Kabel und/oder dynamische/statische IP</title>
+<body>
+
+<p>
+Wenn du eine statische IP nutzt, brauchst du ein paar mehr Details als bei einer
+dynamischen. Für Nutzer von statischen IPs werden sowohl IP als auch Gateway
+und die DNS-Server benötigt.
+</p>
+
+<pre caption="Konfiguration von eth1">
+<comment>Benutzer dynamischer IPs:</comment>
+# <i>emerge dhcpcd</i>
+# <i>nano /etc/conf.d/net</i>
+<comment>Du brauchst einen Eintrag wie den folgenden:
+ifconfig_eth1=( "dhcp" )</comment>
+
+<comment>Benutzer statischer IPs:</comment>
+# <i>nano /etc/conf.d/net</i>
+<comment>Du brauchst Einträge wie die folgenden:
+ifconfig_eth1=( "66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0" )
+routes_eth1=( "default gw 66.92.78.1" )</comment>
+# <i>nano /etc/resolv.conf</i>
+<comment>Einen DNS-Server pro Zeile:
+nameserver 123.123.123.123</comment>
+
+<comment>Für sowohl statische als auch dynamische Setups:</comment>
+# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+# <i>/etc/init.d/net.eth1 start</i>
+</pre>
+
+<p>
+Jetzt sollte alles bereit sein damit du dich ins Internet verbinden kannst.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Das LAN (bring' ein paar Freunde mit)</title>
+<section>
+<body>
+
+<p>
+Dieser Schritt ist ein Kinderspiel, im Vergleich zum vorherigen.
+</p>
+
+<pre caption="Konfiguration von eth0">
+# <i>nano /etc/conf.d/net</i>
+<comment>Füge eine Zeile wie die folgende hinzu:
+ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0"</comment>
+# <i>rc-update add net.eth0 default</i>
+# <i>/etc/init.d/net.eth0 start</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>LAN Dienste (denn wir sind freundliche Menschen)</title>
+
+<section>
+<title>DHCP-Server</title>
+<body>
+
+<p>
+Ich wette es wäre schön, wenn alle anderen in deinem Haus lediglich ihre
+Computer ins Netzwerk stecken müssten und alles einfach liefe. Nicht nötig,
+sie sich komplizierte Details merken zu lassen oder sie vor verwirrende 
+Konfigurationsbildschirme zu setzen! Das Leben wäre großartig, hm? Das
+<e>Dynamic Host Configuration Protocol</e> (DHCP) und warum du es wichtig
+finden solltest.
+</p>
+
+<p>
+DHCP ist genau das, was sein Name impliziert. Es ist ein Protokoll, mit dem
+man andere Computer dynamisch und automatisch konfigurieren kann. Du startest
+einen DHCP-Server auf dem Router (dhcpcd), gibst ihm alle notwendigen
+Informationen über dein Netzwerk (erlaubte IPs, DNS-Server, Gateways, usw...)
+und wenn andere Computer hochfahren, starten sie einen DHCP-Client, der diese
+automatisch Konfiguriert. Kein Brimborium, kein Durcheinander! Um mehr über
+DHCP zu erfahren, kannst du immer bei 
+<uri link="http://de.wikipedia.org/wiki/DHCP">Wikipedia</uri> vorbeischauen.
+</p>
+
+<pre caption="Konfiguration des dhcpd">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>Hier eine Beispielkonfiguration:
+authoritative;
+ddns-update-style ad-hoc;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+range 192.168.0.100 192.168.0.250;
+default-lease-time 259200;
+max-lease-time 518400;
+option subnet-mask 255.255.255.0;
+option broadcast-address 192.168.0.255;
+option routers 192.168.0.1;
+option domain-name-servers 192.168.0.1;
+}
+</comment>
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>Set IFACE="eth0"</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Jetzt ist dein kleiner Router ein echter DHCP-Server! Füge die Computer deinem
+Netzwerk hinzu und sieh', wie sie arbeiten! Bei Windows-Systemen solltest du
+in die Netzwerkeinstellungen für TCP/IP gehen und dort die Optionen "IP-Adresse
+automatisch beziehen" und "DNS-Server-Adresse automatisch beziehen" aktivieren.
+Manchmal werden die Änderungen nicht sofort übernommen. Um die Wartezeit zu
+umgehen, kannst du eine CMD-Box öffnen und <c>ipconfig /release</c> und 
+<c>ipconfig /renew</c> eingeben. Doch genug von Windows, lass uns zurück zu
+unserem Lieblingspinguin kommen.
+</p>
+</body>
+</section>
+
+<section>
+<title>DNS-Server</title>
+<body>
+
+<p>
+Wenn Leute einen Ort im Internet besuchen wollen, merken sie sich Namen, keine
+langen Ketten nutzloser Nummern. Denn, was ist einfacher zu merken: ebay.com
+oder 66.135.192.87? Hier wird das DNS aktiv. DNS-Server laufen überall im
+Internet und wann immer jemand 'ebay.com' besuchen möchte, übersetzen diese
+Server 'ebay.com' (was wir verstehen) in '66.135.192.87' (was Computer 
+verstehen). Für mehr Informationen über das DNS kannst du jederzeit
+<uri link="http://de.wikipedia.org/wiki/DNS">Wikipedia</uri> besuchen.
+</p>
+
+<p>
+Möglicherweise ist dir zuvor aufgefallen, dass wir den DHCP-Clients gesagt
+haben, dass ein DNS-Server unter 192.168.0.1 läuft. Möglicherweise erinnerst
+du dich auch daran, dass 192.168.0.1 unser kleiner Router ist. Jedoch kann
+ich mich nicht daran erinnern, einen DNS-Server aufgesetzt zu haben... Also
+machen wir das jetzt!
+</p>
+
+<pre caption="Konfiguration von dnsmasq">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Füge "-i eth0" zu DNSMASQ_OPTS hinzu</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
+</pre>
+
+<p>
+Nun, das ging schnell. Aber was haben wir gemacht? Das Großartige ist, wir
+haben nicht viel zu tun! Selbstverständlich kannst du einen anderen DNS-Server
+wählen, mit dem du besser vertraut bist; dnsmasq ist jedoch sehr gut, da es
+genau für das kreiert wurde, was wir wollen und nicht mehr. Es ist ein kleiner
+DNS Auffangs-/Weiterleitungsserver für lokale Netzwerke. Wir wollen hier kein
+DNS für unsere eigene Domäne offerieren, sondern nur ein einfaches DNS
+für alle anderen im LAN.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>NAT (a.k.a. IP-Maskerade)</title>
+<body>
+
+<p>
+An diesem Punkt angelangt können Leute in deinem Netzwerk miteinander sprechen
+und über den DNS-Server auch Hostnamen überprüfen. Dennoch ist noch immer keine
+Verbindung ins Internet möglich. Wärend du möglicherweise glaubst, dass das 
+großartig ist (mehr Bandbreite für dich!), wette ich, dass alle anderen nicht
+allzu froh darüber sind.
+</p>
+
+<p>
+Hier tritt NAT auf. NAT ist ein Weg um mehrere Computer in einem privaten LAN
+mit dem Internet zu verbinden, wenn nur eine kleinere Nummer an IP-Adressen
+zur Verfügung steht. Normalerweise bekommst du von deinem ISP (Internet Service
+Provider) genau eine IP zugewiesen, dennoch möchtest du das ganz Haus mit 
+Internet versorgen. NAT ist die Zauberei, die dies möglich macht. Für mehr 
+Informationen über NAT kannst du immer bei 
+<uri link="http://de.wikipedia.org/wiki/NAT">Wikipedia</uri> vorbeischauen.
+</p>
+
+<note>
+Bevor wir starten überprüfe bitte, ob du iptables auf deinem System installiert
+hast. Obgleich es normalerweise automatisch auf den meisten Systemen installiert
+wird, könntest du es nicht dabei haben. Wenn dem der Fall ist, starte einfach
+<c>emerge iptables</c>.
+</note>
+
+<pre caption="Konfiguration von iptables">
+<comment>Zuerst leeren wir unsere aktuellen Regeln</comment>
+# <i>iptables -F</i>
+# <i>iptables -t nat -F</i>
+
+<comment>Dann beschränken wir unsere Dienste, sodass sie nur im LAN arbeiten</comment>
+# <i>iptables -I INPUT 1 -i eth0 -j ACCEPT</i>
+# <i>iptables -I INPUT 1 -i lo -j ACCEPT</i>
+# <i>iptables -A INPUT -p UDP --dport bootps -i ! eth0 -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport domain -i ! eth0 -j REJECT</i>
+
+<comment>(Optional) Erlaube Zugriff auf unseren SSH-Server aus dem WAN</comment>
+# <i>iptables -A INPUT -p TCP --dport ssh -i eth1 -j ACCEPT</i>
+
+<comment>Lasse TCP/UDP-Pakete für bestimmte Ports fallen</comment>
+# <i>iptables -A INPUT -p TCP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p UDP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+
+<comment>Schließlich fügen wir NAT-Regeln hinzu</comment>
+# <i>iptables -I FORWARD -i eth0 -d 192.168.0.0/255.255.0.0 -j DROP</i>
+# <i>iptables -A FORWARD -i eth0 -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -A FORWARD -i eth1 -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+<comment>Sage dem Kernel, dass IP-Forwarding in Ordnung ist</comment>
+# <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
+# <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
+
+<comment>So müssen wir nach dem Booten die Regeln nicht per Hand starten</comment>
+# <i>/etc/init.d/iptables save</i>
+# <i>rc-update add iptables default</i>
+# <i>nano /etc/sysctl.conf</i>
+<comment>Füge hinzu oder unkommentiere folgende Zeilen:
+net.ipv4.ip_forward = 1
+net.ipv4.conf.default.rp_filter = 1</comment>
+</pre>
+
+<p>
+Nachdem du das alles eingetragen und gestartet hast, sollte der Rest deines
+Netzwerks in der Lage sein, das Internet zu benutzen, als wenn sie alle selbst
+direkt damit verbunden wären.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Spielereien (für einen regnerischen Tag)</title>
+
+<section>
+<title>Intro</title>
+<body>
+
+<p>
+Glaub' es oder lass es bleiben: Du bist fertig :). Von hier aus bespreche ich
+ein paar gebräuchliche Dinge, die dich interessieren könnten. Alles in diesem
+Kapitel ist absolut optional.
+</p>
+</body>
+</section>
+
+<section>
+<title>Port Weiterleitung (port forwarding)</title>
+<body>
+
+<p>
+Manchmal möchtest du evtl. die Möglichkeit haben, Dienste auf einem Computer
+hinter deinem Router laufen zu haben oder einfach dein Leben im Bereich der
+Remoteverwaltung erleichtern. Vielleicht möchtest du einen FTP, HTTP, SSH oder
+VNC-Server auf einer oder mehrerer Maschinen hinter dem Router starten und die
+Option haben, dich zu allen zu verbinden. Die einzige Einschränkung ist, dass
+du lediglich eine Dienst/Maschinen-Kombination pro Port hast. Zum Beispiel gibt
+es keine Möglichkeit, drei FTP-Server hinter deinem Router zu starten und zu 
+allen via Port 21 zu verbinden; nur einer kann auf Port 21 laufen, wärend die 
+anderen auf z.B. Port 123 und Port 567 laufen müssten.
+</p>
+
+<p>
+Alle Portweiterleitungsregeln sind in der Form <c>iptables -t nat -A PREROUTING
+[-p protocol] --dport [externer Port auf dem Router] -i eth1 -j DNAT --to [IP/Port
+auf den weitergeleitet wird]</c>. iptables akzeptiert keine Hostnamen bei der 
+Portweiterleitung. Wenn du den selben externen Port auf einen internen Port
+weiterleitest, kannst du den Zielport weglassen. Lies' dir iptables(8) durch für
+mehr Informationen.
+</p>
+
+<pre>
+<comment>Leite Port 2 zu einem internen SSH-Host weiter</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i eth1 -j DNAT --to 192.168.0.2:22</i>
+
+<comment>FTP-Weiterleitung zu einem internen Host</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i eth1 -j DNAT --to 192.168.0.56</i>
+
+<comment>HTTP-Weiterleitung zu einem internen Host</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 -j DNAT --to 192.168.0.56</i>
+
+<comment>VNC-Weiterleitung zu einem internen Host</comment>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i eth1 -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i eth1 -j DNAT --to 192.168.0.3:5900</i>
+<comment>Wenn du auf den VNC-Server auf 192.168.0.3 verbinden möchtest, füge ein
+simples ':1' hinter den Hostnamen des Routers hinzu.</comment>
+
+<comment>Bittorrent-Weiterleitung</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i eth1 -j DNAT --to 192.168.0.2</i>
+
+<comment>Game Cube Warp Pipe Unterstützung</comment>
+ <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i eth1 -j DNAT --to 192.168.0.56</i>
+
+<comment>Playstation2 Onlineunterstützung</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
+</pre>
+
+<note>
+Wenn du andere gebräuchliche / coole Beispiele hast, bitte schreibe mir eine 
+<uri link="mailto:vapier@gentoo.org">E-Mail</uri> (auf Englisch, für deutsche
+E-Mails bitte an <uri link="mailto:rk@oppono.de">rk</uri>).
+</note>
+</body>
+</section>
+
+<section>
+<title>Identd (für's IRC)</title>
+<body>
+
+<p>
+<e>Internet Relay Chat</e> benutzt den ident-Dienst ziemlich stark. Jetzt, da
+die IRC-Clients hinter dem Router sind, brauchen wir einen Weg, um ident sowohl
+auf den Clients als auch auf dem Router unterzubringen. Ein solcher Server ist
+z.B. <c>midentd</c>.
+</p>
+
+<pre caption="Konfiguration von ident">
+# <i>emerge midentd</i>
+# <i>rc-update add midentd default</i>
+# <i>/etc/init.d/midentd start</i>
+</pre>
+
+<p>
+Es gibt noch ein paar weitere ident-Server in Portage. Abhängig von deinem 
+Bedarf empfehle ich, <c>oidentd</c> und <c>fakeidentd</c> zu testen.
+</p>
+</body>
+</section>
+
+<!--
+<section>
+<title>Traffic Shaping</title>
+<body>
+
+<p>
+Dies ist der Versuch, das <uri link="http://www.tldp.org/HOWTO/ADSL-Bandwidth-Management-HOWTO/">ADSL Bandwidth Management HOWTO</uri>
+zu vereinfachen. Du kannst selbstverständlich wann immer du möchtest das
+originale Dokument zu Rate ziehen.
+</p>
+
+<p>
+Hier konfigurieren wir jetzt, was manche Menschen als "Packet Shaper", 
+<uri link="http://de.wikipedia.org/wiki/Traffic_shaping">Traffic Shaping"</uri>
+oder <uri link="http://de.wikipedia.org/wiki/QoS">"Quality of Service"</uri>
+bezeichnen. Simpel gesehen wollen wir Regeln auf unserem Router einrichten,
+die bestimmte Aktivitäten verlangsamen (z.B. das Senden von großen E-Mails oder
+der Download aus P2P-Netzwerken), wärend andere Aktivitäten (z.B. Surfen im Web
+oder Spielen von Online-Games) relativ schnell gehalten werden. Eine
+30-Sekunden-Differenz in einem Videospiel ist sehr viel schlimmer als eine beim
+Herunterladen großer Dateien :).
+</p>
+
+<p>
+Zuerst muss man nachschauen, ob der Kernel alle Vorraussetzungen erfüllt. Siehe
+<uri link="#doc_chap2">Kernel-Konfiguration</uri> für mehr Informationen. Als
+nächstes musst du <c>emerge iptables iputils</c> durchführen, damit du Zugriff
+auf <c>iptables</c>-, <c>ip</c>- und <c>tc</c>-Befehle hast.
+</p>
+
+<p>
+Bevor wir mit den Befehlen anfangen, sollten wir ein bisschen Theorie abdecken.
+Dieses ganze System arbeitet dadurch, dass gebräuchliche Netzwerkstreams
+klassifiziert werden und dann mit einer Priorität versehen werden. Du nutzt 
+iptables zum Klassifizieren von Netzwerkstreams, iputils um die
+unterschiedlichen Prioritäten zu definieren und den Kernel um die
+Geschwindigkeiten anzupassen. Erinnere dich, dass du den <e>outbound traffic</e>
+relativ streng kontrollieren kannst (vom LAN zum WAN) - diese Möglichkeit 
+transferiert auf den <e>inbound traffic</e> (vom WAN zum LAN) jedoch relativ
+begrenzt ist. Bitte denk' daran, dass die folgenden Beispiele lediglich als
+kleine Heranführung an die Bereiche gedacht sind. Solltest du mehr erfahren 
+wollen, solltest du mehr über die speziellen Themengebiete lesen. In diesem
+Beispiel werden wir den <uri link="http://luxik.cdi.cz/~devik/qos/htb/">Hierarchical Token Buckets (HTB)</uri> 
+Paketplanungs-Algorithmus verwenden. Noch immer dabei? Klasse, dann lass uns 
+mit dem <e>shaping</e> beginnen :).
+</p>
+
+<pre caption="Konfiguration">
+DEV=eth1 <comment>NIC verbunden mit dem WAN</comment>
+RATE_OUT=100 <comment>Verfügbare Bandbreite ins WAN (in Kilobit [kb])</comment>
+RATE_IN=1400 <comment>Verfügbare Bandbreite aus dem WAN ins LAN (in kb)</comment>
+
+<comment>Hier initialisieren wir das Prioritätssystem. Die 45 wird benutzt, um den Standard-Klassifizierungslevel festzulegen.</comment>
+ip link set dev ${DEV} qlen 30
+tc qdisc add dev ${DEV} root handle 1: htb default 45
+tc class add dev ${DEV} parent 1: classid 1:1 htb rate ${RATE_OUT}kbit
+</pre>
+
+<p>
+Hier initialisieren wir das Systen, dass benutzt werden wird um den gesammten
+Netzwerk-Traffic zu priorisieren. Wir kreierten unseren Ablauf (queue), sagten
+ihm, den HTB Algorithmus zu benutzen und setzten den Standard-Klassifizierungslevel
+auf '45'. Der Standard ist vollkommen frei wählbar, genau wie alle anderen Level
+von hier aus. Das Einzige, was wichtig ist, ist wie sich diese Level relativ 
+zueinander verhalten; ein Level '10' Paket bekommt den Vorzug vor einem Level 
+'45' Paket. Lass uns weitermachen mit dem Erstellen unterschiedlicher Level.
+</p>
+
+<pre caption="Erstellen von Levels">
+tc class add dev $DEV parent 1:1 classid 1:10 htb rate $rkbit ceil $tkbit prio $p
+tc qdisc add dev $DEV parent 1:10 handle 10: sfq
+</pre>
+</body>
+</section>
+-->
+
+<section>
+<title>Zeitserver</title>
+<body>
+
+<p>
+Für ein gesundes, funktionierendes System ist es unausweichlich, die Zeit immer
+korrekt zu halten. Einer der gebräuchlichsten Wege, dies zu verwirklichen, ist
+die Benutzung des <e>Network Time Protocol</e> (NTP) und dem ntp-Paket (das 
+sowohl Implementierungen für Server und Client enthält).
+</p>
+
+<p>
+Viele Menschen haben ntp-Clients auf ihren Computern laufen. Offensichtlich 
+müssen die NTP-Server in der Welt mehr Last verarbeiten, je mehr Menschen solche
+Clients starten. In Umgebungen wie unserem Heimnetzwerk können wir jedoch
+die Last der öffentlichen Server etwas mindern und dennoch allen Geräten in 
+unserem Netzwerk die richtige Zeit offerieren. Als Bonus sind unsere privaten
+Updates für alle Clients sehr viel schneller! Alles, was wir zu tun haben, ist,
+einen NTP-Server auf unserem Router zu starten, der sich selbst mit den 
+öffentlichen Servern synchronisiert und gleichzeitig diese Zeit dem Rest der
+Rechner im Netzwerk zur Verfügung stellt. Für den Start reich ein einfaches
+<c>emerge ntp</c> auf dem Router.
+</p>
+
+<pre caption="Konfiguration des NTP-Servers">
+# <i>nano /etc/conf.d/ntp-client</i>
+<comment>Editiere hier, wenn du möchtest. Die Standards sollten aber in Ordnung sein.</comment>
+# <i>rc-update add ntp-client default</i>
+
+# <i>nano /etc/ntp.conf</i>
+<comment>Füge folgende Zeilen hinzu:
+restrict default ignore
+restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
+Dies erlaubt nur Clients mit einer IP-Adresse aus dem 192.168.0.xxx-Netz die 
+Nutzung deines NTP-Servers.</comment>
+# <i>nano /etc/conf.d/ntpd</i>
+<comment>Editiere hier, wenn du möchtest. Die Standards sollten aber in Ordnung sein.</comment>
+# <i>rc-update add ntpd default</i>
+
+# <i>/etc/init.d/ntp-client start</i>
+# <i>/etc/init.d/ntpd start</i>
+</pre>
+
+<p>
+Jetzt führe auf deinen Clients ebenfalls ein <c>emerge ntp</c> durch. Jedoch
+werden wir hier lediglich den NTP-Client starten, was die Konfiguration um 
+einiges erleichtert.
+</p>
+
+<pre caption="Konfiguration eines NTP-Clients">
+# <i>nano /etc/conf.d/ntp-client</i>
+<comment>Ändere den 'pool.ntp.org'-Server in der NTPCLIENT_OPTS Variable in '192.168.0.1'</comment>
+# <i>rc-update add ntp-client default</i>
+# <i>/etc/init.d/ntp-client start</i>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Mail Server</title>
+<body>
+
+<p>
+Manchmal ist es schön, den eigenen <e>Simple Mail Transfer Protocol</e> (SMTP)
+Server auf dem Router laufen zu haben. Du magst deinen eigenen Grund dafür 
+haben, aber ich benutze ihn damit die Benutzer den Versand ihrer E-Mails sehen
+als wenn sie sofort verschickt werden und die Arbeit des Wiederholens/Routens
+dem Mail-Server überlassen ist. Manche ISPs erlauben die Weitergabe für Accounts
+die nicht Teil ihres Netzwerks sind, überhaupt nicht (z.B. Verizon). Zudem
+kannst du so den Versand von Mails einfach drosseln, sodass große Anhänge
+deiner Verbindung keinen großen Lag von einer halben Stunde aufzwingen.
+</p>
+
+<pre caption="Konfiguration vom SMTP">
+# <i>emerge qmail</i>
+<comment>Versichere dich, dass die Ausgabe von 'hostname' ist richtig</comment>
+# <i>ebuild /var/db/pkg/*-*/qmail-1.03-r*/*.ebuild config</i>
+# <i>iptables -I INPUT -p tcp --dport smtp -i ! eth0 -j REJECT</i>
+# <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
+# <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
+<!--
+# <i>cd /etc/tcprules.d</i>
+# <i>nano tcp.qmail-smtp</i>
+-->
+# <i>cd /etc</i>
+# <i>nano tcp.smtp</i>
+<comment>Füge eine Zeile ähnlich der folgenden zum "allow"-Abschnitt hinzu:
+192.168.0.:allow,RELAYCLIENT=""</comment>
+<!--
+# <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
+-->
+
+# <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+# <i>rc-update add svscan default</i>
+# <i>/etc/init.d/svscan start</i>
+</pre>
+
+<p>
+Ich bin ein großer Fan von QMail, aber selbstverständlich kannst du auch
+ein anderes Programm nutzen :). Wenn du E-Mail auf den Hosts in deinem Netzwerk
+konfigurierst, sage ihnen, dass der SMTP-Server 192.168.0.1 ist und alles sollte
+gut laufen. Möglicherweise möchtest du <uri link="http://qmail.org/">QMail</uri>
+besuchen, um weitere Dokumentationen zu bekommen.
+</p>
+</body>
+</section>
+
+<!--
+<section>
+<title>E-Mail Virenscan</title>
+<body>
+
+<p>
+Wenn du deinen Usern E-Mail Virenscan zur Verfügung stellen willst, jedoch
+nicht auf jeder einzelnen Maschine einen Virenscanner installieren willst, 
+könnte <c>pop3vscan</c> genau das richtige für dich sein; ein transparenter
+<e>Post Office Protocol</e> (POP) Scanner.
+</p>
+
+<pre caption="Konfiguration von pop3vscan">
+TODO
+</pre>
+
+</body>
+</section>
+-->
+
+</chapter>
+
+<chapter>
+<title>Ausklang</title>
+<section>
+<body>
+
+<p>
+Ich habe keine abschließenden Bemerkungen. Wenn du jedoch irgendwelche 
+Probleme mit diesem Guide hast, kannst du mich per 
+<mail link="vapier@gentoo.org">E-Mail</mail> erreichen (bitte auf Englisch, für
+deutsche Mails <mail link="rk@oppono.de">hier</mail>
+klicken). Eine andere Möglichkeit ist, dass du einen Bug meldest auf 
+<uri link="http://bugs.gentoo.org/">Gentoo's Bugtracking Website</uri>. Wenn du
+ein paar interessante Dinge hast, von denen du annimmst, dass sie diesen Guide
+verbessern würden, schicke sie mir bitte zur Einbindung (auch hier bitte: Auf 
+Englisch).
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
