@@ -9,11 +9,13 @@
   <author title="Author">Gentoo Documentation Project</author>
   <version>Dynamically</version>
   <date>Dynamically</date>
- 
+
+  <xsl:if test="intro">
   <chapter>
     <title><xsl:value-of select="title"/></title>
     <xsl:apply-templates match="intro"/>
   </chapter>
+  </xsl:if>
 
   <xsl:apply-templates>
     <xsl:with-param name="metadoc" select="$metadoc"/>
