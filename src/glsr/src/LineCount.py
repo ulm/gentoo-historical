@@ -1,12 +1,12 @@
 #!/usr/bin/python
-# $Id: LineCount.py,v 1.2 2004/07/03 23:50:08 port001 Exp $
+# $Id: LineCount.py,v 1.3 2004/11/05 20:33:15 port001 Exp $
 
 import os
 
 WWW_DIR = os.path.join(os.getcwd(), "htdocs")
 GLSR_DIR = os.getcwd()
 
-MyFiles = ("%s/Setup.py" % GLSR_DIR, "%s/admin/index.py" % WWW_DIR) 
+MyFiles = ("%s/Setup.py" % GLSR_DIR, "%s/index.py" % WWW_DIR) 
 MyDirs = ("%s/pym" % GLSR_DIR, "%s/site_modules" % GLSR_DIR)
 
 FileList = []
