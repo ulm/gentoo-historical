@@ -300,10 +300,10 @@
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='docs'">
-            <a class="highlight" href="/main/en/docs.xml">Docs</a> |
+            <a class="highlight" href="/doc/en/index.xml">Docs</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/docs.xml">Docs</a> |
+            <a class="menulink" href="/doc/en/index.xml">Docs</a> |
           </xsl:otherwise>
         </xsl:choose>
         <a class="menulink" href="http://forums.gentoo.org">Forums</a> |
@@ -363,11 +363,11 @@
                     <br/>
                     <a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#top">User Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml">User Docs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#doc_chap2_sect1">Developer Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap6">Developer Docs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#doc_chap3">Other Docs/Translations</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs/Translations</a>
                     <br/>
                     <a class="altlink" href="/main/en/contract.xml">Social Contract</a>
                     <br/><br/>
