@@ -7,7 +7,7 @@
     <name>Staffing Needs</name>
     <longname>Gentoo Linux Staffing Needs</longname>
 
-    <date>Current</date>
+    <date>automatically</date><!-- Should give: Updated automatically -->
     <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
 
     <description>
