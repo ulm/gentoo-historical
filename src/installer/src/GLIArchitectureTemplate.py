@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.18 2005/01/04 22:18:18 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.19 2005/01/04 22:20:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -506,9 +506,7 @@ class ArchitectureTemplate:
 			if interfaces[interface][2]:
 				
 				# Add it to the default runlevel
-					exitstatus = GLIUtility.spawn("rc-update add net." + interface + " default", True)
-					if exitstatus != 0:
-						raise "NetStartupError", "Cannot add interface " + interface + " to the default runlevel!"
+				self._add_to_runlevel("net."+interface)	
 
 			# Set what kind of interface it is
 			interface_type = interface[:3]
