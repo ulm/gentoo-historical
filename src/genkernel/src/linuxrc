@@ -1,5 +1,6 @@
 #!/bin/sh
 # Daniel Robbins <drobbins@gentoo.org>
+# John Davis <zhen@gentoo.org>
 # Copyright 2003 Gentoo Technologies, Inc.
 # Distributed under the GPL
 
@@ -27,58 +28,45 @@ then
         mount -t devfs devfs /dev
 fi
 
+KV="`uname -r`"
+KV_FINE="${KV:0:3}"
 CMDLINE="`cat /proc/cmdline`"
-for x in $CMDLINE
-do
-	if [ "$x" = "doscsi" ]
-	then
+
+case ${CMDLINE} in
+
+	"doscsi")
 		SCSI="yes"
-	elif [ "$x" = "cdcache" ]
-	then
+	;;
+
+	"cdcache")
 		CDCACHE="yes"
-	elif [ "$x" = "idebug" ]
-	then
+	;;
+
+	"idebug")
 		IDEBUG="yes"
-	fi
-done
+	;;
 
-for x in $CMDLINE
-do
-	if [ "$x" = "dofirewire" ]
-        then
-                FIREWIRE="yes"
-	fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "nousb" ]
-        then
-                USB="no"
-        fi
-done
+	"dofirewire")
+		FIREWIRE="yes"
+	;;
 
-for x in $CMDLINE
-do
-	if [ "$x" = "doataraid" ]
-        then
-                ATARAID="yes"
-	fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "dopcmcia" ]
-        then
-                PCMCIA="yes"
-        fi
-done
+	"nousb")
+		USB="no"
+	;;
 
-for x in $CMDLINE
-do
-        if [ "$x" = "dokeymap" ]
-        then
-                KEYMAP="yes"
-        fi
-done
+	"doataraid")
+		ATARAID="yes"
+	;;
+	
+	"dopcmcia")
+		PCMCIA="yes"
+	;;
+
+	"dokeymap")
+		KEYMAP="yes"
+	;;
+	
+esac
 
 blurb() {
 	echo -ne ${HILITE}${1}
@@ -129,7 +117,12 @@ modules_scan() {
 	for x in "$@"
 	do
 		blurb "---- Scanning for ${x}..."
-		insmod -f /modules/${type}/${x}.o > /dev/null 2>&1
+		if [ ${KV_FINE} = "2.6" ]
+		then
+			insmod -f /modules/${type}/${x}.ko > /dev/null 2>&1
+		else
+			insmod -f /modules/${type}/${x}.o > /dev/null 2>&1
+		fi
 		if [ $? -eq 0 ]
 		then
 			backup
