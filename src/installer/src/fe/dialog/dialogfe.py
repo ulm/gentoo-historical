@@ -258,7 +258,7 @@ def set_make_conf():
 # This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 	make_conf = install_profile.get_make_conf()
 	while 1:
-		menulist = ["ACCEPT_KEYWORDS", "CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "USE"]
+		menulist = ["ACCEPT_KEYWORDS", "CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "USE", "GENTOO_MIRRORS", "SYNC"]
 		code, menuitem = d.menu("Choose a variable to edit", choices=dmenu_list_to_choices(menulist), cancel="Done")
 		if code != DLG_OK: break
 		menuitem = menulist[int(menuitem)-1]

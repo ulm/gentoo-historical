@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.24 2005/03/21 23:00:33 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.25 2005/03/26 20:11:49 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -30,14 +30,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			if exitstatus != 0:
 				raise GLIException("BootLoaderEmergeError", 'fatal', 'install_bootloader', "Could not emerge bootloader!")
 		else:
-			pass
+			self._logger.log("Emerged the selected bootloader.")
 		
 		if self._install_profile.get_boot_loader_pkg() == "grub":
 			self._install_grub()
 		elif self._install_profile.get_boot_loader_pkg() == "lilo":
 			self._install_lilo()
 		else:
-			raise Exception("BootLoaderError",'fatal','install_bootloader',"Invalid bootloader selected:"+self._install_profile.get_boot_loader_pkg())
+			raise GLIException("BootLoaderError",'fatal','install_bootloader',"Invalid bootloader selected:"+self._install_profile.get_boot_loader_pkg())
 		
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(1024*1024))
@@ -78,7 +78,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			parted_dev = parted.PedDevice.get(dev)
 			parted_disk = parted.PedDisk.new(parted_dev)
 			if not parts_new.has_key(dev) or not parts_new[dev]:
-				print "Partition table for " + dev + " does not exist in install profile"
+				self._logger.log("Partition table for " + dev + " does not exist in install profile")
+				#print "Partition table for " + dev + " does not exist in install profile"
 				continue
 			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
 				# Change MB/%/* into sectors
@@ -131,11 +132,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						table_changed = 1
 						break
 				if not table_changed:
-					print "Partition table for " + dev + " is unchanged"
+					self._logger.log("Partition table for " + dev + " is unchanged")
+					#print "Partition table for " + dev + " is unchanged"
 					continue
 			parts_active = []
 			parts_lba = []
-			print "\nProcessing " + dev + "..."
+			self._logger.log("Processing "+dev+"...")
+			#print "\nProcessing " + dev + "..."
 			# First pass to delete old partitions that aren't resized
 			for part in parts_old[dev]:
 				if part > 4: continue
@@ -153,62 +156,75 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							tmppart = parts_new[dev][new_part]
 							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
 								matchingminor = new_part
-								print "  Deleting old minor " + str(part_log) + " to be recreated later"
+								self._logger.log("  Deleting old minor " + str(part_log) + " to be recreated later")
+								#print "  Deleting old minor " + str(part_log) + " to be recreated later"
 								delete_log = 1
 								break
 							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
 								matchingminor = new_part
-								print "  Ignoring old minor " + str(part_log) + " to resize later"
+								self._logger.log("  Ignoring old minor " + str(part_log) + " to resize later")
+								#print "  Ignoring old minor " + str(part_log) + " to resize later"
 								logical_to_resize = 1
 								break
 						if not matchingminor:
-							print "  No match found...deleting partition " + str(part_log)
+							self._logger.log("  No match found...deleting partition " + str(part_log))
+							#print "  No match found...deleting partition " + str(part_log)
 							parted_disk.delete_partition(parted_disk.get_partition(part_log))
 						else:
 							if parted_disk.get_partition(part_log).get_flag(1): # Active/boot
-								print "  Partition " + str(part_log) + " was active...noted"
+								self._logger.log("  Partition " + str(part_log) + " was active...noted")
+								#print "  Partition " + str(part_log) + " was active...noted"
 								parts_active.append(int(matchingminor))
 							if parted_disk.get_partition(part_log).get_flag(7): # LBA
-								print "  Partition " + str(part_log) + " was LBA...noted"
+								self._logger.log("  Partition " + str(part_log) + " was LBA...noted")
+								#print "  Partition " + str(part_log) + " was LBA...noted"
 								parts_lba.append(int(matchingminor))
 							if delete_log:
 								parted_disk.delete_partition(parted_disk.get_partition(part_log))
 					if not logical_to_resize:
-						print "  Deleting old minor " + str(part)
+						self._logger.log("  Deleting old minor " + str(part))
+						#print "  Deleting old minor " + str(part)
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 					continue
 				for new_part in parts_new[dev]:
 					tmppart = parts_new[dev][new_part]
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
 						matchingminor = new_part
-						print "  Deleting old minor " + str(part) + " to be recreated later"
+						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
+						#print "  Deleting old minor " + str(part) + " to be recreated later"
 						delete = 1
 						break
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
 						matchingminor = new_part
-						print "  Ignoring old minor " + str(part) + " to resize later"
+						self._logger.log("  Ignoring old minor " + str(part) + " to resize later")
+						#print "  Ignoring old minor " + str(part) + " to resize later"
 						break
 				if not matchingminor:
-					print "  No match found...deleting partition " + str(part)
+					self._logger.log("  No match found...deleting partition " + str(part))
+					#print "  No match found...deleting partition " + str(part)
 					parted_disk.delete_partition(parted_disk.get_partition(part))
 				else:
 					if parted_disk.get_partition(part).get_flag(1): # Active/boot
-						print "  Partition " + str(part) + " was active...noted"
+						self._logger.log("  Partition " + str(part) + " was active...noted")
+						#print "  Partition " + str(part) + " was active...noted"
 						parts_active.append(int(matchingminor))
 					if parted_disk.get_partition(part).get_flag(7): # LBA
-						print "  Partition " + str(part) + " was LBA...noted"
+						self._logger.log("  Partition " + str(part) + " was LBA...noted")
+						#print "  Partition " + str(part) + " was LBA...noted"
 						parts_lba.append(int(matchingminor))
 					if delete:
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 			parted_disk.commit()
 			# Second pass to resize old partitions that need to be resized
-			print " Second pass..."
+			self._logger.log("Partitioning: Second pass...")
+			#print " Second pass..."
 			for part in parts_old[dev]:
 				oldpart = parts_old[dev][part]
 				for new_part in parts_new[dev]:
 					tmppart = parts_new[dev][new_part]
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
-						print "  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end'])
+						self._logger.log("  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end']))
+						#print "  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end'])
 						type = tmppart['type']
 						device = dev
 						minor = part
@@ -237,30 +253,37 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 								parted_fs.resize(new_geom)
 							except:
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
-						print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
+						self._logger.log("  Deleting old minor " + str(part) + " to be recreated in 3rd pass")
+						#print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 						break
 			parted_disk.delete_all()
 			parted_disk.commit()
 			# Third pass to create new partition table
-			print " Third pass..."
+			self._logger.log("Partitioning: Third pass.")
+			#print " Third pass..."
 			for part in parts_new[dev]:
 				newpart = parts_new[dev][part]
 				new_start, new_end = newpart['start'], newpart['end']
 				if newpart['type'] == "extended":
-					print "  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._logger.log("  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end']))
+					#print "  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end'])
 					self._add_partition(parted_disk, new_start, new_end, "extended", "")
 				elif int(part) < 5:
-					print "  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._logger.log("  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end']))
+					#print "  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end'])
 					self._add_partition(parted_disk, new_start, new_end, "primary", newpart['type'])
 				elif int(part) > 4:
-					print "  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._logger.log("  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end']))
+					#print "  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end'])
 					self._add_partition(parted_disk, new_start, new_end, "logical", newpart['type'])
 				if int(part) in parts_active and not newpart['format']:
-					print "   Partition was previously active...setting"
+					self._logger.log("   Partition was previously active...setting")
+					#print "   Partition was previously active...setting"
 					parted_disk.get_partition(part).set_flag(1)
 				if int(part) in parts_lba and not newpart['format']:
-					print "   Partition was previously LBA...setting"
+					self._logger.log("   Partition was previously LBA...setting")
+					#print "   Partition was previously LBA...setting"
 					parted_disk.get_partition(part).set_flag(7)
 				parted_disk.commit()
 				if newpart['format']:
@@ -317,7 +340,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/initrd-* > "+file_name4)
 		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):
 			raise GLIException("BootloaderError", 'fatal', '_install_grub', "Error in one of THE THREE run commands")
-		
+		self._logger.log("Bootloader: the three information gathering commands have been run")
 		"""
 		read the device map.  sample looks like this:
 		(fd0)   /dev/floppy/0
@@ -394,7 +417,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus = GLIUtility.spawn(grubinstallstring)
 		if exitstatus != 0:
 			raise GLIException("GrubInstallError", 'fatal', '_install_grub', "Could not install grub!")
-			
+		self._logger.log("Bootloader: grub has been installed!")
 		#now make the grub.conf file
 		file_name = root + "/boot/grub/grub.conf"	
 		try:
