@@ -9,14 +9,41 @@ subarches=["amd64", "hppa", "hppa1.1", "hppa2.0", "x86", "i386", "i486", "i586",
 "g4", "sparc", "sparc64", "mips", "alpha", "ev4", "ev5", "ev56", "pca56", "ev6", "ev67" ]
 
 #this target stuff is not completed, but I've added it as a general template.
-
+"""
+setting name			bash equivalent		defined how?
+====================================================================
+pkgdir				PKGDIR			default (package cache dir)
+distdir				DISTDIR			default (/usr/portage/distfiles)
+subarch				SUBARCH			user (from spec)
+rel_version			REL_VERSION		user (from spec) (was MAINVERSION)
+rel_type			REL_TYPE		user (from spec)
+version_stamp			VERSION_STAMP		user (from spec)
+snapshot			SNAPSHOT		user (from spec)
+source_tarball			SOURCE_TARBALL		user (from spec)
+target				TARGET			user (from spec)
+cflags				CFLAGS			auto
+hostuse				HOSTUSE			auto
+chost				CHOST			auto
+mainarch			MAINARCH		auto
+"""
 class generic_target:
 	def __init__(self,myset):
 		self.settings=myset
 		self.envmap={"CFLAGS":"cflags" }
 	def path(self):
+		#builds/default-x86-1.4/stage1-pentium4-20030911.tar.bz2
+		#builds/default-x86-1.4/stage2-pentium4-20030911.tar.bz2
+		#builds/default-x86-1.4/stage3-pentium4-20030911.tar.bz2
+		#builds/default-x86-1.4/grp-pentium4-20030911/cd1
+		#builds/default-x86-1.4/grp-pentium4-20030911/cd2
+		#builds/default-x86-1.4/livecd-20030911.tar.bz2
+		#builds/buildtype-mainarch-mainversion/buildtype-subarch-version_stamp
+		#now where to put the work files.
 		return "stages/stage1-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
 	def read_spec_file(self,myfile):
+		#settings from this file:
+		#pkgdir, distdir, subarch, mainversion, version_stamp, snapshot, source tarball
+		#default default  user     user         user           user      user
 		#read in a spec file, grab settings we need.
 		pass
 	def execute_script(self,myscript,myargs):
@@ -26,8 +53,8 @@ class generic_target:
 	def export_variables(self):
 		#export environment variables
 		#export:
-		# CFLAGS, HOSTUSE, CHOST, MAINARCH, PROFILE, MAKEOPTS, BASEDIR, CHROOTDIR, FEATURES
-		
+		# CFLAGS, HOSTUSE, CHOST, MAINARCH, MAINVERSION, BUILDTYPE, MAKEOPTS, BASEDIR, CHROOTDIR, FEATURES
+		# auto    auto     auto   auto      spec         spec auto default  auto       default	
 	def build(self):
 		#do the actual stage1 building
 		return execute_script("targets/stage1/build.sh")
