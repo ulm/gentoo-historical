@@ -6,7 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, signal, time, shutil
+import string, os, re, signal, time, shutil, sys
 
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
@@ -188,60 +188,47 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
-	res = run_cmd("ifconfig",options)
+	res = run_cmd("ifconfig" + options)
 
-	if res[0] == 'exit' and res[1] == 0:
-		return(0)
-	else:
-		return(1)
+	if exitsuccess(res):
+		return True
+
+	return False
 
 def set_default_route(route):
 	pass
 
-def run_cmd(cmd, timeout=-1):
-	if type(cmd) != str:
-		raise "InputError", "cmd must be a string!"
-
-	cmdline = []
-
-	if len(cmd.split()) > 1:
-		tmp = cmd.split()
-		cmd = tmp[0]
-		cmdline = tmp[1:]
-
-	if len(cmdline) == 0 or cmdline[0] != cmd:
-		cmdline = [cmd] + cmdline
-
+def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
 	pid = os.fork()
 	if pid == 0:
-		os.execvp(cmd, cmdline)
+		if quiet and logfile != None:
+			print "You cannot log the output of a command when you specify 'quiet'."
+			print "Logging anyway, but unsetting 'quiet'."
+			cmd += " | tee " + logfile
+		elif quiet and logfile == None:
+			cmd += " >/dev/null 2>&1"
+		elif logfile != None:
+			cmd += " | tee " + logfile
+
+		if display_on_tty8:
+			try:
+				tty = os.open("/dev/vc/8", os.O_RDWR)
+				oldstdout = sys.stdout
+				os.dup2(tty,sys.stdout.fileno())
+			except IOError:
+				print "Could not open on tty8. Are you running as root?"
+				tty = None
+
+		ret = os.system(cmd)
+
+		if display_on_tty8 and tty != None:
+			os.close(tty)
+			sys.stdout = oldstdout
+
+		sys.exit(ret)
 	else:
-		if timeout != -1:
-			for i in range(0, timeout):
-				status = os.waitpid(pid, os.WNOHANG)
-				if status[0] != 0:
-					break
-				time.sleep(1)
-
-			if status[0] == 0:
-				os.kill(pid, signal.SIGTERM)
-
-				for i in range(0, 5):
-					status = os.waitpid(pid, os.WNOHANG)
-					if status[0] != 0:
-						break
-					time.sleep(1)
-
-				if status[0] == 0:
-					os.kill(pid, signal.SIGKILL)
-					status = os.waitpid(pid,0)
-
-
-		else:
-			status = os.waitpid(pid,0)
-
-		# We're big kids, we can use os.W* when we need to see what happened.
-		return(status[1])
+		status = os.waitpid(pid,0)
+		return status[1]
 
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
