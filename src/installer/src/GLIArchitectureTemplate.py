@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.24 2005/01/05 22:50:07 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.25 2005/01/06 07:29:43 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -12,7 +12,7 @@ The only definitions that are filled in here are architecture independent.
 
 """
 
-import GLIUtility, os, string, sys, shutil
+import GLIUtility, os, string, sys, shutil, re
 from GLIException import *
 # Until I switch my partition code to GLIUtility.spawn()
 import commands
@@ -74,7 +74,7 @@ class ArchitectureTemplate:
 		
 		# Do it
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, chroot=self._chroot_dir)
-		if not GLIUtility.exit_success(status):
+		if not GLIUtility.exitsuccess(status):
 			raise GLIException("RunlevelAddError", 'warning', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 
 	def _emerge(self, package, binary=False, binary_only=False):
@@ -148,7 +148,10 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
-
+		ret = GLIUtility.spawn("mount -o bind /dev " + self._chroot_dir + "/dev")
+		if not GLIUtility.exitsuccess(ret):
+			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
+		
 		# Set USE flags here
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
 		# Then you should be done... at least with the preinstall.
@@ -171,8 +174,7 @@ class ArchitectureTemplate:
 		#'mountopts': '',   'mountpoint': '',   'start': 63,    'type': 'linux-swap'},
 		#2: {   'end': 240121727, 'format': False,  'mb': 0, 'mountopts': '',  
 		#'mountpoint': '',  'start': 1999872,  'type': 'ext3'}}
-		#{'/dev/hdz': {1: {'end': 4, 'mb': 0, 'format': False, 'start': 0, 'mountopts': '', 'mountpoint': '', 'type': 'ext2', 'minor': 1}, 2: {'end': 129, 'mb': 0, 'format': False, 'start': 5, 'mountopts': '', 'mountpoint': '', 'type': 'linux-swap', 'minor': 2}, 3: {'end': 12579, 'mb': 0, 'format': False, 'start': 130, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 3}, 4: {'end': 24320, 'mb': 0, 'format': False, 'start': 12580, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 4}}}
-
+		
 		parts = self._install_profile.get_partition_tables()
 		parts_to_mount = {}
 		for device in parts:
@@ -189,7 +191,6 @@ class ArchitectureTemplate:
 					if partition_type:
 						partition_type = "-t "+partition_type+" "
 					parts_to_mount[mountpoint]= {0: mountopts, 1: partition_type, 2: minor}
-					
 					
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
@@ -217,7 +218,13 @@ class ArchitectureTemplate:
 		
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
-		pass
+		if not GLIUtility.is_file(self._chroot_dir+"/usr/portage/distfiles"):
+			exitstatus = GLIUtility.spawn("mkdir -p /usr/portage/distfiles",chroot=self._chroot_dir)
+			if exitstatus != 0:
+				raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
+		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/")
+		if exitstatus != 0:
+			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
 
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
@@ -244,17 +251,11 @@ class ArchitectureTemplate:
 		
 			# Get portage tree info
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
-			
-			# Fetch and unpack the tarball
-			GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/")
-			if not GLIUtility.is_file(self._chroot_dir+"/usr/portage/distfiles"):
-				exitstatus = GLIUtility.spawn("mkdir /usr/portage/distfiles",chroot=self._chroot_dir)
-				if exitstatus != 0:
-					raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
-			#!!!!!!!!!!FIXME THIS SHOULD NOT BE HERE
-			exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/")
-			if exitstatus != 0:
-				raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
+			if portage_tree_snapshot_uri:
+				# Fetch and unpack the tarball
+				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/")
+				# FIXME TEMPORARY FIX FOR NON-GRP SETTING
+				self.fetch_sources_from_cd()
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
 			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir)
@@ -273,25 +274,48 @@ class ArchitectureTemplate:
 		if not os.access(self._chroot_dir + "/etc/localtime", os.W_OK):
 			os.symlink(self._chroot_dir + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._chroot_dir + "/etc/localtime")
 		if not (self._install_profile.get_time_zone() == "UTC"):
-			self._edit_config(self._chroot_dir + "/etc/rc.conf", "CLOCK", "local")
+			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
 		
 	def configure_fstab(self):
 		"Configures fstab"
 		newfstab = ""
-		partitions = self._install_profile.get_fstab()
-		for partition in partitions:
-			if not GLIUtility.is_file(self._chroot_dir+partition):
-				exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
-				if exitstatus != 0:
-					raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
-			newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
-			newfstab += "\t " + partitions[partition][2] + "\t "
-			if partition == "/boot":
-				newfstab += "1 2\n"
-			elif partition == "/":
-				newfstab += "0 1\n"
-			else:
-				newfstab += "0 0\n"
+		#partitions = self._install_profile.get_fstab()
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+		#in parts['/dev/hda']
+			for partition in parts[device]:
+				#print parts[device][partition]
+				mountpoint = parts[device][partition]['mountpoint']
+				minor = str(parts[device][partition]['minor'])
+				partition_type = parts[device][partition]['type']
+				mountopts = parts[device][partition]['mountopts']
+				if mountpoint:
+					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
+					if exitstatus != 0:
+						raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
+					newfstab += device+minor+"\t "+mountpoint+"\t "+partition_type+"\t "+mountopts+"\t\t "
+					if mountpoint == "/boot":
+						newfstab += "1 2\n"
+					elif mountpoint == "/":
+						newfstab += "0 1\n"
+					else:
+						newfstab += "0 0\n"
+				if partition_type == "linux-swap":
+					newfstab += device+minor+"\t none            swap            sw              0 0\n"
+		#for partition in partitions:
+		#	if not GLIUtility.is_file(self._chroot_dir+partition):
+		#		exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
+		#		if exitstatus != 0:
+		#			raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
+		#	newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
+		#	newfstab += "\t " + partitions[partition][2] + "\t "
+		#	if partition == "/boot":
+		#		newfstab += "1 2\n"
+		#	elif partition == "/":
+		#		newfstab += "0 1\n"
+		#	else:
+		#		newfstab += "0 0\n"
 		newfstab += "none        /proc     proc    defaults          0 0\n"
 		newfstab += "none        /dev/shm  tmpfs   defaults          0 0\n"
 		if GLIUtility.is_device("/dev/cdroms/cdrom0"):

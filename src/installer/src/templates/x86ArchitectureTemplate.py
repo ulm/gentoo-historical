@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.4 2005/01/04 22:28:29 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.5 2005/01/06 07:29:43 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -24,8 +24,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#
 		# THIS IS ARCHITECTURE DEPENDANT!!!
 		# This is the x86 way.. it uses grub
-		# Dependency checking		
-		self._depends("build_kernel")
 		
 		if self._install_profile.get_boot_loader_pkg():
 			exitstatus = self._emerge(self._install_profile.get_boot_loader_pkg())
@@ -50,24 +48,42 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		file_name2 = root + "/boot/grub/device.map"
 		file_name3 = root + "/boot/grub/kernel_name"
 		foundboot = False
-		partitions = self._install_profile.get_fstab()
-		for partition in partitions:
+		#partitions = self._install_profile.get_fstab()
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+		#in parts['/dev/hda']
+			for partition in parts[device]:
+				#print parts[device][partition]
+				mountpoint = parts[device][partition]['mountpoint']
+				if (mountpoint == "/boot"):
+					foundboot = True
+				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
+					boot_minor = str(parts[device][partition]['minor'])
+					grub_boot_minor = str(parts[device][partition]['minor'] - 1)
+					boot_device = device
+				if mountpoint == "/":
+					root_minor = str(parts[device][partition]['minor'])
+					grub_root_minor = str(parts[device][partition]['minor'] - 1)
+					root_device = device
+				
+					
+		#for partition in partitions:
 			#if find a /boot then stop.. else we'll take a / and overwrite with a /boot if we find it too.
-			if (partition == "/boot"):
+		#	if (partition == "/boot"):
 				#try to get the drive LETTER from /dev/hdc1 8th character
-				boot_minor = partitions[partition][0][8]
-				grub_boot_minor = str(int(boot_minor) - 1)
-				boot_device = partitions[partition][0][0:8]
-				foundboot = True
-			if ( (partition == "/") and (not foundboot) ):
-				boot_minor = partitions[partition][0][8]
-				grub_boot_minor = str(int(boot_minor) - 1)
-				boot_device = partitions[partition][0][0:8]
+		#		boot_minor = partitions[partition][0][8]
+		#		grub_boot_minor = str(int(boot_minor) - 1)
+		#		boot_device = partitions[partition][0][0:8]
+		#		foundboot = True
+		#	if ( (partition == "/") and (not foundboot) ):
+		#		boot_minor = partitions[partition][0][8]
+		#		grub_boot_minor = str(int(boot_minor) - 1)
+		#		boot_device = partitions[partition][0][0:8]
 				#Foundboot IS STILL FALSE
-			if partition == "/":
-				root_minor = partitions[partition][0][8]
-				grub_root_minor = str(int(root_minor) - 1)
-				root_device = partitions[partition][0][0:8]
+		#	if partition == "/":
+		#		root_minor = partitions[partition][0][8]
+		#		grub_root_minor = str(int(root_minor) - 1)
+		#		root_device = partitions[partition][0][0:8]
 		
 		exitstatus0 = GLIUtility.spawn("ls -l " + boot_device + " > " + file_name)
 		exitstatus1 = GLIUtility.spawn("ls -l " + root_device + " > " + file_name1)
