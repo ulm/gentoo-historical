@@ -399,7 +399,7 @@
                       <xsl:when test="/mainpage/@id='news'">
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
-                            <td>
+                            <td valign="top">
                               <a href="http://www.linuxworldexpo.com" target="_blank">
 							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe" border="0"/>
 							  </a>
