@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2  
 #
-# $Id: SiteModule.py,v 1.3 2004/12/31 17:03:12 port001 Exp $  
+# $Id: SiteModule.py,v 1.4 2005/01/25 01:05:52 hadfield Exp $  
 #
 
 __modulename__ = 'SiteModule'
@@ -43,26 +43,26 @@ class SiteModule:
     def __init__(self, req, **args):
 
         self._req = req
-	
-	self._page = args['page']
-	self._uid = args['uid']
-	self._alias = args['alias']
-	self._session = args['session']
+
+        self._page = args['page']
+        self._uid = args['uid']
+        self._alias = args['alias']
+        self._session = args['session']
 
         self._action_inputs = self._req.Values.keys()
 
         try:
-	    self.init()
-	except:
-	    pass
-	    
+            self.init()
+        except:
+            pass
+
         self._sanity_check()
         self._map_attributes()
 
     def _sanity_check(self):
 
-	if self._template == None:
-	    raise GLSRException('Template not specified')
+        if self._template == None:
+            raise GLSRException('Template not specified')
 
     def _map_attributes(self):
 
@@ -70,27 +70,27 @@ class SiteModule:
         self._obj_attributes = {}
 
         if attributes != None:
-   	    for attribute in attributes:
-	        self._obj_attributes[attribute] = ''
+            for attribute in attributes:
+                self._obj_attributes[attribute] = ''
 
     def _set_attributes(self):
 
         for key in self._obj_attributes.keys():
-	    self._obj_attributes[key] = self._req.Values.getvalue(key)
-	    
+            self._obj_attributes[key] = self._req.Values.getvalue(key)
+
     def _set_report(self):
 
         if self._mode.startswith('show'):
-	    self._report = ''
-	else:
- 	    self._report = self._reports[self._mode]
+            self._report = ''
+        else:
+            self._report = self._reports[self._mode]
 
     def _select_action(self):
 
         for action in self._action_inputs:
-	    if action in self._options:
-	         exec "self._%s()" % action
-	         break
+            if action in self._options:
+                exec "self._%s()" % action
+                break
 
         self._set_report()
 
@@ -99,85 +99,85 @@ class SiteModule:
         self._mode = 'add'
 
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
+            raise GLSRException('Site module attempted to call restricted method')
         
-	self._set_attributes()
-	self._object.Create(self._obj_attributes)
+        self._set_attributes()
+        self._object.Create(self._obj_attributes)
 
     def _modify(self):
 
         self._mode = 'modify'
-	
+
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
+            raise GLSRException('Site module attempted to call restricted method')
 
         self._set_attributes()
-	self._object.SetID(self._req.Values.getvalue("%s_id" % self._class_name))
-	self._object.Modify(self._obj_attributes)
+        self._object.SetID(self._req.Values.getvalue("%s_id" % self._class_name))
+        self._object.Modify(self._obj_attributes)
 
     def _delete(self):
 
         self._mode = 'delete'
-	
+
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
+            raise GLSRException('Site module attempted to call restricted method')
 
         for id in self._req.Values.getlist('delete_btn'):
-	    if self._object.SetID(id):
-	        self._object.Remove()
+            if self._object.SetID(id):
+                self._object.Remove()
 
-	self._show_all()
+        self._show_all()
 
     def _show_all(self):
 
         self._mode = 'show_all'
 
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
-	
+            raise GLSRException('Site module attempted to call restricted method')
+
         row = 'even'
 
-	for record in self._object.List():
-	    record.update({'row': row})
-	    self._main_loop.append(record)
-	    if row == 'even':
-	        row = 'odd'
-	    else:
-	        row = 'even'
-	
-	if not len(self._main_loop):
-	    self._report_type = 'warn'
+        for record in self._object.List():
+            record.update({'row': row})
+            self._main_loop.append(record)
+            if row == 'even':
+                row = 'odd'
+            else:
+                row = 'even'
+
+        if not len(self._main_loop):
+            self._report_type = 'warn'
 
     def _show_add(self):
     
         self._mode = 'show_add'
 
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
-	
+            raise GLSRException('Site module attempted to call restricted method')
+
         self._add_obj = True
-	self._modify_obj = True
+        self._modify_obj = True
 
     def _show_modify(self):
     
         self._mode = 'show_modify'
 
         if self._mode not in self._permited_methods:
-	    raise GLSRException('Site module attempted to call restricted method')
-	
-        self._modify_obj = self._req.Values.getvalue('show_modify')
-	self._object.SetID(self._modify_obj)
-	obj_info = self._object.GetDetails()
+            raise GLSRException('Site module attempted to call restricted method')
 
-	for key in self._obj_attributes.keys():
-	    self._obj_attributes[key] = obj_info["%s_%s" %
-	                                         (self._class_name, key)]
+        self._modify_obj = self._req.Values.getvalue('show_modify')
+        self._object.SetID(self._modify_obj)
+        obj_info = self._object.GetDetails()
+
+        for key in self._obj_attributes.keys():
+            self._obj_attributes[key] = obj_info["%s_%s" %
+                                                 (self._class_name, key)]
 
     def display(self):
 
         self._select_action()
         
-	self._tmpl.param('GLSR_URL', Config.URL)
+        self._tmpl.param('GLSR_URL', Config.URL)
         self._tmpl.param('TOTAL', len(self._main_loop))
         self._tmpl.param('MODIFY', self._modify_obj)
         self._tmpl.param('ADD_FORM', self._add_obj)
@@ -190,9 +190,9 @@ class SiteModule:
 
         for key in self._params.keys():
             if self._mode in self._params[key].keys():
-	        self._tmpl.param(string.upper(key), self._params[key][self._mode])
-	        
-	self._tmpl.compile(self._template)
+                self._tmpl.param(string.upper(key), self._params[key][self._mode])
+        
+        self._tmpl.compile(self._template)
         return self._tmpl
 
 class Redirect(Exception): pass
