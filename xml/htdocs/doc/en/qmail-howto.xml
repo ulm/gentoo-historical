@@ -1,0 +1,216 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/qmail-howto.xml,v 1.1 2004/02/05 07:39:44 vapier Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/qmail-howto.xml">
+<title>Virtual Mailhosting System Guide</title>
+<author title="Author" >
+<mail link="vapier@gentoo.org">Mike Frysinger</mail>
+</author>
+<abstract>
+This document details how to create a mailhosting system based upon qmail, vpopmail, courier-imap, mysql, and horde's imp.
+</abstract>
+<version>1.0</version>
+<date>Feb 05, 2004</date>
+
+<chapter>
+	<title>Introduction</title>
+	<body>
+	<p>
+	Whether you're providing e-mail for just system daemons, a single server, a domain, or for many virtual domains, qmail can 
+	easily be setup to handle your needs.  This guide will help you setup qmail for all of these scenarios with a focus on 
+	remote access and encrypted communications the whole way through.
+	</p>
+	<p>
+	Specifically, the packages this guide will help you with are qmail, courier-imap, vpopmail, and horde/imp.  These core 
+	packages will also bring in daemontools, ucspi-tcp, mysql, apache, and mod_php.  qmail provides the core mta functions, 
+	courier-imap provides remote retrieval services, vpopmail provides virtual domain management, and horde/imp provides 
+	webmail access.
+	</p>
+	<p>
+	Before emerging anything, you will need the following USE variables enabled.  If you've already emerged any of these 
+	packages, you may have to re-emerge them.  <c>USE="maildir ssl imap mysql"</c>.  Additionally, if you want to use horde/imp 
+	for your webmail then you will need <c>USE="nls"</c> before emerging mod_php.
+	</p>
+	<note>
+	This guide is written in steps.  If at anytime you feel your setup is 'complete', you need not continue.
+	</note>
+	<p>
+	The last step of course is to commit yourself to the qmail system.  There are of course many other packages with which 
+	you could build your e-mail system.  Now is the time to research and decide that qmail is for you.  We have another 
+	<uri link="virt-mail-howto.xml">lovely guide</uri> centered around <uri link="http://www.postfix.org/">Postfix</uri>, or 
+	you could look into <uri link="http://www.exim.org/">exim</uri>.  It's up to you to choose the best solution for 
+	yourself, it is up to us to show you how to use qmail here.
+	</p>
+	</body>
+</chapter>
+
+<chapter>
+	<title>qmail (talking to myself)</title>
+	<body>
+<pre caption="Emerge qmail">
+# <i>emerge '>=net-mail/qmail-1.03-r13'</i>
+</pre>
+	<impo>
+	This guide is designed around qmail-1.03-r13 or later.  Will it work with earlier versions?  Maybe.  Should you upgrade?  
+	Yes, if you want to be sure this guide will work.
+	</impo>
+	<warn>
+	If you get a message like <c>the virtual/mta package conflicts with another package</c> then you need to make 
+	sure to unmerge the other MTA on your system.  To figure out what package that is, just run <c>emerge qmail -p</c>.
+	</warn>
+	<p>
+	Emerging qmail will have also emerged ucspi-tcp and daemontools.  You can read up on ucspi-tcp <uri link="http://cr.yp.to/ucspi-tcp.html">here</uri> 
+	and on daemontools <uri link="http://cr.yp.to/daemontools.html">here</uri>.  Basically, daemontools is responsible for 
+	managing qmail as a service while ucspi-tcp is responsible for managing the incoming TCP connections to the qmail service.
+	</p>
+	<p>
+	First we have a few post-install configuration steps.
+<pre caption="Out-of-the-box setup">
+# <i>nano /var/qmail/control/servercert.cnf</i> <codenote>customize to fit your personal information</codenote>
+# <i>ebuild /var/db/pkg/net-mail/qmail-1.03-r*/qmail-1.03-r*.ebuild config</i>
+</pre>
+	</p>
+	<p>
+	The design of qmail has been completely around the focus of security.  To this end, e-mail is never sent to the user 
+	'root'.  So now you have to select a user on your machine to receive mail that would normally be destined for 'root'.  
+	From now on in this guide, I will refer to that user as I have it in my setup, 'vapier'.
+<pre caption="Setting up non-root account for mail">
+# <i>cd /var/qmail/alias</i>
+# <i>echo vapier > .qmail-root</i>
+# <i>echo vapier > .qmail-postmaster</i>
+# <i>echo vapier > .qmail-mailer-daemon</i>
+</pre>
+	</p>
+	<p>
+	Now we want to get the qmail delivery service up and running.
+<pre caption="Start qmail delivery service">
+# <i>rc-update add svscan default</i>
+# <i>/etc/init.d/svscan start</i>
+# <i>cd /service</i>
+# <i>ln -s /var/qmail/supervise/qmail-send qmail-send</i>
+</pre>
+	We want to make sure qmail is working correctly, so here's a quick test.
+<pre caption="Test delivery service">
+# <i>ssh vapier@loclahost</i>
+# <i>qmail-inject root &lt;&lt; EOF
+test root e-mail!
+EOF</i>
+# <i>qmail-inject postmaster &lt;&lt; EOF
+test postmaster e-mail!
+EOF</i>
+# <i>qmail-inject vapier &lt;&lt; EOF
+test vapier e-mail!
+EOF</i>
+# <i>mutt</i> <codenote>You should now have 3 e-mails in your inbox</codenote>
+</pre>
+	And that's all!  Now you have a mail system that will handle mail for your local machine and the system daemons/users 
+	who utilize it.
+	</p>
+	</body>
+</chapter>
+
+<chapter>
+	<title>vpopmail</title>
+	<body>
+	<p>
+<pre caption="Emerge vpopmail">
+# <i>emerge '>net-mail/vpopmail-5.3'</i>
+</pre>
+	<impo>
+	This guide is designed around vpopmail-5.4.0_rc1 or later.  Will it work with earlier versions?  Maybe.  Should you upgrade?  
+	Yes, if you want to be sure this guide will work.
+	</impo>
+	</p>
+	<p>
+	vpopmail takes a little bit more effort to setup than the previous packages.  Since vpopmail runs off of mysql, we'll 
+	have to make sure that it's up and running first.  Then we can setup the vpopmail database and move on.  Note that the 
+	password I will use for the vpopmail database is 'vpoppw', you however should pick a different one.
+<pre caption="Setting up mysql">
+# <i>rc-update add mysql default</i>
+# <i>/etc/init.d/mysql start</i>
+# <i>nano /etc/vpopmail.conf</i> <codenote>Change the password from 'secret' to 'vpoppw'</codenote>
+# <i>mysql -p &lt;&lt; EOF
+create database vpopmail;
+use mysql;
+grant select, insert, update, delete, create, drop on vpopmail.* to vpopmail@localhost identified by 'vpoppw';
+flush privileges;
+EOF</i>
+<codenote>The following steps may or may not be needed, but we run them just to be sure</codenote>
+# <i>chown root:vpopmail /etc/vpopmail.conf</i>
+# <i>chmod 640 /etc/vpopmail.conf</i>
+# <i>chown root:vpopmail /var/vpopmail/bin/vchkpw</i>
+# <i>chmod 4711 /var/vpopmail/bin/vchkpw</i>
+</pre>
+	</p>
+	<p>
+	At this point in time, vpopmail is ready to roll.  In this guide, we will be providing virtual hosting for the domain 
+	'wh0rd.org'.  This means we need to tell vpopmail about this domain we want it to host for us.  We'll also quickly add 
+	an user account for 'vapier' while we're here.
+<pre caption="Adding a domain">
+# <i>vadddomain wh0rd.org postpass</i>
+<codenote>Now quickly verify the domain is setup properly</codenote>
+# <i>printf "postmaster@wh0rd.org\0postpass\0blah\0" | vchkpw `which id` 3&lt;&amp;0</i>
+uid=89(vpopmail) gid=89(vpopmail) groups=0(root)
+<codenote>If you don't see something similar to above, then permissions somewhere are incorrect</codenote>
+# <i>vadduser vapier@wh0rd.org vappw</i>
+</pre>
+	Every domain that vpopmail creates comes with a 'postmaster' account.  Here we told vpopmail that the password for the 
+	postmaster account is 'postpass'.  Before vpopmail can be truely useful, we'll need to be able to recieve mail via 
+	courier and send mail via qmail and SMTP.
+	</p>
+	</body>
+</chapter>
+
+<chapter>
+	<title>Courier POP/IMAP</title>
+	<body>
+	<p>
+<pre caption="Emerge courier-imap">
+# <i>emerge net-mail/courier-imap</i>
+</pre>
+	<impo>
+	You must emerge courier-imap after vpopmail.  That way the authvchkpw module will be built.
+	</impo>
+	</p>
+	<p>
+	Now for the common post-install configuration steps.  These steps are only needed if you wish to run SSL encrypted 
+	communications (which you should !).  Otherwise you can skip to the last two steps in the two following code 
+	listings, removing the '-ssl' from the init script name each time.
+<pre caption="Out-of-the-box setup for POP3/SSL">
+# <i>cd /etc/courier-imap</i>
+# <i>nano pop3d.cnf</i> <codenote>Edit the [ req_dn ] section</codenote>
+# <i>mkpop3dcert</i>
+# <i>rc-update add courier-pop3d-ssl default</i>
+# <i>/etc/init.d/courier-pop3d-ssl start</i>
+</pre>
+<pre caption="Out-of-the-box setup for IMAP/SSL">
+# <i>cd /etc/courier-imap</i>
+# <i>nano imapd.cnf</i> <codenote>Edit the [ req_dn ] section</codenote>
+# <i>mkimapdcert</i>
+# <i>rc-update add courier-imapd-ssl default</i>
+# <i>/etc/init.d/courier-imapd-ssl start</i>
+</pre>
+	Your mail client should now be able to login to the host running courier and retrieve mail for the virtual host.  In my 
+	case, I am now able to login with the username 'vapier@wh0rd.org' and password 'vappw'.
+	</p>
+	</body>
+</chapter>
+
+<chapter>
+	<title>qmail (talking to the world)</title>
+	<body>
+	<p>
+	Let's get SMTP up and running while making sure we don't create another spam hole for people to abuse.
+<pre caption="Start qmail SMTP service">
+<codenote>Uncomment the variables for SMTP-AUTH and set QMAIL_SMTP_CHECKPASSWORD to /var/vpopmail/bin/vchkpw</codenote>
+# <i>cd /var/qmail/control/conf-smtpd</i>
+# <i>cd /service</i>
+# <i>ln -s /var/qmail/supervise/qmail-smtpd qmail-smtpd</i>
+# <i>/etc/init.d/svscan restart</i>
+</pre>
+	</p>
+	</body>
+</chapter>
+</guide>
+
