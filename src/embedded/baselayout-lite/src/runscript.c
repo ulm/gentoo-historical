@@ -15,17 +15,15 @@ int main(int argc, char **argv) {
 	char *word;
 	FILE *init_script_FILE;
 
-
-	line=(void *)malloc(1000);
-	memset(line, 0, 1000);
-	
 	/* if we don't have the right number of args, fail */
 	if(argc < 3) {
 		printf("Invalid number of arguments");
 		exit(1);
 	}
 
-
+	line=(void *)malloc(1000);
+	memset(line, 0, 1000);
+	
 	/* find the deps, and make sure all the right stuff is started first */
 	init_script_FILE=fopen(argv[1], "r");
 	while(fgets(line, 999, init_script_FILE)) {
