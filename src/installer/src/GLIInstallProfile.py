@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.35 2005/03/26 04:00:06 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.36 2005/03/29 04:36:14 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -44,7 +44,6 @@ class InstallProfile:
 		parser.addHandler('gli-profile/boot-loader', self.set_boot_loader_pkg)
 		parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
 		parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
-		parser.addHandler('gli-profile/filesystem-tools', self.set_filesystem_tools_pkgs)
 		parser.addHandler('gli-profile/hostname', self.set_hostname)
 		parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
 		parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
@@ -716,11 +715,6 @@ class InstallProfile:
 
 			xmldoc += "</rc-conf>"
 
-		if self.get_filesystem_tools_pkgs() != ():
-			xmldoc += "<filesystem-tools>"
-			xmldoc += string.join(self.get_filesystem_tools_pkgs(), ' ')
-			xmldoc += "</filesystem-tools>"
-
 		if self.get_dns_servers() != ():
 			xmldoc += "<dns-servers>"
 			xmldoc += string.join(self.get_dns_servers(), ' ')
@@ -857,27 +851,6 @@ class InstallProfile:
 	def get_install_rp_pppoe(self):
 		""" Return the boolean value of _install_rp_pppoe """
 		return self._install_rp_pppoe
-
-	def set_filesystem_tools_pkgs(self, xml_path, tools, xml_attr):
-		"""
-		This method will take either a string or a list/tuple of strings that are
-		packages of the filesystem tools that need to be installed. For example,
-		"sys-fs/reiserfsprogs" might be the input, or a list of tuples similar
-		to that will be the input
-		"""
-		if (type(tools) == list) or (type(tools) == tuple):
-			self._filesystem_tools = tools
-		elif GLIUtility.is_realstring(tools):
-			self._filesystem_tools = tuple(string.split(tools))
-		else:
-			raise GLIException("FileSystemTools", 'fatal', 'set_filesystem_tools_pkgs', "Invalid input!")
-
-	def get_filesystem_tools_pkgs(self):
-		"""
-		This method will return the string or tuple of the filesystem programs
-		that need to be installed.
-		"""
-		return self._filesystem_tools
 
 	def set_install_pcmcia_cs(self, xml_path, install_pcmcia, xml_attr):
 		""" This tells the installer whether or not to install the pcmcia_cs package """

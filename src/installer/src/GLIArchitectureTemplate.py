@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.78 2005/03/29 04:30:06 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.79 2005/03/29 04:36:14 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -572,22 +572,6 @@ class ArchitectureTemplate:
 				else:
 					self._logger.log("FileSystemTool jfsutils was emerged successfully.")
 					
-		"""
-		filesystem_tools = self._install_profile.get_filesystem_tools_pkgs()
-		
-		# If the fstools var is a str, convert it to a list
-		if type(filesystem_tools) == str:
-			filesystem_tools = [ filesystem_tools ]
-		
-		# For each fstool package in the list, install it
-		for package in filesystem_tools:
-			exitstatus = self._emerge(package)
-			if exitstatus != 0:
-				self._logger.log("ERROR! : Could not emerge " + package + "!")
-			#	raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
-			else:
-				self._logger.log("FileSystemTool "+package+" was emerged successfully.")
-		"""
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
 		# If user wants us to install rp-pppoe, then do so
