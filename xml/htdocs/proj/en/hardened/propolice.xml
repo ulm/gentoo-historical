@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="local-guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/propolice.xml">
+<title>ProPolice Protected Gentoo Linux</title>
+<subtitle>GCC extension for protecting from stack-smashing applications</subtitle>
+<author title="Author">
+   <mail link="frogger@gentoo.org">Matt Rickard</mail>
+</author>
+<abstract>
+   ProPolice is a GCC extension for protecting from stack-smashing
+   applications. It is a implemented as a patch to GCC.
+</abstract>
+
+<version>0.3</version>
+<date>24 March 2003</date>
+
+<chapter>
+<title>What is ProPolice?</title>
+<section>
+<body>
+<p>
+   ProPolice is a GCC extension for protecting from stack-smashing
+   applications. It is a implemented as a patch to GCC which will
+   automatically insert protection code into your programs at compile
+   time. It is developed by Hiroaki Etoh at IBM. For more information
+   visit the official 
+   <uri link="http://www.trl.ibm.com/projects/security/ssp/">ProPolice website</uri>.
+</p>
+<p>
+   Overall this is an excellent security measure. We know that the applications
+   we use have yet to be discovered bugs, and this protection helps
+   minimize the possibility of an exploit due to these bugs. The flawed
+   application may well still crash, but privileges will not be
+   escalated, and your system will not be compromised. Best of all, we'll
+   get some information on where in the program code the overflow
+   occurred, which will allow us to quickly track down the problem and
+   fix it.
+</p>
+<p>
+   However, ProPolice does not catch all possible overflows, and there
+   are still some cases that will get through the stack-smashing
+   protection code. This is not an end all, be all solution to security,
+   it is merely a step in the right direction.
+</p>
+<p>
+   This patch was recently implemented in OpenBSD-current (soon to be 3.3),
+   and looks to be an excellent addition to proactive security.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>How is it implemented in Gentoo?</title>
+
+<section>
+<title>Warning</title>
+<body>
+<p>
+   I must warn you that this is still a new project, and there are still
+   some pitfalls and bugs involved in running it. For now, I would not
+   recommend this be run by the average user, or by anyone with a system
+   in a mission critical position.
+</p>
+<p>
+   However, anyone who would like to contribute to the development or
+   testing/bug-fixing of this project, please go ahead and run it! Since
+   this will eventually be targeted at secure systems, it needs all the
+   testing it can get.
+</p>
+</body>
+</section>
+
+<section>
+<title>GCC Patch</title>
+<body>
+<p>
+   ProPolice is implemented as a <b>GCC patch</b>. This patch includes a diff
+   against the GCC code, as well as two additional files (a source file
+   and a header file). There is also an optional diff that will cause
+   stack protection to be enabled by default. I do not recommend this
+   latter patch be applied, as it tends to cause problems with a number
+   of things, including kernel compilation. The <c>gcc-3.2.2-r3 ebuild</c>
+   in portage is now patched for propolice support.
+</p>
+<p>
+   ProPolice adds two new <c>CFLAGS</c> to GCC. 
+   These are <c>-fstack-protector</c>
+   to enable the stack protection, and <c>-fno-stack-protector</c> (default
+   behavior) to explicitly disable the protection.
+</p>
+<p>
+   If you would the protection on by default add <c>-fstack-protector</c> to
+   your <c>CFLAGS</c> in <path>/etc/make.conf</path>.
+</p>
+</body>
+</section>
+
+<section>
+<title>Results so far</title>
+<body>
+<p>
+   My tests so far have been quite successful. I have however ran into a
+   few pitfalls related to ProPolice on Gentoo.
+</p>
+<p>
+<b>Portage/glibc</b><br/><br/>
+   The first, and probably most significant problem stems from portage
+   and glibc. If glibc is built with stack protection, portage's sandbox
+   will break, and you will no longer be able to emerge packages.
+</p>
+<p>I have narrowed the problem down, and it seems to be a bug in the sandbox
+   code itself, rather than in glibc.  What happens here is that any program 
+   linked against libpthread will segfault when executed through the sandbox.
+   Since tar is linked to libpthread, the emerge will fail while trying to
+   unpack the package archive.  I'm still working on tracking down the source
+   of this bug.  If anyone has any ideas or fixes for this problem, please
+   let me know.
+</p>
+<p>Until a suitable fix for this sandbox problem is discovered, there are a
+   couple different approaches to take.  By default, the glibc and portage 
+   ebuilds will remove most <c>CFLAGS</c> including the <c>-fstack-protector</c>
+   flag.  For this reason, if you make no modifications to the ebuilds, you
+   won't have any problems.  The downside to this is that your glibc will not
+   be protected from stack smashing attacks.  Since nearly all programs link to
+   glibc, this is a poor solution from a security perspective.
+</p>
+<p>The next approach you can take is to go ahead and build glibc and portage
+   with stack protection, then disable the sandbox by adding
+   <c>FEATURES=-sandbox</c> to your <path>/etc/make.conf</path>.  Again, this 
+   is a less than optimal solution, since the sandbox is an excellent feature of
+   portage.  It is up to you to decide which approach to use until this
+   problem is solved.
+</p>
+<p>
+<b>XFree86</b><br/><br/>
+   XFree86 by default strips the <c>-fstack-protector</c> flag.  This is not necessary
+   and should be changed in future ebuild revisions.  All of XFree86 can be built 
+   successfully with stack protection <b>except</b> the video modules.  This 
+   allows us to protect the networking code in XFree86, the most vulnerable to
+   attack.  To build XFree86 with stack protection, a small patch is required.
+   This patch causes some OpenBSD specific XFree86 code to be run to determine
+   if we are using a ProPolice patched GCC.  If it finds that we are, it will
+   then explicitely add <c>-fno-stack-protector</c> to the module building, but keep
+   <c>-fstack-protector</c> for the rest of the source.  You can find this patch along
+   with a modified <c>xfree86-4.3.0-r1.ebuild</c> in the download section.
+</p>
+<p>
+<b>Other Problems</b><br/><br/>
+   There are a few other programs that will not successfully build with
+   stack protection enabled. This include grub, cracklib (part of the
+   base system), tetex, and ocaml.  For the time being, you must either
+   disable stack protection by not passing the <c>-fstack-protector</c> CFLAG
+   or filter the <c>-fstack-protector</c> flag explicitly in the ebuilds for
+   these packages by modifying them with the code shown below:
+<pre>
+inherit flag-o-matic
+filter-flags "-fstack-protector"
+</pre>
+</p>
+<p>
+<b>Building an entire system with stack protection</b><br/><br/>
+   With the necessarily modified (filtering) ebuilds as listed above, it
+   is possible to bootstrap and build an entire machine with ProPolice
+   stack-smashing protection. In fact, my current workstation has been
+   built this way, and is fully protected except for those packages that
+   will not build appropriately. I haven't run into any problems yet in
+   running this system, and things seem quite stable.
+</p>
+<p>
+<b>What now?</b><br/><br/>
+   There are plans to merge this project into the base Gentoo system as an
+   optional feature, perhaps through USE flags.  This is now officially a 
+   part of the Hardened Gentoo effort, along with many other security 
+   enhancements.  Before any of this is incorporated in the base system it
+   needs more testing, especially on non x86 platforms.
+</p>
+<p>
+   I will be be providing more info and more bug fixes as I continue my
+   testing and development of this project.
+</p>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Files</title>
+<section>
+<body>
+<p>
+   I've put together the necessary files you will need to build a fully
+   protected ProPolice Gentoo system. Most of these only have trivial
+   changes such as a filter-flags statement, so feel free to modify your
+   own ebuilds instead if you wish.
+</p>
+<p>
+   I recommend setting <c>PORTDIR_OVERLAY</c> in your 
+   <path>/etc/make.conf</path> and
+   keeping these modified files separate from your main portage tree.
+   This has the added benefit of allowing them to survive an <c>emerge
+   sync</c>.
+</p>
+<p>
+   <uri link="http://www.trl.ibm.com/projects/security/ssp/gcc3_2_2/protector-3.2.2-3.tar.gz">ProPolice GCC 3.2.2 Patch</uri> - 
+   Extract all of these files to your
+   <path>$PORTDIR/sys-devel/gcc/files/3.2.1/</path> directory. 
+   Make sure you also download the modified GCC ebuild below.
+</p>
+<p>
+   <uri link="http://frogger974.homelinux.org/propolice/">Modified ebuilds</uri> - 
+   Here is a general repository of the ebuilds that
+   I have modified in some way or another, most of them just to
+   explicitly filter the <c>-fstack-protector</c> flag rather than having to
+   change <c>CFLAGS</c> on a package by package basis. You will NEED the 
+   <c>gcc</c> ebuild as a minimum.  It is left up to you to decide what to do
+   with the glibc/portage issue.  The easiest thing is to leave them alone and 
+   let them filter out the stack protection for now.
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>
