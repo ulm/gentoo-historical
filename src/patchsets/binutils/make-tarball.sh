@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -lt 2 ]] && [[ $# -gt 3 ]] ; then
+if [[ $# -lt 2 ]] || [[ $# -gt 3 ]] ; then
 	echo "Usage: $0 <binutils ver> <patch ver> [uclibc ver]"
 	exit 1
 fi
