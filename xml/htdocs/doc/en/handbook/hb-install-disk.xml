@@ -1,13 +1,137 @@
 <section>
 <subsection>
 <title>Introduction to Block Devices</title>
+<subsubsection>
+<title>Block Devices</title>
 <body>
 
 <p>
-Seperate in architecture-specific sections. Blabla from current guide :)
+We'll take a good look at disk-oriented aspects of Gentoo Linux
+and Linux in general, including Linux filesystems, partitions and block devices.
+Then, once you're familiar with the ins and outs of disks and filesystems,
+you'll be guided through the process of setting up partitions and filesystems
+for your Gentoo Linux installation.
+</p>
+
+<p>
+To begin, we'll introduce <e>block devices</e>. The most famous block device is
+probably the one that represents the first IDE drive in a Linux system, namely
+<path>/dev/hda</path>. If your system uses SCSI drives, then your first hard
+drive would be <path>/dev/sda</path>.
+</p>
+
+<p>
+The block devices above represent an abstract interface to the disk. User
+programs can use these block devices to interact with your disk without worrying
+about whether your drives are IDE, SCSI or something else. The program can
+simply address the storage on the disk as a bunch of contiguous,
+randomly-accessible 512-byte blocks.
 </p>
 
 </body>
+</subsubsection>
+<subsubsection>
+<title>Partitions and Slices</title>
+<body>
+
+<p>
+Although it is theoretically possible to use a full disk to house your Linux
+system, this is almost never done in practice. Instead, full disk block devices
+are split up in smaller, more manageable block devices. On x86-based systems,
+these are called <e>partitions</e>. Other architectures call those
+<e>slices</e>.
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Partitions</title>
+<body>
+
+<p>
+Partitions are only used on x86-based systems. They are divided in three types:
+<e>primary</e>, <e>extended</e> and <e>logical</e>.
+</p>
+
+<p>
+A <e>primary</e> partition is a partition of which the information is stored in
+the MBR (master boot record). As an MBR is very small (512 bytes) only four
+primary partitions can be defined (for instance, <path>/dev/hda1</path> to
+<path>/dev/hda4</path>).
+</p>
+
+<p>
+An <e>extended</e> partition is a special primary partition (meaning the
+extended partition must be one of the four possible primary partitions) which
+contains more partitions. Such a partition didn't exist in the beginning, but as
+four partitions is too little, it is brought to life to extend this formatting
+scheme without loosing backwards compatibility.
+</p>
+
+<p>
+A <e>logical</e> partition is a partition inside the extended partition. Their
+definitions aren't placed inside the MBR, but are declared inside the extended
+partition. There is no limit on the amount of logical partitions, but older
+kernels only support up to 64 partitions per disk in total (meaning 60 logical 
+partitions).
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Slices</title>
+<body>
+
+<p>
+Slices can be seen as another way of implementing partitions. However, the limit
+with slices is 8 of which one slice cannot be defined by the user: slice 3 is
+reserved to denote the whole disk. All other slices can be defined freely.
+However, there is no <e>extended</e> slice, meaning your system is limited to 7
+slices. If you want to extend this, you should take a look at LVM, which we
+describe further.
+</p>
+
+<p>
+Slices are used on most non-x86 architectures.
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Logical Volumes</title>
+<body>
+
+<p>
+Some people might find partitions and slices too restrictive. If you feel the
+same way, you should take a look at LVM -- the <e>Logical Volume Manager</e>.
+</p>
+
+<p>
+With LVM, you create partitions (or slices) the normal way, but you won't use
+them to house your Linux system. Instead, you add another layer of storage
+(namely the LVM layer) on which you install Gentoo. But what are the benefits of
+LVM?
+</p>
+
+<p>
+With LVM you can easily resize the volumes on which you have installed Gentoo.
+You can also take a snapshot of a volume without freezing the system, making
+your backup strategy more transparent for the users (and less troublesome).
+Another advantage is that you can add several disks to a single volume (meaning
+if one of your volumes is low on free space, you can extend it without having to
+copy over files). 
+</p>
+
+<p>
+An LVM is structured in three abstract items. You have a <e>physical volume</e>,
+which is a collection of partitions, slices or disks which you want to use for
+LVM. Then you have a <e>volume group</e> to which you assign certain physical
+volumes. This volume group contains several <e>logical volumes</e> which are in
+se virtual partitions.
+</p>
+
+</body>
+</subsubsection>
 </subsection>
 <subsection>
 <title>Designing a Partitioning Scheme</title>
@@ -22,13 +146,199 @@ How to partition? Present default (<path>/dev/hda1, /dev/hda2,
 </subsection>
 <subsection>
 <title>Default: Using fdisk to Partition your Disk</title>
+<subsubsection>
+<title>Viewing the Current Partition Layout</title>
 <body>
 
 <p>
-Explain how to proceed with the default partitioning scheme.
+<c>fdisk</c> is a popular and powerful tool to split your disk into partitions
+or slices. Throughout the rest of this section we will use partitions for both
+partitions or slices. Fire up <c>fdisk</c> on your disk (in our example, we use
+<path>/dev/hda</path>):
+</p>
+
+<pre caption="Starting fdisk">
+# <i>fdisk /dev/hda</i>
+</pre>
+
+<p>
+Once in <c>fdisk</c>, you'll be greeted with a prompt that looks like this:
+</p>
+
+<pre caption="fdisk prompt">
+Command (m for help): 
+</pre>
+
+<p>
+Type <c>p</c> to display your disk's current partition configuration:
+</p>
+
+<pre caption="An example partition configuration">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        49    264600   82  Linux swap
+/dev/hda3            50        70    158760   83  Linux
+/dev/hda4            71      2184  15981840    5  Extended
+/dev/hda5            71       209   1050808+  83  Linux
+/dev/hda6           210       348   1050808+  83  Linux
+/dev/hda7           349       626   2101648+  83  Linux
+/dev/hda8           627       904   2101648+  83  Linux
+/dev/hda9           905      2184   9676768+  83  Linux
+
+Command (m for help): 
+</pre>
+
+<p>
+This particular disk is configured to house seven Linux filesystems (each with a
+corresponding partition listed as "Linux") as well as a swap partition (listed
+as "Linux swap"). As you can figure out, this example was for an x86-based
+system. An example layout for other architectures is:
+</p>
+
+<pre caption="Another example partition configuration">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+Device    Flag    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        49    264600   82  Linux swap
+/dev/hda3             0        70    519168    5  Whole Disk
+/dev/hda4            50        70    158760   83  Linux
+
+Command (m for help): 
+</pre>
+
+<p>
+This particular disk is configured to house two Linux filesystems (each with a
+corresponding partition listed as "Linux") as well as a swap partition (listed
+as "Linux swap").
 </p>
 
 </body>
+</subsubsection>
+<subsubsection>
+<title>Clearing the Partition Scheme</title>
+<body>
+
+<p>
+We will first remove all existing partitions from the disk. Type <c>d</c> to
+delete a partition. For instance, to delete an existing <path>/dev/hda1</path>:
+</p>
+
+<pre caption="Deleting a partition">
+Command (m for help): <i>d</i>
+Partition number (1-4): <i>1</i>
+</pre>
+
+<p>
+The partition has been scheduled for deletion. It will no longer show up if you
+type <c>p</c>, but it will not be erased until your changes have been saved. If
+you made a mistake and want to abort without saving your changes, type <c>q</c>
+immediately and hit enter and your partition will not be deleted.
+</p>
+
+<p>
+Now, assuming that you do indeed want to wipe out all the partitions on your
+system, repeatedly type <c>p</c> to print out a partition listing and then type
+<c>d</c> and the number of the partition to delete it. Eventually, you'll end 
+up with a partition table with nothing in it:
+</p>
+
+<pre caption="An empty partition table">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+
+Command (m for help):
+</pre>
+
+<p>
+Now that the in-memory partition table is empty, we're ready to create the
+partitions. We will use a default partitioning scheme as discussed previously.
+Ofcourse, don't follow these instructions to the letter if you don't want the
+same partitioning scheme!
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Optional: Create the Whole Disk Slice</title>
+<body>
+
+<warn>
+A "Whole Disk" slice is needed for PPC-based systems.
+</warn>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Optional: Create the PALO boot partition</title>
+<body>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Optional: Creating the boot partition</title>
+<body>
+
+<p>
+We first create a small boot partition. Type <c>n</c> to create a new partition,
+then <c>p</c> to select a primary partition, followed by <c>1</c> to select the
+first primary partition. When prompted for the first cylinder, hit enter. When
+prompted for the last cylinder, type <c>+32M</c> to create a partition 32 Mbyte
+in size:
+</p>
+
+<pre caption="Creating the boot partition">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-3876, default 1): <comment>(Hit Enter)</comment>
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): <i>+32M</i>
+</pre>
+
+<p>
+Now, when you type <c>p</c>, you should see the following partition printout:
+</p>
+
+<pre caption="Created boot partition">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1          1        14    105808+  83  Linux
+</pre>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Creating the Swap Partition</title>
+<body>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Creating the Root Partition</title>
+<body>
+
+</body>
+</subsubsection>
 </subsection>
 <subsection>
 <title>Alternative: Using cfdisk to Partition your Disk</title>
