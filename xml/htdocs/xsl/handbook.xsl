@@ -137,6 +137,8 @@
       </xsl:choose>
       <!-- Content -->
       [ <a href="{/book/@link}?part=0&amp;chap=0">Home</a> ]
+      <!-- Printable -->
+      [ <a href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable">Print</a> ]
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
         [ <a href="{/book/@link}?part=1">&gt;</a> ]
