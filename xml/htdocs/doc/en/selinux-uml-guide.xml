@@ -5,6 +5,12 @@
 <author title="Author">
   <mail link="dimiduk.1@osu.edu">Nick Dimiduk</mail>
 </author>
+<author title="Author">
+  <mail link="mark.robinson@stdc.com">Mark Robinson</mail>
+</author>
+<author title="Editor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
 
 <abstract>
 This guide shows you how to set up a User-Mode Linux (UML) installation of
@@ -15,8 +21,8 @@ SELinux.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>0.2</version>
-<date>March 4, 2004</date>
+<version>0.3</version>
+<date>March 7, 2004</date>
 
 <chapter>
 <title>Before we start</title>
@@ -59,6 +65,28 @@ system.
 <chapter>
 <title>Preparing for User-Mode SELinux</title>
 <section>
+<title>About UML and SELinux</title>
+<body>
+
+<p>
+As the <uri link="http://user-mode-linux.sf.net">User-Mode Linux website</uri>
+states allows user-mode linux (from now onwards abbreviated as UML) to "run
+Linux inside itself". Specifically, user-mode linux provides a virtual machine
+on which a user can "[r]un buggy software, experiment with new Linux kernels or
+distributions, and poke around in the internals of Linux, all without risking
+your main Linux setup." Such a setup is perfect for playing with, testing and
+familiarizing oneself with SELinux. 
+</p>
+
+<p>
+The <uri link="http://www.gentoo.org/proj/en/hardened/selinux/index.xml">Gentoo
+Hardened SELinux Subproject</uri> describes SELinux as a mandatory access
+control system using type enforcement and role-based access controls.
+</p>
+
+</body>
+</section>
+<section>
 <title>Building the kernel</title>
 <body>
 
@@ -68,9 +96,9 @@ Start by getting the user-mode sources and configure the kernel accordingly:
 
 <pre caption="Installation, Configuration and Compilation of the Kernel">
 # <i>emerge sys-kernel/usermode-sources</i>
-# <i>cd /usr/src/linux-&gt;ver&lt;-uml</i>
-# <i>make menuconfig <comment>ARCH=um</comment></i>
-# <i>make linux <comment>ARCH=um</comment></i>
+# <i>cd /usr/src/linux-</i><comment>&lt;version&gt;</comment><i>-uml</i>
+# <i>make menuconfig ARCH=um</i>
+# <i>make linux ARCH=um</i>
 # <i>cp linux /usr/local/bin/linux</i>
 </pre>
 
@@ -110,8 +138,9 @@ features:
 
 <comment>(Under "Security Options")</comment>
 [*] Enable different security models
-[*]   NSA SELinux Support
-[*]     NSA SELinux Development Support
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[*]   NSA SELinux Development Support
 </pre>
 
 <warn>ReiserFS and JFS are not supported in SELinux</warn>
@@ -187,8 +216,9 @@ changes:
 
 <ul>
   <li><path>/dev/ROOT</path> should be changed to <path>/dev/ubd/0</path></li>
+  <li><path>/dev/ubd/0</path> should have the <c>acl,user_xattr</c> options</li>
   <li><path>/dev/ubd/0</path> should have an fs type of ext2 or ext3</li>
-  <li>point <path>/dev/SWAP</path> at <path>/dev/ubd/1</path></li>
+  <li><path>/dev/SWAP</path> should be changed to <path>/dev/ubd/1</path></li>
   <li>Comment out (remove)<path>/dev/BOOT</path></li>
 </ul>
 
@@ -202,7 +232,15 @@ none    /selinux    selinuxfs    defaults          0    0
 </pre>
 
 <p>
-Now the fun part begins: let's build the policies!
+Let's create the devices we referenced in <path>fstab</path>:
+</p>
+
+<pre caption="Creating the UML Block Devices">
+# <i>for i in `seq 0 7`; do mknod /dev/ubd$i b 98 $(($i*16)); done</i>
+</pre>
+
+<p>
+Now build the SELinux policies:
 </p>
 
 <pre caption="Creating SELinux policies">
@@ -223,13 +261,9 @@ Now finish up the installation and proceed with creating the
 
 <p>
 When we check the size of the chroot environment we find out that it takes a 
-hefty 1.2G.  Why, you ask?  We have an entire portage tree, for starters.  
-More on this later.
-</p>
-
-<p>
-Because of this hefty foot-print, we're going to have to make an image with
-some room -- let's start with 1.5G.
+hefty 600M to 1.2G (depending on the stage you used). Because of this hefty 
+foot-print, we're going to have to make an image with some room -- let's start 
+with 1.5G.
 </p>
 
 <pre caption="Creating the root_fs file">
@@ -257,7 +291,7 @@ Now see if it works:
 </p>
 
 <pre caption="Booting the Gentoo environment">
-# linux ubd0=root_fs ubd1=swap_fs
+# linux gentoo=nodevfs con0=fd:0,fd:1 con1=xterm con2=xterm con=null ubd0=root_fs ubd1=swap_fs
 </pre>
 
 <note>
@@ -266,6 +300,18 @@ time, so you need to make sure that the terminal from which you run
 user-mode linux has $DISPLAY properly set (along with proper xhost/xauth
 permissions).
 </note>
+
+<p>
+The only errors you see on startup should be along the lines of
+<e>Couldn't get a file descriptor referring to the console</e> from
+<c>setfont</c> and <c>keymaps</c>. These errors are harmless, but if you want to
+get rid of them, do the following:
+</p>
+
+<pre caption="Removing cosmetic errors">
+# <i>rc-update del keymaps</i>
+# <i>rc-update del consolefont</i>
+</pre>
 
 <p>
 Once we're here, the last thing to do is label the filesystem.
@@ -281,6 +327,49 @@ Once we're here, the last thing to do is label the filesystem.
 <p>
 Congratulations; you're all set and ready :)
 </p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Resources</title>
+<section>
+<title>User Mode Linux</title>
+<body>
+
+<ul>
+  <li>
+    <uri link="http://edeca.net/articles/bridging/index.html">Bridging with 
+    UML</uri>
+  </li>
+  <li>
+    <uri link="http://user-mode-linux.sourceforge.net/">UML Homepage</uri>
+  </li>
+  <li>
+    <uri link="http://www.theshore.net/~caker/uml/">Caker's UML notes</uri>
+  </li>
+  <li>
+    <uri link="http://sourceforge.net/mailarchive/forum.php?forum_id=3647">UML
+    mailinglist archives</uri>
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Security Enhanced Linux</title>
+<body>
+
+<ul>
+  <li><uri link="http://www.nsa.gov/selinux/">SELinux Homepage</uri></li>
+  <li><uri link="http://www.gentoo.org/proj/en/hardened/selinux/selinux-quickstart.xml">Gentoo Hardened SELinux Quickstart Guide</uri></li>
+  <li><uri link="http://web.verbum.org/selinux/uml/">SELinux and UML</uri></li>
+  <li>
+    <uri link="http://marc.theaimsgroup.com/?l=selinux">SELinux mailinglist
+    archives</uri>
+  </li>
+</ul>
 
 </body>
 </section>
