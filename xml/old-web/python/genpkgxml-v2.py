@@ -200,4 +200,107 @@ def do_pkgentry(db,pkgname,category):
 	<tr>
 	<th>CVS Repository</th>
 	<ti><uri link="http://www.gentoo.org/cgi-bin/viewcvs/gentoo-x86/"""+category +"/" +pkgname+'/">' + pkgname + """</uri></ti>
- 
+	</tr>
+	</table>
+	</p>"""
+	return pkgentry
+############
+# main processing loop
+############
+TotalPkgNum=0
+db ={}
+create_pkg_db(db)
+out = file(sys.argv[1], "w")
+header=do_header('index')
+content="""<p>
+	Total number of packages available: """ + db['totalnumberofpackages'] + """
+	<table>
+	<tr>
+	<th>Category</th>
+	</tr>
+"""
+del db['totalnumberofpackages']
+out.write(header)
+out.write(content)
+side='1'
+for category in fsort(db.keys()):
+	if (side=='1'):
+		out.write('<tr>\n') 
+		out.write('<ti><uri link="/packages/'+category+'/index.html">'+category+'</uri></ti>\n')
+		side='2'
+	elif (side=='2'):
+		out.write('<ti><uri link="/packages/'+category+'/index.html">'+category+'</uri></ti>\n')
+		side='3'
+	elif (side=='3'):
+		out.write('<ti><uri link="/packages/'+category+'/index.html">'+category+'</uri></ti>\n')
+		out.write('</tr>\n')
+		side='1'
+if (side=='2') or (side=='3'):
+	out.write('</tr>\n')
+out.write('</table></p>')
+footer=do_footer()
+out.write(footer)
+out.close()
+####################
+# category index pages
+####################
+for category in fsort(db.keys()):
+	workdir = pkgdir + category
+	if not os.path.exists(workdir):
+		os.makedirs(workdir)
+	pkg_count=db[category]['package_count']
+	del db[category]['package_count']
+	for pkg in fsort(db[category].keys()):
+		pkg_desc_dir = workdir #+ "/" +pkg
+		if not os.path.exists(pkg_desc_dir):
+			os.makedirs(pkg_desc_dir)
+		pkg_desc= pkg_desc_dir + "/index.xml"
+		out=open(pkg_desc,"w")
+		header="""<?xml version='1.0'?>
+		<mainpage id="packages">
+		<title>Gentoo Linux Packages</title> 
+		<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+		<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
+		<version>Current</version>
+		<date>%s</date>
+		<chapter>""" % time.asctime(time.localtime())
+		out.write(header)
+		tableheader="""<section>
+				<title>Package Category """+ category+"""</title>
+				<body>
+				<p>
+				Number of packages in category: """ + str(pkg_count) + """
+				<table>
+				<tr>
+				<th>Package</th>
+				<th>Version</th>
+				</tr>"""
+		out.write(tableheader)
+		for pkgname in fsort(db[category].keys()):
+			entry="""<tr>
+				<ti><uri link=\"/packages/"""+category+"/"+pkgname+".html\">"+pkgname+"""</uri></ti>
+				<ti>"""+db[category][pkgname]["version"]+"</ti></tr>"
+			out.write(entry)
+			pkg_file=pkg_desc_dir + "/" +pkgname +".xml"
+			pkg_out=open(pkg_file,"w")
+			header="""<?xml version='1.0'?>
+			<mainpage id="packages">
+			<title>Gentoo Linux Packages""" + pkgname + """</title>
+			<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+			<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
+			<version>Current</version>
+			<date>%s</date>
+			<chapter>
+			<section>""" % time.asctime(time.localtime())
+			pkg_out.write(header)
+			pkg_entry=do_pkgentry(db,pkgname,category)
+			pkg_out.write(pkg_entry)
+			footer=do_footer()
+			pkg_out.write(footer)
+			pkg_out.close()
+		out.write("</table></p>\n")
+		footer=do_footer()
+		out.write(footer)
+		out.close()
+
+	
