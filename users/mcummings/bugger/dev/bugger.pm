@@ -6,8 +6,9 @@ sub list_bugs {
     # Unfortunately, I can't find a simple method for retrieving this list
     require LWP::UserAgent;
     my %buglist;
-    my $bugcount;
+    my $bugcount = 0;
     my $bugfor = shift;
+    my $stype = shift;
     $bugfor =~ s/\@/\%40/m;
 
     my $ua = LWP::UserAgent->new(
@@ -15,9 +16,16 @@ sub list_bugs {
         keep_alive => 1,
         timeout    => 30,
     );
-    my $request = HTTP::Request->new( 'GET',
+    my $request;
+    if ($stype eq "cc") {
+    $request = HTTP::Request->new( 'GET',
+"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
+    );
+    } else {
+    $request = HTTP::Request->new( 'GET',
 "http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailassigned_to1=1&emailtype1=substring&email1=$bugfor&emailassigned_to2=1&emailreporter2=1&emailcc2=1&emailtype2=substring&email2=$bugfor&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&cmdtype=doit&order=Reuse+same+sort+as+last+time&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
     );
+    }
     my $response = $ua->request($request);
     die "Error while getting ", $response->request->uri, " -- ",
       $response->status_line, "\nAborting"
@@ -40,46 +48,6 @@ sub list_bugs {
 
 }
 
-sub cclist_bugs {
-
-    # Unfortunately, I can't find a simple method for retrieving this list
-    require LWP::UserAgent;
-    my $bugfor = shift;
-    $bugfor =~ s/\@/\%40/m;
-
-    my $ua = LWP::UserAgent->new(
-        env_proxy  => 1,
-        keep_alive => 1,
-        timeout    => 30,
-    );
-    my $request = HTTP::Request->new( 'GET',
-"http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
-    );
-    my $response = $ua->request($request);
-    die "Error while getting ", $response->request->uri, " -- ",
-      $response->status_line, "\nAborting"
-      unless $response->is_success;
-
-    my $content = $response->content;
-    my @baseline = split( /\n/, $content );
-    my $rowcount;
-    foreach my $line ( sort @baseline ) {
-        $line =~ s/\"//mg;
-        my @rowline = split( /,/, $line );
-        next if ( $rowline[0] =~ m/bug_id/ );
-        next if ( $rowline[0] eq "" );
-        next if ( $rowline[0] =~ /^\n$/ );
-        $rowcount = $rowcount + 4;
-        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
-        if ( $rowcount >= $rows ) {
-            print "Press Enter to Continue";
-            my $junk = <STDIN>;
-            $rowcount = 0;
-        }
-    }
-    exit();
-
-}
 
 sub add_bug {
     use WWW::Bugzilla;
@@ -287,17 +255,16 @@ sub show_bug {
 
     my @blocks = split( /\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
     my $rowcount;
-    my @bugtext;
+    my %bugtext;
 
 # In block 1, the only piece of information we care about is the line with the words bugzilla bug #number
     my $block1 = $blocks[1];
     $block1 =~ s/\n//mg;
     $block1 =~ s/^.*Bugzilla Bug/Bugzilla Bug/igm;
     $block1 =~ s/\<\/font\>.*$/\<\/front\>/img;
-    my $Line = $hs->parse($block1);
+    my $header = $hs->parse($block1);
     $hs->eof;
 
-    push @bugtext, "$Line\n";
 
     # Here we handle all of the header information
     my $block4 = $blocks[4];
@@ -308,44 +275,40 @@ sub show_bug {
     # lines of interest
     # line 4 - reporter
     my $reporter = clean_line( $blockset[3] );
-
-    push @bugtext, "$reporter\n";
+    $reporter =~ s/reporter: //i;
 
     # line 10 - cc
     my $ccline = clean_line( $blockset[9] );
     $ccline =~ s/Remove select.*//gm;
-
-    push @bugtext, "$ccline\n";
+    $ccline =~ s/CC://i;
 
     # line 11 - status
     my $status = clean_line( $blockset[10] );
-
-    push @bugtext, "$status\n";
+    $status =~ s/status ://i;
 
     # line 12 - priority *
     my $priority = clean_line( $blockset[11] );
-
-    push @bugtext, "$priority\n";
+    $priority =~ s/priority ://i;
 
     # line 13 - resolution
     my $resolution = clean_line( $blockset[12] );
+    $resolution =~ s/resolution ://i;
 
-    push @bugtext, "$resolution\n";
 
     # line 14 - severity *
     my $severity = clean_line( $blockset[13] );
+    $severity =~ s/severity ://i;
 
-    push @bugtext, "$severity\n";
 
     # line 15 - assigned
     my $assigned = clean_line( $blockset[14] );
-
-    push @bugtext, "$assigned\n";
+    $assigned =~ s/Assigned(.*)To ://i;
 
     # line 16  - URL
     my $URL = clean_line( $blockset[15] );
+    $URL =~ s/u rl://i;
+    $URL =~ s/url ://i;
 
-    push @bugtext, "$URL\n";
 
     #my $block6 = clean_line($blocks[6]);
     my $block6 = $blocks[6];
@@ -353,13 +316,25 @@ sub show_bug {
     $block6 =~ s/\<pre\>/\n/mg;
     $block6 =~ s/\n\n/\n/mg;
     my $cleaned = $hs->parse($block6);
+    $cleaned =~ s/^\n{1,}//;
     $hs->eof;
+    
+    %bugtext = (
+	'header' => "$header",
+	'reporter' => "$reporter",
+	'cclist' => "$ccline",
+	'status' => "$status",
+	'priority' => "$priority",
+	'resolution' => "$resolution",
+	'severity' => "$severity",
+	'assigned' => "$assigned",
+	'URL' => "$URL",
+	'textblock' => "$cleaned",
+	);
 
-    #my @tmpclean = split( /\n/, $cleaned );
-    #push @bugtext, @tmpclean;
-    #my @tmpclean = split( /\n/, $cleaned );
-    push @bugtext, "$cleaned\n";
-    return(@bugtext);
+
+
+    return(%bugtext);
 }
 
 sub download_attach {

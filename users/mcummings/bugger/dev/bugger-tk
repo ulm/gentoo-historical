@@ -15,35 +15,51 @@ use Tk::ToolBar;
 use Tk::HList;
 use Tk::ItemStyle;
 use bugger;
+use subs qw/search/;
 
 use vars qw/$TOP/;
+my %results;
 
 my $mw = new MainWindow;
-my $tb = $mw->ToolBar(
-    qw/-movable 1 -side top
-      -indicatorcolor blue /
-);
 
-$tb->ToolButton(
-    -text    => 'Button',
-    -tip     => 'tool tip',
-    -command => sub { print "hi\n" }
+my $search_string = '';
+my $searchbox = $mw->ToolBar(
+    qw/-movable 1 
+      -indicatorcolor blue
+      /
 );
-$tb->ToolLabEntry(
+my $radiovar = "assigned";
+my $ccd = $searchbox->Radiobutton(-text => 'CC List',
+                                        -variable => \$radiovar,
+                                        -value => 'cc');
+my $assigned = $searchbox->Radiobutton(-text => 'Assigned To',
+                                        -variable => \$radiovar,
+                                        -value => 'assigned');
+$assigned->pack(qw/-side left/, -fill => 'x');
+$ccd->pack(qw/-side left/, -fill => 'x');
+my $ss = $searchbox->LabEntry(
     -label     => 'Search Bugs',
     -labelPack => [
-        -side   => "left",
-        -anchor => "w"
+        -side   => "left"
     ],
-    -width => 20,
-);
+    -textvariable => \$search_string
+)->pack(qw/-side left -expand yes/);
+$ss->configure(-width => 40);
+$ss->Subwidget('entry')->focus;
+my $ss_button = $searchbox->ToolButton(
+	-image => 'navforward22',
+	-tip => 'Search',
+	);
+	#-command => \&search,
+$ss_button->pack(qw/-side left -pady 5 -padx 10/);
 
+my $search_command = sub { main::search $radiovar, $search_string, $ss};
+$ss_button->configure(-command => $search_command);
+$ss->bind('<Return>' => $search_command);
+
+
+$searchbox->separator;
 my $tb2 = $mw->ToolBar;
-$tb2->ToolButton(
-    -image   => 'navforward22',
-    -tip     => 'forward',
-    -command => \&forward
-);
 $tb2->separator;
 $tb2->ToolButton(
     -image   => 'navhome22',
@@ -60,11 +76,29 @@ $tb2->ToolButton(
    -tip      => 'quit',
    -command  => \&quit
 );
+
 my $hlist = $mw->Scrolled(qw/HList
 	-columns 3
 	-width 70
 	-command main::launch_win/)->pack(qw/-expand yes -fill both/);
 	#-command launch_win/)->grid(qw/-sticky ns/); $hlist->pack(qw/-expand yes -fill both/);
+MainLoop;
+
+sub search { 
+
+my ($assignment, $search, $tkref) = @_;
+
+   %results = bugger::list_bugs($search, $assignment);
+   my $bug_no = scalar(keys %results);
+
+   if ($bug_no <1)
+   {
+	my $button = $mw->messageBox('-icon' => "error", -type => "OK",
+		-title => 'ERROR',
+		-message => "Your search returned no results");
+		
+   } else {
+$hlist->delete(all);
    my (@red,@blue,@black);
    $red[1]  = $hlist->ItemStyle('text', -foreground=>'#800000');
    $red[2]  = $hlist->ItemStyle('text', -foreground=>'#800000', -background=>'#fbdaffffb603');
@@ -73,18 +107,17 @@ my $hlist = $mw->Scrolled(qw/HList
    $black[1] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#ffffffffffff');
    $black[2] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#fbdaffffb603');
    my $header;
-   $header = $hlist->addchild("");
+   $header = $hlist->add("0");
+   #$header = $hlist->addchild("");
    $hlist->itemCreate($header, 0, -itemtype=>'text', -text=>"BugID", -style=>$black[1]);
    $hlist->itemCreate($header, 1, -itemtype=>'text', -text=>"Priority", -style=>$black[1]);
    $hlist->itemCreate($header, 2, -itemtype=>'text', -text=>"Description", -style=>$black[1]);
 
    
-   my %results = bugger::list_bugs('mcummings@gentoo.org');
-   my $bug_no = scalar(keys %results);
    my $colorchange = 1;
    for (my $key = 1; $key <=$bug_no; $key++){
    my $entry;
-       $entry = $hlist->addchild("");
+       $entry = $hlist->add("$key");
        $hlist->itemCreate($entry, 0, -itemtype=>'text',
                 -text=>"$results{$key}{'BugID'}", -style=>$red[$colorchange]);
        $hlist->itemCreate($entry, 1, -itemtype=>'text',
@@ -97,14 +130,22 @@ my $hlist = $mw->Scrolled(qw/HList
 	else {$colorchange = 2}
 }	
 	
-MainLoop;
 
-sub forward { print "going totally forward\n" }
+}
+}
 
 sub launch_win {
 my $incoming = shift;
-
 my $bugID = $results{$incoming}{'BugID'};
+if ($bugID <1)
+{
+	my $button = $mw->messageBox('-icon' => "error", -type => "OK",
+		-title => 'ERROR',
+		-message => "No bug ID was passed");
+		
+   } else {
+
+my %bugtext = bugger::show_bug($bugID);
 my $mw2 = new MainWindow;
 my $tb = $mw2->ToolBar(
     qw/-movable 1 -side top
@@ -115,13 +156,38 @@ $tb->ToolButton(
    -tip      => 'quit',
    -command  => [$mw2 => 'destroy']
 );
- my $text = $mw2->Scrolled(qw/Text -setgrid true -scrollbars e/);
-$text->pack(qw/-expand yes -fill both/);
-my @bugtext = bugger::show_bug($bugID);
- $text->insert('0.0', "@bugtext");
+$mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
+my $text = $mw2->Scrolled(qw/Text -setgrid true -width  70 -height 32
+			   -font normal -wrap word -scrollbars e/);
+    $text->pack(qw/-expand yes -fill both/);
+$text->tag(qw/configure bold    -font C_bold/);
+$text->tag(qw/configure color1 -background black -foreground white/);
+
+
+$text->insert('0.0',"$bugtext{header}\n\n",'bold');
+$text->insert('insert',"\tReporter: ", 'bold');
+$text->insert('insert',"$bugtext{reporter}\n");
+$text->insert('insert',"\tCC List: ",'bold');
+$text->insert('insert',"$bugtext{cclist}\n");
+$text->insert('insert',"\tStatus: ",'bold');
+$text->insert('insert',"$bugtext{status}\n");
+$text->insert('insert',"\tPriority: ",'bold');
+$text->insert('insert',"$bugtext{priority}\n");
+$text->insert('insert',"\tResolution: ",'bold');
+$text->insert('insert',"$bugtext{resolution}\n");
+$text->insert('insert',"\tSeverity: ",'bold');
+$text->insert('insert',"$bugtext{severity}\n");
+$text->insert('insert',"\tAssigned To: ",'bold');
+$text->insert('insert',"$bugtext{assigned}\n");
+$text->insert('insert',"\tURL: ",'bold');
+$text->insert('insert',"$bugtext{URL}\n");
+$text->insert('insert',"\tBug Report:",'bold');
+$text->insert('insert',"$bugtext{textblock}\n");
+
+ $text->insert('insert', "$bugtext{textblock}");
     $text->mark(qw/set insert 0.0/);
 	
 MainLoop;
-}
+}}
 
 sub quit { print "Thank you for using bugger-tk\n\n";  exit() }
