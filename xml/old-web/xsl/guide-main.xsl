@@ -1,97 +1,97 @@
 <?xml version="1.0" encoding="iso-8859-15"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-  <xsl:output encoding="iso-8859-15" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
-  <xsl:preserve-space elements="pre"/>
-  <xsl:template match="img">
-    <img src="{@src}"/>
-  </xsl:template>
-  <xsl:template match="/guide">
-      <html>
-      <head>
-        <link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
-        <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-        <title>Gentoo Linux 
+	<xsl:output encoding="iso-8859-15" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
+	<xsl:preserve-space elements="pre"/>
+	<xsl:template match="img">
+		<img src="{@src}"/>
+	</xsl:template>
+	<xsl:template match="/guide">
+	<html>
+	<head>
+	<link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
+	<link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+	<title>Gentoo Linux 
 	<xsl:choose><xsl:when test="/guide/@type='project'">
 		Projects
 	</xsl:when><xsl:otherwise>
 		Documentation
 	</xsl:otherwise></xsl:choose>
 -- 
-	<xsl:choose><xsl:when test="subtitle"><xsl:value-of select="title"/>: <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose>
-</title>
-      </head>
-      <body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
-<!--<table border="0" width="100%" cellspacing="0" cellpadding="0">-->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0">
-          <tr>
-            <td valign="top" height="125" bgcolor="#45347b">
-              <table cellspacing="0" cellpadding="0" border="0" width="193">
-                <tr>
-                  <td class="logobg" valign="top" align="center" height="88">
-                    <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="logobg" valign="top" align="center" height="36">
-                    <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-<!--			<td width="99%" valign="bottom" bgcolor="#000000">
-				<table class="menu" border="0" cellpadding="10" cellspacing="0">
-				<tr>
-					<td valign="top">
-						<xsl:variable name="mylink"><xsl:value-of select="/guide/@link"/></xsl:variable>
-						main menu ::<br/>
-						&#160;<a class="oldlink" href="/index.html">About Gentoo Linux</a><br/>
-						&#160;<a class="oldlink" href="/index-download.html">Download/Install</a><br/> 
-						&#160;<a class="oldlink" href="/index-changelog.html">CVS Changelog</a><br/> 
-						&#160;<a class="oldlink" href="/index-projects.html">Projects</a><br/> 
-						<br/>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						<xsl:choose>
-						<xsl:when test="/guide/@type='project'">
-							projects
-						</xsl:when>
-						<xsl:otherwise>
-							docs 
-						</xsl:otherwise>
-						</xsl:choose>
-						::
-						<a class="highlight" href="{$mylink}">
-						<xsl:choose>
-						<xsl:when test="/guide/subtitle">
-							<xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:value-of select="/guide/title"/>
-						</xsl:otherwise>
-						</xsl:choose>
-						</a>
-					</td>
-				</tr>
-				</table>
-			</td>
-		-->
-          </tr>
-          <tr>
-            <td valign="top" align="right" bgcolor="#ffffff">
+	<xsl:choose><xsl:when test="subtitle"><xsl:value-of select="title"/>: <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose></title>
+	</head>
+	<body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
+	<!--<table border="0" width="100%" cellspacing="0" cellpadding="0">-->
+	<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tr>
+	<td valign="top" height="125" bgcolor="#45347b">
+		<table cellspacing="0" cellpadding="0" border="0" width="193">
+			<tr>
+				<td class="logobg" valign="top" align="center" height="88">
+					<a href="/index.html">
+						<img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
+					</a>
+				</td>
+			</tr>
+			<tr>
+				<td class="logobg" valign="top" align="center" height="36">
+					<a href="/index.html">
+						<img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
+					</a>
+				</td>
+			</tr>
+		</table>
+	</td>
+<!--	
+	<td width="99%" valign="bottom" bgcolor="#000000">
+		<table class="menu" border="0" cellpadding="10" cellspacing="0">
+			<tr>
+				<td valign="top">
+					<xsl:variable name="mylink"><xsl:value-of select="/guide/@link"/></xsl:variable>
+					main menu ::<br/>
+					&#160;<a class="oldlink" href="/index.html">About Gentoo Linux</a><br/>
+					&#160;<a class="oldlink" href="/index-download.html">Download/Install</a><br/> 
+					&#160;<a class="oldlink" href="/index-changelog.html">CVS Changelog</a><br/> 
+					&#160;<a class="oldlink" href="/index-projects.html">Projects</a><br/> 
+					<br/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<xsl:choose>
+					<xsl:when test="/guide/@type='project'">
+						projects
+					</xsl:when>
+					<xsl:otherwise>
+						docs 
+					</xsl:otherwise>
+					</xsl:choose>
+					::
+					<a class="highlight" href="{$mylink}">
+					<xsl:choose>
+					<xsl:when test="/guide/subtitle">
+						<xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/>
+					</xsl:when>
+					<xsl:otherwise>
+					<xsl:value-of select="/guide/title"/>
+					</xsl:otherwise>
+					</xsl:choose>
+					</a>
+				</td>
+			</tr>
+			</table>
+			/td>
+-->
+	</tr>
+	<tr>
+		<td valign="top" align="right" bgcolor="#ffffff">
 <!--content begin-->
 <!--Netscape 4.7 hack table start-->
 <!--<table border="0" cellspacing="5" cellpadding="0" height="100%" width="100%">-->
-              <table border="0" cellspacing="0" cellpadding="0" width="100%">
-                <tr>
-                  <td width="99%" class="content" valign="top" align="left">
-                    <br/>
-                    <p class="dochead">
+			<table border="0" cellspacing="0" cellpadding="0" width="100%">
+				<tr>
+					<td width="99%" class="content" valign="top" align="left">
+						<br/>
+						<p class="dochead">
                       <xsl:choose>
                         <xsl:when test="/guide/subtitle"><xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
                         <xsl:otherwise>
@@ -124,12 +124,12 @@
                       </tr>
                       <tr>
                         <td align="center" class="alttext">
-					Updated <xsl:value-of select="/guide/date"/>
-				</td>
+				Updated <xsl:value-of select="/guide/date"/>
+			</td>
                       </tr>
-                      <tr>
-                        <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+		      <tr>
+		      	<td>
+				<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -185,22 +185,22 @@
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
-<tr>
-					<td>
-					<p class="alttext">
-					<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
-					largest directory of Web developers and other marketing-oriented firms. Use
-					Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
-					that meets your exact needs.
-					<br/><br/>
-					<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
-					get noticed world-wide!
-					<br/><br/>
-					When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
-					will donate a portion of revenue to the Gentoo Linux free software project.
-					</p>
-					</td>
-				</tr>
+		<tr>
+			<td>
+				<p class="alttext">
+				<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
+				largest directory of Web developers and other marketing-oriented firms. Use
+				Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
+				that meets your exact needs.
+				<br/><br/>
+				<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
+				get noticed world-wide!
+				<br/><br/>
+				When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
+				will donate a portion of revenue to the Gentoo Linux free software project.
+				</p>
+			</td>
+			</tr>
 			      <tr>
                   <td>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
@@ -315,95 +315,100 @@
 						<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/>
 						<a class="altlink" href="/doc/mirroring.html">(how to set up an rsync mirror)</a><br/>
 						<br/>
+						&lt;--Ad--&gt;<br />
 						<a href="http://www.qksrv.net/click-477620-5033206" target="_top"><img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/>
+						&lt;--Ad--&gt;<br />
 						<br/>
+<!--
 User Docs:<br/>
-   <a class="altlink" href="/doc/build.html">x86 Install Instructions</a><font color="#ff0000">(updated!)</font><br/>
-   <a class="altlink" href="/doc/gentoo-ppc-install.html">PowerPC Install Instructions</a><font color="#ff0000">(updated!)</font><br/>
-   <a class="altlink" href="/doc/gentoo-sparc-install.html">SPARC Install Instructions</a><font color="#ff0000">(New!)</font><br/>
-   <a class="altlink" href="/doc/faq.html">FAQ</a><font color="#ff0000">(updated!)</font><br/>
-   <a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
-   <a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><br/>
-   <a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
-   <a class="altlink" href="/doc/gentoolkit.html">Gentoolkit Guide</a><font color="#ff0000">(new)</font><br/>
-   <a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a><br/>
-   <a class="altlink" href="/doc/env.d-howto.html">ENV.D HOWTO Guide</a><font color="#ff0000">(new)</font><br/>
-   <a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a><br/>
-   <a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><br/>
-   <a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><br/>
-   <a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a><br/>
-   <a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
-   <a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
-   <a class="altlink" href="/doc/printing-howto.html">Printing Howto</a><br/>
+   x86 Install Instructions<br/>
+   <a class="altlink" href="/doc/build.html">English</a>|<a class="altlink" href="/doc/build-fr.html">Français</a>|<a class="altlink" href="/doc/build-es.html">Español</a>|<a class="altlink" href="/doc/build-nl.html">Nederlands</a><br/>
+   PowerPC Install Instructions<br/>
+   <a class="altlink" href="/doc/gentoo-ppc-install.html">English</a>|<a class="altlink" href="/doc/gentooppc-quickstart-es.html">Español</a><br/>
+   SPARC Install Instructions<br/>
+   <a class="altlink" href="/doc/gentoo-sparc-install.html">English</a><br/>
+   FAQ<br/>
+   <a class="altlink" href="/doc/faq.html">English</a>|<a class="altlink" href="/doc/faq-fr.html">Français</a>|<a class="altlink" href="/doc/faq-es.html">Español</a><br/>
+   Desktop Guide<br/>
+   <a class="altlink" href="/doc/desktop.html">English</a>|<a class="altlink" href="/doc/desktop-fr.html">Français</a>|<a class="altlink" href="/doc/desktop-es.html">Español</a><br/>
+   Portage Manual<br/>
+   <a class="altlink" href="/doc/portage-manual.html">English</a>|<a class="altlink" href="/doc/portage-manual-fr.html">Français</a>|<a class="altlink" href="/doc/portage-manual-es.html">Español</a><br/>
+   Portage User Guide<br/>
+   <a class="altlink" href="/doc/portage-user.html">English</a>|<a class="altlink" href="/doc/portage-user-fr.html">Français</a>|<a class="altlink" href="/doc/portage-user-es.html">Español</a><br/>
+   Gentoolkit Guide<br/>
+   <a class="altlink" href="/doc/gentoolkit.html">English</a><br/>
+   USE variable HOWTO<br/>
+   <a class="altlink" href="/doc/use-howto.html">English</a>|<a class="altlink" href="/doc/use-howto-fr.html">Français</a>|<a class="altlink" href="/doc/use-howto-es.html">Español</a><br/>
+   ENV.D HOWTO Guide<br/>
+   <a class="altlink" href="/doc/env.d-howto.html">English</a><br/>
+   Gentoo rc-scripts Guide<br/>
+   <a class="altlink" href="/doc/rc-scripts.html">English</a>|<a class="altlink" href="/doc/rc-scripts-fr.html">Français</a><br/>
+   Gentoo Security Guide<br/>
+   <a class="altlink" href="/doc/gentoo-security.html">English</a>|<a class="altlink" href="/doc/gentoo-security-es.html">Español</a><br/>
+   Gentoo Java Guide<br/>
+   <a class="altlink" href="/doc/java.html">English</a>|<a class="altlink" href="/doc/java-fr.html">Français</a><br/>
+   Nano Basics Guide<br/>
+   <a class="altlink" href="/doc/nano-basics-guide.html">English</a>|<a class="altlink" href="/doc/nano-basics-guide-fr.html">Français</a>|<a class="altlink" href="/doc/nano-basics-guide-es.html">Español</a><br/>
+   Alternative Installation Guide<br/>
+   <a class="altlink" href="/doc/altinstall.html">English</a><a class="altlink" href="/doc/altinstall-fr.html">Français</a>|<a class="altlink" href="/doc/altinstall-es.html">Español</a><br/>
+   OpenAFS Installation Guide<br/>
+   <a class="altlink" href="/doc/openafs.html">English</a><br/>
+   Printing Howto<br/>
+   <a class="altlink" href="/doc/printing-howto.html">English</a><br/>
    <br/><br/>
 
 Developer Resources:<br/>
-   <a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
-   <a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
-   <a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><br/>
-   <a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
+   <a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a>|<a class="altlink" href="/doc/cvs-tutorial-fr.html">Français</a><br/>
+   <a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a>|<a class="altlink" href="/doc/gentoo-howto-fr.html">Français</a><br/>
+   <a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a>|<a class="altlink" href="/doc/eclass-howto-fr.html">Français</a><br/>
+   <a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a>|<a class="altlink" href="/doc/xml-guide-es.html">Español</a><br/>
    <a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
-   <a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
+   <a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a>|<a class="altlink" href="/doc/ebuild-submit-fr.html">Français</a>|<a class="altlink" href="/doc/ebuild-submit-es.html">Español</a><br/>
    <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
    <br/><br/>
 Documentation en Français:<br/>
-<a class="altlink" href="/doc/faq-fr.html">Foire Aux Questions</a><br/>
-<a class="altlink" href="/doc/build-fr.html">Guide d'Installation</a><br/>
-<a class="altlink" href="/doc/portage-user-fr.html">Guide de l'Utilisateur de Portage</a><br/>
-<a class="altlink" href="/doc/portage-manual-fr.html">Manuel de Portage</a><br/>
-<a class="altlink" href="/doc/rc-scripts-fr.html">Guide des rc-scripts</a><br/>
-<a class="altlink" href="/doc/desktop-fr.html">Guide de Bureau</a><br/>
-<a class="altlink" href="/doc/use-howto-fr.html">HOWTO sur les variables USE</a><br/>
-<a class="altlink" href="/doc/java-fr.html">Guide Gentoo Java</a><br/>
-<a class="altlink" href="/doc/nano-basics-guide-fr.html">Guide de base sur Nano</a><br/>
-<a class="altlink" href="/doc/altinstall-fr.html">Guide d'Installation Alternative</a><br/>
 <a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide nVidia</a><br/>
-<br/><br/>
-Documentation Développeur:<br/>
-<a class="altlink" href="/doc/gentoo-howto-fr.html">HOWTO Développeurs</a><br/>
-<a class="altlink" href="/doc/cvs-tutorial-fr.html">Tutoriel CVS</a><br/>
-<a class="altlink" href="/doc/eclass-howto-fr.html">HOWTO Eclass</a><br/>
-<a class="altlink" href="/doc/ebuild-submit-fr.html">Soumettre vos ebuilds</a><br/>
 <br/><br/>
 Documentación en Español: <br/>
 Para usuarios:<br/>
-<a class="altlink" href="/doc/build-es.html">Guía de Instalación</a><br/>
-<a class="altlink" href="/doc/faq-es.html">Preguntas frecuentes</a><br/>
-<a class="altlink" href="/doc/portage-user-es.html">Guía de Usuario de Portage</a><br/>
-<a class="altlink" href="/doc/portage-manual-es.html">Manual de Portage</a><br/>
-<a class="altlink" href="/doc/desktop-es.html">Guía de Escritorio</a><br/>
-<a class="altlink" href="/doc/use-howto-es.html">Guía de parámetros USE</a><br/>
-<a class="altlink" href="/doc/altinstall-es.html">Método alternativo de instalación</a><br/>
 <a class="altlink" href="/doc/gentooppc-quickstart-es.html">Instalación en PPC</a><br/>
-<a class="altlink" href="/doc/nano-basics-guide-es.html">Guía básica de Nano</a><br/>
-<a class="altlink" href="/doc/gentoo-security-es.html">Guía de Seguridad</a><br/>
-<!--<a class="altlink" href="/doc/openafs-es.html">Guía de OpenAFS</a><br/> -->
-Para Desarrolladores:<br/>
-<a class="altlink" href="/doc/xml-guide-es.html">Guía de documentación</a><br/>
-<a class="altlink" href="/doc/ebuild-submit-es.html">Mandando Ebuilds</a><br/>
 Otros:<br/>
 <a class="altlink" href="/doc/main-about-es.html">Sobre Gentoo Linux</a><br/>
 <a class="altlink" href="/doc/main-contract-es.html">Contrato Social</a><br/>
 <a class="altlink" href="/doc/project-xml-es.html">Proyectos XML</a><br/>
 <a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/>
 <br/><br/>
-Gebruikers Documentatie in het Nederlands: <br/>
-<a class="altlink" href="/doc/build-nl.html">Installatie Handleiding</a><br/>
-<br/><br/>
-	
-						Mailing Lists:<br/><br/><a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/><br/>
-						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
-						General Discussion:<br/>#gentoo<br/><br/>
-						Gentoo Linux/PPC:<br/>#gentoo-ppc <br/><br/>
-						Gentoo Linux/Sparc:<br/>#gentoo-sparc <br/><br/>
-						Low-bandwidth chat:<br/>#gentoo-user<br/><br/>
-						Server-related chat:<br/>#gentoo-server<br/><br/>
-						En Français:<br/>#gentoofr<br/><br/>
-						En Español:<br/>#gentoo-es<br/><br/>
-						På norsk:<br/>#gentoo-no <br/><br/>
-						På svenska:<br/>#gentoo-se <br/><br/>
-						In het Nederlands:<br/>#gentoo-nl <br/><br/>
-						Auf Deutsch:<br/>#gentoo.de <br/><br/><br/><br/></p>
+-->
+<br />
+[ <a href="/index-docs.html#top"> User Docs </a>]
+<br /><br />
+[ <a href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>]
+<br /><br />
+[ <a href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>]
+<br /><br />
+
+
+
+				Mailing Lists:<br/><br/>
+				<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a>
+				<br/><br/>
+				IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:
+				<br/><br/>
+				General Discussion:<br/>#gentoo<br/><br/>
+				Gentoo Linux/PPC:<br/>#gentoo-ppc <br/><br/>
+				Gentoo Linux/Sparc:<br/>#gentoo-sparc <br/><br/>
+				Low-bandwidth chat:<br/>#gentoo-user<br/><br/>
+				Server-related chat:<br/>#gentoo-server<br/><br/>
+				En Français:<br/>#gentoofr<br/><br/>
+				En Español:<br/>#gentoo-es<br/><br/>
+				På norsk:<br/>#gentoo-no <br/><br/>
+				På svenska:<br/>#gentoo-se <br/><br/>
+				In het Nederlands:<br/>#gentoo-nl <br/><br/>
+				Auf Deutsch:<br/>#gentoo.de <br/><br/>
+				Em Português:<br />#gentoo-pt<br /><br />
+				Japanese Discussion:<br /> #gentoo-ja<br/><br/>
+				<br/><br/>
+				</p>
                         </td>
                       </tr>
                     </table>
@@ -607,10 +612,10 @@ Gebruikers Documentatie in het Nederlands: <br/>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
-<tr>
-					<td>
-					<p class="alttext">
-					<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
+		<tr>
+			<td>
+			<p class="alttext">
+				<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
 					largest directory of Web developers and other marketing-oriented firms. Use
 					Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
 					that meets your exact needs.
@@ -620,10 +625,10 @@ Gebruikers Documentatie in het Nederlands: <br/>
 					<br/><br/>
 					When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
 					will donate a portion of revenue to the Gentoo Linux free software project.
-					</p>
-					</td>
-				</tr>
-			      <tr>
+				</p>
+			</td>
+		</tr>
+		<tr>
                   <td>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
@@ -964,11 +969,22 @@ Gebruikers Documentatie in het Nederlands: <br/>
   </xsl:template>
   <xsl:template match="p">
     <xsl:param name="chid"/>
-    <p>
-      <xsl:apply-templates>
-        <xsl:with-param name="chid" select="$chid"/>
-      </xsl:apply-templates>
-    </p>
+      <xsl:choose>
+      <xsl:when test="@class">
+ 		<p class="{@class}">
+      		<xsl:apply-templates>
+		<xsl:with-param name="chid" select="$chid"/>
+		</xsl:apply-templates>
+    		</p>
+    	</xsl:when>
+    	<xsl:otherwise>
+		<p>
+	      	<xsl:apply-templates>
+ 		<xsl:with-param name="chid" select="$chid"/>
+		</xsl:apply-templates>
+    		</p>
+    	</xsl:otherwise>
+	</xsl:choose>
   </xsl:template>
   <xsl:template match="e">
     <font class="emphasis">
