@@ -388,7 +388,7 @@ User Docs:<br/>
 						Developer Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
-						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
+						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a> <font color="#ff0000">(updated!)</font><br/>
 						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide <font color="#ff0000">(new!)</font></a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<br/>
