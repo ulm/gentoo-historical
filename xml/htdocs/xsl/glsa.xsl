@@ -208,6 +208,7 @@ Related bugreports:
         <xsl:value-of select="text()"/>
         <xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each>
+        <xsl:if test="@auto = 'no'"><brite>*</brite></xsl:if>
       </ti>
       <ti>
         <xsl:choose>
@@ -249,7 +250,13 @@ Related bugreports:
     </tr>
     </xsl:for-each>
     </table>
-  
+ 
+  <xsl:if test="//affected/package/@auto = 'no'">
+  <warn>
+    <brite>*</brite>: Needs to be manually updated
+  </warn>
+  </xsl:if>
+ 
   </xsl:when>
   <xsl:when test="$type = 'infrastructure'">
     <table>
