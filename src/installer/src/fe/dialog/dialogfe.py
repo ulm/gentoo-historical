@@ -301,8 +301,8 @@ def set_boot_loader():
 		install_profile.set_boot_loader_mbr(None, True, None)
 	else:
 		install_profile.set_boot_loader_mbr(None, False, None)
-	code, kernel_args = d.inputbox("Add any optional arguments to pass to the kernel at boot here:")
-	if code == DLG_OK: install_profile.set_kernel_args(None, kernel_args, None)
+	code, bootloader_kernel_args = d.inputbox("Add any optional arguments to pass to the kernel at boot here:")
+	if code == DLG_OK: install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
 
 def set_timezone():
 # This section will be for setting the timezone. It pulls from /usr/share/zoneinfo/zone.tab.

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.26 2005/03/30 00:10:50 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.27 2005/03/30 05:33:48 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -380,8 +380,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#OK, now that we have all the info, let's build that grub.conf
 		newgrubconf = ""
 		newgrubconf += "default 0\ntimeout 30\n"
-		if self._install_profile.get_kernel_args(): kernel_args = self._install_profile.get_kernel_args()
-		else: kernel_args = ""
+		if self._install_profile.get_bootloader_kernel_args(): bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
+		else: bootloader_kernel_args = ""
 		if foundboot:  #we have a /boot
 			newgrubconf += "splashimage=(" + grub_boot_drive + "," + grub_boot_minor + ")/grub/splash.xpm.gz\n"
 		else: #we have / and /boot needs to be included
@@ -397,11 +397,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			if foundboot:
 				newgrubconf += "kernel " + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-				newgrubconf += root_device + root_minor + " " + kernel_args + "\n"
+				newgrubconf += root_device + root_minor + " " + bootloader_kernel_args + "\n"
 				newgrubconf += "initrd " + grub_initrd_name[5:] + "\n"
 			else:
 				newgrubconf += "kernel /boot" + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-				newgrubconf += root_device + root_minor + " " + kernel_args + "\n"
+				newgrubconf += root_device + root_minor + " " + bootloader_kernel_args + "\n"
 				newgrubconf += "initrd /boot" + grub_initrd_name[5:] + "\n"
 		
 		#-------------------------------------------------------------
@@ -465,8 +465,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		kernel_name = map(string.strip, kernel_name)
 		kernel_name[0] = kernel_name[0].split(root)[1]
 		kernel_name[1] = kernel_name[1].split(root)[1]
-		if self._install_profile.get_kernel_args(): kernel_args = self._install_profile.get_kernel_args()
-		else: kernel_args = ""
+		if self._install_profile.get_bootloader_kernel_args(): bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
+		else: bootloader_kernel_args = ""
 		#-------------------------------------------------------------
 		#time to build the lilo.conf
 		newliloconf = ""
@@ -483,7 +483,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		newliloconf += "vga=788                   # Framebuffer setting. Adjust to your own will\n"
 		newliloconf += "image=/boot"+kernel_name[0][5:]+" \n"
 		newliloconf += "  label=gentoo \n  read-only \n  root=/dev/ram0 \n"
-		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + kernel_args + "\" \n"
+		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + bootloader_kernel_args + "\" \n"
   		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
 		newliloconf = self._lilo_add_windows(newliloconf)
 		#now make the lilo.conf file

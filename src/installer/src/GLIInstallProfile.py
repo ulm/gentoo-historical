@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.37 2005/03/30 00:10:50 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.38 2005/03/30 05:33:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -27,7 +27,7 @@ class InstallProfile:
 
 		parser.addHandler('gli-profile/stage-tarball', self.set_stage_tarball_uri)
 		parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
-		parser.addHandler('gli-profile/kernel-args', self.set_kernel_args)
+		parser.addHandler('gli-profile/bootloader-kernel-args', self.set_bootloader_kernel_args)
 		parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
 		parser.addHandler('gli-profile/portage-tree-sync', self.set_portage_tree_sync_type)
 		parser.addHandler('gli-profile/install-pcmcia-cs', self.set_install_pcmcia_cs)
@@ -70,7 +70,7 @@ class InstallProfile:
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []
 		self._kernel_config_uri = ""
-		self._kernel_args = ""
+		self._bootloader_kernel_args = ""
 		self._kernel_initrd = True
 		self._kernel_bootsplash = False
 		self._kernel_source_pkg = ""
@@ -201,13 +201,13 @@ class InstallProfile:
 
 		self._kernel_config_uri = kernel_config_uri
 
-	def get_kernel_args(self):
+	def get_bootloader_kernel_args(self):
 		"returns kernel arguments"
-		return self._kernel_args
+		return self._bootloader_kernel_args
 	
-	def set_kernel_args(self, xml_path, kernel_args, xml_attr):
+	def set_bootloader_kernel_args(self, xml_path, bootloader_kernel_args, xml_attr):
 		"kernel_args are the arguments to pass the kernel at boot from the bootloader."
-		self._kernel_args = kernel_args
+		self._bootloader_kernel_args = bootloader_kernel_args
 
 	def get_kernel_initrd(self):
 		"returns kernel_initrd"
@@ -658,7 +658,7 @@ class InstallProfile:
 				'boot-loader':		self.get_boot_loader_pkg,
 				'kernel-config':	self.get_kernel_config_uri,
 				'kernel-initrd':	self.get_kernel_initrd,
-				'kernel-args':		self.get_kernel_args,
+				'bootloader-kernel-args':	self.get_bootloader_kernel_args,
 				'kernel-bootsplash':	self.get_kernel_bootsplash,
 				'kernel-source':	self.get_kernel_source_pkg,
 				'root-pass-hash':	self.get_root_pass_hash,
