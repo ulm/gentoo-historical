@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.73 2005/03/27 04:39:56 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.74 2005/03/27 07:33:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -414,7 +414,7 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile)
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
-		elif kernel_pkg:
+		else:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
 				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
