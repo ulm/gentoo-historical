@@ -112,7 +112,7 @@
     <tr>
       <ti>
         <xsl:choose>
-          <xsl:when test="document(&quot;/dyn/pkgs/index.xml&quot;)/packages/package[category=substring-before(current()/@pkgname,&quot;/&quot;) and name=substring-after(current()/@pkgname,&quot;/&quot;) ]">
+          <xsl:when test='document(&quot;/dyn/pkgs/index.xml&quot;)/packages/category[name=substring-before(current()/@pkgname,&quot;/&quot;)]/package[name=substring-after(current()/@pkgname,&quot;/&quot;) ]'>
             <uri>
               <xsl:attribute name="link">/dyn/pkgs/<xsl:value-of select="@pkgname"/>.xml</xsl:attribute>
               <xsl:value-of select="@pkgname"/>
