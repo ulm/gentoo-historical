@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.10 2004/11/03 14:09:30 port001 Exp $
+# $Id: index.py,v 1.11 2004/11/04 00:14:53 port001 Exp $
 #
 
 """
@@ -18,7 +18,6 @@ It also manages session handling and errors.
 """
 
 __modulename__ = "index"
-
 
 import os
 import sys
@@ -50,23 +49,34 @@ from site_modules import *
 
 def main():
 
+    uid = 0
+    alias = ""
+    session = None
+
+    tmpl_page = None
+    show_border = True
+
+    ThisSession = SessionHandler.New()
+    ThisUser = User()
+
     t_start = start_timer()
 
     #print "Content-type:text/html\n\n",
     form = cgi.FieldStorage()
     page = form.getvalue("page")
 
-    # Verify login credentials and log users in and out.
-    #login = Page_Login.Page_Login(form)
-    #(page, username, uid, user_type) = login.display()
-
-    tmpl_page = None
-    show_border = True
+    # Does the user have a cookie for me? Load and eat.
+    if os.environ.has_key("HTTP_COOKIE"):
+        if ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"]):
+            (uid, session) = self.ThisSession.LoadCookieData(
+                                          os.environ["HTTP_COOKIE"])
+            # OK, we have a returning user.
+            ThisSession.UpdateTS(uid, session)
+            ThisUser.SetID(uid)
+            ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
+            alias = ThisUser.GetAlias()
 
     for Module in site_modules.__all__:
- 
-        # hack, will fix this tomorrow.
-        uid = 0
 
         module_object = eval("%s.%s(form, uid)" % (Module, Module))
 
@@ -113,7 +123,8 @@ def main():
     if show_border:
         tmpl_head = TemplateHandler.Template()
         tmpl_head.compile(Config.Template["header"],
-                          {"GLSR_URL":          Config.URL})
+                          {"GLSR_URL":          Config.URL,
+                           "USER_ALIAS":	alias})
         print tmpl_head.output()
 
     print tmpl_page.output()

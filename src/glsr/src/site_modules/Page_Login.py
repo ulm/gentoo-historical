@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.4 2004/11/03 14:09:30 port001 Exp $
+# $Id: Page_Login.py,v 1.5 2004/11/04 00:14:53 port001 Exp $
 #
 
 import os
@@ -27,36 +27,13 @@ class Page_Login(SiteModule):
         self.username = self.form.getvalue("username")
         self.password = self.form.getvalue("password")
         self.alias = ""
-        self.uid = 0
+        self.uid = uid
         self.sess = None
         self.user_obj = User()
 
         self.ThisSession = SessionHandler.New()
         
-    def _check_session(self):
-        """Checks the session and sets alias, sess and uid if it exists."""
-
-        import os
-
-        if os.environ.has_key("HTTP_COOKIE"):
-
-            if self.ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"]):
-                
-                (self.uid, self.sess) = self.ThisSession.LoadCookieData(
-                    os.environ["HTTP_COOKIE"])
-
-                if not self.user_obj.SetID(self.uid):
-                    self.uid = 0
-                
-                else:
-                    self.user_obj.UpdateIP(os.environ['REMOTE_ADDR'])
-                    self.ThisSession.UpdateTS(self.uid, self.sess)
-                    self.alias = self.user_obj.GetAlias()
-
-    
     def display(self):
-
-        self._check_session()
 
         # Is the user logging in or logging out?
         if self.page == "perform_login":
@@ -71,7 +48,9 @@ class Page_Login(SiteModule):
         
             if self.ThisSession.ValidateSession(self.uid, self.sess):
                 self.ThisSession.RemoveCookie(self.sess)
-        
+            # Get session by uid first then remove cookie
+            # or get session from index..        
+
             self.uid = 0
             self.alias = ""
             self.template = Config.Template["main"]
