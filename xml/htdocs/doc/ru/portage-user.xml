@@ -1,0 +1,193 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/ru/portage-user.xml">
+<title>Руководство пользователя Portage</title>
+<author title="Chief Architect"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Editor"><mail link="thomasfl@gentoo.org">Thomas Flavel</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Переводчик"><mail link="alv@linux-online.ru">Алексей Федорчук</mail></author>
+<author title="Редактор"><mail link="pythoo@yandex.ru">Иван Зенков</mail></author>
+<abstract>Это руководство кратко описывает принцип установки новых пакетов и поддержания вашей системы в должном виде.</abstract>
+
+<version>1.3</version>
+<date>17 Dec 2002</date>
+
+<chapter>
+<title>Быстрый старт</title>
+
+<section>
+<title>Загрузка дерева Portage</title>
+<body>
+
+<p>После установки Gentoo Linux и игр с системой вы можете обнаружить некоторые баги в некоторых пакетах, или захотите установить более поздние версии некоторых пакетов, или обновить установленные пакеты. Для этого вам потребуется скачать наше дерево портежей (Portage). Мы поддерживаем анонимный rsync-сервер, с которого можно получить последнюю версию этого дерева. И здесь рассказывается, как.</p>
+
+<p>Следующую команду используйте для синхронизации системы Portage:</p>
+
+<pre caption = "Получение нового Portage дерева">
+# <c>emerge rsync</c>
+</pre>
+
+<p>Пожалуйста, обратите внимание, что <c>emerge rsync</c> автоматически
+вызывает опцию <i>--clean</i>, которая удалит любое из ваших личных изменений
+или дополнений к дереву <path>/usr/portage</path>. Если вы желаете держать ваши
+собственные ebuilds-скрипты отдельно от главного дерева Portage,
+пожалуйста, используйте функцию <c>PORTDIR_OVERLAY</c>.</p>
+
+<pre caption = "Использование PORTDIR_OVERLAY">
+<comment>Добавьте эту строке в <path>/etc/make.conf</path></comment>
+PORTDIR_OVERLAY="/каталог/где/находятся/ваши/ebuilds"
+</pre>
+
+<p>Если вы вносите регулярные изменения, устраняя ошибки и некоторые
+дефекты в своем дереве Portage, то, возможно, вы бы хотели стать членом
+группы разработчиков Gentoo Linux. Для дополнительно информации
+свяжитесь, пожалуйста, с <mail link = "drobbins@gentoo.org">Daniel Robbins</mail> или <mail link = "seemant@gentoo.org">Seemant Kulleen</mail>.</p>
+
+</body>
+</section>
+
+<section>
+<title>Обновление Portage</title>
+<body>
+<p>Прежде чем использовать дерево Portage, весьма важно было бы
+обновить его. Для этого сделайте следующее:</p>
+
+<pre caption = "Обновление Portage">
+<comment>Это покажет вам какие пакеты необходимо обновить</comment>
+# <c>emerge -up system </c>
+<comment>Это обновит необходимые пакеты</comment>
+# <c>emerge -u system </c>
+</pre>
+
+<p>После этого вы получаете более современную версию Protage и
+готовы к тому, чтобы использовать нашу ebuild-систему для обновления
+вашего установленного программного обеспечения</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Введение в <c>emerge</c></title>
+
+<section>
+<title><c>emerge --pretend</c></title>
+<body> 
+
+<p>Перед установкой пакета, было бы хорошей идеей посмотреть, какие
+зависимости требуются для установки, какие пакеты необходимо обновить
+и т.д. <c>emerge --pretend</c> или <c>emerge -p</c> сделает это для вас.</p>
+
+<pre caption = "Использование emerge -p">
+# <c>emerge -p xchat</c>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies......... done!
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>В данном случае мы принимаем, что <i>xchat</i> будет устанавливаться на машине без XFree86. То есть <c>emerge --pretend</c>
+правильно устанавливает, что многие зависимости должны быть
+удовлетворены в первую очередь. В частности, что пакеты
+<path>sys-libs/zlib</path> и <path>dev-libs/glib</path> должны быть
+обновлены, и что остальные пакеты (включая, разумеется,
+<path>x11-base/xfree</path>) должны быть собраны.</p>
+
+</body>
+</section>
+
+<section>
+<title>USE и <c>emerge</c></title>
+<body>
+<p>Выше команда <c>emerge --pretend</c> была выполнена в системе, в которой
+значение <c>gnome</c> не было определено в переменной <c>USE</c> файла
+<path>/etc/make.conf</path>. Это означает, что опциональная поддержка GNOME, если эта среда установлена, не будет доступна. Однако для <path>xchat</path> <e>такую</e> поддержку можно включить, если выполнить команду <c>emerge --pretend</c> после добавления значения <c>gnome</c> в переменную окружения <c>USE</c> файла <path>/etc/make.conf</path>. В этом случае вывод команды:</p>
+
+<pre caption = "Использование emerge c USE переменными">
+# <c>emerge -p xchat</c>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies............................ done!
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] gnome-base/libghttp-1.0.9 to /
+[ebuild N  ] media-libs/audiofile-0.2.1 to /
+[ebuild N  ] media-sound/esound-0.2.22-r2 to /
+[ebuild N  ] gnome-base/gnome-env-1.0 to /
+[ebuild N  ] gnome-base/libxml-1.8.11 to /
+[ebuild N  ] gnome-base/ORBit-0.5.8 to /
+[ebuild N  ] gnome-base/oaf-0.6.5 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] net-libs/libwww-5.3.2-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] dev-util/guile-1.4-r3 to /
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] gnome-base/gnome-libs-1.2.13 to /
+[ebuild N  ] gnome-base/glibwww-0.2-r1 to /
+[ebuild N  ] gnome-base/gdk-pixbuf-0.11.0 to /
+[ebuild N  ] gnome-base/gconf-1.0.0 to /
+[ebuild N  ] gnome-base/gnome-vfs-1.0.1 to /
+[ebuild N  ] gnome-base/control-center-1.4.0.1 to /
+[ebuild N  ] gnome-base/scrollkeeper-0.2 to /
+[ebuild N  ] dev-util/xml-i18n-tools-0.8.1 to /
+[ebuild N  ] gnome-base/libglade-0.16-r1 to /
+[ebuild N  ] gnome-base/gnome-core-1.4.0.4 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>Как можно видеть, после добавления <c>gnome</c> к переменной <c>USE</c>, команда emerge распознает, что xchat должен включать поддержку GNOME. И конечно, для реализации этой поддержки GNOME предварительно должен быть установлен. Команда <c>emerge</c> показывает все это и добавляет различные пакеты, требуемые GNOME, в список кандидатов на сборку. В то же время, если переменная <c>USE</c> определена не вполне правильно, это может вызвать то, что
+<c>emerge</c> не распознает включения или исключения различных опциональных расширений. Вследствие этого рекомендуется всегда предварять действительное исполнение команды <c>emerge</c> командой <c>emerge --pretend</c>, особенно для новых, не очень знакомых ebuild-скриптов. Тогда вы будете знать, что вам следует ожидать.:) Только после этого следует выполнять действительную сборку с пропуском опции --pretend, что делается следующим образом:</p>
+
+<pre caption = "Установка xchat">
+# <c>emerge xchat</c>
+</pre>
+
+<p>После того, как все требуемые зависимостями пакеты будут собраны
+(если эти зависимости есть, не все пакеты могут иметь зависимости), исходники
+xchat будут скачаны (в каталог <path>/usr/portage/distfiles</path>), верифицированы на предмет контрольных сумм, распакованы, скомпилированы и установлены во временный каталог. Затем он будет помещен в локальную файловую
+систему и в базе данных пакетов будет создан файл
+<path>/var/db/pkg/net-irc/xchat-1.4.3/CONTENTS</path>, содержащий список всех
+установленных файлов и их контрольных сумм.</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Обновление пакетов</title>
+<section>
+<body>
+
+<p>Стандартный способ обновления пакетов в Portage - это использование <c>emerge --update</c>
+или <c>emerge -u</c>.</p>
+
+<pre caption = "Использование emerge -u">
+# <c>emerge -u xchat</c>
+</pre>
+
+<p>Portage использует то, что называется безопасным у далением; оно распространяется только на несвязанные оригинальные файлы. Если некий файл перезаписывается или модифицируется в это самое время, это будет отражено в файловой системе (обычно такое бывает, если устанавливалась новая версия пакета). И, соответственно, если выполнить unmerge к старой версии xchat после сборки новой, то исполняемый файл xchat не будет удален из файловой системы, так как имеет другие временные атрибуты и контрольную сумму. То есть безопасность такого удаления действительно велика, потому что обеспечивает доступность какой-либо версии в любое время. Если удалить старую версию перед установкой
+новой, программа не будет доступна какое-то время, пока последняя скачивается, компилируется и т.д.</p>
+
+<impo>Система портежей имеет специальную особенность, именуемую защитой конфигурационных файлов (config file protection). Ее назначение - предотвратить изменение инсталлируемыми пакетами существующих конфигурационных файлов. По умолчанию защита конфигурационных файлов действует на файлы из каталога /etc и из конфигурационных каталогов KDE. Другие каталоги могут быть добавлены в
+будущем. Детали смотрите по команде <c>emerge --help</c> config.</impo>
+
+</body>
+</section>
+</chapter>
+</guide>
