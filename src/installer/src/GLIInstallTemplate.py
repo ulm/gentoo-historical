@@ -551,7 +551,7 @@ class GLIInstallTemplate:
 		self._depends("emerge_system")
 		
 		# If user wants us to install rp-pppoe, then do so
-		if self._install_profile.get_install_rp-pppoe():
+		if self._install_profile.get_install_rp_pppoe():
 			exitstatus = self._emerge("rp-pppoe")
 			if exitstatus != 0:
 				raise "RP-PPPOEError", "Could not emerge rp-pppoe!"
@@ -566,7 +566,7 @@ class GLIInstallTemplate:
 		self._depends("build_kernel")
 		
 		# If user wants us to install pcmcia-cs, then do so
-		if self._install_profile.get_install_pcmcia-cs():
+		if self._install_profile.get_install_pcmcia_cs():
 			exitstatus = self._emerge("pcmcia-cs")
 			if exitstatus != 0:
 				raise "PCMCIA-CSError", "Could not emerge pcmcia-cs!"

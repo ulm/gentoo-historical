@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.7 2004/04/25 20:05:33 esammer Exp $
+$Id: GLIInstallProfile.py,v 1.8 2004/04/25 20:13:36 esammer Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -884,7 +884,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		self._install_rp_pppoe = install_rp_pppoe
 
 	def get_install_rp_pppoe(self):
-		""" Return the boolean value of _install_rp-pppoe """
+		""" Return the boolean value of _install_rp_pppoe """
 		return self._install_rp_pppoe
 
 	def set_filesystem_tools_pkgs(self, tools):
