@@ -34,12 +34,14 @@ network and establish outbound <c>ssh</c> connections and download files.  </p>
 <p>To install from the build CD, you will need to have a 486+ processor and
 ideally at least 64 Megabytes of RAM.  (Gentoo linux has been successfully
 built with 64MB of RAM + 64MB of swap space, but the build process is awfully
-slow under those conditions.) To begin the install process, first grab one of
-our ISO images from
-<uri>http://www.ibiblio.org/gentoo/releases/build/</uri>. The three stages make our life
+slow under those conditions.) To begin the install process, first grab the
+livecd ISO images from
+<uri>http://www.ibiblio.org/gentoo/releases/1.4_rc1/</uri>. The three stages make our life
 easy with Gentoo. The stage1 is for building the entire system from scratch. Stage2 is for building
 some of the system from scratch, and stage3 saves a lot of time because it is already
-optimized for you specific system. Make sure to grab the right ISO, and then continue on. </p>
+optimized for you specific system. At the moment only the stage1 tarball is 
+stored on the livecd, but you will be able to download a stage2 or
+stage3 tarball optimized for your system after booting the livecd. </p>
 
 <p>Now, let's quickly review the install process.  We'll create partitions, 
 create our filesystems, and extract either a stage1, stage2 or stage3 tarball.
@@ -64,10 +66,18 @@ process you're starting from, here's what's required for installation:</p>
 <section>
 <body>
 
-<p>Once you've chosen the CD you want to use, go ahead and boot it. You'll be
-greeted with a bunch of text and a <c>boot:</c> prompt at the bottom of the
-screen.  At this prompt, hit enter, and Linux will begin to load from the
-CD.</p> 
+<p>Start by booting the livecd. You'll be
+greeted with a bunch of text 
+followed by the normal Gentoo Linux boot sequence.
+Login as "root" (just hit &lt;enter&gt; for the password),
+and then use the <c>passwd</c> command to change the root
+password.  (This root password is only for this installation session.
+The reason for changing the password is that you will have to connect
+to the net to complete the installation.  Connecting to the internet with
+the default root password is a <i>really</i> bad idea!)
+You should have a root ("<c>#</c>") prompt on the current
+console, and can also open new consoles by typing alt-f2, alt-f3, etc and then
+hitting enter.</p>
 
 <p>Next, you'll be greeted with a small list of commands available on the boot
 CD, including <c>nano</c> (a pico editor clone) and instructions for setting up
@@ -88,10 +98,14 @@ hitting enter.</p>
 <section>
 <body>
 
-<p>We're almost ready to begin installing Gentoo Linux, but first we need take
-the necessary steps so that the kernel recognizes our network cards, and
-optionally any SCSI hardware that is in our system that PCI autodetection
-missed.  To view a list of all available network card modules, type <c>ls
+<p>
+Hopefully you need only type <c>pci-setup</c> at the root prompt to 
+autodetect the hardware on your system and to load the appropriate
+kernel modules.
+</p>
+<p>If the PCI autodetection missed some of your hardware, however, you 
+will have to load the appropriate modules manually.
+To view a list of all available network card modules, type <c>ls
 /lib/modules/*/kernel/drivers/net/*</c>.  To load a particular module,
 type:</p>
 
@@ -113,19 +127,20 @@ modules from /lib/modules, again using <c>modprobe</c>:</p>
 <p>Above, we modprobe the <c>aic7xxx</c> SCSI driver and then make sure that SCSI CD-ROM (<c>sr_mod</c>)
 and disk (<c>sd_mod</c>) support is loaded.</p>
 
-<p> If you are using hardware RAID, you will want to load the modules for ATA-RAID and for your RAID controller</p>
-
-<pre>
-# <i>insmod ataraid</i>
-# <i>insmod pdcraid</i>
-	<comment>(Promise Raid Controller)</comment>
-# <i>insmod hptraid</i>
-	<comment>(Highpoint Raid Controller)</comment>
+<p> If you are using hardware RAID, you will want to load the 
+modules for ATA-RAID and for your RAID controller</p>        
+<pre>    
+# <i>insmod ataraid</i>    
+# <i>insmod pdcraid</i>            
+      <comment>(Promise Raid Controller)</comment>    
+# <i>insmod hptraid</i>            
+      <comment>(Highpoint Raid Controller)</comment>    
 </pre>
 
 <note><c>hdparm</c> is included on the Gentoo iso.  
 If any of your drives require tweaking, now
-would be a good time to do so.  On reasonably modern hardware
+would be a good time to do so, although the livecd boot process
+should have enabled dma for you already.  On reasonably modern hardware
 <c>hdparm -d 1 /dev/hdx</c> should be quite safe.  You can use 
 <c>hdparm -v /dev/hdx</c> to check your drive's settings,
 and <c>hdparm -t /dev/hdx</c> to check your drive's performance.</note>
@@ -165,12 +180,19 @@ remove it.)
 <p>The Gentoo install lets you configure a working network, allowing you to use <c>ssh</c>, <c>scp</c> or <c>wget</c>
 as needed before even beginning the installation process.  Even if you don't need to do these things now,
 you should go ahead and set up networking now.  Once set up, Portage will be able to use your configured network
-once you are inside the chroot environment (required for installing Gentoo Linux).</p>
+once you are inside the chroot environment (required for installing Gentoo Linux).  The simplest way to set up networking is to run our new <c>net-setup</c>
+script:</p>
+<pre>
+# <i>net-setup eth0</i>
+</pre>
+<p>
+Of course, if you prefer you may still set up networking manually.
+</p>
 </body>
 </section>
 
 <section>
-<title>DHCP</title>
+<title>Manual DHCP configuration</title>
 <body>
 <p>
 Network configuration is simple with DHCP; If your ISP is not using
@@ -188,7 +210,7 @@ are most likely cosmetic.  Skip down to Network testing below.</p>
 </body>
 </section>
 <section>
-<title>Static configuration</title>
+<title>Manual Static configuration</title>
 <body>
 <p>
 We need to setup just enough networking so that we can download
@@ -205,7 +227,7 @@ $GTWAY with your default gateway.
 <p>Now, it's time to create the <path>/etc/resolv.conf</path>
 file so that name resolution (finding Web/FTP sites by name, rather than just by IP address) will work.</p>
 
-<note>At the moment the only editor installed by default is <c>nano</c>, a
+<note>At the moment the only editors installed by default are <c>nano</c>, a
 small and very easy-to-use visual editor.   Use <c>nano</c> with the <c>-w</c>
 option to turn off automatic line-wrapping.
 </note>
@@ -298,7 +320,8 @@ ext3 when dealing with small files (files less than 4k), often by a factor of
 10x-15x. ReiserFS has metadata journaling, but no data journaling.  XFS
 is a high-performance enterprise-class filesystem with metadata journaling that
 is fully supported under Gentoo Linux.
-</p><p>
+</p>
+<p>
 If you're looking for the most standard filesystem, use ext2.  If you're looking
 for the most rugged journalled filesystem, use ext3.  If you're looking for a
 high-performance filesystem with journaling support, use XFS;  both ext3 and XFS are 
@@ -335,12 +358,16 @@ sizes and types:</p>
 <note>At this point, create your partitions using fdisk.  Note that your partitions
 should be of type 82 if swap and 83 for regular filesystems (whether XFS, ReiserFS <e>or</e> ext2).
 </note>
-<note>If you are using RAID your partitions will be a little different. 
+
+<note>If you are using RAID your partitions will be a little
+different.
 You will have the partitions like this:
 <path>/dev/ataraid/discX/partY</path>
-X is the arrays you have made, so if you only have made 1 array, then it will 
+X is the arrays you have made, so if you only have made 1
+array, then it will
 be disc0.Y is the partition number as in <path>/dev/hdaY</path>
 </note>
+
 
 <p>Once you've created your partitions using <c>fdisk</c>, it's time to initialize
 the filesystems that will be used to house our data.  Initialize swap as follows:</p>
@@ -414,22 +441,21 @@ and we'll mount our filesystems to these mountpoints.
 </chapter>
 
 <chapter>
-<title>Mounting the CD-ROM</title>
+<title>Obtaining the desired stage-x tarball</title>
 <section>
 <body>
-<p>Even though we've booted from the CD-ROM, the CD-ROM itself is not mounted under our minimal
-Linux boot CD environment.  We'll need to mount it so that we can access the compressed build image
-tarball contained on the CD-ROM.  To mount the CD-ROM, one typically types:
+<p>
+If you want to start from a stage1 tarball, then you're already set
+to go; you can find the stage1 tarball in <path>/cdroot/nocompress</path>.
+On the other hand, if you would prefer to start from a stage2 or stage3
+tarball that has been optimized for your architecture you can download it
+(into <path>/mnt/gentoo</path> would be the simplest)
+from one of the Gentoo mirror sites:
 </p>
-
-<impo>Do not use the images on the 1.3b CD, make sure to use your new 1.4 CD with
-the 1.4 tarball. </impo>
-
 <pre>
-# <i>mount /dev/cdroms/cdrom0 /mnt/cdrom -o ro -t iso9660</i>
+# <i>cd /mnt/gentoo</i>
+# <i>lynx http://www.ibiblio.org/pub/Linux/distributions/gentoo/releases/1.4_rc1/x86/</i>
 </pre>
-<p>With the CD-ROM mounted, you should be able to see the <c>stage???.tbz2</c> file(s) by typing
-<c>ls /mnt/cdrom</c>.</p>
 </body>
 </section>
 </chapter>
@@ -451,7 +477,7 @@ expense of configurability (we've already chosen compiler optimizations and defa
 
 <pre>
 # <i>cd /mnt/gentoo</i>
-# <i>tar -xvjpf /mnt/cdrom/stage?-*.tbz2</i>
+# <i>tar -xvjpf /path/to/stage?-*.tbz2</i>
 # <i>mount -o bind /proc /mnt/gentoo/proc</i>
 # <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
 </pre>
@@ -663,9 +689,9 @@ under "SCSI support" enable "SCSI support", "SCSI CD-ROM support" and
 also choose to use modules, then <c>echo -e "ide-scsi\nsg\nsr_mod"
 >> /etc/modules.autoload</c> to have them automatically added at boot time.
 </impo>
-<impo>If you are using hardware RAID you will need to enable a couple more options in the kernel:
-For Highpoint RAID controllers select hpt366 chipset support, support for IDE RAID controllers and Highpoint 
-370 software RAID.For Promise RAID controllers select PROMISE PDC202{46|62|65|67|68|69|70} support, support for IDE RAID 
+<impo>If you are using hardware RAID you will need to enable a couple more options in the kernel:    
+For Highpoint RAID controllers select hpt366 chipset support, support for IDE RAID controllers and Highpoint    
+370 software RAID.For Promise RAID controllers select PROMISE PDC202{46|62|65|67|68|69|70} support, support for IDE RAID    
 controllers and Support Promise software RAID (Fasttrak(tm))</impo>
 <note>
 For those who prefer it, 
@@ -910,7 +936,7 @@ possibilities).
 <body>
 <p>
 Add your <i>hdparm</i> tweaks to
-to <path>/etc/conf.d/local.start</path>,
+ to <path>/etc/conf.d/local.start</path>,
 so that they are initialized at every boot.
 </p>
 <pre>
@@ -940,10 +966,12 @@ Hard drives count from zero rather than "a", and partitions start at zero rather
 </p><pre>
 # <i>grub</i>
 </pre>
-<impo>If you are using hardware RAID this part will not work at this time.
+<impo>If you are using hardware RAID this part will not work at
+this time.
 Skip to the section on making your <path>menu.lst</path>. After that we will complete the
 grub setup for RAID controllers</impo>
-<p>You'll be presented with the <c>grub&gt;</c> grub command-line prompt.  Now, you need to type in the
+<p>You'll be presented with the <c>grub&gt;</c> grub
+command-line prompt.  Now, you need to type in the
 right commands to install the GRUB boot record onto your hard drive.  In my example configuration,
 I want to install the GRUB boot record on my hard drive's MBR (master boot record), so that 
 the first thing I see when I turn on the computer is the GRUB prompt.  In my case, the commands
@@ -1007,15 +1035,19 @@ loader.</note> <p>Also, if you need to pass any options to the kernel, simply
 add them to the end of the <c>kernel</c> command.  We're already passing one option
 (<c>root=/dev/hda3</c>), but you can pass others as well.  In particular, you can
 turn off devfs by default (not recommended unless you know what you're doing) by
-adding the <c>gentoo=nodevfs</c> option to the <c>kernel</c> command.</p>
+adding the <c>gentoo=nodevfs</c> option to the <c>kernel</c> command.
+</p>
 
 <note>Unlike in earlier versions of Gentoo Linux, you no longer have to add 
 <c>devfs=mount</c> to the end of the <c>kernel</c> line to enable devfs.  In rc6
 devfs is enabled by default.
 </note>
-<p>If you are using hardware RAID, you must make a grub boot disk. With hardware RAID
-if you try to install grub from your chrooted shell it will fail. So we will make a grub
-boot disk, and when you reboot the first time we will install grub to the mbr. Make your
+<p>If you are using hardware RAID, you must make a grub boot
+disk. With hardware RAID
+if you try to install grub from your chrooted shell it will fail. So we
+will make a grub
+boot disk, and when you reboot the first time we will install grub
+to the mbr. Make your
 bootdisk like this:</p>
 
 <pre>
@@ -1031,6 +1063,7 @@ grub&gt; <i>root (fd0)</i>
 grub&gt; <i>setup (fd0)</i>
 grub&gt; <i>quit</i>
 </pre>
+
 
 </body>
 </section>
@@ -1058,9 +1091,10 @@ After rebooting, it is a good idea to run the <c>update-modules</c> command to c
 the <path>/etc/modules.conf</path> file.  Instead of modifying this file directly, you should
 generally make changes to the files in <path>/etc/modules.d</path>.
 </note>
-<impo>Remember if you are running hardware RAID, you must use the bootdisk for the first reboot.
-then go back and install grub the way everyone else did the first time. You are done, congratulations</impo>
-
+<impo>Remember if you are running hardware RAID, you must
+use the bootdisk for the first reboot.
+then go back and install grub the way everyone else did the first
+time. You are done, congratulations</impo>
 <p>If you have any questions or would like to get involved with Gentoo Linux development, 
 consider joining our gentoo-user and gentoo-dev mailing lists
 (there's a "click to subscribe" link on our <uri link="http://www.gentoo.org">main page</uri>).
