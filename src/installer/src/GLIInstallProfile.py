@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.12 2004/08/11 15:07:20 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.13 2004/08/23 15:20:52 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -697,7 +697,7 @@ class InstallProfile(xml.sax.ContentHandler):
 				'kernel-source':	self.get_kernel_source_pkg,
 				'root-pass-hash':	self.get_root_pass_hash,
 				'time-zone':		self.get_time_zone,
-				'custom-stage3-tarball':self.get_stage_tarball_uri,
+				'stage-tarball':	self.get_stage_tarball_uri,
 				'install-stage':	self.get_install_stage,
 				'portage-tree-sync':	self.get_portage_tree_sync_type,
 				'portage-snapshot':	self.get_portage_tree_snapshot_uri,
@@ -796,12 +796,16 @@ class InstallProfile(xml.sax.ContentHandler):
 		"""
 		data is a string that is the value of the variable name.
 		attr is an xml attribute that contains the name of the variable
+		OR attr is a variable name, like 'USE'. This makes it easier for front-end designers.
 		"""
-		if 'name' not in attr.getNames():
-			raise "MakeConfError", "Every value needs to have a variable name!"
+		if type(attr) == 'str':
+			self._make_conf[attr] = str(data)
+		else:
+			if 'name' not in attr.getNames():
+				raise "MakeConfError", "Every value needs to have a variable name!"
 
-		varName = attr.getValue('name')
-		self._make_conf[str(varName)] = str(data)
+			varName = attr.getValue('name')
+			self._make_conf[str(varName)] = str(data)
 
 	def set_make_conf(self, make_conf):
 		"""
