@@ -35,7 +35,7 @@ if ($#ARGV < 0)
 	{
     #
     # define default output file here
-	$outfile = "index.xml";
+	$outfile = "/home/httpd/gentoo/xml/htdocs/dyn/index.xml";
 	
 	} else {
 	$option1 = $ARGV[0];
