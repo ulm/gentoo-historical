@@ -37,7 +37,7 @@ This is where you select what timezone you are in.
 			      ]
 
 	# creates the drop-down
-	menu=widgets.createAndAppendOptionMenu(self,"Timezone",GLIUtility.generate_timezones())
+	menu=widgets.createAndAppendOptionMenu(self,"Timezone", ["blah", "blah2", "Blah3"]) #GLIUtility.generate_timezones())
 	# packs the label and the option menu
 	packIt = widgets.hBoxThese(gtk.FALSE,0,[gtk.Label("Timezones"),menu])
 	packItV=widgets.hBoxIt(packIt)

@@ -1,7 +1,6 @@
 import gtk
 import GLIScreen
 from Widgets import Widgets
-from Storage import Storage
 
 class Panel(GLIScreen.GLIScreen):
     """
