@@ -1,6 +1,7 @@
 """
 Gentoo Linux Installer
 
+$Id: GLIClientController.py,v 1.3 2004/08/11 16:14:43 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 """
