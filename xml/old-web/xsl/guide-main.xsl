@@ -29,14 +29,14 @@
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt=""/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt =""/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
                     </a>
                   </td>
                 </tr>
@@ -119,7 +119,7 @@
                     <table border="0" cellspacing="5" cellpadding="0">
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -129,7 +129,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -139,7 +139,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -148,7 +148,7 @@
 <!--
 				<tr>
 				<td>
-				<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+				<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
 				</td>
 				</tr>
 				<tr>
@@ -162,7 +162,7 @@
 				</tr> -->
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -185,7 +185,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -200,7 +200,7 @@ of your sale will go towards further Gentoo Linux development.</p>
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif"/>
+                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                     </table>
@@ -236,14 +236,14 @@ of your sale will go towards further Gentoo Linux development.</p>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt=""/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/index.html">
-                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt =""/>
+                      <img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
                     </a>
                   </td>
                 </tr>
@@ -283,7 +283,7 @@ of your sale will go towards further Gentoo Linux development.</p>
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td height="1%" valign="top" align="right">
-                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gridtest.gif" alt=""/>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gridtest.gif" alt="Gentoo Spaceship"/>
                   </td>
                 </tr>
                 <tr>
@@ -458,7 +458,7 @@ Otros:<br/>
                                   <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-stick.png" alt="stick man"/>
                                 </xsl:when>
                                 <xsl:when test="@category='ibm'">
-                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif" alt=""/>
+                                  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-ibm.gif" alt="IBM"/>
                                 </xsl:when>
                                 <xsl:when test="@category='linux'">
                                   <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-penguin.png" alt="Tux the Penguin"/>
