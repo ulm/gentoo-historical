@@ -51,7 +51,7 @@
 	scratch.
 	</abstract>
 <version>2.6.1</version>
- <date>7 May 2003</date>
+ <date>8 May 2003</date>
   <chapter>
     <title>About the Install</title>
     <section>
@@ -397,7 +397,10 @@ eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
 # <c>/sbin/route add -net default gw $GTWAY netmask 0.0.0.0 metric 1</c>
 </pre>
         <p>Now it is time to create the <path>/etc/resolv.conf</path>
-		file so that name resolution (finding Web/FTP sites by name, rather than just by IP address) will work.</p>
+		file so that name resolution (finding Web/FTP sites by name, rather 
+        than just by IP address) will work. You can use <c>nano -w 
+        /etc/resolv.conf</c> to create <path>/etc/resolv.conf</path>. 
+        <c>nano</c> is a small and easy-to-use editor.</p>
         <p>Here is a template to follow for creating your /etc/resolv.conf file: </p>
 <pre caption="/etc/resolv.conf template">
 domain mydomain.com
@@ -411,13 +414,16 @@ nameserver 10.0.0.2
     <section>
       <title>Proxy Configuration</title>
       <body>
-        <p>If you are behind a proxy, it is necessary to configure your proxy before
+        <p>If you are behind a proxy, it could be necessary to configure your proxy before
 		you continue. We will export some variables to set up the proxy accordingly.
 		</p>
 <pre caption="Setting a Proxy">
+<codenote>If the proxy restricts HTTP traffic:</codenote>
 # <c>export http_proxy=&quot;machine.company.com:1234&quot; </c>
-# <c>export ftp_proxy=&quot;$http_proxy&quot; </c>
-# <c>export RSYNC_PROXY=&quot;$http_proxy&quot; </c>
+<codenote>If the proxy restricts FTP traffic:</codenote>
+# <c>export ftp_proxy=&quot;machine.company.com&quot; </c>
+<codenote>If the proxy restricts RSYNC traffic:</codenote>
+# <c>export RSYNC_PROXY=&quot;machine.company.com&quot; </c>
 </pre>
       </body>
     </section>
@@ -587,8 +593,9 @@ acts as a container for partitions <c>hda5</c> through <c>hda9</c>.  </p>
 <p> Also, notice that each partition has an "Id", also called a "partition
 type".  Whenever you create a new partition, you should ensure that the
 partition type is set correctly. '83' is the correct partition type for
-partitions that will be housing Linux filesystems, and '82' is the correct
-partition type for Linux swap partitions.  You set the partition type using the
+partitions that will be housing Linux filesystems, '82' is the correct
+partition type for Linux swap partitions and 'fd' is the recommended partition
+type for Software RAID partitions. You set the partition type using the
 <c>t</c> option in <c>fdisk</c>.  The Linux kernel uses the partition type
 setting to auto-detect filesystems and swap devices on the disk at boot-time.
 </p>
@@ -659,8 +666,8 @@ Linux:</p>
 	</tr>
 	<tr>
 	<ti>boot partition, containing kernel(s) and boot information</ti>
-	<ti>100 Megabytes</ti>
-	<ti>ext2/3 highly recommended (easiest); if ReiserFS then mount with <c>-o notail</c></ti>
+	<ti>32 Megabytes</ti>
+	<ti>ext2/3 highly recommended (easiest); if ReiserFS then mount with <c>-o notail</c>. If you will be using ext3 or ReiserFS, you must add the size of the journal to te size; in these cases 64 Megabytes is recommended</ti>
 	<ti>/dev/hda1</ti>
 	</tr>
 	<tr>
@@ -731,8 +738,15 @@ Command (m for help):
 boot partition. To do this, type <c>n</c> to create a new partition, then
 <c>p</c> to tell fdisk you want a primary partition. Then type <c>1</c> to
 create the first primary partition. When prompted for the first cylinder, hit
-enter. When prompted for the last cylinder, type <c>+100M</c> to create a
-partition 100MB in size. You can see output from these steps below:</p>
+enter. When prompted for the last cylinder, type <c>+32M</c> to create a
+partition 32MB in size. You can see output from these steps below:</p>
+
+<note>
+Journaled filesystems require extra space for their journal. Default settings 
+require about 33 Megabytes of space. Therefor, if you are using a journaled 
+filesystem for <path>/boot</path>, you should type <c>+64M</c> when prompted
+for the last cylinder.
+</note>
 
 <pre caption="Steps to create our boot partition">
 Command (m for help): n
@@ -743,7 +757,7 @@ p
 Partition number (1-4): 1
 First cylinder (1-3876, default 1):
 Using default value 1
-Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): +100M
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): +32M
 </pre>
 
 <p>Now, when you type <c>p</c>, you should see the following partition printout:</p>
@@ -1617,8 +1631,8 @@ Check <path>/lib/modules/`uname -r`/kernel/drivers/net</path> for your card. </c
 # <c>nano -w /etc/conf.d/net</c>
 # <c>rc-update add net.eth0 default</c>
 </pre>
-        <p>If you have multiple network cards you need to create additional <path>net.eth<comment>x</comment></path>
-			scripts for each one (<comment>x</comment> = 1, 2, ...): </p>
+        <p>If you have multiple network cards or tokenring interfaces, you need to create additional <path>net.eth<comment>x</comment></path> or <path>net.tr<comment>x</comment></path> 
+			scripts respectively for each one (<comment>x</comment> = 1, 2, ...): </p>
 <pre caption="Multiple Network Interfaces">
 # <c>cd /etc/init.d</c>
 # <c>cp net.eth0 net.eth<comment>x</comment></c>
