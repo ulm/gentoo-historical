@@ -1,0 +1,433 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/Attic/distcc.xml,v 1.1 2004/03/07 12:38:25 bennyc Exp $ -->
+<!-- rev 1.15 by Eternity -->
+<guide link="/doc/tw/distcc.xml">
+
+<title>Gentoo Distcc 文件</title>
+
+<author title="Author">
+  <mail link="lisa@gentoo.org">Lisa Seelye</mail>
+</author>
+<author title="Editor">
+  <mail link="vapier@gentoo.org">Mike Frysinger</mail>
+</author>
+<author title="Editor">
+  <mail link="erwin@gentoo.org">Erwin</mail>
+</author>
+<author title="Reviewer">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Reviewer, Editor">
+  <mail link="blubber@gentoo.org">Tiemo Kieft</mail>
+</author>
+<author title="Translator">
+  <mail link="y.lan@student.qut.edu.au">Rick Lan</mail>
+</author>
+<author title="Reviewer">
+  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+
+<!-- Current Version: 1.15, Date: 07/03/2004 -->
+
+<abstract>
+這份文件將教你如何在 Gentoo 上使用 distcc 功能。
+</abstract>
+
+<license/>
+
+<version>1.4</version>
+<date>January 19, 2004</date>
+
+<chapter>
+<title>介紹</title>
+<section>
+<title>什麼是 distcc？</title>
+<body>
+
+<p>
+Distcc 是個設計讓你可以在不同的電腦上編譯程序的程式。它包含了伺服器端
+<c>distccd</c> 以及客服端 <c>distcc</c> 程式。經由一些小小的設定，
+Distcc 將可以配合著 <uri link="http://ccache.samba.org">ccache</uri> 
+以及 Portage 一起運作。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>設定</title>
+<section>
+<title>相依性</title>
+<body>
+
+<pre caption="Distcc 相依性 (2.8 到 2.10)">
+&gt;=sys-apps/portage-2.0.46-r11
+<codenote>Distcc-2.11 以上將需要 &gt;=sys-apps/portage-2.0.49-r6</codenote>
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>(從 2.8 至 2.11 版本) 若你在 USE 參數裡有加入 <i>gtk</i> 的話，你將需要下列額外的依存性套件</codenote>
+&gt;=x11-libs/gtk+-2.2.1
+</pre>
+
+<pre caption="Distcc 相依性 (2.11.1 以上)">
+&gt;=sys-apps/portage-2.0.49-r6
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>在這篇修訂文件中，你可以選擇使用 Gnome 或 GTK 圖型介面監視器，它們將需要下列額外的依存性套件</codenote>
+<codenote>GTK：</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+<codenote>Gnome：</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+&gt;=gnome-base/libgnomeui-2.0.0.0
+&gt;=gnome-base/libgnome-2.0.0
+</pre>
+
+</body>
+</section>
+<section>
+<title>安裝 Distcc</title>
+<body>
+
+<p>
+安裝 Distcc 很簡單。只要將你的 USE 參數設定好並 <c>emerge distcc</c> 就可以
+了。但是，這邊還有一些其他的選項你該知道。
+</p>
+
+<p>
+Distcc 內建了圖型介面的監視器讓你監視從你的電腦傳送出去編譯的程序。如果你使
+用 Gnome 的話，在你的 USE 參數裡加入 "gnome"。如果你不使用 Gnome 但你還是想
+要有一個監視器功能，則請在你的 USE 參數裡加入 "gtk"。
+</p>
+
+</body>
+</section>
+<section>
+<title>設定讓 Portage 使用 Distcc</title>
+<body>
+
+<p>
+這個設定也非常簡單，你只要跟著下列步驟既可：
+</p>
+
+<pre caption="整合 Distc 和 Portage">
+# <i>emerge distcc</i>
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<impo>
+如果你使用 distcc-2.11.1 以上的版本以及 &gt;=portage-2.0.49-r6，那你要做的只有
+設定你的主機位置、編輯 <path>/etc/make.conf</path> 裡的 MAKEOPTS、以及在 
+<path>/etc/make.conf</path> 裡的 FEATURES 加入 "distcc"。
+</impo>
+
+<note>
+在你的 FEATURES 參數加入 &quot;distcc&quot;
+</note>
+
+<p>
+接下來，你將要指定你要使用那些主機。你可以直接使用 <c>distcc-config</c>
+來設定主機列表。下面的例子將告訴你如何設定主機列表：
+</p>
+
+<pre caption="主機列表定義範例">
+192.168.0.1          192.168.0.2                       192.168.0.3
+192.168.0.1/2        192.168.0.2                       192.168.0.3/10
+192.168.0.1:4000/2   192.168.0.2/1                     192.168.0.3:3632/4
+@192.168.0.1         @192.168.0.2:/usr/bin/distccd     192.168.0.3
+<codenote>這裡還有許多其他的方法設定主機。</codenote>
+<codenote>請查閱 distcc 的 manpage 來觀看更多的訊息。</codenote>
+</pre>
+
+<p>
+這看起來可能有點複雜，不過大部分的人只需要用第一或第二行的設定既可。
+第一行的設定代表指定的主機或使用預設值。第二行代表的是指定的主機會使用指定的
+最大工作數 (使用 /N) 在指定的時間傳送至主機 (使用 <c>/n</c>)。因為一般的人
+不會使用到第三和第四行的設定方式，我將 
+<uri link="http://distcc.samba.org/man/distcc_1.html">指引</uri>你至 distcc
+的文件，請自行查看更多的資訊。
+</p>
+
+<p>
+使用第一行的方法的指令範例：
+</p>
+
+<pre caption="設定主機範例">
+# <i>/usr/bin/distcc-config --set-hosts "192.168.0.1 192.168.0.2 192.168.0.3"</i>
+</pre>
+
+<p>
+整合 distcc 至 Portage 的最後一個步驟便是重新開啟你的 <path>/etc/make.conf</path>
+並編輯 <c>MAKEOPTS</c> 包含 <c>-jN</c> (N 是一個整數)。一般來說，你需要將該數值
+設定為在你網路中所有的處理器總數加一。
+</p>
+
+<pre caption="make.conf 最後一個步驟">
+# <i>nano -w /etc/make.conf</i>
+MAKEOPTS=-jN
+</pre>
+
+<impo>
+別忘了啟動 distcc 伺服器！<c>/etc/init.d/distccd start</c>
+</impo>
+
+<note>
+你可以自行找一個最適當的 "N" 值。另一個方法便是 2 x #CPU 總數 + 1
+</note>
+
+</body>
+</section>
+<section>
+<title>設定讓 Automake 使用 Distcc</title>
+<body>
+
+<p>
+這個設定方式比 Portage 的還要簡單些。你只要在你的 <c>PATH</c> 環境變數裡，
+gcc (<path>/usr/bin</path>) 之前加入 <path>/usr/lib/distcc/bin</path> 既可
+。然而，這裡你要注意一個地方，如果你使用 ccache 的話，你將需要把 distcc 放
+在 ccache 的後面。像這樣：
+</p>
+
+<pre caption="設定你的 path">
+# <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
+</pre>
+
+<p>
+然後，在你平常時輸入 <c>make</c> 的地方，請改為使用 <c>make -jN</c> (N 是
+一個整數)。N 通常用來指的是你全部用來編譯程序的電腦。對我而言，我有一台
+雙處理器的 P3 以及一台 K6-2/400 的電腦來幫我的主電腦 (1200MHz Athlon 雷鳥)
+編譯所有的東西，所以我使用 -j5。建議你自行測試並找出一個最適合你的一個數值。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>使用 Distcc 來 Bootstrap</title>
+<section>
+<title>步驟 1：設定一台新的主機</title>
+<body>
+
+<p>
+你已經使用 Gentoo Linux LiveCD 開機並照著安裝步驟至 bootstrapping。接下來請照
+著下面的方法做修改讓你的新主機使用 Distcc。
+</p>
+
+<pre caption="修改">
+<codenote>我們在 FEATURES 裡加入 distcc</codenote>
+# <i>nano -w /etc/make.conf</i>
+<codenote>加入 &quot;distcc&quot; 至 FEATURES</codenote>
+<codenote>在 <path>/etc/make.conf 裡的 MAKEOPTS 參數加入 -jN (如上述)</path></codenote>
+</pre>
+
+<p>
+然後加入 distcc 使用者至你的 <path>/etc/passwd</path>：
+</p>
+
+<pre caption="加入 distcc 使用者至 /etc/passwd">
+# <i>echo "distcc:x:240:2:distccd:/dev/null:/bin/false" &gt;&gt;/etc/passwd</i>
+<codenote>別忘了 "<i>&gt;&gt;</i>"</codenote>
+</pre>
+
+</body>
+</section>
+<section>
+<title>步驟 2：安裝 Distcc</title>
+<body>
+
+<p>
+接下來，你需要在你 chroot 後新的主機執行下面的指令。
+</p>
+
+<pre caption="在新的主機安裝 Distcc">
+# <i>USE='-*' emerge --nodeps distcc</i>
+</pre>
+
+<note>
+依 <uri link="http://bugs.gentoo.org/show_bug.cgi?id=34262">bug
+34262</uri>，如果在執行上述的指令發生了類似
+"pkg-config: command not found" 的錯誤訊息，你應該執行 <c>emerge --nodeps
+pkgconfig</c> 然後再試著 emerge 一次看看。
+</note>
+
+</body>
+</section>
+<section>
+<title>步驟 3：設定 Distcc</title>
+<body>
+
+<p>
+接下來我們要設定 distcc 本身…
+</p>
+
+<pre caption="設定 distcc">
+# <i>/usr/bin/distcc-config --install</i>
+# <i>/usr/bin/distcc-config --set-hosts "localhost host1 host2 host3 ..."</i>
+</pre>  
+
+<p>
+distcc 現在應該可以 bootstrap 了！請繼續接著官方的安裝指南，並請別忘了在
+<c>emerge system</c> 之後再重新 emerge distcc。
+</p>
+
+<note>
+請記住，在 bootstrap 和 <c>emerge system</c> 時，distcc 可能不會被使用，這是因
+為某些 ebuilds 或是套件並無法好好的在 distcc 編輯，所以它們關閉使用 distcc。
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>解決問題</title>
+<section>
+<title>Mozilla 和 Xfree</title>
+<body>
+
+<p>
+在你 emerge 套件時，你會發現它們並不會平行編譯。這是因為 Mozilla 和 Xfree 的 
+.ebuilds 開發者關閉了平行編譯的功能，因為平行編譯將會造成錯誤，這並不是 distcc
+本身的問題。
+</p>
+
+<p>
+這並不代表有時 distcc 會造成套件編譯失敗。
+</p>
+
+</body>
+</section>
+<section>
+<title>混著 hardened-gcc 和非 hardened-gcc 主機會造成錯誤</title>
+<body>
+
+<p>
+如果你計畫在有 <uri link="http://www.gentoo.org/proj/en/hardened/etdyn-ssp.xml">
+PaX/hardened-gcc</uri> 和沒有 hardened-gcc 的主機群間進行平行編譯，你將會有許多
+的問題。
+</p>
+
+<p>
+這個問題的解決方法在於，你必需在有 PaX/hardened-gcc 的主機上執行
+<c>hardened-gcc -R</c>，或著是在該主機的核心裡啟動 PaX 保護並 <c>emerge hardened-gcc</c>
+。這兩種都是很好的解決辦法，因為這兩種辦法提供了大部分的防護，而且這對一般的使用者
+沒有任何影響。
+</p>
+
+</body>
+</section>
+<section>
+<title>不同的 GCC 版本</title>
+<body>
+
+<p>
+如果在你的主機群間有著不同的 GCC 版本，你將會有非常詭異的問題發生。唯一的解決辦法就是
+所有的主機均使用相同版本的 GCC。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>跨平台編譯</title>
+<section>
+<title>跨平台編譯的註釋</title>
+<body>
+
+<p>
+跨平台編譯 (Cross-Compiling) 是使用一種架構來為另一種架構編譯軟體。簡單的來說，
+你可以將它想為利用一台 Athlon (i686) 的電腦來為一台 K6-2 (i586) 的電腦編譯
+程式，或是使用一台 Sparc 來幫 PPC 編譯程式。
+</p>
+
+</body>
+</section>
+<section>
+<title>個人的跨平台編譯的筆記</title>
+<body>
+
+<p>
+我非常願意的幫忙於 Gentoo 上測試跨平台編譯，但是我沒有任何的非 x86 主機。我
+可以寫出<e>理論上</e>可以運作的東西，但我還是得靠其他的人幫忙測試我寫的東
+西。
+</p>
+
+<p>
+在最近的將來，我希望能得到 Sparc 的類似機型並在上面安裝 Gentoo，這樣我便可以
+在獨自的測試了。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Distcc 額外的功能</title>
+<section>
+<title>Distcc 監視器</title>
+<body>
+
+<p>
+Distcc 包含兩個監視器。文字介面的是內建的，它叫作 <c>distccmon-text</c>。
+第一次執行它可能會有點困擾，不過它是非常容易使用的。如果你執行它並且沒有加任何
+的參數的話，它只會執行一次。然而，如果你在後面加入一個數值 N 的話，它會每 N 秒
+更新一次。
+</p>
+
+<p>
+另一個監視器只有在你的 USE 參數中啟動 <c>gtk</c> 或 <c>gnome</c> 才會打開。
+它是建立於 GTK+ 並需執行於 X 的環境下。
+</p>
+
+<p>
+這裡必需提醒你，當你想要監視任何的 emerge 動作，你必需用下列的方法啟動監視器：
+</p>
+
+<pre caption="啟動監視器">
+# <i>DISTCC_DIR=/path/to/distccdir distccmon-text N</i>
+<codenote>或著你可以啟動圖型介面監視器…</codenote>
+# <i>DISTCC_DIR=/path/to/distccdir distccmon-gnome</i>
+</pre>
+
+<impo>
+如果你使用 Portage 並使用上述的範例，則將會是
+<c>DISTCC_DIR=/var/tmp/portage/.distcc</c>.
+</impo>
+
+<note>
+如果你不是使用 Portage，則你不需要指定 DISTCC_DIR (例如，直接輸入 
+distccmon-text N)。
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>未來 Gentoo 和 Distcc 之間的計畫</title>
+<section>
+<title>distcc-subnetscan</title>
+<body>
+
+<p>
+<c>distcc-subnetscan</c> 是一個正在發展的 perl 程式，它會掃描整個 subnet 並
+找出裝有 distcc 伺服器功能的主機。這將需要先測試該遠端伺服器是否符合特定的 
+<c>CHOST</c> 設定，以便讓跨平台編譯簡單些。
+</p>
+
+<p>
+直到我們找到一個更正式的家以前，該 perl 腳本會存放在 
+<uri link="http://dev.gentoo.org/~lisa/distcc/distcc-subnetscan/distcc-subnetscan.pl">這裡</uri>。
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
