@@ -118,7 +118,7 @@ def create_pkg_db(db):
                         description=string.replace(description,'&','&amp;')
                         description=string.replace(description,'<','&lt;')
                         description=string.replace(description,'>','&gt;')
-                        description=re.sub('[-a-zA-z\.0-9]+\@[-a-zA-z\.0-9]+','<mail link="\1">\1</mail>',description)
+                        description=re.sub("([a-zA-Z0-9]+[-a-zA-Z0-9\.]*\@[-a-zA-Z0-9]+\.[-a-zA-Z0-9\.]*[a-zA-Z])","<mail link=\"\\1\">\\1</mail>",description)
                         db[mysplit[0]][PN]['description'] = description
                 else:
                         db[mysplit[0]][PN]['description'] = "No DESCRIPTION !!!!!"
@@ -129,7 +129,7 @@ def create_pkg_db(db):
                 if license_mo != None:
                         db[mysplit[0]][PN]['license']   = license_mo.group(1)
                 else:
-                        db[mysplit[0]][PN]['license']   = "No Licesne Specified"
+                        db[mysplit[0]][PN]['license']   = "No License Specified"
 
                 #####################
                 # Get the homepage
@@ -269,7 +269,7 @@ for category in fsort(db.keys()):
         if not os.path.exists(workdir):
                 os.makedirs(workdir)
 
-        for pkg in db[category].keys():
+        for pkg in fsort(db[category].keys()):
                 pkg_desc_dir = workdir #+ "/" +pkg
                 if not os.path.exists(pkg_desc_dir):
                         os.makedirs(pkg_desc_dir)
@@ -294,7 +294,7 @@ for category in fsort(db.keys()):
                                 <th>Version</th>
                                 </tr>"""
                 out.write(tableheader)
-                for pkgname in db[category].keys():
+                for pkgname in fsort(db[category].keys()):
                         entry="""<tr>
                                 <ti><uri link=\"/packages/"""+category+"/"+pkgname+".html\">"+pkgname+"""</uri></ti>
                                 <ti>"""+db[category][pkgname]["version"]+"</ti></tr>"
