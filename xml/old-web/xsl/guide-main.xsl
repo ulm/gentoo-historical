@@ -328,6 +328,18 @@ of your sale will go towards further Gentoo Linux development.</p>
 						<!--<table width="90%" height="100%" cellspacing="0" cellpadding="5" border="0">-->
 						<tr><td valign="top">
 						<p class="altmenu">
+						Recent Gentoo Linux news:<br/>
+						<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]">
+						<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
+						<a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/>
+						</xsl:for-each>
+						<br/><br/>
+						Recent Other News:<br/>
+						<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]">
+						<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
+						<a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/>
+						</xsl:for-each>
+						<br/><br/>
 						Download Mirrors:<br/>
 							<a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/>
 							<a class="altlink" href="http://gentoo.latinux.org">latinux.org (Venezuela)</a><br/>
@@ -369,30 +381,7 @@ User Docs:<br/>
 					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<center>
-							<table cellpadding="4" border="0" width="100%">
-							<tr><td valign="top">
-							<img src="/images/gentoo-new.gif"/>
-							</td><td class="altmenu" valign="top">
-							Recent Gentoo Linux news<br/>
-							<ul>
-							<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]">
-							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
-							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
-							</xsl:for-each>
-							</ul>
-							</td><td class="altmenu" valign="top">
-							Recent Other News<br/>
-							<ul>
-							<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]">
-							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
-							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
-							</xsl:for-each>
-							</ul>
-							</td></tr>
-							</table>
-							</center>
-							<br/>
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="/images/gentoo-new.gif"/></td></tr></table><br/>
 							<xsl:for-each select="newsitems/news[position()&lt;10]">
 							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
 							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
