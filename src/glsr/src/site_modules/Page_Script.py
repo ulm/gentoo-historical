@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.7 2004/11/04 19:02:44 port001 Exp $
+# $Id: Page_Script.py,v 1.8 2004/12/15 00:31:42 hadfield Exp $
 #
 
 import Config
@@ -30,7 +30,8 @@ class Page_Script(SiteModule):
         if self.script_id == "0":
             self.parent_script_id = self.form.getvalue("parent_script_id", "0")
         else:
-            script_obj = Script.SubScript(self.script_id)
+            parent_obj = Script.Script(self.script_id)
+            script_obj = Script.SubScript(parent_obj.RecentSub())
             self.parent_script_id = script_obj.GetParentID()
 
         if self.form.has_key("save_script"):

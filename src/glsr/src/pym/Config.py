@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.12 2004/11/14 23:34:23 port001 Exp $
+# $Id: Config.py,v 1.13 2004/12/15 00:31:42 hadfield Exp $
 #
 
 __modulename__ = "Config"
@@ -26,7 +26,7 @@ MySQL = {
     }
 
 t_prefix = "/usr/local/share/glsr/templates/"
-#t_prefix = "/var/www/buffmuthers.com/htdocs/projects/glsr/templates/"
+#t_prefix = "/var/www/localhost/htdocs/glsr/templates/"
 
 Template = {
     "test":                     t_prefix + "test.tpl",
@@ -62,13 +62,11 @@ Memcache = False # Not supported yet
 
 Logging = True
 LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
-#LogFile = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/glsr.log"
 
 Debug = True
 
 ErrorReporting = True
 ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
-#ErrorReportLog = "/var/www/buffmuthers.com/htdocs/projectsglsr/log/error_reports.log"
 
 # Default report list offset
 ErrorReportListOffset = 5

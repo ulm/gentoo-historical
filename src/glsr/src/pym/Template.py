@@ -3,284 +3,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.6 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Template.py,v 1.7 2004/12/15 00:31:42 hadfield Exp $
 #
 
-"""
-The template handler module.
-"""
+"""The template handler module.
 
-import string
-import re
-import types
-
-from Logging import err
-
-__modulename__ = "Template"
-
-class Template:
-    """Template handler class."""
-
-    def __init__(self):
-        
-        self._template_name = ""
-        self._contents = []
-        self._output = []
-        self._loops = {}
-        self._terms = {}
-
-    def _read(self):
-        """Load the content of the template file into self.contents."""
-        
-        try:
-            self._contents = open(self._template_name, "r").readlines()
-            
-        except IOError, errmsg:
-            raise TemplateError, errmsg
-
-        return self._contents
-	
-    def clear(self):
-        """Re-initializes all of the template variables."""
-        
-        self._template_name = ""
-        self._contents = []
-        self._output = []
-	
-    def _process_loops(self, file_content, loops):
-        """Processes all top level loops.
-        
-        Returns 'file_content' with all loops processed.
-        """
-        
-        return self._process_tags(file_content, loops, "LOOP",
-                                  lambda x,y: self._process_loop(x, y))
-
-    def _process_ifs(self, file_content, terms):
-        """Process all IF tags."""
-        
-        return self._process_tags(file_content, terms, "IF",
-                                  lambda x,y: self._process_if(x, y))
-
-    def _process_tags(self, file_content, terms, tag, function):
-        """Replaces all variables in file_content with their actual value."""
-        
-        tag_open = "{%s " % tag
-        tag_close = "{!%s}" % tag
-
-        working_file = file_content
-        start = string.find(working_file, tag_open)
-        
-        while (start != -1):
-            
-            # Find the end of the tag
-            end = self._find_tag_close(working_file[start + len(tag_open):], 0,
-                                      tag) + start + len(tag_open)
-
-            # Process that tag
-            tag_content = function(working_file[start + len(tag_open):end],
-                                   terms)
-
-            working_file = (working_file[:start] + tag_content +
-                            working_file[end + len(tag_close):])
-
-            # Find the beginning of the next loop
-            start = string.find(working_file, tag_open)
-
-
-        return working_file
-
-    def _find_tag_close(self, file_content, nest, tag):
-        """Recursively finds/returns the location of the matching {!TAG}."""
-        
-        tag_open = "{%s " % tag
-        tag_close = "{!%s}" % tag
-
-        next_open = string.find(file_content, tag_open)
-        next_close = string.find(file_content, tag_close)
-
-        if next_close < next_open or next_open == -1:
-            
-            # No new loops were found
-            if nest == 0:
-                # Yay! We found the final loop closing tag
-                return next_close
-            else:
-                # A nested !loop found, decrement the nest count
-                start = next_close + len(tag_close)
-                return start + self._find_tag_close(file_content[start:],
-                                                   nest - 1, tag)
-            
-        else:
-            
-            # A new nested loop found, increment the nest count.
-            start = next_open + len(tag_open)
-            return start + self._find_tag_close(file_content[start:],
-                                               nest + 1, tag)
-
-    def _process_loop(self, file_content, loops):
-        """Returns the content inside the loop (after processing).
-
-        It expects 'file_content' to be the content between (exlusively)
-        '{LOOP ' and '{!LOOP}'.
-        The nested-most loop is processed first.
-        """
-
-        # loop_name is the loop tag name
-        loop_name = file_content[:string.find(file_content, "}")].strip()
-
-        # loop_text is the content within the {LOOP}{!LOOP} tags.
-        loop_text = file_content[string.find(file_content, "}") + 1:]
-
-        next_open = string.find(file_content, "{LOOP ")
-        if next_open != -1:
-            # A nested LOOP exists, so recurse futher.
-            loop_text = self._process_loops(loop_text, loops)
-
-        # No more nested loops, so we can process this one.
-        if loop_name not in loops.keys():
-            raise TemplateError, "Loop %s is not defined." % loop_name
-
-        # FIXME:
-        # The following four statements are used for finding and replacing
-        # tags within the IF tag (i.e. {IF TAG1 == TAG2}).
-        # This is *very* hard to read and really needs to be cleaned up.
-
-        # regx for {IF VAR1 == literal_string}
-        std_if = re.compile(
-            '({IF +)([\w\-_"\']+)( *[!=<>]+ *)([\w\-_"\']+)( *})')
-        
-        # regx for {IF LOOP1.var1 == literal_string}
-        complex_if = re.compile('({IF +)([\w\-_"\']+.[\w\-_"\']+)' +
-                                '( *[!=<>]+ *)([\w\-_"\']+.[\w\-_"\']+)( *})')
-
-        # Note: Because repl_func and repl_func2 are called within the 'for'
-        # loop below the 'i' and loop_index are actually valid variables.
-        repl_func = lambda x: (re.sub('([ !=<>]+)%s|%s([ !=<>]+)' %
-                                      (loop_name, loop_name),
-                                      "\\1%s" % loops[loop_name][i],
-                                      x.group()))
-        
-        repl_func2 = lambda x: (
-            re.sub('([ !=<>]+)%s.%s|%s.%s([ !=<>]+)' %
-                   (loop_name, loop_index, loop_name, loop_index), "\\1%s" %
-                   loops[loop_name][i][loop_index], x.group()))
-
-        loop_str = ""
-        for i in range(0, len(loops[loop_name])):
-            """This loop does the actual tag replacement with the
-            appropriate values."""
-
-            tmp_text = loop_text
-            dot = tmp_text.find("{%s." % loop_name)
-            match_obj = None
-            
-            if dot == -1:
-                # If a {loop_name. string wasn't found, look for {IF loopname.
-                match_obj = re.search('({IF +)(%s.)([\w\-_"\']+)' %
-                                      loop_name, tmp_text)
-            
-            while dot != -1 or match_obj is not None:
-                """Replace all multi-dimensional loop tags."""
-
-                if dot != -1:
-                    start = dot + len(loop_name) + 2
-                    end = tmp_text.find("}", start)
-
-                else:
-                    start = tmp_text.find(match_obj.group(0)) + \
-                            len(match_obj.group(1)) - 1 + \
-                            len(match_obj.group(2)) + 1
-
-                    end = start + len(match_obj.group(3))
-
-                loop_index = tmp_text[start:end].strip()
-                inner_val = loops[loop_name][i][loop_index]
-
-                new_text = tmp_text.replace("{%s.%s}" %
-                                            (loop_name, loop_index),
-                                            "%s" % inner_val)
-                
-                # Replace and tags.index within the {IF } tag
-                new_text = complex_if.sub(repl_func2, new_text)
-
-                # Adjust the position accordingly
-                # Evaluate the new start position by subtracting (len(tmp_text)
-                # - len(new_text)) (which should put us to the start
-                # of the inserted variable) and then add then length of the
-                # inserted variable to that.
-
-                start -= (len(tmp_text) - len(new_text)) + len(str(inner_val))
-                tmp_text = new_text
-
-                dot = tmp_text.find("{%s." % loop_name, start)
-            
-                if dot == -1:
-                    match_obj = re.search('({IF +)(%s.)([\w\-_"\']+)' %
-                                          loop_name, tmp_text)
-
-            # Replace and tags within the {IF } tag
-            tmp_text = std_if.sub(repl_func, tmp_text)
-
-            # This is to replace simple loops.
-            loop_str = (loop_str +
-                        tmp_text.replace("{%s}" % loop_name,
-                                         "%s" % loops[loop_name][i]))
-        
-        return loop_str
-
-    def _process_if(self, file_content, terms):
-        """Returns the processed {IF}{!IF} text.
-
-        file_content contains everything between '{IF' and '{!IF}'.
-        """
-        
-        next_open = string.find(file_content, "{IF ")
-
-        if_text = file_content[string.find(file_content, "}") + 1:]
-
-        if next_open != -1:
-            if_text = self._process_ifs(if_text, terms)
-
-        # Find any else's
-        else_text = ""
-        else_pos = if_text.find("{ELSE}")
-        if else_pos != -1:
-            else_text = if_text[else_pos + 6:]
-            if_text = if_text[:else_pos]
-
-
-        stmt = file_content[:file_content.find("}")].strip()
-        tag = stmt[:stmt.find(" ")]
-
-        # Set the operator
-        oper = stmt[stmt.find(" "):].strip(" ")
-        oper = oper[:oper.find(" ")].strip()
-
-        def setVal(val):
-            """Sets the appropriate literal value for a term."""
-            
-            if val not in terms.keys():
-                return val.strip("\"' ")
-            else:
-                return "%s" % terms[val]
-
-        # Set the value to the right of the operator
-        valueR = setVal(stmt[string.rfind(stmt, " "):].strip())
-
-        # Set the value to the left of the operator
-        valueL = setVal(tag)
-
-        if ((oper == "==" and valueL == valueR) or
-            (oper == "!=" and valueL != valueR) or
-            (oper == "<" and int(valueL) < int(valueR)) or
-            (oper == ">" and int(valueL) > int(valueR))):
-            return if_text
-        else:
-            return else_text
-
-    def compile(self, template_name, terms = None, loops = None):
-        """Processes the template.
         
         'terms' should be a dictionary of {TAG: value} pairs where value
         will replace the text {TAG} in the specified template file.
@@ -302,8 +29,104 @@ class Template:
           ==  !=  >
 
         Note: Everything is case sensitive
+
+"""
+
+import string
+import re
+import types
+
+from Logging import err
+
+__modulename__ = "TemplateNG"
+
+class Template:
+    """Template handler class."""
+
+    def __init__(self):
+        
+        self._template_name = ""
+        self._contents = []
+        self._output = []
+        self._loops = {}
+        self._terms = {}
+        
+        # These are the template languages keywords. You can't have a parameter
+        # with the same name as a keyword.
+        self._keywords = ("ELSE",)
+
+        # The standard regex to match template variables. This should match
+        # all alphanumeric strings with potentially embedded .'s (dot).
+        self._var_regex = r'\w+(?:\.\w+)?\w*'
+
+        # The literal regex to match strings and digits
+        self._literal_regex = r'"[^"]*"|"?\d+"?'
+
+    def _read(self):
+        """Load the content of the template file into self.contents."""
+        
+        try:
+            self._contents = open(self._template_name, "r").readlines()
+            
+        except IOError, errmsg:
+            raise TemplateError, errmsg
+
+        return self._contents
+	
+    def clear(self):
+        """Re-initializes all of the template variables."""
+        
+        self._template_name = ""
+        self._contents = []
+        self._output = []
+	
+    def _sub(self, variable, repl_text, values, index = -1):
+        """Substitute all occurences of 'variable' in repl_text with the value.
+
+        The value is obtained by evaluating 'variable' against 'values'. Values
+        might be self._terms or self._loops. 'index' is used during loops to
+        define what loop iteration we're on and return the appropriate array
+        value.
         """
 
+        dot_loc = variable.find(".")
+        if dot_loc != -1 and values.has_key(variable[:dot_loc]):
+
+            param_name = variable[:dot_loc]
+            # This will build a "python compatible" list to access the dict
+            # i.e. ['var1']['var2']
+            rest = "['%s']" % variable[dot_loc + 1:].replace(".", "']['")
+
+            if index != -1:
+                rest = "[%s]" % index + rest
+
+            #value = eval("%s%s" % (values[param_name], rest))
+            value = eval("values[param_name]%s" % rest)
+
+            # Convert value to a string and then do the replace.
+            repl_text = repl_text.replace("{%s}" % variable, "%s" % value)
+            
+        elif values.has_key(variable):
+
+            if index == -1:
+                repl_text = repl_text.replace("{%s}" % variable,
+                                              "%s" % values[variable])
+            else:
+                repl_text = repl_text.replace("{%s}" % variable,
+                                              "%s" % values[variable][index])
+
+        return repl_text
+        
+    def compile(self, template_name, terms = None, loops = None):
+        """Processes the template.
+
+        This includes 4 steps, stripping out the comments, replacing all
+        simple variables (i.e. {VAR} or {VAR.sub1}), evaluating all LOOPs,
+        and evaluating all IFs.
+        """
+
+        import re
+        
         self._template_name = template_name
         self._read()
 
@@ -315,35 +138,261 @@ class Template:
 
         full_file = string.join(self._contents);
 
-        # Process all non LOOP, non IF tags
-        for term in self._terms.keys():
+        # Strip out all comments
+        full_file = re.sub(r'(?s)\{\*.*?\*\}', '', full_file)
 
-            # Convert all dict terms
-            if type(self._terms[term]) == types.DictType:
-                for index in self._terms[term].keys():
-                    full_file = string.replace(full_file, "{%s.%s}" %
-                                               (term, index), "%s" %
-                                               (self._terms[term][index]))
+        # Process all variable tags (i.e. non LOOP, non IF tags)
+        full_file = self._evaluate_vars(full_file)
 
-            # Convert all simple terms
-            else:
-                full_file = string.replace(full_file, "{%s}" % term,
-                                           "%s" % self._terms[term])
+        # Evaluate all LOOPs and their nested IFs
+        full_file = self._evaluate_loops(full_file)
 
-        # Process all LOOP tags
-        full_file = self._process_loops(full_file, self._loops)
+        # Evaluate the rest of the IFs that weren't in any loops
+        full_file = self._evaluate_ifs(full_file)
 
-        # Process all IF tags
-        full_file = self._process_ifs(full_file, self._terms)
-        
+        # Build the output variable
         self._output = string.split(full_file, "\n")
 
+    def _evaluate_vars(self, content):
+        """Evaluate all variable tags."""
+        
+        # This regex will find all parameters that are of the form:
+        # {VAR} or {VAR.var} or {VAR.var1.var2} or ...
+        variables = re.findall(r'\{((?:%s)+)\}' % self._var_regex, content)
+        variables = filter(lambda x: x not in self._keywords, variables)
+
+        for variable in variables:
+            content = self._sub(variable, content, self._terms)
+
+        return content
+
+    def _evaluate_loops(self, content):
+        """Evaluate all LOOPs."""
+        
+        # This regex will return pairs of ('LOOP_NAME', 'LOOP_CLOSE')
+        # However, each pair will only contain either the LOOP_NAME or
+        # LOOP_CLOSE because of the '|' in the re. This way we know how many
+        # nested loops there will be before the valid loop close.
+        # i.e. [('LOOP_NAME1', ''), ('LOOP_NAME2', ''), ('', 'LOOP'),
+        #       ('', 'LOOP')]
+        # tells use we have a loop that looks something like the following:
+        # {LOOP LOOP_NAME1} {LOOP LOOP_NAME2} {!LOOP} {!LOOP}
+
+        loops = re.findall(r'(?s)\{LOOP (%s)\}|\{!(LOOP)\}' % self._var_regex,
+                           content)
+
+        # This marks a closed loop
+        loop_close = ('', 'LOOP')
+        
+        loop_array = self._build_nest_count(content, loops, loop_close, "LOOP")
+
+        # Note that every time a loop is evaluated, all other loops' starting
+        # positions need to be re-evaluated.
+        for i in range(0, len(loop_array)):
+            
+            loop = loop_array[i]
+            content_start_len = len(content)
+            
+            # FIXME: Throw exception if find returns -1
+            start_pos = loop["char_pos"]
+            end_pos = content.find("{!LOOP}", start_pos)
+            loop_text = content[start_pos + len("{LOOP %s}" % loop["expr"]):
+                                  end_pos]
+            
+            # Cut out the loop text from the full file text
+            content = content[:start_pos] + content[end_pos + 7:]
+
+            dot_loc = loop["expr"].find(".")
+            if dot_loc == -1 and self._loops.has_key(loop["expr"]):
+                var_name = loop["expr"]
+            else:
+                continue
+
+            evaluated_text = ""
+            for j in range(0, len(self._loops[var_name])):
+
+                variables = re.findall(r'\{((?:%s)+)\}' % self._var_regex,
+                                       loop_text)
+                variables = filter(lambda x: x not in self._keywords,
+                                   variables)
+                
+                repl_text = loop_text
+
+                for variable in variables:
+                    repl_text = self._sub(variable, repl_text, self._loops, j)
+
+                    # We also have to evaluate all if tags within the loop at
+                    # this point
+                    repl_text = self._evaluate_ifs(repl_text, j)
+                    
+                evaluated_text += repl_text
+
+            # Insert the evaluated text
+            content = (content[:start_pos] + evaluated_text +
+                       content[start_pos:])
+
+            loop_array = self._calibrate(content, content_start_len,
+                                         loop_array, i)
+
+        return content
+    
+    def _evaluate_ifs(self, content, index = -1):
+        """Evaluate all IFs."""
+
+        var_expr = r'(?:%s|%s)' % (self._var_regex, self._literal_regex)
+        expr_regex = r'%s (?:==|!=|<|>) %s' % (var_expr, var_expr)
+
+        # See _evaluate_loops for a comment on how this expression works.
+        ifs = re.findall(r'(?s)\{IF (%s)\}|\{!(IF)\}' % expr_regex, content)
+        if_close = ('', 'IF')
+
+        if_array = self._build_nest_count(content, ifs, if_close, "IF")
+
+        # Now do the evaluation.
+        for i in range(0, len(if_array)):
+
+            cur_if = if_array[i]
+            content_start_len = len(content)
+
+            # FIXME: Throw exception if find returns -1
+            start_pos = cur_if["char_pos"]
+            end_pos = content.find("{!IF}", start_pos)
+            if_text = content[start_pos + len("{IF %s}" % cur_if["expr"]):
+                              end_pos]
+            else_text = ""
+
+            else_start_pos = if_text.find("{ELSE}")
+            if else_start_pos != -1:
+                else_text = if_text[else_start_pos + len("{ELSE}"):]
+                if_text = if_text[:else_start_pos]
+
+            # Evaluate the expression:
+            if self._evaluate_expr(cur_if["expr"], index):
+                new_text = if_text
+            else:
+                new_text = else_text
+
+            content = (content[:start_pos] + new_text +
+                       content[end_pos + len("{!IF}"):])
+
+            if_array = self._calibrate(content, content_start_len, if_array, i)
+
+        return content
+
+    def _calibrate(self, content, content_start_len, region_array, index):
+        """Calibrate the starting character positions for a set of regions.
+
+        This is required because once an IF or LOOP is processed the number
+        of characters for the output changes meaning that our region starting
+        positions will all be offset.
+        """
+
+        difference = len(content) - content_start_len
+        for j in range(index, len(region_array)):
+            if region_array[j]["char_pos"] > region_array[index]["char_pos"]:
+                region_array[j]["char_pos"] += difference
+        
+        return region_array
+
+    def _build_nest_count(self, content, regions, region_close, region_str):
+        """Generates an array of (region, nest) pairs.
+
+        Nest is a count of how many nested loops a region has and each
+        region is basically either LOOP, or IF starting position up to 'close'.
+        This data is used for the evaluation order of regions. For example,
+        the least nested loops will always be evaluated first. This eliminates
+        the problem of nested loops by evaluating the inner loops first.
+        The same goes for IF's.
+        """
+    
+        def region_sort(x, y):
+            if x["nested"] < y["nested"]: return -1
+            if x["nested"] > y["nested"]: return 0
+            if x["char_pos"] < y["char_pos"]: return -1
+            if x["char_pos"] > y["char_pos"]: return 0
+            return 1
+        
+        # Count the number of regions by counting the number of region closes
+        num_of_regions = len(filter(lambda x: x != region_close, regions))
+
+        # Now determine which regions have nested regions, and how many nested
+        # regions we have. This will be used to determine processing order.
+        start_pos = 0  # Used for marking the character position of the region.
+        region_array = []
+        for i in range(0, len(regions)):
+
+            # Skip this iteration if it's a region close
+            if regions[i] == region_close:
+                continue
+
+            # Figure out how many sub regions are contained within this region.
+            region_array.append({"expr": regions[i][0], "nested": 0})
+
+            match_str = "{%s %s}" % (region_str, regions[i][0])
+            
+            # Now we want to find the starting position for each region.
+            # Set the char_pos of the current region. Note that we must use -1
+            # here as 'i' isn't valuable due to the skipping of region closes.
+            region_array[-1]["char_pos"] = content.find(match_str, start_pos)
+            
+            # Increment past the {} (i.e. past the {LOOP VARNAME} text)
+            start_pos = region_array[-1]["char_pos"] + len(match_str)
+
+            nest_count = 1
+            for j in range(i + 1, len(regions)):
+
+                if regions[j] != region_close:
+                    region_array[-1]["nested"] += 1
+                    nest_count += 1
+
+                else:
+                    nest_count -= 1
+
+                if nest_count == 0: break
+        
+        region_array.sort(region_sort)
+        return region_array
+
+    def _evaluate_expr(self, expr, index):
+        """Evaluate any boolean expressions.
+
+        expr should contain an operator (i.e. ==, <, >, !=) and this function
+        will return True or False.
+        """
+
+        vars = r'(?:%s|%s)' % (self._var_regex, self._literal_regex)
+        expr_regex = r'(%s) (==|!=|<|>) (%s)' % (vars, vars)
+
+        # FIXME: Raise an exception if match is None here.
+        match = re.search(expr_regex, expr)
+
+        lhs = self._value_of(match.group(1), index)
+        rhs = self._value_of(match.group(3), index)
+        oper = match.group(2)
+
+        return eval("\"%s\" %s \"%s\"" % (lhs, oper, rhs))
+
+    def _value_of(self, var, index):
+        """Returns the literal value of any variable or literal."""
+
+        # If it's surrounded by quotes or all digits then we have a literal
+        if (var[0] == "\"" and var[-1] == "\"") or \
+               re.match(r'^\d*$', var) is not None:
+            value = var.strip("\"")
+        
+        else:
+            value = self._sub(var, "{%s}" % var, self._terms)
+            if value == "{%s}" % var:
+                value = self._sub(var, "{%s}" % var, self._loops, index)
+
+        return value
 
     def param(self, key, value, param_type = "term"):
         """Add a new parameter, either a 'loop' or a 'term'."""
         
         if string.lower(param_type) in ("l", "loop"):
             self._loops.update({key: value})
+        
         elif string.lower(param_type) in ("t", "term"):
             self._terms.update({key: value})
 

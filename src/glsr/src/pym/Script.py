@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Script.py,v 1.5 2004/12/15 00:31:42 hadfield Exp $
 #
 
 __modulename__ = "Script"
@@ -27,38 +27,6 @@ class Script(Parent):
 
         details.update({"rank": 0})
         return Parent.Create(self, details, (("submitter_id", "name"),))
-
-#     def CreateSub(self, parent_id, details):
-#         """Add a new subscript"""
-
-#         if not parent_id or parent_id == "0":
-#             err("Invalid Parent ID", __modulename__)
-#             return False
-        
-#         self.tablename = Config.MySQL["subscript_table"]
-
-#         details.update({"date":  strftime("%Y-%m-%d", gmtime())})
-#         retval = Parent.Create(self, details)
-        
-#         self.tablename = Config.MySQL["script_table"]
-#         return retval
-
-#     def ModifySub(self, script_id, parent_id, details):
-#         """Add a new subscript."""
-
-#         if not details["parent_id"] or details["parent_id"] == "0":
-#             err("Invalid Parent ID", __modulename__)
-#             return False
-
-#         self.tablename = Config.MySQL["subscript_table"]
-#         self.SetID(script_id)
-        
-#         details.update({"date":  strftime("%Y-%m-%d", gmtime()),
-#                         "approved": 0})
-#         retval = Parent.Modify(self, details)
-        
-#         self.tablename = Config.MySQL["script_table"]
-#         return retval
             
     def ListSubs(self, constraint = None):
         """Returns a list of all subscripts."""
@@ -72,6 +40,20 @@ class Script(Parent):
 
         return retval
 
+    def RecentSub(self):
+        """Returns the id of the most recent (i.e. current) subscript."""
+        
+        results = MySQL.Query(
+            "SELECT subscript_id FROM glsr_subscript WHERE " +
+            "subscript_parent_id = %s ORDER BY subscript_date DESC", self.id,
+            fetch="one")
+
+        if results != None:
+            return results["subscript_id"]
+        else:
+            return None
+            
+        
     def ListScripts(self, script_restrict = None, subscript_restrict = None):
         """Returns a list of each script combined with its most recent
         subscript."""
@@ -204,7 +186,6 @@ class Script(Parent):
                 qStr = qStr + self.__mk_query_str(key, Terms)
         
         return qStr
-
 
 
 
