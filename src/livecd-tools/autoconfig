@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2002 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.8 2004/11/18 23:41:33 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.9 2004/11/19 16:11:24 wolf31o2 Exp $
 
 echo "0" > /proc/sys/kernel/printk
 DHCP="yes"
@@ -11,33 +11,33 @@ HOTPLUG="yes"
 APM="no"
 ACPI="no"
 CMDLINE="`cat /proc/cmdline`"
-for x in $CMDLINE ; do
-	if [ "$x" = "nodetect" ]; then
+for x in ${CMDLINE} ; do
+	if [ "${x}" = "nodetect" ]; then
 		DETECT="no"
 		HOTPLUG="no"
 		APM="no"
 		ACPI="no"
 	fi
 
-	if [ "$x" = "nodhcp" ]; then
+	if [ "${x}" = "nodhcp" ]; then
 		DHCP="no"
 	fi
 
-	if [ "$x" = "dopcmcia" ]; then
+	if [ "${x}" = "dopcmcia" ]; then
 		PCMCIA="yes"
 	fi
 	
-	if [ "$x" = "doapm" ]; then
+	if [ "${x}" = "doapm" ]; then
 		APM="yes"
 		ACPI="no"
 	fi
 
-	if [ "$x" = "acpi=on" ]; then
+	if [ "${x}" = "acpi=on" ]; then
 		APM="no"
 		ACPI="yes"
 	fi
 
-	if [ "$x" = "nohotplug" ]; then
+	if [ "${x}" = "nohotplug" ]; then
 		HOTPLUG="no"
 	fi
 done
@@ -47,29 +47,28 @@ depend() {
 }
 
 start() {
-	if [ "$DETECT" = "yes" ]; then
-		ebegin $WARN"Hardware detection started"
-		PC=`awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
-		ebegin $GOOD"$PC"
+	if [ "${DETECT}" = "yes" ]; then
+		ebegin ${WARN}"Hardware detection started"
+		PC=`awk -F: '/^processor/{printf "Processor"${2}" is"};/^model name/{printf ${2}};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int(${2})};/^cache size/{printf ","${2}" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
+		ebegin ${GOOD}"${PC}"
 		eend		
 		[ -x /usr/sbin/hwsetup ] && hwsetup -p >/dev/null
 		eend
 	else
-		ebegin $WARN"Hardware detection disabled via cmdline$NORMAL"
+		ebegin ${WARN}"Hardware detection disabled via cmdline$NORMAL"
 	fi
 
-	if [ "$APM" = "yes" ]; then
-		insmod apm power_off=1 >/dev/null 2>&1 && ebegin $GOOD"APM BIOS found, power management functions enabled.$NORMAL"
+	if [ "${APM}" = "yes" ]; then
+		insmod apm power_off=1 >/dev/null 2>&1 && ebegin ${GOOD}"APM BIOS found, power management functions enabled.${NORMAL}"
 		/etc/init.d/apmd start
 	else
-		ebegin $GOOD"Not Loading APM Bios support.${NORMAL}"
+		ebegin ${GOOD}"Not Loading APM Bios support.${NORMAL}"
 		eend
 	fi
 
-	if [ "$ACPI" = "yes" ]; then
-		insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
+	if [ "${ACPI}" = "yes" ]; then
+		insmod processor >/dev/null 2>&1 && ebegin ${GOOD} ACPI power management functions enabled.${NORMAL} && insmod thermal >/dev/null
 		insmod fan >/dev/null
-		insmod thermal >/dev/null
 		insmod button >/dev/null
 		insmod battery >/dev/null
 		insmod ac >/dev/null
@@ -77,28 +76,32 @@ start() {
 		eend
 	fi
 
-	if [ "$PCMCIA" = "yes" ]; then
-		ebegin $HILITE "PCMCIA enabled via cmdline"
+	if [ "${PCMCIA}" = "yes" ]; then
+		ebegin ${HILITE} "PCMCIA enabled via cmdline"
 		/etc/init.d/pcmcia start
 	fi
 
-	if [ "$DHCP" = "no" ]; then
-		sed -i 's/iface_eth0="dhcp"/#iface_eth0="dhcp"/' /etc/conf.d/net
-		ebegin $BAD"Skipping DHCP broadcast detection as requested on boot commandline."
+	if [ "${DHCP}" = "no" ]; then
+		sed -i -e 's/ifconfig_eth0=( "dhcp" )/#ifconfig_eth0=( "dhcp" )/' \
+		sed -i -e 's/ifconfig_eth1=( "dhcp" )/#ifconfig_eth1=( "dhcp" )/' \
+		sed -i -e 's/ifconfig_eth2=( "dhcp" )/#ifconfig_eth2=( "dhcp" )/' \ 
+		sed -i -e 's/ifconfig_eth3=( "dhcp" )/#ifconfig_eth3=( "dhcp" )/' \ 
+		/etc/conf.d/net
+		ebegin ${BAD}"Skipping DHCP broadcast detection as requested on boot commandline."
 	fi
 
 	#Read in what hwsetup has found
 	[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
 
 	# Mouse
-	if [ -n "$MOUSE_DEVICE" ]; then
-		ebegin $GOOD"Mouse is $HILITE$MOUSE_FULLNAME$GOOD at $HILITE$MOUSE_DEVICE$NORMAL"
+	if [ -n "${MOUSE_DEVICE}" ]; then
+		ebegin ${GOOD}"Mouse is ${HILITE}${MOUSE_FULLNAME}${GOOD} at ${HILITE}${MOUSE_DEVICE}${NORMAL}"
 		source /etc/sysconfig/mouse
 		[ -x /usr/sbin/gpm ] && gpm -m "${MOUSE_DEVICE}" -t "${MOUSETYPE}"
 		eend
 	fi
 
-	if [ "$HOTPLUG" = "yes" ]; then
+	if [ "${HOTPLUG}" = "yes" ]; then
 		#Check whether we should be using hotplug or coldplug
 		if [ -x /etc/init.d/coldplug ]; then
 			/etc/init.d/coldplug start
@@ -106,36 +109,36 @@ start() {
 			/etc/init.d/hotplug start
 		fi
 	else
-		ebegin $BAD"Hotplug disabled via cmdline$NORMAL"
+		ebegin ${BAD}"Hotplug disabled via cmdline${NORMAL}"
 	fi
 
-	if [ "$DETECT" = "no" ]; then
+	if [ "${DETECT}" = "no" ]; then
 		DHCP="no"
 	fi
 
-	if [ "$DETECT" = "yes" ]; then
-		NETDEVICES="`awk -F: '/eth.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null`"
+	if [ "${DETECT}" = "yes" ]; then
+		NETDEVICES="`awk -F: '/eth.:|tr.:/{print ${1}}' /proc/net/dev 2>/dev/null`"
 	fi
 
-	if [ -n "$NETDEVICES" ]; then
+	if [ -n "${NETDEVICES}" ]; then
 		if [ "${DHCP}" = "yes" ]; then
-			ebegin $GOOD"Network device$HILITE$NETDEVICES$GOOD detected,$WARN DHCP broadcasting for IP.$NORMAL"
+			ebegin ${GOOD}"Network device${HILITE}${NETDEVICES}${GOOD} detected,${WARN} DHCP broadcasting for IP.${NORMAL}"
 			dhcpcd &
 		fi
 		eend
 
 	else
-		ebegin $BAD"No Network device auto detected.$NORMAL"
+		ebegin ${BAD}"No Network device auto detected.${NORMAL}"
 	fi
 
 
-	if [ -n "$SOUND_FULLNAME" -o -n "$SOUND_DRIVER" ]; then
-		ebegin $GOOD"Soundcard:"
+	if [ -n "${SOUND_FULLNAME}" -o -n "${SOUND_DRIVER}" ]; then
+		ebegin ${GOOD}"Soundcard:"
 		eend
-		[ -n "$SOUND_FULLNAME" ] 
-		ebegin "              $WARN$SOUND_FULLNAME"
-		[ -n "$SOUND_DRIVER" ] 
-		ebegin $WARN"              driver = $SOUND_DRIVER"$HILITE
+		[ -n "${SOUND_FULLNAME}" ] 
+		ebegin "              ${WARN}${SOUND_FULLNAME}"
+		[ -n "${SOUND_DRIVER}" ] 
+		ebegin ${WARN}"              driver = ${SOUND_DRIVER}"${HILITE}
 		if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]; then
 			amixer scontrols > /etc/amixer
 			[ -n "`grep Master /etc/amixer`" ] && amixer -q set Master 75% \
@@ -152,8 +155,8 @@ start() {
 	fi
 
 
-	if [ -n "$XDESC" -o -n "$XDESC" ]; then
-        ebegin $GOOD"VideoCard:   $WARN ${XDESC}"
+	if [ -n "${XDESC}" -o -n "${XDESC}" ]; then
+        ebegin ${GOOD}"VideoCard:   ${WARN} ${XDESC}"
         eend
 	fi
 
