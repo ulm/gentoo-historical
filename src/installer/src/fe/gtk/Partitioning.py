@@ -21,7 +21,7 @@ class Panel(GLIScreen.GLIScreen):
 	active_part_start_cyl = 0
 	active_part_minor = 0
 	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
-	supported_filesystems = ['ext2', 'ext3', 'reiserfs', 'linux-swap', 'fat32', 'ntfs']
+	supported_filesystems = ['ext2', 'ext3', 'linux-swap', 'fat32', 'ntfs']
 
 	def __init__(self, controller, parent):
 		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
@@ -113,7 +113,7 @@ resize partitions.
 		# This builds the color key at the bottom
 		color_codes = [ { 'label': "Swap", 'color': '#12ff99' },
                                 { 'label': "Ext2/3", 'color': '#0af2fe' },
-                                { 'label': "ReiserFS", 'color': '#e9f704' },
+#                                { 'label': "ReiserFS", 'color': '#e9f704' },
                                 { 'label': "FAT", 'color': '#3d07f9' },
                                 { 'label': "NTFS", 'color': '#f20600' },
                                 { 'label': "Other", 'color': '#ed03e0' },
