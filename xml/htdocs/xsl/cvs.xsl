@@ -3,6 +3,7 @@
 <xsl:output encoding="iso-8859-1" method="xml" indent="yes"/>
 
 <xsl:template match="/changelog">
+	<xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
 	<mainpage id="changelog">
 	<title>Gentoo Linux Development Changelog for <xsl:value-of select="entry/date"/></title>
 	<author title="script">cvs-xml.xsl</author>
