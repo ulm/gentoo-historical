@@ -432,7 +432,7 @@
 							To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
 				</td>
 			    -->
-			    <td valign="middle"><b>We encourage our european friends to make up their mind on a <a href="http://swpat.ffii.org/">proposed software patents legislation</a> in the European Union which will be voted on September 1st 2003 in the European Parliament.</b></td>
+			    <td valign="middle"><b>We encourage our european friends to make up their mind on a <a href="http://swpat.ffii.org/">proposed software patents legislation</a> in the European Union which will be voted on September 22nd 2003 in the European Parliament.</b></td>
                           </tr>
                         </table>
                         <br/>
