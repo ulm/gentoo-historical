@@ -1,0 +1,549 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/openafs.xml,v 1.1 2004/05/06 13:50:45 mush Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/it/openafs.xml" lang="it">
+<title>Guida ad OpenAFS in Gentoo Linux</title>
+<author title="Redazione">
+  <mail link="darks@gentoo.org">Holger Brueckner</mail>
+</author>
+<author title="Redazione">
+  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+<author title="Redazione">
+  <mail link="blubber@gentoo.org">Tiemo Kieft</mail>
+</author>
+<author title="Traduzione">
+  <mail link="frgrieco@aliceposta.it">Francesco Grieco</mail>
+</author>
+
+
+<abstract>
+Questa guida mostra come installare un server openafs ed un client su gentoo linux 
+</abstract>
+
+<license/>
+
+<version>0.5</version>
+<date>5 Marzo 2004</date>
+
+<chapter>
+  <title>Introduzione</title>
+  <section>
+    <title>Premessa</title>
+    <body>
+      <p>Questo documento descrive tutti i passi necessari all'installazione di un server openafs su Gentoo Linux.
+      Parti di questo documento sono tratte dalla FAQ AFS e dalla guida IBM's Quick Beginnings su AFS.
+      </p>
+    </body>
+  </section>
+  <section>
+    <title>Cos'è AFS ?</title>
+    <body>
+    
+   <p>
+   AFS è un filesystem distribuito che permette ad host cooperanti
+   (client e server) di condividere in maniera efficiente un filesystem
+   attraverso una local o wide area network. I Client mantengono una
+   cache per gli oggetti (file) maggiormente utilizzati, per averne
+   un accesso più rapido.
+   </p>
+   <p>
+   AFS è basato su un filesystem distribuito chiamato "Andrew File System", originariamente
+   sviluppato all'Information Technology Center della Carnegie-Mellon University.
+   "Andrew" era il nome del progetto di ricerca alla CMU, in ricordo del fondatore dell'Università.
+   Fondata la Transarc e divenuto AFS un prodotto, si decise di eliminare il nome "Andrew"
+   al fine di indicare che ormai si era andati oltre il progetto di ricerca
+   universitario. AFS era divenuto un filesystem robusto e di qualità.
+   Tuttavia, essendo ancora esistenti dei nodi (cell) con filesystem del tipo /asf,
+   e, nota la difficoltà dell'epoca nel cambiare il volume root del filesystem,
+   il nome AFS rimase tale.
+   </p> 
+   </body>
+  </section>  
+    <section>
+    <title>Cos'è un nodo (cell) AFS ?</title>
+    <body>
+    <p>
+    Uno nodo (cell) AFS è un insieme di server collegati tra loro che presentano un singolo filesystem.
+    Di solito, un nodo AFS è costituito da host (postazioni) che usano lo stesso dominio Internet
+    ("domain name"), ad esempio gentoo.org.
+    Gli utenti si collegano ai client workstation, i quali richiedono dati e file dai server del nodo per
+    gli utenti stessi. Gli utenti non sapranno su quale server è situato il file a cui stanno accedendo,
+    poichè ogni volume può essere copiato e spostato su di un altro server senza che se ne accorgano.
+    I file sono sempre accessibili.
+   </p>
+    </body>
+  </section>  
+  <section>
+    <title>Che benefici ottengo con l'utilizzo di AFS ?</title>
+    <body>
+    <p>I punti di forza di AFS sono:
+ 
+       abilità di caching (da 100M a 1GB lato client),    
+       caratteristiche di sicurezza (basato su Kerberos 4, con access control list),
+       semplicità di addressing (si ha in pratica un solo filesystem),
+       scalabilità (ulteriore aggiunta di server al nodo in caso di necessità),
+       protocolli di comunicazione.
+    </p>
+    </body>
+  </section>  
+  <section>
+    <title>Dove posso trovare maggiori informazioni ?</title>
+    <body>
+    <p>
+    Leggete la <uri link="http://www.angelfire.com/hi/plutonic/afs-faq.html">FAQ ASF</uri>.
+    </p>
+    <p>
+    Il sito ufficiale di Openafs è <uri link="http://www.openafs.org">www.openafs.org</uri>.
+    </p>
+    <p>
+    AFS è stato originariamente sviluppato dalla Transarc che ora è di proprietà di IBM.
+    Potete trovare maggiori informazioni riguardo AFS sul sito della 
+    <uri link="http://www.transarc.ibm.com/Product/EFS/AFS/index.html">Transarc</uri>.
+    </p>
+    </body>
+  </section>  
+
+</chapter>
+
+<chapter>
+<title>Documentazione</title>
+  <section>
+    <title>Consultare la Documentazione AFS</title>
+    <body>
+    <p>
+    Potete facilmente consultare la Documentazione originale AFS di IBM. E' scritta molto bene e,
+    se devote amministrare un Server AFS, diventa una lettura obbligata.
+    </p>
+<pre>
+# <i>emerge app-doc/afsdoc</i>
+</pre>
+    </body>   
+  </section>
+</chapter>
+
+<chapter> 
+<title>Installazione sul Client</title>
+   <section>
+     <title>Fase Iniziale</title>
+     <body>
+       <note>
+         Tutti i comandi devono essere digitati su una sola linea. Per facilitarne la lettura,
+	 in questo documento alcune volte sono riportati su più linee.
+       </note>
+       <note>
+         Sfortunatamente i Client AFS necessitano di una partizione di tipo ext2 per la loro
+	 cache per funzionare correttamente; ci sono problemi con le partizioni di tipo reiserfs.
+	 La partizione ext2 deve essere di circa 200MB (o più) e va montata in 
+	 <path>/usr/vice/cache</path>
+       </note>
+       <p>
+       Prima di compilare il client afs dovrete modificare i file CellServDB e ThisCell (si trovano in <path>/usr/portage/net-fs/openafs/files</path>).
+       </p>
+ <pre>
+ CellServDB:
+ >netlabs        #Cell name
+ 10.0.0.1        #storage
+ 
+ ThisCell:
+ netlabs       
+ </pre>
+
+ <warn>
+ Usate solo spazi all'interno del file <path>CellServDB</path>. Se usate i TAB, il client
+ andrà sicuramente incontro a problemi.
+ </warn>
+ 
+       <p>
+       Il file CellServDB indica al vostro client quale o quali client ha bisogno
+       di contattare per uno specifico nodo (cell). Il contenuto di ThisCell dovrebbe
+       sembrare ovvio. Normalmente usate un nome che è unico per la vostra azienda.
+       Una buona scelta è data dal vostro dominio (ufficiale).
+       </p>
+     </body>
+   </section>
+   <section>
+     <title>Compilazione lato Client</title>
+     <body>
+<pre>
+# <i>emerge net-fs/openafs</i>
+</pre>
+       <p>
+       Dopo una corretta compilazione siete pronti a proseguire.
+       </p>
+     </body>
+   </section>
+   <section>
+     <title>Esecuzione di afs all'avvio</title>
+     <body>
+       <p>
+       I comandi seguenti creeranno i link appropriati per avviare il vostro client afs durante
+       il boot del sistema.
+       </p>
+       <warn>
+       Dovreste sempre avere un server afs in esecuzione all'interno del vostro dominio quando avviate un client
+       afs. Se il server afs non è attivo (o è down), il vostro sistema non si avvierà e attenderà prima
+       di proseguire, per un tempo relativamente lungo (fino al timeout).
+       </warn>
+<pre>
+# <i>rc-update add afs default</i>
+</pre>
+     </body>
+   </section>
+</chapter>
+
+<chapter>
+<title>Installazione sul Server</title>
+   <section>
+     <title>Compilazione lato Server</title>
+     <body>
+       <p>
+       I comandi seguenti installeranno tutti i binari necessari alla configurazione di un Server AFS
+       <e>e</e> di un Client.
+       </p>
+<pre>
+# <i>emerge net-fs/openafs</i>
+</pre>
+     </body>
+   </section>
+  <section>
+    <title>Avvio del Server AFS</title>    
+    <body>
+      <p>
+      E' necessario prima di tutto cancellare i file di esempio CellServDB e ThisCell.
+      </p>
+<pre>
+# <i>rm /usr/vice/etc/ThisCell</i>
+# <i>rm /usr/vice/etc/CellServDB</i>
+</pre>
+      <p>
+      In seguito dovete eseguire il comando <b>bosserver</b> per inizializzare il Basic OverSeer (BOS) 
+      Server, il quale ha il compito di monitorare e controllare gli altri processi del server AFS.
+      Pensate al BOS come ad un init del sistema. Includete la flag <b>-noauth</b> per disabilitare
+      il controllo delle autorizzazioni, poichè non avete ancora aggiunto l'user admin.
+      </p>
+      <warn>
+      Disabilitando il controllo delle autorizzazioni compromettete temporaneamente la sicurezza 
+      del vostro nodo (cell). 
+      Completate tutti questi sottopassaggi in un unica ininterrotta sessione e
+      non lasciate il sistema incustodito fino al prossimo riavvio del Server BOS con il
+      controllo delle autorizzazioni attivato.
+      </warn>
+<pre>
+# <i>/usr/afs/bin/bosserver -noauth &amp;</i>
+</pre>
+      <p>
+      Controllate che il Server BOS abbia creato i file
+      <path>/usr/vice/etc/CellServDB</path> e <path>/usr/vice/etc/ThisCell</path>
+      </p>
+<pre>
+# <i>ls -al /usr/vice/etc/</i>
+-rw-r--r--    1 root     root           41 Jun  4 22:21 CellServDB
+-rw-r--r--    1 root     root            7 Jun  4 22:21 ThisCell
+</pre>
+      
+    </body>    
+  </section>
+  <section>
+    <title>Assegnazione del Nome del Nodo (cell) e del Gruppo (Membership) per i Processi del Server</title>
+    <body>
+      <p>
+      Assegnate ora il nome al nodo.
+      </p>
+      <impo>Ci sono alcune restrizioni nel formato del nome.
+      Non possono essere usate lettere in maiuscolo e non si possono superare i 64 caratteri.
+      Ricordate che il nome del vostro nodo (cell) apparirà nel percorso <path>/afs</path> , 
+      quindi conviene usare nomi brevi.</impo>
+      <note>D'ora in avanti ogni qual volta incontrerete la stringa &lt;server name&gt; , sostituitela
+      con l'hostname completo (ad esempio <b>afs.gentoo.org</b>) della macchina sulla quale state installando.
+      Al posto di &lt;cell name&gt; sostituite il nome completo del vostro nodo (ad esempio <b>gentoo</b>).
+      </note>
+      <p>
+      Eseguite il comando <b>bos setcellname</b> per assegnare un nome al nodo:
+      </p>
+<pre>
+# <i>/usr/afs/bin/bos setcellname &lt;server name&gt; &lt;cell name&gt; -noauth</i>
+</pre>
+    </body>
+  </section>
+  <section>
+    <title>Avvio del Database Server Process</title>
+    <body><p>
+       Continuate usando il comando <b>bos create</b> per creare le configurazioni dei quattro processi
+       database server nel file
+       <path>/usr/afs/local/BosConfig</path> . I quattro processi funzionano solamente
+       sui database server.
+       </p>
+
+       <table>
+       <tr>
+         <ti>kaserver</ti>
+	 <ti>L'Authentication Server gestisce l'Authentication Database.
+	     Può essere sostituito con un demone Kerberos 5 (in questa guida non documentato).
+	 </ti>
+       </tr>
+       <tr>
+         <ti>buserver</ti>
+	 <ti>Il Backup Server gestisce il Backup Database</ti>
+       </tr>
+       <tr>
+         <ti>ptserver</ti>
+	 <ti>Il Protection Server gestisce il Protection Database</ti>
+       </tr>
+       <tr>
+         <ti>vlserver</ti>
+	 <ti>Il Volume Location Server gestisce il Volume Location Database (VLDB).
+	     Il più importante</ti>
+       </tr>
+       </table>    
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; kaserver simple 
+    /usr/afs/bin/kaserver -cell &lt;cell name&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; buserver simple 
+    /usr/afs/bin/buserver -cell &lt;cell name&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; ptserver simple 
+    /usr/afs/bin/ptserver -cell &lt;cell name&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; vlserver simple 
+    /usr/afs/bin/vlserver -cell &lt;cell name&gt; -noauth</i>
+</pre>
+       <p>
+       Potete verificare che tutti i server siano in esecuzione con il comando <b>bos status</b> :
+       </p>
+<pre>
+# <i>/usr/afs/bin/bos status &lt;server name&gt; -noauth</i>
+Instance kaserver, currently running normally.
+Instance buserver, currently running normally.
+Instance ptserver, currently running normally.
+Instance vlserver, currently running normally.
+</pre>
+       
+    </body>
+  </section>
+  <section>
+    <title>Configurazione della Sicurezza del Nodo (Cell)</title>
+    <body>
+      <p>
+      Ora configurerete i meccanismi di sicurezza del nodo. Comincerete creando due profili iniziali
+      nell'Authentication Database: l'account di amministratore, chiamato per convenzione <b>admin</b>
+      e un account per i processi del server AFS, chiamato <b>afs</b>.
+      Nessun utente si può connettere usando l'user <b>afs</b>, ma il modulo Authentication
+      Server's Ticket Granting Service (TGS) usa questo account per criptare le comunicazioni tra il server
+      e i client AFS.
+      </p>
+      <p>
+      Entrate nella modalità interattiva <b>kas</b>
+      </p>
+<pre>
+# <i>/usr/afs/bin/kas -cell &lt;cell name&gt; -noauth</i>
+ka&gt; <i>create afs</i>
+initial_password:
+Verifying, please re-enter initial_password:
+ka&gt; <i>create admin</i>
+initial_password:
+Verifying, please re-enter initial_password:
+ka&gt; <i>examine afs</i>
+
+User data for afs
+  key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:30 2001
+  password will never expire.
+  An unlimited number of unsuccessful authentications is permitted.
+  entry never expires.  Max ticket lifetime 100.00 hours.
+  last mod on Mon Jun  4 20:49:30 2001 by $lt;none&gt;
+  permit password reuse
+ka&gt; <i>setfields admin -flags admin</i>
+ka&gt; <i>examine admin</i>
+ 
+User data for admin (ADMIN)
+  key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:59 2001
+  password will never expire.
+  An unlimited number of unsuccessful authentications is permitted.
+  entry never expires.  Max ticket lifetime 25.00 hours.
+  last mod on Mon Jun  4 20:51:10 2001 by $lt;none&gt;
+  permit password reuse
+ka&gt;
+</pre>
+      <p>
+        Eseguite il comando <b>bos adduser</b> , per aggiungere l'utente <b>admin</b> 
+	(amministratore) a <path>/usr/afs/etc/UserList</path> .
+      </p>
+<pre>
+# <i>/usr/afs/bin/bos adduser &lt;server name&gt; admin -cell &lt;cell name&gt; -noauth</i>
+</pre>
+      <p>
+        Eseguite il comando <b>bos addkey</b> per definire la chiave di crittografia (encryption key)
+	del Server AFS in <path>/usr/afs/etc/KeyFile</path>
+      </p>
+      <note>
+        Se vi viene chiesta una password ("input key"), inserite quella che avete usato nella creazione
+	dell'user afs nella modalità interattiva <b>kas</b>.
+      </note>
+<pre>
+# <i>/usr/afs/bin/bos addkey  &lt;server name&gt; -kvno 0 -cell &lt;cell name&gt; -noauth</i>
+    input key:
+    Retype input key:
+</pre>
+      <p>
+        Eseguite il comando <b>pts createuser</b>  per creare un profilo Protection Database 
+	per l'utente amministratore.
+      </p>
+      <note>
+        Per default, il Protection Server assegna all'utente <b>admin</b> un AFS UID 1, perchè
+	è il primo profilo creato. Se nel file delle password locale (/etc/passwd o uno equivalente)
+	è già presente un <b>admin</b> con UID differente, usate la flag <b>-id</b> per creare UID
+	equivalenti.
+       </note>
+<pre>
+# <i>/usr/afs/bin/pts createuser -name admin -cell &lt;cell name&gt; [-id &lt;AFS UID&gt;] -noauth</i>
+</pre>
+      <p>
+        Eseguite il comando <b>pts adduser</b> per fare dell'utente <b>admin</b> un 
+	membro del gruppo "system:administrators" e il comando <b>pts membership</b>
+	per verificare che ciò sia avvenuto correttamente.
+      </p>
+<pre>
+# <i>/usr/afs/bin/pts adduser admin system:administrators -cell &lt;cell name&gt; -noauth</i>
+# <i>/usr/afs/bin/pts membership admin -cell &lt;cell name&gt; -noauth</i>
+      Groups admin (id: 1) is a member of:
+        system:administrators
+</pre>
+      <p>
+        Riavviate tutti i processi del Server AFS
+      </p>
+<pre>
+# <i>/usr/afs/bin/bos restart &lt;server name&gt; -all -cell &lt;cell name&gt; -noauth</i>
+</pre>
+    </body>
+  </section>
+  <section>
+    <title>Avvio del File Server, Volume Server e Salvager</title>
+    <body>
+    <p>
+      Avviate il processo <b>fs</b>, costituito da File Server, da Volume Server e da Salvager (processi fileserver,
+      volserver e salvager).
+    </p>
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; fs fs /usr/afs/bin/fileserver 
+		                              /usr/afs/bin/volserver 
+        		                      /usr/afs/bin/salvager 
+                		              -cell &lt;cell name&gt; -noauth</i>
+</pre>
+    <p>
+    Controllate che tutti i processi siano in esecuzione
+    </p>
+<pre>
+ # <i>/usr/afs/bin/bos status &lt;server name&gt; -long -noauth</i>
+ Instance kaserver, (type is simple) currently running normally.
+     Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+     Last exit at Mon Jun  4 21:07:17 2001
+     Command 1 is '/usr/afs/bin/kaserver'
+
+ Instance buserver, (type is simple) currently running normally.
+     Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+     Last exit at Mon Jun  4 21:07:17 2001
+     Command 1 is '/usr/afs/bin/buserver'
+
+ Instance ptserver, (type is simple) currently running normally.
+     Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+     Last exit at Mon Jun  4 21:07:17 2001
+     Command 1 is '/usr/afs/bin/ptserver'
+
+ Instance vlserver, (type is simple) currently running normally.
+     Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+     Last exit at Mon Jun  4 21:07:17 2001
+     Command 1 is '/usr/afs/bin/vlserver'
+
+ Instance fs, (type is fs) currently running normally.
+     Auxiliary status is: file server running.
+     Process last started at Mon Jun  4 21:09:30 2001 (2 proc starts)
+     Command 1 is '/usr/afs/bin/fileserver'
+     Command 2 is '/usr/afs/bin/volserver'
+     Command 3 is '/usr/afs/bin/salvager'
+</pre>
+    <p>
+      Il prossimo passo dipende da se avete o meno mai eseguito un file server AFS nel nodo.
+    </p>
+    <p>
+      Se state installanto il Server AFS per la prima volta nel nodo, create il 
+      primo volume AFS, <b>root.afs</b>
+    </p>
+    <note>
+    Al posto di "partition name", inserite il nome di una partizione AFS Server della postazione.
+    Per convenzione queste partizioni sono chiamate <path>/vicex</path>, dove la x
+    può essere compresa tra a e z.
+    </note>
+<pre>
+  # <i>/usr/afs/bin/vos create &lt;server name&gt; 
+                            &lt;partition name&gt; root.afs 
+				-cell &lt;cell name&gt; -noauth</i>
+</pre>
+    <p>
+      Se nel nodo sono già presenti postazioni con file server AFS e volumi, eseguite i comandi 
+      <b>vos sncvldb</b> e <b>vos syncserv</b> per sincronizzare il VLDB (Volume Location Database)
+      con la stato attuale dei volumi sulla postazione locale. Tutti i dati necessari saranno
+      copiati sul tuo nuovo server.
+    </p>
+<pre>
+  # <i>/usr/afs/bin/vos syncvldb &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i>
+  # <i>/usr/afs/bin/vos syncserv &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i> 
+</pre>
+    </body>
+  </section>
+  <section>
+    <title>Avvio del Server Portion dell'Update Server</title>
+    <body>
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server name&gt; 
+                    upserver simple "/usr/afs/bin/upserver 
+		    -crypt /usr/afs/etc -clear /usr/afs/bin" 
+		    -cell &lt;cell name&gt; -noauth</i>
+</pre>
+    </body>
+  </section>
+  <section>
+    <title>Configurazione del Top Level del Filespace AFS</title>
+    <body>
+      <p>
+        C'è bisogno, a questo punto, di configurare la acl (access control list) in modo che ogni utente possa
+	accedere al percorso <path>/afs</path>.	
+      </p>
+<pre>
+# <i>/usr/afs/bin/fs setacl /afs system:anyuser rl</i>
+</pre>
+      <p>
+       Dopo dovete creare il volume root, montarlo in modalità solo lettura su <path>/afs/&lt;cell name&gt;</path>
+       e in modalità lettura/scrittura su <path>/afs/.&lt;cell name&gt;</path>
+      </p>
+<pre>
+# <i>/usr/afs/bin/vos create &lt;server name&gt;&lt;partition name&gt; root.cell</i>
+# <i>/usr/afs/bin/fs mkmount /afs/&lt;cell name&gt; root.cell </i>
+# <i>/usr/afs/bin/fs setacl /afs/&lt;cell name&gt; system:anyuser rl</i>
+# <i>/usr/afs/bin/fs mkmount /afs/.&lt;cell name&gt; root.cell -rw</i>
+</pre>
+      <p>
+        Ora è tutto pronto ! Dovreste avere un ASF file server funzionante
+	all'interno della vostra rete.
+      </p>
+      <note>
+        Per il corretto funzionamento del server AFS è essenziale che tutti gli
+	orologi di sistema siano sincronizzati.
+	La soluzione più conveniente consiste nella installazione di un server ntp su di una postazione (ad esempio
+	sul server AFS) per sincronizzare tutti gli orologi dei client attraverso il client ntp.
+	Questo può, naturalmente, essere fatto anche su di un client afs.
+      </note>
+    </body>
+  </section>
+  
+</chapter>
+
+<chapter>
+  <title>Amministrazione di Base</title>
+  <section>
+  <title></title>
+  <body>
+    <p>Da fare... Per ora non resta che leggere la Documentazione AFS.</p>
+  </body>
+  </section>
+</chapter>
+</guide>
