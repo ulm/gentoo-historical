@@ -1,0 +1,420 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/ru/alsa-guide.xml">
+<title>Инструкция по установке звуковых ALSA драйверов в ОС Gentoo Linux</title>
+<author title="Author"><mail link="zu@pandora.be">Vincent Verleye</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Переводчик"><mail link="drcham@inbox.ru">Dr][aM</mail></author>
+
+
+<abstract>
+Данное руководство расскажет о том как настроить ALSA драйвера в Gentoo Linux.
+Оно может послужить дополнением к Gentoo Linux Desktop Configuration Guide.</abstract>
+
+<version>1.2</version>
+<date>18 February 2003</date>
+
+<chapter>
+<title>Вступление</title>
+<section>
+<title>Что такое ALSA?</title>
+<body>
+<p>
+The Advanced Linux Sound Architecture (ALSA) - это проект, который
+призван улучшить звуковую подсистему в ОС Linux. Предполагается, что в
+более новых версиях ядра Linux (2.3.x или 3.3.x) эти драйвера будут
+включены в ядро.
+</p>
+
+<p>
+ALSA драйвера предоставляют полную поддержку аудио и MIDI в системе Linux.
+</p>
+
+<p>
+Основываясь на данных с сайта <uri>http://www.alsa-project.org</uri>, у ALSA драйверов есть следующие функции:
+<ul><li> Полная поддержка всех звуковых интерфейсов, от  простых звуковых  до профессиональных многоканальных карт.</li>
+    <li> Драйверы представлены в системе в виде модулей.</li>
+    <li> Поддержка параллельного воспроизведения файлов (SMP-Symmetric Multiprocessing)</li>
+    <li> Высоко функциональная, легко используемая приложениями, библиотека пользовательского уровня (alsa-lib)</li>
+    <li> Поддержка более старых OSS API, совместимость с большинством OSS программ.</li>
+</ul>
+В ALSA драйверах присутствует поддержка полного дуплексного режима воспроизведения и записи, поддержка одновременно нескольких звуковых карт, аппаратное управление потоками, расширенная поддержка микшера (для улучшения работы новых функций современных звуковых карт).
+</p>
+</body>
+</section>
+<section>
+<title>Почему именно ALSA?</title>
+<body>
+<p>
+Если ваша карта поддерживается звуковой подсистемой ядра или
+коммерческими OSS/4Front звуковыми драйверами, которые встроены в ядро
+версии 2.4.x, то Вы можете сразу включить поддержку вашей карты <e>в
+виде модуля</e>. Если Вы решили пойти по этому пути то ознакомьтесь с
+<uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/index.html">Linux
+Sound HOWTO</uri>.
+</p>
+<p>
+Однако у OSS/4Front драйверов есть некоторые ограничения из-за того,
+что они коммерческие. ALSA, напротив, лишена всех этих
+недостатков. ALSA это полностью GPL и LGPL система звуковых драйверов,
+которые предоставляют профессиональное качество записи,
+воспроизведения и обработки MIDI.
+</p>
+</body>
+</section>
+<section>
+<title>Какие звуковые карты поддерживают ALSA драйверы?</title>
+<body>
+<p>
+Разработчики ALSA драйверов стараются предоставить поддержку как можно
+большего числа звуковых карт, при этом предоставляя открытый исходный
+код. Однако некоторые производители могут предоставлять бинарную
+версию драйверов.
+</p>
+<p>Узнать поддерживается ли ваша звуковая карта можно на сервере:
+<uri>http://www.alsa-project.org/alsa-doc/</uri>.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Инсталляция</title>
+<section>
+<title>Модули ядра</title>
+<body>
+<p>
+Учитывая, что большинство людей использует ядро версии 2.4.х то нам
+потребуется собирать модули ядра и модули ALSA драйверов отдельно. Те
+же, кто использует ядро версии 2.5.х могут сделать это на уровне ядра,
+так как ALSA драйверы уже встроены в ядро этих версий.
+</p>
+<p>
+Сначала давайте убедимся, что наше ядро готово для работы с ALSA
+драйверами. Надо убедиться, что в ядре отключены все звуковые
+драйверы, а поддержка звука выставлена как модуль (M).
+
+В результате мы должны получить модуль <c>soundcore.o</c>.
+</p>
+<p>
+<note>
+Возможно, что ALSA драйверы будут работать, даже если поддержка звука
+в ядре выставлена как (Y), вместо модуля (M). Однако официальная
+инструкция по установке ALSA драйверов предполагает наличие модуля,
+чтобы ALSA сама могла его подгрузить когда это необходимо.
+</note>
+</p>
+<p>Если у вас уже есть рабочая конфигурация ядра системы, то надо
+убедиться, что убрана поддержка всех звуковых карт, а поддержка звука
+выставлена как модуль. (M). Если Вы хотите сделать это не
+перезагружаясь то следуйте нижеприведённым инструкциям:</p>
+<pre>
+# <c>cd /usr/src/linux</c>
+# <c>cp .config ~/</c>
+# <c>make mrproper</c>
+# <c>cp ~/.config .</c>
+# <c>make menuconfig</c>
+</pre>
+<p>
+Теперь выберите поддержку звука (<e>Sound Card Support</e>) как модуль
+(M) и уберите поддержку всех звуковых карт. Теперь надо пересобрать ядро:
+</p>
+<pre>
+# <c>make dep clean</c>
+# <c>make modules modules_install</c>
+</pre>
+<p>
+Команда make modules сотрёт все модули из системы и соберёт их заново,
+даже те которые остались после предыдущей инсталляции ALSA драйверов.
+</p>
+<p>
+<impo>
+Это означает, что придётся переустанавливать <c>alsa-driver</c> после каждой пересборки ядра.
+</impo>
+</p>
+<p>
+<note>Однако нет необходимости переустанавливать
+<c>nvidia-kernel</c>, так как Nvidia драйверы находятся в отдельной
+директории <path>/lib/modules/*/video</path> и не будут удалены
+командами <c>make modules modules_install</c>.</note>
+</p>
+</body>
+</section>
+
+<section>
+<title>Установка ALSA модулей</title>
+<body>
+
+<p>
+Теперь пришло время установить ALSA модули для поддержки вашей
+звуковой карты. Если у вас PCI звуковая карта то можно узнать чипсет,
+на котором она сделана выводом команды /proc/pci
+<pre># <c>grep audio /proc/pci</c></pre>
+</p>
+
+<p>
+<warn>
+Если у вас уже были установлены звуковые модули другого производителя
+то их надо <e>теперь</e> выгрузить. Проверить какие модули загружены
+можно командой <c>lsmod</c> и потом, с помощью команды <c>rmmod</c>
+выгрузить их из системы.
+</warn>
+</p>
+
+<p>
+Теперь можно просто воспользоваться командой <c>emerge
+alsa-driver</c>, и через некоторое время мы получим установленные
+звуковые драйверы с поддержкой <e>всех</e> звуковых карт.
+</p>
+<p>
+Однако можно сэкономить время узнав имя модуля, который требуется для
+корректной работы ALSA драйверов со звуковой картой. Это можно сделать
+посмотрев <uri link="http://www.alsa-project.org/alsa-doc">ALSA
+Soundcard Matrix</uri>. Мой модуль называется <c>snd-emu10k1</c>, так
+как у меня звуковая карта SBlive! на чипсете <e>EMU10K1</e>. Теперь
+можно указать звуковым драйверам тип нашей звуковой карты не используя
+префикс snd.
+</p>
+<p>
+<pre>
+# <c>env ALSA_CARDS='emu10k1' emerge alsa-driver</c>
+</pre>
+</p>
+<p>
+<note>
+Вы можете также указать тип вашей звуковой карты в файле
+<path>/etc/make.conf</path>, тогда при переустановке звуковых
+драйверов ALSA можно просто воспользоваться командой <c>emerge
+alsa-driver</c>. Например, это можно сделать так: <c>echo 'ALSA_CARDS="emu10k1"' >> /etc/make.conf</c>
+</note>
+
+<note>
+Если Вы хотите поставить ALSA драйверы для нескольких звуковых карт то
+можно вписать их через пробел в переменную ALSA_CARDS. Например так:
+<c>env ALSA_CARDS='emu10k1 intel8x0 ens1370' emerge alsa-driver</c>
+</note>
+
+<note>Если Вы хотите чтобы ALSA драйверы поддерживали OSS то надо
+поставить <i>alsa-oss</i> командой emerge alsa-oss, это ALSA/OSS совместимая оболочка.</note>
+
+</p>
+<p>
+Теперь звуковые драйверы ALSA установлены в вашей системе.
+</p>
+</body>
+</section>
+<section>
+<title>Настройка звуковых драйверов ALSA</title>
+<body>
+<p>
+Для корректной работы драйверов необходимо внести изменения в
+некоторые конфигурационные файлы.
+</p>
+<p>
+Сначала отредактируем файл <path>/etc/modules.d/alsa</path>.
+</p>
+<warn>
+Не надо редактировать файл <path>/etc/modules.conf</path>. Вместо
+этого надо настраивать <path>/etc/modules.d</path>.
+</warn>
+<p>
+Проверьте наличие следующих строк <e>в самом конце этого файла</e>.
+Там же нужно выставить максимальное количество используемых вами
+звуковых карт (как правило, одну).
+</p>
+<p>
+<pre caption="Внизу /etc/modules.d/alsa">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+
+# Выставите правильное количество.
+<c>options snd cards_limit=1</c>
+</pre>
+</p>
+<p>
+Теперь надо указать какой модуль будут использовать ALSA драйвера:
+<pre caption="В /etc/modules.d/alsa">
+## после завершения запустите `update-modules'.
+## Для дополнительно информации прочтите INSTALL file в /usr/share/doc.
+##
+##  ALSA блок
+<c>alias snd-card-0 snd-emu10k1</c>
+<c>## Если у вас больше чем одна, добавьте:
+## alias snd-card-1 snd-intel8x0
+## alias snd-card-2 snd-ens1370</c>
+##  OSS/Free блок
+## alias sound-slot-0 snd-card-0
+## alias sound-slot-1 snd-card-1
+##
+</pre>
+</p>
+<p>
+<note>
+Если у вас в системе установлено несколько звуковых карт то надо в
+переменной <c>cards_limit</c> указать их точное число и в snd-card
+прописать все нужные модули. Вы можете найти примеры в <uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/c1660.htm">Разделе 6</uri> инструкции <uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/alsa-howto.html">ALSA Howto</uri>.
+</note>
+</p>
+<p>
+Проверьте, не закомментированы ли следующие строки:
+<pre caption="Ближе к концу файла /etc/modules.d/alsa">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+</pre>
+</p>
+<p>
+Теперь проверьте, правильно ли Вы отредактировали
+<path>/etc/modules.d/alsa</path> и потом запустите команду
+<c>update-modules</c>.
+<pre>
+# <c>update-modules</c>
+</pre>
+</p>
+<note>
+Команда <c>update-modules</c> внесёт исправления в файл
+<path>/etc/modules.conf</path> основываясь на изменениях, которые Вы
+сделали в файле <path>/etc/modules.d/alsa</path>.
+</note>
+<p>
+Также Вы должны проверить файл <path>/etc/devfsd.conf</path> и
+удостовериться, что ALSA драйверы зарегистрированы правильно.
+</p>
+<pre caption="/etc/devfsd.conf">
+# ALSA/OSS содержание
+# Вы можете изменить права доступа к аудио устройствам
+LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
+REGISTER        sound/.*     PERMISSIONS root.audio 660
+REGISTER        snd/.*       PERMISSIONS root.audio 660
+</pre>
+<note>
+Данные из файла devfsd.conf устанавливают права доступа к
+/dev/sound. Поэтому, если Вы не обладаете правами roota то надо
+убедиться, что Вы внесены в группу audio.
+</note>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Запуск ALSA драйверов</title>
+<section>
+<title>Добавление ALSA драйверов в автозагрузку</title>
+<body>
+<p>
+Первое, что надо сделать чтобы ALSA драйверы запускались на стадии
+загрузки системы это:
+<pre>
+# <c>rc-update add alsasound boot</c>
+</pre>
+</p>
+<p>
+<warn>Имейте в виду, что alsasound скрипт должен быть занесен в "boot" -
+загрузочный уровень, а не "default".</warn>
+</p>
+</body>
+</section>
+<section>
+<title>Запуск драйверов и настройка звука</title>
+<body>
+<p>
+Так, как мы пользуемся OS Linux то перезагружаться не требуется. Надо
+просто запустить ALSA драйвер вручную.
+</p>
+<pre>
+# <c>/etc/init.d/alsasound start</c>
+</pre>
+<p>
+Теперь ALSA драйверы запущены. Если все в порядке то команда
+<c>lsmod</c> должна показать модуль ALSA. Однако звука пока не будет,
+так как не установлены <c>alsa-utils</c>.
+</p>
+<pre>
+# <c>emerge alsa-utils</c>
+# <c>amixer</c>
+</pre>
+<p>
+<warn>
+<e>Если</e> возникнут проблемы с запуском amixer: "amixer: Mixer attach
+default error: No such file or directory", то надо выполнить insmod
+<c>snd-mixer-oss</c> и <c>snd-pcm-oss</c>. Теперь можно запустить
+amixer снова.
+</warn>
+</p>
+<pre caption="только если Вы получите ошибку при запуске amixer">
+# <c>insmod snd-mixer-oss</c>
+# <c>insmod snd-pcm-oss</c>
+# <c>amixer</c>
+</pre>
+<p>
+Если всё прошло успешно то теперь можно включить звук на основном и
+дополнительном канале.
+</p>
+<p>
+<pre>
+# <c>amixer set Master 100 unmute</c>
+# <c>amixer set PCM 100 unmute</c>
+# <c>aplay /usr/kde/3/share/sounds/pop.wav</c> <codenote>(pop.wav это часть KDE)</codenote>
+</pre>
+</p>
+Теперь мы проверили работает ли звук командой aplay (alsa play). Если
+Вы услышали щёлканье то звук работает нормально. Теперь пора настроить
+громкость для этого воспользуемся ncurses-основанным <c>alsamixer</c>.
+<p>
+Если Вы хотите слушать музыку через XMMS то надо установить alsa-xmms
+командой emerge <c>alsa-xmms</c>.
+</p>
+Теперь, если Вы перезагрузите систему то <c>alsasound</c> скрипт запуститься и восстановит все ваши настройки.
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Последние штрихи</title>
+<section>
+<title>После обновления ядра...</title>
+<body>
+<p>Если Вы обновите ядро системы то придётся пересобрать ALSA модули.</p>
+<p>Нет необходимости переустанавливать <c>alsa-libs</c> и
+<c>alsa-utils</c>, так они не будут удалены при пересборке/смене ядра
+системы. Удален будет только <c>alsa-driver</c>, так как он ставиться
+в директорию <path>/lib/modules/*/kernel/sound/pci/</path>.</p>
+<pre caption="необходимо после каждой перекомпиляциии ядра">
+# <c>emerge alsa-driver</c>
+</pre>
+</body>
+</section>
+<section>
+<title>/etc/modules.autoload</title>
+<body>
+<p>Нет необходимости редактировать <path>/etc/modules.autoload</path>,
+так как после выполнения команды <c>rc-update add alsasound boot</c>,
+ALSA модули будут автоматически загружены при запуске системы.</p>
+<p>Нет необходимости добавлять <c>snd-pcm-oss</c> или
+<c>snd-mixer-oss</c> в этом файле. Обратитесь к этой <uri link="http://www.djcj.org/LAU/guide/alsbook/faq1.html">
+документации</uri> за подробностями.</p>
+</body>
+</section>
+<section>
+<title>Ссылки</title>
+<body>
+<p>
+По этим ссылкам Вы можете найти дополнительную документацию:
+</p>
+<p>
+<ul>
+<li><uri link="http://www.gentoo.org/doc/en/desktop.xml">The Gentoo Linux Desktop Configuration Guide</uri></li>
+<li><uri link="http://www.alsa-project.org">ALSA Project Homepage</uri></li>
+<li><uri link="http://www.alsa-project.org/documentation.php3">ALSA Users Documentation</uri></li>
+<li><uri link="http://www.djcj.org">ALSA Howto's and FAQ's</uri></li>
+<li><uri link="http://tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri></li>
+<li><uri link="http://linux-sound.org/">Sound and MIDI Software For Linux</uri></li>
+</ul>
+</p>
+</body>
+</section>
+</chapter>
+</guide>
