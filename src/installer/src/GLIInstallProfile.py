@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.23 2004/12/11 05:50:06 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.24 2004/12/21 14:06:42 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -110,7 +110,7 @@ class InstallProfile:
 		
 		# Check data type
 		if type(cron_daemon_pkg) != str:
-			raise "CronDaemonPKGError", "Input must be type 'string'!"
+			raise GLIException("CronDaemonPKGError", 'fatal', 'set_cron_daemon_pkg',  "Input must be type 'string'!")
 		
 		self._cron_daemon_pkg = cron_daemon_pkg
 
@@ -123,7 +123,7 @@ class InstallProfile:
 		
 		# Check data type
 		if type(logging_daemon_pkg) != str:
-			raise "LoggingDaemonPKGError", "Input must be type 'string'!"
+			raise GLIException("LoggingDaemonPKGError", 'fatal', 'set_logging_daemon_pkg',  "Input must be type 'string'!")
 
 		self._logging_daemon_pkg = logging_daemon_pkg
 
@@ -139,7 +139,7 @@ class InstallProfile:
 			if type(boot_loader_mbr) == str:
 				boot_loader_mbr = GLIUtility.strtobool(boot_loader_mbr)
 			else:
-				raise "BootLoaderMBRError", "Input must be type 'bool'!"
+				raise GLIException("BootLoaderMBRError", 'fatal', 'set_boot_loader_mbr',  "Input must be type 'bool'!")
 		
 		self._boot_loader_mbr = boot_loader_mbr
 
@@ -152,7 +152,7 @@ class InstallProfile:
 		
 		# Check data type
 		if type(boot_loader_pkg) != str:
-			raise "BootLoaderPKG", "Input must be type 'string'!"
+			raise GLIException("BootLoaderPKG", 'fatal', 'set_boot_loader_pkg',  "Input must be type 'string'!")
 
 		self._boot_loader_pkg = boot_loader_pkg
 
@@ -164,7 +164,7 @@ class InstallProfile:
 		"Add a kernel module to the list of kernel modules"
 
 		if type(kernel_module) != str:
-			raise "KernelModuleError", "The kernel module must be a string!"
+			raise GLIException("KernelModuleError", 'fatal', 'add_kernel_module',  "The kernel module must be a string!")
 
 		self._kernel_modules.append(kernel_module)
 		
@@ -173,7 +173,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(kernel_modules) != tuple:
-			raise "KernelModulesError", "Must be a tuple!"
+			raise GLIException("KernelModulesError", 'fatal', 'set_kernel_modules',  "Must be a tuple!")
 		
 		self._kernel_modules = []
 	
@@ -190,11 +190,11 @@ class InstallProfile:
 		
 		# Check type
 		if type(kernel_config_uri) != str:
-			raise "KernelConfigURIError", "Must be a string!"
+			raise GLIException("KernelConfigURIError", 'fatal', 'set_kernel_config_uri',  "Must be a string!")
 
 		# Check validity
 		if not GLIUtility.is_uri(kernel_config_uri):
-			raise "KernelConfigURIError", "Invalid URI!"
+			raise GLIException("KernelConfigURIError", 'fatal', 'set_kernel_config_uri',  "Invalid URI!")
 
 		self._kernel_config_uri = kernel_config_uri
 
@@ -210,7 +210,7 @@ class InstallProfile:
 			if type(kernel_initrd) == str:
 				kernel_initrd = GLIUtility.strtobool(kernel_initrd)
 			else:
-				raise "KernelInitRDError", "Must be a bool!"
+				raise GLIException("KernelInitRDError", 'fatal', 'set_kernel_initrd',  "Must be a bool!")
 		
 		self._kernel_initrd = kernel_initrd
 
@@ -226,7 +226,7 @@ class InstallProfile:
 			if type(kernel_bootsplash) == str:
 					kernel_bootsplash = GLIUtility.strtobool(kernel_bootsplash)
 			else:
-				raise "KernelBootsplashError", "Must be a bool!"
+				raise GLIException("KernelBootsplashError", 'fatal', 'set_kernel_bootsplash',  "Must be a bool!")
 		
 		self._kernel_bootsplash = kernel_bootsplash
 
@@ -239,7 +239,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(kernel_source_pkg) != str:
-			raise "KernelSourcePKGError", "Must be a string!"
+			raise GLIException("KernelSourcePKGError", 'fatal', 'set_kernel_source_pkg',  "Must be a string!")
 		
 		self._kernel_source_pkg = kernel_source_pkg
 
@@ -269,7 +269,7 @@ class InstallProfile:
 
 		if type(username) == tuple:
 			if len(username) != 7:
-				raise "UserError", "Wrong format for user tuple!"
+				raise GLIException("UserError", 'fatal', 'add_user',  "Wrong format for user tuple!")
 
 			username_tmp = username[0]
 			hash = username[1]
@@ -301,21 +301,21 @@ class InstallProfile:
 		allowable_nonalphnum_characters = '_-'
 
 		if not GLIUtility.is_realstring(username):
-			raise "UserError", "username must be a non-empty string"
+			raise GLIException("UserError", 'fatal', 'add_user',  "username must be a non-empty string")
 
 		if username[0] not in (string.lowercase + string.uppercase):
-			raise "UsersError", "A username must start with a letter!"
+			raise GLIException("UsersError", 'fatal', 'add_user',  "A username must start with a letter!")
 
 		for x in username:
 			if x not in (string.lowercase + string.uppercase + string.digits + allowable_nonalphnum_characters):
-				raise "UsersError", "A username must contain only letters, numbers, or these symbols: " + allowable_nonalphnum_characters
+				raise GLIException("UsersError", 'fatal', 'add_user', "A username must contain only letters, numbers, or these symbols: " + allowable_nonalphnum_characters)
 
 		for user in self._users:
 			if username == user[0]:
-				raise "UserError", "This username already exists!"
+				raise GLIException("UserError", 'fatal', 'add_user',  "This username already exists!")
 
 		if (hash == None) or (hash == ''):
-			raise "UserError", "A password hash must be given for every user!"
+			raise GLIException("UserError", 'fatal', 'add_user',  "A password hash must be given for every user!")
 
 		self._users.append((username,hash,groups,shell,homedir,uid,comment))
 
@@ -347,7 +347,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(root_pass_hash) != str:
-			raise "RootPassHashError", "Must be a string!"
+			raise GLIException("RootPassHashError", 'fatal', 'set_root_pass_hash',  "Must be a string!")
 		
 		self._root_pass_hash = root_pass_hash
 
@@ -360,7 +360,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(time_zone) != str:
-			raise "TimeZoneError", "Must be a string!"
+			raise GLIException("TimeZoneError", 'fatal', 'set_time_zone',  "Must be a string!")
 			
 		self._time_zone = time_zone
 
@@ -373,11 +373,11 @@ class InstallProfile:
 
 		# Check type
 		if type(stage_tarball_uri) != str:
-			raise "StageTarballURIError", "Must be a string!"
+			raise GLIException("StageTarballURIError", 'fatal', 'set_stage_tarball_uri',  "Must be a string!")
 
 		# Check validity
 		if not GLIUtility.is_uri(stage_tarball_uri):
-			raise "CustomStage3TarballURIError", "Invalid URI!"
+			raise GLIException("CustomStage3TarballURIError", 'fatal', 'set_stage_tarball_uri',  "Invalid URI!")
 		
 		self._stage_tarball_uri = stage_tarball_uri
 
@@ -393,13 +393,13 @@ class InstallProfile:
 			if type(install_stage) == str:
 				install_stage = int(install_stage)
 			else:
-				raise "InstallStageError", "Must be an integer!"
+				raise GLIException("InstallStageError", 'fatal', 'set_install_stage',  "Must be an integer!")
 		
 		# Check for stage bounds
 		if 0 < install_stage < 4:
 			self._install_stage = install_stage
 		else:
-			raise "InstallStageError", "install_stage must be 1-3!"
+			raise GLIException("InstallStageError", 'fatal', 'set_install_stage',  "install_stage must be 1-3!")
 
 	def get_portage_tree_sync_type(self):
 		"returns portage_tree_sync"
@@ -410,10 +410,10 @@ class InstallProfile:
 		
 		# Check type
 		if type(portage_tree_sync) != str:
-			raise "PortageTreeSyncError", "Must be a string!"
+			raise GLIException("PortageTreeSyncError", 'fatal', 'set_portage_tree_sync_type',  "Must be a string!")
 
 		if string.lower(portage_tree_sync) not in ('sync', 'webrsync', 'custom'):
-			raise "PortageTreeSyncError", "Invalid Input!"
+			raise GLIException("PortageTreeSyncError", 'fatal', 'set_portage_tree_sync_type',  "Invalid Input!")
 
 		self._portage_tree_sync_type = string.lower(portage_tree_sync)
 
@@ -426,11 +426,11 @@ class InstallProfile:
 		
 		# Check type
 		if type(portage_tree_snapshot_uri) != str:
-			raise "PortageTreeSnapshotURIError", "Must be a string!"
+			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Must be a string!")
 
 		# Check validity
 		if not GLIUtility.is_uri(portage_tree_snapshot_uri):
-			raise "PortageTreeSnapshotURIError", "Invalid URI!"
+			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Invalid URI!")
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
 
@@ -443,7 +443,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(domainname) != str:
-			raise "DomainnameError", "Must be a string!"
+			raise GLIException("DomainnameError", 'fatal', 'set_domainname',  "Must be a string!")
 		
 		self._domainname = domainname
 
@@ -456,7 +456,7 @@ class InstallProfile:
 
 		# Check type
 		if type(hostname) != str:
-			raise "HostnameError", "Must be a string!"
+			raise GLIException("HostnameError", 'fatal', 'set_hostname',  "Must be a string!")
 
 		self._hostname = hostname
 
@@ -469,7 +469,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(nisdomainname) != str:
-			raise "NISDomainnameError", "Must be a string!"
+			raise GLIException("NISDomainnameError", 'fatal', 'set_nisdomainname',  "Must be a string!")
 			
 		self._nisdomainname = nisdomainname
 		
@@ -507,7 +507,7 @@ class InstallProfile:
 		"""
 		
 		if type(partition_tables) != dict:
-			raise "PartitionTableError", "Invalid data type! partition_tables is a dict..."
+			raise GLIException("PartitionTableError", 'fatal', 'set_partition_tables',  "Invalid data type! partition_tables is a dict...")
 		
 		for device in partition_tables:
 		
@@ -524,21 +524,21 @@ class InstallProfile:
 					try:
 						int(minor)
 					except:
-						raise "ParitionTableError", "The minor you specified (" + minor + ") is not an integer!"
+						raise GLIException("ParitionTableError", 'fatal', 'set_partition_tables',  "The minor you specified (" + minor + ") is not an integer!")
 					
 					# Make sure that a minor number is valid
 					if minor < 1:
-						raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
+						raise GLIException("ParitionTableError", 'fatal', 'set_partition_tables',  "The minor you specified (" + minor + ") is not a valid minor!")
 				
 					# Make sure that <size>, <type> and <mount point> are all set
 					#if len(partition_tables[device][minor]) != 3:
-					#	raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
+					#	raise GLIException("ParitionTableError", 'fatal', 'set_partition_tables',  "The number of attributes for minor " + minor + " is incorrect!")
 					#
 					# Make sure that the <size> is an integer or can be converted to one
 					#try:
 					#	int(partition_tables[device][minor][0])
 					#except:
-					#	raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
+					#	raise GLIException("ParitionTableError", 'fatal', 'set_partition_tables',  "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!")
 
 			# Else, if the device is a valid remote device (hostname or ip)
 			elif GLIUtility.is_ip(device) or GLIUtility.is_hostname(device):
@@ -546,11 +546,11 @@ class InstallProfile:
 				pass
 				# Make sure that only the mount point is set
 			#	if type(partition_tables[device]) != str:
-			#		raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
+			#		raise GLIException("ParitionTableError", 'fatal', 'set_partition_tables',  "Invalid mount point for nfs mount (device: " + device + ")!")
 
 			# If the device is not a local or remote device, then it is invalid
 			else:
-				raise "PartitionTableError", "The device you specified (" + device + ") is not valid!"
+				raise GLIException("PartitionTableError", 'fatal', 'set_partition_tables',  "The device you specified (" + device + ") is not valid!")
 
 		# If all the tests clear, then set the variable
 		self._partition_tables = partition_tables
@@ -580,10 +580,10 @@ class InstallProfile:
 		dhcp = True
 
 		if type(device) != str:
-			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device + ")!"
+			raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "Invalid or unimplimented device type (" + device + ")!")
 	
 		if not GLIUtility.is_eth_device(device):
-			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device + ")!"
+			raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "Invalid or unimplimented device type (" + device + ")!")
 
 		if type(attr) == tuple:
 			ip = attr[0]
@@ -604,11 +604,11 @@ class InstallProfile:
 
 		if not dhcp:
 			if not GLIUtility.is_ip(ip):
-				raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
+				raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "The ip address you specified for " + device + " is not valid!")
 			if not GLIUtility.is_ip(broadcast):
-				raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
+				raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "The broadcast address you specified for " + device + " is not valid!")
 			if not GLIUtility.is_ip(netmask):
-				raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
+				raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "The netmask address you specified for " + device + " is not valid!")
 			options = (ip, broadcast, netmask)
 		else:
 			options = ('dhcp', None, None)
@@ -624,7 +624,7 @@ class InstallProfile:
 		
 		# Check type
 		if type(network_interfaces) != dict:
-			raise "NetworkInterfacesError", "Must be a dictionary!"
+			raise GLIException("NetworkInterfacesError", 'fatal', 'set_network_interfaces',  "Must be a dictionary!")
 
 		self._network_interfaces = {}
 		for device in network_interfaces:
@@ -788,7 +788,7 @@ class InstallProfile:
 			self._make_conf[attr] = str(data)
 		else:
 			if 'name' not in attr.keys():
-				raise "MakeConfError", "Every value needs to have a variable name!"
+				raise GLIException("MakeConfError", 'fatal', 'make_conf_add_var',  "Every value needs to have a variable name!")
 
 			varName = attr['name']
 			self._make_conf[str(varName)] = str(data)
@@ -813,7 +813,7 @@ class InstallProfile:
 		attr is an xml attribute that contains the name of the variable
 		"""
 		if 'name' not in attr.keys():
-			raise "RCConfError", "Every value needs to have a variable name!"
+			raise GLIException("RCConfError", 'fatal', 'rc_conf_add_var',  "Every value needs to have a variable name!")
 
 		varName = attr['name']
 		self._rc_conf[str(varName)] = str(data)
@@ -842,7 +842,7 @@ class InstallProfile:
 			if type(ignore_depends) == str:
 				ignore_depends = GLIUtility.strtobool(ignore_depends)
 			else:
-				raise "IgnoreInstallStepDepends", "Input must be type 'bool'!"
+				raise GLIException("IgnoreInstallStepDepends", 'fatal', 'set_ignore_install_step_depends',  "Input must be type 'bool'!")
 		
 		self._ignore_install_step_depends = ignore_depends
 
@@ -859,7 +859,7 @@ class InstallProfile:
 			if type(install_rp_pppoe) == str:
 				install_rp_pppoe = GLIUtility.strtobool(install_rp_pppoe)
 			else:
-				raise "InstallRP_PPPOE", "Invalid input!"
+				raise GLIException("InstallRP_PPPOE", 'fatal', 'set_install_rp_pppoe',  "Invalid input!")
 
 		self._install_rp_pppoe = install_rp_pppoe
 
@@ -879,7 +879,7 @@ class InstallProfile:
 		elif GLIUtility.is_realstring(tools):
 			self._filesystem_tools = tuple(string.split(tools))
 		else:
-			raise "FileSystemTools","Invalid input!"
+			raise GLIException("FileSystemTools", 'fatal', 'set_filesystem_tools_pkgs', "Invalid input!")
 
 	def get_filesystem_tools_pkgs(self):
 		"""
@@ -894,7 +894,7 @@ class InstallProfile:
 			if type(install_pcmcia) == str:
 				install_pcmcia = GLIUtility.strtobool(install_pcmcia)
 			else:
-				raise "InstallPcmciaCS", "Input must be type 'bool'!"
+				raise GLIException("InstallPcmciaCS", 'fatal', 'set_install_pcmcia_cs',  "Input must be type 'bool'!")
 
 		self._install_pcmcia_cs = install_pcmcia
 
@@ -913,11 +913,11 @@ class InstallProfile:
 		elif type(dns_servers) == str:
 			dns_servers = string.split(dns_servers)
 		else:
-			raise "DnsServersError", "Invalid input!"
+			raise GLIException("DnsServersError", 'fatal', 'set_dns_servers',  "Invalid input!")
 
 		for server in dns_servers:
 			if not GLIUtility.is_ip(server):
-				raise "DnsServersError", server + " must be a valid IP address!"
+				raise GLIException("DnsServersError", 'fatal', 'set_dns_servers',  server + " must be a valid IP address!")
 
 		self._dns_servers = dns_servers
 
@@ -935,18 +935,18 @@ class InstallProfile:
 		"""
 
 		if not GLIUtility.is_realstring(gateway):
-			raise DefaultGatewayError('fatal', 'set_default_gateway', "The gateway must be a non-empty string!")
+			raise GLIException('DefaultGatewayError', 'fatal', 'set_default_gateway', "The gateway must be a non-empty string!")
 
 		if not 'interface' in xml_attr.keys():
-			raise DefaultGatewayError('fatal', 'set_default_gateway', 'No interface information specified!')
+			raise GLIException('DefaultGatewayError', 'fatal', 'set_default_gateway', 'No interface information specified!')
 
 		interface = str(xml_attr['interface'])
 
 		if not GLIUtility.is_eth_device(interface):
-			raise DefaultGatewayError('fatal', 'set_default_gateway', "Invalid device!")
+			raise GLIException('DefaultGatewayError', 'fatal', 'set_default_gateway', "Invalid device!")
 
 		if not GLIUtility.is_ip(gateway):
-			raise "DefaultGateway", "The IP Provided is not valid!"
+			raise GLIException("DefaultGateway", 'fatal', 'set_default_gateway',  "The IP Provided is not valid!")
 
 		self._default_gateway = (interface, gateway)
 
@@ -967,7 +967,7 @@ class InstallProfile:
 		info = None
 		options = fstype = dev = None
 		if not GLIUtility.is_realstring(mountpoint):
-			raise "AddPartitionError", "Invalid mountpoint or mountpoint does not exist!"
+			raise GLIException("AddPartitionError", 'fatal', 'add_fstab_partition',  "Invalid mountpoint or mountpoint does not exist!")
 
 		
 		if type(attr) == tuple:
@@ -1001,11 +1001,11 @@ class InstallProfile:
 		if type(install_packages) == str:
 			install_packages = string.split(install_packages)
 		else:
-			raise "InstallPackagesError", "Invalid input!"
+			raise GLIException("InstallPackagesError", 'fatal', 'set_install_packages',  "Invalid input!")
 
 		for install_package in install_packages:
 			if not GLIUtility.is_realstring(install_package):
-				raise "InstallPackagesError", install_package + " must be a valid string!"
+				raise GLIException("InstallPackagesError", 'fatal', 'set_install_packages',  install_package + " must be a valid string!")
 
 		self._install_packages = install_packages
  
@@ -1050,7 +1050,7 @@ class InstallProfile:
 
 	def set_mta(self, xml_path, mta, xml_attr):
 		if type(mta) != str:
-			raise "MTAError", "The MTA must be a string!"
+			raise GLIException("MTAError", 'fatal', 'set_mta',  "The MTA must be a string!")
 
 		self._mta = mta
 
