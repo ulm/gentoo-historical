@@ -1,0 +1,156 @@
+#!/bin/sh
+# Daniel Robbins <drobbins@gentoo.org>
+# Copyright 2003 Gentoo Technologies, Inc.
+# Distributed under the GPL
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+BACK_UP="\033[1K\033[0G"
+HILITE="\033[1m"
+NORMAL="\033[0m"
+WARN="\033[1m"
+BAD="\033[1m"
+INITRD="true"
+SCSI="yes"
+CDCACHE="no"
+IDEBUG="no"
+FIREWIRE="no"
+ATARAID="no"
+PCMCIA="no"
+DETECT="no"
+USB="yes"
+KEYMAP="no"
+REAL_ROOT=""
+CDROOT=0
+
+mount -o remount,rw /
+mount /proc
+
+CMDLINE="`cat /proc/cmdline`"
+
+[ ! -e /dev/.devfsd ] && mount -t devfs devfs /dev
+
+initmsg() {
+	echo -e "${HILITE}${*}${NORMAL}"
+}
+
+echo "${GOOD} Initial RAMDISK Loading Starting..."
+
+
+parse_opt() {
+	case "$1" in
+		*\=*)
+			echo "$1" | cut -f2 -d=
+		;;
+	esac
+}
+
+
+for x in "${CMDLINE}"
+do
+	case "${x}" in
+		real_root=*)
+			REAL_ROOT=`parse_opt "${x}"`
+		;;
+		cdroot)
+			CDROOT=1
+			REAL_ROOT=""
+		;;
+		*)
+		;;
+	esac
+done
+
+findcdmount() {
+	if [ "$#" -gt "1" ]
+	then
+		for x in "$*"
+		do
+			mount -t iso9660 -r ${x} /newroot/mnt/cdrom > /dev/null 2>&1
+			if [ "$?" = "0" ]
+			then
+				REAL_ROOT="${x}"
+				break
+			fi
+		done
+
+		if [ "${REAL_ROOT}" != "" ]
+		then
+			echo -e "${HILITE}---- CD medium found on $1${NORMAL}"
+		fi
+	fi
+}
+
+mkdir /newroot
+
+if [ "${CDROOT}" -eq "1" ]
+then
+	mount -t tmpfs tmpfs /newroot
+	mkdir /newroot/dev /newroot/mnt /newroot/mnt/cdrom /newroot/mnt/.init.d /newroot/mnt/gentoo
+	[ ! -e /newroot/dev/.devfsd ] && mount -t devfs devfs /newroot/dev
+	findcdmount /newroot/dev/cdroms/*
+	if [ "${REAL_ROOT}" = "" ]
+	then
+		umount /newroot/dev/
+		umount /newroot
+		# shouldn't be anything in here b/c it was on tmpfs
+		rm -rf /newroot/*
+		CDROOT=0
+		echo "Could not find CD to boot, gonna need something else"
+	fi
+fi
+
+while true
+do
+	got_good_root=0
+	while [ "${got_good_root}" != "1" ]
+	do
+		if [ "${REAL_ROOT}" != "shell" -a "${REAL_ROOT}" != "" -a -b "${REAL_ROOT}" ]
+		then
+			got_good_root=1
+		elif [ "${REAL_ROOT}" = "shell" ]
+		then
+			# Drop to a shell, let them figure out what to do
+			/bin/ash
+			REAL_ROOT=""
+		else
+			echo "Invalid real_root specified, please type in desired real_root (or 'shell' to drop to a shell)"
+			echo -n "real_root: "
+			read REAL_ROOT
+		fi
+	done
+
+	if [ "${CDROOT}" -eq "1" -a "${got_good_root}" = "1" ]
+	then
+		break
+	else
+		mount ${REAL_ROOT} /newroot
+		if [ "$?" = "0" ]
+		then
+			break
+		else
+			echo "Could not mount specified ROOT, try again"
+			got_good_root=0
+			REAL_ROOT=""
+		fi
+	fi
+done
+
+if [ "${CDROOT}" = "1" ]
+then
+	cd /newroot
+	for x in ${ROOT_LINKS}
+	do
+		ln -s "mnt/cdrom/${x}" "${x}"
+	done
+	mkdir initrd proc tmp sys
+	chmod 1777 tmp
+	(cd /newroot/mnt/cdrom; cp -a ${ROOT_TREES} /newroot)
+else
+	umount /proc
+	umount /dev
+	mkdir /newroot/initrd
+fi
+
+cd /newroot
+pivot_root . initrd
+exec chroot . /sbin/init </dev/console >/dev/console 2>&1
