@@ -1,0 +1,392 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/handbook/Attic/hb-install-system.xml,v 1.1 2004/02/21 11:22:24 bennyc Exp $ -->
+
+<!-- en rev 1.27 by ccpz -->
+
+<sections>
+<section>
+<title>變換根目錄</title>
+<subsection>
+<title>自由選擇：選擇鏡像站</title>
+<body>
+
+<p>
+如果你是從 Gentoo LiveCD 開機的話，你可以使用 <c>mirrorselect</c> 來更新 
+<path>/etc/make.conf</path> 讓你可以從最快的鏡像站取得套件和原始碼：
+</p>
+
+<pre caption="選擇最快的鏡像站">
+# <i>mirrorselect -a -s4 -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+如果因為某些理由 <c>mirrorselect</c> 失敗了，不要慌張。這一部是自由選擇的。當 
+<c>mirrorselect</c> 失敗時，預設的設定也可以使用。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>複製 DNS 設定</title>
+<body>
+
+<p>
+還有一件事在我們進入新的系統環境之前要記得做，就是複製 <path>/etc/resolv.conf</path> 
+中的 DNS 設定。你需要做這件是確保網路在進入新的環境後仍然可以工作。 
+<path>/etc/resolv.conf</path> 包含網路需要的名稱伺服器。
+</p>
+
+<pre caption="複製 DNS 設定">
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇： 掛載 /dev</title>
+<body>
+
+<p>
+Knoppix 使用者(或是從沒有使用 DevFS 的媒體安裝的人)現在應該要以 bind 的方式掛載
+ <path>/dev</path>。如果你使用我們的 LiveCD 你可以跳過這一步。
+</p>
+
+<pre caption="以 bind 的方式掛載 /dev">
+# <i>mkdir /mnt/gentoo/dev</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>進入新的系統環境</title>
+<body>
+
+<p>
+現在所有的分割區都已經初步設定好了而且基本的系統也安裝完畢，現在是用
+<e>變換根目錄</e>進入新的系統環境的時候了。這代表我們從目前的安裝環境
+(LiveCD 或是其他的安裝媒體)進入你安裝的系統(就是已經安裝的分割區)。
+</p>
+
+<p>
+變換根目錄動作在三步驟內完成。首先我們會用 <c>chroot</c> 讓根目錄從 
+<path>/</path> (目前安裝的媒體)變換到 <path>/mnt/gentoo</path> (或你安裝的分割區)。
+然後用 <c>env-update</c> 建立新的環境，這將會建立基本的系統變數。最後，我們用 
+<c>source</c> 把這些變數載入到記憶體。
+</p>
+
+<pre caption = "進入新的環境">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+恭喜！你現在新的 Gentoo Linux 環境當中了。不過離安裝完畢還有一段時間，這就是為什
+麼安裝指南還有下面這些部份 :-)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：更新 Portage</title>
+<body>
+
+<p>
+如果你<e>不是</e>使用 GRP，你需要從網際網路下載最新的 Portage。<c>emerge sync</c> 
+為你做這件事。GRP 使用者請略過這一段繼續進行
+<uri link="#doc_chap1_sect6">設定 USE 變數</uri>。
+</p>
+
+<pre caption="更新 Portage">
+# <i>emerge sync</i>
+<comment>(如果你不能使用 rsync，使用 "emerge-webrsync" 下載並且安裝最新的
+Portage)</comment>
+# <i>emerge-webrsync</i>
+</pre>
+
+<p>
+如果你看到新的 Portage 已經可以下載而且你必須要更新的警告時，你可以安全的掠過，
+ Portage 在之後安裝時會被更新。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>設定 USE 變數</title>
+<body>
+
+<p>
+<c>USE</c> 是 Gentoo 提供給使用者最有威力的變數之一。須多程式可以在編譯時包含或
+不包含自由選擇的支援。例如，一些程式可以在編譯時包含 gtk 支援，或者是支援 qt。其它
+程式可以包含或不包含 SSL 支援，也有一些甚至可以使用 framebuffer (svgalib) 而不是
+X11 (X-server)。
+</p>
+
+<p>
+大部分的安裝套件在編譯時都敬可能的加入最多的支援，增加檔案大小以及程式啟動的時
+間，更別提複雜的相依性。在 Gentoo 下你可以定義哪些支援編譯時要加入。這就是 <c>USE</c>
+ 的作用。
+</p>
+
+<p>
+在 <c>USE</c> 變數中，你可以加入要在編譯時加入支援的關鍵字。例如，<e>ssl</e> 會
+在支援 ssl 的程式編譯時加入 ssl 支援。<e>-X</e> 則會移除 X-server 支援(注意前面
+的減號)。<e>gnome gtk -kde -qt</e> 則會支援 gnome(以及 gtk)，而不包含 kde(以及 qt)
+的支援，這可以讓你的系統對 GNOME 完整的調節。
+</p>
+
+<p>
+預設的 <c>USE</c> 設定放在 <path>/etc/make.profile/make.defaults</path>，而你在 
+<path>/etc/make.conf</path> 中的設定會和預設的設定一起考慮。如果你在 <c>USE</c> 
+設定中新增一些東西，他會加入預設的設定中。如果你從 <c>USE</c> 中移除一些東西(在
+前面加上減號)，他會從預設的設定移除。<e>永遠</e>不要改變任何在 
+<path>/etc/make.profile</path> 目錄中的東西，他會在你更新 Portage 時被覆蓋！
+</p>
+
+<p>
+完整的 <c>USE</c> 說明可以在 Gentoo 手冊中 
+<uri link="?part=2&amp;chap=1">第一章： USE 參數</uri> 找到。完整的 USE 參數列表
+可以在系統中的 <path>/usr/portage/profiles/use.desc</path> 找到。
+</p>
+
+<pre caption="檢視可用的 USE 參數">
+# <i>less /usr/portage/profiles/use.desc</i>
+</pre>
+
+<p>
+下面是一個 <c>USE</c> 的設定，在以 KDE 為基礎的系統中支援 DVD, ALSA 以及燒錄機。
+</p>
+
+<pre caption="開啟 /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE 設定">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：在不同電腦編譯</title>
+<body>
+
+<p>
+如果你對使用許多系統來協助你依起編譯程式，你可能會想要看 
+<uri link="/doc/en/distcc.xml">DistCC 指南</uri>。你可以藉著 <c>distcc</c> 來使
+用許多台電腦的處理能力來幫助你完成安裝。
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title> Stage1，Stage2 和 Stage3 的不同</title>
+<body>
+
+<p>
+線在先坐下來回想一下之前的步驟。我們要求你選擇 <e>stage1</e>，<e>stage2</e> 或 
+<e>stage3</e> 並且提醒你妳的選輒對之後的安裝步驟很重要。嗯，現在是你決定接下來
+的步驟的時候了。
+</p>
+
+<ul>
+<li>
+  如果你選擇 <e>stage1</e>，接下來你要做這一節<b>全部</b>的步驟從 
+  <uri link="#doc_chap3">Stage1 到 Stage2 的過程</uri> 開始
+</li>
+<li>
+  如果你選擇 <e>stage2</e> 你只要略過第一步驟，立即從第二部份 
+  <uri link="#doc_chap4">Stage2 到 Stage3 的過程</uri> 開始
+</li>
+<li>
+  如果你選擇 <e>stage3</e>(不管使不使用 GRP)那你可以略過這兩部份繼續下一節：
+  <uri link="?part=1&amp;chap=7">設定核心</uri>
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Stage1 到 Stage2 的過程</title>
+<subsection>
+<title>介紹 Bootstrapping</title>
+<body>
+
+<p>
+所以你決定要從頭編譯所有東西？那開始吧 :-)
+</p>
+
+<p>
+在這個步驟中，我們會 <e>bootstrap</e> 你的 Gentoo 系統。這會花很長一段時間，但是
+你會得到一個針對你的機器完全最佳化的系統。
+</p>
+
+<p>
+<e>Bootstrapping</e> 代表編譯 GNU C 函式庫、GNU C 編譯器以及其他重要的軟體。GNU 
+C 編譯器甚至需要編譯兩次：第一次使用我們提供的 "一般" 編譯器，第二次就使用你剛編
+譯好的編譯器。
+</p>
+
+<p>
+在開始之前，我們會列出兩個你需要或是不需要的參數。如果你不想要閱讀這些的話，從 
+<uri link="#doc_chap3_sect4">Bootstrapping 你的系統</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：減少編譯時間</title>
+<body>
+
+<p>
+如果你想要加速 bootstrapping 的話，你可以暫時取消 java 支援。這代表 GNU C 編譯器
+還有函式庫將會不編譯 java 支援(這將會減少編譯的時間)。雖然這讓你不能使用 GNU Java
+ 編譯器 (<c>gcj</c>)，但這<e>不</e>表示你不行執行 java 程式以及和它相關的東西。
+</p>
+
+<p>
+只要在執行 bootstrap 前定義 <e>USE="-java"</e> 就可以暫時取消 java 支援。
+</p>
+
+<pre caption = "取消 java 支援">
+# <i>export USE="-java"</i>
+</pre>
+
+<p>
+不要忘記在完成之後取消這個變數。
+</p>
+
+<pre caption="取消 USE">
+# <i>unset USE</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：先下載原始碼</title>
+<body>
+
+<p>
+如果你之前不曾婦至全部的原始碼，bootstrap script 會下載所有必要的檔案。這當然在
+有連接到網路時才能正常工作 :-) 如果你想要先下載原始碼然後再執行 bootstrap (例如
+你並不想在編譯時讓你的網路一直保持連線)，使用bootstrap script 的 <e>-f</e> 選項
+，這將會下載(<e>F</e>etch)所有的原始碼。
+</p>
+
+<pre caption = "下載必須的原始碼">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh -f</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Bootstrapping 你的系統</title>
+<body>
+
+<p>
+好啦，在你的鍵盤敲下底下的指令來啟動 bootstrap，然後給你自己找些娛樂吧 (例如打擾
+在 #gentoo 上的 Gentoo 發展者)，因為這一步驟將會花費一些時間完成。
+</p>
+
+<pre caption = "Bootstrapping 你的系統">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+</pre>
+
+<p>
+如果你先前已經改變了 <path>/etc/make.conf</path> 中的 <c>CHOST</c> 變數，你需要
+去重設一些變數讓 <c>gcc</c> 執行比較快：
+</p>
+
+<pre caption="重設系統變數">
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+接下來繼續下一步驟 <uri link="#doc_chap4">Stage2 到 Stage3 的過程</uri>。
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Stage2 到 Stage3 的過程</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<p>
+如果你正再閱讀這一部份，那你已經有一個 bootstrap 好的系統(可能是你之前執行
+bootstrap 或是你使用 <e>stage2</e>)。現在是編譯所有系統套件的時候了。
+</p>
+
+<p>
+<e>所有</e>系統套件？不，不完全是。在這一步驟中，你將會編譯沒有其他選擇的系統套
+件。一些套件有多種選擇 (例如 system loggers)，因為 Gentoo 代表選擇，我們不會強迫
+你一定要使用哪一種。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：看會做哪些事</title>
+<body>
+
+<p>
+如果你想要知道哪些套件會被安裝，執行 <c>emerge --pretend system</c>。這將會列出
+所有要編譯的程式。因為這相當的多，你應該使用 <c>less</c> 或 <c>more</c> 來上下瀏
+覽。
+</p>
+
+<pre caption = "看 'emerge system' 會做什麼">
+# <i>emerge --pretend system | less</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選擇：下載原始碼</title>
+<body>
+
+<p>
+如果你想要 <c>emerge</c> 在開始之前先下載原始碼(例如你並不想在編譯時讓你的網路一
+直保持連線)，你可以使用 <c>emerge</c> 的 <e>--fetchonly</e> 參數來幫你下載所有的
+原始碼。
+</p>
+
+<pre caption = "下載原始碼">
+# <i>emerge --fetchonly system</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>編譯系統</title>
+<body>
+
+<p>
+執行 <c>emerge system</c> 來開始編譯系統。然後讓你自己忙於某些事情，因為這到完成
+會花很長一段時間。
+</p>
+
+<pre caption = "編譯系統">
+# <i>emerge system</i>
+</pre>
+
+<p>
+當編譯完成以後，接下來繼續 <uri link="?part=1&amp;chap=7">設定核心</uri>。
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
