@@ -31,7 +31,7 @@ class GLIInstallTemplate:
 		"A private method for dependency checking (returns bool)"
 
 		# Type checking
-		if type(depends) in [ list, str, tuple ]:
+		if type(depends) not in [ list, str, tuple ]:
 			raise "Dependencies must be a string or a list of strings"
 
 		# If it is a string, change it to a list for parsing

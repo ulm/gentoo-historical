@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.10 2004/05/25 14:11:53 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.11 2004/08/08 21:23:48 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -174,7 +174,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns logging_daemon_pkg"
 		return self._logging_daemon_pkg
 
-	def set_logging_daemon_pkg(self, loggin_daemon):
+	def set_logging_daemon_pkg(self, logging_daemon_pkg):
 		"logging_daemon_pkg is a string to determine which logging daemon to install and configure (ie. 'sysklogd')"
 		
 		# Check data type
@@ -632,10 +632,10 @@ class InstallProfile(xml.sax.ContentHandler):
 		dhcp = True
 
 		if type(device) != str:
-			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
+			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device + ")!"
 	
 		if not GLIUtility.is_eth_device(device):
-			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
+			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device + ")!"
 
 		if type(attr) == tuple:
 			ip = attr[0]
@@ -994,7 +994,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		dev = gateway[0:seperator]
 		gateway_ip = gateway[seperator+1:]
 
-		if dev[0:3] not in ('eth', 'ppp'):
+		if dev[0:3] not in ('eth', 'ppp', 'wla'):
 			raise "DefaultGateway", "Invalid device!"
 
 		if not GLIUtility.is_ip(gateway_ip):
