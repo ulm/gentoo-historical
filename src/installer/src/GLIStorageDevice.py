@@ -301,12 +301,16 @@ class Partition:
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
 				os.system("mkdir /mnt/freespace 2>&1 > /dev/null; mount " + device._device + str(minor) + " /mnt/freespace | tee -a /tmp/dfoutput.log")
-				min_bytes = string.strip(commands.getoutput("df -B kB | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+kB\s\+::' -e 's:kB\s.\+::' | tee /tmp/dfoutput.log"))
-				print device._device + str(minor) + ": |" + min_bytes + "|"
-				min_bytes = int(min_bytes) * 1000
+#				min_bytes = string.strip(commands.getoutput("df --block-size 1 | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+\s\+::' -e 's:\s.\+::' | tee /tmp/dfoutput.log"))
+				free_cyl = string.strip(commands.getoutput("df --block-size " + str(self._device._cylinder_bytes) + " | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+\s\+[0-9]\+\s\+::' -e 's:\s.\+::' | tee /tmp/dfoutput.log"))
+#				print device._device + str(minor) + ": |" + min_bytes + "|"
+#				min_bytes = int(min_bytes)
+				free_cyl = int(free_cyl)
 				os.system("umount /mnt/freespace; rm -rf /mnt/freespace")
-				min_bytes = min_bytes + (100 * 1024 * 1024) # Add 100M just to be safe
-				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+#				min_bytes = min_bytes + (200 * 1024 * 1024) # Add 200M just to be safe
+				free_cyl = free_cyl - 200 # just to be safe
+#				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+				self._min_cylinders_for_resize = (self._end - self._start + 1) - free_cyl
 				self._resizeable == True
 			elif type == "fat16" or type == "fat32":
 				parted_part = self._device._parted_disk.get_partition(self._minor)
