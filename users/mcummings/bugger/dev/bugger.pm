@@ -77,6 +77,68 @@ $mech->select( 'order',      'Bug Number' );
 
 }
 
+sub show_bug {
+    my $BUG = shift;
+    chomp($BUG);
+    my $mech = connect_mech();
+$mech->submit_form(
+        form_number => 2,
+        fields      => { id => "$BUG", }
+    );
+    $mech->follow_link( text_regex => qr/format for printing/i );
+
+    my $TextBody = $mech->content();
+
+
+    our $hs = HTML::Strip->new();
+    my $hrcount;
+
+    my @blocks = split( /\<\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
+    
+    my @fulltext;
+    $fulltext[0] = $hs->parse("$blocks[2]");
+    $fulltext[1] = $hs->parse("$blocks[3]");
+    $fulltext[0] =~ s/Bug\#\:\n/Bug\#\:/i;
+    $fulltext[0] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[1] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[0] =~ s/\n\n/\n/mg;
+    $fulltext[1] =~ s/\n\n/\n/mg;
+    my @sintext = split( /\n/, $fulltext[0] );
+my ($header,$reporter,$status,$priority,$resolution,$severity,$assigned,$URL,$textblock);
+#my $ccline;
+foreach my $TextLine (@sintext) {
+	if ($TextLine =~ m/Bug $BUG/) { $header = clean_line( $TextLine ) }
+	elsif ($TextLine =~ m/reported by: /i) {$TextLine =~ s/reported by: //i; $reporter = clean_line( $TextLine );}
+	# Removed for now because CC: line doesn't appear in the text formatted
+	# version of the show bugs page on bugzie
+	#elsif ($TextLine =~ m/CC:/i) {$TextLine =~ s/CC://i; $ccline = $TextLine;}
+	elsif ($TextLine =~ m/status:/i) {$TextLine =~ s/status: //i; $status = clean_line( $TextLine );}
+	elsif ($TextLine =~ m/priority:/i) {$TextLine =~ s/priority: //i; $priority = clean_line( $TextLine );}
+	elsif ($TextLine =~ m/resolution:/i) {$TextLine =~ s/resolution: //i; $resolution = clean_line( $TextLine );}
+	elsif ($TextLine =~ m/severity:/i) {$TextLine =~ s/severity: //i; $severity = clean_line( $TextLine );}
+	elsif ($TextLine =~ m/assigned to:/i) {$TextLine =~ s/assigned to: //i; $assigned = clean_line( $TextLine );}
+	elsif ($TextLine =~ m/URL:/i) {$TextLine =~ s/URL //i; $URL = clean_line( $TextLine );}
+	else {next}
+}
+    %bugtext = (
+	'header' => "$header",
+	'reporter' => "$reporter",
+	#'cclist' => "$ccline",
+	'status' => "$status",
+	'priority' => "$priority",
+	'resolution' => "$resolution",
+	'severity' => "$severity",
+	'assigned' => "$assigned",
+	'URL' => "$URL",
+	'textblock' => "$fulltext[1]",
+	);
+
+
+
+    return(%bugtext);
+}
+
+
 
 sub add_bug {
 
@@ -270,98 +332,6 @@ sub add_attach {
 # The following is a horrid hack, but I'm trying to keep the number of dependancies
 # to a minimum in this package. So...
 
-sub show_bug {
-    my $BUG = shift;
-
-    my $agent = WWW::Mechanize->new();
-    $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
-    my $TextBody = $agent->content();
-    our $hs = HTML::Strip->new();
-    my $hrcount;
-
-    my @blocks = split( /\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
-    my $rowcount;
-    my %bugtext;
-
-# In block 1, the only piece of information we care about is the line with the words bugzilla bug #number
-    my $block1 = $blocks[1];
-    $block1 =~ s/\n//mg;
-    $block1 =~ s/^.*Bugzilla Bug/Bugzilla Bug/igm;
-    $block1 =~ s/\<\/font\>.*$/\<\/front\>/img;
-    my $header = $hs->parse($block1);
-    $hs->eof;
-
-
-    # Here we handle all of the header information
-    my $block4 = $blocks[4];
-    $block4 =~ s/\n//mg;
-    my $linecount;
-    my @blockset = split( /\salign\=\"right\"/, $block4 );
-
-    # lines of interest
-    # line 4 - reporter
-    my $reporter = clean_line( $blockset[3] );
-    $reporter =~ s/reporter: //i;
-
-    # line 10 - cc
-    my $ccline = clean_line( $blockset[9] );
-    $ccline =~ s/Remove select.*//gm;
-    $ccline =~ s/CC://i;
-
-    # line 11 - status
-    my $status = clean_line( $blockset[10] );
-    $status =~ s/status ://i;
-
-    # line 12 - priority *
-    my $priority = clean_line( $blockset[11] );
-    $priority =~ s/priority ://i;
-
-    # line 13 - resolution
-    my $resolution = clean_line( $blockset[12] );
-    $resolution =~ s/resolution ://i;
-
-
-    # line 14 - severity *
-    my $severity = clean_line( $blockset[13] );
-    $severity =~ s/severity ://i;
-
-
-    # line 15 - assigned
-    my $assigned = clean_line( $blockset[14] );
-    $assigned =~ s/Assigned(.*)To ://i;
-
-    # line 16  - URL
-    my $URL = clean_line( $blockset[15] );
-    $URL =~ s/u rl://i;
-    $URL =~ s/url ://i;
-
-
-    #my $block6 = clean_line($blocks[6]);
-    my $block6 = $blocks[6];
-    $block6 =~ s/\<div \>/\n/mg;
-    $block6 =~ s/\<pre\>/\n/mg;
-    $block6 =~ s/\n\n/\n/mg;
-    my $cleaned = $hs->parse($block6);
-    $cleaned =~ s/^\n{1,}//;
-    $hs->eof;
-    
-    %bugtext = (
-	'header' => "$header",
-	'reporter' => "$reporter",
-	'cclist' => "$ccline",
-	'status' => "$status",
-	'priority' => "$priority",
-	'resolution' => "$resolution",
-	'severity' => "$severity",
-	'assigned' => "$assigned",
-	'URL' => "$URL",
-	'textblock' => "$cleaned",
-	);
-
-
-
-    return(%bugtext);
-}
 
 sub download_attach {
     my $BUG = shift;
