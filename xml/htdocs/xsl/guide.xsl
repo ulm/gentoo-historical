@@ -833,11 +833,15 @@
 <xsl:template match="author">
 <xsl:apply-templates/>
 <xsl:if test="@title">
+<xsl:if test="$style != 'printable'">
   <br/>
+</xsl:if>
   <i><xsl:value-of select="@title"/></i>
 </xsl:if>
 <br/>
-<br/>
+<xsl:if test="$style != 'printable'">
+  <br/>
+</xsl:if>
 </xsl:template>
 
 <!-- Chapter -->
