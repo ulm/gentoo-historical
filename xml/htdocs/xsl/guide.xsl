@@ -133,12 +133,24 @@
                     <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
+			<tr>
+			<td align="center">
+				<a href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">
+				<img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
+				</a>
+			</td>
+		</tr>
 		<tr>
+                  <td>
+                    <img src="/images/line.gif" alt="line"/>
+                  </td>
+                </tr><tr>
                   <td align="center">
-                    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
+                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.</p>
+		    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
                       <img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
-                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
+                     <p class="alttext"><a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
 		</tr>
 		<tr>
@@ -599,12 +611,24 @@
                     <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
+			<tr>
+			<td align="center">
+				<a href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">
+				<img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
+				</a>
+			</td>
+		</tr>
 		<tr>
+                  <td>
+                    <img src="/images/line.gif" alt="line"/>
+                  </td>
+                </tr><tr>
                   <td align="center">
-                    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
+                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.</p>
+		    <a href="http://www.netraverse.com/gentoo.htm" target="_top">
                       <img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
-                    <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
+                     <p class="alttext"><a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
 		</tr>
 		<tr>
