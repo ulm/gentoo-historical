@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.27 2004/11/22 06:54:12 agaffney Exp $
+$Id: GLIClientController.py,v 1.28 2004/11/23 05:06:17 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -84,6 +84,7 @@ class GLIClientController(Thread):
 
 		self.output("Starting install now...")
 
+		self.addNotification("int", NEXT_STEP_READY)
 		self._install_event.wait()
 		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		self._install_steps = self._arch_template.get_install_steps()
@@ -241,5 +242,5 @@ class GLIClientController(Thread):
 		except:
 			# This should only ever happen if the frontend is not checking for notifications
 			pass
-		os.kill(os.getpid(), signal.SIGUSR1)
+#		os.kill(os.getpid(), signal.SIGUSR1)
 

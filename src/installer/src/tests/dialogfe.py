@@ -12,7 +12,8 @@ import commands
 import string
 import copy
 import signal
-import pprint
+#import pprint
+import time
 
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -456,7 +457,7 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 	configuration.close()
 	return filename
 
-signal.signal(signal.SIGUSR1, signal_handler)
+#signal.signal(signal.SIGUSR1, signal_handler)
 d.setBackgroundTitle("Gentoo Linux Installer")
 d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If your system dies a horrible, horrible death, don't come crying to us (okay, you can cry to klieber).", height=10, width=50, title="Welcome")
 
@@ -517,16 +518,6 @@ while 1:
 			if d.yesno("Do you want to save the InstallProfile XML file?") == DLG_YES:
 				if install_profile_xml_file == None: install_profile_xml_file = ""
 				install_profile_xml_file = save_install_profile(xmlfilename=install_profile_xml_file)
-
-#				code, filename = d.inputbox("Enter a filename for the XML file", init=install_profile_xml_file)
-#				if code != DLG_OK: sys.exit()
-#				if GLIUtility.is_file(filename):
-#					if not d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == DLG_YES:
-#						sys.exit()
-#				configuration = open(filename ,"w")
-#				configuration.write(install_profile.serialize())
-#				configuration.close()
-
 			sys.exit()
 		continue
 	menuitem = menu_list[int(menuitem)-1]
@@ -541,18 +532,30 @@ while 1:
 		cc.set_install_profile(install_profile_xml_file)
 		cc.start_install()
 		# This next line gives the ClientController time to actually get to the install step loop
-		while not next_step_waiting: pass
 		while 1:
-			if next_step_waiting:
-				next_step_waiting = False
-				next_step = cc.get_next_step_info()
-				print "Next step: " + next_step
-				if cc.has_more_steps():
-					cc.next_step()
+			notification = cc.getNotification()
+			if notification == None:
+				time.sleep(1)
 				continue
-			if install_done:
-				print "Install done!"
-				sys.exit(0)
-			if exception_waiting:
+			if notification.get_type() == "int" and notification.get_data() == GLIClientController.NEXT_STEP_READY:
+				break
+		while 1:
+			notification = cc.getNotification()
+			if notification == None:
+				time.sleep(1)
+				continue
+			type = notification.get_type()
+			data = notification.get_data()
+			if type == "exception":
 				print "Exception received"
-				pass
+			elif type == "int":
+				if data == GLIClientController.NEXT_STEP_READY:
+					next_step_waiting = False
+					next_step = cc.get_next_step_info()
+					print "Next step: " + next_step
+					if cc.has_more_steps():
+						cc.next_step()
+					continue
+				if data == GLIClientController.INSTALL_DONE:
+					print "Install done!"
+					sys.exit(0)
