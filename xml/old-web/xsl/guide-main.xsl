@@ -378,20 +378,22 @@ of your sale will go towards further Gentoo Linux development.</p>
 <a href="http://www.qksrv.net/click-477620-5033206" target="_top" >
 <img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
 User Docs:<br/>
-						<font color="#ff0000"><a class="altlink" href="/doc/build.html">Install Instructions</a></font><br/>
+						<a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/>
+						<a class="altlink" href="/doc/gentooppc-quickstart.html">GentooPPC Quickstart Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
 						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
-						<a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/portage-manual.html">Portage Manual</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
-						<a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><font color="#ff0000">(new!)</font><br/>
-						<a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a> <font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a> <font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/java.html">Gentoo Java Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
 						<br/><br/>
 						Developer Resources:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
-						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><font color="#ff0000">(updated!)</font><br/>
-						<a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a> <font color="#ff0000">(updated!)</font><br/>
+						<a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
 						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
@@ -403,8 +405,12 @@ User Docs:<br/>
 						<br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
 						#gentoo (general discussion)<br/>
-						#gentooppc (Gentoo Linux/PPC)<br/>
-						#gentoo-user (low-bandwidth chat)<br/>
+						#gentooppc (Gentoo Linux/PPC) <font color="#ff0000">(new!)</font><br/>
+						#gentoospace (Gentoo Linux/Sparc) <font color="#ff0000">(new!)</font><br/>
+						#gentoo-user (low-bandwidth chat) <font color="#ff0000">(new!)</font><br/>
+						#gentoo-server (Gentoo servers) <font color="#ff0000">(new!)</font><br/>
+						#gentoofr (Fran&amp;ccedil;ais) <font color="#ff0000">(new!)</font><br/>
+						#gentoo-es (Espa&amp;ntilde;ol) <font color="#ff0000">(new!)</font><br/>
 						<br/><br/></p></td></tr></table>
 					</td></tr>
 				</table>

@@ -1,0 +1,271 @@
+<?xml version='1.0'?>
+<guide link="/doc/gentooppc-quickstart.html">
+<title>Gentoo Linux PPC Quickstart Guide</title>
+<author><mail link="david@trailheadcoffee.com">
+        David Chamberlain</mail>
+</author>
+
+<abstract>This guide is intended for those already familiar with Gentoo
+Linux.  It will point out the major differences you need to be aware of
+between the PPC port and the x86 version.  If you aren't familiar with Gentoo,
+you should read the Gentoo PPC Full Install Guide.
+</abstract>
+
+<version>1.0</version>
+<date>14 April 2002</date>
+
+
+<chapter>
+<title>Pre-Install</title>
+<section>
+<body>
+<p>If you're only going to have Linux on this box, you're ready to start.  If
+you
+want OS9 and/or OSX, you'll need to set up your disk from the Mac environment 
+first.  There's a thorough guide here: 
+<uri>http://people.debian.org/~branden/ibook.html</uri>.  Also look here:
+<uri>http://www.oreillynet.com/pub/a/mac/2002/03/29/ibook_linux.html</uri>.</p>
+<p>
+Don't get carried away making lots of partitions - when you look at the drive
+in mac-fdisk, you're going to see that Apple already has at least 8 partitions 
+
+
+at the start of your drive for its drivers, and you're going to need an extra 
+one for a kind of fake MBR we'll be using.  Since I've been using Linux, I've
+suspected that the large number of partitions on my drive has made OSX rather 
+crash-happy.  Still, one thing to consider is making a smallish, plain HFS 
+("Apple Standard") partition so you can comfortably swap files between Linux 
+and Mac - that's the one format they can both read (though deleting files on 
+HFS has given me quite a few Linux kernel panics).</p>
+<note>
+A final note: most OSX users seem to agree it's a good idea to have a separate
+partition for OS9 ("Classic"), even though you can install it on the same one 
+as OSX.</note>
+</body>
+</section></chapter>
+
+<chapter>
+<title>Using the Install CD</title>
+<section>
+<body>
+<p>
+You can download the iso for the install CD from
+<uri>http://ftp.sunsite.dk/projects/gentooppc/build</uri>.  If you burn it as
+a CD
+master, it will be able to boot your Mac.  With the CD in the drive, power-on
+the Mac while holding down the C key.  Alternatively, hold down the Option key
+for a boot menu and choose the CD.  Older Macs may require arcane combinations
+of the keys C, D, Shift, Option etc.  If you have one of these, you're on your
+own.</p>
+<p>
+While you're logged into the ftp site, see if there's a version of
+<path>build-ppc.tar.bz2</path> that's more recent than the CD image.  If there
+is,
+grab
+it
+too - it probably has something you want in it (currently that means 
+<c>rsync</c>!)</p>
+<p>
+If you've successfully booted from the CD, you'll have a chance to choose your
+boot mode.  Note that nearly all Macs made in the last four years or so are
+so-called "New-World" machines and can use the default boot mode.</p>
+</body>
+</section></chapter>
+
+<chapter>
+<title>Setting Up</title>
+<section>
+<body>
+<p>
+Unlike the x86 boot CD, the PPC version will almost certainly activate all
+necessary hardware without the need to modprobe.  You'll see instructions for
+bringing up the network - yes, there's no need to look for your ethernet
+driver.  If ifconfig doesn't work right off the bat, you can poke around in
+/lib/modules to see if there are any drivers you can load, but you're probably
+not going to be able to do the install this way.</p>
+<p>
+There are, on the other hand, some useful drivers in /lib/modules - in
+particular, Firewire.  If you want to use a Firewire drive (or a
+powerbook in Target Disk mode :-) during install - e.g. to load a newer build
+tarball - try:</p>
+<pre>
+<c>modprobe ieee1394</c>
+<codenote>actually I think that's built in to the kernel</codenote>
+<c>modprobe ohci1394</c>
+<c>modprobe sbp2</c>
+</pre>
+
+<p>This should attach your drive as an emulated scsi device - check 
+<c>dmesg</c>
+to
+see
+where it shows up.  If it doesn't work, try unloading and reloading the
+modules a couple of times to check - firewire support has come a long way, but
+it's still kinda sketchy, especially - irony of ironies - on the PPC side.</p>
+<note>No, I haven't tried Target Disk with Linux - it's an idea 
+though...</note>
+
+<p>Once you get the network set up, you're ready to partition, which you do
+using
+<c>mac-fdisk</c>.  It's pretty straight-forward - use "p" after partition
+numbers
+to
+select default starting and ending blocks.  See the guides mentioned above, 
+and don't forget to make the special bootstrap partition using the "b" command 
+
+
+- this is our version of a MBR.  If you make this the first (non-driver)
+partition,the Mac will try to boot from it first; but note that you don't have
+to do it this way.  Once you're done installing, you can boot into Open
+Firmare (Cmd-Option-O-F) and issue some cryptic Forth commands to tell the
+machine which partition to boot from.</p>
+<note>Another note: since i'm concerned about having too many partitions, I
+kept
+/boot on the root partition.  No unforseen problems so far.</note>
+<note>What with all those Apple partitions, it's a good idea to write down the 
+
+
+important partition numbers and names somewhere.</note>
+</body>
+</section></chapter>
+
+<chapter>
+<title>Install</title>
+<section>
+<body>
+<p>
+You can follow through most of the standard Gentoo install guide now.  Make
+sure your net connection is working (e.g. put an entry in 
+<path>/etc/resolv.conf)</path>;
+make your linux filesystem(s) and mount it.  Unpack the
+build tarball onto <path>/mnt/gentoo</path> - note that if you want to grab an
+
+updated
+tarball now, wget is available - mount proc, copy over 
+<path>/etc/resolv.conf</path>
+
+and
+<c>chroot</c>
+in.</p>
+<p>
+Now you can run <c>emerge rsync</c>: first check <path>/etc/make.conf</path> -
+set
+SYNC
+to rsync://sunsite.dk/gentooppc/portage.  You're ready to bootstrap and emerge
+system.</p>
+<note>I strongly recommend getting all the sources before starting: before
+bootstrap, you should <c>emerge --fetchonly</c> baselayout, gcc, glibc,
+binutils 
+
+and
+gettext. Before <c>emerge system</c>, <c>emerge --fetchonly system</c>.</note>
+<note>Be sure that <path>/etc/make.conf</path> has the ppc settings.  It
+should
+probably
+just
+be a link to <path>/usr/portage/profiles/default-ppc</path>.</note>
+</body>
+</section></chapter>
+
+<chapter>
+<title>Configuring your system</title>
+<section>
+<body>
+<p>
+The main difference you'll find here from x86 Linux is the bootloader, yaboot.
+ It's a lot like lilo: settings go in <path>/etc/yaboot.conf</path> - here's
+mine:</p>
+<pre>
+## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## our bootstrap partition:
+boot=/dev/hda9
+
+##hd: is open firmware speak for hda
+device=hd:
+partition=11
+
+root=/dev/hda11
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options
+#################
+image=/boot/vmlinux
+	label=Linux
+	read-only
+##################
+
+macos=/dev/hda13
+macosx=/dev/hda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>Once <path>yaboot.conf</path> is set up how you want it, you run
+<path>/usr/sbin/ybin</path> to
+install
+the settings in the bootstrap partition.  Don't forget this!  If all goes 
+well, and you have the same options as me, your next reboot will give you a 
+simple, five-entry boot menu.</p>
+<note>Yaboot has some functionality for
+setting config at boot time, so take a look at
+<uri>http://penguinppc.org/projects/yaboot</uri> for more info.</note>
+
+<p>As for configuring and compiling your kernel, the default config you'll get
+with the gentoo ppc sources will have most of the important stuff set up
+already.  There are usually very few alternative drivers for Mac hardware, and
+the necessary ones will almost certainly be preselected.  Still, use the
+'help' option in <c>make menuconfig</c> if you have any doubts.
+Note that you'll have trouble making a bzImage.  Stick with <c>make 
+vmlinux</c>
+unless you know what you're doing.</p>
+<note>If you want to know who Ben is, see 
+<uri>http://penguinppc.org/~benh</uri >
+or
+<uri>http://ppckernel.org</uri>.  He's the PPC kernel maintainer, and most PPC
+linux
+users use sources from his tree, not the kernel.org tree.</note>
+
+<p>Another ppc quirk is the difficulty of setting up XFree.  First, if you
+want
+to use direct rendering with a video card, try loading the appropriate kernel
+module first, just to be sure.  Second, I've had best luck recently with
+<c>XFree86 --configure</c>.  Still, what the config programs think should work
+may
+not.  Your usb mouse will probably be <path>/dev/input/mice</path>, by the
+way.
+If you
+don't know what hardware (e.g. video card) you have, try emerging pci-utils,
+then issue the command <c>lspci</c>.  It may pick up the relevant details.</p>
+<note>"Option" "UseFBdev" is your friend :-)</note>
+<note>At the time of writing, ppc portage has an extra, cvs version
+of
+xfree. This may not build, so don't rely on leaving it to compile overnight 
+or something like that.</note>
+
+<p>Well, there it is.  Things are functioning very well right now, but the
+more people we can get testing, the better.  If you want to try your hand at
+making
+an architecture-independent ebuild, take a look at <path>
+/usr/portage/media-sound/mpg123/mpg123r-r1.ebuild</path>.  Note also that any
+ebuild
+that downloads binary files will probably be broken, unless the author has
+included alternate ppc binaries (see new xanim ebuilds).</p>
+
+<note>Yes, KDE3 works fine - thanks for the great ebuilds, Dan :-)</note>
+</body>
+</section>
+</chapter>
+</guide>
