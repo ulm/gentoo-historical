@@ -322,14 +322,30 @@ def set_boot_loader():
 
 def set_timezone():
 # This section will be for setting the timezone. It pulls from /usr/share/zoneinfo/zone.tab.
-	tzlist = []
-	file = open("/usr/share/zoneinfo/zone.tab")
-	for line in file.readlines():
-		if not line.startswith('#') and len(line) > 0:
-			tzlist.append("%s" % line.split("\t")[2].strip())
-	tzlist.sort()
-	code, tznum = d.menu("Enter a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
-	if code == DLG_OK: install_profile.set_time_zone(None, tzlist[int(tznum)-1], None)
+	zonepath = "/usr/share/zoneinfo"
+	while 1:
+		tzlist = []
+		for entry in os.listdir(zonepath):
+			if entry[-4:] == ".tab": continue
+			if os.path.isdir(zonepath + "/" + entry): entry += " -->"
+			tzlist.append(entry)
+		tzlist.sort()
+		code, tznum = d.menu("Enter a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
+		if code == DLG_OK:
+			tzchoice = tzlist[int(tznum)-1]
+			if tzchoice[-3:] == "-->":
+				zonepath += "/" + tzchoice[:-4]
+				continue
+			else:
+				zonepath += "/" + tzchoice
+				break
+		else:
+			if zonepath == "/usr/share/zoneinfo":
+				return
+			slashloc = zonepath.rfind("/")
+			zonepath = zonepath[:slashloc-1]
+			continue
+	install_profile.set_time_zone(None, zonepath[20:], None)
 
 def set_networking():
 # This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
