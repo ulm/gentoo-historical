@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.84 2005/04/03 01:44:33 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.85 2005/04/03 03:03:42 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -347,8 +347,9 @@ class ArchitectureTemplate:
 	def set_timezone(self):
 		"Sets the timezone for the new environment"
 		# Set symlink
-		if not os.access(self._chroot_dir + "/etc/localtime", os.W_OK):
-			os.symlink(self._chroot_dir + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._chroot_dir + "/etc/localtime")
+		if os.access(self._chroot_dir + "/etc/localtime", os.W_OK):
+			GLIUtility.spawn("rm "+self._chroot_dir + "/etc/localtime", quiet=True)
+		os.symlink(self._chroot_dir + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._chroot_dir + "/etc/localtime")
 		if not (self._install_profile.get_time_zone() == "UTC"):
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
 		self._logger.log("Timezone set.")
