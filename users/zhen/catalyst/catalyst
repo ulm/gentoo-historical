@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.25 2003/10/08 19:51:52 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.26 2003/10/09 00:33:30 zhen Exp $
 
 VERSION="2.0"
 
@@ -30,97 +30,80 @@ install -d $MY_DIST_LOCALS
 
 MYPROFILEDIR="/usr/portage/profiles/${BUILDTYPE}-${MAINARCH}-${MAINVERSION}"
 
-prechecks() {
-	if [ "$1" = "-h" ] || [ "$1" = "--help" ]
-	then
-		usage
-		exit 1
-	fi
+snap() {
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
+	SNAPBALL=${SNAPDIR}/portage-${1}.tar.bz2
+
+	install -d ${SNAPDIR}
+	einfo "Cleaning up build directory..."
+	rm -rf ${CHROOTDIR}
+	install -d ${CHROOTDIR}
+	einfo "Creating Portage tree snapshot..."	
+	rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
+	einfo "Creating Portage tree tarball..."
+	( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
+	einfo "done!"
+
+} #end snap
+
+#umount() {
+#	einfo "Unmounting..."
+#	umount_all
+
+#} #end umount
 	
-	if [ -z $1 ]
-	then
-		usage
-		exit 1
-	fi
+enter_chroot() {
+	install -d ${CHROOTDIR}
+	cd ${CHROOTDIR}
+	mount_all
+	einfo "Chrooting to ${CHROOTDIR}..."
+	$CHROOT ${CHROOTDIR}
+	umount_all
 
-	if [ "`whoami`" != "root" ]
-	then
-		eerror "$0: This script requires root privileges to operate."
-		exit 1
-	fi
-	
-	if [ -z ${MYPROFILEDIR} ]
-	then
-		eerror "!!! Profile missing! You must 'emerge sync'"
-		exit 1
-	fi
+} #end enter
 
-} #end prechecks() 
 
-is_special() {
-	if [ "$1" = "snap" ] || [ "$1" = "enter" ] || [ "$1" = "umount" ] || [ "$1" = "livecd" ]
-	then
-		return 1
-	else
-		return 0
-	fi
-
-} #end is_special()
-
-check_special() {
-	
-	if [ `is_special` >= 1 ]
-	then
-	
-	if [ $1 = "snap" ]
-	then
-		[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${2}" || CHROOTDIR="$TMPDIR/snap-${2}"
-		SNAPBALL=${SNAPDIR}/portage-${2}.tar.bz2
-
-		install -d ${SNAPDIR}
-		einfo "Cleaning up build directory..."
-		rm -rf ${CHROOTDIR}
-		install -d ${CHROOTDIR}
-		einfo "Creating Portage tree snapshot..."	
-		rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
-		einfo "Creating Portage tree tarball..."
-		( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
-		einfo "done!"
-		exit 0
-	fi
-
-	if [ $1 = "umount" ]
-	then
-		einfo "Unmounting..."
-		umount_all
-		exit 0
-
-	fi
-	
-	if [ $1 = "enter" ]
-	then
-		install -d ${CHROOTDIR}
-		cd ${CHROOTDIR}
-		mount_all
-		einfo "Chrooting to ${CHROOTDIR}..."
-		$CHROOT ${CHROOTDIR}
-		umount_all
-		exit 0
-	fi
+if [ "`whoami`" != "root" ]
+then
+	eerror "$0: This script requires root privileges to operate."
+	exit 1
 fi
 	
-} #end check_special()
+if [ -z ${MYPROFILEDIR} ]
+then
+	eerror "!!! Profile missing! You must 'emerge sync'"
+	exit 1
+fi
+
+case "$1" in
+	"-h"|"--help")
+		usage
+		exit1
+	;;
+
+	"snap")
+		snap $2
+		exit 0
+	;;
+	
+	"umount")
+		umount
+		exit 0
+	;;
+
+	"enter")
+		enter_chroot
+		exit 0
+	;;
+
+	*)
+		usage
+	;;
+esac
 
 ## START MAIN PROGRAM ##
 
 # more or less a sanity check
-prechecks $1
-check_special $1 $2
-#shift
-
-# all of the special preconditions should be filled, so start
-# the body of the program now
-
 get_arch $1 $2 $4
 pre_build $2 $3 $4
 build $2
