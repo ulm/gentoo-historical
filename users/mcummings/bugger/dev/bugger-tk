@@ -1,15 +1,18 @@
 #!/usr/bin/perl
-package main;
+use Tk;
+use Tk::widgets qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
 use bugger;
+use diagnostics;
+my $selfname = $0;
+package main;
+use subs qw/splash search initconfig launch_win init_main_win/;
+use vars qw/$BW $mw $mw2 $hlist/;
+
+if ($selfname =~ m/bugger-tk/) {main::start()}
 
 sub start {
-    use Tk;
 
-    use Tk::widgets
-      qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
-    use subs qw/splash search initconfig/;
-
-    use vars qw/$TOP/;
+    #use vars qw/$BW/;
     my %results;
 
     #build the splash
@@ -37,7 +40,6 @@ sub start {
 
 sub init_main_win {
     our $mw = new MainWindow;
-
     my $search_string = '';
     my $searchbox     = $mw->ToolBar(
         qw/-movable 1
@@ -98,7 +100,7 @@ sub init_main_win {
     $tb2->ToolButton(
         -image   => 'actexit22',
         -tip     => 'quit',
-        -command => \&quit
+        -command => sub {&quit; $mw->withdraw; exit;}
     );
 
     our $hlist = $mw->Scrolled(
@@ -129,7 +131,7 @@ sub search {
 
     }
     else {
-        $hlist->delete(all);
+        $hlist->delete("all");
         my ( @red, @blue, @black );
         $red[1] = $hlist->ItemStyle( 'text', -foreground => '#800000' );
         $red[2] = $hlist->ItemStyle(
@@ -210,7 +212,7 @@ sub search {
 
 sub launch_win {
     my $incoming = shift;
-    my $bugID = $hlist->info( data, $incoming );
+    my $bugID = $hlist->info( 'data', $incoming );
     if ( $bugID < 1 ) {
         my $button = $mw->messageBox(
             '-icon'  => "error",
@@ -231,7 +233,7 @@ sub launch_win {
         $tb->ToolButton(
             -image   => 'actexit22',
             -tip     => 'quit',
-            -command => [ $mw2 => 'destroy' ]
+            -command =>  sub{$mw2->withdraw}  
         );
         $mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
         my $text = $mw2->Scrolled(
@@ -271,8 +273,7 @@ sub launch_win {
         my @menubuttons;
         foreach (qw/update close/) {
             my $pos        = ucfirst;
-            my $menubutton =
-              $mw2->Menubutton( qw/-underline 0 -relief raised/,
+            my $menubutton = $mw2->Menubutton( qw/-underline 0 -relief raised/,
                 -text => $pos );
             push @menubuttons, $menubutton;
             my $menu = $menubutton->menu(qw/-tearoff 0/);
@@ -281,10 +282,15 @@ sub launch_win {
                 -label   => "$pos",
                 -command => sub { $comment->Save("/tmp/mike") }
             );
-
+###
         }
-        $menubuttons[0]->grid(qw/-row 0 -column 1 -sticky s/);
-        $menubuttons[1]->grid(qw/-row 0 -column 1 -sticky s/);
+	foreach my $key (@menubuttons){
+	$key->pack(qw/-side left/);}
+	#$menubuttons[0]->pack();
+	#$menubuttons[0]->pack();
+
+        ###$menubuttons[0]->grid(qw/-row 0 -column 1 -sticky s/);
+        ###$menubuttons[1]->grid(qw/-row 0 -column 1 -sticky s/);
 
         #my $combut = $mw2->ToolBar;
         #$combut->separator;
@@ -294,11 +300,12 @@ sub launch_win {
         #-command => sub{$comment->Save("/tmp/mike")}
         #);
 
-        MainLoop;
+    MainLoop;
     }
+    return;
 }
 
-sub quit { print "Thank you for using bugger-tk\n\n"; exit() }
+sub quit { print "Thank you for using bugger-tk\n\n"; return; }
 
 sub splash {
     $QUIT_COMMAND = sub { exit };
@@ -369,8 +376,9 @@ sub initconfig {
         -labelPack    => [qw/-side left -anchor w/],
         -textvariable => \$servername
     );
-    $serv->pack(qw/-fill x -side left -expand 1/);
-    # ADD DOWNDIR HERE - MPC
+    $serv->pack(qw/-fill x -expand 1/);
+    
+    
     my $downdir = '';
     my $down = $ConnectInfo->LabEntry(
 	-label => "Download Directory",
@@ -382,19 +390,27 @@ sub initconfig {
         -labelPack    => [qw/-side left -anchor w/],
         -textvariable => \$downdir
     );
-    my $radiovar = "mode";
+    my $browsebut = $ConnectInfo->Button(
+    	-text => "Browse...",
+	-command => sub {dirDialog($CONF_WIN,$down)});
+    $down->pack(qw/-fill x -expand 1 -side left/);
+    $browsebut->pack(qw/-side left/);
+
+    #my $seperator = $ConnectInfo->Label()->pack(qw/-side left -anchor w -expand 1/);
+    
+    my $modevar = "tkmode";
     my $tkmode = $ConnectInfo->Radiobutton(
     	-text => 'Run TK by default',
-	-variable => \$radiovar,
+	-variable => \$modevar,
 	-value => 'tkmode'
     );
     my $flatmode = $ConnectInfo->Radiobutton(
 	-text => 'Run console by default',
-	-variable => \$radiovar,
+	-variable => \$modevar,
 	-value => 'flatmode'
     );
-    $tkmode->pack( qw/-side left/, -fill => 'x');
-    $flatmode->pack( qw/-side left/, -fill => 'x');
+    $tkmode->pack( qw/-anchor w/, -fill => 'x');
+    $flatmode->pack( qw/-anchor w/, -fill => 'x');
     
 
     my $frame = $CONF_WIN->Frame;
@@ -439,6 +455,7 @@ sub initconfig {
 		$contents{'password'} = "$passphrase";
 		$contents{'rows'} = "20";
 		$contents{'downdir'} = "$downdir"|| "/tmp";
+		$contents{'mode'} = "$modevar";
 		$conf->save_file("$configfile",\%contents)
 			or die "Can't save configfile! $!\n";
 		my $mode = '0600';
@@ -471,6 +488,17 @@ sub callsome {
     return;
 }
 
+sub dirDialog {
+    my $w = shift;
+    my $ent = shift;
+    my $dir;
+    $dir = $w->chooseDirectory;
+    if (defined $dir and $dir ne '') {
+	$ent->delete(0, 'end');
+	$ent->insert(0, $dir);
+	$ent->xview('end');
+    }
+}
 sub entry_flash {
     my ( $w, $fg, $bg ) = @_;
     $w->focusForce;
