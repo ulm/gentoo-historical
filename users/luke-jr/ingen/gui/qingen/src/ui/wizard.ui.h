@@ -126,8 +126,9 @@ void Wizard::init() {
 #define REQUIRED cur->setRequired(TRUE);
 #define DEFAULT	cur->setOn(TRUE);
 #define SEPERATOR(name) new QListViewItem(lstLicenses, name);
+	//Nvidia??
 	ITEM("DIVX")
-	ITEM("MOTIF")
+	ITEM("MOTIF")			// Is this really required since KDE's MOTIF using is compile-time?
 	SEPERATOR("  --- Optional ---")
 	ITEM("CRACKLIB")	REQUIRED	DEFAULT
 	ITEM("fontconfig")	REQUIRED	DEFAULT

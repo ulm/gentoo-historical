@@ -1,5 +1,6 @@
 #!/bin/bash
 # Step 2: Copy system, unmerging disabled pkgs live
+# TODO: Deinitialize copied system? (simulate shutdown?)
 adsc() {
 	ns="$@" os=""
 	while test "$ns" != "$os"; do
@@ -15,7 +16,7 @@ ads() {
 # also remove from world file if it's in there
 scan_exclude_pkgs() {
 	COPY_EXCLUDE=""	PKG_EXCLUDE=""
-	for pkg in `cat $INGEN_DATA/exclude_pkgs 2>/dev/null`; do
+	for pkg in `cat $INGEN_DATA/exclude_pkgs 2>/dev/null` $INGEN_PKG; do
 		PKG_EXCLUDE="$PKG_EXCLUDE:`echo /usr/portage/*/$pkg* | sed 's%^.*/%%'`"
 		if ! echo $pkg | egrep -q '/' -- ; then pkg="*/$pkg"; fi
 		pkg="`echo /var/db/pkg/$pkg*`"
@@ -34,6 +35,7 @@ scan_exclude_pkgs() {
 	done
 }
 docopy() {
+	# Note: this will have issues if COPY_EXCLUDE goes into any symlinks
 	ads item $1
 	ads itemd $1/
 	case ":$COPY_EXCLUDE:" in
@@ -54,8 +56,9 @@ docopy() {
 		done
 		popvar item
 		# TODO: find replacement for this test; ls can take some time
-		if outnull ls -d $item/*			&&
-		 ! outnull ls -d $SYSROOT/$item/*	; then
+		if outnull ls -Ad $item/*			&&
+		 ! outnull ls -Ad $SYSROOT/$item/*	&&
+		 ! [ -f $SYSROOT/$item/.keep ]		; then
 			rmdir $SYSROOT/$item	# Contents were excluded
 			debug "Excluding Dir: $item"
 		fi
@@ -71,8 +74,9 @@ scan_exclude_pkgs
 COPY_EXCLUDE="$COPY_EXCLUDE:/var/cache/edb/world"	# Rebuild this later
 COPY_EXCLUDE="$COPY_EXCLUDE:/tmp/:/mnt/"	# Contents [re]built later
 COPY_EXCLUDE="$COPY_EXCLUDE:/proc/:/dev/"	# Shouldn't copy these contents
-COPY_EXCLUDE="$COPY_EXCLUDE:/initrd:/boot/boot"	# A loop?
+COPY_EXCLUDE="$COPY_EXCLUDE:/initrd"
 sdebug "COPY_EXCLUDE=$COPY_EXCLUDE"
+# TODO: find a way to support pkg_prerm here instead of later
 docopy '/'
 debug "PKG_EXCLUDE=$PKG_EXCLUDE"
 debug "Transferring world file..."
@@ -89,3 +93,11 @@ for wpe in `cat /var/cache/edb/world`; do
 		;;
 	esac
 done
+{
+	echo $PKG_EXCLUDE |
+	while read -d ':' pkg; do
+		echo "ebuild $pkg prerm"
+		echo "ebuild $pkg postrm"
+	done
+} | debugoutput chroot $SYSROOT /bin/bash --login
+# TODO: find a way to sdebug each 'ebuild' cmd prior to running it 

@@ -1,6 +1,7 @@
 #!/bin/bash
 INGEN_DATA=/.ingen
 SYSROOT=/mnt/gentoo
+INGEN_PKG=sys-apps/ingen
 
  debug() { [  $DEBUG ] && echo DEBUG: "$@"; }
 sdebug() { [ $SDEBUG ] && echo DEBUG: "$@"; }
@@ -14,3 +15,17 @@ popvar() {
 outnull() {
 	"$@" >/dev/null 2>&1
 }
+debugoutput() {
+	# This function uses 'sdebug' on stdout, and then (after completed) uses
+	# 'debug "WARNING: $stderr_output'
+	# It should, however, intermix the stdout and stderr as it comes from the
+	# eval line. If anyone knows how, please let me know.
+
+	# Process stderr first:
+	#{ { writer | stdout-reader >&3 2>&4; } 2>&1 | stderr-reader; } 4>&2 3>&1
+	# Process stdout first:
+	#{ { { writer >&3; } 2>&1 | stderr-reader >&4; } 3>&1 | stdout-reader; } 4>&2
+
+	{ { { { eval "$@"; } >&3; } 2>&1 | while read a; do debug "WARNING: $a"; done >&4; } 3>&1 | while read a; do sdebug "$a"; done; } 4>&2
+}
+
