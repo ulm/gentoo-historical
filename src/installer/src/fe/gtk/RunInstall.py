@@ -93,9 +93,11 @@ class RunInstall(gtk.Window):
 
 	def tail_logfile(self):
 		if select.select([self.tail_pipe], [], [], 0)[0]:
+			print "Data available"
 			line = self.tail_pipe.readline()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
+		return True
 
 	def make_visible(self):
 		self.show_all()
