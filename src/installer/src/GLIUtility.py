@@ -207,9 +207,12 @@ def set_default_route(route):
 
 	return True
 
-def spawn(cmd,quiet=False,logfile=None,display_on_tty8=False):
+def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None):
 	pid = os.fork()
 	if pid == 0:
+		if chroot != None:
+			cmd = "chroot " + chroot + " " + cmd
+
 		if quiet and logfile != None:
 			cmd += " >> " + logfile + " 2>&1"
 		elif quiet and logfile == None:
