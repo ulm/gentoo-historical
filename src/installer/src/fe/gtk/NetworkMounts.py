@@ -17,9 +17,6 @@ class Panel(GLIScreen.GLIScreen):
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
 
-		self.netmounts.append({ 'host': "kagome", 'export': "/usr/portage", 'type': "NFS", 'mountpoint': "/usr/portage", 'mountopts': "ro"})
-		self.netmounts.append({ 'host': "kagome", 'export': "/var/cache/edb/dep", 'type': "NFS", 'mountpoint': "/var/cache/edb/dep", 'mountopts': "rw,noauto"})
-
 		self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
 		for i in range(0, len(self.netmounts)):
 			self.treedata.append([i, self.netmounts[i]['host'], self.netmounts[i]['export'], self.netmounts[i]['type'], self.netmounts[i]['mountpoint'], self.netmounts[i]['mountopts']])
@@ -56,9 +53,9 @@ class Panel(GLIScreen.GLIScreen):
 		mount_info_export_label = gtk.Label("Export/Share:")
 		mount_info_export_label.set_alignment(0.0, 0.5)
 		mount_info_table.attach(mount_info_export_label, 0, 1, 1, 2)
-#		self.mount_info_export = gtk.combo_box_entry_new_text()
 		self.mount_info_export = gtk.ComboBoxEntry(gtk.ListStore(gobject.TYPE_STRING))
-		self.mount_info_export.set_text_column(0)
+		if not self.mount_info_export.get_text_column() == 0:
+			self.mount_info_export.set_text_column(0)
 		mount_info_table.attach(self.mount_info_export, 1, 2, 1, 2)
 		mount_info_type_label = gtk.Label("Type:")
 		mount_info_type_label.set_alignment(0.0, 0.5)
@@ -153,12 +150,6 @@ class Panel(GLIScreen.GLIScreen):
 		self.mount_button_populate.set_sensitive(gtk.TRUE)
 
 	def new_mount(self, button, data=None):
-		self.mount_info_host.set_text("")
-		self.mount_info_export.get_child().set_text("")
-		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
-		self.mount_info_type.set_text("")
-		self.mount_info_mountpoint.set_text("")
-		self.mount_info_mountopts.set_text("")
 		self.active_entry = -1
 		self.mount_button_update.set_sensitive(gtk.TRUE)
 		self.mount_button_delete.set_sensitive(gtk.FALSE)
@@ -190,12 +181,6 @@ class Panel(GLIScreen.GLIScreen):
 
 	def delete_mount(self, button, data=None):
 		self.netmounts.pop(self.active_entry)
-		self.mount_info_host.set_text("")
-		self.mount_info_export.get_child().set_text("")
-		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
-		self.mount_info_type.set_text("")
-		self.mount_info_mountpoint.set_text("")
-		self.mount_info_mountopts.set_text("")
 		self.active_entry = -1
 		self.mount_button_update.set_sensitive(gtk.FALSE)
 		self.mount_button_delete.set_sensitive(gtk.FALSE)
