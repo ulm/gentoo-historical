@@ -2,9 +2,6 @@ import os, sys, shutil, GLIUtility
 
 class GLIInstallTemplate:
 
-	_install_profile = None
-	_client_configuration = None
-	
 	def __init__(self, install_profile, client_configuration):
 		"Sets the install_profile and client_configuration referances"
 		
@@ -548,7 +545,7 @@ class GLIInstallTemplate:
 			if exitstatus != 0:
 				raise "FilesystemToolsError", "Could not emerge " + package + "!"
 
-	def install_rp-pppoe(self):
+	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
 		# Dependency checking		
 		self._depends("emerge_system")
@@ -563,7 +560,7 @@ class GLIInstallTemplate:
 		# I think it should go into the setup_network_post section
 		# What do you guys think?
 				
-	def install_pcmcia-cs(self):
+	def install_pcmcia_cs(self):
 		"Installs and sets up pcmcia-cs"
 		# Dependency checking		
 		self._depends("build_kernel")
@@ -693,7 +690,7 @@ class GLIInstallTemplate:
 			
 			# If the domainname is set, then also output it
 			if domainname:
-				resolv_output.append("search " + domainname + "\n)
+				resolv_output.append("search " + domainname + "\n")
 				
 		# Output to file
 		resolve_conf = open(self._client_configuration.root_mount_point + "/etc/resolv.conf", "w")

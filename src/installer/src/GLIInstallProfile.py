@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.6 2004/04/22 20:45:02 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.7 2004/04/25 20:05:33 esammer Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -20,47 +20,45 @@ class InstallProfile(xml.sax.ContentHandler):
 	profile file.
 	"""
 
-	# Configuration information - profile data
-	_cron_daemon_pkg = ""
-	_logging_daemon_pkg = ""
-	_boot_loader_mbr = True
-	_boot_loader_pkg = ""
-	_kernel_modules = ()
-	_kernel_config_uri = ""
-	_kernel_initrd = False
-	_kernel_bootsplash = False
-	_kernel_source_pkg = ""
-	_users = []
-	_root_pass_hash = ""
-	_time_zone = ""
-	_stage_tarball_uri = ""
-	_install_stage = 1
-	_portage_tree_sync_type = "sync"
-	_portage_tree_snapshot_uri = ""
-	_domainname = "localdomain"
-	_hostname = "localhost"
-	_nisdomainname = ""
-	_partition_tables = {}
-	_network_interfaces = {}
-	_make_conf = {}
-	_rc_conf = {}
-	_ignore_install_step_depends = False
-	_install_rp_pppoe = False
-	_filesystem_tools = ()
-	_install_pcmcia_cs = False
-	_dns_servers_pre = ()
-	_dns_servers_post = ()
-	_default_gateway_pre = ''
-	_default_gateway_post = ''
-
-	# Internal SAX state info
-	_xml_elements = [];
-	_xml_current_data = ""
-	_xml_current_attr = None
-
 	def __init__(self):
-		pass
-		
+		# Configuration information - profile data
+		self._cron_daemon_pkg = ""
+		self._logging_daemon_pkg = ""
+		self._boot_loader_mbr = True
+		self._boot_loader_pkg = ""
+		self._kernel_modules = ()
+		self._kernel_config_uri = ""
+		self._kernel_initrd = False
+		self._kernel_bootsplash = False
+		self._kernel_source_pkg = ""
+		self._users = []
+		self._root_pass_hash = ""
+		self._time_zone = ""
+		self._stage_tarball_uri = ""
+		self._install_stage = 1
+		self._portage_tree_sync_type = "sync"
+		self._portage_tree_snapshot_uri = ""
+		self._domainname = "localdomain"
+		self._hostname = "localhost"
+		self._nisdomainname = ""
+		self._partition_tables = {}
+		self._network_interfaces = {}
+		self._make_conf = {}
+		self._rc_conf = {}
+		self._ignore_install_step_depends = False
+		self._install_rp_pppoe = False
+		self._filesystem_tools = ()
+		self._install_pcmcia_cs = False
+		self._dns_servers_pre = ()
+		self._dns_servers_post = ()
+		self._default_gateway_pre = ''
+		self._default_gateway_post = ''
+
+		# Internal SAX state info
+		self._xml_elements = [];
+		self._xml_current_data = ""
+		self._xml_current_attr = None
+
 	def startElement(self, name, attr):
 		"""
 		XML SAX start element handler
