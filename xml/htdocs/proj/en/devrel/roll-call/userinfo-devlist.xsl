@@ -16,7 +16,7 @@
 	    The following table contains a list of active Gentoo developers. Retired or inactive
 	    developers are listed at the <uri link="/proj/en/devrel/roll-call/inactive-devs.xml">Gentoo
             Developer Relations Inactive Developers</uri> page and the <uri 
-            link="/proc/en/devrel/roll-call/alumni.xml">Developer Relations Former Developers</uri> page.
+            link="/proj/en/devrel/roll-call/alumni.xml">Developer Relations Former Developers</uri> page.
 	  </p>
           <p>
             Developers can be reached by sending e-mail to the
