@@ -1,7 +1,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-portage.xml,v 1.1 2003/11/20 10:52:35 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-portage.xml,v 1.2 2003/11/25 17:34:47 swift Exp $ -->
 
 <sections>
 <section>
@@ -10,11 +10,233 @@
 <title>The Lord of All Tools: emerge</title>
 <body>
 
+<p>
+We have briefly encountered <c>emerge</c> in the previous chapter, but not to
+the extent that you are now able to work with it to its fullest potential. We
+will fix that right now ;-)
+</p>
+
+<p>
+<c>emerge</c> is the command used to install, remove, query and maintain
+software packages. It is a front-end for <c>ebuild</c>; people interested in
+becoming Gentoo professionals will learn how to use <c>ebuild</c> later on. For
+now, we will focus on <c>emerge</c> as it has functionality that <c>ebuild</c>
+lacks (such as resolving dependencies, searching the Portage tree, etc.).
+</p>
+
+<p>
+Since <c>emerge</c> is the most important tool for Gentoo users, it has an
+extensive manpage you can read by issuing <c>man emerge</c>. You can also view
+the in-command help by running <c>emerge --help</c>.
+</p>
+
+<pre caption="Retrieving help for emerge">
+# <i>man emerge</i>
+# <i>emerge --help</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>The Portage Tree</title>
+<body>
+
+<p>
+Before we continue describing <c>emerge</c>, let us first take a look at the
+Portage Tree. Go to <path>/usr/portage</path> and do a listing of the available
+directories.
+</p>
+
+<pre caption="Viewing the Portage Tree">
+# <i>cd /usr/portage; ls --classify</i>
+<comment>(The --classify will append a special character to note the filetype)</comment>
+app-admin/       dev-ml/            gnome-libs/     net-print/
+app-arch/        dev-perl/          gnome-office/   net-wireless/
+app-benchmarks/  dev-php/           header.txt      net-www/
+app-cdr/         dev-python/        incoming/       net-zope/
+app-crypt/       dev-ruby/          jython/         packages/
+app-dicts/       dev-tcltk/         kde-apps/       profiles/
+app-doc/         dev-tex/           kde-base/       releases/
+app-editors/     dev-util/          kde-i18n/       scripts/
+app-emacs/       distfiles/         kde-libs/       sec-policy/
+app-emulation/   eclass/            licenses/       skel.ChangeLog
+app-games/       experimental/      media-fonts/    skel.ebuild
+app-gnustep/     files/             media-gfx/      skel.metadata.xml
+app-i18n/        fresco-base/       media-libs/     snapshots/
+app-misc/        games-action/      media-plugins/  sys-apps/
+app-office/      games-arcade/      media-radio/    sys-build/
+app-pda/         games-board/       media-sound/    sys-cluster/
+app-portage/     games-emulation/   media-tv/       sys-devel/
+app-sci/         games-engines/     media-video/    sys-fs/
+app-shells/      games-fps/         metadata/       sys-kernel/
+app-text/        games-kids/        net-analyzer/   sys-kmods/
+app-vim/         games-misc/        net-apache/     sys-libs/
+app-xemacs/      games-mud/         net-dialup/     unix2tcp/
+berlin-base/     games-puzzle/      net-dns/        x11-base/
+dev-ada/         games-roguelike/   net-firewall/   x11-libs/
+dev-cpp/         games-rpg/         net-fs/         x11-misc/
+dev-db/          games-server/      net-ftp/        x11-plugins/
+dev-dotnet/      games-simulation/  net-im/         x11-terms/
+dev-embedded/    games-sports/      net-irc/        x11-themes/
+dev-games/       games-strategy/    net-libs/       x11-wm/
+dev-haskell/     games-util/        net-mail/       xfce-base/
+dev-java/        glep/              net-misc/       xfce-extra/
+dev-lang/        gnome-apps/        net-nds/
+dev-libs/        gnome-base/        net-news/
+dev-lisp/        gnome-extra/       net-p2p/
+</pre>
+
+<p>
+As you can see, the Portage tree has several subdirectories. Most of them are
+the <e>categories</e> in which the Gentoo packages, called <e>ebuilds</e>,
+reside. Take a look at, for instance, <path>app-office</path>:
+</p>
+
+<pre caption="Viewing a category">
+# <i>cd app-office; ls --classify</i>
+abiword/     gnotime/   kmymoney2/  ooodi/              plan/     timestamp.x
+dia/         gnucash/   koffice/    oooqs/              qhacc/
+dia2code/    gnumeric/  lxbank/     openoffice/         sc/
+facturalux/  ical/      lyx/        openoffice-bin/     scribus/
+gaby/        kbudget/   mdbtools/   openoffice-ximian/  siag/
+gnofin/      khacc/     mrproject/  phprojekt/          texmacs/
+</pre>
+
+<p>
+Inside a category you will find the packages belonging to that category, with a
+seperate directory for each package. Let us take a look at the <c>openoffice</c>
+package:
+</p>
+
+<pre caption="Viewing a package">
+# <i>cd openoffice; ls --classify</i>
+ChangeLog  files/        openoffice-1.0.3-r1.ebuild  openoffice-1.1.0-r2.ebuild
+Manifest   metadata.xml  openoffice-1.1.0-r1.ebuild  openoffice-1.1.0.ebuild
+</pre>
+
+<p>
+Remember that we told you that a Gentoo package is called an ebuild? Well, in
+the example directory four of such ebuilds are stored. Their naming is
+almost identical: they only differ in the version name.
+You are free to view the contents of such a package: they are plain scripts. We
+will not discuss it right now as it isn't important to know if you plan on just
+using Gentoo.
+</p>
+
+<p>
+The other files are the <path>ChangeLog</path> (which contains a listing of all
+the changes done to the ebuilds), <path>Manifest</path> (which contains the
+checksums and permissions of all the files in the directory) and
+<path>metadata.xml</path> (which contains more information about the package,
+such as the responsible development group -- called <e>herd</e> and a more
+extensive description).
+</p>
+
+<p>
+Inside the <path>files</path> directory you will find extra files, needed by
+Portage: digests (checksums and permissions of the files needed by a single
+version of the package), patches, example configuration files, etc.
+</p>
+
+<pre caption="Viewing the extra files">
+# <i>cd files; ls --classify</i>
+1.0.3/  digest-openoffice-1.0.3-r1  digest-openoffice-1.1.0-r1
+1.1.0/  digest-openoffice-1.1.0     digest-openoffice-1.1.0-r2
+# <i>cd 1.1.0; ls --classify</i>
+fixed-gcc.patch      ooffice-wrapper-1.3
+newstlportfix.patch  openoffice-1.1.0-linux-2.6-fix.patch
+no-mozab.patch       openoffice-1.1.0-sparc64-fix.patch
+nptl.patch
+</pre>
+
+<p>
+If you go back to the root of the Portage tree (<path>/usr/portage</path>) you
+will notice that there are other, non-category directories too. We will discuss
+those later in this chapter. 
+</p>
+
 </body>
 </subsection>
 <subsection>
 <title>Search for a Package</title>
 <body>
+
+<p>
+If you are new to Linux or Gentoo, you might not know what tool you need for
+what job. To facilitate searching, <c>emerge</c> provides you with a way to
+search through the available packages on your system. There are two ways you can
+search through packages: by <e>name</e>, or by <e>name</e> and 
+<e>description</e>.
+</p>
+
+<p>
+To search through the Portage tree by name, use <c>emerge search</c>. For
+instance, to find out more about <c>mozilla</c>:
+</p>
+
+<pre caption="Showing information about mozilla">
+# <i>emerge search mozilla</i>
+Searching...   
+[ Results for search key : mozilla ]
+[ Applications found : 5 ]
+<comment>(Some output removed to improve readability)</comment>
+*  net-www/mozilla
+      Latest version available: 1.5-r1
+      Latest version installed: 1.4-r3
+      Size of downloaded files: 29,153 kB
+      Homepage:    http://www.mozilla.org
+      Description: The Mozilla Web Browser
+
+*  net-www/mozilla-firebird
+      Latest version available: 0.7
+      Latest version installed: [ Not Installed ]
+      Size of downloaded files: 37,850 kB
+      Homepage:    http://www.mozilla.org/projects/firebird/
+      Description: The Mozilla Firebird Web Browser
+<comment>(...)</comment>
+</pre>
+
+<p>
+If you want to include a search through the descriptions too, use the
+<c>--searchdesc</c> argument:
+</p>
+
+<pre caption="Search through the descriptions too">
+# <i>emerge --searchdesc mozilla</i>
+Searching...   
+[ Results for search key : mozilla ]
+[ Applications found : 10 ]
+<comment>(Some output removed to improve readability)</comment>
+*  dev-libs/nss-3.8
+      Latest version available: 3.8
+      Latest version installed: 3.8
+      Size of downloaded files:  2,782 kB
+      Homepage:    http://www.mozilla.org/projects/security/pki/nss/
+      Description: Mozilla's Netscape Security Services Library that implements PKI support
+</pre>
+
+<p>
+As you can see, the output of <c>emerge</c> informs you about the category and
+name of the package, the available version, the currently installed version, 
+the size of the downloaded files, the homepage and the small description.
+</p>
+
+<p>
+You see something new? Yes, <e>downloaded files</e>. When you tell Portage to
+install a package, it ofcourse needs to have the necessary sources (or
+precompiled packages) available. It therefor checks the contents of
+<path>/usr/portage/distfiles</path> (for sourcecode) or
+<path>/usr/portage/packages/All</path> (for precompiled packages) to see if the
+necessary files are already available. If not, it downloads the necessary files
+and places them in those directories.
+</p> 
+
+<note>
+Searching the Portage Tree, especially when using <c>--searchdesc</c>, is very
+time consuming. There are other, more performant tools available. We will
+describe those in the chapter on <uri link="?part=2&amp;chap=7">Gentoolkit and
+Other Tools</uri>.
+</note>
 
 </body>
 </subsection>
@@ -22,14 +244,75 @@
 <section>
 <title>Updating Portage</title>
 <subsection>
-<title>Using rsync</title>
+<title>Introduction</title>
 <body>
+
+<p>
+Searching through Portage is nice, but if you don't update your Portage Tree
+regularly, you will be stuck with the packages and versions available on your
+system. This means that your system will get outdated pretty soon, and that
+packages with possible security problems will remain on your system.
+</p>
+
+<p>
+There are several ways to update your Portage Tree. The most popular method is
+by using one of our <uri link="/main/en/mirrors.xml">rsync mirrors</uri>.
+Another one is by using a Portage snapshot (in case a firewall or unavailability
+of a network prohibits the use of the rsync server).
+</p>
 
 </body>
 </subsection>
 <subsection>
-<title>Using a Downloaded Snapshot</title>
+<title>Selecting a Mirror for rsync</title>
 <body>
+
+<p>
+It is adviseable to first select a fast <uri
+link="/main/en/mirrors.xml">mirror</uri> close to you. You can do this manually
+(by setting the <c>SYNC</c> variable in <path>/etc/make.conf</path>) or use
+<c>mirrorselect</c> to do this for you automatically. As the <c>SYNC</c>
+variable will be discussed later on, we will focus on using <c>mirrorselect</c>.
+First install <c>mirrorselect</c> by emerging it:
+</p>
+
+<pre caption="Installing mirrorselect">
+# <i>emerge --usepkg mirrorselect</i>
+</pre>
+
+<p>
+Now run <c>mirrorselect</c> to automatically select mirrors for you (it will
+also setup Portage to use a mirror for the sourcecode):
+</p>
+
+<pre caption="Running mirrorselect">
+# <i>mirrorselect -a -s3</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Updating Portage</title>
+<body>
+
+<p>
+To update Portage using rsync, simply run <c>emerge sync</c>:
+</p>
+
+<pre caption="Updating Portage using emerge sync">
+# <i>emerge sync</i>
+</pre>
+
+<p>
+If this fails (due to network problems, or a firewall), you can try using
+<c>emerge-webrsync</c> which will download a Portage Tree snapshot using
+<c>wget</c>. This also means that you can use proxies if you want. We discussed
+how to setup your system to use proxies during the Gentoo installation.
+</p>
+
+<pre caption="Updating Portage using emerge-webrsync">
+# <i>emerge-webrsync</i>
+</pre>
 
 </body>
 </subsection>
