@@ -170,11 +170,24 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+                  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
 		  php|architect is the monthly magazine for PHP professionals, available
 		  worldwide in print and electronic format. A percentage of all the sales
 		  will be donated back into the Gentoo project.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+                  <p class="alttext">
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
                 </td>
               </tr>
@@ -230,7 +243,7 @@
   </tr>
   <tr>
     <td colspan="2" align="right" class="infohead" width="100%" bgcolor="#7a5ada">
-      Copyright 2001-2003 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-2004 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
@@ -296,26 +309,26 @@
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='projects'">
-            <a class="highlight" href="/proj/en/metastructure/projects.xml">Projects</a> |
+            <a class="highlight" href="/proj/en/index.xml?showlevel=1">Projects</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/proj/en/metastructure/projects.xml">Projects</a> |
+            <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a> |
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='contract'">
-            <a class="highlight" href="/main/en/contract.xml">Social Contract</a> |
+            <a class="highlight" href="/main/en/philosophy.xml">Philosophy</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/contract.xml">Social Contract</a> |
+            <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a> |
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='docs'">
-            <a class="highlight" href="/main/en/docs.xml">Docs</a> |
+            <a class="highlight" href="/doc/en/index.xml">Docs</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/docs.xml">Docs</a> |
+            <a class="menulink" href="/doc/en/index.xml">Docs</a> |
           </xsl:otherwise>
         </xsl:choose>
         <a class="menulink" href="http://forums.gentoo.org">Forums</a> |
@@ -375,15 +388,19 @@
                     <br/>
                     <a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#top">User Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml">User Docs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#doc_chap2_sect1">Developer Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap6">Developer Docs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/docs.xml#doc_chap3">Other Docs/Translations</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/contract.xml">Social Contract</a>
+                    <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
                     <br/><br/>
                     Installation:
+                    <br/>
+                    <a class="altlink" href="/doc/en/handbook/handbook.xml?part=1">Gentoo Handbook Installation Instructions</a>
+                    <br/><br/>
+                    Older Installation Guides:
                     <br/>
                     <a class="altlink" href="/doc/en/gentoo-x86-install.xml">Gentoo Linux/x86</a>
                     <br/>
@@ -392,7 +409,9 @@
                     <a class="altlink" href="/doc/en/gentoo-sparc-install.xml">Gentoo Linux/Sparc</a>
                     <br/>
                     <a class="altlink" href="/doc/en/gentoo-hppa-install.xml">Gentoo Linux/HPPA</a>
-                    <br/><br/>
+                    <br/>
+                    <a class="altlink" href="/doc/en/gentoo-alpha-install.xml">Gentoo Linux/Alpha</a>
+                   <br/><br/>
                     Resources:
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
@@ -411,7 +430,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
                     <br/>
-                    <a class="altlink" href="/dyn/pkgs/index.xml">Online package database</a>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
                     <br/>
@@ -677,65 +696,63 @@
             </a>
           </td>
         </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-                  <p class="alttext">
-		  php|architect is the monthly magazine for PHP professionals, available
-		  worldwide in print and electronic format. A percentage of all the sales
-		  will be donated back into the Gentoo project.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
-                  <p class="alttext">
-                    Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
-                  <p class="alttext">
-                    Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
-                  <p class="alttext">
-                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
+        <tr>
+          <td>
+            <img src="/images/line.gif" alt="line"/>
+          </td>
+        </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
+              <p class="alttext">
+                Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
+              <p class="alttext">
+                Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
+              <p class="alttext">
+                Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
       </table>
     </td>
   <!--
@@ -752,7 +769,7 @@
   </tr>
   <tr>
     <td align="right" class="infohead" width="100%" colspan="3" bgcolor="#7a5ada">
-      Copyright 2001-2003 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-2004 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
@@ -833,11 +850,15 @@
 <xsl:template match="author">
 <xsl:apply-templates/>
 <xsl:if test="@title">
+<xsl:if test="$style != 'printable'">
   <br/>
+</xsl:if>
   <i><xsl:value-of select="@title"/></i>
 </xsl:if>
 <br/>
-<br/>
+<xsl:if test="$style != 'printable'">
+  <br/>
+</xsl:if>
 </xsl:template>
 
 <!-- Chapter -->
@@ -846,6 +867,9 @@
 <xsl:choose>
   <xsl:when test="title">
     <p class="chaphead">
+      <xsl:if test="@id">
+        <a name="{@id}"/>
+      </xsl:if>
       <span class="chapnum">
         <a name="doc_chap{$chid}"><xsl:number/>. </a>
       </span>
@@ -879,6 +903,9 @@
   <p class="secthead">
     <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
   </p>
+</xsl:if>
+<xsl:if test="@id">
+  <a name="{@id}"/>
 </xsl:if>
 <xsl:apply-templates select="body">
   <xsl:with-param name="chid" select="$chid"/>
@@ -1097,7 +1124,7 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            Code listing <xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
             Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
@@ -1126,7 +1153,16 @@
 <!-- expand templates to handle things like <uri link="http://bar"><c>foo</c></uri> -->
 <xsl:choose>
   <xsl:when test="@link">
-    <a href="{@link}"><xsl:apply-templates/></a>
+    <xsl:choose>
+      <xsl:when test="substring(@link,1,1) = '?'">
+        <!-- We are dealing with a handbook link -->
+        <!-- TODO: don't hardcode handbook.xml because of draft -->
+        <a href="handbook.xml{@link}"><xsl:apply-templates/></a>
+      </xsl:when>
+      <xsl:otherwise>
+        <a href="{@link}"><xsl:apply-templates/></a>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:when>
   <xsl:otherwise>
     <xsl:variable name="loc" select="."/>
