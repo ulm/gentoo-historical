@@ -16,6 +16,7 @@ class Panel(GLIScreen.GLIScreen):
 	active_part_min_size = 0
 	active_part_max_size = 0
 	active_part_cur_size = 0
+	active_part_start_cyl = 0
 	active_part_minor = 0
 	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
 
@@ -59,25 +60,43 @@ resize partitions.
 
 		# This builds the partition info box
 		self.part_info_box = gtk.HBox(gtk.FALSE, 0)
-		part_info_table = gtk.Table(6, 2, gtk.TRUE)
+		part_info_table = gtk.Table(6, 2, gtk.FALSE)
 		part_info_table.set_col_spacings(10)
-		self.info_partition = gtk.Label("/dev/hda1")
-		self.info_type = gtk.Label("Primary")
-		self.info_filesystem = gtk.Label("ext3")
-		self.info_start = gtk.Label("0")
-		self.info_end = gtk.Label("560")
-		self.info_size = gtk.Label("280M")
-		part_info_table.attach(gtk.Label("Partition:"), 0, 1, 0, 1)
+		info_partition_label = gtk.Label("Partition:")
+		info_partition_label.set_alignment(0.0, 0.5)
+		self.info_partition = gtk.Label()
+		self.info_partition.set_alignment(0.0, 0.5)
+		info_type_label = gtk.Label("Type:")
+		info_type_label.set_alignment(0.0, 0.5)
+		self.info_type = gtk.Label()
+		self.info_type.set_alignment(0.0, 0.5)
+		info_filesystem_label = gtk.Label("Filesystem:")
+		info_filesystem_label.set_alignment(0.0, 0.5)
+		self.info_filesystem = gtk.Label()
+		self.info_filesystem.set_alignment(0.0, 0.5)
+		info_start_label = gtk.Label("Start cylinder:")
+		info_start_label.set_alignment(0.0, 0.5)
+		self.info_start = gtk.Label()
+		self.info_start.set_alignment(0.0, 0.5)
+		info_end_label = gtk.Label("End cylinder:")
+		info_end_label.set_alignment(0.0, 0.5)
+		self.info_end = gtk.Label()
+		self.info_end.set_alignment(0.0, 0.5)
+		info_size_label = gtk.Label("Size:")
+		info_size_label.set_alignment(0.0, 0.5)
+		self.info_size = gtk.Label()
+		self.info_size.set_alignment(0.0, 0.5)
+		part_info_table.attach(info_partition_label, 0, 1, 0, 1)
 		part_info_table.attach(self.info_partition, 1, 2, 0, 1)
-		part_info_table.attach(gtk.Label("Type:"), 0, 1, 1, 2)
+		part_info_table.attach(info_type_label, 0, 1, 1, 2)
 		part_info_table.attach(self.info_type, 1, 2, 1, 2)
-		part_info_table.attach(gtk.Label("Filesystem:"), 0, 1, 2, 3)
+		part_info_table.attach(info_filesystem_label, 0, 1, 2, 3)
 		part_info_table.attach(self.info_filesystem, 1, 2, 2, 3)
-		part_info_table.attach(gtk.Label("Start cylinder:"), 0, 1, 3, 4)
+		part_info_table.attach(info_start_label, 0, 1, 3, 4)
 		part_info_table.attach(self.info_start, 1, 2, 3, 4)
-		part_info_table.attach(gtk.Label("End cylinder:"), 0, 1, 4, 5)
+		part_info_table.attach(info_end_label, 0, 1, 4, 5)
 		part_info_table.attach(self.info_end, 1, 2, 4, 5)
-		part_info_table.attach(gtk.Label("Size:"), 0, 1, 5, 6)
+		part_info_table.attach(info_size_label, 0, 1, 5, 6)
 		part_info_table.attach(self.info_size, 1, 2, 5, 6)
 		self.part_info_box.pack_start(part_info_table, expand=gtk.FALSE, fill=gtk.FALSE)
 		vert.pack_start(self.part_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -91,7 +110,7 @@ resize partitions.
 		self.resize_part_space = PartitionButton.Partition(color1=self.colors['linux-swap'], color2=self.colors['free'], division=0, label="")
 		self.resize_part_space.set_sensitive(gtk.FALSE)
 		self.resize_part_space_frame.add(self.resize_part_space)
-		self.resize_hpaned.pack1(self.resize_part_space_frame, resize=gtk.TRUE, shrink=gtk.FALSE)
+		self.resize_hpaned.pack1(self.resize_part_space_frame, resize=gtk.TRUE, shrink=gtk.TRUE)
 		self.resize_unalloc_space_frame = gtk.Frame()
 		self.resize_unalloc_space_frame.set_shadow_type(gtk.SHADOW_IN)
 		self.resize_unalloc_space = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="")
@@ -108,13 +127,6 @@ resize partitions.
 		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part_size")
 		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		resize_text_box.pack_start(gtk.Label("Partition freespace:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-		self.resize_info_part_free = gtk.Entry(max=11)
-		self.resize_info_part_free.set_width_chars(8)
-		self.resize_info_part_free.connect("insert-text", self.validate_keypress)
-		self.resize_info_part_free.connect("focus-out-event", self.update_slider_and_entries, "part_free")
-		resize_text_box.pack_start(self.resize_info_part_free, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 		resize_text_box.pack_start(gtk.Label("Unallocated size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
 		self.resize_info_unalloc_size = gtk.Entry(max=11)
 		self.resize_info_unalloc_size.set_width_chars(8)
@@ -126,16 +138,13 @@ resize partitions.
 		vert.pack_start(self.resize_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the row of buttons
-		self.part_button_box = gtk.HBox(gtk.TRUE, 0)
-		part_button_delete = gtk.Button("Remove")
-		part_button_delete.connect("clicked", self.part_button_delete_clicked)
-		self.part_button_box.pack_start(part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE)
-		part_button_updatesize = gtk.Button("Update size")
-		part_button_updatesize.connect("clicked", self.part_button_updatesize_clicked)
-		self.part_button_box.pack_start(part_button_updatesize, expand=gtk.FALSE, fill=gtk.FALSE)
-		part_button_resetsize = gtk.Button("Reset size")
-		part_button_resetsize.connect("clicked", self.part_button_resetsize_clicked)
-		self.part_button_box.pack_start(part_button_resetsize, expand=gtk.FALSE, fill=gtk.FALSE)
+		self.part_button_box = gtk.HBox(gtk.FALSE, 0)
+		self.part_button_create = gtk.Button(" Create ")
+		self.part_button_create.connect("clicked", self.part_button_create_clicked)
+		self.part_button_box.pack_start(self.part_button_create, expand=gtk.FALSE, fill=gtk.FALSE)
+		self.part_button_delete = gtk.Button(" Remove Partition ")
+		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
+		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the color key at the bottom
@@ -193,7 +202,6 @@ resize partitions.
 		self.part_button_box.hide_all()
 
 	def part_selected(self, button, dev=None, minor=None):
-		normal_resize_types = ['ext2', 'ext3', 'fat32', 'ntfs', 'fat16', 'reiserfs']
 		minor = int(minor)
 		tmppart = self.devices[dev].get_partitions()[minor]
 		self.info_partition.set_text(dev + str(minor))
@@ -215,32 +223,44 @@ resize partitions.
 		self.info_end.set_text(str(end))
 		part_size = int(round(float(self.devices[dev].get_cylinder_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
-		min_size = tmppart.get_min_cylinders_for_resize()
-		max_size = tmppart.get_max_cylinders_for_resize()
+		self.active_part_minor = tmppart.get_minor()
+		self.resize_box.hide_all()
+		self.part_button_delete.set_sensitive(gtk.TRUE)
+		self.part_button_create.set_sensitive(gtk.FALSE)
+		self.part_info_box.show_all()
+		self.part_button_box.show_all()
+
+	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
+		self.info_partition.set_text(dev + " (unallocated space)")
+		if extended:
+			self.info_type.set_text("Logical")
+		else:
+			self.info_type.set_text("Primary")
+		self.info_filesystem.set_text("Unallocated space")
+		self.info_start.set_text(str(start))
+		self.info_end.set_text(str(end))
+		part_size = int(round(float(self.devices[dev].get_cylinder_size()) * (end - start + 1) / 1024 / 1024))
+		self.info_size.set_text(str(part_size) + " MB")
+
+		min_size = 0
+		max_size = end - start
 		hpaned_width = self.resize_hpaned.get_allocation().width
 		hpaned_pos = hpaned_width
 		if max_size > end:
 			hpaned_pos = int(float(float(end) / float(max_size)) * hpaned_width) - 5
 		self.resize_hpaned.set_position(hpaned_pos)
 		self.resize_info_part_size.set_text(str(part_size))
-		self.resize_info_part_free.set_text("0")
 		self.resize_info_unalloc_size.set_text("0")
 		self.active_part_min_size = min_size
-		self.active_part_max_size = max_size - start + 1
-		self.active_part_cur_size = end - start + 1
-		self.active_part_minor = tmppart.get_minor()
-		if hpaned_pos == hpaned_width: hpaned_pos = hpaned_pos - 5
-		if type in normal_resize_types:
-			self.resize_part_space.set_division(int(hpaned_pos * (float(self.active_part_min_size) / float(self.active_part_cur_size))) - 12)
-			self.resize_part_space.set_colors(self.colors[type], self.colors['free'])
-		elif type == "linux-swap":
-			self.resize_part_space.set_division(0)
-			self.resize_part_space.set_colors(self.colors['linux-swap'], self.colors['linux-swap'])
-		else:
-			self.rsize_part_space.set_division(hpaned_pos)
-			self.resize_part_space.set_colors(self.colors['unknown'], self.colors['unknown'])
+		self.active_part_max_size = max_size
+		self.active_part_cur_size = max_size
+		self.active_part_start_cyl = start
+		self.resize_part_space.set_division(0)
+		self.resize_part_space.set_colors(self.colors['ext3'], self.colors['ext3'])
 		self.part_info_box.show_all()
 		self.resize_box.show_all()
+		self.part_button_delete.set_sensitive(gtk.FALSE)
+		self.part_button_create.set_sensitive(gtk.TRUE)
 		self.part_button_box.show_all()
 
 	def part_resized(self, widget, allocation):
@@ -257,7 +277,7 @@ resize partitions.
 		part_free_cyl = part_size_cyl - self.active_part_min_size
 		part_free_mib = int(round(part_free_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
 #		print "part_free_cyl is " + str(part_free_cyl) + ", part_free_mib is " + str(part_free_mib)
-		self.resize_info_part_free.set_text(str(part_free_mib))
+#		self.resize_info_part_free.set_text(str(part_free_mib))
 		part_unalloc_cyl = self.active_part_max_size - part_size_cyl
 		part_unalloc_mib = int(round(part_unalloc_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
 #		print "part_unalloc_cyl is " + str(part_unalloc_cyl) + ", part_unalloc_mib is " + str(part_unalloc_mib)
@@ -273,17 +293,28 @@ resize partitions.
 	def update_slider_and_entries(self, widget, event, which_one):
 		print "Entry " + which_one + " has been updated"
 
-	def part_button_delete_clicked(self, button, data=None):
-		pass
 
-	def part_button_updatesize_clicked(self, button, data=None):
+	def part_button_delete_clicked(self, button, data=None):
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to delete " + self.active_device + str(self.active_part_minor))
+		resp = msgdlg.run()
+		msgdlg.destroy()
+		if resp == gtk.RESPONSE_YES:
+			self.devices[self.active_device].remove_partition(self.active_part_minor)
+			self.draw_part_box()
+
+	def part_button_create_clicked(self, button, data=None):
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 		part_size_cyl = round(self.active_part_max_size * part_space)
-		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
-		tmppart.resize(int(tmppart.get_start()), int(tmppart.get_start() + part_size_cyl - 1))
+		start = self.active_part_start_cyl
+		end = int(start + part_size_cyl)
+		minor = self.devices[self.active_device].get_free_minor_at(start, end)
+		type = "ext3"
+		print "start=" + str(start) + ", end=" + str(end) + ", minor=" + str(minor)
+		self.devices[self.active_device].add_partition(minor, start, end, type)
 		self.draw_part_box()
+		self.part_selected(None, self.active_device, minor)
 
 	def part_button_resetsize_clicked(self, button, data=None):
 		pass
@@ -305,6 +336,7 @@ resize partitions.
 				if percent > 0 and percent < 1: percent = 1
 				percent = int(percent)
 				self.part_buttons['free_' + new_start + '_' + new_end] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+				self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
 				self.part_table.attach(self.part_buttons['free_' + new_start + '_' + new_end], last_percent, (last_percent + percent), 0, 1)
 				last_percent = last_percent + percent
 			elif re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part) != None:

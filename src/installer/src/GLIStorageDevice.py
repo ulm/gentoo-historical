@@ -214,6 +214,12 @@ class Device:
 			devdic[part] = { 'mb': 0, 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
 		return devdic
 
+	def get_extended_partition(self):
+		for part in self._partitions:
+			tmppart = self._partitions[part]
+			if tmppart.is_extended():
+				return part
+
 	def get_num_sectors(self):
 		return int(self._total_sectors)
 
