@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.50 2005/03/01 06:50:47 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.51 2005/03/01 08:01:42 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -44,8 +44,8 @@ class ArchitectureTemplate:
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
-								 (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.prepare_chroot, "Preparing chroot"),
+								 (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.stage1, "Performing bootstrap"),
                                  (self.stage2, "Performing 'emerge system'"),
                                  (self.set_root_password, "Set the root password"),
@@ -146,7 +146,7 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_stage() == 1:
 			self._logger.mark()
 			self._logger.log("Starting bootstrap.")
-			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=true)
+			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
 			self._logger.log("Bootstrap complete.")
@@ -272,7 +272,7 @@ class ArchitectureTemplate:
 			exitstatus = GLIUtility.spawn("mkdir -p /usr/portage/distfiles",chroot=self._chroot_dir)
 			if exitstatus != 0:
 				raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
-		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/", display_on_tty8=true)
+		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/", display_on_tty8=True)
 		if exitstatus != 0:
 			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
 		self._logger.log("Distfiles copied from cd.")
@@ -312,7 +312,7 @@ class ArchitectureTemplate:
 			self._logger.log("Portage tree install was custom.")
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
-			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=true)
+			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=True)
 			if exitstatus != 0:
 				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tre', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd using webrsync")
@@ -428,7 +428,7 @@ class ArchitectureTemplate:
 				genkernel_options = genkernel_options + " --no-bootsplash"
 			# Run genkernel in chroot
 			print "genkernel all " + genkernel_options
-			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=true)
+			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
 			self._logger.log("Genkernel complete.")
@@ -452,7 +452,7 @@ class ArchitectureTemplate:
 			f.close()
 			#Build the kernel
 			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/root/kernel_script")
-			exitstatus2 = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir, display_on_tty8=true)
+			exitstatus2 = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir, display_on_tty8=True)
 			if (exitstatus1 != 0) or (exitstatus2 != 0):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
 						
@@ -490,7 +490,7 @@ class ArchitectureTemplate:
 		
 			# If the Cron Daemon is not vixie-cron, run crontab			
 			if cron_daemon_pkg != "vixie-cron":
-				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=true)
+				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
 				if exitstatus != 0:
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
 			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
@@ -543,7 +543,7 @@ class ArchitectureTemplate:
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
-		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=true)
+		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=True)
 		if not GLIUtility.exitsuccess(status):
 			self._logger.log("ERROR! : Could not update the config files!")
 		#	raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
