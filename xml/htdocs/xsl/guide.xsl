@@ -197,19 +197,6 @@
                 </td>
               </tr>
 	      //-->
-              <tr>
-                <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
-                  <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
           <tr>
             <td align="center">
               <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
@@ -236,6 +223,19 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+        <tr>
+          <td align="center">
+            <a href="http://store.gentoo.org">
+              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="/images/line.gif" alt="line"/>
+          </td>
+        </tr>
+
               <tr>
                 <td align="center">
                   <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
@@ -249,18 +249,20 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-        <tr>
-          <td align="center">
-            <a href="http://store.gentoo.org">
-              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
-            </a>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
+              <tr>
+                <td align="center">
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
+                  <p class="alttext">
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+
             </table>
           </td>
         </tr>
@@ -725,19 +727,6 @@
           </td>
         </tr>
 	//-->
-              <tr>
-                <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
-                  <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
           <tr>
             <td align="center">
               <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
@@ -764,6 +753,18 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+        <tr>
+          <td align="center">
+            <a href="http://store.gentoo.org">
+              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="/images/line.gif" alt="line"/>
+          </td>
+        </tr>
               <tr>
                 <td align="center">
                   <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
@@ -777,18 +778,20 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-        <tr>
-          <td align="center">
-            <a href="http://store.gentoo.org">
-              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
-            </a>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
+              <tr>
+                <td align="center">
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
+                  <p class="alttext">
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+
       </table>
     </td>
   <!--
