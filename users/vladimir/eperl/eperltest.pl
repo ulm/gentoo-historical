@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.2 2003/03/05 01:43:12 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.3 2003/03/05 05:04:04 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 # Please be careful with this, don't use it if you're not reasonably fluent
@@ -67,7 +67,7 @@ sub wanted {
 		($path, $ebuild) = $_ =~ m|^(.+)/(.+).ebuild$|;
 		
 		# See if the user wants to accept the changes
-		my $response = $term->readline("Accept $changes changes? [no] ");
+		my $response = $term->readline("Accept $changes changes? [N/y/q] ");
 		if($response =~ /^q/i) {
 			&postprocess;
 			print GREEN "User requested quit", RESET, "\n";
