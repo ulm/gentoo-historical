@@ -36,9 +36,15 @@ resize partitions.
 		container = gtk.HBox(gtk.FALSE, 10)
 		detected_dev_label = gtk.Label("Devices:")
 		container.pack_start(detected_dev_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		self.detected_dev_combo = gtk.combo_box_entry_new_text()
+		self.detected_dev_combo = gtk.combo_box_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
 		container.pack_start(self.detected_dev_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.new_dev_entry = gtk.Entry()
+		self.new_dev_entry.set_width_chars(12)
+		container.pack_start(self.new_dev_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
+		new_dev_button = gtk.Button(" _Add device ")
+		new_dev_button.connect("clicked", self.add_new_dev)
+		container.pack_start(new_dev_button, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
 		self.drives = GLIStorageDevice.detect_devices()
 		self.drives.sort()
@@ -176,6 +182,11 @@ resize partitions.
 
 		self.add_content(vert)
 		self.detected_dev_combo.set_active(0)
+
+	def add_new_dev(self, button, data=None):
+		newdev = self.new_dev_entry.get_text()
+		self.new_dev_entry.set_text("")
+		self.detected_dev_combo.append_text(newdev)
 
 	def drive_changed(self, combobox, data=None):
 		self.active_device = self.drives[self.detected_dev_combo.get_active()]

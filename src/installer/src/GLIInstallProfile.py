@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.21 2004/12/05 03:13:17 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.22 2004/12/09 07:52:33 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -58,6 +58,7 @@ class InstallProfile:
 		parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
 		parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
 		parser.addHandler('gli-profile/mta', self.set_mta)
+		parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
 		
 		self._parser = parser
 
@@ -82,6 +83,7 @@ class InstallProfile:
 		self._hostname = "localhost"
 		self._nisdomainname = ""
 		self._partition_tables = {}
+		self._network_mounts = []
 		self._temp_partition_table = {}
 		self._network_interfaces = {}
 		self._make_conf = {}
@@ -762,7 +764,14 @@ class InstallProfile:
 					part = partitions[device][minor]
 					xmldoc += "<partition minor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
 				xmldoc += "</device>"
-			xmldoc += "</partitions>";
+			xmldoc += "</partitions>"
+
+		if self.get_network_mounts() != {}:
+			netmounts = self.get_network_mounts()
+			xmldoc += "<network-mounts>"
+			for mount in netmounts:
+				xmldoc += "<netmount host=\"%s\" export=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" />" % ((mount['host'], mount['export'], mount['type'], mount['mountpoint'], mount['mountopts'])
+			xmldoc += "</network-mounts>"
 
 		xmldoc += "</gli-profile>"
 
@@ -1047,3 +1056,23 @@ class InstallProfile:
 
 	def get_mta(self):
 		return self._mta
+
+	def add_netmount(self, xml_path, unused, attr):
+		netmount_entry = {'export': '', 'host': '', 'mountopts': '', 'mountpoint': '', 'type': ''}
+		if type(attr) == tuple:
+			part_entry['export'] = attr[0]
+			part_entry['host'] = attr[1]
+			part_entry['mountopts'] = attr[2]
+			part_entry['mountpoint'] = attr[3]
+			part_entry['type'] = attr[4]
+		else:
+			if "minor" in attr.getNames():
+				for attrName in attr.getNames():
+					part_entry[attrName] = str(attr.getValue(attrName))
+		self._network_mounts.append(netmount_entry)
+
+	def set_network_mounts(self, netmounts):
+		self._network_mounts = netmounts
+
+	def get_network_mounts(self):
+		return self._network_mounts
