@@ -245,7 +245,7 @@
         <tr>
           <td align="center">
             <a href="http://store.gentoo.org">
-              <img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
+              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
             </a>
           </td>
         </tr>
@@ -764,7 +764,7 @@
         <tr>
           <td align="center">
             <a href="http://store.gentoo.org">
-              <img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
+              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
             </a>
           </td>
         </tr>
