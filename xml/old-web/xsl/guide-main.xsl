@@ -273,10 +273,10 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<font color="#ff0000"><a class="menulink" href="/doc/shots.html">ScreenShots</a></font> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='articles'">
-							<a class="highlight" href="/index-articles.html">Documentation</a> |
+							<a class="highlight" href="/index-articles.html">Articles</a> |
 						</xsl:when>
 						<xsl:otherwise>
-							<a class="menulink" href="/index-articles.html">Documentation</a> |
+							<a class="menulink" href="/index-articles.html">Articles</a> |
 						</xsl:otherwise>
 					</xsl:choose>
 					<a class="menulink" href="/doc/build.html">Download/Install</a> |
