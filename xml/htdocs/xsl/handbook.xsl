@@ -82,6 +82,9 @@
 <!-- Content of /book/part -->
 <xsl:template name="bookpartcontent">
   <xsl:call-template name="menubar" />
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
   <xsl:if test="abstract">
     <p><xsl:value-of select="abstract" /></p>
@@ -198,6 +201,9 @@
 <!-- Content of /book/part/chapter -->
 <xsl:template name="bookpartchaptercontent">
   <xsl:call-template name="menubar" />
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
   <xsl:variable name="doc" select="include/@href"/>
   <xsl:variable name="FILE" select="document($doc)" />
@@ -220,6 +226,9 @@
 <xsl:template match="/sections/section">
   <xsl:param name="pos" select="position()" />
   <a name="doc_chap{$pos}"/>
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <xsl:if test="title">
     <p class="chaphead"><span class="chapnum"><xsl:value-of select="$chap" />.<xsl:number level="multiple" format="a. " select="position()" /></span><xsl:value-of select="title" /></p>
   </xsl:if>
@@ -232,6 +241,9 @@
 <xsl:template match="/sections/section/subsection">
   <xsl:param name="pos" select="position()"/>
   <a name="doc_chap{$chpos}_sect{$pos}" />
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <p class="secthead"><xsl:value-of select="title" /></p>
   <xsl:apply-templates select="body" />
 </xsl:template>

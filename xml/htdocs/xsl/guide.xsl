@@ -850,6 +850,9 @@
 <xsl:choose>
   <xsl:when test="title">
     <p class="chaphead">
+      <xsl:if test="@id">
+        <a name="{@id}"/>
+      </xsl:if>
       <span class="chapnum">
         <a name="doc_chap{$chid}"><xsl:number/>. </a>
       </span>
@@ -883,6 +886,9 @@
   <p class="secthead">
     <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
   </p>
+</xsl:if>
+<xsl:if test="@id">
+  <a name="{@id}"/>
 </xsl:if>
 <xsl:apply-templates select="body">
   <xsl:with-param name="chid" select="$chid"/>
