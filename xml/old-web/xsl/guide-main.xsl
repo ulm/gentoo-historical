@@ -11,8 +11,8 @@
 <xsl:template match="/guide">
 <html>
 <head>
-    <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"/>
-	<link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
+    <link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
+	<link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
 	<title>Gentoo Linux 
 	<xsl:choose>
 	<xsl:when test="/guide/@type='project'">
@@ -374,6 +374,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
+						<a class="altlink" href="/doc/xml-guide.html">User-Mode Linux Guide <comment>(new!)</comment></a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<br/>
 	
