@@ -13,8 +13,8 @@
 The SELinux policy describes the access permissions for the entire system.
 </abstract>
 
-<version>1.0</version>
-<date>13 September 2003</date>
+<version>1.1</version>
+<date>14 September 2003</date>
 
 <chapter><title>SELinux Types</title>
 <section><body>
@@ -194,7 +194,7 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 <tr><ti>make initrd</ti>
     <ti>Compile, install, and create an initial ramdisk for the initial policy load.</ti></tr>
 <tr><ti>make relabel</ti>
-    <ti>Relabels the filesystems using the file contexts in the policy</ti></tr>
+    <ti>Relabels the filesystems using the file contexts in the policy.</ti></tr>
 </table>
 </body></section>
 
@@ -340,7 +340,152 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </chapter>
 
 <chapter>
-<title>References</title>
+<title>Policy Kernel Messages</title>
+<section><body>
+<p>
+   While a system is running, a program or user may attempt to do something
+   that violates the security policy.  If the system is enforcing the policy,
+   the access will be denied, and there will be a message in the kernel log.
+   If the system is not enforcing (permissive mode), the access will be allowed,
+   but there will still be a kernel message.
+</p>
+</body></section>
+
+<section><title>AVC Messages</title><body>
+<p>
+   Most kernel messages from SELinux come from the access vector cache (AVC).
+   Understanding denials is important to understand if an attack is happening,
+   or if the program is requiring unexpected accesses.  An example denial
+   may look like this:
+</p>
+
+<pre caption="Example AVC Message">
+avc:  denied  { read write } for  pid=3392 exe=/bin/mount dev=03:03 ino=65554
+scontext=pebenito:sysadm_r:mount_t tcontext=system_u:object_r:tmp_t tclass=file
+</pre>
+
+<p>
+   While most AVC messages are denials, occasionally there might be an audit
+   message for an access that was granted:
+</p>
+<pre caption="Example AVC Message 2">
+avc:  granted  { load_policy } for  pid=3385 exe=/usr/sbin/load_policy
+scontext=pebenito:sysadm_r:load_policy_t tcontext=system_u:object_r:security_t tclass=security
+</pre>
+<p>
+   In this case, the ability to load the policy was granted.  This is a critical
+   security event, and thus is always audited.  Another event that is always
+   audited is switching between enforcing and permissive modes.
+</p>
+
+<p>
+   SELinux will supress logging of denials if many are received in a short
+   amount of time.  However, This does not always imply there is an attack
+   in progress.  A program may be doing something that could cause
+   many denials in a short time, such as doing a stat() on device nodes in
+   /dev.  To protect from filling up the system logs, SELinux has rate limiting
+   for its messages:
+</p>
+
+<pre caption="Example AVC Message 3">
+AVC: 12 messages suppressed.
+</pre>
+
+<p>
+   The policy would have to be modified to not audit these accesses if they
+   are normal program behavior, but still need to be denied.
+</p>
+
+</body></section>
+</chapter>
+
+<chapter><title>Dissecting a Denial</title>
+<section><body>
+<p>
+   Denials contain varying amounts of information, depending on the access type.
+</p>
+
+<pre caption="Example Denials">
+avc:  denied  { lock } for  pid=28341 exe=/sbin/agetty path=/var/log/wtmp dev=03:03 ino=475406
+scontext=system_u:system_r:getty_t tcontext=system_u:object_r:var_log_t tclass=file
+
+avc:  denied  { create } for  pid=20909 exe=/bin/ls scontext=pebenito:sysadm_r:mkinitrd_t
+tcontext=pebenito:sysadm_r:mkinitrd_t tclass=unix_stream_socket
+
+avc:  denied  { setuid } for  pid=3170 exe=/usr/bin/ntpd capability=7
+scontext=system_u:system_r:ntpd_t tcontext=system_u:system_r:ntpd_t tclass=capability
+
+</pre>
+
+<p>
+   The most common denial relates to access of files.  For better understanding,
+   the first denial message will be broken down:
+</p>
+<table>
+<tr><th>Component</th><th>Description</th></tr>
+<tr><ti>avc:  denied</ti>
+    <ti>SELinux has denied this access.</ti></tr>
+<tr><ti>{ lock }</ti>
+    <ti>The attempted access is a lock.</ti></tr>
+<tr><ti>pid=28341</ti>
+    <ti>The process ID performing this access is 28341.</ti></tr>
+<tr><ti>exec=/sbin/agetty</ti>
+    <ti>The full path and name of the process&#39;s executable is /sbin/agetty.</ti></tr>
+<tr><ti>path=/var/log/wtmp</ti>
+    <ti>The path and name of the target object is /var/log/wtmp.  Note: a complete
+        path is not always available.</ti></tr>
+<tr><ti>dev=03:03</ti>
+    <ti>The target object resides on device 03:03 (major:minor number).
+        On 2.6 kernels this may resolve to a name, sda3 in this example.</ti></tr>
+<tr><ti>ino=475406</ti>
+    <ti>The inode number of the target object is 475406.</ti></tr>
+<tr><ti>scontext=system_u:system_r:getty_t</ti>
+    <ti>The context of the program is system_u:system_r:getty_t.</ti></tr>
+<tr><ti>tcontext=system_u:object_r:var_log_t</ti>
+    <ti>The context of the target object is system_u:object_r:var_log_t.</ti></tr>
+<tr><ti>tclass=file</ti>
+    <ti>The target object is a normal file.</ti></tr>
+</table>
+
+<p>
+   Not all AVC messages will have all of these fields, as shown in the other
+   two denials.  The fields vary depending on the target object&#39;s class.
+   However, the most important fields: access type, source and target contexts,
+   and the target object&#39;s class will always be in an AVC message.
+</p>
+</body></section>
+
+<section><title>Understanding the Denial</title><body>
+<p>
+   Denials can be very confusing since they can be triggered for several reasons.
+   The key to understanding what is happening is to know the behavior of the
+   program, and to correctly interpret the denial message.  The target is not
+   limited to files; it could also be related to network sockets,
+   interprocess communications, or others.
+</p>
+<p>
+   In the above example, the agetty is denied locking of a file.  The file&#39;s type
+   is var_log_t, therefore it is implied that the target file is in /var/log.
+   With the extra information from the path= field in the denial message, it is
+   confirmed to be the file /var/log/wtmp.  If path information was unavailable,
+   this could be further confirmed by searching for the inode.  Wtmp is a file that has
+   information about users currently logged in, and agetty handles logins on
+   ttys.  It can be concluded that this is an expected access of agetty, for
+   updating wtmp.  However, why is this access being denied?  Is there a flaw
+   in the policy by not allowing agetty to update wtmp?  It turns out that wtmp
+   has the incorrect context.  It should be system_u:object_r:wtmp_t, rather
+   than system_u:object_r:var_log_t.
+</p>
+<p>
+   If this access was not understood, a user might mistakenly allow getty_t
+   read/write access to var_log_t files, which would be incorrect, since agetty
+   only needs to modify /var/log/wtmp.  This underscores how critical keeping
+   file contexts consistent is.
+</p>
+</body></section>
+</chapter>
+
+<chapter><title>References</title>
 <section><body>
 <p>
    <uri link="http://www.nsa.gov/selinux">U.S. National Security Agency</uri>,
