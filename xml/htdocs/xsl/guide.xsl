@@ -316,7 +316,7 @@
 				<br/>
 				<a class="altlink" href="/main/en/docs.xml#doc_chap2_sect1">Developer Docs</a>
 				<br/>
-				<a class="altlink" href="/main/en/docs.xml#doc_chap3_sect1">Other Docs/Translations</a>
+				<a class="altlink" href="/main/en/docs.xml#doc_chap3">Other Docs/Translations</a>
 				<br/>
 				<a class="altlink" href="/main/en/contract.xml">Social Contract</a>
 				<br/><br/>
