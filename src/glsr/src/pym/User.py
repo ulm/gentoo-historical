@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.4 2004/07/19 00:58:45 hadfield Exp $
+# $Id: User.py,v 1.5 2004/07/22 12:59:13 port001 Exp $
 #
 
 from time import strftime, gmtime
@@ -122,3 +122,12 @@ class User(Parent):
         else:
             return result[0]
     
+    def GetLastIP(self):
+        """ Return the last recorded IP for the given uid """
+
+        result = self.GetDetails()
+
+        if result == None:
+            return False
+        else:
+            return result["%s_lastip" % self.tablename]

@@ -36,13 +36,36 @@
     <br />
     {!IF}
 
-    <table width="90%" border="0" cellspacing="0" cellpadding="0" class="section_table">
+    <table width="90%" class="standard_table">
       <tr>
-        <td height="50" background="{GLSR_URL}images/header-bk.png">&nbsp;&nbsp;<span class="section_header_text">Who Is Online</span></td>
-	<td width="50" height="50" align="center" valign="middle" background="{GLSR_URL}images/header-bk.png"><img src="{GLSR_URL}images/people.png" width="48" height="48"></td>
+        {IF USERS_ONLINE != "False"}
+        <td colspan="2" class="header">Who Is Online</td>
+        {ELSE}
+        <td class="header">Who Is Online</td>
+        {!IF}
       </tr>
+      {IF USERS_ONLINE != "False"}
       <tr>
-        <td height="30" colspan="2" class="stats_row_4"><span>&nbsp;&nbsp;{USER_ONLINE_LIST}</span></td>
+        <td class="sub_header">User</td>
+        <td class="sub_header">IP Address</td>
       </tr>
+      {!IF}
+      {IF USERS_ONLINE != "False"}
+      {LOOP USERS_ONLINE_LIST}
+      <tr>
+        <td class="standard_row_{USERS_ONLINE_LIST.row}">{USERS_ONLINE_LIST.user}</td>
+        <td class="standard_row_{USERS_ONLINE_LIST.row}">{USERS_ONLINE_LIST.ip}</td>
+      </tr>
+      {!LOOP}
+      <tr>
+         <td class="standard_cell" colspan="2"></td>
+      </tr>
+      {ELSE}
+      <tr>
+         <td class="standard_cell">No registered accounts active.</td>
+      </tr>
+      {!IF}
     </table>
+    </form>
+    <br />
 

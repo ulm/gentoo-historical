@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.5 2004/07/10 01:10:32 port001 Exp $
+# $Id: Page_Main.py,v 1.6 2004/07/22 12:59:13 port001 Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : "form"}
@@ -37,17 +37,33 @@ class Page_Main(Parent):
 
         error_reporting = "True"
         error_report_list = []
-        user_online_list = ""
+        users_online = "True"
+        users_online_list = []
+        row = "even"
+
         sess_obj = Session.New()
         sessions = sess_obj.ListSessionsOnline(Config.WhoIsOnlineOffset)
 
         if len(sessions) == 0:
-            user_online_list = "No registered accounts active."
+            users_online = "False"
         else:
             for session in sessions:
                 user_obj = User(session["session_user_id"])
-                user_online_list = "%s %s" % (user_online_list,
-                                              user_obj.GetAlias())
+                alias = user_obj.GetAlias()
+                ip = user_obj.GetLastIP()                
+
+                if alias == False:
+                    alias = "N/A"
+                elif ip == False:
+                    ip = "N/A"
+
+                users_online_list.append({"row": row,
+                                          "user": alias,
+                                          "ip": ip})
+                if row == "even":
+                    row = "odd"
+                else:
+                    row = "even"
 
         if Config.ErrorReporting == True:
             error_report_list = ReturnErrorReports()
@@ -63,7 +79,8 @@ class Page_Main(Parent):
         tmpl.Compile(
             self.template,
             {"GLSR_URL":                Config.URL,
-             "USER_ONLINE_LIST":        user_online_list,
+             "USERS_ONLINE":       	users_online,
              "ERROR_REPORTING":         error_reporting},
-            {"ERROR_REPORT_LIST":       error_report_list})
+            {"ERROR_REPORT_LIST":       error_report_list,
+	     "USERS_ONLINE_LIST":       users_online_list})
         tmpl.Print()
