@@ -1,8 +1,8 @@
 GLEP: 33
 Title: Eclass Restructure/Redesign
-Version: $Revision: 1.1 $
-Last-Modified: $Date: 2005/02/16 21:30:44 $
-Author:	John Mylchreest <johnm@gentoo.org>, Brian Harring <ferringb@gentoo.org>
+Version: $Revision: 1.2 $
+Last-Modified: $Date: 2005/03/06 20:33:20 $
+Author:	Brian Harring <ferringb@gentoo.org>, John Mylchreest <johnm@gentoo.org>
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
@@ -17,7 +17,7 @@ For any design, the transition from theoretical to applied exposes inadequacies
 in the original design.  This document is intended to document, and propose a 
 revision of the current eclass setup to address current eclass inadequacies.
 
-This document proposes several thing- the creation of ebuild libraries, 'elibs', 
+This document proposes several things- the creation of ebuild libraries, 'elibs', 
 a narrowing of the focus of eclasses, a move of eclasses w/in the tree, the 
 addition of changelogs, and a way to allow for simple eclass gpg signing.
 In general, a large scale restructuring of what eclasses are and how they're
@@ -29,19 +29,19 @@ Terminology
 
 From this point on, the proposed eclass setup will be called 'new eclasses', the
 existing crop (as of this writing) will be referenced as 'old eclasses'.  The
-destinction is elaborated on within this document.
+distinction is elaborated on within this document.
 
 
 Motivation and Rationale
 ========================
 
 Eclasses within the tree currently are a bit of a mess- they're forced to
-maintain backwards compatability w/ all previous functionality.  In effect,
+maintain backwards compatibility w/ all previous functionality.  In effect,
 their api is constant, and can only be added to- never changing the existing
-functionality. This obviously is quite limiting, and leads to cruft accrueing in
+functionality. This obviously is quite limiting, and leads to cruft accruing in
 eclasses as a eclasses design is refined.  This needs to be dealt with prior to
-eclass code  reaching a critical mass where they become unmanagable/fragile
-(recent pushes for eclass versioning could be interpretted as proof of this).
+eclass code  reaching a critical mass where they become unmanageable/fragile
+(recent pushes for eclass versioning could be interpreted as proof of this).
 
 Beyond that, eclasses were originally intended as a method to allow for ebuilds
 to use a pre-existing block of code, rather then having to duplicate the code in
@@ -66,6 +66,14 @@ the sand.  Old eclasses allowed for this, behaved this way.  New eclasses allow
 for that, and behave this way. This should reduce misconceptions about what is
 allowed/possible with eclasses, thus reducing bugs that result from said
 misconceptions.
+
+A few words on elibs- think of them as a clear definition between behavioral 
+functionality of an eclass, and the library functionality.  Eclass's modify 
+template data, and are the basis for other ebuilds- elibs, however are *just* 
+common bash functionality.
+
+Consider the majority of the portage bin/* scripts- these all are candidates for 
+being added to the tree as elibs, as is the bulk of eutils.
 
 
 Specification.
@@ -93,27 +101,51 @@ as a repository of ebuild function libraries.  Rather then relying on using the
 source command, an 'elib' function should be added to portage to import that
 libraries functionality.  The reason for the indirection via the function is 
 mostly related to portage internals, but it does serve as an abstraction such 
-that (for example) zsh compatability hacks could be hidden in the elib function.
+that (for example) zsh compatibility hacks could be hidden in the elib function.
 
 Elib's will be collections of bash functions- they're not allowed to do anything
 in the global scope aside from function definition, and any -minimal-
 initialization of the library that is absolutely needed.  Additionally, they 
-cannot modify any ebuild functions- src_compile, src_unpack fex.  Since they are
+cannot modify any ebuild template functions- src_compile, src_unpack.  Since they are
 required to not modify the metadata keys, nor in any way affect the ebuild aside
 from providing functionality, they can be conditionally pulled in.  They also
 are allowed to pull in other elibs, but strictly just elibs- no eclasses, just
-other elibs. A realworld example would be the eutils eclass.
+other elibs. A real world example would be the eutils eclass.
 
 Portage, since the elib's don't modify metadata, isn't required to track elibs
 as it tracks eclasses.  Thus a change in an elib doesn't result in half the tree
 forced to be regenerated/marked stale when changed (this is more of an infra
 benefit, although regen's that take too long due to eclass changes have been
-known to cause rsync issues due to missing timestamps).  The only thing portage
-will do for elibs, aside from provide the elib function, is track what elibs
-have been loaded thus far, and load an elib only if it hasn't been loaded once
-already. An implication of this (if it wasn't clear from the elib description)
-is that elibs cannot change their exported api dependant on the api (as some
-eclass do for example).
+known to cause rsync issues due to missing timestamps).  
+
+Elibs will not be available in the global scope of an eclass, or ebuild- nor during the 
+depends phase (basically a phase that sources the ebuild, to get it's metadata).  Elib 
+calls in the global scope will be tracked, but the elib will not be loaded till just before
+the setup phase (pkg_setup). There are two reasons for this- first, it ensures elibs are 
+completely incapable of modifying metadata.  There is no room for confusion, late loading
+of elibs gives you the functionality for all phases, except for depends- depends being the 
+only phase that is capable of specifying metadata.  Second, as an added bonus, late 
+loading reduces the amount of bash sourced for a regen- faster regens.  This however is minor,
+and is an ancillary benefit of the first reason.
+
+There are a few further restrictions with elibs- mainly, elibs to load can only be specified
+in either global scope, or in the setup, unpack, compile, test, and install phases.  You can 
+not load elibs in prerm, postrm, preinst, and postinst.  The reason being, for *rm phases, 
+installed pkgs will have to look to the tree for the elib, which allows for api drift to cause 
+breakage.  For *inst phases, same thing, except the culprit is binpkgs.
+
+There is a final restriction- elibs cannot change their exported api dependent on the api 
+(as some eclass do for example).  The reason mainly being that elibs are loaded once- not 
+multiple times, as eclasses are.
+
+To clarify, for example this is invalid.
+::
+	if [[ -n ${SOME_VAR} ]]; then
+		func x() { echo "I'm accessible only via tweaking some var";}
+	else
+		func x() { echo "this is invalid, do not do it."; }
+	fi
+
 
 Regarding maintainability of elibs, it should be a less of a load then old
 eclasses.  One of the major issues with old eclasses is that their functions are
@@ -122,13 +154,17 @@ makes eclass functions a bit fragile- the restrictions on what can, and cannot
 be done in elibs will address this, making functionality less fragile (thus a
 bit more maintainable).
 
-There is no need for backwards compatability with elibs- they just must work
+There is no need for backwards compatibility with elibs- they just must work
 against the current tree.  Thus elibs can be removed when the tree no longer
 needs them.  The reasons for this are explained below.
 
 Structuring of the elibs directory will be exactly the same as that of the new
 eclass directory (detailed below), sans a different extension.
 
+As to why their are so many restrictions, the answer is simple- the definition of 
+what elibs are, what they are capable of, and how to use them is nailed down as much as 
+possible to avoid *any* ambiguity related to them.  The intention is to make it clear,
+such that no misconceptions occur, resulting in bugs.
 
 The reduced role of Eclasses, and a clarification of existing Eclass requirements
 ---------------------------------------------------------------------------------
@@ -153,34 +189,32 @@ the keys exported on system B.
 
 If an eclass (or ebuild for that matter) violates this constant requirement, it
 leads to portage doing the wrong thing for rsync users- for example, wrong deps
-pulled in, leading to compilation failure.
+pulled in, leading to compilation failure, or dud deps.
 
 If the existing metadata isn't flexible enough for what is required for a
 package, the parsing of the metadata is changed to address that.  Cases where
 the constant requirement is violated are known, and a select few are allowed-
 these are exceptions to the rule that are required due to inadequacies in
-portage.  In other words, those *few* exceptions are allowed because it's the
-only way to do it at this time.  Any case where it's determined the constant
-requirement may need to be violated the dev must make it aware to the majority
-of devs, and the portage devs- violation of the constant rule has far reaching
-effects.
+portage.  Any case where it's determined the constant requirement may need to be 
+violated the dev must make it aware to the majority of devs, along with the portage 
+devs.  This should be done prior to committing.
 
 It's quite likely there is a way to allow what you're attempting- if you just go
-and do it, the rsync users (our userbase) suffer the results of compilation
+and do it, the rsync users (our user base) suffer the results of compilation
 failures and unneeded deps being pulled in.
 
 After that stern reminder, back to new eclasses.  Defining INHERITED and ECLASS
 within the eclass is no longer required.  Portage already handles those vars if
 they aren't defined.
 
-As with elibs, it's no longer required backwards compatability be maintained
-indefinitely- compatability must be maintained against the current tree, but
+As with elibs, it's no longer required that backwards compatibility be maintained
+indefinitely- compatibility must be maintained against the current tree, but
 just that.  As such new eclasses (the true distinction of new vs old is
 elaborated in the next section) can be removed from the tree once they're no
 longer in use.
 
 
-The end of backwards compatability...
+The end of backwards compatibility...
 -------------------------------------
 
 With current eclasses, once the eclass is in use, it's api can no longer be
@@ -194,7 +228,7 @@ For a real world example of this, if you merged a glibc 2 years back, whatever
 eclasses it used must still be compatible, or you may not be able to unmerge the
 older glibc version during an upgrade to a newer version.  So either the glibc
 maintainer is left with the option of leaving people using ancient versions out
-in the rain, or maintaining an ever increasing load of backwards compatability
+in the rain, or maintaining an ever increasing load of backwards compatibility
 cruft in any used eclasses.
 
 Binpkgs suffer a similar fate.  Merging of a binpkg pulls needed eclasses from
@@ -207,30 +241,23 @@ be re-used rather then relying on the eclass.  In other words, binpkgs and
 installed ebuilds will no longer go and pull needed eclasses from the tree,
 they'll use the 'saved' version of the eclass they were built/merged with.
 
-So the backwards compatability requirement for users of the next major portage
+So the backwards compatibility requirement for users of the next major portage
 version (and beyond) isn't required.  All the cruft can be dropped.
 
-The problem is that there will be users using older versions of portage that
-don't support this functionality.  So backwards compatability must be maintained
-for them.  Additionally, earlier versions of portage haven't always handled the
-env correctly- for broken saved envs, the eclasses backwards compatability is
-still required.  Waiting N months preserving backwards compatability in current
-eclasses, then dropping the support isn't much of an option.  There always are
-stragglers who don't upgrade, beyond that, there is the possibility of cases
-where users -will- upgrade, but still be bitten (broken saved envs from earlier
-portage installations).  More importantly, it doesn't provide a route to
-upgrade/fix things if a user lags behind, exempting trying to find a compatabile
-version of the eclass in viewcvs (assuming it hasn't been sent to the attic
-already).  Obviously, that isn't acceptable.
+The problem is that there will be users using older versions of portage that don't 
+support this functionality- these older installations *cannot* use the 
+new eclasses, due to the fact that their portage version is incapable of 
+properly relying on the env- in other words, the varying api of the eclass will
+result in user-visible failures during unmerging.
 
-With the next major portage release, it will be possible to drop backwards
-compatability for eclasses, and all lingering cruft.  What is needed is a way to
-take full advantage of this functionality, without completely screwing over the
-unfortunates and those who don't upgrade.
+So we're able to do a clean break of all old eclasses, and api cruft, but we need 
+a means to basically disallow access to the new eclasses for all portage versions 
+incapable of properly handling the env requirements.
 
-Unfortunately, the creation of new eclasses within the tree has an additional
-snag due to portage.  The existing inherit function that is used to pull in old
-eclasses- basically, whatever it's passed (inherit kernel or inherit
+Unfortunately, we cannot just rely on a different grouping/naming convention within 
+the old eclass directory.  The new eclasses must be inaccessible, and portage throws
+a snag into this- the existing inherit function that is used to handle existing
+eclasses.  Basically, whatever it's passed (inherit kernel or inherit
 kernel/kernel) it will pull in (kernel.eclass, and kernel/kernel.eclass
 respectively).  So even if the new eclasses were implemented within a
 subdirectory of the eclass dir in the tree, all current portage versions would
@@ -245,7 +272,7 @@ Tree restructuring.
 
 There are only two way to block the existing (as of this writing) inherit
 functionality from accessing the new eclasses- either change the extension of
-eclasses to something other then 'eclass', or to have them stored in a seperate
+eclasses to something other then 'eclass', or to have them stored in a separate
 subdirectory of the tree then eclass.
 
 The latter is preferable, and the proposed solution.  Reasons are- the current
@@ -259,7 +286,7 @@ If it's unclear as to why the old inherit function *cannot* access the new
 eclasses, please reread the previous section.  It's unfortunately a requirement
 to take advantage of all that the next major portage release will allow.
 
-The proposed directory sructure is ${PORTDIR}/include/{eclass,elib}.
+The proposed directory structure is ${PORTDIR}/include/{eclass,elib}.
 Something like ${PORTDIR}/new-eclass, or ${PORTDIR}/eclass-ng could be used
 (although many would cringe at the -ng), but such a name is unwise. Consider the
 possibility (likely a fact) that new eclasses someday may be found lacking, and
@@ -282,29 +309,31 @@ No eclasses will be allowed in the base directory- grouping of new eclasses will
 be required to help keep things tidy, and for the following reasons.  Grouping
 of eclasses allows for the addition of ChangeLogs that are specific to that
 group of eclasses, grouping of files/patches as needed, and allows for
-saner/easier signing of eclasses- basically, you can just stick a signed
+saner/easier signing of eclasses- you can just stick a signed
 Manifest file w/in that grouping, thus providing the information portage needs
 to ensure no files are missing, and that nothing has been tainted.
 
 The elib directory will be structured in the same way, for the same reasons.
 
 Repoman will have to be extended to work within new eclass and elib groups, and
-to handle signing and commiting. This is intentional, and a good thing. This
+to handle signing and committing. This is intentional, and a good thing. This
 gives repoman the possibility of doing sanity checks on elibs/new eclasses.
-It won't solve developers doing dumb things with eclasses (no technological
-solution would, exempting a tazering), but it will give us a way to automate 
-checks to try and prevent honest mistakes from slipping through and breaking
-things for our users.
+
+Note these checks will not prevent developers from doing dumb things with eclass- 
+these checks would only be capable of doing basic sanity checks, such as syntax checks.
+There is no way to prevent people from doing dumb things (exempting perhaps repeated 
+applications of a cattle prod)- these are strictly automatic checks, akin to repoman's
+dependency checks.
 
 
-The start of a different phase of backwards compatability
+The start of a different phase of backwards compatibility
 ---------------------------------------------------------
 
-As clarified above, new eclasses will exist in a seperate directory that will be
+As clarified above, new eclasses will exist in a separate directory that will be
 intentionally inaccessible to the inherit function.  As such, users of older
 portage versions *will* have to upgrade to merge any ebuild that uses elibs/new
-eclasses. A depend on the next major portage version would address
-transparently handle this for rsync users.
+eclasses. A depend on the next major portage version would transparently handle 
+this for rsync users.
 
 There still is the issue of users who haven't upgraded to the required portage
 version. This is a minor concern frankly- portage releases include new
@@ -331,38 +360,41 @@ For users who do not upgrade within the window of N months while the old
 eclasses are in the tree, as stated, it's assumed they know what they are doing.
 If they specifically block the new portage version, as the ebuilds in the tree
 migrate to the new eclasses, they will have less and less ebuilds available to
-them.  If they tried injecting the new portage version (lieing to portage,
-essentially), portage would bail since it cannot find the new eclass.  Note that
-for them to even get to this point, they'd have to somehow disable the DEPEND on
-a new version of portage- either hack up the ebuild, or do an injection.
-Essentially they'd have to actively try to sidestep sanity checks implemented to
-make the shift over from old to new transparent.  If they've
-disabled/sidestepped our attempt at a transparent migration, they can deal with
-the repercussions of it.
+them.  If they tried injecting the new portage version (lying to portage,
+essentially), portage would bail since it cannot find the new eclass.  
+For ebuilds that use the new eclasses, there really isn't any way to sidestep 
+the portage version requirement- same as it has been for other portage features.
 
 What is a bit more annoying is that once the old eclasses are out of the tree,
-users will lose the ability to unmerge any installed ebuild that used an old
-eclass, further users will lose the ability to merge any tbz2 that uses old
-eclasses.
+if a user has not upgraded to a portage version supporting env processing, they 
+will lose the ability to unmerge any installed ebuild that used an old
+eclass.  Same cause, different symptom being they will lose the ability to merge 
+any tbz2 that uses old eclasses also.
 
-They however will *not* be left out in the rain.  For merging old eclass
-binpkgs, and unmerging installed packages, they can merge the old eclass compat
-ebuild.  The compat ebuild provides the missing eclasses, thus providing that
-lost functionality.  
+There is one additional case that is a rarity, but should be noted- if a user 
+has suffered significant corruption of their installed package database (vdb).  This is 
+ignoring the question of whether the vdb is even usable at this point, but the possibility
+exists for the saved envs to be non usable due to either A) missing, or B) corrupted.
+In such a case, even with the new portage capabilities, they would need
+the old eclass compat ebuild.  
 
-The intention isn't to force them to upgrade, hence the ability to restore the
+Note for this to happen requires either rather... unwise uses of root, or significant 
+fs corruption.  Regardless of the cause, it's quite likely for this to even become an 
+issue, the system's vdb is completely unusable.  It's a moot issue at that point.
+If you lose your vdb, or it gets seriously damaged, it's akin to lobotomizing portage- 
+it doesn't know what's installed, it doesn't know of it's own files, and in general, 
+a rebuilding of the system is about the only sane course of action.  The missing env is 
+truly the least of the users concern in such a case.
+
+Continuing with the more likely scenario, users unwilling to upgrade portage will
+*not* be left out in the rain.  Merging the old eclass compat ebuild will provide 
+the missing eclasses, thus providing that lost functionality .
+
+Note the intention isn't to force them to upgrade, hence the ability to restore the
 lost functionality. The intention is to clean up the existing mess, and allow us
-to move forward. The saying "you've got to break a few eggs to make an omelete"
+to move forward. The saying "you've got to break a few eggs to make an omelet"
 is akin, exempting the fact we're providing a way to make the eggs whole again
 (the king's men would've loved such an option).
-
-It's advisable that once all old eclasses are no longer in use in the tree, the
-old eclass package is added to system default.  Remember that even those who
-have upgraded to a portage version that handles the env correctly, may run into
-instances where an installed packages env is corrupt.  For new bootstraps (which
-automatically upgrade portage right off the bat), an injection of the compat
-package would be advisable- unless they downgrade portage, they will never need
-the old eclasses.
 
 
 Migrating to the new setup
@@ -403,15 +435,14 @@ advantage of it. :)
 Backwards Compatibility
 =======================
 
-All backwards compatability issues are addressed inline, but a recap is offered-
-it's suggested that if the a particular compatability issue is
+All backwards compatibility issues are addressed in line, but a recap is offered-
+it's suggested that if the a particular compatibility issue is
 questioned/worried over, the reader read the relevant section.  There should be
 a more in depth discussion of the issue, along with a more extensive explanation
-of the potential solutions, and reasons for the choosen solution.
+of the potential solutions, and reasons for the chosen solution.
 
 To recap:
 ::
-
 	New eclasses and elib functionality will be tied to a specific portage
 	version. A DEPENDs on said portage version should address this for rsync
 	users who refuse to upgrade to a portage version that supports the new
@@ -422,16 +453,17 @@ To recap:
 	
 	Old eclasses at some point in the future should be removed from the tree,
 	and released in a tarball/ebuild. This will cause installed ebuilds that
-	rely on the old eclass to be unable to unmerge to behave as expected, with
-	the same applying for merging of binpkgs.
+	rely on the old eclass to be unable to unmerge, with the same applying for 
+	merging of binpkgs dependent on the following paragraph.
 		
-	This eclass ebuild should be a system depends target to make the transition
-	transparent. Future portage ebuilds, and the old eclass compat ebuild should
-	not inherit any eclasses. The reason for this is that in doing so, it may
-	block upgrade paths. At least for portage, this already is something of a
-	known issue for ebuild functionality- due to what it is/provides, it must
-	essentially be standalone, and cannot benefit from any eclass/elib
-	functionality.
+	The old eclass-compat is only required for users who do not upgrade their 
+	portage installation, and one further exemption- if the user has somehow
+	corrupted/destroyed their installed pkgs database (/var/db/pkg currently), 
+	in the process, they've lost their saved environments.  The eclass-compat
+	ebuild would be required for ebuilds that required older eclasses in such a 
+	case.  Note, this case is rare also- as clarified above, it's mentioned 
+	strictly to be complete, it's not much of a real world scenario as elaborated
+	above.
 
 
 Copyright
