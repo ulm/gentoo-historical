@@ -645,7 +645,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 <xsl:template match="author">
 	<xsl:apply-templates />
 	<xsl:if test="@title"><br/><i><xsl:value-of select="@title"/></i>
-	</xsl:if>	
+	</xsl:if>
 	<br/>
 	<br/>
 </xsl:template>
@@ -658,10 +658,11 @@ of your sale will go towards further Gentoo Linux development.</p>
 	</xsl:when>
 	<xsl:otherwise>
 		<xsl:if test="/guide">
-			<p class="chaphead"><font class="chapnum"><a name="{$chapid}"><xsl:number/>.</a></font></p> 
+			<p class="chaphead"><font class="chapnum"><a name="{$chapid}"><xsl:number/>.</a></font></p>
 		</xsl:if>
 	</xsl:otherwise>
 	</xsl:choose>
+	<xsl:apply-templates select="body"/>
 	<xsl:apply-templates select="section">
 	<xsl:with-param name="chapid" value="$chapid"/>
 	</xsl:apply-templates>
@@ -672,6 +673,15 @@ of your sale will go towards further Gentoo Linux development.</p>
 	<xsl:if test="title">
 		<xsl:variable name="sectid"><xsl:value-of select="$chapid"/>_sect<xsl:number/></xsl:variable>
 		<p class="secthead"><a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a></p>
+	</xsl:if>
+	<xsl:apply-templates select="body"/>
+</xsl:template>
+
+<xsl:template match="subsection">
+	<xsl:param name="chapid"/>
+	<xsl:if test="title">
+		<xsl:variable name="subsectid"><xsl:value-of select="$chapid"/>_subsect<xsl:number/></xsl:variable>
+		<p class="subsecthead"><a name="{$subsectid}"><xsl:value-of select="title"/>&#160;</a></p>
 	</xsl:if>
 	<xsl:apply-templates select="body"/>
 </xsl:template>
