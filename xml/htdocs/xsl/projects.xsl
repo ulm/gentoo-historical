@@ -53,28 +53,6 @@
 	</guide>
 </xsl:template>
 
-<xsl:template name="fullname">
-  <xsl:param name="nick" select=""/>
-  <xsl:param name="fallback" select="false"/>
-  <xsl:if test='not($nick="")'>
-    <xsl:choose>
-      <xsl:when test='document("/proj/en/metastructure/userinfo.xml")//user[@username=$nick]'>
-        <xsl:apply-templates select='document("/proj/en/metastructure/userinfo.xml")//user[@username=$nick]'/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:if test='$fallback="true"'>
-          <xsl:value-of select="$nick"/>
-        </xsl:if>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:if>
-</xsl:template>
-<xsl:template match="userlist/user">
-  <xsl:value-of select="realname/firstname/text()"/>
-  <xsl:text> </xsl:text>
-  <xsl:value-of select="realname/familyname/text()"/>
-</xsl:template>
-
 <xsl:template name="projlist">
   <xsl:param name="ref" select=""/>
   <xsl:param name="level" select="1"/>
