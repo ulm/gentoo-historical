@@ -10,20 +10,14 @@ class GLIInstallTemplate:
 		
 		self._install_profile = install_profile
 		self._client_configuration = client_configuration
-
-	def _emerge_sync(self):
-		"A private method to run emerge sync in the chroot environment"
-		
-		# Run the sync and return the exitstatus
-		return self._exec_in_chroot("emerge sync")
 		
 	def _emerge(self, package, binary=False, binary_only=False):
 		"A private method to emerge a program in the chroot environment"
 		
 		# Decide which to run
-		if binary:
+		if binary_only:
 			return self._exec_in_chroot("emerge -k " + package)
-		elif binary_only:
+		elif binary:
 			return self._exec_in_chroot("emerge -K " + package)
 		else:
 			return self._exec_in_chroot("emerge " + package)	
@@ -51,7 +45,7 @@ class GLIInstallTemplate:
 				#If ignore is off, then raise exception
 				else:
 					raise "InstallTemplateError",  "Install step dependency not met!"
-
+					
 	def _exec_in_chroot(self, command):
 		"Runs a command in the chroot environment."
 
@@ -144,6 +138,25 @@ class GLIInstallTemplate:
 		f = open(file_name, 'w')
 		f.writelines(file)
 		f.close()
+		
+	def _percent_complete(self, percent):
+		"Outputs the percent complete to client_configuration"
+		
+		if type(percent) != int:
+			raise "Percentage must be an integer!"
+			
+		if not percent in range(101):
+			raise "Percentage must be between 0 and 100!"
+		
+		self._client_configuration.current_step_percent = percent
+		
+	def _process_desc(self, description):
+		"Outputs the description of the current process to client_configuration"
+		
+		if type(description) != str:
+			raise "Description must be an string!"
+			
+		self._client_configuration.current_step_process_desc = description	
 
 	def setup_network_pre(self):
 		"Sets up the network on the live CD environment"
@@ -151,95 +164,132 @@ class GLIInstallTemplate:
 
 	def partition_local_devices(self):
 		"Partitions local devices (hard drives, memory sticks, etc)"
-		pass
-
+		pass 
+		
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
-		pass
+		# Dependency checking		
+		self._depends("partition_local_drives")
 
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
-		pass
+		# Dependency checking		
+		self._depends([ "setup_network_pre", "mount_local_partitions" ])
 
 	def unpack_tarball(self):
 		"Unpacks the appropriate stage tarball"
-		pass
+		# Dependency checking		
+		self._depends([ "mount_local_partitions", "mount_network_shares" ])
 
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def prepare_chroot(self):
 		"Copies resolve.conf to the chroot environment and mounts /dev and /proc"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def configure_make_conf(self):
 		"Configures make.conf"
-		pass
+		# Dependency checking		
+		self._depends("prepare_chroot")
 
-	def emerge_sync(self):
+	def install_portage_tree(self):
 		"Get/update the portage tree"
-		pass
-
+		# Dependency checking		
+		self._depends("prepare_chroot")
+		
 	def bootstrap(self):
 		"Stage 1 install -- bootstraping"
-		pass
+		# Dependency checking		
+		self._depends([ "install_portage_tree", "configure_make_conf" ])
+		
+		# If we are doing a stage 1 install, then bootstrap
+		if self._install_profile.get_install_stage() == 1:
+			if not self._exec_in_chroot("/usr/portage/scripts/bootstrap.sh"):
+				raise "BootstrapError", "Bootstrapping failed!"
 
 	def emerge_system(self):
 		"Stage 1 and 2 install -- build system"
-		pass
+		# Dependency checking		
+		self._depends("bootstrap")
+		
+		# If we are doing a stage 1 or 2 install, then emerge system
+		if self._install_profile.get_install_stage() in [ 1, 2 ]:
+			if not self._emerge("system"):
+				raise "EmergeSystemError", "Building the system failed!"
 
 	def set_timezone(self):
 		"Sets the timezone for the new environment"
-		
+
+		# Dependency checking		
 		self._depends("unpack_tarball")
-		
+		self._process_desc("Setting the timezone")
+		self._percent_complete(0)
+
 		# Set symlink
 		os.symlink("../usr/share/zoneinfo/" + self._install_profile.get_time_zone(), "/mnt/gentoo/etc/localtime")
+		
+		self._percent_complete(100)
 
 	def configure_fstab(self):
 		"Configures fstab"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def build_kernel(self):
 		"Builds kernel"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def setup_network_post(self):
 		"Sets up the network for the first boot"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def install_system_utilities(self):
 		"Installs and sets up logger, cron, fstools, rp-pppoe, pcmcia-cs"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def install_bootloader(self):
 		"Installs and configures bootloader"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def configure_rc_conf(self):
 		"Configures rc.conf"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def set_root_password(self):
 		"Sets the root password"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def set_users(self):
 		"Sets up the new users for the system"
-		pass
+		# Dependency checking		
+		self._depends("unpack_tarball")
 
 	def unmount_devices(self):
 		"Unmounts mounted devices after installation"
+		# Dependency checking		
+		self._depends()

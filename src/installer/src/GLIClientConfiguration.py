@@ -11,4 +11,4 @@ class GLIClientConfiguration:
 	# This gives a percentange of the step that is completed
 	current_step_percent = 0
 	# This is a string describing what the step is currently doing
-	current_step_process = ""
+	current_step_process_desc = ""
