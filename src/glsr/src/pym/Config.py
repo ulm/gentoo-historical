@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.13 2004/12/15 00:31:42 hadfield Exp $
+# $Id: Config.py,v 1.14 2004/12/15 15:22:45 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -22,7 +22,8 @@ MySQL = {
     "script_table":     "script",
     "subscript_table":  "subscript",
     "session_table":    "session",
-    "news_table":       "news"
+    "news_table":       "news",
+    "state_table":	"state"
     }
 
 t_prefix = "/usr/local/share/glsr/templates/"

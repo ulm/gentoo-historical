@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.25 2004/12/15 00:31:42 hadfield Exp $
+# $Id: index.py,v 1.26 2004/12/15 15:22:45 port001 Exp $
 #
 
 """The main page dispatcher for glsr.
@@ -140,7 +140,7 @@ class PageDispatch:
 
             for module in site_modules.admin.__all__:
                 module_list.append(module)
-                self.load_module(module)
+                self._load_module(module)
                 #Threader(self._load_module, module)
         else:
             import site_modules
