@@ -218,7 +218,10 @@ def set_default_route(route):
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
-		cmd = "echo -e '#!/bin/bash\n\nsource /etc/profile\n" + cmd + "' > " + chroot + "/tmp/spawn.sh && chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh"
+		wrapper = open(chroot+"/tmp/spawn.sh", "w")
+		wrapper.write("#!/bin/bash\n\nsource /etc/profile\n" + cmd)
+		wrapper.close()
+		cmd = "chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh && rm " + chroot + "/tmp/spawn.sh"
 
 	cmd += " 2>&1 "
 	if logfile != None:
