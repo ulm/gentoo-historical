@@ -463,6 +463,33 @@ sub show_bug {
     }
 }
 
+sub download_attach {
+    my $BUG = shift;
+    use WWW::Mechanize;
+    my $downdir = $config{'downdir'} || "/tmp";
+    my $agent = WWW::Mechanize->new();
+    $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
+    my $TextBody = $agent->content();
+    my @TextBody = split( /\n/, $TextBody );
+    my %grabbed  = ();
+    foreach my $line (@TextBody) {
+
+        if ( my ($download_url) = $line =~ m{(attachment\.cgi\?id=.*view)} ) {
+            my $down = "http://bugs.gentoo.org/$download_url";
+            my ($id) = $download_url =~ m{id=(\d+)\&amp};
+            unless ( $grabbed{$id} == "1" ) {
+                $grabbed{$id} = 1;
+
+                print "  Downloading $down...\n ";
+                my $response =
+                  $agent->mirror( $down, "$downdir/$BUG-attachment-$id" );
+            }
+        }
+
+    }
+
+}
+
 sub clean_line {
     my $line = shift;
     if ( $line =~ /\<input/i ) {
