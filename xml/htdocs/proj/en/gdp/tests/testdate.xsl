@@ -23,8 +23,8 @@ This page shows how dates could be formatted for each language
 
 <license/>
 
-<version>1.1</version>
-<date>2004-11-21</date>
+<version>1.2</version>
+<date><xsl:value-of select="func:today()"/></date>
 
 <chapter>
 <title>Introduction</title>
