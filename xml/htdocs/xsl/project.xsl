@@ -64,7 +64,13 @@
 			       	<xsl:sort select="text()"/>
 			       </xsl:apply-templates>
 			       <xsl:apply-templates select='dev[not(@role)]'/>
-			</table></body></section>
+			</table>
+      
+      <p>
+      All developers can be reached by e-mail using <c>Nickname@gentoo.org</c>.
+      </p>
+      
+      </body></section>
 		</chapter>
 		</xsl:if>
 		<xsl:apply-templates select='extrachapter[@position="devs"]'/>
