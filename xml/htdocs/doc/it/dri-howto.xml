@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/dri-howto.xml">
+<title>Guida all'accelerazione hardware 3d</title>
+<author title="Autore">
+	<mail link="donnie.berkholz@richmond.edu">Donnie Berkholz</mail>
+</author>
+<author title="Editore">
+	<mail link="peesh@gentoo.org">Jorge Paulo</mail>
+</author>
+<author title="Traduttore">
+	<mail link="ilmalcom@supereva.it">Stefano Calzavara</mail>
+</author>
+
+<abstract>Questa è una guida per far funzionare l'accelerazione 3d in XFree86 sfruttando XFree-DRM sotto Gentoo Linux</abstract>
+
+<version>1.0.0</version>
+<date>14 giugno 2003</date>
+
+<chapter>
+	<title>Introduzione</title>
+	<section>
+		<title>Cos'è l'accelerazione hardware 3d e perchè dovrei voler abilitarla?</title>
+		<body>
+		<p>Con l'accelerazione 3d hardware il rendering di immagini 3d usa il processore grafico della vostra scheda video invece di sfruttare preziose risorse della cpu nel disegnare. Si parla anche di accelerazione hardware piuttosto che di accelerazione software perchè, senza questa accelerazione 3d, la vostra CPU è obbligata a disegnare tutto da sola facendo uso delle librerie di Rendering Mesa, ciò implica un considerevole consumo di risorse. Mentre XFree di norma supporta l'accelerazione 2d hardware, spesso manca di quella 3d. L'accelerazione hardware 3d è apprezzabile in situazioni che richiedono il rendering di oggetti 3d come giochi, CAD 3D o la realizzazionedi modelli.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Come attivo l'accelerazione 3d?</title>
+		<body>
+		<p>In molti casi, i drivers esistono sia precompilati che opensource. I drivers opensource son preferibili, perchè stiamo usando Linux e l'opensource è uno dei suoi principi chiave. A volte i precompilati sono però l'unica
+scelta, come per le schede Nvidia. Se possedete una di essa, leggete la <uri link="nvidia_tsg.xml">guida nVidia alla risoluzione dei problemi</uri>. Questa guida spiega come usare i drivers per XFree-DRM. Le schede supportate sono indicate qui avanti nel documento. I drivers precompilati includono media-video/mgavideo per le Matrox e media-video/ati-drivers per le ATI. Altri drivers opensource sono media-video/kyro-kernel per le schede KyroII e media-video/ati-gatos ancora per le ATI cards, essi mirano a sfruttare più a fondo le potenzialità video della scheda.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Cos'è il DRI?</title>
+		<body>
+		<p>Il Direct Rendering Infrastructure (<uri link="http://dri.sourceforge.net">dri.sourceforge.net</uri>), abbreviato in DRI, è il mezzo per l'accesso diretto alla scheda video in maniera sicura ed efficiente. Esso include cambiamenti al server X, a parecchie librerie ed al kernel. Lo scopo primario del DRI è di creare veloci implementazioni OpenGL.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Cos'è XFree-DRM e cos'ha a che fare con XFree86?</title>
+		<body>
+		<p>XFree-DRM è un <e>miglioramento</e> di XFree86 che aggiunge l'accelerazione 3d per quelle schede che XFree normalmente non supporta.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Destinatari</title>
+		<body>
+		<p>Questa guida è per coloro che non riescono ad abilitare il direct rendering solamente con XFree. XFree-DRM funziona per i drivers 3dfx, gamma, i8x0, matrox, rage128, radeon e sis. C'è anche il supporto per mach64 nei sorgenti del CVS -- date un'occhiata a <uri link="http://www.retinalburn.net/linux/dri_status.html">questo sito</uri> e a <uri link="http://www.retinalburn.net/linux/dri_HOWTO.html">questa guida</uri>. Poichè il Direct Rendering Manager (DRM) della serie 2.4.x non supporta XFree 4.3, è necessario il pacchetto xfree-drm. Se state usando un kernel 2.5.x, il suo DRM supporta XFree 4.3; così, a meno che la vostra scheda non sia così nuova che non funziona il direct rendering, lasciate pure perdere questa guida. Rimandiamo al <uri link="http://dri.sourceforge.net">sito web di DRI</uri> per maggiori informazioni e per la documentazione ufficiale. </p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Contatti</title>
+		<body>
+		<p>Per suggerimenti, domanda ecc ecc mandate un e-mail a <mail link="donnie.berkholz@richmond.edu">Donnie Berkholz</mail>.</p>
+		</body>
+	</section>
+</chapter>
+
+
+<chapter>
+	<title>Installare XFree86 e configurare il kernel</title>
+	<section>
+		<title>Installare XFree86</title>
+		<body>
+		<pre>
+# <i>emerge x11-base/xfree</i>
+		</pre>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Configurare il kernel</title>
+		<body>
+		<p>Verificate qual è il vostro chipset ed abilitate il supporto solo per quello.</p>
+		<pre caption="Individuare il modello">
+# <i>emerge pciutils; lspci | grep AGP</i>
+# <i>00:01.0 PCI bridge: Intel Corp. 440BX/ZX/DX - 82443BX/ZX/DX AGP bridge (rev 03)</i>
+<codenote>Ovviamente il vostro output può essere diverso a causa del diverso hardware.</codenote>
+		</pre>
+		<p>La maggior parte dei kernel, se non tutti, dovrebbe avere queste opzioni. Nell'esempio si fa uso dei gentoo-sources-2.4.20-r5.</p>
+		<pre>
+# <i>ls -l /usr/src/linux </i>
+lrwxrwxrwx    1 root     root           22 May 29 18:20 /usr/src/linux -> linux-2.4.20-gentoo-r5
+<codenote>Assicuratevi che <path>/usr/src/linux</path> punti al vostro attuale kernel.</codenote>
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+		</pre>
+		<p></p>
+		<pre caption="Opzioni di make menuconfig">
+Processor type and features ---&gt;
+  &lt;*&gt; MTRR (Memory Type Range Register) support
+Character devices ---&gt;
+  &lt;*&gt; /dev/agpgart (AGP Support)
+  [*] Intel 440LX/BX/GX and I815/I820/I830M/I830MP/I840/I845/I850/I860 support
+<codenote>Selezionate il vostro chipset, non quello dell'esempio.</codenote>
+  [ ] Direct Rendering Manager (XFree86 DRI support)
+		</pre>
+		<p>Assicuratevi che il Direct Rendering Manager (DRM) sia <e>disattivato</e>, penserà a tutto il pacchetto xfree-drm, dato che la versione del kernel è per XFree 4.2.</p>
+		</body>
+	</section>
+
+
+        <section>
+                <title>Compilare ed installare il kernel</title>
+                <body>
+                <pre caption="Compilare ed installare il kernel">
+# <i>make dep &amp;&amp; make clean bzImage modules modules_install</i>
+# <i>mount /boot</i>
+# <i>cp arch/i386/boot/bzImage /boot</i>
+                </pre>
+	<p>Se volete che il vostro kernel si chiami in modo diverso da
+bzImage, assicuratevi di copiarlo in /boot/nomekernel. Non dimenticatevi di
+aggiornare grub.conf o lilo.conf e di di lanciare /sbin/lilo se usate
+LILO.</p>
+                </body>
+        </section>
+</chapter>
+
+
+<chapter>
+        <title>Installare XFree-DRM ed abilitare il direct rendering</title>
+        <section>
+                <title>Installare XFree-DRM</title>
+                <body>
+                <pre>
+# <i>ACCEPT_KEYWORDS="~x86" emerge xfree-drm</i>
+		</pre>
+		</body>
+	</section>
+
+
+        <section>
+                <title>Configurare XF86Config</title>
+                <body>
+		<p>Aprite <path>/etc/X11/XF86Config</path> con il vostro editor preferito e modificatelo per abilitare DRI e GLX.</p>
+                <pre caption="XF86Config">
+...
+Section "Module"
+     Load "dri"
+     Load "glx"
+     ...
+EndSection
+...
+Section "Device"
+     Driver "radeon"
+     ...
+EndSection
+...
+Section "DRI"
+     Mode 0666
+EndSection
+		</pre>
+		<p>Se state usando un altro driver, sostituite "radeon" con la voce appropriata</p>
+		</body>
+	</section>
+</chapter>
+
+
+<chapter>
+	<title>Verificare il funzionamento dell'accelerazione 3d</title>
+	<section>
+		<title>Riavviare con il nuovo kernel</title>
+		<body>
+		<p>Riavviate il sistema con il nuovo kernel, è ora di vedere se il direct rendering è attivo e quanto bene funziona. </p>
+		<pre caption="Provare il rendering">
+# <i>startx</i>
+<codenote>Nessun bisogno di caricare moduli per il vostro driver o agpgart, se si è compilato agpgart come modulo.</codenote>
+<codenote>Saranno caricati in automatico.</codenote>
+# <i>glxinfo | grep rendering</i>
+direct rendering: Yes
+<codenote>Se c'è scritto "No", l'accelerazione non è abilitata.</codenote>
+# <i>glxgears</i>
+<codenote>Verificate i frames per secondo (FPS). Fatelo con la cpu al minimo sforzo possibile.</codenote>
+		</pre>
+		</body>
+	</section>
+</chapter>
+
+
+<chapter>
+	<title>Usare i sorgenti del CVS</title>
+	<section>
+		<body>
+	<warn>Non fatelo se è stato sufficiente xfree-drm.</warn>
+	<note>Per la loro natura, i sorgenti nel CVS cambiano di continuo. La vostra configurazione può non essere esattamente come la sottostante.</note>
+		</body>
+	</section>
+	<section>
+		<title>Vi serve davvero il CVS?</title>
+		<body>
+		<p>Prima di tutto dovete controllare se il pacchetto xfree-drm funziona. Se non lo fa ed avete una scheda molto recente, potete prendere in considerazione il cvs. Il pacchetto xfree-drm attualmente supporta almeno la Radeon 9000.</p>
+		</body>
+	</section>
+	<section>
+		<title>Il CVS supporta la vostra scheda?</title>
+		<body>
+		<p>Controllate sul sito del DRI la <uri link="http://dri.sourceforge.net/dri_status.phtml">lista dell'hardware supportato</uri> per vedere se il cvs supporta la vostra scheda. Anche se non lo fa, ma ne supporta una simile, provatelo.</p>
+		<warn>"Le versioni 2.4 di Linux non supportano agp 8x, così ho dovuto trovare una patch. Essa funziona .... ma non così adeguatamente e richiede il kernel 2.4.21 (ha funzionato solo con il vanilla, compresso in .tar.gz (non l'ebuild)). Prima di scaricare la patch per passare dal 2.4.20 al 2.4.21 da kernel.org .... Era su una mailing list da qualche parte. La patch non funziona in modo corretto -- su un file fallisce, per la precisione pci_ids.h, ma se leggete il file e la reject list è molto facile risolvere. Infine funziona e mi garantisce una risoluzione di 1600x1200(anche se un po' lenta per la mancanza di dga) con xfree-drm"
+(SanityInAnarchy su #gentoo)</warn>
+		<p></p>
+		<impo>La patch è un po' complessa da applicare, ma <uri link="http://www.ussg.iu.edu/hypermail/linux/kernel/0302.2/att-1618/01-agp3.diff.bz2">ecco il collegamento</uri>. Se potete disabilitare agp 8X nel vostro BIOS, cambiatelo a 4X e non vi servirà la patch.</impo>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Installare i sorgenti dal CVS</title>
+		<body>
+		<p>Seguite questa guida con riferimento a "Compilare ed installare il vostro kernel." Quindi andremo al passo 6 della <uri link="http://dri.sourceforge.net/doc/DRIcompile.html">guida alla compilazione di DRI</uri> e la seguiremo fino al passo 8.3.</p>
+		</body>
+	</section>
+
+	
+	<section>
+		<title>Download via cvs anonimo</title>
+		<body>
+		<p>Create una directory per contenere i file del CVS:</p>
+		<pre>
+# <i>cd ~</i>
+# <i>mkdir DRI-CVS</i>
+		</pre>
+		<p>Passiamo ora ai sorgenti del CVS</p>
+		<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>cvs -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri login</i>
+<codenote>(premere INVIO alla richiesta di password)</codenote>
+# <i>cvs -z3 -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri co xc</i>
+<codenote>L'opzione -z3 garantisce la compressione per ridurre il tempo di scaricamento.</codenote>
+		</pre>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Aggiornare il CVS</title>
+		<body>
+		<p>In futuro potrete voler scaricare il CVS del codice sorgente del DRI per vedere gli ultimi cambiamenti. Questo può essere fatto con:</p>
+		<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>cvs -z3 update -dA xc</i>
+<codenote>L'opzione -d genera eventuali sottodirectories.</codenote>
+<codenote>L'opzione -A vi fa scaricare i più recenti trunk sources, non i branch sources.</codenote>
+		</pre>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Costruire un build tree</title>
+		<body>
+		<p>Piuttosto che mettere oggetti e librerie nell'albero dei sorgenti, è consigliabile fare uso di un parallelo <e>build</e> tree. Un build tree si realizza con il comando <c>lndir</c>:</p>
+		<pre>
+# <i>cd ~/DRI-CVS</i>
+# <i>ln -s xc XFree40</i>
+# <i>mkdir build; cd build</i>
+# <i>lndir -silent -ignorelinks ../XFree40</i>
+		</pre>
+		<p>Il build tree conterrà links simbolici che punteranno all'albero dei sorgenti del CVS. Utenti avanzati possono avere più alberi per compilare con diverse opzioni e provarle.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Modificare il file host.def</title>
+		<body>
+		<p>Il file <path>~/DRI-CVS/build/xc/config/cf/host.def</path>è usato per personalizzare la compilazione di XFree86. Potete cambiarlo per adattare le opzioni in fase di installazione o personalizzarlo in base alla vostra configurazione di sistema. Il file host.def di norma sarà qualcosa del genere:</p>
+		<pre>
+            #define DefaultCCOptions -Wall
+<codenote>Per architetture i386:</codenote>
+            #define DefaultGcc2i386Opt -O2
+<codenote>Per architetture Alpha:</codenote>
+            #define DefaultGcc2AxpOpt -O2 -mcpu=ev6 (or similar)
+<codenote>Per tutte le architetture</codenote>
+            #define LibraryCDebugFlags -O2
+            #define BuildServersOnly YES
+            #define XF86CardDrivers vga tdfx mga ati i810
+            #define LinuxDistribution LinuxRedHat
+            #define DefaultCCOptions -ansi GccWarningOptions -pipe
+            #define BuildXF86DRI YES
+            /* Eventualmente attivate le voci sottostanti per il rilevamento di errori */
+            /* #define GlxBuiltInTdfx YES */
+            /* #define GlxBuiltInMga YES */
+            /* #define GlxBuiltInR128 YES */
+            /* #define GlxBuiltInRadeon YES */
+            /* #define DoLoadableServer NO */
+            #define SharedLibFont NO
+		</pre>
+		<p>La variabile ProjectRoot specifica dove sarà installato
+XFree86. Raccomandiamo di installare i files di DRI sopra la vostra esistente installazione di XFree86 - generalmente è sicuro e privo di errori. Questo suggerimento è diverso da quello che eravamo soliti dare.</p>
+		<p>Se XFree86 4.x non è installato in <path>/usr/X11R6/</path>dovrete aggiungere questo al file host.def:</p>
+		<pre>
+#define ProjectRoot pathToYourXFree86installation
+<codenote>Notare la riga XF86CardDrivers per essere sicuri che ci siano i drivers per la vostra scheda.</codenote>
+<codenote>Se volete abilitare le ottimizzazioni 3DNow! in Mesa e nei drivers DRI, aggiungete quanto segue:</codenote>
+#define MesaUse3DNow YES
+<codenote>Non dovete usare un processore AMD per abilitare questa opzioni.</codenote>
+<codenote> Il DRI cercherà il supporto 3DNow! all'avvio e lo attiverà solo se possibile.</codenote>
+		</pre>
+		<p>Se volete abilitare le ottimizzazioni SSE in Mesa e nei DRI, dovete passare al kernel Linux 2.4.x. Mesa controllerà che SSE sia supportato sia dal processore che dal sistema operativo ma per installare Mesa nel DRI avrete bisogno degli headers di un kernel 2.4.x in <path>/usr/src/linux</path>. Se abilitate le ottimizzazioni SSE con una vecchia versione del kernel in <path>/usr/src/linux</path>, Mesa non verrà compilato, siete stati avvertiti. Se avete un kernel 2.4.x, dovrete aggiungere quanto segue:</p>
+		<pre>
+#define MesaUseKatmai YES
+		</pre>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Compilare l'albero dei sorgenti XFree86/DRI</title>
+		<body>
+		<p>Per compilare il DRI:</p>
+		<pre>
+# <i>cd ~/DRI-CVS/build/xc/</i>
+# <i>make World &gt;&amp; world.log</i>
+		</pre>
+		<p>Un utente suggerisce che potrebbe essere necessario fare quanto segue:</p>
+		<pre>
+# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel</i>
+# <i>make -f Makefile.linux radeon.o</i>
+<codenote>Sostituite "radeon" con il driver appropriato.</codenote>
+		</pre>
+		<p>Con le opzioni di compilazione prestabilite è normale
+ricevere un sacco di warnings. La compilazione richiederà un po' di tempo.</p>
+		<warn>Non usate l'opzione -j con make (ad esempio non usate distcc), non funziona con XFree86/DRI.</warn>
+		<p>Usando il vostro editor di testo, cercate eventuali errori nel file world.log mettendo come stringa per la ricerca ***.</p>
+		</body>
+	</section>
+
+
+	<section>
+		<title>Installare i drivers</title>
+		<body>
+		<p>Verificate che i moduli del kernel per il DRI del vostro sistema siano stati compilati:</p>
+		<pre>
+# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel; ls</i>
+		</pre>
+		<p>Per le 3dFX Voodoo, il file interessato è <path>tdfx.o</path>. Per le Matrox G200/G400, dovrete cercare <path>mga.o</path>. Per le ATI Rage 128, invece, <path>r128.o</path>. Per le ATI Radeon vi servirà <path>radeon.o</path>. Per le Intel i810, infine, è necessario <path>i810.o</path>. Se i moduli del kernel per il DRI non si son compilati, controllate di usare la giusta versione di Linux. I kernel più recenti non sono sempre supportati.</p>
+		<p>Copiate i files interessati nella vostra installazione di XFree86. Potrebbe servire una copia di sicurezza dei files sostituiti. Questo esempio usa una scheda Radeon, se ne avete un'altra copiate i files appropriati. Se non sapete quali sono, controllate la directory in cui state per copiarli e vedete cosa c'è lì.</p>
+		<pre>
+# <i>cd ~/DRI-CVS/build/xc/exports/lib/modules/</i>
+# <i>cp dri/r200_dri.so /usr/X11R6/lib/modules/dri/</i>
+# <i>cp drivers/atimisc_drv.o /usr/X11R6/lib/modules/drivers/</i>
+# <i>cp drivers/radeon_drv.o /usr/X11R6/lib/modules/drivers/</i>
+# <i>cp extensions/libdri.a /usr/X11R6/lib/modules/extensions/</i>
+# <i>cp linux/libdrm.a /usr/X11R6/lib/modules/linux/</i>
+		</pre>
+		<p>Seguite la sezione "Configurare XF86Config"</p>
+		<p>Per caricare il modulo appropriato per il kernel in uso, copiatelo in <path>/lib/modules/`uname -r`/kernel/drivers/char/drm/</path>, quindi lanciate <c>modules-update</c> e riavviate il server X. Se non state utilizzando il kernel che utilizzerete in futuro, invece di <c>`uname -r`</c>, usate la versione di quel kernel</p>
+		<warn>Assicuratevi che prima abbiate disattivato ogni vecchio modulo kernel DRI che potrebbe essere caricato. Attenzione che alcuni moduli DRM richiedono prima il caricamento del modulo agpgart.</warn>
+		</body>
+	</section>
+</chapter>
+
+
+<chapter>
+	<title>Migliorare le prestazioni</title>
+	<section>
+		<title>Ottenere il massimo dal direct rendering</title>
+		<body>
+		<p>Alcune opzioni possono aumentare le prestazioni del 30 percento (e perfino di più). Attivatele in <path>/etc/X11/XF86Config</path>.</p>
+		<pre caption="XF86Config">
+Section "Device"
+     Option     "AGPMode" "4"
+<codenote>Questo ha aumentato i FPS da 609 a 618.</codenote>
+     Option     "AGPFastWrite" "True"
+<codenote>Questo non ha avuto effetti misurabili, ma può aumentare l'instabilità del sistema.</codenote>
+<codenote>Può anche essere necessario attivarlo nel BIOS</codenote>
+     Option     "EnablePageFlip" "True"
+<codenote>Questo ha aumentato i FPS da 618 a 702. E' anche un po' rischioso, ma poche persone han riportato problemi.</codenote>
+     ...
+EndSection
+		</pre>
+		<p>Se volete altre opzioni, date un'occhiata a <uri link="http://dri.sourceforge.net/doc/dri_driver_features.phtml">questa lista</uri> sul sito del DRI.</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>Risoluzione dei problemi</title>
+	<section>
+		<title>Non funziona il direct rendering e non so perchè.</title>
+		<body>
+		<p>Provate <c>insmod radeon</c> prima di avviare X. Provate anche a compilare agpgart come modulo, piuttosto che inserirlo nel kernel.</p>
+		</body>
+	</section>
+	<section>
+		<title>Quando lancio <c>startx</c>, ricevo questo errore: "[drm] failed to load kernel module agpgart"</title>
+		<body>
+		<p>E' perchè avete compilato agpgart nel kernel anzichè come modulo, ignoratelo.</p>
+		</body>
+	</section>
+	<section>
+		<title>Il direct rendering non funziona ed in <path>/var/log/XFree86.0.log</path> c'è un'errore sulla versione troppo vecchia dei drivers.</title>
+		<body>
+		<p>Non state usando xfree-drm, controllate di aver compilato DRM ed i drivers adeguati nel kernel, probabilmente non l'avete fatto.</p>
+		</body>
+	</section>
+	<section>
+		<title>Ho una Radeon e voglio l'uscita TV</title>
+		<body>
+		<p>Provate i drivers gatos. <c>emerge -s gatos</c>.</p>
+		</body>
+	</section>
+	<section>
+		<title>Non funziona, la mia scheda è così nuova e potente che non è supportata...</title>
+		<body>
+		<p>Provate i drivers precompilati. Per quelli ati, una lista si trova su <uri>http://www.schneider-digital.de/html/download_ati.html</uri>. Se essi non funzionano, usate i VESA, son lenti, ma funzionano. Tenete d'occhio i drivers in futuro perchè presto supporteranno la vostra scheda.</p>
+		</body>
+	</section>
+	<section>
+		<title>Ho una scheda PCI e non funziona! Aiuto!</title>
+		<body>
+		<p>Nella sezione "Device" attivate ForcePCIMode.
+<pre>Option "ForcePCIMode" "True"</pre></p>
+		</body>
+	</section>
+	 
+</chapter>
+
+
+<chapter>
+	<title>Riferimenti</title>
+	<section>
+		<body>
+		<p>
+			<ol>
+				<li>http://forums.gentoo.org/viewtopic.php?t=46681</li>
+				<li>http://forums.gentoo.org/viewtopic.php?t=29264</li>
+				<li>http://dri.sourceforge.net/</li>
+				<li>http://www.retinalburn.net/linux/dri_status.html</li>
+			</ol>
+		</p>
+		</body>
+	</section>
+</chapter>
+</guide>
