@@ -4,37 +4,73 @@
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/proj/en/hardened/selinux-quickstart.xml">
 <title>Gentoo Linux SELinux Quick Start Guide</title>
-<author title="Editor">
-  <mail link="method@gentoo.org">Joshua Brindle</mail>
-</author>
 <author title="Author">
   <mail link="pebenito@gentoo.org">Chris PeBenito</mail>
+</author>
+<author title="Editor">
+  <mail link="method@gentoo.org">Joshua Brindle</mail>
 </author>
 <abstract>
 This will provide instructions for getting an SELinux installation running.
 </abstract>
 <version>1.0</version>
-<date>28 May 2003</date>
+<date>16 June 2003</date>
 
 <chapter>
 <title>SELinux QuickStart Guide</title>
 
 <section>
-<title>Installing SELinux</title>
+
+<title>Installing SELinux from Stage 1</title>
 <body>
+
+<p>For converting an existing Gentoo installation to SELinux,
+go <uri link="#doc_chap1_sect2">here</uri>.</p>
 
 <warn>SELinux is currently only developed on x86.</warn>
 
-<p>First, remove your old profile, and enable the SELinux profile.</p>
+<note>This is not intended to be a full guide.  It will eventually be
+replaced with more complete documentation.</note>
+
+
+<p>Follow the <uri link="http://www.gentoo.org/doc/en/gentoo-x86-install.xml"> 
+main installation guide</uri>, and use the standard LiveCD
+and stage 1 of mainline Gentoo.  After you have done "emerge sync", then
+switch your profile to the SELinux profile:</p>
+
 <pre>
 # rm -f /etc/make.profile
 # ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile
 </pre>
-<p>Now configure the kernel.  Selinux-sources or hardened-sources must be used;
-these are the only kernels that contain the linux security module patch and SELinux
-security module.  The kernel must be compiled with security module support, SELinux
-support, devfs and devpts.</p>
+
+<p>Continue with the main installation guide and do the bootstrap.  An
+appropriate kernel is required before doing "emerge system".
+Emerge selinux-sources or hardened-sources; these are the only kernels that contain
+the linux security module patch and SELinux security module.  Selinux-sources
+only contains the linux security module and selinux support.  Hardened-sources
+contains the linux security module, selinux support, and additional
+performance and security patches.</p>
+
+<pre caption="Merge an appropriate kernel">
+<comment>Do only one of the next two lines:</comment>
+# emerge selinux-sources
+<comment>or</comment>
+# emerge hardened-sources
+</pre>
+
+<p>Now continue with the installation guide and do "emerge system".</p>
+
+<note>coreutils is required, but currently masked.  You must remove it
+from /usr/portage/profiles/package.mask.</note>
+
+<p>When it is time to compile the kernel, it  must be compiled with security
+module support, SELinux support, devfs and devpts.  Refer to the main
+installation guide for futher kernel options.</p>
+
 <pre caption="Location and required options under menuconfig">
+<comment>Under "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
 <comment>Under "Security options"</comment>
 [*] Enable different security models
 [ ] Socket and Networking Security Hooks
@@ -43,42 +79,22 @@ support, devfs and devpts.</p>
 [*]   NSA SELinux Development Support
 [ ]   NSA SELinux MLS policy (EXPERIMENTAL)
 
-<comment>Under  "File systems"</comment>
+<comment>Under "File systems"</comment>
 [*] /dev file system support (EXPERIMENTAL)
 [*]   Automatically mount at boot
 [ ]   Debug devfs
 [*] /dev/pts file system for Unix98 PTYs
 </pre>
-<p>Now compile and install the kernel and modules, but do not reboot.
-Enable devpts to mount at boot.  In /etc/fstab add:</p>
+
+<p>Now compile and install the kernel and modules as described in the
+installation guide.  Continue with the installation guide.  When configuring
+/etc/fstab, devpts must also be enabled to mount at boot.  Add this to /etc/fstab:</p>
 <pre>
 none	/dev/pts	devpts	gid=5,mode=620	0 0
 </pre>
-<p>Merge the libraries, utilities and base-policy.  The /usr/src/linux
-symbolic link must point to the selinux-sources or hardened-sources directory!</p>
 
-<pre># emerge selinux-small</pre>
-
-<p>Merge SELinux-patched packages:</p>
-
-<pre># emerge coreutils findutils openssh procps psmisc shadow tar util-linux</pre>
-<note>coreutils is currently masked in package.mask, you must remove it</note>
-
-<p>There are other packages that have SELinux patches, but are optional.  These
-should be remerged if they are already installed, so the SELinux patches are
-applied:</p>
-<p>app-admin/logrotate<br/>
-sys-apps/stat<br/>
-dev-util/strace<br/>
-sys-apps/vcron (currently the only cron patched for SELinux)</p>
-
-<impo>If converting a mainline Gentoo machine to SELinux, unmerge pam-login, 
-textutils, fileutils and sh-utils:</impo>
-
-<pre caption="Remove unused packages from mainline Gentoo">
-# emerge -C pam-login textutils fileutils sh-utils</pre>
-
-<p>Compile and install policy, and label filesystems.</p>
+<p>Before exiting the chroot and rebooting at the end of the install guide,
+compile and install policy, and label filesystems.</p>
 
 <pre>
 # cd /etc/security/selinux/src/policy
@@ -90,6 +106,110 @@ textutils, fileutils and sh-utils:</impo>
 are labeled correctly (some files may have been created during shutdown and
 reboot)</p>
 <pre>
+# cd /etc/security/selinux/src/policy
+# make relabel
+</pre>
+</body>
+</section>
+
+<section><title>Converting a Preexisting Gentoo Installation</title>
+<body>
+
+<p>For installing SELinux from stage one,
+go <uri link="#doc_chap1_sect1">here</uri>.</p>
+
+
+<p>First switch your profile to the SELinux profile:</p>
+
+<pre caption="Switch profiles">
+# rm -f /etc/make.profile
+# ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile
+</pre>
+
+<p>Then merge an appropriate kernel.  Emerge selinux-sources or
+hardened-sources; these are the only kernels that contain
+the linux security module patch and SELinux security module.  Selinux-sources
+only contains the linux security module and selinux support.  Hardened-sources
+contains the linux security module, selinux support, and additional
+performance and security patches.</p>
+
+<pre caption="Merge an appropriate kernel">
+<comment>Do only one of the next two lines:</comment>
+# emerge selinux-sources
+<comment>or</comment>
+# emerge hardened-sources
+
+<comment>Ensure that /usr/src/linux symbolic link points to
+the newly merged kernel (selinux-sources-2.4.20-r5 for example)</comment>
+# rm -f /usr/src/linux
+# ln -s /usr/src/linux-2.4.20-selinux-r5 /usr/src/linux
+</pre>
+
+<p>The kernel must  be compiled with security
+module support, SELinux support, devfs and devpts.  Refer to the main
+installation guide for futher kernel options.</p>
+
+<pre caption="Location and required options under menuconfig">
+<comment>Under "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
+<comment>Under "Security options"</comment>
+[*] Enable different security models
+[ ] Socket and Networking Security Hooks
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[*]   NSA SELinux Development Support
+[ ]   NSA SELinux MLS policy (EXPERIMENTAL)
+
+<comment>Under "File systems"</comment>
+[*] /dev file system support (EXPERIMENTAL)
+[*]   Automatically mount at boot
+[ ]   Debug devfs
+[*] /dev/pts file system for Unix98 PTYs
+</pre>
+
+<p>Now compile and install the kernel and modules, but do not reboot.
+Devpts must also be enabled to mount at boot.  Add this to /etc/fstab:</p>
+<pre caption="Fstab settings for devpts">
+none	/dev/pts	devpts	gid=5,mode=620	0 0
+</pre>
+
+<p>Merge the libraries, utilities and base-policy.  The /usr/src/linux
+symbolic link must point to the selinux-sources or hardened-sources directory!</p>
+
+<pre caption="Merge base SELinux packages"># emerge selinux-small</pre>
+
+<p>Merge SELinux-patched packages:</p>
+
+<pre># emerge coreutils findutils openssh procps psmisc shadow tar util-linux</pre>
+<note>coreutils is currently masked, you must remove it
+from /usr/portage/profiles/package.mask.</note>
+
+<p>There are other packages that have SELinux patches, but are optional.  These
+should be remerged if they are already installed, so the SELinux patches are
+applied:</p>
+<p>app-admin/logrotate<br/>
+sys-apps/stat<br/>
+dev-util/strace<br/>
+sys-apps/vcron (currently the only cron patched for SELinux)</p>
+
+<impo>Unmerge pam-login, textutils, fileutils and sh-utils:</impo>
+
+<pre caption="Remove unused packages from mainline Gentoo">
+# emerge -C pam-login textutils fileutils sh-utils</pre>
+
+<p>Compile and install policy, and label filesystems.</p>
+
+<pre caption="Install policy and label">
+# cd /etc/security/selinux/src/policy
+# make policy
+# make install
+# make relabel
+</pre>
+<p>Reboot using the new SELinux kernel.  Relabel again to ensure all files
+are labeled correctly (some files may have been created during shutdown and
+reboot)</p>
+<pre caption="Relabel">
 # cd /etc/security/selinux/src/policy
 # make relabel
 </pre>
