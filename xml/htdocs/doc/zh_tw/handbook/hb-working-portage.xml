@@ -1,0 +1,947 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-working-portage.xml,v 1.1 2004/09/17 09:55:08 bennyc Exp $ -->
+
+<!-- rev 1.37 by ccpz -->
+
+<sections>
+<section>
+<title>索取套件資訊</title>
+<subsection>
+<title>所有工具之王：emerge</title>
+<body>
+
+<p>
+大多數的使用者將會用的最主要的 Portage 工具，也就是 <c>emerge</c>。我們在安裝時已
+經使用過了，但是我們只是簡單的介紹。這章將會更加詳細的解釋 <c>emerge</c> 然後教您
+使用 <c>emerge</c> 修理所有相關的軟體需求。
+</p>
+
+<p>
+<c>emerge</c> 是一個用來安裝，移除，查詢，和維護軟體套件的指令。他是一個
+<c>ebuild</c> 的使用介面；有興趣成為 Gentoo 高手的人將需要了解稍後介紹的
+<c>ebuild</c>。現在，我們將專心的討論 <c>ebuild</c> 沒有的 <c>emerge</c> 功能（
+如解決相依性和搜尋 Portage Tree，等等。）。
+</p>
+
+<p>
+<c>emerge</c> 是一個對於 Gentoo 使用者來說最為重要的工具，您可以執行 
+<c>man emerge</c> 查看它包含的詳細說明。您也可以在文字介面執行 
+<c>emerge --help</c> 查看。
+文件
+</p>
+
+<pre caption="索取 emerge 的說明">
+# <i>man emerge</i>
+# <i>emerge --help</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Portage Tree</title>
+<body>
+
+<p>
+在我們繼續介紹 <c>emerge</c> 之前，讓我們先看看 Portage Tree。到
+<path>/usr/portage</path> 的目錄，您將會看到一清單的目錄。我們將使用 <c>ls
+-classify</c> 來顯示出目錄的內容並且在目錄後面會加上 "/"。
+</p>
+
+<pre caption="觀看 Portage Tree">
+# <i>cd /usr/portage; ls --classify</i>
+app-admin/       dev-ml/            gnome-libs/     net-print/
+app-arch/        dev-perl/          gnome-office/   net-wireless/
+app-benchmarks/  dev-php/           header.txt      net-www/
+app-cdr/         dev-python/        incoming/       net-zope/
+app-crypt/       dev-ruby/          jython/         packages/
+app-dicts/       dev-tcltk/         kde-apps/       profiles/
+app-doc/         dev-tex/           kde-base/       releases/
+app-editors/     dev-util/          kde-i18n/       scripts/
+app-emacs/       distfiles/         kde-libs/       sec-policy/
+app-emulation/   eclass/            licenses/       skel.ChangeLog
+app-games/       experimental/      media-fonts/    skel.ebuild
+app-gnustep/     files/             media-gfx/      skel.metadata.xml
+app-i18n/        fresco-base/       media-libs/     snapshots/
+app-misc/        games-action/      media-plugins/  sys-apps/
+app-office/      games-arcade/      media-radio/    sys-build/
+app-pda/         games-board/       media-sound/    sys-cluster/
+app-portage/     games-emulation/   media-tv/       sys-devel/
+app-sci/         games-engines/     media-video/    sys-fs/
+app-shells/      games-fps/         metadata/       sys-kernel/
+app-text/        games-kids/        net-analyzer/   sys-kmods/
+app-vim/         games-misc/        net-apache/     sys-libs/
+app-xemacs/      games-mud/         net-dialup/     unix2tcp/
+berlin-base/     games-puzzle/      net-dns/        x11-base/
+dev-ada/         games-roguelike/   net-firewall/   x11-libs/
+dev-cpp/         games-rpg/         net-fs/         x11-misc/
+dev-db/          games-server/      net-ftp/        x11-plugins/
+dev-dotnet/      games-simulation/  net-im/         x11-terms/
+dev-embedded/    games-sports/      net-irc/        x11-themes/
+dev-games/       games-strategy/    net-libs/       x11-wm/
+dev-haskell/     games-util/        net-mail/       xfce-base/
+dev-java/        glep/              net-misc/       xfce-extra/
+dev-lang/        gnome-apps/        net-nds/
+dev-libs/        gnome-base/        net-news/
+dev-lisp/        gnome-extra/       net-p2p/
+</pre>
+
+<p>
+就如您所見，Portage tree 有多個子目錄。大多數的目錄都是 Gentoo 套件的 
+<e>類別</e>。舉例來說，看看 <path>app-office</path>：
+</p>
+
+<pre caption="查看一個類別">
+# <i>cd app-office; ls --classify</i>
+abiword/     gnotime/   kmymoney2/  ooodi/              plan/     timestamp.x
+dia/         gnucash/   koffice/    oooqs/              qhacc/
+dia2code/    gnumeric/  lxbank/     openoffice/         sc/
+facturalux/  ical/      lyx/        openoffice-bin/     scribus/
+gaby/        kbudget/   mdbtools/   openoffice-ximian/  siag/
+gnofin/      khacc/     mrproject/  phprojekt/          texmacs/
+</pre>
+
+<p>
+在這個類別內，您將可以找到所有適合放在這個目錄內的套件，其中各軟體將以子目錄的方
+式分開。讓我們看看 <c>openoffice</c> 套件：
+</p>
+
+<pre caption="觀看一個套件">
+# <i>cd openoffice; ls --classify</i>
+ChangeLog  files/        openoffice-1.0.3-r1.ebuild  openoffice-1.1.0-r2.ebuild
+Manifest   metadata.xml  openoffice-1.1.0-r1.ebuild  openoffice-1.1.0.ebuild
+</pre>
+
+<p>
+在我們的範例目錄裡將會看到四個 ebuild。<e>ebuild</e> 是一個指令稿，包含套件某個
+版本所需要的所有資訊。他們的名字都是很明顯：他們不同的只是版本。您將可以查看這
+些套件：它們只是程序。因為現在我們只討論如何使用 Gentoo 所以我們不會討論這些程序。
+</p>
+
+<p>
+其他的檔案為 <path>ChangeLog</path>（一個包含某個套件的更新清單），
+<path>Manifest</path> （包含套件所需檔案的名稱，大小，還有 checksum） 和
+<path>metadata.xml</path> （ 包含著更多關於套件的資訊，如相關開發的團隊 -- 叫做
+<e>herd</e> -- 其更多的介紹）。
+</p>
+
+<p>
+在 <path>files</path> 的目錄，您將會找到其他檔案，這些為 Portage 所需要的：
+digest（checksum 和個別套件的版本需要），補釘，和範例設定檔，等等。
+</p>
+
+<pre caption="觀看其他檔案">
+# <i>cd files; ls --classify</i>
+1.0.3/  digest-openoffice-1.0.3-r1  digest-openoffice-1.1.0-r1
+1.1.0/  digest-openoffice-1.1.0     digest-openoffice-1.1.0-r2
+# <i>cd 1.1.0; ls --classify</i>
+fixed-gcc.patch      ooffice-wrapper-1.3
+newstlportfix.patch  openoffice-1.1.0-linux-2.6-fix.patch
+no-mozab.patch       openoffice-1.1.0-sparc64-fix.patch
+nptl.patch
+</pre>
+
+<p>
+如果您回到 Portage tree 的主目錄（<path>/usr/portage</path>）您將會發現還有其他非
+套件的目錄。我們將在稍後解釋這點。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>搜尋套件</title>
+<body>
+
+<p>
+如果您剛接觸到 Gentoo 或是 Linux，您或許不知道該用什麼工具完成什麼工作。要搜尋軟
+體，<c>emerge</c> 可以透過 <e>套件名稱</e> 或是 <e>套件名稱</e> 加上 <e>說明</e>
+來進行套件的搜尋。
+</p>
+
+<p>
+要以名稱搜尋 Portage tree，使用 <c>emerge searc</c>。舉例來說，要搜尋 
+<c>mozilla</c>：
+</p>
+
+<pre caption="顯示關於 mozilla 的資訊">
+# <i>emerge search mozilla</i>
+Searching...   
+[ Results for search key : mozilla ]
+[ Applications found : 5 ]
+<comment>（為了方便閱讀，移除了一些部份）</comment>
+*  net-www/mozilla
+      Latest version available: 1.5-r1
+      Latest version installed: 1.4-r3
+      Size of downloaded files: 29,153 kB
+      Homepage:    http://www.mozilla.org
+      Description: The Mozilla Web Browser
+
+*  net-www/mozilla-firebird
+      Latest version available: 0.7
+      Latest version installed: [ Not Installed ]
+      Size of downloaded files: 37,850 kB
+      Homepage:    http://www.mozilla.org/projects/firebird/
+      Description: The Mozilla Firebird Web Browser
+<comment>（﹍）</comment>
+</pre>
+
+<p>
+如果您要依照介紹搜尋使用 <c>--searchdesc</c> 參數：
+</p>
+
+<pre caption="搜尋介紹">
+# <i>emerge --searchdesc mozilla</i>
+Searching...   
+[ Results for search key : mozilla ]
+[ Applications found : 10 ]
+<comment>（為了方便閱讀，移除了一些部份）</comment>
+*  dev-libs/nss-3.8
+      Latest version available: 3.8
+      Latest version installed: 3.8
+      Size of downloaded files:  2,782 kB
+      Homepage:    http://www.mozilla.org/projects/security/pki/nss/
+      Description: Mozilla's Netscape Security Services Library that implements PKI support
+</pre>
+
+<p>
+就如您所見，<c>emerge</c>
+將會顯示出該類別和套件的名稱，可使用的版本，目前安裝的版本，下載檔案大小，網址和
+簡介。
+</p>
+
+<p>
+發現新東西了嗎？沒錯，<e>下載檔案</e>。當您告訴 Portage 要安裝一個套件，當然需要
+下載原始碼（或是已編譯套件）。他將會先檢查 <path>/usr/portage/distfiles</path>
+是否有已存在的檔案可用。如果沒有，它將會下載所有的相關檔案然後放入相關目錄。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>觀看 ChangeLog</title>
+<body>
+
+<p>
+當正在遊覽 Portage tree 時，您將會看到每個套件都會有一個 ChangeLog。您也可以使用
+<c>emerge</c> 來查看這些版本跟版本之間的更動。使用 <c>--pretend --changelog</c>
+（或使簡短的 <c>-pl</c>）選項。我們將使用 <c>gnumeric</c> 為這次的範例：
+</p>
+
+<pre caption="查看 gnumeric 的 ChangeLog">
+# <i>emerge --pretend --changelog gnumeric</i>
+<comment>（為了方便閱讀，移除了一些部份）</comment>
+*gnumeric-1.2.2
+
+  27 Nov 2003; foser &lt;foser@gentoo.org&gt; gnumeric-1.2.2.ebuild :
+  New release, requested in #34492
+  updated deps
+
+  12 Nov 2003; Jason Wever &lt;weeve@gentoo.org&gt; gnumeric-1.2.0.ebuild:
+  Marked stable on sparc, fixes bug #32405.
+
+  14 Oct 2003; Jason Wever &lt;weeve@gentoo.org&gt; gnumeric-1.0.8.ebuild:
+  Added ~sparc keyword.  Fixes bug #31150.
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>更新 Portage</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<p>
+搜尋 Portage 是很不錯，但是如果您不常常更新您的 Portage Tree，您將會被限制於老舊
+的版本。這代表著您的系統很快就會變得老舊因為您無法更新一些臭蟲或是安全性的漏洞。
+</p>
+
+<p>
+更新 Portage Tree 有多個方法。最受歡迎的方法就是使用我們的 <uri
+link="/main/en/mirrors.xml">rsync 對映站</uri>。另一個則是使用 Portage 快照（在
+防火牆或是無法使用網路連到 rsync 伺服器的方式）。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>選擇 rsync 對映站</title>
+<body>
+
+<p>
+我們建議您先選擇一個靠近您的 <uri link="/main/en/mirrors.xml">對映站</uri>。您可
+手動的（設定 <path>/etc/make.conf</path> 裡面的 <c>SYNC</c> 變數）或是使用
+<c>mirrorselect</c> 自動幫您完成此項工作。當 <c>SYNC</c> 的變數將在稍後講解，我
+們現在先討論使用 <c>mirrorselect</c>。首先安裝 <c>mirrorselect</c>：
+</p>
+
+<pre caption="安裝 mirrorselect">
+# <i>emerge --usepkg mirrorselect</i>
+</pre>
+
+<p>
+現在執行 <c>mirrorselect</c> 來自動為您選擇對映站（它也會設定 Portage
+使用原始碼）：
+</p>
+
+<pre caption="執行 mirrorselect">
+# <i>mirrorselect -a -s3</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>更新 Portage</title>
+<body>
+
+<p>
+要使用 rsync 更新 Portage，只要執行 <c>emerge sync</c>：
+</p>
+
+<pre caption="使用 emerge sync 更新 Portage">
+# <i>emerge sync</i>
+</pre>
+
+<p>
+如果失敗（因為網路或是防火牆），您可以嘗試使用 <c>emerge-webrsync</c>，這將會
+使用 <c>wget</c> 下載 Portage Tree 快照。這也代表著您可以使用我們在 Gentoo
+安裝過程中討論過的代理伺服器。
+</p>
+
+<pre caption="使用 emerge-webrsync 更新 Portage">
+# <i>emerge-webrsync</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>維護軟體</title>
+<subsection>
+<title>編譯還是預編？</title>
+<body>
+
+<p>
+如果您喜歡，Gentoo 提供著套件 ebuild。但是如果您想要安裝這種 ebuild，您可以選擇
+<e>編譯</e> 或是 <e>預編</e> 的套件。它們個別有什麼優缺點，不同目標，還是可以一
+起使用呢？
+</p>
+
+<p>
+就如您所猜到的，編譯套件需要很多時間（特別是您有很少的資源或是很大的套件，如
+<uri link="http://www.kde.org">KDE</uri>，<uri
+link="http://www.openoffice.org">OpenOffice.org</uri>，等等。）。編譯這些套件時
+，您可以使用 <c>USE</c> 設定來進行自訂的微調。當然，您也可以定義高效能的選項（在
+<c>CFLAGS</c> 和 <c>CXXFLAGS</c> 的變數）來編譯這些套件。
+</p>
+
+<p>
+使用預編的套件將縮短安裝時間（不需要任何編譯的動作），但是您將會缺少使用 
+<c>USE</c> 和 <c>CFLAGS</c> &amp; <c>CXXFLAGS</c> 變數的優點。
+</p>
+
+<p>
+就如剛剛所說的，預編套件將會被放在 <path>/usr/portage/packages/All</path>
+的目錄，而原始碼將會被放在 <path>/usr/portage/distfiles</path>。如果您完成安裝一
+個套件，您可以從相關目錄移除它的原始碼或是安裝套件。但是您或許想要保留最新版的套
+件/原始碼，如此一來您就不需要在重新安裝的時候重新編譯或是下載了。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>從原始法安裝軟體</title>
+<body>
+
+<p>
+好吧，不囉唆了。要安裝一個套件，您將需要使用到 <c>emerge</c> 的指令。如果您不想
+要使用任何預編套件，您可以直接使用 <c>emerge &lt;套件名稱&gt;</c> 或是 <c>emerge
+&lt;類別&gt;/&lt;套件名稱&gt;</c>。我們將安裝 <c>gnumeric</c> 為範例：
+</p>
+
+<pre caption="編譯 gnumeric">
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+這將會下載原始碼，然後解開，編譯，然後安裝這個套件到您的系統上。它也會針對相依性
+安裝一些依賴的套件。如果您想要查看它依賴著那些套件，使用 <c>--pretend</c> 參數
+（或是簡短的 <c>-p</c>）：
+</p>
+
+<pre caption="假裝編譯 gnumeric">
+# <i>emerge --pretend gnumeric</i>
+</pre>
+
+<p>
+如果您想要先下載套件和依賴的相關檔案，但是不編譯，那就使用 <c>--fetchonly</c>
+參數（或是簡短的 <c>-f</c>）：
+</p>
+
+<pre caption="只下載 gnumeric 的原始碼">
+# <i>emerge --fetchonly gnumeric</i>
+</pre>
+
+<p>
+如果您想要查看 <c>emerge</c> 從那裡下載原始碼，將 <c>--fetchonly</c> 和
+<c>--pretend</c> 選項一起放入：
+</p>
+
+<pre caption="顯示 gnumeric 要下載的原始碼網址">
+# <i>emerge --fetchonly --pretend gnumeric</i>
+</pre>
+
+<p>
+您也可以選擇安裝某個版本的套件。舉例來說，您想要安裝一個比 gnumeric 1.2 還要老舊
+的版本您將要輸入：
+</p>
+
+<pre caption="安裝一個特定的 gnumeric 版本">
+# <i>emerge "&lt;gnumeric-1.2"</i>
+</pre>
+
+<p>
+其他的選擇為 "&gt;" (之後的）和 "=" （一樣的版本）。以及他們的合併 "&lt;=" 和
+"&gt;="。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>安裝預編套件</title>
+<body>
+
+<p>
+如果您想要安裝預編套件，您應該使用 <c>--usepkg</c> （或是簡短的 <c>-k</c>）選項
+。這將會使用 <path>/usr/portage/packages/All</path> 裡面可用的二進位套件。但是
+指在套件和版本一樣的情況下有效。
+</p>
+
+<pre caption="安裝預編的 gnumeric 套件">
+# <i>emerge --usepkg gnumeric</i>
+</pre>
+
+<p>
+如果您想要使用二進位的套件，也不在乎版本是否相同，您可以使用 <c>--usepkgonly</c>
+（或是簡短的 <c>-K</c>）為參數。
+</p>
+
+<pre caption="安裝預編的 gnumeric 套件">
+# <i>emerge --usepkgonly gnumeric</i>
+</pre>
+
+<p>
+如果您的系統上沒有預編的套件，您可以從一個對映站使用 <c>emerge</c> 下載。這將會
+在 <path>/etc/make.conf</path> 裡面的 <c>PORTAGE_BINHOST</c> 變數內定義。
+</p>
+
+<p>
+如果您的系統上沒有需要的二進位套件，使用 <c>--getbinpkg</c> （或是簡短的 
+<c>-g</c>）：
+</p>
+
+<note>
+Gentoo 沒有一個伺服器或鏡像包含這些預先編譯好的套件。Portage 增加這項功能來滿足
+社群的需求。
+</note>
+
+<pre caption="下載然後安裝二進位的 gnumeric">
+# <i>emerge --getbinpkg gnumeric</i>
+</pre>
+
+<p>
+這將會下載套件和依賴的套件，和需要安裝到您系統上的相關資訊。如果您想要查看那些
+依賴的套件將會被安裝，使用 <c>--pretend</c> 選項 （或是簡短的 <c>-p</c>）：
+</p>
+
+<pre caption="假裝下載預編的 gnumeric 套件">
+# <i>emerge --getbinpkg --pretend gnumeric</i>
+</pre>
+
+<p>
+您也可以選擇要下載的預編套件（和套件相關資訊）而 <e>不用</e> 檢查您本地系統的資
+料和 <e>不</e> 您系統上的使用預編套件，使用 <c>--getbinpkgonly</c> 選項 （
+或是簡短的 <c>-G</c>）：
+</p>
+
+<pre caption="略過本地資料直接安裝預編套件">
+# <i>emerge --getbinpkgonly gnumeric</i>
+</pre>
+
+<p>
+您也可以選擇套件的版本。舉例來說，您要安裝一個比 gnumeric 1.2 還舊的版本，您將
+要輸入：
+</p>
+
+<pre caption="安裝指定的 gnumeric 版本">
+# <i>emerge --usepkg "&lt;gnumeric-1.2"</i>
+</pre>
+
+<p>
+其他的選擇為 "&gt;" (之後的）和 "=" （一樣的版本）。以及他們的合併 "&lt;=" 和
+"&gt;="。
+</p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>使用相依性</title>
+<body>
+
+<p>
+Portage 有很好的相依性支援。雖然您平常不需要顧慮到這點（因為相依性將會自動的被
+Portage 管理），有些使用者或許想要知道如何使用 <c>emerge</c> 和相依性。
+</p>
+
+<p>
+舉例來說，如果您要 Portage 假裝一個套件的相依性都沒有被安裝，您可以使用
+<c>--emptytree</c> （或是簡短的 <c>-e</c>）。這個在 <c>--pretend</c> 的使用下將
+非常好用，您將可以查看個別套件所需要的整個相依性清單。如果沒有 <c>--pretend</c>
+，<c>emerge</c> 將會（重）編譯所有列出的套件。
+</p>
+
+<pre caption="顯示所有 gnumeric 的相依性">
+# <i>emerge --emptytree --pretend gnumeric</i>
+</pre>
+
+<p>
+另外一個參數則是 <c>--nodeps</c>，這將會讓 Portage 在不管相依性的問題下常識編譯
+這個套件。這有可能會讓編譯失敗。
+</p>
+
+<pre caption="不理會相依性問題編譯 gnumeric">
+# <i>emerge --nodeps gnumeric</i>
+</pre>
+
+<p>
+<c>--nodeps</c> 的相反就是 <c>--onlydeps</c>，這只會這個套件的相依性，而部會編譯
+套件：
+</p>
+
+<pre caption="安裝 gnumeric 的相依套件">
+# <i>emerge --onlydeps gnumeric</i>
+</pre>
+
+<p>
+當你移除軟體時，Portage 並不會自動移除不再需要的相依套件。如果你想要移除這些孤
+立的相依套件，你可以使用 <c>emerge depclean</c>。這會搜尋不是你刻意安裝，而且也
+不是你刻意安裝套件的相依套件。
+</p>
+  	 
+<warn>
+使用 depclean 可能會損害你的系統。小心的使用他並且，在你繼續之前，重覆檢查
+Portage 想要移除的相依套件列表
+</warn>
+  	 
+<pre caption="列出並移除孤立的套件">
+# <i>emerge -p depclean</i>
+<comment>(在相當仔細檢查列表後，移除孤立的套件)</comment>
+# <i>emerge depclean</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>更新您的系統</title>
+<body>
+
+<p>
+我們之前所提過，<e>world</e> 檔沒有包含任何相依性。當您執行 <c>emerge --update
+world</c> 時，只會檢查即時需要更新的相依性。如果您想要 <c>emerge</c> 檢查
+<e>所有的</e> 相依性（包括相依的套件所需要的），記得加上 <c>--deep</c> 的參數：
+</p>
+
+<pre caption="更新整個系統，包括所有的相依性">
+# <i>emerge --update --deep world</i>
+</pre>
+
+<p>
+Portage 知道兩個特別得標籤來管理軟體套件：<e>system</e> 和 <e>world</e>。如果您
+不是從 <e>stage3</e> 開始安裝 Gentoo ，您將會看過這個標籤。<e>system</e> 為一整
+套的 <e>核心</e> 套件，讓 Gentoo 基礎系統所用。
+</p>
+
+<p>
+<e>world</e> 的標籤將會包4含著所有您安裝的套件加上 <e>system</e> 的套件。換句話
+說，每次您使用 <c>emerge &lt;套件名稱&gt;</c> 來安裝軟體，這個
+<c>&lt;套件名稱&gt;</c> 將會被註冊到 <e>world</e>
+的檔案（<path>/var/cache/edb/workd</path>）。相依性不屬於這個 <e>world</e> 檔案
+，但使我們將在稍後講解。
+</p>
+
+<p>
+如果您想要更新 system 套件組，使用 <c>--update</c> 選項（或是簡短的 <c>-u</c>）
+：
+</p>
+
+<pre caption="更新 system 套件">
+# <i>emerge --update system</i>
+</pre>
+
+<p>
+另外可以使用 world 套件組：
+</p>
+
+<pre caption="更新整個系統">
+# <i>emerge --update world</i>
+</pre>
+
+<p>
+再一次的，如果您想要查看 <c>emerge</c> 會更新什麼，將 <c>--pretend</c> 和
+<c>--update</c> 參數一起使用：
+</p>
+
+<pre caption="假裝更新整個系統">
+# <i>emerge --pretend --update world</i>
+<comment>（為了方便閱讀，移除了一些部份）</comment>
+[ebuild     U ] net-misc/wget-1.9-r1 [1.9] 
+[ebuild     UD] media-video/dvdauthor-0.5.0 [0.5.3] 
+[ebuild     U ] net-analyzer/ethereal-0.9.16 [0.9.14] 
+</pre>
+
+<p>
+在 "ebuild" 的旁邊您將會看到一個字母（或是一組字母）這將給您關於這個套件的資訊：
+</p>
+
+<ul>
+  <li>
+    <e>B</e>（阻擋，blocks）這個套件將阻擋您繼續套件的安裝
+  </li>
+  <li>
+    <e>N</e>（新的，new）這個套件是新的，並且是第一次安裝
+  </li>
+  <li>
+    <e>R</e>（更換，replace）這個套件不是新的，但是將會重新安裝
+  </li>
+  <li>
+    <e>F</e>（下載，fetch）這個套件需要您手動下載原始碼（使用執照相關問題）
+  </li>
+  <li>
+    <e>U</e>（更新，update）這個套件已經存在您的系統上但需要更新
+  </li>
+  <li>
+    <e>UD</e>（降低版本，downgrade）這個套件已經在您的系統上存在了但是需要降低版本
+  </li>
+</ul>
+
+<p>
+當然，我們在這邊所討論的是 <e>system</e> 和 <e>world</e>，但是您也可以一個一個
+套件自行更新。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>移除軟體</title>
+<body>
+
+<p>
+如果您想要移除系統上的軟體，您可以使用 <c>unmerge</c> 選項（或是簡短的 <c>-C</c>
+大寫）：
+</p>
+
+<pre caption="移除軟體">
+# <i>emerge unmerge gnumeric</i>
+</pre>
+
+<p>
+如果您想要測試移除（但是不是真的執行），您可以使用 <c>--pretend</c>：
+</p>
+
+<pre caption="假裝移除軟體">
+# <i>emerge --pretend unmerge gnumeric</i>
+</pre>
+
+<warn>
+Portage 沒有辦法辨別一個套件是否為令一個套件所依賴的。他也不會在您移除 
+<e>system</e> 內的套件時而警告您，例：需要某些軟體才能讓基礎系統完好的作用！
+</warn>
+
+<p>
+當移除的動作開始時，您將會看到一個很長的屬於該套件的檔案清單。有些檔案的左邊將
+會有一些旗標。這些旗標為 <c>!mtile</c>，<c>!empty</c> 和 <c>cfgpro</c> 將告訴您
+那些檔案會被移除而那些不會。沒有旗標的檔案將會完整的從檔案系統內被移除。這三個
+旗標代表著：
+</p>
+
+<ul>
+  <li>
+    <c>!mtile</c>：的旗標代表著這個檔案在安裝後變更過，或許是被您還是其他工具
+  </li>
+  <li>
+    <c>!empty</c>：顯示的目錄不是空的
+  </li>
+  <li>
+    <c>cfgpro</c>：這個檔案是放在一個保護的目錄，為了安全起見將不會被更改
+  </li>
+</ul>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>使用封鎖的套件</title>
+<subsection>
+<title>要不要依照硬體架構？</title>
+<body>
+
+<p>
+當 Gentoo 開發員放上一個新的 ebuild 時，他告訴 Portage 如何依照架構及穩定性處理
+這個軟體。他在 ebuild 內定義叫做 <c>KEYWORDS</c> 的變數來達這個目的。這個變數包
+含一個或多個架構，並且用特殊的旗標作標記。底下的表格提供目前所有的旗標。
+</p>
+  	 
+<table>
+<tr>
+  <th>旗標</th>
+  <th>說明</th>
+</tr>
+<tr>
+  <ti>ARCH</ti>
+  <ti>在指定的架構下可以正常工作</ti>
+</tr>
+<tr>
+  <ti>~ARCH</ti>
+  <ti>
+  在指定的架構下可能可以正常工作，但需要更多的測試。
+  </ti>
+</tr>
+<tr>
+  <ti>-ARCH</ti>
+  <ti>在指定的架構下不能工作</ti>
+</tr>
+<tr>
+  <ti>-*</ti>
+  <ti>因為相當危險，在所有架構下都不能工作。</ti>
+</tr>
+</table>
+  	 
+<p>
+來看一個範例：
+</p>
+
+<pre caption="KEYWORDS KEYWORDS 設定範例">
+KEYWORDS="x86 -sparc ~alpha ~ppc"
+</pre>
+
+<p>
+這個範例的解釋如下：
+</p>
+
+<ul>
+  <li>
+   這個 ebuild 在 x86 架構下可以正常工作
+  </li>
+  <li>
+  這個 ebuild 在 sparc 架構下不能正常工作
+  </li>
+  <li>
+  這個 ebuild 可能可以在 alpha 架構下工作，但需要更多的測試
+  </li>
+  <li>
+  這個 ebuild 可能可以在 ppc 架構下工作，但需要更多的測試
+  </li>
+  <li>
+  這個 ebuild 可能可以在其他的架構下工作，但是還沒測試過
+  </li>
+</ul>
+
+<p>
+您的系統將會使用 <e>ARCH</e> 為預設。如果您想要嘗試並且不擔心損毀的套件，知道
+如何到 <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> 那您可以選擇使用
+<e>~ARCH</e> 的套件。要將您的系統 "移到" 一個 <e>~ARCH</e> 的系統，將
+<path>/etc/make.conf</path> 裡面的 <c>ACCEPT_KEYWORDS</c> 變數更改為 
+<e>~ARCH</e>（再一次的：x86 系統：<e>~x86</e>，等以此類推。）。
+</p>
+
+<p>
+您必須注意您無法從 <e>~ARCH</e> 的階段回到 <e>ARCH</e>。
+</p>
+
+<p>
+如果您現在想要更新您的系統，您將會發現有 <e>非常多</e> 的套件等待更新！
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>鎖住的套件（Masked）</title>
+<body>
+
+<p>
+當您想要安裝一個套件，您或許會看到以下訊息：
+</p>
+
+<pre caption="關於封鎖註的套件訊息">
+Calculating dependencies   
+!!! <comment>all ebuilds that could satisfy </comment>&lt;your package&gt;<comment> have been masked.</comment>
+</pre>
+
+<p>
+一個套件會被封鎖註有這幾個原因：
+</p>
+
+<ol>
+  <li>您如果正在使用 <e>ARCH</e>，而這個套件是 <e>~ARCH</e></li>
+  <li>這個套件是被刻意鎖住的</li>
+  <li>這個套件不在你的 ARCH 中</li>
+  <li>這個套件在你的 profile 中被封鎖了</li>
+</ol>
+
+<p>
+Portage 會告訴你為什麼這個套件不能安裝：
+</p>
+  	 
+<ul>
+  <li>
+  <b>~arch 關鍵字</b>：這個套件可以在指定的架構上工作，但是為了了解是不是可以正
+  常工作，他需要更多測試
+  </li>
+  <li>
+  <b>-arch 關鍵字</b>：這個套件不能在指定的架構上工作
+  </li>
+  <li>
+  <b>-* 關鍵字</b>：這個套件不能在任何架構上工作
+  </li>
+  <li>
+  <b>package.mask</b>：這個套件列在 <path>package.mask</path> 中，代表他可能損
+  毀某些東西，弄壞你的系統，或是有嚴重的安全問題，或更壞的狀況
+  </li>
+  <li>
+  <b>profile</b>：這個套件在你的 profile 中不能取得
+  </li>
+</ul>
+  	 
+<p>
+如果是因為 <b>~arch 關鍵字</b> 而封鎖，而您 <e>非常</e> 想要安裝它，您可以把他
+加到 <path>/etc/portage/package.keywords</path> 檔案中暫時的接受 <e>~ARCH</e>
+套件：
+</p>
+
+<pre caption="暫時性的接受 ~ARCH 套件">
+<comment>(如果 /etc/portage 目錄不存在的話建立他)</comment> 
+# <i>mkdir /etc/portage</i> 
+	
+# <i>echo "app-office/gnumeric ~x86" &gt;&gt; /etc/portage/package.keywords</i> 
+# <i>emerge gnumeric</i>    
+</pre>
+
+<p>
+類似的，如果你想要安裝有 <b>-arch 關鍵字</b> 或 <b>-* 關鍵字</b> 標記的軟體，而
+不管我們放在你面前的警告，編輯 <path>/etc/portage/package.keywords</path> 加入
+套件和要求的關鍵字：
+</p>
+  	 
+<pre caption="接受套件的 -arch 或 -* 版本">
+<comment>(如果 /etc/portage 目錄不存在的話建立他)</comment>
+# <i>mkdir /etc/portage</i>
+  	 
+# <i>echo "app-office/gnumeric -x86" &gt;&gt; /etc/portage/package.keywords</i>
+<comment>(或)</comment>
+# <i>echo "app-office/gnumeric -*" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+  	 
+<p>
+如果你只想要允許安裝套件的特定版本，或特定版本範圍，你可以使用
+"&lt;，&lt;=，=，&gt;= 或 &gt;" 運算子：
+</p>
+  	 
+<pre caption="接受指定的 ~arch 標記套件版本">
+# <i>echo "=app-office/gnumeric-2.0 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+</pre>
+  	 
+<p>
+一個套件會被如果是因為 <b>package.mask</b> 而封鎖將會被放在
+<path>/usr/portage/profiles/protage.mask</path>。如果您查看這個檔案，您將會看到
+這個套件會被刻意鎖住的原因（常常是加入為註解）。如果您不管其他原因要安裝這個套
+件（有可能會造成系統極度不穩），您將需要建立一個
+<path>/etc/portage/package.unmask</path> 檔案然後按照
+<path>/usr/portage/profiles/portage.mask</path> 的格式放入您想要安裝的套件。
+</p>
+
+<pre caption="解除刻意鎖住的程式"> 
+<comment>(如果 /etc/portage 目錄不存在的話建立他)</comment> 
+# <i>mkdir /etc/portage</i> 
+	      
+# <i>echo "=app-office/gnumeric-1.2.12" &gt;&gt; /etc/portage/package.unmask</i> 
+</pre> 
+				
+<p>
+請 <e>不要</e> 更改 <path>/usr/portage/profiles/package.mask</path> 檔案，這個
+檔案會在下次更新 Portage tree 時被復原。如果您需要封鎖一個套件，建立
+<path>/etc/portage/package.mask</path> 然後按照以上類似的格式填入。
+</p>
+
+<p>
+有時賀你火許會想刻意鎖住一個(或一系列)套件。這可能是軟體新的版本不支援你想要的
+功能，或是這個版本可能會毀了你系統中某些東西。
+</p>
+
+<p>
+為了刻意鎖住一個套件，建立 <path>/etc/portage/package.mask</path> 然後把套件列
+在裡面(使用如同上面提到的格式)。
+</p> 
+    
+<pre caption="刻意鎖住一個套件"> 
+<comment>(如果 /etc/portage 目錄不存在的話建立他)</comment> 
+# <i>mkdir /etc/portage</i> 
+    
+# <i>echo "&gt;app-office/gnumeric-1.2.10" &gt;&gt; /etc/portage/package.mask</i> 
+</pre>
+
+<p>
+當 Portage 告訴你因為 <b>profile</b> 所以不能安裝，這代表你使用某種不允許這個套
+件安裝的 profile。但什麼是 "profile"？ 
+</p>
+  	 
+<p>
+profile 包含了套件名稱列表以及一套 Portage 使用的預設設定。這些檔案告訴 Portage
+那些套件及套件的那些套件版本允許，不允許，或依邀求處理。使用者可以改變單一的符
+號連結(<path>/etc/make.profile</path>)來改變 profile。
+</p>
+  	 
+<p>
+你不能安裝因為 <b>profile</b> 封鎖的檔案。，如果你真的想要使用他，改用合適的
+profile。
+</p>
+  	 
+<p>
+你可以在我們的
+<uri link="/proj/en/releng/docs/cascading-profiles.xml">Cascading Profiles
+Document</uri> 中找到詳細的資訊。
+</p>
+</body>
+</subsection>
+
+<subsection>
+<title>被阻擋的套件</title>
+<body>
+
+<p>
+您將會碰到類似以下的錯誤狀況：
+</p>
+
+<pre caption="阻擋的套件">
+[blocks B     ] gnome-base/bonobo-activation (from pkg gnome-base/libbonobo-2.4.0) 
+</pre>
+
+<p>
+在以上的例子，<c>bonobo-activation</c> 套件正在阻擋著 emerge <c>libbonobo</c>
+的動作。要解決這個問題，移除 <c>bonobo-activation</c>然後繼續：
+</p>
+
+<pre caption="解決阻擋的狀況">
+# <i>emerge unmerge bonobo-activation</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>
