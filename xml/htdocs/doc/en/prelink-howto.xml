@@ -3,271 +3,381 @@
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 	
 <guide link="doc/en/prelink-howto.xml">
-<title>Gentoo Linux Prelink Guide</title>
-<author title="Author"><mail link="cretin@gentoo.org">Stefan Jones</mail>
-</author>
-<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail>
-</author>
-<author title="Editor"><mail link="peesh@gentoo.org">Jorge Paulo</mail>
-</author>
 
-<abstract>This guide informs on how to make use of prelink support in portage
-2.0.46 and later.</abstract>
+<title>Gentoo Linux Prelink Guide</title>
+
+<author title="Author"><mail link="cretin@gentoo.org">Stefan Jones</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Editor"><mail link="peesh@gentoo.org">Jorge Paulo</mail></author>
+
+<abstract>
+	This guide informs on how to make use of prelink support in portage
+	2.0.46 and later.
+</abstract>
+
 <version>1.3</version>
 <date>12 May 2003</date>
 
 <chapter>
-<title>Introduction</title>
-<section>
-<title>What is Prelink and how can it help me?</title>
-<body>
-<p>Most common applications make use of shared libraries. These shared libraries
-need to be loaded into memory at runtime and the various symbol references need
-to be resolved. For most small programs this dynamic linking is very quick. But
-for programs written in C++ and that have many library dependencies, the dynamic
-linking can take a fair amount of time.</p>
-<p>On most systems, libraries are not changed very often and when a program is
-run, the operations taken to link the program are the same every time. Prelink takes
-advantage of this by carrying out the linking and storing it in the executable, in
-effect prelinking it. In order for the linker, you need ld-linux.so in glibc; to recognize
-the prelinking you need glibc&gt;=2.3</p>
-<p>Prelinking can cut the startup times of applications.  For example, a typical KDE
-program's loading time can be cut by as much as 50%. The only maintenance required
-is re-running prelink every time a library is upgraded for a pre-linked executable.</p>
-</body>
-</section>
+	<title>Introduction</title>
+	<section>
+		<title>What is Prelink and how can it help me?</title>
+		<body>
+		<p>
+		Most common applications make use of shared libraries.  These shared libraries
+		need to be loaded into memory at runtime and the various symbol references need
+		to be resolved.  For most small programs this dynamic linking is very quick.  But
+		for programs written in C++ and that have many library dependencies, the dynamic
+		linking can take a fair amount of time.
+		</p>
+		<p>
+		On most systems, libraries are not changed very often and when a program is
+		run, the operations taken to link the program are the same every time.  Prelink takes
+		advantage of this by carrying out the linking and storing it in the executable, in
+		effect prelinking it.  In order for the linker, you need ld-linux.so in glibc; to recognize
+		the prelinking you need &gt;=glibc-2.3.1-r2.
+		</p>
+		<p>
+		Prelinking can cut the startup times of applications.  For example, a typical KDE
+		program's loading time can be cut by as much as 50%.  The only maintenance required
+		is re-running prelink every time a library is upgraded for a pre-linked executable.
+		</p>
+		</body>
+	</section>
 
-<section>
-<title>Summary</title>
-<body>
-<ul>
-<li>Prelinking is done via a program called, surprisingly, <path>prelink</path>. It
-changes the binary to make it start faster.</li>
-<li>If an application's dependent libraries change after you have prelinked it, you need
-to re-prelink the application, otherwise you loose the speed advantage.</li>
-<li>The change to the binary is fully reversible. <path>prelink</path> has an undo
-function.</li>
-<li>Newer versions of Portage can handle, via <path>prelink</path>, the changing
-MD5sums and mtimes of the binaries.</li>
-<li>You need to have glibc-2.3 or greater installed with the binaries compiled
-with binutils-2.13.90.0.xx</li>
-</ul>
-</body>
-</section>
+	<section>
+		<title>Summary</title>
+		<body>
+		<ul>
+			<li>
+			Prelinking is done via a program called, surprisingly, <path>prelink</path>.  It
+			changes the binary to make it start faster.
+			</li>
+			<li>
+			If an application's dependent libraries change after you have prelinked it, you need
+			to re-prelink the application, otherwise you loose the speed advantage.  This is 
+			to say, everytime you update a package via portage that updates libraries, they 
+			need to be re-prelinked.
+			</li>
+			<li>
+			The change to the binary is fully reversible.  <path>prelink</path> has an undo
+			function.
+			</li>
+			<li>
+			Newer versions of Portage can handle, via <path>prelink</path>, the changing
+			MD5sums and mtimes of the binaries.
+			</li>
+			<li>
+			You need to have glibc-2.3.1-r2 or greater installed with the binaries compiled
+			with binutils-2.13.90.0.xx or greater.
+			</li>
+		</ul>
+		</body>
+	</section>
 </chapter>
 
 <chapter>
-<title>Setting up Prelink</title>
-<section>
-<title>Installing the Programs</title>
-<body>
-<note>I assume you have a Gentoo-1.4 system and it was built with gcc-3.2 or
-better and binutils-2.13.90.0.xx. This needs to be so in order for your binaries
-to be prelinkable.</note><warn>You must have glibc 2.3.1 or newer installed
-otherwise <path>prelink</path> will zap all your binaries!</warn>
+	<title>Setting up Prelink</title>
+	<section>
+		<title>Installing the Programs</title>
+		<body>
+		<note>
+		I assume you have a Gentoo-1.4 system and it was built with gcc-3.2 or
+		better and binutils-2.13.90.0.xx or better.  This needs to be so in order for your 
+		binaries to be prelinkable.
+		</note>
+		<warn>
+		You must have glibc-2.3.1-r2 or newer installed otherwise <path>prelink</path> will zap 
+		all your binaries!
+		</warn>
 
-<p>First update your portage tree, as many of the needed applications are new
-and bug-fixes are constantly added.</p><pre caption = "Updating your Portage
-Tree"># <c>emerge sync</c>
-</pre>
+		<p>
+		First update your portage tree, as many of the needed applications are new
+		and bug-fixes are constantly added.
+		</p>
 
-<p>Next make sure you have portage-2.0.46 or better installed. This is needed so
-that portage can recognize the prelinked binaries and thus uninstall them
-correctly when requested. This is because prelinking changes the MD5sum of a
-binary.</p><pre caption = "Checking Portage Version"># <c>emerge
-">=portage-2.0.46"</c></pre>
+		<pre caption = "Updating your Portage Tree">
+		# <c>emerge sync</c>
+		</pre>
 
-<p>Now you can emerge the prelinking tool. The emerge process automatically
-verifies that your system can prelink safely. </p>
-<pre caption = "Installing Prelink">
-# <c>emerge prelink</c>
-</pre>
+		<p>
+		Next make sure you have portage-2.0.46 or better installed.  This is needed so
+		that portage can recognize the prelinked binaries and thus uninstall them
+		correctly when requested.  This is because prelinking changes the MD5sum of a
+		binary.
+		</p>
 
-<p>A number of people get errors in emerging prelink because of the failed
-tests. The tests were put in for safety reasons, prelink's behavior is undefined
-if you disable them. The emerge errors are usually only dependent on the core
-packages; binutils, gcc, and glibc. Try re-emerging those packages in that
-order.</p><note>Tip: If you get an error try compiling and testing <c>prelink</c>
-yourself (<c>./configure</c> ; <c>make</c> ; <c>make check</c> ). On a
-failure you can view the *.log
-files in the testsuite directory. They may provide you with some useful
-clues.</note><p>If you have a set of steps that reproduces the emerge error on
-another system please email them to <mail link="cretin@gentoo.org">Stefan
-Jones</mail>.</p>
-</body>
-</section>
+		<pre caption = "Checking Portage Version">
+		# <c>emerge ">=portage-2.0.46"</c>
+		</pre>
 
-<section>
-<title>Configuration</title>
-<body>
-<p>Portage automatically generates the file <path>/etc/prelink.conf</path>
-that tells <path>prelink</path> which files to prelink.</p><p>Unfortunately
-you cannot prelink files
-that were compiled by old versions of binutils. Most of these applications
-come from pre-compiled, binary only packages which are installed in
-<path>/opt</path>. Making the following file will tell prelink not to attempt to
-prelink them.</p><pre caption="/etc/env.d/99prelink">PRELINK_PATH_MASK="/opt"</pre>
+		<p>
+		Now you can emerge the prelinking tool.  The emerge process automatically
+		verifies that your system can prelink safely.
+		</p>
 
-<note>You can add more or less directories to the colon separated list.</note>
+		<pre caption = "Installing Prelink">
+		# <c>emerge prelink</c>
+		</pre>
 
-</body>
-</section>
-</chapter>
+		<p>
+		A number of people get errors in emerging prelink because of the failed
+		tests.  The tests were put in for safety reasons, prelink's behavior is undefined
+		if you disable them.  The emerge errors are usually only dependent on the core
+		packages; binutils, gcc, and glibc.  Try re-emerging those packages in that
+		order.
+		</p>
+		<note>
+		Tip: If you get an error try compiling and testing <c>prelink</c> yourself 
+		(<c>./configure</c> ; <c>make</c> ; <c>make check</c> ).  On a failure you can 
+		view the *.log files in the testsuite directory.  They may provide you with some 
+		useful clues.
+		</note>
 
+		<p>
+		If you have a set of steps that reproduces the emerge error on another system 
+		please e-mail them to <mail link="cretin@gentoo.org">Stefan Jones</mail>.
+		</p>
+		</body>
+	</section>
 
-
-
-<chapter>
-<title>Prelinking</title>
-
-<section>
-<title>Prelink Usage</title>
-<body>
-<p>I use the following command to prelink all the binaries in the directories
-given by <path>/etc/prelink.conf</path>.</p>
-<pre caption = "Prelinking listed files">
-# <c>prelink -afmR</c>
-</pre>
-
-<warn>It has been observed that if you are low on disk space and you prelink your
-entire system then there is a possibility that your binaries may be truncated.
-The result being a b0rked system. Use the "file" or "readelf" command to check
-the state of a binary file.</warn><p>The options explained:</p>
-<p><b>-a</b></p><p>All, prelinks all the binaries</p>
-
-<p><b>-f</b></p><p>Force <path>prelink</path> to re-prelink already
-prelinked binaries. This is needed as <path>prelink</path> aborts if old
-prelinked files are present and their library dependencies have changed.</p>
-<p><b>-m</b></p><p>Conserve the virtual memory
-space. This is needed if you have a lot of libraries that need to be
-prelinked.</p><p><b>-R</b></p><p>Random -- randomize the address
-ordering, this enhances security against buffer overflows.</p>
-<p>For more options and details see <c>man prelink</c></p>
-
-</body>
-</section>
+	<section>
+		<title>Configuration</title>
+		<body>
+		<p>
+		Portage automatically generates the file <path>/etc/prelink.conf</path>
+		that tells <path>prelink</path> which files to prelink.
+		</p>
+		<p>
+		Unfortunately you cannot prelink files that were compiled by old versions 
+		of binutils.  Most of these applications come from pre-compiled, binary 
+		only packages which are installed in <path>/opt</path>.  Making the 
+		following file will tell prelink not to attempt to prelink them.
+		</p>
+		<pre caption="/etc/env.d/99prelink">
+		PRELINK_PATH_MASK="/opt"
+		</pre>
+		<note>
+		You can add more or less directories to the colon separated list.
+		</note>
+		</body>
+	</section>
 </chapter>
 
 <chapter>
-<title>Known Problems and Fixes</title>
+	<title>Prelinking</title>
+	<section>
+		<title>Prelink Usage</title>
+		<body>
+		<p>
+		I use the following command to prelink all the binaries in the directories
+		given by <path>/etc/prelink.conf</path>.
+		</p>
+		<pre caption = "Prelinking listed files">
+		# <c>prelink -afmR</c>
+		</pre>
 
-<section>
-<title>&quot;Cannot prelink against non-PIC shared library&quot;</title>
-<body>
-<p>The cause of this problem is from badly compiled shared libraries that were
-compiled without the -fPIC gcc option for all their object files.</p>
-<p>The following is a list of the problem libraries and which packages to
-re-emerge if you have the above error.</p>
-<pre caption = "Fixes">
-<codenote>For the ORBit library /usr/lib/libIIOP.so.0.5.17</codenote>
-emerge ">=sys-apps/tcp-wrappers-7.6-r4" ORBit
-<codenote>For zlib library usr/lib/libz.so.1.1.4</codenote>
-emerge ">=sys-libs/zlib-1.1.4"
-<codenote>For svgalib, /usr/lib/libsvga.so.xx</codenote>
-emerge ">=media-libs/svgalib-1.9.16"
-<codenote>For the XFree openGL library, libGLU.so.1</codenote>
-emerge ">=x11-base/xfree-4.2.1-r2"
-<codenote>For libpcap.so.0.6</codenote>
-emerge ">=net-libs/libpcap-0.7.1-r2"
-<codenote>For the lcms library, /usr/lib/liblcms.so.1</codenote>
-emerge ">=media-libs/lcms-1.09"
-</pre>
+		<warn>
+		It has been observed that if you are low on disk space and you prelink your
+		entire system then there is a possibility that your binaries may be truncated.  
+		The result being a b0rked system.  Use the <c>file</c> or <c>readelf</c> command to check
+		the state of a binary file.  Alternatively, check the amount of free space on 
+		your harddrive ahead of time with <c>du -h</c>.
+		</warn>
 
-<note>Many libraries link statically to zlib and/or tcp-wrappers so first try
-emerging those and re-emerging the problem library.</note>
-<p>If you are having trouble with prelinking QT/KDE first try upgrading to
->=x11-base/xfree-4.2.1-r2 and >=x11-libs/qt-3.1.0-r1. If QT still fails then try
-compiling QT without xinerama support by adding myconf="-no-xinerama ${myconf}"
-in the qt ebuild.</p><p>Here are the libraries that haven't been fixed or cannot
-be fixed:</p><ul><li>The libraries in the wine package, including winex. It
-wouldn't speed up MS Windows executables anyway.</li><li>The library in
-media-video/mjpegtools, /usr/lib/liblavfile-1.6.so.0</li></ul>
-
-<p>If your problem library was not listed please report it with, preferably, a
-patch to add <i>-fPIC</i> to the relevant CFLAGS.</p>
-</body>
-</section>
-
-<section>
-<title>Abort while prelinking a file, like &quot;1631 Aborted ....&quot;</title>
-<body>
-
-<p>You need to use the <i>-f</i> option for <path>prelink</path>;
-i.e., reprelink the entire
-system from scratch. Try <c>prelink -af</c></p>
-</body>
-</section>
-
-<section>
-<title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected
-reloc type...&quot;</title>
-<body>
-<p>This has been fixed in <i>sys-libs/glibc-2.3.1-r2</i> on 2002/11/18, re-emerge
-glibc if yours is older.</p>
-<p>Also doing <c>prelink -u -a -m</c> ; <c>prelink -a -m</c> has been known
-to help. If all else fails just do <c>prelink -u &lt;file&gt;</c></p>
-</body>
-</section>
-
-<section>
-<title>I have problems with Nvidia openGL libraries</title>
-<body>
-<p>The accelerated openGL libraries that come in the nvidia-glx package have
-been compiled in a non-standard way and so <path>prelink</path> will throw
-warnings. This is nothing to worry about and cannot be fixed by anyone except
-nvidia. You can always revert to the xfree version of libGL.so if you don't need 3D
-acceleration. The nvidia xfree driver works fine though.</p>
-</body>
-</section>
-
-<section>
-<title>When I prelink my system some static binaries don't work anymore</title>
-<body>
-<p>Where glibc is concerned, there is no such thing as a 100% static binary. If
-you statically compile a binary with glibc, it may still depend on other system
-files. Below is an explanation by Dick Howell,</p>
-<p>&quot;I suppose the idea is
-that everything will be in the downloaded file, so nothing depends on the local
-libraries on the target system. Unfortunately with Linux, and I think anything
-else using GLIBC, this still isn't quite true. There's this "libnss" (name
-service switch, some people seem to call it network security system) which
-provides functions for accessing various databases for authentication, network
-information, and other things. It's supposed to make application programs
-independent of the separately configured actual network environment of the
-machine. A nice idea, but changes to GLIBC can lead to problems loading it. And
-you can't statically link "libnss", since it is configured for each machine
-individually. The problem comes, I think, mainly from statically linking other
-GLIBC libraries, notably "libpthread", "libm", and "libc", from which come
-incompatible calls to "libnss"
-functions.&quot;</p>
-</body>
-</section>
-
-<section>
-<title>Prelink aborts with
-&quot;prelink: dso.c:306: fdopen_dso: Assertion `j == k'
-failed.&quot;</title>
-<body>
-<p>This a known problem, kindly diagnosed <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=13878">here</uri>. Prelink cannot
-cope with UPX-compressed executables. As of prelink-20021213 there is no fix
-except to hide the executables while you are prelinking. See the <uri
-link="#doc_chap2_sect2">Configuration section</uri> above for an easy way to do
-this.</p>
-</body>
-</section>
+		<table>
+		<tr>
+			<th>The options explained:</th>
+		</tr>
+		<tr>
+			<th>-a</th>
+			<ti>"All": prelinks all the binaries</ti>
+		</tr>
+		<tr>
+			<th>-f</th>
+			<ti>
+			Force <path>prelink</path> to re-prelink already
+			prelinked binaries.  This is needed as <path>prelink</path> 
+			aborts if old prelinked files are present and their library 
+			dependencies have changed.
+			</ti>
+		</tr>
+		<tr>
+			<th>-m</th>
+			<ti>
+			Conserve the virtual memory space.  This is needed if you 
+			have a lot of libraries that need to be prelinked.
+			</ti>
+		</tr>
+		<tr>
+			<th>-R</th>
+			<ti>
+			Random -- randomize the address ordering, this enhances 
+			security against buffer overflows.
+			</ti>
+		</tr>
+		</table>
+		<note>
+		For more options and details see <c>man prelink</c>.
+		</note>
+		</body>
+	</section>
 </chapter>
 
 <chapter>
-<title>Conclusion</title>
-<section>
-<body>
-<p>Prelinking can drastically speed up the start up times for a number of
-large applications. Support is built into Portage. Prelinking is also safe as
-you can always undo the prelinking for any binary if you come across any
-problems. In short good luck!</p>
-</body>
-</section>
+	<title>Known Problems and Fixes</title>
+	<section>
+		<title>&quot;Cannot prelink against non-PIC shared library&quot;</title>
+		<body>
+		<p>
+		The cause of this problem is from badly compiled shared libraries that were
+		compiled without the -fPIC gcc option for all their object files.
+		</p>
+		<p>
+		The following is a list of the problem libraries and which packages to
+		re-emerge if you have the above error.
+		</p>
+
+		<pre caption = "Fixes">
+		<codenote>For the ORBit library /usr/lib/libIIOP.so.0.5.17</codenote>
+		# <c>emerge ">=sys-apps/tcp-wrappers-7.6-r4" ORBit</c>
+
+		<codenote>For zlib library usr/lib/libz.so.1.1.4</codenote>
+		# <c>emerge ">=sys-libs/zlib-1.1.4"</c>
+
+		<codenote>For svgalib, /usr/lib/libsvga.so.xx</codenote>
+		# <c>emerge ">=media-libs/svgalib-1.9.16"</c>
+
+		<codenote>For the XFree openGL library, libGLU.so.1</codenote>
+		# <c>emerge ">=x11-base/xfree-4.2.1-r2"</c>
+
+		<codenote>For libpcap.so.0.6</codenote>
+		# <c>emerge ">=net-libs/libpcap-0.7.1-r2"</c>
+
+		<codenote>For the lcms library, /usr/lib/liblcms.so.1</codenote>
+		# <c>emerge ">=media-libs/lcms-1.09"</c>
+		</pre>
+		<note>
+		Many libraries link statically to zlib and/or tcp-wrappers so first try
+		emerging those and re-emerging the problem library.
+		</note>
+
+		<p>
+		If you are having trouble with prelinking QT/KDE, then first try upgrading to
+		>=x11-base/xfree-4.2.1-r2 and >=x11-libs/qt-3.1.0-r1.  If QT still fails then try
+		compiling QT without xinerama support by adding myconf="-no-xinerama ${myconf}"
+		in the qt ebuild.
+		</p>
+
+		<p>
+		Here are the libraries that haven't been fixed or cannot
+		be fixed:
+		</p>
+		<ul>
+			<li>
+			The libraries in the wine package, including winex.  Prelinking
+			wouldn't speed up MS Windows executables anyway.
+			</li>
+			<li>
+			The library in media-video/mjpegtools, 
+			<path>/usr/lib/liblavfile-1.6.so.0</path>.
+			</li>
+		</ul>
+
+		<p>
+		If your problem library was not listed please report it with, preferably, a
+		patch to add <i>-fPIC</i> to the relevant CFLAGS.
+		</p>
+		</body>
+	</section>
+
+	<section>
+		<title>Abort while prelinking a file, like &quot;1631 Aborted ....&quot;</title>
+		<body>
+		<p>
+		You need to use the <i>-f</i> option for <path>prelink</path>;
+		i.e., reprelink the entire system from scratch.  Try <c>prelink -af</c>.
+		</p>
+		</body>
+	</section>
+
+	<section>
+		<title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected reloc type...&quot;</title>
+		<body>
+		<p>
+		This has been fixed in <i>sys-libs/glibc-2.3.1-r2</i> on 2002/11/18, re-emerge 
+		glibc if yours is older.
+		</p>
+		<p>
+		Also doing <c>prelink -u -a -m</c> ; <c>prelink -a -m</c> has been known
+		to help.  If all else fails just do <c>prelink -u &lt;file&gt;</c>.
+		</p>
+		</body>
+	</section>
+
+	<section>
+		<title>I have problems with Nvidia openGL libraries</title>
+		<body>
+		<p>
+		The accelerated openGL libraries that come in the nvidia-glx package have
+		been compiled in a non-standard way and so <path>prelink</path> will throw
+		warnings.  This is nothing to worry about and cannot be fixed by anyone except
+		nvidia.  You can always revert to the xfree version of libGL.so if you don't need 3D
+		acceleration.  The nvidia xfree driver works fine though.
+		</p>
+		</body>
+	</section>
+
+	<section>
+		<title>When I prelink my system some static binaries don't work anymore</title>
+		<body>
+		<p>
+		Where glibc is concerned, there is no such thing as a 100% static binary.  If
+		you statically compile a binary with glibc, it may still depend on other system
+		files.  Below is an explanation by Dick Howell,
+		</p>
+		<p>&quot;I suppose the idea is that everything will be in the downloaded file, 
+		so nothing depends on the local libraries on the target system.  Unfortunately with 
+		Linux, and I think anything else using GLIBC, this still isn't quite true.  There's this 
+		"libnss" (name service switch, some people seem to call it network security system) 
+		which provides functions for accessing various databases for authentication, network
+		information, and other things.  It's supposed to make application programs
+		independent of the separately configured actual network environment of the
+		machine.  A nice idea, but changes to GLIBC can lead to problems loading it.  And
+		you can't statically link "libnss", since it is configured for each machine
+		individually.  The problem comes, I think, mainly from statically linking other
+		GLIBC libraries, notably "libpthread", "libm", and "libc", from which come
+		incompatible calls to "libnss" functions.&quot;
+		</p>
+		</body>
+	</section>
+
+	<section>
+		<title>Prelink aborts with &quot;prelink: dso.c:306: fdopen_dso: Assertion `j == k' failed.&quot;</title>
+		<body>
+		<p>
+		This a known problem, kindly diagnosed <uri link="http://bugs.gentoo.org/show_bug.cgi?id=13878">here</uri>.  
+		Prelink cannot cope with UPX-compressed executables.  As of prelink-20021213 there is no 
+		fix except to hide the executables while you are prelinking.  See the <uri link="#doc_chap2_sect2">Configuration section</uri> 
+		above for an easy way to do this.
+		</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>Conclusion</title>
+	<section>
+		<body>
+		<p>
+		Prelinking can drastically speed up the start up times for a number of
+		large applications.  Support is built into Portage.  Prelinking is also safe as
+		you can always undo the prelinking for any binary if you come across any
+		problems.  Just remember that when you update glibc or other libraries that you 
+		prelinked with, you need to rerun <path>prelink</path>!  In short good luck!
+		</p>
+		</body>
+	</section>
 </chapter>
 
 </guide>
