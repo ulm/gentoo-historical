@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.77 2005/03/29 04:10:10 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.78 2005/03/29 04:30:06 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -544,6 +544,7 @@ class ArchitectureTemplate:
 		"Installs and sets up fstools"
 		# Get the list of file system tools to be installed
 		parts = self._install_profile.get_partition_tables()
+		filesystem_tools = []
 		for device in parts:
 		#in parts['/dev/hda']
 			for partition in parts[device]:
