@@ -12,7 +12,7 @@ class Device:
 	_sectors_in_cylinder = 0
 	_parted_dev = None
 	_parted_disk = None
-	_fdiskcall = "fdisk -l "
+	_sector_bytes = 0
 	
 	def __init__(self, device):
 		self._device = device
@@ -37,8 +37,10 @@ class Device:
 #		else: #SCSI
 		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
 
-		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._parted_dev.sector_size
-		self._total_sectors = self._geometry['cylinders'] * self._geometry['heads'] * self._geometry['sectors']
+		self._sector_bytes = self._parted_dev.sector_size
+		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._sector_bytes
+#		self._total_sectors = self._geometry['cylinders'] * self._geometry['heads'] * self._geometry['sectors']
+		self._total_sectors = self._parted_dev.length
 		self._sectors_in_cylinder = self._geometry['heads'] * self._geometry['sectors']
 
 	def set_partitions_from_disk(self):
@@ -228,6 +230,9 @@ class Device:
 
 	def get_cylinder_size(self):
 		return int(self._cylinder_bytes)
+
+	def get_sector_size(self):
+		return int(self._sector_bytes)
 
 	def get_num_cylinders(self):
 		return int(self._geometry['cylinders'])

@@ -12,6 +12,7 @@ class Panel(GLIScreen.GLIScreen):
 	devices = {}
 	active_device = ""
 	active_device_bytes_in_cylinder = 0
+	active_device_bytes_in_sector = 0
 	active_device_cylinders = 0
 	active_part_min_size = 0
 	active_part_max_size = 0
@@ -75,11 +76,11 @@ resize partitions.
 		info_filesystem_label.set_alignment(0.0, 0.5)
 		self.info_filesystem = gtk.Label()
 		self.info_filesystem.set_alignment(0.0, 0.5)
-		info_start_label = gtk.Label("Start cylinder:")
+		info_start_label = gtk.Label("Start sector:")
 		info_start_label.set_alignment(0.0, 0.5)
 		self.info_start = gtk.Label()
 		self.info_start.set_alignment(0.0, 0.5)
-		info_end_label = gtk.Label("End cylinder:")
+		info_end_label = gtk.Label("End sector:")
 		info_end_label.set_alignment(0.0, 0.5)
 		self.info_end = gtk.Label()
 		self.info_end.set_alignment(0.0, 0.5)
@@ -208,6 +209,7 @@ resize partitions.
 		self.draw_part_box()
 		self.active_device_cylinders = self.devices[self.active_device].get_num_cylinders()
 		self.active_device_bytes_in_cylinder = self.devices[self.active_device].get_cylinder_size()
+		self.active_device_bytes_in_sector = self.devices[self.active_device].get_sector_size()
 		self.info_partition.set_text("")
 		self.info_type.set_text("")
 		self.info_filesystem.set_text("")
@@ -238,7 +240,7 @@ resize partitions.
 		end = tmppart.get_end()
 		self.info_start.set_text(str(start))
 		self.info_end.set_text(str(end))
-		part_size = int(round(float(self.devices[dev].get_cylinder_size()) * (end - start + 1) / 1024 / 1024))
+		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
 		self.active_part_minor = tmppart.get_minor()
 		self.resize_box.hide_all()
@@ -256,7 +258,7 @@ resize partitions.
 		self.info_filesystem.set_text("Unallocated space")
 		self.info_start.set_text(str(start))
 		self.info_end.set_text(str(end))
-		part_size = int(round(float(self.devices[dev].get_cylinder_size()) * (end - start + 1) / 1024 / 1024))
+		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
 
 		min_size = 0
@@ -296,10 +298,10 @@ resize partitions.
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 		part_size_cyl = round(self.active_part_max_size * part_space)
-		part_size_mib = int(round(part_size_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
+		part_size_mib = int(round(part_size_cyl * self.active_device_bytes_in_sector / 1024 / 1024))
 		self.resize_info_part_size.set_text(str(part_size_mib))
 		part_unalloc_cyl = self.active_part_max_size - part_size_cyl
-		part_unalloc_mib = int(round(part_unalloc_cyl * self.active_device_bytes_in_cylinder / 1024 / 1024))
+		part_unalloc_mib = int(round(part_unalloc_cyl * self.active_device_bytes_in_sector / 1024 / 1024))
 		self.resize_info_unalloc_size.set_text(str(part_unalloc_mib))
 
 	def validate_keypress(self, editable, new_text, new_text_length, position):
