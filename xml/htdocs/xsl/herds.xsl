@@ -43,6 +43,11 @@
 			     <section><title>Description</title><body>
                                <xsl:value-of select="description"/>
 			     </body></section>
+			     <xsl:if test="email">
+			       <section><title>Herd maintainers' email address</title><body>
+                                 <xsl:value-of select="email"/>
+			       </body></section>
+			     </xsl:if>
                              <section>
                                <title>Maintainers</title>
                                <body>
@@ -111,6 +116,16 @@
 	</p>
 	</body>
 	</section>
+	<xsl:if test="email">
+		<section>
+		<title>Herd maintainers' email address</title>
+		<body>
+		<p>
+		<xsl:value-of select="email"/>
+		</p>
+		</body>
+		</section>
+	</xsl:if>
 	<section>
 	<title>Maintainers</title>
 	<body>
