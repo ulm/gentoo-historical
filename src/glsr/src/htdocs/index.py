@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.13 2004/11/04 01:48:20 port001 Exp $
+# $Id: index.py,v 1.14 2004/11/04 19:02:44 port001 Exp $
 #
 
 """
@@ -35,111 +35,141 @@ from Function import stderr_redirect
 sys.stderr = stderr_redirect()
 
 import Config
-from Function import start_timer, stop_timer, eval_timer
-from GLSRException import GLSRException
+from User import User
 import Logging as LogHandler
 import Session as SessionHandler
 import Template as TemplateHandler
-from User import User
+from GLSRException import GLSRException
 from Validation import CheckPageRequest
+from Function import start_timer, stop_timer, eval_timer
 
 import site_modules
 from site_modules import Redirect
 from site_modules import *
 
-def main():
+class PageDispatch:
 
-    uid = 0
-    alias = ""
-    session = None
+    def __init__(self):
 
-    tmpl_page = None
-    show_border = True
+        self._tmpl_page = None
+        self._show_border = True
+        self._t_start = 0
+        self._form = cgi.FieldStorage()
+        self._page = self._form.getvalue("page")
+        self._user_detail = {"uid": 0,
+                             "alias": "",
+                             "session": None}
 
-    ThisSession = SessionHandler.New()
-    ThisUser = User()
+        self._ThisSession = SessionHandler.New()
+        self._ThisUser = User()
 
-    t_start = start_timer()
+        self._init_timer()
 
-    form = cgi.FieldStorage()
-    page = form.getvalue("page")
+    def _init_timer(self):
 
-    # Does the user have a cookie for me? Load and eat.
-    if os.environ.has_key("HTTP_COOKIE"):
-        if ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"]):
-            (uid, session) = self.ThisSession.LoadCookieData(
-                                          os.environ["HTTP_COOKIE"])
-            # OK, we have a returning user.
-            ThisSession.UpdateTS(uid, session)
-            ThisUser.SetID(uid)
-            ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
-            alias = ThisUser.GetAlias()
+        self._t_start = start_timer() 
 
-    for Module in site_modules.__all__:
+    def check_session(self):
 
-        module_object = eval("%s.%s(form = form, uid = uid, alias = alias, session = session)" % (Module, Module))
+        # Does the user have a cookie for me? Load and eat.
+        if os.environ.has_key("HTTP_COOKIE"):
+            if self._ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"]):
+                (self._user_detail["uid"],
+                 self._user_detail["session"]) = self.ThisSession.LoadCookieData(
+                                                       os.environ["HTTP_COOKIE"])
+                # OK, we have a returning user.
+                self._ThisSession.UpdateTS(self._user_detail["uid"], 
+                                           self._user_detail["session"])
+                self._ThisUser.SetID(self._user_detail["uid"])
+                self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
+                self._user_detail["alias"] = self._ThisUser.GetAlias()
 
-        try:
-            for mod_page in module_object.pages:
-                if page == mod_page:
-                    try:
-                        #verifyFormInputs(form, module_object.required)
-                        tmpl_page = module_object.display()
-                        show_border = module_object.show_border
-                        raise 'PageFound'
+    def select_module(self):
 
-                    except Redirect, location_str:
-                        print "Location: %s\n\n" % location_str
-                        sys.exit(0)
+        for module in site_modules.__all__:
 
-                    except GLSRException, error:
-                        output_str = error.__str__()
-                        output_str = output_str.replace("\n", "<br />")
-                        output_str = output_str.replace(" ", "&nbsp;")
-                        LogHandler.err(output_str,
-                                       module_object.__modulename__)
-                        sys.exit(0)
+            module_object = eval("""%s.%s(form = self._form, uid = self._user_detail["uid"], alias = self._user_detail["alias"], session = self._user_detail["session"])""" % (module, module))
 
-                    #except Exception, errmsg:
-                    #    LogHandler.err(errmsg, module_object.__modulename__)
-                    #    sys.exit(0)
-                    
-        except 'PageFound':
-            break
+            try:
+                for mod_page in module_object.pages:
+                    if self._page == mod_page:
+                        try:
+                            #verifyFormInputs(self._form, module_object.required)
+                            self._tmpl_page = module_object.display()
+                            self._show_border = module_object.show_border
+                            raise 'PageFound'
 
-    if tmpl_page == None:
-        failover = eval("%s.%s(form = form, alias = alias)" %
-                        (site_modules.failover, site_modules.failover))
-        tmpl_page = failover.display()
+                        except Redirect, location_str:
+                            print "Location: %s\n\n" % location_str
+                            sys.exit(0)
+
+                        except GLSRException, error:
+                            output_str = error.__str__()
+                            output_str = output_str.replace("\n", "<br />")
+                            output_str = output_str.replace(" ", "&nbsp;")
+                            LogHandler.err(output_str,
+                                   module_object.__modulename__)
+                            sys.exit(0)
+
+                        #except Exception, errmsg:
+                        #    LogHandler.err(errmsg, module_object.__modulename__)
+                        #    sys.exit(0)
+
+            except 'PageFound':
+                break
+
+        if self._tmpl_page == None:
+            failover = eval("""%s.%s(form = self._form, alias = self._user_detail["alias"])""" %
+                                                 (site_modules.failover, site_modules.failover))
+            self._tmpl_page = failover.display()
         
-    if tmpl_page == "nodisplay":
-        sys.exit(0)
+        if self._tmpl_page == "nodisplay":
+            sys.exit(0)
 
-    if Config.HTMLHeadersSent == False:
-        print "Content-type:text/html\n\n",
-        Config.HTMLHeadersSent = True
+    def _send_headers(self):
 
-    if show_border:
-        tmpl_head = TemplateHandler.Template()
-        tmpl_head.compile(Config.Template["header"],
+        if Config.HTMLHeadersSent == False:
+            print "Content-type:text/html\n\n",
+            Config.HTMLHeadersSent = True
+
+    def dispatch_header(self):
+
+        self._send_headers()
+ 
+        if self._show_border:
+            tmpl_head = TemplateHandler.Template()
+            tmpl_head.compile(Config.Template["header"],
                           {"GLSR_URL":          Config.URL,
-                           "USER_ALIAS":	alias})
-        print tmpl_head.output()
+                           "USER_ALIAS":	self._user_detail["alias"]})
+            print tmpl_head.output()
 
-    print tmpl_page.output()
+    def dispatch_page(self):
 
-    if show_border:
-        tmpl_foot = TemplateHandler.Template()
-        tmpl_foot.compile(Config.Template["footer"],
-                          {"GLSR_VERSION":	Config.Version,
-                           "GLSR_URL":		Config.URL,
-                           "CONTACT":		Config.Contact})
-        print tmpl_foot.output()
+        print self._tmpl_page.output()
 
-    LogHandler.logwrite("Request for page '%s' completed in %.5f(s)" %
-                        (page, eval_timer(t_start, stop_timer())),
-                        __modulename__, "Info")
+    def dispatch_footer(self):
+
+        if self._show_border:
+            tmpl_foot = TemplateHandler.Template()
+            tmpl_foot.compile(Config.Template["footer"],
+                              {"GLSR_VERSION":	Config.Version,
+                               "GLSR_URL":	Config.URL,
+                               "CONTACT":	Config.Contact})
+            print tmpl_foot.output()
+
+    def log_request(self):
+
+        LogHandler.logwrite("Request for page '%s' completed in %.5f(s)" %
+                            (self._page, eval_timer(self._t_start, stop_timer())),
+                            __modulename__, "Info")
 
 if __name__ == "__main__":
 
-    main()
+    Dispatcher = PageDispatch()
+
+    Dispatcher.check_session()
+    Dispatcher.select_module()
+    Dispatcher.dispatch_header()
+    Dispatcher.dispatch_page()
+    Dispatcher.dispatch_footer()
+    Dispatcher.log_request()

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.6 2004/11/04 00:59:22 port001 Exp $
+# $Id: Page_Script.py,v 1.7 2004/11/04 19:02:44 port001 Exp $
 #
 
 import Config
@@ -20,7 +20,7 @@ class Page_Script(SiteModule):
 
         self.pages = [None, "create_script", "save_script"]
         self.form = args["form"]        
-        self.page = form.getvalue("page")
+        self.page = self.form.getvalue("page")
         self.template = Config.Template["create_script"]
         self.uid = args["uid"]
 
