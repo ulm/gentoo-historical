@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Search.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Page_Search.py,v 1.4 2004/11/04 00:59:22 port001 Exp $
 #
 
 import Config
@@ -18,11 +18,11 @@ __modulename__ = "Page_Search"
 
 class Page_Search(SiteModule):
 
-    def __init__(self, form = None, uid = 0):
+    def __init__(self, **args):
 
         self.pages = ["script_search"]
         self.template = Config.Template["script_search"]
-        self.form = form
+        self.form = args["form"]
 
     def _set_params(self):
         

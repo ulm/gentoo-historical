@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.11 2004/11/04 00:14:53 port001 Exp $
+# $Id: index.py,v 1.12 2004/11/04 00:59:22 port001 Exp $
 #
 
 """
@@ -61,7 +61,6 @@ def main():
 
     t_start = start_timer()
 
-    #print "Content-type:text/html\n\n",
     form = cgi.FieldStorage()
     page = form.getvalue("page")
 
@@ -78,7 +77,7 @@ def main():
 
     for Module in site_modules.__all__:
 
-        module_object = eval("%s.%s(form, uid)" % (Module, Module))
+        module_object = eval("%s.%s(form = form, uid = uid, alias = alias, session = session)" % (Module, Module))
 
         try:
             for mod_page in module_object.pages:
@@ -109,7 +108,7 @@ def main():
             break
 
     if tmpl_page == None:
-        failover = eval("%s.%s(form, username)" %
+        failover = eval("%s.%s(form = form, alias = alias)" %
                         (site_modules.failover, site_modules.failover))
         tmpl_page = failover.display()
         

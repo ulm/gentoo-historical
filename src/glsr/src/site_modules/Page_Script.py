@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.5 2004/10/29 01:34:12 hadfield Exp $
+# $Id: Page_Script.py,v 1.6 2004/11/04 00:59:22 port001 Exp $
 #
 
 import Config
@@ -16,19 +16,19 @@ __modulename__ = "Page_Script"
 
 class Page_Script(SiteModule):
 
-    def __init__(self, form = None, uid = 0):
+    def __init__(self, **args):
 
         self.pages = [None, "create_script", "save_script"]
+        self.form = args["form"]        
         self.page = form.getvalue("page")
         self.template = Config.Template["create_script"]
-        self.form = form
-        self.uid = uid
+        self.uid = args["uid"]
 
-        self.script_id = form.getvalue("script_id", "0")
+        self.script_id = self.form.getvalue("script_id", "0")
 
         # Set the scripts parent id automatically if the script already has id.
         if self.script_id == "0":
-            self.parent_script_id = form.getvalue("parent_script_id", "0")
+            self.parent_script_id = self.form.getvalue("parent_script_id", "0")
         else:
             script_obj = Script.SubScript(self.script_id)
             self.parent_script_id = script_obj.GetParentID()

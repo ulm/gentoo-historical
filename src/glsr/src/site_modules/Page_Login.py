@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.5 2004/11/04 00:14:53 port001 Exp $
+# $Id: Page_Login.py,v 1.6 2004/11/04 00:59:22 port001 Exp $
 #
 
 import os
@@ -17,20 +17,20 @@ from site_modules import SiteModule
 
 class Page_Login(SiteModule):
 
-    def __init__(self, form, uid = 0):
+    def __init__(self, **args):
 
         self.pages = ["login", "perform_login", "logout"]
-        self.page = form.getvalue("page")
-        self.form = form
+        self.form = args["form"]       
+        self.page = self.form.getvalue("page")
         
         self.template = Config.Template["login"]
         self.username = self.form.getvalue("username")
         self.password = self.form.getvalue("password")
-        self.alias = ""
-        self.uid = uid
-        self.sess = None
-        self.user_obj = User()
+        self.alias = args["alias"]
+        self.uid = args["uid"]
+        self.session = args["session"]
 
+        self.user_obj = User()
         self.ThisSession = SessionHandler.New()
         
     def display(self):
@@ -46,10 +46,8 @@ class Page_Login(SiteModule):
  
         elif self.page == "logout":
         
-            if self.ThisSession.ValidateSession(self.uid, self.sess):
-                self.ThisSession.RemoveCookie(self.sess)
-            # Get session by uid first then remove cookie
-            # or get session from index..        
+            if self.ThisSession.ValidateSession(self.uid, self.session):
+                self.ThisSession.RemoveCookie(self.session)        
 
             self.uid = 0
             self.alias = ""
