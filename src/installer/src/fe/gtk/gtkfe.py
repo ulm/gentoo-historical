@@ -10,7 +10,7 @@ import crypt
 import random
 
 import Welcome
-import Partitioning
+import PartitioningMain
 import Stage
 import PortageTree
 import MakeDotConf
@@ -38,7 +38,7 @@ class Installer:
 	install_window = None
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
-                      { 'text': 'Partitioning', 'module': Partitioning },
+                      { 'text': 'Partitioning', 'module': PartitioningMain },
                       { 'text': 'Network Mounts', 'module': NetworkMounts },
                       { 'text': 'Stage', 'module': Stage },
                       { 'text': 'Portage tree', 'module': PortageTree },

@@ -24,7 +24,7 @@ class Panel(GLIScreen.GLIScreen):
 	supported_filesystems = ['ext2', 'ext3', 'reiserfs', 'linux-swap', 'fat32', 'ntfs']
 
 	def __init__(self, controller):
-		GLIScreen.GLIScreen.__init__(self, controller)
+		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
 
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
