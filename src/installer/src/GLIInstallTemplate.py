@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, shutil, GLIUtility
 
 class GLIInstallTemplate:
 
@@ -11,16 +11,78 @@ class GLIInstallTemplate:
 		self._install_profile = install_profile
 		self._client_configuration = client_configuration
 		
+		
+	def _log(self, data):
+		"Logs the lines/file-object passed.  Accepts str, tuple, list, file."
+		
+		# If the user passed a file object
+		if type(data) == file:
+		
+			# Open logfile
+			log_file = open(self._client_configuration.log_file, "a")
+		
+			# Loop until the file is done
+			while True:
+			
+				# Get a line from the data
+				line = data.readline()
+				
+				# If the line is not null...
+				if line:
+				
+					# Write it to the log
+					log_file.writeline(line)
+					
+				# If the line is null, exit the loop
+				else:
+					break
+			
+			# Close the logfile
+			log_file.close()
+					
+		elif type(data) in [ str, tuple, list ]:
+			
+			# Open logfile
+			log_file = open(self._client_configuration.log_file, "a")		# Convert string to list
+
+			# If data is a string, convert it to a list for easy parsing
+			if type(data) == str:
+				data = [ data ]
+			
+			# Check for newline char
+			# Add a newline char if not found
+			for i in range(len(data)):
+				if data[i][-1] != '\n':
+					data[i] = data[i] + '\n'
+			
+			# Append lines to logfile
+			log_file.writelines(data)
+			log_file.close()
+			
+		else:
+			raise "LoggingError", "Data to be logged must be a string, a list/tuple of strings or a file object!"
+			
+		
+		
 	def _emerge(self, package, binary=False, binary_only=False):
 		"A private method to emerge a program in the chroot environment"
 		
+		#
+		# I made this little private method in case we want to tie
+		# this more into the emerge api.  However, right now all
+		# the loggin is being handled by the exec_in_chroot method.
+		# If we integrate with portage api, we need to make sure
+		# we handle logging.
+		#
+		
+		
 		# Decide which to run
 		if binary_only:
-			return self._exec_in_chroot("emerge -k " + package)
+			return self._run("emerge -k " + package, True)
 		elif binary:
-			return self._exec_in_chroot("emerge -K " + package)
+			return self._run("emerge -K " + package, True)
 		else:
-			return self._exec_in_chroot("emerge " + package)	
+			return self._run("emerge " + package, True)	
 
 	def _depends(self, depends):
 		"A private method for dependency checking (returns bool)"
@@ -46,25 +108,60 @@ class GLIInstallTemplate:
 				else:
 					raise "InstallTemplateError",  "Install step dependency not met!"
 					
-	def _exec_in_chroot(self, command):
-		"Runs a command in the chroot environment."
+	def _run(self, command, chroot=False):
+		"Runs a command in the livecd or chroot environment."
 
-		# Chroot needs to be in a child process
-		pid = fork()
+		# If chroot is true, execute in chroot
+		if chroot:
 
-		# If you are the child process
-		if pid == 0:
-
-			# Chroot to /mnt/gentoo and run the command, then exit
-			os.chroot("/mnt/gentoo")
-			exitstatus = os.system(command)
-			sys.exit(exitstatus)
-
-		# If you are the parent process, just wait for the child
-		# Kids can be so slow sometimes... 
+			# Set the chroot log. The path is relative to the chroot.
+			# ie. '/mnt/gentoo' + chroot_log_file to access outside of the chroot
+			chroot_log_file = "/tmp/chroot.log"
+	
+			# Chroot needs to be in a child process
+			pid = fork()
+	
+			# If you are the child process
+			if pid == 0:
+	
+				# Chroot to /mnt/gentoo and run the command, then exit
+				os.chroot(self._client_configuration.root_mount_point)
+				exitstatus = os.system(command + " > " + chroot_log_file)
+				sys.exit(exitstatus)
+	
+			# If you are the parent process...
+			else:
+				
+				# Wait for the child, kids can be so slow sometimes... 
+				child_exitstatus = os.wait()[1]
+				
+				# Open the chroot log and append it to the install log
+				chroot_log = open(self._client_configuration.root_mount_point + chroot_log_file, "r")
+				self._log(chroot_log)
+				chroot_log.close()
+				
+				# Remove the now useless chroot log
+				os.unlink(self._client_configuration.root_mount_point + chroot_log_file)
+				
+				# Return the exitstatus from the chroot
+				return(child_exitstatus)
+		
+		# If chroot is false, execute in livecd env		
 		else:
-			child_exitstatus = os.wait()[1]
-			return(child_exitstatus)
+			
+			# Generate a log file name
+			livecd_log_file = os.tempnam()
+		
+			# Execute the command and log to the temp log file
+			exitstatus = os.system(command + " > " + livecd_log_file)
+			
+			# Open the temp log file and log it
+			livecd_log = open(livecd_log_file, "r")
+			self._log(livecd_log)
+			livecd_log.close()
+			
+			# Return the exitstatus from the command
+			return(exitstatus)
 
 	def _edit_config(file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
 		"""This allows one to edit a config file non-destructively.
@@ -139,25 +236,24 @@ class GLIInstallTemplate:
 		f.writelines(file)
 		f.close()
 		
-	def _percent_complete(self, percent):
-		"Outputs the percent complete to client_configuration"
 		
-		if type(percent) != int:
-			raise "Percentage must be an integer!"
+	def _get_uri(self, uri, dest):
+		"Fetches a file from uri and places it at dest"
+		
+		# Check to make sure URI is valid
+		if not GLIUtility.is_uri(uri):
+			raise raise "URIError", str(uri) + " is not a valid URI!"
+		
+		# If this is a local URI...
+		if uri.split('/')[0] == "file:":
+		
+			# Just copy the file to the destination
+			shutil.copy(uri[7:], dest)
 			
-		if not percent in range(101):
-			raise "Percentage must be between 0 and 100!"
-		
-		self._client_configuration.current_step_percent = percent
-		
-	def _process_desc(self, description):
-		"Outputs the description of the current process to client_configuration"
-		
-		if type(description) != str:
-			raise "Description must be an string!"
+		else:
+			pass
 			
-		self._client_configuration.current_step_process_desc = description	
-
+			
 	def setup_network_pre(self):
 		"Sets up the network on the live CD environment"
 		pass
@@ -195,16 +291,60 @@ class GLIInstallTemplate:
 		"Copies resolve.conf to the chroot environment and mounts /dev and /proc"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		
+		# Copy resolv.conf to new env
+		try:
+			shutil.copy("/etc/resolv.conf", self._client_configuration.root_mount_point + "/etc/resolv.conf")
+		except:
+			pass
+			
+		# Mount /dev and /proc in the chroot env
+		exitstatus = self._run("mount -t proc proc " + self._client_configuration.root_mount_point + "/proc", False)
+		if exitstatus != 0:
+			raise "MountProcError", "Could not mount /proc into the chroot environment!"
+		exitstatus = self._run("mount -o bind /dev " + self._client_configuration.root_mount_point + "/dev", False)
+		if exitstatus != 0:
+			raise "MountDevError", "Could not mount /dev into the chroot environment!"
 
 	def configure_make_conf(self):
 		"Configures make.conf"
 		# Dependency checking		
 		self._depends("prepare_chroot")
+		
+		# Get make.conf options
+		options = self._install_profile.get_make_conf()
+		
+		# For each configuration option...
+		for key in options.keys():
+		
+			# Add/Edit it into make.conf
+			self._edit_config(self._client_configuration.root_mount_point + "/etc/make.conf", key, option[key])
+
 
 	def install_portage_tree(self):
 		"Get/update the portage tree"
 		# Dependency checking		
 		self._depends("prepare_chroot")
+		
+		# Check the type of portage tree fetching we'll do
+		# If it is custom, follow the path to the custom tarball and unpack it
+		if self._install_profile.get_portage_tree_sync_type() == "custom":
+			#
+			# Download/copy snapshot and unpack it
+			#
+			pass
+			
+		# If the type is webrsync, then run emerge-webrsync
+		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
+			exitstatus = self._run("emerge-webrsync", True)
+			if exitstatus != 0:
+				raise "EmergeWebRsyncError", "Failed to retrieve portage tree!"
+				
+		# Otherwise, just run emerge sync
+		else:
+			exitstatus = self._emerge("sync")
+			if exitstatus != 0:
+				raise "EmergeSyncError", "Failed to retrieve portage tree!"
 		
 	def bootstrap(self):
 		"Stage 1 install -- bootstraping"
@@ -213,7 +353,8 @@ class GLIInstallTemplate:
 		
 		# If we are doing a stage 1 install, then bootstrap
 		if self._install_profile.get_install_stage() == 1:
-			if not self._exec_in_chroot("/usr/portage/scripts/bootstrap.sh"):
+			exitstatus = self._run("/usr/portage/scripts/bootstrap.sh", True)
+			if exitstatus != 0:
 				raise "BootstrapError", "Bootstrapping failed!"
 
 	def emerge_system(self):
@@ -223,7 +364,8 @@ class GLIInstallTemplate:
 		
 		# If we are doing a stage 1 or 2 install, then emerge system
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
-			if not self._emerge("system"):
+			exitstatus = self._emerge("system")
+			if exitstatus != 0:
 				raise "EmergeSystemError", "Building the system failed!"
 
 	def set_timezone(self):
@@ -232,13 +374,10 @@ class GLIInstallTemplate:
 		# Dependency checking		
 		self._depends("unpack_tarball")
 		self._process_desc("Setting the timezone")
-		self._percent_complete(0)
 
 		# Set symlink
-		os.symlink("../usr/share/zoneinfo/" + self._install_profile.get_time_zone(), "/mnt/gentoo/etc/localtime")
+		os.symlink("../usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._client_configuration.root_mount_point + "/etc/localtime")
 		
-		self._percent_complete(100)
-
 	def configure_fstab(self):
 		"Configures fstab"
 		# Dependency checking		
@@ -248,11 +387,22 @@ class GLIInstallTemplate:
 		"Fetches desired kernel sources"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		
+		exitstatus = self._emerge(self._install_profile.get_kernel_source_pkg())
+		if exitstatus != 0:
+			raise "EmergeKernelSourcesError", "Could not retrieve kernel sources!"
 
 	def build_kernel(self):
 		"Builds kernel"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		
+		genkernel_options = ""
+
+		kernel_config_uri = self._install_profile.get_kernel_config_uri()
+		
+		if kernel_config_uri != "":
+			genkernel_options = genkernel_options + " --kernel-config=" + kernel_config
 
 	def setup_network_post(self):
 		"Sets up the network for the first boot"

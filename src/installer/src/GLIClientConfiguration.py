@@ -12,3 +12,9 @@ class GLIClientConfiguration:
 	current_step_percent = 0
 	# This is a string describing what the step is currently doing
 	current_step_process_desc = ""
+
+	# This is the full path to the logfile
+	log_file = "/var/log/installer.log"
+
+	# This is the root mount point
+	root_mount_point = "/mnt/gentoo"

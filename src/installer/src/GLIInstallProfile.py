@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.1 2004/03/27 17:20:04 npmccallum Exp $
+$Id: GLIInstallProfile.py,v 1.2 2004/04/04 03:26:18 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -419,7 +419,11 @@ class InstallProfile(xml.sax.ContentHandler):
 		return self._portage_tree_sync
 
 	def set_portage_tree_sync(self, portage_tree_sync):
-		"portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree."
+		"""
+		portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree.
+		True - runs 'emerge sync'
+		False - runs 'emerge websync'
+		"""
 		
 		# Check type
 		if type(portage_tree_sync) != bool:
@@ -432,8 +436,16 @@ class InstallProfile(xml.sax.ContentHandler):
 		return self._portage_tree_snapshot_uri
 
 	def set_portage_tree_snapshot_uri(self, portage_tree_snapshot_uri):
-		"portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. (ie. 'file:///mnt/cdrom/snapshots/portage-*.tar.bz2')"
+		"""
+		portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. 
+		examples: 
+			'file:///mnt/cdrom/snapshots/portage-*.tar.bz2'
+			'http://192.168.1.2/portage-20040302.tar.bz2'
+			'ftp://192.168.1.2/portage-20040302.tar.bz2'
 		
+		If portage_tree_snapshot_uri is set to '' or None, the method defined in portage_tree_sync is used.
+		If portage_tree_snapshot_uri is NOT '' or None, the installer will attempt to use listed snapshot.
+		"""
 		# Check type
 		if type(portage_tree_snapshot_uri) != str:
 			raise "PortageTreeSnapshotURIError", "Must be a string!"
