@@ -366,7 +366,7 @@
 				<br/>
 				<a class="altlink" href="/dyn/pkgs/index.xml">Online package database</a>
 				<br/>
-				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
+				<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
 				<br/>
 				<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
 				<br/>
