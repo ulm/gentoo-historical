@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS Version: 1.5 -->
+<!-- English CVS Version: 1.7 -->
 
 <guide link="/doc/en/gentoo-x86-tipsntricks.xml">
 <title>Gentoo/x86 Installation Tips &amp; Tricks</title>
@@ -21,8 +21,8 @@ Dokument mit allen eingereichten Tipps und Tricks eine Referenz zu liefern.
 
 <license/>
 
-<version>1.2</version>
-<date>11. April 2004</date>
+<version>1.4</version>
+<date>1. August 2004</date>
 
 <chapter>
 <title>Einleitung</title>
@@ -65,6 +65,9 @@ Zusatz zu den Installationsanweisungen und nicht als Ersatz gedacht.
 
 <ul>
   <li><uri link="#checking-disks">Intensives Testen Ihrer Festplatten</uri></li>
+  <li>
+    <uri link="#recover">Wiederherstellung von einer fehlerhaften Installation</uri>
+  </li>
 </ul>
 
 </body>
@@ -99,53 +102,18 @@ indem Sie den <c>t</c> Befehl in <c>fdisk</c> verwenden.
 
 <p>
 Nach dem Partitionieren sollten Sie die <path>/etc/raidtab</path> Datei 
-erstellen (ja in der Tat, in der Umgebung der LiveCD) und die notwendigen 
-Befehle einfügen für Ihr RAID Setup. Zum Beispiel um Boot, Swap und Root 
+erstellen (ja in der Tat, in der Umgebung der LiveCD) mit <c>mdadm</c> einem 
+fortgeschrittenen Hilfsprogramm für 
+<uri link="http://www.linuxdevcenter.com/pub/a/linux/2002/12/05/RAID.html">RAID
+ Management</uri>. Zum Beispiel um Boot, Swap und Root 
 Partition gespiegelt zu haben (RAID-1), was <path>/dev/sda</path> und 
 <path>/dev/sdb</path> umfasst, können sie folgendes verwenden:
 </p>
 
-<pre caption="/etc/raidtab für RAID-1 Setup">
-raiddev /dev/md0
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda1
-    raid-disk 0
-  device /dev/sdb1
-    raid-disk 1
-
-raiddev /dev/md1
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda2
-    raid-disk 0
-  device /dev/sdb2
-    raid-disk 1
-
-raiddev /dev/md2
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda3
-    raid-disk 0
-  device /dev/sdb3
-    raid-disk 1
-</pre>
-
-<p>
-Erstellen Sie nun die notwendigen RAID Devices für jedes RAID Gerät, 
-dass Sie in <path>/etc/raidtab</path> aufgeführt haben:
-</p>
-
-<pre caption="Erstellen von RAID Devices">
-# <i>mkraid /dev/md0</i>
-# <i>mkraid /dev/md1</i>
-# <i>mkraid /dev/md2</i>
+<pre caption="mdadm Beispielsbefehl">
+# <i>mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1</i>
+# <i>mdadm --create --verbose /dev/md1 --level=1 --raid-devices=2 /dev/sda2 /dev/sdb2</i>
+# <i>mdadm --create --verbose /dev/md2 --level=1 --raid-devices=2 /dev/sda3 /dev/sdb3</i>
 </pre>
 
 <p>
@@ -388,6 +356,87 @@ ausgedehnten Lese-/Schreibtest durchführen.
 
 </body>
 </section>
+
+<section id="recover">
+<title>Wiederherstellung von einer fehlerhaften Installation</title>
+<body>
+ 
+<p>
+Wenn aus welchem Grund auch immer Ihre Gentoo Installation fehlschlägt, 
+dann müssen Sie nicht die gesamte Installation von vorne beginnen. Stattdessen 
+können Sie sicher zu dem Punkt "gehen" an dem Sie denken, dass Sie einen 
+Fehler begangen haben (oder wo Sie denken, dass die Anweisungen fehlerhaft 
+sind) und einen anderen Ansatz probieren.
+</p>
+ 
+<p>
+Zunächst müssen Sie zurück in Ihre Gentoo Linux Umgebung wechseln mit chroot. 
+Folgen Sie den Anweisungen abermals, aber ignorieren Sie den 
+Partitionierungsschritt, da Ihre Partition schon erstellt sind und auch 
+beschrieben sind. Sie können daher sofort diese Partitionen mit mount unter 
+<path>/mnt/gentoo</path> einbinden. Sie sollten auch die Abschnitte für die 
+Extrahierung der Stage-Datei und die Modifizierung von <path>make.conf</path> 
+ignorieren, denn schliesslich wollen Sie nicht Ihre Dateien überschreiben.
+</p>
+ 
+<p>
+Gehen Sie, sowie Sie mit chroot in Ihre Gentoo Linux Umgebung gewechselt sind, 
+direkt zu den Schritten wo Sie denken, dass Sie einen anderen Ansatz probieren 
+sollten. Wiederholen Sie nicht alle Abschnitte wie Bootstrapping und solche, 
+außer wenn dies der Abschnitt ist wo Sie denken, dass etwas schiefgelaufen ist.
+</p>
+ 
+<p>
+Zum Beispiel wenn Sie denken, dass Sie <path>grub.conf</path> falsch 
+konfiguriert haben, dann können Sie direkt Ihren Texteditor aufrufen um 
+<path>/boot/grub/grub.conf</path> zu erneuern.
+</p>
+ 
+<p>
+Sobald Sie einen anderen Ansatz für Ihre Situation versucht haben, sollten Sie 
+beachten welche darauffolgenden Schritte notwendigerweise nochmals 
+ausgeführt werden müssen. Wenn die nachfolgenden Schritte von Ihren Änderungen 
+abhängig sind, dann müssen Sie diese wiederholen.
+</p>
+ 
+<p>
+Zum Beispiel:
+</p>
+
+  <ul>
+    <li>
+      Wenn Sie eine Variable innerhalb von <path>make.conf</path> verändert 
+      haben, dann werden Sie alle nachfolgenden Kompilierungen durchführen 
+      müssen, da diese abhängig sind von den Einstellungen in 
+     <path>make.conf</path>. 
+   </li>
+   <li>
+     Wenn Sie <path>/boot/grub/grub.conf</path> verändert haben, dann können 
+     Sie die chroot Umgebung sofort verlassen und neustarten, da keine folgenden 
+     Schritte abhängig sind von <path>grub.conf</path>.
+   </li>
+   <li>
+     Wenn Sie Ihren Kernel neu kompiliert haben, dann müssen Sie nur 
+     sicherstellen, dass Ihre Bootloader Konfiguration auf das korrekte 
+     Kernel-Image verweist (überprüfen Sie nochmals, dass <path>/boot</path> 
+     eingebunden ist!). Dann können Sie die chroot Umgebung verlassen und 
+     neustarten.
+   </li>
+   <li>
+     Wenn Sie <path>/etc/fstab</path> verändert haben, dann können sie die 
+     chroot Umgebung verlassen und neustarten.
+  </li>
+</ul>
+ 
+<p>
+Wie Sie sehen, können Sie für die meisten Wiederherstellungsabläufe sofort 
+neustarten. Nur in bestimmten Fällen werden Sie nachfolgende 
+Installationsabschnitte wiederholen müssen.
+ </p>
+ 
+</body>
+</section>
+ 
 </chapter>
 
 </guide>
