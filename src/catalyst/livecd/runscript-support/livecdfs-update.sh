@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35 2005/03/30 17:29:13 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.1 2005/04/06 11:41:38 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -133,10 +133,11 @@ then
 fi
 
 # setup opengl in /etc (if configured)
-[ -x /usr/sbin/openglify ] && /usr/sbin/openglify
+#[ -x /usr/sbin/openglify ] && /usr/sbin/openglify
+mkdir -p /etc/opengl
 
-# touch /etc/asound.state if alsa is configured
-[ -d /proc/asound/card0 ] && touch /etc/asound.state
+# touch /etc/asound.state
+touch /etc/asound.state
 
 # tweak the motd for gentoo releases 
 if [ "${clst_livecd_type}" = "gentoo-release-universal" ]
@@ -204,7 +205,7 @@ then
 	then
 		cp /usr/lib/hotplug/firmware/* /lib/firmware
 	fi
-	tar cvjpf /lib/firmware.tar.bz2 .
+	tar cjpf /lib/firmware.tar.bz2 .
 	rm -f /lib/firmware/*
 	mkdir -p /usr/lib/hotplug
 	ln -sf /lib/firmware /usr/lib/hotplug/firmware

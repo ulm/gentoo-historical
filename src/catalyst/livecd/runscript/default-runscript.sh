@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25 2005/03/29 18:53:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.1 2005/04/06 11:41:38 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -167,8 +167,10 @@ case $1 in
 		if [ "${clst_livecd_type}" = "gentoo-gamecd" ]
 		then
 			cp ${clst_sharedir}/livecd/runscript-support/gamecdfs-update.sh ${clst_chroot_path}/tmp
+			cp ${clst_gamecd_conf} ${clst_chroot_path}/tmp/gamecd.conf
 			${clst_CHROOT} ${clst_chroot_path} /tmp/gamecdfs-update.sh || exit 1
-			rm -f ${clst_chroot_path}/tmp/gamecdfs-update.sh
+			rm -f ${clst_chroot_path}/tmp/gamecdfs-update.sh \
+				${clst_chroot_path}/tmp/gamecd.conf
 		fi
 		
 		# if the user has their own fs update script, execute it
