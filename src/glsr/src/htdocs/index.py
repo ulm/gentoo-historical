@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.28 2004/12/18 22:05:18 port001 Exp $
+# $Id: index.py,v 1.29 2004/12/21 18:54:31 port001 Exp $
 #
 
 """
@@ -110,7 +110,7 @@ class PageDispatch:
                 print "Access Denied"
                 LogHandler.logwrite(
                     "Request for page '%s', domain 'admin'" % self._page +
-                    "denied for IP address '%s'" % os.environ["REMOTE_ADDR"],
+                    " denied for IP address '%s'" % os.environ["REMOTE_ADDR"],
                     __modulename__, "Warn")
                 sys.exit(0) 
 
