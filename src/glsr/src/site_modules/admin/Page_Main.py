@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.13 2004/12/25 23:51:02 port001 Exp $
+# $Id: Page_Main.py,v 1.14 2004/12/28 19:28:25 port001 Exp $
 #
 
 import State
@@ -59,8 +59,8 @@ class Page_Main(SiteModule):
 
         if Config.ErrorReporting == True:
             list_offset = int()
-            if self.req.values('error_report_offset') != None:
-                list_offset = self.req.values('error_report_offset')
+            if self.req.Values.getvalue('error_report_offset') != None:
+                list_offset = self.req.Values.getvalue('error_report_offset')
                 if str(list_offset).lower() == 'all':
                     list_offset = -1
                 else:
@@ -83,10 +83,10 @@ class Page_Main(SiteModule):
 
     def _select_action(self):
 
-        if self.req.values('flush_error_reports'):
+        if self.req.Values.getvalue('flush_error_reports'):
             FlushErrorReportLog()
 
-        if self.req.values('optimize_tables'):
+        if self.req.Values.getvalue('optimize_tables'):
             optimize_tables()
 
     def display(self):

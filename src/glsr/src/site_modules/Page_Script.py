@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.10 2004/12/25 21:05:03 port001 Exp $
+# $Id: Page_Script.py,v 1.11 2004/12/28 19:28:25 port001 Exp $
 #
 
 import Config
@@ -24,17 +24,17 @@ class Page_Script(SiteModule):
         self.template = Config.Template['create_script']
         self.uid = args['uid']
 
-        self.script_id = self.req.values("script_id", "0")
+        self.script_id = self.req.Values.getvalue("script_id", "0")
 
         # Set the scripts parent id automatically if the script already has id.
         if self.script_id == "0":
-            self.parent_script_id = self.req.values("parent_script_id", "0")
+            self.parent_script_id = self.req.Values.getvalue("parent_script_id", "0")
         else:
             parent_obj = Script.Script(self.script_id)
             script_obj = Script.SubScript(parent_obj.RecentSub())
             self.parent_script_id = script_obj.GetParentID()
 
-        if self.req.values("save_script") != None:
+        if self.req.Values.getvalue("save_script") != None:
             self.required = {}
 
     def _set_params(self):
@@ -81,10 +81,10 @@ class Page_Script(SiteModule):
     def _action_save(self):
 
         # Setup/save the parent script.
-        script_details = {"name": self.req.values('name'),
-                          "descr": self.req.values('descr'),
-                          "category_id": self.req.values('category_ids'), #TODO: get only first value
-                          "language_id": self.req.values('language_id'),
+        script_details = {"name": self.req.Values.getvalue('name'),
+                          "descr": self.req.Values.getvalue('descr'),
+                          "category_id": self.req.Values.getvalue('category_ids'), #TODO: get only first value
+                          "language_id": self.req.Values.getvalue('language_id'),
                           "submitter_id": self.uid}
 
         if self.parent_script_id == "0":
@@ -97,12 +97,12 @@ class Page_Script(SiteModule):
             script_obj.Modify(script_details)
 
         # Setup/save the subscript.
-        subscript_details = {"version": self.req.values('version'),
-                             "body": self.req.values('body'),
-                             "changelog": self.req.values('changelog', "")}
+        subscript_details = {"version": self.req.Values.getvalue('version'),
+                             "body": self.req.Values.getvalue('body'),
+                             "changelog": self.req.Values.getvalue('changelog', "")}
 
         # Does the script need approval?
-        if Config.RequireApproval or self.req.values("get_script_reviewed") != None:
+        if Config.RequireApproval or self.req.Values.getvalue("get_script_reviewed") != None:
             subscript_details["approved"] = "0"
 
         else:
@@ -129,9 +129,9 @@ class Page_Script(SiteModule):
 
         self._select_action()
 
-        if (self.req.values("save_script") != None or
-            self.req.values("publish_script") != None or
-            self.req.values("get_script_reviewed") != None):
+        if (self.req.Values.getvalue("save_script") != None or
+            self.req.Values.getvalue("publish_script") != None or
+            self.req.Values.getvalue("get_script_reviewed") != None):
             raise Redirect, ("index.py?page=create_script&script_id=%s" %
                              self.script_id + "&parent_script_id=%s" %
                              self.parent_script_id)

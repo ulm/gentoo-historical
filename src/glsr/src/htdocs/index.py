@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.31 2004/12/25 21:05:03 port001 Exp $
+# $Id: index.py,v 1.32 2004/12/28 19:28:24 port001 Exp $
 #
 
 """
@@ -46,7 +46,7 @@ from Session import Session
 import Template as TemplateHandler
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
-from Function import start_timer, stop_timer, eval_timer, values
+from Function import start_timer, stop_timer, eval_timer, _Values
 
 from site_modules import Redirect
 
@@ -54,7 +54,11 @@ class RequestHandler(cgi.Handler):
 
     def process(self, req):
 
-        setattr(cgi.Request, values.__name__, values)
+        # OK, this is pretty hacky but its the best solution I could
+	# come up with atm. Rewrite later.
+
+	req.Values = req._Values()
+        req.Values._store_params(req.params)
 
         Dispatcher = _PageDispatch(req)
 
@@ -267,4 +271,5 @@ class _PageDispatch:
                             __modulename__, "Info")
 
 if __name__ == "__main__":
+    setattr(cgi.Request, _Values.__name__, _Values)
     fcgi.Server({fcgi.FCGI_RESPONDER: RequestHandler}).run()

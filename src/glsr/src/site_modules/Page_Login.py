@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.10 2004/12/25 21:05:03 port001 Exp $
+# $Id: Page_Login.py,v 1.11 2004/12/28 19:28:25 port001 Exp $
 #
 
 import os
@@ -22,8 +22,8 @@ class Page_Login(SiteModule):
         self.req = req       
         self.page = args['page']
         self.template = Config.Template["login"]
-        self.username = self.req.values('username')
-        self.password = self.req.values('password')
+        self.username = self.req.Values.getvalue('username')
+        self.password = self.req.Values.getvalue('password')
         self.alias = args["alias"]
         self.uid = args["uid"]
         self.session = args["session"]
@@ -36,7 +36,7 @@ class Page_Login(SiteModule):
         if self.page == "perform_login":
 
             if self._login_user():
-                self.alias = self.req.values('username')
+                self.alias = self.req.Values.getvalue('username')
                 self.uid = self.user_obj.GetUid(self.alias)
         
             raise Redirect, "index.py?page=main"

@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.12 2004/12/25 21:05:03 port001 Exp $
+# $Id: Function.py,v 1.13 2004/12/28 19:28:25 port001 Exp $
 #
 
 import sys
@@ -62,3 +62,28 @@ def values(self, key, *args):
             return args[0]
 
         return None
+
+class _Values:
+
+    def _store_params(self, params):
+
+        self._params = params
+
+    def getlist(self, key):
+
+        pass
+
+    def getvalue(self, key, *args):
+
+        if self._params.has_key(key):
+	    return self._params[key]
+	else:
+	    if len(args) >= 1:
+	        return args[0]
+		
+	    return None
+
+    _store_params = classmethod(_store_params)
+    getlist = classmethod(getlist)
+    getvalue = classmethod(getvalue)
+

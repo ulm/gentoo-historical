@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: View_Script.py,v 1.4 2004/12/25 21:05:03 port001 Exp $
+# $Id: View_Script.py,v 1.5 2004/12/28 19:28:25 port001 Exp $
 #
 
 import time
@@ -29,7 +29,7 @@ class View_Script(SiteModule):
 
     def _set_params(self):
 
-        script_id = self.req.values('script_id')
+        script_id = self.req.Values.getvalue('script_id')
         script_obj = Script.Script(script_id)
         scripts = script_obj.ListScripts({'id': script_id})
 
@@ -74,21 +74,21 @@ class View_Script(SiteModule):
 
     def _action_save_comment(self):
 
-        subscript_id = self.req.values('subscript_id')
+        subscript_id = self.req.Values.getvalue('subscript_id')
         subscript_obj = Script.SubScript(subscript_id)
         script_id = subscript_obj.GetParentID()
 
         # Don't save the comment if there is not body or subject
-        if (self.req.values('body') is None and
-            self.req.values('subject') is None):
+        if (self.req.Values.getvalue('body') is None and
+            self.req.Values.getvalue('subject') is None):
             return
         
         details = {
             'submitter_id': self.uid,
             'script_id': script_id,
             'subscript_id': subscript_id,
-            'subject': self.req.values('subject', ''),
-            'body': self.req.values('body')
+            'subject': self.req.Values.getvalue('subject', ''),
+            'body': self.req.Values.getvalue('body')
             }
 
         comment_obj = Comment.Comment()

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Search.py,v 1.6 2004/12/25 21:05:03 port001 Exp $
+# $Id: Page_Search.py,v 1.7 2004/12/28 19:28:25 port001 Exp $
 #
 
 import User
@@ -27,20 +27,20 @@ class Page_Search(SiteModule):
 
     def _set_params(self):
         
-        if self.req.values('search') != None:
+        if self.req.Values.getvalue('search') != None:
             scripts = self._search()
 
-        elif self.req.values('search_submitter_id') != None:
+        elif self.req.Values.getvalue('search_submitter_id') != None:
             scripts = self._search_submitter()
 
-        elif self.req.values('list_all') != None:
+        elif self.req.Values.getvalue('list_all') != None:
             scripts = self._list_all()
 
         else:
             return
 
         self.template = Config.Template["view_scripts"]
-        submitter_id = self.req.values("search_submitter_id", 0)
+        submitter_id = self.req.Values.getvalue("search_submitter_id", 0)
 
         row = "even"
         for script in scripts:
@@ -69,26 +69,26 @@ class Page_Search(SiteModule):
         script_obj = Script.Script()
         terms = {}
 
-        if self.req.values('name') != None:
-            terms["name"] = self.req.values("name")
+        if self.req.Values.getvalue('name') != None:
+            terms["name"] = self.req.Values.getvalue("name")
 
-        if self.req.values('descr') != None:
-            terms["descr"] = self.req.values('descr')
+        if self.req.Values.getvalue('descr') != None:
+            terms["descr"] = self.req.Values.getvalue('descr')
 
-        if self.req.values('submitter') != None:
+        if self.req.Values.getvalue('submitter') != None:
 
             user_obj = User.User()
-            user_id = user_obj.GetUid(self.req.values('submitter'))
+            user_id = user_obj.GetUid(self.req.Values.getvalue('submitter'))
             terms["submitter_id"] = user_id
 
-        recent_only = self.req.values('most_recent')
+        recent_only = self.req.Values.getvalue('most_recent')
 
         return script_obj.Search(terms)
 
     def _search_submitter(self):
 
         script_obj = Script.Script()
-        submitter_id = self.req.values('search_submitter_id')
+        submitter_id = self.req.Values.getvalue('search_submitter_id')
         scripts = script_obj.ListScripts({"submitter_id": submitter_id})
         
         return scripts
