@@ -465,7 +465,11 @@
                                   <xsl:when test="document(.)/news/@category='moo'">
                                     <img src="/images/icon-cow.png" alt="Larry the Cow"/>
                                   </xsl:when>
-                                  <xsl:when test="document(.)/news/@category='nvidia'">
+                                  <xsl:when
+								  test="document(.)/news/@category='plans'">
+                                    <img src="/images/icon-clock.png" alt="Clock"/>
+                                  </xsl:when>
+									<xsl:when test="document(.)/news/@category='nvidia'">
                                     <img src="/images/icon-nvidia.png" alt="Nvidia"/>
                                   </xsl:when>
                                 </xsl:choose>
