@@ -14,10 +14,17 @@
 	<body>
 	  <p>
 	    The following table contains a list of active Gentoo developers. Retired or inactive
-	    developers are listed at the <uri link="/proj/en/devrel/roll-call/inactive.xml">Gentoo
+	    developers are listed at the <uri link="/proj/en/devrel/roll-call/inactive-devs.xml">Gentoo
             Developer Relations Inactive Developers</uri> page and the <uri 
-            link="/proc/en/devrel/alumni.xml">Developer Relations Former Developers</uri> page.
+            link="/proc/en/devrel/roll-call/alumni.xml">Developer Relations Former Developers</uri> page.
 	  </p>
+          <p>
+            Developers can be reached by sending e-mail to the
+            developer's user name at gentoo.org; and many developers
+            may be found on IRC (freenode) in #gentoo or #gentoo-dev
+            (requires voicing to speak) using their user name as their
+            IRC nick.
+          </p>
 	  <table>
 	    <tr>
 	      <th>Username</th>
