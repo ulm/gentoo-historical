@@ -177,7 +177,7 @@ $tarsize = int ($tarstat[7]/1024)."kb" ;
 #
 $footer = "</table>
 <note>A tarball of all of these icons may be downloaded <uri link=\"".$iconpath."icons.tar.bz2\">here</uri> ($tarsize)</note>
-<p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by forum users DuF, Hi-Fi, L-Chamber, bud1979, dufnutz, linux4god, slapcat, iKiddo and zypher.</p>	
+<p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by several other forum users.</p>	
 <p>Users interested in extending the icon set can obtain the original files in 
 <uri link=\"".$iconpath."photoshop-base-l33t.psd\">Photoshop</uri> or
 <uri link=\"".$iconpath."gimp-base-l33t.xcf\">GIMP</uri> format.  Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
