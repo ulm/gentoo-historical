@@ -8,7 +8,6 @@ import gtk
 import gobject
 import sys
 import time
-import threading
 
 class RunInstall(gtk.Window):
 
@@ -34,6 +33,10 @@ class RunInstall(gtk.Window):
 		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
 		self.globalbox.add(self.notebook)
 
+		button = gtk.Button("blah")
+		button.connect("clicked", self.poll_notifications)
+		self.globalbox.pack_start(button, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
 		self.progress = gtk.ProgressBar()
 		self.progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.progress.set_text("Preparing...")
@@ -44,20 +47,20 @@ class RunInstall(gtk.Window):
 
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
-#		gobject.timeout_add(1000, self.poll_notifications)
-		gobject.idle_add(self.poll_notifications)
+		gobject.timeout_add(1000, self.poll_notifications)
+#		gobject.idle_add(self.poll_notifications)
 
-	def poll_notifications(self):
+	def poll_notifications(self, widget=None):
 		notification = self.controller.cc.getNotification()
 		if notification == None:
 			return True
-		type = notification.get_type()
-		data = notification.get_data()
-		if type == "exception":
+		ntype = notification.get_type()
+		ndata = notification.get_data()
+		if ntype == "exception":
 			print "Exception received:"
-			print data
-		elif type == "int":
-			if data == GLIClientController.NEXT_STEP_READY:
+			print ndata
+		elif ntype == "int":
+			if ndata == GLIClientController.NEXT_STEP_READY:
 				num_steps = self.controller.cc.get_num_steps()
 				if self.controller.cc.has_more_steps():
 					next_step = self.controller.cc.get_next_step_info()
@@ -65,10 +68,10 @@ class RunInstall(gtk.Window):
 					self.progress.set_fraction(round(float(self.which_step)/num_steps, 2))
 					self.progress.set_text(self.controller.cc.get_next_step_info())
 					self.which_step += 1
-					time.sleep(1)
+#					time.sleep(1)
 					self.controller.cc.next_step()
 				return True
-			if data == GLIClientController.INSTALL_DONE:
+			if ndata == GLIClientController.INSTALL_DONE:
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
 				print "Install done!"

@@ -281,6 +281,7 @@ class Installer:
 
 	def run(self):
 		self.loadPanel()
+		gtk.threads_init()
 		gtk.main()
 
 	def back(self, widget, data=None):
