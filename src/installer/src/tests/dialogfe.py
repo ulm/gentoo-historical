@@ -74,7 +74,7 @@ def set_partitions():
 		d.msgbox("Sorry, you don't have agaffney's kickass GLIStorageDevice module")
 		return
 
-	if d.yesno("If you continue, your previous changes (if any) will be reset. Continue?") == DLG_YES: return
+	if d.yesno("If you continue, your previous changes (if any) will be reset. Continue?") != DLG_YES: return
 	use_existing = (d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
 
 	devices = {}
