@@ -1240,11 +1240,6 @@
   <span class="emphasis"><xsl:apply-templates/></span>
 </xsl:template>
 
-<!-- E-mail address -->
-<xsl:template match="mail">
-<a href="mailto:{@link}"><xsl:value-of select="."/></a>
-</xsl:template>
-
 <!-- Table -->
 <xsl:template match="table">
 <table class="ntable">
