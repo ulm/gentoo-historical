@@ -9,8 +9,8 @@
   <abstract>This guide covers the configuration of many popular PDAs for
 use under Gentoo Linux.
 </abstract>
-  <version>1.0</version>
-  <date>07 December 2002</date>
+  <version>2.0</version>
+  <date>2 January 2003</date>
   <chapter>
     <title>PDA Independent Setup</title>
     <section>
@@ -37,8 +37,12 @@ so if you would like more information, please consult the
 # <c>make menuconfig</c>
 </pre>
         <p> Here are the options you should be looking for:
-<ul><li>USB support (CONFIG_USB)</li><li>The preliminary USB Device Filesystem (CONFIG_USB_DEVICEFS)</li><li>The appropriate controller - UHCI, or OHCI (CONFIG_USB_UHCI, or CONFIG_USB_OHCI)</li><li>USB Serial Converter support (CONFIG_USB_SERIAL)</li><li>USB Handspring Visor Driver (CONFIG_USB_SERIAL_VISOR) (serial converter's sub-option)
-[or pick another appropriate driver]</li></ul>
+<ul><li>USB support (CONFIG_USB)</li>
+<li>The preliminary USB Device Filesystem (CONFIG_USB_DEVICEFS)</li>
+<li>The appropriate controller - UHCI, or OHCI (CONFIG_USB_UHCI, or CONFIG_USB_OHCI)</li>
+<li>USB Serial Converter support (CONFIG_USB_SERIAL)</li>
+<li>USB Handspring Visor Driver (CONFIG_USB_SERIAL_VISOR) (serial converter's sub-option)
+[Only necessary if you are using a Handspring]</li></ul>
 </p>
         <note>If possible, compile these as modules, and add them to
 <path> /etc/modules.autoload</path> so that they can be automatically
@@ -47,36 +51,9 @@ loaded at boot time.
       </body>
     </section>
     <section>
-      <title>Setting Up devfsd</title>
-      <body>
-        <note>The below entries are for setting up syncing for a USB Palm Pilot/Handspring. You may
-not have to follow these directions if you are using another PDA.
-</note>
-        <p> Ok, so first make the following symlinks; this makes <e>most</e> of the available syncing programs
-work.
-</p>
-        <pre caption="Creating symlinks">
-# <c>ln -s /dev/usb/tts/1 /dev/palm</c>
-# <c>ln -s /dev/usb/tts/1 /dev/pilot</c>
-</pre>
-        <p>Then add the following code to /etc/devfsd.conf.</p>
-        <pre caption="Editing /etc/devfsd.conf">
-<comment>#configure USB added by YOU! </comment>
-REGISTER        ^usb            PERMISSIONS     0.0     0777
-REGISTER        ^usb/tts        PERMISSIONS     0.0     0777
-#REGISTER        ^usb/tts/1      EXECUTE       /bin/su YOU -c	&quot;/usr/bin/jpilot -sync&quot;
-#REGISTER       ^usb/tts/1       EXECUTE       /bin/su YOU -c	&quot;/usr/bin/coldsync -p /dev/usb/tts/ -mb /home/YOU/palmbackup&quot;
-REGISTER        ^usb/tts/[0-9]  PERMISSIONS     0.0     0777
-</pre>
-        <p> We will come back to this later.  Basically, this sets up
-permissions for USB to be accessible by anyone, making it
-potentially insecure.</p>
-      </body>
-    </section>
-    <section>
       <title>Serial Connection</title>
       <body>
-        <p>I'll assume your Palm cradle plugs into the first serial port
+        <p>I'll assume your serial PDA cradle plugs into the first serial port
 (/dev/ttyS0, or /dev/tts/0 in &quot;devfs&quot; notation).
 </p>
         <pre caption="Adding serial device">
@@ -116,7 +93,7 @@ manually because it will stop running.</p>
     </section>
 
 <section>
-<title>USB Internet via <i>usbd</i> <i>Sharp Zaurus owners only</i></title>
+<title>Sharp Zaurus (SL5000/SL5500) USB Connection</title>
 <body>
 <p>The Zaurus has the handy feature of being able to connect to your computer like a device on the network, but it does
 not require a network card (NIC). All that you need is your Zaurus' USB cradle, and the <i>usbd</i> kernel module.
@@ -209,7 +186,7 @@ wish to connect to the internet from the Zaurus via the USB cradle, please consu
 </section>
 	
     <section>
-	<title>Gentoo Procedures</title>
+	<title>Miscellaneous Procedures</title>
       <body>
         <p>Before compiling any programs that you will be using for your PDA, it is a good idea
 to add the <e>pda</e> USE variable to <path>/etc/make.conf</path>. Doing this will ensure
@@ -220,7 +197,15 @@ that any programs you have will have their optional PDA (if availible) support b
 <comment>You are looking for this line</comment>
 USE=&quot;use1 use2 etc <e>pda</e>&quot;
 </pre>
-      </body>
+
+<p>Now, if you are going to be using a Palm/Handspring, it is a good idea to add the necessary
+symlinks.
+</p>
+         <pre caption="Creating symlinks">
+# <c>ln -s /dev/usb/tts/1 /dev/palm</c>
+# <c>ln -s /dev/usb/tts/1 /dev/pilot</c>
+</pre>
+     </body>
     </section>
   </chapter>
   <chapter>
@@ -314,8 +299,16 @@ execute something.  Below, I have an example setup for user YOU:</p>
 #configure USB  added by YOU!
 REGISTER        ^usb            PERMISSIONS     0.0     0777
 REGISTER        ^usb/tts        PERMISSIONS     0.0     0777
+<comment>Use this if you are using jpilot to sync</comment>
 REGISTER        ^usb/tts/1      EXECUTE       /bin/su YOU -c	&quot;/usr/bin/jpilot -sync&quot;
+<comment>Use this if you are using coldsync to sync</comment>
+REGISTER       ^usb/tts/1       EXECUTE       /bin/su YOU -c	&quot;/usr/bin/coldsync -p /dev/usb/tts/ -mb /home/YOU/palmbackup&quot;
 </pre>
+
+<note>This option is not availible if you are syncing via serial since serial is always "on".
+USB is detected differently than serial. You may try, but this will not work with serial.
+</note>
+
         <note>The daemon is run as root. Notice that it uses su
 to change to the person who owns the pilot before syncing, and doesn't
 require a password to do so.
