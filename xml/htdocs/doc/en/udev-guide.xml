@@ -13,8 +13,8 @@ This document explains what udev is and how you can use udev to fit your needs.
 
 <license/>
 
-<version>0.1</version>
-<date>February 26, 2003</date>
+<version>0.2</version>
+<date>February 29, 2003</date>
 
 <chapter>
 <title>What is udev?</title>
@@ -173,13 +173,12 @@ the udev application which performs the necessary actions on the
 
 <p>
 To be able to use udev on Gentoo, you must install 
-<c>sys-apps/baselayout-1.8.6.13</c> or later and <c>sys-fs/udev</c>.
+<c>sys-apps/baselayout-1.8.6.13-r1</c> or later and <c>sys-fs/udev</c>.
 If necessary, edit <path>/etc/portage/package.keywords</path> so that your
-system uses the ~ARCH tree for those two packages:
+system uses the ~ARCH tree for <c>sys-fs/udev</c>:
 </p>
 
 <pre caption="/etc/portage/package.keywords">
-sys-apps/baselayout ~x86
 sys-fs/udev ~x86
 </pre>
 
@@ -219,24 +218,15 @@ wish.
 <body>
 
 <p>
-First activate <c>hotplug</c> and have it started when you boot up your system:
-</p>
-
-<pre caption="Adding hotplug to the default runlevel">
-<comment>(Make sure that "boot" is used, not "default")</comment>
-# <i>rc-update add hotplug boot</i>
-# <i>/etc/init.d/hotplug start</i>
-</pre>
-
-<p>
-Now, if you're interested in the udev-tweaks Gentoo added to make your life
+If you're interested in the udev-tweaks Gentoo added to make your life
 comfortable, then read no more. You're all set. The Gentoo init scripts won't
 run the devfsd daemon and deactivate devfs when you boot up. 
 </p>
 
 <p>
 But if you are a die-hard and want to run a udev-only, no-tweaked system as is
-intended by the udev development, by all means, read on :)
+intended by the udev development (including the difficulties of missing device
+nodes because udev doesn't support them yet), by all means, read on :)
 </p>
 
 <warn>
@@ -246,61 +236,14 @@ nicely with Gentoo!
 </warn>
 
 <p>
-First of all we'll deactivate the rules that save the device file nodes from
-<path>/etc/init.d/halt.sh</path> and <path>/sbin/rc</path> by commenting them
-out:
+First of all we'll deactivate the rules that save the device file nodes.
+From <c>sys-apps/baselayout-1.8.6.13-r1</c> onwards, you can edit the
+<c>RC_DEVICE_TARBALL</c> variable in <path>/etc/conf.d/rc</path> and set it to
+<c>no</c>:
 </p>
 
-<pre caption="/etc/init.d/halt.sh">
-# We need to properly terminate devfsd to save the permissions
-if [ -n "`ps --no-heading -C 'devfsd'`" ]
-then
-        ebegin "Stopping devfsd"
-        killall -15 devfsd &amp; &gt; /dev/null
-        eend $?
-elif [ ! -e /dev/.devfsd -a -e /dev/.udev ]
-then
-        ebegin "Saving device nodes"
-        <comment>##cd /dev</comment>
-        <comment>##try tar -jclpf "/tmp/devices-$$.tar.bz2" *</comment>
-        <comment>##try mv -f "/tmp/devices-$$.tar.bz2" /lib/udev-state/devices.tar.bz2</comment>
-        eend 0
-fi
-</pre>
-
-<pre caption="/sbin/rc">
-# Fix weird bug where there is a /dev/.devfsd in a unmounted /dev
-mymounts="$(awk '($3 == "devfs") { print "yes"; exit 0 }' /proc/mounts)"
-if [ -e "/dev/.devfsd" -a "${mymounts}" != "yes" ]
-then
-        rm -f /dev/.devfsd
-fi
-
-if [ "${udev}" = "yes" ]
-then
-        ebegin "Mounting ramfs at /dev"
-        try mount -n -t ramfs none /dev
-        eend $?
-        ebegin "Configuring system to use udev"
-        einfo " Populating /dev with device nodes..."
-        <comment>##try tar -jxpf /lib/udev-state/devices.tar.bz2 -C /dev</comment>
-        populate_udev
-        if [ -e /proc/sys/kernel/hotplug -a -x /sbin/hotplug ]
-        then
-                einfo " Using /sbin/hotplug for udev management..."
-
-        elif [ -e /proc/sys/kernel/hotplug ]
-        then
-                einfo " Setting /sbin/udev as hotplug agent..."
-                echo "/sbin/udev" &gt; /proc/sys/kernel/hotplug
-        else
-                ewarn " Kernel was not compiled with hotplug support!"
-        fi
-        eend 0
-        # Create problematic directories
-        mkdir -p /dev/{pts,shm}
-        # Same thing as /dev/.devfsd
-        touch /dev/.udev
+<pre caption="/etc/conf.d/rc">
+RC_DEVICE_TARBALL="no"
 </pre>
 
 <p>
