@@ -11,8 +11,8 @@ Daniel Robbins</mail>
 Catalyst reference manual, covering (nearly) every aspect of catalyst configuration.
 </abstract>
 
-<version>1.0</version>
-<date>11 Jan 2004</date>
+<version>1.1</version>
+<date>12 Feb 2004</date>
 
 <chapter>
 <title>Introduction</title>
@@ -245,6 +245,9 @@ Script started, file is typescript
 	<tr><ti><c>boot/kernel</c></ti><ti>required</ti><ti>list</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/sources</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/config</c></ti><ti>required</ti><ti>string</ti></tr>
+	<tr><ti><c>boot/kernel/[boot/kernel:x]/extraversion</c></ti><ti>optional</ti><ti>string</ti></tr>
+	<tr><ti><c>boot/kernel/[boot/kernel:x]/packages</c></ti><ti>optional</ti><ti>list</ti></tr>
+	<tr><ti><c>boot/kernel/[boot/kernel:x]/use</c></ti><ti>optional</ti><ti>list</ti></tr>
 	<tr><ti><c>livecd/cdfstype</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/runscript</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/archscript</c></ti><ti>required</ti><ti>string</ti></tr>
@@ -298,17 +301,33 @@ Script started, file is typescript
 	<p><b>Using the kernel-related variables in the spec file:</b> For each name in the <c>boot/kernel</c> variable in the spec file (such as <c>gentoo</c>, for example), this target will
 	use <c>genkernel</c> to build a kernel and initrd. With the example <c>boot/kernel</c> entry of <c>gentoo</c>, catalyst
 	will use the <c>boot/kernel/gentoo/sources</c> setting to determine what kernel sources to merge for this particular
-	kernel build (an example setting would be <c>=sys-kernel/gentoo-dev-sources-2.6.0</c>.) Then, the kernel config pointed
-	to by <c>boot/kernel/gentoo/config</c> will be copied into the chroot and used to build said kernel. Here is an example
+	kernel build (an example setting would be <c>=sys-kernel/gentoo-dev-sources-2.6.0</c>.) Any <c>USE</c> settings specified
+	in <c>boot/kernel/gentoo/use</c> will be exported to the environment before <c>genkernel</c> is called. 
+	</p>
+
+	<p>
+	Then, the kernel config pointed
+	to by <c>boot/kernel/gentoo/config</c> will be copied into the chroot and used to build said kernel. After <c>genkernel</c>
+	finishes, any packages specified in <c>boot/kernel/gentoo/packages</c> will be merged. The <c>boot/kernel/gentoo/packages</c>
+	setting is used to merge kernel-specific ebuilds, such as <c>nvidia-kernel</c>, <c>e1000</c>, etc. As during the kernel
+	build, any <c>USE</c> settings specified in <c>boot/kernel/gentoo/use</c> will be exported to the environment during the
+	optional package merge step.
+	
+	Here is an example
 	snippet from a livecd-stage2 spec file that tells catalyst to build two kernel/initrd sets, one called <c>gentoo</c> and
-	another called <c>smp</c>:
+	another called <c>smp</c>. When the <c>gentoo</c> kernel is merged, the <c>foo</c> USE setting is exported to the environment.
+	Also, after the <c>gentoo</c> kernel, modules and initrd are built by <c>genkernel</c>, catalyst will merge the <path>nvidia-kernel</path>,
+	<path>e1000</path> and <path>pcmcia-cs</path> ebuilds. Any modules that are built during this step will be built specifically for the <c>gentoo</c>
+	kernel.
 	</p>
 	<pre caption="Livecd-stage2 spec snippet">
 boot/kernel: gentoo smp
 boot/kernel/gentoo/sources: =sys-kernel/gentoo-dev-sources-2.6.0
 boot/kernel/gentoo/config: /path/to/gentoo.config
-boot/kernel/gentoo/sources: =sys-kernel/special-smp-sources-2.6.0
-boot/kernel/gentoo/config: /path/to/smp.config
+boot/kernel/gentoo/use: foo
+boot/kernel/gentoo/packages: nvidia-kernel e1000 pcmcia-cs
+boot/kernel/smp/sources: =sys-kernel/special-smp-sources-2.6.0
+boot/kernel/smp/config: /path/to/smp.config
 	</pre>
 	<note>The most
 	recent unmasked version of genkernel will be merged by the runscript; please make sure that version 3.0.1 or later of genkernel is unmasked in your 
