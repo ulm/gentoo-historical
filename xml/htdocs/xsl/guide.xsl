@@ -600,6 +600,9 @@
                           <xsl:when test="document(.)/news/@category='nvidia'">
                             <img src="/images/icon-nvidia.png" alt="Nvidia"/>
                           </xsl:when>
+                          <xsl:when test="document(.)/news/@category='freescale'">
+                            <img src="/images/icon-freescale.png" alt="Freescale Semiconductor"/>
+                          </xsl:when>
                         </xsl:choose>
                       </td>
                       <td valign="top">
@@ -656,6 +659,9 @@
                         </xsl:when>
                         <xsl:when test="@category='nvidia'">
                           <img src="/images/icon-nvidia.png" alt="nvidia"/>
+                        </xsl:when>
+                        <xsl:when test="document(.)/news/@category='freescale'">
+                          <img src="/images/icon-freescale.png" alt="Freescale Semiconductor"/>
                         </xsl:when>
                       </xsl:choose>
                     </td>
