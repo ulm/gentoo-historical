@@ -12,12 +12,11 @@
 # Build 26th Feb. 2003 by Fir3fly
 #
 if ($ARGV[0] =~ /./ ) {print "\nusage: icon2xml > outputfile.xml\n\n"; exit;}
-$searchpath = `pwd`;
+$searchpath = "/home/httpd/gentoo/xml/images/icons/";
 #
 # icon path 
 #
-$iconpath = "http://forums.gentoo.org/~kurtl/icons/";
-#$iconpath = "./";
+$iconpath = "http://www.gentoo.org/images/icons/";
 #
 # html tags
 #
@@ -36,11 +35,11 @@ $header = "<?xml version='1.0'?>
 <body>
 <table>\n";
 $footer = "</table>
-<note>A tarball of all of these icons may be downloaded <uri link=\"http://forums.gentoo.org/~kurtl/icons.tar.bz2\">here</uri> (1.4MB)</note>
+<note>A tarball of all of these icons may be downloaded <uri link=\"http://www.gentoo.org/images/icons.tar.bz2\">here</uri> (1.4MB)</note>
 <p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by forum users DuF, Hi-Fi, L-Chamber, bud1979, dufnutz, linux4god, slapcat, iKiddo and zypher.</p>	
 <p>Users interested in extending the icon set can obtain the original files in 
-<uri link=\"http://www.ibiblio.org/web-gentoo/images/icons/photoshop-base-l33t.psd\">Photoshop</uri> or
-<uri link=\"http://www.ibiblio.org/web-gentoo/images/icons/gimp-base-l33t.xcf\">GIMP</uri> format.  Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
+<uri link=\"http://www.gentoo.org/images/icons/photoshop-base-l33t.psd\">Photoshop</uri> or
+<uri link=\"http://www.gentoo.org/images/icons/gimp-base-l33t.xcf\">GIMP</uri> format.  Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
 </body>
 </section>
 </chapter>
@@ -66,7 +65,7 @@ $footer = "</table>
 	 'IMA' => 'Image Viewers',
 	 'GRA' => 'Graphic Editors',
 	 'TXT' => 'Text Editors',
-	 'OFF' => 'Office Suites & Tools',
+	 'OFF' => 'Office Suites &amp; Tools',
 	 'FIN' => 'Financial',
 	 'EMU' => 'Emulators',
 	 'WIN' => 'Windows',
@@ -83,7 +82,6 @@ $footer = "</table>
 #
 # get filenames
 #
-$searchpath = ".";
 
 opendir(DIR, $searchpath);
 	    @files = grep(!/^\.\.?$/,readdir(DIR));
