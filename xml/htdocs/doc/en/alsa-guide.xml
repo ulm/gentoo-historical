@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.45 2004/12/02 20:27:35 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.46 2004/12/08 11:12:50 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/alsa-guide.xml">
@@ -40,8 +40,8 @@ Guide, this guide is supposed to give you more information on this subject.
 
 <license/>
 
-<version>1.5.7</version>
-<date>2004-12-02</date>
+<version>1.5.8</version>
+<date>2004-12-08</date>
 
 <chapter>
 <title>The Advanced Linux Sound Architecture</title>
@@ -87,21 +87,26 @@ compile with OSS backward compatibility.
 <p>
 First of all, before continuing, make sure your kernel has <e>Sound Card
 Support</e> enabled. If you used <c>genkernel</c> to build your kernel, then
-this is automatically true. Otherwise reconfigure your kernel.
+this is automatically true. Otherwise reconfigure your kernel.  Additionally,
+make sure you disable <e>Open Sound System</e> in your kernel configuration.
+If you don't, your system may try to use these drivers rather than the alsa
+ones.  If you see a message about 'sound card not detected' and you are sure
+you have the correct driver, this is probably the reason.
 </p>
 
 <warn>
-If you use a 2.6 kernel you can skip the rest of this section and continue with
-<uri link="#alsa-utils">Installing the ALSA Utils</uri> as 2.6 already has the
-necessary ALSA drivers in it. Of course, don't forget to enable support for the
-sound card you have when configuring your kernel.
+If you use a 2.6 kernel, you may use the drivers provided in the kernel, but
+we still recommend that you use media-sound/alsa-driver as they are more up
+to date than what is provided in the kernel tree.  If you still wish to use
+the drivers provided with your kernel, you can skip the rest of this section
+and continue with <uri link="#alsa-utils">Installing the ALSA Utils</uri>.
 </warn>
 
 <p>
-Users of 2.4 kernel sources will have to install the necessary ALSA drivers for
-their soundcard. First find out what soundcard you have. An easy trick is to
-search for "audio" in the output of the <c>lspci</c> command. You can install
-it with <c>emerge pciutils</c>.
+The first step in installing your sound drivers is figuring out what sound
+card you have.  If you don't already know, an easy trick is to search
+for "audio" in the output of the <c>lspci</c> command. You can install
+this tool with <c>emerge pciutils</c>.
 </p>
 
 <pre caption="Finding out the soundcard type">
@@ -129,8 +134,15 @@ you want to use:
 ALSA_CARDS="via82xx"
 </pre>
 
+<warn>
+If you have multiple sound cards in your system, separate them with a comma
+in the ALSA_CARDS variable.  Ex: ALSA_CARDS="via82xx,emu10k1"
+</warn>
+
 <p>
-Now install <c>alsa-driver</c>:
+If you want OSS compatibility (highly recommended), you should add 'oss' to
+your USE flags in <path>/etc/make.conf</path>.  After that, you are ready to
+install <c>alsa-driver</c>:
 </p>
 
 <pre caption="Installing ALSA Drivers">
@@ -139,9 +151,9 @@ Now install <c>alsa-driver</c>:
 
 <impo>
 Whenever you (re)compile your kernel sources, chances are that the ALSA drivers
-will be overwritten. It is therefore adviseable to rerun <c>emerge
-alsa-driver</c> every time you (re)compile your kernel <e>after</e> having
-rebooted into the new kernel.
+will be deleted. It is therefore adviseable to rerun <c>emerge alsa-driver</c>
+every time you (re)compile your kernel.  Note that this will compile the
+drivers for the kernel in /usr/src/linux, NOT the running kernel.
 </impo>
 
 </body>
@@ -151,12 +163,14 @@ rebooted into the new kernel.
 <body>
 
 <p>
-If you want backwards compatibility with OSS, you need to install
-<c>alsa-oss</c>:
+If the in-kernel OSS compatibility is not sufficient for your needs, you will
+want to install <c>alsa-oss</c>.  This will provide you with the 'aoss'
+executable which can be used as demonstrated:
 </p>
 
-<pre caption="Installing the ALSA OSS compatibility layer">
+<pre caption="More OSS compatibility layer">
 # <i>emerge alsa-oss</i>
+# <i>aoss mpg123 music.mp3</i>
 </pre>
 
 <p>
@@ -182,8 +196,8 @@ Now that the utils are installed, it is time to configure ALSA...
 
 <p>
 If you use a modular kernel (such as when using <c>genkernel</c>) you have to
-edit <path>/etc/modules.d/alsa</path> so that it activates the necesary modules
-at boot time. For the soundcard in our example:
+edit <path>/etc/modules.d/alsa</path> so that it activates the necessary
+modules at boot time. For the soundcard in our example:
 </p>
 
 <pre caption="/etc/modules.d/alsa">
@@ -211,9 +225,9 @@ Now run <c>modules-update</c> to save the changes you made to the
 <body>
 
 <p>
-If you use DevFS (which is the default for Gentoo installations) make sure that
-<path>/etc/devfsd.conf</path> has the ALSA devices and permissions correctly
-registered:
+This should be done automatically for you on recent installs, but if you run
+into problems, check that your ALSA devices and permissions are set correctly
+by your /dev manager.  If you use DevFS, check <path>/etc/devfsd.conf</path>
 </p>
 
 <pre caption="/etc/devfsd.conf">
@@ -270,6 +284,11 @@ also unmute the <e>Center</e> and <e>Surround</e> channels.
 </p>
 
 <pre caption="Unmuting the sound channels">
+<comment>If you prefer an ncurses method:</comment>
+# <i>alsamixer</i>
+
+or
+
 # <i>amixer set Master 100 unmute</i>
 # <i>amixer set PCM 100 unmute</i>
 <comment>(Only if the above isn't sufficient:)</comment>
@@ -278,14 +297,10 @@ also unmute the <e>Center</e> and <e>Surround</e> channels.
 # <i>amixer set Headphone 100 unmute</i>
 </pre>
 
+
 <p>
 To check if your sound works, play a wave file (using <c>aplay</c>), mp3 (using
 <c>mpg123</c> or even <c>mplayer</c>) or any other sound file for that matter.
-</p>
-
-<p>
-To fine-tune the sound channel settings you can use the <c>alsamixer</c>
-application.
 </p>
 
 </body>
@@ -348,11 +363,21 @@ synthesizer. Start by emerging this package:
 
 <p>
 For timidity to play sounds, it needs a soundfont. If you do not have any,
-install <c>timidity-eawpatches</c> which will give you some soundfonts.
+install <c>timidity-eawpatches</c> or <c>timidity-shompatches</c> which will
+give you some soundfonts.  You can have multiple soundfont configurations
+installed, and you can place your own in <path>/usr/share/timidity/</path>.
+To switch between different timidity configurations, you should use the
+<e>timidity-update</e> tool provided in the timidity++ package.
 </p>
 
-<pre caption="Installing timidity-eawpatches">
+<pre caption="Installing soundfonts">
 # <i>emerge timidity-eawpatches</i>
+# timidity-update -g -s eawpatches
+
+<comment>  or </comment>
+
+# <i>emerge timidity-shompatches</i>
+# timidity-update -g -s shompatches
 </pre>
 
 <p>
