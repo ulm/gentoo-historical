@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/Attic/ltsp.xml,v 1.4 2004/06/20 14:25:09 bennyc Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/Attic/ltsp.xml,v 1.5 2004/06/20 14:53:36 bennyc Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/ltsp.xml">
@@ -17,15 +17,15 @@
   <mail link="bennyc@gentoo.org">Benny Chuang</mail>
 </author>
 
-<!--  Version 1.3 Rev 1.4 2003-12-13 //-->
+<!-- Rev 1.4 by Benny -->
 <abstract>
 這份指南將帶領您如何使用 Gentoo 架設 LTSP 伺服器.
 </abstract>
 
 <license/>
 
-<version>1.3</version>
-<date>2003年12月11日</date>
+<version>1.5</version>
+<date>2004年5月12日</date>
 <chapter>
 <title>介紹</title>
 <section>
@@ -108,9 +108,15 @@ Gentoo 安裝指南.
 <body>
 
 <p>
-為了要更方便地分析問題, 系統記錄器一定要允許遠端連線.
-請參考您的系統記錄器文件完成此項設定.
+為了要更方便地分析問題，系統記錄器一定要允許遠端連線。
+請參考您的系統記錄器文件完成此項設定。舉例來說，如果你使用的是 sysklogd，
+你只需要編輯 <path>/etc/conf.d/sysklogd</path> 然後在 SYSKLOGD 那行加入 "-r"：
 </p>
+
+<pre caption="/etc/conf.d/sysklogd">
+SYSLOGD="-m 0 -r"
+KLOGD="-c 3 -2"
+</pre>
 
 </body>
 </section>
@@ -149,8 +155,37 @@ Gentoo 安裝指南.
 <body>
 
 <p>
-預定的 TFTP 不會自行啟動, 您可以編輯 <path>/etc/xinetd.d/tfpt</path>
-然後將 <c>disable=yes</c> 改成 <c>disable=no</c>. 接著啟動 xinetd 即可.
+要使用 TFPT 之前需要先編輯一點他的設定檔。首先，編輯 
+<path>/etc/conf.d/in.tftpd</path> 設定 tfptd 正確的目錄：
+</p>
+
+<pre caption="/etc/conf.d/in.tftpd">
+INTFTPD_PATH="/tftpboot"
+INTFTPD_OPTS="${INTFTPD_PATH}"
+</pre>
+
+<p>
+接著，設定 xinetd 讓 TFPT 可以接受遠端連線。首先，先檢查
+<path>/etc/xinetd.d/tftp</path> 的檔案是否存在。預設的情況來說，xinetd 不會自動
+啟動 TFTP，所以你將需要編輯 <path>/etc/xinetd.d/tfpt</path> 然後將
+<c>disable=yes</c> 改為 <c>disable=no</c>。
+</p>
+
+<pre caption="/etc/xinetd.d/tftp">
+service tftp
+{
+  disable = no
+  socket_type = dgram
+  protocol = udp
+  wait = yes
+  user = root
+  server = /usr/sbin/in.tftpd
+}
+</pre>
+
+<p>
+編輯 <path>/etc/xinetd.conf</path> 然後使用 <c>#</c> 將 
+<c>only_from = localhost</c> 註解使起來。最後，啟動 xinetd。
 </p>
 
 <pre caption="啟動 xinetd">
@@ -236,9 +271,10 @@ shared-network WORKSTATIONS {
 </pre>
 
 <p>
-如果您的工作站支援 PXE, 您應該按照以上的 <e>host ws001</e> 的方式
-將每個都編寫進去 (別忘記拿掉註解). 記得不要分配動態型的 IP 給它們,
-這是為了防止 IP 重複.
+如果您的工作站支援 PXE，您應該按照以上的 <e>host ws001</e> 的方式
+將每個都編寫進去 (別忘記拿掉註解)。記得不要分配動態型的 IP 給它們，
+這是為了防止 IP 重複。請注意，如果你複製以上的範例，記得將任何 "//" 的
+註解方式更改為 "##"，不然 dhcp 將無法啟用。
 </p>
 
 <p>
@@ -272,6 +308,22 @@ DHCPD 需要啟動核心(kernel) 內的 CONFIG_PACKET 和 CONFIG_FILTER.
 和 <path>/opt/ltsp/i386/etc/lts.conf</path> 內的詳細說明
 </p>
 
+<p>
+在你開始前我們有幾建議，你將需要先 
+<path>/opt/ltsp/i386/etc/lts.conf.example</path> 複製到 
+<path>/opt/ltsp/i386/etc/lts.conf</path> 然後從那邊開始編輯。或許你也需要將
+<c>SCREEN_01</c> 的選項設定為 <c>SCREEN_01 = startx</c>。要在遠端的用戶端使用
+USB 華數，請加入類似以下的模組：
+</p>
+
+<pre caption="/opt/ltsp/i386/etc/lts.conf">
+ MODULE_01          = usb-uhci
+ MODULE_02          = mousedev
+ MODULE_03          = usbmouse
+ X_MOUSE_PROTOCOL   = "IMPS/2"
+ X_MOUSE_DEVICE     = "/dev/input/mice"
+</pre>
+
 </body>
 </section>
 
@@ -293,6 +345,18 @@ DHCPD 需要啟動核心(kernel) 內的 CONFIG_PACKET 和 CONFIG_FILTER.
 
 <p>
 現在請設定您所選擇的顯示管理員:
+</p>
+
+<p>
+首先修改你的 <path>Xaccess</path> 檔案，然後按照以下註解：
+</p>
+
+<pre caption="Xaccess">
+#*                   #any host can get a login window
+</pre>
+
+<p>
+現在設定你想要使用的顯示管理員：
 </p>
 
 <p>
@@ -324,6 +388,11 @@ DHCPD 需要啟動核心(kernel) 內的 CONFIG_PACKET 和 CONFIG_FILTER.
 <warn>
 目前的 XDM 和 GDM 會有問題. 作者使用 KDM 來取代.
 </warn>
+
+<p>
+請注意，如果你的顯示管理員已經執行了，使用 CTRL-ALT-BACKSPACE 不會重新啟動
+顯示管理員。
+</p>
 
 </body>
 </section>
@@ -419,7 +488,18 @@ Troubleshooting 的部份.</li>
 <path>lts.conf</path>, 編輯 <path>/etc/X11/fs/config</path> 將 
 <c>no-listen: tcp</c> 註解起來, 在 <path>/etc/conf.d/xfs</path>
 將 <c>XFS_PORT="-1"</c> 更換為 <c>XFS_PORT="7100"</c>
-然後啟動 xfs: <c>/etc/init.d/xfs start</c>.
+然後啟動 xfs: <c>/etc/init.d/xfs start</c>。然後請確定 
+<path>/etc/X11/XF86Config</path> （或是 <path>/etc/X11/xorg.conf</path>）
+內的 Files 部份包含著 <c>FontPath "unix/:7100"</c>
+</p>
+
+<p>
+<b>Q:</b> 我如何在我的工作站使用音效卡？
+</p>
+
+<p>
+<b>A:</b> Gentoo 有提供 ltsp-sound 的套間，關於更多步驟請參考裡面的
+<path>README</path> 檔。
 </p>
 
 <p>
