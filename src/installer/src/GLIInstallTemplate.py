@@ -1,4 +1,4 @@
-import os
+import os, sys
 
 class GLIInstallTemplate
 
@@ -26,11 +26,24 @@ class GLIInstallTemplate
 				else:
 					raise "InstallTemplateError: Install step dependency not met!"
 
-	def _enter_chroot():
-		os.chroot("/mnt/gentoo")
+	def _exec_in_chroot(self, command):
+		"Runs a command in the chroot environment."
 
-	def _exit_chroot():
-		os.chroot("../..")
+		# Chroot needs to be in a child process
+		pid = fork()
+
+		# If you are the child process
+		if pid == 0:
+
+			# Chroot to /mnt/gentoo and run the command, then exit
+			os.chroot("/mnt/gentoo")
+			os.system(command)
+			sys.exit()
+
+		# If you are the parent process, just wait for the child
+		# Kids can be so slow sometimes... 
+		else:
+			os.wait()
 
 	def setup_network_pre(self, install_profile, client_configuration):
 		"Sets up the network on the live CD environment"
