@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.3 $"
+__revision__ = "$Revision: 1.4 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -283,7 +283,7 @@ def get_recent_releases(pkg, db, max=config.MAX_RECENT_RELEASES):
     
 def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
     """write out ebuild info to RSS file (fp)"""
-    fp.write("""<?xml version="1.0" encoding="utf-8"?>
+    fp.write("""<?xml version="1.0" encoding="iso-8859-1"?>
         <rss version="0.92">
         <channel>
         <title>Fresh ebuilds %s</title>

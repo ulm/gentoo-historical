@@ -9,7 +9,7 @@ import gentoo
 import ebuilddb
 from MySQLdb import escape_string
 
-sys.stdout.write('Content-type: text/html; charset=UTF-8\n\n')
+sys.stdout.write('Content-type: text/html; charset=iso-8859-1\n\n')
 
 def query_to_dict(q):
     pkginfo = {}
