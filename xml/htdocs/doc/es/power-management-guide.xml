@@ -1,0 +1,1111 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.1 2004/11/11 11:43:31 chiguire Exp $ -->
+<guide link="power-management-guide.xml">
+<title>Power Management Guide</title>
+
+<author title="Author">
+  <mail link="fragfred@gmx.de">Dennis Nienh&#252;ser</mail>
+</author>
+
+<abstract>
+Power Management is the key to extend battery run time on mobile systems like
+laptops. This guide assists you setting it up on your laptop.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<license/>
+
+<version>1.17</version>
+<date>October 10, 2004</date>
+
+<chapter>
+<title>Introduction</title>
+
+<section>
+<title>Why Power Management?</title>
+
+<body>
+
+<p>
+Capacity and lifetime of laptop batteries has improved much in the last years.
+Nevertheless modern processors consume much more energy than older ones and
+each laptop generation introduces more devices hungry for energy. That's why
+Power Management is more important than ever. Increasing battery run time
+doesn't necessarily mean buying another battery. Much can be achieved applying
+intelligent Power Management policies.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>A quick overview</title>
+<body>
+
+<p>
+Please notice that this guide describes Power Management for <e>laptops</e>.
+While some sections might also suite for <e>servers</e>, others do not and may
+even cause harm. Please do not apply anything from this guide to a server
+unless you really know what you are doing.
+</p>
+
+<p>
+As this guide has become rather long, here's a short overview helping you to
+find your way through it.
+</p>
+
+<p>
+The <e>Prerequisites</e> chapter talks about some requirements that should be
+met before any of the following device individual sections will work. This
+includes BIOS settings, kernel configuration and some simplifications in user
+land. The following three chapters focus on devices that typically consume most
+energy - processor, display and hard drive. Each can be configured seperately.
+<e>CPU Power Management</e> shows how to adjust the processor's frequency to
+save a maximum of energy whithout losing too much performance. A few different
+tricks prevent your hard drive from working unnecessarily often in <e>Disk Power
+Management</e> (decreasing noise level as a nice side effect). Some notes on
+Wireless LAN and USB finish the device section in <e>Power Management for other
+devices</e> while another chapter is dedicated to the (rather experimental)
+<e>sleep states</e>. Last not least <e>Troubleshooting</e> lists common
+pitfalls.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Power Budget for each component</title>
+<body>
+
+<figure link="/images/energy-budget.png" short="Which component consumes how
+much energy?" caption="Power budget for each component"/>
+
+<p>
+Nearly every component can operate in different states - off, sleep, idle,
+active to name a few - consuming a different amount of energy. Major parts are
+consumed by the LCD display, CPU, chipset and hard drives. Often one is able to
+activate OS-independent Power Management in the BIOS, but an intelligent setup
+in the operating system adapting to different situations can achieve much more.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Prerequisites</title>
+<section>
+<title>What has to be done first</title>
+<body>
+
+<p>
+Before going into the details on making individual devices Power Management
+aware, make sure certain requirements are met. After controlling the BIOS
+settings, some kernel options want to be enabled - these are in short ACPI,
+sleep states and CPU frequency scaling. As power saving most of the time comes
+along with performance loss or increased latency, it should only be enabled
+when running on batteries. That's where a new runlevel <e>battery</e> comes in
+handy.
+</p>
+
+</body>
+</section>
+<section>
+<title>The BIOS part</title>
+<body>
+
+<p>
+First have a look into your BIOS Power Management settings. The best way is to
+combine BIOS and operating system policies, but for the moment it's better to
+disable most of the BIOS part. This makes sure it doesn't interfere with your
+policies. Don't forget to re-check BIOS settings after you configured
+everything else.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuring the kernel</title>
+<body>
+
+<p>
+ACPI (Advanced Configuration and Power Interface) support in the kernel is
+still work in progress. Using a recent kernel will make sure you'll get the
+most out of it.
+</p>
+
+<p>
+In kernel config, activate at least these options:
+</p>
+
+<pre caption="Minimum kernel setup for Power Management (Kernel 2.6)">
+Power Management Options ---&gt;
+  [*] Power Management Support
+  [ ] Software Suspend
+  [ ] Suspend-to-Disk Support
+
+  ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
+    [*] ACPI Support
+    [ ]   Sleep States
+    &lt;M&gt;   AC Adapter
+    &lt;M&gt;   Battery
+    &lt;M&gt;   Button
+    &lt;M&gt;   Fan
+    &lt;M&gt;   Processor
+    &lt;M&gt;     Thermal Zone
+    &lt; &gt;   ASUS/Medion Laptop Extras
+    &lt; &gt;   Toshiba Laptop Extras
+    [ ]   Debug Statements
+    
+  CPU Frequency Scaling ---&gt;
+    [*] CPU Frequency scaling
+          Default CPUFreq governor (userspace)
+    &lt;*&gt;   'performance' governor
+    &lt;*&gt;   'powersave' governor
+    &lt;*&gt;   CPU frequency table helpers
+    &lt;M&gt; ACPI Processor P-States driver
+    &lt;*&gt; <i>CPUFreq driver for your processor</i>
+</pre>
+
+<p>
+Decide yourself whether you want to enable Software Suspend, Suspend-to-Disk
+and Sleep States (see below). If you own an ASUS, Medion or Toshiba laptop,
+enable the appropriate section.
+</p>
+
+<p>
+Compile your kernel, make sure the right modules get loaded at startup and boot
+into your new ACPI-enabled kernel. Next run <c>emerge sys-apps/acpid</c> to get
+the acpi daemon. This one informs you about events like switching from AC to
+battery or closing the lid. Make sure the module <e>button</e> is loaded if you
+didn't compile it into the kernel and start acpid with <c>/etc/init.d/acpid
+start</c>. Run <c>rc-update add acpid default</c> to load it on startup. You'll
+soon see how to use it.
+</p>
+
+<pre caption="Installing acpid">
+# <i>emerge sys-apps/acpid</i>
+# <i>modprobe button</i>
+# <i>/etc/init.d/acpid start</i>
+# <i>rc-update add acpid default</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Creating a "battery" runlevel</title>
+<body>
+
+<p>
+The default policy will be to enable Power Management only when needed -
+running on batteries. To make the switch between AC and battery convenient,
+create a runlevel <e>battery</e> that holds all the scripts starting and
+stopping Power Management.
+</p>
+
+<note>
+You can safely skip this section if you don't like the idea of having another
+runlevel. However, skipping this step will make the rest a bit trickier to set
+up. The next sections assume a runlevel <e>battery</e> exists.
+</note>
+
+<pre caption="Creating a battery runlevel">
+# <i>cd /etc/runlevels</i>
+# <i>cp -a default battery</i>
+</pre>
+
+<p>
+Finished. Your new runlevel <e>battery</e> contains everything like
+<e>default</e>, but there is no automatic switch between both yet. Time to
+change it.
+</p>
+
+</body>
+</section>
+<section>
+<title>Reacting on ACPI events</title>
+<body>
+
+<p>
+Typical ACPI events are closing the lid, changing the power source or pressing
+the sleep button. Every acpi event recognized by the kernel is catched by acpid
+which calls <path>/etc/acpi/default.sh</path>. Here is a basic modification
+supporting runlevel switching:
+</p>
+
+<pre caption="Event driven runlevel switching with acpid">
+#!/bin/sh
+
+set $*
+
+group=${1/\/*/}
+action=${1/*\//}
+
+<comment># runlevel to use in AC mode</comment>
+RLVL_AC="default"
+<comment># runlevel to use in battery mode</comment>
+RLVL_BATTERY="battery"
+
+<comment># file indicating the AC state. Verify the filename before using</comment>
+AC_STATE="/proc/acpi/ac_adapter/AC/state"
+<comment># this string means running on AC</comment>
+AC_ON="on-line"
+<comment># this string means running on batteries</comment>
+AC_OFF="off-line"
+
+function SwitchRunlevel() {
+  if [[ "$(grep ${AC_OFF} ${AC_STATE})" != "" &amp;&amp; "$(cat /var/lib/init.d/softlevel)" != "${RLVL_BATTERY}" ]]
+  then
+    logger "Switching to ${RLVL_BATTERY} runlevel"
+    /sbin/rc ${RLVL_BATTERY}
+  elif [[ "$(grep ${AC_ON} ${AC_STATE})" != "" &amp;&amp; "$(cat /var/lib/init.d/softlevel)" != "${RLVL_AC}" ]]
+  then
+    logger "Switching to ${RLVL_AC} runlevel"
+    /sbin/rc ${RLVL_AC}
+  fi
+}
+
+
+case "$group" in
+  battery)
+    case "$action" in
+      battery) 
+        SwitchRunlevel
+        ;;
+      *) 
+        logger "ACPI group battery / action $action is not defined"
+        ;;
+    esac
+    ;;
+
+  ac_adapter)
+    case "$action" in
+      ac_adapter)
+        SwitchRunlevel
+        ;;
+      *)
+        logger "ACPI group ac_adapter / action $action is not defined"
+        ;;
+    esac
+    ;;
+  *)
+    logger "ACPI group $group / action $action is not defined"
+    ;;
+esac
+</pre>
+
+<p>
+Give it a try: Plug AC in and out and watch syslog for the "Switching to AC
+mode" or "Switching to battery mode" messages. 
+</p>
+
+<p>
+Due to the nature of the event mechanism, your laptop will boot into runlevel
+<e>default</e> regardless of the AC/battery state. You can add another entry
+to the boot loader with <c>softlevel=boot</c>, but it's likely to forget
+choosing it. A better way is faking an ACPI event in the end of the boot
+process and let the <path>/etc/acpi/default.sh</path> script decide whether a
+runlevel change is necessary. Open <path>/etc/conf.d/local.start</path> in your
+favourite editor and add these lines:
+</p>
+
+<pre caption="Runlevel switch at boot time by editing local.start">
+<comment># Fake acpi event to switch runlevel if running on batteries</comment>
+/etc/acpi/default.sh "battery/battery"
+</pre>
+
+<p>
+Prepared like this you can activate Power Management policies for individual 
+devices.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>CPU Power Management</title>
+<section>
+<title>Setting the frequency manually</title>
+<body>
+
+<p>
+Decreasing CPU speed and voltage has two advantages: On the one hand less
+energy is consumed, on the other hand there is thermal improvement as your
+system doesn't get as hot as running on full speed. The main disadvantage is
+obviously the loss of performance. Decreasing processor speed is a trade off
+between performance loss and energy saving.
+</p>
+
+<note>
+Not every laptop supports frequency scaling. If unsure, have a look at the list
+of supported processors in the <e>Troubleshooting</e> section to verify your's 
+is supported.
+</note>
+
+<p>
+It's time to test whether CPU frequency changing works. To get comfortable with
+the interface to the kernel, first do some manual speed modifications. To set
+another CPU speed, use:
+</p>
+
+<pre caption="Manual CPU speed modifications">
+<comment>(Get current frequency)</comment>
+# <i>grep "cpu MHz" /proc/cpuinfo</i>
+
+<comment>(Lists supported frequencies. This might fail.)</comment>
+# <i>cd /sys/devices/system/cpu/cpu0/cpufreq/</i>
+# <i>cat scaling_available_frequencies</i>
+
+<comment>(Change frequency to 1 GHz (1000000 KHz)
+Replace with a frequency your laptop supports.)</comment>
+# <i>echo -n userspace > scaling_governor</i>
+# <i>echo -n 1000000 > scaling_setspeed</i>
+
+<comment>(Verify frequency was changed)</comment>
+# <i>grep "cpu MHz" /proc/cpuinfo</i>
+</pre>
+
+<p>
+If you are getting error messages, please refer to the <e>Troubleshooting</e>
+chapter in the end of this guide.
+</p>
+
+<p>
+You can also write to <path>scaling_max_freq</path> and
+<path>scaling_min_freq</path> to set boundaries the frequency should stay in
+between.
+</p>
+
+<note>
+Some kernel seem to be buggy about updating <path>/proc/cpuinfo</path>. If you
+don't see any change there, this doesn't neccessarily mean the CPU frequency
+wasn't changed. If this happens to you, run <c>emerge x86info</c>, update your
+kernel as asked and check the current frequency with <c>x86info -mhz</c>.
+</note>
+
+</body>
+</section>
+<section>
+<title>Automated frequency adaption</title>
+<body>
+
+<p>
+The above is quite nice, but not doable in daily life. Better let your system
+set the appropriate frequency automatically. A couple of user space programs
+like to do it for you. The following table gives a quick overview to help you
+decide on one of them.
+</p>
+
+<table>
+<tr>
+  <th>Name</th>
+  <th>Pro</th>
+  <th>Con</th>
+</tr>
+<tr>
+  <ti><uri link="http://mnm.uib.es/~gallir/cpudyn/">cpudyn</uri></ti>
+  <ti>Also supports disk standby</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreq</uri></ti>
+  <ti>Sophisticated setup possible</ti>
+  <ti>Complicated setup</ti>
+</tr>
+<tr>
+  <ti><uri link="http://www.goop.org/~jeremy/speedfreq/">speedfreq</uri></ti>
+  <ti>
+    Small yet powerful<br />
+    Useful client/server interface
+  </ti>
+  <ti>Kernel 2.6 series only</ti>
+</tr>
+<tr>
+  <ti><uri link="http://www.deater.net/john/powernowd.html">powernowd</uri></ti>
+  <ti>Supports SMP</ti>
+  <ti></ti>
+</tr>
+</table>
+
+<p>
+While adjusting the frequency to the current load looks simple on the first
+view, it's not such a trivial task. A bad algorithm can cause switching between
+two frequencies all the time or wasting energy when setting frequency to an
+unnecessary high level. 
+</p>
+
+<p>
+Which one to choose? If you have no idea about it, first try <c>speedfreq</c>:
+</p>
+
+<pre caption="Installing speedfreq">
+# <i>emerge speedfreq</i>
+# <i>rc-update add speedfreq battery</i>
+</pre>
+
+<p>
+<c>speedfreq</c> can be configured by editing
+<path>/etc/conf.d/speedfreq</path>. For example, if you like users to be able
+to change the policy, modify <c>SPEEDFREQ_OPTS=""</c> to
+<c>SPEEDFREQ_OPTS="-u"</c>. Having done your changes, start the daemon.
+</p>
+
+<pre caption="Starting speedfreq">
+# <i>/etc/init.d/speedfreq start</i>
+</pre>
+
+<p>
+Setting up cpufreq is a little bit more complicated.
+</p>
+
+<warn>
+Do not run more than one of the above programs at the same time. It may cause
+confusion like switching between two frequencies all the time. If you just
+installed speedfreq, skip cpufreq now.
+</warn>
+
+<pre caption="Installing cpufreqd">
+# <i>emerge cpufreqd</i>
+# <i>rc-update add cpufreqd battery</i>
+</pre>
+
+<p>
+<c>cpufreqd</c> comes with a default configuration in
+<path>/etc/cpufreqd.conf</path>.
+Change the config file to fit your needs. The following will save more energy
+than the default one - at the cost of less performance, of course.
+</p>
+
+<pre caption="A sample cpufreqd config file">
+[General]
+pidfile=/var/run/cpufreqd.pid
+poll_interval=2
+pm_type=acpi
+<comment># Uncomment the following line to enable ACPI workaround (see cpufreqd.conf(5))
+# acpi_workaround=1</comment>
+verbosity=4 <comment>#(if you want a minimal logging set to 5)</comment>
+
+<comment># Full performance</comment>
+[Profile]
+name=ac
+minfreq=600000
+maxfreq=1400000
+policy=performance
+
+<comment># Maximum power saving</comment>
+[Profile]
+name=battery
+minfreq=600000
+maxfreq=900000
+policy=powersave
+
+<comment># Constant frequency</comment>
+[Profile]
+name=dvd
+minfreq=900000
+maxfreq=1100000
+policy=powersave
+
+<comment># Full performance when running on AC</comment>
+[Rule]
+name=ac_on
+ac=on
+profile=ac
+
+<comment># Compiling should be fast if battery state is ok</comment>
+[Rule]
+name=compiling
+ac=off
+battery_interval=30-100
+programs=emerge,make,gcc,cpp
+cpu_interval=0-100
+profile=ac
+
+<comment># watching DVD's gets sluggish with slow CPU frequency
+# Can also be used for games etc.</comment>
+[Rule]
+name=dvd_watching
+ac=off
+battery_interval=15-100
+programs=xine,mplayer,avidemux,kaffeine,kmplayer
+cpu_interval=0-100
+profile=dvd
+
+<comment># If above doesn't apply, maximise power saving</comment>
+[Rule]
+name=battery_on
+ac=off
+battery_interval=0-100
+cpu_interval=0-100
+profile=battery
+</pre>
+
+<p>
+<c>cpudyn</c> and <c>powernowd</c> are installed in the same way as
+<c>speedfreq</c>.
+</p>
+
+<p>
+The last thing to check is that your new policies do a good job. An easy way to
+do so is monitoring the CPU speed while working with your laptop:
+</p>
+
+<pre caption="Monitoring CPU speed">
+# <i>watch -n 1 grep "cpu MHz" /proc/cpuinfo</i>
+</pre>
+
+<p>
+If <path>/proc/cpuinfo</path> doesn't get updated (see above), monitor the CPU
+frequency with:
+</p>
+
+<pre caption="Alternative CPU speed monitoring">
+# <i>watch -n 1 x86info -mhz</i>
+</pre>
+
+<p>
+Depending on your setup, CPU speed should increase on heavy load, decrease on
+no activity or just stay at the same level.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>LCD Power Management</title>
+<section>
+<title>Energy consumer no. 1</title>
+<body>
+
+<p>
+As you can see in  <uri link="#doc_chap1_fig1">figure 1.1</uri>, the LCD display
+consumes the biggest part of energy (might not be the case for non-mobile
+CPU's). Thus it's quite important not only to shut the display off when not
+needed, but also to reduce it's backlight if possible. Most laptops offer the
+possibility to control the backlight dimming. 
+</p>
+
+<p>
+First thing to check is the standby/suspend/off timings of the display. As this
+depends heavily on your windowmanager, I'll let you figure it out yourself.
+Just two common places: Blanking the terminal can be done with <c>setterm
+-blank &lt;number-of-minutesM&gt;</c>, <c>setterm -powersave on</c> and
+<c>setterm -powerdown &lt;number-of-minutesM&gt;</c>.
+For Xorg, modify <path>/etc/X11/xorg.conf</path> similar to this:
+</p>
+
+<pre caption="LCD suspend settings in Xorg and XFree86">
+Section "ServerLayout"
+  Identifier  [...]
+  [...]
+  Option  "BlankTime"  "5"  <comment># Blank the screen after 5 minutes (Fake)</comment>
+  Option  "StandbyTime"  "10"  <comment># Turn off screen after 10 minutes (DPMS)</comment>
+  Option  "SuspendTime"  "20"  <comment># Full suspend after 20 minutes</comment>
+  Option  "OffTime"  "30"  <comment># Turn off after half an hour</comment>
+  [...]
+EndSection
+
+[...]
+
+Section "Monitor"
+  Identifier  [...]
+  Option  "DPMS"  "true"
+  [...]
+EndSection
+</pre>
+
+<p>
+This is the same for XFree86 and <path>/etc/X11/XF86Config</path>.
+</p>
+
+<p>
+Probably more important is the backlight dimming. If you have access to the
+dimming settings via a tool, write a small script that dims the backlight in
+battery mode and place it in your <e>battery</e> runlevel.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Disk Power Management</title>
+<section>
+<title>Sleep when idle</title>
+<body>
+
+<p>
+Let's bring the hard disk to sleep as early as possible whenever it is not
+needed. I'll show you two possibilities to do it. First <c>cpudyn</c> supports
+Disk Power Management. Uncomment the lines in the "Disk Options" section in
+<path>/etc/conf.d/cpudyn</path>. To put your first disk to sleep after 60
+seconds of no activity, you would modify it like this:
+</p>
+
+<pre caption="Using cpudyn for disk standby">
+<comment>################################################
+# DISK OPTIONS
+# (disabled by default)
+################################################
+
+#
+# Timeout to put the disk in standby mode if there was no
+# io during that period (in seconds)
+#
+</comment>
+TIMEOUT=60
+<comment>
+#
+# Specified disks to spindown (comma separated devices)
+#
+</comment>
+DISKS=/dev/hda
+</pre>
+
+<p>
+The second possibility is using a small script and hdparm. Create
+<path>/etc/init.d/pm.hda</path> like this:
+</p>
+
+<pre caption="Using hdparm for disk standby">
+#!/sbin/runscript
+start() {
+  ebegin "Activating Power Management for Hard Drives"
+  hdparm -q -S12 /dev/hda
+  eend $?
+}
+
+stop () {
+  ebegin "Deactivating Power Management for Hard Drives"
+  hdparm -q -S253 /dev/hda
+  eend $?
+}
+</pre>
+
+<p>
+See <c>man hdparm</c> for the options. If your script is ready, add it to the
+battery runlevel.
+</p>
+
+<pre caption="Automate disk standby settings">
+# <i>/sbin/depscan.sh</i>
+# <i>rc-update add pm.hda battery</i>
+</pre>
+
+<impo>
+Be careful with sleep/spin down settings of your hard drive. Setting it to
+small values might wear out your drive and lose warranty.
+</impo>
+
+</body>
+</section>
+<section>
+<title>Increasing idle time - laptop-mode</title>
+<body>
+
+<p>
+Recent kernels (2.6.6 and greater, recent 2.4 ones and others with patches)
+include the so-called <e>laptop-mode</e>. When activated, dirty buffers are
+written to disk on read calls or after 10 minutes (instead of 30 seconds). This
+minimizes the time the hard disk needs to be spun up.
+</p>
+
+<p>
+<!-- FIXME: bug #45593 -->
+To start and stop laptop-mode, create a script /etc/init.d/laptop-mode. You can
+take the one included in
+<path>/usr/src/linux/Documentation/laptop-mode.txt</path>. Onces it's ready,
+make sure it gets called.
+</p>
+
+<pre caption="Automatic start of laptop-mode">
+# <i>rc-update add laptop-mode battery</i>
+</pre>
+
+<warn>
+Once again: Be careful with sleep/spin down settings of your hard drive.
+Setting it to small values might wear out your drive and lose warranty. Be sure
+to read the documentation in laptop-mode.txt. Make sure to stop laptop-mode
+before your battery runs out of power and data gets written to disk - otherwise
+you will at least lose the last 10 minutes of your work.
+</warn>
+
+</body>
+</section>
+<section>
+<title>Other tricks</title>
+<body>
+
+<p>
+Besides putting your disk to sleep state as early as possible, it is a good
+idea to minimize disk accesses. Have a look at processes that write to your
+disk frequently - the syslogd is a good candidate. You probably don't want to
+shut it down completely, but it's possible to modify the config file so that
+"unnecessary" things don't get logged and thus don't create disk traffic. Cups
+writes to disk periodically, so consider shutting it down and only enable it
+manually when needed.
+</p>
+
+<pre caption="Disabling cups in battery mode">
+# <i>rc-update del cupsd battery</i>
+</pre>
+
+<p>
+Another possibility is to deactivate swap in battery mode. Before writing a
+swapon/swapoff switcher, make sure there is enough RAM and swap isn't used
+heavily, otherwise you'll be in big problems.
+</p>
+
+<p>
+If you don't want to use laptop-mode, it's still possible to minimize disk
+access by mounting certain directories as <e>tmpfs</e> - write accesses are not
+stored on a disk, but in main memory and get lost with unmounting. Often it's
+useful to mount <path>/tmp</path> like this - you don't have to pay special
+attention as it gets cleared on every reboot regardless whether it was mounted
+on disk or in RAM. Just make sure you have enough RAM and no program (like a
+download client or compress utility) needs extraordinary much space in
+<path>/tmp</path>. To activate this, enable tmpfs support in your kernel and
+add a line to <path>/etc/fstab</path> like this:
+</p>
+
+<pre caption="Editing /etc/fstab to make /tmp even more volatile">
+none  /tmp  tmpfs  size=32m  0 0
+</pre>
+
+<warn>
+Pay attention to the size parameter and modify it for your system. If you're
+unsure, don't try this at all, it can become a perfomance bottleneck easily. In
+case you want to mount <path>/var/log</path> like this, make sure to merge the
+log files to disk before unmounting. They are essential. Don't attempt to mount
+/var/tmp like this. Portage uses it for compiling...
+</warn>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Power Management for other devices</title>
+<section>
+<title>Wireless Power Management</title>
+<body>
+
+<p>
+Wireless LAN cards consume quite a few energy. Put them in Power Management
+mode in analogy to the pm.hda script.
+</p>
+
+<pre caption="WLAN Power Management automated">
+#!/sbin/runscript
+start() {
+  ebegin "Activating Power Management for Wireless LAN"
+  iwconfig wlan0 power on power max period 3
+  eend $?
+}
+
+stop () {
+  ebegin "Deactivating Power Management for Wireless LAN"
+  iwconfig wlan0 power off
+  eend $?
+}
+</pre>
+
+<p>
+Starting this script will put wlan0 in Power Management mode, going to sleep at
+the latest three seconds after no traffic.
+Save it as <path>/etc/init.d/pm.wlan0</path> and add it to the battery runlevel
+like the disk script above. See <c>man iwconfig</c> for details and more
+options. If your driver and access point support changing the beacon time, this
+is a good starting point to save even more energy.
+</p>
+
+</body>
+</section>
+<section>
+<title>USB Power Management</title>
+<body>
+
+<p>
+There are two problems with USB devices regarding energy consumption: First,
+devices like USB mice, digital cameras or USB sticks consume energy while
+plugged in. You cannot avoid this (nevertheless remove them in case they're not
+needed). Second, when there are USB devices plugged in, the USB host controller
+periodically accesses the bus which in turn prevents the CPU from going into
+C3/4 sleep mode. The OS answer to this problem is the so called "USB selective
+suspend", which has not yet been implemented in the kernel. USB selective
+suspend only allows bus accesses in case the device is in use. The cruel
+workaround until it's implemented is as following: Compile USB support and
+devices as modules and remove them via a script while they are not in use (e.g.
+when closing the lid).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Sleep states: sleep, standby, suspend to disk</title>
+<section>
+<title>Overview</title>
+<body>
+
+<p>
+ACPI defines different sleep states. The more important ones are
+</p>
+
+<ul> 
+  <li>S1 aka Standby</li>
+  <li>S3 aka Suspend to RAM aka Sleep</li>
+  <li>S4 aka Suspend to Disk aka Hibernate</li>
+</ul>
+
+<p>
+They can be called whenever the system is not in use, but a shutdown is not
+wanted due to the long boot time.
+</p>
+
+</body>
+</section>
+<section>
+<title>Sleep, Standby &amp; Hibernate</title>
+<body>
+
+<p>
+The ACPI support for these sleep states is marked as experimental for good
+reason. APM sleep states seem to be more stable, however you can't use APM and
+ACPI together.
+</p>
+
+<warn>
+Altough sleep state support is improving much, it's still rather experimental.
+At last I got swsusp2 and suspend to RAM to work, but be warned: This will very
+likely not work but damage your data/system.
+</warn>
+
+<p>
+There are currently three implementations for S4. The original one is swsusp,
+then there is swsusp2 which has the nicest interface (including bootsplash
+support), but requires manual kernel patching. Last not least we have
+Suspend-to-Disk, a fork of swsusp.
+</p>
+
+<p>
+If this confused you, have a look at a <uri
+link="http://softwaresuspend.berlios.de/features.html#compare">feature
+comparison</uri>. If you still are confused and don't know which one to choose,
+first give swsusp2 a try, it looks most promising.
+</p>
+
+<p>
+The kernel part for this is as following:
+</p>
+
+<pre caption="Kernel configuration for the various suspend types">
+Power Management Options ---&gt;
+
+  <comment>(sleep and standby)</comment>
+  ACPI( Advanced Configuration and Power Interface ) Support --->
+    [*] ACPI Support
+       [*]   Sleep States
+
+  <comment>(hibernate with swsusp)</comment>
+  [*] Software Suspend (EXPERIMENTAL)
+  
+  <comment>(hibernate with swsusp2)</comment>
+  Software Suspend 2
+    --- Image Storage (you need at least one writer)
+    [*]    Swap Writer
+    --- Page Transformers
+    [*]    LZF image compression
+    (/dev/"your-swap-here")    Default resume device name
+
+  <comment>(hibernate with Suspend-to-Disk)</comment>
+  [*] Suspend-to-Disk Suport
+  (/dev/"your-swap-here") Default resume partition
+</pre>
+
+<p>
+Compile your kernel with the appropriate options enabled and issue <c>cat
+/proc/acpi/sleep</c> for 2.4 series respectively <c>cat /sys/power/state</c>
+for 2.6 to find out what is supported. The latter gives me <c>standby mem
+disk</c>. For swsusp, the kernel parameter <c>resume=/dev/"your-swap-here"</c>
+has to be appended. If booting is not possible due to a broken image, use
+<c>noresume</c> for swsusp, <c>pmdisk=off</c> for Suspend-to-Disk and
+<c>noresume2</c> for swsusp2.
+</p>
+
+<p>
+To put your system in one of the sleep states, use
+</p>
+
+<pre caption="Activating sleep states">
+<comment>(kernel 2.4 series)</comment>
+# <i>echo 1 &gt; /proc/acpi/sleep</i>          <comment>(standby)</comment>
+# <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(sleep)</comment>
+
+<comment>(kernel 2.6 series)</comment>
+# <i>echo -n standby &gt; /sys/power/state</i> <comment>standby</comment>
+# <i>echo -n mem &gt; /sys/power/state</i>     <comment>sleep</comment>
+
+<comment>(swsusp)</comment>
+# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>hibernate</comment>
+
+<comment>(Suspend-to-Disk)</comment>
+# <i>echo -n disk &gt; /sys/power/state</i>    <comment>hibernate</comment>
+
+<comment>(swsusp2)</comment>
+# <i>echo &gt; /proc/swsusp/activate</i>
+</pre>
+
+<warn>
+Backup your data before doing this. Run <c>sync</c> before executing one of the
+commands to have cached data written to disk. First try it outside of X, then
+with X running, but not logged in.
+</warn>
+ 
+<p>
+If you experience kernel panics due to uhci or similar, try to compile USB
+support as module and unload the modules before sending your laptop to sleep
+mode.
+</p>
+
+<p>
+While the above should be sufficient to get swsusp and Suspend-to-Disk running
+(I didn't say working), swsusp2 needs special care. 
+The first thing to do is to patch the kernel with the patches provided at <uri
+link="http://softwaresuspend.berlios.de/">
+http://softwaresuspend.berlios.de/</uri>. Afterwards, install the hibernate 
+script from the same page.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Troubleshooting</title>
+<section>
+<title>If things go wrong...</title>
+<body>
+
+<p>
+<e>Q:</e> I'm trying to change the CPU frequency, but
+<path>/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor</path> does not
+exist.
+</p>
+
+<p>
+<e>A:</e> Make sure your processor supports CPU frequency scaling and you chose
+the right CPUFreq driver for your processor. Here is a list of processors that
+are supported by cpufreq (kernel 2.6.7): ARM Integrator, ARM-SA1100,
+ARM-SA1110, AMD Elan - SC400, SC410, AMD mobile K6-2+, AMD mobile K6-3+, AMD
+mobile Duron, AMD mobile Athlon, AMD Opteron, AMD Athlon 64, Cyrix Media GXm,
+Intel mobile PIII and Intel mobile PIII-M on certain chipsets, Intel Pentium 4,
+Intel Xeon, Intel Pentium M (Centrino), National Semiconductors Geode GX,
+Transmeta Crusoe, VIA Cyrix 3 / C3, UltraSPARC-III, SuperH SH-3, SH-4, several
+"PowerBook" and "iBook2" and various processors on some ACPI 2.0-compatible
+systems (only if "ACPI Processor Performance States" are available to the
+ACPI/BIOS interface).
+</p>
+
+<p>
+<e>Q:</e> My laptop supports frequency scaling, but
+<path>/sys/devices/system/cpu/cpu0/cpufreq/</path> is empty.
+</p>
+
+<p>
+<e>A:</e> Look for ACPI related error messages with <c>dmesg | grep ACPI</c>.
+Try to update the BIOS, especially if a broken DSDT is reported. You can also
+try to fix it yourself (which is beyond the scope of this guide).
+</p>
+
+<p>
+<e>Q:</e> My laptop supports frequency scaling, but according to /proc/cpuinfo
+the speed never changes.
+</p>
+
+<p>
+<e>A:</e> This seems to be a kernel bug. Run <c>emerge x86info</c>, update your
+kernel as asked and check the current frequency with <c>x86info -mhz</c>.
+</p>
+
+<p>
+<e>Q:</e> I can change the CPU frequency, but the range is not as wide as in
+another OS.
+</p>
+
+<p>
+<e>A:</e> You can combine frequency scaling with ACPI throttling to get a lower
+minimum frequency. Notice that throttling doesn't save much energy and is
+mainly used for thermal management (keeping your laptop cool and quiet). You
+can read the current throttling state with <c>cat
+/proc/acpi/processor/CPU/throttling</c> and change it with <c>echo -n "0:x" >
+/proc/acpi/processor/CPU/limit</c>, where x is one of the Tx states listed in
+<path>/proc/acpi/processor/CPU/throttling</path>.
+</p>
+
+<p>
+<e>Q:</e> Battery life time seems to be worse than before.
+</p>
+
+<p>
+<e>A:</e> Check your BIOS settings. Maybe you forgot to re-enable some of the
+settings.
+</p>
+
+<p>
+<e>Q:</e> My battery is charged, but KDE reports there would be 0% left and
+immediately shuts down.
+</p>
+
+<p>
+<e>A:</e> Check that battery support is compiled into your kernel. If you use
+it as a module, make sure the module is loaded.
+</p>
+
+<p>
+<e>Q:</e> I have a Dell Inspiron 51XX and I don't get any ACPI events.
+</p>
+
+<p>
+<e>A:</e> This seems to be a kernel bug. Read on <uri
+link="http://bugme.osdl.org/show_bug.cgi?id=1752">here</uri>.
+</p>
+
+<p>
+<e>Q:</e> I just bought a brand new battery, but it only lasts for some
+minutes! What am I doing wrong?
+</p>
+
+<p>
+<e>A:</e> First follow your manufacturer's advice on how to charge the battery
+correctly. 
+</p>
+
+<p>
+<e>Q:</e> The above didn't help. What should I do then?
+</p>
+
+<p>
+<e>A:</e> Some batteries sold as "new" are in fact old ones. Try the following:
+</p>
+
+<pre caption="Querying battery state">
+$ <i>grep capacity /proc/acpi/battery/BAT0/info</i>
+design capacity:     47520 mWh
+last full capacity:  41830 mWh
+</pre>
+
+<p>
+If the "last full capacity" differs significantly from the design capacity,
+your battery is probably broken. Try to claim your warranty.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
