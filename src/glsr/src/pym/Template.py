@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.8 2005/01/25 18:50:04 hadfield Exp $
+# $Id: Template.py,v 1.9 2005/01/25 21:25:38 hadfield Exp $
 #
 
 """The template handler module.
@@ -130,10 +130,12 @@ class Template:
         self._read()
 
         if terms is not None:
-            self._terms.update(terms)
+            for name, term in terms.iteritems():
+                self.param(name, term, "term")
 
         if loops is not None:
-            self._loops.update(loops)
+            for name, loop in loops.iteritems():
+                self.param(name, loop, "loop")
 
         full_file = string.join(self._contents);
 
@@ -151,6 +153,24 @@ class Template:
 
         # Build the output variable
         self._output = string.split(full_file, "\n")
+
+    def _add_tmpl_values(self, loop):
+        """Adds values to the loop to make loops easier to use.
+
+        Each loop automatically gets an '_is_odd', '_is_even', '_counter'
+        variable. If that variable is already set it will be overridden.
+        This only applies to multi-dimentional loops.
+        """
+
+        from types import DictType
+
+        for i in range(0, len(loop)):
+            if type(loop[i]) is DictType:
+                loop[i]['_counter'] = i
+                loop[i]['_is_odd'] = i % 2
+                loop[i]['_is_even'] = int(not i % 2)
+        
+        return loop
 
     def _evaluate_vars(self, content):
         """Evaluate all variable tags."""
@@ -392,7 +412,7 @@ class Template:
         """Add a new parameter, either a 'loop' or a 'term'."""
         
         if string.lower(param_type) in ("l", "loop"):
-            self._loops.update({key: value})
+            self._loops.update({key: self._add_tmpl_values(value)})
         
         elif string.lower(param_type) in ("t", "term"):
             self._terms.update({key: value})
