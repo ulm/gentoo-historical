@@ -1,0 +1,334 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/cluster/howto_openmosix.xml">
+  
+<title>openMosix</title>
+<author title="gentoo developer"><mail 
+link="tantive@gentoo.org">Michael Imhof</mail></author>
+
+<abstract>
+This HOWTO  will help you create an openMosix cluster using gentoo! 
+</abstract>
+
+<version>1.0</version>
+<date>06 Aug 2003</date>
+
+<chapter>
+<title>Introduction</title>
+
+<section>
+<title>About this HOWTO</title>
+<body>
+<p>
+This HOWTO  will help you create an openMosix cluster.  It will 
+be based around the Gentoo Linux distribution.  I intended to make this as user friendly as possible and cater to the Linux newbie, because I myself came into this project as a complete newbie.  While an experienced user could easily tie the multiple HOWTOs available on openMosix, diskless nodes and networking together; I had various difficulties that I hope I can alleviate through this HOWTO.  
+</p>
+</body>
+</section>
+
+<section>
+<title>About openMosix</title>
+<body>
+<p>
+OpenMosix is a patch to the Linux kernel that allows multiple hosts to act as a single system image (SSI).  This results in multiple hosts <e>appearing</e> as one large multiprocessor host.  At the time of this writing I am using the latest release of the openMosix kernel patch, version 2.4.20, and openMosix user tools version 0.3.4.  There is a wide variety of information about openMosix at <uri>http://openmosix.sourceforge.net</uri>. I have had difficulties tying to cluster different versions of patched kernel sources, and have found that the patches are not backwards compatible.  OpenMosix migrates heavy weight processes explicitly when executing a.out or ELF binaries or when a heavy weight process forks.  It will not migrate light weight processes such as p-threads, or heavyweight processes that use shared memory. 
+</p>
+<p>
+For more information about openMosix visit their home page.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>About the cluster</title>
+<body>
+<p>
+Our cluster will be comprised of individual computers (nodes) sharing 
+computational resources in an effort to increase the computational power of all nodes.  Not all nodes need to be of the same architecture but that makes the task of clustering them much easier.
+</p>
+</body>
+</section>
+
+<section>
+<title>Before you start</title>
+<body>
+<p>
+You should have Gentoo installed on the computers you wish to bring 
+into your cluster. Additionally you should have the openMosix kernel source which has been conveniently patched by Gentoo.  
+</p>
+<p>
+To get this source simply type:
+</p>
+<pre caption="acquiring patched kernel source">
+# <c>emerge openmosix-sources</c>
+</pre>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Configuring the kernel</title>
+
+<section>
+<title>About kernels</title>
+<body>
+<p>
+The kernel is the software that sits between your hardware and all other software you have loaded on your machine, essentially the heart of a kernel based operating system.  When your computer is started, the BIOS executes the instructions found at the reserved boot space of your hard drive.  These instructions are typically a boot loader that loads your kernel.  After your kernel has been loaded all processes are handled by the kernel.  
+</p>
+<p>
+For more information on kernels and kernel configuration you might want to check out this helpful HOWTO, <uri>http://www.tldp.org/HOWTO/Kernel-HOWTO.html</uri>.
+</p>
+</body>
+</section>
+
+<section>
+<title>Configuring the kernel</title>
+<body>
+<p>
+The kernel can be as large and as customized as you would like but there are a few required kernel options you need to check off.
+<impo>It is extremely important to link /usr/src/linux to the openmosix-sources as shown above.</impo>
+</p>
+<pre caption="setting /usr/src/linux to openmosix">
+# <c>cd /usr/src</c>
+# <c>rm linux</c>
+# <c>ln -s linux-2.4.20-openmosix-r6 linux</c>
+</pre>
+<p>
+Then go into your kernel configuration by typing:
+</p>
+<pre caption="editing the kernel configuration">
+# <c>cd /usr/src/linux</c>
+# <c>make menuconfig</c>
+</pre>
+<p>
+You should get a grey and blue GUI that offers a safe alternative to manually editing the <path>/usr/src/linux/.config</path> file.  If your kernel is currently functioning well you might want to save the current configuration file by typing:
+</p>
+<pre caption="backing up the kernel configuration">
+# <c>cp .config .config_working</c>
+</pre>
+<p>
+The topmost menu item should say <c>openMosix ---</c>.  If it doesn't you need to emerge the kernel source with the openMosix patch (<uri link="#doc_chap1_pre1">code listing 1.1</uri>). Go into the following sub-menus and make sure the following items are checked as built-in <e>NOT</e> as modular.
+</p>
+<ul>
+<li>openMosix --- </li>
+<ul>
+	<li>openMosix process migration support</li>
+	<li>openMosix File-System</li>
+</ul>
+<li>Networking options ---</li>
+<ul>
+	<li>Packet Socket</li>
+	<li>Socket Filtering</li>
+	<li>TCP/IP networking</li>
+	<ul><li>IP: multicasting</li></ul>
+</ul>
+<li>File systems ---</li>
+<ul>
+	<li>/proc file system support</li>
+	<li>/dev file system support</li>
+	<ul><li>Automatically mount at boot</li></ul>
+</ul>
+</ul>
+<p>
+<note>
+the /dev file system support is highly recommend by Gentoo and myself but is not essential to the master's kernel
+</note>
+<note>
+these kernel configuration options should only be appended to your system specific configuration options and are not meant to completely replace those options
+</note>
+After you have re-configured the master's kernel you will want to rebuild it by typing:
+</p>
+<pre caption="recompiling the kernel and modules">
+# <c>make dep </c>
+# <c>make clean bzImage modules modules_install</c>
+# <c>cp arch/i386/boot/bzImage /boot/bzImage-openmosix</c>
+</pre>
+<p>
+If you are using lilo, then edit lilo.conf and add an entry for that new kernel.
+If you are using grub, then edit grub.conf and add an entry for that new kernel.
+In both cases make them the default on your system.
+Now that the new bzImage has been copied into your boot directory all you will have to do is reboot the system in order to load these new options.
+</p>
+</body>
+</section>
+
+<section>
+<title>Missing Options</title>
+<body>
+<p>
+If you have missing options in your kernel configuration make sure you check:
+</p>
+<ul>
+<li>Code maturity level options ---</li>
+<ul><li>Prompt for development and/or incomplete code/drivers</li></ul>
+</ul>
+</body>
+</section>
+</chapter>
+
+
+
+<chapter>
+<title>Configuring of the openMosix nodes</title>
+
+<section>
+<title>Installing openMosix user tools</title>
+<body>
+<p>
+In order for the cluster to migrate processes, a few user-land binaries need to be installed.  Additionally, an openMosix server needs to be started in order for a node to join a cluster and fully utilize the openMosix kernel.  To get the aforementioned binaries and files type:
+</p>
+<pre caption="installing openMosix userland utilities">
+# <c>emerge openmosix-user</c>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Configuring openMosix node</title>
+<body>
+<p>
+Editing or creating of an /etc/openmosix.map is no longer nedded.
+The newer versions of the userland utilities have a autodiscovery daemon availabe, that automatically detects all nodes in your network.
+</p>
+<p>
+Create a directory /mfs on every node and mount it if you want to use the openMosix filesystem (highly recommended) that allows you to access all your nodes.
+</p>
+<pre caption="mkdir /mfs">
+# <c>mkdir /mfs</c>
+</pre>
+<pre caption="sample entry in /etc/fstab">
+# /etc/fstab: static file system information.
+# $Header: /home/cvsroot/gentoo-src/rc-scripts/etc/fstab,v 1.10 
+2002/11/18 19:39:22 azarah Exp $
+#
+# noatime turns of atimes for increased performance (atimes normally 
+aren't
+# needed; notail increases performance of ReiserFS (at the expense of 
+storage
+# efficiency).  It's safe to drop the noatime options if you want and to
+# switch between notail and tail freely.
+
+# NOTE: If your BOOT partition is ReiserFS, add the notail option to 
+opts.
+/dev/hda2               /boot           ext3            noauto,noatime         
+1 1
+/dev/hda4               /               ext3            noatime                
+0 0
+/dev/hda3               none            swap            sw                     
+0 0
+/dev/cdroms/cdrom0      /mnt/cdrom      iso9660         noauto,ro              
+0 0
+proc                    /proc           proc            defaults               
+0 0
+
+# glibc 2.2 and above expects tmpfs to be mounted at /dev/shm for
+# POSIX shared memory (shm_open, shm_unlink). Adding the following
+# line to /etc/fstab should take care of this:
+# (tmpfs is a dynamically expandable/shrinkable ramdisk, and will use 
+almost no
+#  memory if not populated with files)
+
+tmpfs                   /dev/shm        tmpfs           defaults               
+0 0
+
+mymfs                   /mfs            mfs             noauto,dfsa=1          
+0 0
+</pre>
+<p>
+<note>Not all nodes need to be up and running for openMosix to function correctly.</note>
+</p>
+</body>
+</section>
+
+<section>
+<title>Starting openMosix</title>
+<body>
+<p>
+Starting openMosix is really simple. The following command will enable openMosix functionality in your kernel and start the autodiscovery daemon, that keeps track of all availabe nodes.
+</p>
+<pre caption="starting openMosix!">
+# <c>/etc/init.d/openmosix start</c>
+</pre>
+</body>
+</section>
+</chapter>
+
+
+
+<chapter>
+<title>openMosix userland utilities</title>
+
+<section>
+<title>Command line utilities</title>
+<body>
+<p>
+openMosix-user installs several usefull tools on your system. To name a few:
+</p>
+<ul>
+<li>mosmon - openMosix monitor. Allows you to see the state of all your nodes. Including cpu utilization, memory installed, memory used, etc...</li>
+<li>mtop - Enhanced version of top that shows you on which node a proccess is actually running.</li>
+<li>mps - Enhanced version of ps. Shows nodenumber, too.</li>
+<li>mosctl whois - This is very usefull as mosmon and the other tools only tell you the node-number. With mosctl whois nodenumber you can figure out the ip or hostname of that node.</li>
+</ul>
+<p>
+The openmosix stress test can be used to test if everything on your cluster works as it should and how it behaves under load.
+To install it just do an
+</p>
+<pre caption="emerge openmosixtest">
+# <c>emerge openmosixtest</c>
+</pre>
+<p>
+the ebuild should tell how to run the test.
+</p>
+</body>
+</section>
+
+<section>
+<title>Graphical utilities</title>
+<body>
+<p>
+To get a graphical overview over your cluster and see proccesses being migrated you can use openmosixview.
+</p>
+<pre caption="emerge openmosixview">
+# <c>emerge openmosixview</c>
+</pre>
+<p>
+To run this wonderfull application just type
+</p>
+<pre caption="openmosixview">
+# <c>openmosixview</c>
+</pre>
+</body>
+</section>
+
+</chapter>
+
+
+
+<chapter>
+<title>Links</title>
+
+<section>
+<title>openMosix</title>
+
+<body>
+<ul>
+<li><uri>http://openmosix.sf.net</uri></li>
+<li><uri>http://www.openmosixview.com</uri></li>
+<li><uri></uri></li>
+<li><uri></uri></li>
+<li><uri></uri></li>
+<li><uri></uri></li>
+</ul>
+</body>
+</section>
+
+
+
+</chapter>
+
+
+
+</guide>
