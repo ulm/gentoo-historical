@@ -304,10 +304,10 @@
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='contract'">
-            <a class="highlight" href="/main/en/contract.xml">Social Contract</a> |
+            <a class="highlight" href="/main/en/philosophy.xml">Philosophy</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/contract.xml">Social Contract</a> |
+            <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a> |
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
@@ -381,7 +381,7 @@
                     <br/>
                     <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs/Translations</a>
                     <br/>
-                    <a class="altlink" href="/main/en/contract.xml">Social Contract</a>
+                    <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
                     <br/><br/>
                     Installation:
                     <br/>
