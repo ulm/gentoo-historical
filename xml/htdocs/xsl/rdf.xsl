@@ -2,23 +2,22 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:admin="http://webns.net/mvcb/"
-	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:content="http://purl.org/rss/1.0/modules/content/">
-<xsl:output encoding="UTF-8" method="xml" indent="yes" />
+	xmlns:dc="http://purl.org/dc/elements/1.1/">
+<xsl:output encoding="UTF-8" method="xml" indent="yes" cdata-section-elements="description" />
 
 <xsl:template match="/rdffeed">
 
 <rdf:RDF>
 	<channel>
 		<xsl:attribute name="rdf:about"><xsl:value-of select="link" /></xsl:attribute>
-		<title><xsl:value-of select="title" /></title> 
+		<title><xsl:value-of select="title" /></title>
 		<link><xsl:value-of select="link" /></link>
 		<description><xsl:value-of select="description" /></description>
 		<dc:creator>rajiv@gentoo.org</dc:creator>
 		<admin:errorReportsTo rdf:resource="mailto:rajiv@gentoo.org" />
 		<items>
 			<rdf:Seq>
-				<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;10]/text()">
+				<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;11]/text()">
 					<xsl:sort select="position()" order="ascending" /> 
 					<rdf:li>
 						<xsl:attribute name="rdf:resource">http://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
@@ -28,7 +27,7 @@
 		</items>
 	</channel>
 
-	<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;10]/text()">
+	<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;11]/text()">
 	<item>
 		<xsl:attribute name="rdf:about">http://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
 		<title><xsl:value-of select="document(.)/news/title" /></title> 
@@ -36,7 +35,7 @@
 		<dc:subject><xsl:value-of select="document(.)/news/@category" /></dc:subject>
 		<dc:creator><xsl:value-of select="document(.)/news/poster" /></dc:creator>
 		<dc:date><xsl:value-of select="document(.)/news/date" /></dc:date>
-		<content:encoded><xsl:value-of select="document(.)/news/body" /></content:encoded>
+		<description><xsl:value-of select="document(.)/news/body" /></description>
 	</item>
 	</xsl:for-each>
 </rdf:RDF>
