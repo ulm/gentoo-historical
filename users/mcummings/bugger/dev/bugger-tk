@@ -3,7 +3,7 @@ use Tk;
 use Tk::widgets
   qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog NoteBook);
 
-#use bugger;
+use Gentoo::Bugger;
 #use diagnostics;
 my $selfname = $0;
 
@@ -11,7 +11,7 @@ package main;
 use subs qw/splash search initconfig launch_win init_main_win/;
 use vars qw/$BW $mw $mw2 $hlist/;
 
-if ( $selfname =~ m/bugger-tk/ ) { use bugger; main::start() }
+if ( $selfname =~ m/bugger-tk/ ) { start() }
 my %mw2;
 sub start {
 
@@ -54,12 +54,15 @@ sub init_main_win {
         -ConfigFile        => "$configfile",
         -IncludeRelative   => 1,
     );
-    my %config = $conf->getall;
-    our $login    = $config{'login'};
-    our $password = $config{'password'};
-    our $server   = $config{'server'};
-    our $downdir  = $config{'downdir'} || "/tmp";
-    our $runmode  = $config{'mode'};
+    our %config = $conf->getall;
+    our $bugzie = Gentoo::Bugger->new(
+	login => $config{'login'},
+	password => $config{'password'},
+	server => $config{'server'},
+	downdir => $config{'downdir'},
+	runmode => $config{'runmode'},
+    );
+    #$bugzie->connect_mech();
 
     our $frame = new MainWindow;
     my $tb2 = $frame->ToolBar;
@@ -149,7 +152,7 @@ sub search {
 
     my ( $assignment, $search, $tkref ) = @_;
 
-    (%results) = bugger::list_bugs( $search, $assignment );
+    (%results) = $bugzie->list_bugs( $search, $assignment );
     my $bug_no = scalar( keys %results );
 
     if ( $bug_no < 1 ) {
@@ -255,7 +258,7 @@ sub launch_win {
     }
     else {
 
-        my %bugtext = bugger::show_bug($bugID);
+        my %bugtext = bugzie->show_bug($bugID);
         #our $mw2     = new MainWindow;
         my $mw2     = $querytab->add($bugID,-label=>"Bug $bugID",);
         my $tb      = $mw2->ToolBar(
@@ -305,7 +308,7 @@ sub launch_win {
         $comment->pack(qw/-expand yes -fill both/);
         $comment->mark(qw/set insert 0.0/);
         my @menubuttons;
-			my $bugz = bugger::connect_bugz($bugID);
+			my $bugz = bugzie->connect_bugz($bugID);
 #        #foreach (qw/update close/) {
 #            my $pos        = ucfirst;
             my $commentbutton =
@@ -416,7 +419,7 @@ sub initconfig {
     my $ConnectInfo =
       $CONF_WIN->Labelframe( -text => 'Connection Information' );
     my $Login;
-    my $logid = $login || "";
+    my $logid = $config{'login'} || "";
     $Login = $ConnectInfo->LabEntry(
         -label        => "Login ID: ",
         -validate     => 'key',
@@ -425,7 +428,7 @@ sub initconfig {
     );
     $Login->pack(qw/-fill x -expand 1/);
 
-    my $passphrase = $password || "";
+    my $passphrase = $config{'password'} || "";
     my $pass = $ConnectInfo->LabEntry(
         -label           => "Password: ",
         -validate        => 'key',
@@ -439,7 +442,7 @@ sub initconfig {
     );
     $pass->pack(qw/-fill x -expand 1/);
 
-    my $servername = $server || "";
+    my $servername = $config{'server'} || "";
     my $serv = $ConnectInfo->LabEntry(
         -label           => "Bugzilla Server",
         -validate        => 'key',
@@ -460,7 +463,7 @@ sub initconfig {
             return length($proposed) >= 0 ? 1 : 0;
         },
         -labelPack    => [qw/-side left -anchor w/],
-        -textvariable => \$downdir
+        -textvariable => \$config{'downdir'}
     );
     my $browsebut = $ConnectInfo->Button(
         -text    => "Browse...",
@@ -471,7 +474,7 @@ sub initconfig {
 
 #my $seperator = $ConnectInfo->Label()->pack(qw/-side left -anchor w -expand 1/);
 
-    my $modevar = $runmode || "tkmode";
+    my $modevar = $config{'runmode'} || "tkmode";
     my $tkmode = $ConnectInfo->Radiobutton(
         -text     => 'Run TK by default',
         -variable => \$modevar,

@@ -120,7 +120,7 @@ sub show_bug {
         form_number => 2,
         fields      => { id => "$BUG", }
     );
-    my $ccline = $mech
+    my $ccline = $mech;
     $mech->follow_link( text_regex => qr/format for printing/i );
 
     my $TextBody = $mech->content();

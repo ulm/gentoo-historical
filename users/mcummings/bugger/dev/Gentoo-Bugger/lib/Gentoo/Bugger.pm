@@ -43,29 +43,204 @@ sub new {
 	$self->{onwarn} = \&Gentoo::Bugger::_warn;
 	$self->{BUGID} = undef;
 	$self->{SEARCH} = undef;
-	$self->{pages} = 0;
 croak("'server', 'login', and 'password' are all required arguments.") if ( (not $args{server}) or (not $args{login}) or (not $args{password}) ); 
 
 	$self->{server} = $args{server};
 	$self->{login} = $args{login};
 	$self->{password} = $args{password};
+	$self->{downdir} = $args{downdir}||"/tmp";
+	$self->{runmode} = $args{runmode};
+
+
+	$self->{pagelevel} = 0;
+
+	$self->{mech} = WWW::Mechanize->new();
+    
 	bless ($self, $class);
+   	$self->connect_mech( delete $args{server}, delete $args{login}, delete $args{password});
 	return $self;
 }
 
 
 sub connect_mech {
     my $self = shift;
-    my $agent = WWW::Mechanize->new();
-    my $url = 'http://'.$self->{server}.'/query.cgi?GoAheadAndLogIn=1';
+    my $agent = $self->{mech};
+    my ($server,$login,$password) = @_;
+    my $url = 'http://'.$server.'/query.cgi?GoAheadAndLogIn=1';
     $agent->get( $url );
     $agent->submit_form(
         fields => {
-            Bugzilla_login    => $self->{login},
-            Bugzilla_password => $self->{password},
-        }
+            Bugzilla_login    => $login,
+            Bugzilla_password => $password,
+	    },
+        
     );
+    $self->{pagelevel} = 1;
     return ($agent);
+}
+
+sub list_bugs {
+	my $self = shift;
+
+
+    my %buglist;
+    my $bugcount = 0;
+    my $bugfor   = shift;
+    my $stype    = shift;
+    chomp($bugfor);
+
+    $self->{mech}->form_number(1);
+    $self->{mech}->field( 'email2', "" );
+
+    if ( $stype eq "cc" ) {
+        $self->{mech}->field( 'email1', $bugfor );
+        $self->{mech}->untick( 'emailassigned_to1', '1' );
+        $self->{mech}->tick( 'emailcc1', '1' );
+        $self->{mech}->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "assigned" ) {
+        $self->{mech}->field( 'email1', $bugfor );
+        $self->{mech}->tick( 'emailassigned_to1', '1' );
+        $self->{mech}->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "reporter" ) {
+        $self->{mech}->field( 'email1', $bugfor );
+        $self->{mech}->untick( 'emailassigned_to1', '1' );
+        $self->{mech}->tick( 'emailreporter1', '1' );
+        $self->{mech}->select( 'emailtype1', 'exact' );
+    }
+    elsif ( $stype eq "keyword" ) {
+        $self->{mech}->field( 'email1', "" );
+        $self->{mech}->untick( 'emailassigned_to1', '1' );
+        $self->{mech}->field( 'long_desc', $bugfor );
+        $self->{mech}->select( 'long_desc_type', 'anywordssubstr' );
+    }
+    $self->{mech}->untick( 'emailreporter2', '1' );
+
+    $self->{mech}->select( 'order', 'Bug Number' );
+    $self->{mech}->submit();
+    $self->{pagelevel}++;
+
+    $self->{mech}->follow_link( text_regex => qr/CSV/ );
+    $self->{pagelevel}++;
+    my $content = $self->{mech}->content;
+    my @baseline = split( /\n/, $content );
+    if ($baseline[0] =~ m/bug_id/i){
+    foreach my $line ( sort @baseline ) {
+        $line =~ s/\"//mg;
+        my @rowline = split( /,/, $line );
+        next if ( $rowline[0] =~ m/bug_id/ );
+        next if ( $rowline[0] eq "" );
+        next if ( $rowline[0] =~ /^\n$/ );
+        $bugcount++;
+        $buglist{$bugcount} = {
+            'BugID'       => "$rowline[0]",
+            'Priority'    => "$rowline[1]",
+            'Description' => "$rowline[7]"
+        };
+    }
+    }
+    $self->go_back();
+    return (%buglist);
+
+}
+
+sub show_bug {
+    my $self = shift;
+    my $BUG = shift;
+    chomp($BUG);
+    my %bugtext;
+    $self->{mech}->submit_form(
+        form_number => 2,
+        fields      => { id => "$BUG", }
+    );
+    $self->{pagelevel}++;
+    #my $ccline = $mech;
+    $self->{mech}->follow_link( text_regex => qr/format for printing/i );
+    $self->{pagelevel}++;
+
+    my $TextBody = $self->{mech}->content();
+
+    our $hs = HTML::Strip->new();
+    my $hrcount;
+
+    my @blocks = split( /\<\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
+
+    my @fulltext;
+    $fulltext[0] = $hs->parse("$blocks[2]");
+    $fulltext[1] = $hs->parse("$blocks[3]");
+    $fulltext[0] =~ s/Bug\#\:\n/Bug\#\:/i;
+    $fulltext[0] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[1] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[0] =~ s/\n\n/\n/mg;
+    $fulltext[1] =~ s/\n\n/\n/mg;
+    my @sintext = split( /\n/, $fulltext[0] );
+    my (
+        $header,   $reporter, $status, $priority, $resolution,
+        $severity, $assigned, $URL,    $textblock
+    );
+
+    #my $ccline;
+    foreach my $TextLine (@sintext) {
+        if ( $TextLine =~ m/Bug $BUG/ ) { $header = clean_line($TextLine) }
+        elsif ( $TextLine =~ m/reported by: /i ) {
+            $TextLine =~ s/reported by: //i;
+            $reporter = clean_line($TextLine);
+        }
+
+     # Removed for now because CC: line doesn't appear in the text formatted
+     # version of the show bugs page on bugzie
+     #elsif ($TextLine =~ m/CC:/i) {$TextLine =~ s/CC://i; $ccline = $TextLine;}
+        elsif ( $TextLine =~ m/status:/i ) {
+            $TextLine =~ s/status: //i;
+            $status = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/priority:/i ) {
+            $TextLine =~ s/priority: //i;
+            $priority = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/resolution:/i ) {
+            $TextLine =~ s/resolution: //i;
+            $resolution = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/severity:/i ) {
+            $TextLine =~ s/severity: //i;
+            $severity = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/assigned to:/i ) {
+            $TextLine =~ s/assigned to: //i;
+            $assigned = clean_line($TextLine);
+        }
+        elsif ( $TextLine =~ m/URL:/i ) {
+            $TextLine =~ s/URL: //i;
+            $URL = clean_line($TextLine);
+        }
+        else { next }
+    }
+    %bugtext = (
+        'header'   => "$header",
+        'reporter' => "$reporter",
+
+        #'cclist' => "$ccline",
+        'status'     => "$status",
+        'priority'   => "$priority",
+        'resolution' => "$resolution",
+        'severity'   => "$severity",
+        'assigned'   => "$assigned",
+        'URL'        => "$URL",
+        'textblock'  => "$fulltext[1]",
+    );
+    my $pages = $self->{pagelevel};
+    $self->go_back( );
+
+    return (%bugtext);
+}
+
+
+sub go_back {
+	my $self = shift;
+	for (my $count = $self->{pagelevel}; $count > 1; $count--)
+	  { $self->{pagelevel}--; $self->{mech}->back() }
 }
 
 sub die {
