@@ -183,15 +183,17 @@
   </tr>
   <xsl:for-each select="document($metadoc)/metadoc/files/file">
   <xsl:variable name="fileurl" select="text()"/>
-  <xsl:variable name="parentfileurl" select="@parent"/>
+  <xsl:variable name="fileid"  select="@id"/>
+  <xsl:variable name="parentmetadoc" select="@parent"/>
   <tr>
     <ti><uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri></ti>
     <xsl:variable name="version"><xsl:value-of select="document($fileurl)/guide/version|document($fileurl)/book/version|document($fileurl)/sections/version|document($fileurl)/mainpage/version"/></xsl:variable>
     <ti><xsl:value-of select="$version"/></ti>
     <ti>
       <xsl:choose>
-        <xsl:when test="document($parentfileurl)">
-          <xsl:variable name="parentversion"><xsl:value-of select="document($parentfileurl)/guide/version|document($parentfileurl)/book/version|document($parentfileurl)/sections/version|document($parentfileurl)/mainpage/version"/></xsl:variable>
+        <xsl:when test="document($parentmetadoc)/metadoc/files/file[@id = $fileid]">
+          <xsl:variable name="parentfile" select="document($parentmetadoc)/metadoc/files/file[@id = $fileid]"/>
+          <xsl:variable name="parentversion"><xsl:value-of select="document($parentfile)/guide/version|document($parentfile)/book/version|document($parentfile)/sections/version|document($parentfile)/mainpage/version"/></xsl:variable>
           <xsl:value-of select="$parentversion"/>
         </xsl:when>
         <xsl:otherwise>
