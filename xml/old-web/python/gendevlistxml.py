@@ -54,8 +54,8 @@ def buildxml(devinfo):
 		# separate into user name, name, location, responsibilities
 		user,name,location,duties = line.split(":")
 		# generate the table entry for the current developer
-		tablexml = "\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n" \
-			% (name,user,location,duties)
+		tablexml = '\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti><mail link="%s@gentoo.org">%s</mail></ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n' \
+			% (name,user,user,location,duties)
 		xml += tablexml
 	xml += footer
 	return xml
