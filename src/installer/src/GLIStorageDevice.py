@@ -294,6 +294,7 @@ class Partition:
 		self._start = int(start)
 		self._end = int(end)
 		self._blocks = int(blocks)
+		if type == "": type = "unknown"
 		self._type = type
 		self._mountpoint = mountpoint
 		self._mountopts = mountopts
