@@ -306,7 +306,7 @@ Die AktivitÃ¤ten zwischen 03. Oktober 2004 und 09. Oktober 2004 resultierten i
             </li>
 <li><mail link="osx@gentoo.org" >osx porters</mail>, mit 9
               <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=2004-10-03&amp;chfieldto=2004-10-09&amp;assigned_to=osx@gentoo.org" >neuen Bugs</uri>
-            </li>
+           </li>
 <li><mail link="media-video@gentoo.org" >media-video herd</mail>, mit 9
               <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=2004-10-03&amp;chfieldto=2004-10-09&amp;assigned_to=media-video@gentoo.org" >neuen Bugs</uri>
             </li>
@@ -320,10 +320,133 @@ Die AktivitÃ¤ten zwischen 03. Oktober 2004 und 09. Oktober 2004 resultierten i
 </body>
 </section>
 </chapter>
+<chapter>
+<title>Tipps und Tricks</title>
+<section>
+<title>OpenVPN Fibel</title>
+<body>
+<p>
+Es gibt soviele Vorteil von VPN Tunneln wie es verschiedene VPN Szenarien gibt.
+Eine einfache Implemtierung ist die "OpenVPN via tun-device" Lösung. Ein
+Beispiel: Sie möchten sich auf den Laptop in Ihrem Heimnetzwerk verbinden, um
+dort das Mail Programm zu nutzen, ohne es umkonfigurieren zu müssen sobald Sie
+von zuhause ins Internet wechseln oder zurück. Gehen wir davon aus, dass der
+Mail Server in Ihrem LAN (192.168.1.0/24) 192.168.1.10 ist und Sie einen
+Router/Firewall haben, der eine Verbindung ins Internet herstellt. Sie können
+sich von der Arbeit oder Schule aus verbinden und wollen Mails lesen.
+OpenVPN kann virtuelle Devices für Sie erstellen, wenn Sie zwei Computer
+über einen verschlüsselten Tunnel verbinden wollen. Dann haben Sie die
+Möglichkeit Netzwerkverkehr in die Netzwerke hinter den beiden Computern
+weiterzuleiten, so dass diese "virtuell" mit dem LAN hinter Ihrer Firewall
+verbunden sind. Um dies zu erreichen muss entweder Ihre Firewall oder ein Server
+hinter der Firewall den OpenVPN Dienst ausführen (wenn Sie einen Server hinter der
+Firewall auswählen, müssen Sie den Zielport auf den OpenVPN Server
+weiterleiten).
+</p>
 
-<!--Tipps und Tricks-->
+<p>
+Hier ist, was Sie tun müssen:
+</p>
 
+<pre caption="Aktivieren sie das tun Modul in Ihrem Kernel">
+         [*] Networking support
+                Networking options  ---&gt;
+          [ ] Amateur Radio support  ---&gt;
+          &lt; &gt; IrDA (infrared) subsystem support  ---&gt;
+          &lt; &gt; Bluetooth subsystem support  ---&gt;
+          [*] Network device support
+          &lt; &gt;   Dummy net driver support
+          &lt; &gt;   Bonding driver support
+          &lt; &gt;   EQL (serial line load balancing) support
+          &lt;M&gt;   Universal TUN/TAP device driver support  <codenote>Diese Option muss aktiviert sein</codenote>
+</pre>
 
+<p>
+Stellen Sie sicher, dass dieses Modul existiert und geladen werden kann.
+Anschliessend installieren Sie OpenVPN und dessen Ahängigkeiten:
+</p>
+
+<pre caption="Installieren von OpenVPN">
+# emerge openvpn
+</pre>
+
+<p>
+Erstellen Sie nun sowohl am Client wie auch am Server ein Verzeichnis für die Konfiguration:
+</p>
+
+<pre caption="Verzeichnis erstellen">
+# mkdir /etc/openvpn
+# mkdir /etc/openvpn/myhomelan
+</pre>
+
+<p>
+Innerhalb dieses Verzeichnisses erstellen Sie einen Key für Ihre VPN Sitzung und
+kopieren ihn in das Verzeichnis des Clients, <path>/etc/openvpn/myhomelan</path>.
+</p>
+
+<pre caption="Erstellen des Shared Key">
+cd /etc/openvpn/myhomelan
+openvpn --genkey --secret myhomelan-key.txt
+</pre>
+
+<p>
+Und nun der trickreiche Teil ... Das Routing. Es ist wichtig, dass die beiden
+tun Devices am Client und auf dem Server IP Adressen aus dem gleichen Subnetz
+benutzen. Die nun folgende Konfigurationsdatei listet den Typ des Devices, die
+beiden Endpunkte des Tunnel, die Kompressionsmethode und den UDP-Port auf dem
+der Tunnel aufgebaut werden soll. Weiterhin werden die Privilegien an die
+angebenen Benutzer verteilt.
+</p>
+
+<pre caption="Serverseitige Konfiguration in /etc/openvpn/myhomelan/local.conf">
+dev tun
+ifconfig 172.16.1.1 172.16.1.20  <codenote>IP des lokalen tun Device und der Gegenstelle</codenote>
+secret /etc/openvpn/myhomelan/myhomelan-key.txt
+comp-lzo
+port 5000
+user nobody
+group nobody
+</pre>
+
+<p>
+Die Client Konfiguration benötigt eine Zieladresse des Tunnel. Dies ist oft eine
+dynamische DNS Adresse, manchmal eine feste IP, je nach ISP. Sie müssen
+ebenfalls eine Route in Ihr Heim LAN  (192.168.1.0 in unserem Beispiel)
+legen. Sie können ein Shell Script aus der Konfigurationsdatei heraus aufrufen,
+dass die entsprechende Route setzt.
+</p>
+
+<pre caption="Clientseitige Konfiguration in /etc/openvpn/myhomelan/local.conf">
+remote &lt;servers.dynamic.dns.address&gt;   <codenote>Oder die externe IP des VPN Server, wenn Sie eine feste IP haben</codenote>
+dev tun
+ifconfig 172.16.1.20 172.16.1.1         <codenote>IP des lokalen tun Device und der Gegenstelle</codenote>
+secret /etc/openvpn/myhomelan/myhomelan-key.txt
+comp-lzo
+port 5000
+user nobody
+group nobody
+up /etc/openvpn/myhomelan/route.sh      <codenote>Setzt die Route ins Netzwerk hinter dem VPN Server</codenote>
+</pre>
+
+<p>
+Das route Kommando muss das Gateway des Client für das Netzwerk 1922.168.1.0 auf
+die IP Adresse der Gegenstelle setzen (172.16.1.1 in unserem Beispiel).
+</p>
+
+<pre caption="/etc/openvpn/myhomelan/route.sh">
+#!/bin/bash
+route add -net 192.168.1.0 netmask 255.255.255.0 gw 172.16.1.1
+</pre>
+
+<p>
+Das ist es! Starten Sie den OpenVPN Server und den Client und kontrollieren Sie
+die Devices mit <c>ifconfig</c> und die Routen mit <c>route -n</c>. Viel
+Erfolg!.
+</p>
+
+</body>
+</section>
+</chapter>
 <chapter>
 <title>Abgänge, Zugänge und Veränderungen</title>
 	<section>
