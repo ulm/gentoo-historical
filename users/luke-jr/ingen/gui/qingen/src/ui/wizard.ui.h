@@ -121,23 +121,33 @@ void Wizard::init() {
 	
 	lstLicenses->header()->hide();
 	lstLicenses->setSorting(-1);	//items are listed in opposite order they are added
-	cur = new LicenseListItem(lstLicenses, "DIVX"); cur->setRequired(0);
-	cur = new LicenseListItem(lstLicenses, "MOTIF"); cur->setRequired(0);
-	new QListViewItem(lstLicenses, "-----");
-	cur = new LicenseListItem(lstLicenses, "CRACKLIB"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "fontconfig"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "Info-ZIP"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "PSF-2.2"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "ZLIB"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "BZIP2"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "freedist"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "OpenSoftware"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "X11"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "LGPL-2.1"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "BSD"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "MIT"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "as-is"); cur->setRequired(1);
-	cur = new LicenseListItem(lstLicenses, "GPL-2"); cur->setRequired(1);
+#define ITEM(name)	\
+	cur = new LicenseListItem(lstLicenses, name); cur->setRequired(FALSE);
+#define REQUIRED cur->setRequired(TRUE);
+#define DEFAULT	cur->setOn(TRUE);
+#define SEPERATOR(name) new QListViewItem(lstLicenses, name);
+	ITEM("DIVX")
+	ITEM("MOTIF")
+	SEPERATOR("  --- Optional ---")
+	ITEM("CRACKLIB")	REQUIRED	DEFAULT
+	ITEM("fontconfig")	REQUIRED	DEFAULT
+	ITEM("Info-ZIP")	REQUIRED	DEFAULT
+	ITEM("PSF-2.2")		REQUIRED	DEFAULT
+	ITEM("ZLIB")		REQUIRED	DEFAULT
+	ITEM("BZIP2")		REQUIRED	DEFAULT
+	ITEM("freedist")	REQUIRED	DEFAULT
+	ITEM("OpenSoftware")REQUIRED	DEFAULT
+	ITEM("X11")			REQUIRED	DEFAULT
+	ITEM("LGPL-2.1")	REQUIRED	DEFAULT
+	ITEM("BSD")			REQUIRED	DEFAULT
+	ITEM("MIT")			REQUIRED	DEFAULT
+	ITEM("as-is")		REQUIRED	DEFAULT
+	ITEM("GPL-2")		REQUIRED	DEFAULT
+	SEPERATOR("  --- Required ---")
+#undef ITEM
+#undef REQUIRED
+#undef DEFAULT
+#undef SEPERATOR
 	
 	//TODO: replace w/ partition detection stuff
 	sldHDOldResize_valueChanged( sldHDOldResize->value() );
@@ -148,48 +158,50 @@ void Wizard::init() {
 	lvwSoftwareComponents->setSorting(-1);
 #define SECTION(name) \
 	curc = cura = new QCheckListItem(lvwSoftwareComponents, name ,	\
-									 QCheckListItem::CheckBox);
+									 QCheckListItem::CheckBoxController);
 #define ITEM(name)	\
-	curc = new QCheckListItem(cura, name , QCheckListItem::CheckBox);
+	curc = new QCheckListItem(cura, name , QCheckListItem::CheckBox);	\
+    cura->setState(QCheckListItem::NoChange);
 #define SUBSECTION(name) \
-	curc = curb = new QCheckListItem(cura, name , QCheckListItem::CheckBox);
+	curc = curb = new QCheckListItem(cura, name , QCheckListItem::CheckBoxController);
 #define SUBITEM(name) \
 	curc = new QCheckListItem(curb, name , QCheckListItem::CheckBox);
 #define DEFAULT	curc->setOn(TRUE);
 	
 	SECTION("Accessories")
 			ITEM("Common Utilities")			DEFAULT
-			SECTION("Games")						DEFAULT
+	SECTION("Games")
 			ITEM("Common Games")				DEFAULT
 			ITEM("ArmageTRON")					DEFAULT
 			ITEM("Frozen Bubble")				DEFAULT
-			SECTION("Desktop Themes")
+	SECTION("Desktop Themes")
 			ITEM("Common Themes")				DEFAULT
 			ITEM("Liquid")
-			SECTION("Multimedia")
+	SECTION("Multimedia")
 			ITEM("Common Multimedia")			DEFAULT
 			ITEM("CD Burner")
 			ITEM("Multimedia Player")			DEFAULT		//VLC?
-			SUBSECTION("Video Compression")		DEFAULT
-			SUBITEM("Quicktime")			DEFAULT
-			SUBITEM("RealMedia")			DEFAULT
-			SUBITEM("DivX")				DEFAULT
-			SUBITEM("Other Codecs")			DEFAULT
-			SECTION("System Tools")				DEFAULT
-			ITEM("Common Administration Tools")		DEFAULT
+			SUBSECTION("Video Compression")
+			    SUBITEM("Quicktime")			DEFAULT
+			    SUBITEM("RealMedia")			DEFAULT
+			    SUBITEM("DivX")					DEFAULT
+		    	SUBITEM("Other Codecs")			DEFAULT
+	SECTION("System Tools")
+			ITEM("Common Administration Tools")	DEFAULT
 			ITEM("Windows Compatibility")		DEFAULT
 			ITEM("Partition Manipulator")				//QtParted
-			SECTION("Internet")
+	SECTION("Internet")
 			ITEM("Instant Messenger")			DEFAULT		//Psi
 			ITEM("Advanced Downloader")					//KGet?
 			ITEM("IRC Client")						//ksirc/KVirc?
-			SECTION("Office Suite")
+	SECTION("Office Suite")
 			
 #undef DEFAULT
 #undef SUBITEM
 #undef SUBSECTION
 #undef ITEM
 #undef SECTION
+	
 			
 	/*	cmdBack->setIconSet(QPixmap("images/back.png"));
 	cmdNext->setIconSet(QPixmap("images/next.png")); */
