@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output encoding="UTF-8" method="xml" indent="yes"/>
+<xsl:param name="showlevel">2</xsl:param>
 <xsl:template match="/projects">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
         <guide  link="index.xml" type="project">
@@ -22,8 +23,8 @@
 			<table>
 			  <!--tr>
 			    <th>toplevel</th>
-			    <th>project</th>
-			    <th>subproject</th>
+			    <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
+			    <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
 			    <th>members</th>
 			    <th>description</th>
 			  </tr-->
@@ -65,15 +66,15 @@
   <xsl:if test='number($level)=1'>
     <tr>
       <th>toplevel</th>
-      <th>project</th>
-      <th>subproject</th>
+      <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
+      <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
       <th>lead</th>
       <th>members</th>
       <th>description</th>
     </tr>
   </xsl:if>
   <xsl:for-each select="document($ref)">
-    <xsl:if test="$level > 0">
+    <xsl:if test="($level > 0) and ($level &lt;=$showlevel)">
       <tr>
         <ti>
        	  <xsl:if test="$level=1">
@@ -85,26 +86,30 @@
       	    </uri>
           </xsl:if>
         </ti>
-        <ti>
-      	  <xsl:if test="$level=2">
-       	    <uri>
-       	      <xsl:attribute name="link">
-       	        <xsl:value-of select="$ref"/>
-       	      </xsl:attribute>
-      	      <xsl:value-of select="project/name/text()"/>
-      	    </uri>
-      	  </xsl:if>
-        </ti>
-        <ti>
-      	  <xsl:if test="$level=3">
-       	    <uri>
-       	      <xsl:attribute name="link">
-       	        <xsl:value-of select="$ref"/>
-       	      </xsl:attribute>
-      	      <xsl:value-of select="project/name/text()"/>
-      	    </uri>
-      	  </xsl:if>
-        </ti>
+        <xsl:if test="$showlevel>1">
+          <ti>
+      	    <xsl:if test="$level=2">
+              <uri>
+       	        <xsl:attribute name="link">
+       	          <xsl:value-of select="$ref"/>
+                </xsl:attribute>
+      	        <xsl:value-of select="project/name/text()"/>
+      	      </uri>
+      	    </xsl:if>
+          </ti>
+        </xsl:if>
+        <xsl:if test="$showlevel>2">
+          <ti>
+      	    <xsl:if test="$level=3">
+       	      <uri>
+       	        <xsl:attribute name="link">
+                  <xsl:value-of select="$ref"/>
+                </xsl:attribute>
+                <xsl:value-of select="project/name/text()"/>
+              </uri>
+            </xsl:if>
+          </ti>
+        </xsl:if>
         <ti>
           <xsl:value-of select='project/dev[@role="lead"]'/>
         </ti>
@@ -149,30 +154,34 @@
   <xsl:if test='number($level)=1'>
     <tr>
       <th>toplevel</th>
-      <th>project</th>
-      <th>subproject</th>
+      <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
+      <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
       <th>lead</th>
       <th>members</th>
       <th>description</th>
     </tr>
   </xsl:if>
-  <xsl:if test="$level > 0">
+  <xsl:if test="($level > 0) and ($level &lt;=$showlevel)">
     <tr>
       <ti>
         <xsl:if test="$level=1">
           <xsl:value-of select="@name"/>
         </xsl:if>
       </ti>
+      <xsl:if test="$showlevel>1">
       <ti>
         <xsl:if test="$level=2">
           <xsl:value-of select="@name"/>
       	</xsl:if>
       </ti>
+      </xsl:if>
+      <xsl:if test="$showlevel>2">
       <ti>
         <xsl:if test="$level=3">
     	  <xsl:value-of select="@name"/>
         </xsl:if>
       </ti>
+      </xsl:if>
       <ti>
         <xsl:value-of select='@lead'/>
       </ti>
