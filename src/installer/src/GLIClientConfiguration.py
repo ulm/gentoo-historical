@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.14 2004/08/25 21:53:50 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.15 2004/08/26 04:27:16 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -132,42 +132,37 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	shared_client_configuration = classmethod(shared_client_configuration)
 
 	def set_network_type(self, network_type, attr=None):
+
 		if attr == None:
 			attr = self._xml_current_attr
 
-		if network_type == 'static' and attr != None:
-			ip = broadcast = netmask = interface = ""
+		interface = ip = broadcast = netmask = None
 
-			if type(attr) != tuple:
-				for attrName in attr.keys():
-					if attrName == 'ip':
-						ip = str(attr.get(attrName))
-					elif attrName == 'broadcast':
-						broadcast = str(attr.get(attrName))
-					elif attrName == 'netmask':
-						netmask = str(attr.get(attrName))
-					elif attrName == 'interface':
-						interface = str(attr.get(attrName))
+		if type(attr) == tuple:
+			interface = attr[0]
+			ip = attr[1]
+			broadcast = attr[2]
+			netmask = attr[3]
+		else:
+			for key in attr.keys():
+				if key == 'interface':
+					interface = str(attr.get('interface'))
+				elif key == 'ip':
+					ip = str(attr.get('ip'))
+				elif key == 'broadcast':
+					broadcast = str(attr.get('broadcast'))
+				elif key == 'netmask':
+					netmask = str(attr.get('netmask'))
 
-				attr = (interface, ip, broadcast, netmask)
+		if not GLIUtility.is_eth_device(interface):
+			raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
 
-			self.set_network_data(attr)
+		network_data = (interface, ip, broadcast, netmask)
 
-		elif network_type == 'static':
+		if network_type == 'static' and attr == None:
 			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
 
-		elif network_type == "dhcp" and attr != None:
-			if type(attr) != tuple:
-				if 'interface' in attr.getNames():
-					interface = str(attr.get('interface'))
-					if not GLIUtility.is_eth_device(interface):
-						raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
-					else:
-						self._network_data = (interface, None, None, None)
-			else:
-				self._network_data = attr
-
-
+		self.set_network_data(network_data)
 		self._network_type = network_type
 
 	def get_network_type(self):
@@ -187,15 +182,21 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	
 		if ip != None:
 			if not GLIUtility.is_ip(ip):
-				raise IPAddressError('fatal','set_network_data', 'The specified IP is not a valid IP Address!')
+				raise IPAddressError('fatal','set_network_data', 'The specified IP ' + ip + ' is not a valid IP Address!')
 
 		if broadcast != None:
 			if not GLIUtility.is_ip(broadcast):
 				raise IPAddressError('fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
+		else:
+			# Guess the broadcast... just in case (probably need the gateway, to guess)
+			pass
 
 		if netmask != None:
 			if not GLIUtility.is_ip(netmask):
 				raise IPAddressError('fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
+		else:
+			# Guess the netmask... just in case (probably need the gateway.. to guess)
+			pass
 
 		self._network_data = network_info
 
@@ -294,7 +295,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/profile-uri': self.set_profile_uri,
 					'client-configuration/root-mount-point': self.set_root_mount_point,
 					'client-configuration/log-file': self.set_log_file,
-					'client-configuration/network-setup': self.set_network_type,
+					'client-configuration/network': self.set_network_type,
 					'client-configuration/dns-servers': self.set_dns_servers,
 					'client-configuration/default-gateway': self.set_default_gateway,
 					'client-configuration/enable-ssh': self.set_enable_ssh,
@@ -362,7 +363,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		net_type = self.get_network_type()
 		if net_type == "static":
 			net_info = self.get_network_data()
-			data +=  "<network-setup interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network-setup>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
+			data +=  "<network interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
 			gateway = self.get_default_gateway()
 			data += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gateway[0], gateway[1])
 			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
@@ -374,11 +375,11 @@ class ClientConfiguration(xml.sax.ContentHandler):
 				interface = net_info[0]
 
 			if interface != None:
-				data += "<network-setup interface=\"%s\">dhcp</network-setup>" % interface
+				data += "<network interface=\"%s\">dhcp</network>" % interface
 			else:
-				data += "<network-setup>dhcp</network-setup>"
+				data += "<network>dhcp</network>"
 		else:
-			data += "<network-setup>%s</network-setup>" % net_type
+			data += "<network>%s</network>" % net_type
 	
 		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
 
