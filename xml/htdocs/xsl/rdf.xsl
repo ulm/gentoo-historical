@@ -36,7 +36,7 @@
 		<link>http://www.gentoo.org<xsl:value-of select="." /></link>
 		<dc:subject><xsl:value-of select="document(.)/news/@category" /></dc:subject>
 		<dc:creator><xsl:value-of select="document(.)/news/poster" /></dc:creator>
-		<dc:date><xsl:value-of select="document(.)/news/date" /></dc:date>
+		<!-- <dc:date><xsl:value-of select="document(.)/news/date" /></dc:date> -->
 		<description><xsl:value-of select="document(.)/news/body" /></description>
 	</item>
 	</xsl:for-each>
