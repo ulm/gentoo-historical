@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.30 2004/11/30 21:38:57 samyron Exp $
+$Id: GLIClientController.py,v 1.31 2004/11/30 21:49:45 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -101,10 +101,8 @@ class GLIClientController(Thread):
 			self.addNotification(Notification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
 
 		try:
-			print "Using", templates[self._configuration._architecture_template]
 			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration._architecture_template])
 			self._arch_template = getattr(template, templates[self._configuration._architecture_template])(self._configuration, self._install_profile, self._pretend)
-			print "self._arch_template =", self._arch_template
 		except ImportError:
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!')))
 		except AttributeError:
