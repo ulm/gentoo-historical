@@ -3,7 +3,7 @@ import GLIScreen
 
 class Panel(GLIScreen.GLIScreen):
 
-	title = "Stage Selection"
+	title = "Portage Tree"
 	active_selection = 1
 	radio_syncs = {}
 
