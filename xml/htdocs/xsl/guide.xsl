@@ -1303,7 +1303,7 @@
 <!-- License Tag -->
 <xsl:template match="license">
 <tt>
-  The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/1.0">Creative Commons - Attribution / Share Alike</a> license.
+  The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/2.0">Creative Commons - Attribution / Share Alike</a> license.
 </tt>
 </xsl:template>
 
