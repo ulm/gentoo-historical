@@ -3,33 +3,25 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Language.py,v 1.2 2004/07/03 23:47:29 port001 Exp $
+# $Id: Page_Language.py,v 1.3 2004/12/30 16:35:20 port001 Exp $
 #
 
-MetaData = {"page" : ("language",), "params" : "form"}
-
 import Config
-
 from Language import Language
-from SiteModuleBE import SiteModuleBE as Parent
+from SiteModule import SiteModule
 
-def Display(form):
+class Page_Language(SiteModule):
 
-    page = Page_Language(form)
-    page.selectDisplay()
+    __modulename__ = 'Page_Language'
 
-class Page_Language(Parent):
+    def init(self):
 
-    class_type = "language"
-    language_arr = []
-    template = Config.Template["admin_script_languages"]
-    obj_attributes = {"name": "", "descr": "", "def_keywords": "",
-                      "def_expr": "", "clo_expr": "", "clo_s_keywords": ""}
-    
-    obj = Language()
+	self._template = Config.Template['admin_script_languages']
+	self._class_name = "language"
+        self._obj_attributes = ('name', 'descr', 'def_keywords',
+                                'def_expr', 'clo_expr', 'clo_s_keywords')
+        self._object = Language()
 
-    messages = {"add": "Language Successfully Added",
-                "modify": "Language Successfully Modified",
-                "delete": "Languages Successfully Deleted"}
-
-
+        self._reports = {'add': 'Language Successfully Added',
+                         'modify': 'Language Successfully Modified',
+                         'delete': 'Languages Successfully Deleted'}

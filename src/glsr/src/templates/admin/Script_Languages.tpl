@@ -1,19 +1,14 @@
       
       <form name="language_control_form" method="GET" action="index.py">
+      <input type="hidden" name="domain" value="admin">
       <input type="hidden" name="page" value="language">
       
-      {IF REPORT != ""}
-        {IF REPORT_TYPE == "normal"}
-          <font class="report_normal">
-        {!F}
-        {IF REPORT_TYPE == "warn"}
-          <font class="report_warn">
-        {!IF}
-        {IF REPORT_TYPE == "fatal"}
-          <font class="report_fatal">
-        {!IF}
-        {REPORT}
-        </font><br /><br />
+      {IF MESSAGE != ""}
+      <font class="message">{MESSAGE}</font><br /><br />
+      {!IF}
+      
+      {IF WARN_MESSAGE == 1}
+      <font class="warn_message">No Languages Found</font><br /><br />
       {!IF}
       
       {IF TOTAL > 0}
@@ -30,7 +25,7 @@
         </tr>
         {LOOP MAIN_LOOP}
 	<tr>
-          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=language&show_modify={MAIN_LOOP.language_id}">{MAIN_LOOP.language_name}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?domain=admin&page=language&show_modify={MAIN_LOOP.language_id}">{MAIN_LOOP.language_name}</a></td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.language_descr}</td>
           <td class="standard_row_{MAIN_LOOP.row}" align="center"><input type="checkbox" name="delete_btn" value="{MAIN_LOOP.language_id}" /></td>
 	</tr>

@@ -64,7 +64,7 @@
         </tr>
         {LOOP MAIN_LOOP}
         <tr>
-          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=news&show_modify={MAIN_LOOP.news_id}">{MAIN_LOOP.news_id}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?domain=admin&page=news&show_modify={MAIN_LOOP.news_id}">{MAIN_LOOP.news_id}</a></td>
 	  <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.news_subject}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.news_date}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.news_author_id}</td>

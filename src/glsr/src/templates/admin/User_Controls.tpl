@@ -66,7 +66,7 @@
         </tr>
         {LOOP MAIN_LOOP}
 	<tr>
-          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=user&show_modify={MAIN_LOOP.user_id}">{MAIN_LOOP.user_alias}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?domain=admin&page=user&show_modify={MAIN_LOOP.user_id}">{MAIN_LOOP.user_alias}</a></td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_fullname}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_email}</td>
           <td class="standard_row_{MAIN_LOOP.row}">

@@ -31,7 +31,7 @@
         </tr>
         {LOOP MAIN_LOOP}
 	<tr>
-          <td class="standard_row_{MAIN_LOOP.row}" style="padding-left: {MAIN_LOOP.padding}px"><a href="index.py?page=category&show_modify={MAIN_LOOP.category_id}&mod_categories=Modify+Catgories">{MAIN_LOOP.category_name}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}" style="padding-left: {MAIN_LOOP.padding}px"><a href="index.py?domain=admin&page=category&show_modify={MAIN_LOOP.category_id}&mod_categories=Modify+Catgories">{MAIN_LOOP.category_name}</a></td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.category_descr}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{IF MAIN_LOOP.parent_name == "None"}Root Category{ELSE}{MAIN_LOOP.parent_name}{!IF}</td>
           <td class="standard_row_{MAIN_LOOP.row}" align="center"><input type="checkbox" name="delete_btn" value="{MAIN_LOOP.category_id}" /></td>
