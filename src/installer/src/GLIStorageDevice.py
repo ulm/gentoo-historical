@@ -300,16 +300,11 @@ class Partition:
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
-				os.system("mkdir /mnt/freespace 2>&1 > /dev/null; mount " + device._device + str(minor) + " /mnt/freespace | tee -a /tmp/dfoutput.log")
-#				min_bytes = string.strip(commands.getoutput("df --block-size 1 | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+\s\+::' -e 's:\s.\+::' | tee /tmp/dfoutput.log"))
-				free_cyl = string.strip(commands.getoutput("df --block-size " + str(self._device._cylinder_bytes) + " | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+\s\+[0-9]\+\s\+::' -e 's:\s.\+::' | tee /tmp/dfoutput.log"))
-#				print device._device + str(minor) + ": |" + min_bytes + "|"
-#				min_bytes = int(min_bytes)
+				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
+				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
+				free_cyl = int(int(block_size) * int(free_blocks) / self._device._cylinder_bytes)
 				free_cyl = int(free_cyl)
-				os.system("umount /mnt/freespace; rm -rf /mnt/freespace")
-#				min_bytes = min_bytes + (200 * 1024 * 1024) # Add 200M just to be safe
 				free_cyl = free_cyl - 200 # just to be safe
-#				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._min_cylinders_for_resize = (self._end - self._start + 1) - free_cyl
 				self._resizeable == True
 			elif type == "fat16" or type == "fat32":
