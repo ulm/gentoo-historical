@@ -431,7 +431,7 @@ User Docs:<br/>
 								<img src="/images/icon-stick.png"/>
 							</xsl:when>
 							<xsl:when test="@category='ibm'">
-								<img src="/images/ibm.gif"/>
+								<img src="/images/icon-ibm.gif"/>
 							</xsl:when>
 							<xsl:when test="@category='linux'">
 								<img src="/images/icon-penguin.png"/>
