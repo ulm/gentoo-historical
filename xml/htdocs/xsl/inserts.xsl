@@ -55,11 +55,6 @@
   </xsl:choose>
 </func:function>
 
-<!-- Define some globals that can be used throughout the stylesheets -->
-<xsl:param name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:param> <!-- Top element name e.g. "book" -->
-<xsl:param name="LANG"><xsl:value-of select="//*[1]/@lang" /></xsl:param> <!-- Value of top element's lang attribute e.g. "en" -->
-<xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param> <!-- Value of top element's link attribute e.g. "handbook.xml" -->
-
 <xsl:template match="/">
               <!-- 4DEBUGGING
                               <xsl:message>TTOP: <xsl:value-of select="$TTOP" /> </xsl:message>

@@ -34,7 +34,8 @@
   <xsl:if test="$style = 'printable'">
     <xsl:apply-templates select="author" />
   </xsl:if>
-  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p>
+<!--  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p> -->
+    <p>Content: </p>
   <ul>
     <xsl:for-each select="part">
       <xsl:variable name="curpart" select="position()" />
@@ -112,7 +113,8 @@
   <xsl:if test="abstract">
     <p><xsl:value-of select="abstract" /></p>
   </xsl:if>
-  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p>
+<!--  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p> -->
+    <p>Content: </p>
   <ol>
     <xsl:for-each select="chapter">
       <xsl:variable name="curpos" select="position()" />
@@ -247,7 +249,8 @@
   <xsl:if test="$full = 0">
     <!-- Chapter content only when rendering a single page -->
     <xsl:if test="$FILE/sections/section/title">
-      <b><xsl:value-of select="xsl:gettext('Content')"/>: </b>
+<!--      <b><xsl:value-of select="xsl:gettext('Content')"/>: </b> -->
+      <b>Content: </b>
       <ul>
         <xsl:for-each select="$FILE/sections/section/title">
           <xsl:variable name="pos" select="position()" />
