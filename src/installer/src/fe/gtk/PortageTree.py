@@ -41,6 +41,12 @@ a brief description beside it.
 		hbox.pack_start(self.radio_syncs['custom'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("Use this option to bypass syncing the tree. If you want to NFS mount the portage tree,\nuse this option"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(gtk.Label("Portage snapshot URI:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.entry_portage_snapshot_uri = gtk.Entry()
+		self.entry_portage_snapshot_uri.set_width_chars(50)
+		hbox.pack_start(self.entry_portage_snapshot_uri, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=40)
 
 		self.add_content(vert)
 
@@ -55,7 +61,9 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
 		self.radio_syncs[self.active_selection].set_active(gtk.TRUE)
+		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_snapshot_tarball_uri())
 
 	def deactivate(self):
 		self.controller.install_profile.set_portage_tree_sync_type(None, self.active_selection, None)
+		self.controller.install_profile.set_portage_snapshot_tarball_uri(self.entry_portage_snapshot_uri.get_text())
 		return True
