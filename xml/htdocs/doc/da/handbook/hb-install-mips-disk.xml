@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-mips-disk.xml,v 1.9 2005/01/29 15:27:55 broeman Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-mips-disk.xml,v 1.10 2005/03/27 10:27:24 broeman Exp $ -->
 
 <sections>
 
-<version>1.6</version>
-<date>2004-09-14</date>
+<version>1.8</version>
+<date>2005-02-20</date>
 
 <section>
 <title>Introduktion til blok-enheder</title>
@@ -114,7 +114,7 @@ begrænsning på 15 partitioner på SCSI og SATA.
 <section>
 <title>At bruge fdisk på MIPS for at partitionere din disk</title>
 <subsection>
-<title>At lave en SGI Disk Label</title>
+<title>SGI-maskiner: Oprettelse af en SGI Disk Label</title>
 <body>
 
 <p>
@@ -126,12 +126,14 @@ skabe to specielle partitioner på disken:
 
 <ul>
   <li>
-    <e>SGI Volume Header</e> (den niende partition): Denne partition er
+<!--    <e>SGI Volume Header</e> (den niende partition): Denne partition er
     vigtig. Det er her kerne billed-filerne skal hen. For at gemme
     kerne billed-filer, vil du bruge værktøjet kendt som
     <c>dvhtool</c> til at kopiere kerne billed-filer til denne
     partition. Du vil derefter være i stand til at opstarte fra kerner
-    på denne partition via SGI PROM Monitor.
+    på denne partition via SGI PROM Monitor. -->
+    <e>SGI Volume Header</e> (den niende partition): Denne partition er
+    vigtig. Det er her kerne billed-filerne skal hen.
   </li>
   <li>
     <e>SGI Volume</e> (den 11. partition): Denne partitions formål
@@ -207,11 +209,8 @@ partitionstabellen med null data via den følgende kommando: <c>dd
 if=/dev/zero of=/dev/sda bs=512 count=1</c>.  
 </note>
 
-</body>
-</subsection>
-<subsection>
-<title>At få SGI Volume Header til at justere den rigtige størrelse</title>
-<body>
+<!-- This has been dropped in favour of using arcboot
+<p>At få SGI Volume Header til at justere den rigtige størrelse</p>
 
 <p>
 Nu hvor en SGI Disklabel er blevet lavet, så kan partitioner
@@ -226,7 +225,7 @@ navne på otte karakterer.
 </p>
 
 <p>
-Processen at lave volumeheaderen større er ikke ligefrem nemt -- der er en fidus ved det.
+Processen at lave volumeheaderen større er ikke ligefrem nemt - der er en fidus ved det.
 Man kan ikke bare slette og tilføje volumeheaderen igen pga. mærkelig
 opførsel fra fdisk. I det eksempel der vises nedenfor, laver vi en
 Volumeheader på 50MB sammen med en 50MB /boot partition. Det faktiske
@@ -238,42 +237,281 @@ Command (m for help): <i>n</i>
 Partition number (1-16): <i>1</i>
 First cylinder (5-8682, default 5): <i>51</i>
  Last cylinder (51-8682, default 8682): <i>101</i>
-<comment>(Bemærk hvordan fdisk kun tillader at Partition #1 bliver genskabt med en minimum cylinder på 5)</comment>
-<comment>(Hvis du havde forsøgt at slette &amp; Så skal du genskabe
-SGI Volume Headeren på denne måde, dette er det samme problem, som du ville være løbet ind i.)</comment>
-<comment>(I vores eksempel, vil vi have /boot til at være 50MB, med
+<comment>
+(Bemærk hvordan fdisk kun tillader at Partition #1 bliver genskabt med en minimum cylinder på 5)
+(Hvis du havde forsøgt at slette &amp; Så skal du genskabe
+SGI Volume Headeren på denne måde, dette er det samme problem, som du ville være løbet ind i.)
+(I vores eksempel, vil vi have /boot til at være 50MB, med
 den ved cylinder 51 (Volume Headeren skal starte ved cylinder 0, hvis
 du kan huske det?), og at sætte dens sluttende cylinder til 101,
-hvilket groft set vil være 50MB (+/- 1-5MB))</comment>
+hvilket groft set vil være 50MB (+/- 1-5MB))
+</comment>
 
 Command (m for help): <i>d</i>
 Partition number (1-16): <i>9</i>
+
 <comment>(Slet partition #9 (SGI Volume Header))</comment>
 
 Command (m for help): <i>n</i>
 Partition number (1-16): <i>9</i>
 First cylinder (0-50, default 0): <i>0</i>
  Last cylinder (0-50, default 50): <i>50</i>
+
 <comment>(Genskab partition #9, til at slutte lige inden partition #1)</comment>
 </pre>
+-->
+<p>
+Hvis du er usikker på at bruge <c>fdisk</c>, kig lidt længere nede i vejledningen til
+partitionering på Cobalt. Konceptet er præcist det samme -- husk at lade
+"volume header" og "hele disk-partitionen" være.
+</p>
+
+<!-- <p>  Perhaps part of the above commented-out block?
+Once this is done, you are safe to create the rest of your partitions as you see
+fit. After all your partitions are laid out, make sure you set the partition ID
+of your swap partition to <c>82</c>, which is Linux Swap. By default, it will be
+<c>83</c>, Linux Native.
+</p> -->
+
+<p>
+Nu da dine partitioner er oprettet, kan du fortsætte med <uri
+link="#filesystems">Oprettelse af filsystemer</uri>.
+</p>
 
 </body>
 </subsection>
 <subsection>
-<title>Endeligt layout af partitioner</title>
+<title>Cobalt maskiner: Partitionering af din harddisk</title>
 <body>
 
 <p>
-Efter at dette er gjort, så kan du sikkert lave resten af dine
-partitioner som du ser det passende. Efter at alle dine partitioner er
-lagt ud, så skal du være sikker på at sætte partitions ID på dine swap
-partition til <c>82</c>, hvilken er Linux Swap. Den vil være <c>83</c>, Linux Native. 
+På Cobalt maskiner, forventer BOOTROM at se en MS-DOS MBR, så partitioneringen
+af harddisken er relativt nemt -- det er endda gjort på samme måde, som du ville
+gøre det på en Intel x86 maskine. <e>Dog</e> er der nogle tinge som du bør
+tage dig i agt på.
+</p>
+ 
+<ul>
+  <li>
+    Cobalt firmware vil forvente at <path>/dev/hda1</path> er en Linux partition, som
+    er formateret <e>EXT2 Revision 0</e>.  <e>EXT2 Revision 1 partitioner vil IKKE
+    VIRKE!</e>  (Cobalt BOOTROM forstår kun EXT2r0)  
+  </li>
+  <li>
+    Når ovenstående er sagt, skal partitionen indeholde en gzipped ELF billed-fil,
+    <path>vmlinux.gz</path> i roden af dens partition, hvorfra den hentes, ligesom
+    kernen
+  </li>
+</ul>
+
+<p>
+På grund af dette, anbefaler jeg at oprette en ~20MB <path>/boot</path> partition, som
+er formateret EXT2r0, hvorpå du installerer CoLo &amp; dine kerner.  Dette
+tillader dig at køre et moderne filsystem (EXT3 eller ReiserFS) til dit root-filsystem.
 </p>
 
 <p>
-Nu hvor dine partitioner er lavet, kan du fortsætte med <uri
-link="#filesystems">Oprettelse af filsystemer</uri>.
+Jeg forudsætter at du har oprettet <path>/dev/hda1</path>, som skal mountes senere som en
+<path>/boot</path>-partition.  Hvis du ønsker at gøre dette til <path>/</path>, skal du
+huske at kigge på PROMs forventninger senere.
 </p>
+
+<p>
+Vi forsætter... For at oprette partitioner, skal du taste <c>fdisk /dev/hda</c> ved
+prompten. Hovedkommandoerne som du skal bruge er disse:
+</p>
+
+<ul>
+  <li>
+    <c>o</c>: Sletter den gamle partitionstabel, og starter med en tom MS-DOS
+    partitionstabel
+  </li>
+  <li>
+    <c>n</c>: Ny partition
+  </li>
+  <li>
+    <c>t</c>: Ændre partitionstype
+    <ul>
+      <li>Brug type <c>82</c> til Linux Swap og <c>83</c> til Linux FS</li>
+    </ul>
+  </li>
+  <li>
+    <c>d</c>: Slet en partition
+  </li>
+  <li>
+    <c>p</c>: Vis (udskriv) partitionstabelen
+  </li>
+  <li>
+    <c>q</c>: Afslut -- lade den gamle partitionstabel være.
+  </li>
+  <li>
+    <c>w</c>: Afslut -- skrive den nye partitionstable.
+  </li>
+</ul>
+  	 
+<pre caption="Partitionering af harddisken">
+# <i>fdisk /dev/hda</i>
+ 	 
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+ 
+<comment>(Start med at slette de eksisterende partitioner)</comment>
+Command (m for help): <i>o</i>
+Building a new DOS disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content won't be recoverable.
+  	 
+  	 
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+Warning: invalid flag 0x0000 of partition table 4 will be corrected by w(rite)
+  	 
+<comment>(Du kan nu verificere at partitionstabellen er tom, ved at bruge 'p'-kommandoen)</comment>
+  	 
+Command (m for help): <i>p</i>
+  	 
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+  	 
+   Device Boot      Start         End      Blocks   Id  System
+  	 
+<comment>(Oprette /boot-partitionen)</comment>
+  	 
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+  	 
+<comment>(Tast bare ENTER her, for at acceptere standard)</comment>
+  	 
+First cylinder (1-19870, default 1):
+Last cylinder or +size or +sizeM or +sizeK (1-19870, default 19870): <i>+20M</i>
+  	 
+<comment>(og nu, hvis vi taster 'p' igen, bør vi se den nye partition)</comment>
+Command (m for help): <i>p</i>
+  	 
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+  	 
+   Device Boot      Start         End      Blocks   Id  System
+/dev/hda1               1          40       20128+  83  Linux
+  	 
+<comment>(Resten, jeg plejer at indsætte en extended partition, så jeg opretter denne)</comment>
+  	 
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>e</i>
+Partition number (1-4): <i>2</i>
+  	 
+<comment>(Igen, standarden er fint nok, tast bare ENTER.)</comment>
+  	 
+First cylinder (41-19870, default 41):
+Using default value 41
+  	 
+<comment>(Vi ønsker at bruge hele disken her, så tast ENTER igen)</comment>
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870):
+Using default value 19870
+  	 
+<comment>(Nu, / partitionen -- Jeg bruger separate partitioner til /usr, /var,
+etc... så / kan være lille.  Juster efter dine ønsker.)</comment>
+  	 
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (41-19870, default 41):<i>&lt;Press ENTER&gt;</i>
+Using default value 41
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870): <i>+500M</i>
+  	 
+<comment>(... og lige så dan ved andre partitioner ...)</comment>
+  	 
+<comment>(Sidst, swap-plads.  Jeg anbefaler mindst 250 MB swap,
+ønskbart 1 GB)</comment>
+  	 
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (17294-19870, default 17294): <i>&lt;Press ENTER&gt;</i>
+Using default value 17294
+Last cylinder or +size or +sizeM or +sizeK (1011-19870, default 19870): <i>&lt;Press ENTER&gt;</i>
+Using default value 19870
+  	 
+<comment>(Now, if we check our partition table, everything should mostly be ship
+shape except for one thing...)</comment>
+  	 
+Command (m for help): <i>p</i>
+  	 
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+Device Boot      Start         End      Blocks      ID  System
+/dev/hda1               1          21       10552+  83  Linux
+/dev/hda2              22       19870    10003896    5  Extended
+/dev/hda5              22        1037      512032+  83  Linux
+/dev/hda6            1038        5101     2048224+  83  Linux
+/dev/hda7            5102        9165     2048224+  83  Linux
+/dev/hda8            9166       13229     2048224+  83  Linux
+/dev/hda9           13230       17293     2048224+  83  Linux
+/dev/hda10          17294       19870     1298776+  83  Linux
+  	 
+<comment>(Noter at hvordan #10, din swap-partition stadigvæk er type 83?)</comment>
+  	 
+Command (m for help): <i>t</i>
+Partition number (1-10): <i>10</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 10 to 82 (Linux swap)
+  	 
+<comment>(Det bør ordne det... bare for at verificere...)</comment>
+  	 
+Command (m for help): <i>p</i>
+  	 
+Disk /dev/hda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+  	 
+Device Boot      Start         End      Blocks      ID  System
+/dev/hda1               1          21       10552+  83  Linux
+/dev/hda2              22       19870    10003896    5  Extended
+/dev/hda5              22        1037      512032+  83  Linux
+/dev/hda6            1038        5101     2048224+  83  Linux
+/dev/hda7            5102        9165     2048224+  83  Linux
+/dev/hda8            9166       13229     2048224+  83  Linux
+/dev/hda9           13230       17293     2048224+  83  Linux
+/dev/hda10          17294       19870     1298776+  82  Linux Swap
+  	 
+<comment>(Nu, lad os skrive den nye partitionstabel.)</comment>
+  	 
+Command (m for help): <i>w</i>
+The partition table has been altered!
+  	 
+Calling ioctl() to re-read partition table.
+Syncing disks.
+  	 
+#
+</pre>
+  	 
+<p>
+Og det er alt hvad der skulle gøres. Du bør nu være klart til at forsætte med næste
+trin: <uri link="#filesystems">Oprettelse af filesystemer</uri>.
+</p>
+
 
 </body>
 </subsection>
@@ -301,7 +539,7 @@ tilgængelige filsystemer...
 <body>
 
 <p>
-Der er adskillige filsystemer til rådighed. Ext2 og ext3 er fundet stabile på MIPS-arkitekturen, imens de andre er eksperimentielle.
+Der er adskillige filsystemer til rådighed. ReiserFS, Ext2 og ext3 er fundet stabile på MIPS-arkitekturen, imens de andre er eksperimentielle.
 </p>
 
 <p>
@@ -408,6 +646,19 @@ Lav nu filsystemerne på dine for nyligt skabte partitioner (eller
 logiske enheder).
 </p>
 
+<warn>
+Hvis du installerer på en Cobalt-server, husk at <path>/dev/hda1</path> SKAL være
+af typen <e>EXT2 revision 0</e>; Alt andet (e.g. EXT2 revision 1, EXT3,
+ReiserFS, XFS, JFS and others) <e>VIL IKKE VIRKE!</e>
+Du kan formatere partitionen ved at bruge kommandoen: <c>mke2fs -r 0 /dev/hda1</c>.
+</warn>
+  	 
+<warn>
+Også, være på agt at arcboot på nuværende tidspunkt ikke kan læse andre filsystemer end
+EXT2, EXT3 og ISO9660 (nuværende versioner). På grund af dette,
+skal <path>/boot</path> på SGI-maskiner også være på en EXT2- eller EXT3-partition.
+</warn>
+
 </body>
 </subsection>
 <subsection>
@@ -415,7 +666,7 @@ logiske enheder).
 <body>
 
 <p>
-<c>mkswap</c> er kommandoen der bruges til at initialisere swap partitioner:
+<c>mkswap</c> er kommandoen der bruges til at oprette og initialisere swap partitioner:
 </p>
 
 <pre caption="At lave en swap signatur">
@@ -431,7 +682,7 @@ For at aktivere swap-partitionen, brug <c>swapon</c>:
 </pre>
 
 <p>
-Lav og aktiver swap nu.
+Lav og aktiver swap ved at bruge ovenstående kommandoer.
 </p>
 
 </body>
