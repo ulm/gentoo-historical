@@ -278,6 +278,7 @@ This is where you setup Networking.
 
     def update_device(self, button, data=None):   
 	    #if self.active_entry == -1:
+	    if not self.networking_info_device.get_child().get_text() or not self.networking_info_ip.get_text() or not self.mask.get_text(): return
 	    if self.networking_info_device.get_child().get_text() not in self.added_devices:
 		# new entry
 		    self.networking.append({ 'device': self.networking_info_device.get_child().get_text(),
