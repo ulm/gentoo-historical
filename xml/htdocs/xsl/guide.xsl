@@ -414,7 +414,7 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td valign="top">
-							<img src="http://www.ibiblio.org/web-gentoo/images/gentoo-new.gif" alt="new"/>
+							<img src="/images/gentoo-new.gif" alt="new"/>
 							</td>
                             <td valign="middle">
 							We produce Gentoo Linux, a special flavor of Linux that can be automatically 
