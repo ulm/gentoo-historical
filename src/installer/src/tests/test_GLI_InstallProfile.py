@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer Test Suite
 Copyright 2004 Gentoo Technologies, Inc.
-$Header: /var/cvsroot/gentoo/src/installer/src/tests/test_GLI_InstallProfile.py,v 1.2 2004/02/15 02:11:27 esammer Exp $
+$Header: /var/cvsroot/gentoo/src/installer/src/tests/test_GLI_InstallProfile.py,v 1.3 2004/02/15 20:34:09 esammer Exp $
 """
 
 import unittest
@@ -9,6 +9,9 @@ import os
 import GLI
 
 class test_GLIInstallProfile (unittest.TestCase):
+
+	def setUp(self):
+		self.failUnless(os.path.exists("GLI.py"), "Please run tests from src")
 
 	def testInstantiate(self):
 		profile = GLI.InstallProfile();
