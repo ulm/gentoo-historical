@@ -1,7 +1,7 @@
 ﻿<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/nvidia-guide.xml,v 1.2 2004/09/17 10:27:43 bennyc Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/nvidia-guide.xml,v 1.3 2004/10/19 01:13:10 ccpz Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- rev 1.2 by Palatis -->
+<!-- rev 1.7 by ccpz -->
 <guide link="/doc/zh_tw/nvidia-guide.xml">
 <title>Gentoo Linux nVidia 指南</title>
 
@@ -19,8 +19,8 @@ Linux 專用驅動程式。這篇指南教您如何安裝以及設定這些驅�
 
 <license/>
 
-<version>1.0</version>
-<date>May 18, 2004</date>
+<version>1.5</version>
+<date>2004年9月24</date>
 <!-- translate date: Jun 16, 2004 -->
 
 <chapter>
@@ -42,13 +42,23 @@ Loadable module support ---&gt;
 </pre>
 
 <p>
+你也需要啟動核心中的 <e>Memory Type Range Register</e>：
+</p>
+	   	 
+<pre caption="啟動 MTRR">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+							   	 
+<p>
 nVidia 的模組以及函式庫分別放在兩個套件中：<c>nvidia-glx</c> 及 <c>nvidia-ke<!--
 -->rnel</c>。前者為 X11 GLX 函式庫，而後者為核心模組。您兩個都需要，所以應該<!--
--->趁現在安裝他們。
+-->趁現在安裝他們。因為 <c>nvidia-glx</c> 依賴 <c>nvidia-kernel</c>，安裝
+<c>nvidia-glx</c> 就足夠了。
 </p>
 
 <pre caption="安裝 nVidia 驅動程式">
-# <i>emerge nvidia-glx nvidia-kernel</i>
+# <i>emerge nvidia-glx</i>
 </pre>
 
 <p>
@@ -95,6 +105,19 @@ EndSection
 </pre>
 
 <p>
+然後到 <c>Module</c> 小節然後確定載入 <c>glx</c> 模組以及 <c>dri</c> 沒有載入：
+</p>
+  	 
+<pre caption="更新 Module 小節">
+Section "Module"
+<comment>(...)</comment>
+<i># Load  "dri"
+Load  "glx"</i>
+<comment>(...)</comment>
+EndSection
+</pre>
+  	 
+<p>
 執行 <c>opengl-update</c> 讓 X Server 使用 nVidia GLX 函式庫。
 </p>
 
@@ -121,6 +144,48 @@ direct rendering: Yes
 要測試您的 FPS，請執行 <c>glxgears</c>。
 </p>
 
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>解決問題</title>
+<section>
+<title>在有 4Gb 以上記憶體的電腦讓 2D 工作</title>
+<body>
+  	 
+<p>
+如果你在 nVidia 2D 加速上遇到困難，可能是你不能啟動 MTRR 的 write-combining
+range。要確認的話，檢查 <path>/proc/mtrr</path> 的內容：
+</p>
+  	 
+<pre caption="檢查是否啟動 write-combining">
+# <i>cat /proc/mtrr</i>
+</pre>
+  	 
+<p>
+每一行都應該包含 "write-back" 或 "write-combining"。如果你看到有一行有
+"uncachable" 你需要改變 BIOS 設定來修正。
+</p>
+  	 
+<p>
+重開機然後進入 BIOS，找到 MTRR 設定(通常在 "CPU Settings" 中)。把他的設定從
+"continuous" 改成 "discrete"，然後開機回到 Linux。你會發現不再有
+"uncachable" 而且 2D 加速可以正常工作。
+</p>
+  	 
+</body>
+</section>
+<section>
+<title>我碰到關於不支援 4K 堆疊大小的錯誤</title>
+<body>
+  	 
+<p>
+目前的 <c>nvidia-kernel</c> 只支援 8K 堆疊大小。比較新的核心 (2.6.6 及更新的) 已
+經支援 4K 堆疊大小。在核心設定中不要選擇 4K 堆疊大小。你可以在
+<c>Kernel Hacking</c> 區域中找到這項設定。
+</p>
+  	 
 </body>
 </section>
 </chapter>
