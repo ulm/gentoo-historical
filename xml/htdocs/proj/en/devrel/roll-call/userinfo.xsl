@@ -23,7 +23,13 @@
           <xsl:if test="count(status) = 0"><xsl:call-template name="copyData"/></xsl:if>
 	</xsl:when>
 	<xsl:otherwise>
-          <xsl:if test="status = $statusFilter"><xsl:call-template name="copyData"/></xsl:if>
+          <xsl:choose>
+            <xsl:when test="$statusFilter = 'Retired'">
+              <xsl:if test="status = 'Retired'"><xsl:call-template name="copyData"/></xsl:if>
+              <xsl:if test="status = 'Gone'"><xsl:call-template name="copyData"/></xsl:if>
+            </xsl:when>
+            <xsl:when test="status = $statusFilter"><xsl:call-template name="copyData"/></xsl:when>
+          </xsl:choose>
 	</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
