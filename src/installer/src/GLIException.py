@@ -1,12 +1,14 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIException.py,v 1.4 2004/08/25 19:38:10 samyron Exp $
+$Id: GLIException.py,v 1.5 2004/08/30 03:47:44 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 GLIException is the base class for all of the exceptions
 raised by the installer.
 """
+
+from string import upper
 
 class GLIException(Exception):
 	error_levels = ['notice', 'warning', 'fatal']
@@ -27,7 +29,7 @@ class GLIException(Exception):
 		return self.args[2]
 
 	def __str__(self):
-		return repr("%s: %s: %s" % (self.args[0], self.args[1], self.args[2]))
+		return "%s: %s: %s" % (upper(self.args[0]), self.args[1], self.args[2])
 
 class IPAddressError(GLIException):
 	pass
