@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.13 2004/08/22 23:23:39 hadfield Exp $
+# $Id: index.py,v 1.14 2004/11/04 01:48:20 port001 Exp $
 #
 
 import os
@@ -20,8 +20,8 @@ sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr/")
 from Error import exception_handler
 sys.excepthook = exception_handler
 
-from Function import stderrRedirect
-sys.stderr = stderrRedirect()
+from Function import stderr_redirect
+sys.stderr = stderr_redirect()
 
 import Config
 from Function import start_timer, stop_timer, eval_timer
@@ -61,8 +61,6 @@ def main():
                 user_obj.UpdateIP(os.environ['REMOTE_ADDR'])
                 ThisSession.UpdateTS(uid, sess)
                 alias = user_obj.GetAlias()
-
-
     
     if page == "login":
         
