@@ -312,13 +312,18 @@ class Partition:
 			self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 		if existing:
 			parted_part = device._parted_disk.get_partition(minor)
+			label_type = device._parted_disk.type.name
+			if label_type == "loop":
+				dev_node = device._device + str(minor)
+			else:
+				dev_node = device._device
 			if type == "ntfs":
-				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
-				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
-				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
+				block_size = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
+				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
 				free_sec = int(int(block_size) * int(free_blocks) / self._device._sector_bytes)
 				free_sec = free_sec - 2000 # just to be safe
 				self._min_sectors_for_resize = (self._end - self._start + 1) - free_sec
