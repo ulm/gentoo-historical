@@ -1,7 +1,9 @@
 import gtk, gobject
 import GLIScreen
 import GLIUtility
+import Widgets
 import commands, string
+import copy
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -36,6 +38,7 @@ class Panel(GLIScreen.GLIScreen):
 			self.treeview.append_column(column)
 			col_num += 1
 		self.treewindow = gtk.ScrolledWindow()
+		self.treewindow.set_size_request(-1, 100)
 		self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		self.treewindow.add(self.treeview)
 		vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -79,21 +82,58 @@ class Panel(GLIScreen.GLIScreen):
 		vert.pack_start(self.mount_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		mount_button_box = gtk.HBox(gtk.FALSE, 0)
-		mount_button_new = gtk.Button("New")
+		mount_button_new = gtk.Button(" _New ")
 		mount_button_new.connect("clicked", self.new_mount)
 		mount_button_box.pack_start(mount_button_new, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		self.mount_button_update = gtk.Button("Update")
+		self.mount_button_update = gtk.Button(" _Update ")
 		self.mount_button_update.connect("clicked", self.update_mount)
+		self.mount_button_update.set_sensitive(gtk.FALSE)
 		mount_button_box.pack_start(self.mount_button_update, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		self.mount_button_delete = gtk.Button("Delete")
+		self.mount_button_delete = gtk.Button(" _Delete ")
 		self.mount_button_delete.connect("clicked", self.delete_mount)
+		self.mount_button_delete.set_sensitive(gtk.FALSE)
 		mount_button_box.pack_start(self.mount_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		self.mount_button_populate = gtk.Button("Populate Exports")
+		self.mount_button_populate = gtk.Button(" _Populate Exports ")
 		self.mount_button_populate.connect("clicked", self.populate_exports)
+		self.mount_button_populate.set_sensitive(gtk.FALSE)
 		mount_button_box.pack_start(self.mount_button_populate, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		vert.pack_start(mount_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.add_content(vert)
+
+	def disable_all_fields(self):
+		self.mount_info_host.set_text("")
+		self.mount_info_export.get_child().set_text("")
+		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
+		self.mount_info_type.set_text("")
+		self.mount_info_mountpoint.set_text("")
+		self.mount_info_mountopts.set_text("")
+		self.mount_info_host.set_sensitive(gtk.FALSE)
+		self.mount_info_export.set_sensitive(gtk.FALSE)
+		self.mount_info_type.set_sensitive(gtk.FALSE)
+		self.mount_info_mountpoint.set_sensitive(gtk.FALSE)
+		self.mount_info_mountopts.set_sensitive(gtk.FALSE)
+
+	def enable_all_fields(self):
+		self.mount_info_host.set_text("")
+		self.mount_info_export.get_child().set_text("")
+		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
+		self.mount_info_type.set_text("")
+		self.mount_info_mountpoint.set_text("")
+		self.mount_info_mountopts.set_text("")
+		self.mount_info_host.set_sensitive(gtk.TRUE)
+		self.mount_info_export.set_sensitive(gtk.TRUE)
+		self.mount_info_type.set_sensitive(gtk.TRUE)
+		self.mount_info_mountpoint.set_sensitive(gtk.TRUE)
+		self.mount_info_mountopts.set_sensitive(gtk.TRUE)
+
+	def refresh_list_at_top(self):
+		self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		for i in range(0, len(self.netmounts)):
+			self.treedata.append([i, self.netmounts[i]['host'], self.netmounts[i]['export'], self.netmounts[i]['type'], self.netmounts[i]['mountpoint'], self.netmounts[i]['mountopts']])
+		self.treedatasort = gtk.TreeModelSort(self.treedata)
+		self.treeview.set_model(self.treedatasort)
+		self.treeview.show_all()
 
 	def selection_changed(self, treeview, data=None):
 		treeselection = treeview.get_selection()
@@ -101,21 +141,67 @@ class Panel(GLIScreen.GLIScreen):
 		row = treemodel.get(treeiter, 0)
 		self.active_entry = row[0]
 		mount = self.netmounts[self.active_entry]
+		self.enable_all_fields()
 		self.mount_info_host.set_text(mount['host'])
 		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
 		self.mount_info_export.get_child().set_text(mount['export'])
 		self.mount_info_type.set_text(mount['type'])
 		self.mount_info_mountpoint.set_text(mount['mountpoint'])
 		self.mount_info_mountopts.set_text(mount['mountopts'])
+		self.mount_button_update.set_sensitive(gtk.TRUE)
+		self.mount_button_delete.set_sensitive(gtk.TRUE)
+		self.mount_button_populate.set_sensitive(gtk.TRUE)
 
 	def new_mount(self, button, data=None):
-		pass
+		self.mount_info_host.set_text("")
+		self.mount_info_export.get_child().set_text("")
+		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
+		self.mount_info_type.set_text("")
+		self.mount_info_mountpoint.set_text("")
+		self.mount_info_mountopts.set_text("")
+		self.active_entry = -1
+		self.mount_button_update.set_sensitive(gtk.TRUE)
+		self.mount_button_delete.set_sensitive(gtk.FALSE)
+		self.mount_button_populate.set_sensitive(gtk.TRUE)
+		self.enable_all_fields()
+		self.mount_info_host.grab_focus()
 
 	def update_mount(self, button, data=None):
-		print self.mount_info_export.get_child().get_text()
+		if self.active_entry == -1:
+			self.netmounts.append({ 'host': self.mount_info_host.get_text(), 'export': self.mount_info_export.get_child().get_text(), 'type': self.mount_info_type.get_text(), 'mountpoint': self.mount_info_mountpoint.get_text(), 'mountopts': self.mount_info_mountopts.get_text() })
+			self.mount_info_host.set_text("")
+			self.mount_info_export.get_child().set_text("")
+			self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
+			self.mount_info_type.set_text("")
+			self.mount_info_mountpoint.set_text("")
+			self.mount_info_mountopts.set_text("")
+			self.active_entry = -1
+			self.mount_button_update.set_sensitive(gtk.FALSE)
+			self.mount_button_delete.set_sensitive(gtk.FALSE)
+			self.mount_button_populate.set_sensitive(gtk.FALSE)
+		else:
+			self.netmounts[self.active_entry]['host'] = self.mount_info_host.get_text()
+			self.netmounts[self.active_entry]['export'] = self.mount_info_export.get_child().get_text()
+			self.netmounts[self.active_entry]['type'] = self.mount_info_type.get_text()
+			self.netmounts[self.active_entry]['mountpoint'] = self.mount_info_mountpoint.get_text()
+			self.netmounts[self.active_entry]['mountopts'] = self.mount_info_mountopts.get_text()
+		self.refresh_list_at_top()
+		self.disable_all_fields()
 
 	def delete_mount(self, button, data=None):
-		pass
+		self.netmounts.pop(self.active_entry)
+		self.mount_info_host.set_text("")
+		self.mount_info_export.get_child().set_text("")
+		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
+		self.mount_info_type.set_text("")
+		self.mount_info_mountpoint.set_text("")
+		self.mount_info_mountopts.set_text("")
+		self.active_entry = -1
+		self.mount_button_update.set_sensitive(gtk.FALSE)
+		self.mount_button_delete.set_sensitive(gtk.FALSE)
+		self.mount_button_populate.set_sensitive(gtk.FALSE)
+		self.refresh_list_at_top()
+		self.disable_all_fields()
 
 	def populate_exports(self, button, data=None):
 		host = self.mount_info_host.get_text()
@@ -131,6 +217,11 @@ class Panel(GLIScreen.GLIScreen):
 				remotemount = string.strip(remotemount)
 				mountlist.append([remotemount])
 			self.mount_info_export.get_child().set_text(oldtext)
+		else:
+			msgdialog = Widgets.Widgets().error_Box("Invalid Host or IP", "You must specify a valid hostname or IP address to scan for exports")
+			result = msgdialog.run()
+			if result == gtk.RESPONSE_ACCEPT:
+				msgdialog.destroy()
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
@@ -138,3 +229,10 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.netmounts = copy.deepcopy(self.controller.install_profile.get_network_mounts())
+		self.refresh_list_at_top()
+		self.disable_all_fields()
+
+	def deactivate(self):
+		self.controller.install_profile.set_network_mounts(self.netmounts)
+		return True
