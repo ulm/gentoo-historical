@@ -764,7 +764,7 @@
       <xsl:when test="title">
         <p class="chaphead">
           <span class="chapnum">
-            <a name="doc_chap{$chid}"><xsl:number/>.</a>
+            <a name="doc_chap{$chid}"><xsl:number/>. </a>
           </span>
           <xsl:value-of select="title"/>
         </p>
