@@ -1,14 +1,31 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.7 2003/03/06 13:54:26 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.8 2003/03/08 05:45:17 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
-# Distributed under the GPL v2 or later
-# Please be careful with this, don't use it if you're not reasonably fluent
-#  with Perl.
+# Distributed under the GPL v2 or later, and all that cruft
+# 
+# eperl.pl applies Perl code to all ebuilds in Portage, displays and prompts
+#   to accept changes, then runs echangelog upon leaving each directory.
+#
+# Please be careful with this, and watch all changes closely.
+# By using it, you accepts all responsibility for your actions.
+# Please have ECHANGELOG_USER set properly.
+#
+# Usage: eperl.pl '<code>' 'ChangeLog reason'
+# 
+# <code> being Perl code that may modify $_, which is each individual line of
+#        all ebuilds.
+#
+# Examples:
+# eperl.pl 's/Copyright (\d{4}-)2003/Copyright ${1}2004/' 'Updated Copyrights'
+# eperl.pl 's/[~-]?x86//g if /^KEYWORDS/' 'x86 abandoned, ppc better afterall'
+# eperl.pl 's/python/perl/g' 'Act of God'
 #
 use strict;
 use File::Find;
+use File::Basename;
 use Term::ReadLine;
 use Term::ANSIColor qw(:constants);
+use Getopt::Long;
 
 ###############################################################################
 #  User prefs
@@ -17,12 +34,17 @@ use Term::ANSIColor qw(:constants);
 my $PORTDIR = "/usr/gentoo-x86";
 
 # Turn off all changes
-my $debug = 0;
+my $debug = 1;
+
+# How many control-c's it takes to really kill it (please use q when possible)
+my $max_zaps = 5;
 
 ###############################################################################
 #  Setup of globals 'n stuff
 #
 $SIG{INT} = \&catch_zap;
+my $num_zaps = 0;
+
 my $term = new Term::ReadLine 'eperl.pl';
 my $path_changes = 0;
 my $path = "";
@@ -30,16 +52,26 @@ my $path = "";
 ###############################################################################
 #  Main - Check &wanted for the real meat
 #
-unless ( scalar @ARGV == 2 ) {
-# We need two arguments
-	print RED "\nPlease be careful with this, and watch all changes closely.\n";
-	print "By using it, you accepts all responsibility for ", BOLD, "your ";
-	print RESET RED "actions.\nPlease have ECHANGELOG_USER set properly.\n\n";
-	print RESET "Usage: eperl.pl '<code>' 'ChangeLog reason'\n\n";
+
+# Grab options
+my $filter = "";
+Getopt::Long::Configure("no_ignore_case", "bundling");
+GetOptions(
+    'help|h|?'		=> \&print_usage,
+    'filter=s'		=> \$filter
+) or &print_usage, exit;
+
+# Make sure ECHANGELOG_USER is set
+if ($ENV{'ECHANGELOG_USER'} eq "") {
+	print RED "Please have \$ECHANGELOG_USER set", RESET, "\n";
 	exit;
 }
 
+# We want two non-option arguments
+&print_usage unless scalar @ARGV == 2;
+
 find(
+# Start our search of the tree
 	{ 
 		wanted => \&wanted,
 		postprocess => \&postprocess,
@@ -52,12 +84,19 @@ find(
 #  Subroutines
 #
 sub wanted {
+# Runs once for each ebuild
 	# We want only proper ebuilds
 	return if /skel\.ebuild$/ || !/\.ebuild$/;
+	
+	if($filter ne "") {
+	# Filter the worked on files for the --filter option
+		return unless /$filter/;
+	}
 	
 	print BOLD YELLOW "$_", RESET, "\n";
 	# Put the entire ebuild in @contents
 	my @contents = get_file($_);
+	my $file = $_;
 	# Apply the Perl code, which prints changed lines
 	my ($changes, @new_contents) = apply_code($ARGV[0], @contents);
 	
@@ -147,6 +186,7 @@ sub put_file {
 }
 
 sub postprocess {
+# Executed upon leaving each ebuild directory
 	if($path_changes) {
 		# Run echangelog in the ebuild dir
 		print RED "Updating ChangeLog in $path for $path_changes ";
@@ -161,5 +201,35 @@ sub postprocess {
 }
 
 sub catch_zap {
+# Stop attempts to control-c, so changelogs get updated proper-like
 	print BOLD RED "Please exit by typing 'q'", RESET, "\n";
+	if (++$num_zaps >= $max_zaps) {
+		print BOLD RED "Exit forced", RESET, "\n";
+		exit;
+	}
+}
+
+sub print_usage {
+# If you're wondering, give up now
+	my $desc = "Apply Perl code to ebuilds globally";
+	my $usage = "[options] '<code>' 'Changelog Reason'";
+	my %options = (
+		"--filter=<regex>" => 
+		"Checked against the path to the ebuild, skipped if it doesn't match"
+	);
+	
+	print "\n";
+	print BOLD basename($0), "- $desc", RESET;
+	print "\n\n";
+	print BOLD YELLOW "Usage:", RESET, "\n";
+	print "   " . basename($0) . " $usage\n\n";
+	print BOLD YELLOW "Options:", RESET, "\n";
+	for (sort keys %options) {
+		print "   $_\t$options{$_}\n";
+	}
+	print "\n";
+	print BOLD "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>", RESET;
+	print "\n\n";
+	
+	exit;
 }
