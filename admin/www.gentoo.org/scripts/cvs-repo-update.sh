@@ -18,7 +18,7 @@ mkdir -p ${WORKDIR}/cvsroot
 # grab a recent copy of the cvs modules for viewcvs
 
 RSYNC_RSH=ssh rsync -a cvs.gentoo.org:/home/cvsroot/gentoo \
---exclue /home/cvsroot/gentoo/admin ${WORKDIR}/cvsroot/gentoo
+--exclude /home/cvsroot/gentoo/admin ${WORKDIR}/cvsroot/gentoo
 
 RSYNC_RSH=ssh rsync -a cvs.gentoo.org:/home/cvsroot/gentoo-x86 \
 ${WORKDIR}/cvsroot/gentoo-x86
