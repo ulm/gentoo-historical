@@ -2,7 +2,7 @@
  * (c)1999 Paul `Rusty' Russell.  GPL.
  *
  * CVS version: $Source: /var/cvsroot/gentoo/src/gcloop/compressloop_ucl.c,v $
- * Version $Id: compressloop_ucl.c,v 1.1 2004/02/03 02:46:37 lu_zero Exp $
+ * Version $Id: compressloop_ucl.c,v 1.2 2004/06/24 19:09:19 lu_zero Exp $
  *
  * CHANGELOG:
  * * Fri Apr 11 2003 Luca Barbato
