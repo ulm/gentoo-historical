@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.33 2005/03/20 09:03:47 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.34 2005/03/25 20:45:57 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -380,7 +380,7 @@ class InstallProfile:
 			raise GLIException("StageTarballURIError", 'fatal', 'set_stage_tarball_uri',  "Must be a string!")
 
 		# Check validity
-		if not GLIUtility.is_uri(stage_tarball_uri):
+		if stage_tarball_uri and not GLIUtility.is_uri(stage_tarball_uri):
 			raise GLIException("CustomStage3TarballURIError", 'fatal', 'set_stage_tarball_uri',  "Invalid URI!")
 		
 		self._stage_tarball_uri = stage_tarball_uri
