@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.6 2004/07/24 19:03:28 hadfield Exp $
+# $Id: MySQL.py,v 1.7 2004/08/22 23:19:27 hadfield Exp $
 #
 
 import sys
@@ -18,7 +18,6 @@ import Const
 import MySQLdb
 from Function import start_timer, stop_timer, eval_timer
 from Logging import err, logwrite
-import Template as TemplateHandler
 
 __modulename__ = "MySQL"
 
