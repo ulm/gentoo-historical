@@ -438,20 +438,82 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 	configuration.close()
 	return filename
 
+#----------------------------Now for the client_config functions
+def set_arch_template():
+	template_choices = ("x86", "amd64","sparc", "alpha", "hppa", "ppc")
+	code, menuitem = d.menu("Please Select Architecture Template:",choices=dmenu_list_to_choices(template_choices))
+	if code != DLG_OK:
+		menuitem = template_choices[int(menuitem)-1]
+		client_profile.set_architecture_template(None, menuitem, None)
+def set_logfile():
+	code, logfile = d.inputbox("Enter the desired path for the install log:", init="/var/log/install.log")
+	if code == DLG_OK: client_profile.set_log_file(None, logfile, None)
+def set_root_mount_point():
+	code, rootmountpoint = d.inputbox("Enter the mount point for the chroot enviornment:", init="/mnt/gentoo")
+	if code == DLG_OK: client_profile.set_root_mount_point(None, rootmountpoint, None)
+def set_client_networking():
+	d.msgbox("You shall have no networking for the install until samyron writes this function (please bug him to!).")
+def set_livecd_password():
+# The root password will be set here
+	code, passwd1 = d.passwordbox("Enter the new LIVECD root password")
+	if code != DLG_OK: return
+	code, passwd2 = d.passwordbox("Enter the new LIVECD root password again")
+	if code != DLG_OK: return
+	if passwd1 != passwd2:
+		d.msgbox("The passwords do not match")
+		return
+	client_profile.set_root_passwd(None, crypt.crypt(passwd1, get_random_salt()), None)
+def set_enable_ssh():
+	if d.yesno("Do you want SSH enabled during the install?") == DLG_YES:
+		client_profile.set_enable_ssh(None, True, None)
+	else:
+		client_profile.set_enable_ssh(None, False, None)
+def set_client_kernel_modules():
+	code, kernel_modules_list = d.inputbox("Enter a list of kernel modules you want loaded before installation:", init="")
+	if code == DLG_OK: client_profile.set_kernel_modules(None, kernel_modules_list, None)
+def save_client_profile(xmlfilename="", askforfilename=True):
+	code = 0
+	filename = xmlfilename
+	if askforfilename:
+		code, filename = d.inputbox("Enter a filename for the XML file", init=xmlfilename)
+		if code != DLG_OK: return None
+	if GLIUtility.is_file(filename):
+		if not d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == DLG_YES:
+			return None
+	configuration = open(filename ,"w")
+	configuration.write(client_profile.serialize())
+	configuration.close()
+	return filename
+# ------------------------------------------------------------------
 d.setBackgroundTitle("Gentoo Linux Installer")
 d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If your system dies a horrible, horrible death, don't come crying to us (okay, you can cry to klieber).", height=10, width=50, title="Welcome")
 
-#if d.yesno("Do you want to use the ClientController?") == DLG_YES:
-#	client_controller_xml = None
-#	if d.yesno("Do you have a previously generated XML file for the ClientController?") == DLG_YES:
-#		code, client_controller_xml = d.inputbox("Enter the filename of the XML file")
-#	if code != DLG_OK:
-#		pass
-#		# code to fill in data in client_profile
-#	else:
-#		client_profile.parse(client_controller_xml)
-#	# code to actually run the client_controller functions
-#	d.msgbox("ClientController done")
+if d.yesno("Do you want to use the ClientController?") == DLG_YES:
+	client_config_xml_file = None
+	while 1:
+		if d.yesno("Do you have a previously generated XML file for the ClientConfiguration?") == DLG_YES:
+			code, client_controller_xml_file = d.inputbox("Enter the filename of the XML file")
+			if code != DLG_OK: break
+			if GLIUtility.is_file(client_controller_xml_file): break
+			d.msgbox("Cannot open file " + client_controller_xml_file, height=7, width=50)
+			client_controller_xml_file = None
+			continue
+		break
+	if client_config_xml_file != None:
+			client_profile.parse(client_config_xml_file)
+	# code to actually run the client_controller functions
+	set_arch_template()
+	set_logfile()
+	set_root_mount_point()
+	set_client_networking()
+	set_livecd_password()
+	set_enable_ssh()
+	set_client_kernel_modules()
+	if d.yesno("Do you want to save the ClientConfiguration XML file?") == DLG_YES:
+		if client_config_xml_file == None: client_config_xml_file = ""
+		client_config_xml_file = save_client_profile(xmlfilename=client_config_xml_file)
+
+	d.msgbox("ClientController done")
 
 client_profile.set_interactive(None, True, None)
 cc.set_configuration(client_profile)
