@@ -94,6 +94,7 @@ This is where you select what timezone you are in.
 		# add to the list
 		self.selected_path.append(entry)
 	    
+	    self.treeview.get_selection().select_path(entry5)
 	    self.selected_path.reverse()
 	    #print self.selected_path
 	    

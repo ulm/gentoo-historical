@@ -156,6 +156,7 @@ This is where you setup Networking.
 	self.mask.set_text("")
 	self.networking_info_ip.set_text("")
 	
+	
 	self.networking_info_broadcast.set_sensitive(gtk.TRUE)
 	self.networking_info_gateway.set_sensitive(gtk.TRUE)
 	self.networking_info_device.set_sensitive(gtk.TRUE)
@@ -192,7 +193,13 @@ This is where you setup Networking.
 	self.networking_info_gateway.set_text(mount['mountopts'])
 	self.networking_button_update.set_sensitive(gtk.TRUE)
 	self.networking_button_delete.set_sensitive(gtk.TRUE)
-	#self.mount_button_populate.set_sensitive(gtk.TRUE)
+	if(self.networking_info_ip.get_text()=="dhcp"):
+	    self.networking_info_broadcast.set_sensitive(gtk.FALSE)
+	    self.networking_info_gateway.set_sensitive(gtk.FALSE)
+	    self.networking_info_ip.set_sensitive(gtk.FALSE)
+	    self.mask.set_sensitive(gtk.FALSE)
+	    # now check the checkbox
+	    self.dhcp_checkbox.set_active(gtk.TRUE)
 
     def new_device(self, button, data=None):
 	self.active_entry = -1
@@ -220,20 +227,25 @@ This is where you setup Networking.
 		    self.active_entry = -1
 		    self.networking_button_update.set_sensitive(gtk.FALSE)
 		    self.networking_button_delete.set_sensitive(gtk.FALSE)
-	    else:
-		    self.networking[self.active_entry]['type'] = self.ethernet_devices[self.networking_info_device.get_active()]
-		    self.networking[self.active_entry]['host'] = self.networking_info_ip.get_text()
-		    self.networking[self.active_entry]['export'] = self.mask.get_text()
-		    self.networking[self.active_entry]['mountpoint'] = self.networking_info_broadcast.get_text()
-		    self.networking[self.active_entry]['mountopts'] = self.networking_info_gateway.get_text()
 	    self.refresh_list_at_top()
 	    self.disable_all_fields()
 	else:
-	    widgets=Widgets()
-	    msgdialog=widgets.error_Box("Duplicate Entry","You already entered configuration for this device! \n Delete it first.")
+	    # update it
+    	    widgets=Widgets()
+	    msgdialog=widgets.error_Box2("Duplicate Entry","Replace existing data?")
 	    result = msgdialog.run()
 	    if result == gtk.RESPONSE_ACCEPT:
 		msgdialog.destroy()
+		self.networking[self.active_entry]['type'] = self.ethernet_devices[self.networking_info_device.get_active()]
+		self.networking[self.active_entry]['host'] = self.networking_info_ip.get_text()
+		self.networking[self.active_entry]['export'] = self.mask.get_text()
+		self.networking[self.active_entry]['mountpoint'] = self.networking_info_broadcast.get_text()
+		self.networking[self.active_entry]['mountopts'] = self.networking_info_gateway.get_text()
+		self.refresh_list_at_top()
+		self.disable_all_fields()
+	    else:
+		msgdialog.destroy()
+		print "nothing changed"
 
     def delete_device(self, button, data=None):
 	self.networking.pop(self.active_entry)
@@ -255,7 +267,30 @@ This is where you setup Networking.
 
     def deactivate(self):
 	#self.controller.install_profile.set_network_mounts(self.networking)
-	return True
+	# fix the structure to correctly get into structure for setting
+	interfaces={}
+	for count in range(len(self.networking)):
+	    interfaces[self.networking[count]['type']]=(self.networking[count]['host'],self.networking[count]['export'],self.networking[0]['mountpoint'])
+	#self.networking[0]['mountopts']
+	print interfaces
+	return_value = False
+	try:
+	    self.controller.install_profile.set_network_interfaces(interfaces)
+	    for count in range(len(self.networking)):
+		if interfaces[count]['mountopts']!="":
+		    # if its not blank, its the default gateway!
+		    self.controller.install_profile.set_default_gateway(None,self.networking[count]['mountopts'],{'interface':self.networking[count]['type']})
+	    return_value = True
+	except:
+	    widgets=Widgets()
+	    msgdialog=widgets.error_Box("Malformed IP","Malformed IP address, please fix it!")
+	    result = msgdialog.run()
+	    if result == gtk.RESPONSE_ACCEPT:
+		msgdialog.destroy()
+	    return_value = False
+	#for item in self.networking:
+	#    print item
+	return return_value
     
     def get_ethernet_devices(self):
 	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
@@ -274,6 +309,9 @@ This is where you setup Networking.
 	if(("OFF", "ON")[widget.get_active()]=="ON"):
 	    self.networking_info_ip.set_text("dhcp")
 	    self.disable_all_fields()
+	    self.networking_info_broadcast.set_text("None")
+	    self.networking_info_gateway.set_text("None")
+	    self.mask.set_text("None")
 	else:
 	    self.networking_info_ip.set_text("")
 	    self.enable_all_fields()
