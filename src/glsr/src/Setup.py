@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.7 2004/11/12 20:37:49 port001 Exp $
+# $Id: Setup.py,v 1.8 2004/12/21 18:50:43 port001 Exp $
 #
 
 import sys
@@ -159,7 +159,7 @@ db.commit()
 
 print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["state_table"])
 state_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
-       %s_table_opt     INT(10)        NOT NULL default '0');""" %
+       %s_table_opt     DATE        NOT NULL);""" %
                 tuple(operator.repeat([Config.MySQL["state_table"]], 2)))
 
 cursor.execute(state_table)
@@ -170,7 +170,7 @@ print "\nInserting default data:"
 print "  >>> %s" % Config.MySQL["state_table"]
 query = ("INSERT INTO %s%s (%s_table_opt) " % (Config.MySQL["prefix"],
                                                Config.MySQL["state_table"],
-                                               Config.MySQL["state_table"]) + "VALUES ('0')")
+                                               Config.MySQL["state_table"]) + "VALUES ('%s')" % strftime("%Y-%m-%d", gmtime()))
 
 cursor.execute(query)
 db.commit()

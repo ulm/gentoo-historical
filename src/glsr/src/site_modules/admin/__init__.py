@@ -1,10 +1,12 @@
-__all__ = ["Page_Main",
-           "Page_News",
-           "Page_User",
-           "Page_Script",
-           "Page_Language",
-           "Page_Category",
-           "Page_Statistics"
-          ]
+__all__ = {
+    "Page_Main": ["main"],
+    "Page_News": ["news"],
+    "Page_User": ["user"],
+    "Page_Script": ["script"] ,
+    "Page_Language": ["language"],
+    "Page_Category": ["category"],
+    "Page_Statistics": ["stat"]
+    }
+                                                                                
+failover = {"module": "Page_Main", "page": "main"}
 
-failover = "Page_Main"

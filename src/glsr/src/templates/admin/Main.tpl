@@ -35,6 +35,7 @@
       </tr>
     </table>
     </form>
+    <br />
     {!IF}
 
     <form name="optimize_tables" method="POST" action="index.py">
