@@ -46,22 +46,29 @@
   <body>
  
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $categorie]">
-      <p><b>
-      <xsl:call-template name="documentname">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="fileid"  select="fileid/text()"/>
-        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-        <xsl:with-param name="docid"   select="@id"/>
-      </xsl:call-template>
-      </b>: <xsl:call-template name="documentabstract">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="fileid"  select="fileid/text()"/>
-        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-        <xsl:with-param name="docid"   select="@id"/>
-      </xsl:call-template>
-      </p>
+      <xsl:choose>
+        <xsl:when test="bugs/bug[@stopper = 'yes']">
+          <!-- Ignore showstopper -->
+        </xsl:when>
+        <xsl:otherwise>
+          <p><b>
+          <xsl:call-template name="documentname">
+            <xsl:with-param name="metadoc" select="$metadoc"/>
+            <xsl:with-param name="fileid"  select="fileid/text()"/>
+            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+            <xsl:with-param name="docid"   select="@id"/>
+          </xsl:call-template>
+          </b>: <xsl:call-template name="documentabstract">
+            <xsl:with-param name="metadoc" select="$metadoc"/>
+            <xsl:with-param name="fileid"  select="fileid/text()"/>
+            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+            <xsl:with-param name="docid"   select="@id"/>
+          </xsl:call-template>
+          </p>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:for-each>
   
   </body>
@@ -76,22 +83,29 @@
       <body>
 
         <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $currentcat]">
-          <p><b>
-          <xsl:call-template name="documentname">
-            <xsl:with-param name="metadoc"  select="$metadoc"/>
-            <xsl:with-param name="fileid"   select="fileid/text()"/>
-            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
-            <xsl:with-param name="docid"    select="@id"/>
-          </xsl:call-template>
-          </b>: <xsl:call-template name="documentabstract">
-            <xsl:with-param name="metadoc"  select="$metadoc"/>
-            <xsl:with-param name="fileid"   select="fileid/text()"/>
-            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
-            <xsl:with-param name="docid"    select="@id"/>
-          </xsl:call-template>
-          </p>
+          <xsl:choose>
+            <xsl:when test="bugs/bug[@stopper = 'yes']">
+
+            </xsl:when>
+            <xsl:otherwise>
+              <p><b>
+              <xsl:call-template name="documentname">
+                <xsl:with-param name="metadoc"  select="$metadoc"/>
+                <xsl:with-param name="fileid"   select="fileid/text()"/>
+                <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+                <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+                <xsl:with-param name="docid"    select="@id"/>
+              </xsl:call-template>
+              </b>: <xsl:call-template name="documentabstract">
+                <xsl:with-param name="metadoc"  select="$metadoc"/>
+                <xsl:with-param name="fileid"   select="fileid/text()"/>
+                <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+                <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+                <xsl:with-param name="docid"    select="@id"/>
+              </xsl:call-template>
+              </p>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:for-each>
       
       </body>
@@ -173,13 +187,20 @@
   <xsl:param name="catid" select="text()"/>
   <ul><b><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $catid]">
-      <xsl:call-template name="documentname">
-        <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="fileid"  select="fileid"/>
-        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
-        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
-        <xsl:with-param name="docid"   select="@id"/>
-      </xsl:call-template>
+      <xsl:choose>
+        <xsl:when test="bugs/bug[@stopper = 'yes']">
+          <!-- Ignore showstopper case -->
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="documentname">
+            <xsl:with-param name="metadoc" select="$metadoc"/>
+            <xsl:with-param name="fileid"  select="fileid"/>
+            <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+            <xsl:with-param name="docid"   select="@id"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:for-each>
     <xsl:for-each select="document($metadoc)/metadoc/categories/cat[@parent = $catid]">
       <xsl:call-template name="list">
