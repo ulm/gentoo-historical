@@ -171,13 +171,7 @@ class Panel(GLIScreen.GLIScreen):
 
 	def update_mount(self, button, data=None):
 		if self.active_entry == -1:
-			self.netmounts.append({ 'host': self.mount_info_host.get_text(), 'export': self.mount_info_export.get_child().get_text(), 'type': self.mount_info_type.get_text(), 'mountpoint': self.mount_info_mountpoint.get_text(), 'mountopts': self.mount_info_mountopts.get_text() })
-			self.mount_info_host.set_text("")
-			self.mount_info_export.get_child().set_text("")
-			self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
-			self.mount_info_type.set_text("")
-			self.mount_info_mountpoint.set_text("")
-			self.mount_info_mountopts.set_text("")
+			self.netmounts.append({ 'host': self.mount_info_host.get_text(), 'export': self.mount_info_export.get_child().get_text(), 'type': self.mount_types[self.mount_info_type.get_active()], 'mountpoint': self.mount_info_mountpoint.get_text(), 'mountopts': self.mount_info_mountopts.get_text() })
 			self.active_entry = -1
 			self.mount_button_update.set_sensitive(gtk.FALSE)
 			self.mount_button_delete.set_sensitive(gtk.FALSE)
