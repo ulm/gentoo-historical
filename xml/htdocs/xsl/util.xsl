@@ -7,8 +7,8 @@
   <xsl:param name="parent" select="false"/>
   <xsl:if test='not($nick="none")'>
     <xsl:choose>
-      <xsl:when test='document("/proj/en/metastructure/userinfo.xml")//user[@username=$nick]'>
-        <xsl:for-each select='document("/proj/en/metastructure/userinfo.xml")//user[@username=$nick]'>
+      <xsl:when test='document("/proj/en/metastructure/userinfo.xml")//user[@username=translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'>
+        <xsl:for-each select='document("/proj/en/metastructure/userinfo.xml")//user[@username=translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'>
           <xsl:if test='$parent="true"'><xsl:text>(</xsl:text></xsl:if>
 	    <xsl:choose>
 	      <xsl:when test="realname/@fullname">

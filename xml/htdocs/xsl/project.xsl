@@ -166,7 +166,7 @@
 		
 		</ti>
 		<ti>
-			<xsl:value-of select="$nick"/>
+			<xsl:value-of select='translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")'/>
 		</ti>
 		<ti>
 			<xsl:value-of select="@role"/>
