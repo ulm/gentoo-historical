@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Stat.py,v 1.1 2004/06/04 06:38:36 port001 Exp $
+# $Id: Stat.py,v 1.2 2004/08/22 23:20:29 hadfield Exp $
 #
 
 __modulename__ = "Stat"
@@ -17,7 +17,7 @@ def DBSize():
     result = MySQL.Query("SHOW TABLE STATUS", fetch="all")
 
     for row in result:
-	dbsize += row["Data_length"] + row["Index_length"]
+        dbsize += row["Data_length"] + row["Index_length"]
 
     return str(dbsize)
 
