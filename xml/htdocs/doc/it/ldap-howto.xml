@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/it/ldap-howto.xml" lang="it">
+<guide link="/doc/it/ldap-howto.xml">
 <title>Gentoo Guide all'autenticazione OpenLDAP </title>
 
 <author title="Autore">
@@ -32,8 +32,8 @@
 
 <license />
 
-<version>0.8</version>
-<date>16 Settembre 2004</date>
+<version>0.10</version>
+<date>28 Novembre 2004</date>
 
 <chapter>
 <title>Iniziamo con OpenLDAP</title>
@@ -41,14 +41,6 @@
     <title>Cos'è LDAP?</title>
         <body>
 	 
-  	 <warn>
-        Questo documento è sorpassato ed è mantenuto online solamente affinché
-        i  collaboratori possano usare il sorgente per correggere i bug 
-riguardanti questo documento. I bug sono:
-  	 <uri link="http://bugs.gentoo.org/show_bug.cgi?id=39718">#39718</uri>, <uri
-  	 link="http://bugs.gentoo.org/show_bug.cgi?id=68855">#68855</uri>.
-  	 </warn>
-  	
             <p>
                 LDAP è l'acronimo di <e>Lightweight Directory Access Protocol</e>.
                 Basato su X.500, comprende molte delle sue funzioni primarie,
@@ -149,7 +141,13 @@ uid: ..   jhon            <comment>(OU-specific data)</comment>
         </p>
 
 <pre caption="Installazione di OpenLDAP">
-# <i>emerge openldap pam_ldap nss_ldap migrationtools</i>
+# <i>emerge openldap pam_ldap nss_ldap</i>
+  	 
+<comment>(Ci sarà bisogno di migrationtools-64 che è, in questo momento, disponibile sono in ambienti ~arch)
+  	  </comment>
+# <i>mkdir /etc/portage</i>
+# <i>echo "net-nds/migrationtools" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge migrationtools</i>
 # <i>chown ldap:ldap /var/lib/openldap-ldbm /var/lib/openldap-data /var/lib/openldap-slurp</i>
 
 </pre>
@@ -301,16 +299,26 @@ $EXTENDED_SCHEMA = 1;
         <body>
             <p>
                 Passeremo ora alla configurazione di PAM per 
-                permettere l'autorizzazione LDAP. Aggiungete in blocco le
-                seguenti linee a <path>/etc/pam.d/system-auth</path>:
+                permettere l'autorizzazione LDAP. Editare 
+ <path>/etc/pam.d/system-auth</path> in modo che appaia come l'esempio che segue:
             </p>
 
  <pre caption="/etc/pam.d/system-auth">
-auth        sufficient    /lib/security/pam_ldap.so use_first_pass
-account     sufficient    /lib/security/pam_ldap.so
+auth    required    /lib/security/pam_env.so
+auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
+auth    sufficient  /lib/security/pam_ldap.so use_first_pass
+auth    required    /lib/security/pam_deny.so 
+account sufficient  /lib/security/pam_unix.so
+account sufficient  /lib/security/pam_ldap.so
+account required    /lib/security/pam_deny.so
+password required /lib/security/pam_cracklib.so retry=3
+password sufficient /lib/security/pam_unix.so nullok use_authtok shadow md5
 password    sufficient    /lib/security/pam_ldap.so use_authtok
-session     required      /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0
-session     optional      /lib/security/pam_ldap.so
+password    required /lib/security/pam_deny.so
+session required    /lib/security/pam_limits.so
+session required    /lib/security/pam_unix.so
+session required    /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0
+session optional    /lib/security/pam_ldap.so
 </pre>
 
             <p>
@@ -393,12 +401,15 @@ root:x:0:0:root:/root:/bin/bash
                 di quali dati gli utenti possono leggere e/o scrivere:
             </p>
 <pre caption="/etc/openldap/slapd.conf">
+access to attribute="userPassword"
+ by dn="uid=root,ou=people,dc=genfic,dc=com" write
+ by dn="uid=John, ou=People,dc=genfic,dc=com" write
+ by anonymous auth
+ by self write
+ by * none
+
 access to *
-  by dn="uid=root,ou=people,dc=genfic,dc=com" write
-  by users read
-  by anonymous auth
-access to attrs=userPassword,gecos,description,loginShell
-  by self write
+ by dn="uid=root,ou=People,dc=genfic,dc=com" write
 </pre>
 
             <p>
