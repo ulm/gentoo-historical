@@ -14,6 +14,7 @@ import select
 class RunInstall(gtk.Window):
 
 	which_step = 0
+	install_done = False
 
 	def __init__(self, controller):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -61,6 +62,7 @@ class RunInstall(gtk.Window):
 		gobject.timeout_add(1000, self.tail_logfile)
 
 	def poll_notifications(self):
+		if self.install_done: return False
 		notification = self.controller.cc.getNotification()
 		if notification == None:
 			return True
@@ -84,15 +86,19 @@ class RunInstall(gtk.Window):
 					self.controller.cc.next_step()
 				return True
 			if ndata == GLIClientController.INSTALL_DONE:
+				self.install_done = True
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
+				print "Install done!"
 				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install completed successfully!")
 				msgdlg.run()
 				msgdlg.destroy()
-				print "Install done!"
 				return False
 
 	def tail_logfile(self):
+		if self.install_done:
+			self.output_log.close()
+			return False
 		if not self.output_log:
 			try:
 				self.output_log = open("/tmp/compile_output.log")
