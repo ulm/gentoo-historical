@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.39 2005/01/18 08:03:23 codeman Exp $
+$Id: GLIClientController.py,v 1.40 2005/01/19 03:44:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -84,6 +84,7 @@ class GLIClientController(Thread):
 		# Wait for the self._install_event to be set before starting the installation.
 		# start_install() is called to pass here
 		self._install_event.wait()
+		self._install_event.clear()
 
 		if self._install_profile == None and not interactive:	
 			print "You can not do a non-interactive install without an InstallProfile!"
