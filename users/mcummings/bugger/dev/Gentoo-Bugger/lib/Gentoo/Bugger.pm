@@ -3,6 +3,10 @@ package Gentoo::Bugger;
 use 5.008002;
 use strict;
 use warnings;
+use Carp qw(croak);
+use WWW::Mechanize 1.02;
+use WWW:Bugzilla 0.4;
+use HTML::Strip 1.02;
 
 require Exporter;
 
@@ -29,6 +33,18 @@ our $VERSION = '0.01';
 
 
 # Preloaded methods go here.
+
+sub new {
+	my $proto = shift;
+	my $class = ref($proto) || $proto;
+	my $self = {};
+	$self->{BUGID} = undef;
+	$self->{SEARCH} = undef;
+	bless ($self, $class);
+	return $self;
+}
+
+
 
 1;
 __END__
