@@ -121,7 +121,6 @@ only NFS is supported.
 		self.mount_info_host.set_text("")
 		self.mount_info_export.get_child().set_text("")
 		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
-#		self.mount_info_type.set_text("")
 		self.mount_info_mountpoint.set_text("")
 		self.mount_info_mountopts.set_text("")
 		self.mount_info_host.set_sensitive(gtk.FALSE)
@@ -135,7 +134,6 @@ only NFS is supported.
 		self.mount_info_host.set_text("")
 		self.mount_info_export.get_child().set_text("")
 		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
-#		self.mount_info_type.set_text("")
 		self.mount_info_mountpoint.set_text("")
 		self.mount_info_mountopts.set_text("")
 		self.mount_info_host.set_sensitive(gtk.TRUE)
@@ -163,7 +161,12 @@ only NFS is supported.
 		self.mount_info_host.set_text(mount['host'])
 		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
 		self.mount_info_export.get_child().set_text(mount['export'])
-		self.mount_info_type.set_text(mount['type'])
+		i = 0
+		for type in self.mount_types:
+			if type == mount['type']:
+				self.mount_info_type.set_active(i)
+			else:
+				i = i + 1
 		self.mount_info_mountpoint.set_text(mount['mountpoint'])
 		self.mount_info_mountopts.set_text(mount['mountopts'])
 		self.mount_button_update.set_sensitive(gtk.TRUE)
@@ -179,6 +182,24 @@ only NFS is supported.
 		self.mount_info_host.grab_focus()
 
 	def update_mount(self, button, data=None):
+		if not GLIUtility.is_ip(self.mount_info_host.get_text()) and not GLIUtility.is_hostname(self.mount_info_host.get_text()):
+			msgdialog = Widgets.Widgets().error_Box("Invalid Host or IP", "You must specify a valid hostname or IP address")
+			result = msgdialog.run()
+			if result == gtk.RESPONSE_ACCEPT:
+				msgdialog.destroy()
+			return
+		if self.mount_info_export.get_child().get_text() == "":
+			msgdialog = Widgets.Widgets().error_Box("Invalid Entry", "You must enter a value for the export field")
+			result = msgdialog.run()
+			if result == gtk.RESPONSE_ACCEPT:
+				msgdialog.destroy()
+			return
+		if self.mount_info_mountpoint.get_text() == "":
+			msgdialog = Widgets.Widgets().error_Box("Invalid Entry", "You must enter a mountpoint")
+			result = msgdialog.run()
+			if result == gtk.RESPONSE_ACCEPT:
+				msgdialog.destroy()
+			return
 		if self.active_entry == -1:
 			self.netmounts.append({ 'host': self.mount_info_host.get_text(), 'export': self.mount_info_export.get_child().get_text(), 'type': self.mount_types[self.mount_info_type.get_active()], 'mountpoint': self.mount_info_mountpoint.get_text(), 'mountopts': self.mount_info_mountopts.get_text() })
 			self.active_entry = -1
@@ -232,6 +253,9 @@ only NFS is supported.
 		self.netmounts = copy.deepcopy(self.controller.install_profile.get_network_mounts())
 		self.refresh_list_at_top()
 		self.disable_all_fields()
+		self.mount_button_update.set_sensitive(gtk.FALSE)
+		self.mount_button_delete.set_sensitive(gtk.FALSE)
+		self.mount_button_populate.set_sensitive(gtk.FALSE)
 
 	def deactivate(self):
 		self.controller.install_profile.set_network_mounts(self.netmounts)
