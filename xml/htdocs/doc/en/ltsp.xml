@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/ltsp.xml,v 1.8 2004/05/12 08:47:32 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/ltsp.xml,v 1.9 2004/08/20 14:24:36 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/ltsp.xml">
@@ -20,8 +20,8 @@ This guide shows you how to setup a LTSP Server with Gentoo.
 
 <license/>
 
-<version>1.5</version>
-<date>May 12, 2004</date>
+<version>1.6</version>
+<date>August 20, 2004</date>
 <chapter>
 <title>Introduction</title>
 <section>
@@ -161,21 +161,26 @@ Now start NFS.
 <title>xinetd/tftp</title>
 <body>
 <p>
-TFTP requires a bit of configuring to get it to work properly. First,
-edit <path>/etc/conf.d/in.tftpd</path> to set tftpd's path correctly:
+TFTP requires a bit of configuring to get it to work properly. First, edit
+<path>/etc/conf.d/in.tftpd</path> to set tftpd's options and path correctly:
 </p>
 
 <pre caption="/etc/conf.d/in.tftpd">
 INTFTPD_PATH="/tftpboot"
-INTFTPD_OPTS="${INTFTPD_PATH}"
+INTFTPD_OPTS="-s ${INTFTPD_PATH}"
 </pre>
 
 <p>
-Next, configure xinetd to run TFTP and allow remote connections. First,
-check to see if the file <path>/etc/xinetd.d/tftp</path> was created when
-you emerged tftp. By default TFTP won't be started by xinetd, so to change 
-this edit <path>/etc/xinetd.d/tftp</path> and replace <c>disable=yes</c> with 
-<c>disable=no</c>.
+The -s flag specifies that TFTP is to run in secure chrooted mode
+(recommended). This means that you don't need to include the
+<path>/tftpboot</path> path for example in the DHCP configuration.
+</p>
+
+<p>
+Next, configure xinetd to run TFTP and allow remote connections. By default
+TFTP won't be started by xinetd, so edit <path>/etc/xinetd.d/tftp</path> and
+replace <c>disable=yes</c> with <c>disable=no</c>. If the file is missing just
+go ahead and create <path>/etc/xinetd.d/tftp</path> with the contents below.
 </p>
 
 <pre caption="/etc/xinetd.d/tftp">
@@ -221,7 +226,7 @@ at the example:
 <pre caption="/etc/hosts">
 127.0.0.1        localhost
 192.168.0.254    server      server.yourdomain.com
-192.168.0.1      ws-1        ws-1.yourdomain.com
+192.168.0.1      ws001       ws001.yourdomain.com
 </pre>
 
 </body>
@@ -257,7 +262,7 @@ option domain-name            "yourdomain.com";
 
 <codenote>LTSP Path Options</codenote>
 option root-path              "192.168.0.254:/opt/ltsp/i386";
-filename                      "/lts/vmlinuz-2.4.19-ltsp-1";
+filename                      "/lts/vmlinuz-2.4.24-ltsp-1";
 
 <codenote>If your workstations have ISA NICs uncomment the following</codenote>
 <codenote>lines and alter the driver and IO</codenote>
@@ -269,7 +274,7 @@ filename                      "/lts/vmlinuz-2.4.19-ltsp-1";
 shared-network WORKSTATIONS {
   subnet 192.168.0.0 netmask 255.255.255.0 {
     <codenote>Distribute dynamic IPs to the workstations</codenote>
-    range dynamic-bootp 192.168.1.1 192.168.1.16;
+    range dynamic-bootp 192.168.0.1 192.168.0.16;
     <codenote>Workstation specific configuration for PXE booting</codenote>
     #host ws001 {
     #  hardware ethernet     00:E0:06:E8:00:84;
@@ -343,10 +348,11 @@ also accept remote connections.
 </p>
 
 <p>
-First change your <path>Xaccess</path> file, uncomment the following line:
+First change your <path>/etc/X11/xdm/Xaccess</path> file,
+uncomment the following line:
 </p>
 
-<pre caption="Xaccess">
+<pre caption="/etc/X11/xdm/Xaccess">
 #*                   #any host can get a login window
 </pre>
 
@@ -396,14 +402,14 @@ Remember, if your display manager is already running, restarting the X server vi
 <body>
 
 <p>
-If you workstations don't support PXE booting, you must create a 
-boot-floppy, which is needed to start your workstations. Go to 
-<uri>http://www.rom-o-matic.net/5.0.9/</uri>, select your NIC, press 
-<e>Get ROM</e> and write the image to a floppy:
+If your workstations don't support PXE booting, you can create a boot-floppy
+which is used to start your workstations and connect to the terminal server.
+Go to <uri>http://www.rom-o-matic.net</uri>, select the latest version, select
+your NIC, press <e>Get ROM</e> and write the image to a floppy:
 </p>
 
 <pre caption="Write floppy image">
-# <i>cat nicfile.lzdsk > /dev/fd0</i>
+# <i>cat nicfile.zdsk > /dev/fd0</i>
 </pre>
 
 </body>
