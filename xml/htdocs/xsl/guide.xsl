@@ -564,7 +564,7 @@
                             <xsl:value-of select="document(.)/news/title"/>
                           </b>
                           <br/>
-                          <font size="-3">Posted on <xsl:value-of select="document(.)/news/date"/> by <xsl:value-of select="document(.)/news/poster"/></font>
+                          <font size="-3">Posted on <xsl:value-of select="func:format-date(document(.)/news/date)"/> by <xsl:value-of select="document(.)/news/poster"/></font>
                         </font>
                       </td>
                     </tr>
