@@ -27,9 +27,16 @@
 			        Show sub-projects
 			      </uri>
 			    </xsl:when>
+			    <xsl:when test="$showlevel&gt;=3">
+			      <uri link="/proj/en/index.xml?showlevel=2">
+			        Hide sub-sub-projects
+			      </uri>
+			    </xsl:when>
 			    <xsl:otherwise>
 			      <uri link="/proj/en/index.xml?showlevel=1">
-			        Hide sub-projects
+			        Hide sub-projects</uri>
+                              <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]></xsl:text>
+			      <uri link="/proj/en/index.xml?showlevel=3">Show sub-sub-projects
 			      </uri>
 			    </xsl:otherwise>
 			  </xsl:choose>
