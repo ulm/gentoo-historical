@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.36 2005/01/05 05:02:00 codeman Exp $
+$Id: GLIClientController.py,v 1.37 2005/01/09 08:25:16 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -66,7 +66,7 @@ class GLIClientController(Thread):
 			print "You can not do a non-interactive install without a ClientConfiguration!"
 			sys.exit(1)
 
-		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.enable_ssh]
+		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.enable_ssh, self.start_portmap]
 		# Do Pre-install client-specific things here.
 		while len(steps) > 0:
 			try:
@@ -179,6 +179,11 @@ class GLIClientController(Thread):
 	
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
+
+	def start_portmap(self):
+		status = GLIUtility.spawn('/etc/init.d/portmap start')
+		if not GLIUtility.exitsuccess(status):
+			raise GLIException("PortmapError", 'warning', 'start_portmap', "Could not start the portmap service!")
 
 	def configure_networking(self):
 		# Do networking setup right here.

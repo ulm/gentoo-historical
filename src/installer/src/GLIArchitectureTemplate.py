@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.31 2005/01/07 07:38:08 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.32 2005/01/09 08:25:16 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -216,7 +216,27 @@ class ArchitectureTemplate:
 						
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
-		pass
+		"""
+		<agaffney> it'll be much easier than mount_local_partitions
+<agaffney> make sure /etc/init.d/portmap is started
+<agaffney> then mount each one: mount -t nfs -o <mountopts> <host>:<export> <mountpoint>
+		"""
+		nfsmounts = self._install_profile.get_network_mounts()
+		for netmount in nfsmounts:
+			if nfsmounts[netmount]['type'] == "NFS" or nfsmounts[netmount]['type'] == "nfs":
+				mountopts = nfsmounts[netmount]['mountopts']
+				if mountopts:
+					mountopts = "-o "+mountopts
+				host = nfsmounts[netmount]['host']
+				export = nfsmounts[netmount]['export']
+				mountpoint = nfsmounts[netmount]['mountpoint']
+				if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
+					if exitstatus != 0:
+						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
+				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint)
+				if not GLIUtility.exitsuccess(ret):
+					raise GLIException("MountError", 'warning','mount_network_shares','Could not mount an NFS partition')
 		
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
