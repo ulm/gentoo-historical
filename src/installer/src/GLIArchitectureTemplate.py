@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.65 2005/03/24 23:20:32 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.66 2005/03/25 01:07:26 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -405,7 +405,7 @@ class ArchitectureTemplate:
 			PKGDIR = "/usr/portage/packages"
 			PORTAGE_TMPDIR = "/var/tmp/portage"
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
-			self._emerge("sys-kernel/livecd-kernel", binary_only=True)
+			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 		else:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
