@@ -1,0 +1,359 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/ja/altinstall.xml">
+<title>Gentoo Linuxの他のインストール方法に関する手引き</title>
+<author title="Author">
+	<mail link="lordviram@rebelpacket.net">Travis Tilley</mail>
+</author>
+<author title="Contributor">
+	<mail link="davoid@gentoo.org">Faust A.Tanasescu</mail>
+</author>
+<author title="Contributor"
+	><mail link="aliz@gentoo.org">Daniel Ahlberg</mail>
+</author> 
+<author title="翻訳">
+	<mail link="s00t206@stmail.eng.kagawa-u.ac.jp">石井博文</mail>
+</author>
+<abstract>
+この解説では通常の方法以外でGentooをインストールする手段をいくつか紹介しています。
+CD-ROMドライブがなかったり、CDから起動できないコンピュータなどでは、ここに書かれているような特別なインストール方法が必要となるでしょう。
+</abstract>
+
+<version>0.3</version>
+<date>1 June 2003</date>
+<!-- Original revision: 1.8 -->
+
+<chapter>
+<title>この文章について</title>
+<section>
+<body>
+
+<p>一般的なCDから起動する方法でインストールできない(あるいは、そうしたくない)時のための手引きを用意しました。この文章は、Gentoo Linuxをインストールするためのいくつかの代替的な手段を提供します。その中に気に入ったものがあれば、それがあなたのためのちょっと変わったインストール方法です。
+もしもGentooの便利なインストール方法を知っていたり、面白いインストール方法を思いついたりしたなら、迷わずそれを書き上げて<mail link="lordviram@rebelpacket.net">私まで送ってください</mail>。</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>ネットワークブート・インストール</title>
+<section>
+
+<title>必要なもの</title>
+<body>
+<p>
+ネットワークブート・インストールには、最低でもTFTPサーバが稼働しているホストコンピュータと、それ自身がネットワークブート可能なBIOSや、GRUBを起動するためのフロッピードライブ、あるいはその他のネットワーク対応のブートローダを備えたコンピュータが必要です。
+おそらくDHCPサーバも必要になるかもしれません。もちろん最新のISOイメージも必要です。これは<uri>http://www.ibiblio.org/gentoo/releases/build/</uri>から入手できます。
+</p>
+<p>
+(訳注: ネットワークブート・インストールを行うには、バージョン1.2以前のISOイメージが必要です。1.4以降のISOイメージ(いわゆる、LiveCD)は使えませんのでご注意ください。
+なお、ISOイメージは<uri>http://mirror.gentoo.gr.jp/releases/build/</uri>等のミラーサイトからも入手可能です。ミラーサイトのご利用もご検討ください)
+</p>
+
+</body>
+</section>
+
+<section>
+<title>概要</title>
+<body>
+
+<p>
+ネットワーク経由でイメージを呼び出すために、まず、ネットワークブートを行うコンピュータがIPアドレスを取得しなければなりません。
+これには色々な方法がありますが、どんな方法でも構いません。
+個人的にはBOOTPやDHCPを設定する代わりにGRUBの<c>ifconfig</c>コマンドを使う方が楽なので、私はいつもGRUBを好んで使っていますが、あなたのコンピュータが既にネットワークから起動できるならGRUBは必要ないでしょう。
+</p>
+
+<p>
+あなたのコンピュータがIPアドレスを取得したら、次に必要な手順はあなたが何を起動しようとしていて、それが何処で確保できるのかを確認することです。
+さきほど言ったように、これはBOOTPやDHCPサーバの設定を行った時のようにGRUBのコマンドを使えばとても簡単です。
+また、initrdを取得する方法を見つけて、それをルートファイルシステムとして用いる事をカーネルに教えてやらなければなりません。
+</p>
+
+<p>
+カーネルが起動し、ルートファイルシステムがマウントされれば通常の方法でインストールを続ける事ができます。構築済みのイメージはCDから呼び出したり、TFTPを使ってネットワークからダウンロードしたりできます。
+</p>
+
+</body>
+</section>
+<section>
+<title>GRUBを使う</title>
+<body>
+<p>
+ネットワークブートを目的としてGRUBを使う場合、お使いのネットワークデバイスをサポートするようにGRUBをコンパイルしておく必要があります。これは、インストール先がフロッピーであるかGentooをインストールしようとしているコンピュータのハードディスクであるかには関係ありません。
+もしインストール先にネットワークに対応したGRUBがインストールされているなら、次の段階へ進む事ができます。ちなみに、GRUBは<uri>ftp://alpha.gnu.org/gnu/grub/</uri>から入手できます。
+</p>
+
+<p>
+configureで、私が使っているtulipのカードを有効にした例:
+</p>
+
+<pre caption="手作業によるGRUBのインストール">
+# <i>./configure --enable-tulip --prefix=/usr</i>
+# <i>make &amp;&amp; make install</i>
+</pre>
+
+<p>
+もし現在Gentooを使っていて、Gentooのツールを使ってGRUBをインストールしたいのなら、お使いのカードが使えるように設定するために順番にインストール作業を行う必要があります。
+例えば、ebuildを使ってGRUBでtulipのカードのサポートを有効にするなら次のようになります。
+</p>
+
+<pre caption="Gentoo LinuxでのGRUBの設定とインストール">
+# <i>ebuild /usr/portage/sys-apps/grub/grub-0.91.ebuild clean fetch unpack</i>
+# <i>cd /var/tmp/portage/grub-0.91/work/grub-0.91/</i>
+# <i>./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man \ </i>
+# <i>--infodir=/usr/share/info --enable-tulip</i>
+# <i>make</i>
+# <i>touch /var/tmp/portage/grub-0.91/.compiled</i>
+# <i>cd /usr/portage/</i>
+# <i>ebuild sys-apps/grub/grub-0.91.ebuild install merge</i>
+</pre>
+
+<p>
+さて、GRUBのシェル自体はインストールできました。
+今度はブートセクタにGRUBをインストールしましょう。たとえGentooをインストールするコンピュータのハードディスクのブートセクタにインストールできたとしても、ブート用のフロッピーにもインストールしておいた方が良いと思います。
+これには二つの方法があります。GRUBのシェル自体を使う方法と、<c>grub-install</c>というコマンドを使う方法です。
+フロッピーにGRUBをインストールするなら<c>grub-install</c>を使った方が良いでしょう。
+</p>
+
+<pre caption="grub-installコマンドの例">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>grub-install --root-directory=/mnt/floppy/ '(fd0)'</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>
+<c>grub-install</c> はいつも使えるわけではないので、GRUBをインストールするのに最も良い手段であるとは言えません。
+ブートセクタから起動した時のようにGRUBのシェルが確実に動くのであれば、GRUBを使うのがより望ましいでしょう。
+次に挙げるのはGRUBのシェルを使ってフロッピーにGRUBをインストールする例です。
+</p>
+
+<pre caption="GRUBのシェルを使う方法">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>mkdir -p /mnt/floppy/boot/grub/</i>
+# <i>cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/</i>
+# <i>grub</i>
+grub> <i>root (fd0)</i>
+grub> <i>setup (fd0)</i>
+grub> <i>quit</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>
+さて、これでGRUBでブート可能なフロッピーが出来ました。
+次にカーネルとinitrdを呼び出すためにTFTPサーバ(netkitのTFTPサーバがオススメです)の設定が必要です。もしinetdを使っているのなら、<path>/etc/inetd.conf</path>に次のような一行を書く必要があります。
+</p>
+<pre caption="/etc/inetd.conf">
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+
+<p>Gentoo LinuxでnetkitのTFTPサーバをインストールするなら、コマンドラインでemerge net-misc/netkit-tftpとタイプしてください。</p>
+
+<note>
+xinetdのためのebuildもあります。もしもそちらを使いたければご自由にどうぞ。でも私はxinetdを使わないので、xinetdを使ってtftpdを設定する方法が分かりません。
+もしxinetdを使ってうまくいった方がいれば、どうやってTFTPをセットアップしたか教えてください。この手引きに書き足します。
+</note>
+
+<p>
+さて、TFTPサーバが用意できたので、次はカーネルとそれを設置するためのinitrd上のルートディレクトリが必要です。
+カーネルは自由にカスタマイズしてコンパイルしたものが使えますが、Gentooを走らせるのに必要なdevfsや、ネットワークブートの際に使うためのinitrdなどの必要な条件を備えたものであることを確かめておいてください。
+initrdの実体は、GentooのISOに含まれているrescue.gzのはずです。
+</p>
+
+<impo>ISOイメージをCDに焼かずにマウントする場合は、ループバックファイルシステムがサポートされている必要があります。</impo>
+
+<pre>
+# <i>mkdir /tftpboot</i>
+# <i>mount -o loop /path/to/gentoo-ix86-1.1a.iso /mnt/cdrom/</i>
+# <i>cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot</i>
+# <i>chmod 644 /tftpboot/*</i>
+# <i>umount /mnt/cdrom/</i>
+</pre>
+
+<p>さっき作ったとっておきのGRUBのフロッピーで、インストールするマシンを起動しましょう。
+起動したら、IPアドレスの取得方法、カーネルのありかやカーネルオプション、initrdがどこにあるかなどを指定します。</p>
+
+<pre>
+grub> <i>ifconfig --address=192.168.0.10 --server=192.168.0.2</i>
+grub> <i>root (nd)</i>
+grub> <i>kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 </i>
+      <i>prompt_ramdisk=0 ramdisk_size=24000 root=/dev/ram0 rw</i> <comment>(全てひとつの行です)</comment>
+grub> <i>initrd /tftpboot/rescue.gz</i>
+grub> <i>boot</i>
+</pre>
+
+<note>
+さらに、GRUBを使ってIPアドレスの設定をするならBOOTPとDHCPが使えます。
+bootpコマンドとdhcpコマンドを使ってください。
+</note>
+
+<p>
+マシンを起動する事ができたら通常の方法でインストールできます。
+元にしたCDに付属しているインストール方法をご覧ください。
+</p>
+</body>
+</section>
+</chapter>
+
+
+
+
+
+<chapter> <title>既存のLinuxディストリビューションからGentooをインストールする</title> 
+<section> <title> 必要なもの </title> 
+<body>
+<p>
+既存のLinuxディストリビューション上からGentooをインストールするには、既存のシステムにchrootコマンドがインストールされていて、インストールするGentooのtarアーカイブやISOイメージが用意されている必要があります。
+お持ちのtarアーカイブ(ところで、tarアーカイブはtar.gzかtbzに圧縮されているものである必要があります)に収録されていない機能を使いたければ、ネットワークに接続できるとなお良いでしょう。
+本稿の著者は「ホスト側の」OSとしてRedHat Linux7.3を使いましたが、これは大して重要ではありません。さあ、始めましょう！
+</p>
+</body>
+</section>
+
+<section> <title> 概要 </title>
+<body>
+<p>
+まず、既存のLinuxパーティションの容量を変更してGentoo用のパーティションを確保し、マウントしてそこにtarアーカイブを展開し、インストール対象のシステムへchrootしてビルド作業を始めます。
+bootstrapの作業が終ってしまえば、あとは起動できるようにするなどのシステムの最終的な設定を行えば、再起動してGentooを使うまでの準備ができたことになります。
+</p>
+
+</body>
+</section>
+
+<section> <title> Gentooのためのスペースを作る方法 </title>
+<body>
+
+<p>
+ルートパーティションは"/"にマウントされるファイルシステムです。
+私のシステムでmountコマンドを使ってみた結果を御覧になれば、何について書いているかすぐに分かって頂けると思います。ディスク領域をどれだけ使っていてどれだけリサイズすれば良いかは、df (disk free)コマンドを使えば分かります。ルートパーティションを無理矢理リサイズしないように注意してください！
+リサイズに使うツールがサポートしていればどんな方法でリサイズしても構いませんが、それについてはまた後程触れる事にします。
+</p>
+
+
+<pre caption="ファイルシステムの情報">
+# <i>mount</i>
+/dev/hdb2 on / type ext3 (rw) 
+none on /proc type proc (rw) 
+none on /dev/pts type devpts (rw,gid=5,mode=620) 
+none on /dev/shm type tmpfs (rw) 
+# <i>df -h </i>
+Filesystem           Size Used Avail Use% Mounted on 
+/dev/hdb2            4.0G 1.9G  2.4G  82% /
+none		      38M    0    38M   0% /dev/shm 
+</pre>
+
+<p>
+御覧の通り、"/"にマウントされているパーティションは2.4GBの空き領域のある/dev/hda2に割り当てられています。私の場合は、これを400MBの空き領域を残してリサイズしようと思います。
+つまり、Gentoo用に2GBを確保する訳です。まあ、このくらい用意すれば良いんじゃないかなと思います。いろいろインストールできることでしょう。
+しかし、ほとんどのユーザにとっては1GBでも十分でしょう。さあ、パーティションの確保を始めましょう！
+</p>
+
+</body> </section>
+
+<section> <title> パーティションのリサイズのためにpartedを構築 </title> 
+<body>
+<p>
+partedは日常色々な場面で使っているツールを開発している、GNUという歴史ある偉大で大規模なプロジェクトが提供しているユーティリティです。
+
+ここで挙げるのはたった一つのツールです。
+しかし、このような場面では非常に役に立ちます。これはpartedと呼ばれるパーティションエディタで、<uri>http://www.gnu.org/software/parted/</uri> から入手できます。
+</p>
+
+<note>
+同じようにパーティションをリサイズできるツールは他にもありますが、著者はPartitionMagic(tm)や同じような機能のある他のソフトウェアの事はよく知らないしあまり興味がないので、そういったものに関する事は読者の皆さんにお任せします。
+</note>
+
+<p> 
+先程のページからリサイズするつもりのファイルシステムの種類と、partedがそれに対応しているかどうかを探してください。
+もし不幸な事に対応していなければ、Gentooのために何処かのパーティションを潰して再インストールしなければなりません。
+ここで問題があります。私達はLinuxのルートパーティションをリサイズするつもりですが、それゆえ"/"をリサイズするための最小限のLinuxシステムと、事前にコンパイルされたpartedを格納したフロッピーディスクが必要になります。
+しかしながら、Linuxを走らせたままで対象のパーティションをアンマウントできるならあなたは幸運です。何を有効にするか迷わなくて良いのですから。
+さて、partedをコンパイルし、アンマウントしたリサイズ先のパーティション上で走らせてみましょう。私のシステムでどのように行ったかを次に挙げます。
+</p>
+
+<impo>
+そのパーティションに対して行おうとしている操作をpartedがサポートしているかどうか確認してください！
+</impo>
+
+<p>
+tomsrtbtのブート/ルート用のディスク(無料です)を<uri>http://freshmeat.net/tomsrtbt" </uri>から入手し、ソフトウェアパッケージに付属している解説書の内容に従ってフロッピーを作成し、次の手順のために新しいフロッピーをドライブに挿れてください。
+</p>
+
+<note>
+Linuxは「目的を実現する手段は一つではない」という言葉と同義であると言えます。
+目的はアンマウントされたパーティション上でpartedを使う事なので、それが実現できるなら手段は問いません。tomsrtbtのもの以外のboot/rootディスクを使う事もできます。
+この手順は必ずしも必要であるとは限りません。要はリサイズ先のファイルシステムをアンマウントして、その上でLinuxを起動した状態でpartedを走らせれば良いのです。
+</note>
+
+<pre caption="ユーティリティ・ディスクの作成">
+# <i>mkfs.minix /dev/fd0</i>
+480 inodes
+1440 blocks
+Firstdatazone=19 (19)
+Zonesize=1024
+Maxsize=268966912
+</pre>
+ではpartedをビルドしましょう。
+まだダウンロードしていなかったり、展開していなかったりするのなら、すぐにダウンロードして展開し、目的のディレクトリへcdしましょう。
+そして、次のコマンドでユーティリティを構築し、フロッピーディスクへコピーします。
+
+<pre caption="ユーティリティ・フロッピーディスクの構築">
+# <i> mkdir /floppy; mount -t minix /dev/fd0 /floppy &amp;&amp; 
+export CFLAGS="-O3 -pipe -fomit-frame-pointer -static" &amp;&amp; ./configure 
+&amp;&amp; make &amp;&amp; cp parted/parted /floppy &amp;&amp; umount /floppy </i>
+</pre>
+
+<p>
+おめでとうございます！
+これで再起動してパーティションをリサイズする準備ができました。
+ここから後は最低でもGNUのウェブサイトにあるpartedのドキュメントをざっと読んでから始めてください。
+大容量のハードディスクだとリサイズに30分程度かかることがありますが、我慢して待ちましょう。tomsrtbtのブートディスクをフロッピードライブに入れて再起動し、ログインします。ログインできたらpartedを/floppyから呼び出せるように、先程作ったユーティリティ・ディスクに入れ換えてmount /dev/fd0 /floppyとタイプしてください。
+さあ、始めましょう。partedを起動し、パーティションをリサイズします。
+この長ったらしい作業が終ってしまえば、Gentooをインストールして本当の楽しみを見付けることができます。さて、再起動して元のLinuxシステムに戻りましょう。
+操作するドライブは、リサイズするパーティションを含んでいるドライブです。
+例えば、/dev/hda3をリサイズするならドライブは/dev/hdaになります。
+</p>
+
+<pre caption="tomsrtbtのシステムにログインした場合に使うコマンド">
+# <i>mount /dev/fd0 /floppy </i>
+# <i>cd /floppy; ./parted [操作対象のドライブ]</i>
+(parted) <i> print </i>
+Disk geometry for /dev/hdb: 0.000-9787.148 megabytes
+Disk label type: msdos
+Minor    Start       End     Type      Filesystem  Flags
+1          0.031   2953.125  primary   ntfs        
+3       2953.125   3133.265  primary   linux-swap  
+2       3133.266   5633.085  primary   ext3        
+4       5633.086   9787.148  extended              
+5       5633.117   6633.210  logical               
+6       6633.242   9787.148  logical   ext3        
+(parted) <i> help resize </i>
+  resize MINOR START END        resize filesystem on partition MINOR
+
+        MINOR is the partition number used by Linux.  On msdos disk labels, the
+        primary partitions number from 1-4, and logical partitions are 5
+        onwards.
+        START and END are in megabytes
+(parted) <i> resize 2 3133.266 4000.000 </i>
+</pre>
+
+<impo>
+我慢してお待ちください！コンピュータは働いています！
+マシンのケースについているLEDを見れば本当に働いているのが分かるはずです。
+この作業には2分から30分程度はかかるでしょう。
+</impo>
+
+<p>
+リサイズが終わったら、先程説明したように元のLinuxシステムを再起動してください。
+そして<uri link="/doc/en/gentoo-x86-install.xml">http://www.gentoo.org/doc/en/gentoo-x86-install.xml</uri>(<uri link="http://www.gentoo.org/doc/ja/gentoo-x86-install.xml">日本語訳</uri>)を開き、ステップ6、7、と9から17までを行ってください。
+
+ステップ7に取り掛かる前に<path>/mnt/gentoo</path>を作るのを忘れないでください。LiveCDから起動していないので、ステップ8では必要なtarアーカイブをダウンロードしなくてはいけません。
+
+楽しんでくださいね！
+</p>
+</body>
+</section>
+</chapter>
+</guide>
