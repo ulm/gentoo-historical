@@ -43,6 +43,10 @@ foreach my $line (@package_list){
 	open(FILE,"$ebuild")|| die "unable to open $ebuild:$!";
 	my $filecontent; { local $/ = undef; $filecontent = <FILE>; }
 	close(FILE);
+ 	##############
+	# Some people have put \" in an ebuild to escape "'s when shown, so let's keep them, but we need to move them out of the way
+	##############
+	$filecontent =~ s/\\\"/-c-/g;
 	
 	##############
 	# start populating the hash, version first, as we know we have that.
@@ -68,6 +72,10 @@ foreach my $line (@package_list){
 	my $description = "";
 	if ($filecontent=~ /^DESCRIPTION="([^"]*)"/msi){
 		$description=$1;
+		################
+		# lets move the -c-'s back to "'s
+		$description=~ s/-c-/\"/g;
+
 		# lets clean up the descriptions to stop the xml parser barfing
 		$description=~s/\&/\&amp\;/g;
 		$description=~s/\</\&lt\;/g;
@@ -94,6 +102,7 @@ foreach my $line (@package_list){
 	#############
 	$packages{$category}{$name}{depend} ="none";
 	my $depend="";
+	my $rdepend="";
 	if ($filecontent=~ /^DEPEND="([^"]*)"/msi){
 		$depend = $1;
 		$depend=~s/\</\&lt\;/g;
@@ -101,6 +110,7 @@ foreach my $line (@package_list){
 		my @depends = split('\n',$depend);
 		my $depend_list="";
 		foreach my $line (@depends){
+			if ($line eq '${RDEPEND}'){$rdepend="present"; next};
 			$depend_list .= "<li>$line</li>";
 		}
 		$depend="<ul>$depend_list</ul>";
@@ -108,6 +118,29 @@ foreach my $line (@package_list){
 		$depend= "no Depend list found";
 	}
 	$packages{$category}{$name}{depend} = $depend ;
+	###########
+	# Check for and create run-time dependancies
+	###########
+	if ($rdepend eq "present"){
+		if ($filecontent=~ /^RDEPEND="([^"]*)"/msi){
+			$rdepend= $1;
+			$rdepend=~s/\</\&lt\;/g;
+			$rdepend=~s/\>/\&gt\;/g;
+			my @rdepends = split('\n',$rdepend);
+			my $rdepend_list="";
+			foreach my $line (@rdepends){
+				next if ($line eq '');
+				$rdepend_list .= "<li>$line</li>";
+			}
+			$rdepend="<ul>$rdepend_list</ul>";
+		}
+		$packages{$category}{$name}{rdepend} = $rdepend;
+	} else {
+		$packages{$category}{$name}{rdepend} = "No Run-Time Dependancies";
+	}
+
+
+
 	$category_list{$category}="present";
 }
 
@@ -209,6 +242,10 @@ foreach my $category (keys %category_list){
 			<tr>
 				<th>Package Dependencies</th>
 				<ti>$packages{$category}{$name}{'depend'}</ti>
+			</tr>
+			<tr>
+				<th>Run-Time Dependencies</th>
+				<ti>$packages{$category}{$name}{'rdepend'}</ti>
 			</tr>
 			<tr>
 				<th>Licensed under</th>
