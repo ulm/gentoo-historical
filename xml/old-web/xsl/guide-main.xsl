@@ -406,12 +406,15 @@ User Docs:<br/>
 						<br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
 						General Discussion:<br/>#gentoo<br/><br/>
-						Gentoo Linux/PPC:<br/>#gentooppc <font color="#ff0000">(new!)</font><br/><br/>
-						Gentoo Linux/Sparc:<br/>#gentoosparc <font color="#ff0000">(new!)</font><br/><br/>
+						Gentoo Linux/PPC:<br/>#gentoo-ppc <font color="#ff0000">(new!)</font><br/><br/>
+						Gentoo Linux/Sparc:<br/>#gentoo-sparc <font color="#ff0000">(new!)</font><br/><br/>
 						Low-bandwidth chat:<br/>#gentoo-user <font color="#ff0000">(new!)</font><br/><br/>
 						Server-related chat:<br/>#gentoo-server <font color="#ff0000">(new!)</font><br/><br/>
 						En Fran&#231;ais:<br/>#gentoofr <font color="#ff0000">(new!)</font><br/><br/>
 						En Espa&#241;ol:<br/>#gentoo-es <font color="#ff0000">(new!)</font><br/><br/>
+						På norsk:<br/>#gentoo-no <font color="#ff0000">(new!)</font><br/><br/>
+						På svenska:<br/>#gentoo-se <font color="#ff0000">(new!)</font><br/><br/>
+						Auf Deutsch:<br/>#gentoo.de <font color="#ff0000">(new!)</font><br/><br/>
 						<br/><br/></p></td></tr></table>
 					</td></tr>
 				</table>
