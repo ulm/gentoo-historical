@@ -14,8 +14,8 @@ Linux 1.2.  The Gentoo Linux installation process supports various installation
 approaches, depending upon how much of the system you want to custom-build from
 scratch.</abstract>
 
-<version>1.51</version>
-<date>10 June 2002</date>
+<version>1.52</version>
+<date>19 July 2002</date>
 
 <chapter>
 <title>About the Install</title>
@@ -78,7 +78,7 @@ CD.</p>
 <p>Next, you'll be greeted with a small list of commands available on the boot
 CD, including <c>nano</c> (a pico editor clone) and instructions for setting up
 the network.  Then, you'll be prompted to select your preferred keymap,
-followed by PCI autodection.  The PCI autodetection process will automatically
+followed by PCI autodetection.  The PCI autodetection process will automatically
 load the appropriate kernel modules for many popular PCI SCSI and ethernet
 devices.  After this, you can hit enter to enter the minimal boot CD Linux
 environment.  You should have a root ("<c>#</c>") prompt on the current
@@ -118,8 +118,12 @@ modules from /lib/modules, again using <c>modprobe</c>:</p>
 
 <p>Above, we modprobe the <c>aic7xxx</c> SCSI driver and then make sure that SCSI CD-ROM (<c>sr_mod</c>)
 and disk (<c>sd_mod</c>) support is loaded.</p>
-<note><c>hdparm</c> is now included on -r10 and later of the iso.  If any of your drives require tweaking, now
-would be a good time to do so.</note>
+<note><c>hdparm</c> is included on the Gentoo iso.  
+If any of your drives require tweaking, now
+would be a good time to do so.  On reasonably modern hardware
+<c>hdparm -d 1 /dev/hdx</c> should be quite safe.  You can use 
+<c>hdparm -v /dev/hdx</c> to check your drive's settings,
+and <c>hdparm -t /dev/hdx</c> to check your drive's performance.</note>
 </body>
 </section>
 </chapter>
@@ -138,7 +142,7 @@ trickery.</p>
 <p>As cardmgr detects which hardware is present, your speaker should emit a
 few reassuring beeps, and your PCMCIA network card should hum to life. You can
 of course insert the PCMCIA card after loading cardmgr too, if that's 
-preferrable. (Technically, you need not run 
+preferable. (Technically, you need not run 
 <i>cardmgr</i> if you know exactly which module your PCMCIA card requires. 
 But if you don't, loading all PCMCIA modules and see which sticks won't work,
 as all PCMCIA modules load obligingly and hang around for a PCMCIA card to 
@@ -273,7 +277,7 @@ providing data journaling as well.  ReiserFS is a B*-tree based filesystem
 that promises very good small file performance, and greatly outperforms both ext2 and
 ext3 when dealing with small files (files less than 4k), often by a factor of
 10x-15x.  However, we do <e>not</e> recommend ReiserFS at this time,
-due to repeated occurances of file-system corruption with the 2.4.x series
+due to repeated occurences of file-system corruption with the 2.4.x series
 kernels.  ReiserFS has metadata journaling, but no data journaling.  XFS
 is a high-performance enterprise-class filesystem with metadata journaling that
 is fully supported under Gentoo Linux.
@@ -630,6 +634,15 @@ want to enable the "USE DMA by default" option; otherwise, your IDE drives may p
 very poorly.  Of course, remember to enable "IDE disk" support as well -- otherwise your
 kernel won't be able to see your IDE disks.
 </warn>
+<impo>
+If you have an IDE cd burner, then you need to enable SCSI emulation in the
+kernel.  Turn on "ATA/IDE/MFM/RLL support" ---> "IDE, ATA and ATAPI Block 
+devices" ---> "SCSI emulation support" (I usually make it a module), then
+under "SCSI support" enable "SCSI support", "SCSI CD-ROM support" and
+"SCSI generic support" (again, I usually compile them as modules).  If you
+also choose to use modules, then <c>echo -e "ide-scsi\nsg\nsr_mod"
+>> /etc/modules.autoload</c> to have them automatically added at boot time.
+</impo>
 <note>
 For those who prefer it, 
 it is now possible to install Gentoo Linux with a 2.2 kernel.
@@ -849,6 +862,29 @@ possibilities).
 </section>
 
 <section>
+<title>Final steps: harddrive settings (hdparm)</title>
+<body>
+<p>
+Unfortunately, hdparm tweaks such as you performed at the
+beginning of this installation are not remembered between
+reboots.  An easy fix is to add the necessary hdparm tweak
+to <path>/etc/conf.d/local.start</path>:
+</p>
+<pre>
+# <i>nano -w /etc/conf.d/local.start</i>
+</pre>
+<pre caption="add hdparm tweak to /etc/conf.d/local.start">
+# This is a good place to load any misc.
+# programs on startup ( 1>&amp;2 )
+
+# turn on DMA on both harddrives
+hdparm -d 1 /dev/hda
+hdparm -d 1 /dev/hdb
+</pre>
+</body>
+</section>
+
+<section>
 <title>Final steps: configure GRUB</title>
 <body>
 <p>
@@ -903,6 +939,11 @@ chainloader +1
 The <path>menu.lst</path> file should end in "lst" as in "list", not "1st" as in "first".  Also, (hd0,0) should be 
 written without any spaces inside the parentheses.
 </note>
+<impo>
+If you set up scsi emulation for an IDE cd burner earlier, then to get it to
+actually work you need to add an "hdx=ide-scsi" fragment to the kernel
+line in menu.lst (where "hdx" should be the device for your cd burner).
+</impo>
 <p>After saving this file, Gentoo Linux installation is complete.  Selecting the first option will
 tell GRUB to boot Gentoo Linux without a fuss.  The second part of the menu.lst file is optional, and shows you how to
 use GRUB to boot a bootable Windows partition.</p>
