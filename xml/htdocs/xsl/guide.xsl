@@ -268,10 +268,18 @@
 		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='where'">
-				<a class="highlight" href="/main/en/where.xml">Get Gentoo!</a>
+				<a class="highlight" href="/main/en/where.xml">Get Gentoo!</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/main/en/where.xml">Get Gentoo!</a> 
+				<a class="menulink" href="/main/en/where.xml">Get Gentoo!</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='sponsors'">
+				<a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/main/en/sponsors.xml">Sponsors</a> 
 			</xsl:otherwise>
 		</xsl:choose>
 		</p>
