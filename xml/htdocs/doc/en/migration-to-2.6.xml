@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/migration-to-2.6.xml,v 1.7 2004/12/22 07:52:29 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/migration-to-2.6.xml,v 1.8 2005/01/09 10:44:44 swift Exp $ -->
 
 <guide link="/doc/en/migration-to-2.6.xml">
 
@@ -28,8 +28,8 @@ This document will aid you in the process of migrating from Linux 2.4 to Linux
 2.6, devfs to udev and OSS to ALSA.
 </abstract>
 
-<version>0.1.5</version>
-<date>2004-12-22</date>
+<version>0.2.0</version>
+<date>2005-01-09</date>
 
 <chapter>
 <title>Introduction</title>
@@ -518,7 +518,8 @@ interactivity. Please remove your "niceness" hacks!
 </body>
 </section>
 <section>
-<title>X11 config file should now use /dev/input/mice</title>
+<title>X11 config file should now use /dev/input/mice for PS/2 and USB
+mice</title>
 <body>
 
 <p>
@@ -570,6 +571,74 @@ EndSection
 
 </body>
 </section>
+<section>
+<title>New Serial-ATA (SATA) drivers name the devices differently</title>
+<body>
+
+<p>
+If you used the original Serial ATA drivers under Linux 2.4, you probably
+observed your SATA devices having names such as <c>/dev/hde</c>.
+</p>
+
+<p>
+Linux 2.6 introduces some new SATA drivers (libata) which are based on the
+SCSI subsystem. As these drivers are based on SCSI, your SATA disks will now
+show up as SCSI devices. Your first SATA disk will be named <c>/dev/sda</c>.
+You will need to update your <c>/etc/fstab</c> file to reflect this, and you
+will need to bear this in mind when choosing the root/real_root kernel boot
+parameter later on.
+</p>
+
+<note>
+libata has been backported into recent versions of Linux 2.4, so you may
+already be familiar with the new device naming.
+</note>
+
+</body>
+</section>
+<section>
+<title>bootsplash no longer maintained</title>
+<body>
+
+<p>
+If you used the <c>gentoo-sources-2.4</c> kernel, you may have used the
+<e>bootsplash</e> functionality in order to provide yourself with a colourful
+framebuffer console.
+</p>
+
+<p>
+The developer of bootsplash appears to have lost interest in his project, given
+some design problems. However, Gentoo developer <e>Michal Januszewski</e> is
+developing a successor, <c>gensplash</c>, which in included in the
+gentoo-dev-sources kernel. You can follow Michals
+<uri link="http://dev.gentoo.org/~spock/projects/gensplash/archive/gensplash-in-5-easy-steps.txt">
+Gensplash in 5 easy steps</uri> document in order to familiarize yourself with
+how gensplash is operated.
+</p>
+
+</body>
+</section>
+<section>
+<title>I2C drivers now included in the kernel</title>
+<body>
+
+<p>
+If you use <c>lm-sensors</c> to monitor system temperatures and power levels,
+you previously needed to install the <c>i2c</c> package in order to provide
+hardware support.
+</p>
+
+<p>
+The I2C hardware drivers are now included in the Linux 2.6 kernel, no external
+i2c package is required. Remember to compile support for your specific I2C
+devices into the kernel configuration. You will then be able to use
+<c>lm-sensors</c> as usual.
+</p>
+
+</body>
+</section>
+
+
 </chapter>
 
 <chapter id="conf">
@@ -845,59 +914,6 @@ nvidia
 
 </body>
 </section>
-<section>
-<title>Configuring the ALSA modules</title>
-<body>
-
-<p>
-You will have noticed that we chose to compile ALSA as modules. We can now
-configure ALSA's behaviour easily. However, we also need to configure which
-modules are to be loaded. Open up <path>/etc/modules.d/alsa</path> in your text
-editor:
-</p>
-
-<pre caption="Opening /etc/modules.d/alsa in nano">
-# <i>nano -w /etc/modules.d/alsa</i>
-</pre>
-
-<p>
-Now look for the section marked as <e>IMPORTANT</e>. In most cases, you just
-need to uncomment and modify the snd-card-0 and snd-slot-0 aliases.
-</p>
-
-<pre caption="Sample section of /etc/modules.d/alsa">
-## IMPORTANT:
-## You need to customise this section for your specific sound card(s)
-## and then run `update-modules' command.
-## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
-##
-##  ALSA portion
-
-#   My laptop uses the snd-maestro3 driver
-alias snd-card-0 snd-maestro3
-
-##  OSS/Free portion
-
-# Generally all you need to do is uncomment this line:
-alias sound-slot-0 snd-card-0
-</pre>
-
-<p>
-For more info on which driver name to use, consult the <uri
-link="/doc/en/alsa-guide.xml">Gentoo Linux ALSA Guide</uri>. Remember to prefix
-it with <e>snd-</e> in this file.
-</p>
-
-<p>
-Finally, set the <c>alsasound</c> init script to be executed on bootup:
-</p>
-
-<pre caption="Adding alsasound to default runlevel">
-# <i>rc-update add alsasound boot</i>
-</pre>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
@@ -931,22 +947,38 @@ try again!
 </body>
 </section>
 <section>
-<title>Unmuting ALSA channels</title>
+<title>Configuring and unmuting ALSA</title>
 <body>
 
 <p>
-By default, ALSA channels are muted, so you won't hear anything when you go to
-play a sound. You need to unmute them now. Run the <c>alsamixer</c> program
-from a console and use the arrow keys to move around and adjust volumes, and
-the M key to mute and unmute. Read the <uri
-link="/doc/en/alsa-guide.xml">Gentoo Linux ALSA Guide</uri> for more complete
-documentation and other ways to do this.
+We will now complete the ALSA configuration and unmute the audio channels. The
+ALSA packages provide a useful utility to make this process relatively simple:
 </p>
 
+<pre caption="Invoking the automatic ALSA configuration utility">
+# <i>alsaconf</i>
+</pre>
+
+<p>
+The process is straightforward: allow the <e>/etc/modules.d/alsa</e> file to
+be automatically updated, and then allow ALSA to be reloaded. alsaconf will
+then terminate, however you will need to run it multiple times if you have
+multiple sound devices installed in your system.
+</p>
+
+<p>
+You should now add <c>alsasound</c> to your boot runlevel, so that volumes
+will be saved on shutdown and restored on bootup:
+</p>
+
+<pre caption="Adding alsasound to the boot runlevel">
+# <i>rc-update add alsasound boot</i>
+</pre>
+
 <note>
-The alsasound init script that we put in the default runlevel will save mixer
-levels on shutdown and restore them on bootup. You won't need to set all these
-volumes every time you boot!
+The <c>alsaconf</c> utility chooses initial volume levels for your sound
+devices. If these are inappropriate, you can modify them at any time with the
+<c>alsamixer</c> utility.
 </note>
 
 </body>
@@ -1056,6 +1088,76 @@ smoothly. Please <mail link="dsd@gentoo.org">mail me</mail> your feedback so
 that we can get this document in perfect shape for when 2005.0 comes around.
 Thanks!
 </p>
+
+</body>
+</section>
+<section>
+<title>Removing Linux 2.4 from your system</title>
+<body>
+
+<p>
+After you have been running 2.6 for a while, you may decide that you no longer
+have any requirement to be able to use Linux 2.4. The steps you can take to
+clean up your system are detailed below. Only follow this section if you are
+sure that you don't want/need to use 2.4 again!
+</p>
+
+<p>
+The 2.4 kernel source code can be removed, using the emerge utility as usual.
+For example, assuming you have 2.4 versions of vanilla-sources and
+gentoo-sources installed, you could use the following command to remove them
+while keeping the 2.6 versions intact:
+</p>
+
+<pre caption="Example: Removing Linux 2.4 sources">
+# <i>emerge unmerge =vanilla-sources-2.4.* =gentoo-sources-2.4.*</i>
+</pre>
+
+<p>
+Portage will not completely clean out your 2.4 kernel source installations,
+because some temporary files are created during compilation. It is safe to
+remove these remnants with the following command:
+</p>
+
+<pre caption="Removing remaining temporary files">
+# <i>rm -rf /usr/src/linux-2.4.*</i>
+</pre>
+
+<p>
+You can additionally remove modules and information files relating to your
+old 2.4 kernel installations, as these are no longer needed.
+</p>
+
+<pre caption="Removing previously-installed 2.4 modules">
+# <i>rm -rf /lib/modules/2.4.*</i>
+</pre>
+
+<p>
+The 2.4 kernel binaries you used to boot from can also be safely removed.
+You should mount your <c>/boot</c> partition, and remove those images. You
+should also update your bootloader configuration so that it no longer
+references these deleted kernel images.
+</p>
+
+<p>
+Some Linux 2.4 users will have previously installed the <c>alsa-drivers</c>
+package to benefit from the new audio capabilities included in Linux 2.6. If
+you were one of these users, and you followed the advice given earlier in this
+document about building ALSA with the 2.6 kernel sources (as opposed to using
+the <c>alsa-driver</c> package), then you can safely remove this to prevent
+future conflicts.
+</p>
+
+<p>
+Additionally, <c>lm-sensors</c> users will have previously used the <c>i2c</c>
+package to provide the hardware drivers. As already mentioned, I2C drivers are
+now included in the kernel, so this package can also be removed in order to
+prevent future conflicts.
+</p>
+
+<pre caption="Removing alsa-driver and i2c">
+# <i>emerge unmerge alsa-driver i2c</i>
+</pre>
 
 </body>
 </section>
