@@ -24,10 +24,12 @@ Linux Security Team</mail>
   <th>Summary:</th>
   <ti><xsl:value-of select="summary"/></ti>
 </tr>
+<xsl:if test="package">
 <tr>
   <th>Package:</th>
   <ti><xsl:value-of select="package"/></ti>
 </tr>
+</xsl:if>
 <xsl:if test="/affected/version">
 <tr>
   <th>Affected Version(s):</th>
