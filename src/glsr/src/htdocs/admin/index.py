@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: index.py,v 1.3 2004/07/03 21:55:23 port001 Exp $
 #
 
 import os
@@ -24,9 +24,8 @@ import Template as TemplateHandler
 from User import User
 from Validation import CheckPageRequest
 
-import SiteModules
-from SiteModules.Global import *
-from SiteModules.Admin import *
+from site_modules import *
+from site_modules.admin import *
 
 def main():
 
