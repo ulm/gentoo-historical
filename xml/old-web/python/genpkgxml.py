@@ -43,7 +43,7 @@ def getcurrentpkgs():
 	for node in tree.getallnodes():
 		best = tree.dep_bestmatch(node)
 		cat, PN, PV, PR = portage.catpkgsplit(best)
-		currentlist.append([PN.lower(), PV, PR, cat])
+		currentlist.append([PN, PV, PR, cat])
 	currentlist.sort()
 	return currentlist
 
@@ -52,7 +52,7 @@ def getcurrentpkgs():
 # <name> <version> <category>
 def getpkgentry(pkg):
 	pkgentry = "\t<tr>\n"
-	pkgentry += "\t\t<ti>%s</ti>\n" % pkg[0]
+	pkgentry += "\t\t<ti>%s</ti>\n" % pkg[0].lower()
 	pkgentry += "\t\t<ti>%s</ti>\n" % pkg[1]
 	pkgentry += "\t\t<ti>%s</ti>\n" % pkg[3]
 	pkgentry += "\t</tr>\n"
