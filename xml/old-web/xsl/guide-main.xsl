@@ -381,8 +381,8 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/>
 							<a class="altlink" href="http://gentoo.linux.no/">linux.no (Norway)</a><br/>
 							<a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/>
-							<a class="altlink" href="http://ftp.gentoo.no/">ftp.gentoo.no (Norway 2)</a><br/>
-							<a class="altlink" href="ftp://ftp.gentoo.no/pub/linux/distributions/gentoo/">ftp.gentoo.no (Norway 2/ftp)</a><br/>
+							<a class="altlink" href="http://ftp.gentoo.no/">gentoo.no (Norway 2)</a><br/>
+							<a class="altlink" href="ftp://ftp.gentoo.no/pub/linux/distributions/gentoo/">gentoo.no (Norway 2/ftp)</a><br/>
 							<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/><br/>
 
 <a href="http://www.qksrv.net/click-477620-5033206" target="_top" >
