@@ -18,7 +18,7 @@ def error():
 	'<tr><td class="fields">Error in request</td></tr><br>\n'
 	'<tr><td class="item"><img src="%s/?category=generic" align="right" alt="">'
 	'<p>An error was encountered processing your request.  Request a '
-	'different page or check the <a href="%s">fresh ebuilds main page</a>.'
+	'different page or check the <a href="%s">packages.gentoo.org main page</a>.'
 	'</p></td></tr>'
 	'</table>'
 	'</div>') % (config.ICONS,config.FEHOME)

@@ -2,12 +2,13 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.6 $"
+__revision__ = "$Revision: 1.7 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
 import os
 import time
+import string
 import sys
 import ebuilddb
 import bugs
@@ -96,6 +97,7 @@ def package_to_html(pkginfo, db):
     #bug_string = ('<br><h3>Related bugs:</h3>\n%s' 
     #    % bugs_to_html(pkginfo['name']))
     general = '<tr><td>%s</td></tr>' % general_info_to_html(pkginfo)
+    similar = '<tr><td>%s</td></tr>' % create_similar_pkgs_link(pkginfo)
     table_end = '</table>'
     rows = '\n\t'.join([name, description, releases, general])
     return '\n\t'.join([table_begin, rows, table_end])
@@ -105,10 +107,12 @@ def archs_to_html(ebuilds, heading = None):
     heading = heading or '&nbsp;'
     table_begin = '<table class="releases">'
     header_row = ''.join(['<tr><td><b>%s</b></td>' % heading] +
-        ['<th class="arch">%s</th>' % i for i in config.ARCHLIST] +
+        ['<th class="arch">%s</th>' % i.replace('-',' ') for i in config.ARCHLIST] +
         ['</tr>']
     )
     rows = []
+    ebuilds.sort(cmp_ebuilds)
+    ebuilds.reverse()
     for ebuild in ebuilds:
         masked = is_masked(ebuild)
         archs = ebuild['arch'].split()
@@ -197,7 +201,9 @@ def general_info_to_html(pkg):
     license = ('<td class="license">%s</td>' 
         % license_to_html(pkg['license']))
     changelog = ('<td class="changelog" rowspan="2">'
-        '<a href="%s">ChangeLog</a><td>' % changelogurl)
+        '<a href="%s">ChangeLog</a></td>' % changelogurl)
+    similar = ('<td class="similar" rowspan="2">'
+        '%s</td>' % create_similar_pkgs_link(pkg))
     
     return '\n\t'.join(['<table class="general_info">',
         '<tr>',
@@ -205,6 +211,7 @@ def general_info_to_html(pkg):
         homepage,
         license_header,
         changelog,
+        similar,
         '</tr>',
         '<tr>',
         category,
@@ -212,6 +219,29 @@ def general_info_to_html(pkg):
         '</tr>',
         '</table>'])
         
+def create_similar_pkgs_link(pkg):
+    """Create a link to similar packages"""
+    
+    def strip_chars(mystring):
+        newstring = ''
+        for char in mystring:
+            if char not in string.punctuation:
+                newstring = newstring + char
+            else:
+                newstring = newstring + ' '
+        return newstring
+        
+    description = strip_chars(pkg['description'].lower())
+    
+    words = [word for word in description.split() 
+        if word and len(word)>2 and word not in config.EXCLUDED_FROM_SIMILAR]
+    words = words[:config.SIMILAR_MAX_WORDS] + [pkg['name']]
+    #query = ['[[:<:]]%s[[:>:]].*' % word for word in words]
+    query = ['[[:<:]]%s.*' % word for word in words]
+    query = '(%s){%s,}' % ('|'.join(query), config.SIMILAR_MIN_MATCHES)
+    url = '%ssearch/?sstring=%s' % (config.FEHOME, escape(query))
+    return '<a href="%s">Similar Packages</a>' % url
+    
 def bugs_to_html(package):
     """Given package name (no version #s), return html text of bugs as
     reported by bugzilla"""
@@ -280,13 +310,19 @@ def get_recent_releases(pkg, db, max=config.MAX_RECENT_RELEASES):
     results = c.fetchall()
     #print results
     return [ query_to_dict(i) for i in results ]
-    
+
+def cmp_ebuilds(a, b):
+    """Compare two ebuilds"""
+    fields_a = portage.pkgsplit('%s-%s' % (a['name'], a['version']))
+    fields_b = portage.pkgsplit('%s-%s' % (b['name'], b['version']))
+    return portage.pkgcmp(fields_a, fields_b)
+
 def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
     """write out ebuild info to RSS file (fp)"""
     fp.write("""<?xml version="1.0" encoding="iso-8859-1"?>
         <rss version="0.92">
         <channel>
-        <title>Fresh ebuilds %s</title>
+        <title>packages.gentoo.org [ %s ]</title>
         <link>%s</link>
         <description>Latest ebuilds from the Gentoo Linux portage tree</description>
         <![CDATA[<link rel="stylesheet" href="%s" type="text/css" title="styled" />]]>

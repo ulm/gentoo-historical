@@ -11,6 +11,16 @@ from MySQLdb import escape_string
 
 sys.stdout.write('Content-type: text/html; charset=iso-8859-1\n\n')
 
+def cmp_results(a, b):
+    """Compare results a and b"""
+    category_a = a[0]
+    category_b = b[0]
+    
+    order = cmp(category_a, category_b)
+    if order != 0:
+        return order
+        
+    
 def query_to_dict(q):
     pkginfo = {}
     keys = ('category','name','homepage','description','license')
@@ -75,5 +85,5 @@ else:
         'align="right" alt=""> <p>Information on the package you requested'
         ' could not be found.  Be sure to check the'
         ' <a HREF="%s">'
-        'fresh ebuilds main page</a>.</p></td></tr></table>\n'
+        'packages.gentoo.org main page</a>.</p></td></tr></table>\n'
         '</div>' % (config.ICONS,config.FEHOME))

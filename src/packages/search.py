@@ -32,7 +32,10 @@ def query_to_dict(q):
 	return pkginfo
 
 def write_to_cache(s):
-	open(cachefile,'w').write(s)
+    try:
+        open(cachefile,'w').write(s)
+    except IOError:
+        pass
 
 def sort_by_weight(a, b):
     """Right now we just sort based on whether the sstring is in the name"""
@@ -59,7 +62,7 @@ if os.path.exists(cachefile):
 escaped = escape_string(sstring)
 query = ('SELECT category,name,homepage,description,license '
 	'FROM package WHERE name REGEXP "%s" or description REGEXP "%s" '
-	'LIMIT %s,%s' 
+	'ORDER BY category LIMIT %s,%s' 
 	% (escaped,escaped,offset,config.MAXPERPAGE))
 
 import ebuilddb
@@ -82,7 +85,7 @@ if not results:
 	'align="right" alt=""> <p>I could not find any ebuild that match'
 	' your query.  Try a different query or check the'
 	' <a HREF="%s">'
-	'fresh ebuilds main page</a>.</p></td></tr></table>\n'
+	'packages.gentoo.org main page</a>.</p></td></tr></table>\n'
 	'</div>\n' % (config.ICONS,config.FEHOME))
 	sys.stdout.write(s)
 	write_to_cache(s)

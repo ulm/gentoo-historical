@@ -3,8 +3,8 @@
 import config
 FEHOME = config.FEHOME
 
-print """<div class="centerpage"><H3>Fresh Ebuilds RSS Feeds</H3>
-<p>Fresh Ebuilds provides the following RSS feeds.   Note that some
+print """<div class="centerpage"><H3>packages.gentoo.org RSS Feeds</H3>
+<p>packages.gentoo.org provides the following RSS feeds.   Note that some
 feed readers may have problems with the embedded HTML feeds.</p>
 </div>
 <br>

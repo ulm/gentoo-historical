@@ -8,7 +8,15 @@ import re
 import changelogs
 import MySQLdb
 
-FINDVER = re.compile('-[0-9]')
+# import portage, but temporarily redirect stderr
+if 'portage' not in dir():
+    null = open('/dev/null', 'w')
+    tmp = sys.stderr
+    sys.stderr = null
+    sys.path = ["/usr/lib/portage/pym"]+sys.path
+    import portage
+    sys.stderr = tmp
+    sys.path = sys.path[1:]
 
 def db_connect():
     return MySQLdb.connect(host = config.HOST,
@@ -31,9 +39,14 @@ def parse_ebuild(s):
     s=s.split('/')
     parsed['category'] = s[-3]
     package = s[-1].split('.ebuild')[0]
-    pos=FINDVER.search(package).start()
-    parsed['name'] = package[:pos]
-    parsed['version'] = package[pos+1:]
+    pieces = portage.pkgsplit(package)
+    if not pieces:
+        return None
+    parsed['name'] = pieces[0]
+    if pieces[2] == 'r0':
+        parsed['version'] = pieces[1]
+    else:
+        parsed['version'] = '-'.join(pieces[1:])
 
     return parsed
 
@@ -66,6 +79,10 @@ def create_ebuild_record(db,ebinfo):
 def update_ebuild_record(db,ebinfo):
     c = db.cursor()
     escaped = dict([(x,MySQLdb.escape_string(y)) for (x,y) in ebinfo.items()])
+    query="""REPLACE INTO package VALUES ("%(category)s","%(name)s",\
+        "%(homepage)s","%(description)s","%(license)s");""" % escaped
+    c.execute(query)
+    
     query = ('UPDATE ebuild '
         'SET when_found="%(time)s",'
         'arch="%(archs)s",'
@@ -74,7 +91,13 @@ def update_ebuild_record(db,ebinfo):
         'WHERE category="%(category)s" '
         'AND name="%(name)s" '
         'AND version="%(version)s" ' % escaped)
-    c.execute(query)
+    try:
+        c.execute(query)
+    except MySQLdb.MySQLError, data:
+        print 'error occurred: '
+        print 'query: %s' % query
+        print 'error: %s' % data
+        
 
 def get_extended_info(ebuild):
     filename = os.path.join(config.PORTAGE_DIR,'metadata/cache',
@@ -116,9 +139,8 @@ def main():
     db = db_connect()
     
     for s in ebuilds:
-        try:
-            fields = parse_ebuild(s)
-        except:
+        fields = parse_ebuild(s)
+        if not fields:
             continue
         result = get_ebuild_record(db,fields)
         fields = get_extended_info(fields)
@@ -134,7 +156,6 @@ def main():
             # keywords change, update db
             fields['prevarch'] = result[4]
             update_ebuild_record(db,fields)
-
         
 if __name__ == '__main__':
     main()

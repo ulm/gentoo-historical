@@ -22,9 +22,12 @@ if 0:
 else:
     # let's try the database
     # connect
-    pos=ebuilddb.FINDVER.search(ebuild).start()
-    name = ebuild[:pos]
-    version = ebuild[pos+1:]
+    pieces = gentoo.portage.pkgsplit(ebuild)
+    name = pieces[0]
+    if pieces[2] == 'r0':
+        version = pieces[1]
+    else:
+        version = '-'.join(pieces[1:])
     db = ebuilddb.db_connect()
     # query
     query = ('SELECT ebuild.category,ebuild.name,version,when_found,'
