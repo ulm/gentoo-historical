@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-loglocal.xml,v 1.1 2004/07/06 03:22:02 pebenito Exp $ -->
+
+<sections>
+<section><title>Begin Here</title>
+<subsection><body>
+<p>
+  Run <c>sestatus -v</c>.  Click the first context that doesn't match:
+</p>
+<table>
+<tr><th>Process</th><th>Context</th></tr>
+<tr><ti>Init context</ti><ti>system_u:system_r:init_t</ti></tr>
+<tr><ti>/sbin/agetty</ti><ti>system_u:system_r:getty_t</ti></tr>
+<tr><th>File</th><th>Context</th></tr>
+<tr><ti>/etc/passwd</ti><ti>system_u:object_r:etc_t</ti></tr>
+<tr><ti>/etc/shadow</ti><ti>system_u:object_r:shadow_t</ti></tr>
+<tr><ti>/bin/bash</ti><ti>system_u:object_r:shell_exec_t</ti></tr>
+<tr><ti>/bin/login</ti><ti>system_u:object_r:login_exec_t</ti></tr>
+</table>
+</body></subsection>
+</section>
+
+<section><title>Incorrect Init Context</title>
+<subsection><title>Verify Init Label</title>
+<body>
+<p>
+  There are several possible reasons why init may have the wrong context.
+  First, verify that init is labeled correctly, refer to the sestatus's output
+  for /sbin/init.  If it is not <c>system_u:object_r:init_exec_t</c>, relabel sysvinit.
+</p>
+<pre>
+# <i>rlpkg sysvinit</i>
+</pre>
+</body></subsection>
+<subsection><title>Verify Available Policy</title><body>
+<p>
+  An appropriate binary policy version must also be available in 
+  /etc/security/selinux.  For example, for policy version 17,
+  /etc/security/selinux/policy.17 must exist.  If it is missing, first adjust
+  the policy <uri link="http://www.gentoo.org/proj/en/hardened/selinux/selinux-policy.xml#doc_chap6_sect3">Makefile</uri>.
+  Then compile and install the policy.
+</p>
+<pre>
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make clean</i>
+# <i>make install</i>
+</pre>
+</body>
+</subsection>
+<subsection><title>Verify Init Can Load the Policy</title><body>
+<p>
+  The final check is to ensure init can load the policy.  Run <c>ldd</c> on
+  init, and if libselinux is not in the output, remerge sysvinit.
+</p>
+<pre>
+# <i>ldd /sbin/init</i>
+  linux-gate.so.1 =>  (0xffffe000)
+  <comment>libselinux.so.1 => /lib/libselinux.so.1 (0x40025000)</comment>
+  libc.so.6 => /lib/libc.so.6 (0x40035000)
+  /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+</pre>
+<p>
+  Now reboot so init gains the correct context, and loads the policy.
+</p>
+</body></subsection>
+</section>
+
+<section><title>Incorrect agetty Context</title>
+<subsection><body>
+<p>
+  Verify that agetty is labeled correctly. Refer to the sestatus's output
+  for /sbin/agetty.  If it is not <c>system_u:object_r:getty_exec_t</c>, relabel
+  util-linux.  Then restart all gettys.
+</p>
+<pre>
+# <i>rlpkg util-linux</i>
+# <i>killall agetty</i> <comment>(they will respawn)</comment>
+</pre>
+<p>
+  All of the agettys should now be in the correct <c>system_u:object_r:getty_exec_t</c>
+  context.  Try logging in again.
+</p>
+</body>
+</subsection>
+</section>
+</sections>

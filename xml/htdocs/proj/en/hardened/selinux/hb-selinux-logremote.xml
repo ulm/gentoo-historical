@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-logremote.xml,v 1.1 2004/07/06 03:22:02 pebenito Exp $ -->
+
+<sections>
+<section><title>Begin Here</title>
+<subsection><body>
+<p>
+  Run <c>sestatus -v</c>.  Click the first context that doesn't match:
+</p>
+<table>
+<tr><th>Process</th><th>Context</th></tr>
+<tr><ti>Init context</ti><ti>system_u:system_r:init_t</ti></tr>
+<tr><ti>/usr/sbin/sshd</ti><ti>system_u:system_r:sshd_t</ti></tr>
+<tr><th>File</th><th>Context</th></tr>
+<tr><ti>/etc/passwd</ti><ti>system_u:object_r:etc_t</ti></tr>
+<tr><ti>/etc/shadow</ti><ti>system_u:object_r:shadow_t</ti></tr>
+<tr><ti>/bin/bash</ti><ti>system_u:object_r:shell_exec_t</ti></tr>
+<tr><ti>/bin/login</ti><ti>system_u:object_r:login_exec_t</ti></tr>
+</table>
+</body></subsection>
+</section>
+
+<section><title>Incorrect sshd Context</title>
+<subsection><body>
+<p>
+  Another possibility is sshd is not labeled correctly, meaning it is not running
+  in the right context.  Relabel openssh, then restart sshd.
+</p>
+<pre>
+# <i>rlpkg openssh</i>
+# <i>/etc/init.d/sshd restart</i>
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Other sshd Issues</title>
+<subsection><title>Valid Shell</title><body>
+<p>
+  First, make sure the user has a valid shell.
+</p>
+<pre>
+# <i>grep</i> <comment>username</comment> <i>/etc/passwd | cut -d: -f7</i>
+/bin/bash <comment>(or your shell of choice)</comment>
+</pre>
+<p>
+  If the above command does not return anything, or the shell is wrong,
+  set the user's shell.
+</p>
+<pre>
+# <i>usermod -s /bin/bash</i> <comment>username</comment>
+</pre>
+</body></subsection>
+<subsection><title>PAM enabled</title><body>
+<p>
+  PAM also must be enabled in sshd.  Make sure this line
+  in <c>/etc/ssh/sshd_config</c> is uncommented:
+</p>
+<pre>
+UsePAM yes
+</pre>
+<p>
+  SELinux currently only allows PAM and a select few programs direct access
+  to <c>/etc/shadow</c>; therefore, openssh must now
+  use PAM for password authentication (public key still works).
+</p>
+</body></subsection>
+</section>
+</sections>

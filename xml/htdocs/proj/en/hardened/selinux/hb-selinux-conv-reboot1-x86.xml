@@ -1,0 +1,140 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+ 
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot1-x86.xml,v 1.1 2004/07/06 03:22:02 pebenito Exp $ -->
+
+<sections>
+<section><title>Merge a SELinux Kernel</title>
+<subsection><body>
+<p>Merge an appropriate kernel.  Any 2.6 kernel is usable.  x86 systems can
+   also use selinux-sources or hardened-sources, which are 2.4 kernels.  The
+   suggested kernel is hardened-dev-sources.
+</p>
+ 
+<pre caption="Merge an appropriate kernel">
+<comment>Any 2.6 kernel</comment>
+# <i>emerge hardened-dev-sources</i>
+ 
+<comment>2.4 kernels:</comment>
+# <i>emerge selinux-sources</i>
+<comment>Or</comment>
+# <i>emerge hardened-sources</i>
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Compile the Kernel with SELinux Options</title>
+<subsection><body>
+<p>The kernel must  be compiled with security module support, SELinux support,
+devpts, and extended attribute security labels.  Refer to the main installation
+guide for futher kernel options.</p>
+
+<pre caption="Location and required options under menuconfig">
+<comment>Under "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
+<comment>Under "General setup"</comment>
+[*] Auditing support
+[*]   Enable system-call auditing support
+
+<comment>Under "File systems"</comment>
+&lt;*&gt; Second extended fs support <comment>(If using ext2)</comment>
+[*]   Ext2 extended attributes
+[ ]     Ext2 POSIX Access Control Lists
+[*]     Ext2 Security Labels
+&lt;*&gt; Ext3 journalling file system support <comment>(If using ext3)</comment>
+[*]   Ext3 extended attributes
+[ ]     Ext3 POSIX Access Control Lists
+[*]     Ext3 Security labels
+&lt;*&gt; XFS filesystem support <comment>(If using XFS)</comment>
+[ ]   Realtime support (EXPERIMENTAL)
+[ ]   Quota support
+[ ]   ACL support
+[*]   Security Labels
+
+[ ] /dev file system support (EXPERIMENTAL)
+[*] /dev/pts file system for Unix98 PTYs
+[*]   /dev/pts Extended Attributes
+[*]     /dev/pts Security Labels    
+
+<comment>Under "Security options"</comment>
+[*] Enable different security models
+[ ] Socket and Networking Security Hooks
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[ ]   NSA SELinux boot parameter
+[ ]   NSA SELinux runtime disable
+[*]   NSA SELinux Development Support
+[ ]   NSA SELinux MLS policy (EXPERIMENTAL)
+</pre>
+<p>
+  The extended attribute security labels must be turned on for devpts and
+  your filesystem(s).  Devfs is no longer usable in SELinux, and can be
+  turned off.  Not all options exist on 2.4 kernels, and older 2.6 kernels,
+  such as Auditing support, and runtime disable.
+</p>
+<note>
+  The available options may vary slightly depending on if a 2.4 or 2.6 kernel
+  is being used.  The other extended attribute options should be turned off.
+</note>
+
+<p>
+  Now compile and install the kernel and modules, but do not reboot.
+</p>
+</body></subsection>
+</section>
+
+<section><title>Update fstab</title>
+<subsection><body>
+<p>
+  Devpts and selinuxfs must also be enabled to mount at boot.
+  Add this to /etc/fstab:
+</p>
+<pre caption="Fstab settings for devpts and selinuxfs">
+none	/dev/pts	devpts		gid=5,mode=620	0	0
+none	/selinux	selinuxfs	defaults	0	0
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Update Bootloader</title>
+<subsection><body>
+<p>
+The command line option <c>gentoo=nodevfs</c> must be added to the kernel
+command line so the init scripts do not attempt to mount devfs.
+</p>
+<pre caption="Example bootloader entries">
+<comment>GRUB:</comment>
+title=linux
+root (hd0,0)
+kernel /bzImage root=/dev/hda3 <i>gentoo=nodevfs</i>
+
+<comment>LILO:</comment>
+image=/boot/bzImage
+	label=linux
+	read-only
+	root=/dev/hda3
+	<i>append="gentoo=nodevfs"</i>
+
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Reboot</title>
+<subsection><body>
+<p>
+  We need to make some directories before we reboot.
+</p>
+<pre caption="Making Required Directories">
+# <i>mkdir /selinux</i>
+# <i>mkdir /sys</i>
+</pre>
+<p>
+  Now reboot.
+</p>
+</body></subsection>
+</section>
+</sections>

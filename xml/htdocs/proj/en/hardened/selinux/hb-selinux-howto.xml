@@ -1,0 +1,141 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-howto.xml,v 1.1 2004/07/06 03:22:02 pebenito Exp $ -->
+
+<sections>
+<section><title>Load policy into a running SELinux kernel</title>
+<subsection><body>
+<p>
+  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre>
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make load</i>
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Change roles</title>
+<subsection><body>
+<p>
+  This requires your user have access to the target role.  This example
+  is for changing to the <c>sysadm_r</c> role.
+</p>
+<pre>
+# <i>newrole -r sysadm_r</i>
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Specify available roles for a user</title>
+<subsection><body>
+<p>
+  The SELinux identity determines the roles available to a user.  Modify the
+  users file (/etc/security/selinux/src/policy/users).  For example, to allow
+  the user <c>pebenito</c> the ability to have roles <c>staff_r</c> and <c>sysadm_r</c>,
+  add to the file:
+</p>
+<pre>user pebenito roles { staff_r sysadm_r };</pre>
+<p>
+  Then <uri link="#doc_chap1">load</uri> the policy.  See the 
+  SELinux Overview for additional information on SELinux identities.
+</p>
+</body></subsection>
+</section>
+
+<section><title>Relabel filesystems</title>
+<subsection><body>
+<p>
+  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre>
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make relabel</i>
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Relabel an individual package</title>
+<subsection><body>
+<p>
+   In addition to relabeling entire filesystems, individual portage packages
+   can be relabeled.  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre caption="rlpkg example">
+# <i>rlpkg pam-login sash</i>
+</pre>
+<p>
+   The script rlpkg is used, and any number of packages can be specified
+   on the command line.
+</p>
+</body></subsection>
+</section>
+
+<section><title>Start daemons in the correct domain</title>
+<subsection><body>
+<p>
+  Controlling daemons that have init scripts in /etc/init.d is slightly
+  different in SELinux.  The <c>run_init</c> command must be used to run
+  the scripts, to ensure they are ran in the correct domain.  The command
+  can be ran normally, except the command is prefixed with <c>run_init</c>.
+  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre caption="run_init examples">
+# <i>run_init /etc/init.d/ntpd start</i>
+# <i>run_init /etc/init.d/apache2 restart</i>
+# <i>run_init /etc/init.d/named stop</i>
+</pre>
+</body></subsection>
+<subsection><title>Gentoo run_init integration</title><body>
+<p>
+  <c>run_init</c> has been integrated into Gentoo's init script system.  With
+  SELinux installed, services can be started and stopped as usual, but will
+  now authenticate the user.
+</p>
+<pre caption="Integrated run_init example">
+# <i>/etc/init.d/sshd restart</i>
+Authenticating root.
+Password:
+ * Stopping sshd...                       [ ok ]
+ * Starting sshd...                       [ ok ]
+</pre>
+</body></subsection>
+</section>
+
+<section><title>Switch between enforcing and permissive modes</title>
+<subsection><body>
+<p>
+  Switching between modes in SELinux is very simple.  Write a 1 for
+  enforcing, or 0 for permissive to /selinux/enforce to set the mode.
+  The current mode can be queried by reading /selinux/enforce; 0 means
+  permissive mode, and 1 means enforcing mode.  If the kernel option
+  "NSA SELinux Development Support" is turned off, the system will always
+  be in enforcing mode, and cannot be switched to permissive mode.
+</p>
+<pre>
+<comment>Query current mode</comment>
+# <i>cat /selinux/enforce</i>
+<comment>Switch to enforcing mode</comment>
+# <i>echo 1 > /selinux/enforce</i>
+<comment>Switch to permissive mode</comment>
+# <i>echo 0 > /selinux/enforce</i>
+</pre>
+<p>
+  The old SELinux API had commands <c>avc_enforcing</c> and <c>avc_toggle</c>
+  for querying the current mode and toggling between modes, respectively.
+  <c>avc_toggle</c> will display the mode that the machine is switching to
+  (not the former mode).  For backwards compatability, scripts that replicate
+  these programs are installed by policycoreutils.
+</p>
+<p>
+  A machine with development support turned on can be started in enforcing
+  mode by adding <c>enforcing=1</c> to the kernel command line, in the
+  bootloader (GRUB, lilo, etc).
+</p>
+</body></subsection>
+</section>
+</sections>
