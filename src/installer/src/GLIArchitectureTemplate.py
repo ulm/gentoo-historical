@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.72 2005/03/27 04:25:27 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.73 2005/03/27 04:39:56 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -59,7 +59,9 @@ class ArchitectureTemplate:
                                  (self.update_config_files, "Updating config files"),
                                  (self.configure_rc_conf, "Updating /etc/rc.conf"),
 								 (self.set_services, "Setting up services for startup"),
-								 (self.set_users, "Add additional users.")
+								 (self.set_users, "Add additional users."),
+								 (self.install_packages, "Installing additional packages."),
+								 (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
                                 ]
 
 
@@ -412,7 +414,7 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile)
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
-		else:
+		elif kernel_pkg:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
 				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
@@ -833,6 +835,25 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("User "+username+"was added.")
 			
+	def finishing_cleanup(self):
+		"This function will handle the various cleanup tasks as well as unmounting the filesystems for reboot."
+		#These are temporary until I come up with a nicer idea.
+		#First we copy the log over to the new system.
+		install_logfile = self._client_configuration.get_log_file()
+		try:
+			shutil.copy(install_logfile, self._chroot_dir + install_logfile)
+		except:
+			pass
+		#Now we're done logging as far as the new system is concerned.
+		
+		#Unmount the /proc and /dev that we mounted in prepare_chroot
+		#There really isn't a reason to log errors here.
+		ret = GLIUtility.spawn("umount "+self._chroot_dir+"/proc", display_on_tty8=True, logfile=self._compile_logfile)
+		ret = GLIUtility.spawn("umount "+self._chroot_dir+"/dev", display_on_tty8=True, logfile=self._compile_logfile)
+		#temp hack to unmount the new root.
+		ret = GLIUtility.spawn("umount "+self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile)
+		#insert code here to unmount the swap partition, if there is one.
+		
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
 		pass
