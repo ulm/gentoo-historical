@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.85 2005/04/03 03:03:42 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.86 2005/04/03 03:56:45 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -168,7 +168,7 @@ class ArchitectureTemplate:
 			self._logger.mark()
 			self._logger.log("Starting emerge system.")
 			pkgs = self._get_packages_to_emerge("emerge -p system")
-			exitstatus = self._emerge("system")
+			exitstatus = self._emerge("--emptytree system")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
 			self._logger.log("Emerge system complete.")
@@ -414,6 +414,19 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
+			
+			#these are the hotplug/coldplug steps from build_kernel copied over here.  they will NOT be run there.
+			exitstatus = self._emerge("hotplug")
+			if exitstatus != 0:
+				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
+			self._logger.log("Hotplug emerged.")
+			exitstatus = self._emerge("coldplug")
+			if exitstatus != 0:
+				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
+			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
+			
+			self._add_to_runlevel("hotplug")
+			self._add_to_runlevel("coldplug", runlevel="boot")
 		else:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
