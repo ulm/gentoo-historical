@@ -95,7 +95,7 @@ This is where you setup Networking.
 	# DHCP Checkbox
 	self.dhcp_checkbox=gtk.CheckButton("DHCP")
 	self.dhcp_checkbox.connect("toggled", self.checkbutton, "check button 1")
-	networking_info_table.attach(widgets.hBoxIt2(gtk.TRUE,0,self.dhcp_checkbox), 2, 3, 1, 2)
+	networking_info_table.attach(widgets.hBoxIt2(gtk.FALSE,0,self.dhcp_checkbox), 2, 3, 1, 2)
 
 	
 	# Mask
@@ -156,7 +156,7 @@ This is where you setup Networking.
 	self.hostname.set_width_chars(25)
 	naming_table.attach(self.hostname, 1, 2, 0, 1)
 	hostname_explain=gtk.Label("The name of your computer, ex, 'tux'")
-	naming_table.attach(hostname_explain, 2, 3, 0, 1)
+	naming_table.attach(widgets.hBoxIt2(gtk.FALSE,0,hostname_explain), 2, 3, 0, 1)
 	
 	# dnsdomainname
 	dnsdomainname_label = gtk.Label("DNS Domain Name:")
@@ -166,7 +166,7 @@ This is where you setup Networking.
 	self.dnsdomainname.set_width_chars(25)
 	naming_table.attach(self.dnsdomainname, 1, 2, 1, 2)
 	dnsdomainname_explain=gtk.Label("ex. gentoo.org")
-	naming_table.attach(dnsdomainname_explain, 2, 3, 1, 2)
+	naming_table.attach(widgets.hBoxIt2(gtk.FALSE,0,dnsdomainname_explain), 2, 3, 1, 2)
 	
 	naming_button_box.pack_start(naming_table, expand=gtk.FALSE, fill=gtk.FALSE)
 	vert.pack_start(naming_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
@@ -367,7 +367,10 @@ This is where you setup Networking.
 	# fix the structure to correctly get into structure for setting
 	interfaces={}
 	for count in range(len(self.networking)):
-	    interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],self.networking[count]['mask'],self.networking[count]['broadcast'])
+	    if self.networking[count]['ip']!="dhcp":
+		interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],self.networking[count]['mask'],self.networking[count]['broadcast'])
+	    else:
+		interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],None,None)
 	print interfaces
 	return_value = False
 	# set the hostname and dnsdomainname
@@ -375,8 +378,10 @@ This is where you setup Networking.
 	self.controller.install_profile.set_domainname(None,self.dnsdomainname.get_text(),None)
 	
 	try:
-	    self.controller.install_profile.set_network_interfaces(interfaces)
-	    self.controller.install_profile.set_default_gateway(None,self.gateway_info[1],{'interface':self.gateway_info[0]})
+	    if len(interfaces)!=0:
+		self.controller.install_profile.set_network_interfaces(interfaces)
+		if self.networking[count]['ip']!="dhcp":
+		    self.controller.install_profile.set_default_gateway(None,self.gateway_info[1],{'interface':self.gateway_info[0]})
 	    return_value = True
 	except:
 	    widgets=Widgets()
@@ -387,7 +392,7 @@ This is where you setup Networking.
 	    return_value = False
 	#for item in self.networking:
 	#    print item
-	return True #return_value
+	return return_value
     
     def get_ethernet_devices(self):
 	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
