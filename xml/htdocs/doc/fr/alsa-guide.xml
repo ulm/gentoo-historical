@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/alsa-guide.xml,v 1.23 2004/11/20 17:01:47 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/alsa-guide.xml,v 1.24 2004/12/09 17:26:15 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/alsa-guide.xml" lang="fr">
@@ -47,8 +47,8 @@ supposé vous donner plus d'informations à ce sujet.
 
 <license/>
 
-<version>1.5.5</version>
-<date>2004-10-31</date>
+<version>1.5.9</version>
+<date>2004-12-09</date>
 
 <chapter>
 <title>L'architecture avancée pour le son sous Linux («&nbsp;Advanced Linux
@@ -101,22 +101,26 @@ votre variable USE, ALSA se compilera avec la compatibilité OSS.
 Avant de continuer, assurez-vous que le support pour les cartes sons est activé
 dans votre noyau (<e>Sound Card Support</e>). Si vous utilisez <c>genkernel</c>
 pour construire votre noyau, c'est activé automatiquement. Sinon, reconfigurez
-votre noyau.
+votre noyau. Assurez-vous de désactiver <e>Open Sound System</e> dans votre
+configuration du noyau. Si vous ne le faites pas, votre système peut essayer
+d'utiliser ces pilotes plutôt que les pilotes ALSA. Si vous voyez un message tel
+que «&nbsp;sound card not detected&nbsp;», c'est que c'est le cas.
 </p>
 
-<p>
-Si vous utilisez un noyau 2.6, vous pouvez sauter le reste de cette section
-et continuer avec l'<uri link="#alsa-utils">installation des outils
-ALSA</uri>, car le noyau 2.6 intègre déjà les pilotes ALSA. Bien sûr,
-n'oubliez pas d'activer le support pour votre carte son lorsque vous
-configurerez votre noyau.
-</p>
+<warn>
+Si vous utilisez un noyau 2.6, vous pouvez utiliser les pilotes fournis par le
+noyau, mais nous vous recommandons néanmoins d'utiliser media-sound/alsa-driver
+car ces pilotes sont généralement plus à jour que ceux du noyau. Si vous
+souhaitez toujours utiliser les pilotes fournis avec le noyau, vous pouvez
+sauter le reste de cette section et continuer avec l'<uri
+link="#alsa-utils">installation des outils ALSA</uri>.
+</warn>
 
 <p>
-Les utilisateurs des noyaux 2.4 devront installer les pilotes ALSA nécessaires
-pour leur carte son. D'abord, trouvez quelle carte son vous avez.  Une méthode
-simple est de chercher «&nbsp;audio&nbsp;» dans l'affichage de la commande
-<c>lspci</c>. Vous pouvez l'installer avec <c>emerge pciutils</c>.
+Pour commencer, vous devez trouver quelle carte son vous avez. Si vous ne le
+savez pas déjà, une méthode simple est de chercher «&nbsp;audio&nbsp;» dans
+l'affichage de la commande <c>lspci</c>. Vous pouvez l'installer avec <c>emerge
+pciutils</c>.
 </p>
 
 <pre caption="Trouver le type de carte son">
@@ -126,7 +130,7 @@ Multimedia audio controller: VIA Technologies, Inc. VT82C686 AC97 Audio Controll
 
 <p>
 Allez maintenant voir la <uri link="http://www.alsa-project.org/alsa-doc">table
-des cartes son supportées par ALSA</uri> et cherchez-y la vôtre. Dans l'exemple
+des cartes sons supportées par ALSA</uri> et cherchez-y la vôtre. Dans l'exemple
 précédent, vous auriez choisi le constructeur <e>VIA</e> et vous auriez alors
 obtenu une liste des chipsets connus de ce constructeur. Le chipset dans
 l'exemple précédent est «&nbsp;via82c686&nbsp;»&nbsp;; le lien
@@ -146,8 +150,16 @@ pouvez déclarez les pilotes audio que vous voulez utiliser&nbsp;:
 ALSA_CARDS="via82xx"
 </pre>
 
+<warn>
+Si vous avez plusieurs cartes sons dans votre système, séparez leur nom par une
+virgule dans la variable ALSA_CARDS. Par exemple&nbsp;:
+ALSA_CARDS="via82xx,emu10k1".
+</warn>
+
 <p>
-Maintenant, installez <c>alsa-driver</c>&nbsp;:
+Si vous voulez la compatibilité OSS (hautement recommandée), vous devrez ajouter
+le paramètre USE «&nbsp;oss&nbsp;» dans <path>/etc/make.conf</path>. Vous êtes
+maintenant prêt à installer <c>alsa-driver</c>&nbsp;:
 </p>
 
 <pre caption="Installation des pilotes ALSA">
@@ -156,9 +168,10 @@ Maintenant, installez <c>alsa-driver</c>&nbsp;:
 
 <impo>
 Si, un jour, vous recompilez votre noyau, il y a de fortes chances pour que
-vos modules ALSA se fassent écraser. Il est donc conseillé de relancer
-<c>emerge alsa-driver</c> à chaque fois que vous recompilez votre noyau,
-<e>après</e> avoir redémarré avec le nouveau noyau.
+vos modules ALSA soient supprimés. Il est donc conseillé de relancer
+<c>emerge alsa-driver</c> à chaque fois que vous recompilez votre noyau. Notez
+que cela compilera les pilotes correspondant au noyau placé dans /usr/src/linux
+et non pas le noyau courant.
 </impo>
 
 </body>
@@ -169,12 +182,14 @@ vos modules ALSA se fassent écraser. Il est donc conseillé de relancer
 <body>
 
 <p>
-Si vous désirez la compatibilité OSS, vous devez installer
-<c>alsa-oss</c>&nbsp;:
+Si la compatibilité OSS fournie par le noyau n'est pas suffisante, vous pouvez
+installer <c>alsa-oss</c>. Cela installera l'exécutable <c>aoss</c> qui peut
+être utilisé de la manière suivante&nbsp;:
 </p>
 
-<pre caption="Installation de la couche de compatibilité OSS">
+<pre caption="Compatibilité OSS accrue">
 # <i>emerge alsa-oss</i>
+# <i>aoss mpg123 music.mp3</i>
 </pre>
 
 <p>
@@ -234,9 +249,10 @@ vous venez d'appliquer au fichier <path>alsa</path> dans le fichier
 <body>
 
 <p>
-Si vous utilisez DevFS (qui est le défaut d'une installation Gentoo),
-assurez-vous que le fichier <path>/etc/devfsd.conf</path> possède bien les
-bonnes permissions pour les périphériques ALSA&nbsp;:
+Normalement, tout est fait automatiquement dans les installations récentes. En
+cas de problème, vérifiez que les périphériques et les permissions ALSA sont
+correctement configurées par votre gestionnaire de /dev. Si vous utilisez DevFS,
+vérifiez le fichier <path>/etc/devfsd.conf</path>&nbsp;:
 </p>
 
 <pre caption="/etc/devfsd.conf">
@@ -296,22 +312,23 @@ suffisant, activez aussi les canaux <e>Center</e> et <e>Surround</e>.
 </p>
 
 <pre caption="Activer les canaux de la carte son">
+<comment>(Si vous préférez utiliser un outil ncurses :)</comment>
+# <i>alsamixer</i>
+
+<comment>(sinon :)</comment>
+
 # <i>amixer set Master 100 unmute</i>
 # <i>amixer set PCM 100 unmute</i>
 <comment>(Seulement si les commandes précédentes ne suffisent pas :)</comment>
 # <i>amixer set Center 100 unmute</i>
 # <i>amixer set Surround 100 unmute</i>
+# <i>amixer set Headphone 100 unmute</i>
 </pre>
 
 <p>
 Pour vérifier que le son marche bien, essayez de lire un fichier .wav (avec
 <c>aplay</c>), un fichier .mp3 (avec <c>mpg123</c> ou même <c>mplayer</c>) ou
 n'importe quel autre fichier qui produit du son.
-</p>
-
-<p>
-Pour régler vos volumes plus agréablement, vous pouvez utiliser l'application
-<c>alsamixer</c>.
 </p>
 
 </body>
@@ -325,7 +342,7 @@ Pour régler vos volumes plus agréablement, vous pouvez utiliser l'application
 <body>
 
 <p>
-Certaines cartes son possèdent un synthétiseur MIDI intégré. Pour l'utiliser,
+Certaines cartes sons possèdent un synthétiseur MIDI intégré. Pour l'utiliser,
 vous devez d'abord installer le paquet <c>awesfx</c>&nbsp;:
 </p>
 
@@ -377,11 +394,22 @@ Commençons par installer le paquet&nbsp;:
 
 <p>
 Timidity a besoin de polices sonores pour produire du son. Si vous n'en avez
-pas, vous pouvez installer le paquet <c>timidity-eawpatches</c>&nbsp;:
+pas, vous pouvez installer les paquets <c>timidity-eawpatches</c> ou
+<c>timidity-shompatches</c> qui vous en installerons quelques-unes. Vous pouvez
+avoir plusieurs configurations de polices sonores installées et vous pouvez
+placer les vôtres dans <path>/usr/share/timidity</path>. Pour basculer d'une
+configuration vers une autre, vous pouvez utiliser l'utilitaire
+<e>timidity-update</e> fourni avec le paquet timidity++.
 </p>
 
-<pre caption="Installation de timidity-eawpatches">
+<pre caption="Installation de polices sonores">
 # <i>emerge timidity-eawpatches</i>
+# <i>timidity-update -g -s eawpatches</i>
+
+<comment>(ou)</comment>
+
+# <i>emerge timidity-shompatches</i>
+# <i>timidity-update -g -s shompatches</i>
 </pre>
 
 <p>
