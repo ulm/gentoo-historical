@@ -32,13 +32,13 @@ header = """<?xml version='1.0'?>
 tableheader = """<table>
 	<tr>
 		<th>Name</th>
-		<th>IRC name</th>
+		<th>User name</th>
 		<th>Location</th>
 		<th>Responsibilities</th>
 	</tr>
 """
 footer = """</table>
-<note>Developers may be reached by sending e-mail to the developer's IRC
+<note>Developers may be reached by sending e-mail to the developer's user
 name @gentoo.org.</note>
 </body>
 </section>
