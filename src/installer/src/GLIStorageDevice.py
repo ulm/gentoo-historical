@@ -417,10 +417,10 @@ class Partition:
 
 	def get_min_sectors_for_resize(self):
 		if self.is_extended():
-#			for part in self._device._partitions:
-#				if part < 5: continue
-#				min_size = part.get_end()
-			min_size = min([min_size] + [part.get_end() for part in self._device._partitions if part >= 5]) - self._start + 1
+			min_size = self._start
+			for part in self._device._partitions:
+				if part < 5: continue
+				if part.get_end > min_size: min_size = part.get_end()
 			return min_size
 		else:
 			return self._min_sectors_for_resize
