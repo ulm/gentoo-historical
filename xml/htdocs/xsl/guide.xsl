@@ -20,13 +20,13 @@
 
 <!-- Content of /guide -->
 <xsl:template name="guidecontent">
-  <br/>
-  <p class="dochead">
+  <br />
+  <h1>
     <xsl:choose>
       <xsl:when test="/guide/subtitle"><xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
       <xsl:otherwise><xsl:value-of select="/guide/title"/></xsl:otherwise>
     </xsl:choose>
-  </p>
+  </h1>
 
   <xsl:choose>
     <xsl:when test="$style = 'printable'">
@@ -70,9 +70,17 @@
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
   </xsl:choose>
 </title>
-</head>
-<body style="margin:0px;" bgcolor="#ffffff">
 
+</head>
+<xsl:choose>
+  <xsl:when test="$style = 'printable'">
+    <!-- Insert the node-specific content -->
+<body bgcolor="#ffffff">
+    <xsl:call-template name="content"/>
+</body>
+  </xsl:when>
+  <xsl:otherwise>
+<body style="margin:0px;" bgcolor="#ffffff">
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" bgcolor="#45347b">
@@ -100,6 +108,25 @@
           </td>
           <td width="1%" bgcolor="#dddaec" valign="top">
             <table border="0" cellspacing="5" cellpadding="0">
+              <!-- Add a "printer-friendly" button when link attribute exists -->
+              <xsl:if test="/book/@link or /guide/@link">
+               <tr>
+                <td class="altmenu" align="center">
+                  <xsl:variable name="PrintTip"><xsl:value-of select="xsl:gettext('PrintTip')"/></xsl:variable>
+                  <xsl:if test="/book">
+                   <xsl:if test="$full=1">
+                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                   </xsl:if>
+                   <xsl:if test="$full=0">
+                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                   </xsl:if>
+                  </xsl:if>
+                  <xsl:if test="/guide">
+                    <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                  </xsl:if>
+                </td>
+               </tr>
+              </xsl:if>
               <tr>
                 <td>
                   <img src="/images/line.gif" alt="line"/>
@@ -241,6 +268,8 @@
 </table>
 
 </body>
+  </xsl:otherwise>
+  </xsl:choose>
 </html>
 </xsl:template>
 

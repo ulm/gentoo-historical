@@ -4,34 +4,10 @@
 
 <xsl:include href="guide.xsl" />
 
-<!-- Printable style for /guide -->
-<xsl:template name="printdoclayout">
-<html>
-<head>
-  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
-  <title>
-    <xsl:choose>
-      <xsl:when test="/guide/@type='project'"><xsl:value-of select="xsl:gettext('PrintablePrj')"/></xsl:when>
-      <xsl:otherwise><xsl:value-of select="xsl:gettext('PrintableDoc')"/></xsl:otherwise>
-    </xsl:choose>
-    -- 
-    <xsl:choose>
-      <xsl:when test="subtitle"><xsl:value-of select="title"/>: <xsl:value-of select="subtitle"/></xsl:when>
-      <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
-    </xsl:choose>
-  </title>
-</head>
-<body bgcolor="#ffffff">
-
-<!-- Content goes here -->
-<xsl:call-template name="content" />
-
-</body>
-</html>
-</xsl:template>
+<!-- This file can be deleted once the AxKit config has been updated -->
 
 <xsl:template match="/guide">
-  <xsl:call-template name="printdoclayout" />
+  <xsl:call-template name="doclayout" />
 </xsl:template>
 
 </xsl:stylesheet>

@@ -15,14 +15,7 @@
       <xsl:apply-templates select="part" />
     </xsl:when>
     <xsl:otherwise>
-      <xsl:choose>
-        <xsl:when test="$style = 'printable'">
-          <xsl:call-template name="printdoclayout" />
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:call-template name="doclayout"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:call-template name="doclayout"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -91,14 +84,7 @@
     </xsl:apply-templates>
   </xsl:if>
   <xsl:if test="($chap = 0) and ($part = position())">
-    <xsl:choose>
-      <xsl:when test="$style = 'printable'">
-        <xsl:call-template name="printdoclayout" />
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="doclayout" />
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:call-template name="doclayout" />
   </xsl:if>
 </xsl:template>
 
@@ -160,8 +146,9 @@
       </xsl:choose>
       <!-- Content -->
       [ <a href="{/book/@link}?part=0&amp;chap=0">Home</a> ]
-      <!-- Printable -->
+      <!-- Printable
       [ <a href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable">Print</a> ]
+      -->
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
         [ <a href="{/book/@link}?part=1">&gt;</a> ]
@@ -212,14 +199,7 @@
 <!-- Chapter inside a part -->
 <xsl:template match="/book/part/chapter">
   <xsl:if test="($chap = position()) and ($full = 0)">
-    <xsl:choose>
-      <xsl:when test="$style = 'printable'">
-        <xsl:call-template name="printdoclayout" />
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="doclayout" />
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:call-template name="doclayout" />
   </xsl:if>
   <xsl:if test="$full = 1">
     <xsl:call-template name="bookpartchaptercontent">
