@@ -7,7 +7,7 @@
 <xsl:template match="img">
 <img src="{@src}"/>
 </xsl:template>
-
+<!--
 <xsl:template match="/news">
 <xsl:output encoding="iso-8859-1" method="xml" indent="yes"/> 
 <mainpage id="newsitem">
@@ -17,21 +17,61 @@
 <date><xsl:value-of select="/news/date"/></date>
 <title><xsl:apply-templates select="/news/title"/></title>
 <newsbody graphic="{/news/@graphic}" date="{/news/date}" poster="{/news/poster}" title="{/news/title}">
-<xsl:apply-templates select="/news/body"/>
+<xsl:choose>
+<xsl:when test="/news/body">
+	<xsl:apply-templates select="/news/body"/>
+</xsl:when>
+<xsl:when test="/news/section">
+	<xsl:apply-templates select="/news/section"/>
+</xsl:when>
+</xsl:choose>
 </newsbody>
 </mainpage>
 </xsl:template>
-
+-->
 <xsl:template match="newsbody">
-	<table border="0">
-		<tr><td valign="top"><img src="{@graphic}"/></td><td class="content" valign="top">
-		<span class="dochead"><xsl:value-of select="@title"/></span><br/>
-		Posted by <xsl:value-of select="@poster"/> on <xsl:value-of select="@date"/><br/><br/>
-	<body>
-	<xsl:apply-templates />
-	</body>	
-		</td></tr>
-	</table>
+	<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
+							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
+							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
+							</font>
+							</td></tr>
+							<tr><td width="100" align="middle" valign="center">	
+							<xsl:choose>
+							<xsl:when test="@category='gentoo'">
+								<img src="/images/icon-gentoo.png"/>
+							</xsl:when>
+							<xsl:when test="@category='main'">
+								<img src="/images/icon-stick.png"/>
+							</xsl:when>
+							<xsl:when test="@category='ibm'">
+								<img src="/images/icon-ibm.gif"/>
+							</xsl:when>
+							<xsl:when test="@category='linux'">
+								<img src="/images/icon-penguin.png"/>
+							</xsl:when>
+							<xsl:when test="@category='moo'">
+								<img src="/images/icon-cow.png"/>
+							</xsl:when>
+							<xsl:when test="@category='nvidia'">
+								<img src="/images/icon-nvidia.png"/>
+							</xsl:when>
+							</xsl:choose>
+							</td><td valign="top">
+							<xsl:choose>
+
+							<xsl:when test="summary">
+								<xsl:apply-templates select="summary"/>
+							</xsl:when>
+							<xsl:when test="section">
+								<xsl:apply-templates select="section"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:apply-templates select="body"/>
+							</xsl:otherwise>
+							</xsl:choose>
+							</td></tr>
+							</table>
+	
 </xsl:template>
 
 <xsl:template match="/guide">
@@ -265,7 +305,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 </html>
 </xsl:template>
 
-<xsl:template match="/mainpage">
+<xsl:template match="/mainpage | /news">
 <html>
 <head>
     <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"></link>
@@ -399,7 +439,7 @@ User Docs:<br/>
 							</td><td class="altmenu" valign="top">
 							Recent Gentoo Linux news<br/>
 							<ul>
-							<xsl:for-each select="newsitems/news[@category='gentoo'][position()&lt;7]">
+							<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]">
 							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
 							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
 							</xsl:for-each>
@@ -407,7 +447,7 @@ User Docs:<br/>
 							</td><td class="altmenu" valign="top">
 							Recent Other News<br/>
 							<ul>
-							<xsl:for-each select="newsitems/news[@category!='gentoo'][position()&lt;7]">
+							<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]">
 							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
 							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
 							</xsl:for-each>
@@ -439,6 +479,9 @@ User Docs:<br/>
 							<xsl:when test="@category='moo'">
 								<img src="/images/icon-cow.png"/>
 							</xsl:when>
+							<xsl:when test="@category='nvidia'">
+								<img src="/images/icon-nvidia.png"/>
+							</xsl:when>
 							</xsl:choose>
 							</td><td valign="top">
 							<xsl:choose>
@@ -455,11 +498,45 @@ User Docs:<br/>
 							<br/>
 							</xsl:for-each>
 						</xsl:when>
-						<xsl:when test="/mainpage/@id='newsitem'">
-							<br/>
-							<xsl:apply-templates select="newsbody"/>
-							<br/>
-							<br/>
+						<xsl:when test="/news">
+								<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
+							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
+							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
+							</font>
+							</td></tr>
+							<tr><td width="100" align="middle" valign="top">	
+							<xsl:choose>
+							<xsl:when test="@category='gentoo'">
+								<img src="/images/icon-gentoo.png"/>
+							</xsl:when>
+							<xsl:when test="@category='main'">
+								<img src="/images/icon-stick.png"/>
+							</xsl:when>
+							<xsl:when test="@category='ibm'">
+								<img src="/images/icon-ibm.gif"/>
+							</xsl:when>
+							<xsl:when test="@category='linux'">
+								<img src="/images/icon-penguin.png"/>
+							</xsl:when>
+							<xsl:when test="@category='moo'">
+								<img src="/images/icon-cow.png"/>
+							</xsl:when>
+							<xsl:when test="@category='nvidia'">
+								<img src="/images/icon-nvidia.png"/>
+							</xsl:when>
+							</xsl:choose>
+							</td><td valign="top">
+							<xsl:choose>
+
+							<xsl:when test="body">
+								<xsl:apply-templates select="body"/>
+							</xsl:when>
+							<xsl:when test="section">
+								<xsl:apply-templates select="section"/>
+							</xsl:when>
+							</xsl:choose>
+							</td></tr>
+							</table>
 						</xsl:when>
 						<xsl:otherwise>
 							<!--<p class="subhead"><xsl:value-of select="/mainpage/title"/></p> -->
