@@ -27,26 +27,26 @@ def compile_defaults(subarch):
 		else:
 			results[1] += " -march=1.1"
 	elif subarch in ["x86","i386","i486","i586","i686","athlon","athlon-xp","athlon-mp","pentium-mmx","pentium3","pentium4"]:
+		#With recent gcc compilers (gcc-3.1+,) gcc produces generally slower code with -O3 as compared to -O2
+		#So we are tweaking things here. 
 		uf=[]
 		if subarch == "x86":
-			cf="-O3 -mcpu=i686"
+			cf="-O2 -mcpu=i686 -fomit-frame-pointer"
 		elif subarch == "athlon-xp":
 			#we've intentionally lowered optimizations here to address compile bugs. It is very likely safe to
 			#go up to -O3 without any additional -f goodies (like unroll-loops and prefetch-loop-arrays) tacked
 			#on. Note that we don't add any extra -f goodies if we are athlon* below.
-			cf="-O3 -march=athlon-xp"
+			cf="-O2 -march=athlon-xp -fomit-frame-pointer"
 		else:
-			cf="-O3 -march="+subarch
-		if subarch[0:6] != "athlon":
-			cf+=" -funroll-loops"
-		else:
+			cf="-O2 -march="+subarch+" -fomit-frame-pointer"
+		if subarch[0:6] == "athlon":
 			uf.append("3dnow")
 		if subarch in [ "athlon","athlon-xp","athlon-mp","pentium-mmx","pentium3","pentium4" ]:
 			uf.append("mmx")
 		if subarch in [ "pentium3", "pentium4" ]:
 			uf.append("sse")
-		if subarch in ["pentium-mmx", "pentium3", "pentium4"]:
-			cf+=" -fprefetch-loop-arrays"
+		if subarch in ["pentium3", "pentium4", "athlon", "athlon-xp", "athlon-mp", "i686"]:
+			cf += " -finline-functions -finline-limit=800"
 		if subarch in ["i386","i486","i586"]:
 			results=["x86",cf,subarch+"-pc-linux-gnu",[]]
 		elif subarch == "x86":
@@ -55,6 +55,7 @@ def compile_defaults(subarch):
 			results=["x86",cf,"i586-pc-linux-gnu",uf]
 		else:
 			results=["x86",cf,"i686-pc-linux-gnu",uf]
+		
 	elif subarch in ["ppc","g3","g4"]:
 		if subarch == "ppc":
 			results=["ppc","-O2 -fsigned-char",[]]
