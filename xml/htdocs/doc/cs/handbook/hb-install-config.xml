@@ -1,0 +1,470 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/handbook/hb-install-config.xml,v 1.1 2005/04/05 21:24:30 neysx Exp $ -->
+
+<sections>
+
+<version>2.00</version>
+<date>2005-03-28</date>
+
+<section>
+<title>Informace o souborových systémech</title>
+<subsection>
+<title>Co je to fstab?</title>
+<body>
+
+<p>
+Pod Linuxem musí být všechny používané oddíly zapsány v&nbsp;souboru
+<path>/etc/fstab</path>. Tento soubor obsahuje přiřazení přípojných bodů
+jednotlivým diskovým oddílům a různé další informace (například zda připojovat
+automaticky, zda je může připojit běžný uživatel atd.).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Vytvoření /etc/fstab</title>
+<body>
+
+<p>
+<path>/etc/fstab</path> má speciální skladbu. Každý řádek sestává ze&nbsp;šesti
+polí oddělených nějakým druhem mezery (jedna či více mezer, tabulátor,...).
+Každé políčko má vlastní význam:
+</p>
+
+<ul>
+<li>
+  První pole specifikuje <b>oddíl</b>, cestu k&nbsp;blokovému zařízení, na
+  kterém je souborový systém uložen.
+</li>
+<li>
+  Druhé pole určuje <b>přípojný bod</b>, místo, kam se má filesystém připojit.
+</li>
+<li>
+  Jako třetí je specifikován <b>typ</b> souborového systému.
+</li>
+<li>
+  Čtvrté pole je určeno pro <b>volby</b> používané programem <c>mount</c> pro
+  připojování oddílu. Každý typ souborového systému má své vlastní povolené
+  parametry, pro jejich přehled použijte <c>man mount</c> (zobrazení manuálové
+  stránky). Jednotlivé volby se oddělují čárkami.
+</li>
+<li>
+  Páté pole je používáno programem <c>dump</c> pro určení, zda se má nad tímto
+  oddílem <b>dump</b> spustit. Můžete jej nechat na hodnotě <c>0</c> (nula).
+</li>
+<li>
+  Šesté políčko používá program <c>fsck</c> pro určení pořadí, ve&nbsp;kterém
+  se bude provádět <b>kontrola</b> souborových systémů v&nbsp;případě, že
+  systém nebyl řádně ukončen. Kořenový systém souborů by zde měl mít uvedeno
+  <c>1</c>, ostatní filesystémy <c>2</c> (případně <c>0</c>, nevyžadují-li
+  kontrolu).
+</li>
+</ul>
+
+<p>
+Výchozí <path>/etc/fstab</path>, který je obsažen v&nbsp;Gentoo, <e>není
+přímo použitelný</e>, takže spusťte svůj oblíbený editor (použijeme
+<c>nano</c>), abyste mohli nastavení upravit podle svého systému:
+</p>
+
+<pre caption="Otevření /etc/fstab">
+# <i>nano -w /etc/fstab</i>
+</pre>
+
+<p>
+Pojďme se podívat, jak zapsat volby pro oddíl <path>/boot</path>. Je to pouze
+příklad, takže pokud Vaše architektura nevyžaduje oddělený <path>/boot</path>
+(jako například <b>PPC</b>), neřiďte se jím do posledního slova.
+</p>
+
+<p>
+V&nbsp;našem výchozím rozdělení je <path>/boot</path> umístěn na oddílu
+<path>/dev/hda1</path> a je použit systém souborů <c>ext2</c>. Během spouštění
+je navíc požadovaná jeho kontrola, napíšeme tedy:
+</p>
+
+<pre caption="Ukázkový řádek o /boot v&nbsp;/etc/fstab">
+/dev/hda1   /boot     ext2    defaults        1 2
+</pre>
+
+<p>
+Někteří uživatelé nechtějí mít z&nbsp;bezpečnostních důvodů automaticky připojen
+<path>/boot</path>, dosáhneme toho tím, že položku <c>defaults</c> nahradíme
+klíčovým slovem <c>noauto</c>. Učiníte-li tak, budete muset tento oddíl
+připojit vždy, když ho budete chtít použít.
+</p>
+
+<p>
+Abychom zlepšili výkon, přidejme volbu <c>noatime</c>. Dosáhneme tím
+rychlejšího souborového systému, protože se nebudou muset aktualizovat
+informace o času posledního přístupu k&nbsp;souborům, které většinou ani nejsou
+potřeba:
+</p>
+
+<pre caption="Vylepšený řádekd pro /boot v&nbsp;/etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime    1 2
+</pre>
+
+<p>
+Budeme-li pokračovat, měli bychom dostat následující tři řádky (pro
+<path>/boot</path>, <path>/</path> a oddíl pro swap):
+</p>
+
+<pre caption="Tři řádky v&nbsp;/etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime  1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+</pre>
+
+<p>
+Nakonec přidáme pravidla pro <path>/proc</path>, <c>tmpfs</c> (vyžadováno) a
+pro CD-ROM mechaniku, a samozřejmě pokud máte další disky nebo oddíly, tak i
+pro ně:
+</p>
+
+<pre caption="Kompletní příklad /etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime     1 2
+/dev/hda2   none      swap    sw                   0 0
+/dev/hda3   /         ext3    noatime              0 1
+
+none        /proc     proc    defaults             0 0
+none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+</pre>
+
+<p>
+<c>auto</c> říká programu <c>mount</c>, aby se snažil uhádnout použitý systém
+souborů; hodí se to pro výměnná média, kde se můžete setkat s&nbsp;jedním
+z&nbsp;více systémů. Volba <c>user</c> umožňuje připojit CD i pro obyčejné
+uživatele.
+</p>
+
+<p>
+Použijte výše uvedený příklad pro vytvoření svého souboru
+<path>/etc/fstab</path>. Používáte-li <b>SPARC</b>, měli byste navíc přidat i
+tento řádek:
+</p>
+
+<pre caption="Přidání filesystému openprom do /etc/fstab">
+none        /proc/openprom  openpromfs    defaults      0 0
+</pre>
+
+<p>
+Potřebujete-li <c>usbfs</c>, přidejte tento řádek:
+</p>
+
+<pre caption="Přidání filesystému usbfs do /etc/fstab">
+none        /proc/bus/usb   usbfs         defaults      0 0
+</pre>
+
+<p>
+Soubor po sobě překontrolujte, uložte jej a ukončete editor.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Informace o síti</title>
+<subsection>
+<title>Jméno počítače, domény,...</title>
+<body>
+
+<p>
+Další z&nbsp;voleb, kterou musí uživatel podstoupit, je pojmenování svého
+stroje. Můžete se to zdát snadným úkolem, ale ve skutečnosti má <e>mnoho</e>
+uživatelů problémy s&nbsp;výběrem správného jména. Nebojte se, jméno jde
+kdykoliv změnit. Dále budeme používat jméno <c>tux</c> a doménu
+<c>domacisit</c>. Nejprve nastavíme jméno počítače, <e>hostname</e>:
+</p>
+
+<pre caption="Nastavení hostname">
+# <i>echo tux &gt; /etc/hostname</i>
+</pre>
+
+<p>
+Nyní jméno domény:
+</p>
+
+<pre caption="Natavení jména domény">
+# <i>echo domacisit &gt; /etc/dnsdomainname</i>
+</pre>
+
+<p>
+Máte-li NIS doménu (pokud nevíte, co to je, tak ji nemáte), zadejte ji:
+</p>
+
+<pre caption="Nastavení jména NIS domény">
+# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+</pre>
+
+<p>
+Nyní přidejte skript <c>domainname</c> do výchozího runlevelu:
+</p>
+
+<pre caption="Přidání domainname do výchozího runlevelu">
+# <i>rc-update add domainname default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Nastavení sítě</title>
+<body>
+
+<p>
+Předtím, než podlehnete pocitu "ale to už jsme přece udělali" byste si měli
+uvědomit, že nastavení sítě provedené před instalací bylo pouze pro potřeby
+instalace; nyní nakonfigurujete síť nastálo.
+</p>
+
+<p>
+Všechny informace o síti jsou shromážděny v&nbsp;souboru
+<path>/etc/conf.d/net</path>. Používá přímý, ale nevíte-li, jak nastavit síť
+ručně, ne intuitivní formát zápisu. Ale nebojte se, vysvětlíme si všechno :-)
+</p>
+
+<p>
+Nejprve otevřete soubor <path>/etc/conf.d/net</path> ve svém oblíbeném editoru
+(v&nbsp;našem příkladu použijeme <c>nano</c>):
+</p>
+
+<pre caption="Editace /etc/conf.d/net">
+# <i>nano -w /etc/conf.d/net</i>
+</pre>
+
+<p>
+První proměnná, kterou uvidíte, je<c>iface_eth0</c>. Používá se takto:
+</p>
+
+<pre caption="Syntaxe iface_eth0">
+iface_eth0="<i>&lt;IP adresa&gt;</i> broadcast <i>&lt;broadcast adresa&gt;</i>
+netmask <i>&lt;síťová maska&gt;</i>"
+</pre>
+
+<p>
+Používáte-li DHCP pro automatické nastavení IP adresy, měli byste pouze
+nastavit proměnnou <c>iface_eth0</c> na hodnotu <c>dhcp</c>. Používáte-li
+rp-pppoe (například pro ADSL), nastavte ji na <c>up</c>. Potřebujete-li
+nastavit síť ručně a výše zmíněné termíny Vám nic neříkají, přečtěte si prosím
+část <uri link="?part=1&amp;chap=3#network_term">porozumění síťovým
+technologiím</uri>, pokud jste tak ještě neučinili.
+</p>
+
+<p>
+Uveďme si tři příklady; první používá DHCP, druhý nastavuje statickou IP adresu
+192.168.0.2 s&nbsp;maskou 255.255.255.0, broadcast 192.168.0.255, výchozí brána
+192.168.0.1 a třetí pouze aktivuje rozhraní pro použití rp-pppoe:
+</p>
+
+<pre caption="Příklad /etc/conf.d/net">
+<comment>(pro DHCP)</comment>
+iface_eth0="dhcp"
+<comment># Někteří správci sítí vyžadují, abyste použili</comment>
+<comment># jméno počítače a domény poskytnuté serverem DHCP.</comment>
+<comment># V&nbsp;takovém případě přidejte následující volbu,</comment>
+<comment># která potlačí Vaše nastavení.</comment>
+dhcpcd_eth0="-HD"
+<comment># Přejete-li si použít NTP pro synchronizaci času,</comment>
+<comment># použijte volbu -N, abyste zabránili programu dhcpcp</comment>
+<comment># přepsat soubor /etc/ntp.conf</comment>
+dhcpcd_eth0="-N"
+
+<comment>(pro statickou IP adresu)</comment>
+iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
+gateway="eth0/192.168.0.1"
+
+<comment>(pro rp-pppoe)</comment>
+iface_eth0="up"
+</pre>
+
+<p>
+Máte-li více síťových rozhraní, vytvořte další proměnné <c>iface_eth</c> jako
+<c>iface_eth1</c>, <c>iface_eth2</c> atd. Proměnná <c>gateway</c> však může být
+definovaná pouze jednou, protože nejde mít více výchozích bran najednou.
+</p>
+
+<p>
+Nyní uložte konfiguraci a ukončete editor.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Automatické spuštění síťování při startu</title>
+<body>
+
+<p>
+Aby byla Vaše síťová rozhraní spuštěna při bootu systému, musíte je přidat do
+výchozího runlevelu. Máte-li PCMCIA rozhraní, měli byste tento krok přeskočit,
+protože taková rozhraní jsou spouštěna init skriptem pro PCMCIA.
+</p>
+
+<pre caption="Přidání net.eth0 do výchozího runlevelu">
+# <i>rc-update add net.eth0 default</i>
+</pre>
+
+<p>
+Máte-li více síťových rozhraní, musíte vytvořit odpovídající initskripty
+<path>net.eth1</path>, <path>net.eth2</path>,... Můžete pro to použít
+příkaz <c>ln</c>:
+</p>
+
+<pre caption="Vytvoření dalších initskriptů">
+# <i>cd /etc/init.d</i>
+# <i>ln -s net.eth0 net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Informace o síti</title>
+<body>
+
+<p>
+Dále budete muset systému sdělit některé informace o síti. Pro převod
+(resolving) jmen strojů na IP adresy se jako doplněk služby DNS používá soubor
+<path>/etc/hosts</path>. Máte-li například ve své síti tři počítače pojmenované
+<c>janicka</c> (192.168.0.5), <c>barborka</c> (192.168.0.6) a <c>tux</c>
+(192.168.0.7 - tento systém), Váš soubor <path>/etc/hosts</path> by měl vypadat
+přibližně takto:
+</p>
+
+<pre caption="Otevření souboru /etc/hosts">
+# <i>nano -w /etc/hosts</i>
+</pre>
+
+<pre caption="Vyplnění informací o síti">
+127.0.0.1     localhost
+192.168.0.5   janicka.domacisit janicka
+192.168.0.6   barborka.domacisit barborka
+192.168.0.7   tux.homenetwork tux
+</pre>
+
+<p>
+Je-li Váš systém v&nbsp;síti samotný nebo pokud Vaše nameservery umí
+vše převádět, stačí jeden řádek. Budete-li například říkat svému systému
+<c>tux</c>:
+</p>
+
+<pre caption="/etc/hosts pro osamělý a nebo zcela integrovaný stroj">
+127.0.0.1     localhost tux
+</pre>
+
+<p>
+Změny uložte a ukončete editor.
+</p>
+
+<p>
+Nemáte-li ve svém systému PCMCIA, můžete nyní pokračovat <uri
+link="#doc_chap3">systémovými informacemi</uri>, jinak čtěte dále.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Volitelně: Zprovoznění PCMCIA</title>
+<body>
+
+<note>
+pcmcia-cs je dostupná pouze na platformách x86, amd64 a ppc.
+</note>
+
+<p>
+Uživatelé PCMCIA by měli nejprve nainstalovat balíček <c>pcmcia-cs</c>. Platí
+to i pro ty, kdo budou pracovat s&nbsp;jádrem řady 2.6 (i když nebudou používat
+ovladače z tohoto balíčku, ale přímo z&nbsp;jádra). Použití proměnné
+<c>USE="-X"</c> je nezbytné, jinak by se nyní začalo instalovat <c>xorg-x11</c>:
+</p>
+
+<pre caption="Instalace pcmcia-cs">
+# <i>USE="-X" emerge pcmcia-cs</i>
+</pre>
+
+<p>
+Až se balíček nainstaluje, přidejte <c>pcmcia</c> do <e>výchozího (default)</e>
+runlevelu:
+</p>
+
+<pre caption="Přidání pcmcia do runlevelu default">
+# <i>rc-update add pcmcia default</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Systémové informace</title>
+<subsection>
+<title>Heslo superuživatele root</title>
+<body>
+
+<p>
+Nejprve nastavíme rootovské heslo:
+</p>
+
+<pre caption="Nastavení rootovského hesla">
+# <i>passwd</i>
+</pre>
+
+<p>
+Přejete-li si, aby se mohl root přihlašovat i přes sériovou konzoli, přidejte
+<c>tts/0</c> do souboru <path>/etc/securetty</path>:
+</p>
+
+<pre caption="Přidání tts/0 do /etc/securetty">
+# <i>echo "tts/0" &gt;&gt; /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Systémové informace</title>
+<body>
+
+<p>
+Pro všeobecnou konfiguraci systému používá Gentoo soubor
+<path>/etc/rc.conf</path>. Otevřete jej a užijte si jeho přehledné dokumentace
+v&nbsp;podobě komentářů :-)
+</p>
+
+<pre caption="Otevření /etc/rc.conf">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+
+<p>
+Jak vidíte, soubor je velmi dobře okomentován, což by Vám mělo pomoci
+s&nbsp;nastavením nezbytných proměnných. Dejte pozor na správné nastavení
+proměnné <c>KEYMAP</c>, jinak se můžete setkat s&nbsp;podivnými výsledky psaní
+na klávesnici.
+</p>
+
+<note>
+Uživatelé systémů <b>SPARC</b> (a jeho klonů) založených na USB možná budou
+muset vybrat klávesovou mapu i386 (například "us") místo "sunkeymap".
+</note>
+
+<p>
+<b>PPC</b> používá na většině systémů klávesové mapy x86. Uživatelé, kteří
+chtějí být schopni používat klávesové mapy ADB musí povolit ADB posílání
+klávesových kódů v&nbsp;jádře a v&nbsp;souboru <path>rc.conf</path> nastavit
+klávesovou mapu mac/ppc.
+</p>
+
+<p>
+Až budete hotovi s&nbsp;konfigurací souboru <path>/etc/rc.conf</path>, uložte
+jej, ukončete editor a pokračujte <uri link="?part=1&amp;chap=9">instalací
+nezbytných systémových nástrojů</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
