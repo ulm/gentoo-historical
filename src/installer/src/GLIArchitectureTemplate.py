@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.5 2004/11/11 23:11:15 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.6 2004/11/12 06:40:21 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -819,6 +819,12 @@ class ArchitectureTemplate:
 		start = sectors_to_megabytes(start)
 		end = sectors_to_megabytes(end)
 		run_parted_command(device, "mkpart " + type + " " + fs + " " + str(start) + " " + str(end))
+		if type == "ntfs":
+			pass
+		elif type == "ext2" or type == "ext3":
+			pass
+		else:
+			pass
 
 	def delete_partition(device, minor):
 		run_parted_command(device, "rm " + str(minor))

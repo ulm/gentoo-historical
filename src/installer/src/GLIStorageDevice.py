@@ -296,13 +296,15 @@ class Partition:
 		if existing:
 			parted_part = device._parted_disk.get_partition(minor)
 			if type == "ntfs":
-				min_bytes = int(commands.getoutput("ntfsresize --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
-				commands.getstatus("mkdir /mnt/freespace; mount " + device._device + str(minor) + " /mnt/freespace")
-				min_bytes = int(commands.getoutput("df -B kB " + device._device + str(minor) + " | tail -n 1 | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+kB\s\+::' -e 's:kB\s.\+::'")) * 1000
-				commands.getstatus("umount /mnt/freespace; rm -rf /mnt/freespace")
+				os.system("mkdir /mnt/freespace 2>&1 > /dev/null; mount " + device._device + str(minor) + " /mnt/freespace | tee -a /tmp/dfoutput.log")
+				min_bytes = string.strip(commands.getoutput("df -B kB | grep -e '^" + device._device + str(minor) + "' | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+kB\s\+::' -e 's:kB\s.\+::' | tee /tmp/dfoutput.log"))
+				print device._device + str(minor) + ": |" + min_bytes + "|"
+				min_bytes = int(min_bytes) * 1000
+				os.system("umount /mnt/freespace; rm -rf /mnt/freespace")
 				min_bytes = min_bytes + (100 * 1024 * 1024) # Add 100M just to be safe
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
