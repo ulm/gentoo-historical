@@ -1,0 +1,198 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+	
+<guide link = doc/en/prelink-howto.xml>
+<title>Gentoo Linux Prelink Guide</title>
+<author title="Author"><mail link="cretin@gentoo.org">Stefan Jones</mail>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail>
+</author>
+
+<abstract>This guide informs on how to make use of prelink support in portage 2.0.46 and later.</abstract>
+
+<version>1.0</version>
+<date>1 Jan 2003</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<title>What is Prelink and how can it help me?</title>
+<body>
+
+<p>Most common applications make use of shared libraries. These shared libraries need to be loaded into memory at runtime and the various symbol references need to be resolved. For most small programs this dynamic linking is very quick. But for programs written in C++ and have many library dependencies, the dynamic linking can take a fair amount of time.</p>
+
+<p>On most systems, libraries are not changed very often, and when a program is run the operations taken to link the program are the same every time. Prelink takes advantage of this by carrying out the linking and storing it in the executable, in effect prelinking it. In order for the linker, you need ld-linux.so in glibc; to recognise the prelinking you need glibc&gt;=2.3</p>
+
+<p>Prelinking can cut the startup times of applications. For example, a typical KDE program's loading time can be cut by as much as 50%. The only maintenance required is re-running prelink every time a library is upgraded for a pre-linked executable.</p>
+
+</body>
+</section>
+<section>
+<title>Summery</title>
+<body>
+<ul>
+<li>Prelinking is done via a program called, surprisingly, prelink. It changes the binary to make it start faster.</li>
+
+<li>If an application's dependent libraries change after you have prelinked it, you need to re-prelink the application, otherwise you gain no speed advantage.</li>
+
+<li>The change to the binary is fully reversible. Prelink has an undo function.</li>
+
+<li>Newer versions of Portage can handle, via prelink, the changing MD5sums of the binaries.</li>
+
+<li>You need to have glibc-2.3 or greater installed with the binaries compiled with binutils-2.13.90.0.xx</li>
+</ul>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Setting up Prelink</title>
+<section>
+<title>Installing the Programs</title>
+<body>
+<note>I assume you have a Gentoo-1.4 system and it was built with gcc-3.2 or better and binutils-2.13.90.0.xx. This needs to be so in order for your binaries to be prelinkable.</note>
+
+<warn>You must have glibc 2.3.1 or newer installed otherwise prelink will zap all your binaries!</warn>
+
+
+<p>First update your portage tree, as many of the needed applications are new and bug-fixes are constantly added.</p>
+<pre caption = "Updating your Portage Tree">
+# <c>emerge rsync</c>
+</pre>
+
+<p>Next make sure you have portage-2.0.46 or better installed. This is needed so that portage can recognise the preinked binaries and thus uninstall them correctly when requested. This is because prelinking changes the MD5sum of a binary.</p>
+
+<pre caption = "Checking Portage Version">
+# <c>emerge ">=portage-2.0.46"</c>
+</pre>
+
+<p>Now you can emerge the prelinking tool. The emerge process automatically verifies that your system can prelink safely. </p>
+
+<pre caption = "Installing Prelink">
+# <c>emerge prelink</c>
+</pre>
+
+<warn>If you get an error in this emerge please contact me, <mail link="cretin@gentoo.org">Stefan Jones</mail>, and don't continue, as prelinking could destroy your system.</warn>
+
+</body>
+</section>
+
+<section>
+<title>Configuration</title>
+<body>
+
+<p>Portage automatically generates the file "/etc/prelink.conf" which tells prelink which files to prelink.</p>
+<p>Unfortunately you cannot prelink files which where compiled by old versions of binutils. Most of these applications come from precompiled, binary only packages which are installed in /opt. Making the following file will tell prelink not to attempt to prelink them.</p>
+
+<pre caption="/etc/env.d/99prelink">
+PRELINK_PATH_MASK="/opt"
+</pre>
+
+<note>You can add more or less directories to the colon separated list</note>
+
+</body>
+</section>
+</chapter>
+
+
+
+
+<chapter>
+<title>Prelinking</title>
+<section>
+<title>Prelink Usage</title>
+<body>
+<p>I use the following command to prelink all the binaries in the directories given by /etc/prelink.conf.</p>
+
+<pre caption = "Prelinking listed files">
+# <c>prelink -afmR</c>
+</pre>
+
+<p>The options explained:</p>
+
+<p><b>-a</b></p><p>All, prelinks all the binaries</p>
+
+<p><b>-f</b></p><p>Force prelink to reprelink already prelinked binaries. This is needed as prelink aborts if old prelinked files are present and their library dependencies have changed.</p>
+
+<p><b>-m</b></p><p>Conserve the virtual memory space. This is needed if you have a lot of libraries which need to be prelinked.</p>
+
+<p><b>-R</b></p><p>Random, randomise the address ordering, this enhances security against buffer overflows</p>
+
+<p>For more options and details see <i>man prelink</i></p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Known Problems and Fixes</title>
+
+<section>
+<title>&quot;Cannot prelink against non-PIC shared library&quot;</title>
+<body>
+<p>The cause of this problem is from badly compiled shared libraries which were compiled without the -fPIC gcc option for all their object files.</p>
+
+<p>The following is a list of the problem libraries and which packages to remerge if you have the above error.</p>
+
+<pre caption = "Fixes">
+<codenote>For the ORBit library /usr/lib/libIIOP.so.0.5.17</codenote>
+emerge ">=sys-apps/tcp-wrappers-7.6-r4" ORBit
+<codenote>For zlib library usr/lib/libz.so.1.1.4</codenote>
+emerge ">=sys-libs/zlib-1.1.4"
+<codenote>For svgalib, /usr/lib/libsvga.so.xx</codenote>
+emerge ">=media-libs/svgalib-1.9.16"
+<codenote>For the XFree openGL library, libGLU.so.1</codenote>
+emerge ">=x11-base/xfree-4.2.1-r2"
+</pre>
+
+<note>Many libraries link statically to zlib and/or tcp-wrappers so, first try emerging those and remerging the problem library.</note>
+
+<p>For the QT library libXinerama.a either add
+<pre caption = "Addition for libXinerama">
+myconf="-no-xinerama ${myconf}"
+</pre>
+somewhere at the beginning of the src_compile function in /usr/portage/x11-libs/qt/qt-3.x.x.ebuild of your QT ebuild or add <i>-fPIC</i> to your CFLAGS while emerging QT.</p>
+
+<p>If your problem library was not listed please report it with, preferably, a patch to add <i>-fPIC</i> to the relevant CFLAGS. The libraries in the wine package are a lost cause.</p>
+
+</body>
+</section>
+
+<section>
+<title>Abort while prelinking a file, like &quot;1631 Aborted ....&quot;</title>
+<body>
+
+<p>You need to use the <i>-f</i> option for prelink, ie. reprelink the entire system from scratch. Try <i>prelink -af</i></p>
+
+</body>
+</section>
+
+<section>
+<title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected reloc type...&quot;</title>
+<body>
+<p>This has been fixed in <i>sys-libs/glibc-2.3.1-r2</i> on 2002/11/18, remerge glibc if yours is older.</p>
+
+<p>Also doing <i>prelink -u -a -m ; prelink -a -m</i> has been known to help. If all else fails just do <i>prelink -u &lt;file&gt;</i></p>
+
+</body>
+</section>
+
+<section>
+<title>I have problems with Nvidia openGL libraries</title>
+<body>
+<p>The accelerated openGL libraries which come in the nvidia-glx package have been compiled in a non-standard way and so prelink will throw up warnings. This is nothing to worry about. You can always revert to the xfree versions if you don't need 3D acceleration.</p> 
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Conclusion</title>
+<section>
+<body>
+<p>Prelinking can drastically speed up the start up times for a number of large applications. Support is built into Portage. Prelinking is also safe as you can always undo the prelinking for any binary if you come across any problems. In short good luck!</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
