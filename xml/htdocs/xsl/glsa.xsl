@@ -312,5 +312,20 @@ Related bugreports:
 </ol>
 </xsl:template>
 
+<xsl:template match="b">
+<b><xsl:apply-templates/></b>
+</xsl:template>
+
+<xsl:template match="u">
+<u><xsl:apply-templates/></u>
+</xsl:template>
+
+<xsl:template match="i">
+<span class="input"><xsl:apply-templates/></span>
+</xsl:template>
+
+<xsl:template match="br">
+<br/>
+</xsl:template>
 
 </xsl:stylesheet>
