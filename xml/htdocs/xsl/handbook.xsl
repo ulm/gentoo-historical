@@ -283,7 +283,9 @@
   <xsl:param name="pos" select="position()" />
   <xsl:choose>
     <xsl:when test="$full = 1">
+      <!-- We need two anchors, 1 for internal links, 1 for cross-chapters links -->
       <a name="book_{generate-id(../..)}_chap{$pos}"/>
+      <a name="book_part{$partnum}_chap{$chapnum}__chap{$pos}"/>
     </xsl:when>
     <xsl:otherwise>
       <a name="doc_chap{$pos}"/>
@@ -300,6 +302,8 @@
     <xsl:when test="$full = 1">
       <xsl:apply-templates select="body|subsection">
         <xsl:with-param name="chpos" select="$pos"/>
+        <xsl:with-param name="chapnum" select="$chapnum"/>
+        <xsl:with-param name="partnum" select="$partnum"/>
       </xsl:apply-templates>
     </xsl:when>
     <xsl:otherwise>
@@ -316,7 +320,9 @@
   <xsl:param name="pos" select="position()"/>
   <xsl:choose>
     <xsl:when test="$full = 1">
+      <!-- We need two anchors, 1 for internal links, 1 for cross-chapters links -->
       <a name="book_{generate-id(../../..)}_chap{$chpos}_sect{$pos}"/>
+      <a name="book_part{$partnum}_chap{$chapnum}__chap{$chpos}_sect{$pos}"/>
     </xsl:when>
     <xsl:otherwise>
       <a name="doc_chap{$chpos}_sect{$pos}" />

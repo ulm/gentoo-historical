@@ -1162,24 +1162,32 @@
   <xsl:when test="@link">
     <xsl:choose>
       <xsl:when test="($TTOP = 'book') and ($full = 0) and (starts-with(@link, '?'))">
-        <!-- Handbook link pointing to another part/chapter -->
+        <!-- Handbook link pointing to another part/chapter, normal case -->
         <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
       </xsl:when>
       <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '?'))">
         <!-- Handbook link pointing to another part/chapter
              Handbook is being rendered in a single page (full=1)
-             Hence link needs to be rewritten as an internal one
-             i.e. handbook.xml?part=1&chap=3 becomes #book_part1_chap3
-             or   handbook.xml?part=2        becomes #book_part2 -->
+             Hence link needs to be rewritten as a local one
+             i.e. ?part=1&chap=3#doc_chap1 must become #book_part1_chap3__chap1   Case 1
+             or   ?part=1&chap=3           must become #book_part1_chap3          Case 2
+             or   ?part=2                  must become #book_part2                Case 3-->
         <xsl:choose>
-          <xsl:when test="contains(@link, '&amp;')">
-            <!-- Link points to a chapter (2 params) -->
+          <xsl:when test="contains(@link, 'chap=') and contains(@link, '#doc_')">
+            <!-- Link points inside a chapter  (Case 1)-->
+            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:param name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
+            <xsl:param name="linkanch" select="substring-after(@link, '#doc_')" />
+            <a href="#book_part{$linkpart}_chap{$linkchap}__{$linkanch}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:when test="contains(@link, 'chap=')">
+            <!-- Link points to a chapter  (Case 2)-->
             <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
             <xsl:param name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:otherwise>
-            <!-- Link points to a part (1 param) -->
+            <!-- Link points to a part  (Case 3)-->
             <xsl:param name="linkpart" select="substring-after(@link, '=')" />
             <a href="#book_part{$linkpart}"><xsl:apply-templates/></a>
           </xsl:otherwise>
