@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 	<xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 	<xsl:preserve-space elements="pre"/>
@@ -243,20 +242,20 @@
             </td>
             <td valign="bottom" align="left" bgcolor="#000000" colspan="2">
               <p class="menu">
-	      	<xsl:choose>
-			<xsl:when test="/mainpage/@id='news'">
-				<a class="highlight" href="/">News</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/">News</a> |
-			</xsl:otherwise>
-		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='about'">
 				<a class="highlight" href="/main/en/about.xml">About</a> |
 			</xsl:when>
 			<xsl:otherwise>
 				<a class="menulink" href="/main/en/about.xml">About</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+	      	<xsl:choose>
+			<xsl:when test="/mainpage/@id='projects'">
+				<a class="highlight" href="/proj/en/metastructure/projects.xml">Projects</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/proj/en/metastructure/projects.xml">Projects</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
@@ -284,7 +283,6 @@
 				<a class="menulink" href="/main/en/lists.xml">Lists</a> |
 			</xsl:otherwise>
 		</xsl:choose>
-<a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 		<a class="menulink" href="http://store.gentoo.org">Store</a> |
 		<xsl:choose>
