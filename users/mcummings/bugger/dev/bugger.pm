@@ -21,10 +21,23 @@ sub list_bugs {
     $request = HTTP::Request->new( 'GET',
 "http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailcc1=1&emailtype1=substring&email1=$bugfor&emailtype2=substring&email2=&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
     );
-    } else {
+    } elsif ($stype eq "assigned") {
     $request = HTTP::Request->new( 'GET',
 "http://bugs.gentoo.org/buglist.cgi?query_format=&short_desc_type=allwordssubstr&short_desc=&long_desc_type=allwordssubstr&long_desc=&bug_file_loc_type=allwordssubstr&bug_file_loc=&keywords_type=allwords&keywords=&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&emailassigned_to1=1&emailtype1=substring&email1=$bugfor&emailassigned_to2=1&emailreporter2=1&emailcc2=1&emailtype2=substring&email2=$bugfor&bugidtype=include&bug_id=&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&cmdtype=doit&order=Reuse+same+sort+as+last+time&field0-0-0=noop&type0-0-0=noop&value0-0-0=&ctype=csv"
     );
+    } else {
+    my @words = split(/ /,$bugfor);
+    my $strung = "";
+    my $wordcount = 0;
+    foreach my $word (@words) {
+	$strung .= "&field$wordcount-0-0=product&type$wordcount-0-0=substring&value$wordcount-0-0=$word&field$wordcount-0-1=component&type$wordcount-0-1=substring&value$wordcount-0-1=$word&field$wordcount-0-2=short_desc&type$wordcount-0-2=substring&value$wordcount-0-2=$word&field$wordcount-0-3=status_whiteboard&type$wordcount-0-3=substring&value$wordcount-0-3=$word";
+	$wordcount++;
+    }
+    my $addon="&ctype=csv";
+    $request = HTTP::Request->new( 'GET',
+    "http://bugs.gentoo.org/buglist.cgi?bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=RESOLVED&bug_status=VERIFIED&bug_status=CLOSED$strung$addon"
+    );
+    
     }
     my $response = $ua->request($request);
     die "Error while getting ", $response->request->uri, " -- ",
