@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/openafs.xml,v 1.16 2004/09/20 09:49:07 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/openafs.xml,v 1.17 2004/09/22 11:42:11 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -14,6 +14,9 @@
 <author title="Editor">
   <mail link="blubber@gentoo.org">Tiemo Kieft</mail>
 </author>
+<author title="Editor">
+  <mail link="fnjordy@gmail.com">Steven McCoy</mail>
+</author>
 
 <abstract>
 This guide shows you how to install a openafs server and client on gentoo linux 
@@ -21,8 +24,8 @@ This guide shows you how to install a openafs server and client on gentoo linux
 
 <license/>
 
-<version>0.6</version>
-<date>September 09, 2004</date>
+<version>0.7</version>
+<date>September 22, 2004</date>
 
 <chapter>
   <title>Overview</title>
@@ -553,12 +556,103 @@ ka&gt;
 </chapter>
 
 <chapter>
-  <title>Basic Administration</title>
-  <section>
-  <title></title>
-  <body>
-    <p>To be done ... For now read the AFS Documentation :)</p>
-  </body>
-  </section>
+<title>Basic Administration</title>
+<section>
+<title>Disclaimer</title>
+<body>
+
+<p>
+OpenAFS is an extensive technology. Please read the AFS documentation for more
+information. We only list a few administrative tasks in this chapter.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuring PAM to Acquire an AFS Token on Login</title>
+<body>
+
+<p>
+To use AFS you need to authenticate against the KA Server if using
+an implementation AFS Kerberos 4, or against a Kerberos 5 KDC if using
+MIT, Heimdal, or ShiShi Kerberos 5.  However in order to login to a
+machine you will also need a user account, this can be local in
+/etc/passwd, NIS, LDAP (OpenLDAP), or a Hesiod database.  PAM allows
+Gentoo to tie the authentication against AFS and login to the user
+account.
+</p>
+
+<p>
+You will need to update /etc/pam.d/system-auth which is used by the
+other configurations.  "use_first_pass" indicates it will be checked
+first against the user login, and "ignore_root" stops the local super
+user being checked so as to order to allow login if AFS or the network
+fails.
+</p>
+
+<pre caption="/etc/pam.d/system-auth">
+auth       required     /lib/security/pam_env.so
+auth       sufficient   /lib/security/pam_unix.so likeauth nullok
+auth       sufficient   /usr/afsws/lib/pam_afs.so.1 use_first_pass ignore_root
+auth       required     /lib/security/pam_deny.so
+
+account    required     /lib/security/pam_unix.so
+
+password   required     /lib/security/pam_cracklib.so retry=3
+password   sufficient   /lib/security/pam_unix.so nullok md5 shadow use_authtok
+password   required     /lib/security/pam_deny.so
+
+session    required     /lib/security/pam_limits.so
+session    required     /lib/security/pam_unix.so
+</pre>
+
+<p>
+In order for sudo to keep the real user's token and to prevent local
+users gaining AFS access change /etc/pam.d/su as follows:
+</p>
+
+<pre caption="/etc/pam.d/su">
+<comment># Here, users with uid &gt; 100 are considered to belong to AFS and users with
+# uid &lt;= 100 are ignored by pam_afs.</comment>
+auth       sufficient   /usr/afsws/lib/pam_afs.so.1 ignore_uid 100
+
+auth       sufficient   /lib/security/pam_rootok.so
+
+<comment># If you want to restrict users begin allowed to su even more,
+# create /etc/security/suauth.allow (or to that matter) that is only
+# writable by root, and add users that are allowed to su to that
+# file, one per line.
+#auth       required     /lib/security/pam_listfile.so item=ruser \
+#       sense=allow onerr=fail file=/etc/security/suauth.allow
+
+# Uncomment this to allow users in the wheel group to su without
+# entering a passwd.
+#auth       sufficient   /lib/security/pam_wheel.so use_uid trust
+
+# Alternatively to above, you can implement a list of users that do
+# not need to supply a passwd with a list.
+#auth       sufficient   /lib/security/pam_listfile.so item=ruser \
+#       sense=allow onerr=fail file=/etc/security/suauth.nopass
+
+# Comment this to allow any user, even those not in the 'wheel'
+# group to su</comment>
+auth       required     /lib/security/pam_wheel.so use_uid
+
+auth       required     /lib/security/pam_stack.so service=system-auth
+
+account    required     /lib/security/pam_stack.so service=system-auth
+
+password   required     /lib/security/pam_stack.so service=system-auth
+
+session    required     /lib/security/pam_stack.so service=system-auth
+session    optional     /lib/security/pam_xauth.so
+
+<comment># Here we prevent the real user id's token from being dropped</comment>
+session    optional     /usr/afsws/lib/pam_afs.so.1 no_unlog
+</pre>
+
+</body>
+</section>
 </chapter>
+
 </guide>
