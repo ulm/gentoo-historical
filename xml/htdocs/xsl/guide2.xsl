@@ -159,17 +159,6 @@
               </tr>
               <tr>
                 <td align="center">
-                  <!-- Image of the Gentoo Store -->
-                  <a href="http://store.gentoo.org"><img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/></a>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
                   <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
 		  php|architect is the monthly magazine for PHP professionals, available
@@ -211,6 +200,19 @@
               </tr>
               <tr>
                 <td align="center">
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.jpg" alt="$99/mo dedicated servers" border="0"/></a>
+                  <p class="alttext">
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
                   <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
                   <p class="alttext">
                     Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
@@ -224,10 +226,8 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
-                  <p class="alttext">
-                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
-                  </p>
+                  <!-- Image of the Gentoo Store -->
+                  <a href="http://store.gentoo.org"><img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/></a>
                 </td>
               </tr>
               <tr>
