@@ -1,14 +1,22 @@
 #!/bin/bash
 echo ">>> Starting Web update..."
+
+#to get WEBROOT and WEBSCRIPTS defined
 source ~/.bashrc
-#to get WEBROOT defined...
+
 #to get all arches in our package listing:
 export ACCEPT_KEYWORDS="x86 ppc alpha sparc sparc64"
 export PORTDIR="$HOME/gentoo-x86"
 export FEATURES="-cvs -digest"
-${WEBROOT}/../scripts/cvs-page.sh
-${WEBROOT}/../scripts/pkgs.py
-${WEBROOT}/../scripts/use-index.py
-${WEBROOT}/../scripts/site-archive.sh
-${WEBROOT}/../scripts/news-index.sh
-${WEBROOT}/../scripts/doc-tarball.sh
+
+[ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
+[ -z "${WEBSCRIPTS}" ] && echo "\$WEBSCRIPTS not set; exiting" && exit 1
+
+${WEBSCRIPTS}/cvs-page.sh
+${WEBSCRIPTS}/pkgs.py
+${WEBSCRIPTS}/use-index.py
+${WEBSCRIPTS}/site-archive.sh
+${WEBSCRIPTS}/news-index.sh
+${WEBSCRIPTS}/doc-tarball.sh
+
+echo ">>> Nightly Web update done."
