@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- English CVS Version: 1.22 -->
+<!-- English CVS Version: 1.25 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/Attic/hb-install-bootloader.xml,v 1.3 2004/01/11 10:33:48 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/Attic/hb-install-bootloader.xml,v 1.4 2004/01/25 14:15:03 dertobi123 Exp $ -->
 
 <sections>
 <section>
@@ -224,7 +224,7 @@ allzu schwer sein. Also weiter in der Konfiguration von GRUB!
 </p>
 
 <pre caption = "Installieren von GRUB im MBR">
-grub&gt; <i>root (hd0,0)</i>          <comment>(Benutze die Informationen von der Boot Partition)</comment>
+grub&gt; <i>root (hd0,0)</i>          <comment>(Angabe wo sich Ihre /boot Partition befindet)</comment>
 grub&gt; <i>setup (hd0)</i>           <comment>(Installiere GRUB im MBR)</comment>
 grub&gt; <i>quit</i>                  <comment>(Verlasse die GRUB Shell)</comment>
 </pre>
@@ -252,10 +252,26 @@ erstellten Kernel bootet. Erstellen Sie <path>/boot/grub/grub.conf</path> mit
 <p>
 Nun wollen wir eine <path>grub.conf</path> schreiben. Folgend finden Sie eine
 <path>grub.conf</path> für das Partitionierungsbeispiel, das wir in diesem
-Leitfaden verwendet haben mit dem Kernel-Image <path>kernel-2.4.22</path>.
+Leitfaden verwendet haben mit dem Kernel-Image <path>kernel-2.4.22</path>. Wir
+werden nur die erste <path>grub.conf</path> ausführlich erläutern.
 </p>
 
-<pre caption = "grub.conf Inhalt">
+<ul>
+  <li>
+    Die erste <path>grub.conf</path> für Leute, die nicht <c>genkernel</c>
+    benutzt haben
+  </li>
+  <li>
+    Die zweite <path>grub.conf</path> ist für Leute, die <c>genkernel</c> von
+    der LiveCD benutzt haben (<c>genkernel</c> mittels GRP installiert)
+  </li>
+  <li>
+    Die dritte <path>grub.conf</path> ist für Leute, die <c>genkernel</c>
+    heruntergeladen haben
+  </li>
+</ul>
+
+<pre caption = "grub.conf für Nich-genkernel Benutzer">
 <comment># Welcher Eintrag standardmäßig gebootet werden soll. 0 ist der Erste, 1 ist der Zweite usw.</comment>
 default 0
 <comment># Wieviele Sekunden gewartet werden soll, bevor der Standardeintrag gebootet wird.</comment>
@@ -267,11 +283,41 @@ title=Gentoo Linux
 <comment># Partition in der das Kernel-Image (oder das Betriebssystem) vorhanden ist</comment>
 root (hd0,0)
 kernel (hd0,0)/kernel-2.4.22 root=/dev/hda3
-<comment># Nur wenn sie Genkernel benutzen, ansonsten entfernen Sie die folgende Zeile:</comment>
-initrd (hd0,0)/initrd-2.4.22-gentoo-r2
 
 <comment># Die nächsten drei Zeilen werden nur benötigt wenn Sie einen Dualboot mit einem Windows System einrichten wollen.</comment>
 <comment># Hier in diesem Fall liegt Windows auf /dev/hda6.</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
+<pre caption = "grub.conf für GRP genkernel Benutzer">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.22
+root (hd0,0)
+kernel (hd0,0)/kernel-2.4.22 root=/dev/hda3
+initrd (hd0,0)/initrd-2.4.22
+
+<comment># Nur wenn Sie einen Dual-Boot einrichten möchten</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
+<pre caption = "grub.conf für Nicht-GRP genkernel Benutzer">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.22
+root (hd0,0)
+kernel (hd0,0)/kernel-2.4.22 root=/dev/ram0 init=/linuxrc real_root=/dev/hda3
+initrd (hd0,0)/initrd-2.4.22
+
+<comment># Nur wenn Sie einen Dual-Boot einrichten möchten</comment>
 title=Windows XP
 root (hd0,5)
 chainloader +1
@@ -290,9 +336,9 @@ Mountpoint ist, nicht dem Root. Mit anderen Worten,
 <p>
 Wenn Sie noch zusätzliche Optionen an den Kernel übergeben müssen, fügen Sie
 diese einfach zum Ende des Kernelbefehls hinzu. Eine Option übermitteln wir
-schon (<c>root=/dev/hda3</c>), aber Sie können auch weitere übermittlen. Als
-Beispiel benutzen wir das <c>vga</c> Statement für Framebuffer, das wir schon
-besprochen haben:
+schon (<c>root=/dev/hda3</c> oder <c>real_root=/dev/hda3</c>), aber Sie können
+auch weitere übermittlen. Als Beispiel benutzen wir das <c>vga</c> Statement
+für Framebuffer, das wir schon besprochen haben:
 </p>
 
 <pre caption = "Hinzufügen des vga Statements als eine Kerneloption">
@@ -363,8 +409,24 @@ und erstellen die Datei.
 Vor einigen Abschnitten baten wir Sie, sich den Namen des Kernel-Images zu
 merken, welches Sie erstellt haben. In der folgenden <path>lilo.conf</path>
 Beispielsdatei nehmen wir an, dass der Imagename <path>kernel-2.4.22</path>
-ist. Wir benutzen zudem das Beispielpartitionsschema in dieser Datei.
+ist. Wir benutzen zudem das Beispielpartitionsschema in diesem Beispiel, es gibt
+drei verschiedene Teile:
 </p>
+
+<ul>
+  <li>
+    Einen für diejenigen, die <c>genkernel</c> nicht benutzt haben um den Kernel
+    zu bauen
+  </li>
+  <li>
+    einen für diejenigen, die eine GRP Installation von <c>genkernel</c> zum
+    bauen des Kernel genutzt haben
+  </li>
+  <li>
+    Einen für diejenigen, die ein aktuelles (heruntergeladenes) <c>genkernel</c>
+    zum bauen des Kernel benutzt haben.
+  </li>
+</ul>
 
 <pre caption = "Example /etc/lilo.conf">
 boot=/dev/hda             <comment># Installieren von LILO im MBR</comment>
@@ -374,13 +436,25 @@ default=gentoo            <comment># Wenn das Timeout verstrichen ist, dann boot
 <comment># Nur wenn Sie Framebuffer verwenden, ansonsten entfernen Sie die folgende Zeile:</comment>
 vga=788                   <comment># Die Framebuffereinstellung: Passen Sie diese nach Ihrem Willen an.</comment>
 
+<omment># Nur für Nicht-GRP Benutzer</omment>
 image=/boot/kernel-2.4.22
   label=gentoo            <comment># Der Name den wir der Sektion geben</comment>
   read-only               <comment># Starte mit einem nur-lesen Root. Nicht ändern!</comment>
   root=/dev/hda3          <comment># Ort des Root Dateisystems</comment>
-  <comment># Nur wenn Sie Genkernel benutzen. Ansonsten entfernen Sie die folgende Zeile:</comment>
-  initrd=/boot/initrd-2.4.22-gentoo-r2
+<comment># Für GRP genkernel Benutzer:</comment>
+image=/boot/kernel-2.4.22
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  initrd=/boot/initrd-2.4.22
 
+<comment># Für Benutzer des aktuellen genkernel</comment>
+image=/boot/kernel-2.4.22
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.22
 <comment># Die nächsten zwei Zeilen werden nur benötigt, wenn Sie Dualboot mit einem Windowssystem einrichten wollen.</comment>
 <comment># In diesem Fall liegt Windows auf /dev/hda6.</comment>
 other=/dev/hda6
