@@ -38,19 +38,20 @@
 <item>
   <xsl:variable name="glsaid" select="normalize-space(ti[1]/uri/text())"/>
   <xsl:variable name="glsalink" select="string(ti[1]/uri/@link)"/>
-  <xsl:variable name="glsapkg" select="normalize-space(ti[2]/text())"/>
-  <xsl:variable name="glsadesc" select="normalize-space(ti[3]/text())"/>
+  <xsl:variable name="glsasev" select="normalize-space(ti[2]/text())"/>
+  <xsl:variable name="glsapkg" select="normalize-space(ti[3]/text())"/>
+  <xsl:variable name="glsadesc" select="normalize-space(ti[4]/text())"/>
   <xsl:attribute name="rdf:about"><xsl:value-of select="$glsalink"/></xsl:attribute>
   <title>
     <xsl:choose>
       <xsl:when test="$glsapkg='kernel'">
-        <xsl:value-of select="concat('GLSA ', $glsaid, ': ', $glsapkg)"/>
+        <xsl:value-of select="concat('GLSA ', $glsaid, ' (', $glsasev, '): ', $glsapkg)"/>
       </xsl:when>
       <xsl:when test="$glsapkg!=''">
-        <xsl:value-of select="concat('GLSA ', $glsaid, ': ', substring-after($glsapkg, '/'))"/>
+        <xsl:value-of select="concat('GLSA ', $glsaid, ' (', $glsasev, '): ', substring-after($glsapkg, '/'))"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="concat('GLSA ', $glsaid)"/>
+        <xsl:value-of select="concat('GLSA ', $glsaid, ' (', $glsasev, ')')"/>
       </xsl:otherwise>
     </xsl:choose>
   </title>
