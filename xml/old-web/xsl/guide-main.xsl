@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding="iso-8859-1"?>
+<?xml version='1.0' encoding="iso-8859-15"?>
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output encoding="iso-8859-1" method="html" indent="yes"/> 
+<xsl:output encoding="iso-8859-15" method="html" indent="yes"/> 
 <xsl:preserve-space elements="pre"/>
 
 <xsl:template match="img">
@@ -309,8 +309,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-articles.html">Articles</a> |
 						</xsl:otherwise>
 					</xsl:choose>
-					Install: <a class="menulink" href="/doc/build.html">x86</a> / 
-					<a class="menulink" href="/doc/gentooppc-quickstart.html">PowerPC</a> |
+					<a class="menulink" href="/doc/build.html">Download/Install</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='docs'">
@@ -374,8 +373,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/>
 							<a class="altlink" href="http://gentoo.linux.no/">linux.no (Norway)</a><br/>
 							<a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/>
-							<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/>
-							<a class="altlink" href="/doc/mirroring.html">Gentoo Linux rsync mirror HOWTO</a> <font color="#ff0000">(new!)</font><br/><br/>
+							<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/><br/>
 
 <a href="http://www.qksrv.net/click-477620-5033206" target="_top" >
 <img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
@@ -402,7 +400,17 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
-						<br/>
+						<br/><br/>
+						Documentation en Français:<br/>
+						<a class="altlink" href="/doc/build-fr.html">Instructions d' Installation</a><br/>
+						<a class="altlink" href="/doc/altinstall-fr.html">Methode d' Alternative Installation</a><br/>
+						<a class="altlink" href="/doc/faq-fr.html">Foire Aux Questions</a><br/>
+						<a class="altlink" href="/doc/portage-manual-fr.html">Manuel Portage</a><br/>
+						<a class="altlink" href="/doc/portage-user-fr.html">Guide de l' Utilisateur d' Portage</a><br/>
+						<a class="altlink" href="/doc/desktop-fr.html">Guide de Bureau</a><br/>
+						<a class="altlink" href="/doc/rc-scripts-fr.html">System d'Initialisation</a><br/>
+						<a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide d' nVidia</a><br/>
+						<br/><br/>
 	
 						Mailing Lists:<br/><br/>
 						<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/>
