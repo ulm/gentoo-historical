@@ -8,14 +8,11 @@
 	<xsl:template match="/guide">
 	<html>
 	<head>
-<link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
+	<link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
 	<link REL="shortcut icon" HREF="http://ppc.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-	<title>Gentoo Linux on PowerPC 
--- 
-	<xsl:choose><xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose></title>
+	<title>Gentoo Linux on PowerPC -- News</title> 
 	</head>
 	<body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
-	<!--<table border="0" width="100%" cellspacing="0" cellpadding="0">-->
 	<table width="100%" border="0" cellspacing="0" cellpadding="0">
 	<tr>
 	<td valign="top" height="125" bgcolor="#45347b">
@@ -42,24 +39,19 @@
 	<tr>
 		<td valign="top" align="right" colspan="1" bgcolor="#ffffff">
 <!--content begin-->
-<!--Netscape 4.7 hack table start-->
-<!--<table border="0" cellspacing="5" cellpadding="0" height="100%" width="100%">-->
 			<table border="0" cellspacing="0" cellpadding="0" width="100%">
 				<tr>
 					<td width="99%" class="content" valign="top" align="left">
 						<br/>
 						<p class="dochead">
                       <xsl:choose>
-                        <xsl:when test="/guide/subtitle"><xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
+                        <xsl:when test="/guide/subtitle">
+			<xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
                         <xsl:otherwise>
                           <xsl:value-of select="/guide/title"/>
                         </xsl:otherwise>
                       </xsl:choose>
                     </p>
-<!--		<p>
-			<xsl:apply-templates select="author"/>
-
-		</p> -->
                     <form name="contents" action="http://ppc.gentoo.org"><b>Contents</b>:
 	<select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10"><xsl:for-each select="chapter"><xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
 
@@ -196,7 +188,6 @@
 		</xsl:choose>
       </head>
       <body style="margin-left:0px;margin-top:0px;" bgcolor="#000000">
-<!--<table border="0" width="100%" height="100%" cellspacing="0" cellpadding="0">-->
         <table border="0" width="100%" cellspacing="0" cellpadding="0">
           <tr>
             <td valign="top" height="125" width="1%" bgcolor="#45347b">
@@ -244,7 +235,6 @@
 				<a class="menulink" href="/main/en/lists.xml">Lists</a> |
 			</xsl:otherwise>
 		</xsl:choose>
-<a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store</a> |
 		<xsl:choose>
@@ -253,22 +243,6 @@
 			</xsl:when>
 			<xsl:otherwise>
 				<a class="menulink" href="/news/en/gwn/gwn.xml"> GWN</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='where'">
-				<a class="highlight" href="/main/en/where.xml">Get Gentoo!</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/main/en/where.xml">Get Gentoo!</a> |
-			</xsl:otherwise>
-		</xsl:choose>
-		<xsl:choose>
-			<xsl:when test="/mainpage/@id='sponsors'">
-				<a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/main/en/sponsors.xml">Sponsors</a> 
 			</xsl:otherwise>
 		</xsl:choose>
 		</p>
@@ -305,9 +279,6 @@
 				</td></tr></table>
 				<br/>	
 				-->
-				Documentation:
-				<br/>
-				<a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
 				Resources:
 				<a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
 				<br/>
@@ -317,26 +288,13 @@
 				<br/>
 				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
 				<br/>
-				<a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
-				<br/>
-				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
-				<br/>
-				<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
-				<br/>
-				<a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
-				<br/>
-				<br/>
-				Graphics:
-				<br/>
-				<a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
-				<br/><br/>	
 				Miscellaneous Resources:
 				<br/>
 	
 	<xsl:if test="/mainpage/@id='news'">
 				<br/><br/>
 				Older News:<br/>
-				<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;=7][position()&lt;20]/text()">
+				<xsl:for-each select="document('/proj/en/ppc/dyn/news-index.xml')/uris/uri[position()&gt;=7][position()&lt;20]/text()">
 				<xsl:variable name="newsuri" select="."/>
 				<a class="altlink" href="{$newsuri}"><xsl:value-of select="document(.)/news/title"/></a><br/>
 				</xsl:for-each>
@@ -600,17 +558,6 @@
                 </tr>
 </table>
             </td>
-<!--
-			<td width="15%" class="infotext" valign="top" align="left" bgcolor="#ddddff">
-				<table border="0" cellspacing="5" cellpadding="0" width="100%">
-				<tr>
-					<td>
-						<br/>
-					</td>
-				</tr>
-			</table>
-			</td>
-			-->
           </tr>
           <tr>
             <td align="right" class="infohead" width="100%" colspan="3" bgcolor="#7a5ada">
@@ -672,245 +619,6 @@
     </table>
     <br/>
   </xsl:template>
-  <xsl:template match="mail">
-    <a href="mailto:{@link}">
-      <xsl:value-of select="."/>
-    </a>
-  </xsl:template>
-  <xsl:template match="author/mail">
-    <b>
-      <a class="altlink" href="mailto:{@link}">
-        <xsl:value-of select="."/>
-      </a>
-    </b>
-  </xsl:template>
-  <xsl:template match="author">
-    <xsl:apply-templates/>
-    <xsl:if test="@title">
-      <br/>
-      <i>
-        <xsl:value-of select="@title"/>
-      </i>
-    </xsl:if>
-    <br/>
-    <br/>
-  </xsl:template>
-  <xsl:template match="chapter">
-    <xsl:variable name="chid"><xsl:number/></xsl:variable>
-    <xsl:choose>
-      <xsl:when test="title">
-        <p class="chaphead">
-          <span class="chapnum">
-            <a name="doc_chap{$chid}"><xsl:number/>.</a>
-          </span>
-          <xsl:value-of select="title"/>
-        </p>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:if test="/guide">
-          <p class="chaphead">
-            <span class="chapnum">
-              <a name="doc_chap{$chid}"><xsl:number/>.</a>
-            </span>
-          </p>
-        </xsl:if>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:apply-templates select="body">
-      <xsl:with-param name="chid" select="$chid"/>
-    </xsl:apply-templates>
-    <xsl:apply-templates select="section">
-      <xsl:with-param name="chid" select="$chid"/>
-    </xsl:apply-templates>
-  </xsl:template>
-  <xsl:template match="section">
-    <xsl:param name="chid"/>
-    <xsl:if test="title">
-      <xsl:variable name="sectid">doc_chap<xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
-      <p class="secthead">
-        <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
-      </p>
-    </xsl:if>
-    <xsl:apply-templates select="body">
-      <xsl:with-param name="chid" select="$chid"/>
-    </xsl:apply-templates>
-  </xsl:template>
-<!--  
-  <xsl:template match="subsection">
-    <xsl:param name="chapid"/>
-    <xsl:if test="title">
-      <xsl:variable name="subsectid"><xsl:value-of select="$chapid"/>_subsect<xsl:number/></xsl:variable>
-      <p class="subsecthead">
-        <a name="{$subsectid}"><xsl:value-of select="title"/>&#160;</a>
-      </p>
-    </xsl:if>
-    <xsl:apply-templates select="body"/>
-  </xsl:template>
--->
-  <xsl:template match="figure">
-    <xsl:param name="chid"/>
-    <xsl:variable name="fignum">
-      <xsl:number level="any" from="chapter" count="figure"/>
-    </xsl:variable>
-    <xsl:variable name="figid">doc_chap<xsl:value-of select="$chid"/>_fig<xsl:value-of select="$fignum"/></xsl:variable>
-    <br/>
-    <a name="{$figid}"/>
-    <table cellspacing="0" cellpadding="0" border="0">
-      <tr>
-        <td class="infohead" bgcolor="#7a5ada">
-          <p class="caption">
-            <xsl:choose>
-              <xsl:when test="@caption">
-				Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
-			</xsl:when>
-              <xsl:otherwise>
-				Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
-			</xsl:otherwise>
-            </xsl:choose>
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td align="center" bgcolor="#ddddff">
-          <xsl:choose>
-            <xsl:when test="@short">
-              <img src="{@link}" alt="Fig. {$fignum}: {@short}"/>
-            </xsl:when>
-            <xsl:otherwise>
-              <img src="{@link}" alt="Fig. {$fignum}"/>
-            </xsl:otherwise>
-          </xsl:choose>
-        </td>
-      </tr>
-    </table>
-    <br/>
-  </xsl:template>
-<!--figure without a caption; just a graphical element-->
-  <xsl:template match="fig">
-    <center>
-      <xsl:choose>
-        <xsl:when test="@linkto">
-          <a href="{@linkto}">
-            <img src="{@link}" alt="{@short}"/>
-          </a>
-        </xsl:when>
-        <xsl:otherwise>
-          <img src="{@link}" alt="{@short}"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </center>
-  </xsl:template>
-  <xsl:template match="br">
-    <br/>
-  </xsl:template>
-  <xsl:template match="note">
-    <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-      <tr>
-        <td bgcolor="#bbffbb">
-          <p class="note">
-            <b>Note: </b>
-            <xsl:apply-templates/>
-          </p>
-        </td>
-      </tr>
-    </table>
-  </xsl:template>
-  <xsl:template match="impo">
-    <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-      <tr>
-        <td bgcolor="#ffffbb">
-          <p class="note">
-            <b>Important: </b>
-            <xsl:apply-templates/>
-          </p>
-        </td>
-      </tr>
-    </table>
-  </xsl:template>
-  <xsl:template match="warn">
-    <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-      <tr>
-        <td bgcolor="#ffbbbb">
-          <p class="note">
-            <b>Warning: </b>
-            <xsl:apply-templates/>
-          </p>
-        </td>
-      </tr>
-    </table>
-  </xsl:template>
-  <xsl:template match="codenote">
-    <span class="comment">// <xsl:value-of select="."/></span>
-  </xsl:template>
-  <xsl:template match="comment">
-    <span class="comment">
-      <xsl:apply-templates/>
-    </span>
-  </xsl:template>
-  <xsl:template match="i">
-    <span class="input">
-      <xsl:apply-templates/>
-    </span>
-  </xsl:template>
-  <xsl:template match="b">
-    <b>
-      <xsl:apply-templates/>
-    </b>
-  </xsl:template>
-  <xsl:template match="brite">
-    <font color="#ff0000">
-      <b>
-        <xsl:apply-templates/>
-      </b>
-    </font>
-  </xsl:template>
-  
-<xsl:template match="/email/body">
-<table border="0"><tr><td>
-<span class="content">
-<p class="secthead">
-	Subject: <xsl:value-of select="/email/subject"/>
-</p>
-<p class="secthead"><font color="#000000">
-	List: <xsl:value-of select="/email/list"/> at gentoo.org<br/>
-	Date: <xsl:value-of select="/email/date"/><br/>
-	From: <xsl:value-of select="/email/from"/><br/><br/>
-		<xsl:if test="/email/nav/prev">
-	<xsl:for-each select="/email/nav/prev[position()=1]/text()">
-		<xsl:variable name="navloc" select="."/>
-		<xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-		Previous: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
-	</xsl:for-each>
-	</xsl:if>
-	<xsl:if test="/email/nav/next">
-	<xsl:for-each select="/email/nav/next[position()=1]/text()">
-		<xsl:variable name="navloc" select="."/>
-		<xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-		Next: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
-	</xsl:for-each>
-	</xsl:if>
-	<xsl:if test="/email/in-reply-to">
-	<xsl:for-each select="/email/in-reply-to[position()=1]/text()">
-		<xsl:variable name="irtloc" select="."/>
-		<xsl:variable name="irtfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-		In Reply To: <a href="{$irtfile}"><xsl:value-of select="document($irtfile)/email/subject"/></a><br/>
-	</xsl:for-each>
-	</xsl:if>
-<xsl:if test="/email/replies">
-		<br/>Replies to this message:<br/>
-		<xsl:for-each select="/email/replies/reply/text()">
-			<xsl:variable name="rloc" select="."/>
-			<xsl:variable name="rfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-	&#160;<a href="{$rfile}"><xsl:value-of select="document($rfile)/email/subject"/></a><br/>
-		</xsl:for-each>
-	</xsl:if>
-</font></p>
-</span>
-<pre>
-		<xsl:apply-templates/>
-</pre>
-</td></tr></table>
-</xsl:template>
   
   <xsl:template match="body">
     <xsl:param name="chid"/>
