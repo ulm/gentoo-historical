@@ -52,13 +52,16 @@ This is where you emerge extra packages that your system may need.
 	    new_section.create_gtk_gui(vert2)
 	    #new_section.print_all()
 	    
+	# add the custom space-seperated list bar
+	self.custom_box=Widgets().textBox3(self.custom_box_callback,0,"custom_box")
+
 	scrolled_window.add_with_viewport(vert2)
 	viewport = scrolled_window.get_children()[0]
         viewport.set_shadow_type (gtk.SHADOW_IN)
 	viewport.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse ("white"))
 	
 	vert.pack_start(scrolled_window,expand=gtk.TRUE,fill=gtk.TRUE,padding=0)
-	
+	vert.pack_start(self.custom_box,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	self.add_content(vert)
 	
 
@@ -69,6 +72,29 @@ This is where you emerge extra packages that your system may need.
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	
+	# load the custom packages bar
+	s=" ".join(self.controller.install_profile.get_install_packages())
+	print "loaded custom packages: "+s
+	self.custom_box.set_text(s)
+    
+    def custom_box_callback(self,widget,data=None):
+	pass
+    
+    def deactivate(self):
+	return_value = False
+	# save the space seperated list
+	#print self.custom_box.get_text()
+	try:
+	    self.controller.install_profile.set_install_packages(None,self.custom_box.get_text(),None)
+	    #print self.custom_box.get_text()
+	    return_value = True
+	except:
+	    box = Widgets().error_Box("Error saving packages","You need to fix your input! \n Theres a problem, are you sure didn't enter \n funny characters?")
+	    box.show()
+	    return_value = False
+	    
+	return return_value
     
     class Section:
 	"This is the Section associated with packages."
