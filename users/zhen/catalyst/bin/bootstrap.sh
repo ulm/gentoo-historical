@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License, v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.6 2003/10/02 17:34:48 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.7 2003/10/05 02:06:16 zhen Exp $
 
 # IMPORTANT NOTE:
 # This script no longer accepts an optional argument.
@@ -131,7 +131,7 @@ fi
 # We really need to upgrade baselayout now that it's possible:
 myBASELAYOUT=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-apps/baselayout | sed 's:^\*::'`
 myPORTAGE=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-apps/portage | sed 's:^\*::'`
-myGETTEXT=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-devel/gettext | sed 's:^\*::'`
+#myGETTEXT=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-devel/gettext | sed 's:^\*::'`
 myBINUTILS=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-devel/binutils | sed 's:^\*::'`
 myGCC=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-devel/gcc | sed 's:^\*::'`
 myGLIBC=`cat ${MYPROFILEDIR}/packages | grep -v '^#' | grep sys-libs/glibc | sed 's:^\*::'`
@@ -144,7 +144,7 @@ echo "Using ${myBASELAYOUT}"
 echo "Using ${myPORTAGE}"
 echo "Using ${myBINUTILS}"
 echo "Using ${myGCC}"
-echo "Using ${myGETTEXT}"
+#echo "Using ${myGETTEXT}"
 echo "Using ${myGLIBC}"
 echo "Using ${myTEXINFO}"
 echo "Using ${myZLIB}"
@@ -218,7 +218,9 @@ then
 fi
 
 export USE="${ORIGUSE} bootstrap"
-emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
+#emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
+
+emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myBINUTILS} ${myGCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
 
 # ncurses-5.3 and up also build c++ bindings, so we need to rebuild it
 export USE="${ORIGUSE}"
