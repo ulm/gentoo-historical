@@ -271,6 +271,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 						</xsl:otherwise>
 					</xsl:choose>
 					<font color="#ff0000"><a class="menulink" href="/doc/shots.html">ScreenShots</a></font> |
+					<font color="#ff0000"><a class="menulink" href="/doc/articles.html">Articles</a></font> |
 					<a class="menulink" href="/doc/build.html">Download/Install</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
