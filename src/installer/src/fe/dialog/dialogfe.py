@@ -199,11 +199,11 @@ def set_install_stage():
 def set_portage_tree():
 # This section will ask whether to sync the tree, whether to use a snapshot, etc.
 	menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "None (snapshot or NFS mount)"]
-	code, portage_tree_sync = d.menu("How do you want to sync the portage tree?  (emerge sync is temporarily disabled, use webrsync instead)", choices=dmenu_list_to_choices(menulist))
+	code, portage_tree_sync = d.menu("How do you want to sync the portage tree?", choices=dmenu_list_to_choices(menulist))
 	if code != DLG_OK: return
 	portage_tree_sync = menulist[int(portage_tree_sync)-1]
 	#FIX ME when python 2.4 comes out.
-	if portage_tree_sync == "Normal 'emerge sync' (temporarily disabled)": install_profile.set_portage_tree_sync_type(None, "webrsync", None)
+	if portage_tree_sync == "Normal 'emerge sync'": install_profile.set_portage_tree_sync_type(None, "sync", None)
 	if portage_tree_sync == "Webrsync (rsync is firewalled)": install_profile.set_portage_tree_sync_type(None, "webrsync", None)
 	if portage_tree_sync == "None (snapshot or NFS mount)": install_profile.set_portage_tree_sync_type(None, "custom", None)
 	if portage_tree_sync == "None (snapshot or NFS mount)":

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.23 2005/03/19 04:39:35 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.24 2005/03/21 23:00:33 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -391,7 +391,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			grubinstallstring +="setup ("+grub_boot_drive+")\n"
 		grubinstallstring += "quit\n' | "+root+"/sbin/grub"
 		#print grubinstallstring
-		exitstatus = GLIUtility.spawn(grubinstallstring,chroot=self._chroot_dir)
+		exitstatus = GLIUtility.spawn(grubinstallstring)
 		if exitstatus != 0:
 			raise GLIException("GrubInstallError", 'fatal', '_install_grub', "Could not install grub!")
 			
