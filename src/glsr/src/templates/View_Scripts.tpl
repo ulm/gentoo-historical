@@ -5,7 +5,7 @@
       <table width="90%" class="standard_table">
         <tr>
           <td colspan="4" class="header">Script Listing</td>
-          <td colspan="4" class="header" style="text-align: right;">
+          <td colspan="5" class="header" style="text-align: right;">
           Order By:
           <select name="orderby">
             <option value="1">Author</option>
@@ -16,7 +16,7 @@
 
         {IF MAIN_LOOP_LEN == 0}
         <tr>
-          <td class="standard_cell" colspan="8">No Scripts Found</td>
+          <td class="standard_cell" colspan="9">No Scripts Found</td>
         </tr>
 
         {ELSE}
@@ -28,6 +28,7 @@
 	  <td class="sub_header">Rank</td>
           <td class="sub_header">Version</td>
           <td class="sub_header">Date Created</td>
+          <td class="sub_header">Status</td>
           <td class="sub_header">Approved By</td>
         </tr>
         
@@ -41,6 +42,7 @@
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_rank}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_version}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_date}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_status}</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approvedby}</td>
 	</tr>
         {!LOOP}
