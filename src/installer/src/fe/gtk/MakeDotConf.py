@@ -12,12 +12,17 @@ class Panel(GLIScreen.GLIScreen):
 	columns = []
 	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
+	arch_chosts = { 'x86': ("i386-pc-linux-gnu", "i486-pc-linux-gnu", "i586-pc-linux-gnu", "i686-pc-linux-gnu") }
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
 
-#		self.system_use_flags = commands.getoutput("emerge info | grep -e '^USE' | sed -e 's:USE=\"::' -e 's:\"::'").split(" ")
 		self.system_use_flags = commands.getoutput("portageq envvar USE").strip()
+		self.system_cflags = commands.getoutput("portageq envvar CFLAGS").strip()
+		self.system_chost = commands.getoutput("portageq envvar CHOST").strip()
+		self.system_makeopts = commands.getoutput("portageq envvar MAKEOPTS").strip()
+		self.system_features = commands.getoutput("portageq envvar FEATURES").strip()
+		self.system_accept_keywords = commands.getoutput("portageq envvar ACCEPT_KEYWORDS").strip()
 
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
@@ -74,7 +79,7 @@ class Panel(GLIScreen.GLIScreen):
                         column.set_resizable(gtk.TRUE)
                         self.treeview.append_column(column)
                 self.treewindow = gtk.ScrolledWindow()
-                self.treewindow.set_size_request(-1, 170)
+                self.treewindow.set_size_request(-1, 140)
                 self.treewindow.set_shadow_type(gtk.SHADOW_IN)
                 self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
                 self.treewindow.add(self.treeview)
@@ -106,6 +111,37 @@ class Panel(GLIScreen.GLIScreen):
 		hbox.pack_start(self.custom_cflags_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		label = gtk.Label()
+		label.set_markup("<b>Other:</b>")
+		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		self.unstable_packages_check = gtk.CheckButton("Use unstable (~arch) packages")
+		hbox.pack_start(self.unstable_packages_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.build_binary_check = gtk.CheckButton("Build binary packages")
+		hbox.pack_start(self.build_binary_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		self.use_distcc_check = gtk.CheckButton("Use DistCC")
+		hbox.pack_start(self.use_distcc_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.use_ccache_check = gtk.CheckButton("Use ccache")
+		hbox.pack_start(self.use_ccache_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(gtk.Label("CHOST:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.chost_combo = gtk.combo_box_new_text()
+		for chost in self.arch_chosts['x86']:
+			self.chost_combo.append_text(chost)
+		self.chost_combo.set_active(0)
+		hbox.pack_start(self.chost_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		hbox.pack_start(gtk.Label(" "), expand=gtk.FALSE, fill=gtk.FALSE, padding=15)
+		hbox.pack_start(gtk.Label("MAKEOPTS:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.makeopts_entry = gtk.Entry()
+		self.makeopts_entry.set_width_chars(7)
+		hbox.pack_start(self.makeopts_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
 		self.add_content(vert)
 
 	def flag_toggled(self, cell, path):
@@ -126,6 +162,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.make_conf_values = self.controller.install_profile.get_make_conf()
+		# Parsing USE
 		self.use_flags = {}
 		if not self.make_conf_values.has_key('USE') or not self.make_conf_values['USE']:
 			self.make_conf_values['USE'] = self.system_use_flags
@@ -144,6 +181,65 @@ class Panel(GLIScreen.GLIScreen):
 			else:
         	                self.treedata.append([False, flag, self.use_desc[flag]])
 		self.treeview.set_model(self.treedata)
+		# Parsing CFLAGS
+		if not self.make_conf_values.has_key('CFLAGS') or not self.make_conf_values['CFLAGS']:
+			self.make_conf_values['CFLAGS'] = self.system_cflags
+		custom_cflags = ""
+		for flag in self.make_conf_values['CFLAGS'].split(" "):
+			flag = flag.strip()
+			if flag.startswith("-march="):
+				equal_pos = flag.find("=")
+				arch = flag[equal_pos+1:]
+				i = 0
+				for proc in self.arch_procs['x86']:
+					if proc == arch:
+						self.proc_combo.set_active(i)
+						break
+					i += 1
+			elif flag.startswith("-O"):
+				i = 0
+				for opt in self.optimizations:
+					if flag == opt:
+						self.optimizations_combo.set_active(i)
+						break
+					i += 1
+			else:
+				custom_cflags = custom_cflags + " " + flag
+		self.custom_cflags_entry.set_text(custom_cflags.strip())
+		# Parsing ACCEPT_KEYWORDS
+		if not self.make_conf_values.has_key('ACCEPT_KEYWORDS') or not self.make_conf_values['ACCEPT_KEYWORDS']:
+			self.make_conf_values['ACCEPT_KEYWORDS'] = self.system_accept_keywords
+		if self.make_conf_values['ACCEPT_KEYWORDS'].find("~x86") != -1:
+			self.unstable_packages_check.set_active(gtk.TRUE)
+		else:
+			self.unstable_packages_check.set_active(gtk.FALSE)
+		# Parsing FEATURES
+		if not self.make_conf_values.has_key('FEATURES') or not self.make_conf_values['FEATURES']:
+			self.make_conf_values['FEATURES'] = self.system_features
+		self.use_distcc_check.set_active(gtk.FALSE)
+		self.use_ccache_check.set_active(gtk.FALSE)
+		self.build_binary_check.set_active(gtk.FALSE)
+		for feature in self.make_conf_values['FEATURES'].split(" "):
+			feature = feature.strip()
+			if feature == "distcc":
+				self.use_distcc_check.set_active(gtk.TRUE)
+			elif feature == "ccache":
+				self.use_ccache_check.set_active(gtk.TRUE)
+			elif feature == "buildpkg":
+				self.build_binary_check.set_active(gtk.TRUE)
+		# Parsing CHOST
+		if not self.make_conf_values.has_key('CHOST') or not self.make_conf_values['CHOST']:
+			self.make_conf_values['CHOST'] = self.system_chost
+		i = 0
+		for chost in self.arch_chosts['x86']:
+			if chost == self.make_conf_values['CHOST']:
+				self.chost_combo.set_active(i)
+				break
+			i += 1
+		# Parsing MAKEOPTS
+		if not self.make_conf_values.has_key('MAKEOPTS') or not self.make_conf_values['MAKEOPTS']:
+			self.make_conf_values['MAKEOPTS'] = self.system_makeopts
+		self.makeopts_entry.set_text(self.make_conf_values['MAKEOPTS'])
 
 	def deactivate(self):
 		temp_use = ""
@@ -156,6 +252,19 @@ class Panel(GLIScreen.GLIScreen):
 				temp_use += " -" + flag
 		self.make_conf_values['USE'] = temp_use
 		self.make_conf_values['CFLAGS'] = "-march=" + self.arch_procs['x86'][self.proc_combo.get_active()] + " " + self.optimizations[self.optimizations_combo.get_active()] + " " + self.custom_cflags_entry.get_text()
-		print self.make_conf_values['CFLAGS']
+		if self.unstable_packages_check.get_active():
+			self.make_conf_values['ACCEPT_KEYWORDS'] = "~x86"
+		else:
+			self.make_conf_values['ACCEPT_KEYWORDS'] = ""
+		temp_features = ""
+		if self.build_binary_check.get_active():
+			temp_features += "buildpkg "
+		if self.use_distcc_check.get_active():
+			temp_features += "distcc "
+		if self.use_ccache_check.get_active():
+			temp_features += "ccache "
+		self.make_conf_values['FEATURES'] = temp_features.strip()
+		self.make_conf_values['CHOST'] = self.arch_chosts['x86'][self.chost_combo.get_active()]
+		self.make_conf_values['MAKEOPTS'] = self.makeopts_entry.get_text()
 		self.controller.install_profile.set_make_conf(self.make_conf_values)
 		return True
