@@ -15,7 +15,7 @@ class Panel(GLIScreen.GLIScreen):
 		GLIScreen.GLIScreen.__init__(self, controller)
 
 #		self.system_use_flags = commands.getoutput("emerge info | grep -e '^USE' | sed -e 's:USE=\"::' -e 's:\"::'").split(" ")
-		self.system_use_flags = commands.getoutput("portageq envvar USE").split(" ")
+		self.system_use_flags = commands.getoutput("portageq envvar USE").strip()
 
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
@@ -83,10 +83,12 @@ class Panel(GLIScreen.GLIScreen):
 	def flag_toggled(self, cell, path):
 		model = self.treeview.get_model()
 		model[path][0] = not model[path][0]
+		flag = model[path][1]
 		if model[path][0]:
-			self.use_flags['path'] = 1
+			self.use_flags[flag] = 1
 		else:
-			if path in self.use_flags: self.use_flags['path'] = 0
+			if flag in self.use_flags:
+				self.use_flags[flag] = 0
 		return
 
 	def activate(self):
@@ -99,9 +101,9 @@ class Panel(GLIScreen.GLIScreen):
 		self.use_flags = {}
 		if not self.make_conf_values.has_key('USE') or not self.make_conf_values['USE']:
 			self.make_conf_values['USE'] = self.system_use_flags
-		for flag in self.make_conf_values['USE']:
+		for flag in self.make_conf_values['USE'].split(" "):
 			if flag.startswith("-"):
-				flag = flag[1:] or flag[1]
+				flag = flag[1:]
 				self.use_flags[flag] = 0
 			else:
 				self.use_flags[flag] = 1
@@ -109,10 +111,21 @@ class Panel(GLIScreen.GLIScreen):
 		sorted_use.sort()
                 self.treedata = gtk.ListStore(gobject.TYPE_BOOLEAN, gobject.TYPE_STRING, gobject.TYPE_STRING)
 		for flag in sorted_use:
-                        self.treedata.append([(flag in self.use_flags), flag, self.use_desc[flag]])
+			if flag in self.use_flags and self.use_flags[flag] == 1:
+	                        self.treedata.append([True, flag, self.use_desc[flag]])
+			else:
+        	                self.treedata.append([False, flag, self.use_desc[flag]])
 		self.treeview.set_model(self.treedata)
 
 	def deactivate(self):
-		self.make_conf_values['USE'] = " ".join(self.use_flags)
-		set.controller.install_profile.set_make_conf(self.make_conf_values)
+		temp_use = ""
+		sorted_use = self.use_flags.keys()
+		sorted_use.sort()
+		for flag in sorted_use:
+			if self.use_flags[flag]:
+				temp_use += " " + flag
+			else:
+				temp_use += " -" + flag
+		self.make_conf_values['USE'] = temp_use
+		self.controller.install_profile.set_make_conf(self.make_conf_values)
 		return True
