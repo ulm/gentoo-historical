@@ -261,6 +261,55 @@
 
 <xsl:template match="overview">
   <xsl:param name="metadoc"/>
+  <chapter id="members">
+  <title>Members</title>
+  <section>
+  <body>
+  
+  <table>
+    <tr>
+      <th>Name</th><th>Nickname</th><th>E-mail</th><th>Position</th>
+    </tr>
+    <xsl:for-each select="document($metadoc)/metadoc/members/lead">
+      <xsl:variable name="nickname" select="text()"/>
+      <xsl:variable name="userfile">/proj/en/devrel/roll-call/userinfo.xml</xsl:variable>
+      <xsl:variable name="fullname" select="concat(concat(document($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' '), document($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/>
+      <xsl:variable name="email"    select="document($userfile)/userlist/user[@username = $nickname]/email"/>
+      <tr>
+        <ti><xsl:value-of select="$fullname"/></ti>
+        <ti><xsl:value-of select="$nickname"/></ti>
+        <ti><xsl:value-of select="$email"/></ti>
+        <ti>Lead</ti>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="document($metadoc)/metadoc/members/member">
+      <xsl:variable name="nickname" select="text()"/>
+      <xsl:variable name="userfile">/proj/en/devrel/roll-call/userinfo.xml</xsl:variable>
+      <xsl:variable name="fullname">
+        <xsl:choose>
+          <xsl:when test="@fullname"><xsl:value-of select="@fullname"/></xsl:when>
+          <xsl:otherwise><xsl:value-of select="concat(concat(document($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' '), document($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/></xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:variable name="email">
+        <xsl:choose>
+          <xsl:when test="@mail"><xsl:value-of select="@mail"/></xsl:when>
+          <xsl:otherwise><xsl:value-of select="document($userfile)/userlist/user[@username = $nickname]/email"/></xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <tr>
+        <ti><xsl:value-of select="$fullname"/></ti>
+        <ti><xsl:value-of select="$nickname"/></ti>
+        <ti><xsl:value-of select="$email"/></ti>
+        <ti>Member</ti>
+      </tr>
+    </xsl:for-each>
+  </table>
+  
+  </body>
+  </section>
+  </chapter>
+  
   <chapter id="files">
   <title>Files</title>
   <section>
