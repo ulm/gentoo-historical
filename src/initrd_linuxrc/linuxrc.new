@@ -3,7 +3,8 @@
 # Copyright 2003 Gentoo Technologies, Inc.
 # Distributed under the GPL
 
-source /etc/livecd.defaults
+. /etc/livecd.defaults
+
 mount -o remount,rw /
 mount /proc
 
@@ -32,8 +33,13 @@ for x in $HWOPTS
 do
 	for y in $CMDLINE
 	do
-		[ "$y" = "do${x}" ] && [ "$x" != "${HWOPTS/${x}/}" ] && MY_HWOPTS="MY_HWOPTS $x" && continue
-		[ "$y" = "no${x}" ] && MY_HWOPTS="${MY_HWOPTS/${x}/}"
+		if [ "$y" = "do${x}" ] 
+		then
+			MY_HWOPTS="MY_HWOPTS $x"
+		elif [ "$y" = "no${x}" ] 
+		then
+			MY_HWOPTS="`echo ${MY_HWOPTS} | sed -e 's/${x}//g' -`"
+		fi
 	done
 done
 
@@ -75,21 +81,28 @@ do
 		if [ "${REAL_ROOT}" = "shell" ]
 		then
 			/bin/ash
+
 			#set REAL_ROOT to "" so we get a prompt for the real root after the shell exits.
 			REAL_ROOT=""
+			got_good_root=0
+			continue
 		elif [ "${REAL_ROOT}" = "" ]
 		then
 			#no REAL_ROOT determined/specified. Prompt user for root block device.
 			echo "Root block device unspecified or not detected."
 			echo "Please specify a device to boot, or \"shell\" for a shell."
-			echo -n "# "
+			echo -n ": "
 			read REAL_ROOT
+			got_good_root=0
 		elif [ -b "${REAL_ROOT}" ]
 		then
 			got_good_root=1
 		else
+			REAL_ROOT=""
+			got_good_root=0
 		fi
 	done
+
 
 	if [ "${CDROOT}" -eq "1" -a "${got_good_root}" = "1" ]
 	then
