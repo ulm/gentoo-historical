@@ -6,29 +6,29 @@
 <title>Gentoo Linux Security Guide</title>
 <author title="Autore Originale"><mail link="kn@insecurity.dk">Kim Nielsen</mail>
 </author>
-
 <author title="Aggiornamento"><mail link="zhen@gentoo.org">John P. Davis</mail>
 </author>
-
 <author title="Aggiornamento"><mail link="stocke2@gentoo.org">Eric R. Stockbridge</mail>
 </author>
-
 <author title="Aggiornamento"><mail link="carl@gentoo.org">Carl Anderson</mail>
 </author>
-
 <author title="Aggiornamento"><mail link="peesh@gentoo.org">Jorge Paulo</mail>
 </author>
+<author title="Redattore"><mail link="swift@gentoo.org">Sven Vermeulen</mail>
+  	 </author>
 <author title="Traduttore"><mail link="gentoo@virgilio.it">Shev</mail>
 </author>
 <author title="Traduttore">Team Italiano
 </author>
+
+<license/>
 
 <abstract>
 Questa è una guida passo-passo per hardenizzare un sistema Gentoo Linux (aumentarne la sicurezza).
 </abstract>
 
 <version>0.4</version>
-<date>4 Maggio 2003</date>
+<date>17 Agosto 2003</date>
 
 
 <chapter>
@@ -435,11 +435,11 @@ USE="tcpd pam ssl"
 
 <p>
 Grub supporta due differenti modi di aggiungere password per restringere l'accesso ai suoi file di configurazione
-(<path>/boot/grub/menu.lst</path>).
+(<path>/boot/grub/grub.conf</path>).
 Il primo metodo prevede l'uso di password testuali in chiaro e il secondo crittografate con md5+salt.
 </p>
 
-<pre caption="/boot/grub/menu.lst">
+<pre caption="/boot/grub/grub.conf">
 timeout 5
 password changeme
 </pre>
@@ -465,7 +465,7 @@ Per esempio, la password <e>changeme</e> cifrata dovrebbe apparire così <e>$1$T
 Nel file menu.lst dovrete aggiungere:
 </p>
 
-<pre caption="/boot/grub/menu.lst">
+<pre caption="/boot/grub/grub.conf">
 timeout 5
 password --md5 $1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.
 
@@ -651,8 +651,8 @@ Auth messages :
   facility = "auth"
   logdir   = "/var/log/auth"
 
-Emergencies :
-  facility = "emerg"
+Critical :
+  facility = "critical"
   command  = "/usr/local/sbin/pwdfail.sh"  
 
 Crond :
@@ -675,7 +675,7 @@ SSH Server :
 
 Mail :
 
-  facility = "mail"
+  facility = "ftp-mail-news"
   logdir   = "/var/log/mail"
 
 Snort:
@@ -963,6 +963,10 @@ ogni limitazione in questo file se avete previsto il supporto PAM in make.conf e
 <title>Quote</title>
 <body>
 
+<warn>
+Assicuratevi che il filesystem con cui state lavorando supporti le quote. ReiserFS non è uno di questi!
+</warn>
+
 <p>
 L'uso delle quote in un file system previene la saturazione del disco da parte degli utenti. Le quote vanno abilitate
 nel kernel ed aggiunte al mount point. Le opzioni del kernel da abilitare si trovano sotto
@@ -983,9 +987,9 @@ volete sia ristretto l'utilizzo di spazio-disco come nell'esempio che segue.
 /dev/sda1 /boot ext2 noauto,noatime 1 1
 /dev/sda2 none swap sw 0 0
 /dev/sda3 / reiserfs notail,noatime 0 0
-/dev/sda4 /tmp reiserfs notail,noatime,nodev,nosuid,noexec,usrquota,grpquota 0 0
-/dev/sda5 /var reiserfs notail,noatime,nodev,usrquota,grpquota 0 0
-/dev/sda6 /home reiserfs notail,noatime,nodev,nosuid,usrquota,grpquota 0 0
+/dev/sda4 /tmp ext3 notail,noatime,nodev,nosuid,noexec,usrquota,grpquota 0 0
+/dev/sda5 /var ext3 notail,noatime,nodev,usrquota,grpquota 0 0
+/dev/sda6 /home ext3 notail,noatime,nodev,nosuid,usrquota,grpquota 0 0
 /dev/sda7 /usr reiserfs notail,noatime,nodev,ro	0 0
 /dev/cdroms/cdrom0 /mnt/cdrom iso9660 noauto,ro 0 0
 proc /proc proc defaults 0 0
@@ -1474,7 +1478,7 @@ seguente script al run level e renderlo eseguibile.
 #!/sbin/runscript
 
 depend() {
- before *
+ use checkroot
 }
 
 start() {
@@ -1630,7 +1634,7 @@ utilizzarlo ecco qui come aggiungergli un certo grado di sicurezza:
 </p>
 
 <pre caption="Installare xinetd">
-# <i>emerge xinetd tcpd</i>
+# <i>emerge xinetd tcp-wrappers</i>
 </pre>
 
 <p>
@@ -1798,6 +1802,15 @@ defaultserverargs=""
 defaultserverargs="-nolisten tcp"
 </pre>
 
+<p>
+Per essere sicuri che <c>startx</c> non venga sovrascritto nel caso facciate l'emerge di una versione più recente di XFree 
+dovrete proteggerlo. Aggiungete le seguenti linee a <path>/etc/make.conf</path>:
+</p>
+  	 
+<pre caption = "/etc/make.conf">
+CONFIG_PROTECT_MASK="/usr/X11R6/bin/startx"
+</pre>
+  	 
 <p>
 Se utilizzate un login manager grafico avete bisogno d'un differente approccio.
 </p>
@@ -2869,7 +2882,7 @@ rules() {
       ALL FIN --dport ssh -j ACCEPT
   $IPTABLES -A allow-ssh-traffic-in -m limit --limit 1/second -p tcp --tcp-flags \ 
       ALL SYN --dport ssh -j ACCEPT
-  $IPTABLES -A allow-ssh-traffic-in -p tcp --dport ssh -j ACCEPT
+  $IPTABLES -A allow-ssh-traffic-in -m state --state RELATED,ESTABLISHED --dport ssh -j ACCEPT
 
   # traffico in uscita
   einfo "Creating outgoing ssh traffic chain"
