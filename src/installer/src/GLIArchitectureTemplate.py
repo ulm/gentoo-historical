@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.11 2004/11/16 06:59:51 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.12 2004/11/16 07:07:59 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -810,8 +810,8 @@ class ArchitectureTemplate:
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(1024*1024))
 
-	def _sectors_to_kibibytes(self, sectors, sector_bytes=512):
-		return float((sectors * sector_bytes) / 1000)
+	def _sectors_to_bytes(self, sectors, sector_bytes=512):
+		return (int(sectors) * sector_bytes)
 
 	def _run_parted_command(self, device, cmd):
 		parted_output = commands.getoutput("parted -s " + device + " " + cmd)
@@ -901,9 +901,9 @@ class ArchitectureTemplate:
 							print "resize2fs " + device + str(minor) + " " + str(total_sectors) + "s"
 						elif type == "ntfs":
 							total_sectors = end - start + 1
-							total_kibibytes = int(self._sectors_to_kibibytes(total_sectors))
-							commands.getstatus("ntfsresize --size " + str(total_kibibytes) + "k " + device + str(minor))
-							print "ntfsresize --size " + str(total_kibibytes) + "k " + device + str(minor)
+							total_bytes = int(self._sectors_to_bytes(total_sectors))
+							commands.getstatus("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
+							print "ntfsresize --size " + str(total_bytes) + " " + device + str(minor)
 						else:
 							start = float(self._sectors_to_megabytes(start))
 							end = float(self._sectors_to_megabytes(end))
