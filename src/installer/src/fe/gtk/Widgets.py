@@ -206,3 +206,21 @@ class Widgets:
           label.show()
           image.show()
           return dialog
+      
+    def error_Box2(self,header,string_display):
+          dialog = gtk.Dialog(header,
+                     None,
+                     gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                     (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL))
+          
+          label=gtk.Label(string_display)
+          image=gtk.Image()
+          image.set_from_stock(gtk.STOCK_DIALOG_WARNING,gtk.ICON_SIZE_DIALOG)
+          table=gtk.Table(1,2,gtk.FALSE)
+          table.attach(image,0,1,0,1)
+          table.attach(label,1,2,0,1)
+          table.show()
+          dialog.vbox.add(table)
+          label.show()
+          image.show()
+          return dialog

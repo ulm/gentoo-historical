@@ -33,10 +33,6 @@ class RunInstall(gtk.Window):
 		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
 		self.globalbox.add(self.notebook)
 
-		button = gtk.Button("blah")
-		button.connect("clicked", self.poll_notifications)
-		self.globalbox.pack_start(button, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-
 		self.progress = gtk.ProgressBar()
 		self.progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.progress.set_text("Preparing...")
@@ -48,9 +44,8 @@ class RunInstall(gtk.Window):
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
 		gobject.timeout_add(1000, self.poll_notifications)
-#		gobject.idle_add(self.poll_notifications)
 
-	def poll_notifications(self, widget=None):
+	def poll_notifications(self):
 		notification = self.controller.cc.getNotification()
 		if notification == None:
 			return True
