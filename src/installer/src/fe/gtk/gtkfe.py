@@ -217,10 +217,7 @@ class Installer:
 
 	def get_random_salt(self):
 		chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		chars = list(chars)
-		c1 = chars[random.randint(0,len(chars)-1)]
-		c2 = chars[random.randint(0,len(chars)-1)]
-		return c1 + c2
+		return random.choice(chars) + random.choice(chars)
 
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
@@ -236,7 +233,7 @@ class Installer:
 			box_label=gtk.Label(box_string)
 			box_label.set_alignment(0,0)
 			self.box.pack_start( box_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-			self.navlinks.pack_start( self.box, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+			self.navlinks.pack_start( self.box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 			box_label.set_sensitive(gtk.TRUE)
 
 			if self._cur_panel == self.num_times:
@@ -259,8 +256,8 @@ class Installer:
 		elif self.SHOW_BUTTON_FINISH:
 			self.finishbutton.set_flags(gtk.CAN_DEFAULT)
 			self.finishbutton.grab_default()
-		if self.install_profile_xml_file != "":
-			self.finishbutton.set_sensitive(gtk.TRUE)
+#		if self.install_profile_xml_file != "":
+#			self.finishbutton.set_sensitive(gtk.TRUE)
 		self.bottombox.show_all()
 
 	def refresh_right_panel(self):
