@@ -1,7 +1,7 @@
 #
 # Library of functions for dealing with the kernel config environment
 #
-# $Header: /var/cvsroot/gentoo/src/kernel/config-kernel/config_kernel/ck_env.py,v 1.2 2004/03/19 01:08:17 latexer Exp $
+# $Header: /var/cvsroot/gentoo/src/kernel/config-kernel/config_kernel/ck_env.py,v 1.3 2004/04/03 16:30:08 latexer Exp $
 
 import sys, os
 import string
@@ -16,6 +16,7 @@ def setenv(varsNew):
 	err, envVars = readEnvFile()
 	if err:
 		warn ("No previous variable definitions found")
+		envVars={}
 
 	for key in varsNew.keys():
 		if key == "KBUILD_OUTPUT_PREFIX" and varsNew[key] == "none":
@@ -51,7 +52,7 @@ def getenv(variable):
 	if err:
 		return None, "Variable not found"
 
-	if vars[variable]:
+	if vars.has_key(variable):
 		return (vars[variable], None)
 	else:
 		return (None, "Variable not found")
@@ -62,15 +63,15 @@ def readEnvFile():
 	try:
 		f = open(os.path.join(envPrefix,envFile), 'r')
 	except OSError, details:
-		return (None, str(details))
+		return (str(details), None)
 	except IOError, details:
-		return (None, str(details))
+		return (str(details), None)
 	try:
 		lines = f.readlines()
 	except OSError, details:
-		return (None, str(details))
+		return (str(details), None)
 	except IOError, details:
-		return (None, str(details))
+		return (str(details), None)
 
 	f.close()
 	
