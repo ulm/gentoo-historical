@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.52 2005/03/01 17:29:19 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.53 2005/03/01 18:05:49 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -642,10 +642,10 @@ class ArchitectureTemplate:
 			if domainname:
 				resolv_output.append("search " + domainname + "\n")
 				
-		# Output to file
-		resolve_conf = open(self._chroot_dir + "/etc/resolv.conf", "w")
-		resolve_conf.writelines(resolv_output)
-		resolve_conf.close()
+			# Output to file
+			resolve_conf = open(self._chroot_dir + "/etc/resolv.conf", "w")
+			resolve_conf.writelines(resolv_output)
+			resolve_conf.close()
 		
 		#
 		# PARSE INTERFACES
@@ -653,7 +653,7 @@ class ArchitectureTemplate:
 
 		# Fetch interfaces
 		interfaces = self._install_profile.get_network_interfaces()
-		emerge_dhcp = false
+		emerge_dhcp = False
 		# Parse each interface
 		for interface in interfaces.keys():
 		
@@ -715,7 +715,7 @@ class ArchitectureTemplate:
 				#
 				else:
 					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp"})
-					emerge_dhcp = true
+					emerge_dhcp = True
 		if emerge_dhcp:
 			exitstatus = self._emerge("dhcpcd")
 			if exitstatus != 0:
