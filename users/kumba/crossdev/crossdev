@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/kumba/crossdev/Attic/crossdev,v 1.14 2005/01/09 19:09:13 kumba Exp $
+# $Header: /var/cvsroot/gentoo/users/kumba/crossdev/Attic/crossdev,v 1.15 2005/01/31 02:22:17 kumba Exp $
 
 
 #// Set user-defined data
@@ -82,6 +82,9 @@ ReadConfiguration() {
 	GCC_LOC="sys-devel/gcc"
 	GLIBC_LOC="sys-libs/glibc"
 
+	#// Location of 'tee' (for logging)
+	TEELOC="/usr/bin/tee"
+
 	#// My Version
 	MYVERSION="0.5"
 
@@ -141,7 +144,7 @@ makeErrorMsg() {
 
 showError() {
 	#// Display error
-	makeErrorMsg "$@" 2>&1 | tee -a "${CROSS_LOGFILE_TARGET}"
+	makeErrorMsg "$@" 2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}"
 	export PATH="${ORIGPATH}"
 	exit 1
 	return 0
@@ -161,7 +164,7 @@ makeInfoMsg() {
 
 showInfo() {
 	if [ ! -z "${*}" ]; then
-		makeInfoMsg "${*}" 2>&1 | tee -a "${CROSS_LOGFILE_TARGET}"
+		makeInfoMsg "${*}" 2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}"
 	fi
 	return 0
 }
@@ -247,7 +250,7 @@ CheckSandbox() {
 			export USE="${3}"
 			export ARCH="${4}"
 			${EBUILD_LOC} ${1} ${2} \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${6}" "Call to ${EBUILD_LOC} failed! (Called from ${5})"
 			unset USE ARCH
 
@@ -319,7 +322,7 @@ CheckSandbox() {
 			export USE="${3}"
 			export ARCH="${4}"
 			${EBUILD_LOC} ${1} ${2} \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${6}" "Call to ${EBUILD_LOC} failed! (Called from ${5})"
 			unset USE ARCH
 
@@ -1303,7 +1306,7 @@ InstallKernelHeaders() {
 
 		#// Clean
 		make ARCH="${kern_arch}" CROSS_COMPILE="${MY_CHOST}-" mrproper \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make mrproper'!"
 
 		#// autoconf.h isnt generated unless it already exists. plus, we have no guarentee that
@@ -1316,19 +1319,19 @@ InstallKernelHeaders() {
 		#// Make oldconfig (uses defconfig)
 		showInfo "Configuring Linux Headers..."
 		yes "" | make ARCH="${kern_arch}" HOSTCFLAGS="${hcflags}" CROSS_COMPILE="${MY_CHOST}-" oldconfig \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		#// This one is PIPESTATUS[1] and NOT PIPESTATUS[0] on purpose
 		[ ${PIPESTATUS[1]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make oldconfig'!"
 
 		#// Make version/symlinks
 		make ARCH="${kern_arch}" ${kern_dosym} include/linux/version.h \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to create include/linux/version.h!"
 
 		#// If 2.6.x, "Prepare" certain files
 		if [ "${kv_majmin}" = "2.6" ]; then
 			make ARCH="${kern_arch}" HOSTCFLAGS="${hcflags}" CROSS_COMPILE="${MY_CHOST}-" prepare\
-				2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+				2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 				[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make prepare'!"
 		fi
 
@@ -1422,14 +1425,14 @@ InstallBinutils() {
 			--prefix=${CROSS_INSTALL} \
 			--enable-shared \
 			--enable-64-bit-bfd \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to configure!"
 
 
 		#// Build
 		showInfo "Compiling ${BINUTILS_VER}..."
 		make ${CROSS_MAKEOPTS} \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to compile!"
 
 
@@ -1442,7 +1445,7 @@ InstallBinutils() {
 	if [ ! -f ".installed" ]; then
 		showInfo "Installing ${BINUTILS_VER}..."
 		make install \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make install'!"
 		touch .installed
 	fi
@@ -1528,7 +1531,7 @@ InstallGccBootstrap() {
 			--disable-nls \
 			--enable-__cxa_atexit \
 			--enable-static \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to configure!"
 
 
@@ -1541,7 +1544,7 @@ InstallGccBootstrap() {
 		make ${CROSS_MAKEOPTS} \
 			CFLAGS_FOR_TARGET="${CROSS_CFLAGS}" \
 			CXXFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET}" \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to compile!"
 
 
@@ -1556,7 +1559,7 @@ InstallGccBootstrap() {
 		#// So we remove them.
 		find gcc/include -type l -exec rm -f '{}' \;
 		showInfo "Installing ${GCC_VER} (bootstrap)..."
-		make install 2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+		make install 2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make install'!"
 		touch .installed
 	fi
@@ -1690,14 +1693,14 @@ InstallGlibcCore() {
 			--disable-debug \
 			--with-headers="${CROSS_INSTALL}/include" \
 			${myconf} \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to configure!"
 
 
 		#// This fixes a *really* annoying issue that pops up in glibc
 		#// http://sources.redhat.com/ml/crossgcc/2003-05/msg00190.html
 		make sysdeps/gnu/errlist.c \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'sysdeps/gnu/errlist.c'"
 		mkdir -p stdio-common
 		touch stdio-common/errlist-compat.c
@@ -1705,7 +1708,7 @@ InstallGlibcCore() {
 
 		#// Build
 		showInfo "Compiling ${GLIBC_VER} (full)..."
-		make PARALLELMFLAGS="${CROSS_MAKEOPTS}" 2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+		make PARALLELMFLAGS="${CROSS_MAKEOPTS}" 2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to compile!"
 
 
@@ -1718,7 +1721,7 @@ InstallGlibcCore() {
 	if [ ! -f ".installed" ]; then
 		showInfo "Installing ${GLIBC_VER} (full)..."
 		make PARALLELMFLAGS="${CROSS_MAKEOPTS}" install \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make install'!"
 		touch .installed
 	fi
@@ -1826,7 +1829,7 @@ InstallGccFull() {
 			--with-local-prefix=${prefix}/local \
 			--with-libs="${CROSS_INSTALL}/lib" \
 			--with-headers="${CROSS_INSTALL}/include" \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to configure!"
 
 
@@ -1835,7 +1838,7 @@ InstallGccFull() {
 		make ${CROSS_MAKEOPTS} \
 			CFLAGS_FOR_TARGET="${CROSS_CFLAGS} -DHAVE_SYS_ERRLIST" \
 			CXXFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET}" \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 			[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to compile!"
 
 
@@ -1852,7 +1855,7 @@ InstallGccFull() {
 
 		showInfo "Installing ${GCC_VER} (full)..."
 		make install \
-			2>&1 | tee -a "${CROSS_LOGFILE_TARGET}" 
+			2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}" 
 		[ ${PIPESTATUS[0]} -eq 0 ] || showError "${FUNCNAME}" "${LINENO}" "Failed to run 'make install'!"
 		touch .installed
 	fi
@@ -1887,7 +1890,7 @@ CompleteInstallMsg() {
 }
 
 CompleteInstall() {
-	CompleteInstallMsg 2>&1 | tee -a "${CROSS_LOGFILE_TARGET}"
+	CompleteInstallMsg 2>&1 | ${TEELOC} -a "${CROSS_LOGFILE_TARGET}"
 	#// Unset exported vars
 	export PATH="${ORIGPATH}"
 	export -n _POSIX2_VERSION
