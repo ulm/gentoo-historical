@@ -356,7 +356,7 @@
 				<br/>
 				<a class="altlink" href="/main/en/graphics.xml">Logos and themes</a>
 				<br/>
-				<a class="altlink" href="/main/en/icons.xml">Icons</a>
+				<a class="altlink" href="/dyn/icons.xml">Icons</a>
 				<br/>
 				<a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
 				<br/><br/>	
