@@ -26,16 +26,16 @@ class Device:
 
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
-		if string.strip(commands.getoutput("echo " + self._device + " | grep '/hd'")) == self._device: # IDE
-			proc_dir = "/proc/ide/" + commands.getoutput("echo " + self._device + " | cut -d '/' -f 3")
-			proc_dir = string.strip(proc_dir)
-			heads = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 2")
-			sectors = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 3")
-			total_sectors = commands.getoutput("cat " + proc_dir + "/capacity")
-			cylinders = int(total_sectors) / (int(heads) * int(sectors))
-			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = int(heads), int(sectors), int(cylinders)
-		else: #SCSI
-			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
+#		if string.strip(commands.getoutput("echo " + self._device + " | grep '/hd'")) == self._device: # IDE
+#			proc_dir = "/proc/ide/" + commands.getoutput("echo " + self._device + " | cut -d '/' -f 3")
+#			proc_dir = string.strip(proc_dir)
+#			heads = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 2")
+#			sectors = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 3")
+#			total_sectors = commands.getoutput("cat " + proc_dir + "/capacity")
+#			cylinders = int(total_sectors) / (int(heads) * int(sectors))
+#			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = int(heads), int(sectors), int(cylinders)
+#		else: #SCSI
+		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
 
 		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._parted_dev.sector_size
 		self._total_sectors = self._geometry['cylinders'] * self._geometry['heads'] * self._geometry['sectors']
@@ -50,7 +50,7 @@ class Device:
 			fs_type = ""
 			if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 			if parted_part.type == 2: fs_type = "extended"
-			self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, '', (parted_part.geom.start / self._sectors_in_cylinder), (parted_part.geom.end / self._sectors_in_cylinder), (parted_part.geom.end - parted_part.geom.start), fs_type, format=False, existing=True)
+			self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, '', parted_part.geom.start, parted_part.geom.end, (parted_part.geom.end - parted_part.geom.start), fs_type, format=False, existing=True)
 			parted_part = self._parted_disk.next_partition(parted_part)
 
 	def set_partitions_from_install_profile_structure(self, ips):
@@ -109,7 +109,7 @@ class Device:
 		lastend_log = 0
 		free_start = -1
 		free_end = -1
-		if start > self.get_num_cylinders(): return (-1, -1)
+		if start > self._total_sectors: return (-1, -1)
 		for part in parts:
 			if part > 4: break
 			tmppart = self._partitions[part]
@@ -132,18 +132,18 @@ class Device:
 					free_end = tmppart.get_end()
 					break
 			lastend_pri = tmppart.get_end() + 1
-		if free_start == -1 and lastend_pri < self.get_num_cylinders():
+		if free_start == -1 and lastend_pri < self._total_sectors:
 			free_start = lastend_pri
-			free_end = self.get_num_cylinders()
+			free_end = self._total_sectors
 		return (free_start, free_end)
 
-	def get_partition_at(self, cylinder, ignore_extended=1):
+	def get_partition_at(self, sector, ignore_extended=1):
 		parts = self._partitions.keys()
 		parts.sort()
 		for part in parts:
 			tmppart = self._partitions[part]
 			if ignore_extended and tmppart.is_extended(): continue
-			if (cylinder >= tmppart.get_start()) and (cylinder <= tmppart.get_end()):
+			if (sector >= tmppart.get_start()) and (sector <= tmppart.get_end()):
 				return part
 		return 0
 
@@ -286,7 +286,7 @@ class Partition:
 	_mountopts = None
 	_format = None
 	_resizeable = None
-	_min_cylinders_for_resize = 0
+	_min_sectors_for_resize = 0
 	
 	def __init__(self, device, minor, bootflag, start, end, blocks, type, mountpoint='', mountopts='', format=True, existing=False):
 		self._device = device
@@ -417,16 +417,17 @@ class Partition:
 	def get_blocks(self):
 		return int(self._blocks)
 
-	def get_min_cylinders_for_resize(self):
+	def get_min_sectors_for_resize(self):
 		if self.is_extended():
 			min_size = self._start
 			for part in self._device._partitions:
 				if part < 5: continue
 				min_size = part.get_end()
+			return min_size
 		else:
-			return self._min_cylinders_for_resize
+			return self._min_sectors_for_resize
 
-	def get_max_cylinders_for_resize(self):
+	def get_max_sectors_for_resize(self):
 		free_start, free_end = self._device.get_free_space(self._end)
 		if free_end == -1: return self._end
 		if free_start - 1 == self._end:

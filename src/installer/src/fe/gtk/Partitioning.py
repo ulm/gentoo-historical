@@ -348,6 +348,7 @@ resize partitions.
 		partlist = self.devices[self.active_device].get_ordered_partition_list()
 		tmpparts = self.devices[self.active_device].get_partitions()
 		cylinders = self.devices[self.active_device].get_num_cylinders()
+		sectors = self.devices[self.active_device].get_num_sectors()
 		for button in self.part_buttons.keys():
 			self.part_table.remove(self.part_buttons[button])
 		self.part_table.resize(1, 100)
@@ -360,7 +361,7 @@ resize partitions.
 			if re.compile("^Free Space").match(part) != None:
 				new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part).groups()
 				partsize = int(new_end) - int(new_start) + 1
-				percent = (float(partsize) / float(cylinders)) * 100
+				percent = (float(partsize) / float(sectors)) * 100
 				if percent > 0 and percent < 1: percent = 1
 				percent = int(percent)
 				if self.devices[self.active_device].get_partition_at(int(new_start), ignore_extended=0):
@@ -379,7 +380,7 @@ resize partitions.
 			elif re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part) != None:
 				tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part).groups()
 				partsize = tmpparts[int(tmpminor)].get_end() - tmpparts[int(tmpminor)].get_start() + 1
-				percent = (float(partsize) / float(cylinders)) * 100
+				percent = (float(partsize) / float(sectors)) * 100
 				if percent > 0 and percent < 1: percent = 1
 				percent = int(percent)
 				if tmpparts[int(tmpminor)].is_extended():
