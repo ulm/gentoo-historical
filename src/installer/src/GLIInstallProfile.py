@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.2 2004/04/04 03:26:18 npmccallum Exp $
+$Id: GLIInstallProfile.py,v 1.3 2004/04/06 20:58:16 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -35,14 +35,21 @@ class InstallProfile(xml.sax.ContentHandler):
 	_time_zone = ""
 	_custom_stage3_tarball_uri = ""
 	_install_stage = 1
-	_portage_tree_sync = True
+	_portage_tree_sync_type = "sync"
 	_portage_tree_snapshot_uri = ""
 	_domainname = "localdomain"
 	_hostname = "localhost"
 	_nisdomainname = ""
 	_partition_tables = {}
 	_network_interfaces = {}
-
+	_make_conf = {}
+	_rc_conf = {}
+	_ignore_install_step_depends = False
+	_install_rp_pppoe = False
+	_filesystem_tools = ()
+	_install_pcmcia_cs = False
+	_dns_servers = ()
+	_default_gateway = ''
 
 	# Internal SAX state info
 	_xml_elements = [];
@@ -82,24 +89,35 @@ class InstallProfile(xml.sax.ContentHandler):
 					'gli-profile/time-zone': self.set_time_zone,
 					'gli-profile/custom-stage3-tarball': self.set_custom_stage3_tarball_uri,
 					'gli-profile/install-stage': self.set_install_stage,
-					'gli-profile/portage-tree-sync': self.set_portage_tree_sync,
+					'gli-profile/portage-tree-sync': self.set_portage_tree_sync_type,
 					'gli-profile/portage-snapshot': self.set_portage_tree_snapshot_uri,
 					'gli-profile/domainname': self.set_domainname,
 					'gli-profile/hostname': self.set_hostname,
-					'gli-profile/nisdomainname': self.set_nisdomainname
+					'gli-profile/nisdomainname': self.set_nisdomainname,
+					'gli-profile/ignore-depends': self.set_ignore_install_step_depends,
+					'gli-profile/install-rp-pppoe': self.set_install_rp_pppoe,
+					'gli-profile/filesystem-tools': self.set_filesystem_tools_pkgs,
+					'gli-profile/install-pcmcia-cs': self.set_install_pcmcia_cs,
+					'gli-profile/dns-servers': self.set_dns_servers,
+					'gli-profile/default-gateway': self.set_default_gateway
 				}
 
 		path = self._xml_element_path()
 
-		# This is a normal case
-		if path in fntable.keys():
-			fntable[path](self._xml_current_data)
-		else:
-			# Handle the special cases
-			if path == 'gli-profile/kernel-modules/module':
-				self.get_kernel_modules().append(self._xml_current_data)
-			elif path == 'gli-profile/users/user':
-				self.add_user(self._xml_current_data, self._xml_current_attr)
+		if self._xml_current_data != '':
+			# This is a normal case
+			if path in fntable.keys():
+				fntable[path](self._xml_current_data)
+			else:
+				# Handle the special cases
+				if path == 'gli-profile/kernel-modules/module':
+					self.get_kernel_modules().append(self._xml_current_data)
+				elif path == 'gli-profile/users/user':
+					self.add_user(self._xml_current_data, self._xml_current_attr)
+				elif path == 'gli-profile/make-conf/variable':
+					self.make_conf_add_var(self._xml_current_data, self._xml_current_attr)
+				elif path == 'gli-profile/rc-conf/variable':
+					self.rc_conf_add_var(self._xml_current_data, self._xml_current_attr)
 
 		self._xml_current_data = ""
 		self._xml_current_attr = None
@@ -170,7 +188,10 @@ class InstallProfile(xml.sax.ContentHandler):
 		
 		# Check data type
 		if type(boot_loader_mbr) != bool:
-			raise "BootLoaderMBRError", "Input must be type 'bool'!"
+			if type(boot_loader_mbr) == str:
+				boot_loader_mbr = GLIUtility.strtobool(boot_loader_mbr)
+			else:
+				raise "BootLoaderMBRError", "Input must be type 'bool'!"
 		
 		self._boot_loader_mbr = boot_loader_mbr
 
@@ -218,7 +239,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			raise "KernelConfigURIError", "Must be a string!"
 
 		# Check validity
-		if not GLIUtility._is_uri(kernel_config_uri):
+		if not GLIUtility.is_uri(kernel_config_uri):
 			raise "KernelConfigURIError", "Invalid URI!"
 
 		self._kernel_config_uri = kernel_config_uri
@@ -232,7 +253,10 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		# Check type
 		if type(kernel_initrd) != bool:
-			raise "KernelInitRDError", "Must be a bool!"
+			if type(kernel_initrd) == str:
+				kernel_initrd = GLIUtility.strtobool(kernel_initrd)
+			else:
+				raise "KernelInitRDError", "Must be a bool!"
 		
 		self._kernel_initrd = kernel_initrd
 
@@ -245,7 +269,10 @@ class InstallProfile(xml.sax.ContentHandler):
 		
 		# Check type
 		if type(kernel_bootsplash) != bool:
-			raise "KernelBootsplashError", "Must be a bool!"
+			if type(kernel_bootsplash) == str:
+					kernel_bootsplash = GLIUtility.strtobool(kernel_bootsplash)
+			else:
+				raise "KernelBootsplashError", "Must be a bool!"
 		
 		self._kernel_bootsplash = kernel_bootsplash
 
@@ -273,6 +300,9 @@ class InstallProfile(xml.sax.ContentHandler):
 		username and hash are manditory. All other attributes are optional. Or this method will
 		take a 7-tuple set, verify it's correctness and then append it to the _users list.
 		All items are strings except <uid>, which is an integer, and groups, which is a tuple. 
+
+		The finished tuples look like this:
+		( <user name>, <password hash>, (<tuple of groups>), <shell>, <home directory>, <user id>, <user comment> )
 
 		"""
 		hash = ''
@@ -316,7 +346,7 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		allowable_nonalphnum_characters = '_-'
 
-		if not GLIUtility._is_realstring(username):
+		if not GLIUtility.is_realstring(username):
 			raise "UserError", "username must be a non-empty string"
 
 		if username[0] not in (string.lowercase + string.uppercase):
@@ -392,7 +422,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			raise "CustomStage3TarballURIError", "Must be a string!"
 
 		# Check validity
-		if not GLIUtility._is_uri(kernel_config_uri):
+		if not GLIUtility.is_uri(custom_stage3_tarball_uri):
 			raise "CustomStage3TarballURIError", "Invalid URI!"
 		
 		self._custom_stage3_tarball_uri = custom_stage3_tarball_uri
@@ -406,6 +436,9 @@ class InstallProfile(xml.sax.ContentHandler):
 		
 		# Check type
 		if type(install_stage) != int:
+			if type(install_stage) == str:
+				install_stage = int(install_stage)
+		else:
 			raise "InstallStageError", "Must be an integer!"
 		
 		# Check for stage bounds
@@ -414,44 +447,35 @@ class InstallProfile(xml.sax.ContentHandler):
 		else:
 			raise "InstallStageError", "install_stage must be 1-3!"
 
-	def get_portage_tree_sync(self):
+	def get_portage_tree_sync_type(self):
 		"returns portage_tree_sync"
-		return self._portage_tree_sync
+		return self._portage_tree_sync_type
 
-	def set_portage_tree_sync(self, portage_tree_sync):
-		"""
-		portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree.
-		True - runs 'emerge sync'
-		False - runs 'emerge websync'
-		"""
+	def set_portage_tree_sync_type(self, portage_tree_sync):
+		"portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree."
 		
 		# Check type
-		if type(portage_tree_sync) != bool:
-			raise "PortageTreeSyncError", "Must be a bool!"
-			
-		self._portage_tree_sync = portage_tree_sync
+		if type(portage_tree_sync) != str:
+			raise "PortageTreeSyncError", "Must be a string!"
+
+		if string.lower(portage_tree_sync) not in ('sync', 'webrsync', 'custom'):
+			raise "PortageTreeSyncError", "Invalid Input!"
+
+		self._portage_tree_sync_type = string.lower(portage_tree_sync)
 
 	def get_portage_tree_snapshot_uri(self):
 		"returns portage_tree_snapshot_uri"
 		return self._portage_tree_snapshot_uri
 
 	def set_portage_tree_snapshot_uri(self, portage_tree_snapshot_uri):
-		"""
-		portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. 
-		examples: 
-			'file:///mnt/cdrom/snapshots/portage-*.tar.bz2'
-			'http://192.168.1.2/portage-20040302.tar.bz2'
-			'ftp://192.168.1.2/portage-20040302.tar.bz2'
+		"portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. (ie. 'file:///mnt/cdrom/snapshots/portage-*.tar.bz2')"
 		
-		If portage_tree_snapshot_uri is set to '' or None, the method defined in portage_tree_sync is used.
-		If portage_tree_snapshot_uri is NOT '' or None, the installer will attempt to use listed snapshot.
-		"""
 		# Check type
 		if type(portage_tree_snapshot_uri) != str:
 			raise "PortageTreeSnapshotURIError", "Must be a string!"
 
 		# Check validity
-		if not GLIUtility._is_uri(portage_tree_snapshot_uri):
+		if not GLIUtility.is_uri(portage_tree_snapshot_uri):
 			raise "PortageTreeSnapshotURIError", "Invalid URI!"
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
@@ -531,7 +555,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		for device in partition_tables:
 		
 			# If the device is a valid local device...
-			if GLIUtility._is_device(device):
+			if GLIUtility.is_device(device):
 			
 				# We should check to make sure device is in /proc/partitions
 				# If it is in /proc/partitions, it is a partitionable device
@@ -560,7 +584,7 @@ class InstallProfile(xml.sax.ContentHandler):
 						raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
 
 			# Else, if the device is a valid remote device (hostname or ip)
-			elif GLIUtility._is_ip(device) or GLIUtility._is_hostname(device):
+			elif GLIUtility.is_ip(device) or GLIUtility.is_hostname(device):
 			
 				# Make sure that only the mount point is set
 				if type(partition_tables[device]) != str:
@@ -625,15 +649,15 @@ class InstallProfile(xml.sax.ContentHandler):
 				
 					# If the user does not desire DHCP, then validate each ip address provided
 					if network_interfaces[device][i] != None:
-						if not GLIUtility._is_ip(network_interfaces[device][i][0]):
+						if not GLIUtility.is_ip(network_interfaces[device][i][0]):
 							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
-						if not GLIUtility._is_ip(network_interfaces[device][i][1]):
+						if not GLIUtility.is_ip(network_interfaces[device][i][1]):
 							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
-						if not GLIUtility._is_ip(network_interfaces[device][i][2]):
+						if not GLIUtility.is_ip(network_interfaces[device][i][2]):
 							raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
 						
 						# If gateway is set to none, check the validity of the ip
-						if (network_interfaces[device][i][3] != None) and (not GLIUtility._is_ip(network_interfaces[device][i][3])):
+						if (network_interfaces[device][i][3] != None) and (not GLIUtility.is_ip(network_interfaces[device][i][3])):
 							raise "NetworkInterfacesError", "The gateway address you specified for " + device + " is not valid!"
 							
 						# Check the validity of aliases if they exist
@@ -659,11 +683,11 @@ class InstallProfile(xml.sax.ContentHandler):
 									raise "NetworkInterfacesError", "Alias must have ip address, netmask and broadcast defined (device: " + device + ")!"
 								
 								# Alias must have an ip address, netmask, and broadcast defined
-								if not GLIUtility._is_ip(alias[0]):
+								if not GLIUtility.is_ip(alias[0]):
 									raise "NetworkInterfacesError", "Invalid ip address for alias (device: " + device + ")!"
-								if not GLIUtility._is_ip(alias[1]):
+								if not GLIUtility.is_ip(alias[1]):
 									raise "NetworkInterfacesError", "Invalid broadcast address for alias (device: " + device + ")!"
-								if not GLIUtility._is_ip(alias[2]):
+								if not GLIUtility.is_ip(alias[2]):
 									raise "NetworkInterfacesError", "Invalid netmask address for alias (device: " + device + ")!"
 			
 			# Other device types
@@ -682,23 +706,27 @@ class InstallProfile(xml.sax.ContentHandler):
 		"""
 		import xml.dom.minidom
 		xmldoc = ""
-		xmltab = {	'cron-daemon':		("", self.get_cron_daemon_pkg),
-				'logging-daemon':	("", self.get_logging_daemon_pkg),
-				'boot-loader_mbr':	(True, self.get_boot_loader_mbr),
-				'boot-loader':		("", self.get_boot_loader_pkg),
-				'kernel-config':	("", self.get_kernel_config_uri),
-				'kernel-initrd':	(False, self.get_kernel_initrd),
-				'kernel-bootsplash':	(False, self.get_kernel_bootsplash),
-				'kernel-source':	("", self.get_kernel_source_pkg),
-				'root-pass-hash':	("", self.get_root_pass_hash),
-				'time-zone':		("", self.get_time_zone),
-				'custom-stage3-tarball': ("", self.get_custom_stage3_tarball_uri),
-				'install-stage':	(1, self.get_install_stage),
-				'portage-tree-sync':	(True, self.get_portage_tree_sync),
-				'portage-snapshot':	("", self.get_portage_tree_snapshot_uri),
-				'domainname':		("localdomain", self.get_domainname),
-				'hostname':		("localhost", self.get_hostname),
-				'nisdomainname':	("", self.get_nisdomainname)
+		xmltab = {	'cron-daemon':		self.get_cron_daemon_pkg,
+				'logging-daemon':	self.get_logging_daemon_pkg,
+				'boot-loader_mbr':	self.get_boot_loader_mbr,
+				'boot-loader':		self.get_boot_loader_pkg,
+				'kernel-config':	self.get_kernel_config_uri,
+				'kernel-initrd':	self.get_kernel_initrd,
+				'kernel-bootsplash':	self.get_kernel_bootsplash,
+				'kernel-source':	self.get_kernel_source_pkg,
+				'root-pass-hash':	self.get_root_pass_hash,
+				'time-zone':		self.get_time_zone,
+				'custom-stage3-tarball':self.get_custom_stage3_tarball_uri,
+				'install-stage':	self.get_install_stage,
+				'portage-tree-sync':	self.get_portage_tree_sync_type,
+				'portage-snapshot':	self.get_portage_tree_snapshot_uri,
+				'domainname':		self.get_domainname,
+				'hostname':		self.get_hostname,
+				'nisdomainname':	self.get_nisdomainname,
+				'ignore-depends':	self.get_ignore_install_step_depends,
+				'install-rp-pppoe':	self.get_install_rp_pppoe,
+				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
+				'default-gateway':	self.get_default_gateway
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -707,9 +735,7 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		# Normal cases
 		for key in xmltab.keys():
-			tmptuple = xmltab[key]
-			if tmptuple[1]() != tmptuple[0]:
-				xmldoc += "<%s>%s</%s>" % (key, tmptuple[1](), key)
+			xmldoc += "<%s>%s</%s>" % (key, xmltab[key](), key)
 
 		# Other cases
 		if self.get_users() != []:
@@ -735,7 +761,209 @@ class InstallProfile(xml.sax.ContentHandler):
 				xmldoc += "<user %s>%s</user>" % (string.strip(attrstr), username)
 			xmldoc += "</users>"
 
+		if self.get_make_conf() != {}:
+			xmldoc += "<make-conf>"
+
+			make_conf = self.get_make_conf()
+			for var in make_conf:
+				xmldoc += "<variable name=\"%s\">%s</variable>" % (var, make_conf[var])
+
+			xmldoc += "</make-conf>"
+
+		if self.get_rc_conf() != {}:
+			xmldoc += "<rc-conf>"
+
+			rc_conf = self.get_rc_conf()
+			for var in rc_conf:
+				xmldoc += "<variable name=\"%s\">%s</variable>" % (var, rc_conf[var])
+
+			xmldoc += "</rc-conf>"
+
+		if self.get_filesystem_tools_pkgs() != ():
+			xmldoc += "<filesystem-tools>"
+			xmldoc += string.join(self.get_filesystem_tools_pkgs(), ' ')
+			xmldoc += "</filesystem-tools>"
+
+		if self.get_dns_servers() != ():
+			xmldoc += "<dns-servers>"
+			xmldoc += string.join(self.get_dns_servers(), ' ')
+			xmldoc += "</dns-servers>"
+
 		xmldoc += "</gli-profile>"
 
 		dom = xml.dom.minidom.parseString(xmldoc)
 		return dom.toprettyxml()
+
+	def make_conf_add_var(self, data, attr):
+		"""
+		data is a string that is the value of the variable name.
+		attr is an xml attribute that contains the name of the variable
+		"""
+		if 'name' not in attr.getNames():
+			raise "MakeConfError", "Every value needs to have a variable name!"
+
+		varName = attr.getValue('name')
+		self._make_conf[str(varName)] = str(data)
+
+	def set_make_conf(self, make_conf):
+		"""
+		make_conf is a dictionary that will be set to _make_conf
+
+		There is no checking that needs to be done, so please sure sure that the make_conf dictionary
+		that is passed in is valid.
+		"""
+
+		self._make_conf = make_conf
+
+	def get_make_conf(self):
+		""" Return a dictionary of the make.conf """
+		return self._make_conf
+
+	def rc_conf_add_var(self, data, attr):
+		"""
+		data is a string that is the value of the variable name.
+		attr is an xml attribute that contains the name of the variable
+		"""
+		if 'name' not in attr.getNames():
+			raise "RCConfError", "Every value needs to have a variable name!"
+
+		varName = attr.getValue('name')
+		self._rc_conf[str(varName)] = str(data)
+
+	def set_rc_conf(self, rc_conf):
+		"""
+		rc_conf is a dictionary that will be set to _rc_conf
+
+		There is no checking that needs to be done, so please sure sure that the rc_conf dictionary
+		that is passed in is valid.
+		"""
+
+		self._rc_conf = rc_conf
+
+	def get_rc_conf(self):
+		""" Return a dictionary of the make.conf """
+		return self._rc_conf
+
+	def set_ignore_install_step_depends(self, ignore_depends):
+		""" 
+		Set _ignore_install_step_depends to ignore_depends, if it is a bool, if not, convert
+		it first, then set _ignore_install_step_depends to val.
+		"""
+		# Check the data type
+		if type(ignore_depends) != bool:
+			if type(ignore_depends) == str:
+				ignore_depends = GLIUtility.strtobool(ignore_depends)
+			else:
+				raise "IgnoreInstallStepDepends", "Input must be type 'bool'!"
+		
+		self._ignore_install_step_depends = ignore_depends
+
+	def get_ignore_install_step_depends(self):
+		""" Return _ignore_install_step_depends """
+		return self._ignore_install_step_depends
+
+	def set_install_rp_pppoe(self, install_rp_pppoe):
+		"""
+		Tell the installer whether or not to install the rp-pppoe package
+		"""
+
+		if type(install_rp_pppoe) != bool:
+			if type(install_rp_pppoe) == str:
+				install_rp_pppoe = GLIUtility.strtobool(install_rp_pppoe)
+			else:
+				raise "InstallRP_PPPOE", "Invalid input!"
+
+		self._install_rp_pppoe = install_rp_pppoe
+
+	def get_install_rp_pppoe(self):
+		""" Return the boolean value of _install_rp-pppoe """
+		return self._install_rp_pppoe
+
+	def set_filesystem_tools_pkgs(self, tools):
+		"""
+		This method will take either a string or a list/tuple of strings that are
+		packages of the filesystem tools that need to be installed. For example,
+		"sys-fs/reiserfsprogs" might be the input, or a list of tuples similar
+		to that will be the input
+		"""
+		if (type(tools) == list) or (type(tools) == tuple):
+			self._filesystem_tools = tools
+		elif GLIUtility.is_realstring(tools):
+			self._filesystem_tools = tuple(string.split(tools))
+		else:
+			raise "FileSystemTools","Invalid input!"
+
+	def get_filesystem_tools_pkgs(self):
+		"""
+		This method will return the string or tuple of the filesystem programs
+		that need to be installed.
+		"""
+		return self._filesystem_tools
+
+	def set_install_pcmcia_cs(self, install_pcmcia):
+		""" This tells the installer whether or not to install the pcmcia_cs package """
+		if type(install_pcmcia) != bool:
+			if type(install_pcmcia) == str:
+				install_pcmcia = GLIUtility.strtobool(install_pcmcia)
+			else:
+				raise "InstallPcmciaCS", "Input must be type 'bool'!"
+
+		self._install_pcmcia_cs = install_pcmcia
+
+	def get_install_pcmcia_cs(self):
+		""" Returns the boolean _install_pcmcia_cs """
+
+		return self._install_pcmcia_cs
+
+	def set_dns_servers(self, dns_servers):
+		""" This sets the DNS servers for the system. The tuple will have the form:
+		(<nameserver 1>, <nameserver 2>, <nameserver 3>)
+		"""
+
+		if type(dns_servers) == tuple:
+			dns_servers = dns_servers[0:3]
+		elif type(dns_servers) == str:
+			dns_servers = string.split(dns_servers)
+		else:
+			raise "DnsServersError", "Invalid input!"
+
+		for server in dns_servers:
+			if not GLIUtility.is_ip(server):
+				raise "DnsServersError", server + " must be a valid IP address!"
+
+		self._dns_servers = dns_servers
+
+	def get_dns_servers(self):
+		""" This returns a tuple of the form:
+			(<nameserver 1>, <nameserver 2>, <nameserver 3>)
+		"""
+		return self._dns_servers
+
+	def set_default_gateway(self, gateway):
+		""" 
+		Set the default gateway.
+		The format of the input is: <device>/<gateway IP addr>
+		"""
+		if not GLIUtility.is_realstring(gateway):
+			raise "DefaultGateway", "The gateway must be a non-empty string!"
+
+		seperator = string.find(gateway, '/')
+		if seperator == -1:
+			raise "DefaultGateway", "Invalid input!"
+
+		dev = gateway[0:seperator]
+		gateway_ip = gateway[seperator+1:]
+
+		if dev[0:3] not in ('eth', 'ppp'):
+			raise "DefaultGateway", "Invalid device!"
+
+		if not GLIUtility.is_ip(gateway_ip):
+			raise "DefaultGateway", "The IP Provided is not valid!"
+
+		self._default_gateway = gateway
+
+	def get_default_gateway(self):
+		"""
+		Returns the default gateway
+		"""
+		return self._default_gateway

@@ -1,7 +1,6 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIUtility.py,v 1.2 2004/04/04 03:26:18 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIUtility module contians all utility functions used throughout GLI.
@@ -132,18 +131,27 @@ def is_uri(uri):
 	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
 		
 		# Check for hostname or ip address
-		if (not is_hostname(uri.split('/')[2])) and (not _is_ip(uri.split('/')[2])):
+		if (not _is_hostname(uri.split('/')[2])) and (not _is_ip(uri.split('/')[2])):
 			return False
 		
 		# Check to make sure the rest is a propper path
-		if not is_path(string.join(uri.split('/')[3:], '/')):
+		if not _is_path(string.join(uri.split('/')[3:], '/')):
 			return False
 
 	# If we are dealing with a local uri
 	else:
 		# Check for file validity
-		if not is_file(uri[colon_location + 3:]):
+		if not _is_file(uri[colon_location + 3:]):
 			return False
+				
 		
 	return True
 
+def strtobool(input):
+	if type(input) != str:
+		raise "InputError", "The input must be a string!"
+
+	if string.lower(input) == 'true':
+		return True
+	else:
+		return False
