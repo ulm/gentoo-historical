@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2005.0/Attic/hb-install-ppc-disk.xml,v 1.3 2005/03/06 12:21:06 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2005.0/Attic/hb-install-ppc-disk.xml,v 1.4 2005/03/19 03:55:23 pylon Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2004-12-12</date>
+<version>1.3</version>
+<date>2005-03-19</date>
 
 <section>
 <title>Introduction to Block Devices</title>
@@ -28,8 +28,8 @@ for your Gentoo Linux installation.
 <p>
 To begin, we'll introduce <e>block devices</e>. The most famous block device is
 probably the one that represents the first IDE drive in a Linux system, namely
-<path>/dev/hda</path>. If your system uses SCSI drives, then your first hard
-drive would be <path>/dev/sda</path>.
+<path>/dev/hda</path>. If your system uses SCSI or SATA drives, then your first
+hard drive would be <path>/dev/sda</path>.
 </p>
 
 <p>
@@ -73,13 +73,15 @@ you can use the partitioning scheme we use throughout this book:
   <th>Partition NewWorld</th>
   <th>Partition OldWorld</th>
   <th>Partition Pegasos</th>
+  <th>Partition RS/6000</th>
   <th>Filesystem</th>
   <th>Size</th>
   <th>Description</th>
 </tr>
 <tr>
   <ti><path>/dev/hda1</path></ti>
-  <ti>/dev/hda1</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Not applicable)</ti>
   <ti>(Not applicable)</ti>
   <ti>(Partition Map)</ti>
   <ti>32k</ti>
@@ -89,35 +91,64 @@ you can use the partitioning scheme we use throughout this book:
   <ti><path>/dev/hda2</path></ti>
   <ti>(Not needed)</ti>
   <ti>(Not applicable)</ti>
+  <ti>(Not applicable)</ti>
   <ti>(bootstrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
 </tr>
 <tr>
+  <ti>(Not applicable</ti>
+  <ti>(Not applicable)</ti>
+  <ti>(Not applicable)</ti>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>(PReP Boot)</ti>
+  <ti>800k</ti>
+  <ti>Type 0x41</ti>
+</tr>
+<tr>
+  <ti>(Not needed)</ti>
+  <ti>(Not needed)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Not needed)</ti>
+  <ti>ext2</ti>
+  <ti>32MB</ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/hda2</path></ti>
-  <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/sda2</path></ti>
   <ti>(swap)</ti>
   <ti>512M</ti>
-  <ti>Swap partition</ti>
+  <ti>Swap partition, Type 0x82</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
-  <ti>ext3</ti>
+  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3, xfs</ti>
   <ti>Rest of the disk</ti>
-  <ti>Root partition</ti>
+  <ti>Root partition, Type 0x83</ti>
 </tr>
 </table>
 
 <note>
 There are some partitions named like this: <path>Apple_Driver43,
-Apple_Driver_ATA, Apple_FWDriver, Apple_Driver_IOKit,
-Apple_Patches</path>. If you are not planning to use MacOS 9 you can
-delete them, because MacOS X and Linux don't need them.
-You might have to use parted in order to delete them, as mac-fdisk can't delete them yet.
+Apple_Driver_ATA, Apple_FWDriver, Apple_Driver_IOKit, Apple_Patches</path>. If
+you are not planning to use MacOS 9 you can delete them, because MacOS X and
+Linux don't need them.  You might have to use <c>parted</c> in order to delete
+them, as mac-fdisk can't delete them yet.
 </note>
+
+<warn>
+<c>parted</c> is able to resize partitions.  On the LiveCD there are patches
+included to resize HFS+ filesystem.  Unfortunately it is not possible to
+resize HFS+ journaled filesystems, even if the journaling has been switched
+off in Mac OS X.  Everything you do with resizing in parted you do it on your
+own risk!  Be sure to have a backup of your data!
+</warn>
 
 <p>
 If you are interested in knowing how big a partition should be, or even how many
@@ -163,23 +194,23 @@ partitions or volumes have the following advantages:
   it is with multiple partitions)
 </li>
 <li>
-  Security can be enhanced by mounting some partitions or volumes read-only, 
+  Security can be enhanced by mounting some partitions or volumes read-only,
   nosuid (setuid bits are ignored), noexec (executable bits are ignored) etc.
 </li>
 </ul>
 
 <p>
-However, multiple partitions have one big disadvantage: if not configured 
-properly, you might result in having a system with lots
-of free space on one partition and none on another. There is also a 15-partition
-limit for SCSI and SATA.
+However, multiple partitions have one big disadvantage: if not configured
+properly, you might result in having a system with lots of free space on one
+partition and none on another. There is also a 15-partition limit for SCSI and
+SATA.
 </p>
 
 </body>
 </subsection>
 </section>
 <section id="fdisk">
-<title>Default: Using mac-fdisk (Apple/IBM) Partition your Disk</title>
+<title>Default: Using mac-fdisk (Apple) Partition your Disk</title>
 <body>
 
 <p>
@@ -204,9 +235,9 @@ partition, followed by a <c>p</c>. For instance this is <c>2p</c>.
 </p>
 
 <note>
-This partition is <e>not</e> a "boot" partition. It is not used by Linux at all;
-you don't have to place any filesystem on it and you should never mount it. PPC
-users don't need an extra partition for <path>/boot</path>.
+This partition is <e>not</e> a <path>/boot</path> partition. It is not used by
+Linux at all; you don't have to place any filesystem on it and you should never
+mount it. Apple users don't need an extra partition for <path>/boot</path>.
 </note>
 
 <p>
@@ -251,7 +282,7 @@ link="#filesystems">Creating Filesystems</uri>.
 
 <p>
 <c>parted</c>, the Partition Editor, can now handle HFS+ partitions used by
-Mac OS and Mac OS X.  With this tool you can shrink your Mac-partitions and
+Mac OS and Mac OS X.  With this tool you can resize your Mac-partitions and
 create space for your Linux partitions.  Nevertheless, the example below
 describes partitioning for Pegasos machines only.
 </p>
@@ -271,20 +302,19 @@ disklabel for the drive.
 
 <p>
 You can type <c>print</c> at any time in parted to display the current partition
-table. Your changes aren't saved until you quit the application; if at any time
-you change your mind or made a mistake you can press <c>Ctrl-c</c> to abort
-parted.
+table. If at any time you change your mind or made a mistake you can press
+<c>Ctrl-c</c> to abort parted.
 </p>
 
 <p>
 If you intend to also install MorphOS on your Pegasos create an affs1 filesystem
-named "BI0" (BI zero) at the start of the drive. 50MB should be more than enough
+named "BI0" (BI zero) at the start of the drive. 32MB should be more than enough
 to store the MorphOS kernel. If you have a Pegasos I or intend to use reiserfs or
 xfs, you will also have to store your Linux kernel on this partition (the
-Pegasos II can boot from ext2/ext3 drives). To create the partition run
+Pegasos II can only boot from ext2/ext3 or affs1 partitions). To create the partition run
 <c>mkpart primary affs1 START END</c> where <c>START</c> and <c>END</c> should
-be replaced with the megabyte range (e.g. <c>5 55</c> creates a 50 MB partition
-starting at 5MB and ending at 55MB.
+be replaced with the megabyte range (e.g. <c>0 32</c> creates a 32 MB partition
+starting at 0MB and ending at 32MB.
 </p>
 
 <p>
@@ -325,10 +355,10 @@ When you are done in parted simply run <c>quit</c>.
 <body>
 
 <p>
-Now that your partitions are created, it is time to place a filesystem on them. 
+Now that your partitions are created, it is time to place a filesystem on them.
 If you don't care about what filesystem to choose and are happy with what we use
-as default in this handbook, continue with <uri 
-link="#filesystems-apply">Applying a Filesystem to a Partition</uri>.
+as default in this handbook, continue with <uri
+  link="#filesystems-apply">Applying a Filesystem to a Partition</uri>.
 Otherwise read on to learn about the available filesystems...
 </p>
 
@@ -339,8 +369,9 @@ Otherwise read on to learn about the available filesystems...
 <body>
 
 <p>
-Several filesystems are available. ext2, ext3 and XFS are found stable
-on the PPC architecture. jfs is unsupported, ReiserFS still has some problems on ppc and is not supported.
+Several filesystems are available. ext2, ext3 and XFS are found stable on the
+PPC architecture. jfs is unsupported, ReiserFS still has some problems on ppc
+and is not supported.
 </p>
 
 <p>
@@ -401,15 +432,15 @@ each possible filesystem:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
-  <ti><c>mkreiserfs</c></ti>
+  <ti><c>mkfs.reiserfs</c></ti>
 </tr>
 <tr>
   <ti>xfs</ti>
@@ -423,7 +454,7 @@ in ext3 (as in our example), you would use:
 </p>
 
 <pre caption="Applying a filesystem on a partition">
-# <i>mke2fs -j /dev/hda4</i>
+# <i>mkfs.ext3 /dev/hda4</i>
 </pre>
 
 <p>
