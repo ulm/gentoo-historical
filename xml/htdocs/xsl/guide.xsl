@@ -323,6 +323,8 @@
 				<br/>
 				<a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
 				<br/>
+				<a class="hotlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+				<br/>
 				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
 				<br/>
 				<a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
