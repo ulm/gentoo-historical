@@ -519,8 +519,8 @@
                       about any application or need. Extreme performance,
                       configurability and a top-notch user and developer
                       community are all hallmarks of the Gentoo experience.
-                      To learn more, <b><a href="/main/en/about.xml">click
-                      here</a></b>.
+                      To learn more, read <b><a href="/main/en/about.xml">About
+                      Gentoo</a></b>.
                     </td>
                   </tr>
                 </table>
