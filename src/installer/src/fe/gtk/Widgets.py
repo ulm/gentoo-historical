@@ -64,10 +64,10 @@ class Widgets:
       return new_entry
   
     # a method that can box an arbitrary number of things into an hbox
-    def hBoxThese(self,homogenous,spacing,list):
+    def hBoxThese(self,homogenous,spacing,list,pad=0):
      new_box=gtk.HBox(homogenous,spacing)
      for item in list:
-      new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+      new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=pad)
      return new_box
      
     # a method that can box an arbitrary number of things into an hbox
