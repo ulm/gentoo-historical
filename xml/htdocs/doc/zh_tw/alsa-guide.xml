@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/alsa-guide.xml,v 1.7 2004/12/03 08:45:52 bennyc Exp $ -->
-<!-- rev 1.45 by Benny -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/alsa-guide.xml,v 1.8 2004/12/21 01:06:51 ccpz Exp $ -->
+<!-- rev 1.47 by ccpz -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="alsa-guide.xml" lang="zh_tw">
 
@@ -37,15 +37,15 @@
 </author>
 
 <abstract>
-這篇文章教您怎樣在 Gentoo Linux 上設定 Advanced Linux Sound Architecture (進<!--
--->階 Linux 音效架構)。給讀過 Gentoo Linux 桌面系統設定指南的讀者，希望這篇指<!--
--->南能給您有關 ALSA 的進一步資訊。
+這篇文章教您怎樣在 Gentoo Linux 上設定 Advanced Linux Sound Architecture (進
+階 Linux 音效架構)。給讀過 Gentoo Linux 桌面系統設定指南的讀者，希望這篇指
+南能給您有關 ALSA 的進一步資訊。
 </abstract>
 
 <license/>
 
-<version>1.5.7</version>
-<date>2004-12-02</date>
+<version>1.5.9</version>
+<date>2004-12-09</date>
 
 <chapter>
 <title>介紹</title>
@@ -54,15 +54,15 @@
 <body>
 
 <p>
-ALSA (<e>Advanced Linux Sound Architecture</e> - 進階 Linux 音效架構) 是個透<!--
--->過重寫程式碼來增進 Linux 音效子系統的計畫。在 2.6 核心中，取代了 OSS（<e>Open
+ALSA (<e>Advanced Linux Sound Architecture</e> - 進階 Linux 音效架構) 是個透
+過重寫程式碼來增進 Linux 音效子系統的計畫。在 2.6 核心中，取代了 OSS（<e>Open
 Sound System</e>）的地位成為預設的音效子系統。
 </p>
 
 <p>
-ALSA 有效率地支援幾乎所有的音效介面。他擁有完整的模組化設計、多處理器以及執行<!--
--->緒安全性支援、更提供了一個高品質的使用者函式庫以檢化成是設計。它同時還提供<!--
--->與舊式音效系統 - OSS 的向下相容性。
+ALSA 有效率地支援幾乎所有的音效介面。他擁有完整的模組化設計、多處理器以及執行
+緒安全性支援、更提供了一個高品質的使用者函式庫以檢化成是設計。它同時還提供
+與舊式音效系統 - OSS 的向下相容性。
 </p>
 
 </body>
@@ -87,21 +87,23 @@ USE 參數中，ALSA 瓜會提供 OSS 模擬。
 <body>
 
 <p>
-首先，在您繼續之前，請確定您的核心有啟動 <e>Sound Card Support</e> 選項。如果<!--
--->您使用 <c>genkernel</c> 幫助您編譯核心，那麼這個選項會自動開啟。否則，請重<!--
--->新設定您的核心。
+首先，在您繼續之前，請確定您的核心有啟動 <e>Sound Card Support</e> 選項。如果
+您使用 <c>genkernel</c> 幫助您編譯核心，那麼這個選項會自動開啟。否則，請重
+新設定您的核心。此外，確定關閉核心設定中的 <e>Open Sound System</e>。如果沒有關
+閉的話，系統會先嘗試使用他而不是 alsa。假如你看到 'sound card not detected' 的
+錯誤訊息而你確定選了正確的驅動程式，可能就是因為你沒關閉他。
 </p>
 
 <warn>
-如果您使用 2.6 的核心，則您可以直接跳到 <uri link="#alsa-utils">安裝 ALSA
-工具</uri>，因為 2.6 內建了所需的 ALSA 驅動程式。當然，別忘了在設定核心的時候<!--
--->啟用您擁有音效卡的支援！
+如果你是使用 2.6 版核心，你可能會享用核心內附的驅動程式，但是因為
+media-sound/alsa-driver 比核心內的還要新，我們仍然建議你使用
+media-sound/alsa-driver。假如你仍然想要使用核心內的驅動程式，你可以跳過接下來的
+部份繼續閱讀 <uri link="#alsa-utils">安裝 ALSA 工具</uri>。
 </warn>
 
 <p>
-至於使用 2.4 核心的使用者，則必須先安裝所需的 ALSA 驅動程式。首先辨認您的音效<!--
--->卡型號，有個簡單的技巧，就是直接使用 <c>lspci</c> 的指令搜尋。你必須使用
-<c>emerge pciutils</c> 安裝這個套件。
+安裝驅動程式第一步就是找出你用那張音效卡。如果你還不知道的話，有一個技巧是搜尋
+<c>lspci</c> 輸出中的 "audio"。你可以用 <c>emerge pciutils</c> 安裝這個工具。
 </p>
 
 <pre caption="辨認音效卡型號">
@@ -112,24 +114,30 @@ Controller (rev 64).
 
 <p>
 然後至 <uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix
-</uri> 並搜尋您的音效卡。在上面的例子中，您應該找 "VIA" 製造商，尋找已知晶片<!--
--->清單。上例中的晶片是 "via82c686"；"Details" 連結中告訴我這個晶片驅動程式叫<!--
--->做 <path>via82xx</path>。這就是你所需要的全部資訊，你可以掠過那份文件其他部
+</uri> 並搜尋您的音效卡。在上面的例子中，您應該找 "VIA" 製造商，尋找已知晶片
+清單。上例中的晶片是 "via82c686"；"Details" 連結中告訴我這個晶片驅動程式叫
+做 <path>via82xx</path>。這就是你所需要的全部資訊，你可以掠過那份文件其他部
 分。
 </p>
 
 <p>
 有了這些資訊，我們現在可以為音效卡安裝 <c>alsa-driver</c> 了！首先編輯
-<path>/etc/make.conf</path> 並<e>新增</e>一個新的選項 - "ALSA_CARDS"。於這個<!--
--->變數中指派您想使用的音效卡驅動程式：
+<path>/etc/make.conf</path> 並<e>新增</e>一個新的選項 - "ALSA_CARDS"。於這個
+變數中指派您想使用的音效卡驅動程式：
 </p>
 
 <pre caption="編輯 /etc/make.conf 並加入 ALSA_CARDS">
 ALSA_CARDS="via82xx"
 </pre>
 
+<warn>
+如果系統上有多個音效卡，在 ALSA_CARDS 變數中使用 , 分隔，如：
+ALSA_CARDS="via82xx,emu10k1"
+</warn>
+
 <p>
-現在安裝 <c>alsa-driver</c>:
+如果你要支援 OSS (非常建議這麼做)，你要在 <path>/etc/make.conf</path> 中的 USE
+設定加上 'oss'。接下來就可以安裝 <c>alsa-driver</c>：
 </p>
 
 <pre caption="安裝 ALSA 驅動程式">
@@ -137,9 +145,9 @@ ALSA_CARDS="via82xx"
 </pre>
 
 <impo>
-當您（重新）編譯並安裝核心時，ALSA 驅動程式有可能會被覆蓋。這表示，當您以後重<!--
--->新編譯核心的時候，必須重新執行 <c>emerge alsa-driver</c>。注意！您必須在使<!--
--->用新的核心開機<e>以後</e>才執行 <c>emerge alsa-driver</c>。
+當您（重新）編譯並安裝核心時，ALSA 驅動程式有可能會被刪除。這表示，當您以後重
+新編譯核心的時候，必須重新執行 <c>emerge alsa-driver</c>。要注意的是這會編譯適
+合 /usr/src/linux 中核心的驅動程式，而不是現在執行的核心。
 </impo>
 
 </body>
@@ -149,11 +157,13 @@ ALSA_CARDS="via82xx"
 <body>
 
 <p>
-如果您需要與 OSS 的向下相容性，您必須安裝 <c>alsa-oss</c>：
+假如核心中的 OSS 支援不能滿足你的需要，你可以安裝 <c>alsa-oss</c>。這提供一個叫
+'aoss' 的程式作為展示用。
 </p>
 
-<pre caption="安裝 ALSA OSS 相容層">
+<pre caption="更多的 OSS 相容層">
 # <i>emerge alsa-oss</i>
+# <i>aoss mpg123 music.mp3</i>
 </pre>
 
 <p>
@@ -207,8 +217,8 @@ alias /dev/midi snd-seq-oss
 <body>
 
 <p>
-若您使用 DevFS（Gentoo 安裝預設會使用），請確認 <path>/etc/devfsd.conf</path>
-中 ALSA 設備的權限有正確指定：
+在你安裝時這些事應該就會處理好了，但如果你碰到一些問題的話，檢查 /dev 管理程式
+有沒有正確設定 ALSA 裝置及權限。如果使用 DevFS，檢查 <path>/etc/devfsd.conf</path>
 </p>
 
 <pre caption="/etc/devfsd.conf">
@@ -253,17 +263,20 @@ REGISTER        snd/.*       PERMISSIONS root.audio 660
 </pre>
 
 <p>
-若 <c>amixer</c> 吐初一大堆訊息，表示您準備好可以取消靜音了。若它只吐出了一個<!--
--->錯誤訊息，則請重新檢查您已經載入了音效卡模組。
+若 <c>amixer</c> 吐初一大堆訊息，表示您準備好可以取消靜音了。若它只吐出了一個
+錯誤訊息，則請重新檢查您已經載入了音效卡模組。
 </p>
 
 
 <p>
-如果您做到了這裡，現在可以解除 Master 和 PCM 聲道的靜音了。有些硬體還必須解除<!--
--->中央聲道和環繞聲道的靜音。
+如果您做到了這裡，現在可以解除 Master 和 PCM 聲道的靜音了。有些硬體還必須解除
+中央聲道和環繞聲道的靜音。
 </p>
 
 <pre caption="解除聲道靜音">
+<comment>(如果你比較喜歡透過 ncurses：)</comment>
+# <i>alsamixer</i>
+<comment>(或)</comment>
 # <i>amixer set Master 100 unmute</i>
 # <i>amixer set PCM 100 unmute</i>
 <comment>（若必須的話...）</comment>
@@ -275,10 +288,6 @@ REGISTER        snd/.*       PERMISSIONS root.audio 660
 <p>
 想檢查您的音效卡是否能用，請隨意播放個 wave 檔（使用 <c>aplay</c>）、mp3（使用
 <c>mpg123</c> 甚至 <c>mplayer</c>）或其他任何音效檔。
-</p>
-
-<p>
-您可以使用 <c>alsamixer</c> 程式針對聲道作細部調整
 </p>
 
 </body>
@@ -338,11 +347,20 @@ REGISTER        snd/.*       PERMISSIONS root.audio 660
 
 <p>
 要讓 timidity++ 播放聲音，它需要一些音色檔。若您沒有任何音色檔，安裝
-<c>timidity-eawpatches</c> 會提供一些。
+<c>timidity-eawpatches</c> 或 <c>timidity-shompatches</c> 會提供一些。
+你可以同時使用多個音色檔，也可以將你自己的音色檔放在
+<path>/usr/share/timidity/</path>。要切換不同設定的話，可以使用
+timidity++ 套件提供的 <e>timidity-update</e>。
 </p>
 
-<pre caption="安裝 timidity-eawpatches">
+<pre caption="安裝音色檔">
 # <i>emerge timidity-eawpatches</i>
+# <i>timidity-update -g -s eawpatches</i>
+
+<comment>(或)</comment>
+		   	 
+# <i>emerge timidity-shompatches</i>
+# <i>timidity-update -g -s shompatches</i>
 </pre>
 
 <p>
@@ -415,8 +433,8 @@ ALSA_TOOLS="as10k1 ac3dec"
 <body>
 
 <p>
-如果您的音效卡有搖桿的接口，您應該會有興趣啟用音效卡上的搖桿接口支援。請先確<!--
--->定音效卡的驅動程式上有搖桿的參數。您可以使用 <c>modinfo</c> 查看您的 
+如果您的音效卡有搖桿的接口，您應該會有興趣啟用音效卡上的搖桿接口支援。請先確
+定音效卡的驅動程式上有搖桿的參數。您可以使用 <c>modinfo</c> 查看您的 
 <path>snd-&lt;晶片&gt;</path>。舉例來說，您的音效卡是 <c>snd-via82xx</c>：
 </p>
 
