@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.70 2005/03/26 07:33:34 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.71 2005/03/26 07:54:18 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -214,10 +214,6 @@ class ArchitectureTemplate:
 		services = self._install_profile.get_services()
 		for service in services:
 			status = self._add_to_runlevel(service)
-			if not GLIUtility.exitsuccess(status):
-				self._logger.log("Could not add " + package + "to startup!")
-			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
-
 			
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
