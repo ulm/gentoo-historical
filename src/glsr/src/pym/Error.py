@@ -11,7 +11,7 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.14 2005/01/27 02:01:54 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.15 2005/01/27 04:23:03 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_uncaught(req):
@@ -89,7 +89,7 @@ def error_uncaught(req):
                   """)
     os.abort()
 
-def error(msg, modname):
+def error(msg, modname, extramsg=''):
     """
     Display internal error user, send it to the log and error report log
     """
@@ -122,7 +122,12 @@ def error(msg, modname):
 
         output += "<b>Internal Error</b> (in module '%s')<b>:</b>\n" % modname
         output += "<br /><br />\n%s\n" % msg
-            
+
+        if extramsg != '':
+            output += ("""<br /><br />\n
+                          <b>Further Details:</b><br /><br />\n
+                          %s\n<br /><br />\n""" % extramsg)
+
         if modname == 'Template':
             output += ("""
             <br />
