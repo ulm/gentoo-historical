@@ -119,7 +119,7 @@ class Device:
 				if free_start == -1 and lastend_log < tmppart.get_end():
 					free_start = lastend_log
 					free_end = tmppart.get_end()
-				break
+					break
 			lastend_pri = tmppart.get_end() + 1
 		if free_start == -1 and lastend_pri < self.get_num_cylinders():
 			free_start = lastend_pri
