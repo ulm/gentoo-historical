@@ -37,7 +37,11 @@
 
 	<xsl:template match="SECT1">
 		<chapter>
-			<xsl:apply-templates/>
+			<xsl:apply-templates select="TITLE"/>
+			<body>
+				<xsl:apply-templates select="PARA|PROGRAMLISTING"/>
+			</body>
+		<xsl:apply-templates select="SECT2"/>
 		</chapter>
 	</xsl:template>
 
@@ -59,27 +63,22 @@
 	<xsl:template match="ULINK">
 		<uri link="{@URL}"><xsl:value-of select="."/></uri>
 	</xsl:template>
-    
+
 	<xsl:template match="PROGRAMLISTING">
 		<pre><xsl:value-of select="."/></pre>
 	</xsl:template>
-	
+
 	<xsl:template match="EMPHASIS">
 		<i><xsl:value-of select="."/></i>
 	</xsl:template>
-	
-	<!-- There is no equivalent for SECT3 in Gentoo'sGuide DTD. We can
-		try to simulate it though using other Gentoo Guide DTD elements,
-		but this is probably poor form since it makes an assumption about
-		Gentoo Guide XML transforms to presentation.
 
-		It would be cool if a section's body element could contain a
-		section element in a recursive manner, but Gentoo Guide XML DTD
-		2.1 does not provide for this. 
-	-->
 	<xsl:template	match="SECT3">
-		<p><i><xsl:value-of select="TITLE"/></i></p>
-		<xsl:apply-templates select="PARA|PROGRAMLISTING"/>
+		<subsection>
+			<xsl:apply-templates select="TITLE"/>
+			<body>
+				<xsl:apply-templates select="PARA|PROGRAMLISTING"/>
+			</body>
+		</subsection>
 	</xsl:template>
-    
+
 </xsl:stylesheet>
