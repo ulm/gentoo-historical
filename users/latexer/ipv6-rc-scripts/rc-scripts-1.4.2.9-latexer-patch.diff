@@ -37,12 +37,12 @@ diff -aurN rc-scripts-1.4.2.9/etc/conf.d/net rc-scripts-1.4.2.9-latexer/etc/conf
 +#gateway6="eth0/3ffe:aaaa:bbbb::1"
 diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.d/iface.eth0
 --- rc-scripts-1.4.2.9/init.d/iface.eth0	1969-12-31 19:00:00.000000000 -0500
-+++ rc-scripts-1.4.2.9-latexer/init.d/iface.eth0	2003-06-20 12:06:03.000000000 -0400
-@@ -0,0 +1,86 @@
++++ rc-scripts-1.4.2.9-latexer/init.d/iface.eth0	2003-06-21 18:39:43.000000000 -0400
+@@ -0,0 +1,79 @@
 +#!/sbin/runscript
 +# Copyright 1999-2002 Gentoo Technologies, Inc.
 +# Distributed under the terms of the GNU General Public License v2
-+# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.2 2003/06/20 20:53:49 latexer Exp $
++# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.3 2003/06/22 01:38:36 latexer Exp $
 +
 +#NB: Config is in /etc/conf.d/net
 +
@@ -50,14 +50,6 @@ diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.
 +# runlevel as the net/iface.* script that needs it.
 +depend() {
 +	use pcmcia
-+}
-+
-+check_tunnel_config() {
-+	if [ -z "$(eval echo \$\{tunnel_${IFACE}\})" ]
-+	then
-+		eerror "Please make sure that /etc/conf.d/net has \$tunnel_$IFACE set"
-+		return 1
-+	fi
 +}
 +
 +start() {
@@ -80,16 +72,17 @@ diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.
 +	if [[ "${IFACE}" == "sit*" ]]
 +	then
 +		#if it's a tunnel interface, figure out what to bridge to
-+		check_tunnel_config || return 1
 +		local endpoint="$(eval echo \$\{tunnel_${IFACE}\})"
-+		/sbin/ifconfig sit0 tunnel ${endpoint} || {
-+			retval=$?
-+			eend ${retval} "Failed to establish a tunnel for ${IFACE}"
-+			return ${retval}
-+		}
-+		save_options "tunnel" "$(eval echo \$\{tunnel_${IFACE}\})"
-+		
++		if [ -n "${endpoint}" ]
++			/sbin/ifconfig sit0 tunnel ${endpoint} || {
++				retval=$?
++				eend ${retval} "Failed to establish a tunnel for ${IFACE}"
++				return ${retval}
++			}
++			save_options "tunnel" "$(eval echo \$\{tunnel_${IFACE}\})"
++		fi
 +	elif [[ "${IFACE}" == "ppp*" ]]
++	then
 +		#do some ppp stuff. someone help me with this? please?
 +		eend "I don't know ppp stuff. please fix me"
 +		return 1
@@ -127,7 +120,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.
 +# vim:ts=4
 diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/net.eth0
 --- rc-scripts-1.4.2.9/init.d/net.eth0	2002-11-26 18:12:40.000000000 -0500
-+++ rc-scripts-1.4.2.9-latexer/init.d/net.eth0	2003-06-20 12:33:13.000000000 -0400
++++ rc-scripts-1.4.2.9-latexer/init.d/net.eth0	2003-06-21 18:42:22.000000000 -0400
 @@ -5,11 +5,10 @@
  
  #NB: Config is in /etc/conf.d/net
@@ -139,7 +132,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
 -	use pcmcia
 +	# have to figure out how to use the below instead of hard coding
 +	#need iface.${IFACE}
-+	need iface.eth1
++	need iface.eth0
  }
  
  checkconfig() {
@@ -212,12 +205,12 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
  }
 diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d/net6.eth0
 --- rc-scripts-1.4.2.9/init.d/net6.eth0	1969-12-31 19:00:00.000000000 -0500
-+++ rc-scripts-1.4.2.9-latexer/init.d/net6.eth0	2003-06-20 16:57:09.000000000 -0400
-@@ -0,0 +1,95 @@
++++ rc-scripts-1.4.2.9-latexer/init.d/net6.eth0	2003-06-21 18:41:13.000000000 -0400
+@@ -0,0 +1,92 @@
 +#!/sbin/runscript
 +# Copyright 1999-2002 Gentoo Technologies, Inc.
 +# Distributed under the terms of the GNU General Public License v2
-+# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.2 2003/06/20 20:53:49 latexer Exp $
++# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.3 2003/06/22 01:38:36 latexer Exp $
 +
 +#NB: Config is in /etc/conf.d/net
 +
@@ -247,7 +240,6 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d
 +	local iface6_args="$(eval echo \$\{iface6_${IFACE}\})"
 +	local dhcp6_args="$(eval echo \$\{dhcp6c_${IFACE}\})"
 +	local retval=0
-+	ebegin "Bringing ${IFACE} up"
 +	if [ "$(eval echo \$\{inet6_${IFACE}\})" = "dhcp" ]
 +	then
 +		/usr/sbin/dhcp6c ${dhcp6_args} ${IFACE} >/dev/null || {
@@ -257,14 +249,13 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d
 +		}
 +	elif [ "$(eval echo \$\{iface6_${IFACE}\})" != "auto" ]
 +	then
-+		local x=""
-+		ebegin "Adding inet6 addresses"
-+		for x in $(eval echo \$\{inet6_${IFACE}\})
-+		do
-+			ebegin "    ${IFACE} inet6 add ${x}"
-+			/sbin/ifconfig ${IFACE} inet6 add ${x} >/dev/null
-+			eend 0
-+		done
++		ebegin "${IFACE} inet6 add ${iface6_args}"
++		/sbin/ifconfig ${IFACE} inet6 add ${iface6_args} >/dev/null || {
++			local error=$?
++			eerror ${error} "Failed to add the IPv6 address"
++			return ${error}
++		}
++		eend 0
 +		ebegin "Setting the default IPv6 gateway"
 +		/sbin/route -A inet6 add ::/0 gw ${gateway6#*/} \
 +				dev ${gateway6%/*} || {
@@ -279,23 +270,15 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d
 +}
 +
 +stop() {
-+	local myalias="$(get_options alias)"
 +	ebegin "Bringing ${IFACE} down"
-+
-+	# Also down the inet6 interfaces
-+	local myinet6="$(get_options inet6)"
-+	if [ -n "${myinet6}" ]
-+	then
-+		/sbin/ifconfig ${IFACE} inet6 del ${myinet6} >/dev/null
-+	fi
 +
 +	if [ "$(eval echo \$\{iface_${IFACE}\})" = "dhcp" ]
 +	then
 +		/sbin/dhcp6c -r all ${IFACE} &>/dev/null
 +	
-+		# Give dhcpcd time to properly shutdown
++		# Give dhcp6c time to properly shutdown
 +		local count=0
-+		einfon "  Waiting for dhcpcd to shutdown"
++		einfo "  Waiting for dhcp6c to shutdown"
 +		while [ "${count}" -lt 3 ]
 +		do
 +			echo -n "."
@@ -303,6 +286,13 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d
 +			count=$((count + 1))
 +		done
 +		echo "done"
++	elif [ "$(eval echo \$\{iface6_${IFACE}\})" != "auto" ]
++	then
++		local myinet6="$(get_options inet6)"
++		if [ -n "${myinet6}" ]
++		then
++			/sbin/ifconfig ${IFACE} inet6 del ${myinet6} >/dev/null
++		fi
 +	fi
 +	eend 0
 +}
