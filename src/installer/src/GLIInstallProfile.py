@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.17 2004/11/01 02:49:51 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.18 2004/11/04 16:45:44 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -57,6 +57,7 @@ class InstallProfile:
 		parser.addHandler('gli-profile/fstab/partition', self.add_fstab_partition)
 		parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
 		parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
+		parser.addHandler('gli-profile/mta', self.set_mta)
 		
 		self._parser = parser
 
@@ -93,6 +94,7 @@ class InstallProfile:
 		self._default_gateway = ()
 		self._fstab = {}
 		self._install_packages = ()
+		self._mta = ""
 
 	def parse(self, filename):
 		self._parser.parse(filename)
@@ -655,6 +657,7 @@ class InstallProfile:
 				'ignore-depends':	self.get_ignore_install_step_depends,
 				'install-rp-pppoe':	self.get_install_rp_pppoe,
 				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
+				'mta':			self.get_mta,
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -1031,3 +1034,12 @@ class InstallProfile:
 					part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
 		self._temp_partition_table[part_entry['minor']] = part_entry
+
+	def set_mta(self, xml_path, mta, xml_attr):
+		if type(mta) != str:
+			raise "MTAError", "The MTA must be a string!"
+
+		self._mta = mta
+
+	def get_mta(self):
+		return self._mta
