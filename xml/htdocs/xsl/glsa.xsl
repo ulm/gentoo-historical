@@ -178,6 +178,18 @@ Related bugreports:
             <xsl:when test="@range = 'ge'">
               &gt;=
             </xsl:when>
+            <xsl:when test="@range = 'rlt'">
+              revision &lt;
+            </xsl:when>
+            <xsl:when test="@range = 'rle'">
+              revision &lt;=
+            </xsl:when>
+            <xsl:when test="@range = 'rgt'">
+              revision &gt;
+            </xsl:when>
+            <xsl:when test="@range = 'rge'">
+              revision &gt;=
+            </xsl:when>
           </xsl:choose>  
         <xsl:value-of select="text()"/>
         <xsl:if test="not(position() = last())">, </xsl:if>
