@@ -177,12 +177,17 @@
                   <p class="alttext">
                     <b>Donate</b> to support our development efforts.
                   </p>
-
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="image" src="https://www.paypal.com/en_US/i/btn/x-click-but21.gif" border="0" name="submit" alt="Donate to support our development efforts.">
-<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----">
-</form>
+                  <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+                    <input type="hidden" name="cmd" value="_xclick"/>
+                    <input type="hidden" name="business" value="paypal@gentoo.org"/>
+                    <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
+                    <input type="hidden" name="item_number" value="1000"/>
+                    <input type="hidden" name="image_url" value="/images/paypal.png"/>
+                    <input type="hidden" name="no_shipping" value="1"/>
+                    <input type="hidden" name="return" value="http://www.gentoo.org"/>
+                    <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
+                    <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+                  </form>
                 </td>
               </tr>
               <tr>
