@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.6 2004/02/19 18:23:01 npmccallum Exp $
+$Id: GLI.py,v 1.7 2004/02/19 18:41:02 esammer Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -419,10 +419,10 @@ class InstallProfile(xml.sax.ContentHandler):
 			# Else, if the device is a valid remote device (hostname or ip)
 			elif self._is_ip(device) or self._is_hostname(device):
 			
-					# Make sure that only the mount point is set
-					if type(partition_tables[device]) != str:
-						raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
-						
+				# Make sure that only the mount point is set
+				if type(partition_tables[device]) != str:
+					raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
+
 			# If the device is not a local or remote device, then it is invalid
 			else:
 				raise "PartitionTableError", "The device you specified (" + device + ") is not valid!"
