@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/quick-samba-howto.xml,v 1.6 2005/02/13 00:31:07 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/quick-samba-howto.xml,v 1.7 2005/04/04 19:03:21 dertobi123 Exp $ -->
 
-<!-- English CVS Version: 1.15 -->
+<!-- English CVS Version: 1.16 -->
 
 <guide link="/doc/de/quick-samba-howto.xml">
 <title>Gentoo Samba3/CUPS/CLAM AV Howto</title>
@@ -13,7 +13,7 @@
 <author title="Autor">
   <mail link="joshua@sungentoo.homeunix.com">Joshua Preston</mail>
 </author>
-<author title="Übersetzung">
+<author title="Übersetzer">
   <mail link="gentoo at thomasgier dot de">Thomas Gier</mail>
 </author>
 
@@ -27,8 +27,8 @@ Viren bereitstellt.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.10</version>
-<date>05. Februar 2005</date>
+<version>1.11</version>
+<date>07. Februar 2005</date>
 
 <chapter>
 <title>Einleitung zu diesem Howto</title>
@@ -120,7 +120,7 @@ behandelt:
 <ul>
   <li>Auf dem Samba Server:
     <ul>
-      <li>Installation und Konfiguration von CLAM-AV</li>
+      <li>Installation und Konfiguration von ClamAV</li>
       <li>Installation und Konfiguration von Samba</li>
       <li>Installation und Konfiguration von CUPS</li>
       <li>Drucker zu CUPS hinzufügen</li>
@@ -191,7 +191,8 @@ Bevor Sie Pakete emergen, schauen Sie sich die verschiedenen USE-Flags an, die
 für Samba zur Verfügung stehen.
 </p>
 
-<pre caption="Samba verwendet folgende USE-Variablen:">kerberos mysql xml acl cups ldap pam readline python oav</pre>
+<pre caption="Samba verwendet folgende USE-Variablen:">kerberos mysql xml acl
+cups ldap pam readline python oav libclamav</pre>
 
 <p>
 Abhängig von der Netzwerk-Struktur und den spezifischen Anforderungen des 
@@ -290,6 +291,12 @@ emergen von Samba eingebunden oder ausgeschlossen werden.
     Sophos Sweep (SAVI), Symantec CarrierScan und Trend Micro(VSAPI).
   </ti>
 </tr>
+<tr>
+  <th><b>libclamav</b></th>
+	<ti>
+	  ClamAV als Viren-Scanner aktivieren.
+	</ti>
+</tr>
 </table>
 
 <p>
@@ -345,6 +352,7 @@ Setup, dass für dieses Howto verwendet wurde, ist:
   <li>cups</li>
   <li>readline</li>
   <li>pam</li>
+	<li>libclamav</li>
 </ul>
 
 <p>
@@ -354,7 +362,7 @@ USE-Flags ausdrücklich eingebunden oder ausgeschlossen.
 
 <pre caption="Samba-Emerge">
 <comment>(Beachten Sie die USE-Flags!)</comment>
-# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql&quot; emerge net-fs/samba</i>
+# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql libclamav&quot; emerge net-fs/samba</i>
 </pre>
 
 <note>
@@ -369,7 +377,7 @@ Hierdurch wird Samba und CUPS (wenn noch nicht auf dem System vorhanden) emerged
 </body>
 </section>
 <section>
-<title>Clam AV emergen</title>
+<title>ClamAV emergen</title>
 <body>
 
 <p>
@@ -468,13 +476,9 @@ guest ok = yes
 # Hinweis: Dadurch, dass dies im Abschnitt [global] steht, wird das Scannen
 # für ALLE Freigaben ermöglicht. Optional kann dies auch nur für eine einzelne
 # Freigabe verwendet werden, so dass nur diese gescannt wird.</comment>
-<comment># Für Samba 3.x</comment>
+<comment># Für Samba 3.x. Dies aktiviert das Scannen durch ClamAV beim Zugriff.</comment>
 vfs object = vscan-clamav
 vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
-
-<comment># Für Samba 2.2.x</comment>
-vfs object = /usr/lib/samba/vfs/vscan-clamav.so
-vfs options = config-file = /etc/samba/vscan-clamav.conf
 
 <comment># Nun stellen wir die Drucker-Treiber-Informationen ein!</comment>
 [print$]
@@ -638,7 +642,24 @@ clamd socket name = /var/run/clamd
 <p>
 Es ist grundsätzlich eine gute Idee, den Virenscanner sofort zu starten. Fügen
 Sie ihn dem <e>default</e>-Runlevel hinzu und starten Sie anschließend sofort
-den Dienst.
+den <c>clamd</c>-Dienst. Dieser Dienst besteht aus zwei Prozessen: freshclam
+hält die Datenbank mit den Virus-Definitionen auf dem neuesten Stand, während es
+sich bei clamd um den eigentlichen Anti-Virus-Daemon handelt. Zunächst sollten
+Sie die Pfade für die Log-Dateien festlegen, so dass Sie Ihren Bedürfnissen
+entsprechen.
+</p>
+
+<pre caption="Prüfen der Speicherorte für Log-Dateien">
+#<i>vim /etc/clamd.conf</i>
+<comment>(Prüfen Sie die Zeile "LogFile "/var/log/clamd.log")</comment>
+#<i>vim /etc/freshclam.conf</i>
+<comment>(Prüfen Sie die Zeile "UpdateLogFile /var/log/freshclam.log")</comment>
+#<i>vim /etc/conf.d/clamd</i>
+<comment>(Setzen Sie "START_CLAMD=yes" und "START_FRESHCLAM=yes")</comment>
+</pre>
+
+<p>
+Starten Sie jetzt den Viren-Scanner.
 </p>
 
 <pre caption="clamd zum Bootup hinzufügen und starten">
@@ -796,16 +817,16 @@ zuzugreifen und Testseite drucken zu können.
 
 <p>
 Jetzt, wo der Drucker eigentlich funktionieren sollte, ist es Zeit, die
-Druckertreiber für Windows-Clients zu installieren. Diese Funktionalität wurde
+Drucker-Treiber für Windows-Clients zu installieren. Diese Funktionalität wurde
 mit Samba 2.2 eingeführt. Suchen Sie im Netzwerk nach dem Print-Server, klicken
 Sie mit der rechten Maustaste auf die gewünschte Druckerfreigabe und wählen Sie
-"connect". Dies lädt den passenden Druckertreiber automagisch auf den sich
+"connect". Dies lädt den passenden Drucker-Treiber automagisch auf den sich
 verbindenden Client, wodurch Sie das Theater vermeiden, den Treiber auf dem
 Client von Hand installieren zu müssen. 
 </p>
 
 <p>
-Es gibt hierfür zwei Drucker- Treiber. Zunächst den Adobe PS-Treiber, den Sie
+Es gibt hierfür zwei Drucker-Treiber. Zunächst den Adobe PS-Treiber, den Sie
 von <uri link="http://www.adobe.com/support/downloads/main.html">Adobe</uri>
 (Postscript Drucker-Treiber) beziehen können. Als zweites gibt es die CUPS 
 PS-Treiber, die Sie von <uri link="http://www.cups.org/software.ph">der CUPS
