@@ -395,7 +395,7 @@ def set_additional_users():
 				if newuser == user[0]:
 					d.msgbox("A user with that name already exists")
 					continue
-			new_user = [newuser, '', ('users'), '/bin/bash', '/home' + newuser, '', '']
+			new_user = [newuser, '', ('users'), '/bin/bash', '/home/' + newuser, '', '']
 			users.append(new_user)
 			menuitem = newuser
 		while 1:
