@@ -308,28 +308,27 @@ class Partition:
 		self._format = format
 		if blocks == 0:
 			self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
-#		if existing:
-#			parted_part = device._parted_disk.get_partition(minor)
-#			if type == "ntfs":
-#				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-#				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
-#				self._resizeable == True
-#			elif type == "ext2" or type == "ext3":
-#				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
-#				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
-#				free_cyl = int(int(block_size) * int(free_blocks) / self._device._cylinder_bytes)
-#				free_cyl = int(free_cyl)
-#				free_cyl = free_cyl - 200 # just to be safe
-#				self._min_cylinders_for_resize = (self._end - self._start + 1) - free_cyl
-#				self._resizeable == True
-#			elif type == "fat16" or type == "fat32":
-#				parted_part = self._device._parted_disk.get_partition(self._minor)
-#				parted_fs = parted_part.geom.file_system_open()
-#				resize_constraint = parted_fs.get_resize_constraint()
-#				min_size = float(resize_constraint.min_size / self._device._sectors_in_cylinder)
-#				if int(min_size) != min_size: min_size = int(min_size) + 1
-#				self._min_cylinders_for_resize = min_size
-#				self._resizeable = True
+		if existing:
+			parted_part = device._parted_disk.get_partition(minor)
+			if type == "ntfs":
+				min_bytes = int(commands.getoutput("ntfsresize -f --info " + device._device + str(minor) + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+				self._resizeable == True
+			elif type == "ext2" or type == "ext3":
+				block_size = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
+				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + device._device + str(minor) + " 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
+				free_sec = int(int(block_size) * int(free_blocks) / self._device._sector_bytes)
+				free_sec = free_sec - 2000 # just to be safe
+				self._min_sectors_for_resize = (self._end - self._start + 1) - free_sec
+				self._resizeable == True
+			else:
+				parted_part = self._device._parted_disk.get_partition(self._minor)
+				parted_fs = parted_part.geom.file_system_open()
+				resize_constraint = parted_fs.get_resize_constraint()
+				min_size = resize_constraint.min_size
+				if int(min_size) != min_size: min_size = int(min_size) + 1
+				self._min_sectors_for_resize = min_size
+				self._resizeable = True
 #			elif type == "":
 #				self._min_cylinders_for_resize = 1
 #				self._resizeable = True

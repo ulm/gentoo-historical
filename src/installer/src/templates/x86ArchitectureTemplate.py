@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.11 2005/01/11 08:54:17 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.12 2005/01/12 03:46:53 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -309,13 +309,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						end = tmppart['end']
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
-#							commands.getstatus("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
-#							print "resize2fs " + device + str(minor) + " " + str(total_sectors) + "s"
+							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
+							if ret: # Resize error
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
 						elif type == "ntfs":
 							total_sectors = end - start + 1
 							total_bytes = int(total_sectors) * 512
-#							commands.getstatus("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
-#							print "ntfsresize --size " + str(total_bytes) + " " + device + str(minor)
+							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
+							if ret: # Resize error
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
 						else:
 							parted_fs = parted_disk.get_partition(part).geom.file_system_open()
 							resize_constraint = parted_fs.get_resize_constraint()
@@ -324,8 +326,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							new_geom = resize_constraint.start_range.duplicate()
 							new_geom.set_start(start)
 							new_geom.set_end(end)
-							parted_fs.resize(new_geom)
-							
+							try:
+								parted_fs.resize(new_geom)
+							except:
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
 						print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
 #						self._run_parted_command(dev, "rm " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
