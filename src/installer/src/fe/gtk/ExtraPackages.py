@@ -1,4 +1,4 @@
-import gtk
+import gtk,gobject
 import GLIScreen
 from Widgets import Widgets
 
@@ -12,11 +12,14 @@ class Panel(GLIScreen.GLIScreen):
     # Attributes:
     title="Do you need any extra packages?"
     # {section: [{category:description},...}
-    data={'Applications':[{"Editors":["These are text editors that allow you to create text files.",None]
-			   }],
-	  'Desktops':[{"X Window System":["These are the base packages which provide support for other X-Windowing environments. ",None],
-		       "Gnome Desktop Enviroment":["GNOME is a powerful graphical user interface which is lighter than KDE.","extra_packages/GNOME-Foot.png"],
-		       "KDE Desktop Environment":["KDE is a powerful graphical user interface which is suitable for anyone.","extra_packages/kde_icon.png"]
+    data={'Applications':[{"Editors":["These are text editors that allow you to create text files.",None,None]}],
+	  'Desktops':[{"X Window System":["These are the base packages which provide support for other X-Windowing environments. ",None,
+					  {"x11-base/xorg-x11":"An X11 implementation maintained by the X.Org Foundation",
+					   "x11-base/opengl-update":"Utility to change the OpenGL interface being used",
+					   "x11-misc/xscreensaver":"a modular screensaver for X11"}
+					  ],
+		       "Gnome Desktop Enviroment":["GNOME is a powerful graphical user interface which is lighter than KDE.","extra_packages/GNOME-Foot.png",None],
+		       "KDE Desktop Environment":["KDE is a powerful graphical user interface which is suitable for anyone.","extra_packages/kde_icon.png",None]
 		       }]
 	  }
     # slocate, esearch, and dhcpcd
@@ -44,7 +47,7 @@ This is where you emerge extra packages that your system may need.
 	    new_section=self.Section(section)
 	    category_dict=self.data[section][0]
 	    for category in category_dict:
-		new_category=self.Category(category,category_dict[category][0],category_dict[category][1])
+		new_category=self.Category(category,category_dict[category][0],category_dict[category][1],category_dict[category][2])
 		new_section.add_category(new_category)
 	    new_section.create_gtk_gui(vert2)
 	    #new_section.print_all()
@@ -111,9 +114,11 @@ This is where you emerge extra packages that your system may need.
     class Category:
 	"This is an individual category inside a Section"
 	
-	def __init__(self,title,description,picture_path=None):
+	def __init__(self,title,description,picture_path=None,details_dictionary=None):
 	    self.title=title
 	    self.description=description
+	    self.details_click=self.Details(self.title,details_dictionary)
+	    
 	    if picture_path!=None:
 		self.picture=gtk.Image()
 		self.picture.set_from_file(picture_path)
@@ -151,15 +156,75 @@ This is where you emerge extra packages that your system may need.
 	    category_description.set_line_wrap(gtk.TRUE)
 	    category_table.attach(Widgets().hBoxThese(gtk.FALSE,10,[left_image,category_description],0),1,2,1,2,xpadding=25)
 	    #category_table.attach(widgets.hBoxIt2(gtk.FALSE,0,category_description),2,3,1,2)
-	    
+	    category_table.attach(self.details_click.get_details_gui(),1,2,2,3)
 	    # the details button
-	    category_button=gtk.Button("Details")
-	    category_button.connect("clicked", self.Category1,self.title)
-	    category_table.attach(Widgets().hBoxIt2(gtk.FALSE,0,category_button),4,5,0,1)
+	    #category_button=gtk.Button("Details")
+	    #category_button.connect("clicked", self.Category1,self.title)
+	    #category_table.attach(Widgets().hBoxIt2(gtk.FALSE,0,category_button),4,5,0,1)
 	    
 	    
 	    category_hbox.pack_start(category_table,expand=gtk.FALSE,fill=gtk.FALSE,padding=5)
 	    vert2.pack_start(category_hbox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	    
 	def Category1(self,widget,data=None):
-	    print data
+	    self.details_click.show()
+	    
+	class Details:
+	    "This is for the details window"
+	    def __init__(self,title,details_dictionary):
+		self.title=title
+		self.window=gtk.Window(gtk.WINDOW_TOPLEVEL)
+		self.dictionary=details_dictionary
+		self.details_view_gui=self.create_gtk_gui()
+		
+	    def create_gtk_gui(self):
+		
+		MY_FIRST_ROW, MY_SECOND_ROW = range(2)
+		
+		self.treestore = gtk.TreeStore(gobject.TYPE_BOOLEAN,gobject.TYPE_STRING)
+		self.treeview = gtk.TreeView(self.treestore)
+		self.treeview.set_headers_visible(gtk.FALSE)
+		
+		self.renderer = gtk.CellRendererToggle()
+		self.renderer.set_property('activatable', True)
+		self.renderer.connect( 'toggled', self.col0_toggled_cb, self.treestore )
+		
+		self.column0 = gtk.TreeViewColumn("", self.renderer )
+		self.column0.add_attribute( self.renderer, "active", MY_FIRST_ROW)
+		self.treeview.append_column( self.column0 )
+		
+		self.renderer1 = gtk.CellRendererText()
+		self.column1 = gtk.TreeViewColumn("Description", self.renderer1,markup=MY_SECOND_ROW)
+		self.treeview.append_column( self.column1 )
+		
+		if self.dictionary != None:
+		    piter = self.treestore.append(None, [None,"Expand"])
+		    for child in self.dictionary:
+			test='<span><b>'+child+'</b></span>'+"\n"+self.dictionary[child]
+			self.treestore.append(piter, [None,test])
+		else:
+		    piter = self.treestore.append(None,(None,"No Extra Packages To Select"))
+		
+		return self.treeview
+	    
+	    def show(self):
+		self.create_gtk_gui()
+		
+		#self.window.show()
+		print "shows the window"
+		
+	    def hide(self,widget,data=None):
+		print "hides the window"
+		# also need to save the selections here
+		#gtk_widget_destroy(widget)
+	    
+	    def get_details_gui(self):
+		return self.details_view_gui
+	    
+	    def col0_toggled_cb( self, cell, path, model ):
+		"""
+		Sets the toggled state on the toggle button to true or false.
+		"""
+		model[path][0] = not model[path][0]
+		print "Toggle '%s' to: %s" % (model[path][1], model[path][0])
+		return
