@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.16 2004/12/20 19:56:08 samyron Exp $
+$Id: GLIArchitectureTemplate.py,v 1.17 2005/01/04 20:35:56 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -20,14 +20,14 @@ import commands
 class ArchitectureTemplate:
 
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
-		self._configuration = configuration
+		self._client_configuration = configuration
 		self._install_profile = install_profile
 		self._cc = client_controller
 
 		# This will get used a lot, so it's probably
 		# better to store it in a variable than to call
 		# this method 100000 times.
-		self._chroot_dir = self._configuration.get_root_mount_point()
+		self._chroot_dir = self._client_configuration.get_root_mount_point()
 
 		# These must be filled in by the subclass. _steps is a list of
 		# functions, that will carry out the installation. They must be
@@ -59,28 +59,28 @@ class ArchitectureTemplate:
                                  (self.update_config_files, "Updating config files"),
                                  (self.configure_rc_conf, "Updating /etc/rc.conf")
                                 ]
-		
-        def _depends(self, depends):
+
+	def _depends(self, depends):
 		# Type checking
-		if type(depends) not in [ list, str, tuple ]:
-			raise "Dependencies must be a string or a list of strings"
+		#if type(depends) not in [ list, str, tuple ]:
+		#	raise "Dependencies must be a string or a list of strings"
 
 		# If it is a string, change it to a list for parsing
-		if type(depends) == str:
-			depends = [ depends ]
+		#if type(depends) == str:
+		#	depends = [ depends ]
 
 		# Parse dependencies
-		for dependency in depends:
+		#for dependency in depends:
 			# If the dependency has not been satisfied, check to see if 'ignore' has been turned on
-			if not dependency in self._client_configuration.install_steps_completed:
+		#	if not dependency in self._client_configuration.get_install_steps_completed():
 
 				#If ignore is on, just print a warning
-				if self._install_profile.get_ignore_install_step_depends():
-					print "Warning: You chose to ignore install step dependencies.  The " + dependency + " was not met.  Ignoring."
+		#		if self._install_profile.get_ignore_install_step_depends():
+		#			print "Warning: You chose to ignore install step dependencies.  The " + dependency + " was not met.  Ignoring."
 				#If ignore is off, then raise exception
-				else:
-					raise GLIException("InstallTemplateError", 'warning', '_depends', "Install step dependency not met!")
-
+		#		else:
+		#			raise GLIException("InstallTemplateError", 'warning', '_depends', "Install step dependency not met!")
+		pass
 	def get_install_steps(self):
 		return self._install_steps
 

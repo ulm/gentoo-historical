@@ -492,26 +492,27 @@ if d.yesno("Do you want to use the ClientController?") == DLG_YES:
 	client_config_xml_file = None
 	while 1:
 		if d.yesno("Do you have a previously generated XML file for the ClientConfiguration?") == DLG_YES:
-			code, client_controller_xml_file = d.inputbox("Enter the filename of the XML file")
+			code, client_config_xml_file = d.inputbox("Enter the filename of the XML file")
 			if code != DLG_OK: break
-			if GLIUtility.is_file(client_controller_xml_file): break
-			d.msgbox("Cannot open file " + client_controller_xml_file, height=7, width=50)
-			client_controller_xml_file = None
+			if GLIUtility.is_file(client_config_xml_file): break
+			d.msgbox("Cannot open file " + client_config_xml_file, height=7, width=50)
+			client_config_xml_file = None
 			continue
 		break
 	if client_config_xml_file != None:
-			client_profile.parse(client_config_xml_file)
+		client_profile.parse(client_config_xml_file)
 	# code to actually run the client_controller functions
-	set_arch_template()
-	set_logfile()
-	set_root_mount_point()
-	set_client_networking()
-	set_livecd_password()
-	set_enable_ssh()
-	set_client_kernel_modules()
-	if d.yesno("Do you want to save the ClientConfiguration XML file?") == DLG_YES:
-		if client_config_xml_file == None: client_config_xml_file = ""
-		client_config_xml_file = save_client_profile(xmlfilename=client_config_xml_file)
+	else:
+		set_arch_template()
+		set_logfile()
+		set_root_mount_point()
+		set_client_networking()
+		set_livecd_password()
+		set_enable_ssh()
+		set_client_kernel_modules()
+		if d.yesno("Do you want to save the ClientConfiguration XML file?") == DLG_YES:
+			if client_config_xml_file == None: client_config_xml_file = ""
+			client_config_xml_file = save_client_profile(xmlfilename=client_config_xml_file)
 
 	d.msgbox("ClientController done")
 
@@ -569,7 +570,7 @@ while 1:
 			continue
 	if menuitem == "Install!":
 		if install_profile_xml_file == None or install_profile_xml_file == "":
-			install_profile_xml_file == "tmp_install_profile.xml"
+			install_profile_xml_file = "tmp_install_profile.xml"
 		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
 		cc.set_install_profile(install_profile_xml_file)
 		cc.start_install()
