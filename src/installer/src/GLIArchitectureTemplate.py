@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.8 2004/11/15 20:15:11 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.9 2004/11/16 04:04:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -14,7 +14,7 @@ The only definitions that are filled in here are architecture independent.
 
 import GLIUtility
 from signal import SIGUSR1
-from GLIExceptions import *
+from GLIException import *
 
 class ArchitectureTemplate:
 
@@ -90,7 +90,7 @@ class ArchitectureTemplate:
 
 	def preinstall(self):
 		if not os.path.isdir(self._configuration.get_root_mount_point()):
-			os.makedirs(self._configuration.get_root_mount_point()):
+			os.makedirs(self._configuration.get_root_mount_point())
 
 		# Fetch and unpack the stage tarball here.
 		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._configuration.get_root_mount_point(),keep_permissions=True)
@@ -797,7 +797,7 @@ class ArchitectureTemplate:
 			if not GLIUtility.exit_success(exitstatus):
 				raise "AddUserError", "Failure to add user " + username
 
-	def _cylinders_to_sectors(minor, start, end, sectors_in_cylinder):
+	def _cylinders_to_sectors(self, minor, start, end, sectors_in_cylinder):
 		cylinders = end - start + 1
 		total_sectors = cylinders * sectors_in_cylinder
 		start_sector = start * sectors_in_cylinder
@@ -805,17 +805,17 @@ class ArchitectureTemplate:
 		if minor == 1 and start_sector == 0: start_sector = 63
 		return (start_sector, end_sector)
 
-	def _sectors_to_megabytes(sectors, sector_bytes=512):
+	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(1024*1024))
 
-	def _sectors_to_kibibytes(sectors, sector_bytes=512):
+	def _sectors_to_kibibytes(self, sectors, sector_bytes=512):
 		return float((sectors * sector_bytes) / 1000)
 
-	def _run_parted_command(device, cmd):
+	def _run_parted_command(self, device, cmd):
 		parted_output = commands.getstatus("parted -s " + device + " " + cmd)
 		print "parted -s " + device + " " + cmd
 
-	def _add_partition(device, start, end, type, fs):
+	def _add_partition(self, device, start, end, type, fs):
 		start = self._sectors_to_megabytes(start)
 		end = self._sectors_to_megabytes(end)
 		_run_parted_command(device, "mkpart " + type + " " + fs + " " + str(start) + " " + str(end))
