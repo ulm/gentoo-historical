@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.23 2005/01/05 08:26:42 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.24 2005/01/05 22:50:07 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -37,8 +37,8 @@ class ArchitectureTemplate:
 		# Of course, steps will be different depending on the install_profile
 
 		self._architecture_name = "generic"
+		#self._install_steps = [  (self.do_partitioning, "Partition"), TEMPORARY thing only.
 		self._install_steps = [
-                                 (self.do_partitioning, "Partition"),
                                  (self.mount_local_partitions, "Mount local partitions"),
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
@@ -137,16 +137,17 @@ class ArchitectureTemplate:
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
-		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, keep_permissions=True)
+		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
 
 	def prepare_chroot(self):
-		ret = GLIUtility.spawn("cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf")
+		# Copy resolv.conf to new env
+		try:
+			shutil.copy("/etc/resolv.conf", self._chroot_dir + "/etc/resolv.conf")
+		except:
+			pass
+		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
-			raise GLIException("CopyError", 'warning','preinstall','Could not copy resolv.conf!')
-
-		ret = GLIUtility.spawn("mount -t proc none /mnt/gentoo /proc")
-		if not GLIUtility.exitsuccess(ret):
-			raise GLIException("MountError", 'fatal','preinstall','Could not mount /proc')
+			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
 
 		# Set USE flags here
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
@@ -173,6 +174,7 @@ class ArchitectureTemplate:
 		#{'/dev/hdz': {1: {'end': 4, 'mb': 0, 'format': False, 'start': 0, 'mountopts': '', 'mountpoint': '', 'type': 'ext2', 'minor': 1}, 2: {'end': 129, 'mb': 0, 'format': False, 'start': 5, 'mountopts': '', 'mountpoint': '', 'type': 'linux-swap', 'minor': 2}, 3: {'end': 12579, 'mb': 0, 'format': False, 'start': 130, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 3}, 4: {'end': 24320, 'mb': 0, 'format': False, 'start': 12580, 'mountopts': '', 'mountpoint': '', 'type': 'reiserfs', 'minor': 4}}}
 
 		parts = self._install_profile.get_partition_tables()
+		parts_to_mount = {}
 		for device in parts:
 		#in parts['/dev/hda']
 			for partition in parts[device]:
@@ -186,17 +188,29 @@ class ArchitectureTemplate:
 						mountopts = "-o "+mountopts+" "
 					if partition_type:
 						partition_type = "-t "+partition_type+" "
-					if not GLIUtility.is_file(self._chroot_dir+partition):
-						exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
-						if exitstatus != 0:
-							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
-					ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint)
-					if not GLIUtility.exitsuccess(ret):
-						raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
+					parts_to_mount[mountpoint]= {0: mountopts, 1: partition_type, 2: minor}
+					
+					
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
 					if not GLIUtility.exitsuccess(ret):
 						raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
+		sorted_list = []
+		for key in parts_to_mount.keys(): sorted_list.append(key)
+		sorted_list.sort()
+		
+		for mountpoint in sorted_list:
+			mountopts = parts_to_mount[mountpoint][0]
+			partition_type = parts_to_mount[mountpoint][1]
+			minor = parts_to_mount[mountpoint][2]
+			if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
+				if exitstatus != 0:
+					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
+			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint)
+			if not GLIUtility.exitsuccess(ret):
+				raise GLIException("MountError", 'warning','mount_local_partitions','Could not mount a partition')
+						
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
 		pass
