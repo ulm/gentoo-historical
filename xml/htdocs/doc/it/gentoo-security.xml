@@ -1,0 +1,3727 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link = "/doc/en/gentoo-security.xml">
+<title>Gentoo Linux Security Guide</title>
+<author title="Autore Originale"><mail link="kn@insecurity.dk">Kim Nielsen</mail>
+</author>
+
+<author title="Aggiornamento"><mail link="zhen@gentoo.org">John P. Davis</mail>
+</author>
+
+<author title="Aggiornamento"><mail link="stocke2@gentoo.org">Eric R. Stockbridge</mail>
+</author>
+
+<author title="Aggiornamento"><mail link="carl@gentoo.org">Carl Anderson</mail>
+</author>
+
+<author title="Aggiornamento"><mail link="peesh@gentoo.org">Jorge Paulo</mail>
+</author>
+<author title="Traduttore"><mail link="gentoo@virgilio.it">Shev</mail>
+</author>
+<author title="Traduttore">Team Italiano
+</author>
+
+<abstract>
+Questa è una guida passo-passo per hardenizzare un sistema Gentoo Linux (aumentarne la sicurezza).
+</abstract>
+
+<version>0.4</version>
+<date>4 Maggio 2003</date>
+
+
+<chapter>
+<title>Introduzione</title>
+<section>
+<title>Chi dovrebbe leggere questa guida?</title>
+<body>
+
+<p>
+Coloro che stanno utilizzando Gentoo Linux in un ambiente server e/o che sentono
+un bisogno quasi paranoico di aumentare la sicurezza.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Credits</title>
+<body>
+
+<p>
+Kim Nielsen
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Ringraziamenti speciali</title>
+<body>
+
+<p>
+Un ringraziamento speciale va alle seguenti persone per aver trovato trovato vari bugs,
+errori di sintassi e frasi mal strutturate.
+</p>
+
+<p>
+Bjarke Sørensen, Justin Lambert, Andreas Waschbuesch, Duncan Lissett, Sherman Boyd, Sami Dalouche e Väinö Järvelä.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Miglioramenti per le prossime versioni di questa Guida:</title>
+<body>
+
+<p>
+Nella versione 0.6 (Backup)
+</p>
+<ul>
+<li>Arpwatch</li>
+<li>Backup completo del sistema usando Systemimager</li>
+<li>Backup parziale usando tar</li>
+<li>Fare il backup di postgres</li>
+</ul>
+
+
+<p>
+Nella versione 0.8 (Penetration testing)
+</p>
+<ul>
+<li>Audits (controllo, verifica) remoto</li>
+<li>Audits di rete</li>
+<li>Audits degli host</li>
+<li>Audits del software</li>
+</ul>
+
+<p>
+Nella versione 1.0 (Dopo una compromissione)
+</p>
+<ul>
+<li>Come fare il report di un incidente</li>
+<li>Analisi forense</li>
+<li>Creare una immagine del sistema senza distruggere le prove (Usando dd)</li>
+<li>Trap e trace (Usando tcpdump)</li>
+<li>.. Aggiunte future ..</li>
+<li>Ripristinare il sistema</li>
+</ul>
+
+<note>
+Si noti che ogni nuova versione si concentrerà su un solo argomento per volta. Questo per
+assicurare la qualità della trattazione.
+</note>
+
+</body>
+</section>
+
+</chapter>
+
+-- Introduction end --
+
+-- Considerations before installation start --
+
+<chapter>
+<title>Concetti Pre-Installazione</title>
+<section>
+<title>Sicurezza Fisica</title>
+<body>
+
+<p>
+Non importa quante misure di sicurezza implementate, possono facilmente essere aggirate qualora l'attaccante
+guadagni l'accesso fisico alla vostra box. Dovete essere sicuri che il vostro hardware non sia facilmente accessibile.
+Per esempio, potreste mettere la vostra macchina in una stanza chiusa a chiave. Anche sigillare il case è una buona idea.
+Per un livello di sicurezza ancora maggiore potreste configurare il BIOS per limitare il boot al solo disco rigido. 
+E disabilitare il boot da floppy o cdrom. Per i paranoici, è una buona idea abilitare la password per accedere alle 
+impostazioni del BIOS. Quest'ultima può essere una scelta saggia anche per gli utenti che usano portatili.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Pianificare Demoni/Servizi</title>
+<body>
+
+<p>
+Documentatevi su quali servizi debbano girare sulla macchina o che supponete debbano girarvi. Questo vi aiuterà a
+studiare un buono schema per le partizioni da creare sul sistema. Può anche facilitare la scelta di quale strategia di
+rilevazione delle intrusioni adottare.
+</p>
+
+<p>
+Naturalmente se possedete soltanto una macchina, o comunque poche, o siete i soli a servirvene non sarà necessario
+preoccuparsi di ciò.
+</p>
+
+<p>
+Esempio:
+</p>
+
+<p>
+Supponiamo che il Computer agisca da firewall. Quali servizi dovrebbero girarvi?
+</p>
+
+<p>
+<e>nessuno</e>, eccezion fatta per ssh.
+</p>
+
+<p>
+Prendete nota di questo e della versione corrente di SSH - ciò vi aiuterà a tenere traccia di quali sistemi aggiornare
+nell'eventualità qualcuno trovi un qualche buco di sicurezza in sshd. Vi aiuterà inoltre a determinare chi dovrebbe avere 
+accesso al sistema.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Schema delle Partizioni</title>
+<body>
+
+<p>
+Regole d'oro:
+</p>
+
+<ul>
+
+<li>
+Ogni albero di directory sul quale un utente può scrivere (/home, /tmp e /var), dovrebbe risiedere in una partizione 
+separata e fare uso di quote disco. Portage usa /var/tmp per compilare i file, quindi la partizione dovrebbe
+essere abbastanza grande. Questo riduce inoltre il rischio che un utente possa riempire il vostro mount point 
+(punto d'innesto) "/".
+</li>
+
+<li>
+Ogni albero di directory in cui volete installare software opzionale dovrebbe risiedere in una partizione separata.
+In accordo con il <uri link="http://www.pathname.com/fhs/">File Hierarchy Standard</uri>, questa dovrebbe essere 
+<path>/opt</path> o <path>/usr/local</path>.
+Se queste sono partizioni separate, non verranno cancellate in caso di reinstallazione del sistema.
+</li>
+
+<li>
+Provate a spostare i dati statici nelle loro partizioni e montarle in modalità di sola lettura. Se siete realmente 
+paranoici potreste provare a memorizzare i dati statici su supporti di sola lettura come i cdrom.
+</li>
+
+</ul>
+</body>
+</section>
+
+<section>
+<title>L'utente root</title>
+<body>
+<p>
+L'utente 'root' è l'utente più importante del sistema e non dovrebbe essere usato se non per pura necessità. Se un
+attaccante dovesse ottenere l'accesso come root, non sareste più in grado di amministrare il vostro sistema e l'unica
+soluzione che vi resterebbe sarebbe la reinstallazione del sistema.
+</p>
+
+<p>
+Regole d'oro riguardanti 'root'
+</p>
+
+<ul>
+
+<li>
+Create sempre un utente per uso quotidiano e se questi necessitasse di avere l'accesso con privilegi di root, 
+aggiungetelo al gruppo <i>wheel</i>. Questo rende possibile ad un utente normale fare uno switch user (su) a root.
+</li>
+
+<li>
+Non eseguite mai X o qualsiasi altra applicazione utente come root.
+</li>
+
+<li>
+Usate sempre path assoluti quando accedete come root. E' possibile ingannare root facendogli eseguire applicazioni 
+diverse da quelle che crede di usare. Per esempio se qualcuno manomette la variabile PATH e root fa uno switch user
+senza usare <c>su -</c>, root userà la variabile PATH dell'utente.
+</li>
+
+<li>
+Se un utente ha bisogno solo di pochi comandi anzichè di tutti quelli che root ha normalmente a disposizione, prendete in
+considerazione l'uso di <c>sudo</c>, ma con la dovuta cautela!
+</li>
+
+<li>
+Non lasciate mai il terminale quando siete loggati come root.
+</li>
+
+</ul>
+
+<p>
+Gentoo possiede una protezione generale contro il cambio da utente normale a root. La configurazione di default di PAM
+prevede infatti che un normale utente debba far parte del gruppo <i>wheel</i> per poter diventare root.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Politiche</title>
+<body>
+<section>
+<title>Quali politiche sono necessarie</title>
+<body>
+
+<p>
+Vi sono diversi motivi per cui le politiche sono necessarie.
+</p> 
+
+<ul>
+
+<li>
+Non potete dichiarare di avere una rete sicura senza prima dare una definizione di cosa per voi significhi "sicura".
+</li>
+
+<li>
+E' quasi impossibile scoprire un potenziale attaccante, risolvere problemi di rete o condurre prove di audits senza spiare
+il traffico di rete o dare un'occhiata a directory home private, e spiare senza il consenso dell'utente è illegale in
+molti paesi. Inoltre poichè circa il 60% degli attacchi proviene dall'interno delle organizzazioni, è importante tenere
+sempre gli occhi aperti.
+</li>
+
+<li>
+Non vi potete aspettare che gli utenti pensino alla sicurezza, se non avete mai spiegato loro perché essa sia importante
+e come possano proteggere se stessi e i loro colleghi.
+</li>
+
+<li>
+Buone linee guida e documentazione sulla rete si trovano sempre, su qualsiasi argomento.
+</li>
+
+<li>
+Polizia o Organi federali non possono aiutarvi a scoprire un attaccante se non conoscono la vostra configurazione di rete o
+quali servizi fornite.
+</li>
+
+<li>
+Cosa farete quando avrete subito un attacco? Dovete decidere cosa fare e a chi eventualmente chiedere qualcosa a riguardo. 
+Chiamerete la polizia o il team del CERT ad ogni occasione? Non vi prenderanno sul serio!
+</li>
+
+</ul>
+
+<p>
+Questo dovrebbe chiarire perché è importante creare politiche sui sistemi che hanno più di un utente e perchè è importante
+educare gli utenti stessi.
+</p>
+
+<p>
+Una politica è un documento (o più documenti) che risponde a domande quali "chi, dove, perchè e cosa". Ogni utente del vostro
+sistema/network dovrebbe leggerla, capirla e firmarla. E' importante che vi prendiate del tempo per aiutare gli utenti
+a capire la politica, capire perché è necessario firmarla o cosa accadrebbe se agissero direttamente contro di essa 
+(la politica dovrebbe prevedere anche questo). Tutto questo dovrebbe essere ripetuto almeno una volta all'anno, dato che la 
+politica può essere soggetta a modifiche, ma anche perchè è sempre meglio ricordare certe cose.
+</p>
+
+<note>
+Create politiche che siano facili da leggere e veramente chiare/specifiche su ciascun argomento trattato.
+</note>
+
+<p>
+La maggior parte degli argomenti trattati in una politica possono essere fatti rispettare direttamente nel sistema operativo
+o tramite firewall e altri mezzi.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Politiche di sicurezza</title>
+<body>
+
+<p>
+Una politica di sicurezza è fondamentalmente un insieme di regole che renderà sicuri i vostri host e la vostra rete. 
+E' un documento contenente informazioni su come computer, rete, password, email e utenti dovrebbero
+o non dovrebbero comportarsi, come agire in caso di attacco, come sono installate le macchine 
+(workstation/servers), l'infrastruttura, ecc.
+</p>
+
+<p>
+Una politica di sicurezza dovrebbe contenere almeno i seguenti argomenti:
+</p>
+
+<ul>
+
+<li>Utilizzo consentito.</li>
+<ul>
+  <li>Screen savers.</li>
+  <li>Password.</li>
+  <li>Download di software.</li>
+  <li>Essere a conoscenza di essere monitorati.</li>
+  <li>Software anti-virus.</li>
+  <li>etc.</li>
+</ul>
+
+<li>Gestione di informazioni sensibili (in qualsiasi forma scritta, sia cartacea 
+che digitale).
+</li>
+<ul>
+  <li>Pulire la scrivania e chiudere a chiave le informazioni classificate.</li>
+  <li>Spegnere il computer prima di lasciare il lavoro.</li>
+  <li>Usare la crittografia.</li>
+  <li>Come gestire le chiavi di collaboratori fidati.</li>
+  <li>Come gestire materiale classificato in viaggio.</li>
+</ul>
+
+<li>Gestione del materiale informatico in viaggio.</li>
+<ul>
+    <li>Come gestire portatili durante viaggi e permanenze in hotel.</li>
+</ul>
+
+</ul>
+
+<p>
+La politica per lo staff IT può essere leggermente diversa da quella degli utenti normali.
+</p>
+
+<p>
+La politica di sicurezza può diventare enorme e di conseguenza informazioni vitali potrebbero venire facilmente dimenticate. 
+La politica dello staff IT dovrebbe contenere informazioni che sono ritenute classificate per gli utenti ordinari, quindi
+potrebbe essere saggio suddividerla in politiche più piccole; p.e. Politica di ciò che è concesso usare, Politica delle
+Password, Politica delle email, Politica per l'accesso remoto.
+</p>
+
+<p>
+Esempi di politiche possono essere trovati su <uri link="http://www.sans.org/newlook/resources/policies/policies.htm">The 
+SANS Security Policy Project</uri>.
+Se avete una piccola rete e pensate che queste politiche siano eccessive per voi date un'occhiata all'
+<uri link="http://www.cis.ohio-state.edu/cgi-bin/rfc/rfc2196.html">RFC2196</uri>, che è un manuale di sicurezza per un sito.
+</p>
+
+</body>
+</section>
+</body>
+</section>
+</chapter>
+
+-- Considerations before installation end --
+
+-- Tightening the security after/during installation start --
+
+<chapter>
+<title>Rinforzare la sicurezza durante/dopo l'installazione</title>
+<section>
+<title>/etc/make.conf</title>
+<body>
+
+<p>
+Il file make.conf contiene tutte le opzioni e le libreria extra che volete siano supportate durante la costruzione 
+degli ebuild. Dovete assicurarvi che in questo file sia presente il supporto a tutte le opzioni di sicurezza come <i>PAM</i>
+(Pluggable Authentication Modules), <i>tcp wrappers</i> o <i>SSL</i> (Secure Socket Layer) affinchè vengano inclusi nei 
+vostri ebuild. La vostra variabile globale <i>USE</i> dovrebbe contenere pam, tcpd e ssl.
+</p>
+
+<p>
+Aggiungete quindi qualcosa del tipo:
+</p>
+
+<pre caption="flags da aggiungere alla varibile USE">
+USE="tcpd pam ssl"
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>GRUB/LILO password</title>
+<body>
+<section>
+<title>GRUB</title>
+<body>
+
+<p>
+Grub supporta due differenti modi di aggiungere password per restringere l'accesso ai suoi file di configurazione
+(<path>/boot/grub/menu.lst</path>).
+Il primo metodo prevede l'uso di password testuali in chiaro e il secondo crittografate con md5+salt.
+</p>
+
+<pre caption="/boot/grub/menu.lst">
+timeout 5
+password changeme
+</pre>
+
+<p>
+Questo aggiungerà la password <e>changeme</e>, se non viene inserita alcuna password verrà semplicemente usata la
+configurazione di default.
+</p>
+
+<p>
+Per aggiungere una password md5, dovrete convertire la password in un formato cifrato (man crypt) che ha lo stesso
+formato del file shadow.
+Per esempio, la password <e>changeme</e> cifrata dovrebbe apparire così <e>$1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.</e>
+</p>
+
+<note>N.d.T.</note>
+<p>Per ottenere una password md5 digitate:</p>
+<pre caption="Ottenere una password md5">
+# <c>/sbin/grub-md5-crypt</c>
+</pre>
+
+<p>
+Nel file menu.lst dovrete aggiungere:
+</p>
+
+<pre caption="/boot/grub/menu.lst">
+timeout 5
+password --md5 $1$T7/dgdIJ$dJM.n2wZ8RG.oEiIOwJUs.
+
+<note>N.d.T: la password cifrata si riferisce a <e>changeme</e>, se usate
+il tool <c>grub-md5-crypt</c> dovrete sostituirla con l'output del comando.
+</note>
+</pre>
+
+<warn>
+Quando testate la configurazione, ricordatevi di inserire un timeout. In caso contrario non potrete avviare il sistema
+qualora la password non sia corretta.
+</warn>
+
+<p>
+Un timeout di 5 secondi risulta molto comodo se il sistema è remoto e deve potersi riavviare senza alcuna interazione 
+con la tastiera. Maggiori informazioni sulle password sotto Grub possono essere trovate eseguendo <c>info grub</c>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>LILO</title>
+<body>
+
+<p>
+Anche LILO supporta due modalità di utilizzo delle password: globale e per immagine, entrambe come testo in chiaro.
+</p>
+
+<p>
+Nel modo globale la passowrd deve essere impostata all'inizio del file di configurazione:
+</p>
+
+<pre caption="/etc/lilo.conf">
+password=changeme
+restricted
+delay=3
+</pre>
+
+<p>
+In alternativa è possibile aggiungerla solamente ad un'immagine.
+</p>
+
+<pre caption="/etc/lilo.conf">
+image=/boot/bzImage
+      read-only
+      password=changeme
+      restricted
+</pre>
+
+<p>
+Se l'opzione <e>restricted</e> è omessa, verrà richiesto l'inserimento della password ad ogni riavvio.
+</p>
+
+<p>
+Per rendere effettive le nuove impostazioni in lilo.conf dovrete eseguire il comando <c>/sbin/lilo</c>.
+</p>
+
+</body>
+</section>
+</body>
+</section>
+
+<section>
+<title>Limitare l'uso della Console</title>
+<body>
+<p>
+<path>/etc/securetty</path> contiene una lista dei terminali che vi permette di specificare su quali device TTY
+è permesso il login di root.
+</p>
+
+<p>
+Suggeriamo di commentare tutte le linee eccetto vc/1. Questo assicurerà che root possa effettuare il login solo su
+questo terminale.
+</p>
+
+<pre caption="/etc/securetty">
+vc/1
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Log (Registrazioni) più completi</title>
+<body>
+
+<p>
+Per scoprire errori o warnings che potrebbero riferirsi ad un attacco in atto o ad uno già iniziato, dovrebbero essere
+aggiunti log più approfonditi. Gli attaccanti spesso eseguono fanno una scansione o sondano le reti prima di attaccarle.
+</p>
+
+<p>
+E' inoltre vitale che i file di log siano facilmente leggibili e manutenibili.
+</p>
+
+<p>
+Gentoo Linux, durante la fase di installazione, vi permette di scegliere tra 3 differenti sistemi di log.
+</p>
+
+<section>
+<title>Syslogd</title>
+<body>
+
+<p>
+Syslogd è il più comune sistema di log per Linux e Unix in generale. Non provvede alla rotazione dei log. Tale funzione
+viene gestita eseguendo <path>/usr/sbin/logrotate</path> in un job di cron e configurandolo adeguatamente in 
+<path>/etc/logrotate.conf</path>.
+Quanto spesso debba essere fatta la rotazione dipende dal carico di lavoro del sistema.
+</p>
+
+<p>
+Segue un esempio di come potete configurare syslog
+</p>
+
+<pre caption="/etc/syslog.conf">
+*.=debug                   /var/log/debug
+*.err                      /var/log/syslog
+
+# Utenti che devono poter vedere i messaggi se sono loggati
+*.=alert                   root,<c>il vostro username qui</c>
+*.=emerg                   root,<c>il vostro username qui</c>
+
+mail.info,mail.notice      /var/log/maillog
+kern.*                     /var/log/kern.log
+daemon.info;daemon.notice  /var/log/daemon.log
+cron.*                     /var/log/cron.log
+mail.*                     /var/log/mail.log
+user.*                     /var/log/user.log
+uucp.*                     /var/log/uucp.log
+*.*;auth,authpriv.none     /var/log/syslog
+
+# Mette i file di log in due posti
+authpriv.*;auth.*          /admin/auth.log
+authpriv.*;auth.*          /var/log/secure
+
+# Scrive tutto in console
+*.*                        /dev/tty12
+
+# O imposta il logging su un server remoto
+*.*                        @logserver
+</pre>
+
+<p>
+Un attaccante molto probabilmente proverà a cancellare ogni sua traccia modificando o cancellando i file di log. 
+Potete rendergli la vita difficile inviando i log ad uno o più logging server su macchine differenti. 
+</p>
+
+<p>
+Maggiori informazioni su syslogd possono essere trovate nelle pagine di manuale (<path>man syslog</path>).
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Metalog</title>
+<body>
+
+<p>
+<uri link="http://metalog.sourceforge.net">Metalog</uri> di Frank Dennis non può inviare i log a server remoti,
+ma mostra tutti suoi pregi quando si bada alla flessibilità e alla velocità di logging.
+</p>
+
+<p>
+E' possibile creare log indicando il nome del programma o attaverso facility (come per syslogd) e sono inoltre
+supportate l'interpretazione di espressioni regolari e l'esecuzione di comandi. Davvero comodo per intraprendere
+determinate azioni quando necessario. 
+</p> 
+
+<pre caption="/etc/metalog.conf">
+maxsize  = 1000000
+maxtime  = 86400
+maxfiles = 7
+minimum  = 7
+
+Kernel messages :
+
+  facility = "kern"
+  logdir   = "/var/log/kernel"
+
+Auth messages :
+  facility = "auth"
+  logdir   = "/var/log/auth"
+
+Emergencies :
+  facility = "emerg"
+  command  = "/usr/local/sbin/pwdfail.sh"  
+
+Crond :
+
+  program  = "crond"
+  logdir   = "/var/log/crond"
+  
+Password failures :
+
+  regex    = "(password|login|authentication)\s+(fail|invalid)"
+  regex    = "(failed|invalid)\s+(password|login|authentication)"
+  regex    = "ILLEGAL ROOT LOGIN"
+  logdir   = "/var/log/pwdfail"
+  command  = "/usr/local/sbin/pwdfail.sh"
+
+SSH Server :
+
+  program  = "sshd"
+  logdir   = "/var/log/sshd"
+
+Mail :
+
+  facility = "mail"
+  logdir   = "/var/log/mail"
+
+Snort:
+  program   = "snort"
+  command  = "/usr/local/sbin/pwdfail.sh"
+
+Everything important :
+
+  facility = "*"
+  logdir   = "/var/log/everything"
+
+Everything very important :
+
+  facility = "*"
+  logdir   = "/var/log/critical"
+
+</pre>
+
+<p>
+Questa è una configurazione di base con soltanto alcune modifiche come il livello minimo di log impostato a 7,
+il che significa che verrà registrata ogni cosa.
+</p>
+
+<p>
+pwdfail.sh per postfix.
+</p>
+
+<pre caption = "pwdfail.sh per postfix">
+#! /bin/sh
+echo "$3" | mail -s "Warning (program : $2)" root
+</pre>
+
+<p>
+pwdfail.sh per qmail.
+</p>
+
+<pre caption = "pwdfail.sh per qmail">
+#!/bin/sh
+echo "To: root
+Subject:Failure (Warning: $2) 
+$3
+" | /var/qmail/bin/qmail-inject -f root
+</pre>
+
+<p>
+Maggiori informazioni possono essere trovate sul sito di <uri link="http://metalog.sourceforge.net">metalog</uri>.
+</p>
+
+
+</body>
+</section>
+<section>
+
+<title>Syslog-ng</title>
+<body>
+
+<p>
+Syslog-ng fornisce parte delle caratteristiche di syslogd e di metalog, con alcune piccole differenze. 
+Può filtrare i messaggi basandosi su livello e contenuto (come metalog), fornisce la possibilità di log remoto
+come syslog, può gestire log provenienti da syslogd (stream uniformi da Solaris), scrivere su una TTY, eseguire 
+programmi e agire da logging server.
+Fondalmente unisce il meglio di entrambi i programmi di log precedenti fondendolo con un'avanzata configurazione.
+</p>
+
+<p>
+Un file di configurazione classico con alcune modifiche.
+</p>
+
+<pre caption="/etc/syslog-ng/syslog-ng.conf">
+options { long_hostnames(off); sync(0); };
+
+# Sorgenti da cui leggere i log
+source src { unix-stream("/dev/log"); internal(); };
+source kernsrc { file("/proc/kmsg"); };
+
+# Definisce le destinazioni
+destination authlog { file("/var/log/auth.log"); };
+destination syslog { file("/var/log/syslog"); };
+destination cron { file("/var/log/cron.log"); };
+destination daemon { file("/var/log/daemon.log"); };
+destination kern { file("/var/log/kern.log"); };
+destination lpr { file("/var/log/lpr.log"); };
+destination user { file("/var/log/user.log"); };
+destination mail { file("/var/log/mail.log"); };
+
+destination mailinfo { file("/var/log/mail.info"); };
+destination mailwarn { file("/var/log/mail.warn"); };
+destination mailerr { file("/var/log/mail.err"); };
+
+destination newscrit { file("/var/log/news/news.crit"); };
+destination newserr { file("/var/log/news/news.err"); };
+destination newsnotice { file("/var/log/news/news.notice"); };
+
+destination debug { file("/var/log/debug"); };
+destination messages { file("/var/log/messages"); };
+destination console { usertty("root"); };
+destination console_all { file("/dev/tty12"); };
+destination xconsole { pipe("/dev/xconsole"); };
+
+# Crea filtri
+filter f_auth { facility(auth); };
+filter f_authpriv { facility(auth, authpriv); };
+filter f_syslog { not facility(authpriv, mail); };
+filter f_cron { facility(cron); };
+filter f_daemon { facility(daemon); };
+filter f_kern { facility(kern); };
+filter f_lpr { facility(lpr); };
+filter f_mail { facility(mail); };
+filter f_user { facility(user); };
+filter f_debug { not facility(auth, authpriv, news, mail); };
+filter f_messages { level(info..warn) 
+	and not facility(auth, authpriv, mail, news); };
+filter f_emergency { level(emerg); };
+
+filter f_info { level(info); };
+filter f_notice { level(notice); };
+filter f_warn { level(warn); };
+filter f_crit { level(crit); };
+filter f_err { level(err); };
+filter f_failed { match("failed"); };
+filter f_denied { match("denied"); };
+
+# Collega filtri e destinazioni
+log { source(src); filter(f_authpriv); destination(authlog); };
+log { source(src); filter(f_syslog); destination(syslog); };
+log { source(src); filter(f_cron); destination(cron); };
+log { source(src); filter(f_daemon); destination(daemon); };
+log { source(kernsrc); filter(f_kern); destination(kern); };
+log { source(src); filter(f_lpr); destination(lpr); };
+log { source(src); filter(f_mail); destination(mail); };
+log { source(src); filter(f_user); destination(user); };
+log { source(src); filter(f_mail); filter(f_info); destination(mailinfo); };
+log { source(src); filter(f_mail); filter(f_warn); destination(mailwarn); };
+log { source(src); filter(f_mail); filter(f_err); destination(mailerr); };
+
+log { source(src); filter(f_debug); destination(debug); };
+log { source(src); filter(f_messages); destination(messages); };
+log { source(src); filter(f_emergency); destination(console); };
+
+# Log di default
+log { source(src); destination(console_all); };
+</pre>
+
+<p>
+E' veramente facile da configurare ma è altrettanto facile dimenticare qualcosa nel file di configurazione, viste le non
+indifferenti dimensioni di quest'ultimo. L'autore promette per il futuro alcune caratteristiche aggiuntive come
+crittografia, autenticazione, compressione e MAC (Mandatory Access Control). Con queste opzioni sarà perfetto per il
+logging di rete, dato che un attaccante non potrà spiare i log.
+</p>
+
+<p>
+E syslog-ng ha anche un altro vantaggio. Non deve essere eseguito come root!
+</p>
+
+</body>
+</section>
+</body>
+</section>
+
+<section>
+<title>Montare le partizioni</title>
+<body>
+
+<p>
+Quando montate una partizione ext2, ext3 o reiserfs, avete diverse opzioni che potete utilizzare in <path>/etc/fstab</path>. 
+Queste sono:
+</p>
+
+<ul>
+
+<li>
+nosuid - Ignora il bit SUID considerandolo come un file ordinario.
+</li>
+
+<li>
+noexec - Impedisce l'esecuzione di programmi in questa partizione.
+</li>
+
+<li>
+nodev - Ignora i dispositivi (devices). 
+</li>
+</ul>
+
+<p>
+Sfortunatamente questi parametri possono essere facilmente aggirati dall'esecuzione in path "non-diretti".
+Comunque settando /tmp come noexec verrà fermatò il 99% degli script kiddies, poichè i loro exploits sono
+pensati per essere eseguiti direttamente da /tmp.
+</p>
+
+<pre caption="/etc/fstab">
+/dev/sda1 /boot ext2 noauto,noatime 1 1
+/dev/sda2 none swap sw 0 0
+/dev/sda3 / reiserfs notail,noatime 0 0
+/dev/sda4 /tmp reiserfs notail,noatime,nodev,nosuid,noexec 0 0
+/dev/sda5 /var reiserfs notail,noatime,nodev 0 0
+/dev/sda6 /home reiserfs notail,noatime,nodev,nosuid 0 0
+/dev/sda7 /usr reiserfs notail,noatime,nodev,ro 0 0
+/dev/cdroms /cdrom0 /mnt/cdrom iso9660 noauto,ro 0 0
+proc /proc proc defaults 0 0
+</pre>
+<warn>
+Impostando <path>/tmp</path> in modalità noexec è possibile impedire la corretta esecuzione di certi script legittimi.
+</warn>
+<note>Le quote-disco vengono descritte in un altro capitolo.</note>
+
+<p>
+Notate che non ho impostato <path>/var</path> in modalità noexec o nosuid anche se normalmente qui non verrà mai
+eseguito alcun file. La ragione di questa scelta è che qmail viene installato in <path>/var/qmail</path> e deve avere
+il permesso di esecuzione e accesso per un file suid.
+Ho configurato <path>/usr</path> in modalità read-only (sola lettura) dato che non scrivo mai nulla qui a meno che non
+voglia aggiornare Gentoo. In questo caso rimonto il file system in modalità read-write (lettura-scrittura), aggiorno il
+sistema e lo rimonto nuovamente con i permessi originali.
+</p>
+
+<note>
+Anche se non usate qmail, Gentoo necessita comunque di avere il bit di esecuzione in <path>/var/tmp</path> dato che gli
+ebuild vengono costruiti qui. Se siete decisi ad avere <path>/var</path> in modalità noexec, potreste pensare ad una
+directory alternativa per la compilazione degli ebuild.
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Limitazioni User/group</title>
+<body>
+
+<section>
+<title>/etc/security/limits.conf</title>
+<body>
+
+<p>
+Avere il controllo dei limiti delle risorse può veramente aiutare nella prevenzione di DoS locali o nella gestione
+del numero massimo di utenti o gruppi cui è permesso collegarsi.
+</p>
+
+<pre caption="/etc/security/limits.conf">
+*    soft core      0
+*    hard core      0
+*    hard nproc     15
+*    hard rss       10000
+*    -    maxlogins 2
+@dev hard core      100000
+@dev soft nproc     20
+@dev hard nproc     35
+@dev -    maxlogins 10
+</pre>
+
+<p>
+Se vi trovaste a voler impostare nproc o maxlogins a 0, probabilmente fareste meglio ad eliminare questo utente.
+L'esempio qui sopra imposta le opzioni del gruppo "dev" per quanto riguarda processi, file core e maxlogins. Il resto
+viene mantenuto ai valori di default.
+</p>
+<note><path>/etc/security/limits.conf</path> 
+fa parte del pacchetto PAM e sarà applicabile solamente ai pacchetti che fanno uso di PAM.</note>
+
+
+</body>
+</section>
+
+<section>
+<title>/etc/limits</title>
+<body>
+<p>
+limits è molto simile al file <path>/etc/security/limits.conf</path>.
+La sola differenza risiede nel formato e nel fatto che lavora solo su utenti e caratteri jolly (non sui gruppi).
+Questa è una discreta configurazione:
+</p>
+
+<pre caption="/etc/limits">
+*   L2 C0 U15 R10000
+kn L10 C100000 U35
+</pre>
+
+<p>
+Qui abbiamo impostato i settaggi di default ed un'impostazione specifica per l'utente <e>kn</e>.
+limits è parte del pacchetto shadow ed è applicabile soltanto ai programmi di shadow login. Non è necessario impostare
+ogni limitazione in questo file se avete previsto il supporto PAM in make.conf e avete configurato PAM adeguatamente.
+</p>
+
+</body>
+</section>
+<section>
+
+<title>Quote</title>
+<body>
+
+<p>
+L'uso delle quote in un file system previene la saturazione del disco da parte degli utenti. Le quote vanno abilitate
+nel kernel ed aggiunte al mount point. Le opzioni del kernel da abilitare si trovano sotto
+<c>File systems->Quota support</c>. Abilitate le opzioni disponibili, ricompilate il kernel e riavviate il sistema
+utilizzando il nuovo kernel
+</p>
+
+<pre caption="Installare quota">
+# <i>emerge quota</i>
+</pre>
+
+<p>
+Modificate il vostro <path>/etc/fstab</path> e aggiungete <i>usrquota</i> e <i>grpquota</i> alle partizioni per le quali
+volete sia ristretto l'utilizzo di spazio-disco come nell'esempio che segue.
+</p>
+
+<pre caption="/etc/fstab">
+/dev/sda1 /boot ext2 noauto,noatime 1 1
+/dev/sda2 none swap sw 0 0
+/dev/sda3 / reiserfs notail,noatime 0 0
+/dev/sda4 /tmp reiserfs notail,noatime,nodev,nosuid,noexec,usrquota,grpquota 0 0
+/dev/sda5 /var reiserfs notail,noatime,nodev,usrquota,grpquota 0 0
+/dev/sda6 /home reiserfs notail,noatime,nodev,nosuid,usrquota,grpquota 0 0
+/dev/sda7 /usr reiserfs notail,noatime,nodev,ro	0 0
+/dev/cdroms/cdrom0 /mnt/cdrom iso9660 noauto,ro 0 0
+proc /proc proc defaults 0 0
+</pre>
+
+<p>
+In ogni partizione per la quale avete abilitato le quote, create i file quota (<i>quota.user</i> e <i>quota.group</i>)
+posizionandoli nella radice (root) della partizione.
+</p>
+
+<pre caption="Creazione dei file quota">
+# <i>touch /tmp/quota.user</i>
+# <i>touch /tmp/quota.group</i>
+# <i>chmod 600 /tmp/quota.user</i>
+# <i>chmod 600 /tmp/quota.group</i>
+</pre>
+
+<p>
+Questo passo andrà ripetuto per ogni partizione in cui avete abilitato le quote. Dopo aver aggiunto e configurato i 
+file quota, abbiamo bisogno di uno script run level che abiliti le quote ad ogni riavvio. Copiate e incollate il seguente
+script in un file chiamato <path>/etc/init.d/quotas</path>. Create semplicemente questo file (se non esiste) e rendetelo
+eseguibile.
+</p>
+
+<pre caption="/etc/init.d/quotas">
+#!/sbin/runscript
+
+depend() {
+	need localmount
+}
+
+start() {
+        if [ -x /sbin/quotacheck ] 
+        then 
+               ebegin "Checking quotas. This may take some time." 
+               /sbin/quotacheck -avug 
+               eend $?
+        fi 
+        if [ -x /sbin/quotaon ] 
+        then 
+               ebegin "Turning on quota." 
+               /sbin/quotaon -avug 
+               eend $?
+        fi
+}
+
+stop() {
+        if [ -x /sbin/quotaon ] 
+        then 
+	       ebegin "Turning off quota."
+               /sbin/quotaoff
+	       eend $?
+        fi
+}
+</pre>
+
+<p>
+Aggiungete questo script al run level di default con <c>rc-update add quotas default</c> e impostate un quotacheck 
+(<c>crontab-e</c>) che faccia una scansione periodica ogni settimana: <c>0 3 * * 0 /sbin/quotacheck -avug</c>.
+</p>
+
+<p>
+Dopo il riavvio della macchina, è il momento di assegnare le quote per gli utenti e i gruppi. <c>edquota -u kn</c> 
+aprirà l'editor definito in $EDITOR (nano di default) e vi permetterà di editare le quote per l'utente kn.
+Con l'opzione <i>-g</i> potrete fare la stessa cosa per i gruppi.
+</p>
+
+<pre caption="Assegnare una quota all'utente kn">
+Quotas for user kn: 
+/dev/sda4: blocks in use: 2594, limits (soft = 5000, hard = 6500) 
+         inodes in use: 356, limits (soft = 1000, hard = 1500)
+</pre>
+
+<p>
+Per maggiori dettagli leggete <e>man edquota</e> o <uri link="http://www.tldp.org/HOWTO/mini/Quota.html">The quota
+mini howto</uri>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>/etc/login.defs</title>
+<body>
+	    
+<p>
+Sa il contenuto della politica lo prevede ogni utente dovrebbe cambiare la propria password ogni settimana. 
+Cambiate per questo il valore di <i>PASS_MAX_DAYS</i> a 14 e <i>PASS_WARN_AGE</i> a 7. 
+Si raccomanda di applicare tale politica poichè utilizzando password vecchie le si rende facilmente soggette ad attacchi
+di forza bruta in grado di violare qualsiasi password: è solo questione di tempo. Siete anche invitati a settare 
+<i>LOG_OK_LOGINS</i> a yes.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>/etc/login.access</title>
+<body>
+<p>
+Il file <path>login.access</path> è anch'esso parte del pacchetto shadow e fornisce una tabella di controllo 
+per l'accesso di login. La tabella è  usata per controllare chi può o non può eseguire il login basandosi su user name,
+group name o host name. Di default, tutti gli utenti di un sistema possono eseguire il login, così il file è pieno solo di
+commenti ed esempi. Se però state cercando di rendere più sicuro il vostro server o la vostra workstation, vi raccomandiamo
+di configurare questo file in modo tale da evitare che nessun altro oltre a voi (l'amministratore) abbia accesso
+alla console.
+</p>
+<note>Queste impostazioni non si applicano a root.</note>
+
+<pre caption="/etc/login.access">
+-:ALL EXCEPT wheel sync:console
+-:wheel:ALL EXCEPT LOCAL .gentoo.org
+</pre>
+
+<warn>
+Fate attenzione quando configurate queste opzioni, un errore potrebbe impedirvi l'accesso alla macchina.
+</warn>
+<note>
+Queste impostazioni non si applicano a SSH dato che SSH non esegue /bin/login di default. Questo può essere abilitato
+usando "UseLogin yes" in <path>/etc/ssh/sshd_config</path>. Tale opzione forzerà SSH ad usare login e dunque rendere
+attive le impostazioni precedenti.
+</note>
+
+<p>
+Questa configurazione permetterà l'accesso alla console solo ai membri del gruppo wheel o a coloro che provengono dal
+dominio gentoo.org.
+Potrebbe sembrare paranoico, ma prevenire è meglio che curare ;-)
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Permessi sui File.</title>
+<body>
+
+<section>
+<title>World readable (Permessi di lettura per tutti).</title>
+<body>
+
+<p>
+Gli utenti normali non dovrebbero avere accesso a file di configurazione o password. Un attaccante può rubare le passwords
+da un database o da un sito web e modificare, o peggio, cancellare i dati.  Ecco perchè è importante che i permessi siano
+corretti. Se siete sicuri che un file è usato solo da root, assegnategli i permessi 0600 e il giusto proprietario
+con <c>chown</c>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>World/Group writable (Permessi di scrittura per tutti o per il gruppo).</title>
+<body>
+
+<pre caption="Trovare file e directory con permessi di scrittura per tutti">
+# <i>/usr/bin/find / -type f \( -perm -2 -o -perm -20 \) \ 
+   -exec ls -lg {} \; 2>/dev/null >writable.txt</i>
+# <i>/usr/bin/find / -type d \( -perm -2 -o -perm -20 \) \ 
+   -exec ls -ldg {} \; 2>/dev/null >>writable.txt</i>
+</pre>
+
+<p>
+Questi comandi creeranno un grosso file con la lista di tutti i file e le directory che hanno il permesso di scrittura
+impostato per un gruppo o per chiunque. Controllateli ed eliminate il permesso di scrittura per tutti eseguendo
+<path>/bin/chmod o-w</path> sui file.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>FIle SUID/SGID</title>
+<body>
+
+<p>
+I file SUID/SGID (file che hanno il bit superuser attivo) sono un modo per permettere ad un utente normale di fare cose
+normalmente permesse al solo root. Questi file possono portare alla compromissione locale di root (se contengono
+buchi di sicurezza) poichè il file è eseguito con permessi di root. Questi file sono pericolosi e dovrebbero essere evitati
+ad ogni costo. Se non usate questi file, usate <c>chmod 0</c> su di loro o eliminate il pacchetto che li contiene con
+<c>emerge -C pacchetto</c> (trovate il pacchetto con <c>qpkg -f nomefile</c>. qpkg fa parte del pacchtto gentoolkit, fate
+<c>emerge gentoolkit</c> se non lo avete ancora installato). Altrimenti eliminate soltanto il bit suid con 
+<c>chmod -s nomefile</c>.
+</p>
+
+<pre caption="Trovare file setuid">
+# <i>/usr/bin/find / -type f \( -perm -004000 -o -perm -002000 \) \ 
+  -exec ls -lg {} \; 2>/dev/null >suidfiles.txt</i>
+</pre>
+
+<p>
+Questo comando creerà un file contenente una lista di tutti i file SUID/SGID.
+</p>
+
+<pre caption="Lista di binari setuid">
+/bin/su
+/bin/ping
+/bin/mount
+/bin/umount
+/var/qmail/bin/qmail-queue
+/usr/bin/chfn
+/usr/bin/chsh
+/usr/bin/crontab
+/usr/bin/chage
+/usr/bin/expiry
+/usr/bin/sperl5.6.1
+/usr/bin/newgrp
+/usr/bin/passwd
+/usr/bin/gpasswd
+/usr/bin/procmail
+/usr/bin/suidperl
+/usr/lib/misc/pt_chown
+/usr/sbin/unix_chkpwd
+/usr/sbin/traceroute
+/usr/sbin/pwdb_chkpwd
+</pre>
+
+<p>
+Di default Gentoo Linux non ha molti file SUID (dipende da cosa avete installato), ma potreste comunque avere una lista come
+quella precedente. La maggior parte dei comandi non dovrebbe essere usata da normali utenti, ma solo da root.
+Disattivate il bit suid da ping, mount, umount, chfn, chsh, newgrp, suidperl, pt_chown e traceroute, eseguendo
+<c>chmod -s</c> su ogni file. Non eliminate il bit da su, qmail-queue o unix_chkpwd, altrimenti rischiate di non essere 
+più in grado di fare switch user (su) o di ricevere mail. Eliminando questo bit prevenite la possibilità che un normale
+utente (o un attaccante) possa guadagnare i privilegi di root attraverso uno di questi file.
+</p>
+
+<p>
+I soli file SUID che ho sul mio sistema sono su, passwd, gpasswd, qmail-queue, unix_chkpwd and pwdb_chkpwd. Se state
+usando X, probabilmente ne avrete degli altri visto che X necessita di tale accesso.
+</p>
+
+</body>
+</section>
+
+
+</body>
+</section>
+
+
+<section>
+<title>PAM (Pluggable Authentication Modules)</title>
+<body>
+
+<p>
+PAM è una suite di librerie condivise che forniscono una modalità di autenticazione alternativa a un programma.
+Le configurazioni di PAM su Gentoo Linux sono più che ragionevoli, ma c'è sempre modo di migliorare.
+</p>
+<note>
+Questo capitolo non ha effetto se non avete incluso le PAM tra le vostre opzioni di USE in <path>/etc/make.conf</path>
+</note>
+
+<p>Installate le cracklib</p>
+
+<pre caption="Installare le cracklib">
+# <i>emerge cracklib</i>
+</pre>
+
+<pre caption="/etc/pam.d/passwd">
+auth	 required pam_pwdb.so shadow nullok
+account	 required pam_pwdb.so
+password required pam_cracklib.so difok=3 retry=3 minlen=8 dcredit=2 ocredit=2 
+password required pam_pwdb.so md5 use_authtok
+session	 required pam_pwdb.so
+</pre>
+
+<p>
+Questo aggiungerà le cracklib, che vi assicureranno che gli utenti usino una password di almeno 8 caratteri
+e contenente almeno 2 cifre, 2 simboli e che ci siano almeno 3 caratteri differenti dalla password precedente.
+Questo forza l'utente a scegliere un buona password (politica delle password). Guardate la documentazione delle
+<uri link="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam-6.html#ss6.3">PAM</uri> per maggiori dettagli.
+</p>
+
+<pre caption="/etc/pam.d/sshd">
+auth	 required pam_pwdb.so nullok 
+auth     required pam_shells.so
+auth	 required pam_nologin.so
+auth	 required pam_env.so
+account	 required pam_pwdb.so
+password required pam_cracklib.so difok=3 retry=3 minlen=8 dcredit=2 ocredit=2 use_authtok
+password required pam_pwdb.so shadow md5
+session	 required pam_pwdb.so
+session	 required pam_limits.so
+</pre>
+
+<p>
+Tutti gli altri servizi che non sono configurati con un file PAM in <path>/etc/pam.d</path> useranno la regola contenuta in
+"other". Le impostazioni di default disabilitano ogni accesso com'è giusto che sia. Ma mi piace avere molti log, ecco perché
+ho aggiunto pam_warn.so. L'ultima configurazione è pam_limits che è controllata da <path>/etc/security/limits.conf</path>.
+Date un'occhiata al capitolo che riguarda queste impostazioni.
+</p>
+
+<pre caption="/etc/pam.d/other">
+auth     required pam_deny.so 
+auth     required pam_warn.so 
+account  required pam_deny.so 
+account  required pam_warn.so 
+password required pam_deny.so 
+password required pam_warn.so 
+session  required pam_deny.so 
+session  required pam_warn.so
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>TCP Wrappers</title>
+<body>
+
+<p>
+E' un modo di controllare l'accesso ai servizi eseguiti normalmente da inetd (che Gentoo non ha)
+ma che può anche essere usato da xinetd e altri servizi.
+</p>
+<note>
+La variabile USE in make.conf dovrebbe contenere <e>tcpd</e> e i vari servizi dovrebbero eseguire tcpd nel relativo 
+argomento server (in xinetd). Guardate il capitolo su xinetd per maggiori informazioni.
+</note>
+<pre caption="/etc/hosts.deny">
+ALL:PARANOID
+</pre>
+
+<pre caption="/etc/hosts.allow">
+ALL: LOCAL @wheel
+time: LOCAL, .gentoo.org
+</pre>
+
+<p>
+Come potete vedere il formato è molto simile a quello di <path>/etc/login.access</path>. Tcpd supporta uno specifico 
+servizio ma non lavora nella medesima zona di sicurezza. Queste impostazioni si applicano soltanto ai servizi che usano
+tcp wrappers.
+</p>
+
+<p>
+E' possibile eseguire comandi anche quando un servizio è in uso (per esempio quando è attivato il relaying di un modem per
+gli utenti) ma non è una scelta raccomandata, poichè spesso le persone tendono a creare più problemi di quanti ne cerchino
+di risolvere.
+Un esempio potrebbe essere quello di configurare uno script che invii una mail ogni volta che qualcuno accede ad un 
+servizio negato, ma un attaccante potrebbe lanciare un DoS contro di voi tentando innumerevoli accessi. Questo
+genererebbe un notevole I/O e le mail non verrebbero più inviate! Leggete <c>man 5 host_access</c> per maggiori
+informazioni.
+</p>
+
+</body>
+</section>
+
+
+</body>
+</section>
+</chapter>
+
+-- Tightening the security after/during installation end --
+
+-- Kernel security start --
+
+<chapter>
+<title>Sicurezza del Kernel</title>
+
+<section>
+<title>Rimuovere funzionalità</title>
+<body>
+
+<p>
+La regola di base per la configurazione del kernel è di rimuovere tutto ciò che non è necessario. Questo creerà un
+kernel compatto ma soprattutto eliminerà le vulnerabilità che potrebbero essere insite in un driver o in altre funzinalità.
+</p>
+
+<p>
+Considerate inoltre di rimuovere il supporto per i moduli. Nonostante sia possibile aggiungere moduli (root kits) anche
+senza tale supporto,  renderete comunque più difficile per un normale attaccante installare root kits attraverso
+i moduli del kernel.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>/proc (flags del kernel)</title>
+<body>
+
+<p>
+Molti parametri del kernel possono essere alterati attraverso il file system /proc o usando sysctl.
+</p>
+
+<p>
+Per cambiare dinamicamente "al volo" i parametri e le variabili del kernel, è necessario che nel vostro kernel sia
+definita CONFIG_SYSCTL, scelta di default in un kernel 2.4 standard.
+</p>
+
+<pre caption="Ignorare ping-packets">
+# <i>/bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_all</i>
+</pre>
+
+<p>
+Questo comando disabiliterà i pacchetti icmp di tipo 0 (anche conosciuti come ping). La ragione di questo è che icmp
+può contenere nel proprio payload più informazioni di quanto pensiate. Gli amministratori usano ping come un tool per
+la diagnostica e quindi spesso si rammaricano di non poterlo utilizzare. Non v'è invece motivo per permettere ad un
+estraneo di "pingarci". A volte può essere utile agli utenti interni potersi servire di ping. La soluzione a tutto ciò
+può essere di disabilitare gli icmp di tipo 0 nel firewall.
+</p>
+<pre caption="Ignorare ping broadcast ping">
+# <i>/bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts</i>
+</pre>
+
+<p>
+Questo comando disabilita la risposta ai broadcast.
+</p>
+
+<p>
+Non vorrete certo trasformarvi in uno "smurf amplifier". Lo "Smurf amplifier" o "X-mass trees" è una tecnica attraverso
+la quale un attaccante inviando una modesta quantità di pacchetti causa un'esplosione virtuale di traffico verso la
+vittima designata.
+</p> 
+
+<pre caption="Disabilitare i source routed packets">
+# <i>/bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_source_route</i>
+</pre>
+
+<p>
+Disabilita i source routed packets (pacchetti instradati dalla sorgente)
+</p>
+
+<p>
+Non accettate source routed packets. Un attaccante può usare il source routing per generare traffico che sembra provenire
+dalla vostra rete, ma è instradato all'indietro lungo il percorso dal quale è venuto, così che un attaccante può
+compromettere la vostra rete.  Il source routing è usato raramente per motivi legittimi quindi disabilitatelo.
+</p>
+
+<pre caption="Disabilitare l'accettazione di redirect">
+# <i>/bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_redirects</i>
+</pre>
+
+<p>
+Disabilita l'accettazione di ICMP redirect. Gli ICMP redirect possono essere utilizzati per modificare le vostre
+tabelle di routing, possibilmente verso cattive destinazioni.
+</p>
+
+<pre caption="Protezione contro i falsi messaggi d'errore">
+# <i>/bin/echo "1" > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses</i>
+</pre>
+
+<p>
+Abilita la protezione contro i falsi massaggi d'errore.
+</p>
+
+<pre caption="Abilitare il reverse path filtering">
+# <i>for i in /proc/sys/net/ipv4/conf/*; do
+        /bin/echo "1" > $i/rp_filter
+done</i>
+</pre>
+
+<note>
+Se abilitate l'ip forwarding, otterrete anche questo risultato.
+</note>
+
+<p>
+Abilitate il "reverse path filtering" (filtraggio del cammino inverso). Ciò permette di verificare che i pacchetti
+utilizzino un indirizzo sorgente legittimo, rifiutando automaticamente i pacchetti ricevuti qualora la voce relativa a tale
+sorgente nella tabella di routing non risulti correttamente abbinata alla rispettiva interfaccia di rete dalla quale il
+pacchetto stesso è stato ricevuto.
+Ciò presenta vantaggi di sicurezza poichè previene lo spoofing IP, <c>ma può costituire un problema se utilizzate il
+routing asimmetrico</c> (i pacchetti che voi inviate ad un host intraprendono un percorso diverso da quello diretto 
+dall'host a voi) o se operate un "non-routing" con un host che possiede più indirizzi IP su diverse interfacce.
+</p>
+
+<pre caption="Loggare tutti i pacchetti spoofed, source routed e redirect">
+# <i>/bin/echo "1" > /proc/sys/net/ipv4/conf/all/log_martians</i>
+</pre>
+
+<p>
+Loggate tutti i pacchetti spooffati, i pacchetti source routed e quelli redirect.
+</p>
+
+<pre caption="Attivare l'IP forwarding">
+# <i>/bin/echo "0" > /proc/sys/net/ipv4/ip_forward</i>
+</pre>
+
+<p>
+Assicuratevi che l'IP forwarding sia attivo. Questo soltanto se state configurando un sistema multi-homed.
+</p>
+
+<p>
+Tutte queste impostazioni andranno perdute quando la macchina verrà riavviata. Per questo vi suggerisco di aggiungere il
+seguente script al run level e renderlo eseguibile.
+</p>
+
+<pre caption="/etc/init.d/procparam">
+#!/sbin/runscript
+
+depend() {
+ before *
+}
+
+start() {
+ ebegin "Setting /proc options."
+ /bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_all
+ /bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+ /bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_source_route
+ /bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_redirects
+ /bin/echo "1" > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+ for i in /proc/sys/net/ipv4/conf/*; do
+   /bin/echo "1" > $i/rp_filter
+ done
+ /bin/echo "1" > /proc/sys/net/ipv4/conf/all/log_martians
+ /bin/echo "0" > /proc/sys/net/ipv4/ip_forward
+ eend 0
+}
+</pre>
+
+<p>Aggiungetelo al run level con <c>rc-update add procparam default</c>.</p>
+
+</body>
+</section>
+
+<section>
+<title>Kernel patches</title>
+<body>
+<section>
+<title>Grsecurity</title>
+<body>
+
+<p>
+La patch <uri link="http://grsecurity.net">Grsecurity</uri> è applicata ormai come standard nel kernel Gentoo ma per default
+è disabilitata. Questo è il modo per abilitarla:
+</p>
+
+<p>
+Configurate il vostro kernel come fate normalmente, quindi configurate l'opzione Grsecurity: (scegliete "customized") e 
+abilitate le seguenti opzioni:
+</p>
+
+<ul>
+<li>Buffer Overflow Protection</li>
+<ul>
+  <li>Openwall non-executable stack</li>
+  <li>Gcc trampoline support</li>
+</ul>
+
+<li>Filesystem Protections</li>
+<ul>
+  <li>Proc restrictions</li>
+  <li>Linking restrictions</li>
+  <li>Secure file descriptors</li>
+  <li>Chroot jail restrictions (abilitate tutte le opzioni successive a questa)</li>
+</ul>
+
+<li>Kernel Auditing</li>
+<ul>
+  <li>Log execs within chroot</li>
+  <li>(Un)Mount logging</li>
+  <li>Signal logging</li>
+  <li>Fork failure logging</li>
+  <li>Log set*ids to root</li>
+  <li>Time change logging</li>
+</ul>
+
+<li>Executable Protections</li>
+<ul>
+  <li>Dmesg restriction</li>
+  <li>Randomized PIDs</li>
+  <li>Altered default IPC permissions (può impedire che certi programmi funzionino correttamente)</li>
+  <li>Restricted ptrace</li>
+</ul>
+
+<li>Network Protections</li>
+<ul>
+  <li>Randomized IP IDs</li>
+  <li>Randomized TCP source ports</li>
+  <li>Altered Ping IDs</li>
+  <li>Randomized TTL</li>
+</ul>
+<li>Miscellaneous Features</li>
+<ul>
+  <li>BSD-style coredumps (genererà coredumps tipo core.named)</li>
+</ul>
+
+</ul>
+
+<p>
+Ora compilate ed installate il vostro nuovo kernel, robusto e sicuro.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Kerneli</title>
+<body>
+
+<p>
+<uri link="http://www.Kerneli.org">Kerneli</uri> è una patch che aggiunge la crittografia al kernel esistente. Patchando il
+vostro kernel otterrete delle nuove opzioni quali: Cryptographic ciphers, algoritmi di digest e filtri "cryptographic loop".
+</p>
+<warn>La patch kerneli per l'ultimo kernel non è ancora in versione stabile, quindi prestate attenzione qualora sceglieste
+di usarla</warn>
+
+</body>
+</section>
+
+<section>
+<title>Altre patches per il kernel</title>
+<body>
+
+<ul>
+  <li><uri link="http://www.openwall.com">The OpenWall Project</uri> (non per kernel 2.4)</li>
+  <li><uri link="http://www.lids.org">Linux Intrusion Detection System</uri></li>
+  <li><uri link="http://www.rsbac.org">Rule Set Based Access Control</uri></li>
+  <li><uri link="http://www.nsa.gov/selinux">NSA's security enhanced kernel</uri></li>
+  <li><uri link="http://sourceforge.net/projects/wolk/">Wolk</uri></li>
+</ul>
+
+<p>
+E probabilmente ne esistono altre .. 
+</p>
+
+</body>
+</section>
+
+</body>
+</section>
+
+</chapter>
+
+-- Kernel security end --
+
+-- Securing Services start --
+
+<chapter>
+<title>Rendere più sicuri i servizi</title>
+
+<section>
+<title>Usare xinetd</title>
+<body>
+<p>
+xinetd è un sostituto di inetd (non incluso in gentoo), il demone dei servizi internet. Esso supporta il controllo
+degli accessi basato su indirizzo dell'host remoto e ora d'accesso. Fornisce inoltre ampie possibilità di logging,
+quali l'orario d'avvio del server, l'indirizzo dell'host remoto, lo user name remoto, il run time del server e le azioni 
+richieste.
+</p>
+
+<p>Come per ogni altro servizio è importante avere una buona configurazione di default. Ma poichè xinetd è usato da root
+e supporta protocolli di cui potreste ignorare il funzionamento suggeriamo di non usarlo. Se comunque desiderate 
+utilizzarlo ecco qui come aggiungergli un certo grado di sicurezza: 
+</p>
+
+<pre caption="Installare xinetd">
+# <i>emerge xinetd tcpd</i>
+</pre>
+
+<p>
+Modificate il file di configurazione:
+</p>
+
+<pre caption="/etc/xinetd.conf">
+defaults
+{
+ only_from      = localhost
+ instances      = 10
+ log_type       = SYSLOG authpriv info
+ log_on_success = HOST PID
+ log_on_failure = HOST
+ cps            = 25 30
+}
+
+# Questo imposterà il pserver (cvs) via xinetd con le seguenti impostazioni: 
+# max 10 istanze (10 connessioni per volta)
+# limita il pserver ad usare solo il tcp
+# utilizza questo servizio per il cvs degli utenti 
+# lega le interfacce a soltanto un ip
+# permette l'accesso da 10.0.0.*
+# limita il tempo in cui gli sviluppatori possono usare il cvs dalle 8am alle 5pm
+# utilizza i tpcd wrappers (controllo degli accessi verificato in 
+# <path>/etc/hosts.allow</path> e <path>/etc/hosts.deny</path>)
+# max_load della macchina impostato a 1.0
+# La flag 'disable' è per default impostata a 'no' ma preferisco averla
+# nel caso essa sia disabilitata
+service cvspserver
+{
+ socket_type    = stream
+ protocol       = tcp
+ instances      = 10
+ protocol       = tcp
+ wait           = no
+ user           = cvs
+ bind           = 10.0.0.2
+ only_from      = 10.0.0.0
+ access_times   = 8:00-17:00
+ server         = /usr/sbin/tcpd
+ server_args    = /usr/bin/cvs --allow-root=/mnt/cvsdisk/cvsroot pserver
+ max_load       = 1.0
+ log_on_failure += RECORD
+ disable        = no
+}
+</pre>
+
+<p>
+Per maggiori informazioni leggete la pagina di manuale <c>man 5 xinetd.conf</c>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>ssh</title>
+<body>
+
+<p>L'unico provvedimento di sicurezza che OpenSSH richiede è di abilitare un'autenticazione più forte basata sulla
+crittografia a chiave pubblica. Molti siti (come <uri>http://www.sourceforge.net</uri>, <uri>http://www.php.net</uri> e
+<uri>http://www.apache.org</uri>) hanno sofferto di intrusioni non autorizzate ai loro sistemi dovute alla perdita o 
+alla cattiva scelta di password 
+</p>
+
+<pre caption="/etc/ssh/sshd_config">
+# Abilita solamente la versione 2
+Protocol 2
+
+# Non permette l'accesso diretto di root
+PermitRootLogin no
+
+# Abilita l'autenticazione della chiave RSA
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile      .ssh/authorized_keys
+
+# Disabilita il file .rhost e le normali password d'autenticazione
+RhostsAuthentication no
+PasswordAuthentication no
+PermitEmptyPasswords no
+
+AllowHosts *.gentoo.org
+
+# Non permette a nessuno che non sia membro dei gruppi wheel o admin di avere accesso
+AllowGroups wheel admin
+
+# Permette l'accesso ai 2 utenti
+AllowUsers kn bs
+
+# Aggiunge un livello di logging
+SyslogFacility AUTH
+LogLevel INFO
+
+# bind
+ListenAddress 127.0.0.1
+</pre>
+
+<p>Ora quello che tutti i vostri utenti devono fare è generare una chiave (sulla macchina dalla quale desiderano collegarsi)
+con il seguente comando
+</p>
+
+<pre caption="Creare una coppia di chiavi RSA">
+# <i>/usr/bin/ssh-keygen -t rsa</i>
+</pre>
+
+<p>
+Digitare una passphrase
+</p>
+
+<pre caption="Output di ssh-keygen">
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/kn/.ssh/id_rsa):<c>[Premere invio]</c>
+Created directory '/home/kn/.ssh'.
+Enter passphrase (empty for no passphrase): <c>[Inserire la passphrase]</c>
+Enter same passphrase again: <c>[Inserire nuovamente la passphrase]</c>
+Your identification has been saved in /home/kn/.ssh/id_rsa.
+Your public key has been saved in /home/kn/.ssh/id_rsa.pub.
+The key fingerprint is:
+07:24:a9:12:7f:83:7e:af:b8:1f:89:a3:48:29:e2:a4 kn@knielsen
+</pre>
+
+<p>Questo aggiungerà due file nella vostra directory <path>~/.ssh/</path> chiamati id_rsa e id_rsa.pub. Il file denominato
+id_rsa è la vostra chiave privata e dovrebbe essere conservata soltanto da voi e nessun altro. L'altro file id_rsa.pub
+va distribuito ad ogni server a cui dovete avere accesso. Aggiungete la chiave nella directory home dell'utente in
+<path>~/.ssh/authorized_keys</path> e così all'utente dovrebbe essere permesso l'accesso.
+</p>
+
+<p>Ora, i vostri utenti dovrebbero custodire bene questa chiave. Andrebbe messa su un media da portare sempre appresso o
+mantenuta sulla propria workstation (mettetelo nella vostra politica delle <uri link="#doc_chap2">password</uri>).
+</p>
+
+<p>Maggiori informazioni su <uri link="http://www.openssh.org">OpenSSH</uri> possono essere trovate sul loro sito web</p>
+
+</body>
+</section>
+
+<section>
+<title>Rendere più sicuro X</title>
+<body>
+
+<p>Per default XFree è configurato per fungere da Xserver. Ciò può essere pericoloso poichè X utilizza connessioni tcp
+non cifrate e resta in ascolto dei clients X. Se non avete bisogno di questo servizio disabilitatelo! Se invece per 
+utilizzare la vostra workstation dipendete da un Xserver utilizzate il comando  <path>/usr/X11R6/bin/xhost</path> con
+cautela. Questo comando permette a clients provenienti da altri hosts di collegarsi e usare il vostro display. 
+Ciò può risultare comodo se avete bisogno di un'applicazione che risiede su un'altra macchina e l'unico modo per servirsene
+è la rete. La sintessi è <path>/usr/X11R6/bin/xhost +hostname</path>
+</p>
+
+<warn>Non utilizzate mai l'ozpione xhost +! Ciò permetterà a qualunque client di connettersi e prendere il controllo
+del vostro X. Se un attaccante può ottenere l'accesso al vostro X, esso potrà registrare ciò che digitate e controllare
+il vostro desktop.
+</warn>
+
+<p>Una soluzione maggiormente sicura è di disabilitare completamente tale opzione avviando il vostro X con 
+<c>startx -- -nolisten tcp</c> o disabilitandola permanentemente nel file di configurazione cambiando la linea
+</p>
+
+<pre caption="/usr/X11R6/bin/startx">
+defaultserverargs=""
+</pre>
+
+<p> in </p>
+<pre caption="/usr/X11R6/bin/startx">
+defaultserverargs="-nolisten tcp"
+</pre>
+
+<p>
+Se utilizzate un login manager grafico avete bisogno d'un differente approccio.
+</p>
+
+<p>gdm (Gnome Display Manager)</p>
+
+<p>Cambiate:</p>
+<pre caption="/etc/X11/gdm/gdm.conf">
+[server-Standard]
+command=/usr/X11R6/bin/X
+</pre>
+<p>
+in
+</p>
+<pre caption="/etc/X11/gdm/gdm.conf">
+[server-Standard]
+command=/usr/X11R6/bin/X -nolisten tcp
+</pre>
+
+<p>xdm (X Display Manager) e kdm (Kde Display Manager)</p>
+
+<p>Cambiate</p>
+<pre caption="/etc/X11/xdm/Xservers">
+:0 local /usr/bin/X11/X 
+</pre>
+
+<p>in</p>
+
+<pre caption="/etc/X11/xdm/Xservers">
+:0 local /usr/bin/X11/X -nolisten tcp 
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Print services</title>
+<body>
+
+<section>
+<title>Lpd</title>
+<body>
+<p>
+TODO
+</p>
+</body>
+</section>
+
+<section>
+<title>Pdq</title>
+<body>
+
+<p>http://pdq.sourceforge.net/</p>
+
+<p>
+TODO
+</p>
+
+</body>
+</section>
+
+</body>
+</section>
+
+
+
+<section>
+<title>FTP</title>
+<body>
+<p>L'FTP (File Transfer Protocol) è generalmente una pessima idea. Scambia dati non cifrati, è in ascolto su due porte
+(normalmente le porte 20 e 21), supporta gli utenti anonimi ed è ciò che molti attaccanti cercano (per commerci 
+"warez"). Se potete farne a meno usate sftpd o ancora meglio http, poichè il protocollo ftp contiene parecchi problemi di 
+sicurezza. In caso contrario, assicuratevi che i vostri servizi siano quanto migliori possibile e state in guardia. 
+</p>
+
+<section>
+<title>Pure-ftpd</title>
+<body>
+
+<p> Pure-ftpd è un ramo (ndt, deriva dai sorgenti) dell'orginale trollftpd. E' stato modificato per motivi di sicurezza e 
+funzionalità da Frank Dennis.
+</p>
+
+<p>Utilizza utenti virtuali (mai accounts di sistema) abilitando l'opzione AUTH. Impostatela a -lpuredb:/etc/pureftpd.pdb
+e create i vostri utenti utilizzando <path>/usr/bin/pure-pw</path>. 
+</p>
+
+<pre caption="/etc/conf.d/pure-ftpd">
+## Numero di connessioni simultanee totali, e per ip ##
+MAX_CONN="-c 30"
+MAX_CONN_IP="-C 10"
+
+## Non permette uploads se la partizione è piena per una percentuale maggiore di quella impostata in questa variabile ##
+DISK_FULL="-k 90%"
+
+AUTH="-lpuredb:/etc/pureftpd.pdb"
+
+## Varie ed eventuali ##
+MISC_OTHER="-A -E -X -U 177:077 -d -4 -L100:5 -I 15"
+</pre>
+
+<p>Configurate la vostra variabile MISC_OTHER affinchè non permetta accessi anonimi (-E), metta tutto in chroot (-A),
+gli utenti non possano leggere o scrivere file che iniziano con un . (punto) (-X), imposti un idle time massimo (-I), 
+limiti la ricorsione (-L) a una umask ragionevole. E __non__ dovete usare le opzioni -w o -W! Se volete avere un sito warez,
+smettete di leggere questo documento!
+</p>
+
+<p>
+Maggiori informazioni possono essere trovate su <uri>http://www.pureftpd.org</uri>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Proftpd</title>
+<body>
+
+<p>Proftpd ha avuto in passato diversi problemi di sicurezza, ma la maggior parte di essi pare essere stata risolta. Potete
+applicare questi ulteriori miglioramenti:
+</p>
+
+<pre caption="/etc/proftpd/proftpd.conf">
+ServerName "My ftp daemon"
+# Non mostra l'identità del server
+ServerIdent on "Go away"
+
+# Rende più facile creare utenti virtuali
+RequireValidShell off
+
+# Utilizza file passwd e group alternativi (passwd usa un formato cifrato)
+AuthUserFile "/etc/proftpd/passwd"
+AuthGroupFile "/etc/proftpd/group"
+
+# Permessi
+Umask 077
+
+# Timeouts e limiti
+MaxInstances 30
+MaxClients 10 "Only 10 connections allowed"
+MaxClientsPerHost 1 "You have already logged on once"
+MaxClientsPerUser 1 "You have already logged on once"
+TimeoutStalled 10
+TimeoutNoTransfer 20
+TimeoutLogin 20
+
+# Tutto in chroot
+DefaultRoot ~
+
+# Non gira come root
+User  nobody
+Group nogroup
+
+# Registra ogni trasferimento
+TransferLog /var/log/transferlog
+
+# Problemi con il globbing
+DenyFilter \*.*/
+</pre>
+
+<p>
+Il resto spetta a voi ed alla vostra abilità di lettura (<uri>http://www.proftpd.org</uri>).
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Vsftpd</title>
+<body>
+
+<p>Vsftpd (pensato per un ftp veramente sicuro) è un piccolo demone ftp che funziona con una ragionevole configurazione
+di default. E' molto semplice e non possiede altrettante caratteristiche (come gli utenti virtuali) di pureftp e proftp. 
+</p>
+
+<pre caption="/etc/vsftpd">
+anonymous_enable=NO
+local_enable=YES
+
+# sola lettura
+write_enable=NO
+
+# abilita la registrazione dei trasferimenti
+xferlog_std_format=YES
+
+idle_session_timeout=20
+data_connection_timeout=20
+nopriv_user=nobody
+
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chrootlist
+
+ls_recurse_enable=NO
+</pre>
+
+<p>Come vedete non c'è modo con questo demone di avere permessi individuali o di mettere tutto in chroot di default.
+Quando si passa però alle impostazioni relative agli accessi anonimi è davvero valido. A volte può essere utile avere
+un server ftp anonimo (per condividere codice sorgente libero) e questo server è veramente indicato per questo.
+</p>
+
+</body>
+</section>
+
+</body>
+</section>
+
+<section>
+<title>Apache</title>
+<body>
+
+<p>Apache (1.3.26) possiede una buona configurazione di default, ma non abbastanza. Dobbiamo migliorare alcune cose, come
+legarlo ad un indirizzo e impedirgli di rivelare troppe informazioni. Queste sono le opzioni che dovreste sistemare nel 
+file di configurazione:
+</p>
+
+<p>Se avete aggiunto ssl al vostro <path>/etc/make.conf</path> prima di installare apache, dovreste avere accesso ad un 
+server con ssl abilitato. Aggiungete soltanto la seguente riga per attivarlo.
+</p>
+
+<pre caption="/etc/conf.d/apache">
+HTTPD_OPTS="-D SSL"
+</pre>
+
+<pre caption="/etc/apache/conf/apache.conf">
+# Lo mette in ascolto sul vostro ip
+Listen 127.0.0.1
+BindAddress 127.0.0.1
+# Non è una buona idea usare nobody o nogroup - 
+# per ogni servizio che non gira come root
+# (semplicemente aggiungete l'utente apache con il gruppo apache)
+User apache
+Group apache
+# Impedisce ad apache di comunicare la propria versione
+ServerSignature Off
+ServerTokens min
+</pre>
+
+<p>Apache è compilato normalmente con le opzioni --enable-shared=max e --enable-module=all. Queste abilitano di default
+ogni modulo, per escluderli dovrete quindi commentare ogni modulo di cui non avete bisogno nella sezione LoadModule 
+(LoadModule e AddModule). Riavviate il servizio eseguendo <c>/etc/init.d/apache restart</c>.
+</p>
+
+<p>
+La documentazione può essere trovata su <uri>http://www.apache.org</uri>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Mail</title>
+<body>
+
+
+<section>
+<title>Postfix</title>
+<body>
+TODO!
+</body>
+</section>
+
+<section>
+<title>Qmail</title>
+<body>
+<p>Qmail è considerato come il mail server più sicuro. E' stato scritto con la sicurezza (e la paranoia) in testa. Non
+permette il relaying di default e non presenta buchi di sicurezza dal 1996. Date semplicemente <c>emerge qmail</c> 
+e procedete con la configurazione!
+</p>
+</body>
+</section>
+
+</body>
+</section>
+
+<section>
+<title>DNS</title>
+<body>
+<p>
+Gentooo supporta due differenti servers dns, Bind e djbdns.
+</p>
+
+<section>
+<title>Bind</title>
+<body>
+
+<p>Bind è conosciuto per la propria "discutibile" storia di sicurezza e non dovrebbe essere preso alla leggera. Come ogni
+altro servizio non dovrebbe __mai__ girare con privilegi di root quindi non cambiate la configurazione di default. 
+Gentoo non imposta nessuna configurazione di base per questo servizio quindi dovrete aggiungere le vostre personali zone
+dns a <path>/etc/bind/named.conf</path>. Poichè la sicurezza non riguarda soltanto il demone del server di dominio
+ma anche il protocollo, assicuratevi di configurarlo adeguatamente.
+</p>
+
+<p>La gente spesso mi chiede perchè non uso djbdns (un dns veramente sicuro scritto da D.J. Bernstein) e la risposta è:
+Bind possiede caratteristiche che djbdns non ha, come il supporto per IPv6 (almeno non senza un patch). 
+</p>
+
+<pre caption="/etc/bind/named.conf">
+# Imposta il controllo degli accessi
+acl "mynet" { 10.0.0.0/24; };
+
+options {
+  directory "/var/bind";
+  pid-file "/var/run/named/named.pid";
+# Abilita "mynet" a fare interrogazioni
+allow-query { "mynet"; };
+# Non abilita i trasferimenti di zona
+allow-transfer { none; };
+  forward only;
+  forwarders { 10.0.0.2; };
+# Fornisce il servizio ricorsivo solo a "mynet"
+  recursion no;
+  allow-recursion { mynet; };
+# Lega ad un interfaccia
+  listen-on { 10.0.0.1; };
+# Non mostra la versione
+  version "Go away";
+};
+
+key "rndc-key" {
+  algorithm hmac-md5;
+  secret "o1BYkYC+bXeZgHDsrVBwRQ==";
+};
+
+# Abilita solo il controllo da localhost e con una chiave
+controls {
+  inet 127.0.0.1 port 953
+  allow { 127.0.0.1; } keys { "rndc-key"; };
+};
+</pre>
+
+<p>Questa è una buona configurazione di default. Tuttavia, la versione 9 di Bind ha una speciale funzionalità di chroot
+che dovreste usare. Segue un esempio di come dovreste creare il vostro Bind chrooted:
+</p>
+
+<pre caption="Preparare un ambiente chrooted">
+# <i>mkdir -p /chroot</i>
+# <i>mkdir /chroot/dns</i>
+# <i>mkdir /chroot/dns/dev</i>
+# <i>mkdir /chroot/dns/etc</i>
+# <i>mkdir /chroot/dns/var</i>
+# <i>mkdir /chroot/dns/var/run</i>
+# <i>mkdir /chroot/dns/var/run/named</i>
+# <i>chown -R named:named /chroot/dns/var/run/named</i>
+# <i>cp -R /etc/bind /chroot/dns/etc/.</i>
+# <i>cp /etc/localtime /chroot/dns/etc/localtime</i>
+# <i>cp -R /var/bind /chroot/dns/var/.</i>
+# <i>mknod /chroot/dns/dev/zero c 1 5</i>
+# <i>chmod 666 /chroot/dns/dev/zero</i>
+# <i>mknod /chroot/dns/dev/random c 1 8</i>
+# <i>chmod 666 /chroot/dns/dev/random</i>
+# <i>cp -a /dev/log /chroot/dns/dev/log</i>
+# <i>cd /chroot/dns</i>
+# <i>chattr +i etc etc/localtime var</i>
+</pre>
+
+<p>Questo creerà un ambiente chrooted in <path>/chroot</path>. Ora tutto quello che dovete fare è modificare lo script init
+affinchè supporti il nuovo ambiente. Modificate <path>/etc/init.d/named</path> e aggiungete <c>-t /chroot/dns</c> alla 
+funzione start. Potreste voler modificare anche la funzione stop per puntare al corretto file pid in
+<path>/chroot/var/run/named/named.pid</path>. Riavviate il vostro server DNS.
+</p>
+
+<note>Un attaccante abbastaza abile può fuggire dalla chrooted jail (ndt, la "prigione" chrooted) (trovate come 
+prevenire questa eventualità nella sezione patch del kernel)
+</note>
+
+<p>
+La documentazione può essere trovata all'<uri link="http://www.isc.org/products/BIND/bind9.html">Internet Software Consortium</uri>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Djbdns</title>
+<body>
+
+<p>Non c'è veramente molto da dire su djbdns se non che l'autore è disposto a scommettere 
+<uri link="http://cr.yp.to/djbdns/guarantee.html">soldi</uri> su quanto sicuro esso sia. Non vi resta che provarlo: 
+<uri>http://www.djbdns.org/</uri> è davvero differente dal modo di lavorare di Bind v.9 ma non ne resterete delusi.
+</p>
+
+</body>
+</section>
+
+</body>
+</section>
+
+<section>
+<title>Samba</title>
+<body>
+
+<p>Samba è un protocollo per condividere file con reti Microsoft/Novell e __non__ dovrebbe essere usato su Internet.
+Tuttavia deve essere comunque reso più sicuro.
+</p>
+
+<pre caption="/etc/samba/smb.conf">
+[global]
+  # Lega ad un'interfaccia
+  interfaces = eth0 10.0.0.1/32
+
+  # Si assicura di usare password cifrate
+  encrypt passwords = yes
+  directory security mask = 0700
+
+  # Abilita il traffico da 10.0.0.*
+  hosts allow = 10.0.0.
+
+  # Abilita l'autenticazione degli utenti 
+  #(non usa lo share mode)
+  security = user
+  
+  # Disabilita gli account privilegiati
+  invalid users = root @wheel
+
+  # Aggiunge una quantità massima di utilizzo in kilobytes
+  max disk size = 102400
+
+  # Specifica la politica delle password
+  min password length = 8
+  null passwords = no
+
+  # Utilizza PAM (se supportato)
+  obey pam restrictions = yes
+  pam password change = yes
+</pre>
+
+<p>Assicuratevi che i permessi siano impostati correttamente in ogni condivisione e ricordatevi di leggere la 
+<uri link="http://www.samba.org">documentazione</uri>
+</p>
+
+<p>Ora riavviate il server e aggiungete gli utenti che volete abbiano accesso a tale servizio. Ciò è possibile usando
+<path>/usr/bin/smbpasswd</path> con il parametro -a
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Chroot o server virtuali</title>
+<body>
+<p>Mettere in chroot un servizio è un modo di limitare l'ambiente d'esecuzione di un servizio (o utente) a ciò che gli è 
+permesso fare non concedendo nessun accesso (o informazione) che potrebbe servire per acquisire privilegi di root.
+Facendo girare i servizi come utenti diversi da root (nobody, apache, named) un attaccante può soltanto accedere ai file
+con i permessi di tali utenti. Ciò significa che un attaccante non può acquisire privilegi di root anche se i servizi
+presentano vulnerabilità di sicurezza.
+</p>
+
+<p>Alcuni servizi come pure-ftpd a bind possiedono caratteristiche per il chrooting, altri no. Se i servizi lo supportano,
+usatelo, in caso contrario dovrete arrangiarvi e crearvelo da soli. Per comprenderne meglio il funzionamento di base, 
+vedremo ora come creare un chroot, verificandolo poi con la bash (poichè facile da capire).
+</p>
+
+<p>
+Crete una directory in <path>/</path> di nome chroot (<c>mkdir chroot</c>). Cercate con quali librerie dinamiche la bash
+è stata compilata (se è stata compilata con -static questo passo non è necessario):
+</p>
+
+<p>
+I seguenti comandi creeranno una lista di librerie usate dalla bash.
+</p>
+
+<pre caption="Ottenere una lista delle librerie usate">
+# <i>ldd /bin/bash</i>
+  libncurses.so.5 => /lib/libncurses.so.5 (0x4001b000)
+  libdl.so.2 => /lib/libdl.so.2 (0x40060000)
+  libc.so.6 => /lib/libc.so.6 (0x40063000)
+  /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+</pre>
+
+<p>
+Ora bisogna creare un ambiente per la bash.
+</p>
+
+<pre caption="Creare l'ambiente chroot per la bash">
+# <i>mkdir /chroot/bash</i>
+# <i>mkdir /chroot/bash/bin</i>
+# <i>mkdir /chroot/bash/lib</i>
+</pre>
+
+<p>A questo punto copiate i file usati dalla bash (<path>/lib</path>) nella lib chrooted e copiate i comandi bash nella
+directory bin chrooted. Ciò creerà lo stesso ambiente che si è soliti usare, solo con meno funzionalità. Dopo la copiatura
+provate a dare: <c>chroot /chroot/bash</c>. Se ottenete un prompt tipo <c>/</c> funziona! Altrimenti correttamente vi dirà
+quali file mancano. Alcune librerie condivise dipendono a vicenda da altre.
+</p>
+
+<p>Noterete che all'interno del chroot non funziona nulla se non "echo". Questo è dato dal fatto che non ci sono altri
+comandi nel vostro ambiente chroot se non bash e "echo", che è una funzionalità integrata della bash.
+</p>
+
+<p>Questo è fondamentalmente lo stesso procedimento per creare un servizio chrooted. La sola differenza è che i servizi
+a volte contano sui dispositivi e i file di configurazione in <path>/etc</path>. Semplicemente copiateli (i dispositivi
+possono essere copiati con <c>cp -a</c>) nell'ambiente chrooted, modificate lo script init affinchè usi il chroot prima
+di avviarsi.
+Può essere difficoltoso trovare quali dispositivi e file di configurazione sono richiesti da un servizio. Per ovviare a ciò
+diventa utile il comando <c>strace</c>. Avviate il servizio con <path>/usr/bin/strace</path> e cercate le funzioni open,
+read, stat e forse anche connect. Questo vi darà qualche indizio su quali file copiare. Nella maggior parte dei casi
+basta copiare il file passwd (modificate la copia rimuovendo gli utenti che non hanno nulla a che fare con tale servizio), 
+<path>/dev/zero</path>, <path>/dev/log</path> e <path>/dev/random</path>.
+</p>
+
+<p>Un altro modo per creare un ambiente più sicuro è utilizzare un ambiente "virtual server". Questa soluzione crea una copia
+dell'esistente Linux e la carica in modalità virtuale. Ciò significa che se un server venisse compromesso sarebbe 
+soltanto il server virtuale ad essere compromesso e non la reale installazione.
+</p>
+
+<p>
+Esempi di server virtuali:
+</p>
+
+<ul>
+
+<li>
+<uri link="http://user-mode-linux.sourceforge.net">Usermode linux</uri> e un howto a riguardo <uri link="http://www.gentoo.org/doc/uml.html">user mode linux</uri>.
+</li>
+
+<li>
+<uri link="http://www.solucorp.qc.ca/miscprj/s_context.hc">Virtual private servers</uri>
+</li>
+
+</ul>
+
+</body>
+</section>
+
+</chapter>
+
+-- Securing Services end --
+
+-- Firewalls --
+
+<chapter>
+<title>Firewalls</title>
+
+<section>
+<title>Un firewall</title>
+<body>
+
+<p>La gente spesso pensa che un firewall sia il sistema di sicurezza definitivo, ma si sbaglia. Nella maggior parte
+dei casi un firewall mal configurato presenta più problemi di sicurezza che non averlo affatto. Un firewall inoltre non è
+che un software e dovrebbe essere trattato nello stesso modo di un qualsiasi altro servizio, semplicemente perchè è 
+possibile che presenti dei bugs (buchi di sicurezza)
+</p>
+
+<p>Quindi pensateci bene prima di implementarne uno! Ne avete realmente bisogno? Se pensate di averne bisogno scrivete
+una politica su come dovrebbe funzionare, sul tipo di firewall e su chi dovrebbe gestirlo.
+</p>
+
+<p>
+I Firewalls vengono utilizzati con due possibili intenti:
+</p>
+
+<ul>
+<li>Impedire agli utenti (worms/attaccanti) di entrare</li>
+<li>Impedire agli utenti (impiegati/bambini) di uscire</li>
+</ul>
+
+<p>
+Fondamentalmente esistono tre tipi di firewalls:
+</p>
+
+<ul>
+<li>Packet filtering (filtro di pacchetti)</li>
+<li>Circuit relay (relay di circuito)</li>
+<li>Application gateway (gateway d'applicazioni)</li>
+</ul>
+
+<p>
+Un firewall dovrebbe essere una macchina dedicata sulla quale non gira alcun servizio (o soltanto ssh) e resa sicura
+con i metodi raccomandati in questa guida.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Packet filtering (Filtro di pacchetti)</title>
+<body>
+
+<p>
+Tutto il traffico di rete è sotto forma di pacchetti. Il traffico d'una certa dimensione è inoltre suddiviso in pacchetti
+più piccoli e facilmente gestibili, quindi ricostruito quando giunge a destinazione. Ogni pacchetto contiene le informazioni
+su come e dove dovrebbe essere trasportato. E queste informazioni sono esattamente quelle che utilizza un firewall "packet 
+filter" (filtro di pacchetti). Il filtraggio è basato su:
+</p>
+
+<ul>
+
+<li>Autorizzare o bloccare i pacchetti basandosi sull'indirizzo IP sorgente/destinazione.</li>
+<li>Autorizzare o bloccare i pacchetti basandosi sulla porta sorgente/destinazione.</li>
+<li>Autorizzare o bloccare i pacchetti a seconda del protocollo.</li>
+<li>Autorizzare o bloccare i pacchetti a seconda delle flags impostate in uno specifico protocollo.</li>
+
+</ul>
+
+<p>
+Fondamentalmente si tratta di filtrare i dati all'interno dell'intestazione di un pacchetto e non del contenuto 
+(ndt, controlla gli header di un pacchetto e non il suo payload).
+</p>
+
+<p>
+Debolezze:
+</p>
+
+<ul>
+<li>L'indirizzo di un pacchetto potrebbe essere stato appositamente forgiato o come si dice in gergo <e>"spooffato"</e>
+da chi l'ha spedito</li>
+<li>I dati e le richieste contenuti nei pacchetti lasciati passare potrebbero contenere dati indesiderati che un attaccante
+potrebbe sfruttare su bug noti dei servizi che si trovano su o dietro il firewall</li>
+<li>Fallimenti sul singolo pacchetto abbastanza comuni</li>
+</ul>
+
+<p>
+Vantaggi:
+</p>
+
+<ul>
+<li>Semplice e facile da implementare</li>
+<li>Può avvertire di un possibile attacco prima che questo avvenga (identificando i portscans (scansione delle porte))</li>
+<li>Ottimo per bloccare gli attachi SYN</li>
+</ul>
+
+<p>
+Esempi di "packet filter" liberi per Linux:
+</p>
+
+<ul>
+<li><uri link="http://www.iptables.org">Iptables</uri></li>
+<li><uri link="http://www.linuxdocs.org/HOWTOs/IPCHAINS-HOWTO.html">Ipchains</uri></li>
+<li><uri link="http://www.smoothwall.org">SmoothWall</uri></li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Circuit relay (relay di circuito)</title>
+<body>
+
+<p>Noto anche come gateway a livello di circuito, è un tipo di firewall che controlla la validità delle connessioni prima
+di permettere che i dati vengano scambiati. 
+Ciò significa semplicemente che non autorizza o blocca i pacchetti basandosi sull'intestazione dei pacchetti stessi, 
+ma determina se il collegamento fra le due parti sia valido secondo delle regole configurabili prima di aprire una sessione
+e autorizzare lo scambio di dati. Il filtraggio è basato su:
+</p>
+
+<ul>
+<li>Indirizzo sorgente/destinazione</li>
+<li>Porta sorgente/destinazione</li>
+<li>Un certo intervallo di tempo</li>
+<li>Protocollo</li>
+<li>Utente</li>
+<li>Password</li>
+</ul>
+
+<p>
+Tutto il traffico è validato, monitorato e se non rispetta le regole bloccato.
+</p>
+
+<p>
+Debolezze:
+</p>
+
+<ul>
+<li>
+Opera a livello di trasporto e può richiedere notevoli modifiche al tipo di programmazione che normalmente fornisce
+le funzioni di trasporto.
+</li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Application gateway (gateway d'applicazioni)</title>
+<body>
+
+<p>Il gateway a livello applicativo è un proxy per applicazioni, che scambia quindi dati con un sistema remoto al posto
+dei suoi clienti. E' solitamente mantenuto per pubblica sicurezza dietro ad una DMZ (Zona DeMilitarizzata) o un firewall
+senza alcuna connessione dall'esterno. Il filtraggio è basato su:
+</p>
+
+<ul>
+<li>Autorizzare o bloccare i pacchetti basandosi sulla sorgente/destinazione</li>
+<li>Autorizzare o bloccare i pacchetti basandosi sul contenuto dei pacchetti stessi</li>
+<li>Può modificare al volo il contenuto dei pacchetti</li>
+<li>Limitare l'accesso ai file basandosi sul loro tipo o estensione</li>
+</ul>
+
+<p>
+Vantaggi:
+</p>
+
+<ul>
+<li>Può mantenere i files nella sua memoria cache, aumentando le prestazioni della rete</li>
+<li>Può registrare dettagliatamente ogni connessione</li>
+<li>Scala perfettamente (alcuni proxy server possono "condividere" i dati nelle loro cache)</li>
+<li>Nessun accesso diretto dall'esterno</li>
+</ul>
+
+<p>
+Debolezze:
+</p>
+
+<ul>
+<li>La configurazione è complessa</li>
+</ul>
+
+<p>
+Gli application gateway sono considerati come le soluzioni più sicure poichè non devono girare come root e non sono
+raggiungibili pubblicamente da internet.
+</p>
+
+<p>
+Esempi di application gateway liberi:
+</p>
+
+<ul>
+<li><uri link="http://www.squid-cache.org/">Squid</uri></li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Iptables</title>
+<body>
+
+<p>
+Per far funzionare correttamente iptables, esso va abilitato nel kernel. Io l'ho aggiunto in forma di moduli (il comando
+iptables li caricherà quando ne avrà bisogno) ed ho ricompilato il mio kernel. Dopo averlo ricompilato (o mentre lo state
+ricompilando) dovete aggiungere il comando iptables. Basta dare <c>emerge iptables</c> ed esso dovrebbe funzionare.
+</p>
+
+<p>
+Ora proviamo se funziona lanciando <c>iptables -L</c>. Se dovesse fallire significa che manca qualcosa e dovrete quindi
+controllare nuovamente la vostra configurazione.
+</p>
+
+<p>
+Iptables è un packet filter di tipo stateful (ndt, cioè è in grado di tener traccia dello stato delle connessioni) e
+fornisce un controllo maggiore e un più elevato grado di sicurezza rispetto ad ipchains (presente nella versione di Linux
+2.2), che non è stateful. Vi starete certamente chiedendo cosa sono gli stati? Qual è la differenza?
+</p>
+
+<p>
+Sappiamo tutti che il traffico TCP è composto da una serie di pacchetti. Ciascun pacchetto contiene informazioni 
+sull'indirizzo sorgente, su quello di destinazione e un numero di sequenza che permette di ricostruire correttamente
+il flusso di dati.
+Sappiamo inoltre che TCP è di tipo orientato alla connessione (connection-oriented) e UDP di tipo senza connessione
+(connectionless), giusto? Questi sono gli stati che vengono immagazzinati .. vi starete probabilmente chiedendo a 
+che scopo? Ora lo capirete.
+</p>
+
+<p>
+Immaginate di avere un firewall stateless (ipchains) e di non voler permettere ad un computer esterno di 
+connettersi ai vostri servizi interni. Ma come può il firewall determinare quali pacchetti facciano parte o meno di questa
+connessione? Un firewall stateless non può fare distinzione tra una connessione esistente e una che sta per essere 
+instaurata osservando la flag SYN!
+</p>
+
+<p>
+Ora immaginate che un attaccante invii dei pacchetti forgiati manualmente (un pacchetto creato dall'attaccante) nei quali
+ha alterato la flag SYN o qualsiasi altra flag. Questa è una delle tecniche normalmente usate da un attaccante. Invia 
+dunque pacchetti che attraversano direttamente il firewall modificando le tabelle di instradamento o compromettendo i servizi
+che girano sul firewall ma che si credeva fossero al sicuro dietro un filtro. Un firewall stateful può tenere traccia di
+ogni connessione e capire facilmente se un pacchetto fa parte o meno di una connessione esistente. Qualora una connessione,
+che si dichiari essere una connessione esistente non lo è, viene dichiarata non valida ed è possibile quindi ignorarla.
+Ciò impedirà inoltre i possibili "stealth scans" (scansioni nascoste) poichè la connessione non verrà considerata valida.
+</p>
+
+<p>
+Potrei probabilmente trovare decine di altri motivi ma credo abbiate capito .. delle regole semplici permettono di avere
+una configurazione del firewall più compatta e quindi più facile da manutenere.
+</p>
+
+<p>
+Iptables fornisce molte altre funzionalità come la limitazione della frequenza (del "rate"). Questa possibilità è
+estremamente utile quando ci si trova a dover prevenire certi attacchi DoS (Denial of Service, Negazione di Servizio)
+come gli attacchi SYN. Ora, cos'è un attacco SYN?
+</p>
+
+<p>
+Allora .. l'instaurazione di una connessione con TCP avviene utilizzando il "three-way handshake" (ndt, letteralmente
+"stretta di mano in tre modi", indica uno dei più famosi metodi di instaurazione di una connessione, che avviene appunto
+i tre passaggi) in questo modo:
+</p>
+
+<fig link="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/synack.jpg" short="Three-way handshake"/>
+
+<p>
+Un attacco SYN avviene quando si inviano solamente pacchetti SYN (cioè pacchetti in cui l'header contiene solo la flag
+SYN attiva) senza procedere con l'invio degli ultimi due pacchetti necessari per instaurare la connessione. 
+Un pacchetto SYN non necessita di un indirizzo sorgente valido (IP) visto che non ha bisogno di una risposta. Quindi la
+connessione resterà bloccata finchè non scadrà il time out. Ora se un attaccante invia un grosso numero di pacchetti SYN
+con un indirizzo IP non valido, il computer attenderà una risposta che non arriverà mai. A seconda di come è stato
+impostato il time out sul vostro sistema, questa connessione potrebbe restare aperta per 30-60 secondi (o più). 
+Quando la tabella del limite di connessioni sarà completamente occupata non sarà più possibile comunicare con nessuno.
+</p>
+
+<p>
+E' a questo punto che la limitazione della frequenza diviene interessante. E' possibile limitare il numero di pacchetti
+SYN provenienti da una singola sorgente utilizzando <c>-m limit --limit 1/s</c>. Questo limiterà a uno i pacchetti SYN per
+sorgente riducendo dunque la possibilità di SYN flood (inondamento di SYN) sulle vostre risorse.
+</p>
+
+<p>
+Ecco finalmente qualcosa di pratico!
+</p>
+
+<p>
+Quando iptables è caricato nel kernel, ci sono cinque sezioni in cui potete piazzare le vostre regole. Queste sono chiamate
+INPUT, OUTPUT, FORWARD, PREROUTING e POSTROUTING. Queste sezioni sono note come catene (chains) perchè esse funzionano 
+aggiungendovi delle regole che vengono verificate una per volta sequenzialmente. Se una regola blocca un pacchetto esso
+verrà scartato e non andrà oltre nella catena.
+</p>
+
+<p>
+Potete aggiungere le vostre regole direttamente nelle 5 catene principali o crearne di vostre aggiungendole a quelle 
+esistenti. Eccome come fare:
+</p>
+
+<table border="0">
+  <tr>
+    <th>Opzione:</th><th>Descrizione:</th>
+  </tr>
+  <tr>
+    <ti>-A</ti><ti>Append (Aggiungi)</ti>
+  </tr>
+  <tr>
+    <ti>-D</ti><ti>Delete (Cancella</ti>
+  </tr>
+  <tr>
+    <ti>-I</ti><ti>Insert (Inserisci)</ti>
+  </tr>
+  <tr>
+    <ti>-R</ti><ti>Replace (Rimpiazza)</ti>
+  </tr>
+  <tr>
+    <ti>-L</ti><ti>List (Elenca)</ti>
+  </tr>
+  <tr>
+    <ti>-F</ti><ti>Cancella tutte le regole nella catena o in tutte le catene</ti>
+  </tr>
+  <tr>
+    <ti>-Z</ti><ti>Azzera i contatori in una catena o in tutte le catene</ti>
+  </tr>
+  <tr>
+    <ti>-C</ti><ti>Controlla questo pacchetto nella catena</ti>
+  </tr>
+  <tr>
+    <ti>-N</ti><ti>Crea una nuova catena definita dall'utente</ti>
+  </tr>
+  <tr>
+    <ti>-X</ti><ti>Cancella una catena definita dall'utente</ti>
+  </tr>
+  <tr>
+    <ti>-P</ti><ti>Imposta la politica di una catena su un obiettivo</ti>
+  </tr>
+  <tr>
+    <ti>-E</ti><ti>Cambia il nome di una catena</ti>
+  </tr>
+  <tr>
+    <ti>-p</ti><ti>Protocollo</ti>
+  </tr>
+  <tr>
+    <ti>-s</ti><ti>Indirizzo sorgente/maschera</ti>
+  </tr>
+  <tr>
+    <ti>-d</ti><ti>Indirizzo di destinazione/maschera</ti>
+  </tr>
+  <tr>
+    <ti>-i</ti><ti>Nome dell'Input (nome dell'interfaccia ethernet)</ti>
+  <tr>
+  </tr>
+    <ti>-o</ti><ti>Nome dell'Output (nome dell'interfaccia ethernet)</ti>
+  </tr>
+  <tr>
+    <ti>-j</ti><ti>Jump (obiettivo della regola)</ti>
+  </tr>
+  <tr>
+    <ti>-m</ti><ti>Corrispondenza estesa (potrebbe usare un'estensione)</ti>
+  </tr>
+  <tr>
+    <ti>-n</ti><ti>Output numerico di indirizzi e porte</ti>
+  </tr>
+  <tr>
+    <ti>-t</ti><ti>Tabella da manipolare</ti>
+  </tr>
+  <tr>
+    <ti>-v</ti><ti>Modalità verbosa (maggiori dettagli in output)</ti>
+  </tr>
+  <tr>
+    <ti>-x</ti><ti>Espandi i numeri (mostra i valori esatti)</ti>
+  </tr>
+  <tr>
+    <ti>-f</ti><ti>Considera il secondo frammento o quelli successivi</ti>
+  </tr>
+  <tr>
+    <ti>-V</ti><ti>Versione del pacchetto</ti>
+  </tr>
+  <tr>
+    <ti>--line-numbers</ti><ti>Stampa il numero della riga</ti>
+  </tr>
+</table>
+
+<p>
+Proveremo inizialmente a bloccare tutti i pacchetti ICMP sulla nostra macchina, giusto per familiarizzare con iptables.
+</p>
+
+<pre caption="Bloccare tutti i pacchetti ICMP">
+# <i>iptables -A INPUT -p icmp -j DROP</i>
+</pre>
+
+<p>
+Per prima cosa specifichiamo la catena alla quale dovrà appartenere la regola. Successivamente indichiamo il protocollo e
+la regola stessa. Questa regola può essere ACCEPT, DROP, REJECT, LOG, QUEUE, MASQUERADE, un modulo caricato o una catena
+definita dall'utente. In questo esempio, abbiamo utilizzato DROP che scarta i pacchetti senza rispondere al client.
+</p>
+
+<p>
+Provate ora a fare <c>ping localhost</c>. Non dovreste ottenere nessuna risposta poichè l'intero protocollo ICMP è stato
+bloccato sulla vostra macchina. Non sarà possibile pingare neppure altre macchine poichè non possiamo ricevere dagli host
+i pacchetti ICMP di ritorno. Svuotiamo ora la catena riabilitando i pacchetti ICMP:
+</p>
+
+<pre caption="Eliminare tutte le regole">
+# <i>iptables -F</i>
+</pre>
+
+<p>
+Osserviamo adesso la parte stateful di iptables. Se volete fare un'ispezione stateful dei pacchetti entranti in eth0
+dovete abilitarla come segue:
+</p>
+
+<pre caption="Accettare i pacchetti originati da una qualsiasi connessione in corso">
+# <i>iptables -A INPUT -i eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT</i>
+</pre>
+
+<p>
+Questo accetterà ogni pacchetto di una connessione già stabilita o in relazione con essa nella catena di INPUT.
+Potete scartare tutti i pacchetti che non appartengono a uno stato valido nella tabella dando
+<c>iptables -A INPUT -i eth0 -m state --state INVALID -j DROP</c> come prima. Ciò attiverà la parte stateful di iptables
+caricando l'estensione "state". Se volete che una macchina dall'esterno possa connettersi alla vostra dovrete usare
+<c>--state NEW</c>. Ipatables contiene molti moduli per differenti scopi. Alcuni di questi sono:
+</p>
+
+<table border="0">
+  <tr>
+    <th>Modulo/Corrispondenza</th><th>Descrizione</th><th>Opzioni estese</th>
+  </tr>
+  <tr>
+    <ti>mac</ti><ti>Verifica la corrispondenza del mac address con l'estensione per i pacchetti in ingresso.</ti>
+    <ti>--mac-source</ti>
+  </tr>
+  <tr>
+    <ti>state</ti><ti>Abilita l'ispezione stateful</ti><ti>--state (gli stati sono ESTABLISHED,RELATED, INVALID, NEW)</ti>
+  </tr>
+  <tr>
+    <ti>limit</ti><ti>Definisce un limite di frequenza</ti><ti>--limit, --limit-burst</ti>
+  </tr>
+  <tr>
+    <ti>owner</ti><ti>Cerca di controllare diverse caratteristiche del creatore di un pacchetto</ti><ti>--uid-owner userid
+    --gid-owner groupid --pid-owner processid --sid-owner sessionid</ti>
+  </tr>
+  <tr>
+    <ti>unclean</ti><ti>Vari controlli casuali sulla validità di un pacchetto</ti><ti/>
+  </tr>
+</table>
+
+<p>
+Proviamo a creare una catena personalizzata a applicarla alle catene esistenti:
+</p>
+
+<pre caption="Creare una catena definita dall'utente">
+<codenote>Creiamo una nuova catena con una regola</codenote>
+# <i>iptables -X mychain</i>
+# <i>iptables -N mychain</i>
+# <i>iptables -A mychain -i eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT</i>
+<codenote>La politica di default è che tutto il traffico in uscita è autorizzato. Quello in ingresso bloccato.</codenote>
+# <i>iptables -P OUTPUT ACCEPT</i>
+# <i>iptables -P INPUT DROP</i>
+<codenote>Aggiungiamola alla catena di INPUT</codenote>
+# <i>iptables -A INPUT -j mychain</i>
+</pre>
+
+<p>
+Applicando questa regola alla catena di INPUT otteniamo questa politica: in uscita tutto è autorizzato e in ingresso è 
+permesso solo ciò che è relativo a connessioni già stabilite. Generalmente si tratta di una pessima idea. Le politiche 
+di default dovrebbero bloccare tutto ma si trattava solo di un esempio.
+</p>
+
+<p>
+Ora se volete maggiore documentazione date un'occhiata alla
+<uri link="http://www.iptables.org/documentation/index.html#HOWTO">documentazione di iptables</uri>.
+</p>
+
+<p>
+Studiamo ora un esempio completo. In questo caso le mie politiche per il firewall/gateway sono:
+</p>
+
+<ul>
+  <li>Sono permesse solo le connessioni al firewall tramite SSH (porta 22)</li>
+  <li>La rete locale deve avere accesso a HTTP, HTTPS e SSH (il DNS deve essere ugualmente autorizzato)</li>
+  <li>Il traffico ICMP può contenere dati quindi non deve essere permesso. Naturalmente ne autorizzeremo solo una parte.</li>
+  <li>I Port scan devono essere individuati e registrati</li>
+  <li>Gli attacchi SYN devono essere evitati</li>
+  <li>Tutto il traffico rimanente deve essere bloccato e registrato</li>
+</ul>
+
+<pre caption="/etc/init.d/firewall">
+#!/sbin/runscript
+IPTABLES=/sbin/iptables
+IPTABLESSAVE=/sbin/iptables-save
+IPTABLESRESTORE=/sbin/iptables-restore
+FIREWALL=/etc/firewall.rules
+DNS1=212.242.40.3
+DNS2=212.242.40.51
+# interno
+IIP=10.0.0.2
+IINTERFACE=eth0
+LOCAL_NETWORK=10.0.0.0/24
+# esterno
+OIP=217.157.156.144
+OINTERFACE=eth1
+
+opts="${opts} showstatus panic save restore showoptions rules"
+
+depend() {
+  need net procparam
+}
+
+rules() {
+  stop
+  ebegin "Setting internal rules"
+
+  einfo "Setting default rule to drop"
+  $IPTABLES -P FORWARD DROP
+  $IPTABLES -P INPUT   DROP
+  $IPTABLES -P OUTPUT  DROP
+
+  # regole di default
+  einfo "Creating states chain"
+  $IPTABLES -N allowed-connection
+  $IPTABLES -F allowed-connection
+  $IPTABLES -A allowed-connection -m state --state ESTABLISHED,RELATED -j ACCEPT
+  $IPTABLES -A allowed-connection -i $IINTERFACE -m limit -j LOG --log-prefix \ 
+      "Bad packet from ${IINTERFACE}:"
+  $IPTABLES -A allowed-connection -j DROP
+
+  # traffico ICMP
+  einfo "Creating icmp chain"
+  $IPTABLES -N icmp_allowed
+  $IPTABLES -F icmp_allowed
+  $IPTABLES -A icmp_allowed -m state --state NEW -p icmp --icmp-type \ 
+      time-exceeded -j ACCEPT
+  $IPTABLES -A icmp_allowed -m state --state NEW -p icmp --icmp-type \ 
+      destination-unreachable -j ACCEPT
+  $IPTABLES -A icmp_allowed -p icmp -j LOG --log-prefix "Bad ICMP traffic:"
+  $IPTABLES -A icmp_allowed -p icmp -j DROP
+
+  # traffico in ingresso
+  einfo "Creating incoming ssh traffic chain"
+  $IPTABLES -N allow-ssh-traffic-in
+  $IPTABLES -F allow-ssh-traffic-in
+  # protezione dai flood
+  $IPTABLES -A allow-ssh-traffic-in -m limit --limit 1/second -p tcp --tcp-flags \ 
+      ALL RST --dport ssh -j ACCEPT
+  $IPTABLES -A allow-ssh-traffic-in -m limit --limit 1/second -p tcp --tcp-flags \ 
+      ALL FIN --dport ssh -j ACCEPT
+  $IPTABLES -A allow-ssh-traffic-in -m limit --limit 1/second -p tcp --tcp-flags \ 
+      ALL SYN --dport ssh -j ACCEPT
+  $IPTABLES -A allow-ssh-traffic-in -p tcp --dport ssh -j ACCEPT
+
+  # traffico in uscita
+  einfo "Creating outgoing ssh traffic chain"
+  $IPTABLES -N allow-ssh-traffic-out
+  $IPTABLES -F allow-ssh-traffic-out
+  $IPTABLES -A allow-ssh-traffic-out -p tcp --dport ssh -j ACCEPT
+
+  einfo "Creating outgoing dns traffic chain"
+  $IPTABLES -N allow-dns-traffic-out
+  $IPTABLES -F allow-dns-traffic-out
+  $IPTABLES -A allow-dns-traffic-out -p udp -d $DNS1 --dport domain \ 
+      -j ACCEPT
+  $IPTABLES -A allow-dns-traffic-out -p udp -d $DNS2 --dport domain \ 
+     -j ACCEPT
+
+  einfo "Creating outgoing http/https traffic chain"
+  $IPTABLES -N allow-www-traffic-out
+  $IPTABLES -F allow-www-traffic-out
+  $IPTABLES -A allow-www-traffic-out -p tcp --dport www -j ACCEPT
+  $IPTABLES -A allow-www-traffic-out -p tcp --dport https -j ACCEPT
+
+  # individuare i portscanners
+  einfo "Creating portscan detection chain"
+  $IPTABLES -N check-flags
+  $IPTABLES -F check-flags
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL FIN,URG,PSH -m limit \ 
+      --limit 5/minute -j LOG --log-level alert --log-prefix "NMAP-XMAS:" 
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL ALL -m limit --limit \ 
+      5/minute -j LOG --log-level 1 --log-prefix "XMAS:"
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL ALL -j DROP
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG \ 
+      -m limit --limit 5/minute -j LOG --log-level 1 --log-prefix "XMAS-PSH:"
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL NONE -m limit \ 
+      --limit 5/minute -j LOG --log-level 1 --log-prefix "NULL_SCAN:"
+  $IPTABLES -A check-flags -p tcp --tcp-flags ALL NONE -j DROP
+  $IPTABLES -A check-flags -p tcp --tcp-flags SYN,RST SYN,RST -m limit \ 
+      --limit 5/minute -j LOG --log-level 5 --log-prefix "SYN/RST:"
+  $IPTABLES -A check-flags -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+  $IPTABLES -A check-flags -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit \ 
+      --limit 5/minute -j LOG --log-level 5 --log-prefix "SYN/FIN:"
+  $IPTABLES -A check-flags -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+  # applicare e aggiungere gli stati non validi alle catene
+  einfo "Applying chains to INPUT"
+  $IPTABLES -A INPUT -m state --state INVALID -j DROP
+  $IPTABLES -A INPUT -j icmp_allowed 
+  $IPTABLES -A INPUT -j check-flags
+  $IPTABLES -A INPUT -i lo -j ACCEPT
+  $IPTABLES -A INPUT -j allow-ssh-traffic-in
+  $IPTABLES -A INPUT -j allowed-connection
+
+  einfo "Applying chains to FORWARD"
+  $IPTABLES -A FORWARD -m state --state INVALID -j DROP
+  $IPTABLES -A FORWARD -j icmp_allowed 
+  $IPTABLES -A FORWARD -j check-flags
+  $IPTABLES -A FORWARD -o lo -j ACCEPT
+  $IPTABLES -A FORWARD -j allow-ssh-traffic-in
+  $IPTABLES -A FORWARD -j allow-www-traffic-out
+  $IPTABLES -A FORWARD -j allowed-connection
+
+  einfo "Applying chains to OUTPUT"
+  $IPTABLES -A OUTPUT -m state --state INVALID -j DROP
+  $IPTABLES -A OUTPUT -j icmp_allowed
+  $IPTABLES -A OUTPUT -j check-flags
+  $IPTABLES -A OUTPUT -o lo -j ACCEPT
+  $IPTABLES -A OUTPUT -j allow-ssh-traffic-out
+  $IPTABLES -A OUTPUT -j allow-dns-traffic-out
+  $IPTABLES -A OUTPUT -j allow-www-traffic-out
+  $IPTABLES -A OUTPUT -j allowed-connection
+
+  # abilitare l'instradamento dei client tramite NAT (Network Address Translation)
+  $IPTABLES -t nat -A POSTROUTING -o $IINTERFACE -j MASQUERADE 
+  eend $?
+}
+
+start() {
+  ebegin "Starting firewall"
+  if [ -e "${FIREWALL}" ]; then
+    restore
+  else
+    einfo "${FIREWALL} does not exists. Using default rules."
+    rules
+  fi
+  eend $?
+}
+
+stop() {
+  ebegin "Stopping firewall"
+  $IPTABLES -F
+  $IPTABLES -t nat -F
+  $IPTABLES -X
+  $IPTABLES -P FORWARD ACCEPT
+  $IPTABLES -P INPUT   ACCEPT
+  $IPTABLES -P OUTPUT  ACCEPT
+  eend $?
+}
+
+showstatus() {
+  ebegin "Status"
+  $IPTABLES -L -n -v --line-numbers
+  einfo "NAT status"
+  $IPTABLES -L -n -v --line-numbers -t nat
+  eend $?
+}
+
+panic() {
+  ebegin "Setting panic rules"
+  $IPTABLES -F
+  $IPTABLES -X
+  $IPTABLES -t nat -F
+  $IPTABLES -P FORWARD DROP
+  $IPTABLES -P INPUT   DROP
+  $IPTABLES -P OUTPUT  DROP
+  $IPTABLES -A INPUT -i lo -j ACCEPT
+  $IPTABLES -A OUTPUT -o lo -j ACCEPT
+  eend $?
+}
+
+save() {
+  ebegin "Saving Firewall rules"
+  $IPTABLESSAVE &gt; $FIREWALL
+  eend $?
+}
+
+restore() {
+  ebegin "Restoring Firewall rules"
+  $IPTABLESRESTORE &lt; $FIREWALL
+  eend $?
+}
+
+restart() {
+  svc_stop; svc_start
+}
+
+showoptions() {
+  echo "Usage: $0 {start|save|restore|panic|stop|restart|showstatus}"
+  echo "start)      will restore setting if exists else force rules"
+  echo "stop)       delete all rules and set all to accept"
+  echo "rules)      force settings of new rules"
+  echo "save)       will store settings in ${FIREWALL}"
+  echo "restore)    will restore settings from ${FIREWALL}"
+  echo "showstatus) Shows the status" 
+}
+</pre>
+<note>Ho utilizzato il backslash in alcune righe per aumentare la leggibilità. E' sicuramente una buona idea unire queste
+linee nel vostro file di configurazione. Potete trovarlo già sistemato <uri link="firewall.gz">qui</uri>.</note>
+
+<p>
+Qualche consiglio per creare un firewall:
+</p>
+
+<ol>
+  <li>Create la vostra politica per il firewall prima di implemetarlo</li>
+  <li>Fate cose semplici</li>
+  <li>Imparate come funzionano i protocolli (leggete le <uri link="http://www.ietf.org/">RFC (Request For Comments)</uri>)
+  </li>
+  <li>Tenete bene a mente che un firewall non è che un altro software che gira come root</li>
+  <li>Provate e testate il vostro firewall</li>
+</ol>
+
+<p>
+Se pensate che iptables sia troppo difficile da padroneggiare o che vi possa rubare troppo tempo per impostarlo
+decentemente, potete utilizzare <uri link="http://www.shorewall.net">Shorewall</uri>. Fondamentalmente usa iptables per 
+generare le regole del firewall, ma si concentra sulle regole e non sullo specifico protocollo.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Squid</title>
+<body>
+
+<p>
+Squid è un server proxy veramente potente e può filtrare, rifiutare o autorizzare il traffico basandosi su: tempo,
+espressioni regolari per percorso/uri, indirizzo (IP) sorgente e destinazione, dominio, browser, autenticazione del nome
+utente, tipo mime e porta (protocollo). Probabilmente avrò dimenticato qualche funzionalità, ma è veramente difficile
+ricordarsi l'intera lista.
+</p> 
+
+<p>
+Nell'esempio seguente ho aggiunto un filtro per i banner piuttosto che un filtro basato su siti pornografici. La ragione
+di questa scelta è che Gentoo.org <c>non</c> dovrebbe essere classificato come un sito a carattere pornografico, e non
+voglio perdere il mio tempo cercando di trovare dei buoni indirizzi per voi.
+</p>
+
+<p>
+In questo esempio, la mia politica è la seguente:
+</p>
+
+<ul>
+  <li>La navigazione (HTTP/HTTPS) è permessa nelle ore lavorative (lun-ven 8-17 e sab 8-13) poichè se qualcuno resta 
+  fino a tardi, dovrebbe lavorare e non navigare</li>
+  <li>Il download non è permesso (.exe, .com, .arj, .zip, .asf, .avi, .mpg, .mpeg etc.)</li>
+  <li>Non amiamo i banners quindi li filtriamo e sostituiamo con gif trasparenti (è qui che potete dimostrarvi creativi!)
+  </li>
+  <li>Ogni altra connessione a e da Internet non è permessa</li>
+</ul>
+
+<p>
+Tutto questo è implememntato in 4 "facili" passi:
+</p>
+
+<pre caption="/etc/squid/squid.conf">
+# Collega a un ip e una porta
+http_port 10.0.2.1:3128
+
+# Configurazione standard
+hierarchy_stoplist cgi-bin ?
+acl QUERY urlpath_regex cgi-bin \?
+no_cache deny QUERY
+
+# Aggiunge una basilare lista di controllo degli accessi
+acl all src 0.0.0.0/0.0.0.0
+acl manager proto cache_object
+acl localhost src 127.0.0.1/255.255.255.255
+
+# Aggiunge chi può accedere a questo server proxy
+acl localnet src 10.0.0.0/255.255.0.0
+
+# e le porte
+acl SSL_ports port 443
+acl Safe_ports port 80
+acl Safe_ports port 443
+acl purge method PURGE
+
+# Aggiunge una lista di controllo degli accessi basata su
+# espressioni regolari con urls
+acl archives urlpath_regex "/etc/squid/files.acl"
+acl url_ads url_regex "/etc/squid/banner-ads.acl"
+
+# e una lista di controllo degli accessi basata sull'ora e il giorno
+acl restricted_weekdays time MTWHF 8:00-17:00
+acl restricted_weekends time A 8:00-13:00
+
+acl CONNECT method CONNECT
+
+# Abilita l'accesso manager da locale
+http_access allow manager localhost
+http_access deny manager
+
+# Permette la richiesta di svuotamento della cache solo da locale
+http_access allow purge localhost
+http_access deny purge
+
+# Nega le richieste di connessione a porte sconosciute
+http_access deny !Safe_ports
+
+# Nega le connessioni a porte che non siano quella SSL
+http_access deny CONNECT !SSL_ports
+
+# Regole personali
+
+# Aggiunge una pagina da visualizzare quando
+# un banner è rimosso
+deny_info NOTE_ADS_FILTERED url_ads
+
+# dopo un rifiuto
+http_access deny url_ads
+
+# Blocca tutti gli archivi
+http_access deny archives
+
+# Restringe l'accesso alle ore lavorative
+http_access allow localnet restricted_weekdays
+http_access allow localnet restricted_weekends
+
+# Blocca il resto
+http_access deny all
+</pre>
+
+<p>
+Elencate adesso i file che non volete sia permesso scaricare ai vostri utenti. Io ho aggiunto i file zip, viv, exe, mp3,
+rar, ace, avi, mov, mpg, mpeg, au, ra, arj, tar, gz e z.
+</p>
+
+<pre caption="/etc/squid/files.acl">
+\.[Zz][Ii][pP]$
+\.[Vv][Ii][Vv].*
+\.[Ee][Xx][Ee]$
+\.[Mm][Pp]3$
+\.[Rr][Aa][Rr]$
+\.[Aa][Cc][Ee]$
+\.[Aa][Ss][Ff]$
+\.[Aa][Vv][Ii]$
+\.[Mm][Oo][Vv]$
+\.[Mm][Pp][Gg]$
+\.[Mm][Pp][Ee][Gg]$
+\.[Aa][Uu]$
+\.[Rr][Aa]$
+\.[Aa][Rr][Jj]$
+\.[Tt][Aa][Rr]$
+\.[GgZz]$
+\.[Zz]$
+</pre>
+
+<note>
+Si notino le [] contenenti maiuscole e minuscole per ogni carattere. Ciò assicura che non sia possibile scaricare file che
+invece di avere estensione avi, per esempio, abbiano qualcosa come Avi, AVi e così via.
+</note>
+
+<p>
+Ora aggiungiamo le espressioni regolari per identificare i banners. Sarete sicuramente molto più creativi di me:
+</p>
+
+<pre caption="/etc/squid/banner-ads.acl">
+/adv/.*\.gif$
+/[Aa]ds/.*\.gif$
+/[Aa]d[Pp]ix/
+/[Aa]d[Ss]erver
+/[Aa][Dd]/.*\.[GgJj][IiPp][FfGg]$
+/[Bb]annerads/
+/adbanner.*\.[GgJj][IiPp][FfGg]$
+/images/ad/
+/reklame/
+/RealMedia/ads/.*
+^http://www\.submit-it.*
+^http://www\.eads.*
+^http://ads\.
+^http://ad\.
+^http://ads02\.
+^http://adaver.*\.
+^http://adforce\.
+adbot\.com
+/ads/.*\.gif.*
+_ad\..*cgi
+/Banners/
+/SmartBanner/
+/Ads/Media/Images/
+^http://static\.wired\.com/advertising/
+^http://*\.dejanews\.com/ads/
+^http://adfu\.blockstackers\.com/
+^http://ads2\.zdnet\.com/adverts
+^http://www2\.burstnet\.com/gifs/
+^http://www.\.valueclick\.com/cgi-bin/cycle
+^http://www\.altavista\.com/av/gifs/ie_horiz\.gif
+</pre>
+
+<p>
+Eccoci alle ultime battute. Vogliamo sia visualizzato questo file quando rimuoviamo un banner. Si tratta di un metà file
+html con una immagene gif trasparente 4x4.
+</p>
+
+<pre caption="/etc/squid/errors/NOTE_ADS_FILTERED">
+&lt;HTML&gt;
+&lt;HEAD&gt;
+&lt;META HTTP-EQUIV="REFRESH" CONTENT="0; URL=http://www.insecurity.dk/images/4x4.gif"&gt;
+&lt;TITLE>ERROR: The requested URL could not be retrieved&lt;/TITLE&gt;
+&lt;/HEAD&gt;
+&lt;BODY&gt;
+&lt;H1&gt;Add filtered!&lt;/H1&gt;
+</pre>
+
+<note>
+Non chiudete le tag &lt;HTML&gt; &lt;BODY&gt;. Se ne occuperà squid.
+</note>
+
+<p>
+Come potete notare squid presenta molte possibilità di utilizzo ed è veramente efficace nel filtraggio di contenuti nonchè
+come proxy. E' inoltre possibile usare diversi proxies squid per scalare agevolmente in reti molto grandi. La configurazione
+che ho mostrato si adatta ad una rete di piccole dimensioni con 1-20 utenti.
+</p>
+
+<p>
+Ma la soluzione migliore è probabilmente combinare un firewall packet filter (iptables) e un gateway applicativo (squid),
+anche se squid è situato in un posto sicuro e non accessibile dall'esterno. Ricordatevi sempre che un attacco può venire 
+sferrato anche dall'interno.
+</p>
+
+<p>
+Ora dovrete aggiungere il server proxy alle impostazioni dei vostri programmi di navigazione. Così il gateway non permetterà
+a nessun utente di avere contatti con l'esterno se non attraverso di lui.
+</p>
+
+<note>
+In Mozilla può essere impostato nel menu Edit->Preferences->Advanced->Proxies.
+</note>
+
+<p>
+E' possibile inoltre fare tutto questo in modo trasparente usando iptables per reindirizzare tutto il traffico verso il
+proxy squid. Questo è fattibile aggiungendo un paio di regole di forwarding/prerouting sul gateway:
+</p>
+
+<pre caption="Abilitare il portforwarding verso il server proxy">
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to proxyhost:3128</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to proxyhost:3128</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Cosa abbiamo imparato?</title>
+
+<body>
+
+<p>
+Abbiamo imparato che:
+</p>
+
+<ol>
+  <li>Un firewall può essere un rischio. Una cattiva configurazione è spesso più pericolosa che non avere un firewall.</li>
+  <li>Come configurare un gateway e un proxy trasparente</li>
+  <li>La chiave di un buon firewall è conoscere i protocolli che vogliamo autorizzare</li>
+  <li>Che il traffico IP non sempre contiene dati legittimi. Per esempio i pacchetti ICMP con un payload</li>
+  <li>Come prevenire un attacco SYN</li>
+  <li>Filtrare il traffico HTTP rimuovendo le immagini offensive e il download di virus.</li>
+  <li>Combinare un packet filter e un gateway applicativo permette di avere un maggiore controllo</li>
+</ol>
+
+<p>
+Ora, se ne avete <b>realmente</b> bisogno, potete creare un firewall che risponda ai vostri bisogni.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+-- Intrusion detection start --
+
+<chapter>
+<title>Rilevazione delle intrusioni</title>
+
+<section>
+<title>Aide (Advanced Intrusion Detection Environment)</title>
+<body>
+
+<p>
+Aide è un sistema di rilevazione delle intrusioni pensato per gli host (alternativa libera a Tripwire). Se conoscete già
+Tripwire non avrete nessuna difficoltà a destreggiarvi con la configurazione di Aide.
+</p>
+
+<p>
+Il file di configurazione è basato su espressioni regolari, macro e regole per file e directory. Abbiamo a disposizione
+le segueti macro:
+</p>
+
+<table borlder="0">
+  <tr>
+    <th>Macro</th><th>Descrizione</th><th>Sintassi</th>
+  </tr>
+  <tr>
+    <ti>ifdef</ti><ti>Se definito</ti><ti>@@ifdef "nome"</ti>
+  </tr>
+  <tr>
+    <ti>ifndef</ti><ti>Se non definito</ti><ti>@@ifndef "nome"</ti>
+  </tr>
+  <tr>
+    <ti>define</ti><ti>Definisce una variabile </ti><ti>@@define "nome" "valore"</ti>
+  </tr>
+  <tr>
+    <ti>undef</ti><ti>Rilascia una variabile</ti><ti>@@undef "nome"</ti>
+  </tr>
+  <tr>
+    <ti>ifhost</ti><ti>Se "hostname"</ti><ti>@@ifhost "hostname"</ti>
+  </tr>
+  <tr>
+    <ti>ifnhost</ti><ti>Se non "hostname"</ti><ti>@@ifnhost "hostname"</ti>
+  </tr>
+  <tr>
+    <ti>endif</ti><ti>Endif va utilizzato dopo una qualsiasi delle precednti macro ad eccezione di define e undef</ti>
+    <ti>@@endif</ti>
+  </tr>
+</table>
+
+<p>
+Queste macro risultano veramente pratiche se avete più di una Gentoo box e volete servirvi di Aide su ciascuna di esse.
+Infatti non tutte le macchine forniscono gli stessi servizi o hanno i medesimi utenti.
+</p>
+
+<p>
+Dobbiamo successivamente impostare le flags che verificheranno file o directory. Queste flags rappresentano una combinazione
+di permessi, proprietà dei file e hashes crittografici/checksums.
+</p>
+
+<table border="0">
+  <tr>
+    <th>Flag</th><th>Descrizione</th>
+  </tr>
+  <tr>
+    <ti>p</ti><ti>permessi</ti>
+  </tr>
+  <tr>
+    <ti>i</ti><ti>inode</ti>
+  </tr>
+  <tr>
+    <ti>n</ti><ti>numero di links</ti>
+  </tr>
+  <tr>
+    <ti>u</ti><ti>utente</ti>
+  </tr>
+  <tr>
+    <ti>g</ti><ti>gruppo</ti>
+  </tr>
+  <tr>
+    <ti>s</ti><ti>dimensione (size)</ti>
+  </tr>
+  <tr>
+    <ti>b</ti><ti>contatore di blocchi (block count)</ti>
+  </tr>
+  <tr>
+    <ti>m</ti><ti>mtime</ti>
+  </tr>
+  <tr>
+    <ti>a</ti><ti>atime</ti>
+  </tr>
+  <tr>
+    <ti>c</ti><ti>ctime</ti>
+  </tr>
+  <tr>
+    <ti>S</ti><ti>controllo sull'aumento delle dimensioni</ti>
+  </tr>
+  <tr>
+    <ti>md5</ti><ti>md5 checksum</ti>
+  </tr>
+  <tr>
+    <ti>sha1</ti><ti>sha1 checksum</ti>
+  </tr>
+  <tr>
+    <ti>rmd160</ti><ti>rmd160 checksum</ti>
+  </tr>
+  <tr>
+    <ti>tiger</ti><ti>tiger checksum</ti>
+  </tr>
+  <tr>
+    <ti>R</ti><ti>p+i+n+u+g+s+m+c+md5</ti>
+  </tr>
+  <tr>
+    <ti>L</ti><ti>p+i+n+u+g</ti>
+  </tr>
+  <tr>
+    <ti>E</ti><ti>gruppo vuoto</ti>
+  </tr>
+  <tr>
+    <ti>&gt;</ti><ti>file di log crescente p+u+g+i+n+S</ti>
+  </tr>
+</table>
+
+<p>
+Se Aide è compilato con il supporto mhash avremo a disposizione altre funzionalità:
+</p>
+
+<table border="0">
+  <tr>
+    <th>Flag</th><th>Descrizione</th>
+  </tr>
+  <tr>
+    <ti>haval</ti><ti>haval checksum</ti>
+  </tr>
+  <tr>
+    <ti>gost</ti><ti>gost checksum</ti>
+  </tr>
+  <tr>
+    <ti>crc32</ti><ti>crc32 checksum</ti>
+  </tr>
+</table>
+
+<p>
+Ora potete creare le vostre regole personali basandovi sulle flags precedenti, combinandole così:
+</p>
+
+<pre caption="Creare aun insieme di regole per AIDE">
+All=R+a+sha1+rmd160
+Norm=s+n+b+md5+sha1+rmd160
+</pre>
+
+<p>
+L'ultima cosa che avremo bisogno di fare per creare un file di configurazione personale è di guardare come aggiungere regole
+a file e directory. Fondamentalmente avrete bisogno soltanto del nome del file o della directory seguiti da una regola.
+Aide aggiungerà tutti i file ricorsivamente, a meno che specifichiate un diverso comportamento.
+</p>
+
+<table border="0">
+  <tr>
+    <th>Flag</th><th>Descrizione</th>
+  </tr>
+  <tr>
+    <ti>!</ti><ti>Non aggiungere uesto file o directory.</ti>
+  </tr>
+  <tr>
+    <ti>=</ti><ti>Aggiungi questa directory, ma non ricorsivamente.</ti>
+  </tr>
+</table>
+
+<p>
+Guardiamo dunque un esempio completo
+</p>
+
+<pre caption="/etc/aide/aide.conf">
+@@ifndef TOP DIR 
+@@define TOPDIR /
+@@endif
+
+@@ifndef AIDEDIR 
+@@define AIDEDIR /etc/aide
+@@endif
+
+@@ifhost smbserv
+@@define smbactive
+@@endif
+
+# La locazione da cui leggere il database.
+database=file:@@{AIDEDIR}/aide.db
+
+# La locazione in cui scrivere il database.
+database_out=file:aide.db.new
+
+verbose=20
+report_url=stdout
+
+# Definizione delle regole
+All=R+a+sha1+rmd160
+Norm=s+n+b+md5+sha1+rmd160
+
+@@{TOPDIR} Norm
+!@@{TOPDIR}etc/aide
+!@@{TOPDIR}dev
+!@@{TOPDIR}proc
+!@@{TOPDIR}root
+!@@{TOPDIR}tmp
+!@@{TOPDIR}var/log
+!@@{TOPDIR}var/run
+!@@{TOPDIR}usr/portage
+@@ifdef smbactive
+!@@{TOPDIR}etc/smb/private/secrets.tdb
+@@endif
+=@@{TOPDIR}home Norm
+</pre>
+
+<p>
+Nell'esempio precedente abbiamo indicato con qualche macro dove inizia il direttorio principale e dove si trova la directory
+di Aide. Aide controlla il file <path>/etc/aide/aide.db</path> quando deve verificare l'integrità dei file. Ma quando
+aggiorna o crea un nuovo file mette le informazioni ottenute in <path>/etc/aide/aide.db.new</path>. Questo è fatto per
+evitare che si sovrascriva automaticamente il precedente file contenente il database. L'opzione report_URL è ancora in fase
+di implementazione, dunque non ha ancora una reale utilità. Gli autori comunque hanno intenzione di servirsene per inviare
+una mail o per eseguire uno script.
+</p>
+
+<p>
+Dopo la configurazione dovrete creare il vostro file db eseguendo <c>aide -i</c> e copiando il file
+<path>/etc/aide/aide.db.new</path> in <path>/etc/aide/aide.db</path>, quindi dovrete aggiungere il controllo a crontab
+eseguendo <c>crontab -e</c> come root.
+</p>
+<note>Questa operazione può richiedere diverso tempo, a seconda della vostra cpu, la velocità d'accesso del vostro disco 
+e quali flags avete impostato nel vostro file.</note>
+
+<pre caption="Programmare l'esecuzione di aide in un cronjob">
+0 3   * * * /usr/bin/aide -u
+</pre>
+<note>Ricordatevi di impostare correttamente la ricezione della posta di root. In caso contrario potreste non ricevere
+nulla di ciò che Aide vi riferisce.</note>
+
+<p>
+In questo esempio verrà avviato automaticamente alle 3 del mattino. Ciò per assicurarsi che non sia di disturbo agli utenti
+mentre lavorano. Notate che ho usato l'opzione -u (Update, Aggiorna) al posto di -C (Check, Controlla). Questo perchè -u
+controlla ugualmente i file ma non sovrascrive il db originale; lo salva per un certo periodo di tempo, così ciò che
+vi resta da fare è copiare il file quando è stato individuato qualche cambiamento. Prima di copiare le modifiche 
+assicuratevi soltanto che siano state fatte da voi stessi e non da qualche attaccante!
+</p>
+
+<p>
+C'è però un problema con l'archiviazione in locale del file del db poichè un attaccante (se sa che aide è installato)
+cercherà sicuramente di alterare il file del db, aggiornarlo o modificare <path>/usr/bin/aide</path>. 
+Quindi create una copia del file .db e dei binari di Aide su un CD o altro mezzo rimovibile.
+</p>
+
+<p>
+Maggiori informazioni possono essere trovate sulle pagine del progetto 
+<uri link="http://www.cs.tut.fi/~rammer/aide.html">Aide</uri>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Snort</title>
+<body>
+
+<pre caption="Aggiungere un utente snort al sistema">
+# user add snort -d /var/log/snort -s /dev/null
+# chown -R snort /var/log/snort
+</pre>
+
+<pre caption="/etc/conf.d/snort">
+PID FILE=/var/run/snort_eth0.pid
+MODE="full"
+NETWORK="10.0.0.0/24"
+LOG DIR="/var/log/snort"
+CO NF=/etc/snort/snort.Cong
+SNORT_OPTS="-D -s -u snort -dev -l $LOGDIR -h $NETWORK -c $CONF"
+</pre>
+
+<pre caption="/etc/snort/snort.conf">
+<codenote>Passo 1</codenote>
+var HOME_NET 10.0.0.0/24
+var EXTERNAL_NET any
+var SMTP $HOME_NET
+var HTTP_SERVERS $HOME_NET
+var SQL_SERVERS $HOME_NET
+var DNS_SERVERS [10.0.0.2/32,212.242.40.51/32]
+var RULE_PATH ./
+
+<codenote>Passo 2</codenote>
+preprocessor frag2
+preprocessor stream4: detect_scans detect_state_problems detect_scans disable_evasion_alerts
+preprocessor stream4_reassemble: ports all
+preprocessor http_decode: 80 8080 unicode iis_alt_unicode double_encode iis_flip_slash full_whitespace
+preprocessor rpc_decode: 111 32771
+preprocessor bo: -nobrute
+preprocessor telnet_decode
+
+<codenote>Passo 3</codenote>
+include classification.config
+
+<codenote>Passo 4</codenote>
+include $RULE_PATH/bad-traffic.rules
+include $RULE_PATH/exploit.rules
+include $RULE_PATH/scan.rules
+include $RULE_PATH/finger.rules
+include $RULE_PATH/ftp.rules
+include $RULE_PATH/telnet.rules
+include $RULE_PATH/smtp.rules
+include $RULE_PATH/rpc.rules
+include $RULE_PATH/rservices.rules
+include $RULE_PATH/dos.rules
+include $RULE_PATH/ddos.rules
+include $RULE_PATH/dns.rules
+include $RULE_PATH/tftp.rules
+include $RULE_PATH/web-cgi.rules
+include $RULE_PATH/web-coldfusion.rules
+include $RULE_PATH/web-iis.rules
+include $RULE_PATH/web-frontpage.rules
+include $RULE_PATH/web-misc.rules
+include $RULE_PATH/web-attacks.rules
+include $RULE_PATH/sql.rules
+include $RULE_PATH/x11.rules
+include $RULE_PATH/icmp.rules
+include $RULE_PATH/netbios.rules
+include $RULE_PATH/misc.rules
+include $RULE_PATH/attack-responses.rules
+include $RULE_PATH/backdoor.rules
+include $RULE_PATH/shellcode.rules
+include $RULE_PATH/policy.rules
+include $RULE_PATH/porn.rules
+include $RULE_PATH/info.rules
+include $RULE_PATH/icmp-info.rules
+include $RULE_PATH/virus.rules
+# include $RULE_PATH/experimental.rules
+include $RULE_PATH/local.rules
+</pre>
+
+<pre caption="/etc/snort/classification.config">
+config classification: not-suspicious,Not Suspicious Traffic,3
+config classification: unknown,Unknown Traffic,3
+config classification: bad-unknown,Potentially Bad Traffic, 2
+config classification: attempted-recon,Attempted Information Leak,2
+config classification: successful-recon-limited,Information Leak,2
+config classification: successful-recon-largescale,Large Scale Information Leak,2
+config classification: attempted-dos,Attempted Denial of Service,2
+config classification: successful-dos,Denial of Service,2
+config classification: attempted-user,Attempted User Privilege Gain,1
+config classification: unsuccessful-user,Unsuccessful User Privilege Gain,1
+config classification: successful-user,Successful User Privilege Gain,1
+config classification: attempted-admin,Attempted Administrator Privilege Gain,1
+config classification: successful-admin,Successful Administrator Privilege Gain,1
+
+# NEW CLASSIFICATIONS
+config classification: rpc-portmap-decode,Decode of an RPC Query,2
+config classification: shellcode-detect,Executable code was detected,1
+config classification: string-detect,A suspicious string was detected,3
+config classification: suspicious-filename-detect,A suspicious filename was detected,2
+config classification: suspicious-login,An attempted login using a suspicious username was detected,2
+config classification: system-call-detect,A system call was detected,2
+config classification: tcp-connection,A TCP connection was detected,4
+config classification: trojan-activity,A Network Trojan was detected, 1
+config classification: unusual-client-port-connection,A client was using an unusual port,2
+config classification: network-scan,Detection of a Network Scan,3
+config classification: denial-of-service,Detection of a Denial of Service Attack,2
+config classification: non-standard-protocol,Detection of a non-standard protocol or event,2
+config classification: protocol-command-decode,Generic Protocol Command Decode,3
+config classification: web-application-activity,access to a potentially vulnerable web application,2
+config classification: web-application-attack,Web Application Attack,1
+config classification: misc-activity,Misc activity,3
+config classification: misc-attack,Misc Attack,2
+config classification: icmp-event,Generic ICMP event,3
+config classification: kickass-porn,SCORE! Get the lotion!,1
+</pre>
+
+<p>
+Maggiori informazioni possono essere trovate sul sito web di <uri link="http://www.snort.org">Snort</uri>.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+-- Intrusion detection end --
+
+<chapter>
+<title>Modifiche dall'ultima versione</title>
+<section>
+<title>Cambiamenti</title>
+<body>
+
+<p>
+Versione 0.1 -> 0.2
+</p>
+<ul>
+  <li>Corretti diversi errori segnalati da varie persone (Soprattutto da Bjarke Sørensen)</li>
+  <li>Cambiamenti per integrare apache.conf (ServerTokens min)</li>
+  <li>Corretto il problema con le pre-tags più lunghe di 80 caratteri</li>
+  <li>Aggiunto il capitolo relativo ai firewall</li>
+</ul>
+
+<p>
+Version 0.2 -> 0.4
+</p>
+<ul>
+  <li>Aggiunto il capitolo sulla rilevazione delle intrusioni</li>
+  <li>Corretto un bug nello script del firewall.</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+
+
+<chapter>
+<title>FAQ</title>
+
+<section>
+<title>Domande e risposte</title>
+<body>
+
+<table border="0">
+  <tr>
+    <th>Domanda</th><th>Risposta</th>
+  </tr>
+  <tr>
+    <ti>Dove posso trovare la versione più recente di questa guida?</ti><ti>L'ultima versione dovrebbe essere disponibile
+    su <uri>http://gentoo.org</uri> e la versione di sviluppo su <uri>http://gentoo.insecurity.dk</uri></ti>
+  </tr>
+</table>
+
+</body>
+</section>
+</chapter>
+
+
+</guide>
