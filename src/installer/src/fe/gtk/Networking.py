@@ -387,7 +387,7 @@ This is where you setup Networking.
 	    return_value = False
 	#for item in self.networking:
 	#    print item
-	return return_value
+	return True #return_value
     
     def get_ethernet_devices(self):
 	    put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")

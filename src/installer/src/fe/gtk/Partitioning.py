@@ -100,7 +100,20 @@ resize partitions.
 		part_info_table.attach(info_size_label, 0, 1, 5, 6)
 		part_info_table.attach(self.info_size, 1, 2, 5, 6)
 		self.part_info_box.pack_start(part_info_table, expand=gtk.FALSE, fill=gtk.FALSE)
-		vert.pack_start(self.part_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(self.part_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		# This builds the row of buttons
+		self.part_button_box = gtk.HBox(gtk.FALSE, 0)
+		self.part_button_create = gtk.Button(" Create ")
+		self.part_button_create.connect("clicked", self.part_button_create_clicked)
+		self.part_button_box.pack_start(self.part_button_create, expand=gtk.FALSE, fill=gtk.FALSE)
+		self.part_button_delete = gtk.Button(" Remove Partition ")
+		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
+		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		part_button_dump_info = gtk.Button(" Dump to console (debug) ")
+		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
+		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE)
+		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the resize slider and the Entry widgets below it
 		self.resize_box = gtk.VBox(gtk.FALSE, 0)
@@ -151,18 +164,16 @@ resize partitions.
 		self.resize_box.pack_start(resize_text_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 		vert.pack_start(self.resize_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
-		# This builds the row of buttons
-		self.part_button_box = gtk.HBox(gtk.FALSE, 0)
-		self.part_button_create = gtk.Button(" Create ")
-		self.part_button_create.connect("clicked", self.part_button_create_clicked)
-		self.part_button_box.pack_start(self.part_button_create, expand=gtk.FALSE, fill=gtk.FALSE)
-		self.part_button_delete = gtk.Button(" Remove Partition ")
-		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
-		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		part_button_dump_info = gtk.Button(" Dump to console ")
-		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE)
-		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
+		# This builds the mount point/options things
+		self.part_mount_info_box = gtk.HBox(gtk.FALSE, 0)
+		self.part_mount_info_box.pack_start(gtk.Label("Mount point:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.part_mount_point_entry = gtk.Entry()
+		self.part_mount_info_box.pack_start(self.part_mount_point_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_mount_info_box.pack_start(gtk.Label("   "), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		self.part_mount_info_box.pack_start(gtk.Label("Mount options:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.part_mount_opts_entry = gtk.Entry()
+		self.part_mount_info_box.pack_start(self.part_mount_opts_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		vert.pack_start(self.part_mount_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		# This builds the color key at the bottom
 		color_codes_box = gtk.HBox(gtk.FALSE, 0)
@@ -218,6 +229,7 @@ resize partitions.
 		self.part_info_box.hide_all()
 		self.resize_box.hide_all()
 		self.part_button_box.hide_all()
+		self.part_mount_info_box.hide_all()
 
 	def part_selected(self, button, dev=None, minor=None):
 		minor = int(minor)
@@ -241,12 +253,17 @@ resize partitions.
 		self.info_end.set_text(str(end))
 		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
+		self.part_mount_point_entry.set_text(tmppart.get_mountpoint())
+		self.part_mount_opts_entry.set_text(tmppart.get_mountopts())
 		self.active_part_minor = tmppart.get_minor()
+		self.part_button_create.set_label(" Save ")
 		self.resize_box.hide_all()
 		self.part_button_delete.set_sensitive(gtk.TRUE)
-		self.part_button_create.set_sensitive(gtk.FALSE)
+		self.part_button_create.set_sensitive(gtk.TRUE)
 		self.part_info_box.show_all()
 		self.part_button_box.show_all()
+		self.part_mount_info_box.show_all()
+#		self.part_button_create.connect("clicked", self.part_button_save_clicked)
 
 	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
 		self.info_partition.set_text(dev + " (unallocated space)")
@@ -273,8 +290,10 @@ resize partitions.
 		self.active_part_max_size = max_size
 		self.active_part_cur_size = max_size
 		self.active_part_start_cyl = start
+		self.active_part_minor = -1
 		self.resize_part_space.set_division(0)
 		self.resize_part_space.set_colors(self.colors['ext3'], self.colors['ext3'])
+		self.part_button_create.set_label(" Create ")
 		self.part_info_box.show_all()
 		self.resize_box.show_all()
 		self.part_button_delete.set_sensitive(gtk.FALSE)
@@ -290,6 +309,7 @@ resize partitions.
 			self.resize_info_part_type.set_sensitive(gtk.TRUE)
 		self.resize_info_part_filesystem.set_active(0)
 		self.part_button_box.show_all()
+#		self.part_button_create.connect("clicked", self.part_button_create_clicked)
 
 	def part_resized(self, widget, allocation):
 		newwidth = allocation.width
@@ -327,20 +347,25 @@ resize partitions.
 			self.drive_changed(None)
 
 	def part_button_create_clicked(self, button, data=None):
-		hpaned_width = self.resize_hpaned.get_allocation().width - 5
-		hpaned_pos = self.resize_hpaned.get_position()
-		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-		part_size_cyl = round(self.active_part_max_size * part_space)
-		start = self.active_part_start_cyl
-		end = int(start + part_size_cyl)
-		if self.resize_info_part_type.get_active() == 1 and self.devices[self.active_device].get_extended_partition() == 0: # Logical and no extended partition
-			free_start, free_end = self.devices[self.active_device].get_free_space(start)
-			self.devices[self.active_device].add_partition(self.devices[self.active_device].get_free_minor_at(start, end), free_start, free_end, "extended")
-		minor = self.devices[self.active_device].get_free_minor_at(start, end)
-		type = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-		self.devices[self.active_device].add_partition(minor, start, end, type)
-		self.draw_part_box()
-		self.part_selected(None, self.active_device, minor)
+		if self.active_part_minor == -1:
+			hpaned_width = self.resize_hpaned.get_allocation().width - 5
+			hpaned_pos = self.resize_hpaned.get_position()
+			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
+			part_size_cyl = round(self.active_part_max_size * part_space)
+			start = self.active_part_start_cyl
+			end = int(start + part_size_cyl)
+			if self.resize_info_part_type.get_active() == 1 and self.devices[self.active_device].get_extended_partition() == 0: # Logical and no extended partition
+				free_start, free_end = self.devices[self.active_device].get_free_space(start)
+				self.devices[self.active_device].add_partition(self.devices[self.active_device].get_free_minor_at(start, end), free_start, free_end, "extended")
+			minor = self.devices[self.active_device].get_free_minor_at(start, end)
+			type = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
+			self.devices[self.active_device].add_partition(minor, start, end, type)
+			self.draw_part_box()
+			self.part_selected(None, self.active_device, minor)
+		else:
+			tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
+			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
+			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
 
 	def part_button_resetsize_clicked(self, button, data=None):
 		pass
