@@ -3,7 +3,9 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = '$Id: mysql.py,v 1.1 2005/03/27 04:02:34 hadfield Exp $'
+"""The mysql glsr db wrapper."""
+
+__revision__ = '$Id: mysql.py,v 1.2 2005/03/27 08:44:51 hadfield Exp $'
 __modulename__ = 'mysql'
 
 import MySQLdb
@@ -14,10 +16,12 @@ import types
 #from GLSRException import MySQLModuleError
 #from Function import start_timer, stop_timer, eval_timer
 
-DEFAULT_PORT = 3308
+# The default mysql port if none is specified
+DEFAULT_PORT = 3306
 
-class MySQL:
-
+class SQLdb:
+    """The mysql glsr db wrapper class."""
+    
     def __init__(self, parameters):
         """Initialize the MySQL object.
         
@@ -31,40 +35,49 @@ class MySQL:
         
         self._db = None
         self._cursor = None
-        self._fetch = ""
         self._args = None
         self._query = None
         self._parameters = parameters
 
+        # Set the port number appropriately
         if not self._parameters.has_key("port") \
            or not isinstance(self._parameters["port"], types.IntType):
             self._parameters["port"] = DEFAULT_PORT
-        
+
+    def __del__(self):
+        """The class destructor. Closes the connection and cursor objects."""
+        self.close()
 
     def _connect(self):
         """Connect to the mysql database."""
-        
+
         try:
-            self._db = MySQLdb.connect(
-                host   = self._parameters["host"],
-                port   = self._parameters["port"],
-                user   = self._parameters["user"],
-                passwd = self._parameters["passwd"],
-                db     = self._parameters["db"])
+            # Don't reconnect if we already have an open connection
+            if self._db is None:
+                
+                self._db = MySQLdb.connect(
+                    host   = self._parameters["host"],
+                    port   = self._parameters["port"],
+                    user   = self._parameters["user"],
+                    passwd = self._parameters["passwd"],
+                    db     = self._parameters["db"])
+
+            if self._cursor is None:
+                self._cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
         
         except OperationalError, errmsg:
             raise MySQLModuleError(
                 "Caught an OperationError exception from module 'MySQLdb'",
                 errmsg)
                                                                         
-        self._cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
-
     def _init_query(self):
-
+        """Initialize the DB connection and execute the query."""
+        
         self._connect()
 
         try:
             self._cursor.execute(self._query, self._args)
+            self._db.commit()
         
         except MySQLError, errmsg:
             raise MySQLModuleError(
@@ -72,24 +85,31 @@ class MySQL:
                 "%s<br />\nQuery: %s<br />\nValues: %s" %
                 (errmsg, self._query, self._args))
 
-        self._db.commit()
+    def _get_result(self, fetch):
+        """Fetch the specified number of results."""
         
-    def _get_result(self):
-
+        from types import IntType
+        
         retval = None
         
-        if self._fetch == "one":
+        if fetch == "one":
             retval = self._cursor.fetchone()
-        elif self._fetch == "none":
+            
+        elif isinstance(fetch, IntType):
+            retval = self._cursor.fetchmany(fetch)
+            
+        elif fetch == "none":
             retval = None
+        
         else:
             retval = self._cursor.fetchall()
 
         return retval
 
     def query(self, query, args = None, fetch = "all"):
-        """Runs the specified query with 'args'.
+        """The base query method
 
+        Runs the specified query with 'args'.
         Returns a list of dictionaries of {column: value} pairs.
         Each dictionary in the list represents one record for the query.
         e.g ({uid: 1043, name: Ian}, {uid: 3456, Scott})
@@ -97,12 +117,11 @@ class MySQL:
 
         self._query = query
         self._args = args
-        self._fetch = fetch
 
         #t_start = start_timer()
 
         self._init_query()
-        result = self._get_result()
+        result = self._get_result(fetch)
 
         #logwrite("%s, Args: %s, Timing: %.5f(s)" %
         #         (self._query, self._args,
@@ -111,6 +130,23 @@ class MySQL:
         
         return result
 
+    def close(self):
+        """Close the db connection."""
+        
+        if self._cursor is not None:
+            self._cursor.close()
+            self._cursor = None
+        
+        if self._db is not None:
+            self._db.close()
+            self._db = None
 
+    def rowcount(self):
+        """Returns the number of rows the last execute produced or affected."""
+
+        if self._cursor is not None:
+            return self._cursor.rowcount
+
+        
 # FIXME: This exception is only here until exception handling is properly setup
 class MySQLModuleError(Exception): pass
