@@ -576,7 +576,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 	<center>
 	<xsl:choose>
 		<xsl:when test="@linkto">
-			<a href="{@linkto}"><img src="{@link}" alt="{@short}"/>
+			<a href="{@linkto}"><img src="{@link}" alt="{@short}"/></a>
 		</xsl:when>
 		<xsl:otherwise>
 			<img src="{@link}" alt="{@short}"/>
