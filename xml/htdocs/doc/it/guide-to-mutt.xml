@@ -1,0 +1,437 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<guide link="/doc/it/guide-to-mutt.xml">
+<?xml-stylesheet href="xsl/guide-main.xsl" type="text/xsl"?>
+<title>Guida rapida all'uso di Mutt</title>
+<author title="Author"><mail link="mikpolniak@adelphia.net">Mike Polniak</mail></author>
+<author title="Editor"><mail link="antifa@gentoo.org">Ken Nowack</mail></author>
+<author title="traduttore">Corrado 'Fizban' Ignoti</author>
+<author title="Traduttore">Team Italiano</author>
+
+<abstract>Questa guida mostra come iniziare ad usare gli strumenti per la
+consultazione delle email quali fetchmail, procmail, mutt, and nbsmtp.</abstract>
+
+<version>1.0</version>
+<date>19 Febbraio 2003</date>
+
+<chapter>
+<title>Introduzione all' E-Mail</title>
+<section>
+<body>
+
+<p>Se non siete fan dei client e-mail con interfacce grafiche elaborate, o se volete
+soltanto provare un altro client di posta elettronica prima di decidere qual'è il 
+migliore per voi, ecco il modo per iniziare ad utilizzare questi potenti strumenti
+a linea di comando:
+</p>
+
+<p><b>fetchmail->procmail->mutt->smtp</b></p>
+
+<p>Questi programmi non sono solo potenti e altamente personalizzabili, ma sono anche
+piccoli ed efficenti. Una volta che li avrete configurati sarete sbalorditi da quello 
+che potrete farci.
+</p>
+<p>Dato che questa è una guida veloce, elimineremo l'uso dei "Mail Transfer Agent (MTA)" quali sendmail, postfix o exim. Questo significa evitare complesse configurazione degli
+MTA. Questa scelta elimina, inoltre, l'uso della porta 25 per i servizi legati all'email
+</p>
+
+<p>Possiamo fare tutto questo perché fetchmail può ridirigere la mail che recupera
+direttamente al "Mail Delivery Agent (MDA)", invece di mandarla alla porta 25.
+Non è, nemmeno, necessario utilizzare un MTA per la spedizione della posta elettronica 
+verso INTERNET.
+</p>
+
+<p>Questi sono i programmi che dovrete utilizzare per avere il sistema di posta
+elettronica funzionante.</p>
+
+<pre>
+# <i>emerge fetchmail procmail mutt nbsmtp</i>
+</pre> 
+
+<p>E adesso qualche configurazione e alla fine avrete funzionante un nuovo sistema 
+per l'invio e la ricezione della posta elettronica.</p>
+
+<impo>Dopo ogni configurazione potete fare un test per essere sicuri che la 
+configurazione fatta sia corretta.</impo>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Fetchmail</title>  
+<section>
+<body>
+
+
+<p>Fetchmail prende la mail dai server remoti e la redirige al local delivery system
+installato sulla macchina. Per utilizzarlo è necessario configurare un file 
+<path>.fetchmailrc</path> posizionato nella propria home direcotory, come in questo
+esempio: </p>
+
+<pre caption="Esempio di file .fetchmailrc">
+<i>poll mail.myisp.net  protocol pop3 user "myname" password "mypasswd"</i> 
+</pre>
+
+<p>Una volta creato il file .fetchmail.rc, dovrete cambiare i permessi sul file
+utilizzando il comando chmod. Questo file deve essere leggibile solo dal prorpietario
+del file stesso. Impostate i permessi utilizzando il seguente comando:</p>
+
+<pre>
+# <i>chmod 710 .fetchmailrc</i>
+</pre>
+
+<p>Per vedere fetcmail in azione, usate la modalità "verbose". Per scaricare tutti i 
+messaggi utilizzate l'opzione -a. Dovete utilizzare l'opzione -m per dire a fetcmail 
+di mandare la mail al procmail
+</p>
+
+<warn>Mentre siete nella fase di test, è una buona idea dire a fetcmail di mantenere
+tutta la mail sul server remoto (attraverso l'opzione -k), nel caso qualcosa vada 
+storto, potrete recuperare nuovamente la mail.
+</warn> 
+
+
+<p>Ora lanciate fetcmail per vederlo in azione!</p>
+
+<pre caption="Fetchmail test #1">
+# <i>fetchmail -akv -m "/usr/bin/procmail -d %T"</i> 
+</pre>
+
+<p>Una volta che il vostro sistema è funzionante, potete inserire il comando
+nel cron o metterlo in un monitor come gkrellm. Fetchmail, può anche funzionare come un demone, 
+specificando un intervallo di tempo per il controllo della posta.</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Procmail</title>
+<section>  
+<body>
+
+<p>Procmail è il processore che filtra le email che gli vengono redeirette da fetchmail.
+Esegue la funzionalità di MDA per consegnare la mail alle vostre mailbox, dalle quali mutt
+(il vostro client di posta elettronica) le potrà leggere.
+</p>
+
+<p>Per utilizzare procmail, è necessario creare un file .procmailrc nella vostra home
+directory. Per la nostra guida "veloce" ne utilizzeremo uno molto semplice che filtrerà
+la mail proveniente da tre mailing list di gentoo e ne metterà le mail in tre mailbox:
+<e>gentoo-dev, gentoo-user and gentoo-announce</e>
+
+</p>
+
+<note>I filtri di procmail vengono chiamati "ricette", ne sono state inserite alcune
+per filtrare del possibile spam.</note>
+
+<pre caption="Sample .procmailrc">
+MAILDIR=$HOME/MuttMail                ##meglio sapere che c'è
+LOGFILE=$HOME/.procmaillog
+LOGABSTRACT=no
+#VERBOSE=on... suggerito solo in caso di debug
+VERBOSE=off
+FORMAIL=/usr/bin/formail
+NL="
+"
+##le linee delle ricette inziano con :0
+##non mettete commenti sulle linee delle ricette
+##disabilitate le ricette inserendo una condizione di "FALSE" !
+##le linee delle condizioni iniziano con un * e le espressioni regolari
+##sono vostre amiche
+##le condizioni sono concatenate con un "and" logico e tutto ciò che viene
+##messo dopo un * viene dato in pasto direttamente ad un egrep
+##una linea delle azioni segue le condizione, in questo caso è stato 
+##inserito il nome di una mailbox
+
+#trova i duplicati utilizzando formail
+:0 Whc: .msgid.lock
+| $FORMAIL -D 16384 .msgid.cache
+
+:0 a
+$MAILDIR/duplicates
+
+#gente dalla quale vogliamo sempre ricevere email
+:0 
+* ^From:.*(craig\@hotmail|renee\@local.com)
+$MAILDIR/friends 
+
+#adesso togliamo un pò di spam 
+:0  
+* ^Subject:.*(credit|cash|money|debt|sex|sale|loan)
+$MAILDIR/spam
+
+#non voglio mail in HTML
+:0
+* ^Content-Type:.*html
+$MAILDIR/junk
+
+#mettiamo le mailing list nelle mailbox
+:0 
+* ^List-Id:.*gentoo-user
+gentoo-user
+
+:0 
+* ^List-Id:.*gentoo-dev
+gentoo-dev
+
+:0 
+* ^List-Id:.*gentoo-announce
+gentoo-announce
+
+#trova tutte le email che vengono da gentoo
+:0 
+* ^From:.*gentoo.org
+gentoo
+
+:0 
+* ^From:.*@freshmeat\.net
+freshmeat
+
+################################
+# ultima regola: tutte le mail  #
+# che non rientrano nelle altre #  
+# regole finiscono nella inbox  #
+################################
+:0 
+* .*
+default
+
+# Fine del file
+</pre>
+
+<note>E' necessario creare solo la MAILDIR $HOME/MuttMail, sarà Procmail a creare
+tutti i file di mailbox necessari in questa directory utilizzando i nomi contenuti
+nelle linee delle azioni. Per trovare alcuni link utili visitate <uri>http://www.procmail.org/</uri> </note>
+
+<p>Adesso potete testare il file .procmailrc rilanciano il comando fetchmail che abbiamo
+utilizzato precedentemente. Ricordate l'opzione -k per mantenere la posta sul server
+remoto, in questo modo, la potremo recuperare se ci servirà nuovamente.</p>
+
+
+<pre caption="Procmail test #1">
+# <i>fetchmail -akv -m "/usr/bin/procmail -d %T"</i> 
+</pre>
+
+<p>Adesso che fetchmail e procmail funzionano, andate nella directory $HOME/MuttMail e 
+leggete i vostri messaggi attraverso il <c>less</c> o attraverso il vostro file manager.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Il client email Mutt</title>
+<section>
+<body>
+
+<p>Mutt è utilizzato per leggere e comporre email. E' potente e molto personalizzabile
+ma è anche piccolo ed efficiente.</p>
+
+<p>Mutt supporta la lettura e la scrittura di quattro formati differenti di mailbox:
+mbox, MMDF, MH e Maildir. Il tipo di mailbox da utilizzare è automaticamente selezionato. Nel nostro caso utilizzimao il formato mbox, dove tutti i messaggi di una mailbox sono 
+memorizzati in un singolo file.</p>
+
+<p>Mutt può anche operare con delle cartelle posizionate su un server IMAP remoto. Si
+veda "Supporto IMAP" nella sezione 4.11 del manuale di Mutt all'indirizzo <uri>http://www.mutt.org/</uri></p>
+
+<p>Quando avete fatto l'emerge di mutt, esso ha installato una file
+di configurazione per il sistema in <path>/etc/mutt/Muttrc</path>. Dovrete, però, creare anche
+un file .muttrc nella vostra home directory.</p>
+
+<pre caption="Esempio di  .muttrc">
+<codenote>Assicuratevi di leggere il manuale di Mutt in /usr/share/doc/mutt*</codenote>
+<codenote>Ogni configurazione qui sovrascrive le configurazioni di sistema del file /etc/mutt/Muttrc</codenote>
+
+# <i>cp /etc/mutt/Muttrc ~/.muttrc</i>
+# <i>nano -w .muttrc</i>
+set pager_context=1                        
+set pager_index_lines=6                 #mostra un mini-indice nel pager
+set menu_scroll  
+set pgp_verify_sig=no                   #non mostrare il pgp nel pager
+set status_on_top                       #metti la linea di stato in alto
+set sort=threads                        #visualizza i messaggi per argomento nell'indice
+
+set status_format=" %r %b %f %n      Del %d      Msgs %m %l %> (%P)"
+set pager_format="%-10.10i %[!%a %b %d %R]"
+set date_format="!%H:%M %a %d %b     "
+set index_format="%4C %Z %[%b%d] %-15.15F %s"
+set folder_format="%2C %t %8s %d %N %f"
+
+#set sendmail="/usr/bin/nbsmtp -d isp.net -h smtp.isp.net -f yourname@isp.net"
+
+#set from="default-mailaddress"         #imponi il tuo campo from
+#set realname="myname"
+
+set record="$HOME/MuttMail/sent"        #le email inviate sono salvate qui
+set delete=yes                          #cancella senza chiederlo
+set include=yes	#quota i messaggi alla risposta	
+set fast_reply=yes			#non chiedere se devi rispondere
+set beep=no				#niente rumore
+set markers=no				#non aggiungere un "+" quoando vai a capo
+set confirmappend=no			#no prompt for save to =keep           
+set to_chars=" +TCF"                    #niente "L" per mail_list
+
+set folder = $HOME/MuttMail
+mailboxes =gentoo-user
+mailboxes =gentoo-dev
+mailboxes =gentoo-announce
+mailboxes =gentoo   
+mailboxes =freshmeat
+mailboxes =duplicates
+mailboxes =default  
+mailboxes =sent     
+mailboxes =friends  
+mailboxes =junk
+mailboxes =spam
+mailboxes =keep
+
+save-hook .* =keep                      #la mbox di default per (s)alvare le mail è =keep
+subscribe gentoo-user gentoo-dev        #iscritto a queste mailing list
+
+bind pager h display-toggle-weed	#fai vedere gli header con il tasto h
+
+# simula il vecchio menu delle url
+macro index \cb |urlview\n 'call urlview to extract URLs out of a messagè
+macro pager \cb |urlview\n 'call urlview to extract URLs out of a messagè
+
+#esegui fetchmail premendo il tasto G
+macro index G "!fetchmail -a -m 'procmail -d %T'\r"
+macro pager G "!fetchmail -a -m 'procmail -d %T'\r"  
+
+#usato per editare .muttrc e quindi farne il source... non bisgona
+#far ripartire mutt
+macro generic ,sm ":source $HOME/.muttrc\r"
+macro generic \cj "!rxvt -bg wheat -e joe $HOME/.muttrc\r"
+
+#Questa è la lista degli header da togliere quando la mail viene 
+#visualizzata
+ignore *
+unignore  Date To From: Subject X-Mailer Organization User-Agent
+hdr_order Date From To Subject X-Mailer User-Agent Organization 
+
+##Mutt deve avere qualche colore
+##questi sono per quattro livelli di testo quotato
+##vengono sovrascritte le impostazioni di sistema contenute in /etc/mutt/Muttrc
+
+#color quoted green  default
+color quoted1 magenta blue 
+#color quoted2 yellow default
+#color quoted3 red default   
+#color signature cyan cyan   
+
+
+#Queste impostazioni di colori sono copiate da /etc/mutt/Muttrc.color
+#commentatele se volete i colori di default contenuti in /etc/mutt/Muttrc
+#Je vois la vie en rose :-) 
+color	hdrdefault	brightcyan	blue
+color	header		brightwhite	blue "^from:"
+color   header          brightwhite    	blue   "^subject:"
+
+color   quoted          brightgreen     blue
+color   signature       brightwhite	blue
+
+color   indicator       blue	        green
+
+color   error           red             black
+mono    error           bold
+color   status          black cyan
+mono	status		bold
+color   tree            yellow   	blue
+
+color   tilde           brightmagenta   blue
+color	body	brightwhite		blue	"[-a-z_0-9.]+@[-a-z_0-9.]+"
+mono    body    bold                    "[-a-z_0-9.]+@[-a-z_0-9.]+"
+color   body            brightyellow    black   "^Good signature"
+mono    body            bold                    "^Good signature"
+color   body            brightwhite     red     "^Bad signature from.*"
+mono    body            bold                    "^Bad signature from.*"
+color   normal          white		blue
+color	message		green	black
+color	attachment	brightgreen	blue
+
+# fine del file...ma potrebbe andare avanti e avanti e avanti....:)
+</pre>
+
+
+<p>Per la cronaca, questo è semplicemente un esempio di .muttrc. Ci sono
+molte più opzioni che possono essere configurate, per esempio quelle relative al gpg.
+Date un'occhiata a <uri>http://mutt.netliberte.org/</uri> per vedere più esempi ed 
+ottenere aiuto.</p>
+
+<p>Adesso siete pronti per testare il vostro .muttrc</p>
+
+<pre caption="Testare .muttrc">
+# <i>mutt -y</i>
+</pre>
+
+<p>Questo dovrebbe aprire Mutt con un menu che mostra le mailbox che avete creato
+precedentemente quando avete lanciato il comando fetcmail
+</p>
+
+<p>Premete il tasto ? per informazioni sulla navigazione delle Mailbox in mutt</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>SMTP</title>
+<section>
+<body>
+
+<p>Il passo finale consiste nel configurare nbsmtp il 'No-Brainer SMTP' usato per
+mandare mail al server SMTP del vostro provider. Questa configurazione è la
+più semplice di tutte, richiede solo di aggiungere una riga al vostro file .muttrc.</p>
+
+<p>domain (dominio): il dominio a cui volete che nbsmtp dica di appartenere. Questo
+dovrà essere, immancabilmente, uguale a quello presente nel vostro indirizzo di posta
+elettronica.
+</p>
+
+<p>from@addr: questo è l'indirizzo di provenienza della mail che volete che nbsmtp annunci. Notate che questo indirizzo può essere diverso dalla linea "From: (Da) configurata 
+nel vostro MUA.
+</p>
+
+<p>host: Questo è il server SMTP a cui state mandando le email.</p>
+
+<pre caption="Aggiungere il supporto smtp">
+# <i>nano -w .muttrc</i>
+set sendmail="/usr/bin/nbsmtp -d isp.net -h smtp.isp.net -f urname@isp.net"
+</pre>
+
+<p>Adesso siete pronti per ricevere e mandare messaggi. Nel pager o nell'indice di mutt
+premete il tasto <c>m</c> e componete un messagio di prova da mandare al vostro
+indirizzo di posta elettronica. Mutt utilizzerà il valore di EDITOR o quello di
+VISUAL per lanciare l'editor per la composizione del messaggio, questo nel caso non abbiate settato, in alcun modo, la variabile editor= nel file .muttrc. Quando avrete finito con la composizione del 
+messaggio premete il tasto <c>y</c> per inviare il vostro messaggio. Se non ci sono
+errori vedrete un 'invio della posta in corsò seguito da 'Nuova posta in =sent'
+</p>
+
+<p>Ricordate che nel .muttrc abbiamo impostato dove salvare la mail spedita con: 
+set record="$HOME/MuttMail/sent"</p>
+
+<p>Adesso per completare la prova, eseguite fetchmail per ricevere tutta la vostra
+mail e vericficate se avete ricevuto il messaggio che avete spedito al vostro
+indirizzo di posta elettronica. Quando trovate il vostro messaggio premete il tasto
+<c>h</c> per visualizzare tutti gli header e vedere tutto il percoso di trasferimento 
+seguito dalla vosta mail.</p>
+
+<note>C'è probabilmente un altro programma che vorrete installare: urlview. Questo
+estrae le URL dai vostri messaggi di posta e li manda al vostro browser.
+</note>
+
+<pre>
+# <i>emerge urlview</i> 
+</pre>
+
+<p>quindi create <path>~/.urlview</path> copiando il file di configurazione da <path>/usr/share/doc/urlview*/</path> e impostate il comando usato per lanciare il browser.
+</p>
+
+<p>Adesso avete un potente ed altamente personalizzabile sistema di posta elettronica.
+Quindi leggete tutti i manuali e la documentazione e trovate tutti i file di configurazione per le impostazioni utente disponibili sul web con 'google'</p>
+
+</body>
+</section>
+</chapter>
+</guide>
