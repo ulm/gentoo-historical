@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/Attic/hb-install-bootloader.xml,v 1.23 2004/01/14 12:21:54 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/Attic/hb-install-bootloader.xml,v 1.24 2004/01/16 09:42:46 swift Exp $ -->
 
 <sections>
 <section>
@@ -243,11 +243,28 @@ created kernel. Create <path>/boot/grub/grub.conf</path> with
 
 <p>
 Now we are going to write up a <path>grub.conf</path>. Beneath you'll
-find a <path>grub.conf</path> for the partitioning example we use in
-this guide, with kernel image <path>kernel-2.4.22</path>.
+find three possible <path>grub.conf</path> for the partitioning example we use 
+in this guide, with kernel image <path>kernel-2.4.22</path>. We've only
+extensively commented the first <path>grub.conf</path>. 
 </p>
 
-<pre caption = "grub.conf content">
+<ul>
+  <li>
+    The first <path>grub.conf</path> is for people who have not used 
+    <c>genkernel</c> to build their kernel
+  </li>
+  <li>
+    The second <path>grub.conf</path> is for people who have used the
+    <c>genkernel</c> from the LiveCD (i.e. <c>genkernel</c> installed using GRP
+    packages) to build their kernel
+  </li>
+  <li>
+    The third <path>grub.conf</path> is for people who have used a downloaded
+    <c>genkernel</c> to build their kernel
+  </li>
+</ul>
+
+<pre caption = "grub.conf for non-genkernel users">
 <comment># Which listing to boot as default. 0 is the first, 1 the second etc.</comment>
 default 0
 <comment># How many seconds to wait before the default listing is booted.</comment>
@@ -255,12 +272,10 @@ timeout 30
 <comment># Nice, fat splash-image to spice things up :)</comment>
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
-title=Gentoo Linux
+title=Gentoo Linux 2.4.22
 <comment># Partition where the kernel image (or operating system) is located</comment>
 root (hd0,0)
-kernel (hd0,0)/kernel-2.4.22 root=/dev/hda3
-<comment># Only if you use genkernel. Otherwise remove the following line:</comment>
-initrd (hd0,0)/initrd-2.4.22-gentoo-r2
+kernel (hd0,0)/boot/kernel-2.4.22 root=/dev/hda3
 
 <comment># The next three lines are only if you dualboot with a Windows system.</comment>
 <comment># In this case, Windows is hosted on /dev/hda6.</comment>
@@ -268,6 +283,39 @@ title=Windows XP
 root (hd0,5)
 chainloader +1
 </pre>
+
+<pre caption = "grub.conf for GRP genkernel users">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.22
+root (hd0,0)
+kernel (hd0,0)/boot/kernel-2.4.22 root=/dev/hda3
+initrd (hd0,0)/boot/initrd-2.4.22
+
+<comment># Only in case you want to dual-boot</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
+<pre caption = "grub.conf for non-GRP genkernel users">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.22
+root (hd0,0)
+kernel (hd0,0)/boot/kernel-2.4.22 root=/dev/ram0 init=/linuxrc real_root=/dev/hda3
+initrd (hd0,0)/boot/initrd-2.4.22
+
+<comment># Only in case you want to dual-boot</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
 
 <note>
 If you use a different partitioning scheme and/or kernel image, adjust 
@@ -281,8 +329,9 @@ other words, <path>(hd0,0)/grub/splash.xpm.gz</path> is in reality
 <p>
 If you need to pass any additional options to the kernel, simply add
 them to the end of the kernel command. We're already passing one option
-(<c>root=/dev/hda3</c>), but you can pass others as well. As an example
-we use the <c>vga</c> statement for framebuffer we discussed previously:
+(<c>root=/dev/hda3</c> or <c>real_root=/dev/hda3</c>), but you can pass others 
+as well. As an example we use the <c>vga</c> statement for framebuffer we 
+discussed previously:
 </p>
 
 <pre caption = "Adding the vga-statement as a kernel option">
@@ -354,8 +403,21 @@ consistency) and create the file.
 Some sections ago we have asked you to remember the kernel-image name
 you have created. In the next example <path>lilo.conf</path> we assume
 the imagename is <path>kernel-2.4.22</path>. We also use the
-example partitioning scheme in this example.
+example partitioning scheme in this example. There are three separate parts: 
 </p>
+
+<ul>
+  <li>
+    One for those who have not used <c>genkernel</c> to build their kernel
+  </li>
+  <li>
+    One for those who have used a GRP <c>genkernel</c> to build their kernel
+  </li>
+  <li>
+    One for those who have used a recent (downloaded) <c>genkernel</c> to build 
+    their kernel
+  </li>
+</ul>
 
 <pre caption = "Example /etc/lilo.conf">
 boot=/dev/hda             <comment># Install LILO in the MBR</comment>
@@ -365,12 +427,26 @@ default=gentoo            <comment># When the timeout has passed, boot the "gent
 <comment># Only if you use framebuffer. Otherwise remove the following line:</comment>
 vga=788                   <comment># Framebuffer setting. Adjust to your own will</comment>
 
+<comment># For non-genkernel users</comment>
 image=/boot/kernel-2.4.22
   label=gentoo            <comment># Name we give to this section</comment>
   read-only               <comment># Start with a read-only root. Do not alter!</comment>
   root=/dev/hda3          <comment># Location of the root filesystem</comment>
-  <comment># Only if you use genkernel. Otherwise remove the following line:</comment>
-  initrd=/boot/initrd-2.4.22-gentoo-r2
+
+<comment># For GRP genkernel users</comment>
+image=/boot/kernel-2.4.22
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  initrd=/boot/initrd-2.4.22
+
+<comment># For recent genkernel users</comment>
+image=/boot/kernel-2.4.22
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.22
 
 <comment># The next two lines are only if you dualboot with a Windows system.</comment>
 <comment># In this case, Windows is hosted on /dev/hda6.</comment>
