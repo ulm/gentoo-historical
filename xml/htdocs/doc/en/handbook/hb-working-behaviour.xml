@@ -1,20 +1,160 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/Attic/hb-working-behaviour.xml,v 1.1 2003/11/20 10:52:35 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/Attic/hb-working-behaviour.xml,v 1.2 2003/11/28 07:32:38 swift Exp $ -->
 
 <sections>
 <section>
-<title>Protecting Files</title>
+<title>Configuration File Protection</title>
 <subsection>
 <title>Protecting?</title>
 <body>
+
+<p>
+Portage knows the concept of "protected files". This means that, when you update
+software, it will not immediately overwrite certain files with newer versions,
+but inform you that a newer version exists. This is of course very usefull for
+configuration files (the files that reside in <path>/etc</path>).
+</p>
+
+<p>
+Instead of overwriting such files, it will create a new file called
+<path>._cfg0000_&lt;name&gt;</path> with <path>&lt;name&gt;</path> being the 
+original file name. It is then up to the user to merge the necessary differences
+in the existing file. He can use the <c>etc-update</c> command to ease this
+operation. We will talk about <c>etc-update</c> later.
+</p>
 
 </body>
 </subsection>
 <subsection>
 <title>Declaring CONFIG_PROTECT</title>
 <body>
+
+<p>
+Portage cannot protect on a file per file basis. Instead it protects entire
+directories. The <c>CONFIG_PROTECT</c> variable lists all protected directories.
+All subdirectories of the listed directories are protected too. The
+<c>CONFIG_PROTECT</c> variable is defined in <path>/etc/make.globals</path>,
+but if you want to change it, you should declare it in
+<path>/etc/make.conf</path> (to keep things consistent
+<path>/etc/make.conf</path> is used for all Portage configuration).
+</p>
+
+<pre caption="An example CONFIG_PROTECT setting">
+CONFIG_PROTECT="/etc /usr/share/config /usr/kde/3.1/share/config"
+</pre>
+
+<p>
+If you want a certain directory protected, but not all of its subdirectories,
+you can "unprotect" these directories by listing them in the
+<c>CONFIG_PROTECT_MASK</c> variable, which also has a default value defined in
+<path>/etc/make.globals</path> but should be altered by declaring it in
+<path>/etc/make.conf</path>:
+</p>
+
+<pre caption="An example CONFIG_PROTECT_MASK setting">
+CONFIG_PROTECT_MASK="/etc/init.d"
+</pre>
+
+<p>
+More information about the Configuration File Protection can be found in
+<c>emerge</c>'s online help:
+</p>
+
+<pre caption="Getting information about Configuration File Protection">
+# <i>emerge --help config</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>etc-update</title>
+<body>
+
+<p>
+<c>etc-update</c> is a tool that aids in merging the
+<path>._cfg0000_&lt;name&gt;</path> files. It provides an interactive merging
+setup and can also auto-merge trivial changes.
+</p>
+
+<p>
+Running <c>etc-update</c> is pretty straight-forward:
+</p>
+
+<pre caption="Running etc-update">
+# <i>etc-update</i>
+</pre>
+
+<p>
+After merging the trivial changes, you will be prompted with a list of protected
+files that have an update waiting. At the bottom you are greeted by the possible
+options:
+</p>
+
+<pre caption="etc-update options">
+Please select a file to edit by entering the corresponding number.
+              (-1 to exit) (-3 to auto merge all remaining files)
+                           (-5 to auto-merge AND not use 'mv -i'): 
+</pre>
+
+<p>
+If you enter <c>-1</c>, <c>etc-update</c> will exit without performing any
+changes. If you enter <c>-3</c> or <c>-5</c>, <e>all</e> listed configuration
+files will be overwritten with the newer versions. It is therefore very
+important to first select the configuration files that should not be
+automatically updated. This is as easy as entering the number listed to the left
+of that configuration file.
+</p>
+
+<p>
+As an example, we select the configuration file <path>/etc/pear.conf</path>:
+</p>
+
+<pre caption="Updating a specific configuration file">
+Beginning of differences between /etc/pear.conf and /etc/._cfg0000_pear.conf
+<comment>[...]</comment>
+End of differences between /etc/pear.conf and /etc/._cfg0000_pear.conf
+1) Replace original with update
+2) Delete update, keeping original as is
+3) Interactively merge original with update
+4) Show differences again
+</pre>
+
+<p>
+You can now see the differences between the two files. If you believe that the
+updated configuration file can be used without problems, enter <c>1</c>. If you
+believe that the updated configuration file isn't necessary, or doesn't provide
+any new or usefull information, enter <c>2</c>. If you want to interactively
+update your current configuration file, enter <c>3</c>. 
+</p>
+
+<p>
+It is not usefull to elaborate about the interactive merging here. For
+completeness sake, we will list the possible commands you can use while you are
+interactively merging the two files. You are greeted with two lines (the
+original one, and the proposed new one) and a prompt at which you can enter one
+of the following commands:
+</p>
+
+<pre caption="Commands available for the interactive merging">
+ed:     Edit then use both versions, each decorated with a header.
+eb:     Edit then use both versions.
+el:     Edit then use the left version.
+er:     Edit then use the right version.
+e:      Edit a new version.
+l:      Use the left version.
+r:      Use the right version.
+s:      Silently include common lines.
+v:      Verbosely include common lines.
+q:      Quit.
+</pre>
+
+<p>
+When you have finished updating the important configuration files, you can now
+automatically update all the other configuration files. <c>etc-update</c> will
+exit if it doesn't find any more updateable configuration files.
+</p>
 
 </body>
 </subsection>
