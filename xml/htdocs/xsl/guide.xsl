@@ -30,14 +30,14 @@
 			<tr>
 				<td class="logobg" valign="top" align="center" height="88">
 					<a href="/">
-						<img border="0" src="http://www.ibiblio.org/web-gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
+						<img border="0" src="/images/gtop-s.jpg" alt="Gentoo Logo"/>
 					</a>
 				</td>
 			</tr>
 			<tr>
 				<td class="logobg" valign="top" align="center" height="36">
 					<a href="/">
-						<img border="0" src="http://www.ibiblio.org/web-gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
+						<img border="0" src="/images/gbot-s.gif" alt="Gentoo Logo Side"/>
 					</a>
 				</td>
 </tr>
@@ -80,7 +80,7 @@
                     <table border="0" cellspacing="5" cellpadding="0">
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                          <img src="/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -90,7 +90,7 @@
                       </tr>
 		      <tr>
 		      	<td>
-				<img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+				<img src="/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -100,7 +100,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                          <img src="/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                       <tr>
@@ -108,7 +108,7 @@
                       </tr>
                       <tr>
                         <td>
-                          <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                          <img src="/images/line.gif" alt="line"/>
                         </td>
                       </tr>
                 <tr>
@@ -120,7 +120,7 @@
                       <input type="hidden" name="business" value="drobbins@gentoo.org"/>
                       <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
                       <input type="hidden" name="item_number" value="1000"/>
-                      <input type="hidden" name="image_url" value="http://www.ibiblio.org/web-gentoo/images/paypal.png"/>
+                      <input type="hidden" name="image_url" value="/images/paypal.png"/>
                       <input type="hidden" name="no_shipping" value="1"/>
                       <input type="hidden" name="return" value="http://www.gentoo.org"/>
                       <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
@@ -130,20 +130,20 @@
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 		<tr>
                   <td align="center">
                     <a href="http://www.netraverse.com/gentoo.htm" target="_top">
-                      <img src="http://www.ibiblio.org/web-gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                      <img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
                     <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
 		</tr>
 		<tr>
                     <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                     </td>
                 </tr>
 		<tr>
@@ -156,7 +156,7 @@
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 			</table>
@@ -199,14 +199,14 @@
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
                     <a href="/">
-                      <img border="0" src="http://www.ibiblio.org/web-gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
+                      <img border="0" src="/images/gtop-s.jpg" alt="Gentoo Logo"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
                     <a href="/">
-                      <img border="0" src="http://www.ibiblio.org/web-gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
+                      <img border="0" src="/images/gbot-s.gif" alt="Gentoo Logo Side"/>
                     </a>
                   </td>
                 </tr>
@@ -284,7 +284,7 @@
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td height="1%" valign="top" align="right">
-                    <img src="http://www.ibiblio.org/web-gentoo/images/gridtest.gif" alt="Gentoo Spaceship"/>
+                    <img src="/images/gridtest.gif" alt="Gentoo Spaceship"/>
                   </td>
                 </tr>
                 <tr>
@@ -423,28 +423,28 @@
                               <td width="100" align="center" valign="middle">
                                 <xsl:choose>
                                   <xsl:when test="document(.)/news/@category='alpha'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+                                    <img src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
                                   </xsl:when>
 	                                  <xsl:when test="document(.)/news/@category='kde'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-kde.png" alt="KDE"/>
+                                    <img src="/images/icon-kde.png" alt="KDE"/>
                                   </xsl:when>
 									<xsl:when test="document(.)/news/@category='gentoo'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-gentoo.png" alt="gentoo"/>
+                                    <img src="/images/icon-gentoo.png" alt="gentoo"/>
                                   </xsl:when>
                                   <xsl:when test="document(.)/news/@category='main'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-stick.png" alt="stick man"/>
+                                    <img src="/images/icon-stick.png" alt="stick man"/>
                                   </xsl:when>
                                   <xsl:when test="document(.)/news/@category='ibm'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-ibm.gif" alt="ibm"/>
+                                    <img src="/images/icon-ibm.gif" alt="ibm"/>
                                   </xsl:when>
                                   <xsl:when test="document(.)/news/@category='linux'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-penguin.png" alt="tux"/>
+                                    <img src="/images/icon-penguin.png" alt="tux"/>
                                   </xsl:when>
                                   <xsl:when test="document(.)/news/@category='moo'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-cow.png" alt="Larry the Cow"/>
+                                    <img src="/images/icon-cow.png" alt="Larry the Cow"/>
                                   </xsl:when>
                                   <xsl:when test="document(.)/news/@category='nvidia'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-nvidia.png" alt="Nvidia"/>
+                                    <img src="/images/icon-nvidia.png" alt="Nvidia"/>
                                   </xsl:when>
                                 </xsl:choose>
                               </td>
@@ -484,28 +484,28 @@
                             <td width="100" align="center" valign="top">
                               <xsl:choose>
                                  <xsl:when test="@category='alpha'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+                                    <img src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
                                   </xsl:when>
 	                                  <xsl:when test="@category='kde'">
-                                    <img src="http://www.ibiblio.org/web-gentoo/images/icon-kde.png" alt="KDE"/>
+                                    <img src="/images/icon-kde.png" alt="KDE"/>
                                   </xsl:when>
 								<xsl:when test="@category='gentoo'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-gentoo.png" alt="gentoo"/>
+                                  <img src="/images/icon-gentoo.png" alt="gentoo"/>
                                 </xsl:when>
                                 <xsl:when test="@category='main'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-stick.png" alt="stick man"/>
+                                  <img src="/images/icon-stick.png" alt="stick man"/>
                                 </xsl:when>
                                 <xsl:when test="@category='ibm'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-ibm.gif" alt="IBM"/>
+                                  <img src="/images/icon-ibm.gif" alt="IBM"/>
                                 </xsl:when>
                                 <xsl:when test="@category='linux'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-penguin.png" alt="Tux the Penguin"/>
+                                  <img src="/images/icon-penguin.png" alt="Tux the Penguin"/>
                                 </xsl:when>
                                 <xsl:when test="@category='moo'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-cow.png" alt="Larry the Cow"/>
+                                  <img src="/images/icon-cow.png" alt="Larry the Cow"/>
                                 </xsl:when>
                                 <xsl:when test="@category='nvidia'">
-                                  <img src="http://www.ibiblio.org/web-gentoo/images/icon-nvidia.png" alt="nvidia"/>
+                                  <img src="/images/icon-nvidia.png" alt="nvidia"/>
                                 </xsl:when>
                               </xsl:choose>
                             </td>
@@ -548,7 +548,7 @@
               <table border="0" cellspacing="5" cellpadding="0">
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 					<xsl:choose>
@@ -558,7 +558,7 @@
 						</td></tr>
 						<tr>
 						<td>
-							<img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+							<img src="/images/line.gif" alt="line"/>
 						</td>
 						</tr>
 					</xsl:when>
@@ -568,7 +568,7 @@
 						</td></tr>
 						<tr>
 						<td>
-							<img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+							<img src="/images/line.gif" alt="line"/>
 						</td>
 						</tr>
 					</xsl:when>
@@ -582,7 +582,7 @@
                       <input type="hidden" name="business" value="drobbins@gentoo.org"/>
                       <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
                       <input type="hidden" name="item_number" value="1000"/>
-                      <input type="hidden" name="image_url" value="http://www.ibiblio.org/web-gentoo/images/paypal.png"/>
+                      <input type="hidden" name="image_url" value="/images/paypal.png"/>
                       <input type="hidden" name="no_shipping" value="1"/>
                       <input type="hidden" name="return" value="http://www.gentoo.org"/>
                       <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
@@ -592,20 +592,20 @@
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 		<tr>
                   <td align="center">
                     <a href="http://www.netraverse.com/gentoo.htm" target="_top">
-                      <img src="http://www.ibiblio.org/web-gentoo/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
+                      <img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/>
                     </a>
                     <p class="alttext">Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds. <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)</p>
                   </td>
 		</tr>
 		<tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 				<tr>
@@ -618,7 +618,7 @@
                 </tr>
                 <tr>
                   <td>
-                    <img src="http://www.ibiblio.org/web-gentoo/images/line.gif" alt="line"/>
+                    <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
 </table>
