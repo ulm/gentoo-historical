@@ -38,7 +38,7 @@
     <xsl:for-each select="part">
       <xsl:param name="curpart" select="position()" />
       <li>
-        <b><a href="?part={$curpart}&amp;chap=0&amp;style={$style}"><xsl:value-of select="title" /></a></b>
+        <b><a href="handbook.xml?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
         <xsl:if test="abstract">
           <br />
           <xsl:value-of select="abstract" />
@@ -47,7 +47,7 @@
           <xsl:for-each select="chapter">
             <xsl:param name="curchap" select="position()" />
             <li>
-              <b><a href="?part={$curpart}&amp;chap={$curchap}&amp;style={$style}"><xsl:value-of select="title" /></a></b>
+              <b><a href="handbook.xml?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
               <xsl:if test="abstract">
                 <br/>
                 <xsl:value-of select="abstract" />
@@ -92,7 +92,7 @@
       <xsl:param name="curpos" select="position()" />
       <xsl:if test="title">
         <li>
-          <b><a href="?part={$part}&amp;chap={$curpos}&amp;style={$style}"><xsl:value-of select="title" /></a></b>
+          <b><a href="handbook.xml?part={$part}&amp;chap={$curpos}"><xsl:value-of select="title" /></a></b>
           <xsl:if test="abstract">
             <br/><xsl:value-of select="abstract" />
           </xsl:if>
@@ -120,7 +120,7 @@
           [ &lt;&lt; Previous Part ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="?part={$prevpart}&amp;chap=0">&lt;&lt; Previous Part</a> ]
+          [ <a href="handbook.xml?part={$prevpart}&amp;chap=0">&lt;&lt; Previous Part</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Previous Chapter -->
@@ -129,17 +129,17 @@
           [ &lt; Previous Chapter ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="?part={$part}&amp;chap={$prevchap}">&lt; Previous Chapter</a> ]
+          [ <a href="handbook.xml?part={$part}&amp;chap={$prevchap}">&lt; Previous Chapter</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Content -->
-      [ <a href="?part=0&amp;chap=0">Home</a> ]
+      [ <a href="handbook.xml?part=0&amp;chap=0">Home</a> ]
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
-        [ <a href="?part=1">Next Chapter &gt;</a> ]
+        [ <a href="handbook.xml?part=1">Next Chapter &gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
-        [ <a href="?part={$part}&amp;chap=1">Next Chapter &gt;</a> ]
+        [ <a href="handbook.xml?part={$part}&amp;chap=1">Next Chapter &gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'chapter'">
         <xsl:choose>
@@ -147,13 +147,13 @@
             [ Next Chapter &gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$part}&amp;chap={$nextchap}">Next Chapter &gt;</a> ]
+            [ <a href="handbook.xml?part={$part}&amp;chap={$nextchap}">Next Chapter &gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
       <!-- Next Part -->
       <xsl:if test="name() = 'book'">
-        [ <a href="?part={$nextpart}">Next Part &gt;&gt;</a> ]
+        [ <a href="handbook.xml?part={$nextpart}">Next Part &gt;&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
         <xsl:choose>
@@ -161,7 +161,7 @@
             [ Next Part &gt;&gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
+            [ <a href="handbook.xml?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
@@ -171,7 +171,7 @@
             [ Next Part &gt;&gt; ] 
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
+            [ <a href="handbook.xml?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
