@@ -170,7 +170,7 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="Tek Alchemy" border="0"/></a>
+                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
 		  php|architect is the monthly magazine for PHP professionals, available
 		  worldwide in print and electronic format. A percentage of all the sales
@@ -211,12 +211,9 @@
               </tr>
               <tr>
                 <td align="center">
-                  <p class="alttext">
-                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
-                  </p>
                   <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
                   <p class="alttext">
-                    <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)
+                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
                   </p>
                 </td>
               </tr>
@@ -687,7 +684,7 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="Tek Alchemy" border="0"/></a>
+                  <a href="http://www.phparch.com" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
 		  php|architect is the monthly magazine for PHP professionals, available
 		  worldwide in print and electronic format. A percentage of all the sales
@@ -728,12 +725,9 @@
               </tr>
               <tr>
                 <td align="center">
-                  <p class="alttext">
-                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
-                  </p>
                   <a href="http://www.netraverse.com/gentoo.htm" target="_top"><img src="/images/netraverse-gentoo.gif" width="125" height="102" alt="Win4Lin at NeTraverse" border="0"/></a>
                   <p class="alttext">
-                    <a href="http://www.netraverse.com/gentoo.htm">Purchase Win4Lin "Gentoo Edition"</a> and you'll also get a special Gentoo discount. Every sale also helps support Gentoo Linux development :)
+                    Win4Lin from <b>NeTraverse</b> lets you run Windows applications under Gentoo Linux at native speeds.
                   </p>
                 </td>
               </tr>
