@@ -5,7 +5,7 @@ echo ">>> Starting Web update..."
 source ~/.bashrc
 
 #to get all arches in our package listing:
-export ACCEPT_KEYWORDS="x86 ppc alpha sparc sparc64"
+export ACCEPT_KEYWORDS="x86 ppc alpha sparc hppa mips arm"
 export PORTDIR="$HOME/gentoo-x86"
 export FEATURES="-cvs -digest"
 
