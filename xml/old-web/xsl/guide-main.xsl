@@ -283,6 +283,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-contract.html"> Social Contract</a> |
 						</xsl:otherwise>
 					</xsl:choose>
+					<a class="menulink" href="http://forums.gentoo.org">Forums (new!)</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='packages'">
 							<a class="highlight" href="/index-packages.html"> Packages</a> |
