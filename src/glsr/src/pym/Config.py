@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.3 2004/07/05 20:34:44 port001 Exp $
+# $Id: Config.py,v 1.4 2004/07/06 01:16:58 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -48,10 +48,9 @@ Template = {
 URL = "http://localhost/glsr/"
 Contact = "port001@gentoo.org"
 
-Memcache = "No" # Not supported yet
+Memcache = False # Not supported yet
 
 Logging = True
-Logtype = "All" # All/Error
 LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
 
 Debug = True

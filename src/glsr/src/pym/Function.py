@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.2 2004/07/05 20:34:44 port001 Exp $
+# $Id: Function.py,v 1.3 2004/07/06 01:16:58 port001 Exp $
 #
 
 import traceback
@@ -12,7 +12,6 @@ import Config
 import Template as TemplateHandler
 
 __modulename__ = "Function"
-__productname__ = "glsr"
 
 def err(msg, modname):
     """Send given error message to logwrite(), display error message to
@@ -26,7 +25,7 @@ def err(msg, modname):
 	except:
 	    pass
 
-    logwrite("ERROR: %s: %s" % (modname, msg), "Error")
+    logwrite(msg, modname, "Error")
   
     if Config.HTMLHeadersSent == False:      
         print "Content-type:text/html\n\n"
@@ -84,17 +83,30 @@ def err(msg, modname):
                             "CONTACT":          Config.Contact})
         FooterTemplate.Print()
     
-def logwrite(msg, type):
-    """Write Given message to a log file"""
-    
+def logwrite(msg, modname, type):
+    """Write Given message to a log file
+       Type can be: Error, Query, Info"""
+                                                                                                                                   
+    logtype = ""
+                                                                                                                                   
     if Config.Logging == True:
-        if ((Config.Logtype == "All" and (type == "All" or type == "Error")) or
-            (Config.Logtype == "Error" and type == "Error")):
-            
+                                                                                                                                   
+        if type.lower() == "error":
+            logtype = "error"
+        elif type.lower() == "query":
+            logtype = "query"
+        elif type.lower() == "info":
+            logtype = "info"
+        else:
+            logtype = "????"
+                                                                                                                                   
+        try:
             fd = open(Config.LogFile, "a")
-            fd.write("%s %s: %s\n" % (strftime("%d/%b/%Y %H:%M:%S", gmtime()),
-                                      __productname__, msg))
+            fd.write("[%s] [%s] [%s] %s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()),
+                                              logtype, modname, msg))
             fd.close()
+        except:
+            pass
 
 def start_timer():
 

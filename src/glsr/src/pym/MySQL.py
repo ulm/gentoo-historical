@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.2 2004/07/05 20:34:44 port001 Exp $
+# $Id: MySQL.py,v 1.3 2004/07/06 01:16:58 port001 Exp $
 #
 
 import sys
@@ -11,7 +11,7 @@ from _mysql_exceptions import MySQLError, OperationalError
 
 import Config
 
-if Config.Memcache == "Yes":
+if Config.Memcache == True:
     import memcache
 
 import Const
@@ -66,12 +66,12 @@ def _InitQuery(query, args):
 def _Fetch((cursor, t_start), query, args, fetch):
     if fetch == "one":
         result = cursor.fetchone()
-	Function.logwrite("""Query: %s Args: %s Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), "All")
+	Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
     elif fetch == "none":
-        Function.logwrite("""Query: %s Args: %s Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), "All")
+        Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
         return
     else:
         result = cursor.fetchall()
-        Function.logwrite("""Query: %s Args: %s Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), "All")
+        Function.logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, Function.eval_timer(t_start, Function.stop_timer())), __modulename__, "Query")
 
     return result        
