@@ -6,7 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, signal, time, shutil, sys
+import string, os, re, signal, time, shutil, sys, random
 
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
@@ -188,15 +188,23 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
-	res = run_cmd("ifconfig" + options)
+	status = run_cmd("ifconfig" + options, quiet=True)
 
-	if exitsuccess(res):
-		return True
+	if not exitsuccess(status):
+		return False
 
-	return False
+	return True
 
 def set_default_route(route):
-	pass
+	if not is_ip(route):
+		raise "IPAddressError", "The default route must be an IP address!"
+
+	status = run_cmd("route add default gw " + route, quiet=True)
+
+	if not exitsuccess(status):
+		return False
+
+	return True
 
 def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
 	pid = os.fork()
@@ -213,7 +221,7 @@ def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
 				tty = os.open("/dev/vc/8", os.O_RDWR)
 				oldstdout = sys.stdout
 				os.dup2(tty,sys.stdout.fileno())
-			except IOError:
+			except OSError:
 				print "Could not open on tty8. Are you running as root?"
 				tty = None
 
@@ -271,3 +279,66 @@ def get_uri(uri, path):
 		return True
 	
 	return False
+
+def test_network(host):
+	status = run_cmd("ping -c 3 " + host,quiet=True)
+
+	if not exitsuccess(status):
+		return False
+
+	return True
+
+def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
+	"Fetches a tarball from tarball_uri and extracts it into target_directory"
+
+	# Get tarball info
+	tarball_filename = tarball_uri.split("/")[-1]
+
+	# Get the tarball
+	get_uri(tarball_uri, temp_directory + "/" + tarball_filename)
+
+	# Reset tar options
+	tar_options = "xv"
+
+	# If the tarball is bzip'd
+	if tarball_filename.split(".")[-1] == "tbz" or  tarball_filename.split(".")[-1] == "bz2":
+		tar_options = tar_options + "j"
+
+	# If the tarball is gzip'd
+	elif tarball_filename.split(".")[-1] == "tgz" or  tarball_filename.split(".")[-1] == "gz":
+		tar_options = tar_options + "z"
+
+	# If we want to keep permissions
+	if keep_permissions:
+		tar_options = tar_options + "p"
+
+	# Unpack the tarball
+	exitstatus = run_cmd("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
+
+	if not exitsuccess(exitstatus):
+		raise "UnpackTarballError", "Could not unpack tarball!"
+
+def emerge(package, binary=False, binary_only=False):
+	if binary_only:
+		return run_cmd("emerge -K " + package, display_on_tty8=True)
+	elif binary:
+		return run_cmd("emerge -k " + package, display_on_tty8=True)
+	else:
+		return run_cmd("emerge " + package, display_on_tty8=True)
+
+def generate_random_password():
+	s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890$%^&*[]{}-=+_,|'\"<>:/"
+	s = list(s)
+
+	for i in range(0,len(s)/2):
+		x = random.randint(0,len(s)-1)
+		y = random.randint(0,len(s)-1)
+		tmp = s[x]
+		s[x] = s[y]
+		s[y] = tmp
+
+	passwd = ""
+	for i in range(0,random.randint(8,12)):
+		passwd += s[i]
+
+	return passwd

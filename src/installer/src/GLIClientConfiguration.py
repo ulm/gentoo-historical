@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.9 2004/08/10 16:35:41 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.10 2004/08/17 15:32:04 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -61,6 +61,10 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._network_type = ""
 		self._network_data = ()
 		self._default_gateway = ()
+		self._enable_ssh = False
+		self._root_passwd = ""
+		self._interactive = True
+		self._kernel_modules = ()
 
 		# Internal SAX state info
 		self._xml_elements = [];
@@ -77,8 +81,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		return self._profile_uri
 	
 	def set_profile_uri(self, profile_uri):
-		print 'uri =', profile_uri
-		if not GLIUtility.is_uri(profile_uri):
+		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
 			raise "URIError", "The URI specified is not valid!"
 
 		self._profile_uri = profile_uri
@@ -88,6 +91,9 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	
 	def set_install_steps_completed(self, install_steps_completed):
 		self._install_steps_completed = install_steps_completed
+
+	def add_install_steps_completed(self, install_step):
+		self._install_steps_completed.append(install_step)
 
 	def get_current_step_percent(self):
 		return self._current_step_percent
@@ -122,7 +128,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	shared_client_configuration = classmethod(shared_client_configuration)
 
 	def set_network_type(self, type):
-		if type == 'specified' and self._xml_current_attr != None:
+		if type == 'static' and self._xml_current_attr != None:
 			attr = self._xml_current_attr
 			ip = broadcast = netmask = interface = ""
 
@@ -137,7 +143,24 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					interface = str(attr.getValue(attrName))
 
 			self.set_network_data((interface, ip, broadcast, netmask))
+		elif type == 'static':
+			raise "NoInterfaceError","No interface information specified!"
 
+		elif type == "dhcp" and self._xml_current_attr != None:
+			if 'interface' in self._xml_current_attr.getNames():
+				interface = str(self._xml_current_attr.getValue('interface'))
+				if not GLIUtility.is_eth_device(interface):
+					raise "InterfaceError", "Interface " + interface + " must be a valid device!"
+				else:
+					self._network_data = (interface, None, None, None)
+
+		self._network_type = type
+
+	def set_network_type_nocheck(self, type):
+		"""
+		This sets the network type, but allows all of the checking
+		to be done from the frontend.
+		"""
 		self._network_type = type
 
 	def get_network_type(self):
@@ -155,8 +178,9 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		if not GLIUtility.is_eth_device(interface):
 			raise "InterfaceError", "Interface " + interface + " must be a valid device!"
 	
-		if not GLIUtility.is_ip(broadcast) and not GLIUtility.is_ip(netmask) and not GLIUtility.is_ip(ip):
-			raise "IPError", "broadcast, netmask and ip address must be valid IP addresses!"
+		if ip != None and broadcast != None and netmask != None:
+			if not GLIUtility.is_ip(broadcast) and not GLIUtility.is_ip(netmask) and not GLIUtility.is_ip(ip):
+				raise "IPError", "broadcast, netmask and ip address must be valid IP addresses!"
 		
 		self._network_data = network_info
 
@@ -182,15 +206,44 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		return self._default_gateway
 
 	def set_dns_servers(self, nameservers):
-		nameservers = nameservers.split(" ")
-		dns = []
-		for server in nameservers:
-			dns.append(server)
+		if type(nameservers) == str:
+			nameservers = nameservers.split(" ")
+			dns = []
+			for server in nameservers:
+				dns.append(server)
 
 		self._dns_servers = tuple(dns)
 
 	def get_dns_servers(self):
 		return self._dns_servers
+
+	def set_enable_ssh(self, enable_ssh):
+		if type(enable_ssh) == str:
+			enable_ssh = GLIUtility.strtobool(enable_ssh)
+		self._enable_ssh = enable_ssh
+
+	def get_enable_ssh(self):
+		return self._enable_ssh
+
+	def set_root_passwd(self,passwd):
+		self._root_passwd = passwd
+
+	def get_root_passwd(self):
+		return self._root_passwd
+
+	def set_interactive(self, interactive):
+		if type(interactive) != bool:
+			interactive = GLIUtility.strtobool(interactive)
+		self._interactive = interactive
+
+	def get_interactive(self):
+		return self._interactive
+
+	def set_kernel_modules(self, modules):
+		self._kernel_modules = tuple(string.split(modules))
+
+	def get_kernel_modules(self):
+		return self._kernel_modules
 
 	def startElement(self, name, attr): 
 		"""
@@ -210,7 +263,11 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/log-file': self.set_log_file,
 					'client-configuration/network-setup': self.set_network_type,
 					'client-configuration/dns-servers': self.set_dns_servers,
-					'client-configuration/default-gateway': self.set_default_gateway
+					'client-configuration/default-gateway': self.set_default_gateway,
+					'client-configuration/enable-ssh': self.set_enable_ssh,
+					'client-configuration/root-passwd': self.set_root_passwd,
+					'client-configuration/interactive': self.set_interactive,
+					'client-configuration/kernel-modules': self.set_kernel_modules
 				}
 
 		path = self._xml_element_path()
@@ -252,7 +309,10 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		fntable =	{	'architecture-template': self.get_architecture_template,
 					'mount-point': self.get_root_mount_point,
 					'profile-uri': self.get_profile_uri,
-					'log-file': self.get_log_file
+					'log-file': self.get_log_file,
+					'enable-ssh': self.get_enable_ssh,
+					'root-passwd': self.get_root_passwd,
+					'interactive': self.get_interactive
 				}
 		data = "<client-configuration>"
 
@@ -261,15 +321,27 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 		# Special Cases
 		net_type = self.get_network_type()
-		if net_type == "specified":
+		if net_type == "static":
 			net_info = self.get_network_info()
 			data +=  "<network-setup interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network-setup>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
 			gateway = self.get_default_gateway()
 			data += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gateway[0], gateway[1])
 			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
+		elif net_type == "dhcp":
+			net_info = self.get_network_info()
+			interface = None
+
+			if len(net_info) > 0:
+				interface = net_info[0]
+
+			if interface != None:
+				data += "<network-setup interface=\"%s\">dhcp</network-setup>" % interface
+			else:
+				data += "<network-setup>dhcp</network-setup>"
 		else:
 			data += "<network-setup>%s</network-setup>" % net_type
 	
+		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
 
 		data += "</client-configuration>"
 
