@@ -194,7 +194,7 @@ class PartProperties(gtk.Window):
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
 #			start = self.active_part_start_cyl
-			end = int(self.start + part_size) # - 1
+			end = int(self.start + part_size) - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				free_start, free_end = self.controller.devices[self.device].get_free_space(self.start)
 				self.controller.devices[self.device].add_partition(self.controller.devices[self.device].get_free_minor_at(self.start, end), free_start, free_end, "extended")
