@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- English doc rev. 1.33 -->
+<!-- English doc rev. 1.43 -->
 
 <sections>
 <section>
@@ -84,13 +84,20 @@ partisi <path>/boot</path> (mis. <b>PPC</b>), jangan ditiru langsung.
 <p>
 Di contoh partisi x86 default kita, <path>/boot</path> berada di partisi
 <path>/dev/hda1</path>, dengan <c>ext2</c> sebagai filesystem. Partisi
-ini seharusnya tidak dimount secara otomatis (<c>noauto</c>), tetapi tidak
-perlu diperiksa. Jadi, kita akan menulis:
+ini perlu diperiksa sewaktu proses boot, jadi kita isi dengan:
 </p>
 
 <pre caption="Sebuah contoh baris /boot di /etc/fstab">
-/dev/hda1   /boot     ext2    noauto        1 2
+/dev/hda1   /boot     ext2    defaults      1 2
 </pre>
+
+<p>
+Beberapa pengguna tidak ingin partisi <path>/boot</path> mereka di-mount
+secara otomatis untuk meningkatkan keamanan sistem mereka. Pengguna
+tersebut sebaiknya menggantikan <c>defaults</c> dengan <c>noauto</c>.
+Hal ini berarti anda perlu me-mount partisi ini secara manual setiap kali anda
+ingin menggunakannya.
+</p>
 
 <p>
 Sekarang, untuk meningkatkan performa, kebanyakan penggunakan mungkin
@@ -100,7 +107,7 @@ menghasilkan sistem yang lebih kencang karena waktu akses tidak diregister
 </p>
 
 <pre caption="Baris /boot yang ditingkatkan di /etc/fstab">
-/dev/hda1   /boot     ext2    noauto,noatime    1 2
+/dev/hda1   /boot     ext2    defaults,noatime  1 2
 </pre>
 
 <p>
@@ -109,7 +116,7 @@ Jika kita lanjutkan terus, kita akan berakhir dengan tiga baris berikut (untuk
 </p>
 
 <pre caption="Tiga baris /etc/fstab">
-/dev/hda1   /boot     ext2    noauto,noatime    1 2
+/dev/hda1   /boot     ext2    defaults,noatime  1 2
 /dev/hda2   none      swap    sw                0 0
 /dev/hda3   /         ext3    noatime           0 1
 </pre>
@@ -121,7 +128,7 @@ anda memiliki partisi atau drive lain, tambahkan juga):
 </p>
 
 <pre caption="Sebuah contoh /etc/fstab lengkap">
-/dev/hda1   /boot     ext2    noauto,noatime    1 2
+/dev/hda1   /boot     ext2    defaults,noatime  1 2
 /dev/hda2   none      swap    sw                0 0
 /dev/hda3   /         ext3    noatime           0 1
 
@@ -157,7 +164,7 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 </pre>
 
 <p>
-Baca kembali file <path>/etc/fstab</path> anda, simpan dan keluarlah
+Periksa kembali file <path>/etc/fstab</path> anda, simpan dan keluarlah
 untuk melanjutkan ke bagian selanjutnya.
 </p>
 
@@ -257,7 +264,7 @@ hanya perlu mengeset <c>iface_eth0</c> menjadi <c>dhcp</c>. Jika anda
 menggunakan rp-pppoe (mis. untuk ADSL), setlah menjadi <c>up</c>. Jika anda
 perlu men-setup jaringan anda secara manual dan anda tidak begitu kenal
 dengan istilah-istilah di atas, bacalah bagian <uri
-link="?part=1&amp;chap=3#doc_chap4_sect3">Mengerti Terminologi Jaringan</uri>
+link="?part=1&amp;chap=3#network_term">Mengerti Terminologi Jaringan</uri>
 jika anda belum membacanya.
 </p>
 
@@ -271,6 +278,14 @@ tiga hanya mengaktifkan perangkat untuk penggunaan rp-pppoe:
 <pre caption="Contoh untuk /etc/conf.d/net">
 <comment>(Untuk DHCP)</comment>
 iface_eth0="dhcp"
+<comment># Beberapa admin jaringan memerlukan anda menggunakan</comment>
+<comment># hostname dan domainname yang disediakan oleh server DHCP</comment>
+<comment># Dalam kasus ini, tambahkan baris berikut agar dhcpcd menggunakannya</comment>
+<comment># Opsi tersebut akan menimpa defenisi hostname dan domainname anda.</comment>
+dhcpcd_eth0="-HD"
+<comment># Jika anda berencana menggunakan NTP agar jam sistem anda tersinkronisasi, gunakan</comment>
+<comment># opsi -N untuk mencegah dhcpcd menimpa file /etc/ntp.conf anda</comment>
+dhcpcd_eth0="-N"
 
 <comment>(Untuk IP statis)</comment>
 iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
@@ -348,11 +363,12 @@ dengan:
 
 <p>
 Jika sistem anda adalah satu-satunya sistem (atau jika nameserver menangani
-semua resolusi nama), sebuah baris tunggal telah cukup:
+semua resolusi nama), sebuah baris tunggal telah cukup. Misalnya, jika anda
+ingin menamai sistem anda <c>tux.homenetwork</c>:
 </p>
 
 <pre caption="/etc/hosts untuk satu PC">
-127.0.0.1     localhost
+127.0.0.1     tux.homenetwork tux localhost
 </pre>
 
 <p>
@@ -377,7 +393,7 @@ pcmcia-cs hanya tersedia pada arsitektur x86, amd64 dan ppc.
 
 <p>
 Pengguna PCMCIA pertama-tama harus menginstal paket <c>pcmcia-cs</c>.
-Flag <c>USE="-X"</c> diperlukan untuk menghindari XFree86 diinstal pada saat
+Flag <c>USE="-X"</c> diperlukan untuk menghindari xorg-x11 diinstal pada saat
 ini:
 </p>
 
@@ -398,6 +414,31 @@ Setelah <c>pcmcia-cs</c> terinstal, tambahkan <c>pcmcia</c> ke runlevel
 </subsection>
 </section>
 <section>
+<title>Informasi Sistem</title>
+<subsection>
+<title>Password Root</title>
+<body>
+
+<p>
+Pertama-tama, kita set password root dengan mengetik:
+</p>
+
+<pre caption="Set password root">
+# <i>passwd</i>
+</pre>
+
+<p>
+Jika anda ingin root dapat login melalui konsol serial, tambahkan <c>tts/0</c>
+ke <path>/etc/securetty</path>:
+</p>
+
+<pre caption="Menambahkan tts/0 ke /etc/securetty">
+# <i>echo "tts/0" &gt;&gt; /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
 <title>Informasi Sistem</title>
 <body>
 
@@ -433,10 +474,11 @@ keycode ADB di kernel mereka dan harus memilih keymap mac/ppc di
 
 <p>
 Setelah anda selesai mengkonfigurasi file <path>/etc/rc.conf</path>, simpan dan
-keluar, lalu lanjutkan ke <uri link="?part=1&amp;chap=9">Mengkonfigurasi
-Bootloader</uri>.
+keluar, lalu lanjutkan ke <uri link="?part=1&amp;chap=9">Menginstal
+Utilitas-utilitas Sistem yang Diperlukan</uri>.
 </p>
 
 </body>
+</subsection>
 </section>
 </sections>
