@@ -58,7 +58,7 @@ class Installer:
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
 		self.install_profile = GLIInstallProfile.InstallProfile()
 		# Removed the training wheels!
-		if len(sys.argv) > 1 and sys.argv[1] == "-p" or sys.argv[1] == "--pretend":
+		if len(sys.argv) > 1 and (sys.argv[1] == "-p" or sys.argv[1] == "--pretend"):
 			self.cc = GLIClientController.GLIClientController(pretend=True)
 		else:
 			self.cc = GLIClientController.GLIClientController()
