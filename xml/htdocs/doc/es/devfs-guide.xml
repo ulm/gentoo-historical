@@ -1,11 +1,10 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/devfs-guide.xml,v 1.1 2005/02/24 22:22:55 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/devfs-guide.xml,v 1.2 2005/03/07 15:00:28 chiguire Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/devfs-guide.xml" lang="es">
 <title>Guía del Sistema de Archivos de Dispositivos</title>
-
 <author title="Autor">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
@@ -34,8 +33,8 @@ devfs y cómo trabajar con él.
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>0.2</version>
-<date>2005-02-05</date>
+<version>0.3</version>
+<date>2005-02-21</date>
 
 <chapter>
 <title>¿Qué es el devfs?</title>
@@ -127,9 +126,9 @@ sólo lectura, dado que no puedes tener el directorio <path>/dev</path>
 en otra partición, ya que <c>mount</c> necesita de <path>/dev</path>
 para montar las particiones. 
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Las soluciones</title>
 <body>
@@ -221,7 +220,7 @@ desempeño). Mayormente sólo tendrás un único lun, <path>lun0/</path>.
 <p>
 Así, de tener el previo <path>/dev/hda4</path>, ahora tenemos
 <path>/dev/ide/host0/bus0/target0/lun0/part4</path>. Esto es mucho más
-simple... no, tranquilo... de verdad <e>es</e> más fácil ... naa, no
+simple ... no, tranquilo ... de verdad <e>es</e> más fácil ... naa, no
 importa! :)
 </p>
 
@@ -268,6 +267,7 @@ Con <c>devfsd</c>, también puedes configurar los permisos, crear
 nuevos archivos de dispositivos, definir acciones, etc. Todo esto está
 descrito en el siguiente capítulo.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -332,9 +332,9 @@ UNREGISTER      .*  RMOLDCOMPAT
 <p>
 Necesitas reiniciar tu sistema para que los cambios se ejecuten.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Removiendo la funcionalidad de auto cargado</title>
 <body>
@@ -348,6 +348,7 @@ linea del archivo <path>/etc/devfsd.conf</path>:
 <pre caption = "/etc/devfsd.conf, funcionalidad de auto-cargado">
 LOOKUP      .*  MODLOAD
 </pre>
+
 </body>
 </section>
 </chapter>
@@ -355,99 +356,19 @@ LOOKUP      .*  MODLOAD
 <chapter>
 <title>Puntos relacionados con los permisos</title>
 <section>
-<title>Configurar/cambiar permisos utilizando PAM</title>
-<body>
 
-<p>
-Aunque se puede configurar los permisos en
-<path>/etc/devfsd.conf</path>, es recomendable hacerlo con PAM
-(abreviatura en inglés de <e>Módulos de Autenticación
-Insertables</e>). Esto es porque PAM tiene la última palabra en lo que
-a permisos se refiere, posiblemente ignorando los cambios que hagas en
-<path>/etc/devfsd.conf</path>.
-</p>
-
-<p>
-PAM utiliza el archivo <path>/etc/security/console.perms</path> para
-los permisos. El archivo consta de dos partes: la primera describe los
-grupos, y la segunda los permisos.
-</p>
-
-<p>
-Primero veamo la primera parte, los grupos. Como ejemplo usaremos al
-grupo sound:
-</p>
-
-<pre caption = "Grupo sound en /etc/security/console.perms">
-&lt;sound&gt;=/dev/dsp* /dev/audio* /dev/midi* \
-    /dev/mixer* /dev/sequencer* \
-    /dev/sound/* /dev/snd/* /dev/beep \
-    /dev/admm* \
-    /dev/adsp* /dev/aload* /dev/amidi* /dev/dmfm* \
-    /dev/dmmidi* /dev/sndstat
-</pre>                  
-
-<p>
-La sintaxis no es complicada: empiezas con un nombre de grupo, y
-terminas con una lista de dispositivos que pertenecen a ese grupo.
-</p>
-
-<p>
-Ahora, los grupos no son muy útiles si no puedes hacer nada con
-ellos. Así que la siguiente parte describe como los permisos son
-manejados.
-</p>
-
-<pre caption = "Permisos para el grupo de sonido en /etc/security/console.perms">
-&lt;console&gt;  0600 &lt;sound&gt;      0600 root.audio
-</pre>
-
-<p>
-El primer campo es el del terminal. En la mayoría de los sistemas, este
-es el grupo de la consola. PAM siempre revisará este campo en cada
-inicio de sesión. Si el inicio de sesión se da en un dispositivo
-contenido en el grupo de consola, PAM revisará y posiblemente cambiará
-los permisos de algunos archivos de dispositivos.
-</p>
-
-<p>
-El segundo campo contiene los permisos que se aplicarán a los archivos
-de dispositivos cuando se inicie la sesión exitosamente. Cuando una
-persona inicia su sesión en el sistema, y los archivos de dispositivos
-tienen un dueño preestablecido, PAM lo cambiará para que pertenezcan
-al usuario que acaba de ingresar. En este caso, se utiliza el permiso
-0600 (sólo el usuario tiene permiso de lectura/escritura).
-</p>
-
-<p>
-El tercer campo contiene el grupo de dispositivo cuyos permisos serán
-cambiados. En este caso, el grupo de sonido (todos los dispositivos
-relacionados con el sonido) será cambiado.
-</p>
-
-<p>
-El cuarto campo define los permisos que le serán asignados al archivo
-de dispositivo una vez que regrese a su estado previo. En otras
-palabras, cuando la persona que tiene los permisos termina su sesión, PAM
-asignará los permisos de estos campos como por defecto.
-</p>
-
-<p>
-El quinto campo define el dueño (con grupo si deseas) al que será
-asignado el dispositivo en el estado por defecto. En otras palabras,
-si la persona que posee todos los archivos de dispositivos termina su
-sesión, PAM asignará como dueño al definido en el estado por defecto,
-que está en este quinto campo.
-</p>
-</body>
-</section>
-
-<section>
 <title>Asignar/cambiar los permisos con devfsd</title>
 <body>
 
+<note>
+Estas instrucciones son válidas mientras que pam_console haya sido
+desabilitada en <path>/etc/pam.d/system-auth</path>. Si habilitas la
+pam_console aquí, entonces PAM tiene la última palabra sobre los
+permisos.
+</note>
+
 <p>
-Si realmente quieres configurar los permisos utilizando
+Si quieres configurar los permisos utilizando
 <path>/etc/devfsd.conf</path>, entonces utiliza la sintaxis del
 siguiente ejemplo:
 </p>
@@ -463,13 +384,8 @@ puede seleccionar varios archivos de dispositivos en una sola regla.
 </p>
 
 <p>
-El cuarto campo es el dueño del archivo de dispositivo. A diferencia
-de PAM, este no es cambiado (a menos que se mencione en
-<path>console.perms</path> ya que PAM siempre gana).
-</p>
-
-<p>
-El quinto campo contiene los permisos del archivo de dispositivos.
+El cuarto campo es el dueño del archivo de dispositivo y el quinto
+campo contiene los permisos del archivo de dispositivos.
 </p>
 </body>
 </section>
@@ -481,8 +397,9 @@ El quinto campo contiene los permisos del archivo de dispositivos.
 <p>
 Este es el comportamiento normal de Gentoo: si ejecutas <c>chown</c> y
 <c>chmod</c> sobre algún archivo de dispositivo, <c>devfsd</c> salvará
-la información cuando se apaga el sistema. Esto es porque el archivo
-<path>/etc/devfsd.conf</path> contiene las siguientes lineas:
+la información incluso cuando se reinicie el sistema. Esto es porque
+el archivo <path>/etc/devfsd.conf</path> contiene las siguientes
+lineas:
 </p>
 
 <pre caption = "/etc/devfsd.conf salvando permisos">
@@ -504,8 +421,8 @@ RESTORE         /lib/dev-state
 
 <p>
 En otras palabras, los cambios sobre los archivos de dispositivos son
-copiados a <path>/lib/dev-state</path> cuando se apaga el sistema, y
-de regreso a <path>/dev</path> al iniciar el sistema.
+copiados a <path>/lib/dev-state</path> en el instante que suceden, y
+son copiados de regreso a <path>/dev</path> al iniciar el sistema.
 </p>
 
 <p>
@@ -577,6 +494,7 @@ tratan sobre (todos en inglés):
     Implementando devfs</uri>
   </li>
 </ul>
+
 </body>
 </section>
 </chapter>
