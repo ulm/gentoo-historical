@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.51 2005/03/01 08:01:42 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.52 2005/03/01 17:29:19 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -725,7 +725,7 @@ class ArchitectureTemplate:
 		
 	def set_root_password(self):
 		"Sets the root password"
-		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e', quiet=true)
+		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e', quiet=True)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("SetRootPasswordError", 'fatal', 'set_root_password', "Failure to set root password!")
 		self._logger.log("Root Password set on the new system.")
@@ -778,7 +778,7 @@ class ArchitectureTemplate:
 				options.append('-c "' + comment + '"')
 				
 			# Add the user
-			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir, quiet=true)
+			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir, quiet=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Failure to add user " + username)
 			#	raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
