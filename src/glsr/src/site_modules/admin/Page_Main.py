@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.10 2004/11/14 23:00:31 port001 Exp $
+# $Id: Page_Main.py,v 1.11 2004/11/14 23:34:23 port001 Exp $
 #
 
 import Config
@@ -68,7 +68,7 @@ class Page_Main(SiteModule):
                 else:
                     list_offset = int(list_offset)
             else:
-                list_offset = -1
+                list_offset = Config.ErrorReportListOffset
             error_report_list = ReturnErrorReports(list_offset)
             if error_report_list == False:
                 self.tmpl.param("ERROR_REPORTING", "False")

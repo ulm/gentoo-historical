@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.11 2004/11/14 23:00:31 port001 Exp $
+# $Id: Config.py,v 1.12 2004/11/14 23:34:23 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -69,6 +69,9 @@ Debug = True
 ErrorReporting = True
 ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
 #ErrorReportLog = "/var/www/buffmuthers.com/htdocs/projectsglsr/log/error_reports.log"
+
+# Default report list offset
+ErrorReportListOffset = 5
 
 CookieDomain = "glsr.gentoo.org"
 CookiePath = "/"
