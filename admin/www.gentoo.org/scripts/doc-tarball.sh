@@ -9,6 +9,12 @@
 
 [ -z ${WEBROOT} ] && echo "Webroot is not set, exiting" &&	exit 1
 DOCROOT="${WEBROOT}/doc/"
-tar -cvf ${WEBROOT}/dyn/docs-latest.tar ${DOCROOT} 2&1> /dev/null
-bzip2 -z ${WEBROOT}/dyn/docs-latest.tar 2&1> /dev/null
+
+local x
+
+for x in cs de en es fr it ja kr nl
+do
+tar -cf ${WEBROOT}/dyn/docs-latest-${x}.tar ${DOCROOT}/${x} 2&1> /dev/null
+bzip2 -z ${WEBROOT}/dyn/docs-latest-${x}.tar 2&1> /dev/null
+done
 
