@@ -15,10 +15,23 @@
                     <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
                   </xsl:choose>
                 </title>
-		<author title="script generated">Gentoo Project</author>
+		<xsl:choose>
+		  <xsl:when test="author">
+		    <xsl:for-each select="author">
+		      <xsl:copy>
+		        <xsl:apply-templates select="@*|node()"/>
+                      </xsl:copy>
+		    </xsl:for-each>
+		  </xsl:when>
+		  <xsl:otherwise>
+		    <author title="script generated">Gentoo Project</author>
+		  </xsl:otherwise>
+		</xsl:choose>
 		<abstract><xsl:apply-templates select="description"/></abstract>
 		<version>1.0</version>
-		<date>20 Sept 2003</date>
+		<xsl:if test="date">
+		<date><xsl:value-of select="date/text()"/></date>
+		</xsl:if>
 		<chapter>
 			<title>Project Description</title>
 			<section><body>
@@ -151,7 +164,7 @@
 <xsl:template match="longdescription|goals">
 	<xsl:apply-templates select="node()|@*" />
 </xsl:template>
-<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*|plannedproject//node()|plannedproject//@*|uri//@*|uri//node()|mail//@*|mail//node()">
+<xsl:template match="longdescription//node()|longdescription//@*|goals//node()|goals//@*|extrachapter//node()|extrachapter//@*|extraproject//node()|extraproject//@*|plannedproject//node()|plannedproject//@*|uri//@*|uri//node()|mail//@*|mail//node()|author//node()|author//@*">
 	<xsl:copy>
 		<xsl:apply-templates select="node()|@*"/>
 	</xsl:copy>
