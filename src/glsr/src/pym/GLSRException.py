@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRException.py,v 1.1 2004/09/30 03:09:36 hadfield Exp $
+# $Id: GLSRException.py,v 1.2 2004/10/29 01:28:02 hadfield Exp $
 #
 
 
@@ -22,3 +22,5 @@ class GLSRException(Exception):
             errstr = self.errmsg
  
         return errstr
+
+class InvalidIDError(GLSRException): pass
