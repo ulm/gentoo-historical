@@ -1,18 +1,21 @@
 <section>
 <subsection>
 <title>Making your Choice</title>
+<subsubsection>
+<title>Introduction</title>
 <body>
 
 <p>
-Now that your kernel is configured and compiled, it is time to install a
+Now that your kernel is configured and compiled and the necessary system
+configuration files are filled in correctly, it is time to install a
 program that will fire up your kernel when you start the system. Such a
 program is called a <e>bootloader</e>. But before you start, consider
 your options...
 </p>
 
 <p>
-Several bootloaders exist for Linux. Some work on several architectures,
-others only on a single one. Either way, you must choose between the
+Several bootloaders exist for Linux. However, these bootloaders only
+function on a small set of architectures. Therefor you must choose between the
 bootloaders that support your architecture.
 </p>
 
@@ -33,6 +36,40 @@ between GRUB (recommended) and LILO.
 </table>
 
 </body>
+</subsubsection>
+<subsubsection>
+<title>Framebuffer</title>
+<body>
+
+<p>
+<e>If</e> you have configured your kernel with framebuffer support, you
+have to add a <c>vga</c>-statement to your bootloader configuration
+file. The next table lists the available <c>vga</c>-values you can use.
+In the example configuration files we use <e>800x600 @ 16bpp</e>, thus
+<e>788</e>.
+</p>
+
+<table>
+<tr>
+  <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+  <th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+  <th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+  <th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+Remember (or write down) your value; you will need it shortly hereafter.
+</p>
+
+</body>
+</subsubsection>
 </subsection>
 <subsection>
 <title>Default: Using GRUB</title>
@@ -158,7 +195,7 @@ splashimage=(hd0,0)/grub/splash.xpm.gz  <comment># Nice, fat splash-image to spi
 title=Gentoo Linux
 root (hd0,0)                            <comment># Partition where the kernel image (or operating system) is located</comment>
 kernel (hd0,0)/kernel-2.4.22-gentoo-r2 root=/dev/hda3
-<comment># Only if you use genkernel. Otherwise ignore the following line:</comment>
+<comment># Only if you use genkernel. Otherwise remove the following line:</comment>
 initrd (hd0,0)/initrd-2.4.22-gentoo-r2
 
 <comment># The next three lines are only if you dualboot with a Windows system.</comment>
@@ -180,8 +217,15 @@ other words, <path>(hd0,0)/grub/splash.xpm.gz</path> is in reality
 <p>
 If you need to pass any additional options to the kernel, simply add
 them to the end of the kernel command. We're already passing one option
-(<c>root=/dev/hda3</c>), but you can pass others as well.
+(<c>root=/dev/hda3</c>), but you can pass others as well. As an example
+we use the <c>vga</c> statement for framebuffer we discussed previously:
 </p>
+
+<pre caption = "Adding the vga-statement as a kernel option">
+title=Gentoo Linux
+  root (hd0,0)
+  kernel (hd0,0)/kernel-2.4.22-gentoo-r2 root=/dev/hda3 vga=788
+</pre>
 
 <p>
 Now save the <path>grub.conf</path> file and exit. As of now, GRUB is
@@ -194,22 +238,231 @@ system.
 </subsection>
 <subsection>
 <title>Alternative: Using LILO</title>
+<subsubsection>
+<title>Installing LILO</title>
+<body>
+
+<warn>
+LILO can only be used with x86-based systems!
+</warn>
+
+<p>
+LILO, the LInuxLOader, is the tried and true workhorse of Linux
+bootloaders. However, it lacks some features that GRUB has (which is
+also the reason why GRUB is currently gaining popularity). The reason
+why LILO is still used is that, on some systems, GRUB doesn't work and
+LILO does. Ofcourse, it is also used because some people know LILO and
+want to stick with it. Either way, Gentoo supports both, and apparently
+you have chosen to use LILO.
+</p>
+
+<p>
+Installing LILO is a breeze; just use <c>emerge</c>.
+</p>
+
+<pre caption = "Installing LILO">
+# <i>emerge -k lilo</i>
+</pre>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Configuring LILO</title>
 <body>
 
 <p>
-Warn some architectures only. Explain pro/con of lilo, how it works, how
-to install and configure.
+To configure LILO, you must create <path>/etc/lilo.conf</path>. Fire up
+your favorite editor (in this handbook we use <c>nano</c> for
+consistency) and create the file.
 </p>
 
+<pre caption = "Creating /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+Some sections ago we have asked you to remember the kernel-image name
+you have created. In the next example <path>lilo.conf</path> we assume
+the imagename is <path>kernel-2.4.22-gentoo-r2</path>. We also use the
+example partitioning scheme in this example.
+</p>
+
+<pre caption = "Example /etc/lilo.conf">
+boot=/dev/hda             <comment># Install LILO in the MBR</comment>
+prompt                    <comment># Give the user the chance to select another section</comment>
+timeout=50                <comment># Wait 5 (five) seconds before booting the default section</comment>
+default=gentoo            <comment># When the timeout has passed, boot the "gentoo" section</comment>
+<comment># Only if you use framebuffer. Otherwise remove the following line:</comment>
+vga=788                   <comment># Framebuffer setting. Adjust to your own will</comment>
+
+image=/boot/kernel-2.4.22-gentoo-r2
+  label=gentoo            <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/hda3          <comment># Location of the root filesystem</comment>
+  <comment># Only if you use genkernel. Otherwise remove the following line:</comment>
+  initrd=/boot/initrd-2.4.22-gentoo-r2
+
+<comment># The next two lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+If you use a different partitioning scheme and/or kernel image, adjust
+accordingly.
+</note>
+
+<p>
+If you need to pass any additional options to the kernel, add an
+<c>append</c> statement to the section. As an example, we add the
+<c>resume</c> statement for software suspend:
+</p>
+
+<pre caption = "Using append to add kernel options">
+image=/boot/kernel-2.4.22-gentoo-r2
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="resume=/dev/hda2"</i>
+</pre>
+
+<p>
+Now save the file and exit. To finish up, you have to run
+<c>/sbin/lilo</c> so LILO can apply the <path>/etc/lilo.conf</path> to
+your system (i.e. install itself on the disk).
+</p>
+
+<pre caption = "Finishing the LILO installation">
+# <i>/sbin/lilo</i>
+</pre>
+
 </body>
+</subsubsection>
 </subsection>
 <subsection>
 <title>Alternative: Using aboot</title>
 <body>
 
+<warn>
+aboot can only be used with alpha-based systems!
+</warn>
+
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+We first install aboot on our system. Ofcourse we use <c>emerge</c> to
+do so:
+</p>
+
+<pre caption = "Installing aboot">
+# <i>emerge -k aboot</i>
+</pre>
+
+<p>
+The next step is to make our bootdisk bootable. This will start
+<c>aboot</c> when you boot your system. We make our bootdisk bootable by
+writing the <c>aboot</c> bootloader to the start of the disk.
+</p>
+
+<pre caption = "Making your bootdisk bootable">
+# <i>swriteboot -f3 /dev/sda /boot/bootlx</i> 
+# <i>abootconf /dev/sda 2</i>
+</pre>
+
+<note>
+If you use a different partitioning scheme than the one we use
+throughout this chapter, you have to change the commands accordingly.
+Please read the appropriate manual pages (<c>man 8 swriteboot</c> and
+<c>man 8 abootconf</c>).
+</note>
+
+<p>
+Additionally, you can make Gentoo boot more easily by setting up the
+aboot configuration file and SRM boot_osflags variable. You will need to
+make sure that the bootdef_dev is also properly set (easier to do at the
+console than from Linux).
+</p>
+
+<pre caption = "Improve booting Gentoo">
+# <i>echo '0:2/boot/vmlinux.gz root=/dev/sda2' &gt; /etc/aboot.conf</i>
+# <i>echo -n 0 &gt; /proc/srm_environment/named_variables/boot_osflags</i>
+# <i>echo -n '' &gt; /proc/srm_environment/named_variables/boot_file</i>
+</pre>
+
+<p>
+If you're installing using a serial console, don't forget to include
+the serial console boot flag in <path>aboot.conf</path>. See 
+<path>/etc/aboot.conf.example</path> for some further information. 
+Additionally, you need to allow login on the serial port:
+</p>
+
+<pre caption = "Allowing login on the serial port">
+# <i>echo tts/0 &gt;&gt; /etc/securetty</i>
+# <i>echo 's0:12345:respawn:/sbin/agetty 9600 tts/0 vt100' &gt;&gt; /etc/inittab</i>
+</pre>
+
+<p>
+Aboot is now configured and ready to use. Continue with the next
+installation section.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Alternative: Using MILO</title>
+<body>
+
+<warn>
+MILO can only be used with alpha-based systems!
+</warn>
+
+<p>
+Before continuing, you should decide on how to use MILO. In this
+section, we will assume that you want to make a MILO boot floppy. If you
+are going to boot from an MS-DOS partition on your hard disk, you should
+amend the commands appropriately.
+</p>
+
+<p>
+To install MILO, we use <c>emerge</c>.
+</p>
+
+<pre caption = "Installing MILO">
+# <i>emerge -k milo</i>
+</pre>
+
+<p>
+After MILO has been installed, the MILO images should be in
+<path>/opt/milo</path>. The commands below make a bootfloppy for use
+with MILO. Remember to use the correct image for your Alpha-system.
+</p>
+
+<pre caption = "Installing MILO on a floppy">
+<comment>(First insert a blank floppy)</comment>
+# <i>fdformat /dev/fd0</i>
+# <i>mformat a:</i>
+# <i>mcopy /opt/milo/milo-2.2-18-gentoo-ruffian a:\milo</i>
+# <i>mcopy /opt/milo/linload.exe a:\lilnload.exe</i>
+<comment>(Only if you have a Ruffian:</comment>     
+  # <i>mcopy /opt/milo/ldmilo.exe a:\ldmilo.exe</i>
+<comment>)</comment>
+# <i>echo -ne '\125\252' | dd of=/dev/fd0 bs=1 seek=510 count=2</i>
+</pre>
+
+<p>
+Your MILO boot floppy is now ready to boot Gentoo Linux. You may need to
+set environment variables in your ARCS Firmware to get MILO to start;
+this is all explained in the <uri
+link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> with some examples 
+on common systems, and examples of the commands to use in interactive mode.
+</p>
+
+<p>
+Not reading the <uri link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> 
+is a <e>bad</e> idea.
+</p>
+
+<p>
+Now continue the installation with the next section.
 </p>
 
 </body>
@@ -219,19 +472,67 @@ and configure.
 <body>
 
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+It is now time to install and configure <uri
+link="http://www.sparc-boot.org">SILO</uri>, the Sparc Improved boot
+LOader.
 </p>
 
-</body>
-</subsection>
-<subsection>
-<title>Alternative: Using milo</title>
-<body>
+<pre caption = "Installing SILO">
+# <i>emerge -k silo</i>
+</pre>
 
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+Now open up your favorite editor (we use <c>nano</c> as an example) and
+create <path>/etc/silo.conf</path>.
+</p>
+
+<pre caption = "Creating /etc/silo.conf">
+# <i>nano -w /etc/silo.conf</i>
+</pre>
+
+<p>
+Beneath you find an example <path>silo.conf</path> file. It uses the
+partitioning scheme we use throughout this book and
+<path>kernel-2.4.22-gentoo-r2</path> as kernelimage.
+</p>
+
+<pre caption = "Example /etc/silo.conf">
+partition = 1         <comment># Boot partition</comment>
+root = /dev/hda4      <comment># Root partition</comment>
+timeout = 15          <comment># Wait 15 seconds before booting the default section</comment>
+
+image = /boot/kernel-2.4.22-gentoo-r2
+  label = linux
+</pre>
+
+<p>
+If you use the example <path>silo.conf</path> delivered by Portage, be
+sure to comment out <e>all</e> lines that you do not need.
+</p>
+
+<p>
+If you have a seperate <path>/boot</path> partition, copy over the
+configuration file to <path>/boot</path> and run <c>/sbin/silo</c>:
+</p>
+
+<pre caption = "Only if you have /boot on a seperate partition">
+# <i>cp /etc/silo.conf /boot</i>
+# <i>/sbin/silo -C /boo/silo.conf</i>
+/boot/silo.conf appears to be valid
+</pre>
+
+<p>
+If your <path>/boot</path> directory resides on your root partition,
+just run <c>/sbin/silo</c>:
+</p>
+
+<pre caption = "Run silo">
+# <i>/sbin/silo</i>
+/etc/silo.conf appears to be valid
+</pre>
+
+<p>
+Now continue with the next installation section.
 </p>
 
 </body>
@@ -240,31 +541,204 @@ and configure.
 <title>Alternative: Using PALO</title>
 <body>
 
+<warn>
+PALO can only be used on HPPA-based systems!
+</warn>
+
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+On the PA-RISC platform, the boot loader is called palo. You can find
+the configuration file in <path>/etc/palo.conf</path>. Here is a sample 
+configuration:
+</p>
+
+<pre caption = "/etc/palo.conf example">
+--commandline=2/vmlinux root=/dev/sdb2 HOME=/
+--recoverykernel=/vmlinux.old
+--init-partitioned=/dev/sdb
+</pre>
+
+<p>
+The first line tells palo the location of the kernel and which boot
+parameters it must use. <c>2/vmlinux</c> means the kernel named <c>/vmlinux</c>
+resides on the second partition. Beware, the path to the kernel is
+relative to the partition, not to the root of your filesystem.
+</p>
+
+<p>
+The second line indicates which recovery kernel to use. If it is your
+first install and you do not have a recovery kernel, please comment this
+out. The third line indicates on which disk palo will reside. 
+</p>
+
+<p>
+When configuration is done, just run <c>palo</c>.
+</p>
+
+<pre caption = "Applying the PALO configuration">
+# <i>palo</i>
+</pre>
+
+<p>
+Now continue with the next installation section.
 </p>
 
 </body>
 </subsection>
 <subsection>
 <title>Alternative: Using yaBoot</title>
+<subsubsection>
+<title>Introduction</title>
 <body>
 
+<warn>
+yaBoot can only be used on NewWorld PPC-based systems!
+</warn>
+
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+There are two ways to configure yaBoot for your system. You can use the
+new and improved <c>yabootconfig</c> included with
+<path>yaboot-1.3.8-r1</path> and later to automatically setup yaboot. If
+for some reason you do not want to run <c>yabootconfig</c> to
+automatically setup <path>/etc/yaboot.conf</path>, you can just edit the
+sample file already installed on your system.
 </p>
 
 </body>
+</subsubsection>
+<subsubsection>
+<title>Default: Using yabootconfig</title>
+<body>
+
+<p>
+<c>yabootconfig</c> will auto-detect the partitions on your machine and will
+setup dual and triple boot combinations with Linux, Mac OS, and Mac OS
+X.
+</p>
+
+<p>
+To use <c>yabootconfig</c>, your drive must have a bootstrap partition, and
+<path>/etc/fstab</path> must be configured with your Linux partitions. Both of 
+these should have been done already in the steps above. To start, ensure that
+you have the latest version of yaboot installed by running <c>emerge -u
+yaboot</c>. This is necessary as the latest version will be available via
+Portage, but it may not have made it into the stage files.
+</p>
+
+<pre caption = "Installing yaboot">
+# <i>emerge -ku yaboot</i>
+</pre>
+
+<p>
+Now run <c>yabootconfig</c>. The program will run and it will confirm
+the location of the bootstrap partition. Type <c>Y</c> if it is correct. If
+not, double check <path>/etc/fstab</path>. yabootconfig will then scan your
+system setup, create <path>/etc/yaboot.conf</path> and run <c>mkofboot</c> for
+you. <c>mkofboot</c> is used to format the bootstrap partition, and install 
+the yaboot configuration file into it.
+</p>
+
+<p>
+You might want to verify the contents of <path>/etc/yaboot.conf</path>. If 
+you make changes to <path>/etc/yaboot.conf</path> (like setting the 
+default/boot OS), make sure to rerun <c>ybin -v</c> to apply changes to the 
+bootstrap partition.
+</p>
+
+</body>
+</subsubsection>
+<subsubsection>
+<title>Alternative: Manual yaBoot Configuration</title>
+<body>
+
+<p>
+First make sure you have the latest <c>yaboot</c> installed on your
+system:
+</p>
+
+<pre caption = "Installing yaboot">
+# <i>emerge -ku yaboot</i>
+</pre>
+
+<p>
+Below you find a completed <path>yaboot.conf</path> file. Alter it at
+will:
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## our bootstrap partition:</comment>
+
+boot=/dev/hda9
+
+<comment>##hd: is open firmware speak for hda</comment>
+device=hd:
+partition=11
+
+root=/dev/hda11
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options
+#################</comment>
+image=/boot/vmlinux
+  label=Linux
+  sysmap=/boot/System.map
+  read-only
+<comment>##################</comment>
+
+macos=/dev/hda13
+macosx=/dev/hda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+Once <path>yaboot.conf</path> is set up how you want it, you run 
+<c>mkofboot -v</c> to install the settings in the bootstrap partition. <e>Don't 
+forget this!</e> If all goes well, and you have the same options as the sample 
+above, your next reboot will give you a simple, five-entry boot menu. If you 
+update your yaboot config later on, you'll just need to run <c>ybin -v</c> to 
+update the bootstrap partition - <c>mkofboot</c> is for initial setup only.
+</p>
+
+<p>
+For more information on yaboot, take a look at the <uri
+link="http://penguinppc.org/projects/yaboot">yaboot project</uri>. For
+now, continue the installation with the next section.
+</p>
+
+</body>
+</subsubsection>
 </subsection>
 <subsection>
 <title>Alternative: BootX</title>
 <body>
 
+<warn>
+BootX can only be used on OldWorld PPC-based systems!
+</warn>
+
 <p>
-Warn about some architectures only. Explain how it works, how to install
-and configure.
+If you want to use BootX, then you don't have to do anything at this
+stage. However, after rebooting, you will have to some configuration in
+the BootX control panel (inside MacOS). We discuss this later in the
+installation.
+</p>
+
+<p>
+For now, continue with the next installation section.
 </p>
 
 </body>
