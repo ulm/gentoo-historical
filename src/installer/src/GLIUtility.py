@@ -155,3 +155,20 @@ def strtobool(input):
 		return True
 	else:
 		return False
+
+def is_eth_device(device):
+	"Check to see if device is a valid ethernet device. Returns bool."
+	
+	# Make sure it is a string
+	if not is_realstring(device):
+		return False
+
+	# Create a regular expression to test the specified device.
+	expr = re.compile('^eth([0-9]{1,2})(:[0-9]{1,2})?$')
+
+	# Run the match
+	res = expr.match(device)
+
+	# Return True only if there are results
+	return(res != None)
+

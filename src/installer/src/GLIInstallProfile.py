@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.8 2004/04/25 20:13:36 esammer Exp $
+$Id: GLIInstallProfile.py,v 1.9 2004/05/10 16:35:43 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -120,6 +120,8 @@ class InstallProfile(xml.sax.ContentHandler):
 					self.make_conf_add_var(self._xml_current_data, self._xml_current_attr)
 				elif path == 'gli-profile/rc-conf/variable':
 					self.rc_conf_add_var(self._xml_current_data, self._xml_current_attr)
+				elif path == 'gli-profile/network-interfaces/device':
+					self.add_network_interface(self._xml_current_data, self._xml_current_attr)
 
 		self._xml_current_data = ""
 		self._xml_current_attr = None
@@ -604,106 +606,81 @@ class InstallProfile(xml.sax.ContentHandler):
 		"Returns network_interfaces"
 		return self._network_interfaces
 		
+	def add_network_interface(self, device, attr):
+		"""
+		This adds an ethernet device to the _network_interfaces dictionary.
+		The format of this dictionary is:
+		{ <eth_device> : (options tuple), ... }
+
+		The format of the options tuple is:
+		( <ip address>, <broadcast>, <netmask> )
+
+		If the user wants to use DHCP, the <ip address> will be set to 'dhcp'
+		and broadcast and netmask will both be set to None.
+
+		Aliases are no longer needed in the tuple because they can be treated like
+		an individual interface. GLIUtility.is_eth_device will recogniz
+		"""
+		options = None
+		ip = broadcast = netmask = None
+		dhcp = True
+
+		if type(device) != str:
+			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
+	
+		if not GLIUtility.is_eth_device(device):
+			raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
+
+		if type(attr) == tuple:
+			ip = attr[0]
+			broadcast = attr[1]
+			netmask = attr[2]
+			if ip != 'dhcp':
+				dhcp = False
+		else:
+			if "ip" in attr.getNames():
+				for attrName in attr.getNames():
+					if attrName == 'ip':
+						ip = str(attr.getValue(attrName))
+					elif attrName == 'broadcast':
+						broadcast = str(attr.getValue(attrName))
+					elif attrName == 'netmask':
+						netmask = str(attr.getValue(attrName))
+				dhcp = False
+
+		if not dhcp:
+			if not GLIUtility.is_ip(ip):
+				raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
+			if not GLIUtility.is_ip(broadcast):
+				raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
+			if not GLIUtility.is_ip(netmask):
+				raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
+			options = (ip, broadcast, netmask)
+		else:
+			options = ('dhcp', None, None)
+
+		self._network_interfaces[device] = options
+
 	def set_network_interfaces(self, network_interfaces):
 		"""
-		Sets a dictionary of information for the available network_interfaces:
-		{ <eth_device> : ( <pre-install device info (tuple/None)>, <post-install device info (tuple/None)>, <load at boot (bool)> ) }
-
-		<eth_device> is a string with the device name, ie. 'eth0'
-		If you desire DHCP, set <pre/post-install device info> to None.
-		If you desire a static ip, set <pre/post-install device info> to a tuple as defined below:
-		( <ip address>, <broadcast>, <netmask>, <gateway>, <alias (tuple)> )
-		
-		If you do not desire a gateway, set <gateway> to None.
-		If you do not desire an alias, set <alias> to None.
-		Otherwise, <alias> is a tuple of tuples containing alias info in the following format:
-		( ( <alias ip>, <alias broadcast>, <alias netmask> ), ( <alias ip>, <alias broadcast>, <alias netmask> ), etc. )
-		
-		<alias ip>, <alias broadcast> and <alias netmask> MUST be defined for each alias!
-		
-		An <ip address> (or broadcast, netmask, etc...) is defined as a string containing the ip address (ie. "192.168.1.2")
+		This method sets the network interfaces diction to network_interfaces.
+		This method uses the function add_network_interfaces to do all of the
+		real work.
 		"""
 		
 		# Check type
 		if type(network_interfaces) != dict:
 			raise "NetworkInterfacesError", "Must be a dictionary!"
-		
-		for device in network_interfaces:
 
-			# Split device into type and number
-			digit_found = False
-			for i in range(len(device)):
-				if device[i] in string.digits:
-					digit_found = True
-					device_type = device[:i]
-			
-			
-			# If the device is only letters or has the wrong proportion of letters and numbers
-			# then it is not a valid device
-			if (not digit_found) or (5 > i > 2):
-				raise "NetworkInterfacesError", "Improper device name!"
-			
-			# For 'eth' type devices:
-			if device_type == "eth":
-			
-				# Do the same for both pre and post tuples
-				for i in range(2):
-				
-					# If the user does not desire DHCP, then validate each ip address provided
-					if network_interfaces[device][i] != None:
-						if not GLIUtility.is_ip(network_interfaces[device][i][0]):
-							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
-						if not GLIUtility.is_ip(network_interfaces[device][i][1]):
-							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
-						if not GLIUtility.is_ip(network_interfaces[device][i][2]):
-							raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
-						
-						# If gateway is set to none, check the validity of the ip
-						if (network_interfaces[device][i][3] != None) and (not GLIUtility.is_ip(network_interfaces[device][i][3])):
-							raise "NetworkInterfacesError", "The gateway address you specified for " + device + " is not valid!"
-							
-						# Check the validity of aliases if they exist
-						if (network_interfaces[device][i][4] != None):
-							
-							# Type must be tuple
-							if type(network_interfaces[device][i][4]) != tuple:
-								raise "NetworkInterfacesError", "Improper type for network aliases (device: " + device + "), must be tuple!"
-							
-							# Tuple must contain at least 1 alias tuple
-							if not len(network_interfaces[device][i][4]) > 0:
-								raise "NetworkInterfacesError", "Aliases must contain at least one alias (device: " + device + ")!"
-								
-							# 
-							for alias in network_interfaces[device][i][4]:
-								
-								# Alias must be a tuple
-								if type(alias) != tuple:
-									raise "NetworkInterfacesError", "Improper type for network alias (device: " + device + "), must be tuple!"
-									
-								# Alias must have a length of 3
-								if len(alias) != 3:
-									raise "NetworkInterfacesError", "Alias must have ip address, netmask and broadcast defined (device: " + device + ")!"
-								
-								# Alias must have an ip address, netmask, and broadcast defined
-								if not GLIUtility.is_ip(alias[0]):
-									raise "NetworkInterfacesError", "Invalid ip address for alias (device: " + device + ")!"
-								if not GLIUtility.is_ip(alias[1]):
-									raise "NetworkInterfacesError", "Invalid broadcast address for alias (device: " + device + ")!"
-								if not GLIUtility.is_ip(alias[2]):
-									raise "NetworkInterfacesError", "Invalid netmask address for alias (device: " + device + ")!"
-			
-			# Other device types
-			else:
-				raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
-				
-		# Set network_interfaces
-		self._network_interfaces = network_interfaces
+		self._network_interfaces = {}
+		for device in network_interfaces:
+			self.add_network_interface(device, network_interfaces[device])
 
 	def serialize(self):
 		"""
 		This method serializes the configuration data and output a nice XML document.
 
-		NOTE: this method currently does not serialize: _partition_tables, _network_interfaces, or _kernel_modules
+		NOTE: this method currently does not serialize: _partition_tables or _kernel_modules
 
 		"""
 		import xml.dom.minidom
@@ -796,6 +773,16 @@ class InstallProfile(xml.sax.ContentHandler):
 			xmldoc += "<dns-servers-post>"
 			xmldoc += string.join(self.get_dns_servers_post(), ' ')
 			xmldoc += "</dns-servers-post>"
+
+		if self.get_network_interfaces() != {}:
+			xmldoc += "<network-interfaces>"
+			interfaces = self.get_network_interfaces()
+			for iface in interfaces:
+				if interfaces[iface][0] == 'dhcp':
+					xmldoc += "<device>%s</device>" % iface
+				else:
+					xmldoc += "<device ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</device>" % (interfaces[iface][0], interfaces[iface][1], interfaces[iface][2], iface)
+			xmldoc += "</network-interfaces>"
 
 		xmldoc += "</gli-profile>"
 
