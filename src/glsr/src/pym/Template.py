@@ -6,31 +6,62 @@
 
 """The template handler module.
 
-        
-        'terms' should be a dictionary of {TAG: value} pairs where value
-        will replace the text {TAG} in the specified template file.
+General Info:
 
-        'loops' should be a dictionary of {LOOPTAG: list} pairs. The template
-        file will have some text such as the following, but all that will be
-        displayed is "this is loop X" len(list) times.
-        {LOOP MYLOOP}
-        this is loop {MYLOOP}
-        {!LOOP}
-        Note: {MYLOOP} is replaced with list[i] where 'i' is the current
-              iteration.
+There are two types of values you can pass to the template module, 'terms' and
+'loops'. Term variables should not be a SequenceType. Loops should be
+sequences. Loops can also be sequences of dicts to allow for more complex
+variables within loops. You can set variables one of two ways:
 
-        If statements are as follows:
-        {IF TAG == "value"}
-        {TAG} is equal to value
-        {!IF}
-        Note: The currently supported operators are
-          ==  !=  >
+1. Use the param('PARAM_NAME', term_val, 'term') function - This will replace
+all occurrences of {PARAM_NAME} in the template with the value of term_val. The
+last parameter 'term', is used to specifiy if this variable is a term or a
+loop.
 
-        Note: Everything is case sensitive
+2. Use the compile('template_path', term_dict, loop_dict) - This will pass a
+set of terms and loops to the template object. Compile is the last function
+generally executed before the template is printed.
+
+This module also uses caching to speed up template creation. You can disable
+the caching by setting _use_cache = False. Also, remember to clean out the
+template cache folder as you'll probably get some stale cache files. If you
+only want a specific template to not be cached then pass cache = False to the
+compile() function. Note that the compile() cache parameter will only override
+the _use_cache variable if _cache_override is set to True.
+
+
+Loops:
+
+To use a loop in your template, you can either do something like:
+  {LOOP MYLOOP}
+  this is loop {MYLOOP}
+  {!LOOP}
+
+If you have the loop {'MYLOOP': range(1, 10)}, then the above will print out
+'this is loop X' 10 times. You can also use a more complex loop, say 'MYLOOP'
+is set to [{'val1': 1.1, 'val2': 1.2}, {'val1': 2.1, 'val2': '2.2'}], then
+  {LOOP MYLOOP}
+  loop values: val1 = {MYLOOP.val1}, val2 = {MYLOOP.val2}
+  {!LOOP}
+
+will output:
+loop values: val1 = 1.1, val2 = 1.2
+loop values: val1 = 2.1, val2 = 2.2
+
+
+Ifs:
+
+If statements can be used as follows:
+{IF TAG == 'value'}
+  {TAG} is equal to 'value'
+{!IF}
+
+The currently supported operators include:
+== !=  > <
 
 """
 
-__revision__ = '$Id: Template.py,v 1.14 2005/03/10 21:04:34 port001 Exp $'
+__revision__ = '$Id: Template.py,v 1.15 2005/03/19 19:09:30 hadfield Exp $'
 __modulename__ = 'Template'
 
 import os
@@ -52,13 +83,19 @@ class Template:
         self._output = []
         self._loops = {}
         self._terms = {}
+
+        # Do you want to use template caching?
+        self._use_cache = True
+
+        # Do you want the compile() cache parameter to override _use_cache?
+        self._cache_override = True
         
         # These are the template languages keywords. You can't have a parameter
         # with the same name as a keyword.
         self._keywords = ("ELSE",)
 
         # The standard regex to match template variables. This should match
-        # all alphanumeric strings with potentially embedded .'s (dot).
+        # all alphanumeric strings with potentially embedded .'s (dot's).
         self._var_regex = r'\w+(?:\.\w+)?\w*'
 
         # The literal regex to match strings and digits
@@ -105,7 +142,8 @@ class Template:
             try:
                 value = eval("values[param_name]%s" % rest)
             except KeyError, errmsg:
-                raise TemplateModuleError('Caught an KeyError exception', errmsg)
+                raise TemplateModuleError('Caught an KeyError exception',
+                                          errmsg)
             
             # Convert value to a string and then do the replace.
             repl_text = repl_text.replace("{%s}" % variable, "%s" % value)
@@ -121,7 +159,7 @@ class Template:
 
         return repl_text
         
-    def compile(self, template_name, terms = None, loops = None):
+    def compile(self, template_name, terms = None, loops = None, cache = None):
         """Processes the template.
 
         This includes 4 steps, stripping out the comments, replacing all
@@ -129,10 +167,15 @@ class Template:
         and evaluating all IFs.
         """
 
-        digest = md5.new(str(template_name) + str(terms) + str(loops)).hexdigest()
+        if self._cache_override == True and cache is not None:
+            self._use_cache = cache
+        
+        digest_str = str(template_name) + str(terms) + str(loops)
+        digest = md5.new(digest_str).hexdigest()
 
-        if self._check_cache(digest):
-            self._read_cache(digest)        
+        if self._check_cache(digest) and self._use_cache:
+            self._read_cache(digest)
+        
         else:
             self._template_name = template_name
             self._read()
