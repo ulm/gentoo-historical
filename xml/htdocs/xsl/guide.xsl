@@ -400,7 +400,9 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td>
-                              <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe"/>
+                              <a href="http://www.linuxworldexpo.com">
+							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe"/>
+							  </a>
                             </td>
                             <td valign="middle">Come visit us at the Linux World Expo, January 21-24 in New York City! <br />
 							We will be at the .org Pavilion, booth number 8. Hope to see you there!</td>
@@ -421,7 +423,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td width="100" align="center" valign="middle">
+                              <td width="100" align="middle" valign="center">
                                 <xsl:choose>
                                   <xsl:when test="document(.)/news/@category='alpha'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-alpha.gif" alt="AlphaServer GS160"/>
