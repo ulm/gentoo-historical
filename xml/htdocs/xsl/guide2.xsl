@@ -171,6 +171,19 @@
                     <img src="/images/line.gif" alt="line"/>
                   </td>
                 </tr>
+		<tr>
+                  <td align="center">
+                    <a href="http://www.tek.net" target="_top">
+                      <img src="http://www.gentoo.org/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
+                    </a>
+                    <p class="alttext">Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <img src="/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
 			</table>
 			</td>
 			</tr>
