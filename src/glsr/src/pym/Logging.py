@@ -2,14 +2,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.1 2004/07/07 01:39:57 port001 Exp $
+# $Id: Logging.py,v 1.2 2004/07/09 12:58:42 port001 Exp $
 #
 
 import traceback
 from time import time, gmtime, strftime
 
 import Config
-import Template as TemplateHandler
 
 __modulename__ = "Logging"
 
@@ -48,6 +47,11 @@ def err(msg, modname):
 	for line in tb[:-1]:
             print line.replace("\n", "<br>")
 		
+        if modname == "Template":
+            print ("<br />\n" +
+                     "<b>Template module recursion averted.</b>\n" +
+                   "<br /><br />\n")
+
 	print ("     <br />\n" +
 		    "</td>\n" +
 		  "</tr>\n" +
@@ -75,13 +79,17 @@ def err(msg, modname):
                   "</tr>\n" +
                "</table>\n")
 
+    # Only print the footer if we think the header got printed.
     if Config.HTMLHeadersSent == True:
-        # Only print the footer if we think the header got printed.
-        FooterTemplate = TemplateHandler.New()
-        FooterTemplate.Compile(Config.Template["footer"],
-                           {"GLSR_VERSION":     Config.Version,
-                            "CONTACT":          Config.Contact})
-        FooterTemplate.Print()
+        # Don't print the footer if the error came from the Template module.
+        if modname != "Template":
+            import Template as TemplateHandler
+
+            FooterTemplate = TemplateHandler.New()
+            FooterTemplate.Compile(Config.Template["footer"],
+                                   {"GLSR_VERSION":     Config.Version,
+                                    "CONTACT":          Config.Contact})
+            FooterTemplate.Print()
     
 def FlushErrorReportLog():
     """Blank the ErrorReport log"""
