@@ -202,9 +202,7 @@ def run_cmd(cmd,quiet=False,logfile=None,display_on_tty8=False):
 	pid = os.fork()
 	if pid == 0:
 		if quiet and logfile != None:
-			print "You cannot log the output of a command when you specify 'quiet'."
-			print "Logging anyway, but unsetting 'quiet'."
-			cmd += " | tee " + logfile
+			cmd += " >> " + logfile + " 2>&1"
 		elif quiet and logfile == None:
 			cmd += " >/dev/null 2>&1"
 		elif logfile != None:
