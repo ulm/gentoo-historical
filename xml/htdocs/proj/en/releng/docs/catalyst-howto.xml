@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.1 2004/04/08 19:57:55 zhen Exp $ -->
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+
+<guide link="/proj/en/releng/docs/cascading-profiles.xml">
+<title>Catalyst HOWTO</title>
+
+<author title="Author">
+	<mail link="zhen@gentoo.org">John Davis</mail>
+</author>
+
+<abstract>
+	The purpose of this guide is to explain how to use Catalyst to
+	build custom LiveCDs, stages, and other release components.
+</abstract>
+
+<license/>
+
+<version>DRAFT</version>
+<date>07 April 2004</date>
+
+<chapter>
+	<title>Introduction</title>
+	
+	<section>
+		<title>What is Catalyst?</title>
+		<body>
+			<p>Some of you may be asking, "what is Catalyst?". Simply put,
+			Catalyst is the Gentoo Release Engineering Team's release metatool.
+			The releng team uses Catalyst to build everything from stages to LiveCDs,
+			along with some other things in between. So what does this have to do with
+			you as the user? Choice is a hallmark of the Gentoo experience. Everything
+			that Gentoo does allows for the user to make the final choice. Gentoo does not lock
+			you into a specific GUI, like KDE or GNOME, we let you choose. With Catalyst, 
+			Gentoo no longer locks you into what you use to create the soul of your system.
+			Catalyst provides the end to the means of complete customization by allowing
+			you to customize the very installation media that is used to install Gentoo.
+			If you want to change what is in the installation stages or create your
+			own bootable LiveCDs then Catalyst is what you have been waiting for. </p>
+		</body>
+	</section>
+
+	<section>
+		<title>Goals of this Guide</title>
+		<body>
+			<p>Coupled with the <uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri>,
+			this guide will provide all of the information and tools needed to get started
+			building release media using Catalyst. The following topics will be covered: </p>
+
+			<ul>
+				<li>Catalyst installation and setup</li>
+				<li>The Basics - snapshots and specfiles</li>
+				<li>Building installation stages</li>
+				<li>Advanced stage customization - tweaking the system profile</li>
+				<li>Building bootable LiveCDs</li>
+				<li>Advanced LiveCD customization - GUI LiveCDs</li>
+				<li>Building PackageCDs</li>
+				<li>Setting up a Tinderbox</li>
+			</ul>
+
+			<p>This document, like Catalyst, is under heavy development. If there are any feature requests
+			or bugs with either, please report them to the <uri link="http://bugs.gentoo.org">Gentoo Bug Database</uri>. 
+			</p>
+		</body>
+	</section>
+
+</chapter>
+
+<chapter>
+	<title>Installation</title>
+	<section>
+		<title>Catalyst Installation</title>
+		<body>
+			<p>Catalyst is simple to install; simply run <c>emerge catalyst</c> as root from your command line: </p>
+			<pre caption="Emerging Catalyst">
+<c># emerge catalyst</c>
+			</pre>
+
+			<p>If you have access to Gentoo CVS, you can find the latest and greatest CVS version
+			of catalyst at <path>gentoo/src/catalyst</path>. </p>
+
+		</body>
+	</section>
+
+	<section>
+		<title>Catalyst Setup</title>
+		<body>
+			<p>Once Catalyst is installed, the first thing that you will want to do is edit 
+			<path>/etc/catalyst/catalyst.conf</path>. The default <i>catalyst.conf</i> will be
+			similar to the following: </p>
+
+			<pre caption="Example catalyst.conf">
+# Copyright 1999-2004 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.1 2004/04/08 19:57:55 zhen Exp $
+
+# Simple desriptions of catalyst settings. Please refer to the online
+# documentation for more information.
+
+# distdir specifies where your distfiles are located. This setting should
+# work fine for most default installations.
+distdir="/usr/portage/distfiles"
+
+# options set different build-time options for catalyst. Some examples are:
+# ccache = enables build time ccache support (highly recommended)
+# pkgcache = keeps a tbz2 of every built package (useful if your build stops prematurely)
+# distcc = enable distcc support for building. You have to set distcc_hosts in your spec file.
+options="ccache pkgcache"
+
+# sharedir specifies where all of the catalyst runtime executables are. Most users do
+# not need to change this.
+sharedir="/usr/lib/catalyst"
+
+# envscript allows users to set options such as http proxies, MAKEOPTS, GENTOO_MIRRORS,
+# or any other environment variables needed for building.
+# The envscript file sets environment variables like so:
+# export FOO="bar"
+
+#envscript="/root/catalyst-env.sh"
+			</pre>
+			
+			<ul>
+				<li><b>distdir</b> is the directory where your distfiles are kept (the default is
+				fine for most Gentoo systems).</li>
+				<li><b>options</b> accepts <i>ccache</i>, <i>pkgcache</i>, and <i>distcc</i> as valid keys.
+				<i>ccache</i> and <i>pkgcache</i> are highly recommended for most systems, and <i>distcc</i>
+				is recommended if distcc is already available on the network. For a more complete listing
+				of each options key, please consult the
+				<uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri>. </li>
+				<li><b>sharedir</b> is the location of the Catalyst runtime. It is not recommended
+				that this be changed unless you know absolutely sure what you are doing. </li>
+				<li><b>envscript</b> can be set to a script where certain environment variables, http proxies
+				for example, can be set.</li>
+			</ul>
+
+			<p>An example <i>envscript</i> could look like the following: </p>
+			
+			<pre caption="Example envscript">
+# my envscript
+export GENTOO_MIRRORS="http://gentoo.mirrors.pair.com"
+export MAKEOPTS="-j4"
+			</pre>
+
+			<p>After editing <path>/etc/catalyst/catalyst.conf</path> to your liking, sit back, relax, and
+			read on grasshopper. If you are interested in researching what each option does in depth,
+			the <uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri> is a great
+			place to start. </p>
+			
+			<note>If you keep your Catalyst config file in a location other than
+			<path>/etc/catalyst/catalyst.conf</path>, you will have to set the environment
+			variable <i>clst_conf</i> to the location of your Catalyst config file. This can be done
+			like so: <c>export clst_conf="/path/to/my/catalyst_config"</c>. </note>
+			
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>The Basics - Specfiles and Snapshots</title>
+	<section>
+		<title>Catalyst Specfiles</title>
+		<body>
+			<p>Catalyst without a specfile is possible, but only if you have an affinity for carpal tunnel
+			syndrome. For example, if you wanted to build a stage1 installation tarball, you would have to call
+			Catalyst with the following options via the commandline: </p>
+			
+			<pre caption="Using Catalyst the long way">
+# catalyst subarch=x86 version_stamp=20040403 target=stage1 profile=default-x86-2004.0 rel_type=default snapshot=20040403 source_subpath=default-x86-2004.0/stage2-x86-20040218
+			</pre>
+
+			<p>I think that you catch my drift. Now, the same can be accomplished using a specfile for that stage1
+			installation stage: </p>
+
+			<pre caption="Using Catalyst with a spec file">
+# catalyst -f x86-stage1.spec
+
+<codenote>below is the contents of x86-stage1.spec</codenote>
+
+subarch: x86
+version_stamp: 20040403
+target: stage1
+profile: default-x86-2004.0
+rel_type: default
+snapshot: 20040403
+source_subpath: default-x86-2004.0/stage2-x86-20040218
+			</pre>
+
+		</body>
+	</section>
+
+	<section>
+		<title>Portage Snapshots</title>
+		<body>
+			<p>placeholder</p>
+		</body>
+	</section>
+	
+</chapter>
+
+</guide>
