@@ -105,7 +105,7 @@ This is where you select what timezone you are in.
 	    # update the selection box
 	    self.label2.set_label(final_path)
 	    # set it in the profile
-	    self.controller.install_profile.set_time_zone(None, "/usr/local/zoneinfo"+final_path, None)
+	    self.controller.install_profile.set_time_zone(None, final_path, None)
 	
 
     # figures out which one is selected
