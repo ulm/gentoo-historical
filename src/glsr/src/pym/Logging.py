@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.9 2004/11/03 12:28:36 port001 Exp $
+# $Id: Logging.py,v 1.10 2004/11/07 22:33:45 port001 Exp $
 #
 
 import traceback
@@ -109,7 +109,7 @@ def FlushErrorReportLog():
 
 def logwrite(msg, modname, type):
     """Write Given message to a log file
-       Type can be: Error, Query, Info"""
+       Type can be: Error, Query, Info, Warn"""
 
     logtype = ""
 
@@ -121,6 +121,8 @@ def logwrite(msg, modname, type):
             logtype = "query"
         elif type.lower() == "info":
             logtype = "info"
+        elif type.lower() == "warn":
+            logtype = "warn"
         else:
             logtype = "????"
 

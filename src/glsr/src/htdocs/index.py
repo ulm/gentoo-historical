@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.17 2004/11/07 21:10:35 port001 Exp $
+# $Id: index.py,v 1.18 2004/11/07 22:33:45 port001 Exp $
 #
 
 """
@@ -106,6 +106,9 @@ class PageDispatch:
             if deny == True:
                 self._send_headers()
                 print "Access Denied"
+                LogHandler.logwrite("Request for page '%s', domain 'admin' denied from IP '%s'$
+                                    (self._page, os.environ["REMOTE_ADDR"]),
+                                     __modulename__, "Warn")
                 sys.exit(0)
 
             import site_modules.admin
