@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output encoding="UTF-8" method="xml" indent="yes"/>
+
+<xsl:template match="glsa">
+<guide>
+<title>Gentoo Linux Security Advisory : <xsl:value-of select="summary"/></title>
+<author>Script Generated</author>
+<date><xsl:value-of select="date"/></date>
+<version></version>
+<chapter>
+<title>Security Advisory : <xsl:value-of select="summary"/></title>
+<section>
+<title>Overview</title>
+<body>
+
+<table>
+<tr>
+  <th>Summary:</th>
+  <ti><xsl:value-of select="summary"/></ti>
+</tr>
+<tr>
+  <th>Package:</th>
+  <ti><xsl:value-of select="package"/></ti>
+</tr>
+<tr>
+  <th>Affected Version(s):</th>
+  <ti>
+    <xsl:for-each select="affected/version">
+      <xsl:choose>
+        <xsl:when test="@range = 'above'">
+          &gt; 
+        </xsl:when>
+        <xsl:when test="@range = 'above_equal'">
+          &gt;=
+        </xsl:when>
+        <xsl:when test="@range = 'below'">
+          &lt;
+        </xsl:when>
+        <xsl:when test="@range = 'below_equal'">
+          &lt;=
+        </xsl:when>
+        <xsl:otherwise>
+          =
+        </xsl:otherwise>
+      </xsl:choose>
+      <xsl:value-of select="text()"/><br />
+    </xsl:for-each>
+  </ti>
+</tr>
+<tr>
+  <th>Fixed Version(s):</th>
+  <ti>
+    <xsl:for-each select="fixed/version">
+      <xsl:choose>
+        <xsl:when test="@range = 'above'">
+          &gt; 
+        </xsl:when>
+        <xsl:when test="@range = 'above_equal'">
+          &gt;=
+        </xsl:when>
+        <xsl:when test="@range = 'below'">
+          &lt;
+        </xsl:when>
+        <xsl:when test="@range = 'below_equal'">
+          &lt;=
+        </xsl:when>
+        <xsl:otherwise>
+          =
+        </xsl:otherwise>
+      </xsl:choose>
+      <xsl:value-of select="text()"/><br />
+    </xsl:for-each>
+  </ti>
+</tr>
+<tr>
+  <th>Severity:</th>
+  <ti>
+    <xsl:choose>
+      <xsl:when test="(@severity = 'minimal') or (@severity = 'normal')">
+        <xsl:value-of select="@severity"/>
+      </xsl:when>
+      <xsl:when test="@severity = 'high'">
+        <b><xsl:value-of select="@severity"/></b>
+      </xsl:when>
+      <xsl:otherwise>
+        <brite><xsl:value-of select="@severity"/></brite>
+      </xsl:otherwise>
+    </xsl:choose>
+  </ti>
+</tr>
+<tr>
+  <th>Exploit Type:</th>
+  <ti><xsl:value-of select="exploit"/></ti>
+</tr>
+<tr>
+  <th>Bugreport:</th>
+  <ti><uri link="http://bugs.gentoo.org/show_bug.cgi?id={bug}"># <xsl:value-of select="bug"/></uri></ti>
+</tr>
+<tr>
+  <th>Common Vulnerabilities and Exposures (CVE):</th>
+  <ti>
+    <xsl:choose>
+      <xsl:when test="cve/@url">
+        <uri link="{cve/@url}"><xsl:value-of select="cve/text()"/></uri>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="cve/text()"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>Description</title>
+<body>
+
+<p>
+<!-- We need to give <br/>s for the newlines -->
+  <xsl:call-template name="substitute">
+    <xsl:with-param name="string" select="description"/>
+  </xsl:call-template>
+</p>
+
+</body>
+</section>
+<section>
+<title>Solution</title>
+<body>
+
+<xsl:if test="solution/command">
+<p>
+Users are encouraged to execute the following commands:
+</p>
+
+  <xsl:if test="solution/command[@phase = 'before']">
+    <pre caption="Execute these commands first!">
+    <xsl:apply-templates select="solution/command[@phase = 'before']"/>
+    </pre>
+  </xsl:if>
+  <xsl:if test="solution/command[@phase != 'before']">
+    <pre caption="Fixing the security problem">
+    <xsl:apply-templates select="solution/command[@phase != 'before']"/>
+    </pre>
+  </xsl:if>
+
+</xsl:if>
+
+<xsl:if test="solution/description">
+  <p>
+    <xsl:call-template name="substitute">
+      <xsl:with-param name="string" select="solution/description"/>
+    </xsl:call-template>
+  </p>
+</xsl:if>
+</body>
+</section>
+</chapter>
+</guide>
+</xsl:template>
+
+<xsl:template name="substitute">
+   <xsl:param name="string" />
+   <xsl:param name="from" select="'&#xA;'" />
+   <xsl:param name="to">
+      <br />
+   </xsl:param>
+   <xsl:choose>
+      <xsl:when test="contains($string, $from)">
+         <xsl:value-of select="substring-before($string, $from)" />
+         <xsl:copy-of select="$to" />
+         <xsl:call-template name="substitute">
+            <xsl:with-param name="string"
+                            select="substring-after($string, $from)" />
+            <xsl:with-param name="from" select="$from" />
+            <xsl:with-param name="to" select="$to" />
+         </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+         <xsl:value-of select="$string" />
+      </xsl:otherwise>
+   </xsl:choose>
+</xsl:template>
+
+</xsl:stylesheet>
