@@ -21,7 +21,11 @@
 
 <author title="Editor"><mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
+
 <author title="Editor"><mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+
+<author title="Editor"><mail link="jaervosz@itu.dk">Sune Jeppesen</mail>
 </author>
 
 <license/>
@@ -30,8 +34,8 @@
 This guide is step-by-step guide for hardening Gentoo Linux.
 </abstract>
 
-<version>0.4.2</version>
-<date>September 16th, 2003</date>
+<version>0.4.3</version>
+<date>September 22, 2003</date>
 
 -- Introduction start --
 
@@ -44,6 +48,10 @@ This guide is step-by-step guide for hardening Gentoo Linux.
 <p>
 People who are using Gentoo Linux in a server based environment and/or feel the need for more or paranoid security.
 </p>
+
+<note>
+If you are interested in even more Gentoo security stuff after reading this guide then have a look at the <uri link="http://www.gentoo.org/proj/en/hardened/">Hardened Gentoo Project</uri>
+</note>
 
 </body>
 </section>
@@ -75,7 +83,7 @@ Bjarke Sørensen, Justin Lambert, Andreas Waschbuesch, Duncan Lissett, Sherman B
 </section>
 
 <section>
-<title>Enhancements for Next Release of this Guide:</title>
+<title>Enhancements for future releases of this Guide:</title>
 <body>
 
 <p>
@@ -365,20 +373,12 @@ Examples of policies can be found at the <uri link="http://www.sans.org/newlook/
 <chapter>
 <title>Tightening the security after/during installation</title>
 <section>
-<title>/etc/make.conf</title>
+<title>USE flags</title>
 <body>
 
 <p>
-The make.conf file contains all the options and extra libraries that you want to have support for when building ebuilds. In this file you must make sure that if the ebuild supports any security library like PAM (Pluggable Authentication Modules), tcp wrappers or SSL (Secure Socket Layer) it will add support for it. Your global USE variable should contain pam, tcpd and ssl.
+The <path>make.conf</path> file contains user defined USE flags and <path>/etc/make.profile/make.defaults</path> contains the default USE flags for Gentoo Linux. For this guide the important flags are pam (Pluggable Authentication Modules), tcp (TCP wrappers) and ssl (Secure Socket Layer). These are all in the default USE flags.
 </p>
-
-<p>
-So add something like this:
-</p>
-
-<pre caption="USE settings to be added">
-USE="tcpd pam ssl"
-</pre>
 
 </body>
 </section>
@@ -560,88 +560,27 @@ More info about syslogd can be found in the man page (<path>man syslog</path>)
 
 <p>
 <uri link="http://metalog.sourceforge.net">Metalog</uri> by Frank Dennis is not able to log to a remote server, but it does have advantages when it comes to performance and logging flexibility.
-</p>
-
-<p>
-It can log by program name or by facility (like syslogd) and comes with regular expression matching and execution of commands. Very good for taking action when needed.
+It can log by program name, urgency, program name,by facility (like syslogd) and comes with regular expression matching and it can launch external scripts when specific patterns are found. It is very good for taking action when needed.
 </p> 
 
-<pre caption="/etc/metalog/metalog.conf">
-maxsize  = 1000000
-maxtime  = 86400
-maxfiles = 7
-minimum  = 7
-
-Kernel messages :
-
-  facility = "kern"
-  logdir   = "/var/log/kernel"
-
-Auth messages :
-  facility = "auth"
-  logdir   = "/var/log/auth"
-
-Critical :
-  facility = "critical"
-  command  = "/usr/local/sbin/pwdfail.sh"  
-
-Crond :
-
-  program  = "crond"
-  logdir   = "/var/log/crond"
-  
-Password failures :
-
-  regex    = "(password|login|authentication)\s+(fail|invalid)"
-  regex    = "(failed|invalid)\s+(password|login|authentication)"
-  regex    = "ILLEGAL ROOT LOGIN"
-  logdir   = "/var/log/pwdfail"
-  command  = "/usr/local/sbin/pwdfail.sh"
-
-SSH Server :
-
-  program  = "sshd"
-  logdir   = "/var/log/sshd"
-
-Mail :
-
-  facility = "ftp-mail-news"
-  logdir   = "/var/log/mail"
-
-Snort:
-  program   = "snort"
-  command  = "/usr/local/sbin/pwdfail.sh"
-
-Everything important :
-
-  facility = "*"
-  logdir   = "/var/log/everything"
-
-Everything very important :
-
-  facility = "*"
-  logdir   = "/var/log/critical"
-
-</pre>
-
 <p>
-This is basically a standard configuration with a few modifications, like a minimum logging level at 7, which means that everything will be logged.
+The standard configuration is basically enough. If you want to be notified by email whenever a password failure occurs use one of the following scripts.
 </p>
 
 <p>
-pwdfail.sh for postfix.
+For postfix:
 </p>
 
-<pre caption = "postfix' pwdfail.sh">
+<pre caption = "/usr/local/sbin/mail_pwd_failures.sh for postfix">
 #! /bin/sh
 echo "$3" | mail -s "Warning (program : $2)" root
 </pre>
 
 <p>
-pwdfail.sh for qmail.
+For qmail:
 </p>
 
-<pre caption = "qmail's pwdfail.sh">
+<pre caption = "/user/local/sbin/mail_pwd_failures.sh for qmail">
 #!/bin/sh
 echo "To: root
 Subject:Failure (Warning: $2) 
@@ -650,12 +589,20 @@ $3
 </pre>
 
 <p>
-More information can be found in the <uri link="http://metalog.sourceforge.net">metalog</uri> website.
+Remember to make the script executable by issuing <c>chmod +x /usr/local/sbin/mail_pwd_failures.sh</c>
 </p>
 
+<p>
+Then uncomment the command line under Password failures in metalog.conf like:
+</p>
+
+<pre caption="/etc/metalog/metalog.conf">
+command  = "/usr/local/sbin/mail_pwd_failures.sh"
+</pre>
 
 </body>
 </section>
+
 <section>
 
 <title>Syslog-ng</title>
@@ -854,7 +801,7 @@ kn L10 C100000 U35
 </pre>
 
 <p>
-Here we set the default settings and a specific setting for the user <e>kn</e>. Limits are part of the shadow package and only applies for the shadow login program. It is not necessary to set any limitations in this file, if you have set the PAM setting in your make.conf and configured PAM properly.
+Here we set the default settings and a specific setting for the user <e>kn</e>. Limits are part of the shadow package and only apply to the shadow login program. It is not necessary to set any limitations in this file if you haven't disable pam in your <path>make.conf</path> and configured PAM properly.
 </p>
 
 </body>
@@ -1095,7 +1042,6 @@ The only SUID files that I have on my system are su, passwd, gpasswd, qmail-queu
 <p>
 PAM is a suite of shared libraries that provide an alternative way of making authentication in programs. The PAM settings of Gentoo Linux is pretty reasonable, but there is always room for improvement.
 </p>
-<note>This chapter will have no effect if you did not include the PAM in your USE option in <path>/etc/make.conf</path></note>
 
 <p>Install cracklib</p>
 
@@ -1152,7 +1098,7 @@ session  required pam_warn.so
 <p>
 Is a way of controlling access to services normally run by inetd (which Gentoo does not have) but it can also be used by xinetd and other services.
 </p>
-<note>The use in make.conf should contain tcpd and the service should be executing tcpd in its server argument (in xinetd). See the chapter on xinetd for more information</note>
+<note>The service should be executing tcpd in its server argument (in xinetd). See the chapter on xinetd for more information</note>
 
 <pre caption="/etc/hosts.deny">
 ALL:PARANOID
@@ -1819,7 +1765,7 @@ Apache (1.3.26) comes with a pretty decent configuration file but again. We need
 </p>
 
 <p>
-If you have added ssl to your <path>/etc/make.conf</path> before installing apache, you should have access to a ssl enabled server. Just add the following line to enable it.
+If you did not disable ssl in your <path>/etc/make.conf</path> before installing apache, you should have access to a ssl enabled server. Just add the following line to enable it.
 </p>
 
 <pre caption="/etc/conf.d/apache">
@@ -2117,11 +2063,11 @@ Examples of virtual servers:
 <body>
 
 <p>
-People often think that a firewall is the ultimate security, but they are wrong. In most cases a mis configured firewall gives worse security than not having one at all. A firewall is also a piece of software and should be treated the same way as any other service, because is just as likely to have bugs (security holes).
+People often think that a firewall provides the ultimate security, but they are wrong. In most cases a misconfigured firewall gives worse security than not having one at all. A firewall is also a piece of software and should be treated the same way as any other piece of software, because is just as likely to contain bugs.
 </p>
 
 <p>
-So think before implementing one! Do you really need one ? If you think you need one write a policy on how it should work, what type of firewall and who should operate it.
+So think before implementing one! Do you really need one? If you think you need one write a policy on how it should work, what type of firewall and who should operate it. But first read this guide.
 </p>
 
 <p>
@@ -2155,20 +2101,20 @@ A firewall should be a dedicated machine running no services (or ssh as the only
 <body>
 
 <p>
-All network traffic is in the form of packets. Large amounts of traffic also split up into small packets for easy handling and then reassembled when arriving at it's destination. Every packet contains information on how and where is should be delivered. And these information is exactly what a packing filtering firewall uses. Filtering is based on:
+All network traffic is in the form of packets. Large amounts of traffic also split up into small packets for easy handling and then reassembled when arriving at its destination. In the packet header every packet contains information on how and where it should be delivered. And these informations are exactly what a packing filtering firewall uses. Filtering is based on:
 </p>
 
 <ul>
 
 <li>Allow or disallow packets based on source/destination IP address.</li>
 <li>Allow or disallow packets based on source/destination port.</li>
-<li>Allow or disallow packets according to protocol.</li>
-<li>Allow or disallow packets according to flags within a specific protocol</li>
+<li>Allow or disallow packets based on protocol.</li>
+<li>Allow or disallow packets based on flags within a specific protocol.</li>
 
 </ul>
 
 <p>
-Basically filtering on all data within the header of a packet and not it's content.
+Basically filtering is based on all data within the header of a packet and not its content.
 </p>
 
 <p>
@@ -2176,9 +2122,9 @@ Weaknesses:
 </p>
 
 <ul>
-<li>Address information in a packet can potentially be a bogus address or as we say <e>spoofed</e> by the sender</li>
-<li>Data or requests within the allowed packet may contain unwanted data that the attacker can use to exploit known bugs in the services on or behind the firewall</li>
-<li>Usually single point of failure</li>
+<li>Address information in a packet can potentially be a bogus IP address or as we say <e>spoofed</e> by the sender.</li>
+<li>Data or requests within the allowed packet may contain unwanted data that the attacker can use to exploit known bugs in the services on or behind the firewall.</li>
+<li>Usually single point of failure.</li>
 </ul>
 
 <p>
@@ -2186,9 +2132,9 @@ Advantages:
 </p>
 
 <ul>
-<li>Simple and easy to implement</li>
-<li>Can give warnings on a possible attack before they happened (by detecting portscans)</li>
-<li>Good for stopping SYN attacks</li>
+<li>Simple and easy to implement.</li>
+<li>Can give warnings of a possible attack before it happens (ie. by detecting portscans).</li>
+<li>Good for stopping SYN attacks.</li>
 </ul>
 
 <p>
@@ -2209,20 +2155,20 @@ Examples of free packet filters on Linux:
 <body>
 
 <p>
-Or circuit level gateways is a firewall that validates connections before allowing data to be exchanged. This means that is simply does not allow or deny packets based based on the header of the packet but determines whether the connection between both ends is valid according to configurable rules before it opens a session and allows data to and from the allowed source address. Filtering is based on:
+Or circuit level gateways is a firewall that validates connections before allowing data to be exchanged. This means that it simply does not allow or deny packets based on the packet header but determines whether the connection between both ends is valid according to configurable rules before it opens a session and allows data to be exchanged. Filtering is based on:
 </p>
 
 <ul>
-<li>Source/destination IP address</li>
-<li>Source/destination port</li>
-<li>A period of time</li>
-<li>Protocol</li>
-<li>User</li>
-<li>Password</li>
+<li>Source/destination IP address.</li>
+<li>Source/destination port.</li>
+<li>A period of time.</li>
+<li>Protocol.</li>
+<li>User.</li>
+<li>Password.</li>
 </ul>
 
 <p>
-All traffic is validated, monitored and traffic without is disallowed.
+All traffic is validated, monitored and unwanted traffic can be dropped.
 </p>
 
 <p>
@@ -2243,14 +2189,13 @@ Operates at the Transport Layer and may require substantial modification of the 
 <body>
 
 <p>
-The application level gateway is a proxy for application, exchanging data with remote systems on behalf of the clients. It is kept away from the public safely behind a DMZ or firewall with no connection from the outside. Filtering is based on:
+The application level gateway is a proxy for applications, exchanging data with remote systems on behalf of the clients. It is kept away from the public safely behind a DMZ (De-Militarized Zone: the portion of a private network that is visible through the firewall) or a firewall allowing no connections from the outside. Filtering is based on:
 </p>
 
 <ul>
-<li>Allow or disallow based on source/destination IP address</li>
-<li>Based on the packets content</li>
-<li>Can even alter the packet content on the fly</li>
-<li>Limiting file access based on file type or extension</li>
+<li>Allow or disallow based on source/destination IP address.</li>
+<li>Based on the packets content.</li>
+<li>Limiting file access based on file type or extension.</li>
 </ul>
 
 <p>
@@ -2258,10 +2203,11 @@ Advantages:
 </p>
 
 <ul>
-<li>Can cache files, increasing network performance</li>
-<li>Detailed logging of all connections</li>
-<li>Scales perfectly (some proxy servers can "share" the cached data)</li>
-<li>No direct access from the outside</li>
+<li>Can cache files, increasing network performance.</li>
+<li>Detailed logging of all connections.</li>
+<li>Scales perfectly (some proxy servers can "share" the cached data).</li>
+<li>No direct access from the outside.</li>
+<li>Can even alter the packet content on the fly.</li>
 </ul>
 
 <p>
@@ -2269,11 +2215,11 @@ Weakness:
 </p>
 
 <ul>
-<li>The setup is complex</li>
+<li>Configuration is complex.</li>
 </ul>
 
 <p>
-Application gateways are considered to be the most secure solution since it does not have to run as root and is not public to the Internet.
+Application gateways are considered to be the most secure solution since it does not have to run as root and the hosts behind it are not reachable from the Internet.
 </p>
 
 <p>
@@ -2292,7 +2238,7 @@ Example of a free application gateway:
 <body>
 
 <p>
-In order to get iptables working, it has to be enabled in the kernel. I have added them as modules (the iptables command will load them as they are needed) and recompiled my kernel. After you have compiled it (or while compiling the kernel) you have to add the iptables commands. Just <c>emerge iptables</c> and it should work.
+In order to get <c>iptables</c> working, it has to be enabled in the kernel. I have added them as modules (the <c>iptables</c> command will load them as they are needed) and recompiled my kernel. For more information on how to configure your kernel for <c>iptables</c> look go to the <uri link="http://iptables-tutorial.frozentux.net/chunkyhtml/kernelsetup.html">Iptables Tutorial Chapter 2: Preparations</uri>. After you have compiled your new kernel (or while compiling the kernel) you have to add the <c>iptables</c> command. Just <c>emerge iptables</c> and it should work.
 </p>
 
 <p>
@@ -2300,41 +2246,35 @@ Now test that it works by running <c>iptables -L</c>. If it fails something is w
 </p>
 
 <p>
-Iptables is a stateful packet filter which means that it provides greater control and greater security than ipchains (Linux version 2.2) which is not stateful. You are properly asking yourself what is the stateful part? and what is the difference?
+Iptables is the new and heavily improved packet filter in the Linux 2.4.x kernel. It is the successor of the previous ipchains packet filter in the Linux 2.2.x kernel. One of the major improvements is that <c>iptables</c> is able to perform stateful packet filtering. With stateful packet filtering it is possible to keep track of each established TCP connection.
 </p>
 
 <p>
-We all know that a TCP connection consists of a series of packets. Each packet contains information about source IP address, the destination IP address and a sequence number so the packets can be reassembled. And we all know that TCP is connection-oriented and UDP is connectionless right? these are the states that is stored .. now you are probably asking yourself and so what? Well I'm getting to that.
+A TCP connection consists of a series of packets containing information about source IP address, destination IP address, sequence number so the packets can be reassembled and not to forget data. TCP is a connection-oriented protocol in contrast to UDP which is connectionless.
 </p>
 
 <p>
-Now imagine that you have a stateless firewall (ipchains) and do not want to allow external computers to originate a connection to your internal services but how can the firewall determine whether a packet is part of an ongoing connection or not? A stateless firewall cannot distinguish between an existing connection and one that is part of a new connection by looking at the SYN flag!. 
+By examining the TCP packet header a stateful packet filter can determine if a received TCP packet is part of an already established connection or not and decide either to accept or drop the packet.
 </p>
 
 <p>
-Lets say an attacker is sending hand crafted packets (a packet created by the attacker) where he alters the SYN flags or any other flags. This is quite often what attackers do. Send packets right through the firewall altering routing tables or compromising services running on the firewall which are supposed to be safe behind a filter. A stateful firewall will keep track of all connections and can thus detect if a received packet does not belong to an existing connection. When a packet not belonging to any existing connection is found it is marked as invalid and can be discarded. This will also stop the possibility of "stealth scans" since the connection was invalid.
+With a stateless packet filter it is possible to fool the packet filter to accept packets that should be dropped by manipulating the TCP packet headers. This could be done by manipulating the SYN flag or other flags in the TCP header. With stateful packet filtering it is possible to drop such packets as they are not part of an already established connection. This will also stop the possibility of "stealth scans" since such packets will not be part of an already established connection.
 </p>
 
 <p>
-I could probably find a dozen other reasons but I think you got the picture .. simple rules result in a smaller firewall configuration that is easier to maintain.
+Iptables provides several other features like NAT (Network Address Translation) and rate limiting. Rate limiting is extremely useful when trying to prevent certain DoS (Denial of Service) attacks like SYN floods.
 </p>
 
 <p>
-Iptables provides several other features like rate limiting. This features is extremely useful when trying to prevent certain DoS (Denial of Service) attacks like a SYN attack. Now what is a SYN attack?
+A TCP connection is established by a so called three-way handshake. When establishing a TCP connection the client-side sends a packet to the server with the SYN flag set. When the server-side receives the SYN packet it responds by sending a SYN+ACK packet back to the client-side. When the SYN+ACK is received the client-side responds with a third ACK packet in effect acknowledging the connection.
 </p>
 
 <p>
-Again .. when creating a connection with TCP it uses three-way handshake to establish the connection like this:
-</p>
-
-<fig link="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/synack.jpg" short="Three-way handshake"/>
-
-<p>
-A SYN attack is when it only sends a SYN packet (header only contains SYN flag) and does not continue sending the last two packets to establish the connection. A SYN packet does not require a valid source IP address because it does not need a reply. So the connection will hang until it times out. Now if the attacker sends a lot of SYN packets with a bogus source IP address, the computer waits for the response, which never comes. Depending on the timeout settings in your system, this connection could stay open for 30-60 seconds (or longer). When the connection limit table is completely occupied and unable to communicate with anyone.
+A SYN flood attack is performed by sending the SYN packet but failing to respond to the SYN+ACK packet. The client-side can forge a packet with a fake source IP address because it does not need a reply. The server-side system will add an entry to a queue of half-open connections when it receives the SYN packet and then wait for the final ACK packet before deleting the entry from the queue. The queue has a limitied number of slots and if all the slots are filled it is unable to open any further connections. If the ACK packet is not received before a specified timeout period the entry will automatically be deleted from the queue. The timeout settings vary but will typically be 30-60 seconds or even more. The client-side initiates the attack by forging a lot of SYN packets with different source IP addresses and sends them to the target IP address as fast as possible and thereby filling up the queue of half-open connections and thus preventing other clients from establishing legitimate with the server.
 </p>
 
 <p>
-This is where the rate limit becomes handy. It is possible to limit the number of SYN packets from a single source but using the <c>-m limit --limit 1/s</c>. This will limit the SYN packets to one per source and therefor restricting the SYN flood on our resources.
+This is where the rate limit becomes handy. It is possible to limit the rate of accepted SYN packets by using the <c>-m limit --limit 1/s</c>. This will limit the number of SYN packets accepted to one per second and therefor restricting the SYN flood on our resources.
 </p>
 
 <p>
@@ -2342,11 +2282,11 @@ Now! some practical stuff!
 </p>
 
 <p>
-When iptables is loaded in the kernel it has 5 hooks where you can place your rules. They are called INPUT, OUTPUT FORWARD, PREROUTING and POSTROUTING. These lists are called chains because they work by added a rules and checks the rules one at the time as they where added. If one rule deny a packet it will be dropped and does not continue down the chain.
+When <c>iptables</c> is loaded in the kernel it has 5 hooks where you can place your rules. They are called INPUT, OUTPUT, FORWARD, PREROUTING and POSTROUTING. Each of these is called a chain and consists of a list of rules. Each rule says if the packet header looks like this, then here is what to do with the packet. If the rule does not match the packet the next rule in the chain is consulted.
 </p>
 
 <p>
-You can place rules directly to the 5 main chains or create chains and add them to as a rule to an existing chain. Lets see how this is done
+You can place rules directly in the 5 main chains or create new chains and add them to as a rule to an existing chain. <c>iptables</c> supports the following options.
 </p>
 
 <table border="0">
@@ -2434,7 +2374,7 @@ You can place rules directly to the 5 main chains or create chains and add them 
 </table>
 
 <p>
-First we will try to block all ICMP packages to our machine, just to get familiar with iptables.
+First we will try to block all ICMP packages to our machine, just to get familiar with <c>iptables</c>.
 </p>
 
 <pre caption="Block all ICMP packages">
@@ -2442,11 +2382,11 @@ First we will try to block all ICMP packages to our machine, just to get familia
 </pre>
 
 <p>
-First we specify the chain it should be appended to. Next to specify the protocol and then the rule. The rule can be a ACCEPT, DROP, REJECT, LOG, QUEUE, MASQUERADE, a loaded module or a user defined chain. In this case we use DROP which will drop the packet without responding to the client.
+First we specify the chain it should be appended to next the protocol and then the target. The target can be the name of a user specified chain or one of the special targets ACCEPT, DROP, REJECT, LOG, QUEUE, MASQUERADE. In this case we use DROP which will drop the packet without responding to the client.
 </p>
 
 <p>
-Now try <c>ping localhost</c>. It will not be able to get any response since it is blocking the entire ICMP protocol incoming to our machine. It will not be able to ping other machines either since it is not allowed to get the ICMP packets returning from the host. Now flush the chain to get ICMP flowing again.
+Now try <c>ping localhost</c>. It will not be able to get any response since <c>iptables</c> will drop all incoming ICMP messages. It will not be able to ping other machines either since the ICMP reply packet will be dropped. Now flush the chain to get ICMP flowing again.
 </p>
 
 <pre caption="Flush all rules">
@@ -2454,7 +2394,7 @@ Now try <c>ping localhost</c>. It will not be able to get any response since it 
 </pre>
 
 <p>
-Now lets look at the stateful part in iptables. If we wanted to have a stateful inspection of packets incoming on eth0 we could enable it by issuing:
+Now lets look at the stateful packet filtering in <c>iptables</c>. If we wanted to have a stateful inspection of packets incoming on eth0 we could enable it by issuing:
 </p>
 
 <pre caption="Accept packets that originate from an already established connection">
@@ -2462,7 +2402,7 @@ Now lets look at the stateful part in iptables. If we wanted to have a stateful 
 </pre>
 
 <p>
-This will accept any packet already established or related in the INPUT chain. And you could drop any packet that is not in the state table by issuing <c>iptables -A INPUT -i eth0 -m state --state INVALID -j DROP</c> just before. This enables the stateful part in iptables by loading the extension state. If you wanted connection from the outside to connect to you machine you could use the <c>--state NEW</c>. Iptables contain some modules for different purposes. Some of them are: 
+This will accept any packet from an already established connection or related in the INPUT chain. And you could drop any packet that is not in the state table by issuing <c>iptables -A INPUT -i eth0 -m state --state INVALID -j DROP</c> just before. This enables the stateful packet filtering in <c>iptables</c> by loading the extension state. If you wanted to allow others to connect to you machine you could use the <c>--state NEW</c>. Iptables contain some modules for different purposes. Some of them are: 
 </p>
 
 <table border="0">
@@ -2490,7 +2430,7 @@ This will accept any packet already established or related in the INPUT chain. A
 Lets try to create a user defined chain and apply it to one of the existing chains:
 </p>
 
-<pre caption="Creating a userdefined chain">
+<pre caption="Creating a user defined chain">
 <codenote>Create a new chain with one rule</codenote>
 # <i>iptables -X mychain</i>
 # <i>iptables -N mychain</i>
@@ -2515,12 +2455,12 @@ Lets see a full blown example. In this case my firewall/gateway policy states:
 </p>
 
 <ul>
-  <li>Connections to the firewall is only allowed through SSH (port 22)</li>
-  <li>The local network should have access to HTTP, HTTPS and SSH (DNS should also be allowed)</li>
+  <li>Connections to the firewall are only allowed through SSH (port 22).</li>
+  <li>The local network should have access to HTTP, HTTPS and SSH (DNS should also be allowed).</li>
   <li>ICMP traffic can contain payload and should not be allowed. Of course we have to allow some ICMP traffic.</li>
-  <li>Port scan should be detected and logged</li>
-  <li>SYN attack should be avoided</li>
-  <li>All other traffic should be dropped and logged</li>
+  <li>Port scans should be detected and logged.</li>
+  <li>SYN attacks should be avoided.</li>
+  <li>All other traffic should be dropped and logged.</li>
 </ul>
 
 <pre caption="/etc/init.d/firewall">
@@ -2738,15 +2678,15 @@ Free advice when creating a firewall:
 </p>
 
 <ol>
-  <li>Create your firewall policy before implementing it</li>
-  <li>Keep it simple</li>
-  <li>Know how the protocol works (read the <uri link="http://www.ietf.org/">RFC (Request For Comments)</uri>)</li>
-  <li>Keep in mind that a firewall it just another piece of software running as root</li>
-  <li>Test your firewall</li>
+  <li>Create your firewall policy before implementing it.</li>
+  <li>Keep it simple.</li>
+  <li>Know how the protocol works (read the <uri link="http://www.ietf.org/">RFC (Request For Comments)</uri>).</li>
+  <li>Keep in mind that a firewall it just another piece of software running as root.</li>
+  <li>Test your firewall.</li>
 </ol>
 
 <p>
-If you think that iptables is hard to understand or takes to long to setup a decent firewall you could use <uri link="http://www.shorewall.net">Shorewall</uri>. It basically uses iptables to generate firewall rules, but concentrates on rules and not specific protocols.
+If you think that <c>iptables</c> is hard to understand or takes to long to setup a decent firewall you could use <uri link="http://www.shorewall.net">Shorewall</uri>. It basically uses <c>iptables</c> to generate firewall rules, but concentrates on rules and not specific protocols.
 </p>
 
 </body>
@@ -2757,11 +2697,11 @@ If you think that iptables is hard to understand or takes to long to setup a dec
 <body>
 
 <p>
-Squid is a very powerful proxy server and it can filter traffic based on: time, regular expression path/uri, source and destination IP addresses, domain, browser, authenticated username, mime-type and port number(protocol). I probably forgot some features, but it can be hard to cover the entire feature list.
+Squid is a very powerful proxy server and it can filter traffic based on: time, regular expressions on path/URI, source and destination IP addresses, domain, browser, authenticated username, MIME type and port number (protocol). I probably forgot some features, but it can be hard to cover the entire feature list.
 </p> 
 
 <p>
-In the following example I have added a banner filter instead of a filter based on porn sites. The reason for this is that Gentoo.org should <c>not</c> be listed as some porn site. And I do not want to waste my time trying to find some good sites for you.
+In the following example I have added a banner filter instead of a filter based on porn sites. The reason for this is that Gentoo.org should <e>not</e> be listed as some porn site. And I do not want to waste my time trying to find some good sites for you.
 </p>
 
 <p>
@@ -2769,10 +2709,10 @@ In this case, my policy states:
 </p>
 
 <ul>
-  <li>Surfing (HTTP/HTTPS) is allowed during work hours (mon-fri 8-17 and sat 8-13) if they are here late they should work, not surf</li>
-  <li>Download is not allowed (.exe, .com, .arj, .zip, .asf, .avi, .mpg, .mpeg etc.)</li>
-  <li>We don't like banners so they are filtered and replaced with a transparent gif (this is where you get creative!)</li>
-  <li>Every other connection to and from the Internet is not allowed</li>
+  <li>Surfing (HTTP/HTTPS) is allowed during work hours (mon-fri 8-17 and sat 8-13) if they are here late they should work, not surf.</li>
+  <li>Download is not allowed (.exe, .com, .arj, .zip, .asf, .avi, .mpg, .mpeg etc).</li>
+  <li>We do not like banners so they are filtered and replaced with a transparent gif (this is where you get creative!).</li>
+  <li>All other connections to and from the Internet are not allowed.</li>
 </ul>
 
 <p>
@@ -2913,7 +2853,7 @@ _ad\..*cgi
 </pre>
 
 <p>
-And the last part. We want this file to be displayed when it removes a banner. It is basically a half html file with a 4x4 transparent gif image.
+And as the last part we want this file to be displayed when a banner is removed. It is basically a half html file with a 4x4 transparent gif image.
 </p>
 
 <pre caption="/etc/squid/errors/NOTE_ADS_FILTERED">
@@ -2927,26 +2867,26 @@ And the last part. We want this file to be displayed when it removes a banner. I
 </pre>
 
 <note>
-Don't close the &lt;HTML&gt; &lt;BODY&gt; tags. This will be done by squid.
+Do not close the &lt;HTML&gt; &lt;BODY&gt; tags. This will be done by squid.
 </note>
 
 <p>
-As you can see, squid has a lot of possibilities and it is very effective in both filtering and proxying. It can even use alternative squid proxies to scale on very large networks. The configuration I have listed here is mostly suited for a small network with 1-20 users.
+As you can see, squid has a lot of possibilities and it is very effective at both filtering and proxying. It can even use alternative squid proxies to scale on very large networks. The configuration I have listed here is mostly suited for a small network with 1-20 users.
 </p>
 
 <p>
-But combining the packet filter (iptables) and the application gateway (squid) is probably the best solution, even if squid is located somewhere safe and nobody could access it from the outside. We still need to be concerned on attack from the inside.
+But combining the packet filter (<c>iptables</c>) and the application gateway (squid) is probably the best solution, even if squid is located somewhere safe and nobody can access it from the outside. We still need to be concerned by attacks from the inside.
 </p>
 
 <p>
-Now you have to add the proxy server into the settings of your clients browsers. The gateway will prevent the users from having any contact with the outside unless they use the proxy.
+Now you have to configure your clients browsers to use the proxy server. The gateway will prevent the users from having any contact with the outside unless they use the proxy.
 </p>
 <note>
 In Mozilla this is done in Edit->Preferences->Advanced->Proxies.
 </note>
 
 <p>
-It can also be done transparently by using iptables to forward all traffic out to a squid proxy. This can be done by adding a forwarding/prerouting rule on the gateway:
+It can also be done transparently by using <c>iptables</c> to forward all outbound traffic to a squid proxy. This can be done by adding a forwarding/prerouting rule on the gateway:
 </p>
 
 <pre caption="Enable portforwarding to our proxyserver">
@@ -2967,13 +2907,13 @@ We have learned that:
 </p>
 
 <ol>
-  <li>A firewall can be a risk itself. A badly configured firewall is worse than not having one at all.</li>
+  <li>A firewall can be a risk in itself. A badly configured firewall is worse than not having one at all.</li>
   <li>How to setup a basic gateway and a transparent proxy.</li>
   <li>The key to a good firewall is to know the protocol you want do allow.</li>
-  <li>That IP traffic does not always contain legitimate data. For an example ICMP packets with payload.</li>
+  <li>That IP traffic does not always contain legitimate data ie. ICMP packets can contain payload.</li>
   <li>How to prevent SYN attack.</li>
   <li>Filtering HTTP traffic by removing offensive pictures and downloads of viruses.</li>
-  <li>Combining packet filters and application gateways gives a better control.</li>
+  <li>Combining packet filters and application gateways provides better control.</li>
 </ol>
 
 <p>
@@ -3370,28 +3310,5 @@ Version 0.2 -> 0.4
 </body>
 </section>
 </chapter>
-
-
-
-<chapter>
-<title>FAQ</title>
-
-<section>
-<title>Questions and answers</title>
-<body>
-
-<table border="0">
-  <tr>
-    <th>Question</th><th>Answer</th>
-  </tr>
-  <tr>
-    <ti>Where can I find the latest version of this guide?</ti><ti>The lastest version should be available on <uri>http://gentoo.org</uri> and the development version at <uri>http://gentoo.insecurity.dk</uri></ti>
-  </tr>
-</table>
-
-</body>
-</section>
-</chapter>
-
 
 </guide>
