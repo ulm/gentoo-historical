@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.1 2004/04/08 19:57:55 zhen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.2 2004/04/09 01:59:46 zhen Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -19,7 +19,7 @@
 <license/>
 
 <version>DRAFT</version>
-<date>07 April 2004</date>
+<date>08 April 2004</date>
 
 <chapter>
 	<title>Introduction</title>
@@ -94,7 +94,7 @@
 			<pre caption="Example catalyst.conf">
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.1 2004/04/08 19:57:55 zhen Exp $
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/releng/docs/Attic/catalyst-howto.xml,v 1.2 2004/04/09 01:59:46 zhen Exp $
 
 # Simple desriptions of catalyst settings. Please refer to the online
 # documentation for more information.
@@ -143,6 +143,10 @@ export GENTOO_MIRRORS="http://gentoo.mirrors.pair.com"
 export MAKEOPTS="-j4"
 			</pre>
 
+			<note>Do not set CFLAGS, CXXFLAGS, LDFLAGS, CHOST, or any other compilation specific
+			environment variables in the envscript as it may have undesired effects on the building process.
+			</note>
+
 			<p>After editing <path>/etc/catalyst/catalyst.conf</path> to your liking, sit back, relax, and
 			read on grasshopper. If you are interested in researching what each option does in depth,
 			the <uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri> is a great
@@ -164,7 +168,7 @@ export MAKEOPTS="-j4"
 		<body>
 			<p>Catalyst without a specfile is possible, but only if you have an affinity for carpal tunnel
 			syndrome. For example, if you wanted to build a stage1 installation tarball, you would have to call
-			Catalyst with the following options via the commandline: </p>
+			Catalyst with the following options via the command line: </p>
 			
 			<pre caption="Using Catalyst the long way">
 # catalyst subarch=x86 version_stamp=20040403 target=stage1 profile=default-x86-2004.0 rel_type=default snapshot=20040403 source_subpath=default-x86-2004.0/stage2-x86-20040218
@@ -186,17 +190,128 @@ rel_type: default
 snapshot: 20040403
 source_subpath: default-x86-2004.0/stage2-x86-20040218
 			</pre>
+	
+			<p>So what do all of these mean? Again, more indepth information can be found in the
+			<uri link="/proj/en/releng/catalyst/reference.xml">Catalyst Reference Manual</uri>. A quick
+			synopsis is as follows: </p>
+			
+			<table>
+				<tr>
+					<th>Variable</th>
+					<th>Definition</th>
+				</tr>
+				<tr>
+					<ti>subarch</ti>
+					<ti>The subarch that is being built. Examples are x86, athlon-xp, or sparc64</ti>
+				</tr>
+				<tr>
+					<ti>version_stamp</ti>
+					<ti>A version stamp that uniqely identifies the build. Can be a date, such as 20040403,
+					or a version identifier, such as 2004.1</ti>
+				</tr>
+				<tr>
+					<ti>target</ti>
+					<ti>What target Catalyst is to build</ti>
+				</tr>
+				<tr>
+					<ti>profile</ti>
+					<ti>What system profile Catalyst uses to build the media. It can take values such as default-x86-2004.0
+					or default-linux/x86/2004.0.</ti>
+				</tr>
+				<tr>
+					<ti>rel_type</ti>
+					<ti>The type of build that Catalyst should do. Most of the time it will be default,
+					but it could also be hardened or selinux for their respective buildtypes</ti>
+				</tr>
+				<tr>
+					<ti>snapshot</ti>
+					<ti>Specifies which Portage snapshot Catalyst will use</ti>
+				</tr>
+				<tr>
+					<ti>source_subpath</ti>
+					<ti>Where Catalyst can find the seed stage for the target to be built.</ti>
+				</tr>
+			</table>
+			
+			<p>Those options make up the core of any specfile. Different targets will require some more
+			specialized options stacked on top of the default options, most notably the GRP, livecd-stage1, and
+			livecd-stage2 targets. Each of those targets and their specfiles will be covered in their respective
+			parts of this guide. </p>
 
+			<p>There do exist some global, but not required, specfile options. The most recent version
+			of Catalyst only includes one at this time, and it is for distcc build support.
+			The <i>distcc_hosts</i> option specifies which hosts distcc should use for distributed
+			building: </p>
+
+			<pre caption="distcc_hosts specfile option">
+distcc_hosts: 127.0.0.1 192.168.0.2 192.168.0.3 192.168.0.4/3
+			</pre>
+
+			<p>Ok, so now we have the specfile basics. Next, add a generous heaping of Portage snapshot,
+			and preheat your CPU to 350. </p>
+			
 		</body>
 	</section>
 
 	<section>
 		<title>Portage Snapshots</title>
 		<body>
-			<p>placeholder</p>
+			<p>Instead of using your live Portage tree, commonly found in <path>/usr/portage/profiles</path>,
+			Catalyst opts to use something called a Portage snapshot. A Portage snapshot is simply
+			a compressed tarball snapshot of your Portage tree. The advantage of using a a Portage
+			snapshot over a live tree is portability. Using snapshots makes it much easier to duplicate
+			builds across machines since all that is needed is the applicable spec file and the Portage
+			snapshot used in the build. </p>
+
+			<p>Creation of the Portage snapshot is rather straightforward. Before creating the snapshot,
+			make sure that you have tweaked the tree to your liking (e.g. marking an ebuild stable).
+			There are two ways to create a snapshot. One way is straight from the command line: </p>
+
+			<pre caption="Portage snapshot creation from the command line">
+# catalyst target=snapshot version_stamp=20040408
+			</pre>
+
+			<p>The other way is to use a specfile: </p>
+
+			<pre caption="Portage snapshot creation using a specfile">
+<codenote>specfile contents</codenote>
+
+target: snapshot
+version_stamp: 20040408
+
+<codenote>using catalyst to call the specfile</codenote>
+
+catalyst -f snapshot.spec
+			</pre>
+
+			<p>Specfiles are covered, Portage snapshots are covered, so now its time to build. </p>
 		</body>
 	</section>
 	
+</chapter>
+
+<chapter>
+	<title>Installation Stages</title>
+
+	<section>
+		<title>Overview</title>
+		<body>
+			
+			<p>Installation stages comprise the core of any Gentoo Linux system. The ability to customize
+			and create a set of installation stages is godlike in the realm of Gentoo, and with
+			Catalyst, its easy. </p>
+
+		</body>
+	</section>
+
+	<section>
+		<title>Building a Stage1 Installation Tarball</title>
+		<body>
+
+			<p>placeholder</p>
+		</body>
+	</section>
+
 </chapter>
 
 </guide>
