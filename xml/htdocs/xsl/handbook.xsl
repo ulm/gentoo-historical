@@ -59,6 +59,7 @@
     </xsl:for-each>
   </ul>
   <xsl:call-template name="menubar" />
+  <xsl:apply-templates select="/book/license" />
 </xsl:template>
 
 <!-- Chapter inside a book -->
@@ -101,6 +102,7 @@
   </ul>
   
   <xsl:call-template name="menubar" />
+  <xsl:apply-templates select="/book/license" />
 </xsl:template>
 
 <!-- Menu bar -->
@@ -211,6 +213,7 @@
   <xsl:apply-templates select="$FILE/section/body|$FILE/section/subsection" />
   
   <xsl:call-template name="menubar" />
+  <xsl:apply-templates select="/book/license" />
 </xsl:template>
 
 <!-- Subsection inside a section -->
