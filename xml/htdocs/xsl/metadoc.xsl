@@ -390,6 +390,7 @@
     <th><xsl:value-of select="func:gettext('editing', $lang)"/></th>
   </tr>
   <xsl:for-each select="exslt:node-set($metadoc)/metadoc/files/file">
+  <xsl:sort select="document(text())/metadoc/@lang" order="descending"/>
   <xsl:sort select="text()"/>
   <xsl:variable name="fileurl"    select="text()"/>
   <xsl:variable name="dfile"      select="document($fileurl)"/>
@@ -403,6 +404,9 @@
   <xsl:choose>
     <xsl:when test="exslt:node-set($dfile)/sections">
       <uri link="{$fileurl}?passthru=1"><xsl:value-of select="$fileurl"/></uri>
+    </xsl:when>
+    <xsl:when test="exslt:node-set($dfile)/metadoc">
+      <b><xsl:value-of select="$fileurl"/></b>
     </xsl:when>
     <xsl:otherwise>
       <uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri>
