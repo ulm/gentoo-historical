@@ -327,9 +327,10 @@ def set_networking():
 						del interfaces[menuitem]
 				install_profile.set_network_interfaces(interfaces)
 		elif menuitem == "DNS Servers":
-			d.msgbox("DNS Servers")
+			code, dnsservers = d.inputbox("Enter a space-separated list of DNS servers")
+			if code == DLG_OK: install_profile.set_dns_servers(None, dnsservers, None)
+			
 		elif menuitem == "Default Gateway":
-			d.msgbox("Default Gateway")
 			while 1:
 				interfaces = install_profile.get_network_interfaces()
 				if not interfaces: break
