@@ -20,4 +20,8 @@ ${WEBSCRIPTS}/news-index.sh
 ${WEBSCRIPTS}/doc-tarball.sh
 ${WEBSCRIPTS}/icons2xml.pl > /home/httpd/gentoo/xml/htdocs/dyn/icons.xml
 
+# this script takes a while (5+ minutes) to run, so leave it as the last one.
+${WEBSCRIPTS}/distrowatch.sh
+
+
 echo ">>> Nightly Web update done."
