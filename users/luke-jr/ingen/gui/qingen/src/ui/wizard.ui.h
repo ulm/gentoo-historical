@@ -475,6 +475,3 @@ void Wizard::closeEvent(QCloseEvent *e) {
 	return e->ignore();
     e->accept();
 }
-
-
-}
