@@ -1,8 +1,8 @@
 ﻿<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/openafs.xml,v 1.2 2004/09/17 10:27:43 bennyc Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/openafs.xml,v 1.3 2004/10/19 00:27:32 ccpz Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- rev 1.14 by Eternity -->
+<!-- rev 1.17 by ccpz -->
 <guide link = "/doc/zh_tw/openafs.xml">
 <title>Gentoo Linux OpenAFS 指南</title>
 <author title="Editor">
@@ -13,6 +13,9 @@
 </author>
 <author title="Editor">
   <mail link="blubbler@gentoo.org">Tiemo Kieft</mail>
+</author>
+<author title="Editor">
+  <mail link="fnjordy@gmail.com">Steven McCoy</mail>
 </author>
 <author title="Translator">
 	<mail link="palatis@gentoo.org.tw">【Palatis】</mail>
@@ -30,8 +33,8 @@
 
 <license />
 
-<version>0.5</version>
-<date>March 5, 2004</date>
+<version>0.7</version>
+<date>2004年9月22日</date>
 
 <chapter>
 <title>總覽</title>
@@ -512,7 +515,7 @@ ka&gt;
 
 <note>
 在分割區名稱選項中代入其中一台機器的 AFS 伺服器分割區。手冊上這些分割區是稱作 
-<path>/vicex</path>，然後 x 的範圍是從 a-z。
+<path>/vicepx</path>，然後 x 的範圍是從 a-z。
 </note>
 
 <pre>
@@ -525,6 +528,12 @@ ka&gt;
 如果在核系統中已經有 AFS 檔案伺服器以及容量，執行 <b>vos sncvldb</b> 和 <b>vos 
 syncserv</b>指令來將 VLDB (Volume Location Database) 與實際的容量與機器作同步。
 這將把所有必須的資料複製到您的新伺服器。
+</p>
+
+<p>
+如果這個指令顯示失敗訊息 "partition /vicepa does not exist on the server"，確定
+你在執行 OpenAFS 服務前先掛載分割區，或掛載後使用 <c>/usr/afs/bin/bos restart
+&lt;server name&gt; -all -cell &lt;cell name&gt; -noauth</c> 指令重新啟動。
 </p>
 
 <pre>
@@ -585,11 +594,90 @@ syncserv</b>指令來將 VLDB (Volume Location Database) 與實際的容量與�
 <chapter>
 <title>基本管理</title>
 <section>
-<title></title>
+<title>免則聲明</title>
+<body>
+  	 
+<p>
+OpenAFS 是一個廣泛的科技。請閱讀 AFS 取得更多資訊。我們在這章中只列出一點點的管
+理工具。
+</p>
+  	 
+</body>
+</section>
+<section>
+<title>設定 PAM 登入時取得 AFS Token</title>
 <body>
 
-<p>施工中... 現階段的話，先念 AFS 文件 :)</p>
+<p>
+使用 AFS 時，如果你使用 AFS Kerberos 4 你需要對 KA 服務認證，或著是使用 MIT，
+Heimdal，或 ShiShi Kerberos 5 的話，對 Kerberos 5 KDC 認證。然而為了要登入機器
+，你也需要一個使用者帳戶，這可以在本地的 /etc/passwd，NIS，LDAP (OpenLDAP)，或
+Hesiod 資料庫。PAM 讓 Gentoo 可以結合 AFS 認證以及使用者帳戶登入。
+</p>
+  	 
+<p>
+你需要更新這些設定使用的 /etc/pam.d/system-auth。"use_first_pass" 表示他首先會
+檢查使用者登入，然後 "ignore_root" 禁止檢查本機的超級使用者以便當 AFS 或網路有
+問題時還可以登入。
+</p>
+  	 
+<pre caption="/etc/pam.d/system-auth">
+auth       required     /lib/security/pam_env.so
+auth       sufficient   /lib/security/pam_unix.so likeauth nullok
+auth       sufficient   /usr/afsws/lib/pam_afs.so.1 use_first_pass ignore_root
+auth       required     /lib/security/pam_deny.so
+  	 
+account    required     /lib/security/pam_unix.so
+  	 
+password   required     /lib/security/pam_cracklib.so retry=3
+password   sufficient   /lib/security/pam_unix.so nullok md5 shadow use_authtok
+password   required     /lib/security/pam_deny.so
+  	 
+session    required     /lib/security/pam_limits.so
+session    required     /lib/security/pam_unix.so
+</pre>
+  	 
+<p>
+為了讓 sudo 保持真實使用者的 token 以及避免本地使用者增加 AFS 存取權限，將
+/etc/pam.d/su 改成這樣：
+</p>
+  	 
+<pre caption="/etc/pam.d/su">
+<comment># 這裡，uid 大於 100 的使用者屬於 AFS 而小於等於 100 的使用者被
+pam_afs 忽略。</comment>
+auth       sufficient   /usr/afsws/lib/pam_afs.so.1 ignore_uid 100
 
+auth       sufficient   /lib/security/pam_rootok.so
+  	 
+<comment># 如果你想要更嚴格的限制使用者 su，
+# 建立 /etc/security/suauth.allow 這只能讓 root 寫入，
+# 然後加入允許 su 的使用者到檔案中，每一個佔一行
+#auth       required     /lib/security/pam_listfile.so item=ruser \
+#       sense=allow onerr=fail file=/etc/security/suauth.allow
+  	 
+# 取消這個註解讓 wheel 群組中的使用者可以不用輸入密碼就 su
+#auth       sufficient   /lib/security/pam_wheel.so use_uid trust
+  	 
+# 相對於上面，你可以建立一個不用輸入密碼就可以 su 的使用者列表。
+#auth       sufficient   /lib/security/pam_listfile.so item=ruser \
+#       sense=allow onerr=fail file=/etc/security/suauth.nopass
+
+# 把這些註解起來讓任何使用者，即使不是 'wheel' 群組中，也可以 su
+</comment>
+auth       required     /lib/security/pam_wheel.so use_uid
+  	 
+auth       required     /lib/security/pam_stack.so service=system-auth
+  	 
+account    required     /lib/security/pam_stack.so service=system-auth
+
+password   required     /lib/security/pam_stack.so service=system-auth
+  	 
+session    required     /lib/security/pam_stack.so service=system-auth
+session    optional     /lib/security/pam_xauth.so
+  	 
+<comment># 這裡避免真實使用者的 token 被丟棄</comment>
+session    optional     /usr/afsws/lib/pam_afs.so.1 no_unlog
+</pre>
 </body>
 </section>
 </chapter>
