@@ -67,10 +67,10 @@ The SELinux policy describes the access permissions for the entire system.
 <p>
    SELinux identities are contained in the users file in the policy directory.
    The syntax for the file is simple.  For example, to allow the user
-   <i>pebenito</i> the roles <i>user_r</i> and <i>sysadm_r</i>, add to the end of
+   <i>pebenito</i> the roles <i>staff_r</i> and <i>sysadm_r</i>, add to the end of
    the file something like:
 </p>
-<pre>user pebenito roles { user_r sysadm_r };</pre>
+<pre>user pebenito roles { staff_r sysadm_r };</pre>
 <p>
    Then load the policy.  There must also be a Linux username <i>pebenito</i>.
    If a user does not have a <i>user</i> line in the file, their identity will
@@ -78,10 +78,28 @@ The SELinux policy describes the access permissions for the entire system.
 </p>
 
 <impo>
-   All users that are specified in the users file should at least be allowed
-   the <i>user_r</i> and/or <i>staff_r</i> role.  Otherwise, they will not be
-   able to log in remotely.
+   Normal users that have identities should be allowed <i>user_r</i>, not
+   <i>staff_r</i>. Administrators should be allowed <i>staff_r</i> and 
+   <i>sysadm_r</i>.  All users must be allowed <i>user_r</i> or
+   <i>staff_r</i> otherwise they will be unable to log in remotely.
 </impo>
+
+<p>
+   When giving a user an identity their home directory and contents should also be
+   appropriately labeled.  The file <i>users.fc</i> in the file_contexts directory
+   should be modified.  For example, the normal user <i>method</i> and the
+   administrator <i>pebenito</i> would be labeled:
+</p>
+
+<pre>
+/home/method           -d      method:object_r:user_home_dir_t
+/home/method/.*                method:object_r:user_home_t
+/home/method/\.ssh(/.*)?       method:object_r:user_home_ssh_t
+ 
+/home/pebenito         -d      pebenito:object_r:staff_home_dir_t
+/home/pebenito/.*              pebenito:object_r:staff_home_t
+/home/pebenito/\.ssh(/.*)?     pebenito:object_r:staff_home_ssh_t
+</pre>
 
 </body></section>
 
@@ -154,9 +172,9 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </pre>
 <p>
    In this example, the typical process information is displayed, in addition
-   to the process&#39;s SID and equivalent context.  By inspection, all of the
-   system&#39;s kernel processes and daemons run under the <i>system_u</i> identity,
-   and <i>system_r</i> role.  The individual domains depend on the program.
+   to the process&#39;s context.  By inspection, all of the system&#39;s kernel
+   processes and daemons run under the <i>system_u</i> identity, and
+   <i>system_r</i> role.  The individual domains depend on the program.
    There are a few users logged in over ssh, using the generic <i>user_u</i>
    identity.  Finally there is a user with the identity <i>pebenito</i> logged in
    with the <i>staff_r</i> role, running in the <i>staff_t</i> domain.
@@ -245,10 +263,12 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 <p>
    This directory contains the files that describe the security contexts
    for all files on persistent filesystems.  It contains the file <i>types.fc</i>
-   which has all of the security contexts for the general system.  The
-   directory <i>program/</i> contains the security contexts for the daemons
-   in the <i>domains/program/</i> directory.  These are one-to-one mapped; 
-   for example, the domains/program/syslogd.te policy file corresponds to the
+   which has all of the security contexts for the general system, and the
+   file <i>users.fc</i> which has the security contexts for home directories
+   of users that have SELinux identities.  The directory <i>program/</i>
+   contains the security contexts for the daemons in the <i>domains/program/</i>
+   directory.  These are one-to-one mapped; for example, the
+   domains/program/syslogd.te policy file corresponds to the
    file_contexts/program/syslogd.fc security contexts file.
 </p>
 </body></section>
