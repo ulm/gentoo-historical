@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.7 2004/02/19 18:41:02 esammer Exp $
+$Id: GLI.py,v 1.8 2004/02/19 22:28:29 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -40,6 +40,7 @@ class InstallProfile(xml.sax.ContentHandler):
 	_hostname = ""
 	_nisdomainname = ""
 	_partition_tables = {}
+	_network_interfaces = {}
 
 
 	# Internal SAX state info
@@ -309,8 +310,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		if 0 < install_stage < 4:
 			self._install_stage = install_stage
 		else:
-			# We should probably raise some kind of exception here...
-			pass
+			raise "InstallStageError", "install_stage must be 1-3!"
 
 	def get_portage_tree_sync(self):
 		"returns portage_tree_sync"
@@ -429,3 +429,94 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		# If all the tests clear, then set the variable
 		self._partition_tables = partition_tables
+
+
+	def get_network_interfaces(self):
+		"Returns network_interfaces"
+		return self._network_interfaces
+		
+	def set_network_interfaces(self, network_interfaces):
+		"""
+		Sets a dictionary of information for the available network_interfaces:		{ <eth_device> : ( <pre-install device info (tuple/None)>, <post-install device info (tuple/None)>, <load at boot (bool)> ) }		<eth_device> is a string with the device name, ie. 'eth0'
+		If you desire DHCP, set <pre/post-install device info> to None.
+		If you desire a static ip, set <pre/post-install device info> to a tuple as defined below:
+		( <ip address>, <broadcast>, <netmask>, <gateway>, <alias (tuple)> )
+		
+		If you do not desire a gateway, set <gateway> to None.
+		If you do not desire an alias, set <alias> to None.
+		Otherwise, <alias> is a tuple of tuples containing alias info in the following format:
+		( ( <alias ip>, <alias broadcast>, <alias netmask> ), ( <alias ip>, <alias broadcast>, <alias netmask> ), etc. )
+		
+		<alias ip>, <alias broadcast> and <alias netmask> MUST be defined for each alias!
+		
+		An <ip address> (or broadcast, netmask, etc...) is defined as a string containing the ip address (ie. "192.168.1.2")
+		"""
+		
+		for device in network_interfaces:
+
+			# Split device into type and number
+			digit_found = False
+			for i in range(len(device)):
+				if device[i] in string.digits:
+					digit_found = True
+					device_type = device[:i]
+			
+			
+			# If the device is only letters or has the wrong proportion of letters and numbers
+			# then it is not a valid device
+			if (not digit_found) or (5 > i > 2):
+				raise "NetworkInterfacesError", "Improper device name!"
+			
+			# For 'eth' type devices:
+			if device_type = "eth":
+			
+				# Do the same for both pre and post tuples
+				for i in range(2):
+				
+					# If the user does not desire DHCP, then validate each ip address provided
+					if network_interfaces[device][i] != None:
+						if not self._is_ip(network_interfaces[device][i][0]):
+							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"						if not self._is_ip(network_interfaces[device][i][1]):
+							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"						if not self._is_ip(network_interfaces[device][i][2]):
+							raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
+						
+						# If gateway is set to none, check the validity of the ip
+						if (network_interfaces[device][i][3] != None) and (not self._is_ip(network_interfaces[device][i][3])):
+							raise "NetworkInterfacesError", "The gateway address you specified for " + device + " is not valid!"
+							
+						# Check the validity of aliases if they exist
+						if (network_interfaces[device][i][4] != None):
+							
+							# Type must be tuple
+							if type(network_interfaces[device][i][4]) != tuple:
+								raise "NetworkInterfacesError", "Improper type for network aliases (device: " + device + "), must be tuple!"
+							
+							# Tuple must contain at least 1 alias tuple
+							if not len(network_interfaces[device][i][4]) > 0:
+								raise "NetworkInterfacesError", "Aliases must contain at least one alias (device: " + device + ")!"
+								
+							# 
+							for alias in network_interfaces[device][i][4]:
+								
+								# Alias must be a tuple
+								if type(alias) != tuple:
+									raise "NetworkInterfacesError", "Improper type for network alias (device: " + device + "), must be tuple!"
+									
+								# Alias must have a length of 3
+								if len(alias) != 3:
+									raise "NetworkInterfacesError", "Alias must have ip address, netmask and broadcast defined (device: " + device + ")!"
+								
+								# Alias must have an ip address, netmask, and broadcast defined
+								if not self._is_ip(alias[0]):
+									raise "NetworkInterfacesError", "Invalid ip address for alias (device: " + device + ")!"
+								if not self._is_ip(alias[1]):
+									raise "NetworkInterfacesError", "Invalid broadcast address for alias (device: " + device + ")!"
+								if not self._is_ip(alias[2]):
+									raise "NetworkInterfacesError", "Invalid netmask address for alias (device: " + device + ")!"
+			
+			# Other device types
+			else:
+				raise "NetworkInterfacesError", "Invalid or unimplimented device type (" + device_type + ")!"
+				
+			# Set network_interfaces
+			self._network_interfaces = network_interfaces
