@@ -307,13 +307,27 @@ variable settings. The variables you can set are:</p>
 
 <section>
 <title>Rules for writing an ebuild File</title>
-<body><p>Since ebuild files are really just shell scripts, you should
+<body>
+<p>Since ebuild files are really just shell scripts, you should
 use your editor's shell-script mode for editing them. You should use
 proper indentation, using only tab characters -- no spaces. Make sure
 you set up your editor to put tabstops at 4 spaces. Always make sure
 you use braces around your environment variables; e.g. <c>${P}</c>
 instead of just <c>$P</c>.</p>
-<p>If you're using Vim, you can put the following snippet at the bottom of your .vimrc to make sure you're using the right settings when editing anything Gentoo-related.</p>
+
+<p>Long lines are wrapped with ' \', thus:</p>
+<pre>
+./configure \
+	--prefix=/usr || die "configure failed"
+</pre>
+
+<p>For further details, refer to <path>skel.ebuild</path> (usually 
+residing in /usr/portage).</p>
+
+<p>If you're using Vim, you can put the following snippet at the bottom
+of your .vimrc to make sure you're using the right settings when editing
+ anything Gentoo-related.</p>
+
 <pre>
 if (getcwd() =~ 'gentoo-x86\|gentoo-src\|portage')
 	set tabstop=4 shiftwidth=4 noexpandtab
@@ -568,25 +582,32 @@ so that paths and additional variables can be included into the environment.</no
 
 <section>
 <title>Private Scripts and Commands</title>
-<body><p>These are scripts you can use in your ebuild files to perform common tasks.</p>
+<body>
+
+<p>These are scripts you can use in your ebuild files to perform common tasks.</p>
+
+<p>For more detailed instructions, look at the scripts themselves in <path>/usr/lib/portage/bin</path>.</p>
+
 <table>
 <tr><ti>dobin</ti><ti>installs the specified binaries into <path>DESTTREE/bin</path></ti></tr>
 <tr><ti>into</ti><ti>sets the target prefix (<path>DESTTREE</path>) for <c>dobin</c>, <c>dolib</c>, <c>doman</c>, etc.</ti></tr>
 <tr><ti>dodoc</ti><ti>installs the specified files into the packages documentation directory (<path>/usr/share/doc/${PF}</path>)</ti></tr>
 <tr><ti>doexe</ti><ti></ti></tr>
-<tr><ti>dohard</ti><ti></ti></tr>
+<tr><ti>dohard</ti><ti>creates a hardlink, handles ${D} transparently</ti></tr>
+<tr><ti>dohtml</ti><ti>installs the specified files and directories into <path>/usr/share/doc/${PF}/html</path></ti></tr>
 <tr><ti>doinfo</ti><ti></ti></tr>
 <tr><ti>doins</ti><ti></ti></tr>
 <tr><ti>dolib</ti><ti></ti></tr>
 <tr><ti>dolib.a</ti><ti></ti></tr>
 <tr><ti>dolib.so</ti><ti></ti></tr>
-<tr><ti>doman</ti><ti></ti></tr>
-<tr><ti>domo</ti><ti></ti></tr>
+<tr><ti>doman</ti><ti>installs specified file into <path>/usr/share/man/manX</path>, according to suffix</ti></tr>
+<tr><ti>domo</ti><ti>arigatou ;)</ti></tr>
 <tr><ti>donewins</ti><ti></ti></tr>
 <tr><ti>dopython</ti><ti></ti></tr>
-<tr><ti>dosbin</ti><ti></ti></tr>
-<tr><ti>dosed</ti><ti></ti></tr>
-<tr><ti>dosym</ti><ti></ti></tr>
+<tr><ti>dosbin</ti><ti>installs a binary into <path>/sbin</path>, marking it as executable</ti></tr>
+<tr><ti>dosed</ti><ti>removes all occurences of ${D} (the installation prefix path) in the specified files</ti></tr>
+<tr><ti>dosym</ti><ti>creates a symlink, handles ${D} transparently.</ti></tr>
+<tr><ti>emake</ti><ti>runs a parallell make. Some projects cannot be made in parallell; use make</ti></tr>
 <tr><ti>find-packages</ti><ti></ti></tr>
 <tr><ti>find-requires</ti><ti></ti></tr>
 <tr><ti>fowners</ti><ti></ti></tr>
@@ -606,12 +627,12 @@ so that paths and additional variables can be included into the environment.</no
 <tr><ti>newsbin</ti><ti></ti></tr>
 <tr><ti>pkgmerge</ti><ti></ti></tr>
 <tr><ti>pkgname</ti><ti></ti></tr>
-<tr><ti>pmake</ti><ti></ti></tr>
+<tr><ti>pmake</ti><ti>deprecated. Use emake</ti></tr>
 <tr><ti>prepall</ti><ti></ti></tr>
 <tr><ti>prepalldocs</ti><ti></ti></tr>
 <tr><ti>prepallinfo</ti><ti></ti></tr>
 <tr><ti>prepallman</ti><ti></ti></tr>
-<tr><ti>try</ti><ti></ti></tr>
+<tr><ti>try</ti><ti>deprecated. Use the || die construct instead.</ti></tr>
 </table>
 </body>
 </section>
@@ -623,56 +644,81 @@ so that paths and additional variables can be included into the environment.</no
 <section>
 <title>Why dependencies are important</title>
 <body>
-<p>All but the most trivial packages or the most central packages depend on the 
-existence of libraries, utilities or data from other packages. This a well-known
-fact. When installing a new package from sources, satisfying its dependencies 
-can sometimes prove to be a chore. This is also a well-known fact. The Portage 
-system tries its very best to help out in this regard: When you tell it to merge
-the package foo, by issuing the command emerge foo, all necessary dependencies 
-for foo will be installed for you, before Portage tries to compile foo's sources.
+<p>Portage is more than just a convenience script that gives you a unified 
+way to build any one project (program, library) from source. It will also
+fetch and install any necessary dependencies if you take care to specify 
+these in your ebuild.</p>
+
+<p>In the official ebuilds, all dependencies have already been specified, 
+so when you issue <c>emerge net-www/mozilla/mozilla-1.0</c>, Portage will 
+insure that all libraries necessary for Mozilla to build and run are 
+properly installed before Mozilla itself is built.</p> 
+
+<p>Portage even distinguishes between build-time dependencies and run-time 
+dependencies. (Caveat: Currently, Portage installs all build-time and run-time
+dependencies and leaves it at that. At a later stage, it will be possible to 
+trim your installation so that only the run-time dependencies are left installed).
 </p>
 
-<p>In order for this magic to work, it is important that the ebuild for foo specifies
-exactly which packages, including version, it needs to compile properly.</p>
-
-<p>It is not uncommon for a package to have different requirements (e.g. build tools)
-to compile than for running. Portage allows you to specify (possibly different) runtime
-and build time dependencies.</p>
 </body>
 </section>
 
 <section>
 <title>How to Specify Dependencies in Your ebuild Files</title>
-<body><p>
-The DEPEND variable inside your foo-x.y.z.ebuild tells Portage about which packages are needed 
-to build foo. The RDEPEND variable tells which packages are needed to run. 
-Example:
+<body>
+<p>The <c>DEPEND</c> variable inside your <path>foo-x.y.z.ebuild</path> tells Portage 
+about which packages are needed to build <path>foo</path>. The <c>RDEPEND</c> variable
+specifies which packages are needed for <path>foo</path> to run. 
+Example:</p>
 <pre>
 DEPEND="virtual/glibc
         sys-libs/zlib"
 RDEPEND="virtual/glibc"
 </pre>
-This tells Portage that to build, the packages <path>virtual/glibc</path> (more on 
-virtuals in a bit) and <path>sys-libs/zlib</path> are needed. It does not say anything about 
-which version of glibc or zlib that are needed.</p>
 
-<p>It is always a good idea to be explicit about the version that is needed. Portage is quite 
-flexible in this respect:</p>
+<p>This tells Portage that to build <path>foo-x.y.z</path>, the packages 
+<path>virtual/glibc</path> (more on  virtuals in a bit) and <path>sys-libs/zlib</path>
+are needed. It does not say anything about which version of glibc or zlib that are needed,
+which means "anything goes".</p>
+
+<p>The "anything goes" is of course a bit scary, and will not work in the general case.
+But for central libraries like glibc, which strives very hard to be 100% binary compatible
+all the time, it actually works. For other libraries, we can of course specify version 
+dependencies. There are numerous ways to do this:</p>
 <pre>
-DEPEND="&gt;=sys-apps/bar-1.2
-         =sys-apps/baz-1.0
-	 =sys-apps/frob-1.0
-	 =sys-apps/frob-1.0-r1
-	 =sys-apps/frob-1.0-pre1
-	 =sys-apps/frob-1.0-alpha1
-         ~sys-apps/qux-1.0
-	 sys-apps/foo-1.2*"
+&gt;=sys-apps/bar-1.2
+=sys-apps/baz-1.0
 </pre>
+
 <p> &gt;= and = do what you would expect; sys-apps/bar version 1.2 or newer is okay (this means that 
 sys-apps/bar-2.0 is okay), while sys-apps/baz version 1.0 is the only version that is accepted.</p>
-<p>frob-1.0, frob-1.0-r1, frob-1.0-pre1, frob-1.0-alpha1 are listed in order of priority.</p>
+
+<p>Portage knows of four special suffixes to a version number: <c>-rX</c>, <c>-preX</c>, 
+<c>-alphaX</c> and <c>-betaX</c> where X is a number (as many digits as you like). Given the 
+specification <c>&gt=sys-apps/foo-1.0</c> and the files:</p>
+<pre>
+sys-apps/frob-1.0-r1
+sys-apps/frob-1.0
+sys-apps/frob-1.0-pre1
+sys-apps/frob-1.0-beta1
+sys-apps/frob-1.0-alpha1
+</pre>
+<p>Portage will arrange them internally in the order listed, and pick the one on the top. This 
+means it will always pick <c>beta</c> packages over <c>-alphaX</c>, <c>-preX</c> over <c>-betaX</c>, 
+non-suffixed over <c>-preX</c> and <c>-rX</c> suffixed over non-suffixed.</p>
+
+<p>Other methods of specifying version dependencies are follow:</p>
+<pre>
+~sys-apps/qux-1.0
+sys-apps/foo-1.2*
+</pre>
+
 <p>~sys-apps/qux-1.0 will select the newest revision of qux-1.0</p>
-<p>sys-apps/foo-1.2* will select the newest member of the 1.2 series, but will ignore 1.3 and later series</p>
+
+<p>sys-apps/foo-1.2* will select the newest member of the 1.2 series, but will ignore 
+1.3 and later series. That is, foo-1.2.3 and foo-1.2.0 are both valid, while foo-1.3.3 
+and foo-1.3.0 are not.</p>
+
 </body>
 </section>
 </chapter>
