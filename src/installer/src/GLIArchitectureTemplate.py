@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.3 2004/11/06 05:04:00 samyron Exp $
+$Id: GLIArchitectureTemplate.py,v 1.4 2004/11/11 19:47:12 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -18,9 +18,10 @@ from GLIExceptions import *
 
 class ArchitectureTemplate:
 
-	def __init__(self,configuration=None, install_profile=None):
+	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		self._configuration = configuration
 		self._install_profile = install_profile
+		self._cc = client_controller
 
 		# This will get used a lot, so it's probably
 		# better to store it in a variable than to call
