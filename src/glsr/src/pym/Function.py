@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.11 2004/11/12 20:37:49 port001 Exp $
+# $Id: Function.py,v 1.12 2004/12/25 21:05:03 port001 Exp $
 #
 
 import sys
@@ -52,3 +52,13 @@ class stderr_redirect:
         
         else:
             sys.__stderr__.write(msg)
+
+def values(self, key, *args):
+
+    if self.params.has_key(key):
+        return self.params[key]
+    else:
+        if len(args) >= 1:
+            return args[0]
+
+        return None

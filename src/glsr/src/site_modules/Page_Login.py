@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.9 2004/12/25 01:36:24 port001 Exp $
+# $Id: Page_Login.py,v 1.10 2004/12/25 21:05:03 port001 Exp $
 #
 
 import os
@@ -13,7 +13,6 @@ import os
 import State
 import Config
 from User import User
-import Session as SessionHandler
 from site_modules import SiteModule, Redirect
 
 class Page_Login(SiteModule):
@@ -23,20 +22,13 @@ class Page_Login(SiteModule):
         self.req = req       
         self.page = args['page']
         self.template = Config.Template["login"]
-        if self.req.params.has_key('username'):
-            self.username = self.req.params['username']
-        else:
-            self.username = None
-        if self.req.params.has_key('password'):
-            self.password = self.req.params['password']
-        else:
-            self.password = None
+        self.username = self.req.values('username')
+        self.password = self.req.values('password')
         self.alias = args["alias"]
         self.uid = args["uid"]
         self.session = args["session"]
 
         self.user_obj = User()
-        self.ThisSession = SessionHandler.New()
         
     def display(self):
 
@@ -44,7 +36,7 @@ class Page_Login(SiteModule):
         if self.page == "perform_login":
 
             if self._login_user():
-                self.alias = self.req.params["username"]
+                self.alias = self.req.values('username')
                 self.uid = self.user_obj.GetUid(self.alias)
         
             raise Redirect, "index.py?page=main"
@@ -73,7 +65,7 @@ class Page_Login(SiteModule):
             return False
 
         # Update IP address
-        self.user_obj.UpdateIP(os.environ['REMOTE_ADDR'])
+        self.user_obj.UpdateIP(self.req.environ['REMOTE_ADDR'])
     
         # Assign uid to current session
         State.ThisSession.assign_uid(uid)
