@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.10 2005/01/26 05:46:28 hadfield Exp $
+# $Id: Template.py,v 1.11 2005/01/26 20:59:57 port001 Exp $
 #
 
 """The template handler module.
@@ -36,7 +36,7 @@ import string
 import re
 import types
 
-from Logging import err
+from Error import error
 
 __modulename__ = "Template"
 
@@ -440,6 +440,6 @@ class TemplateError(Exception):
     def __str__(self):
 
         import sys
-        err(self.errmsg, __modulename__)            
-        sys.exit(1)
+        error(self.errmsg, __modulename__)            
+        sys.exit(0)
 

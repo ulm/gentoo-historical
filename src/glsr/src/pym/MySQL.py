@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.11 2004/12/30 21:54:31 hadfield Exp $
+# $Id: MySQL.py,v 1.12 2005/01/26 20:59:57 port001 Exp $
 #
 
 __modulename__ = "MySQL"
@@ -15,7 +15,8 @@ from _mysql_exceptions import MySQLError, OperationalError
 
 import Config
 import Const
-from Logging import err, logwrite
+from Error import error
+from Logging import logwrite
 from Function import start_timer, stop_timer, eval_timer
 
 class MySQL:
@@ -35,8 +36,8 @@ class MySQL:
                                  passwd=Config.MySQL["passwd"],
                                  db=Config.MySQL["db"])
         except OperationalError, errmsg:
-            err(errmsg, __modulename__)
-            sys.exit(1)
+            error(errmsg, __modulename__)
+            sys.exit(0)
                                                                         
         self._cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
 
@@ -59,9 +60,9 @@ class MySQL:
         try:
             self._cursor.execute(self._query, self._args)
         except MySQLError, errmsg:
-            err("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, self._query, self._args),
+            error("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, self._query, self._args),
                 __modulename__)
-            sys.exit(1)
+            sys.exit(0)
                                                                                 
         self._db.commit()
         

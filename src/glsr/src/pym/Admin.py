@@ -2,14 +2,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Admin.py,v 1.4 2004/12/18 18:49:51 port001 Exp $
+# $Id: Admin.py,v 1.5 2005/01/26 20:59:57 port001 Exp $
 #
 
 __modulename__ = "Admin"
 
 from MySQL import MySQL
 import Config
-from Logging import err
+from Error import error
 from time import strftime, gmtime
 
 MySQLHandler = MySQL()
@@ -23,7 +23,7 @@ def optimize_tables():
 
     for result in MySQLHandler.query("OPTIMIZE TABLES %s" % tables_str[:-2], fetch="all"):
         if result["Msg_type"] == "error":
-            err("Optimization error: %s" % result["Msg_text"], __modulename__)
+            error("Optimization error: %s" % result["Msg_text"], __modulename__)
             sys.exit(0)
 
     MySQLHandler.query("UPDATE %s%s SET %s_table_opt = " %

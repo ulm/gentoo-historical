@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.6 2004/12/16 14:06:26 port001 Exp $
+# $Id: Script.py,v 1.7 2005/01/26 20:59:57 port001 Exp $
 #
 
 __modulename__ = "Script"
@@ -14,7 +14,7 @@ import string
 from time import strftime, gmtime
 
 import Config
-from Logging import err
+from Error import error
 from MySQL import MySQL
 from GLSRBackend import GLSRBackend as Parent
 
@@ -197,7 +197,7 @@ class SubScript(Parent):
         """Add a new subscript"""
 
         if not details["parent_id"] or details["parent_id"] == "0":
-            err("Invalid Parent ID", __modulename__)
+            error("Invalid Parent ID", __modulename__)
             return False
 
         details.update({"date":  strftime("%Y-%m-%d", gmtime())})
@@ -207,7 +207,7 @@ class SubScript(Parent):
         """Add a new subscript."""
 
         if not details["parent_id"] or details["parent_id"] == "0":
-            err("Invalid Parent ID", __modulename__)
+            error("Invalid Parent ID", __modulename__)
             return False
 
         details.update({"date":  strftime("%Y-%m-%d", gmtime()),

@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.37 2005/01/25 23:23:02 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.38 2005/01/26 20:59:57 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -31,19 +31,16 @@ sys.path.insert(0, "/usr/local/share/glsr/")
 sys.path.insert(0, "../pym")
 sys.path.insert(0, "../")
 
-from Function import stderr_redirect
-#sys.stderr = stderr_redirect()
-
 import State
 import Config
 from User import User
-from Error import error_tb
 from Session import Session
-from Logging import logwrite, err
+from Logging import logwrite
 from SiteModule import Redirect
 from Template import Template
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
+from Error import error_uncaught, error
 from Function import start_timer, stop_timer, eval_timer, _Values
 
 class RequestHandler(cgi.Handler):
@@ -68,7 +65,7 @@ class RequestHandler(cgi.Handler):
 
     def traceback(self, req):
 
-        error_tb(req)
+        error_uncaught(req)
 
 class _PageDispatch:
 
@@ -89,9 +86,14 @@ class _PageDispatch:
         if self._req.params.has_key('domain'):
             if self._req.params['domain'] == 'admin':
                 self._domain = 'admin'
+				
         self._user_detail = {"uid": 0,
                              "alias": "",
                              "session": None}
+
+		State.UserDetail = self._user_details
+		State.Domian = self._domain
+		State.Req = self._req
 
         self._ThisSession = Session(self._req, self._page)        
         self._ThisUser = User()
@@ -203,7 +205,7 @@ class _PageDispatch:
             output_str = error.__str__()
             output_str = output_str.replace("\n", "<br />")
             output_str = output_str.replace(" ", "&nbsp;")
-            err(output_str,
+            error(output_str,
                 module_object.__modulename__)
             sys.exit(0)
 

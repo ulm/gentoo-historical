@@ -3,13 +3,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Category.py,v 1.5 2004/12/16 14:06:26 port001 Exp $
+# $Id: Category.py,v 1.6 2005/01/26 20:59:57 port001 Exp $
 #
 
 __modulename__ = "Category"
 
 import Config
-from Logging import err
+from Error import error
 from MySQL import MySQL
 from GLSRBackend import GLSRBackend as Parent
 
@@ -88,5 +88,5 @@ class Category(Parent):
             return results["%s_name" % self.tablename]
         
         else:
-            err("Invalid User ID!", __modulename__)
+            error("Invalid User ID!", __modulename__)
             return False

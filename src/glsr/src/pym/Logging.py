@@ -2,8 +2,6 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.14 2004/12/18 18:49:51 port001 Exp $
-#
 
 import traceback
 from time import gmtime, strftime
@@ -11,143 +9,76 @@ from time import gmtime, strftime
 import State
 import Config
 
-__modulename__ = "Logging"
+__revision__ = '$Id: Logging.py,v 1.15 2005/01/26 20:59:57 port001 Exp $'
+__modulename__ = 'Logging'
 
-def err(msg, modname):
-    """Displays and records errors.
+def FlushErrorReportLog():
+    """Blank the ErrorReport log"""
 
-    Send given error message to logwrite(), display error message to
-    user then report the error.
+    try:
+        fd = open(Config.ErrorReportLog, 'w')
+        fd.close()
+    except:
+        pass
+
+def logwrite(msg, modname, type, error_uncaught=False):
     """
+	Write given message to the log file and error log if required.
+    Type can be: Error, Query, Info, Warn
+	"""
 
-    if Config.ErrorReporting == True:
+    logtime = gmtime()
+    logtype = ''
 
-        contents = []
+    if type.lower() == 'error':
+        logtype = 'error'
+    elif type.lower() == 'query':
+        logtype = 'query'
+    elif type.lower() == 'info':
+        logtype = 'info'
+    elif type.lower() == 'warn':
+        logtype = 'warn'
+    else:
+        logtype = '????'
+
+    if Config.Logging == True:
+
+        if isinstance(msg, list):
+            msg = "".join(msg)
 
         try:
-            readfd = open(Config.ErrorReportLog, "r")
+            fd = open(Config.LogFile, 'a')
+            fd.write("[%s] [%s] [%s] %s\n" %
+                     (strftime('%d %b %Y %H:%M:%S', logtime),
+                      logtype, modname, msg))
+            fd.close()
+        except IOError:
+            pass
+
+    if Config.ErrorReporting == True and logtype == 'error':
+	# FIXME: log warnings also
+	
+	    contents = []
+
+        try:
+            readfd = open(Config.ErrorReportLog, 'r')
             contents = readfd.readlines()
             readfd.close()
         except IOError:
             pass
 
         try:
-            writefd = open(Config.ErrorReportLog, "w")
-            writefd.write("%s||%s||%s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()),
-                                                                      modname, msg))
-            writefd.write("".join(contents))
+            writefd = open(Config.ErrorReportLog, 'w')
+			if error_uncaught == True:
+			    # FIXME: Print the traceback directly to log
+			    writefd.write("%s||Unknown||Uncaught exception, see glsr.log entry for this date and time.\n" \
+			                                                        % strftime('%d %b %Y %H:%M:%S', logtime))
+			else:
+                writefd.write("%s||%s||%s\n" % (strftime('%d %b %Y %H:%M:%S', logtime),
+                                                                         modname, msg))
+            writefd.write(''.join(contents))
             writefd.close()
         except IOError:
-            pass
-
-    logwrite(msg, modname, "Error")
-  
-    if State.HTMLHeadersSent == False:      
-        print "Content-type:text/html\n\n"
-        State.HTMLHeadersSent = True
-
-    output = ("""
-    <table align="center" width="90%">
-      <tr>
-        <td align="left">
-          <br />""")
-    
-    if Config.Debug == True:
-        output += ("""
-          <font color="FF0000"><b>Debug Mode</b></font>
-          <br /><br />""")
-
-        output += "<b>Internal Error</b> (in module '%s')<b>:</b>\n" % modname
-        output += "<br /><br />\n%s\n" % msg
-        output += ("""
-           <br /><br />
-           <b>Traceback:</b>
-           <br /><br />""")
-
-        tb = traceback.format_stack(None)
-        for line in tb[:-1]:
-            output += line.replace("\n", "<br>").replace(" ", "&nbsp;")
-        
-        if modname == "Template":
-            output += ("""
-            <br />
-            <b>Template module recursion averted.</b>
-            <br /><br />""")
-
-    else:
-        cur_time = strftime("%d/%b/%Y %H:%M:%S", gmtime())
-
-        output += ("""
-           <b>Ooops!</b>
-           <br /><br />
-           It looks like you've encountered an internal error!
-           <br /><br />""")
-        
-        if Config.ErrorReporting == True:
-            output += "This error has been reported to the administration.\n"
-        
-        else:              
-            output += ("Please contact <b>%s</b> and quote the time " %
-                       Config.Contact + "'<b>%s</b>'" % cur_time)
-
-    output += ("""
-           <br />
-         </td>
-       </tr>
-     </table>""")
-
-    print output
-    
-    # Only print the footer if we think the header got printed.
-    # And don't print the footer if the error came from the Template module.
-    if State.HeaderTmplSent == True and modname != "Template":
-        import Template as TemplateHandler
-
-        FooterTemplate = TemplateHandler.Template()
-        FooterTemplate.compile(Config.Template["footer"],
-                               {"GLSR_VERSION":     Config.Version,
-                                "CONTACT":          Config.Contact})
-        print FooterTemplate.output()
-
-    
-def FlushErrorReportLog():
-    """Blank the ErrorReport log"""
-
-    try:
-        fd = open(Config.ErrorReportLog, "w")
-        fd.close()
-    except:
-        pass
-
-def logwrite(msg, modname, type):
-    """Write Given message to a log file
-       Type can be: Error, Query, Info, Warn"""
-
-    logtype = ""
-
-    if Config.Logging == True:
-
-        if type.lower() == "error":
-            logtype = "error"
-        elif type.lower() == "query":
-            logtype = "query"
-        elif type.lower() == "info":
-            logtype = "info"
-        elif type.lower() == "warn":
-            logtype = "warn"
-        else:
-            logtype = "????"
-
-        if isinstance(msg, list):
-            msg = "".join(msg)
-
-        try:
-            fd = open(Config.LogFile, "a")
-            fd.write("[%s] [%s] [%s] %s\n" %
-                     (strftime("%d %b %Y %H:%M:%S", gmtime()),
-                      logtype, modname, msg))
-            fd.close()
-        except:
             pass
 
 def ReturnErrorReports(list_offset):
@@ -156,33 +87,33 @@ def ReturnErrorReports(list_offset):
     count = 0
 
     try:
-        fd = open(Config.ErrorReportLog, "r")
+        fd = open(Config.ErrorReportLog, 'r')
         contents = fd.readlines()
         fd.close()
     except:
         return False
 
-    row = "even"
+    row = 'even'
     for line in contents:
         
-        if line == "\n":
+        if line == '\n':
             continue
 
         if count == list_offset:
             break
 
         try:
-            (date, module, error) = line.split("||", 2)
-            reports.append({"row": row, "date": date, "module": module,
-                            "error": error.strip()})
+            (date, module, error) = line.split('||', 2)
+            reports.append({'row': row, 'date': date, 'module': module,
+                            'error': error.strip()})
         except:
-            reports.append({"row": row, "date": "N/A", "module": "N/A",
-                            "error": "Corrupt report"})
+            reports.append({'row': row, 'date': 'N/A', 'module': 'N/A',
+                            'error': 'Corrupt report'})
 
-        if row == "even":
-            row = "odd"
+        if row == 'even':
+            row = 'odd'
         else:
-            row = "even"
+            row = 'even'
 
         count += 1
 

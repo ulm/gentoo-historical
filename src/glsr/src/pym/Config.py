@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.18 2005/01/26 03:59:01 hadfield Exp $
+# $Id: Config.py,v 1.19 2005/01/26 20:59:57 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -30,9 +30,7 @@ t_prefix = "/usr/local/share/glsr/templates/"
 #t_prefix = "/var/www/buffmuthers.com/htdocs/projects/glsr/templates/"
 
 Template = {
-    "test":                     t_prefix + "test.tpl",
-    "err":                      t_prefix + "err.tpl",
-    "msg":                      t_prefix + "msg.tpl",
+    "error_user":               t_prefix + "Error_User.tpl",
     "header":                   t_prefix + "Header.tpl",
     "footer":                   t_prefix + "Footer.tpl",
     "main":                     t_prefix + "Main.tpl",
