@@ -68,10 +68,6 @@ int main(int argc, char **argv) {
 		FILE *f1;
 		char path[500];
 		char line[500];
-		char *command;
-		
-		command=(void *)malloc(1000);
-		memset(command, 0, 1000);
 		
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
@@ -88,7 +84,6 @@ int main(int argc, char **argv) {
 				mark_started(svc_script->d_name);
 			}
 		}
-		free(command);
 	}
 	/* We've started what should be the first thing, now we need to start
 	 * everything else. We will start off in the order that readdir gives them
