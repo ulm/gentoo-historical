@@ -1,11 +1,13 @@
 <?xml version='1.0' encoding="utf-8"?>
-
-
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/proj/en/hardened/selinux-quickstart.xml">
 <title>Gentoo Linux SELinux Quick Start Guide</title>
 <author title="Author">
   <mail link="pebenito@gentoo.org">Chris PeBenito</mail>
+</author>
+<author title="Author">
+  <mail link="klasikahl@gentoo.org">Zack Gilburd</mail>
 </author>
 <author title="Editor">
   <mail link="method@gentoo.org">Joshua Brindle</mail>
@@ -14,11 +16,11 @@
 This will provide instructions for getting an SELinux installation running.
 </abstract>
 <license/>
-<version>1.4</version>
-<date>30 August 2003</date>
+<version>2.0</version>
+<date>21 October 2003</date>
 
-<chapter><title>Converting to SELinux Quick Start Guide</title>
-<section><title>Converting a Preexisting Gentoo Installation</title>
+<chapter><title>Converting a Preexisting Standard Gentoo Installation</title>
+<section><title>Initial Preparations</title>
 <body>
 
 <warn>SELinux is only supported on servers.  Workstation support
@@ -31,238 +33,564 @@ in the future.</warn>
 <warn>SELinux is only supported on x86.  Other architectures
 will be supported in the upcoming 2.6 kernel.</warn>
 
+<impo>As always, keep a LiveCD at hand in case things go wrong.</impo>
+
+<note>The new API is not in portage yet.  Do not attempt this yet.
+This conversion guide is available early, so users can familiarize
+themselves with the conversion.  Stay tuned to the gentoo-hardened
+mail list for availability.</note>
+
 <p>First switch your profile to the SELinux profile:</p>
 
 <pre caption="Switch profiles">
-# rm -f /etc/make.profile
-# ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile
+# <c>rm -f /etc/make.profile</c>
+# <c>ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile</c>
 </pre>
 
 <impo>The SELinux profile has significanly fewer USE flags asserted than
 the default profile.  Use "<i>emerge info</i>" to see if any use flags
 need to be reenabled in make.conf.</impo>
 
-<p>Now merge an appropriate kernel.  Emerge selinux-sources or
-hardened-sources; these are the only kernels that contain
-the linux security module patch and SELinux security module.  Selinux-sources
-only contains the linux security module and selinux support.  Hardened-sources
-contains the linux security module, selinux support, and additional
-performance and security patches.</p>
+<impo>You must add <i>ACCEPT_KEYWORDS="~x86"</i> to make.conf, as not all
+SELinux packages are marked stable yet.</impo>
 
-<pre caption="Merge an appropriate kernel">
-<comment>Do only one of the next two lines:</comment>
-# emerge selinux-sources
-<comment>or</comment>
-# emerge hardened-sources
+<p>
+  We will start by emerging some essential packages.  Glibc must first be
+  recompiled with newer linux headers.
+</p>
 
-<comment>Ensure that /usr/src/linux symbolic link points to
-the newly merged kernel (selinux-sources-2.4.20-r5 for example)</comment>
-# rm -f /usr/src/linux
-# ln -s /usr/src/linux-2.4.20-selinux-r5 /usr/src/linux
+<p>
+  First check which version of linux-headers are installed.
+</p>
+
+<pre caption="Check linux-headers version">
+# <c>emerge -s linux-headers</c>
+<comment>or if you have gentoolkit installed:</comment>
+# <c>qpkg -I -v linux-headers</c>
 </pre>
 
-<p>The kernel must  be compiled with security
-module support, SELinux support, devfs and devpts.  Refer to the main
-installation guide for futher kernel options.</p>
+<p>
+  If the linux-headers version is older than 2.4.20, newer headers must me merged.
+</p>
+
+<pre caption="Merge newer headers">
+# <c>emerge \>=sys-kernel/linux-headers-2.4.20</c>
+</pre>
+
+<p>
+  Now, if you have merged new headers, or you are unsure if your glibc was
+  compiled with newer headers, you must recompile glibc.
+</p>
+
+<pre caption="Recompile glibc">
+# <c>emerge glibc</c>
+</pre>
+
+<impo>
+  This is a critical operation.  Glibc must be compiled with newer linux-headers,
+  otherwise some operations will malfunction.
+</impo>
+
+<p>Now merge an appropriate kernel.  Hardened-sources with the new API
+will be coming soon.
+</p>
+
+<pre caption="Merge an appropriate kernel">
+<comment>Use one of the following commands.</comment>
+# <c>emerge \>=selinux-sources-2.4.21-r2</c>
+<comment>Or</comment>
+# <c>emerge \>=development-sources-2.6.0_beta3</c>
+<comment>Or</comment>
+# <c>emerge \>=mm-sources-2.6.0_beta3</c>
+</pre>
+<note>
+  While 2.6 kernels can be used, only 2.4 kernels are currently supported.
+</note>
+<note>
+  You may encounter this message from portage: "!!! SELinux module not found.
+  Please verify that it was installed."  This is normal, and will be fixed
+  later in the conversion process.
+</note>
+<p>The kernel must  be compiled with security module support, SELinux support,
+devpts, and extended attribute security labels.  Refer to the main installation
+guide for futher kernel options.</p>
 
 <pre caption="Location and required options under menuconfig">
 <comment>Under "Code maturity level options"</comment>
 [*] Prompt for development and/or incomplete code/drivers
+
+<comment>Under "File systems"</comment>
+&lt;*&gt; Second extended fs support
+[*]   Ext2 extended attributes
+[ ]     Ext2 POSIX Access Control Lists
+[*]     Ext2 Security Labels
+&lt;*&gt; Ext3 journalling file system support
+[*]   Ext3 extended attributes
+[ ]     Ext3 POSIX Access Control Lists
+[*]     Ext3 security labels    
+
+[ ] /dev file system support (EXPERIMENTAL)
+[*] /dev/pts file system for Unix98 PTYs
+[*]   /dev/pts Extended Attributes
+[*]     /dev/pts Security Labels    
+
+<comment>Under "Block devices"</comment>
+&lt;*&gt; RAM disk support
+(4096)   Default RAM disk size
+[*]   Initial RAM disk (initrd) support
 
 <comment>Under "Security options"</comment>
 [*] Enable different security models
 [ ] Socket and Networking Security Hooks
 &lt;*&gt; Capabilities Support
 [*] NSA SELinux Support
+[ ]   NSA SELinux boot parameter
 [*]   NSA SELinux Development Support
 [ ]   NSA SELinux MLS policy (EXPERIMENTAL)
-
-<comment>Under "File systems"</comment>
-[*] /dev file system support (EXPERIMENTAL)
-[*]   Automatically mount at boot
-[ ]   Debug devfs
-[*] /dev/pts file system for Unix98 PTYs
 </pre>
+<p>
+  The extended attribute security labels must be turned on for devpts and ext2
+  and/or ext3, depending on which you use.  Devfs is no longer usable in
+  SELinux, and can be turned off.
+</p>
+<note>
+  The available options may vary slightly depending on if a 2.4 or 2.6 kernel
+  is being used.  The other extended attribute options should be turned off.
+</note>
 
 <p>Now compile and install the kernel and modules, but do not reboot.
-Devpts must also be enabled to mount at boot.  Add this to /etc/fstab:</p>
-<pre caption="Fstab settings for devpts">
-none	/dev/pts	devpts	gid=5,mode=620	0 0
+Devpts and selinuxfs must also be enabled to mount at boot.  Add this to /etc/fstab:</p>
+<pre caption="Fstab settings for devpts and selinuxfs">
+none	/dev/pts	devpts		gid=5,mode=620	0	0
+none	/selinux	selinuxfs	defaults	0	0
 </pre>
 
-<p>Merge the libraries, utilities and base-policy.  The /usr/src/linux
-symbolic link must point to the selinux-sources or hardened-sources directory!</p>
+<p>
+The command line option <i>gentoo=nodevfs</i> must be added to the kernel
+command line, so the init scripts do not attempt to mount devfs.
+</p>
+<pre caption="Example GRUB entry">
+title=linux
+root (hd0,0)
+kernel /bzImage root=/dev/hda3 <c>gentoo=nodevfs</c>
+</pre>
+<pre caption="Example LILO entry">
+image=/boot/bzImage
+	label=linux
+	read-only
+	root=/dev/hda3
+	<c>append="gentoo=nodevfs"</c>
+</pre>
+<p>
+  We need to make some directories before we reboot.
+</p>
+<pre caption="Making Required Directories">
+# <c>mkdir /selinux</c>
+# <c>mkdir /initrd</c>
 
-<pre caption="Merge base SELinux packages"># emerge selinux-small</pre>
+<comment>This only needs to be done on 2.6 kernels:</comment>
+# <c>mkdir /sys</c>
+</pre>
+<p>Now reboot with the new SELinux kernel.</p>
+
+</body>
+</section>
+<section><title>Merge SELinux Packages</title>
+<body>
+<p>Merge the libraries, utilities and base-policy.</p>
+
+<pre caption="Merge base SELinux packages and policy">
+# <c>emerge libselinux checkpolicy policycoreutils mkinitrd</c>
+# <c>emerge \>=sec-policy/selinux-base-policy-20030817</c>
+</pre>
 
 <p>Merge SELinux-patched packages:</p>
-<impo>You must add <i>ACCEPT_KEYWORDS="~x86"</i> to make.conf, as not all
-SELinux packages are marked stable yet.</impo>
 
-<pre># emerge coreutils findutils openssh pam-login procps psmisc tar</pre>
+<pre># emerge pam pwdb coreutils findutils openssh pam-login procps psmisc shadow util-linux python-selinux</pre>
 
 <p>There are other packages that have SELinux patches, but are optional.  These
 should be remerged if they are already installed, so the SELinux patches are
 applied:</p>
 <p>app-admin/logrotate<br/>
-sys-apps/stat<br/>
-dev-util/strace<br/>
 sys-apps/vcron (currently the only cron patched for SELinux)</p>
 
-<p>SELinux does not use some packages that are used in mainline Gentoo:</p>
+<p>SELinux does not use some packages that are used in standard Gentoo:</p>
 
-<pre caption="Remove unused packages from mainline Gentoo">
-# emerge -C textutils fileutils sh-utils</pre>
+<pre caption="Remove unused packages from standard Gentoo">
+# <c>emerge -C textutils fileutils sh-utils</c>
+</pre>
 
-<p>Compile and install policy, and label filesystems.</p>
+<p>The policy is loaded from an initial ramdisk (initrd) when booting.  Compile
+and install policy, create an (initrd), and label filesystems.</p>
 
 <pre caption="Install policy and label">
-# cd /etc/security/selinux/src/policy
-# make install
-# make relabel
+# <c>cd /etc/security/selinux/src/policy</c>
+# <c>make install</c>
+# <c>make initrd</c>
+# <c>make relabel</c>
 </pre>
-<p>Reboot using the new SELinux kernel.  Relabel again to ensure all files
+<p>
+  Now the bootloader will have to be modified to load the
+  initrd.
+</p>
+<pre caption="Example GRUB entry">
+title=linux
+root (hd0,0)
+kernel /bzImage root=/dev/hda3 gentoo=nodevfs
+<c>initrd (hd0,0)/initrd.gz</c>
+</pre>
+<warn>
+  There is a <uri link="http://bugs.gentoo.org/show_bug.cgi?id=30859">
+  known issue</uri> with GRUB not being able
+  to read symlinks that have been labeled.  If you
+  have a separate /boot partition, the kernel and
+  initrd lines are relative to the top of the
+  partition, not to /, and thus "/boot" should not
+  be in the path.  Please doublecheck your GRUB
+  configuration.  You do have a LiveCD handy, right?
+</warn>
+
+<pre caption="Example LILO entry">
+image=/boot/bzImage
+	label=linux
+	read-only
+	root=/dev/hda3
+	<c>initrd=/boot/initrd.gz</c>
+	append="gentoo=nodevfs"
+</pre>
+</body>
+</section>
+<section><title>Final reboot</title>
+<body>
+<p>Reboot.  Relabel again to ensure all files
 are labeled correctly (some files may have been created during shutdown and
 reboot)</p>
 <pre caption="Relabel">
 # cd /etc/security/selinux/src/policy
 # make relabel
 </pre>
-</body>
-</section>
-</chapter>
-<chapter><title>HowTo</title>
-<section><title>Load policy into a running SELinux kernel</title>
-<body>
-This requires you to be in the sysadm_r role.
-<pre>
-# cd /etc/security/selinux/src/policy
-# make load
-</pre>
-</body>
-</section>
-<section><title>Change roles</title>
-<body>
-This requires your user have access to the target role.  This example
-is for changing to the sysadm_r role.
-<pre>
-# newrole -r sysadm_r
-</pre>
-</body>
-</section>
-<section><title>Specify available roles for a user</title>
-<body>
-<p>Modify the users file (/etc/security/selinux/src/policy/users).
-For example, to allow the user 'pebenito' the ability to have roles
-user_r and sysadm_r, add to the end of the file add something like:</p>
-
-<pre>user pebenito roles { user_r sysadm_r };</pre>
-
-<p>Then <uri link="#doc_chap3_sect1">load</uri> the policy.  If a user
-doesnt have a 'user' line in the file, they will only be allowed
-the user_r role.</p>
-<impo>All users that are specified in the users file should at least be
-allowed the user_r and/or staff_r role.  Otherwise, they will not be
-able to log in remotely.</impo>
-</body>
-</section>
-<section><title>Relabel filesystems</title>
-<body>
-This requires you to be in the sysadm_r role.
-<pre>
-# cd /etc/security/selinux/src/policy
-# make relabel
-</pre>
+<note>
+  It is strongly suggested to subscribe to the gentoo-hardened mail list.
+  It is generally a low traffic list, and SELinux announcements are made there.
+</note>
 </body>
 </section>
 </chapter>
 <chapter>
-<title>FAQ/Troubleshooting</title>
-<section><title>"My selinux-small compile fails with a message similar to this:"</title>
-<body>
-<pre>
- * Compiling checkpolicy
-make -C checkpolicy LSMDIR=../../../lsm-2.4
-make[1]: Entering directory
-`/var/tmp/portage/selinux-small-2003011510-r3/work/selinux/module/checkpolicy'
-make[1]: *** <i>No rule to make target `ebitmap.o'</i>, needed by `checkpolicy'.  Stop.
-make[1]: Leaving directory
-`/var/tmp/portage/selinux-small-2003011510-r3/work/selinux/module/checkpolicy'
-make: *** [all] Error 2
+	<title>
+		Conversion to the 2.6 SELinux API
+	</title>
+	<section><title>Converting an old API SELinux Installation</title>
+	<body>
+	<note>
+		The new API is not in portage yet.  Do not attempt this yet.
+		This conversion guide is available early, so users
+		can familiarize themselves with the conversion.  Stay tuned to
+		the gentoo-hardened mail list for availability.
+	</note>
+	<p>
+		SELinux is available in 2.6 kernels; however, it does not use the
+		same API as the old (selinux-small/libsecure) 2.4 SELinux.  
+		This new API has been backported to 2.4 in newer selinux-sources
+		kernels.  Updated hardened-sources are forthcoming.  This chapter
+		of the Quick Start Guide describes the conversion
+		of a old API SELinux machine to the new API.  Please read the
+		entire chapter before starting.
+	</p>
+	<impo>
+		As always, keep a LiveCD at hand in case things go wrong.
+	</impo>
+	</body></section>
+	<section>
+		<title>
+			Beginning the Conversion
+		</title>
+		<body>
+			<p>
+				We will start by emerging some essential packages.
+				Glibc must first be recompiled
+				with newer linux headers.
+			</p>
 
-!!! ERROR: sys-apps/selinux-small-2003011510-r3 failed.
-!!! Function src_compile, Line 54, Exitcode 2
-!!! <i>Checkpolicy compilation failed</i>
+<note>It is suggested to be in permissive mode.</note>
+
+			<p>
+				First check which version of linux-headers are
+				installed.
+			</p>
+
+<pre caption="Check linux-headers version">
+# <c>emerge -s linux-headers</c>
+<comment>or if you have gentoolkit installed:</comment>
+# <c>qpkg -I -v linux-headers</c>
 </pre>
 
-<p>Ebitmap.c exists in the kernel sources.  The /usr/src/linux symbolic link must point
-to the installed selinux-sources or hardened-sources.  Newer versions of selinux-small
-will now check for correct kernel sources.  To fix, create a symbolic link to
-the correct kernel sources (selinux-sources-2.4.20-r4 in this example):</p>
+			<p>
+				If the linux-headers version is older than 2.4.20,
+				newer headers must me merged.
+			</p>
 
-<pre>
-# rm -f /usr/src/linux
-# ln -sf /usr/src/linux-2.4.20-selinux-r4 /usr/src/linux</pre>
-</body>
-</section>
-<section><title>"I can log in at the console, but not over ssh."</title>
-<body>
-<p>The openssh is most likely not labeled correctly, so it isnt running in the
-right context.  Relabel openssh, then restart sshd.</p>
-<pre>
-# rlpkg openssh
-# run_init /etc/init.d/sshd restart
+<pre caption="Merge newer headers">
+# <c>emerge \>=sys-kernel/linux-headers-2.4.20</c>
 </pre>
-</body>
-</section>
-<section><title>"I cant 'newrole -r sysadm_r' from my user."</title>
-<body>
-<p>The user must be allowed to use the sysadm_r role.  <uri link="#doc_chap3_sect3">Modify</uri>
-the users file to allow them to change to the target role.  Then 
-<uri link="#doc_chap3_sect1">load</uri> the policy.</p>  
 
-<p>In the default policy, some role transitions are denied, such as
-user_r to sysadm_r.  If you want to allow this transition, the policy
-must be changed.</p>
-</body>
-</section>
-<section><title>"When I boot, I get an insmod denial looks like this:"</title>
-<body>
-<pre>avc:  denied  { <i>search</i> } for  pid=230 exe=/sbin/<i>insmod</i> path=<i>/var</i> dev=03:02 ino=163201
-scontext=system_u:system_r:<i>insmod_t</i> tcontext=system_u:object_r:<i>file_t</i> tclass=<i>dir</i>
+			<p>
+				Now, if you have merged new headers, or you are
+				unsure if your glibc was compiled with newer
+				headers, you must recompile glibc.
+			</p>
+
+<pre caption="Recompile glibc">
+# <c>emerge glibc</c>
 </pre>
-<p>This usually happens if you have a separate /var partition.  The /var
-partition probably will have the context system_u:object_r:var_t when mounted
-and system_u:object_r:file_t when unmounted.  The way to fix this is to umount
-the /var partition and <uri link="#doc_chap3_sect4">relabel</uri>.  Then /var
-will have the correct context regardless if the /var partition is mounted
-or not.</p>
-</body>
-</section>
-<section><title>"When I boot, devfsd get a denial that looks like this:"</title>
-<body>
-<pre>avc:  denied  { <i>write</i> } for  pid=148 exe=/sbin/<i>devfsd</i> path=<i>/log</i> dev=00:07 ino=421
-scontext=system_u:system_r:<i>devfsd_t</i> tcontext=system_u:object_r:<i>device_t</i> tclass=<i>sock_file</i>
+
+			<impo>
+				This is a critical operation.
+				Glibc must be compiled with newer linux-headers,
+				otherwise some operations will malfunction.
+			</impo>
+
+			<p>
+				These packages contain the equivalent of the old
+				selinux-small.  Do not unmerge selinux-small yet.
+			</p>
+
+<pre caption="Installing the New Packages">
+# <c>emerge sys-libs/libselinux</c>
+# <c>emerge sys-apps/checkpolicy</c>
+# <c>emerge sys-apps/policycoreutils</c>
 </pre>
-<p>This means that your devfsd is restoring /dev/log from the devfs save state,
-and therefore it has the incorrect context.  Normally this shouldn't happen,
-as /dev/log should be created by the syslog (and will have the correct context).
-Newer versions of the devfsd.conf file should ignore /dev/log, and not save it.
-To ennsure that your devfsd.conf is in fact ignoring /dev/log, make sure
-these lines are in your devfsd.conf file (around line 42):</p>
-<pre caption="Devfsd.conf contents">
-DELETE          ^pt[sy]      IGNORE<i>
-REGISTER        ^log         IGNORE
-CHANGE          ^log         IGNORE
-CREATE          ^log         IGNORE
-DELETE          ^log         IGNORE</i>
-REGISTER        .*           COPY    /lib/dev-state/$devname $devpath
+			<p>
+				Now you should either backup, move, or remove your old SELinux policy and then emerge the new policy.
+			</p>
+<pre caption="Emerging the New Policy">
+# <c>emerge \>=sec-policy/selinux-base-policy-20030817</c>
 </pre>
-<p>Then, ensure that /dev/log is not in the devfs save state:</p>
-<pre caption="Remove /dev/log from save state">
-# rm -f /lib/dev-state/log
+		</body>
+	</section>
+	<section>
+		<title>
+			Compiling and Installing the New Kernel
+		</title>
+		<body>
+			<p>
+				We will first emerge a kernel that contains the new API.
+				Hardened-sources with the new API will be coming soon.
+			</p>
+<pre caption="Emerging the Kernel">
+<comment>Use one of the following commands.</comment>
+# <c>emerge \>=selinux-sources-2.4.21-r2</c>
+<comment>Or</comment>
+# <c>emerge \>=development-sources-2.6.0_beta3</c>
+<comment>Or</comment>
+# <c>emerge \>=mm-sources-2.6.0_beta3</c>
 </pre>
-</body>
-</section>
+			<note>
+				While 2.6 kernels can be used, only 2.4 kernels
+				are currently supported.
+			</note>
+			<p>
+				Now we must configure the kernel.
+			</p>
+<pre caption="Location and required options under menuconfig">
+<comment>Under "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
+<comment>Under "File systems"</comment>
+&lt;*&gt; Second extended fs support
+[*]   Ext2 extended attributes
+[ ]     Ext2 POSIX Access Control Lists
+[*]     Ext2 Security Labels
+&lt;*&gt; Ext3 journalling file system support
+[*]   Ext3 extended attributes
+[ ]     Ext3 POSIX Access Control Lists
+[*]     Ext3 security labels    
+
+[ ] /dev file system support (EXPERIMENTAL)
+[*] /dev/pts file system for Unix98 PTYs
+[*]   /dev/pts Extended Attributes
+[*]     /dev/pts Security Labels    
+
+<comment>Under "Block devices"</comment>
+&lt;*&gt; RAM disk support
+(4096)   Default RAM disk size
+[*]   Initial RAM disk (initrd) support
+
+<comment>Under "Security options"</comment>
+[*] Enable different security models
+[ ] Socket and Networking Security Hooks
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[ ]   NSA SELinux boot parameter
+[*]   NSA SELinux Development Support
+[ ]   NSA SELinux MLS policy (EXPERIMENTAL)
+</pre>
+			<p>
+				The extended attribute security labels must be
+				turned on for devpts and ext2 and/or ext3, depending on
+				which you use.  Devfs is no longer usable in
+				SELinux, and can be turned off.
+			</p>
+			<note>
+				The available options may vary slightly depending on
+				if a 2.4 or 2.6 kernel is being used.  The other
+				extended attribute options should be turned off.
+			</note>
+
+<pre caption="Compile and Install the Kernel">
+<comment>For 2.4 kernels:</comment>
+# <c>make dep &amp;&amp; make clean bzImage modules modules_install</c>
+
+<comment>For 2.6 kernels:</comment>
+# <c>make clean bzImage modules modules_install</c>
+
+<comment>For both versions:</comment>
+<comment>if necessary, mount your boot partition.</comment>
+# <c>mount /boot</c>
+# <c>cp arch/i386/boot/bzImage /boot</c>
+</pre>
+		</body>
+	</section>
+	<section>
+		<title>
+			Making the initial ramdisk
+		</title>
+		<body>
+			<p>
+				We will now create the initial ramdisk (initrd).
+				The initial policy load during booting is now
+				done from an initrd.
+			</p>
+<pre caption="Making the initrd">
+# <c>cd /etc/security/selinux/src/policy</c>
+# <c>make initrd</c>
+</pre>
+			<p>
+				This will create /boot/initrd.gz.
+			</p>
+		</body>
+	</section>
+	<section>
+		<title>Reboot Preperations</title>
+		<body>
+			<p>
+				We need to make some directories before we reboot.
+			</p>
+<pre caption="Making Required Directories">
+# <c>mkdir /selinux</c>
+# <c>mkdir /initrd</c>
+
+<comment>This only needs to be done on 2.6 kernels:</comment>
+# <c>mkdir /sys</c>
+</pre>
+			<p>
+				Now, we need to add a line to our fstab:
+			</p>
+<pre caption="/etc/fstab">
+# <c>nano -w /etc/fstab</c>
+<comment>Add the following line.</comment>
+none	/selinux	selinuxfs	defaults	0	0
+</pre>
+			<p>
+				Now the bootloader will have to be modified to load the
+				initrd. In addition, the command line option
+				<i>gentoo=nodevfs</i> must be added to the kernel
+				command line, so the init scripts do not attempt
+				to mount devfs.
+			</p>
+<pre caption="Example GRUB entry">
+title=linux
+root (hd0,0)
+kernel /bzImage root=/dev/hda3 <c>gentoo=nodevfs</c>
+<c>initrd (hd0,0)/initrd.gz</c>
+</pre>
+<pre caption="Example LILO entry">
+image=/boot/bzImage
+	label=linux
+	read-only
+	root=/dev/hda3
+	<c>initrd=/boot/initrd.gz</c>
+	<c>append="gentoo=nodevfs"</c>
+</pre>
+			<p>
+				You may now <c>reboot</c>.
+			</p>
+		</body>
+	</section>
+	<section>
+		<title>Post-Reboot</title>
+		<body>
+			<p>
+				Several packages need to be re-emerged.
+			</p>
+<pre caption="Re-emerge the Following Packages">
+sys-libs/pam
+sys-libs/pwdb
+sys-apps/coreutils
+sys-apps/findutils
+sys-apps/procps
+sys-apps/psmisc
+sys-apps/util-linux
+sys-apps/pam-login
+sys-apps/shadow
+sys-apps/tar
+net-misc/openssh
+dev-python/python-selinux
+
+<comment>The following are optional packages that must be re-emerged if you use them.</comment>
+app-admin/logrotate
+dev-util/strace
+sys-apps/vcron
+sys-apps/stat
+</pre>
+			<p>
+				Now all packages have been recompiled with the
+				new API.  Now the old API can finally be unmerged.
+			</p>
+<pre caption="Unmerge selinux-small">
+# <c>emerge unmerge selinux-small</c>
+</pre>
+		</body>
+	</section>
+	<section>
+		<title>
+			Relabeling and Final Reboot
+		</title>
+		<body>
+			<p>
+				As a one-time process, the filesystem must be relabled, the computer rebooted, then the filesystem relabled once again.
+			</p>
+			<warn>
+				There is a <uri link="http://bugs.gentoo.org/show_bug.cgi?id=30859">
+				known issue</uri> with GRUB not being able
+				to read symlinks that have been labeled.  If you
+				have a separate /boot partition, the kernel and
+				initrd lines are relative to the top of the
+				partition, not to /, and thus "/boot" should not
+				be in the path.  Please doublecheck your GRUB
+				configuration.  You do have a LiveCD handy, right?
+			</warn>
+<pre caption="Relabeling">
+# <c>cd /etc/security/selinux/src/policy</c>
+# <c>make relabel</c>
+
+<comment>Reboot</comment>
+
+# <c>cd /etc/security/selinux/src/policy</c>
+# <c>make relabel</c>
+</pre>
+			<p>
+				The conversion is complete.  When policy is
+				added or changed, remember to load policy and relabel, or
+				rlpkg the affected packages.  Also, the initrd
+				must be regenerated so the policy in it is
+				updated.
+			</p>
+<note>
+  It is strongly suggested to subscribe to the gentoo-hardened mail list.
+  It is generally a low traffic list, and SELinux announcements are made there.
+</note>
+		</body>
+	</section>
 </chapter>
 </guide>
