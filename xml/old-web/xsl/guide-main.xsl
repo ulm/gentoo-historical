@@ -313,6 +313,8 @@ Para usuarios:<br/>
 <a class="altlink" href="/doc/desktop-es.html">Guía de Escritorio</a><br/>
 <a class="altlink" href="/doc/use-howto-es.html">Guía de parámetros USE</a><br/>
 <a class="altlink" href="/doc/altinstall-es.html">Método alternativo de instalación</a><br/>
+<a class="altlink"
+href="/doc/gentooppc-quickstart-es.html"></a>Instalación en PPC</a><br/>
 <a class="altlink" href="/doc/nano-basics-guide-es.html"></a>Guía básica de Nano</a><br/>
 <a class="altlink" href="/doc/openafs-es.html"></a>Guía de OpenAFS</a><br/>
 Para Desarrolladores:<br/>
