@@ -215,19 +215,6 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
-              <p class="alttext">
-                Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
         <tr>
           <td align="center">
             <a href="http://store.gentoo.org">
@@ -745,19 +732,6 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.qksrv.net/click-477620-5032687" target="_top"><img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/></a>
-              <p class="alttext">
-                Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
         <tr>
           <td align="center">
             <a href="http://store.gentoo.org">
