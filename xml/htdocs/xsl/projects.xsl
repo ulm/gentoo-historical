@@ -118,22 +118,30 @@
           </xsl:for-each>
         </ti>
         <ti>
-          <xsl:value-of select="project/description/text()"/>
+          <xsl:apply-templates select="project/description"/>
         </ti>
       </tr>
     </xsl:if>
     <xsl:for-each select="project/subproject">
+      <xsl:sort select="document(@ref)/project/name"/>
       <xsl:call-template name="projlist">
         <xsl:with-param name="ref" select="string(@ref)"/>
         <xsl:with-param name="level" select="$level + 1"/>
       </xsl:call-template>
     </xsl:for-each>
     <xsl:for-each select="project/extraproject">
+      <xsl:sort select="@name"/>
       <xsl:call-template name="extraproj">
         <xsl:with-param name="level" select="$level + 1"/>
       </xsl:call-template>
     </xsl:for-each>
   </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="/project/description//node()|project/description//@*|/project/extraproject//@*|/project/extraproject//node()">
+  <xsl:copy>
+    <xsl:apply-templates select="node()|@*"/>
+  </xsl:copy>
 </xsl:template>
 
 <xsl:template name="extraproj">
@@ -171,7 +179,7 @@
       <ti>
       </ti>
       <ti>
-        <xsl:value-of select="text()"/>
+        <xsl:apply-templates select="node()"/>
       </ti>
     </tr>
   </xsl:if>

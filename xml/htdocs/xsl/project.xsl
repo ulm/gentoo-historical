@@ -27,12 +27,13 @@
 		<!-- here extra chapters would appear-->
 		<xsl:if test="goals">
 		<chapter>
-			<title>Project goals</title>
+			<title>Project Goals</title>
 			<section><body>
 			<xsl:apply-templates select="goals"/>
 			</body></section>
 		</chapter>
 		</xsl:if>
+		<xsl:apply-templates select='extrachapter[@position="goals"]'/>
 		<xsl:if test="dev">
 		<chapter>
 			<title>Developers</title>
@@ -51,20 +52,7 @@
 			</table></body></section>
 		</chapter>
 		</xsl:if>
-		<xsl:if test="resource">
-		<chapter>
-			<title>Resources</title>
-			<section><body>
-			<p>Resources offered by the
-			<xsl:value-of select="normalize-space(/project/name/text())"/>
-			project are:</p>
-			<ul>
-			<xsl:apply-templates select="resource"/>
-			</ul>
-			</body></section>
-		</chapter>			
-		</xsl:if>
-		<xsl:apply-templates select='extrachapter[@position="resources"]'/>
+		<xsl:apply-templates select='extrachapter[@position="devs"]'/>
 		<xsl:if test="subproject|extraproject">
 		<chapter>
 			<title>Subprojects</title>
@@ -103,8 +91,23 @@
 			</table></body></section>
 		</chapter>
 		</xsl:if>		
-
 		<xsl:apply-templates select='extrachapter[@position="subproject"]'/>
+
+		<xsl:if test="resource">
+		<chapter>
+			<title>Resources</title>
+			<section><body>
+			<p>Resources offered by the
+			<xsl:value-of select="normalize-space(/project/name/text())"/>
+			project are:</p>
+			<ul>
+			<xsl:apply-templates select="resource"/>
+			<xsl:call-template name="inheritres"/>
+			</ul>
+			</body></section>
+		</chapter>			
+		</xsl:if>
+		<xsl:apply-templates select='extrachapter[@position="resources"]'/>
 		<xsl:if test="herd">
 		<chapter>
 			<title>Herds</title>
@@ -251,5 +254,26 @@
     </tr>
   </xsl:for-each>
 </xsl:template>
+
+<xsl:template name="inheritres">
+  <xsl:for-each select='/project/subproject[@inheritresources="yes"]'>
+    <xsl:for-each select="document(@ref)">
+      <li>
+        <b>
+          <xsl:value-of select="/project/longname"/>
+          <xsl:if test="not(/project/longname)">
+            <xsl:value-of select="/project/name"/>
+          </xsl:if>
+          subproject resources
+        </b>
+        <ul>
+          <xsl:apply-templates select="/project/resource"/>
+          <xsl:call-template name="inheritres"/>
+        </ul>
+      </li>
+    </xsl:for-each>
+  </xsl:for-each>
+</xsl:template>
+
 
 </xsl:stylesheet>
