@@ -202,6 +202,9 @@ Related bugreports:
               &gt;=
             </xsl:when>
           </xsl:choose>
+        <xsl:if test="@name">
+          <xsl:value-of select="@name"/>-
+        </xsl:if>
         <xsl:value-of select="text()"/>
         <xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each>
