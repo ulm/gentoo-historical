@@ -55,7 +55,7 @@ class PartProperties(gtk.Window):
 		self.resize_info_part_size = gtk.Entry(max=9)
 		self.resize_info_part_size.set_width_chars(7)
 		self.resize_info_part_size.connect("insert-text", self.validate_keypress)
-		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part_size")
+		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part-size")
 		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
 		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box.pack_start(gtk.Label("  "), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
@@ -215,7 +215,6 @@ class PartProperties(gtk.Window):
 		self.destroy()
 
 	def part_resized(self, widget, allocation):
-		newwidth = allocation.width
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
@@ -234,8 +233,18 @@ class PartProperties(gtk.Window):
 			editable.stop_emission("insert-text")
 
 	def update_slider_and_entries(self, widget, event, which_one):
-#		print "Entry " + which_one + " has been updated"
-		pass
+		print "Entry " + which_one + " has been updated"
+		hpaned_width = self.resize_hpaned.get_allocation().width - 5
+		if which_one == "part-size":
+			part_size_sec = round(long(self.resize_info_part_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
+			hpaned_pos = round((float(part_size_sec) / self.max_size) * hpaned_width)
+		else:
+			part_unalloc_sec = round(long(self.resize_info_unalloc_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
+			hpaned_pos = hpaned_width - round((float(part_unalloc_sec) / self.max_size) * hpaned_width)
+		if hpaned_pos <= hpaned_width:
+			self.resize_hpaned.set_position(hpaned_pos)
+		else:
+			self.resize_hpaned.set_position(self.resize_hpaned.get_position())
 
 	def filesystem_changed(self, widget, data=None):
 		fs = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
