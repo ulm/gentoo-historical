@@ -7,7 +7,8 @@ class Panel(GLIScreen.GLIScreen):
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
-		vert = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
+		vert = gtk.VBox(gtk.FALSE, 10)
+		vert.set_border_width(10)
 
 		content_str = """
 Welcome to The Gentoo Linux Installer. This is a TESTING release.
@@ -25,13 +26,8 @@ and you saved your configuration settings, you can click the "Load"
 button to load your previous settings as defaults.
 """
 
-		content_str2 = """Click the "Forward" button below to begin your
-Gentoo Linux installation."""
- 	
 		content_label = gtk.Label(content_str)
-		content_label2 = gtk.Label(content_str2)
 		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)            
-		container = gtk.HBox(gtk.FALSE,30)
 
 		self.add_content(vert)
 
