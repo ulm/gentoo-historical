@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gentoo-security.xml,v 1.8 2004/01/24 15:56:40 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gentoo-security.xml,v 1.9 2004/02/17 17:59:26 mush Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link = "/doc/en/gentoo-security.xml">
@@ -47,8 +47,8 @@
 Questa è una guida passo-passo per hardenizzare un sistema Gentoo Linux (aumentarne la sicurezza).
 </abstract>
 
-<version>0.4.14</version>
-<date>16 Gennaio 2003</date>
+<version>0.4.16</version>
+<date>8 Febbraio 2003</date>
 
 
 <chapter>
@@ -1009,11 +1009,11 @@ In ogni partizione per la quale avete abilitato le quote, create i file quota (<
 
 <p>
 Questo passo andrà ripetuto per ogni partizione in cui avrete abilitato le quote. Dopo aver aggiunto e 
-configurato i file quota, avremo bisogno di aggiungere lo script <c>quota</c> al runlevel di defautl.
+configurato i file quota, avremo bisogno di aggiungere lo script <c>quota</c> al runlevel di boot.
 </p>
 
-<pre caption="Aggiungere quota al runlevel di default">
-# <i>rc-update add quota default</i>
+<pre caption="Aggiungere quota al runlevel di boot">
+# <i>rc-update add quota boot</i>
 </pre>
 
 <p>
@@ -1438,7 +1438,7 @@ se operate un "non-routing" con un host che possiede più indirizzi IP su divers
 Loggate tutti i pacchetti spooffati, i pacchetti source routed e quelli redirect.
 </p>
 
-<pre caption="Attivare l'IP forwarding">
+<pre caption="Disattivare l'IP forwarding">
 # <i>/bin/echo "0" > /proc/sys/net/ipv4/ip_forward</i>
 </pre>
 
@@ -1449,31 +1449,20 @@ interfacce di rete.
 
 <p>
 Tutte queste impostazioni andranno perdute quando la macchina verrà riavviata. Per questo vi suggerisco di 
-aggiungere il seguente script al run level <c>rc-update add procparam default</c> e renderlo eseguibile
-<c>chmod +x /etc/init.d/procparam</c>.
+aggiungerle a <path>/etc/sysctl.conf</path> affinchè vengano lette automaticamente dallo script init <path>/etc/init.d/bootmisc</path>
 </p>
 
-<pre caption="/etc/init.d/procparam">
-#!/sbin/runscript
+<p>
+La sintassi di <path>/etc/sysctl.conf</path> è abbastanza intuitiva. Eliminate dai path precedentemente 
+menzionati <path>/proc/sys/</path> e sostituite ogni <path>/</path> con <path>.</path>:
+</p>
 
-depend() {
- use checkroot
-}
+<pre caption="Passare a sysctl.conf">
+<comment>(Manualmente usando echo):</comment>
+/bin/echo "0" &gt; /proc/sys/net/ipv4/ip_forward
 
-start() {
- ebegin "Setting /proc options."
- /bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_all
- /bin/echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
- /bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_source_route
- /bin/echo "0" > /proc/sys/net/ipv4/conf/all/accept_redirects
- /bin/echo "1" > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
- for i in /proc/sys/net/ipv4/conf/*; do
-   /bin/echo "1" > $i/rp_filter
- done
- /bin/echo "1" > /proc/sys/net/ipv4/conf/all/log_martians
- /bin/echo "0" > /proc/sys/net/ipv4/ip_forward
- eend 0
-}
+<comment>(Automaticamente in sysctl.conf:)</comment>
+net.ipv4.ip_forward = 0
 </pre>
 
 </body>
@@ -2745,7 +2734,7 @@ OINTERFACE=eth1
 opts="${opts} showstatus panic save restore showoptions rules"
 
 depend() {
-  need net procparam
+  need net
 }
 
 rules() {
