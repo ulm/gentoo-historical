@@ -16,7 +16,7 @@ Perrot</mail></author>
 </abstract>
 
 <version>0.26</version>
-<date>18 Mar. 2002</date>
+<date>17 Mai 2002 (traduction le 31 août 2002)</date>
 
 <chapter>
 <title>Préliminaires</title>
@@ -230,17 +230,6 @@ pilotes accélérés NVIDIA.</p>
 # <c>nano -w /etc/X11/XF86Config</c>
 # <c>echo NVdriver >> /etc/modules.autoload</c>
 </pre>
-<pre caption="Ajout du chemin vers les modules nvidia dans la section Files de /etc/X11/XF86Config">
-Section "Files"
-
-[...] <comment>(Les sections RgbPath et FontPath ont été sautées)</comment>
-
-# The module search path.  The default path is shown here.
-
-#    ModulePath "/usr/X11R6/lib/modules"
-    ModulePath "/opt/nvidia/modules"
-    ModulePath "/usr/X11R6/lib/modules"
-</pre>
 <pre caption="Activer GLX dans /etc/X11/XF86Config">
 Section "Module"
 
@@ -315,39 +304,23 @@ paquet <path>sys-kernel/linux-sources</path>, assurez vous que votre noyau Linux
 a le support du son activé.</p>
 <pre>
 # <i>emerge media-sound/alsa-driver</i>
-<comment>les modules Alsa vont être installés</comment>
-# <i>depmod -a</i>
 </pre>
 <p>Je vais supposer ici que <e>devfs</e> est activé ; si ce n'est pas le cas
 alors voir la FAQ Gentoo : <uri>http://www.gentoo.org/doc/faq.html</uri>.
 </p>
-<pre>
-# <i>nano -w /etc/modules.autoload</i>
-</pre>
-<pre caption="modules.autoload avec les modules Alsa">
-# Put modules to be loaded, with arguments, one per line
-# The following lines will be called with "modprobe"
-  
-snd-card-emu10k1
-snd-pcm-oss
-
-</pre>
-<p>Vous devez remplacer <e>snd-card-emu10k1</e> avec la carte son appropriée
-pour votre système. Regardez dans <path>/lib/modules/[kernel
-version]/misc/</path> pour une liste des modules. Si vous voulez avoir la
-compatibilité OSS, c'est une très bonne idée de placer une ligne
-<e>snd-pcm-oss</e> dans ce fichier.
-</p>
-<warn>Ne rajoutez pas de modules noyau au fichier <path>/etc/modules.conf</path>
-(s'il existe). Le fichier <path>/etc/modules.conf</path> est auto-généré, donc
-tous les changements faits directement dans ce fichier seront perdus.
-</warn>
 <p>Maintenant nous définissions les alias <e>kerneld</e>.
 </p>
 <pre>
-# <i>nano -w /etc/modules.d/aliases</i>
+# <i>nano -w /etc/modules.d/alsa</i>
 </pre>
-<pre caption="fin de /etc/modules.d/aliases avec les ajouts Alsa">
+<pre caption="Vers le haut de /etc/modules.d/alsa">
+##
+## IMPORTANT:
+## You need to customise this section for your specific sound card(s)
+## and then run `update-modules' command.
+## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
+##
+##  ALSA portion
 <i># Alsa</i>
 <i>alias snd-card-0 snd-card-emu10k1</i>
 <i>alias snd-card-1 snd-card-emu10k1</i>
@@ -358,7 +331,7 @@ tous les changements faits directement dans ce fichier seront perdus.
 <i>alias snd-card-6 snd-card-emu10k1</i>
 <i>alias snd-card-7 snd-card-emu10k1</i>
 </pre>
-<p>Une fois de plus, vous devez remplacer <e>snd-card-emu10k1</e> avec votre
+<p>Vous devez remplacer <e>snd-card-emu10k1</e> avec votre
 carte son.
 </p>
 
@@ -367,12 +340,16 @@ correctes dans <path>/etc/devfsd.conf</path>.
 </p>
 <pre>
 # <i>nano -w /etc/devfsd.conf</i>
+# <i>rc-update add alsasound boot</i>
 </pre>
-<pre caption="fin de devfsd.conf avec les ajouts Alsa">
+<pre caption="milieu de devfsd.conf avec les ajouts Alsa">
 # ALSA/OSS stuff
 # Comment/change these if you want to change the permissions on
 # the audio devices
 LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
 REGISTER        sound/.*     PERMISSIONS root.audio 660
 REGISTER        snd/.*       PERMISSIONS root.audio 660
 </pre>
@@ -380,15 +357,13 @@ REGISTER        snd/.*       PERMISSIONS root.audio 660
 <path>/dev/sound</path> à <c>root.audio</c>. Donc, pour que les utilisateurs non
 root puissent utiliser le son ils doivent faire parti du groupe
 <c>audio</c>.</note>
-<p>Redémarrez, ou simplement chargez avec <c>modprobe</c> les modules sons que
-vous avez placés dans <path>/etc/modules.autoload</path>, et tout les modules
-pour le son devraient être chargés. Vous ne pouvez pas encore entendre de son
-pour l'instant, parce que Alsa règle tous les canaux sons au plus bas par
-défaut.
+<warn>Remarquez que le script alsasound doit être ajouté au runlevel "boot" et
+pas au runlevel "default".</warn>
+<p>A ce point la méthode la plus simple est de redémarrer. Vous ne pourrez pas
+encore entendre de son pour l'instant parce qu'Alsa règle tous les canaux sons au plus bas par défaut.
 </p>
 <pre>
 # <i>emerge media-sound/alsa-utils</i>
-# <i>/etc/init.d/alsa start</i>
 # <i>amixer</i>
 
 Group 'Input Gain',0
@@ -421,7 +396,7 @@ Group 'Master',0
 
 # <i>amixer set Master 100 unmute</i>
 # <i>amixer set PCM 100 unmute</i>
-# <i>aplay /usr/kde/2/share/sounds/pop.wav</i> <comment>(pop.wav fait partie de KDE)</comment>
+# <i>aplay /usr/kde/3/share/sounds/pop.wav</i> <comment>(pop.wav fait partie de KDE)</comment>
 </pre>
 <p>Après avoir installé les utilitaires alsa nous utilisons <c>amixer</c> pour
 régler le volume des canaux sons Master et PCM à 100%. Nous vérifions aussi que
@@ -430,13 +405,6 @@ entendez un "pop", alors le son fonctionne. Puis, ajustez les paramètres de
 volume à votre convenance ; le programme ncurses <c>alsamixer</c> est un bon
 moyen pour le faire.
 </p>
-<pre caption="utilisateurs rc6+ seulement">
-# <i>rc-update add alsa default</i>
-</pre>
-
-<note>Pour les utilisateurs de versions antérieurs à rc6, l'ebuild alsa-utils
-ajoute automatiquement le script d'init <e>alsa</e> aux runlevels 3, 4 et
-5.</note>
 <p>
 Quand vous redémarrez votre système, le script d'init <e>alsa</e> va
 correctement sauver et restaurer vos paramètres de volume. 
@@ -940,12 +908,12 @@ faire le lien entre le serveur web et le courrier. Puisque Gentoo Linux utilise
 des dossiers au format Maildir, Courier IMAP est un bon choix.</p>
 <pre>
 # <i>emerge net-mail/courier-imap</i>
-# <i>rc-update add courier-imap default</i>
- * courier-imap added to runlevel default...
+# <i>rc-update add courier-imapd default</i>
+ * courier-imapd added to runlevel default...
  * Caching service dependencies...                        [ ok ]
  * rc-update complete.
 # <i>nano -w /etc/courier-imap/authdaemonrc</i>
-# <i>/etc/init.d/courier-imap start</i>
+# <i>/etc/init.d/courier-imapd start</i>
 # <i>telnet localhost 143</i>
 Trying 127.0.0.1...
 Connected to localhost.localdomain.
@@ -986,8 +954,8 @@ créer le certificat IMAP SSL (et indiquer à courier-imap où le trouver),
 </pre>
 <p>puis démarrez imap-ssl.</p>
 <pre>
-# <i>rc-update add courier-imap-ssl default</i>
-# <i>/etc/init.d/courier-imap-ssl start</i>
+# <i>rc-update add courier-imapd-ssl default</i>
+# <i>/etc/init.d/courier-imapd-ssl start</i>
 </pre>
 <p>Vous pouvez vérifier qu'imap fonctionne en utilisant n'importe client email
 qui supporte l'IMAP, comme netscape, kmail ou mutt.</p>
@@ -1060,6 +1028,23 @@ Command >>
 d'utiliser un répertoire en dehors de l'arborescence des documents Apache.
 J'utilise aussi <path>/tmp</path> comme répertoire pour stocker les
 attachements.</p>
+
+<p>Avant d'utiliser squirrelmail, vous devez d'abord modifier le fichier de
+configuration PHP, <path>/etc/php4/php.ini</path>, pour activer les variables de
+registre puis redémarrer apache : </p>
+<pre>
+# <i>nano -w /etc/php4/php.ini</i>
+# <i>/etc/init.d/apache restart</i>
+</pre>
+<pre caption="Edition de /etc/php4/php.ini">
+; You should do your best to write your scripts so that they do not require
+; register_globals to be on;  Using form variables as globals can easily lead
+; to possible security problems, if the code is not very well thought of.
+;register_globals = Off
+<comment>register_globals = On</comment>
+</pre>
+
+<!-- 
 <p>Vous devez aussi faire une petite modification à la configuration d'Apache
 pour qu'il sache que <path>index.php</path> devrait être exécuté à l'entrée d'un
 répertoire contenant un tel fichier.</p>
@@ -1079,6 +1064,7 @@ répertoire contenant un tel fichier.</p>
 &lt;/IfModule&gt;
 
 </pre>
+-->
 <p>Naviguez sur <uri>https://localhost/squirrelmail/</uri>, et cela devrait
 fonctionner !</p>
 <pre>
