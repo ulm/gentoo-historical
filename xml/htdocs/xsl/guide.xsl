@@ -184,12 +184,19 @@
 	  </body>
     </html>
   </xsl:template>
-  <xsl:template match="/mainpage | /news">
+  <xsl:template match="/mainpage | /news | /email">
     <html>
       <head>
         <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
         <link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
-        <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
+        <xsl:choose>
+		<xsl:when test="/mainpage | /news">
+			<title>Gentoo Linux -- <xsl:value-of select="title"/></title>
+		</xsl:when>
+		<xsl:when test="/email">
+			<title><xsl:value-of select="subject"/></title>
+		</xsl:when>
+		</xsl:choose>
       </head>
       <body style="margin-left:0px;margin-top:0px;" bgcolor="#000000">
 <!--<table border="0" width="100%" height="100%" cellspacing="0" cellpadding="0">-->
@@ -490,6 +497,9 @@
                           </tr>
                         </table>
                       </xsl:when>
+					  <xsl:when test="/email">
+							<xsl:apply-templates select="/email/body"/>
+					  </xsl:when>
                       <xsl:otherwise>
                         <br/>
                         <table border="0" class="content">
@@ -860,6 +870,54 @@
       </b>
     </font>
   </xsl:template>
+  
+<xsl:template match="/email/body">
+<table border="0"><tr><td>
+<span class="content">
+<p class="secthead">
+	Subject: <xsl:value-of select="/email/subject"/>
+</p>
+<p class="secthead"><font color="#000000">
+	List: <xsl:value-of select="/email/list"/> at gentoo.org<br/>
+	Date: <xsl:value-of select="/email/date"/><br/>
+	From: <xsl:value-of select="/email/from"/><br/><br/>
+		<xsl:if test="/email/nav/prev">
+	<xsl:for-each select="/email/nav/prev[position()=1]/text()">
+		<xsl:variable name="navloc" select="."/>
+		<xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
+		Previous: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
+	</xsl:for-each>
+	</xsl:if>
+	<xsl:if test="/email/nav/next">
+	<xsl:for-each select="/email/nav/next[position()=1]/text()">
+		<xsl:variable name="navloc" select="."/>
+		<xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
+		Next: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
+	</xsl:for-each>
+	</xsl:if>
+	<xsl:if test="/email/in-reply-to">
+	<xsl:for-each select="/email/in-reply-to[position()=1]/text()">
+		<xsl:variable name="irtloc" select="."/>
+		<xsl:variable name="irtfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
+		In Reply To: <a href="{$irtfile}"><xsl:value-of select="document($irtfile)/email/subject"/></a><br/>
+	</xsl:for-each>
+	</xsl:if>
+<xsl:if test="/email/replies">
+		<br/>Replies to this message:<br/>
+		<xsl:for-each select="/email/replies/reply/text()">
+			<xsl:variable name="rloc" select="."/>
+			<xsl:variable name="rfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
+	» <a href="{$rfile}"><xsl:value-of select="document($rfile)/email/subject"/></a><br/>
+		</xsl:for-each>
+	</xsl:if>
+</font></p>
+</span>
+<pre>
+		<xsl:apply-templates/>
+</pre>
+</td></tr></table>
+</xsl:template>
+  
   <xsl:template match="body">
     <xsl:param name="chid"/>
     <xsl:apply-templates>
@@ -876,6 +934,7 @@
       <xsl:apply-templates/>
     </p>
   </xsl:template>
+  
   <xsl:template match="pre">
     <xsl:param name="chid"/>
     <xsl:variable name="prenum">
