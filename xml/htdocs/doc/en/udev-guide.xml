@@ -1,0 +1,362 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/en/udev-guide.xml">
+<title>Gentoo udev Guide</title>
+
+<author title="Author">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+This document explains what udev is and how you can use udev to fit your needs.
+</abstract>
+
+<license/>
+
+<version>0.1</version>
+<date>February 26, 2003</date>
+
+<chapter>
+<title>What is udev?</title>
+<section>
+<title>The /dev Directory</title>
+<body>
+
+<p>
+When Linux-users talk about the hardware on their system in the vicinity of
+people that believe Linux is some sort of virus or brand of coffee, the use of
+"slash dev slash foo" will return a strange look for sure. But for the fortunate
+user (and that includes you) using <path>/dev/hda1</path> is just a fast way of
+explaining that we are talking about the primary master IDE, first partition. Or
+aren't we?
+</p>
+
+<p>
+We all know what a device file is. Some even know why device files have special
+numbers when we take a closer look at them when we issue <c>ls -l</c> in
+<path>/dev</path>. But what we always take for granted is that the primary
+master IDE disk is referred to as <path>/dev/hda</path>. You might not see it
+this way, but this is a flaw by design.
+</p>
+
+<p>
+Think hotpluggable devices like USB, IEEE1394, hot-swappable PCI, ... What is
+the first device? And for how long? What will the other devices be named to when
+the first one disappears? How will that affect ongoing transactions? Wouldn't it
+be fun that a printing job is suddenly moved from your supernew laserprinter to
+your almost-dead matrix printer because your mom decided to pull the plug of the
+inkjet which happened to be the first printer?
+</p>
+
+<p>
+Enter <e>udev</e>. The goals of the udev project are both interesting and
+needed:
+</p>
+
+<ul>
+  <li>Run in userspace</li>
+  <li>Dynamically create/remove device files</li>
+  <li>Provide consistent naming</li>
+  <li>Provide a user-space API</li>
+</ul>
+
+<p>
+To provide these features, udev is developed in three separate projects:
+<e>namedev</e>, <e>libsysfs</e> and, of course, <e>udev</e>.
+</p>
+
+</body>
+</section>
+<section>
+<title>namedev</title>
+<body>
+
+<p>
+Namedev allows you to define the device naming separately from the udev program.
+This allows for flexible naming policies and naming schemes developed by
+separate entities. This device naming subsystem provides a standard interface
+that udev can use.
+</p>
+
+<p>
+Currently only a single naming scheme is provided by namedev; the one provided
+by LANANA, used by the majority of Linux systems currently and therefor very
+suitable for the majority of Linux users.
+</p>
+
+<p>
+Namedev uses a 5-step procedure to find out the name of a given device. If the
+device name is found in one of the given steps, that name is used. The steps
+are:
+</p>
+
+<ul>
+  <li>label or serial number</li>
+  <li>bus device number</li>
+  <li>bus topology</li>
+  <li>statically given name</li>
+  <li>kernel provided name</li>
+</ul>
+
+<p>
+The <e>label or serial number</e> step checks if the device has a unique
+identifier. For instance USB devices have a unique USB serial number; SCSI
+devices have a unique UUID. If namedev finds a match between this unique number
+and a given configuration file, the name provided in the configuration file is
+used.
+</p>
+
+<p>
+The <e>bus device number</e> step checks the device bus number. For 
+non-hot-swappable environments this procedure is sufficient to
+identify a hardware device. For instance PCI bus numbers rarely change in the
+lifetime of a system. Again, if namedev finds a match between this position and
+a given configuration file, the name provided in that configuration file is
+used.
+</p>
+
+<p>
+Likewise the <e>bus topology</e> is a rather static way of defining devices as
+long as the user doesn't switch devices. When the position of the device matches
+a given setting provided by the user, the accompagnying name is used.
+</p>
+
+<p>
+The fourth step, <e>statically given name</e>, is a simple string replacement.
+When the kernel name (the default name) matches a given replacement string, the
+substitute name will be used. 
+</p>
+
+<p>
+The final step (<e>kernel provided name</e>) is a catch-all: this one takes 
+the default name provided by the kernel. In the majority of cases this is 
+sufficient as it matches the device naming used on current Linux systems.
+</p>
+
+</body>
+</section>
+<section>
+<title>libsysfs</title>
+<body>
+
+<p>
+udev interacts with the kernel through the sysfs pseudo filesystem. The libsysfs
+project provides a common API to access the information given by the sysfs
+filesystem in a generic way. This allows for querying all kinds of hardware
+without having to make assumptions on the kind of hardware.
+</p>
+
+</body>
+</section>
+<section>
+<title>udev</title>
+<body>
+
+<p>
+Every time the kernel notices an update in the device structure, it calls the
+<path>/sbin/hotplug</path> program. Hotplug runs the applications linked in the
+<path>/etc/hotplug.d/default</path> directory where you will also find a symlink
+to the udev application. Hotplug directs the information given by the kernel to
+the udev application which performs the necessary actions on the
+<path>/dev</path> structure (creating or deleting device files).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Using udev on Gentoo</title>
+<section>
+<title>Requirements</title>
+<body>
+
+<p>
+To be able to use udev on Gentoo, you must install 
+<c>sys-apps/baselayout-1.8.6.13</c> or later and <c>sys-fs/udev</c>.
+If necessary, edit <path>/etc/portage/package.keywords</path> so that your
+system uses the ~ARCH tree for those two packages:
+</p>
+
+<pre caption="/etc/portage/package.keywords">
+sys-apps/baselayout ~x86
+sys-fs/udev ~x86
+</pre>
+
+<p>
+If you haven't done so already, also install <c>sys-apps/hotplug</c>.
+</p>
+
+<pre caption="Installing necessary tools">
+# <i>emerge baselayout udev hotplug</i>
+</pre>
+
+<p>
+Kernelwise, if you're using the default set by <c>genkernel</c> then you're all 
+set. Otherwise be sure to activate the following options:
+</p>
+
+<pre caption="Required kernel options">
+Bus options (PCI, PCMCIA, EISA, MCA, ISA) ---&gt;
+  [*] Support for hot-pluggable devices
+
+File systems ---&gt;
+  Pseudo filesystems ---&gt;
+    [*] /proc file system support
+    [*] /dev/pts file system for Unix98 PTYs
+    [*] Virtual memory file system support (former shm fs)
+</pre>
+
+<p>
+You can leave the <c>/dev file system support (OBSOLETE)</c> active if you
+wish.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuration</title>
+<body>
+
+<p>
+First activate <c>hotplug</c> and have it started when you boot up your system:
+</p>
+
+<pre caption="Adding hotplug to the default runlevel">
+<comment>(Make sure that "boot" is used, not "default")</comment>
+# <i>rc-update add hotplug boot</i>
+# <i>/etc/init.d/hotplug start</i>
+</pre>
+
+<p>
+Now, if you're interested in the udev-tweaks Gentoo added to make your life
+comfortable, then read no more. You're all set. The Gentoo init scripts won't
+run the devfsd daemon and deactivate devfs when you boot up. 
+</p>
+
+<p>
+But if you are a die-hard and want to run a udev-only, no-tweaked system as is
+intended by the udev development, by all means, read on :)
+</p>
+
+<warn>
+Do <e>not</e> complain if something goes wrong. You're going to remove the hard
+work of many Gentoo developers that hacked our init scripts to get udev playing 
+nicely with Gentoo!
+</warn>
+
+<p>
+First of all we'll deactivate the rules that save the device file nodes from
+<path>/etc/init.d/halt.sh</path> and <path>/sbin/rc</path> by commenting them
+out:
+</p>
+
+<pre caption="/etc/init.d/halt.sh">
+# We need to properly terminate devfsd to save the permissions
+if [ -n "`ps --no-heading -C 'devfsd'`" ]
+then
+        ebegin "Stopping devfsd"
+        killall -15 devfsd &amp; &gt; /dev/null
+        eend $?
+elif [ ! -e /dev/.devfsd -a -e /dev/.udev ]
+then
+        ebegin "Saving device nodes"
+        <comment>##cd /dev</comment>
+        <comment>##try tar -jclpf "/tmp/devices-$$.tar.bz2" *</comment>
+        <comment>##try mv -f "/tmp/devices-$$.tar.bz2" /lib/udev-state/devices.tar.bz2</comment>
+        eend 0
+fi
+</pre>
+
+<pre caption="/sbin/rc">
+# Fix weird bug where there is a /dev/.devfsd in a unmounted /dev
+mymounts="$(awk '($3 == "devfs") { print "yes"; exit 0 }' /proc/mounts)"
+if [ -e "/dev/.devfsd" -a "${mymounts}" != "yes" ]
+then
+        rm -f /dev/.devfsd
+fi
+
+if [ "${udev}" = "yes" ]
+then
+        ebegin "Mounting ramfs at /dev"
+        try mount -n -t ramfs none /dev
+        eend $?
+        ebegin "Configuring system to use udev"
+        einfo " Populating /dev with device nodes..."
+        <comment>##try tar -jxpf /lib/udev-state/devices.tar.bz2 -C /dev</comment>
+        populate_udev
+        if [ -e /proc/sys/kernel/hotplug -a -x /sbin/hotplug ]
+        then
+                einfo " Using /sbin/hotplug for udev management..."
+
+        elif [ -e /proc/sys/kernel/hotplug ]
+        then
+                einfo " Setting /sbin/udev as hotplug agent..."
+                echo "/sbin/udev" &gt; /proc/sys/kernel/hotplug
+        else
+                ewarn " Kernel was not compiled with hotplug support!"
+        fi
+        eend 0
+        # Create problematic directories
+        mkdir -p /dev/{pts,shm}
+        # Same thing as /dev/.devfsd
+        touch /dev/.udev
+</pre>
+
+<p>
+We also need to manually create some device node files in order for our system
+to perform a succesful boot:
+</p>
+
+<pre caption="Creating necessary device node files">
+# <i>mknod -m 660 /dev/console c 5 1</i>
+# <i>mknod -m 660 /dev/null c 1 3</i>
+</pre>
+
+<p>
+If you have included devfs support in your kernel, you can deactivate it from
+the bootloader configuration: add <c>devfs=nomount</c> as kernel parameter. 
+</p>
+
+<p>
+If you want to use devfs and deactivate udev, add <c>gentoo=noudev</c> as kernel
+parameter.
+</p>
+
+</body>
+</section>
+<section>
+<title>Current Issues</title>
+<body>
+
+<p>
+Please report the <e>temporary fixes</e> to current issues to the Gentoo 
+Documentation Project by using the <uri link="http://bugs.gentoo.org">Gentoo 
+Bugzilla</uri> website.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Resources &amp; Acknowledgements</title>
+<section>
+<body>
+
+<p>
+The udev talk on the Linux Symposium (Ottawa, Ontario Canada - 2003) given by
+Greg Kroah-Hartman (IBM Corporation) provided a solid understanding on the udev
+application.
+</p>
+
+<p>
+<uri link="http://webpages.charter.net/decibelshelp/LinuxHelp_UDEVPrimer.html">Decibel's 
+UDEV Primer</uri> is an in-depth document about udev and Gentoo.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
