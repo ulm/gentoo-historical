@@ -14,7 +14,7 @@
        requested text is unavailable.
   -->
   <xsl:choose>
-    <xsl:when test="contains('|da|en|es|fi|fr|id|it|ro|ru|sv|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|da|en|es|fi|fr|id|it|pl|ro|ru|sv|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts-', $LANG, '.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
