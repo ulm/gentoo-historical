@@ -180,6 +180,7 @@
       <head>
         <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
         <link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
+	<xsl:if test="/mainpage/@id='news'"><link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" /></xsl:if>
         <xsl:choose>
 		<xsl:when test="/mainpage | /news">
 			<title>Gentoo Linux -- <xsl:value-of select="title"/></title>
