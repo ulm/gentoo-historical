@@ -18,5 +18,6 @@ ${WEBSCRIPTS}/use-index.py
 ${WEBSCRIPTS}/site-archive.sh
 ${WEBSCRIPTS}/news-index.sh
 ${WEBSCRIPTS}/doc-tarball.sh
+${WEBSCRIPTS}/icons2xml.pl > /home/httpd/gentoo/xml/htdocs/dyn/icons.xml
 
 echo ">>> Nightly Web update done."
