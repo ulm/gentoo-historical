@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/Attic/catalyst,v 1.1 2003/09/09 06:24:51 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/Attic/catalyst,v 1.2 2003/09/09 14:21:56 zhen Exp $
 
 # please note that you SHOULD not tinker with variables in here unless
 # you ABSOLUTELY know what you are doing. Please use files/catalyst.conf instead.
@@ -17,7 +17,7 @@ source /sbin/functions.sh
 usage() {
 	einfo "Copyright 2003, Gentoo Technologies. Licensed under the GPL v2"
 	echo
-	einfo "Please mail assign all bug reports to <zhen@gentoo.org>"
+	einfo "Please assign all bug reports to <zhen@gentoo.org>"
 	echo
 	einfo "Catalyst: Gentoo Hardened stage tarball building tool v${VERSION}"
 	einfo "Syntax: catalyst <arch> <stage> srcver destver"
@@ -128,7 +128,7 @@ pre_build() {
 	cd ${CHROOTDIR}
 	rm etc/make.profile
 	# <zhen@gentoo.org> REMINDER: The hardened profile is a local one that I use. 
-	ln -sf ../usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} etc/make.profile
+	ln -sf /usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} ${BASEDIR}/etc/make.profile
 	if [ ${CCACHE} > 0 ]
 	then
 		export FEATURES="ccache"
@@ -161,6 +161,26 @@ post_build() {
 	then
 		tardir
 	fi
+
+	einfo "Build Complete!"
+}
+
+prechecks() {
+	if [ "`whoami`" != "root" ]
+	then
+		eerror "$0: This script requires root privileges to operate."
+		exit 1
+	fi
+
+	if [ ! -d /usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} ]
+	then
+		eerror
+		eerror "Hardened profile not found in /usr/portage/profiles."
+		eerror "The hardened profile is a local profile and must be installed manually."
+		eerror "Please go to http://dev.gentoo.org/~zhen/Hardnened/profile to get the latest profile."
+		eerror
+		exit 1
+	fi
 }
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]
@@ -169,12 +189,7 @@ then
 	exit 1
 fi
 
-if [ "`whoami`" != "root" ]
-then
-	echo "$0: This script requires root privileges to operate."
-	exit 1
-fi
-
+prechecks
 
 if [ "$1" = "enter" -o "$1" = "umount" -o "$1" = "snap" ]
 then
@@ -190,24 +205,24 @@ unset PORTDIR DISTDIR
 # setup how the special modes are handled
 if [ "$SPECIALMODE" = "snap" ]
 then
-	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/stager/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
 	SNAPBALL=${SNAPDIR}/portage-${1}.tar.bz2
 else
 	MY_DIST_LOCALS=${BASEDIR}/dists/${4}
 	install -d $MY_DIST_LOCALS
-	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/stager/build/stage-${2}-${4}" || CHROOTDIR="$TMPDIR/stage-${2}-${4}"
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/catalyst/build/stage-${2}-${4}" || CHROOTDIR="$TMPDIR/stage-${2}-${4}"
 	SNAPBALL=${SNAPDIR}/portage-${4}.tar.bz2
 fi
 
 if [ "$SPECIALMODE" = "snap" ]
 then
 	install -d ${SNAPDIR}
-	echo "Cleaning up build directory..."
+	einfo "Cleaning up build directory..."
 	rm -rf ${CHROOTDIR}
 	install -d ${CHROOTDIR}
-	echo "Creating Portage tree snapshot..."	
+	einfo "Creating Portage tree snapshot..."	
 	rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
-	echo -n "Creating Portage tree tarball..."
+	einfo -n "Creating Portage tree tarball..."
 	( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
 	echo " done."
 	exit 0
@@ -215,7 +230,7 @@ fi
 
 if [ "$SPECIALMODE" = "umount" ]
 then
-	echo "Unmounting..."
+	einfo "Unmounting..."
 	umount_all
 	exit 0
 
@@ -225,7 +240,7 @@ cd ${CHROOTDIR}
 elif [ "$SPECIALMODE" = "enter" ]
 then
 	mount_all
-	echo "Chrooting to ${CHROOTDIR}..."
+	einfo "Chrooting to ${CHROOTDIR}..."
 	$CHROOT ${CHROOTDIR}
 	umount_all
 	exit 0
@@ -243,10 +258,10 @@ case "${1}" in
 		case "${1}" in
 			hppa|hppa1.1)
 				CFLAGS="-march=1.1"
-				;;
+		;;
 			hppa2.0)
 				CLAGS="-march=2.0"
-				;;
+		;;
 		esac
 		CHOST="hppa-unknown-linux-gnu"
 		CFLAGS="-O2 $CFLAGS"
@@ -354,25 +369,25 @@ case "${2}" in
 		SRCARCH=${MAINARCH}
 		DESTARCH=${MAINARCH}
 		SRCFORTAR=${CHROOTDIR}/tmp/stage1root
-		;;
+	;;
 	2)
 		SRCSTAGE=1
 		SRCVER=${3}
 		SRCARCH=${MAINARCH}
 		DESTARCH=${SUBARCH}
-		;;
+	;;
 	3)
 		SRCSTAGE=2
 		SRCVER=${3}
 		SRCARCH=${SUBARCH}
 		DESTARCH=${SUBARCH}
-		;;
+	;;
 	grp)
 		SRCSTAGE=3
 		SRCVER=${3}
 		SRCARCH=${SUBARCH}
 		DESTARCH=${SUBARCH}
-		;;
+	;;
 
 esac
 if [ "$2" = "grp" ]
@@ -387,8 +402,8 @@ if [ "`uname -m`" = "x86_64" -a "$MAINARCH" = "x86" ]
 then
 	if [ ! -e /bin/linux32 ]
 	then
-		echo "Can't find linux32 executable. Please emerge sys-apps/linux32"
-		echo "and try again."
+		eerror "Can't find linux32 executable. Please emerge sys-apps/linux32"
+		eerror "and try again."
 		die "linux32 not found; aborting."
 	fi
 	CHROOT="linux32 chroot"
@@ -411,7 +426,7 @@ case ${2} in
 		makeconf ${CHROOTDIR}/tmp/stage1root
 		$CHROOT . /tmp/stage1 build /tmp/stage1root
 		[ $? -ne 0 ] && die "Stage 1 build failure"
-		;;
+	;;
 	2)	
 		$CHROOT . /bin/bash << EOF
 		env-update
@@ -426,7 +441,7 @@ case ${2} in
 		${BASEDIR}/bin/bootstrap.sh || exit 1
 EOF
 		[ $? -ne 0 ] && die "Stage 2 build failure"
-		;;
+	;;
 	3)
 		$CHROOT . /bin/bash << EOF
 		env-update
@@ -440,7 +455,7 @@ EOF
 		emerge system --usepkg --buildpkg || exit 1
 EOF
 		[ $? -ne 0 ] && die "Stage 3 build failure"
-		;;
+	;;
 	grp) 
 		cp ${BASEDIR}/grp/${MAINARCH}.* ${CHROOTDIR}/tmp || die
 		$CHROOT . /bin/bash << EOF
@@ -494,4 +509,5 @@ EOF
 esac
 
 post_build
-einfo "Build finished!"
+
+# vim ts=4
