@@ -354,6 +354,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
 						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
 						<a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
+						<a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
 						<br/><br/>
 						Developer Docs:<br/>
