@@ -206,7 +206,7 @@ def set_nfs_mounts():
 def set_install_stage():
 # The install stage and stage tarball will be selected here
 	code, install_stage = d.inputbox("Which stage do you want to start at?", init=install_profile.get_install_stage())
-	if == DLG_OK: install_profile.set_install_stage(None, install_stage, None)
+	if code == DLG_OK: install_profile.set_install_stage(None, install_stage, None)
 	code, stage_tarball = d.inputbox("Where is the stage tarball located (URL or local file)?", init=install_profile.get_stage_tarball_uri())
 	try:
 		if code == DLG_OK: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
@@ -217,7 +217,7 @@ def set_portage_tree():
 # This section will ask whether to sync the tree, whether to use a snapshot, etc.
 	menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "None (snapshot or NFS mount)"]
 	code, portage_tree_sync = d.menu("How do you want to sync the portage tree?", choices=dmenu_list_to_choices(menulist))
-	if code != DLG_OK: break
+	if code != DLG_OK: return
 	portage_tree_sync = menulist[int(portage_tree_sync)-1]
 	if portage_tree_sync == "Normal 'emerge sync'": install_profile.set_portage_tree_sync_type(None, "sync", None)
 	if portage_tree_sync == "Webrsync (rsync is firewalled)": install_profile.set_portage_tree_sync_type(None, "webrsync", None)
@@ -249,14 +249,14 @@ def set_kernel():
 # This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
 	kernel_sources = ("vanilla-sources", "gentoo-sources", "development-sources", "gentoo-dev-sources", "hardened-sources")
 	code, menuitem = d.menu("Choose a kernel sources package", choices=dmenu_list_to_choices(kernel_sources))
-	if code != DLG_OK: break
+	if code != DLG_OK: return
 	menuitem = kernel_sources[int(menuitem)-1]
 	install_profile.set_kernel_source_pkg(None, menuitem, None)
 
 def set_boot_loader():
 	boot_loaders = ("grub", "lilo")
 	code, menuitem = d.menu("Choose a boot loader", choices=dmenu_list_to_choices(boot_loaders))
-	if code != DLG_OK: break
+	if code != DLG_OK: return
 	menuitem = boot_loaders[int(menuitem)-1]
 	install_profile.set_boot_loader_pkg(None, menuitem, None)
 	if d.yesno("Do you want the boot loader installed in the MBR?") == DLG_YES:
@@ -363,9 +363,9 @@ def set_rc_conf():
 def set_root_password():
 # The root password will be set here
 	code, passwd1 = d.passwordbox("Enter the new root password")
-	if code != DLG_OK: break
+	if code != DLG_OK: return
 	code, passwd2 = d.passwordbox("Enter the new root password again")
-	if code != DLG_OK: break
+	if code != DLG_OK: return
 	if passwd1 != passwd2:
 		d.msgbox("The passwords do not match")
 		return
