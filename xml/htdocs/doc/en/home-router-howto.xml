@@ -1,0 +1,408 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.1 2004/07/22 05:53:40 vapier Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/home-router-howto.xml">
+
+<title>Home Router Guide</title>
+
+<author title="Author">
+  <mail link="vapier@gentoo.org">Mike Frysinger</mail>
+</author>
+
+<abstract>
+This document details how to turn an old Gentoo machine into a router 
+for connecting your home network to the internet.
+</abstract>
+
+<version>1.1</version>
+<date>July 21, 2004</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+
+<p>
+Building your own router out of old spare parts has many advantages 
+over buying a pre-made canned router by say Linksys.  The biggest one by 
+far is control over the connection.  The other advantages are left up to 
+your imagination; just about anything can be done in this scenario, 
+it's just a matter of needing it.
+</p>
+
+<p>
+This guide will show you how to setup Network Address Translation (NAT) 
+on the router (kernel and iptables), add and configure common services 
+(DNS via dnsmasq, dhcp via dhcpcd, ADSL via rp-pppoe), and conclude 
+with more elaborate and fun things that can be done (mail caching, port 
+forwarding, traffic shaping, http/ftp hosting).
+</p>
+
+<p>
+Before getting started, there's a few basic requirements you must meet.  
+First, you'll need a computer that has at least 2 Network Interface 
+Cards (NICs) in it.  Next, you'll need the configuration settings for 
+your internet connection (may include things like 
+IP/DNS/Gateway/username/password).  Finally, you'll need a bit of spare 
+time and some Gentoo loving.
+</p>
+
+<p>
+The conventions used in this guide are:
+</p>
+<ul>
+ <li>eth0 - NIC connected to the Local Area Network (LAN)</li>
+ <li>eth1 - NIC connected to the Wide Area Network (WAN)</li>
+ <li>LAN utilizes the private 192.168.0.xxx network</li>
+ <li>router is hardcoded to the standard 192.168.0.1 IP</li>
+</ul>
+
+<impo>
+Due to security precautions, I would highly suggest you shut down any 
+unneeded services on the router until we have a chance to get the 
+firewall up and rolling.  To view the currently running services, just 
+run <c>rc-status</c>.
+</impo>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Kernel setup (know thyself first)</title>
+<section>
+<body>
+
+<p>
+Your kernel needs to have the drivers running for both your NICs.  To 
+see if your cards are already setup, just run <c>ifconfig</c>.  Your 
+output may differ slightly from the following, that's fine.  What 
+matters is that the interface shows up at all.
+</p>
+<pre caption="Checking NICs">
+# <i>ifconfig -a</i>
+eth0      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B8
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+          Interrupt:11 Base address:0x9800 
+
+eth1      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B9
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+          Interrupt:10 Base address:0x9400 
+</pre>
+<p>
+If you do not see your two cards showing up and you're not sure what 
+kind of cards you have, try running <c>lspci</c>.  You can get that from 
+<c>emerge sys-apps/pciutils</c>.  Look for "Ethernet controller" in the 
+output.  Once you have this information, go into your kernel and add 
+support for the correct drivers.
+</p>
+
+<p>
+The next thing you'll need is support for iptables and NAT (and packet 
+shaping if you want).  The following list is split up into required 
+(*), suggested (x), and shaper (s) features.  It does not matter whether 
+you build the features into the kernel or as a module so long as when 
+the feature is need, the correct module(s) are loaded (module loading 
+is left to the reader as a fun exercise however).
+</p>
+<pre caption="Network Options">
+<i>Networking options  ---&gt;</i>
+<i>   [*] TCP/IP networking</i>
+<i>      [*] IP: advanced router</i>
+<i>   [*] Network packet filtering (replaces ipchains)</i>
+
+<i>   IP: Netfilter Configuration  ---&gt;</i>
+<i>      [*] Connection tracking (required for masq/NAT)</i>
+<i>         [x] FTP protocol support</i>
+<i>         [x] IRC protocol support</i>
+<i>      [*] IP tables support (required for filtering/masq/NAT)</i>
+<i>         [*] IP range match support</i>
+<i>         [x] MAC address match support</i>
+<i>         [*] Multiple port match support</i>
+<i>         [*] Packet filtering</i>
+<i>            [*] REJECT target support</i>
+<i>            [x] REDIRECT target support</i>
+<i>         [*] Full NAT</i>
+<i>            [*] MASQUERADE target support</i>
+<i>         [s] Packet mangling</i>
+<i>            [s] MARK target support</i>
+<i>         [x] LOG target support</i>
+
+<i>   QoS and/or fair queueing  ---&gt;</i>
+<i>      [s] QoS and/or fair queueing</i>
+<i>         [s] HTB packet scheduler</i>
+<i>         [s] Ingress Qdisc</i>
+</pre>
+<note>
+Somethings may be slightly different in a 2.4 vs 2.6 kernel, but you 
+should be able to figure it out :).  2.2 + ipchains is not covered here.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Hug the WAN (a.k.a. The Internet)</title>
+
+<section>
+<title>Intro</title>
+<body>
+<p>
+There are many ways to connect to the internet so I'll just cover the 
+ones I'm familiar with.  That leaves us with ADSL (PPPoE) and cable 
+modems (static/dynamic).  If there are other methods out there, feel 
+free to write up a little blurb and e-mail me.  Feel free to skip any of 
+the following sections in this chapter that don't apply to you.  This 
+chapter is just about getting the router connected to the internet via 
+eth1.
+</p>
+</body>
+</section>
+
+<section>
+<title>ADSL and PPPoE</title>
+<body>
+
+<p>
+All the fancy PPPoE software has been bundled up into one little nice 
+package nowadays called <uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>.  
+Simply <c>emerge rp-pppoe</c> and you'll be on your way.  Remember how 
+I said you'll need username/password information?  Well I wasn't lying 
+so I hope you have it now!  Load up <path>/etc/ppp/pppoe.conf</path> in 
+your favorite editor and set it up.
+</p>
+
+<pre caption="Setting up eth1">
+<comment>(Replace 'vla9h924' with your username and 'password' with your password)</comment>
+
+# <i>nano /etc/ppp/pppoe.conf</i>
+<comment># Ethernet card connected to ADSL modem
+ETH=eth1
+# ADSL user name.
+USER=vla9h924</comment>
+# <i>nano /etc/ppp/pap-secrets</i>
+<comment># client    server  secret
+"vla9h924" * "password"</comment>
+# <i>nano /etc/conf.d/net</i>
+<comment>Add an entry for ifconfig_eth1 and set it to adsl:
+ifconfig_eth1=( "adsl" )</comment>
+# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+# <i>/etc/init.d/net.eth1 start</i>
+</pre>
+
+<p>
+You should be all set to go now.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Cable and/or dynamic/static IP</title>
+<body>
+
+<p>
+If you have a static IP then you will need the few more details than if 
+you have a dynamic IP.  For static users, you will need your IP, 
+gateway, and DNS servers.
+</p>
+
+<pre caption="Setting up eth1">
+<comment>Dynamic IP Users:</comment>
+# <i>emerge dhcpcd</i>
+# <i>nano /etc/conf.d/net</i>
+<comment>You'll need an entry like so:
+ifconfig_eth1=( "dhcp" )</comment>
+
+<comment>Static IP Users:</comment>
+# <i>nano /etc/conf.d/net</i>
+<comment>You'll need entries like so:
+ifconfig_eth1=( "66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0" )
+routes_eth1=( "default gw 66.92.78.1" )</comment>
+# <i>nano /etc/resolv.conf</i>
+<comment>Add one line per DNS server:
+nameserver 123.123.123.123</comment>
+
+<comment>Dynamic and Static Setup:</comment>
+# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+# <i>/etc/init.d/net.eth1 start</i>
+</pre>
+
+<p>
+You should be all set to go now.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Hug the LAN (bring along some friends)</title>
+<section>
+<body>
+
+<p>
+This step is a breeze compared to the previous one.
+</p>
+
+<pre caption="Setting up eth0">
+# <i>nano /etc/conf.d/net</i>
+<comment>Add a line like the following:
+ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )</comment>
+# <i>rc-update add net.eth0 default</i>
+# <i>/etc/init.d/net.eth0 start</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>LAN Services (because we're nice people)</title>
+
+<section>
+<title>DHCP Server</title>
+<body>
+<p>
+I bet it'd be nice if everyone else in your house could just plug 
+their computers into the network and things would just work.  No need to 
+remember mind-numbing details or make them stare at confusing 
+configuration screens!  Life would be grand eh?  Introducing the Dynamic 
+Host Configuration Protocol (DHCP) and why you should care.
+</p>
+
+<pre caption="Setting up dhcpd">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>Here is a sample configuration file:
+authoritative;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+	range 192.168.0.100 192.168.0.250;
+	default-lease-time 259200;
+	max-lease-time 518400;
+	option subnet-mask 255.255.255.0;
+	option broadcast-address 192.168.0.255;
+	option routers 192.168.0.1;
+	option domain-name-servers 192.168.0.1;
+}
+</comment>
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>Set IFACE="eth0"</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Now your little router is a bona-fide DHCP server!  Plugin those 
+computers and watch them work!  With Windows systems you should go into 
+the TCP/IP Properties and select the 'Obtain an IP address 
+automatically' and 'Obtain DNS server address automatically' options.  
+Sometimes the changes aren't instantaneous, so you may have to run a 
+command prompt and run <c>ipconfig /release</c> and <c>ipconfig 
+/renew</c>.  But enough about Windows, let's get back to our favorite 
+penguin.
+</p>
+</body>
+</section>
+
+<section>
+<title>DNS Server</title>
+<body>
+
+<p>
+You may have noticed in the previous section that we told the DHCP 
+clients we have a DNS server at 192.168.0.1.  You may also remember that 
+192.168.0.1 is our little router that we're making.  I don't remember 
+setting up a DNS server ... so let's do so now!
+</p>
+
+<pre caption="Setting up dnsmasq">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Add "-i eth1" to DNSMASQ_OPTS</comment>
+# <i>rc-update add dnsmasq</i>
+# <i>/etc/init.d/dnsmasq start</i>
+</pre>
+
+<p>
+Well that was quick, but what did we do?  The great thing is, we didn't 
+have to do very much!  You're welcome to choose other DNS servers if 
+you're more comfortable with them, but the reason dnsmasq is great is 
+because it was designed to do exactly what we want it for.  It's a 
+little DNS caching/forwarding server for local networks.  We're not 
+looking to provide our own DNS server here, just offer simple DNS 
+services to everyone else on our LAN.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>NAT</title>
+<body>
+
+<p>
+At this point, people on your network can talk to each other and they 
+can look up hostnames via DNS, but they still can't actually connect to 
+the internet.  While you may think that's great (more bandwidth for 
+you!), I bet they're not too happy just yet.
+</p>
+
+<pre caption="Setting up iptables">
+<comment>First we flush our current rules</comment>
+# <i>iptables -F</i>
+# <i>iptables -t nat -F</i>
+
+<comment>Then we lock our services so they only work from the LAN</comment>
+# <i>iptables -I INPUT 1 -i eth0 -j ACCEPT</i>
+# <i>iptables -I INPUT 1 -i lo -j ACCEPT</i>
+# <i>iptables -A INPUT -p UDP --dport bootps -i ! eth0 -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport dns -i ! eth0 -j REJECT</i>
+
+<comment>Drop TCP / UDP packets to privileged ports</comment>
+# <i>iptables -A INPUT -p TCP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p UDP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+
+<comment>Finally we add the rules for NAT</comment>
+# <i>iptables -I FORWARD -i 192.168.0.0/255.255.0.0 -j DROP</i>
+# <i>iptables -A FORWARD -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -A FORWARD -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+<comment>Tell the kernel that ip forwarding is OK</comment>
+# <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
+# <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
+
+<comment>This is so when we boot we don't have to run the rules by hand</comment>
+# <i>/etc/init.d/iptables save</i>
+# <i>rc-update add iptables default</i>
+</pre>
+
+<p>
+Once you've typed out all of that, the rest of your network should now 
+be able to use the internet as if they were directly connected 
+themselves.
+</p>
+
+<p>
+Believe it or not, you're done :).  The only thing left involves adding 
+extra services to make your life (or the lives of your users) easier.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>
