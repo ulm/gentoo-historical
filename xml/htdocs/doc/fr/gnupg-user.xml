@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gnupg-user.xml,v 1.12 2005/02/07 11:57:42 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gnupg-user.xml,v 1.13 2005/03/17 12:18:01 neysx Exp $ -->
 
 <guide link="/doc/fr/gnupg-user.xml" lang="fr">
 <title>Utiliser GnuPG sous Gentoo</title>
@@ -18,6 +18,9 @@
 <author title="Traducteur">
  <mail link="cam@gentoo.org">Camille Huot</mail>
 </author>
+<author title="Traducteur">
+ <mail link="clement@varaldi.org">Clément Varaldi</mail>
+</author>
 
 <abstract>
 Ce guide vous apprendra les bases de l'utilisation de GnuPG, un utilitaire pour
@@ -26,8 +29,8 @@ sécuriser les communications.
 
 <license/>
 
-<version>1.0.10</version>
-<date>2005-02-05</date>
+<version>1.0.12</version>
+<date>2005-02-19</date>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
@@ -220,12 +223,12 @@ Please select the reason for the revocation:
 (Probably you want to select 1 here)
 Your decision? <i>1</i>
 Enter an optional description; end it with an empty line:
-&gt; <i>Someone cracked me and got my key and passphrase</i>
-&gt; <i>On m'a piraté et volé ma clé avec son mot de passe</i>
+&gt; <i>Someone cracked me and got my key and passphrase.</i>
+&gt; <i>On m'a piraté et volé ma clé avec son mot de passe.</i>
 &gt;
 Reason for revocation: Key has been compromised
-Someone cracked me and got my key and passphrase
-On m'a piraté et volé ma clé avec son mot de passe
+Someone cracked me and got my key and passphrase.
+On m'a piraté et volé ma clé avec son mot de passe.
 Is this okay? <i>y</i>
 
 You need a passphrase to unlock the secret key for
@@ -394,8 +397,9 @@ Luis au serveur pgp.mit.edu. Le protocole utilisé est HTTP, donc si vous avez
 besoin d'un proxy il est temps de le définir (<c>export
 http_proxy=http://proxy_host:port/</c>). La commande pour envoyer une clé
 est&nbsp;: <c>gpg --keyserver pgp.mit.edu --keyserver-options honor-http-proxy
---send-key john@nowhere.someplace.flick</c>. Si vous n'avez pas besoin du proxy,
-vous pouvez enlever la partie <e>--keyserver-options honor-http-proxy</e>.
+--send-key 75447B14</c> où <c>75447B14</c> est l'ID de votre clé. Si vous n'avez
+pas besoin du proxy, vous pouvez enlever la partie <e>--keyserver-options
+honor-http-proxy</e>.
 </p>
 
 <p>
@@ -448,9 +452,110 @@ récupérer et la signer s'il a confiance en elle.
 </section>
 </chapter>
 
+<chapter id="gpg-agent">
+<title>Utiliser un agent GPG</title>
+<section>
+<title>Qu'est-ce qu'un agent GPG ?</title>
+<body>
+
+<p>
+Il arrive que vous utilisiez votre clé GPG très fréquemment lorsque vous
+travaillez avec certaines applications. Dans ce cas, il vous faudrait taper
+votre mot de passe très souvent. Pour résoudre ce problème, de nombreuses
+applications utilisaient un mécanisme de mise en mémoire tampon pour faciliter
+le travail des utilisateurs, mais cela ne permet pas un partage de cette mémoire
+entre les applications (imaginez les problèmes de sécurité que cela
+impliquerait) et les applications devaient réinventer la roue, encore et encore.
+</p>
+
+<p>
+Un agent GPG est une application à part entière utilisée par GPG pour mettre en
+cache le mot de passe de manière standard et sécurisée. Cela permet aux
+applications d'utiliser GPG de manière concurrente&nbsp;: si vous entrez votre
+mot de passe alors que vous utilisez déjà une application, la seconde pourra
+travailler avec le GPG sans devoir demander de nouveau le mot de passe pour
+libérer la clé, si l'agent GPG est configuré pour permettre cela, bien sûr.
+</p>
+
+<p>
+Gentoo propose quelques applications d'agent GPG. <c>app-crypt/gpg-agent</c>
+peut être considéré comme l'application de référence et est utilisée dans ce
+document.
+</p>
+
+</body>
+</section>
+<section>
+<title>Installation et configuration de gpg-agent et pinentry</title>
+<body>
+
+<p>
+Vous devez évidemment installer <c>gpg-agent</c> ainsi que <c>pinentry</c> qui
+est l'application d'aide utilisée par gpg-agent pour demander le mot de passe
+dans une fenêtre graphique. Elle est proposée avec trois possibilités&nbsp;:
+elle peut ouvrir une fenêtre en utilisant gtk+, Qt, ou un bibliothèque curses
+(selon le paramètre USE utilisé lors de son installation).
+</p>
+
+<pre caption="Installer gpg-agent et pinentry">
+# <i>emerge gpg-agent pinentry</i>
+</pre>
+
+<p>
+Il vous faut maintenant créer un fichier <path>~/.gnupg/gpg-agent.conf</path>
+et lui ajouter les lignes suivantes pour définir le temps d'expiration du mot
+de passe (par exemple 30 minutes) et l'application à appeler lorsque le mot de
+passe doit être tapé la première fois (par exemple, la version qt de pinentry).
+</p>
+
+<pre caption="Édition de ~/.gnupg/gpg-agent.conf">
+pinentry-program /usr/bin/pinentry-qt
+no-grab
+default-cache-ttl 1800
+</pre>
+
+<p>
+Ensuite, configurez GnuPG pour utiliser l'agent à bon escient. Éditez le
+fichier <path>~/.gnupg/gpg.conf</path> et ajoutez la ligne suivante&nbsp;:
+</p>
+
+<pre caption="Configurer GnuPG pour utiliser un agent GPG">
+use-agent
+</pre>
+
+<p>
+Maintenant, votre système est (presque) prêt à l'utilisation de l'agent GPG.
+</p>
+
+</body>
+</section>
+<section>
+<title>Démarrer automatiquement l'agent GPG</title>
+<body>
+
+<p>
+Si vous utilisez KDE comme environnement graphique, éditez le fichier 
+<path>/usr/kde/3.x/env/agent-startup.sh</path> (pour l'ensemble du système ) ou
+<path>~/.kde/env/gpgagent.sh</path> (pour un utilisateur local) et ajoutez la
+commande suivante pour que KDE démarre automatiquement l'agent GPG&nbsp;:
+</p>
+
+<pre caption="KDE démarrera automatiquement l'agent GPG">
+eval "$(gpg-agent --daemon)"
+</pre>
+
+<p>
+Si vous utilisez un environnement graphique différent, ajoutez la ligne citée
+précédemment dans votre fichier <path>~/.xinitrc</path> (si vous utilisez
+<c>startx</c>) ou <path>~/.xsession</path> (si vous utilisez XDM/GDM/KDM/...)
+</p>
+
+</body>
+</section>
+</chapter>
+
 <chapter>
 <title>Travailler avec des documents</title>
-
 <section>
 <title>Chiffrer et signer</title>
 <body>
@@ -480,7 +585,6 @@ ajoutez simplement l'option <c>--clearsign</c> au début de la commande.
 
 </body>
 </section>
-
 <section>
 <title>Déchiffrage et vérification des signatures</title>
 <body>
@@ -583,7 +687,6 @@ méthode.
 
 </body>
 </section>
-
 <section>
 <title>Kgpg</title>
 <body>
@@ -616,7 +719,6 @@ demander son empreinte :).
 
 </body>
 </section>
-
 <section>
 <title>Seahorse</title>
 <body>
@@ -652,27 +754,27 @@ commande, n'est-ce pas&nbsp;?).
 
 </body>
 </section>
-
 <section>
 <title>KMail</title>
 <body>
 
-<impo>
-Depuis la version 1.7 de KMail, il semble que la procédure ait été rendue plus
-complexe.  Veuillez suivre les <uri
-link="http://kmail.kde.org/kmail-pgpmime-howto.html">instructions
-officielles</uri> si vous utilisez KMail 1.7.
-</impo>
-
 <p>
-KMail est également très simple à configurer. Je vais juste mettre quelques
-images qui montrent à quoi ça ressemble. En gros, vous devez dire à KMail
-d'utiliser GPG et lui indiquer quelle clé utiliser.
+Si vous utilisez le paramètre USE <c>crypt</c>, KMail sera compilé avec le
+support gpg et sera capable de chiffrer et déchiffrer les courriers PGP
+automatiquement. Il pourra également chiffrer les courriers avec OpenPGP/MIME.
+Si vous voulez également pouvoir déchiffrer les courriers OpenPGP/MIME (ce qui
+est probablement le cas), vous devrez disposer d'un agent GPG en cours
+d'exécution (voir le chapitre <uri link="#gpg-agent">Utiliser un agent
+GPG</uri>).
 </p>
 
-<figure link="/images/kmail_identity.png" caption="Sélection de la clé à utiliser dans KMail"/>
-<figure link="/images/kmail_security_openpgp.png" caption="Configuration d'OpenPGP dans KMail"/>
-<figure link="/images/kmail_security_plugins.png" caption="Les plugins de sécurité dans KMail"/>
+<p>
+Vous pouvez vérifier si KMail est correctement configuré en allant dans
+<c>Configurations</c>, <c>Configurer KMail</c>, <c>Sécurité</c>, <c>Crypto
+Plugins</c>. Vous devriez voir un élément GpgME-based dans la liste. S'il n'est
+pas grisé, cliquez sur <c>Rescan</c>. S'il n'est toujours pas grisé, KMail ne
+fonctionne pas correctement.
+</p>
 
 </body>
 </section>
