@@ -11,11 +11,12 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.13 2005/01/26 23:59:15 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.14 2005/01/27 02:01:54 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_uncaught(req):
 
+    import os
     import sys
     import traceback
     from time import gmtime, strftime
@@ -86,14 +87,14 @@ def error_uncaught(req):
                      </tr>\n
                      </table>\n
                   """)
+    os.abort()
 
 def error(msg, modname):
     """
-	Display internal error user, send it to the log and error report log
-	"""
+    Display internal error user, send it to the log and error report log
+    """
 
-    import sys
-    import traceback
+    import os
     from time import gmtime, strftime
 
     import State
@@ -121,20 +122,14 @@ def error(msg, modname):
 
         output += "<b>Internal Error</b> (in module '%s')<b>:</b>\n" % modname
         output += "<br /><br />\n%s\n" % msg
-        output += ("""
-           <br /><br />
-           <b>Traceback:</b>
-           <br /><br />""")
-
-        tb = traceback.format_stack(None)
-        for line in tb[:-1]:
-            output += line.replace("\n", "<br>").replace(" ", "&nbsp;")
-        
-        if modname == "Template":
+            
+        if modname == 'Template':
             output += ("""
             <br />
             <b>Template module recursion averted.</b>
             <br /><br />""")
+
+        output += '<b>Execution terminated.<b><br /><br />'
 
     else:
         output += ("""
@@ -172,15 +167,15 @@ def error(msg, modname):
 
         State.Req.write(tmpl_footer.output())
 
-    sys.exit(0)
+    os.abort()
 
 def error_user(title, description):
     """
-	Present the user with a given error message.
-	To be used for errors based on user input, not internal errors.
-	"""
+    Present the user with a given error message.
+    To be used for errors based on user input, not internal errors.
+    """
 
-    import sys
+    import os
 
     import Config
     from Template import Template
@@ -218,4 +213,4 @@ def error_user(title, description):
 	
     State.Req.write(tmpl_footer.output())
 
-    sys.exit(0)
+    os.abort()
