@@ -13,11 +13,13 @@
 	<title>Gentoo Linux 
 	<xsl:choose><xsl:when test="/guide/@type='project'">
 		Projects
+	</xsl:when><xsl:when test="/guide/@type='newsletter'">
+		Newsletter
 	</xsl:when><xsl:otherwise>
 		Documentation
 	</xsl:otherwise></xsl:choose>
 -- 
-	<xsl:choose><xsl:when test="subtitle"><xsl:value-of select="title"/>: <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose></title>
+	<xsl:choose><xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when><xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise></xsl:choose></title>
 	</head>
 	<body style="margin-left:0px;margin-top:0px;" bgcolor="#ffffff">
 	<!--<table border="0" width="100%" cellspacing="0" cellpadding="0">-->
