@@ -325,7 +325,7 @@ Documentation Développeur:<br/>
 <a class="altlink" href="/doc/eclass-howto-fr.html">HOWTO Eclass</a><br/>
 <a class="altlink" href="/doc/ebuild-submit-fr.html">Soumettre vos ebuilds</a><br/>
 <br/><br/>
-Documentación en Español: <br/>:<br/>
+Documentación en Español: <br/>
 Para usuarios:<br/>
 <a class="altlink" href="/doc/build-es.html">Guía de Instalación</a><br/>
 <a class="altlink" href="/doc/faq-es.html">Preguntas frecuentes</a><br/>
