@@ -19,6 +19,7 @@ ${WEBSCRIPTS}/site-archive.sh
 ${WEBSCRIPTS}/news-index.sh
 ${WEBSCRIPTS}/doc-tarball.sh
 ${WEBSCRIPTS}/icons2xml_v2.pl  
+${WEBSCRIPTS}/cvs-repo-update.sh
 
 # this script takes a while (5+ minutes) to run, so leave it as the last one.
 ${WEBSCRIPTS}/distrowatch.sh
