@@ -17,7 +17,7 @@ This will provide instructions for getting an SELinux installation running.
 </abstract>
 <license/>
 <version>2.0</version>
-<date>4 November 2003</date>
+<date>23 November 2003</date>
 
 <chapter><title>Converting a Preexisting Standard Gentoo Installation</title>
 <section><title>Initial Preparations</title>
@@ -45,6 +45,11 @@ will be supported in the upcoming 2.6 kernel.</warn>
 <impo>The SELinux profile has significanly fewer USE flags asserted than
 the default profile.  Use "<i>emerge info</i>" to see if any use flags
 need to be reenabled in make.conf.</impo>
+<note>
+  You may encounter this message from portage: "!!! SELinux module not found.
+  Please verify that it was installed."  This is normal, and will be fixed
+  later in the conversion process.
+</note>
 
 <impo>You must add <i>ACCEPT_KEYWORDS="~x86"</i> to make.conf, as not all
 SELinux packages are marked stable yet.</impo>
@@ -102,11 +107,6 @@ SELinux packages are marked stable yet.</impo>
 <note>
   While 2.6 kernels can be used, only 2.4 kernels are currently supported.
 </note>
-<note>
-  You may encounter this message from portage: "!!! SELinux module not found.
-  Please verify that it was installed."  This is normal, and will be fixed
-  later in the conversion process.
-</note>
 <p>The kernel must  be compiled with security module support, SELinux support,
 devpts, and extended attribute security labels.  Refer to the main installation
 guide for futher kernel options.</p>
@@ -129,13 +129,13 @@ guide for futher kernel options.</p>
 [*] /dev/pts file system for Unix98 PTYs
 [*]   /dev/pts Extended Attributes
 [*]     /dev/pts Security Labels    
-
+<!--
 <comment>Under "Block devices"</comment>
 &lt;*&gt; Loopback device support
 &lt;*&gt; RAM disk support
 (4096)   Default RAM disk size
 [*]   Initial RAM disk (initrd) support
-
+-->
 <comment>Under "Security options"</comment>
 [*] Enable different security models
 [ ] Socket and Networking Security Hooks
@@ -184,7 +184,7 @@ image=/boot/bzImage
 </p>
 <pre caption="Making Required Directories">
 # <c>mkdir /selinux</c>
-# <c>mkdir /initrd</c>
+<!-- # <c>mkdir /initrd</c> -->
 
 <comment>This only needs to be done on 2.6 kernels:</comment>
 # <c>mkdir /sys</c>
@@ -198,7 +198,7 @@ image=/boot/bzImage
 <p>Merge the libraries, utilities and base-policy.  Then load the policy.</p>
 
 <pre caption="Merge base SELinux packages and policy">
-# <c>emerge libselinux checkpolicy policycoreutils mkinitrd</c>
+# <c>emerge libselinux checkpolicy policycoreutils</c>
 # <c>emerge selinux-base-policy</c>
 
 # <c>cd /etc/security/selinux/src/policy</c>
@@ -221,31 +221,29 @@ sys-apps/vcron (currently the only cron patched for SELinux)</p>
 # <c>emerge -C textutils fileutils sh-utils</c>
 </pre>
 
-<p>The policy is loaded from an initial ramdisk (initrd) when booting.  Compile
-and install policy, create an (initrd), and label filesystems.</p>
+<p>Compile and install policy, and label filesystems.</p>
 
 <pre caption="Install policy and label">
 # <c>cd /etc/security/selinux/src/policy</c>
 # <c>make install</c>
-# <c>make initrd</c>
 # <c>make relabel</c>
 </pre>
 <p>
-  Now the bootloader will have to be modified to load the
-  initrd.
+  Now the bootloader will have to be configured to load the policy before
+  init loads.  The /sbin/seinit script loads the policy and executes the
+  real init (/sbin/init).
 </p>
 <pre caption="Example GRUB entry">
 title=linux
 root (hd0,0)
-kernel /bzImage root=/dev/hda3 gentoo=nodevfs
-<c>initrd (hd0,0)/initrd.gz</c>
+kernel /bzImage root=/dev/hda3 <c>init=/sbin/seinit</c> gentoo=nodevfs
 </pre>
 <warn>
   There is a <uri link="http://bugs.gentoo.org/show_bug.cgi?id=30859">
   known issue</uri> with GRUB not being able
   to read symlinks that have been labeled.  If you
-  have a separate /boot partition, the kernel and
-  initrd lines are relative to the top of the
+  have a separate /boot partition, the kernel
+  lines are relative to the top of the
   partition, not to /, and thus "/boot" should not
   be in the path.  Please doublecheck your GRUB
   configuration.  Rerun GRUB and reinstall it 
@@ -264,8 +262,7 @@ image=/boot/bzImage
 	label=linux
 	read-only
 	root=/dev/hda3
-	<c>initrd=/boot/initrd.gz</c>
-	append="gentoo=nodevfs"
+	append="<c>init=/sbin/seinit</c> gentoo=nodevfs"
 </pre>
 </body>
 </section>
@@ -368,7 +365,7 @@ in the future.</warn>
 # <c>emerge sys-apps/policycoreutils</c>
 </pre>
 			<p>
-				Now you should either move, or remove your old SELinux policy and then emerge the new policy.
+				Now you should either move, or remove your old SELinux policy (/etc/security/selinux/src/policy) and then emerge the new policy.
 			</p>
 <pre caption="Emerging the New Policy">
 # <c>emerge \>=sec-policy/selinux-base-policy-20030817</c>
@@ -418,13 +415,13 @@ in the future.</warn>
 [*] /dev/pts file system for Unix98 PTYs
 [*]   /dev/pts Extended Attributes
 [*]     /dev/pts Security Labels    
-
+<!--
 <comment>Under "Block devices"</comment>
 &lt;*&gt; Loopback device support
 &lt;*&gt; RAM disk support
 (4096)   Default RAM disk size
 [*]   Initial RAM disk (initrd) support
-
+-->
 <comment>Under "Security options"</comment>
 [*] Enable different security models
 [ ] Socket and Networking Security Hooks
@@ -462,25 +459,6 @@ in the future.</warn>
 		</body>
 	</section>
 	<section>
-		<title>
-			Making the initial ramdisk
-		</title>
-		<body>
-			<p>
-				We will now create the initial ramdisk (initrd).
-				The initial policy load during booting is now
-				done from an initrd.
-			</p>
-<pre caption="Making the initrd">
-# <c>cd /etc/security/selinux/src/policy</c>
-# <c>make initrd</c>
-</pre>
-			<p>
-				This will create /boot/initrd.gz.
-			</p>
-		</body>
-	</section>
-	<section>
 		<title>Reboot Preperations</title>
 		<body>
 			<p>
@@ -488,7 +466,7 @@ in the future.</warn>
 			</p>
 <pre caption="Making Required Directories">
 # <c>mkdir /selinux</c>
-# <c>mkdir /initrd</c>
+<!-- # <c>mkdir /initrd</c> -->
 
 <comment>This only needs to be done on 2.6 kernels:</comment>
 # <c>mkdir /sys</c>
@@ -502,25 +480,26 @@ in the future.</warn>
 none	/selinux	selinuxfs	defaults	0	0
 </pre>
 			<p>
-				Now the bootloader will have to be modified to load the
-				initrd. In addition, the command line option
+				Now the bootloader will have to be configured.
+				The command line option
 				<i>gentoo=nodevfs</i> must be added to the kernel
 				command line, so the init scripts do not attempt
-				to mount devfs.
+				to mount devfs.  The bootloader will have to be
+				configured to load the policy before init loads.
+				The /sbin/seinit script loads the policy and
+				executes the real init (/sbin/init).
 			</p>
 <pre caption="Example GRUB entry">
 title=linux
 root (hd0,0)
-kernel /bzImage root=/dev/hda3 <c>gentoo=nodevfs</c>
-<c>initrd (hd0,0)/initrd.gz</c>
+kernel /bzImage root=/dev/hda3 <c>init=/sbin/seinit gentoo=nodevfs</c>
 </pre>
 <pre caption="Example LILO entry">
 image=/boot/bzImage
 	label=linux
 	read-only
 	root=/dev/hda3
-	<c>initrd=/boot/initrd.gz</c>
-	<c>append="gentoo=nodevfs"</c>
+	<c>append="init=/sbin/seinit gentoo=nodevfs"</c>
 </pre>
 			<p>
 				You may now <c>reboot</c>.
@@ -574,8 +553,8 @@ sys-apps/stat
 				There is a <uri link="http://bugs.gentoo.org/show_bug.cgi?id=30859">
 				known issue</uri> with GRUB not being able
 				to read symlinks that have been labeled.  If you
-				have a separate /boot partition, the kernel and
-				initrd lines are relative to the top of the
+				have a separate /boot partition, the kernel lines
+				are relative to the top of the
 				partition, not to /, and thus "/boot" should not
 				be in the path.  Please doublecheck your GRUB
 				configuration.  Rerun GRUB and reinstall it
@@ -600,9 +579,7 @@ grub> setup (hd0) <comment>(Where the boot record is installed; here, it is the 
 			<p>
 				The conversion is complete.  When policy is
 				added or changed, remember to load policy and relabel, or
-				rlpkg the affected packages.  Also, the initrd
-				must be regenerated so the policy in it is
-				updated.
+				rlpkg the affected packages.
 			</p>
 <note>
   It is strongly suggested to <uri link="http://www.gentoo.org/main/en/lists.xml">subscribe</uri>
