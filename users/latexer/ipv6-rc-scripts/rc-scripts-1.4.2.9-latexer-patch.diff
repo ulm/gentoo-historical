@@ -1,7 +1,7 @@
 diff -aurN rc-scripts-1.4.2.9/etc/conf.d/net rc-scripts-1.4.2.9-latexer/etc/conf.d/net
 --- rc-scripts-1.4.2.9/etc/conf.d/net	2002-11-18 14:39:22.000000000 -0500
-+++ rc-scripts-1.4.2.9-latexer/etc/conf.d/net	2003-06-20 12:37:48.000000000 -0400
-@@ -8,12 +8,26 @@
++++ rc-scripts-1.4.2.9-latexer/etc/conf.d/net	2003-06-22 02:51:19.000000000 -0400
+@@ -8,12 +8,30 @@
  iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
  #iface_eth1="207.170.82.202 broadcast 207.0.255.255 netmask 255.255.0.0"
  
@@ -9,9 +9,13 @@ diff -aurN rc-scripts-1.4.2.9/etc/conf.d/net rc-scripts-1.4.2.9-latexer/etc/conf
 +#iface6_eth0="3ffe:aaaa:bbbb::2"
 +
  # For DHCP set iface_eth? to "dhcp"
++# For passing options to dhcclient use dhclient_eth?
  # For passing options to dhcpcd use dhcpcd_eth?
++
++# If both variables are specified, dhclient will be used
  #
  #iface_eth0="dhcp"
++#dhclient_eth0="..."
  #dhcpcd_eth0="..."
  
 +# For DHCPv6 set iface6_eth? to "dhcp"
@@ -28,7 +32,7 @@ diff -aurN rc-scripts-1.4.2.9/etc/conf.d/net rc-scripts-1.4.2.9-latexer/etc/conf
  # For adding aliases to a interface
  #
  #alias_eth0="192.168.0.3 192.168.0.4"
-@@ -32,3 +46,6 @@
+@@ -32,3 +50,6 @@
  #
  #gateway="eth0/192.168.0.1"
  
@@ -42,7 +46,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.
 +#!/sbin/runscript
 +# Copyright 1999-2002 Gentoo Technologies, Inc.
 +# Distributed under the terms of the GNU General Public License v2
-+# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.4 2003/06/22 06:03:17 latexer Exp $
++# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.5 2003/06/22 07:11:22 latexer Exp $
 +
 +#NB: Config is in /etc/conf.d/net
 +
@@ -121,7 +125,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/iface.eth0 rc-scripts-1.4.2.9-latexer/init.
 +# vim:ts=4
 diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/net.eth0
 --- rc-scripts-1.4.2.9/init.d/net.eth0	2002-11-26 18:12:40.000000000 -0500
-+++ rc-scripts-1.4.2.9-latexer/init.d/net.eth0	2003-06-21 18:42:22.000000000 -0400
++++ rc-scripts-1.4.2.9-latexer/init.d/net.eth0	2003-06-22 03:14:24.000000000 -0400
 @@ -5,11 +5,10 @@
  
  #NB: Config is in /etc/conf.d/net
@@ -137,7 +141,45 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
  }
  
  checkconfig() {
-@@ -79,19 +78,6 @@
+@@ -23,7 +22,9 @@
+ start() {
+ 	checkconfig || return 1
+ 	local iface_args="$(eval echo \$\{iface_${IFACE}\})"
+-	local dhcp_args="$(eval echo \$\{dhcpcd_${IFACE}\})"
++	local dhcpcd_args="$(eval echo \$\{dhcpcd_${IFACE}\})"
++	local dhclient_args="$(eval echo \$\{dhclient_${IFACE}\})"
++	local dhcp_client="$(eval echo \$\{dhcp_client_${IFACE}\})"
+ 	local retval=0
+ 	ebegin "Bringing ${IFACE} up"
+ 	if [ "$(eval echo \$\{iface_${IFACE}\})" != "dhcp" ]
+@@ -40,11 +41,21 @@
+ 			return ${retval}
+ 		}
+ 	else
+-		/sbin/dhcpcd ${dhcp_args} ${IFACE} >/dev/null || {
+-			retval=$?
+-			eend ${retval} "Failed to bring ${IFACE} up"
+-			return ${retval}
+-		}
++		if [ "${dhcp_client}" = "dhcpcd" -o -z "${dhcp_client}" ]
++		then
++			/sbin/dhcpcd ${dhcpcd_args} ${IFACE} >/dev/null || {
++				retval=$?
++				eend ${retval} "dhcpcd failed on ${IFACE}"
++				return ${retval}
++			}
++		else
++			/sbin/dhclient ${dhclient_args} ${IFACE} &>/dev/null || {
++				retval=$?
++				eend ${retval} "dhclient failed on ${IFACE}"
++				return ${retval}
++			}
++		fi
++		save_options dhcp_client "$(eval echo \$\{dhcp_client_${IFACE}\})"
+ 	fi
+ 	eend 0
+ 
+@@ -79,19 +90,6 @@
  		save_options "alias" "$(eval echo \$\{alias_${IFACE}\})"
  	fi
  
@@ -157,7 +199,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
  	if [ -n "${gateway}" ] && [ "${gateway%/*}" = "${IFACE}" ]
  	then
  		ebegin "  Setting default gateway"
-@@ -99,37 +85,18 @@
+@@ -99,37 +97,18 @@
  			netmask 0.0.0.0 metric 1 >/dev/null || {
  			
  			local error=$?
@@ -179,7 +221,8 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
  
  stop() {
  	local myalias="$(get_options alias)"
- 	ebegin "Bringing ${IFACE} down"
+-	ebegin "Bringing ${IFACE} down"
++	ebegin "Removing IPv4 settings for ${IFACE}"
  
 -	# Also down the inet6 interfaces
 -	local myinet6="$(get_options inet6)"
@@ -195,12 +238,52 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net.eth0 rc-scripts-1.4.2.9-latexer/init.d/
  	# Do some cleanup in case the amount of aliases change
  	if [ -n "${myalias}" ]
  	then
-@@ -156,8 +123,6 @@
- 			count=$((count + 1))
- 		done
- 		echo "done"
+@@ -144,20 +123,35 @@
+ 
+ 	if [ "$(eval echo \$\{iface_${IFACE}\})" = "dhcp" ]
+ 	then
+-		/sbin/dhcpcd -k ${IFACE} &>/dev/null
++		local dhcp_client="$(get_options dhcp_client)"
++
++		if [ "${dhcp_client}" = "dhcpcd" -o -z "${dhcp_client}" ]
++		then
++			/sbin/dhcpcd -k ${IFACE} &>/dev/null
+ 	
+-		# Give dhcpcd time to properly shutdown
+-		local count=0
+-		einfon "  Waiting for dhcpcd to shutdown"
+-		while [ "${count}" -lt 5 ]
+-		do
+-			echo -n "."
+-			sleep 1
+-			count=$((count + 1))
+-		done
+-		echo "done"
 -	else
 -		/sbin/ifconfig ${IFACE} down >/dev/null
++			# Give dhcpcd time to properly shutdown
++			local count=0
++			einfon "  Waiting for dhcpcd to shutdown"
++			while [ "${count}" -lt 5 ]
++			do
++				echo -n "."
++				sleep 1
++				count=$((count + 1))
++			done
++			echo "done"
++		else
++			#release the address for our device
++			/sbin/dhclient -r ${IFACE} &>/dev/null
++			local count=0
++			einfon "  Waiting for dhclient to shutdown"
++			while [ "${count}" -lt 5 ]
++			do
++				echo -n "."
++				sleep 1
++				count=$((count + 1))
++			done
++			echo "done"
++		fi
  	fi
  	eend 0
  }
@@ -211,7 +294,7 @@ diff -aurN rc-scripts-1.4.2.9/init.d/net6.eth0 rc-scripts-1.4.2.9-latexer/init.d
 +#!/sbin/runscript
 +# Copyright 1999-2002 Gentoo Technologies, Inc.
 +# Distributed under the terms of the GNU General Public License v2
-+# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.4 2003/06/22 06:03:17 latexer Exp $
++# $Header: /var/cvsroot/gentoo/users/latexer/ipv6-rc-scripts/rc-scripts-1.4.2.9-latexer-patch.diff,v 1.5 2003/06/22 07:11:22 latexer Exp $
 +
 +#NB: Config is in /etc/conf.d/net
 +
