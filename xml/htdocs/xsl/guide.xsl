@@ -29,14 +29,14 @@
 		<table cellspacing="0" cellpadding="0" border="0" width="193">
 			<tr>
 				<td class="logobg" valign="top" align="center" height="88">
-					<a href="/index.xml">
+					<a href="/">
 						<img border="0" src="http://www.ibiblio.org/web-gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
 					</a>
 				</td>
 			</tr>
 			<tr>
 				<td class="logobg" valign="top" align="center" height="36">
-					<a href="/index.xml">
+					<a href="/">
 						<img border="0" src="http://www.ibiblio.org/web-gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
 					</a>
 				</td>
@@ -197,14 +197,14 @@
               <table cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td class="logobg" valign="top" align="center" height="88">
-                    <a href="/index.xml">
+                    <a href="/">
                       <img border="0" src="http://www.ibiblio.org/web-gentoo/images/gtop-s.jpg" alt="Gentoo Logo"/>
                     </a>
                   </td>
                 </tr>
                 <tr>
                   <td class="logobg" valign="top" align="center" height="36">
-                    <a href="/index.xml">
+                    <a href="/">
                       <img border="0" src="http://www.ibiblio.org/web-gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
                     </a>
                   </td>
@@ -215,10 +215,10 @@
               <p class="menu">
 	      	<xsl:choose>
 			<xsl:when test="/mainpage/@id='news'">
-				<a class="highlight" href="/index.xml">News</a> |
+				<a class="highlight" href="/">News</a> |
 			</xsl:when>
 			<xsl:otherwise>
-				<a class="menulink" href="/index.xml">News</a> |
+				<a class="menulink" href="/">News</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
