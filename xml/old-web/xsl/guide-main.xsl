@@ -308,7 +308,6 @@
 						Download Mirrors:<br/>
 						<a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/>
 						<a class="altlink" href="ftp://ftp.gtlib.cc.gatech.edu/pub/gentoo">gatech.edu (USA)</a><br/>
-						<a class="altlink" href="http://gentoo.latinux.org">latinux.org (Venezuela)</a><br/>
 						<a class="altlink" href="http://mirrors.sunsite.dk/gentoo/">sunsite.dk (Denmark)</a><br/>
 						<a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/>
 						<a class="altlink" href="http://gentoo.linux.no/">linux.no (Norway)</a><br/>
