@@ -172,7 +172,6 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-              <!--//
 	      <tr>
                 <td align="center">
                   <p class="alttext">
@@ -180,7 +179,7 @@
                   </p>
                   <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
                     <input type="hidden" name="cmd" value="_xclick"/>
-                    <input type="hidden" name="business" value="drobbins@gentoo.org"/>
+                    <input type="hidden" name="business" value="paypal@gentoo.org"/>
                     <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
                     <input type="hidden" name="item_number" value="1000"/>
                     <input type="hidden" name="image_url" value="/images/paypal.png"/>
@@ -196,7 +195,6 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-	      //-->
           <tr>
             <td align="center">
               <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
@@ -702,31 +700,24 @@
             </tr>
           </xsl:when>
         </xsl:choose>
-        <!--//
-	<tr>
-          <td align="center">
-            <p class="alttext">
-              <b>Donate</b> to support our development efforts.
-            </p>
-            <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-              <input type="hidden" name="cmd" value="_xclick"/>
-              <input type="hidden" name="business" value="drobbins@gentoo.org"/>
-              <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
-              <input type="hidden" name="item_number" value="1000"/>
-              <input type="hidden" name="image_url" value="/images/paypal.png"/>
-              <input type="hidden" name="no_shipping" value="1"/>
-              <input type="hidden" name="return" value="http://www.gentoo.org"/>
-              <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-              <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
-            </form>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-	//-->
+	      <tr>
+                <td align="center">
+                  <p class="alttext">
+                    <b>Donate</b> to support our development efforts.
+                  </p>
+                  <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+                    <input type="hidden" name="cmd" value="_xclick"/>
+                    <input type="hidden" name="business" value="paypal@gentoo.org"/>
+                    <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
+                    <input type="hidden" name="item_number" value="1000"/>
+                    <input type="hidden" name="image_url" value="/images/paypal.png"/>
+                    <input type="hidden" name="no_shipping" value="1"/>
+                    <input type="hidden" name="return" value="http://www.gentoo.org"/>
+                    <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
+                    <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+                  </form>
+                </td>
+              </tr>
           <tr>
             <td align="center">
               <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
