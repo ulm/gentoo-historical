@@ -330,7 +330,16 @@ def set_networking():
 			d.msgbox("DNS Servers")
 		elif menuitem == "Default Gateway":
 			d.msgbox("Default Gateway")
-
+			while 1:
+				interfaces = install_profile.get_network_interfaces()
+				menu_list = interfaces.keys()
+				menu_list.sort()
+				code, menuitem = d.menu("Which interface is the default gateway?", choices=dmenu_list_to_choices(menu_list), cancel="Back")
+				if code != DLG_OK: break
+				menuitem = menu_list[int(menuitem)-1]
+				code, ip = d.inputbox("Enter an IP address for " + menuitem , init=interfaces[menuitem][0])
+				if code != DLG_OK: continue
+				install_profile.set_default_gateway(None, ip,{'interface': menuitem})	
 def set_cron_daemon():
 	cron_daemons = ("vixie-cron", "fcron", "dcron", "None")
 	code, menuitem = d.menu("Choose a cron daemon", choices=dmenu_list_to_choices(cron_daemons))

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.53 2005/03/01 18:05:49 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.54 2005/03/14 22:19:45 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -617,7 +617,8 @@ class ArchitectureTemplate:
 		
 		# If the default gateway exists, add it
 		if default_gateway:
-			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"gateway": default_gateway})
+			default_gateway_string = default_gateway[0] + "/" + default_gateway[1]
+			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"gateway": default_gateway_string})
 			
 		#
 		# SET RESOLV INFO
