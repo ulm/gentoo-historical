@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.31 2005/03/16 06:17:35 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.32 2005/03/19 09:10:57 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1051,15 +1051,15 @@ class InstallProfile:
 	def add_netmount(self, xml_path, unused, attr):
 		netmount_entry = {'export': '', 'host': '', 'mountopts': '', 'mountpoint': '', 'type': ''}
 		if type(attr) == tuple:
-			part_entry['export'] = attr[0]
-			part_entry['host'] = attr[1]
-			part_entry['mountopts'] = attr[2]
-			part_entry['mountpoint'] = attr[3]
-			part_entry['type'] = attr[4]
+			netmount_entry['export'] = attr[0]
+			netmount_entry['host'] = attr[1]
+			netmount_entry['mountopts'] = attr[2]
+			netmount_entry['mountpoint'] = attr[3]
+			netmount_entry['type'] = attr[4]
 		else:
-			if "minor" in attr.getNames():
+			if "export" in attr.getNames():
 				for attrName in attr.getNames():
-					part_entry[attrName] = str(attr.getValue(attrName))
+					netmount_entry[attrName] = str(attr.getValue(attrName))
 		self._network_mounts.append(netmount_entry)
 
 	def set_network_mounts(self, netmounts):

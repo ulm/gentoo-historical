@@ -125,30 +125,22 @@ def set_partitions():
 			parts_tmp[part] = devices[part].get_install_profile_structure()
 		install_profile.set_partition_tables(parts_tmp)
 
-def set_nfs_mounts():
+def set_network_mounts():
 # This is where any NFS mounts will be specified
-	nfs_mounts = copy.deepcopy(install_profile.get_partition_tables())
-	for i in nfs_mounts.keys():
-		if GLIUtility.is_file(i): del nfs_mounts[i]
+	network_mounts = copy.deepcopy(install_profile.get_network_mounts())
 	while 1:
 		menulist = []
-		for host in nfs_mounts.keys():
-			for export in nfs_mounts[host].keys():
-				menulist.append(host + ":" + export)
-		menulist.append("Add new NFS mount")
+		for mount in network_mounts:
+			menulist.append(mount['host'] + ":" + mount['export'])
+		menulist.append("Add new network mount")
 		choices = dmenu_list_to_choices(menulist)
-		code, menuitem = d.menu("Select a NFS mount", choices=choices, cancel="Done")
+		code, menuitemidx = d.menu("Select a network mount", choices=choices, cancel="Done")
 		if code:
 			if d.yesno("Do you want to save changes?") == DLG_YES:
-				parts_tmp = install_profile.get_partition_tables()
-				for part in parts_tmp.keys():
-					if not GLIUtility.is_file(part): del parts_tmp[part]
-				for host in nfs_mounts.keys():
-					parts_tmp[host] = nfs_mounts[host]
-				install_profile.set_partition_tables(parts_tmp)
+				install_profile.set_network_mounts(network_mounts)
 			break
-		menuitem = menulist[int(menuitem)-1]
-		if menuitem == "Add new NFS mount":
+		menuitem = menulist[int(menuitemidx)-1]
+		if menuitem == "Add new network mount":
 			code, nfsmount = d.inputbox("Enter NFS mount or just enter the IP/hostname to search for available mounts")
 			if code != DLG_OK: continue
 			if not GLIUtility.is_nfs(nfsmount):
@@ -162,26 +154,31 @@ def set_nfs_mounts():
 					code, nfsmount2 = d.menu("Select a NFS export", choices=dmenu_list_to_choices(remotemounts), cancel="Back")
 					if code != DLG_OK: continue
 					nfsmount2 = remotemounts[int(nfsmount2)-1]
-					if not nfs_mounts.has_key(nfsmount):
-						nfs_mounts[nfsmount] = {}
-					if nfs_mounts[nfsmount].has_key(nfsmount2):
-						if not d.yesno("There is already an entry for " + nfsmount + ":" + nfsmount2 + ". Do you want to overwrite it?") == DLG_YES:
-							continue
-					nfs_mounts[nfsmount][nfsmount2] = { 'mountpoint': '', 'mountopts': '', 'type': 'nfs', 'mb': 0, 'start': 0, 'end': 0, 'format': False, 'minor': 0 }
-					menuitem = nfsmount + ":" + nfsmount2
 				else:
 					d.msgbox("Enter '" + nfsmount + "' is not a valid IP or hostname")
+			else:
+				colon_location = nfsmount.find(':')
+				menuitem = nfsmount
+				nfsmount = menuitem[:colon_location]
+				nfsmount2 = menuitem[colon_location+1:]
+			for mount in network_mounts:
+				if nfsmount == mount['host'] and nfsmount2 == mount['export']:
+					d.msgbox("There is already an entry for " + nfsmount + ":" + nfsmount2 + ".")
+					nfsmount = None
+					break
+			if nfsmount == None: continue
+			network_mounts.append({'export': nfsmount2, 'host': nfsmount, 'mountopts': '', 'mountpoint': '', 'type': 'nfs'})
+			menuitem = nfsmount + ":" + nfsmount2
+			menuitemidx = len(network_mounts)
+
 		if menuitem.find(':') != -1:
 			colon_location = menuitem.find(':')
-			host = menuitem[:colon_location]
-			export = menuitem[colon_location+1:]
-			tmppart = nfs_mounts[host][export]
-			code, mountpoint = d.inputbox("Enter a mountpoint", init=tmppart['mountpoint'])
-			if code == DLG_OK: tmppart['mountpoint'] = mountpoint
-			code, mountopts = d.inputbox("Enter mount options", init=tmppart['mountopts'])
-			if code == DLG_OK: tmppart['mountopts'] = mountopts
-			nfs_mounts[host][export] = tmppart
-			
+			tmpmount = network_mounts[int(menuitemidx)-1]
+			code, mountpoint = d.inputbox("Enter a mountpoint", init=tmpmount['mountpoint'])
+			if code == DLG_OK: tmpmount['mountpoint'] = mountpoint
+			code, mountopts = d.inputbox("Enter mount options", init=tmpmount['mountopts'])
+			if code == DLG_OK: tmpmount['mountopts'] = mountopts
+			network_mounts[int(menuitemidx)-1] = tmpmount
 
 def set_install_stage():
 # The install stage and stage tarball will be selected here
@@ -593,7 +590,7 @@ cc.start_pre_install()
 install_profile_xml_file = None
 fn = (
 	{ 'text': "Partitioning", 'fn': set_partitions },
-	{ 'text': "NFS mounts", 'fn': set_nfs_mounts },
+	{ 'text': "Network mounts", 'fn': set_network_mounts },
 	{ 'text': "Install Stage", 'fn': set_install_stage },
 	{ 'text': "Portage Tree", 'fn': set_portage_tree },
 	{ 'text': "make.conf", 'fn': set_make_conf },
