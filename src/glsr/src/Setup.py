@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.12 2005/01/25 22:21:08 hadfield Exp $
+# $Id: Setup.py,v 1.13 2005/01/25 22:29:40 hadfield Exp $
 #
 
 import sys
@@ -46,11 +46,10 @@ user_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	%s_lastip	VARCHAR(15)	NULL,
         %s_language     VARCHAR(100)    NULL,
         %s_location     VARCHAR(100)    NULL,
-        %s_language     VARCHAR(100)    NULL,
         %s_website      VARCHAR(100)    NULL,
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
-              tuple(operator.repeat([Config.MySQL["user_table"]], 15)))
+              tuple(operator.repeat([Config.MySQL["user_table"]], 16)))
 
 cursor.execute(user_table)
 db.commit()
