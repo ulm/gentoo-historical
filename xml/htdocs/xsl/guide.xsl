@@ -488,8 +488,6 @@
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
                     <br/>
-                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
-                    <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
                     <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrent Tracker</a>

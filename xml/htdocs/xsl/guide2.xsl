@@ -435,8 +435,6 @@
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
                     <br/>
-                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
-                    <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
                     <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
