@@ -241,7 +241,7 @@ of your sale will go towards further Gentoo Linux development.</p>
     <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"></link>
 	<title>Gentoo Linux -- <xsl:value-of select="title"/></title>
 </head>
-<body leftmargin="0" topmargin="0" marginheight="0" marginwidth="0" bgcolor="#ffffff">
+<body leftmargin="0" topmargin="0" marginheight="0" marginwidth="0" bgcolor="#000000">
 	<!--<table border="0" width="100%" height="100%" cellspacing="0" cellpadding="0">-->
 	<table border="0" width="100%" cellspacing="0" cellpadding="0">
 		<tr>
