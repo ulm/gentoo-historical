@@ -1,6 +1,6 @@
 <?xml version = '1.0' encoding = 'UTF-8' ?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/Attic/ltsp.xml,v 1.2 2004/05/23 18:20:15 bass Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/Attic/ltsp.xml,v 1.3 2004/08/26 18:25:06 bass Exp $ -->
 <guide link="/doc/en/ltsp.xml" >
   <title>Gentoo - Guía de LTSP</title>
   <author title="Author" >
@@ -13,7 +13,7 @@
     <mail link="swift@gentoo.org" >Sven Vermeulen</mail>
   </author>
   <author title="Editor" >
-    <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
+    <mail link="bass@gentoo.org" >José Alberto Suárez López</mail>
   </author>
   <author title="Traductor" >
     <mail link="carles@carles.no-ip.info" >Carles Ferrer Peris</mail>
@@ -22,8 +22,8 @@
 Esta guía muestra cómo poner en marcha un servidor LTSP en Gentoo.
 </abstract>
   <license/>
-  <version>1.5</version>
-  <date>May 12, 2004</date>
+  <version>1.6</version>
+  <date>August 20, 2004</date>
   <chapter>
     <title>Introducción</title>
     <section>
@@ -73,7 +73,7 @@ Lo que instalará los siguientes paquetes y dependencias:
             <b>XINETD</b>: Xinetd es un potente sustituto de inetd, con características avanzadas, usado por ltsp para arrancar tftp.</li>
         </ul>
         <note>
-Si usted tiene la variable "USE" "kde" o "gnome", también se instalará un sistema completo kde o gnome.
+Si usted tiene la variable &quot;USE&quot; &quot;kde&quot; o &quot;gnome&quot;, también se instalará un sistema completo kde o gnome.
 </note>
       </body>
     </section>
@@ -125,14 +125,17 @@ Ahora inicie NFS.
       <title>xinetd/tftp</title>
       <body>
         <p>
-TFTP requiere un poco más de configuración para conseguir que funcione correctamente. En primer lugar, edite <path>/etc/conf.d/in.tftpd</path> para indicar la ruta de acceso correcta a tftpd:
+TFTP requiere un poco más de configuración para conseguir que funcione correctamente. En primer lugar, edite <path>/etc/conf.d/in.tftpd</path> para indicar las opciones y la ruta de acceso de tftpd correctamente:
 </p>
         <pre caption="/etc/conf.d/in.tftpd" >
 INTFTPD_PATH=&quot;/tftpboot&quot;
-INTFTPD_OPTS=&quot;${INTFTPD_PATH}&quot;
+INTFTPD_OPTS=&quot;-s ${INTFTPD_PATH}&quot;
 </pre>
         <p>
-Luego, configure xinetd para ejecutar TFTP y permitir las conexiones remotas. Primero, verifique si el fichero <path>/etc/xinetd.d/tftp</path> ha sido creado al &quot;emerger&quot; tftp. Por defecto TFTP no será iniciado por xinetd, para cambiar eso edite <path>/etc/xinetd.d/tftp</path> y cambie <c>disable=yes</c> por <c>disable=no</c>.
+El parámetro -s especifica que TFTP se ejecute en el modo seguro de chroot (recomendado). Esto significa que usted no necesita incluir la ruta  <path>/tftpboot</path> en la configuración de DHCP, por ejemplo.
+</p>
+        <p>
+Luego, configure xinetd para ejecutar TFTP y permitir las conexiones remotas. Por defecto TFTP no será iniciado por xinetd, por ello debe editar  <path>/etc/xinetd.d/tftp</path> y cambiar <c>disable=yes</c> por <c>disable=no</c>. Si no existe el fichero basta crear <path>/etc/xinetd.d/tftp</path> con el siguiente contenido.
 </p>
         <pre caption="/etc/xinetd.d/tftp" >
 service tftp
@@ -166,7 +169,7 @@ Todos los puestos de trabajo deben estar listados en <path>/etc/hosts</path>. Ec
         <pre caption="/etc/hosts" >
 127.0.0.1        localhost
 192.168.0.254    server      server.sudominio.com
-192.168.0.1      ws-1        ws-1.sudominio.com
+192.168.0.1      ws001       ws001.sudominio.com
 </pre>
       </body>
     </section>
@@ -197,7 +200,7 @@ option domain-name            &quot;sudominio.com&quot;;
 
 <codenote>Opciones de rutas de LTSP</codenote>
 option root-path              &quot;192.168.0.254:/opt/ltsp/i386&quot;;
-filename                      &quot;/lts/vmlinuz-2.4.19-ltsp-1&quot;;
+filename                      &quot;/lts/vmlinuz-2.4.24-ltsp-1&quot;;
 
 <codenote>Si usted tiene estaciones de trabajo con tarjetas de red ISA &quot;descomente&quot;</codenote>
           <codenote>las líneas siguientes y cambie el driver y el IO</codenote>
@@ -209,7 +212,7 @@ filename                      &quot;/lts/vmlinuz-2.4.19-ltsp-1&quot;;
 shared-network WORKSTATIONS {
   subnet 192.168.0.0 netmask 255.255.255.0 {
     <codenote>Distribuye IPs dinámicas a los clientes</codenote>
-    range dynamic-bootp 192.168.1.1 192.168.1.16;
+    range dynamic-bootp 192.168.0.1 192.168.0.16;
     <codenote>Estación con una configuración específica para arranque PXE</codenote>
     #host ws001 {
     #  hardware ethernet     00:E0:06:E8:00:84;
@@ -261,9 +264,9 @@ X_MOUSE_DEVICE     = &quot;/dev/input/mice&quot;
 Ahora tiene que cambiar la configuración del gestor de ventanas también para aceptar conexiones remotas.
 </p>
         <p>
-Primero cambie el fichero <path>Xaccess</path>, 'descomentando' la línea siguiente:
+Primero cambie el fichero <path>/etc/X11/xdm/Xaccess</path>, 'descomentando' la línea siguiente:
 </p>
-        <pre caption="Xaccess" >
+        <pre caption="/etc/X11/xdm/Xaccess" >
 #*                   #cualquier host puede obtener una ventana de login
 </pre>
         <p>
@@ -297,10 +300,10 @@ Recuerde, si su gestor de ventanas está ya en marcha, reiniciar el servidor X c
       <title>Crear un disquete de arranque</title>
       <body>
         <p>
-Si sus estaciones de trabajo no soportan el arranque PXE, debe crear un disquete de arranque, que será necesario para arrancarlas. Vaya a <uri>http://www.rom-o-matic.net/5.0.9/</uri>, seleccione su tarjeta de red, pulse <e>Get ROM</e> y grabe la imagen en un disquete:
+Si sus estaciones de trabajo no soportan el arranque PXE, puede crear un disquete de arranque para arrancarlas y conectarlas al servidor de terminales. Vaya a <uri>http://www.rom-o-matic.net</uri>, seleccione la última versión, elija su tarjeta de red, pulse <e>Get ROM</e> y grabe la imagen en un disquete:
 </p>
         <pre caption="Escribiendo la imagen en el floppy disk" >
-# <i>cat nicfile.lzdsk > /dev/fd0</i>
+# <i>cat nicfile.zdsk > /dev/fd0</i>
         </pre>
       </body>
     </section>
@@ -327,42 +330,42 @@ Hay muchas cosas que puedan ser el origen del problema, pero también hay varios
     <section>
       <body>
         <p>
-          <b>Q:</b> Mis puestos de trabajo tienen CPUs Pentium II, pero mi servidor está compilado con <c>march=athlon-xp</c>, ¿funcionará?
+          <b>P:</b> Mis puestos de trabajo tienen CPUs Pentium II, pero mi servidor está compilado con <c>march=athlon-xp</c>, ¿funcionará?
 </p>
         <p>
-          <b>A:</b> Eso no es ningún un problema, por que todas las aplicaciones se ejecutan en el servidor.
+          <b>R:</b> Eso no es ningún un problema, por que todas las aplicaciones se ejecutan en el servidor.
 </p>
         <p>
-          <b>Q:</b> ¿Qué CPU y cuánta RAM debe tener el servidor?
+          <b>P:</b> ¿Qué CPU y cuánta RAM debe tener el servidor?
 </p>
         <p>
-          <b>A:</b> Este es un buen documento con sugerencias al respecto: <uri>http://ltsp.org/documentation/server_suggestions.html</uri>.
+          <b>R:</b> Este es un buen documento con sugerencias al respecto: <uri>http://ltsp.org/documentation/server_suggestions.html</uri>.
 </p>
         <p>
-          <b>Q:</b> ¿Tiene más información al respecto de PXE?
+          <b>P:</b> ¿Tiene más información al respecto de PXE?
 </p>
         <p>
-          <b>A:</b> Sí, mire <uri>http://ltsp.org/documentation/eproms.txt</uri> y <uri>http://ltsp.org/documentation/pxe.howto.html</uri>.
+          <b>R:</b> Sí, mire <uri>http://ltsp.org/documentation/eproms.txt</uri> y <uri>http://ltsp.org/documentation/pxe.howto.html</uri>.
 </p>
         <p>
-          <b>Q:</b> ¿Es posible usar aceleración 3D por software en las estaciones de trabajo?
+          <b>P:</b> ¿Es posible usar aceleración 3D por software en las estaciones de trabajo?
 </p>
         <p>
-          <b>A:</b> Si utiliza tarjetas NVidia eche un vistazo a <uri>http://ltsp.org/documentation/nvidia.txt</uri>.
+          <b>R:</b> Si utiliza tarjetas NVidia eche un vistazo a <uri>http://ltsp.org/documentation/nvidia.txt</uri>.
 </p>
         <p>
-          <b>Q:</b> En algunas aplicaciones las fuentes se ven con mala calidad, ¿qué puedo hacer?
+          <b>P:</b> En algunas aplicaciones las fuentes se ven con mala calidad, ¿qué puedo hacer?
 </p>
         <p>
-          <b>A:</b> Tiene que configurar el XFontServer, añada <c>USE_XFS=Y</c> a su <path>lts.conf</path>, edite <path>/etc/X11/fs/config</path> y 'comente' <c>no-listen: tcp</c>, reemplace <c>XFS_PORT=&quot;-1&quot;</c> con <c>XFS_PORT=&quot;7100&quot;</c> en <path>/etc/conf.d/xfs</path> y arranque xfs: 
+          <b>R:</b> Tiene que configurar el XFontServer, añada <c>USE_XFS=Y</c> a su <path>lts.conf</path>, edite <path>/etc/X11/fs/config</path> y 'comente' <c>no-listen: tcp</c>, reemplace <c>XFS_PORT=&quot;-1&quot;</c> con <c>XFS_PORT=&quot;7100&quot;</c> en <path>/etc/conf.d/xfs</path> y arranque xfs: 
 <c>/etc/init.d/xfs start</c>. También compruebe que <path>/etc/X11/XF86Config</path> (o <path>/etc/X11/xorg.conf</path>) contenga <c>FontPath &quot;unix/:7100&quot;</c> en la sección Files.
 
 </p>
         <p>
-          <b>Q: </b> ¿Cómo puedo usar la tarjeta de sonido en una estación de trabajo?
+          <b>P: </b> ¿Cómo puedo usar la tarjeta de sonido en una estación de trabajo?
 </p>
         <p>
-          <b>A: </b> Hay un paquete ltsp-sound en gentoo, para más información lea el fichero que se incluye <path>README</path>.
+          <b>R: </b> Hay un paquete ltsp-sound en gentoo, para más información lea el fichero que se incluye <path>README</path>.
 </p>
       </body>
     </section>
