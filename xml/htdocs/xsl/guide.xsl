@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+                xmlns:exslt="http://exslt.org/common"
                 xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
 
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
@@ -65,7 +66,7 @@
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
     <xsl:otherwise><xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
-- -
+--
   <xsl:choose>
     <xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
@@ -136,22 +137,40 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  <xsl:value-of select="func:gettext('Updated')"/>&#160;
+                  <xsl:value-of select="func:gettext('Updated')"/>&#173;
                   <xsl:choose>
-                    <xsl:when test="($part != 0) and ($chap != 0)">
-                      <xsl:variable name="filename" select="/book/part[$part]/chapter[$chap]/include/@href"/>
-                      <xsl:variable name="datevalue" select="document($filename)/sections/date"/>
-                      <xsl:choose>
-                        <xsl:when test="$datevalue">
-                          <xsl:value-of select="$datevalue"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                          <xsl:value-of select="/book/date"/>
-                        </xsl:otherwise>
-                      </xsl:choose>
+                    <xsl:when test="/book">
+                      <!-- In a book: look for max(/date, include_files/sections/date) -->
+                      <xsl:for-each select="/book/part/chapter/include">
+                        <xsl:sort select="document(@href)/sections/date" order="descending" />
+                        <xsl:if test="position() = 1">
+
+                          <!-- Compare the max(date) from included files with the date in the master file
+                               Of course, XSLT 1.0 knows no string comparison operator :-(
+                               So we build a node set with the two dates and we sort it.
+                            -->
+                          <xsl:variable name="theDates">
+                            <xsl:element name="bookDate">
+                              <xsl:value-of select="/book/date"/>
+                            </xsl:element>
+                            <xsl:element name="maxChapterDate">
+                              <xsl:value-of select="document(@href)/sections/date"/>
+                            </xsl:element>
+                          </xsl:variable>
+                          <xsl:variable name="sortedDates">  
+                            <xsl:for-each select="exslt:node-set($theDates)/*">  
+                              <xsl:sort select="." order="descending" />
+                              <xsl:copy-of select="."/>
+                            </xsl:for-each>   
+                          </xsl:variable>
+                          <!-- First date is the one we want -->
+                          <xsl:value-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
+
+                        </xsl:if>
+                      </xsl:for-each>
                     </xsl:when>
                     <xsl:otherwise>
-                      <xsl:value-of select="/guide/date|/book/date"/>
+                      <xsl:value-of select="func:format-date(/guide/date)"/>
                     </xsl:otherwise>
                   </xsl:choose>
                 </td>
@@ -307,7 +326,7 @@
   </xsl:if>
   <xsl:choose>
     <xsl:when test="/mainpage | /news">
-      <title>Gentoo Linux - - <xsl:value-of select="title"/></title>
+      <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
     </xsl:when>
     <xsl:when test="/email">
       <title><xsl:value-of select="subject"/></title>
@@ -684,7 +703,8 @@
           <xsl:when test="/mainpage/date">
             <tr>
               <td align="center" class="alttext">
-                Updated <xsl:value-of select="/mainpage/date"/>
+                <xsl:value-of select="func:gettext('Updated')"/>&#173;
+                <xsl:value-of select="func:format-date(/mainpage/date)"/>
               </td>
             </tr>
             <tr>
@@ -1347,7 +1367,10 @@
 <!-- License Tag -->
 <xsl:template match="license">
 <tt>
-  The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/2.0">Creative Commons - Attribution / Share Alike</a> license.
+  <br/>
+  The contents of this document are licensed under the
+  <a href="http://creativecommons.org/licenses/by-sa/2.0">Creative Commons - Attribution / Share Alike</a>
+  license.
 </tt>
 </xsl:template>
 
