@@ -1,18 +1,16 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/net-setup,v 1.2 2004/03/21 20:09:33 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/net-setup,v 1.3 2004/07/11 23:33:45 wolf31o2 Exp $
 
 #!/bin/bash
 # John Davis <zhen@gentoo.org>
 
-if [ `whoami` != "root" ]
-then
+if [ `whoami` != "root" ]; then
 	echo "net-setup: must be root to continue"
 	exit 1
 fi
 
-if [ -z ${1} ]
-then
+if [ -z ${1} ]; then
 	echo "net-setup: please specify a network interface"
 	exit 1
 fi
@@ -23,30 +21,29 @@ cd /tmp/setup.opts
 dialog --title "Network Setup" --menu "Time to set up the ${1} interface! You can use DHCP to automatically configure a network interface or you can specify an IP and related settings manually. Choose one option:" 20 60 7 1 "Use DHCP to auto-detect my network settings" 2 "Specify an IP address manually" 2> ${1}.1
 mynetsel=`cat ${1}.1`
 case $mynetsel in
-1)
-	/sbin/dhcpcd -t 10 ${1}
-	;;
-2)
-	dialog --title "IP address" --inputbox "Please enter an IP address for $1:" 20 50 "192.168.1.1" 2> ${1}.IP
-	dialog --title "Broadcast address" --inputbox "Please enter a Broadcast address for $1:" 20 50 "192.168.1.255" 2> ${1}.B
-	dialog --title "Network mask" --inputbox "Please enter a Network Mask for $1:" 20 50 "255.255.255.0" 2> ${1}.NM
-	dialog --title "Gateway" --inputbox "Please enter a Gateway for $1 (hit enter for none:)" 20 50 2> ${1}.GW
-	dialog --title "DNS server" --inputbox "Please enter a name server to use (hit enter for none:)" 20 50 2> ${1}.NS
-	/sbin/ifconfig $1 `cat ${1}.IP` broadcast `cat ${1}.B` netmask `cat ${1}.NM`
-	myroute=`cat ${1}.GW`
-	if [ "$myroute" != "" ]
-	then
-		/sbin/route add default gw $myroute dev $1 netmask 0.0.0.0 metric 1	
-	fi
-	myns="`cat ${1}.NS`"
-	if [ "$myns" = "" ]
-	then
-		: > /etc/resolv.conf
-	else
-		echo "nameserver $myns" > /etc/resolv.conf
-	fi
-	;;
+	1)
+		/sbin/dhcpcd -t 10 ${1}
+		;;
+	2)
+		dialog --title "IP address" --inputbox "Please enter an IP address for $1:" 20 50 "192.168.1.1" 2> ${1}.IP
+		dialog --title "Broadcast address" --inputbox "Please enter a Broadcast address for $1:" 20 50 "`cat ${1}.IP|cut -d . -f 1`.`cat ${1}.IP|cut -d . -f 2`.`cat ${1}.IP|cut -d . -f 3`.255" 2> ${1}.B
+		dialog --title "Network mask" --inputbox "Please enter a Network Mask for $1:" 20 50 "255.255.255.0" 2> ${1}.NM
+		dialog --title "Gateway" --inputbox "Please enter a Gateway for $1 (hit enter for none:)" 20 50 2> ${1}.GW
+		dialog --title "DNS server" --inputbox "Please enter a name server to use (hit enter for none:)" 20 50 2> ${1}.NS
+		/sbin/ifconfig $1 `cat ${1}.IP` broadcast `cat ${1}.B` netmask `cat ${1}.NM`
+		myroute=`cat ${1}.GW`
+		if [ "$myroute" != "" ]; then
+			/sbin/route add default gw $myroute dev $1 netmask 0.0.0.0 metric 1	
+		fi
+		myns="`cat ${1}.NS`"
+		if [ "$myns" = "" ]; then
+			: > /etc/resolv.conf
+		else
+			echo "nameserver $myns" > /etc/resolv.conf
+		fi
+		;;
 esac
 
 echo "Type \"ifconfig\" to make sure the interface was configured correctly."
 
+# vim: ts=4

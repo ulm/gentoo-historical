@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2002 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.2 2004/04/30 22:52:02 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.3 2004/07/11 23:33:45 wolf31o2 Exp $
 
 echo "0" > /proc/sys/kernel/printk
 DHCP="yes"
@@ -11,33 +11,27 @@ HOTPLUG="yes"
 APM="no"
 ACPI="no"
 CMDLINE="`cat /proc/cmdline`"
-for x in $CMDLINE
-do
-	if [ "$x" = "nodetect" ]
-	then
+for x in $CMDLINE ; do
+	if [ "$x" = "nodetect" ]; then
 		DETECT="no"
 		HOTPLUG="no"
 		APM="no"
 		ACPI="no"
 	fi
 
-	if [ "$x" = "nodhcp" ]
-	then
+	if [ "$x" = "nodhcp" ]; then
 		DHCP="no"
 	fi
 
-	if [ "$x" = "dopcmcia" ]
-	then
+	if [ "$x" = "dopcmcia" ]; then
 		PCMCIA="yes"
 	fi
 	
-	if [ "$x" = "doapm" ]
-	then
+	if [ "$x" = "doapm" ]; then
 		APM="yes"
 	fi
 
-	if [ "$x" = "acpi=on" ]
-	then
+	if [ "$x" = "acpi=on" ]; then
 		APM="no"
 		ACPI="yes"
 	fi
@@ -48,121 +42,116 @@ depend() {
 }
 
 start() {
-if [ "$DETECT" = "yes" ]
-	then
+	if [ "$DETECT" = "yes" ]; then
 		ebegin $WARN"Hardware detection started"
 		PC=`awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
 		ebegin $GOOD"$PC"
 		eend		
 		hwsetup -p >/dev/null
 		eend
-		else
+	else
 		ebegin $WARN"Hardware detection disabled via cmdline$NORMAL"
-fi
+	fi
 
-if [ "$APM" = "yes" ]
-	then
+	if [ "$APM" = "yes" ]; then
 		insmod apm power_off=1 >/dev/null 2>&1 && ebegin $GOOD"APM BIOS found, power management functions enabled.$NORMAL"
 		/etc/init.d/apmd start
 	else
 		ebegin $GOOD"Not Loading APM Bios support.${NORMAL}"
-	eend
-fi
-
-if [ "$ACPI" = "yes" ]
-then
-	insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
-	insmod fan >/dev/null
-	insmod thermal >/dev/null
-	insmod button >/dev/null
-	insmod battery >/dev/null
-	insmod ac >/dev/null
-	/etc/init.d/acpid start
-	eend
-fi
-
-if [ "$PCMCIA" = "yes" ]
-	then
-	ebegin $HILITE "PCMCIA enabled via cmdline"
-	/etc/init.d/pcmcia start
-fi
-
-if [ "$DHCP" = "no" ]
-        then
-	sed 's/iface_eth0="dhcp"/#iface_eth0="dhcp"/' /etc/conf.d/net > /etc/conf.d/net1
-	cp /etc/conf.d/net1 /etc/conf.d/net
-	rm /etc/conf.d/net1
-	ebegin $BAD"Skipping DHCP broadcast detection as requested on boot commandline."
-fi
-
-	 #Read in what hwsetup has found
-[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
-
-# Mouse
-if [ -n "$MOUSE_DEVICE" ]
-	then
-	ebegin $GOOD"Mouse is $HILITE$MOUSE_FULLNAME$GOOD at $HILITE$MOUSE_DEVICE$NORMAL"
-	source /etc/sysconfig/mouse
-	gpm -m "${MOUSE_DEVICE}" -t "${MOUSETYPE}"
-	eend
-fi
-
-if [ "$HOTPLUG" = "yes" ]
-	then
-	/etc/init.d/hotplug start
-	else
-	ebegin $BAD"Hotplug disabled via cmdline$NORMAL"
-fi
-
-if [ "$DETECT" = "no" ]
-        then
-	DHCP="no"
-
-fi
-
-if [ "$DETECT" = "yes" ]
-	then
-	NETDEVICES="`awk -F: '/eth.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null`"
-fi
-
-if [ -n "$NETDEVICES" ]
-      	then
-	ebegin $GOOD"Network device$HILITE$NETDEVICES$GOOD detected,$WARN DHCP broadcasting for IP.$NORMAL"
-	if [ "${DHCP}" = "yes" ]
-	then
-		dhcpcd
+		eend
 	fi
-	eend
-	
+
+	if [ "$ACPI" = "yes" ]; then
+		insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
+		insmod fan >/dev/null
+		insmod thermal >/dev/null
+		insmod button >/dev/null
+		insmod battery >/dev/null
+		insmod ac >/dev/null
+		/etc/init.d/acpid start
+		eend
+	fi
+
+	if [ "$PCMCIA" = "yes" ]; then
+		ebegin $HILITE "PCMCIA enabled via cmdline"
+		/etc/init.d/pcmcia start
+	fi
+
+	if [ "$DHCP" = "no" ]; then
+		sed 's/iface_eth0="dhcp"/#iface_eth0="dhcp"/' /etc/conf.d/net > /etc/conf.d/net1
+		cp /etc/conf.d/net1 /etc/conf.d/net
+		rm /etc/conf.d/net1
+		ebegin $BAD"Skipping DHCP broadcast detection as requested on boot commandline."
+	fi
+
+	#Read in what hwsetup has found
+	[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
+
+	# Mouse
+	if [ -n "$MOUSE_DEVICE" ]; then
+		ebegin $GOOD"Mouse is $HILITE$MOUSE_FULLNAME$GOOD at $HILITE$MOUSE_DEVICE$NORMAL"
+		source /etc/sysconfig/mouse
+		[ -x /usr/sbin/gpm ] && gpm -m "${MOUSE_DEVICE}" -t "${MOUSETYPE}"
+		eend
+	fi
+
+	if [ "$HOTPLUG" = "yes" ]; then
+		/etc/init.d/hotplug start
+	else
+		ebegin $BAD"Hotplug disabled via cmdline$NORMAL"
+	fi
+
+	if [ "$DETECT" = "no" ]; then
+		DHCP="no"
+	fi
+
+	if [ "$DETECT" = "yes" ]; then
+		NETDEVICES="`awk -F: '/eth.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null`"
+	fi
+
+	if [ -n "$NETDEVICES" ]; then
+		if [ "${DHCP}" = "yes" ]; then
+			ebegin $GOOD"Network device$HILITE$NETDEVICES$GOOD detected,$WARN DHCP broadcasting for IP.$NORMAL"
+			dhcpcd
+		fi
+		eend
+
 	else
 		ebegin $BAD"No Network device auto detected.$NORMAL"
-
-fi
-
-
-if [ -n "$SOUND_FULLNAME" -o -n "$SOUND_DRIVER" ]
-	then
-	# Setting micro input to zero to avoid subsonic disaster
-	ebegin $GOOD"Soundcard:"
-	eend
-	aumix -m 0 >/dev/null 2>&1
-	aumix -f /etc/aumixrc -L >/dev/null 2>&1
-	aumix -v75 -c75 -w75 >/dev/null 2>&1
-#	modprobe /dev/dsp
-	[ -n "$SOUND_FULLNAME" ] 
-	ebegin "              $WARN$SOUND_FULLNAME"
-	[ -n "$SOUND_DRIVER" ] 
-	ebegin $WARN"              driver = $SOUND_DRIVER"$HILITE
-fi
+	fi
 
 
-if [ -n "$XDESC" -o -n "$XDESC" ]
-        then
+	if [ -n "$SOUND_FULLNAME" -o -n "$SOUND_DRIVER" ]; then
+		ebegin $GOOD"Soundcard:"
+		eend
+		if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]; then
+			amixer scontrols > /etc/amixer
+			[ -n "`grep Master /etc/amixer`" ] && amixer set Master 75% \
+				&& amixer set Master unmute
+			[ -n "`grep PCM /etc/amixer`" ] && amixer set PCM 75% \
+				&& amixer set PCM unmute
+			[ -n "`grep Mic /etc/amixer`" ] && amixer set Mic 75% \
+				&& amixer set Mic cap
+			[ -n "`grep Wave /etc/amixer`" ] && amixer set Wave 75% \
+				&& amixer set Wave unmute
+			[ -n "`grep Capture /etc/amixer`" ] && amixer set Capture 75% \
+				&& amixer set Capture cap && amixer set Capture unmute
+		fi
+		[ -n "$SOUND_FULLNAME" ] 
+		ebegin "              $WARN$SOUND_FULLNAME"
+		[ -n "$SOUND_DRIVER" ] 
+		ebegin $WARN"              driver = $SOUND_DRIVER"$HILITE
+	fi
+
+
+	if [ -n "$XDESC" -o -n "$XDESC" ]; then
         ebegin $GOOD"VideoCard:   $WARN ${XDESC}"
         eend
-fi
+	fi
 
-killall hwsetup 2>/dev/null
-echo "6" > /proc/sys/kernel/printk
+	killall hwsetup 2>/dev/null
+	echo "6" > /proc/sys/kernel/printk
 
 }
+
+# vim: ts=4
