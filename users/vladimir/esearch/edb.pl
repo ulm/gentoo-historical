@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.2 2003/03/06 11:36:04 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.3 2003/03/06 12:31:14 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -10,6 +10,7 @@ use Term::ANSIColor qw(:constants);
 #  User prefs
 #
 my $PORTDIR = "/usr/portage/";
+
 my $ARCH = `uname -a`;
 $ARCH = (split/ /, $ARCH)[10];
 
@@ -23,11 +24,12 @@ $ACCEPT_KEYWORDS = $1 if $ACCEPT_KEYWORDS =~ m/^ACCEPT_KEYWORDS="([^"]+)"/;
 
 my %done;
 
-open FILE, ">packages.txt";
+open FILE, ">packages.txt" or die "Can't open packages.txt to write the DB;
 
+# First line contains a space seperated list of all acceptable keywords
 print FILE "$ARCH $ACCEPT_KEYWORDS\n";
 
-
+# Scan the portage tree
 find(
 	{ 
 		wanted => \&wanted,
