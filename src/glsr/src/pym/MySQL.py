@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.10 2004/12/18 18:49:51 port001 Exp $
+# $Id: MySQL.py,v 1.11 2004/12/30 21:54:31 hadfield Exp $
 #
 
 __modulename__ = "MySQL"
@@ -38,7 +38,7 @@ class MySQL:
             err(errmsg, __modulename__)
             sys.exit(1)
                                                                         
-        self._cursor = db.cursor(MySQLdb.cursors.DictCursor)
+        self._cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
 
     def validate_args(self):
         """
