@@ -46,8 +46,8 @@ Questa guida mostra come configurare ALSA (Advanced Linux Sound Architecture) in
 
 <license/>
 
-<version>1.5.5</version>
-<date>31 Ottobre 2004</date>
+<version>1.5.9</version>
+<date>2004-12-09</date>
 
 <chapter>
 <title>Advanced Linux Sound Architecture</title>
@@ -83,13 +83,13 @@ Gentoo fornisce una flag USE <c>alsa</c>, da impostare in <path>/etc/make.conf</
 	<title>Moduli del kernel</title>
 <body>
 <p>
-Prima di continuare, assicuratevi che il vostro kernel ha abilitato il <e>Sound Card Support</e>. Se avete usato <c>genkernel</c> per compilare il vostro kernel, allora è già abilitato. Altrimenti riconfigurate il kernel.
+Prima di continuare, assicuratevi che il vostro kernel ha abilitato il <e>Sound Card Support</e>. Se avete usato <c>genkernel</c> per compilare il vostro kernel, allora è già abilitato. Altrimenti riconfigurate il kernel. Assicuratevi di disabilitare <e>Open Sound System</e> nella configurazione del kernel. Se non lo si fa, il vostro sistema potrebbe usare questi driver invece di quelli alsa. Questa è molto probabilmente la ragione di quandi si vede un messaggio che avvisa che la scheda sonora non è rilevata, e invece voi siete sicuri di avere il driver corretto.
 </p>
+<warn>
+Se usate un kernel 2.6, potete usare i driver forniti nel kernel, ma noi raccomandiamo di usare ancora media-sound/alsa-driver poichè sono più aggiornati di quelli del kernel. Se desiderate usare quelli del kernel, potete saltare il resto di questa sezione e continuare con <uri link="#alsa-utils">Installare ALSA Utils</uri>.
+</warn>
 <p>
-Se usate un kernel 2.6 potete saltare il resto di questa sezione e continuare con <uri link="#alsa-utils">Installare ALSA Utils</uri>, poichè sono già presenti i driver ALSA necessari. Non dimenticate di abilitare il supporto per la vostra scheda sonora, quando configurate il kernel.
-</p>
-<p>
-Gli utenti che usano il kernel 2.4 dovranno installare i driver ALSA necessari per le loro schede audio. Per prima cosa si deve trovare il tipo di scheda sonora. Un semplice trucco è quello di cercare nell'output del comando <c>lspci</c>. Il comando si installa facendo <c>emerge pciutils</c>.
+Il primo passo per installare i driver sonori, è quello di sapere quale scheda sonora avete. Se non lo sapete, un semplice trucco è quello di cercare nell'output del comando <c>lspci</c>. Il comando si installa facendo <c>emerge pciutils</c>.
 
 </p>
 <pre caption="Trovare il tipo di scheda sonora">
@@ -109,15 +109,19 @@ Da queste informazioni si può installare <c>alsa-driver</c> per la propria sche
 ALSA_CARDS="via82xx"
 </pre>
 
+<warn>
+Se avete varie schede sonore nel vostro sistema, separatele con una virgola nella variabile ALSA_CARDS. Esempio: ALSA_CARDS="via82xx,emu10k1"
+</warn>
+
 <p>
-Adesso installate <c>alsa-driver</c>:
+Se desiderate la compatibilità OSS (raccomandata), dovete aggiungere 'oss' nelle flag USE in <path>/etc/make.conf</path>. Adesso siete pronti per installare <c>alsa-driver</c>:
 </p>
 <pre caption="Installare i driver ALSA">
 # <i>emerge alsa-driver</i>
 </pre>
 
 <impo>
-Ogni volta che (ri)compilate il vostro kernel, i driver ALSA dovrebbero essere sovrascritti. E' però consigliato fare <c>emerge alsa-driver</c> se (ri)compilate il kernel, <e>dopo</e> aver effettuato il reboot con il nuovo kernel.
+Ogni volta che (ri)compilate il vostro kernel, i driver ALSA dovrebbero essere cancellati. E' però consigliato fare <c>emerge alsa-driver</c> se (ri)compilate il kernel. Notate che questo compilerà i driver per il kernel in /usr/src/linux, NON il kernel che si esegue.
 </impo>
 
 </body>
@@ -129,11 +133,12 @@ Ogni volta che (ri)compilate il vostro kernel, i driver ALSA dovrebbero essere s
 <body>
 
 <p>
-Se si desidera la retro-compatibilità con OSS, si deve installare <c>alsa-oss</c>:
+Se la compatibilità OSS nel kernel non è sufficiente per le vostre necessità, dovrete installare <c>alsa-oss</c>. Questo fonrirà l'eseguibile 'aoss' che può essere usato così come dimostrato:
 </p>
 
-<pre caption="Installare ALSA OSS">
+<pre caption="Altra compatibilità OSS">
 # <i>emerge alsa-oss</i>
+# <i>aoss mpg123 music.mp3</i>
 </pre>
 
 <p>
@@ -184,7 +189,7 @@ Eseguite <c>modules-update</c> per salvare i cambiamenti fatti al file <path>als
 <body>
 
 <p>
-Se usate DevFS (di default per l'installazione di Gentoo), assicuratevi che <path>/etc/devfsd.conf</path> abbia i dispositivi ALSA e i permessi correttamente registrati:
+Dovrebbe essere fatto automaticamnte su installazioni recenti, ma se incontrate problemi, controllate che i dispositivi ALSA e i permessi siano correttamente registrati dal vostro /dev manager. Se usate DevFS, controllate <path>/etc/devfsd.conf</path>.
 </p>
 <pre caption="/etc/devfsd.conf">
 # ALSA/OSS stuff
@@ -233,18 +238,20 @@ Adesso attivare i canali <e>Master</e> e <e>PCM</e>. Se non è sufficiente, atti
 </p>
 
 <pre caption="Attivazione dei canali sonori">
+<comment>(Se preferite un metodo basato su ncurses:)</comment>
+# <i>alsamixer</i>
+<comment>(o)</comment>
+
 # <i>amixer set Master 100 unmute</i>
 # <i>amixer set PCM 100 unmute</i>
 <comment>(Solo se quanto fatto non è sufficiente:)</comment>
 # <i>amixer set Center 100 unmute</i>
 # <i>amixer set Surround 100 unmute</i>
+# <i>amixer set Headphone 100 unmute</i>
 </pre>
-<p>
-Per controllare se il suono funziona, ascoltate un file wave (con <c>aplay</c>), mp3 (con <c>mpg123</c> o <c>mplayer</c>) e qualsiasi altro file musicale.
-</p>
 
 <p>
-Per sintonizzare le impostazioni dei canali sonori, potete usare l'applicazione <c>alsamixer</c>.
+Per controllare se il suono funziona, ascoltate un file wave (con <c>aplay</c>), mp3 (con <c>mpg123</c> o <c>mplayer</c>) e qualsiasi altro file musicale.
 </p>
 
 </body>
@@ -299,11 +306,17 @@ Se la vostra scheda sonora non ha un sintetizzatore hardware (o non volete usarl
 </pre>
 
 <p>
-C'è bisogno di un font audio per far funzionare timidity. Se non l'avete, installate <c>timidity-eawpatches</c>, ve ne darà alcuni.
+C'è bisogno di un font audio per far funzionare timidity. Se non l'avete, installate <c>timidity-eawpatches</c> o <c>timidity-shompatches</c>, ve ne darà alcuni. Si possono avere varie configurazioni di font audio installate, e potete mettere la vostra in <path>/usr/share/timidity/</path>. Per passare da una configurazione ad un'altra, si dovrebbe usare <e>timidity-update</e> fornito nel pacchetto timidity++.
 </p>
 
-<pre caption="Installare timidity-eawpatches">
+<pre caption="Installare font audio">
 # <i>emerge timidity-eawpatches</i>
+# <i>timidity-update -g -s eawpatches</i>
+
+<comment>(o)</comment>
+
+# <i>emerge timidity-shompatches</i>
+# <i>timidity-update -g -s shompatches</i>
 </pre>
 
 <p>
