@@ -9,6 +9,19 @@ class application:
 		#
 		self.plugins = plugin.Plugin(".")
 
+		#
+		# If log4py is available, we use it to generate Plugin Framework debug output.
+		#
+		try:
+			import log4py
+			logger = log4py.Logger(log4py.FALSE).get_instance(self.plugins)
+			logger.set_loglevel(log4py.LOGLEVEL_DEBUG)
+			self.plugins.set_debug_callback(logger.debug)
+		except:
+			print "log4py not available"
+			pass
+
+
 	def load_plugins(self):
 		#
 		# Load up three different plugins, all three from this module.
@@ -34,6 +47,12 @@ class application:
 		self.plugins.unload_plugin("plugin2")
 		self.plugins.unload_plugin("plugin3")
 		self.plugins.unload_plugin("testplugin2.plugin1")
+
+	def unload_plugins2(self):
+		#
+		# Unload all plugins.
+		#
+		self.plugins.unload_all_plugins()
 
 	def test_plugins(self):
 		sys.stdout.write("\n>>> Calling 'only1' [ ")
@@ -62,7 +81,7 @@ class application:
 
 
 class plugin1:
-	loadable = True
+	loadable = 1
 
 	def __init__(self, hdlr):
 		hdlr.add_callback("only1", 100, self.hello)
@@ -78,7 +97,7 @@ class plugin1:
 
 
 class plugin2:
-	loadable = True
+	loadable = 1
 
 	def __init__(self, hdlr):
 		hdlr.add_callback("only2", 100, self.hello)
@@ -94,7 +113,7 @@ class plugin2:
 
 
 class plugin3:
-	loadable = True
+	loadable = 1
 
 	def __init__(self, hdlr):
 		hdlr.add_callback("only3", 100, self.hello)
@@ -116,3 +135,5 @@ app.load_plugins2()
 app.test_plugins()
 app.unload_plugins()
 
+app.load_plugins()
+app.unload_plugins2()

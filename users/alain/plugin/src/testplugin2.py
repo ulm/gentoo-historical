@@ -3,7 +3,7 @@
 import plugin,sys
 
 class plugin1:
-	loadable = True
+	loadable = 1
 
 	def __init__(self, hdlr):
 		hdlr.add_callback("all", 90, self.hello)
