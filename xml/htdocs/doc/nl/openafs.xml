@@ -1,0 +1,579 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!-- 
+English doc rev. 1.6
+-->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/nl/openafs.xml">
+<title>Gentoo Linux OpenAFS Handleiding</title>
+<author title="Editor">
+<mail link="darks@gentoo.org">Holger Brueckner</mail>
+</author>
+<author title="Translator">
+<mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+Deze handleiding legt uit hoe je een openafs server en client installeert op
+Gentoo Linux.
+</abstract>
+
+<version>0.1</version>
+<date>12 April 2003</date>
+
+<chapter>
+<title>Overzicht</title>
+<section>
+<title>Over dit document</title>
+<body>
+<p>
+Dit document vertelt alles over het installeren van een openafs server op
+Gentoo Linux. Delen van dit document werden genomen van de AFS FAQ en IBM's
+Quick Beginnings guide on AFS. Welja, zoals ze zeggen, je hoeft het wiel niet
+telkens opnieuw uitvinden :)
+</p>
+</body>
+</section>
+<section>
+<title>Wat is AFS ?</title>
+<body>
+
+<p>
+AFS is een gedistribueerd bestandssysteem dat co-operatie tussen verschillende
+hosts toelaat zodat op een efficiente manier bestandssysteembronnen over een
+LAN of WAN gedeeld worden. Clients houden tevens een cache bij zodat frequent
+gebruikte bestanden sneller beschikbaar zijn.
+</p>
+<p>
+AFS is gebaseerd op een gedistribueerd bestandssysteem dat oorspronkelijk
+ontwikkeld werd aan de Information Technology Center in Carnegie-Mellon
+University, genaamd de "Andrew File System". "Andrew" was de naam van het
+onderzoeksproject op CMU - dit ter ere van de universiteits-oprichters. Eenmaal
+Transarc opgericht was en AFS een product werd werd de "Andrew" weggelaten, dit
+om aan te duiden dat AFS verder dan het Andrew research project was geevolueerd
+en een volledig ondersteund kwaliteitsproduct geworden was. Er waren echter
+verschillende cellen die hun root-bestandssysteem als /afs hadden. Het
+veranderen van de root van het bestandssysteem was een niet-triviale hack. Dus
+om de vroegere AFS-cellen toe te laten verder te werken werd AFS als naam en
+root-bestandssysteem behouden.
+</p> 
+</body>
+</section>  
+<section>
+<title>Wat is een AFS cell ?</title>
+<body>
+<p>
+Een AFS cel is een verzameling van servers die gegroepeerd zijn en een
+enkelvoudig, coherent bestandssysteem vormen. Een AFS cel is typisch een set
+hosts die eenzelfde Internet domeinnaam gebruiken (bv gentoo.org). Users loggen
+in via AFS client workstations die de nodige informatie en bestanden van de
+cel-servers afhalen in opdracht van de gebruikers. De gebruikers weten zelf
+niet van welke server de bestanden gehaald werden. Ze zullen zelfs niet merken
+indien de originele server verhuisd wordt, aangezien elk volume gedupliceerd en
+verplaatst wordt naar andere server(s) zonder dat de gebruiker dat mag merken.
+De bestanden zijn dus altijd beschikbaar.
+
+Denk aan NFS met steroiden :)
+</p>
+</body>
+</section>  
+<section>
+<title>Wat zijn de voordelen van AFS?</title>
+<body>
+<p>De hoofd-voordelen van AFS zijn:
+
+caching mogelijkheid (op client, tussen 100 MiB tot 1 GiB),
+veiligheidsfeatures (Kerberos 4 gebaseerd, access control lists),
+eenvoud van adressering (je hebt maar 1 bestandssysteem),
+schaleerbaarheid (voeg servers toe aan de cel indien nodig),
+communicatie protocol.
+</p>
+</body>
+</section>  
+<section>
+<title>Waar vind ik meer informatie?</title>
+<body>
+<p>
+Lees de <uri link="http://www.angelfire.com/hi/plutonic/afs-faq.html">AFS
+FAQ</uri>.
+</p>
+<p>
+De OpenAFS website vind je op <uri>http://www.openafs.org</uri>.
+</p>
+<p>
+AFS werd oorspronkelijk ontwikkeld door Transarc die nu onder IBM's voogdij
+zit. Je kan meer informatie over AFS vinden op <uri
+link="http://www.transarc.ibm.com/Product/EFS/AFS/index.html">Transarcs
+Website</uri>.
+</p>
+</body>
+</section>  
+
+</chapter>
+
+<chapter>
+<title>Documentatie</title>
+<section>
+<title>AFS Documentatie verkrijgen</title>
+<body>
+<p>
+Je kan de originele IBM AFS documentatie verkrijgen indien gewenst. Deze is goe
+geschreven en indien je een AFS-server wil beheren is het aangeraden lectuur.
+</p>
+<pre>
+# <i>emerge app-doc/afsdoc</i>
+</pre>
+</body>   
+</section>
+</chapter>
+
+<chapter>
+<title>Client Installatie</title>
+<section>
+<title>Voorbereidend werk</title>
+<body>
+<note>
+Alle commando's moeten in 1 regel getypt worden. In dit document is er soms
+regelafbreking toegepast om de regels leesbaarder te maken.
+</note>
+<note>
+Jammergenoeg heeft de AFS client een ext2-partitie nodig voor het cachen omdat
+er op het moment van schrijven (eind 2001) locking-problemen zijn met reiserfs.
+Je moet een ext2-partitie aanmaken van ongeveer 200 MiB (meer zal geen zeer
+doen) en deze in <path>/usr/vice/cache</path> mounten.
+</note>
+<p>
+Je moet de bestanden <path>CellServDB</path> en <path>ThisCell</path> aanpassen
+alvorens je de afs client compileert. Deze bestanden staan in
+<path>/usr/portage/net-fs/openafs/files</path>).
+</p>
+<pre>
+CellServDB:
+>netlabs        #Celnaam
+10.0.0.1        #storage
+
+ThisCell:
+netlabs       
+</pre>
+<p>
+CellServDB vertelt je client welke server(s) hij moet contacteren voor een
+specifieke cel. ThisCell, welja, de naam zegt genoeg :). Normaal gezien neem je
+een benaming die uniek is voor je organisatie. Je officieel domein is een goede
+keuze.
+</p>
+</body>
+</section>
+
+<section>
+<title>Compileren van de client</title>
+<body>
+<pre>
+<i>emerge net-fs/openafs</i>
+</pre>
+<p>
+Na een succesvolle compilatie ben je startklaar.
+</p>
+</body>
+</section>
+<section>
+<title>Automatisch AFS opstarten</title>
+<body>
+<p>
+Het volgende commando zal de nodige links aanmaken waardoor je je AFS client
+automatisch doet opstarten.
+</p>
+<warn>
+Je moet altijd een werkende AFS-server hebben in je domein wanneer je een AFS
+client start. Je systeem zal lang wachten op een timeout tijdens het booten
+wanneer dat niet het geval is, en dat kan lang duren.
+</warn>
+<pre>
+# <i>rc-update add afs default</i>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Server Installatie</title>
+<section>
+<title>De server compileren</title>
+<body>
+<p>
+Het volgende commando zal alle nodige bestanden aanmaken voor zowel AFS server
+als client.
+</p>
+<pre>
+# <i>emerge net-fs/openafs</i>
+</pre>
+</body>
+</section>
+<section>
+<title>Opstarten van de AFS server</title>    
+<body>
+<p>
+Je moet eerst de CellServDB en ThisCell voorbeeldbestanden verwijderen.
+</p>
+<pre>
+# <i>rm /usr/vice/etc/ThisCell</i>
+# <i>rm /usr/vice/etc/CellServDB</i>
+</pre>
+<p>
+Hierna voer je <b>bosserver</b> uit om de Basic OverSeer (BOS) Server, dewelke
+de AFS serverprocessen beheert, op te starten. Bezie het als een init voor het
+systeem. Geef het <b>-noauth</b> argument mee om authorizatie uit te schakelen,
+aangezien je nog geen beheerder aangemaakt hebt.
+</p>
+<p>
+<warn>
+Het uitschakelen van de authorizatie is een zware veiligheidsfout. Je moet alle
+volgende stappen in 1 trek uitvoeren en je mag de server niet verlaten totdat
+je de BOS Server herstart met authorizatie geactiveerd. Dit staat tevens in de
+AFS-documentatie.
+</warn>
+</p>
+<pre>
+# <i>/usr/afs/bin/bosserver -noauth &amp;</i>
+</pre>
+<p>
+Controleer of de BOS Server <path>/usr/vice/etc/CellServDB</path> en
+<path>/usr/vice/etc/ThisCell</path> aangemaakt heeft.
+</p>
+<pre>
+# <i>ls -al /usr/vice/etc/</i>
+-rw-r--r--    1 root     root           41 Jun  4 22:21 CellServDB
+-rw-r--r--    1 root     root            7 Jun  4 22:21 ThisCell
+</pre>
+
+</body>    
+</section>
+
+<section>
+<title>Definieren van een celnaam en celtoegang voor een server process</title>
+<body>
+<p>
+Geef nu namen aan je cells.
+</p>
+<p>      
+<impo>
+Er zijn enkele restricties wat betreft naamformaat. Twee hiervan zijn dat de
+naam geen hoofdletters mag bevatten en niet meer dan 64 karakters lang mag
+zijn. Herinner je dat de celnaam onder <path>/afs</path> komt te staan, dus
+neem een die gemakkelijk typt.
+</impo>
+</p>
+
+<note>
+Vanaf nu wordt in dit document <i>&lt;server naam&gt;</i> gebruikt. Gelieve
+telkens deze te vervangen met de volledige hostname (zoals
+<b>afs.gentoo.org</b>). Voor de <i>&lt;celnaam&gt;</i> vervang je deze
+natuurlijk met de werkelijke celnaam (bv <b>gentoo</b>).
+</note>
+<p>
+Voer <b>bos setcellname</b> uit om de celnaam in te stellen:
+</p>
+<pre>
+# <i>/usr/afs/bin/bos setcellname &lt;server naam&gt; &lt;celnaam&gt; -noauth</i>
+</pre>      
+</body>
+</section>
+<section>
+<title>Starten van de Database Server Process</title>
+<body><p>
+Voer nu <b>bos create</b> uit om de 4 databaseprocessen in
+<path>/usr/afs/local/BosConfig</path> in te stellen. Deze 4 processen draaien
+enkel op de servermachines.
+</p>
+<p>
+<table>
+<tr>
+<ti>kaserver</ti>
+<ti>
+De authentificatie server onderhoudt de authentificatie database. Deze kan
+vervangen worden door een Kerberos 5 daemon. Indien iemand dat wil proberen mag
+je gerust dit document hiernaartoe aanpassen :)
+</ti>
+</tr>
+<tr>
+<ti>buserver</ti>
+<ti>
+De backup server onderhoudt de backup database.
+</ti>
+</tr>
+<tr>
+<ti>ptserver</ti>
+<ti>
+De protectieserver onderhoudt de protectiedatabase.
+</ti>
+</tr>
+<tr>
+<ti>vlserver</ti>
+<ti>
+De volume localisatieserver onderhoudt de volume locatisatiedatabase (VLDB).
+Zeer belangrijk :)
+</ti>
+</tr>
+</table>    
+</p>
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; kaserver simple 
+/usr/afs/bin/kaserver -cell &lt;celnaam&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; buserver simple 
+/usr/afs/bin/buserver -cell &lt;celnaam&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; ptserver simple 
+/usr/afs/bin/ptserver -cell &lt;celnaam&gt; -noauth</i>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; vlserver simple 
+/usr/afs/bin/vlserver -cell &lt;celnaam&gt; -noauth</i>
+</pre>
+<p>
+Je kan snel zien of alle server draaien door <b>bos status</b> uit te voeren:
+</p>
+<pre>
+# <i>/usr/afs/bin/bos status &lt;server naam&gt; -noauth</i>
+Instance kaserver, currently running normally.
+Instance buserver, currently running normally.
+Instance ptserver, currently running normally.
+Instance vlserver, currently running normally.
+</pre>
+
+</body>
+</section>
+<section>
+<title>Initialiseren van de Cell Security</title>
+<body>
+<p>
+Nu gaan we de veiligheidsmaatregelen initialiseren. We beginnen met het
+aanmaken van de volgende 2 entries in de authentificatiedatabase: de
+hoofdadministratieve account, genaamd <b>admin</b>, en een entrie voor de AFS
+serverprocessen, genaamd <b>afs</b>. Niemand zal er inloggen onder <b>afs</b>,
+maar de Server's Ticket Granting Service (TGS) maakt gebruik van deze account
+om de servertickets die ze uitdeelt aan de AFS clients te encrypteren. Dit
+trekt dus enorm veel op Kerberos :)
+</p>
+<p>
+Voer <b>kas</b> uit in interactieve mode:
+</p>
+<pre>
+# <i>/usr/afs/bin/kas -cell &lt;celnaam&gt; -noauth</i>
+ka&gt; <i>create afs</i>
+initial_password:
+Verifying, please re-enter initial_password:
+ka&gt; <i>create admin</i>
+initial_password:
+Verifying, please re-enter initial_password:
+ka&gt; <i>examine afs</i>
+
+User data for afs
+key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:30 2001
+password will never expire.
+An unlimited number of unsuccessful authentications is permitted.
+entry never expires.  Max ticket lifetime 100.00 hours.
+last mod on Mon Jun  4 20:49:30 2001 by lt;none&gt;
+permit password reuse
+ka&gt; <i>setfields admin -flags admin</i>
+ka&gt; <i>examine admin</i>
+
+User data for admin (ADMIN)
+key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:59 2001
+password will never expire.
+An unlimited number of unsuccessful authentications is permitted.
+entry never expires.  Max ticket lifetime 25.00 hours.
+last mod on Mon Jun  4 20:51:10 2001 by lt;none&gt;
+permit password reuse
+ka&gt;
+</pre>
+<p>
+Voer het <b>bos adduser</b> commando uit om de <b>admin</b> gebruiker aan de
+<path>/usr/afs/etc/UserList</path> toe te voegen.
+</p>
+<pre>
+# <i>/usr/afs/bin/bos adduser &lt;server naam&gt; admin -cell &lt;celnaam&gt; -noauth</i>
+</pre>
+<p>
+Gebruik het <b>bos addkey</b> commando om de AFS server encryptiesleutel in
+<path>/usr/afs/etc/KeyFile</path> te definieren.
+</p>
+<note>
+Indien er gevraagd wordt naar de inputsleutel, geef dan het paswoord in dat je
+gegeven hebt bij de afs entrie toen je <b>kas</b> uitvoerde.
+</note>
+<pre>
+# <i>/usr/afs/bin/bos addkey  &lt;server naam&gt; -kvno 0 -cell &lt;celnaam&gt; -noauth</i>
+input key:
+Retype input key:
+</pre>
+<p>
+Voer het <b>pts createuser</b> commando uit om een beschermingsdatabase entrie
+aan te maken voor de admin gebruiker.
+</p>
+<note>
+Per default zal de Protection Server de AFS UID 1 aan de <b>admin</b> gebruiker
+geven, aangezien deze de eerste gebruiker is die je aanmaakt. Indien de locale
+passwd-file (<path>/etc/passwd</path> of equivalent) al een entrie heeft voor
+<b>admin</b> dat een andere UID gebruikt, maak dan gebruik van het <b>-id</b>
+argument om gelijke UIDs te gebruiken.
+</note>
+<pre>
+# <i>/usr/afs/bin/pts createuser -name admin -cell &lt;celnaam&gt; [-id &lt;AFS UID&gt;] -noauth</i>
+</pre>
+<p>
+Gebruik het <b>pts adduser</b> commando om de <b>admin</b> gebruiker een lid te
+maken van de system:administrators groep, en het <b>pts membership</b> commando
+om deze te verifieren.
+</p>
+<pre>
+# <i>/usr/afs/bin/pts adduser admin system:administrators -cell &lt;celnaam&gt; -noauth</i>
+# <i>/usr/afs/bin/pts membership admin -cell &lt;celnaam&gt; -noauth</i>
+Groups admin (id: 1) is a member of:
+system:administrators
+</pre>
+<p>
+Herstart alle AFS serverprocessen.
+</p>
+<pre>
+# <i>/usr/afs/bin/bos restart &lt;server naam&gt; -all -cell &lt;celnaam&gt; -noauth</i>
+</pre>
+</body>
+</section>
+<section>
+<title>
+Starten van de fileserver, volumeserver en Salvager
+</title>
+<body>
+<p>
+Start het <b>fs</b> process, dat bestaat uit de fileserver, volumeserver en
+Salvager.
+</p>
+
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; fs fs /usr/afs/bin/fileserver 
+/usr/afs/bin/volserver 
+/usr/afs/bin/salvager 
+-cell &lt;celnaam&gt; -noauth</i>
+</pre>
+<p>
+Controleer of alle processen draaien.
+</p>
+<pre>
+# <i>/usr/afs/bin/bos status &lt;servernaam&gt; -long -noauth</i>
+Instance kaserver, (type is simple) currently running normally.
+Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+Last exit at Mon Jun  4 21:07:17 2001
+Command 1 is '/usr/afs/bin/kaserver'
+
+Instance buserver, (type is simple) currently running normally.
+Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+Last exit at Mon Jun  4 21:07:17 2001
+Command 1 is '/usr/afs/bin/buserver'
+
+Instance ptserver, (type is simple) currently running normally.
+Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+Last exit at Mon Jun  4 21:07:17 2001
+Command 1 is '/usr/afs/bin/ptserver'
+
+Instance vlserver, (type is simple) currently running normally.
+Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
+Last exit at Mon Jun  4 21:07:17 2001
+Command 1 is '/usr/afs/bin/vlserver'
+
+Instance fs, (type is fs) currently running normally.
+Auxiliary status is: file server running.
+Process last started at Mon Jun  4 21:09:30 2001 (2 proc starts)
+Command 1 is '/usr/afs/bin/fileserver'
+Command 2 is '/usr/afs/bin/volserver'
+Command 3 is '/usr/afs/bin/salvager'
+</pre>
+<p>
+De volgende actie is afhankelijk van of je al AFS bestandsservers draaiende
+hebt gehad in de cel of niet:
+</p>
+<p>
+Indien je voor de eerste keer een AFS server in de cel installeert moet je een
+AFS volume aanmaken, <b>root.afs</b>.
+</p>
+<note>
+Voor de partitie's naam, substitueer &lt;partitienaam&gt; met de naam van je 
+computer's AFS Server partities. Bij conventie zijn deze <path>/vicex</path> 
+waar x in de range a-z gelegen is.
+</note>
+<pre>
+# <i>/usr/afs/bin/vos create &lt;servernaam&gt; 
+&lt;partitienaam&gt; root.afs 
+-cell &lt;celnaam&gt; -noauth</i>
+</pre>
+<p>
+Indien er bestaande AFS fileservermachines bestaan en er al volumes in de cel
+zitten, dan moet je <b>vos sncvldb</b> en <b>vos syncserv</b> uitvoeren zodat
+de VLDK gesynchroniseerd wordt met de werkelijke staat van de volumes op de
+locale machine. Deze zal alle nodige data overkopieren naar je nieuwe server.
+</p>
+<pre>
+# <i>/usr/afs/bin/vos syncvldb &lt;server naam&gt; -cell &lt;celnaam&gt; -verbose -noauth</i>
+# <i>/usr/afs/bin/vos syncserv &lt;server naam&gt; -cell &lt;celnaam&gt; -verbose -noauth</i> 
+</pre>
+</body>
+</section>
+<section>
+<title>Starten van de servers van de update server</title>
+<body>
+<pre>
+# <i>/usr/afs/bin/bos create &lt;server naam&gt; 
+upserver simple "/usr/afs/bin/upserver 
+-crypt /usr/afs/etc -clear /usr/afs/bin" 
+-cell &lt;celnaam&gt; -noauth</i>
+</pre>
+</body>
+</section>
+<section>
+<title>Configureren van de top level van het AFS bestandssysteem</title>
+<body>
+<p>
+Allereerst moet je enkele ACL's installeren zodat gebruikers <path>/afs</path>
+kunnen gebruiken.
+</p>
+<pre>
+# <i>/usr/afs/bin/fs setacl /afs system:anyuser rl</i>
+</pre>
+<p>
+Nu moet je een rootvolume aanmaken, readonly mounten op
+<path>/afs/&lt;celnaam&gt;</path> en lees/schrijf op
+<path>/afs/.&lt;celnaam&gt;</path>.
+
+<pre>
+# <i>/usr/afs/bin/vos create &lt;server naam&gt;&lt;partitienaam&gt; root.cell</i>
+# <i>/usr/afs/bin/fs mkmount /afs/&lt;celnaam&gt; root.cell </i>
+# <i>/usr/afs/bin/fs setacl /afs/&lt;celnaam&gt; system:anyuser rl</i>
+# <i>/usr/afs/bin/fs mkmount /afs/.&lt;celnaam&gt; root.cell -rw</i>     
+</pre>
+</p>
+<p>
+Blaas nu maar eens goed uit. We zijn klaar. Je hebt nu een werkend AFS
+bestandssysteem op je lokaal net. Het is nu tijd om een grote kop koffie te
+drinken en de AFS documentatie uit te printen.
+</p>
+<note>
+Het is zeer belangrijk dat de AFS server correct functioneert en dat alle
+systeemklokken gesynchroniseerd zijn. Dit doe je het best door een NTP-server
+te installeren op een machine (bv op de AFS server) en dan via een ntpclient
+alle clients hun klokken in te stellen. Dit kan je trouwens laten doen door de
+afsclient zelf.
+</note>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Basis Beheer</title>
+<section>
+<title></title>
+<body>
+<p>
+Nog te doen... momenteel lees je het best de AFS documentatie :)
+</p>
+</body>
+</section>
+</chapter>
+</guide>
