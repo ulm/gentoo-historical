@@ -1,7 +1,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.1 2003/11/20 10:52:35 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.2 2003/12/02 19:33:12 swift Exp $ -->
 
 <sections>
 <section>
@@ -10,23 +10,199 @@
 <title>What is a runlevel?</title>
 <body>
 
-</body>
-</subsection>
-<subsection>
-<title>We are different :)</title>
-<body>
+<p>
+When you boot your system, a number of tasks need to be performed before you are
+able to log on. This "normal" boot operation is fully defined -- it will be the
+same every time you restart your system. A <e>runlevel</e> is a state in which
+your system is running and contains a collection of scripts (runlevel scripts or
+<e>initscripts</e>) that must be executed when you enter or leave a runlevel.
+</p>
 
 </body>
 </subsection>
 <subsection>
-<title>Runlevels</title>
+<title>Booting your System</title>
 <body>
+
+<p>
+The process that takes care of the runlevels is called <c>init</c> and is also
+the first process started by the Linux kernel. <c>init</c>'s configuration file
+is called <path>/etc/inittab</path> and gets read immediately after <c>init</c>
+is started. In this configuration file, the commands used to enter a certain 
+runlevel are listed. For instance, after initialising the system (<e>si</e>), 
+the <b>boot</b> runlevel is started:
+</p>
+
+<pre caption="System initialisation lines in /etc/inittab">
+si::sysinit:/sbin/rc sysinit
+rc::bootwait:/sbin/rc boot
+</pre>
+
+<p>
+As you can see, <c>init</c> relies on the <c>rc</c> script. When started with 
+the "boot" argument, <c>rc</c> starts all scripts in the
+<path>/etc/runlevels/boot</path> directory. Don't think about the sequence used
+to start the scripts -- we will explain later how Gentoo uses dependencies for
+the init scripts.
+</p>
+
+<p>
+When the <b>boot</b> runlevel is completed (the boot runlevel is an intermediate
+one), <c>init</c> checks what runlevel it should start. If you have not defined
+one as kernel parameter, it will  use the one defined in
+<path>/etc/inittab</path>:
+</p>
+
+<pre caption="Default runlevel">
+id:3:initdefault:
+</pre>
+
+<p>
+In this case, the runlevel id is "3", and gets mapped to:
+</p>
+
+<pre caption="Mapping from number to readable commands in /etc/inittab">
+l3:3:wait:/sbin/rc default
+</pre>
+
+<p>
+In other words, the <c>rc</c> script is asked to activate the <b>default</b>
+runlevel. Again, this results in executing all
+<path>/etc/runlevels/default</path> scripts.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Numbers and Names</title>
+<body>
+
+<p>
+When you take a look at <path>/etc/inittab</path>, you will see the following
+section:
+</p>
+
+<pre caption="Defining the runlevels in /etc/inittab">
+l0:0:wait:/sbin/rc shutdown
+l1:S1:wait:/sbin/rc single
+l2:2:wait:/sbin/rc nonetwork
+l3:3:wait:/sbin/rc default
+l4:4:wait:/sbin/rc default
+l5:5:wait:/sbin/rc default
+l6:6:wait:/sbin/rc reboot
+</pre>
+
+<p>
+As you can see, there is a mapping of numbers to names (not vice versa). For
+instance, 0 maps to "shutdown", 1 to "single" etc. Vice versa is not true, as
+"default" is used by 3, 4 and 5. These numbers are the runlevel numbers. Most
+distributions work with the numbers; Gentoo however decided to make it a bit
+more userfriendly and continue with the naming.  
+</p>
+
+<p>
+As you can see from the listings, Gentoo defines 7 runlevels. Three of them are
+internal runlevels: <e>sysinit</e>, <e>shutdown</e> and <e>reboot</e>. The
+<b>sysinit</b> runlevel mounts all necessary filesystems as defined in
+<path>/etc/fstab</path>. The <b>shutdown</b> runlevel shuts down all running
+services and powers down the system. The <b>reboot</b> runlevel acts like the
+<e>shutdown</e> runlevel, but reboots the system instead of powering down.
+</p>
+
+<p>
+The other four runlevels are <e>boot</e>, <e>default</e>, <e>nonetwork</e> and
+<e>single</e>. Each of them has a subdirectory in <path>/etc/runlevels</path>
+containing scripts that need to be started when the runlevel is activated.
+</p>
 
 </body>
 </subsection>
 <subsection>
 <title>Working with the initscripts</title>
 <body>
+
+<p>
+If you take a closer look to <path>/etc/runlevels/default</path>, you will
+notice that it contains symbolic links to identically named scripts located in
+<path>/etc/init.d</path> and not just scripts as we mentioned previously. For 
+instance, <path>/etc/runlevels/default/postfix</path> is a symbolic link to
+<path>/etc/init.d/postfix</path>. In general we can say that such a script
+provides a service...
+</p>
+
+<p>
+Each script in <path>/etc/init.d</path> can be executed with the arguments
+<e>start</e>, <e>stop</e>, <e>restart</e>, <e>pause</e>, <e>zap</e>,
+<e>status</e>, <e>ineed</e>, <e>iuse</e>, <e>needsme</e>, <e>usesme</e> or
+<e>broken</e>.
+</p>
+
+<p>
+To start, stop or restart a service (and all depending services), <c>start</c>,
+<c>stop</c> and <c>restart</c> should be used:
+</p>
+
+<pre caption="Starting Postfix">
+# <i>/etc/init.d/postfix start</i>
+</pre>
+
+<p>
+If you want to stop a service, but not the services that depend on it, you can
+use the <c>pause</c> argument:
+</p>
+
+<pre caption="Stopping Postfix but keep the depending services running">
+# <i>/etc/init.d/postfix pause</i>
+</pre>
+
+<p>
+If you want to see what status a service has (started, stopped, paused, ...) you
+can use the <c>status</c> argument:
+</p>
+
+<pre caption="Status information for postfix">
+# <i>/etc/init.d/postfix status</i>
+</pre>
+
+<p>
+If the status information tells you that the service is running, but it doesn't,
+then you can reset the status information to "stopped" with the <c>zap</c>
+argument:
+</p>
+
+<pre caption="Resetting status information for postfix">
+# <i>/etc/init.d/postfix zap</i>
+</pre>
+
+<p>
+To also ask what dependencies the service has, you can use <c>iuse</c> or
+<c>ineed</c>. With <c>ineed</c> you can see the services that are really
+necessary for the correct functioning of the service. <c>iuse</c> on the other
+hand shows the services that can be used by the service, but are not necessary
+for the correct functioning.
+</p>
+
+<pre caption="Requesting a list of all necessary services on which Postfix depends">
+# <i>/etc/init.d/postfix ineed</i>
+</pre>
+
+<p>
+Similarly, you can ask what services require the service (<c>needsme</c>) or can
+use it (<c>usesme</c>):
+</p>
+
+<pre caption="Requesting a list of all services that require Postfix">
+# <i>/etc/init.d/postfix needsme</i>
+</pre>
+
+<p>
+Finally, you can ask what dependencies the service requires but that are
+missing:
+</p>
+
+<pre caption="Requesting a list of missing dependencies for Postfix">
+# <i>/etc/init.d/postfix broken</i>
+</pre>
 
 </body>
 </subsection>
@@ -37,17 +213,49 @@
 <title>What is rc-update?</title>
 <body>
 
+<p>
+Gentoo's init system uses a dependency-tree to decide what service needs to be
+started first. As this is a tedious task that we wouldn't want our users to do
+manually, we have created tools that ease the administration of the runlevels
+and init scripts.
+</p>
+
+<p>
+With <c>rc-update</c> you can add and remove init scripts to a runlevel. The
+<c>rc-update</c> tool will then automatically ask the <c>depscan.sh</c> script
+to rebuild the dependency tree.
+</p>
+
 </body>
 </subsection>
 <subsection>
 <title>Adding and Removing Services</title>
 <body>
 
-</body>
-</subsection>
-<subsection>
-<title>Other rc-update Magic</title>
-<body>
+<p>
+You have already added init scripts to the "default" runlevel during the
+installation of Gentoo. At that time you might not had a clue what the
+"default" is for, but now you should. The <c>rc-update</c> script requires a
+second argument that defines the action: <e>add</e>, <e>del</e> or <e>show</e>.
+</p>
+
+<p>
+To add or remove an init script, just give <c>rc-update</c> the <c>add</c> or
+<c>del</c> argument, followed by the init script and the runlevel. For instance:
+</p>
+
+<pre caption="Removing Postfix from the default runlevel">
+# <i>rc-update del postfix default</i>
+</pre>
+
+<p>
+The <c>rc-update show</c> command will show all the available init scripts and
+list at which runlevels they will execute:
+</p>
+
+<pre caption="Receiving init script information">
+# <i>rc-update show</i>
+</pre>
 
 </body>
 </subsection>
@@ -55,8 +263,21 @@
 <section>
 <title>Configuring Services</title>
 <subsection>
-<title>Why the need for extra configuration?</title>
+<title>Why the Need for Extra Configuration?</title>
 <body>
+
+<p>
+Init scripts can be quite complex. It is therefor not really interesting to have
+the users directly edit the init script, as it would make it more error-prone.
+It is however important to be able to configure such a service. For instance,
+you might want to give more options to the service itself.
+</p>
+
+<p>
+A second reason to have this configuration outside the init script is to be able
+to update the init scripts without being afraid that your configuration changes
+are undone.
+</p>
 
 </body>
 </subsection>
@@ -64,14 +285,45 @@
 <title>The /etc/conf.d Directory</title>
 <body>
 
+<p>
+Gentoo provides an easy way to configure such a service: every init script that
+can be configured has a file in <path>/etc/conf.d</path>. For instance, the
+apache2 initscript (called <path>/etc/init.d/apache2</path>) has a
+configuration file called <path>/etc/conf.d/apache2</path>, which can contain
+the options you want to give to the Apache 2 server when it is started:
+</p>
+
+<pre caption="Variable defined in /etc/conf.d/apache2">
+APACHE2_OPTS="-D PHP4"
+</pre>
+
+<p>
+Such a configuration file contains variables and variables alone (just like
+<path>/etc/make.conf</path>), making it very easy to configure services. It also
+allows us to provide more information about the variables (as comments).
+</p>
+
 </body>
 </subsection>
 </section>
 <section>
-<title>Writing Initscripts</title>
+<title>Writing Init Scripts</title>
 <subsection>
 <title>Do I Have To?</title>
 <body>
+
+<p>
+No. Writing an init script is usually not necessary as Gentoo provides
+ready-to-use init scripts for all provided services. However, you might have
+installed a service without using Portage, in which case you will most likely
+have to create an init script.
+</p>
+
+<p>
+Do not use the init script provided by the service if it isn't explicitly
+written for Gentoo: Gentoo's init scripts are not compatible with the init
+scripts used by other distributions!
+</p>
 
 </body>
 </subsection>
@@ -79,11 +331,91 @@
 <title>Layout</title>
 <body>
 
+<p>
+The basic layout of an init script is shown below.
+</p>
+
+<pre caption="Basic layout of an init script">
+#!/sbin/runscript
+
+depend() {
+  <comment>(Dependency information)</comment>
+}
+
+start() {
+  <comment>(Commands necessary to start the service)</comment>
+}
+
+stop() {
+  <comment>(Commands necessary to stop the service)</comment>
+}
+
+restart() {
+  <comment>(Commands necessary to restart the service)</comment>
+}
+</pre>
+
+<p>
+Any init script <e>requires</e> the <c>start()</c> function to be defined. All
+other sections are optional.
+</p>
+
 </body>
 </subsection>
 <subsection>
 <title>Dependencies</title>
 <body>
+
+<p>
+There are two dependencies you can define: <c>use</c> and <c>need</c>. As we
+have mentioned before, the <c>need</c> dependency is more strict than the
+<c>use</c> dependency. Following this dependency type you enter the service
+you depend on, or the <e>virtual</e> dependency.
+</p>
+
+<p>
+A <e>virtual</e> dependency is a dependency that a service provides, but that is
+not provided solely by that service. Your init script can depend on a system
+logger, but there are many system loggers available (metalogd, syslog-ng,
+sysklogd, ...). As you cannot <c>need</c> every single one of them (no sensible
+system has all these system loggers installed and running) we made sure that
+all these services <c>provide</c> a virtual dependency.
+</p>
+
+<p>
+Let us take a look at the dependency information for the postfix service.
+</p>
+
+<pre caption="Dependency information for Postfix">
+depend() {
+  need net
+  use logger dns
+  provide mta
+}
+</pre>
+
+<p>
+As you can see, the postfix service:
+</p>
+
+<ul>
+  <li>
+    requires the (virtual) <c>net</c> dependency (which is provided by, for
+    instance, <path>/etc/init.d/net.eth0</path>)
+  </li>
+  <li>
+    uses the (virtual) <c>logger</c> dependency (which is provided by, for 
+    instance, <path>/etc/init.d/syslog-ng</path>)
+  </li>
+  <li>
+    uses the (virtual) <c>dns</c> dependency (which is provided by, for
+    instance, <path>/etc/init.d/named</path>)
+  </li>
+  <li>
+    provides the (virtual) <c>mta</c> dependency (which is common for all mail 
+    servers)
+  </li>
+</ul>
 
 </body>
 </subsection>
@@ -91,11 +423,37 @@
 <title>Controlling the Order</title>
 <body>
 
-</body>
-</subsection>
-<subsection>
-<title>Virtual Services</title>
-<body>
+<p>
+In some cases you might not require a service, but want your service to be
+started <c>before</c> (or <c>after</c>) another service <e>if</e> it is
+available on the system (note the conditional - this is no dependency anymore)
+<e>and</e> ran in the same runlevel (note the conditional - only services in the
+same runlevel are involved). You can provide this information using the 
+<c>before</c> or <c>after</c> settings.
+</p>
+
+<p>
+As an example we view the settings of the Portmap service:
+</p>
+
+<pre caption="The depend() function in the Portmap service">
+depend() {
+  need net
+  before inetd
+  before xinetd
+}
+</pre>
+
+<p>
+You can also use the "*" glob to catch all services in the same runlevel,
+although this isn't adviseable.
+</p>
+
+<pre caption="Running an init script as first script in the runlevel">
+depend() {
+  before *
+}
+</pre>
 
 </body>
 </subsection>
@@ -103,17 +461,84 @@
 <title>Standard Functions</title>
 <body>
 
+<p>
+Next to the <c>depend()</c> functionality, you also need to define the
+<c>start()</c> function. This one contains all the commands necessary to
+initialise your service. It is adviseable to use the <c>ebegin</c> and
+<c>eend</c> functions to inform the user about what is happening:
+</p>
+
+<pre caption="Example start() function">
+start() {
+  ebegin "Starting my_service"
+  start-stop-daemon --start --quiet --exec /path/to/my_service
+  eend $?
+}
+</pre>
+
+<p>
+If you need more examples of the <c>start()</c> function, please read the source
+code of the available init scripts in your <path>/etc/init.d</path> directory.
+As for <c>start-stop-daemon</c>, there is an excellent man page available if you
+need more information:
+</p>
+
+<pre caption="Getting the man page for start-stop-daemon">
+# <i>man start-stop-daemon</i>
+</pre>
+
+<p>
+Other functions you can define are: <c>stop()</c> and <c>restart()</c>. You are
+not obliged to define these functions! Our init system is intelligent enough to
+fill these functions in herself if you use <c>start-stop-daemon</c>.
+</p>
+
 </body>
 </subsection>
 <subsection>
 <title>Adding Custom Options</title>
 <body>
 
+<p>
+If you want your init script to support more options than the ones we have
+already encountered, you should add the option to the <c>opts</c> variable, and
+create a function with the same name as the option. For instance, to support an
+option called <c>restartdelay</c>:
+</p>
+
+<pre caption="Supporting the restartdelay option">
+opts="${opts} restartdelay"
+
+restartdelay() {
+  stop()
+  sleep 3    <comment># Wait 3 seconds before starting again</comment>
+  start()
+}
+</pre>
+
 </body>
 </subsection>
 <subsection>
 <title>Service Configuration Variables</title>
 <body>
+
+<p>
+You don't have to do anything to support a configuration file in
+<path>/etc/conf.d</path>: if your init script is executed, the following files
+are automatically sourced (i.e. the variables are available to use):
+</p>
+
+<ul>
+  <li><path>/etc/conf.d/&lt;your init script&gt;</path></li>
+  <li><path>/etc/conf.d/basic</path></li>
+  <li><path>/etc/rc.conf</path></li>
+</ul>
+
+<p>
+Also, if your init script provides a virtual dependency (such as <c>net</c>),
+the file associated with that dependency (such as <path>/etc/conf.d/net</path>)
+will be sourced too.
+</p>
 
 </body>
 </subsection>
