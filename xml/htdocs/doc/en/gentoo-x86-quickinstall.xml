@@ -1,0 +1,230 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<guide link="/doc/en/quickinstall.xml">
+<title>Gentoo Linux Install Reference</title>
+<author title="Author">Steven Wagner</author>
+<author title="Editor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+The Quick install reference covers all details of the install process in a 
+non-verbose manner. Users should already have prior experience with 
+installing gentoo linux if they want to follow this guide.</abstract>
+<license/>
+<version>1.0</version>
+<date>October 9, 2003</date>
+
+<chapter>
+<title>Quick Install Reference</title>
+<body>
+
+<p>
+The installation ISOs are on the <uri link=
+"http://www.gentoo.org/main/en/mirrors.xml">Gentoo Mirrors</uri>. Detailed 
+descriptions of the different CDs are available in the <uri 
+link="http://store.gentoo.org">Gentoo Store</uri>. CD 1 contains
+everything you need to install Gentoo Linux quickly and without a
+connection to the Internet. CD2 is optional and contains pre-compiled packages 
+such as KDE, GNOME, OpenOffice, Mozilla, Evolution and more.
+</p>
+
+<p>
+Boot from the first Gentoo CD. Press &lt;F1&gt; and/or &lt;F2&gt; to
+see what boot options are available. Press &lt;ENTER&gt; at the bootscreen to 
+continue with the default kernel. You'll eventually receive a prompt.
+</p>
+
+<pre caption="Beginning settings">
+# <i>date</i>  (Make sure your time and date is correct. If wrong, set it with  <i>date MMDDhhmmCCYY</i> )
+# <i>modprobe module_name</i>  (Optional - Load any necessary modules)
+# <i>net-setup eth0</i> (Configure the network)
+# <i>fdisk /dev/hda</i> (Partition your drive)
+</pre>
+
+<p>
+The recommended setup is a 64 meg boot volume with ext3, a swap partition 
+twice the size of your available RAM, and the rest for your root partition 
+using ReiserFS.
+</p>
+
+<p>
+Initialise your partitions using <c>mke2fs</c> (Ext2), <c>mke2fs
+-j</c> (Ext3), <c>mkreiserfs</c> (ReiserFS), <c>mkfs.xfs</c> (XFS),
+<c>mkfs.jfs</c> (JFS) and <c>mkswap</c> (swap partition). For instance:
+<c>mke2fs -j /dev/hda3</c>.
+</p>
+
+<p>
+Continue by mounting the partitions and extracting the appropriate stage
+file.
+</p>
+
+<pre caption="Preparing the Installation">
+(Activate the swap partition)                    # <i>swapon /dev/hdax</i>
+(Mount the root partition)                       # <i>mount /dev/hdax /mnt/gentoo</i>
+(Create the boot mountpoint)                     # <i>mkdir /mnt/gentoo/boot</i>
+(Mount the boot partition)                       # <i>mount /dev/hdax /mnt/gentoo/boot</i>
+(Go to the mountpoint)                           # <i>cd /mnt/gentoo</i>
+(Extract a stage tarball...)                     # <i>tar -xvjpf /mnt/cdrom/stages/stage?-*.tar.bz2</i>
+(<comment>or</comment> download the latest tarball...)              # <i>links http://gentoo.oregonstate.edu/releases/x86/1.4/</i>
+(                  ... and extract)              # <i>tar -xvjpf stage*</i>
+(GRP-only: unpack a portage tree)                # <i>tar -xvjf /mnt/cdrom/snapshots/portage-*.tar.bz2 -C /mnt/gentoo/usr</i>
+(GRP-only: copy over distfiles)                  # <i>cp -R /mnt/cdrom/distfiles /mnt/gentoo/usr/portage/distfiles</i>
+(GRP-only: copy over packages)                   # <i>cp -a /mnt/cdrom/packages /mnt/gentoo/usr/portage/packages</i>
+(Select a mirror)                                # <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+(Copy over nameserver information)               # <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+(Mount the proc filesystem)                      # <i>mount -t proc proc /mnt/gentoo/proc</i>
+(Chroot into the new environment)                # <i>chroot /mnt/gentoo /bin/bash</i>
+(Load the necessary variables)                   # <i>env-update; source /etc/profile</i>
+(Network-only, non-GRP: update Portage)          # <i>emerge sync</i>
+</pre>
+
+<p>
+Now we install Gentoo:
+</p>
+
+<pre caption = "Installing Gentoo">
+(Change USE, CFLAGS and CXXFLAGS. Stage1 can also change CHOST)  # <i>nano -w /etc/make.conf</i>
+(Stage1 only: bootstrap system)                                  # <i>cd /usr/portage; scripts/bootstrap.sh</i>
+(Stage1, Stage2 only: install base system)                       # <i>emerge system</i>
+</pre>
+
+<p>
+Next we set up the necessary information:
+</p>
+
+<pre caption = "Setting up Configuration Files">
+(Set timezone information)                        # <i>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</i>
+(Edit fstab file)                                 # <i>nano -w /etc/fstab</i>
+</pre>
+
+<p>
+Use the following as a <e>template</e> (don't copy verbatim) for
+<path>/etc/fstab</path>:
+</p>
+
+<pre caption="/etc/fstab">
+# &lt;fs&gt;                  &lt;mountpoint&gt;    &lt;type&gt;          &lt;opts&gt;                  &lt;dump/pass&gt;
+/dev/hdax               /boot           ext3            noauto,noatime          1 2
+/dev/hdax               /               reiserfs        noatime                 0 1
+/dev/hdax               none            swap            sw                      0 0
+/dev/cdroms/cdrom0      /mnt/cdrom      iso9660         noauto,ro,user          0 0
+none                    /proc           proc            defaults                0 0
+none                    /dev/shm        tmpfs           defaults                0 0
+/dev/hdax               /mnt/dosc       ntfs            ro,noatime,umask=0222   0 0
+</pre>
+
+<p>
+Continue by installing the Linux kernel:
+</p>
+
+<pre caption="Installing the Kernel">
+(Install the kernel sources)                               # <i>emerge -k sys-kernel/gentoo-sources</i>
+(Configure your kernel using genkernel...)                 # <i>emerge -k genkernel; genkernel</i>
+(<comment>or</comment> (1) manually build your kernel)                        # <i>cd /usr/src/linux; make menuconfig;</i>
+(   (2) Include VM fs, /proc fs, /dev fs,  /dev fs auto mount at boot)
+(   (3) Compile your kernel)                               # <i>make dep &amp;&amp; make clean bzImage modules modules_install</i>
+(   (4) Copy over the kernel)                              # <i>cp arch/i386/boot/bzImage /boot; cp System.map /boot</i>
+</pre>
+
+<p>
+Now install other tools you might want:
+</p>
+
+<pre caption = "Install important system tools">
+(Install system logger; choice: sysklogd, metalog, msyslog, syslog-ng) # <i>emerge -k app-admin/syslog-ng </i>
+(Have the systemlogger automatically started at boot)                  # <i>rc-update add syslog-ng default</i>
+(Install cron daemon; choice: vcron, dcron, fcron)                     # <i>emerge -k sys-apps/vcron</i>
+(Have the cron daemon automatically started at boot)                   # <i>rc-update add vcron default</i>   
+(genkernel users only: install hotplug)                                # <i>emerge -k hotplug</i>
+(genkernel users only: have hotplug automatically started at boot)     # <i>rc-update add hotplug default</i>
+(Non-ext2,ext3 users only; choice: reiserfsprogs, xfsprogs, jfsutils)  # <i>emerge -k reiserfsprogs</i>
+</pre>
+
+<p>
+If you need specialised kernel ebuilds, now is a good time to install them:
+</p>
+
+<pre caption = "Install Specialised Kernel Ebuilds">
+# <i>emerge -k pcmcia-cs</i> (or <i>emu10k1</i>, <i>nforce-net</i>, <i>nforce-audio</i>, <i>e100</i>, <i>e1000</i>, <i>ati-drivers</i>, <i>rp-pppoe</i>)
+# <i>VIDEO_CARDS="yourcard" emerge xfree-drm</i>   (for ATI Radeon up to 9200, Rage128, Matrox, Voodoo and other cards)
+</pre>
+
+<p>
+Finalise the settings for your Gentoo system:
+</p>
+
+<pre caption = "Finalise the Configuration Settings">
+(Set root password)                                      # <i>passwd</i>
+(Create a user)                                          # <i>useradd your_user -m -G users,wheel,audio -s /bin/bash</i>
+(Set password for that user)                             # <i>passwd your_user</i>
+(Set the system hostname)                                # <i>echo mymachine &gt; /etc/hostname</i>
+(Set the system domainname)                              # <i>echo mydomain.com &gt; /etc/dnsdomainname</i>
+(Set the hostsfile, at least set "127.0.0.1 mymachine")  # <i>nano -w /etc/hosts</i>
+</pre>
+
+<pre caption = "Set up Networking">
+(Setup networking; dhcp-users should set iface_eth0="dhcp")      # <i>nano -w /etc/conf.d/net</i>
+(List modules to be loaded at startup)                           # <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+(Configure basic system settings; follow comments)               # <i>nano -w /etc/rc.conf</i>
+(Non-PCMCIA only: start networking automatically at boot)        # <i>rc-update add net.eth0 default</i>
+(Only if you have multiple network interfaces:)
+   (1) Create initscripts for each interface)                    # <i>ln -s /etc/init.d/net.eth0 /etc/init.d/net.ethx</i>
+   (2) Automatically start at boot if no PCMCIA)                 # <i>rc-update add net.ethx default</i>
+(PCMCIA only: verify /etc/conf.d/pcmcia and load PCMCIA at boot) # <i>rc-update add pcmcia boot</i>
+</pre>
+
+<p>
+Now install a bootloader. Left is for grub, right for lilo:
+</p>
+
+<pre caption = "Install and Configure a bootloader">
+# <i>emerge -k grub</i>                                          | # <i>emerge -k lilo</i>
+# <i>grub</i>                                                    | # <i>nano -w /etc/lilo.conf</i>
+grub&gt; <i>root (hd0,0)</i>   (Boot partition)                     |  boot=/dev/hda
+grub&gt; <i>setup (hd0)</i>    (Install on MBR)                     |  prompt 
+grub&gt; <i>quit</i>                                                |  timeout=50
+# <i>nano -w /boot/grub/grub.conf</i>                            |  default=gentoo
+  default 0                                               |  
+  timeout 15                                              |  <comment># Genkernel only:</comment>
+  splashimage=(hd0,0)/grub/splash.xpm.gz                  |  image=/boot/kernel-<comment>&lt;kernel version&gt;</comment>
+                                                          |    root=/dev/hda3
+  title=Gentoo Linux                                      |    label=gentoo
+    root (hd0,0)                                          |  
+  <comment># Genkernel only:</comment>                                       |  <comment># Non-genkernel only:</comment>
+    kernel (hd0,0)/kernel-<comment>&lt;kernel version&gt;</comment> root=/dev/hda3 |  image=/boot/bzImage
+    initrd (hd0,0)/initrd-<comment>&lt;kernel version&gt;</comment>                |    root=/dev/hda3
+  <comment># Non-genkernel only:</comment>                                   |    label=gentoo
+    kernel (hd0,0)/bzImage                                | 
+                                                          |  <comment># For dualbooting:</comment>
+  <comment># For dualbooting:</comment>                                      |  other=/dev/hda<comment>X</comment>
+  title=Windows XP                                        |    label=windows
+    root (hd0,5)                                          | 
+    chainloader (hd0,5)+1                                 | # <i>/sbin/lilo</i> 
+</pre>
+
+<p>
+Now unmount all partitions and reboot into your new system:
+</p>
+
+<pre caption="Finishing off and installing GUI">
+(Updating configuration files)                  # <i>etc-update</i>
+(Exiting the chroot)                            # <i>exit; cd /</i>
+(Unmounting partitions)                         # <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+(Reboot; Remove the install CD from the tray)   # <i>reboot</i>
+(After booting:)
+(ADSL-users only)                               # <i>adsl-setup</i>
+(GRP-users only, optional CD2 usage)
+(  (1) Mount CD2)                               # <i>mount /dev/cdrom /mnt/cdrom</i>  
+(  (2) Copy over packages)                      # <i>cp -a /mnt/cdrom/packages/* /usr/portage/packages/</i>
+(  (3) Install extra software)                  # <i>emerge -k xfree gnome kde mozilla openoffice-bin</i>
+(  (4) Configure your Xserver)                  # <i>/usr/X11R6/bin/xf86config</i>
+</pre>
+
+<p>
+You can get more information from the <uri link="http://www.gentoo.org/main/en/docs.xml">Gentoo Documentation</uri>.
+</p>
+</body></chapter>	
+
+</guide>
+
