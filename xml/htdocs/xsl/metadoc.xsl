@@ -476,6 +476,9 @@
           <uri link="http://bugs.gentoo.org/show_bug.cgi?id={$bugid}">
             <xsl:value-of select="$bugid"/>
           </uri>
+          <xsl:if test="@arch">
+              (<xsl:value-of select="@arch"/>)
+          </xsl:if>
           <xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each>
       </ti>
@@ -513,6 +516,9 @@
           <uri link="http://bugs.gentoo.org/show_bug.cgi?id={$bugid}">
             <xsl:value-of select="$bugid"/>
           </uri>
+          <xsl:if test="@arch">
+            (<xsl:value-of select="@arch"/>)
+          </xsl:if>
           <xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each>
       </ti>
