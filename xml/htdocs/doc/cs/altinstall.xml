@@ -1,0 +1,359 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<guide link="/doc/cs/altinstall.xml">
+<title>The Gentoo Linux alternativní instalační HOWTO</title>
+<author title="Author"><mail link="lordviram@rebelpacket.net">Travis Tilley</mail></author>
+<author title="Contributor"><mail link="davoid@gentoo.org">Faust A.  Tanasescu</mail></author>
+<author title="Contributor"><mail link="aliz@gentoo.org">Daniel Ahlberg</mail></author>
+<abstract>
+Tento návod (Howto) je míněn jako seznam alternativních metod instalace pro ty,
+kteří se ocitli ve speciální situaci jako nepřítomnost cdrom mechaniky, nebo
+počítač, který neumí startovat z cdrom mechaniky.
+</abstract>
+
+<version>0.3</version>
+<date>10 September 2002</date>
+
+<chapter>
+<title>O tomto dokumentu</title>
+<section>
+<body>
+
+<p>Jestliže nemůžete použít standardní startuj-z-CD instalační metodu
+(nebo ji prostě nemáte rádi), exsistuje pro vás řešení.
+Tento dokument slouží jako seznam alternativních instalačních metod 
+pro ty, jenž je potřebují.
+Nebo, pokud se vám to bude líbit více, jako místo pro "neobvyklé"
+metody instalace. Pokud máte nějakou instalační metodu, kterou pokládáte
+za užitečnou, nebo jste objevili nějaký "zábavný" způsob instalace,
+nestyďte se něco sepsat a
+<mail link="lordviram@rebelpacket.net">poslat mi to.</mail></p>
+
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Instalace pomocí startování ze sítě</title>
+<section>
+<title>Požadavky</title>
+<body>
+<p>Požadavky pro instalaci pomocí startování ze sítě jsou: 
+server, který poskytuje tftp službu a počítač, který je schopen nastartovat
+ze sítě pomocí síťové podpory v BIOSu nebo pomocí diskety s GRUBem nebo jiným
+zavaděčem se síťovými službami. Eventuálně je třeba také DHCP server.
+Samozřejmě je třeba též poslední ISO build, který je možno nalézt na
+<uri>http://www.ibiblio.org/gentoo/releases/build/</uri></p>
+</body>
+</section>
+
+<section>
+<title>Přehled</title>
+<body>
+
+<p>Pokud chceme nahrát "image" ze sítě, musí nastartovaný počítač obdržet
+IP adresu. Je několik způsobů, jak to provést a každý z nich poslouží.
+Osobně preferuji GRUB na všechno, ale pokuď váš počítač umí startovat ze sítě,
+GRUB není podmínkou, i když je snadnější použít jeho příkaz <c>ifconfig</c>
+místo nastavování bootp nebo dhcp serveru.</p>
+
+<p>Jakmile váš počítač obdrží IP adresu, příštím logickým krokem je nalézt to,
+co budete startovat a kde to uložit. Ještě jednou, jde to snadněji pomocí
+příkazů GRUBu, než nastavovat bootp nebo dhcp server. Je potřeba také
+specifikovat, jak získat initrd a říci kernelu, že to bude jeho
+kořenový souborový systém.</p>
+
+<p>S nahraným kernelem a připojeným kořenovým souborovým systémem můžete
+pokračovat v instalaci jako obvykle. Build image může být nahrán z cd
+nebo stáhnut ze sítě pomocí tftp.</p>
+
+</body>
+</section>
+<section>
+<title>Použití GRUB</title>
+<body>
+
+<p>Pro využití schopností GRUBu pro startovaní ze sítě musíte mít
+GRUB zkompilovaný s podporou vaší síťové karty. Nezáleží, zda GRUB
+instalujete na disketu nebo na pevný disk, který bude v počítači, na kterém
+později bude Gentoo systém. Pokud váš cíl již má GRUB s touto
+podporou, jste o jeden krok dále. GRUB je možno získat z
+<uri>ftp://alpha.gnu.org/gnu/grub/</uri></p>
+
+<p>Příklad parametrů configure, které nastaví podporu karty tulip, síťové
+karty v mém počítači:</p>
+
+<pre caption="Samostatná instalace GRUBu">
+# <i>./configure --enable-tulip --prefix=/usr</i>
+# <i>make &amp;&amp; make install</i>
+</pre>
+
+<p>Pokud jste právě v systému Gentoo a přejete si instalovat GRUB pomocí
+jeho nástrojů, je potřeba instalovat krok po kroku pro dodání podpory
+síťové karty. Následuje příklad využití příkazu ebuild pro instalaci
+GRUBu s podporou síťové karty tulip:</p>
+
+<pre caption="Instalace a konfigurace GRUBu v Gentoo Linuxu">
+# <i>ebuild /usr/portage/sys-apps/grub/grub-0.91.ebuild clean fetch unpack</i>
+# <i>cd /var/tmp/portage/grub-0.91/work/grub-0.91/</i>
+# <i>./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man \ </i>
+> <i>--infodir=/usr/share/info --enable-tulip</i>
+# <i>make</i>
+# <i>touch /var/tmp/portage/grub-0.91/.compiled</i>
+# <i>cd /usr/portage/</i>
+# <i>ebuild sys-apps/grub/grub-0.91.ebuild install merge</i>
+</pre>
+
+<p>Nyní máme nainstalován GRUB shell a je potřeba nainstalovat zaváděcí
+sektor. Ačkoli je možné nainstalovat zaváděcí sektor na pevný disk
+vašeho budoucího Gentoo systému, zde předpokládáme instalaci na disketu.
+Jsou dva způsoby, jak to provést. Můžete použít příkazy GRUBu nebo
+využít dodávaného skriptu nazvaného <c>grub-install</c>. Při instalaci
+na disketu je doporučeno využít <c>grub-install</c> skriptu.</p>
+
+<pre caption="příklad s použitím grub-install skriptu">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>grub-install --root-directory=/mnt/floppy/ '(fd0)'</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p><c>grub-install</c> nepracuje vždy spolehlivě... a není vždy nejlepším
+způsobem pro instalaci GRUBu. A protože GRUB shell pracuje stejně jako v případě
+jeho spuštění při startu počítače, je někdy výhodnější použít přímo jeho.
+Zde je příklad použití příkazů GRUBu pro instalaci zaváděcího sektoru
+na disketu:</p>
+
+<pre caption="Instalace pomocí příkazů GRUBu">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>mkdir -p /mnt/floppy/boot/grub/</i>
+# <i>cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/</i>
+# <i>grub</i>
+grub> <i>root (fd0)</i>
+grub> <i>setup (fd0)</i>
+grub> <i>quit</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>Nyní, když máme bootovací GRUB disketu, potřebujeme ještě nastavit tftp server
+(doporučuji netkit tftp server) pro nahrání našeho kernelu a initrd. Pokud
+používáte inetd, je třeba dodat řádku do vašeho <path>/etc/inetd.conf</path>,
+která bude vypadat takto:</p>
+
+<pre caption="/etc/inetd.conf">
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+
+<p>Pro nainstalování balíku netkit tftp serveru pod gentoo linuxem použijte
+příkaz: emerge net-misc/netkit-tftp</p>
+
+<note>Existuje též ebuild pro xinetd... pokud mu dáváte přednost, lze jej vužít také.
+Ale já nepoužívám xinetd a nevím jak nakonfigurovat tftp server pomocí xinetd.
+Pokud jej využíváte, prosím, zašlete mi informaci, jak jej nastavit, a já ji
+doplním do tohoto howto.</note>
+
+<p>Nyní, když máme připraven tftp server, je potřeba do něj vložit kernel a
+initrd. Lze zkompilovat vlastní kernel, ale je potřeba zajistit, aby obsahoval
+vše, co je potřeba pro běh gentoo linuxu (jako devfs) a pro start ze sítě
+(jako podporu initrd). Jako initrd použijeme rescue.gz, které je součástí
+gentoo ISO.</p>
+
+<impo>Připojení ISO souboru bez potřeby jeho vypálení na cd vyžaduje podporu
+loopback souborového systému.</impo>
+
+<pre>
+# <i>mkdir /tftpboot</i>
+# <i>mount -o loop /path/to/build-ix86-1.0_rc6-r14.iso /mnt/cdrom/</i>
+# <i>cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot</i>
+# <i>chmod 644 /tftpboot/*</i>
+# <i>umount /mnt/cdrom/</i>
+</pre>
+
+<p>Nastartujte počítač z vaší neskutečně užitečné grub diskety.
+Jakmile systém naběhne, je třeba specifikovat způsob získání
+IP adresy, kernelu s parametry a kde získat initrd.</p>
+
+<pre>
+grub> <i>ifconfig --address=192.168.0.10 --server=192.168.0.2</i>
+grub> <i>root (nd)</i>
+grub> <i>kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 </i>
+      <i>prompt_ramdisk=0 ramdisk_size=18580 root=/dev/ram0 rw</i> <comment>(vše na jedné řádce)</comment>
+grub> <i>initrd /tftpboot/rescue.gz</i>
+grub> <i>boot</i>
+</pre>
+
+<note>Grub lze také využít pro konfiguraci IP s pomocí bootp a dhcp. Použijte
+bootp a dhcp příkazy.</note>
+
+<p>Nyní, kdy je váš počítač spuštěn, můžete pokračovat jako při normální instalaci.
+Viz. návod k instalaci na instalačním gentoo cd.</p>
+
+</body>
+</section>
+</chapter>
+
+
+
+
+
+<chapter> <title>Instalace Gentoo z existující Linuxové distribuce</title> 
+<section> <title> Požadavky </title> 
+<body>
+<p>Pro instalaci Gentoo z již existující Linuxové distribuce je třeba mít
+nainstalován příkaz chroot a mít zkopírován Gentoo instalační tar balík nebo
+ISO, které chcete instalovat. Připojení k síti je třeba v případě, že chcete
+více, než je obsaženo ve vašem balíku (mimochodem, tar balík je prostě
+soubor zakončený příponou .tbz nebo .tar.gz). Autor použil RedHat Linux 7.3
+jako "host" operační systém, ale to není příliš důležité. Začněme!</p>
+</body>
+</section>
+
+<section> <title> Přehled </title>
+<body>
+<p>Za prvé uvolníme místo na disku a vytvoříme nový oddíl pro náš budoucí systém Gentoo 
+pomocí změny velikosti již existujícího Linuxového oddílu. Pak připojíme tento nový oddíl, 
+rozpakujeme tar balík, pomocí příkazu chroot se přepneme do našeho "proto" systému a zahájíme 
+vytváření. Jakmile bude dokončen proces bootstrap, provedeme konečnou konfiguraci na systému 
+pro jeho nastartování. A jsme připraveni nastartovat a používat systém Gentoo. </p>
+</body>
+</section>
+
+<section> <title> Jak vytvořit místo pro náš Gentoo systém? </title>
+<body>
+
+<p>
+Kořenový oddíl je souborový systém připojený pod "/". Rychlé provedení příkazu mount ukáže o čem hovořím.
+Použijeme také příkaz df (disk free) pro zjištění, kolik je volného místa a jak změnit velikost.
+Uvědomte si, že není povinné měnit velikost "root" systému! Je možno změnit velikost jakéhokoliv
+jiného oddílu, ale o tom se zmíním později.</p>
+
+
+<pre caption="Informace o systému souborů">
+# <i>mount</i>
+/dev/hdb2 on / type ext3 (rw) 
+none on /proc type proc (rw) 
+none on /dev/pts type devpts (rw,gid=5,mode=620) 
+none on /dev/shm type tmpfs (rw) 
+# <i>df -h </i>
+Filesystem           Size Used Avail Use% Mounted on 
+/dev/hdb2            4.0G 1.9G  2.4G  82% /
+none		      38M    0    38M   0% /dev/shm 
+</pre>
+
+<p>Jak vidíme, oddíl připojený jako "/" pojmenovaný /dev/hdb2 má 2.4 gigabajtů volného místa.
+V tomto případě změním jeho velikost tak, aby zbylo 400M volného místa, tudíž zbydou 2 gigabajty
+pro systém Gentoo. Docela dobré, budu moci nainstalovat mnoho věcí. Mnoha uživatelům však
+postačí i jeden gigabajt. Nyní k vlastní změně velikosti!</p>
+
+</body> </section>
+
+<section> <title> Sestavení parted pro změnu velikosti </title> 
+<body>
+<p>Parted je utilita vytvořená GNU projektem, starou a respektovanou organizací, jejíž mnohé programy nyní využíváte.
+Jedním z jejích velmi užitečných programů je utilita parted. Parted je "partition editor" a lze jej 
+získat na <uri> http://www.gnu.org/software/parted/ </uri> 
+</p>
+<note> Existují i jiné nástroje pro změnu velikosti diskového oddílu, ale autor
+nezná/nezjímají ho programy typu PartitionMagic(tm) nebo jiné tohoto druhu.
+Je na čtenáři, zda je použije. </note>
+
+<p>Zjistěte, zda je parted schopen pracovat se souborovým systémem toho typu,
+kde chcete měnit velikost. Pokud ne, nemáte štěstí a budete muset zničit
+některý oddíl, abyjste uvolnili místo pro Gentoo systém, a poté obnovit původní
+data. Stáhněte software, nainstalujte. V našem případě chceme
+změnit velikost našeho "root" oddílu a zde je problém. Proto musíme nastartovat 
+z disket s minimálním linuxovým systémem a nakopírovaným parted, které si předem vytvoříme.
+Pokud však chcete měnit velikost jiného oddílu, který lze odpojit za běhu systému,
+máte štěstí. Nemusíte provádět následující kroky. Pouze zkompilujte parted a
+použijte ho na odpojený oddíl. Zde je postup, jaký jsem použil v mém případě.</p>
+
+<impo> Ujistěte se, že parted podporuje typ souborového systému oddílu, 
+jehož velikost chcete měnit! </impo>
+
+<p> Stáhněte si tomsrtbt boot/root disk (zadarmo) z <uri>
+http://freshmeat.net/tomsrtbt/ </uri>, vytvořte zaváděcí disketu podle
+dokumentace přiložené k balíku. Připravte si další disketu a vložte ji
+do disketové mechaniky</p>
+
+<note> Uvědomte si opět, že Linux je synonymum pro "Je zde vždy další způsob,
+jak to provést". Vaším cílem je spustit parted nad odpojeným oddílem.
+Můžete použít jiné "bootovací" diskety než tomsrtbt. Někdy není potřeba
+tento krok vůbec provádět, pokud lze odmontovat oddíl, který chcete
+měnit, přímo z běžícího systému. </note>
+
+<pre caption="Vytvoření diskety utilit">
+# <i>mkfs.minix /dev/fd0</i>
+480 inodes
+1440 blocks
+Firstdatazone=19 (19)
+Zonesize=1024
+Maxsize=268966912
+</pre>
+
+Nyní vytvoříme parted. Pokud jste balík ještě nestáhli a nerozbalili, udělejte to nyní a přesuňte
+se do odpovídajícího adresáře. Pro vlastní vytvoření utility a její zkopírování na
+disketu proveďte následující posloupnost příkazů.
+
+<pre caption="Sestavení diskety utilit">
+# <i> mkdir /floppy; mount -t minix /dev/fd0 /floppy &amp;&amp; 
+export CFLAGS="-O3 -pipe -fomit-frame-pointer -static" &amp;&amp; ./configure 
+&amp;&amp; make &amp;&amp; cp parted/parted /floppy &amp;&amp; umount /floppy </i>
+</pre>
+
+<p>
+Blahopřeji, nyní jste připraveni restartovat a změnit velikost oddílu. Udělejte
+to ovšem až po alespoň zběžném pohledu na dokumentaci na GNU webu. Vlastní
+proces by měl zabrat něco méně než 30 minut na velkém oddílu, buďte trpěliví.
+Restartujte z tomsrtbt zaváděcí diskety, a po přihlášení vyměňte tuto disketu
+za disketu utilit, kterou jsme si předtím vytvořili. Proveďte příkaz
+mount /dev/fd0 /floppy pro připojení diskety pod adresář /floppy.
+Potom spustťe z tohoto adresáře utilitu parted a můžete začít se změnou
+velikosti vašeho oddílu. Jakmile tento poměrně dlouhý proces proběhne,
+může začít skutečná zábava s instalací Gentoo systému. Restartujte
+zpět do vašeho starého Linux systému. Disk, na kterém budeme akci
+provádět, je disk s oddílem určeným pro změnu velikosti.
+Na příklad pokud chceme měnit velikost oddílu /dev/hda3, disk bude
+/dev/hda
+</p>
+
+<pre caption="Seznam příkazů po přihlášení do tomsrtbt systému">
+# <i>mount /dev/fd0 /floppy </i>
+# <i>cd /floppy; ./parted [drive you wish to operate on]</i>
+(parted) <i> print </i>
+Disk geometry for /dev/hdb: 0.000-9787.148 megabytes
+Disk label type: msdos
+Minor    Start       End     Type      Filesystem  Flags
+1          0.031   2953.125  primary   ntfs        
+3       2953.125   3133.265  primary   linux-swap  
+2       3133.266   5633.085  primary   ext3        
+4       5633.086   9787.148  extended              
+5       5633.117   6633.210  logical               
+6       6633.242   9787.148  logical   ext3        
+(parted) <i> help resize </i>
+  resize MINOR START END        resize filesystem on partition MINOR
+
+        MINOR is the partition number used by Linux.  On msdos disk labels, the
+        primary partitions number from 1-4, and logical partitions are 5
+        onwards.
+        START and END are in megabytes
+(parted) <i> resize 2 3133.266 4000.000 </i>
+</pre>
+
+<impo> Buďte trpěliví! Počítač pracuje! Sledujte LEDku vašeho disku pro kontrolu,
+zda systém skutečně pracuje. Mělo by to trvat od 2 do 30 minut v závislosti
+na velikosti disku. </impo>
+
+<p>Jakmile je proces dokončen (velikost změněna), restartujte zpět do vašeho
+starého Linux systému, jak již bylo řečeno. Pak pokračujte dále podle
+<uri link="/doc/build.html">http://www.gentoo.org/doc/build.html</uri>
+a proveďte kroky 6,7,9 až 17.
+
+Hodně štěstí!
+</p>
+</body>
+</section>
+</chapter>
+</guide>
