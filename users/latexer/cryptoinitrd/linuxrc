@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Script to load the cryptoapi modules, decrypt the necessary
+# partitions, and boot normally
+
+#ROOT_FSTYPE=
+#ROOT_DEV=
+#HOME_FSTYPE=
+#HOME_DEV=
+#USR_FSTYPE=
+#USR_DEV
+#VAR_FSTYPE=
+#VAR_DEV=
+#TMP_FSTYPE=
+#TMP_DEV=
+
+PATH=/bin
+CIPHER=
+
+NORMAL="\033[0m"
+WARN="\033[1m"
+BAD="\033[1m"
+
+mount /proc
+# Disable kernel messages to console:
+echo "0" > /proc/sys/kernel/printk
+
+
+module_loading(){
+	insmod -f /modules/cryptoapi.o >/dev/null 2>&1
+	insmod -f /modules/cryptoloop.o >/dev/null 2>&1
+	insmod -f /modules/cipher-${CIPHER}.o >/dev/null 2>&1
+}
+
+crypto_mount(){
+	#ROOT#mount -t ${ROOT_FSTYPE} /dev/${ROOT_DEV} /mnt/newroot -oremount,rw,encryption=${CIPHER}
+	#HOME#mount -t ${HOME_FSTYPE} /dev/${HOME_DEV} /mnt/newroot/home -oremount,rw,encryption=${CIPHER}
+	#USR#mount -t ${USR_FSTYPE} /dev/${USR_DEV} /mnt/newroot/usr -oremount,rw,encryption=${CIPHER}
+	#VAR#mount -t ${VAR_FSTYPE} /dev/${VAR_DEV} /mnt/newroot/var -oremount,rw,encryption=${CIPHER}
+	#TMP#mount -t ${TMP_FSTYPE} /dev/${TMP_DEV} /mnt/newroot/tmp -oremount,rw,encryption=${CIPHER}
+}
+
+normalboot(){
+	cd /mnt/newroot
+	echo "6" > /proc/sys/kernel/printk
+	pivot_root . initrd
+	exec chroot . /sbin/init </dev/console >/dev/console 2>&1
+}
+
+module_loading
+crypto_mount
+normalboot
+
+#-----------------------------------------------#
+# OLD STUFF HERE. REMOVE THIS PETE.		#
+#-----------------------------------------------#
