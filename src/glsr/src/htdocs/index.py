@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.41 2005/01/27 04:19:15 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.42 2005/02/17 01:19:11 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -38,6 +38,7 @@ from Session import Session
 from Logging import logwrite
 from Template import Template
 from Error import error_uncaught
+from GLSRException import Redirect
 from Validation import CheckPageRequest
 from Function import start_timer, stop_timer, eval_timer, _Values
 
@@ -114,10 +115,19 @@ class _PageDispatch:
         if self._ThisSession.is_registered:
             self._user_detail['uid'] = self._ThisSession.get_uid()
             self._ThisUser.SetID(self._user_detail['uid'])
-            self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
 
-            # TODO: check here if this IP matches their last one,
-            # if not, make them log back in.
+            if str(self._ThisUser.GetLastIP()) != str(os.environ['REMOTE_ADDR']) \
+               and self._ThisSession.is_restricted() == True:
+
+                self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
+                self._ThisSession.remove()
+                
+                if os.environ.has_key('HTTP_REFERER'):
+                    raise Redirect(os.environ['HTTP_REFERER'], __modulename__)
+                else:
+                    raise Redirect('?page=main', __modulename__)
+
+            self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
             self._user_detail["alias"] = self._ThisUser.GetAlias()
             self._ThisUser.SetLoggedIn()
 

@@ -4,7 +4,7 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = '$Id: Session.py,v 1.8 2005/01/26 02:18:55 port001 Exp $'
+__revision__ = '$Id: Session.py,v 1.9 2005/02/17 01:19:11 port001 Exp $'
 __modulename__ = 'Session'
 
 import sha
@@ -16,6 +16,7 @@ import Cookie
 
 import Config
 import MySQL
+from GLSRException import ProgrammingError
 
 MySQLHandler = MySQL.MySQL()
 
@@ -135,7 +136,7 @@ class Session:
         result = MySQLHandler.query("SELECT %s_id FROM %s " %
                                     (self.tablename, self.full_tablename) +
                                     "WHERE %s_id =  " % self.tablename +
-				    "%s " + "AND %s_keep = 0 " % self.tablename +
+                                    "%s " + "AND %s_keep = 0 " % self.tablename +
                                     "AND %s_time " % self.tablename +
                                     "< UNIX_TIMESTAMP() - %s", (self._sid, Config.SessionTimeout),
                                     fetch='one')
@@ -157,15 +158,26 @@ class Session:
         else:
              self._create()
 
-    def assign_uid(self, uid, keep=0):
-
+    def assign_uid(self, uid, keep=0, restrict=0):
+         
+        if keep not in range(0, 2):
+            raise ProgrammingError('Invalid input for assign_uid()',
+                                   'The variable \'keep\' had a value not in the required \
+                                    range of 0 - 1', __modulename__)
+        if restrict not in range(0, 2):
+            raise ProgrammingError('Invalid input for assign_uid()',
+                                   'The variable \'restrict\' had a value not in the required \
+                                    range of 0 - 1', __modulename__)
+            
         MySQLHandler.query("UPDATE %s SET " % self.full_tablename +
                            "%s_user_id " % self.tablename +
                            "= %s, " + 
                            "%s_keep " % self.tablename +
-			   "= %s " +
-			   "WHERE %s_id" % self.tablename +
-                           "= %s", (uid, keep, self._sid), fetch='none')
+			               "= %s, " +
+                           "%s_restrict " % self.tablename +
+                           " = %s " +
+			               "WHERE %s_id" % self.tablename +
+                           "= %s", (uid, keep, restrict, self._sid), fetch='none')
 
     def remove(self):
 
@@ -179,6 +191,19 @@ class Session:
                                   "WHERE %s_id = " % self.tablename +
                                   "%s", self._sid, fetch='one')["%s_user_id" %
                                                                 self.tablename]
+
+    def is_restricted(self):
+
+        result = MySQLHandler.query("SELECT %s_restrict FROM %s " %
+                                    (self.tablename, self.full_tablename) +
+                                     "WHERE %s_id = " % self.tablename +
+                                     "%s", self._sid, fetch='one')["%s_restrict" %
+                                                                    self.tablename]
+        if int(result) == 1:
+            return True
+
+        return False
+
     def get_active(self, grace):
 
         guest_count = 0

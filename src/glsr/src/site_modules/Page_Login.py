@@ -4,7 +4,7 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = '$Id: Page_Login.py,v 1.14 2005/01/27 04:19:15 port001 Exp $'
+__revision__ = '$Id: Page_Login.py,v 1.15 2005/02/17 01:19:11 port001 Exp $'
 __modulename__ = 'Page_Login'
 
 import State
@@ -25,6 +25,9 @@ class Page_Login(SiteModule):
 	
     def _login_user(self):
 
+        keep = 0
+        restrict = 0
+            
         self._uid = self._user_obj.GetUid(self._username)
 
         self._user_obj.SetID(self._uid)
@@ -37,9 +40,11 @@ class Page_Login(SiteModule):
     
         # Assign uid to current session
         if self._req.Values.has_key('remember'):
-            State.ThisSession.assign_uid(self._uid, keep=1)
-        else:
-            State.ThisSession.assign_uid(self._uid)
+            keep = 1
+        if self._req.Values.has_key('restrict'):
+            restrict = 1
+            
+        State.ThisSession.assign_uid(self._uid, keep=keep, restrict=restrict)
     
         return True
 

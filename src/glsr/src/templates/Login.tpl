@@ -12,6 +12,9 @@
           <tr>
             <td colspan="2" align="right"><font class="instructional">Remember me</font><input class="login_form_element" name="remember" type="checkbox" /></td>
           </tr>
+	  <tr>
+            <td colspan="2" align="right"><font class="instructional">Restrict session to this IP</font><input class="login_form_element" name="restrict" type="checkbox" /></td>
+	  </tr>
           <tr>
             <td colspan="2" align="right"><input class="form_element" name="login" value="Login" type="submit" /></td>
           </tr>
