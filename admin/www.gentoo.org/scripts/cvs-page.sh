@@ -4,6 +4,7 @@ OUTLOG=/tmp/clog
 #[ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
 export WEBROOT=~/gentoo-src/gentoo-xml/htdocs
 source ~/.keychain/*-sh
+export CVS_RSH=ssh
 cd ~/gentoo-x86 
 echo ">>> Updating cvs..."
 cvs -q update -dP

@@ -5,10 +5,7 @@
 
 import portage, string, os, os.path, time, sys, re
 from stat import *
-if not os.environ["WEBROOT"]:
-	print "$WEBROOT not set; exiting."
-	sys.exit(1)
-
+os.environ["WEBROOT"]="/home/gweb/gentoo-src/gentoo-xml/htdocs"
 
 #####################################
 # prog start, and main variable, and compiled regex's
@@ -16,12 +13,14 @@ if not os.environ["WEBROOT"]:
 license_re=     re.compile(r"^LICENSE=\"([^\"]*)\"",re.M|re.I|re.S)
 homepage_re=    re.compile(r"^HOMEPAGE=\"([^\"]*)\"",re.M|re.I|re.S)
 desc_re=        re.compile(r"^DESCRIPTION=\"([^\"]*)\"",re.M|re.I|re.S)
-pkgdir=os.environ["WEBROOT"]+"/dyn/pkgs/" 
+pkgdir=os.environ["WEBROOT"]+"/dyn/newpkgs/" 
+oldpkgdir=os.environ["WEBROOT"]+"/dyn/oldpkgs/"
+curpkgdir=os.environ["WEBROOT"]+"/dyn/pkgs/"
 try:
 	os.makedirs(pkgdir)
 except OSError:
 	#exists already
-	continue
+	pass
 
 ############
 # Subroutine time
@@ -94,7 +93,7 @@ def create_pkg_db(db):
 			PnV = PV
 		else:
 			PnV=PV + PR
-		print PN+"-"+PnV
+		#print PN+"-"+PnV
 		
 		#XMLize common characters
 		depend=string.replace(depend,'<','&lt;')
@@ -207,7 +206,7 @@ def do_pkgentry(db,pkgname,category):
 TotalPkgNum=0
 db ={}
 create_pkg_db(db)
-out = open(os.environ["WEBROOT"]+"/dyn/pkgs/index.xml", "w")
+out = open(pkgdir+"index.xml", "w")
 header=do_header('index')
 content="""<p>
 	Total number of packages available: """ + db['totalnumberofpackages'] + """
@@ -306,5 +305,25 @@ for category in fsort(db.keys()):
 	out.write("</table></p>\n")
 	out.write(footer)
 	out.close()
+
+#create plaintext package listing
+allpkgs=portage.db["/"]["porttree"].dbapi.cp_all()
+bestpkgs={}
+mycount=0
+mytxt=open(pkgdir+"packages.txt","w")
+for x in allpkgs:
+	if x not in bestpkgs.keys():
+		y=portage.db["/"]["porttree"].dbapi.xmatch("bestmatch-visible",x)
+		bestpkgs[x]=y
+		if y=="":
+			continue
+		xs=portage.pkgsplit(bestpkgs[x])
+		mytxt.write(xs[0].split("/")[1]+" "+xs[1]+" "+bestpkgs[x]+"\n")
+		mycount+=1
+mytxt.close()
+
+os.system("rm -rf "+oldpkgdir)
+os.system("mv "+curpkgdir+" "+oldpkgdir)
+os.system("mv "+pkgdir+" "+curpkgdir)
 
 	
