@@ -12,8 +12,8 @@ sources that are automatically downloaded from the Internet.  This build CD inst
 will work with any x86-compatible system.
 </abstract>
 
-<version>1.4.4</version>
-<date>21 Jan. 2002</date>
+<version>1.4.5</version>
+<date>11 Feb. 2002</date>
 
 <chapter>
 <title>About the Install</title>
@@ -51,7 +51,8 @@ prompt at the bottom of the screen.  At this prompt, hit enter, and Linux will b
 from the CD.</p>
 <p>Next, you'll be greeted with a small list of commands available on the boot CD, including
 <c>nano</c> (a pico editor clone) and instructions for setting up the network.  Then, you'll be
-prompted to select your preferred keymap. After this, you can hit enter to enter 
+prompted to select your preferred keymap, followed by PCI autodection (hint: when prompted to hit any key,
+choose the &lt;enter&gt; key). After this, you can hit enter to enter 
 the minimal boot CD Linux environment.  You should have a root ("<c>#</c>") prompt on the current
 console, and can also open new consoles by typing alt-f2, alt-f3, 
 etc and then hitting enter.</p>
@@ -67,7 +68,8 @@ etc and then hitting enter.</p>
 
 <p>We're almost ready to begin installing Gentoo Linux, but first we need take the necessary steps
 so that the kernel recognizes our network cards, and optionally any SCSI hardware that is in our
-system.  To view a list of all available network card modules, type <c>ls /lib/modules/*/kernel/drivers/net/*</c>.
+system, that our PCI autodetection missed.  
+To view a list of all available network card modules, type <c>ls /lib/modules/*/kernel/drivers/net/*</c>.
 To load a particular module, type:</p>
 
 <pre>
@@ -107,7 +109,7 @@ once you are in the chroot environment (required for bootstrapping Gentoo Linux)
 <body>
 <p>
 Network configuration is simple with DHCP; If your ISP is not using
-DHCP, skip down to the static configuration section below.
+DHCP, skip down to the static configuration section below.  
 </p>
 <pre caption="Network configuration with DHCP">
 # <i>dhcpcd eth0</i> 
@@ -116,6 +118,8 @@ DHCP, skip down to the static configuration section below.
 Some ISPs require you to provide a hostname.  To do that,
 add a <c>-h myhostname</c> flag to the dhcpcd command line above.
 </note>
+<p>If you receive <i>dhcpConfig</i> warnings, don't panic; the errors
+are most likely cosmetic.  Skip down to Network testing below.</p>
 </body>
 </section>
 <section>
@@ -137,7 +141,8 @@ $GTWAY with your default gateway.
 file so that name resolution (finding Web/FTP sites by name, rather than just by IP address) will work.</p>
 
 <note>At the moment the only editor installed by default is <c>nano</c>, a
-small and very easy-to-use visual editor. 
+small and very easy-to-use visual editor.   Use <c>nano</c> with the <c>-w</c>
+option to turn off automatic line-wrapping.
 </note>
 
 <p>Here's a template to follow for creating your /etc/resolv.conf file:
@@ -149,6 +154,11 @@ nameserver 10.0.0.2
 </pre>
 <p>Replace <c>10.0.0.1</c> and <c>10.0.0.2</c> with the IP addresses of your
 primary and secondary DNS servers respectively.</p>
+</body>
+</section>
+<section>
+<title>Network testing</title>
+<body>
 <p>Now that your network has been configured, the <c>/sbin/ifconfig -a</c> command should show (hopefully!) 
 that your network card is working
 (look for <e>UP</e> and <e>RUNNING</e> in the output).
@@ -204,17 +214,20 @@ XFS, ext2, ext3 (journaling) and ReiserFS.  ext2 is the tried and true Linux
 filesystem but doesn't have metadata journaling.  ext3 is the new version of
 ext2 with both metadata journaling and ordered data writes, effectively
 providing data journaling as well.  ReiserFS is a B*-tree based filesystem
-with very good small file performance, and greatly outperforms both ext2 and
+that promises very good small file performance, and greatly outperforms both ext2 and
 ext3 when dealing with small files (files less than 4k), often by a factor of
-10x-15x.  ReiserFS has metadata journaling, but no data journaling.  XFS
+10x-15x.  However, we do <e>not</e> recommend ReiserFS at this time,
+due to repeated occurances of file-system corruption with the 2.4.x series
+kernels.  ReiserFS has metadata journaling, but no data journaling.  XFS
 is a high-performance enterprise-class filesystem with metadata journaling.
 </p><p>
 If
 you're looking for the most standard filesystem, use ext2.  If you're looking
 for the most rugged journalled filesystem, use ext3.  If you're looking for a
-high-performance filesystem with journaling support, use XFS or ReiserFS.  Of
-XFS and ReiserFS, XFS is the most mature and refined.  All
-filesystems are production-ready.  Here are our basic recommended filesystem
+high-performance filesystem with journaling support, use XFS;  XFS is the 
+most mature and refined.  All
+filesystems are production-ready.  
+Here are our basic recommended filesystem
 sizes and types:</p>
 
   <table>
@@ -239,7 +252,7 @@ sizes and types:</p>
   <tr>
   	<ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
 	<ti>&gt;=1.5 Gigabytes</ti>
-	<ti>XFS, ReiserFS, ext3 recommended; ext2 ok</ti>
+	<ti>XFS, ext3 recommended; ext2 ok</ti>
   	<ti>/dev/hda3</ti>
   </tr>
  </table>
@@ -256,10 +269,6 @@ the filesystems that will be used to house our data.  Initialize swap as follows
 <p>You can use the <c>mke2fs</c> command to create ext2 filesystems:</p>
 <pre>
 # <i>mke2fs /dev/hda1</i>
-</pre>
-<p>To create ReiserFS filesystems, use the <c>mkreiserfs</c> command:</p>
-<pre>
-# <i>mkreiserfs /dev/hda3</i>
 </pre>
 <p>To create an XFS filesystem, use the <c>mkfs.xfs</c> command:</p>
 <pre>
@@ -281,6 +290,12 @@ an explicit <c>mount -t xfs</c>.  The solution is to zero out the partition befo
 <pre>
 # <i>mke2fs -j /dev/hda3</i>
 </pre>
+<p>To create ReiserFS filesystems, use the <c>mkreiserfs</c> command:</p>
+<pre>
+# <i>mkreiserfs /dev/hda3</i>
+</pre>
+<warn>We do not recommend ReiserFS at this time.  Filesystem corruption has been a common problem
+with ReiserFS and the 2.4.x series kernels.</warn>
 
 <note>You can find out more about using ext3 under Linux 2.4 at <uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
 </body>
@@ -298,13 +313,13 @@ provides later:
 # <i>swapon /dev/hda2</i>
 </pre>
 <p>Next, we'll create the <path>/mnt/gentoo</path> and <path>/mnt/gentoo/boot</path> mountpoints,
-and we'll mount our filesystems to these mountpoints.  Note that we use the special <c>-o notail</c>
-option when we mount our ReiserFS boot partition.</p>
+and we'll mount our filesystems to these mountpoints. 
+</p>
 <pre>
 # <i>mkdir /mnt/gentoo</i>
 # <i>mount /dev/hda3 /mnt/gentoo</i>
 # <i>mkdir /mnt/gentoo/boot</i>
-# <i>mount -o notail /dev/hda1 /mnt/gentoo/boot</i>
+# <i>mount /dev/hda1 /mnt/gentoo/boot</i>
 </pre>
 <p>If you are setting up Gentoo
    Linux with a separate <path>/usr</path> or <path>/var</path>, these would get mounted to
@@ -378,7 +393,7 @@ which will download an up-to-the-minute copy of the Gentoo Linux Portage tree fr
 <pre>
 # <i>emerge rsync</i>
 </pre>
-<p>The Portage tree will begin to be transferred; it's about 20Mb in size.</p>
+<p>The Portage tree will begin to be transferred; it's about 10Mb in size.</p>
 </body>
 </section>
 </chapter>
@@ -482,14 +497,15 @@ compiled as modules</e>.
 Under the "File systems" section, be sure to enable the "Device File System" (note that
 you <e>shouldn't</e> enable the "/dev/pts file system support" option). You'll also
 need to enable the "Virtual Memory Filesystem".  Be sure to enable "ReiserFS" if you have
-any ReiserFS partitions; the same goes for "Ext3".  If you're using XFS, enable the "Page
-Buffer support" option in the filesystems section, as well as the "SGI XFS filesystem support"
+any ReiserFS partitions; the same goes for "Ext3".  If you're using XFS, enable the 
+"SGI XFS filesystem support"
 option.  It's always a good idea to leave ext2
 enabled whether you are using it or not.  You will need to enable the "Experimental Features"
 options to see several of these selections.  Also, most people using IDE hard drives will
 want to enable the "USE DMA by default" option; otherwise, your IDE drives may perform
 very poorly.
 </impo>
+
 
 <p>
 Your new custom kernel (and modules) are now installed.  Now you need to choose a system
@@ -511,12 +527,20 @@ To merge your logger of choice, type <e>one</e> of the next three lines:
 # <i>rc-update add metalog default</i>
 </pre>
 <warn>
-In the case of syslog-ng and metalog, you need to create 
-<path>/etc/syslog-ng/syslog-ng.conf</path> or
-<path>/etc/metalog/metalog.conf</path>, respectively.
-See <path>/etc/syslog-ng</path> or <path>/etc/metalog</path>
-for sample configuration files.
+In the case of syslog-ng you need to create 
+<path>/etc/syslog-ng/syslog-ng.conf</path>.
+See <path>/etc/syslog-ng</path> 
+for a sample configuration file.
 </warn>
+<impo>
+Metalog flushes output to the disk in blocks, so messages aren't immediately recorded into
+the system logs.  If you are trying to debug a daemon, this behavior less than helpful.  Send
+metalog a USR1 signal to turn off this message buffering (meaning that 
+<i>tail -f <path>/var/log/everything/current</path></i> will now work 
+in real time, as expected), 
+and a USR2 signal to turn buffering back on
+again. 
+</impo>
 </body>
 </section>
 </chapter>
@@ -565,7 +589,7 @@ Remember to specify <c>ext2</c>, <c>ext3</c> or <c>reiserfs</c> filesystem types
 # NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
 </comment>
 /dev/BOOT		/boot		ext2		noauto,noatime		1 2
-/dev/ROOT		/		reiserfs	notail,noatime		0 1
+/dev/ROOT		/		ext3		noatime			0 1
 /dev/SWAP		none            swap		sw			0 0
 /dev/cdroms/cdrom0	/mnt/cdrom	iso9660		noauto,ro		0 0
 proc			/proc           proc		defaults		0 0
@@ -676,6 +700,7 @@ the first thing I see when I turn on the computer is the GRUB prompt.  In my cas
 I want to type are:</p>
 <pre>grub&gt; <i>root (hd0,0)</i>
 grub&gt; <i>setup (hd0)</i>
+grub&gt; <i>quit</i>
 </pre>
 
 <p>Here's how the two commands work.  The first <c>root ( )</c> command tells GRUB
