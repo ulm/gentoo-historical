@@ -661,7 +661,7 @@ of your sale will go towards further Gentoo Linux development.</p>
     </xsl:choose>
     <xsl:apply-templates select="body"/>
     <xsl:apply-templates select="section">
-      <xsl:with-param name="chapid" value="$chapid"/>
+      <xsl:with-param name="chapid" select="$chapid"/>
     </xsl:apply-templates>
   </xsl:template>
   <xsl:template match="section">
