@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.14 2005/01/14 07:07:09 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.15 2005/01/15 06:30:54 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -395,7 +395,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		newliloconf += "image=/boot"+kernel_name[0][5:]+" \n"
 		newliloconf += "  label=gentoo \n  read-only \n  root=/dev/ram0 \n"
 		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor+"\" \n"
-  		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n"
+  		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
+		newliloconf = self._lilo_add_windows(newliloconf)
 		#now make the lilo.conf file
 		file_name = root + "/etc/lilo.conf"	
 		try:
@@ -410,3 +411,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus = GLIUtility.spawn("/sbin/lilo",chroot=self._chroot_dir)
 		if exitstatus != 0:
 			raise GLIException("LiloInstallError", 'fatal', '_install_lilo', "Running lilo failed!")
+
+	def _lilo_add_windows(self, newliloconf):
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+			for partition in parts[device]:
+				if (parts[device][partition]['type'] == "vfat") or (parts[device][partition]['type'] == "ntfs"):
+					newliloconf += "other="+device+parts[device][partition]['minor']+"\n"
+					newliloconf += "label=Possible Windows Partition"+parts[device][partition]['minor']+"\n\n"

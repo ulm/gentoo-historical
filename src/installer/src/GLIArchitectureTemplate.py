@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.34 2005/01/14 07:07:08 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.35 2005/01/15 06:30:54 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -43,12 +43,12 @@ class ArchitectureTemplate:
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
-								 (self.set_root_password, "Set the root password"),
-                                 (self.install_portage_tree, "Portage tree voodoo"),
+								 (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.prepare_chroot, "Preparing chroot"),
                                  (self.stage1, "Performing bootstrap"),
                                  (self.stage2, "Performing 'emerge system'"),
-                                 (self.set_timezone, "Setting timezone"),
+                                 (self.set_root_password, "Set the root password"),
+								 (self.set_timezone, "Setting timezone"),
                                  (self.emerge_kernel_sources, "Emerge kernel sources"),
                                  (self.build_kernel, "Building kernel"),
                                  (self.install_logging_daemon, "Logger"),
@@ -218,8 +218,8 @@ class ArchitectureTemplate:
 		"Mounts all network shares to the local machine"
 		"""
 		<agaffney> it'll be much easier than mount_local_partitions
-<agaffney> make sure /etc/init.d/portmap is started
-<agaffney> then mount each one: mount -t nfs -o <mountopts> <host>:<export> <mountpoint>
+		<agaffney> make sure /etc/init.d/portmap is started
+		<agaffney> then mount each one: mount -t nfs -o <mountopts> <host>:<export> <mountpoint>
 		"""
 		nfsmounts = self._install_profile.get_network_mounts()
 		for netmount in nfsmounts:
