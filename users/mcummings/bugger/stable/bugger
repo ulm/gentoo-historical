@@ -68,36 +68,40 @@ my $change   = '';
 my $attach   = '';
 my $grab     = '';
 my $devrel   = '';
+my $reporter = '';
 GetOptions(
-    'help'     => \$help,
-    'cclist=s' => \$cclist,
-    'list=s'   => \$list,
-    'add'      => \$add,
-    'newdev'   => \$newdev,
-    'devrel'   => \$devrel,
-    'update=s' => \$update,
-    'change=s' => \$change,
-    'attach=s' => \$attach,
-    'grab=s'   => \$grab,
-    'show=s'   => \$show,
+    'help'       => \$help,
+    'cclist=s'   => \$cclist,
+    'list=s'     => \$list,
+    'reporter=s' => \$reporter,
+    'add'        => \$add,
+    'newdev'     => \$newdev,
+    'devrel'     => \$devrel,
+    'update=s'   => \$update,
+    'change=s'   => \$change,
+    'attach=s'   => \$attach,
+    'grab=s'     => \$grab,
+    'show=s'     => \$show,
 );
 
-if    ($help)   { helpme() }
-elsif ($cclist) { cclist_bugs($cclist) }
-elsif ($list)   { list_bugs($list) }
-elsif ($show)   { show_bug($show) }
-elsif ($add)    { add_bug() }
-elsif ($newdev) { new_dev() }
-elsif ($update) { update_bug($update) }
-elsif ($change) { change_status($change) }
-elsif ($attach) { add_attach($attach) }
-elsif ($grab)   { download_attach($grab) }
-elsif ($devrel) { dev_rel() }
+if    ($help)     { helpme() }
+elsif ($cclist)   { cclist_bugs($cclist) }
+elsif ($list)     { list_bugs($list) }
+elsif ($reporter) { reporter($reporter) }
+elsif ($show)     { show_bug($show) }
+elsif ($add)      { add_bug() }
+elsif ($newdev)   { new_dev() }
+elsif ($update)   { update_bug($update) }
+elsif ($change)   { change_status($change) }
+elsif ($attach)   { add_attach($attach) }
+elsif ($grab)     { download_attach($grab) }
+elsif ($devrel)   { dev_rel() }
 else { helpme() }
 
 sub helpme {
     print "Usage: $selfname\n";
     print "\t\t--list=loginID\tList bugs assigned to given loginID\n";
+    print "\t\t--reporter=loginID\tList bugs reported by loginID\n";
     print "\t\t--add\tAdd a new bug\n";
     print "\t\t--newdev\tAdd a new developer\n";
     print "\t\t--devrel\tAdd Developer Relations report\n";
@@ -576,4 +580,49 @@ sub dev_rel {
     print "Adding developer relations report...\n";
     my $bugnumber = $bugz->commit;
     print "Bug $bugnumber added.\n\n";
+}
+
+sub reporter {
+
+    my $bugfor = shift;
+
+    use WWW::Mechanize;
+    my $mech = WWW::Mechanize->new();
+    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
+    $mech->submit_form(
+        fields => {
+            Bugzilla_login    => $login,
+            Bugzilla_password => $password,
+        }
+    );
+
+    $mech->form_number(1);
+    $mech->field( 'email1', $bugfor );
+    $mech->field( 'email2', "" );
+    $mech->untick( 'emailassigned_to1', '1' );
+    $mech->tick( 'emailreporter1', '1' );
+    $mech->untick( 'emailreporter2', '1' );
+    $mech->select( 'order',      'Bug Number' );
+    $mech->select( 'emailtype1', 'exact' );
+    $mech->submit();
+
+    $mech->follow_link( text_regex => qr/CSV/ );
+
+    my $content = $mech->content();
+    my @baseline = split( /\n/, $content );
+    my $rowcount;
+    foreach my $line ( sort @baseline ) {
+        $line =~ s/\"//mg;
+        my @rowline = split( /,/, $line );
+        next if ( $rowline[0] =~ m/bug_id/ );
+        next if ( $rowline[0] eq "" );
+        next if ( $rowline[0] =~ /^\n$/ );
+        $rowcount = $rowcount + 4;
+        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
+        if ( $rowcount >= $rows ) {
+            print "Press Enter to Continue";
+            my $junk = <STDIN>;
+            $rowcount = 0;
+        }
+    }
 }
