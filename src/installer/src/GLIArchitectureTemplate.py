@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.56 2005/03/20 05:11:29 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.57 2005/03/20 08:52:26 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -84,7 +84,7 @@ class ArchitectureTemplate:
 		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
 
 	def _quickpkg_deps(self, package):
-		# These need to be changed
+		# These need to be changed to pull values from the make.conf stuff
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
 		packages = [word for word in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if "/" in word]
@@ -94,6 +94,10 @@ class ArchitectureTemplate:
 				if ret:
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					pass
+
+	def _get_packages_to_emerge(self, cmd):
+		# cmd = full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
+		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True).split("\n")
 
 	def _emerge(self, package, binary=False, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
@@ -148,15 +152,18 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_stage() == 1:
 			self._logger.mark()
 			self._logger.log("Starting bootstrap.")
+			pkgs = self._get_packages_to_emerge("/usr/portage/scripts/bootstrap.sh --pretend")
 			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
 			self._logger.log("Bootstrap complete.")
+
 	def stage2(self):
 		# If we are doing a stage 1 or 2 install, then emerge system
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
 			self._logger.mark()
 			self._logger.log("Starting emerge system.")
+			pkgs = self._get_packages_to_emerge("emerge -p system")
 			exitstatus = self._emerge("system")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
