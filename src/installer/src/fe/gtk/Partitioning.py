@@ -25,11 +25,10 @@ class Panel(GLIScreen.GLIScreen):
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
 
-		vert = gtk.VBox(gtk.FALSE, 10)
+		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
 
-		content_str = """
-On this screen, you will be presented with a list of detected partitionable devices. Selecting
+		content_str = """On this screen, you will be presented with a list of detected partitionable devices. Selecting
 a device will show you the current partitions on it (if any) and allow you to add, remove, and
 resize partitions.
 """
