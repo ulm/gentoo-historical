@@ -8,7 +8,7 @@ EOF
 	
 mydate=`date +"%d %b %Y"`
 cd ${WEBROOT}
-for x in `find news -iname 200*.xml | sort -r`
+for x in `ls news/200*.xml | sort -r`
 do
 	echo "<uri>/$x</uri>" >> ${WEBROOT}/dyn/news-index.xml
 done
