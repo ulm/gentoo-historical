@@ -42,6 +42,8 @@ def getcurrentpkgs():
 	currentlist = []
 	for node in tree.getallnodes():
 		best = tree.dep_bestmatch(node)
+		if not best:
+			continue
 		cat, PN, PV, PR = portage.catpkgsplit(best)
 		currentlist.append([PN, PV, PR, cat])
 	currentlist.sort()
