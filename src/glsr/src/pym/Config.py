@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.22 2005/03/10 20:57:16 port001 Exp $
+# $Id: Config.py,v 1.23 2005/03/24 07:05:17 hadfield Exp $
 #
 
 __modulename__ = "Config"
@@ -28,7 +28,7 @@ MySQL = {
 
 t_prefix = "/var/www/scripts.gentoo.org/gentoo/src/glsr/src/templates/"
 #t_prefix = "/usr/local/share/glsr/templates/"
-#t_prefix = "/var/www/buffmuthers.com/htdocs/projects/glsr/templates/"
+#t_prefix = "/var/www/localhost/htdocs/glsr/templates/"
 
 Template = {
     "error_user":               t_prefix + "Error_User.tpl",
@@ -58,7 +58,6 @@ Template = {
 
 URL = "http://scriptstest.gentoo.org/"
 #URL = "http://localhost/glsr/htdocs/"
-#URL = "http://buffmuthers.com/projects/glsr/htdocs/"
 Contact = "port001@gentoo.org"
 
 TmplCacheDir = "/var/www/scripts.gentoo.org/htdocs/tmpl_cache"
@@ -67,14 +66,12 @@ TmplCacheDir = "/var/www/scripts.gentoo.org/htdocs/tmpl_cache"
 Logging = True
 LogFile = "/var/www/scripts.gentoo.org/htdocs/log/glsr.log"
 #LogFile = "/var/www/localhost/htdocs/glsr/log/glsr.log"
-#LogFile = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/glsr.log"
 
 Debug = True
 
 ErrorReporting = True
 ErrorReportLog = "/var/www/scripts.gentoo.org/htdocs/log/error_reports.log"
 #ErrorReportLog = "/var/www/localhost/htdocs/glsr/log/error_reports.log"
-#ErrorReportLog = "/var/www/buffmuthers.com/htdocs/projects/glsr/log/error_reports.log"
 
 # Default report list offset
 ErrorReportListOffset = 5

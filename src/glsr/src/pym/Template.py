@@ -61,7 +61,7 @@ The currently supported operators include:
 
 """
 
-__revision__ = '$Id: Template.py,v 1.16 2005/03/20 01:24:56 hadfield Exp $'
+__revision__ = '$Id: Template.py,v 1.17 2005/03/24 07:05:17 hadfield Exp $'
 __modulename__ = 'Template'
 
 import md5
@@ -387,6 +387,7 @@ class Template:
         """
     
         def region_sort(reg1, reg2):
+            """Sorts loops in order of how nested they are."""
             if reg1["nested"] < reg2["nested"]:
                 return -1
             if reg1["nested"] > reg2["nested"]:
