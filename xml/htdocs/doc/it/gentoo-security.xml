@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gentoo-security.xml,v 1.19 2005/02/11 17:58:55 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gentoo-security.xml,v 1.20 2005/02/24 15:47:52 so Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link = "/doc/it/gentoo-security.xml" lang="it">
@@ -51,8 +51,8 @@ Questa è una guida passo-passo per rafforzare la sicurezza (ndt, quello che in 
 
 <license/>
 
-<version>0.4.43</version>
-<date>2005-02-07</date>
+<version>0.4.44</version>
+<date>2005-02-14</date>
 
 
 <chapter>
@@ -949,7 +949,7 @@ Questi comandi creeranno un grosso file con la lista di tutti i file e le direct
 </section>
 
 <section>
-<title>FIle SUID/SGID</title>
+<title>File SUID/SGID</title>
 <body>
 
 <p>
@@ -995,6 +995,52 @@ Di default Gentoo Linux non ha molti file SUID (dipende da cosa avete installato
 <p>
 I soli file SUID che ho sul mio sistema sono <c>su</c>, <c>passwd</c>, <c>gpasswd</c>, <c>qmail-queue</c>, <c>unix_chkpwd</c> e <c>pwdb_chkpwd</c>. Ma se state usando X, probabilmente ne avrete degli altri visto che X necessita di tale accesso.
 </p>
+
+</body>
+</section>
+
+<section>
+<title>Eseguibili SUID/SGID e hardlinks</title>
+<body>
+
+<p>
+Un file si può considerare cancellato solo quando non ci sono piú links che puntano a esso. Potrebbe sembrare strano, ma bisogna tener presente che il nome di un file come <path>/usr/bin/perl</path> in realtá rappresenta un link all'inode dove sono registrati i dati. A questo file si possono riferire un numero qualsiasi di link, e fino a che non vengono rimossi tutti il file continuerá a esistere.
+</p>
+
+<p>
+Se gli utenti del proprio sistema hanno accesso a partizioni che non vengono montate con le opzioni <c>nosuid</c> o <c>noexec</c> (per esempio nel caso in cui <path>/tmp</path>, <path>/home</path> o <path>/var/tmp</path> non siano partizioni separate), bisogna assicurarsi che gli utenti non creino hardlink a degli eseguibili SUID o SGUID, altrimenti dopo un aggiornamento del software tramite Portage sarebbero comunque in grado di eseguire le vecchie versioni del software.
+</p>
+
+<warn>
+Se si sono ricevuti degli avvisi da Portage che riguardano hardlink rimasti sul sistema e gli utenti possono scrivere su partizioni che consentono l'esecuzione di file SUID/SGID, si dovrebbe leggere questa sezione della guida con molta attenzione. Uno degli utenti potrebbe aver cercato di aggirare l'aggiornamento mantenendo una versione vecchia di un programma. Se gli utenti del sistema non hanno possibilitá di creare file SUID o possono eseguire programmi solo attraverso il dynamic loader (partizioni montate con l'opzione <c>noexec</c>), non ci dovrebbe essere nulla di cui preoccuparsi. 
+</warn>
+
+<note>
+Un utente non ha bisogno di avere il permesso di lettura su un file per creare un link a esso, é sufficiente che abbia il permesso di lettura sulla directory che contiene il file.
+</note>
+
+<p>
+Per verificare quanti link si riferiscono a un file si utilizza il comando <c>stat</c>.
+</p>
+
+<pre caption="Comando stat">
+$ stat /bin/su    
+  File: `/bin/su'
+  Size: 29350           Blocks: 64         IO Block: 131072 regular file
+Device: 900h/2304d      Inode: 2057419     Links: 1
+Access: (4711/-rws--x--x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2005-02-07 01:59:35.000000000 +0000
+Modify: 2004-11-04 01:46:17.000000000 +0000
+Change: 2004-11-04 01:46:17.000000000 +0000
+</pre>
+
+<p>
+Per trovare file SUID o SGID a cui si riferisca piú di un link si usa il comando <c>find</c>.
+</p>
+
+<pre caption="Trovare eseguibili SUID/SGID con link multipli">
+$ find / -type f \( -perm -004000 -o -perm -002000 \) -links +1 -ls
+</pre>
 
 </body>
 </section>
@@ -1705,7 +1751,7 @@ ListenAddress 127.0.0.1
 </pre>
 
 <p>
-Bisogna anche verificare che nel file di configurazione non sia presente la direttiva <c>UsePAM</c>, in quanto si sovrapporrebbe al meccanismo di autenticazione tramite chiave pubblica.
+Bisogna anche verificare che nel file di configurazione non sia presente la direttiva <c>UsePAM yes</c>, in quanto si sovrapporrebbe al meccanismo di autenticazione tramite chiave pubblica.
 </p>
 
 <p>
