@@ -26,12 +26,12 @@
 </author>
 
 <abstract>
-This page shows how dates could be formatted for each language
+This page shows how dates are formatted for each language
 </abstract>
 
 <license/>
 
-<version>1.2</version>
+<version>1.3</version>
 <date><xsl:value-of select="func:today()"/></date>
 <!--<date>2005-01-14</date>-->
 
