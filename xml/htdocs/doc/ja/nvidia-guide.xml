@@ -1,0 +1,214 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/nvidia-guide.xml,v 1.1 2005/02/14 15:50:23 idani Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/ja/nvidia-guide.xml">
+<title>Gentoo Linux nVidiaガイド</title>
+
+<author title="Author">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="翻訳">
+  <mail link="solidsneak@hyper.cx">小林弘樹</mail>
+</author>
+
+<abstract>
+多くのGentooユーザは、nVidiaのチップセットが組み込まれたシステムを使用しています。
+nVidiaはカードのパフォーマンスを向上させる特定のLinuxドライバを提供しています。
+このガイドではどのようにしてこれらのドライバをインストールし、設定するかを説明します。
+</abstract>
+
+<license/>
+
+<version>1.7</version>
+<date>2004-12-02</date>
+
+<!-- Original revision: 1.10 -->
+
+<chapter>
+<title>カードの設定</title>
+<section>
+<title>適当なドライバのインストール</title>
+<body>
+
+<p>
+nVidiaドライバには現在のカーネルと統合するカーネルモジュールが含まれます。
+このドライバを使うためには、カーネルがカーネルモジュールの読み込みをサポートしていなければなりません。
+もしカーネルの設定に<c>genkernel</c>を使用したなら、準備は整っています。
+そうでなければ、このサポートが有効になっているかカーネルの設定をもう一度確認してください。
+</p>
+
+<pre caption="カーネルモジュールの読み込みを有効化">
+Loadable module support ---&gt;
+  [*] Enable loadable module support
+</pre>
+
+<p>
+<e>Memory Type Range Register</e>も有効にする必要があります。
+</p>
+
+<pre caption="MTRRを有効化">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+
+<p>
+nVidiaのモジュールとライブラリは2つのパッケージから構成されています。<c>nvidia-glx</c>と<c>nvidia-kernel</c>です。
+前者はX11 GLXライブラリで、後者はカーネルモジュールです。
+<c>nvidia-glx</c>は<c>nvidia-kernel</c>に依存しているため、<c>nvidia-glx</c>をインストールするだけで十分です。
+</p>
+
+<pre caption="nVidiaモジュールのインストール">
+# <i>emerge nvidia-glx</i>
+</pre>
+
+<p>
+インストールが完了したら、<c>modprobe nvidia</c>を実行してカーネルモジュールをメモリに読み込みます。
+</p>
+
+<pre caption="カーネルモジュールの読み込み">
+# <i>modprobe nvidia</i>
+</pre>
+
+<p>
+たぶん、システムを起動するたびにこれを行うようにと思うでしょう。
+それならば、<path>/etc/modules.autoload.d/kernel-2.6</path>（もしくは<path>kernel-2.4</path>）を編集して<c>nvidia</c>を追加してください。
+その後に<c>modules-update</c>を実行することを忘れないでください。
+</p>
+
+<pre caption="modules-updateの実行">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Xサーバの設定</title>
+<body>
+
+<p>
+適切なドライバがインストールされたなら、デフォルトの<c>nv</c>ドライバの代わりに<c>nvidia</c>ドライバを使用するように、Xサーバ（XFree86かXorg）の設定をする必要があります。
+</p>
+
+<p>
+<path>/etc/X11/XF86Config</path>（もしくは<path>/etc/X11/xorg.conf</path>）を（<c>nano</c> や<c>vim</c>の様な）お気に入りのエディタで開いて、<c>Device</c>セクションに進んでください。
+このセクションの<c>Driver</c>行を以下のように変更します。
+</p>
+
+<pre caption="Xサーバ設定のnvをnvidiaに変更">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  <i>Driver     "nvidia"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+<p>
+そして<c>Module</c>セクションに行き、<c>glx</c>モジュールが読み込まれ、<c>dri</c>モジュールが読み込まれないようにしてください。
+</p>
+
+<pre caption="Moduleセクションを更新">
+Section "Module"
+  <comment>(...)</comment>
+  <i># Load  "dri"
+  Load  "glx"</i>
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+<c>opengl-update</c>を実行してXサーバがnVidia GLXを使うようにします。
+</p>
+
+<pre caption="opengl-updateを実行">
+# <i>opengl-update nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>ユーザをvideoグループに追加</title>
+<body>
+
+<p>
+ユーザがnvidiaデバイスファイルにアクセスできるように<c>video</c>グループに追加する必要があります。
+</p>
+
+<pre caption="ユーザをvideoグループに追加">
+# <i>gpasswd -a youruser video</i>
+</pre>
+
+<p>
+これは<c>udev</c>を使用していなければ全く必要ありませんけれど、追加したところ
+で問題が起きるわけでもありませんし、もし将来的に必要になった場合でも困ら
+ずにすみます :)
+</p>
+
+</body>
+</section>
+<section>
+<title>カードのテスト</title>
+<body>
+
+<p>
+nVidiaカードをテストするには、Xを起動して<c>glxinfo | grep direct</c>コマンドを実行します。
+それはダイレクトレンダリングが有効であると伝えるでしょう。
+</p>
+
+<pre caption="ダイレクトレンダリングの状態を確認">
+$ <i>glxinfo | grep direct</i>
+direct rendering: Yes
+</pre>
+
+<p>
+FPSを評価するために、<c>glxgears</c>を実行します。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>トラブルシューティング</title>
+<section>
+<title>4Gb以上のメモリを搭載したマシンで2Dを動作させる</title>
+<body>
+
+<p>
+もしnVidia 2Dアクセラレーションに関して問題があるなら、たぶんMTRRにwrite-combining幅を設定できないと言うことでしょう。
+確認するには、<path>/proc/mtrr</path>の内容を確認します。
+</p>
+
+<pre caption="write-combiningが有効か確認">
+# <i>cat /proc/mtrr</i>
+</pre>
+
+<p>
+各行に"write-back"か"write-combining"が含まれているでしょう。
+もし"uncachable"と書かれた行があるなら、BIOSの設定を変更する必要があるでしょう。
+</p>
+
+<p>
+再起動してBIOSに入り、MTRR設定（もしかすると"CPU Settings"設定項目の中かもしれません）を探してください。
+設定を"continuous"から"discrete"へと変更し、再びLinuxを起動させます。
+これで"uncachable"が無くなり、2Dアクセラレーションが動作することでしょう。
+</p>
+
+</body>
+</section>
+<section>
+<title>サポートされていない4Kスタックサイズに関する警告を受けました</title>
+<body>
+
+<p>
+1.0.6106以前の<c>nvidia-kernel</c>パッケージは8Kスタックサイズを使用するカーネルのみサポートしています。
+最近のカーネル（2.6.6以上）は4Kスタックサイズをサポートしています。
+この様な<c>nvidia-kernel</c>パッケージを使用しているなら、カーネル設定で4Kスタックサイズを選択しないでください。
+このオプションは<c>Kernel Hacking</c>に有ります。
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
