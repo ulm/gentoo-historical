@@ -17,7 +17,7 @@ import pprint
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
 install_profile = GLIInstallProfile.InstallProfile()
-cc = GLIClientController.GLIClientController()
+cc = GLIClientController.GLIClientController(pretend=True)
 waiting_for_install = False
 gauge_progress = 0
 exception_waiting = None
@@ -447,6 +447,19 @@ def set_additional_users():
 							break
 					break
 
+def save_install_profile(xmlfilename="", askforfilename=True):
+	code = 0
+	filename = xmlfilename
+	if askforfilename:
+		code, filename = d.inputbox("Enter a filename for the XML file", init=xmlfilename)
+		if code != DLG_OK: return None
+	if GLIUtility.is_file(filename):
+		if not d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == DLG_YES:
+			return None
+	configuration = open(filename ,"w")
+	configuration.write(install_profile.serialize())
+	configuration.close()
+	return filename
 
 signal.signal(signal.SIGUSR1, signal_handler)
 d.setBackgroundTitle("Gentoo Linux Installer")
@@ -463,6 +476,8 @@ d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If y
 #		client_profile.parse(client_controller_xml)
 #	# code to actually run the client_controller functions
 #	d.msgbox("ClientController done")
+
+cc.start_pre_install()
 
 install_profile_xml_file = None
 fn = (
@@ -503,14 +518,17 @@ while 1:
 		if d.yesno("Do you really want to exit before the install is complete?") == DLG_YES:
 			if d.yesno("Do you want to save the InstallProfile XML file?") == DLG_YES:
 				if install_profile_xml_file == None: install_profile_xml_file = ""
-				code, filename = d.inputbox("Enter a filename for the XML file", init=install_profile_xml_file)
-				if code != DLG_OK: sys.exit()
-				if GLIUtility.is_file(filename):
-					if not d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == DLG_YES:
-						sys.exit()
-				configuration = open(filename ,"w")
-				configuration.write(install_profile.serialize())
-				configuration.close()
+				install_profile_xml_file = save_install_profile(xmlfilename=install_profile_xml_file)
+
+#				code, filename = d.inputbox("Enter a filename for the XML file", init=install_profile_xml_file)
+#				if code != DLG_OK: sys.exit()
+#				if GLIUtility.is_file(filename):
+#					if not d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == DLG_YES:
+#						sys.exit()
+#				configuration = open(filename ,"w")
+#				configuration.write(install_profile.serialize())
+#				configuration.close()
+
 			sys.exit()
 	menuitem = menu_list[int(menuitem)-1]
 	for item in fn:
@@ -518,7 +536,10 @@ while 1:
 			item['fn']()
 			continue
 	if menuitem == "Install!":
-		cc.start()
+		if install_profile_xml_file == None or install_profile_xml_file == "":
+			install_profile_xml_file == "tmp_install_profile.xml"
+		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
+		cc.set_install_profile(install_profile_xml_file)
 		cc.start_install()
 		while 1:
 			if cc.has_more_steps(): cc.next_step()
@@ -527,9 +548,3 @@ while 1:
 				if exception_waiting:
 					# Code to determine Exception type and act on it
 					pass
-
-#		waiting_for_install = True
-#		d.gauge_start(text="Install progress:", percent=0)
-#		while waiting_for_install: pass
-#		d.msgbox("Install done!")
-#		sys.exit()

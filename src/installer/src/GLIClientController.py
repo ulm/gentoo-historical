@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.24 2004/11/21 22:40:11 agaffney Exp $
+$Id: GLIClientController.py,v 1.25 2004/11/21 22:58:48 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -52,7 +52,7 @@ class GLIClientController(Thread):
 	def run(self):
 		interactive = self._configuration.get_interactive()
 
-		if self._configuration == None and not interactive:
+		if self._configuration == None and not interactive and not self._pretend:
 			print "You can not do a non-interactive install without a ClientConfiguration!"
 			sys.exit(1)
 
