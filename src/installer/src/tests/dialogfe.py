@@ -18,10 +18,9 @@ d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
 install_profile = GLIInstallProfile.InstallProfile()
 cc = GLIClientController.GLIClientController(pretend=True)
-waiting_for_install = False
-gauge_progress = 0
 exception_waiting = None
 next_step_waiting = False
+install_done = False
 
 DLG_OK = 0
 DLG_YES = 0
@@ -41,26 +40,22 @@ def dmenu_list_to_choices(list):
 
 def signal_handler(signum, frame):
 	global gauge_progress
-	global waiting_for_install
 	global exception_waiting
 	global next_step_waiting
+	global install_done
 
 	while 1:
 		notification = cc.getNotification()
+		if notification == None: break
 		type = notification.get_type()
 		data = notification.get_data()
-		if notification == None: break
 		if type == "exception":
 			exception_waiting = data
 		elif type == "int":
 			if data == 1: # Install step done
 				next_step_waiting = True
-
-#	gauge_progress += 10
-#	d.gauge_update(gauge_progress, text="Install progress:", update_text=1)
-#	if gauge_progress >= 100:
-#		waiting_for_install = False
-#		d.gauge_stop()
+			if data == 2: # Install complete
+				install_done = True
 
 def run(cmd):
 	output_string = commands.getoutput(cmd)
@@ -218,7 +213,7 @@ def set_nfs_mounts():
 
 def set_install_stage():
 # The install stage and stage tarball will be selected here
-	code, install_stage = d.inputbox("Which stage do you want to start at?", init=install_profile.get_install_stage())
+	code, install_stage = d.inputbox("Which stage do you want to start at?", init=str(install_profile.get_install_stage()))
 	if code == DLG_OK: install_profile.set_install_stage(None, install_stage, None)
 	code, stage_tarball = d.inputbox("Where is the stage tarball located (URL or local file)?", init=install_profile.get_stage_tarball_uri())
 	try:
@@ -313,7 +308,7 @@ def set_networking():
 					menuitem2 = d.menu("What do you want to do with interface " + menuitem + "?", choices=dmenu_list_to_choices(menulist), cancel="Back")
 					if code != DLG_OK: continue
 				else:
-					menuitem2 = "Edit"
+					menuitem2 = "1"
 				menuitem2 = menulist[int(menuitem2)-1]
 				if menuitem2 == "Edit":
 					tmpnic = [interfaces[menuitem][0], interfaces[menuitem][1], interfaces[menuitem][2]]
@@ -477,6 +472,9 @@ d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If y
 #	# code to actually run the client_controller functions
 #	d.msgbox("ClientController done")
 
+client_profile.set_interactive(None, True, None)
+cc.set_configuration(client_profile)
+
 cc.start_pre_install()
 
 install_profile_xml_file = None
@@ -530,6 +528,7 @@ while 1:
 #				configuration.close()
 
 			sys.exit()
+		continue
 	menuitem = menu_list[int(menuitem)-1]
 	for item in fn:
 		if menuitem == item['text']:
@@ -541,10 +540,21 @@ while 1:
 		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
 		cc.set_install_profile(install_profile_xml_file)
 		cc.start_install()
+		while not next_step_waiting: pass
 		while 1:
-			if cc.has_more_steps(): cc.next_step()
+			if cc.has_more_steps():
+				cc.next_step()
+			else:
+				print "No more steps"
 			while 1:
-				if next_step_waiting: continue
+				if next_step_waiting:
+					next_step_waiting = False
+					next_step = cc.get_next_step_info()
+					print "Next step: " + next_step
+					break
+				if install_done:
+					print "Install done!"
+					sys.exit(0)
 				if exception_waiting:
-					# Code to determine Exception type and act on it
+					print "Exception received"
 					pass

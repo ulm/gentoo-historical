@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.25 2004/11/21 22:58:48 agaffney Exp $
+$Id: GLIClientController.py,v 1.26 2004/11/22 00:42:02 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -14,7 +14,7 @@ Steps (based on the ClientConfiguration):
 
 """
 
-import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue
+import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue, GLIArchitectureTemplate, GLINotification
 from GLIException import *
 from threading import Thread, Event
 
@@ -33,6 +33,7 @@ class GLIClientController(Thread):
 		self._notification_queue = Queue.Queue(50)
 		self._install_step = -1
 		self._pretend = pretend
+		self.setDaemon(True)
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -61,7 +62,7 @@ class GLIClientController(Thread):
 		while len(steps) > 0:
 			try:
 				step = steps.pop(0)
-				if not self._pretent:
+				if not self._pretend:
 					step()
 			except GLIException, error:
 				if error.get_error_level() != 'fatal':
@@ -82,17 +83,22 @@ class GLIClientController(Thread):
 		self._install_event.wait()
 		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		self._install_steps = self._arch_template.get_install_steps()
-		while self._install_event.wait():
+		while 1:
+			self._install_event.wait()
 			if self._install_step <= (len(self._install_steps) - 1):
 				try:
-					if not self._pretent:
+					if not self._pretend:
 						self._install_steps[self._install_step]()
-					self.addNotification("int", 1) # Install step done
+					self._install_event.clear()
+					if self.has_more_steps():
+						self.addNotification("int", 1)
+					else:
+						self.addNotification("int", 2)
 				except GLIException, error:
 					self.addNotification("exception", error)
+					self._install_event.clear()
 			else:
 				break
-			self._install_event.clear()
 
 	def get_next_step_info(self):
 		return self._install_steps[(self._install_step + 1)][1]
@@ -225,7 +231,7 @@ class GLIClientController(Thread):
 		return notification
 
 	def addNotification(self, type, data):
-		notification = GLINotificaton.GLINotification(type, data)
+		notification = GLINotification.GLINotification(type, data)
 		try:
 			self._notification_queue.put_nowait(notification)
 		except:
