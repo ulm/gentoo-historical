@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.74 2005/03/27 07:33:28 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.75 2005/03/27 08:02:24 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -462,7 +462,7 @@ class ArchitectureTemplate:
 			else:
 				genkernel_options = genkernel_options + " --no-bootsplash"
 			# Run genkernel in chroot
-			print "genkernel all " + genkernel_options
+			#print "genkernel all " + genkernel_options
 			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
