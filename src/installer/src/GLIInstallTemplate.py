@@ -45,6 +45,79 @@ class GLIInstallTemplate
 		else:
 			os.wait()
 
+	def _edit_config(file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
+		"""This allows one to edit a config file non-destructively.
+		For instance: USE="gtk gtk2 X gnome"
+		key = "USE"
+		value = "gtk gtk2 X gnome"
+		enabled determines whether the line will be active or commented.
+		"""
+		
+		# read the file into memory
+		f = open(file_name)
+		file = f.readlines()
+		f.close()
+	
+		# We haven't searched for the key yet, so we haven't found it
+		found_key = False
+		
+		# Search for the key
+		for i in range(len(file)):
+		
+			# If the line doesn't have the delimeter, just continue the loop
+			if not delimeter in file[i]:
+				continue
+				
+			# If we find the key, whether its commented or not...
+			if (file[i].split(delimeter)[0] == key) or (file[i].split(delimeter)[0] == '#' + key):
+			
+				# If we haven't already found (and reset) the key, lets do it...
+				if not found_key:
+					# Replace the line with the appropriate...
+					if enabled:
+						if quotes_around_value:
+							file[i] = key + delimeter + '"' + value + '"' + '\n'
+						else:
+							file[i] = key + delimeter + value + '\n'
+					else:
+						if quotes_around_value:
+							file[i] = '#' + key + delimeter + '"' + value + '"' + '\n'
+						else:
+							file[i] = '#' + key + delimeter + value + '\n'
+							
+					# We found the key, yeah!!!
+					found_key = True
+					
+				# If we already found the key (and reset it),
+				# but we find another instance, comment it out
+				else:
+				
+					# If the line is not commented, comment it
+					if file[i].split(delimeter)[0] == key:
+						file[i] = '#' + file[i]
+	
+		# If after searching the whole file, we still haven't found the key...
+		if not found_key:
+		
+			# Then just add the lines to the end of the file
+			file.append('\n')
+			file.append('# This line added by GLI\n')
+			if enabled:
+				if quotes_around_value:
+					file.append(key + delimeter + '"' + value + '"' + '\n')
+				else:
+					file.append(key + delimeter + value + '\n')
+			else:
+				if quotes_around_value:
+					file.append('#' + key + delimeter + '"' + value + '"' + '\n')
+				else:
+					file.append('#' + key + delimeter + value + '\n')
+					
+		f = open(file_name, 'w')
+		for line in file:
+			f.write(line)
+		f.close()
+
 	def setup_network_pre(self, install_profile, client_configuration):
 		"Sets up the network on the live CD environment"
 		pass
