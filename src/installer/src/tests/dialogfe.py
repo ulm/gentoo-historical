@@ -44,7 +44,7 @@ def signal_handler(signum, frame):
 	global gauge_progress
 	global waiting_for_install
 	gauge_progress += 10
-	d.gauge_iterate(gauge_progress, "Install progress:")
+	d.gauge_update(gauge_progress, text="Install progress:", update_text=1)
 	if gauge_progress >= 100:
 		waiting_for_install = False
 		d.gauge_stop()
@@ -506,7 +506,7 @@ while 1:
 			continue
 	if menuitem == "Install!":
 		waiting_for_install = True
-		d.gauge_start(0, "Install progress:", title="Installing")
+		d.gauge_start(text="Install progress:", percent=0)
 		while waiting_for_install: pass
 		d.msgbox("Install done!")
 		sys.exit()
