@@ -377,13 +377,16 @@ Otros:<br/>
 <a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/>
 <br/><br/>
 -->
+Documentation:
 <br />
-[ <a href="/index-docs.html#top"> User Docs </a>]
+<a class="altlink" href="/index-docs.html#top"> User Docs </a>
+<br />
+<a class="altlink" href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>
+<br />
+<a class="altlink" href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>
 <br /><br />
-[ <a href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>]
-<br /><br />
-[ <a href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>]
-<br /><br />
+<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
+<br />
 
 
 
