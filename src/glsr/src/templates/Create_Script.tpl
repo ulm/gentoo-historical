@@ -1,4 +1,4 @@
-      <form name="user_control_form" method="GET" action="index.py">
+      <form name="user_control_form" method="POST" action="index.py">
       <input type="hidden" name="page" value="save_script">
       <input type="hidden" name="script_id" value="{SCRIPT_ID}" />
       <input type="hidden" name="parent_script_id" value="{PARENT_SCRIPT_ID}" />
