@@ -2,7 +2,7 @@
 XSLTP=xsltproc
 OUTLOG=/tmp/clog
 source ~/.bashrc
-source ~/.keychain/*-sh
+source ~/.keychain/`hostname`-sh
 export CVS_RSH=ssh
 
 [ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
