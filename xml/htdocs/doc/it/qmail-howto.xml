@@ -1,8 +1,8 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/qmail-howto.xml,v 1.3 2004/05/30 11:01:33 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/qmail-howto.xml,v 1.4 2004/09/19 22:04:49 mush Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/it/qmail-howto.xml">
+<guide link="/doc/en/qmail-howto.xml" lang="it">
 
 <title>qmail/vpopmail Virtual Mail Hosting System Guide</title>
 
@@ -13,16 +13,14 @@
 <author title="Traduttore">
   <mail link="gentoo-dev@gentoo.it">Enrico Morelli</mail>
 </author>
-<author title="Traduttore">
-Team Italiano
-</author>
+
 <abstract>
 Questo documento espone dettagliatamente come creare un mail server basato su qmail,
 vpopmail, courier-imap, mysql e imp di horde.
 </abstract>
 
-<version>1.6</version>
-<date>26 Maggio 2004</date>
+<version>1.8</version>
+<date>10 Settembre 2004</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -105,7 +103,7 @@ E' necessario eseguire alcune configurazioni post-installazione.
 <pre caption="Configurazione per qmail">
 <comment>(Da personalizzare per adattarle alle informzioni personali)</comment>
 # <i>nano /var/qmail/control/servercert.cnf</i>
-# <i>ebuild /var/db/pkg/net-mail/qmail-1.03-r*/qmail-1.03-r*.ebuild config</i>
+# <i>ebuild /var/db/pkg/mail-mta/qmail-1.03-r*/qmail-1.03-r*.ebuild config</i>
 </pre>
 
 <p>
@@ -262,8 +260,12 @@ Sarà anche creato uno user account per 'vapier'.
 </p>
 
 <pre caption="Aggiungere un  dominio">
-# <i>source /etc/profile</i>
 <comment>(Necessario solo se il comando <i>vadddomain</i> visualizza "command not found")</comment>
+# <i>source /etc/profile</i>
+  	 
+ <comment>(Durante il debug di vpopmail, si potrebbero consultare i log)</comment>
+# <i>mysql -u vpopmail -p</i>
+mysql> <i>select * from vpopmail.vlog;</i>
 # <i>vadddomain wh0rd.org postpass</i>
 <comment>(Verifica se il dominio è configurato correttamente)</comment>
 # <i>printf "postmaster@wh0rd.org\0postpass\0blah\0" | vchkpw `which id` 3&lt;&amp;0</i>
@@ -418,7 +420,7 @@ di aiuto per il lettore.
 # <i>nano horde.php</i>
 <comment>(In 'Horde Authentication':)</comment>
 $conf['auth']['driver'] = 'imap';
-$conf['auth']['params']['dsn'] = '{localhost:993/imap/ssl}';
+$conf['auth']['params']['dsn'] = '{localhost:993/imap/ssl/novalidate-cert}';
 
 <comment>(In 'Horde Logging':)</comment>
 $conf['log']['name'] = '/var/log/apache2/horde.log';
@@ -460,8 +462,9 @@ $servers['imap'] = array(
 	'server' => 'localhost',
 	'protocol' => 'imap/ssl/novalidate-cert',
 	'port' => 993,
-	'folders' => 'mail/',
+	'folders' => '',
 	'namespace' => '',
+        'namespace' => 'INBOX.',
 	'maildomain' => 'wh0rd.org',
 	'smtphost' => 'localhost',
 	'realm' => '',
@@ -559,7 +562,7 @@ per inserire la nuova applicazione.
 <p>
 qmail utilizza ucspi-tcp per gestire le connessioni in ingresso. 
 Se si desidera personalizzare le regole dei filtri, i file di configurazione sono in
-<path>/etc/tcprules.d/</path>. 
+<path>/etc/tcprules.d/</path> (vecchie versioni di qmail pongono i file in /etc). 
 Qui si trovano due file per ogni servizio, il file di configurazione (p.e. tcp.qmail-smtp)
 e la versione compilata di questo file usato da ucspi-tcp (p.e. tcp.qmail-smtp.cdb).
 Ogni volta si aggiorna il file di configurazione, si dovrà anche provvedere alla ricompilazione
@@ -613,7 +616,7 @@ Si possono personalizzare alcune opzioni editando direttamente
 <p>
 Uno dei filtri antispam Open Source è
 <uri link="http://www.spamassassin.org/">SpamAssassin</uri>.
-Installare con <c>emerge dev-perl/Mail-SpamAssassin</c>.
+Installare con <c>emerge mail-filter/spamassassin</c>.
 Il pacchetto ha sia una versione da linea di comando che una client/server.
 Per server che smistano una piccola quantità di mail, si può utilizzare la versione
 da linea di comando, mentre per server che gestiscono carichi abbondanti di mail
@@ -653,7 +656,7 @@ che eseguirà SpamAssassin.
 <p>
 Come SpamAssassin, <uri link="http://www.clamav.net/">Clam AntiVirus</uri> 
 arriva in due versioni.  Si daranno indicazioni su come configurare la versione 
-client/server.  Installare con <c>emerge net-mail/clamav</c>. 
+client/server.  Installare con <c>emerge app-antivirus/clamav</c>. 
 </p>
 
 <pre caption="Configurazione per Clam AntiVirus">
@@ -667,9 +670,8 @@ client/server.  Installare con <c>emerge net-mail/clamav</c>.
 <comment>(Assicurarsi che la variabile $clamscan_binary sia definita come '/usr/bin/clamscan'.)</comment>
 <comment>(Se fosse deinita come '', guardare la nota che segue.)</comment>
 # <i>nano /var/qmail/control/conf-common</i>
-<comment>(Se ClamAV avesse problemi di memoria provate ad eliminare il softlimit)</comment>
+<comment>(Se ClamAV riporta problemi di memoria provare a cancellare il softlimit)</comment>
 </pre>
-
 <impo>
 Se non si aveva Clam AntiVirus nel sistema prima di emergere qmail-scanner,
 sarà necessario riemergere qmail-scanner. In questo modo verranno aggiunti
