@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Language.py,v 1.3 2004/12/30 16:35:20 port001 Exp $
+# $Id: Page_Language.py,v 1.4 2004/12/31 17:03:12 port001 Exp $
 #
 
 import Config
@@ -18,10 +18,11 @@ class Page_Language(SiteModule):
 
 	self._template = Config.Template['admin_script_languages']
 	self._class_name = "language"
+        self._object = Language()
+        self._permited_methods = ('add', 'modify', 'delete',
+                                  'show_add', 'show_modify', 'show_all')
         self._obj_attributes = ('name', 'descr', 'def_keywords',
                                 'def_expr', 'clo_expr', 'clo_s_keywords')
-        self._object = Language()
-
         self._reports = {'add': 'Language Successfully Added',
                          'modify': 'Language Successfully Modified',
                          'delete': 'Languages Successfully Deleted'}

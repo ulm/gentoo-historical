@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2  
 #
-# $Id: SiteModule.py,v 1.2 2004/12/30 14:08:09 port001 Exp $  
+# $Id: SiteModule.py,v 1.3 2004/12/31 17:03:12 port001 Exp $  
 #
 
 __modulename__ = 'SiteModule'
@@ -27,6 +27,7 @@ class SiteModule:
     _obj_attributes = None
     _class_name = None
     _params = {}
+    _permited_methods = ()
 
     _tmpl = Template()
     _action_inputs = []
@@ -96,12 +97,20 @@ class SiteModule:
     def _add(self):
     
         self._mode = 'add'
-        self._set_attributes()
+
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+        
+	self._set_attributes()
 	self._object.Create(self._obj_attributes)
 
     def _modify(self):
 
         self._mode = 'modify'
+	
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+
         self._set_attributes()
 	self._object.SetID(self._req.Values.getvalue("%s_id" % self._class_name))
 	self._object.Modify(self._obj_attributes)
@@ -109,6 +118,10 @@ class SiteModule:
     def _delete(self):
 
         self._mode = 'delete'
+	
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+
         for id in self._req.Values.getlist('delete_btn'):
 	    if self._object.SetID(id):
 	        self._object.Remove()
@@ -118,6 +131,10 @@ class SiteModule:
     def _show_all(self):
 
         self._mode = 'show_all'
+
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+	
         row = 'even'
 
 	for record in self._object.List():
@@ -134,12 +151,20 @@ class SiteModule:
     def _show_add(self):
     
         self._mode = 'show_add'
+
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+	
         self._add_obj = True
 	self._modify_obj = True
 
     def _show_modify(self):
     
         self._mode = 'show_modify'
+
+        if self._mode not in self._permited_methods:
+	    raise GLSRException('Site module attempted to call restricted method')
+	
         self._modify_obj = self._req.Values.getvalue('show_modify')
 	self._object.SetID(self._modify_obj)
 	obj_info = self._object.GetDetails()
