@@ -7,7 +7,6 @@ import time
 import re
 import changelogs
 import MySQLdb
-import md5
 
 FINDVER = re.compile('-[0-9]')
 

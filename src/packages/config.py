@@ -20,5 +20,5 @@ RSS_EDITOR = 'marduk@gentoo.org'
 
 HOST = 'localhost'
 DATABASE = 'fresh_ebuilds'
-USER = 
-PASSWD = 
+USER = ''
+PASSWD = ''

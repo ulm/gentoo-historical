@@ -1,185 +1,233 @@
 #!/usr/bin/python -OO
+"""These functions mainly take ebuild info (grabbed from the database and
+    convert it to HTML.  See the "main" function at the bottom."""
+
+__version__ = "$Revision: 1.2 $"
+# $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $"
 
 import config
 import os
 import time
 import sys
-import MySQLdb
 import ebuilddb
+import bugs
 import changelogs
 from cgi import escape
 from urllib import quote
 
+# import portage, but temporarily redirect stderr
+try:
+    portage
+except NameError:
+    null = open('/dev/null', 'w')
+    tmp = sys.stderr
+    sys.stderr = null
+    sys.path = ["/usr/lib/portage/pym"]+sys.path
+    import portage
+    sys.stderr = tmp
+
+tree = portage.portdbapi('/usr/portage')
+
+def is_masked(ebuild):
+    """Return true if ebuild is masked"""
+
+    return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
+    
 def is_new(db,ebuild):
     """Check for newness. An ebuild is considered new if it is the
     only ebuild with that category/name in ebuild and it has no prevarch"""
     
     c = db.cursor()
-    query = """SELECT prevarch FROM ebuild WHERE category="%s" AND name="%s" """ \
-        % (ebuild['category'], ebuild['name'])
+    query = ('SELECT prevarch FROM ebuild WHERE category="%s" AND name="%s"'
+        % (ebuild['category'], ebuild['name']))
     c.execute(query)
     results = c.fetchall()
     if len(results) == 1 and results[0][0] is None:
         return 1
     return 0
 
-def changelog_to_html(s):
-    n = ""
-    for c in s:
-        if c == '\n':
-            n = "%s<br>" % n
+def changelog_to_html(changelog):
+    """HTML-ize a changelog entry"""
+    html = ""
+    for char in changelog:
+        if char == '\n':
+            html = "%s<br>" % html
         else:
-            n = "%s%s" % (n,escape(c))
-    n = changelogs.bugs_to_html(n)
-    return n
+            html = "%s%s" % (html, escape(char))
+    html = changelogs.bugs_to_html(html)
+    return html
 
-def homepage_to_html(s):
-    if not s.strip(): return "?"
-    t = s.replace('|',' ')
-    if ' ' in t:
-        pieces = t.split()
-        return ' '.join([ homepage_to_html(piece) for piece in pieces ])
-    return ("""<a href="%s"><img border="0" src="%s/home.png" width="24" height="20" alt="Home Page" title="Home Page"></a>""" % (s, config.ICONS))
+def homepage_to_html(homepage):
+    """convert HOMEPAGE entry to HTML"""
+    if not homepage.strip(): return "?"
+    homepage = homepage.replace('|',' ')
+    pieces = homepage.split()
+    count = len(pieces)
+    if count == 1:
+        return ('<a class="homepage" href="%s">'
+            'Homepage</a>' % pieces[0])
+            
+    html = ['[<a href="%s">%s</a>]' % (page, index + 1) for index,
+        page in enumerate(pieces)]
+    return " ".join(['<span class="homepage">Homepages'] + html + 
+        ['</span>'])
 
-def license_to_html(s):
-    if not s.strip(): return "?"
-    t = s.replace('|',' ')
-    if ' ' in t:
-        pieces = t.split()
-        return "<br>".join([ license_to_html(piece) for piece in pieces ])
-    return """<a href="http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/licenses/%s">%s</a>""" % (s,s)
+def license_to_html(license):
+    if not license.strip(): return "?"
+    license = license.replace('|',' ')
+    pieces = license.split()
+    html = ['<a href="http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
+        'licenses/%s">%s</a>' % (piece, piece) for piece in pieces]
+    return '<br>\n'.join(html)
 
 def package_to_html(pkginfo,db):
     """This function needs a database (db) connection because it performs a query_to_dict
     on the package"""
-    #colspan = len(config.ARCHLIST) + 1
-    s = """<table class="ebuild">
-        <tr><td class="fields" colspan="4">%s</td></tr>
-        <tr><td class="item" colspan="4"><p><img align="right" alt="" src="%s/%s.png">
-        <b>Description: </b>%s</p>
-    """  % (pkginfo['name'],config.ICONS,pkginfo['category'],escape(pkginfo['description']))
-    ebuilds = get_recent_releases(pkginfo,db)
-    if ebuilds:
-        s = """%s<p><b>Releases:</b></p>
-        <table class="releases"><tr><td>&nbsp;</td>""" % s
-        for i in config.ARCHLIST:
-            s = """%s<th class="arch">%s</th>""" % (s,i)
-        s = "%s</tr>\n" % s
-        for ebuild in ebuilds:
-            archs = ebuild['arch'].split()
-            s = """%s<tr><th class="releases"><a href="%sebuilds/?%s-%s" title="%s">%s</a></th>
-            """ % (s,config.FEHOME,ebuild['name'],ebuild['version'],ebuild['time'],ebuild['version'])
-            for arch in config.ARCHLIST:
-                if arch in config.ARCHLIST:
-                    if arch in archs:
-                        arch_string = '+'
-                        title = 'marked stable for %s' % arch
-                    elif '~%s' % arch in archs:
-                        arch_string = '~'
-                        title = 'undergoing testing for %s' % arch
-                    else:
-                        arch_string = '-'
-                        title = 'not available for %s' % arch
-                s = """%s<td class="archcell" arch="%s" title="%s">%s</td>
-                """ % (s,arch_string,title,arch_string)
-            s = "%s</tr>" % s
-        s = "%s</table>\n" % s
     
-    s = "%s\n%s</table>" % (s,general_info_to_html(pkginfo))
-    return s    
+    table_begin = '<table class="ebuild">'
+    name = '<tr><td class="fields">%s</td></tr>' % pkginfo['name']
+    description = ('<tr><td class="item">'
+        '<img align="right" alt="" src="%s/%s.png">'
+        '<b>Description: </b>%s</td></tr>' % (config.ICONS, 
+        pkginfo['category'], escape(pkginfo['description'])))
+    ebuilds = get_recent_releases(pkginfo,db)
+    releases = '<tr><td>%s</td></tr>' % archs_to_html(ebuilds, 'Releases')
+    bug_string = ''
+    #bug_string = ('<br><h3>Related bugs:</h3>\n%s' 
+    #    % bugs_to_html(pkginfo['name']))
+    general = '<tr><td>%s</td></tr>' % general_info_to_html(pkginfo)
+    table_end = '</table>'
+    rows = '\n\t'.join([name, description, releases, general])
+    return '\n\t'.join([table_begin, rows, table_end])
 
-def archs_to_html(archs):
-    arch_string= '|'
-    for arch in config.ARCHLIST:
-        if arch in archs:
-            arch_icon = 'check.gif'
-            alt = ": yes"
-            title = 'marked stable for %s' % arch
-        elif '~%s' % arch in archs:
-            arch_icon = 'bug.gif'
-            alt = ': testing'
-            title = 'undergoing testing for %s' % arch
-        else:
-            arch_icon = 'no.gif'
-            alt = ': no'
-            title = 'not available for %s' % arch
-            
-        arch_string = (' %s %s <img src="%simages/archs/%s" '
-            'alt="%s" title="%s"> |' % (
-            arch_string,
-            arch,
-            config.FEHOME, 
-            arch_icon,
-            alt,
-            title))
-            
-    return arch_string
-                
-def ebuild_to_html(ebinfo,new=0):
-    try:
-        archs = ebinfo['arch'].split()
-    except KeyError:
-        archs = ()
-    arch_string = archs_to_html(archs)
-    changelogurl = ('http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
-        '%s/%s/ChangeLog' % (ebinfo['category'],ebinfo['name']))
-
+def archs_to_html(ebuilds, heading = None):
+    heading = heading or '&nbsp;'
+    table_begin = '<table class="releases">'
+    header_row = ''.join(['<tr><td><b>%s</b></td>' % heading] +
+        ['<th class="arch">%s</th>' % i for i in config.ARCHLIST] +
+        ['</tr>']
+    )
+    rows = []
+    for ebuild in ebuilds:
+        masked = is_masked(ebuild)
+        archs = ebuild['arch'].split()
+        row_start = ('<tr>\n\t<th class="releases"><a href="%sebuilds/?%s-%s"'
+            ' title="%s">%s</a></th>\n' % (config.FEHOME, 
+                ebuild['name'], ebuild['version'], ebuild['time'], 
+                ebuild['version']))
+        row_data = []
+        for arch in config.ARCHLIST:
+            if arch in archs:
+                arch_string = '+'
+            elif '~%s' % arch in archs:
+                arch_string = '~'
+            else:
+                arch_string = '-'
+            if arch_string != '-' and masked:
+                arch_string = 'M' + arch_string
+            row_data.append('\t<td class="archcell" arch="%s">%s</td>'
+                % (arch_string, arch_string))
+        row_end = '</tr>'
+        rows.append('\n\t'.join([row_start] + row_data + [row_end]))
+    table_end = '</table>'
+    return '\n\t'.join([table_begin] + [header_row] + rows + [table_end])
+    
+def ebuild_to_html(ebinfo, new=0, show_bugs=0):
     if new:
         new_string = """ &nbsp;&nbsp;<span class="new">new!</span> """
     else:
         new_string = ""
         
-    return ('<table class="ebuild">\n'
-        '<tr><td colspan="4" class="fields">'
+    table_begin = '<table class="ebuild">'
+    name_and_date = ('<tr><td class="fields">'
         '<a href="%spackages/?category=%s;name=%s">%s</a> %s%s<br>'
-        '<span class="time">%s</span><br>\n'
-        '</td></tr>\n'
-        '<tr><td class="item" align="center" colspan="1">'
-        '<img alt="" src="%simages/%s.png">' 
-        '<td class="item" valign="top" colspan="3">'
-        '<p><b>Description:</b> %s</p>\n'
-        '<p><b>Changes:</b><br>\n'
-        '%s</p></td></tr>\n'
-        '<tr><td colspan="4" class="item"><p class="archs">%s</p>\n'
-        '</td></tr>\n'
-        '%s</table>\n'
-        '<br>\n' % (config.FEHOME,
-            quote(ebinfo['category']),
-            quote(ebinfo['name']),
-            ebinfo['name'],
-            ebinfo['version'],
-            new_string,
-            ebinfo['time'].localtime().strftime("%c %Z"),
-            config.FEHOME,
-            ebinfo['category'],
-            escape(ebinfo['description']),
-            changelog_to_html(ebinfo['changelog']),
-            arch_string,
-            general_info_to_html(ebinfo)))
+        '<span class="time">%s</span>'
+        '</td></tr>' % (config.FEHOME, quote(ebinfo['category']),
+        quote(ebinfo['name']),
+        ebinfo['name'],
+        ebinfo['version'],
+        new_string,
+        ebinfo['time'].localtime().strftime("%c %Z")))
+        
+    desc_and_changes = ('<tr><td class="item" valign="top">'
+        '<img alt="" align="right" src="%simages/%s.png">' 
+        '<p><b>Description:</b> %s</p>'
+        '<p><b>Changes:</b><br>'
+        '%s</p></td></tr>' % (
+        config.FEHOME,
+        ebinfo['category'],
+        escape(ebinfo['description']),
+        changelog_to_html(ebinfo['changelog'])))
 
+    archs = '<tr><td>%s</td></tr>' % archs_to_html([ebinfo])
+    general = '<tr><td>%s</td></tr>' % general_info_to_html(ebinfo)
+    table_end = '</table>'
+    
+    if 1 == 1:
+        bug_string = ''
+    else:
+        bug_string = '<br><h3>Related bugs:</h3>%s' % bugs_to_html(ebinfo['name'])
+            
+    return '\n\t'.join([table_begin, 
+        name_and_date, 
+        desc_and_changes, 
+        archs,
+        general, 
+        table_end, 
+        bug_string])
+      
 def general_info_to_html(pkg):
     """This actually will (should) take either a package or ebuild dict
     as an argument"""
     
     changelogurl = ('http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
         '%s/%s/ChangeLog' % (pkg['category'],pkg['name']))
-    return ('<tr><th class="category">Category</th>'
-        '<td class="homepage" rowspan="2">%s</td>'
-        #'<td class="homepage" rowspan="2"><a href="%s">Home Page</a></td>'
-        '<th class="license">License</th>'
-        '<td class="changelog" rowspan="2"><a href="%s">ChangeLog</a><td>\n'
-        '<tr><td class="category"><a href="%spackages/?category=%s">'
-        '%s</a></td>'
-        #'<td class="homepage"><a href="%s">Home Page</a></td>'
-        '<td class="license">%s</td></tr>\n'
-        % ( homepage_to_html(pkg['homepage']),
-            changelogurl,
-            config.FEHOME,
-            pkg['category'],
-            pkg['category'],
-            #pkg['homepage'],
-            license_to_html(pkg['license'])))
+    cat_header = '<th class="category">Category</th>'
+    license_header = '<th class="license">License</th>'
+    category = ('<td class="category">'
+        '<a href="%spackages/?category=%s">%s</a></td>'  % (config.FEHOME, 
+        pkg['category'], pkg['category']))
+    homepage = ('<td class="homepage" rowspan="2">%s</td>' 
+        % homepage_to_html(pkg['homepage']))
+    license = ('<td class="license">%s</td>' 
+        % license_to_html(pkg['license']))
+    changelog = ('<td class="changelog" rowspan="2">'
+        '<a href="%s">ChangeLog</a><td>' % changelogurl)
+    
+    return '\n\t'.join(['<table class="general_info">',
+        '<tr>',
+        cat_header,
+        homepage,
+        license_header,
+        changelog,
+        '</tr>',
+        '<tr>',
+        category,
+        license,
+        '</tr>',
+        '</table>'])
         
+def bugs_to_html(package):
+    """Given package name (no version #s), return html text of bugs as
+    reported by bugzilla"""
+    # Right now we have an issue with the bugzilla site.  New interface
+    # needs to be written, Bail out.
+    return ""
+    import urllib2
+    url = ('http://bugs.gentoo.org/buglist.cgi?query_format='
+            '&short_desc_type=allwords&short_desc=%s'
+            '&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED'
+            '&bug_status=REOPENED'
+            '&ctype=csv' % package)
+    fp = urllib2.urlopen(url)
+    factory = bugs.BugFactory()
+    package_bugs = factory.fromCSV(fp)
+    if package_bugs:
+        writer = bugs.HTMLWriter(package_bugs, 'bugs.gentoo.org')
+        return str(writer)
+    else:
+        return "None"
+                
 def get_most_recent(db,max=config.MAXPERPAGE,arch="",branch=""):
     c = db.cursor()
     extra = ''
@@ -221,7 +269,7 @@ def get_recent_releases(pkg,db,max=config.MAX_RECENT_RELEASES):
     c = db.cursor()
     query = """SELECT category,name,version,when_found,NULL,changelog,arch ,NULL,NULL
     FROM ebuild WHERE name="%s" AND 
-    category="%s" ORDER BY when_found DESC LIMIT %s
+    category="%s" ORDER BY version DESC LIMIT %s
     """ % (pkg['name'],pkg['category'],max)
     c.execute(query)
     results = c.fetchall()
@@ -236,9 +284,10 @@ def ebuilds_to_rss(fp,ebuilds,simple=False,subtitle=""):
         <title>Fresh ebuilds %s</title>
         <link>%s</link>
         <description>Latest ebuilds from the Gentoo Linux portage tree</description>
+        <![CDATA[<link rel="stylesheet" href="%s" type="text/css" title="styled" />]]>
         <webMaster>www@gentoo.org</webMaster>
         <managingEditor>marduk@gentoo.org</managingEditor>
-        <pubDate>%s</pubDate>""" % (subtitle,config.FEHOME,
+        <pubDate>%s</pubDate>""" % (subtitle,config.FEHOME, config.STYLESHEET,
             time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
 
     for ebuild in ebuilds:
@@ -272,7 +321,7 @@ if __name__ == '__main__':
             ebuilddb.main()
     except IndexError:
             pass
-
+            
     db = ebuilddb.db_connect()
     branches = ('','stable','testing')
     for arch in [''] + config.ARCHLIST:
@@ -306,16 +355,13 @@ if __name__ == '__main__':
                     ebuildfilename = "%s/%s/%s/%s-%s.ebuild" % (ebuilddb.config.PORTAGE_DIR,
                         ebuild['category'],ebuild['name'],ebuild['name'],
                         ebuild['version'])
-                    os.system('touch -r %s %s || touch -d "today -1 year" %s' % (ebuildfilename,pkgfilename,pkgfilename))
+                    os.system('touch -r %s %s || touch -d "today -1 year" %s' 
+                        % (ebuildfilename,pkgfilename,pkgfilename))
         
                 try:
-                    index.write('%s<br>\n\n\n' % (ebuild_html))
+                    index.write('%s\n\n' % (ebuild_html))
                 except IOError:
                     pass
-                #index.write('<!--#include virtual="%s/ebuilds/%s-%s.html" --><br>\n\n\n' 
-                #   % (config.WEBBASE,ebuild['name'],ebuild['version']))
-                #index.write("""<hr class="seperator">\n""")
-                
             index.write("""</table>\n""")
             index.close()
             

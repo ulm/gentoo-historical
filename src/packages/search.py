@@ -3,9 +3,9 @@
 import sys
 import config
 import cgi
-import ebuilddb
 import gentoo
 import os
+import re
 from MySQLdb import escape_string
 
 form = cgi.FieldStorage()
@@ -34,6 +34,20 @@ def query_to_dict(q):
 def write_to_cache(s):
 	open(cachefile,'w').write(s)
 
+def sort_by_weight(a, b):
+    """Right now we just sort based on whether the sstring is in the name"""
+    a_name = a['name']
+    b_name = b['name']
+    
+    a_match = re.search(sstring, a_name, re.IGNORECASE)
+    b_match = re.search(sstring, b_name, re.IGNORECASE)
+    
+    if a_match and b_match:
+        return 0
+    if a_match:
+        return -1
+    return 1
+
 # if it's in the cache, just write that out
 qs = sys.argv[1]
 cachefile = os.path.join(config.LOCALHOME,'search/cache',qs)
@@ -48,6 +62,7 @@ query = ('SELECT category,name,homepage,description,license '
 	'LIMIT %s,%s' 
 	% (escaped,escaped,offset,config.MAXPERPAGE))
 
+import ebuilddb
 db = ebuilddb.db_connect()
 c = db.cursor()
 try:
@@ -74,12 +89,13 @@ if not results:
 	sys.exit(0)
 
 pkgs = [ query_to_dict(i) for i in results ]
+pkgs.sort(sort_by_weight)
 
 s = ''
 for pkg in pkgs:
 	#print pkg
 	html = gentoo.package_to_html(pkg,db)
-	s = '%s\n%s<br>\n<br>\n' % (s,gentoo.package_to_html(pkg,db))
+	s = '%s\n%s' % (s,gentoo.package_to_html(pkg,db))
 
 if offset != "0":
 	s = '%s<a href="?sstring=%s;offset=%s">[Previous]</a> ' % (s,sstring,int(offset) - config.MAXPERPAGE)
