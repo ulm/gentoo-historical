@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.18 2004/11/07 22:33:45 port001 Exp $
+# $Id: index.py,v 1.19 2004/11/07 22:53:55 port001 Exp $
 #
 
 """
@@ -200,8 +200,8 @@ class PageDispatch:
 
     def log_request(self):
 
-        LogHandler.logwrite("Request for page '%s' completed in %.5f(s)" %
-                            (self._page, eval_timer(self._t_start, stop_timer())),
+        LogHandler.logwrite("Request for page '%s', domain '%s' completed in %.5f(s)" %
+                            (self._page, self._domain, eval_timer(self._t_start, stop_timer())),
                             __modulename__, "Info")
 
 if __name__ == "__main__":
