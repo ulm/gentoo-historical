@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/kde-split-ebuilds.xml,v 1.1 2005/02/03 19:07:23 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/kde-split-ebuilds.xml,v 1.2 2005/02/19 17:32:50 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -22,8 +22,8 @@ it.
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>1.0</version>
-<date>2005-01-15</date>
+<version>1.1</version>
+<date>2005-02-19</date>
 
 <chapter>
 <title>The Split KDE Ebuilds</title>
@@ -282,6 +282,65 @@ featureful solutions such as the monolithic ebuilds.
 <chapter>
 <title>Split ebuilds FAQ</title>
 <section>
+<title>Can't we do this already with DO_NOT_COMPILE?</title>
+<body>
+
+<p>
+DO_NOT_COMPILE is an environment variable internal to the KDE build system. It
+allows selectively disabling subdirectories from compilation. Some people used
+to use it to compile subsets of the monolithic KDE ebuilds. For instance,
+running <c>DO_NOT_COMPILE=konqueror emerge kdebase</c> would install a kdebase
+without the konqueror application.
+</p>
+
+<p>
+However, DO_NOT_COMPILE was never intended to be used to interfere with the
+operation of a package manager's automated builds. It does not work, it can
+break your system, and it was never supported. We request everyone to refrain
+from using it.
+</p>
+
+<p>
+Here is a partial list of the problems with DO_NOT_COMPILE:
+</p>
+
+<ul>
+  <li>
+    It completely breaks portage's dependency tracking. Portage does not know
+    about DO_NOT_COMPILE, and thinks the entire monolithic package has been
+    installed and can satisfy other packages' deps. This can cause other
+    packages not to emerge or not to run.
+  </li>
+  <li>
+    It forces the user to know the names and meanings of all the different
+    existing subdirs of the KDE modules. Very few users do know this, unless
+    they're KDE developers, so they can't use DO_NOT_COMPILE properly.
+  </li>
+  <li>
+    KDE module subdirs can have interdependencies between them, require a
+    particular build order, require another dir to be present even if it does
+    not have to be installed, and so forth. We put a lot of work into the split
+    ebuilds to make them work properly in this regard. DO_NOT_COMPILE is not
+    nearly a fine enough tool to achieve the same results, even given
+    sufficient knowledge on the user's part. The only thing you can do with it
+    is disable a few applications from compiling. It is practically impossible
+    to use it to install only a few selected applications from modules like
+    kdebase or kdepim.
+  </li>
+  <li>
+    If I installed kmail yesterday and want to add korn today, using
+    DO_NOT_COMPILE, it entails recompiling kmail as well. This means
+    DO_NOT_COMPILE is always much slower than split ebuilds.
+  </li>
+  <li>
+    DO_NOT_COMPILE can't be used to make precompiled packages (such as the GRP)
+    containing individual KDE apps.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
 <title>Aren't you putting too big a load on the Gentoo KDE maintainers?</title>
 <body>
 
@@ -355,6 +414,14 @@ another way is needed.
 </p>
 
 <p>
+A proper solution to this problem requires modifications to portage. One such
+solution is described in
+<uri link="http://www.gentoo.org/proj/en/glep/glep-0021.html">GLEP 21</uri>.
+Until that is implemented, however, we must resort to scripts like the one
+given below.
+</p>
+
+<p>
 Fortunately, all KDE ebuilds belong to the kde-base directory (and all ebuilds
 in the kde-base category come from kde.org). So the following code works:
 </p>
@@ -381,18 +448,30 @@ and so there will always be easy ways to accomplish it.
 
 <p>
 The objective here is to list all split kde ebuilds derived from, say, the
-kdebase monolithic ebuild. There are currently three main ways to accomplish
-this. They all involve you in KDE eclasses' implementation details to some
-degree, so if you use them in a script that's not for private use, tell us
-about it.
+kdebase monolithic ebuild. Once again, the proper implementation (such as <uri
+link="http://www.gentoo.org/proj/en/glep/glep-0021.html">GLEP 21</uri>)
+would make this trivial. Today, however, you must become involved in the
+KDE eclasses' implementation details to some degree. So, if you use any of
+these approaches in a script that's not for private use, tell us about it.
 </p>
 
 <p>
 kde-functions.eclass defines functions called get-parent-package() and
 get-child-packages() which do the translation for you. These two functions are
 the correct way to accomplish this task from an ebuild or an external bash
-script.
+script. Here is an example:
 </p>
+
+<pre>
+$ <i>function die() { echo $@; } # called to report errors</i>
+$ <i>source /usr/portage/eclass/kde-functions.eclass</i>
+$ <i>get-parent-package konqueror # won't work, you must specify full name</i>
+<i>Package konqueror not found in KDE_DERIVATION_MAP, please report bug # error printed</i>
+$ <i>get-parent-package kde-base/konqueror # fully qualified package name</i>
+<i>kde-base/kdebase # result printed</i>
+$ <i>get-child-packages kde-base/kdebase</i>
+<i> # (long list of packages printed here)</i>
+</pre>
 
 <p>
 If your script isn't in bash, you can grep kde-functions.eclass to extract the
