@@ -54,7 +54,7 @@ This is where you setup Networking.
 		self.treeview.append_column(column)
 		col_num += 1
 	self.treewindow = gtk.ScrolledWindow()
-	self.treewindow.set_size_request(-1, 200)
+	self.treewindow.set_size_request(-1, 125)
 	self.treewindow.set_shadow_type(gtk.SHADOW_IN)
 	self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 	self.treewindow.add(self.treeview)
@@ -146,7 +146,36 @@ This is where you setup Networking.
 	networking_button_box.pack_start(self.networking_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 	
 	vert.pack_start(networking_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-
+	
+	# The hostname and dnsdomainname box
+	naming_button_box = gtk.HBox(gtk.FALSE, 0)
+	naming_table = gtk.Table(5, 5, gtk.FALSE)
+	naming_table.set_col_spacings(10)
+	naming_table.set_row_spacings(6)
+	
+	# hostname
+	hostname_label = gtk.Label("Hostname:")
+	hostname_label.set_alignment(0.0, 0.5)
+	naming_table.attach(hostname_label, 0, 1, 0, 1)
+	self.hostname = gtk.Entry()
+	self.hostname.set_width_chars(25)
+	naming_table.attach(self.hostname, 1, 2, 0, 1)
+	hostname_explain=gtk.Label("The name of your computer, ex, 'tux'")
+	naming_table.attach(hostname_explain, 2, 3, 0, 1)
+	
+	# dnsdomainname
+	dnsdomainname_label = gtk.Label("DNS Domain Name:")
+	dnsdomainname_label.set_alignment(0.0, 0.5)
+	naming_table.attach(dnsdomainname_label, 0, 1, 1, 2)
+	self.dnsdomainname = gtk.Entry()
+	self.dnsdomainname.set_width_chars(25)
+	naming_table.attach(self.dnsdomainname, 1, 2, 1, 2)
+	dnsdomainname_explain=gtk.Label("ex. gentoo.org")
+	naming_table.attach(dnsdomainname_explain, 2, 3, 1, 2)
+	
+	naming_button_box.pack_start(naming_table, expand=gtk.FALSE, fill=gtk.FALSE)
+	vert.pack_start(naming_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	
 	self.add_content(vert)
 
     def disable_all_fields(self):
@@ -304,6 +333,8 @@ This is where you setup Networking.
 	self.refresh_list_at_top()
 	self.disable_all_fields()
 	# load the saved data ( if any )
+	self.hostname.set_text(self.controller.install_profile.get_hostname())
+	self.dnsdomainname.set_text(self.controller.install_profile.get_domainname())
 	interfaces=self.controller.install_profile.get_network_interfaces()
 	print interfaces
 	default_gateway=self.controller.install_profile.get_default_gateway()
@@ -329,6 +360,10 @@ This is where you setup Networking.
 	    interfaces[self.networking[count]['type']]=(self.networking[count]['host'],self.networking[count]['export'],self.networking[count]['mountpoint'])
 	print interfaces
 	return_value = False
+	# set the hostname and dnsdomainname
+	self.controller.install_profile.set_hostname(None,self.hostname.get_text(),None)
+	self.controller.install_profile.set_domainname(None,self.dnsdomainname.get_text(),None)
+	
 	try:
 	    self.controller.install_profile.set_network_interfaces(interfaces)
 	    for count in range(len(self.networking)):
