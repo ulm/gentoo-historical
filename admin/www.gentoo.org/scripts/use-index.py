@@ -16,7 +16,7 @@ outfile=open(outfn,"w")
 outfile.write("""<?xml version='1.0'?>
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <guide link="/use.html"><title>Gentoo Linux Use Variable Descriptions</title>
-<version>1.0</version><date>${mydate}</date><chapter><title>Use Descriptions</title>
+<version>1.0</version><date>"""+time.asctime(time.localtime())+"""</date><chapter><title>Use Descriptions</title>
 <section><body><p>A small table of currently available use variables and a short description of each</p><table>
 <tr><th>Variable</th><th>Description</th></tr>""")
 infn=portage.settings["PORTDIR"]+"/profiles/use.desc"
