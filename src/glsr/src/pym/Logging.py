@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.5 2004/07/24 00:27:49 port001 Exp $
+# $Id: Logging.py,v 1.6 2004/07/24 19:23:22 hadfield Exp $
 #
 
 import traceback
@@ -17,12 +17,12 @@ def err(msg, modname):
     user then report the error"""
 
     if Config.ErrorReporting == True:
-    	try:
+        try:
             fd = open(Config.ErrorReportLog, "a")
-	    fd.write("%s||%s||%s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()), modname, msg))
-	    fd.close()
-	except:
-	    pass
+            fd.write("%s||%s||%s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()), modname, msg))
+            fd.close()
+        except:
+            pass
 
     logwrite(msg, modname, "Error")
   
@@ -32,47 +32,47 @@ def err(msg, modname):
 
     if Config.Debug == True:
         print ("<table align=\"center\" width=\"90%\">\n" +
-		   "<tr>\n" +
+                  "<tr>\n" +
                      "<td align=\"left\">\n" +
-		       "<br />\n" +
+                     "<br />\n" +
                        "<font color=\"FF0000\"><b>Debug Mode</b></font>\n" +
-		       "<br /><br />\n" +
-	  	       "<b>Internal Error</b> (in module '%s')<b>:</b>\n" % modname +
-		       "<br /><br />\n" +
-		       "%s\n" % msg +
                        "<br /><br />\n" +
-		       "<b>Traceback:</b>\n" +
-		       "<br /><br />\n")
+                       "<b>Internal Error</b> (in module '%s')<b>:</b>\n" % modname +
+                       "<br /><br />\n" +
+                       "%s\n" % msg +
+                       "<br /><br />\n" +
+                       "<b>Traceback:</b>\n" +
+                       "<br /><br />\n")
 
         tb = traceback.format_stack(None)
-	for line in tb[:-1]:
+        for line in tb[:-1]:
             print line.replace("\n", "<br>")
-		
+        
         if modname == "Template":
             print ("<br />\n" +
-                     "<b>Template module recursion averted.</b>\n" +
+                    "<b>Template module recursion averted.</b>\n" +
                    "<br /><br />\n")
 
-	print ("     <br />\n" +
-		    "</td>\n" +
-		  "</tr>\n" +
-	       "</table>\n")
-		       
+            print ("     <br />\n" +
+                     "</td>\n" +
+                  "</tr>\n" +
+                "</table>\n")
+        
     else:
         time = strftime("%d/%b/%Y %H:%M:%S", gmtime())
 
         print ("<table align=\"center\" width=\"90%\">\n" +
                    "<tr>\n" +
-                     "<td align=\"left\">\n" +
+                      "<td align=\"left\">\n" +
                        "<br />\n" +
-		       "<b>Ooops!</b>\n" + 
-		       "<br /><br />\n" +
+                       "<b>Ooops!</b>\n" + 
+                       "<br /><br />\n" +
                        "It looks like you've encountered an internal error!\n" +
-		       "<br /><br />\n")
+                       "<br /><br />\n")
         
         if Config.ErrorReporting == True:
             print "This error has been reported to the administration.\n"
-	else:              
+        else:              
             print "Please contact <b>%s</b> and quote the time '<b>%s</b>'" % (Config.Contact, time)
 
         print ("     <br />\n" +
@@ -97,18 +97,18 @@ def FlushErrorReportLog():
 
     try:
         fd = open(Config.ErrorReportLog, "w")
-	fd.close()
+        fd.close()
     except:
-	pass
+        pass
 
 def logwrite(msg, modname, type):
     """Write Given message to a log file
        Type can be: Error, Query, Info"""
-                                                                                                                                   
+
     logtype = ""
-                                                                                                                                   
+
     if Config.Logging == True:
-                                                                                                                                   
+
         if type.lower() == "error":
             logtype = "error"
         elif type.lower() == "query":
