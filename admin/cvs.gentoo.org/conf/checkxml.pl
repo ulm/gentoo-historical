@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-print "XML-QA-checker called.  If you have troubles,\\ contact pylon\@gentoo.org or swift\@gentoo.org\n";
+print "XML-QA-checker called.  If you have troubles,\n contact pylon\@gentoo.org or swift\@gentoo.org\n";
 foreach ( @ARGV ) {
 	if ( $_ =~ /\.xml$/ and -e $_ ) {
 		print "Checking $_ ... \n";
