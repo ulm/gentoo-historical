@@ -588,13 +588,13 @@ while 1:
 		cc.set_install_profile(install_profile)
 		cc.start_install()
 		# This next line gives the ClientController time to actually get to the install step loop
-		while 1:
-			notification = cc.getNotification()
-			if notification == None:
-				time.sleep(1)
-				continue
-			if notification.get_type() == "int" and notification.get_data() == GLIClientController.NEXT_STEP_READY:
-				break
+#		while 1:
+#			notification = cc.getNotification()
+#			if notification == None:
+#				time.sleep(1)
+#				continue
+#			if notification.get_type() == "int" and notification.get_data() == GLIClientController.NEXT_STEP_READY:
+#				break
 		while 1:
 			notification = cc.getNotification()
 			if notification == None:

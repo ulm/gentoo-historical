@@ -6,13 +6,6 @@ import GLIClientController
 import GLIUtility
 import gtk
 import sys
-import crypt
-import random
-import commands
-import string
-import copy
-import signal
-import time
 
 import Welcome
 import Partitioning
@@ -30,6 +23,8 @@ import Users
 import InstallSummary
 import NetworkMounts
 
+import RunInstall
+
 class Installer:
 
 	SHOW_BUTTON_FINISH = 1
@@ -38,6 +33,7 @@ class Installer:
 	SHOW_BUTTON_HELP = 1
 	SHOW_BUTTON_EXIT = 1
 	install_profile_xml_file = ""
+	install_window = None
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
                       { 'text': 'Partitioning', 'module': Partitioning },
@@ -60,6 +56,10 @@ class Installer:
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
 		self.install_profile = GLIInstallProfile.InstallProfile()
 		self.cc = GLIClientController.GLIClientController(pretend=True)
+		self.client_profile.set_interactive(None, True, None)
+		self.cc.set_configuration(self.client_profile)
+		self.cc.start_pre_install()
+
 		self.window = None
 		self.panel = None
 		self._cur_panel = 0
@@ -304,6 +304,9 @@ class Installer:
 
 	def finish(self, widget, data=None):
 		print "Finish was clicked"
+		self.make_invisible()
+		self.install_window = RunInstall.RunInstall(self)
+#		self.install_window.run()
 
 	def load_button(self, widget, data=None):
 		filesel = gtk.FileSelection("Select the install profile to load")

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.37 2005/01/09 08:25:16 codeman Exp $
+$Id: GLIClientController.py,v 1.38 2005/01/16 04:04:36 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -40,7 +40,8 @@ class GLIClientController(Thread):
 		self.set_configuration(configuration)
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
-		self._install_step = 0
+		self._install_step = -1
+		self._install_steps = None
 		self._pretend = pretend
 		self.setDaemon(True)
 
@@ -81,6 +82,7 @@ class GLIClientController(Thread):
 					raise error
 
 		# Wait for the self._install_event to be set before starting the installation.
+		# start_install() is called to pass here
 		self._install_event.wait()
 
 		if self._install_profile == None and not interactive:	
@@ -111,10 +113,10 @@ class GLIClientController(Thread):
 		except AttributeError:
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'This architecture template was not defined properly!')))
 
-		self.addNotification("int", NEXT_STEP_READY)
-		self._install_event.wait()
-#		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		self._install_steps = self._arch_template.get_install_steps()
+		self.addNotification("int", NEXT_STEP_READY)
+#		self._install_event.wait()
+#		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		while 1:
 			self._install_event.wait()
 			if self._install_step <= (len(self._install_steps) - 1):
@@ -131,6 +133,9 @@ class GLIClientController(Thread):
 					self._install_event.clear()
 			else:
 				break
+
+	def get_num_steps(self):
+		return len(self._install_steps)
 
 	def get_next_step_info(self):
 		return self._install_steps[(self._install_step + 1)][1]
