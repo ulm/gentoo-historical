@@ -398,7 +398,10 @@ Otros:<br/>
                             <tr>
                               <td width="100" align="center" valign="middle">
                                 <xsl:choose>
-                                  <xsl:when test="@category='gentoo'">
+                                  <xsl:when test="@category='kde'">
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-kde.png" alt="KDE"/>
+                                  </xsl:when>
+									<xsl:when test="@category='gentoo'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png" alt="gentoo"/>
                                   </xsl:when>
                                   <xsl:when test="@category='main'">
