@@ -15,6 +15,9 @@ class GLIClientConfiguration:
 
 	# This is the full path to the logfile
 	log_file = "/var/log/installer.log"
+	
+	# Current process temporary log (for parsing)
+	proc_temp_log = "/tmp/proc.tmp.log"
 
 	# This is the root mount point
 	root_mount_point = "/mnt/gentoo"

@@ -11,59 +11,6 @@ class GLIInstallTemplate:
 		self._install_profile = install_profile
 		self._client_configuration = client_configuration
 		
-		
-	def _log(self, data):
-		"Logs the lines/file-object passed.  Accepts str, tuple, list, file object."
-		
-		# If the user passed a file object
-		if type(data) == file:
-		
-			# Open logfile
-			log_file = open(self._client_configuration.log_file, "a")
-		
-			# Loop until the file is done
-			while True:
-			
-				# Get a line from the data
-				line = data.readline()
-				
-				# If the line is not null...
-				if line:
-				
-					# Write it to the log
-					log_file.writeline(line)
-					
-				# If the line is null, exit the loop
-				else:
-					break
-			
-			# Close the logfile
-			log_file.close()
-					
-		elif type(data) in [ str, tuple, list ]:
-			
-			# Open logfile
-			log_file = open(self._client_configuration.log_file, "a")		# Convert string to list
-
-			# If data is a string, convert it to a list for easy parsing
-			if type(data) == str:
-				data = [ data ]
-			
-			# Check for newline char
-			# Add a newline char if not found
-			for i in range(len(data)):
-				if data[i][-1] != '\n':
-					data[i] = data[i] + '\n'
-			
-			# Append lines to logfile
-			log_file.writelines(data)
-			log_file.close()
-			
-		else:
-			raise "LoggingError", "Data to be logged must be a string, a list/tuple of strings or a file object!"
-			
-		
-		
 	def _emerge(self, package, binary=False, binary_only=False):
 		"A private method to emerge a program in the chroot environment"
 		
@@ -74,7 +21,6 @@ class GLIInstallTemplate:
 		# If we integrate with portage api, we need to make sure
 		# we handle logging.
 		#
-		
 		
 		# Decide which to run
 		if binary_only:
@@ -110,58 +56,19 @@ class GLIInstallTemplate:
 					
 	def _run(self, command, chroot=False):
 		"Runs a command in the livecd or chroot environment."
-
-		# If chroot is true, execute in chroot
+		
+		# If chroot is true, set the prefix to execute in chroot
 		if chroot:
-
-			# Set the chroot log. The path is relative to the chroot.
-			# ie. '/mnt/gentoo' + chroot_log_file to access outside of the chroot
-			chroot_log_file = "/tmp/chroot.log"
-	
-			# Chroot needs to be in a child process
-			pid = fork()
-	
-			# If you are the child process
-			if pid == 0:
-	
-				# Chroot to /mnt/gentoo and run the command, then exit
-				os.chroot(self._client_configuration.root_mount_point)
-				exitstatus = os.WEXITSTATUS(os.system(command + " > " + chroot_log_file))
-				sys.exit(exitstatus)
-	
-			# If you are the parent process...
-			else:
-				
-				# Wait for the child, kids can be so slow sometimes... 
-				child_exitstatus = os.WEXITSTATUS(os.wait()[1])
-				
-				# Open the chroot log and append it to the install log
-				chroot_log = open(self._client_configuration.root_mount_point + chroot_log_file, "r")
-				self._log(chroot_log)
-				chroot_log.close()
-				
-				# Remove the now useless chroot log
-				os.unlink(self._client_configuration.root_mount_point + chroot_log_file)
-				
-				# Return the exitstatus from the chroot
-				return(child_exitstatus)
-		
-		# If chroot is false, execute in livecd env		
+			prefix = "chroot " + self._client_configuration.root_mount_point + " "
 		else:
+			prefix = ""
 			
-			# Generate a log file name
-			livecd_log_file = os.tempnam()
+		# This sets the logging info
+		suffix = " | tee " + self._client_configuration.proc_temp_log  + " >> " + self._client_configuration.log_file
 		
-			# Execute the command and log to the temp log file
-			exitstatus = os.WEXITSTATUS(os.system(command + " > " + livecd_log_file))
-			
-			# Open the temp log file and log it
-			livecd_log = open(livecd_log_file, "r")
-			self._log(livecd_log)
-			livecd_log.close()
-			
-			# Return the exitstatus from the command
-			return(exitstatus)
+		exitstatus = os.WEXITSTATUS(os.system(prefix + command + suffix))
+		
+		return(exitstatus)
 
 	def _edit_config(file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
 		"""This allows one to edit a config file non-destructively.
