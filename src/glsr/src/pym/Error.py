@@ -11,7 +11,7 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.11 2005/01/26 22:50:33 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.12 2005/01/26 23:54:33 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_uncaught(req):
@@ -33,7 +33,6 @@ def error_uncaught(req):
     
     (tbtype, value, traceb) = sys.exc_info()
     tblines = traceback.format_exception(tbtype, value, traceb)
-    logwrite(value, "FOO", 'Info')
     # FIXME: multine line statements are getting chopped off somewhere in the traceback module.
 	
     exception_time = strftime('%d/%b/%Y %H:%M:%S', gmtime())

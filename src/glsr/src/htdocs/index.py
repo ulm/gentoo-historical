@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.39 2005/01/26 22:15:03 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.40 2005/01/26 23:54:33 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -46,6 +46,8 @@ from Function import start_timer, stop_timer, eval_timer, _Values
 class RequestHandler(cgi.Handler):
 
     def process(self, req):
+
+        req.set_buffering(False)
 
         # OK, this is pretty hacky but its the best solution I could
         # come up with atm. Rewrite later.
