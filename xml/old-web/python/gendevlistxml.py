@@ -52,7 +52,7 @@ def buildxml(devinfo):
 		# remove \n
 		line = line[:-1]
 		# separate into user name, name, location, responsibilities
-		user,name,location,duties = line.split("\t")
+		user,name,location,duties = line.split(":")
 		# generate the table entry for the current developer
 		tablexml = "\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n" \
 			% (name,user,location,duties)
