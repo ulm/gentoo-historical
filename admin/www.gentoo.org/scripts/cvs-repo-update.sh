@@ -13,7 +13,7 @@ source ~/.bashrc
 
 RSYNC_ARGS="--rsh=ssh -a --delete --delete-excluded"
 
-if [ -z "${WEB_RAW_CVS_MODULES}" ]; then
+if [ -d "${WEB_RAW_CVS_MODULES}" ]; then
 	# grab a recent copy of the cvs modules for viewcvs
 
 	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo/ \
