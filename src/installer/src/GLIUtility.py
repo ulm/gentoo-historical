@@ -287,13 +287,50 @@ def get_uri(uri, path):
 	
 	return False
 
-def test_network(host):
-	status = spawn("ping -c 3 " + host,quiet=True)
-
+def ping(host):
+	host = str(host)
+	status = spawn("ping -n -c 3 " + host,quiet=True)
 	if not exitsuccess(status):
 		return False
-
 	return True
+
+def get_eth_info(device):
+	"""Pass in the eth device's number (0, 1, 2, etc).
+	Returns network information in a tuple.
+	Order is hw_addr, ip_addr, mask, bcast, route, and
+	whether it's up (True or False).
+	"""
+	device = str(device)
+	if device:
+		hw_addr = 'None'
+		ip_addr = 'None'
+		mask    = 'None'
+		bcast	= 'None'
+		gw      = 'None'
+		up      =  False
+		device_info = commands.getstatusoutput("ifconfig eth" + device)
+		if device_info[0] == 0:
+			for line in device_info[1].splitlines():
+				line = line.strip()
+				if 'HWaddr' in line: 
+					hw_addr = line.split('HWaddr',1)[1].strip()
+				if 'inet addr' in line:
+					ip_addr = line.split('  ')[0].split(':')[1]
+				if 'Bcast' in line:
+					bcast = line.split('  ')[1].split(':')[1]
+				if 'Mask' in line:
+					mask = line.split('  ')[2].split(':')[1]
+				if line.startswith('UP'):
+					up = True
+		else: return (device_info[0], device_info[1])
+		route_info = commands.getstatusoutput("netstat -nr")
+		if route_info[0] == 0:
+			for line in route_info[1].splitlines():
+				if line.startswith('0.0.0.0'):
+					gw = line.split('0.0.0.0')[1].strip()
+		else: return (route_info[0], route_info[1])
+		return (hw_addr, ip_addr, mask, bcast, gw, up)
+	else: return False
 
 def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
 	"Fetches a tarball from tarball_uri and extracts it into target_directory"
