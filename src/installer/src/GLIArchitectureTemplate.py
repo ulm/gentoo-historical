@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.39 2005/01/22 08:58:05 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.40 2005/01/26 05:52:43 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -408,21 +408,27 @@ class ArchitectureTemplate:
 		else:  #CUSTOM CONFIG
 			#Copy the kernel .config to the proper location in /usr/src/linux
 			try:
-				shutil.copy(kernel_config_uri, self._chroot_dir + "/usr/src/linux/.config")
+				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/root/kernel_config")
 			except:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
 			
+			kernel_compile_script =  "#!/bin/bash\n"
+			kernel_compile_script += "cp /root/kernel_config /usr/src/linux/.config\n"
+			kernel_compile_script += "cd /usr/src/linux\n"
+			kernel_compile_script += "make \nmake modules_install \n"
+
+			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
+			if self._client_configuration.get_architecture_template() == "x86":
+				kernel_compile_script += "cp /usr/src/linux/arch/i386/boot/bzImage /boot/kernel-custom\n"
+			f = open(self._chroot_dir+"/root/kernel_script", 'w')
+			f.writelines(kernel_compile_script)
+			f.close()
 			#Build the kernel
-			exitstatus = GLIUtility.spawn("cd "+self._chroot_dir + "/usr/src/linux/ && make && make modules_install")
+			exitstatus = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/root/kernel_script")
+			exitstatus = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
-			
-			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
-			try:
-				shutil.copy(self._chroot_dir+"/usr/src/linux/"+self._kernel_bzimage, self._chroot_dir+"/boot/kernel-custom")
-			except:
-				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel!")
-			
+						
 			#i'm sure i'm forgetting something here.
 			
 	def install_logging_daemon(self):

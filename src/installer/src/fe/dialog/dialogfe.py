@@ -510,6 +510,11 @@ def save_client_profile(xmlfilename="", askforfilename=True):
 d.setBackgroundTitle("Gentoo Linux Installer")
 d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If your system dies a horrible, horrible death, don't come crying to us (okay, you can cry to klieber).", height=10, width=50, title="Welcome")
 
+if d.yesno("Are we running in Pretend mode? Yes means safe, No means actually install!") == DLG_NO:
+	cc._pretend = False
+else:
+	cc._pretend = True
+
 if d.yesno("Do you want to use the ClientController?") == DLG_YES:
 	client_config_xml_file = None
 	while 1:
