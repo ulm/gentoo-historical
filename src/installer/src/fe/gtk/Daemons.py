@@ -1,119 +1,121 @@
 import gtk
 import GLIScreen
-from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
-    """
-    The Daemons section of the installer.
-    
-    @author:    John N. Laliberte <allanonl@bu.edu>
-    @license:   GPL
-    """
-    # Attributes:
-    title="Daemons"
-    # Operations
-    def __init__(self, controller):
-	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+	title = "Daemons"
+	active_selection_cron = None
+	active_selection_logger = None
+	cron_daemons = {}
+	log_daemons = {}
 
-        content_str = """
-This is where you select what cron and logging daemons you want, if any.
-[short explanation here]
+	def __init__(self, controller):
+		GLIScreen.GLIScreen.__init__(self, controller)
+		vert = gtk.VBox(gtk.FALSE, 0)
+		vert.set_border_width(10)
+
+		content_str = """Here, you will select which cron and logger daemons you would like to use. Each option has
+a brief description beside it.
 """
-	content_label=gtk.Label(content_str)
-	
-	content_str2 = """Click the "Forward" button below when you are finished with this step."""
- 	
-	# pack the description
-	vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		content_label = gtk.Label(content_str)
+		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 
-	widgets=Widgets()
-	
-	item = gtk.Label("")
-	item.set_markup('<b>'+"Crontab Daemon"+'</b>')	
-        vert.pack_start(widgets.hBoxIt3(gtk.FALSE,0,item,5),expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-		
-	# cron daemon
-	options=["Vixie-cron","fcron","dcron","None"]
-	self.cron_daemons=options
-	self.cron_widgets=[]
-	
-	i=0
-	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,self.callback_cron,options[0],options[0])
-	self.cron_widgets.append(new_boxt)
-	
-	new_boxt.set_active(gtk.TRUE)
-	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10) 
-	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for counter in range(len(options)):
-	 if i!=0: 
-	  new_box=widgets.radioButton(new_boxt,self.callback_cron,options[counter],options[counter])
-	  self.cron_widgets.append(new_box)
-          #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
-          new_box.show()
-	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)			  
-	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-	 else:
-	  i=-1
-        
-	item = gtk.Label("")
-	item.set_markup('<b>'+"Logging Daemon"+'</b>')
-	vert.pack_start(widgets.hBoxIt3(gtk.FALSE,0,item,5),expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	options=["syslog-ng","metalog","syslogkd","None"]
-	self.logging_daemon_widgets=[]
-	self.logging_daemons=options
-	
-	# logging daemon
-	i=0
-	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,self.callback_logger,options[0],options[0])
-	new_boxt.set_active(gtk.TRUE)
-	self.logging_daemon_widgets.append(new_boxt)
-	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10)
-	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for counter in range(len(options)):
-	 if i!=0:
-	  new_box=widgets.radioButton(new_boxt,self.callback_logger,options[counter],options[counter])
-	  self.logging_daemon_widgets.append(new_box)
-	  new_box.show()
-	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)
-	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-	 else:
-	  i=-1
-													      
-    	self.add_content(vert)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		label = gtk.Label()
+		label.set_markup("<b>Cron Daemon</b> (runs tasks at scheduled times)")
+		hbox.pack_start(label, gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-    def callback_cron(self, widget, data=None):
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-      self.controller.install_profile.set_cron_daemon_pkg(None,widget.get_name(),None)
-      print "current cron: "+self.controller.install_profile.get_cron_daemon_pkg()
-      
-    def callback_logger(self, widget, data=None):
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-      self.controller.install_profile.set_logging_daemon_pkg(None,widget.get_name(),None)
-      print "current logger: "+self.controller.install_profile.get_logging_daemon_pkg()
-      
-    def activate(self):
-	# get the current activated option from the fe
-	cron_daemon=self.controller.install_profile.get_cron_daemon_pkg()
-	logging_daemon=self.controller.install_profile.get_logging_daemon_pkg()
-	
-	# now select them in the pane
-	for count in range(len(self.cron_daemons)):
-	    if(cron_daemon==self.cron_daemons[count]):
-		# This is it, select it.
-		self.cron_widgets[count].set_active(gtk.TRUE)
-	
-	for count in range(len(self.logging_daemons)):
-	    if(logging_daemon==self.logging_daemons[count]):
-		# This is it.
-		self.logging_daemon_widgets[count].set_active(gtk.TRUE)
+		self.cron_daemons['vixie-cron'] = gtk.RadioButton(None, "vixie-cron")
+		self.cron_daemons['vixie-cron'].set_name("vixie-cron")
+		self.cron_daemons['vixie-cron'].connect("toggled", self.cron_selected, "vixie-cron")
+		self.cron_daemons['vixie-cron'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.cron_daemons['vixie-cron'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Paul Vixie's cron daemon, a fully featured crond implementation"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.cron_daemons['fcron'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "fcron")
+		self.cron_daemons['fcron'].set_name("fcron")
+		self.cron_daemons['fcron'].connect("toggled", self.cron_selected, "fcron")
+		self.cron_daemons['fcron'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.cron_daemons['fcron'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("A command scheduler with extended capabilities over cron and anacron"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.cron_daemons['dcron'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "dcron")
+		self.cron_daemons['dcron'].set_name("dcron")
+		self.cron_daemons['dcron'].connect("toggled", self.cron_selected, "dcron")
+		self.cron_daemons['dcron'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.cron_daemons['dcron'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("A cute little cron from Matt Dillon"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.cron_daemons['none'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "None")
+		self.cron_daemons['none'].set_name("none")
+		self.cron_daemons['none'].connect("toggled", self.cron_selected, "none")
+		self.cron_daemons['none'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.cron_daemons['none'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Choose this if you don't want a cron daemon"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		label = gtk.Label()
+		label.set_markup("<b>System Logger</b> (provides logging facilities)")
+		hbox.pack_start(label, gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.log_daemons['syslog-ng'] = gtk.RadioButton(None, "syslog-ng")
+		self.log_daemons['syslog-ng'].set_name("syslog-ng")
+		self.log_daemons['syslog-ng'].connect("toggled", self.logger_selected, "syslog-ng")
+		self.log_daemons['syslog-ng'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.log_daemons['syslog-ng'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("syslog replacement with advanced filtering features"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.log_daemons['metalog'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "metalog")
+		self.log_daemons['metalog'].set_name("metalog")
+		self.log_daemons['metalog'].connect("toggled", self.logger_selected, "metalog")
+		self.log_daemons['metalog'].set_size_request(150, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.log_daemons['metalog'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("A highly configurable replacement for syslogd/klogd"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+#		self.log_daemons['syslogkd'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "syslogkd")
+#		self.log_daemons['syslogkd'].set_name("syslogkd")
+#		self.log_daemons['syslogkd'].connect("toggled", self.logger_selected, "syslogkd")
+#		self.log_daemons['syslogkd'].set_size_request(150, -1)
+#		hbox = gtk.HBox(gtk.FALSE, 0)
+#		hbox.pack_start(self.log_daemons['syslogkd'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+#		hbox.pack_start(gtk.Label(""), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+#		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+
+		self.add_content(vert)
+
+	def cron_selected(self, widget, data=None):
+		self.active_selection_cron = data
+
+	def logger_selected(self, widget, data=None):
+		self.active_selection_logger = data
+
+	def activate(self):
+		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
+		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
+		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
+		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
+		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.active_selection_cron = self.controller.install_profile.get_cron_daemon_pkg() or "vixie-cron"
+		self.active_selection_logger = self.controller.install_profile.get_logging_daemon_pkg() or "syslog-ng"
+		self.cron_daemons[self.active_selection_cron].set_active(gtk.TRUE)
+		self.log_daemons[self.active_selection_logger].set_active(gtk.TRUE)
+
+	def deactivate(self):
+		self.controller.install_profile.set_cron_daemon_pkg(None, self.active_selection_cron, None)
+		self.controller.install_profile.set_logging_daemon_pkg(None, self.active_selection_logger, None)
+		return True
