@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.13 2004/11/19 03:02:27 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.14 2004/11/21 06:42:32 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -38,8 +38,28 @@ class ArchitectureTemplate:
 		# where each entry is a function (with no arguments) that carries out the desired actions.
 		# Of course, steps will be different depending on the install_profile
 
-		self._steps = []
 		self._architecture_name = "generic"
+		self._install_steps = [
+                                 (self.do_partitioning, "Partition"),
+                                 (self.mount_local_partitions, "Mount local partitions"),
+                                 (self.mount_network_shares, "Mount network (NFS) shares"),
+                                 (self.unpack_stage_tarball, "Unpack stage tarball"),
+                                 (self.configure_make_conf, "Configure /etc/make.conf"),
+                                 (self.install_portage_tree, "Portage tree voodoo"),
+                                 (self.prepare_chroot, "Preparing chroot"),
+                                 (self.stage1, "Performing bootstrap"),
+                                 (self.stage2, "Performing 'emerge system'"),
+                                 (self.set_timezone, "Setting timezone"),
+                                 (self.emerge_kernel_sources, "Emerge kernel sources"),
+                                 (self.build_kernel, "Building kernel"),
+                                 (self.install_logging_daemon, "Logger"),
+                                 (self.install_cron_daemon, "Cron daemon"),
+                                 (self.install_filesystem_tools, "Installing filesystem tools"),
+                                 (self.setup_network_post, "Configuring post-install networking"),
+                                 (self.install_bootloader, "Configuring and installing bootloader"),
+                                 (self.update_config_files, "Updating config files"),
+                                 (self.configure_rc_conf, "Updating /etc/rc.conf")
+                                ]
 		
         def _depends(self, depends):
 		# Type checking
@@ -61,6 +81,9 @@ class ArchitectureTemplate:
 				#If ignore is off, then raise exception
 				else:
 					raise "InstallTemplateError",  "Install step dependency not met!"
+
+	def get_install_steps(self):
+		return self._install_steps
 
 	# It is possible to override these methods in each Arch Template.
 	# It might be necessary to do so, if the arch needs something 'weird'.
