@@ -1,21 +1,22 @@
 <?xml version='1.0'?>
 
-<!DOCTYPE guide SYSTEM "../../../dtd/guide.dtd">
+<!DOCTYPE guide SYSTEM "../dtd/guide.dtd">
 
 <guide link="/doc/build.html">
-<title>Gentoo Linux 1.2 Installation Instructions</title>
+<title>Gentoo Linux 1.4 Installation Instructions</title>
 <author title="Chief Architect"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
 <author title="Author">Chris Houser</author>
 <author title="Author"><mail link="jerry@gentoo.org">Jerry Alexandratos</mail></author>
 <author title="Ghost"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
 
 <abstract>These instructions step you through the process of installing Gentoo
-Linux 1.2.  The Gentoo Linux installation process supports various installation
+Linux 1.4_rc1.  The Gentoo Linux installation process supports various installation
 approaches, depending upon how much of the system you want to custom-build from
 scratch.</abstract>
 
-<version>1.6</version>
-<date>05 Sep 2002</date>
+<version>1.7</version>
+<date>05 September 2002</date>
 
 <chapter>
 <title>About the Install</title>
@@ -23,7 +24,7 @@ scratch.</abstract>
 <body>
 
 <p>This new boot CD will boot from nearly any modern IDE CD-ROM drive, as well
-as many SCSI CD-ROMs.  Included on the CD-ROM is Linux support for IDE
+as many SCSI CD-ROMs.  Included on the CD-ROM is Linux support for IDE (and PCI IDE)
 (built-in to the kernel) as well as support for all SCSI devices (available as
 modules).  In addition, we provide modules for literally every kind of network
 card that Linux supports, as well as tools to allow you to configure your
@@ -33,19 +34,11 @@ network and establish outbound <c>ssh</c> connections and download files.  </p>
 ideally at least 64 Megabytes of RAM.  (Gentoo linux has been successfully
 built with 64MB of RAM + 64MB of swap space, but the build process is awfully
 slow under those conditions.) To begin the install process, first grab one of
-our CD ISO images from
-<uri>http://www.ibiblio.org/gentoo/releases/build/</uri>.  Right now, we have
-two CDs available.  Our first CD is <uri
-link="http://www.ibiblio.org/gentoo/releases/build/1.2/gentoo-ix86-1.2.iso">gentoo-ix86-1.2.iso</uri>;
-this ISO image is quite small (16Mb) and contains a minimal chrootable build image (<path>stage1-ix86-1.2.tbz2</path>) -- everything you need to build
-a Gentoo Linux system from scratch (sources will be auto-downloaded from the
-Internet as needed.)  Our second CD is <uri
-link="http://www.ibiblio.org/gentoo/releases/build/1.2/gentoo-i686-1.2.iso">gentoo-i686-1.2.iso</uri>;
-this ISO image is a bit bigger (100+Mb) -- it contains the same stuff as 
-on our 16Mb ISO, <e>plus</e> a pre-built i686 base system (<path>stage3-i686-1.2.tbz2</path>) and semi-built i686
-base system (<path>stage2-i686-1.2.tbz2</path>) in a tarball.  The two new tarballs require a Pentium Pro or
-greater processor (K6 won't work).  If you have an i686+ system, they can really help speed up installation
-if you're willing to not build everything from scratch.</p>
+our ISO images from
+<uri>http://www.ibiblio.org/gentoo/releases/build/</uri>. The three stages make our life
+easy with Gentoo. The stage1 is for building the entire system from scratch. Stage2 is for building
+some of the system from scratch, and stage3 saves a lot of time because it is already
+optimized for you specific system. Make sure to grab the right ISO, and then continue on. </p>
 
 <p>Now, let's quickly review the install process.  We'll create partitions, 
 create our filesystems, and extract either a stage1, stage2 or stage3 tarball.
@@ -157,7 +150,7 @@ remove it.)
 <section>
 <body>
 
-<p>The new -r11+ boot CDs allow you to configure a working network, allowing you to use <c>ssh</c>, <c>scp</c> or <c>wget</c>
+<p>The Gentoo install lets you configure a working network, allowing you to use <c>ssh</c>, <c>scp</c> or <c>wget</c>
 as needed before even beginning the installation process.  Even if you don't need to do these things now,
 you should go ahead and set up networking now.  Once set up, Portage will be able to use your configured network
 once you are inside the chroot environment (required for installing Gentoo Linux).</p>
@@ -216,6 +209,20 @@ nameserver 10.0.0.2
 primary and secondary DNS servers respectively.</p>
 </body>
 </section>
+
+<section>
+<title>Proxy Configuration</title>
+<body>
+<p>If you are behind a proxy, it is necessary to configure your proxy before
+you continue. We will export some variables to set up the proxy accordingly. </p>
+<pre>
+# <i>export http_proxy="machine.company.com:1234" </i>
+# <i>export ftp_proxy="$http_proxy" </i>
+# <i>export RSYNC_PROXY="$http_proxy" </i>
+</pre>
+</body>
+</section>
+
 <section>
 <title>Network testing</title>
 <body>
@@ -274,20 +281,16 @@ XFS, ext2, ext3 (journaling) and ReiserFS.  ext2 is the tried and true Linux
 filesystem but doesn't have metadata journaling.  ext3 is the new version of
 ext2 with both metadata journaling and ordered data writes, effectively
 providing data journaling as well.  ReiserFS is a B*-tree based filesystem
-that has very good small file performance, and greatly outperforms both ext2 and
+that promises very good small file performance, and greatly outperforms both ext2 and
 ext3 when dealing with small files (files less than 4k), often by a factor of
-10x-15x. ReiserFS also scales extremely well and has metadata journaling.
-As of kernel 2.4.18+, ReiserFS is finally rock-solid and highly recommended.
-XFS is an filesystem with metadata journaling that
-is fully supported under Gentoo Linux's <path>xfs-sources</path> kernel.
+10x-15x. ReiserFS has metadata journaling, but no data journaling.  XFS
+is a high-performance enterprise-class filesystem with metadata journaling that
+is fully supported under Gentoo Linux.
 </p><p>
 If you're looking for the most standard filesystem, use ext2.  If you're looking
 for the most rugged journalled filesystem, use ext3.  If you're looking for a
-high-performance filesystem with journaling support, use ReiserFS;  both ext3 and ReiserFS are 
-mature and refined.  Please be careful with XFS; this filesystem has a tendency to fry lots of data
-if the system crashes or you lose power. Originally, it seemed like a promising filesystem but it
-now appears that this tendency to lose data is a major achilles' heel.
-Here are our basic recommended filesystem
+high-performance filesystem with journaling support, use XFS;  both ext3 and XFS are 
+mature and refined.  All filesystems are production-ready. Here are our basic recommended filesystem
 sizes and types:</p>
 
   <table>
@@ -312,13 +315,13 @@ sizes and types:</p>
   <tr>
   	<ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
 	<ti>&gt;=1.5 Gigabytes</ti>
-	<ti>ReiserFS, ext3 recommended; ext2 ok</ti>
+	<ti>XFS, ext3 recommended; ext2 ok</ti>
   	<ti>/dev/hda3</ti>
   </tr>
  </table>
 
 <note>At this point, create your partitions using fdisk.  Note that your partitions
-should be of type 82 if swap and 83 for regular filesystems (whether ReiserFS <e>or</e> ext2/3).
+should be of type 82 if swap and 83 for regular filesystems (whether XFS, ReiserFS <e>or</e> ext2).
 </note>
 
 <p>Once you've created your partitions using <c>fdisk</c>, it's time to initialize
@@ -330,6 +333,22 @@ the filesystems that will be used to house our data.  Initialize swap as follows
 <pre>
 # <i>mke2fs /dev/hda1</i>
 </pre>
+<p>To create an XFS filesystem, use the <c>mkfs.xfs</c> command:</p>
+<pre>
+# <i>mkfs.xfs /dev/hda3</i>
+</pre>
+<note>
+You may want to add a couple of additional flags to the <c>mkfs.xfs</c> command: <c>-d agcount=3 -l size=32m</c>. 
+The <c>-d agcount=3</c> command will lower
+the number of allocation groups.  XFS will insist on using at least 1 allocation group per 4 GB of your partition,
+so, for example, if you hava a 20 GB partition you will need a minimum agcount of 5.  The <c>-l size=32m</c> command
+increases the journal size to 32 Mb, increasing performance.
+</note>
+<warn>
+If you are installing an XFS partition over a previous ReiserFS partition, later attempts to mount may fail without
+an explicit <c>mount -t xfs</c>.  The solution is to zero out the partition before creating the XFS filesystem:
+<c>dd if=/dev/zero of=/dev/hd<comment>x</comment> bs=1k</c>. 
+</warn>
 <p>If you'd like to use ext3, you can create ext3 filesystems using <c>mke2fs -j</c>:</p>
 <pre>
 # <i>mke2fs -j /dev/hda3</i>
@@ -339,6 +358,7 @@ the filesystems that will be used to house our data.  Initialize swap as follows
 # <i>mkreiserfs /dev/hda3</i>
 </pre>
 
+<note>As of 2.4.18 ReiserFS support can now be considered stable.</note>
 <note>You can find out more about using ext3 under Linux 2.4 at <uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
 </body>
 </section>
@@ -383,6 +403,10 @@ and we'll mount our filesystems to these mountpoints.
 Linux boot CD environment.  We'll need to mount it so that we can access the compressed build image
 tarball contained on the CD-ROM.  To mount the CD-ROM, one typically types:
 </p>
+
+<impo>Do not use the images on the 1.3b CD, make sure to use your new 1.4 CD with
+the 1.4 tarball. </impo>
+
 <pre>
 # <i>mount /dev/cdroms/cdrom0 /mnt/cdrom -o ro -t iso9660</i>
 </pre>
@@ -402,9 +426,9 @@ tarball contained on the CD-ROM.  To mount the CD-ROM, one typically types:
 
 <impo>Be sure to use the <c>p</c> option with <c>tar</c>.  Forgetting to do this will cause certain files to contain incorrect permissions.</impo>
 
-<impo>If you are using the "from scratch, build everything" install method, you will want to use the <path>stage1-ix86-1.2.tbz2</path> image.
+<impo>If you are using the "from scratch, build everything" install method, you will want to use the <path>stage1-ix86-1.4_beta.tbz2</path> image.
 If you're using one of our bigger CDs, you'll also have a choice of a stage2 and stage3 image.  These images allow you to save time at the
-expense of configurability (we've already chosen compiler optimizations and default USE variables for you.)  The stage3 image now also includes complete linux sources and a Portage tree snapshot, eliminating the need to do an <c>emerge rsync</c> later.
+expense of configurability (we've already chosen compiler optimizations and default USE variables for you.)  The stage3 image now also includes complete linux sources and a Portage tree snapshot, eliminating the need to do an <c>emerge sync</c> later.
 </impo>
 
 <pre>
@@ -433,24 +457,13 @@ Regenerating /etc/ld.so.cache...
 <title>Rsync</title>
 <section>
 <body>
-<p>Now, you'll need to run <c>emerge rsync</c>.  If you're using the a Gentoo Linux 1.1+ stage3 tarball,
-<c>emerge rsync</c> is now optional as we've included a snapshot of the Portage tree for your convenience. <c>emerge rsync</c> will tell <c>emerge</c> to
-connect to rsync.gentoo.org and download the latest version of our Portage ports tree:</p>
+<p>Now, you'll need to run <c>emerge sync</c>.  This is optional, but recommended.
+It is a good idea to do this, just to make sure everything is up to date. </p>
 
 <pre>
-# <i>emerge rsync</i>
+# <i>emerge sync</i>
 </pre>
 <p>The Portage tree will be downloaded; it's about 10Mb in size.</p>
-<impo>The address for the rsync server is currently rsync://rsync.gentoo.org/gentoo-portage.
-  If you have trouble accessing Gentoo rsync, make sure you're
-using this address by setting it as the SYNC variable in your /etc/make.conf.
-</impo>
-<note>The rsync command can be configured to use an HTTP proxy if you
-are behind a firewall.  To configure this item set 
-<i>RSYNC_PROXY="hostname:port"</i> in <i>/etc/make.conf</i> or set it as
-an environment variable.
-</note>
-
 </body>
 </section>
 </chapter>
@@ -461,7 +474,7 @@ an environment variable.
 
 <impo>If you are a stage2 or stage3 tarball, then we've already bootstrapped
 for you.  There is no reason for you to bootstrap again, unless you decided to
-do an <c>emerge rsync</c> and want to ensure that you have an up-to-the-minute
+do an <c>emerge sync</c> and want to ensure that you have an up-to-the-minute
 current Gentoo Linux system.  Most people using stage2 or stage3 tarballs will
 <i>not</i> want to bootstrap again, since it can take up to an hour even on
 very fast machines.</impo>
@@ -473,9 +486,7 @@ edit the file <path>/etc/make.conf</path>.  In this file, you should set your
 be built into packages; generally, the defaults (an <e>empty</e> or unset USE
 variable) are fine.  You also should set appropriate <c>CHOST</c>, <c>
 CFLAGS</c> and <c>CXXFLAGS</c> settings for the kind of system that you are
-creating (commented examples can be found further down in the file.)  If
-necessary, you can also set proxy information here if you are behind a
-firewall.  </p>
+creating (commented examples can be found further down in the file.) </p>
 
 <pre>
 # <i>nano -w /etc/make.conf</i> <comment>(Adjust these settings)</comment>
@@ -531,7 +542,7 @@ system as follows:</p>
 
 <pre>
 # <i>export CONFIG_PROTECT=""</i>
-# <i>emerge --pretend system</i>
+# <i>emerge -p system</i>
 	<comment>[lists the packages to be installed]</comment>
 # <i>emerge system</i>
 </pre>
@@ -556,12 +567,18 @@ you'll have a stage3 Gentoo Linux system.</p>
 <section>
 <body>
 
+<note>It is extremely important that this step is completed. Major clock drift
+will be experienced if you do not set localtime correctly.
+</note>
+
 <p>At this point, you should have a stage3 system that's ready for final configuration.  We'll start this process by setting the timezone.  By setting the timezone before building the kernel we ensure that
 users get reasonable <c>uname -a</c> output.</p>
 <p>Look for your timezone (or GMT if you using Greenwich Mean Time) in <path>/usr/share/zoneinfo</path>.  Then, make a symbolic link by typing:
 </p><pre>
 # <i>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</i>
 </pre>
+<p>You might also want to check <path>/etc/rc.conf</path> to make sure your timezone settings
+are correct. </p>
 </body>
 </section>
 </chapter>
@@ -576,12 +593,17 @@ Otherwise, you'll need to merge Linux source ebuilds.  Here are the ones we curr
 offer:</p>
 <table>
 <tr><th>ebuild</th><th>description</th></tr>
-<tr><ti><path>gentoo-sources</path></ti><ti>Our own performance and functionality-enhanced kernel based on the stock kernel (as of 5 Sep 2002, no longer includes  XFS)</ti></tr>
-<tr><ti><path>xfs-sources</path></ti><ti>The official SGI XFS kernel with a few additions like EVMS</ti></tr>
+<tr><ti><path>gentoo-sources</path></ti><ti>Our own performance and functionality-enhanced kernel based on -ac (now includes the release version of XFS)</ti></tr>
+<tr><ti><path>xfs-sources</path></ti><ti>A snapshot of the SGI XFS CVS Linux source tree; this is the kernel to run if you want bleeding edge(cvs) xfs support, (currently the XFS build in gentoo-sources is the recommended release version)</ti></tr>
 <tr><ti><path>openmosix-sources</path></ti><ti>A stock Linux kernel source tree patched with support for the GPL <uri link="http://www.openmosix.com">openMosix</uri> load-balancing/clustering technology</ti></tr>
 <tr><ti><path>usermode-sources</path></ti><ti>A stock Linux kernel source tree patched with support for User-Mode Linux.  ("Linux inside Linux" technology)</ti></tr>
 <tr><ti><path>vanilla-sources</path></ti><ti>A stock Linux kernel source tree, just like you'd get from kernel.org</ti></tr>
 </table>
+
+<warn>Please note that <i>gentoo-sources</i> is heavily patched and may not be stable. Using <i>vanilla-sources</i> might be a better idea if you encounter numerous problems. On a 
+side note, beware of <i>grsecurity</i>, especially with <i>X</i>. It is best to disable <i>grsecurity</i> unless you are absolutely
+sure that you need it.
+</warn>
 
 <p>Choose one and then merge as follows:</p>
 
@@ -630,7 +652,7 @@ Such stability will come at a price:
 you will lose many of the nifty features that
 are new to the 2.4 series kernels (such as XFS and tmpfs
 filesystems, iptables, and more), although the 2.2 kernel sources can be
-patched with ReiserFS and devfs support.  
+patched with Reiserfs and devfs support.  
 Gentoo linux bootscripts require either tmpfs or ramdisk support in the kernel, so 
 2.2 kernel users need to make sure that ramdisk support is compiled in (ie, not a module).
 It is <comment>vital</comment> that a <e>gentoo=notmpfs</e> flag be added to the kernel
@@ -684,6 +706,8 @@ If you don't know which one to choose, you might as well grab vcron.  They can b
 # <i>crontab /etc/crontab</i>
 <comment>or</comment>
 # <i>emerge sys-apps/vcron</i>
+<comment>Don't forget to add your *cron to the proper init level. </comment>
+# <i>rc-update add *cron default </i>
 </pre>
 <p>For more information how how cron works under Gentoo Linux, see <uri link="http://lists.gentoo.org/pipermail/gentoo-announce/2002-April/000151.html">this announcement</uri>.</p>
 <p>For more information on starting programs and daemons at startup, see the <uri link="/doc/rc-scripts.html">rc-script guide</uri>. </p>
@@ -755,6 +779,10 @@ Remember to specify <c>ext2</c>, <c>ext3</c> or <c>reiserfs</c> filesystem types
 proc                /proc       proc	 defaults        0 0
 </pre>
 
+<warn>Please notice that <i>/boot</i> is NOT mounted at boottime. This is to protect the data in <i>/boot</i> from
+corruption. If you need to access <i>/boot</i>, please mount it!
+</warn>
+
 </body>
 </section>
 <section>
@@ -770,6 +798,9 @@ proc                /proc       proc	 defaults        0 0
 <title>Final steps: /etc/hostname</title>
 <body>
 <p>Edit this file so that it contains your fully-qualified domain name on a single line, i.e. <c>mymachine.mydomain.com</c>.
+<pre>
+# <i>echo mymachine.mydomain.com > /etc/hostname</i>
+</pre>
 </p>
 </body>
 </section>
@@ -784,6 +815,11 @@ of any hostnames that may not be in your nameservers.  Here's a template for thi
 <comment># the next line contains your IP for your local LAN, and your associated machine name</comment>
 192.168.1.1    mymachine.mydomain.com	mymachine
 </pre>
+
+<note>If you are on a DHCP network, it might be helpful to set <i>localhost</i> to your machine's
+actual hostname. This will help GNOME and many other programs in name resolution.
+</note>
+
 </body>
 </section>
 
