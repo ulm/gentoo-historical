@@ -1,123 +1,186 @@
 <?xml version='1.0' encoding="utf-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<guide link="grsecurity2.xml">
+<guide link="http://dev.gentoo.org/proj/en/hardened/index.xml">
 
-<title>The grsecurity2 Quick Introduction</title>
+<title>Gentoo Grsecurity v2 Guide</title>
 
 <author title="Author">
   <mail link="solar@gentoo.org">solar</mail>
 </author>
-<author title="Editor">
+<author title="Author">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
 
-<abstract>Grsecurity2 Quick Intro</abstract>
+<abstract>
+This document features the grsecurity2 security patches, supported kernel
+configuration options and tools provided by the grsecurity project to lift your
+system's security to higher standards.
+</abstract>
 
-<version>1.1</version>
-<date>Aug 13, 2004</date>
+<version>0.3</version>
+<date>September 23, 2004</date>
 
 <chapter>
-<title>Introduction &amp; Features</title>
+<title>About Grsecurity</title>
 <section>
+<title>The Grsecurity Project</title>
 <body>
 
 <p>
-Grsecurity offers an innovative proactive approach to security utilizing a 
-multi-layered detection, prevention, and containment model. It offers many 
-features including:
+The grsecurity project, hosted on <uri>http://www.grsecurity.org</uri>, provides
+various patches to the Linux kernel which enhance your system's overall
+security. The various features brought by grsecurity are discussed in the next
+chapter; a comprehensive list is maintained on the <uri
+link="http://www.grsecurity.org/features.php">grsecurity features page</uri>
+itself.
 </p>
 
-<ul>
-  <li>grsecurity 2.0 RBAC features Role-Based Access Control</li>
-  <li>User, group, and special roles</li>
-  <li>Role transition tables</li>
-  <li>IP-based roles</li>
-  <li>Non-root access to special roles</li>
-  <li>Special roles that require no authentication</li>
-  <li>Nested subjects</li>
-  <li>Variable support in configuration</li>
-  <li>Difference set operations on variables in configuration</li>
-  <li>Object mode that controls the creation of setuid and setgid files</li>
-  <li>Create and delete object modes</li>
-  <li>
-    <path>/dev/grsec</path> entry for kernel authentication and learning logs
-  </li>
-  <li>
-    Next-generation code that produces least-privilege policies for the entire 
-    system with no configuration
-  </li>
-  <li>
-    Full pathnames for offending process and parent process
-  </li>
-  <li>RBAC status function for gradm</li>
-  <li>
-    <path>/proc/pid/ipaddr</path> gives the remote address of the person who 
-    started a given process
-  </li>
-  <li>
-    All other features of grsecurity 1.9.x MAC (Mandatory Access Controls) 
-    system
-  </li>
-</ul>
+<p>
+As grsecurity's features are mostly kernel-based, the majority of this document
+explains the various kernel features and their respective sysctl operands (if
+applicable). 
+</p>
+
+</body>
+</section>
+<section>
+<title>Gentoo Hardened Integration</title>
+<body>
+
+<p>
+The <uri link="http://hardened.gentoo.org">Gentoo Hardened Project</uri>
+maintains security-enhancement features for Gentoo, including but not limited to
+grsecurity.
+</p>
+
+</body>
+</section>
+<section>
+<title>Kernel Configuration</title>
+<body>
+
+<p>
+Throughout this document we will talk about kernel configuration using the
+kernel variables like <c>CONFIG_GRKERNSEC_PAX_NO_ACL_FLAGS</c>. These are the
+variables that the kernel build process uses to determine if a certain feature
+needs to be compiled.
+</p>
+
+<p>
+When you configure your kernel through <c>make menuconfig</c> or similar, you
+receive a user interface through which you can select the various kernel
+options. If you select the <e>Help</e> button at a certain kernel feature you
+will see at the top that it lists such a kernel variable.
+</p>
+
+<p>
+You can therefore still configure your kernel as you like - with a bit of
+thinking. And if you can't find a certain option, there's always the possibility
+to edit <path>/usr/src/linux/.config</path> by hand :)
+</p>
+
+<p>
+Of course, to be able to select the various grsecurity kernel options, you must
+enable grsecurity in your kernel:
+</p>
+
+<pre caption="Activating grsecurity">
+CONFIG_GRKERNSEC=y
+CONFIG_GRKERNSEC_CUSTOM=y
+</pre>
 
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>Typical x86 Kernel Setup</title>
+<title>PaX</title>
 <section>
-<title>Getting the kernel</title>
+<title>Fighting the Exploitation of Software Bugs</title>
 <body>
 
 <p>
-First of all you need to download the appropriate kernel sources:
+PaX introduces a couple of security mechanisms that make it harder for attackers
+to exploit software bugs. The <uri
+link="http://pax.grsecurity.net/docs/pax.txt">PaX introduction document</uri>
+talks about three possible exploit techniques:
 </p>
 
-<pre caption="Fetching the kernel sources">
-<i># emerge grsec-sources</i>         <comment>(2.4.x time tested and recomended for security)</comment>
-<i># emerge hardened-dev-sources</i>  <comment>(2.6.x experimental)</comment>
-</pre>
+<ol>
+  <li>introduce/execute arbitrary code</li>
+  <li>execute existing code out of original program order</li>
+  <li>execute existing code in original program order with arbitrary data</li>
+</ol>
+
+<p>
+One prevention method disallows executable code to be stored in writable 
+memory. When we look at a process, it requires five memory regions:
+</p>
+
+<ol>
+  <li>
+    a <e>data section</e> which contains the statically allocated and global
+    data
+  </li>
+  <li>
+    a <e>BSS region</e> (Block Started by Symbol) which contains information
+    about the zero-initialized data of the process
+  </li>
+  <li>
+    a <e>code region</e>, also called the <e>text segment</e>, which contains
+    the executable instructions
+  </li>
+  <li>
+    a <e>heap</e> which contains the dynamically allocated memory
+  </li>
+  <li>
+    a <e>stack</e> which contains the local variables
+  </li>
+</ol>
+
+<note>
+The first two regions are usually placed in a single, contiguous area called
+the data segment.
+</note>
+
+<p>
+The first PaX prevention method, called <b>NOEXEC</b>, marks memory pages that 
+do not contain executable code as non-executable. This means that the heap and 
+the stack, which only contain variable data and shouldn't contain executable
+code, are marked as non-executable. Exploits that place code in these areas with
+the intention of running it will fail.
+</p>
+
+<p>
+NOEXEC does more than this actually, interested readers should focus their
+attention to the <uri link="http://pax.grsecurity.net/docs/noexec.txt">PaX
+NOEXEC documentation</uri>.
+</p>
+
+<p>
+The second PaX prevention method, called <b>ASLR</b> (Address Space Layout
+Randomization), randomize the addresses given to memory requests. Where
+previously memory was assigned contiguously (which means exploits know where
+the tasks' memory regions are situated) ASLR randomizes this allocation,
+rendering techniques that rely on this information useless.
+</p>
+
+<p>
+More information about ASLR can be found <uri
+link="http://pax.grsecurity.net/docs/aslr.txt">online</uri>.
+</p>
 
 </body>
 </section>
 <section>
-<title>Recommended Kernel Configuration</title>
+<title>Enabling PaX</title>
 <body>
 
 <p>
-Now that your kernel is downloaded you will need to configure it appropriately.
+The recommended kernel setting for PaX is:
 </p>
 
-<pre caption="Configuring the kernel">
-<comment>(For genkernel users:)</comment>
-  # <i>genkernel --menuconfig all</i>
-
-<comment>(Otherwise:)</comment>
-  # <i>cd /usr/src/linux</i>
-  # <i>make menuconfig</i>
-</pre>
-<note>genkernel is mostly incompatible with hardened systems and should be avoided</note>
-
-<p>
-The following Code Listing provides the recommended configuration for the
-Grsecurity settings. You can toggle these settings in the interactive kernel
-configuration you started or by editing the <path>.config</path> file located
-inside <path>/usr/src/linux</path>.
-</p>
-
-<pre caption="The grsecurity part of the kernel's .config">
-<comment>#
-# Grsecurity
-#</comment>
-CONFIG_GRKERNSEC=y
-CONFIG_CRYPTO=y
-CONFIG_CRYPTO_SHA256=y
-<comment># CONFIG_GRKERNSEC_LOW is not set
-# CONFIG_GRKERNSEC_MID is not set
-# CONFIG_GRKERNSEC_HI is not set</comment>
-CONFIG_GRKERNSEC_CUSTOM=y
-
+<pre caption="Recommended PaX Kernel Configuration">
 <comment>#
 # PaX Control
 #
@@ -146,609 +209,77 @@ CONFIG_GRKERNSEC_PAX_RANDEXEC=y
 # CONFIG_GRKERNSEC_IO is not set</comment>
 CONFIG_GRKERNSEC_PROC_MEMMAP=y
 CONFIG_GRKERNSEC_HIDESYM=y
-
-<comment>#
-# Role Based Access Control Options
-#</comment>
-CONFIG_GRKERNSEC_ACL_HIDEKERN=y
-CONFIG_GRKERNSEC_ACL_MAXTRIES=3
-CONFIG_GRKERNSEC_ACL_TIMEOUT=30
-
-<comment>#
-# Filesystem Protections
-#</comment>
-CONFIG_GRKERNSEC_PROC=y
-<comment># CONFIG_GRKERNSEC_PROC_USER is not set</comment>
-CONFIG_GRKERNSEC_PROC_USERGROUP=y
-CONFIG_GRKERNSEC_PROC_GID=10
-CONFIG_GRKERNSEC_PROC_ADD=y
-CONFIG_GRKERNSEC_LINK=y
-CONFIG_GRKERNSEC_FIFO=y
-CONFIG_GRKERNSEC_CHROOT=y
-CONFIG_GRKERNSEC_CHROOT_MOUNT=y
-CONFIG_GRKERNSEC_CHROOT_DOUBLE=y
-CONFIG_GRKERNSEC_CHROOT_PIVOT=y
-CONFIG_GRKERNSEC_CHROOT_CHDIR=y
-CONFIG_GRKERNSEC_CHROOT_CHMOD=y
-CONFIG_GRKERNSEC_CHROOT_FCHDIR=y
-CONFIG_GRKERNSEC_CHROOT_MKNOD=y
-CONFIG_GRKERNSEC_CHROOT_SHMAT=y
-CONFIG_GRKERNSEC_CHROOT_UNIX=y
-CONFIG_GRKERNSEC_CHROOT_FINDTASK=y
-CONFIG_GRKERNSEC_CHROOT_NICE=y
-CONFIG_GRKERNSEC_CHROOT_SYSCTL=y
-CONFIG_GRKERNSEC_CHROOT_CAPS=y
-
-<comment>#
-# Kernel Auditing
-#
-# CONFIG_GRKERNSEC_AUDIT_GROUP is not set</comment>
-CONFIG_GRKERNSEC_EXECLOG=y
-CONFIG_GRKERNSEC_RESLOG=y
-CONFIG_GRKERNSEC_CHROOT_EXECLOG=y
-CONFIG_GRKERNSEC_AUDIT_CHDIR=y
-CONFIG_GRKERNSEC_AUDIT_MOUNT=y
-CONFIG_GRKERNSEC_AUDIT_IPC=y
-CONFIG_GRKERNSEC_SIGNAL=y
-CONFIG_GRKERNSEC_FORKFAIL=y
-CONFIG_GRKERNSEC_TIME=y
-CONFIG_GRKERNSEC_PROC_IPADDR=y
-CONFIG_GRKERNSEC_AUDIT_TEXTREL=y
-
-<comment>#
-# Executable Protections
-#</comment>
-CONFIG_GRKERNSEC_EXECVE=y
-CONFIG_GRKERNSEC_DMESG=y
-CONFIG_GRKERNSEC_RANDPID=y
-CONFIG_GRKERNSEC_TPE=y
-CONFIG_GRKERNSEC_TPE_ALL=y
-CONFIG_GRKERNSEC_TPE_GID=100
-
-<comment>#
-# Network Protections
-#</comment>
-CONFIG_GRKERNSEC_RANDNET=y
-CONFIG_GRKERNSEC_RANDISN=y
-CONFIG_GRKERNSEC_RANDID=y
-CONFIG_GRKERNSEC_RANDSRC=y
-CONFIG_GRKERNSEC_RANDRPC=y
-<comment># CONFIG_GRKERNSEC_SOCKET is not set
-
-#
-# Sysctl support
-#</comment>
-CONFIG_GRKERNSEC_SYSCTL=y
-
-<comment>#
-# Logging options
-#</comment>
-CONFIG_GRKERNSEC_FLOODTIME=10
-CONFIG_GRKERNSEC_FLOODBURST=4
-</pre>
-
-<p>
-Be sure to enable PaX ASLR if you are planning on using the Gentoo hardened 
-toolchain.
-</p>
-
-<note>
-Your mileage may vary with CONFIG_GRKERNSEC_KMEM and CONFIG_GRKERNSEC_IO. Be 
-sure to read the Help during the kernel configuration!
-</note>
-
-</body>
-</section>
-<section>
-<title>Compiling and installing the kernel example</title>
-<body>
-
-<p>
-If you aren't using <c>genkernel</c> you will need to compile and install your
-kernel:
-</p>
-
-<pre caption="Compiling and installing your kernel">
-<comment>(For 2.4 kernels:)</comment>
-  # <i>make bzImage modules modules_install</i>
-
-<comment>(For 2.6 kernels:)</comment>
-  # <i>make &amp;&amp; make modules_install</i>
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>      
-<title>Example Sysctl Settings</title>
-<section>
-<title>SysCtl Values</title>
-<body>
-
-<p>
-After you have compiled your kernel with settings similar to the above and
-rebooted, you will get the option to enable/disable many of the
-options through the <path>/proc</path> filesystem or via sysctl.
-</p>
-
-<p>
-The example below shows what a typical <path>/etc/sysctl.conf</path> looks 
-like.
-</p>
-
-<p>
-Note that some options are noisier than others, and are thus disabled in
-this example.  You can toggle these from the command line at runtime as in
-the following example:
-</p>
-
-<pre caption="Example toggling of options">
-<comment>(Toggling the exec_logging feature ON:)</comment>
-  # <i>sysctl -w kernel.grsecurity.exec_logging=1</i>
-
-<comment>(Toggling the exec_logging feature OFF:)</comment>
-  # <i>sysctl -w kernel.grsecurity.exec_logging=0</i>
-</pre>
-
-<pre caption="Sample SysCtl values in /etc/sysctl.conf">
-<comment>#kernel.grsecurity.grsec_lock = 0</comment>
-kernel.grsecurity.chroot_findtask = 1
-kernel.grsecurity.rand_rpc = 1
-kernel.grsecurity.dmesg = 1
-kernel.grsecurity.audit_ipc = 0
-kernel.grsecurity.audit_mount = 1
-kernel.grsecurity.audit_chdir = 0
-kernel.grsecurity.audit_gid = 0
-kernel.grsecurity.audit_group = 0
-kernel.grsecurity.audit_textrel = 0
-kernel.grsecurity.rand_isns = 1
-kernel.grsecurity.rand_tcp_src_ports = 1
-kernel.grsecurity.rand_ip_ids = 1
-kernel.grsecurity.rand_pids = 1
-kernel.grsecurity.tpe_restrict_all = 0
-kernel.grsecurity.tpe_gid = 100
-kernel.grsecurity.tpe = 1
-kernel.grsecurity.chroot_deny_sysctl = 1
-kernel.grsecurity.chroot_caps = 1
-kernel.grsecurity.chroot_execlog = 0
-kernel.grsecurity.chroot_restrict_nice = 1
-kernel.grsecurity.chroot_deny_mknod = 1
-kernel.grsecurity.chroot_deny_chmod = 1
-kernel.grsecurity.chroot_enforce_chdir = 1
-kernel.grsecurity.chroot_deny_pivot = 1
-kernel.grsecurity.chroot_deny_chroot = 1
-kernel.grsecurity.chroot_deny_fchdir = 1
-kernel.grsecurity.chroot_deny_mount = 1
-kernel.grsecurity.chroot_deny_unix = 1
-kernel.grsecurity.chroot_deny_shmat = 1
-kernel.grsecurity.timechange_logging = 1
-kernel.grsecurity.forkfail_logging = 1
-kernel.grsecurity.signal_logging = 1
-kernel.grsecurity.exec_logging = 0
-kernel.grsecurity.execve_limiting = 1
-kernel.grsecurity.fifo_restrictions = 1
-kernel.grsecurity.linking_restrictions = 1
-</pre>
-
-<p>
-After you've found your desired settings you should enable the grsecurity 
-sysctl lock listed on top of the example.
-</p>
-
-<pre caption="Activating the SysCtl Locking Mechanism">
-kernel.grsecurity.grsec_lock = 1
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>      
-<title>Role Based Access Control System</title>
-<section>
-<body>
-
-<note>
-Running the RBAC system is completely optional. At no point does
-grsecurity force you to use its RBAC system. It is, however, recommended for
-educational universities, public access machines, banks, shell servers
-and any place where you wish to run services with least privilege.
-RBAC is useful whenever you have untrusted local (human) users, or when your
-users are trusted but the apps they have to run are not.
-</note>
-
-</body>
-</section>
-<section>
-<title>What is gradm?</title>
-<body>
-
-<p>
-<c>gradm</c> is a tool which allows you administer and maintain a policy for
-your system. With it, you can enable the RBAC system (<c>-E</c>), reload the
-roles (<c>-R</c>), remove an execution ban from a given uid/filename
-(<c>-M</c>), parse the learning logs (<c>-L</c>), display permissions on
-an object by a subject (<c>-T</c>), disable the RBAC system (<c>-D</c>),
-go into Admin Mode (<c>-a admin</c>) and set a password for the admin mode
-(<c>-P admin</c>) or switch to another role (<c>-P rolename</c>)
-</p>
-
-<p>
-You need to install <c>gradm</c> if you wish to use it.
-</p>
-
-<pre caption="Installing gradm">
-# <i>emerge gradm</i>
-</pre>
-
-<p>
-A default policy will be installed to <path>/etc/grsec/policy</path> if one 
-does not exist.
-</p>
-
-</body>
-</section>
-<section>
-<title>Basic Setup</title>
-<body>
-
-<p>
-You will notice that the RBAC's on the system are still not activated. This
-is because it is the sysadmin's job to determine when the system should
-have an RBAC policy enforced and not Gentoo's. 
-</p>
-
-<p>
-Before activating the RBAC system you should set an admin password with 
-<c>gradm -P</c>. Then you can activate the RBAC system with <c>gradm -E</c>.
-</p>
-
-<pre caption = "Activating the RBAC system">
-# <i>gradm -P admin</i>
-Setting up grsecurity RBAC password
-Password: <comment>(Enter a well-chosen password)</comment>
-Re-enter Password: <comment>(Enter the same password for confirmation)</comment>
-Password written in /etc/grsec/pw.
 </pre>
 
 </body>
 </section>
 <section>
-<title>Full system learning mode</title>
+<title>Controlling PaX</title>
 <body>
 
 <p>
-The learning mode can generate an anticipatory least privilege policy
-for your system. This allows for time and money savings by being able to
-rapidly deploy multiple secure servers.
+Not all Linux applications are happy with the PaX security restrictions. These
+tools include xorg-x11, java, mplayer, xmms and others. If you plan on using
+them you can elevate the protections for these applications using <c>chpax</c>
+and <c>paxctl</c>.
 </p>
 
-<pre caption="Enable learning mode">
-# <i>gradm -F -L /etc/grsec/learning.log</i>
-</pre>
-
-<p>
-Use your sytem, do the things you would normaly do..
-Try to avoid rsyncing, running locate or any heavy file i/o operation as this 
-can really slow down the processing time.
-</p>
-
-<note>
-A logging daemon runs while the RBAC system is loaded in learning mode. You
-will never notice it because it is auto-protected by the RBAC system.
-</note>
-
-</body>
-</section>
-<section>
-<title>Creating a Policy from the Learning Mode Logging</title>
-<body>
-
-<p>
-When you believe you have used your system sufficiently to obtain a good policy,
-save the logs under <path>/etc/grsec/learning.roles</path>:
-</p>
-
-<pre caption="Process learning mode logs">
-# <i>gradm -F -L /etc/grsec/learning.log -O /etc/grsec/learning.roles</i>
-</pre>
-
-<p>
-Audit the file <path>/etc/grsec/learning.roles</path> and save it as
-<path>/etc/grsec/policy</path> (mode 0600) when you are finished.
-</p>
-
-<pre caption="Saving the policies">
-# <i>mv /etc/grsec/learning.roles /etc/grsec/policy</i>
-# <i>chmod 0600 /etc/grsec/policy</i>
-</pre>
-
-<p>
-You will now be able to enable the RBAC system with your new learned policy.
-</p>
-
-</body>
-</section>
-<section>
-<title>Enabling the RBAC System</title>
-<body>
-
-<p>
-Activate the RBAC system with the <c>gradm</c> tool:
-</p>
-
-<pre caption="Enable the RBAC system">
-# <i>gradm -E</i>
-</pre>
-
-<p>
-You are now using your system with RBAC enabled. Congratulations!
-</p>
-
-</body>
-</section>
-<section>
-<title>Using Roles</title>
-<body>
-
-<p>
-As the name implies, RBAC uses roles to allow or deny certain activities on the
-system. The most important role on the system is the <c>admin</c> role as it is
-the only role allowed to alter RBAC settings. You will have many roles on your
-system; read your grsec policy file for more information.
-</p>
-
-<pre caption="Authenticating in the admin role">
-# <i>gradm -a admin</i>
-</pre>
-
-<p>
-When you have finished your administrative tasks, don't forget to 
-deauthenticate from the admin role:
-</p>
-
-<pre caption="De-Authenticating from the admin role">
-# <i>gradm -u admin</i>
-</pre>
-
-<p>
-To authenticate yourself into another role, substitute <c>admin</c> with the
-role of your choice.
-</p>
-
-</body>
-</section>
-<section>
-<title>Disabling the RBAC System</title>
-<body>
-
-<p>
-When you need to disable the RBAC system (for instance because it disallows
-actions that shouldn't be disallowed), first authenticate yourself in the
-<c>admin</c> role and then disable the RBAC system using <c>gradm</c>:
-</p>
-
-<pre caption="Disable the RBAC system">
-# <i>gradm -a admin</i>
-# <i>gradm -D</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Variable Set Operation</title>
-<body>
-
-<p>
-An interesting feature of grsecurity2 is <e>Set Operation Support</e> for 
-the configuration file. Currently it supports unions, intersections, and
-differences of sets (of objects in this case).
-</p>
-
-<pre caption="Example sets">
-define objset1 {
-/root/blah rw
-/root/blah2 r
-/root/blah3 x
-}
-
-define somename2 {
-/root/test1 rw
-/root/blah2 rw
-/root/test3 h
-}
-</pre>
-
-<p>
-Here is an example of its use, and the resulting objects that will be added to 
-your subject:
-</p>
-
-<pre caption="&amp; Example">
-subject /somebinary o
-$objset1 &amp; $somename2
-</pre>
-
-<p>
-The above would expand to:
-</p>
-
-<pre caption="Resulting subject settings">
-subject /somebinary o
-/root/blah2 r
-</pre>
-
-<p>
-This is the result of the &amp; operator which takes both sets and returns the 
-files that exist in both sets and the permission for those files that exist 
-in both sets.
-</p>
-
-<pre caption="| Example">
-subject /somebinary o
-$objset1 | $somename2
-</pre>
-
-<p>
-This example would expand to:
-</p>
-
-<pre caption="Resulting subject settings">
-subject /somebinary o
-/root/blah rw
-/root/blah2 rw
-/root/blah3 x
-/root/test1 rw
-/root/test3 h
-</pre>
-
-<p>
-This is the result of the | operator which takes both sets and returns the 
-files that exist in either set.  If a file exists in both sets, it is returned 
-as well and the mode contains the flags that exist in either set.
-</p>
-
-<pre caption="- Example">
-subject /somebinary o
-$objset1 - $somename2
-</pre>
-
-<p>
-This example would expand to:
-</p>
-
-<pre caption="Resulting subject settings">
-subject /somebinary o
-/root/blah rw
-/root/blah2 h
-/root/blah3 x
-</pre>
-
-<p>
-This is the result of the - operator which takes both sets and returns the 
-files that exist in the set on the left but not in the match of the file in 
-set on the right. If a file exists on the left and a match is found on the 
-right (either the filenames are the same, or a parent directory exists in 
-the right set), the file is returned and the mode of the second set is 
-removed from the first set, and that file is returned.
-</p>
-
-<p>
-In some obscure pseudo-language you could see this as:
-</p>
-
-<pre caption="Pseudo-language explanation">
-if ( (<i>$objset1</i> contained <i>/tmp/blah rw</i>) and 
-     (<i>$objset2</i> contained <i>/tmp/blah r</i>) )
-then
-  <i>$objset1 - $objset2</i> would contain <i>/tmp/blah w</i>
-
-if ( (<i>$objset1</i> contained <i>/tmp/blah rw</i>) and
-     (<i>$objset2</i> contained <i>/ rwx</i>) )
-then
-  <i>$objset1 - $objset2</i> would contain <i>/tmp/blah h</i>
-</pre>
-
-<p>
-As for order of precedence (from highest to lowest): "-, &amp; |".
-</p>
-
-<p>
-If you do not want to bother remembering precedence, parenthesis support
-is also included, so you can do things like:
-</p>
-
-<pre caption="Parenthesis example">
-(($set1 - $set2) | $set3) &amp; $set4
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Maintaining your system</title>
-<section>
-<body>
-
-<p>
-It is important that you monitor your log files. Tenshi is one such tool 
-which can monitor and mail an admin when grsecurity and PaX events happen 
-in the logs.
-</p>
-
-<p>
-It is highly configurable as was designed for Gentoo's own infrastructure where
-grsecurity and PaX play a major role in protecting our servers.
-</p>
-
-<p>
-More information on Tenshi can be found at <uri
-link="/proj/en/infrastructure/tenshi/">the Tenshi Homepage</uri>.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Process Address Space Protection</title>
-<section>
-<title>PaX is your first line of defense</title>
-<body>
-
-<p>
-PaX is your first line of defense against the exploitation of all kinds of 
-memory corruption bugs.
-</p>
-
-<p>
-Some legacy code such as xfree/java/mplayer(with 3rd party codecs)/xmms
-(with 3rd party plugins) cause runtime code generation and require less
-restrictive settings. <c>chpax</c> and <c>paxctl</c> exist for just these 
-cases. An init/conf script will be created when you merge <c>chpax</c> that 
-has most of these exceptions in it. 
-</p>
-
-<pre caption="Installing the PaX tools">
+<pre caption="Installing the chpax and paxctl tools">
 # <i>emerge app-admin/chpax</i>
 # <i>emerge app-admin/paxctl</i>
 </pre>
 
 <p>
-You may simply use the chpax initscript in the default runlevel
-to have most of these binary markings handled for you automatically.
+chpax provides an init script that handles most known application settings for
+you:
 </p>
 
-<pre caption="Adding chpax to the default runlevel">
+<pre caption="Adding the chpax init script to the default runlevel">
 # <i>rc-update add chpax default</i>
 </pre>
 
-<note>
-The chpax script handles both cases of EI_PAX (chpax) and PT_PAX_FLAGS
-(paxctl).
-</note>
-
 <p>
-<c>paxtest</c> is a PaX regression test suite developed by Peter Busser for
-Adamantix, but has been adopted for use on other distributions such as
-Gentoo.
+<c>pax-utils</c> is a small toolbox which contains useful applications to
+administrate a PaX aware server. 
 </p>
 
-<pre caption="Installing paxtest">
-# <i>emerge paxtest</i>
+<pre caption="Installing pax-utils">
+# <i>emerge pax-utils</i>
 </pre>
 
 <p>
-Run <c>paxtest</c> to start the regression test suite. Be careful where you run
-it as it will leave a <path>paxtest.log</path> file in the current working
-directory.
+Interesting tools include <c>scanelf</c> and <c>pspax</c>:
 </p>
 
-<pre caption="Running paxtest">
-# <i>paxtest</i>
+<ul>
+  <li>
+    With <c>scanelf</c> you can scan over library and binary directories and
+    list the various permissions and ELF types that pertain to running an ideal
+    pax/grsec setup
+  </li>
+  <li>
+    With <c>pspax</c> you can display PaX flags/capabilities/xattr from the
+    kernel's perspective
+  </li>
+</ul>
 
+</body>
+</section>
+<section>
+<title>Verifying the PaX Settings</title>
+<body>
+
+<p>
+Peter Busser has written a regression test suite called <c>paxtest</c>. This
+tool will check various cases of possible attack vectors and inform you of the
+result. When you run it, it will leave a logfile called <path>paxtest.log</path>
+in the current working directory.
+</p>
+
+<pre caption="Installing and running paxtest">
+# <i>emerge paxtest</i>
+
+# <i>paxtest</i>
 Executable anonymous mapping             : Killed
 Executable bss                           : Killed
 Executable data                          : Killed
@@ -779,85 +310,543 @@ Executable shared library data           : Killed
 </pre>
 
 <p>
-With the above settings we notice that strcpy,memcpy are still listed as
-<c>Vulnerable</c> - this is expected and normal. It is simply showing the need 
-for a technology such as propolice/ssp. We also see that PAGEEXEC has no
-randomization, this is also normal as we did not enable PAGEEXEC in our
-kernel. On the ia32 platform PAGEEXEC has slightly more of a performance
-hit than SEGMEXEC so we opt for SEGMEXEC over PAGEEXEC.
+In the above example run you notice that:
 </p>
+
+<ul>
+  <li>
+    strcpy and memcpy are listed as <e>Vulnerable</e>. This is expected and
+    normal - it is simply showing the need for a technology such as <uri
+    link="/proj/en/hardened/propolice.xml">ProPolice/SSP</uri>
+  </li>
+  <li>
+    there is no randomization for PAGEEXEC. This is normal since our recommended
+    x86 kernel configuration didn't activate the PAGEEXEC setting. However, on
+    arches that support a true NX (non-executable) bit (most of them do,
+    including x86_64), PAGEEXEC is the recommended method and has no 
+    performance hit.
+  </li>
+</ul>
 
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>RBAC</title>
 <section>
-<title>PaX Utilities</title>
+<title>Role Based Access Control</title>
 <body>
 
 <p>
-<c>pax-utils</c> is a small toolbox of useful applications made to 
-administrate a PaX aware server. Some of the common utilities are 
-<c>scanelf</c> and <c>pspax</c>.
+There are two basic types of access control mechanisms used to prevent
+unauthorized access to files (or information in general): DAC (Discretionary
+Access Control) and MAC (Mandatory Access Control). By default, Linux uses a DAC
+mechanism: the creator of the file can define who has access to the file. A MAC
+system however forces everyone to follow rules set by the administrator.
 </p>
 
 <p>
-Install <c>pax-utils</c> using <c>emerge</c>:
+The MAC implementation grsecurity supports is called Role Based Access
+Control. RBAC associates <e>roles</e> with each user. Each role defines what
+operations can be performed on certain objects. Given a well-written collection
+of roles and operations your users will be restricted to perform only those
+tasks that you tell them they can do. The default "deny-all" ensures you that a
+user cannot perform an action you haven't thought of.
 </p>
 
-<pre caption="Installing pax-utils">
-# <i>emerge pax-utils</i>
-</pre>
+</body>
+</section>
+<section>
+<title>Configuring the Kernel</title>
+<body>
 
 <p>
-With <c>scanelf</c> you scan over library and binary PATHs and list the various
-permissions and ELF types that pertain to running an ideal pax/grsec setup.
+The recommended kernel setting for RBAC is:
 </p>
 
-<pre caption="Running scanelf">
-# <i>scanelf -p -l</i>
-</pre>
-
-<p>
-With <c>pspax</c> you can display PaX flags/capabilities/xattr from the 
-kernel's perspective.
-</p>
-
-<pre caption="Running pspax">
-# <i>pspax</i>
+<pre caption="Recommended RBAC Kernel Configuration">
+<comment>#
+# Role Based Access Control Options
+#</comment>
+CONFIG_GRKERNSEC_ACL_HIDEKERN=y
+CONFIG_GRKERNSEC_ACL_MAXTRIES=3
+CONFIG_GRKERNSEC_ACL_TIMEOUT=30
 </pre>
 
 </body>
 </section>
 <section>
+<title>Working with gradm</title>
+<body>
+
+<p>
+<c>gradm</c> is a tool which allows you to administer and maintain a policy for
+your system. With it, you can enable or disable the RBAC system, reload 
+the RBAC roles, change your role, set a password for admin mode, etc.
+</p>
+
+<p>
+When you install <c>gradm</c> a default policy will be installed in
+<path>/etc/grsec/policy</path>:
+</p>
+
+<pre caption="Installing gradm">
+# <i>emerge gradm</i>
+</pre>
+
+<p>
+By default, the RBAC policies are not activated. It is the sysadmin's job to
+determine when the system should have an RBAC policy enforced and not Gentoo's.
+Before activating the RBAC system you should set an admin password.
+</p>
+
+<pre caption="Activating the RBAC system">
+# <i>gradm -P admin</i>
+Setting up grsecurity RBAC password
+Password: <comment>(Enter a well-chosen password)</comment>
+Re-enter Password: <comment>(Enter the same password for confirmation)</comment>
+Password written in /etc/grsec/pw
+# <i>gradm -E</i>
+</pre>
+
+<p>
+To disable the RBAC system, run <c>gradm -D</c>. If you are not allowed to, you
+first need to switch to the admin role:
+</p>
+
+<pre caption="Disabling the RBAC system">
+# <i>gradm -a admin</i>
+Password: <comment>(Enter your admin role password)</comment>
+# <i>gradm -D</i>
+</pre>
+
+<p>
+If you want to leave the admin role, run <c>gradm -u admin</c>:
+</p>
+
+<pre caption="Dropping the admin role">
+# <i>gradm -u admin</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Generating a Policy</title>
+<body>
+
+<p>
+The RBAC system comes with a great feature called "learning mode". The learning
+mode can generate an anticipatory least privilege policy for your system. This
+allows for time and money savings by being able to rapidly deploy multiple
+secure servers.
+</p>
+
+<p>
+To use the learning mode, activate it using <c>gradm</c>:
+</p>
+
+<pre caption="Activating the RBAC learning mode">
+# <i>gradm -F -L /etc/grsec/learning.log</i>
+</pre>
+
+<p>
+Now use your system, do the things you would normally do. Try to avoid rsyncing,
+running locate of any other heavy file i/o operation as this can really slow
+down the processing time.
+</p>
+
+<p>
+When you believe you have used your system sufficiently to obtain a good policy,
+let <c>gradm</c> process them and propose roles under 
+<path>/etc/grsec/learning.roles</path>:
+</p>
+
+<pre caption="Processing learning mode logs">
+# <i>gradm -F -L /etc/grsec/learning.log -O /etc/grsec/learning.roles</i>
+</pre>
+
+<p>
+Audit the <path>/etc/grsec/learning.roles</path> and save it as
+<path>/etc/grsec/policy</path> (mode 0600) when you are finished.
+</p>
+
+<pre caption="Saving the policies">
+# <i>mv /etc/grsec/learning.roles /etc/grsec/policy</i>
+# <i>chmod 0600 /etc/grsec/policy</i>
+</pre>
+
+<p>
+You will now be able to enable the RBAC system with your new learned policy.
+</p>
+
+</body>
+</section>
+<section>
+<title>Tweaking your Policy</title>
+<body>
+
+<p>
+An interesting feature of grsecurity2 is <e>Set Operation Support</e> for the
+configuration file. Currently it supports unions, intersections and differences
+of sets (of objects in this case).
+</p>
+
+<pre caption="Example sets">
+define objset1 {
+/root/blah rw
+/root/blah2 r
+/root/blah3 x
+}
+
+define somename2 {
+/root/test1 rw
+/root/blah2 rw
+/root/test3 h
+}
+</pre>
+
+<p>
+Here is an example of its use, and the resulting objects that will be added to
+your subject:
+</p>
+
+<pre caption="&amp; Example">
+subject /somebinary o
+$objset1 &amp; $somename2
+</pre>
+
+<p>
+The above would expand to:
+</p>
+
+<pre caption="Resulting subject settings">
+subject /somebinary o
+/root/blah2 r
+</pre>
+
+<p>
+This is the result of the &amp; operator which takes both sets and returns the
+files that exist in both sets and the permission for those files that exist
+in both sets.
+</p>
+
+<pre caption="| Example">
+subject /somebinary o
+$objset1 | $somename2
+</pre>
+
+<p>
+This example would expand to:
+</p>
+
+<pre caption="Resulting subject settings">
+subject /somebinary o
+/root/blah rw
+/root/blah2 rw
+/root/blah3 x
+/root/test1 rw
+/root/test3 h
+</pre>
+
+<p>
+This is the result of the | operator which takes both sets and returns the
+files that exist in either set.  If a file exists in both sets, it is returned
+as well and the mode contains the flags that exist in either set.
+</p>
+
+<pre caption="- Example">
+subject /somebinary o
+$objset1 - $somename2
+</pre>
+
+<p>
+This example would expand to:
+</p>
+
+<pre caption="Resulting subject settings">
+subject /somebinary o
+/root/blah rw
+/root/blah2 h
+/root/blah3 x
+</pre>
+
+<p>
+This is the result of the - operator which takes both sets and returns the
+files that exist in the set on the left but not in the match of the file in
+set on the right. If a file exists on the left and a match is found on the
+right (either the filenames are the same, or a parent directory exists in
+the right set), the file is returned and the mode of the second set is
+removed from the first set, and that file is returned.
+</p>
+
+<p>
+In some obscure pseudo-language you could see this as:
+</p>
+
+<pre caption="Pseudo-language explanation">
+if ( (<i>$objset1</i> contained <i>/tmp/blah rw</i>) and
+     (<i>$objset2</i> contained <i>/tmp/blah r</i>) )
+then
+  <i>$objset1 - $objset2</i> would contain <i>/tmp/blah w</i>
+
+if ( (<i>$objset1</i> contained <i>/tmp/blah rw</i>) and
+     (<i>$objset2</i> contained <i>/ rwx</i>) )
+then 
+  <i>$objset1 - $objset2</i> would contain <i>/tmp/blah h</i>
+</pre>
+
+<p>
+As for order of precedence (from highest to lowest): "-, &amp; |".
+</p>
+
+<p>
+If you do not want to bother remembering precedence, parenthesis support
+is also included, so you can do things like:
+</p>
+
+<pre caption="Parenthesis example">
+(($set1 - $set2) | $set3) &amp; $set4
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Filesystem Protection</title>
+<section>
+<title>Fighting Chroot and Filesystem Abuse</title>
+<body>
+
+<p>
+Grsecurity2 includes many patches that prohibits users from gaining unnecessary
+knowledge about the system. This includes restrictions on <path>/proc</path>
+usage, chrooting, linking, etc.
+</p>
+
+</body>
+</section>
+<section>
+<title>Kernel Configuration</title>
+<body>
+
+<p>
+We recommend the following grsecurity kernel configuration for filesystem
+protection:
+</p>
+
+<pre caption="Activating Filesystem Protection">
+<comment>#
+# Filesystem Protections
+#</comment>
+CONFIG_GRKERNSEC_PROC=y
+<comment># CONFIG_GRKERNSEC_PROC_USER is not set</comment>
+CONFIG_GRKERNSEC_PROC_USERGROUP=y
+CONFIG_GRKERNSEC_PROC_GID=10
+CONFIG_GRKERNSEC_PROC_ADD=y
+CONFIG_GRKERNSEC_LINK=y
+CONFIG_GRKERNSEC_FIFO=y
+CONFIG_GRKERNSEC_CHROOT=y
+CONFIG_GRKERNSEC_CHROOT_MOUNT=y
+CONFIG_GRKERNSEC_CHROOT_DOUBLE=y
+CONFIG_GRKERNSEC_CHROOT_PIVOT=y
+CONFIG_GRKERNSEC_CHROOT_CHDIR=y
+CONFIG_GRKERNSEC_CHROOT_CHMOD=y
+CONFIG_GRKERNSEC_CHROOT_FCHDIR=y
+CONFIG_GRKERNSEC_CHROOT_MKNOD=y
+CONFIG_GRKERNSEC_CHROOT_SHMAT=y
+CONFIG_GRKERNSEC_CHROOT_UNIX=y
+CONFIG_GRKERNSEC_CHROOT_FINDTASK=y
+CONFIG_GRKERNSEC_CHROOT_NICE=y
+CONFIG_GRKERNSEC_CHROOT_SYSCTL=y
+CONFIG_GRKERNSEC_CHROOT_CAPS=y
+</pre>
+
+</body>
+</section>
+<section>
+<title>Triggering the Security Mechanism</title>
+<body>
+
+<p>
+When you're using a kernel compiled with the above (or similar) settings, you
+will get the option to enable/disable many of the options through the
+<path>/proc</path> filesystem or via <c>sysctl</c>.
+</p>
+
+<p>
+The example below shows an excerpt of a typical <path>/etc/sysctl.conf</path>:
+</p>
+
+<pre caption="Example settings inside /etc/sysctl.conf">
+kernel.grsecurity.chroot_deny_sysctl = 1
+kernel.grsecurity.chroot_caps = 1
+kernel.grsecurity.chroot_execlog = 0
+kernel.grsecurity.chroot_restrict_nice = 1
+kernel.grsecurity.chroot_deny_mknod = 1
+kernel.grsecurity.chroot_deny_chmod = 1
+kernel.grsecurity.chroot_enforce_chdir = 1
+kernel.grsecurity.chroot_deny_pivot = 1
+kernel.grsecurity.chroot_deny_chroot = 1
+kernel.grsecurity.chroot_deny_fchdir = 1
+kernel.grsecurity.chroot_deny_mount = 1
+kernel.grsecurity.chroot_deny_unix = 1
+kernel.grsecurity.chroot_deny_shmat = 1
+</pre>
+
+<p>
+You can enable or disable settings at will using the <c>sysctl</c> command:
+</p>
+
+<pre caption="Enabling sysctl settings">
+<comment>(Toggling the exec_logging feature ON)</comment>
+# <i>sysctl -w kernel.grsecurity.exec_logging = 1</i>
+<comment>(Toggling the exec_logging feature OFF)</comment>
+# <i>sysctl -w kernel.grsecurity.exec_logging = 0</i>
+</pre>
+
+<p>
+There is a very important sysctl setting pertaining to grsecurity, namely
+<c>kernel.grsecurity.grsec_lock</c>. When set, you are not able to change any
+setting anymore. 
+</p>
+
+<pre caption="Locking the sysctl interface">
+# <i>sysctl -w kernel.grsecurity.grsec_lock = 1</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Kernel Auditing</title>
+<section>
+<title>Extend your System's Logging Facilities</title>
+<body>
+
+<p>
+grsecurity adds extra functionality to the kernel pertaining the logging. With
+grsecurity's <e>Kernel Auditing</e> the kernel informs you when applications are
+started, devices (un)mounted, etc.
+</p>
+
+</body>
+</section>
+<section>
+<title>The various Kernel Audit Settings</title>
+<body>
+
+<p>
+The following kernel configuration section can be used to enable grsecurity's
+Kernel Audit Settings:
+</p>
+
+<pre caption="Activating Kernel Auditing">
+<comment>#
+# Kernel Auditing
+#
+# CONFIG_GRKERNSEC_AUDIT_GROUP is not set</comment>
+CONFIG_GRKERNSEC_EXECLOG=y
+CONFIG_GRKERNSEC_RESLOG=y
+CONFIG_GRKERNSEC_CHROOT_EXECLOG=y
+CONFIG_GRKERNSEC_AUDIT_CHDIR=y
+CONFIG_GRKERNSEC_AUDIT_MOUNT=y
+CONFIG_GRKERNSEC_AUDIT_IPC=y
+CONFIG_GRKERNSEC_SIGNAL=y
+CONFIG_GRKERNSEC_FORKFAIL=y
+CONFIG_GRKERNSEC_TIME=y
+CONFIG_GRKERNSEC_PROC_IPADDR=y
+CONFIG_GRKERNSEC_AUDIT_TEXTREL=y
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Process Restrictions</title>
+<section>
+<title>Executable Protection</title>
+<body>
+
+<p>
+With grsecurity you can restrict executables. Since most exploits work through
+one or more running processes this protection can save your system's health.
+</p>
+
+</body>
+</section>
+<section>
+<title>Network Protection</title>
+<body>
+
+<p>
+Linux' TCP/IP stack is vulnerable to prediction-based attacks. grsecurity
+includes randomization patches to counter these attacks. Apart from these you
+can also enable socket restrictions, disallowing certain groups network access
+alltogether.
+</p>
+
+</body>
+</section>
+<section>
+<title>Kernel Settings</title>
+<body>
+
+<p>
+The following kernel settings enable various executable and network protections:
+</p>
+
+<pre caption="Kernel setting">
+<comment>#
+# Executable Protections
+#</comment>
+CONFIG_GRKERNSEC_EXECVE=y
+CONFIG_GRKERNSEC_DMESG=y
+CONFIG_GRKERNSEC_RANDPID=y
+CONFIG_GRKERNSEC_TPE=y
+CONFIG_GRKERNSEC_TPE_ALL=y
+CONFIG_GRKERNSEC_TPE_GID=100
+
+<comment>#
+# Network Protections
+#</comment>
+CONFIG_GRKERNSEC_RANDNET=y
+CONFIG_GRKERNSEC_RANDISN=y
+CONFIG_GRKERNSEC_RANDID=y
+CONFIG_GRKERNSEC_RANDSRC=y
+CONFIG_GRKERNSEC_RANDRPC=y
+<comment># CONFIG_GRKERNSEC_SOCKET is not set</comment>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>The Hardened Toolchain</title>
+<section>
 <body>
 
 <p>
-The hardened toolchain was designed to complete the grsec/PaX model from 
-userspace. That is beyond the scope of this document, but as a quickstart you 
-can do:
+Although it is outside the scope of this document we mention the use of the
+hardened toolchain which completes the grsec/PaX model from userspace. As a
+quickstart you can do:
 </p>
 
 <pre caption="Using the hardened toolchain">
 # <i>cd /etc</i>
 # <i>rm make.profile</i>
 # <i>ln -s ../usr/portage/profiles/hardened/x86 make.profile</i>
-# <i># emerge -e world</i>
+# <i>emerge -e world</i>
 </pre>
 
 <p>
-If you don't want to use this profile, add the hardened USE flag to your 
-<path>/etc/make.conf</path>.
+If you don't want to use this profile, add the <c>hardened</c> USE flag to your
+USE variable in <path>/etc/make.conf</path>. 
 </p>
-
-<p>
-Do not forget to use (layer 2) <c>ebtables</c> and (layer3) <c>iptables</c> 
-firewalling where appropriate.
-</p>
-
-<pre caption="Installing ebtables and iptables">
-# <i>emerge ebtables</i>
-# <i>emerge iptables</i>
-</pre>
 
 </body>
 </section>
@@ -874,6 +863,7 @@ firewalling where appropriate.
   <li>
     <uri link="http://grsecurity.net/researchpaper.pdf">Increasing Performance 
     and Granularity in Role-Based Access Control Systems</uri>
+
   </li>
   <li>
     <uri link="http://www.gentoo.org/proj/en/hardened/capabilities.xml">
@@ -883,6 +873,7 @@ firewalling where appropriate.
     <uri link="http://grsecurity.net/quickstart.pdf">Grsecurity Quick-Start 
     Guide</uri> (NEW .pdf)
   </li>
+
   <li>
     <uri link="http://www.gentoo.org/proj/en/hardened/docs/pax-howto.xml">Using PaX with 
     Gentoo QuickStart</uri> (NEW)
@@ -894,6 +885,7 @@ firewalling where appropriate.
   <li>
     <uri link="http://grsecurity.net/PaX-presentation_files/frame.htm">PaX: The 
     Guaranteed End of Arbitrary Code Execution</uri>
+
   </li>
   <li>
     <uri link="http://pax.grsecurity.net">PaX HomePage and Documentation</uri>
@@ -902,6 +894,7 @@ firewalling where appropriate.
     <uri link="http://www.gentoo.org/proj/en/infrastructure/tenshi">Tenshi</uri>
   </li>
 </ul>
+
 
 </body>
 </section>
