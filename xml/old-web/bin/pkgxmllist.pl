@@ -10,24 +10,49 @@ use diagnostics;
 ################
 # Global vars
 ################
+# Directories
+
 my $portage_root='/usr/portage/';
-my $pkg_input = `python ../python/genpkglist.py`|| die "Unable to get package list:$!\n";
-my @package_list= split ('\n',$pkg_input);
-my %packages =();
-my %category_list=();
 my $xml_index='../xml/pkg_index.xml';
 my $package_dir='../xml/packages/';
+#hashes
+my %packages =();
+my %category_list=();
+
+################
+# Slurp in the list of pkages, their version and category, 
+# There's no reason this couldn't use Imbed::python, but this was quicker
+################
+my $pkg_input = `python ../python/genpkglist.py`|| die "Unable to get package list:$!\n";
+my @package_list= split ('\n',$pkg_input);
+
 #now to grab the descriptons and stuff
 
 foreach my $line (@package_list){
 	my ($name,$version,$category) = split(":",$line);
 	$version =~s/(.*)-r0/$1/;
+	
+	# I know we're re-creating this from the information when we could just pull it directly from portage
+	# however it does add a degree of sanity checking
+
 	my $ebuild = "$portage_root/$category/$name/$name-$version.ebuild";
+	
+	##############
+	# Slurp in the ebuild, all in one go :)
+	##############
 	open(FILE,"$ebuild")|| die "unable to open $ebuild:$!";
 	my $filecontent; { local $/ = undef; $filecontent = <FILE>; }
 	close(FILE);
-#	print "Line: $line \t => Category: $category\t Name: $name\n";
+	
+	##############
+	# start populating the hash, version first, as we know we have that.
+	# we could do this earlier
+	##############
 	$packages{$category}{$name}{version} = $version;
+	
+	##############
+	# Get the license from the ebuild, falling back to a default explanation if unsuccessful
+	##############
 	my $license= "";
 	if ($filecontent=~ /^LICENSE="([^"]*)"/msi){
 		$license=$1;
@@ -35,6 +60,11 @@ foreach my $line (@package_list){
 		$license = "No License Specified!";
 	}
 	$packages{$category}{$name}{license} = $license ;
+	
+	##############
+	# Ditto with the DESCRIPTION field, (this _will_ break if someone has put "'s in the desc, (see xemacs for an example)
+	# We do a little more work here,.. to defang any embedded tags, and to pull out and format email accounts, 
+	##############
 	my $description = "";
 	if ($filecontent=~ /^DESCRIPTION="([^"]*)"/msi){
 		$description=$1;
@@ -47,6 +77,10 @@ foreach my $line (@package_list){
 	} else{
 		$description=" No Description field found!";
 	}
+	
+	#############
+	# Get the HOMEPAGE location
+	#############
 	my $homepage='';
 	if ($filecontent=~ /^HOMEPAGE="([^"]*)"/msi){
 		$homepage= $1;
@@ -54,7 +88,10 @@ foreach my $line (@package_list){
 	}else{
 		$homepage = "NO Hompage defined";
 	}
-
+	
+	#############
+	# Grab the dependancies and build an unordered list out of them
+	#############
 	$packages{$category}{$name}{depend} ="none";
 	my $depend="";
 	if ($filecontent=~ /^DEPEND="([^"]*)"/msi){
@@ -89,7 +126,7 @@ print qq|<section>
 	<th>Category</th>
 	</tr>
 |;
-my $side=1;
+my $side=1; # a counter to let us know which coloumn we're in
 foreach my $category (sort keys %category_list){
 	if ($side==1){
 		print qq|<tr>
