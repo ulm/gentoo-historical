@@ -5,10 +5,10 @@ import portage
 import string
 import time
 
-if not os.environ["WEBROOT"]:
-	print "$WEBROOT not set; exiting"
+if not os.environ["GENTOO_WEB_DOCROOT"]:
+	print "$GENTOO_WEB_DOCROOT not set; exiting"
 	sys.exit(1)
-outpath=os.environ["WEBROOT"]+"/dyn"
+outpath=os.environ["GENTOO_WEB_DOCROOT"]+"/dyn"
 outfn=outpath+"/use-index.xml"
 if not os.path.exists(outpath):
 	os.makedirs(outpath)

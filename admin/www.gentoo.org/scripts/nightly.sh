@@ -1,7 +1,7 @@
 #!/bin/bash
 echo ">>> Starting Web update..."
 
-#to get WEBROOT and WEBSCRIPTS defined
+#to get GENTOO_WEB_DOCROOT and WEBSCRIPTS defined
 source ~/.bashrc
 
 #to get all arches in our package listing:
@@ -9,7 +9,7 @@ export ACCEPT_KEYWORDS="x86 ppc alpha sparc hppa mips arm"
 export PORTDIR="$HOME/gentoo-x86"
 export FEATURES="-cvs -digest"
 
-[ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
+[ -z "${GENTOO_WEB_DOCROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
 [ -z "${WEBSCRIPTS}" ] && echo "\$WEBSCRIPTS not set; exiting" && exit 1
 
 ${WEBSCRIPTS}/cvs-page.sh

@@ -7,8 +7,8 @@
 
 import portage, string, os, os.path, time, sys, re
 from stat import *
-if not os.environ["WEBROOT"]:
-	print "$WEBROOT not set; exiting"                     
+if not os.environ["GENTOO_WEB_DOCROOT"]:
+	print "$GENTOO_WEB_DOCROOT not set; exiting"                     
 	sys.exit(1)                                           
 
 #####################################
@@ -17,9 +17,9 @@ if not os.environ["WEBROOT"]:
 license_re=     re.compile(r"^LICENSE=\"([^\"]*)\"",re.M|re.I|re.S)
 homepage_re=    re.compile(r"^HOMEPAGE=\"([^\"]*)\"",re.M|re.I|re.S)
 desc_re=        re.compile(r"^DESCRIPTION=\"([^\"]*)\"",re.M|re.I|re.S)
-pkgdir=os.environ["WEBROOT"]+"/dyn/newpkgs/" 
-oldpkgdir=os.environ["WEBROOT"]+"/dyn/oldpkgs/"
-curpkgdir=os.environ["WEBROOT"]+"/dyn/pkgs/"
+pkgdir=os.environ["GENTOO_WEB_DOCROOT"]+"/dyn/newpkgs/" 
+oldpkgdir=os.environ["GENTOO_WEB_DOCROOT"]+"/dyn/oldpkgs/"
+curpkgdir=os.environ["GENTOO_WEB_DOCROOT"]+"/dyn/pkgs/"
 try:
 	os.makedirs(pkgdir)
 except OSError:

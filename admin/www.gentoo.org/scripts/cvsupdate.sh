@@ -10,11 +10,11 @@
 
 source ~/.bashrc
 
-cd ${WEBROOT}
+cd ${GENTOO_WEB_DOCROOT}
 cvs -z0 -Q update -dP
 
 # now get the images
-cd ${WEBROOT}/../images/
+cd ${GENTOO_WEB_DOCROOT}/../images/
 cvs -z0 -Q update -dP
 
 #done
