@@ -10,9 +10,38 @@
 # usage: icon2xml > outputfile.xml
 #
 # Build 26th Feb. 2003 by Fir3fly
+# 
+# Build 9th Mar. 2004 by klieber - minor path modifications
 #
-if ($ARGV[0] =~ /./ ) {print "\nusage: icon2xml > outputfile.xml\n\n"; exit;}
+# Build 9th Mar. 2003 by Fir3fly
+# 
+# added 
+# 1.  have the script output to a file instead of having to specific '>/path/to/icons.xml'
+#
+# 2.  can you also update the tarball inside the script as well?  So:
+# 	rm $searchpath/icons.tar.bz2
+# 	tar -cjf $searchpath/icons.tar.bz2 $searchpath
+#
+# 3.  have also updated the size of the tarball that gets displayed in the xml file
+#
+#
+#
+if ($#ARGV < 0)
+	{
+#
+# define default output file here
+	$outfile = "index.xml";
+	
+	} else {
+	$option1 = $ARGV[0];
+	$parameter1 = $ARGV[1];	
+	if ($option1 =~ /-h|--help/ || $parameter1 !~ /./){print "\nusage: icon2xml [-o outputfile.xml]\n\n"; exit;}
+	if ($option1 =~ /-o/){$outfile = $parameter1;}
+	}
+#
+#
 $searchpath = "/home/httpd/gentoo/xml/images/icons/";
+#$searchpath = ".";
 #
 # icon path 
 #
@@ -20,30 +49,21 @@ $iconpath = "http://www.gentoo.org/images/icons/";
 #
 # html tags
 #
-
+@timenow = localtime(time);
+$today = $timenow[3].".".$timenow[4].".".($timenow[5]+1900);
 
 $header = "<?xml version='1.0'?>
 <?xml-stylesheet href=\"/xsl/guide.xsl\" type=\"text/xsl\"?>
 <mainpage id=\"graphics\">
 <title>Gentoo Linux Icons</title>
 <author title=\"Gentoo PR Cooridnator\"><mail link=\"klieber\@gentoo.org\">Kurt Lieber</mail></author>
-<version>1.0.1</version>
-<date>23 Feb 2003</date>
+<version>1.0.3</version>
+<date>$today</date>
 <chapter>
 <section>
 <title>Gentoo Linux Icon Sets</title>
 <body>
 <table>\n";
-$footer = "</table>
-<note>A tarball of all of these icons may be downloaded <uri link=\"http://www.gentoo.org/images/icons.tar.bz2\">here</uri> (1.4MB)</note>
-<p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by forum users DuF, Hi-Fi, L-Chamber, bud1979, dufnutz, linux4god, slapcat, iKiddo and zypher.</p>	
-<p>Users interested in extending the icon set can obtain the original files in 
-<uri link=\"http://www.gentoo.org/images/icons/photoshop-base-l33t.psd\">Photoshop</uri> or
-<uri link=\"http://www.gentoo.org/images/icons/gimp-base-l33t.xcf\">GIMP</uri> format.  Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
-</body>
-</section>
-</chapter>
-</mainpage>\n";
 #
 #
 #
@@ -86,7 +106,10 @@ $footer = "</table>
 opendir(DIR, $searchpath);
 	    @files = grep(!/^\.\.?$/,readdir(DIR));
 		closedir(DIR);
-	    
+#
+# open output file
+#
+open (OUT, ">$outfile") || die "unable to open $outfile";	    
 #
 # sorting
 #	     
@@ -101,7 +124,7 @@ foreach $line (@files) {
 #
 # start XML page
 #
-print $header;
+print OUT $header;
 #
 #
 foreach $category (sort (keys(%categorys))) 
@@ -109,8 +132,7 @@ foreach $category (sort (keys(%categorys)))
 	#
 	# init category
 	#
-	#print "\nnew category: ".$categorys{$category}."\n";
-	print "<tr><th>$categorys{$category}</th></tr>\n\n<tr><ti><table>\n";
+	print OUT "<tr><th>$categorys{$category} ($category)</th></tr>\n\n<tr><ti><table>\n";
 		#
 		# divide by 5 icons per line
 		#
@@ -119,18 +141,44 @@ foreach $category (sort (keys(%categorys)))
 		$i = 0;
 		foreach $filename (@{$categorised_filenames{$category}}) 
 			{
-			if ($i == 0) {print "<tr>\n"}
-			if ($i != 0 && $i / $divide == (int $i / $divide)) { print "</tr><tr>\n";}
-			print "<ti><fig link=\"$iconpath$filename\"/></ti>\n";
+			if ($i == 0) {print OUT "<tr>\n"}
+			if ($i != 0 && $i / $divide == (int $i / $divide)) { print OUT "</tr><tr>\n";}
+			print OUT "<ti><fig link=\"$iconpath$filename\"/></ti>\n";
 			$i++;
 			}
-		print "</tr>\n";
+		print OUT "</tr>\n";
 	#
 	# exit category
 	#
-	print "</table></ti></tr>\n";
+	print OUT "</table></ti></tr>\n";
 	}
+#
+# removing old tarball
+# 
+if (-e "$searchpath/icons.tar.bz2" ) {unlink ("$searchpath/icons.tar.bz2") || print "Removal of old tarball not successful";}
+#
+# create new tarball
+#
+system `tar -cjf $searchpath/icons.tar.bz2 $searchpath/*.png`;
+#
+# get size of tarball
+#
+$getsizeof = "$searchpath/icons.tar.bz2";
+@tarstat = stat $getsizeof;
+$tarsize = int ($tarstat[7]/1024)."kb" ;
 #
 # exit XML page
 #
-print $footer;
+$footer = "</table>
+<note>A tarball of all of these icons may be downloaded <uri link=\"".$iconpath."icons.tar.bz2\">here</uri> ($tarsize)</note>
+<p>The initial design for these icons was provided by port001\@w0r.mine.nu.  Further additions were made to the icon set by forum users DuF, Hi-Fi, L-Chamber, bud1979, dufnutz, linux4god, slapcat, iKiddo and zypher.</p>	
+<p>Users interested in extending the icon set can obtain the original files in 
+<uri link=\"".$iconpath."photoshop-base-l33t.psd\">Photoshop</uri> or
+<uri link=\"".$iconpath."gimp-base-l33t.xcf\">GIMP</uri> format.  Instructions and discussions regarding this icon set can be found on the <uri link=\"http://forums.gentoo.org/viewtopic.php?t=31958\">Gentoo Forums</uri>.</p>
+</body>
+</section>
+</chapter>
+</mainpage>\n";
+#
+#
+print OUT $footer;
