@@ -7,72 +7,6 @@
 <xsl:template match="img">
 <img src="{@src}"/>
 </xsl:template>
-<!--
-<xsl:template match="/news">
-<xsl:output encoding="iso-8859-1" method="xml" indent="yes"/> 
-<mainpage id="newsitem">
-<title><xsl:apply-templates select="/news/title"/></title>
-<author><xsl:apply-templates select="/news/poster"/></author>
-<version>1.0</version>
-<date><xsl:value-of select="/news/date"/></date>
-<title><xsl:apply-templates select="/news/title"/></title>
-<newsbody graphic="{/news/@graphic}" date="{/news/date}" poster="{/news/poster}" title="{/news/title}">
-<xsl:choose>
-<xsl:when test="/news/body">
-	<xsl:apply-templates select="/news/body"/>
-</xsl:when>
-<xsl:when test="/news/section">
-	<xsl:apply-templates select="/news/section"/>
-</xsl:when>
-</xsl:choose>
-</newsbody>
-</mainpage>
-</xsl:template>
--->
-<xsl:template match="newsbody">
-	<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
-							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
-							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
-							</font>
-							</td></tr>
-							<tr><td width="100" align="middle" valign="center">	
-							<xsl:choose>
-							<xsl:when test="@category='gentoo'">
-								<img src="/images/icon-gentoo.png"/>
-							</xsl:when>
-							<xsl:when test="@category='main'">
-								<img src="/images/icon-stick.png"/>
-							</xsl:when>
-							<xsl:when test="@category='ibm'">
-								<img src="/images/icon-ibm.gif"/>
-							</xsl:when>
-							<xsl:when test="@category='linux'">
-								<img src="/images/icon-penguin.png"/>
-							</xsl:when>
-							<xsl:when test="@category='moo'">
-								<img src="/images/icon-cow.png"/>
-							</xsl:when>
-							<xsl:when test="@category='nvidia'">
-								<img src="/images/icon-nvidia.png"/>
-							</xsl:when>
-							</xsl:choose>
-							</td><td valign="top">
-							<xsl:choose>
-
-							<xsl:when test="summary">
-								<xsl:apply-templates select="summary"/>
-							</xsl:when>
-							<xsl:when test="section">
-								<xsl:apply-templates select="section"/>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:apply-templates select="body"/>
-							</xsl:otherwise>
-							</xsl:choose>
-							</td></tr>
-							</table>
-	
-</xsl:template>
 
 <xsl:template match="/guide">
 <html>
@@ -541,11 +475,10 @@ User Docs:<br/>
 							</table>
 						</xsl:when>
 						<xsl:otherwise>
-							<!--<p class="subhead"><xsl:value-of select="/mainpage/title"/></p> -->
-							<br/>
+							<table border="0" class="content">
+							<tr><td>
 							<xsl:apply-templates select="chapter"/> 
-							<br/>
-							<br/>
+							</td></tr></table>
 						</xsl:otherwise>
 					</xsl:choose>
 						<!--content end-->
