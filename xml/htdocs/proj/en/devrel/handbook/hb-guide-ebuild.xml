@@ -220,7 +220,7 @@ allows you to isolate ebuild problems to a specific portion of the ebuild.
 </body>
 </subsection>
 <subsection>
-<title>Naming ebuild Files</title>
+<title>Naming ebuild files</title>
 <body>
 
 <p>
@@ -307,7 +307,7 @@ ebuild name -- the <c>.ebuild</c> extension itself.
 </body>
 </subsection>
 <subsection>
-<title>Contents of an ebuild File</title>
+<title>Contents of an ebuild file</title>
 <body>
 
 <note>
@@ -535,9 +535,10 @@ files that control the building and installation process of your package.
 <tr>
   <ti><c>pkg_setup</c></ti>
   <ti>
-    Use this function to perform any miscellaneous prerequisite tasks.  This 
-    might include adding system accounts or checking for an existing 
-    configuration file.
+    Use this function to perform any miscellaneous prerequisite
+    tasks. This might include checking for an existing configuration
+    file. If it is necessary to add users here, you must also do this
+    check in <c>pkg_preinst()</c> before the package gets installed.
   </ti>
 </tr>
 <tr>
@@ -574,6 +575,17 @@ files that control the building and installation process of your package.
     <c>make DESTDIR=${D} install</c>.  <e>Make sure your package installs all 
     its files using <c>D</c> as the root!</e>  The initial working directory is
     <c>S</c>. 
+  </ti>
+</tr>
+<tr>
+  <ti><c>src_test</c></ti>
+  <ti>
+    Executed only when <c>FEATURES="maketest"</c> is set
+    and <c>RESTRICT="maketest"</c> is unset, the default of this
+    function executes an available testing function from any Makefiles
+    in the <c>${S}</c> directory, running either "make test" or "make
+    check" depending on what is provided. It can be overriden to
+    create a custom test setup.
   </ti>
 </tr>
 <tr>
@@ -629,9 +641,11 @@ You can also use the following helper functions in your ebuilds.
 <tr>
   <ti><c>use</c></ti>
   <ti>
-    Check if one or more given use-flags are defined.  If so, the function will
-    echo the flags that exist in <c>USE</c>.  To check the existence of a 
-    use-flag, you can use <c>[ `use foobar` ]</c>.
+    Check if one or more given USE-flags are defined.  If so, the
+    function will echo the flags that exist in <c>USE</c>. This
+    behaviour will soon change, with <c>use</c> not creating output,
+    but <c>usev</c> would still create output. To check the existence
+    of a USE-flag, you can use <c>use foobar</c>.
   </ti>
 </tr>
 <tr>
@@ -716,7 +730,7 @@ You can also use the following helper functions in your ebuilds.
     Causes the current process to be aborted.  It will notify the user using 
     the given arguments as a reason.  Do not neglect to pass a message to 
     <c>die</c> if you have more than one call to it in a single function.  It 
-    is harder to track down a failure if you're not sure <c>where</c> the 
+    is harder to track down a failure if you're not sure <e>where</e> the 
     package failed.
   </ti>
 </tr>
@@ -732,10 +746,276 @@ You can also use the following helper functions in your ebuilds.
 </tr>
 </table>
 
+<p><b>Helper Functions provided by eutils.eclass</b></p>
+
+<p>
+You can use the following helper functions that are provided by the
+"eutils" eclass in your ebuilds. You must make sure that <c>inherit
+eutils</c> is present for these functions to work.
+</p>
+
+<table>
+<tr>
+  <th>Function</th>
+  <th>Purpose</th>
+</tr>
+<tr>
+  <ti><c>draw_line</c></ti>
+  <ti>
+    This function draws a line consisting of a string of '='
+    characters the same length as the input to the function.
+  </ti>
+</tr>
+<tr>
+  <ti><c>epatch</c></ti>
+  <ti>
+    This function acts as a friendlier replacement to
+    the <c>patch</c> command and epatch works with .bz2, .gz, .zip
+    and plain text patches. You do not need to specify a "-p" option,
+    any options that do need to be explicitly specified should be set
+    in <c>EPATCH_OPTS</c>. The function expects either a file or a
+    directory as an argument - if you specify a directory, all
+    patches in the form of "??_${ARCH}_..." will be applied: for a
+    patch to be applied, it needs to match the running architecture,
+    have "_all_" in the name, or <c>EPATCH_FORCE</c> must be set to
+    "yes".
+  </ti>
+</tr>
+<tr>
+  <ti><c>gen_usr_ldscript</c></ti>
+  <ti>
+    This function generates linker scripts in /usr/lib for dynamic
+    libraries in /lib. This fixes linking problems when a .so is in
+    /lib while a .a is in /usr/lib.
+  </ti>
+</tr>
+<tr>
+  <ti><c>have_NPTL</c></ti>
+  <ti>
+    Returns 0 if the system is using the NPTL PThreads
+    implementation.
+  </ti>
+</tr>
+<tr>
+  <ti><c>get_number_of_jobs</c></ti>
+  <ti>
+    This function checks how many CPUs are present and then sets the
+    correct -jX option in <c>MAKEOPTS</c>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>mymktemp</c></ti>
+  <ti>
+    This function acts as a wrapper to mktemp when it exists, or acts
+    as a replacement when it does not.
+  </ti>
+</tr>
+<tr>
+  <ti><c>edos2unix</c></ti>
+  <ti>
+    This function performs the same action as
+    the <c>dos2unix</c> binary.
+  </ti>
+</tr>
+<tr>
+  <ti><c>egetent</c></ti>
+  <ti>
+    egetent acts as a wrapper for <c>getent</c> for Linux
+    or <c>nidump</c> for Mac OS X (R).
+  </ti>
+</tr>
+<tr>
+  <ti><c>enewuser</c></ti>
+  <ti>
+    Creates a new user. This function expects a mandatory argument
+    with the username, and several optional arguments can be
+    specified: <c>$2</c> contains a UID, pass -1 for the next
+    available ID; <c>$3</c> contains a shell
+    with <path>/bin/false</path> being the default; <c>$4</c>
+    contains a home directory with <path>/dev/null</path> being the
+    default, <c>$5</c> contains any groups to which the user should
+    be added, empty by default and <c>$6</c> contains a comment - the
+    default is "added by portage for <c>${PN}</c>".
+  </ti>
+</tr>
+<tr>
+  <ti><c>enewgroup</c></ti>
+  <ti>
+    Adds a new group. This function expects a mandatory argument with
+    the group name - an optional second argument makes the group have
+    a specific GID.
+  </ti>
+</tr>
+<tr>
+  <ti><c>make_desktop_entry</c></ti>
+  <ti>
+    Makes a desktop entry: the first argument contains the path to the
+    binary. Optionally, the second contains a name for the icon - the
+    default is <c>${PN}</c>; the third can contain a path to the icon
+    relative to <path>/usr/share/pixmaps</path> or a full path - the
+    default is <c>${PN}</c>.png; the fourth can contain an
+    <uri link="http://www.freedesktop.org/standards/menu-spec/">application
+    category</uri>, and the fifth argument contains an optional application
+    startup path.
+  </ti>
+</tr>
+<tr>
+  <ti><c>check_license</c></ti>
+  <ti>
+    Displays a license for the user to accept, if the an argument is
+    not specified then the license specified by <c>${LICENSE}</c> is
+    used.
+  </ti>
+</tr>
+<tr>
+  <ti><c>unpack_pdv</c></ti>
+  <ti>
+    Unpacks a pdv generated archive, the first argument must contain
+    the file to unpack and the second should contain "off_t" which
+    has to be manually generated: <c>strace -elseek ${file}</c> and
+    for something like "lseek(3, -4, SEEK_END)" you would pass the
+    value "4".
+  </ti>
+</tr>
+<tr>
+  <ti><c>unpack_makeself</c></ti>
+  <ti>
+    Unpacks a makeself generated archive, requires a file to unpack
+    as the argument.
+  </ti>
+</tr>
+<tr>
+  <ti><c>cdrom_get_cds</c></ti>
+  <ti>
+    Attempts to get a CD, present with files specified by the
+    arguments present on the system and mounted at <c>${CDROM_ROOT}</c>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>cdrom_load_next_cd</c></ti>
+  <ti>
+    Loads the next CD once you are done with the first CD. If the
+    function returns, <c>${CDROM_ROOT}</c> would point to the next CD.
+  </ti>
+</tr>
+<tr>
+  <ti><c>strip-linguas</c></ti>
+  <ti>
+    This function makes sure that LINGUAS contains only the languages
+    that a package can support specified by the arguments to the
+    function. If the first argument is -i, then a list of .po files
+    in the specified directories is built and the intersection of the
+    lists is used. If the first argument is -u, then a list of .po
+    files in the specified directories is built and the union of the
+    lists is used.
+  </ti>
+</tr>
+</table>
+
+<p><b>Helper Functions provided by flag-o-matic.eclass</b></p>
+
+<p>
+You can use the following helper functions that are provided by the
+"flag-o-matic" eclass in your ebuilds. You must make sure that <c>inherit
+flag-o-matic</c> is present for these functions to work. You should never
+modify any compiler settings directly, instead please use flag-o-matic to
+perform any actions such as filtering flags that cause trouble.
+</p>
+
+<table>
+<tr>
+  <th>Function</th>
+  <th>Purpose</th>
+</tr>
+<tr>
+  <ti><c>filter-flags</c></ti>
+  <ti>
+    This function removes particular flags from <c>C[XX]FLAGS</c> -
+    only complete flags are matched.
+  </ti>
+</tr>
+<tr>
+  <ti><c>append-flags</c></ti>
+  <ti>
+    This function adds extra flags to the existing <c>C[XX]FLAGS</c>
+    variables.
+  </ti>
+</tr>
+<tr>
+  <ti><c>replace-flags</c></ti>
+  <ti>
+    This replaces the flag specified by the first argument with the
+    one in the second argument in the current <c>C[XX]FLAGS</c>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>replace-cpu-flags</c></ti>
+  <ti>
+    This replaces any -march=... or -mcpu=... flags that contain the
+    second argument with the first.
+  </ti>
+</tr>
+<tr>
+  <ti><c>replace-sparc64-flags</c></ti>
+  <ti>
+    This sets -mcpu=... to a v8 SPARC and uses the original value as
+    -mtune if one is not already specified.
+  </ti>
+</tr>
+<tr>
+  <ti><c>strip-flags</c></ti>
+  <ti>
+    Strips all flags, except those specified in <c>ALLOWED_FLAGS</c>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>strip-unsupported-flags</c></ti>
+  <ti>
+    Strips <c>C[XX]FLAGS</c> of any flags not supported by the running
+    version of GCC.
+  </ti>
+</tr>
+<tr>
+  <ti><c>get-flag</c></ti>
+  <ti>
+    Finds a flag and outputs its value.
+  </ti>
+</tr>
+<tr>
+  <ti><c>is-flag</c></ti>
+  <ti>
+    This returns true if the flag is set in the
+    current <c>C[XX]FLAGS</c>; only complete matches are performed.
+  </ti>
+</tr>
+<tr>
+  <ti><c>append-ldflags</c></ti>
+  <ti>
+    This function adds extra flags to the existing <c>LDFLAGS</c>
+    variable.
+  </ti>
+</tr>
+<tr>
+  <ti><c>filter-ldflags</c></ti>
+  <ti>
+    Removes the specified flags from <c>LDFLAGS</c>, only complete
+    flags are matched.
+  </ti>
+</tr>
+<tr>
+  <ti><c>fstack-flags</c></ti>
+  <ti>
+    Appends -fno-stack-protector which suppresses -fstack-protector
+    and -fstack-protector-all.
+  </ti>
+</tr>
+</table>
+
 </body>
 </subsection>
+
 <subsection>
-<title>Rules for writing an ebuild File</title>
+<title>Rules for writing an ebuild file</title>
 <body>
 
 <p>
@@ -1294,8 +1574,9 @@ For you down and dirty people, look at the scripts themselves in
   <ti><c>emake</c></ti>
   <ti>N/A</ti>
   <ti>
-    Runs make with <c>MAKEOPTS</c>.  some packages cannot be made in parallel;
-    use <c>emake -j1</c> instead
+    Runs make with <c>MAKEOPTS</c>. Some packages cannot be made in parallel;
+    use <c>emake -j1</c> instead. You can set <c>EXTRA_EMAKE</c> to
+    pass extra flags to make for an ebuild.
   </ti>
   <ti><c>emake</c></ti>
 </tr>
