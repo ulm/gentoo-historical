@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Template.py,v 1.7 2004/12/15 00:31:42 hadfield Exp $
+# $Id: Template.py,v 1.8 2005/01/25 18:50:04 hadfield Exp $
 #
 
 """The template handler module.
@@ -38,7 +38,7 @@ import types
 
 from Logging import err
 
-__modulename__ = "TemplateNG"
+__modulename__ = "Template"
 
 class Template:
     """Template handler class."""
@@ -100,7 +100,6 @@ class Template:
             if index != -1:
                 rest = "[%s]" % index + rest
 
-            #value = eval("%s%s" % (values[param_name], rest))
             value = eval("values[param_name]%s" % rest)
 
             # Convert value to a string and then do the replace.
@@ -370,7 +369,9 @@ class Template:
         rhs = self._value_of(match.group(3), index)
         oper = match.group(2)
 
-        return eval("\"%s\" %s \"%s\"" % (lhs, oper, rhs))
+        # Convert all \n's.
+        return eval("\"%s\" %s \"%s\"" % (str(lhs).replace("\n", r'\n'), oper,
+                                          str(rhs).replace("\n", r'\n')))
 
     def _value_of(self, var, index):
         """Returns the literal value of any variable or literal."""
