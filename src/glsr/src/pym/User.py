@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.10 2005/01/25 00:58:34 hadfield Exp $
+# $Id: User.py,v 1.11 2005/01/26 03:59:01 hadfield Exp $
 #
 
 __modulename__ = "User"
@@ -109,11 +109,10 @@ class User(Parent):
 
     def ValidateAlias(self, alias, password):
 
-        result = MySQLHandler.query("SELECT * FROM %s%s " %
-                                   (Config.MySQL["prefix"], self.tablename) +
-                                    "WHERE %s_alias = %%s AND " % self.tablename +
-                                    "%s_passwd = PASSWORD(%%s)" % self.tablename,
-                                   (alias, password))
+        result = MySQLHandler.query(
+            "SELECT * FROM %s%s " % (Config.MySQL["prefix"], self.tablename) +
+            "WHERE %s_alias = %%s AND " % self.tablename +
+            "%s_passwd = PASSWORD(%%s)" % self.tablename, (alias, password))
 
         if len(result) == 0:
             return False

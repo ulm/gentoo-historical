@@ -29,6 +29,7 @@
       | <a class="menulink" href="index.py?page=logout">Logout [{USER_ALIAS}]</a>
       {ELSE}
       | <a class="menulink" href="index.py?page=login">Login</a>
+      | <a class="menulink" href="index.py?page=register">Register</a>
       {!IF}
       
     </span></td>
