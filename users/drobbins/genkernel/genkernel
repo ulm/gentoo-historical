@@ -3,74 +3,40 @@
 # Copyright 2002 Gentoo Technologies, Inc; http://www.gentoo.org
 # Released under the GNU General Public License version 2
 
+die() {
+        [ -n "$1" ] && echo "$1"
+        exit 1
+}
+
 if [ ! -e /usr/src/linux ]
 then
 	echo "/usr/src/linux doesn't seem to exist. Please emerge your favorite"
 	echo "kernel source tree first."	
-	exit 1
+	die
 fi
 
 if [ ! -h /usr/src/linux ]
 then
 	echo "/usr/src/linux is not a symbolic link. Please make sure it is a"
 	echo "symbolic link to your preferred kernel source tree."
-	exit 1
+	die
 fi
 
 KD=`readlink -f /usr/src/linux`
 KV="${KD##*/}"
 KV="${KV##linux-}"
-
+GK_VERSION=1.7
+GK_SHARE=/usr/share/genkernel
+[ ! -e /sbin/functions.sh ] && die "Can't find /sbin/functions.sh; exiting."
 source /sbin/functions.sh
 TEMP=/tmp
 KERNEL=$1
 CONFIG=/etc/kernels
+[ ! -e /etc/kernels/settings ] && die "Can't find /etc/kernels/settings; exiting."
 source /etc/kernels/settings 
-BUSYBOX_TARBALL=${CONFIG}/archives/busybox-0.60.5.tar.bz2
+BUSYBOX_TARBALL=${GK_SHARE}/busybox-0.60.5.tar.bz2
 BUSYBOX_DIR=busybox-0.60.5
-# This function check how many cpu's are present, and then set
-# -j in MAKEOPTS accordingly.
-#
-# Thanks to nall <nall@gentoo.org> for this.
-#
-MAKEOPTS="-j2"
-get_number_of_jobs() {
-	if [ ! -r /proc/cpuinfo ]
-	then
-		einfo "/proc not mounted; optimizing for uniprocessor compile..."
-	fi
-
-	CPUS="`grep -c ^[Pp]rocessor /proc/cpuinfo`"
-	# Make sure the number is valid ...
-	if [ "${CPUS}" -lt 1 ]
-	then
-		CPUS=1
-	fi
-	
-	MAKEOPTS="-j$(( $CPUS * 2 ))"
-
-}
-
-spinner() {
-	local type
-        type=${1}; shift
-        for i in "$@"
-        do  echo -n " *$GOOD Compiling kernel   $WARN $i";echo -n -e "\r";
-        usleep 100000 ;
-	done
-	spinner '|' '/' '-' '\' '|' '/' '-' '\'
-	echo -n $NORMAL
-}
-
-die() {
-        if [ -n "$1" ]
-        then
-                echo "${PROG}: error: $1"
-        else
-                echo "${PROG}: aborting."
-        fi
-        exit 1
-}
+MAKEOPTS="`${PYTHON} -c 'import portage; print portage.settings["MAKEOPTS"];'`"
 MENUCONFIG="no"
 for x in $@
 do
@@ -78,8 +44,7 @@ do
 	then
 		MENUCONFIG="yes"
 	else
-		echo "genkernel: Unrecognized option \"$x\""
-		die
+		die "Unrecognized option \"$x\""
 	fi		
 	shift
 done
@@ -106,7 +71,7 @@ root_device() {
 }
 
 configuration() {
-	echo "Gentoo Linux genkernel, version 1.6"
+	echo "Gentoo Linux genkernel, version ${GK_VERSION}"
 	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins"
 	echo " Distributed under the GNU General Public License version 2"		
 	echo
@@ -130,10 +95,10 @@ configuration() {
 	if [ -e ${KD}/settings ]
     	then
 		echo "(kernel) ${KD}/settings"
-    		source ${KD}/settings
+    		source ${KD}/settings || die "Error sourcing ${KD}/settings; exiting."
 	else
 		echo "(default) ${CONFIG}/settings"
-		source ${CONFIG}/settings
+		source ${CONFIG}/settings || die "Error sourcing ${CONFIG}/settings; exiting."
 	fi
 	echo
 	cd ${KD}
@@ -222,8 +187,8 @@ busybox() {
         ln -s ../bin ${TEMP}/kernel-initrd/usr/bin
         ln -s ../bin ${TEMP}/kernel-initrd/usr/sbin
         install -d ${TEMP}/kernel-initrd/keymaps
-        cp ${CONFIG}/archives/keymaps/key.lst ${TEMP}/kernel-initrd/keymaps
-        tar xzf ${CONFIG}/archives/keymaps/bin-keymaps.tar.gz -C ${TEMP}/kernel-initrd/keymaps
+        cp ${GK_SHARE}/keymaps/key.lst ${TEMP}/kernel-initrd/keymaps
+        tar xzf ${GK_SHARE}/keymaps/bin-keymaps.tar.gz -C ${TEMP}/kernel-initrd/keymaps
         (mkdir ${TEMP}/kernel-initrd/dev;cd ${TEMP}/kernel-initrd/dev;MAKEDEV generic-i386;MAKEDEV scd)
         cat >${TEMP}/kernel-initrd/etc/fstab <<EOF
 /dev/ram0       /             auto defaults
@@ -300,7 +265,7 @@ initrd() {
                 cp $mymod ${TEMP}/kernel-initrd/modules/usb 
         done
         #tweak our storage module settings based on our initrd
-        cat ${CONFIG}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+        cat ${GK_SHARE}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
 					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
 					-e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
         				-e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
