@@ -735,18 +735,18 @@
     <xsl:choose>
       <xsl:when test="title">
         <p class="chaphead">
-          <font class="chapnum">
+          <span class="chapnum">
             <a name="doc_chap{$chid}"><xsl:number/>.</a>
-          </font>
+          </span>
           <xsl:value-of select="title"/>
         </p>
       </xsl:when>
       <xsl:otherwise>
         <xsl:if test="/guide">
           <p class="chaphead">
-            <font class="chapnum">
+            <span class="chapnum">
               <a name="doc_chap{$chid}"><xsl:number/>.</a>
-            </font>
+            </span>
           </p>
         </xsl:if>
       </xsl:otherwise>
@@ -875,17 +875,17 @@
     </table>
   </xsl:template>
   <xsl:template match="codenote">
-    <font class="comment">// <xsl:value-of select="."/></font>
+    <span class="comment">// <xsl:value-of select="."/></span>
   </xsl:template>
   <xsl:template match="comment">
-    <font class="comment">
+    <span class="comment">
       <xsl:apply-templates/>
-    </font>
+    </span>
   </xsl:template>
   <xsl:template match="i">
-    <font class="input">
+    <span class="input">
       <xsl:apply-templates/>
-    </font>
+    </span>
   </xsl:template>
   <xsl:template match="b">
     <b>
@@ -954,9 +954,9 @@
     </xsl:apply-templates>
   </xsl:template>
   <xsl:template match="c">
-    <font class="code">
+    <span class="code">
       <xsl:apply-templates/>
-    </font>
+    </span>
   </xsl:template>
   <xsl:template match="box">
     <p class="infotext">
@@ -996,9 +996,9 @@
     </table>
   </xsl:template>
   <xsl:template match="path">
-    <font class="path">
+    <span class="path">
       <xsl:value-of select="."/>
-    </font>
+    </span>
   </xsl:template>
   <xsl:template match="uri">
 <!-- expand templates to handle things like <uri link="http://bar"><c>foo</c></uri> -->
@@ -1036,9 +1036,9 @@
 	</xsl:choose>
   </xsl:template>
   <xsl:template match="e">
-    <font class="emphasis">
+    <span class="emphasis">
       <xsl:apply-templates/>
-    </font>
+    </span>
   </xsl:template>
   <xsl:template match="mail">
     <a href="mailto:{@link}">
