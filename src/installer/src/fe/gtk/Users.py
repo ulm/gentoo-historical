@@ -284,6 +284,9 @@ class Panel(GLIScreen.GLIScreen):
 		self.root1.set_text("")
 		self.root2.set_text("")
 		self.verified.set_from_stock(gtk.STOCK_CANCEL, gtk.ICON_SIZE_SMALL_TOOLBAR)
+		# blank the password in the installprofile
+		# this allows detection to reset the hash
+		self.controller.install_profile.set_root_pass_hash(None,"",None)
 		self.blank_the_boxes()
 		self.notebook.set_current_page(0)
 	
@@ -343,7 +346,7 @@ class Panel(GLIScreen.GLIScreen):
 			#    <home directory>, <user id>, <user comment> )
 			
 			# if they were previously added, modify them
-			if not self.was_previously_added(data):
+			if self.is_in_treeview(data['username']):
 				list = self.find_iter(data)
 				self.treedata.set(list[data['username']],0,data["password"],
 									1,data['username'],
@@ -428,19 +431,12 @@ class Panel(GLIScreen.GLIScreen):
 		
 		return value
 	
-	def was_previously_added(self,data):
-		# this method can be removed
+	def is_in_treeview(self,username):
 		value = False
 		# if the username appears in the treestore, display error
 		username_list = self.get_treeview_usernames()
-		#if data["username"] in username_list:
-			## show error box to modify, duplicate user.
-			#error = Widgets().error_Box("Duplicate User","This will modify the user!")
-			#result = error.run()
-			#if result == gtk.RESPONSE_ACCEPT:
-				#error.destroy()
-		#else:
-		value = True
+		if username in username_list:
+			value = True	
 			
 		return value
 	
