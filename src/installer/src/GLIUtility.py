@@ -338,13 +338,6 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	if not exitsuccess(exitstatus):
 		raise GLIException("UnpackTarballError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
 
-def emerge(package, binary=False, binary_only=False):
-	if binary_only:
-		return spawn("emerge -K " + package, display_on_tty8=True)
-	elif binary:
-		return spawn("emerge -k " + package, display_on_tty8=True)
-	else:
-		return spawn("emerge " + package, display_on_tty8=True)
 
 def generate_random_password():
 	s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890$%^&*[]{}-=+_,|'\"<>:/"
@@ -363,38 +356,5 @@ def generate_random_password():
 
 	return passwd
 
-def edit_config(filename, newvalues, delimeter='=', quotes_around_value=True):
-	"""
-	filename = file to be editted
-	newvlaues = a dictionary of VARIABLE:VALUE pairs
-	"""
-	if not os.path.isfile(filename):
-		raise GLIException("NoSuchFileError", 'notice','edit_config',filename + ' does not exist!')
-
-	f = open(filename)
-	file = f.readlines()
-	f.close()
-
-	for key in newvalues.keys():
-		regexpr = '^\s*#?\s*' + key + '\s*' + delimeter + '.*$'
-		regexpr = re.compile(regexpr)
-
-		for i in range(0, len(file)):
-			if regexpr.match(file[i]):
-				if not file[i][0] == '#':
-					file[i] = '#' + file[i]
-
-		file.append('\n# Added by GLI\n')
-		if quotes_around_value:
-			file.append(key + delimeter + '"' + newvalues[key] + '"\n')
-		else:
-			file.append(key + delimeter + newvalues[key]+'\n')
-
-	f = open(filename,'w')
-	f.writelines(file)
-	f.flush()
-	f.close()
-
 def get_value_from_config(filename, value):
 	return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
-	

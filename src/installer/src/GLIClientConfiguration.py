@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.19 2004/12/20 19:56:08 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.20 2005/01/04 22:18:18 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -335,4 +335,3 @@ class ClientConfiguration:
 		import xml.dom.minidom
 		dom = xml.dom.minidom.parseString(data)
                 return dom.toprettyxml()
-
