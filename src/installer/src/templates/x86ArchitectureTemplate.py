@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.19 2005/01/22 00:38:37 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.20 2005/01/22 08:58:05 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -17,6 +17,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
         def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'x86'
+		self._kernel_bzimage = "arch/i386/boot/bzImage"
 
 	def install_bootloader(self):
 		"Installs and configures bootloader"

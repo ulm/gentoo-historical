@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.38 2005/01/19 17:38:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.39 2005/01/22 08:58:05 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -251,6 +251,7 @@ class ArchitectureTemplate:
 
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
+		# This will not work until we find out how the new GRP format will function.
 		pass
 	
 	def configure_make_conf(self):
@@ -378,39 +379,51 @@ class ArchitectureTemplate:
 
 	def build_kernel(self):
 		"Builds kernel"
-		exitstatus = self._emerge("genkernel")
-		if exitstatus != 0:
-			raise GLIException("EmergeGenKernelError", 'warning','build_kernel', "Could not emerge genkernel!")
-		
-		# Null the genkernel_options
-		genkernel_options = ""
-
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
+		if kernel_config_uri == "":  #use genkernel if no specific config
 		
-		# If the uri for the kernel config is not null, then
-		if kernel_config_uri != "":
-			GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/root/kernel_config")
-			genkernel_options = genkernel_options + " --kernel-config=/root/kernel_config"
+			exitstatus = self._emerge("genkernel")
+			if exitstatus != 0:
+				raise GLIException("EmergeGenKernelError", 'warning','build_kernel', "Could not emerge genkernel!")
 			
-		# Decide whether to use bootsplash or not
-		if self._install_profile.get_kernel_bootsplash():
-			genkernel_options = genkernel_options + " --bootsplash"
-		else:
-			genkernel_options = genkernel_options + " --no-bootsplash"
+			# Null the genkernel_options
+			genkernel_options = ""
+	
+			# If the uri for the kernel config is not null, then
+			if kernel_config_uri != "":
+				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/root/kernel_config")
+				genkernel_options = genkernel_options + " --kernel-config=/root/kernel_config"
+				
+			# Decide whether to use bootsplash or not
+			if self._install_profile.get_kernel_bootsplash():
+				genkernel_options = genkernel_options + " --bootsplash"
+			else:
+				genkernel_options = genkernel_options + " --no-bootsplash"
+			# Run genkernel in chroot
+			print "genkernel all " + genkernel_options
+			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir)
+			if exitstatus != 0:
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
+		else:  #CUSTOM CONFIG
+			#Copy the kernel .config to the proper location in /usr/src/linux
+			try:
+				shutil.copy(kernel_config_uri, self._chroot_dir + "/usr/src/linux/.config")
+			except:
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
 			
-		# This is code to choose whether or not genekernel will build an initrd or not
-		# Genkernel currently does not support this
-		#if self._install_profile.get_kernel_initrd():
-		#	pass
-		#else:
-		#	pass
+			#Build the kernel
+			exitstatus = GLIUtility.spawn("cd "+self._chroot_dir + "/usr/src/linux/ && make && make modules_install")
+			if exitstatus != 0:
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
 			
-		# Run genkernel in chroot
-		print "genkernel all " + genkernel_options
-		exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir)
-		if exitstatus != 0:
-			raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
+			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
+			try:
+				shutil.copy(self._chroot_dir+"/usr/src/linux/"+self._kernel_bzimage, self._chroot_dir+"/boot/kernel-custom")
+			except:
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel!")
+			
+			#i'm sure i'm forgetting something here.
 			
 	def install_logging_daemon(self):
 		"Installs and sets up logger"
