@@ -35,7 +35,7 @@ import java.io.*;
  * RizBot extends PircBot to connect to IRC.  It duplicates PieSpy, and adds
  * JMegaHal and ReminderBot features.
  *
- * $Id: RizBot.java,v 1.3 2005/03/10 16:49:33 rizzo Exp $
+ * $Id: RizBot.java,v 1.4 2005/03/15 21:49:10 rizzo Exp $
  */
 public class RizBot extends PircBot implements Runnable {
 
@@ -58,7 +58,10 @@ public class RizBot extends PircBot implements Runnable {
             in.close();
         } catch (Exception e) {
             hal = new JMegaHal();
-            hal.addDocument("file:///home/dseiler/cvs/gentoo/gentoo/users/rizzo/rizbot/h2g2_dialogue.txt");
+            try {
+                hal.addDocument("file:///home/dseiler/cvs/gentoo/gentoo/users/rizzo/rizbot/h2g2_dialogue.txt");
+            } catch (FileNotFoundException e2) {
+            }
         }
 
 
@@ -383,7 +386,7 @@ public class RizBot extends PircBot implements Runnable {
         RizBot bot = new RizBot(config);
         bot.setVerbose(config.verbose);
         bot.setName(config.nick);
-        bot.setLogin("piespy");
+        bot.setLogin("rizbot");
         bot.setVersion(VERSION + " http://dev.gentoo.org/~rizzo/rizbot/");
 
         try {
