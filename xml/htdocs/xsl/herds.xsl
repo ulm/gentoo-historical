@@ -14,9 +14,9 @@
           <title><xsl:value-of select="$select"/> herd information page</title>
         </xsl:otherwise>
       </xsl:choose>
-      <author title="script generated">Gentoo Project</author>
+      <author title="author">Gentoo Project</author>
       <abstract>This is a list of the package maintenance groups under the Gentoo project, and who maintain those packages.</abstract>
-      <version>1.0.1</version>
+      <version>1.0.2</version>
       <date>automatically</date>
       <xsl:choose>
         <xsl:when test="$select=&quot;all&quot;">
