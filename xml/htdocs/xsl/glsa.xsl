@@ -134,10 +134,7 @@ Linux Security Team</mail>
 <body>
 
 <p>
-<!-- We need to give <br/>s for the newlines -->
-  <xsl:call-template name="substitute">
-    <xsl:with-param name="string" select="description"/>
-  </xsl:call-template>
+<xsl:copy-of select="description"/>
 </p>
 
 </body>
@@ -165,11 +162,7 @@ Users are encouraged to execute the following commands:
 </xsl:if>
 
 <xsl:if test="solution/description">
-  <p>
-    <xsl:call-template name="substitute">
-      <xsl:with-param name="string" select="solution/description"/>
-    </xsl:call-template>
-  </p>
+<xsl:copy-of select="solution/description"/>
 </xsl:if>
 </body>
 </section>
