@@ -1,0 +1,114 @@
+GLEP: 9
+Title: Gentoo Package Update System
+Version: $Version: $
+Last-Modified: $Date: 2003/07/25 22:31:38 $
+Author:	John J. Whitney <jjw@linuxmail.org>
+Status: Draft
+Type: Standards Track
+Content-Type: text/x-rst
+Created: 19-Jul-2003
+Post-History: 25-Jul-2003
+
+
+Abstract
+========
+
+This document proposes an official package updating system for Gentoo Linux.
+The Deltup project has been developed for this purpose. [#DELTUP]_
+
+As packages grow larger the amount of redundant data keeps increasing.  Updating
+existing tarballs by patching is the natural way to handle source updates.
+
+Motivation
+==========
+
+This system will reduce mirror loads (potentially mirror size as well) and
+significantly speed up downloads, making Gentoo much more attractive for users 
+with low-bandwidth connections.
+
+Server Implementation
+=====================
+
+I propose that the patches be put onto the Gentoo Mirrors and stored in a new 
+directory called "patchfiles" which could be placed beside "distfiles".
+
+It would be advantageous to have a list of available patches within the portage
+tree so that it can be updated during "emerge sync".  A file named "dtu.list" 
+can be created and placed in $PORTDIR/profiles.
+
+If a machine can be set up to generate patches it should contain a local mirror
+of distfiles which it can monitor for added packages.  When a package is added
+to distfiles the machine can try to determine the previous tarball so a patch
+can be made and placed in the patchfiles dir.  In addition, special-case patches
+can be added manually.
+
+The dtu.list file will be maintained by a special script.  Whenever patches 
+are added or removed to the patchfiles dir, the script will make necessary 
+additions/removals in dtu.list.  This will be done with minimal changes in the
+file so it can be synchronized efficiently.
+
+Client Implementation
+=====================
+
+The system will be optional for users and can be enabled by making portage
+invoke efetch through the FETCHCOMMAND environment variable [#TINYHOWTO]_.
+
+When a package fetch is requested, the efetch/fetchcommand scripts (part of 
+Deltup) will scan the dtu.list file for updates and try downloading and applying
+them if they exist, or fall back to a full package download if they don't or if
+the patching process fails.
+
+Rationale
+=========
+The most controversial feature has been the addition of dtu.list to the portage
+tree, so in this section I will list the reasons I support it.
+
+- Flexibility.  Without it, there must be a standard naming scheme which we
+  would be stuck with once the system is in place.  Changing the system would 
+  require serious compatibility breaks.  With the dtu.list file we can change
+  the naming scheme easily without problems, or even have several different
+  naming schemes.
+
+- Features.  Without patch information detecting different upgrade paths would 
+  be impossible.  Split package patching would also be impossible.  If the info
+  is available we can use it to find the quickest upgrade path, like jumping 
+  from a .0 release, or even disable certain patches if there are problems with 
+  them.
+
+- It would be impossible to know which packages to upgrade from in some cases,
+  including renamed packages.
+
+- Knowing which patches are available will eliminate the overhead of attempting
+  to download patches which don't exist.
+
+The dtu.list file will contain several hundred kilobytes of data.  That has
+caused some concern over how efficiently it can be rsynced.  To address these
+concerns the file's format will be plaintext and care has been taken to
+minimize the number of changes as removals/additions are made.
+
+Backwards Compatibility
+=======================
+
+There are no backwards compatibility issues since Deltup can generate correct 
+package MD5sums.
+
+
+Conclusion
+==========
+
+I suggest we start with a scaled-down implementation and provide more as the
+demand increases.  All of the necesary code is already written and working in
+non-official tests.
+
+References
+==========
+
+.. [#DELTUP] http://sourceforge.net/projects/deltup
+.. [#PATCHES] ftp://sunsite.dk/projects/deltup/patchfiles
+.. [#TINYHOWTO] Tiny Deltup HOWTO
+   (http://www.thedoh.com/linux/HOWTO/deltup)
+
+Copyright
+=========
+
+This document has been placed in the public domain.
