@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.1 2004/06/04 06:38:37 port001 Exp $
+# $Id: GLSRBackend.py,v 1.2 2004/06/27 19:58:59 hadfield Exp $
 #
 
 __modulename__ = "GLSRBackend"
@@ -35,6 +35,7 @@ class GLSRBackend:
 
         fields = string.join(map(lambda x: "%s_%s" % (self.tablename, x),
                                  details.keys()), ", ")
+        
         values = string.join(
             operator.repeat(['%s'], len(details.keys())), ", ")
         
@@ -43,7 +44,7 @@ class GLSRBackend:
 
         MySQL.Query("INSERT INTO %s%s" %
                     (Config.MySQL["prefix"], self.tablename) +
-                    " (%s) VALUES (%s)", (fields, values),
+                    " (%s) VALUES (%s)" % (fields, values),
                     details.values(), fetch="none")
 
 
@@ -63,9 +64,9 @@ class GLSRBackend:
 
         if not self.id:
             return False
-        
+
         for key in fields:
-            if key in details:
+            if key in details.keys():
                 MySQL.Query("UPDATE %s%s" %
                             (Config.MySQL["prefix"], self.tablename) +
                             " SET %s_%s = " % (self.tablename, key) +
