@@ -26,16 +26,16 @@ class Device:
 
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
-#		if string.strip(commands.getoutput("echo " + self._device + " | grep '/hd'")) == self._device: # IDE
-#			proc_dir = "/proc/ide/" + commands.getoutput("echo " + self._device + " | cut -d '/' -f 3")
-#			proc_dir = string.strip(proc_dir)
-#			heads = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 2")
-#			sectors = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 3")
-#			total_sectors = commands.getoutput("cat " + proc_dir + "/capacity")
-#			cylinders = int(total_sectors) / (int(heads) * int(sectors))
-#			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = int(heads), int(sectors), int(cylinders)
-#		else: #SCSI
-		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
+		if string.strip(commands.getoutput("echo " + self._device + " | grep '/hd'")) == self._device: # IDE
+			proc_dir = "/proc/ide/" + commands.getoutput("echo " + self._device + " | cut -d '/' -f 3")
+			proc_dir = string.strip(proc_dir)
+			heads = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 2")
+			sectors = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 3")
+			total_sectors = commands.getoutput("cat " + proc_dir + "/capacity")
+			cylinders = int(total_sectors) / (int(heads) * int(sectors))
+			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = int(heads), int(sectors), int(cylinders)
+		else: #SCSI
+			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
 
 		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._parted_dev.sector_size
 		self._total_sectors = self._geometry['cylinders'] * self._geometry['heads'] * self._geometry['sectors']
