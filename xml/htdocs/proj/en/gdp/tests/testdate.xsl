@@ -1,20 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
+                xmlns:func="http://exslt.org/functions"
+                xmlns:exslt="http://exslt.org/common"
+                extension-element-prefixes="func exslt" >
 
 <xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
 
 <xsl:include href="/xsl/inserts.xsl" />
 
 <xsl:param name="date">1967-06-05</xsl:param>
+<xsl:variable name="userfile" select='document("/proj/en/devrel/roll-call/userinfo.xml")'/>
+
 <!-- Start outputting data -->
 <xsl:template match="/doc">
+
+<xsl:variable name="xav" select="concat(exslt:node-set($userfile)/userlist/user[@username = 'neysx']/realname/firstname, ' * ', exslt:node-set($userfile)/userlist/user[@username = 'neysx']/realname/familyname)"/>
 
 <guide link="testdate.xml">
 <title>Test Date Formatting</title>
 
 <author title="Author">
-  <mail link="neysx@gentoo.org">Xavier Neys</mail>
+  <mail link="neysx@gentoo.org">
+    <xsl:value-of select="$xav"/>
+  </mail>
 </author>
 
 <abstract>
@@ -24,7 +32,8 @@ This page shows how dates could be formatted for each language
 <license/>
 
 <version>1.2</version>
-<date><xsl:value-of select="func:today()"/></date>
+<!--<date><xsl:value-of select="func:today()"/></date>-->
+<date>2005-01-14</date>
 
 <chapter>
 <title>Introduction</title>
