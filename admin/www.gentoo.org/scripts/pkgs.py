@@ -1,13 +1,15 @@
 #! /usr/bin/env python
 # genpkgxml-v2.py
 # Based upon the genpkgxml.py by Grant Goodyear, this script extends the fuctionality and general look and feel.
+# original version by Colin Morey, modified by Daniel Robbins for the website reorganisation
+# main index page output rewritten by Colin Morey.
 
 
 import portage, string, os, os.path, time, sys, re
 from stat import *
 if not os.environ["WEBROOT"]:
-	print "$WEBROOT not set; exiting"
-	sys.exit(1)
+	print "$WEBROOT not set; exiting"                     
+	sys.exit(1)                                           
 
 #####################################
 # prog start, and main variable, and compiled regex's
@@ -167,6 +169,8 @@ def do_pkgentry(db,pkgname,category):
 	if db[category][pkgname]["homepage"]:
 		nice_homepage=string.replace(db[category][pkgname]["homepage"],'&','&amp;')
 		nice_homepage=string.replace(nice_homepage,' ','</uri> , <uri>')
+		nice_homepage=string.replace(nice_homepage,'<','&lt;')
+		nice_homepage=string.replace(nice_homepage,'>','&gt;')
 		pkgentry += "<ti><uri>"+nice_homepage+"</uri></ti>"
 	else:
 		pkgentry += "<ti><e>(No homepage specified)</e></ti>"
@@ -221,25 +225,84 @@ content="""<p>
 del db['totalnumberofpackages']
 out.write(header)
 out.write(content)
-side='1'
+#######################
+# produce the main index page
+#######################
+
+# first we find out the size of each array, (left,middle,right)
+totalcategories = len(db.keys())
+quotient = int(totalcategories/3)
+remainder = totalcategories - (quotient *3)
+if (remainder == 2):
+	left_length= quotient + 1
+	middle_length = quotient + 1
+	right_length = quotient
+elif (remainder == 1):
+	left_length= quotient + 1
+	middle_length = quotient
+	right_length = quotient
+elif (remainder ==0):
+	left_length= quotient
+	middle_length = quotient
+	right_length = quotient
+else:
+
+	sys.stderr.write("managed to get a remainder greater than the devisor!!\n")
+	sys.stderr.write("remainder->")
+	sys.stderr.write(str(remainder))
+	sys.stderr.write("\n")
+	sys.exit(1)
+
+# now we've set up the length of the columns, lets fill them
+
+currentcolumn = 'left'
+position =1
+left_category = []
+middle_category = []
+right_category = []
 for category in fsort(db.keys()):
-	if (side=='1'):
-		out.write('<tr>\n') 
-		out.write('<ti><uri link="/dyn/pkgs/'+category+'/index.xml">'+category+'</uri></ti>\n')
-		side='2'
-	elif (side=='2'):
-		out.write('<ti><uri link="/dyn/pkgs/'+category+'/index.xml">'+category+'</uri></ti>\n')
-		side='3'
-	elif (side=='3'):
-		out.write('<ti><uri link="/dyn/pkgs/'+category+'/index.xml">'+category+'</uri></ti>\n')
+	if (currentcolumn =='left'):
+		left_category.append(category)
+		if (position == left_length ):
+			currentcolumn ='middle'
+			position=1
+		else :
+			position = position  +1
+	elif (currentcolumn =='middle'):
+		middle_category.append(category)
+		if (position == middle_length):
+			currentcolumn ='right'
+			position =1
+		else :
+			position = position + 1
+	else :
+		right_category.append(category)
+
+#we now have our filled columns and we want to go through them and print out the table
+
+
+# yeah, yeah there's probably easier ways of doing it :)
+side='1'
+for row in  range(left_length) :
+	out.write('<tr>\n') 
+	out.write('<ti><uri link="/dyn/pkgs/' +left_category[row] +'/index.xml">' + left_category[row] + '</uri></ti>\n')
+	if (row < middle_length):
+		out.write('<ti><uri link="/dyn/pkgs/'+middle_category[row]+'/index.xml">' + middle_category[row] + '</uri></ti>\n')
+	if (row < right_length):
+		out.write('<ti><uri link="/dyn/pkgs/'+right_category[row] +'/index.xml">'+ right_category[row] +'</uri></ti>\n')
 		out.write('</tr>\n')
-		side='1'
-if (side=='2') or (side=='3'):
+	
+if (remainder > 0):
 	out.write('</tr>\n')
+
 out.write('</table></p>')
 footer=do_footer()
 out.write(footer)
 out.close()
+
+
+
+
 ####################
 # category index pages
 ####################
