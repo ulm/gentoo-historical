@@ -149,7 +149,7 @@ def is_uri(uri):
 
 def strtobool(input):
 	if type(input) != str:
-		raise InputError('fatal','strtobool',"The input must be a string!")
+		raise GLIException("InputError", 'fatal','strtobool',"The input must be a string!")
 
 	if string.lower(input) == 'true':
 		return True
@@ -190,10 +190,10 @@ def is_nfs(device):
 
 def set_ip(dev, ip, broadcast, netmask):
 	if not is_ip(ip) or not is_ip(netmask) or not is_ip(broadcast):
-		raise IPAddressError('fatal','set_ip', "ip, netmask and broadcast must be a valid IP's!")
+		raise GLIException("IPAddressError", 'fatal','set_ip', "ip, netmask and broadcast must be a valid IP's!")
 
 	if not is_eth_device(dev):
-		raise EthDeviceError('fatal','set_ip',"dev must be a valid ethernet device!")
+		raise GLIException("EthDeviceError", 'fatal','set_ip',"dev must be a valid ethernet device!")
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
@@ -206,7 +206,7 @@ def set_ip(dev, ip, broadcast, netmask):
 
 def set_default_route(route):
 	if not is_ip(route):
-		raise IPAddressError('fatal', 'set_default_route', "The default route must be an IP address!")
+		raise GLIException("IPAddressError", 'fatal', 'set_default_route', "The default route must be an IP address!")
 
 	status = spawn("route add default gw " + route, quiet=True)
 
@@ -336,7 +336,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
 
 	if not exitsuccess(exitstatus):
-		raise UnpackTarballError('fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
+		raise GLIException("UnpackTarballError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
 
 def emerge(package, binary=False, binary_only=False):
 	if binary_only:
@@ -369,7 +369,7 @@ def edit_config(filename, newvalues, delimeter='=', quotes_around_value=True):
 	newvlaues = a dictionary of VARIABLE:VALUE pairs
 	"""
 	if not os.path.isfile(filename):
-		raise NoSuchFileError('notice','edit_config',filename + ' does not exist!')
+		raise GLIException("NoSuchFileError", 'notice','edit_config',filename + ' does not exist!')
 
 	f = open(filename)
 	file = f.readlines()

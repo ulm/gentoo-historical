@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.15 2004/12/10 05:46:15 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.16 2004/12/20 19:56:08 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -13,7 +13,6 @@ The only definitions that are filled in here are architecture independent.
 """
 
 import GLIUtility
-from signal import SIGUSR1
 from GLIException import *
 # Until I switch my partition code to GLIUtility.spawn()
 import commands
@@ -80,7 +79,7 @@ class ArchitectureTemplate:
 					print "Warning: You chose to ignore install step dependencies.  The " + dependency + " was not met.  Ignoring."
 				#If ignore is off, then raise exception
 				else:
-					raise "InstallTemplateError",  "Install step dependency not met!"
+					raise GLIException("InstallTemplateError", 'warning', '_depends', "Install step dependency not met!")
 
 	def get_install_steps(self):
 		return self._install_steps
@@ -97,7 +96,7 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_stage() == 1:
 			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", True)
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise Stage1Error('fatal','stage1', "Bootstrapping failed!")
+				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
 
 		self._configuration.add_install_steps_completed("stage1")
 
@@ -109,7 +108,7 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
 			exitstatus = GLIUtility.emerge("system")
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise Stage2Error('fatal','stage2', "Building the system failed!")
+				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
 
 		self._configuration.add_install_steps_completed("stage2")
 
@@ -121,11 +120,11 @@ class ArchitectureTemplate:
 	def prepare_chroot(self):
 		ret = GLIUtility.spawn("cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf",True)
 		if not GLIUtility.exitsuccess(ret):
-			raise CopyError('warning','preinstall','Could not copy resolv.conf!',True)
+			raise GLIException("CopyError", 'warning','preinstall','Could not copy resolv.conf!',True)
 
 		ret = GLIUtility.spawn("mount -t proc none /mnt/gentoo /proc")
 		if not GLIUtility.exitsuccess(ret):
-			raise MountError('fatal','preinstall','Could not mount /proc')
+			raise GLIException("MountError", 'fatal','preinstall','Could not mount /proc')
 
 		# Set USE flags here
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
@@ -142,7 +141,7 @@ class ArchitectureTemplate:
 		for package in installpackages:
 			status = GLIUtility.emerge(package)
 			if not GLIUtility.exit_success(status):
-				raise "InstallPackagesError", "Could not emerge " + package + "!"
+				raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
 
 	# This is part of the interface... subclasses MUST
 	# provide these methods filled in.
@@ -164,9 +163,9 @@ class ArchitectureTemplate:
 		"Adds the script named 'script_name' to the runlevel 'runlevel' in the chroot environement"
 		
 		# Do it
-		status = GLIUtility._run("rc-update add " + script_name + " " + runlevel, chroot=self._chroot_dir)
+		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, chroot=self._chroot_dir)
 		if not GLIUtility.exit_success(status):
-			raise "RunlevelAddError", "Failure adding " + script_name + " to runlevel " + runlevel + "!"
+			raise GLIException("RunlevelAddError", 'warning', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 			
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
@@ -217,23 +216,23 @@ class ArchitectureTemplate:
 			# Fetch and unpack the tarball
 			self._fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._client_configuration.get_root_mount_point() + "/usr/", self._client_configuration.get_root_mount_point() + "/")
 			if not GLIUtility.is_file(self._client_configuration.get_root_mount_point()+"/usr/portage/distfiles"):
-				exitstatus = self._run("mkdir /usr/portage/distfiles",True)
+				exitstatus = GLIUtility.spawn("mkdir /usr/portage/distfiles",True)
 				if exitstatus != 0:
-					raise "MkdirError","Making the distfiles directory failed."
-			exitstatus = self._run("cp /mnt/cdrom/distfiles/* "+self._client_configuration.get_root_mount_point()+"/usr/portage/distfiles/")
+					raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
+			exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._client_configuration.get_root_mount_point()+"/usr/portage/distfiles/")
 			if exitstatus != 0:
-				raise "PortageError","Failed to copy the distfiles to the new system"
+				raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
-			exitstatus = self._run("emerge-webrsync", True)
+			exitstatus = GLIUtility.spawn("emerge-webrsync", True)
 			if exitstatus != 0:
-				raise "EmergeWebRsyncError", "Failed to retrieve portage tree!"
+				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tre', "Failed to retrieve portage tree!")
 				
 		# Otherwise, just run emerge sync
 		else:
 			exitstatus = self._emerge("sync")
 			if exitstatus != 0:
-				raise "EmergeSyncError", "Failed to retrieve portage tree!"
+				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 		
 	def set_timezone(self):
 		"Sets the timezone for the new environment"
@@ -256,9 +255,9 @@ class ArchitectureTemplate:
 		partitions = self._install_profile.get_fstab()
 		for partition in partitions:
 			if not GLIUtility.is_file(self._client_configuration.get_root_mount_point()+partition):
-				exitstatus = self._run("mkdir " + partition, True)
+				exitstatus = GLIUtility.spawn("mkdir " + partition, True)
 				if exitstatus != 0:
-					raise "MkdirError", "Making the mount point failed!"
+					raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
 			newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
 			newfstab += "\t " + partitions[partition][2] + "\t "
 			if partition == "/boot":
@@ -292,7 +291,7 @@ class ArchitectureTemplate:
 		self._depends("emerge_system")
 		exitstatus = self._emerge(self._install_profile.get_kernel_source_pkg())
 		if exitstatus != 0:
-			raise "EmergeKernelSourcesError", "Could not retrieve kernel sources!"
+			raise GLIException("EmergeKernelSourcesError", 'warning','emerge_kernel_sources',"Could not retrieve kernel sources!")
 		try:
 			os.stat(self._client_configuration.get_root_mount_point() + "/usr/src/linux")
 		except:
@@ -301,7 +300,7 @@ class ArchitectureTemplate:
 			counter = 0
 			while not found_a_kernel:
 				if kernels[counter][0:6]=="linux-":
-					exitstatus = self._run("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",True)
+					exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",True)
 					found_a_kernel = True
 				else:
 					counter = counter + 1
@@ -313,7 +312,7 @@ class ArchitectureTemplate:
 		
 		exitstatus = self._emerge("genkernel")
 		if exitstatus != 0:
-			raise "EmergeGenKernelError", "Could not emerge genkernel!"
+			raise GLIException("EmergeGenKernelError", 'warning','build_kernel', "Could not emerge genkernel!")
 
 		
 		# Null the genkernel_options
@@ -342,9 +341,9 @@ class ArchitectureTemplate:
 			
 		# Run genkernel in chroot
 		print "genkernel all " + genkernel_options
-		exitstatus = self._run("genkernel all " + genkernel_options, True)
+		exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, True)
 		if exitstatus != 0:
-			raise "KernelBuildError", "Could not build kernel!"
+			raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
 			
 	def install_logging_daemon(self):
 		"Installs and sets up logger"
@@ -357,7 +356,7 @@ class ArchitectureTemplate:
 			# Emerge Logging Daemon
 			exitstatus = self._emerge(logging_daemon_pkg)
 			if exitstatus != 0:
-				raise "LoggingDaemonError", "Could not emerge " + logging_daemon_pkg + "!"
+				raise GLIException("LoggingDaemonError", 'warning','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
 
 			# Add Logging Daemon to default runlevel
 			self._add_to_runlevel(logging_daemon_pkg)
@@ -373,16 +372,16 @@ class ArchitectureTemplate:
 			# Emerge Cron Daemon
 			exitstatus = self._emerge(cron_daemon_pkg)
 			if exitstatus != 0:
-				raise "CronDaemonError", "Could not emerge " + cron_daemon_pkg + "!"
+				raise GLIException("CronDaemonError", 'warning', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
 
 			# Add Cron Daemon to default runlevel
 			self._add_to_runlevel(cron_daemon_pkg)
 		
 			# If the Cron Daemon is not vixie-cron, run crontab			
 			if cron_daemon_pkg != "vixie-cron":
-				exitstatus = self._run("crontab /etc/crontab", True)
+				exitstatus = GLIUtility.spawn("crontab /etc/crontab", True)
 				if exitstatus != 0:
-					raise "CronDaemonError", "Failure making crontab!"
+					raise GLIException("CronDaemonError", 'warning', 'install_cron_daemon', "Failure making crontab!")
 
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
@@ -400,7 +399,7 @@ class ArchitectureTemplate:
 		for package in filesystem_tools:
 			exitstatus = self._emerge(package)
 			if exitstatus != 0:
-				raise "FilesystemToolsError", "Could not emerge " + package + "!"
+				raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
 
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
@@ -411,7 +410,7 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_rp_pppoe():
 			exitstatus = self._emerge("rp-pppoe")
 			if exitstatus != 0:
-				raise "RP-PPPOEError", "Could not emerge rp-pppoe!"
+				raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
 				
 		# Should we add a section here to automatically configure rp-pppoe?
 		# I think it should go into the setup_network_post section
@@ -426,12 +425,12 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_pcmcia_cs():
 			exitstatus = self._emerge("pcmcia-cs")
 			if exitstatus != 0:
-				raise "PCMCIA-CSError", "Could not emerge pcmcia-cs!"
+				raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not emerge pcmcia-cs!")
 				
 			# Add pcmcia-cs to the default runlevel
-			exitstatus = self._run("rc-update add pcmcia default", True)
+			exitstatus = GLIUtility.spawn("rc-update add pcmcia default", True)
 			if exitstatus != 0:
-				raise "PCMCIA-CSError", "Could not add pcmcia-cs to the default runlevel!"
+				raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not add pcmcia-cs to the default runlevel!")
 	
 	def install_bootloader(self):
 		"Installs and configures bootloader"
@@ -444,7 +443,7 @@ class ArchitectureTemplate:
 		if self._install_profile.get_boot_loader_pkg():
 			exitstatus = self._emerge(self._install_profile.get_boot_loader_pkg())
 			if exitstatus != 0:
-				raise "BootLoaderEmergeError", "Could not emerge bootloader!"
+				raise GLIException("BootLoaderEmergeError", 'fatal', 'install_bootloader', "Could not emerge bootloader!")
 		else:
 			pass
 		
@@ -483,13 +482,13 @@ class ArchitectureTemplate:
 				grub_root_minor = str(int(root_minor) - 1)
 				root_device = partitions[partition][0][0:8]
 		
-		exitstatus0 = self._run("ls -l " + boot_device + " > " + file_name)
-		exitstatus1 = self._run("ls -l " + root_device + " > " + file_name1)
-		exitstatus2 = self._run("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
-		exitstatus3 = self._run("ls "+root+"/boot/kernel-* > "+file_name3)
-		exitstatus4 = self._run("ls "+root+"/boot/initrd-* >> "+file_name3)
+		exitstatus0 = GLIUtility.spawn("ls -l " + boot_device + " > " + file_name)
+		exitstatus1 = GLIUtility.spawn("ls -l " + root_device + " > " + file_name1)
+		exitstatus2 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
+		exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
+		exitstatus4 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
 		if (exitstatus0 != 0) or (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0) or (exitstatus4 != 0):
-			raise "Bootloadererror", "Error in one of THE FOUR run commands"
+			raise GLIException("BootloaderError", 'fatal', 'install_bootloader', "Error in one of THE FOUR run commands")
 		
 		"""
 		read the device map.  sample looks like this:
@@ -522,13 +521,13 @@ class ArchitectureTemplate:
 			if file[i][11:] == ls_outputb:
 				grub_root_drive = file[i][1:4]
 		if (not grub_root_drive) or (not grub_boot_drive):
-			raise "BootloaderError","Couldn't find the drive num in the list from the device.map"
-				
+			raise GLIException("BootloaderError", 'fatal', 'install_bootloader',"Couldn't find the drive num in the list from the device.map")
+
 		g = open(file_name3)
 		kernel_name = g.readlines()
 		g.close()
 		if not kernel_name[0]:
-			raise "BootloaderError","Error: We have no kernel in /boot to put in the grub.conf file!"
+			raise GLIException("BootloaderError", 'fatal', 'install_bootloader',"Error: We have no kernel in /boot to put in the grub.conf file!")
 		kernel_name = map(string.strip, kernel_name)
 		kernel_name[0] = kernel_name[0].split(root)[1]
 		kernel_name[1] = kernel_name[1].split(root)[1]
@@ -564,9 +563,9 @@ class ArchitectureTemplate:
 			grubinstallstring +="setup ("+grub_boot_drive+")\n"
 		grubinstallstring += "quit\n' | "+root+"/sbin/grub"
 		print grubinstallstring
-		exitstatus = self._run(grubinstallstring,True)
+		exitstatus = GLIUtility.spawn(grubinstallstring,True)
 		if exitstatus != 0:
-			raise "GrubInstallError", "Could not install grub!"
+			raise GLIException("GrubInstallError", 'fatal', 'install_bootloader', "Could not install grub!")
 			
 		#now make the grub.conf file
 		file_name = root + "/boot/grub/grub.conf"	
@@ -586,7 +585,7 @@ class ArchitectureTemplate:
 		# Run etc-update overwriting all config files
 		status = GLIUtility.spawn('echo "-5" | etc-update', chroot=self._chroot_dir)
 		if not GLIUtility.exit_success(status):
-			raise "EtcUpdateError", "Could not update config files!"
+			raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 			
 		self.configure_make_conf()
 		self.configure_fstab()
@@ -704,7 +703,7 @@ class ArchitectureTemplate:
 			if interfaces[interface][2]:
 				
 				# Add it to the default runlevel
-					exitstatus = self._run("rc-update add net." + interface + " default", True)
+					exitstatus = GLIUtility.spawn("rc-update add net." + interface + " default", True)
 					if exitstatus != 0:
 						raise "NetStartupError", "Cannot add interface " + interface + " to the default runlevel!"
 
@@ -768,7 +767,7 @@ class ArchitectureTemplate:
 		
 		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chpasswd -e', chroot=self._chroot_dir)
 		if not GLIUtility.exit_success(status):
-			raise "SetRootPasswordError", "Failure to set root password!"
+			raise GLIException("SetRootPasswordError", 'warning', 'set_root_password', "Failure to set root password!")
 
 	def set_users(self):
 		"Sets up the new users for the system"
@@ -823,7 +822,7 @@ class ArchitectureTemplate:
 			# Add the user
 			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir)
 			if not GLIUtility.exit_success(exitstatus):
-				raise "AddUserError", "Failure to add user " + username
+				raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
 
 	def _cylinders_to_sectors(self, minor, start, end, sectors_in_cylinder):
 		cylinders = int(end) - int(start) + 1

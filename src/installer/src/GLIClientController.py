@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.31 2004/11/30 21:49:45 samyron Exp $
+$Id: GLIClientController.py,v 1.32 2004/12/20 19:56:08 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -28,6 +28,9 @@ class GLIClientController(Thread):
 
 	def __init__(self,configuration=None,install_profile=None,pretend=False):
 		Thread.__init__(self)
+
+		self._verbose = True
+
 		if configuration == None and os.path.isfile('/etc/gli.conf'):
 			self.output("Using /etc/gli.conf...")
 			configuration = GLIClientConfiguration.ClientConfiguration()
@@ -158,7 +161,7 @@ class GLIClientController(Thread):
 			try:
 				ret = GLIUtility.spawn('modprobe ' + module, quiet=True)
 				if not GLIUtility.exitsuccess(ret):
-					raise KernelModuleError('warning', 'load_kernel_modules', 'Could not load module: ' + module)
+					raise GLIException("KernelModuleError", 'warning', 'load_kernel_modules', 'Could not load module: ' + module)
 				else:
 					self._logger.log('kernel module: ' + module + ' loaded.')
 			except KernelModuleError, error:
@@ -175,7 +178,7 @@ class GLIClientController(Thread):
 			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
 		if not GLIUtility.exitsuccess(status):
-			raise PasswordError('warning', 'set_root_passwd()',"Could not set the root password!")
+			raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
 
 	def configure_networking(self):
 		# Do networking setup right here.
@@ -196,7 +199,7 @@ class GLIClientController(Thread):
 					status = GLIUtility.spawn("dhcpcd", quiet=True)
 
 				if not GLIUtility.exitsuccess(status):
-					raise DHCPError('fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
+					raise GLIException("DHCPError", 'fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
 
 			elif type == "manual" and self._configuration.get_interactive():
 				# Drop to bash shell and let them configure it themselves
@@ -210,17 +213,17 @@ class GLIClientController(Thread):
 				# Configure the network from the settings they gave.
 				net_data = self._configuration.get_network_data()
 				if not GLIUtility.set_ip(net_data[0], net_data[1], net_data[2], net_data[3]):
-					raise SetIPError('fatal', 'configure_networking', "Could not set the IP address!")
+					raise GLIException("SetIPError", 'fatal', 'configure_networking', "Could not set the IP address!")
 
 				route = self._configuration.get_default_gateway()[1]
 				if not GLIUtility.set_default_route(route):
-					raise DefaultRouteError('fatal','configure_networking', "Could not set the default route!")
+					raise GLIException("DefaultRouteError", 'fatal','configure_networking', "Could not set the default route!")
 
 	def enable_ssh(self):
 		if self._configuration.get_enable_ssh():
 			status = GLIUtility.spawn("/etc/init.d/sshd start", quiet=True)
 			if not GLIUtility.exitsuccess(status):
-				raise SSHError('warning','enable_ssh',"Could not start SSH daemon!")
+				raise GLIException("SSHError", 'warning','enable_ssh',"Could not start SSH daemon!")
 			else:
 				self._logger.log("SSH Started.")
 
@@ -237,7 +240,7 @@ class GLIClientController(Thread):
 					install_profile = GLIInstallProfile.InstallProfile()
 					install_profile.parse('/tmp/install_profile.xml')
 				else:
-					raise InstallProfileError('fatal', 'get_install_profile', 'Could not download/copy the install profile from: ' + self._configuration.get_profile_uri())
+					raise GLIException("InstallProfileError", 'fatal', 'get_install_profile', 'Could not download/copy the install profile from: ' + self._configuration.get_profile_uri)
 
 		self._install_profile = install_profile
 

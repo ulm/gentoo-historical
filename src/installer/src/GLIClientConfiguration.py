@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.18 2004/10/08 20:55:17 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.19 2004/12/20 19:56:08 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -104,7 +104,7 @@ class ClientConfiguration:
 	
 	def set_profile_uri(self, xml_path, profile_uri, xml_attr):
 		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
-			raise URIError('fatal', 'set_profile_uri',"The URI specified is not valid!")
+			raise GLIException("URIError", 'fatal', 'set_profile_uri',"The URI specified is not valid!")
 
 		self._profile_uri = profile_uri
 
@@ -173,12 +173,12 @@ class ClientConfiguration:
 					gateway = str(xml_attr.get('gateway'))
 
 		if not GLIUtility.is_eth_device(interface):
-			raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
+			raise GLIException("InterfaceError", 'fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
 
 		network_data = (interface, ip, broadcast, netmask, gateway)
 
 		if network_type == 'static' and xml_attr == None:
-			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
+			raise GLIException("NoInterfaceError", 'fatal','set_network_type',"No interface information specified!")
 
 		self.set_network_data(network_data)
 		self._network_type = network_type
@@ -197,26 +197,26 @@ class ClientConfiguration:
 		gateway = network_info[4]
 
 		if not GLIUtility.is_eth_device(interface):
-			raise InterfaceError('fatal','set_network_data', "Interface " + interface + " must be a valid device!")
+			raise GLIException("InterfaceError", 'fatal','set_network_data', "Interface " + interface + " must be a valid device!")
 	
 		if ip != None:
 			if not GLIUtility.is_ip(ip):
-				raise IPAddressError('fatal','set_network_data', 'The specified IP ' + ip + ' is not a valid IP Address!')
+				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified IP ' + ip + ' is not a valid IP Address!')
 
 		if gateway != None:
 			if not GLIUtility.is_ip(gateway):
-				raise IPAddressError('fatal', 'set_network_data', "The gateway IP provided is not a valid gateway!!")
+				raise GLIException("IPAddressError", 'fatal', 'set_network_data', "The gateway IP provided is not a valid gateway!!")
 
 		if broadcast != None:
 			if not GLIUtility.is_ip(broadcast):
-				raise IPAddressError('fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
+				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
 		else:
 			# Guess the broadcast... just in case (probably need the gateway..)
 			pass
 
 		if netmask != None:
 			if not GLIUtility.is_ip(netmask):
-				raise IPAddressError('fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
+				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
 		else:
 			# Guess the netmask... just in case (probably need the gateway..)
 			pass
