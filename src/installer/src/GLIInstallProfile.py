@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.4 2004/04/12 15:01:41 npmccallum Exp $
+$Id: GLIInstallProfile.py,v 1.5 2004/04/13 00:01:00 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).

@@ -151,7 +151,7 @@ class GLIInstallTemplate:
 			raise "URIError", str(uri) + " is not a valid URI!"
 		
 		# If this is a local URI...
-		if uri.split('/')[0] == "file:":
+		if uri.split(':')[0] == "file":
 		
 			# Just copy the file to the destination
 			shutil.copy(uri[7:], dest)
@@ -162,10 +162,159 @@ class GLIInstallTemplate:
 			exitstatus = self._run("wget " + uri + " -O " + dest)
 			if exitstatus != 0:
 				raise "URIError", "Could not retrieve " + uri + "!"
+				
+	def _fetch_and_unpack_tarball(self, tarball_uri, target_directory, temp_directory="/tmp", keep_permisions=False):
+		"Fetches a tarball from tarball_uri and extracts it into target_directory"
+		
+		# Get tarball info
+		tarball_filename = tarball_uri.split("/")[-1]
+		
+		# Get the tarball
+		self._get_uri(tarball_uri, temp_directory + "/" + tarball_filename)
+		
+		# Reset tar options
+		tar_options = "xv"
+		
+		# If the tarball is bzip'd
+		if tarball_filename.split(".")[-1] == "tbz" or  tarball_filename.split(".")[-1] == "bz2":
+			tar_options = tar_options + "j"
+				
+		# If the tarball is gzip'd
+		elif tarball_filename.split(".")[-1] == "tgz" or  tarball_filename.split(".")[-1] == "gz":
+			tar_options = tar_options + "z"
+		
+		# If we want to keep permissions
+		if keep_permissions:
+			tar_options = tar_options + "p"
+			
+		# Unpack the tarball
+		exitstatus = self._run("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory)
+		if exitstatus != 0:
+			raise "UnpackTarballError", "Could not unpack tarball!"
+			
+	def _add_to_runlevel(self, script_name, runlevel="default"):
+		"Adds the script named 'script_name' to the runlevel 'runlevel' in the chroot environement"
+		
+		# Do it
+		exitstatus = self._run("rc-update add " + script_name + " " + runlevel, True)
+		if exitstatus != 0:
+			raise "RunlevelAddError", "Failure adding " + script_name + " to runlevel " + runlevel + "!"
 			
 	def setup_network_pre(self):
 		"Sets up the network on the live CD environment"
-		pass
+			
+		#
+		# SET DEFAULT GATEWAY
+		#
+
+		# Get default gateway
+		default_gateway = self._install_profile.get_default_gateway_pre()
+		
+		# If the default gateway exists, add it
+		if default_gateway:
+			self._edit_config("/etc/conf.d/net", "gateway", default_gateway)
+
+		#
+		# SET RESOLV INFO
+		#
+
+		# Get dns servers
+		dns_servers = self._install_profile.get_dns_servers_pre()
+		
+		# If dns servers are set
+		if dns_servers:
+			
+			# Clear the list
+			resolv_output = []
+			
+			# Parse each dns server
+			for dns_server in dns_servers:
+				# Add the server to the output
+				resolv_output.append("nameserver " + dns_server +"\n")
+			
+		# Output to file
+		open("/etc/resolv.conf", "w").writelines(resolv_output)
+
+		#
+		# PARSE INTERFACES
+		#
+
+		# Fetch interfaces
+		interfaces = self._install_profile.get_network_interfaces_pre()
+		
+		# Parse each interface
+		for interface in interfaces.keys():
+		
+			# Set what kind of interface it is
+			interface_type = interface[:3]
+		
+			# Check to see if there is a startup script for this interface, if there isn't link to the proper script
+			if not os.access(self._client_configuration.root_mount_point + "/etc/net." + interface, W_OK):
+				os.symlink("net." + interface_type +  "0", self._client_configuration.root_mount_point + "/etc/net." + interface)				
+		
+			#
+			# ETHERNET
+			#
+			if interface_type == "eth":
+
+				#
+				# STATIC IP
+				#
+				# If the pre device info is not None, then it is a static ip addy
+				if interfaces[interface][1]:
+					ip = interfaces[interface][0][0]
+					broadcast = interfaces[interface][0][1]
+					netmask = interfaces[interface][0][2]
+					aliases = interfaces[interface][0][3]
+					alias_ips = []
+					alias_broadcasts = []
+					alias_netmasks = []
+					
+					# Write the static ip config to /etc/conf.d/net
+					self._edit_config("/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
+					
+					# If aliases are set
+					if aliases:
+					
+						# Parse aliases to format alias info
+						for alias in aliases:
+							alias_ips.append(alias[0])
+							alias_broadcasts.append(alias[1])
+							alias_netmasks.append(allias[2])
+						
+						# Once the alias info has been gathered, then write it out
+						# Alias ips first
+						self._edit_config("/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
+						# Alias broadcasts next
+						self._edit_config("/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
+						# Alias netmasks last
+						self._edit_config("/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
+					
+				#
+				# DHCP IP
+				#
+				else:
+					self._edit_config("/etc/conf.d/net", "iface_" + interface, "dhcp")
+					
+			#
+			# START INTERFACE
+			#
+			
+			# Test to see if interface is already up
+			iface_status = os.popen("/etc/init.d/net." + interface + " status", "r").readline().split()[-1]
+			
+			# If the interface is already started, restart it
+			if iface_status.lower() == "started":
+				exitstatus = self._run("/etc/init.d/net." + interface + " restart")
+				if exitstatus != 0:
+					raise "NetworkPreError", "Could not start interface " + interface + "!"
+					
+			# Otherwise, just start the interface
+			else:
+				exitstatus = self._run("/etc/init.d/net." + interface + " start")
+				if exitstatus != 0:
+					raise "NetworkPreError", "Could not start interface " + interface + "!"						
+
 
 	def partition_local_devices(self):
 		"Partitions local devices (hard drives, memory sticks, etc)"
@@ -185,6 +334,13 @@ class GLIInstallTemplate:
 		"Unpacks the appropriate stage tarball"
 		# Dependency checking		
 		self._depends([ "mount_local_partitions", "mount_network_shares" ])
+		
+		# Get tarball info
+		stage_tarball_uri = self._install_profile.get_stage_tarball_uri()
+		tarball_filename = stage_tarball_uri.split("/")[-1]
+		
+		# Get the tarball and unpack it
+		self._fetch_and_unpack_tarball(stage_tarball_uri, self._client_configuration.root_mount_point + "/", self._client_configuration.root_mount_point + "/", True)
 
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
@@ -229,7 +385,6 @@ class GLIInstallTemplate:
 			# Add/Edit it into make.conf
 			self._edit_config(self._client_configuration.root_mount_point + "/etc/make.conf", key, option[key])
 
-
 	def install_portage_tree(self):
 		"Get/update the portage tree"
 		# Dependency checking		
@@ -238,10 +393,12 @@ class GLIInstallTemplate:
 		# Check the type of portage tree fetching we'll do
 		# If it is custom, follow the path to the custom tarball and unpack it
 		if self._install_profile.get_portage_tree_sync_type() == "custom":
-			#
-			# Download/copy snapshot and unpack it
-			#
-			pass
+		
+			# Get portage tree info
+			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
+			
+			# Fetch and unpack the tarball
+			self._fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._client_configuration.root_mount_point + "/usr/", self._client_configuration.root_mount_point + "/")
 			
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
@@ -339,34 +496,36 @@ class GLIInstallTemplate:
 		"Installs and sets up logger"
 		# Dependency checking		
 		self._depends("emerge_system")
+		
+		# Get loggin daemon info
+		logging_daemon_pkg = self._install_profile.get_logging_daemon_pkg()
 
 		# Emerge Logging Daemon
-		exitstatus = self._emerge(self._install_profile.get_logging_daemon_pkg())
+		exitstatus = self._emerge(logging_daemon_pkg)
 		if exitstatus != 0:
-			raise "LoggingDaemonError", "Could not emerge " + self._install_profile.get_logging_daemon_pkg() + "!"
+			raise "LoggingDaemonError", "Could not emerge " + logging_daemon_pkg + "!"
 
 		# Add Logging Daemon to default runlevel
-		exitstatus = self._run("rc-update add " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " default", True)
-		if exitstatus != 0:
-			raise "LoggingDaemonError", "Failure adding " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " to default runlevel!"
+		self. _add_to_runlevel(self,  logging_daemon_pkg.split('/')[-1].lower())
 
 	def install_cron_daemon(self):
 		"Installs and sets up cron"
 		# Dependency checking		
 		self._depends("emerge_system")
+		
+		# Get cron daemon info
+		cron_daemon_pkg = self._install_profile.get_cron_daemon_pkg()
 
 		# Emerge Cron Daemon
-		exitstatus = self._emerge(self._install_profile.get_cron_daemon_pkg())
+		exitstatus = self._emerge(cron_daemon_pkg)
 		if exitstatus != 0:
-			raise "CronDaemonError", "Could not emerge " + self._install_profile.get_cron_daemon_pkg() + "!"
+			raise "CronDaemonError", "Could not emerge " + cron_daemon_pkg + "!"
 
 		# Add Cron Daemon to default runlevel
-		exitstatus = self._run("rc-update add " + self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() + " default", True)
-		if exitstatus != 0:
-			raise "CronDaemonError", "Failure adding " + self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() + " to default runlevel!"
+		self. _add_to_runlevel(self,  cron_daemon_pkg.split('/')[-1].lower())
 		
 		# If the Cron Daemon is not vixie-cron, run crontab			
-		if self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() != "vixie-cron":
+		if cron_daemon_pkg.split('/')[-1].lower() != "vixie-cron":
 			exitstatus = self._run("crontab /etc/crontab", True)
 			if exitstatus != 0:
 				raise "CronDaemonError", "Failure making crontab!"
@@ -402,6 +561,7 @@ class GLIInstallTemplate:
 				
 		# Should we add a section here to automatically configure rp-pppoe?
 		# I think it should go into the setup_network_post section
+		# What do you guys think?
 				
 	def install_pcmcia-cs(self):
 		"Installs and sets up pcmcia-cs"
@@ -459,13 +619,54 @@ class GLIInstallTemplate:
 		"Sets up the network for the first boot"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		
+		# Get hostname, domainname and nisdomainname
+		hostname = self._install_profile.get_hostname()
+		domainname = self._install_profile.get_domainname()
+		nisdomainname = self._install_profile.get_nisdomainname()
+		
+		# Write the hostname to the hostname file		
+		open(self._client_configuration.root_mount_point + "/etc/hostname", "w").write(hostname + "\n")
+		
+		# Write the domainname to the nisdomainname file
+		if domainname:
+			open(self._client_configuration.root_mount_point + "/etc/dnsdomainname", "w").write(domainname + "\n")
+		
+		# Write the nisdomainname to the nisdomainname file
+		if nisdomainname:
+			open(self._client_configuration.root_mount_point + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
+			
+		#
+		# EDIT THE /ETC/HOSTS FILE
+		#
+			
+		# The address we are editing is 127.0.0.1
+		hosts_ip = "127.0.0.1"
+
+		# If the hostname is localhost
+		if hostname == "localhost":
+			# If a domainname is set
+			if domainname:
+				hosts_line = hostname + "." + domainname + "\t" + hostname
+			else:
+				hosts_line = hostname
+		# If the hostname is not localhost
+		else:
+			# If a domainname is set
+			if domainname:
+				hosts_line = hostname + "." + domainname + "\t" + hostname + "\tlocalhost"
+			else:
+				hosts_line = "localhost\t" + hostname
+
+		# Write to file
+		self._edit_config(self._client_configuration.root_mount_point + "/etc/hosts", hosts_ip, hosts_line, True, '\t', False)
 
 		#
 		# SET DEFAULT GATEWAY
 		#
 
 		# Get default gateway
-		default_gateway = self._install_profile.get_default_gateway()
+		default_gateway = self._install_profile.get_default_gateway_post()
 		
 		# If the default gateway exists, add it
 		if default_gateway:
@@ -475,9 +676,9 @@ class GLIInstallTemplate:
 		# SET RESOLV INFO
 		#
 
-		# Get dns servers and domain info
-		dns_servers = self._install_profile.get_dns_servers()
-		domainname = self._install_profile.get_domainname()
+		# Get dns servers
+		dns_servers = self._install_profile.get_dns_servers_post()
+		
 		
 		# If dns servers are set
 		if dns_servers:
