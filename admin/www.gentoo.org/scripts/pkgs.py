@@ -17,7 +17,13 @@ license_re=     re.compile(r"^LICENSE=\"([^\"]*)\"",re.M|re.I|re.S)
 homepage_re=    re.compile(r"^HOMEPAGE=\"([^\"]*)\"",re.M|re.I|re.S)
 desc_re=        re.compile(r"^DESCRIPTION=\"([^\"]*)\"",re.M|re.I|re.S)
 pkgdir=os.environ["WEBROOT"]+"/dyn/pkgs/" 
-os.makedirs(pkgdir)
+try:
+	os.makedirs(pkgdir)
+except OSError:
+	print "Couldn't create",pkgdir+": does it already exist?"
+	print "If so, delete it and re-run this script."
+	sys.exit(1)
+
 ############
 # Subroutine time
 ############
