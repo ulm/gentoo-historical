@@ -65,5 +65,5 @@ a brief description beside it.
 
 	def deactivate(self):
 		self.controller.install_profile.set_portage_tree_sync_type(None, self.active_selection, None)
-		self.controller.install_profile.set_portage_tree_snapshot_uri(self.entry_portage_snapshot_uri.get_text())
+		self.controller.install_profile.set_portage_tree_snapshot_uri(None, self.entry_portage_snapshot_uri.get_text(), None)
 		return True
