@@ -215,7 +215,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': 0, 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
+			devdic[part] = { 'mb': 0, 'minor': int(part), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
 		return devdic
 
 	def get_extended_partition(self):
