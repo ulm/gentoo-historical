@@ -2,7 +2,7 @@
 # Copyright 2003 Gentoo Technologies, Inc.; http://www.gentoo.org
 # Released under the GNU General Public License version 2
 
-import sys,os
+import sys,os,string
 
 subarches=["amd64", "hppa", "hppa1.1", "hppa2.0", "x86", "i386", "i486", "i586", "i686",
 "athlon", "athlon-xp", "athlon-mp", "pentium-mmx", "pentium3", "pentium4", "ppc", "g3",
@@ -18,8 +18,9 @@ class generic_target:
 	def read_spec_file(self,myfile):
 		#read in a spec file, grab settings we need.
 		pass
-	def execute_script(self,myscript):
-		#export env vars, execute script, look at return value
+	def execute_script(self,myscript,myargs):
+		#export env vars here
+		return os.system(myscript+" "+string.join(myargs," "))
 		pass
 	def build(self):
 		#do the actual stage1 building
