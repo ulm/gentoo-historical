@@ -45,6 +45,7 @@
 <li><uri link="#doc_chap3_sect12">Grub can't find stage x.y?</uri></li>
 <li><uri link="#doc_chap3_sect13">My ASUS CUV4X-D won't boot and it freezes during various stages of kernel loading and hardware detection.</uri></li>
 <li><uri link="#doc_chap3_sect14">If I have Gentoo 1.4_rc1 can I upgrade to 1.4_rc2, 1.4_final/_rc3 without reinstalling?</uri></li>
+<li><uri link="#doc_chap3_sect15">My kernel doesn't boot (properly), what should I do now?</uri></li>
 </ul>
 </body>
 </section>
@@ -82,6 +83,8 @@
 <li><uri link="#doc_chap5_sect5">Why is KDE not reading /etc/profile? </uri></li>
 <li><uri link="#doc_chap5_sect6">Why can't my user use their own crontab? </uri></li>
 <li><uri link="#doc_chap5_sect7">How do I get numlock to start on boot?</uri></li>
+<li><uri link="#doc_chap5_sect8">How do I have my terminal cleared when
+I log out?</uri></li>
 </ul>
 </body>
 </section>
@@ -328,6 +331,46 @@ UNREGISTER      ^misc/psaux$    CFUNCTION GLOBAL unlink mouse
 	As such 1.4rc1 machine for example, that does <c>emerge sync; emerge -u world</c> is <b>exactly the same</b> as a machine with 1.4rc2 installed, after it does <c>emerge sync; emerge -u world</c>. The true differences lie in the installer.
 	</body>
 	</section>
+    <section>
+    <title>My kernel doesn't boot (properly), what should I do now?</title>
+    <body>
+    <p>
+    You don't need to redo every step of the installation, but only the
+    kernel-stuff and all associated steps. Suppose you have installed Gentoo
+    on <path>/dev/hda1</path> (/boot) and <path>/dev/hda3</path> (/) with
+    <path>/dev/hda2</path> being the swap space:
+    </p>
+    <pre caption = "Reconfiguring the kernel">
+<comment>Boot from the LiveCD and wait until you receive a prompt</comment>
+<comment>We first mount all partitions:</comment>
+# <i>mount /dev/hda3 /mnt/gentoo</i>
+# <i>mount /dev/hda1 /mnt/gentoo/boot</i>
+# <i>swapon /dev/hda2</i>
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+<comment>Then we chroot into our Gentoo environment and configure the kernel:</comment>
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update &amp;&amp; source /etc/profile</i>
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+<comment>Now (de)select anything you have (de)selected wrongly at your</comment>
+<comment>previous attempt. Then quit and compile your kernel:</comment>
+# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
+<comment>Now copy over your bzImage file, overwriting your previous one:</comment>
+# <i>cp arch/i386/boot/bzImage /boot</i>
+<comment>If you use LILO, rerun lilo -- GRUB users should skip this:</comment>
+# <i>/sbin/lilo</i>
+<comment>Now exit the chroot and reboot.</comment>
+# <i>exit</i>
+# <i>umount /mnt/gentoo/proc /mnt/gentoo/boot /mnt/gentoo</i>
+# <i>reboot</i>
+    </pre>
+    <p>
+    If on the other hand the problem lays with your bootloader configuration,
+    follow the same steps, but instead of configuring/compiling your kernel you
+    should reconfigure your bootloader (recompilation isn't necessary).
+    </p>
+    </body>
+    </section>
 </chapter>
 
 <chapter>
@@ -634,6 +677,24 @@ UNREGISTER      ^misc/psaux$    CFUNCTION GLOBAL unlink mouse
         </p>
         </body>
     </section>
+    <section>
+        <title>How do I have my terminal cleared when I log out?</title>
+        <body>
+        <p>
+        To have your terminal cleared, add <c>clear</c> to your
+        <path>~/.bash_logout</path> script:
+        </p>
+        <pre caption = "Clearing the terminal during logout">
+$ <i>echo clear &gt;&gt; ~/.bash_logout</i></pre>
+        <p>
+        If you want this to happen automatically when you add a new
+        user, do the same for the <path>/etc/skel/.bash_logout</path>:
+        </p>
+        <pre caption = "Making new users their terminal clear on logout">
+# <i>echo clear &gt;&gt; /etc/skel/.bash_logout</i></pre>
+        </body>
+    </section>
+    
 
 </chapter>
 
