@@ -77,7 +77,8 @@
 <xsl:template match="/guide">
 <html>
 <head>
-    <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"></link>
+    <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"/>
+	<link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
 	<title>Gentoo Linux 
 	<xsl:choose>
 	<xsl:when test="/guide/@type='project'">
@@ -308,7 +309,8 @@ of your sale will go towards further Gentoo Linux development.</p>
 <xsl:template match="/mainpage | /news">
 <html>
 <head>
-    <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"></link>
+    <link title="new" rel="stylesheet" href="/main-new.css" type="text/css"/>
+	<link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
 	<title>Gentoo Linux -- <xsl:value-of select="title"/></title>
 </head>
 <body leftmargin="0" topmargin="0" marginheight="0" marginwidth="0" bgcolor="#000000">
