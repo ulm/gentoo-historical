@@ -1,0 +1,405 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-x86-bootloader.xml,v 1.1 2004/05/02 20:48:27 broeman Exp $ -->
+
+<sections>
+<section>
+<title>Valg af boot-loader</title>
+<subsection>
+<title>Introduktion</title>
+<body>
+
+<p>
+Nu hvor din kerne er opsat og kompileret og den nødvendige 
+systemopsætning er klaret, er det tid til at installere et program, der vil 
+sætte gang i din kerne, når du starter systemet. Sådan et program kaldes en 
+<e>boot-loader</e>. Til x86, leverer Gentoo <uri link="#grub">GRUB</uri> og <uri link="#lilo">LILO</uri>. Men før du starter med at installere én af disse to boot-loadere, vil vi informere dig hvordan man opsætter framebuffer (hvis du altså ønsker det). Med framebuffer kan du køre Linux-kommandolinien med (begrænsede) grafisk egenskaber (som en lækker bootsplash billede, som Gentoo leverer).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valgfrit: Framebuffer</title>
+<body>
+
+<p>
+<e>Hvis</e> du har understøttelse af framebuffer med i din kerne (eller du brugte <c>genkernel</c>s standard kerneopsætning), skal 
+du tilføje et <c>vga</c>-parameter i din opsætningsfil til boot-loaderen, 
+hvis du har brug for understøttelse af framebuffer. Den næste tabel viser 
+dig de mulige værdier for <c>vga</c>. I eksemplet til opsætningsfilen 
+har vi brugt <e>800x600 @ 16bpp</e>, altså <e>788</e>.
+</p>
+
+<table>
+<tr>
+  <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+  <th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+  <th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+  <th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+Husk værdien (eller skriv den ned); du får brug for den om lidt.
+</p>
+
+<p>
+Fortsæt nu med at installere <uri link="#grub">GRUB</uri> <e>eller</e> <uri link="#lilo">LILO</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="grub">
+<title>Standard: Brug af GRUB</title>
+<subsection>
+<title>Forståelse af GRUBs terminologi</title>
+<body>
+
+<p>
+Den mest kritiske del i forståelsen af GRUB, er at blive fortrolig med 
+hvordan GRUB refererer til harddiske og partitioner. Din Linux partition
+<path>/dev/hda1</path> hedder <path>(hd0,0)</path> i GRUB. Vær opmærksom 
+på parenteserne omkring <path>hd0,0</path> - de er nødvendige.
+</p>
+
+<p>
+Harddiske tælles op fra nul i stedet for "a" og partitionerne starter ved
+ nul i stedet for ét. Vær også opmærksom på at med hd-enheder bliver kun 
+harddiske, og ikke atapi-ide-enheder som f.eks. cd-drev og brændere, talt med. 
+Samme konstruktion gælder ligeledes for scsi-drev. 
+(Normalt får de et højere nummer end ide-drevene, med undtagelse af når bios 
+er sat til at starte op fra scsi-enheder.)
+</p>
+
+<p>
+Forudsat du har en harddisk på <path>/dev/hda</path>, et cd-drev på
+<path>/dev/hdb</path>, en brænder på <path>/dev/hdc</path>, en
+sekundær harddisk på <path>/dev/hdd</path> og ingen scsi-harddisk,
+bliver <path>/dev/hdd7</path> oversat til <path>(hd1,6)</path>. Det
+kan lyde svært og det er bestemt svært, men som vi skal se, indeholder
+GRUB tabulator-færdiggørelse, der kan være behjælpelig for dem, der
+har mange harddiske og partitioner og er gået lidt tabt i GRUBs
+nummeringssystem.
+</p>
+
+<p>
+Efter at have fået en ide om det, er det tid til at installere GRUB.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Installation af GRUB</title>
+<body>
+
+<p>
+For at installere GRUB, vil vi først emerge det. Brugere af x86-arkitekturen 
+skal installere <c>grub</c>, AMD64-brugere skal emerge <c>grub-static</c>:
+</p>
+
+<pre caption = "Installering af GRUB">
+# <i>emerge grub</i>
+</pre>
+
+<p>
+For at starte opsætningen af GRUB, skriver du <c>grub</c>. Du vil nu blive 
+præsenteret for GRUBs <path>grub&gt;</path> kommandolinjeprompt. Du skal nu 
+indtaste de rigtige kommandoer for at installere GRUBs boot-optegnelse på din
+harddisk.
+</p>
+
+<pre caption = "Start af GRUBs shell (skal)">
+# <i>grub</i>
+</pre>
+
+<note>
+Hvis dit system ikke har nogen floppydrev, tilføj <c>--no-floppy</c>
+valgmuligheden til den ovenstående kommando, for at forhindre grub i
+at efterprøve (ikke-eksisterende) diskettedrev.  </note>
+
+<p>
+I opsætningseksemplet vil vi installere GRUB, så det læser informationerne fra 
+opstartspartitionen <path>/dev/hda1</path> og installerer GRUBs 
+opstartfortegnelse på harddiskens MBR (master boot record), så det første vi 
+ser når vi starter vores computer er GRUB-prompten. Hvis du ikke har fulgt 
+opsætningskonfigurationen under installation, skal du naturligvis ændre 
+kommandoerne tilsvarende.
+</p>
+
+<p>
+Tab-færdiggørelsen i GRUB kan benyttes inde fra GRUB. Hvis du f.eks. indtaster 
+"<c>root (</c>" efterfulgt af et TAB, vil du blive præsenteret for en liste
+med af enheder (som f.eks. <path>hd0</path>). Hvis du indtaster 
+"<c>root (hd0,</c>" efterfulgt af et TAB, får du en liste over mulige 
+partition du kan vælge imellem (som fx <path>hd0,0</path>).
+</p>
+
+<p>
+Ved brug af tab-færdiggørelse burde opsætningen af GRUB ikke være så svær.
+Skal vi så fortsætte og installere GRUB? :-)
+</p>
+
+<pre caption = "Installering af GRUB i MBR">
+grub&gt; <i>root (hd0,0)</i>          <comment>(Angiv hvor din /boot partition findes)</comment>
+grub&gt; <i>setup (hd0)</i>           <comment>(Installer GRUB i MBR)</comment>
+grub&gt; <i>quit</i>                  <comment>(Afslut GRUBs skal)</comment>
+</pre>
+
+<note>
+Hvis du vil installere GRUB i en partition i stedet for MBR, skal du ændre 
+kommandoen for <c>setup</c> så den peger på den rigtige partition. Hvis du f.eks. 
+vil have GRUB installeret i <path>/dev/hda3</path>, bliver kommandoen 
+<c>setup (hd0,2)</c>.  Få brugere vil dog gøre dette.
+</note>
+
+<p>
+Selv om GRUB nu er installeret, mangler vi stadigvæk at skrive en 
+opsætningsfil til det, så GRUB automatisk starter din fornylige oprettede kerne. 
+Opret <path>/boot/grub/grub.conf</path> med <c>nano</c> (eller evt. en 
+anden editor):
+</p>
+
+<pre caption = "Oprettelse af /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+Vi vil nu lave en <path>grub.conf</path>. Nedenfor finder du to mulige
+<path>grub.conf</path> til partitioneringseksemplet vi bruger i denne 
+vejledning, med kernebilledet <path>kernel-2.4.24</path>. Vi har kun
+ekstensivt kommenteret den første <path>grub.conf</path>.
+</p>
+
+<ul>
+ <li>
+  Den første <path>grub.conf</path> er for folk, der ikke har brugt
+  <c>genkernel</c> til at bygge deres kerne
+ </li>
+ <li>
+  Den anden <path>grub.conf</path> er for folk, der har brugt
+  <c>genkernel</c> til at bygge deres kerne
+ </li>
+</ul>
+
+<pre caption = "grub.conf for ikke-genkernel brugere">
+<comment># Hvilket nummer fra listen, der skal startes op på som standard. 0 er det første, 1 er det andet etc.</comment>
+default 0
+<comment># Hvor mange sekunder, der skal ventes inden standardvalget startes op.</comment>
+timeout 30
+<comment># Fedt splash-billede, som krydderi til det hele :)
+# Udkommenter hvis du ikke har grafikkort installeret</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.24
+<comment># Partitionen, hvor kernebilledet (eller operativsystemet) ligger</comment>
+root (hd0,0)
+kernel /boot/kernel-2.4.24 root=/dev/hda3
+
+<comment># De næste tre linier bruges kun hvis du dobbeltbooter med et Windows-system.</comment>
+<comment># I dette tilfølde er Windows placeret på /dev/hda6.</comment>
+title=Windows XP
+rootnoverify (hd0,5)
+chainloader +1
+</pre>
+
+<pre caption = "grub.conf for genkernel brugere">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+  	 
+title=Gentoo Linux 2.4.24
+root (hd0,0)
+kernel /kernel-2.4.24 root=/dev/ram0 init=/linuxrc real_root=/dev/hda3
+initrd /initrd-2.4.24
+
+<comment># Kun hvis du vil dual-boote</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>  	 
+
+<note>
+Hvis du benytter et andet partitioneringsskema og/eller kernebillede, så 
+tilpas den i overensstemmelse hermed. Vær dog sikker på at alt der kommer efter 
+en GRUB-enhed (som fx <path>(hd0,0)</path>) er relativ i forhold til 
+mount-punktet og ikke roden. Med andre ord er 
+<path>(hd0,0)/grub/splash.xpm.gz</path> i virkeligheden 
+<path>/boot/grub/splash.xpm.gz</path>, da <path>(hd0,0)</path> er 
+<path>/boot</path>.
+</note>
+
+<p>
+Hvis du har brug for at angive yderligere parametre til kernen, skal du 
+blot tilføje dem i slutningen af kernel kommandoen. Vi angiver allerede et 
+parameter (<c>root=/dev/hda3</c> eller <c>real_root=/dev/hda3</c>), men du kan også angive andre ligeledes. 
+Som eksempel kan vi bruge parameteret <c>vga</c> til framebuffer, 
+som vi diskuterede tidligere:
+</p>
+
+<pre caption = "Tilføjelse af vga som et kerne-parameter">
+title=Gentoo Linux
+root (hd0,0)
+kernel /kernel-2.4.24 root=/dev/hda3 vga=788
+</pre>
+
+<p>
+Brugere af <c>genkernel</c> skal vide at deres kerner har de samme 
+opstartparametre, som er brugt til LiveCDen. Hvis du fx har SCSI-enheder, 
+bør du tilføje <c>doscsi</c> som kerne-parameter.
+</p>
+
+<p>
+Gem nu filen <path>grub.conf</path> og afslut. Fra nu af er GRUB færdigopsat, 
+og du kan fortsætte med <uri link="?part=1&amp;chap=10">Installation af 
+nødvendige systemværktøjer</uri>.
+</p>
+
+<p>
+Hvis du har flere spørgsmål angående GRUB, konsulter venligst <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> eller <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB-vejledningen</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="lilo">
+<title>Alternativ: Brug af LILO</title>
+<subsection>
+<title>Installation af LILO</title>
+<body>
+
+<p>
+LILO (LInuxLOader) er den afprøvede og sande arbejdshest af Linuxs boot-loadere
+. Den mangler dog nogle funktionaliteter, som GRUB har (hvilket er årsagen til 
+GRUB i øjeblikket har en stigende popularitet). Årsagen til LILO stadigvæk 
+benyttes er, at LILO virker på nogle systemer, hvor GRUB ikke virker. Det er 
+selvfølgelig også benyttet af folk, der kender LILO og vil holde sig til det. 
+Uanset hvad, så understøtter Gentoo begge, og du har tilsyneladende valgt LILO.
+</p>
+
+<p>
+Installation af LILO er barnemad; bare brug <c>emerge</c>.
+</p>
+
+<pre caption = "Installation af LILO">
+# <i>emerge lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opsætning af LILO</title>
+<body>
+
+<p>
+Til opsætningen af LILO skal du oprette <path>/etc/lilo.conf</path>. Start din
+foretrukne redigeringsprogram (i denne håndbog benytter vi <c>nano</c> konsekvent) og opret filen.
+</p>
+
+<pre caption = "Oprettelse af /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+Nogle sektioner tilbage, bad vi dig om at huske navnet på det kernebillede, du 
+havde skabt. I det følgende <path>lilo.conf</path>-eksempel, antager vi at 
+navnet på kernebilledet er <path>kernel-2.4.24</path>. Vi bruger også planen 
+for partitioneringseksemplet fra før, i dette eksempel. Der er to
+separate dele:
+</p>
+
+<ul>
+ <li>
+  En til dem, der ikke har brugt <c>genkernel</c> til at bygge deres kerne
+ </li>
+ <li>
+  En til dem, der har brugt <c>genkernel</c> til at bygge deres kerne
+ </li>
+</ul>  	
+
+<pre caption = "Eksempel på /etc/lilo.conf">
+boot=/dev/hda             <comment># Installerer LILO i MBR</comment>
+prompt                    <comment># Giver brugeren en mulighed for at vælge en anden sektion</comment>
+timeout=50                <comment># Vent 5 (fem) sekunder inden standardsektionen startes op</comment>
+default=gentoo            <comment># Når timeouten er udløbet opstartes sektionen "gentoo"</comment>
+<comment># Kun hvis du bruger framebuffer. Hvis ikke, så fjern følgende linje:</comment>
+vga=788                   <comment># Framebuffer-parameter. Tilpas til dit eget ønske</comment>
+
+<comment># Til ikke-genkernel brugere</comment>
+image=/boot/kernel-2.4.24
+  label=gentoo            <comment># Et navn vi tildeler denne sektion</comment>
+  read-only               <comment># Start med kun læserettigheder til roden. Ændr det ikke!</comment>
+  root=/dev/hda3          <comment># Placering af rodens filsystem</comment>
+
+<comment># Til brugere af genkernel</comment>
+image=/boot/kernel-2.4.24
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.24
+
+<comment># De to næste linjer skal kun bruges hvis du dobbeltstarter med et Windows-system.</comment>
+<comment># I dette tilfælde er Windows placeret på /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+Hvis dine partitioner og/eller kernebilleder er ordnet anderledes, så tilpas 
+tilsvarende.
+</note>
+
+<p>
+Hvis du har brug for at angive yderligere parametre til kernen, så tilføj en
+<c>append</c> erklæring til sektionen. Som et eksempel, tilføjer vi en
+<c>vga=788</c> erklæring for at slå understøttelse af framebuffer til:
+</p>
+
+<pre caption = "Brug af append til at tilføje kerne-parametre">
+image=/boot/kernel-2.4.24
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="vga=788"</i>
+</pre>
+
+<p>
+Brugere af <c>genkernel</c> skal vide at deres kerner har de samme 
+opstartparametre, som der er brugt til LiveCDen. Hvis du f.eks. har SCSI-enheder, 
+bør du tilføje <c>doscsi</c> som kerne-parameter.
+</p>
+
+
+<p>
+Gem nu filen og afslut. For at færdiggøre helt, skal du køre <c>/sbin/lilo</c>, 
+så LILO anvender <path>/etc/lilo.conf</path> på dit system 
+(dvs. installere sig på disken). Hold i mente at du også skal køre
+<c>/sbin/lilo</c> igen hver gang du installerer en ny kerne!
+</p>
+
+<pre caption = "Afslutning af LILO installationen">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+Fortsæt nu med <uri link="?part=1&amp;chap=10">
+Installation af nødvendige systemværktøjer</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
