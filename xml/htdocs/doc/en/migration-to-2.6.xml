@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/migration-to-2.6.xml,v 1.8 2005/01/09 10:44:44 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/migration-to-2.6.xml,v 1.9 2005/01/16 15:27:30 swift Exp $ -->
 
 <guide link="/doc/en/migration-to-2.6.xml">
 
@@ -25,11 +25,11 @@
 
 <abstract>
 This document will aid you in the process of migrating from Linux 2.4 to Linux
-2.6, devfs to udev and OSS to ALSA.
+2.6, devfs to udev, OSS to ALSA, and LVM to LVM2.
 </abstract>
 
-<version>0.2.0</version>
-<date>2005-01-09</date>
+<version>0.2.1</version>
+<date>2005-01-11</date>
 
 <chapter>
 <title>Introduction</title>
@@ -144,6 +144,43 @@ configuration options!
 If you do not have any sound/audio hardware, you can safely skip over any
 ALSA-related instructions in this document.
 </note>
+
+</body>
+</section>
+<section>
+<title>What is LVM?</title>
+<body>
+
+<p>
+<e>Logical Volume Management</e> (LVM) exists as set of tools allowing you to
+manage your disk storage in a very flexible manner. Amongst other things, it
+allows powerful control over partitions (e.g. resizing without reboot), and
+makes operations like device changes relatively simple. LVM acts as an
+alternative to standard partition-based disk management.
+</p>
+
+<p>
+LVM support has historically been implemented in Linux 2.4. Linux 2.6 features
+a new version of LVM, named <e>LVM2</e>. The migration process requires you to
+install new versions of the user-level tools (covered later in this document)
+but will leave your data intact!
+</p>
+
+<p>
+<e>If you do not currently use LVM for data-storage management, then LVM2
+migration does not apply to you.</e> If this is the case, you can safely ignore
+any parts of this document referencing LVM/LVM2. Upgrading to Linux 2.6 does
+<e>not</e> require you to store your data on LVM partitions - you can keep
+your data in the standard partition-format as it always has been.
+</p>
+
+<p>
+If you are not a LVM user, but you think LVM2 sounds useful for you, you can
+convert your disks to this format at a later date, by following the
+<uri link="http://www.gentoo.org/doc/en/lvm2.xml">Gentoo LVM2 Installation
+Guide</uri>. For now, lets just concentrate on getting a smooth 2.6 migration
+underway.
+</p>
 
 </body>
 </section>
@@ -719,6 +756,12 @@ Device Drivers  ---&gt;
    &lt;M&gt; OSS Mixer API
    [*] OSS Sequencer API
 <comment>   (and dont forget to select your soundcard from the submenus!)</comment>
+
+<comment>(the following are required if you use LVM for disk management):</comment>
+Device Drivers  ---&gt;
+ Multi-device support (RAID and LVM)  ---&gt;
+  [*] Multiple devices driver support (RAID and LVM)
+   &lt;*&gt;   Device mapper support
 </pre>
 
 <warn>
@@ -917,6 +960,37 @@ nvidia
 </chapter>
 
 <chapter>
+<title>LVM to LVM2 migration</title>
+<section>
+<title>Upgrading to LVM2 tools</title>
+<body>
+
+<note>
+If you do not use LVM to manage your disk storage, you can safely skip
+this chapter and skip onto the next.
+</note>
+
+<p>
+Fortunately, upgrading from the LVM1 user tools to the LVM2 versions is very
+simple:
+</p>
+
+<pre caption="Upgrading user-tools from LVM1 to LVM2">
+# <i>emerge unmerge lvm-user</i>
+# <i>emerge lvm2</i>
+</pre>
+
+<note>
+The LVM2 tools are fully backwards-compatible with LVM1. Your disk data will
+not be touched. You are not breaking any backwards-compatibility by doing
+this, you will continue to be able to boot 2.4 as usual.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>Booting into Linux 2.6</title>
 <section>
 <body>
@@ -1098,8 +1172,8 @@ Thanks!
 <p>
 After you have been running 2.6 for a while, you may decide that you no longer
 have any requirement to be able to use Linux 2.4. The steps you can take to
-clean up your system are detailed below. Only follow this section if you are
-sure that you don't want/need to use 2.4 again!
+clean up your system are detailed below. <e>Only follow the procedure in this
+section if you are sure that you don't want/need to use 2.4 again!</e>
 </p>
 
 <p>
@@ -1155,8 +1229,27 @@ now included in the kernel, so this package can also be removed in order to
 prevent future conflicts.
 </p>
 
-<pre caption="Removing alsa-driver and i2c">
-# <i>emerge unmerge alsa-driver i2c</i>
+<p>
+The devfs management daemon, <c>devfsd</c>, can also safely be removed, now
+that we are using <c>udev</c> for device management.
+</p>
+
+<pre caption="Removing alsa-driver, i2c, and devfsd">
+# <i>emerge unmerge alsa-driver i2c devfsd</i>
+</pre>
+
+<p>
+If you are LVM2 user, you may wish to convert your data into the LVM2 data
+format in order to benefit from the advantages which LVM2 provides.
+However, this operation will prevent you from ever accessing your LVM data
+from a 2.4 kernel. If you want to continue with the conversion (this is totally
+optional!), then you should examine the <c>vgconvert</c> man page for
+instructions on how to carry this out. An example is shown below, where
+<c>main</c> is the volume group name.
+</p>
+
+<pre caption="Converting a LVM1 volume to LVM2 format">
+# <i>vgconvert -M2 main</i>
 </pre>
 
 </body>
