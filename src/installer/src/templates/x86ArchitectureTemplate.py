@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.13 2005/01/14 06:31:08 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.14 2005/01/14 07:07:09 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -384,7 +384,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		if self._install_profile.get_boot_loader_mbr():
 			newliloconf += "boot="+boot_device+"   # Install LILO in the MBR \n"
 		else:
-			newliloconf += "boot="+boot_device+boot_minor"   # Install LILO in the MBR \n"
+			newliloconf += "boot="+boot_device+boot_minor+"   # Install LILO in the MBR \n"
 		newliloconf += "prompt                    # Give the user the chance to select another section\n"
 		newliloconf += "timeout=50                # Wait 5 (five) seconds before booting the default section\n"
 		newliloconf += "default=gentoo            # When the timeout has passed, boot the \"gentoo\" section\n"
@@ -392,10 +392,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		if not self._install_profile.get_kernel_bootsplash():
 			newliloconf += "#"
 		newliloconf += "vga=788                   # Framebuffer setting. Adjust to your own will\n"
-		newliloconf += "image=/boot/"+kernel_name[0][5:]+" \n"
+		newliloconf += "image=/boot"+kernel_name[0][5:]+" \n"
 		newliloconf += "  label=gentoo \n  read-only \n  root=/dev/ram0 \n"
 		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor+"\" \n"
-  		newliloconf += "  initrd=/boot/"+kernel_name[1][5:] + "\n"
+  		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n"
 		#now make the lilo.conf file
 		file_name = root + "/etc/lilo.conf"	
 		try:

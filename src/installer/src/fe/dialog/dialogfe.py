@@ -547,7 +547,7 @@ fn = (
 	{ 'text': "Cron daemon", 'fn': set_cron_daemon },
 	{ 'text': "Logging daemon", 'fn': set_logger },
 	{ 'text': "Extra packages", 'fn': set_extra_packages },
-	[ 'text': "Services", 'fn': set_services ],
+	{ 'text': "Services", 'fn': set_services },
 	{ 'text': "rc.conf", 'fn': set_rc_conf },
 	{ 'text': "Root password", 'fn': set_root_password },
 	{ 'text': "Additional Users", 'fn': set_additional_users },

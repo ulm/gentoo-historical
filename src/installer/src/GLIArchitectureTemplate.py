@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.33 2005/01/14 06:31:08 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.34 2005/01/14 07:07:08 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -656,7 +656,7 @@ class ArchitectureTemplate:
 	def set_root_password(self):
 		"Sets the root password"
 		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e')
-		if not GLIUtility.exit_success(status):
+		if not GLIUtility.exitsuccess(status):
 			raise GLIException("SetRootPasswordError", 'warning', 'set_root_password', "Failure to set root password!")
 
 	def set_users(self):
@@ -708,7 +708,7 @@ class ArchitectureTemplate:
 				
 			# Add the user
 			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir)
-			if not GLIUtility.exit_success(exitstatus):
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
 
 	def install_bootloader(self):
