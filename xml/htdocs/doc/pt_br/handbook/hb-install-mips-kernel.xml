@@ -1,0 +1,408 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-mips-kernel.xml,v 1.1 2005/01/14 12:08:27 enderson Exp $ -->
+
+<sections>
+
+<version>1.6</version>
+<date>2004-09-01</date>
+
+<section>
+<title>Fuso horário</title>
+<body>
+
+<p>
+Você deve primeiro selecionar seu fuso horário para que seu sistema saiba onde está localizado. Procure seu fuso horário em <path>/usr/share/zoneinfo</path>, então faça um symlink para <path>/etc/localtime</path> usando o comando <c>ln</c>:
+</p>
+
+<pre caption="Configurando informação de fuso horário">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suponha que você queira usar GMT)</comment>
+# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalando as fontes</title>
+<subsection>
+<title>Escolhendo um kernel</title>
+<body>
+
+<p>
+O centro através do qual todas distribuições são construídas é o kernel do Linux. Ele fica entre os programas de usuário e o hardware do sistema. O Gentoo permite que seus usuários escolham dentro de uma variedade de fontes de kernel. Uma lista completa com descrições pode ser encontrada no <uri link="/doc/en/gentoo-kernel.xml">Guia de Kernel do Gentoo</uri>. 
+</p>
+
+<p>
+Os sistemas baseados em MIPS podem escolher entre <c>mips-sources</c> (as fontes de kernel padrão 
+para a arquitetura MIPS) e <c>mips-prepatch-sources</c> (árvore do kernel 
+de pré-lançamento).
+</p>
+
+<p>
+Escolhe sua fonte de kernel e instale com o comando <c>emerge</c>. 
+Claro, substitua com sua escolha de fontes, abaixo segue um mero exemplo:
+</p>
+
+<pre caption="Instalando uma fonte de kernel">
+# <i>emerge mips-sources</i>
+</pre>
+
+<p>
+Quando você olhar em <path>/usr/src</path> você deve ver um symlink chamado
+<path>linux</path> apontando para a fonte do kernel:
+</p>
+
+<pre caption="Vendo o symlink da fonte do kernel">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.24
+</pre>
+
+<p>
+Se este não for o caso (isto é, o symlink aponta para uma fonte de kernel diferente) mude o symlink antes de continuar:
+</p>
+
+<pre caption="Mudando o symlink da fonte do kernel">
+# <i>rm /usr/src/linux</i>
+# <i>cd /usr/src</i>
+# <i>ln -s linux-2.4.24 linux</i>
+</pre>
+
+<p>
+Agora está na hora de configurar e compilar sua fonte do kernel.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Configuração manual</title>
+<subsection>
+<title>Introdução</title>
+<body>
+
+<p>
+Configurar um kernel manualmente é freqüentemente tido como o procedimento mais difícil que um usuário de Linux tem de fazer. Grande mentira -- depois de configurar uns dois kernéis você nem lembrará que foi difícil ;)
+</p>
+
+<p>
+No entanto, uma coisa <e>é</e> verdade: você deve conhecer seu sistema quando você começar a configurar o kernel manualmente. A maior parte das informações pode ser obtida lendo o conteúdo de <path>/proc/pci</path> (ou usando o comando <c>lspci</c> se disponível). Você também pode rodar  <c>lsmod</c> para ver que módulos o LiveCD usa (pode dar uma boa dica sobre o que ativar).
+</p>
+
+<p>
+Agora vá para o diretório da fonte do kernel e execute <c>make menuconfig</c>. Isto irá iniciar um menu de configuração baseado em ncurses.
+</p>
+
+<pre caption="Rodando o menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Você verá várias seções de configuração. Iremos primeiro listar algumas opções que você deve ativar (ou o Gentoo não irá funcionar, ou não irá funcionar sem mudanças adicionais).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Ativando as opções necessárias</title>
+<body>
+
+<p>
+Você verá várias seções de configuração. Iremos primeiro listar algumas opções que você deve ativar (ou o Gentoo não irá funcionar, ou não irá funcionar sem mudanças adicionais).
+</p>
+
+<pre caption="Selecionando código/drivers experimentais">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+</pre>
+
+<p>
+Agora vá para <c>File Systems</c> e selecione suporte para os sistemas de arquivos que você usa.
+<e>Não</e> os compile como módulos, senão seu sistema Gentoo não será capaz de montar suas partições. Também selecione <c>Virtual memory</c>, <c>/proc
+file system</c>, <c>/dev file system</c> + <c>Automatically mount at boot</c>:
+</p>
+
+<pre caption="Selecionando sistemas de arquivos necessários">
+<comment>(Com um kernel da linha 2.4.x)</comment>
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(Com um kernel da linha 2.6.x)</comment>
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] /dev file system support (OBSOLETE)
+    [*]   Automatically mount at boot
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Selecione uma ou mais das seguintes opções conforme necessárias ao seu sistema)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+Se você está usando PPPoE para conectar à Internet ou está usando um modem discado, você irá precisar das seguintes opções no kernel:
+</p>
+
+<pre caption="Selecionando drivers necessários para PPPoE">
+<comment>(Com um kernel da linha 2.4.x)</comment>
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+
+<comment>(Com um kernel da linha 2.6.x)</comment>
+Device Drivers ---&gt;
+  Networking support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+As duas opções de compressão não fazem mal, mas não são absolutamente necessárias, bem como a opção <c>PPP over Ethernet</c>, que somente pode ser usada pelo comando <c>rp-pppoe</c> quando configurado para fazer PPPoE em modo de kernel.
+</p>
+
+<p>
+Se você precisar, não se esqueça de incluir suporte no kernel para sua placa de rede.
+</p>
+
+<p>
+Se você estiver usando um sistema baseado em Indy/Indigo2, você precisa ativer o suporte 
+para ele.
+</p>
+
+<pre caption="Ativando SGI IP22">
+Machine selection ---&gt;
+  [*] Support for SGI IP22 (Indy/Indigo2)
+</pre>
+
+<p>
+Se você quiser rodar binários do Irix, inclua a seguinte opção:
+</p>
+
+<pre caption="Incluindo suporte a binários do IRIX">
+General setup ---&gt;
+  [*] Include IRIX binary compatibility
+</pre>
+
+<p>
+Se você tem placas ISA/EISA em seu SGI Indigo2, ative suporte para elas.
+</p>
+
+<pre caption="Ativando suporte de ISA/EISA para SGI Indigo2">
+General setup ---&gt;
+  [*] Indigo-2 (IP22) EISA bus support
+  [*]   ISA bus support
+</pre>
+
+<p>
+Se você tem uma porta paralela da SGI, você pode ativar suporte para ela. Se você tem 
+uma porta paralela ISA você deve selecionar "PC-style hardware".
+</p>
+
+<pre caption="Ativando suporte a porta paralela da SGI">
+Parallel port support  ---&gt;
+  &lt;*&gt; Parallel port support
+  &lt;*&gt;   SGI Indy/Indigo2 hardware (EXPERIMENTAL) (NEW)
+  &lt;*&gt;   IEEE 1284 transfer modes (NEW)
+</pre>
+
+<p>
+Se você quiser usar slots ISA do Indigo2, ative suporte a plug and play.
+</p>
+
+<pre caption="Ativando suporte de PnP para ISA">
+Plug and Play configuration  ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;*&gt;   ISA Plug and Play support
+</pre>
+
+<p>
+Não se esqueça de ativar suporte para SCSI, e use o driver SGI WD93C93:
+</p>
+
+<pre caption="Ativando suporte ao driver WD93C93">
+SCSI low-level drivers  ---&gt;
+  &lt;*&gt; SGI WD93C93 SCSI Driver
+</pre>
+
+<p>
+Para placas de rede você provavelmente precisa de suporte para o 
+SGI Seeq ethernet controller:
+</p>
+
+<pre caption="Ativando suporte ao SGI Seeq">
+Network device support  ---&gt;
+  Ethernet (10 or 100Mbit)  ---&gt;
+    [*] Ethernet (10 or 100Mbit)
+    [*]   SGI Seeq ethernet controller support
+</pre>
+
+<p>
+Não se esqueça de ativar suporte ao console serial e suporte para o SGI
+Zilog85C30:
+</p>
+
+<pre caption="Ativando suporte ao SGI Zilog85C30">
+Character devices ---&gt;
+  [*] Non-standard serial port support
+  [*]   SGI Zilog85C30 serial support
+</pre>
+
+<p>
+Não se esqueça de ativar suporte ao Indy/I2 Watchdog bem como o SGI
+DS1286 RTC:
+</p>
+
+<pre caption="Ativando suporte de Watchdog e RTC">
+Character Devices ---&gt;
+  [*] SGI DS1286 RTC support
+  Watchdog Cards  ---&gt;
+    [*] Watchdog Timer Support
+    &lt;*&gt;   Indy/I2 Hardware Watchdog
+</pre>
+
+<p>
+Você também tem que ativar suporte para partições SGI :)
+</p>
+
+<pre caption="Ativando suporte a partições SGI">
+File Systems ---&gt;
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*]   SGI partition support
+</pre>
+
+<p>
+Se você tem uma placa SGI Newport (XL Gfx) e quer usá-la, você então deve 
+ativar suporte para ela:
+</p>
+
+<pre caption="Ativando suporte para a placa SGI Newport">
+Console drivers  ---&gt;
+  &lt;*&gt; SGI Newport Console support (NEW)
+</pre>
+
+<p>
+Se você quiser suporte de som em seu Indy/Indigo2, ative-o:
+</p>
+
+<pre caption="Ativando suporte para o SGI HAL2">
+Sound  ---&gt;
+  &lt;*&gt; Sound card support
+  &lt;*&gt;   SGI HAL2 sound (EXPERIMENTAL)
+</pre>
+
+<p>
+Quando você terminar de configurar seu kernel, continue com  <uri
+link="#compiling">Compilando e instalando</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compilando e instalando</title>
+<body>
+
+<p>
+Agora que seu kernel está configurado, está na hora de compilá-lo e instalá-lo. Saia da configuração e rode <c>make dep &amp;&amp; make vmlinux modules 
+modules_install</c>:
+</p>
+
+<pre caption="Compilando o kernel">
+<comment>(Para um kernel da linha 2.4)</comment>
+# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+
+<comment>(Para um kernel da linha 2.6)</comment>
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+Quando o kernel terminar de compilar, copie a imagem do kernel para 
+<path>/boot</path>. 
+</p>
+
+<pre caption="Instalando o kernel">
+# <i>cp vmlinux /boot/kernel-2.4.24</i>
+# <i>cp System.map /boot/System.map-2.4.24</i>
+</pre>
+
+<p>
+Também é sábio copiar o seu arquivo de configuração do kernel para
+<path>/boot</path>, caso você precise :)
+</p>
+
+<pre caption="Copiando sua configuração de kernel">
+# <i>cp .config /boot/config-2.4.24</i>
+</pre>
+
+<p>
+Se seu sistema não é capaz de bootar kernels ELF, compile o kernel 
+usando <c>make vmlinux.ecoff</c> ao invés de <c>make vmlinux</c>. A 
+imagem de kernel será salva como <path>arch/mips/boot/vmlinux.ecoff</path> ao invés 
+de <path>vmlinux</path>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Instalando módulos de kernel avulsos</title>
+<subsection>
+<title>Configurando os módulos</title>
+<body>
+
+<p>
+Você deve listar os módulos que você quer carregar automaticamente em  
+<path>/etc/modules.autoload.d/kernel-2.4</path> (ou <path>kernel-2.6</path>). 
+Você pode colocar opções adicionais aos módulos também se quiser.
+</p>
+
+<p>
+Para ver todos módulos disponíveis, rode o seguinte comando usando o <c>find</c>. Não se esqueça de substituir "&lt;versão do kernel&gt;" com a versão do kernel que você acaba de compilar:
+</p>
+
+<pre caption="Vendo todos módulos disponíveis">
+# <i>find /lib/modules/&lt;versão do kernel&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+Por exemplo, para carregar o módulo <c>3c59x.o</c> automaticamente, edite o arquivo 
+<path>kernel-2.6</path> e coloque o nome do módulo nele.
+</p>
+
+<pre caption="Editando o /etc/modules.autoload.d/kernel-2.4">
+<comment>(Examplo para kernéis 2.4)</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 ou kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Agora rode <c>modules-update</c> para atualizar as mudanças no arquivo
+<path>/etc/modules.conf</path>:
+</p>
+
+<p>
+Continue a instalação com <uri link="?part=1&amp;chap=8">Configurando seu sistema</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
