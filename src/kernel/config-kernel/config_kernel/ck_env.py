@@ -1,12 +1,13 @@
 #
 # Library of functions for dealing with the kernel config environment
 #
-# $Header: /var/cvsroot/gentoo/src/kernel/config-kernel/config_kernel/ck_env.py,v 1.1 2004/03/16 03:52:52 latexer Exp $
+# $Header: /var/cvsroot/gentoo/src/kernel/config-kernel/config_kernel/ck_env.py,v 1.2 2004/03/19 01:08:17 latexer Exp $
 
 import sys, os
 import string
 from shutil import copy
 from tempfile import gettempdir
+from ck_display import *
 
 envFile="05kernel"
 envPrefix="/etc/env.d"
@@ -24,7 +25,7 @@ def setenv(varsNew):
 	
 	tempEnv = os.path.join(gettempdir(), envFile)
 	file = open(tempEnv, "w")
-	print green("Writing out changes to " + os.path.join(envPrefix,envFile))
+	info("Writing out changes to " + os.path.join(envPrefix,envFile))
 	for key in envVars.keys():
 		if envVars[key]:
 			# Pad our variables with quotation marks if they need it
@@ -38,8 +39,8 @@ def setenv(varsNew):
 
 	file.close()
 	copy(tempEnv, os.path.join(envPrefix, envFile))
-	print green("Running env-update. You should run 'source /etc/profile' to update")
-	print green("your environment.")
+	info("Running env-update. You should run 'source /etc/profile' to update")
+	info("your environment, or log out and in again.")
 	envupdate()
 
 # getenv(variable) queries the current value of a certain variable 
@@ -82,14 +83,11 @@ def readEnvFile():
 
 	return None, vars
 
-def envwrite(file):
-	print "Writing out file " + file
-
 def envupdate():
-	print "Updating the environment"
-	val = os.system("env-update")
-	if val != "0":
-		print "Error updating the environment!"
+	fromchild, tochild, childerror = os.popen3("env-update")
+	val = childerror.readline()
+	if val:
+		warn("Error updating the environment!")
 
 
 # vim:ts=4:

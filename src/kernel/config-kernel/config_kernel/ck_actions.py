@@ -24,12 +24,12 @@ def usage():
 	printopt("--set-extraversion=[version]", "Set EXTRAVERSION to 'version' for the kernel in /usr/src/linux")
 	printopt("--allow-writable=[yes|no]", "Allow portage to make /usr/src/linux writable during emerges or not")
 	printopt("--auto-symlink=[yes|no]", "Enable/Disable portage pointing /usr/src/linux to newly merged sources")
-	printopt("--auto-config=[yes|no]", "Enable/Disable portage copying your .config into newly merged sources")
+	# printopt("--auto-config=[yes|no]", "Enable/Disable portage copying your .config into newly merged sources")
 	printopt("--output-dir=[path]", "Set the directory prefix for kernel output files to 'path'.\n\tCan specifiy 'none' to disable or 'default' for the Gentoo default")
-	printopt("--make-koutput=[path]", "Convert the kernel found at 'path' to use output all generated files to a seperate\n\tSpecify the special keyword 'current' to convert the kernel found in /usr/src/linux.")
+	printopt("--make-koutput=[path]", "Convert the kernel found at 'path' to use output all generated files to\n\ta seperate location. Specify the special keyword 'current' to convert\n\tthe kernel found in /usr/src/linux.")
 
 def listkernels():
-	print green("Available Kernel Targets:")
+	info("Available Kernel Targets:")
 	os.chdir(os.path.join("/", "usr", "src"))
 	kernels = glob.glob("linux-*")
 	kernels.sort()
@@ -43,26 +43,50 @@ def listkernels():
 # setsymlink(version) sets the /usr/src/linux symlink to some valid
 # kernel version found in /usr/src. e.g: setsymlink("2.4.24")
 def setsymlink(version):
+	newpath=""
 	if not os.path.islink("/usr/src/linux"):
 		warn("/usr/src/linux is not a symlink!")
 		sys.exit()
 		
-	if not os.path.isdir(os.path.join("/", "usr", "src", "linux-" + version)):
-		warn("Version " + version + " not found!")
-		sys.exit()
+	if version[0] == "/":
+		if not os.path.isdir(version):
+				warn("Path not found. Please specify either a kernel version or a full path to a kernel tree")
+				sys.exit(2)
+		if not os.path.isfile(os.path.join(version,"Makefile")):
+				warn("No toplevel kernel makefile found in "  + version )
+				warn("Make sure the specified path points to a valid kernel tree")
+				sys.exit(2)
+		newpath = version
+		info("Pointing /usr/src/linux to " + version)
+	else:
+		if not os.path.isdir(os.path.join("/", "usr", "src", "linux-" + version)):
+			warn("Version " + version + " not found!")
+			sys.exit(2)
+		else:
+			info("Pointing /usr/src/linux to /usr/src/linux-" + version)
+			newpath = "/usr/src/linux-" + version
 		
-	print green("Pointing /usr/src/linux to /usr/src/linux-" + version)
 	ret = os.system("rm /usr/src/linux")
 	if ret:
 		warn ("Unable to remove the /usr/src/linux symlink!")
 		sys.exit(2)
 
-	command = "ln -s /usr/src/linux-" + version + " /usr/src/linux"
+	command = "ln -s " + newpath + " /usr/src/linux"
 	ret = os.system(command)
 	if ret:
-		warn ("Unable to remove the /usr/src/linux symlink!")
+		warn ("Unable to create the /usr/src/linux symlink!")
 		sys.exit(2)
 
+# eclasssymlink(version) is a wrapper to setsymlink(version) which only does the
+# symlink if AUTO_SYMLINK="yes". Used by kernel-2.eclass to update the symlink
+def eclassymlink(version):
+	autosym, err = getenv('AUTO_SYMLINK')
+	if err or autosym != "yes":
+		info("Auto-symlink support disabled. Not updating /usr/src/linux.")
+	else:
+		info("Auto-symlink support detected.")
+		setsymlink(version)
+		
 # setextraversion(version) is used to change the value of EXTRAVERSION in the 
 # toplevel makefile of the kernel found in /usr/src/linux. Useful if using
 # KBUIOD_PREFIX=/some/path/$MAJOR.$MINOR.$PATCHLEVEL$EXTRAVERSION to
@@ -81,19 +105,19 @@ def setextraversion(version):
 		warn ("points to a full kernel tree")
 		sys.exit(2)
 
-	print green("Backing up original makefile to /usr/src/linux/Makefile.orig")
+	info("Backing up original makefile to /usr/src/linux/Makefile.orig")
 	copy("/usr/src/linux/Makefile","/usr/src/linux/Makefile.orig")
 
 	# Inform them what's going on
 	if not version or version == "none":
 		version = ""
-		print green("Unsetting EXTRAVERSION...")
+		info("Unsetting EXTRAVERSION...")
 	else:
 		# extraversions should really start with a '-'
 		if version[0] != "-":
-			print green("Prefixing '-' to the version specified")
+			warn("Prefixing '-' to the version specified")
 			version = "-" + version
-		print green("Setting EXTRAVERSION to '" + version + "'")
+		info("Setting EXTRAVERSION to '" + version + "'")
 	
 	# Used to create our sed piece looking for special elements
 	# which should be LEFT in EXTRAVERSION
@@ -102,11 +126,11 @@ def setextraversion(version):
 		specials = specials + "\|" + key
 
 	copy("/usr/src/linux/Makefile","/usr/src/linux/Makefile.org")
-	command = "sed -i 's:^EXTRAVERSION.*=.*\(-\(" + specials + "\)[0-9]\+\).*:EXTRAVERSION = \\1" \
+	command = "sed -i 's:^EXTRAVERSION.*=.*\(-\(" + specials + "\)[0-9]\+\)*.*:EXTRAVERSION = \\1" \
 		+ version + ":' /usr/src/linux/Makefile"
 	ret = os.system(command)
 
-	# FIXME: This is a nasty bit of bash hiding in a python program. shame on me.
+	# FIXME: Nasty bit of bash hiding in a python program. shame on me.
 	tochild , fromchild , childerror = os.popen3("grep '^KBUILD_OUTPUT.*=.*' /usr/src/linux/Makefile | grep VERSION | cut -d'=' -f2  | sed 's:$(VERSION.*::'")
 	# If we had errors, then we've probably not found anything
 	if childerror.readline():
@@ -114,17 +138,19 @@ def setextraversion(version):
 	
 	kbuildprefix = fromchild.readline()
 
-	# Fix for a random newline we sometimes acquire
-	if kbuildprefix[-1] == "\n":
-		kbuildprefix = kbuildprefix[:-1]
-
-	if kbuildprefix and kbuildprefix != "0":
-		newKV, error = ExtractKernelVersion("/usr/src/linux")
-		if error:
-			warn ("Error determining your new kernel version!")
-			sys.exit(2)
-		else:
-			os.mkdir(os.path.join(kbuildprefix,newKV))
+	# If we found something, fix the KBUILD_OUTPUT stuff
+	if kbuildprefix:
+		# Fix for a random newline we sometimes acquire
+		if kbuildprefix[-1] == "\n":
+			kbuildprefix = kbuildprefix[:-1]
+	
+		if kbuildprefix and kbuildprefix != "0":
+			newKV, error = ExtractKernelVersion("/usr/src/linux")
+			if error:
+				warn ("Error determining your new kernel version!")
+				sys.exit(2)
+			else:
+				os.mkdir(os.path.join(kbuildprefix,newKV))
 
 	return
 
@@ -152,10 +178,10 @@ def makekoutput(path):
 	# Check that we're got a sane configuration
 	makekoutputCheck(path)
 	
-	outputpath = makekoutputGetDir(path)
+	outputpath, outputMake = makekoutputGetDir(path)
 
-	print green("Changing kernel found in " + path)
-	print green("to output to " + outputpath)
+	info("Changing kernel found in " + path)
+	info("to output to " + outputpath)
 	warn ("You will lose all of your compiled files in " + path)
 	warn ("Hit Control C to cancel this now.")
 	for count in range(5):
@@ -164,11 +190,11 @@ def makekoutput(path):
 		sleep(1)
 
 	# Backup our config
-	print green("Backing up your .config file")
+	info("Backing up your .config file")
 	if os.path.isfile(os.path.join(path, ".config")):
 		copy(os.path.join(path , ".config"), gettempdir())
 	
-	print green("Running 'make mrproper to clean your kernel tree (This make take a while)")
+	info("Running 'make mrproper to clean your kernel tree (This make take a while)")
 	os.chdir(path)
 	tochild, fromchild, childerror = os.popen3("make mrproper")
 	error = childerror.readlines()
@@ -179,7 +205,7 @@ def makekoutput(path):
 		sys.exit(2)
 
 	# Use sed to add new KBUILD_OUTPUT path
-	command = "sed -i 's:\(^EXTRAVERSION.*\):\\1\\nKBUILD_OUTPUT = " + outputpath + ":' "
+	command = "sed -i 's:\(^EXTRAVERSION.*\):\\1\\nKBUILD_OUTPUT = " + outputMake + ":' "
 	command += os.path.join(path, "Makefile")
 	ret = os.system(command)
 	if ret:
@@ -191,7 +217,7 @@ def makekoutput(path):
 		ret.close()
 
 	os.mkdir(outputpath)
-	print green("Copying your .config into " + outputpath)
+	info("Copying your .config into " + outputpath)
 	copy(os.path.join(gettempdir(), ".config"),outputpath)
 		
 def makekoutputCheck(path):
@@ -214,12 +240,14 @@ def makekoutputCheck(path):
 # Used to determine where the kernel should output it's files too
 def makekoutputGetDir(path):
 	outputdir, error = getenv('KBUILD_OUTPUT_PREFIX')
-	#outputdir.strip("\"")
-	print outputdir
+
 	if not outputdir:
 		warn ("No output location has been specified, using the Gentoo default of")
 		warn ("/var/tmp/kernel-output/$KV")
 		outputdir = os.path.join("/", "var", "tmp", "kernel-output")
+
+	makeoutput = os.path.join(outputdir, "$(VERSION).$(SUBLEVEL).$(PATCHLEVEL)$(EXTRAVERSION)")
+
 	kv, error = ExtractKernelVersion(path)
 
 	if kv:
@@ -233,14 +261,14 @@ def makekoutputGetDir(path):
 		warn ("to use this output, or your kernel versions are confused.")
 		sys.exit(2)
 	
-	return outputdir
+	return outputdir, makeoutput
 	
 # Prints the current contents /etc/env.d/05kernel
 def printenv():
 	err, vars = readEnvFile()
 	if err:
 		warn ("No variables defined")
-	print green("These variables are currently set:")
+	info("These variables are currently set:")
 	for key in vars:
 		if vars[key]:
 			print key + "=" + vars[key]
