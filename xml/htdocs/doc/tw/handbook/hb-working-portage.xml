@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/handbook/Attic/hb-working-portage.xml,v 1.13 2004/08/28 14:12:37 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/handbook/Attic/hb-working-portage.xml,v 1.14 2004/08/30 06:44:38 ccpz Exp $ -->
 
-<!-- rev 1.34 by ccpz -->
+<!-- rev 1.35 by ccpz -->
 
 <sections>
 <section>
@@ -690,15 +690,65 @@ Portage 沒有辦法辨別一個套件是否為令一個套件所依賴的。他
 <body>
 
 <p>
-Gentoo 將他的套件放在兩個可能的地方叫做 <e>ARCH</e> 和 <e>~ARCH</e>。這個將依照
-您所用的架構而改變換句話說 x86 架構的系統將會使用 <e>x86</e> 和 <e>~x86</e>，
-ppc 架構的使用者將會友 <e>ppc</e> 和 <e>~ppc</e> 等以此類推。
+當 Gentoo 開發員放上一個新的 ebuild 時，他告訴 Portage 如何依照架構及穩定性處理
+這個軟體。他在 ebuild 內定義叫做 <c>KEYWORDS</c> 的變數來達這個目的。這個變數包
+含一個或多個架構，並且用特殊的旗標作標記。底下的表格提供目前所有的旗標。
+</p>
+  	 
+<table>
+<tr>
+  <th>旗標</th>
+  <th>說明</th>
+</tr>
+<tr>
+  <ti>ARCH</ti>
+  <ti>在指定的架構下可以正常工作</ti>
+</tr>
+<tr>
+  <ti>~ARCH</ti>
+  <ti>
+  在指定的架構下可能可以正常工作，但需要更多的測試。
+  </ti>
+</tr>
+<tr>
+  <ti>-ARCH</ti>
+  <ti>在指定的架構下不能工作</ti>
+</tr>
+<tr>
+  <ti>-*</ti>
+  <ti>因為相當危險，在所有架構下都不能工作。</ti>
+</tr>
+</table>
+  	 
+<p>
+來看一個範例：
 </p>
 
+<pre caption="KEYWORDS KEYWORDS 設定範例">
+KEYWORDS="x86 -sparc ~alpha ~ppc"
+</pre>
+
 <p>
-<e>~ARCH</e> 代表著這部份的套件正在測試中，還沒接受過許多測試，所以不能放到
-<e>ARCH</e>。<e>ARCH</e> 的套件的問題通常比較少。
+這個範例的解釋如下：
 </p>
+
+<ul>
+  <li>
+   這個 ebuild 在 x86 架構下可以正常工作
+  </li>
+  <li>
+  這個 ebuild 在 sparc 架構下不能正常工作
+  </li>
+  <li>
+  這個 ebuild 可能可以在 alpha 架構下工作，但需要更多的測試
+  </li>
+  <li>
+  這個 ebuild 可能可以在 ppc 架構下工作，但需要更多的測試
+  </li>
+  <li>
+  這個 ebuild 可能可以在其他的架構下工作，但是還沒測試過
+  </li>
+</ul>
 
 <p>
 您的系統將會使用 <e>ARCH</e> 為預設。如果您想要嘗試並且不擔心損毀的套件，知道
@@ -743,8 +793,33 @@ Calculating dependencies
 </ol>
 
 <p>
-如果是第一個原因，而您 <e>非常</e> 想要安裝它，您可以把他加到 
-<path>/etc/portage/package.keywords</path> 檔案中暫時的接受 <e>~ARCH</e> 套件：
+Portage 會告訴你為什麼這個套件不能安裝：
+</p>
+  	 
+<ul>
+  <li>
+  <b>~arch 關鍵字</b>：這個套件可以在指定的架構上工作，但是為了了解是不是可以正
+  常工作，他需要更多測試
+  </li>
+  <li>
+  <b>-arch 關鍵字</b>：這個套件不能在指定的架構上工作
+  </li>
+  <li>
+  <b>-* 關鍵字</b>：這個套件不能在任何架構上工作
+  </li>
+  <li>
+  <b>package.mask</b>：這個套件列在 <path>package.mask</path> 中，代表他可能損
+  毀某些東西，弄壞你的系統，或是有嚴重的安全問題，或更壞的狀況
+  </li>
+  <li>
+  <b>profile</b>：這個套件在你的 profile 中不能取得
+  </li>
+</ul>
+  	 
+<p>
+如果是因為 <b>~arch 關鍵字</b> 而封鎖，而您 <e>非常</e> 想要安裝它，您可以把他
+加到 <path>/etc/portage/package.keywords</path> 檔案中暫時的接受 <e>~ARCH</e>
+套件：
 </p>
 
 <pre caption="暫時性的接受 ~ARCH 套件">
@@ -756,9 +831,35 @@ Calculating dependencies
 </pre>
 
 <p>
-一個套件會被刻意鎖住將會被放在 <path>/usr/portage/profiles/protage.mask</path>。
-如果您查看這個檔案，您將會看到這個套件會被刻意鎖住的原因（常常是加入為註解）。
-如果您不管其他原因要安裝這個套件（有可能會造成系統極度不穩），您將需要建立一個
+類似的，如果你想要安裝有 <b>-arch 關鍵字</b> 或 <b>-* 關鍵字</b> 標記的軟體，而
+不管我們放在你面前的警告，編輯 <path>/etc/portage/package.keywords</path> 加入
+套件和要求的關鍵字：
+</p>
+  	 
+<pre caption="接受套件的 -arch 或 -* 版本">
+<comment>(如果 /etc/portage 目錄不存在的話建立他)</comment>
+# <i>mkdir /etc/portage</i>
+  	 
+# <i>echo "app-office/gnumeric -x86" &gt;&gt; /etc/portage/package.keywords</i>
+<comment>(或)</comment>
+# <i>echo "app-office/gnumeric -*" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+  	 
+<p>
+如果你只想要允許安裝套件的特定版本，或特定版本範圍，你可以使用
+"&lt;，&lt;=，=，&gt;= 或 &gt;" 運算子：
+</p>
+  	 
+<pre caption="接受指定的 ~arch 標記套件版本">
+# <i>echo "=app-office/gnumeric-2.0 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+</pre>
+  	 
+<p>
+一個套件會被如果是因為 <b>package.mask</b> 而封鎖將會被放在
+<path>/usr/portage/profiles/protage.mask</path>。如果您查看這個檔案，您將會看到
+這個套件會被刻意鎖住的原因（常常是加入為註解）。如果您不管其他原因要安裝這個套
+件（有可能會造成系統極度不穩），您將需要建立一個
 <path>/etc/portage/package.unmask</path> 檔案然後按照
 <path>/usr/portage/profiles/portage.mask</path> 的格式放入您想要安裝的套件。
 </p>
@@ -793,8 +894,30 @@ Calculating dependencies
 # <i>echo "&gt;app-office/gnumeric-1.2.10" &gt;&gt; /etc/portage/package.mask</i> 
 </pre>
 
+<p>
+當 Portage 告訴你因為 <b>profile</b> 所以不能安裝，這代表你使用某種不允許這個套
+件安裝的 profile。但什麼是 "profile"？ 
+</p>
+  	 
+<p>
+profile 包含了套件名稱列表以及一套 Portage 使用的預設設定。這些檔案告訴 Portage
+那些套件及套件的那些套件版本允許，不允許，或依邀求處理。使用者可以改變單一的符
+號連結(<path>/etc/make.profile</path>)來改變 profile。
+</p>
+  	 
+<p>
+你不能安裝因為 <b>profile</b> 封鎖的檔案。，如果你真的想要使用他，改用合適的
+profile。
+</p>
+  	 
+<p>
+你可以在我們的
+<uri link="/proj/en/releng/docs/cascading-profiles.xml">Cascading Profiles
+Document</uri> 中找到詳細的資訊。
+</p>
 </body>
 </subsection>
+
 <subsection>
 <title>被阻擋的套件</title>
 <body>
