@@ -1,6 +1,6 @@
 # einfo.py
 # Distributed AS-IS, without warranty. Licensed under the GPL v2 or newer.
-# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.3 2004/04/26 04:24:18 jhuebel Exp $
+# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.4 2004/05/09 17:28:44 jhuebel Exp $
 
 __module_name__ = "einfo"
 __module_version__ = "0.2"
@@ -176,6 +176,12 @@ def einfo(word, word_el, userdata):
 				chanmsg(word[2] + " is not installed.")
 			else:
 				chanmsg(string.join(portage.db["/"]["vartree"].dbapi.match(word[2]), ","))
+		elif word[1] == "df":
+			chanmsg(commands.getstatusoutput("/bin/df -h")[1])
+		elif word[1] == "free":
+			chanmsg(commands.getstatusoutput("/usr/bin/free")[1])
+		elif word[1] == "uptime":
+			chanmsg(commands.getstatusoutput("/usr/bin/uptime")[1])
 		else:
 			xchat.prnt("Unknown usage of /einfo")
 			return xchat.EAT_ALL
@@ -189,9 +195,11 @@ def einfo_help(word, word_el, userdata):
 	print " "
 	print " /einfo [<option>]"
 	print " "
-	print " Options:"
+	print " General Options:"
 	print "   help     = this help"
 	print "   version  = print einfo version"
+	print " "
+	print " Emerge-Related Information:"
 	print "   all      = prints all emerge info (not recommended)"
 	print "   portage  = show portage and build environment info"
 	print "   uname    = show uname"
@@ -204,6 +212,11 @@ def einfo_help(word, word_el, userdata):
 	print "   allvars  = show all emerge variables"
 	print "   pkgversion <package>"
 	print "            = show the version of <package> that is installed"
+	print " "
+	print " System Information:"
+	print "   df       = disk usage"
+	print "   free     = memory usage"
+	print "   uptime   = uptime statistics"
 	print " "
 
 xchat.hook_command("einfo", einfo, help="/einfo [ help | all | portage | uname | gentoo | cflags | chost | featuers | keywords | use | allvars ]")
