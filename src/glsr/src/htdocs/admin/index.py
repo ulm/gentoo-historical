@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.7 2004/07/07 01:39:57 port001 Exp $
+# $Id: index.py,v 1.8 2004/07/19 00:43:20 hadfield Exp $
 #
 
 import os
@@ -74,8 +74,9 @@ def main():
         alias = ""
         page = "main"
 
-    print "Content-type:text/html\n\n"
-    Config.HTMLHeadersSent = True
+    if Config.HTMLHeadersSent == False:
+        print "Content-type:text/html\n\n"
+        Config.HTMLHeadersSent == True
 
     AdminHeaderTemplate = TemplateHandler.New()
     AdminHeaderTemplate.Compile(Config.Template["admin_header"],
