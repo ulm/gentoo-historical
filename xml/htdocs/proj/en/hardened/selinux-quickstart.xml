@@ -14,7 +14,7 @@
 This will provide instructions for getting an SELinux installation running.
 </abstract>
 <version>1.0</version>
-<date>23 May 2003</date>
+<date>25 May 2003</date>
 
 <chapter>
 <title>SELinux QuickStart Guide</title>
@@ -23,72 +23,74 @@ This will provide instructions for getting an SELinux installation running.
 <title>Installing SELinux</title>
 <body>
 
-<warn>!!! currently only developed on x86 !!!</warn>
+<warn>SELinux is currently only developed on x86.</warn>
 
-First, remove your old profile if you have one, and enable the SELinux profile
+<p>First, remove your old profile, and enable the SELinux profile.</p>
 <pre>
-rm -f /etc/make.profile<br/>
-ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile<br/>
+# rm -f /etc/make.profile
+# ln -sf /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile
 </pre>
-<pre caption="Compile the kernel:">
-	* use selinux-sources or hardened-sources
+<p>Now configure the kernel.  Selinux-sources or hardened-sources must be used;
+these are the only kernels that contain the linux security module patch and SELinux
+security module.  The kernel must be compiled with security module support, SELinux
+support, devfs and devpts.</p>
+<pre caption="Location and required options under menuconfig">
+<comment>Under "Security options"</comment>
+[*] Enable different security models
+[ ] Socket and Networking Security Hooks
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[*]   NSA SELinux Development Support
 
-	* configure the kernel.  Enable SELinux support.  Use devfs
-		automatically mounted at boot, plus devpts:
-
-		-under "Security options"
-		[*] Enable different security models
-		[ ] Socket and Networking Security Hooks
-		&lt;*&gt; Capabilities Support
-		[*] NSA SELinux Support
-		[*]   NSA SELinux Development Support
-
-		-under  "File systems"
-		[*] /dev file system support (EXPERIMENTAL)
-		[*]   Automatically mount at boot
-		[ ]   Debug devfs
-		[*] /dev/pts file system for Unix98 PTYs
-
-	* compile and install the kernel and modules, but do not reboot
+<comment>Under  "File systems"</comment>
+[*] /dev file system support (EXPERIMENTAL)
+[*]   Automatically mount at boot
+[ ]   Debug devfs
+[*] /dev/pts file system for Unix98 PTYs
 </pre>
-<br/>
-<pre caption="enable devpts to mount at boot.  in fstab add:">
+<p>Now compile and install the kernel and modules, but do not reboot.
+Enable devpts to mount at boot.  In /etc/fstab add:</p>
+<pre>
 none	/dev/pts	devpts	gid=5,mode=620	0 0
 </pre>
+<p>Merge the libraries, utilities and base-policy.  The /usr/src/linux
+symbolic link must point to the selinux-sources or hardened-sources directory!</p>
 
-Merge the libraries, utilities and base-policy. the /usr/src/linux symlink
-must point to the selinux-sources or hardened-sources directory!<br/>
+<pre># emerge selinux-small</pre>
 
-<pre>emerge selinux-small</pre>
+<p>Merge SELinux-patched packages:</p>
 
-If converting a mainline Gentoo machine to SELinux, 
-unmerge textutils, fileutils and sh-utils:<br/>
-
-<pre>emerge -C textutils fileutils sh-utils</pre>
-
-Merge SELinux-patched packages:<br/>
-
-<pre>emerge coreutils findutils openssh procps psmisc tar util-linux</pre>
+<pre># emerge coreutils findutils openssh procps psmisc tar util-linux</pre>
 <note>coreutils is currently masked in package.mask, you must remove it</note>
 
-	Optional ones:<br/>
-	logrotate<br/>
-	stat<br/>
-	strace<br/>
-	vcron (currently the only cron patched for SELinux)<br/>
+<p>There are other packages that have SELinux patches, but are optional.  These
+should be remerged if they are already installed, so the SELinux patches are
+applied:</p>
+<p>app-admin/logrotate<br/>
+sys-apps/stat<br/>
+dev-util/strace<br/>
+sys-apps/vcron (currently the only cron patched for SELinux)</p>
 
-<pre caption="Compile and install policy, and label filesystems">
+<impo>If converting a mainline Gentoo machine to SELinux, unmerge pam-login, 
+textutils, fileutils and sh-utils:</impo>
 
-	cd /etc/security/selinux/src/policy
-	make policy
-	make install
-	make relabel
-</pre>
-Reboot using the new SELinux kernel.  Relabel again to ensure all files
-are labeled correctly (some may have been created after the shutdown -r)<br/>
+<pre caption="Remove unused packages from mainline Gentoo">
+# emerge -C pam-login textutils fileutils sh-utils</pre>
+
+<p>Compile and install policy, and label filesystems.</p>
+
 <pre>
-	cd /etc/security/selinux/src/policy
-	make relabel
+# cd /etc/security/selinux/src/policy
+# make policy
+# make install
+# make relabel
+</pre>
+<p>Reboot using the new SELinux kernel.  Relabel again to ensure all files
+are labeled correctly (some files may have been created during shutdown and
+reboot)</p>
+<pre>
+# cd /etc/security/selinux/src/policy
+# make relabel
 </pre>
 </body>
 </section>
@@ -113,34 +115,44 @@ make: *** [all] Error 2
 !!! Checkpolicy compilation failed
 </pre>
 
-Ebitmap.c exists in the kernel sources.  The /usr/src/linux symlink must point
-to the installed selinux or hardened-sources.  Newer versions of selinux-small
+<p>Ebitmap.c exists in the kernel sources.  The /usr/src/linux symbolic link must point
+to the installed selinux-sources or hardened-sources.  Newer versions of selinux-small
 will now check for correct kernel sources.  To fix, create a symbolic link to
-the correct kernel sources (selinux-sources-2.4.20-r4 in this example):<br/>
+the correct kernel sources (selinux-sources-2.4.20-r4 in this example):</p>
 
-<pre>ln -sf /usr/src/linux-2.4.20-selinux-r4 /usr/src/linux</pre>
+<pre>
+# rm -f /usr/src/linux
+# ln -sf /usr/src/linux-2.4.20-selinux-r4 /usr/src/linux</pre>
 </body>
 </section>
 <section>
-<title>"I can log in via the console, but not via ssh."</title>
+<title>"I can log in at the console, but not over ssh."</title>
 <body>
-The openssh is most likely not labeled correctly, so it isnt running in the
-right context.  Relabel, then restart sshd.<br/>
+<p>The openssh is most likely not labeled correctly, so it isnt running in the
+right context.  Relabel, then restart sshd.</p>
 <pre>
-	cd /etc/security/selinux/src/policy ; make relabel
-	run_init /etc/init.d/sshd restart
+# rlpkg openssh
+# run_init /etc/init.d/sshd restart
 </pre>
 </body>
 </section>
 <section>
 <title>"I cant 'newrole -r sysadm_r' from my user."</title>
 <body>
-The user must be allowed to use the sysadm_r role.  Modify the users file
+<p>The user must be allowed to use the sysadm_r role.  Modify the users file
 (/etc/security/selinux/src/policy/users).  To allow the user 'pebenito' the
-ability to newrole to sysadm_r, add to the end of the file add something like:<br/>
+ability to newrole to sysadm_r, add to the end of the file add something
+like:</p>
 
 <pre>user pebenito roles { user_r sysadm_r };</pre>
 
+<p>Then reload the policy</p>
+<pre>
+# cd /etc/security/selinux/src/policy
+# make policy
+# make install
+# make load
+</pre>
 </body>
 </section>
 </chapter>
