@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.1 2004/06/04 06:38:33 port001 Exp $
+# $Id: Setup.py,v 1.2 2004/06/14 23:40:31 port001 Exp $
 #
 
 import sys
@@ -13,11 +13,20 @@ import MySQLdb
 import getpass
 from time import strftime, gmtime
 
-sys.path.insert(0, "/usr/lib/glsr/pym")
+sys.path.insert(0, "/usr/local/share/glsr/pym")
 sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr/pym")
 
 import Config
 import Const
+
+# Language data
+langs = ({"name": "python",
+         "descr": "Python is an interpreted, interactive, object-oriented programming language. It is often compared to Tcl, Perl, Scheme or Java.",
+         "def_keywords": "def,class",
+         "def_expr": "^[ #]{,}{KEYWORD} [\d\w]{,}(|\([\d\w, =]{,}\)):",
+         "clo_expr": None,
+         "clo_s_keywords": "indent"},
+       )
 
 db = MySQLdb.connect(host=Config.MySQL["host"], user=Config.MySQL["user"], passwd=Config.MySQL["passwd"], db=Config.MySQL["db"])
 cursor = db.cursor()
@@ -57,16 +66,19 @@ db.commit()
 
 print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["language_table"])
 category_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
-	%s_id		SMALLINT(3)	unsigned NOT NULL auto_increment,
-	%s_name		VARCHAR(50)	NOT NULL,
-	%s_descr	VARCHAR(100)	NULL,
+	%s_id			SMALLINT(3)	unsigned NOT NULL auto_increment,
+	%s_name			VARCHAR(50)	NOT NULL,
+	%s_descr		VARCHAR(100)	NULL,
+	%s_def_keywords         VARCHAR(100)    NULL,
+	%s_def_expr             VARCHAR(100)    NULL,
+	%s_clo_expr             VARCHAR(100)    NULL,
+	%s_clo_s_keywords       VARCHAR(100)    NULL,
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
-                  tuple(operator.repeat([Config.MySQL["language_table"]], 7)))
+                  tuple(operator.repeat([Config.MySQL["language_table"]], 11)))
 
 cursor.execute(category_table)
 db.commit()
-
 
 print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["comment_table"])
 comment_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
@@ -157,6 +169,33 @@ news_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 cursor.execute(news_table)
 db.commit()
 
+print "\nInserting language data:"
+
+for lang in langs:
+    print "  >>> %s" % lang["name"]
+    if lang["def_keywords"]:
+        def_keywords = lang["def_keywords"]
+    else:
+        def_keywords = "NULL"
+    if lang["def_expr"]:
+        def_expr = lang["def_expr"]
+    else:
+        def_expr = "NULL"
+    if lang["clo_expr"]:
+        clo_expr = lang["clo_expr"]
+    else:
+        clo_expr = "NULL"
+    if lang["clo_s_keywords"]:
+        clo_s_keywords = lang["clo_s_keywords"]
+    else:
+        clo_s_keywords = "NULL"
+
+    cursor.execute("INSERT INTO %s%s " % (Config.MySQL["prefix"], Config.MySQL["language_table"]) +
+                  "(%s_name, %s_descr, %s_def_keywords, %s_def_expr, %s_clo_expr, %s_clo_s_keywords)" %
+                  tuple(operator.repeat([Config.MySQL["language_table"]], 6)) +
+                  "VALUES (%s, %s, %s, %s, %s, %s)", (lang["name"], lang["descr"], def_keywords, def_expr, clo_expr, clo_s_keywords))
+    db.commit()
+
 admin = raw_input("\nAdmin user: ")
 if len(admin) == 0:
     print "ERROR: Zero length username"
@@ -187,4 +226,5 @@ cursor.execute("INSERT INTO %s%s " %
                 strftime("%Y-%m-%d", gmtime())))
 db.commit()
 cursor.close()
-print "\nKeep me safe! You may need me later (if things go wrong ;)."
+
+print "\nSetup complete."
