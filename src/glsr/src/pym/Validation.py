@@ -3,14 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Validation.py,v 1.4 2004/12/16 14:06:26 port001 Exp $
+# $Id: Validation.py,v 1.5 2004/12/18 02:14:12 port001 Exp $
 #
 
 __modulename__ = "Validation"
 
 from re import compile,match
 
-from Config
+import Config
 from MySQL import MySQL
 from Auth import GenMd5
 
