@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.18 2004/11/14 00:08:28 agaffney Exp $
+$Id: GLIClientController.py,v 1.19 2004/11/14 02:39:43 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -79,7 +79,10 @@ class GLIClientController(Thread):
 
 		while self._install_event.wait():
 			if self._install_step <= (len(self._install_steps) - 1):
-				self._install_steps[self._install_step]()
+				try:
+					self._install_steps[self._install_step]()
+				except GLIException, error:
+					self.addNotification("exception", error)
 			else:
 				break
 			self._install_event.clear()
@@ -208,10 +211,12 @@ class GLIClientController(Thread):
 			pass
 		return notification
 
-	def addNotification(self, notification):
+	def addNotification(self, type, data):
+		notification = GLINotificaton.GLINotification(type, data)
 		try:
 			self._notification_queue.put_nowait(notification)
 		except:
+			# This should only ever happen if the frontend is not checking for notifications
 			pass
 		os.kill(os.getpid(), signal.SIGUSR1)
 
