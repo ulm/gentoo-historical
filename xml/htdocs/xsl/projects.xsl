@@ -23,12 +23,12 @@
 			<p>
 			  <xsl:choose>
 			    <xsl:when test="$showlevel&lt;=1">
-			      <uri link="projects.xml?showlevel=2">
+			      <uri link="/proj/en/index.xml?showlevel=2">
 			        Show sub-projects
 			      </uri>
 			    </xsl:when>
 			    <xsl:otherwise>
-			      <uri link="projects.xml?showlevel=1">
+			      <uri link="/proj/en/index.xml?showlevel=1">
 			        Hide sub-projects
 			      </uri>
 			    </xsl:otherwise>
