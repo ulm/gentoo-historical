@@ -6,9 +6,9 @@ def ebuild_name_check(name):
 	# Category
 	cat = r'[\w0-9-]+'
 	# Name
-	nam = r'([+a-zA-Z0-9-]+)'
+	nam = r'[+a-zA-Z0-9-]+'
 	# Version
-	ver = r'((?:\d+\.)*\d+[a-z]?)'
+	ver = r'(\d+\.)*\d+[a-z]?'
 	# Suffix
 	suf = r'(_(alpha\d*|beta\d*|pre\d*|rc\d*|p\d+))?'
 	# Revision
