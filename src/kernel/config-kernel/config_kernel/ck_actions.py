@@ -68,10 +68,11 @@ def setsymlink(version):
 			info("Pointing /usr/src/linux to /usr/src/linux-" + version)
 			newpath = "/usr/src/linux-" + version
 		
-	ret = os.system("rm /usr/src/linux")
-	if ret:
-		warn ("Unable to remove the /usr/src/linux symlink!")
-		sys.exit(2)
+	if os.path.isfile("/usr/src/linux"):
+		ret = os.system("rm /usr/src/linux")
+		if ret:
+			warn ("Unable to remove the /usr/src/linux symlink!")
+			sys.exit(2)
 
 	command = "ln -s " + newpath + " /usr/src/linux"
 	ret = os.system(command)
