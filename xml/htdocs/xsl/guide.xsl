@@ -135,7 +135,7 @@
                 </tr>
 			<tr>
 			<td align="center">
-				<a href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">
+				<a href="http://store.gentoo.org">
 				<img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
 				</a>
 			</td>
@@ -269,7 +269,7 @@
 		</xsl:choose>
 <a class="menulink" href="/main/en/shots.xml">ScreenShots</a> |
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
-		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store</a> |
+		<a class="menulink" href="http://store.gentoo.org">Store</a> |
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='newsletter'">
 				<a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a> |
@@ -384,7 +384,7 @@
 				<br/><br/>	
 				Miscellaneous Resources:
 				<br/>
-				<a class="altlink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Gentoo Linux Store</a>
+				<a class="altlink" href="http://store.gentoo.org">Gentoo Linux Store</a>
 				<br/>
 				<a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
 				<br/>
@@ -623,7 +623,7 @@
                 </tr>
 			<tr>
 			<td align="center">
-				<a href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">
+				<a href="http://store.gentoo.org">
 				<img src="/images/store.png" alt="The Gentoo Linux Store" border="0"/>
 				</a>
 			</td>
