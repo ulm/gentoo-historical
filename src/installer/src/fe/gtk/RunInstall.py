@@ -9,6 +9,7 @@ import gobject
 import sys
 import time
 import os
+import select
 
 class RunInstall(gtk.Window):
 
@@ -53,7 +54,7 @@ class RunInstall(gtk.Window):
 		self.controller.cc.set_install_profile(self.controller.install_profile)
 		self.controller.cc.start_install()
 
-		self.tail_pipe = os.popen("tail -F /tmp/compile_output.log")
+		self.tail_pipe = os.popen("tail -F /tmp/compile_output.log 2>&1")
 		gobject.timeout_add(1000, self.poll_notifications)
 		gobject.idle_add(self.tail_logfile)
 
@@ -91,7 +92,9 @@ class RunInstall(gtk.Window):
 				return False
 
 	def tail_logfile(self):
-		pass
+		if select.select([my_pipe], None, None, 0)[0]:
+			line = self.tail_pipe.readline()
+			self.textbuffer.set_text(self.textbuffer.get_text(0, self.textbuffer.get_char_count()-1) + line)
 
 	def make_visible(self):
 		self.show_all()
