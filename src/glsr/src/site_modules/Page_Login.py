@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.1 2004/07/03 21:37:44 port001 Exp $
+# $Id: Page_Login.py,v 1.1 2004/07/03 21:51:35 port001 Exp $
 #
 
 import os
