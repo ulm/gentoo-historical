@@ -256,10 +256,10 @@ of your sale will go towards further Gentoo Linux development.</p>
 				<p class="menu">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<a class="highlight" href="/index.html"> gentoo.org News</a> |
+							<a class="highlight" href="/index.html">News</a> |
 						</xsl:when>
 						<xsl:otherwise>
-							<a class="menulink" href="/index.html"> gentoo.org News</a> |
+							<a class="menulink" href="/index.html">News</a> |
 						</xsl:otherwise>
 					</xsl:choose>
 					<xsl:choose>
@@ -274,13 +274,22 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<a class="menulink" href="/doc/build.html">Download/Install</a> |
 					<a class="menulink" href="/doc/faq.html">FAQ</a> |
 					<xsl:choose>
-						<xsl:when test="/mainpage/@id='changelog'">
-							<a class="highlight" href="/index-changelog.html">CVS Changelog</a> |
+						<xsl:when test="/mainpage/@id='docs'">
+							<a class="highlight" href="/index-docs.html">Documentation</a> |
 						</xsl:when>
 						<xsl:otherwise>
-							<a class="menulink" href="/index-changelog.html">CVS Changelog</a> |
+							<a class="menulink" href="/index-docs.html">Documentation</a> |
 						</xsl:otherwise>
 					</xsl:choose>
+				<xsl:choose>
+						<xsl:when test="/mainpage/@id='changelog'">
+							<a class="highlight" href="/index-changelog.html">Changelog</a> |
+						</xsl:when>
+						<xsl:otherwise>
+							<a class="menulink" href="/index-changelog.html">Changelog</a> |
+						</xsl:otherwise>
+					</xsl:choose>
+					<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='projects'">
 							<a class="highlight" href="/index-projects.html">Projects</a>
