@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.7 2004/11/13 19:28:28 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.8 2004/11/15 20:15:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -841,6 +841,7 @@ class ArchitectureTemplate:
 
 		for dev in parts_old.keys():
 			parts_active = []
+			parts_lba = []
 			print "\nProcessing " + dev + "..."
 			parted_dev = parted.PedDevice.get(dev)
 			parted_disk = parted.PedDisk.new(parted_dev)
@@ -867,9 +868,12 @@ class ArchitectureTemplate:
 					print "  No match found...deleting partition " + str(part)
 					self._run_parted_command(dev, "rm " + str(part))
 				else:
-					if parted_disk.get_partition(part).get_flag(1):
+					if parted_disk.get_partition(part).get_flag(1): # Active/boot
 						print "  Partition " + str(part) + " was active...noted"
 						parts_active.append(matchingminor)
+					if parted_disk.get_partition(part).get_flag(7): # LBA
+						print "  Partition " + str(part) + " was LBA...noted"
+						parts_lba.append(matchingminor)
 			# Second pass to resize old partitions that need to be resized
 			print " Second pass..."
 			for part in parts_old[dev]:
@@ -918,3 +922,6 @@ class ArchitectureTemplate:
 				if part in parts_active and not newpart['format']:
 					print "   Partition was previously active...setting"
 					self._run_parted_command(dev, "set " + str(part) + " boot on")
+				if part in parts_lba and not newpart['format']:
+					print "   Partition was previously LBA...setting"
+					self._run_parted_command(dev, "set " + str(part) + " lba on")
