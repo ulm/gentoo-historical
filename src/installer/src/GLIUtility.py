@@ -198,26 +198,19 @@ def set_ip(dev, ip, broadcast, netmask):
 def set_default_route(route):
 	pass
 
-def run_cmd(cmd, cmdline="",timeout=-1):
+def run_cmd(cmd, timeout=-1):
 	if type(cmd) != str:
 		raise "InputError", "cmd must be a string!"
+
+	cmdline = []
 
 	if len(cmd.split()) > 1:
 		tmp = cmd.split()
 		cmd = tmp[0]
 		cmdline = tmp[1:]
 
-	if not type(cmdline) in (tuple, list):
-		if type(cmdline) == str:
-			cmdline = cmdline.split()
-		else:
-			raise "InputError", "cmdline must be a string, list or tuple"
-
 	if len(cmdline) == 0 or cmdline[0] != cmd:
-		if type(cmdline) == list:
-			cmdline = [cmd] + cmdline
-		else:
-			cmdline = (cmd,) + cmdline
+		cmdline = [cmd] + cmdline
 
 	pid = os.fork()
 	if pid == 0:
