@@ -73,13 +73,19 @@ c = db.cursor()
 
 extra = ''
 if arch:
-	if branch == 'stable':
-		extra = ' AND ebuild.arch REGEXP "^%s| %s" ' % (arch,arch)
-	elif branch == 'testing':
-		extra = ' AND ebuild.arch REGEXP "^~%s| ~%s" ' % (arch,arch)
-	else:
-		extra = ' AND ebuild.arch LIKE "%%%s%%" ' % arch
-		
+    stable_extra = ('ebuild.arch REGEXP "^%s| %s" '
+        ' AND ebuild.prevarch NOT REGEXP"^%s| %s"'
+        % (arch,arch,arch,arch))
+    testing_extra = ('ebuild.arch REGEXP "^~%s| ~%s" '
+        ' AND ebuild.prevarch NOT REGEXP "^~%s| ~%s"'
+        % (arch,arch,arch,arch))
+    if branch == 'stable':
+        extra = ' AND (%s) ' % stable_extra
+    elif branch == 'testing':
+        extra = ' AND (%s) ' % testing_extra
+    else:
+        extra = ' AND ((%s) OR (%s)) ' % (stable_extra, testing_extra)
+
 query = ('SELECT ebuild.category,'
 	'ebuild.name,'
 	'version,'
@@ -109,4 +115,4 @@ print s
 if today[:3] != (year,month,day):
 	filename = os.path.join(config.LOCALHOME,'daily','cache',
 		'%d%02d%02d-%s-%s.html' % (year,month,day,arch,branch))
-	open(filename,'w').write(s)	
+	open(filename,'w').write(s)
