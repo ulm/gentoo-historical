@@ -36,7 +36,7 @@ resize partitions.
 		container = gtk.HBox(gtk.FALSE, 10)
 		detected_dev_label = gtk.Label("Devices:")
 		container.pack_start(detected_dev_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		self.detected_dev_combo = gtk.combo_box_new_text()
+		self.detected_dev_combo = gtk.combo_box_entry_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
 		container.pack_start(self.detected_dev_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 

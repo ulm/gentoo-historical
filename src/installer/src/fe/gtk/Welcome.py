@@ -15,17 +15,15 @@ Welcome to The Gentoo Linux Installer. This is a TESTING release.
 If your system dies a horrible, horrible death, don't come crying
 to us (okay, you can cry to klieber).
 
-Before any permanent changes are made to your system, you will
-be asked to confirm your decisions.  Any any time prior to the 
-"Install!", you may click the Exit button to terminate this 
-installer without altering your computer's existing 
-configuration.
+In this part of the installer, you will make all of your decisions
+for how you want your system setup. No changes will be made to your
+system until you click the "Install" button. At any point before you
+click "Install", you can click "Save" to save your install profile
+and come back at a later time to finish.
 
-If you have installed Gentoo Linux previously using this installer and 
-you saved your configuration settings, you can enter the filename or URL
-below and click 'Load Profile' to load your settings as defaults. If you
-load a previous profile, you can click 'Finish' at anytime to start the
-install.
+If you have installed Gentoo Linux previously using this installer
+and you saved your configuration settings, you can click the "Load"
+button to load your previous settings as defaults.
 """
 
 		content_str2 = """Click the "Forward" button below to begin your

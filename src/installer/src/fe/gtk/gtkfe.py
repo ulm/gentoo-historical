@@ -52,7 +52,7 @@ class Installer:
                       { 'text': 'Extra Packages', 'module': ExtraPackages },
                       { 'text': 'rc.conf', 'module': RcDotConf },
                       { 'text': 'Users', 'module': Users },
-                      { 'text': 'Install!', 'module': InstallSummary }
+                      { 'text': 'Review', 'module': InstallSummary }
                     ]
 
 	def __init__(self):
@@ -132,7 +132,7 @@ class Installer:
 		self.helpbuttonimg = gtk.Image()
 		self.helpbuttonimg.set_from_file(self.__full_path + '/button_images/stock_help.png')
 		self.helpbuttonbox.pack_start(self.helpbuttonimg)
-		self.helpbutton_label = gtk.Label(" _Show Help ")
+		self.helpbutton_label = gtk.Label(" _Help ")
 		self.helpbuttonbox.pack_start(self.helpbutton_label)
 		self.helpbutton_label.set_use_underline(gtk.TRUE)
 		self.helpbutton.add(self.helpbuttonbox)
@@ -152,24 +152,19 @@ class Installer:
 		self.finishbutton = gtk.Button()
 		self.finishbuttonbox = gtk.HBox(gtk.FALSE, 0)
 		self.finishbuttonimg = gtk.Image()
-		self.finishbuttonimg.set_from_file(self.__full_path + '/button_images/stock_exit.png')
+		self.finishbuttonimg.set_from_file(self.__full_path + '/button_images/stock_exec.png')
 		self.finishbuttonbox.pack_start(self.finishbuttonimg)
-		self.finishbutton_label = gtk.Label(" _Finish ")
+		self.finishbutton_label = gtk.Label(" _Install ")
 		self.finishbuttonbox.pack_start(self.finishbutton_label)
 		self.finishbutton_label.set_use_underline(gtk.TRUE)
 		self.finishbutton.add(self.finishbuttonbox)
 
 		# We pack in the buttons
-		if self.SHOW_BUTTON_FINISH:
-			self.bottombox.pack_end(self.finishbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		if self.SHOW_BUTTON_FORWARD:
-			self.bottombox.pack_end(self.forwardbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		if self.SHOW_BUTTON_BACK:
-			self.bottombox.pack_end(self.backbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		if self.SHOW_BUTTON_HELP:
-			self.bottombox.pack_end(self.helpbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		if self.SHOW_BUTTON_EXIT:
-			self.bottombox.pack_start(self.exitbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_start(self.exitbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_start(self.helpbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_end(self.finishbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_end(self.forwardbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.bottombox.pack_end(self.backbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
 		# We register the buttons with their callbacks
 		self.finishbutton.connect("clicked", self.finish, None)
