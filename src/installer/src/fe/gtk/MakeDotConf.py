@@ -10,6 +10,8 @@ class Panel(GLIScreen.GLIScreen):
 	use_flags = []
 	use_desc = {}
 	columns = []
+	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
+	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -77,7 +79,33 @@ class Panel(GLIScreen.GLIScreen):
                 self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
                 self.treewindow.add(self.treeview)
                 vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
- 	
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		label = gtk.Label()
+		label.set_markup("<b>CFLAGS:</b>")
+		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(gtk.Label("Processor:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.proc_combo = gtk.combo_box_new_text()
+		for proc in self.arch_procs['x86']:
+			self.proc_combo.append_text(proc)
+		self.proc_combo.set_active(0)
+		hbox.pack_start(self.proc_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		hbox.pack_start(gtk.Label("Optimizations:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.optimizations_combo = gtk.combo_box_new_text()
+		for opt in self.optimizations:
+			self.optimizations_combo.append_text(opt)
+		self.optimizations_combo.set_active(0)
+		hbox.pack_start(self.optimizations_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		hbox.pack_start(gtk.Label("Custom:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.custom_cflags_entry = gtk.Entry()
+		self.custom_cflags_entry.set_width_chars(25)
+		self.custom_cflags_entry.set_text("-pipe")
+		hbox.pack_start(self.custom_cflags_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+
 		self.add_content(vert)
 
 	def flag_toggled(self, cell, path):
@@ -127,5 +155,7 @@ class Panel(GLIScreen.GLIScreen):
 			else:
 				temp_use += " -" + flag
 		self.make_conf_values['USE'] = temp_use
+		self.make_conf_values['CFLAGS'] = "-march=" + self.arch_procs['x86'][self.proc_combo.get_active()] + " " + self.optimizations[self.optimizations_combo.get_active()] + " " + self.custom_cflags_entry.get_text()
+		print self.make_conf_values['CFLAGS']
 		self.controller.install_profile.set_make_conf(self.make_conf_values)
 		return True
