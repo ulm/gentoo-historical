@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.29 2005/01/19 06:17:03 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.30 2005/01/19 21:55:09 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -433,7 +433,7 @@ class InstallProfile:
 			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Must be a string!")
 
 		# Check validity
-		if not GLIUtility.is_uri(portage_tree_snapshot_uri):
+		if portage_tree_snapshot_uri and not GLIUtility.is_uri(portage_tree_snapshot_uri):
 			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Invalid URI!")
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
