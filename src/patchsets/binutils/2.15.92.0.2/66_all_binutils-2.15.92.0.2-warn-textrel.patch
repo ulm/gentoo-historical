@@ -1,0 +1,175 @@
+2005-03-20 Ned Ludd <solar@gentoo.org>
+	* textrels are bad for forcing copy-on-write (this affects everyone),
+	and for security/runtime code generation, this affects security ppl.
+	But in either case, it doesn't matter who needs textrels, it's 
+	the very fact that they're needed at all
+	so we would rather see warn-textrel go in, or at least in gentoo.
+	* Removed shared limitation and renamed --warn-shared-textrel 
+	to --warn-textrel
+
+###################################################################
+From: 	Jeff Baker <jbaker@qnx.com>
+Reply-To: 	jbaker@qnx.com
+To: 	binutils@sources.redhat.com
+Subject: 	[PATCH] Add --warn-shared-textrel option to ld
+Date: 	Thu, 16 Sep 2004 14:31:14 -0400
+
+This patch was originally included in the QNX Mips support but I'm 
+posting it on it's own so that the appropriate people might look at it.
+
+###################################################################
+2004-09-13  Jeff Baker  <jbaker@qnx.com>
+	* elflink.c (_bfd_elf_add_dynamic_entry): Add code to
+	warn if adding a DT_TEXTREL to a shared object and
+	--warn-shared-textrel was specified.
+
+2004-09-13  Jeff Baker  <jbaker@qnx.com>
+	* bfdlink.h (bfd_link_info): Add boolean
+	warn_shared_textrel.
+
+2004-09-13  Jeff Baker  <jbaker@qnx.com>
+	* lexsup.c: Handle --warn-shared-textrel option.
+
+Index: bfd/elflink.c
+===================================================================
+RCS file: /cvs/src/src/bfd/elflink.c,v
+retrieving revision 1.101
+diff -w -u -1 -0 -p -r1.101 elflink.c
+--- bfd/elflink.c	7 Sep 2004 13:40:37 -0000	1.101
++++ bfd/elflink.c	13 Sep 2004 18:24:51 -0000
+@@ -2644,20 +2644,25 @@ _bfd_elf_add_dynamic_entry (struct bfd_l
+   const struct elf_backend_data *bed;
+   asection *s;
+   bfd_size_type newsize;
+   bfd_byte *newcontents;
+   Elf_Internal_Dyn dyn;
+ 
+   hash_table = elf_hash_table (info);
+   if (! is_elf_hash_table (hash_table))
+     return FALSE;
+ 
++  if (info->warn_textrel && tag == DT_TEXTREL) {
++    (*_bfd_error_handler)
++      (_("warning: creating a DT_TEXTREL in object."));
++  }
++  
+   bed = get_elf_backend_data (hash_table->dynobj);
+   s = bfd_get_section_by_name (hash_table->dynobj, ".dynamic");
+   BFD_ASSERT (s != NULL);
+ 
+   newsize = s->size + bed->s->sizeof_dyn;
+   newcontents = bfd_realloc (s->contents, newsize);
+   if (newcontents == NULL)
+     return FALSE;
+ 
+   dyn.d_tag = tag;
+Index: include/bfdlink.h
+===================================================================
+RCS file: /cvs/src/src/include/bfdlink.h,v
+retrieving revision 1.45
+diff -w -u -1 -0 -p -r1.45 bfdlink.h
+--- include/bfdlink.h	13 Aug 2004 03:16:01 -0000	1.45
++++ include/bfdlink.h	13 Sep 2004 18:25:04 -0000
+@@ -390,20 +390,23 @@ struct bfd_link_info
+   unsigned int spare_dynamic_tags;
+ 
+   /* May be used to set DT_FLAGS for ELF. */
+   bfd_vma flags;
+ 
+   /* May be used to set DT_FLAGS_1 for ELF. */
+   bfd_vma flags_1;
+ 
+   /* Start and end of RELRO region.  */
+   bfd_vma relro_start, relro_end;
++
++  /* Warn if adding a DT_TEXTREL to object.  */
++  bfd_boolean warn_textrel;
+ };
+ 
+ /* This structures holds a set of callback functions.  These are
+    called by the BFD linker routines.  The first argument to each
+    callback function is the bfd_link_info structure being used.  Each
+    function returns a boolean value.  If the function returns FALSE,
+    then the BFD function which called it will return with a failure
+    indication.  */
+ 
+ struct bfd_link_callbacks
+Index: ld/lexsup.c
+===================================================================
+RCS file: /cvs/src/src/ld/lexsup.c,v
+retrieving revision 1.76
+diff -w -u -1 -0 -p -r1.76 lexsup.c
+--- ld/lexsup.c	19 Jul 2004 16:40:52 -0000	1.76
++++ ld/lexsup.c	13 Sep 2004 18:25:13 -0000
+@@ -139,21 +139,22 @@ enum option_values
+   OPTION_NOSTDLIB,
+   OPTION_NO_OMAGIC,
+   OPTION_STRIP_DISCARDED,
+   OPTION_NO_STRIP_DISCARDED,
+   OPTION_ACCEPT_UNKNOWN_INPUT_ARCH,
+   OPTION_NO_ACCEPT_UNKNOWN_INPUT_ARCH,
+   OPTION_PIE,
+   OPTION_UNRESOLVED_SYMBOLS,
+   OPTION_WARN_UNRESOLVED_SYMBOLS,
+   OPTION_ERROR_UNRESOLVED_SYMBOLS,
+-  OPTION_REDUCE_MEMORY_OVERHEADS
++  OPTION_REDUCE_MEMORY_OVERHEADS,
++  OPTION_WARN_TEXTREL
+ };
+ 
+ /* The long options.  This structure is used for both the option
+    parsing and the help text.  */
+ 
+ struct ld_option
+ {
+   /* The long option information.  */
+   struct option opt;
+   /* The short option with the same meaning ('\0' if none).  */
+@@ -489,20 +490,23 @@ static const struct ld_option ld_options
+ 		   "\t\t\t\tfollowing dynamic libs"), TWO_DASHES },
+   { {"no-add-needed", no_argument, NULL, OPTION_NO_ADD_NEEDED},
+     '\0', NULL, N_("Do not set DT_NEEDED tags for DT_NEEDED entries\n"
+ 		   "\t\t\t\tin following dynamic libs"), TWO_DASHES },
+   { {"as-needed", no_argument, NULL, OPTION_AS_NEEDED},
+     '\0', NULL, N_("Only set DT_NEEDED for following dynamic libs if used"),
+     TWO_DASHES },
+   { {"no-as-needed", no_argument, NULL, OPTION_NO_AS_NEEDED},
+     '\0', NULL, N_("Always set DT_NEEDED for following dynamic libs"),
+     TWO_DASHES },
++  { {"warn-textrel", no_argument, NULL, OPTION_WARN_TEXTREL},
++      '\0', NULL, N_("Warn if object has DT_TEXTREL"),
++      TWO_DASHES },
+   { {"wrap", required_argument, NULL, OPTION_WRAP},
+     '\0', N_("SYMBOL"), N_("Use wrapper functions for SYMBOL"), TWO_DASHES },
+ };
+ 
+ #define OPTION_COUNT ARRAY_SIZE (ld_options)
+ 
+ void
+ parse_args (unsigned argc, char **argv)
+ {
+   unsigned i;
+@@ -1209,20 +1213,23 @@ parse_args (unsigned argc, char **argv)
+ 	  break;
+ 	case OPTION_NO_ADD_NEEDED:
+ 	  add_needed = FALSE;
+ 	  break;
+ 	case OPTION_AS_NEEDED:
+ 	  as_needed = TRUE;
+ 	  break;
+ 	case OPTION_NO_AS_NEEDED:
+ 	  as_needed = FALSE;
+ 	  break;
++	case OPTION_WARN_TEXTREL:
++	  link_info.warn_textrel = TRUE;
++	  break;
+ 	case OPTION_WRAP:
+ 	  add_wrap (optarg);
+ 	  break;
+ 	case OPTION_DISCARD_NONE:
+ 	  link_info.discard = discard_none;
+ 	  break;
+ 	case 'X':
+ 	  link_info.discard = discard_l;
+ 	  break;
+ 	case 'x':

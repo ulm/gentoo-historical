@@ -1,0 +1,258 @@
+
+
+Built and tested on i686-pc-linux-gnu.
+
+Jan
+
+bfd/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* Makefile.am: Add dependency of cache.o on libiberty.h.
+	* cache.c: Include libiberty.h.
+	(bfd_open_file): Use unlink_if_ordinary instead of unlink.
+
+binutils/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* ar.c (remove_output): Use unlink_if_ordinary instead of unlink.
+	* objcopy.c (copy_file): Likewise.
+	(strip_main): Likewise.
+
+gas/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* as.c (main): Use unlink_if_ordinary instead of unlink.
+	* messages.c (as_fatal): Likewise.
+
+include/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* libiberty.h: Declare unlink_if_ordinary.
+
+ld/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* ldmain.c (remove_output): Use unlink_if_ordinary instead of unlink.
+	* pe-dll.c (pe_dll_generate_implib): Likewise.
+
+libiberty/
+2004-12-15 Jan Beulich  <jbeulich@novell.com>
+
+	* Makefile.in (CFILES): Add unlink-if-ordinary.c
+	(REQUIRED_OFILES): Add unlink-if-ordinary.o.
+	Add dependencies and rule for unlink-if-ordinary.o.
+	* unlink-if-ordinary.c: New.
+
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/bfd/Makefile.am	2004-11-18 15:05:03.000000000 +0100
++++ 2004-12-03.13.35/bfd/Makefile.am	2004-12-15 12:24:30.392060672 +0100
+@@ -903,7 +903,7 @@ bfd.lo: bfd.c bfdver.h $(INCDIR)/filenam
+   $(INCDIR)/elf/external.h
+ bfdio.lo: bfdio.c $(INCDIR)/filenames.h
+ bfdwin.lo: bfdwin.c $(INCDIR)/filenames.h
+-cache.lo: cache.c $(INCDIR)/filenames.h
++cache.lo: cache.c $(INCDIR)/filenames.h $(INCDIR)/libiberty.h
+ coffgen.lo: coffgen.c $(INCDIR)/filenames.h $(INCDIR)/coff/internal.h \
+   libcoff.h $(INCDIR)/bfdlink.h
+ corefile.lo: corefile.c $(INCDIR)/filenames.h
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/bfd/Makefile.in	2004-11-18 15:05:03.000000000 +0100
++++ 2004-12-03.13.35/bfd/Makefile.in	2004-12-15 12:24:40.276558000 +0100
+@@ -1458,7 +1458,7 @@ bfd.lo: bfd.c bfdver.h $(INCDIR)/filenam
+   $(INCDIR)/elf/external.h
+ bfdio.lo: bfdio.c $(INCDIR)/filenames.h
+ bfdwin.lo: bfdwin.c $(INCDIR)/filenames.h
+-cache.lo: cache.c $(INCDIR)/filenames.h
++cache.lo: cache.c $(INCDIR)/filenames.h $(INCDIR)/libiberty.h
+ coffgen.lo: coffgen.c $(INCDIR)/filenames.h $(INCDIR)/coff/internal.h \
+   libcoff.h $(INCDIR)/bfdlink.h
+ corefile.lo: corefile.c $(INCDIR)/filenames.h
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/bfd/cache.c	2004-06-28 16:51:45.000000000 +0200
++++ 2004-12-03.13.35/bfd/cache.c	2004-12-15 12:24:50.550996048 +0100
+@@ -41,6 +41,7 @@ SECTION
+ #include "bfd.h"
+ #include "sysdep.h"
+ #include "libbfd.h"
++#include "libiberty.h"
+ 
+ static bfd_boolean bfd_cache_delete (bfd *);
+ 
+@@ -436,7 +437,7 @@ bfd_open_file (bfd *abfd)
+ 	  struct stat s;
+ 
+ 	  if (stat (abfd->filename, &s) == 0 && s.st_size != 0)
+-	    unlink (abfd->filename);
++	    unlink_if_ordinary (abfd->filename);
+ #endif
+ 	  abfd->iostream = (PTR) fopen (abfd->filename, FOPEN_WUB);
+ 	  abfd->opened_once = TRUE;
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/binutils/ar.c	2004-11-02 17:16:01.000000000 +0100
++++ 2004-12-03.13.35/binutils/ar.c	2004-12-15 12:10:35.610966688 +0100
+@@ -328,7 +328,7 @@ remove_output (void)
+ 	bfd_cache_close (output_bfd);
+       if (output_file != NULL)
+ 	fclose (output_file);
+-      unlink (output_filename);
++      unlink_if_ordinary (output_filename);
+     }
+ }
+ 
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/binutils/objcopy.c	2004-11-02 17:16:02.000000000 +0100
++++ 2004-12-03.13.35/binutils/objcopy.c	2004-12-15 12:22:41.303644632 +0100
+@@ -1716,7 +1716,7 @@ copy_file (const char *input_filename, c
+ 
+       if (delete)
+ 	{
+-	  unlink (output_filename);
++	  unlink_if_ordinary (output_filename);
+ 	  status = 1;
+ 	}
+     }
+@@ -2423,7 +2423,7 @@ strip_main (int argc, char *argv[])
+ 	  status = hold_status;
+ 	}
+       else
+-	unlink (tmpname);
++	unlink_if_ordinary (tmpname);
+       if (output_file == NULL)
+ 	free (tmpname);
+     }
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/gas/as.c	2004-08-27 13:44:16.000000000 +0200
++++ 2004-12-03.13.35/gas/as.c	2004-12-15 12:00:28.777219440 +0100
+@@ -1197,7 +1197,7 @@ main (int argc, char ** argv)
+     keep_it = 0;
+ 
+   if (!keep_it)
+-    unlink (out_file_name);
++    unlink_if_ordinary (out_file_name);
+ 
+   input_scrub_end ();
+ 
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/gas/messages.c	2004-10-06 09:35:49.000000000 +0200
++++ 2004-12-03.13.35/gas/messages.c	2004-12-15 12:00:49.554060880 +0100
+@@ -412,7 +412,7 @@ as_fatal (const char *format, ...)
+   /* Delete the output file, if it exists.  This will prevent make from
+      thinking that a file was created and hence does not need rebuilding.  */
+   if (out_file_name != NULL)
+-    unlink (out_file_name);
++    unlink_if_ordinary (out_file_name);
+   xexit (EXIT_FAILURE);
+ }
+ #else
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/include/libiberty.h	2004-10-06 09:35:58.000000000 +0200
++++ 2004-12-03.13.35/include/libiberty.h	2004-12-15 11:43:21.581376944 +0100
+@@ -163,6 +163,10 @@ extern char *choose_temp_base PARAMS ((v
+ 
+ extern char *make_temp_file PARAMS ((const char *)) ATTRIBUTE_MALLOC;
+ 
++/* Remove a link to a file unless it is special. */
++
++extern int unlink_if_ordinary PARAMS((const char *));
++
+ /* Allocate memory filled with spaces.  Allocates using malloc.  */
+ 
+ extern const char *spaces PARAMS ((int count));
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/ld/ldmain.c	2004-11-18 15:07:17.000000000 +0100
++++ 2004-12-03.13.35/ld/ldmain.c	2004-12-15 12:08:20.423518304 +0100
+@@ -171,7 +171,7 @@ remove_output (void)
+       if (output_bfd)
+ 	bfd_cache_close (output_bfd);
+       if (delete_output_file_on_failure)
+-	unlink (output_filename);
++	unlink_if_ordinary (output_filename);
+     }
+ }
+ 
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/ld/pe-dll.c	2004-11-02 17:16:17.000000000 +0100
++++ 2004-12-03.13.35/ld/pe-dll.c	2004-12-15 12:09:00.280459128 +0100
+@@ -2231,7 +2231,7 @@ pe_dll_generate_implib (def_file *def, c
+     if (!ISALNUM (dll_symname[i]))
+       dll_symname[i] = '_';
+ 
+-  unlink (impfilename);
++  unlink_if_ordinary (impfilename);
+ 
+   outarch = bfd_openw (impfilename, 0);
+ 
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/libiberty/Makefile.in	2004-11-18 15:07:33.000000000 +0100
++++ 2004-12-03.13.35/libiberty/Makefile.in	2004-12-15 11:50:38.597940328 +0100
+@@ -152,6 +152,7 @@ CFILES = alloca.c argv.c asprintf.c atex
+ 	 strstr.c strtod.c strtol.c strtoul.c				\
+ 	ternary.c tmpnam.c						\
+ 	vasprintf.c vfork.c vfprintf.c vprintf.c vsnprintf.c vsprintf.c	\
++	unlink-if-ordinary.c						\
+ 	waitpid.c							\
+ 	xatexit.c xexit.c xmalloc.c xmemdup.c xstrdup.c xstrerror.c
+ 
+@@ -171,6 +172,7 @@ REQUIRED_OFILES = ./regex.o ./cplus-dem.
+ 	./safe-ctype.o ./sort.o ./spaces.o ./splay-tree.o ./strerror.o	\
+ 	 ./strsignal.o							\
+ 	./ternary.o							\
++	./unlink-if-ordinary.o						\
+ 	./xatexit.o ./xexit.o ./xmalloc.o ./xmemdup.o ./xstrdup.o	\
+ 	 ./xstrerror.o
+ 
+@@ -973,6 +975,13 @@ $(CONFIGURED_OFILES): stamp-picdir
+ 	else true; fi
+ 	$(COMPILE.c) $(srcdir)/tmpnam.c $(OUTPUT_OPTION)
+ 
++./unlink-if-ordinary.o: $(srcdir)/unlink-if-ordinary.c config.h $(INCDIR)/ansidecl.h \
++	$(INCDIR)/libiberty.h
++	if [ x"$(PICFLAG)" != x ]; then \
++	  $(COMPILE.c) $(PICFLAG) $(srcdir)/unlink-if-ordinary.c -o pic/$@; \
++	else true; fi
++	$(COMPILE.c) $(srcdir)/unlink-if-ordinary.c $(OUTPUT_OPTION)
++
+ ./vasprintf.o: $(srcdir)/vasprintf.c config.h $(INCDIR)/ansidecl.h \
+ 	$(INCDIR)/libiberty.h
+ 	if [ x"$(PICFLAG)" != x ]; then \
+--- /home/jbeulich/src/binutils/mainline/2004-12-03.13.35/libiberty/unlink-if-ordinary.c	1970-01-01 01:00:00.000000000 +0100
++++ 2004-12-03.13.35/libiberty/unlink-if-ordinary.c	2004-12-15 12:14:37.960124016 +0100
+@@ -0,0 +1,49 @@
++/* unlink-if-ordinary.c - remove link to a file unless it is special */
++
++/*
++
++@deftypefn Supplemental int unlink_if_ordinary (const char*)
++
++Unlink the named file, unless it is special (e.g. a device file).
++Returns 0 when the file was unlinked, a negative value (and errno set) when
++there was an error deleting the file, and a positive value if no attempt
++was made to unlink the file because it is special.
++
++@end deftypefn
++
++*/
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++#if HAVE_SYS_STAT_H
++#include <sys/stat.h>
++#endif
++
++#include "libiberty.h"
++
++#ifndef S_ISLNK
++#ifdef S_IFLNK
++#define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
++#else
++#define S_ISLNK(m) 0
++#define lstat stat
++#endif
++#endif
++
++int
++unlink_if_ordinary (name)
++  const char *name;
++{
++  struct stat st;
++
++  if (lstat (name, &st) == 0
++      && (S_ISREG (st.st_mode) || S_ISLNK (st.st_mode)))
++    return unlink (name);
++
++  return 1;
++}
