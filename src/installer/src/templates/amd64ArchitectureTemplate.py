@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: amd64ArchitectureTemplate.py,v 1.1 2005/03/21 04:52:48 codeman Exp $
+$Id: amd64ArchitectureTemplate.py,v 1.2 2005/03/30 00:10:50 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -347,6 +347,8 @@ class amd64ArchitectureTemplate(ArchitectureTemplate):
 			raise GLIException("BootloaderError", 'fatal', '_install_grub',"Error: We have no kernel in /boot to put in the grub.conf file!")
 		kernel_name = map(string.strip, kernel_name)
 		initrd_name = map(string.strip, initrd_name)
+		if self._install_profile.get_kernel_args(): kernel_args = self._install_profile.get_kernel_args()
+		else: kernel_args = ""
 		for i in range(len(kernel_name)):
 			grub_kernel_name = kernel_name[i].split(root)[1]
 		for i in range(len(initrd_name)):
@@ -370,11 +372,11 @@ class amd64ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			if foundboot:
 				newgrubconf += "kernel " + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-				newgrubconf += root_device + root_minor + "\n"
+				newgrubconf += root_device + root_minor + " " + kernel_args + "\n"
 				newgrubconf += "initrd " + grub_initrd_name[5:] + "\n"
 			else:
 				newgrubconf += "kernel /boot" + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-				newgrubconf += root_device + root_minor + "\n"
+				newgrubconf += root_device + root_minor + " " + kernel_args + "\n"
 				newgrubconf += "initrd /boot" + grub_initrd_name[5:] + "\n"
 		
 		#-------------------------------------------------------------
@@ -439,6 +441,8 @@ class amd64ArchitectureTemplate(ArchitectureTemplate):
 		kernel_name = map(string.strip, kernel_name)
 		kernel_name[0] = kernel_name[0].split(root)[1]
 		kernel_name[1] = kernel_name[1].split(root)[1]
+		if self._install_profile.get_kernel_args(): kernel_args = self._install_profile.get_kernel_args()
+		else: kernel_args = ""
 		#-------------------------------------------------------------
 		#time to build the lilo.conf
 		newliloconf = ""
@@ -455,7 +459,7 @@ class amd64ArchitectureTemplate(ArchitectureTemplate):
 		newliloconf += "vga=788                   # Framebuffer setting. Adjust to your own will\n"
 		newliloconf += "image=/boot"+kernel_name[0][5:]+" \n"
 		newliloconf += "  label=gentoo \n  read-only \n  root=/dev/ram0 \n"
-		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor+"\" \n"
+		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + kernel_args + "\" \n"
   		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
 		newliloconf = self._lilo_add_windows(newliloconf)
 		#now make the lilo.conf file
