@@ -42,7 +42,7 @@ class GLIInstallTemplate:
 		for dependency in depends:
 
 			# If the dependency has not been satisfied, check to see if 'ignore' has been turned on
-			if not dependency in self._client_configuration.install_steps_completed:
+			if not dependency in self._client_configuration.get_install_steps_completed():
 
 				#If ignore is on, just print a warning
 				if self._install_profile.get_ignore_install_step_depends():
@@ -56,12 +56,12 @@ class GLIInstallTemplate:
 		
 		# If chroot is true, set the prefix to execute in chroot
 		if chroot:
-			prefix = "chroot " + self._client_configuration.root_mount_point + " "
+			prefix = "chroot " + self._client_configuration.get_root_mount_point() + " "
 		else:
 			prefix = ""
 			
 		# This sets the logging info
-		suffix = " | tee " + self._client_configuration.proc_temp_log  + " >> " + self._client_configuration.log_file
+		suffix = " | tee " + self._client_configuration.get_proc_temp_log()  + " >> " + self._client_configuration.get_log_file()
 		
 		exitstatus = os.WEXITSTATUS(os.system(prefix + command + suffix))
 		
@@ -160,7 +160,7 @@ class GLIInstallTemplate:
 			if exitstatus != 0:
 				raise "URIError", "Could not retrieve " + uri + "!"
 				
-	def _fetch_and_unpack_tarball(self, tarball_uri, target_directory, temp_directory="/tmp", keep_permisions=False):
+	def _fetch_and_unpack_tarball(self, tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
 		"Fetches a tarball from tarball_uri and extracts it into target_directory"
 		
 		# Get tarball info
@@ -205,7 +205,7 @@ class GLIInstallTemplate:
 		#
 
 		# Get default gateway
-		default_gateway = self._install_profile.get_default_gateway_pre()
+		default_gateway = self._install_profile.get_default_gateway()
 		
 		# If the default gateway exists, add it
 		if default_gateway:
@@ -216,13 +216,13 @@ class GLIInstallTemplate:
 		#
 
 		# Get dns servers
-		dns_servers = self._install_profile.get_dns_servers_pre()
+		dns_servers = self._install_profile.get_dns_servers()
 		
+		# Clear the list
+		resolv_output = []
+	
 		# If dns servers are set
 		if dns_servers:
-			
-			# Clear the list
-			resolv_output = []
 			
 			# Parse each dns server
 			for dns_server in dns_servers:
@@ -237,7 +237,7 @@ class GLIInstallTemplate:
 		#
 
 		# Fetch interfaces
-		interfaces = self._install_profile.get_network_interfaces_pre()
+		interfaces = self._install_profile.get_network_interfaces()
 		
 		# Parse each interface
 		for interface in interfaces.keys():
@@ -246,8 +246,8 @@ class GLIInstallTemplate:
 			interface_type = interface[:3]
 		
 			# Check to see if there is a startup script for this interface, if there isn't link to the proper script
-			if not os.access(self._client_configuration.root_mount_point + "/etc/net." + interface, W_OK):
-				os.symlink("net." + interface_type +  "0", self._client_configuration.root_mount_point + "/etc/net." + interface)				
+			if not os.access("/etc/init.d/net." + interface, os.W_OK):
+				os.symlink("/etc/init.d/net." + interface_type +  "0", "/etc/init.d/net." + interface)				
 		
 			#
 			# ETHERNET
@@ -259,33 +259,32 @@ class GLIInstallTemplate:
 				#
 				# If the pre device info is not None, then it is a static ip addy
 				if interfaces[interface][1]:
-					ip = interfaces[interface][0][0]
-					broadcast = interfaces[interface][0][1]
-					netmask = interfaces[interface][0][2]
-					aliases = interfaces[interface][0][3]
-					alias_ips = []
-					alias_broadcasts = []
-					alias_netmasks = []
+					ip = interfaces[interface][0]
+					broadcast = interfaces[interface][1]
+					netmask = interfaces[interface][2]
+		#			aliases = interfaces[interface][0][3]
+		#			alias_ips = []
+		#			alias_broadcasts = []
+		#			alias_netmasks = []
 					
 					# Write the static ip config to /etc/conf.d/net
 					self._edit_config("/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
 					
 					# If aliases are set
-					if aliases:
-					
-						# Parse aliases to format alias info
-						for alias in aliases:
-							alias_ips.append(alias[0])
-							alias_broadcasts.append(alias[1])
-							alias_netmasks.append(allias[2])
+		#			if aliases:
+		#				# Parse aliases to format alias info
+		#				for alias in aliases:
+		#					alias_ips.append(alias[0])
+		#					alias_broadcasts.append(alias[1])
+		#					alias_netmasks.append(allias[2])
 						
 						# Once the alias info has been gathered, then write it out
 						# Alias ips first
-						self._edit_config("/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
+		#				self._edit_config("/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
 						# Alias broadcasts next
-						self._edit_config("/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
+		#				self._edit_config("/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
 						# Alias netmasks last
-						self._edit_config("/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
+		#				self._edit_config("/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
 					
 				#
 				# DHCP IP
@@ -304,7 +303,7 @@ class GLIInstallTemplate:
 			if iface_status.lower() == "started":
 				exitstatus = self._run("/etc/init.d/net." + interface + " restart")
 				if exitstatus != 0:
-					raise "NetworkPreError", "Could not start interface " + interface + "!"
+					raise "NetworkPreError", "Could not restart interface " + interface + "!"
 					
 			# Otherwise, just start the interface
 			else:
@@ -320,7 +319,7 @@ class GLIInstallTemplate:
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
 		# Dependency checking		
-		self._depends("partition_local_devices")
+		self._depends("partition_local_drives")
 
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
@@ -331,13 +330,13 @@ class GLIInstallTemplate:
 		"Unpacks the appropriate stage tarball"
 		# Dependency checking		
 		self._depends([ "mount_local_partitions", "mount_network_shares" ])
-		
+
 		# Get tarball info
 		stage_tarball_uri = self._install_profile.get_stage_tarball_uri()
 		tarball_filename = stage_tarball_uri.split("/")[-1]
 		
 		# Get the tarball and unpack it
-		self._fetch_and_unpack_tarball(stage_tarball_uri, self._client_configuration.root_mount_point + "/", self._client_configuration.root_mount_point + "/", True)
+		self._fetch_and_unpack_tarball(stage_tarball_uri, self._client_configuration.get_root_mount_point() + "/", self._client_configuration.get_root_mount_point() + "/", True)
 
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
@@ -356,15 +355,15 @@ class GLIInstallTemplate:
 		
 		# Copy resolv.conf to new env
 		try:
-			shutil.copy("/etc/resolv.conf", self._client_configuration.root_mount_point + "/etc/resolv.conf")
+			shutil.copy("/etc/resolv.conf", self._client_configuration.get_root_mount_point() + "/etc/resolv.conf")
 		except:
 			pass
 			
 		# Mount /dev and /proc in the chroot env
-		exitstatus = self._run("mount -t proc proc " + self._client_configuration.root_mount_point + "/proc", False)
+		exitstatus = self._run("mount -t proc none " + self._client_configuration.get_root_mount_point() + "/proc", False)
 		if exitstatus != 0:
 			raise "MountProcError", "Could not mount /proc into the chroot environment!"
-		exitstatus = self._run("mount -o bind /dev " + self._client_configuration.root_mount_point + "/dev", False)
+		exitstatus = self._run("mount -o bind /dev " + self._client_configuration.get_root_mount_point() + "/dev", False)
 		if exitstatus != 0:
 			raise "MountDevError", "Could not mount /dev into the chroot environment!"
 
@@ -380,7 +379,7 @@ class GLIInstallTemplate:
 		for key in options.keys():
 		
 			# Add/Edit it into make.conf
-			self._edit_config(self._client_configuration.root_mount_point + "/etc/make.conf", key, option[key])
+			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/make.conf", key, options[key])
 
 	def install_portage_tree(self):
 		"Get/update the portage tree"
@@ -395,7 +394,7 @@ class GLIInstallTemplate:
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
 			
 			# Fetch and unpack the tarball
-			self._fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._client_configuration.root_mount_point + "/usr/", self._client_configuration.root_mount_point + "/")
+			self._fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._client_configuration.get_root_mount_point() + "/usr/", self._client_configuration.get_root_mount_point() + "/")
 			
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
@@ -436,15 +435,45 @@ class GLIInstallTemplate:
 
 		# Dependency checking		
 		self._depends("unpack_tarball")
-		self._process_desc("Setting the timezone")
+		#self._process_desc("Setting the timezone")
 
 		# Set symlink
-		os.symlink("../usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._client_configuration.root_mount_point + "/etc/localtime")
+		if not os.access(self._client_configuration.get_root_mount_point() + "/etc/localtime", os.W_OK):
+			os.symlink(self._client_configuration.get_root_mount_point() + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._client_configuration.get_root_mount_point() + "/etc/localtime")
 		
 	def configure_fstab(self):
 		"Configures fstab"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		newfstab = ""
+		partitions = self._install_profile.get_fstab()
+		for partition in partitions:
+			if not GLIUtility.is_file(partition):
+				exitstatus = self._run("mkdir" + partition, True)
+				if exitstatus != 0:
+					raise "MkdirError", "Making the mount point failed!"
+			newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
+			newfstab += "\t " + partitions[partition][2] + "\t "
+			if partition == "/boot":
+				newfstab += "1 2\n"
+			elif partition == "/":
+				newfstab += "0 1\n"
+			else:
+				newfstab += "0 0\n"
+		newfstab += "none        /proc     proc    defaults          0 0\n"
+		newfstab += "none        /dev/shm  tmpfs   defaults          0 0\n"
+		if GLIUtility.is_device("/dev/cdroms/cdrom0"):
+			newfstab += "/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0\n"
+			
+		file_name = self._client_configuration.get_root_mount_point() + "/etc/fstab"	
+		try:
+			shutil.move(file_name, file_name + ".OLDdefault")
+		except:
+			pass
+		f = open(file_name, 'w')
+		f.writelines(newfstab)
+		f.close()
+
 
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
@@ -460,6 +489,11 @@ class GLIInstallTemplate:
 		# Dependency checking		
 		self._depends("emerge_kernel_sources")
 		
+		exitstatus = self._emerge("genkernel")
+		if exitstatus != 0:
+			raise "EmergeGenKernelError", "Could not emerge genkernel!"
+
+		
 		# Null the genkernel_options
 		genkernel_options = ""
 
@@ -468,7 +502,7 @@ class GLIInstallTemplate:
 		
 		# If the uri for the kernel config is not null, then
 		if kernel_config_uri != "":
-			self._get_uri(kernel_config_uri, self._client_configuration.root_mount_point + "/root/kernel_config")
+			self._get_uri(kernel_config_uri, self._client_configuration.get_root_mount_point() + "/root/kernel_config")
 			genkernel_options = genkernel_options + " --kernel-config=/root/kernel_config"
 			
 		# Decide whether to use bootsplash or not
@@ -503,7 +537,7 @@ class GLIInstallTemplate:
 			raise "LoggingDaemonError", "Could not emerge " + logging_daemon_pkg + "!"
 
 		# Add Logging Daemon to default runlevel
-		self. _add_to_runlevel(self,  logging_daemon_pkg.split('/')[-1].lower())
+		self._add_to_runlevel(logging_daemon_pkg)
 
 	def install_cron_daemon(self):
 		"Installs and sets up cron"
@@ -519,10 +553,10 @@ class GLIInstallTemplate:
 			raise "CronDaemonError", "Could not emerge " + cron_daemon_pkg + "!"
 
 		# Add Cron Daemon to default runlevel
-		self. _add_to_runlevel(self,  cron_daemon_pkg.split('/')[-1].lower())
+		self._add_to_runlevel(cron_daemon_pkg)
 		
 		# If the Cron Daemon is not vixie-cron, run crontab			
-		if cron_daemon_pkg.split('/')[-1].lower() != "vixie-cron":
+		if cron_daemon_pkg != "vixie-cron":
 			exitstatus = self._run("crontab /etc/crontab", True)
 			if exitstatus != 0:
 				raise "CronDaemonError", "Failure making crontab!"
@@ -610,7 +644,7 @@ class GLIInstallTemplate:
 		for key in options.keys():
 		
 			# Add/Edit it into rc.conf
-			self._edit_config(self._client_configuration.root_mount_point + "/etc/rc.conf", key, option[key])
+			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/rc.conf", key, option[key])
 			
 	def setup_network_post(self):
 		"Sets up the network for the first boot"
@@ -623,15 +657,15 @@ class GLIInstallTemplate:
 		nisdomainname = self._install_profile.get_nisdomainname()
 		
 		# Write the hostname to the hostname file		
-		open(self._client_configuration.root_mount_point + "/etc/hostname", "w").write(hostname + "\n")
+		open(self._client_configuration.get_root_mount_point() + "/etc/hostname", "w").write(hostname + "\n")
 		
 		# Write the domainname to the nisdomainname file
 		if domainname:
-			open(self._client_configuration.root_mount_point + "/etc/dnsdomainname", "w").write(domainname + "\n")
+			open(self._client_configuration.get_root_mount_point() + "/etc/dnsdomainname", "w").write(domainname + "\n")
 		
 		# Write the nisdomainname to the nisdomainname file
 		if nisdomainname:
-			open(self._client_configuration.root_mount_point + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
+			open(self._client_configuration.get_root_mount_point() + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
 			
 		#
 		# EDIT THE /ETC/HOSTS FILE
@@ -656,32 +690,32 @@ class GLIInstallTemplate:
 				hosts_line = "localhost\t" + hostname
 
 		# Write to file
-		self._edit_config(self._client_configuration.root_mount_point + "/etc/hosts", hosts_ip, hosts_line, True, '\t', False)
+		self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/hosts", hosts_ip, hosts_line, True, '\t', False)
 
 		#
 		# SET DEFAULT GATEWAY
 		#
 
 		# Get default gateway
-		default_gateway = self._install_profile.get_default_gateway_post()
+		default_gateway = self._install_profile.get_default_gateway()
 		
 		# If the default gateway exists, add it
 		if default_gateway:
-			self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "gateway", default_gateway)
+			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "gateway", default_gateway)
 			
 		#
 		# SET RESOLV INFO
 		#
 
 		# Get dns servers
-		dns_servers = self._install_profile.get_dns_servers_post()
+		dns_servers = self._install_profile.get_dns_servers()
 		
+		# Clear the list
+		resolv_output = []
 		
 		# If dns servers are set
 		if dns_servers:
 			
-			# Clear the list
-			resolv_output = []
 			
 			# Parse each dns server
 			for dns_server in dns_servers:
@@ -693,8 +727,8 @@ class GLIInstallTemplate:
 				resolv_output.append("search " + domainname + "\n")
 				
 		# Output to file
-		resolve_conf = open(self._client_configuration.root_mount_point + "/etc/resolv.conf", "w")
-		resolve_conf.write_lines(resolv_output)
+		resolve_conf = open(self._client_configuration.get_root_mount_point() + "/etc/resolv.conf", "w")
+		resolve_conf.writelines(resolv_output)
 		resolve_conf.close()
 		
 		#
@@ -702,7 +736,7 @@ class GLIInstallTemplate:
 		#
 
 		# Fetch interfaces
-		interfaces = self._install_profile.get_network_interfaces_post()
+		interfaces = self._install_profile.get_network_interfaces()
 		
 		# Parse each interface
 		for interface in interfaces.keys():
@@ -720,9 +754,9 @@ class GLIInstallTemplate:
 		
 			# Check to see if there is a startup script for this interface, if there isn't link to the proper script
 			try:
-				os.stat(self._client_configuration.root_mount_point + "/etc/net." + interface)
+				os.stat(self._client_configuration.get_root_mount_point() + "/etc/init.d/net." + interface)
 			except:
-				os.symlink("net." + interface_type +  "0", self._client_configuration.root_mount_point + "/etc/net." + interface)				
+				os.symlink(self._client_configuration.get_root_mount_point() + "/etc/init.d/net." + interface_type +  "0", self._client_configuration.get_root_mount_point() + "/etc/init.d/net." + interface)				
 		
 			#
 			# ETHERNET
@@ -734,39 +768,39 @@ class GLIInstallTemplate:
 				#
 				# If the post-install device info is not None, then it is a static ip addy
 				if interfaces[interface][1]:
-					ip = interfaces[interface][1][0]
-					broadcast = interfaces[interface][1][1]
-					netmask = interfaces[interface][1][2]
-					aliases = interfaces[interface][1][3]
-					alias_ips = []
-					alias_broadcasts = []
-					alias_netmasks = []
+					ip = interfaces[interface][0]
+					broadcast = interfaces[interface][1]
+					netmask = interfaces[interface][2]
+			#		aliases = interfaces[interface][1][3]
+			#		alias_ips = []
+			#		alias_broadcasts = []
+			#		alias_netmasks = []
 					
 					# Write the static ip config to /etc/conf.d/net
-					self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
+					self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "iface_" + interface, ip + " broadcast " + broadcast + " netmask " + netmask)
 					
 					# If aliases are set
-					if aliases:
+			#		if aliases:
 					
 						# Parse aliases to format alias info
-						for alias in aliases:
-							alias_ips.append(alias[0])
-							alias_broadcasts.append(alias[1])
-							alias_netmasks.append(allias[2])
+			#			for alias in aliases:
+			#				alias_ips.append(alias[0])
+			#				alias_broadcasts.append(alias[1])
+			#				alias_netmasks.append(allias[2])
 						
 						# Once the alias info has been gathered, then write it out
 						# Alias ips first
-						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
+			#			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "alias_" + interface, string.join(alias_ips))
 						# Alias broadcasts next
-						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
+			#			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "broadcast_" + interface, string.join(alias_broadcasts))
 						# Alias netmasks last
-						self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
+			#			self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "netmask_" + interface, string.join(alias_netmasks))
 
 				#
 				# DHCP IP
 				#
 				else:
-					self._edit_config(self._client_configuration.root_mount_point + "/etc/conf.d/net", "iface_" + interface, "dhcp")
+					self._edit_config(self._client_configuration.get_root_mount_point() + "/etc/conf.d/net", "iface_" + interface, "dhcp")
 							
 	def set_root_password(self):
 		"Sets the root password"
@@ -835,4 +869,13 @@ class GLIInstallTemplate:
 	def unmount_devices(self):
 		"Unmounts mounted devices after installation"
 		# Dependency checking		
-		self._depends()
+		self._depends("install_bootloader")
+	def install_packages(self):
+		"Will install any extra software!"
+		# Dependency checking
+		self._depends("emerge system")
+		installpackages = self._install_profile.get_install_packages()
+		for package in installpackages:
+			exitstatus = self._emerge(package)
+			if exitstatus != 0:
+				raise "InstallPackagesError", "Could not emerge " + package + "!"

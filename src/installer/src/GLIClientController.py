@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.12 2004/08/31 15:34:34 samyron Exp $
+$Id: GLIClientController.py,v 1.13 2004/10/01 17:31:04 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -23,12 +23,13 @@ class GLIClientController(Thread):
 	def __init__(self,configuration=None,install_profile=None):
 		Thread.__init__(self)
 		if configuration == None and os.path.isfile('/etc/gli.conf'):
-			print "Using /etc/gli.conf..."
+			self.output("Using /etc/gli.conf...")
 			configuration = GLIClientConfiguration.ClientConfiguration()
 			configuration.parse('/etc/gli.conf')
 
 		self._install_profile = install_profile
 		self._configuration = configuration
+		self._verbose = self._configuration.get_verbose()
 		self._logger = GLILogger.Logger(self._configuration.get_log_file())
 		self._install_event = Event()
 
@@ -60,7 +61,7 @@ class GLIClientController(Thread):
 			except GLIException, error:
 				if error.get_error_level() != 'fatal':
 					self._logger.log("Error:", error.get_function_name() + ": " + error.get_error_msg())
-					print "Non-fatal error... continuing..."
+					self.output("Non-fatal error... continuing...")
 				else:
 					raise error
 
@@ -71,7 +72,7 @@ class GLIClientController(Thread):
 			print "You can not do a non-interactive install without an InstallProfile!"
 			sys.exit(1)
 
-		print "Starting install now..."
+		self.output("Starting install now...")
 
 	def set_proxys(self):
 		if self._configuration.get_ftp_proxy() != "":
@@ -93,7 +94,7 @@ class GLIClientController(Thread):
 				else:
 					self._logger.log('kernel module: ' + module + ' loaded.')
 			except KernelModuleError, error:
-				print error
+				self.output(error)
 				self._logger.log(error.get_error_level() + '! ' + error.get_error_msg())
 
 	def set_root_passwd(self):
@@ -164,7 +165,7 @@ class GLIClientController(Thread):
 				success = GLIUtility.get_uri(self._configuration.get_profile_uri(),'/tmp/install_profile.xml')
 				if success:
 					self._logger.log("Profile downloaded succesfully, loading it now.")
-					print "Profile downloaded... loading it now..."
+					self.output("Profile downloaded... loading it now...")
 					install_profile = GLIInstallProfile.InstallProfile()
 					install_profile.parse('/tmp/install_profile.xml')
 				else:
@@ -174,3 +175,7 @@ class GLIClientController(Thread):
 
 	def start_install(self):
 		self._install_event.set()
+
+	def output(self, str):
+		if self._verbose:
+			print str

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.16 2004/08/31 15:34:34 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.17 2004/10/01 17:31:04 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -68,6 +68,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._ftp_proxy = ""
 		self._http_proxy = ""
 		self._rsync_proxy = ""
+		self._verbose = True
 
 		# Internal SAX state info
 		self._xml_elements = [];
@@ -265,6 +266,15 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_rsync_proxy(self):
 		return self._rsync_proxy
 
+	def set_verbose(self, verbose):
+		if type(verbose) == str:
+			verbose = GLIUtility.strtobool(verbose)
+
+		self._verbose = verbose
+
+	def get_verbose(self):
+		return self._verbose
+
 	def startElement(self, name, attr): 
 		"""
 		XML SAX start element handler
@@ -290,6 +300,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/ftp-proxy': self.set_ftp_proxy,
 					'client-configuration/http-proxy': self.set_http_proxy,
 					'client-configuration/rsync-proxy': self.set_rsync_proxy,
+					'client-configuration/verbose': self.set_verbose,
 				}
 
 		path = self._xml_element_path()
@@ -338,6 +349,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'ftp-proxy': self.get_ftp_proxy,
 					'http-proxy': self.get_http_proxy,
 					'rsync-proxy': self.get_rsync_proxy,
+					'verbose': self.get_verbose,
 				}
 		data = "<client-configuration>"
 
