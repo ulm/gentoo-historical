@@ -24,9 +24,7 @@
   <title><xsl:value-of select="title"/></title>
   <author title="Author">Gentoo Documentation Project</author>
   <version>Dynamically</version>
-  <date>Dynamically</date>
-  <!-- Use the following line instead *AFTER* the web nodes use >=libxslt-1.1.12 -->
-  <!--<date><xsl:value-of select="func:today()"/></date>-->
+  <date><xsl:value-of select="func:today()"/></date>
 
   <xsl:if test="intro">
   <chapter>
