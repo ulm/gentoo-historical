@@ -1,0 +1,200 @@
+<?xml version='1.0'?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<guide>
+<title>Gentoo Java Guide</title>
+<author title="Author and Editor">
+<mail link="karltk@gentoo.org">Karl Trygve Kalleberg</mail>
+</author>
+
+<abstract>
+Users' and Developers' Guide to Java in Gentoo
+</abstract>
+
+<version>0.1.1</version>
+<date>June 25, 2002</date>
+
+<chapter>
+
+<title>Installing a JDK/JRE</title>
+<section>
+<title>Overview</title>
+<body>
+<p>Gentoo provides numerous JDKs and JREs. The default is the
+Blackdown JDK/JRE pair, as it is freely (beer) available without any
+registration fuss.</p>
+
+<note>As kaffe becomes a JRE/JDK drop-in replacement, that will most
+likely become our default.</note>
+
+<p>Both the Sun JDK/JRE and the IBM JDK/JRE are generally faster, but
+getting them is a bit more work, as you are required to read and
+accept their license before downloading (IBM additionally requires you
+to register).</p>
+
+<p>Our ebuilds for the Sun and IBM JDK/JREs will notify you of where
+to go to download them.</p>
+</body>
+</section>
+
+<section>
+<title>Installing the Sun/IBM JDK/JREs</title>
+<body>
+<p>If you run <c>emerge dev-java/sun-jdk-1.3.1</c> or <c>emerge
+dev-java/ibm-jdk-1.3.1</c>, you will be notified that you are required
+to download the actual tarballs yourself. This has to do with license
+restrictions for the Sun JDK/JRE (online click-wrap license) and
+registration issues with the IBM JDK/JRE.</p>
+
+<note>There is also a dev-java/sun-jdk-1.4.0, but not all packages
+work nicely with Java 1.4, so you're on your own if you use the 1.4.0
+JDK.</note>
+
+<p>You should download the indicated file(s) into
+<path>/usr/portage/distfiles</path>. Once that is done, you can rerun
+the emerge command, then the JDK/JRE will be installed properly into
+<path>/opt</path>.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuring your JDK/JRE</title>
+<section>
+<title>Overview</title>
+<body>
+<p>Gentoo has the ability to have multiple JDKs and JREs installed
+without them conflicting. There are a few caveats to this, as noted
+below.</p>
+
+<p>Using the <c>java-config</c> tool, you can set the system-wide
+default if you have root access. Users can also use <c>java-config</c>
+to set up their own personal default, that is different from the
+system-wide default.</p>
+</body>
+</section>
+
+<section>
+<title>Setting a default JDK/JRE</title>
+<body>
+<p>Running the command <c>java-config --list-available-vms</c> will
+give you a list of all availble JREs and JDKs on your system, thus:</p>
+<pre>
+[%1 ~] java-config --list-available-vms
+[blackdown-jdk-1.3.1] Blackdown JDK 1.3.1 (/etc/env.d/java/20blackdown-jdk-1.3.1)
+[blackdown-jre-1.3.1] Blackdown JRE 1.3.1 (/etc/env.d/java/20blackdown-jre-1.3.1)
+[ibm-jdk-1.3.0] IBM JDK 1.3.0 (/etc/env.d/java/20ibm-jdk-1.3.0)
+[ibm-jdk-1.3.1] IBM JDK 1.3.1 (/etc/env.d/java/20ibm-jdk-1.3.1)
+[ibm-jre-1.3.1] IBM JRE 1.3.1 (/etc/env.d/java/20ibm-jre-1.3.1)
+[sun-jdk-1.4.0] Sun JDK 1.4.0 (/etc/env.d/java/20sun-jdk-1.4.0)
+</pre>
+<p>The name in the brackets <path>"[]"</path> is the handle or ID for
+that particular VM. You use pass that ID to <c>java-config
+--set-system-vm</c>, thus:</p>
+<pre>
+[#1 ~] java-config --set-system-vm=ibm-jdk-1.3.1
+Now using IBM JDK 1.3.1 (/etc/env.d/java/20ibm-jdk-1.3.1)
+</pre>
+
+<note>You will have to be root to run --set-system-vm</note>
+
+<p>Once you have issued <c>java-config --set-system-vm</c> with a
+particular VM ID, you will need to regenerate your /etc/profile.env,
+thus:</p>
+<pre>
+[#1 ~] env-update
+</pre>
+
+<p>After this, you will either want to relogin, or resource
+<path>/etc/profile</path> into your environment.</p>
+
+<p>As a regular user, you can use <c>java-config --set-user-vm</c>,
+which will create <path>$HOME/.gentoo/java-env</path> with all
+required env vars. You would normally source this from your shell's
+startup script (<path>$HOME/.zshenv</path> in my case).</p>
+</body>
+</section>
+
+<section>
+<title>Setting a default CLASSPATH</title>
+<body>
+<p><c>java-config</c> can also be used to set a system-wide default
+CLASSPATH, and of course a user-specific default CLASSPATH.</p>
+
+<p>First you want to list available java libraries that might be
+interesting to put in your CLASSPATH, thus:</p>
+<pre>
+[%1 ~] java-config --list-available-packages
+[ant] No description (/usr/share/ant/classpath.env)
+[java-gnome] No description (/usr/share/java-gnome/classpath.env)
+[java-gtk] No description (/usr/share/java-gtk/classpath.env)
+[log4j] "" (/usr/share/log4j/package.env)
+</pre>
+
+<note>None of these packages have a proper description. That is
+something that will be implemented in the not-so-distant
+future.</note>
+
+<p>Again, the name in brackets <path>"[]"</path> are the IDs that you
+have to pass to <c>java-config --set-system-classpath</c>, thus:</p>
+<pre>
+java-config --set-system-classpath=log4j,java-gtk,java-gnome
+</pre>
+<note>The current directory (.) will not be part of the system classpath,
+as that should be added in root's login profile.</note>
+<p>Again, you will want to run <c>env-update</c> to update your
+system's environment, and you might also want to relogin or resource
+the <path>/etc/profile</path>.</p>
+<p>For users, <c>java-config --set-user-classpath</c> will create
+<path>$HOME/.gentoo/java-env-classpath</path>, which is automatically
+included by <path>$HOME/.gentoo/java-env</path>.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Additional resources</title>
+<section>
+<title>Off-line resources</title>
+<body>
+<ul>
+<li>java-config man page</li>
+<li><c>java-config --help</c></li>
+<li>The <path>/usr/bin/java-config</path> script itself</li>
+</ul>
+</body>
+</section>
+<section>
+<title>Online resources</title>
+<body>
+<ul>
+<li>The <uri link="http://lists.gentoo.org/pipermail/gentoo-dev/">
+gentoo-dev </uri>, 
+<uri link="http://lists.gentoo.org/pipermail/gentoo-user/"> gentoo-user
+</uri> mailing list archives</li>
+<li>#gentoo on irc.openprojects.net</li>
+</ul>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Caveats</title>
+<section>
+<title>General</title>
+<body>
+<p>If you select a JRE as your default VM, you may not have a
+<c>javac</c> command handy at all times, unless you have manually
+installed a symlink to take care of that.</p>
+
+<p>Jikes will be used to compile some of the largest packages, if it
+is available. With time, we hope to be able to compile all
+java-dependent packages with Jikes, so some dependencies on the JDK
+can be replaced with a dependency on the JRE.</p>
+
+<p>With some versions of Portage, doing an <c>emerge --world
+update</c> will install the JDK regardless if whether you have it
+installed before or not. This is a known bug addressed in later
+versions of Portage.</p>
+</body>
+</section>
+</chapter>
+</guide>

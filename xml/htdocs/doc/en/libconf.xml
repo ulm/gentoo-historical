@@ -1,0 +1,300 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide>
+	<title>Libconf</title>
+	<author title="Author">
+		<mail link="dams@tuxfamily.fr">Damien 'dams' Krotkine</mail>
+	</author>
+	<abstract>
+libconf provides the functions to read, modify, and check any configuration
+files, provided that it has the appropriated template and validation data.
+	</abstract>
+
+	<version>1.0</version>
+	<date>4 Oct, 2002</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+<p>
+When a program wants to ease the configuration of the linux system, it has to
+edit some configuration files. But parsing a file is not always easy, when it
+has to deal with complex syntax, or (nested) comments, redondant
+informations...
+</p>
+<p>
+<c>libconf</c> provides the functions to read, modify, and check any configuration
+files, provided that it has the appropriated template and validation data.<br/>
+libconf is written in perl, but will be able to interface with multiple
+language and document format, like xml.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Description</title>
+<section>
+<body>
+Here is the way <c>libconf</c> is commonly used : <br/>
+<ul>
+  <li>The program asks <c>libconf</c> to read some configuration file, <c>libconf</c> returns a
+  comprehensive perl structure representing the configuration file. <br/>
+  (1) on the diagram.</li>
+
+  <li>The program can either manipulate itself the structure, or it can ask
+  <c>libconf</c> to do the manipulations for it. The manipulations supported are various listing, removing, inserting,
+  appending, adding, and research functions. <br/>
+  (2) on the diagram.</li>
+
+  <li>The program asks <c>libconf</c> to regenerate the configuration file <br/>
+  (3) on the diagram.</li>
+</ul>
+
+<fig link="/images/libconf-diagram1.jpg" short="libconf description"/>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Features</title>
+<section>
+<body>
+<ul>
+  <li><b>Loading</b>:
+  <ul>
+    <li><c>readConf</c>:<br/>
+    <c>readConf</c> reads some configuration file, builds the corresponding
+    configuration structure (see below for details), and returns it.<br/>
+    arguments:<br/>
+    <ul>
+      <li><c>$filename</c> : name of the configuration file to load</li>
+      <li><c>$template_name</c> [optional] : template to apply. If ommitted, will try to
+      guess it(TODO)</li>
+      <li><c>$validation_name</c> [optional] : validation rules to apply. If ommitted,
+      won't be able to validate</li>
+    </ul>
+    returns the configuration structure.
+    </li>
+  </ul>
+  </li>
+  <li><b>Edit</b>:
+  <ul>
+    <li><c>editAtom</c>:<br/>
+    edit some atom with the datas provided.<br/>
+    arguments:<br/>
+    <ul>
+      <li><c>$struct</c> : the configuration structure (see below for details)</li>
+      <li><c>$index</c> : position of the atom to edit. If -1, then the template will
+      edit the atom that matchs the best. The way it matches is template specific.</li>
+      <li><c>$ref_args</c> : reference on the new values, that will be stored in the
+      atom</li>
+    </ul>
+    </li>
+
+    <li><c>appendAtom</c>:<br/>
+    create a new atom at the end of the configuration structure.<br/>
+    arguments:<br/>
+    <ul>
+      <li><c>$struct</c> : the configuration structure (see below for details)</li>
+      <li><c>$ref_args</c> : reference on the new values, that will be stored in the
+      atom</li>
+    </ul>
+    </li>
+
+    <li><c>insertAtom</c>:<br/>
+    create a new atom at the given position.<br/>
+    arguments:<br/>
+    <ul>
+      <li><c>$struct</c> : the configuration structure (see below for details)</li>
+      <li><c>$index</c> : position of the atom to edit.</li>
+      <li><c>$ref_args</c> : reference on the new values, that will be stored in the
+      atom</li>
+    </ul>
+    </li>
+  </ul>
+  </li>
+  <li><b>Write</b>:
+  <ul>
+    <li><c>writeConf</c>:<br/>
+    write the configuration structure to the configuratino file.<br/>
+    arguments:<br/>
+    <ul>
+      <li><c>$struct</c> : the configuration structure (see below for details)</li>
+      <li><c>$filename</c> : the name of the configuration file </li>
+    </ul>
+    </li>
+  </ul>
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Structure description</title>
+<section>
+<body>
+The configuration is a perl hash that represents the configuration files, after
+applying a template. the current basic templates are:
+<ul>
+<li><c>shell</c> : shell like syntax</li>
+<li><c>values_sections</c> : key = value syntax, with [sections]</li>
+</ul>
+The informations of the configuration file are cut in atoms. An atom is a line that is informative, plus its
+comments and blank lines. For exemple, if the configuration file contains :
+<pre>
+AUTOLOGIN=yes #plop
+
+#this is a cool setting
+#blah bla comment
+USER=dams
+</pre>
+it will be cut in 2 atoms, the first one contains 1 coment ("plop"), and 1
+information (AUTOLOGIN=yes). The second atom contains 1 blank line, 2 comment
+lines ("this is a cool setting", "blah bla comment"), and 1 information. The
+rule is that one atom only contains 1 information.
+<br/>
+The atom can be of different type. For now we have :
+<ul>
+<li><c>SECTION</c> : this atom defines a section line.</li>
+<li><c>KEY_VALUE</c> : this atom defines a key = value line.</li>
+</ul>
+Now to the structure itself. The structure is a hash containing these keys:
+<ul>
+  <li><c>template_name</c> : the name of the template used</li>
+  <li><c>filename</c> : the name of configuration file</li>
+  <li><c>validation_name</c> : the name of the validation rules</li>
+  <li><c>atoms</c> : the list of the atoms, constitued by:
+  <ul>
+    <li><c>type</c> : the type of the atom</li>
+    <li><c>line_feed</c> : the number of blank line it contains (this has to be
+    reworked)</li>
+    <li><c>comments</c> : the list of comments of the atom</li>
+    <li><c>sections</c> : an atom can be in one or more sections. this is the
+    list of these sections.</li>
+    <li><c>name</c> : in the case of a <c>SECTIN</c> typed atom, this is the name of the section</li>
+    <li><c>key</c> : in cas of a <c>KEY_VALUE</c> typed atom, this is the name of the key</li>
+    <li><c>value</c> : in cas of a <c>KEY_VALUE</c> typed atom, this is the name of the value</li>
+  </ul>
+  </li>
+</ul>
+Simple, no? <a href="php_struct.txt">Here</a> is an example of the configuration structure of php.ini. 
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Coding Example</title>
+<section>
+<body>
+<p>
+below is a very simple example, that reads the file <path>test.conf</path>, 
+change its values, and save it to the file <path>plop.conf</path>.
+</p>
+
+<p>
+<pre>
+#!/usr/bin/perl
+
+use lib qw(.);
+use libconf qw(:functions);
+use Data::Dumper;
+
+my $struct = libconf::readConf("test.conf", 'shell');
+libconf::editAtom($struct, -1, {key =&gt; 'USER', value =&gt; 'plop'});
+libconf::appendAtom($struct, {key =&gt; 'K1', value =&gt; 'yo', type =&gt; 'KEY_VALUE'});
+libconf::insertAtom($struct, 1, {key =&gt; 'K2', value =&gt; 'yo2', type =&gt; 'KEY_VALUE'});
+libconf::writeConf($struct, "plop.conf");
+print Data::Dumper-&gt;Dump([$struct], ["out"]) . "\n";
+</pre>
+</p>
+
+<p>
+The content of test.conf before running <path>test_conf.pl</path>:
+<pre>
+
+AUTOLOGIN=yes #plop
+
+#this is a cool setting
+USER=dams
+
+
+#yes
+EXEC=/usr/X11R6/bin/startx
+</pre>
+and after:
+<pre>
+
+#plop
+AUTOLOGIN=yes
+K2=yo2
+
+#this is a cool setting
+USER=plop
+
+
+#yes
+EXEC=/usr/X11R6/bin/startx
+K1=yo
+</pre>
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>libconf based applications</title>
+<section>
+<title>Confiture</title>
+<body>
+<p><c>Confiture</c> is not a very good name, it means jam in french, so it's 
+a joke. It means <b>CONF</b>iture <b>I</b>s <b>T</b>he <b>U</b>ltimate 
+<b>R</b>ustabout <b>E</b>ditor. 
+<c>Confiture</c> provide a view of the configuration files on your
+system, either by files tree, or sections tree, and permits the edition,
+addition, deletion of the configuration files datas. 
+<c>Confiture</c> is a thin GUI layer on top of the configuration files.
+</p>
+<p>Here is a screenshot:
+<fig link="/images/libconf-confiture_shot1_mini.jpg" linkto="/images/libconf-confiture_shot1.jpg" short="Confiture screenshot"/>
+</p>
+<p>
+This diagram represents the way confiture works. This system provide very high
+flexibility and very fast devlopment speed.
+
+<ul>
+  <li>(1) on the diagram : <br/>
+  <c>Confiture</c> laods its GUI, based on ugtk, a layer on top of <c>GTK</c>.
+  </li>
+
+  <li>(2) on the diagram : <br/>
+  Once the user chooses a file to edit, <c>Confiture</c> calls <c>libconf</c> to load the
+  configurator file. Libconf give <c>Confiture</c> the structure (hash) representing the
+  configuration file.
+  </li>
+
+  <li>(3) on the diagram : <br/>
+  <c>Confiture</c> ask <c>UGTK</c> to build the adequate widget corresponding at the
+  structure (hash). It then incorpores it in the main window.
+  </li>
+
+  <li>(4) on the diagram : <br/>
+  Once the user has terminated editing the configuration file, <c>Confiture</c> calls
+  <c>libconf</c> to save the configuration file.
+  </li>
+</ul>
+<fig link="/images/libconf-diagram2.jpg" short="Confiture Description"/>
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>

@@ -1,0 +1,210 @@
+<?xml version='1.0' encoding="iso-8859-15"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="doc/altinstall-fr.html">
+<title>Une méthode alternative d'installation de Gentoo Linux</title>
+<author title="Auteur"><mail link="lordviram@rebelpacket.net">Travis Tilley</mail></author>
+<author title="Traduction"><mail link="julien.perrot@iie.cnam.fr">Julien Perrot</mail></author>
+<abstract>
+Ce HOWTO est destiné à devenir une collection de méthodes alternatives
+d'installation de Gentoo pour ceux qui ont des besoins d'installation
+spécifiques causés par l'absence de lecteur cdrom ou par un ordinateur qui ne peut pas démarrer sur des cds.
+</abstract>
+
+
+<version>0.1</version>
+<date>23 Feb 2002</date>
+
+<chapter>
+<title>A propos de ce document</title>
+<section>
+<body>
+
+<p>Si la méthode d'installation standard avec démarrage sur CD ne fonctionne pas
+pour vous (ou si tout simplement vous ne l'aimez pas), l'aide est ici. Ce
+document fournit une collection de techniques d'installations
+alternatives de Gentoo Linux pour ceux qui en ont besoin.
+Ou, si vous préférez, c'est l'endroit pour placer vos méthodes d'installation
+farfelues. Si vous avez une méthode d'installation que vous trouvez utile, ou
+si vous avez inventé une façon amusante d'installer Gentoo, n'hésitez pas à
+rédiger quelque chose et <mail link="lordviram@rebelpacket.net"></mail>me
+l'envoyer (en anglais)</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installation avec démarrage réseau</title>
+<section>
+<title>Conditions requises</title>
+<body>
+
+<p>Les conditions requises pour une installation avec démarrage réseau sont un
+ordinateur hôte qui peut fournir un serveur tftp et un ordinateur qui peut
+démarrer sur le réseau grace à son bios ou à un lecteur de disquette utilisé
+pour démarrer GRUB ou un autre gestionnaire de démarrage supportant le réseau.
+Un serveur dhcp peut être aussi nécessaire. Bien sûr, vous aurez aussi besoin
+de la dernière image ISO, qui peut être trouvée sur
+<uri>http://www.ibiblio.org/gentoo/snapshots/build/</uri></p>
+
+</body>
+</section>
+
+<section>
+<title>Vue d'ensemble</title>
+<body>
+
+<p>Pour charger les images par le réseau, la première chose qu'une machine avec
+démarrage réseau doit faire est d'obtenir une adresse IP. Il y a des multiples
+façon d'obtenir une adresse IP, et n'importe laquelle fonctionnera.
+Personnellement, je préfère utiliser GRUB pour tout, mais si votre ordinateur
+supporte déjà de démarrer sur le réseau alors GRUB peut ne pas être nécessaire,
+même s'il peut être plus facile de simplement utiliser la commande <c>ifconfig</c>
+de GRUB plutôt que d'installer un serveur bootp ou dhcp.</p>
+
+<p>Une fois que votre ordinateur a obtenu une adresse IP, l'étape suivante est
+logiquement de trouver ce que vous allez utiliser pour démarrer et où ce sera
+stocké. Une fois de plus, il serait plus simple de le faire avec les commandes
+de GRUB plutôt que d'installer un serveur bootp ou dhcp. Vous aurez aussi besoin
+de spécifier comment obtenir un initrd et indiquer au noyau qu'il doit
+utiliser cet initrd en tant que système de fichier racine.</p>
+
+<p>Avec votre noyau chargé et votre système de fichiers racine monté, vous
+pouvez procéder avec l'installation habituelle. L'image de gentoo peut être
+chargée à partir d'un cd ou elle peut être téléchargée à travers le réseau par
+tftp.</p>
+
+</body>
+</section>
+<section>
+<title>Utiliser GRUB</title>
+<body>
+
+<p>Pour utiliser GRUB afin de démarrer sur le réseau, vous devez d'abord avoir
+compilé GRUB avec le support de votre carte réseau. Ca n'a pas d'importance si
+vous l'installez sur une disquette ou sur le disque dur de l'ordinateur sur
+lequel vous voulez installer Gentoo. Si votre cible d'installation a déjà GRUB
+avec le support réseau installé, alors vous pouvez passer à l'étape suivante.
+GRUB peut être téléchargé sur
+<uri>ftp://alpha.gnu.org/gnu/grub/</uri></p>
+
+<p>Un exemple de configure pour activer le support de tulip, la carte réseau
+dans ma machine</p>
+
+<pre caption="Installation manuelle de GRUB">
+# <i>./configure --enable-tulip --prefix=/usr</i>
+# <i>make &amp;&amp; make install</i>
+</pre>
+
+<p>Si vous êtes en ce moment dans Gentoo et que vous voulez installer GRUB en
+utilisant les outils Gentoo, alors vous devez installer étape par étape pour
+configurer le support de votre carte réseau. Un exemple d'utilisation de ebuild
+pour installer GRUB avec le support tulip:</p>
+
+<pre caption="Installer et configurer GRUB sur Gentoo Linux">
+# <i>ebuild /usr/portage/sys-apps/grub/grub-0.91.ebuild clean fetch unpack</i>
+# <i>cd /var/tmp/portage/grub-0.91/work/grub-0.91/</i>
+# <i>./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man \ </i>
+> <i>--infodir=/usr/share/info --enable-tulip</i>
+# <i>make</i>
+# <i>touch /var/tmp/portage/grub-0.91/.compiled</i>
+# <i>cd /usr/portage/</i>
+# <i>ebuild sys-apps/grub/grub-0.91.ebuild install merge</i>
+</pre>
+
+<p>Maintenant que nous avons le shell GRUB installé, nous devons installer un
+secteur de démarrage. Bien que vous pouvez installer GRUB sur le secteur de
+démarrage du disque dur d'installation, ici nous supposerons que vous installez
+GRUB sur une disquette de démarrage. Il y a deux façons de faire ceci. Vous
+pouvez utiliser le shell GRUB lui même, ou vous pouvez utiliser un script fourni
+appellé <c>grub-install</c>. Il est préférable d'utiliser <c>grub-install</c>
+pour installer GRUB sur une disquette.</p> 
+
+<pre caption="exemple d'utilisation de grub-install">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>grub-install --root-directory=/mnt/floppy/ '(fd0)'</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p><c>grub-install</c> ne fonctionne pas toujours... et ce n'est pas toujours la
+meilleure façon d'installer GRUB. Et puisque le shell GRUB fonctionne exactement
+comme GRUB le ferait une fois démarré via le secteur de démarrage, il est
+plus conseillé de simplement utiliser le shell GRUB. Voici un exemple
+d'utilisation du shell GRUB pour installer GRUB sur une disquette:</p>
+
+<pre caption="Utiliser le shell GRUB à la place">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>mkdir -p /mnt/floppy/boot/grub/</i>
+# <i>cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/</i>
+# <i>grub</i>
+grub> <i>root (fd0)</i>
+grub> <i>setup (fd0)</i>
+grub> <i>quit</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>Maintenant que nous avons une disquette GRUB sur laquelle nous pouvons
+démarrer, nous avons besoin d'installer le serveur tftp hôte (Je suggère le
+serveur tftp netkit) pour charger notre noyau et initrd. Si vous utilisez inetd
+alors vous aurez besoin d'une ligne dans votre <path>/etc/inetd.conf</path> qui
+ressemble à ceci:</p>
+
+<pre caption="/etc/inetd.conf">
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+
+<p>Pour installer le serveur tftp netkit sous Gentoo linux, emerge net-misc/netkit-tftp</p>
+
+<note>Il y a un ebuild for xinetd... si vous préférez l'utiliser alors vous êtes
+libres de le faire. Cependant je n'utilise pas xinetd, et ne sais pas comment
+installer tftp avec. Si vous l'utilisez, envoyez moi des informations sur
+comment arriver à faire fonctionner xinetd et je les inclurai dans ce
+HOWTO.</note>
+
+<p>Maintenant que nous avons notre serveur tftp prêt, nous avons besoin d'un
+noyau et d'un initrd racine à placer. Vous pouvez compiler un noyau personnalisé
+vous-même, mais faites en sorte qu'il ait tous les composants nécessaires pour
+faire fonctionner Gentoo (comme devfs) et pour démarrer sur le réseau (comme le
+support initrd). L'initrd racine sera le fichier rescue.gz inclu dans l'image
+ISO Gentoo.</p>
+
+<impo>Monter une image ISO sans la graver sur un CD nécessite le support du
+système de fichiers loopback.</impo>
+
+<pre>
+# <i>mkdir /tftpboot</i>
+# <i>mount -o loop /path/to/build-ix86-1.0_rc6-r14.iso /mnt/cdrom/</i>
+# <i>cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot</i>
+# <i>chmod 644 /tftpboot/*</i>
+# <i>umount /mnt/cdrom/</i>
+</pre>
+
+<p>Démarrer la machine sur laquelle vous voulez installer avec votre
+incroyablement utile disquette GRUB. Après avoir démarré, vous avez besoin de
+spécifier une méthode pour que la machine obtienne son adresse IP, spécifier où
+récupérer un noyau et ses options, et où récupérer son initrd.</p>
+
+<pre>
+grub> <i>ifconfig --address=192.168.0.10 --server=192.168.0.2</i>
+grub> <i>root (nd)</i>
+grub> <i>kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 </i>
+      <i>prompt_ramdisk=0 ramdisk_size=18580 root=/dev/ram0 rw</i> <comment>(le tout sur une ligne)</comment>
+grub> <i>initrd /tftpboot/rescue.gz</i>
+grub> <i>boot</i>
+</pre>
+
+<note>Vous pouvez aussi utiliser bootp et dhcp pour configurer votre adresse IP
+via GRUB. Utilisez les commandes bootp et dhcp de grub.</note>
+
+<p>Maintenant que votre machine a démarré, vous pouvez continuer l'installation
+habituelle. Se référer au howto d'installation présent sur le CD.</p>
+
+</body>
+</section>
+</chapter>
+</guide>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="euc-jp"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/portage-user.html">
+<title>Portage ユーザガイド</title>
+<author title="Chief Architect"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Editor"><mail link="thomasfl@gentoo.org">Thomas Flavel</mail></author>
+
+<abstract>このガイドは、パッケージを最新に保つ方法とシステムを整備する方法を、簡単に取り上げます。</abstract>
+
+<version>1.2.1</version>
+<date>17 Oct 2001</date>
+
+<chapter>
+<title>はじめに</title>
+
+<section>
+<title>Portage ツリーのダウンロード</title>
+<body>
+
+<p>Gentoo Linux をインストールし、少しの間使用していると、いくつかのパッケージにいくつかのバグあるいは、
+おかしな動作を見つけるかもしれません。また最新の Gentoo Linux ソフトウェアパッケージをインストールしたり、現在インストールされているパッケージを更新したりしたいでしょう。最新の Portage ツリーを
+得るために使用することが可能なanonymous rsync サーバを提供しています。ここでは、その使用方法を述べます。</p>
+
+<p>最初に、<path>/usr/portage</path> と呼ばれるディレクトリを作成してください。その後、rsync がインストール
+されていることを確認してください。もしインストールされてなければ、ibiblio ミラーサイトからダウンロードし、
+<c>emerge rsync-x.y.z.tbz2</c> をタイプしてインストールしてください。その後、Portage ディレクトリを同期するための
+下記のコマンドを使用してください。</p>
+<pre>
+# <i>emerge rsync</i>
+</pre>
+
+<p>定期的に rsync コマンドの次の形式を実行したいと思うでしょう。それはいくつかの古い ebuild スクリプト
+を削除するでしょう。</p>
+
+<warn><c>emerge --clean rsync </c> は、個人的な変更や <path>/usr/portage</path>
+ツリーへの追加を削除することに注意してください。したがって、このコマンドは
+注意して使用してください。</warn>
+
+<pre>
+# <i>emerge --clean rsync </i>
+</pre>
+
+<p>もし <path>/usr/portage</path> ツリーに標準の変更を加えているなら、
+公式 Portage CVS ツリーをそれらのうちのいくつか、あるいは全てをコミット
+できるように、CVS へのアクセスのために
+<mail link="drobbins@gentoo.org">Daniel</mail> に連絡を取りたいと思うかも
+しれません。</p>
+
+</body>
+</section>
+
+<section>
+<title>Portage の更新</title>
+<body>
+<p>Portage ツリーを使う前に、Portage を更新することは重要です。更新をするためには、
+下記を実行してください。</p>
+
+<pre>
+# <i>cd /usr/portage/sys-apps/portage</i>
+# <i>emerge portage-x.y.z.ebuild</i>
+</pre>
+
+<p>これで portage の最新のバージョンを使うでしょう。そして、インストールされたソフトウェアを
+更新するために、ebuild システムを使用しはじめることができます。</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title><c>emerge</c> の導入</title>
+<section>
+<title><c>emerge --pretend</c></title>
+<body><p> 
+パッケージをインストールするために、<path>/usr/portage</path> で、
+そのインストールするディレクトリに移動してください。例えば、
+</p>
+
+<pre>
+# <i>cd /usr/portage/net-irc/xchat</i> 
+</pre>
+
+<p>その後、インストールされるであろう依存しているパッケージ(もしあれば)を確認するために、<c>emerge --pretend</c> を実行します。</p>
+
+<pre>
+# <i>emerge --pretend xchat-1.4.3.ebuild</i>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies......... done!
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>特にこの場合、X がインストールされていないマシン上で <path>xchat</path>
+を merge することを想定しています。このように、<c>emerge --pretend</c> は
+最初に指定されたパッケージを満足するために、いくつかの依存するパッケージが
+必要であることを正確に確認します。
+特に、<path>sys-libs/zlib</path> と <path>dev-libs/glib</path> は更新される
+必要があります。そしてその後の一連の ebuild (もちろん、
+<path>x11-base/xfree</path> を含む) は、merge される必要があります。</p>
+</body>
+</section>
+<section>
+<title>USE 環境変数と <c>emerge</c></title>
+<body>
+<p>上記では、<path>/etc/make.conf</path> 内の <c>USE</c> 変数に <c>gnome</c>
+は定義されていないシステム上で <c>emerge --pretend</c> を実行しました。
+これは、オプションの GNOME サポートが、その場合、有効にならないことを
+意味します。
+しかしながら、<path>xchat</path> はオプションの GNOME サポートを持っています。
+したがって、<path>/etc/make.conf</path> 内の USE 環境変数に <c>gnome</c> を
+追加した後の <c>emerge --pretend</c> の出力を見てみましょう。
+</p>
+
+
+<pre>
+# <i>emerge --pretend xchat-1.4.3.ebuild</i>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies............................ done!
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] gnome-base/libghttp-1.0.9 to /
+[ebuild N  ] media-libs/audiofile-0.2.1 to /
+[ebuild N  ] media-sound/esound-0.2.22-r2 to /
+[ebuild N  ] gnome-base/gnome-env-1.0 to /
+[ebuild N  ] gnome-base/libxml-1.8.11 to /
+[ebuild N  ] gnome-base/ORBit-0.5.8 to /
+[ebuild N  ] gnome-base/oaf-0.6.5 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] net-libs/libwww-5.3.2-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] dev-util/guile-1.4-r3 to /
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] gnome-base/gnome-libs-1.2.13 to /
+[ebuild N  ] gnome-base/glibwww-0.2-r1 to /
+[ebuild N  ] gnome-base/gdk-pixbuf-0.11.0 to /
+[ebuild N  ] gnome-base/gconf-1.0.0 to /
+[ebuild N  ] gnome-base/gnome-vfs-1.0.1 to /
+[ebuild N  ] gnome-base/control-center-1.4.0.1 to /
+[ebuild N  ] gnome-base/scrollkeeper-0.2 to /
+[ebuild N  ] dev-util/xml-i18n-tools-0.8.1 to /
+[ebuild N  ] gnome-base/libglade-0.16-r1 to /
+[ebuild N  ] gnome-base/gnome-core-1.4.0.4 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>見ての通り、<c>USE</c> 変数に <c>gnome</c> を追加することで、emerge は
+xchat がオプションの GNOME サポートを含めるべきであることを認識します。
+そしてもちろん、このオプションの GNOME サポートが、正確にコンパイルかつ実行
+されるために、GNOME が最初にインストールされます。<c>emerge</c> はこの全ての
+出力を表示し、merge されるべき ebuild のリストへ GNOME によって必要とされる
+様々なパッケージを追加します。<c>USE</c> 変数は、正確に設定されない場合があり、
+これは様々なオプションの拡張のためのサポートを不意に含めたり除いたりということ
+の原因になります。そのため、実際の <c>emerge</c> を実行する前に
+<c>emerge --pretend</c> を常に実行するように勧めます。特に、新しい見慣れない
+ebuild のために。これであなたが何を期待しているかがわかるでしょう。:)
+一旦すべてが OK であると確認できれば、<c>--pretend</c> を取ることにより、
+実際の <c>emerge</c> を実行することができます。</p>
+
+<pre>
+# <i>emerge xchat-1.4.3.ebuild</i>
+</pre>
+
+<p>全ての依存物が merge された後、(もしそれらがすでに存在する場合、すべての
+パッケージがmergeされるとはかぎりませんが) xchat ソースは
+(<path>/usr/portage/distfiles</path> に)ダウンロードされ、検査、展開され、
+コンパイル、そして一時的なディレクトリにインストールされます。その後、
+ローカルファイルシステムへと merge されます。インストールされたファイル
+と全てのファイルの md5sum を含むパッケージデータベースは、
+<path>/var/db/pkg/net-irc/xchat-1.4.3/CONTENTS</path> に作成されます。</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>パッケージの更新</title>
+<section>
+<body>
+
+<p>Gentoo Linux 管理下でのパッケージを更新する標準の方法は、新しいパッケージを
+merge し、その後古いパッケージを unmerge することです。これが更新するためには、安全(で楽しみ!)です。最初に、上記の説明のように新しいパッケージを merge し、その後、次のように入力して古いパッケージをアンインストールしてください。</p>
+
+<pre>
+# <i>emerge unmerge =net-irc/xchat-1.0.0-r1</i>
+</pre>
+
+<p>Portage は "safe" unmerge と呼ばれる仕組みを使用します。それは、単に
+オリジナルファイルを削除するということです。もしファイルが、なんらかの
+方法で上書き、あるいは変更されていたら、ファイルシステム上に残しておきます。
+(おそらくは、パッケージのより新しいバージョンをインストールしたのでしょう。)
+よって、もし xchat の新しいバージョンを merge した後、古いバージョンを
+unmerge したなら、xchat の実行ファイルはファイルシステムから削除されません。
+よって、それはより新しいタイムスタンプかつ異なる md5sum を持ちます。
+いつでも、アプリケーションのいくつかのバージョンが利用可能であることを
+保証するので、safe unmerge は実にすばらしいです。もし、最初に unmerge を
+しなければならなかったとしたら、新しいバージョンがダウンロード、コンパイル、
+インストール、そして merge されているしばらくの間、xchat はりようできない
+でしょう。</p>
+
+<impo>
+Portage は現在 "config file protection" と呼ばれる特別な機能を持っています。
+この機能の目的は、新しいパッケージのインストールによって既に存在する設定ファイル
+を壊してしまうことを防ぐことです。デフォルトでは、config file protection は、
+/etc と KDE 設定ディレクトリで作動します。今後、もっと追加するかもしれません。
+より詳しくは、<c>emerge --help config</c>を入力してください。
+</impo>
+
+</body>
+</section>
+</chapter>
+</guide>

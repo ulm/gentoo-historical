@@ -1,0 +1,708 @@
+<?xml version='1.0' encoding="iso-8859-1"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide>
+    <version/>
+    <title>Documentation Gentoo - eclass HOWTO</title>
+    <author>Dan Armak</author>
+    <author title="Traducteur" email="pierre.habouzit@m4x.org">Pierre HABOUZIT</author>
+    <date>20020330</date>
+    <abstract>
+	Le howto sur eclass explique l'idée derrière les eclass, quelles sont les
+    eclass actuelles et
+	comment elles fonctionnent, et la méthode pour écrire un script ebuild héritant de l'eclass KDE.
+    </abstract>	   
+
+    <chapter>
+	<title>Introduction aux eclass</title>
+	<body>
+	    <p>
+		Les eclass font partie des ebuilds. Ce sont des morceaux de codes hérités par les ebuilds
+		et d'autres eclass, pour fournir des paramètrages par défaut, et des fonctions à plusieurs
+		ebuilds similaires. Comme pour de la programmation orientée objet, cela assure une réutilisation
+		maximale de code dans des ebuilds similaires.
+	    </p>
+	    <p>
+		Cette première partie montre brièvement comment écrire une eclass. La
+        seconde est une revue détaillée
+		des eclass existantes. La troisième explique comment écrire un ebuild KDE en utilisant le groupe
+		des eclass KDE.
+	    </p>
+	</body>
+	
+	<section>
+	    <title>Exemple</title>
+	    <body>
+		<p>
+		    Voici une eclass "sourceforge.eclass" fictive, écrite pour fournir la page principale et les liens
+		    de téléchargement de projets hébergés par sourceforge.net :
+		</p>
+<pre># Copyright 2001-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2 or later
+# Author Dan Armak &lt;danarmak@gentoo.org&gt;
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/Attic/eclass-howto.xml,v 1.1 2002/11/09 18:47:44 drobbins Exp $
+# This eclass sets $HOMEPAGE and $SRC_URI to the standard vaules for
+# sourceforge.net - hosted projects.
+ECLASS=base
+HOMEPAGE=&quot;http://${PN}.sourceforge.net/&quot;
+SRC_URI=&quot;http://download.sourceforge.net/${PN}/${P}.tar.gz&quot;
+</pre>
+		<p>
+		    Les quatre premières lignes sont en en-tête, identiques à celles de n'importe quel ebuild.
+		    Les deux lignes suivantes sont une courte description de l'eclass. La ligne 7 positionne
+		    $ECLASS sur le nom de l'eclass, ce qui est utile pour des applications que nous verrons
+		    plus loin. Ce sont les seules conventions à suivre.
+		</p>
+		<p>
+		    Le reste du code fait le travail réel (à savoir positionner $SRC_URI et $HOMEPAGE).
+		</p>
+	    </body>
+	</section>
+		
+	<section>
+	    <title>A votre tour</title>
+	    <body>
+		<p>
+		    C'est tout ce que vous avez à savoir pour le momment, pour écrire
+            des eclass. Mettez votre nouvelle
+		    eclass dans /usr/portage/eclass/, et mettez les deux lignes suivantes au début de votre ebuild :
+		</p>
+<pre>. /usr/portage/eclass/inherit.eclass || die
+inherit sourceforge
+</pre>
+		<p>
+		    La première ligne n'est utile que par compatibilité descendante avec portage 1.8.8 (c'est à dire pour
+		    la version rc6 de la gentoo). Le nouveau portage (>=1.8.9) contient une fonction inherit(), mais
+		    les anciennes versions ont besoin d'inclure manuellement inherit.eclass qui la fournit.
+		    Ce support descendant sera supprimé le 25 avril, un mois après la sortie de portage-1.8.9_pre32
+		    pour l'installeur 1.0 (le premier portage à supporter inherit() et quelques autres éléments
+		    servant à assurer le support des eclass).
+		</p>
+		<p>Bien entendu, vous pouvez hériter de plusieurs eclass en même temps en faisant :</p>
+<pre>inherit eclass1 eclass2 ...
+</pre>
+		<p>... mais attention à l'ordre !</p>
+	    </body>
+	</section>
+    </chapter>
+    
+    <chapter>
+	<title>ebuild.sh et l'environnement de travail général</title>
+	<body />
+	
+	<section>
+	    <title>Remarques sur la compatibilité descendante</title>
+	    <body>
+		<p>
+		    Cette section détaille les fonctions fournies par ebuild.sh, spécialement pour les eclass.
+		    Jusqu'à portage-1.8.9_pre32, ces fonctions existent dans les eclass elle-mêmes.
+		    Ces eclass existent encore pour une compatibilité descendante avec portage 1.8.8 et précédents
+		    (1.0_rc6); support qui sera supprimé un mois après la sortie de la version 1.0 (soit le 31 Avril).
+		</p>
+		<p>
+		    Les eclass existantes pour la compatibilité descendante sont uniquement inherit.eclass, functions.eclass et
+		    debug.eclass. inherit.eclass possède une sorte de commande #ifndef/#define: cela exporte la variable
+		    $COMPAT quand le mode de compatibilité est actif. Si ca n'est pas le cas, le code dans les anciennes
+		    eclass n'est pas exécuté, et le code du script ebuild.sh est utilisé à la place.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>inherit()</title>
+	    <body>
+		<p>Cette fonction gère l'héritage (inclusion des sources) des eclass.
+        Elle est appellée ainsi : inherit .</p>
+		<p>
+		    Pour le momment, inherit() ne fait qu'inclure les fichiers depuis une adresse codée en dur. Si dans
+		    le futur, nous décidons de déplacer les eclass ailleurs un code de résolution des noms de fichiers sera
+		    placé ici.
+		</p>
+		<p>
+		    Avant portage-1.8.9_pre32, inherit() se trouvait dans inherit.eclass. Pour la compatibilité descendante
+		    avec ceci, chaque ebuild dérivé d'une eclass doit avoir la ligne suivant avant n'importe quelle commande
+		    d'héritage :
+		</p>
+<pre>. /usr/portage/eclass/inherit.eclass || die
+</pre>
+		<p>
+		    Si le mode de compatibilité est coupé, aucun code ne sera chargé depuis inherit.eclass ou toute autre
+		    eclass obsolète, ni même exécuté.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>EXPORT_FUNCTIONS()</title>
+	    <body>
+		<p>
+		    Supposons que foo.eclass et bar.eclass définissent toutes deux src_compile. Si vous héritez à la fois
+		    de foo et de bar, vous aurez une fonction src_compile qui va
+            dépendre de l'ordre dans lequel vous les
+   		    héritez. C'est bon, vous êtes supposé garder une trace de votre ordre d'héritage. mais vous pouvez avoir envie d'appeler l'une ou l'autre des deux src_compile de manière explicite.
+		</p>
+		<p>
+		    Ainsi, chaque eclass ajoute aux fonctions qu'il définit un préfixe. Par exemple, A.eclass va définir
+		    A_src_compile(), et B.eclass va définir B_src_compile(). Ainsi, un ebuild peut appeler chacune des
+		    deux fonctions, en sachant laquelle il va utiliser.
+		</p>
+		<p>
+		    Cela crée un nouveau problème: nous avons besoin d'avoir une fonction appelée src_compile pour que l'ebuild
+		    n'ait pas besoin d'appeler explicitement quelque chose something_src_compile. C'est là que la fonction
+		    EXPORT_FUNCTIONS() entre en jeu :
+		</p>
+<pre>EXPORT_FUNCTIONS() {
+ 
+        while [ &quot;$1&quot; ]; do
+            eval &quot;$1() { ${ECLASS}_$1 ; }&quot; &gt; /dev/null
+        shift
+        done
+ 
+}
+</pre>
+		<p>
+		    Chaque eclass, dans ses premières lignes, définit la variable $ECLASS à son nom (par exemple &quot;A&quot; 
+		    ou &quot;B&quot;). Ensuite elle appelle EXPORT_FUNCTIONS avec la liste des fonctions qu'elle fournit.
+		    Par exemple, si vous l'appelez par :
+		</p>
+<pre>ECLASS=foo
+EXPORT_FUNCTIONS src_unpack
+</pre>
+		<p>alors EXPORT_FUNCTIONS va permettre d'évaluer la chaine suivante :</p>
+<pre>src_unpack() { foo_src_unpack() ; }
+</pre>
+		<p>
+		    Maintenant, toute eclass héritée en dernier définit la fonction src_compile() par défaut, mais chaque fonction
+		    src_compile des eclass peut être appelée directement par la syntaxe précédente. Une eclass peut bien sur définir
+		    une fonction src_compile() qui ne soit pas exportée, mais personne ne devrait avoir à faire ca.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>Sections des fonction</title>
+	    <body>
+		<p>
+		    Une bonne fonction prédéfinie peut souvent être définie comme telle; parfois, pourtant, vous pouvez avoir envie
+		    de les modifier ("extend").
+		</p>
+		<p>
+		    Si elles ont des noms uniques (foo_src_unpack), il est facile d'ajouter du code qui s'exécute avant
+		    ou après celle ci. Il suffit de faire :
+		</p>
+<pre>src_compile() {
+    run_my_code
+    base_src_compile
+    run_my_other_code
+}
+</pre>
+		<p>
+		    Les "sections" de fonctions permettent une plus grande flexibilité. Elles séparent les fonctions en deux,
+		    et permettent d'exécuter du code dans chacune des deux sections.
+		</p>
+		<p>
+		    L'implémentation est simple. Prenons comme exemple la fonction src_compile() de base.eclass.
+		    (Rem : ce fichier n'existe plus, mais c'est un bon exemple). Elle ressemble à ceci:
+		</p>
+<pre>base_src_compile() {
+    ./configure || die
+    emake || die
+}
+</pre>
+		<p>Ici, on retrouve la même fonction, séparée en deux sections :</p>
+<pre>base_src_compile() {
+ 
+    [ -z &quot;$1&quot; ] &amp;&amp; base_src_compile all
+ 
+    while [ &quot;$1&quot; ]; do
+        case $1 in
+            configure)
+                ./configure || die;;
+            make)
+                emake || die;;
+            all)
+                base_src_compile configure make;;
+        esac
+    shift
+    done
+ 
+}
+</pre>
+		<p>
+		    Le code a été séparé en deux sections: <i>configure</i> et <i>make</i>. Dans cet exemple très simple,
+		    cela correspond aux deux commandes de la fonction originale.
+		</p>
+		<p>
+		    Dans le corps de la nouvelle fonctions, il y a un bloc "while;case...esac;shift;done". Ce bloc compare
+		    les paramètres des fonctions avec les noms de sections et exécute les bonnes portions de code.
+		</p>
+		<p>
+		    Le cas spécial de <i>all</i> appelle la même fonction récursivement
+            avec une liste de sections dans l'ordre.
+		    C'est à l'auteur de l'eclass de maintenir cette liste.
+		</p>
+		<p>
+		    La ligne précédant le bloc spécifie qu'un appel de la fonction sans paramètre doit être traité comme
+		    un appel avec le simple paramètre <i>all</i>. Comme vous le voyez,
+            cette fonction fait beaucoup d'appels
+		    récursifs. Remarquez tout de même que l'appel <i>base_src_compile
+            configure all make</i> est légal;
+		    cela va exécuter  <i>base_src_compile configure configure make make</i>.
+		</p>
+		<p>
+		    Maintenant, dans votre ebuild (ou votre eclass) qui dérive de base.eclass, vous disposez de la fonction
+		    src_compile qui appelle base_src_compile sans paramètres. Ceci fait exécuter <i>all</i> à base_src_compile,
+		    c'est à dire toutes ses sections. Vous pouvez le laisser ainsi. Bien
+            sûr, si vous voulez étendre sa définition,
+		    définissez un nouveau src_compile et appelez chaque section de base_src_compile quand vous le désirez :
+		</p>
+<pre>src_compile() {
+    run_my_code1
+    base_src_compile configure
+    run_my_code2
+    base_src_compile make
+    run_my_code3
+}
+</pre>
+		<p>
+		    Comme vous pouvez le voir, les sections de fonction ajoutent de la flexibilité puisque vous pouvez ajouter
+		    du code entre deux sections, ou bien les exécuter dans un ordre différent, ou n'en exécuter qu'une partie.
+		    Celà permet une réutilisation maximale du code déjà écrit.
+		</p>
+		<p>
+		    Une dernière remarque : toutes les fonctions n'exécutent pas toutes leurs sections lorsqu'elle sont appelées
+		    avec <i>all</i> ou sans paramètres. Certaines sections peuvent ne
+            pas êtres exécutées par défaut, et doivent
+		    être appelées explicitement. Le seul exemple actuel est actuellement <i>base_src_unpack patch</i>.
+		</p>
+	    </body>
+	</section>
+
+	<section>
+	    <title>les fonctions debug-print-*</title>
+	    <body>
+		<p>
+		    Ces fonctions ajoutent de la verbosité, donnant de nombreuses informations de débogage. Toutes les eclass
+		    appellent souvent ces fonctions, ce qui les rend vraiment horribles à regarder, mais qui aident
+		    énormément à déboguer, puisqu'il n'y a aucun débogueur de scripts bash, ni d'IDE, ni aucun interpréteur pas à pas
+		    (en dehors de bash -x)
+		</p>
+		<p>
+		    debug-print() imprime ses paramètres avec le préfixe "debug". debug-print-function() imprime
+		    "debug: entering function $1, parameters: $2 $3 ...". debug-print-section() imprime "debug: now in section $1".
+		</p>
+		<p>
+		    La sortie de débogage va normalement dans le fichier ${T}/eclass-debug.log. Vous pouvez modifier la variable
+		    ECLASS_DEBUG_OUTPUT (dans make.globals/conf ou ebuild/eclass, ou l'environnement) et la sortie de débogage
+		    y sera déportée. Vous pouvez aussi la positionner sur la valeur spécifique "on" qui permet au débogage de 
+		    s'afficher sur la sortie standard, avec les autres messages classiques de "emerge".
+		</p>
+		<p>Ajoutons maintenant des instructions classiques de débogage dans notre fonction d'exemple :</p>
+<pre>base_src_compile() {
+ 
+    debug-print function $FUNCNAME $*
+    [ -z &quot;$1&quot; ] &amp;&amp; base_src_compile all
+ 
+    while [ &quot;$1&quot; ]; do
+        case $1 in
+            configure)
+                debug-print-section configure
+                ./configure || die;;
+            make)
+                debug-print-section make
+                make || die;;
+            all)
+                debug-print-section all
+                base_src_compile configure make;;
+        esac
+    shift
+    done
+ 
+    debug-print &quot;$FUNCNAME: result is $RESULT&quot;
+}
+</pre>
+		<p>Petite remarque : $FUNCNAME est une constante prédéfinie par bash qui contient le nom de la fonction courante</p>
+	    </body>
+	</section>
+
+	<section>
+	    <title>newdepend()</title>
+	    <body>
+		<p>
+		    Cette fonction ne fait qu'ajouter ses paramètres à DEPEND et RDEPEND, vous enlevant la peine d'avoir à maintenir
+		    deux listes de dépendances.
+		</p>
+		<p>
+		    Si elle est appellée avec un paramètre spécial, elle ajoute des
+            dépendances prédéfinies.
+		    Ces paramètres spéciaux sont pour le momment :
+		</p>
+		<p>newdepend /autotools: ajoute "sys-devel/autoconf sys-devel/automake sys-devel/make" à DEPEND (mais pas RDEPEND)</p>
+		<p>newdepend /c: ajoute "virtual/glibc sys-devel/ld.so" à DEPEND et RDEPEND et "sys-devel/gcc" à DEPEND</p>
+		<p>
+		    Cette fonction encourage les développeurs à maintenir des chaînes de dépendance cohérentes.
+		    En particulier, plusieurs ebuilds n'ont pas de chaines "RDEPEND" ce qui sera un problème lorsque notre
+		    fonction "unmerge" sera opérationnelle et saura utiliser les dépendances.
+		</p>
+	    </body>
+	</section>
+    </chapter>
+    
+    <chapter>
+	<title>Les eclass</title>
+	<body/>
+	
+	<section>
+	    <title>base.eclass</title>
+	    <body>
+		<p>
+		    Cette eclass définit quelques variables et fonctions par défaut, identiques à celles que vous avez par défaut
+		    dans un ebuild n'héritant pas (lancé par un portage récent), par exemple src_unpack() { unpack ${A}; }.
+		</p>
+		<p>Eventuellement, cette eclass pourra être rétirée et fusionnée avec les fonctions par défaut de ebuild.sh</p>
+		<p>Elle est héritée par d'autres eclass de plus haut niveau comme celles de KDE</p>
+		<p>
+		    Notez que dans base_src_unpack, se trouve une section non exécutée par défaut par le paramètre <i>all</i>.
+		    il s'agit de la section <i>patch</i> et elle ressemble à ca :
+		</p>
+<pre>cd ${S}
+patch -p0 &lt; ${FILESDIR}/${P}-gentoo.diff
+</pre>
+	    </body>
+	</section>
+
+	<section>
+	    <title>kde.eclass</title>
+	    <body>
+		<p>
+		    Utilisée par toutes les applications KDE, soit directement, soit indirectement. (Mais pas par les
+            applications avec des fonctionnalités kde). C'est une eclass de haut niveau, qui est prévue pour 
+            fournir non seulement des environnements par défaut, mais aussi des fonctions utilisables le plus
+            souvent sans les modifier. En fait aucune des eclass kde-* de haut niveau qui héritent de celle-ci
+            ne modifient ces fonctions d'aucune manière que ce soit, et les ebuilds le font rarement. Cette eclass
+            contient le corps du système d'eclass, tandis que virtual et base fournissent plutôt un squelette.
+		</p>
+		<p>Elle dépend d'autoconf, de base et de depend.</p>
+		<p>Lisez la pour découvrir ce qu'elle définit. Cette eclass est souvent suffisament claire pour ca.</p>
+		<p>
+		    Brièvement, celà permet de gérer toutes les applications KDE standard qui utilisent le cycle
+            d'installation GNU standard : configure/make/make install. Cette
+            eclass gère notamment toutes les options standard de configure, par exemple "qtmt".
+		</p>
+		<p>
+		    Remarque: quelques applications kde, comme les paquets de styles ou d'internationnalisation (i18n), n'ont
+		    pas besoin de compiler la moindre chose. C'est pourquoi kde.eclass
+            ne fait pas hériter de c. Ces paquetages peuvent ainsi hériter directement de kde.eclass. Tous les
+            autres, qui ont du code en c à compiler, doivent hériter de kde-base.eclass.
+		</p>
+	    </body>
+	</section>
+	<section>
+	    <title>cvs.eclass</title>
+	    <body>
+		<p>
+		    Cette eclass permet aux ebuilds de récupérer des sources depuis une source cvs. Comme les ebuilds cvs ne font
+		    pas officiellement partie des possibilités de portage, seuls mes ebuilds des pré-versions de kde3 l'utilisent.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>cvsup.eclass</title>
+	    <body><p>idem que cvs.</p></body>
+	</section>
+    </chapter>
+    
+    <chapter>
+	<title>eclass concernant KDE</title>
+	<body/>
+	
+	<section>
+	    <title>kde.eclass</title>
+	    <body>
+		<p>
+		    Il s'agit de l'eclass KDE principale, centrale. Elle contient la plupart du code concernant KDE. Tous les ebuilds
+		    KDE en dérivent d'une manière ou d'une autre.
+		</p>
+		<p>
+		    Comme avec les autres eclass, lisez là pour savoir ce qu'elle fait. En voici un court résumé avec une meileure 
+		    lisibilité et des commentaires après chaque partie :
+		</p>
+<pre>inherit base kde-functions
+ECLASS=kde
+newdepend /autotools
+HOMEPAGE=&quot;http://www.kde.org/&quot;
+</pre>
+		<p>Les lignes ci-dessus doivent maintenant être assez claires pour vous.</p>
+		<p>Il n'y a pas de fonction kde_src_upack(). La fonction base_src_unpack
+        suffit bien. Regardons alors kde_src_compile():</p>
+<pre>kde_src_compile() {
+    section myconf:
+        myconf=&quot;$myconf --host=${CHOST} --with-x --enable-mitshm --with-xinerama \                     --with-qt-dir=${QTDIR}&quot;
+        case $KDEMAJORVER in
+            2) myconf=&quot;$myconf --prefix=${KDE2DIR}&quot;;;
+            3) myconf=&quot;$myconf --prefix=${KDE3DIR}&quot;;;
+            *) echo an error and abort (unrecognized version);;
+        esac
+        use qtmt &amp;&amp; myconf=&quot;$myconf --enable-mt&quot;
+        [ -n &quot;$DEBUG&quot; ] &amp;&amp; myconf=&quot;$myconf --enable-debug=full --with-debug&quot; \
+                        || myconf=&quot;$myconf --disable-debug --without-debug&quot;
+</pre>
+		<p>
+		    La variable $myconf contient les paramètres passés à configure. Elle
+            n'est jamais initialisée, mais toujours
+		    étendue, ainsi, vous pouvez y ajouter vos propres paramètres depuis votre ebuild. La section
+            myconf établit les paramètres par défaut.
+		</p>
+		<p>La première partie de la section fixe les paramètres codés en dur</p>
+		<p>
+		    La seconde initialise le préfixe, basé sur $KDEMAJORVER qui est positionné dans set-kdedir()
+		    (se référer à la section sur kde-functions.eclass).
+		</p>
+		<p>La troisième partie ajoute les paramètres basés sur les flags du USE (qtmt) et de $DEBUG</p>
+<pre>    section configure:
+        # This can happen with e.g. a cvs snapshot
+        if [ ! -f &quot;./configure&quot; ]; then
+            for x in Makefile.cvs admin/Makefile.common; do
+                if [ -f &quot;$x&quot; ] &amp;&amp; [ -z &quot;$makefile&quot; ]; then makefile=&quot;$x&quot;; fi
+            done
+            emake -f $makefile
+            [ -f &quot;./configure&quot; ] || die &quot;no configure script found, generation unsuccessful&quot;
+        fi
+        export PATH=&quot;${KDEDIR}/bin:${PATH}&quot;
+        ./configure ${myconf} || die &quot;died running ./configure, $FUNCNAME:configure&quot;
+</pre>
+		<p>
+		    La section configure, pour l'instant, lance le script de configuration avec les paramètres de $myconf.
+		    La première partie de la section lance en effet make -f Makefile.cvs ou bien make -f admi/Makefile.common
+		    si c'est nécessaire pour générer les scripts de configuration.
+		</p>
+<pre>    section make:
+        export PATH=&quot;${KDEDIR}/bin:${PATH}&quot;
+        emake || die &quot;died running emake, $FUNCNAME:make&quot;
+</pre>
+		<p>Cette section toute simple exécute make.</p>
+		<p>La fonction suivante esn kde_src_install(). Ca n'est pas bien différent, sauf que celà ajoute la section <i>dodoc</i>:</p>
+<pre>kde_src_install() {
+    section make:
+        make install DESTDIR=${D} destdir=${D} || die 
+    section dodoc:
+        dodoc AUTHORS ChangeLog README* COPYING NEWS TODO
+}
+</pre>
+	    </body>
+	</section>
+		
+	<section>
+	    <title>kde-functions.eclass</title>
+	    <body>
+		<p>
+		    Cette eclass contient toutes les fonctions auxiliaires ayant un rapport avec KDE. Une partie
+            d'entre elles n'ont jamais à être utilisées directement dans un ebuild; elles ne seront pas
+            mentionnées ici.
+		</p>
+		<subsection>
+		    <title>Le schéma actuel de séparation des répertoires KDE</title>
+		    <body>
+			<p>Une courte explication quant à ce schéma :</p>
+			<p>
+			    $KDE{2,3}DIR et $KDELIBS{2,3}DIR sont initialisés dans make.globals (et peuvent être
+                modifiés dans make.conf). Leurs valeurs par défaut sont respectivement /usr/kde/{2,3}.
+			</p>
+			<p>
+			    Un paquetage qui s'identifie comme étant un paquet kde2 (voir plus bas) va utiliser les
+                bibliothèques kde installées dans $KDE2LIBS et s'installer dans $KDE2DIR. Idem pour kde3.
+                REMARQUE: séparer les bibliothèques kde (kdelibs) des applications kde et les autres KDEDIR
+                de ceux par défaut n'a pas été testé et est à priori non supporté.
+			</p>
+			<p>De même, pour qt, les dernières versions se trouvent dans /usr/qt/{2,3} respectivement.</p>
+		    </body>
+		</subsection>
+		
+		<subsection>
+		    <title>need-kde(), need-qt(), set-kdedir(), set-qtdir()</title>
+		    <body>
+			<p>
+			    Cette eclass fournit deux paires de fonctions : need-kde/need-qt() et set-kdedir()/set-qtdir().
+			    Ces fonctions gèrent les détails pour les cas à dépendances multiples pour qt ou kde.
+			</p>
+			<p>
+			    Les fonctions need-* sont appellées avec un paramètre qui est le numéro de version requis.
+                Elles ajoutent les dépendances adéquates et appellent les fonctions set-*dir. Si aucun
+                paramètre n'est passé, le numéro de version 0 est utilisé, et n'importe quelle version
+                va satisfaire les dépendances.
+			</p>
+			<p>
+			    les fonctions set-*dir initialisent les variables KDEDIR et QTDIR, ainsi que KDEMAJORVER (=2 ou =3).
+			    C'est tout ce dont votre ebuild devrait avoir besoin.
+			</p>
+			<p>
+			    Il est important d'appeller ces fonctions depuis la partie principale de votre ebuild
+                (et non depuis une fonction), de telle manière que tous les changements à DEPEND ou
+                RDEPEND affectent bien emerge.
+			</p>
+		    </body>
+		</subsection>
+
+		<subsection>
+		    <title>kde_sandbox_patch()</title>
+		    <body>
+			<p>
+			    Certains makefiles KDE sont mal générés. Ils font des chmods ou des chows sur certains fichier
+                dans $PREFIX à l'installation, mais ne respectent pas $DESTDIR ($D). Notre script détecte ces
+                erreurs. Cette fonction lance un sed sur les makefiles qui corrige toutes les causes connues
+                de problèmes. Elle est appelée avec les répertoires à traiter en paramètres, et traite tous
+                les Makefile, Makefile.in, et Makefile.am dans ces répertoires. Par exemple :
+			</p>
+<pre>src_unpack() {
+    base_src_unpack
+    kde_sandbox_patch ${S}/dir1 ${S}/dir2/dir3
+}
+</pre>
+		    </body>
+		</subsection>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>kde-base.eclass</title>
+	    <body>
+		<p>
+		    Conçue pour les applications standard kde, à peu près tous les ebuilds l'utilisent. Elle hérite de
+            kde, appelle newdepend /c, et initialise HOMEPAGE=apps.kde.com.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>kde-i18n.eclass</title>
+	    <body>
+		<p>Conçue pour les paquets kde-i18n-*.</p>
+		<p>
+		    En fait, les ebuilds kde-i18n sont tous identiques, et ils n'ont rien d'autre à faire qu'hériter de
+            cet eclass. Leur ${P} faisant le reste.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>koffice-i18n.eclass</title>
+	    <body>
+		<p>Conçue pour les paquets koffice-i18n-*. Semblables aux kde-i18n.eclass.</p>
+		<p>Tous les ebuilds koffice-i18n-* sont identiques, et n'ont qu'à hériter de cette eclass.</p>
+	    </body>
+	</section>
+      
+	<section>
+	    <title>kde-dist.eclass</title>
+	    <body>
+		<p>
+		    Conçue pour les paquets du coeur de kde dans kde-base/*. Hérite de kde-base et de kde.org. Elle ajoute
+		    les DESCRITPION et HOMEPAGE corrects, appellent need-kde ${PV} et ajoutent le paramètre --enable_final
+		    à $myconf. Les paquets les plus simples, les plus petits de kde-base/ (par exemple kdetoys) n'ont pas
+            besoin d'y faire la moindre modification; la plupart ne font qu'ajouter des dépendances.
+		</p>
+	    </body>
+	</section>
+		
+	<section>
+	    <title>kde.org.eclass</title>
+	    <body>
+		<p>
+		    Utilisé par les paquets du coeur de kde-base/, et de quelques autres paquets hébergés par ftp.kde.org
+            et ses miroirs (kdevelop, koffice, kdoc). Initialise SRC_URI et ajoute les miroirs principaux de ftp.kde.org.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>kde-pre.eclass</title>
+	    <body>
+		<p>C'est la seule eclass utilisée par les ebuilds des pré-versions de kde3, et ne restera pas dans portage.</p>
+		<p>
+		    Elle est utilisée par les ebuilds de pré-version, qui ont des underscores "_" dans leur nom (3.0_beta1)
+            mais pas dans le nom de leurs archives de sources (3.0beta1.tar.gz). Enlève tout underscore de $SRC_URI et $S.
+		</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>kde-i18n-pre.eclass</title>
+	    <body>
+		<p>Idem que précédemment, pour les pré-versions des kde-i18n.</p>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>kde-source.eclass</title>
+	    <body>
+		<p>Comme précédemment, uniquement disponnible pour les pré-versions de kde3</p>
+		<p>
+		    Utilisé par les paquet du coeur de kde (kde-base/*) pour récupérer les sources depuis cvs
+            ou cvsup ; utilise cvs.eclass et cvsup.eclass. Ces trois eclass combinées ensembles sont
+            tellement puissantes qu'un ebuild n'a besoin de n'hériter que de kde-source pour que tout
+            fonctionne automatiquement, y compris des fonctionnalités intéressantes comme le
+		    changement automatique de serveur cvs, les différents modes de cvs (checkout/update/offline),
+            etc. Mais comme il n'y a pas d'ebuilds cvs dans portage pour le momment, ces eclass restent à part.
+		</p>
+	    </body>
+	</section>
+    </chapter>
+	    
+    <chapter>
+	<title>Ecrire des ebuilds KDE</title>
+	<body/>
+	
+	<section>
+	    <title>Un ebuild kde typique</title>
+	    <body>
+		<p>Le code ci-dessous devrait être suffisament clair maintenant que vous avez lu cet howto:</p>
+<pre>&lt;header lines&gt;
+. /usr/portage/eclass/inherit.eclass || die
+inherit kde-base
+</pre>
+		<p>Quelques ebuilds s'arrêtent là. D'autres sont un peu plus personnalisés.</p>
+		<p>Ajoutez toute dépendance additionnelle. MAis n'oubliez pas, étendez *toujours* vos variables, ne les écrasez pas !</p>
+<pre>DEPEND=&quot;$DEPEND foo/bar&quot;
+RDEPEND=&quot;$RDEPEND bar/foo&quot;
+</pre>
+		<p>Celà va ajouter une dépendance à la fois à DEPEND et RDEPEND</p>
+<pre>newdepend &quot;foo? ( bar )&quot;
+</pre>
+		<p>Ajoute un argument supplémentaire à $myconf, qui est passé à configure : </p>
+<pre>myconf=&quot;$myconf --with-foobar&quot;
+    </pre>
+    		<p>Un src_unpack() étendu :</p>
+<pre>src_unpack() {
+    base_src_unpack all patch   # Patch from ${FILESDIR}/${P}-gentoo.diff
+    # some more changes
+    dosed -e 's:1:2:' ${S}/foobar
+}
+</pre>
+	    </body>
+	</section>
+	
+	<section>
+	    <title>Un ebuild typique avec des fonctionnalités KDE optionnelles</title>
+	    <body>
+		<p>
+		    De base, préfixer chaque ligne spécifique à KDE par "use kde &amp;&amp;", ou créer un bloc complet:
+		    "if [ "`use kde`" ]; then; fi;".
+		</p>
+		<p>Pour les sections générales, ajoutez le code suivant, (si USE kde est activé):</p>
+<pre>if [ &quot;`use kde`&quot; ]; then
+    . /usr/portage/eclass/inherit.eclass
+    inherit kde-functions
+    need-kde $version # minimal version of kde your app needs
+fi
+</pre>
+		<p>Ajoutez bien entendu tout le code que vous désirez, de cette manière :</p>
+<pre>use kde &amp;&amp; myconf=&quot;$myconf --with-my-parameter&quot;
+</pre>
+		<p>Dites ensuite à votre application de rechercher KDE dans $KDEDIR, ce qui se fait par un simple appel à need-kde()</p>
+	    </body>
+	</section>
+    </chapter>
+</guide>

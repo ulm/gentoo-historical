@@ -1,0 +1,330 @@
+<?xml version='1.0' encoding='iso8859-1'?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/uml.html">
+<title>Guía del desarrollador de Gentoo Linux para pruebas con "User-Mode Linux"</title>
+<author title="Editor"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+<author title="Traductor"><mail link="ferdy@ferdyx.org">Fernando J. Pereda Garcimartín</mail></author>
+<author title="Editor-es"><mail link="bass@gentoo.org">José Alberto Suárez López</mail></author>
+
+<abstract>
+   Esta guía enseña a los desarrolladores de Gentoo
+   Linux como configurar user-mode linux para probar potenciales
+   rupturas del sistema.
+</abstract>
+
+<version>0.05</version>
+<date>5 Mar 2002</date>
+
+<chapter>
+<title>Obteniendo User-Mode Linux</title>
+<section>
+<body>
+<p>Tal y como dice la página de user-mode linux
+(<uri>http://user-mode-linux.sourceforge.net</uri>),
+user-mode linux permite a un usuario "correr Linux dentro de sí mismo".
+Especificamente, proporciona una máquina virtual donde un usuario
+puede correr software con fallos, experimentar con una nueva distribución de
+Linux, o con un nuevo kernel, todo ello sin correr ningún riesgo sobre la
+instalación principal de Linux. Los cambios en algunos paquetes del núcleo de
+Gentoo como <e>sys-apps/baselayout</e> o <e>sys-libs/glibc</e> son muy dados
+a romper el systema y hacer que Linux no arranque; con user-mode linux, 
+podemos hacer todas estas pruebas sin preocuparnos en que nuestro Linux se rompa.
+</p>
+<p>Instalar user-mode linux es esencialmente igual a instalar un nuevo
+kernel. Lo primero, instalar las fuentes del kernel (parcheadas apropiadamente
+para user-mode linux), y después configurar el kernel de user-mode linux
+de la forma habitual:
+</p>
+<pre>
+# <i>emerge sys-kernel/usermode-sources</i>
+# <i>cd /usr/src/uml/linux</i>
+# <i>make menuconfig <comment>ARCH=um</comment></i>
+# <i>make linux <comment>ARCH=um</comment></i>
+# <i>cp linux /usr/local/bin/linux</i>
+</pre>
+<warn>El parámetro <e>ARCH=um</e> es ¡<e>extremadamente</e> importante!</warn>
+<impo>
+Para que el kernel de user-mode linux arranque bien en una máquina
+Gentoo, el kernel tiene que ser configurado para que <e>no</e> monte
+automáticamente el <path>/dev</path> (devfs) por defecto.
+También debe asegurarse de que tiene <e>tmpfs</e> ( el "Virtual
+Memory Filesystem") activado, dado que por defecto los scripts de arranque
+de Gentoo guardan su información en una pequeña partición de tmpfs.
+( Los kernel binarios que están en la página de user-mode linux, automáticamente
+montan <path>/dev/</path> y no tienen tmpfs, así que ni los pruebe.)
+</impo>
+<p>Yo recomiendo leer la documentación de user-mode linux, pero la idea 
+es que al ejecutar <path>/usr/local/bin/linux</path> se arranque
+el kernel de user-mode linux e intente levantar el sistema guardado en
+el fichero <path>root_fs</path> que debe estar en el actual directorio
+de trabajo.</p>
+<p>No hará ningún mal instalar también las utilidades de user-mode linux.</p>
+<pre>
+# <i>emerge dev-util/usermode</i>
+</pre>
+<p>Estos programas facilitan la red (entre otras cosas) entre
+el sistema user-mode linux y el sistema base.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Creando el <path>root_fs</path></title>
+
+<section>
+<title>Haciendo el Gentoo chroot</title>
+<body>
+<p>
+El <path>root_fs</path> es un fichero que contiene
+un sistema entero de ficheros de Gentoo Linux. Para generar este
+fichero necesitará tener el dispositivo Loopback en el kernel
+(no en el de user-mode linux).
+</p>
+<p>
+Generar el <path>root_fs</path> será nuestro último paso. Lo primero
+que generaremos será un sistema de ficheros Gentoo en un raíz virtual (chroot).
+Necesitamos el fichero de construcción que conseguiremos bajandolo o en un CD de instalación, o desde una .iso.
+</p>
+<pre caption="Montando una .iso de construcción">
+# <i>mkdir /mnt/loop</i>
+# <i>mount -o loop /path/to/build-&lt;TAB&gt;.iso /mnt/loop</i>
+</pre>
+<p>
+Configurar el chroot es prácticamente que para una instalación normal de Gentoo Linux.
+</p>
+<pre>
+# <i>mkdir /mnt/gentoo</i>
+# <i>cd /mnt/gentoo</i>
+# <i>tar xvjpf /path/to/build-&lt;TAB&gt;.tar.bz2</i>
+</pre>
+<p>
+Adelante, monte la .iso. No necesita nada más.
+</p>
+<pre>
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/</i>
+# <i>mount -o bind /proc /mnt/gentoo/proc</i>
+# <i>mkdir -p /mnt/gentoo/usr/portage/distfiles</i>
+# <i>mkdir -p /mnt/gentoo/usr/portage/packages</i>
+# <i>mount -o bind /usr/portage/distfiles /mnt/gentoo/usr/portage/distfiles</i>
+# <i>mount -o bind /usr/portage/packages /mnt/gentoo/usr/portage/packages</i>
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+# <i>source /etc/profile</i>
+</pre>
+<p>
+Montando <path>/usr/portage/distfiles</path> y
+<path>/usr/portage/packages</path> evitamos tener que
+volver a bajar o construir los paquetes que estén en nuestro sistema
+Gentoo base.
+</p>
+<p>
+Inicie el arranque y construya el sistema de la forma normal:
+</p>
+<pre>
+# <i>emerge rsync</i>
+# <i>cd /usr/portage</i>
+# <i>nano -w /etc/make.conf</i>
+# <i>nano -w /etc/make.profile/packages</i> 
+# <i>nano -w /usr/portage/profiles/package.mask</i>
+# <i>scripts/bootstrap.sh &amp;&amp; emerge --usepkg system</i>
+</pre>
+<warn>
+El fichero <path>/etc/make.profile/packages</path> necesita ser
+editado para quitar grub del sistema por defecto (simplemente 
+quite el "*" delante de "*sys-apps/grub"). El ebuild de grub
+intenta montar la partición /boot, cosa que fallará en nuestro
+raíz virtual.
+</warn>
+<note>
+Asegúrese de que examina <path>/etc/make.profile/packages</path>
+y <path>/usr/portage/profiles/package.mask</path> para asegurarse
+de que los paquetes que van a ser probados, no estén ocultos (masked).
+Como se ha dicho, <path>scripts/bootstrap.sh</path> compilará los
+paquetes de la rutina de inicio desde el código fuente. Para usar
+los paquetes existentes añada <c>alias emerge="emerge --usepkg"</c>
+antes del inicio del bootstrap script.
+</note>
+<p>
+Añada los paquetes que quiera. Siéntase libre de dar un nombre a su
+sistema virtual Gentoo. En <path>/etc/fstab</path> querrá que
+<path>/dev/ROOT</path> sea <path>/dev/ubd/0</path>, del tipo ext2,
+ext3 o reiserfs. Ajuste <path>/dev/SWAP</path> a <path>/dev/ubd/1</path>,
+y comente <path>/dev/BOOT</path>
+</p>
+<p>
+Salga de la raíz virtual (chroot), desmonte todos los
+montajes anteriores, empaquete su nueva Gentoo, y 
+limpie los "residuos":
+</p>
+<pre>
+# <i>exit</i>
+# <i>umount /mnt/gentoo/usr/portage/distfiles</i>
+# <i>umount /mnt/gentoo/usr/portage/packages</i>
+# <i>umount /mnt/gentoo/proc</i>
+# <i>du -ks /mnt/gentoo</i>
+261744	/mnt/gentoo
+# <i>tar cvjpf ~/gentoo.tbz2 *</i>
+# <i>cd</i>
+# <i>rm -rf /mnt/gentoo</i>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Haciendo el <path>root_fs</path></title>
+<body>
+<p>
+Nuestro Gentoo virtual (chroot) está cercana
+a los 300Mb, así que <path>root_fs</path> necesita
+ser por lo menos de ese tamaño. Escogeremos 0.5Gb
+como un tamaño razonable.
+</p>
+<pre>
+# <i>dd if=/dev/zero of=root_fs seek=500 count=1 bs=1M</i>
+# <i>mke2fs -F root_fs</i>
+# <i>mount -o loop root_fs /mnt/loop</i>
+# <i>tar xvjpf gentoo.tbz2 -C /mnt/loop</i>
+# <i>umount /mnt/loop</i>
+</pre>
+<p>
+Será perfecto tener 0.5Gb de swap.
+</p>
+<pre>
+# <i>dd if=/dev/zero of=swap_fs seek=500 count=1 bs=1M</i>
+# <i>mkswap -f swap_fs</i>
+</pre>
+<p>
+¡Ahora veamos si funciona!
+</p>
+<pre>
+# <i>linux ubd0=root_fs ubd1=swap_fs</i>
+</pre>
+<note>
+User-mode linux usa xterms para las consolas virtuales
+que se ejecutan en el arranque, así que asegúrese de que
+el terminal desde el que ejecuta user-mode linux tiene
+la variable $DISPLAY bien configurada ( con los permisos
+de xhost/xauth necesarios).
+</note>
+<p>
+Con algo de suerte será capaz de acceder a su Gentoo user-mode
+linux. La única cosa que hace que esta versión de Gentoo
+( la que corre como user-mode ) sea completamente funcional es
+la red desde la máquina base a la user-mode. La red está pensada
+para ser sencilla, pero yo no he conseguido hacerla funcionar
+para mi. Así que si sabe de una solución que funcione, por favor
+hagámela saber.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>La red</title>
+
+<section>
+<body>
+<p>
+Gracias a Martin Schlemmer (Azarah), ahora se cómo conseguir
+que la red funcione con user-mode linux. La idea es hacer
+una red privada entre el user-mode linux y la máquina base,
+de forma que user-mode linux manda todos sus paquetes a la
+máquina base, y esta se encarga de enrutarlos a la red.
+Asegúrese de que el kernel de la máquina base tiene activado
+Networking --> IP: Netfilter Configuration --> IP tables
+support --> Full NAT --> MASQUERADE target support y 
+Networkd Device Support --> Ethertap network tap compilados
+como módulos; después haga lo siguiente en la máquina <e>base</e>:
+</p>
+<pre>
+# <i>modprobe ethertap</i>
+# <i>modprobe iptable_nat</i>
+# <i>iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</i>
+# <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
+</pre>
+<p>
+La línea de iptables ajusta el enmascaramiento (Masquerading)
+entre la red privada en la que estará nuestro user-mode linux
+e internet (alcanzable a través de <c>eth0</c> en nuestro caso)-
+La línea echo activa en enrutamiento de paquetes entre la red
+privada y la interfaz que hacer de enrutador (eth0 para nosotros).
+</p>
+<p>
+Ahora levantamos el sistema user-mode y vemos si la red funciona.
+</p>
+<pre>
+# <i>linux ubd0=root_fs ubd1=swap_fs eth0=ethertap,tap0,,192.168.0.254</i>
+<comment>(entre en el sistema user-mode)</comment>
+# <i>ifconfig eth0 192.168.0.1 up</i>
+# <i>ping -c 2 192.168.0.254</i>
+PING 192.168.0.254 (192.168.0.254): 56 octets data
+64 octets from 192.168.0.254: icmp_seq=0 ttl=255 time=0.8 ms
+64 octets from 192.168.0.254: icmp_seq=1 ttl=255 time=0.6 ms
+
+--- 192.168.0.254 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.6/0.7/0.8 ms
+<i>route add default gw 192.168.0.254</i>
+<i>netstat -rn</i>
+Kernel IP routing table
+Destination  Gateway        Genmask        Flags MSS Window irtt Iface
+192.168.0.0  0.0.0.0        255.255.255.0  U      40 0         0 eth0
+0.0.0.0      192.168.0.254  0.0.0.0        UG     40 0         0 eth0
+<i>scp user@192.168.0.254:/etc/resolv.conf /etc/resolv.conf</i> <comment>(si lo necesita)</comment>
+<i>ping -c 2 www.gentoo.org</i>
+PING www.gentoo.org (207.170.82.202): 56 octets data
+64 octets from 207.170.82.202: icmp_seq=0 ttl=240 time=119.6 ms
+64 octets from 207.170.82.202: icmp_seq=1 ttl=240 time=92.0 ms
+
+--- www.gentoo.org ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 92.0/105.8/119.6 ms
+</pre>
+<p>
+En el sistma user-mode linux, asignamos al eth0 la IP privada
+192.168.0.1 y la levantamos. El sistema base tiene como IP
+privada la dirección 192.168.0.254, y ahora le hacemos ping al
+user-mode para comprobar que la red funciona. La linea de route
+añade una puerta de enlace por defecto, ahora usamos scp para
+obtener un <path>/etc/resolv.conf</path> (si lo necesitamos), y
+hacemos ping a www.gentoo.org para asegurarnos que la resolución
+de nombres (y en general el acceso a internet) está funcionando
+en el user-mode linux. ¡Ahora el sistema user-mode puede ejecutar
+<c>emerge</c>!
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Comprobando la .iso</title>
+
+<section>
+<body>
+<p>
+Quizá lo ideal de probar Gento Linux sería arrancar
+el .iso con user-mode linux y hacer la instalación 
+completa desde el user-mode linux.
+</p>
+<p>
+Arrancar la .iso, o el initrd desde el .iso, es sencillo.
+</p>
+<pre>
+# <i>mount -o loop /path/to/build-&lt;TAB&gt;.iso /mnt/loop</i>
+# <i>cp /mnt/loop/isolinux/rescue.gz .</i>
+# <i>linux load_ramdisk=1 prompt_ramdisk=0 ramdisk_size=22000 \</i>
+&gt; <i>initrd=rescue.gz root=/dev/ram0 ubd0=root_fs ubd1=swap_fs \</i>
+&gt; <i>ubd2=/dev/cdroms/cdrom0 eth0=ethertap,tap0,,192.168.0.254</i>
+</pre>
+<p>Ahora puede seguir la documentación de Gentoo, también
+necesitará saber que el sistema raíz será <path>/dev/ubd/1</path>,
+y el CD rom será <path>/dev/ubd/2</path>.</p>
+</body>
+</section>
+</chapter>
+
+
+</guide>

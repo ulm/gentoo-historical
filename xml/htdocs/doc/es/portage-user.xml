@@ -1,0 +1,245 @@
+<?xml version='1.0' encoding="ISO-8859-1"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/portage-user-es.html">
+<title>Guía de Usuario de Portage</title>
+<author title="Desarrollador Principal"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Editor"><mail link="thomasfl@gentoo.org">Thomas Flavel</mail></author>
+<author title="Traductor"><mail link="gentoo@kapcoweb.com">Leonardo Boshell</mail></author>
+<author title="Editor-es"><mail link="bass@gentoo.org">José Alberto Suárez López</mail></author>
+
+<abstract>Esta guía cubre brevemente los temas de cómo mantener actualizados sus
+paquetes, y cómo hacer el mantenimiento a su sistema.</abstract>
+
+<version>1.2.1</version>
+<date>17 Oct 2001</date>
+
+<chapter>
+<title>Comenzando</title>
+
+<section>
+<title>Descargando el árbol de Portage</title>
+<body>
+
+<p>Luego de que haya conseguido instalar Gentoo Linux y haya jugado un
+poco con él, puede que encuentre algunos fallos o pequeñas inconsistencias
+en algunos paquetes, o quizás quiera instalar los últimos paquetes de
+software de Gentoo Linux o actualizar sus paquetes actuales. Para hacer
+esto, necesitará descargar nuestro árbol de ports Portage. Nosotros
+proveemos un servidor anónimo de rsync que puede utilizar para adquirir
+nuestro árbol Portage más reciente. He aquí como usarlo.</p>
+
+<p>Primero, cree un directorio llamado <path>/usr/portage</path>. Luego,
+asegúrese de que rsync se encuentre instalado. Si no lo está, descárguelo
+de nuestro mirror en ibiblio e instálelo escribiendo <c>emerge
+rsync-x.y.z.tbz2</c>. Luego, use el siguiente comando para sincronizar su
+directorio de Portage:
+</p>
+<pre>
+# <i>emerge rsync</i>
+</pre>
+
+<p>Periódicamente, usted querrá ejecutar esta siguiente forma del comando
+rsync, la cual eliminará scripts ebuild antiguos:</p>
+
+<warn>Por favor note que <c>emerge --clean rsync</c> eliminará todos los
+cambios personales o adiciones que posea el directorio
+<path>/usr/portage</path>, así que utilice este comando con precaución.</warn>
+
+<pre>
+# <i>emerge --clean rsync </i>
+</pre>
+
+<p>Si usted está haciendo cambios regulares a su árbol
+<path>/usr/portage</path>, quizás quiera ponerse en contacto con <mail
+link="drobbins@gentoo.org">Daniel</mail> para recibir acceso CVS de modo
+que pueda efectuar algunos o todos ellos en nuestro árbol oficial de
+Portage en CVS.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Actualizando Portage</title>
+<body>
+<p>Antes de usar nuestro árbol Portage, es importante que actualice
+Portage. Para lograr esto, realice lo siguiente:
+</p>
+
+<pre>
+# <i>cd /usr/portage/sys-apps/portage</i>
+# <i>emerge portage-x.y.z.ebuild</i>
+</pre>
+
+<p>Ahora usted estará usando la versión más reciente de portage, y puede
+comenzar a usar nuestro sistema de ebuilds para actualizar el software
+instalado en su máquina.</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Presentando <c>emerge</c></title>
+<section>
+<title><c>emerge --pretend</c></title>
+<body><p> 
+Para instalar un paquete, ubíquese en su directorio en
+<path>/usr/portage</path>, por ejemplo:
+</p>
+
+<pre>
+# <i>cd /usr/portage/net-irc/xchat</i> 
+</pre>
+
+<p>Luego, ejecute <c>emerge --pretend</c> para ver cuáles dependencias
+serán instaladas (si las hay):</p>
+
+<pre>
+# <i>emerge --pretend xchat-1.4.3.ebuild</i>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies......... done!
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>En este caso en particular, estamos tratando de instalar
+<path>xchat</path> en una máquina que no tiene X instalado. Por lo tanto,
+<c>emerge --pretend</c> correctamente identifica que varias dependencias
+necesitan ser resueltas primero. Específicamente,
+<path>sys-libs/zlib</path> y <path>dev-libs/glib</path> necesitan ser
+actualizados, y luego un grupo amplio de ebuilds (incluyendo
+<path>x11-base/xfree</path>, por supuesto) necesitan ser instalados.</p>
+</body>
+</section>
+<section>
+<title>USE y <c>emerge</c></title>
+<body>
+<p>En el ejemplo anterior, ejecuté <c>emerge --pretend</c> sobre un
+sistema que no tenía <c>gnome</c> definido en la variable <c>USE</c> que
+se encuentra en <path>/etc/make.conf</path>. Esto quiere decir que el
+soporte opcional para GNOME, si está presente, no será activado. En
+cualquier caso, <path>xchat</path> <e>sí</e> tiene soporte opcional para
+GNOME, así que veamos la salida de <c>emerge --pretend</c> después de
+agregar <c>gnome</c> a la variable de entorno <c>USE</c> en
+<path>/etc/make.conf</path>: </p>
+
+<pre>
+# <i>emerge --pretend xchat-1.4.3.ebuild</i>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies............................ done!
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] gnome-base/libghttp-1.0.9 to /
+[ebuild N  ] media-libs/audiofile-0.2.1 to /
+[ebuild N  ] media-sound/esound-0.2.22-r2 to /
+[ebuild N  ] gnome-base/gnome-env-1.0 to /
+[ebuild N  ] gnome-base/libxml-1.8.11 to /
+[ebuild N  ] gnome-base/ORBit-0.5.8 to /
+[ebuild N  ] gnome-base/oaf-0.6.5 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] net-libs/libwww-5.3.2-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] dev-util/guile-1.4-r3 to /
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] gnome-base/gnome-libs-1.2.13 to /
+[ebuild N  ] gnome-base/glibwww-0.2-r1 to /
+[ebuild N  ] gnome-base/gdk-pixbuf-0.11.0 to /
+[ebuild N  ] gnome-base/gconf-1.0.0 to /
+[ebuild N  ] gnome-base/gnome-vfs-1.0.1 to /
+[ebuild N  ] gnome-base/control-center-1.4.0.1 to /
+[ebuild N  ] gnome-base/scrollkeeper-0.2 to /
+[ebuild N  ] dev-util/xml-i18n-tools-0.8.1 to /
+[ebuild N  ] gnome-base/libglade-0.16-r1 to /
+[ebuild N  ] gnome-base/gnome-core-1.4.0.4 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>Como puede ver, con la cadena <c>gnome</c> presente en <c>USE</c>,
+emerge reconoce que xchat debe incluir el soporte opcional para GNOME. Y
+por supuesto, para que este soporte de GNOME oficial compile y funcione
+correctamente, GNOME debe estar instalado primero. <c>emerge</c> se da
+cuenta de todo esto y agrega varios paquetes requeridos por GNOME a su
+lista de ebuilds a instalar. Pueden presentarse casos en los que su
+variable <c>USE</c> no esté definida correctamente, ocasionando que
+<c>emerge</c> incluya o excluya inesperadamente soporte para varias
+extensiones opcionales. Es por eso que recomiendo que usted siempre
+realice un <c>emerge --pretend</c> antes de ejecutar el <c>emerge</c>
+definitivo, especialmente para ebuilds nuevos y poco familiares. De este
+modo, sabrá qué esperar. :) Una vez todo parezca estar bien, puede continuar
+con el <c>emerge</c> final abandonando la opción <c>--pretend</c>:</p>
+
+<pre>
+# <i>emerge xchat-1.4.3.ebuild</i>
+</pre>
+
+<p>Después de que todas las dependencias estén instaladas (si existen; no
+todos los paquetes tienen), las fuentes de la aplicación xchat serán
+descargadas (a <path>/usr/portage/distfiles</path>), verificadas,
+desempaquetadas, compiladas e instaladas en un directorio temporal. Luego,
+serán instaladas en el sistema de archivos local y una base de datos del
+paquete será creada en
+<path>/var/db/pkg/net-irc/xchat-1.4.3/CONTENTS</path>, incluyendo los
+archivos que fueron instalados y los datos de md5sums para todos los
+archivos.</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Actualizando paquetes</title>
+<section>
+<body>
+
+<p>La manera estándar de actualizar paquetes bajo Gentoo Linux es instalar
+el nuevo paquete, y luego retirar el antiguo. Esto es algo seguro (¡y
+divertido!) de hacer. Primero, instale el nuevo paquete tal y como se
+describió en las instrucciones anteriores. Luego, desinstale el paquete
+antiguo escribiendo algo como:</p>
+
+<pre>
+# <i>emerge unmerge =net-irc/xchat-1.0.0-r1</i>
+</pre>
+
+<p>
+Portage utiliza algo que se conoce como desintalación "segura"; sólo va a
+eliminar los archivos originales. Si un archivo ha sido sobrescrito o
+modificado en alguna forma, éste se dejará intacto en el sistema de
+archivos (muy posiblemente, usted haya instalado una nueva versión del
+paquete). Así que, si desinstala una versión antigua de xchat luego de
+instalar la nueva, el ejecutable de xchat no será eliminado de su sistema
+de archivos, ya que tiene una nueva marca de fecha y un md5sum diferente.
+Las desinstalaciones seguras son realmente maravillosas porque se aseguran
+de que alguna versión cualquiera de la aplicación esté disponible en todo
+momento. Si hubiese desinstalado primero, entonces xchat no estaría
+disponible durante algunos minutos mientras se descarga, compila e instala
+la nueva versión.</p>
+
+<impo>Portage tiene ahora una característica especial llamada "protección
+de archivos de configuración". El propósito de esta característica es
+prevenir que las instalaciones de paquetes nuevos arruinen los archivos de
+configuración existentes previamente. Por defecto, la protección de
+archivos de configuración está activada para el directorio /etc y los
+directorios de configuración de KDE; tal vez se agreguen más en el futuro.
+Escriba <c>emerge --help config</c> para conocer más detalles.</impo>
+
+</body>
+</section>
+</chapter>
+</guide>

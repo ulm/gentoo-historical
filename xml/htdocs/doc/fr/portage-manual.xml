@@ -1,0 +1,1251 @@
+<?xml version='1.0' encoding="iso-8859-15"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<guide>
+<title>Manuel Portage</title>
+<author title="Auteur"><mail link="blocke@shivan.org">Bruce A.
+Locke</mail></author>
+<author title="Traduction"><mail link="nohar@altern.org">Arnaud Cornet</mail></author>
+
+<abstract>
+Ce manuel fournit une vue générale de Portage, des informations détaillées
+de configuration et un guide pour l'installation et la maintenance de
+paquets en utilisant le système Portage.
+</abstract>
+
+<version>0.9.5</version>
+<date>April 22, 2002</date>
+
+<chapter>
+<title>Portage: Une vue d'ensemble</title>
+
+<section>
+  <title>Vue d'ensemble</title>
+  <body>
+	<p>
+	Portage est un système de gestion de paquets très avancé et
+	puissant. Sa flexibilité et sa capacité à servir aussi bien de
+	moteur de compilation que de former le coeur de distribution à 
+	la pointe de la technologie lui confèrent le titre de Moteur de
+	Méta-Distribution. La Distribution Gentoo Linux est conçue autour
+	de Portage.
+	</p>
+	<p>
+	Gentoo Linux lui-même est souvent qualifié de Méta-distribution.
+	Elle consiste en Portage et approximativement 1500 recettes de 
+	paquets appelés <i>ebuilds</i>. Ces <i>ebuilds</i> donnent les
+	informations nécessaires à Portage pour compiler et installer un
+	paquet logiciel. En utilisant des <i>profils</i> et l'utilitaire
+	de ligne de commande <i>emerge</i>, les utilisateurs et les
+	developpeurs peuvent utiliser Portage pour installer et maintenir
+	les applications d'un système.
+	</p>
+	<p>
+	Un système Gentoo Linux est "compilé à la volée". Installer Gentoo
+	Linux implique la mise en place d'au moins un compilateur et d'un
+	environnement de compilation à l'aide duquel Portage peut
+	télécharger un code source à partir d'Internet et compiler le reste du
+	coeur du système ainsi que d'autres applications. Bien que Portage
+	permette l'utilisation de paquets précompilés, ils forment un
+	compromis et ne sont utilisés que pour l'installation sur des
+	machines lentes, par des developpeurs qui auraient besion de
+	restaurer un paquet rapidement, ou pour permettre à d'autres
+	machines plus rapides de compiler pour une machine plus lente.
+	</p>
+	<p>A cause de ceci et du fait que Portage soit très configurable
+	dans sa façon de compiler et d'installer les paquets, très peu
+	d'installations Gentoo sont identiques. En bref, quand un
+	utilisateur installe Gentoo Linux, le système Portage compile une
+	distribution Linux personnalisée selon les options spécifiées dans
+	la configuration de Portage et dans les ebuilds.
+	</p>	
+	<p>
+	Au premier coup d'oeil, l'idée derière Portage peut sembler
+	similaire au traditionnel système de port BSD. Tous deux compilent
+	des paquets a partir de la source et permettent aux utilisateurs
+	d'installer et de désinstaller de façon sûre les logiciels d'un
+	système, et tous deux gèrent les dépendances. Beaucoups d'idées de
+	Portage viennt du système de ports de BSD mais Portage n'est en
+	aucune façon une simple copie du système de ports.
+	</p>
+	<p>Le système Portage est le résultat de l'association d'un coeur 
+	en Python et d'<i>Ebuilds</i> qui sont des scripts bash. Au lieu de
+	gérer des Makefiles à l'aide de la commande <i>make</i>, Portage
+	associe la puissance de Python et la simplicité d'utilisation des
+	scripts bash avec quelques caractéristiques orientées objet afin
+	d'obtenir un système unique et puissant qui confère à Portage sa
+	supériorité par rapport à tous les autres systèmes de ports.
+	</p>
+
+	<p>
+	Portage permet certaines particularités dont :
+	plusieurs versions/révisions d'un même paquet dans l'arbre,
+	dépendances conditionnelles, une gestion de paquets fine, une
+	installation sûre, la protection des fichiers de configuration, et plus
+	encore. Beaucoup de ces particularités sont détaillées plus loin
+	dans ce manuel.
+	</p>
+  </body>
+</section>
+
+<section>
+<title>Résolution des Dépendances Conditionnelles et support de "Features" </title>
+<body>
+	<p>
+	Le système Portage est unique de par sa flexibilité. Les systèmes
+	de ports BSD ont tendance à ne supporter qu'une révision par
+	paquet, Portage ne souffre pas de cette limitation. Plusieurs
+	versions du même paquet peuvent être disponibles et prêts à être
+	installés. Les dépendances peuvent être spécifiées à la version
+	près ou bien on peut spécifier un intervalle de versions. Cela rend
+	possible le fait d'avoir plusieurs versions différentes du même
+	paquets disponible dans l'arbre.
+	</p>
+	<p>
+	Le système de dépendance supporte aussi les dépendances
+	conditionnelles. Portage utilise le concept puissant de réglage de
+	la variable <i>USE</i>. En changeant la valeur de cette variable
+	dans un fichier de configuration de Portage, vous pouvez désactiver
+	des capacités optionnelles (et donc vous vous débarassez de ses
+	dépendances) de certaines bibliothèques pour tous les paquets à la
+	compilation. C'est un système tres puissant qu'on décrira plus en
+	détail dans la suite.
+	</p>
+	<p>
+	En plus Portage connaît le concept de <i>SLOTS</i>. Pendant le
+	développement de Gentoo, les développeurs ont souvent éprouvé le
+	besoin d'avoir plusieurs versions de certains paquets (des
+	bibliothèques par exemple) installés de façon à satisfaire la
+	demande d'autres paquets. L'approche traditionnelle pour résoudre
+	ce probleme a été de traiter les différentes versions du même
+	paquet avec des noms de paquets légèrement différents.
+	</p>
+	<p>
+	Au lieu que les développeurs aient à apprendre à traiter certaines
+	versions avec des paquets séparés, les développeurs ont appris à
+	Portage comment gèrer et maintenir plusieurs versions du même
+	paquet au travers l'utilisation de <i>SLOTS</i>. Un exemple serait
+	de considérer la bibliothèque freetype dont les versions 1.x ne
+	sont pas compatibles avec les versions 2.x mais les deux sont
+	nécessaires à d'autres paquets. La plupart des distributions et
+	des systèmes de ports appellent "freetype" le paquet contenant
+	freetype 1.x et "freetype2" le paquet contenant freetype 2.x. Nous
+	considérons que cette approche est un signe de mauvaise conception
+	du système de paquet. Nous assignons simplement le <i>SLOT</i>
+	numéro 1 à la première et le <i>SLOT</i> numéro 2 à la deuximème.
+	Avec cette information portage peut gèrer les deux versions
+	simultanément et les mettre à jour indépendament..
+	</p>
+</body>
+</section>
+
+<section>
+<title>Profils</title>
+<body>
+
+	<p>Portage utilise le concept de <i>profils</i>. Un <i>profil</i>
+	contient une liste de noms de paquets et de versions et quels
+	paquets autoriser, interdire ou considérer comme indispensables.
+	Les utilisateurs peuvent changer de profil en changeant un simple lien
+	symbolique (<i>/etc/make.profile</i>). Cela peut paraître simple
+	mais cela permet à Portage de répondre aux besoins d'une
+	distribution et de servir de système de compilation professionnel.
+	</p>
+	<p>
+	L'effort de production de Gentoo Linux a résulté en une collection
+	de fichiers <i>ebuild</i> que Portage utilise et d'un profil.
+	Ce profil défini quel paquets sont considèrés comme essentiels,
+	vitaux au bon fonctionnement du système. Le profil autorise aussi
+	aux développeurs de bloquer et de débloquer un paquet spécifique
+	pour désactiver temporairement un paquet buggé, etc. Les fichiers
+	<i>ebuild</i> disent simplement à Portage comment compiler et
+	installer le paquet que le profil demande ou autorise.
+	</p>
+	
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Configurer Portage</title>
+
+<section>
+<title>Vue d'ensemble</title>
+<body>
+	<p>
+	Les chapitres suivants couvrent les différents aspects de la
+	configuration de Portage utiles à la fois aux utilisateurs et aux
+	développeurs. Portage est un système très flexible et vous allez
+	avoir besoin de comprendre comment configurer Portage afin de
+	maitriser votre système et de l'optimiser selon vos besoins.
+	</p>
+	<p>
+	Notez bien que le terme "utilisateur" se réfère dans ce document à
+	une personne ayant les droits d'administrateurs sur la machine.
+	Vous devez être root pour accéder et changer la configuration de
+	Portage et pour "merger" (installer) et "unmerger" (désinstaller)
+    les différents paquets.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Les Fichiers de configuration de Portage</title>
+<body>
+	<p>
+	Pratiquement toutes les options de configuration dont on parle
+	ci-dessous se trouvent dans les fichiers /etc/make.conf et
+	/etc/make.globals. Tous les réglages faits dans /etc/make.conf et
+	/etc/make.globals sont considérés comme généraux et affectent tout
+	le système, du point de vue de Portage.
+	</p>
+	<p>
+	Quand vous vérifiez si une option est déjà définie, il est
+	recommandé de vérifier d'abord /dev/make.conf et ensuite
+	/etc/make.globals. A moins que le contraire soit spécifié, les
+	options dans /etc/make.conf sont prioritaires par rapport à celles
+	de /etc/make.globals.
+	</p>
+</body>
+</section>
+
+<section>
+  <title>Le paramètre USE</title>
+  <body>
+  	<p>
+	Le paramètre USE fournit un moyen flexible de sélectionner ou
+	déselectionner des options à la compilation de paquets, ce à un
+	niveau global, et pour des paquets individuels. Cela permet à
+	l'administrateur de contrôler comment les paquets seront compilés
+	en fonction de ce que le paquet propose comme option de
+	compilation. Par exemple les paquets qui proposent l'option GNOME
+	pouront être compilés sans le support GNOME en désactivant l'option
+	USE "<i>gnome</i>". Sélectionner l'option <i>gnome</i> permettrait
+	de compiler le support de GNOME pour chacun de ces mêmes paquets.
+	</p>
+	<p>
+	L'effet d'une option USE sur les paquets dépend du logiciel
+	lui-même ainsi et de si l'ebuild supporte l'option en tant que
+	fonction optionnelle. Si le logiciel n'a pas de capacité à utiliser
+	le composant logiciel cité dans l'option USE, alors l'option n'a
+	évidemment pas d'effet sur ces dépendances optionnelles. Une liste
+	de mot-clefs USE utilisés par un paquet particulier peuvent être
+	trouvés en regardant les variables <i>DEPEND</i> et <i>RDEPEND</i>
+	dans les fichiers ebuild.
+	</p>
+
+	<p>
+	Une liste des paramètres USE utilisés par Gentoo Linux est
+	accessible dans <i>/usr/portage/profiles/use.desc</i>. On y trouve
+	un paramètre par ligne suivi d'une brève description de ce que le
+	paramètre fait.
+	</p>
+
+	<p>
+	Portage détermine si le parmètre USE est séléctionné ou
+	désélectionné en vérifiant jusqu'à quatre différentes locations.
+	Ces locations changent les paramètre USE à la manière d'une pile.
+	Protage regarde chaque location et se souvient de la valeur
+	qu'avait le pramètre avant chaque repositionnement. Les sélections
+	ou désélections sont cumulées par Portage.
+	</p>
+	<p>
+	L'ordre des locations vérifiées par USE sont déterminées par la
+	variable <i>USE_ORDER</i> dans /etc/make.globals. Pour
+	enlever une location, il suffit d'enlever celle ci de la variable
+	<i>USE_ORDER</i>.
+	</p>
+	<p>
+	Dans la suite vous trouverez un description des locations dans
+	l'ordre défini par la variable <i>USE_ORDER</i> dans la
+	configuration par défaut de Portage.
+	</p>
+	
+	
+	<p><b>Défauts</b></p>
+	<p>
+	Les "profils" Portage peuvent définir un ensemble de mot-clés USE.
+	Ceci est défini dans make.defaults de chaque profil Portage. Comme
+	/etc/make.profile est un lien vers le profil actuellement utilisé
+	par Portage, /etc/make.profile/make.defaults contient les défauts
+	utilisés. Il est recommandé de ne pas modifier ce fichier car il
+	sera écrasé à chaque mise a jour de Portage.
+	</p>
+	<p><b>Auto</b></p>
+	<p>
+	Auto est défini dans le fichier use.defaults dans le profil de
+	Portage (/etc/make.profile/use.defaults). Chaque entrée consiste en
+	un paramètre USE et son paquet correspondant. Si le paquet listé
+	pour un mot-clef USE est installé actuellement, alors alors le mot
+	clef USE est considéré comme sélectionné. Donc, par exemple, si
+	vous avez installé <i>x11-base/xfree</i> et n'avez pas
+	explicitement désélectionné le paramètre USE X, alors ce paramétre
+	est considéré comme sélectionné. Il est recommendé de ne pas
+	modifier ce fichier car il sera écrasé à chaque mise à jour de
+	Portage.
+	</p>
+
+	<p><b>Conf</b></p>
+	<p>
+	Si<i>USE</i> est défini dans /etc/make.conf alors le USE défini
+	est utilisé. Sinon /etc/make.globals est vérifié. Cette entrée peut
+	ressembler à ceci:</p>
+
+	<pre>
+USE="slang readline gpm berkdb gdbm tcpd pam libwww ssl gb tk
+     lm_sensors lvm ldap tex bonobo sdl gtk xfs evo pda ldap
+     mmx mitshm perl python guile ruby postgres dvd 3dnow tcl
+     lcms gif sdl vorbis ogg oss libg++ directfb decss snmp
+     gnome X opengl mozilla pdflib gpg -nls gd xface jpilot
+     -kde -qt -esd -motif -alsa oggvorbis"
+	</pre>
+
+	<p>
+	Un paramètre USE est séléctionné simplement en faisant apparaître
+	son nom dans la liste, il est désélectionné en plaçant devant son
+	nom un <i>-</i>. Par exemble <i>gnome</i> sélectionne GNOME et
+	<i>-motif</i> désélectionne motif.
+	</p>
+	<p>
+	La variable <i>USE</i> dans /etc/make.conf est celle qu'il est
+	recommandé de modifier pour sélectionner ou désélectionner
+	explicitement un mot-clef. Ce fichier ne sera pas écrasé par une
+	mise à jour de Portage. Il est recommendé de spécifier les
+	paramètres USE dont on ne veut pas pour qu'ils soient modifiés
+	dans les deux locations précédentes.
+	</p>
+	
+	<p><b>Env</b></p>
+	<p>USE peut être modifié manuellement en utilisant la variable
+	d'environnement USE.
+	</p>
+
+	<pre>
+export USE="-gnome"
+emerge net-im/gaim
+	</pre>
+
+	<p>Ceci permet d'utiliser une variable USE particulière lors de
+	l'installation d'un paquet spécifique. Un appel à emerge apres le
+	positionnement de la variable USE utilisera la nouvelle variable
+	USE du moment que vous appelliez emerge du shell ou la variable a
+	étée positionnée et que cette variable n'ait pas étée manuellement
+	effacée.
+	</p>
+	
+	<note>Bien que Portage enregistre le paramètre USE utilisé lors de
+	l'installation d'un paquet, ce paramètre n'est pas persistant. Si
+	le paquet est re-emergé ou mis à jour dans le future, il utilisera
+	la variable USE en effet au moment de l'appel a emerge et non pas
+	la variable USE utilisée quand il a été installé pour la premiere
+	fois.
+	</note>
+	
+  </body>
+</section>
+
+<section>
+<title>Options du Compilateur</title>
+<body>
+	<p>Les options du compilateur utilisé par Portage pour compiler les
+	paquets peut être configuré dans /etc/make.conf en éditant les
+	variables <i>CHOST</i>, <i>CFLAGS</i>, et <i>CXXFLAGS</i>.
+	<i>CHOST</i> spécifie la plateforme pour laquelle vous compilez,
+	<i>CFLAGS</i> et <i>CXXFLAGS</i> spécifient les drapeaux à passer
+	aux compilateurs C et C++ respectivement.
+	</p>
+	<p>
+	Plusieurs exemples de variables sont fournies avec des commentaires
+	explicant pour quelles plateformes ils sont adaptées. Ces défauts
+	sont testés et considérés comme stables. Les changer peut conduire
+	à des erreurs de compilation ou à des bugs à la compilation ou à
+	l'exécution. S'il vous plait, soyez attentifs si vous décidez de
+	configurer un paramètre par défaut car cela peut conduire à un
+	système inutilisable.
+	</p>
+	<p>
+	Les utilisateurs possédant des systèmes multi-processeurs peuvent
+	utiliser la variable <i>MAKEOPTS</i> de /etc/make.globals. Cette
+	option est passée à <i>make</i> pendant la compilation d'un paquet
+	pour lancer plusieurs compilateurs en même temps.
+	</p>
+	
+</body>
+</section>
+
+<section>
+<title>Les emplacements des répertoires</title>
+<body>
+	<p>Portage vous permet de configurer les répertoires qu'il utilise
+	pour compiler des paquets et là où il enregistre certains fichiers.
+	La plupart des utilisateurs n'auront pas besoin de modifier ces
+	emplacements. Les variables suivantes peuvent être positionnées:
+	</p>
+
+	<ul>
+	<li><i>PORTDIR</i> - Emplacement de l'arbre de Portage</li>
+	<li><i>DISTDIR</i> - Cache local des archives téléchargées</li>
+	<li><i>PKGDIR</i> - Emplacement des paquets tbz2 générés localement</li>
+	<li><i>RPMDIR</i> - Emplacement des paquets RPM générés localement</li>
+	<li><i>CURRENTFILE</i> - ???</li>
+	<li><i>PORTAGE_TMPDIR</i> - Espace temporaire utilisé pour la
+	compilation de paquets</li>
+	<li><i>BUILD_PREFIX</i> - Associé à PORTAGE_TMPDIR</li>
+	<li><i>PKG_TMPDIR</i> - Associé à PKG_TMPDIR (je sais c'est bête,
+	en même temps, je fais que traduire moi hein...)</li>
+	</ul>
+</body>
+</section>
+	
+
+<section>
+<title>La protection des fichiers de configuration</title>
+<body>
+	<p>
+	Portage permet la protection de tous les fichiers d'un répertoire
+	spécifique. Portage n'écrasera pas les fichiers d'un répertoire
+	protégé. Si un paquet essaye d'installer un fichier protégé, il
+	sera renommé en quelquechose de la forme <i>._cfg0000_nom</i>. Ceci
+	afin de permettre à l'utilisateur de merger son ancienne
+	configuration et la nouvelle à la main.
+	</p>
+	<p>
+	Les répertoires protégés sont choisis à l'aide de
+	<i>CONFIG_PROTECT</i> dans /etc/make.conf ou /etc/make.globals. Des
+	fichiers spécifiques ainsi que des sous répertoires d'un répertoire
+	protégé sont déprotégés à l'aide de la variable
+	<i>CONFIG_PROTECT_MASK</i>.
+	</p>
+	<p>
+	Ceci est un exemple et ne doit pas être bêtement recopié:
+	</p>
+
+<pre>
+CONFIG_PROTECT="/etc /usr/share/config /usr/kde/2/share/config"
+CONFIG_PROTECT_MASK="/etc/gconf /etc/init.d /etc/pam.d"
+</pre>
+
+	<p>Les utilisateurs peuvent avoir plus d'information sur la façon dont
+	marche la protection des fichiers en lançant cette commande depuis
+	un shell:
+	</p>
+
+<pre>
+emerge --help config
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>FEATURES</title>
+<body>
+	<p>
+	Portage offre bon nombre d'options pour faciliter la vie des
+	développeurs et qui gouvernent le comportement de Portage et la
+	façon dont il nettoie après lui après les nombreux stages de
+	l'installation d'un paquet. Ces options ont un intérêt seulement pour les
+	développeurs et peuvent causer des problèmes pour les utilisateurs.
+	</p>
+	<p>
+	La liste des caractéristiques à sélectionner est positionnée à
+	l'aide de la variable <i>FEATURES</i> dans /etc/make.conf ou
+	/etc/make.globals. Voici la liste des options disponibles:
+	</p>
+	<p>
+	<ul>
+	<li><i>digest</i> : Automatiquement créer un digest pour les
+	nouveaux ebuilds.</li>
+	<li><i>cvs</i> : Automatiquement "commiter" les nouveaux digests
+	par cvs</li>
+	<li><i>sandbox</i> : Sélectionne le "bac à sable" pour la
+	protection des préfixes de chemin.</li>
+	<li><i>noclean</i> : Portage ne nettoie rien après lui.</li>
+	<li><i>noauto</i> : N'exécute pas les étapes précédentes
+	automatiquement. </li>
+	</ul>
+	</p>
+</body>
+</section>
+
+<section>
+<title>L'option SYNC</title>
+<body>
+	<p>
+	Portage à la capacité de mettre à jour l'arbre de Portage à l'aide
+	de deux méthodes différentes, par rsync et par cvs anonyme. Vous
+	pouvez définir la méthode que Portage doit utiliser a l'aide de la
+	variable <i>SYNC</i> dans /etc/make.conf.
+	</p>
+
+	<p><b>RSYNC</b></p>
+
+	<p>
+	Il est préférable que les utilisateurs choisissent rsync à moins
+	qu'ils pensent développer leur propre ebuilds car cela utilise
+	beaucoup moins de ressources de nos serveurs que CVS. Pour cela
+	rsync est la méthode par défaut dans /etc/make.conf. Cette méthode
+	peut être choisie ainsi: </p>
+
+<pre>
+SYNC="rsync://cvs.gentoo.org/gentoo-x86-portage"
+</pre>
+
+	<note>Cette méthode écrase bêtement les changements que vous avez pu
+	effectuer à votre arbre Portage locale. Si vous avez besoin de
+	garder les changements que vous avez apportés, vous devez utiliser
+	la méthode du CVS anonyme.</note>
+	<p><b>CVS Anonyme</b></p>
+
+	<p>
+	Portage peut synchroniser son arbre avec un CVS anonyme spécifié.
+	C'est utile aux développeurs qui ne veulent pas que leurs
+	modifications soient perdues lors de synchronisations avec l'arbre
+	officiel. Cette méthode est choisie de la façon suivante :</p>
+
+<pre>
+SYNC="cvs://:pserver:anonymous@gentoo.org:/home/anoncvs"
+</pre>
+
+	<note>
+	Le CVS Anonyme est lent et prend beaucoup de ressource à la fois
+	chez le serveur et chez le client. Nous vous demandons donc
+	d'utiliser la méthode rsync si vous n'effectuez pas de changement à
+	l'arbre Portage.
+	</note>
+
+	<p>
+	Avant de pouvoir utiliser le CVS Anonyme pour synchroniser votre
+	copie locale de l'arbre, avec l'arbre officiel, vous devez faire un
+	"check out" d'une copie de l'arbre en utilisant l'outil cvs de
+	cette façon:
+	</p>
+<pre>
+# Sauvegare de l'ancienne arborescence
+cd /usr/portage
+mv portage portage.old
+
+# "checkout" de l'arbre
+cvs -d :pserver:anonymous@gentoo.org:/home/anoncvs login
+# Appuyez sur entrée quand le mot de passe vous est demandé
+cvs -d :pserver:anonymous@gentoo.org:/home/anoncvs co gentoo-x86
+
+# mettre le répertoire à sa place
+mv gentoo-x86 portage
+</pre>
+
+	<p><b>CVS de développeur</b></p>
+
+	<p>
+	Les développeurs avec l'acces complet à l'arbre CVS peuvent aussi
+	utiliser <i>emerge</i> pour qu'il synchronise l'arbre à l'aide de
+	CVS auquel ils accèdent par rsh ou ssh.
+	</p>
+	<p>
+	Faites simplement un "check out" de l'arbre CVS avec votre compte,
+	déplacez le vers /usr/portage, et utilisez cette option de
+	<i>SYNC</i>
+	</p>
+	
+<pre>
+SYNC="cvs://votrecompte@cvs.gentoo.org:/home/cvsroot"
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Miroirs</title>
+<body>
+	<p>Le projet Gentoo maintient un miroir local de toutes les archives
+	référencées dans les ebuilds de l'arbre Portage. Souvent les
+	"tarballs" sont conservés sur des serveurs lents qui peuvent être
+	souvent indisponibles. Aussi les développeurs effacent les
+	anciennes versions de leurs sources quand une nouvelle release est
+	faite. Pour simplifier la vie des utilisateurs de la distribution
+	Gentoo (et pour réduire l'utilisation de la bande passante du site
+	conservant les sources) nous gardons une copie ces fichiers. Cela permet un
+	téléchargement plus rapide et plus fiable d'un ou plusieurs
+	miroirs près de votre emplacement physique.
+	</p>
+	<p>
+	Quand vous tentez de merger un paquet, Portage essaye d'abord de
+	vérifier si le miroir possède cette archive. Si le miroir ne la
+	possède pas, alors Portage essaye de télécharger les sources du
+	serveur HTTP ou FTP spécifié dans l'ebuild du paquet.
+	</p>
+	<p>
+	Le miroir que Portage utilise se spécifie à l'aide de
+	<i>GENTOO_MIRRORS</i> dans /etc/make.conf. Voilà la configuration
+	courante par défaut:
+	</p>
+<pre>
+GENTOO_MIRRORS="http://www.ibiblio.org/gentoo"
+</pre>
+	<p>
+	Pour trouver un miroir Gentoo plus près de chez vois, visitez le
+	site de Gentoo ou demandez à la liste de diffusionlocale.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Programme de téléchargement.</title>
+<body>
+	<p>	Le programme que Portage utilise pour télécharger les archives peut
+	être spécifié en positionnant <i>FETCHCOMMAND</i> et
+	<i>RESUMECOMMAND</i>. Plusieurs exemples sont indiqués dans
+	/etc/make.conf et /etc/make.globals. Portage utilise <i>wget</i>
+	par défaut, ce qui devrait satisfaire la plupart des utilisateurs.
+	</p>
+
+	<note>Portage passe les informations relatives aux proxys HTTP et FTP au
+	programme de téléchargement à l'aide des variables d'environnement
+	HTTP_PROXY et FTP_PROXY.</note>
+</body>
+</section>
+
+<section>
+<title>Proxies</title>
+<body>
+	<p>
+	On peut dire à Portage d'utiliser des proxies HTTP et FTP pour
+	télécharger des fichiers. Les proxies peuvent être spécifiés par
+	<i>HTTP_PROXY</i> et <i>FTP_PROXY</i> soit dans /etc/make.conf soit
+	dans /etc/make.globals. Si le même proxy sert de proxy http et ftp,
+	alors vous pouvez utiliser la variable <i>PROXY</i> à la place.
+	</p>
+	
+	<p>Voila un exemple:</p>
+
+<pre>
+HTTP_PROXY="http://192.168.1.1:8080"
+FTP_PROXY="http://192.168.1.1:8080"
+
+ou
+
+PROXY="http://192.168.1.1:8080"
+</pre>
+
+	<note>Ces réglages ne s'appliquent à l'heure actuelle qu'aux
+	protocoles HTTP et FTP et ne sont pas utilisés par rsync ou le CVS
+	anonyme. Si vous êtes derrière un firewall qui nécessite
+	l'utilisation d'un proxy pour atteindre le monde extérieur, vous
+	aurez besoin de mettre à jour votre arbre Portage avec un tarball
+	reflétant le CVS à une date donnée. [NDT: utiliser emerge-webrsync]</note>
+
+</body>
+</section>
+
+<section>
+<title>Options Diverses</title>
+<body>
+	<p>Voici quelques options qui pourront être utiles à certains
+	utilisateurs:</p>
+
+	<ul>
+	<li><i>NOCOLOR</i> : Permettre aux utilisateurs d'empêcher
+	l'utilisation de couleurs dans la sortie de l'outil emerge. </li>
+	<li><i>CLEAN_DELAY</i> : Portage n' "unmerge" un paquet qu'après un
+	certains nombre de secondes pour permettre à l'utilisateur d'anuler
+	l'opération. Cette option spécifie le nombre de secondes à
+	attendre. Mettre à "0" pour désactiver.</li>
+	</ul>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Gestion de Paquets</title>
+
+<section>
+<title>Mise à jour de l'abre Portage</title>
+<body>
+	<p>
+	L'arbre Portage, situé dans /usr/portage, contient la bibliothèque
+	d'instructions pour que de nombreux paquets (appelés
+	<i>ebuilds</i>). L'arbre contient les informations profil et
+	package.mask vitaux pour avoir un arbre Portage à jour. Il est
+	important de garder l'arbre synchronisé avec l'arbre officiel pour
+	avoir les versions des paquets et les correctifs de bug les plus
+	récents à disposition. Vous pouvez mettre a jour l'arbre Portage à
+	l'aide de la commande suivante:
+	</p>
+<pre>
+emerge rsync
+</pre>
+	<p>
+	La méthode de mise à jour d'emerge peut être changée. Voir
+	<i>l'option SYNC</i> dans le chapitre <i>Les fichiers de
+	configuration de Portage</i> pour plus d'information.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Installation de Paquets</title>
+<body>
+	<p>
+	Le fait de compiler un paquet à l'aide de Portage est appelée
+	"<i>merger</i>". Portage compile un paquet et l'installe
+	temporairement dans un répertoire "image" où il enregistre les
+	fichiers qui vont être installés. Ces fichiers sont alors déplacés
+	du répertoir image et mergés avec le vrai système de fichier /.
+	</p>
+	<p>
+	La commande <i>emerge</i> est un front-end au système Portage.
+	L'installation et la désinstalltion de paquets est faite à l'aide de
+	cette commande et de ses nombreux arguments.
+	</p>
+	<p>
+	Pour installer la version la plus récente qui ne soit pas masquée
+	d'un paquet, spécifier simplement son nom comme ceci:
+	</p>
+<pre>
+emerge galeon
+</pre>
+	<p>
+	La commande va compiler et installer toutes les dépendances
+	nécessaires (en prenant en compte la variable USE), ensuite elle
+	va compiler et installer la version non-masquée la plus récente de
+	galeon. Galeon aurait pu être référencé à l'aide de son nom et de
+	sa catégorie: <i>net-www/galeon</i>.
+	</p>
+	<p>
+	la commande <i>emerge</i> accepte aussi en argument le chemin du
+	fichier ebuild lui même. Ceci permet aux utilisateurs de merger
+	d'anciennes versions du paquet, et de merger des paquets n'étant
+	pas inclus dans l'arbre portage. Voici un exemple d'utilisation de
+	cette fonctionnalité :
+	</p>
+<pre>
+emerge /usr/portage/net-www/galeon/galeon-1.2.0-r3.ebuild
+</pre>
+	<p>
+	En plus de spécifier le nom du paquet ou l'ebuild à merger,
+	<i>emerge</i> connait plusieurs arguments de ligne de commande. Un
+	de ces arguments <i>--pretend</i> est peut-être le plus utile.
+	Quand il est utilisé, l'action demandée n'est pas effectuée. Au
+	lieu de cela, Portage affiche une liste de paquets qui seraient
+	installés ou mis à jour si l'action était effectuée. Le listing
+	suivant est un exemple de ce qui serait mergé pour l'installation
+	de la dernière version du paquet kdevelop:
+	</p>
+
+<pre>
+root@kodiak blocke # emerge --pretend kdevelop             
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies ...done!
+[ebuild  N   ] kde-base/kdelibs-2.2.2-r4 to /
+[ebuild  N   ] dev-util/kdbg-1.2.2 to /
+[ebuild   U  ] app-text/psutils-1.17 to /
+[ebuild   U  ] app-text/a2ps-4.13b-r3 to /
+[ebuild   U  ] app-text/jadetex-2.20 to /
+[ebuild  N   ] app-text/sgmltools-lite-3.0.3-r2 to /
+[ebuild  N   ] kde-base/kdoc-2.2.2-r1 to /
+[ebuild  N   ] net-www/htdig-3.1.5-r2 to /
+[ebuild  N   ] app-text/enscript-1.6.3-r1 to /
+[ebuild  N   ] kde-base/kdebase-2.2.2-r2 to /
+[ebuild  N   ] app-doc/qt-docs-2.3.1 to /
+[ebuild  N   ] dev-util/kdevelop-2.0.2 to /
+</pre>
+	<p>
+	Dans le listing ci-dessus, les paquets marqués d'un <i>N</i> sont
+	les paquets qui n'ont pas été installés et qui seraient installés
+	avec cette commande. Les paquets marqués d'un <i>U</i> sont ceux
+	dont une version plus ancienne a déjà été installée, et qui
+	seraient mis à jour par cette commande.
+	</p>
+	<p>
+	Les autres arguments disponibles sont:
+	</p>
+	<p>
+	<i>--fetchonly</i> : Télécharge l'archive nécessaire à la
+	compilation du paquet et les dépendances nécessaires.
+	</p>
+	<p>
+	<i>--emptytree</i> : Cette option dit à portage de supposer
+	qu'aucune des dépendances de ce paquet ou des paquets dont il
+	dépend sont déjà installés.  Ceci est utile avec <i>--pretend</i>
+	pour afficher l'arbre complet des dépendances d'un paquet
+	particulier. Toutes les dépendances sauf la bibliothèque glibc sont
+	affichées.
+	</p>
+	<p><i>--nodeps</i> : Portage tente de merger uniquement le paquet
+	spécifié et ignore les dépendances. Si les dépendances ne sont pas
+	déjà installées, alors la compilation  peut échouer.
+	</p>
+	<p><i>--onlydeps</i> : Seules les dépendances du paquet sont
+	mergées. Le paquet spécifié n'est <i>pas</i> mergé.
+        </p>
+	<p><i>--noreplace</i> : Passe l'installation d'un paquet s'il est
+	déjà installé.  
+	</p>
+	<p><i>--usepkg</i> : Au lieu de compiler le paquet particulier,
+	Portage tente de trouver un paquet précompilé de format tbz2 à l'emplacement
+	spécifié par la variable de shell <i>PKGDIR</i>.
+	</p>
+	<p><i>--debug</i> : Dit à l'environement ebuild d'être plus bavard.
+	C'est utile pour les développeurs qui essayent de trouver des
+	erreurs dans les ebuilds.
+	</p>
+	<p><i>--autoclean</i> : Force <i>emerge</i> à nettoyer les fichiers
+	temporaires des répertoires de compilation avant de démarrer la
+	compilation d'un paquet. Portage le fait par défaut, cette option
+	n'est utile qu'aux développeurs qui ont désactivé ce comportement.
+	</p>
+	<p><i>--verbose</i> : Dit à <i>emerge</i> de fonctionner en mode
+	bavard. Pour le moment, cela ne fait qu'afficher les erreurs
+	relatives a GNU info, et cela peut aisément être ignoré par les
+	utilisateurs.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Désinstallation de Paquet</title>
+<body>
+	<p>Le fait d' "unmerger" est le fait d'enlever les fichiers associés à
+	un paquet du système de fichier. Le logiciel est enlevé du système
+	et ne peut donc plus être utilisé jusqu'à ce qu'il soit re-emergé.
+	</p>
+    <p>
+	La désinstallation de paquet est invoquée avec la commande
+	<i>emerge</i> suivie de l'argument <i>unmerge</i> suivi du nom du
+	paquet à enlever. L'exemple suivant désinstallerait toutes les
+	versions du paquet <i>ltrace</i> 
+	</p>
+
+<pre>
+emerge unmerge ltrace
+
+ou
+
+emerge unmerge dev-util/ltrace
+</pre>
+	<p>Portage permet aussi de spécifier des versions des paquets à
+	unmerger. Les intervalles sont spécifiées à l'aide de <i>=</i>
+	(version exacte), <i>&lt;</i> (inférieure), <i>&gt;</i>
+	(supérieure), et <i>&gt;=</i> (supérieure ou égale). L'exemple
+	suivant unmergerait toutes les versions de ltrace égales à 0.3.15
+	ou plus anciennes:
+	</p>
+
+<pre>
+emerge unmerge \&lt;=dev-utils/ltrace-0.3.15
+</pre>
+
+	<p>Quand vous spécifiez une intervalle, il est important de mettre un
+	\ devant <i>&gt;</i> et <i>&lt;</i> dans la ligne de commande du
+	shell pour que le shell n'interprete pas ces caractères
+	particuliers. Aussi, il vous faudra spécifier la catégorie du
+	paquet comme dans l'exemple. Pour un autre exemple de la façon dont
+	marche la spécification d'intervalle voir la commande <i>emerge
+	--help</i>
+	</p>
+
+	<warn>Unmerger un paquet peut être dangereux. Si vous enlevez un
+	paquet essentiel, le système pourra s'arrèter de fonctionner et
+	l'effacement de nombreuses bibliothèques peuvent causer l'échec de
+	logiciels. <b>Portage ne vous préviendra pas si vous effacez un
+	paquet essentiel au sytème ou une dépendance d'un autre paquet.</b>
+	</warn>
+
+	<p>Si le paquet à enlever est installé, le programme emerge va
+	afficher le paquet exact qui va être enlevé et il va attendre un
+	nombre de secondes donné pour donner à l'utilisateur l'opportunité
+	d'appuyer sur Control-C pour annuler l'action entreprise.
+	</p>
+	<p>
+	Un fois que l'opération commence, vous verrez une longue liste de
+	nom de fichier appartenant au paquet affiché. Certains de ces noms
+	de fichier seront accompagnés d'un drapeau sur leur gauche. Les
+	drapeaux <i>!mtime</i>, <i>!empty</i>, et <i>cfg</i> spécifient la
+	raison pour laquelle certains fichiers ne sont pas enlevés lors de
+	l'effacement du paquet du système. Les fichiers listés sans ces
+	drapeaux sont effacés du système.
+	</p>
+	<p>
+	<i>!mtime</i> signifie que le fichier à été modifié après
+	l'installation de la version du paquet spécifiée. Cela signifie que
+	quelqu'un a édité ce fichier après l'installation du paquet, ou
+	qu'un autre paquet a écrasé ce fichier après lui. Cela permet aux
+	paquets d'être mis à jour en s'assurant que la désintallation
+	d'une version plus ancienne n'efface de fichiers essentiels.
+	</p>
+	<p>
+	<i>!empty</i> indique un répertoire que Portage refuse d'effacer à
+	cause du fait qu'ils ne soient pas vides (plusieurs paquets
+	prétendent posséder un même répertoire). La protection de fichier
+	entre en jeu quand vous voyez le drapeau <i>cfg</i>. Cela signifie
+	qu'un paquet plus récent prétend possèder ce fichier de
+	configuration et Portage refuse de l'effacer.
+	</p>
+	<warn>Les fichiers sont considérés comme possédés par le dernier paquet
+	installé. Cela dépend donc de l'ordre d'installation des paquets et
+	non pas des numéros de version des paquets. Effacer la version la
+	plus récemment installé qui prétend possèder  un certain fichier
+	effacera toujours le fichier même si un paquet plus vieux à
+	installé ce fichier auparavant. (En supposant que l'utilisateur
+	n'ait pas modifié le fichier).
+	</warn>
+	
+</body>
+</section>
+
+<section>
+<title>Mises à jour du système</title>
+<body>
+	<p>Portage est capable de mettre à jour les paquets installés
+	automatiquement à l'aide d'une seule commande. La capacité de mise
+	à jour du système permet aux utilisateurs de mettre à jour les
+	paquets "centraux" à des versions recommandées par les développeurs
+	du système Gentoo Linux. Une mise à jour système ne met pas à jour
+	les paquets non essentiels, mais seulement les paquets définis par le
+	profil Portage comme essentiels au bon fonctionnement et à la
+	maintenance du système.
+	</p>
+	<p>
+	Pour effectuer une mise à jour du système lancer la commande :
+	</p>
+<pre>
+emerge --update system
+</pre>
+	<p>
+	Portage va alors compiler et installer les mises à jour en fonction
+	des versions, des paquets que vous avez installés sur votre
+	système et en fonction de ce qui est recommandé par le profil
+	Portage courant. Les utilisateurs peuvent utiliser <i>--pretend</i>
+	avec l'exemple précédent pour avoir la liste de ce qui serait
+	installé ou modifié avec cette action.
+	</p>
+	<note>Vous remarquerez dans les intructions d'installation qu'une des
+	étapes est d'exécuter <i>emerge system</i> pour installer tous les
+	paquets de base (ou "centraux"). <i>emerge --update system</i> met
+	à jour ces paquets à la dernière version recommandée.
+	</note>
+</body>
+</section>
+
+<section>
+<title>Mise à jour "World"</title>
+<body>
+	<p>Portage permet aussi de mettre à jour automatiquement les paquets
+	non-essentiels avec une seule commande. Le système Portage a été
+	concu avec une certaine forme d'intelligence pour permettre la mise
+	à jour sûre d'un système où plusieurs versions de paquets
+	conflictuels peuvent être disponibles.
+	</p>
+
+	<p>La capacité de mise à jour "world" vérifie le profil système, la
+	liste de paquet bloqués (<i>package.mask</i>), le profil "world"
+	et les dépendances (avec les intervalles de versions) de paquets
+	listés dans le profil "world" pour déterminer quels paquets ont
+	besoin d'être mis à jour. Un paquet n'est mis à jour que si une
+	nouvelle version existe et que le paquet est listé dans le profil
+	"world", ou si il est une dépendance d'un paquet dans le profil
+	"world". En plus, le paquet ou la version spécifique du paquet ne
+	doit pas être bloqué par le profil système ou dans
+	<i>package.mask</i>.
+	</p>
+
+	<p>Quand il détermine les paquets à mettre à jour, Portage essaye de
+	mettre à jour tous les paquets mentionnés dans le profil "world" à
+	la version la plus grande qui ne soit pas bloquée. Portage
+	considère également que les dépendances de chaque paquet mentionné
+	dans le profil "world" et va essayer de mettre à jour les
+	dépendances à une version plus récente s'il y en a de disponible,
+	qui correspond à l'intervalle de version spécifié, et qui ne soit
+	pas bloqué soit dans le profil système soit dans
+	<i>package.mask</i>. Il prend également en considération des
+	<i>SLOTS</i> comme mentionné dans le chapitre précédent.
+	</p>
+
+	<p>Les utilisateurs qui connaissent d'autre distributions et d'autres
+	méthode de paquetage en plus de Portage, peuvent trouver étrange
+	que Portage ne mette pas bêtement à jour en fonction des numéros de
+	version (ce que faisait Gentoo 1.0). Plusieurs paquet inclus dans
+	l'arbre de Portage ont plusieurs versions disponibles. Une version
+	plus ancienne d'un paquet peut être incompatible avec un logiciel
+	qui dépend de lui. Mettre à jour bêtement les bibliothèques et les
+	outils sans prendre en compte le besoin d'autre paquets peut
+	rapidement causer des dommages importants. Pour éviter ceci,
+	Portage essaye de le prendre en compte quand il met à jour des
+	paquets, et considère les besoins de chaque paquet mis à jour en
+	fonctions des informations trouvées dans chaque ebuild.
+	</p>
+	
+	<p>
+	Le coeur de la mise à jour "world" de Portage est le profil
+    "world". Au contraire du profil système qui est habituellement
+	défini par les développeurs et jamais modifié par les utilisateurs,
+	le profil "world" est généré indirectement au cours du temps en
+	fonction des actions de l'utilisateur.
+	Le profil "world" est plus ou moins une liste de "favoris".
+	Les paquets installés manuellements par l'utilisateur au travers
+	l'utilisation de la commande <i>emerge</i> sont enregistrés dans le
+	fichier <i>world</i> dans <i>/var/cache/edb/world</i>.
+	Portage suppose que comme vous avez fait l'effort d'installer ce
+	paquet vous allez certainement vouloir qu'il soit maintenu à jour.
+	</p>
+	<p>
+	Le fichier <i>world</i> consiste en une liste de nom de paquet avec
+	leur catégorie, un par ligne, et peut ressembler à cela:
+	</p>
+<pre>
+net-im/gaim
+net-www/skipstone
+net-www/galeon
+app-editors/vim
+app-text/ispell
+net-mail/evolution
+dev-util/ltrace
+sys-apps/xfsprogs
+=net-www/mozilla-0.9.8-r3
+sys-apps/attr
+sys-apps/dmapi
+sys-kernel/linux-sources
+sys-apps/acl
+app-office/gnucash
+app-cdr/xcdroast
+</pre>
+	<p>
+	La plupart des entrées de ce fichier d'exemple ont été ajoutés
+	automatiquement par Portage quand l'utilisateur a mergé
+	manuellement les paquets spécifiés. Ces paquets seront mis à jour
+	si une nouvelle version est disponible.
+	</p>
+	
+	<note>Pour vous économiser du temps et vous assurer que vos paquets
+	préférés sont mis à jour, vous pouvez éditer manuellement le fichier
+	<i>world</i> et ajouter les entrées pour ces paquets. Les
+	utilisateurs qui mettent à jour une vieille version de Portage
+	pouront avoir besoin d'ajouter des choses dans ce fichier. Les
+	installations plus récentes de Gentoo et Portage s'occupent de le
+	remplir à l'installation.</note>
+	
+	<p>Il est intéressant de remarquer l'entrée pour le paquet mozilla
+	(<i>=net-www/mozilla-0.9.8-r3</i>). Cette entrée fut ajoutée
+	manuellement par un utilisateur pour "épingler" une version
+	spécifique. Les intervalles de Paquets (Vus dans la section <i>
+	Désinstallation de Paquets</i> de ce manuel) peuvent être utilisés
+	pour forcer Portage à ne considèrer que certaines versions lors de
+	mises à jour. Cette entrée force Portage à considèrer que
+	mozilla-0.9.8-r3 est la seule version disponible et donc il ne va
+	jamais mettre à jour ce paquet pendant une mise à jour de type
+	"world" quelqu'en soit la raison.
+	</p>
+	
+	<p>Une mise à jour de type "world" s'effectue de la façon suivante:</p>
+<pre>
+emerge --update world
+</pre>
+	<p>Portage va alors essayer de mettre à jour tous les paquets
+	mentionés dans le fichier <i>world</i> et va mettre à jour toutes
+	les dépendances si besoin est. Les dépendances sont mises à jour à
+	la version la plus récente disponible qui satisfasse les besoins du
+	paquet mis à jour. Les paquets qui ne sont pas listés dans
+	<i>world</i> qui ne soient pas des dépendances des paquets de
+	<i>world</i> ne sont pas mis à jour.
+	</p>
+
+	<warn>Portage n'écrasera pas les fichiers se trouvant dans les
+	répertoires protégés par la protection de fichiers de
+	configuration. Vous devrez merger manuellement les différences
+	entre votre configuration actuelle et la nouvelle version que
+	Portage sauve pour vous. Si vous ne mettez pas à jour vos fichier
+	de configuration, vos logiciels installés peuvent s'arrèter de
+	fonctionner. Se réfèrer a <i>Protection des Fichiers de
+	Configuration</i> dans le chapitre <i>Configurer Portage</i> ou
+	utilisez la commande <i>emerge --help config</i> pour plus
+	d'information.</warn> 
+
+	<p>Pour connaître la liste de ce qui serait mis à jour ou installé
+	pendant une mise à jour "world" utilisez l'option <i>--pretend</i>
+	comme mentionné dans les sections précédentes de ce chapitre.
+	</p>
+
+	<note>Une mise à jour "world" effectue automatiquement une mise à jour
+	système. les paquets centraux ne peuvent pas être épinglés à l'aide
+	du fichier <i>world</i> comme décrit précédemment parce que le
+	profil Portage courant à la priorité sur le fichier world.
+	</note>
+
+	<p>
+	Un effet secondaire intéressant est la façon dont la mise à jour
+	"world" peut être exploitée par les utilisateurs souhaitant
+	recompiler tout les logiciels installés sur le système. Comme la
+	mise à jour world va essayer de mettre à jour tous les paquets
+	mentionnés dans le fichier <i>world</i> et leur dépendances,
+	l'utilisation de l'argument <i>--emptytree</i> est une façon de
+	forcer la recompilation de ces paquets ainsi que de chaque
+	dépendance à part la glibc. Ceci peut être utile pour les
+	utilisateurs souhaitant changer les options de compilation ou un
+	mot-clef USE et qui veulent que ces modifications soient utilisés
+	par tous les logiciels qu'ils utilisent sans re-emerger
+	manuellement tous les paquets. Il suffit de remplir le fichier
+	<i>world</i> avec toutes vos applications utilisées régulièrement,
+	et de lancer la commande suivante:
+	</p>
+<pre>
+emerge --update world --emptytree
+</pre>
+	<p>
+	Vous pouvez ajouter l'argument <i>--pretend</i> à cette commande
+	pour avoir la liste des paquets qui seraient recompilés par cette
+	commande.
+	</p>
+	
+</body>
+</section>
+
+<section>
+<title>Nettoyage du système</title>
+<body>
+	<p>Portage permet l'installation de plusieurs versions du même paquet les
+	uns sur les autres. Il y a quelques paquets dans l'arbre de Portage
+	de Gentoo qui utilisent cette fontionnalité (Pour la compatibilité
+	ascendante comme de vieux logiciels peuvent être incompatibles avec
+	une version plus récente d'un autre paquet)
+	</p>
+	<p>Dans la plupart des cas quand une version plus récente d'un paquet
+	est installé la plupart de l'ancien paquet est écrasé et tout ce
+	qui reste est quelques fichiers de documentations et d'autres
+	fichiers sans importance quant au fonctionnement du système. Au fil
+	du temps ces résidus peuvent s'accumuler et gâcher un espace disque
+	précieux.
+	</p>
+	<p>Pour éviter ceci, Portage propose un façon simple d'effacer les
+	traces des anciennes versions d'un système. Cette fonctionnalité
+	est appelée a l'aide de l'option <i>clean</i> et peut être lancée
+	avec la commande suivante:
+	</p>
+<pre>
+emerge clean
+</pre>
+	<p><i>emerge</i> va alors afficher une liste de révision et de
+	versions à effacer, ainsi que les versions qui restent, et
+	permettre à l'utilisateur d'anuler en appuyant sur Contrôle-C.
+	Sur un système typique très actif, une longue liste de fichiers
+	gardés ou enlevés va être affichée.
+	</p>
+
+	<p>Sauf mention contraire, Portage suppose que l'option clean est
+	appliquée pour "<i>world</i>" (les paquets installés). Vous pouvez
+	limiter le champ d'action de clean en utilisant des options comme
+	<i>world</i>,  <i>system</i>, une liste de nom de paquets, ou des
+	intervalles de paquets.
+	</p>
+
+	<p>Quand il détermine quelles versions des paquets doivent etre
+	désinstallées, le système Portage exploite les profils, les
+	besoins d'autres paquets installés, et les SLOTs de paquets. Il
+	suppose que les dépendances sont définies correctement pour tous
+	les paquets, l'action clean va enlever de façon sûre les paquets
+	les plus anciens et ne devrait pas enlever quelque fonctionnalité
+	que ce soit, ou empècher le système de fonctionner.
+	</p>	
+</body>
+</section>
+
+<section>
+<title>"Pruner" un Paquet</title>
+<body>
+	<p>
+	Portage permet de l'action <i>prune</i> sur un paquet. L'action
+	"prune" est la forme non-sûre de clean. Elle efface toutes les
+	versions de tous les paquets sauf les dernières versions
+	installées. Elle n'effectue aucunes des vérifications que fait
+	l'action <i>clean</i>, et peut très bien effacer un paquet
+	essentiel au fonctionnement de votre système. Les utilisateurs de
+	cette action peuvent facilement empècher leur système de
+	fonctionner, son utilisation d'est pas recommandé a part dans des
+	circonstances très paricullières.
+	</p>
+
+	<p>L'action <i>prune</i> accepte les mêmes arguments que <i>clean</i>
+	et peut être utilisée ainsi:
+	</p>
+<pre>
+emerge prune
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Chercher dans l'arbre Portage</title>
+<body>
+	<p>L'arbre Portage comme celui qui forme le coeur de la distribution
+	Gentoo peut devenir très grand. <i>emerge</i> permet d'effectuer
+	des recherches à l'aide d'une chaine de caractères de la forme
+	d'une expression rationnelle entre guillements. Les expressions
+	rationnelles sont très compliquées et il est donc recommandé de
+	trouver un bon  livre sur le sujet si vous êtes intéressés et
+	voulez les utiliser pleinement.
+	</p>
+	<p>
+	La plupart des recherches simples peuvent être effectuées sans
+	savoir comment faire une expression rationnelle. Voici un exemple de
+	recherche simple de paquet dont la chaine "gcc" apparaît dans le
+	nom:
+	</p>
+<pre>
+emerge search gcc
+</pre>
+	<p>
+	Pour chaque chaine qui correspond, emerge affiche le nom du paquet,
+	la version la plus récente disponible, la version la plus récente
+	installée, la page oueb du paquet, et la description du logiciel
+	contenu dans le paquet.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Trouver de l'aide</title>
+<body>
+	<p>
+	Plus d'information sur les nombreuse options d'<i>emerge</i>
+	peuvent être trouvées à l'aide de la commande:
+	</p>
+<pre>
+emerge --help
+</pre>
+</body>
+</section>
+	
+		
+
+<section>
+<title>Outils utiles</title>
+<body>
+	<p>
+	Plusieurs outils qui simplifient la vie ont étés mis a disposition
+	par des utilisateurs de Gentoo. Ces outils sont disponibles dans le
+	paquet <i>app-admin/gentoolkit</i> dans l'arbre de Portage de
+	Gentoo.
+	</p>
+	<p>
+	<ul>
+	<li><i>etc-update</i> : script shell utilisant vim pour permettre
+	de merger les fichers de configuration de /etc. (peut être
+	dangereux si mal utilisé) </li>
+	<li><i>qpkg</i> : outil pour extraire des informations de la base
+	de donnée de paquets</li>
+	<li><i>epm</i> : un autre outil similaire a qpkg mais avec une
+	syntaxe proche de celle de RPM</li>
+	</ul>
+	</p>
+</body>
+</section>
+
+
+</chapter>
+
+</guide>
+
