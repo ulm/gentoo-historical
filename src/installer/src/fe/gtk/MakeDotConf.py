@@ -14,7 +14,8 @@ class Panel(GLIScreen.GLIScreen):
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
 
-		self.system_use_flags = commands.getoutput("emerge info | grep -e '^USE' | sed -e 's:USE=\"::' -e 's:\"::'").split(" ")
+#		self.system_use_flags = commands.getoutput("emerge info | grep -e '^USE' | sed -e 's:USE=\"::' -e 's:\"::'").split(" ")
+		self.system_use_flags = commands.getoutput("portageq envvar USE").split(" ")
 
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
@@ -27,8 +28,8 @@ class Panel(GLIScreen.GLIScreen):
 
 		f = open("/usr/portage/profiles/use.desc", "r")
 		for line in f:
-			line.strip()
-			if line == "" or line.startswith("#"): continue
+			line = line.strip()
+			if not line or line.startswith("#"): continue
 			dash_pos = line.find(" - ")
 			if dash_pos == -1: continue
 			flagname = line[:dash_pos] or line[dash_pos-1]
@@ -38,8 +39,8 @@ class Panel(GLIScreen.GLIScreen):
 
 		f = open("/usr/portage/profiles/use.local.desc", "r")
 		for line in f:
-			line.strip()
-			if line == "" or line.startswith("#"): continue
+			line = line.strip()
+			if not line or line.startswith("#"): continue
 			dash_pos = line.find(" - ")
 			if dash_pos == -1: continue
 			colon_pos = line.find(":", 0, dash_pos)
@@ -48,6 +49,12 @@ class Panel(GLIScreen.GLIScreen):
 			desc = "(" + pkg + ") " + line[dash_pos+3:]
 			self.use_desc[flagname] = desc
 		f.close()
+
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		label = gtk.Label()
+		label.set_markup("<b>USE flags:</b>")
+		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
 		sorted_use = self.use_desc.keys()
 		sorted_use.sort()
@@ -65,7 +72,7 @@ class Panel(GLIScreen.GLIScreen):
                         column.set_resizable(gtk.TRUE)
                         self.treeview.append_column(column)
                 self.treewindow = gtk.ScrolledWindow()
-                self.treewindow.set_size_request(-1, 300)
+                self.treewindow.set_size_request(-1, 170)
                 self.treewindow.set_shadow_type(gtk.SHADOW_IN)
                 self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
                 self.treewindow.add(self.treeview)
@@ -90,7 +97,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.make_conf_values = self.controller.install_profile.get_make_conf()
 		self.use_flags = {}
-		if not self.make_conf_values.has_key('USE') or self.make_conf_values['USE'] == "":
+		if not self.make_conf_values.has_key('USE') or not self.make_conf_values['USE']:
 			self.make_conf_values['USE'] = self.system_use_flags
 		for flag in self.make_conf_values['USE']:
 			if flag.startswith("-"):
