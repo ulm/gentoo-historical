@@ -120,61 +120,61 @@
       <!-- Previous Parts -->
       <xsl:choose>
         <xsl:when test="number($prevpart) &lt; 1">
-          [ &lt;&lt; Previous Part ]
+          [ &lt;&lt; ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="{/book/@link}?part={$prevpart}&amp;chap=0">&lt;&lt; Previous Part</a> ]
+          [ <a href="{/book/@link}?part={$prevpart}&amp;chap=0">&lt;&lt;</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Previous Chapter -->
       <xsl:choose>
         <xsl:when test="number($prevchap) &lt; 1">
-          [ &lt; Previous Chapter ]
+          [ &lt; ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="{/book/@link}?part={$part}&amp;chap={$prevchap}">&lt; Previous Chapter</a> ]
+          [ <a href="{/book/@link}?part={$part}&amp;chap={$prevchap}">&lt;</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Content -->
       [ <a href="{/book/@link}?part=0&amp;chap=0">Home</a> ]
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
-        [ <a href="{/book/@link}?part=1">Next Chapter &gt;</a> ]
+        [ <a href="{/book/@link}?part=1">&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
-        [ <a href="{/book/@link}?part={$part}&amp;chap=1">Next Chapter &gt;</a> ]
+        [ <a href="{/book/@link}?part={$part}&amp;chap=1">&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'chapter'">
         <xsl:choose>
           <xsl:when test="last() = position()">
-            [ Next Chapter &gt; ]
+            [ &gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="{/book/@link}?part={$part}&amp;chap={$nextchap}">Next Chapter &gt;</a> ]
+            [ <a href="{/book/@link}?part={$part}&amp;chap={$nextchap}">&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
       <!-- Next Part -->
       <xsl:if test="name() = 'book'">
-        [ <a href="{/book/@link}?part={$nextpart}">Next Part &gt;&gt;</a> ]
+        [ <a href="{/book/@link}?part={$nextpart}">&gt;&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
         <xsl:choose>
           <xsl:when test="number($part) = last()">
-            [ Next Part &gt;&gt; ]
+            [ &gt;&gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
+            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
       <xsl:if test="name() = 'chapter'">
         <xsl:choose>
           <xsl:when test="count(/book/part) = number($part)">
-            [ Next Part &gt;&gt; ] 
+            [ &gt;&gt; ] 
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">Next Part &gt;&gt;</a> ]
+            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
