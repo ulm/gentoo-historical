@@ -18,12 +18,23 @@
  *
  * Copyright (c) 2004 Topspin Communications.  All rights reserved.
  *
- * $Id: if_infiniband.h,v 1.1 2005/02/12 03:17:56 vapier Exp $
+ * $Id: if_infiniband.h,v 1.2 2005/03/16 23:47:34 vapier Exp $
+ */
+
+/* 
+ * this is a slightly touched up version of the header 
+ * found in linux-2.6 ... the point is to make sure it 
+ * allows for all systems to build properly.  This 
+ * includes glibc-2.2.x, uclibc, etc...
  */
 
 #ifndef _LINUX_IF_INFINIBAND_H
 #define _LINUX_IF_INFINIBAND_H
 
 #define INFINIBAND_ALEN		20	/* Octets in IPoIB HW addr	*/
+
+#ifndef ARPHRD_INFINIBAND
+#define ARPHRD_INFINIBAND 32
+#endif
 
 #endif /* _LINUX_IF_INFINIBAND_H */
