@@ -572,7 +572,7 @@ while 1:
 		if install_profile_xml_file == None or install_profile_xml_file == "":
 			install_profile_xml_file = "tmp_install_profile.xml"
 		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
-		cc.set_install_profile(install_profile_xml_file)
+		cc.set_install_profile(install_profile)
 		cc.start_install()
 		# This next line gives the ClientController time to actually get to the install step loop
 		while 1:
