@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.15 2004/10/08 21:04:43 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.16 2004/10/28 18:51:52 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -55,6 +55,8 @@ class InstallProfile:
 		parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
 		parser.addHandler('gli-profile/install-packages', self.set_install_packages)
 		parser.addHandler('gli-profile/fstab/partition', self.add_fstab_partition)
+		parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
+		parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
 		
 		self._parser = parser
 
@@ -79,6 +81,7 @@ class InstallProfile:
 		self._hostname = "localhost"
 		self._nisdomainname = ""
 		self._partition_tables = {}
+		self._temp_partition_table = {}
 		self._network_interfaces = {}
 		self._make_conf = {}
 		self._rc_conf = {}
@@ -479,16 +482,19 @@ class InstallProfile:
 		<device (nfs)> is a string containing the ip address of the nfs mount. (ie. '192.168.1.2')
 		
 		<partition table> is a dictionary in the following format:
-			{ <minor>: ( <size in mb>, <type>, <mount point> ) }
+			{ <minor>: { 'mb': <size in mb>, 'type': <type>, 'mountpoint': <mount point>, 'start': <start cylinder>,
+			             'end': <end cylinder>, 'mountopts': <mount options>, 'format': <format> } }
 		
-		ie. partition_tables['/dev/hda'][1] would return ( 64, 'ext3', '/boot' )
+		ie. partition_tables['/dev/hda'][1] would return { 'mb': 0, 'type': 'ext3', 'mountpoint': '/boot', 'start': 12345,
+								   'end': 34567, 'mountopts': 'auto', format: 'False' }
 
 		Types are as follows:
-		string: <device>, <type>, <mount point>
-		integer: <minor>, <size in mb>
+		string: <device>, <mount point>, <mount options>, <type>
+		integer: <minor>, <size in mb>, <start cylinder>, <end cylinder>
+		boolean: <format>
 		
 		Current <type> options include:
-		ext2, ext3, reiserfs, xfs, jfs, swap, extended, resize, others?
+		ext2, ext3, reiserfs, xfs, jfs, linux-swap, extended, others?
 		
 		There will be a method in the partitioning code to make sure that the current parition_tables can actually be implemented.
 		Should we call that function to test the culpability of our potential partitioning scheme?
@@ -521,14 +527,14 @@ class InstallProfile:
 						raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
 				
 					# Make sure that <size>, <type> and <mount point> are all set
-					if len(partition_tables[device][minor]) != 3:
-						raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
-					
+					#if len(partition_tables[device][minor]) != 3:
+					#	raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
+					#
 					# Make sure that the <size> is an integer or can be converted to one
-					try:
-						int(partition_tables[device][minor][0])
-					except:
-						raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
+					#try:
+					#	int(partition_tables[device][minor][0])
+					#except:
+					#	raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
 
 			# Else, if the device is a valid remote device (hostname or ip)
 			elif GLIUtility.is_ip(device) or GLIUtility.is_hostname(device):
@@ -742,6 +748,18 @@ class InstallProfile:
 		if self.get_default_gateway() != ():
 			gw = self.get_default_gateway()
 			xmldoc += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gw[0], gw[1])
+
+		if self.get_partition_tables() != {}:
+			partitions = self.get_partition_tables()
+			xmldoc += "<partitions>";
+			for device in partitions.keys():
+				xmldoc += "<device devnode=\"%s\">" % device
+				for minor in partitions[device]:
+					part = partitions[device][minor]
+					xmldoc += "<partition minor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
+				xmldoc += "</device>"
+			xmldoc += "</partitions>";
+
 		xmldoc += "</gli-profile>"
 
 		dom = xml.dom.minidom.parseString(xmldoc)
@@ -983,3 +1001,32 @@ class InstallProfile:
 		This returns a list of the packages:
 		"""
 		return self._install_packages
+
+	def add_partitions_device(self, xml_path, unused, attr):
+		devnode = None
+		if type(attr) == tuple:
+			devnode = attr[0]
+		else:
+			if "devnode" in attr.getNames():
+				devnode = str(attr.getValue("devnode"))
+		self._partition_current_device = devnode
+		self._partition_tables[devnode] = self._temp_partition_table
+		self._temp_partition_table = {}
+
+	def add_partitions_device_partition(self, xml_path, unused, attr):
+		part_entry = {'end': 0, 'format': None, 'mb': 0, 'minor': 0, 'mountopts': '', 'mountpoint': '', 'start': 0, 'type': ''}
+		if type(attr) == tuple:
+			part_entry['end'] = attr[0]
+			part_entry['format'] = attr[1]
+			part_entry['mb'] = attr[2]
+			part_entry['minor'] = attr[3]
+			part_entry['mountopts'] = attr[4]
+			part_entry['mountpoint'] = attr[5]
+			part_entry['start'] = attr[6]
+			part_entry['type'] = attr[7]
+		else:
+			if "minor" in attr.getNames():
+				for attrName in attr.getNames():
+					part_entry[attrName] = str(attr.getValue(attrName))
+		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
+		self._temp_partition_table[int(part_entry['minor'])] = part_entry

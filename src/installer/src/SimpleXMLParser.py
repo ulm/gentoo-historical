@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.1 2004/10/08 20:55:17 samyron Exp $
+$Id: SimpleXMLParser.py,v 1.2 2004/10/28 18:51:52 samyron Exp $
 Copyright 2004 Gentoo
 
 """
@@ -12,7 +12,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 
 	def __init__(self, file=None):
 		self._xml_elements = []
-		self._xml_current_attr = None
+		self._xml_attrs = []
 		self._xml_current_data = ""
 		self._fntable = {}
 		self._path = file
@@ -41,20 +41,19 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		"""
 
 		self._xml_elements.append(name)
-		self._xml_current_attr = attr
+		self._xml_attrs.append(attr)
 		self._xml_current_data = ""
 
 	def endElement(self, name):
 		path = self._xml_element_path()
-		
 		if path in self._fntable.keys():
 			for fn in self._fntable[path]:
 				if self._xml_current_data != "" or fn[1]:
-					fn[0](path, self._xml_current_data, self._xml_current_attr)
+					fn[0](path, self._xml_current_data, self._xml_attrs[-1])
 
 		# Keep the XML state
 		self._xml_current_data = ""
-		self._xml_current_attr = None  
+		self._xml_attrs.pop()
 		self._xml_elements.pop()
 
 	def characters(self, data):
