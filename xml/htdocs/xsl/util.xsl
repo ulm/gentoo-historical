@@ -6,9 +6,10 @@
   <xsl:param name="fallback" select="false"/>
   <xsl:param name="parent" select="false"/>
   <xsl:if test='not($nick="none")'>
+    <xsl:variable name="user" select='document("/proj/en/devrel/roll-call/userinfo.xml")//user[@username=translate($nick, "ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'/>
     <xsl:choose>
-      <xsl:when test='document("/proj/en/devrel/roll-call/userinfo.xml")//user[@username=translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'>
-        <xsl:for-each select='document("/proj/en/devrel/roll-call/userinfo.xml")//user[@username=translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")]'>
+      <xsl:when test='$user'>
+        <xsl:for-each select='$user'>
           <xsl:if test='$parent="true"'><xsl:text>(</xsl:text></xsl:if>
 	    <xsl:choose>
 	      <xsl:when test="realname/@fullname">
