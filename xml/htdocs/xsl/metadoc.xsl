@@ -271,6 +271,7 @@
     <th>Filename</th><th>Version</th><th>Master Version</th><th>Editing</th>
   </tr>
   <xsl:for-each select="document($metadoc)/metadoc/files/file">
+  <xsl:sort select="text()"/>
   <xsl:variable name="fileurl" select="text()"/>
   <xsl:variable name="fileid"  select="@id"/>
   <xsl:variable name="parentmetadoc" select="@parent"/>
