@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.14 2004/06/21 16:41:48 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.15 2004/08/01 10:25:10 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/dri-howto.xml">
@@ -18,8 +18,8 @@ with XFree86 in Gentoo Linux.
 
 <license/>
 
-<version>1.0.3</version>
-<date>June 21st, 2004</date>
+<version>1.0.4</version>
+<date>August 01, 2004</date>
 
 <chapter>
 <title>Introduction</title>
@@ -273,11 +273,6 @@ direct rendering: Yes
 Don't do this if the package worked.
 </warn>
 
-<note>
-By their nature, CVS sources are always changing.  Your configuration may not 
-look exactly like the one below.
-</note>
-
 </body>
 </section>
 <section>
@@ -304,12 +299,16 @@ list</uri> to see if the CVS supports your card. Even if it doesn't, but it
 supports a similar card, try it.
 </p>
 
+<!-- I see a couple of 8x AGP stuff on the Internet about vanilla 2.4 kernels;
+     is this now available or not? I've commented it out for the time being,
+     hoping that this doesn't affect us :)
+
 <warn>
 "Linux 2.4 doesn't support agp 8x, so I had to go find a backport. The backport 
 works .... it doesn't patch quite properly, and it requires 2.4.21 (I've only 
 gotten it to work with vanilla, straight from the tarball (not ebuild)). First 
 go get the 2.4.20-2.4.21 patch from kernel.org .... (then get the patch,) It 
-was on a mailing list somewhere. It doesn't patch cleanly -- one file fails, 
+was on a mailing list somewhere. It doesn't patch cleanly - - one file fails, 
 the pci_ids.h file, but if you actually read the file and the reject list, it's
 very easy to fix. But it does load, and it gives me 1600x1200 with video 
 (although a bit slow b/c of lack of dga) with xfree-drm." (SanityInAnarchy on 
@@ -322,187 +321,19 @@ link="http://www.ussg.iu.edu/hypermail/linux/kernel/0302.2/att-1618/01-agp3.diff
 the link</uri>. If you can disable 8X AGP in your BIOS, change it to 4X and you 
 may not need the patch.
 </impo>
+-->
 
 </body>
 </section>
 <section>
-<title>Install the CVS sources</title>
+<title>Follow the CVS Instructions</title>
 <body>
 
 <p>
-Follow this guide through "Compile and install your kernel." Then continue with
-this guide, which tracks step 6 of the <uri
-link="http://dri.sourceforge.net/cgi-bin/moin.cgi/Building">DRI compilation
-guide</uri> and follows it through step 8.3.
-</p>
-
-</body>
-</section>
-<section>
-<title>Anonymous CVS download</title>
-<body>
-
-<p>
-Create a directory to store the CVS files:
-</p>
-
-<pre caption="Create a directory for CVS">
-# <i>cd ~</i>
-# <i>mkdir DRI-CVS</i>
-</pre>
-
-<p>
-Check out the CVS sources:
-</p>
-
-<pre caption="Check out CVS sources">
-# <i>cd ~/DRI-CVS</i>
-# <i>cvs -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri login</i>
-<codenote>(hit ENTER when prompted for a password)</codenote>
-# <i>cvs -z3 -d:pserver:anonymous@cvs.dri.sourceforge.net:/cvsroot/dri co xc</i>
-<codenote>The -z3 flag causes compression to be used to reduce the download time.</codenote>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Updating your CVS sources</title>
-<body>
-
-<p>
-In the future you'll want to occasionally update your local copy of the DRI 
-source code to get the latest changes. This can be done with:
-</p>
-
-<pre caption="Update local copy">
-# <i>cd ~/DRI-CVS</i>
-# <i>cvs -z3 update -dA xc</i>
-<codenote>The -d flag causes any new subdirectories to be created.</codenote>
-<codenote>The -A flag causes most recent trunk sources to be fetched, not branch sources.</codenote>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Make a build tree</title>
-<body>
-
-<p>
-Rather than placing object files and library files right in the source tree, 
-they're instead put into a parallel <e>build</e> tree. The build tree is made 
-with the <c>lndir</c> command:
-</p>
-
-<pre caption="Creating a parallel build tree">
-# <i>cd ~/DRI-CVS</i>
-# <i>ln -s xc XFree40</i>
-# <i>mkdir build; cd build</i>
-# <i>lndir -silent -ignorelinks ../XFree40</i>
-</pre>
-
-<p>
-The build tree will be populated with symbolic links which point back into the 
-CVS source tree. Advanced users may have several build trees for compiling and 
-testing with different options.
-</p>
-
-</body>
-</section>
-<section>
-<title>Edit the host.def file</title>
-<body>
-
-<p>
-The <path>~/DRI-CVS/build/xc/config/cf/host.def</path> file is used to 
-configure the XFree86 build process. You can change it to customize your build 
-options or make adjustments for your particular system configuration. The 
-default host.def file will look something like this:
-</p>
-
-<pre caption="host.def">
-#define DefaultCCOptions -Wall
-<codenote>For i386:</codenote>
-#define DefaultGcc2i386Opt -O2
-<codenote>For Alpha:</codenote>
-#define DefaultGcc2AxpOpt -O2 -mcpu=ev6 (or similar)
-<codenote>For all architectures</codenote>
-#define LibraryCDebugFlags -O2
-#define BuildServersOnly YES
-#define XF86CardDrivers vga tdfx mga ati i810
-#define LinuxDistribution LinuxRedHat
-#define DefaultCCOptions -ansi GccWarningOptions -pipe
-#define BuildXF86DRI YES
-/* Optionally turn these on for debugging */
-/* #define GlxBuiltInTdfx YES */
-/* #define GlxBuiltInMga YES */
-/* #define GlxBuiltInR128 YES */
-/* #define GlxBuiltInRadeon YES */
-/* #define DoLoadableServer NO */
-#define SharedLibFont NO
-</pre>
-
-<pre caption="host.def continued">
-<codenote>Note the XF86CardDrivers line to be sure your card's driver is listed.</codenote>
-<codenote>If you want to enable 3DNow! optimizations in Mesa and the DRI drivers, you should add the following:</codenote>
-#define MesaUse3DNow YES
-<codenote>You don't have to be using an AMD processor to enable this option.</codenote>
-<codenote>The DRI will look for 3DNow! support at runtime and only enable it if applicable.</codenote>
-</pre>
-
-<p>
-If you want to enable SSE optimizations in Mesa and the DRI drivers, you must 
-upgrade to a Linux 2.4.x kernel. Mesa will verify that SSE is supported by both
-your processor and your operating system, but to build Mesa inside the DRI you 
-need to have the Linux 2.4.x kernel headers in <path>/usr/src/linux</path>. If 
-you enable SSE optimizations with an earlier version of the Linux kernel in 
-<path>/usr/src/linux</path>, Mesa will not compile. You have been warned. If
-you do have a 2.4.x kernel, you should add the following:
-</p>
-
-<pre caption="Update on host.def">
-#define MesaUseKatmai YES
-</pre>
-
-</body>
-</section>
-<section>
-<title>Compile the XFree86/DRI tree</title>
-<body>
-
-<p>
-To compile the complete DRI tree:
-</p>
-
-<pre caption="Compile the DRI tree">
-# <i>cd ~/DRI-CVS/build/xc/</i>
-# <i>make World &gt;&amp; world.log</i>
-</pre>
-
-<p>
-It may also be necessary to do the following, depending on what you placed in 
-host.def:
-</p>
-
-<pre caption="Further compiling steps">
-# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel</i>
-# <i>make -f Makefile.linux radeon.o</i>
-<codenote>Replace radeon with your driver.</codenote>
-</pre>
-
-<p>
-With the default compilation flags it's normal to get a lot of warnings during 
-compilation. Building will take some time so you may want to go check your 
-email or visit slashdot.
-</p>
-
-<warn>
-Do not use the -j option with make (i.e., do not use distcc). It's reported that
-it does not work with XFree86/DRI.
-</warn>
-
-<p>
-Using your text editor, examine world.log for errors by searching for the 
-pattern ***.
+The DRI project has a document about CVS compiling themselves. Please read <uri
+link="http://dri.sourceforge.net/cgi-bin/moin.cgi/Building">the document</uri>
+and follow the instructions up to the <e>Installing for XFree86</e> or
+<e>Installing for X.org</e> part.
 </p>
 
 </body>
@@ -530,7 +361,8 @@ always supported.
 </p>
 
 <p>
-Install over your XFree86 installation. You may wish to back up xfree.
+Install over your XFree86 or X.org installation. You may wish to back up xfree
+or xorg-x11.
 </p>
 
 <pre caption="Backing up XFree">
