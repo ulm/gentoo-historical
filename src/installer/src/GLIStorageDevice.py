@@ -300,9 +300,9 @@ class Partition:
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
-				commands.system("mkdir /mnt/freespace; mount " + device._device + str(minor) + " /mnt/freespace")
+				commands.getstatus("mkdir /mnt/freespace; mount " + device._device + str(minor) + " /mnt/freespace")
 				min_bytes = int(commands.getoutput("df -B kB " + device._device + str(minor) + " | tail -n 1 | sed -e 's:^" + device._device + str(minor) + "\s\+[0-9]\+kB\s\+::' -e 's:kB\s.\+::'")) * 1000
-				commands.system("umount /mnt/freespace; rm -rf /mnt/freespace")
+				commands.getstatus("umount /mnt/freespace; rm -rf /mnt/freespace")
 				min_bytes = min_bytes + (100 * 1024 * 1024) # Add 100M just to be safe
 				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
 				self._resizeable == True
