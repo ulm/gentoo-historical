@@ -4,6 +4,36 @@
 <xsl:output encoding="iso-8859-1" method="html" indent="yes"/> 
 <xsl:preserve-space elements="pre"/>
 
+<xsl:template match="img">
+<img src="{@src}"/>
+</xsl:template>
+
+<xsl:template match="/news">
+<xsl:output encoding="iso-8859-1" method="xml" indent="yes"/> 
+<mainpage id="newsitem">
+<title><xsl:apply-templates select="/news/title"/></title>
+<author><xsl:apply-templates select="/news/poster"/></author>
+<version>1.0</version>
+<date><xsl:value-of select="/news/date"/></date>
+<title><xsl:apply-templates select="/news/title"/></title>
+<newsbody graphic="{/news/@graphic}" date="{/news/date}" poster="{/news/poster}" title="{/news/title}">
+<xsl:apply-templates select="/news/body"/>
+</newsbody>
+</mainpage>
+</xsl:template>
+
+<xsl:template match="newsbody">
+	<table border="0">
+		<tr><td valign="top"><img src="{@graphic}"/></td><td class="content" valign="top">
+		<span class="dochead"><xsl:value-of select="@title"/></span><br/>
+		Posted by <xsl:value-of select="@poster"/> on <xsl:value-of select="@date"/><br/><br/>
+	<body>
+	<xsl:apply-templates />
+	</body>	
+		</td></tr>
+	</table>
+</xsl:template>
+
 <xsl:template match="/guide">
 <html>
 <head>
@@ -181,7 +211,7 @@
 				<td align="center">
 					<p class="alttext">Support our development efforts by donating via credit card!</p>
 							<!-- Begin PayPal Logo -->
-						<form action="https://www.paypal.com/cgi-bin/webscr" methd="post">
+						<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
 						<input type="hidden" name="cmd" value="_xclick"/>
 						<input type="hidden" name="business" value="drobbins@gentoo.org"/>
 						<input type="hidden" name="item_name" value="Gentoo Linux Support"/>
@@ -270,7 +300,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
 						</xsl:otherwise>
 					</xsl:choose>
-					<font color="#ff0000"><a class="menulink" href="/doc/shots.html">ScreenShots</a></font> |
+					<a class="menulink" href="/doc/shots.html">ScreenShots</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='articles'">
 							<a class="highlight" href="/index-articles.html">Articles</a> |
@@ -334,9 +364,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
 						<font color="#ff0000"><a class="altlink" href="/doc/build.html">"From Source" CD Install Guide</a></font><br/>
-						<br/>
-										<a href="http://www.qksrv.net/click-477620-57886" target="_top" >
-					<img src="http://www.qksrv.net/image-477620-57886" width="88" height="31" alt="Online Auto Loans" border="0"/></a><br/><br/>	
+						<br/><br/>
 						Developer Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
@@ -361,13 +389,74 @@ User Docs:<br/>
 			<td valign="top" align="right" bgcolor="#ffffff">
 				<table border="0" cellspacing="5" cellpadding="0" width="100%">
 				<tr>
-					<td class="content" valign="top" align="left">
+					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
+							<center>
+							<table cellpadding="4" border="0" width="100%">
+							<tr><td valign="top">
 							<img src="/images/gentoo-new.gif"/>
+							</td><td class="altmenu" valign="top">
+							Recent Gentoo Linux news<br/>
+							<ul>
+							<xsl:for-each select="newsitems/news[@category='gentoo'][position()&lt;7]">
+							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
+							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
+							</xsl:for-each>
+							</ul>
+							</td><td class="altmenu" valign="top">
+							Recent Other News<br/>
+							<ul>
+							<xsl:for-each select="newsitems/news[@category!='gentoo'][position()&lt;7]">
+							<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
+							<li><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a></li>
+							</xsl:for-each>
+							</ul>
+							</td></tr>
+							</table>
+							</center>
+							<br/>
+							<xsl:for-each select="newsitems/news[position()&lt;10]">
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
+							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
+							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
+							</font>
+							</td></tr>
+							<tr><td width="100" align="middle" valign="center">	
+							<xsl:choose>
+							<xsl:when test="@category='gentoo'">
+								<img src="/images/icon-gentoo.png"/>
+							</xsl:when>
+							<xsl:when test="@category='main'">
+								<img src="/images/icon-stick.png"/>
+							</xsl:when>
+							<xsl:when test="@category='ibm'">
+								<img src="/images/ibm.gif"/>
+							</xsl:when>
+							<xsl:when test="@category='linux'">
+								<img src="/images/icon-penguin.png"/>
+							</xsl:when>
+							</xsl:choose>
+							</td><td valign="top">
+							<xsl:choose>
+							<xsl:when test="summary">
+								<xsl:apply-templates select="summary"/><br/>
+							<a href="{@external}"><b>(full story)</b></a>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:apply-templates select="body"/>
+							</xsl:otherwise>
+							</xsl:choose>
+							</td></tr>
+							</table>
+							<br/>
+							</xsl:for-each>
+						</xsl:when>
+						<xsl:when test="/mainpage/@id='newsitem'">
+							<br/>
+							<xsl:apply-templates select="newsbody"/>
 							<br/>
 							<br/>
-							<xsl:apply-templates select="newsitems"/>
 						</xsl:when>
 						<xsl:otherwise>
 							<!--<p class="subhead"><xsl:value-of select="/mainpage/title"/></p> -->
@@ -403,7 +492,7 @@ User Docs:<br/>
 				<td align="center">
 					<p class="alttext">Support our development efforts by donating via credit card!</p>
 							<!-- Begin PayPal Logo -->
-						<form action="https://www.paypal.com/cgi-bin/webscr" methd="post">
+						<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
 						<input type="hidden" name="cmd" value="_xclick"/>
 						<input type="hidden" name="business" value="drobbins@gentoo.org"/>
 						<input type="hidden" name="item_name" value="Gentoo Linux Support"/>
