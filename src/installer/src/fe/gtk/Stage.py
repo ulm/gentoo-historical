@@ -59,8 +59,8 @@ Each option has a brief description beside it.
 		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-		self.radio_stages[int(self.controller.install_profile.get_install_stage())].set_active(gtk.TRUE)
-		self.active_selection = int(self.controller.install_profile.get_install_stage())
+		self.active_selection = int(self.controller.install_profile.get_install_stage()) or 1
+		self.radio_stages[self.active_selection].set_active(gtk.TRUE)
 		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
 
 	def deactivate(self):
