@@ -20,8 +20,8 @@ nous ont été rapportées.
 
 <license/>
 
-<version>1.2</version>
-<date>11 avril 2004</date>
+<version>1.4</version>
+<date>1er août 2004</date>
 
 <chapter>
 <title>Introduction</title>
@@ -31,8 +31,9 @@ nous ont été rapportées.
 
 <p>
 Ce document contient divers trucs et astuces pour l'installation de Gentoo sur
-les systèmes x86. La plupart sont présentés de façon compacte. Ils forment un
-addenda aux instructions d'installation et ne remplacent pas ces dernières.
+les systèmes x86. La plupart sont présentés de façon compacte&nbsp;; ils
+forment un addenda aux instructions d'installation et ne remplacent pas ces
+dernières.
 </p>
 
 </body>
@@ -66,6 +67,9 @@ addenda aux instructions d'installation et ne remplacent pas ces dernières.
 
 <ul>
   <li><uri link="#checking-disks">Tester vos disques en profondeur</uri></li>
+  <li>
+    <uri link="#recover">Récupérer une installation non fonctionnelle</uri>
+  </li>
 </ul>
 
 </body>
@@ -79,7 +83,7 @@ addenda aux instructions d'installation et ne remplacent pas ces dernières.
 <body>
 
 <note>
-Si vous n'êtes pas familier avec les RAID logiciels, veuillez lire le  <uri 
+Si vous n'êtes pas familier avec les RAID logiciels, veuillez lire le  <uri
 link="http://tldp.org/HOWTO/Software-RAID-HOWTO.html">Software-RAID-HOWTO</uri>.
 </note>
 
@@ -96,59 +100,26 @@ appropriés. Par exemple, si vous souhaitez utiliser RAID-1&nbsp;:
 Lorsque vous partitionnez vos disques, assurez-vous d'utiliser <c>fd</c>
 (détection automatique des RAID Linux) comme type de partition plutôt que
 <c>83</c> (partition Linux native). Avec <c>fdisk</c>, vous pouvez changer le
-type de partition grâce à la commande <c>t</c>.
+type de partition avec la commande <c>t</c>.
 </p>
 
 <p>
 Après le partitionnement des disques, créez le fichier
-<path>/etc/raidtab</path> (oui, dans l'environnement du LiveCD) et
-ajoutez-y les commandes nécessaires au paramétrage de votre RAID. Par exemple,
-pour que vos partitions racine, de démarrage et de mémoire virtuelle fassent
-partie d'un miroir (RAID-1) qui s'étend sur <path>/dev/sda</path> et
-<path>/dev/sdb</path>, vous pouvez utiliser&nbsp;:
+<path>/etc/raidtab</path> (oui, dans l'environnement du LiveCD) en utilisant
+<c>mdadm</c>, un outil avancé pour la <uri
+link="http://www.linuxdevcenter.com/pub/a/linux/2002/12/05/RAID.html">gestion
+des RAID</uri>. Par exemple, pour que vos partitions racine, de démarrage et de
+mémoire virtuelle fassent partie d'un miroir (RAID-1) s'étendant sur
+<path>/dev/sda</path> et <path>/dev/sdb</path>, vous pouvez utiliser&nbsp;:
 </p>
 
-<pre caption="Réglages pour RAID-1 dans /etc/raidtab">
-raiddev /dev/md0
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda1
-    raid-disk 0
-  device /dev/sdb1
-    raid-disk 1
-
-raiddev /dev/md1
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda2
-    raid-disk 0
-  device /dev/sdb2
-    raid-disk 1
-
-raiddev /dev/md2
-  raid-level 1
-  nr-raid-disks 2
-  chunk-size 32
-  persistent-superblock 1
-  device /dev/sda3
-    raid-disk 0
-  device /dev/sdb3
-    raid-disk 1
-</pre>
-
-<p>
-Maintenant, créez les périphériques RAID correspondant à chaque périphérique
-RAID que vous mentionnez dans <path>/etc/raidtab</path>&nbsp;:
-</p>
-
-<pre caption="Créer les périphériques RAID">
-# <i>mkraid /dev/md0</i>
-# <i>mkraid /dev/md1</i>
-# <i>mkraid /dev/md2</i>
+<pre caption="Exemple d'utilisation de la commande mdadm">
+# <i>mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sda1
+/dev/sdb1</i>
+# <i>mdadm --create --verbose /dev/md1 --level=1 --raid-devices=2 /dev/sda2
+/dev/sdb2</i>
+# <i>mdadm --create --verbose /dev/md2 --level=1 --raid-devices=2 /dev/sda3
+/dev/sdb3</i>
 </pre>
 
 <p>
@@ -171,7 +142,7 @@ pas de copier <path>/etc/raidtab</path> vers <path>/mnt/gentoo/etc</path>.
 
 <p>
 Lorsque vous configurez votre noyau, assurez-vous d'inclure le support
-approprié pour votre RAID directement dans le noyau et pas comme module.
+approprié pour votre RAID directement dans le noyau et non pas comme module.
 </p>
 
 <p>
@@ -227,7 +198,7 @@ FastTrack Options</c> soit inclus dans votre noyau.
 Lorsque vous configurez GRUB, vous devez d'abord créer une disquette de
 démarrage GRUB. Ce n'est pas aussi difficile qu'on pourrait le croire. D'abord,
 installez GRUB comme vous le faites d'habitude, mais, au moment d'installer
-GRUB dans le MBR, suivez les instructions suivantes&nbsp;:
+GRUB dans le MBR, suivez ces instructions&nbsp;:
 </p>
 
 <pre caption="Créer un disque de démarrage GRUB">
@@ -333,7 +304,7 @@ besoin de cette information plus tard.
 
 <p>
 Maintenant, quittez l'environnement chroot (<c>exit</c>) et votre session du
-LiveCD. Votre compilation continuera en arrière-plan. 
+LiveCD. Votre compilation continuera en arrière-plan.
 </p>
 
 <p>
@@ -385,6 +356,86 @@ l'écriture.
 <pre caption="Vérifier la cohérence d'un disque">
 # <i>mke2fs -j -c /dev/hda3</i>
 </pre>
+
+</body>
+</section>
+<section id="recover">
+<title>Récupérer une installation non fonctionnelle</title>
+<body>
+
+<p>
+Si, pour quelque raison que ce soit, votre installation de Gentoo échoue, vous
+n'avez pas à recommencer l'installation à partir de zéro. Vous pouvez simplement
+reprendre à partir du point où vous croyez avoir commis une erreur (ou là où
+vous croyez que les instructions vous ont induit en erreur) et essayer une
+approche différente.
+</p>
+
+<p>
+D'abord, vous devez entrer à nouveau dans votre environnement Gentoo Linux (ce
+qu'on appelle fréquemment le «&nbsp;chroot&nbsp;»). Suivez à nouveau les
+instructions, mais ignorez l'étape de partitionnement des disques puisque vos
+partitions existent déjà et contiennent des fichiers. Vous pouvez monter
+immédiatement ces partitions sur <path>/mnt/gentoo</path>. Vous devez aussi
+ignorer les étapes relatives à l'extraction de l'archive stage et à la
+modification de <path>make.conf</path>. Après tout, vous ne souhaitez pas
+écraser vos fichiers, n'est-ce pas&nbsp;?
+</p>
+
+<p>
+Une fois dans votre environnement Gentoo Linux, allez tout de suite à l'étape
+où vous pensez devoir utiliser une approche différente. Ne refaites pas les
+autres étapes (par exemple le «&nbsp;bootstrap&nbsp;») à moins que vous ne
+croyiez que c'est là que s'est produit le problème.
+</p>
+
+<p>
+Par exemple, si vous pensez que votre fichier <path>grub.conf</path> contient
+une configuration erronée, vous pouvez aussitôt exécuter votre éditeur et
+corriger <path>/boot/grub/grub.conf</path>.
+</p>
+
+<p>
+Une fois que vous avez essayé une approche différente, demandez-vous quelles
+sont les étapes subséquentes que vous devez exécuter à nouveau. Si ces étapes
+suivantes dépendent du changement que vous avez apporté, vous devrez refaire
+ces étapes.
+</p>
+
+<p>
+Par exemple ...
+</p>
+
+<ul>
+  <li>
+    Si vous avez changé une variable dans <path>make.conf</path>, vous devrez
+    refaire toutes les compilations subséquences, car elles dépendent toutes
+    des paramètres spécifiés dans <path>make.conf</path>.
+  </li>
+  <li>
+    Si vous avez changé <path>/boot/grub/grub.conf</path>, vous pouvez aussitôt
+    quitter l'environnement chroot et redémarrer puisque aucune étape
+    subséquente ne dépend de <path>grub.conf</path>.
+  </li>
+  <li>
+    Si vous avez recompilé votre noyau, vous n'avez qu'à vous assurer que votre
+    chargeur de démarrage pointe vers la bonne image du noyau. (Assurez-vous
+    deux fois plutôt qu'une d'avoir monté la partition
+    <path>/boot</path>&nbsp;!) Vous pouvez ensuite quitter le chroot et
+    redémarrer.
+  </li>
+  <li>
+    Si vous avez modifié <path>/etc/fstab</path>, vous pouvez quitter
+    l'environnement chroot et redémarrer.
+  </li>
+</ul>
+
+<p>
+Comme vous pouvez le voir, vous pouvez redémarrer immédiatement après la
+plupart des opérations de récupération d'une installation. Vous
+n'aurez à répéter les étapes subséquentes de l'installation que dans certains
+cas particuliers.
+</p>
 
 </body>
 </section>
