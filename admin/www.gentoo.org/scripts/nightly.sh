@@ -11,3 +11,4 @@ ${WEBROOT}/../scripts/pkgs.py
 ${WEBROOT}/../scripts/use-index.py
 ${WEBROOT}/../scripts/site-archive.sh
 ${WEBROOT}/../scripts/news-index.sh
+${WEBROOT}/../scripts/doc-tarball.sh
