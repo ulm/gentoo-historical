@@ -1,9 +1,9 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/qmail-howto.xml,v 1.1 2004/02/05 07:39:44 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/qmail-howto.xml,v 1.2 2004/02/06 23:03:27 vapier Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/qmail-howto.xml">
-<title>Virtual Mailhosting System Guide</title>
+<title>qmail/vpopmail Virtual Mailhosting System Guide</title>
 <author title="Author" >
 <mail link="vapier@gentoo.org">Mike Frysinger</mail>
 </author>
@@ -13,6 +13,7 @@ This document details how to create a mailhosting system based upon qmail, vpopm
 <version>1.0</version>
 <date>Feb 05, 2004</date>
 
+<!-- - - - - - - - - - - - - - - - - - - INTRO - - - - - - - - - - - - - - - - - - -->
 <chapter>
 	<title>Introduction</title>
 	<body>
@@ -45,6 +46,7 @@ This document details how to create a mailhosting system based upon qmail, vpopm
 	</body>
 </chapter>
 
+<!-- - - - - - - - - - - - - - - - - - - QMAIL - - - - - - - - - - - - - - - - - - -->
 <chapter>
 	<title>qmail (talking to myself)</title>
 	<body>
@@ -66,7 +68,7 @@ This document details how to create a mailhosting system based upon qmail, vpopm
 	</p>
 	<p>
 	First we have a few post-install configuration steps.
-<pre caption="Out-of-the-box setup">
+<pre caption="Out-of-the-box setup for qmail">
 # <i>nano /var/qmail/control/servercert.cnf</i> <codenote>customize to fit your personal information</codenote>
 # <i>ebuild /var/db/pkg/net-mail/qmail-1.03-r*/qmail-1.03-r*.ebuild config</i>
 </pre>
@@ -110,6 +112,7 @@ EOF</i>
 	</body>
 </chapter>
 
+<!-- - - - - - - - - - - - - - - - - - - VPOPMAIL - - - - - - - - - - - - - - - - - - -->
 <chapter>
 	<title>vpopmail</title>
 	<body>
@@ -162,6 +165,7 @@ uid=89(vpopmail) gid=89(vpopmail) groups=0(root)
 	</body>
 </chapter>
 
+<!-- - - - - - - - - - - - - - - - - - - COURIER - - - - - - - - - - - - - - - - - - -->
 <chapter>
 	<title>Courier POP/IMAP</title>
 	<body>
@@ -197,20 +201,250 @@ uid=89(vpopmail) gid=89(vpopmail) groups=0(root)
 	</body>
 </chapter>
 
+<!-- - - - - - - - - - - - - - - - - - - QMAIL - - - - - - - - - - - - - - - - - - -->
 <chapter>
 	<title>qmail (talking to the world)</title>
 	<body>
 	<p>
 	Let's get SMTP up and running while making sure we don't create another spam hole for people to abuse.
 <pre caption="Start qmail SMTP service">
-<codenote>Uncomment the variables for SMTP-AUTH and set QMAIL_SMTP_CHECKPASSWORD to /var/vpopmail/bin/vchkpw</codenote>
-# <i>cd /var/qmail/control/conf-smtpd</i>
+# <i>cd /var/qmail/control/</i>
+# <i>nano conf-smtpd</i>
+<codenote>Uncomment the SMTP-AUTH variables and set QMAIL_SMTP_CHECKPASSWORD to /var/vpopmail/bin/vchkpw</codenote>
+# <i>nano servercert.cnf</i> <codenote>Edit the [ req_dn ] section</codenote>
+# <i>mkservercert</i>
 # <i>cd /service</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd qmail-smtpd</i>
 # <i>/etc/init.d/svscan restart</i>
 </pre>
 	</p>
+	<p>
+	Assuming you haven't tweaked the qmail control files at all, qmail will now accept mail for the wh0rd.org virtual 
+	domain and for users of the local machine.  Furthermore, qmail will relay mail for anyone who sends via 127.0.0.1 and 
+	for anyone who is able to authenticate with vpopmail.  When you setup your mail client to send mail, make sure you 
+	select options like 'Server requires authentication'.  In my case, I set the user as 'vapier@wh0rd.org' and my 
+	password as 'vappw'.  The last detail is to make sure you tell your mail client to use SSL/TLS for SMTP communication.  
+	qmail will not let you authenticate if the session is not encrypted.
+	</p>
+	</body>
+</chapter>
+
+
+<!-- - - - - - - - - - - - - - - - - - - HORDE - - - - - - - - - - - - - - - - - - -->
+<chapter>
+	<title>Horde / IMP Webmail Client</title>
+	<body>
+	<p>
+	Although there are plenty of webmail clients out there (and you're free to use any of them), I prefer the 
+	<uri link="http://www.horde.org/imp/">IMP Webmail Client</uri> that is part of the Horde framework.  The biggest 
+	reason is that Horde can simply provide Webmail access, or you can easily add other components to handle Address 
+	Books, Calendars, Tasks, etc...  If this hasn't convinced you yet, then perhaps you need to read up on 
+	<uri link="http://www.horde.org/">Horde</uri> for yourself.
+	</p>
+	<p>
+	On to the good stuff!  We need to emerge IMP now.
+<pre caption="Emerge IMP">
+# <i>emerge horde-imp</i>
+</pre>
+	<impo>
+	This guide is based around horde-2.2.4 and horde-imp-3.2.2.  The CVS versions (and thus the next major release) will 
+	probably have very different configuration settings.
+	</impo>
+	</p>
+	<p>
+	Horde currently isn't the easiest to setup unless you know exactly what to do.  Fortunately for you, I know exactly 
+	what to do, thus you will too.
+<pre caption="Out-of-the-box setup for Horde">
+# <i>cd /var/www/localhost/htdocs/horde/config/</i>
+# <i>for f in *.dist ; do mv ${f} ${f/.dist} ; done</i>
+# <i>nano horde.php</i>
+<codenote>Under 'Horde Authentication':
+$conf['auth']['driver'] = 'imap';
+$conf['auth']['params']['dsn'] = '{localhost:993/imap/ssl}';</codenote>
+<codenote>Under 'Horde Logging':
+$conf['log']['name'] = '/var/log/apache2/horde.log';</codenote>
+<codenote>Under 'Problem Reporting':
+$conf['problems']['enabled'] = true;
+$conf['problems']['email'] = 'webmaster@wh0rd.org';</codenote>
+# <i>nano registry.php</i>
+<codenote>Under 'Handlers':
+$this->registry['auth']['login'] = 'imp';
+$this->registry['auth']['logout'] = 'imp';</codenote>
+<codenote> Under 'Application registry':
+Set the 'status' element of applications['imp'] from 'inactive' to 'active'</codenote>
+# <i>touch /var/log/apache2/horde.log</i>
+</pre>
+	<note>
+	You'll may want to change the 'webmaster' e-mail account to something else.  If you wish to use that e-mail address, 
+	then remember you'll have to add that user via vpopmail (or see below about qmailadmin).
+	</note>
+	</p>
+	<p>
+	Now we setup IMP real quick.
+<pre caption="Out-of-the-box setup for IMP">
+# <i>cd /var/www/localhost/htdocs/horde/imp/config/</i>
+# <i>for f in *.dist ; do mv ${f} ${f/.dist} ; done</i>
+# <i>nano servers.php</i>
+<codenote>Edit the $servers['imap'] array:
+$servers['imap'] = array(
+    'name' => 'wh0rd.org',
+    'server' => 'localhost',
+    'protocol' => 'imap/ssl/novalidate-cert',
+    'port' => 993,
+    'folders' => 'mail/',
+    'namespace' => '',
+    'maildomain' => 'wh0rd.org',
+    'smtphost' => 'localhost',
+    'realm' => '',
+    'preferred' => ''
+);</codenote>
+</pre>
+	</p>
+	<p>
+	Finally, we bring up apache so we can start using webmail.
+<pre caption="Running apache">
+# <i>nano /etc/conf.d/apache</i> <codenote>Uncomment APACHE2_OPTS="-D SSL -D PHP4"</codenote>
+# <i>rc-update add apache2 default</i>
+# <i>/etc/init.d/apache2 start</i>
+</pre>
+	<warn>
+	You should really look into forcing https on users of horde.  This isn't a trivial issue, but you should look into it 
+	for the sake of security.
+	</warn>
+	To test out the new IMP setup, launch a webbrowser and visit <uri>http://localhost/horde/</uri> (or change localhost 
+	with the server you're setting this up on).  You should see the Horde welcome page where you can login.  Again, in my 
+	setup, I simply login with 'vapier@wh0rd.org' and 'vappw' as my username and password.
+	</p>
+	<p>
+	At this point, Horde and IMP are all setup.  You should, however, go back through the config directories and tweak 
+	each to your heart's content.
+	</p>
+	</body>
+</chapter>
+
+<!-- - - - - - - - - - - - - - - - - - - EXTRAS - - - - - - - - - - - - - - - - - - -->
+<chapter>
+	<title>Extra packages</title>
+	<section>
+	<title>qmailadmin</title>
+	<body>
+	<p>
+	The first package I would suggest you look into is <uri link="http://www.inter7.com/qmailadmin.html">qmailadmin</uri>.  
+	It's a web based interface for managing virtual domains.  Simply <c>emerge net-mail/qmailadmin</c> and then point 
+	your webbrowser to <uri>http://localhost/cgi-bin/qmailadmin</uri> in order to use it.  Make's life a lot easier.
+	</p>
+	</body>
+	</section>
+
+	<section>
+	<title>horde addons</title>
+	<body>
+	<p>
+	I would highly recommend looking into the many other Horde applications.  The 
+	<uri link="http://www.horde.org/turba/">Turba</uri>, <uri link="http://www.horde.org/kronolith/">Kronolith</uri>, and 
+	<uri link="http://www.horde.org/nag/">Nag</uri> applications complement IMP very well for instance.
+	Their configuration is similar to that of IMP, so you should have no trouble setting them up.  Just remember to edit 
+	registry.php in the horde config directory so the new applications show up at the bottom of the horde website.
+	</p>
+	</body>
+	</section>
+
+	<section>
+	<title>ucspi-tcp</title>
+	<body>
+	<p>
+	qmail utilizes ucspi-tcp to handle the incoming connections for qmail.  If you wish to customize these filtering 
+	rules, then see the configuration files in <path>/etc/tcprules.d/</path>.  There you'll find two files for each 
+	service, the configuration file (i.e. tcp.qmail-smtp) and the compiled version of this file that ucspi-tcp uses (i.e. 
+	tcp.qmail-smtp.cdb).  Whenever you update the configuration file, you'll have to rebuild the binary version of it.  
+	Just run <c>tcprules tcp.qmail-smtp.cdb tcp.qmail-smtp.tmp &lt; tcp.qmail-smtp</c>.  Everytime a connection is made to 
+	the qmail service, the compiled rules file is re-read, so theres no need to restart the service.
+	</p>
+	</body>
+	</section>
+
+	<section>
+	<title>qmail-scanner</title>
+	<body>
+	<p>
+	If you wish to do content filtering on your mail server (spam and virus), then you'll need to use a different queuing 
+	program than the default one.  One good program for doing so is <uri link="http://qmail-scanner.sourceforge.net/">qmail-scanner</uri>.  
+	Just <c>emerge net-mail/qmail-scanner</c> and edit the <path>/etc/tcprules.d/tcp.qmail-smtp</path> file.
+<pre caption="Changing the queuer">
+# <i>cd /etc/tcprules.d/</i>
+# <i>nano tcp.qmail-smtp</i>
+<codenote>Add QMAILQUEUE="/var/qmail/bin/qmail-scanner-queue" to the catchall allow rule</codenote>
+# <i>tcprules tcp.qmail-smtp.cdb tcp.qmail-smtp.tmp &lt; tcp.qmail-smtp</i>
+</pre>
+	See the following sections for setting up spam and virus filtering.  You may want to set a few custom options by 
+	editing <path>/var/qmail/bin/qmail-scanner-queue.pl</path>.
+	</p>
+	</body>
+	</section>
+
+	<section>
+	<title>SpamAssassin</title>
+	<body>
+	<p>
+	One of the best Open Source spam filters out there is <uri link="http://www.spamassassin.org/">SpamAssassin</uri>.  
+	Once you have qmail-scanner installed, setting this up is a breeze.  Just <c>emerge dev-perl/Mail-SpamAssassin</c> to 
+	install.  The package comes in two flavors, a command line version and a client/server version.  For servers that will 
+	be handling a small amount of mail, running with the command line version is OK, but for anyone whose server will be 
+	handling appreciative loads should utilize the client/server version.
+<pre caption="Out-of-the-box setup for SpamAssassin">
+# <i>nano /etc/mail/spamassassin/local.cf</i>
+<codenote>At the bare minimum, add these options:
+required_hits 6
+skip_rbl_checks 1</codenote>
+# <i>rc-update add spamd default</i>
+# <i>/etc/init.d/spamd start</i>
+# <i>nano /var/qmail/bin/qmail-scanner-queue.pl</i>
+<codenote>Make sure the $spamc_binary variable is set to '/usr/bin/spamc'.
+If it is set to '', then see the note below.</codenote>
+</pre>
+	<impo>
+	If you did not have SpamAssassin on your system before you emerged qmail-scanner, you will have to re-emerge 
+	qmail-scanner now.  Its build process is pretty ugly and will only add in features for packages it detects on the 
+	system at build time.
+	</impo>
+	At this point, incoming mail should be sent through qmail-scanner which will run it through SpamAssassin for you.
+	</p>
+	</body>
+	</section>
+
+	<section>
+	<title>Clam AntiVirus</title>
+	<body>
+	<p>
+	Like SpamAssassin, <uri link="http://www.clamav.net/">Clam AntiVirus</uri> comes in two flavors.  I'll give you a 
+	quick run down on how to quickly setup the client/server version.  First, just <c>emerge net-mail/clamav</c>.
+<pre caption="Out-of-the-box setup for Clam AntiVirus">
+# <i>nano /etc/conf.d/clamd</i> <codenote>Set START_CLAMD=yes</codenote>
+# <i>rc-update add clamd default</i>
+# <i>/etc/init.d/clamd start</i>
+# <i>nano /var/qmail/bin/qmail-scanner-queue.pl</i>
+<codenote>Make sure the $clamscan_binary variable is set to '/usr/bin/clamscan'.
+If it is set to '', then see the note below.</codenote>
+</pre>
+	<impo>
+	If you did not have Clam AntiVirus on your system before you emerged qmail-scanner, you will have to re-emerge 
+	qmail-scanner now.  Its build process is pretty ugly and will only add in features for packages it detects on the 
+	system at build time.
+	</impo>
+	At this point, incoming mail should be sent through qmail-scanner which will run it through Clam AntiVirus for you.
+	</p>
+	</body>
+	</section>
+</chapter>
+
+<!-- - - - - - - - - - - - - - - - - - - FINAL NOTES - - - - - - - - - - - - - - - - - - -->
+<chapter>
+	<title>Final Notes</title>
+	<body>
+	I have no final notes other than if you experience any troubles with the guide, please contact 
+	<mail link="vapier@gentoo.org">me</mail> or file a bug with <uri link="http://bugs.gentoo.org/">BugZilla</uri>.  If 
+	you have some interesting bits you think would enhance this guide, by all means send it my way for inclusion.  I love 
+	qmail and would gladly add stuff that could possibly enhance a user's experience with the mta.
 	</body>
 </chapter>
 </guide>
-
