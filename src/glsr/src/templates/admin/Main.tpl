@@ -9,8 +9,9 @@
     <br />
 
     {IF ERROR_REPORTING != "False"}
-    <form name="error_report_list" method="GET" action="index.py">
+    <form name="error_report_list" method="POST" action="index.py">
     <input type="hidden" name="page" value="main">
+    <input type="hidden" name="domain" value="admin">
 
     <table width="90%" class="standard_table">
       <tr>
@@ -29,12 +30,25 @@
       </tr>
       {!LOOP}
       <tr>
-         <td class="standard_cell" colspan="3" align="right"><input type="submit" class="button" name="error_reports" value="Flush Log" />&nbsp;&nbsp;</td>
+         <td class="standard_cell" colspan="3" align="right"><input type="submit" class="button" name="flush_error_reports" value="Flush Log" />&nbsp;&nbsp;</td>
       </tr>
     </table>
     </form>
-    <br />
     {!IF}
+
+    <form name="optimize_tables" method="POST" action="index.py">
+    <input type="hidden" name="page" value="main">
+    <input type="hidden" name="domain" value="admin">
+    <table width="90%" class="standard_table">
+      <tr>
+        <td colspan="2" class="header">Table Optimization</td>
+      </tr>
+      <tr>
+         <td class="standard_cell">Tables were last optimized on the {OPTIMIZE_DAYS}.</td>
+         <td class="standard_cell" align="right"><input type="submit" class="button" name="optimize_tables" value="$
+      </tr>
+    </table>
+    </form>
 
     <table width="90%" class="standard_table">
       <tr>

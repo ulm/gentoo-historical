@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.10 2004/11/10 16:33:33 port001 Exp $
+# $Id: Function.py,v 1.11 2004/11/12 20:37:49 port001 Exp $
 #
 
 import sys
@@ -48,7 +48,7 @@ class stderr_redirect:
                 print "Content-type:text/html\n\n"
                 State.HTMLHeadersSent = True
 
-            print "<font color=\"FF0000\"><b>DEBUG:</b></font> %s <br />" % msg.strip()
+            print "<font color=\"FF0000\"><b>DEBUG:</b></font> %s <br />" % str(msg).strip()
         
         else:
             sys.__stderr__.write(msg)

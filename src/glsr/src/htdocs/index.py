@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.23 2004/11/10 16:33:33 port001 Exp $
+# $Id: index.py,v 1.24 2004/11/12 20:37:49 port001 Exp $
 #
 
 """
@@ -193,11 +193,17 @@ class PageDispatch:
 
     def dispatch_header(self):
 
+        tmpl_str = ""
+
         self._send_headers()
  
         if self._show_border:
             tmpl_head = TemplateHandler.Template()
-            tmpl_head.compile(Config.Template["header"],
+            if self._domain == "admin":
+                tmpl_str = "admin_header"
+            else:
+                tmpl_str = "header"
+            tmpl_head.compile(Config.Template[tmpl_str],
                           {"GLSR_URL":          Config.URL,
                            "USER_ALIAS":	self._user_detail["alias"]})
             print tmpl_head.output()

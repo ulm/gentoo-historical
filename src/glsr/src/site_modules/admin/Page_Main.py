@@ -3,14 +3,15 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.8 2004/11/06 21:58:21 port001 Exp $
+# $Id: Page_Main.py,v 1.9 2004/11/12 20:37:49 port001 Exp $
 #
 
 import Config
 import Session
 from User import User
-from Logging import ReturnErrorReports, FlushErrorReportLog
 from site_modules import SiteModule, Redirect
+from Admin import optimize_tables, get_optimize_days
+from Logging import ReturnErrorReports, FlushErrorReportLog
 
 class Page_Main(SiteModule):
 
@@ -70,16 +71,20 @@ class Page_Main(SiteModule):
             self.tmpl.param("ERROR_REPORTING", "False")
             self.tmpl.param("ERROR_REPORT_LIST", [], "loop")
 
-        
+        self.tmpl.param("OPTIMIZE_DAYS", get_optimize_days())
         self.tmpl.param("GLSR_URL", Config.URL)
 
     def _select_action(self):
 
-        if self.form.getvalue("error_reports"):
+        if self.form.getvalue("flush_error_reports"):
             FlushErrorReportLog()
+
+        if self.form.getvalue("optimize_tables"):
+            optimize_tables()
 
     def display(self):
 
+        self._select_action()
         self._set_params()
         self.tmpl.compile(self.template)
         return self.tmpl

@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.6 2004/11/07 21:10:35 port001 Exp $
+# $Id: Setup.py,v 1.7 2004/11/12 20:37:49 port001 Exp $
 #
 
 import sys
@@ -143,18 +143,6 @@ session_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 cursor.execute(session_table)
 db.commit()
 
-# Error reporting turned out not to be practical, leave this here just incase we decide to use a file based system. 
-#print "  >>> %s" % Config.MySQL["error_table"]
-#error_table = """CREATE TABLE %s (
-#	errid		TINYINT(2)	unsigned NOT NULL auto_increment,
-#	errmsg		TEXT		NOT NULL,
-#	date		DATETIME	NOT NULL,
-#	PRIMARY		KEY(errid),
-#	KEY		errid(errid));""" % Config.MySQL["error_table"]
-#
-#cursor.execute(error_table)
-#db.commit()
-
 print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["news_table"])
 news_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
         %s_id           INT(10)         unsigned NOT NULL auto_increment,
@@ -167,6 +155,24 @@ news_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
               tuple(operator.repeat([Config.MySQL["news_table"]], 9)))
 
 cursor.execute(news_table)
+db.commit()
+
+print "  >>> %s%s" % (Config.MySQL["prefix"], Config.MySQL["state_table"])
+state_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
+       %s_table_opt     INT(10)        NOT NULL default '0');""" %
+                tuple(operator.repeat([Config.MySQL["state_table"]], 2)))
+
+cursor.execute(state_table)
+db.commit()
+
+print "\nInserting default data:"
+
+print "  >>> %s" % Config.MySQL["state_table"]
+query = ("INSERT INTO %s%s (%s_table_opt) " % (Config.MySQL["prefix"],
+                                               Config.MySQL["state_table"],
+                                               Config.MySQL["state_table"]) + "VALUES ('0')")
+
+cursor.execute(query)
 db.commit()
 
 print "\nInserting language data:"
