@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.13 2004/08/23 15:20:52 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.14 2004/10/08 20:55:17 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -11,8 +11,10 @@ import string
 import xml.sax
 import os
 import GLIUtility
+import SimpleXMLParser
+from GLIException import *
 
-class InstallProfile(xml.sax.ContentHandler):
+class InstallProfile:
 	"""
 	An object representation of a profile.
 
@@ -21,6 +23,40 @@ class InstallProfile(xml.sax.ContentHandler):
 	"""
 
 	def __init__(self):
+		parser = SimpleXMLParser.SimpleXMLParser()
+
+		parser.addHandler('gli-profile/stage-tarball', self.set_stage_tarball_uri)
+		parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
+		parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
+		parser.addHandler('gli-profile/portage-tree-sync', self.set_portage_tree_sync_type)
+		parser.addHandler('gli-profile/install-pcmcia-cs', self.set_install_pcmcia_cs)
+		parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
+		parser.addHandler('gli-profile/kernel-bootsplash', self.set_kernel_bootsplash)
+		parser.addHandler('gli-profile/cron-daemon', self.set_cron_daemon_pkg)
+		parser.addHandler('gli-profile/root-pass-hash', self.set_root_pass_hash)
+		parser.addHandler('gli-profile/kernel-config', self.set_kernel_config_uri)
+		parser.addHandler('gli-profile/domainname', self.set_domainname)
+		parser.addHandler('gli-profile/portage-snapshot', self.set_portage_tree_snapshot_uri)
+		parser.addHandler('gli-profile/time-zone', self.set_time_zone)
+		parser.addHandler('gli-profile/boot-loader_mbr', self.set_boot_loader_mbr)
+		parser.addHandler('gli-profile/nisdomainname', self.set_nisdomainname)
+		parser.addHandler('gli-profile/install-stage', self.set_install_stage)
+		parser.addHandler('gli-profile/boot-loader', self.set_boot_loader_pkg)
+		parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
+		parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
+		parser.addHandler('gli-profile/filesystem-tools', self.set_filesystem_tools_pkgs)
+		parser.addHandler('gli-profile/hostname', self.set_hostname)
+		parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
+		parser.addHandler('gli-profile/ignore-depends', self.set_ignore_install_step_depends)
+		parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
+		parser.addHandler('gli-profile/users/user', self.add_user)
+		parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
+		parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
+		parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
+		
+
+		self._parser = parser
+
 		# Configuration information - profile data
 		self._cron_daemon_pkg = ""
 		self._logging_daemon_pkg = ""
@@ -50,114 +86,16 @@ class InstallProfile(xml.sax.ContentHandler):
 		self._filesystem_tools = ()
 		self._install_pcmcia_cs = False
 		self._dns_servers = ()
-		self._default_gateway = ''
+		self._default_gateway = ()
 
-		# Internal SAX state info
-		self._xml_elements = [];
-		self._xml_current_data = ""
-		self._xml_current_attr = None
-
-	def startElement(self, name, attr):
-		"""
-		XML SAX start element handler
-
-		Called when the SAX parser encounters an XML openning element.
-		"""
-
-		self._xml_elements.append(name)
-		self._xml_current_attr = attr
-		self._xml_current_data = ""
-
-	def endElement(self, name):
-		"""
-		XML SAX end element handler
-
-		Called when the SAX parser encounters an XML closing element.
-		"""
-		# Instead of using 19 if/elif statements, use a jump table (well, pseudo jump table)
-		fntable = 	{	'gli-profile/cron-daemon': self.set_cron_daemon_pkg,
-					'gli-profile/logging-daemon': self.set_logging_daemon_pkg,
-					'gli-profile/boot-loader_mbr': self.set_boot_loader_mbr,
-					'gli-profile/boot-loader': self.set_boot_loader_pkg,
-					'gli-profile/kernel-config': self.set_kernel_config_uri,
-					'gli-profile/kernel-initrd': self.set_kernel_initrd,
-					'gli-profile/kernel-bootsplash': self.set_kernel_bootsplash,
-					'gli-profile/kernel-source': self.set_kernel_source_pkg,
-					'gli-profile/root-pass-hash': self.set_root_pass_hash,
-					'gli-profile/time-zone': self.set_time_zone,
-					'gli-profile/stage-tarball': self.set_stage_tarball_uri,
-					'gli-profile/install-stage': self.set_install_stage,
-					'gli-profile/portage-tree-sync': self.set_portage_tree_sync_type,
-					'gli-profile/portage-snapshot': self.set_portage_tree_snapshot_uri,
-					'gli-profile/domainname': self.set_domainname,
-					'gli-profile/hostname': self.set_hostname,
-					'gli-profile/nisdomainname': self.set_nisdomainname,
-					'gli-profile/ignore-depends': self.set_ignore_install_step_depends,
-					'gli-profile/install-rp-pppoe': self.set_install_rp_pppoe,
-					'gli-profile/filesystem-tools': self.set_filesystem_tools_pkgs,
-					'gli-profile/install-pcmcia-cs': self.set_install_pcmcia_cs,
-					'gli-profile/dns-servers': self.set_dns_servers,
-					'gli-profile/default-gateway': self.set_default_gateway,
-				}
-
-		path = self._xml_element_path()
-
-		if self._xml_current_data != '':
-			# This is a normal case
-			if path in fntable.keys():
-				fntable[path](self._xml_current_data)
-			else:
-				# Handle the special cases
-				if path == 'gli-profile/kernel-modules/module':
-					self._add_kernel_module(self._xml_current_data)
-				elif path == 'gli-profile/users/user':
-					self.add_user(self._xml_current_data, self._xml_current_attr)
-				elif path == 'gli-profile/make-conf/variable':
-					self.make_conf_add_var(self._xml_current_data, self._xml_current_attr)
-				elif path == 'gli-profile/rc-conf/variable':
-					self.rc_conf_add_var(self._xml_current_data, self._xml_current_attr)
-				elif path == 'gli-profile/network-interfaces/device':
-					self.add_network_interface(self._xml_current_data, self._xml_current_attr)
-
-		self._xml_current_data = ""
-		self._xml_current_attr = None
-		self._xml_elements.pop()
-
-	def characters(self, data):
-		"""
-		XML SAX character data handler
-
-		Called when the SAX parser encounters character data.
-		"""
-
-		# This converts data to a string instead of being Unicode
-		# Maybe we should use Unicode strings instead of normal strings?
-		self._xml_current_data += string.strip(str(data))
-
-	def _xml_element_path(self):
-		"""
-		Return path to current XML node
-		"""
-
-		return string.join(self._xml_elements, '/')
-
-	def parse(self, path):
-		"""
-		Parse serialized profile file.
-
-		Parse the serialized installer profile file at 'path'. This
-		will create and use a SAX parser to handle all the details. This
-		class (GLI.InstallProfile) happens to be the SAX content handler
-		subclass that will be used.
-		"""
-
-		xml.sax.parse(path, self)
+	def parse(self, filename):
+		self._parser.parse(filename)
 
 	def get_cron_daemon_pkg(self):
 		"returns cron_daemon_pkg"
 		return self._cron_daemon_pkg
 
-	def set_cron_daemon_pkg(self, cron_daemon_pkg):
+	def set_cron_daemon_pkg(self, xml_path, cron_daemon_pkg, xml_attr):
 		"cron_daemon_pkg is a string to determine which cron daemon to install and configure (ie. 'vixie-cron')"
 		
 		# Check data type
@@ -170,7 +108,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns logging_daemon_pkg"
 		return self._logging_daemon_pkg
 
-	def set_logging_daemon_pkg(self, logging_daemon_pkg):
+	def set_logging_daemon_pkg(self, xml_path, logging_daemon_pkg, xml_attr):
 		"logging_daemon_pkg is a string to determine which logging daemon to install and configure (ie. 'sysklogd')"
 		
 		# Check data type
@@ -183,7 +121,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns boot_loader_mbr"
 		return self._boot_loader_mbr
 
-	def set_boot_loader_mbr(self, boot_loader_mbr):
+	def set_boot_loader_mbr(self, xml_path, boot_loader_mbr, xml_attr):
 		"boot_loader_mbr is a bool. True installs boot loader to MBR.  False installs boot loader to the boot or root partition."
 		
 		# Check data type
@@ -199,7 +137,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns boot_loader_pkg"
 		return self._boot_loader_pkg
 
-	def set_boot_loader_pkg(self, boot_loader_pkg):
+	def set_boot_loader_pkg(self, xml_path, boot_loader_pkg, xml_attr):
 		"boot_loader_pkg is a string to decide which boot loader to install. (ie. 'grub')"
 		
 		# Check data type
@@ -212,7 +150,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_modules"
 		return self._kernel_modules
 
-	def _add_kernel_module(self, kernel_module):
+	def add_kernel_module(self, xml_path, kernel_module, xml_attr):
 		"Add a kernel module to the list of kernel modules"
 
 		if type(kernel_module) != str:
@@ -237,7 +175,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_config_uri"
 		return self._kernel_config_uri
 
-	def set_kernel_config_uri(self, kernel_config_uri):
+	def set_kernel_config_uri(self, xml_path, kernel_config_uri, xml_attr):
 		"kernel_config_uri is a string that is the path to the kernel config file you wish to use.  Can also be a http:// or ftp:// path."
 		
 		# Check type
@@ -254,7 +192,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_initrd"
 		return self._kernel_initrd
 
-	def set_kernel_initrd(self, kernel_initrd):
+	def set_kernel_initrd(self, xml_path, kernel_initrd, xml_attr):
 		"kernel_initrd is a bool to determine whether or not to build an initrd kernel.  False builds a non-initrd kernel. (overwritten by kernel_bootsplash; needs genkernel non-initrd support not yet present)"
 
 		# Check type
@@ -270,7 +208,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_bootsplash"
 		return self._kernel_bootsplash
 
-	def set_kernel_bootsplash(self, kernel_bootsplash):
+	def set_kernel_bootsplash(self, xml_path, kernel_bootsplash, xml_attr):
 		"kernel_bootsplash is a bool to determine whether or not to install bootsplash into the kernel.  True builds in bootsplash support to the initrd.  WARNING: kernel_source_pkg must contain a kernel with bootsplash support or the bootsplash will not appear.  If you set this to true, it will build an initrd kernel even if you chose false for kernel_initrd!"
 		
 		# Check type
@@ -286,7 +224,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns kernel_source_pkg"
 		return self._kernel_source_pkg
 
-	def set_kernel_source_pkg(self, kernel_source_pkg):
+	def set_kernel_source_pkg(self, xml_path, kernel_source_pkg, xml_attr):
 		"kernel_source_pkg is a string to define which kernel source to use.  (ie. 'gentoo-sources')"
 		
 		# Check type
@@ -299,7 +237,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns users"
 		return self._users
 
-	def add_user(self, username='', attr=None):
+	def add_user(self, xml_path, username, attr=None):
 		"""
 		This will take a username (that is a string) and a set of attributes and it will verify everything is valid
 		and convert it into a 7-tuple set. Then it adds this tuple into the users list.
@@ -336,19 +274,19 @@ class InstallProfile(xml.sax.ContentHandler):
 				if groups != None:
 					groups = tuple(groups.split(','))
 		else:
-			for attrName in attr.getNames():
+			for attrName in attr.keys():
 				if attrName == 'groups':
-					groups = tuple(str(attr.getValue(attrName)).split(','))
+					groups = tuple(str(attr[attrName]).split(','))
 				elif attrName == 'shell':
-					shell = str(attr.getValue(attrName))
+					shell = str(attr[attrName])
 				elif attrName == 'hash':
-					hash = str(attr.getValue(attrName))
+					hash = str(attr[attrName])
 				elif attrName == 'homedir':
-					homedir = str(attr.getValue(attrName))
+					homedir = str(attr[attrName])
 				elif attrName == 'uid':
-					uid = int(attr.getValue(attrName))
+					uid = int(attr[attrName])
 				elif attrName == 'comment':
-					comment = str(attr.getValue(attrName))
+					comment = str(attr[attrName])
 
 		allowable_nonalphnum_characters = '_-'
 
@@ -394,7 +332,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns root_pass_hash"
 		return self._root_pass_hash
 
-	def set_root_pass_hash(self, root_pass_hash):
+	def set_root_pass_hash(self, xml_path, root_pass_hash, xml_attr):
 		"root_pass_hash is a string containing an md5 password hash to be assinged as the password for the root user."
 		
 		# Check type
@@ -407,7 +345,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns time_zone"
 		return self._time_zone
 
-	def set_time_zone(self, time_zone):
+	def set_time_zone(self, xml_path, time_zone, xml_attr):
 		"time_zone is a string defining the time zone to use.  Time zones are found in /usr/share/zoneinfo/.  Syntax is 'UTC' or 'US/Eastern'."
 		
 		# Check type
@@ -420,7 +358,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns stage_tarball_uri"
 		return self._stage_tarball_uri
 
-	def set_stage_tarball_uri(self, stage_tarball_uri):
+	def set_stage_tarball_uri(self, xml_path, stage_tarball_uri, xml_attr):
 		"stage_tarball_uri is a string that is the full path to the tarball you wish to use. (ie. 'file:///path/to/mytarball.tar.bz2')"
 
 		# Check type
@@ -437,7 +375,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns install_stage"
 		return self._install_stage
 
-	def set_install_stage(self, install_stage):
+	def set_install_stage(self, xml_path, install_stage, xml_attr):
 		"install_stage is a integer to define which stage install to use.  Appropriate stages are 1-3."
 		
 		# Check type
@@ -457,7 +395,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns portage_tree_sync"
 		return self._portage_tree_sync_type
 
-	def set_portage_tree_sync_type(self, portage_tree_sync):
+	def set_portage_tree_sync_type(self, xml_path, portage_tree_sync, xml_attr):
 		"portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree."
 		
 		# Check type
@@ -473,7 +411,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns portage_tree_snapshot_uri"
 		return self._portage_tree_snapshot_uri
 
-	def set_portage_tree_snapshot_uri(self, portage_tree_snapshot_uri):
+	def set_portage_tree_snapshot_uri(self, xml_path, portage_tree_snapshot_uri, xml_attr):
 		"portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. (ie. 'file:///mnt/cdrom/snapshots/portage-*.tar.bz2')"
 		
 		# Check type
@@ -490,7 +428,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns domainname"
 		return self._domainname
 
-	def set_domainname(self, domainname):
+	def set_domainname(self, xml_path, domainname, xml_attr):
 		"domainname is a string containing the domainname for the new system. (ie. 'mydomain.com'; NOT FQDN)"
 		
 		# Check type
@@ -503,7 +441,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns hostname"
 		return self._hostname
 
-	def set_hostname(self, hostname):
+	def set_hostname(self, xml_path, hostname, xml_attr):
 		"hostname is a string containing the hostname for the new system. (ie. 'myhost'; NOT 'myhost.mydomain.com')"
 
 		# Check type
@@ -516,7 +454,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"returns nisdomainname"
 		return self._nisdomainname
 
-	def set_nisdomainname(self, nisdomainname):
+	def set_nisdomainname(self, xml_path, nisdomainname, xml_attr):
 		"nisdomainname is a string containing the NIS domainname for the new system."
 		
 		# Check type
@@ -608,7 +546,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"Returns network_interfaces"
 		return self._network_interfaces
 		
-	def add_network_interface(self, device, attr):
+	def add_network_interface(self, xml_path, device, attr):
 		"""
 		This adds an ethernet device to the _network_interfaces dictionary.
 		The format of this dictionary is:
@@ -641,13 +579,13 @@ class InstallProfile(xml.sax.ContentHandler):
 				dhcp = False
 		else:
 			if "ip" in attr.getNames():
-				for attrName in attr.getNames():
+				for attrName in attr.keys():
 					if attrName == 'ip':
-						ip = str(attr.getValue(attrName))
+						ip = str(attr[attrName])
 					elif attrName == 'broadcast':
-						broadcast = str(attr.getValue(attrName))
+						broadcast = str(attr[attrName])
 					elif attrName == 'netmask':
-						netmask = str(attr.getValue(attrName))
+						netmask = str(attr[attrName])
 				dhcp = False
 
 		if not dhcp:
@@ -707,7 +645,6 @@ class InstallProfile(xml.sax.ContentHandler):
 				'ignore-depends':	self.get_ignore_install_step_depends,
 				'install-rp-pppoe':	self.get_install_rp_pppoe,
 				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
-				'default-gateway':	self.get_default_gateway,
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -787,12 +724,15 @@ class InstallProfile(xml.sax.ContentHandler):
 				xmldoc += "<module>%s</module>" % module
 			xmldoc += "</kernel-modules>";
 
+		if self.get_default_gateway() != ():
+			gw = self.get_default_gateway()
+			xmldoc += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gw[0], gw[1])
 		xmldoc += "</gli-profile>"
 
 		dom = xml.dom.minidom.parseString(xmldoc)
 		return dom.toprettyxml()
 
-	def make_conf_add_var(self, data, attr):
+	def make_conf_add_var(self, xml_path, data, attr):
 		"""
 		data is a string that is the value of the variable name.
 		attr is an xml attribute that contains the name of the variable
@@ -801,10 +741,10 @@ class InstallProfile(xml.sax.ContentHandler):
 		if type(attr) == 'str':
 			self._make_conf[attr] = str(data)
 		else:
-			if 'name' not in attr.getNames():
+			if 'name' not in attr.keys():
 				raise "MakeConfError", "Every value needs to have a variable name!"
 
-			varName = attr.getValue('name')
+			varName = attr['name']
 			self._make_conf[str(varName)] = str(data)
 
 	def set_make_conf(self, make_conf):
@@ -821,15 +761,15 @@ class InstallProfile(xml.sax.ContentHandler):
 		""" Return a dictionary of the make.conf """
 		return self._make_conf
 
-	def rc_conf_add_var(self, data, attr):
+	def rc_conf_add_var(self, xml_path, data, attr):
 		"""
 		data is a string that is the value of the variable name.
 		attr is an xml attribute that contains the name of the variable
 		"""
-		if 'name' not in attr.getNames():
+		if 'name' not in attr.keys():
 			raise "RCConfError", "Every value needs to have a variable name!"
 
-		varName = attr.getValue('name')
+		varName = attr['name']
 		self._rc_conf[str(varName)] = str(data)
 
 	def set_rc_conf(self, rc_conf):
@@ -846,7 +786,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		""" Return a dictionary of the make.conf """
 		return self._rc_conf
 
-	def set_ignore_install_step_depends(self, ignore_depends):
+	def set_ignore_install_step_depends(self, xml_path, ignore_depends, xml_attr):
 		""" 
 		Set _ignore_install_step_depends to ignore_depends, if it is a bool, if not, convert
 		it first, then set _ignore_install_step_depends to val.
@@ -864,7 +804,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		""" Return _ignore_install_step_depends """
 		return self._ignore_install_step_depends
 
-	def set_install_rp_pppoe(self, install_rp_pppoe):
+	def set_install_rp_pppoe(self, xml_path, install_rp_pppoe, xml_attr):
 		"""
 		Tell the installer whether or not to install the rp-pppoe package
 		"""
@@ -881,7 +821,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		""" Return the boolean value of _install_rp_pppoe """
 		return self._install_rp_pppoe
 
-	def set_filesystem_tools_pkgs(self, tools):
+	def set_filesystem_tools_pkgs(self, xml_path, tools, xml_attr):
 		"""
 		This method will take either a string or a list/tuple of strings that are
 		packages of the filesystem tools that need to be installed. For example,
@@ -902,7 +842,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		"""
 		return self._filesystem_tools
 
-	def set_install_pcmcia_cs(self, install_pcmcia):
+	def set_install_pcmcia_cs(self, xml_path, install_pcmcia, xml_attr):
 		""" This tells the installer whether or not to install the pcmcia_cs package """
 		if type(install_pcmcia) != bool:
 			if type(install_pcmcia) == str:
@@ -917,7 +857,7 @@ class InstallProfile(xml.sax.ContentHandler):
 
 		return self._install_pcmcia_cs
 
-	def set_dns_servers(self, dns_servers):
+	def set_dns_servers(self, xml_path, dns_servers, xml_attr):
 		"""
 		Set the DNS servers for the post-installed system.
 		"""
@@ -941,28 +881,28 @@ class InstallProfile(xml.sax.ContentHandler):
 		"""
 		return self._dns_servers
 
-	def set_default_gateway(self, gateway):
+	def set_default_gateway(self, xml_path, gateway, xml_attr):
 		""" 
 		Set the default gateway for the post-installed system.
-		The format of the input is: <device>/<gateway IP addr>
+		The format of the input is: <default-gateway interface="interface name">ip of gateway</default-gateway>
+		It saves this information in the following format: (<interface>, <ip of gateway>)
 		"""
+
 		if not GLIUtility.is_realstring(gateway):
-			raise "DefaultGateway", "The gateway must be a non-empty string!"
+			raise DefaultGatewayError('fatal', 'set_default_gateway', "The gateway must be a non-empty string!")
 
-		seperator = string.find(gateway, '/')
-		if seperator == -1:
-			raise "DefaultGateway", "Invalid input!"
+		if not 'interface' in xml_attr.keys():
+			raise DefaultGatewayError('fatal', 'set_default_gateway', 'No interface information specified!')
 
-		dev = gateway[0:seperator]
-		gateway_ip = gateway[seperator+1:]
+		interface = str(xml_attr['interface'])
 
-		if dev[0:3] not in ('eth', 'ppp', 'wla'):
-			raise "DefaultGateway", "Invalid device!"
+		if not GLIUtility.is_eth_device(interface):
+			raise DefaultGatewayError('fatal', 'set_default_gateway', "Invalid device!")
 
-		if not GLIUtility.is_ip(gateway_ip):
+		if not GLIUtility.is_ip(gateway):
 			raise "DefaultGateway", "The IP Provided is not valid!"
 
-		self._default_gateway = gateway
+		self._default_gateway = (interface, gateway)
 
 	def get_default_gateway(self):
 		"""

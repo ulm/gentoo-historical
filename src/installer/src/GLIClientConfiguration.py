@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.17 2004/10/01 17:31:04 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.18 2004/10/08 20:55:17 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -18,12 +18,13 @@ Usage:
 	conf.root_mount_point('/mnt/gentoo/')
 	conf.architecture_template('x86')
 
+
 """
 
-import xml.sax, string, re, GLIUtility
+import string, re, GLIUtility, SimpleXMLParser
 from GLIException import *
 
-class ClientConfiguration(xml.sax.ContentHandler):
+class ClientConfiguration:
 
 	SHARED_CLIENT_CONFIGURATION = None
 
@@ -70,21 +71,38 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._rsync_proxy = ""
 		self._verbose = True
 
-		# Internal SAX state info
-		self._xml_elements = [];
-		self._xml_current_data = ""
-		self._xml_current_attr = None
+		parser = SimpleXMLParser.SimpleXMLParser()
+
+		parser.addHandler('client-configuration/architecture-template', self.set_architecture_template)
+		parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
+		parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
+		parser.addHandler('client-configuration/log-file', self.set_log_file)
+		parser.addHandler('client-configuration/network', self.set_network_type)
+		parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
+		parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
+		parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
+		parser.addHandler('client-configuration/interactive', self.set_interactive)
+		parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
+		parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
+		parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
+		parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
+		parser.addHandler('client-configuration/verbose', self.set_verbose)
+
+		self._parser = parser
+
+	def parse(self, filename):
+		self._parser.parse(filename)
 
 	def get_architecture_template(self):
 		return self._architecture_template
 	
-	def set_architecture_template(self, architecture_template):
+	def set_architecture_template(self, xml_path, architecture_template, xml_attr):
 		self._architecture_template = architecture_template
 	
 	def get_profile_uri(self):
 		return self._profile_uri
 	
-	def set_profile_uri(self, profile_uri):
+	def set_profile_uri(self, xml_path, profile_uri, xml_attr):
 		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
 			raise URIError('fatal', 'set_profile_uri',"The URI specified is not valid!")
 
@@ -93,76 +111,73 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_install_steps_completed(self):
 		return self._install_steps_completed
 	
-	def set_install_steps_completed(self, install_steps_completed):
+	def set_install_steps_completed(self, xml_path, install_steps_completed, xml_attr):
 		self._install_steps_completed = install_steps_completed
 
-	def add_install_steps_completed(self, install_step):
+	def add_install_steps_completed(self, xml_path, install_step, xml_attr):
 		self._install_steps_completed.append(install_step)
 
 	def get_current_step_percent(self):
 		return self._current_step_percent
 	
-	def set_current_step_percent(self, current_step_percent):
+	def set_current_step_percent(self, xml_path, current_step_percent, xml_attr):
 		self._current_step_percent = current_step_percent
 
 	def get_current_step_process_desc(self):
 		return self._current_step_process_desc
 	
-	def set_current_step_process_desc(self, current_step_process_desc):
+	def set_current_step_process_desc(self, xml_path, current_step_process_desc, xml_attr):
 		self._current_step_process_desc = current_step_process_desc
 
 	def get_log_file(self):
 		return self._log_file
 	
-	def set_log_file(self, log_file):
+	def set_log_file(self, xml_path, log_file, xml_attr):
 		self._log_file = log_file
 
 	def get_proc_temp_log(self):
 		return self._proc_temp_log
 	
-	def set_proc_temp_log(self, proc_temp_log):
+	def set_proc_temp_log(self, xml_path, proc_temp_log, xml_attr):
 		self._proc_temp_log = proc_temp_log
 
 	def get_root_mount_point(self):
 		return self._root_mount_point
 	
-	def set_root_mount_point(self, root_mount_point):
+	def set_root_mount_point(self, xml_path, root_mount_point, xml_attr):
 		self._root_mount_point = root_mount_point
 
 	shared_client_configuration = classmethod(shared_client_configuration)
 
-	def set_network_type(self, network_type, attr=None):
-
-		if attr == None:
-			attr = self._xml_current_attr
+	def set_network_type(self, xml_path, network_type, xml_attr=None):
 
 		interface = ip = broadcast = netmask = gateway = None
 
-		if type(attr) == tuple:
-			interface = attr[0]
-			ip = attr[1]
-			broadcast = attr[2]
-			netmask = attr[3]
-			gateway = attr[4]
+		if type(xml_attr) == tuple:
+			interface = xml_attr[0]
+			ip = xml_attr[1]
+			broadcast = xml_attr[2]
+			netmask = xml_attr[3]
+			gateway = xml_attr[4]
 		else:
-			for key in attr.keys():
+			for key in xml_attr.keys():
 				if key == 'interface':
-					interface = str(attr.get('interface'))
+					interface = str(xml_attr.get('interface'))
 				elif key == 'ip':
-					ip = str(attr.get('ip'))
+					ip = str(xml_attr.get('ip'))
 				elif key == 'broadcast':
-					broadcast = str(attr.get('broadcast'))
+					broadcast = str(xml_attr.get('broadcast'))
 				elif key == 'netmask':
-					netmask = str(attr.get('netmask'))
+					netmask = str(xml_attr.get('netmask'))
 				elif key == 'gateway':
-					gateway = str(attr.get('gateway'))
+					gateway = str(xml_attr.get('gateway'))
 
 		if not GLIUtility.is_eth_device(interface):
 			raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
 
 		network_data = (interface, ip, broadcast, netmask, gateway)
 
-		if network_type == 'static' and attr == None:
+		if network_type == 'static' and xml_attr == None:
 			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
 
 		self.set_network_data(network_data)
@@ -208,7 +223,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 		self._network_data = network_info
 
-	def set_dns_servers(self, nameservers):
+	def set_dns_servers(self, xml_path, nameservers, xml_attr):
 		if type(nameservers) == str:
 			nameservers = nameservers.split(" ")
 			dns = []
@@ -220,7 +235,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_dns_servers(self):
 		return self._dns_servers
 
-	def set_enable_ssh(self, enable_ssh):
+	def set_enable_ssh(self, xml_path, enable_ssh, xml_attr):
 		if type(enable_ssh) == str:
 			enable_ssh = GLIUtility.strtobool(enable_ssh)
 		self._enable_ssh = enable_ssh
@@ -228,13 +243,13 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_enable_ssh(self):
 		return self._enable_ssh
 
-	def set_root_passwd(self,passwd):
+	def set_root_passwd(self, xml_path, passwd, xml_attr):
 		self._root_passwd = passwd
 
 	def get_root_passwd(self):
 		return self._root_passwd
 
-	def set_interactive(self, interactive):
+	def set_interactive(self, xml_path, interactive, xml_attr):
 		if type(interactive) != bool:
 			interactive = GLIUtility.strtobool(interactive)
 		self._interactive = interactive
@@ -242,31 +257,31 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_interactive(self):
 		return self._interactive
 
-	def set_kernel_modules(self, modules):
+	def set_kernel_modules(self, xml_path, modules, xml_attr):
 		self._kernel_modules = tuple(string.split(modules))
 
 	def get_kernel_modules(self):
 		return self._kernel_modules
 
-	def set_ftp_proxy(self, proxy):
+	def set_ftp_proxy(self, xml_path, proxy, xml_attr):
 		self._ftp_proxy = proxy
 
 	def get_ftp_proxy(self):
 		return self._ftp_proxy
 
-	def set_http_proxy(self, proxy):
+	def set_http_proxy(self, xml_path, proxy, xml_attr):
 		self._http_proxy = proxy
 
 	def get_http_proxy(self):
 		return self._http_proxy
 
-	def set_rsync_proxy(self, proxy):
+	def set_rsync_proxy(self, xml_path, proxy, xml_attr):
 		self._rsync_proxy = proxy
 
 	def get_rsync_proxy(self):
 		return self._rsync_proxy
 
-	def set_verbose(self, verbose):
+	def set_verbose(self, xml_path, verbose, xml_attr):
 		if type(verbose) == str:
 			verbose = GLIUtility.strtobool(verbose)
 
@@ -274,69 +289,6 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 	def get_verbose(self):
 		return self._verbose
-
-	def startElement(self, name, attr): 
-		"""
-		XML SAX start element handler
-
-		Called when the SAX parser encounters an XML openning element.
-		"""
-
-		self._xml_elements.append(name)
-		self._xml_current_attr = attr
-		self._xml_current_data = ""
-
-	def endElement(self, name):
-		fntable = 	{ 	'client-configuration/architecture-template': self.set_architecture_template,
-					'client-configuration/profile-uri': self.set_profile_uri,
-					'client-configuration/root-mount-point': self.set_root_mount_point,
-					'client-configuration/log-file': self.set_log_file,
-					'client-configuration/network': self.set_network_type,
-					'client-configuration/dns-servers': self.set_dns_servers,
-					'client-configuration/enable-ssh': self.set_enable_ssh,
-					'client-configuration/root-passwd': self.set_root_passwd,
-					'client-configuration/interactive': self.set_interactive,
-					'client-configuration/kernel-modules': self.set_kernel_modules,
-					'client-configuration/ftp-proxy': self.set_ftp_proxy,
-					'client-configuration/http-proxy': self.set_http_proxy,
-					'client-configuration/rsync-proxy': self.set_rsync_proxy,
-					'client-configuration/verbose': self.set_verbose,
-				}
-
-		path = self._xml_element_path()
-		
-		if self._xml_current_data != '':
-			if path in fntable.keys():
-				fntable[path](self._xml_current_data)
-				
-		# Keep the XML state
-		self._xml_current_data = ""
-		self._xml_current_attr = None  
-		self._xml_elements.pop()
-
-	def characters(self, data):
-		"""
-		XML SAX character data handler
-        
-		Called when the SAX parser encounters character data.
-		"""
-                                        
-		# This converts data to a string instead of being Unicode
-		# Maybe we should use Unicode strings instead of normal strings?
-		self._xml_current_data += string.strip(str(data))
-
-	def _xml_element_path(self):
-		"""
-		Return path to current XML node
-		"""
-                
-		return string.join(self._xml_elements, '/')
-
-	def parse(self, path):
-		"""
-		Parse serialized configuration file.
-		"""                     
-		xml.sax.parse(path, self)
 
 	def serialize(self):
 		fntable =	{	'architecture-template': self.get_architecture_template,
