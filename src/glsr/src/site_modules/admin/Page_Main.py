@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.1 2004/07/03 21:51:35 port001 Exp $
+# $Id: Page_Main.py,v 1.2 2004/07/06 13:13:33 port001 Exp $
 #
 
 MetaData = {"page" : ("main", None), "params" : ""}
@@ -11,7 +11,6 @@ MetaData = {"page" : ("main", None), "params" : ""}
 import Template as TemplateHandler
 import Session
 import Config
-import Stat
 from User import User
 from SiteModuleBE import SiteModuleBE as Parent
 
@@ -46,12 +45,5 @@ class Page_Main(Parent):
         tmpl.Compile(
             self.template,
             {"GLSR_URL":		Config.URL,
-             "USER_COUNT":		Stat.UserCount(),
-             "SESSION_COUNT":		Stat.SessionCount(),
-             "SCRIPT_COUNT":		Stat.ScriptCount(),
-             "SUBSCRIPT_COUNT":		Stat.SubScriptCount(),
-             "CATEGORY_COUNT":		Stat.CategoryCount(),
-             "COMMENT_COUNT":		Stat.CommentCount(),
-             "DBSIZE":			Stat.DBSize(),
              "USER_ONLINE_LIST":	user_online_list})
         tmpl.Print()

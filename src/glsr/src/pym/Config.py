@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.4 2004/07/06 01:16:58 port001 Exp $
+# $Id: Config.py,v 1.5 2004/07/06 13:13:33 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -42,7 +42,8 @@ Template = {
         "admin_script_search":	t_prefix + "admin/Script_Search.tpl",
         "admin_script_results":	t_prefix + "admin/Script_Results.tpl",
         "admin_categories":	t_prefix + "admin/Categories.tpl",
-        "admin_script_languages":	t_prefix + "admin/Script_Languages.tpl"
+        "admin_script_languages":	t_prefix + "admin/Script_Languages.tpl",
+	"admin_statistics":     t_prefix + "admin/Statistics.tpl"
 	}
 
 URL = "http://localhost/glsr/"
