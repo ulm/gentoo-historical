@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!DOCTYPE mainpage SYSTEM "/dtd/guide.dtd">
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format" version="1.0">
 <xsl:preserve-space elements="*"/>
 <xsl:template match="/userlist">
-  <mainpage id="devlist">
+  <mainpage id="about">
     <title>Gentoo Linux Developers</title>
     <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
     
