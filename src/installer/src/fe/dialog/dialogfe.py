@@ -490,7 +490,7 @@ def set_client_networking():
 	network_choices = ('DHCP', 'Static IP');
 	code, menuitem = d.menu("Please select networking configuration:", choices=dmenu_list_to_choices(network_choices))
 	
-	if code =! DLG_OK:
+	if code != DLG_OK:
 		return
 
 	menuitem = network_choices[int(menuitem)-1]
@@ -510,8 +510,8 @@ def set_client_networking():
 		network_type = 'dhcp'
 
 	try:
-		client_profile.set_network_type(None, network_type, network_data):
-	except GLIException e:
+		client_profile.set_network_type(None, network_type, network_data)
+	except GLIException (e):
 		d.msgbox(e)
 
 
