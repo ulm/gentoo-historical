@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.3 2004/07/06 01:16:58 port001 Exp $
+# $Id: Function.py,v 1.4 2004/07/06 01:42:48 port001 Exp $
 #
 
 import traceback
@@ -45,7 +45,7 @@ def err(msg, modname):
 		       "<br /><br />\n")
 
         tb = traceback.format_stack(None)
-	for line in tb:
+	for line in tb[:-1]:
             print line.replace("\n", "<br>")
 		
 	print ("     <br />\n" +
