@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id:'
+__revision__ = '$Id: index.py,v 1.36 2005/01/25 23:21:25 port001 Exp $'
 __modulename__ = 'index'
 
 import os
