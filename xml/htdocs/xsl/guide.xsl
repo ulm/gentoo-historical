@@ -3,14 +3,9 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 <!-- Include external stylesheets -->
-<xsl:include href="./content.xsl" />
-<xsl:include href="./handbook.xsl" />
-<!-- <xsl:include href="inserts.xsl" /> -->
-
-<!-- Define some globals that can be used throughout the stylesheets -->
-<xsl:param name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:param> <!-- Top element name e.g. "book" -->
-<xsl:param name="LANG"><xsl:value-of select="//*[1]/@lang" /></xsl:param> <!-- Value of top element's lang attribute e.g. "en" -->
-<xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param> <!-- Value of top element's link attribute e.g. "handbook.xml" -->
+<xsl:include href="content.xsl" />
+<xsl:include href="handbook.xsl" />
+<xsl:include href="inserts.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
 <xsl:preserve-space elements="pre"/>
@@ -39,8 +34,7 @@
     </xsl:when>
     <xsl:otherwise>
       <form name="contents" action="http://www.gentoo.org">
-<!--        <b><xsl:value-of select="xsl:gettext('Content')"/></b>: -->
-        <b>Content:</b>
+        <b><xsl:value-of select="xsl:gettext('Content')"/></b>:
         <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
           <xsl:for-each select="chapter">
             <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
@@ -68,8 +62,7 @@
   <xsl:choose>
     <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
-<!--    <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise> -->
-    <xsl:otherwise>Gentoo Linux Documentation</xsl:otherwise>
+    <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
 --
   <xsl:choose>
@@ -115,8 +108,7 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-<!--                  <xsl:value-of select="xsl:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/> -->
-                  Updated&#160; <xsl:value-of select="/guide/date|/book/date"/>
+                  <xsl:value-of select="xsl:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
                 </td>
               </tr>
               <tr>
@@ -138,8 +130,7 @@
               <tr>
                 <td class="alttext">
                   <!-- Abstract (summary) of the document -->
-<!--                  <b><xsl:value-of select="xsl:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/> -->
-                  <b>Summary:</b>&#160;<xsl:apply-templates select="abstract"/>
+                  <b><xsl:value-of select="xsl:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
                 </td>
               </tr>
               <tr>
@@ -940,12 +931,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-<!--            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/> -->
-            Figure&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-<!--            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/> -->
-            Figure&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -992,8 +981,7 @@
   <tr>
     <td bgcolor="#bbffbb">
       <p class="note">
-<!--        <b><xsl:value-of select="xsl:gettext('Note')"/>: </b> -->
-        <b>Note: </b>
+        <b><xsl:value-of select="xsl:gettext('Note')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1007,8 +995,7 @@
   <tr>
     <td bgcolor="#ffffbb">
       <p class="note">
-<!--        <b><xsl:value-of select="xsl:gettext('Important')"/>: </b> -->
-        <b>Important: </b>
+        <b><xsl:value-of select="xsl:gettext('Important')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1022,8 +1009,7 @@
   <tr>
     <td bgcolor="#ffbbbb">
       <p class="note">
-<!--        <b><xsl:value-of select="xsl:gettext('Warning')"/>: </b> -->
-        <b>Warning: </b>
+        <b><xsl:value-of select="xsl:gettext('Warning')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1144,12 +1130,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-<!--            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/> -->
-            Code Listing&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-<!--            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/> -->
-            Code Listing&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
