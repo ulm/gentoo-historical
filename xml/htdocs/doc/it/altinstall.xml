@@ -1,0 +1,221 @@
+<?xml version='1.0' encoding="UTF-8" ?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/it/altinstall.xml">
+	<title>Gentoo Linux: metodi di installazione alternativi HOWTO</title>
+	<author title="Author">
+		<mail link="lordviram@rebelpacket.net">Travis Tilley</mail>
+	</author>
+	<author title="Contributor">
+		<mail link="davoid@gentoo.org">Faust A. Tanasescu</mail>
+	</author>
+	<author title="Contributor">
+		<mail link="aliz@gentoo.org">Daniel Ahlberg</mail>
+	</author>
+	<author title="Traduttore">
+		<mail link="whitenoise@tiscali.it">Giorgio Vielmini</mail>
+	</author>
+	<author title = "Traduttore">Team Italiano</author>
+	<abstract> Questo HOWTO vuole essere una raccolta dei metodi alternativi di installazione, per chi necessita di procedimenti di installazione particolari, per esempio quando non è disponibile un lettore cdrom o quando il sistema non può effettuare il bootstrap di un cd.
+</abstract>
+	<version>0.3</version>
+	<date>10 September 2002</date>
+	<chapter>
+		<title>Introduzione</title>
+		<section>
+			<body>
+				<p>Se la procedura standard di installazione non è adatta per voi (o semplicemente non vi piace), qui troverete aiuto. Questo documento è una raccolta di tecniche alternative per l'installazione di Gentoo Linux a chi ne ha bisogno. O se preferite, rende disponibile un luogo dove raccogliere i vostri metodi di installazione personalizzati . Se hai ideato una metodologia di installazione cha ti si è rivelata utile, o hai scoperto una strategia di installazione divertente, non esitare a scriverne una descrizione e <mail link="whitenoise@tiscali.it"> a spedirla.</mail></p>
+			</body>
+		</section>
+	</chapter>
+	<chapter>
+		<title>Installazione con boot di rete</title>
+		<section>
+			<title>Requisiti</title>
+			<body>
+				<p>Per poter effettuare l'installazione mediante un boot di rete sono necessari un computer in grado di funzionare come server tftp ed un computer in grado di effettuare un boot di rete attraverso il bios o il floppy ed in grado di  lanciare GRUB o un altro bootloader di rete. Potrebbe rivelarsi necessario anche un server DHCP. Sono naturalmente necessari anche le immagini ISO aggiornate, disponibili all'indirizzo 
+<uri>http://www.ibiblio.org/gentoo/releases/build/</uri></p>
+			</body>
+		</section>
+		<section>
+			<title>Panoramica</title>
+			<body>
+				<p></p>
+				<p>Una volta che il vostro computer ha ottentuto un indirizzo IP, la fase successiva è decidere in che modo effettuare il boot  La via più semplice è, ancora una volta, utilizzare GRUB anzichè configurare bootp o un server dhcp. E' inoltre necessario specificare in che modo ottenere initrd e configurare il kernel in modo che lo utilizzi come filesystem di root.</p>
+				<p>Una volta caricato il kernel e dopo aver montato il filesystem, si può procedere con l'installazione in maniera normale. Le immagini ISO o i build possono quindi essere caricate da un cd o ottenute attraverso un download attraverso il protocollo tftp.</p>
+			</body>
+		</section>
+		<section>
+			<title>Uso di GRUB</title>
+			<body>
+				<p>Per poter utilizzare GRUB per effettuare il boot, è necessario aver precedentemente compilato GRUB con il supporto per la vostra scheda di rete. Non vi è differenza nell'installare GRUB su un floppy o sul disco rigido sul quale volete installare Gentoo. Se sul sistema su cui effettuate l'installazione è già stato installato GRUB con supporto di rete, questa fase del procedimento può considerarsi completa. GRUB pùo essere scaricato da <uri>ftp://alpha.gnu.org/gnu/grub/</uri></p>
+				<p>Per esempio, se nel vostro sistema avete una scheda di rete tulip:</p>
+				<pre caption="Installazione manuale di GRUB">
+# <i>./configure --enable-tulip --prefix=/usr</i>
+# <i>make &amp;&amp; make install</i>
+</pre>
+				<p>Se invece Gentoo è già in esecuzione e volte installare GRUB utilizzando i Gentoo tools, è necessaria un'installazione di tipo passo-passo, per poter includere il supporto alla propria scheda di rete. Ecco un esempio che descrive come utilizzare ebuild per installare GRUB con il supporto per le schede di rete tulip:</p>
+				<pre caption="Installazione e configurazione di GRUB in ambiente Gentoo Linux">
+# <i>ebuild /usr/portage/sys-apps/grub/grub-0.91.ebuild clean fetch unpack</i>
+# <i>cd /var/tmp/portage/grub-0.91/work/grub-0.91/</i>
+# <i>./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man \ </i>
+> <i>--infodir=/usr/share/info --enable-tulip</i>
+# <i>make</i>
+# <i>touch /var/tmp/portage/grub-0.91/.compiled</i>
+# <i>cd /usr/portage/</i>
+# <i>ebuild sys-apps/grub/grub-0.91.ebuild install merge</i>
+</pre>
+				<p>Ora che la shell di GRUB è stata installata, è necessario installare GRUB in un boot sector. Nonostante sia possibile installare GRUB nel boot sector del disco rigido del computer su cui desiderate installare Gentoo, da questo punto in poi viene descritto il procedimento di installazione di GRUB su un disco floppy di boot.E' possibile agire in due modi: può essere utilizzata la shell di GRUB, oppure lo script <c>grub-install</c>. Per installare GRUB su un floppy è preferibile utilizzare <c>grub-install</c>.</p>
+				<pre caption="Esempio di utilizzo di grub-install">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>grub-install --root-directory=/mnt/floppy/ '(fd0)'</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+				<p>Non sempre  <c>grub-install</c> funziona correttamente... e non è il modo migliore di installare GRUB. Poichè, una volta effettuato il boot, la shell di GRUB lavora esattamente come GRUB stesso, potrebbe essere consigliabile utilizzare semplicemente GRUB  per effettuare l'installazione sul floppy. Ecco un esempio di come impiegare GRUB per installarlo su un floppy:</p>
+				<pre caption="Uso della shell di GRUB">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>mkdir -p /mnt/floppy/boot/grub/</i>
+# <i>cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/</i>
+# <i>grub</i>
+grub> <i>root (fd0)</i>
+grub> <i>setup (fd0)</i>
+grub> <i>quit</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+				<p>Ora che il floppy di boot è pronto è necessario configurare un server tftp (una scelta valida è "netkit's tftp server") per poter caricare kernel e initrd. Se si ha intenzione di utilizzare inetd bisogna aggiungere al file <path>/etc/inetd.conf</path> una riga simile a questa: </p>
+				<pre caption="/etc/inetd.conf">
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+				<p>Per installare netkit tftp server in un sistema Gentoo Linux eseguire: emerge net-misc/netkit-tftp</p>
+				<note> Esiste un ebuild per xinetd... sentitevi liberi di usarlo, se preferite. Tuttavia, io non uso xinetd e non so come configurarlo con tftp. Se lo usate con successo, speditemi, per favore, maggiori informazioni in modo da includerle in questa guida. </note>
+				<p>Ora che anche il server tftp è pronto, sono necessari un kernel a un initrd di root in cui inserirlo. E' possibile compilare un kernel personalizzato, ma bisogna accertarsi di includere tutte i componenti necessari per il funzionamento di gentoo (come devfs) e quelli neccessari alla fase di boot di rete (come il supporto a initrd). Initrd di boot sarà rescue.gz, incluso nelle ISO di gentoo.</p>
+				<impo>Montare un file ISO senza registrarlo su un CD richiede il supporto al filesystem di loopback.</impo>
+				<pre>
+# <i>mkdir /tftpboot</i>
+# <i>mount -o loop /path/to/gentoo-ix86-1.1a.iso /mnt/cdrom/</i>
+# <i>cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot</i>
+# <i>chmod 644 /tftpboot/*</i>
+# <i>umount /mnt/cdrom/</i>
+</pre>
+				<p>Effettuate ora il boot della macchina su cui volete effettuare l'installazione utilizzando il floppy appena creato. Una volta completata la fase di boot bisogna specificare in che modo ottenere l'indirizzo IP, da dove ottenere il kernel e dove ottenere la sua initrd.</p>
+				<pre>
+grub> <i>ifconfig --address=192.168.0.10 --server=192.168.0.2</i>
+grub> <i>root (nd)</i>
+grub> <i>kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 </i>
+      <i>prompt_ramdisk=0 ramdisk_size=24000 root=/dev/ram0 rw</i> <comment>(all on one line)</comment>
+grub> <i>initrd /tftpboot/rescue.gz</i>
+grub> <i>boot</i>
+</pre>
+				<note>Potete anche usare bootp e dhc per configurare il vostro ip attraves grub, con i comandi bootp e dhcp.  </note>
+				<p>Ora che il boot è terminato, si può effettuare un'installazione normale facendo riferimento alla guida per l'installazione.</p>
+			</body>
+		</section>
+	</chapter>
+	<chapter>
+		<title>Installazione di Gentoo a partire da una distribuzione Linux esistente </title>
+		<section>
+			<title> Requisiti </title>
+			<body>
+				<p>Per poter installare Gentoo a partire da una distribuzione Linux esistente è necessario avere installato chroot e disporre di una copia dei tarball di installazione o le ISO che si desidera installare. E' consigliabile un collegamento di rete se volete aggiungere funzionalità non incluse nei tarball di installazione. (Per inciso, un tarball è un file con estensione .tbz o .tar.gz). L'autore ha utilizzato RedHat Linux 7.3 come sistema operativo "host", ma non è importante. Si parte!</p>
+			</body>
+		</section>
+		<section>
+			<title> Panoramica </title>
+			<body>
+				<p>Per prima cosa verrà creata una partizione dedicata a Gentoo modificando le dimensione della partizione Linux esistente, monteremo tale partizione, monteremo un tarball e lo decomprimeremo,  effettueremo un chroot all'interno del nostro nuovo sistema è ne inizieremo la costruzione. Una volta terminato il processo di boot, effettueremo le ultime fasi di configurazione del sistema per accertarsi che sia in grado di effettuare il boot, e saremo quindi pronti per un reboot ed il successivo utilizzo di Gentoo.</p>
+			</body>
+		</section>
+		<section>
+			<title> Come ottenere spazio per Gentoo? </title>
+			<body>
+				<p>
+La partizione root è la porzione di filesystem montata come "/". Un'esecuzione del comando mount sulla macchina mostra di cosa stiamo parlando. Possiamo usare il comando df (disk free) per controllare quanto spazio abbiamo a disposizione e, di conseguenza, decidere di quanto debbano essere ridimensionate le partizioni esistenti. Non è indispensabile ridimensionare la partizione di root! Possiamo ridimensionare qualunque altra partizione supportata dal programma che andremo ad utilizzare per questo scopo, ma ne parleremo più avanti.</p>
+				<pre caption="Informazioni sul filesystem">
+# <i>mount</i>
+/dev/hdb2 on / type ext3 (rw) 
+none on /proc type proc (rw) 
+none on /dev/pts type devpts (rw,gid=5,mode=620) 
+none on /dev/shm type tmpfs (rw) 
+# <i>df -h </i>
+Filesystem           Size Used Avail Use% Mounted on 
+/dev/hdb2            4.0G 1.9G  2.4G  82% /
+none		      38M    0    38M   0% /dev/shm 
+</pre>
+				<p>Come possiamo vedere, la partizione montata come "/" si chiama /dev/hdb2 e ha 2.4 gigabytes di spazio libero. In questo caso si potrebbe ridimensionare questa partizione lasciando 400Mb di spazio libero e creando una partizione per Gentoo di 2 gigabyte. Non c'è male, in questo modo è disponibile una buona quantità di spazio per le nostre applicazioni. In ogni modo, un gigabyte è più che sufficiente per la maggio parte degli utenti. </p>
+			</body>
+		</section>
+		<section>
+			<title> Preparazione di parted per il ridimensionamento delle partizioni </title>
+			<body>
+<p>Parted  è un'utility fornita dalla fondazione GNU, un vecchio e grande progetto che ha creato il software che stai utilizzando in questo momento. Esiste un tool che è ci estremamente utile in questa situazione. Si chiama parted (partition editor, editor delle partizioni) e lo si può ottenere da <uri>http://www.gnu.org/software/parted/</uri> 
+</p>
+<note> Esistono altri tool che permettono di ridimensionare le partizioni, ma l'autore non è certo e non ha interesse ad accertarsi che  PartitionMagic(tm) o altri software di questo tipo ne siano in grado. E' un compito del lettore verificarlo.  </note>
+
+<p> 
+Controlla su questa pagina che il tipo di filesystem che vuoi ridimensionare sia supportato. Se non lo è, sei sfortunato, e dovrai distruggere alcune partzioni per far spazio a Gentoo. Scarica il sofware e effettua l'installazione. Ora però abbiamo un problema. Vogliamo ridimensionare la nostra partizione di root di Linux, quindi dobbiamo fare il boot con un disco floppy che contiene un sistema linux minimo e utilizzare una copia precompilata di parted precedentemene copiata sul dischetto, per poter ridimensionare "/". Comunque, se si può smontare la partizione mentre si è ancora all'interno di Linux si è fortunati, e si può evitare la fase successiva. E' sufficiente compilare parted ed eseguirlo sulla partizione (non montata) che si vuole ridimensionare. Ecco come ho agito sul mio sistema:
+</p>
+
+<impo>  Accertatevi che le operazioni che volete eseguire sulla vostra partizioni siano supportate da parted! </impo>
+
+<p> Scaricate tomsrtbt, un disco di boot/root (gratuito)  da<uri>
+http://freshmeat.net/tomsrtbt </uri>, create una un floppy come indicato nella Documentazione che accompagna il pacchetto e preparate un nuovo dischetto per la prossima fase dell'installazione
+</p>
+
+<note>  Notate come ancora una volta Linux sia sinonimo di "C'e più di un modo per farlo". Il vostro scopo era di eseguire parted su una partizione non montata. Potete usare altri dischetti di boot/root oltre a tomsrbt. Potreste anche non dover effettuare questa parte dell'installazione, smontando il filesystem che volete ridimensionare e utilizzando parted per i vostri scopi.  </note>
+
+<pre caption="Creazione del dischetto di utility">
+# <i>mkfs.minix /dev/fd0</i>
+480 inodes
+1440 blocks
+Firstdatazone=19 (19)
+Zonesize=1024
+Maxsize=268966912
+</pre>
+
+La fase successiva consiste nella compilazione di parted. Se non lo avete ancora scaricato e decompresso, fatelo ora e spostatevi nella directory corrispondente. Ora eseguite questa serie di comandi per compilare il pacchetto e copiarlo sul floppy.
+
+<pre caption="Fase di build del dischetto di utility">
+# <i> mkdir /floppy; mount -t minix /dev/fd0 /floppy &amp;&amp; 
+export CFLAGS="-O3 -pipe -fomit-frame-pointer -static" &amp;&amp; ./configure 
+&amp;&amp; make &amp;&amp; cp parted/parted /floppy &amp;&amp; umount /floppy </i>
+</pre>
+
+<p>
+Congratulazioni, siete pronti per il reboot e il ridimensionamento della vostra partizione. Fatelo solo dopo aver letto velocemente la documentazione sul sito GNU. Il ridimensionamento può richiedere fino a 30 minuti per i dischi rigidi più grandi. Effettuate il reboot del sistema con il disco di boot tomsrbt (basta inserirlo nel lettore),  e una volta effettuato il login, sostituite il disco nel lettore con il disco di utilità che avete appena creato e montatelo con il comando mount /dev/fd0 per avere parted all'interno di /floppy. Spostatevi all'interno di floppy e una volta lanciato parted potrete ridimensionare le partizioni. Una volta terminato questo lento processo, sarete pronti per installare gentoo. Effettuate un reboot e utilizzate la precedente installazione di Linux. Dovrete operare sul disco che contiene la partizione da ridimensionare. Per esempio, se volete ridimensionare /dev/hda3, dovrete lavorare sull'unità /dev/hda:  </p>
+
+<pre caption="Comandi da eseguire una volta effettuato il login all'interno del sistema tpmsrbt">
+# <i>mount /dev/fd0 /floppy </i>
+# <i>cd /floppy; ./parted [drive su cui volete operare]</i>
+(parted) <i> print </i>
+Disk geometry for /dev/hdb: 0.000-9787.148 megabytes
+Disk label type: msdos
+Minor    Start       End     Type      Filesystem  Flags
+1          0.031   2953.125  primary   ntfs        
+3       2953.125   3133.265  primary   linux-swap  
+2       3133.266   5633.085  primary   ext3        
+4       5633.086   9787.148  extended              
+5       5633.117   6633.210  logical               
+6       6633.242   9787.148  logical   ext3        
+(parted) <i> help resize </i>
+  resize MINOR START END        resize filesystem on partition MINOR
+
+        MINOR is the partition number used by Linux.  On msdos disk labels, the
+        primary partitions number from 1-4, and logical partitions are 5
+        onwards.
+        START and END are in megabytes
+(parted) <i> resize 2 3133.266 4000.000 </i>
+</pre>
+
+<impo> Siate pazienti! Il computer sta lavorando! Controllate i LED del vostro case per accertarvi che il computer stia realmente lavorando. Questa fase può richiedere da 2 a 30 minuti. </impo>
+
+<p>
+Una volta terminato il procedimento ritornate alla precedente installazione di linux come descritto. Dopodichè consultate <uri link="/doc/it/gentoo-x86-install.xml">http://www.gentoo.org/doc/it/gentoo-x86-install.xml</uri> e seguite i passi 6,7, e da 9 a 17. Buon divertimento!
+</p>
+</body>
+		</section>
+	</chapter>
+</guide>
