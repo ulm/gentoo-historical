@@ -132,6 +132,7 @@ resize partitions.
 		for fs in self.supported_filesystems:
 			self.resize_info_part_filesystem.append_text(fs)
 		self.resize_info_part_filesystem.set_active(0)
+		self.resize_info_part_filesystem.connect("changed", self.filesystem_changed)
 		resize_text_box.pack_start(self.resize_info_part_filesystem, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
 		self.resize_info_part_size = gtk.Entry(max=9)
@@ -413,6 +414,11 @@ resize partitions.
 		import pprint
 		pp = pprint.PrettyPrinter(indent=4)
 		pp.pprint(self.devices[self.active_device].get_install_profile_structure())
+
+	def filesystem_changed(self, widget, data=None):
+		fs = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
+		self.resize_part_space.set_colors(self.colors[fs], self.colors[fs])
+		self.resize_part_space.get_child().expose_event(None, None)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
