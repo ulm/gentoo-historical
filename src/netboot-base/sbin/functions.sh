@@ -1,10 +1,10 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/netboot-base/sbin/functions.sh,v 1.1 2004/10/06 14:44:47 vapier Exp $
+# $Header: /var/cvsroot/gentoo/src/netboot-base/sbin/functions.sh,v 1.2 2004/10/07 20:37:53 vapier Exp $
 
 # Stripped down version of gentoo-src/rc-scripts/sbin/functions.sh
 
-if [ "$(/sbin/consoletype 2> /dev/null)" = "serial" ]
+if [ "$(/sbin/consoletype)" = "serial" ]
 then
 	# We do not want colors/endcols on serial terminals
 	RC_NOCOLOR="${RC_NOCOLOR:-yes}"
@@ -15,7 +15,7 @@ else
 fi
 if [ -r /proc/cmdline ]
 then
-	[ -n "`grep nocolor /proc/cmdline`" ] && RC_NOCOLOR="yes"
+	grep -q nocolor /proc/cmdline && RC_NOCOLOR="yes"
 fi
 
 eerror() {
@@ -74,7 +74,7 @@ eend() {
 
 if [ "${RC_ENDCOL}" == "yes" ] ; then
 	COLS=${COLUMNS:-0}		# bash's internal COLUMNS variable
-	(( COLS == 0 )) && COLS=$(stty size 2>/dev/null | cut -d' ' -f2)
+	(( COLS == 0 )) && COLS=$(stty size | cut -d' ' -f2)
 	(( COLS -= 7 ))			# width of [ ok ]
 	if (( COLS <= 0 )); then
 		# Sanity check ... with serial consoles and such,
