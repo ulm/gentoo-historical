@@ -179,6 +179,7 @@ class Installer:
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
 		self.navlinks = gtk.VBox(gtk.FALSE, 5)
+		self.navlinks.set_size_request(140, -1)
 		navlinkslabel = gtk.Label("    Installation Steps    ")
 		self.navlinks.pack_start( navlinkslabel, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		self.num_times = 0
