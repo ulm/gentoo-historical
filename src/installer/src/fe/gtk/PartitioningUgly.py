@@ -32,8 +32,9 @@ button to load your previous settings as defaults.
 		self.add_content(vert)
 
 	def activate(self):
-		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-		self.controller.SHOW_BUTTON_BACK    = gtk.FALSE
-		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		pass
+#		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
+#		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
+#		self.controller.SHOW_BUTTON_BACK    = gtk.FALSE
+#		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
+#		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE

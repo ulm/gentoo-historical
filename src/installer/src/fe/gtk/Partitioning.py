@@ -23,8 +23,9 @@ class Panel(GLIScreen.GLIScreen):
 	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
 	supported_filesystems = ['ext2', 'ext3', 'reiserfs', 'linux-swap', 'fat32', 'ntfs']
 
-	def __init__(self, controller):
+	def __init__(self, controller, parent):
 		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
+		self._parent = parent
 
 		vert = gtk.VBox(gtk.FALSE, 0)
 		vert.set_border_width(10)
@@ -42,14 +43,6 @@ resize partitions.
 		self.detected_dev_combo = gtk.combo_box_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
 		container.pack_start(self.detected_dev_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-
-		self.drives = GLIStorageDevice.detect_devices()
-		self.drives.sort()
-		for drive in self.drives:
-			self.devices[drive] = GLIStorageDevice.Device(drive)
-			self.devices[drive].set_partitions_from_disk()
-			self.detected_dev_combo.append_text(drive)
-		self.active_device = self.drives[0]
 
 		vert.pack_start(container, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
@@ -153,7 +146,7 @@ resize partitions.
 			color_codes_box.pack_start(gtk.Label(color['label']), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		self.add_content(vert)
-		self.detected_dev_combo.set_active(0)
+#		self.detected_dev_combo.set_active(0)
 
 	def drive_changed(self, combobox, data=None):
 		self.active_device = self.drives[self.detected_dev_combo.get_active()]
@@ -293,12 +286,44 @@ resize partitions.
 		props.run()
 
 	def activate(self):
-		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-		self.drive_changed(None)
+#		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
+#		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
+#		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
+#		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
+#		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+
+		if not len(self.drives):
+			part_load_error = 0
+			tmp_drives = GLIStorageDevice.detect_devices()
+			tmp_drives.sort()
+			for drive in tmp_drives:
+				try:
+					self.devices[drive] = GLIStorageDevice.Device(drive)
+					self.devices[drive].set_partitions_from_disk()
+					self.detected_dev_combo.append_text(drive)
+					self.drives.append(drive)
+				except:
+					if self.devices.has_key(drive): del self.devices[drive]
+					part_load_error = 1
+			if part_load_error:
+				if len(self.drives):
+					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
+					msgdlg.run()
+					msgdlg.destroy()
+				else:
+					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="The installer could not read the partition table on any detected drives. You will be forced to use the ugly mode.")
+					msgdlg.run()
+					msgdlg.destroy()
+#					self._parent.switch_screen(None, 1) # Switch to ugly screen
+					self._parent.radio_ugly.set_active(gtk.TRUE)
+					self._parent.radio_pretty.set_sensitive(gtk.FALSE)
+					self._parent.radio_ugly.set_sensitive(gtk.FALSE)
+					return
+					
+		if len(self.drives):
+			self.active_device = self.drives[0]
+			self.detected_dev_combo.set_active(0)
+			self.drive_changed(None)
 
 	def deactivate(self):
 		parts_tmp = {}

@@ -6,7 +6,7 @@ import PartitioningUgly
 class Panel(GLIScreen.GLIScreen):
 
 	title = "Partitioning"
-	active_page = 0
+	active_page = -1
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -14,7 +14,7 @@ class Panel(GLIScreen.GLIScreen):
 		vert.set_border_width(10)
 
 		self.notebook = gtk.Notebook()
-		self.notebook.append_page(Partitioning.Panel(self.controller))
+		self.notebook.append_page(Partitioning.Panel(self.controller, self))
 		self.notebook.append_page(PartitioningUgly.Panel(self.controller))
 		self.notebook.set_show_tabs(gtk.FALSE)
 		self.notebook.set_show_border(gtk.FALSE)
@@ -32,9 +32,11 @@ class Panel(GLIScreen.GLIScreen):
 		self.add_content(vert)
 
 	def switch_screen(self, widget, data=None):
-		self.notebook.set_current_page(data)
-		self.notebook.get_nth_page(data).activate()
-		self.active_page = data
+#		print "data=" + str(data) + ", active_page=" + str(self.active_page)
+		if not self.active_page == data:
+			self.active_page = data
+			self.notebook.set_current_page(data)
+			self.notebook.get_nth_page(data).activate()
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
@@ -42,4 +44,9 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
-		self.switch_screen(self.notebook, self.active_page)
+#		self.notebook.hide_all()
+		if self.active_page == -1:
+			self.switch_screen(self.notebook, 0)
+		else:
+			self.switch_screen(self.notebook, self.active_page)
+#		self.notebook.show_all()
