@@ -3,6 +3,7 @@ import GLIScreen
 import GLIStorageDevice
 import re
 import PartitionButton
+import PartProperties
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -110,6 +111,9 @@ resize partitions.
 		self.part_button_delete = gtk.Button(" Remove Partition ")
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_button_properties = gtk.Button(" Properties ")
+		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
+		self.part_button_box.pack_start(self.part_button_properties, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 		part_button_dump_info = gtk.Button(" Dump to console (debug) ")
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
 		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE)
@@ -446,6 +450,9 @@ resize partitions.
 		fs = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.resize_part_space.set_colors(self.colors[fs], self.colors[fs])
 		self.resize_part_space.get_child().expose_event(None, None)
+
+	def part_button_properties_clicked(self, widget, data=None):
+		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, 0, 0, 0, 0)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
