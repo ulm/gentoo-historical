@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.42 2005/02/04 00:03:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.43 2005/02/06 04:51:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -173,8 +173,10 @@ class ArchitectureTemplate:
 		for package in installpackages:
 			status = self._emerge(package)
 			if not GLIUtility.exitsuccess(status):
-				raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
-			self._logger.log("Emerged package: "+package)
+				self._logger.log("Could not emerge " + package + "!")
+			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
+			else:
+				self._logger.log("Emerged package: "+package)
 # **************************************************************************************
 
 			
@@ -205,7 +207,7 @@ class ArchitectureTemplate:
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
 					if not GLIUtility.exitsuccess(ret):
-						addNotification("warning", "Could not activate swap: "+device+minor)
+						self._logger.log("ERROR! : Could not activate swap!")
 					#	raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 		sorted_list = []
 		for key in parts_to_mount.keys(): sorted_list.append(key)
@@ -453,7 +455,7 @@ class ArchitectureTemplate:
 			# Emerge Logging Daemon
 			exitstatus = self._emerge(logging_daemon_pkg)
 			if exitstatus != 0:
-				raise GLIException("LoggingDaemonError", 'warning','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
+				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
 
 			# Add Logging Daemon to default runlevel
 			self._add_to_runlevel(logging_daemon_pkg)
@@ -466,7 +468,7 @@ class ArchitectureTemplate:
 			# Emerge Cron Daemon
 			exitstatus = self._emerge(cron_daemon_pkg)
 			if exitstatus != 0:
-				raise GLIException("CronDaemonError", 'warning', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
+				raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
 
 			# Add Cron Daemon to default runlevel
 			self._add_to_runlevel(cron_daemon_pkg)
@@ -475,7 +477,7 @@ class ArchitectureTemplate:
 			if cron_daemon_pkg != "vixie-cron":
 				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=true)
 				if exitstatus != 0:
-					raise GLIException("CronDaemonError", 'warning', 'install_cron_daemon', "Failure making crontab!")
+					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
 			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
@@ -490,8 +492,10 @@ class ArchitectureTemplate:
 		for package in filesystem_tools:
 			exitstatus = self._emerge(package)
 			if exitstatus != 0:
-				raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
-			self._logger.log("FileSystemTool "+package+" was emerged successfully.")
+				self._logger.log("ERROR! : Could not emerge " + package + "!")
+			#	raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
+			else:
+				self._logger.log("FileSystemTool "+package+" was emerged successfully.")
 
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
@@ -499,8 +503,10 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_rp_pppoe():
 			exitstatus = self._emerge("rp-pppoe")
 			if exitstatus != 0:
-				raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
-			self._logger.log("rp-pppoe emerged but not set up.")	
+				self._logger.log("ERROR! : Could not emerge rp-pppoe!")
+			#	raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
+			else:
+				self._logger.log("rp-pppoe emerged but not set up.")	
 		# Should we add a section here to automatically configure rp-pppoe?
 		# I think it should go into the setup_network_post section
 		# What do you guys think?
@@ -511,23 +517,26 @@ class ArchitectureTemplate:
 		if self._install_profile.get_install_pcmcia_cs():
 			exitstatus = self._emerge("pcmcia-cs")
 			if exitstatus != 0:
-				raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not emerge pcmcia-cs!")
+				self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
+			#	raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not emerge pcmcia-cs!")
 				
 			# Add pcmcia-cs to the default runlevel
-			self._add_to_runlevel(pcmcia)
-			self._logger.log("PCMCIA_CS emerged and configured.")
+			else:
+				self._add_to_runlevel(pcmcia)
+				self._logger.log("PCMCIA_CS emerged and configured.")
 
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
 		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=true)
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
-			
-		self.configure_make_conf()
-		self.configure_fstab()
-		self.configure_rc_conf()
-		self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
+			self._logger.log("ERROR! : Could not update the config files!")
+		#	raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
+		else:	
+			self.configure_make_conf()
+			self.configure_fstab()
+			self.configure_rc_conf()
+			self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
 	def configure_rc_conf(self):
 		"Configures rc.conf"
@@ -696,7 +705,7 @@ class ArchitectureTemplate:
 		"Sets the root password"
 		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e', quiet=true)
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("SetRootPasswordError", 'warning', 'set_root_password', "Failure to set root password!")
+			raise GLIException("SetRootPasswordError", 'fatal', 'set_root_password', "Failure to set root password!")
 		self._logger.log("Root Password set on the new system.")
 		
 	def set_users(self):
@@ -749,8 +758,10 @@ class ArchitectureTemplate:
 			# Add the user
 			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir, quiet=true)
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
-			self._logger.log("User "+username+"was added.")
+				self._logger.log("ERROR! : Failure to add user " + username)
+			#	raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
+			else:
+				self._logger.log("User "+username+"was added.")
 			
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"

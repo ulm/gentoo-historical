@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.43 2005/02/04 00:03:25 codeman Exp $
+$Id: GLIClientController.py,v 1.44 2005/02/06 04:51:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -166,7 +166,8 @@ class GLIClientController(Thread):
 			try:
 				ret = GLIUtility.spawn('modprobe ' + module, quiet=True)
 				if not GLIUtility.exitsuccess(ret):
-					raise GLIException("KernelModuleError", 'warning', 'load_kernel_modules', 'Could not load module: ' + module)
+					self._logger.log("ERROR! : Could not load module: "+module)
+				#	raise GLIException("KernelModuleError", 'warning', 'load_kernel_modules', 'Could not load module: ' + module)
 				else:
 					self._logger.log('kernel module: ' + module + ' loaded.')
 			except KernelModuleError, error:
@@ -180,12 +181,18 @@ class GLIClientController(Thread):
 			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
+			self._logger.log("ERROR! : Could not set the root password on the livecd environment!")
+		#	raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
+		else:
+			self._logger.log("Livecd root password set.")
 
 	def start_portmap(self):
 		status = GLIUtility.spawn('/etc/init.d/portmap start', display_on_tty8=True)
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("PortmapError", 'warning', 'start_portmap', "Could not start the portmap service!")
+			self._logger.log("ERROR! : Could not start the portmap service!")
+		#	raise GLIException("PortmapError", 'warning', 'start_portmap', "Could not start the portmap service!")
+		else:
+			self._logger.log("Portmap started.")
 
 	def configure_networking(self):
 		# Do networking setup right here.
@@ -230,7 +237,8 @@ class GLIClientController(Thread):
 		if self._configuration.get_enable_ssh():
 			status = GLIUtility.spawn("/etc/init.d/sshd start", quiet=True)
 			if not GLIUtility.exitsuccess(status):
-				raise GLIException("SSHError", 'warning','enable_ssh',"Could not start SSH daemon!")
+				self._logger.log("ERROR! : Could not start the SSH daemon!")
+			#	raise GLIException("SSHError", 'warning','enable_ssh',"Could not start SSH daemon!")
 			else:
 				self._logger.log("SSH Started.")
 
