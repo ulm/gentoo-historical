@@ -1,9 +1,9 @@
 # einfo.py
 # Distributed AS-IS, without warranty. Licensed under the GPL v2 or newer.
-# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.2 2004/04/26 04:14:14 jhuebel Exp $
+# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.3 2004/04/26 04:24:18 jhuebel Exp $
 
 __module_name__ = "einfo"
-__module_version__ = "0.1"
+__module_version__ = "0.2"
 __module_description__ = "Display emerge info to an xchat channel"
 
 import xchat
@@ -172,7 +172,10 @@ def einfo(word, word_el, userdata):
 			for x in myvars:
 				chanmsg(x + '="' + portage.settings[x] + '"')
 		elif word[1] == "pkgversion":
-			chanmsg(string.join(portage.db["/"]["vartree"].dbapi.match(word[2]), ","))
+			if string.join(portage.db["/"]["vartree"].dbapi.match(word[2]), ",") == "":
+				chanmsg(word[2] + " is not installed.")
+			else:
+				chanmsg(string.join(portage.db["/"]["vartree"].dbapi.match(word[2]), ","))
 		else:
 			xchat.prnt("Unknown usage of /einfo")
 			return xchat.EAT_ALL
