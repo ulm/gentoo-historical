@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.10 2004/11/16 05:15:15 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.11 2004/11/16 06:59:51 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -901,7 +901,7 @@ class ArchitectureTemplate:
 							print "resize2fs " + device + str(minor) + " " + str(total_sectors) + "s"
 						elif type == "ntfs":
 							total_sectors = end - start + 1
-							total_kibibytes = self._sectors_to_kibibytes(total_sectors)
+							total_kibibytes = int(self._sectors_to_kibibytes(total_sectors))
 							commands.getstatus("ntfsresize --size " + str(total_kibibytes) + "k " + device + str(minor))
 							print "ntfsresize --size " + str(total_kibibytes) + "k " + device + str(minor)
 						else:
