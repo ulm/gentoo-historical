@@ -368,7 +368,7 @@ This is where you setup Networking.
 	interfaces={}
 	for count in range(len(self.networking)):
 	    if self.networking[count]['ip']!="dhcp":
-		interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],self.networking[count]['mask'],self.networking[count]['broadcast'])
+		interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],self.networking[count]['broadcast'],self.networking[count]['mask'])
 	    else:
 		interfaces[self.networking[count]['device']]=(self.networking[count]['ip'],None,None)
 	print interfaces
