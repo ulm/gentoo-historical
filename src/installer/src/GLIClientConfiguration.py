@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.8 2004/08/09 19:43:57 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.9 2004/08/10 16:35:41 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -77,6 +77,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		return self._profile_uri
 	
 	def set_profile_uri(self, profile_uri):
+		print 'uri =', profile_uri
 		if not GLIUtility.is_uri(profile_uri):
 			raise "URIError", "The URI specified is not valid!"
 
@@ -168,7 +169,6 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		if interface == "":
 			if self._xml_current_attr != None and self._xml_current_attr.has_key('interface'):
 				interface = self._xml_current_attr.getValue('interface')
-				print "interface =", interface
 
 		if interface[0:3] not in ('eth', 'ppp', 'wla'):
 			raise "DefaultGateway", "Invalid interface!"

@@ -6,7 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, signal, time
+import string, os, re, signal, time, shutil
 
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
@@ -79,7 +79,7 @@ def is_path(path):
 		return False
 
 	# Create a regular expression that matches all words and the symbols '-_./' _ is included in the \w
-	expr = re.compile('^[\w\.\-\/]+$')
+	expr = re.compile('^[\w\.\-\/~]+$')
 
 	# Run the match
 	res = expr.match(path)
@@ -105,7 +105,7 @@ def is_uri(uri):
 		return False
 			
 	# Set the valid uri types
-	valid_uri_types = ( 'ftp:', 'rsync:', 'http:', 'file:' )
+	valid_uri_types = ( 'ftp:', 'rsync:', 'http:', 'file:', 'https:')
 		
 	# Check colon and double slash location
 	colon_location = uri.find(':')
@@ -119,7 +119,7 @@ def is_uri(uri):
 		return False
 		
 	# If we are dealing with a network uri...
-	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
+	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:', 'https:' ):
 		
 		# Check for hostname or ip address
 		if (not is_hostname(uri.split('/')[2])) and (not is_ip(uri.split('/')[2])):
@@ -240,19 +240,49 @@ def run_cmd(cmd, timeout=-1):
 		else:
 			status = os.waitpid(pid,0)
 
-		res = status[1]
+		# We're big kids, we can use os.W* when we need to see what happened.
+		return(status[1])
 
-		if os.WIFSIGNALED(res):
-			return(('signal', os.WTERMSIG(res)))
-		elif os.WIFEXITED(res):
-			return(('exit', os.WEXITSTATUS(res)))
-		elif os.WIFSTOPPED(res):
-			return(('stopped', os.STOPSIG(res)))
-		elif os.WCOREDUMP(res):
-			return(('core', -1))
-		else:
-			return(('unknown', os.WEXITSTATUS(res)))
+def exitsuccess(status):
+	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+		return True
+
+	return False
 
 def run_bash():
 	os.putenv("PROMPT_COMMAND","echo \"Type 'exit' to return to the installer.\"")
 	return run_cmd("bash")
+
+def get_uri(uri, path):
+	uri = uri.strip()
+	status = 1
+
+	if re.match('^(ftp|http(s)?)://',uri):
+		status = run_cmd("wget --quiet " + uri + " -O " + path)
+
+	elif re.match('^rsync://', uri):
+		status = run_cmd("rsync --quiet " + uri + " " + path)
+
+	elif re.match('^file://', uri):
+		file = uri[7:]
+		if os.path.isfile(file):
+			shutil.copy(file, path)
+			if os.path.isfile(path):
+				status = 0
+			else:
+				status = 1
+	else:
+		# Just in case a person forgets file://
+		if os.path.isfile(uri):
+			shutil.copy(uri, path)
+			if os.path.isfile(path):
+				status = 0
+			else:
+				status = 1
+		else:
+			print "I don't know how to download/copy that profile!"
+
+	if exitsuccess(status):
+		return True
+	
+	return False
