@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.14 2004/11/11 17:53:57 samyron Exp $
+$Id: GLIClientController.py,v 1.15 2004/11/11 18:56:00 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -186,7 +186,7 @@ class GLIClientController(Thread):
 
 	def getNotification(self):
 		if len(self._notification_queue) > 0:
-			notification = self._notification_queue.pop()
+			notification = self._notification_queue.pop(0)
 			return notification
 		else:
 			return None
