@@ -392,7 +392,9 @@
                     <a class="altlink" href="/doc/en/gentoo-sparc-install.xml">Gentoo Linux/Sparc</a>
                     <br/>
                     <a class="altlink" href="/doc/en/gentoo-hppa-install.xml">Gentoo Linux/HPPA</a>
-                    <br/><br/>
+                    <br/>
+                    <a class="altlink" href="/doc/en/gentoo-alpha-install.xml">Gentoo Linux/Alpha</a>
+                   <br/><br/>
                     Resources:
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
