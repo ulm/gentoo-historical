@@ -68,9 +68,9 @@
 # $index_footer	: HTML footer for index page
 # %categories	: Unique 3 letter abbreviations (also part of icon filenames) for icon 
 #	categories and a "description".
-my $basedir = "/home/httpd/gentoo/xml/htdocs/dyn";
+my $basedir = "/var/cfengine/repository/files/var/www/www.gentoo.org/htdocs/dyn";
 my $index_page = "$basedir/icons.xml";
-my $searchpath = "/home/httpd/gentoo/xml/images/icons";
+my $searchpath = "/var/cfengine/repository/files/cvs/gentoo/xml/images/icons";
 #
 my $iconpath = "http://www.gentoo.org/images/icons/";
 

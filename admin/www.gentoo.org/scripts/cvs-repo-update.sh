@@ -13,18 +13,18 @@ source ~/.bashrc
 
 RSYNC_ARGS="--rsh=ssh -a --delete --delete-excluded"
 
-if [ -z "${WEBCVSROOT}" -a -d "${WEBCVSROOT}" ]; then
+if [ -z "${WEB_RAW_CVS_MODULES}" ]; then
 	# grab a recent copy of the cvs modules for viewcvs
 
 	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo/ \
-	--exclude /home/cvsroot/gentoo/admin/ ${WEBCVSROOT}/gentoo/
+	--exclude /home/cvsroot/gentoo/admin/ ${WEB_RAW_CVS_MODULES}/gentoo/
 
 	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-x86/ \
-	${WEBCVSROOT}/gentoo-x86/
+	${WEB_RAW_CVS_MODULES}/gentoo-x86/
 
 	rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-src/ \
-	${WEBCVSROOT}/gentoo-src/
+	${WEB_RAW_CVS_MODULES}/gentoo-src/
 else
-	echo "Either WEBCVSROOT isn't set or it isn't a directory" >&2
+	echo "Either WEB_RAW_CVS_MODULES isn't set or it isn't a directory" >&2
 	exit 1
 fi
