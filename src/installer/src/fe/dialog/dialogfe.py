@@ -211,7 +211,7 @@ def set_install_stage():
 		if stage_tarball:
 			if not GLIUtility.is_uri(stage_tarball, checklocal=local_install):
 				d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-			else install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+			else: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 		else: d.msgbox("No URI was specified!")
 		#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
@@ -249,7 +249,7 @@ def set_portage_tree():
 			if snapshot: 
 				if not GLIUtility.is_uri(snapshot, checklocal=local_install):
 					d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-				else install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
+				else: install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
 			
 			else: d.msgbox("No URI was specified!")
 		#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
@@ -282,7 +282,7 @@ def set_kernel():
 			if custom_kernel_uri: 
 					if not GLIUtility.is_uri(custom_kernel_uri, checklocal=local_install):
 						d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-					else install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+					else: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
 			else: d.msgbox("No URI was specified!")
 	else: 
 		if d.yesno("Do you want the bootsplash?") == DLG_YES:
