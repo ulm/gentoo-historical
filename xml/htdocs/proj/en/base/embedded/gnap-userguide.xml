@@ -1,0 +1,383 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/proj/en/base/embedded/gnap-userguide.xml">
+<title>Gentoo Network APpliance User Guide</title>
+<author title="Author">
+  <mail link="koon@gentoo.org">Koon</mail>
+</author>
+
+<abstract>
+This document describes what GNAP is, how to build it, and how
+to use it.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<license/>
+
+<version>1.0</version>
+<date>DEcember 3, 2004</date>
+
+<chapter>
+<title>Why GNAP ?</title>
+<section>
+<title>The name</title>
+<body>
+
+<p>
+The acronym GNAP stands for Gentoo Network APpliance. The following figure
+should give you the big picture:
+</p>
+
+<figure link="gnap/gnap.jpg" short="GNAP! GNAP!" caption="GNAP development"/>
+
+</body>
+</section>
+<section>
+<title>The need</title>
+<body>
+
+<p>
+More seriously, GNAP comes from the need to build old-PC based network
+appliances like internal routers or firewalls without the need for a complete
+installation. I have a bunch of old PCs with fragile components and want to be
+able to easily switch PCs in case of failure. Using removable media with a
+burned-on configuration is the most flexible way I found. When it fails,
+just put the media on another machine.
+</p>
+
+<p>
+I started by using 
+<uri link="http://leaf.sourceforge.net/mod.php?mod=userpage&amp;menu=910&amp;page_id=36">LEAF Bering-uClibc</uri>
+floppy-based firewalls but was quickly
+undermined by problems: media fragility, difficulty to automate creation of
+floppies and lack of easy extensibility.
+I switched to LEAF Bering-uClibc
+<uri link="http://leaf.sourceforge.net/doc/guide/bubooting.html#id2572755">CDROM-based configurations</uri>,
+with a web-based automated ISO generation. This solved most of the
+problems but the extensibility problems remain, and maintaining the web-app
+was becoming a nightmare.
+</p>
+
+<p>
+I finally chose to leverage 
+<uri link="http://www.gentoo.org/proj/en/releng/catalyst/">Gentoo Catalyst</uri>
+power to build custom LiveCDs,
+solving both the extensibility problem and the non-standard solution
+maintenance. The idea was to have a generic LiveCD core that I could build once
+and use everywhere, and burn on the CD a specific configuration overlay to
+customize the appliance role. This simplifies CD generation as you don't have
+to go through the whole Catalyst process to customize a specific LiveCD.
+</p>
+
+</body>
+</section>
+<section>
+<title>What you should read</title>
+<body>
+
+<p>
+If you just want to build a customized GNAP LiveCD using an existing GNAP core,
+please proceed directly to the
+<uri link="#doc_chap3">How to use a GNAP core to build a custom LiveCD</uri>
+chapter. If you want to
+build your own GNAP core, please read the following section.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>How to build a GNAP Core</title>
+<section>
+<title>Prerequisites</title>
+<body>
+
+<p>
+You'll need root rights (needed by Catalyst) to build a GNAP Core. You'll also
+need to have the following packages installed:
+</p>
+
+<ul>
+<li>dev-util/catalyst (version 1.0.9)</li>
+<li>sys-fs/squashfs-tools</li>
+</ul>
+
+<p>
+Finally you'll need an uclibc/hardened stage2 tarball as seed stage.
+The current one is named <path>stage2-x86-uclibc-hardened-2004.3.tar.bz2</path>
+and it is available for download
+<uri link="http://gentoo.osuosl.org/experimental/x86/embedded/stages/">here</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Catalyst spec files and support files</title>
+<body>
+
+<p>
+The <uri link="gnap/gnap-sources-current.tar.bz2">GNAP Sources</uri>
+contains the <c>gnap_make</c> build script, Catalyst configuration
+files, the portage configuration and the kernel configuration used for
+the current version of GNAP. You should download and unpack it, then
+update the <c>storedir</c> parameter in the <path>gnapcatalyst.conf</path>
+file so that it points to a temporary build directory.
+</p>
+
+</body>
+</section>
+<section>
+<title>Building a GNAP Core from scratch</title>
+<body>
+
+<p>
+Once you edited the file, you should use <c>gnap_make</c> to call the
+Catalyst stages and the tarball creation, with the <c>-s</c> parameter
+to designate the stage2 tarball seed:
+</p>
+
+<pre caption="Building a new GNAP Core tarball in one step">
+# ./gnap_make -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2
+</pre>
+
+<p>
+This will take a <e>very</e> long time to complete, and should produce
+a nice GNAP Core tarball with a version stamp based on current date.
+</p>
+
+<p>
+If you want to reuse a previously built (or officially downloaded) Portage
+snapshot, you should copy the portage-YYYYMMDD.tar.bz2 file to the
+<path>storedir/snapshots</path> subdirectory, then use the following command:
+</p>
+
+<pre caption="Building from a YYYYMMDD snapshot">
+# ./gnap_make -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 YYYYMMDD
+</pre>
+<p>
+In case of failure, or if you just want to re-run some final stages, you might
+want to specify which Catalyst stages gnap_make should call. You can do this
+by providing the snapshot timestamp to reuse, the GNAP version timestamp to 
+reuse, and the stage names (<c>snapshot</c>, <c>stage3</c>,
+<c>livecd-stage1</c>, <c>livecd-stage2</c>) and/or the special
+<c>tarball</c> target (which builds the final GNAP Core tarball) as parameters:
+</p>
+
+<pre caption="Calling only the two final stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
+# ./gnap_make 20041008 20041012 livecd-stage2 tarball
+</pre>
+
+
+</body>
+</section>
+<section>
+<title>Customizing your GNAP Core</title>
+<body>
+
+<p>
+You may want to change the kernel sources used in the GNAP Core (you may even
+have to, if the configured sources are no longer in portage). To do that, you
+should edit the <path>kernel/sources.conf</path> file to point to the right
+sources name and configuration file.
+</p>
+
+<p>
+You can also change the subarch and profile used to build the GNAP Core
+(by default, an <e>x86</e> subarch with <e>hardened/x86/2.6</e> profile),
+by editing the <path>specs/common.conf</path> file.
+</p>
+
+<p>
+To add new software packages, you should add them to the
+<path>specs/packages.conf</path> file. To start new daemons by default,
+you should add them to the <c>livecd/rcadd</c> option of the
+<path>specs/livecd.conf</path> file.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>How to use a GNAP Core to build a custom LiveCD</title>
+<section>
+<title>Requirements</title>
+<body>
+
+<p>
+You'll just need the
+<uri link="gnap/gnap-tools-current.tar.bz2">GNAP Tools</uri>, a 
+<uri link="gnap/gnap-core-current.tar">GNAP Core tarball</uri>
+and the app-cdr/cdrtools package installed.
+You don't need to be root to build a custom GNAP LiveCD.
+</p>
+
+</body>
+</section>
+<section>
+<title>The overlay.conf file</title>
+<body>
+
+<p>
+The overlay.conf file controls general customization options. It's the only
+mandatory file in your overlay directory. Here you can decide localization
+options and which features should be enabled on your customized LiveCD:
+</p>
+
+<table>
+<tr>
+ <th>Option</th>
+ <th>Values</th>
+ <th>Default</th>
+</tr>
+<tr>
+ <ti>TIMEZONE</ti>
+ <ti>The <uri link="http://leaf.sourceforge.net/doc/guide/buci-tz.html">uclibc-compliant timezone code</uri>.</ti> 
+ <ti>empty (UTC)</ti>
+</tr>
+<tr>
+ <ti>KEYMAP</ti>
+ <ti>Console keymap value. Example: <c>fr</c></ti>
+ <ti><c>us</c></ti>
+</tr>
+<tr>
+ <ti>NBCARDS</ti>
+ <ti>Number of connected network cards you want to start.</ti>
+ <ti><c>1</c></ti>
+</tr>
+<tr>
+ <ti>IP_RELAY</ti>
+ <ti>Should IP relaying be active at startup ?</ti>
+ <ti><c>no</c></ti>
+</tr>
+<tr>
+ <ti>NET_CONFIG</ti>
+ <ti>Is network configured by static files or DHCP. Example: <c>dhcp</c></ti>
+ <ti><c>static</c></ti>
+</tr>
+
+<tr>
+ <ti>USE_SSH</ti>
+ <ti>Set to <c>yes</c> to have the OpenSSH daemon run at startup. Note that
+     if keys are not generated they will be during the first startup.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_FW</ti>
+ <ti>Set to <c>yes</c> to have the Shorewall IPTables firewall run at startup.
+     Note that you should overlay files in the <path>etc/shorewall</path>
+     directory to configure non-default Shorewall options.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_CBQ</ti>
+ <ti>Set to <c>yes</c> to have the CBQ traffic control run at startup.
+     Note that you should overlay files in the <path>etc/cbqinit</path>
+     directory with the CBQ configuration files to use.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_VPN</ti>
+ <ti>Set to <c>yes</c> to have the OpenVPN daemon run at startup. Note that
+     you should overlay files in the <path>etc/openvpn</path> directory with
+     the OpenVPN configuration files to use.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_DNSDHCP</ti>
+ <ti>Set to <c>yes</c> to have the DNSMasq daemon run at startup. Note that
+     you should overlay a <path>etc/dnsmasq.conf</path> file with
+     the DNSMasq configuration file to use.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>NTPSERVER</ti>
+ <ti>The name of the NTP server to use as a time synchronisation source.</ti>
+ <ti>empty (do not synchronise time using NTP)</ti>
+</tr>
+</table>
+</body>
+</section>
+<section>
+<title>The overlay directory</title>
+<body>
+
+<p>
+The overlay directory contains files that will be used to replace default files
+on the LiveCD root filesystem just after startup. This directory must contain
+at least a <path>etc</path> subdirectory with a <path>etc/overlay.conf</path>
+in it.
+</p>
+
+<p>
+Files commonly replaced include <path>etc/hostname</path> (to set a host name),
+<path>etc/shadow</path> (to set a root password) or <path>etc/conf.d/net</path>
+(to set network configuration).
+</p>
+
+<note>
+The GNAP tools contain typical overlays for various roles in the examples
+subdirectory.
+</note>
+
+</body>
+</section>
+<section>
+<title>Generating and burning</title>
+<body>
+
+<p>
+You should use the <c>gnap_overlay</c> script from the gnap-tools package.
+For example, to build an <path>myfirewall.iso</path> LiveCD using the
+<path>gnap-0.3-20041008.tar</path> GNAP Core and the 
+<path>overlays/myfirewall</path> overlay directory:
+</p>
+
+<pre caption="Example of gnap_overlay use">
+$ ./gnap_overlay gnap-0.3-20041008.tar overlays/myfirewall myfirewall.iso
+</pre>
+
+<p>
+Then you should burn this ISO file and test. CD-RW is recommended :)
+</p>
+
+</body>
+</section>
+<section>
+<title>Generating and writing to hard disk, CF...</title>
+<body>
+
+<p>
+The <c>gnap_overlay</c> script from the gnap-tools package can also be used
+to create a bootable hard drive (hard disk, DiskOnModule, CF card...) with
+the GNAP configuration on it. First the target must be properly set up. You
+will need to install a Master Boot Record on it :
+</p>
+
+<pre caption="Creation a MBR on device /dev/sda">
+# dd if=mbr/mbr.bin of=/dev/sda bs=512 count=1
+</pre>
+
+<p>
+You must also create an active partition on the device, using fdisk. Then
+you can call (as root) gnap_overlay to write to the disk. You'll need to know
+the name of the partition to write to, as seen by the host you use to write
+to the device. You'll also need to know the name of the partition as it will be
+seen in the GNAP system as it boots on the device. For example, a CF card can
+be seen on the host as /dev/sdb1 and by a Soekris system as /dev/hda1.
+</p>
+
+<pre caption="Writing GNAP to the disk">
+# ./gnap_overlay -t disk gnap-0.3-20041008.tar overlays/myfirewall /dev/sda1 hda1 cache
+</pre>
+
+<note>
+cache is an optional parameter you can use to tell GNAP to cache the squashfs
+filesystem once at strtup to avoid multiple read access that can wear the
+device.
+</note>
+
+</body>
+</section>
+</chapter>
+</guide>
