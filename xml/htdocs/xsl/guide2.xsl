@@ -141,7 +141,6 @@
               <!--//
 	      <tr>
                 <td align="center">
-                  <!-- Begin PayPal Logo -->
                   <p class="alttext">
                     <b>Donate</b> to support our development efforts.
                   </p>
@@ -664,7 +663,6 @@
         <!--//
 	<tr>
           <td align="center">
-            <!-- Begin PayPal Logo -->
             <p class="alttext">
               <b>Donate</b> to support our development efforts.
             </p>
