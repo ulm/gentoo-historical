@@ -14,7 +14,7 @@
       <!-- Listing of all your scripts in the system -->
       <table width="90%" class="standard_table">
         <tr>
-          <td colspan="8" class="header">Script Listing</td>
+          <td colspan="7" class="header">Script Listing</td>
         </tr>
 
         <tr>
@@ -25,18 +25,18 @@
           <td class="sub_header">Language</td>
           <td class="sub_header">Date</td>
           <td class="sub_header">Approved By</td>
-          <td class="sub_header">Status</td>
+          <!-- <td class="sub_header">Status</td> -->
         </tr>
         {LOOP MAIN_LOOP}
 	<tr>
-          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_name}&nbsp;</a></td>
-          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_version}&nbsp;</td>
-          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_category_id}&nbsp;</td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=yourscripts&show_parent=True&script_id={MAIN_LOOP.script_id}">{MAIN_LOOP.script_name}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=yourscripts&show_subscript=True&script_id={MAIN_LOOP.subscript_id}">{MAIN_LOOP.subscript_version}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.category}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_rank}&nbsp;</td>
-          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.script_language_id}&nbsp;</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.language}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_date}&nbsp;</td>
           <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approvedby}&nbsp;</td>
-          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approved}&nbsp;</td>
+          <!-- <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.subscript_approved}&nbsp;</td> -->
 	</tr>
         {!LOOP}
       </table>
@@ -69,6 +69,13 @@
         
         <tr>
           <td class="standard_cell">
+           <font class="instructional">Version (numeric):</font><br />
+           <input type="text" class="text" name="version" value="{VERSION}" />
+          </td>
+        </tr>
+
+        <tr>
+          <td class="standard_cell">
            <font class="instructional">Category:</font><br />
            <select name="category_id">
              <option value="0">Select a Category</option>
@@ -99,10 +106,16 @@
         </tr>
         <tr>
            <td class="standard_cell">
-           <input type="submit" class="button" name="{IF ADD_FORM == 1}add{ELSE}modify{!IF}" value="Save"/>
+           <input type="submit" class="button" name="{IF ADD_FORM == 1}add{ELSE}modify{!IF}" value="Save" />
            </td>
         </tr>
       </table>
       {!IF}
 
+
+      {IF SHOW_PARENT != 0}
+      <br />      
+      <input type="submit" class="button" name="show_modify" value="New Version" />
+      {!IF}
+      
       </form>
