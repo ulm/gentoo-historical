@@ -383,6 +383,7 @@ User Docs:<br/>
 						<font color="#ff0000"><a class="altlink" href="/doc/build.html">Install Instructions</a></font><br/>
 						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
 						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
+						<a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
 						<a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
