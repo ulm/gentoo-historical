@@ -13,7 +13,7 @@ class GLIInstallTemplate:
 		
 		
 	def _log(self, data):
-		"Logs the lines/file-object passed.  Accepts str, tuple, list, file."
+		"Logs the lines/file-object passed.  Accepts str, tuple, list, file object."
 		
 		# If the user passed a file object
 		if type(data) == file:
@@ -70,7 +70,7 @@ class GLIInstallTemplate:
 		#
 		# I made this little private method in case we want to tie
 		# this more into the emerge api.  However, right now all
-		# the loggin is being handled by the exec_in_chroot method.
+		# the loggin is being handled by the _run method.
 		# If we integrate with portage api, we need to make sure
 		# we handle logging.
 		#
@@ -126,14 +126,14 @@ class GLIInstallTemplate:
 	
 				# Chroot to /mnt/gentoo and run the command, then exit
 				os.chroot(self._client_configuration.root_mount_point)
-				exitstatus = os.system(command + " > " + chroot_log_file)
+				exitstatus = os.WEXITSTATUS(os.system(command + " > " + chroot_log_file))
 				sys.exit(exitstatus)
 	
 			# If you are the parent process...
 			else:
 				
 				# Wait for the child, kids can be so slow sometimes... 
-				child_exitstatus = os.wait()[1]
+				child_exitstatus = os.WEXITSTATUS(os.wait()[1])
 				
 				# Open the chroot log and append it to the install log
 				chroot_log = open(self._client_configuration.root_mount_point + chroot_log_file, "r")
@@ -153,7 +153,7 @@ class GLIInstallTemplate:
 			livecd_log_file = os.tempnam()
 		
 			# Execute the command and log to the temp log file
-			exitstatus = os.system(command + " > " + livecd_log_file)
+			exitstatus = os.WEXITSTATUS(os.system(command + " > " + livecd_log_file))
 			
 			# Open the temp log file and log it
 			livecd_log = open(livecd_log_file, "r")
@@ -235,7 +235,6 @@ class GLIInstallTemplate:
 		f = open(file_name, 'w')
 		f.writelines(file)
 		f.close()
-		
 		
 	def _get_uri(self, uri, dest):
 		"Fetches a file from uri and places it at dest"
