@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    English doc rev. 1.6
+-->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/nl/altinstall.xml">
+<title>De Gentoo Linux alternatieve installatie-methode HOWTO</title>
+<author title="Author">
+    <mail link="lordviram@rebelpacket.net">Travis Trilley</mail>
+</author>
+<author title="Contributor">
+    <mail link="davoid@gentoo.org">Faust A. Tanasescu</mail>
+</author>
+<author title="Contributor">
+    <mail link="aliz@gentoo.org">Daniel Ahlberg</mail>
+</author>
+<author title="Translator">
+    <mail link="rgoessen@home.nl">Roderick Goessen</mail>
+</author>
+
+<abstract>
+Deze HOWTO heeft als doel een aantal alternatieve installatiemanieren voor 
+Gentoo aan te kaarten, dit voor mensen die de gewone manier niet kunnen 
+voltooien wegens bijvoorbeeld het ontbreken van een (bootable) cdrom-drive.
+</abstract>
+
+<version>0.3</version>
+<date>30 April 2003</date>
+
+<chapter>
+<title>Over dit document</title>
+<section>
+<body>
+<p>
+Wanneer de standaard boot-van-cd installatie methode niet werkt (of
+als deze methode je gewoon niet bevalt), dan moet je deze HOWTO zeker
+lezen. De bedoeling van dit document is om als een soort van vergaarbak
+te dienen waarin de verschillende wijzes beschreven worden waarop
+Gentoo Linux ge&#239;nstalleerd kan worden. Als je zelf een
+installatie-methode kent die je erg handig of grappig vindt, twijfel
+dan niet om deze installatie-wijze te beschrijven, maar stuur het naar
+<mail link="lordviram@rebelpacket.net">mij.</mail>
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Netboot installatie</title>
+<section>
+<title>Benodigdheden </title>
+<body>
+<p>
+Voor een netboot installatie heb je een host-computer nodig die als een
+tftp server kan dienen. Daarnaast heb je een computer nodig die vanaf
+een netwerk kan booten aan de hand van het BIOS of een diskette die
+gebruik maakt van GRUB, of een andere netwerk bootloader. Een dhcp
+server kan ook nodig zijn. Natuurlijk heb je ook de Gentoo ISO
+nodig. Deze kan je vinden op <uri
+link="http://distro.ibiblio.org/pub/linux/distributions/gentoo/releases/">http://distro.ibiblio.org/pub/linux/distributions/gentoo/releases/</uri>
+</p>
+</body>
+</section>
+
+<section>
+<title>Samenvatting</title>
+<body>
+<p>
+Om in staat te zijn images van het netwerk te laden, is een IP adres
+aanvragen het eerste wat je computer moet doen. Er zijn verschillende
+manieren om een IP adres te krijgen, en iedere methode zal geschikt
+zijn. Persoonlijk geef ik de voorkeur om GRUB voor alles te gebruiken,
+maar als je computer al booting vanaf een netwerk ondersteund zal je
+GRUB hiervoor niet nodig hebben. Het kan echter eenvoudiger zijn om
+het GRUB <c>ifconfig</c> commando te gebruiken.
+</p>
+
+<p>
+Zodra je computer een IP adres verkregen heeft, is de volgende logische
+stap om uit te zoeken wat je wilt gaan booten, en wat de locatie van
+het te booten bestand is. Nogmaals, het makkelijkst zou het zijn om
+GRUB voor alles te gebruiken. Je zal ook moeten aangeven hoe je aan de
+initrd denk te kunnen komen en je zal de kernel moeten vertellen dit
+als zijn root's bestandssysteem te gebruiken.
+</p>
+
+<p>
+Als je computer de kernel geladen, het een IP adres verkregen heeft en
+het bestandssysteem geladen is kun je op de normale manier verdergaan
+met de installatie. Het build image kan dan geladen worden vanaf een cd
+of via het netwerk gedownloaded worden via tftp.
+</p>
+
+</body>
+</section>
+<section>
+<title>Het gebruik van GRUB</title>
+<body>
+<p>
+Om GRUB te gebruiken met de bedoeling om van een netwerk te booten,
+moet je eerst GRUB gecompileerd hebben met support voor je netwerkkaart.
+Het maakt niet uit of je GRUB installeert op een diskette of op de
+harde schijf van de computer waarop je Gentoo wilt installeren. Als je
+doel-computer al GRUB met support voor je netwerkkaart heeft, dan lig
+je een stap voor. GRUB kan gedownload worden van
+<uri link="ftp://alpha.gnu.org/gnu/grub/">ftp://alpha.gnu.org/gnu/grub/</uri>
+</p>
+
+<p>
+Een configuratie-voorbeeld voor het ondersteunen van Tulip-support, de 
+netwerkkaart in mijn computer:
+</p>
+
+<pre caption="Handmatige GRUB installatie">
+# <i>./configure --enable-Tulip --prefix=/usr</i>
+# <i>make &amp;&amp; make install</i>
+</pre>
+
+<p>
+Als je op dit moment in Gentoo zit en GRUB via de Gentoo tools wilt
+installeren, dan moet je dit stap voor stap installeren om support voor
+je netwerkkaart te krijgen. Een voorbeeld van het gebruik van een
+ebuild om GRUB te installeren met Tulip support:
+</p>
+
+<pre caption="Installeren en configureren GRUB op Gentoo Linux">
+# <i>ebuild /usr/portage/sys-apps/grub/grub-0.91.ebuild clean fetch unpack</i>
+# <i>cd /var/tmp/portage/grub-0.91/work/grub-0.91/</i>
+# <i>./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man \ </i>
+&gt; <i>--infodir=/usr/share/info --enable-Tulip</i>
+# <i>make</i>
+# <i>touch /var/tmp/portage/grub-0.91/.compiled</i>
+# <i>cd /usr/portage/</i>
+# <i>ebuild sys-apps/grub/grub-0.91.ebuild install merge</i>
+</pre>
+
+<p>
+Nu we de GRUB shell ge&#239;nstalleerd hebben, moeten we het op een
+bootsector zetten. Hoewel je GRUB op een bootsector van je harde schijf
+zou kunnen zetten, gaan wij ervan uit dat je GRUB op een diskette wilt
+zetten. Er zijn twee manieren om dit te doen. Je kan de GRUB shell zelf
+hiervoor gebruiken, maar ook een bijgeleverd script dat <c>grub-install</c> 
+heet. Het wordt aangeraden <c>grub-install</c> te gebruiken wanneer je dit 
+op een diskette wilt installeren.
+</p>
+
+<pre caption="GRUB-installatie voorbeeld">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>grub-install --root-directory=/mnt/floppy/ '(fd0)'</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>
+<c>grub-install</c> werkt niet altijd... en is niet altijd de beste
+manier om GRUB te installeren. Omdat de GRUB shell precies hetzelfde
+werkt als GRUB wanneer deze geboot wordt, is het wenselijk om gewoon de
+GRUB shell te gebruiken. Hier is een voorbeeld hoe je de shell gebruikt
+om GRUB op een diskette te installeren:
+</p>
+
+<pre caption="De GRUB shell gebruiken">
+# <i>mkfs.ext2 /dev/fd0</i>
+# <i>mount /dev/fd0 /mnt/floppy/</i>
+# <i>mkdir -p /mnt/floppy/boot/grub/</i>
+# <i>cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/</i>
+# <i>grub</i>
+grub&gt; <i>root (fd0)</i>
+grub&gt; <i>setup (fd0)</i>
+grub&gt; <i>quit</i>
+# <i>umount /mnt/floppy/</i>
+</pre>
+
+<p>
+Nu we een bootable GRUB-diskette hebben, dienen we de host tftp server
+op te zetten om te kernel en initrd te kunnen laden. Netkit's tftp
+server wordt hiervoor aanbevolen. Als je inetd gebruikt, dan moet je in
+de laatste regel van je <path>/etc/inetd.conf</path> deze regel
+toevoegen:
+</p>
+
+<pre caption="/etc/inetd.conf">
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+
+<p>
+Om de netkit tftp server te installeren onder Gentoo Linux, moet je
+<c>emerge net-misc/netkit-tftp</c> invoeren.
+</p>
+
+
+<note>
+Er is een ebuild voor xinetd... als je hieraan de voorkeur geeft ben je
+vrij om dit te doen. Ikzelf gebruik geen xinetd en weet ook niet hoe je
+tftp hierop moet instellen. Als je xinetd gebruikt, stuur me dan a.u.b.
+informatie over hoe je dit voor elkaar gekregen hebt. Ik zal deze
+informatie in deze HOWTO neerzetten.
+</note>
+
+<p>
+Nu we klaar zijn met onze tftp server, moeten we er een kernel en root
+initrd in zetten. Je kan een aangepaste kernel ervoor compilen, maar
+zorg er dan wel voor dat je zeker weet dat je er alle dingen inzet die
+nodig zijn om een succesvolle Gentoo Linux installatie ermee uit te
+kunnen voeren. Denk hierbij aan devfs, en voor netbooting initrd
+support. De root initrd zal de rescue.gz zijn, die in de Gentoo Linux
+ISO zit.
+</p>
+
+
+<impo>
+Om een ISO te mounten zonder deze op cd te branden heb je loopback
+filesystem support nodig.
+</impo>
+
+
+<pre>
+# <i>mkdir /tftpboot</i>
+# <i>mount -o loop /path/to/gentoo-ix86-1.1a.iso /mnt/cdrom/</i>
+# <i>cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot</i>
+# <i>chmod 644 /tftpboot/*</i>
+# <i>umount /mnt/cdrom/</i>
+</pre>
+
+
+<p>
+Boot de computer waarop je Gentoo wilt installeren van je ontzettend
+handige GRUB diskette. Zodra GRUB geladen is, moet je een manier
+opgeven waarop je je computer een IP adres wilt laten toewijzen en
+zeggen waar de kernel en initrd zich bevinden.
+</p>
+
+<pre>
+grub&gt; <i>ifconfig --address=192.168.0.10 --server=192.168.0.2</i>
+grub&gt; <i>root (nd)</i>
+grub&gt; <i>kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 </i>
+      <i>prompt_ramdisk=0 ramdisk_size=24000 root=/dev/ram0 rw</i> <codecomment>(allemaal op 1 regel)</codecomment>
+grub&gt; <i>initrd /tftpboot/rescue.gz</i>
+grub&gt; <i>boot</i>
+</pre>
+
+
+<note>
+Je kan boop en dhcp ook gebruiken om je IP via GRUB te configureren.
+Gebruik daarvoor de bootp en dhcp commando's.
+</note>
+
+<p>
+Nu dat je je computer geboot hebt kun je de installatie op de
+gebruikelijke wijze voortzetten. Gebruik voor de normale
+installatie-methode de HOWTO die hiervoor geschreven is. 
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installeren van Gentoo vanaf een bestaande Linux distributie</title>
+<section>
+<title>Benodigdheden</title>
+<body>
+<p>
+Om Gentoo vanaf een bestaande Linux distributie te installeren, dien je
+het chroot commando ge&#239;nstalleerd te hebben. Daarnaast moet je een
+kopie van de Gentoo Linux installatie tarball of ISO hebben. Ook wordt
+er de voorkeur gegeven aan een internetverbinding zodat je meer op je
+systeem kunt zetten dan dat in de tarball of ISO zit. Een tarball is
+overigens een bestand dat eindigt op .tbz of .tar.gz. De schrijver
+gebruikt RedHat Linux 7.3 als besturingssysteem, maar dat is verder
+niet erg belangrijk voor deze installatie-methode. Let's get started! 
+</p>
+
+</body>
+</section>
+<section>
+<title>Samenvatting</title>
+<body>
+<p>
+We zullen eerst een partitie aan Gentoo toewijzen door onze bestaande
+Linux partitie te veranderen in grootte. Dan mounten we deze nieuwe
+partitie, pakken de tarball uit die gemount is, chrooten in het
+proto-systeem en beginnen met het compilen. Zodra het bootstrap-proces
+afgerond is, zullen er nog enkele configuraties toegepast worden zodat
+we zeker weten dat het systeem wil booten. Zodra we dat gedaan hebben
+zijn we zover dat we de computer opnieuw kunnen opstarten, en Gentoo
+Linux kunnen laden. 
+</p>
+</body>
+</section>
+<section>
+<title>Hoe zouden we plek kunnen maken voor Gentoo Linux?</title>
+<body>
+<p>
+De root partitie is het bestandssysteem gemount onder "/". Het mount
+commando laat zien waar ik het over heb. We zullen ook df (disk free)
+gebruiken om te zien hoeveel ruimte ik over heb, en hoe ik mijn
+partitie zal resizen. Merk op dat het niet verplicht is je root
+partitie in grootte te veranderen! Je kan alles resizen waar onze
+resizer support aan biedt. Hier komen we zo op terug. 
+</p>
+
+<pre caption="Bestandssysteem informatie">
+# <i>mount</i>
+/dev/hdb2 on / type ext3 (rw) 
+none on /proc type proc (rw) 
+none on /dev/pts type devpts (rw,gid=5,mode=620) 
+none on /dev/shm type tmpfs (rw) 
+# <i>df -h </i>
+Filesystem           Size Used Avail Use% Mounted on 
+/dev/hdb2            4.0G 1.9G  2.4G  82% /
+none		      38M    0    38M   0% /dev/shm 
+</pre>
+
+
+<p>
+Zoals we kunnen zien heeft de partitie die gemount is als "/" de naam
+/dev/hdb2, waarop 2.4 gigabyte ruimte is. In mijn geval denk ik dat ik
+deze partitie op een manier ga aanpassen, zodat er nog maar 400
+megabyte vrije ruimte op is. Er gaan dus 2 gigabyte naar de Gentoo
+Linux partitie. Niet slecht, daar kan flink wat op ge&#239;nstalleerd
+worden. Voor de meeste gebruikers zal 1 gigabyte al ruim genoeg zijn.
+Laten we dit ding partitioneren!
+</p> 
+
+</body>
+</section>
+<section>
+<title>Parted installeren om een partitie te resizen</title>
+<body>
+<p>
+Parted is een programma dat geleverd wordt door de GNU stichting. Dit
+is een oud, respectvol en enorm project, wiens software je op dit moment
+gebruikt. Er is een zeker programma dat extreem bruikbaar is op dit
+moment. De naam is parted, een partitie editor dat verkrijgbaar is op
+<uri link="http://www.gnu.org/software/parted/">http://www.gnu.org/software/parted/</uri> 
+</p>
+
+<note>
+Er zijn andere tools om partities te resizen. De schrijver is echter
+onzeker of niet ge&#239;nteresseerd in PartitionMagic(tm) of andere
+software die hetzelfde doen. Het is de taak van de lezer om dit uit te
+zoeken.
+</note>
+
+<p> 
+Zoek op die pagina het soort bestandssysteem dat je wilt resizen, en
+kijk of parted dat aankan. Zoniet, pech gehad. Je zal een complete
+partitie moeten opofferen om ruimte te kunnen maken voor Gentoo Linux.
+Download de software en installeer het vervolgens. Nu lopen we tegen
+een probleem aan. We willen de root partitie resizen, en daarom moeten
+we van een diskette booten dat een minimaal Linux systeem bevat. Ook
+parted dient op de diskette te staan. Dit opstarten vanaf diskette is
+nodig om "/" te kunnen resizen. Als je de partitie kunt unmounten
+terwijl je onder Linux zit, heb je geluk. Je hoeft dan niet te doen wat
+hieronder beschreven wordt. Compileer simpelweg parted, en start het
+vanaf een unmounted partitie die je graag wilt resizen. Hieronder wordt
+beschreven hoe ik het heb gedaan voor mijn systeem.
+</p>
+
+
+<impo>
+Wees er zeker van dat de dingen die je wilt gaan doen ondersteund
+worden door parted!
+</impo>
+
+<p>
+Download tomsrtbt boot/root diskette (gratis) van <uri
+link="http://freshmeat.net/tomsrtbt">http://freshmeat.net/tomsrtbt</uri> en 
+maak een diskette zoals gesuggereerd wordt in de documentatie die meegeleverd 
+wordt in het bestand dat je zojuist gedownloaded hebt. Zodra je diskette klaar 
+is, kan je je computer herstarten en deze van de diskette laten booten. 
+</p>
+
+
+<note>
+Merk op dat Linux is synoniem is aan "Er zijn meerdere manieren om het
+te doen". Het uiteindelijke doel is om parted op een unmounted partitie
+te hebben, zodat het zijn werk kan doen. Misschien gebruik je een
+andere boot/root diskette dan tomsrtbt. Misschien is het zelfs helemaal
+niet nodig om deze stap uit te voeren als het bestandssysteem al
+geunmount is.
+</note>
+
+
+<pre caption="Utilitydisk formatteren">
+# <i>mkfs.minix /dev/fd0</i>
+480 inodes
+1440 blocks
+Firstdatazone=19 (19)
+Zonesize=1024
+Maxsize=268966912
+</pre>
+
+
+<note>
+We gaan nu verder met parted. Als het nog niet gedownloaded en untarred
+hebt, doe dat dan nu. Zorg dat je in doe juiste directory zit, en voer
+de volgende commando's in. 
+</note>
+
+<pre caption="Utilityfloppy configureren">
+# <i> mkdir /floppy; mount -t minix /dev/fd0 /floppy &amp;&amp; 
+export CFLAGS=&quot;-O3 -pipe -fomit-frame-pointer -static&quot; &amp;&amp; ./configure 
+&amp;&amp; make &amp;&amp; cp parted/parted /floppy &amp;&amp; umount /floppy </i>
+</pre>
+
+
+<p>
+Gefeliciteerd, je bent nu klaar om je computer opnieuw op te starten en
+de partitie te resizen. Kijk nog wel even snel op de GNU website voor
+extra informatie. Het resizen zou minder dan 30 minuten in beslag
+moeten nemen voor de grootste harde schijven, dus heb geduld. Herstart
+je computer met de tomsrtbt bootdiskette. Zodra je ingelogd bent stop
+je de utility diskette in het diskettestation en typ je mount /dev/fd0
+/floppy waardoor je parted onder /floppy hebt staan. Daar ga je. Zodra
+je parted start zul je in staat zijn je partitie te resizen. Zodra dit
+proces voltooid is zijn we klaar voor het echte werk, door een begin te
+kunnen maken met het installeren van Gentoo Linux. Start je computer
+opnieuw op zodat je weer in je oude Linux distributie terechtkomt. Stel
+dat we /dev/hda3 willen resizen, dat zich op /dev/hda bevindt. 
+</p>
+
+
+<pre caption="Uit te voeren commando's zodra je ingelogd bent in het tomsrtbt systeem">
+# <i>mount /dev/fd0 /floppy </i>
+# <i>cd /floppy; ./parted [drive you wish to operate on]</i>
+(parted) <i> print </i>
+Disk geometry for /dev/hdb: 0.000-9787.148 megabytes
+Disk label type: msdos
+Minor    Start       End     Type      Filesystem  Flags
+1          0.031   2953.125  primary   ntfs        
+3       2953.125   3133.265  primary   linux-swap  
+2       3133.266   5633.085  primary   ext3        
+4       5633.086   9787.148  extended              
+5       5633.117   6633.210  logical               
+6       6633.242   9787.148  logical   ext3        
+(parted) <i> help resize </i>
+  resize MINOR START END        resize filesystem on partition MINOR
+
+        MINOR is the partition number used by Linux.  On msdos disk labels, the
+        primary partitions number from 1-4, and logical partitions are 5
+        onwards.
+        START and END are in megabytes
+(parted) <i> resize 2 3133.266 4000.000 </i>
+</pre>
+
+<impo>
+Heb geduld! De computer is bezig! Kijk naar de hardware LED op je
+computerkast om te zien of hij nog daadwerkelijk bezig is. Dit proces
+kan tussen de 2 en 30 minuten duren.
+</impo>
+
+<p>
+Als je je partitie eenmaal hebt geresized dien je je computer opnieuw
+op te starten. Ga vervolgens naar <uri
+link="/doc/nl/gentoo-x86-install.xml">http://www.gentoo.org/doc/nl/gentoo-x86-install.xml</uri> 
+en volg de stappen 6, 7, 9 tot en met 17. Geniet ervan! 
+</p>
+
+
+</body>
+</section>
+</chapter>
+</guide>
