@@ -337,7 +337,7 @@ User Docs:<br/>
 						<br/>
 	
 						Mailing Lists:<br/><br/>
-						General User List:</font><br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-user">gentoo-user</a><br/><br/>
+						General User List:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-user">gentoo-user</a><br/><br/>
 						Developer list:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-dev">gentoo-dev</a><br/><br/>
 						Announcements:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-announce">gentoo-announce</a><br/><br/>
 						Daily CVS logs:<br/>  <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-cvs">gentoo-cvs</a><br/><br/>
