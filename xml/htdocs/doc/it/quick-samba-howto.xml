@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/quick-samba-howto.xml,v 1.2 2004/07/19 20:07:40 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/quick-samba-howto.xml,v 1.3 2004/11/29 21:14:21 mush Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="quick-samba-howto.xml" lang="it">
 <title>Gentoo Samba3/CUPS/Clam AV HOWTO</title>
@@ -22,8 +22,8 @@ la condivisione di file e stampanti con scansione virus.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.5</version>
-<date>9 Luglio 2004</date>
+<version>1.8</version>
+<date>21 Novembre 2004</date>
 
 <chapter>
 <title>Introduzione all'Howto</title>
@@ -458,7 +458,7 @@ vfs options = config-file = /etc/samba/vscan-clamav.conf
 [print$]
 comment = Printer Drivers
 path = /etc/samba/printer <comment># questo path mantiene la struttura dei driver</comment>
-guest ok = no
+guest ok = yes
 browseable = yes
 read only = yes
 <comment># Se si modifica quanto segue con "NOME_UTENTE,root" si abilita 
@@ -481,7 +481,8 @@ printer admin = <i>root</i>
 # Può essere: browseable, printable, public.</comment>
 [printers]   
 comment = All Printers
-browseable = yes   
+browseable = no
+writable = no
 printable = yes   
 public = yes   
 guest ok = yes
@@ -539,6 +540,17 @@ Gli utenti devono esistere nel file <path>/etc/passwd</path>.
 <p>
 Le password Samba devono essere diverse dalle password in <path>/etc/passwd</path>
 </p>
+
+<p>
+Si renderà necessario poi aggiornare <path>/etc/nsswitch.conf</path> così che i 
+sistemi Windows possano essere trovati semplicemente usando NetBIOS:
+</p>
+
+<pre caption="Modificare /etc/nsswitch.conf">
+# <i>nano -w /etc/nsswitch.conf</i>
+<comment>(Modificare la riga hosts:)</comment>
+hosts: files dns <i>wins</i>
+</pre>
 
 </body>
 </section>
@@ -964,62 +976,45 @@ di cui si ha bisogno è CUPS che va quindi installato.
 
 <pre caption="Configurazione di un sistema Gentoo">
 # <i>emerge cups</i>
-# <i>/etc/init.d/cupsd start</i>
-# <i>rc-update add cupsd default</i>
+# <i>nano -w /etc/cups/client.conf</i>
+ServerName <i>PrintServer</i>		<comment># il nome del server</comment>
 </pre>
 
 <p>
-Questo dovrebbe bastare.  Non serve nient'altro.  Si può controllare
-su <c>http://localhost:631</c> sul WebBrowser del client per vedere
-che il PrintServer abilita le stampanti a tutti i client CUPS.
+Questo dovrebbe bastare.  Non serve nient'altro.
 </p>
 
 <p>
-Per stampare, si usi per esempio:
+Se si ha una sola stampante, quella sarà quella di default. Se invece
+il server dovrà gestire più stampanti, l'amministratore dovrà definirne una 
+di default sul server. Per impostarne una propria stampante di default differente
+da quella sul server, bisogna usare il comando <c>lpoptions</c>.
 </p>
 
-<pre caption="Stampare in *nix">
-# <i>lpr -pNOME_STAMPANTE anything.txt</i>
-# <i>lpr -PNOME_STAMPANTE foobar.whatever.ps</i>
+<pre caption="Impostare la propria stampante di default">
+<comment>(Lista delle stampanti disponibili)</comment>
+# <i>lpstat -a</i>
+<comment>(Esempio di output)</comment>
+HPDeskJet930C accepting requests since Jan 01 00:00
+laser accepting requests since Jan 01 00:00
+<comment>(Define HPDeskJet950C come stampante di default)</comment>
+# <i>lpoptions -d HPDeskJet930C</i>
+</pre>
+
+<pre caption="Printing in *nix">
+<comment>(Specificare la stampante da usare)</comment>
+# <i>lp -d HPDeskJet930C foo.txt</i>
+<comment>(Usare la stampante di default)</comment>
+# <i>lp foo.ps </i>
 </pre>
 
 <p>
-Per impostare una stampante di default, si deve modificare
-<path>/etc/cups/client.conf</path> e settare la direttiva 
-<c>ServerName</c> al proprio PrintServer.  Nel caso di questa guida
-si guardi l'esempio seguente:
+Per gestire le stampanti e i loro lavori nella coda di stampa, basta digitare
+<c>http://printserver:631</c> nel browser di un client, e si accederà ad una 
+comoda interfaccia web. Bisogna cambiare <c>printserver</c> con il nome della
+<e>macchina</e> su cui gira il server di stampa, non il nome dato al server cups 
+se si hanno usati due nomi differenti.
 </p>
-
-<pre caption="/etc/cups/client.conf">
-ServerName PrintServer
-</pre>
-
-<p>
-Il comando seguente invierà un ipotetico file <path>foorbar.whatever.ps</path>
-direttamente al PrintServer.
-</p>
-
-<pre caption="Stampare con la stampante di default">
-$ <i>lpr foobar.whatever.ps</i>
-</pre>
-
-<p>
-Alcune osservazioni per quando si imposta una stampante 
-di default in questa maniera:
-</p>
-
-<ul>
-  <li>
-    Impostare <c>ServerName</c> nel file <path>client.conf</path> dovrebbe
-    funzionare solo per una stampante.  Bisogna trovare un altro sistema
-    per impostare la stampante di default per un client.
-  </li>
-  <li>
-    Quando si accede a <c>http://localhost:631</c> sul client, nessuna 
-    stampante sembra "visibile" dal client CUPS. Questo accade quando si imposta
-    <c>ServerName</c> in <path>client.conf</path>.
-  </li>
-</ul>
 
 </body>
 </section>
