@@ -3,6 +3,7 @@ import os
 import re
 import GLIScreen
 from Widgets import Widgets
+import GLIUtility
 # GLIUtility.hash_password(whatever)
 # ( <user name>, <password hash>, (<tuple of groups>), <shell>, 
 #    <home directory>, <user id>, <user comment> )
@@ -18,6 +19,7 @@ class Panel(GLIScreen.GLIScreen):
     title="User Settings"
     columns = []
     users = []
+    current_users=[]
     root_verified = False
     
     def __init__(self,controller):
@@ -25,7 +27,7 @@ class Panel(GLIScreen.GLIScreen):
 
 	content_str = "User screen!"
 	
-	vert = gtk.VBox(gtk.FALSE, 0)
+	vert = gtk.VBox(False, 0)
 	vert.set_border_width(10)
 	
 	# setup the top box that data will be shown to the user in.
@@ -48,7 +50,7 @@ class Panel(GLIScreen.GLIScreen):
 	self.columns.append(gtk.TreeViewColumn("Comment", gtk.CellRendererText(), text=6))
 	col_num = 0
 	for column in self.columns:
-		column.set_resizable(gtk.TRUE)
+		column.set_resizable(True)
 		column.set_sort_column_id(col_num)
 		self.treeview.append_column(column)
 		col_num += 1
@@ -102,13 +104,17 @@ class Panel(GLIScreen.GLIScreen):
 	# setup the first page
 	frame_vert = gtk.VBox(False,0)
 	
-	# two blank hboxes
+	# three blank hboxes
 	hbox = gtk.HBox(False, 0)
 	label = gtk.Label("")
 	label.set_size_request(150, -1)
 	hbox.pack_start(label, expand=False, fill=False, padding=5)
 	frame_vert.add(hbox)
 	hbox = gtk.HBox(False, 0)
+	label = gtk.Label("")
+	label.set_size_request(150, -1)
+	hbox.pack_start(label, expand=False, fill=False, padding=5)
+	frame_vert.add(hbox)
 	label = gtk.Label("")
 	label.set_size_request(150, -1)
 	hbox.pack_start(label, expand=False, fill=False, padding=5)
@@ -169,6 +175,18 @@ class Panel(GLIScreen.GLIScreen):
 	self.username.set_size_request(150, -1)
 	self.username.set_name("username")
 	hbox.pack_start(self.username, expand=False, fill=False, padding=5)
+	frame_vert.add(hbox)
+	
+	hbox = gtk.HBox(False, 0)
+	label = gtk.Label("Password")
+	label.set_size_request(150, -1)
+	hbox.pack_start(label, expand=False, fill=False, padding=5)
+	self.password = gtk.Entry()
+	self.user['password'] = self.password
+	self.password.set_size_request(150, -1)
+	self.password.set_name("password")
+	self.password.set_visibility(False)
+	hbox.pack_start(self.password, expand=False, fill=False, padding=5)
 	frame_vert.add(hbox)
 	
 	hbox = gtk.HBox(False, 0)
@@ -250,6 +268,7 @@ class Panel(GLIScreen.GLIScreen):
     
     def reset(self, widget, data=None):
 	# enable the boxen
+	self.root_verified=False
 	self.root1.set_sensitive(True)
 	self.root2.set_sensitive(True)
 	self.root1.set_text("")
@@ -267,9 +286,9 @@ class Panel(GLIScreen.GLIScreen):
 	# if theres something selected, need to show the details
 	if treeiter != None:
 	    data={}
-	    data["username"],data["groups"],data["shell"],\
+	    data["password"],data["username"],data["groups"],data["shell"],\
 		data["homedir"],data["userid"],data["comment"] = \
-		treemodel.get(treeiter, 1,2,3,4,5,6)
+		treemodel.get(treeiter, 0,1,2,3,4,5,6)
 	    
 	    # fill the current entries
 	    for entry_box in self.user:
@@ -291,14 +310,28 @@ class Panel(GLIScreen.GLIScreen):
 	    box=self.user[entry_box]
 	    data[box.get_name()] = box.get_text()
 	
-	# if its not empty, then its valid data!
-	if self.is_data_empty(data) and self.was_previously_added(data):
+	# if its not empty, then its valid data! ( just replace i
+	#if self.is_data_empty(data) and self.was_previously_added(data):
+	if self.is_data_empty(data):
 	    # now add it to the box
 	    # ( <user name>, <password hash>, (<tuple of groups>), <shell>, 
 	    #    <home directory>, <user id>, <user comment> )
-	    self.treedata.append(["",data["username"], data["groups"],
-				  data["shell"], data["homedir"], 
-				  data["userid"], data["comment"]])
+	    
+	    # if they were previously added, modify them
+	    if not self.was_previously_added(data):
+		list = self.find_iter(data)
+		self.treedata.set(list[data['username']],0,data["password"],
+				  1,data['username'],
+				  2,data["groups"],
+				  3,data["shell"],
+				  4,data["homedir"],
+				  5,data["userid"],
+				  6,data["comment"]
+				  )
+	    else:
+		self.treedata.append([data["password"],data["username"], data["groups"],
+				      data["shell"], data["homedir"], 
+				      data["userid"], data["comment"]])
 	    
 	    # blank the current entries
 	    self.blank_the_boxes()
@@ -309,8 +342,15 @@ class Panel(GLIScreen.GLIScreen):
 	treemodel, treeiter = treeselection.get_selected()
 	# if something is selected, remove it!
 	if treeiter != None:
-	    row = treemodel.get(treeiter, 0)
-	    # remove it
+	    row = treemodel.get(treeiter, 1)
+	    
+	    # remove it from the current_users
+	    self.current_users.remove(row[0])
+	    
+	    # remove it from the profile
+	    self.controller.install_profile.remove_user(row[0])
+	    
+	    # remove it from the treeview
 	    iter = self.treedata.remove(treeiter)
     
     def verify_root_password(self, widget, data=None):
@@ -342,8 +382,8 @@ class Panel(GLIScreen.GLIScreen):
 	# if the username appears in the treestore, display error
 	username_list = self.get_treeview_usernames()
 	if data["username"] in username_list:
-	    # show error box, duplicate user.
-	    error = Widgets().error_Box("Duplicate User","Sorry, you cannot have 2 users \n with the same login!")
+	    # show error box to modify, duplicate user.
+	    error = Widgets().error_Box("Duplicate User","This will modify the user!")
 	    result = error.run()
 	    if result == gtk.RESPONSE_ACCEPT:
 		error.destroy()
@@ -351,6 +391,18 @@ class Panel(GLIScreen.GLIScreen):
 	    value = True
 	    
 	return value
+    
+    def find_iter(self,data):
+	data_stor = {}
+	treeiter = self.treedata.get_iter_first()
+	
+	while treeiter != None:
+	    username = self.treedata.get_value(treeiter, 1)
+	    if username == data["username"]:
+		data_stor[username]=treeiter
+	    treeiter = self.treedata.iter_next(treeiter)
+
+	return data_stor
     
     def get_treeview_usernames(self):
 	data = []
@@ -362,9 +414,67 @@ class Panel(GLIScreen.GLIScreen):
 
 	return data
 
+    def get_treeview_data(self):
+	data = []
+	treeiter = self.treedata.get_iter_first()
+	
+	while treeiter !=None:
+	    user = self.treedata.get_value(treeiter,1)
+	    passwd = self.treedata.get_value(treeiter,0)
+	    pass_hash = GLIUtility.hash_password(passwd)
+	    groups = self.treedata.get_value(treeiter,2)
+	    shell = self.treedata.get_value(treeiter,3)
+	    homedir = self.treedata.get_value(treeiter,4)
+	    userid = self.treedata.get_value(treeiter,5)
+	    comment = self.treedata.get_value(treeiter,6)
+	    try:
+		group_tuple = tuple(groups.split(","))
+	    except:
+		# must be only 1 group
+		group_tuple = (groups)
+	    
+	    data.append([user,pass_hash,group_tuple,shell,homedir,userid,comment])
+	    treeiter = self.treedata.iter_next(treeiter)
+	    
+	return data
+    
     def activate(self):
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False
+    
+    def deactivate(self):
+	# store everything
+	if (self.root_verified):
+	    # store the root password
+	    root_hash = GLIUtility.hash_password(self.root1.get_text())
+	    self.controller.install_profile.set_root_pass_hash(None,root_hash,None)
+	    
+	    # now store all the entered users
+	    #( <user name>, <password hash>, (<tuple of groups>), <shell>, 
+	    #  <home directory>, <user id>, <user comment> )
+	    # retrieve everything
+	    data = self.get_treeview_data()
+	    print data
+
+	    i=0
+	    for user in data:
+		if data[i][0] not in self.current_users:
+		    self.controller.install_profile.add_user(None,(data[i][0],data[i][1],
+								   data[i][2],data[i][3],data[i][4],
+								   data[i][5],data[i][6]),None
+							 )
+		    self.current_users.append(data[i][0])
+		else:
+		    # they must already be added
+		    pass
+		i=i+1
+		
+	    return True
+	else:
+	    msgbox=Widgets().error_Box("Error","You have not verified your root password!")
+	    msgbox.run()
+	    msgbox.destroy()
+	
