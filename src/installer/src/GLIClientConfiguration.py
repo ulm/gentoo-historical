@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.13 2004/08/25 21:42:13 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.14 2004/08/25 21:53:50 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -173,7 +173,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	def get_network_type(self):
 		return self._network_type
 
-	def get_network_info(self):
+	def get_network_data(self):
 		return self._network_data
 
 	def set_network_data(self, network_info):
@@ -361,13 +361,13 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		# Special Cases
 		net_type = self.get_network_type()
 		if net_type == "static":
-			net_info = self.get_network_info()
+			net_info = self.get_network_data()
 			data +=  "<network-setup interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network-setup>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
 			gateway = self.get_default_gateway()
 			data += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gateway[0], gateway[1])
 			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
 		elif net_type == "dhcp":
-			net_info = self.get_network_info()
+			net_info = self.get_network_data()
 			interface = None
 
 			if len(net_info) > 0:
