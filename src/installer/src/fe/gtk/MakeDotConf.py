@@ -30,10 +30,12 @@ This is where you setup make.conf.
 	widgets=Widgets()
 	
 	makeoptions=["ACCEPT_KEYWORDS","CFLAGS","CHOST","MAKEOPTS","FEATURES","USE"]
+	self.makeoptions=makeoptions
+	self.makeoptions_widgets=[]
 	
 	for makeoption in makeoptions:
-	 #new_box=widgets.textBox(26,makeoption)
 	 new_box=widgets.textBox2(self,26,makeoption)
+	 self.makeoptions_widgets.append(new_box)
 	 new_box=widgets.labelIt(makeoption,new_box)
 	 new_box=widgets.hBoxIt(new_box)
 	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -41,6 +43,14 @@ This is where you setup make.conf.
     	self.add_content(vert)
 
     def activate(self):
+	make_conf = self.controller.install_profile.get_make_conf()
+	print "From Saved Profile: "+str(make_conf)
+	for item in make_conf:
+	    # if the item in the dictionary is in the list, load it!
+	    if(item in self.makeoptions):
+		number=self.makeoptions.index(item)
+		self.makeoptions_widgets[number].set_text(make_conf[item])
+
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE

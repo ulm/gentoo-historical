@@ -29,16 +29,20 @@ This is where you select either grub or lilo.
 	
 	# This will always install it in the MBR! CAUTION.
 	options=["grub","lilo"]
+	self.bootloaders=options
+	self.bootloader_widgets=[]
 	
 	i=0
 	#new_vbox=gtk.
 	new_boxt=widgets.radioButton(None,self.callback,options[0],options[0])
+	self.bootloader_widgets.append(new_boxt)
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt(new_boxt) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	for counter in range(len(options)):
 	 if i!=0:
 	  new_box=widgets.radioButton(new_boxt,self.callback,options[counter],options[counter])
+	  self.bootloader_widgets.append(new_box)
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt(new_box)			  
@@ -56,6 +60,16 @@ This is where you select either grub or lilo.
       print "current bootloader: "+self.controller.install_profile.get_boot_loader_pkg()
       
     def activate(self):
+	# grab from the install profile
+	bootloader=self.controller.install_profile.get_boot_loader_pkg()
+	print "Bootloader from profile: " + bootloader
+	
+	# now select it
+	for count in range(len(self.bootloaders)):
+	    if(bootloader==self.bootloaders[count]):
+		# This is it, select it.
+		self.bootloader_widgets[count].set_active(gtk.TRUE)
+		
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE

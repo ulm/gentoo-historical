@@ -108,9 +108,9 @@ class Widgets:
     #------Drop-down Menu-----#
     # These methods are deprecated! fix!
     # This will create a menu
-    def createOptionMenu(self):
-     opt = gtk.OptionMenu()
-     return opt
+    #def createOptionMenu(self):
+    # opt = gtk.OptionMenu()
+    # return opt
     
     # creates a regular gtk menu
     def createMenu(self,heading):
@@ -144,12 +144,12 @@ class Widgets:
      return menu
 
     # This will create an option menu and append a list of options
-    def createAndAppendOptionMenu(self,controller,name,optionsToAppend):
-     menu=self.createMenu(name)
-     menu=self.appendListToMenu(controller,menu,optionsToAppend)
-     optionMenu=self.createOptionMenu()
-     optionMenu.set_menu(menu)
-     return optionMenu
+    #def createAndAppendOptionMenu(self,controller,name,optionsToAppend):
+    # menu=self.createMenu(name)
+    # menu=self.appendListToMenu(controller,menu,optionsToAppend)
+    # optionMenu=self.createOptionMenu()
+    # optionMenu.set_menu(menu)
+    # return optionMenu
     #--------------------------#
     
     # creates a combo entry box.

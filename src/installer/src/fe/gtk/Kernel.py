@@ -29,16 +29,19 @@ This is where you select which kind of kernel you wish to have.
 	
 	options=["vanilla-sources","gentoo-sources","development-sources",
 		 "gentoo-dev-sources","hardened-sources"]
+	self.kernel_options=options
+	self.kernel_widgets=[]
 	
 	i=0
-	#new_vbox=gtk.
 	new_boxt=widgets.radioButton(None,self.callback,options[0],options[0])
+	self.kernel_widgets.append(new_boxt)
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt(new_boxt) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	for counter in range(len(options)):
 	 if i!=0: 
 	  new_box=widgets.radioButton(new_boxt,self.callback,options[counter],options[counter])
+	  self.kernel_widgets.append(new_box)
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt(new_box)			  
@@ -54,6 +57,16 @@ This is where you select which kind of kernel you wish to have.
       print "current kernel: "+self.controller.install_profile.get_kernel_source_pkg()
 
     def activate(self):
+	# grab from the install profile
+	kernel=self.controller.install_profile.get_kernel_source_pkg()
+	print "Kernel from profile: " + kernel
+	
+	# now select it
+	for count in range(len(self.kernel_options)):
+	    if(kernel==self.kernel_options[count]):
+		# This is it, select it.
+		self.kernel_widgets[count].set_active(gtk.TRUE)
+		
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE

@@ -37,16 +37,21 @@ This is where you select what cron and logging daemons you want, if any.
 		
 	# cron daemon
 	options=["Vixie-cron","fcron","dcron","None"]
+	self.cron_daemons=options
+	self.cron_widgets=[]
 	
 	i=0
 	#new_vbox=gtk.
 	new_boxt=widgets.radioButton(None,self.callback_cron,options[0],options[0])
+	self.cron_widgets.append(new_boxt)
+	
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	for counter in range(len(options)):
 	 if i!=0: 
 	  new_box=widgets.radioButton(new_boxt,self.callback_cron,options[counter],options[counter])
+	  self.cron_widgets.append(new_box)
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)			  
@@ -58,17 +63,21 @@ This is where you select what cron and logging daemons you want, if any.
 	item.set_markup('<b>'+"Logging Daemon"+'</b>')
 	vert.pack_start(widgets.hBoxIt3(gtk.FALSE,0,item,5),expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	options=["syslog-ng","metalog","syslogkd","None"]
+	self.logging_daemon_widgets=[]
+	self.logging_daemons=options
+	
 	# logging daemon
 	i=0
 	#new_vbox=gtk.
 	new_boxt=widgets.radioButton(None,self.callback_logger,options[0],options[0])
 	new_boxt.set_active(gtk.TRUE)
+	self.logging_daemon_widgets.append(new_boxt)
 	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10)
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	for counter in range(len(options)):
 	 if i!=0:
 	  new_box=widgets.radioButton(new_boxt,self.callback_logger,options[counter],options[counter])
-	  #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
+	  self.logging_daemon_widgets.append(new_box)
 	  new_box.show()
 	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)
 	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
@@ -88,6 +97,21 @@ This is where you select what cron and logging daemons you want, if any.
       print "current logger: "+self.controller.install_profile.get_logging_daemon_pkg()
       
     def activate(self):
+	# get the current activated option from the fe
+	cron_daemon=self.controller.install_profile.get_cron_daemon_pkg()
+	logging_daemon=self.controller.install_profile.get_logging_daemon_pkg()
+	
+	# now select them in the pane
+	for count in range(len(self.cron_daemons)):
+	    if(cron_daemon==self.cron_daemons[count]):
+		# This is it, select it.
+		self.cron_widgets[count].set_active(gtk.TRUE)
+	
+	for count in range(len(self.logging_daemons)):
+	    if(logging_daemon==self.logging_daemons[count]):
+		# This is it.
+		self.logging_daemon_widgets[count].set_active(gtk.TRUE)
+
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE

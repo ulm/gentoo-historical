@@ -28,16 +28,20 @@ This is where you select what kind of portage tree you will use.
 	widgets=Widgets()
 	
 	self.options=["Normal (emerge sync)","Webrsync (firewalled)","None (snapshop/NFS mount)"]
+	self.portage_tree=self.options
+	self.portage_tree_widgets=[]
 	
 	i=0
 	#new_vbox=gtk.
 	new_boxt=widgets.radioButton(None,self.callback,self.options[0],self.options[0])
+	self.portage_tree_widgets.append(new_boxt)
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt(new_boxt) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	for counter in range(len(self.options)):
 	 if i!=0: 
 	  new_box=widgets.radioButton(new_boxt,self.callback,self.options[counter],self.options[counter])
+	  self.portage_tree_widgets.append(new_box)
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt(new_box)			  
@@ -56,6 +60,16 @@ This is where you select what kind of portage tree you will use.
       print "current portage tree: "+self.controller.install_profile.get_portage_tree_sync_type()
       
     def activate(self):
+	# grab from the install profile
+	portage_tree=self.controller.install_profile.get_portage_tree_sync_type()
+	print "Portage Tree from profile: " + portage_tree
+	
+	# now select it
+	for count in range(len(self.portage_tree)):
+	    if(portage_tree=="sync"):self.portage_tree_widgets[0].set_active(gtk.TRUE)
+	    if(portage_tree=="webrsync"):self.portage_tree_widgets[1].set_active(gtk.TRUE)
+	    if(portage_tree=="custom"):self.portage_tree_widgets[2].set_active(gtk.TRUE)
+	    
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE

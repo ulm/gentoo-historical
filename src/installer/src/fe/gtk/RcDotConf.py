@@ -29,10 +29,12 @@ This is where you setup rc.conf.
 	
 	options=["KEYMAP","SET_WINDOWSKEYS","EXTENDED_KEYMAPS","CONSOLEFONT","CONSOLETRANSLATION",
 		"CLOCK","EDITOR","PROTOCOLS","DISPLAYMANAGER","XSESSION"]
+	self.rc_options=options
+	self.rc_options_widgets=[]
 	
 	for option in options:
-	 #new_box=widgets.textBox(26,option)
 	 new_box=widgets.textBox2(self,26,option)
+	 self.rc_options_widgets.append(new_box)
 	 new_box=widgets.labelIt(option,new_box)
 	 new_box=widgets.hBoxIt(new_box)
 	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -40,6 +42,14 @@ This is where you setup rc.conf.
     	self.add_content(vert)
 
     def activate(self):
+	rc_conf = self.controller.install_profile.get_rc_conf()
+	print "From saved profile: "+str(rc_conf)
+	for item in rc_conf:
+	    # if the item in the dictionary is in the list, load it!
+	    if(item in self.rc_options):
+		number=self.rc_options.index(item)
+		self.rc_options_widgets[number].set_text(rc_conf[item])
+		
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
