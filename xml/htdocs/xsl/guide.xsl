@@ -390,9 +390,9 @@
                     <br/>
                     <a class="altlink" href="/doc/en/index.xml">User Docs</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/index.xml#doc_chap6">Developer Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap5">Developer Docs</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/index.xml#doc_chap7">Other Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml#doc_chap6">Other Docs</a>
                     <br/>
                     <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
                     <br/><br/>
