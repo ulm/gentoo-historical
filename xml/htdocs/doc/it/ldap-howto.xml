@@ -1,0 +1,455 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/it/ldap-howto.xml">
+<title>Gentoo Guide all'autenticazione OpenLDAP </title>
+
+<author title="Autore">
+  <mail link="sj7trunks@gentoo.org">Benjamin Coles</mail>
+</author>
+
+<author title="Revisore">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<author title="Revisore">
+  <mail link="tseng@gentoo.org">Brandon Hale</mail>
+</author>
+
+<author title="Traduttore">
+    <mail link="emorelli@gentoo.it">Enrico Morelli</mail>
+</author>
+
+<author title="Traduttore">Team Italiano</author>
+
+<abstract>
+    Questa guida introduce le basi di LDAP e mostra come configurare
+    OpenLDAP allo scopo di autenticare un gruppo di computer Gentoo.
+</abstract>
+
+<version>0.1</version>
+<date>19 Settembre 2003</date>
+
+<chapter>
+<title>Iniziamo con OpenLDAP</title>
+<section>
+    <title>Cos'è LDAP?</title>
+        <body>
+            <p>
+                LDAP è l'acronimo di <e>Lightweight Directory Access Protocol</e>.
+                Basato su X.500, comprende molte delle sue funzioni primarie,
+                ma non include molte delle funzioni esoteriche che X.500 ha.
+                Ma cos'è questo X.500 e cosa centra con LDAP?
+            </p>
+
+            <p>
+                Nel concetto OSI, l'X.500 è un modello per i Directory Services.
+                Contiene le definizioni per i namespace ed i protocolli
+                per la ricerca e l'aggiornamento delle directory.
+                Comunque, X.500 è stato trovato essere eccessivo in molte
+                situazioni. Entriamo in LDAP. Come l'X.500, provvede
+                un modello data/namespace per le directory ed anche un procollo.
+                Comunque, LDAP è disegnato per essere eseguito direttamente 
+                al di sopra dello stack TCP/IP. Pensate a LDAP come una
+                versione più snella di X.500.
+            </p>
+
+        </body>
+    </section>
+
+    <section>
+    <title>Non ci siamo. Cos'è una directory?</title>
+        <body>
+
+            <p>
+                Una directory è un database specializzato disegnato
+                per frequenti richieste ma infrequenti aggiornamenti.
+                Al contrario di database generali, non contiene
+                il supporto per transazioni o funzionalità di roll-back.
+
+                Le directory sono facilmente replicabili per incrementarne                      la disponibilità e l'affidabilità. Quando directory sono
+                replicate, sono permesse inconsistenze temporanee finché 
+                non divengono eventualmente sincronizzate.
+            </p>
+
+        </body>
+    </section>
+
+    <section>
+    <title>Come sono strutturate le informazioni?</title>
+        <body>
+            <p>
+                Tutte le informazioni all'interno di una directory
+                sono strutturate gerarchicamente. Inoltre, se volete
+                inserire dati dentro una directory, la directory
+                del sapere come memorizzare questi dati all'interno
+                di un albero. Diamo un'occhiata ad una finta compagnia
+                e ad un albero Internet-like:
+            </p>
+
+<pre caption = "Struttura organizzativa di GenFic, una compagnia finta di Gentoo">
+dc:         com
+             |
+dc:        genfic         <comment>(Organisation)</comment>
+          /      \
+ou:   people   servers    <comment>(Organisational Units)</comment>
+      /    \     ..     
+uid: ..   jhon            <comment>(OU-specific data)</comment>
+</pre>
+
+        <p>
+            Dato che non abbiamo introdotto dati nel database in questo
+            schema ascii, ogni nodo di questo albero deve essere definito.
+            Per dare un nome ad ogni nodo, LDAP usa un naming scheme.
+            Molte distribuzioni LDAP (incluso OpenLDAP) contengono già
+            un certo numero di schemi predefiniti (generalmente approvati),
+            come inetorgperson, uno schema frequentemente usato
+            per definire utenti.
+        </p>
+
+        <p>
+            Utenti interessati sono incoraggiati a leggere la
+            <uri link="http://www.openldap.org/doc/admin21/">OpenLDAP Admin Guide</uri>.
+        </p>
+
+    </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Configurazione di OpenLDAP</title>
+    <section>
+        <title>Configurazione iniziale</title>
+        <body>
+
+        <note>
+            In questo documento useremo l'indirizzo genfic.com come
+            esempio. Voi dovrete naturalmente cambiarlo. Comunque,
+            assicuratevi che il nodo iniziale sia il top level di un dominio
+            ufficiale (net, com, cc, be, it, ...).
+        </note>
+
+        <p> 
+            Prima di tutto installiamo tutti i componenti necessari
+            sul nostro server:
+        </p>
+
+<pre caption="Installazione di OpenLDAP">
+# <i>emerge openldap pam_ldap nss_ldap migrationtools</i>
+</pre>
+
+        <p>
+            Editiamo <path>/etc/openldap/slapd.conf</path>  e aggiungiamo
+            ciò che segue a destra di <c>core.schema</c>:
+        </p>
+
+<pre caption="/etc/openldap/slapd.conf">
+<comment># Includiamo i data schemes necessari</comment>
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+
+<comment># Use crypt to hash the passwords</comment>
+password-hash {crypt}
+
+<comment># Define SSL and TLS properties (optional)</comment>
+TLSCertificateFile /etc/ssl/ldap.pem
+TLSCertificateKeyFile /etc/openldap/ssl/ldap.pem
+TLSCACertificateFile /etc/ssl/ldap.pem
+
+<codenote>Further down...</codenote>
+
+database        ldbm
+suffix          "dc=genfic,dc=com"
+rootdn          "cn=Manager,dc=genfic,dc=com"
+rootpw          <i>{MD5}Xr4ilOzQ4PCOq3aQ0qbuaQ==</i>
+directory       /var/lib/openldap-ldbm
+index           objectClass     eq
+
+<codenote>
+Potete avere una password cryptata come quella sopra, con slappasswd -h {Md5}</codenote>
+</pre>
+
+            <p>
+                Ora editiamo il file di configurazione di LDAP:
+            </p>
+
+<pre caption="/etc/openldap/ldap.conf">
+# <i>nano -w /etc/openldap/ldap.conf</i>
+<codenote>Aggiungiamo...</codenote>
+
+BASE    dc=genfic, dc=com
+URI     ldaps://auth.genfic.com:636/
+</pre>
+
+
+            <p>
+                Generiamo ora un certificato SSL per rendere
+                sicura la directory. Rispondete alle domande che
+                ricevete nel miglior modo possibile. Quando vi viene
+                richiesto il vostro <e>Common Name</e>, inserite
+                il nome dei client che userete quando contatterete il server.
+                Di solito è il domainname completo (p.e. <path>auth.genfic.com</path>).
+            </p>
+<pre caption="Generazione di un certificato SSL">
+# <i>cd /etc/ssl</i>
+# <i>openssl req -config /etc/ssl/openssl.cnf -new -x509 -nodes -out \
+ldap.pem -keyout /etc/openldap/ssl/ldap.pem -days 999999</i>
+</pre>
+
+            
+            
+            <p>
+                Editate ora <path>/etc/conf.d/slapd</path> e aggiungete ciò che
+                segue, scommentando le linee esistenti:
+            </p>
+<pre caption="/etc/conf.d/slapd">
+OPTS="-h ldaps:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock"
+</pre>
+
+            <p>
+                Facciamo partire slapd:
+            </p>
+ <pre caption = "Start di SLAPd">
+# <i>/etc/init.d/slapd start</i>
+</pre>
+           
+           <p>
+                Potete fare un test col seguente comando:
+            </p>
+
+ <pre caption = "Testiamo il daemon SLAPd">
+# <i>ldapsearch -D "cn=Manager,dc=genfic,dc=com" -W</i>
+</pre>
+           <p>
+                Se ricevete un errore, provate ad aggiungere <c>-d 255</c>
+                per incermentare la verbosità  e risolvere il problema.
+            </p>
+
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Migrare dati esistenti</title>
+    <section>
+        <title>Migrare account utente</title>
+        <body>
+            <p>
+                Migriamo ora gli account utente. Aprite
+                <path>/usr/share/migrationtools/migrate_common.ph</path> 
+                e editate ciò che segue:
+            </p>
+ <pre caption="/usr/share/migrationtools/migrate_common.ph">
+$DEFAULT_BASE = "dc=genfic,dc=com";
+$EXTENDED_SCHEMA = 1;
+<comment># Commentate queste linee a meno che non abbiate un mail sheme caricato</comment>
+<comment>#$DEFAULT_MAIL_DOMAIN = "genfic.com";</comment>
+<comment>#$DEFAULT_MAIL_HOST = "mail.genfic.com";</comment>
+</pre>
+
+           
+            <p>
+                Eseguite ora gli script per la migrazione:
+            </p>
+
+  <pre caption="Esecuzione dei migration scripts">
+# <i>export ETC_SHADOW=/etc/shadow</i>
+# <i>cd /usr/share/migrationtools</i>
+# <i>./migrate_base.pl > /tmp/base.ldif</i>
+# <i>./migrate_group.pl /etc/group /tmp/group.ldif</i>
+# <i>./migrate_hosts.pl /etc/hosts /tmp/hosts.ldif</i>
+# <i>./migrate_passwd.pl /etc/passwd /tmp/passwd.ldif</i>
+</pre>
+          <p>
+            Questi ultimi passi migrano i file specificati nei file ldif
+            letti da LDAP. Ora aggiungiamo i file alla nostra directory:
+            </p>
+
+<pre caption="Importare i dati nella nostra directory">
+# <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/base.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/group.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/passwd.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/hosts.ldif</i>
+</pre>
+        
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Configurazione dell'autenticazione</title>
+    <section>
+        <title>Configurazione di PAM</title>
+        <body>
+            <p>
+                Passeremo ora alla configurazione di PAM per 
+                permettere l'autorizzazione LDAP. Aggiungete le
+                seguenti linee a <path>/etc/pam.d/system-auth</path>:
+            </p>
+
+ <pre caption="/etc/pam.d/system-auth">
+auth        sufficient    /lib/security/pam_ldap.so use_first_pass
+account     sufficient    /lib/security/pam_ldap.so
+password    sufficient    /lib/security/pam_ldap.so use_authtok
+session     required      /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0
+session     optional      /lib/security/pam_ldap.so
+</pre>
+
+            <p>
+                Cambiate  <path>/etc/ldap.conf</path> in modo da avere:
+            </p>
+<pre caption="/etc/ldap.conf">
+<comment>#host 127.0.0.1</comment>
+<comment>#base dc=padl,dc=com</comment>
+
+ssl start_tls
+ssl on
+suffix          "dc=genfic,dc=com"
+<comment>#rootbinddn uid=root,ou=People,dc=genfic,dc=com</comment>
+
+uri ldaps://auth.genfic.com/
+pam_password exop
+
+ldap_version 3
+pam_filter objectclass=posixAccount
+pam_login_attribute uid
+pam_member_attribute memberuid
+nss_base_passwd ou=People,dc=genfic,dc=com
+nss_base_shadow ou=People,dc=genfic,dc=com
+nss_base_group  ou=Group,dc=genfic,dc=com
+nss_base_hosts  ou=Hosts,dc=genfic,dc=com
+
+scope one
+</pre>
+
+            
+            <p>
+                Configurate infine i vostri client in modo che
+                controllino il LDAP per gli account di sistema:
+            </p>
+
+ <pre caption="/etc/nsswitch.conf">
+passwd:         files ldap
+group:          files ldap
+</pre>
+
+            <p>
+                Per testare le modifiche, digitate:
+            </p>
+
+<pre caption="Test LDAP Auth">
+# <i>getent passwd|grep 0:0</i>
+
+<codenote>Dovreste avere due righe di risposta:</codenote>
+root:x:0:0:root:/root:/bin/bash 
+root:x:0:0:root:/root:/bin/bash
+</pre>
+
+            <p>
+                Se notate che una delle linee che avete messo nel
+                vostro <path>/etc/ldap.conf</path> era commentata
+                (la linea <c>rootbinddn</c>), non preoccupatevi, non ne
+                avete bisogno a meno che non vogliate cambiare la 
+                password degli utenti come superuser. In questo caso
+                avete bisogno di mettere in chiaro la password di root
+                in <path>/etc/ldap.secret</path>. Questo è 
+                <brite>PERICOLOSO</brite> e dovreste cambiare l'accesso
+                del file in 600. Quello che faccio io è di lasciare questo
+                file in bianco e quando ho bisogno di cambiare la password
+                a qualcuno che è sia in ldap che in <path>/etc/passwd</path>,
+                metto la password di root nel file suddetto per 10 secondi mentre
+                cambio la password dell'utente e quindi la rimuovo subito
+                dopo che ho terminato.
+            </p>
+        </body>
+    </section>
+
+    <section>
+        <title>Permessi OpenLDAP</title>
+        <body>
+
+            <p> 
+                Se diamo un'occhiata a <path>/etc/openldap/slapd.conf</path>
+                vedremo che possiamo specificare le ACL (o permessi)
+                di quali dati gli utenti possono leggere e/o scrivere:
+            </p>
+ <pre caption="/etc/openldap/slapd.conf">
+access to *
+  by self write
+  by users read
+  by anonymous auth
+</pre>
+
+            <p>
+                Questo vi dà l'accesso a TUTTO. Se questa è una vostra
+                informazione, avete l'accesso in scrittura; se l'informazione
+                è di un altro utente, potete leggerla; utenti anonimi devono
+                inviare login e password per avere l'accesso. Ci sono
+                quattro livelli, partendo dal più basso al più alto:
+                <c>auth search read write</c>.
+            </p>
+
+            <p>
+                La prossima ACL è leggermente più sicura come bloccare
+                ad un utente normale la lettura delle password shadow
+                di altri utenti:
+            </p>
+ <pre caption="/etc/openldap/slapd.conf">
+access to dn=".*,dc=genfic,dc=com" attr="userPassword"
+  by dn="uid=root,ou=people,dc=genfic,dc=com" write
+  by dn="uid=John, ou=People,dc=genfic,dc=com" write
+  by anonymous auth
+  by self write
+  by * search
+  
+access to *
+  by dn="uid=root,ou=People,dc=genfic,dc=com" write
+  by * read
+</pre>
+
+            <p>
+                Questo esempio dà a root e John l'accesso in
+                lettura/scrittura/ricerca in tutto l'albero
+                sotto <path>dc=genfic,dc=com</path>.
+                Questo permette agli utenti di cambiare le proprie
+                <path>userPassword</path>. Così per come finisce
+                la dichiarazione del filtro ognuno ha la possibilità 
+                di ricercare ma non di leggere i risultati di tale ricerca.
+                Possiamo avere acl multiple ma le regole vengono processate
+                dal basso verso l'alto, così quelle iniziali dovrebbero essere
+                quelle più restrittive.
+            </p>
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Lavorare con OpenLDAP</title>
+    <section>
+        <title>Manutenzione delle directory</title>
+        <body>
+            <p>
+                Potete iniziare ad usare le directory per autenticare gli utenti
+                in apache/proftpd/qmail/samba. Potete amministrarle con Webmin,
+                che provvede un'interfaccia veramente facile. Potete anche
+                usare gq o directory_administrator.
+            </p>
+        </body>
+    </section>
+</chapter>
+
+<chapter>
+    <title>Riconoscimenti</title>
+    <section>   
+        <body>
+            <p>
+                Vorremmo ringraziare Matt Heler per averci prestato il
+                suo computer per gli scopi di questa guida. Grazie anche
+                agli amici in #ldap @ irc.freenode.net
+            </p>
+
+        </body>
+    </section>
+</chapter>
+</guide>
