@@ -78,9 +78,9 @@ class GLIInstallTemplate:
 		
 		# Decide which to run
 		if binary_only:
-			return self._run("emerge -k " + package, True)
-		elif binary:
 			return self._run("emerge -K " + package, True)
+		elif binary:
+			return self._run("emerge -k " + package, True)
 		else:
 			return self._run("emerge " + package, True)	
 
@@ -242,7 +242,7 @@ class GLIInstallTemplate:
 		
 		# Check to make sure URI is valid
 		if not GLIUtility.is_uri(uri):
-			raise raise "URIError", str(uri) + " is not a valid URI!"
+			raise "URIError", str(uri) + " is not a valid URI!"
 		
 		# If this is a local URI...
 		if uri.split('/')[0] == "file:":
@@ -251,8 +251,11 @@ class GLIInstallTemplate:
 			shutil.copy(uri[7:], dest)
 			
 		else:
-			pass
 			
+			# Wget the file
+			exitstatus = self._run("wget " + uri + " -O " + dest)
+			if exitstatus != 0:
+				raise "URIError", "Could not retrieve " + uri + "!"
 			
 	def setup_network_pre(self):
 		"Sets up the network on the live CD environment"
@@ -397,35 +400,157 @@ class GLIInstallTemplate:
 		# Dependency checking		
 		self._depends("unpack_tarball")
 		
+		# Null the genkernel_options
 		genkernel_options = ""
 
+		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 		
+		# If the uri for the kernel config is not null, then
 		if kernel_config_uri != "":
-			genkernel_options = genkernel_options + " --kernel-config=" + kernel_config
-
-	def setup_network_post(self):
-		"Sets up the network for the first boot"
-		# Dependency checking		
-		self._depends("unpack_tarball")
-
+			self._get_uri(kernel_config_uri, self._client_configuration.root_mount_point + "/root/kernel_config")
+			genkernel_options = genkernel_options + " --kernel-config=/root/kernel_config"
+			
+		# Decide whether to use bootsplash or not
+		if self._install_profile.get_kernel_bootsplash():
+			genkernel_options = genkernel_options + " --no-bootsplash"
+		else:
+			genkernel_options = genkernel_options + " --no-bootsplash"
+			
+		# This is code to choose whether or not genekernel will build an initrd or not
+		# Genkernel currently does not support this
+		if self._install_profile.get_kernel_initrd():
+			pass
+		else:
+			pass
+			
+		# Run genkernel in chroot
+		exitstatus = self._run("genkernel all " + genkernel_options, True)
+		if exitstatus != 0:
+			raise "KernelBuildError", "Could not build kernel!"
+			
 	def install_system_utilities(self):
 		"Installs and sets up logger, cron, fstools, rp-pppoe, pcmcia-cs"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends(["unpack_tarball", "build_kernel"])
+		
+		#
+		# LOGGING DAEMON
+		#
 
+		# Emerge Logging Daemon
+		exitstatus = self._emerge(self._install_profile.get_logging_daemon_pkg())
+		if exitstatus != 0:
+			raise "LoggingDaemonError", "Could not emerge " + self._install_profile.get_logging_daemon_pkg() + "!"
+
+		# Add Logging Daemon to default runlevel
+		exitstatus = self._run("rc-update add " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " default", True)
+		if exitstatus != 0:
+			raise "LoggingDaemonError", "Failure adding " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " to default runlevel!"
+		
+		#
+		# CRON DAEMON
+		#
+		
+		# Emerge Cron Daemon
+		exitstatus = self._emerge(self._install_profile.get_cron_daemon_pkg())
+		if exitstatus != 0:
+			raise "CronDaemonError", "Could not emerge " + self._install_profile.get_cron_daemon_pkg() + "!"
+
+		# Add Cron Daemon to default runlevel
+		exitstatus = self._run("rc-update add " + self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() + " default", True)
+		if exitstatus != 0:
+			raise "CronDaemonError", "Failure adding " + self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() + " to default runlevel!"
+		
+		# If the Cron Daemon is not vixie-cron, run crontab			
+		if self._install_profile.get_cron_daemon_pkg().split('/')[-1].lower() != "vixie-cron":
+			exitstatus = self._run("crontab /etc/crontab", True)
+			if exitstatus != 0:
+				raise "CronDaemonError", "Failure making crontab!"
+				
+		#
+		# FILE SYSTEM TOOLS
+		#
+		
+		# Get the list of file system tools to be installed
+		filesystem_tools = self._install_profile.get_filesystem_tools_pkgs()
+		
+		# If the fstools var is a str, convert it to a list
+		if type(filesystem_tools) == str:
+			filesystem_tools = [ filesystem_tools ]
+		
+		# For each fstool package in the list, install it
+		for package in filesystem_tools:
+			exitstatus = self._emerge(package)
+			if exitstatus != 0:
+				raise "FilesystemToolsError", "Could not emerge " + package + "!"
+				
+		#
+		# RP-PPPOE
+		#
+		
+		# If user wants us to install rp-pppoe, then do so
+		if self._install_profile.get_install_rp-pppoe():
+			exitstatus = self._emerge("rp-pppoe")
+			if exitstatus != 0:
+				raise "RP-PPPOEError", "Could not emerge rp-pppoe!"
+				
+		# Should we add a section here to automatically configure rp-pppoe?
+				
+		#
+		# PCMCIA-CS
+		#
+		
+		# If user wants us to install pcmcia-cs, then do so
+		if self._install_profile.get_install_pcmcia-cs():
+			exitstatus = self._emerge("pcmcia-cs")
+			if exitstatus != 0:
+				raise "PCMCIA-CSError", "Could not emerge pcmcia-cs!"
+				
+			# Add pcmcia-cs to the default runlevel
+			exitstatus = self._run("rc-update add pcmcia default", True)
+			if exitstatus != 0:
+				raise "PCMCIA-CSError", "Could not add pcmcia-cs to the default runlevel!"
+	
 	def install_bootloader(self):
 		"Installs and configures bootloader"
+		#
+		# THIS IS ARCHITECTURE DEPENDANT!!!
+		#
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		pass
+
+	def update_config_files(self):
+		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
+		# Dependency checking		
+		self._depends("unpack_tarball")
+		
+		# Run etc-update overwriting all config files
+		exitstatus = self._run('echo "-5" | etc-update', True)
+		if exitstatus != 0:
+			raise "EtcUpdateError", "Could not update config files!"
+			
+		self.configure_make_conf()
+		self.configure_fstab()
+		self.configure_rc_conf()
 
 	def configure_rc_conf(self):
 		"Configures rc.conf"
 		# Dependency checking		
 		self._depends("unpack_tarball")
-
-	def update_config_files(self):
-		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
+		
+		# Get make.conf options
+		options = self._install_profile.get_rc_conf()
+		
+		# For each configuration option...
+		for key in options.keys():
+		
+			# Add/Edit it into rc.conf
+			self._edit_config(self._client_configuration.root_mount_point + "/etc/rc.conf", key, option[key])
+			
+	def setup_network_post(self):
+		"Sets up the network for the first boot"
 		# Dependency checking		
 		self._depends("unpack_tarball")
 
@@ -433,6 +558,8 @@ class GLIInstallTemplate:
 		"Sets the root password"
 		# Dependency checking		
 		self._depends("unpack_tarball")
+		
+		exitstatus = self._run('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chpasswd -e', True)
 
 	def set_users(self):
 		"Sets up the new users for the system"
