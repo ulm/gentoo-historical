@@ -4,7 +4,7 @@
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
-<xsl:include href="handbook.xsl" /> 
+<xsl:include href="handbook.xsl" />
 <xsl:include href="inserts.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
@@ -64,7 +64,7 @@
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
     <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
--- 
+--
   <xsl:choose>
     <xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
@@ -368,7 +368,7 @@
             <a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a> 
+            <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -440,7 +440,7 @@
                     <a class="altlink" href="/dyn/icons.xml">Icons</a>
                     <br/>
                     <a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
-                    <br/><br/>	
+                    <br/><br/>
                     Miscellaneous Resources:
                     <br/>
                     <a class="altlink" href="http://store.gentoo.org">Gentoo Linux Store</a>
@@ -477,12 +477,12 @@
                       <img src="/images/gentoo-new.gif" alt="new"/>
                     </td>
                     <td valign="middle">
-                      We produce Gentoo Linux, a special flavor of Linux that 
-                      can be automatically optimized and customized for just 
-                      about any application or need. Extreme performance, 
-                      configurability and a top-notch user and developer 
+                      We produce Gentoo Linux, a special flavor of Linux that
+                      can be automatically optimized and customized for just
+                      about any application or need. Extreme performance,
+                      configurability and a top-notch user and developer
                       community are all hallmarks of the Gentoo experience.
-                      To learn more, <b><a href="/main/en/about.xml">click 
+                      To learn more, <b><a href="/main/en/about.xml">click
                       here</a></b>.
                     </td>
                   </tr>
@@ -1165,7 +1165,7 @@
         <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
       </xsl:when>
       <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '?'))">
-        <!-- Handbook link pointing to another part/chapter 
+        <!-- Handbook link pointing to another part/chapter
              Handbook is being rendered in a single page (full=1)
              Hence link needs to be rewritten as an internal one
              i.e. handbook.xml?part=1&chap=3 becomes #book_part1_chap3
@@ -1187,7 +1187,7 @@
       <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '#'))">
         <!-- Handbook link pointing to another same part/chapter
              Handbook is being rendered in a single page (full=1)
-             Hence link needs to be rewritten as an internal one that is unique 
+             Hence link needs to be rewritten as an internal one that is unique
              for the whole handbook, i.e.
              #doc_part1_chap3 becomes #book_{UNIQUEID}_part1_chap3, but
              #anything_else_like_an_ID is left unchanged -->
@@ -1309,6 +1309,11 @@
 <pre>
   The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/1.0">Creative Commons - Attribution / Share Alike</a> license.
 </pre>
+</xsl:template>
+
+<!-- GLSA Index -->
+<xsl:template match="glsaindex">
+  <xsl:apply-templates select="document('/dyn/glsa-index.xml')/guide/chapter[1]/section[1]/body"/>
 </xsl:template>
 
 </xsl:stylesheet>
