@@ -6,15 +6,15 @@
 </author>
 
 <abstract>
-Users and Developers Guide to Portage
+Users Guide to Portage
 </abstract>
 
-<version>0.1</version>
-<date>April 1, 2002</date>
+<version>0.9</version>
+<date>April 22, 2002</date>
 
 <chapter>
+<title>Portage Overview</title>
 
-<title>Configuring Portage</title>
 <section>
   <title>Overview</title>
   <body>
@@ -30,6 +30,11 @@ Users and Developers Guide to Portage
 	Portage's configuration and to merge and unmerge packages.
   </body>
 </section>
+</chapter>
+
+
+<chapter>
+<title>Configuring Portage</title>
 
 <section>
 <title>Portage Configuration Files</title>
@@ -75,7 +80,11 @@ Users and Developers Guide to Portage
 	and <i>RDEPEND</i> lines in any ebuild file.
 	</p>
 
-	<p>[FIXME: need a list of USE settings]</p>
+	<p>A list of the USE settings used by Gentoo Linux can be found
+	in <i>/usr/portage/profiles/use.desc</i>.  Each USE setting
+	is listed one per line with a brief description of what the USE
+	setting enables.
+	</p>
 
 	<p>
 	Portage determines if a USE setting is enabled or disabled by checking
@@ -316,6 +325,40 @@ SYNC="cvs://:pserver:anonymous@gentoo.org:/home/anoncvs"
 	<note>Anonymous CVS is slow and resource intensive on both the server
 	and the client.  We ask that you please use the rsync method if you
 	are not making changes to your local Portage tree.</note>
+
+	<p>Before you can begin using Anonymous CVS to sync your local copy
+	of the tree with the official Portage tree, you must "check out"
+	a copy of the tree using the cvs tool by doing the following:
+	</p>
+<pre>
+# backup old portage directory
+cd /usr/portage
+mv portage portage.old
+
+# "checkout" the tree
+cvs -d :pserver:anonymous@gentoo.org:/home/anoncvs login
+# hit enter when prompted for password
+cvs -d :pserver:anonymous@gentoo.org:/home/anoncvs co gentoo-x86
+
+# move the new tree into place
+mv gentoo-x86 portage
+</pre>
+
+	<p><b>Developer CVS</b></p>
+
+	<p>Developers with full access to the CVS tree can also have
+	<i>emerge</i> sync the local tree against a CVS repository that
+	they can access through RSH or SSH.
+	</p>
+	<p>
+	Simply check out a CVS tree using your account, move it to 
+	/usr/portage, and use the following <i>SYNC</i> option:
+	</p>
+	
+<pre>
+SYNC="cvs://youraccount@cvs.gentoo.org:/home/cvsroot"
+</pre>
+
 </body>
 </section>
 
@@ -678,10 +721,51 @@ emerge --update system
 <title>World Update</title>
 <body>
 	<p>Portage also supports the ability to automatically upgrade
-	selected non-essential packages with a single command.  Portage's 
-	world update functionality operates much like a "favorites list".
+	selected non-essential packages with a single command.  The portage
+	system has a degree of intelegence built into it to allow for the 
+	safe upgrading of a system where multiple versions of conflicting 
+	packages may be available.</p>
+
+	<p>Portage's world update feature checks the system profile, the
+	list of blocked packages (<i>package.mask</i>), the world profile and 
+	the dependencies (including version ranges) of packages listed 
+	in the world profile when determining which packages need upgrading.
+	A package is only upgraded if a newer version exists and the package
+	is listed in the world profile or is a dependency of a package in the 
+	world profile.  In addition the package or specific version of the 
+	package must not be blocked by the system profile or in 
+	<i>package.mask</i>.
 	</p>
+
+	<p>When considering which packages to upgrade, Portage tries to 
+	upgrade all packages mentioned in the world profile to the newest
+	unblocked version available.  Portage also considers the dependencies
+	of each package mentioned in the world profile and will try to
+	upgrade the dependency to a newer version if one is available, matches
+	the version ranges specified, and is not blocked by either the system
+	profile or <i>package.mask</i>.  It also takes into consideration
+	<i>SLOTS</i> as mentioned in a previous chapter.
+	</p>
+
+	<p>Users familiar with other distributions and packaging methods
+	besides Portage may be confused by why Portage does not simply
+	do a blind upgrade of packages based solely on version numbers (as it
+	did before Gentoo 1.0).  Many of the packages included in Gentoo's
+	Portage Tree have many versions available.  An older or newer
+	version of a package may be incompatible with the software that relies
+	on it.  Blindly upgrading libraries and tools without taking into
+	consideration the needs of other packages can quickly result in
+	many severe problems.  To avoid this Portage tries to take care when
+	upgrading and takes the needs of all packages into consideration based
+	on the needs declared in individual package ebuilds.
+	</p>
+	
 	<p>
+	The heart of Portage's world update is the world profile.  Unlike
+	the system profile which is usually defined by developers and never
+	touched by users, the world update profile is generated indirectly
+	over time by actions performed by the user.
+	The world profile operates much like a "favorites list".
 	Packages that are manually installed by the user through use of the
 	<i>emerge</i> command are recorded in the <i>world</i> file located at
 	<i>/var/cache/edb/world</i>.  Portage assumes that because you took
@@ -718,7 +802,10 @@ app-cdr/xcdroast
 	
 	<note>To save time and make sure your favorite packages are kept updated
 	you may manually edit the <i>world</i> file and add entries for these
-	packages.</note>
+	packages.  Users upgrading from old versions of Portage may need
+	to populate this file.  Recent installations of Gentoo and Portage
+	should have a fairly populated world profile created during
+	installation.</note>
 	
 	<p>An interesting entry to note is the entry for the mozilla package
 	(<i>=net-www/mozilla-0.9.8-r3</i>).  This entry was added manually
@@ -786,6 +873,115 @@ emerge --update world --emptytree
 </section>
 
 <section>
+<title>Cleaning System</title>
+<body>
+	<p>Portage supports the ability to install multiple versions
+	of the same version on top of each other.  There are quite a few
+	packages in Gentoo's Portage Tree that makes use of this
+	functionality (for backwards compatiblity as older applications may
+	be incompatible with a newer version of another package)
+	</p>
+	<p>In most cases though when a newer version of a package is installed
+	most of the older package is overwritten and all that remains is
+	a few documentation files and other files unimportant to the operation
+	of a system.  Overtime this "cruft" can build up and waste valuable
+	diskspace.
+	</p>
+	<p>To combat this, Portage provides an easy way to remove traces
+	of older versions from a user's system.  This functionality is refered
+	to as the emerge <i>clean</i> option and be used by issueing the
+	following command:
+	</p>
+<pre>
+emerge clean
+</pre>
+	<p><i>emerge</i> will then display a list of package revisions and 
+	versions to be removed, the versions that will remain, and give
+	the user time to cancel out of the action by pressing Control-C.
+	On a typical system a flurry of activity will occur as it displays
+	long lists of files that were either deleted or kept.
+	</p>
+
+	<p>Unless specified, Portage assumes the clean action is to be
+	performed for the <i>world</i> (all installed packages).  You can
+	narrow the scope of the clean action by using options such as 
+	<i>world</i>, <i>system</i>, a list of package names, and package 
+	version ranges as mentioned in the unmerge section of this chapter.
+	</p>
+
+	<p>When considering which package versions should be removed the 
+	Portage system considers the various profiles, the needs of other
+	installed packages, and a packages SLOT.  Assuming dependencies
+	are correctly defined for all packages, the clean action will
+	safely remove old package system and should not remove any
+	functionality or prevent the system from functioning.
+	</p>	
+</body>
+</section>
+
+<section>
+<title>Pruning Packages</title>
+<body>
+	<p>
+	Portage also supports a package <i>prune</i> action.   The prune
+	action is an unsafe form of the clean.  It removes all versions
+	of all packages except for the last installed version.  It does
+	not perform many of the checks <i>clean</i> performs and can
+	remove essential dependencies from your system.  Users of this 
+	option can easily break their systems and its use is not recommended
+	except in specific specialized circumstances.
+	</p>
+
+	<p>The <i>prune</i> action accepts the same list as options as the
+	<i>clean</i> action and can be used like the following:
+	</p>
+<pre>
+emerge prune
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Searching The Portage Tree</title>
+<body>
+	<p>Portage Trees such as the one that forms the heart of the Gentoo
+	Linux distribution can be quite large.  The <i>emerge</i> command
+	provides a search feature which accepts a search string in the form
+	of a regular expression contained in quotes.  Regular expressions
+	are very complicated beasts so it is recommended you find a good book
+	on the topic if you are interested in fully using regular expressions.
+	</p>
+	<p>
+	Most simple searches can be done without knowing how to form
+	regular expressions.  The following is an example of a simple search 
+	for a package either named "gcc" or has "gcc" as part of its name:
+	</p>
+<pre>
+emerge search gcc
+</pre>
+	<p>
+	For each match the search action lists the package name, newest 
+	available version, newest version installed, its homepage, and
+	a description of the software contained in the package.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Getting Help</title>
+<body>
+	<p>More information on the many options and actions <i>emerge</i>
+	supports can be found by issuing the following command:</p>
+<pre>
+emerge --help
+</pre>
+</body>
+</section>
+	
+		
+
+<section>
 <title>Useful Utilities</title>
 <body>
 	<p>Several utilities have been made available by Gentoo users
@@ -794,8 +990,6 @@ emerge --update world --emptytree
 	</p>
 	<p>
 	<ul>
-	<li><i>pkg-clean</i> : looks for duplicate versions of the same
-	package installed and prompts for removal of the duplicates (can be dangerous if used incorrectly)</li>
 	<li><i>etc-update</i> : shell script using vim to assist with the
 	merging of /etc files (can be dangerous if used incorrectly)</li>
 	<li><i>qpkg</i> : package database query tool</li>
