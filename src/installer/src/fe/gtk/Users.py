@@ -48,7 +48,8 @@ using your computer.
         # default user ( only user automatically added )
 	self.users = ["root"]
 	# creates the drop-down
-	menu=widgets.createAndAppendOptionMenu(self,"Users",self.users)
+	#menu=widgets.createAndAppendOptionMenu(self,"Users",self.users)
+	menu=widgets.createComboEntry(self,"Users",self.users)
 	#new_box=widgets.hBoxIt(menu)
 	#set default
 	#self.lastSelected=self.devices[0]
