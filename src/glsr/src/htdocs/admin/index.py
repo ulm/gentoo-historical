@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.11 2004/07/24 01:20:49 port001 Exp $
+# $Id: index.py,v 1.12 2004/07/24 16:10:08 port001 Exp $
 #
 
 import os
@@ -17,8 +17,8 @@ sys.path.insert(0, "/usr/local/share/glsr/")
 sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/pym")
 sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/")
 
-from Error import ExceptionHandler
-sys.excepthook = ExceptionHandler
+from Error import exception_handler
+sys.excepthook = exception_handler
 
 from Function import stderrRedirect
 sys.stderr = stderrRedirect()

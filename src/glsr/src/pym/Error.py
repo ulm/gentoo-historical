@@ -2,8 +2,6 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Error.py,v 1.1 2004/07/24 01:54:35 port001 Exp $
-#
 
 """ This module is considered fail proof, i.e. its not allowed to break,
     because things that break depend on these functions. 
@@ -11,9 +9,11 @@
     the possibility of breakage from importing a dodgy module
     a function might not use. """
 
+__revision__ = "$Id: Error.py,v 1.2 2004/07/24 16:10:08 port001 Exp $"
+__rating__ = "9.06/10"
 __modulename__ = "Error"
 
-def ExceptionHandler(type, value, tb):
+def exception_handler(tbtype, value, traceb):
     """ Print uncaught exceptions to stdout; glsr style. """
 
     import traceback
@@ -22,14 +22,16 @@ def ExceptionHandler(type, value, tb):
     import Config
     from Logging import logwrite
 
-    lines = traceback.format_exception(type, value, tb)
+    lines = traceback.format_exception(tbtype, value, traceb)
 
     if Config.ErrorReporting == True:
         try:
-            fd = open(Config.ErrorReportLog, "a")
-            fd.write("%s||Unknown||Uncaught exception, see glsr.log entry for this date and time.\n" % strftime("%d %b %Y %H:%M:%S", gmtime()))
-            fd.close()
-        except:
+            error_log = open(Config.ErrorReportLog, "a")
+            error_log.write("%s||Unknown||Uncaught exception, \
+                            see glsr.log entry for this date and time.\n" \
+                            % strftime("%d %b %Y %H:%M:%S", gmtime()))
+            error_log.close()
+        except IOError:
             pass
 
     if Config.Logging == True:
@@ -80,7 +82,8 @@ def ExceptionHandler(type, value, tb):
         if Config.ErrorReporting == True:
             print "This error has been reported to the administration.\n"
         else:
-            print "Please contact <b>%s</b> and quote the time '<b>%s</b>'" % (Config.Contact, time)
+            print "Please contact <b>%s</b> and quote the time '<b>%s</b>'" \
+                   % (Config.Contact, time)
 
         print ("     <br />\n" +
                     "</td>\n" +
