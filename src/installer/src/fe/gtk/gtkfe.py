@@ -276,7 +276,9 @@ class Installer:
 		if resp == gtk.RESPONSE_OK:
 			self.install_profile_xml_file = filename
 			try:
-				self.install_profile.parse(self.install_profile_xml_file)
+				tmp_install_profile = GLIInstallProfile.InstallProfile()
+				tmp_install_profile.parse(self.install_profile_xml_file)
+				self.install_profile = tmp_install_profile
 				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install profile loaded successfully!")
 				msgdlg.run()
 				msgdlg.destroy()
