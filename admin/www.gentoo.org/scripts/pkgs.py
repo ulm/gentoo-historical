@@ -20,9 +20,8 @@ pkgdir=os.environ["WEBROOT"]+"/dyn/pkgs/"
 try:
 	os.makedirs(pkgdir)
 except OSError:
-	print "Couldn't create",pkgdir+": does it already exist?"
-	print "If so, delete it and re-run this script."
-	sys.exit(1)
+	#exists already
+	continue
 
 ############
 # Subroutine time
@@ -246,7 +245,11 @@ mytime=time.asctime(time.localtime())
 for category in fsort(db.keys()):
 	workdir = pkgdir + category
 	if not os.path.exists(workdir):
-		os.makedirs(workdir)
+		try:
+			os.makedirs(workdir)
+		except:
+			#exists already
+			continue
 	pkg_count=db[category]['package_count']
 	del db[category]['package_count']
 	
