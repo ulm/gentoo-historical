@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/Attic/hb-desktop-xfree.xml,v 1.3 2004/03/22 17:57:19 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/Attic/hb-desktop-xfree.xml,v 1.4 2004/03/26 01:01:03 swift Exp $ -->
 
 <sections>
 <section>
@@ -153,7 +153,9 @@ window manager called <c>twm</c>, probably the smallest window manager
 available. Try moving your mouse and see if your keyboard and such is working.
 In the next section we will optimize our <path>XF86Config</path> so it fits your
 hardware. Now go into one of the terminals you see on your screen and type in
-<c>exit</c> (or press Ctrl-D) until XFree86 shuts down.
+<c>exit</c> (or press Ctrl-D) until XFree86 shuts down. If you are unable to
+use your mouse to focus the terminals, you can also press Ctrl-Alt-Backspace to
+kill the X server.
 </p>
 
 </body>
@@ -175,11 +177,73 @@ Let us first copy over the <path>XF86Config.new</path> to
 # <i>cp /root/XF86Config.new /etc/X11/XF86Config</i>
 </pre>
 
+<p>
+Now run <c>startx</c> to start up your X server. It will use the freshly copied
+file as its configuration file. To finish the X session, type in <c>exit</c> or
+Ctrl-D in the upcoming xterms. You can also kill the X session using the
+Ctrl-Alt-Backspace combination. This will however make X exit disgracefully -
+something that you might not always want. It doesn't hurt though :)
+</p>
+
+<pre caption="Starting X">
+# <i>startx</i>
+</pre>
+
 </body>
 </subsection>
 <subsection>
 <title>Setting your Resolution</title>
 <body>
+
+<p>
+If you feel that the screen resolution is wrong, you will need to check two
+sections in your configuration. First of all, you have the <e>Screen</e> section
+which lists the resolutions - if any - that your X server will run at. By
+default, this section might not list any resolutions at all. If this is the
+case, XFree86 will estimate the resolutions based on the information in the
+second section, <e>Monitor</e>.
+</p>
+
+<p>
+What happens is that XFree86 checks the settings of <c>HorizSync</c> and
+<c>VertRefresh</c> in the <e>Monitor</e> section to compute valid resolutions.
+For now, leave these settings as-is. Only when the changes to the <e>Screen</e>
+section (which we will describe in a minute) don't work, then you will need to
+look up the specs for your monitor and fill in the correct values.
+</p>
+
+<warn>
+Do <b>not</b> "just" change the values of these two monitor-related variables
+without consulting the technical specifications of your monitor. Setting
+incorrect values lead to out-of-sync errors at best and smoked up screens at
+worst.
+</warn>
+
+<p>
+Now let us change the resolutions. In the next example from
+<path>/etc/X11/XF86Config</path> we add the <c>Modes</c> lines and the
+<c>DefaultDepth</c> so that our X server starts with 32 bits at 1024x768 by
+default. Don't mind the given strings - they are examples and will most likely
+differ from the settings on your system.
+</p>
+
+<pre caption="Changing the Screen section in /etc/X11/XF86Config">
+Section "Screen"
+  Identifier  "Default Screen"
+  Device    "S3 Inc. ProSavage KN133 [Twister K]"
+  Monitor   "Generic Monitor"
+  <i>DefaultDepth  32</i>
+  <comment># Skipping some text to improve readability</comment>
+  SubSection "Display"
+    Depth   32
+    <i>Modes   "1024x768"</i>
+  EndSubSection
+EndSection
+</pre>
+
+<p>
+Run X (<c>startx</c>) to discover it uses the resolution you want :)
+</p>
 
 </body>
 </subsection>
@@ -187,11 +251,73 @@ Let us first copy over the <path>XF86Config.new</path> to
 <title>Configuring your Keyboard</title>
 <body>
 
+<p>
+To setup X to use an international keyboard, search for the <e>InputDevice</e>
+section that configures the keyboard and add the <c>XkbLayout</c> option to
+point to the keyboard layout you want. As an example, we show you how to apply
+for the Belgian layout. Just substitute the country-keycode with yours:
+</p>
+
+<pre caption="Changing the keyboard layout">
+Section "InputDevice"
+  Identifier  "Generic Keyboard"
+  Driver    "keyboard"
+  Option    "CoreKeyboard"
+  Option    "XkbRules"  "xfree86"
+  Option    "XkbModel"  "pc105"
+  <i>Option    "XkbLayout" "be"</i>
+EndSection
+</pre>
+
 </body>
 </subsection>
 <subsection>
 <title>Configuring your Mouse</title>
 <body>
+
+<p>
+If your mouse isn't working, you will first need to find out if it is detected
+by the kernel at all. PS/2 mouses are (device-wise) seen as 
+<path>/dev/psaux</path>. Other mouses (like USBs) are seen as
+<path>/dev/input</path> (or <path>/dev/input/mice</path>). In either case you 
+can check if the devices do represent your mouse by checking the output of those
+files when you move your mouse. To end the session press <c>Ctrl-C</c>.
+</p>
+
+<pre caption="Checking the device files">
+# <i>cat /dev/input</i>
+<comment>(Don't forget to press Ctrl-C to end this)</comment>
+</pre>
+
+<p>
+If your mouse isn't detected, verify if all the necessary modules are loaded.
+</p>
+
+<p>
+If your mouse is detected, fill in the device in the appropriate 
+<e>InputDevice</e> section. In the next example you'll see we also set two other
+options: <c>Protocol</c> (which lists the mouse protocol to be used - most users
+will use PS/2 or IMPS/2) and <c>ZAxisMapping</c> (which allows for the 
+mousewheel (if applicable) to be used).
+</p>
+
+<pre caption="Changing the mouse settings in XFree">
+Section "InputDevice"
+  Identifier  "TouchPad Mouse"
+  Driver    "mouse"
+  Option    "CorePointer"
+  <i>Option    "Device"    "/dev/psaux"</i>
+  <i>Option    "Protocol"    "IMPS/2"</i>
+  <i>Option    "ZAxisMapping"    "4 5"</i>
+EndSection
+</pre>
+
+<p>
+Run <c>startx</c> and be happy about the result :) Congratulations, you now
+(hopefully) have a working XFree on your system. Now continue to remove this
+ugly lightweight window manager and use a high-feature one (or even a desktop
+environment) which is what we describe in the next chapters.
+</p>
 
 </body>
 </subsection>
@@ -201,6 +327,36 @@ Let us first copy over the <path>XF86Config.new</path> to
 <subsection>
 <title>Creating and Tweaking XF86Config</title>
 <body>
+
+<p>
+First of all, <c>man 5 XF86Config</c> provides a quick yet complete reference
+about the syntaxis used by the configuration file. Be sure to have it open on a
+terminal near you when you edit your configuration file!
+</p>
+
+<p>
+A second point of resources on your system is the
+<path>/usr/X11R6/lib/X11/doc</path> directory with various <path>README</path>'s
+for individual graphical chipsets.
+</p>
+
+<p>
+There are also many online resources on editing <path>XF86Config</path>. We only
+list few of them here, be sure to <uri link="http://www.google.com">Google</uri>
+for more :)
+</p>
+
+<ul>
+  <li>
+    <uri link="http://tldp.org/HOWTO/XFree-Local-multi-user-HOWTO/">The XFree
+    Local Multi-User HOWTO</uri>
+  </li>
+  <li>
+    <uri
+    link="http://www-106.ibm.com/developerworks/edu/os-dw-linuxxwin-i.html">An
+    Introduction to XFree 4.x</uri> by Chris Houser
+  </li>
+</ul>
 
 </body>
 </subsection>
