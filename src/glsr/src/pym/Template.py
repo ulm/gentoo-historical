@@ -30,7 +30,7 @@
 
 """
 
-__revision__ = '$Id: Template.py,v 1.13 2005/03/10 20:57:16 port001 Exp $'
+__revision__ = '$Id: Template.py,v 1.14 2005/03/10 21:04:34 port001 Exp $'
 __modulename__ = 'Template'
 
 import os
@@ -132,7 +132,7 @@ class Template:
         digest = md5.new(str(template_name) + str(terms) + str(loops)).hexdigest()
 
         if self._check_cache(digest):
-            self._read_cache(digest):        
+            self._read_cache(digest)        
         else:
             self._template_name = template_name
             self._read()
@@ -420,7 +420,7 @@ class Template:
 
         return value
 
-        def _check_cache(self, digest):
+    def _check_cache(self, digest):
 
         if not os.path.exists(Config.TmplCacheDir):
             raise TemplateModuleError('Template cache directory missing')
