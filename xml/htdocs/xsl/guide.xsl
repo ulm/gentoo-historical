@@ -185,6 +185,19 @@
               </tr>
               <tr>
                 <td align="center">
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
+                  <p class="alttext">
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
                   <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
                   <p class="alttext">
                     Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
@@ -701,6 +714,19 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+              <tr>
+                <td align="center">
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
+                  <p class="alttext">
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <img src="/images/line.gif" alt="line"/>
+                </td>
+              </tr>
           <tr>
             <td align="center">
               <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
