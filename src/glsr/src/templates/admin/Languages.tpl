@@ -56,6 +56,30 @@
           </td>
         </tr>
         <tr>
+          <td class="standard_cell">
+           <font class="instructional">Definition Keywords:</font><br />
+           <input type="text" class="text" name="name" value="{DEF_KEYWORDS}" />
+          </td>
+        </tr>
+        <tr>
+          <td class="standard_cell">
+           <font class="instructional">Definition Expression:</font><br />
+           <input type="text" class="text-long" name="name" value="{DEF_EXPR}" />
+          </td>
+        </tr>
+        <tr>
+          <td class="standard_cell">
+           <font class="instructional">Closing Expression:</font><br />
+           <input type="text" class="text-long" name="name" value="{CLO_EXPR}" />
+          </td>
+        </tr>
+        <tr>
+          <td class="standard_cell">
+           <font class="instructional">Closing Special Keywords:</font><br />
+           <input type="text" class="text" name="name" value="{CLO_S_KEYWORDS}" />
+          </td>
+        </tr>
+        <tr>
            <td class="standard_cell">
            <input type="submit" class="button" name="{IF ADD_FORM == 1}add{ELSE}modify{!IF}" value="Save"/>
            </td>

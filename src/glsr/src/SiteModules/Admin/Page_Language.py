@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Language.py,v 1.1 2004/06/27 23:24:58 hadfield Exp $
+# $Id: Page_Language.py,v 1.2 2004/06/30 19:48:34 port001 Exp $
 #
 
 MetaData = {"page" : ("language",), "params" : "form"}
@@ -23,7 +23,8 @@ class Page_Language(Parent):
     class_type = "language"
     language_arr = []
     template = Config.Template["admin_languages"]
-    obj_attributes = {"name": "", "descr": ""}
+    obj_attributes = {"name": "", "descr": "", "def_keywords": "",
+                      "def_expr": "", "clo_expr": "", "clo_s_keywords": ""}
     
     obj = Language()
 
