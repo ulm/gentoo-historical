@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="iso-8859-15"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 	<xsl:output encoding="iso-8859-15" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 	<xsl:preserve-space elements="pre"/>
@@ -105,7 +105,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td class="alttext"><b>Summary:</b> <xsl:apply-templates select="abstract"/></td>
+                        <td class="alttext"><b>Summary:</b>&#160;<xsl:apply-templates select="abstract"/></td>
                       </tr>
                       <tr>
                         <td>
@@ -734,7 +734,7 @@
     <xsl:if test="title">
       <xsl:variable name="sectid">doc_chap<xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
       <p class="secthead">
-        <a name="{$sectid}"><xsl:value-of select="title"/> </a>
+        <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
       </p>
     </xsl:if>
     <xsl:apply-templates select="body">
@@ -747,7 +747,7 @@
     <xsl:if test="title">
       <xsl:variable name="subsectid"><xsl:value-of select="$chapid"/>_subsect<xsl:number/></xsl:variable>
       <p class="subsecthead">
-        <a name="{$subsectid}"><xsl:value-of select="title"/> </a>
+        <a name="{$subsectid}"><xsl:value-of select="title"/>&#160;</a>
       </p>
     </xsl:if>
     <xsl:apply-templates select="body"/>
@@ -907,7 +907,7 @@
 		<xsl:for-each select="/email/replies/reply/text()">
 			<xsl:variable name="rloc" select="."/>
 			<xsl:variable name="rfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-	» <a href="{$rfile}"><xsl:value-of select="document($rfile)/email/subject"/></a><br/>
+	&#160;<a href="{$rfile}"><xsl:value-of select="document($rfile)/email/subject"/></a><br/>
 		</xsl:for-each>
 	</xsl:if>
 </font></p>
