@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.4 2004/07/07 01:39:57 port001 Exp $
+# $Id: MySQL.py,v 1.5 2004/07/19 00:56:18 hadfield Exp $
 #
 
 import sys
@@ -58,7 +58,8 @@ def _InitQuery(query, args):
     try:
         cursor.execute(query, args)
     except MySQLError, errmsg:
-        err(errmsg, __modulename__)
+        err("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, query, args),
+            __modulename__)
         sys.exit(1)
 
     db.commit()
