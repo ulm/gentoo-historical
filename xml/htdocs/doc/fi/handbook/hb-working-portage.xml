@@ -1,0 +1,1031 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-working-portage.xml,v 1.1 2004/10/11 08:18:47 flammie Exp $ -->
+
+<sections>
+<section>
+<title>Tiedon haku paketeista</title>
+<subsection>
+<title>Työkalujen herra: emerge</title>
+<body>
+
+<p>
+<c>emerge</c> on Portagen keskeinen työkalu jota valtaosa käyttäjistä tulee
+enimmäkseen käyttämään. Käytimme sitä jo edellisessä kappaleessa ja Gentoon
+asennuksessa, mutta selitykset olivat hyvin lyhyitä. Tässä kappaleessa
+tarkastelemm <c>emerge</c>ä ja opimme käyttämään sitä ohjelmistotarpeiden
+täyttämiseen.
+</p>
+
+<p>
+<c>emerge</c>llä asennetaan, poistetaan, etsitään ja ylläpidetään ohjelmistoja.
+Se on frontendi komentoon <c>ebuild</c>; Gentoon tehokäyttämisestä kiinnostuneet
+saavat oppia <c>ebuild</c>in käytön myöhempänä. Tässä keskitytään
+<c>emerge</c>en, sillä monet sen tärkeät toiminnallisuudet puuttuvat
+<c>ebuildi</c>sta (kuten riippuuvuuksien ratkominen, Portagepuun haku jne.).
+</p>
+
+<p>
+Koska <c>emerge</c> on Gentoon tärkein työkalu, sillä myös on laajahko ohjesivu
+jota voi tarkastella komentamalla <c>man emerge</c>. Komennonsisäiset ohjeet
+saa esille ajamalla komennon <c>emerge --help</c>.
+</p>
+
+<pre caption="Emergen ohjeen tarkastelu">
+# <i>man emerge</i>
+# <i>emerge --help</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Portagepuu</title>
+<body>
+
+<p>
+Ennen kuin tutkimme enempää <c>emerge</c>ä, katsokaamme hieman Portagepuun
+olemusta. Siirry hakemistoon <path>/usr/portage</path> ja listaa hakemistot.
+Käytä komentoa <c>ls --classify</c> niin tunnistat hakemistot perässäolevasta
+kauttaviivasta.
+</p>
+
+<pre caption="Portagepuun katselu">
+# <i>cd /usr/portage; ls --classify</i>
+app-admin/       dev-ml/            gnome-libs/     net-print/
+app-arch/        dev-perl/          gnome-office/   net-wireless/
+app-benchmarks/  dev-php/           header.txt      net-www/
+app-cdr/         dev-python/        incoming/       net-zope/
+app-crypt/       dev-ruby/          jython/         packages/
+app-dicts/       dev-tcltk/         kde-apps/       profiles/
+app-doc/         dev-tex/           kde-base/       releases/
+app-editors/     dev-util/          kde-i18n/       scripts/
+app-emacs/       distfiles/         kde-libs/       sec-policy/
+app-emulation/   eclass/            licenses/       skel.ChangeLog
+app-games/       experimental/      media-fonts/    skel.ebuild
+app-gnustep/     files/             media-gfx/      skel.metadata.xml
+app-i18n/        fresco-base/       media-libs/     snapshots/
+app-misc/        games-action/      media-plugins/  sys-apps/
+app-office/      games-arcade/      media-radio/    sys-build/
+app-pda/         games-board/       media-sound/    sys-cluster/
+app-portage/     games-emulation/   media-tv/       sys-devel/
+app-sci/         games-engines/     media-video/    sys-fs/
+app-shells/      games-fps/         metadata/       sys-kernel/
+app-text/        games-kids/        net-analyzer/   sys-kmods/
+app-vim/         games-misc/        net-apache/     sys-libs/
+app-xemacs/      games-mud/         net-dialup/     unix2tcp/
+berlin-base/     games-puzzle/      net-dns/        x11-base/
+dev-ada/         games-roguelike/   net-firewall/   x11-libs/
+dev-cpp/         games-rpg/         net-fs/         x11-misc/
+dev-db/          games-server/      net-ftp/        x11-plugins/
+dev-dotnet/      games-simulation/  net-im/         x11-terms/
+dev-embedded/    games-sports/      net-irc/        x11-themes/
+dev-games/       games-strategy/    net-libs/       x11-wm/
+dev-haskell/     games-util/        net-mail/       xfce-base/
+dev-java/        glep/              net-misc/       xfce-extra/
+dev-lang/        gnome-apps/        net-nds/
+dev-libs/        gnome-base/        net-news/
+dev-lisp/        gnome-extra/       net-p2p/
+</pre>
+
+<p>
+Kuten näkyy, Portagepuussa on muutama alihakemisto. Useimmat niistä ovat
+<e>kategorioita</e> joihin Gentoon paketit jaotellaan.
+Tarkastelkaamme vaikkapa hakemistoa <path>app-office</path>:
+</p>
+
+<pre caption="Kategorian katselu">
+# <i>cd app-office; ls --classify</i>
+abiword/     gnotime/   kmymoney2/  ooodi/              plan/     timestamp.x
+dia/         gnucash/   koffice/    oooqs/              qhacc/
+dia2code/    gnumeric/  lxbank/     openoffice/         sc/
+facturalux/  ical/      lyx/        openoffice-bin/     scribus/
+gaby/        kbudget/   mdbtools/   openoffice-ximian/  siag/
+gnofin/      khacc/     mrproject/  phprojekt/          texmacs/
+</pre>
+
+<p>
+Kategorian alla ovat kaikki siihen kuuluvat paketit omissa hakemistoissaan.
+Katsotaan nyt pakettia <c>openoffice</c>:
+</p>
+
+<pre caption="Paketin katselu">
+# <i>cd openoffice; ls --classify</i>
+ChangeLog  files/        openoffice-1.0.3-r1.ebuild  openoffice-1.1.0-r2.ebuild
+Manifest   metadata.xml  openoffice-1.1.0-r1.ebuild  openoffice-1.1.0.ebuild
+</pre>
+
+<p>
+Tässä esimerkkihakemistossa on neljä ebuildia. <e>ebuild</e> on
+skripti, joka sisältää kaiken tarpeellisen tiedon paketin tietystä versiosta.
+Pakettien nimet ovat melkein samat: vain versionumerot eroavat. Voit vapaasti
+tarkastella tiedostojen sisältöjä, ne ovat tekstimuotoisia skriptejä.
+Emme kerro tässä enempää sisällöistä sillä
+se ei ole käyttämisen kannalta merkityksellistä.
+</p>
+
+<p>
+Hakemiston muut tiedosto ovat <path>ChangeLog</path> (joka sisältää listauksen
+ebuildiin tehdyistä muutoksista), <path>Manifest</path> (joka sisältää
+tarkastussummat ja koot kaikille hakemiston tiedostoille) ja
+<path>metadata.xml</path> (joka sisältää tietoa paketista sinänsä, kuten
+vastuullisen kehittäjäryhmän -- eli <e>lauman</e> (engl. herd, viitannee gentoon
+kehittäjien lehmämaskottiin) -- ja laajemman kuvauksen).
+</p>
+
+<p>
+Hakemistossa <path>files</path> on Portagen lisätiedostoja: digestejä
+(tiedostojen nimiä, kokoja ja tarkistussummia), pätsejä,
+esimerkkiasetustiedostoja ja sen sellaista.
+</p>
+
+<pre caption="Viewing the extra files">
+# <i>cd files; ls --classify</i>
+1.0.3/  digest-openoffice-1.0.3-r1  digest-openoffice-1.1.0-r1
+1.1.0/  digest-openoffice-1.1.0     digest-openoffice-1.1.0-r2
+# <i>cd 1.1.0; ls --classify</i>
+fixed-gcc.patch      ooffice-wrapper-1.3
+newstlportfix.patch  openoffice-1.1.0-linux-2.6-fix.patch
+no-mozab.patch       openoffice-1.1.0-sparc64-fix.patch
+nptl.patch
+</pre>
+
+<p>
+Palataan takaisin Portagepuun juurelle (<path>/usr/portage</path>). Nyt
+huomaamme että siellä on myös hakemistoja jotka eivät ole kategorioita. Niitä
+tarkastellaan tässä kappaleessa tuonnempana.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Paketin etsiminen</title>
+<body>
+
+<p>
+Jollet ole aiemmin tutustunut Gentoohon tai Linuxiin, et välttämättä tiedä
+oikeita työkaluja tiettyjä tehtäviä varten. <c>emerge</c>ssä on kaksi
+eri keinoa paketin hakemiseksi järjestelmästä: <e>nimestä</e> ja
+<e>kuvauksesta</e> hakeminen tai pelkästä <e>nimestä</e> hakeminen.
+</p>
+
+<p>
+Portagepuun läpi hakeminen tapahtuu komennolla <c>emerge search</c>.
+Esimerkiksi <c>mozilla</c>a haettaisiin seuraavasti:
+</p>
+
+<pre caption="Tietojen näyttäminen Mozillasta">
+# <i>emerge search mozilla</i>
+Searching...
+[ Results for search key : mozilla ]
+[ Applications found : 5 ]
+<comment>(Tulostetta leikelty luettavuuden parantamiseksi)</comment>
+*  net-www/mozilla
+      Latest version available: 1.5-r1
+      Latest version installed: 1.4-r3
+      Size of downloaded files: 29,153 kB
+      Homepage:    http://www.mozilla.org
+      Description: The Mozilla Web Browser
+
+*  net-www/mozilla-firebird
+      Latest version available: 0.7
+      Latest version installed: [ Not Installed ]
+      Size of downloaded files: 37,850 kB
+      Homepage:    http://www.mozilla.org/projects/firebird/
+      Description: The Mozilla Firebird Web Browser
+<comment>(...)</comment>
+</pre>
+
+<p>
+Jos halutaan etsiä myös kuvauksista, käytetään valitsitsinta
+<c>--searchdesc</c>:
+</p>
+
+<pre caption="Kuvailuistakin hakeminen">
+# <i>emerge --searchdesc mozilla</i>
+Searching...
+[ Results for search key : mozilla ]
+[ Applications found : 10 ]
+<comment>(Tulostetta leikelty luettavuuden parantamiseksi)</comment>
+*  dev-libs/nss-3.8
+      Latest version available: 3.8
+      Latest version installed: 3.8
+      Size of downloaded files:  2,782 kB
+      Homepage:    http://www.mozilla.org/projects/security/pki/nss/
+      Description: Mozilla's Netscape Security Services Library that implements PKI support
+</pre>
+
+<p>
+<c>emerge</c>n tulosteesta selviää paketin nimi ja kategoria, saatavilla oleva
+versio, asennettu versio, ladattavien tiedostojen koko, kotisivu ja lyhyt
+kuvaus.
+</p>
+
+<p>
+Jotain uuttako? Tiedot <e>ladattavista tiedostoista</e>! Kun Portage asentaa
+pakettia sen tarvitsee tottakai hakea lähdekoodit (tai esikäännetyt
+paketit) saataville. Ennen hakemista se tarkastaa hakemiston
+<path>/usr/portage/distfiles</path> (lähdekoodille) josko tarvittavat
+tiedostot ovat jo saatavilla. Puuttuvat tiedostot järjestelmä lataa ja asettaa
+tuohon hakemistoon.
+</p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>ChangeLogin muutosten tarkastelu</title>
+<body>
+
+<p>
+Portagepuuta katsellessa huomasimme ChangeLogin pakettihakemistoissa.
+ChangeLogin muutostiedot tuoreimman ja asennetun version väliltä voi
+tarkastaa myös <c>emerge</c>llä. Käytä valitsimia <c>--pretend --changelog</c>
+(lyhyesti <c>-pl</c>). Esimerkissä katselemme <c>gnumeric</c>in muutostietoja
+ChangeLogista:
+</p>
+
+<pre caption="Gnumericin ChangeLogin kenttien tarkasteleminen">
+# <i>emerge --pretend --changelog gnumeric</i>
+<comment>(Tulostetta leikelty luettavuuden parantamiseksi)</comment>
+*gnumeric-1.2.2
+
+  27 Nov 2003; foser &lt;foser@gentoo.org&gt; gnumeric-1.2.2.ebuild :
+  New release, requested in #34492
+  updated deps
+
+  12 Nov 2003; Jason Wever &lt;weeve@gentoo.org&gt; gnumeric-1.2.0.ebuild:
+  Marked stable on sparc, fixes bug #32405.
+
+  14 Oct 2003; Jason Wever &lt;weeve@gentoo.org&gt; gnumeric-1.0.8.ebuild:
+  Added ~sparc keyword.  Fixes bug #31150.
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Portagen päivittäminen</title>
+<subsection>
+<title>Johdanto</title>
+<body>
+
+<p>
+Portagella haeskeleminen on mukavaa, mutta jollei Portagepuuta pidetä ajan
+tasalla joudutaan tyytymään järjestelmässä oleviin versioihin. Päivittämätön
+järjestelmä vanhenee nopeasti ja tärkeät virhekorjaukset ja turvallisuusaukkojen
+paikkaukset jäävät saamatta.
+</p>
+
+<p>
+Portagepuun voi päivittää useammalla tavalla. Suosituinta on käyttää
+erästä <uri link="/main/en/mirrors.xml">rsync-peilipalvelimistamme</uri>.
+Toinen tapa on käyttää Portagen kuvaa (jos palomuuri tai verkon
+saavuttamattomuus estävät rsyncin käytön).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Rsyncin peilipalvelimen valinta</title>
+<body>
+
+<p>
+On suositeltavaa aloittaa valitsemalla nopea, lähellä sijaitseva <uri
+link="/main/en/mirrors.xml">peilipalvelin</uri>. Tämä voi asettaa käsin
+(muuttamalla <c>SYNC</c>-muuttujaa tiedostossa <path>/etc/make.conf</path>)
+tai käyttää komentoa <c>mirrorselect</c> joka hoitaa valinnan automaattisesti.
+Koska <c>SYNC</c>-muuttujaa tarkastellaan vielä myöhemmin, keskitymme tässä
+<c>mirrorselect</c>iin. Aloita asentamalla <c>mirrorselect</c>:
+</p>
+
+<pre caption="Mirrorselectin asennus">
+# <i>emerge --usepkg mirrorselect</i>
+</pre>
+
+<p>
+Seuraavaksi suoritetaan <c>mirrorselect</c> peilipalvelinten valitsemiseksi
+(se asettaa myös Portagen käyttämään lähintä lähdekoodin peilipalvelinta):
+</p>
+
+<pre caption="Mirrorselectin suoritus">
+# <i>mirrorselect -a -s3</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Portagen päivitys</title>
+<body>
+
+<p>
+Portage päivitetään rsyncin avulla ajamalla <c>emerge --sync</c>:
+</p>
+
+<pre caption="Portagen päivitys emerge syncillä">
+# <i>emerge --sync</i>
+</pre>
+
+<p>
+Jos tämä epäonnistuu (verkko-ongelmien tai palomuurin takia), voit koettaa
+<c>emerge-webrsync</c>illä. Se hakee Portagepuun kuvan <c>wget</c>illä.
+Tällöin voit myös hyödyntää välipalvelimia tarvittaessa. Välipalvelinten
+asettamisesta kerrottiin Gentoon asennuksen yhteydessä.
+</p>
+
+<pre caption="Järjestelmän päivitys emerge-webrsyncillä">
+# <i>emerge-webrsync</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Ohjelmiston ylläpito</title>
+<subsection>
+<title>Käännetty vai esikäännetty?</title>
+<body>
+
+<p>
+Gentoohon kuuluu ebuildeja, Gentoon paketteja, mutta sellaista asennettaessa
+voi valita <e>kääntämisen</e> ja <e>esikäännetyn</e> väliltä. Mutta entä
+hyödyt ja haitat, tai molempien muotojen rinnakkaiskäyttö?
+</p>
+
+<p>
+Kuten arvata saattaa, pakettien kääntämisessä kuluu kauan aikaa (erityisesti
+jos resursseja on vähän, tai käännetään suuria paketteja kuten <uri
+link="http://www.kde.org">KDE:tä</uri>, <uri
+link="http://www.openoffice.org">OpenOffice.orgia</uri>, jne.).
+Käännettäessä voi kuitenkin käyttää USE-asetuksia hienosäätöön, sekä pelata
+optimointiasetuksilla (muuttujissa <c>CFLAGS</c> ja <c>CXXFLAGS</c>).
+</p>
+
+<p>
+Esikäännettyjen pakettien käyttö nopeuttaa asennusta (kun niitä ei enää
+tarvitse kääntää), mutta <c>USE</c>-asetusten ja <c>CFLAGS</c>- sekä
+<c>CXXFLAGS</c>-muuttujien hyödyt menetetään.
+</p>
+
+<p>
+Kuten aiemmin huomattiin, esikäännetyt paketit sijaitsevat hakemistossa
+<path>/usr/portage/packages/All</path>, ja lähdekoodipaketit hakemistossa
+<path>/usr/portage/distfiles</path>. Paketin käännön jälkeen koodin tai
+paketoidun esikäännöksen voi poistaa vastaavasta hakemistosta. Viimeisimmän
+version säilyttäminen saattaa kuitenkin olla järkevää jos vaikka joutuisi
+uudelleenasentamaan paketin piakkoin (näin vältytään lataamasta sitä toiseen
+kertaan).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Ohjelmiston asentaminen lähdekoodeista</title>
+<body>
+
+<p>
+Mutta se tarinoinnista, käykäämme asentamaan.
+Paketin asentamiseen käytetään komentoa <c>emerge</c>. Jos et halua
+esikäännettyä pakettia voit komentaa suoraan <c>emerge &lt;paketin nimi&gt;</c>
+tai <c>emerge &lt;kategoria&gt;/&lt;paketin nimi&gt;</c>. Esimerkiksi
+<c>gnumeric</c> asennettaan näin:
+</p>
+
+<pre caption="Gnumericin asentaminen">
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+Tämä komento lataa lähdekoodin, purkaa, kääntää ja asentaa sen järjestelmään.
+Se tekee myös saman kaikille riippuvuuksille. Jos haluat nähdä mitä
+riippuvuuksia asennettaisiin, käytä valitsinta <c>--pretend</c> (lyhyesti
+<c>-p</c>):
+</p>
+
+<pre caption="Gnumericin asennuksen esikatselu">
+# <i>emerge --pretend gnumeric</i>
+</pre>
+
+<p>
+Jos haluat ladata paketin riippuvuudet ja lähdekoodin asentamatta sitä, käytä
+valitsinta <c>--fetchonly</c> (lyhyesti <c>-f</c>):
+</p>
+
+<pre caption="Gnumericin lähdekoodien hakeminen">
+# <i>emerge --fetchonly gnumeric</i>
+</pre>
+
+<p>
+Jos haluat nähdä mistä <c>emerge</c> lataisi lähdekoodit, yhdistä valitsin
+<c>--fetchonly</c> valitsimeen <c>--pretend</c>:
+</p>
+
+<pre caption="Gnumericin lähdekoodin verkko-osoitteen tarkastelu">
+# <i>emerge --fetchonly --pretend gnumeric</i>
+</pre>
+
+<p>
+Voit myös asentaa ohjelmistosta jonkin tietyn version. Esimerkiksi jos
+tarvitset gnumericin joka on 1.2:a vanhempi -- mistä ikinä syystä tarvitsetkaan
+:) saat sen komentamalla:
+</p>
+
+<pre caption="Gnumericin tietyn version asentaminen">
+# <i>emerge "&lt;gnumeric-1.2"</i>
+</pre>
+
+<p>
+Muita vaihtehtoja on määritellä "&gt;" (myöhemmälle versiolle) ja "="
+(tarkalleen mainitulle versiolle) sekä yhdistelmät "&gt;=" ja "&lt;=".
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Esikäännettyjen pakettien asentaminen</title>
+<body>
+
+<p>
+Esikäännetyt paketit asennetaan valitsimella <c>--usepkg</c> (lyhyesti
+<c>-k</c>). Tämä käyttää hakemistosta
+<path>/usr/portage/packages/All</path> löytyvää binääripakettia <e>jos</e>
+asennettavaan täsmäävä versio sovelluspaketista löytyy.
+</p>
+
+<pre caption="Esikäännetyn gnumericin paketin asennus">
+# <i>emerge --usepkg gnumeric</i>
+</pre>
+
+<p>
+Jos haluat käyttää binääripakettia jonka versio ei välttämättä täsmääkään,
+käytä valitsinta <c>--usepkgonly</c> (lyhyesti <c>-K</c>).
+</p>
+
+<pre caption="Esikäännetyn gnumericin paketin asennus">
+# <i>emerge --usepkgonly gnumeric</i>
+</pre>
+
+<p>
+Jollei järjestelmästä vielä löydy esikäännettyjä paketteja, <c>emerge</c>
+osaa ladata niitä peilipalvelimelta. Määrittele muuttuja <c>PORTAGE_BINHOST</c>
+tiedostoon <path>/etc/make.conf</path>.
+</p>
+
+<note>
+Gentoolla ei ole palvelinta tai peiliä esikäännetyille paketeille. Portagea
+on laajennettu tällä toiminnolla vain yhteisön pyynnöstä.
+</note>
+
+
+<p>
+Puuttuvan binääripaketin lataamisessa käytetään valitsinta
+<c>--getbinpkg</c> (lyhyesti <c>-g</c>):
+</p>
+
+<pre caption="Esikäännetyn paketin hakeminen ja asennus">
+# <i>emerge --getbinpkg gnumeric</i>
+</pre>
+
+<p>
+Komento hakee paketin ja siihen liittyvät tiedot järjestelmään ja asentaa sen
+yhdessä riippuvuuksien kanssa. Jos haluat nähdä asennettavat riippuvuudet,
+käytä valitsinta <c>--pretend</c> (lyhyesti <c>-p</c>):
+</p>
+
+<pre caption="Esikäännettyjen haettavien pakettien esikatselu">
+# <i>emerge --getbinpkg --pretend gnumeric</i>
+</pre>
+
+<p>
+Voit myös hakea esikäännetyn paketin (ja siihen liittyvän datan)
+<e>tarkastamatta</e> paikallisen järjestelmän tietoja ja <e>käyttämättä</e>
+paikallisen järjestelmän pakettia (jos sellaista on) valitsimella
+<c>--getbinpkgonly</c> (lyhyesti <c>-G</c>):
+</p>
+
+<pre caption="Esikäännetyn paketin asennus ilman paikallisia tietoja">
+# <i>emerge --getbinpkgonly gnumeric</i>
+</pre>
+
+<p>
+Myös määrätyn version paketista voi asentaa. Esimerkiksi jos halutaan
+gnumericia joka on 1.2:a vanhempaa -- mistä tahansa syystä sitten halutaankaan
+;) se saadaan komennolla:
+</p>
+
+<pre caption="Gnumericin määrätyn version asennus">
+# <i>emerge --usepkg "&lt;gnumeric-1.2"</i>
+</pre>
+
+<p>
+Muut vaihtoehdot valinnalle ovat  "&gt;" (uudemmalle versiolle) ja "=" (tarkoin
+määritellylle versiolle) sekä yhdistelmät "&gt;=" ja "&lt;=".
+</p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Riippuvuuksien hoitaminen</title>
+<body>
+
+<p>
+Portage käsittelee riippuvuuksia tehokkaasti. Useimmiten tätä ei käyttäjän
+tarvitse edes miettiä (sillä käsittely on automaattista), mutta jotkut
+halunnevat tietää miten <c>emerge</c> riippuvuuksiaan hoitaa.
+</p>
+
+<p>
+Jos haluat portagen teeskentelevän ettei mitään paketin riippuvuuksistista ole
+asennettu, käytä valitsinta <c>--emptytree</c> (lyhyesti <c>-e</c>). Tämän
+voi tehokkaasti yhdistää valitsimeen <c>--pretend</c> nähdäkseen koko
+riippuvuuspuun jollekin tietylle paketille. Ilman <c>--pretend</c>iä
+<c>emerge</c> (uudelleen)kääntää kaikki listatut paketit.
+</p>
+
+<pre caption="Gnumericin kaikkien riippuvuuksien tarkastelu">
+# <i>emerge --emptytree --pretend gnumeric</i>
+</pre>
+
+<p>
+Toinen tehokas valitsin on <c>--nodeps</c>, jolla Portage asentaa
+paketin huomioimatta riippuvuuksia. Itsestäänselvästi tämä johtaa monissa
+tapauksissa epäonnistumisiin.
+</p>
+
+<pre caption="Gnumericin asentaminen riippuvuuksia huomioimatta">
+# <i>emerge --nodeps gnumeric</i>
+</pre>
+
+<p>
+Vastakohta <c>--nodeps</c>ille on <c>--onlydeps</c>. Se saa Portagen
+asentamaan vain riippuvuudet, muttei pakettia itseään:
+</p>
+
+<pre caption="Gnumericin riippuvuuksien asennus">
+# <i>emerge --onlydeps gnumeric</i>
+</pre>
+
+<p>
+Kun poistat ohjelmistoja, Portage ei automaattisesti poista niiden
+riippuvuuksia, vaikka ne tulisivatkin tarpeettomiksi. Jos haluat puhdistaa
+(engl. clean) järjestelmäsi orvoista riippuvuuksista, voit koettaa
+<c>emerge depclean</c>iä. Tämä komento käy läpi asentuneet ohjelmistot,
+joita ei ole asennettu suoraan, ja jotka eivät enää kuulu minkään olemassaolevan
+asennetun ohjelman lueteltuihin riippuvuuksiin.
+</p>
+
+<warn>
+Depcleanin käyttö voi hyvin usein vahingoittaa järjestelmääsi. Käytä sitä vain
+äärimmäisellä varovaisuudella varmistaen erittäin tarkkaan mitä Portage on
+poistamassa ennen kuin suoritat itse komennon!
+</warn>
+
+<pre caption="Orpojen riippuvuuksien luettelointi ja poistaminen">
+# <i>emerge -p depclean</i>
+<comment>(Vasta tarkistettuasi listan jokaisen kohdan huolella, poista paketit:)</comment>
+# <i>emerge depclean</i>
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Järjestelmän päivittäminen</title>
+<body>
+
+<p>
+Portagessa on kaksi erityistä nimeä joilla valitaan joukko paketteja:
+<e>system</e> ja <e>world</e>. Ensimmäiseen törmättiin jo asennusvaiheessa
+jollei kyseessä ollut <e>stage3</e>-asennus. Muistin virkistykseksi,
+<e>system</e> on kokoelma <e>järjestelmä</e>paketteja joita välttämättä
+tarvitaan toimivassa Gentoossa.
+</p>
+
+<p>
+<e>world</e> sisältää kaikki suoraan asennetut paketit ja <e>system</e>in
+paketit. Toisinsanoen, joka kerta kun paketti asennetaan komennolla
+<c>emerge &lt;paketin nimi&gt;</c>, tallennetaan
+<c>&lt;paketin nimi&gt;</c> <e>world</e>-tiedostoon
+(<path>/var/cache/edb/world</path>). Riippuvuuksia <e>ei</e> tallenneta
+<e>world</e>-tiedostoon, mutta tästä lisää tuonnempana.
+</p>
+
+<p>
+Jos haluat päivittää kaikki järjestelmäpaketit, käytä valitsinta
+<c>--update</c> (lyhyesti <c>-u</c>):
+</p>
+
+<pre caption="Järjestelmäpakettien päivitys">
+# <i>emerge --update system</i>
+</pre>
+
+<p>
+Samoin päivitetään kaikki worldin paketit:
+</p>
+
+<pre caption="Koko järjestelmän päivittäminen">
+# <i>emerge --update world</i>
+</pre>
+
+<p>
+Taaskin <c>emerge</c>n päivitystä voidaan esikatsella yhdistämällä
+valitsin <c>--pretend</c> valitsimeen <c>--update</c>:
+</p>
+
+<pre caption="Järjestelmän päivityksen esikatselu">
+# <i>emerge --pretend --update world</i>
+<comment>(Tulostetta leikelty luettavuuden parantamiseksi)</comment>
+[ebuild     U ] net-misc/wget-1.9-r1 [1.9]
+[ebuild     UD] media-video/dvdauthor-0.5.0 [0.5.3]
+[ebuild     U ] net-analyzer/ethereal-0.9.16 [0.9.14]
+</pre>
+
+<p>
+Sanan ebuild vieressä on kirjain (tai kirjaimia) jotka kertovat paketin
+tilasta:
+</p>
+
+<ul>
+  <li>
+    <e>B</e> (blocks) Vasemmanpuoleinen paketti estää oikeanpuoleisen
+    asentamisen
+  </li>
+  <li>
+    <e>N</e> (new) Tätä pakettia ei ole järjestelmässä vaan se asennetaan
+    ensimmäistä kertaan
+  </li>
+  <li>
+    <e>R</e> (replace) Paketti on vanha, mutta se uudelleenasentaan
+  </li>
+  <li>
+    <e>F</e> (fetch) Paketin lähdekoodi on haettava käsin (lisenssin rajoitusten
+    takia)
+  </li>
+  <li>
+    <e>U</e> (update) Paketti on asennettu järjestelmään ja se päivitetään
+  </li>
+  <li>
+    <e>UD</e> (downgrade) Paketti on asennettu järjestelmään, mutta se
+    varhennetaan
+  </li>
+</ul>
+
+<p>
+Olemme kertoneet, ettei <e>world</e>-tiedosto sisällä riippuvuustietoja.
+Siksi, kun ajetaan <c>emerge --update world</c>, vain world-tiedostossa
+mainitut tiedostot ja näiden suorat riippuvuudet päivitetään. Jos haluat
+<c>emerge</c>n tarkastelevan myös riippuvuuksien riippuvuuksia ja niin edelleen,
+käytä valitsinta --deep:
+</p>
+
+<pre caption="Upgrading your entire system, including all dependencies">
+# <i>emerge --update --deep world</i>
+</pre>
+
+<p>
+Tässä kappaleessa puhuttiin <e>system</e>istä ja <e>world</e>istä, mutta
+samat toiminnot käyvät myös yksittäisten pakettien käsittelyyn.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Ohjelmistojen poistaminen</title>
+<body>
+
+<p>
+Jos haluat poistaa ohjelman järjestelmäsä, voit käyttää toimintoa <c>unmerge</c>
+(lyhyesti <c>-C</c>, suuraakkonen C):
+</p>
+
+<pre caption="Ohjelman poistaminen">
+# <i>emerge unmerge gnumeric</i>
+</pre>
+
+<p>
+Jos haluat testata poistoa suoirttamatta sitä, voit käyttää tässäkin
+valitsinta <c>--pretend</c>:
+</p>
+
+<pre caption="Ohjelman poiston teeskentely">
+# <i>emerge --pretend unmerge gnumeric</i>
+</pre>
+
+<warn>
+Portage ei tarkasta onko poistettava paketti tarpeellinen riippuvuus. Se ei
+edes tarkasta onko paketti osa järjestelmää (<e>system</e>), eli pakollinen
+järjestelmän toimivuuden kannalta!
+</warn>
+
+<p>
+Poisto alkaa pitkällä listauksella paketin sisällöstä. Joidenkin
+tiedostonimien vasemmalla puolella näkyy merkintöjä.  Merkinnät <c>!mtime</c>,
+<c>!empty</c> ja <c>cfgpro</c> kertovat miksei jotain tiedostoa poisteta
+paketin mukana. Tiedostot joissa ei merkintöjä ole poistetaan
+tiedostojärjestelmästä. Kolme merkintää tarkoittavat seuraavaa:
+</p>
+
+<ul>
+  <li>
+    <c>!mtime</c> : Tiedostoa on muokattu asennuksen jälkeen, ehkäpä jonkin
+    työkalun toimesta
+  </li>
+  <li>
+    <c>!empty</c> : Hakemisto ei ole tyhjä
+  </li>
+  <li>
+    <c>cfgpro</c> : Tiedosto on suojatun hakemistorakenteen alla, eikä siihen
+    turvallisuussyistä kosketa
+  </li>
+</ul>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Peitettyjen pakettien käsittely</title>
+<subsection>
+<title>ARCH vai ei?</title>
+<body>
+
+<p>
+Laittaessaan ebuildeja saataville gentoon kehittäjät lisäävät niihin tietoja
+paketin stabiiliudesta eri arkkitehtuureilla. Tämä toteutetaan
+<c>KEYWORDS</c>-muuttujan avulla. Muuttuja sisältää luettelon arkkitehtuureista
+ja merkinnät niiden vakaudesta. Merkintöjen selitykset näkyvät alla olevassa
+taulukossa.
+</p>
+
+<table>
+<tr>
+  <th>Merkintä</th>
+  <th>Kuvaus</th>
+</tr>
+<tr>
+  <ti>ARCH</ti>
+  <ti>Tiettävästi vakaa tällä arkkitehtuurilla.</ti>
+</tr>
+<tr>
+  <ti>~ARCH</ti>
+  <ti>
+    Todennäköisesti vakaa tällä arkkitehtuurilla, mutta sitä pitää vielä testata
+    ennen kuin voidaan olla varmoja.
+  </ti>
+</tr>
+<tr>
+  <ti>-ARCH</ti>
+  <ti>Ei varmasti toimi tällä arkkitehtuurilla.</ti>
+</tr>
+<tr>
+  <ti>-*</ti>
+  <ti>Ei varmaankaan toimi millään arkkitehtuurilla tai aiheuttaa vakavia
+  ongelmia.</ti>
+</tr>
+</table>
+
+<p>
+Esimerkiksi:
+</p>
+
+<pre caption="Esimerkki KEYWORD-asetuksesta ebuildissa">
+KEYWORDS="x86 -sparc ~alpha ~ppc"
+</pre>
+
+
+<p>
+Tämä tarkoittaa, että:
+</p>
+
+<ul>
+  <li>
+    Ebuild toimii x86-alustoilla.
+  </li>
+  <li>
+    Ebuild ei toimi Sparceilla.
+  </li>
+  <li>
+    Ebuild toiminee Alphalla, mutta sitä pitää testata vielä.
+  </li>
+  <li>
+    Ebuild toiminee PPC:llä, mutta sitä pitää testata vielä.
+  </li>
+  <li>
+    Ebuild saattaa toimia tai olla toimimatta muilla alustoilla, mutta kukaan
+    kehittäjistä ei ole vielä kokeillut.
+  </li>
+</ul>
+
+
+<p>
+Järjestelmässäsi oletusasetus on <e>ARCH</e>. Jos haluat elää kehityksen
+huipulla, eivätkä satunnaiset rikkinäiset paketit haittaa, ja osaat vieläpä
+hoitaa rikkinäisen järjestelmän kuntoon sekä ilmoittaa kohtaamistasi vioista
+englanniksi osoitteeseen <uri
+link="http://bugs.gentoo.org">bugs.gentoo.org</uri>, silloin kannattanee jo
+käyttää <e>~ARCH</e>-paketteja. Siirtääksesi järjestelmän
+<e>~ARCH</e>-maailmaan, aseta muuttuja <c>ACCEPT_KEYWORDS</c> tiedostossa
+<path>/etc/make.conf</path> arvoksi <e>~ARCH</e> (joka siis on
+x86-järjestelmille <e>~x86</e> jne.).
+</p>
+
+<p>
+Huomaa, että on hyvin hankalaa (ellei mahdotonta) palata
+<e>~ARCH</e>-järjestelmästä <e>ARCH</e>:iin.
+</p>
+
+<p>
+Jos haluat päivittää järjestelmän nyt, huomaat että <e>suuri joukko</e>
+paketeista kaipaa päivittämistä!
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Peitetyt paketit</title>
+<body>
+
+<p>
+Joskus pakettia asentaessasi saatat törmätä tähän viestiin:
+</p>
+
+<pre caption="Ilmoitus peitetyistä paketeista">
+Calculating dependencies
+!!! <comment>all ebuilds that could satisfy </comment>&lt;pakettisi&gt;<comment> have been masked.</comment>
+</pre>
+
+<p>
+Pakettien peitteitä on seuraavanlaisia:
+</p>
+
+<ol>
+  <li>Paketti on <e>~ARCH</e>-luokkaa ja järjestelmä <e>ARCH</e>.</li>
+  <li>Paketti on erikseen määritetty peitetyksi.</li>
+  <li>Pakettia ei ole ollenkaan koneesi ARCH-määrittelylle.</li>
+  <li>Paketti on peitetty profiilissasi</li>
+</ol>
+
+<p>
+Portage kertoo miksi pakettia ei voida asentaa:
+</p>
+
+<ul>
+  <li>
+    <b>~arch</b>: paketti toimii alustalla, mutta vaatii lisää testausta ja
+    järjestelmäsi tarvitsee testatun paketin.
+  </li>
+  <li>
+    <b>-arch</b>: paketti ei toimi alustalla.
+  </li>
+  <li>
+    <b>-*</b>: paketti ei toimi millään alustalla
+  </li>
+  <li>
+    <b>package.mask</b>: paketti on merkitty tiedostoon
+    <path>package.mask</path>, joka tarkoittaa että se on jollain tapaa
+    rikki (kaataa järjestelmän, sisältää turvallisuusaukkoja tai muuta).
+  </li>
+  <li>
+    <b>profile</b>: pakettia ei saa profiilillesi.
+  </li>
+</ul>
+
+<p>
+Jos paketin asennusta estää sen sijoittuminen
+<b>~arch</b>iin ja haluat <e>todella</e> asentaa sen (muistaen että
+sen sijoittumiselle <e>ARCH</e>:n ulkopuolelle <e>on</e> jokin syy), voit
+pakettikohtaisesti hyväksyä ~ARCH-paketin lisäämällä sen
+<path>/etc/portage/package.keywords</path>-tiedostoon:
+</p>
+
+<pre caption="paketin ~ARCH-version hyväksyminen">
+<comment>(Luo /etc/portage jollei sitä vielä ole)</comment>
+# <i>mkdir /etc/portage</i>
+
+# <i>echo "app-office/gnumeric ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+Samoin, jos haluat asentaa paketin joka on merkitty <b>-arch</b>:iksi tai
+<b>-*</b>:ksi (varoituksista huolimatta), lisää tiedostoon
+<path>/etc/portage/package.keywords</path> tarvittavat muutokset:
+</p>
+
+<pre caption="Paketin -arch tai -* version hyväksyminen">
+<comment>(Luo hakemisto /etc/portage, jollei sitä jo ole)</comment>
+# <i>mkdir /etc/portage</i>
+
+# <i>echo "app-office/gnumeric -x86" &gt;&gt; /etc/portage/package.keywords</i>
+<comment>(tai)</comment>
+# <i>echo "app-office/gnumeric -*" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+Jos haluat sallia vain paketin tietyn version tai versiovälin asentamisen voit
+käyttää merkintöjä "&lt;, &lt;=, =, &gt;= ja &gt;":
+</p>
+
+<pre caption="Tietyn arch-merkityn paketin version hyväksyminen">
+# <i>echo "=app-office/gnumeric-2.0 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+</pre>
+
+<p>
+Erikseen peitetty paketti on listattu tiedostoon
+<path>/usr/portage/profiles/package.mask</path>. Tässä tiedostossa
+on peitteiden lisäksi myös selitykset peittämisen syistä (ne yleensä
+lisätään kommentointeina). Jos haluat siltikin asentaa paketin (huolimatta
+kaikista varoituksista joita järjestelmän ja muiden pakettien särkymisestä
+ja testauksen tarpeesta heitellään ilmaan), luo tiedosto
+<path>/etc/portage/package.unmask</path> ja merkitse paketti sinne (käytä
+samaa muotoa mitä on käytetty tiedostossa
+<path>/usr/portage/profiles/package.mask</path>).
+</p>
+
+<pre caption="Erikseen peitetyn paketin vapauttaminen">
+<comment>(Luo /etc/portage jollei sitä vielä ole)</comment>
+# <i>mkdir /etc/portage</i>
+
+# <i>echo "=app-office/gnumeric-1.2.12" &gt;&gt; /etc/portage/package.unmask</i>
+</pre>
+
+
+<p>
+<e>Älä</e> muokkaa tiedostoa <path>/usr/portage/profiles/package.mask</path>.
+Kaikki muutokset häviävät seuraavassa Portagepuun päivityksessä.
+</p>
+
+<p>
+Joskus saatat haluta itse peittää paketteja. Näin käy usein jos paketin uudesta
+versiosta on pudotettu tuki jollekin tärkeälle ominaisuudelle tai uudistukset
+eivät muuten vain toimi koneessasi.
+</p>
+
+<p>
+Paketin peittämiseksi, luo tiedosto <path>/etc/portage/package.mask</path> ja
+lisää paketit siihen (käyttäen aiemmin mainittua muotoa.
+</p>
+
+<pre caption="Paketin peittäminen">
+<comment>(Luo /etc/portage, jollei sitä jo ole)</comment>
+# <i>mkdir /etc/portage</i>
+
+# <i>echo "&gt;app-office/gnumeric-1.2.10" &gt;&gt; /etc/portage/package.mask</i>
+</pre>
+
+<p>
+Kun Portage kertoo, ettei voi asentaa pakettia <b>profile</b>n takia, se
+tarkoittaa että järjestelmän profiili ei salli sen paketin asennusta. Mutta
+mikä profiili sitten on?
+</p>
+
+<p>
+Profiili sisältää listan pakettien nimistä ja joukon oletusasetuksia
+Portagelle. Siinä kerrotaan mitkä paketit ja mitkä versiot niistä
+hyväksytään, kielletään, tai käsitellään erityisesti. Profiileja voi
+vaihtaa muuttamalla symlinkin <path>/etc/make.profile</path> osoitusta.
+</p>
+
+<p>
+Profiilin takia peitettyä pakettia ei voida asentaa mitenkään; jos välttämättä
+haluat sen paketin, täytyy vaihtaa profiilia.
+</p>
+
+<p>
+Lisää tietoa profiileista löytyy <uri
+link="/proj/en/releng/docs/cascading-profiles.xml">Cascading Profiles
+Document</uri>ista.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Blokatut paketit</title>
+<body>
+
+<p>
+Seuraava virheilmoitus saattaa tulla vastaan:
+</p>
+
+<pre caption="Blokkaava paketti">
+[blocks B     ] gnome-base/bonobo-activation (from pkg gnome-base/libbonobo-2.4.0)
+</pre>
+
+<p>
+Ylläolevassa esimerkissä paketti <c>bonobo-activation</c> estää
+<c>libbonobo</c>n asentamisen. Ongelman ratkaisemiseksi poista
+<c>bonobo-activation</c> ja jatka asennusta:
+</p>
+
+<pre caption="Blokkaustilanteen selvittäminen">
+# <i>emerge unmerge bonobo-activation</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>

@@ -1,0 +1,405 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-install-system.xml,v 1.1 2004/10/11 08:18:47 flammie Exp $ -->
+
+<sections>
+<section>
+<title>Chroot-ympäristön asettaminen</title>
+<subsection>
+<title>Valinnainen: Peilipalvelimen valinta</title>
+<body>
+
+<p>
+Jos käynnistit Gentoon LiveCD:ltä voit päivittää <path>/etc/make.conf</path>in
+asetukset käyttämään nopeita peilipalvelimia Portagen ja lähdekoodien
+latauksessa komennolla <c>mirrorselect</c> (tämä tietenkin vaatii toimivan
+verkkoyhteyden):
+</p>
+
+<warn>
+Mirrorselectissä on ongelma joka saattaa johtaa roskan tulostumiseen GENTOO_MIRRORS-asetusen perään. Avaa <path>/mnt/gentoo/etc/make.conf</path>
+ja poista turhuudet GENTOO_MIRRORS-riviltä, jos se on tarpeen.
+</warn>
+
+<pre caption="Nopean peilipalvelimen valinta">
+# <i>mirrorselect -a -s4 -o | grep 'GENTOO_MIRRORS=' &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+Jos <c>mirrorselect</c> ei toimikaan niin se ei haittaa. Sen käyttäminen on
+täysin valinnaista, virhetilanteissa oletusarvoilla pärjää kyllä.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>DNS-osoitteiden kopiointi</title>
+<body>
+
+<p>
+Ennen uuteen ympäristöön menemistä pitää vielä kopioida DNS-palvelinten
+tiedosto tiedostosta <path>/etc/resolv.conf</path>.
+Tietoja tarvitaan että verkkoympäristö toimii vielä uudessakin ympäristössä.
+<path>/etc/resolv.conf</path> sisältää tiedot käytettävistä nimipalvelimista.
+</p>
+
+<pre caption="DNS-tietojen kopiointi">
+<comment>(valitsin -L varmistaa ettei kopio ole symbolinen linkki)</comment>
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>proc-tiedostojärjestelmän liittäminen</title>
+<body>
+
+<p>
+Jotta asennus voisi saada tietoa nykyisestä ytimestä chrootin sisältäkin, täytyy
+<path>/proc</path> liittää hakemistoon <path>/mnt/gentoo/proc</path>.
+</p>
+
+<pre caption="/proc:n liittäminen">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Uuteen ympäristöön siirtyminen</title>
+<body>
+
+<p>
+Nyt kun kaikki osiot on alustettu ja perusjärjestelmä on asennettu, voidaan
+siirtyä <e>chrootaamaan</e> ympäristöä. Tämä tarkoittaa nykyisestä
+asennusympäristöstä (LiveCD:ltä tai vastaavasta) siirtymistä uuteen
+asennusympäristöön (alustetuille osioille).
+</p>
+
+<p>
+Chrootaus tehdään kolmessa osassa. Ensin vaihdetaan juurihakemisto
+<c>chroot</c>-komennolla <path>/</path>-hakemistosta (asennusvälineen)
+<path>/mnt/gentoo</path>-hakemistoksi (uusilla osioilla).
+Uusi ympäristö luodaan komennolla <c>env-update</c>, joka luo
+ympäristömuuttujat. Lopuksi muuttujat asetetaan komennolla <c>source</c>.
+</p>
+
+<pre caption = "Uuden ympäristön chrootaus">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+Regenerating /etc/ld.so.cache...
+* Caching service dependencies...
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+Olet nyt Gentoo Linux -järjestelmässäsi. Asennusta on toki vielä paljolti
+jäljellä, kuten jäljellä olevien kappaleiden määräkin vihjaa :-)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Portagepuun päivitys</title>
+<body>
+
+<p>
+Jollet ole asentanut Portagen otosta edellisen kappaleen aikana, täytyy
+seuraavaksi ladata uusin ohjelmistohakemisto verkosta. Lataaminen onnistuu
+komennolla <c>emerge --sync</c>. Portagen asentaneet voivat ohittaa tämän'
+vaiheen
+ja jatkaa  <uri
+link="#configure_USE">säätämällä USE-muuttujia</uri>.
+</p>
+
+<pre caption="Portagen päivitys">
+# <i>emerge --sync</i>
+</pre>
+
+<p>
+Portage käyttää rsync-protokollaa ohjelmistohakemiston päivittämiseen. Jos palomuuri estää päivittämisen, käytä <c>emerge-webrsync</c>-komentoa, joka
+lataa ja asentaa uusimman Portagen otoksen http-yhteyden ylitse.
+</p>
+
+<pre caption="Portagen päivittäminen emerge-webrsyncillä">
+# <i>emerge-webrsync</i>
+</pre>
+
+<p>
+Jos esiin tulee kehotus päivittää Portage uudempaan versioon, ohita se.
+Portage päivitetään vielä asennuksen myöhemmässä vaiheessa.
+</p>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>USE-muuttujien asettaminen</title>
+<body>
+
+<p>
+<c>USE</c> on yksi Gentoo-ympäristön tärkeimmistä muuttujista. Suureen osaan
+ohjelmista voidaan kääntää mukaan vaihtoehtoinen tuki tietyille asioille.
+Esimerkiksi joissakin ohjelmissa voi olla sekä gtk- että qt-tuki. Joihinkin
+voi saada valinnaisena SSL-tuen. Jotkin kääntyvät jopa framebuffer-tuella
+(svgalib) ilman X11:ä.
+</p>
+
+<p>
+Useimmat jakelut kääntävät paketteihin mukaan tuen kaikelle mahdolliselle, mikä
+on omiaan lisäämään ohjelmien kokoa ja käynnistysaikaa riippuuvuuksien määrästä
+puhumattakaan. Gentoolla voit päättää mitkä asetukset käännetään mukaan. Tähän
+käytämme juuri <c>USE</c>-muuttujia.
+</p>
+
+<p>
+<c>USE</c>-muuttujaan määritetään avainsanoja jotka tulkitaan sitten
+käännösasetuksiksi. Esimerkiksi <e>ssl</e> kääntää ssl-tuen jos ohjelmassa
+sellainen on ja <e>-X</e> poistaa X-palvelintuen käytöstä (äksän edessä on siis
+miinus). Asetuksella <e>gnome gtk -kde -qt</e> ohjelmat käännetään
+Gnome- ja gtk-tuen kanssa mutta ilman kde- tai qt-tukea. Näin aikaansaataisiin
+täysin Gnome järjestelmä.
+</p>
+
+<p>
+Oletusarvoiset <c>USE</c>-asetukset löytyvät tiedostosta
+<path>/etc/make.profile/make.defaults</path>. Itsetehdyt asetukset tiedostossa
+<path>/etc/make.conf</path> lisätään niiden päälle. Lisätty asetus lisätään
+oletusten listaan ja poistettu (asettamalla miinusmerkki asetuksen eteen)
+poistetaan listasta (jos se siellä oli alunperinkään). Hakemiston
+<path>/etc/make.profile</path> asetuksia <e>ei saa</e> muuttaa sillä se
+korvataan jokaisessa Portagen päivityksessä.
+</p>
+
+<p>
+<c>USE</c>-järjestelmän täydempi kuvaus löytyy käsikirjan toisen osan <uri
+link="?part=2&amp;chap=1">kappaleesta 1: Use-muuttujat</uri>. Muuttujien
+kuvaukset majailevat järjestelmän tiedostossa
+<path>/usr/portage/profiles/use.desc</path>.
+</p>
+
+<pre caption="USE-kuvausten katselu">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(Nuolinäppäimillä vieritetään ja q:lla lopetetaan)</comment>
+</pre>
+
+<p>
+Esimerkissä on <c>USE</c>-asetukset KDE-järjestelmälle DVD-, ALSA- ja
+CD:n polttotuella.
+</p>
+
+<pre caption="/etc/make.confin avaus">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE-asetukset">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Rinnakkaisjärjestelmillä kääntäminen</title>
+<body>
+
+<p>
+Jos aiot käyttää suurta määrää järjestelmiä kääntämisen tehostamiseksi,
+kannattanee lukea <uri
+link="/doc/en/distcc.xml">DistCC-opas</uri>. <c>distcc</c> hyödyntää useamman
+järjestelmän prosessoritehoa yhtäaikaisesti.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Erot stage1:n, stage2:n ja stage3:n välillä</title>
+<body>
+
+<p>
+Aiemmin pyysimme valitsemaan jonkun kohteista
+<e>stage1</e>, <e>stage2</e> tai <e>stage3</e> ja muistutimme valinnan
+vaikutuksista myöhempiin asennuksen osioihin. Tämä on ensimmäinen kohdista
+jossa valinnalla on merkitystä jatkon kannalta.
+</p>
+
+<ul>
+<li>
+  <e>Stage1</e>-asennuksessa käydään läpi <e>molemmat</e> tässä kappaleessa
+  kuvaillut osat (aloittaen <uri link="#doc_chap3">siirtymällä stage1:stä
+  stage2:een</uri>).
+</li>
+<li>
+  <e>Stage2</e>-asennuksessa ohitetaan ensimmäinen osa ja aloitetaan suoraan
+  toisesta (<uri link="#doc_chap4">siirtyminen
+  Stage2:sta Stage3:een</uri>)
+</li>
+<li>
+  <e>Stage3</e>-asennuksessa (GRP tai ei) ohitetaan molemmat osat ja jatketaan
+  suoraan <uri link="?part=1&amp;chap=7">säätämällä ydintä</uri>
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Eteneminen stage1:stä stage2:een</title>
+<subsection>
+<title>Johdatus bootstrappaukseen</title>
+<body>
+
+<p>
+Käännettäänkö tosiaan kaikki alusta alkaen? No ei kun menoksi sitten vaan :-)
+</p>
+
+<p>
+Aloitamme <e>bootstrappaamalla</e> Gentoo-järjestelmän. Tässä kestää
+jokusen tovin, mutta lopputuloksena saatava järjestelmä on ainakin tarkalleen
+optimoitu järjestelmän ja laitteen tarpeisiin.
+</p>
+
+<p>
+<e>Bootstrappaus</e> tarkoittaa tässä GNUn C-kirjaston, Gnun kääntäjäkokoelman
+(GCC) ja muutamien muiden tärkeiden järjestelmäohjelmien kääntämistä.
+</p>
+
+<p>
+Ennen bootstrappausta tarkastelemme muutamia asetuksia jotka eivät ole
+pakollisia tai tarvittavia. Jos et ole kiinnostunut niistä jatka suoraan <uri
+link="#bootstrap">Järjestelmän bootstrappaukseen</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Lähdekoodien lataus ennen kääntöä</title>
+<body>
+
+<p>
+Jollet vielä ole kopioinut kaikkia lähdekoodeja, bootstrap-skripti lataa
+tarvittavat osat niistä. Tämä ei tietenkään toimi ellei toimivaa verkkoyhteyttä
+ole käytössä :-) Jos haluat ladata lähdekoodin ensin ja bootstrapata
+järjestelmän sitten (vaikkapa silloin kun et halua pitää internet-yhteyttä
+auki koko asennuksen ajan), aja bootstrap-skripti valitimsen <e>-f</e> kanssa.
+Se hakee (engl. <e>f</e>etch) kaiken lähdekoodin valmiiksi.
+</p>
+
+<pre caption = "Tarvittavan lähdekoodin lataus">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh -f</i>
+</pre>
+
+</body>
+</subsection>
+<subsection id="bootstrap">
+<title>Järjestelmän Bootstrappaus</title>
+<body>
+
+<p>
+Seuraavaksi laitetaan itse bootstrappaus pyörimään.
+Suorituksen aikana voit tehdä jotain muuta, siinä
+kuitenkin kestää huomattava aika ennen kuin bootstrappaus on valmis.
+</p>
+
+<pre caption = "Järjestelmän bootstrappaus">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+</pre>
+
+<p>
+Nyt voidaan jatkaa seuraavaan osaan, <uri link="#doc_chap4">siirtymiseen
+stage2:sta stage3:een</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Siirtyminen stage2:lta stage3:lle</title>
+<subsection>
+<title>Johdatus</title>
+<body>
+
+<p>
+Tässä vaiheessa lukiessa sinulla pitäisi olla bootstrapattu järjestelmä
+(joko äskeisestä vaiheesta tai <e>stage2</e>-asennuksesta). Seuraavaksi
+käännetään kaikki järjestelmäpaketit.
+</p>
+
+<p>
+<e>Ihan kaikki</e> järjestelmäpaketitko?
+No ei nyt sentään. Vain kaikki ne joilla ei ole vaihtoehtoisia paketteja.
+Joillakin ohjelmilla (kuten järjestelmälokilla) on vaihtoehtoisia toteuksia,
+ja koska Gentoon idea on tarjota vaihtoehtoja emme pakota tässäkään mitään
+tiettyä asennettavaksi.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Asennuksen esikatselu</title>
+<body>
+
+<p>
+Komennolla <c>emerge --pretend system</c> nähdään mitä paketteja se tulee
+asentamaan. Listauksessa kerrotaan kaikki käännettävät paketit. Koska listaus
+on pitkähkö kannataa käyttää pageria kuten <c>less</c> tai <c>more</c>
+listauksessa kulkemiseen.
+</p>
+
+<pre caption = "Näkymä siitä mitä 'emerge system' tekisi">
+# <i>emerge --pretend system | less</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Lähdekoodien lataaminen</title>
+<body>
+
+<p>
+Jos haluat <c>emerge</c>n lataavan kaikki lähteet ennen asentamista (vaikkapa
+siksi, kun et voi pitää internet-yhteyttä auki koko kääntämisen ajan) voit
+käyttää valitsinta <e>--fetchonly</e>. Se lataa kaikki paketit asentamatta
+niitä.
+</p>
+
+<pre caption = "Lähdekoodien hakeminen">
+# <i>emerge --fetchonly system</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Järjestelmän kääntäminen</title>
+<body>
+
+<p>
+Järjestelmän kääntäminen käynnistetään komennolla <c>emerge system</c>.
+Käännös kestää taas jonkin aikaa joten voit tehdä muita hommia odotellessasi.
+</p>
+
+<pre caption = "Järjestelmän kääntäminen">
+# <i>emerge system</i>
+</pre>
+
+<p>
+Ohita kaikki varoitukset päivitetyistä tiedostoista (ja komennon
+<c>etc-update</c> ajamisesta). Asennuksen jälkeen kannattaa lukea dokumentaatio
+<uri
+link="?part=2&amp;chap=4#doc_chap1">Asetustiedostojen suojaamisesta</uri>.
+</p>
+
+<p>
+Asennusprosessin lopetettua jatka <uri
+link="?part=1&amp;chap=7">Säätämällä ytimen asetuksia</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>
