@@ -1,0 +1,413 @@
+#!/bin/bash  
+# Bob Johnson, 23 March 2003 <livewire@gentoo.org>
+# Copyright 2002 Gentoo Technologies, Inc; http://www.gentoo.org
+# Released under the GNU General Public License version 2
+
+die() {
+        [ -n "$1" ] && echo "$1"
+        exit 1
+}
+
+if [ ! -e /usr/src/linux ]
+then
+	echo "/usr/src/linux doesn't seem to exist. Please emerge your favorite"
+	echo "kernel source tree first."	
+	die
+fi
+
+if [ ! -h /usr/src/linux ]
+then
+	echo "/usr/src/linux is not a symbolic link. Please make sure it is a"
+	echo "symbolic link to your preferred kernel source tree."
+	die
+fi
+
+KD=`readlink -f /usr/src/linux`
+KV="${KD##*/}"
+KV="${KV##linux-}"
+GK_VERSION=1.9
+GK_SHARE=/usr/share/genkernel
+[ ! -e /sbin/functions.sh ] && die "Can't find /sbin/functions.sh; exiting."
+source /sbin/functions.sh
+TEMP=/tmp
+KERNEL=$1
+CONFIG=/etc/kernels
+[ ! -e /etc/kernels/settings ] && die "Can't find /etc/kernels/settings; exiting."
+source /etc/kernels/settings 
+BUSYBOX_TARBALL=${GK_SHARE}/busybox-0.60.5.tar.bz2
+BUSYBOX_DIR=busybox-0.60.5
+CLOOP_TARBALL=cloop_0.68-2.tar.gz
+CLOOP_DIR=cloop-0.68
+MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
+MENUCONFIG="no"
+BOOTSPLASH="no"
+NOINSTALL="no"
+MRPROPER="yes"
+usage() {
+        echo $WARN"* usage: genkernel --options"
+        echo $WARN"*"
+        echo $WARN"*  --config          =       invoke menuconfig"
+	echo $WARN"*"
+        echo $WARN"*  --bootsplash      =       install bootsplash initrd also"
+        echo $WARN"*                            add its initrd path to settings"
+        echo $WARN"*"
+	echo $WARN"*  --buildpkg        =       build a package containing "
+        echo $WARN"*                            kernel,initrd,lib/modules,.config"
+	echo $WARN"*"
+        echo $WARN"*  --livecd          =       build a kernel and initrd for"
+        echo $WARN"*                            livecd usage"
+	echo $WARN"*"
+	echo $WARN"*  --myconfig        =       will use a personal config file"
+	echo $WARN"*			        /etc/kernels/myconfig"
+	echo $WARN"* "
+}
+
+for x in $*
+        do
+        case "${x}" in
+        --config)
+        MENUCONFIG="yes"
+        ;;
+
+        --buildpkg)
+        PACKAGE="yes"
+	NOINSTALL="yes"
+        ;;
+
+	--livecd)
+	LIVECD="yes"
+	NOINSTALL="yes"
+	;;
+
+	--myconfig)
+        MYCONFIG="yes"
+        ;;
+
+        --bootsplash)
+        BOOTSPLASH="yes"
+        ;;
+
+        --help)
+        usage
+        exit 1
+        ;;
+	esac
+done
+
+root_device() {
+	local myroot
+	local mylink	
+	myroot=`awk '/^[ \t]*[^#]/ { if ($2 == "/") { print $1; }}' /etc/fstab`
+	if [ ! -e "$myroot" ]
+	then
+		echo "I can't find the root device specified in /etc/fstab: ${myroot}."
+		echo "Please configure your /etc/fstab file correctly, and then try again. "
+		die
+	fi
+	mylink="`readlink $myroot`"
+	if [ $? -eq 0 ]
+	then
+		#expanded a symlink....
+		myroot="$mylink"
+	fi
+	ROOT_DEVICE=$myroot
+}
+
+configuration() {
+	echo "Gentoo Linux genkernel, version ${GK_VERSION}"
+	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins"
+	echo " Distributed under the GNU General Public License version 2"		
+	echo
+	echo "Settings:"
+#	echo " root device: ${ROOT_DEVICE}"
+	if [ "$MAKEOPTS" = "" ]
+	then
+		echo " make options: (none) (set in make.conf)"
+	else
+		echo " make options: ${MAKEOPTS} (from Portage/make.conf)"
+	fi
+	echo " source tree: ${KD}"
+	echo -n " config type: "
+	
+	if [ "$MYCONFIG" = "yes" ]
+	then 
+	echo -e "user supplied\n config loc: ${CONFIG}/myconfig"
+	elif [ -e ${CONFIG}/config-${KV} ]
+    	then
+	    	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
+    	elif [ -e ${KD}/kernel-config ]
+	then
+		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config"
+	else
+		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config"
+	fi	 
+	
+	echo -n " initrd config: "
+	if [ -e ${KD}/settings ]
+    	then
+		echo "(kernel) ${KD}/settings"
+    		source ${KD}/settings || die "Error sourcing ${KD}/settings; exiting."
+	else
+		echo "(default) ${CONFIG}/settings"
+		source ${CONFIG}/settings || die "Error sourcing ${CONFIG}/settings; exiting."
+	fi
+	echo
+	cd ${KD}
+	#running make mrproper fixes unresolved symbol stuff when switching CPU types with
+	#the custom configure option.
+	if [ "${MRPROPER}" = "yes" ]
+	then
+	ebegin "Running \"make mrproper\""
+	make mrproper > /dev/null
+	eend
+	fi
+	if [ "$MYCONFIG" = "yes" ]
+	then
+		cp -f ${CONFIG}/myconfig ${KD}/.config || die "couldn't copy myconfig"
+
+	elif [ -e ${CONFIG}/config-${KV} ]
+    	then
+    		cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
+    	elif [ -e ${KD}/kernel-config ]
+	then
+		cp -f ${KD}/kernel-config ${KD}/.config || die "couldn't copy 2"
+	else
+		cp -f ${CONFIG}/default-config ${KD}/.config || die "couldn't copy 3"
+	fi	 
+	ebegin "Running \"make oldconfig\""
+	while true;do echo -e "\n";done|make oldconfig >/dev/null
+	eend
+	if [ "$MENUCONFIG" = "yes" ]
+     	then 
+        	echo
+		echo "You will now be able to make customizations to your kernel configuration."
+		echo "Any changes you make will be saved in ${CONFIG}/config-${KV}."
+		echo "Your changes will also be used automatically the next time you use"
+		echo "genkernel to build the ${KV} kernel."
+		echo
+		echo "Hit enter to begin."
+		read
+		make menuconfig    
+		if [ $? -eq 0 ]
+		then
+			cp ${KD}/.config ${CONFIG}/config-${KV}
+		else
+			echo "Error running \"make menuconfig\"; exiting."
+			die
+		fi
+	fi
+}
+
+compile() {
+	local compile	
+	ebegin "Logging to /var/log/genkernel.log"; eend;
+	ebegin "Starting ${KV} build"; eend
+	ebegin "Running \"make dep\""
+	make dep  >/var/log/genkernel.log 2>&1 ||die; eend
+        ebegin "Running \"make bzImage\""
+	make $MAKEOPTS bzImage >/var/log/genkernel.log 2>&1 || die; eend
+	ebegin "Running \"make modules\""
+	make $MAKEOPTS modules >/var/log/genkernel.log 2>&1 || die; eend
+        ebegin "Running \"make modules_install\""
+	if [ "$PACKAGE" = "yes" ]
+	then
+	install -d ${TEMP}/modules
+	INSTALL_MOD_PATH="${TEMP}/modules" make modules_install >/var/log/genkernel.log 2>&1 || die; eend
+	mkdir ${TEMP}/genkernel
+	cp -rf ${TEMP}/modules/lib/modules/${KV} ${TEMP}/genkernel
+	rm -rf ${TEMP}/modules
+	else
+	make modules_install >/var/log/genkernel.log 2>&1 || die; eend
+	fi
+	mount /boot > /dev/null 2>&1
+	if [ "$LIVECD" = "yes" ]
+	then
+	ebegin "Moving bzImage to /kernel-${KV}-livecd"
+        cp arch/i386/boot/bzImage /kernel-${KV}-livecd || die; eend
+	else
+	if [ "$NOINSTALL" = "yes" ]
+	then
+	ebegin "Moving bzimage to ${TEMP}/kernel-${KV}"
+	cp arch/i386/boot/bzImage ${TEMP}/kernel-${KV}
+	else
+	ebegin "Moving bzImage to /boot/kernel-${KV}"
+        cp arch/i386/boot/bzImage /boot/kernel-${KV} || die; eend
+	fi
+fi
+  if [ "$NOINSTALL" = "no" ]
+        then
+        ebegin "Copying System.map to /boot/System.map-${KV}"
+        cp System.map /boot/System.map-${KV}
+        rm -f /boot/System.map.old
+        if [ -L /boot/System.map ]
+        then
+                rm /boot/System.map
+        elif [ -e /boot/System.map ]
+        then
+                mv -f /boot/System.map /boot/System.map.old
+        fi
+        ln -s System.map-${KV} /boot/System.map
+        eend
+        else
+        ebegin "Skipping System.map copy"
+        eend
+        fi
+}
+
+busybox() {
+	local busy
+	ebegin "Building busybox"
+	cd ${TEMP} 
+	rm -rf ${BUSYBOX_DIR} 
+	tar -xjf ${BUSYBOX_TARBALL}
+	cd ${BUSYBOX_DIR} 
+	cp Config.h Config.h.orig
+	sed -e "s://#define BB_INSMOD:#define BB_INSMOD:" \
+	-e "s://#define BB_PIVOT_ROOT:#define BB_PIVOT_ROOT:" \
+	-e "s://#define BB_LOADKMAP:#define BB_LOADKMAP:" \
+	-e "s://#define BB_LOSETUP:#define BB_LOSETUP:" \
+	-e "s://#define BB_RMMOD:#define BB_RMMOD:" Config.h.orig > Config.h
+	make clean
+	make DOSTATIC=true
+        install -d ${TEMP}/kernel-initrd
+        dd if=/dev/zero of=${TEMP}/initrd bs=1k count=${INITRD_SIZE} 
+        mke2fs -F -q -N5000 ${TEMP}/initrd
+        mount -t ext2 -o loop ${TEMP}/initrd ${TEMP}/kernel-initrd
+        install -d ${TEMP}/kernel-initrd/{bin,etc,usr,proc,tmp,.initrd,new_root}
+        ln -s bin ${TEMP}/kernel-initrd/sbin
+        ln -s ../bin ${TEMP}/kernel-initrd/usr/bin
+        ln -s ../bin ${TEMP}/kernel-initrd/usr/sbin
+        install -d ${TEMP}/kernel-initrd/keymaps
+        cp ${GK_SHARE}/key.lst ${TEMP}/kernel-initrd/keymaps
+        tar xzf ${GK_SHARE}/bin-keymaps.tar.gz -C ${TEMP}/kernel-initrd/keymaps
+        (mkdir ${TEMP}/kernel-initrd/dev;cd ${TEMP}/kernel-initrd/dev;MAKEDEV generic-i386;MAKEDEV scd)
+        cat >${TEMP}/kernel-initrd/etc/fstab <<EOF
+/dev/ram0       /             cramfs defaults
+proc            /proc         proc   defaults  0 0
+EOF
+        cp ${TEMP}/${BUSYBOX_DIR}/busybox ${TEMP}/kernel-initrd/bin 
+        for i in '[' ash basename cat chroot clear cp dirname echo env false find \
+        grep gunzip gzip insmod ln ls loadkmap losetup lsmod mkdir mknod modprobe more mount mv \
+        pivot_root ps awk pwd rm rmdir rmmod sh sleep tar test touch true umount uname \
+        xargs yes zcat chmod chown; do
+               rm -f ${TEMP}/kernel-initrd/bin/$i
+               ln  ${TEMP}/kernel-initrd/bin/busybox ${TEMP}/kernel-initrd/bin/$i 
+        done
+	eend
+}
+
+initrd() {
+        ebegin "Creating initrd"
+	local modc i mods mymod
+	for modc in storage firewire ataraid pcmcia usb
+        do
+		install -d ${TEMP}/kernel-initrd/modules/${modc}
+		mods=`echo $modc | tr [:lower:] [:upper:]`_MODULES
+		for i in ${!mods}
+		do
+			mymod=`find /lib/modules/${KV} -name "${i}.o"`
+			if [ -z "${mymod}" ]
+			then
+				echo "Warning: ${i}.o not found; skipping..."
+				continue
+			fi
+			cp $mymod ${TEMP}/kernel-initrd/modules/${modc} 
+		done
+	done
+        #tweak our storage module settings based on our initrd
+        
+	if [ "$LIVECD" = "yes" ]
+        then
+	cd ${TEMP} 
+	rm -rf ${CLOOP_DIR}
+	tar xzf ${GK_SHARE}/${CLOOP_TARBALL}
+	cd ${CLOOP_DIR}
+	make KERNEL_DIR=/usr/src/linux
+	cd ..
+	cp ${TEMP}/${CLOOP_DIR}/cloop.o ${TEMP}/kernel-initrd/modules/cloop.o
+	rm -rf ${TEMP}/${CLOOP_DIR}
+	cat ${GK_SHARE}/livecdrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
+					-e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
+        				-e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
+					-e "s/##USB_MODULES##/${USB_MODULES}/" \
+					> ${TEMP}/kernel-initrd/linuxrc
+	else 
+	cat ${GK_SHARE}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+                                        -e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
+                                        -e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
+                                        -e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
+                                        -e "s/##USB_MODULES##/${USB_MODULES}/" \
+                                        > ${TEMP}/kernel-initrd/linuxrc
+	fi
+
+        chmod +x ${TEMP}/kernel-initrd/linuxrc
+	umount ${TEMP}/kernel-initrd
+	gzip -f -9 ${TEMP}/initrd
+}
+bootsplash() {
+	if [ "$BOOTSPLASH" = "yes" ]
+	then
+	ebegin "Adding Bootsplash Initrd"
+        cat ${BOOT_SPLASH_INITRD} >> ${TEMP}/initrd.gz || die
+	fi
+	if [ "$LIVECD" = "yes" ]
+	then
+	ebegin "Moving initrd to /initrd-${KV}-livecd"
+	mv -f ${TEMP}/initrd.gz /initrd-${KV}-livecd
+	else
+	if [ "$NOINSTALL" = "yes" ]
+	then
+	mv -f ${TEMP}/initrd.gz ${TEMP}/initrd-${KV}
+	else
+	ebegin "Moving initrd to /boot/initrd-${KV}"
+	        mv -f ${TEMP}/initrd.gz /boot/initrd-${KV}
+	eend
+	fi
+fi
+}
+buildpkg() {
+if [ "$PACKAGE" = "yes" ]
+	then
+	ebegin "Building Kernel Package"
+	mv ${TEMP}/kernel-${KV} ${TEMP}/genkernel || die "cannot copy kernel"
+	mv ${TEMP}/initrd-${KV} ${TEMP}/genkernel || die "cannot copy initrd"
+	eend
+	cp -f /usr/src/linux-${KV}/.config ${TEMP}/genkernel/config >/var/log/genkernel.log 2>&1
+	cd ${TEMP}
+	ebegin "Copying Kernel package to /kernel-${KV}.tar.bz2"
+	tar -jcvf /kernel-${KV}.tar.bz2 genkernel >/var/log/genkernel.log 2>&1 || die
+	eend
+	rm -rf ${TEMP}/genkernel
+	fi
+}
+finish() {
+	echo
+	einfo "Build completed successfully!"
+	echo
+	einfo "Please specify /boot/kernel-${KV} and /boot/initrd-${KV}"
+	einfo "when customizing your boot loader configuration files."
+	echo
+	einfo "A detailed log can be found at /var/log/genkernel.log."
+	rm -rf /tmp/KV
+	umount ${TEMP}/kernel-initrd >/var/log/genkernel.log 2>&1
+
+	rm -rf ${TEMP}/kernel-initrd
+	rm -rf ${TEMP}/${BUSYBOX_DIR}
+}
+
+#root_device
+configuration
+compile
+ebegin "Building busybox"
+busybox >/var/log/genkernel.log 2>&1
+eend
+ebegin "Creating initrd"
+initrd >/var/log/genkernel.log 2>&1
+eend
+bootsplash
+buildpkg
+finish
+exit 0
+
+
