@@ -12,8 +12,6 @@
 <!-- Selection parameter -->
 <xsl:param name="catid">0</xsl:param>
 
-<xsl:variable name="userfile" select="document('/proj/en/devrel/roll-call/userinfo.xml')"/>
-
 <xsl:template match="dynamic">
   <xsl:variable name="metadoc"  select="document(@metadoc)"/>
   <xsl:variable name="pmetadoc">
@@ -326,6 +324,9 @@
   <xsl:param name="metadoc"/>
   <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
+
+  <xsl:variable name="userfile" select="document('/proj/en/devrel/roll-call/userinfo.xml')"/>
+
   <chapter id="members">
   <title><xsl:value-of select="func:gettext('members', $lang)"/></title>
   <section>
