@@ -96,7 +96,10 @@ def create_pkg_db(db):
 		description=string.replace(description,'&','&amp;')
 		description=string.replace(description,'<','&lt;')
 		description=string.replace(description,'>','&gt;')
-			
+		license=string.replace(license,'&','&amp;')
+		license=string.replace(license,'<','&lt;')
+		license=string.replace(license,'>','&gt;')
+		
 		####################
 		# whack in the version
 		####################
