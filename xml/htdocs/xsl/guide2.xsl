@@ -73,6 +73,9 @@
 				</xsl:for-each></select></form>
                     <xsl:apply-templates select="chapter"/>
                     <br/>
+                    <xsl:if test="/guide/license">
+                        <xsl:apply-templates select="license" />
+                    </xsl:if>
                     <br/>
 <!--content end-->
                   </td>
@@ -239,20 +242,20 @@
             </td>
             <td valign="bottom" align="left" bgcolor="#000000" colspan="2">
               <p class="menu">
-	      	<xsl:choose>
-			<xsl:when test="/mainpage/@id='news'">
-				<a class="highlight" href="/">News</a> |
-			</xsl:when>
-			<xsl:otherwise>
-				<a class="menulink" href="/">News</a> |
-			</xsl:otherwise>
-		</xsl:choose>
 		<xsl:choose>
 			<xsl:when test="/mainpage/@id='about'">
 				<a class="highlight" href="/main/en/about.xml">About</a> |
 			</xsl:when>
 			<xsl:otherwise>
 				<a class="menulink" href="/main/en/about.xml">About</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+	      	<xsl:choose>
+			<xsl:when test="/mainpage/@id='projects'">
+				<a class="highlight" href="/proj/en/metastructure/projects.xml">Projects</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/proj/en/metastructure/projects.xml">Projects</a> |
 			</xsl:otherwise>
 		</xsl:choose>
 		<xsl:choose>
@@ -433,13 +436,16 @@
                             <td valign="top">
 							<img src="/images/gentoo-new.gif" alt="new"/>
 							</td>
-                            <td valign="middle">
+                            <!--
+			    <td valign="middle">
 							We produce Gentoo Linux, a special flavor of Linux that can be automatically 
 							optimized and customized for just about any application or need. Extreme
 							performance, configurability and a top-notch user and developer community are
 							all hallmarks of the Gentoo experience.
 							To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
 				</td>
+			    -->
+			    <td valign="middle"><b>We encourage our european friends to make up their mind on a <a href="http://swpat.ffii.org/">proposed software patents legislation</a> in the European Union which will be voted on September 22nd 2003 in the European Parliament.</b></td>
                           </tr>
                         </table>
                         <br/>
@@ -790,7 +796,7 @@
       <xsl:when test="title">
         <p class="chaphead">
           <span class="chapnum">
-            <a name="doc_chap{$chid}"><xsl:number/>.</a>
+            <a name="doc_chap{$chid}"><xsl:number/>. </a>
           </span>
           <xsl:value-of select="title"/>
         </p>
@@ -1141,5 +1147,10 @@
 	  </xsl:template>
 	    <xsl:template match="ignoreinguide">
 	      </xsl:template>
+<xsl:template match="license">
+<pre>
+The contents of this document are licensed under the <a href="http://creativecommons.org/licenses/by-sa/1.0">Creative Commons - Attribution / Share Alike</a> license.
+</pre>
+</xsl:template>
 
 </xsl:stylesheet>
