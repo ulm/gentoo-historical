@@ -1,6 +1,6 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.7 2003/10/13 01:18:04 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.8 2003/10/13 05:05:58 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
@@ -173,14 +173,14 @@ pre_build() {
 		1)
 			SRCSTAGE=2
 			SRCVER=${2}
-			SRCARCH=${MAINARCH}
-			DESTARCH=${MAINARCH}
+			SRCARCH=${SUBARCH}
+			DESTARCH=${SUBARCH}
 			SRCFORTAR=${CHROOTDIR}/tmp/stage1root
 		;;
 		2)
 			SRCSTAGE=1
 			SRCVER=${2}
-			SRCARCH=${MAINARCH}
+			SRCARCH=${SUBARCH}
 			DESTARCH=${SUBARCH}
 		;;
 		3)
