@@ -388,7 +388,7 @@ class GLIInstallTemplate:
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_system")
 		
 		exitstatus = self._emerge(self._install_profile.get_kernel_source_pkg())
 		if exitstatus != 0:
@@ -397,7 +397,7 @@ class GLIInstallTemplate:
 	def build_kernel(self):
 		"Builds kernel"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_kernel_sources")
 		
 		# Null the genkernel_options
 		genkernel_options = ""
@@ -412,7 +412,7 @@ class GLIInstallTemplate:
 			
 		# Decide whether to use bootsplash or not
 		if self._install_profile.get_kernel_bootsplash():
-			genkernel_options = genkernel_options + " --no-bootsplash"
+			genkernel_options = genkernel_options + " --bootsplash"
 		else:
 			genkernel_options = genkernel_options + " --no-bootsplash"
 			
@@ -428,14 +428,10 @@ class GLIInstallTemplate:
 		if exitstatus != 0:
 			raise "KernelBuildError", "Could not build kernel!"
 			
-	def install_system_utilities(self):
-		"Installs and sets up logger, cron, fstools, rp-pppoe, pcmcia-cs"
+	def install_logging_daemon(self):
+		"Installs and sets up logger"
 		# Dependency checking		
-		self._depends(["unpack_tarball", "build_kernel"])
-		
-		#
-		# LOGGING DAEMON
-		#
+		self._depends("emerge_system")
 
 		# Emerge Logging Daemon
 		exitstatus = self._emerge(self._install_profile.get_logging_daemon_pkg())
@@ -446,11 +442,12 @@ class GLIInstallTemplate:
 		exitstatus = self._run("rc-update add " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " default", True)
 		if exitstatus != 0:
 			raise "LoggingDaemonError", "Failure adding " + self._install_profile.get_logging_daemon_pkg().split('/')[-1].lower() + " to default runlevel!"
-		
-		#
-		# CRON DAEMON
-		#
-		
+
+	def install_cron_daemon(self):
+		"Installs and sets up cron"
+		# Dependency checking		
+		self._depends("emerge_system")
+
 		# Emerge Cron Daemon
 		exitstatus = self._emerge(self._install_profile.get_cron_daemon_pkg())
 		if exitstatus != 0:
@@ -466,10 +463,11 @@ class GLIInstallTemplate:
 			exitstatus = self._run("crontab /etc/crontab", True)
 			if exitstatus != 0:
 				raise "CronDaemonError", "Failure making crontab!"
-				
-		#
-		# FILE SYSTEM TOOLS
-		#
+
+	def install_filesystem_tools(self):
+		"Installs and sets up fstools"
+		# Dependency checking		
+		self._depends("emerge_system")
 		
 		# Get the list of file system tools to be installed
 		filesystem_tools = self._install_profile.get_filesystem_tools_pkgs()
@@ -483,10 +481,11 @@ class GLIInstallTemplate:
 			exitstatus = self._emerge(package)
 			if exitstatus != 0:
 				raise "FilesystemToolsError", "Could not emerge " + package + "!"
-				
-		#
-		# RP-PPPOE
-		#
+
+	def install_rp-pppoe(self):
+		"Installs rp-pppoe"
+		# Dependency checking		
+		self._depends("emerge_system")
 		
 		# If user wants us to install rp-pppoe, then do so
 		if self._install_profile.get_install_rp-pppoe():
@@ -495,10 +494,12 @@ class GLIInstallTemplate:
 				raise "RP-PPPOEError", "Could not emerge rp-pppoe!"
 				
 		# Should we add a section here to automatically configure rp-pppoe?
+		# I think it should go into the setup_network_post section
 				
-		#
-		# PCMCIA-CS
-		#
+	def install_pcmcia-cs(self):
+		"Installs and sets up pcmcia-cs"
+		# Dependency checking		
+		self._depends("build_kernel")
 		
 		# If user wants us to install pcmcia-cs, then do so
 		if self._install_profile.get_install_pcmcia-cs():
@@ -517,13 +518,13 @@ class GLIInstallTemplate:
 		# THIS IS ARCHITECTURE DEPENDANT!!!
 		#
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_system")
 		pass
 
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_system")
 		
 		# Run etc-update overwriting all config files
 		exitstatus = self._run('echo "-5" | etc-update', True)
@@ -532,12 +533,11 @@ class GLIInstallTemplate:
 			
 		self.configure_make_conf()
 		self.configure_fstab()
-		self.configure_rc_conf()
 
 	def configure_rc_conf(self):
 		"Configures rc.conf"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("update_config_files")
 		
 		# Get make.conf options
 		options = self._install_profile.get_rc_conf()
@@ -556,14 +556,14 @@ class GLIInstallTemplate:
 	def set_root_password(self):
 		"Sets the root password"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_system")
 		
 		exitstatus = self._run('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chpasswd -e', True)
 
 	def set_users(self):
 		"Sets up the new users for the system"
 		# Dependency checking		
-		self._depends("unpack_tarball")
+		self._depends("emerge_system")
 
 	def unmount_devices(self):
 		"Unmounts mounted devices after installation"
