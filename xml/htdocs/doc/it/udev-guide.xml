@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/udev-guide.xml,v 1.1 2004/05/05 20:37:48 mush Exp $ -->
+
+<guide link="/doc/en/udev-guide.xml">
+<title>Guida a udev su Gentoo</title>
+
+<author title="Autore">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Contributi">
+  <mail link="g.guidi@sns.it">Gregorio Guidi</mail>
+</author>
+
+<abstract>
+Questo documento spiega cos'è e come si può usare udev su Gentoo.
+</abstract>
+
+<license/>
+
+<version>0.8</version>
+<date>26 Aprile 2004</date>
+
+<chapter>
+<title>Cos'è udev?</title>
+<section>
+<title>La directory /dev</title>
+<body>
+
+<p>
+La directory <path>/dev</path> contiene al suo interno una grande quantita' di file, ognuno dei quali rappresenta un dispositivo collegato al sistema, <c>/dev/hda</c> rappresenta il dispositivo master collegato al primo canale IDE, <c>/dev/lp0</c> rappresenta la prima stampante collegata su una porta parallela; alcuni di questi dispositivi, per esempio <c>/dev/hda</c>, restano collegati al sistema durante tutto il tempo del suo funzionamento, mentre altri, dispositivi USB o IEEE1394 (Firewire), possono venire collegati o scollegati anche mentre il sistema è in funzione.
+</p>
+
+<p>
+I file di dispositivo possono essere creati staticamente con il comando di sistema <c>mknod</c>, oppure possono esseri creati e rimossi dinamicamente, quando vengono collegati o scollegati dal sistema, usando lo pseudo-filesystem devfs e il demone devfsd oppure udev.
+</p>
+
+<p>
+udev, quindi, ha proprio lo scopo di creare o rimuovere quando necessario i file di dispositivo dalla directory <path>/dev</path>, e assegnare a questi file il nome appropriato, eventualemente creando anche dei link simbolici a questi file.
+</p>
+
+<p>
+Le caratteristiche del progetto udev sono:
+</p>
+
+<ul>
+  <li>Gira in spazio utente</li>
+  <li>Crea e rimuove dinamicamente i file di dispositivo</li>
+  <li>Assegna i nomi alle periferiche</li>
+  <li>Mette a disposizione un API utilizzabile nello spazio utente</li>
+</ul>
+
+<p>
+Per fornire queste caratteristiche, udev è sviluppato in tre diversi progetti:
+<e>namedev</e>, <e>libsysfs</e> e, ovviamente, <e>udev</e>.
+</p>
+
+</body>
+</section>
+<section>
+<title>namedev</title>
+<body>
+
+<p>
+namedev consente di definire i nomi delle periferiche indipendentemente dal programma udev. Questo permette di avere uno modello di assegnamento dei nomi molto flessibile e che può essere modificato in base alle proprie esigenze.
+</p>
+
+<p>
+Attualmente namedev fornisce un solo modello per l'assegnamento dei nomi ai dispositivi, fornito da <uri link="http://www.lanana.org">LANANA (The Linux Assigned Names And Numbers Authority)</uri>, che è quello che viene attualmente usato dalla maggior parte dei sistemi Linux.
+</p>
+
+<p>
+namedev usa un procedimento suddiviso in cinque passi per assegnare un nome a una data periferica. Se si trova un nome per la periferica durante uno di questi passi, viene usato questo nome e la procedura si interrompe. I cinque passi, nell'ordine, sono:
+</p>
+ 
+<ul>
+  <li>etichetta o numero seriale</li>
+  <li>numero della periferica sul bus</li>
+  <li>topologia del bus</li>
+  <li>nome assegnato staticamente</li>
+  <li>nome fornito dal kernel</li>
+</ul>
+
+<p>
+namedev controlla per prima cosa se la periferica ha un identificatore univoco. Per esempio i dispositivi USB hanno un numero seriale unico; le periferiche SCSI hanno un UUID unico. Se nel file di configurazione in uso esiste una regola che assegna il nome al dispositivo in base a questo identificatore, namedev applica la regola e assegna il nome alla periferica.
+</p>
+
+<p>
+Successivamnte viene controllato il numero con cui il dispositivo viene identificato sul bus . Per esempio i numeri assegnati ai dispositivi sul bus PCI cambiano di rado durante il ciclo di vita di un sistema, per cui si possono considerare un buon metodo per assegnare un nome a una periferica. 
+</p>
+
+<p>
+Si può assegnare un nome a un dispositivo anche sulla base di come questo è fisicamente collegato al bus (<e>topologia del bus</e>), anche questo è un metodo abbastanza valido per identificare univocamente una periferica, almeno fino a quando non viene variata la disposizione fisica dei dispositivi all'interno del sistema.
+</p>
+
+<p>
+È possibile definire una regola che sostituisca staticamente, al nome fornito dal kernel, una stringa arbitraria.
+</p>
+
+<p>
+Se non esistono regole per assegnare un nome a un dispositivo, il comportamento predefinito di udev è di assegnare alla periferica il nome fornito dal kernel.
+</p>
+
+</body>
+</section>
+<section>
+<title>libsysfs</title>
+<body>
+
+<p>
+udev interagisce con il kernel tramite il filesystem sysfs. Il progetto libsysfs mette a disposizione un API per accedere alle informazione fornite dal filesystem sysfs. Questo consente di poter interrogare qualunque tipo di dispositivo hardware senza doversi preoccupare di che tipo di hardware si tratti.
+</p>
+
+</body>
+</section>
+<section>
+<title>udev</title>
+<body>
+
+<p>
+Ogni volta che il kernel percepisce che sono stati collegati o rimossi dei dispositivi, lancia il programma <path>/sbin/hotplug</path>. Hotplug a sua volta lancia i programmi che sono stati linkati nella directory <path>/etc/hotplug.d/default</path>, nella quale si trova anche un link simbolico all'eseguibile udev. Hotplug invia le informazioni fornite dal kernel al sistema udev che provvedere a aggiungere o rimuovere gli oppurtuni file di periferica dalla directory <path>/dev</path>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Usare udev su Gentoo</title>
+<section>
+<title>Requisiti</title>
+<body>
+
+<p>
+udev è stato pensato per funzionare in combinazione con i kernel 2.6 (come per esempio <c>development-sources</c> o <c>gentoo-dev-sources</c>). Oltre a avere installato un kernel 2.6 è necessario avere installato sul proprio sistema anche la versione piu' recente di <c>sys-apps/baselayout</c>.
+</p>
+
+<pre caption="Installare udev">
+# <i>emerge udev</i>
+</pre>
+
+<p>
+udev installa come dipendenza anche il paccheto <c>sys-apps/hotplug-base</c>. Se però si ha intenzione di usare hotplug per eseguire azioni specifiche quando vengono collegate al sistema periferiche USB o IEEE1394 è necessario installare anche l'intero pacchetto degli script di hotplug.
+</p>
+
+<pre caption="Installare gli script opzionali di hotplug">
+# <i>emerge hotplug</i>
+</pre>
+
+<p>
+Se si sono utilizzate le impostazioni predefinite di <c>genkernel</c> per compilare il kernel non ci sono modifiche da apportare alla configurazione del kernel stesso. Altrimenti se si è configurata manualmente la compilazione del kernel bisogna assicurarsi di aver attivato le seguenti opzioni:
+</p>
+
+<pre caption="Opzioni del kernel necessarie">
+General setup ---&gt;
+  [*] Support for hot-pluggable devices
+
+File systems ---&gt;
+  Pseudo filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+</pre>
+
+<p>
+Se si desidera si puo' mantenere attiva anche l'opzione <c>/dev file system support (OBSOLETE)</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configurazione</title>
+<body>
+
+<p>
+Installando udev il sistema è già configurato per funzionare correttamente, gli script di avvio di Gentoo non avvieranno il demone devfsd e disabiliteranno il filesystem devfs; se si vuole utilizzare questa configurazione non è necessario leggere oltre. Se invece si vuole configurare personalmente il sistema, per farlo funzionare così com'è stato pensato allora è necessario leggere attentamente quanto segue.
+</p>
+
+<warn>
+<e>Non</e> ci si può lamentare se qualcosa va storto. Utilizzando questo sistema si distrugge il lavoro degli sviluppatori di Gentoo che hanno modificato gli script di avvio per fare in modo che udev funzionasse bene con Gentoo!</warn>
+
+<p>
+Prima di tutto si deve disattivare il salvataggio dei file delle periferiche: si deve modificare la variabile <c>RC_DEVICE_TARBALL</c> che si trova nel file <path>/etc/conf.d/rc</path> impostandola a <c>no</c>:
+</p>
+
+<pre caption="/etc/conf.d/rc">
+RC_DEVICE_TARBALL="no"
+</pre>
+
+<p>
+Se si è lasciato attivo il supporto a devfs nel kernel lo si può disattivare nel file di configurazione del bootloader aggiungendo il parametro del kernel <c>devfs=nomount</c>. Se invece si volesse riattivare il supporto a devfs disabilitanto udev, si dovrà passare al kernel il parametro <c>gentoo=noudev</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Problemi Noti</title>
+<section>
+<title>File di dispositivo mancanti all'avvio</title>
+<body>
+
+<p>
+Se non si riesce a avviare il sistema con successo perché si ottiene un errore che dice che il file <path>/dev/null</path> non è stato trovato, o perché la console iniziale non esiste, il problema è dovuto alla mancanza di alcuni file che devono essere presenti nel sistema <e>prima</e> che
+<path>/dev</path> venga montato e udev inizi gestirlo. Questo è un errore piuttosto comune sui sistemi Gentoo installati usando supporti vecchi.
+</p>
+
+<p>
+Avendo installato <c>sys-apps/baselayout-1.8.12</c>, o più recente, questo incoveniente dovrebbe essere alleviato dal fatto che il sistema dovrebbe essere comunque in grado di avviarsi. Comunque, per evitare noiosi avvisi, è sufficiente creare i file di dispositivo mancanti, come descritto in seguito.
+</p>
+
+<p>
+Per visualizzare i dispositivi che sono disponibili prima che il filesystem <path>/dev</path> venga montato bisogna eseguire i seguenti comandi:
+</p>
+
+<pre caption="Elenco dei dispositivi disponibili all'avvio">
+# <i>mkdir test</i>
+# <i>mount --bind / test</i>
+# <i>cd test/dev</i>
+# <i>ls</i>
+</pre>
+
+<p>
+I dispositivi necessari per avviare correttamente il sistema sono <path>/dev/null</path> e <path>/dev/console</path>. Se non vengono viasualizzati durante il test precendente vanno creati manualmente. I comandi seguenti vanno eseguiti nella directory <path>test/</path> creata precentemente:
+</p>
+
+<pre caption="Creare i file di dispositivo mancanti">
+# <i>mknod -m 660 dev/console c 5 1</i>
+# <i>mknod -m 660 dev/null c 1 3</i>
+</pre>
+
+<p>
+Quando si sono impartiti questi comandi è necessario ricordarsi di smontare la directory <path>test/</path>:
+</p>
+
+<pre caption="Smontare la directory test/">
+# <i>umount test</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>udev e nvidia</title>
+<body>
+
+<p>
+Nel caso si usassero i driver proprietari di nVidia e il server grafico X non partisse, in un sistema configurato come spiegato nel paragrafo "Configurazione", bisogna assicurarsi che:
+</p>
+
+<ul>
+  <li>
+    il modulo <c>nvidia</c> sia elencato nel file <path>/etc/modules.autoload.d/kernel-2.6</path>
+  </li>
+  <li>
+    sia installata una versione di <c>nvidia-kernel</c> uguale o maggiore di <c>media-video/nvidia-kernel-1.0.5336-r2</c>
+  </li>
+  <li>
+    sia installata una versione di <c>sys-apps/baselayout</c> uguale o maggiore di <c>sys-apps/baselayout-1.8.12</c>
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Altri problemi</title>
+<body>
+
+<p>
+Se il file corrispondente a un dispositivo non viene creato quando si carica il modulo relativo tramite il file <path>/etc/modules.autoload.d/kernel-2.6</path>, ma compare caricando manualmente il modulo tramite modprobe si provi a installare <c>sys-apps/baselayout-1.8.12</c>, o più recente.
+</p>
+
+<p>
+Il supporto per i dispositivi framebuffer (<path>/dev/fb/*</path>) è stato introdotto a partire dalla versione 2.6.6-rc2 del kernel.
+                                                               </p>
+
+<p>
+Nel caso si usasse un kernel precendente alla versione 2.6.4 è necessario includere esplicitamente il supporto per il filesystem <path>/dev/pts</path>.
+</p>
+
+<pre caption="Abilitare il filesystem /dev/pts">
+File systems ---&gt;
+  Pseudo filesystems ---&gt;
+    [*] /dev/pts file system for Unix98 PTYs
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Risorse &amp; Riconoscimenti</title>
+<section>
+<body>
+
+<p>
+La conferenza sul sistema udev tenuta da Greg Kroah-Hartman (IBM Corporation) al Linux Symposium (Ottawa, Canada - 2003) è un ottimo punto di partenza per una buona comprensione di udev.
+</p>
+
+<p>
+<uri link="http://webpages.charter.net/decibelshelp/LinuxHelp_UDEVPrimer.html">Decibel's 
+UDEV Primer</uri> è un documento molto approfondito riguardo all'uso di udev su Gentoo.
+</p>
+
+<p>
+<uri link="http://www.reactivated.net/udevrules.php">Writing udev rules</uri>, scritto dallo sviluppatore di Gentoo Daniel Drake, è un documento eccellente per imparare come personalizzare la proprio installazione di udev.</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
