@@ -1,0 +1,714 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/nl/rc-scripts.xml">
+<title>Gentoo Linux 1.0 Init Systeem</title>
+<author title="Author"><mail link="azarah@gentoo.org">Martin Schlemmer</mail></author>
+<author title="Proof-reader"><mail link="seemant@gentoo.org">Seemant Kulleen</mail></author>
+<author title="Translator"><mail link="sven.vermeulen@rug.ac.be">Sven Vermeulen</mail></author>
+
+<abstract>Deze handleiding is een introductie tot Gentoo Linux' Init systeem,
+en beschrijft tevens enkele zaken ivm met schrijven van rc-scripts.
+</abstract>
+
+<version>1.0.2</version>
+<date>05 Januari 2003</date>
+
+<chapter>
+<title>Inleiding</title>
+<section>
+<body>
+
+<p>
+Gentoo Linux gebruikt een initsysteem die vooral gecontroleerd wordt door
+dependencies. Ze zou eenvoudig moeten zijn in onderhoud, maar toch krachtig en
+flexibel genoeg voor eender welke opstelling.
+Deze handleiding mag niet beschouwdt worden als een introductie tot de interne
+werking van het systeem; eerder is deze een snelle handleiding over hoe je het
+Gentoo's initsysteem klaar en draaiende krijgt.
+Voor diegenen die geinteresseerd zijn in de interne werking: lees de broncode
+:)
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Runlevels</title>
+<section>
+<body>
+
+<p>
+In tegenstelling tot andere initsystemen maakt Gentoo's initsysteem geen
+gebruik van vreemde namen of nummers, maar eerder van eigengedefinieerde namen
+die vertaald worden naar de standaard runlevelnummers van init.
+</p>
+
+<note>
+Per default zijn er 3 runlevels, namelijk <e>&quot;boot&quot;</e>,
+<e>&quot;default&quot;</e> en <e>&quot;nonetwork&quot;</e>.
+</note>
+
+<p>
+De <e>&quot;boot&quot;</e> runlevel is default bij de meeste configuraties, en 
+zoals de naam al voorstelt is het deze runlevel die uitgevoerd wordt tijdens 
+het booten. De volgende is <e>&quot;default&quot;</e> die, zoals de naam al
+voorstelt, uitgevoerd wordt na het booten. De latste is
+<e>&quot;nonetwork&quot;</e> die eigenlijk puur een voorbeeldrol speelt.
+</p>
+
+<p>
+De runlevels bevinden zich in <path>/etc/runlevels</path>, in een submap
+genaamd naar de runlevel; deze submap is gevuld met symlinks naar services die
+door de runlevel opgestart worden.
+</p>
+
+<note>
+De aangeraden manier om services toe te voegen of te verwijderen staat in de
+sectie &quot;Aangaande rc-update&quot;.
+</note>
+
+<p>
+Zoals al eerder vermeld kan de naam van de runlevel aangepast worden naar
+eender welke term de gebruiker wenst, maar men mag niet vergeten
+<path>/etc/inittab</path> mee aan te passen om de aanpassing door te voeren.
+</p>
+
+<warn>
+Een uitzondering is dat de <e>&quot;boot&quot;</e> runlevel NOOIT mag hernoemd
+worden, aangezien dat leid tot defecte werking van je systeem.
+</warn>
+
+<p>The <path>/sbin/rc</path> script makes all of this work, and can be invoked
+to switch between virtual runlevels on the fly.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Virtuele runlevels</title>
+<body>
+
+<p>
+Aangezien de runlevels niet statisch gemapped worden aan deze van init kan je
+meer runlevels aanmaken dan dat er nummers ondersteund worden door init.
+Hierdoor kan de gebruiker profielen of virtuele runlevels aanmaken afhankelijk
+van de noodzaak.
+</p>
+
+<p>
+Bijvoorbeeld, een laptop gebruiker kan 2 default runlevels hebben, genaamd
+&quot;online&quot; en &quot;offline&quot;. Hierdoor kan men een actieve
+runlevel hebben voor wanneer de PCMCIA NIC ingeplugged is, en een waar deze NIC
+niet ingeplugged is. De PCMCIA-scripts kunnen geconfigureerd worden om,
+afhankelijk van de situatie, <c>&quot;/sbin/rc online&quot;</c> respectievelijk
+<c>&quot;/sbin/rc offline&quot;</c> uit te voeren, dit om de correcte services
+te laden afhankelijk van de aanwezigheid van de NIC.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Runlevels en XFree86</title>
+<body>
+
+<p>
+Volgens de Gentoo-manier van doen hebben we geen runlevel expliciet voor
+het grafisch op te starten, maar enkel een rc-script (initscript) die dat 
+doet. Deze heet, zoals bij de meeste andere distributies, &quot;xdm&quot; 
+en kan aan eender welke runlevel toegevoegd worden indien de gebruiker dat 
+wenst.
+</p>
+
+<warn>&quot;xdm&quot; toevoegen aan de boot runlevel kan resulteren in
+ongewenste werking van het systeem!</warn>
+
+<p>
+Per default, als je xdm, gdm of kdm wil uitvoeren alvorens de gettys gestart
+worden, zal X starten op de eerste vrije console. Bij tragere machines is het
+geen probleem indien de Desktop Manager service pas op het einde van een
+runlevel's init proces gestart wordt. De gettys zullen starten voor dat X start
+en deze laatste zal zich dus binden aan console 7 zoals gewenst.
+Bij snellere machines is dit echter niet het geval. X zal starten alvorens de
+gettys gestart zijn (gewoonlijk op console 2). Wanneer de gettys starten, nemen
+deze controle over van het keyboard en verliest de Desktop Manager
+keyboardondersteuning.
+</p>
+
+<p>
+Dit kan opgelost worden door de Desktop Managers' opstartscript in een init's
+extra runlevel te plaatsen, bijvoorbeeld 'a'. Aangezien 'a' geen echte runlevel
+is dient onze &quot;xdm&quot; script enkel <c>&quot;telinit a&quot;</c> op te
+roepen. Hierdoor zullen alle services in runlevel 'a' uitgevoerd worden
+<i>nadat</i> alle services in de huidige runlevel uitgevoerd zijn, dus wanneer
+alle gettys opgestart zijn.
+</p>
+
+<note>Meer informatie over runlevel 'a' krijg je door init's manpage te
+lezen</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>RC-Scripts</title>
+<section>
+<body>
+
+<p>
+rc-scripts zijn scripts die de basis-functies van elke service definieren,
+inclusief dependencies voor opstarten en afsluiten. Ze bevinden zich in
+<path>/etc/init.d</path>
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Basisch layout van een rc-script</title>
+   
+<body>
+<pre caption="rc-script layout">
+#!/sbin/runscript
+ 
+depend() {
+    need bar
+}
+ 
+start() {
+    ebegin &quot;Starting foo&quot;
+    /sbin/foo
+    eend $? &quot;Failed to start foo&quot;
+}
+ 
+stop() {
+    ebegin &quot;Stopping foo&quot;
+    kill $(cat /var/run/foo.pid)
+    eend $? &quot;Failed to stop foo&quot;
+}
+</pre>
+
+<note>De interpreter is &quot;/sbin/runscript&quot;. De &quot;depend&quot;
+functie is optioneel. Alle rc-scripts moeten minstens de &quot;start&quot;
+functie hebben.</note>
+
+</body>
+</section>
+
+<section>
+<title>Opstarten controleren</title>
+<body>
+
+<p>
+De algemene opstartvolgorde van de services in een runlevel is alfabetisch. Dit
+komt wegens de output van <path>/bin/ls</path>.
+</p>
+
+<p>
+De eerste methode om van de default opstartvolgorde af te wijken zijn
+dependencies. Indien er geen relatie is tussen services kan het order-type
+gebruikt worden.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Dependency types</title>
+<section>
+<body>
+
+<p>
+De meeste services zijn gerelateerd of hangen af van een andere service.
+</p>
+
+<p>
+Postfix bijvoorbeeld vereist &quot;network&quot; draaiende, alsook een system
+logger.
+</p>
+
+<p>
+Samba aan de andere hand vereist dat &quot;network&quot; draaiende is. Indien
+echter CUPS gebruikt wordt voor het printen moet deze opgestart worden voordat
+samba gestart wordt. Merk echter op dat cups niet expliciet noodzakelijk is
+voor het opstarten van samba.
+</p>
+
+<p>
+We hebben dus 2 manieren om afhankelijkheidsrelaties (dependencies)
+tussen verschillende services uit te drukken. Deze afhankelijkheden zijn altijd
+geldig, ook al is de runlevel compleet aangepast of een service gestart/gestopt
+manueel na het booten.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De NEED afhankelijkheid (dependency)</title>
+<body>
+
+<p>
+Deze wordt gebruikt indien een service noodzakelijk is voor het opstarten van
+de huidige service.
+</p>
+
+<pre caption="Toevoegen van logger en net als een NEED afhankelijkheid">
+depend() {
+    need net logger
+}
+</pre>
+
+<note>De service vermeld na <e>NEED</e> is noodzakelijk voor het opstarten van
+de service. Deze service zal dus niet opstarten indien een van zijn
+NEED-afhankelijkheden niet opstart.
+</note>
+
+<impo>
+Indien een service aan een <e>NEED</e>-regel is toegevoegd zal deze opgestart
+worden, onafhankelijk van het feit of deze service in de huidige runlevel (of
+in de &quot;boot&quot; runlevel) gedefinieerd is of niet.
+</impo>
+
+<p>
+<e>NEED</e> is dus een &quot;dominante&quot; afhankelijkheid.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De USE afhankelijkheid</title>
+<body>
+
+<p>
+De service is niet noodzakelijk voor het opstarten van de huidige service, maar
+indien ze opgestart wordt moet dat voordien gebeuren.
+</p>
+
+<pre caption="Toevoegen van portmap als een USE afhankelijkheid aan netmount">
+depend() {
+    use portmap
+}
+</pre>
+
+<p>
+Netmount per default kan gebruik maken van NFS mounts, maar zal enkel afhangen
+van portmap indien deze toegevoegd is aan de huidige runlevel (of de
+&quot;boot&quot;-runlevel). Indien je dus wenst dat NFS-mounts ondersteund
+worden moet je dus portmap toevoegen aan de default runlevel, zodat netmount
+portmap ziet als een afhankelijkheid en deze dus eerder opstart.
+</p>
+
+<impo>Een service in de <e>USE</e> regel <e>moet</e> toegevoegd worden aan de
+huidige runlevel (of de boot runlevel) opdat deze als een geldige
+afhankelijkheid gezien wordt.</impo>
+
+<e>USE</e> is dus een &quot;voorbehouden&quot; afhankelijkheid.
+
+<note>Indien een service in een <e>USE</e> regel niet start, zal de huidige
+servuice wel starten, aangezien de service in de <e>USE</e> regel niet
+noodzakelijk is.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Zonder afhankelijkheden toch de volgorde controleren</title>
+<section>
+<body>
+
+<p>
+Indien geen afhankelijkheidsrelatie bestaat tussen 2 services, maar het gewenst
+is dat de ene voor de andere opstart, dan kan men gebruik maken van de
+<e>AFTER</e> en de <e>BEFORE</e> afhankelijkheid.
+</p>
+
+<note>Deze 2 types zijn enkel geldig bij een runlevel verandering.</note>
+
+<p>
+Optioneel kan men gebruik maken van de &quot;*&quot; glob voor het aanduiden
+van alle andere services:
+</p>
+
+<pre caption="Een glob example voor AFTER">
+depend() {
+    after *
+}
+</pre>
+
+<p>
+Dit zorgt ervoor dat local gestart wordt <e>na</e> alle andere services.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De BEFORE volgorde-variabele</title>
+<body>
+
+<p>
+De huidige service wordt gestart <e>voor</e> deze vermeldt in de <e>BEFORE</e>
+regel.
+</p>
+
+<pre caption="Zorgt ervoor dat foo start voor bar (in foo)">
+depend() {
+   before bar
+}
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>De AFTER volgorde-variabele</title>
+<body>
+
+<p>De huidige service wordt gestart <e>na</e> deze vermeldt in de <e>AFTER</e>
+regel.
+</p>
+
+<pre caption="Zorgt ervoor dat bar start na foo (in bar)">
+depend() {
+    after foo
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Virtuele services</title>
+<section>
+<body>
+
+<p>
+Services, zoals de meeste andere zaken in de Unix-wereld van vandaag, komen in
+verschillende smaken en kleuren. Het is meestal de keuze van de
+systeembeheerder die beslist welkeen er gebruikt wordt.
+</p>
+
+<p>System loggers is een van die voorbeelden. Op het moment van schrijven bevat
+Gentoo Linux een 4-tal verschillende system loggers waaruit de gebruikers
+kunnen kiezen. Alle services die een system logger vereisen voordat ze zelf
+opstarten kunnen onmogelijk alle 4 de loggers in de <e>NEED</e> steken. Maar
+<e>USE</e> is te zwak.
+</p>
+
+<p>
+Dit is waar virtuele services en de <e>PROVIDE</e> types hun intrede doen.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Het PROVIDE type</title>
+<body>
+
+<p>
+Het <e>PROVIDE</e> type definieert een virtuele service die andere services
+kunnen <e>NEED</e>'en of <e>USE</e>'en.
+</p>
+
+<pre caption="sysklogd die logger PROVIDEs">
+depend() {
+    provide logger
+}
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>De LOGGER virtuele service</title>
+<body>
+
+<p>
+<e>LOGGER</e> is een voorgedefinieerde virtuele service die door alle system
+loggers gecreeerd wordt. Ze kan gebruikt worden met <e>NEED</e> of <e>USE</e>
+afhankelijkheidstypes.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De NET virtuele service</title>
+<body>
+
+<p>
+De <e>NET</e> service is een andere virtuele service, maar in tegenstelling tot
+<e>LOGGER</e> gaat het niet expliciet een service <e>PROVIDE</e>'en.
+</p>
+
+<impo>
+Om de <e>NET</e> virtuele service te voorzien (PROVIDE) moet een service:
+<ul>
+<li>toegevoegd worden aan de huidige of de boot runlevel.</li>
+<li>zijn naam beginnen met &quot;net.&quot;.</li>
+<li>zijn naam eindigen met de naam van een bestaande netwerk interface
+(net.eth0 of net.ppp1 bijvoorbeeld).</li>
+</ul>
+</impo>
+
+<p>
+Opdat een net.* service geldig is moet $IFACE gedefinieerd zijn met de naam van
+de netwerkinterface (&quot;eth0&quot; voor net.eth0 bijvoorbeeld).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Default commandoregelopties</title>
+<section>
+<body>
+
+<p>
+Elke service kan opgeroepen worden met een van de default opties. Alle vermelde
+opties zijn al vanzelf gedefinieerd, behalve <e>START</e> en <e>STOP</e> die de
+gebruiker zelf moet definieren in zijn rc-script.
+</p>
+
+<impo>De <e>start()</e> functie <e>moet</e> gedefinieerd zijn.</impo>
+<note>De <e>stop()</e> functie is minder belangrijk en kan worden
+weggelaten.</note>
+
+
+<note>
+In het algemeen zal de gebruiker enkel <e>start()</e>, <e>stop()</e> en
+<e>restart()</e> definieren. De rest is intern en dient met rust gelaten te
+worden.
+</note>
+
+<pre caption="start de httpd service">
+# <c>/etc/init.d/httpd start</c>
+</pre>
+
+<note>Commandoregelopties kunnen gemengd voorkomen.</note>
+
+<pre caption="pause/start net.eth0">
+# <c>/etc/init.d/net.eth0 pause start</c>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>De START/STOP opties</title>
+<body>
+
+<p><e>START</e> de service inclusief de services waarvan deze afhangt.</p>
+
+<p><e>STOP</e> de service inclusief de services die ervan afhangen.</p>
+
+</body>
+</section>
+
+<section>
+<title>De RESTART optie</title>
+<body>
+
+<p>
+De service moet gestart zijn alvorens dat <e>RESTART</e> zal werken. Het zal de
+service herstarten alsook alle services die ervan afhangen.
+</p>
+
+<note>Indien een eigen <e>restart()</e> functie gedefinieerd is moet de
+gebruiker <e>&quot;svc_start()&quot;</e> en <e>&quot;svc_stop()&quot;</e>
+gebruiken om de service te starten respectievelijk te stoppen. Dit is
+noodzakelijk om de afhankelijkheden correct te doen verlopen.</note>
+
+</body>
+</section>
+
+<section>
+<title>De PAUSE optie</title>
+<body>
+
+<p>
+Deze zal de service stoppen, maar in tegenstelling tot <e>STOP</e> zullen geen
+afhankelijke services gestopt worden.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De ZAP optie</title>
+<body>
+
+<p>
+Deze resets de status van de service naar &quot;gestopped&quot;.
+</p>
+
+<note>Merk op dat geen enkel van de commando's in de <e>stop()</e> functie
+uitgevoerd worden. De gebruiker zal dus zelf moeten ervoor zorgen dat de
+service's daemons etc... gestopt zijn (bv dmv killall).
+</note>
+
+</body>
+</section>
+
+<section>
+<title>De INEED/NEEDSME opties</title>
+<body>
+
+<p>
+<e>INEED</e> toont de service die deze service in zijn <e>NEED</e> regel staan
+heeft.
+</p>
+
+<p>
+<e>NEEDSME</e> toont de services die deze service in hun <e>NEED</e> regel
+staan hebben.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De IUSE/USESME opties</title>
+<body>
+
+<p>
+<e>IUSE</e> toont de services die in de <e>USE</e> regel staan
+heeft.
+</p>
+
+<p>
+<e>USESME</e> toont de services wiens <e>USE</e> regel deze service staan
+heeft.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>De BROKEN optie</title>
+<body>
+
+<p>
+Deze toont de services die vermist zijn (indien er dergelijke zijn) en die wel
+in de <e>NEED</e> regel staan vermeld.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Eigen commandoregelopties toevoegen</title>
+<section>
+<body>
+
+<p>
+Het is relatief gemakkelijk om eigen commandoregelopties toe te voegen. Een
+functie met de optienaam dient gedefinieerd te zijn in de rc-script, en moet
+toegevoegd worden aan de <e>$opts</e> variabele, zoals hieronder vermeld.
+</p>
+
+<pre caption="foo als een eigen option">
+opts=&quot;${opts} foo&quot;
+ 
+foo() {
+    ............
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuratie</title>
+<section>
+<body>
+
+<p>
+Configuratie van rc-scripts dient algemeen te gebeuren via
+omgevingsvariabelen. Deze mogen echter niet in de rc-script gedefinieerd
+worden, maar in een van de 3 mogelijke configuratiebestanden.
+</p>
+
+<p>
+De eerste is specifiek aan het rc-script, de andere zijn 2
+configuratiebestanden voor de eigen service.
+</p>
+
+<pre caption="configuratiebestanden voor rc-scripts">
+<path>/etc/conf.d/&lt;naam van rc-script&gt;</path>
+<path>/etc/conf.d/basic</path>
+<path>/etc/rc.conf</path>
+</pre>
+
+<note>Deze 3 configuratiebestanden worden automatisch ingelezen in diezelfde
+volgorde.
+</note>
+
+<impo>Alle <e>NET</e> services lezen tevens <path>/etc/conf.d/net</path>
+in</impo>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Utilities/helper scripts</title>
+
+<section>
+<title>Het rc-update tool</title>
+<body>
+
+<p>
+rc-update is de primaire tool om services toe te voegen en te verwijderen van
+een runlevel. Deze zal tevens &quot;depscan.sh&quot; uitvoeren om de
+afhankelijkheidsinformatie up te daten.
+</p>
+
+<pre caption="Voeg metalog toe aan de default runlevel">
+# <c>rc-update add metalog default</c>
+</pre>
+
+<pre caption="Verwijder metalog uit de default runlevel">
+# <c>rc-update del metalog default</c>
+</pre>
+
+<note>Indien je rc-update zonder argumenten uitvoert krijg je meer help.</note>
+
+</body>
+</section>
+
+<section>
+<title>De depscan.sh helper script</title>
+<body>
+
+<p>
+Voor de volledigheid vermelden we hier depscan.sh. Deze wordt gebruikt om een
+afhankelijkheidlijst op te stellen die bestaat uit de afhankelijkheden die door
+de services vermeldt worden.
+</p>
+
+<p>depscan.sh moet uitgevoerd worden telkens er een nieuwe rc-script toegevoegd
+wordt aan <path>/etc/init.d</path>, maar aangezien rc-update dat zelf al doet
+moeten de meeste gebruikers zich hier niets van aantrekken.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
+
