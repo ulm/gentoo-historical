@@ -1,5 +1,6 @@
 #!/bin/bash
 [ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
+install -d ${WEBROOT}/dyn
 cat > ${WEBROOT}/dyn/news-index.xml << EOF 
 <?xml version="1.0" encoding="UTF-8"?>
 <uris>
