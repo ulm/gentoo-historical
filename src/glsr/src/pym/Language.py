@@ -3,13 +3,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Language.py,v 1.4 2004/12/16 14:06:26 port001 Exp $
+# $Id: Language.py,v 1.5 2005/01/26 22:22:20 port001 Exp $
 #
 
 __modulename__ = "Language"
 
 import Config
-from Logging import err
+from Error import error
 from GLSRBackend import GLSRBackend as Parent
 
 class Language(Parent):
@@ -31,5 +31,5 @@ class Language(Parent):
             return results["%s_name" % self.tablename]
         
         else:
-            err("Invalid User ID!", __modulename__)
+            error("Invalid User ID!", __modulename__)
             return False
