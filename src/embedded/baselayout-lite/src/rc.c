@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	printf("Entering runlevel %s\n", argv[1]);
+	//printf("Entering runlevel %s\n", argv[1]);
 	
 	
 	/* we only support 1 runlevel dir for boot+shutdown, so resolve deps for that
@@ -84,12 +84,17 @@ int main(int argc, char **argv) {
 				mark_started(svc_script->d_name);
 			}
 		}
+		//printf("%d\n", __LINE__);
 	}
+	
+	//printf("%d\n", __LINE__);
 	/* We've started what should be the first thing, now we need to start
 	 * everything else. We will start off in the order that readdir gives them
 	 * to us, and hope to hell that runscript does the right thing */
 	rewinddir(rlvldir);
+	//printf("%d\n", __LINE__);
 	while((svc_script=readdir(rlvldir)) != NULL) {
+		//printf("rewind: %s\n", svc_script->d_name);
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
 		if(is_started(svc_script->d_name) == TRUE)
@@ -102,38 +107,33 @@ int main(int argc, char **argv) {
 }
 
 int mark_started(char *script) {
+	int ret;
 	char *command = NULL;
-	char *cmdline[] = { NULL, "start", 0 };
+	char *init_script = NULL;
+	//char *cmdline[] = { NULL, "start", 0 };
 
 	/* start everything with "before *", and mark it as started */
-	printf("Starting %s\n", script);
+	//printf("Starting %s\n", script);
 
-	asprintf(&command, "%s%s", INIT_DIR, script);
-	cmdline[0]=command;
-
+	asprintf(&init_script, "%s%s", INIT_DIR, script);
+	asprintf(&command, "%s%s start", INIT_DIR, script);
+	//cmdline[0]=command;
+	//printf("%d: %s %s %s %s\n",
+	//	__LINE__, cmdline[0], cmdline[1], cmdline[2], cmdline[3]);
 	/* so we can get return values and decide if we should call mark_started() */
-	if ((execvp(command, cmdline)) == 0) {
+	if ((ret=system(command)) == 0) {
+		//printf("%d\n", __LINE__);
+		//printf("%s: Succesfully started %s\n", __func__, script);
+		mkdir("/var/lib/", 0755);
+		mkdir("/var/lib/init.d/", 0755);
 		mkdir("/var/lib/init.d/started/", 0755);
 		chdir("/var/lib/init.d/started/");
-		symlink(command, basename(script));
+		symlink(init_script, basename(script));
 		free(command);
 		return TRUE;
 	}
-	printf("Failed to start %s (%s)\n", script, strerror(errno));
+	//printf("%d\n", __LINE__);
+	printf("Failed to start %s (%s)(return value=%d)\n", script, strerror(errno), ret);
 	free(command);
-	return FALSE;
-}
-
-int is_started(char *script) {
-	char *script_link = NULL;
-
-	asprintf(&script_link, "/var/lib/init.d/started/%s",
-		basename(script));
-
-	if ((access(script_link, F_OK)) == 0) {
-		free(script_link);
-		return TRUE;
-	}
-	free(script_link);
 	return FALSE;
 }
