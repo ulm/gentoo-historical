@@ -1,0 +1,751 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/nl/handbook/hb-install-x86-bootloader.xml,v 1.1 2004/10/02 10:53:45 swift Exp $ -->
+
+<sections>
+<section>
+<!-- Making your Choise -->
+<title>Je keuze maken</title>
+<subsection>
+<!-- Introduction -->
+<title>Introductie</title>
+<body>
+
+<p>
+<!--Now that your kernel is configured and compiled and the necessary system
+configuration files are filled in correctly, it is time to install a
+program that will fire up your kernel when you start the system. Such a
+program is called a <e>bootloader</e>. For x86, Gentoo Linux provides <uri
+link="#grub">GRUB</uri> and <uri link="#lilo">LILO</uri>. But before we
+install one of these two bootloaders, we inform you how to configure framebuffer
+(assuming you want it of course). With framebuffer you can run the Linux command
+line with (limited) graphical features (such as using the nice bootsplash
+image Gentoo provides).-->
+Nu je kernel is geconfigureerd en gecompileerd en de nodige systeem
+configuratie bestanden goed zijn ingevuld, is het tijd om een programma te
+installeren die je kernel zal starten als je systeem opstart. Zo'n programma
+heet een <e>bootloader</e>. Voor x86 levert Gentoo Linux
+<uri link="#grub">GRUB</uri> en <uri link="#lilo">LILO</uri>. Maar voor we een
+van beiden installeren, zullen we je eerst vertellen hoe je framebuffer moet
+configureren (aangenomen dat je dat wil natuurlijk). Met framebuffer kun je op
+de Linux command line (beperkt) grafische features gebruiken (zoals een mooi
+bootsplash plaatje wat Gentoo levert).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<!-- Optional: Framebuffer -->
+<title>Optioneel: Framebuffer</title>
+<body>
+
+<p>
+<!--<e>If</e> you have configured your kernel with framebuffer support (or you
+used <c>genkernel</c>'s default kernel configuration), you
+have to add a <c>vga</c>-statement to your bootloader configuration
+file if you require framebuffer. The next table lists the available 
+<c>vga</c>-values you can use. In the example configuration files we use 
+<e>800x600 @ 16bpp</e>, thus <e>788</e>.-->
+<e>Als</e> je je kernel hebt geconfigureerd met framebuffer ondersteuning (of
+als je <c>genkernel</c>'s standaard kernel configuratie hebt gebruikt), moet
+je een <c>vga</c>-argument toevoegen in het configuratiebestand van je
+bootloader indien je gebruikt wenst te maken van framebuffer. De volgende
+tabel geeft een lijst van de mogelijke <c>vga</c>-waardes die je kan gebruiken.
+In de voorbeeld configuratie bestanden zullen we <e>800x600 @ 16bpp</e>, dus
+<e>788</e>, gebruiken.
+</p>
+
+<table>
+<tr>
+  <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+  <th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+  <th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+  <th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+<!-- Remember (or write down) your value; you will need it shortly. -->
+Onthoud (of noteer) je waarde; je hebt het zo dadelijk nodig.
+</p>
+
+<p>
+<!-- Now continue by installing <uri link="#grub">GRUB</uri> <e>or</e> <uri
+link="#lilo">LILO</uri>. -->
+Ga nu verder door <uri link="#grub">GRUB</uri> <e>or</e>
+<uri link="#lilo">LILO</uri> te installeren.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="grub">
+<!-- Default: Using GRUB -->
+<title>Standaard: GRUB gebruiken</title>
+<subsection>
+<!-- Understanding GRUB's terminology -->
+<title>De terminologie van GRUB begrijpen</title>
+<body>
+
+<p>
+<!--The most critical part of understanding GRUB is getting comfortable with
+how GRUB refers to hard drives and partitions. Your Linux partition
+<path>/dev/hda1</path> is called <path>(hd0,0)</path> under GRUB. Notice the 
+parenthesis around the <path>hd0,0</path> - they are required.-->
+De belangrijkste stap in het begrijpen van GRUB is vertrouwd te raken met hoe
+GRUB harde schijven en partities noemt. Je Linux partitie <path>/dev/hda1</path>
+noemt GRUB <path>(hd0,0)</path>. Vergeet niet de haakjes rond <path>hd0,0</path>
+- ze zijn vereist.
+</p>
+
+<p>
+<!--Hard drives count from zero rather than "a" and partitions start at zero 
+rather than one. Be aware too that with the hd devices, only hard drives are 
+counted, not atapi-ide devices such as cdrom players and burners.  Also, the 
+same construct is used with scsi drives. (Normally they get higher numbers than
+ide drives except when the bios is configured to boot from scsi devices.)-->
+Harde schijven tellen vanaf nul in plaats van vanaf "a" en partities beginnen
+bij nul in plaats van een. Merk ook op dat met hd apparaten alleen harde
+schijven worden geteld en geen atapi-ide apparaten zoals cdrom spelers en
+branders. Ook wordt hetzelfde systeem gebruikt bij SCSI schijven. (Normaal
+gesproken krijgen ze hogere nummers dan ide schijven tenzij de bios is ingesteld
+om vanaf scsi schijven op te starten.)
+</p>
+
+<p>
+<!--Assuming you have a hard drive on <path>/dev/hda</path>, a cdrom player on 
+<path>/dev/hdb</path>, a burner on <path>/dev/hdc</path>, a second hard drive 
+on <path>/dev/hdd</path> and no SCSI hard drive, <path>/dev/hdd7</path> gets 
+translated to <path>(hd1,6)</path>. It might sound tricky and tricky it is 
+indeed, but as we will see, GRUB offers a tab completion mechanism
+that comes handy for those of you having a lot of hard drives and
+partitions and who are a little lost in the GRUB numbering scheme.-->
+<!-- man, wat is dat warrig, ik herschijf het even -->
+Laten we een voorbeeld nemen. Stel dat je een harde schijf op
+<path>/dev/hda</path> hebt, een cdrom speler op <path>/dev/hdb</path>, een
+brander op <path>/dev/hdc</path>, een tweede harde schijf op
+<path>/dev/hdd</path> en geen SCSI harde schijf, dan wordt
+<path>/dev/hdd7</path> vertaald tot <path>(hd1,6)</path>. Het klinkt misschien
+moeilijk en dat is het ook, maar zoals we zullen zien heeft GRUB een tab
+aanvullings mechanisme dat heel erg van pas komt voor diegene met veel schijven
+en partities enigszins de weg is kwijtgeraakt in het GRUB schema.
+</p>
+
+<p>
+<!--Having gotten the feel for that, it is time to install GRUB.-->
+Nadat we hiermee een beetje vertrouwd zijn geraakt is het nu tijd om GRUB te
+installeren.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<!-- Installing GRUB -->
+<title>GRUB installeren</title>
+<body>
+
+<p>
+<!--To install GRUB, let's first emerge it:-->
+<!-- ik gebruik de term mergen, meld het als iemand er iets op tegen heeft -->
+Om GRUB te installeren, zullen we het eerst mergen:
+</p>
+
+<pre caption="Installing GRUB">
+# <i>emerge grub</i>
+</pre>
+
+<p>
+<!--Although GRUB is now installed, we still need to write up a
+configuration file for it and place GRUB in our MBR so that GRUB automatically 
+boots your newly created kernel. Create <path>/boot/grub/grub.conf</path> with
+<c>nano</c> (or, if applicable, another editor):-->
+Hoewel GRUB nu is geinstalleerd, moeten we nog steeds een configuratie ervoor
+schrijven en GRUB in onze MBR zetten zodat GRUB ook daadwerkelijk je verse
+kernel opstart. Maak <path>/boot/grub/grub.conf</path> met <c>nano</c>
+(of je favoriete andere editor):
+</p>
+
+<!-- Creating /boot/grub/grub.conf -->
+<pre caption="/boot/grub/grub.conf aanmaken">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+<!--Now we are going to write up a <path>grub.conf</path>. Below you'll
+find two possible <path>grub.conf</path> for the partitioning example we use 
+in this guide, with kernel image <path>kernel-2.4.26-gentoo-r6</path>. We've 
+only extensively commented the first <path>grub.conf</path>. Make sure you use
+<e>your</e> kernel image filename and, if appropriate, <e>your</e> initrd image
+filename.-->
+Nu gaan we een <path>grub.conf</path> schrijven. Hieronder vind je twee
+mogelijke versies van <path>grub.conf</path> voor de partitionering die we
+hebben gebruikt in deze handleiding, met kernel image
+<path>kernel-2.4.26-gentoo-r6</path>. We hebben alleen uitgebreid commentaar
+gegeven op de eerste <path>grub.conf</path>. Zorg dat je <e>jouw</e> kernel
+image bestandsnaam en, indien van toepassing, <e>jouw</e> initrd image
+bestandsnaam gebruikt.
+</p>
+
+<ul>
+  <li>
+    <!--The first <path>grub.conf</path> is for people who have not used 
+    <c>genkernel</c> to build their kernel-->
+    De eerste <path>grub.conf</path> is voor mensen die <c>genkernel</c> niet
+    hebben gebruikt om hun kernel te bouwen
+  </li>
+  <li>
+    <!--The second <path>grub.conf</path> is for people who have used
+    <c>genkernel</c> to build their kernel-->
+    De tweede <path>grub.conf</path> is voor mensen die <c>genkernel</c> wel
+    hebben gebruikt
+  </li>
+</ul>
+
+<!--
+caption: grub.conf for non-genkernel users
+comment 1: Which listing to boot as default. 0 is the first, 1 the second etc.
+comment 2: How many seconds to wait before the default listing is booted.
+comment 3: Nice, fat splash-image to spice things up :)
+# Comment out if you don't have a graphics card installed
+comment 4: Partition where the kernel image (or operating system) is located
+comment 5: The next three lines are only if you dualboot with a Windows system.
+comment 6: In this case, Windows is hosted on /dev/hda6.
+-->
+<pre caption="grub.conf for non-genkernel users">
+<comment># Wat is de standaard kernel om op te starten? 0 is de eerste, 1 is de tweede.</comment>
+default 0
+<comment># Hoeveel seconden wachten we tot onze standaard kernel opstart.</comment>
+timeout 30
+<comment># Mooi, vet splash-image om het mooier te maken :)
+# Haal dit weg als je geen grafische kaart hebt geinstalleerd</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r6
+<comment># Partitie waar je kernel image (of besturingssysteem) op staat</comment>
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r6 root=/dev/hda3
+
+<comment># De volgende regels zijn alleen nodig als je een dualboot met een Windows systeem hebt.</comment>
+<comment># In dit geval is Windows geinstalleerd op /dev/hda6.</comment>
+title=Windows XP
+rootnoverify (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+<!-- caption: grub.conf for genkernel users
+comment: Only in case you want to dual-boot -->
+<pre caption="grub.conf voor genkernel gebruikers">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r6
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r6 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initrd-2.4.26-gentoo-r6
+
+<comment># Alleen van toepassing als je dual-boot hebt</comment>
+title=Windows XP
+root (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+
+<note>
+<!--If you use a different partitioning scheme and/or kernel image, adjust 
+accordingly. However, make sure that anything that follows a GRUB-device 
+(such as <path>(hd0,0)</path>) is relative to the mountpoint, not the root. In 
+other words, <path>(hd0,0)/grub/splash.xpm.gz</path> is in reality 
+<path>/boot/grub/splash.xpm.gz</path> since <path>(hd0,0)</path> is 
+<path>/boot</path>.-->
+Als je echter een ander partitioneringsschema en/of kernel image gebruikt, pas
+dit dan aan. Zorg echter wel dat alles dat op een GRUB-apparaat volgt (zoals
+<path>(hd0,0)</path>) relatief is ten opzichte van het mount punt, niet van de
+root. Met andere woorden, <path>(hd0,0)/grub/splash.xpm.gz</path> is in
+werkelijkheid <path>/boot/grub/splash.xpm.gz</path> omdat <path>(hd0,0)</path>
+gewoon <path>/boot</path> is.
+</note>
+
+<p>
+<!--If you need to pass any additional options to the kernel, simply add
+them to the end of the kernel command. We're already passing one option
+(<c>root=/dev/hda3</c> or <c>real_root=/dev/hda3</c>), but you can pass others 
+as well. As an example we use the <c>vga</c> statement for framebuffer we 
+discussed previously:-->
+Als je extra opties aan je kernel wil toevoegen, zet ze simpelweg aan het
+einde van de kernel opdrachtregel. We hebben nu al een optie toegevoegd
+(<c>root=/dev/hda3</c> of <c>real_root=/dev/hda3</c>), maar je kunt ook andere
+geven. Als voorbeeld zullen we het <c>vga</c> argument toevoegen zodat we,
+zoals eerder besproken, framebuffer kunnen gebruiken:
+</p>
+
+<!-- Adding the vga-statement as a kernel option -->
+<pre caption="Het vga-argument meegeven als een kernel optie">
+title=Gentoo Linux 2.4.26-r6
+  root (hd0,0)
+  kernel /kernel-2.4.26-gentoo-r6 root=/dev/hda3 vga=788
+</pre>
+
+<p>
+<!--If you're using a 2.6.7 or higher kernel and you jumpered your harddrive
+because the BIOS can't handle large harddrives you'll need to append
+<c>hdx=stroke</c>.-->
+Als je een een 2.6.7 of nieuwere kernel draait en je hebt je harde schrijf
+gejumperd omdat je BIOS geen grote harde schijven aankan, moet je
+<c>hdX=stroke</c> als optie toevoegen.
+</p>
+
+<p>
+<!--<c>genkernel</c> users should know that their kernels use the same boot
+options as is used for the LiveCD. For instance, if you have SCSI devices, you
+should add <c>doscsi</c> as kernel option.-->
+<c>genkernel</c> gebruikers moeten weten dat hun kernels dezelfde boot
+opties gebruiken als de LiveCD gebruikt. Bijvoorbeeld, als je SCSI apparaten
+hebt, moet je <c>doscsi</c> als kernel optie toevoegen.
+</p>
+
+<p>
+<!--Now save the <path>grub.conf</path> file and exit. You still need to
+install GRUB in the MBR (Master Boot Record) so that GRUB is automatically
+executed when you boot your system.-->
+Sla nu je <path>grub.conf</path> bestand op en sluit af. Nu moeten we nog wel
+GRUB in de MBR (Master Boot Record) installeren zodat hij daadwerkelijk start
+als je je systeem opstart.
+</p>
+
+<p>
+<!--The GRUB developers recommend the use of <c>grub-install</c>. However, if
+for some reason <c>grub-install</c> fails to work correctly you still have the
+option to manually install GRUB.-->
+De GRUB ontwikkelaars raden het gebruik van <c>grub-install</c> aan. Als echter
+<c>grub-install</c> mislukt, zijn er nog steeds mogelijkheden om het handmatig
+te doen.
+</p>
+
+<p>
+<!--Continue with <uri link="#grub-install-auto">Default: Setting up GRUB using
+grub-install</uri> or <uri link="#grub-install-manual">Alternative: Setting up
+GRUB using manual instructions</uri>.-->
+Ga verder met <uri link="#grub-install-auto">Standaard: GRUB installeren met
+grub-install</uri> of <uri link="#grub-install-manual">Alternatief: GRUB
+handmatig installeren</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-auto">
+<!-- Default: Setting up GRUB using grub-install -->
+<title>Standaard: GRUB installeren met grub-install</title>
+<body>
+
+<p>
+<!--To install GRUB you will need to issue the <c>grub-install</c> command.
+However, <c>grub-install</c> won't work off-the-shelf since we are inside a
+chrooted environment. We need to update <path>/etc/mtab</path> (the file with
+information about all mounted filesystems) first: luckily there is an easy way
+to accomplish this - just copy over <path>/proc/mounts</path> to
+<path>/etc/mtab</path>:-->
+Om GRUB te installeren, moet je het commando <c>grub-install</c> gebruiken.
+<c>grub-install</c> zal echter niet direct werken omdat we in een chroot zitten.
+We zullen eerst <path>/etc/mtab</path> (het bestand met de informatie over alle
+gemounte filesystems) moeten updaten. Gelukkig is er een makkelijke manier om
+dit te doen: kopieer gewoon <path>/proc/mounts</path> naar
+<path>/etc/mtab</path>:
+</p>
+
+<!-- Updating /etc/mtab -->
+<pre caption="/etc/mtab updaten">
+# <i>cp /proc/mounts /etc/mtab</i>
+</pre>
+
+<p>
+<!-- Now we can install GRUB using <c>grub-install</c>: -->
+Nu kunnen we GRUB installeren met behulp van <c>grub-install</c>:
+</p>
+
+<!-- Running grub-install -->
+<pre caption="grub-install draaien">
+# <i>grub-install --root-directory=/boot /dev/hda</i>
+</pre>
+
+<p>
+<!--If you have more questions regarding GRUB, please consult the <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> or the <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.-->
+Als je verder nog vragen hebt over GRUB, lees dan de <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> (EN) of de
+<uri link="http://www.gnu.org/software/grub/manual/">GRUB Handleiding</uri>(EN).
+</p>
+
+<p>
+<!--Continue with <uri link="#reboot">Rebooting the System</uri>.-->
+Ga verder met <uri link="#reboot">Het systeem herstarten</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-manual">
+<!-- Alternative: Setting up GRUB using manual instructions -->
+<title>Alternatief: GRUB handmatig installeren</title>
+<body>
+
+<p>
+<!--To start configuring GRUB, you type in <c>grub</c>. You'll be presented
+with the <path>grub&gt;</path> grub command-line prompt. Now, you need to type 
+in the right commands to install the GRUB boot record onto your hard drive.-->
+Om de configuratie van GRUB te starten, type je <c>grub</c> in. Je zult begroet
+worden met de <path>grub&gt;</path> grub command-line prompt. Nu moet je de
+juiste opdrachten intypen om het GRUB boot record op je harde schijf te krijgen.
+</p>
+
+<!-- Starting the GRUB shell -->
+<pre caption="De GRUB shell starten">
+# <i>grub</i>
+</pre>
+
+<note>
+<!--If your system does not have any floppy drives, add the <c>-\-no-floppy</c>
+option to the above command to prevent grub from probing the (non-existing) 
+floppy drives.-->
+Als je systeem geen floppy drive heeft, voeg de <c>--no-floppy</c> optie toe
+aan bovenstaande opdracht zodat grub niet gaat zoeken naar (niet bestaande)
+floppy drives.
+</note>
+
+<p>
+<!--In the example configuration we want to install GRUB so that it reads its 
+information from the boot-partition <path>/dev/hda1</path>, and installs the 
+GRUB boot record on the hard drive's MBR (master boot record) so that the first
+thing we see when we turn on the computer is the GRUB prompt. Of course, if you
+haven't followed the example configuration during the installation,
+change the commands accordingly.-->
+In de voorbeeld configuratie willen we GRUB zo installeren zodat hij zijn
+informatie leest vanaf de boot partitie <path>/dev/hda1</path>, en dat hij de
+GRUB boot record op de MBR van de harde schijf zet zodat het eerste wat we zien
+als de computer opstart GRUB is. Als je niet de voorbeelden hebt gevolgd, zorg
+wel dat je dan de opdrachten daarop aanpast.
+</p>
+
+<p>
+<!--The tab completion mechanism of GRUB can be used from within GRUB.
+For instance, if you type in "<c>root (</c>" followed by a TAB, you will
+be presented with a list of devices (such as <path>hd0</path>). If you
+type in "<c>root (hd0,</c>" followed by a TAB, you will receive a list
+of available partitions to choose from (such as <path>hd0,0</path>).-->
+Het tab aanvullingsmechanisme van GRUB kan worden gebruikt binnen GRUB.
+Bijvoorbeeld, als je "<c>root (</c>" typt, gevold door een TAB, zul je een lijst
+met apparaten (zoals <path>hd0</path>) terugkrijgen. Als je 
+"<path>root (hd0,</path>" intypt, gevolgd door een TAB zul je een lijst krijgen
+met beschikbare partities (zoals <path>hd0,0</path>).
+</p>
+
+<p>
+<!--By using the tab completion, setting up GRUB should be not that hard.
+Now go on, configure GRUB, shall we? :-)-->
+Met behulp van tab aanvulling zou GRUB installeren niet moeilijk moeten zijn.
+Ga nu verder, configureer GRUB, OK? :-)
+</p>
+
+<!--
+caption:   Installing GRUB in the MBR
+comment 1: (Specify where your /boot partition resides)
+comment 2: (Install GRUB in the MBR)
+comment 3: (Exit the GRUB shell)
+-->
+<pre caption="GRUB in de MBR installeren">
+grub&gt; <i>root (hd0,0)</i>          <comment>(Geef op waar je /boot partitie is)</comment>
+grub&gt; <i>setup (hd0)</i>           <comment>(Installeer GRUB in de MBR)</comment>
+grub&gt; <i>quit</i>                  <comment>(Verlaat de GRUB shell)</comment>
+</pre>
+
+<note>
+<!--If you want to install GRUB in a certain partition instead of the MBR,
+you have to alter the <c>setup</c> command so it points to the right
+partition. For instance, if you want GRUB installed in
+<path>/dev/hda3</path>, then the command becomes <c>setup (hd0,2)</c>.
+Few users however want to do this.-->
+Als je GRUB op een bepaalde partitie wil installeren in plaats van de MBR, dan
+zul je het <c>setup</c> commando aan moeten passen zodat hij naar de juiste
+partitie verwijst. Bijvoorbeeld, als je GRUB wil installeren in
+<path>/dev/hda3</path>, dan zal de opdracht er als volgt uit ziet:
+<c>setup (hd0,2)</c>. Er zullen maar heel weinig gebruikers dit willen doen.
+</note>
+
+<p>
+<!--If you have more questions regarding GRUB, please consult the <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> or the <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.-->
+Als je verder nog vragen hebt over GRUB, lees dan de <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> (EN) of de
+<uri link="http://www.gnu.org/software/grub/manual/">GRUB Handleiding</uri>(EN).
+</p>
+
+<p>
+<!--Continue with <uri link="#reboot">Rebooting the System</uri>.-->
+Ga verder met <uri link="#reboot">Het systeem herstarten</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="lilo">
+<!-- Alternative: Using LILO -->
+<title>Alternatief: LILO gebruiken</title>
+<subsection>
+<!-- Installing LILO -->
+<title>LILO installeren</title>
+<body>
+
+<p>
+<!--LILO, the LInuxLOader, is the tried and true workhorse of Linux
+bootloaders. However, it lacks some features that GRUB has (which is
+also the reason why GRUB is currently gaining popularity). The reason
+why LILO is still used is that, on some systems, GRUB doesn't work and
+LILO does. Of course, it is also used because some people know LILO and
+want to stick with it. Either way, Gentoo supports both, and apparently
+you have chosen to use LILO.-->
+LILO, de LInuxLOader, is het bewezen werkpaard van de Linux bootloaders. Helaas
+mist het enkele mogelijkheden die GRUB wel heeft (wat tevens de
+reden is dat GRUB nu veel aan populariteit wint). De reden dat LILO nog steeds
+gebruikt wordt, is dat GRUB soms niet werkt en LILO wel. Natuurlijk zijn er ook
+mensen die LILO kennen en daarom niet over willen stappen. Hoe dan ook, Gentoo
+ondersteunt beide, en blijkbaar heb jij gekozen om LILO te gebruiken.
+</p>
+
+<p>
+<!--Installing LILO is a breeze; just use <c>emerge</c>.-->
+LILO installeren is een eitje; gebruik gewoon <c>emerge</c>.
+</p>
+
+<!-- Installing LILO -->
+<pre caption="LILO installeren">
+# <i>emerge --usepkg lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<!-- Configuring LILO -->
+<title>LILO configureren</title>
+<body>
+
+<p>
+<!--To configure LILO, you must create <path>/etc/lilo.conf</path>. Fire up
+your favorite editor (in this handbook we use <c>nano</c> for
+consistency) and create the file.-->
+Om LILO te configureren moet je <path>/etc/lilo.conf</path> aanmaken. Start je
+favoriete editor (in dit handboek gebruiken we standaard <c>nano</c>) en maak
+het bestand aan.
+</p>
+
+<!-- Creating /etc/lilo.conf -->
+<pre caption="/etc/lilo.conf aanmaken">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+<!--Some sections ago we have asked you to remember the kernel-image name
+you have created. In the next example <path>lilo.conf</path> we assume
+the imagename is <path>kernel-2.4.26-gentoo-r6</path>. We also use the
+example partitioning scheme in this example. There are two separate parts: -->
+Enkele paragrafen geleden hebben we je gevraagd de naam van het door jou
+gemaakte kernel-image te onthouden. In het volgende voorbeeld
+<path>lilo.conf</path> nemen we aan dat het
+<path>kernel-2.4.26-gentoo-r6</path> is. We gebruiken hier ook het voorbeeld
+partitioneringsschema. Er zijn twee afzonderlijke delen:
+</p>
+
+<ul>
+  <li>
+   <!--One for those who have not used <c>genkernel</c> to build their kernel-->
+    Een voor diegene die geen <c>genkernel</c> hebben gebruikt voor hun kernel
+  </li>
+  <li>
+    <!--One for those who have used <c>genkernel</c> to build their kernel-->
+    Een voor diegene die wel <c>genkernel</c> hebben gebruikt voor hun kernel
+  </li>
+</ul>
+
+<p>
+<!--Make sure you use <e>your</e> kernel image filename and, if appropriate,
+<e>your</e> initrd image filename.-->
+Zorg dat je <e>jouw</e> kernel image bestandsnaam en, indien van toepassing,
+<e>jouw</e> initrd image bestandsnaam gebruikt.
+</p>
+
+<!--<pre caption="Example /etc/lilo.conf">
+boot=/dev/hda             <comment># Install LILO in the MBR</comment>
+prompt                    <comment># Give the user the chance to select another section</comment>
+timeout=50                <comment># Wait 5 (five) seconds before booting the default section</comment>
+default=gentoo            <comment># When the timeout has passed, boot the "gentoo" section</comment>
+<comment># Only if you use framebuffer. Otherwise remove the following line:</comment>
+vga=788                   <comment># Framebuffer setting. Adjust to your own will</comment>
+
+<comment># For non-genkernel users</comment>
+image=/boot/kernel-2.4.26-gentoo-r6
+  label=gentoo            <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/hda3          <comment># Location of the root filesystem</comment>
+
+<comment># For genkernel users</comment>
+image=/boot/kernel-2.4.26-gentoo-r6
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.26-gentoo-r6
+
+<comment># The next two lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>-->
+
+<pre caption="Voorbeeld /etc/lilo.conf">
+boot=/dev/hda             <comment># Installeer LILO in de MBR</comment>
+prompt                    <comment># Geef de gebruiker de kans een andere keuze te maken</comment>
+timeout=50                <comment># Wacht 5 (vijf) seconden voor het booten van de standaard keuze</comment>
+default=gentoo            <comment># Als de timeout voobij is, boot de "gentoo" keuze</comment>
+<comment># Alleen als je framebuffer gebruikt. Verwijder anders de volgede regel:</comment>
+vga=788                   <comment># Framebuffer instelling. Pas aan indien gewenst</comment>
+
+<comment># Voor niet-genkernel gebruikers</comment>
+image=/boot/kernel-2.4.26-gentoo-r6
+  label=gentoo            <comment># De naam die we deze keuze geven</comment>
+  read-only               <comment># Start met een read-only root. Pas niet dit niet aan!</comment>
+root=/dev/hda3          <comment># Plaats van het root filesystem</comment>
+
+<comment># Voor genkernel gebruikers</comment>
+image=/boot/kernel-2.4.26-gentoo-r6
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.26-gentoo-r6
+
+<comment># De volgende twee regels zijn alleen voor dual-boot gebruikers met een Windows systeem.</comment>
+<comment># In dit voobeeld is Windows geinstalleerd op /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+<!--If you use a different partitioning scheme and/or kernel image, adjust
+accordingly.-->
+Als je echter een ander partitioneringsschema en/of kernel image gebruikt, pas
+dit dan aan.
+</note>
+
+<p>
+<!--If you need to pass any additional options to the kernel, add an
+<c>append</c> statement to the section. As an example, we add the
+<c>vga=788</c> statement to enable framebuffer:-->
+Als je nog andere opties moet toevoegen aan de kernel, voeg <c>append</c> toe
+aan deze sectie. Als voorbeeld zullen we <c>vga=788</c> toevoegen om framebuffer
+te kunnen gebruiken:
+</p>
+
+<!-- Using append to add kernel options -->
+<pre caption="append gebruiken om kernel opties toe te voegen">
+image=/boot/kernel-2.4.26-gentoo-r6
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="vga=788"</i>
+</pre>
+
+<p>
+<!--If you're using a 2.6.7 or higher kernel and you jumpered your harddrive
+because the BIOS can't handle large harddrives you'll need to append
+<c>hdx=stroke</c>.-->
+Als je een een 2.6.7 of nieuwere kernel draait en je hebt je harde schrijf
+gejumperd omdat je BIOS geen grote harde schijven aankan, moet je
+<c>hdX=stroke</c> als optie toevoegen.
+</p>
+
+<p>
+<!--<c>genkernel</c> users should know that their kernels use the same boot
+options as is used for the LiveCD. For instance, if you have SCSI devices, you
+should add <c>doscsi</c> as kernel option.-->
+<c>genkernel</c> gebruikers zouden moeten weten dat hun kernels dezelfde boot
+opties gebruiken als de LiveCD gebruikt. Bijvoorbeeld, als je SCSI apparaten
+hebt, moet je <c>doscsi</c> als kernel optie toevoegen.
+</p>
+
+<p>
+<!--Now save the file and exit. To finish up, you have to run <c>/sbin/lilo</c>
+so LILO can apply the <path>/etc/lilo.conf</path> to your system (i.e. install
+itself on the disk). Keep in mind that you'll also have to rerun
+<c>/sbin/lilo</c> every time you install a new kernel or make any changes to
+the menu.-->
+Sla nu het bestand op en sluit af. Om het af te ronden, moet je
+<c>/sbin/lilo</c> nog starten zodat LILO <path>/etc/lilo.conf</path> kan
+toepassen op je systeem (zoals zichzelf installeren op de schijf). Onthoud dat
+je <c>/sbin/lilo</c> opnieuw moet starten als je een nieuwe kernel installeert
+of het menu van LILO verandert.
+</p>
+
+<!-- Finishing the LILO installation -->
+<pre caption="De LILO installatie afmaken">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+<!--You can now continue with <uri link="#reboot">Rebooting the System</uri>.-->
+Je kunt nu verder gaan met <uri link="#reboot">Het systeem herstarten</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="reboot">
+<!-- Rebooting the System -->
+<title>Het systeem herstarten</title>
+<subsection>
+<body>
+
+<p>
+<!--Exit the chrooted environment and unmount all mounted partitions. Then type
+in that one magical command you have been waiting for: <c>reboot</c>.-->
+Verlaat de chroot en unmount alle gemounte partities. Typ dan de magische
+opdracht waar je al die tijd op hebt gewacht: <c>reboot</c>.
+</p>
+
+<!-- Unmounting all partitions and rebooting -->
+<pre caption="Unmount alle partities en reboot">
+# <i>exit</i>
+# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+# <i>reboot</i>
+</pre>
+
+<p>
+<!--Of course, don't forget to remove the bootable CD, otherwise the CD will be
+booted again instead of your new Gentoo system.-->
+Vergeet natuurlijk niet je opstartbare CD er uit te halen, anders start je CD
+op in plaats van je verse Gentoo systeem.
+</p>
+
+<p>
+<!--Once rebooted in your Gentoo installation, finish up with <uri
+link="?part=1&amp;chap=11">Finalizing your Gentoo Installation</uri>.-->
+Eenmaal opnieuw opgestart en in je Gentoo installatie, ga verder met <uri
+link="?part=1&amp;chap=11">De Gentoo installatie afmaken</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
+
