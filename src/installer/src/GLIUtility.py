@@ -227,9 +227,9 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		cmd += " 2>&1 "
 	if logfile != None:
 		if append_log:
-			cmd += " | tee " + logfile
-		else:
 			cmd += " | tee -a " + logfile
+		else:
+			cmd += " | tee " + logfile
 
 	if display_on_tty8:
 		cmd += " | tee /dev/tty8"
