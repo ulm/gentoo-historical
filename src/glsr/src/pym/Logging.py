@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.8 2004/09/30 03:03:46 hadfield Exp $
+# $Id: Logging.py,v 1.9 2004/11/03 12:28:36 port001 Exp $
 #
 
 import traceback
@@ -54,7 +54,7 @@ def err(msg, modname):
 
         tb = traceback.format_stack(None)
         for line in tb[:-1]:
-            print line.replace("\n", "<br>")
+            output += line.replace("\n", "<br>").replace(" ", "&nbsp;")
         
         if modname == "Template":
             output += ("""
