@@ -3,10 +3,11 @@ CFLAGS=-Wall -Os -fomit-frame-pointer
 OBJS=rc runscript
 
 
-all:
-	$(CC) $(CFLAGS) -o rc rc.c
-	$(CC) $(CFLAGS) -o runscript runscript.c
-	
+all: rc runscript
+
+rc: rc.o common.o
+runscript: runscript.o common.o
+
 strip: rc runscript
 	strip -R comment -X -d --strip-unneeded rc runscript
 
