@@ -34,6 +34,7 @@ class RunInstall(gtk.Window):
 		self.textbuffer = gtk.TextBuffer()
 		self.textbuffer.set_text("testing\ntesting again..\n\ntesting testing")
 		self.textview = gtk.TextView(self.textbuffer)
+		self.textview.set_editable(False)
 		self.tailpage.pack_start(self.textview, expand=True, fill=True)
 		self.notebook.append_page(self.tailpage, tab_label=gtk.Label("Output"))
 
@@ -93,10 +94,10 @@ class RunInstall(gtk.Window):
 
 	def tail_logfile(self):
 		if select.select([self.tail_pipe], [], [], 0)[0]:
-			print "Data available"
 			line = self.tail_pipe.readline()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
+			self.textview.scroll_to_iter(iter_end, 0.5)
 		return True
 
 	def make_visible(self):
