@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/relnotes/genrelnotes.sh,v 1.1 2003/12/31 22:24:16 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/relnotes/genrelnotes.sh,v 1.2 2003/12/31 22:38:23 zhen Exp $
 
 ## Gentoo Release Notes generator
 ## John Davis <zhen@gentoo.org>; 2003 12 30
@@ -58,3 +58,19 @@ usage() {
 	echo
 	echo "genhtml: (genrelnotes.sh genhtml input.xml) generates html from input.xml"
 }
+
+sedme() {
+}
+
+validate() {
+}
+
+genall() {
+}
+
+gentxt() {
+}
+
+genhtml() {
+}
+
