@@ -1,0 +1,178 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/cvsup.xml">
+	<title>Gentoo Linux Preliminary CVSUP Guide</title>
+		<author title="Author"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+
+	<abstract>
+		This guide provides a rough sketch of how to get cvsup working as a
+		Gentoo alternative to rsync.
+	</abstract>
+
+	<version>0.1</version>
+	<date>26 January 2003</date>
+
+	<chapter>
+		<title>Preliminaries</title>
+			<section>
+			
+				<body>
+			
+				<p>Unsurprisingly, you need to have the cvsup package installed
+				(the full path is specified because the package is currently masked):
+				</p>
+			
+				<pre caption = "Getting CVSUP">
+# <c>emerge /usr/portage/dev-utils/cvsup/cvsup-16.1e-r2</c>
+				</pre>
+				<p>
+					The cvsup ebuild provides both the cvsup client and the
+					cvsupd server.
+				</p>
+
+			</body>
+		</section>
+	</chapter>
+
+	<chapter>
+		<title>Setting up the main Gentoo CVSUP server</title>
+			<section>
+			
+				<body>
+			
+				<p>
+					The main Gentoo cvsup server needs to make the Gentoo
+					cvs repository available to mirrors, and deny access to
+					anybody else.  At the moment we'll only consider the 
+					portage tree, and hold off on gentoo-src until later.
+				</p>
+				
+				<pre caption = "cvsupd server config">
+# <c>mkdir -p /etc/cvsup/sup/gentoo-x86</c>
+# <c>echo "cvs list=list.cvs prefix=/path/to/cvs/repository" &gt; /etc/cvsup/sup/portage/releases</c>
+# <c>echo "upgrade gentoo-x86" &gt; /etc/cvsup/sup/portage/list.cvs</c>
+# <c> cat &lt;&lt; EOF &gt; /etc/cvsup/cvsupd.access
+# allow localhost (and any allowed gentoo mirrors)
++127.0.0.1/32
+# deny all else
+-0.0.0.0/0
+EOF </c>
+# <c>/etc/init.d/cvsupd start</c>
+				</pre>
+
+				<p>
+					The cvsupd server looks for repositories that it will serve
+					under <path>/etc/cvsup/sup</path>, and at the moment we are
+					only serving one we've labelled <e>portage</e>.
+					The next two lines actually set up what "portage" is
+					serving, with the "upgrade gentoo-x86" line telling cvsupd
+					to serve the <e>gentoo-x86</e> cvs module.  That's all we
+					need to do to get the server working!
+				</p>
+
+				<p>
+					Of course, we don't want everybody connecting to 
+					cvs.gentoo.org, since we don't have the bandwidth for that.
+					The <path>cvsupd.access</path> file is used to restrict access
+					to localhost and allowed gentoo mirrors..
+				</p>
+			
+			</body>
+		</section>
+	</chapter>
+
+	<chapter>
+		<title>Setting up a Gentoo CVSUP mirror</title>
+			<section>
+				<title>Obtain the Gentoo CVS repository</title>
+				<body>
+					<p>
+						Mirroring Gentoo's portage tree involves two necessary
+						steps: obtaining a copy of the tree from cvs.gentoo.org
+						and serving that copy to others.  The first part is 
+						quite simple.  Make a directory to store the repository:
+					</p>
+					<pre>
+# <c>mkdir /var/cvsup/gentoo</c>
+					</pre>
+					<p>
+						and then set up a cron job that every half-hour runs
+						the following:
+					</p>
+					<pre caption="To be put in a cron job">
+# <c>cvsup /etc/cvsup/gentoo_mirror.sup</c>
+					</pre>
+					<p>
+						and <path>/var/cvsup/gentoo/gentoo-x86</path> will
+						then store the portage repository.
+					</p>
+					<note>
+						The repository stored in <path>/var/cvsup/gentoo/gentoo-x86</path>
+						is an actual copy of the cvs <e>repository</e>, complete with
+						RCS files, and not just a cvs checkout.
+					</note>
+				</body>
+			</section>
+			<section>
+				<title>Set up the cvsupd server</title>
+				<body>
+					<p>
+						Essentially we do the same here as on the main
+						Gentoo cvsupd server, only without the access
+						restrictions.
+					</p>
+					<pre>
+# <c>mkdir -p /etc/cvsup/sup/gentoo</c>
+# <c>echo "cvs list=list.cvs prefix=/var/cvsup/gentoo/gentoo-x86" &gt; \</c>
+&gt; <c>/etc/cvsup/sup/gentoo/releases</c>
+# <c>echo "upgrade gentoo-x86" &gt; /etc/cvsup/sup/gentoo/list.cvs</c>
+# <c>/etc/init.d/cvsupd start</c>
+					</pre>
+					<p>
+						Your mirror should be good to go!
+					</p>
+				</body>
+			</section>
+	</chapter>
+
+	<chapter>
+	<title>CVSUP for the Gentoo user</title>
+		<section>
+
+			<body>
+
+			<p>
+				Assuming the cvsup ebuild was written correctly, Gentoo users
+				should be able to check out the portage tree via:
+			</p>
+			<pre caption = "Portage tree checkout">
+# <c>cvsup /etc/cvsup/gentoo.sup</c>
+			</pre>
+
+			<p>The user should find a <path>/usr/gentoo-x85</path> directory
+			   now exists.  (Also, some cvsup bookkeeping stuff has been 
+			   generated in <path>/var/cvsup</path>.)  
+			   To use this new directory as <path>/usr/portage</path>
+			   you just need to move the old directory aside and make a symlink:
+			</p>
+
+			<pre>
+# <c>cd <path>/usr</path></c>
+# <c>mv <path>portage</path> <path>portage.old</path></c>
+# <c>ln -s <path>gentoo-x86</path> <path>portage</path></c>
+# <c>mv <path>portage.old/distfiles/*</path> <path>portage/distfiles</path></c>
+# <c>mv <path>portage.old/packages/*</path> <path>portage/packages</path></c>
+			</pre>
+
+			<p>
+				(The last two lines just relocate all of the distfiles and packages
+				that you've aquired to their new home.)
+			</p>
+
+			</body>
+		</section>
+	</chapter>
+</guide>
