@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # 
 # Library of actions that config-kernel can perform
 #
@@ -44,9 +45,10 @@ def listkernels():
 # kernel version found in /usr/src. e.g: setsymlink("2.4.24")
 def setsymlink(version):
 	newpath=""
-	if not os.path.islink("/usr/src/linux"):
-		warn("/usr/src/linux is not a symlink!")
-		sys.exit()
+	if os.path.isfile("/usr/src/linux") and \
+		not os.path.islink("/usr/src/linux"):
+			warn("/usr/src/linux is not a symlink!")
+			sys.exit()
 		
 	if version[0] == "/":
 		if not os.path.isdir(version):
@@ -172,7 +174,7 @@ def outputdir(path):
 		warn("Directory " + path + " does not exist.")
 		warn("This path will be created next time you emerge a kernel")
 
-# getoutput() queries for the current KBUILD_OUTPUT_PREFIX and prints that 
+# getoutputPrefix() queries for the current KBUILD_OUTPUT_PREFIX and prints that
 # string to stdout. Used in kernel-2.eclass to figure out what to set the output
 # to.
 def getOutputPrefix():
@@ -186,6 +188,18 @@ def getOutputPrefix():
 		sys.exit(2)
 	else:
 		print out
+		sys.exit()
+
+# isWritable() queries to find out if the current configuration allows making
+# /usr/src/linux writable for 2.6 kernel modules built against traditional
+# kernel source layouts
+def isWritable():
+	writable, err = getenv('LINUX_PORTAGE_WRITABLE')
+	if err:
+		print "no"
+		sys.exit(2)
+	else:
+		print writable
 		sys.exit()
 
 # makekoutput converts the kernel found at "path" to using a seperate output
@@ -208,9 +222,14 @@ def makekoutput(path):
 	print ""
 
 	# Backup our config
-	info("Backing up your .config file")
-	if os.path.isfile(os.path.join(path, ".config")):
-		copy(os.path.join(path , ".config"), gettempdir())
+	config = os.path.join(path,".config")
+	configtemp = os.path.join(gettempdir(),".config")
+	if os.path.isfile(config):
+		info("Backing up your .config file")
+		copy(config, configtemp)
+	else:
+		config = ""
+		configtemp = ""
 	
 	info("Running 'make mrproper to clean your kernel tree (This make take a while)")
 	os.chdir(path)
@@ -228,13 +247,15 @@ def makekoutput(path):
 	ret = os.system(command)
 	if ret:
 		warn ("Error editing your kernel's toplevel Makefile!")
-		copy(os.path.join(gettempdir(), ".config"),outputpath)
-		warn ("Restoring your .config to " + path)
+		if config:
+			copy(os.path.join(gettempdir(), ".config"),outputpath)
+			warn ("Restoring your .config to " + path)
 		sys.exit(2)
 
 	os.mkdir(outputpath)
-	info("Copying your .config into " + outputpath)
-	copy(os.path.join(gettempdir(), ".config"),outputpath)
+	if config:
+		info("Copying your .config into " + outputpath)
+		copy(os.path.join(gettempdir(), ".config"),outputpath)
 		
 def makekoutputCheck(path):
 	if not os.path.isdir(path):
@@ -251,6 +272,11 @@ def makekoutputCheck(path):
 	if os.path.isfile(os.path.join(path, "Rules.make")):
 		warn ("Detected a 2.4 kernel. You can only enable seperate output locations")
 		warn ("for 2.6 series kernels")
+		sys.exit(2)
+	
+	result = os.popen("grep '^KBUILD_OUTPUT[ ]*=' " + os.path.join(path, "Makefile")).readline()
+	if result:
+		warn ("Kernel detected to already be using koutput. Exiting...")
 		sys.exit(2)
 
 # Used to determine where the kernel should output it's files too
