@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+#
+# enamecheck Copyright (c) Graham Forest <vladimir@gentoo.org>
+# This software is released under the GNU General Public License, v2 or later
+#
+# This script verifies that the naming of ebuilds is up to Gentoo spec
+# Yes, we know that somewhere around 600 existing ebuilds are illegally named
+#
+# Usage  : enamecheck category/name-version[_suffix[#]][_revision#]
+# Example: enamecheck media-video/mplayer-0.90_pre10-r5
+# Another: enamecheck x11-wm/openbox-2.2.3
+#
+# In this form, it prints "Passed: " or "Failed: ", then the ebuild name,
+# and returns 1 for pass, and 0 for fail
+#
+#
+# Alternate Usage: cat namelist | enamecheck
+# 
+# In this form, it prints a "Passed: " or "Failed: " line for each line that
+# comes in STDIN
+# 
+# If you find anything wrong with this, or would like to see new features,
+# please don't hesitate to mail me or catch me on IRC. Not that there's anything
+# wrong with it ^_^
+# 
+use strict;
+
+# This handles an ebuild name specified on the command line
+if(defined $ARGV[0]) {
+    if(verify($ARGV[0])) { print "Passed: $ARGV[0]\n"; exit 1}
+    else                 { print "Failed: $ARGV[0]\n"; exit 0}
+}
+
+# This handles a list of ebuild names piped through STDIN
+while(<>) {
+    if(verify($_)) { print "Passed: " }
+    else           { print "Failed: " }
+    print $_;
+}
+
+sub verify {
+    # The following regex is *not* a quick hack
+    # I decided I'd spare the non-Perlers among us, and use /x and comments on
+    # the regex. Ideally, the remaining portion of this script is two lines
+	#
+	# Note!: Last second I learned that portage is going case sensitive, so I
+	#        just added the case insensitivity operator to the end of the regex
+	
+    return 1 if $_[0] =~ m/^
+    
+    # The Gentoo standards describe four different fields which may be present
+    # in an ebuild name. 
+    
+    # The ebuild name is prefixed with the category name, which contains 
+    # lowercase letters and dashes. There is an actual list of valid categories,
+    # but I have left this rather simple due to lack of necessity
+    
+    [a-z\-]+
+    
+    # Which is followed by a backslash
+    
+    \/
+    
+    # Name:    May contain lowercase letters, numbers, and dashes
+    
+    [a-z\d\-]+
+    
+    # Which is followed by a dash
+    
+    -
+    
+    # Version: Any number of numbers and periods, optionally followed by a
+    #          single lowercase letter
+    
+    [\d\.]+[a-z]?
+    
+    # Suffix (Optional): An underscore, followed by 'alpha', 'beta', 'pre',
+    # 'rc', or 'p' which is optionally followed by a number
+    
+    (_(alpha|beta|pre|rc|p)\d*)?
+    
+    # Revision (Optional): '-r', optionally followed by a number
+    (-r\d+)?
+    $/ix;
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.9 2003/03/08 06:16:07 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.10 2003/03/17 18:34:39 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
@@ -34,7 +34,7 @@ use Getopt::Long;
 my $PORTDIR = "/usr/gentoo-x86";
 
 # Turn off all changes
-my $debug = 1;
+my $debug = 0;
 
 # How many control-c's it takes to really kill it (please use q when possible)
 my $max_zaps = 5;

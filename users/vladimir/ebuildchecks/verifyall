@@ -1,0 +1,61 @@
+#!/usr/bin/perl -w
+
+# Yes, I know using find in backticks is a cheap hack, but it's quick
+# to impliment, and it works
+for (`find /usr/portage -name "*.ebuild"`) {
+    
+    # Don't want that in there
+    next if /skel.ebuild$/;
+    
+    # Convert the full path to the ebuilds to
+    # the category/package-version format - Quick hack
+    $_ = "$1/$2-$3" if m|^/usr/portage/(.+?)/(.+?)/\2-(.+?)\.ebuild$|;
+    
+    # The following regex is *not* a quick hack
+    if (verify($_)) {
+        print "Pass   : $_\n";
+    }
+    else {
+        print "Failure: $_\n";
+    }
+}
+
+sub verify {
+    # The following regex is *not* a quick hacks
+    return 1 if $_[0] =~ m/
+    
+    # The Gentoo standards describe four different fields which may be present
+    # in an ebuild name. 
+    
+    # The ebuild name is prefixed with the category name, which contains 
+    # lowercase letters and dashes. There is an actual list of valid categories,
+    # but I have left this rather simple due to lack of necessity
+    
+    [a-z\-]+
+    
+    # Which is followed by a backslash
+    
+    \/
+    
+    # Name:    May contain lowercase letters, numbers, and dashes
+    
+    [a-z\d\-]+
+    
+    # Which is followed by a dash
+    
+    -
+    
+    # Version: Any number of numbers and periods, optionally followed by a
+    #          single lowercase letter
+    
+    [\d\.]+[a-z]?
+    
+    # Suffix (Optional): An underscore, followed by 'alpha', 'beta', 'pre',
+    # 'rc', or 'p' which is optionally followed by a number
+    
+    (_(alpha|beta|pre|rc|p)\d*)?
+    
+    # Revision (Optional): '-r', optionally followed by a number
+    (-r\d+)?
+    /ix;
+}
