@@ -386,7 +386,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
 						<br/><br/>
-						Developer Docs:<br/>
+						Developer Resources:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/>
@@ -399,10 +399,10 @@ User Docs:<br/>
 						Mailing Lists:<br/><br/>
 						<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/>
 						<br/>
-						IRC chat:<br/><br/>
-						<b>#gentoo</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (general discussion)<br/>
-						<b>#gentooppc</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (Gentoo Linux/PPC)<br/>
-						<b>#gentoo-user</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (low-bandwidth chat)<br/>
+						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
+						#gentoo (general discussion)<br/>
+						#gentooppc (Gentoo Linux/PPC)<br/>
+						#gentoo-user (low-bandwidth chat)<br/>
 						<br/><br/></p></td></tr></table>
 					</td></tr>
 				</table>
@@ -413,7 +413,7 @@ User Docs:<br/>
 					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/gentoo/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86-based systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/gentoo/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for the x86 and PowerPC.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
 							<xsl:for-each select="newsitems/news[position()&lt;10]">
 							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
 							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>

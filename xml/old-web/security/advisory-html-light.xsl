@@ -12,8 +12,8 @@ Gentoo Linux Security Advisory<br/>
 </center>
 
 <p>
-Gentoo Linux is a free x86-based community developed Linux distribution
-with an advanced package management system (called Portage).  Since it may
+Gentoo Linux is a free community developed Linux distribution
+with an advanced package management system called Portage.  Since it may
 be possible for users to use different versions of the same package, it is
 important that users carefully read this announcement to assess the impact
 of the problem on their systems and choose a workaround or solution that
