@@ -21,7 +21,7 @@
     </xsl:choose>
   </title>
 </head>
-<body style="margin-right: 35mm;" bgcolor="#ffffff">
+<body bgcolor="#ffffff">
 
 <!-- Content goes here -->
 <xsl:call-template name="content" />
