@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding="UTF-8"?> 
-<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 
 <guide link = "/doc/en/printing-howto.xml"> 
 	<title>Gentoo Printing Guide</title> 
@@ -23,18 +22,20 @@
 				
 				<body> 
  
-				<p>Setting up printing in Gentoo Linux is relatively easy, as all of the packages
-				required can be found in the portage tree as of 8 August 2002. 
-				All that we have to do is configure the actual printer and make sure that it interprets
-				Postscript correctly. The first step is installing the necessary software.
+				<p>Setting up printing in Gentoo Linux is a relatively painless task, thanks
+				to some great programs such as cups and foomatic. Both of these programs are
+				currently in the Portage tree, and they are very easy to set up for the
+				end user.
 				</p> 
- 
-				<note>The next steps assume that we are setting up printing in GNOME2. 
-				This may work in KDE, as CUPS is environment-independent. TODO: guide for setup in KDE.
-				</note> 
- 	
-				<p>If you are going to be using CUPS exclusively, regardless of desktop environment,
-				it is a good idea to add CUPS to your USE variables in <path>/etc/make.conf</path>.
+				
+				<p>Please be aware the cups is cross-desktop, i.e. you can follow
+				these directions to get printing working under GNOME or KDE.
+				There are other options, such as KDE's print setup, but I believe that 
+				CUPS is the easiest to setup, and the most scalable.
+				</p>
+				
+				<p>Before emerging CUPS, it is a  good idea to add the necessary
+				USE flags to <path>/etc/make.conf</path>.
 				</p>
 
 				<pre caption = "Editing /etc/make.conf">
@@ -49,51 +50,30 @@ USE="cups other_var1 other_var2
 				
 				<pre caption = "Emerging necessary packages"> 
 # <c>emerge cups</c>  
-# <c>emerge gnome-print</c> 
-# <c>emerge libgnomeprint</c> 
-# <c>emerge gimp-print</c> 
-# <c>emerge gimp-print-cups</c>
 # <c>emerge foomatic </c>
 				</pre> 
  
-				<p>Since the packages are now installed with their appropriate dependencies,
-				it is time to install the printer itself.
+				<p>Now that the necessary packages are installed, it is time to install the printer.
 				</p>
-
-				<note>This document deals mostly with USB Hewlett Packard printers, but configuring
-				a parallel-port printer is not much different from USB configuration.  
-				Non-HP printers are not covered as of yet, so finding and installing drivers
-				for them will not be an identical process.
-				</note>
-	
-				<p>Unless you already have USB printer support compiled into the kernel,
-				it will have to be compiled in. You need to have USB core support and USB
-				printer support enabled either as modules or built in. 
-				I chose to modularize both because I can <c>lsmod</c> and see that the support
-				is actually up and running, but that is just personal preference.
-				</p> 
- 
-				<impo>If you are using a parallel port printer, make sure to enable the parallel
-				port kernel options instead of the USB options.
-				</impo> 
- 
+				
+				<p>Depending on what type of printer connection you will be using, it will
+				be necessary to enable either parallel port or USB port printer connections
+				in the kernel.
+				</p>
+				
 				<note>If you are not sure on how to compile the kernel, the official
 				Linux Kernel-HOWTO can be found <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">here</uri>.
 				</note>
  
-				<p>Now that the appropriate kernel options are installed, it is time to see
-				if the printer is detected and dealt with appropriately. Once everything is restarted,
-				load the printer modules.
-				</p> 
- 
-				<note>If you have USB built into your kernel, you don't have to load
-				the USB modules. If you are using a parallel port printer, substitute the
-				appropriate modules as needed.
-				</note> 
- 
+				<p>After you have built your kernel and restarted, now you have to 
+				load the appropriate modules. There are no modules for parallel port support,
+				but since we did include USB support as modules, we have to load those first:
+				</p>
+
+				
 				<pre caption = "Loading USB modules"> 
-# <c>insmod usbcore</c> 
-# <c>insmod printer</c> 
+# <c>modprobe usbcore</c> 
+# <c>modprobe printer</c> 
 				</pre> 
  
 				<p>After the modules have loaded successfully, plug in the printer, and check
@@ -117,7 +97,7 @@ USE="cups other_var1 other_var2
 				and look for evidence of the kernel detecting your printer.
 				</note> 
  
-				<p>Before setting up the printer using CUPS, it is possible to test your printer using <i>cat</i>.
+				<p>Before setting up the printer with CUPS, we can test it with some simple low-level commands.
 				</p> 
 
 				<pre caption = "Printer Testing Using cat">
@@ -125,7 +105,7 @@ USE="cups other_var1 other_var2
 # <c>echo "Hello World" > test.txt</c>
 # <c>cat test.txt > /dev/usb/lp0 </c>
 
-<i> Alternatively, for parallel port printers: </i>
+<comment> Alternatively, for parallel port printers: </comment>
 # <c>cat test.txt > /dev/lp0 </c>
 				</pre>
 
@@ -152,27 +132,27 @@ USE="cups other_var1 other_var2
 				</pre> 
  
 				<impo>The documentation from HP for the <c>hpijs</c> driver is in
-				<path>/usr/share/doc/hpijs-1.1</path>. The author<i>highly</i> recommends reading this.
+				<path>/usr/share/doc/hpijs-&lt;version&gt;</path>. The author<i>highly</i> recommends reading this.
 				</impo> 
  
 				<p> In order for your printer to interpret Postscipt correctly, CUPS needs
 				a PPD (Printer Postscript Definition) file. The easiest way to generate a PPD is through foomatic.
-				Give foomatic these commands to configure your printer, then move the PPD to the correct location.
-				This example uses the hpijs driver for an HP printer.
 				</p>
 
-				<note>For the printer ID, foomatic is expecting an ID out of its database
-				located in <path>/usr/share/foomatic/db/source/printer</path>. 
-				You must find your printer ID, and use its exact name. Remember that it is case sensitive.
-				</note>
+				<p>Three pieces of information are necessary in order to make the below command work;
+				you need your printer model, printer device, and your print driver (if you are not using hpijs).
+				The printer ID and driver can be grepped from foomatic's database, and the print device is
+				what device node your printer is connected to (/dev/lp0 etc). The below example uses <i>hpijs</i> as its
+				driver, but please replace <i>hpijs</i> with your driver name if you are not using an HP printer.
+				</p>
 
 				<pre caption = "Using foomatic">
-# <c>foomatic-configure -s cups -p printer ID -c print_device -n queue name -d hpijs </c>
-# <c>mv /etc/foomatic/your.new.ppd /etc/cups/ppd </c>
+# <c>grep $printer_model /usr/share/foomatic/db/source/printer/* </c>
+# <c>grep $print_device /usr/share/foomatic/db/source/driver/* </c>
+# <c>foomatic-configure -s cups -p $printer_model -c $print_device -n queue name -d hpijs </c>
 				</pre>
  
-				<impo>If you are using a non-HP printer, you will still be able to use foomatic
-				to generate your PPD. Please refer to the foomatic documentation
+				<impo>If you are having problems, please refer to the foomatic documentation
 				<uri link="http://www.linuxprinting.org/foomatic/USAGE">here</uri> 
 				and the <uri link="http://www.linuxprinting.org">linuxprinting.org</uri>
 				homepage for more information.
@@ -189,7 +169,7 @@ USE="cups other_var1 other_var2
 				to handle the printer queueing. CUPS can be accessed via web browser on port 631 of the printer server.
 				</p>
 
-				<impo>CUPS has a builtin configuration file for the daemon that should, but does
+				<impo>CUPS has a built in configuration file for the daemon that should, but does
 				not have to, be modified. You might want to take a gander at it, it is
 				<path>/etc/cups/cupsd.conf</path>.
 				</impo>
@@ -231,8 +211,14 @@ USE="cups other_var1 other_var2
 				<title>The GIMP</title>
 				<body>
 
-				<p>First, let's setup The GIMP, just because it is Just Plain Fun (tm).
-				Open up The GIMP, and open an existing picture, or just some blank pic, it really doesn't
+				<p>Before starting, we have to emerge The Gimp's CUPS printing extentions.
+				</p>
+
+				<pre caption="Emerging gimp-print-cups">
+# <c>emerge gimp-print-cups </c>
+				</pre>
+
+				<p>Now, open up The GIMP, and open an existing picture, or just some blank pic, it really doesn't
 				matter because all we are looking for is the <i>File</i> menu. 
 				Right click on the image and go to <i>File/Print</i> The dialog for printing should come up,
 				and when it does, click on new printer. 
@@ -303,8 +289,8 @@ USE="cups other_var1 other_var2
 				</p>
 
 				<pre caption = "Using foomatic with Samba">
-# <c>foomatic-configure -s cups -p printer ID -c smb://user:password@server/share -n queue name -d hpijs </c> 
-# <c>mv /etc/foomatic/your.new.ppd /etc/cups/ppd </c>
+<codenote>Please acquire printer model and your driver name using the aforementioned steps. </codenote>
+# <c>foomatic-configure -s cups -p $printer_model -c smb://user:password@server/share -n queue name -d hpijs </c> 
 				</pre>
 
 				<p>Now, point your favorite web browser 
