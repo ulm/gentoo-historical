@@ -1,9 +1,9 @@
-#!/bin/bash  
+#!/bin/bash    
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/genkernel/Attic/genkernel,v 1.11 2003/10/23 03:34:35 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/genkernel/Attic/genkernel,v 1.12 2003/10/29 03:08:49 livewire Exp $
 
-# Bob Johnson, 23 March 2003 <livewire@gentoo.org>
+# Bob Johnson, 28 October 2003 <livewire@gentoo.org>
 # John Davis, 18 October 2003 <zhen@gentoo.org>
 
 die() {
@@ -38,11 +38,12 @@ KERNEL=$1
 CONFIG=/etc/kernels
 [ ! -e /etc/kernels/settings ] && die "Can't find /etc/kernels/settings; exiting."
 source /etc/kernels/settings 
-BUSYBOX_TARBALL=${GK_SHARE}/busybox-0.60.5.tar.bz2
-BUSYBOX_DIR=busybox-0.60.5
+BUSYBOX_TARBALL=${GK_SHARE}/busybox-1.00-pre3.tar.bz2
+BUSYBOX_DIR=busybox-1.00-pre3
 CLOOP_TARBALL=${GK_SHARE}/cloop_0.68-2.tar.gz
 CLOOP_DIR=cloop-0.68
-MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
+#MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
+MAKEOPTS=`portageq envvar MAKEOPTS`
 : ${DISTCC_HOSTS:="`distcc-config --get-hosts 2> /dev/null`"}
 [ ! -z "${DISTCC_HOSTS}" ] && CC="distcc gcc" || CC="gcc"
 MENUCONFIG="no"
@@ -110,6 +111,15 @@ for x in $*
 	esac
 done
 
+lookbusy() {
+        local type
+        type=${1}; shift
+        for i in "$@"
+        do  echo -n ${GOOD}" *${NORMAL} Building " $i;echo -n -e "\r";
+        usleep 300000 ;
+        done
+}
+
 root_device() {
 	local myroot
 	local mylink	
@@ -129,9 +139,10 @@ root_device() {
 	ROOT_DEVICE=$myroot
 }
 
+
 configuration() {
 	echo "Gentoo Linux genkernel, version ${GK_VERSION}"
-	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins, John Davis"
+	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins ,John Davis"
 	echo " Distributed under the GNU General Public License version 2"		
 	echo
 	echo "Settings:"
@@ -147,15 +158,15 @@ configuration() {
 	
 	if [ "$MYCONFIG" = "yes" ]
 	then 
-		echo -e "user supplied\n config loc: ${CONFIG}/myconfig-${KV}"
+	echo -e "user supplied\n config loc: ${CONFIG}/myconfig"
 	elif [ -e ${CONFIG}/config-${KV} ]
-    then
-	   	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
-    elif [ -e ${KD}/kernel-config-${KV_FINE} ]
+    	then
+	    	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
+    	elif [ -e ${KD}/kernel-config ]
 	then
-		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config-${KV_FINE}"
+		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config"
 	else
-		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config-${KV_FINE}"
+		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config"
 	fi	 
 	
 	echo -n " initrd config: "
@@ -174,21 +185,21 @@ configuration() {
 	if [ "${MRPROPER}" = "yes" ]
 	then
 	ebegin "Running \"make mrproper\""
-	spinner make mrproper > /dev/null
+	make mrproper > /dev/null
 	eend
 	fi
 	if [ "$MYCONFIG" = "yes" ]
 	then
-		cp -f ${CONFIG}/myconfig-${KV} ${KD}/.config || die "couldn't copy myconfig"
+		cp -f ${CONFIG}/myconfig ${KD}/.config || die "couldn't copy myconfig"
 
 	elif [ -e ${CONFIG}/config-${KV} ]
-    then
-    	cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
-    elif [ -e ${KD}/kernel-config-${KV_FINE} ]
+    	then
+    		cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
+    	elif [ -e ${KD}/kernel-config ]
 	then
-		cp -f ${KD}/kernel-config-${KV_FINE} ${KD}/.config || die "couldn't copy 2"
+		cp -f ${KD}/kernel-config ${KD}/.config || die "couldn't copy 2"
 	else
-		cp -f ${CONFIG}/default-config-${KV_FINE} ${KD}/.config || die "couldn't copy 3"
+		cp -f ${CONFIG}/default-config ${KD}/.config || die "couldn't copy 3"
 	fi	 
 	ebegin "Running \"make oldconfig\""
 	while true;do echo -e "\n";done|make oldconfig >/dev/null
@@ -214,6 +225,17 @@ configuration() {
 	fi
 }
 
+if [ ${MAINARCH} = "x86" ]
+        then
+        KERNARCH="i386"
+elif [ ${MAINARCH} = "amd64" ]
+        then
+        KERNARCH="x86_64"
+elif [ ${MAINARCH} = "ppc" ]
+        then
+        KERNARCH="ppc"
+fi
+
 compile() {
 	local compile	
 	ebegin "Logging to /var/log/genkernel.log"; eend;
@@ -224,17 +246,18 @@ compile() {
 			ebegin "Running \"make dep\""
 			make dep  >/var/log/genkernel.log 2>&1 ||die; eend
         	ebegin "Running \"make bzImage\""
-			make CC="${CC}" ${MAKEOPTS} bzImage >>/var/log/genkernel.log 2>&1 || die; eend
-			ebegin "Running \"make modules\""
+			make CC="${CC}" ${MAKEOPTS} bzImage >>/var/log/genkernel.log 2>&1  || die; eend &
+
 		;;
 
 		"2.6")
 			ebegin "Running \"make\""
-			make CC="${CC}" ${MAKEOPTS} >>/var/log/genkernel.log 2>&1 ||die; eend
+		 	make CC="${CC}" ${MAKEOPTS} >>/var/log/genkernel.log 2>&1 || die &
+
 		;;
 	esac
-	make CC="${CC}" ${MAKEOPTS} modules >>/var/log/genkernel.log 2>&1 || die; eend
-    ebegin "Running \"make modules_install\""
+	make CC="${CC}" ${MAKEOPTS} modules >>/var/log/genkernel.log 2>&1 &
+	 ebegin "Running \"make modules_install\""
 	if [ "$PACKAGE" = "yes" ]
 	then
 	install -d ${TEMP}/modules
@@ -243,21 +266,21 @@ compile() {
 	cp -rf ${TEMP}/modules/lib/modules/${KV} ${TEMP}/genkernel
 	rm -rf ${TEMP}/modules
 	else
-	make modules_install >>/var/log/genkernel.log 2>&1 || die; eend
-	fi
+	make modules_install >>/var/log/genkernel.log 2>&1 || die; eend 
 	mount /boot > /dev/null 2>&1
+	fi
 	if [ "$LIVECD" = "yes" ]
 	then
 	ebegin "Moving bzImage to /kernel-${KV}-livecd"
-        cp arch/i386/boot/bzImage /kernel-${KV}-livecd || die; eend
+        cp arch/${KERNARCH}/boot/bzImage /kernel-${KV}-livecd || die; eend
 	else
 	if [ "$NOINSTALL" = "yes" ]
 	then
 	ebegin "Moving bzimage to ${TEMP}/kernel-${KV}"
-	cp arch/i386/boot/bzImage ${TEMP}/kernel-${KV}
+	cp arch/${KERNARCH}/boot/bzImage ${TEMP}/kernel-${KV}
 	else
 	ebegin "Moving bzImage to /boot/kernel-${KV}"
-        cp arch/i386/boot/bzImage /boot/kernel-${KV} || die; eend
+        cp arch/${KERNARCH}/boot/bzImage /boot/kernel-${KV} || die; eend
 	fi
 fi
   if [ "$NOINSTALL" = "no" ]
@@ -283,18 +306,19 @@ fi
 busybox() {
 	local busy
 	ebegin "Building busybox"
+	if [ ! -e ${GK_SHARE}/busybox ]
+	then
 	cd ${TEMP} 
 	rm -rf ${BUSYBOX_DIR} 
-	tar -xjf ${BUSYBOX_TARBALL}
-	cd ${BUSYBOX_DIR} 
-	cp Config.h Config.h.orig
-	sed -e "s://#define BB_INSMOD:#define BB_INSMOD:" \
-	-e "s://#define BB_PIVOT_ROOT:#define BB_PIVOT_ROOT:" \
-	-e "s://#define BB_LOADKMAP:#define BB_LOADKMAP:" \
-	-e "s://#define BB_LOSETUP:#define BB_LOSETUP:" \
-	-e "s://#define BB_RMMOD:#define BB_RMMOD:" Config.h.orig > Config.h
-	make clean
-	make DOSTATIC=true
+	tar -xjf ${BUSYBOX_TARBALL} ||die
+	cd ${BUSYBOX_DIR}
+	cp ${GK_SHARE}/busy.config ${TEMP}/${BUSYBOX_DIR} 
+	make oldconfig
+	make
+	cp -f busybox ${GK_SHARE} ||die
+	cd ${TEMP}
+	rm -rf ${BUSYBOX_DIR}
+	fi 
         install -d ${TEMP}/kernel-initrd
         dd if=/dev/zero of=${TEMP}/initrd bs=1k count=${INITRD_SIZE} 
         mke2fs -F -q -N5000 ${TEMP}/initrd
@@ -308,10 +332,10 @@ busybox() {
         tar xzf ${GK_SHARE}/bin-keymaps.tar.gz -C ${TEMP}/kernel-initrd/keymaps
         (mkdir ${TEMP}/kernel-initrd/dev;cd ${TEMP}/kernel-initrd/dev;MAKEDEV generic-i386;MAKEDEV scd)
         cat >${TEMP}/kernel-initrd/etc/fstab <<EOF
-/dev/ram0       /             cramfs defaults
+/dev/ram0       /             ext2 defaults
 proc            /proc         proc   defaults  0 0
 EOF
-        cp ${TEMP}/${BUSYBOX_DIR}/busybox ${TEMP}/kernel-initrd/bin 
+        cp ${GK_SHARE}/busybox ${TEMP}/kernel-initrd/bin ||die 
         for i in '[' ash basename cat chroot clear cp dirname echo env false find \
         grep gunzip gzip insmod ln ls loadkmap losetup lsmod mkdir mknod modprobe more mount mv \
         pivot_root ps awk pwd rm rmdir rmmod sh sleep tar test touch true umount uname \
@@ -342,7 +366,8 @@ initrd() {
 				echo "Warning: module ${i} not found; skipping..."
 				continue
 			fi
-			cp $mymod ${TEMP}/kernel-initrd/modules/${modc} 
+			cp -ax --parents $mymod ${TEMP}/kernel-initrd/
+                        cp -ax --parents /lib/modules/${KV}/modules* ${TEMP}/kernel-initrd
 		done
 	done
         #tweak our storage module settings based on our initrd
@@ -423,19 +448,27 @@ finish() {
 	einfo "A detailed log can be found at /var/log/genkernel.log."
 #	umount ${TEMP}/kernel-initrd >>/var/log/genkernel.log 2>&1
 	rm -rf ${TEMP}/kernel-initrd || die
-	rm -rf ${TEMP}/${BUSYBOX_DIR} || die
 }
 
 ###START MAIN PROGRAM###
 
 #root_device
 configuration
-compile
+compile &
+while ps |grep $! &>/dev/null; do
+lookbusy '|' '/' '-' '\' '|' '/' '-' '\'
+        done
 ebegin "Building busybox"
-busybox >>/var/log/genkernel.log 2>&1
+busybox >>/var/log/genkernel.log 2>&1 &
+while ps |grep $! &>/dev/null; do
+lookbusy '|' '/' '-' '\' '|' '/' '-' '\'
+        done
 eend
 ebegin "Creating initrd"
-initrd >>/var/log/genkernel.log 2>&1
+initrd >>/var/log/genkernel.log 2>&1 &
+while ps |grep $! &>/dev/null; do
+lookbusy '|' '/' '-' '\' '|' '/' '-' '\'
+        done
 eend
 bootsplash
 buildpkg
