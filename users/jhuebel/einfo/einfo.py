@@ -1,3 +1,7 @@
+# einfo.py
+# Distributed AS-IS, without warranty. Licensed under the GPL v2 or newer.
+# $Header: /var/cvsroot/gentoo/users/jhuebel/einfo/einfo.py,v 1.2 2004/04/26 04:14:14 jhuebel Exp $
+
 __module_name__ = "einfo"
 __module_version__ = "0.1"
 __module_description__ = "Display emerge info to an xchat channel"
@@ -167,6 +171,8 @@ def einfo(word, word_el, userdata):
 			myvars.sort()
 			for x in myvars:
 				chanmsg(x + '="' + portage.settings[x] + '"')
+		elif word[1] == "pkgversion":
+			chanmsg(string.join(portage.db["/"]["vartree"].dbapi.match(word[2]), ","))
 		else:
 			xchat.prnt("Unknown usage of /einfo")
 			return xchat.EAT_ALL
@@ -193,6 +199,8 @@ def einfo_help(word, word_el, userdata):
 	print "   keywords = show ACCEPT_KEYWORDS variable"
 	print "   use      = show USE variable"
 	print "   allvars  = show all emerge variables"
+	print "   pkgversion <package>"
+	print "            = show the version of <package> that is installed"
 	print " "
 
 xchat.hook_command("einfo", einfo, help="/einfo [ help | all | portage | uname | gentoo | cflags | chost | featuers | keywords | use | allvars ]")
