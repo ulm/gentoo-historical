@@ -307,7 +307,7 @@ User Docs:<br/><a class="altlink" href="/doc/build.html">x86 Install Instruction
 						Documentation en Français:<br/><a class="altlink" href="/doc/build-fr.html">Instructions d' Installation</a><br/><a class="altlink" href="/doc/altinstall-fr.html">Methode d' Alternative Installation</a><br/><a class="altlink" href="/doc/faq-fr.html">Foire Aux Questions</a><br/><a class="altlink" href="/doc/portage-manual-fr.html">Manuel Portage</a><br/><a class="altlink" href="/doc/portage-user-fr.html">Guide de l' Utilisateur d' Portage</a><br/><a class="altlink" href="/doc/desktop-fr.html">Guide de Bureau</a><br/><a class="altlink" href="/doc/rc-scripts-fr.html">System d'Initialisation</a><br/><a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide d' nVidia</a><br/><br/><br/>
 Documentación en Español: <br/><font color="#ff0000">(new!)</font>:<br/>
 Para usuarios:<br/>
-<a class="altlink" href="/doc/build-es.html">Guía de Instalación</a></br>
+<a class="altlink" href="/doc/build-es.html">Guía de Instalación</a><br/>
 <a class="altlink" href="/doc/faq-es.html">Preguntas frecuentes</a><br/>
 <a class="altlink" href="/doc/portage-user-es.html">Guía de Usuario de Portage</a><br/>
 <a class="altlink" href="/doc/portage-manual-es.html">Manual de Portage</a><br/>
