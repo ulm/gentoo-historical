@@ -53,7 +53,11 @@ def buildxml(devinfo):
 		# remove \n
 		line = line[:-1]
 		# separate into user name, name, location, responsibilities, web page
-		user,name,location,duties,web = line.split(":")
+		mys=line.split(":")
+		if len(mys)<5:
+			print "error in: \""+line+"\", exiting."
+			sys.exit(1)
+		user,name,location,duties,web = line.split(":")[0:5]
 		# generate the table entry for the current developer
 		# commented out version w/ mail links because of spam robots.
 		#tablexml = '\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti><mail link="%s@gentoo.org">%s</mail></ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n' \
