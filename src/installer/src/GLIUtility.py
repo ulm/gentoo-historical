@@ -216,46 +216,28 @@ def set_default_route(route):
 	return True
 
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
-	pid = os.fork()
-	cmd_output = None
-	if pid == 0:
-		if chroot != None:
-			cmd = "chroot " + chroot + " " + cmd
+	# quiet and return_output really do the same thing. One of them need to be removed.
+	if chroot != None:
+		cmd = "chroot " + chroot + " " + cmd
 
-		if quiet and logfile != None:
-			cmd += " >> " + logfile + " 2>&1"
-		elif quiet and logfile == None:
-			cmd += " >/dev/null 2>&1"
-		elif logfile != None:
-			if append_log:
-				cmd += " | tee " + logfile
-			else:
-				cmd += " | tee -a " + logfile
-		if return_output:
-			cmd += " | tee /tmp/toreturn.log"
+	if quiet and logfile != None:
+		cmd += " >> " + logfile + " 2>&1"
+	elif quiet and logfile == None:
+		cmd += " >/dev/null 2>&1"
+	elif logfile != None:
+		if append_log:
+			cmd += " | tee " + logfile
+		else:
+			cmd += " | tee -a " + logfile
 
-		if display_on_tty8:
-			if not is_file("/tmp/tty8_fifo"):
-				spawn("mkfifo /tmp/tty8_fifo")
-			cmd += " | tee /tmp/tty8_fifo"
-#			try:
-#				tty = os.open("/dev/vc/8", os.O_RDWR)
-#				oldstdout = sys.stdout
-#				oldstderr = sys.stderr
-#				os.dup2(tty,sys.stdout.fileno())
-#				os.dup2(tty,sys.stderr.fileno())
-#			except OSError:
-#				print "Could not open on tty8. Are you running as root?"
-#				tty = None
+	if display_on_tty8:
+		if not is_file("/tmp/tty8_fifo"):
+			spawn("mkfifo /tmp/tty8_fifo")
+		cmd += " | tee /tmp/tty8_fifo"
 
-		os.execv('/bin/bash',['/bin/bash', '-c', cmd])
-		sys.exit(1) # Should never be reached.
-
-	ret = os.waitpid(pid,0)[1]
+	ret, output = commands.getstatusoutput(cmd)
 	if return_output:
-		cmd_output = commands.getoutput("cat /tmp/toreturn.log")
-		os.system("rm /tmp/toreturn.log")
-		return ret, cmd_output
+		return ret, output
 	else:
 		return ret
 
