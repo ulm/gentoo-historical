@@ -12,6 +12,10 @@
 This is a Gentoo Linux Security Advisory
 </abstract>
 
+<xsl:if test="license">
+  <license />
+</xsl:if>
+
 <version><xsl:value-of select="@id"/></version>
 <date><xsl:value-of select="announced"/></date>
 
