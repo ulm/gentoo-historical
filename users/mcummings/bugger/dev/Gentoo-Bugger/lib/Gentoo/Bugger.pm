@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp qw(croak);
 use WWW::Mechanize 1.02;
-use WWW:Bugzilla 0.4;
+use WWW::Bugzilla 0.4;
 use HTML::Strip 1.02;
 
 require Exporter;
@@ -36,13 +36,59 @@ our $VERSION = '0.01';
 
 sub new {
 	my $proto = shift;
+	my %args = @_;
 	my $class = ref($proto) || $proto;
 	my $self = {};
+	$self->{onerror} =  \&Gentoo::Bugger::_die;
+	$self->{onwarn} = \&Gentoo::Bugger::_warn;
 	$self->{BUGID} = undef;
 	$self->{SEARCH} = undef;
+	$self->{pages} = 0;
+croak("'server', 'login', and 'password' are all required arguments.") if ( (not $args{server}) or (not $args{login}) or (not $args{password}) ); 
+
+	$self->{server} = $args{server};
+	$self->{login} = $args{login};
+	$self->{password} = $args{password};
 	bless ($self, $class);
 	return $self;
 }
+
+
+sub connect_mech {
+    my $self = shift;
+    my $agent = WWW::Mechanize->new();
+    my $url = 'http://'.$self->{server}.'/query.cgi?GoAheadAndLogIn=1';
+    $agent->get( $url );
+    $agent->submit_form(
+        fields => {
+            Bugzilla_login    => $self->{login},
+            Bugzilla_password => $self->{password},
+        }
+    );
+    return ($agent);
+}
+
+sub die {
+    my $self = shift;
+
+    return unless my $handler = $self->{onerror};
+
+    $handler->(@_);
+}
+
+
+# NOT an object method!
+sub _warn {
+    require Carp;
+    &Carp::carp; # pass thru
+}
+
+# NOT an object method!
+sub _die {
+    require Carp;
+    &Carp::croak; # pass thru
+}
+
 
 
 

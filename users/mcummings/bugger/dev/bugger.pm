@@ -24,6 +24,10 @@ if ( $stripver < 1.02 ) {
     exit();
 }
 
+use lib "Gentoo-Bugger/lib";
+use Gentoo::Bugger;
+my $cmech = Gentoo::Bugger->new();
+my $session = $cmech->connect_mech();
 sub list_bugs {
 
     my %buglist;
@@ -32,40 +36,62 @@ sub list_bugs {
     my $stype    = shift;
     chomp($bugfor);
 
-    my $mech = connect_mech();
-    $mech->form_number(1);
-    $mech->field( 'email2', "" );
+    #my $mech = connect_mech();
+    #$mech->form_number(1);
+    $session->form_number(1);
+    #$mech->field( 'email2', "" );
+    $session->field( 'email2', "" );
 
     if ( $stype eq "cc" ) {
-        $mech->field( 'email1', $bugfor );
-        $mech->untick( 'emailassigned_to1', '1' );
-        $mech->tick( 'emailcc1', '1' );
-        $mech->select( 'emailtype1', 'exact' );
+        #$mech->field( 'email1', $bugfor );
+        #$mech->untick( 'emailassigned_to1', '1' );
+        #$mech->tick( 'emailcc1', '1' );
+        #$mech->select( 'emailtype1', 'exact' );
+        $session->field( 'email1', $bugfor );
+        $session->untick( 'emailassigned_to1', '1' );
+        $session->tick( 'emailcc1', '1' );
+        $session->select( 'emailtype1', 'exact' );
     }
     elsif ( $stype eq "assigned" ) {
-        $mech->field( 'email1', $bugfor );
-        $mech->tick( 'emailassigned_to1', '1' );
-        $mech->select( 'emailtype1', 'exact' );
+        #$mech->field( 'email1', $bugfor );
+        #$mech->tick( 'emailassigned_to1', '1' );
+        #$mech->select( 'emailtype1', 'exact' );
+        $session->field( 'email1', $bugfor );
+        $session->tick( 'emailassigned_to1', '1' );
+        $session->select( 'emailtype1', 'exact' );
     }
     elsif ( $stype eq "reporter" ) {
-        $mech->field( 'email1', $bugfor );
-        $mech->untick( 'emailassigned_to1', '1' );
-        $mech->tick( 'emailreporter1', '1' );
-        $mech->select( 'emailtype1', 'exact' );
+        #$mech->field( 'email1', $bugfor );
+        #$mech->untick( 'emailassigned_to1', '1' );
+        #$mech->tick( 'emailreporter1', '1' );
+        #$mech->select( 'emailtype1', 'exact' );
+        $session->field( 'email1', $bugfor );
+        $session->untick( 'emailassigned_to1', '1' );
+        $session->tick( 'emailreporter1', '1' );
+        $session->select( 'emailtype1', 'exact' );
     }
     elsif ( $stype eq "keyword" ) {
-        $mech->field( 'email1', "" );
-        $mech->untick( 'emailassigned_to1', '1' );
-        $mech->field( 'long_desc', $bugfor );
-        $mech->select( 'long_desc_type', 'anywordssubstr' );
+        #$mech->field( 'email1', "" );
+        #$mech->untick( 'emailassigned_to1', '1' );
+        #$mech->field( 'long_desc', $bugfor );
+        #$mech->select( 'long_desc_type', 'anywordssubstr' );
+        $session->field( 'email1', "" );
+        $session->untick( 'emailassigned_to1', '1' );
+        $session->field( 'long_desc', $bugfor );
+        $session->select( 'long_desc_type', 'anywordssubstr' );
     }
-    $mech->untick( 'emailreporter2', '1' );
+    #$mech->untick( 'emailreporter2', '1' );
+    $session->untick( 'emailreporter2', '1' );
 
-    $mech->select( 'order', 'Bug Number' );
-    $mech->submit();
+    #$mech->select( 'order', 'Bug Number' );
+    #$mech->submit();
+    $session->select( 'order', 'Bug Number' );
+    $session->submit();
 
-    $mech->follow_link( text_regex => qr/CSV/ );
-    my $content = $mech->content;
+    #$mech->follow_link( text_regex => qr/CSV/ );
+    $session->follow_link( text_regex => qr/CSV/ );
+    #my $content = $mech->content;
+    my $content = $session->content;
     my @baseline = split( /\n/, $content );
     if ($baseline[0] =~ m/bug_id/i){
     foreach my $line ( sort @baseline ) {
@@ -94,6 +120,7 @@ sub show_bug {
         form_number => 2,
         fields      => { id => "$BUG", }
     );
+    my $ccline = $mech
     $mech->follow_link( text_regex => qr/format for printing/i );
 
     my $TextBody = $mech->content();
@@ -421,7 +448,7 @@ sub clearscreen {
     print $clear_string;
 }
 
-sub connect_mech {
+sub connects_mech {
     my $agent = WWW::Mechanize->new();
     $agent->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
     $agent->submit_form(
