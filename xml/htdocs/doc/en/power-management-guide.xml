@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.7 2004/10/11 00:51:36 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.8 2005/01/17 10:10:23 swift Exp $ -->
 <guide link="power-management-guide.xml">
 <title>Power Management Guide</title>
 
 <author title="Author">
-  <mail link="fragfred@gmx.de">Dennis Nienh&#252;ser</mail>
+  <mail link="fragfred@gmx.de">Dennis Nienhüser</mail>
 </author>
 
 <abstract>
@@ -17,8 +17,8 @@ laptops. This guide assists you setting it up on your laptop.
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>1.17</version>
-<date>October 10, 2004</date>
+<version>1.18</version>
+<date>January 05, 2005</date>
 
 <chapter>
 <title>Introduction</title>
@@ -164,15 +164,26 @@ Power Management Options ---&gt;
           Default CPUFreq governor (userspace)
     &lt;*&gt;   'performance' governor
     &lt;*&gt;   'powersave' governor
+    &lt;*&gt;   'ondemand' cpufreq policy governor
     &lt;*&gt;   CPU frequency table helpers
     &lt;M&gt; ACPI Processor P-States driver
     &lt;*&gt; <i>CPUFreq driver for your processor</i>
 </pre>
 
 <p>
-Decide yourself whether you want to enable Software Suspend, Suspend-to-Disk
-and Sleep States (see below). If you own an ASUS, Medion or Toshiba laptop,
-enable the appropriate section.
+Decide yourself whether you want to enable Software Suspend, Suspend-to-Disk and
+Sleep States (see below). If you own an ASUS, Medion or Toshiba laptop, enable
+the appropriate section. Recent kernel versions (2.6.9 and later) include an
+<e>'ondemand' governor</e> for CPU Frequency Scaling, activate it as well when
+using such a kernel.
+</p>
+
+<p>
+The kernel has to know how to enable CPU frequency scaling on your processor. As
+each type of CPU has a different interface, you've got to choose the right
+driver for your processor. Be careful here - enabling <e>Intel Pentium 4 clock
+modulation</e> on a Pentium M system will lead to strange results for example.
+Consult the kernel documentation if you're unsure which one to take.
 </p>
 
 <p>
@@ -230,81 +241,100 @@ change it.
 
 <p>
 Typical ACPI events are closing the lid, changing the power source or pressing
-the sleep button. Every acpi event recognized by the kernel is catched by acpid
-which calls <path>/etc/acpi/default.sh</path>. Here is a basic modification
-supporting runlevel switching:
+the sleep button. An important event is changing the power source, which should
+cause a runlevel switch. Create the following files to switch between
+<e>default</e> and <e>battery</e> runlevel depending on the power source:
 </p>
 
-<pre caption="Event driven runlevel switching with acpid">
-#!/bin/sh
+<pre caption="/etc/acpi/switch_runlevel.sh">
+#!/bin/bash
 
-set $*
+RUNLEVEL_AC="default"
+RUNLEVEL_BATTERY="battery"
 
-group=${1/\/*/}
-action=${1/*\//}
-
-<comment># runlevel to use in AC mode</comment>
-RLVL_AC="default"
-<comment># runlevel to use in battery mode</comment>
-RLVL_BATTERY="battery"
-
-<comment># file indicating the AC state. Verify the filename before using</comment>
-AC_STATE="/proc/acpi/ac_adapter/AC/state"
-<comment># this string means running on AC</comment>
-AC_ON="on-line"
-<comment># this string means running on batteries</comment>
-AC_OFF="off-line"
-
-function SwitchRunlevel() {
-  if [[ "$(grep ${AC_OFF} ${AC_STATE})" != "" &amp;&amp; "$(cat /var/lib/init.d/softlevel)" != "${RLVL_BATTERY}" ]]
-  then
-    logger "Switching to ${RLVL_BATTERY} runlevel"
-    /sbin/rc ${RLVL_BATTERY}
-  elif [[ "$(grep ${AC_ON} ${AC_STATE})" != "" &amp;&amp; "$(cat /var/lib/init.d/softlevel)" != "${RLVL_AC}" ]]
-  then
-    logger "Switching to ${RLVL_AC} runlevel"
-    /sbin/rc ${RLVL_AC}
-  fi
+function on_ac () {
+    if which on_ac_power &amp;> /dev/null
+    then
+        on_ac_power
+    else
+        grep --quiet on-line /proc/acpi/ac_adapter/*/state
+    fi
 }
 
+function SwitchRunlevel () {
 
-case "$group" in
-  battery)
-    case "$action" in
-      battery) 
-        SwitchRunlevel
-        ;;
-      *) 
-        logger "ACPI group battery / action $action is not defined"
-        ;;
-    esac
-    ;;
+    if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
+    then
+        logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
+        exit 1
+    fi
 
-  ac_adapter)
-    case "$action" in
-      ac_adapter)
-        SwitchRunlevel
-        ;;
-      *)
-        logger "ACPI group ac_adapter / action $action is not defined"
-        ;;
-    esac
-    ;;
-  *)
-    logger "ACPI group $group / action $action is not defined"
-    ;;
-esac
+
+    if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
+    then
+        logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
+        exit 1
+    fi
+
+    if on_ac
+    then if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
+  then
+            logger "Switching to ${RUNLEVEL_AC} runlevel"
+            /sbin/rc ${RUNLEVEL_AC}
+        fi
+    elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
+  then
+        logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
+        /sbin/rc ${RUNLEVEL_BATTERY}
+  fi
+}
+</pre>
+
+<pre caption="/etc/acpi/events/pmg_ac_adapter">
+event=ac_adapter.*
+action=/etc/acpi/actions/pmg_ac_adapter.sh %e
+</pre>
+
+<pre caption="/etc/acpi/events/pmg_battery">
+event=battery.*
+action=/etc/acpi/actions/pmg_battery.sh %e
+</pre>
+
+<pre caption="/etc/acpi/actions/pmg_ac_adapter.sh">
+#!/bin/bash
+
+source /etc/acpi/switch_runlevel.sh
+SwitchRunlevel
+</pre>
+
+<pre caption="/etc/acpi/actions/pmg_battery.sh">
+#!/bin/bash
+
+source /etc/acpi/switch_runlevel.sh
+SwitchRunlevel
+</pre>
+
+<p>
+Some of these files must be executable. Last not least restart acpid to have
+it recognize the changes.
+</p>
+
+<pre caption="Finishing runlevel switching with acpid">
+<i># chmod +x /etc/acpi/switch_runlevel.sh</i>
+<i># chmod +x /etc/acpi/actions/pmg_*</i>
+<i># /etc/init.d/acpid restart</i>
 </pre>
 
 <p>
 Give it a try: Plug AC in and out and watch syslog for the "Switching to AC
-mode" or "Switching to battery mode" messages. 
+mode" or "Switching to battery mode" messages. See the Troubleshooting
+section if the script is not able to detect the power source correctly.
 </p>
 
 <p>
 Due to the nature of the event mechanism, your laptop will boot into runlevel
 <e>default</e> regardless of the AC/battery state. You can add another entry
-to the boot loader with <c>softlevel=boot</c>, but it's likely to forget
+to the boot loader with <c>softlevel=battery</c>, but it's likely to forget
 choosing it. A better way is faking an ACPI event in the end of the boot
 process and let the <path>/etc/acpi/default.sh</path> script decide whether a
 runlevel change is necessary. Open <path>/etc/conf.d/local.start</path> in your
@@ -313,7 +343,7 @@ favourite editor and add these lines:
 
 <pre caption="Runlevel switch at boot time by editing local.start">
 <comment># Fake acpi event to switch runlevel if running on batteries</comment>
-/etc/acpi/default.sh "battery/battery"
+/etc/acpi/actions/pmg_battery.sh "battery/battery"
 </pre>
 
 <p>
@@ -327,6 +357,43 @@ devices.
 
 <chapter>
 <title>CPU Power Management</title>
+<section>
+<title>Some technical terms</title>
+<body>
+
+<p>
+CPU frequency scaling brings up some technical terms that might be unknown to
+you. Here's a quick introduction.
+</p>
+
+<p>
+First of all, the kernel has to be able to change the processor's frequency. The
+<e>CPUfreq processor driver</e> knows the commands to do it on your CPU. Thus
+it's important to choose the right one in your kernel. You should already have
+done it above. Once the kernel knows how to change frequencies, it has to know
+which frequency it should set. This is done according to the <e>policy</e> which
+consists of <e>CPUfreq policy</e> and a <e>governor</e>. A CPUfreq policy are
+just two numbers which define a range the frequency has to stay between -
+minimal and maximal frequency. The governor now decides which of the available
+frequencies in between minimal and maximal frequency to choose. For example, the
+<e>powersave governor</e> always chooses the lowest frequency available, the
+<e>performance governor</e> the highest one. The <e>userspace governor</e> makes
+no decision but chooses whatever the user (or a program in userspace) wants -
+which means it reads the frequency from
+<path>/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed</path>.
+</p>
+
+<p>
+This doesn't sound like dynamic frequency changes yet and in fact it isn't.
+Dynamics however can be accomplished with various approaches. For example,
+the <e>ondemand governor</e> makes its decisions depending on the current CPU
+load. The same is done by various userland tools like <c>cpudyn</c>,
+<c>speedfreq</c>, <c>powernowd</c> and many more. ACPI events can be used to
+enable or disable dynamic frequency changes depending on power source.
+</p>
+
+</body>
+</section>
 <section>
 <title>Setting the frequency manually</title>
 <body>
@@ -394,39 +461,101 @@ kernel as asked and check the current frequency with <c>x86info -mhz</c>.
 
 <p>
 The above is quite nice, but not doable in daily life. Better let your system
-set the appropriate frequency automatically. A couple of user space programs
-like to do it for you. The following table gives a quick overview to help you
-decide on one of them.
+set the appropriate frequency automatically. There are many different approaches
+to do this. The following table gives a quick overview to help you decide on one
+of them. It's roughly seperated in three categories <e>kernel</e> for approaches
+that only need kernel support, <e>daemon</e> for programs that run in the
+background and <e>graphical</e> for programs that provide a GUI for easy
+configuration and changes.
 </p>
 
 <table>
 <tr>
   <th>Name</th>
-  <th>Pro</th>
-  <th>Con</th>
+  <th>Category</th>
+  <th>Switch decision</th>
+  <th>Kernel governors</th>
+  <th>Further governors</th>
+  <th>Comments</th>
+</tr>
+<tr>
+  <ti>'ondemand' governor</ti>
+  <ti>Kernel</ti>
+  <ti>CPU load</ti>
+  <ti>N.A.</ti>
+  <ti>N.A.</ti>
+  <ti>
+    Further tuning through files in
+    <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>. Still requires
+    userland tools (programs, scripts) if governor switching or similar is
+    desired.
+  </ti>
 </tr>
 <tr>
   <ti><uri link="http://mnm.uib.es/~gallir/cpudyn/">cpudyn</uri></ti>
-  <ti>Also supports disk standby</ti>
-  <ti></ti>
+  <ti>Daemon</ti>
+  <ti>CPU load</ti>
+  <ti>None</ti>
+  <ti>Dynamic</ti>
+  <ti>
+    Also supports disk standby - notice however that <e>laptop mode</e> in most
+    cases will do a better job.
+  </ti>
 </tr>
 <tr>
-  <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreq</uri></ti>
-  <ti>Sophisticated setup possible</ti>
-  <ti>Complicated setup</ti>
+  <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
+  <ti>Daemon</ti>
+  <ti>Battery state, CPU load, running programs</ti>
+  <ti>All available</ti>
+  <ti>None</ti>
+  <ti>
+    Sophisticated (but also complicated) setup. An optimal configuration
+    requires detailed knowledge of your system.
+  </ti>
+</tr>
+<tr>
+  <ti>
+    <uri link="http://www.deater.net/john/powernowd.html">powernowd</uri>
+  </ti>
+  <ti>Daemon</ti>
+  <ti>CPU load</ti>
+  <ti>None</ti>
+  <ti>Passive, sine, aggressive</ti>
+  <ti>
+    Supports SMP.
+  </ti>
 </tr>
 <tr>
   <ti><uri link="http://www.goop.org/~jeremy/speedfreq/">speedfreq</uri></ti>
+  <ti>Daemon</ti>
+  <ti>CPU load</ti>
+  <ti>None</ti>
+  <ti>Dynamic, powersave, performance, fixed speed</ti>
   <ti>
-    Small yet powerful<br />
-    Useful client/server interface
+    Small yet powerful with an useful client/server interface. Requires a 2.6
+    kernel.
   </ti>
-  <ti>Kernel 2.6 series only</ti>
 </tr>
 <tr>
-  <ti><uri link="http://www.deater.net/john/powernowd.html">powernowd</uri></ti>
-  <ti>Supports SMP</ti>
-  <ti></ti>
+  <ti><uri link="http://cpuspeedy.sourceforge.net/">gtk-cpuspeedy</uri></ti>
+  <ti>Graphical</ti>
+  <ti>None</ti>
+  <ti>None</ti>
+  <ti>None</ti>
+  <ti>
+    Gnome application, a graphical tool to set CPU frequency manually. It does
+    not offer any automation and is mainly listed for the sake of completeness.
+  </ti>
+</tr>
+<tr>
+  <ti>klaptopdaemon</ti>
+  <ti>Graphical</ti>
+  <ti>Battery state</ti>
+  <ti>All available</ti>
+  <ti>None</ti>
+  <ti>
+    KDE only, 'ondemand' governor required for dynamic frequency scaling.
+  </ti>
 </tr>
 </table>
 
@@ -458,13 +587,13 @@ to change the policy, modify <c>SPEEDFREQ_OPTS=""</c> to
 </pre>
 
 <p>
-Setting up cpufreq is a little bit more complicated.
+Setting up cpufreqd is a little bit more complicated.
 </p>
 
 <warn>
 Do not run more than one of the above programs at the same time. It may cause
 confusion like switching between two frequencies all the time. If you just
-installed speedfreq, skip cpufreq now.
+installed speedfreq, skip cpufreqd now.
 </warn>
 
 <pre caption="Installing cpufreqd">
@@ -548,9 +677,17 @@ profile=battery
 <c>speedfreq</c>.
 </p>
 
+</body>
+</section>
+
+<section>
+<title>Verifying the result</title>
+
+<body>
+
 <p>
 The last thing to check is that your new policies do a good job. An easy way to
-do so is monitoring the CPU speed while working with your laptop:
+do so is monitoring CPU speed while working with your laptop:
 </p>
 
 <pre caption="Monitoring CPU speed">
@@ -692,6 +829,7 @@ battery runlevel.
 </p>
 
 <pre caption="Automate disk standby settings">
+# <i>chmod +x /etc/init.d/pm.hda</i>
 # <i>/sbin/depscan.sh</i>
 # <i>rc-update add pm.hda battery</i>
 </pre>
@@ -715,24 +853,41 @@ minimizes the time the hard disk needs to be spun up.
 </p>
 
 <p>
-<!-- FIXME: bug #45593 -->
-To start and stop laptop-mode, create a script /etc/init.d/laptop-mode. You can
-take the one included in
-<path>/usr/src/linux/Documentation/laptop-mode.txt</path>. Onces it's ready,
-make sure it gets called.
+<!-- TODO: bug #45593 -->
+Besides kernel support you also need a script that controls starting and
+stopping of laptop-mode. You kernel documentation in
+<path>/usr/src/linux/Documentation/laptop-mode.txt</path> contains one as well
+as the package <c>laptop-mode-tools</c>. None of them is easy to install
+though.
 </p>
 
-<pre caption="Automatic start of laptop-mode">
-# <i>rc-update add laptop-mode battery</i>
-</pre>
+<p>
+Ebuilds for laptop-mode-tools are not in Portage, because Gentoo developers
+don't think they are production ready yet. Take that into consideration
+before using the ebuilds which can be found in <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=45593">Bugzilla</uri>. The Gentoo
+Handbook tells you how to use external ebuilds if you don't know where to put
+them. Once your PORTDIR_OVERLAY contains the ebuilds, install the
+script:
+</p>
 
 <warn>
-Once again: Be careful with sleep/spin down settings of your hard drive.
-Setting it to small values might wear out your drive and lose warranty. Be sure
-to read the documentation in laptop-mode.txt. Make sure to stop laptop-mode
-before your battery runs out of power and data gets written to disk - otherwise
-you will at least lose the last 10 minutes of your work.
+This package is not seen as production ready and installing custom ebuilds from
+Bugzilla is not recommended. Please don't use laptop-mode-tools if you're
+unsure.
 </warn>
+
+<pre caption="Automated start of laptop-mode">
+# <i>emerge laptop-mode-tools</i>
+</pre>
+
+<p>
+<c>laptop-mode-tools</c> has it's configuration file in
+<path>/etc/laptop-mode/laptop-mode.conf</path>. Adjust it the way you like it,
+it's well commented. If you have <e>apm</e> or <e>acpi</e> in your USE flags,
+laptop-mode will be started automatically in battery mode. Otherwise you can
+automate it by running <c>rc-update add laptop-mode battery</c>.
+</p>
 
 </body>
 </section>
@@ -822,6 +977,12 @@ like the disk script above. See <c>man iwconfig</c> for details and more
 options. If your driver and access point support changing the beacon time, this
 is a good starting point to save even more energy.
 </p>
+
+<pre caption="Power Management for WLAN">
+# <i>chmod +x /etc/init.d/pm.wlan0</i>
+# <i>/sbin/depscan.sh</i>
+# <i>rc-update add pm.wlan0 battery</i>
+</pre>
 
 </body>
 </section>
@@ -948,17 +1109,17 @@ To put your system in one of the sleep states, use
 # <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(sleep)</comment>
 
 <comment>(kernel 2.6 series)</comment>
-# <i>echo -n standby &gt; /sys/power/state</i> <comment>standby</comment>
-# <i>echo -n mem &gt; /sys/power/state</i>     <comment>sleep</comment>
+# <i>echo -n standby &gt; /sys/power/state</i> <comment>(standby)</comment>
+# <i>echo -n mem &gt; /sys/power/state</i>     <comment>(sleep)</comment>
 
 <comment>(swsusp)</comment>
-# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>hibernate</comment>
+# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>(hibernate)</comment>
 
 <comment>(Suspend-to-Disk)</comment>
-# <i>echo -n disk &gt; /sys/power/state</i>    <comment>hibernate</comment>
+# <i>echo -n disk &gt; /sys/power/state</i>    <comment>(hibernate)</comment>
 
 <comment>(swsusp2)</comment>
-# <i>echo &gt; /proc/swsusp/activate</i>
+# <i>/usr/sbin/hibernate</i>                   <comment>(hibernate, see below)</comment>
 </pre>
 
 <warn>
@@ -976,11 +1137,19 @@ mode.
 <p>
 While the above should be sufficient to get swsusp and Suspend-to-Disk running
 (I didn't say working), swsusp2 needs special care. 
-The first thing to do is to patch the kernel with the patches provided at <uri
+The first thing to do is patching the kernel with the patches provided at <uri
 link="http://softwaresuspend.berlios.de/">
-http://softwaresuspend.berlios.de/</uri>. Afterwards, install the hibernate 
-script from the same page.
+http://softwaresuspend.berlios.de/</uri>. Additionally you've got to emerge
+<c>hibernate-script</c>. Once it is installed, configure
+<path>/etc/hibernate/hibernate.conf</path> and try whether it works:
 </p>
+
+<pre>
+<i># emerge hibernate-script</i>
+<i># $EDITOR /etc/hibernate/hibernate.conf</i>
+<comment>(Last chance to backup any data)</comment>
+<i># hibernate</i>
+</pre>
 
 </body>
 </section>
@@ -1029,8 +1198,11 @@ the speed never changes.
 </p>
 
 <p>
-<e>A:</e> This seems to be a kernel bug. Run <c>emerge x86info</c>, update your
-kernel as asked and check the current frequency with <c>x86info -mhz</c>.
+<e>A:</e> Probably you have activated symmetric multiprocessing support
+(CONFIG_SMP) in your kernel. Deactivate it and it should work. Some older
+kernels had a bug causing this. In that case, run <c>emerge x86info</c>,
+update your kernel as asked and check the current frequency with
+<c>x86info -mhz</c>.
 </p>
 
 <p>
@@ -1046,6 +1218,30 @@ can read the current throttling state with <c>cat
 /proc/acpi/processor/CPU/throttling</c> and change it with <c>echo -n "0:x" >
 /proc/acpi/processor/CPU/limit</c>, where x is one of the Tx states listed in
 <path>/proc/acpi/processor/CPU/throttling</path>.
+</p>
+
+<p>
+<e>Q:</e> When configuring the kernel, powersave, performance and userspace
+governors show up, but that ondemand thing is missing. Where do I get it?
+</p>
+
+<p>
+<e>A:</e> The ondemand governor is only included in recent kernel sources. Try
+updating them.
+</p>
+
+<p>
+<e>Q:</e> Runlevel switching doesn't work - the script is not able to determine
+the power source correctly.
+</p>
+
+<p>
+<e>A:</e> On some systems, the power source can't be determined by reading
+<path>/proc/acpi/ac_adapter/*/state</path>. If it fails for you, create a
+custom script <c>on_ac_power</c> or use the one from <c>powermgmt-base</c>.
+An ebuild can be found in <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=76516">Bug #76516</uri>. You
+only have to emerge it, it works transparently with the above script.
 </p>
 
 <p>
@@ -1103,6 +1299,15 @@ last full capacity:  41830 mWh
 <p>
 If the "last full capacity" differs significantly from the design capacity,
 your battery is probably broken. Try to claim your warranty.
+</p>
+
+<p>
+<e>Q:</e> My problem is not listed above. Where should I go next?
+</p>
+
+<p>
+<e>A:</e> Don't fear to contact me, <mail link="fragfred@gmx.de">Dennis
+Nienhüser</mail>, directly.
 </p>
 
 </body>
