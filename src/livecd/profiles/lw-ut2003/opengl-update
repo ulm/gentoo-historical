@@ -1,0 +1,95 @@
+#!/bin/bash
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2 or later
+# Author:  Martin Schlemmer <azarah@gentoo.org>
+# $Header: /var/cvsroot/gentoo/src/livecd/profiles/lw-ut2003/Attic/opengl-update,v 1.1 2003/10/19 03:46:49 livewire Exp $
+
+
+source /etc/init.d/functions.sh
+
+if [ `id -u` -ne 0 ]
+then
+	eerror "${0}: must be root."
+	exit 1
+fi
+
+usage() {
+cat << FOO
+usage: opengl-update <GL implementation>
+
+note:  
+       This utility switch between OpenGL implementations.  Currently there
+       are two supported implementations, namely "xfree" and "nvidia", the
+       implementations for XFree86 and the NVidia drivers respectively.
+
+examples:
+       opengl-update xfree
+       This will setup things to use libGL.so from XFree86
+
+       opengl-update nvidia
+       This will setup things to use libGL.so from the NVidia drivers.
+	   
+FOO
+	exit 1
+}
+
+if [ "$#" -ne 1 ]
+then
+	usage
+fi
+if [ ! -d /usr/lib/opengl/${1} ]
+then
+	usage
+else
+	ebegin "Switching to ${1} OpenGL interface"
+
+	#set up the $LDPATH
+	echo "LDPATH=/usr/lib/opengl/${1}/lib" >/etc/env.d/09opengl
+	/usr/sbin/env-update &>/dev/null
+
+	#setup the /usr/lib/libGL.so symlink
+	rm -f /etc/opengl/libGL.so /etc/opengl/libGL.so.1
+	
+	realname="$(readlink /usr/lib/opengl/${1}/lib/libGL.so)"
+	ln -sf /usr/lib/opengl/${1}/lib/${realname} \
+		/etc/opengl/libGL.so
+	ln -sf /usr/lib/opengl/${1}/lib/${realname} \
+		/etc/opengl/libGL.so.1
+
+	#setup the /usr/X11R6/lib/libMesaGL.so symlink
+	rm -f /etc/opengl/libMesaGL.so
+	realname="$(readlink /usr/lib/opengl/${1}/lib/libGL.so)"
+	ln -sf /usr/lib/opengl/${1}/lib/${realname} \
+		/etc/opengl/libMesaGL.so
+
+	rm -f /etc/opengl/libGLcore.so*
+	
+	if [ -e /usr/lib/opengl/${1}/lib/libGLcore.so ]
+	then
+		realname="$(readlink /usr/lib/opengl/${1}/lib/libGLcore.so)"
+		ln -sf /usr/lib/opengl/${1}/lib/${realname} \
+			/etc/opengl/libGLcore.so
+		ln -sf /usr/lib/opengl/${1}/lib/${realname} \
+			/etc/opengl/libGLcore.so.1
+	fi
+
+	#setup the /usr/X11R6/lib/modules/extensions/libglx.so symlink
+	rm -f /etc/opengl/libglx.*
+	
+	if [ -e /usr/lib/opengl/${1}/extensions/libglx.so ]
+	then
+		ln -sf /usr/lib/opengl/${1}/extensions/libglx.so \
+			/etc/opengl/libglx.so
+	fi
+	#setup the /usr/X11R6/lib/modules/extensions/libglx.a symlink
+	if [ -e /usr/lib/opengl/${1}/extensions/libglx.a ]
+	then
+		ln -sf /usr/lib/opengl/${1}/extensions/libglx.a \
+			/etc/opengl/libglx.a
+	fi
+
+	eend 0
+fi
+
+
+# vim:ts=4

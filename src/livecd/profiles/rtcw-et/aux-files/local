@@ -1,0 +1,87 @@
+#!/sbin/runscript
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2 or later
+# $Header: /var/cvsroot/gentoo/src/livecd/profiles/rtcw-et/aux-files/Attic/local,v 1.1 2003/10/19 03:46:50 livewire Exp $
+
+HILITE="\033[1m"
+NORMAL="\033[0m"
+
+NET="no"
+GAME="yes"
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+	if [ "$x" = "forceloadnet" ]
+	then
+		NET="yes"
+	elif [ "$x" = "nogame" ]
+	then
+		GAME="no"
+	fi
+done
+
+depend() {
+	before autoconfig
+}
+
+blurb() {
+	echo -ne ${HILITE}${1}
+	#blurblen=${#1}
+}
+
+backup() {
+	echo -ne "\033[0G\033[0K"
+}
+
+start() {
+	umount /initrd
+	/sbin/freeramdisk /dev/ram0
+	#make our mtab look sane...
+	local mycdloc
+	mycdloc=`cat /tmp/mycd`
+	mycdloc=${mycdloc#/newroot*}
+	mount -f $mycdloc /mnt/cdrom -t iso9660 -o ro
+	if [ -e /mnt/livecd.cloop ]
+	then
+		mount -f /mnt/livecd.cloop /mnt/cloop -t ext2 -o ro
+		#cloop was cached to tmpfs so that CD could be unmounted.
+	else
+		mount -f /mnt/cdrom/livecd.cloop /mnt/cloop -t ext2 -o ro
+	fi
+	rm /tmp/mycd
+	mount -f tmpfs / -t tmpfs -o rw
+
+	echo "10000" > /proc/sys/fs/file-max
+	echo root:`pwgen -s 16` | chpasswd  > /dev/null 2>&1
+	if [ "$NET" = "yes" ]
+	then
+		ebegin "Auto-detecting network modules"
+		# Disable kernel messages to console:
+		echo "0" > /proc/sys/kernel/printk
+		local x
+		for x in /lib/modules/*/kernel/drivers/net/*
+		do
+			y=${x##*/}
+			y=${y%%.*}
+			echo -ne " ${GOOD}*${NORMAL} Scanning for ${y}..."
+			insmod -f ${x} > /dev/null 2>&1
+			backup
+		done
+		echo "6" > /proc/sys/kernel/printk
+	fi
+	#if [ ! -e /mnt/livecd.* ]
+	#then
+	#	#Turn off CD-ROM spindown (well... 5.5hrs) if cdcache wasn't enabled...
+	#	hdparm -S 251 /dev/cdroms/cdrom* > /dev/null 2>&1
+	#fi
+	if [ "$GAME" = "yes" ]
+	then
+		touch /etc/startgame
+	fi
+}
+
+stop() {
+	return
+}
+
+# vim:ts=4

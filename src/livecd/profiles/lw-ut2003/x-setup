@@ -1,0 +1,79 @@
+#!/bin/bash
+#first, get paths right if we're getting started b4 login
+source /etc/profile
+
+echo "0" > /proc/sys/kernel/printk
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+        if [ "$x" = "agpgart" ]
+        then
+			modprobe agpgart > /dev/null 2>&1
+        fi
+done
+
+GLTYPE=nvidia
+#now, for the key component :)
+modprobe nvidia > /dev/null 2>&1
+if [ "`lsmod | cut -f1 -d\" \" | grep ^nvidia$`" = "nvidia" ]
+then
+	echo "NVIDIA driver loaded."
+else
+	modprobe fglrx > /dev/null 2>&1
+	if [ "`lsmod | cut -f1 -d\" \" | grep ^fglrx$`" = "fglrx" ]
+	then
+		echo "ATI driver loaded."
+		GLTYPE=ati
+	else
+		echo "**********************************************************"
+		echo "NVIDIA or ATI drivers unable to load; aborting."
+		echo "This demo requires modern NVIDIA or ATI graphics hardware."
+		echo "**********************************************************"
+		echo ""
+	if [ -e /proc/splash ]
+	then	
+		echo "*******************************"
+		echo "Entering Vesa browser-only mode"
+		echo "*******************************"
+		sleep 3
+		GLTYPE=xfree
+		fi
+	fi
+
+fi
+opengl-update $GLTYPE
+
+if [ ! -e /etc/sysconfig/mouse ]
+then
+	echo "A mouse could not be detected; aborting."
+	echo "Please make sure a mouse is attached to your system."
+	exit 1
+fi
+source /etc/sysconfig/mouse
+
+VERTREFRESH=`ddcxinfo -vsync`
+
+if [ "$VERTREFRESH" = "0-0" ]
+then
+	echo "No DDC information detected; assuming reasonable defaults."
+	VERTREFRESH=50-80
+	HORIZSYNC=30-70
+else
+	HORIZSYNC=`ddcxinfo -hsync`
+fi
+
+sed -e "s:##MOUSEPROTO##:${XMOUSETYPE}:" \
+	-e "s:##MOUSEDEV##:${DEVICE}:" \
+	-e "s:##VERTREFRESH##:${VERTREFRESH}:" \
+	-e "s:##HORIZSYNC##:${HORIZSYNC}:" \
+/etc/X11/XF86Config.${GLTYPE} > /etc/X11/XF86Config
+
+#Now, we need to export LD_PATH since env-update can't do this for us (no python,
+#/etc/env.d/09opengl removed...
+
+cp /etc/ld.so.conf.orig /etc/ld.so.conf
+echo /usr/lib/opengl/${GLTYPE}/lib >> /etc/ld.so.conf
+ldconfig
+#time to fire up X
+exec /usr/X11R6/bin/xinit
+

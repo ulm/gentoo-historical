@@ -1,0 +1,51 @@
+#!/sbin/runscript
+#
+# Script to boot up a system with autodetection of CD location
+# 
+# Daniel Robbins <drobbins@gentoo.org>
+# Copyright 2002 Gentoo Technologies, Inc.
+# Distributed under the GPL
+
+HILITE="\033[1m"
+NORMAL="\033[0m"
+
+RAID="yes"
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+        if [ "$x" = "noraid" ]
+        then
+                RAID="no"
+        fi
+done
+
+blurb() {
+        echo -ne ${1}
+        #blurblen=${#1}
+}
+
+depend() {
+        after checkfs
+        after *
+}
+
+start() {
+ebegin "Loading EVMS modules"
+modules_scan() {
+	local type
+	type=${1}; shift
+	for x in "$@"
+	do
+#		blurb "---- Loading ${x}..."
+		insmod -f ${x} > /dev/null 2>&1
+	done
+}
+
+
+if [ "$RAID" = "yes" ]
+then
+DEVICE=EVMS
+        modules_scan  evms evms evms_bbr evms_drivelink evms_passthru dos_part ldev_mgr lvm_vge md_core md_linear md_raid0 md_raid1 md_xor snapshot
+fi
+eend
+}

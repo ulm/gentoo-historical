@@ -1,0 +1,173 @@
+#!/sbin/runscript
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/src/livecd/profiles/lw-ut2003/aux-files/Attic/autoconfig,v 1.1 2003/10/19 03:46:49 livewire Exp $
+echo "0" > /proc/sys/kernel/printk
+DHCP="yes"
+DETECT="yes"
+PCMCIA="no"
+HOTPLUG="yes"
+APM="no"
+ACPI="no"
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+        if [ "$x" = "nodetect" ]
+        then
+                DETECT="no"
+		HOTPLUG="no"
+		APM="no"
+		ACPI="no"
+        fi
+done
+for x in $CMDLINE
+do
+        if [ "$x" = "nodhcp" ]
+        then
+                DHCP="no"
+        fi
+done
+for x in $CMDLINE
+do
+        if [ "$x" = "dopcmcia" ]
+        then
+                PCMCIA="yes"
+        fi
+done
+for x in $CMDLINE
+do
+        if [ "$x" = "nohotplug" ]
+        then
+                HOTPLUG="no"
+        fi
+done
+for x in $CMDLINE
+do
+        if [ "$x" = "noapm" ]
+        then
+                APM="no"
+        fi
+done
+
+for x in $CMDLINE
+do
+        if [ "$x" = "acpi=on" ]
+        then
+                APM="no"
+		ACPI="yes"
+        fi
+done
+
+
+depend() {
+	after *
+	after urandom
+}
+
+start() {
+if [ "$DETECT" = "yes" ]
+	then
+		ebegin $WARN"Hardware detection started"
+	PC=`awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
+		ebegin $GOOD"$PC"
+		eend		
+		hwsetup -p >/dev/null
+		eend
+		else
+		ebegin $WARN"Hardware detection disabled via cmdline$NORMAL"
+fi
+
+if [ "$APM" = "no" ]
+	then
+        ebegin $GOOD"Not Loading APM Bios support.${NORMAL}"
+	else
+	insmod apm power_off=1 >/dev/null 2>&1 && ebegin $GOOD"APM BIOS found, power management functions enabled.$NORMAL"
+	/etc/init.d/apmd start
+	eend
+fi
+
+
+if [ "$ACPI" = "yes" ]
+        then
+        insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
+        insmod fan >/dev/null
+	insmod thermal >/dev/null
+	insmod button >/dev/null
+	insmod battery >/dev/null
+	insmod ac >/dev/null
+	/etc/init.d/acpid start
+	eend
+fi
+
+if [ "$PCMCIA" = "yes" ]
+	then
+	ebegin $HILITE "PCMCIA enabled via cmdline"
+	/etc/init.d/pcmcia start
+fi
+
+if [ "$DHCP" = "no" ]
+        then
+	sed 's/iface_eth0="dhcp"/#iface_eth0="dhcp"/' /etc/conf.d/net > /etc/conf.d/net1
+	cp /etc/conf.d/net1 /etc/conf.d/net
+	rm /etc/conf.d/net1
+	ebegin $BAD"Skipping DHCP broadcast detection as requested on boot commandline."
+fi
+
+	 #Read in what hwsetup has found
+[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
+
+# Mouse
+if [ -n "$MOUSE_DEVICE" ]
+	then
+	ebegin $GOOD"Mouse is $HILITE$MOUSE_FULLNAME$GOOD at $HILITE$MOUSE_DEVICE$NORMAL"
+	eend
+fi
+
+if [ "$HOTPLUG" = "yes" ]
+	then
+	/etc/init.d/hotplug start
+	else
+	ebegin $BAD"Hotplug disabled via cmdline$NORMAL"
+fi
+
+if [ "$DETECT" = "no" ]
+        then
+	DHCP="no"
+
+fi
+
+if [ "$DETECT" = "yes" ]
+	then
+	NETDEVICES="`awk -F: '/eth.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null`"
+fi
+
+if [ -n "$NETDEVICES" ]
+      	then
+	ebegin $GOOD"Network device$HILITE$NETDEVICES$GOOD detected,$WARN DHCP broadcasting for IP.$NORMAL"
+	eend
+	else
+	ebegin $BAD"No Network device auto detected.$NORMAL"
+
+fi
+
+
+if [ -n "$SOUND_FULLNAME" -o -n "$SOUND_DRIVER" ]
+	then
+	# Setting micro input to zero to avoid subsonic disaster
+	ebegin $GOOD"Soundcard:"
+	eend
+	aumix -m 0 >/dev/null 2>&1
+	aumix -f /etc/aumixrc -L >/dev/null 2>&1
+	aumix -v100 -c100 -w100 >/dev/null 2>&1
+	[ -n "$SOUND_FULLNAME" ] 
+	ebegin "              $WARN$SOUND_FULLNAME"
+	[ -n "$SOUND_DRIVER" ] 
+	ebegin $WARN"              driver = $SOUND_DRIVER"$HILITE
+fi
+
+killall hwsetup 2>/dev/null
+test -f /proc/splash && echo "show 65535" > /proc/splash
+echo "6" > /proc/sys/kernel/printk
+echo off >/proc/splash
+clear
+}

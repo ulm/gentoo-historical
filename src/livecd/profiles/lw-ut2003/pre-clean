@@ -1,0 +1,91 @@
+#!/bin/bash
+echo "$CD_HOSTNAME" > ${CD_BUILDCHROOT}/etc/hostname || die
+#modprobe has a bug and auto-adds a "above hid keybdev mousedev" line to it's internel configuration.
+#this fixes it....
+echo "above hid" > ${CD_BUILDCHROOT}/etc/modules.d/hidfix
+cp ${CD_BUILDCHROOT}/etc/init.d/net.eth0 ${CD_BUILDCHROOT}/etc/init.d/net.eth1
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/bash_profile ${CD_BUILDCHROOT}/root/.bash_profile || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/modules ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/checkroot ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/md ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/hotplug ${CD_BUILDCHROOT}/etc/init.d || die
+#cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/aumix ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/checkfs ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/mingetty ${CD_BUILDCHROOT}/sbin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/autoconfig ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/usleep ${CD_BUILDCHROOT}/sbin || die
+#cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/depscan.sh ${CD_BUILDCHROOT}/sbin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/login.defs ${CD_BUILDCHROOT}/etc || die
+cat ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/splash.sh >> ${CD_BUILDCHROOT}/sbin/functions.sh || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/local ${CD_BUILDCHROOT}/etc/init.d || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/fstab ${CD_BUILDCHROOT}/etc || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/net-setup ${CD_BUILDCHROOT}/usr/sbin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/profile ${CD_BUILDCHROOT}/etc || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/net ${CD_BUILDCHROOT}/etc/conf.d || die
+mv ${CD_BUILDCHROOT}/sbin/splash ${CD_BUILDCHROOT}/sbin/splash.bin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/splash ${CD_BUILDCHROOT}/sbin/ || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/rc ${CD_BUILDCHROOT}/sbin/ || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/fbtruetype.static ${CD_BUILDCHROOT}/sbin/ || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/fbtruetype.static ${CD_BUILDCHROOT}/sbin/fbtruetype || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/fbresolution ${CD_BUILDCHROOT}/sbin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/splash.bin ${CD_BUILDCHROOT}/sbin || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/bg.png ${CD_BUILDCHROOT}/usr/share/commonbox/backgrounds || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/menu.blackbox ${CD_BUILDCHROOT}/usr/share/commonbox/menu || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/bootsplash-1024x768.cfg ${CD_BUILDCHROOT}/etc/bootsplash/gentoo/config || die
+rm -f ${CD_BUILDCHROOT}/usr/share/hwdata/pci.ids
+rm -f ${CD_BUILDCHROOT}/usr/share/hwdata/usb.ids
+ln -s /usr/share/misc/pci.ids ${CD_BUILDCHROOT}/usr/share/hwdata/pci.ids
+ln -s /usr/share/misc/usb.ids ${CD_BUILDCHROOT}/usr/share/hwdata/usb.ids
+install -d  ${CD_BUILDCHROOT}/usr/share/fonts || die
+#ln -s /usr/X11R6/lib/X11/fonts/{TTF,100dpi,75dpi,PEX,Speedo,Type1,truetype,encodings} ${CD_BUILDCHROOT}/usr/share/fonts || die
+rm -f ${CD_BUILDCHROOT}/lib/evms/libe2fsim.1.2.1.so
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/install.txt ${CD_BUILDCHROOT}/ || die
+echo usbcore >> ${CD_BUILDCHROOT}/etc/hotplug/blacklist
+chmod +x ${CD_BUILDCHROOT}/usr/sbin/net-setup  || die
+mymotd=${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/motd
+[ -e $mymotd ] && cp $mymotd ${CD_BUILDCHROOT}/etc
+echo "CDBOOT=1" >> ${CD_BUILDCHROOT}/etc/rc.conf || die
+echo "svcdir=/var/state/init.d" >> ${CD_BUILDCHROOT}/etc/conf.d/rc || die
+echo "127.0.0.1 cdimage localhost" > ${CD_BUILDCHROOT}/etc/hosts || die
+cp ${LIVECD_ROOT}/profiles/${CD_PROFILE}/aux-files/inittab ${CD_BUILDCHROOT}/etc || die
+mount_all
+cat > $CD_BUILDTEMP/chroot-clean << EOF
+#!/bin/bash
+source /etc/profile
+#do our hid fix...
+modules-update
+cd /usr/src/linux
+#produce correct module dependency information
+make _modinst_post
+rc-update del iptables default
+rc-update del netmount default
+rc-update add autoconfig default
+#rc-update add md default
+#remove standard keymap support:
+rc-update del keymaps
+rc-update del consolefont
+rc-update add metalog default
+#rc-update add aumix default
+fc-cache --force
+update-modules
+modules-update
+#OK, we can't run env-update on the CD itself (likely no python)
+#so we will tweak opengl stuff here...
+rm /etc/env.d/09opengl
+env-update
+cp /etc/ld.so.conf /etc/ld.so.conf.orig
+rm /usr/sbin/env-update
+EOF
+chmod +x $CD_BUILDTEMP/chroot-clean
+chroot $CD_BUILDCHROOT /tmp/livecd/chroot-clean
+[ $? -ne 0 ] && chroot_die "chroot-clean failure"
+umount_all
+rm -rf ${CD_BUILDCHROOT}/etc/localtime 
+cp ${CD_BUILDCHROOT}/usr/share/zoneinfo/GMT ${CD_BUILDCHROOT}/etc/localtime || die
+
+if [ -e "${LIVECD_ROOT}/profiles/${CD_PROFILE}/openglify" ]
+then
+	source ${LIVECD_ROOT}/profiles/${CD_PROFILE}/openglify
+fi
+find ${CD_BUILDCHROOT}/lib/modules -name modules.dep |xargs touch
+

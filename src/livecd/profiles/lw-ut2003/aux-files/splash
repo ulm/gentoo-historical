@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# splash.sh - script to paint progress bar during
+# system startup/shutdown. This script is solely run
+# by the init scripts (shell function rc_splash)
+#
+# (w) 2002-2003 Stefan Reinauer, <stepan@suse.de>
+# Modified for Gentoo by Jay Pfeifer <pfeifer@gentoo.org>
+# It's licensed under GPL, of course.
+#
+# this script expects the following environment variables:
+#  sscripts = number of start scripts to be executed for runlevel change
+#  kscripts = number of stop scripts to be executed for runlevel change
+#  progress = number of currently executed start/stop script
+
+# execute splash binary utility because we are a wrapper:
+if [ "$1" == "-s" -o "$1" == "-u" -o "$1" == "-n" -o "$1" == "-f" ]; then
+    exec /sbin/splash.bin $*
+else
+   ( exec /sbin/splash.bin "$*" )
+fi
+
+# assertions
+test -r /proc/splash || exit 0
+sparam=$1
+
+# 
+
+function box() { true; } # ignore box descriptions in the config file
+
+if [ -f /etc/bootsplash/default/config/bootsplash-`fbresolution`.cfg ]; then
+  . /etc/bootsplash/default/config/bootsplash-`fbresolution`.cfg
+fi
+
+# Print text string..
+if [ "${sparam}" = "begin" ]; then
+    fbtruetype.static -x ${text_x} -y ${text_y} -t ${text_color} -s ${text_size} \
+  	"Booting the system... Press F2 for verbose mode" 2> /dev/null
+	export startnum=$(( ${sscripts} + 5 ))
+
+fi
+
+if [ "${sparam}" = "end" ]; then
+    fbtruetype.static -x ${text_x} -y ${text_y} -t ${text_color} -s ${text_size} \
+  	"Shutting down the system... Press F2 for verbose mode" 2> /dev/null
+	export stopnum=$(( ${cscripts} / 4 ))
+fi
+
+# Paint progressbar..
+#if [ "$1" = "start" ]; then
+if [ "${#sparam}" -ge "5" ] && \
+   [ `expr "${sparam}" : '.*\(.....\)'` = "start" ]; then
+	export startnum=$(( ${sscripts} + 5 ))
+	echo "show $(( 65534 * ( ${progress} + 1 ) / ${startnum} ))" > /proc/splash
+	#echo ${progress} ${sscripts} ${startnum}
+#	fbtruetype -x ${text_x} -y $((${text_y} + 70)) -t ${text_color} -s ${text_size} \
+#	"                                           " 2> /dev/null
+#	fbtruetype -x ${text_x} -y $((${text_y} + 70)) -t ${text_color} -s ${text_size} \
+#	"$1" 2> /dev/null
+fi
+#if [ "$1" = "stop" ]; then
+if [ "${#sparam}" -ge "4" ] && \
+   [ `expr "${sparam}" : '.*\(....\)'` = "stop" ]; then
+	export stopnum=$(( ${cscripts} / 4 ))
+	echo "show $(( 65534 * ( ${progress} + 1 ) / ${stopnum} ))" > /proc/splash
+	#echo ${progress} ${sscripts} ${stopnum}
+#	fbtruetype -x ${text_x} -y $((${text_y} + 70)) -t ${text_color} -s ${text_size} \
+#	"                                           " 2> /dev/null
+#	fbtruetype -x ${text_x} -y $((${text_y} + 70)) -t ${text_color} -s ${text_size} \
+#	"$1" 2> /dev/null
+fi
