@@ -243,12 +243,35 @@ Script started, file is typescript
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/sources</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/config</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/runscript</c></ti><ti>required</ti><ti>string</ti></tr>
+	<tr><ti><c>livecd/archscript</c></ti><ti>required</ti><ti>string</ti></tr>
 	</table>
 
-	<p><b>Usage notes:</b> This target works by unpacking the seed tarball, and then running <c>emerge genkernel</c>. The most
-	recent unmasked version of genkernel will be merged; please make sure that version 3.0.1 or later is unmasked in your 
-	Portage tree snapshot. Then, for each name in <c>boot/kernel</c> (such as <c>gentoo</c>, for example), this target will
-	use <c>genkernel</c> to build a kernel and initrd. For the example <c>boot/kernel</c> entry of <c>gentoo</c>, catalyst
+	<p><b>runscripts and archscripts:</b> The <c>livecd/runscript</c> and <c>livecd/archscript</c> variables point to 
+	shell scripts that handle various chores that require direct shell interaction. For the purposes of the 
+	<c>livecd-stage2</c> target, the archscript and runscript are used to build kernel(s) for the LiveCD.</p>
+	
+	<p>The reason why we have two scripts (runscript and archscript) are so that we can properly separate steps
+	arch-independent from arch-specific steps. For example, kernel building is typically handled by genkernel,
+	which provides a generic and arch-independent interface for kernel and initrd-building. Because the interface
+	is generic in nature, it can be placed in the runscript, which in turn can be shared between all architectures.</p>
+
+	<p><b>run target details:</b> When the livecd-stage2 target runs, the livecd-stage1 tarball specified is unpacked to a chroot
+	directory. Then, the <c>run</c> target of the <c>archscript</c> is executed, which typically doesn't do anything except call
+	the generic
+	<c>run</c> target of the arch-independent <c>runscript</c>. The <c>run</c> target of the runscript is responsible for
+	building kernels, and does this by using the <path>sys-kernel/genkernel</path> package, which it merges in the
+	chroot, and then calls, passing each kernel configuration you specify in the spec file as an argument. The resultant
+	kernels and initrds are stored in the <path>/tmp/binaries</path> directory inside the chroot, which is actually a
+	bind-mount that maps to <path>[storedir]/builds/[rel_type]-[mainarch]-[rel_version]/livecd-stage2-[subarch]-[version_stamp]/binaries/</path>.
+	The <c>livecd-stage3</c> target will "pull" from this directory and place the already-built kernels and initrds on the LiveCD in the
+	proper place.</p>
+	
+	<p><b>Usage notes:</b> The most
+	recent unmasked version of genkernel will be merged by the runscript; please make sure that version 3.0.1 or later of genkernel is unmasked in your 
+	Portage tree snapshot.</p>
+	
+	<p><b>Using the kernel-related variables in the spec file:</b> For each name in the <c>boot/kernel</c> variable in the spec file (such as <c>gentoo</c>, for example), this target will
+	use <c>genkernel</c> to build a kernel and initrd. With the example <c>boot/kernel</c> entry of <c>gentoo</c>, catalyst
 	will use the <c>boot/kernel/gentoo/sources</c> setting to determine what kernel sources to merge for this particular
 	kernel build (an example setting would be <c>=sys-kernel/gentoo-dev-sources-2.6.0</c>.) Then, the kernel config pointed
 	to by <c>boot/kernel/gentoo/config</c> will be copied into the chroot and used to build said kernel. Here is an example
@@ -262,6 +285,9 @@ boot/kernel/gentoo/config: /path/to/gentoo.config
 boot/kernel/gentoo/sources: =sys-kernel/special-smp-sources-2.6.0
 boot/kernel/gentoo/config: /path/to/smp.config
 	</pre>
+	<p>Using two scripts eases maintenance and synchronizing improvements to LiveCDs between architectures. You can
+	find example runscripts and archscripts in the <path>examples/livecd/runscript</path> directory in the catalyst
+	source tree.</p>
 	
 	</body>
 	</section>
@@ -287,6 +313,7 @@ boot/kernel/gentoo/config: /path/to/smp.config
 	<tr><ti><c>boot/kernel</c></ti><ti>required</ti><ti>list</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/sources</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>boot/kernel/[boot/kernel:x]/config</c></ti><ti>required</ti><ti>string</ti></tr>
+	<tr><ti><c>livecd/archscript</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/runscript</c></ti><ti>required</ti><ti>string</ti></tr>
 	<tr><ti><c>livecd/empty</c></ti><ti>optional</ti><ti>list</ti></tr>
 	<tr><ti><c>livecd/rm</c></ti><ti>optional</ti><ti>list</ti></tr>
