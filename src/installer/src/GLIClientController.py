@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.16 2004/11/11 21:49:16 agaffney Exp $
+$Id: GLIClientController.py,v 1.17 2004/11/11 22:47:00 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -14,7 +14,7 @@ Steps (based on the ClientConfiguration):
 
 """
 
-import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal
+import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue
 from GLIException import *
 from threading import Thread, Event
 
@@ -32,8 +32,7 @@ class GLIClientController(Thread):
 		self._verbose = self._configuration.get_verbose()
 		self._logger = GLILogger.Logger(self._configuration.get_log_file())
 		self._install_event = Event()
-		self._notify_locked = False
-		self._notification_queue = []
+		self._notification_queue = Queue.Queue(50)
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -182,29 +181,18 @@ class GLIClientController(Thread):
 		if self._verbose:
 			print str
 
-	def _lock_notify_queue(self):
-		if self._notify_locked:
-			while self._notify_locked:
-				pass
-		self._notify_locked = True
-
-	def _unlock_notify_queue(self):
-		self._notify_locked = False
-
-	def notify(self):
-		os.kill(os.getpid(), signal.SIGUSR1)
-
 	def getNotification(self):
-		self._lock_notify_queue()
-		if len(self._notification_queue) > 0:
-			notification = self._notification_queue.pop(0)
-			self._unlock_notify_queue()
-			return notification
-		else:
-			self._unlock_notify_queue()
-			return None
+		notification = None
+		try:
+			notification = self._notification_queue.get_nowait()
+		except:
+			pass
+		return notification
 
 	def addNotification(self, notification):
-		self._lock_notify_queue()
-		self._notification_queue.append(notification)
-		self._unlock_notify_queue()
+		try:
+			self._notification_queue.put_nowait(notification)
+		except:
+			pass
+		os.kill(os.getpid(), signal.SIGUSR1)
+
