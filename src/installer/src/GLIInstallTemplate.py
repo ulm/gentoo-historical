@@ -67,7 +67,7 @@ class GLIInstallTemplate:
 		
 		return(exitstatus)
 
-	def _edit_config(file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
+	def _edit_config(self, file_name, key, value, enabled=True, delimeter='=', quotes_around_value=True):
 		"""This allows one to edit a config file non-destructively.
 		For instance: USE="gtk gtk2 X gnome"
 		key = "USE"
