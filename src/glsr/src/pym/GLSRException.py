@@ -4,10 +4,11 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = '$Id: GLSRException.py,v 1.3 2005/01/27 04:19:15 port001 Exp $'
+__revision__ = '$Id: GLSRException.py,v 1.4 2005/01/27 22:24:34 port001 Exp $'
 __modulename__ = 'GLSRException'
 
 import os
+
 import State
 from Error import error
 from Logging import logwrite
@@ -17,10 +18,11 @@ class GLSRException(Exception):
     The parent exception class
     """
  
-    def __init__(self, errmsg, extramsg = ''):
+    def __init__(self, errmsg, extramsg = '', module = ''):
     
         self._errmsg = errmsg
         self._extramsg = extramsg
+        self._module = module
 
 class Redirect(GLSRException):
 
@@ -66,3 +68,9 @@ class ScriptModuleError(GLSRException):
     def __str__(self):
 
         error(self._errmsg, 'Script', self._extramsg)
+
+class ProgrammingError(GLSRException):
+
+    def __str__(self):
+
+        error(self._errmsg, self._module, self._extramsg)

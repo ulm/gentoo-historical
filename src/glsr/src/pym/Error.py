@@ -11,7 +11,7 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.15 2005/01/27 04:23:03 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.16 2005/01/27 22:24:34 port001 Exp $'
 __modulename__ = 'Error'
 
 def error_uncaught(req):
@@ -186,10 +186,14 @@ def error_user(title, description):
     from Template import Template
 
     if str(title) == '':
-        raise ErrorModuleError, 'Zero length error title'
+        raise ProgrammingError('Zero length error title',
+                               'The title argument passed to error_user() was of zero length',
+                               __modulename__)
 	
     if str(description) == '':
-        raise ErrorModuleError, 'Zero length error description'
+        raise ProgrammingError('Zero length error description',
+                               'The description argument passed to error_user() was of zero length',
+                               __modulename__)
 
     tmpl_header = Template()
     tmpl_header.param('GLSR_URL', Config.URL)
