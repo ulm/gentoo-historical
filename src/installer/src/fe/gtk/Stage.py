@@ -31,6 +31,7 @@ This is where you select what kind of portage tree you will use.
 	options=["Stage 1","Stage 2","Stage 3"]
 	self.stage_options=options
 	self.stage_widgets=[]
+	self.valid=False
 	
 	i=0
 	#new_vbox=gtk.
@@ -72,8 +73,10 @@ This is where you select what kind of portage tree you will use.
 	try:
 	    self.controller.install_profile.set_stage_tarball_uri(None,widget.get_text(),None)
 	    widget.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("white"))
+	    self.valid=True
 	except:
 	    # do stuff
+	    self.valid=False
 	    widget.modify_base(gtk.STATE_NORMAL,gtk.gdk.color_parse("pink"))
 	
     def activate(self):
@@ -99,3 +102,9 @@ This is where you select what kind of portage tree you will use.
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+    
+    def deactivate(self):
+	if(self.valid==False):
+	    return True
+	else:
+	    return True
