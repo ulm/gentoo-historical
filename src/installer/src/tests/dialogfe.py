@@ -39,25 +39,6 @@ def dmenu_list_to_choices(list):
 
 	return choices
 
-def signal_handler(signum, frame):
-	global gauge_progress
-	global exception_waiting
-	global next_step_waiting
-	global install_done
-
-	while 1:
-		notification = cc.getNotification()
-		if notification == None: break
-		type = notification.get_type()
-		data = notification.get_data()
-		if type == "exception":
-			exception_waiting = data
-		elif type == "int":
-			if data == GLIClientController.NEXT_STEP_READY:
-				next_step_waiting = True
-			if data == GLIClientController.INSTALL_DONE:
-				install_done = True
-
 def run(cmd):
 	output_string = commands.getoutput(cmd)
 	output_list = []
@@ -457,7 +438,6 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 	configuration.close()
 	return filename
 
-#signal.signal(signal.SIGUSR1, signal_handler)
 d.setBackgroundTitle("Gentoo Linux Installer")
 d.msgbox("Welcome to The Gentoo Linux Installer. This is a TESTING release. If your system dies a horrible, horrible death, don't come crying to us (okay, you can cry to klieber).", height=10, width=50, title="Welcome")
 
