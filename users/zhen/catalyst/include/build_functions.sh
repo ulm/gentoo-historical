@@ -1,6 +1,6 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.6 2003/10/13 00:22:59 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.7 2003/10/13 01:18:04 zhen Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
@@ -270,7 +270,7 @@ pre_build() {
 	if [ $1 = "2" ] && [ ${BUILDTYPE} = "hardened" ]
 	then
 		# copy our bootstrap file
-		cp -a ${BASEDIR}/bin/bootstrap.sh ${CHROOTDIR}/usr/portage || die
+		cp -a ${BASEDIR}/bin/bootstrap.sh ${CHROOTDIR}/usr/portage/scripts || die
 	fi
 
 	#install our make.conf into the main compilation dir
@@ -330,7 +330,7 @@ build() {
 			then
 				emerge --oneshot --nodeps ccache || exit 1
 			fi
-			/usr/portage/bootstrap.sh || exit 1
+			/usr/portage/scripts/bootstrap.sh || exit 1
 EOF
 			[ $? -ne 0 ] && die "Stage 2 build failure"
 		;;
