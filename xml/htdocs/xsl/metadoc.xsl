@@ -259,6 +259,28 @@
 
   <table>
   <tr><th>Document</th><th>Bug ID</th></tr>
+  <xsl:for-each select="document($metadoc)/metadoc/docs/doc[bugs/bug/@stopper = 'yes']">
+    <tr>
+      <ti>
+        <xsl:call-template name="documentname">
+          <xsl:with-param name="metadoc" select="$metadoc"/>
+          <xsl:with-param name="fileid"  select="fileid/text()"/>
+          <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+          <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+          <xsl:with-param name="docid"   select="@id"/>
+        </xsl:call-template>
+      </ti>
+      <ti>
+        <xsl:for-each select="bugs/bug[@stopper = 'yes']">
+          <xsl:variable name="bugid" select="text()"/>
+          <uri link="http://bugs.gentoo.org/show_bug.cgi?id={$bugid}">
+            <xsl:value-of select="$bugid"/>
+          </uri>
+          <xsl:if test="not(position() = last())">, </xsl:if>
+        </xsl:for-each>
+      </ti>
+    </tr>
+  </xsl:for-each>
   </table>
 
   </body>
@@ -266,6 +288,32 @@
   <section id="normalbugs">
   <title>Normal Bugs</title>
   <body>
+
+  <table>
+  <tr><th>Document</th><th>Bug ID</th></tr>
+  <xsl:for-each select="document($metadoc)/metadoc/docs/doc[bugs/bug[not(@stopper = 'yes')]]">
+    <tr>
+      <ti>
+        <xsl:call-template name="documentname">
+          <xsl:with-param name="metadoc" select="$metadoc"/>
+          <xsl:with-param name="fileid"  select="fileid/text()"/>
+          <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+          <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+          <xsl:with-param name="docid"   select="@id"/>
+        </xsl:call-template>
+      </ti>
+      <ti>
+        <xsl:for-each select="bugs/bug[not(@stopper = 'yes')]">
+          <xsl:variable name="bugid" select="text()"/>
+          <uri link="http://bugs.gentoo.org/show_bug.cgi?id={$bugid}">
+            <xsl:value-of select="$bugid"/>
+          </uri>
+          <xsl:if test="not(position() = last())">, </xsl:if>
+        </xsl:for-each>
+      </ti>
+    </tr>
+  </xsl:for-each>
+  </table>
 
   </body>
   </section>
