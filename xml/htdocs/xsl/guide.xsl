@@ -756,7 +756,7 @@
   </xsl:template>
 -->
   <xsl:template match="figure">
-    <xsl:with-param name="chid"/>
+    <xsl:param name="chid"/>
     <xsl:variable name="fignum">
       <xsl:number level="any" from="chapter" count="figure"/>
     </xsl:variable>
