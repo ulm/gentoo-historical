@@ -189,7 +189,7 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
-	status = run_cmd("ifconfig" + options, quiet=True)
+	status = run_cmd("ifconfig " + options, quiet=True)
 
 	if not exitsuccess(status):
 		return False

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.11 2004/08/24 22:01:21 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.12 2004/08/25 19:38:10 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -132,11 +132,11 @@ class ClientConfiguration(xml.sax.ContentHandler):
 	shared_client_configuration = classmethod(shared_client_configuration)
 
 	def set_network_type(self, network_type, attr=None):
-		if network_type == 'static' and (attr != None or self._xml_current_attr != None):
-			ip = broadcast = netmask = interface = ""
+		if attr == None:
+			attr = self._xml_current_attr
 
-			if attr == None:
-				attr = self._xml_current_attr
+		if network_type == 'static' and attr != None:
+			ip = broadcast = netmask = interface = ""
 
 			if type(attr) != tuple:
 				for attrName in attr.keys():
@@ -156,13 +156,17 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		elif network_type == 'static':
 			raise NoInterfaceError('fatal','set_network_type',"No interface information specified!")
 
-		elif network_type == "dhcp" and self._xml_current_attr != None:
-			if 'interface' in self._xml_current_attr.getNames():
-				interface = str(self._xml_current_attr.getValue('interface'))
-				if not GLIUtility.is_eth_device(interface):
-					raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
-				else:
-					self._network_data = (interface, None, None, None)
+		elif network_type == "dhcp" and attr != None:
+			if type(attr) != tuple:
+				if 'interface' in attr.getNames():
+					interface = str(attr.get('interface'))
+					if not GLIUtility.is_eth_device(interface):
+						raise InterfaceError('fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
+					else:
+						self._network_data = (interface, None, None, None)
+			else:
+				self._network_data = attr
+
 
 		self._network_type = network_type
 

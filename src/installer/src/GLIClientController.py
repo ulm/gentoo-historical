@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.8 2004/08/25 14:23:07 samyron Exp $
+$Id: GLIClientController.py,v 1.9 2004/08/25 19:38:10 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -14,31 +14,22 @@ Steps (based on the ClientConfiguration):
 
 """
 
-import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, sys
+import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys
 from GLIException import *
 from threading import Thread, Event
 
 class GLIClientController(Thread):
 
 	def __init__(self,configuration=None,install_profile=None):
-
+		Thread.__init__(self)
 		if configuration == None and os.path.isfile('/etc/gli.conf'):
 			print "Using /etc/gli.conf..."
 			configuration = GLIClientConfiguration.ClientConfiguration()
 			configuration.parse('/etc/gli.conf')
 
-		if install_profile == None:
-			if configuration != None:
-				success = GLIUtility.get_uri(configuration.get_profile_uri(),'/tmp/install_profile.xml')
-				if success:
-					print "Profile downloaded succesfully, loading it now."
-					install_profile = GLIInstallProfile.InstallProfile()
-					install_profile.parse('/tmp/install_profile.xml')
-				else:
-					print "The installer could not download the profile specified by:", self._configuration.get_profile_uri() + "."
-
 		self._install_profile = install_profile
 		self._configuration = configuration
+		self._logger = GLILogger.Logger(self._configuration.get_log_file())
 		self._install_event = Event()
 
 	def set_install_profile(self, install_profile):
@@ -63,11 +54,22 @@ class GLIClientController(Thread):
 			print "You can not do a non-interactive install without an InstallProfile!"
 			sys.exit(1)
 
+		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.get_install_profile, self.enable_ssh]
 		# Do Pre-install client-specific things here.
-		
+		while len(steps) > 0:
+			try:
+				step = steps.pop(0)
+				step()
+			except GLIException, error:
+				if error.get_error_level() != 'fatal':
+					self._logger.log("Error:", error.get_function_name() + ": " + error.get_error_msg())
+					print "Non-fatal error... continuing..."
+				else:
+					raise error
 
 		# Wait for the self._install_event to be set before starting the installation.
 		self._install_event.wait()
+		print "Starting install now..."
 
 	def set_proxys(self):
 		if self._configuration.get_ftp_proxy() != "":
@@ -79,8 +81,21 @@ class GLIClientController(Thread):
 		if self._configuration.get_rsync_proxy() != "":
 			os.environ['RSYNC_PROXY'] = self._configuration.get_rsync_proxy()
 
+	def load_kernel_modules(self):
+		modules = self._configuration.get_kernel_modules()
+		for module in modules:
+			try:
+				ret = GLIUtility.run_cmd('modprobe ' + module, quiet=True)
+				if not GLIUtility.exitsuccess(ret):
+					raise KernelModuleError('warning', 'load_kernel_modules', 'Could not load module: ' + module)
+				else:
+					self._logger.log('kernel module: ' + module + ' loaded.')
+			except KernelModuleError, error:
+				print error
+				self._logger.log(error.get_error_level() + '! ' + error.get_error_msg())
+
 	def set_root_passwd(self):
-		print "GLI: Setting root password."
+		self._logger.log("Setting root password.")
 		if self._configuration.get_root_passwd() == "":
 			passwd = GLIUtility.generate_random_password()
 			status = GLIUtility.run_cmd('echo "root:' + passwd + '" | chpasswd',quiet=True)
@@ -88,7 +103,6 @@ class GLIClientController(Thread):
 			# The password specified in the configuration is encrypted.
 			status = GLIUtility.run_cmd('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
-		print "exit status =", status
 		if not GLIUtility.exitsuccess(status):
 			raise PasswordError('warning', 'set_root_passwd()',"Could not set the root password!")
 
@@ -99,7 +113,12 @@ class GLIClientController(Thread):
 			if type == "dhcp":
 				# Run dhcpcd.
 				net_info = self._configuration.get_network_info()
-				interface = net_info[0]
+				try:
+					interface = net_info[0]
+				except:
+					self._logger.log("No interface found.. defaulting to eth0.")
+					interface = "eth0"
+
 				if interface:
 					status = GLIUtility.run_cmd("dhcpcd " + interface, quiet=True)
 				else:
@@ -132,9 +151,24 @@ class GLIClientController(Thread):
 			if not GLIUtility.exitsuccess(status):
 				raise SSHError('warning','enable_ssh',"Could not start SSH daemon!")
 			else:
-				print "GLI: SSH Started."
+				self._logger.log("SSH Started.")
 
 
+
+	def get_install_profile(self):
+		install_profile=None
+		if self._install_profile == None:
+			if self._configuration != None:
+				success = GLIUtility.get_uri(self._configuration.get_profile_uri(),'/tmp/install_profile.xml')
+				if success:
+					self._logger.log("Profile downloaded succesfully, loading it now.")
+					print "Profile downloaded... loading it now..."
+					install_profile = GLIInstallProfile.InstallProfile()
+					install_profile.parse('/tmp/install_profile.xml')
+				else:
+					raise InstallProfileError('fatal', 'get_install_profile', 'Could not download/copy the install profile from: ' + self._configuration.get_profile_uri())
+
+		self._install_profile = install_profile
 
 	def start_install(self):
 		self._install_event.set()

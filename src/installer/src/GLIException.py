@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIException.py,v 1.3 2004/08/25 14:23:07 samyron Exp $
+$Id: GLIException.py,v 1.4 2004/08/25 19:38:10 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 GLIException is the base class for all of the exceptions
@@ -33,6 +33,9 @@ class IPAddressError(GLIException):
 	pass
 
 class NoSuchFileError(GLIException):
+	pass
+
+class InstallProfileError(GLIException):
 	pass
 
 class MountError(GLIException):
