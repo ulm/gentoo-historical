@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.4 2004/12/25 01:36:24 port001 Exp $
+# $Id: Session.py,v 1.5 2004/12/25 02:27:33 port001 Exp $
 #
 
 __modulename__ = "Session"
@@ -113,6 +113,7 @@ class Session:
         self._sid = self._gen_sid()
         self._hash = self._gen_hash()
         self._save_session()
+        self._update_ts()
         self._set_cookie()
 
     def _is_registered(self):
