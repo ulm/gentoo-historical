@@ -4,9 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-working-use.xml,v 1.1 2004/03/16 17:38:41 mush Exp $ -->
 
 <sections>
+
+<version>1.21</version>
+<date>21 Ottobre 2004</date>
+
 <section>
 <title>Cosa sono i flag USE</title>
 <subsection>
@@ -105,6 +108,10 @@ icc-pgo - Abilita la generazione di dati PGO o usare insieme a icc
 imap    - Aggiunge il  supporto per IMAP
 </pre>
 
+<p>
+Un elenco delle flag USE locali disponibili può essere trovato in <path>/usr/portage/profiles/use.local.desc</path>.
+</p>
+
 </body>
 </subsection>
 </section>
@@ -126,11 +133,11 @@ comunemente usata dagli utenti Gentoo ed è dichiarata nel file
 <path>/etc/make.profile/make.defaults</path>. Segue la configurazione predefinita:
 </p>
 
-<pre caption="Variabile USE in /etc/make.profile/make.defaults">
-USE="x86 oss apm arts avi berkdb crypt cups encode foomaticdb gdbm gif gpm gtk 
-     imlib jpeg kde gnome libg++ libwww mad mikmod motif mpeg ncurses nls 
-     oggvorbis opengl pam pdflib png python qt quicktime readline sdl slang 
-     spell ssl svga tcpd truetype X xml2 xmms xv zlib"
+<pre caption="Variabile USE su un sistema x86 in /etc/make.profile/make.defaults">
+USE="x86 oss apm arts avi berkdb crypt cups encode foomaticdb gdbm gif gpm
+     gtk gtk2 imlib jpeg kde gnome libg++ libwww mad mikmod motif mpeg ncurses
+     nls oggvorbis opengl pam pdflib png python qt quicktime readline sdl
+     slang spell ssl svga tcpd truetype X xml2 xmms xv zlib"
 </pre>
 
 <p>
@@ -164,6 +171,33 @@ USE="-kde -qt ldap"
 </body>
 </subsection>
 <subsection>
+<title>Dichiarare flag USE per pacchetti individuali</title>
+<body>
+
+<p>
+Qualche volta si desidera dichiarare una determinata flag USE per una (o per più) applicazione ma non per tutto il sistema. Per fare questo, si deve creare la directory <path>/etc/portage</path> (se ancora non esiste) e modificare <path>/etc/portage/package.use</path>.
+</p>
+
+<p>
+Per esempio, se non si vuole che <c>berkdb</c> sia supportato globalmente, ma si desidera per <c>mysql</c>, si dovrebbe aggiungere:
+</p>
+
+<pre caption="/etc/portage/package.use example">
+dev-db/mysql berkdb
+</pre>
+
+<p>
+Si possono naturalmente anche <e>disabilitare</e> le flag USE per una certa applicazione. Per esempio, se non si desidera il supporto <c>java</c> in PHP:
+</p>
+
+<pre caption="/etc/portage/package.use secondo esempio">
+dev-php/php -java
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
 <title>Dichiarare flag USE temporanei</title>
 <body>
 
@@ -171,18 +205,13 @@ USE="-kde -qt ldap"
 In certi casi è utile dichiarare flag USE una sola volta. Invece di editare
 <path>/etc/make.conf</path> due volte (una per la modifica e l'altra
 per riportare il tutto all'origine) è possibile dichiarare la variabile USE
-come fosse una variabile ambiente.
+come fosse una variabile ambiente. Si ricordi che, quando si ri-emerge o si aggiorna questa applicazione (in modo esplicito o parte di un aggiornamento del sistema), i cambiamenti saranno persi!
 </p>
 
 <p>
 Segue un esempio di come rimuovere temporaneamente il supporto java
 durante l'installazione di mozilla.
 </p>
-
-<note>
-Il comando <c>emerge</c> viene discusso più approfonditamente in
-<uri link="?part=2&amp;chap=2">Portage e Software</uri>.
-</note>
 
 <pre caption="Usare USE come una variabile ambiente">
 # <i>USE="-java" emerge mozilla</i>
@@ -236,6 +265,9 @@ per la configurazione USE (i primi hanno la priorità più bassa):
     Configurazione USE definita dall'utente in <path>/etc/make.conf</path>
   </li>
   <li>
+    Configurazione USE definita dall'utente in <path>/etc/portage/package.use</path>
+  </li>
+  <li>
     Dichiarazione USE definita dall'utente come variabile ambiente
   </li>
 </ol>
@@ -252,6 +284,45 @@ rilevanti (incluso la variabile <c>USE</c>) col valore usato dal Portage.
 
 </body>
 </subsection>
+<subsection>
+<title>Adattare il vostro sistema alle nuove flag USE</title>
+<body>
+
+<p>
+Se si sono cambiate le proprie flag USE e si desidera aggiornare l'intero sistema, affinchè utilizzi le nuove flag USE, si può usare l'opzione <c>--newuse</c> di <c>emerge</c>:
+</p>
+
+<pre caption="Ricompilare il sistema">
+# <i>emerge --update --deep --newuse world</i>
+</pre>
+
+<p>
+Dopo, eseguire il depclean del Portage per rimuovere le dipendenze condizionali che erano state emerse nel vecchio sistema, ma che sono diventate obsolete con l'uso delle nuove flag USE.
+</p>
+
+<warn>
+Eseguire <c>emerge depclean</c> è una operazione pericolosa e dovrebbe essere fatta con cura. Si ricontrolli la lista fornita di pacchetti "obsoleti" per assicurarsi che non si rimuovano pacchetti di cui si ha bisogno. Nell'esempio seguente si è aggiunto <c>-p</c> per avere solo la lista dei pacchetti senza rimuoverli.
+</warn>
+
+<pre caption="Rimuovere pacchetti obsoleti">
+# <i>emerge -p depclean</i>
+</pre>
+
+<p>
+Quando il depclean ha finito, eseguire <c>revdep-rebuild</c> per ricompilare le applicazioni che sono collegate agli oggetti forniti dai pacchetti rimossi. <c>revdep-rebuild</c> è parte del pacchetto <c>gentoolkit</c>; non dimenticarsi di emergerlo prima.
+</p>
+
+<pre caption="Eseguire revdep-rebuild">
+# <i>revdep-rebuild</i>
+</pre>
+
+<p>
+Quando tutto è finito, il sistema userà le nuove flag USE.
+</p>
+
+
+</body>
+</subsection>
 </section>
 <section>
 <title>flag USE specifici per pacchetto</title>
@@ -260,15 +331,8 @@ rilevanti (incluso la variabile <c>USE</c>) col valore usato dal Portage.
 <body>
 
 <p>
-Il prossimo capitolo su <uri link="?part=2&amp;chap=2">Portage e Software</uri>
-spiega come gestire il software installato e come usare <c>emerge</c>.
-Segue comunque un piccolo anticipo su <c>emerge</c>, che mostra come
-visualizzare i flag USE usati da un pacchetto.
-</p>
-
-<p>
 Ecco l'esempio di <c>mozilla</c> per vedere quali flag si aspetta.
-Per questo usare <c>emerge</c> con le opzioni <c>--pretend</c> (che non applica i risultati) e <c>--verbose</c> (per avere maggiore output):
+Per questo usare <c>emerge</c> con le opzioni <c>--pretend</c> e <c>--verbose</c>:
 </p>
 
 <pre caption="Vedere i flag USE usati">
@@ -289,7 +353,7 @@ Occorre prima installare <c>gentoolkit</c>:
 </p>
 
 <pre caption="Installare gentoolkit">
-# <i>emerge --usepkg gentoolkit</i>
+# <i>emerge gentoolkit</i>
 </pre>
 
 <p>
