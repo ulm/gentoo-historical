@@ -459,18 +459,13 @@ class Panel(GLIScreen.GLIScreen):
 	    data = self.get_treeview_data()
 	    print data
 
-	    i=0
 	    for user in data:
-		if data[i][0] not in self.current_users:
-		    self.controller.install_profile.add_user(None,(data[i][0],data[i][1],
-								   data[i][2],data[i][3],data[i][4],
-								   data[i][5],data[i][6]),None
-							 )
-		    self.current_users.append(data[i][0])
-		else:
-		    # they must already be added
-		    pass
-		i=i+1
+		if user[0] not in self.current_users:
+		    self.controller.install_profile.add_user(None, (user[0], user[1], user[2], user[3], user[4], user[5], user[6]), None)
+		    self.current_users.append(user[0])
+#		else:
+#		    # they must already be added
+#		    pass
 		
 	    return True
 	else:
