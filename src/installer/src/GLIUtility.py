@@ -221,9 +221,9 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		wrapper = open(chroot+"/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash\n\nsource /etc/profile\n" + cmd)
 		wrapper.close()
-		cmd = "chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh && rm " + chroot + "/tmp/spawn.sh"
-
-	cmd += " 2>&1 "
+		cmd = "chmod a+x " + chroot + "/tmp/spawn.sh && chroot " + chroot + " /tmp/spawn.sh 2>&1 && rm " + chroot + "/tmp/spawn.sh"
+	else:
+		cmd += " 2>&1 "
 	if logfile != None:
 		if append_log:
 			cmd += " | tee " + logfile
@@ -233,6 +233,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	if display_on_tty8:
 		cmd += " | tee /dev/tty8"
 
+	print "Running command: " + cmd
 	ret, output = commands.getstatusoutput(cmd)
 	if return_output:
 		return ret, output
@@ -317,7 +318,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 		tar_options = tar_options + "p"
 
 	# Unpack the tarball
-	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True)
+	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log") # change this to the logfile variable
 
 	if not exitsuccess(exitstatus):
 		raise GLIException("UnpackTarballError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
