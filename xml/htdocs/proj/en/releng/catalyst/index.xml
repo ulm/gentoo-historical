@@ -33,8 +33,115 @@ that the code we write is maintainable and of high-quality.
 </goals>
 
 <dev role="lead" description="Design lead">drobbins</dev>
+<dev role="LiveCD/genkernel">brad_mssw</dev>
 <dev description="catalyst co-designer">zhen</dev>
 <dev description="genkernel">livewire</dev>
 <dev description="initscripts">azarah</dev>
+
+<extrachapter position="bottom">
+	<title>Catalyst Installation and Usage Documentation</title>
+	<section>
+	<title>Installation</title>
+	<body>
+	<p>Here's how to use catalyst. First, either check it out of CVS (at <path>gentoo/src/catalyst</path>) or download a snapshot from <uri>http://dev.gentoo.org/~drobbins/catalyst</uri>. Unpack the directory, and then create an <path>/etc/catalyst.conf</path> that looks like this:</p>
+
+	<pre caption="Example /etc/catalyst.conf">
+distdir="/mnt/misc/distfiles"
+options="ccache pkgcache"
+sharedir="/home/drobbins/cvs/gentoo/src/catalyst"
+	</pre>
+	
+	<p>The <c>sharedir</c> variable tells catalyst where to find its various
+	plugins, and should point to the main catalyst directory that you
+	created. the <c>options</c> variable is used to turn on <c>.tbz2</c> package
+	caching, which is off by default (you'll likely want it on, however.)
+	Also, <c>distdir</c> is used here to tell catalyst where to look/store
+	distfiles. The default is <path>/usr/portage/distfiles</path>. If you wish to use
+	the default setting, simply omit the line from your config file.
+	</p>
+
+	<p>Here are other variables you can set, and their default values.
+	Please remember that <b>strings must be quoted</b>, as <path>/etc/catalyst.conf</path>
+	uses python syntax:</p>
+
+	<table>
+	<tr><th>variable</th><th>default value</th><th>description</th></tr>
+
+	<tr><ti><c>storedir</c></ti><ti><path>/var/tmp/catalyst</path></ti><ti>Parent directory for all building and storing of completed builds</ti></tr>
+	<tr><ti><c>sharedir</c></ti><ti><path>/usr/share/catalyst</path></ti><ti>Where the main directory for catalyst is located</ti></tr>
+	<tr><ti><c>distdir</c></ti><ti><path>/usr/portage/distfiles</path></ti><ti>Where catalyst should look for distfiles</ti></tr>
+	<tr><ti><c>portdir</c></ti><ti><path>/usr/portage</path></ti><ti>Portage tree that catalyst will use for creating Portage tree snapshots</ti></tr>
+	<tr><ti><c>options</c></ti><ti><c>ccache</c></ti><ti>Catalyst options/extensions that are enabled. Others: <c>pkgcache</c></ti></tr>
+	</table>
+
+	<p>You may also want to create a <path>/usr/bin/catalyst</path> symlink that points to the
+	real location of your catalyst executable script.</p>
+	
+	</body>
+	</section>
+	<section>
+	<title>First Steps -- Creating a Portage Tree Snapshot</title>
+	<body>
+	<p>Catalyst works by using Portage tree snapshots, which are nothing more than tarballs containing
+	an entire Portage tree. Portage tree snapshots are used so that catalyst can deliver consistent results -- using the same Portage tree snapshot and catalyst settings, two different people on two different machines should be able to build identical stages. This is an important design characteristic of catalyst.</p>
+
+	<p>Before you generate a Portage tree snapshot, first make sure that the Portage tree you'll be
+	snapshotting meets these basic requirements. Your snapshot should be from 06 Nov 2003 at the earliest,
+	and <path>portage-2.0.49-r15</path> or later should be unmasked for the architecture for which you
+	will be building.</p>
+
+	<p><b>IMPORTANT (for Gentoo developers only):</b> If you are a Gentoo
+	arch lead, make sure that the <c>GRP_STAGE23_USE</c> variable is
+	defined in your profile's <path>make.defaults</path> file.
+	<c>GRP_STAGE23_USE</c> will tell catalyst what <c>USE</c> variables
+	should be enabled when stage2 and stage3 are built. Without
+	<c>GRP_STAGE23_USE</c> defined in your <path>make.defaults</path> file,
+	your stages may not work properly. <c>GRP_STAGE23_USE</c> is necessary
+	to prevent packages like <path>db</path> from pulling in a JDK as a dependency
+	simply because <c>java</c> is enabled in <c>USE</c> in your profile, and <c>db</c>
+	recognizes the <c>java</c> USE variable.</p>
+
+	<p>To create a snapshot of your Portage tree, type:</p>
+
+	<pre caption="Generating a snapshot with catalyst">
+# catalyst target=snapshot version_stamp=20031102
+</pre>
+
+	<p>Assuming you are using the default <c>storedir</c> setting of <path>/var/tmp/catalyst</path>,
+	the following file will be created:</p>
+
+	<pre>
+/var/tmp/catalyst/snapshots/portage-20031102.tar.bz2
+	</pre>
+
+	<p>Now that you have a snapshot, you can prepare catalyst to build a stage, GRP set, LiveCD,
+	or do a tinderbox build for QA purposes.</p>
+	
+	</body>
+	</section>
+	<section>
+	<title>Targets, Architectures and Sub-Architectures</title>
+	<body>
+	<p>Catalyst supports a variety of targets, architectures and sub-architectures. I'll explain
+	what each of these terms mean. A "target" is an end-product that catalyst can build for you.
+	For example, a stage1 tarball is a target. A Portage tree snapshot is a target. A LiveCD is
+	also considered to be a target. Here is a complete list of all the targets that catalyst supports,
+	as of 20031228.</p>
+
+	<table>
+	<tr><th>Target name</th><th>Description</th><th>Requirements to build (besides snapshot)</th></tr>
+	<tr><ti>snapshot</ti><ti>Portage tree snapshot tarball</ti><ti>A valid Portage tree</ti></tr>
+	<tr><ti>stage1</ti><ti>A stage1 tarball (used for bootstrapping)</ti><ti>A "generic CPU" stage2 or stage3 tarball for your architecture (ie. <c>x86</c> rather than <c>pentium4</c>)</ti></tr>
+	<tr><ti>stage2</ti><ti>A stage2 tarball (used for <c>emerge system</c>)</ti><ti>An available stage1 tarball for your architecture</ti></tr>
+	<tr><ti>stage3</ti><ti>A stage3 tarball (complete Gentoo base system)</ti><ti>An available stage2 tarball with a sub-architecture that matches that of the target stage3 (ie. use a <c>pentium4</c> stage2 to build a <c>pentium4</c> stage3)</ti></tr>
+	<tr><ti>tinderbox</ti><ti>QA build engine -- for testing ebuilds</ti><ti>A stage3 tarball</ti></tr>
+	<tr><ti>livecd-stage1</ti><ti>First stage of LiveCD building</ti><ti>A stage3 tarball</ti></tr>
+	<tr><ti>livecd-stage2</ti><ti>Second stage of LiveCD building</ti><ti>A livecd-stage1 tarball</ti></tr>
+	<tr><ti>livecd-stage3 (not yet implemented)</ti><ti>A tarball that can be used to create LiveCD ISOs</ti><ti>A livecd-stage2 tarball</ti></tr>
+	<tr><ti>livecd-iso</ti><ti>A bootable, burnable LiveCD ISO</ti><ti>A livecd-stage3 tarball</ti></tr>
+	</table>
+	</body>
+	</section>
+</extrachapter>
 
 </project>
