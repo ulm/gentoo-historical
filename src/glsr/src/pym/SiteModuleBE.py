@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: SiteModuleBE.py,v 1.1 2004/06/27 23:24:58 hadfield Exp $
+# $Id: SiteModuleBE.py,v 1.2 2004/07/19 01:00:22 hadfield Exp $
 #
 
 import string
@@ -27,6 +27,11 @@ class SiteModuleBE:
     uid = 0
 
     display_forms = {"show_all": 1, "show_add": 2, "show_modify": 3}
+
+    # These options match submit button names in the html forms.
+    # They should also match function names in the class.
+    options = ["show_all", "show_add", "show_modify",
+               "add", "modify", "delete"]
 
     def __init__(self, form = {}, uid = 0):
 
@@ -62,12 +67,8 @@ class SiteModuleBE:
 
     def selectDisplay(self):
 
-        # These options match submit button names in the html forms.
-        options = ["show_all", "show_add", "show_modify",
-                   "add", "modify", "delete"]
-
         # Select the chosen operation
-        for option in options:
+        for option in self.options:
             if option in self.form_inputs:
                 exec "self.%s()" % option
                 break
