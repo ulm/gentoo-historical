@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.5 2004/09/30 03:09:36 hadfield Exp $
+# $Id: GLSRBackend.py,v 1.6 2004/10/29 01:26:33 hadfield Exp $
 #
 
 __modulename__ = "GLSRBackend"
@@ -14,7 +14,7 @@ import types
 
 import MySQL
 import Config
-from GLSRException import GLSRException
+import GLSRException
 
 class GLSRBackend:
 
@@ -171,4 +171,5 @@ class GLSRBackend:
             self.id = id
             return True
         else:
-            return False
+            raise GLSRException.InvalidIDError(
+                "Invalid %s ID '%s'" % (self.__module__, id))
