@@ -11,7 +11,7 @@ rm -rf tmp
 rm -f net-tools-${nver}-*.tar.bz2
 
 mkdir -p tmp/patch/excluded
-cp -r *.patch tmp/patch/
+cp -r ../README* *.patch tmp/patch/
 bzip2 tmp/patch/*.patch
 cp -r extra tmp/
 find tmp -type d -name CVS -exec rm -r {} \;
