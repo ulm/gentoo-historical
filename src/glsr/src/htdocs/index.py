@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.20 2004/11/09 18:56:22 port001 Exp $
+# $Id: index.py,v 1.21 2004/11/10 10:55:07 port001 Exp $
 #
 
 """
@@ -91,6 +91,26 @@ class PageDispatch:
                 self._user_detail["alias"] = self._ThisUser.GetAlias()
                 self._ThisUser.SetLoggedIn()
 
+    def check_access(self):
+
+        deny = True
+
+        if self._domain == "admin":
+
+            if self._ThisUser.IsLoggedIn():
+                if self._ThisUser.GetType() == 3:
+                    deny = False
+            else:
+                deny = True
+
+            if deny == True:
+                self._send_headers()
+                print "Access Denied"
+                LogHandler.logwrite("Request for page '%s', domain 'admin' deni$
+                                    (self._page, os.environ["REMOTE_ADDR"]),
+                                     __modulename__, "Warn")
+                sys.exit(0) 
+
     def _load_module(self, module):
 
         module_object = None
@@ -105,23 +125,8 @@ class PageDispatch:
     def select_module(self):
 
         module_list = []
-        deny = True
-
+        
         if self._domain == "admin":
-
-            if self._ThisUser.IsLoggedIn():
-                if self._ThisUser.GetType() == 3:
-                    deny = False
-            else:
-                deny = True
-
-            if deny == True:
-                self._send_headers()
-                print "Access Denied"
-                LogHandler.logwrite("Request for page '%s', domain 'admin' denied from IP '%s'$
-                                    (self._page, os.environ["REMOTE_ADDR"]),
-                                     __modulename__, "Warn")
-                sys.exit(0)
 
             import site_modules.admin
             self._failover = site_modules.admin.failover
@@ -221,6 +226,7 @@ if __name__ == "__main__":
     Dispatcher = PageDispatch()
 
     Dispatcher.check_session()
+    Dispatcher.check_access()
     Dispatcher.select_module()
     Dispatcher.dispatch_header()
     Dispatcher.dispatch_page()
