@@ -28,6 +28,7 @@ import ExtraPackages
 import RcDotConf
 import Users
 import InstallSummary
+import NetworkMounts
 
 class Installer:
 
@@ -40,7 +41,7 @@ class Installer:
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
                       { 'text': 'Partitioning', 'module': Partitioning },
-                      { 'text': 'Network Mounts', 'module': Welcome },
+                      { 'text': 'Network Mounts', 'module': NetworkMounts },
                       { 'text': 'Stage', 'module': Stage },
                       { 'text': 'Portage tree', 'module': PortageTree },
                       { 'text': 'make.conf', 'module': MakeDotConf },

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.22 2004/12/09 07:52:33 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.23 2004/12/11 05:50:06 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -770,7 +770,7 @@ class InstallProfile:
 			netmounts = self.get_network_mounts()
 			xmldoc += "<network-mounts>"
 			for mount in netmounts:
-				xmldoc += "<netmount host=\"%s\" export=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" />" % ((mount['host'], mount['export'], mount['type'], mount['mountpoint'], mount['mountopts'])
+				xmldoc += "<netmount host=\"%s\" export=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" />" % (mount['host'], mount['export'], mount['type'], mount['mountpoint'], mount['mountopts'])
 			xmldoc += "</network-mounts>"
 
 		xmldoc += "</gli-profile>"
