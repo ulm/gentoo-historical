@@ -7,6 +7,7 @@
   </xsl:copy>
 </xsl:template>
 <xsl:template match="*">
+  <xsl:param name="statusFilter"/>
   <xsl:choose>
     <xsl:when test="name() = 'address'"/>
     <xsl:when test="name() = 'birthday'"/>
@@ -18,8 +19,12 @@
     </xsl:when>
     <xsl:when test="name() = 'user'">
       <xsl:choose>
-        <xsl:when test="status != ''"/>
-        <xsl:otherwise><xsl:call-template name="copyData"/></xsl:otherwise>
+	<xsl:when test="$statusFilter = ''">
+          <xsl:if test="count(status) = 0"><xsl:call-template name="copyData"/></xsl:if>
+	</xsl:when>
+	<xsl:otherwise>
+          <xsl:if test="status = $statusFilter"><xsl:call-template name="copyData"/></xsl:if>
+	</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:when test="name() = 'phonenumber'"/>
