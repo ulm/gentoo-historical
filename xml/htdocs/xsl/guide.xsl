@@ -399,10 +399,10 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td valign="top">
-                            <img src="http://distro.ibiblio.org/pub/Linux/distributions/gentoo/images/fosdem.png" alt="new"/>
+                            <img src="http://distro.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif" alt="new"/>
 							</td>
                             <td valign="middle">
-				Come visit our Ambassador at Large, Daniel Robbins, and the rest of the Gentoo Linux team at <a href="http://www.fosdem.org">FOSDEM</a>, February 8th through the 9th in Brussels, Belgium!
+							Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, UltraSparc and Alpha Processor systems.  To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
 							</td>
                           </tr>
                         </table>
