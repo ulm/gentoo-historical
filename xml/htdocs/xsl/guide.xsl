@@ -705,7 +705,7 @@
           <xsl:when test="/mainpage/date">
             <tr>
               <td align="center" class="alttext">
-                <xsl:value-of select="func:gettext('Updated')"/>&#173;
+                <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
                 <xsl:value-of select="func:format-date(/mainpage/date)"/>
               </td>
             </tr>
