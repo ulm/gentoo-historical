@@ -30,6 +30,6 @@ ${WEBSCRIPTS}/distrowatch.sh
 ${WEBSCRIPTS}/rsync-weblogs.sh
 
 # this script takes the longest of all -- ~1 hour or more.  leave it as the *very* last one
-${WEBSCRIPTS}/pkgs.py
+#${WEBSCRIPTS}/pkgs.py
 
 echo ">>> Nightly Web update done."
