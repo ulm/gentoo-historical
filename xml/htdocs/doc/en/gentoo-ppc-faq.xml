@@ -7,12 +7,20 @@
 <author title="Editor"><mail link="rajiv@gentoo.org">Rajiv Manglani</mail></author>
 <abstract>This FAQ is a collection of questions and answers collected from the gentoo-ppc-dev mailing list and from IRC -- if you have any questions (or answers!) to add, please contact either an author or a member of the documentation team.</abstract>
 
-<version>1.3.1</version>
-<date>27 November 2002</date>
+<version>1.4</version>
+<date>03 February 2002</date>
 
 
 <chapter>
 	<title>Installation</title>
+
+	<section>
+		<title>Can I dual-boot Gentoo Linux and Mac OS X?</title>
+		<body><p>Yes you can! In fact, yabootconfig will automatically detect and setup <path>/etc/yaboot.conf</path> with Linux, Mac OS X and even classic Mac OS (see the <uri link="/doc/en/gentoo-ppc-install.xml">Gentoo PPC Install Guide</uri> for details on yabootconfig). The trick is in how you partition your hard drive. Before installing Gentoo, startup with the Mac OS X install CD. Use the <c>Disk Utility</c> to partition the drive in your machine into two or three partitions. The first should be a single partition the total size of all your Linux partitions (root+swap+/home etc.). The format of this partition does not matter. The second should be for OS X. The third (and optional) partition should be for classic Mac OS. It is needed only if you want to put Mac OS 9 on a separate partition. Note that if you want to be able to triple-boot with yaboot, Mac OS 9 needs to be on a separate partition from your Mac OS X installation.</p>
+			<p>After partitioning, install Mac OS X and Mac OS 9 onto their respective partitions. Once installation is complete, start following the <uri link="/doc/en/gentoo-ppc-install.xml">Gentoo Linux PPC Install Guide</uri>. When you get to the section on partitioning, use <c>mac-fdisk</c> to <e>delete</e> the large partition you created for Gentoo. In its place, create a bootstrap partition, root, swap, and any other partitions you want to use with Gentoo.</p>
+			<p>If you have an OldWorld Macintosh (pre-iMac), follow a similar procedure as described above. However, use the Mac OS 9 install CD and the <c>Drive Setup</c> utility. OldWorld machines do not need a bootstrap partition.</p>
+		</body>
+	</section>
 
 	<section>
 		<title>I have an OldWorld Macintosh and need to use BootX. However, I am having trouble opening the BootX installer on the PPC install CD. What can I do?</title>
@@ -33,8 +41,8 @@
 	</section>
 
 	<section>
-		<title>When I try and install Gentoo on my PowerBook my internal hard drive does not show up. What should I do?</title>
-		<body><p>Pass <e>hda=1,1,1</e> to the kernel at boot time. That should solve your problems. You can do this at yaboot prompt by typing <c>boot hda=1,1,1</c>.</p></body>
+		<title>When I try and install Gentoo on my PowerBook or iBook the internal hard drive does not show up. What should I do?</title>
+		<body><p>For a PowerBook, pass <e>hda=1,1,1</e> to the kernel at boot time. That should solve your problems. You can do this at yaboot prompt by typing <c>boot hda=1,1,1</c>. Some iBooks need <c>hda=16383,16,64</c>.</p></body>
 	</section>
 
 	<section>
@@ -77,6 +85,21 @@ This way, you will still be able to use <path>/proc/sys/dev/mac_hid</path> to em
 	<title>Laptop Support</title>
 
 	<section>
+		<title>How do I enable the full processor speed on my PowerBook while running Linux?</title>
+		<body><p>Some processors in PowerBooks start up at slower speed than they are designed to run. Running at this slower speed conserves battery life with the tradeoff of performance. The operating system on the machine must instruct the hardware to run at its full speed. In Mac OS X this is called "Reduced processor performance" or "CPU Scaling" in Linux. To check the current speed of your processor while running in Linux, type <c>cat /proc/cpuinfo</c>. In Mac OS X, you first have to turn off "Reduce processor performance" in the "Options" tab of the Energy Saver system preference panel. Then run Apple System Profiler (in Applications:Utilities).</p>
+			<warn>Do not use this method to overclock your machine. Results are unpredictable if you use an improper value. We are not responsible if you fry your machine!</warn>
+			<p>If Apple System Profiler reports a higher speed than what you get when running in Linux, you can enable the full speed of the processor with a simple command. First, your machine needs to be running kernel 2.4.20-pre9-ben0 or later. Earlier kernels do not have the code necessary to change the processor speed. Second, you will need to compile the kernel with <c>CPU Frequency scaling</c> <e>disabled</e>. Finally, run an appropriate command as shown in the examples below.
+<pre>
+<codenote>These are examples only. Use values appropriate for your machine.</codenote>
+
+echo "0:667000:1000000:performance" > /proc/cpufreq    <codenote>For a 1ghz PowerBook G4</codenote>
+echo "0:667000:800000:performance" > /proc/cpufreq     <codenote>For an 800mhz PowerBook G4</codenote>
+</pre>
+		Many users will want to add this command to the end of <path>/etc/conf.d/local.start</path>. This file is sourced every time your machine starts.
+		</p></body>
+	</section>
+
+	<section>
 		<title>I'm running Gentoo on a PowerPC laptop. What packages should I install to enable laptop-specific functionality?</title>
 		<body><p>There are four main packages you will need to install.</p>
 			<p><ul>
@@ -115,6 +138,13 @@ This way, you will still be able to use <path>/proc/sys/dev/mac_hid</path> to em
 		<body><p>Check that the permissions on <path>/var/tmp</path> are set to <path>drwxrwxrwx</path>. If not, change them by typing <c>chmod a+rwx /var/tmp</c>. This will allow XFree to load keymaps properly again.</p></body>
 	</section>
 
+	<section>
+		<title>When using OpenGL DRI in XFree or playing movies, the system sometimes freezes hard unexpectedly. What can I do?</title>
+		<body><p>Your system may not cope properly with AGP support. Newer kernels (2.4.20 or higher) and XFree 4.3 or better should solve this. Until then the easiest solution is to add the following line to the "Device" section of <path>/etc/X11/XF86Config-4</path>:
+<pre>
+Option       "ForcePCIMode"
+</pre></p></body>
+	</section>
 	<section>
 		<title>How do I get sound output working?</title>
 		<body><p>Two things are needed here. First, you have to make sure that you have the correct kernel options selected.  In make menuconfig you need:
@@ -166,13 +196,13 @@ To play a CD, fire up <c>xmms</c> and enter <c>/dev/cdrom</c> as the file you wa
 <title>Resources</title>
 	<section>
 		<title>Can I buy a CD of Gentoo Linux/PPC?</title>
-		<body><p>Yes! Fresh CDRs are available from <uri link="http://www.tuxcds.com/section.php?section=42"> tuxcds</uri> for a very good price. These people also bounce back a portion of the profits to the Gentoo project, so buy them while they are hot!</p>
+		<body><p>Yes! Several vendors sell Gentoo on CD-ROM. Some even will sell you a complete system with Gentoo pre-installed. These people also bounce back a portion of the profits to the Gentoo project, so buy them while they are hot! <uri link="/main/en/where.xml">Get Gentoo!</uri>.</p>
 		</body>
 	</section>
 
 	<section>
 		<title>This FAQ hasn't answered my question. What do I do now?</title>
-		<body><p>A good first step is to browse through the relevant <uri link="http://www.gentoo.org/index-docs.html">documentation on www.gentoo.org</uri>. Two PPC-specific mailing lists currently exist, <uri link="http://lists.gentoo.org/mailman/listinfo/gentooppc-dev">gentooppc-dev</uri> and <uri link="http://lists.gentoo.org/mailman/listinfo/gentooppc-user">gentooppc-user</uri>. Both lists are archived online. <uri link="http://forums.gentoo.org/viewforum.php?f=24">Gentoo on PPC</uri> (on forums.gentoo.org) is a open bulletin-board for discussion of all PowerPC issues. Also, there is usually a lively discussion on IRC. Join us on <i>#gentoo-ppc</i> on <i>irc.freenode.net</i>.</p>
+		<body><p>A good first step is to browse through the relevant <uri link="/main/en/docs.xml">documentation on www.gentoo.org</uri>. Two PPC-specific mailing lists currently exist, <uri link="http://lists.gentoo.org/mailman/listinfo/gentooppc-dev">gentooppc-dev</uri> and <uri link="http://lists.gentoo.org/mailman/listinfo/gentooppc-user">gentooppc-user</uri>. Both lists are archived online. <uri link="http://forums.gentoo.org/viewforum.php?f=24">Gentoo on PPC</uri> (on forums.gentoo.org) is a open bulletin-board for discussion of all PowerPC issues. Also, there is usually a lively discussion on IRC. Join us on <i>#gentoo-ppc</i> on <i>irc.freenode.net</i>.</p>
 			<p>General information about Linux on PowerPC can be found at <uri link="http://penguinppc.org/">penguinppc.org</uri> and the <uri link="http://lppcfom.sourceforge.net/">Linux on PowerPC FAQ-O-Matic</uri>. General Linux information is at <uri link="http://www.linuxdoc.org/">www.linuxdoc.org</uri>.</p>
 		</body>
 	</section>
