@@ -18,13 +18,13 @@ mkdir -p ${WORKDIR}/cvsroot
 
 # grab a recent copy of the cvs modules for viewcvs
 
-rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo \
---exclude /home/cvsroot/gentoo/admin/ ${WORKDIR}/cvsroot/gentoo
+rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo/ \
+--exclude /home/cvsroot/gentoo/admin/ ${WORKDIR}/cvsroot/gentoo/
 
-rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-x86 \
-${WORKDIR}/cvsroot/gentoo-x86
+rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-x86/ \
+${WORKDIR}/cvsroot/gentoo-x86/
 
-rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-src \
-${WORKDIR}/cvsroot/gentoo-src
+rsync ${RSYNC_ARGS} cvs.gentoo.org:/home/cvsroot/gentoo-src/ \
+${WORKDIR}/cvsroot/gentoo-src/
 
 #done
