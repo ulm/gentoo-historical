@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.9 2004/07/20 15:23:55 port001 Exp $
+# $Id: index.py,v 1.10 2004/07/24 00:27:49 port001 Exp $
 #
 
 import os
@@ -16,6 +16,9 @@ sys.path.insert(0, "/usr/local/share/glsr/pym")
 sys.path.insert(0, "/usr/local/share/glsr/")
 sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/pym")
 sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/")
+
+from Error import ExceptionHandler
+sys.excepthook = ExceptionHandler
 
 import Config
 from Function import start_timer, stop_timer, eval_timer

@@ -2,11 +2,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.4 2004/07/19 00:55:24 hadfield Exp $
+# $Id: Logging.py,v 1.5 2004/07/24 00:27:49 port001 Exp $
 #
 
 import traceback
-from time import time, gmtime, strftime
+from time import gmtime, strftime
 
 import Config
 
@@ -117,7 +117,10 @@ def logwrite(msg, modname, type):
             logtype = "info"
         else:
             logtype = "????"
-                                                                                                                                   
+
+        if isinstance(msg, list):
+            msg = "".join(msg)
+
         try:
             fd = open(Config.LogFile, "a")
             fd.write("[%s] [%s] [%s] %s\n" % (strftime("%d %b %Y %H:%M:%S", gmtime()),
