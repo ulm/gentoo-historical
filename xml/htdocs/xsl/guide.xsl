@@ -437,7 +437,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
                     <br/>
-                    <a class="altlink" href="/security/en/glsa/index.xml">Security Announcements</a>
+                    <a class="altlink" href="/security/en/index.xml">Security Announcements</a>
                     <br/>
                     <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
                     <br/>
