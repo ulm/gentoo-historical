@@ -9,14 +9,13 @@
 
 <xsl:template match="/project">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
-        <guide  link="index.xml" type="project">
-                <title>
-                  <xsl:choose>
-                    <xsl:when test="longname"><xsl:value-of select="longname"/>
-		    </xsl:when>
-                    <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
-                  </xsl:choose>
-                </title>
+<guide  link="index.xml" type="project">
+<title>
+<xsl:choose>
+  <xsl:when test="longname"><xsl:value-of select="longname"/></xsl:when>
+  <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
+</xsl:choose>
+</title>
 		<xsl:choose>
 		  <xsl:when test="author">
 		    <xsl:for-each select="author">
@@ -36,9 +35,9 @@
 		</xsl:if>
 		<chapter>
 			<title>Project Description</title>
-			<section><body>
+			<section><body><p>
 			<xsl:apply-templates select="longdescription"/>
-			</body></section>
+			</p></body></section>
 		</chapter>
 		<xsl:apply-templates select='extrachapter[@position="top"]'/>
 		<!-- here extra chapters would appear-->
@@ -163,7 +162,7 @@
 		</chapter>
 		</xsl:if>		
 	
-		<xsl:apply-templates select='extrachapter[@position="bottom"]|extrachapter[@position=""]'/>
+		<xsl:apply-templates select='extrachapter[@position="" or @position="bottom"]'/>
 	</guide>
 </xsl:template>
 <xsl:template match="name|description">
@@ -318,7 +317,7 @@
       <xsl:if test='@finished="yes"'> (finished)</xsl:if>
     </title>
     <body>
-      <xsl:value-of select="longdescription"/>
+      <p><xsl:value-of select="longdescription"/></p>
       <table>
         <tr>
 	  <th>Starting date:</th><ti><xsl:value-of select="startdate"/></ti>
