@@ -157,24 +157,6 @@ def setextraversion(version):
 
 	return
 
-# setoutput(path) defines KBUILD_OUTPUT_PREFIX in envfile, for future
-# kernel installations using kernel-2.eclass
-def outputdir(path):
-
-	# "default" really means /var/tmp/kernel-output
-	if path == "default":
-		path = os.path.join("/" , "var", "tmp", "kernel-output")
-
-	# Set the path, setenv will handle the case where path="none"
-	setenv('KBUILD_OUTPUT_PREFIX', path)
-
-	if path == "none":
-		return
-
-	if not os.path.isdir(path):
-		warn("Directory " + path + " does not exist.")
-		warn("This path will be created next time you emerge a kernel")
-
 # getoutputPrefix() queries for the current KBUILD_OUTPUT_PREFIX and prints that
 # string to stdout. Used in kernel-2.eclass to figure out what to set the output
 # to.
