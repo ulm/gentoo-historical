@@ -391,11 +391,15 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td valign="top">
-                            <img src="http://www.ibiblio.org/web-gentoo/images/gentoo-new.gif" alt="new"/>
+                            <a href="http://www.gdconf.com/" target="_blank"><img src="http://www.gamanetwork.com/logos/gifs/gdc.gif" alt="Game Developers Conference" border="0" /></a>
 							</td>
                             <td valign="middle">
-							Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, UltraSparc and Alpha Processor systems.  To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
-							</td>
+			Please visit the Gentoo Linux developers and special guest Emmett Plant, CEO of
+			<a href="http://www.vorbis.com/" link="_blank">Vorbis</a>, at the <a href="http://www.gdconf.com/" target="_blank">Game Developers Conference 2003</a> in San
+			Jose, CA from March 6th through 8th. Emmett and the Gentoo Linux crew will be
+			presenting at the <a href="http://www.nvidia.com/" target="_blank">NVIDIA</a> booth, touting the advantages of using
+			free software for game development and supporting Linux as a gaming platform.
+				</td>
                           </tr>
                         </table>
                         <br/>
