@@ -11,7 +11,7 @@ from stat import *
 license_re=     re.compile(r"^LICENSE=\"([^\"]*)\"",re.M|re.I|re.S)
 homepage_re=    re.compile(r"^HOMEPAGE=\"([^\"]*)\"",re.M|re.I|re.S)
 desc_re=        re.compile(r"^DESCRIPTION=\"([^\"]*)\"",re.M|re.I|re.S)
-pkgdir  = "../xml/packages/"
+pkgdir  ="xml/packages/" 
 
 ############
 # Subroutine time
