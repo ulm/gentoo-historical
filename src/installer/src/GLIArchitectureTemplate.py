@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.64 2005/03/24 23:16:16 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.65 2005/03/24 23:20:32 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -617,10 +617,12 @@ class ArchitectureTemplate:
 		# Write the domainname to the nisdomainname file
 		if domainname:
 			open(self._chroot_dir + "/etc/dnsdomainname", "w").write(domainname + "\n")
+			self._add_to_runlevel("domainname")
 		
 		# Write the nisdomainname to the nisdomainname file
 		if nisdomainname:
 			open(self._chroot_dir + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
+			self._add_to_runlevel("domainname")
 			
 		#
 		# EDIT THE /ETC/HOSTS FILE
@@ -697,12 +699,6 @@ class ArchitectureTemplate:
 		# Parse each interface
 		for interface in interfaces.keys():
 		
-			# If we are going to load the network at boot...
-			if interfaces[interface][2]:
-				
-				# Add it to the default runlevel
-				self._add_to_runlevel("net."+interface)	
-
 			# Set what kind of interface it is
 			interface_type = interface[:3]
 		
@@ -712,6 +708,12 @@ class ArchitectureTemplate:
 			except:
 				os.symlink(self._chroot_dir + "/etc/init.d/net." + interface_type +  "0", self._chroot_dir + "/etc/init.d/net." + interface)				
 		
+			# If we are going to load the network at boot...
+			if interfaces[interface][2]:
+				
+				# Add it to the default runlevel
+				self._add_to_runlevel("net."+interface)	
+
 			#
 			# ETHERNET
 			#
