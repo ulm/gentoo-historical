@@ -10,8 +10,6 @@
 
 import portage, string, os, os.path, time, sys
 
-# xml file to be generated
-out = file(sys.argv[1], "w")
 
 # xml boilerplate
 header = """<?xml version='1.0'?>
@@ -62,6 +60,8 @@ def getpkgentry(pkg):
 	
 
 if __name__ == "__main__":
+	# xml file to be generated
+	out = file(sys.argv[1], "w")
 	pkglist = getcurrentpkgs()
 	out.write(header)
 	out.write("<chapter>\n")
