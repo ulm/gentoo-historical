@@ -69,11 +69,13 @@ my $attach   = '';
 my $grab     = '';
 my $devrel   = '';
 my $reporter = '';
+my $closed = '';
 GetOptions(
     'help'       => \$help,
     'cclist=s'   => \$cclist,
     'list=s'     => \$list,
     'reporter=s' => \$reporter,
+    'closedby=s' => \$closed,
     'add'        => \$add,
     'newdev'     => \$newdev,
     'devrel'     => \$devrel,
@@ -88,6 +90,7 @@ if    ($help)     { helpme() }
 elsif ($cclist)   { cclist_bugs($cclist) }
 elsif ($list)     { list_bugs($list) }
 elsif ($reporter) { reporter($reporter) }
+elsif ($closed)   { closed_by($closed) }
 elsif ($show)     { show_bug($show) }
 elsif ($add)      { add_bug() }
 elsif ($newdev)   { new_dev() }
@@ -102,6 +105,7 @@ sub helpme {
     print "Usage: $selfname\n";
     print "\t\t--list=loginID\tList bugs assigned to given loginID\n";
     print "\t\t--reporter=loginID\tList bugs reported by loginID\n";
+    print "\t\t--closedby=loginID\tList bugs closed by loginID\n";
     print "\t\t--add\tAdd a new bug\n";
     print "\t\t--newdev\tAdd a new developer\n";
     print "\t\t--devrel\tAdd Developer Relations report\n";
@@ -611,6 +615,69 @@ sub reporter {
     my $content = $mech->content();
     my @baseline = split( /\n/, $content );
     my $rowcount;
+    foreach my $line ( sort @baseline ) {
+        $line =~ s/\"//mg;
+        my @rowline = split( /,/, $line );
+        next if ( $rowline[0] =~ m/bug_id/ );
+        next if ( $rowline[0] eq "" );
+        next if ( $rowline[0] =~ /^\n$/ );
+        $rowcount = $rowcount + 4;
+        print "Bug ID $rowline[0]\nPriority $rowline[1]\n$rowline[7]\n\n";
+        if ( $rowcount >= $rows ) {
+            print "Press Enter to Continue";
+            my $junk = <STDIN>;
+            $rowcount = 0;
+        }
+    }
+}
+
+sub closed_by {
+my $owner = shift;
+chomp($owner);
+
+use WWW::Mechanize;
+    my $mech = WWW::Mechanize->new();
+    $mech->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
+    $mech->submit_form(
+        fields => {
+            Bugzilla_login    => $login,
+            Bugzilla_password => $password,
+        }
+    );
+
+
+ $mech->form_number (1);
+ my @status = ( RESOLVED,VERIFIED,CLOSED);
+ my @resolution = (FIXED,
+        INVALID,
+        WONTFIX,
+        CANTFIX,
+        NEEDINFO,
+        TEST-REQUEST,
+        LATER,
+        REMIND,
+        DUPLICATE,
+        WORKSFORME,
+        MOVED,
+	UPSTREAM);
+$mech->select('bug_status',\@status);
+$mech->select('resolution',\@resoltion);
+ $mech->field('email1',$owner);
+ $mech->field('email2',"");
+ $mech->tick('emailassigned_to1','1');
+ $mech->untick('emailreporter2','1');
+ $mech->select('order','Bug Number');
+ $mech->select('emailtype1','exact');
+ $mech->submit();
+
+ $mech->follow_link( text_regex => qr/CSV/ );
+
+ my $content = $mech->content();
+my @baseline = split( /\n/, $content );
+my $results = @baseline;
+$results--;
+print "$results bugs found\n";
+    my $rowcount= 1;
     foreach my $line ( sort @baseline ) {
         $line =~ s/\"//mg;
         my @rowline = split( /,/, $line );
