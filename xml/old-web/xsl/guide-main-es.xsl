@@ -387,7 +387,7 @@ Portage</a><br/><br/><br/>
                             <td>
                               <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-nuevo.gif"/>
                             </td>
-                            <td valign="center">Gentoo Linux es una
+                            <td valign="middle">Gentoo Linux es una
 			    metaditribución Linux basada en ports
 			    altamente optimizada para sistemas x86,
 			    PowerPC, Sparc y Sparc64. Para saber más,
@@ -411,7 +411,7 @@ Portage</a><br/><br/><br/>
                               </td>
                             </tr>
                             <tr>
-                              <td width="100" align="middle" valign="center">
+                              <td width="100" align="center" valign="middle">
                                 <xsl:choose>
                                   <xsl:when test="@category='gentoo'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
@@ -467,7 +467,7 @@ Portage</a><br/><br/><br/>
                             </td>
                           </tr>
                           <tr>
-                            <td width="100" align="middle" valign="top">
+                            <td width="100" align="center" valign="top">
                               <xsl:choose>
                                 <xsl:when test="@category='gentoo'">
                                   <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>

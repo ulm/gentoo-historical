@@ -359,7 +359,7 @@ Portage</a><br/><br/><br/>
                             <td>
                               <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif"/>
                             </td>
-                            <td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
+                            <td valign="middle">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
                           </tr>
                         </table>
                         <br/>
@@ -377,7 +377,7 @@ Portage</a><br/><br/><br/>
                               </td>
                             </tr>
                             <tr>
-                              <td width="100" align="middle" valign="center">
+                              <td width="100" align="center" valign="middle">
                                 <xsl:choose>
                                   <xsl:when test="@category='gentoo'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
@@ -432,7 +432,7 @@ Portage</a><br/><br/><br/>
                             </td>
                           </tr>
                           <tr>
-                            <td width="100" align="middle" valign="top">
+                            <td width="100" align="center" valign="top">
                               <xsl:choose>
                                 <xsl:when test="@category='gentoo'">
                                   <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>

@@ -428,14 +428,14 @@ User Docs:<br/>
 					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif"/></td><td valign="middle">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
 							<xsl:for-each select="newsitems/news[position()&lt;10]">
 							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
 							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
 							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
 							</font>
 							</td></tr>
-							<tr><td width="100" align="middle" valign="center">	
+							<tr><td width="100" align="center" valign="middle">	
 							<xsl:choose>
 							<xsl:when test="@category='gentoo'">
 								<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
@@ -477,7 +477,7 @@ User Docs:<br/>
 							<font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
 							</font>
 							</td></tr>
-							<tr><td width="100" align="middle" valign="top">	
+							<tr><td width="100" align="center" valign="top">	
 							<xsl:choose>
 							<xsl:when test="@category='gentoo'">
 								<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-gentoo.png"/>
