@@ -5,7 +5,7 @@
 #
 #############################################################
 #                                                           #
-#   THE gweb ACCOUNT MUST BE ABLE TO RUN emerge sync IN		#
+#   THE gweb ACCOUNT MUST BE ABLE TO RUN emerge sync IN     #
 #   ORDER FOR THIS TO WORK                                  #
 #                                                           #
 #############################################################
