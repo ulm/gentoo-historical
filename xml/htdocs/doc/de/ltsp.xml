@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/Attic/ltsp.xml,v 1.3 2004/02/27 14:58:33 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/Attic/ltsp.xml,v 1.4 2004/05/08 16:25:03 dertobi123 Exp $ -->
 
-<!-- English CVS version: 1.6 -->
+<!-- English CVS version: 1.7 -->
 
 <guide link="/doc/de/ltsp.xml">
 
@@ -28,8 +28,8 @@ eingerichtet werden.
 
 <license/>
 
-<version>1.3</version>
-<date>11. Dezember 2003</date>
+<version>1.4</version>
+<date>11. April 2004</date>
 
 <chapter>
 <title>Einführung</title>
@@ -144,8 +144,15 @@ werden:
 <p>
 Um Probleme leichter zu untersuchen, muss der System-Logger so konfiguriert
 werden, dass er Netzwerkverbindungen zulässt. Lesen Sie bitte hierzu die
-Dokumentation Ihres System-Loggers.
+Dokumentation Ihres System-Loggers. Wenn Sie zum Beispiel sysklogd verwenden, 
+dann müssen Sie nur <path>/etc/conf.d/sysklogd</path> editieren und "-r" zur 
+SYSLOGD Zeile hinzufügen:
 </p>
+
+<pre caption="/etc/conf.d/sysklogd">
+SYSLOGD="-m 0 -r"
+KLOGD="-c 3 -2"
+</pre>
 
 </body>
 </section>
@@ -183,11 +190,42 @@ Starten Sie nun NFS.
 <section>
 <title>xinetd/tftp</title>
 <body>
+<p>
+TFTP benötigt ein wenig Konfiguration bevor es einwandfrei läuft. Editieren 
+sie als erstes <path>/etc/conf.d/in.tftpd</path> um TFTPs Pfade korrekt zu 
+setzen:
+</p>
+
+<pre caption="/etc/conf.d/in.tftpd">
+INTFTPD_PATH="/tftpboot"
+INTFTPD_OPTS="${INTFTPD_PATH}"
+</pre>
+
+ <p>
+Konfigurieren Sie als nächstes xinetd so, dass es TFTP ausführt und Remote 
+Connections erlaubt. Überprüfen Sie vorher ob die Datei 
+<path>/etc/xinetd.d/tftp</path> erstellt wurde, als Sie TFTP emerged haben. 
+Standardmäßig wird TFTP von xinetd nicht gestart, um dies zu ändern müssen Sie 
+daher <path>/etc/xinetd.d/tftp</path> editieren und <c>disable=yes</c> mit 
+<c>disable=no</c> ersetzen.
+</p>
+
+<pre caption="/etc/xinetd.d/tftp">
+service tftp
+{
+			disable = no
+			socket_type = dgram
+			protocol = udp
+			wait = yes
+			user = root
+			server = /usr/sbin/in.tftpd
+ }
+</pre>
 
 <p>
-In der Grundeinstellung wird TFTP nicht gestartet. Um dies zu ändern, ersetzen
-Sie in <path>/etc/xinetd.d/tftp</path> den Eintrag <c>disable=yes</c> durch
-<c>disable=no</c>. Anschließend starten Sie xinetd.
+Editieren Sie nun <path>/etc/xinetd.conf</path>  und kommtentieren Sie die 
+Zeile <c>only_from = localhost</c> aus indem Sie ein <c>#</c> voranstellen. 
+Starten Sie nun xinted.
 </p>
 
 <pre caption="xinetd starten">
@@ -283,7 +321,9 @@ Falls die Workstations PXE unterstützen, sollten Sie jede von Ihnen so
 auflisten, wie es im Beispiel durch <e>host ws001</e> erfolgt ist (vergessen
 Sie nicht, die Kommentarmarken zu entfernen!). Weisen Sie ihnen keine Adresse im
 dynamischen Adressraum zu, da es sonst geschehen kann, dass mehrere Workstations
-die gleiche IP-Adresse erhalten (was zu Problemen führen wird).
+die gleiche IP-Adresse erhalten (was zu Problemen führen wird). Denken Sie 
+daran, wenn Sie das obrige Beispiel rüberkopieren, jegliche "//" Kommentare 
+mit "##" zu ersetzen, da dhcp sonst nicht erfolgreich gestartet werden kann.
 </p>
 
 <p>
@@ -317,6 +357,24 @@ Zur Konfiguration Ihrer Workstations existieren in
 <uri>http://www.ltsp.org/documentation/ltsp-3.0-4-de.html#AEN911</uri>
 vollständig beschrieben sind.
 </p>
+ 
+<p>
+Eine Vorschläge um anzufangen wären, dass Sie zuerst 
+<path>/opt/ltsp/i386/etc/lts.conf.example</path> nach  
+<path>/opt/ltsp/i386/etc/lts.conf</path> kopieren und von dort editieren. Sie 
+sollten vielleicht versuchen die <c>SCREEN_01</c> Option in 
+<c>SCREEN_01 = startx</c> zu ändern. Um eine USB Maus zu verwenden an dem 
+Remote Client fügen Sie die folgenden Modulzeilen hinzu und ändern Sie die 
+X_MOUSE_* Zeilen wie folgt:
+</p>
+
+<pre caption="/opt/ltsp/i386/etc/lts.conf">
+MODULE_01          = usb-uhci
+MODULE_02          = mousedev
+MODULE_03          = usbmouse
+X_MOUSE_PROTOCOL   = "IMPS/2"
+X_MOUSE_DEVICE     = "/dev/input/mice"
+</pre>
 
 </body>
 </section>
@@ -371,6 +429,12 @@ Starten Sie anschließend den Displaymanager (Beispiel: xdm):
 Gegenwärtig scheinen Probleme mit XDM und GDM aufzutreten. Der Autor rät daher
 zu KDM als Lösung.
 </warn>
+
+ <p>
+Beachten Sie, dass wenn Ihr Displaymanager schon läuft, dann wird das 
+Neustarten Ihres X-Serves mit STRG-ALT-RÜCKTASTE nicht Ihren Displaymanager 
+neu starten.
+</p>
 
 </body>
 </section>

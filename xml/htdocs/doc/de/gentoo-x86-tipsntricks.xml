@@ -1,0 +1,393 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<!-- English CVS Version: 1.5 -->
+
+<guide link="/doc/en/gentoo-x86-tipsntricks.xml">
+<title>Gentoo/x86 Installation Tips &amp; Tricks</title>
+<author title="Author">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Translator">
+    <mail link="hendrik@grahli.net">Hendrik Grahl</mail>
+</author>
+
+<abstract>
+Die Gentoo Installation erlaubt sehr flexible Ansätze zu den verschiedenen 
+Installationsmethoden. Da es so gut wie unmöglich ist jeden einzelnen Tipp 
+oder Trick in den Installationsanleitungen einzubringen versucht dieses 
+Dokument mit allen eingereichten Tipps und Tricks eine Referenz zu liefern. 
+</abstract>
+
+<license/>
+
+<version>1.2</version>
+<date>11. April 2004</date>
+
+<chapter>
+<title>Einleitung</title>
+<section>
+<title>Vorwort</title>
+<body>
+
+<p>
+Dieses Dokument enthält verschiedenste Tipps und Tricks für die Gentoo/x86 
+Installation. Die meisten von ihnen werden detailliert diskutiert - sie sind als 
+Zusatz zu den Installationsanweisungen und nicht als Ersatz gedacht.
+</p>
+
+</body>
+</section>
+<section>
+<title>Inhalt</title>
+<body>
+
+<p>
+<b>Erweiterte Installationen</b>
+</p>
+
+<ul>
+  <li><uri link="#software-raid">Software RAID</uri></li>
+  <li><uri link="#ata-raid-2.4">ATA RAID mit 2.4 Kerneln</uri></li>
+</ul>
+
+<p>
+<b>Vereinfachen der Installation</b>
+</p>
+
+<ul>
+  <li><uri link="#leave_terminal">Verlassen des Terminals</uri></li>
+</ul>
+
+<p>
+<b>Beheben von Fehlern/Problemen</b>
+</p>
+
+<ul>
+  <li><uri link="#checking-disks">Intensives Testen Ihrer Festplatten</uri></li>
+</ul>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Erweiterte Installationen</title>
+<section id="software-raid">
+<title>Software RAID</title>
+<body>
+
+<note>
+Wenn Sie nicht vertraut sind mit Software RAID, dann lesen Sie bitte das <uri 
+link="http://tldp.org/HOWTO/Software-RAID-HOWTO.html">Software-RAID-HOWTO</uri>.
+</note>
+
+<p>
+Sowie Sie von der LiveCD gebootet haben laden Sie die passenden RAID Module. 
+Zum Beispiel, wenn Sie planen RAID-1 zu verwenden:
+</p>
+
+<pre caption="Laden des RAID-1 Moduls">
+# <i>modprobe raid1</i>
+</pre>
+
+<p>
+Während Sie Ihre Festplatten partitionieren, müssen Sie sicherstellen, dass 
+Ihre Partitionen <c>fd</c> (Linux raid autodetect) benutzen als Partitionstyp 
+anstatt von <c>83</c> (Linux native). Sie können den Partitionstyp verändern 
+indem Sie den <c>t</c> Befehl in <c>fdisk</c> verwenden.
+</p>
+
+<p>
+Nach dem Partitionieren sollten Sie die <path>/etc/raidtab</path> Datei 
+erstellen (ja in der Tat, in der Umgebung der LiveCD) und die notwendigen 
+Befehle einfügen für Ihr RAID Setup. Zum Beispiel um Boot, Swap und Root 
+Partition gespiegelt zu haben (RAID-1), was <path>/dev/sda</path> und 
+<path>/dev/sdb</path> umfasst, können sie folgendes verwenden:
+</p>
+
+<pre caption="/etc/raidtab für RAID-1 Setup">
+raiddev /dev/md0
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda1
+    raid-disk 0
+  device /dev/sdb1
+    raid-disk 1
+
+raiddev /dev/md1
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda2
+    raid-disk 0
+  device /dev/sdb2
+    raid-disk 1
+
+raiddev /dev/md2
+  raid-level 1
+  nr-raid-disks 2
+  chunk-size 32
+  persistent-superblock 1
+  device /dev/sda3
+    raid-disk 0
+  device /dev/sdb3
+    raid-disk 1
+</pre>
+
+<p>
+Erstellen Sie nun die notwendigen RAID Devices für jedes RAID Gerät, 
+dass Sie in <path>/etc/raidtab</path> aufgeführt haben:
+</p>
+
+<pre caption="Erstellen von RAID Devices">
+# <i>mkraid /dev/md0</i>
+# <i>mkraid /dev/md1</i>
+# <i>mkraid /dev/md2</i>
+</pre>
+
+<p>
+Der Linux Software RAID Treiber wird beginnen die Metadevices zu erstellen. 
+Sie können den Fortschritt in <path>/proc/mdstat</path> betrachten. Warten 
+Sie bis die Metadevices vollständig beendet wurden bevor Sie fortfahren.
+</p>
+
+<p>
+Verwenden Sie von nun an <path>/dev/md0</path> für die Boot Partition, 
+<path>/dev/md1</path> für die Swap Partition und <path>/dev/md2</path> für 
+die Root Partition.
+</p>
+
+<p>
+Vergessen Sie nicht, nach dem Einbinden von <path>/dev/md2</path> unter 
+<path>/mnt/gentoo</path>, <path>/etc/raidtab</path> nach 
+<path>/mnt/gentoo/etc</path> hinüber zu kopieren.
+</p>
+
+<p>
+Wenn Sie Ihren Kernel konfigurieren, stellen Sie sicher, dass Sie die passende 
+RAID Unterstützung <e>in</e> Ihrem Kernel haben und nicht als Modul.
+</p>
+
+<p>
+Wenn Sie weitere extra Tools installieren, dann führen Sie auch emerge 
+<c>raidtools</c> aus. Beachten Sie, dass dieses nicht auf allen LiveCDs 
+vorhanden ist, so dass Sie möglicherweise nicht die Möglichkeit haben werden 
+Gentoo auf einem Software RAID zu installieren, wenn sie keine 
+Netzwerkanbindung haben. 
+</p>
+
+<p>
+Wenn Sie Ihren Bootloader konfigurieren, stellen Sie sicher, dass er im MBR 
+von <e>beiden</e> Festplatten installiert wird, wenn Sie Spiegelung verwenden. 
+</p>
+
+</body>
+</section>
+<section id="ata-raid-2.4">
+<title>ATA RAID mit 2.4 Kerneln</title>
+<body>
+
+<p>
+Stellen Sie sicher, dass Sie Ihre LiveCD mit der <c>doataraid</c> Option 
+booten. Einmal gebootet, überprüfen Sie den Inhalt von 
+<path>/dev/ataraid</path>. Es sollte verschiedene <path>disc*</path> 
+Verzeichnisse für jede vorhandene Festplatte vorhanden im ATA RAID anzeigen. 
+Eine gesamte Festplatte wird angezeigt als <path>disc</path> wobei Partitionen 
+<path>part*</path> sind.
+</p>
+
+<p>
+Schreiben Sie die verschiedenen <path>/dev/ataraid/disc*/*</path> 
+Devicedateien auf, die Sie verwenden wollen um Gentoo zu installieren. Sie 
+werden die <path>/dev/hda</path> Beispiele der Installation mit diesem Pfad 
+substituieren müssen.
+</p>
+
+<p>
+Bevor Sie chrooten, sollten Sie das Bind-mount der <path>/dev</path> Struktur 
+in der neuen Umgebung durchführen:
+</p>
+
+<pre caption="Bind-mounten von /dev">
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+<p>
+Wenn Sie Ihren Kernel konfigurieren, stellen Sie sicher, dass Sie 
+Unterstützung für Ihren ATA RAID Chipsatz aktivieren sowie Optionen. Zum 
+Beispiel ist ein populäres ATA RAID System der <e>Promise FastTrack built-in 
+RAID</e> in welchem Fall Sie definitiv <c>Promise FastTrack Options</c> in 
+Ihrem Kernel benötigen. 
+</p>
+
+<p>
+Wenn Sie GRUB konfigurieren, müssen Sie zuerst eine GRUB Bootdiskette 
+erstellen. Dies ist nicht so schwer wie Sie denken. Installieren Sie zunächst 
+GRUB wie Sie es gewohnt sind, doch wenn Sie zu dem Punkt kommen an dem GRUB 
+im MBR installiert wird, führen Sie folgende Befehle aus:
+</p>
+
+<pre caption="Erstellen einer GRUB Bootdiskette">
+# <i>cd /boot/grub</i>
+# <i>dd if=stage1 of=/dev/fd0 bs=512 count=1</i>
+# <i>dd if=stage2 of=/dev/fd0 bs=512 seek=1</i>
+</pre>
+
+<p>
+Sie werden trotzdem noch Ihre <path>grub.conf</path> Datei schreiben müssen. 
+Dies unterscheidet sich nicht von den Installationsanleitungen, stellen Sie 
+einfach sicher, dass Ihr <c>root=</c> auf das ATA RAID Device verweist.
+</p>
+
+<p>
+Nach Beendigung der Installation starten Sie mit Ihrer GRUB Bootdiskette. 
+Sie werden begrüsst von der GRUB Kommandozeile. Konfigurieren Sie GRUB nun 
+dazu vom ATA RAID Device zu booten:
+</p>
+
+<pre caption="Installieren von GRUB auf dem ATA RAID">
+grub&gt; root (hd0,x)
+grub&gt; setup (hd0)
+grub&gt; quit
+</pre>
+
+<p>
+Starten Sie nun neu (mit der GRUB Bootdiskette entfernt).
+</p>
+
+<p>
+LILO Benutzer können ohne Angst die Anweisungen verwenden die in den 
+Installationsanleitungen erwähnt werden. 
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Vereinfachen der Installation</title>
+<section id="leave_terminal">
+<title>Verlassen des Terminals</title>
+<body>
+
+<p>
+Viele Menschen wollen Ihr System alleine lassen, wenn es kompiliert. In bestimmten 
+Fällen ist dies eher schwierig, da die Installation in einer offenen Umgebung 
+geschieht, in der Sie niemandem trauen können. Wenn dies der Fall ist, wollen 
+Sie die Möglichkeit haben die Kompilierung im Hintergrund durchzuführen und 
+sich von allen Terminals abzumelden.
+</p>
+
+<p>
+Es gibt verschiedene mögliche Lösungen. Die erste ist die Verwendung von 
+<c>screen</c>. Nach dem booten der LiveCD, setzen Sie Ihre Root Passwort und 
+starten Sie eine screen Sitzung:
+</p>
+
+<note>
+Nicht alle LiveCDs enthalten screen. Wenn dies der Fall ist, dann müssen Sie 
+eine der anderen Methoden, beschrieben in diesem Abschnitt, verwenden.
+</note>
+
+<pre caption="Starten einer screen Sitzung">
+# <i>screen -S gentoo</i>
+</pre>
+
+<p>
+Einmal in der screen Sitzung angekommen, können Sie die gesamte Installation 
+von dort aus ausführen. Wenn Sie Ihr Terminal verlassen wollen, drücken Sie 
+<c>Strg-a, d</c> (das ist Steuerung und a zur gleichen Zeit, darauf gefolgt 
+von einem d) um Ihre screen Sitzung <e>abzutrennen</e>. Sie können sich nun 
+sicher aus Ihrem System abmelden. 
+</p>
+
+<p>
+Um Zugang zu Ihrem Terminal wiederzuerlangen, melden Sie sich wieder als Root 
+an und <e>heften</e> sich an die laufende screen Sitzung <e>an</e>:
+</p>
+
+<pre caption="Anhängen an eine screen Sitzung">
+# <i>screen -x gentoo</i>
+</pre>
+
+<p>
+Wenn Sie screen nicht verwenden können, dann gibt es trotzdem noch einen Weg 
+Ihr Terminal zu verlassen. Folgen Sie den Installationsanweisungen, aber wenn 
+Sie an den Punkt kommen wo eine langanhaltende Kompilierung begonnen werden 
+würde (zum Beispiel der <c>./scripts/bootstrap.sh</c> Schritt), dann verwenden 
+Sie <c>nohup</c> welches erlaubt, dass ein Prozess weiterläuft selbst wenn Sie 
+sich ausloggen. Vergessen Sie nicht das angehängte "&amp;", ansonsten wird 
+der Prozess nicht in den Hintergrund verschoben! Vergewissern Sie sich, wo Sie 
+sich befinden (der <c>pwd</c> Befehl wird Ihnen das zeigen), da Sie dies später 
+noch benötigen werden. 
+</p>
+
+<pre caption="Benutzen von nohup">
+# <i>pwd</i>
+/usr/portage
+# <i>nohup ./scripts/bootstrap.sh &amp;</i>
+</pre>
+
+<p>
+Verlassen Sie nun die chrootete Umgebung (<c>exit</c>) und die LiveCD Sitzung. 
+Ihre Kompilierung wird im Hintergrund fortgesetzt.
+</p>
+
+<p>
+Wenn Sie die Kompilierung überprüfen wollen, loggen Sie sich als root ein (auf 
+der LiveCD) und chrooten Sie zurück in Ihre Umgebung und gehen Sie in das 
+Verzeichnis in dem Sie sich zuletzt befanden:
+</p>
+
+<pre caption="Zurück chrooten ">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update &amp;&amp; source /etc/profile</i>
+# <i>cd /usr/portage</i>
+</pre>
+
+<p>
+Benutzen Sie nun den <c>less</c> Befehl mit der <path>nohup.out</path> Datei 
+die in dem Verzeichnis plaziert wurde. Die Kompilierung wird Ihre Ausgabe an 
+diese Datei anhängen, so wenn Sie dem Kompilierungsprozess folgen wollen, dann 
+führen Sie <c>less nohup.out</c> aus und drücken Sie <c>F</c> um den 
+Veränderungen zu folgen. Wenn die Kompilierung fertiggestellt ist, können Sie 
+fortfahren mit dem nächsten Schritt der Installationsanleitung.
+</p>
+
+<p>
+Sollte Ihnen langweilig werden beim betrachten der Veränderungen, dann drücken 
+Sie <c>Ctrl-C</c> gefolgt von einem <c>q</c>. Dies wird den 
+Kompilierungsprozess nicht beenden, nur den <c>less</c> Prozess.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Beheben von Fehlern/Problemen</title>
+<section id="checking-disks">
+<title>Ausgedehntes Testen Ihrer Festplatten</title>
+<body>
+
+<p>
+Wenn Sie denken, dass Ihre Festplatte gründlich überprüft werden müsste für 
+Zusammenhang (Bad Sectors und ähnliches), dann können Sie die <c>-c</c> 
+Option verwenden, währen Sie das ext2 oder ext3 Dateisystem darauf plazieren. 
+Dies wird einen Lesetest durchführen und Bad Blocks als solche markieren. 
+Wenn Sie extrem paranoid sind, verwenden Sie <c>-c -c</c> um einen 
+ausgedehnten Lese-/Schreibtest durchführen.
+</p>
+
+<pre caption="Überprüfen von Festplattenzusammenhang">
+# <i>mke2fs -j -c /dev/hda3</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+</guide>
