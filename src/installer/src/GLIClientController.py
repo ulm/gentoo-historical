@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.48 2005/03/29 23:54:41 agaffney Exp $
+$Id: GLIClientController.py,v 1.49 2005/03/31 18:12:15 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -184,11 +184,11 @@ class GLIClientController(Thread):
 			# The password specified in the configuration is encrypted.
 			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
 	
-		if not GLIUtility.exitsuccess(status):
-			self._logger.log("ERROR! : Could not set the root password on the livecd environment!")
-		#	raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
-		else:
-			self._logger.log("Livecd root password set.")
+			if not GLIUtility.exitsuccess(status):
+				self._logger.log("ERROR! : Could not set the root password on the livecd environment!")
+			#	raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
+			else:
+				self._logger.log("Livecd root password set.")
 
 	def start_portmap(self):
 		status = GLIUtility.spawn('/etc/init.d/portmap start') #, display_on_tty8=True)
