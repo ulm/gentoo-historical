@@ -1191,14 +1191,10 @@
   <tr>
     <td class="infohead" bgcolor="#7a5ada">
       <p class="caption">
-        <xsl:choose>
-          <xsl:when test="@caption">
-            <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
-          </xsl:otherwise>
-        </xsl:choose>
+      <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
+      <xsl:if test="@caption">
+        <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
+      </xsl:if>
       </p>
     </td>
   </tr>
