@@ -77,7 +77,7 @@ def set_partitions():
 		while 1:
 			partitions = devices[drive_to_partition].get_partitions()
 			partsmenu = devices[drive_to_partition].get_ordered_partition_list()
-			code, part_to_edit = d.menu("Which partition would you like to edit?", choices=dmenu_list_to_choices(partsmenu), cancel="Back")
+			code, part_to_edit = d.menu("Which partition would you like to edit?", width=70, choices=dmenu_list_to_choices(partsmenu), cancel="Back")
 			if code != DLG_OK: break
 			part_to_edit = partsmenu[int(part_to_edit)-1]
 			if re.compile("^Free Space").match(part_to_edit) != None:
@@ -88,7 +88,7 @@ def set_partitions():
 				if code != DLG_OK: continue
 				minor = devices[drive_to_partition].get_partition_at(int(new_start) - 1) + 1
 				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-				code, type = d.menu("Type for new partition (reiserfs not supported!)", choices=dmenu_list_to_choices(part_types))
+				code, type = d.menu("Type for new partition (reiserfs not yet supported!)", choices=dmenu_list_to_choices(part_types))
 				if code != DLG_OK: continue
 				type = part_types[int(type)-1]
 				if type == "other":
@@ -634,9 +634,11 @@ def set_enable_ssh():
 		client_profile.set_enable_ssh(None, True, None)
 	else:
 		client_profile.set_enable_ssh(None, False, None)
+
 def set_client_kernel_modules():
 	code, kernel_modules_list = d.inputbox("Enter a list of kernel modules you want loaded before installation:", init="")
 	if code == DLG_OK: client_profile.set_kernel_modules(None, kernel_modules_list, None)
+
 def save_client_profile(xmlfilename="", askforfilename=True):
 	code = 0
 	filename = xmlfilename
@@ -726,24 +728,25 @@ while 1:
 	break
 if install_profile_xml_file != None:
 	install_profile.parse(install_profile_xml_file)
+current_item = 0
 while 1:
 	menu_list = []
 	for item in fn:
 		menu_list.append(item['text'])
 	menu_list.append("Install!")
-	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=25, menu_height=18, cancel="Exit")
+	code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menu_list), height=20, menu_height=13, default_item=str(current_item), cancel="Exit")
 	if code != DLG_OK:
 		if d.yesno("Do you really want to exit before the install is complete?") == DLG_YES:
 			if d.yesno("Do you want to save the InstallProfile XML file?") == DLG_YES:
 				if install_profile_xml_file == None: install_profile_xml_file = ""
 				install_profile_xml_file = save_install_profile(xmlfilename=install_profile_xml_file)
 			sys.exit()
-		continue
+	current_item = int(menuitem)
 	menuitem = menu_list[int(menuitem)-1]
 	for item in fn:
 		if menuitem == item['text']:
 			item['fn']()
-			continue
+			current_item += 1
 	if menuitem == "Install!":
 		if install_profile_xml_file == None or install_profile_xml_file == "":
 			install_profile_xml_file = "tmp_install_profile.xml"
