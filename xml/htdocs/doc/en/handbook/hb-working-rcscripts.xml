@@ -1,88 +1,135 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.3 2003/12/03 13:42:05 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.4 2003/12/03 15:03:41 swift Exp $ -->
 
 <sections>
 <section>
 <title>Runlevels</title>
 <subsection>
-<title>What is a runlevel?</title>
-<body>
-
-<p>
-When you boot your system, a number of tasks need to be performed before you are
-able to log on. This "normal" boot operation is fully defined -- it will be the
-same every time you restart your system. A <e>runlevel</e> is a state in which
-your system is running and contains a collection of scripts (runlevel scripts or
-<e>initscripts</e>) that must be executed when you enter or leave a runlevel.
-</p>
-
-</body>
-</subsection>
-<subsection>
 <title>Booting your System</title>
 <body>
 
 <p>
-The process that takes care of the runlevels is called <c>init</c> and is also
-the first process started by the Linux kernel. <c>init</c>'s configuration file
-is called <path>/etc/inittab</path> and gets read immediately after <c>init</c>
-is started. In this configuration file, the commands used to enter a certain 
-runlevel are listed. For instance, after initialising the system (<e>si</e>), 
-the <b>boot</b> runlevel is started:
-</p>
-
-<pre caption="System initialisation lines in /etc/inittab">
-si::sysinit:/sbin/rc sysinit
-rc::bootwait:/sbin/rc boot
-</pre>
-
-<p>
-As you can see, <c>init</c> relies on the <c>rc</c> script. When started with 
-the "boot" argument, <c>rc</c> starts all scripts in the
-<path>/etc/runlevels/boot</path> directory. Don't think about the sequence used
-to start the scripts -- we will explain later how Gentoo uses dependencies for
-the init scripts.
+When you boot your system, you will notice lots of text floating by. If you pay
+close attention, you will notice this text is the same every time you reboot
+your system. The sequence of all these actions is called the <e>boot
+sequence</e> and is (more or less) statically defined.
 </p>
 
 <p>
-When the <b>boot</b> runlevel is completed (the boot runlevel is an intermediate
-one), <c>init</c> checks what runlevel it should start. If you have not defined
-one as kernel parameter, it will  use the one defined in
-<path>/etc/inittab</path>:
+First, your boot loader will load the kernel image you have defined in the
+boot loader configuration into memory after which it tells the CPU to run the
+kernel. When the kernel is loaded and run, it initialises all kernel-specific
+structures and tasks and starts the <c>init</c> process.
 </p>
 
-<pre caption="Default runlevel">
-id:3:initdefault:
-</pre>
-
 <p>
-In this case, the runlevel id is "3", and gets mapped to:
+This process then makes sure that all filesystems (defined in
+<path>/etc/fstab</path>) are mounted and ready to be used. Then it executes
+several scripts located in <path>/etc/init.d</path>, which will start the
+services you need in order to have a succesfully booted system.
 </p>
 
-<pre caption="Mapping from number to readable commands in /etc/inittab">
-l3:3:wait:/sbin/rc default
-</pre>
-
 <p>
-In other words, the <c>rc</c> script is asked to activate the <b>default</b>
-runlevel. Again, this results in executing all
-<path>/etc/runlevels/default</path> scripts.
+Finally, when all scripts are executed, <c>init</c> activates the terminals
+(in most cases just the virtual consoles which are hidden beneith <c>Alt-F1</c>,
+<c>Alt-F2</c>, etc.) attaching a special process called <c>agetty</c> to it. 
+This process will then make sure you are able to log on through these terminals 
+by running <c>login</c>.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Numbers and Names</title>
+<title>Init Scripts</title>
 <body>
 
 <p>
-When you take a look at <path>/etc/inittab</path>, you will see the following
-section:
+Now <c>init</c> doesn't just execute the scripts in <path>/etc/init.d</path>
+randomly. Even more, it doesn't run all scripts in <path>/etc/init.d</path>,
+only the scripts it is told to execute. It decides what scripts to execute by 
+looking into <path>/etc/runlevels</path>.
 </p>
 
-<pre caption="Defining the runlevels in /etc/inittab">
+<p>
+First, <c>init</c> runs all scripts from <path>/etc/init.d</path> that have
+symbolic links inside <path>/etc/runlevels/boot</path>. Usually, it will
+start the scripts in alphabetical order, but some scripts have dependency
+information in them, telling the system that another script must be run before
+they can be started. 
+</p>
+
+<p>
+When all <path>/etc/runlevels/boot</path> referenced scripts are executed,
+<c>init</c> continues with running the scripts that have a symbolic link to them
+in <path>/etc/runlevels/default</path>. Again, it will use the alphabetical
+order to decide what script to run first, unless a script has dependency
+information in it, in which the order is changed to provide a valid start-up
+sequence.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>How Init Works</title>
+<body>
+
+<p>
+Of course <c>init</c> doesn't decide all that by itself. It needs a
+configuration file that specifies what actions need to be taken. This
+configuration file is <path>/etc/inittab</path>.
+</p>
+
+<p>
+If you remember the boot sequence we have just explained to you, you will
+remember that <c>init</c>'s first action is to mount all filesystems. This is
+defined in the following line from <path>/etc/inittab</path>:
+</p>
+
+<pre caption="The system initialisation line in /etc/inittab">
+si::sysinit:/sbin/rc sysinit
+</pre>
+
+<p>
+This line tells <c>init</c> that it must run <c>/sbin/rc sysinit</c> to
+initialise the system. The <path>/sbin/rc</path> script takes care of the
+initialisation, so you might say that <c>init</c> doesn't do much -- it
+delegates the task of initialising the system to another process.
+</p>
+
+<p>
+Second, <c>init</c> executed all scripts that had symbolic links in
+<path>/etc/runlevels/boot</path>. This is defined in the following line:
+</p>
+
+<pre caption="The system initialisation, continued">
+rc::bootwait:/sbin/rc boot
+</pre>
+
+<p>
+Again the <c>rc</c> script performs the necessary tasks. Note that the option
+given to <c>rc</c> (<e>boot</e>) is the same as the subdirectory of
+<path>/etc/runlevels</path> that is used.
+</p>
+
+<p>
+Now <c>init</c> checks its configuration file to see what <e>runlevel</e> it
+should run. To decide this, it reads the following line from
+<path>/etc/inittab</path>:
+</p>
+
+<pre caption="The initdefault line">
+id:3:initdefault:
+</pre>
+
+<p>
+In this case (which the majority of Gentoo users will use), the <e>runlevel</e>
+id is 3. Using this information, <c>init</c> checks what it must run to start
+<e>runlevel 3</e>:
+</p>
+
+<pre caption="The runlevel definitions">
 l0:0:wait:/sbin/rc shutdown
 l1:S1:wait:/sbin/rc single
 l2:2:wait:/sbin/rc nonetwork
@@ -93,44 +140,65 @@ l6:6:wait:/sbin/rc reboot
 </pre>
 
 <p>
-As you can see, there is a mapping of numbers to names (not vice versa). For
-instance, 0 maps to "shutdown", 1 to "single" etc. Vice versa is not true, as
-"default" is used by 3, 4 and 5. These numbers are the runlevel numbers. Most
-distributions work with the numbers; Gentoo however decided to make it a bit
-more userfriendly and continue with the naming.  
+The line that defines level 3, again, uses the <c>rc</c> script to start the
+services (now with argument <e>default</e>). Again note that the argument of
+<c>rc</c> is the same as the subdirectory from <path>/etc/runlevels</path>.
 </p>
 
 <p>
-As you can see from the listings, Gentoo defines 7 runlevels. Three of them are
-internal runlevels: <e>sysinit</e>, <e>shutdown</e> and <e>reboot</e>. The
-<b>sysinit</b> runlevel mounts all necessary filesystems as defined in
-<path>/etc/fstab</path>. The <b>shutdown</b> runlevel shuts down all running
-services and powers down the system. The <b>reboot</b> runlevel acts like the
-<e>shutdown</e> runlevel, but reboots the system instead of powering down.
+When <c>rc</c> has finished, <c>init</c> decides what virtual consoles it should
+activate and what commands need to be run at each console:
+</p>
+
+<pre caption="The virtual consoles definition">
+c1:12345:respawn:/sbin/agetty 38400 tty1 linux
+c2:12345:respawn:/sbin/agetty 38400 tty2 linux
+c3:12345:respawn:/sbin/agetty 38400 tty3 linux
+c4:12345:respawn:/sbin/agetty 38400 tty4 linux
+c5:12345:respawn:/sbin/agetty 38400 tty5 linux
+c6:12345:respawn:/sbin/agetty 38400 tty6 linux
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
+<title>What is a runlevel?</title>
+<body>
+
+<p>
+You have seen that <c>init</c> uses a numbering scheme to decide what
+<e>runlevel</e> it should activate. A <e>runlevel</e> is a state in which
+your system is running and contains a collection of scripts (runlevel scripts or
+<e>initscripts</e>) that must be executed when you enter or leave a runlevel.
 </p>
 
 <p>
-The other four runlevels are <e>boot</e>, <e>default</e>, <e>nonetwork</e> and
-<e>single</e>. Each of them has a subdirectory in <path>/etc/runlevels</path>
-containing scripts that need to be started when the runlevel is activated.
+In Gentoo, there are seven runlevels defined: three internal runlevels, and four
+user-defined runlevels. The internal runlevels are called <e>sysinit</e>,
+<e>shutdown</e> and <e>reboot</e> and do exactly what their names imply:
+initialise the system, powering off the system and rebooting the system.
+</p>
+
+<p>
+The user-defined runlevels are those with an accompanying
+<path>/etc/runlevels</path> subdirectory: <path>boot</path>,
+<path>default</path>, <path>nonetwork</path> and <path>single</path>. The
+<path>boot</path> runlevel starts all system-necessary services which all other
+runlevels use. The remaining three runlevels differ in what services they start:
+<path>default</path> is used for day-to-day operations, <path>nonetwork</path>
+is used in case no network connectivity is required, and <path>single</path> is
+used when you need to fix the system.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Working with the initscripts</title>
+<title>Working with the Init Scripts</title>
 <body>
 
 <p>
-If you take a closer look to <path>/etc/runlevels/default</path>, you will
-notice that it contains symbolic links to identically named scripts located in
-<path>/etc/init.d</path> and not just scripts as we mentioned previously. For 
-instance, <path>/etc/runlevels/default/postfix</path> is a symbolic link to
-<path>/etc/init.d/postfix</path>. In general we can say that such a script
-provides a service...
-</p>
-
-<p>
+The scripts that the <c>rc</c> process starts are called <e>init scripts</e>.
 Each script in <path>/etc/init.d</path> can be executed with the arguments
 <e>start</e>, <e>stop</e>, <e>restart</e>, <e>pause</e>, <e>zap</e>,
 <e>status</e>, <e>ineed</e>, <e>iuse</e>, <e>needsme</e>, <e>usesme</e> or
@@ -145,6 +213,12 @@ To start, stop or restart a service (and all depending services), <c>start</c>,
 <pre caption="Starting Postfix">
 # <i>/etc/init.d/postfix start</i>
 </pre>
+
+<note>
+Only the services that <e>need</e> the given service are stopped or restarted.
+The other depending services (those that <e>use</e> the service but don't need
+it) are left untouched.
+</note>
 
 <p>
 If you want to stop a service, but not the services that depend on it, you can
