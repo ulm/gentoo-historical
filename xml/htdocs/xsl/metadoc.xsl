@@ -24,15 +24,15 @@
   </xsl:if>
 
   <xsl:choose>
-    <xsl:when test="not($catid = 0)">
+    <xsl:when test="catid and not($catid = 0)">
       <!-- ID selected -->
       <xsl:apply-templates select="catid[text() = $catid]">
         <xsl:with-param name="metadoc" select="$metadoc"/>
         <xsl:with-param name="unfold">yes</xsl:with-param>
       </xsl:apply-templates>
     </xsl:when>
-    <xsl:otherwise>
-      <!-- No ID selected -->
+    <xsl:when test="catid">
+      <!-- No ID selected, but we're still checking for catid -->
       <chapter>
       <title><xsl:value-of select="func:gettext('GLinuxDoc')"/></title>
       <section>
@@ -48,6 +48,11 @@
       </body>
       </section>
       </chapter>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates>
+        <xsl:with-param name="metadoc" select="$metadoc"/>
+      </xsl:apply-templates>
     </xsl:otherwise>
   </xsl:choose>
 </mainpage>
@@ -207,7 +212,7 @@
 <xsl:template match="listing">
   <xsl:param name="metadoc"/>
   <chapter>
-  <title>Gentoo Documentation Overview</title>
+  <title><xsl:value-of select="func:gettext('GLinuxDoc')"/></title>
   <section>
   <body>
 
@@ -233,6 +238,7 @@
           <!-- Ignore showstopper case -->
         </xsl:when>
         <xsl:otherwise>
+          <li>
           <xsl:call-template name="documentname">
             <xsl:with-param name="metadoc" select="$metadoc"/>
             <xsl:with-param name="fileid"  select="fileid"/>
@@ -240,6 +246,7 @@
             <xsl:with-param name="vchap"   select="fileid/@vchap"/>
             <xsl:with-param name="docid"   select="@id"/>
           </xsl:call-template>
+          </li>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
