@@ -417,7 +417,11 @@
 							<img src="http://www.ibiblio.org/web-gentoo/images/gentoo-new.gif" alt="new"/>
 							</td>
                             <td valign="middle">
-							Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, UltraSparc and Alpha Processor systems.  To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
+							We produce Gentoo Linux, a special flavor of Linux that can be automatically 
+							optimized and customized for just about any application or need. Extreme
+							performance, configurability and a top-notch user and developer community are
+							all hallmarks of the Gentoo experience.
+							To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
 				</td>
                           </tr>
                         </table>
