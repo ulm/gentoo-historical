@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.52 2004/04/25 16:52:17 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.53 2004/05/09 12:43:05 swift Exp $ -->
 
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
@@ -42,8 +42,8 @@ This guide is step-by-step guide for hardening Gentoo Linux.
 
 <license/>
 
-<version>0.4.24</version>
-<date>Apr 25, 2004</date>
+<version>0.4.25</version>
+<date>May 09, 2004</date>
 
 <chapter>
 <title>Introduction</title>
@@ -1505,6 +1505,410 @@ And there is probably a lot more.
 <chapter>
 <title>Securing Services</title>
 <section>
+<title>Apache</title>
+<body>
+
+<p>
+Apache (1.3.26) comes with a pretty decent configuration file but again. We 
+need to improve some things, like binding to one address and keep it from 
+leaking information. These are the options that you should apply the 
+configuration file:
+</p>
+
+<p>
+If you did not disable <c>ssl</c> in your <path>/etc/make.conf</path> before 
+installing apache, you should have access to a ssl enabled server. Just add 
+the following line to enable it.
+</p>
+
+<pre caption="/etc/conf.d/apache">
+HTTPD_OPTS="-D SSL"
+</pre>
+
+<pre caption="/etc/apache/conf/apache.conf">
+#Make it listen on your ip
+Listen 127.0.0.1
+BindAddress 127.0.0.1
+#It is not a good idea to use nobody or nogroup - 
+#for every service not running as root 
+#(just add the user apache with group apache)
+User apache
+Group apache
+#Will keep apache from telling about the version
+ServerSignature Off
+ServerTokens Prod
+</pre>
+
+<p>
+Apache is compiled with <c>--enable-shared=max</c> and 
+<c>--enable-module=all</c>. This will per default enable all modules so you 
+should comment out all modules in the <c>LoadModule</c> section 
+(<c>LoadModule</c> and <c>AddModule</c>) that you do not use. Restart the 
+service by executing <c>/etc/init.d/apache restart</c>.
+</p>
+
+<p>
+One can find documentation at <uri>http://www.apache.org</uri>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Bind</title>
+<body>
+
+<p>
+One can find documentation at the <uri
+link="http://www.isc.org/products/BIND/bind9.html">Internet Software
+Consortium</uri> the BIND 9 Administrator Reference Manual is also in
+the <path>doc/arm</path>.
+</p>
+
+<p>
+The newer BIND ebuilds support chrooting out of the box. After emerging <c>bind</c> follow these simple instructions:
+</p>
+<pre caption="Chrooting BIND">
+ebuild /var/db/pkg/net-dns/bind-9.2.2-r2/bind-9.2.2-r2.ebuild config\`"
+<codenote>Before running the above command you might want to change the chroot 
+directory in /etc/conf.d/named. Otherwise /chroot/dns will be used.</codenote>
+<codenote>You might need to substitute the version number with the current version number </codenote>
+</pre>
+</body>
+</section>
+<section>
+<title>Djbdns</title>
+<body>
+
+<p>
+Djbdns is a DNS implementation of which the author is willing to bet
+<uri link="http://cr.yp.to/djbdns/guarantee.html">money</uri> on how 
+secure it is. It is very different from how Bind 9 works but worth a try.
+More information can be obtained from <uri>http://www.djbdns.org</uri>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>FTP</title>
+<body>
+
+<p>
+Generally, using the FTP (File Transfer Protocol) is a bad idea. It uses 
+unencrypted data, listens on 2 ports (normally port 20 and 21), and anonymous 
+logins that are what attackers are looking for (for trading warez). Since the
+FTP protocol contains several security problems (ie. passwords are sent in clear text), you should rather use 
+<c>sftp</c> or HTTP instead. If not, secure your services as good as you 
+can and prepare yourself.
+</p>
+
+</body>
+</section>
+<section>
+<title>Mysql</title>
+<body>
+
+<p>
+If you only need local applications to access the <c>mysql</c> database uncomment the following line.
+</p>
+<pre caption="Disable network access">
+skip-networking
+</pre>
+
+<p>
+Disable the command <c>LOAD DATA LOCAL INFILE</c>.
+</p>
+
+<pre caption="Disable LOAD DATA LOCAL INFILE in the [mysqld] section">
+set-variable=local-infile=0
+</pre>
+
+<p>
+The default <c>mysql</c> installation comes with an empty <c>root</c> password. 
+</p>
+
+<pre caption="Set root password">
+<i>/usr/local/mysql/bin/mysql -u root</i> 
+mysql> <i>SET PASSWORD FOR root@localhost=PASSWORD('new_password');</i>
+</pre>
+<note>
+
+It is good practice not to change passwords from the command line, for example, 
+by using the <c>mysqladmin password</c> command. This is especially important when other 
+users work on the server. In that case the password could be easily revealed, e.g. 
+by using the <c>ps aux</c> command or reviewing history files (<path>~/.history</path>, 
+<path>~/.bash_history</path> etc), when improper access rights are set to them. 
+</note>
+
+<p>
+Next, we must remove the sample database (test) and all accounts except the local <c>root</c> account. 
+</p>
+
+<pre caption="Removing sample database and all unnecessary users">
+mysql> <i>drop database test;</i>
+mysql> <i>use mysql;</i>
+mysql> <i>delete from db;</i>
+mysql> <i>delete from user where not (host="localhost" and user="root");</i>
+mysql> <i>flush privileges;</i>
+</pre>
+
+<warn>
+
+Be careful with the above if you have already configured user accounts.
+</warn>
+</body>
+</section>
+<section>
+<title>Proftpd</title>
+<body>
+
+<p>
+Proftpd has had several security problems, but they seem to have fixed most of 
+them. Still apply some enhancements:
+</p>
+
+<pre caption="/etc/proftpd/proftpd.conf">
+ServerName "My ftp daemon"
+#Don't show the ident of the server
+ServerIdent on "Go away"
+
+#Makes it easier to create virtual users
+RequireValidShell off
+
+#Use alternative password and group file (passwd uses crypt format)
+AuthUserFile "/etc/proftpd/passwd"
+AuthGroupFile "/etc/proftpd/group"
+
+# Permissions
+Umask 077
+
+# Timeouts and limitations
+MaxInstances 30
+MaxClients 10 "Only 10 connections allowed"
+MaxClientsPerHost 1 "You have already logged on once"
+MaxClientsPerUser 1 "You have already logged on once"
+TimeoutStalled 10
+TimeoutNoTransfer 20
+TimeoutLogin 20
+
+#Chroot everyone
+DefaultRoot ~
+
+#don't run as root
+User  nobody
+Group nogroup
+
+#Log every transfer
+TransferLog /var/log/transferlog
+
+#Problems with globbing
+DenyFilter \*.*/
+</pre>
+
+<p>
+One can find documentation at <uri>http://www.proftpd.org</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Pure-ftpd</title>
+<body>
+
+<p>
+Pure-ftpd is an branch of the original trollftpd. Modified for security reasons 
+and functionality by Frank Dennis.
+</p>
+
+<p>
+Use virtual users (never system accounts) by enabling the <c>AUTH</c> option. 
+Set it to <c>-lpuredb:/etc/pureftpd.pdb</c> and create your users by using 
+<c>/usr/bin/pure-pw</c>. 
+</p>
+
+<pre caption="/etc/conf.d/pure-ftpd">
+AUTH="-lpuredb:/etc/pureftpd.pdb"
+
+## Misc. Others ##
+MISC_OTHER="-A -E -X -U 177:077 -d -4 -L100:5 -I 15"
+</pre>
+
+<p>
+And configure your <c>MISC_OTHER</c> setting for not allowing anonymous 
+(<c>-E</c>), chroot everyone (<c>-A</c>), Users can not read or write to files 
+beginning with a . (dot) (<c>-X</c>), max idle time (<c>-I</c>), limit recursion 
+(<c>-L</c>), and a reasonable <c>umask</c>.
+</p>
+
+<warn>
+Do <e>not</e> use the <c>-w</c> or <c>-W</c> options! If you want to have a 
+warez site, stop reading this guide!
+</warn>
+
+<p>
+One can find documentation at <uri>http://www.pureftpd.org</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Qmail</title>
+<body>
+
+<p>
+Qmail is considered to be the most secure mail server. It is written with 
+security (and paranoia) in mind. It does not allow relaying per default and 
+have not had a security hole since 1996. Simply <c>emerge qmail</c> and go 
+configure!
+</p>
+</body>
+</section>
+<section>
+<title>Samba</title>
+<body>
+
+<p>
+Samba is a protocol to share files with Microsoft/Novell networks and it 
+should <e>not</e> be used over the Internet. But nevertheless it needs 
+securing.
+</p>
+
+<pre caption="/etc/samba/smb.conf">
+[global]
+  #Bind to an interface
+  interfaces = eth0 10.0.0.1/32
+
+  #Make sure to use encrypted password
+  encrypt passwords = yes
+  directory security mask = 0700
+
+  #allow traffic from 10.0.0.*
+  hosts allow = 10.0.0.
+
+  #Enables user authentication 
+  #(don't use the share mode)
+  security = user
+  
+  #Disallow privileged accounts
+  invalid users = root @wheel
+
+  #Maximum size smb shows for a share (not a limit)
+  max disk size = 102400
+
+  #Uphold the password policy
+  min password length = 8
+  null passwords = no
+
+  #Use PAM (if added support)
+  obey pam restrictions = yes
+  pam password change = yes
+</pre>
+
+<p>
+Make sure that permissions are set correct on every share and remember to read 
+the <uri link="http://www.samba.org">documentation</uri>.
+</p>
+
+<p>
+Now restart the server and add the users who should have access to this 
+service. This is done though the <path>/usr/bin/smbpasswd</path> with the 
+parameter -a
+</p>
+
+</body>
+</section>
+<section>
+<title>ssh</title>
+<body>
+
+<p>
+The only securing that OpenSSH needs is turning on a stronger authentication 
+based on public key encryption. Too many sites (like 
+<uri>http://www.sourceforge.net</uri>, <uri>http://www.php.net</uri> and 
+<uri>http://www.apache.org</uri>) have all suffered unauthorized intrusion to 
+their systems due to password leaks or bad passwords.
+</p>
+
+<pre caption="/etc/ssh/sshd_config">
+#Only enable version 2
+Protocol 2
+
+#Disable root login. Users have to su to root
+PermitRootLogin no
+
+#Turn on Public key authentication
+PubkeyAuthentication yes
+AuthorizedKeysFile      .ssh/authorized_keys
+
+#Disable .rhost and normal password authentication
+RhostsAuthentication no
+PasswordAuthentication no
+PermitEmptyPasswords no
+
+AllowHosts *.gentoo.org
+
+#Only allow userin the wheel or admin group to login
+AllowGroups wheel admin
+
+#In those groups only allow the following users
+AllowUsers kn bs
+
+#Logging 
+SyslogFacility AUTH
+LogLevel INFO
+
+ListenAddress 127.0.0.1
+</pre>
+
+<p>
+Now all that your users have to do, is create a key (on their machine they want 
+to login from) with the following command
+</p>
+
+<pre caption="Create a DSA keypair">
+# <i>/usr/bin/ssh-keygen -t dsa</i>
+</pre>
+
+<p>
+And type in a passphrase
+</p>
+
+<pre caption="Output of ssh-keygen">
+Generating public/private dsa key pair.
+Enter file in which to save the key (/home/kn/.ssh/id_dsa):<i>[Press enter]</i>
+Created directory '/home/kn/.ssh'.
+Enter passphrase (empty for no passphrase): <i>[Enter passphrase]</i>
+Enter same passphrase again: <i>[Enter passphrase again]</i>
+Your identification has been saved in /home/kn/.ssh/id_dsa.
+Your public key has been saved in /home/kn/.ssh/id_dsa.pub.
+The key fingerprint is:
+07:24:a9:12:7f:83:7e:af:b8:1f:89:a3:48:29:e2:a4 kn@knielsen
+</pre>
+
+<p>
+This will add two files in your <path>~/.ssh/</path> directory called 
+<path>id_dsa</path> and <path>id_dsa.pub</path>. The file called 
+<path>id_dsa</path> is your private key and should be kept from other people 
+than yourself. The other file <path>id_dsa.pub</path> is to be distributed to 
+every server that you have access to. Add the key to the users home directory 
+in <path>~/.ssh/authorized_keys</path> and the user should be able to login.
+</p>
+
+<p>
+Now your users should guard this private key well. Put it on a media that they 
+always carry with them or keep it on their workstation (put this in the <uri 
+link="#doc_chap2_sect5">password</uri> policy).
+</p>
+
+<p>
+For more information go to the <uri link="http://www.openssh.org">OpenSSH</uri> 
+website.
+</p>
+
+</body>
+</section>
+<section>
 <title>Using xinetd</title>
 <body>
 
@@ -1580,92 +1984,40 @@ For more information read the <c>man 5 xinetd.conf</c>.
 </body>
 </section>
 <section>
-<title>ssh</title>
+<title>Vsftpd</title>
 <body>
 
 <p>
-The only securing that OpenSSH needs is turning on a stronger authentication 
-based on public key encryption. Too many sites (like 
-<uri>http://www.sourceforge.net</uri>, <uri>http://www.php.net</uri> and 
-<uri>http://www.apache.org</uri>) have all suffered unauthorized intrusion to 
-their systems due to password leaks or bad passwords.
+Vsftpd (short for very secure ftp) is a small ftp daemon running a reasonably 
+default configuration. It is simple and does not have as many features (like 
+virtual users) as pureftp and proftp.
 </p>
 
-<pre caption="/etc/ssh/sshd_config">
-#Only enable version 2
-Protocol 2
+<pre caption="/etc/vsftpd">
+anonymous_enable=NO
+local_enable=YES
 
-#No direct root access
-PermitRootLogin no
+#read only
+write_enable=NO
 
-#Turn on Public key authentication
-PubkeyAuthentication yes
-AuthorizedKeysFile      .ssh/authorized_keys
+#enable logging of transfers
+xferlog_std_format=YES
 
-#Disable .rhost files and normal password auth.
-RhostsAuthentication no
-PasswordAuthentication no
-PermitEmptyPasswords no
+idle_session_timeout=20
+data_connection_timeout=20
+nopriv_user=nobody
 
-AllowHosts *.gentoo.org
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chrootlist
 
-#Only people in the wheel or admin group can be given access
-AllowGroups wheel admin
-
-#Of all the people in those groups, only kn and bs really have access
-AllowUsers kn bs
-
-#add logging level
-SyslogFacility AUTH
-LogLevel INFO
-
-#bind
-ListenAddress 127.0.0.1
+ls_recurse_enable=NO
 </pre>
 
 <p>
-Now all that your users have to do, is create a key (on their machine they want 
-to login from) with the following command
-</p>
-
-<pre caption="Create a DSA keypair">
-# <i>/usr/bin/ssh-keygen -t dsa</i>
-</pre>
-
-<p>
-And type in a passphrase
-</p>
-
-<pre caption="Output of ssh-keygen">
-Generating public/private dsa key pair.
-Enter file in which to save the key (/home/kn/.ssh/id_dsa):<i>[Press enter]</i>
-Created directory '/home/kn/.ssh'.
-Enter passphrase (empty for no passphrase): <i>[Enter passphrase]</i>
-Enter same passphrase again: <i>[Enter passphrase again]</i>
-Your identification has been saved in /home/kn/.ssh/id_dsa.
-Your public key has been saved in /home/kn/.ssh/id_dsa.pub.
-The key fingerprint is:
-07:24:a9:12:7f:83:7e:af:b8:1f:89:a3:48:29:e2:a4 kn@knielsen
-</pre>
-
-<p>
-This will add two files in your <path>~/.ssh/</path> directory called 
-<path>id_dsa</path> and <path>id_dsa.pub</path>. The file called 
-<path>id_dsa</path> is your private key and should be kept from other people 
-than yourself. The other file <path>id_dsa.pub</path> is to be distributed to 
-every server that you have access to. Add the key to the users home directory 
-in <path>~/.ssh/authorized_keys</path> and the user should be able to login.
-</p>
-
-<p>
-Now your users should guard this private key well. Put it on a media that they 
-always carry with them or keep it on their workstation (put this in the <uri 
-link="#doc_chap2_sect5">password</uri> policy).
-</p>
-
-<p>
-For more information go to the <uri link="http://www.openssh.org">OpenSSH</uri> 
-website.
+As you can see there is no way for this service to have individual permissions 
+and no default chroot action. But when it comes to anonymous settings it is 
+quite good. Sometimes it can be nice to have a anonymous ftp server (for 
+sharing open source) and vsftpd does a really good job at this.
 </p>
 
 </body>
@@ -1740,402 +2092,25 @@ For <c>xdm</c> (X Display Manager) and <c>kdm</c> (Kde Display Manager)
 
 </body>
 </section>
+</chapter>
 
+<chapter>
+<title>Chrooting and virtual servers</title>
 <section>
-<title>FTP</title>
-<body>
-
-<p>
-Generally, using the FTP (File Transfer Protocol) is a bad idea. It uses 
-unencrypted data, listens on 2 ports (normally port 20 and 21), and anonymous 
-logins that are what attackers are looking for (for trading warez). Since the
-FTP protocol contains several security problems, you should rather use 
-<c>sftp</c> or HTTP instead. If not, secure your services as good as you 
-can and prepare yourself.
-</p>
-
-</body>
-</section>
-<section>
-<title>Pure-ftpd</title>
-<body>
-
-<p>
-Pure-ftpd is an branch of the original trollftpd. Modified for security reasons 
-and functionality by Frank Dennis.
-</p>
-
-<p>
-Use virtual users (never system accounts) by enabling the <c>AUTH</c> option. 
-Set it to <c>-lpuredb:/etc/pureftpd.pdb</c> and create your users by using 
-<c>/usr/bin/pure-pw</c>. 
-</p>
-
-<pre caption="/etc/conf.d/pure-ftpd">
-AUTH="-lpuredb:/etc/pureftpd.pdb"
-
-## Misc. Others ##
-MISC_OTHER="-A -E -X -U 177:077 -d -4 -L100:5 -I 15"
-</pre>
-
-<p>
-And configure your <c>MISC_OTHER</c> setting for not allowing anonymous 
-(<c>-E</c>), chroot everyone (<c>-A</c>), Users can not read or write to files 
-beginning with a . (dot) (<c>-X</c>), max idle time (<c>-I</c>), limit recursion 
-(<c>-L</c>), and a reasonable <c>umask</c>.
-</p>
-
-<warn>
-Do <e>not</e> use the <c>-w</c> or <c>-W</c> options! If you want to have a 
-warez site, stop reading this guide!
-</warn>
-
-<p>
-One can find documentation at <uri>http://www.pureftpd.org</uri>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Proftpd</title>
-<body>
-
-<p>
-Proftpd has had several security problems, but they seem to have fixed most of 
-them. Still apply some enhancements:
-</p>
-
-<pre caption="/etc/proftpd/proftpd.conf">
-ServerName "My ftp daemon"
-#Don't show the ident of the server
-ServerIdent on "Go away"
-
-#Makes it easier to create virtual users
-RequireValidShell off
-
-#Use alternative password and group file (passwd uses crypt format)
-AuthUserFile "/etc/proftpd/passwd"
-AuthGroupFile "/etc/proftpd/group"
-
-# Permissions
-Umask 077
-
-# Timeouts and limitations
-MaxInstances 30
-MaxClients 10 "Only 10 connections allowed"
-MaxClientsPerHost 1 "You have already logged on once"
-MaxClientsPerUser 1 "You have already logged on once"
-TimeoutStalled 10
-TimeoutNoTransfer 20
-TimeoutLogin 20
-
-#Chroot everyone
-DefaultRoot ~
-
-#don't run as root
-User  nobody
-Group nogroup
-
-#Log every transfer
-TransferLog /var/log/transferlog
-
-#Problems with globbing
-DenyFilter \*.*/
-</pre>
-
-<p>
-One can find documentation at <uri>http://www.proftpd.org</uri>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Vsftpd</title>
-<body>
-
-<p>
-Vsftpd (short for very secure ftp) is a small ftp daemon running a reasonably 
-default configuration. It is simple and does not have as many features (like 
-virtual users) as pureftp and proftp.
-</p>
-
-<pre caption="/etc/vsftpd">
-anonymous_enable=NO
-local_enable=YES
-
-#read only
-write_enable=NO
-
-#enable logging of transfers
-xferlog_std_format=YES
-
-idle_session_timeout=20
-data_connection_timeout=20
-nopriv_user=nobody
-
-chroot_list_enable=YES
-chroot_list_file=/etc/vsftpd/chrootlist
-
-ls_recurse_enable=NO
-</pre>
-
-<p>
-As you can see there is no way for this service to have individual permissions 
-and no default chroot action. But when it comes to anonymous settings it is 
-quite good. Sometimes it can be nice to have a anonymous ftp server (for 
-sharing open source) and vsftpd does a really good job at this.
-</p>
-
-</body>
-</section>
-<section>
-<title>Apache</title>
-<body>
-
-<p>
-Apache (1.3.26) comes with a pretty decent configuration file but again. We 
-need to improve some things, like binding to one address and keep it from 
-leaking information. These are the options that you should apply the 
-configuration file:
-</p>
-
-<p>
-If you did not disable <c>ssl</c> in your <path>/etc/make.conf</path> before 
-installing apache, you should have access to a ssl enabled server. Just add 
-the following line to enable it.
-</p>
-
-<pre caption="/etc/conf.d/apache">
-HTTPD_OPTS="-D SSL"
-</pre>
-
-<pre caption="/etc/apache/conf/apache.conf">
-#Make it listen on your ip
-Listen 127.0.0.1
-BindAddress 127.0.0.1
-#It is not a good idea to use nobody or nogroup - 
-#for every service not running as root 
-#(just add the user apache with group apache)
-User apache
-Group apache
-#Will keep apache from telling about the version
-ServerSignature Off
-ServerTokens Prod
-</pre>
-
-<p>
-Apache is compiled with <c>--enable-shared=max</c> and 
-<c>--enable-module=all</c>. This will per default enable all modules so you 
-should comment out all modules in the <c>LoadModule</c> section 
-(<c>LoadModule</c> and <c>AddModule</c>) that you do not use. Restart the 
-service by executing <c>/etc/init.d/apache restart</c>.
-</p>
-
-<p>
-One can find documentation at <uri>http://www.apache.org</uri>.
-</p>
-
-</body>
-</section>
-
-<section>
-<title>Qmail</title>
-<body>
-
-<p>
-Qmail is considered to be the most secure mail server. It is written with 
-security (and paranoia) in mind. It does not allow relaying per default and 
-have not had a security hole since 1996. Simply <c>emerge qmail</c> and go 
-configure!
-</p>
-
-</body>
-</section>
-<section>
-<title>Bind</title>
-<body>
-
-<p>
-One can find documentation at the <uri
-link="http://www.isc.org/products/BIND/bind9.html">Internet Software
-Consortium</uri> the BIND 9 Administrator Reference Manual is also in
-the <path>doc/arm</path>.
-</p>
-
-<!--
-<p>
-Per default Gentoo does not setup any configuration for this services so you 
-have to add your own DNS zones to <path>/etc/bind/named.conf</path>. But since 
-the security lies not only within the domain server daemon but also in the 
-protocol it should be properly configured.
-</p>
-
-<p>
-People often ask, why not use djbdns (very secure DNS server by D.J. Bernstein) 
-and the answer is: Bind does have features that djbdns does not, like support 
-for IPv6 (not without a patch anyway).
-</p>
-
-<pre caption="/etc/bind/named.conf">
-#setup access control
-acl "mynet" { 10.0.0.0/24; };
-
-options {
-  directory "/var/bind";
-  pid-file "/var/run/named/named.pid";
-#allow "mynet" to make queries
-  allow-query { "mynet"; };
-#don't allow zone transfers
-  allow-transfer { none; };
-  forward only;
-  forwarders { 10.0.0.2; };
-#Only provide recursive service to "mynet"
-  recursion no;
-  allow-recursion { mynet; };
-# Bind to an interface
-  listen-on { 10.0.0.1; };
-# Don't show the version
-  version "Go away";
-};
-
-key "rndc-key" {
-  algorithm hmac-md5;
-  secret "o1BYkYC+bXeZgHDsrVBwRQ==";
-};
-
-#allow only control from localhost and with a key
-controls {
-  inet 127.0.0.1 port 953
-  allow { 127.0.0.1; } keys { "rndc-key"; };
-};
-</pre>
-
-<p>
-This is a good default configuration. However, Bind version 9 has a special 
-<c>chroot</c> functionality that you should use. Here is how you create your 
-chrooted bind:
-</p>
-
-<pre caption="Prepairing a chroot environment">
-# <i>mkdir -p /chroot</i>
-# <i>mkdir /chroot/dns</i>
-# <i>mkdir /chroot/dns/dev</i>
-# <i>mkdir /chroot/dns/etc</i>
-# <i>mkdir /chroot/dns/var</i>
-# <i>mkdir /chroot/dns/var/run</i>
-# <i>mkdir /chroot/dns/var/run/named</i>
-# <i>chown -R named:named /chroot/dns/var/run/named</i>
-# <i>cp -R /etc/bind /chroot/dns/etc/.</i>
-# <i>cp /etc/localtime /chroot/dns/etc/localtime</i>
-# <i>cp -R /var/bind /chroot/dns/var/.</i>
-# <i>mknod /chroot/dns/dev/zero c 1 5</i>
-# <i>chmod 666 /chroot/dns/dev/zero</i>
-# <i>mknod /chroot/dns/dev/random c 1 8</i>
-# <i>chmod 666 /chroot/dns/dev/random</i>
-# <i>cp -a /dev/log /chroot/dns/dev/log</i>
-# <i>cd /chroot/dns</i>
-# <i>chattr +i etc etc/localtime var</i>
-</pre>
-
-<p>
-This will create a chrooted environment in <path>/chroot</path>. Now all we 
-have to do is modify the init script for supporting the new environment. Edit 
-<path>/etc/init.d/named</path> and add <c>-t /chroot/dns</c> to the start 
-function. You may also want to change the stop function to point to the correct 
-pid file in <path>/chroot/var/run/named/named.pid</path>. Restart your DNS 
-server.
-</p>
-
-<note>
-An attacker can escape a chrooted jail, if their skill is good enough (see how 
-to prevent this in the kernel patch section).
-</note>
--->
-
-</body>
-</section>
-<section>
-<title>Djbdns</title>
-<body>
-
-<p>
-Djbdns is a DNS implementation of which the author is willing to bet
-<uri link="http://cr.yp.to/djbdns/guarantee.html">money</uri> on how 
-secure it is. It is very different from how Bind 9 works but worth a try.
-More information can be obtained from <uri>http://www.djbdns.org</uri>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Samba</title>
-<body>
-
-<p>
-Samba is a protocol to share files with Microsoft/Novell networks and it 
-should <e>not</e> be used over the Internet. But nevertheless it needs 
-securing.
-</p>
-
-<pre caption="/etc/samba/smb.conf">
-[global]
-  #Bind to an interface
-  interfaces = eth0 10.0.0.1/32
-
-  #Make sure to use encrypted password
-  encrypt passwords = yes
-  directory security mask = 0700
-
-  #allow traffic from 10.0.0.*
-  hosts allow = 10.0.0.
-
-  #Enables user authentication 
-  #(don't use the share mode)
-  security = user
-  
-  #Disallow privileged accounts
-  invalid users = root @wheel
-
-  #Maximum size smb shows for a share (not a limit)
-  max disk size = 102400
-
-  #Uphold the password policy
-  min password length = 8
-  null passwords = no
-
-  #Use PAM (if added support)
-  obey pam restrictions = yes
-  pam password change = yes
-</pre>
-
-<p>
-Make sure that permissions are set correct on every share and remember to read 
-the <uri link="http://www.samba.org">documentation</uri>.
-</p>
-
-<p>
-Now restart the server and add the users who should have access to this 
-service. This is done though the <path>/usr/bin/smbpasswd</path> with the 
-parameter -a
-</p>
-
-</body>
-</section>
-<section>
-<title>Chroot or virtual servers</title>
+<title>Chrooting</title>
 <body>
 
 <p>
 Chrooting a service is a way of limiting a service (or user) environment to 
 only accessing what it should and not gaining access (or information) that 
-could lead to root access. By running the service as another user than root 
-(nobody, apache, named) an attacker can only access files with the permissions 
-of this user. This means that an attacker cannot gain root access even if the 
+could lead to root access. By running the service as another user than <c>root</c> 
+(<c>nobody</c>, <c>apache</c>, <c>named</c>) an attacker can only access files with the permissions 
+of this user. This means that an attacker cannot gain <c>root</c> access even if the 
 services has a security flaw.
 </p>
 
 <p>
-Some services like pure-ftpd and bind have features for chrooting, and other 
+Some services like <c>pure-ftpd</c> and <c>bind</c> have features for chrooting, and other 
 services do not. If the service supports it, use it, otherwise you have to 
 figure out how to create your own. Lets see how to create a chroot, for a 
 basic understanding of how chroots work, we will test it with <c>bash</c> 
@@ -2143,13 +2118,13 @@ basic understanding of how chroots work, we will test it with <c>bash</c>
 </p>
 
 <p>
-Create the <path>/chroot</path> directory (<c>mkdir chroot</c>). And find what 
+Create the <path>/chroot</path> directory with <c>mkdir chroot</c>. And find what 
 dynamic libraries that <c>bash</c> is compiled with (if it is compiled with 
 <c>-static</c> this step is not necessary):
 </p>
 
 <p>
-The following command will create a list of libraries used by bash. 
+The following command will create a list of libraries used by <c>bash</c>. 
 </p>
 
 <pre caption="Get listing of used libraries">
@@ -2161,7 +2136,7 @@ The following command will create a list of libraries used by bash.
 </pre>
 
 <p>
-Now lets create the environment for bash.
+Now lets create the environment for <c>bash</c>.
 </p>
 
 <pre caption="Create chroot-environment for bash">
@@ -2171,8 +2146,8 @@ Now lets create the environment for bash.
 </pre>
 
 <p>
-Next copy the files used by bash (<path>/lib</path>) to the chrooted lib and 
-copy the bash command to the chrooted bin directory. This will create the 
+Next copy the files used by <c>bash</c> (<path>/lib</path>) to the chrooted <path>lib</path> and 
+copy the bash command to the chrooted <path>bin</path> directory. This will create the 
 exact same environment, just with less functionality. After copying try it 
 out: <c>chroot /chroot/bash</c>. If you get an prompt saying <path>/</path> it 
 works! Otherwise it will properly tell you what a file is missing. Some shared 
@@ -2198,6 +2173,12 @@ cases just copy the passwd file (edit the copy and remove users that has
 nothing to do with the service), <path>/dev/zero</path>, <path>/dev/log</path> 
 and <path>/dev/random</path>.
 </p>
+
+</body>
+</section>
+<section>
+<title>Virtual servers</title>
+<body>
 
 <p>
 Another way of creating a more secure environment is by using a virtual server 
@@ -3718,8 +3699,11 @@ More information is at the <uri link="http://www.snort.org">Snort</uri> website.
 
 </body>
 </section>
-<section>
+</chapter>
+
+<chapter>
 <title>Keeping up to date</title>
+<section>
 <body>
 
 <p>
