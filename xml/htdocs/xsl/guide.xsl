@@ -413,7 +413,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
                     <br/>
-                    <a class="altlink" href="/dyn/pkgs/index.xml">Online package database</a>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
                     <br/>
