@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.12 2003/04/23 00:11:11 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.13 2004/10/15 12:35:09 wolf31o2 Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
