@@ -66,6 +66,7 @@ sub list_bugs {
     $mech->follow_link( text_regex => qr/CSV/ );
     my $content = $mech->content;
     my @baseline = split( /\n/, $content );
+    if ($baseline[0] =~ m/bug_id/i){
     foreach my $line ( sort @baseline ) {
         $line =~ s/\"//mg;
         my @rowline = split( /,/, $line );
@@ -78,6 +79,7 @@ sub list_bugs {
             'Priority'    => "$rowline[1]",
             'Description' => "$rowline[7]"
         };
+    }
     }
     return (%buglist);
 
@@ -146,7 +148,7 @@ sub show_bug {
             $assigned = clean_line($TextLine);
         }
         elsif ( $TextLine =~ m/URL:/i ) {
-            $TextLine =~ s/URL //i;
+            $TextLine =~ s/URL: //i;
             $URL = clean_line($TextLine);
         }
         else { next }
@@ -428,6 +430,18 @@ sub connect_mech {
         }
     );
     return ($agent);
+}
+
+sub connect_bugz {
+    my $BUG  = shift;
+    my $bugz = WWW::Bugzilla->new(
+        server     => $main::server,
+        email      => $main::login,
+        password   => $main::password,
+        bug_number => $BUG,
+    );
+
+	return($bugz);
 }
 
 sub display_csv {

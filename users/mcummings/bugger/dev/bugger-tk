@@ -59,13 +59,13 @@ sub init_main_win {
     our $runmode  = $config{'mode'};
 
     our $mw = new MainWindow;
-    my $search_string = '';
+    our $search_string = '';
     my $searchbox     = $mw->ToolBar(
         qw/-movable 1
           -indicatorcolor blue
           /
     );
-    my $radiovar = "assigned";
+    our $radiovar = "assigned";
     my $ccd      = $searchbox->Radiobutton(
         -text     => 'CC List',
         -variable => \$radiovar,
@@ -90,7 +90,7 @@ sub init_main_win {
     $ccd->pack( qw/-side left/,      -fill => 'x' );
     $reporter->pack( qw/-side left/, -fill => 'x' );
     $keyword->pack( qw/-side left/,  -fill => 'x' );
-    my $ss = $searchbox->LabEntry(
+    our $ss = $searchbox->LabEntry(
         -label        => 'Search Bugs',
         -labelPack    => [ -side => "left", ],
         -textvariable => \$search_string
@@ -143,7 +143,7 @@ sub search {
 
     my ( $assignment, $search, $tkref ) = @_;
 
-    %results = bugger::list_bugs( $search, $assignment );
+    (%results) = bugger::list_bugs( $search, $assignment );
     my $bug_no = scalar( keys %results );
 
     if ( $bug_no < 1 ) {
@@ -250,7 +250,7 @@ sub launch_win {
     else {
 
         my %bugtext = bugger::show_bug($bugID);
-        my $mw2     = new MainWindow;
+        our $mw2     = new MainWindow;
         my $tb      = $mw2->ToolBar(
             qw/-movable 1 -side top
               -indicatorcolor blue /
@@ -293,25 +293,68 @@ sub launch_win {
         $text->insert( 'insert', "$bugtext{textblock}\n" );
 
         $text->mark(qw/set insert 0.0/);
-
         # Comment text block
         my $comment = $mw2->Scrolled(qw/TextUndo -height 5 -scrollbars se/);
         $comment->pack(qw/-expand yes -fill both/);
         $comment->mark(qw/set insert 0.0/);
         my @menubuttons;
-        foreach (qw/update close/) {
-            my $pos        = ucfirst;
-            my $menubutton =
+			my $bugz = bugger::connect_bugz($bugID);
+#        #foreach (qw/update close/) {
+#            my $pos        = ucfirst;
+            my $commentbutton =
               $mw2->Button( qw/-underline 0 -relief raised/,
-                -text => $pos,
+                -text => "Add Comment",
 		-width => 10,
-		-command => sub {$comment->selectAll;my $text=$comment->getSelected;$comment->deleteSelected;print "$text\n" });
-# MPC - good spot to take a nap. Here we grab the textblock. Next we 
-# either update the ticket, change status, maybe add a cc:, etc. You 
-# know, all the maintenance stuff =:)
-
-            push @menubuttons, $menubutton;
-        }
+		-command => sub {
+			$comment->selectAll;
+			my $text=$comment->getSelected;
+			if ($text) {
+			$bugz->additional_comments($text);
+			my $message = "Comment added to Bug $bugID\n";
+			message_pop($message) if $bugz->commit;	
+			$comment->deleteSelected;
+			$mw2->withdraw;
+			search($radiovar, $search_string, $ss);
+			} else {
+			my $message = "Please provide a comment first\n";
+			message_pop($message);
+			}
+			}
+			
+	);
+	$commentbutton->pack(qw/-side left/);
+#            push @menubuttons, $commentbutton;
+	    my $spinchange = $mw2->Spinbox(
+        -values => [qw/assigned fixed invalid wontfix later remind worksforme reopen verified closed/, 'assigned'],
+	-buttonbackground => "white",
+        -width  => 10,
+    );
+    		push @menubuttons, $spinchange;
+            my $closebutton =
+              $mw2->Button( qw/-underline 0 -relief raised/,
+                -text => "Change Status",
+		-width => 10,
+		-command => sub {
+			$comment->selectAll;
+			my $text=$comment->getSelected;
+			my $spinchoice = $spinchange->get();
+			if (($text) && ($spinchoice)) {
+			$bugz->change_status($spinchoice);
+			$bugz->additional_comments($text);
+			my $message = "Status change for Bug $bugID\n";
+			message_pop($message) if $bugz->commit;	
+			$comment->deleteSelected;
+			$mw2->withdraw;
+			search($radiovar, $search_string, $ss);
+			} else {
+			my $message = "Comment needed to change status\n";
+			message_pop($message);
+			}
+			}
+	);
+			
+            push @menubuttons, $closebutton;
+#        }
         foreach my $key (@menubuttons) {
             $key->pack(qw/-side left/);
         }
@@ -500,7 +543,16 @@ sub conf_pop {
     );
     $message = "";
 }
-
+sub message_pop {
+    my $message = shift;
+    my $button  = $mw2->messageBox(
+        '-icon'  => "info",
+        -type    => "OK",
+        -title   => "MESSAGE",
+        -message => "$message"
+    );
+    $message = "";
+}
 sub callsome {
 
 # This is the block where we will do the actual config writing for the first time.
