@@ -103,6 +103,7 @@ class Device:
 		del self._partitions[int(minor)]
 
 	def get_free_space(self, start):
+		GAP_SIZE = 100
 		parts = self._partitions.keys()
 		parts.sort()
 		lastend_pri = 0
@@ -113,7 +114,7 @@ class Device:
 		for part in parts:
 			if part > 4: break
 			tmppart = self._partitions[part]
-			if (tmppart.get_start() > lastend_pri) and (lastend_pri >= start):
+			if (tmppart.get_start() > (lastend_pri + GAP_SIZE)) and (lastend_pri >= start):
 				free_start = lastend_pri
 				free_end = tmppart.get_start() - 1
 				break
@@ -122,7 +123,7 @@ class Device:
 				for part_log in parts:
 					if part_log < 5: continue
 					tmppart_log = self._partitions[part_log]
-					if (tmppart_log.get_start() > lastend_log) and (lastend_log >= start):
+					if (tmppart_log.get_start() > (lastend_log + GAP_SIZE)) and (lastend_log >= start):
 						free_start = lastend_log
 						free_end = tmppart_log.get_start() - 1
 						break
