@@ -198,7 +198,7 @@ def do_pkgentry(db,pkgname,category):
 	</tr>
 	<tr>
 	<th>View CVS Repository</th>
-	<ti><uri>http://www.gentoo.org/cgi-bin/viewcvs.cgi/gentoo-x86/"""+category +"/" +pkgname+"""/</uri></ti>
+	<ti><uri>http://www.gentoo.org/cgi-bin/viewcvs.cgi/"""+category +"/" +pkgname+"""/</uri></ti>
 	</tr>
 	</table>
 	</p>"""
