@@ -1,0 +1,165 @@
+<?xml version='1.0'?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<news gentoo="no" category="linux">
+	<poster>drobbins</poster>
+	<date>26 Feb 2002</date>
+	<title>Guru Medication Error Redux</title>
+
+<summary>
+
+<p><b>Hiya Slashdotters!  From the Slashdot comments related to the original
+"Guru Meditation Error -- missing patches?" news item, I see that many of you
+still doubt that this missing patch problem actually exists.  Fair enough.
+After all, what exactly was fixed by that bootmem patch mentioned
+previously?</b> In a Slashdot post, Alan Cox contends that the patch was
+submitted by MandrakeSoft, but couldn't be proved to be correct so it was not
+applied.  Yet in Mandrake's own SRPM, the bootmem patch has a one line comment
+that reads <c>Fix an off by one error that results in memory overwrites</c>.
+Now, I would contend that MandrakeSoft isn't simply adding this patch to their
+kernel for the thrill of it, but it is in fact doing it to fix a problem
+encountered in the field.  After all, they took the time out of their busy
+lives to track down the problem and create a patch for it in the first place.
+Why patch what isn't broken?  But in all honesty, I don't know; since I'm not
+in contact with the kernel developers at MandrakeSoft, I'm not one to say.
+</p>
+<p>
+<b>Comments from Andrea Archangeli:</b> <e>"While I agree on parts of the article,
+the patch you mention is buggy, if you find it in the Mandrake kernel, that's a
+bug in Mandrake that wastes one more page of ram than necessary (it's an
+harmless bug though)."</e></p>
+
+<p><b>While I chose a bad example for my original post, the problem I
+described is certainly very real.  It took me all of 15 minutes browsing the
+~50 Mandrake kernel patches to find a significant hardware compatibility
+patch that is not yet in the -ac, -aa or stock kernels.  Without this patch,
+many modern Athlon/VIA 82c686b systems will not work correctly with ATAPI
+ZIP250 drives.  Of the kernel sources I looked at, this fix only appears to be available in the Mandrake kernel.
+</b> Click on "full story" for in-depth information.</p>
+
+</summary>
+
+<body>
+<p><b>Hiya Slashdotters!  From the Slashdot comments related to the original
+"Guru Meditation Error -- missing patches?" news item, I see that many of you
+still doubt that this missing patch problem actually exists.  Fair enough.
+After all, what exactly was fixed by that bootmem patch mentioned
+previously?</b> In a Slashdot post, Alan Cox contends that the patch was
+submitted by MandrakeSoft, but couldn't be proved to be correct so it was not
+applied.  Yet in Mandrake's own SRPM, the bootmem patch has a one line comment
+that reads <c>Fix an off by one error that results in memory overwrites</c>.
+Now, I would contend that MandrakeSoft isn't simply adding this patch to their
+kernel for the thrill of it, but it is in fact doing it to fix a problem
+encountered in the field.  After all, they took the time out of their busy
+lives to track down the problem and create a patch for it in the first place.
+Why patch what isn't broken?  But in all honesty, I don't know; since I'm not
+in contact with the kernel developers at MandrakeSoft, I'm not one to say.
+</p>
+<p>
+<b>Comments from Andrea Archangeli:</b> <e>"While I agree on parts of the article,
+the patch you mention is buggy, if you find it in the Mandrake kernel, that's a
+bug in Mandrake that wastes one more page of ram than necessary (it's an
+harmless bug though)."</e></p>
+
+<p><b>While I chose a bad example for my original post, the problem I
+described is certainly very real.  It took me all of 15 minutes browsing the
+~50 Mandrake kernel patches to find a significant hardware compatibility
+patch that is not yet in the -ac, -aa or stock kernels.  Without this patch,
+many modern Athlon/VIA 82c686b systems will not work correctly with ATAPI
+ZIP250 drives.  Of the kernel sources I looked at, this fix only appears to be available in the Mandrake kernel.
+</b> Click on "full story" for in-depth information.</p>
+
+<p>For more information on this VIA 82c686b/ATAPI ZIP250 problem,
+visit <uri link="http://paulbristow.net/linux/idefloppy.html">The IDE-floppy Driver Documentation for Linux page</uri>.  On the page, there is <uri link="http://paulbristow.net/linux/via-patch-paul">a patch for kernel 2.4.14</uri> that solves this bug.  In the patch, the author describes the problem as follows:</p>
+<pre>
++ * Ver 0.98  Nov  8 01   There is a bug with the Via82c686b chip when used with
++ *		an ATAPI ZIP drive. The problem occurs when issuing write 
++ *		commands to the drive, and it doesn't happen with the promise
++ *		pdc20265 chipset. Both Skip Gaede (sgaede@mediaone.net) and
++ *		Timo Teras (timo.teras@iki.fi) discovered that including
++ *		a delay fixed the problem. Gadi Oxman suggested using the timer
++ *		queue instead of counting, and Timo implemented code to limit
++ *		the delay to machines having the via chipset. A delay of 50
++ *		msec works on my system. The variable ticks is exposed 
++ *		in /proc/ide/hdx/settings. Each tick is 10 msec. If ticks is
++ *		set to zero, the driver reverts to the old algorithm. --Skip
+</pre>
+
+<p>Later in the patch, a delay is added to the code as follows:</p>
+<pre>
++/* 
++ * default delay for VIA chipset (50 ms, or 5 ticks)
++ * This value is exposed as the variable ticks and may be adjusted if necessary.
++ * On my system, a 1200 mhz Athlon with the Asus A7V133 board. this is the minimum 
++ * delay. If set to zero, the standard algorithm is used. Note: my board also has a 
++ * Promise PDC20265 (ATA100) controller. The ZIP drive works fine on the other chipset.
++ */
++#define IDEFLOPPY_TICKS_DELAY		((50 * HZ) / 1000)	
++
+</pre>
+
+<p>For most kernels, this will result in <c>IDEFLOPPY_TICKS_DELAY</c> set to <c>5</c>, since
+<c>HZ</c> is normally set to <c>100</c>.  And also notice that in the patch comments, the author
+points out that <e>a setting of 5 is the minimum delay necessary to get his ZIP250 working with
+his Asus A7V133 board (a popular board)</e>.  So, what ide-floppy.c fixes are in the various
+kernel patches/releases out there?  Here's a table of the delay setting used in various patches:
+</p>
+
+<table>
+<tr><th>Kernel release</th><th>IDEFLOPPY_TICKS_DELAY value</th></tr>
+<tr><ti>2.4.18 (stock)</ti><ti>(none)</ti></tr>
+<tr><ti>Andrea Archangeli 2.4.18-rc4-aa1</ti><ti>(none)</ti></tr>
+<tr><ti>Alan Cox 2.4.19-pre1-ac1</ti><ti><c>3</c></ti></tr>
+<tr><ti>Red Hat Rawhide 2.4.17-0.18</ti><ti><c>3</c></ti></tr>
+<tr><ti>Mandrake Cooker 2.4.17.20mdk-1-1mdk</ti><ti><c>5</c></ti></tr>
+</table>
+
+<p>Based upon a simple and logical interpretation of this data, it would seem
+that if you have affected hardware and use a <e>stock or -aa</e> kernel, you will
+experience problems with your ZIP250 (2.4.18 and 2.4.14's <c>ide-floppy.c</c>
+are almost completely identical, except for a single <c>#ifdef</c>).  If you
+use a recent -ac or Rawhide kernel, you <e>may or may not</e> experience
+problems, and if you use a Mandrake kernel then you will most likely <e>not</e>
+experience problems with your ZIP250.  Even if the -ac and rawhide kernels
+contain additional fixes so that a delay of 3 will work on all systems, their
+<c>3</c> setting does not scale if the <c>HZ</c> value of your kernel changes.
+And even if a flat setting of <c>3</c> is simply not an issue and works for
+everyone, then it's still the case that those using stock or -aa kernels will not
+have this fix at all and thus will still have problems.  At least, this is my
+interpretation of the data.  Feel free to compare the various sources and
+verify this for yourself.  </p>
+
+<p>I feel that this simple example demonstrates that we <e>could</e> do a
+better job getting important patches into the stock kernel in a more timely
+manner.  As you can see, this particular patch was released by Paul Bristow on
+November 8, 2001.  I'm writing this editorial on February 26, 2002, and people
+who use the stock and -aa (and very likely -ac and Rawhide) kernels are still
+going to be bitten by this bug.  And, this means that as the Gentoo Linux
+development lead, I am still forced to scavenge for patches from Mandrake, Red
+Hat and others in order to ensure that the Gentoo Linux kernel works for as
+many people as possible.</p>
+
+<p>In closing, I also want to make it clear that I am not trying to bash those
+kernel developers who work for major distros and develop these patches.
+Obviously, they are extremely valued members of the Linux community.  In fact,
+they have a unique role in the Linux community.  Because they work for major
+distros, they must address real problems that their customers face in the real
+world, ensuring that their particular kernel works perfectly for the greatest
+number of possible users.  Having a kernel that works for 95% of their
+users isn't good enough.  And the large distro companies are kept accountable
+as well -- if their kernel doesn't work, <e>they</e> look bad because their
+logo is on the CD, and <e>they</e> risk the possibility that the user may try
+<e>another</e> distro or OS in hopes of better results.  Because of this, I'd
+contend that the bulk of patches included in Red Hat, Mandrake and other "big
+name" distros are generally focused on addressing problems that real users
+experience in the field -- they are about helping users.  Yes, there are
+certainly <e>some</e> unnecessary patches and <e>a few</e> that are purely
+experimental or performance-enhancing.  But the majority of them are there to
+fix stuff.  All I ask is that we ensure that these real-world user-oriented
+fixes make it in to the stock kernel so that all Linux users, no matter what
+distribution they happen to use, can benefit from them.</p>
+
+</body>
+
+</news>
+
+
