@@ -1,18 +1,21 @@
 <?xml version='1.0' encoding="iso-8859-1"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/diskless-howto.xml,v 1.2 2004/02/23 21:17:21 aaby Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/diskless-howto.xml,v 1.3 2004/04/13 21:32:10 broeman Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/da/diskless-howto.xml">
+<guide link="/doc/da/diskless-howto.xml" lang="da">
 
 <title>Diskfrie noder med Gentoo</title>
 
 <author title="Researcher">
     <mail link="ma53@drexel.edu">Michael Andrews</mail>
 </author>
+<author title="Redaktør">
+    <mail link="unsolo@sysrq.no">Kristian Jerpetjoen</mail>
+</author>
 <author title="Reviewer">
     <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-<author title="Redaktør">
+<author title="Reviewer">
     <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
 <author title="Oversætter">
@@ -31,8 +34,8 @@ Denne HOWTO vil hjælpe dig med at opsætte diskfrie noder med Gentoo Linux.
 
 <license/>
 
-<version>1.1</version>
-<date>20. November, 2003</date>
+<version>1.3</version>
+<date>11. April, 2003</date>
 
 <chapter>
 <title>Introduktion</title>
@@ -64,7 +67,7 @@ via et netværk og skal bruge en server, som kan levere det med
 lagerplads, som en lokal harddisk ville gøre. Fra nu af, kalder vi
 serveren <e>master</e>, imens vi kalder den diskfrie maskine for
 <e>slave</e> (det ligger i navnet :). Slave-noden kræver en
-netværksadapter, som understøtter PXE-opstart. De fleste kort
+netværksadapter, som understøtter PXE-opstarti eller Etherboot; tjek <uri link="http://www.etherboot.org">Etherboot.org</uri> for understøttede lister. De fleste kort
 understøtter PXE og mange indebygget adaptere på bundkorte vil også
 virke.
 </p>
@@ -77,7 +80,9 @@ virke.
 
 <p>
 Du bør have Gentoo installeret på din master-node, og nok plads på 
-master til at gemme filsystemer til slave-noderne.  
+master til at gemme filsystemer til slave-noderne. Vær også sikker på
+at du har en grænseflade til Internet separeret fra din lokale/interne
+forbindelse (LAN).
 </p>
 
 </body>
@@ -172,7 +177,19 @@ File systems ---&gt;
   Network File Systems  ---&gt;
     &lt;*&gt; NFS server support
     [*]   Provide NFSv3 server support
+
+<comment>
+Hvis du vil have adgang til Internet igennem din masters node og/eller har en sikker firewall, vær sikker på at tilføje understøttelse til iptables
+</comment>
+  [*] Network packet filtering (replaces ipchains)
+  IP: Netfilter Configuration ---&gt;
+    &lt;*&gt; Connection tracking (required for masq/NAT)
+    &lt;*&gt; IP tables support (required for filtering/masq/NAT)
 </pre>
+
+<p>
+Hvis du ønsker at bruge pakke-filter (packet filtering), kan du tilføje resten af modulerne senere. Vær sikker på at læse <uri link="http://www.gentoo.org/doc/en/gentoo-security#doc_chap12">Gentoo sikkerhedsvejledning, kapitel 12 Firewall</uri> (engelsk) for at sætte dette ordentligt op.
+</p>
 
 <note>
 Disse kerneopsætningsindstillinger skulle kun blive tilføjet dine systemspecifikke 
@@ -276,11 +293,23 @@ File systems ---&gt;
     [*]   Root file system on NFS
 </pre>
 
+<note>
+Et alternativ til en DHCP-server er at opsætte en BOOTP-server.
+</note>
+
+<impo>
+Det er vigtigt at du tilføjer dit netværksadapter ind i kernen (og ikke som et modul) på noderne. Brug af moduler er dog generelt ikke et problem for diskfrie noder.
+</impo>
+
 <p>
 Nu mangler slaves kerne at blive kompileret.  Du skal være omhyggelig her,
 idet du ikke ønsker at ødelægge modulerne (hvis nogen) som du har bygget til 
 master:
 </p>
+
+<note>
+Hvis du bruger forskellige arkitekturer, bør du nok gemme hver opsætning til <path>.config_arch</path>. Gør det samme med billedfiler: gem dem i <path>/diskless</path> som <path>bzImage_arch</path>.
+</note>
 
 <pre caption="Kompilering af slaves kerne">
 # <i>cd /usr/src/linux</i>
@@ -293,6 +322,12 @@ og krævede systemfiler. Vi bruger <path>/diskless</path>, men du kan vælge
 den placering, som du ønsker.  Kopiér nu slaves bzImage ind i
 <path>/diskless</path> biblioteket:
 </p>
+
+<note>
+Hvis du bruger forskellige arkitekturer, bør du gemme hver opsætning som
+<path>.config_arch</path>. Gør det samme med billed-filerne: gem dem i
+<path>/diskless</path> som <path>bzImage_arch</path>.
+</note>
 
 <pre caption="Kopiering af slaves kerne">
 # <i>mkdir /diskless</i>
@@ -342,6 +377,7 @@ biblioteker. For at oprette dem, tast:
 # <i>mkdir /diskless/192.168.1.21/proc</i>
 # <i>mkdir /diskless/192.168.1.21/tmp</i>
 # <i>mkdir /diskless/192.168.1.21/mnt</i>
+# <i>chmod a+w /diskless/192.168.1.21/tmp</i>
 # <i>mkdir /diskless/192.168.1.21/mnt/.initd</i>
 # <i>mkdir /diskless/192.168.1.21/root</i>
 # <i>mkdir /diskless/192.168.1.21/var</i>
@@ -349,6 +385,7 @@ biblioteker. For at oprette dem, tast:
 # <i>mkdir /diskless/192.168.1.21/var/lock</i>
 # <i>mkdir /diskless/192.168.1.21/var/log</i>
 # <i>mkdir /diskless/192.168.1.21/var/run</i>
+# <i>mkdir /diskless/192.168.1.21/var/spool</i>
 <comment>(Kun for openMosix)</comment>
 # <i>mkdir /diskless/192.168.1.21/mfs</i>
 </pre>
@@ -509,7 +546,8 @@ option PXE.discovery-control      code 6 = unsigned integer 8;
 option PXE.discovery-mcast-addr   code 7 = ip-address;
  
 subnet 192.168.1.0 netmask 255.255.255.0 {
- 
+
+
   class "pxeclients" {
     match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
     option vendor-class-identifier "PXEClient";
@@ -529,7 +567,14 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
     <comment># Brug masters IP</comment>
     next-server 192.168.1.1;
   }
- 
+
+<comment># Hvis du bruger etherboot med en ikke-specifik billedfil</comment>
+class "etherboot" {
+    if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
+    filename "/diskless/vmlinuz";
+    }
+}
+
   pool {
     max-lease-time 86400;
     default-lease-time 86400;
@@ -550,9 +595,24 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
        option domain-name               "mydomain.com";
        <comment># Brut slaves værtsnavn</comment>
        option host-name                 "slave21";
+
+
+       <comment># Etherboot og pxe-boot med en mac-specifik billedfil</comment>
+       option root-path                 "/diskless/192.168.1.21";
+
+       if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
+       			filename "/vmlinuz_arch";
+	} else if substring (option vendor-class-identifier, 0, 9) = "PXEClient" {
+			filename "/pxelinux.0";
+	}
+
   }
 }
 </pre>
+
+<note>
+Der er ikke noget der forhindrer brugen af både PXE-boot og Etherboot samtidigt.
+</note>
 
 <p>
 IP-adressen efter <c>next-server</c> vil blive spurgt efter et specificeret
@@ -587,11 +647,10 @@ her:
 <pre caption="Smagsprøve af /etc/conf.d/dhcp">
 IFACE="eth0"
 <comment># indsæt de andre indstillinger, som er nødvendige</comment>
-DHCPD_OPTS="-d"
 </pre>
 
 <p>
--d flaget er til verbose debugging. <c>IFACE</c>-variablen er enheden, som
+<c>IFACE</c>-variablen er enheden, som
 du ønsker at køre din DHCP-server på, i dette tilfælde <c>eth0</c>. Tilføjelser af flere
 punkter til <c>IFACE</c>-variablen kan være brugbart til et komplekse netværkssteder,
 med flere netværkskorte. For at starte DHCP-serveren, tast:  
@@ -617,11 +676,11 @@ For at tilføje DHCP-serveren til dit opstartsscript, tast:
 
 <p>
 For at se at noden starter, kan du tage et kig på
-<path>/var/log/daemon.log</path>.  Hvis denne node starter med
-succes, vil <path>daemon.log</path>-filen se ud som dette:
+<path>/var/log/syslog.log</path>.  Hvis denne node starter med
+succes, vil <path>syslog.log</path>-filen have nogle linjer i bunden, som ser ud som dette:
 </p>
 
-<pre caption="Smagsprøve af DHCPs logfil">
+<pre caption="Smagsprøve af logfil-punkter oprettet af DHCP">
 DHCPDISCOVER from 00:00:00:00:00:00 via eth0
 DHCPOFFER on 192.168.1.21 to 00:00:00:00:00:00 via eth0
 DHCPREQUEST for 192.168.1.21 from 00:00:00:00:00:00 via eth0
@@ -655,7 +714,7 @@ For at genstarte serveren, tast:
 </chapter>
 
 <chapter>
-<title>Opsætning af TFTP-server og PXE Linux boot-loader</title>
+<title>Opsætning af TFTP-server og PXE Linux boot-loader og/eller Etherboot</title>
 <section>
 <title>Om TFTP-serveren</title>
 <body>
@@ -670,14 +729,66 @@ sikkert en god idé at lave master til TFTP-serveren.
 </body>
 </section>
 <section>
+<title>Installation af TFTP-server</title>
+<body>
+
+<p>
+En virkelig anbefalet tftp-server er klar som tftp-hpa pakken. Denne tftp-server er skrevet af SYSLINUX-forfatteren og den virker meget godt sammen med pxelinux. For at installere, bare tast:
+</p>
+
+<pre caption="Installation af tftp-serveren">
+# <i>emerge tftp-hpa</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Opsætning af TFTP-server</title>
+<body>
+
+<p>
+Rediger <path>/etc/conf.d/in.tftpd</path>. Du bør specficere tftproot-folderen med <c>INTFTPD_PATH</c> og hvilketsomhelst kommandolinie-valgmulighed med <c>INTFTPD_OPTS</c>. Det bør se ud som noget lignende dette:
+</p>
+
+<pre caption="Smagsprøve af /etc/conf.d/in.tftpd">
+INTFTPD_PATH="/diskless"
+INTFTPD_OPTS="-l -v -s ${INTFTPD_PATH}"
+</pre>
+
+<p>
+<c>-l</c>-optionen indikerer at serveren lytter i 'stand alone mode', så den ikke skal køre inetd. <c>-v</c> indikerer at log-/fejl-beskeder skal være verdslige. <c>-s /diskless</c> specificerer roden af din tftp-server.
+</p>
+
+</body>
+</section>
+<section>
+<title>Start af TFTP-server</title>
+<body>
+
+<p>
+For at starte tftp-serveren tast:
+</p>
+
+<pre caption="Start af master's tftp-server">
+# <i>/etc/init.d/in.tftpd start</i>
+</pre>
+
+<p>
+Dette bør starte tftp-serveren med de valgmuligheder, som du specficerede i <path>/etc/conf.d/in.tftpd</path>. Hvis du vil have at denne server bliver automatisk startet ved opstart, tast:
+</p>
+
+<pre caption="Tilføjelse af tftp-server til masters default run-level">
+# <i>rc-update add in-tftpd default</i>
+</pre>
+
+</body>
+</section>
+<section>
 <title>Om PXELINUX</title>
 <body>
 
 <p>
-PXELINUX er en netværksboot-loader, som kan sammenlignes med LILO eller GRUB, og vil være
-behandlet via TFTP.  Det er essentielt et lille sæt af instruktioner, som fortæller
-klienten, hvor den skal finde sin kerne og indledende filsystem og tillader
-forskellige kerneopsætninger.
+Denne sektion er ikke krævet, hvis du kun bruger Etherboot. PXELINUX er en netværksboot-loader, som kan sammenlignes med LILO eller GRUB, og vil være behandlet via TFTP.  Det er essentielt et lille sæt af instruktioner, som fortæller klienten, hvor den skal finde sin kerne og indledende filsystem og tillader forskellige kerneopsætninger.
 </p>
 
 </body>
@@ -698,25 +809,12 @@ af H. Peter Anvin.  Du kan installere denne pakke ved at taste:
 </body>
 </section>
 <section>
-<title>Installation af TFTP-server</title>
-<body>
-
-<p>
-Det er med stor anbefaling at TFTP-serveren er med i tftp-hpa pakken.
-Denne TFTP-server er tilfældigvis også skrevet af samme forfatter som
-SYSLINUX, og det virker meget godt med pxelinux. For at installere
-denne, tast:
-</p>
-
-<pre caption="Installation af TFTP-server">
-# <i>emerge tftp-hpa</i>
-</pre>
-
-</body>
-</section>
-<section>
 <title>Opsætning af PXELINUX</title>
 <body>
+
+<note>
+Dette er ikke nødvendigt til Etherboot.
+</note>
 
 <p>
 Før du starter din TFTP-server, skal du indstille pxelinux.  Du skal først kopiere 
@@ -756,10 +854,13 @@ C
 default
 </pre>
 
+<note>
+Disse er alle med små bogstaver.
+</note>
+
 <p>
 Lad os starte med <path>default</path>-filen:
 </p>
-
 
 <pre caption="Smagsprøve af pxelinux.cfg/default">
 DEFAULT /diskless/bzImage
@@ -777,51 +878,58 @@ indledende filsystem.
 
 </body>
 </section>
+
 <section>
-<title>Opsætning af TFTP-serveren</title>
+<title>Om Etherboot</title>
 <body>
 
-<p>
-Redigér <path>/etc/conf.d/in.tftpd</path>. Du vil få brug for at
-specificere tftproot-biblioteket med <c>INTFTPD_PATH</c> og alle andre
-kommandolinieopsætninger med <c>INTFTPD_OPTS</c>.  Det skulle se ud som dette:
-</p>
-
-<pre caption="Smagsprøve af /etc/conf.d/in.tftpd">
-INTFTPD_PATH="/diskless"
-INTFTPD_OPTS="-l -v -s ${INTFTPD_PATH}"
-</pre>
+<note>
+Dette er ikke krævet, hvis du bruger PXE-boot.
+</note>
 
 <p>
-<c>-l</c> indstillingen indikerer at denne server lytter i 'stand alone mode', så
-du ikke skal køre inetd. <c>-v</c> indikerer at log-/fejl-beskeder
-skulle være 'verbose'. <c>-s /diskless</c> specificerer roden af din 
-TFTP-server.
+Etherboot opstarter netværks-opstartsbilledfiler fra en TFTP-server. Som PXEen, er dette sammenlignelig med LILO eller GRUB. <c>mknbi</c>-værktøjet sørger for at du kan oprette forskellige billedfiler, som bruger forskellige valgmuligheder.
 </p>
 
 </body>
 </section>
 <section>
-<title>Opstart af TFTP-serveren</title>
+<title>Før du starter</title>
 <body>
 
 <p>
-For at starte TFTP-serveren, tast:
+Du vil få brug for <c>mknbi</c>-pakken (værktøj til at lave tagged kerne-billedfiler, som er brugbart til netopstart) for at oprette dine Etherboot-billedfiler. Dette værktøj vil oprette en præ-opsat kerne-billedfil fra din originale kerne. Denne indeholder opstarts-valgmulighederne, som er vist længere nede.
 </p>
 
-<pre caption="Opstart af masters TFTP-server">
-# <i>/etc/init.d/in.tftpd start</i>
+<pre caption="Installation af mknbi">
+# <i>emerge mknbi</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Opsætning af Etherboot</title>
+<body>
+
+<p>
+I denne sektion vil vi oprette en simpel etherboot-billedfil. Idet DHCP-serveren uddeler klientens rod-sti i "option root-path" dhcp.conf, skal vi ikke tilføje den her. Flere detaljer kan blive fundet i mknbis manual.
+</p>
+
+<pre caption="mknbi manual">
+# <i>man mknbi</i>
 </pre>
 
 <p>
-Dette skulle starte TFTP-serveren med de indstillinger, som du har specificeret i
-<path>/etc/conf.d/in.tfpd</path>. Hvis du vil have at denne server starter
-automatisk ved opstart, tast:
+Oprettelse af opstart-billedfiler. Dette vil oprette en ELF opstartbar billedfil, som kan tilføje DHCP og rod-stien til kernen. Den tvinger også kernen til at browse netværket for en DHCP-server.
 </p>
 
-<pre caption="Tilføjelse af TFTP-server til masters standard runlevel">
-# <i>rc-update add in.tftpd default</i>
+<pre caption="Oprettelse af netopstart-billedfiler">
+# <i>mkelf-linux -ip=dhcp /diskless/bzImage &gt; /diskless/vmlinuz </i>
 </pre>
+
+<note>
+Til arkitektur-specifikke billedfiler, skal du indtaste <c>bzImage_arch</c> og <c>vmlinuz_arch</c>.
+</note>
 
 </body>
 </section>
@@ -977,13 +1085,13 @@ dette:
 
 <pre caption="Smagsprøve af masters /etc/exports">
 <comment># En linie som denne til hver slave</comment>
-/diskless/192.168.1.21   192.168.1.21(rw,no_root_squash,no_all_squash)
+/diskless/192.168.1.21   192.168.1.21(sync,rw,no_root_squash,no_all_squash)
 <comment># Fælles for alle slaver</comment>
-/opt   192.168.1.0/24(ro,no_root_squash,no_all_squash)
-/usr   192.168.1.0/24(ro,no_root_squash,no_all_squash)
-/home  192.168.1.0/24(rw,no_root_squash,no_all_squash)
+/opt   192.168.1.0/24(sync,ro,no_root_squash,no_all_squash)
+/usr   192.168.1.0/24(sync,ro,no_root_squash,no_all_squash)
+/home  192.168.1.0/24(sync,rw,no_root_squash,no_all_squash)
 <comment># Hvis du vil have en delt log</comment>
-/var/log   192.168.1.21(rw,no_root_squash,no_all_squash)
+/var/log   192.168.1.21(sync,rw,no_root_squash,no_all_squash)
 </pre>
 
 <p>
@@ -1000,10 +1108,10 @@ laver 'I/O requests'.  Slaves fstab-fil,
 
 <pre caption="Smagsprøve af slaves fstab">
 <comment># Disse punkter er essentielle</comment>
-master:/diskless/192.168.1.21   /         nfs     hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
-master:/opt                     /opt      nfs     hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
-master:/usr                     /usr      nfs     hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
-master:/home                    /home     nfs     hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
+master:/diskless/192.168.1.21   /         nfs     sync,hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
+master:/opt                     /opt      nfs     sync,hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
+master:/usr                     /usr      nfs     sync,hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
+master:/home                    /home     nfs     sync,hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
 none                            /proc     proc    defaults                                     0 0
 <comment># Brugbart, men ikke nødvendigt</comment>
 master:/var/log                 /var/log  nfs     hard,intr,rw                                 0 0
@@ -1082,10 +1190,14 @@ de nødvendige binære filer, imens vi stadigvæk bevarer slaves specifikke filer.
 </p>
 
 <pre caption="Oprettelse af slaves filsystem">
-# <i>cp -r /bin /diskless/192.168.1.21/bin</i>
-# <i>cp -r /sbin /diskless/192.168.1.21/sbin </i>
-# <i>cp -r /lib /diskless/192.168.1.21/lib </i>
+# <i>rsync -avz /bin /diskless/192.168.1.21/bin</i>
+# <i>rsync -avz /sbin /diskless/192.168.1.21/sbin </i>
+# <i>rsync -avz /lib /diskless/192.168.1.21/lib </i>
 </pre>
+
+<note>
+Begrundelsen for at bruge rsync -avz istedet for cp er for at opretholde symlinks og rettigheder.
+</note>
 
 </body>
 </section>
