@@ -1,6 +1,6 @@
 <?xml version = '1.0' encoding = 'UTF-8' ?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gentoo-security.xml,v 1.7 2004/06/27 11:14:33 bass Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gentoo-security.xml,v 1.6 2004/05/15 20:05:34 bass Exp $ -->
 <guide link="/doc/en/gentoo-security.xml" >
   <title>Guía de seguridad de Gentoo Linux</title>
   <author title="Author" >
@@ -46,8 +46,8 @@
   <abstract>
  Esta guía describe paso a paso como asegurar Gentoo Linux.</abstract>
   <license/>
-  <version>0.4.24</version>
-  <date>Apr 25, 2004</date>
+  <version>0.4.27</version>
+  <date>Jun 22, 2004</date>
   <chapter>
     <title>Introducción</title>
     <section>
@@ -1077,63 +1077,238 @@ Y probablemente haya bastantes más.
   <chapter>
     <title>Asegurando los servicios</title>
     <section>
-      <title>Uso de xinetd</title>
+      <title>Apache</title>
       <body>
         <p>
-xinetd es un sustituto de inetd (del cual no dispone Gentoo), el demonio de servicios de Internet. Soporta control de acceso basado en la dirección del host remoto y el tiempo de acceso. También proporciona extensas posibilidades de log, incluyendo una hora de arranque del servidor, dirección de host remoto, nombre de usuario remoto, tiempo de ejecución del servidor, y acciones solicitadas.
+Apache (1.3.26) viene con un más que decente fichero de configuración pero todavía necesitamos mejorar algunas cosas, como el enlace (bind) a una dirección y prevenir fugas de información. Debería aplicar las siguientes opciones en el fichero de configuración:
 </p>
         <p>
-Como en todos los demás servicios es importante tener una buena configuración por defecto. Pero desde el momento que <c>xinetd</c> se ejecuta como root y soporta protocolos que puede que usted no conozca como funcionan le recomendamos que no lo utilice. Pero si a pesar de todo lo quiere utilizar, aquí le explicamos como puede añadirle algo de seguridad:
+Si usted no deshabilita <c>ssl</c> en su <path>/etc/make.conf</path> antes de instalar apache, debería tener habilitado el acceso al servidor mediante ssl. Sólo tiene que añadir la siguiente línea para activarlo:
 </p>
-        <pre caption="Instale xinetd" >
-# <i>emerge xinetd tcp-wrappers</i>
-        </pre>
-        <p>
-Y edite el fichero de configuración:
-</p>
-        <pre caption="/etc/xinetd.conf" >
-defaults
-{
- only_from      = localhost
- instances      = 10
- log_type       = SYSLOG authpriv info
- log_on_success = HOST PID
- log_on_failure = HOST
- cps            = 25 30
-}
-
-# Esto configurará pserver (cvs) via xinetd con los siguientes parámetros:
-# un máximo de 10 instancias (10 conexiones simultáneas)
-# limita pserver a conexiones tcp solamente
-# utiliza el usuario cvs para ejecutar este servicio
-# enlaza una sola dirección IP en las interfaces de red
-# permite el acceso desde 10.0.0.*
-# limita el tiempo que los desarrolladores pueden usar cvs: desde 8am a 5pm
-# usa tcpd wrappers (control de acceso especificado en 
-# <i>/etc/hosts.allow</i> y <i>/etc/hosts.deny</i>)
-# la carga máxima del sistema se establece a 1.0
-# el disable flag está a no por defecto, pero preferimos tenerlo
-# en caso de querer desactivarlo
-service cvspserver
-{
- socket_type    = stream
- protocol       = tcp
- instances      = 10
- protocol       = tcp
- wait           = no
- user           = cvs
- bind           = 10.0.0.2
- only_from      = 10.0.0.0
- access_times   = 8:00-17:00
- server         = /usr/sbin/tcpd
- server_args    = /usr/bin/cvs --allow-root=/mnt/cvsdisk/cvsroot pserver
- max_load       = 1.0
- log_on_failure += RECORD
- disable        = no
-}
+        <pre caption="/etc/conf.d/apache" >
+HTTPD_OPTS=&quot;-D SSL&quot;
+</pre>
+        <p/>
+        <pre caption="/etc/apache/conf/apache.conf" >
+#Indica si escucha en su ip
+Listen 127.0.0.1
+BindAddress 127.0.0.1
+#No es una buena idea usar nobody o nogroup
+#en cualquier servicio que no corra como root
+#(basta añadir el usuario apache con el grupo apache)
+User apache
+Group apache
+#Le indica a apache que no revele la versión
+ServerSignature Off
+ServerTokens Prod
 </pre>
         <p>
-Para más información consulte <c>man 5 xinetd.conf</c>.
+Apache está compilado con <c>--enable-shared=max</c> y <c>--enable-module=all</c>. Esto activará por defecto todos los módulos, así que puede &quot;comentar&quot; todos los módulos en la sección  <c>LoadModule</c> (<c>LoadModule</c> y <c>AddModule</c>) que no use. Reinicie el servicio ejecutando <c>/etc/init.d/apache restart</c>.
+</p>
+        <p>
+Puede encontrar más información en <uri>http://www.apache.org</uri>.
+</p>
+      </body>
+    </section>
+    <section>
+      <title>Bind</title>
+      <body>
+        <p>
+Puede encontrar información en <uri link="http://www.isc.org/products/BIND/bind9.html" >Internet Software
+Consortium</uri>, el Manual de referencia del administrador en BIND 9 lo puede encontrar también en  <path>doc/arm</path>.
+</p>
+        <p>
+Los nuevos &quot;ebuilds&quot; de BIND soportan el chrooting fuera del entorno. Después de instalar (emerge) <c>bind</c> siga estos sencillos pasos:
+</p>
+        <pre caption="Chrooting BIND" >
+ebuild /var/db/pkg/net-dns/bind-9.2.2-r2/bind-9.2.2-r2.ebuild config\`&quot;
+<codenote>Antes de ejecutar el comando anterior debe tratar de cambiar el directorio de chroot en /etc/conf.d/named. En caso contrario será usado /chroot/dns.</codenote>
+          <codenote>Puede necesitar sustituir el número de versión por el número de versión actual.</codenote>
+        </pre>
+      </body>
+    </section>
+    <section>
+      <title>Djbdns</title>
+      <body>
+        <p>
+Djbdns es una implementación de DNS en la que su autor está dispuesto a apostar <uri link="http://cr.yp.to/djbdns/guarantee.html" >dinero</uri> en cuan segura es. Trabaja de forma muy diferente a Bind 9 pero vale la pena probarlo. Puede obtener más información en <uri>http://www.djbdns.org</uri>.
+</p>
+      </body>
+    </section>
+    <section>
+      <title>FTP</title>
+      <body>
+        <p>
+Generalmente, usar FTP (File Transfer Protocol) es una mala idea. Porque no cifra los datos, escucha en dos puertos (normalmente el 20 y el 21), y permite accesos anónimos lo que hace que los atacantes lo busquen (para intercambiar warez). Puesto que protocolo FTP tiene varios problemas de seguridad, más bien debería utilizar en su lugar <c>sftp</c> o HTTP . Si no lo hace, asegure tan bien como pueda sus servicios y prepárese.
+</p>
+      </body>
+    </section>
+    <section>
+      <title>Mysql</title>
+      <body>
+        <p>
+Si sólo necesita que las aplicaciones locales accedan a la base de datos <c>mysql</c> &quot;descomente&quot; la siguiente línea en <path>/etc/mysql/my.cnf</path>.
+</p>
+        <pre caption="Deshabilitar el acceso de red" >
+skip-networking
+</pre>
+        <p>
+Deshabilite el comando <c>LOAD DATA LOCAL INFILE</c> en el mismo fichero.
+</p>
+        <pre caption="Deshabilitar LOAD DATA LOCAL INFILE en la sección [mysqld]" >
+set-variable=local-infile=0
+</pre>
+        <p>
+La instalación por defecto de <c>mysql</c> viene sin contraseña para <c>root</c>.
+</p>
+        <pre caption="Establecer la contraseña de root" >
+          <i>/usr/local/mysql/bin/mysql -u root</i> 
+mysql> <i>SET PASSWORD FOR root@localhost=PASSWORD('nueva_contraseña');</i>
+        </pre>
+        <note>
+
+Es un buen hábito no cambiar contraseñas desde la línea de comandos, por ejemplo, usando el comando <c>mysqladmin password</c>. Lo que es especialmente importante cuando otros usuarios trabajan en el servidor. Es este caso, la contraseña puede ser fácilmente hallada, por ej. usando el comando <c>ps aux</c> o revisando los archivos de historial (<path>~/.history</path>, <path>~/.bash_history</path> etc.), cuando se les han asignado derechos de acceso equivocados.
+</note>
+        <p>
+A continuación, vamos a borrar la base de datos de ejemplo (test) y todas las cuentas excepto la cuenta local de <c>root</c>.
+</p>
+        <pre caption="Borrando la base de datos de ejemplo y todos los usuarios innecesarios" >
+mysql> <i>drop database test;</i>
+mysql> <i>use mysql;</i>
+mysql> <i>delete from db;</i>
+mysql> <i>delete from user where not (host=&quot;localhost&quot; and user=&quot;root&quot;);</i>
+mysql> <i>flush privileges;</i>
+        </pre>
+        <warn>
+
+Tenga cuidado con lo anterior si usted previamente ya ha configurado cuentas de usuario.
+</warn>
+      </body>
+    </section>
+    <section>
+      <title>Proftpd</title>
+      <body>
+        <p>
+Proftpd ha tenido bastantes problemas de seguridad, pero parece que se han resuelto muchos de ellos. Todavía puede aplicar algunas mejoras:
+</p>
+        <pre caption="/etc/proftpd/proftpd.conf" >
+ServerName &quot;My ftp daemon&quot;
+# No muestre la identidad del servidor
+ServerIdent on &quot;Go away&quot;
+
+# Hace más fácil crear usuarios virtuales
+RequireValidShell off
+
+# Use unos ficheros de contraseñas y grupos alternativos (passwd usa cifrado)
+AuthUserFile &quot;/etc/proftpd/passwd&quot;
+AuthGroupFile &quot;/etc/proftpd/group&quot;
+
+# Permisos
+Umask 077
+
+# Timeouts y limitaciones
+MaxInstances 30
+MaxClients 10 &quot;Only 10 connections allowed&quot;
+MaxClientsPerHost 1 &quot;You have already logged on once&quot;
+MaxClientsPerUser 1 &quot;You have already logged on once&quot;
+TimeoutStalled 10
+TimeoutNoTransfer 20
+TimeoutLogin 20
+
+# Chroot todo el mundo
+DefaultRoot ~
+
+# No lo ejecute como root
+User  nobody
+Group nogroup
+
+# Registre cada transacción
+TransferLog /var/log/transferlog
+
+# Problemas con globbing
+DenyFilter \*.*/
+</pre>
+        <p>
+Puede encontrar más documentación en <uri>http://www.proftpd.org</uri>.
+</p>
+      </body>
+    </section>
+    <section>
+      <title>Pure-ftpd</title>
+      <body>
+        <p>
+Pure-ftpd es una variante del trollftpd original. Modificado por Frank Dennis por razones de seguridad y funcionalidad.
+</p>
+        <p>
+Utilice usaurios virtuales (nunca cuentas del sistema) habilitando la opción <c>AUTH</c>. Ajústela a <c>-lpuredb:/etc/pureftpd.pdb</c> y cree sus usuarios mediante <c>/usr/bin/pure-pw</c>.
+</p>
+        <pre caption="/etc/conf.d/pure-ftpd" >
+AUTH=&quot;-lpuredb:/etc/pureftpd.pdb&quot;
+
+## Misc. Others ##
+MISC_OTHER=&quot;-A -E -X -U 177:077 -d -4 -L100:5 -I 15&quot;
+</pre>
+        <p>
+Y configure la opción <c>MISC_OTHER</c> para que no permita accesos anónimos (<c>-E</c>), no haga chroot todo el mundo (<c>-A</c>), para que los usuarios no puedan leer o escribir en los archivos que empiezan por . (punto) (<c>-X</c>), el tiempo máximo 'idle' (<c>-I</c>), el límite de recursión (<c>-L</c>), y una razonable <c>umask</c>.
+</p>
+        <warn>
+¡<e>No</e> use las opciones <c>-w</c> or <c>-W</c>! Si usted quiere tener un sitio de warez, ¡no lea más esta guía!
+</warn>
+        <p>
+Puede encontrar más documentación en <uri>http://www.pureftpd.org</uri>.
+</p>
+      </body>
+    </section>
+    <section>
+      <title>Qmail</title>
+      <body>
+        <p>
+Qmail está considerado como el servidor de correo más seguro. Está escrito pensando en la seguridad (y en la paranoia). Por defecto no permite el relaying y no ha tenido un sólo agujero de seguridad desde 1.996. ¡Simplemente instálelo con <c>emerge qmail</c> y configúrelo!
+</p>
+      </body>
+    </section>
+    <section>
+      <title>Samba</title>
+      <body>
+        <p>
+Samba es un protocolo para compartir ficheros con redes Microsoft y Novell y <e>no</e> debería usarse a través de Internet. Pero sin embargo necesita ser asegurado.
+</p>
+        <pre caption="/etc/samba/smb.conf" >
+[global]
+  #Enlace a una interface
+  interfaces = eth0 10.0.0.1/32
+
+  #Indica el uso de contraseñas cifradas
+  encrypt passwords = yes
+  directory security mask = 0700
+
+  #Permite el tráfico desde 10.0.0.*
+  hosts allow = 10.0.0.
+
+  #Habilita el modo de autentificación por usuario
+  #(no use el modo compartido)
+  security = user
+
+  #Deshabilita las cuentas con privilegios
+  invalid users = root @wheel
+
+  #Tamaño máximo que smb muestra para un recurso compartido
+  #(no es un límite)
+  max disk size = 102400
+
+  #Política de contraseñas
+  min password length = 8
+  null passwords = no
+
+  #Uso de PAM (si se ha añadido su soporte)
+  obey pam restrictions = yes
+  pam password change = yes
+</pre>
+        <p>
+Asegúrese que los permisos están correctamente establecidos en cada recurso compartido y recuerde leer la <uri link="http://www.samba.org" >documentación</uri>.
+</p>
+        <p>
+Ahora reinicie el servidor y añada los usuarios que deban tener acceso a este servicio. Esto se hace mediante <path>/usr/bin/smbpasswd</path> con el parámetro -a.
 </p>
       </body>
     </section>
@@ -1206,129 +1381,63 @@ Para más información visite la página web de <uri link="http://www.openssh.or
       </body>
     </section>
     <section>
-      <title>X</title>
+      <title>Uso de xinetd</title>
       <body>
         <p>
-Por defecto XFree está configurado para actuar como un servidor X. Esto puede resultar peligros puesto que X usa conexiones TCP no cifradas y está a la escucha para clientes X.
+xinetd es un sustituto de inetd (Gentoo no dispone de él), el demonio de servicios de Internet. Soporta control de acceso basado en la dirección del host remoto y el tiempo de acceso. También proporciona extensas posibilidades de log, incluyendo una hora de arranque del servidor, dirección de host remoto, nombre de usuario remoto, tiempo de ejecución del servidor, y acciones solicitadas.
 </p>
-        <impo>
-Si usted no necesita este servicio, ¡deshabilítelo!
-</impo>
         <p>
-Pero si cuenta con usar su estación de trabajo como servidor X use el comando <c>/usr/X11R6/bin/xhost</c> con precaución. Este comando permite a clientes desde otros hosts conectarse y usar su pantalla. Lo que puede ser práctico si usted necesita una aplicación X de un equipo diferente y la única manera de utilizarla es a través de la red. La sintaxis es <c>/usr/X11R6/bin/xhost +nombre_de_host</c>
-        </p>
-        <warn>
-¡No use nunca la opción <c>xhost +</c>! Esto permitirá a cualquier cliente conectarse y tomar el control de sus X. Si un atacante puede tener acceso a sus X, puede registrar lo que teclee y tomar el control de su escritorio. Recuerde especificar siempre un host, si usted debe utilizarlo.
-</warn>
-        <p>
-Un solución más segura es deshabilitar completamente esta característica arrancando X con <c>startx -- -nolisten tcp</c> o deshabilitándola permanentemente en la configuración.
+Como en todos los demás servicios es importante tener una buena configuración por defecto. Pero desde el momento que <c>xinetd</c> se ejecuta como root y soporta protocolos que puede que usted no conozca como funcionan le recomendamos que no lo utilice. Pero si a pesar de todo lo quiere utilizar, aquí le explicamos como puede añadirle algo de seguridad:
 </p>
-        <pre caption="/usr/X11R6/bin/startx" >
-defaultserverargs=&quot;-nolisten tcp&quot;
+        <pre caption="Instale xinetd" >
+# <i>emerge xinetd tcp-wrappers</i>
+        </pre>
+        <p>
+Y edite el fichero de configuración:
+</p>
+        <pre caption="/etc/xinetd.conf" >
+defaults
+{
+ only_from      = localhost
+ instances      = 10
+ log_type       = SYSLOG authpriv info
+ log_on_success = HOST PID
+ log_on_failure = HOST
+ cps            = 25 30
+}
+
+# Esto configurará pserver (cvs) via xinetd con los siguientes parámetros:
+# un máximo de 10 instancias (10 conexiones simultáneas)
+# limita pserver a conexiones tcp solamente
+# utiliza el usuario cvs para ejecutar este servicio
+# enlaza una sola dirección IP en las interfaces de red
+# permite el acceso desde 10.0.0.*
+# limita el tiempo que los desarrolladores pueden usar cvs: desde 8am a 5pm
+# usa tcpd wrappers (control de acceso especificado en 
+# <i>/etc/hosts.allow</i> y <i>/etc/hosts.deny</i>)
+# la carga máxima del sistema se establece a 1.0
+# el disable flag está a no por defecto, pero preferimos tenerlo
+# en caso de querer desactivarlo
+service cvspserver
+{
+ socket_type    = stream
+ protocol       = tcp
+ instances      = 10
+ protocol       = tcp
+ wait           = no
+ user           = cvs
+ bind           = 10.0.0.2
+ only_from      = 10.0.0.0
+ access_times   = 8:00-17:00
+ server         = /usr/sbin/tcpd
+ server_args    = /usr/bin/cvs --allow-root=/mnt/cvsdisk/cvsroot pserver
+ max_load       = 1.0
+ log_on_failure += RECORD
+ disable        = no
+}
 </pre>
         <p>
-Para asegurarse de que <path>startx</path> no será sobreescrito al 'emerger' una nueva versión de XFree debe protegerlo. Añada la siguiente línea a <path>/etc/make.conf</path>:
-</p>
-        <pre caption="/etc/make.conf" >
-CONFIG_PROTECT_MASK=&quot;/usr/X11R6/bin/startx&quot;
-</pre>
-        <p>
-Si usted usa un gestor gráfico de login necesitará cambiar otros archivos.
-</p>
-        <p>
-Para <c>gdm</c> (Gnome Display Manager)
-</p>
-        <pre caption="/etc/X11/gdm/gdm.conf" >
-[server-Standard]
-command=/usr/X11R6/bin/X -nolisten tcp
-</pre>
-        <p>
-Para <c>xdm</c> (X Display Manager) y <c>kdm</c> (Kde Display Manager)
-</p>
-        <pre caption="/etc/X11/xdm/Xservers" >
-:0 local /usr/bin/X11/X -nolisten tcp
-</pre>
-      </body>
-    </section>
-    <section>
-      <title>FTP</title>
-      <body>
-        <p>
-Generalmente, usar FTP (File Transfer Protocol) es una mala idea. Porque no cifra los datos, escucha en dos puertos (normalmente el 20 y el 21), y permite accesos anónimos lo que hace que los atacantes lo busquen (para intercambiar warez). Puesto que protocolo FTP tiene varios problemas de seguridad, más bien debería utilizar en su lugar <c>sftp</c> o HTTP . Si no lo hace, asegure tan bien como pueda sus servicios y prepárese.
-</p>
-      </body>
-    </section>
-    <section>
-      <title>Pure-ftpd</title>
-      <body>
-        <p>
-Pure-ftpd es una variante del trollftpd original. Modificado por Frank Dennis por razones de seguridad y funcionalidad.
-</p>
-        <p>
-Utilice usaurios virtuales (nunca cuentas del sistema) habilitando la opción <c>AUTH</c>. Ajústela a <c>-lpuredb:/etc/pureftpd.pdb</c> y cree sus usuarios mediante <c>/usr/bin/pure-pw</c>.
-</p>
-        <pre caption="/etc/conf.d/pure-ftpd" >
-AUTH=&quot;-lpuredb:/etc/pureftpd.pdb&quot;
-
-## Misc. Others ##
-MISC_OTHER=&quot;-A -E -X -U 177:077 -d -4 -L100:5 -I 15&quot;
-</pre>
-        <p>
-Y configure la opción <c>MISC_OTHER</c> para que no permita accesos anónimos (<c>-E</c>), no haga chroot todo el mundo (<c>-A</c>), para que los usuarios no puedan leer o escribir en los archivos que empiezan por . (punto) (<c>-X</c>), el tiempo máximo 'idle' (<c>-I</c>), el límite de recursión (<c>-L</c>), y una razonable <c>umask</c>.
-</p>
-        <warn>
-¡<e>No</e> use las opciones <c>-w</c> or <c>-W</c>! Si usted quiere tener un sitio de warez, ¡no lea más esta guía!
-</warn>
-        <p>
-Puede encontrar más documentación en <uri>http://www.pureftpd.org</uri>.
-</p>
-      </body>
-    </section>
-    <section>
-      <title>Proftpd</title>
-      <body>
-        <p>
-Proftpd ha tenido bastantes problemas de seguridad, pero parece que se han resuelto muchos de ellos. Todavía puede aplicar algunas mejoras:
-</p>
-        <pre caption="/etc/proftpd/proftpd.conf" >
-ServerName &quot;My ftp daemon&quot;
-# No muestre la identidad del servidor
-ServerIdent on &quot;Go away&quot;
-
-# Hace más fácil crear usuarios virtuales
-RequireValidShell off
-
-# Use unos ficheros de contraseñas y grupos alternativos (passwd usa cifrado)
-AuthUserFile &quot;/etc/proftpd/passwd&quot;
-AuthGroupFile &quot;/etc/proftpd/group&quot;
-
-# Permisos
-Umask 077
-
-# Timeouts y limitaciones
-MaxInstances 30
-MaxClients 10 &quot;Only 10 connections allowed&quot;
-MaxClientsPerHost 1 &quot;You have already logged on once&quot;
-MaxClientsPerUser 1 &quot;You have already logged on once&quot;
-TimeoutStalled 10
-TimeoutNoTransfer 20
-TimeoutLogin 20
-
-# Chroot todo el mundo
-DefaultRoot ~
-
-# No lo ejecute como root
-User  nobody
-Group nogroup
-
-# Registre cada transacción
-TransferLog /var/log/transferlog
-
-# Problemas con globbing
-DenyFilter \*.*/
-</pre>
-        <p>
-Puede encontrar más documentación en <uri>http://www.proftpd.org</uri>.
+Para más información consulte <c>man 5 xinetd.conf</c>.
 </p>
       </body>
     </section>
@@ -1363,208 +1472,64 @@ Como puede ver no hay forma en este servicio de tener permisos individuales y no
       </body>
     </section>
     <section>
-      <title>Apache</title>
+      <title>X</title>
       <body>
         <p>
-Apache (1.3.26) viene con una más que decente configuración pero todavía necesitamos mejorar algunas cosas, como el enlace (bind) a una dirección y prevenir fugas de información. Debería aplicar las siguientes opciones en el fichero de configuración:
+Por defecto XFree está configurado para actuar como un servidor X. Esto puede resultar peligroso puesto que X usa conexiones TCP no cifradas y está a la escucha para clientes X.
 </p>
+        <impo>
+Si usted no necesita este servicio, ¡deshabilítelo!
+</impo>
         <p>
-Si usted no deshabilita <c>ssl</c> en su <path>/etc/make.conf</path> antes de instalar apache, debería tener habilitado el acceso al servidor mediante ssl. Sólo tiene que añadir la siguiente línea para activarlo:
+Pero si piensa usar su estación de trabajo como servidor X use el comando <c>/usr/X11R6/bin/xhost</c> con precaución. Este comando permite a clientes desde otros hosts conectarse y usar su pantalla. Lo que puede ser práctico si usted necesita una aplicación X de un equipo diferente y la única manera de utilizarla es a través de la red. La sintaxis es <c>/usr/X11R6/bin/xhost +nombre_de_host</c>
+        </p>
+        <warn>
+¡No use nunca la opción <c>xhost +</c>! Esto permitirá a cualquier cliente conectarse y tomar el control de sus X. Si un atacante puede tener acceso a sus X, puede registrar lo que teclee y tomar el control de su escritorio. Recuerde especificar siempre un host, si usted debe utilizarlo.
+</warn>
+        <p>
+Un solución más segura es deshabilitar completamente esta característica arrancando X con <c>startx -- -nolisten tcp</c> o deshabilitándola permanentemente en la configuración.
 </p>
-        <pre caption="/etc/conf.d/apache" >
-HTTPD_OPTS=&quot;-D SSL&quot;
-</pre>
-        <p/>
-        <pre caption="/etc/apache/conf/apache.conf" >
-#Indica la escucha en su ip
-Listen 127.0.0.1
-BindAddress 127.0.0.1
-#No es una buena idea usar nobody o nogroup
-#en cualquier servicio que no corra como root
-#(basta añadir el usuario apache con el grupo apache)
-User apache
-Group apache
-#Le indica a apache que no revele la versión
-ServerSignature Off
-ServerTokens Prod
+        <pre caption="/usr/X11R6/bin/startx" >
+defaultserverargs=&quot;-nolisten tcp&quot;
 </pre>
         <p>
-Apache está compilado con <c>--enable-shared=max</c> y <c>--enable-module=all</c>. Esto activará por defecto todos los módulos, así que puede &quot;comentar&quot; todos los módulos en la sección  <c>LoadModule</c> (<c>LoadModule</c> y <c>AddModule</c>) que no use. Reinicie el servicio ejecutando <c>/etc/init.d/apache restart</c>.
+Para asegurarse de que <path>startx</path> no será sobreescrito al 'emerger' una nueva versión de XFree debe protegerlo. Añada la siguiente línea a <path>/etc/make.conf</path>:
+</p>
+        <pre caption="/etc/make.conf" >
+CONFIG_PROTECT_MASK=&quot;/usr/X11R6/bin/startx&quot;
+</pre>
+        <p>
+Si usted usa un gestor gráfico de login necesitará cambiar otros archivos.
 </p>
         <p>
-Puede encontrar más información en <uri>http://www.apache.org</uri>.
+Para <c>gdm</c> (Gnome Display Manager)
 </p>
+        <pre caption="/etc/X11/gdm/gdm.conf" >
+[server-Standard]
+command=/usr/X11R6/bin/X -nolisten tcp
+</pre>
+        <p>
+Para <c>xdm</c> (X Display Manager) y <c>kdm</c> (Kde Display Manager)
+</p>
+        <pre caption="/etc/X11/xdm/Xservers" >
+:0 local /usr/bin/X11/X -nolisten tcp
+</pre>
       </body>
     </section>
+  </chapter>
+  <chapter>
+    <title>Chroot o servidores virtuales</title>
     <section>
-      <title>Qmail</title>
+      <title>Chrooting</title>
       <body>
         <p>
-Qmail está considerado como el servidor de correo más seguro. Está escrito pensando en la seguridad (y en la paranoia). Por defecto no permite el relaying y no ha tenido un sólo agujero de seguridad desde 1.996. ¡Simplemente instálelo con <c>emerge qmail</c> y configúrelo!
-</p>
-      </body>
-    </section>
-    <section>
-      <title>Bind</title>
-      <body>
-        <p>
-Puede encontrar información en <uri link="http://www.isc.org/products/BIND/bind9.html" >Internet Software
-Consortium</uri>, el Manual de referencia del administrador en BIND 9 lo puede encontrar también en  <path>doc/arm</path>.
-</p>
-<!--
-<p>
-Per default Gentoo does not setup any configuration for this services so you
-have to add your own DNS zones to <path>/etc/bind/named.conf</path>. But since
-the security lies not only within the domain server daemon but also in the
-protocol it should be properly configured.
-</p>
-
-<p>
-People often ask, why not use djbdns (very secure DNS server by D.J. Bernstein)
-and the answer is: Bind does have features that djbdns does not, like support
-for IPv6 (not without a patch anyway).
-</p>
-
-<pre caption="/etc/bind/named.conf">
-#setup access control
-acl "mynet" { 10.0.0.0/24; };
-
-options {
-  directory "/var/bind";
-  pid-file "/var/run/named/named.pid";
-#allow "mynet" to make queries
-  allow-query { "mynet"; };
-#don't allow zone transfers
-  allow-transfer { none; };
-  forward only;
-  forwarders { 10.0.0.2; };
-#Only provide recursive service to "mynet"
-  recursion no;
-  allow-recursion { mynet; };
-# Bind to an interface
-  listen-on { 10.0.0.1; };
-# Don't show the version
-  version "Go away";
-};
-
-key "rndc-key" {
-  algorithm hmac-md5;
-  secret "o1BYkYC+bXeZgHDsrVBwRQ==";
-};
-
-#allow only control from localhost and with a key
-controls {
-  inet 127.0.0.1 port 953
-  allow { 127.0.0.1; } keys { "rndc-key"; };
-};
-</pre>
-
-<p>
-This is a good default configuration. However, Bind version 9 has a special 
-<c>chroot</c> functionality that you should use. Here is how you create your 
-chrooted bind:
-</p>
-
-<pre caption="Prepairing a chroot environment">
-# <i>mkdir -p /chroot</i>
-# <i>mkdir /chroot/dns</i>
-# <i>mkdir /chroot/dns/dev</i>
-# <i>mkdir /chroot/dns/etc</i>
-# <i>mkdir /chroot/dns/var</i>
-# <i>mkdir /chroot/dns/var/run</i>
-# <i>mkdir /chroot/dns/var/run/named</i>
-# <i>chown -R named:named /chroot/dns/var/run/named</i>
-# <i>cp -R /etc/bind /chroot/dns/etc/.</i>
-# <i>cp /etc/localtime /chroot/dns/etc/localtime</i>
-# <i>cp -R /var/bind /chroot/dns/var/.</i>
-# <i>mknod /chroot/dns/dev/zero c 1 5</i>
-# <i>chmod 666 /chroot/dns/dev/zero</i>
-# <i>mknod /chroot/dns/dev/random c 1 8</i>
-# <i>chmod 666 /chroot/dns/dev/random</i>
-# <i>cp -a /dev/log /chroot/dns/dev/log</i>
-# <i>cd /chroot/dns</i>
-# <i>chattr +i etc etc/localtime var</i>
-</pre>
-
-<p>
-This will create a chrooted environment in <path>/chroot</path>. Now all we 
-have to do is modify the init script for supporting the new environment. Edit 
-<path>/etc/init.d/named</path> and add <c>-t /chroot/dns</c> to the start 
-function. You may also want to change the stop function to point to the correct 
-pid file in <path>/chroot/var/run/named/named.pid</path>. Restart your DNS 
-server.
-</p>
-
-<note>
-An attacker can escape a chrooted jail, if their skill is good enough (see how
-to prevent this in the kernel patch section).
-</note>
--->      </body>
-    </section>
-    <section>
-      <title>Djbdns</title>
-      <body>
-        <p>
-Djbdns es una implementación de DNS en la que su autor está dispuesto a apostar <uri link="http://cr.yp.to/djbdns/guarantee.html" >dinero</uri> en cuan segura es. Trabaja de forma muy diferente a Bind 9 pero vale la pena probarlo. Puede obtener más información en <uri>http://www.djbdns.org</uri>.
-</p>
-      </body>
-    </section>
-    <section>
-      <title>Samba</title>
-      <body>
-        <p>
-Samba es un protocolo para compartir ficheros con redes Microsoft y Novell y <e>no</e> debería usarse a través de Internet. Pero sin embargo necesita ser asegurado.
-</p>
-        <pre caption="/etc/samba/smb.conf" >
-[global]
-  #Enlace a una interface
-  interfaces = eth0 10.0.0.1/32
-
-  #Indica el uso de contraseñas cifradas
-  encrypt passwords = yes
-  directory security mask = 0700
-
-  #Permite el tráfico desde 10.0.0.*
-  hosts allow = 10.0.0.
-
-  #Habilita el modo de autentificación por usuario
-  #(no use el modo compartido)
-  security = user
-
-  #Deshabilita las cuentas con privilegios
-  invalid users = root @wheel
-
-  #Tamaño máximo que smb muestra para un recurso compartido
-  #(no es un límite)
-  max disk size = 102400
-
-  #Política de contraseñas
-  min password length = 8
-  null passwords = no
-
-  #Uso de PAM (si se ha añadido su soporte)
-  obey pam restrictions = yes
-  pam password change = yes
-</pre>
-        <p>
-Asegúrese que los permisos están correctamente establecidos en cada recurso compartido y recuerde leer la <uri link="http://www.samba.org" >documentación</uri>.
+Hacer chroot a un servicio es la manera de limitar el entorno de un servicio (o usuario) para que acceda sólo a lo que debería y para que no escale acceso (o consiga información) que le permita un acceso de root. Ejecutando el servicio como un usuario distinto de <c>root</c> (<c>nobody</c>, <c>apache</c>, <c>named</c>) un atacante sólo podrá acceder a los ficheros con permisos para dicho usuario. Lo que significa que un atacante no conseguirá el acceso de root incluso si los servicios tuvieran algún defecto de seguridad.
 </p>
         <p>
-Ahora reinicie el servidor y añada los usuarios que deban tener acceso a este servicio. Esto se hace mediante <path>/usr/bin/smbpasswd</path> con el parámetro -a.
-</p>
-      </body>
-    </section>
-    <section>
-      <title>Chroot o servidores virtuales</title>
-      <body>
-        <p>
-Hacer chroot a un servicio es la manera de limitar el entorno de un servicio (o usuario) para que acceda sólo a lo que debería y que no escale acceso (o consiga información) que le permita un acceso de root. Ejecutando el servicio como un usuario distinto de root (nobody, apache, named) un atacante sólo podrá acceder a los ficheros con permisos para dicho usuario. Lo que significa que un atacante no conseguirá el acceso de root incluso si los servicios tuvieran algún defecto de seguridad.
+Algunos servicios como <c>pure-ftpd</c> y <c>bind</c> tienen características para hacer chroot, pero otros no. Si el servicio lo soporta, úselo, si no usted tiene que saber como crearse el suyo propio. Veamos como crear un chroot. Para una comprensión elemental de como trabaja un chroot, vamos a probarlo con <c>bash</c> (la manera fácil de aprenderlo)
 </p>
         <p>
-Algunos servicios como pure-ftpd o bind tienen características para hacer chroot, pero otros no. Si el servicio lo soporta, uselo, si no usted tiene que saber como crearse el suyo propio. Veamos como crear un chroot. Para una comprensión elemental de como trabaja un chroot, vamos a probarlo con <c>bash</c> (la manera fácil de aprenderlo)
-</p>
-        <p>
-Cree un directorio <path>/chroot</path> (<c>mkdir chroot</c>). Y averigüe con qué librerías dinámicas está compilado <c>bash</c> (este paso no es necesario si está compilado con <c>-static</c>)
+Cree el directorio <path>/chroot</path> (<c>mkdir chroot</c>). Y averigüe con qué librerías dinámicas está compilado <c>bash</c> (este paso no es necesario si está compilado con <c>-static</c>)
 </p>
         <p>
 El siguiente comando creará una lista con las librerías usadas por bash.
@@ -1585,7 +1550,7 @@ Ahora creemos el entorno para bash.
 # <i>mkdir /chroot/bash/lib</i>
         </pre>
         <p>
-Luego copie los ficheros usados por bash (<path>/lib</path>) al directorio lib del chroot y copie también el comando bash al directorio bin del chroot. Esto creará exactamente el mismo entorno, pero con menos funcionalidad. Después de copiarlo pruébelo:  <c>chroot /chroot/bash</c>. Si obtiene un prompt indicado <path>/</path> ¡funciona! En caso contrario le informará adecuadamente de qué fichero falta. Algunas librerías compartidas dependen unas de otras.
+Luego copie los ficheros usados por <c>bash</c> (<path>/lib</path>) al directorio <path>lib</path> del chroot y copie también el comando bash al directorio <path>bin</path> del chroot. Esto creará exactamente el mismo entorno, pero con menos funcionalidad. Después de copiarlo pruébelo:  <c>chroot /chroot/bash</c>. Si obtiene un prompt indicado <path>/</path> ¡funciona! En caso contrario le informará adecuadamente de qué fichero falta. Algunas librerías compartidas dependen unas de otras.
 </p>
         <p>
 Se dará cuenta que dentro del chroot sólo funciona <c>echo</c>. Esto ocurre porque no tenemos otros comandos dentro del entorno chroot que no sean bash y <c>echo</c> que es una funcionalidad incorporada.
@@ -1593,6 +1558,11 @@ Se dará cuenta que dentro del chroot sólo funciona <c>echo</c>. Esto ocurre po
         <p>
 Esta es básicamente la manera en la que usted podría crear un servicio ejecutado con chroot. La única diferencia es que los servicios a veces depende de servicios y ficheros de configuración en <path>/etc</path>. Simplemente cópielos (los dispositivos pueden copiarse con <c>cp -a</c>) en el entorno de chroot, edite el script init para que use chroot antes de ejecutarlo. Puede resultar difícil encontrar qué dispositivos y ficheros de configuración necesita un servicio. Para esto es práctico el comando <c>strace</c>. Inicie el servicio en bash con <c>/usr/bin/strace</c> y busque los open, read, stat y puede que connect. Lo que le dará una pista de qué ficheros copiar. Pero en muchos casos basta copiar el fichero de contraseñas (passwd) (edite la copia y borre los usuarios que no tienen nada que ver con el servicio), <path>/dev/zero</path>, <path>/dev/log</path> y <path>/dev/random</path>.
 </p>
+      </body>
+    </section>
+    <section>
+      <title>Virtual servers</title>
+      <body>
         <p>
 Otra forma de crear un entorno más seguro es usando un entorno de servidor virtual. Esto creará una copia del Linux existente y arranques en modo virtual. Lo que significa que si el servidor se ve comprometido únicamente el servidor virtual habrá resultado comprometido y no la instalación real.
 </p>
@@ -2852,7 +2822,7 @@ Si tiene una versión reciente del <c>portage</c> instalada usted puede primero 
 su máxima prioridad sería juicioso contrastar la lista con otras fuentes
 </warn>
         <p>
-Todas las líneas con <c>[N]</c> y <c>[U]</c> pueden casi ser ignoradas sin peligro mientras el sistema no esté afectado por este GLSA.
+Todas las líneas con <c>[A]</c> y <c>[U]</c> pueden casi ser ignoradas sin peligro mientras el sistema no esté afectado por este GLSA.
 </p>
         <p>
 Algunas personas todavía prefieren usar <c>emerge nombre_de_paquete</c> en lugar de <c>glsa-check -f</c> por esto todos los GLSA están listados como <c>[N]</c>.
