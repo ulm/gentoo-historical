@@ -14,8 +14,8 @@
    and samba (unix/windows interoperability).
 </abstract>
 
-<version>0.41</version>
-<date>29 September 2002</date>
+<version>0.5</version>
+<date>16 October 2002</date>
 
 <chapter>
 <title>Preliminaries</title>
@@ -345,164 +345,10 @@ be run with or without <e>devfs</e>.  One note; if you've installed a new
 <path>sys-kernel/linux-sources</path> package, make sure that your Linux kernel
 has sound support enabled.</p>
 
-<pre>
-# <i>emerge alsa-driver</i>
-</pre>
-<note>Please remember that if you recompile your kernel, you MUST recompile <i>alsa-driver</i>. This must be done
-to put the ALSA modules into the correct kernel modules directory. </note>
-<p>
-I am going to assume
-here that you have <e>devfs</e> enabled; if you don't then please
-see the Gentoo FAQ:
-<uri>http://www.gentoo.org/doc/faq.html</uri>.
-</p>
-<p>Now we set up the <e>kerneld</e> aliases.</p>
-<pre>
-# <i>nano -w /etc/modules.d/alsa</i>
-# <i>update-modules</i>
-</pre>
-<pre caption="Near the top of /etc/modules.d/alsa">
-##
-## IMPORTANT:
-## You need to customise this section for your specific sound card(s)
-## and then run `update-modules' command.
-## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
-##
-##  ALSA portion
-<i>alias snd-card-0 snd-emu10k1</i>
-<i>alias snd-card-1 snd-emu10k1</i>
-<i>alias snd-card-2 snd-emu10k1</i>
-<i>alias snd-card-3 snd-emu10k1</i>
-<i>alias snd-card-4 snd-emu10k1</i>
-<i>alias snd-card-5 snd-emu10k1</i>
-<i>alias snd-card-6 snd-emu10k1</i>
-<i>alias snd-card-7 snd-emu10k1</i>
-</pre>
-<p>
-You'll want to replace <e>snd-emu10k1</e> with
-your sound card.
-</p>
-<p>You should also verify that <path>/etc/devfsd.conf</path>
-has the alsa devices and permissions correctly registered.</p>
-<pre>
-# <i>nano -w /etc/devfsd.conf</i>
-# <i>rc-update add alsasound boot</i>
-</pre>
-<pre caption="middle of devfsd.conf file with Alsa/oss stuff">
-# ALSA/OSS stuff
-# Comment/change these if you want to change the permissions on
-# the audio devices
-LOOKUP          snd          MODLOAD ACTION snd
-LOOKUP          dsp          MODLOAD
-LOOKUP          mixer        MODLOAD
-LOOKUP          midi         MODLOAD
-REGISTER        sound/.*     PERMISSIONS root.audio 660
-REGISTER        snd/.*       PERMISSIONS root.audio 660
-</pre>
-<note>Notice that devfsd.conf sets <path>/dev/sound</path>
-permissions to be <c>root.audio</c>.  Thus, for non-root users to
-use audio they will have to be part of the <c>audio</c> group.
-</note>
-<warn>Note that the alsasound script should be added to the "boot" runlevel, not 
-the "default" runlevel.
-</warn>
-<p>
-At this point the simplest method is to reboot.  You still won't
-be able to hear any sound, though, because alsa keeps all sound channels
-muted by default.
-</p>
-<pre>
-# <i>emerge alsa-utils</i>
-# <i>amixer</i>
-
-Group 'Input Gain',0
-  Capabilities: volume mute jointly-mute
-  Channels: Front-Left Front-Right
-  Limits: min = 0, max = 15
-  Front-Left: 11 [73%] [mute] [---]
-  Front-Right: 11 [73%] [mute] [---]
-Group 'Master Mono',0
-  Capabilities: volume mute capture exclusive-capture
-  Capture exclusive group: 1
-  Channels: Front-Left Front-Right
-  Limits: min = 0, max = 31
-  Front-Left: 23 [74%] [mute] [---]
-  Front-Right: 23 [74%] [mute] [---]
-Group 'Headphone',0
-  Capabilities: volume mute jointly-mute
-  Channels: Front-Left Front-Right
-  Limits: min = 0, max = 31
-  Front-Left: 0 [0%] [mute] [---]
-  Front-Right: 0 [0%] [mute] [---]
-Group 'Master',0
-  Capabilities: volume mute jointly-mute capture exclusive-capture
-  Capture exclusive group: 1
-  Channels: Front-Left Front-Right
-  Limits: min = 0, max = 63
-  Front-Left: 50 [79%] [mute] [---]
-  Front-Right: 50 [79%] [mute] [---]
-<comment>[chopped for brevity]</comment>
-
-# <i>amixer set Master 100 unmute</i>
-# <i>amixer set PCM 100 unmute</i>
-# <i>aplay /usr/kde/3/share/sounds/pop.wav</i> <comment>(pop.wav is part of KDE)</comment>
-</pre>
-<p>
-After installing the alsa utilities we use <c>amixer</c> to 
-unmute the Master and PCM sound channels and to set their volume
-to 100%.  We check to see if sound is working by using the 
-<c>aplay</c> (alsa play) command.  If you hear a pop, then sound
-is indeed working.  Then, adjust the volume settings to your liking;
-the ncurses-based <c>alsamixer</c> is a great way to get them "just so".
+<p>To install ALSA, please refer to the Gentoo Linux ALSA setup guide
+<uri link = "http://www.gentoo.org/doc/alsa-guide.html">here</uri>
 </p>
 
-<p>You may want to emerge <i>alsa-xmms</i> as that will provide ALSA
-support for XMMS.
-</p>
-
-<p>
-When you reboot your system, the <e>alsasound</e> init
-script will properly save and restore your volume settings.
-</p>
-</body>
-</section>
-<section>
-<title>Standard Kernel Sound Modules</title>
-<body>
-<p>For standard kernel sound, you will have to recompile the
-kernel if you didn't compile your sound module when you installed
-gentoo.
-If you chose to compile the sound driver as a module (not
-compile it directly into the kernel), they you need to add
-the module name (without the .o extension) to <path>/etc/modules.autoload</path>.
-Reboot the machine if you compiled the sound module into the kernel, 
-or just <c>modprobe drivername</c> if you compiled the sound module as a module.
-With any luck the appropriate sound driver 
-should now be loaded.  To actually produce sound, a few more steps
-are required.
-</p>
-<pre caption="non-devfs users only">
-# <i>cd /dev</i>
-# <i>/usr/sbin/MAKEDEV audio</i>
-</pre>
-<pre>
-# <i>cat /usr/kde/2/share/sounds/pop.wav &gt; /dev/dsp</i>
-# <i>emerge media-sound/sox</i>
-# <i>play /usr/kde/2/share/sounds/pop.wav</i>
-</pre>
-<p>
-If any sound at all results from cat'ing the .wav file to 
-<path>/dev/dsp</path>, then sound is probably working.
-By emerge'ing sox one can use the <c>play</c> command to 
-play .wav files (and, unlike using <c>cat</c>, the .wav file
-should actually sound good when using <c>play</c>).
-</p>
-<!-- 
-found that when running <e>devfs</e> the /dev/MAKEDEV script
-would be missing.  Help? Well, you shouldn't need to run MAKEDEV if you're
-using devfs (maybe to get /dev/dsp created?), but if you need it, its real home is in /usr/sbin (/dev/MAKEDEV is
-a symlink.  I changed the text to reflect this. [drobbins]
--->
 </body>
 </section>
 <section>
