@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.4 2004/07/03 23:34:49 port001 Exp $
+# $Id: index.py,v 1.5 2004/07/05 20:35:29 port001 Exp $
 #
 
 import os
@@ -72,6 +72,7 @@ def main():
         page = "main"
 
     print "Content-type:text/html\n\n"
+    Config.HTMLHeadersSent = True
 
     AdminHeaderTemplate = TemplateHandler.New()
     AdminHeaderTemplate.Compile(Config.Template["admin_header"],

@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.1 2004/06/04 06:38:34 port001 Exp $
+# $Id: MySQL.py,v 1.2 2004/07/05 20:34:44 port001 Exp $
 #
 
 import sys
@@ -28,23 +28,8 @@ def Connect():
                              passwd=Config.MySQL["passwd"],
                              db=Config.MySQL["db"])
     except OperationalError, errmsg:
-        Function.logwrite("ERROR: %s: %s" % (__modulename__, errmsg), "Error")
-        if Config.Debug == "Yes":
-	    print ("<font color=FF0000><b>Debug Mode</b></font><br><br><b>" +
-		   "MySQL Error:</b><br><br>%s<br><br>" % errmsg)
-	    Function.traceback()
-        else:
-            print "Unable to connect to database, fuck!"
-	
-	# Print the footer, makes things looks nice and closes HTML tags
-	# opened by the header. Perfectionist?
-	FooterTemplate = TemplateHandler.New()
-    	FooterTemplate.Compile(Config.Template["footer"],
-			   {"GLSR_VERSION":	Config.Version,
-			    "CONTACT":		Config.Contact})
-    	FooterTemplate.Print()
-        
-	sys.exit(1) # Hmm, best way?
+        Function.err(errmsg, __modulename__)
+	sys.exit(1)
 
     return db.cursor(MySQLdb.cursors.DictCursor), db
 
@@ -72,25 +57,7 @@ def _InitQuery(query, args):
     try:
         cursor.execute(query, args)
     except MySQLError, errmsg:
-        Function.logwrite("ERROR: %s: %s" % (__modulename__, errmsg), "Error")
-	
-	# Incase headers haven't been sent yet.
-	print "Content-type:text/html\n\n"
-
-        if Config.Debug == "Yes":
-	    print "<font color=FF0000><b>Debug Mode</b></font><br><br><b>MySQL Error:</b><br /><br />%s<br />Query = %s<br />Args = %s<br /><br />" % (errmsg, query, args)
-	    Function.traceback()
-	else:
-	    time = strftime("%d/%b/%Y %H:%M:%S", gmtime())
-	    print "<b>Ooops!</b><br><br>It looks like you've encountered an error!<br><br>Please contact <b>%s</b> and quote the time '<b>%s</b>'" % (Config.Contact, time)
-
-	# Print the footer, makes things looks nice and closes HTML tags opened by the header. Perfectionist?
-	FooterTemplate = TemplateHandler.New()
-    	FooterTemplate.Compile(Config.Template["footer"],
-			   {"GLSR_VERSION":	Config.Version,
-			    "CONTACT":		Config.Contact})
-    	FooterTemplate.Print()
-
+        Function.err(errmsg, __modulename__)
         sys.exit(1)
 
     db.commit()
