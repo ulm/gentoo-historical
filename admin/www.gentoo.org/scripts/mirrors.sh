@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Header: /var/cvsroot/gentoo/admin/www.gentoo.org/scripts/mirrors.sh,v 1.2 2003/03/14 01:15:10 rajiv Exp $
+# $Header: /var/cvsroot/gentoo/admin/www.gentoo.org/scripts/mirrors.sh,v 1.3 2003/03/14 01:25:24 rajiv Exp $
 #
 # this script creates lists of our (rsync) mirrors.
 # the list is used by mirrorselect.
@@ -9,7 +9,7 @@
 
 echo ">>> Updatine rsync mirrors text list..."
 
-echo "# Gentoo rsync mirrors" > ${WEBROOT}/dyn/rsync-mirrors.txt
+echo "# Gentoo rsync mirrors - <http://www.gentoo.org/>" > ${WEBROOT}/dyn/rsync-mirrors.txt
 echo -n "# Last updated: " >> ${WEBROOT}/dyn/rsync-mirrors.txt
 date >> ${WEBROOT}/dyn/rsync-mirrors.txt
 echo "#" >> ${WEBROOT}/dyn/rsync-mirrors.txt
