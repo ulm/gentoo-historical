@@ -364,6 +364,14 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
+          <xsl:when test="/mainpage/@id='support'">
+            <a class="highlight" href="/main/en/support.xml">Support</a> | 
+          </xsl:when>
+          <xsl:otherwise>
+            <a class="menulink" href="/main/en/support.xml">Support</a> | 
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:choose>
           <xsl:when test="/mainpage/@id='sponsors'">
             <a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:when>
