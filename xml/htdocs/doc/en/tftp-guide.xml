@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/tftp-guide.xml,v 1.1 2003/12/09 18:11:12 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/tftp-guide.xml,v 1.2 2003/12/10 16:09:43 swift Exp $ -->
 
 <guide link="/doc/en/tftp-guide.xml">
 <title>Gentoo TFTP Guide</title>
@@ -252,7 +252,7 @@ and create a directory called <path>/var/tftp/all_nodes/pxelinux.cfg</path>:
 </p>
 
 <pre caption="Setting up PXELinux">
-# <i>cp /path/to/pxelinux.0 /var/tftp/all_nodes</i>
+# <i>cp /usr/lib/syslinux/pxelinux.0 /var/tftp/all_nodes</i>
 # <i>mkdir /var/tftp/all_nodes/pxelinux.cfg</i>
 </pre>
 
@@ -264,7 +264,22 @@ difference between all hosts is the IP address, you can probably understand that
 the naming convention is based on the IP addresses.
 </p>
 
-<!-- TODO Add information about naming convention -->
+<p>
+The files inside <path>pxelinux.cfg</path> must be named after the IP address
+(or IP subrange) they represent, but in hexadecimal notation. For instance,
+192.168.1.100 is <path>C0A80164</path>. If multiple hosts share the same
+configuration, you can use a configuration file named after the common IP
+address range. For instance, all hosts with an IP address starting with
+182.168.1 will use <path>C0A801</path>.
+</p>
+
+<p>
+A host will therefore first look at its full IP address and then continue by
+removing one hexadecimal character at a time until it finds a valid
+configuration file: <path>C0A80164</path>, <path>C0A8016</path>,
+<path>C0A801</path>, <path>C0A80</path>, <path>C0A8</path>, <path>C0A</path>,
+<path>C0</path>, <path>C</path> and finally <path>default</path>.
+</p>
 
 </body>
 </section>
@@ -272,7 +287,36 @@ the naming convention is based on the IP addresses.
 <title>Writing the Configuration File</title>
 <body>
 
-<!-- TODO Add information about configuration file -->
+<p>
+The PXELinux configuration file is fairly straight-forward. On top of
+the file you can define global options while beneith you are able to mention
+kernel-specific options. PXELinux supports a few configuration variables.
+We will mention only a couple. The first (and only) global variable that you
+should know of is the <c>DEFAULT</c> instruction that informs PXELinux
+which kernel to load.
+</p>
+
+<p>
+The kernel-specific parts are easy and self-explanatory. A small note though
+about the <c>label</c> instruction: each label can contain up to eight
+characters before a period (if applicable) and three characters after the period
+(the famous 8.3 DOS style).
+</p>
+
+<pre caption="An example PXELinux configuration">
+default linux
+
+label linux
+  kernel  vmlinux-workstation-2.6.0
+  append  root=/dev/hda1
+</pre>
+
+<p>
+If you want to know more about PXE's abilities, please visit <uri
+link="http://syslinux.zytor.com/pxe.php">Peter Avin's SYSLINUX Page</uri>. For
+now we will leave the configuration "as is" and save the above configuration as
+<path>/var/tftp/all_nodes/pxelinux.cfg/default</path>.
+</p>
 
 </body>
 </section>
@@ -280,7 +324,64 @@ the naming convention is based on the IP addresses.
 <title>Testing PXELinux</title>
 <body>
 
-<!-- TODO Add kernel compilation and testing -->
+<p>
+Before we can test PXELinux, we need a kernel to boot the workstations with.
+Assuming you already have a kernel, save it in <path>/var/tftp/all_nodes</path>
+and rename it to what you have entered in the PXELinux configuration file
+(<path>vmlinux-workstation-2.6.0</path> in the example). Then edit 
+<path>dhcp.conf</path> to uncommend the <c>filename</c> instruction and have it
+point to the <path>pxelinux.0</path> file. Note that <c>filename</c> is relative
+to the TFTP path (<path>/var/tftp/all_nodes</path>):
+</p>
+
+<pre caption="Setting filename in /etc/dhcp.conf">
+    filename "pxelinux.0";
+</pre>
+
+<p>
+Now boot your workstation and watch the magic. 
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>What are the Possibilities?</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Now that you know how to netboot a workstation, you might wonder what the
+possibilities are. The sky is the limit, but here are some interesting pointers
+to possible implementations...
+</p>
+
+</body>
+</section>
+<section>
+<title>Centralised Kernel Managment</title>
+<body>
+
+<p>
+You are now able to maintain all kernels on a central server, which makes kernel
+upgrades for the workstations easier. If you want you can also add initrd's to
+your configurations making it easy for you to have the whole disk of the
+workstation encapsulated in, for instance, EVMS.
+</p>
+
+</body>
+</section>
+<section>
+<title>System Rescue from Network</title>
+<body>
+
+<p>
+By using the files (kernel and initrd) of the <uri
+link="http://www.sysresccd.org/">System Rescue CD</uri> you are able to boot any
+workstation and perform full system analysis, create/replace backups using <uri
+link="http://www.partimage.org">PartImage</uri> and more. 
+</p>
 
 </body>
 </section>
