@@ -1,0 +1,324 @@
+<?xml version='1.0'?> 
+<guide> 
+<title>Gentoo Druckereinrichtung</title> 
+<author title="Autor"><mail link="davisjp@muc.edu"> 
+	John P. Davis</mail>
+</author>
+<author title="Copyeditor"><mail link="sunflare@gentoo.org">Phil Bordelon</mail>
+</author> 
+
+<author title="&#220;bersetzung"><mail link="hendrik.brandt@stud.tu-ilmenau.de">Hendrik Brandt</mail>
+</author> 
+ 
+<abstract>Eine umfassende Anleitung f&#252;r das Drucken unter Gentoo Linux. Dieses Dokument beschreibt sowohl lokales als auch drucken im Netzwerk.</abstract> 
+ 
+<version>1.0.2</version> 
+<date>8. August 2002</date> 
+ 
+<chapter> 
+<title>Lokales Drucken mit CUPS</title> 
+<section> 
+	<title>CUPS installieren</title> 
+<body> 
+ 
+<p>
+Gentoo Linux f&#252;r das Drucken vorzubereiten ist relativ einfach, da alle ben&#246;tigten Pakete seit 8. August 2002 im Portage-Tree vorhanden sind.
+Alles was wir machen m&#252;ssen, ist den gew&#252;nschten Drucker zu konfigurieren und sicherzustellen, dass er Postscript richtig interpretiert. Der erste Schritt ist die Installation der notwendige Software.</p>
+ 
+ 
+<note>Der n&#228;chste Schritt beschreibt die Installation f&#252;r GNOME2.
+Das k&#246;nnte mit KDE funktionieren, da CUPS systemunabh&#228;ngig ist. TODO: Anleitung f&#252;r CUPS unter KDE.</note>
+ 
+<pre> 
+# <c>emerge net-print/cups</c>  
+# <c>emerge gnome-base/gnome-print</c> 
+# <c>emerge gnome-base/libgnomeprint</c> 
+# <c>emerge media-gfx/gimp-print</c> 
+# <c>emerge net-print/gimp-print-cups</c> 
+</pre> 
+ 
+<p>Jetzt, da die Pakete mit ihren Abh&#228;ngigkeiten installiert sind, ist es an der Zeit den Drucker selbst zu installieren.</p>
+<note>
+Dieses Dokument baut auf Hewlett-Packard-USB-Drucker auf, allerdings sollte sich die Einrichtung eines Parallel-Port-Druckers nicht sehr davon unterscheiden.
+Nicht-HP-Drucker sind noch nicht einbezogen, somit wird sich das Besorgen und Installieren zugeh&#246;riger Treiber vom hier geschilderten Vorgehen unterscheiden.
+</note>
+
+<p>
+Wenn noch nicht geschehen, muss USB-Core- und die USB-Drucker-Unterst&#252;tzung [<path>USB-Support -> USB Printer support</path>] in den Kernel einkompiliert werden.
+Ich habe beide Teile als Module &#252;bersetzt; durch <c>lsmod</c> konnte ich sehen dass die Unterst&#252;tzung geladen wurde und funktioniert -- allerdings ist dies jedem selbst &#252;berlassen.</p> 
+ 
+<impo>
+Wenn sie einen Parallel-Port-Drucker verwenden, stellen sie sicher, dass die Parallel-Port-Kernel-Optionen anstatt der USB-Optionen aktiviert sind.
+</impo> 
+ 
+<note>
+Wenn sie nicht sicher sind, wie man den Kernel &#252;bersetzt, dann hilft ihnen das <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">offizielle Kernel-HOWTO</uri>.</note>
+ 
+<p>
+Jetzt, da die notwendigen Kernel-Optionen installiert sind, ist es an der Zeit, zu &#252;berpr&#252;fen ob der Drucker erkannt wurde und funktioniert. Nachdem sie alles neu gestartet haben, m&#252;ssen sie nun noch die Drucker-Module laden.
+</p> 
+ 
+<note>
+Wenn sie USB in den Kernel eingebaut haben, d&#252;rfen sie die USB-Module nicht laden. Wenn sie einen Parallel-Port-Drucker verwenden, ersetzen sie die entsprechenden Module.
+</note> 
+ 
+<pre> 
+# <c>insmod usbcore</c> 
+# <c>insmod printer</c> 
+</pre> 
+ 
+<p>
+Nachdem die Module erfolgreich geladen wurden, stecken sie den Drucker ein und sehen dann in <path>/var/log/messages</path> nach, ob er erkannt wurde.
+</p> 
+ 
+<pre> 
+# <c>tail /var/log/messages</c> 
+</pre> 
+ 
+<p>Sie sollten in etwa folgendes sehen: </p>
+   
+<pre>
+<c>hub.c: USB new device connect on bus2/2, assigned device number 2 </c> 
+<c>printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104 </c>
+</pre>    
+ 
+<note>
+Wenn sie einen Parallel-Port-Drucker verwenden, m&#252;ssen sie diesen <e>vor</e> dem Neustart einstecken.
+Nachdem das System hochgefahren ist, sollten sie mittels <c>dmesg</c> &#252;berpr&#252;fen, ob der Kernel ihren Drucker erkannt hat.
+</note> 
+ 
+<p>
+Ehe sie ihren Drucker f&#252;r CUPS einrichten, ist es m&#246;glich ihn mittels <i>cat</i> zu testen.
+</p> 
+
+<pre>
+# <c>touch test.txt</c>
+# <c>echo "Hallo Welt" > test.txt</c>
+# <c>cat test.txt > /dev/usb/lp0 </c>
+
+<i> Alternativ f&#252;r Parallel-Port-Drucker: </i>
+# <c>cat test.txt > /dev/lp0 </c>
+</pre>
+</body> 
+</section> 
+ 
+<section> 
+	<title>Konfiguration der PPD-Datei</title> 
+<body> 
+<p>
+Jetzt ist es an der Zeit, den Drucker und CUPS zu konfigurieren. Wenn sie einen HP-InkJet-Drucker verwenden, ist es notwendig, dass sie den <c>hpijs</c> Druckertreiber installieren.
+Dieser Treiber &#252;bernimmt die Interpretation von Postscript, die notwendig ist, um den HP-Drucker zum arbeiten zu bringen. Wenn sie keinen HP-Drucker verwenden, wird es notwendig sein, herstellerspezifische Treiber zu besorgen.
+</p> 
+ 
+<note>
+Der <c>hpijs</c> Treiber ist <e>nur</e> f&#252;r HP-InkJet-Drucker geeignet. 
+Wenn sie einen HP-LaserJet verwenden, k&#246;nnte die Unterst&#252;tzung &#252;ber das GNOME-Drucksystem m&#246;glich sein.
+&#220;berspringen sie den folgenden Text, wenn sie keinen HP-InkJet-Drucker verwenden.
+</note> 
+ 
+<pre> 
+# <c>emerge net-print/hpijs</c> 
+</pre> 
+ 
+<impo>
+Die Dokumentation von HP zum <c>hpijs</c>-Treiber findet sich unter <path>/usr/share/doc/hpijs-1.1</path>. Sie sollten diese unbedingt lesen.
+</impo> 
+ 
+<p> 
+Damit ihr Drucker Postscript richtig interpretiert, ben&#246;tigt CUPS die PPD-Datei (Printer Postscript Definition).
+Der einfachste Weg eine PPD zu erzeugen ist mit <i>foomatic</i>.
+Die foomatic Konfigurationsskripte sind &#252;ber Link <uri>http://www.linuxprinting.org/download/foomatic</uri> erh&#228;ltlich.
+Au&#223;erdem ist ein Ebuild f&#252;r Gentoo in der Entwicklung - dieser ist aber noch nicht im offizielle Portage-Tree.
+Wenn foomatic einmal eingerichtet ist, f&#252;hren sie folgende Befehle aus, um ihren Drucker zu konfigurieren und verschieben sie dann die PPD an die richtige Stelle. Das folgende Beispiel verwendet die hpijs-Treiber f&#252;r HP-Drucker.
+</p>
+
+<note>
+Die Drucker-ID finder sich in der foomatic-Datenbank unter <path>/usr/share/foomatic/db/source/printer</path>.
+Sie m&#252;ssen ihre Drucker-ID ausfindigen machen und seine genaue Bezeichnung verwenden.
+Achten sie auf Gro&#223;/Kleinschreibung!
+</note>
+
+<pre>
+# <c>foomatic-configure -s cups -p printer ID -c print_device -n queue name -d hpijs </c>
+# <c>mv /etc/foomatic/your.new.ppd /etc/cups/ppd </c>
+</pre>
+ 
+<impo>
+Wenn sie keinen HP-Drucker verwenden, k&#246;nnten sie trotzdem foomatic zum erstellen ihrer PPD verwenden.
+Bitte sehen sie in der <uri link="http://www.linuxprinting.org/foomatic/USAGE">foomatic-Dokumentation</uri> und bei <uri link="http://www.linuxprinting.org">linuxprinting.org</uri> f&#252;r mehr Informationen nach.
+</impo>
+</body> 
+</section> 
+ 
+<section> 
+	<title>Konfiguration von CUPS</title> 
+<body> 
+<p>
+Jetzt da der Drucker selbst konfiguriert ist, muss CUPS so eingerichtet werden, dass es mit den Druckauftr&#228;gen umgehen kann.
+Praktischerweise kann CUPS &#252;ber einen Web-Browser auf Port 631 des Drucker-Computers verwaltet werden.
+</p>
+
+<impo>
+CUPS bringt eine eigene Konfigurationsdatei f&#252;r den Daemon mit, die gegebenfalls angepasst werden muss. Sie sollten die Datei <path>/etc/cups/cupsd.conf</path> durchsehen und anpassen.
+</impo>
+	
+<pre>
+# <c>rc-update add cupsd default</c>
+# <c>/etc/init.d/cupsd start</c>
+</pre>
+
+<p>
+Der CUPS-Daemon sollte jetzt laufen; &#246;ffnen sie also ihren Lieblings-Browser und setzen sie ihn auf <uri>http://localhost:631</uri>.
+</p> 
+
+<p>
+Jetzt werden sie hoffentlich von der CUPS-Konfigurations-Startseite begr&#252;&#223;t.
+Klicken sie auf den Punkt <i>Administration</i> am Seitenanfang und geben sie das Passwort von root oder jemanden aus der Gruppe <i>lp</i> ein.
+Nachdem sie angemeldet sind,  klicken sie auf <i>Add Printer</i> - ein Unterpunkt von <i>Printers</i>. Geben sie den ben&#246;tigten Namen, die Beschreibung und den Ort ihres Druckers ein.
+Der Name des Druckers muss genau der selbe sein, wie der den sie f&#252;r foomatic festgelegt hatten!
+Jetzt m&#252;ssen sie noch die Schnittstelle angegeben, an der ihr Drucker angeschlossen ist.
+W&#228;hlen sie nun zuerst ihren Druckerhersteller und anschlie&#223;end ihren Druckertyp aus.
+</p>
+
+<p>
+Die Einrichtung ist abgeschlossen. Klicken sie nun den Namen ihres Druckers an und versuchen sie eine Testseite zu drucken. Voila, ihre Druckereinrichtung wurde erfolgreich abgeschlossen!
+</p>
+
+
+<note>
+Wenn der Drucker aus unbekanntem Grund nicht funktioniert, sollten sie in der Datei <i>error_log</i> nachschauen, die sich im Verzeichnis f&#252;r die CUPS-Meldungen (meist <path>/var/log/cups</path>) befindet.
+</note>
+ 
+</body> 
+</section>
+</chapter>
+
+<chapter>
+<title>
+The GIMP, OpenOffice.org 1.0 und Abiword f&#252;r das Drucken f&#252;r CUPS einrichten
+</title>
+<section>
+<title>The GIMP</title>
+<body>
+<p>
+Als erstes werden wir The GIMP einrichten - einfach weil es cool ist. Starten sie The GIMP und &#246;ffnen sie ein existierendes Bild oder erstellen sie einfach ein neues, es ist v&#246;llig egal - alles was wir wollen ist das <i>Datei</i>-Men&#252;.
+Klicken sie das Bild mit der rechten Maustaste an und &#246;ffnen sie <i>Datei -> Drucken...</i>. Der Druckdialog sollte erscheinen; wenn ja klicken sie auf <i>Neuer Drucker</i>.
+Wenn ihr Drucker noch nicht aufgef&#252;hrt ist, geben sie den Namen ihres Druckers ein und w&#228;hlen sie den Druckertyp aus.
+Ok, jetzt k&#246;nnen sie von The GIMP aus drucken.
+Probieren sie etwas mit den Einstellungen herum.
+</p>
+</body>
+</section>
+
+<section>
+<title>OpenOffice.org 1.0 / StarOffice 6</title>
+<body>	
+<p>
+Drucken mit OpenOffice.org-1.0 ist nicht sehr schwer. Gehen sie nach <path>OpenOffice.org1.0/program</path> und f&#252;hren sie <c>spadmin</c> aus.
+Erstellen sie einen neuen Drucker und wenn <i>Choose a Driver</i> (Treiber w&#228;hlen) erscheint, klicken sie auf <i>import</i> und gehen sie zum Ort der PPD ihres Druckers - es sollte die Datei <path>/etc/cups/ppd</path> sein.
+Benutzen sie die voreingestellten Druckerkommandos, geben sie dem Drucker einen Namen, setzen sie ihn als Voreinstellung und sie k&#246;nnen losdrucken!
+Starten sie daf&#252;r OpenOffice.org 1.0, &#246;ffnen sie das Druckfeld und w&#228;hlen sie ihren Drucker aus. Drucken sie nun eine Testseite und fertig.
+</p>
+</body>
+</section>
+
+<section>
+<title>Abiword</title>
+<body>
+<warn>
+Abiword verursacht mit CUPS-1.1.15-r2 Speicherzugriffsfehler und st&#252;rzt ab.
+Sie sollten zur&#252;ck zur .14-Serie wechseln, da dies das Problem behebt.
+</warn>
+
+<p>TODO: Abiword-Unterst&#252;tzung hinzuf&#252;gen.</p>
+<p>Lokales Drucken ist hiermit abgeschlossen; wir fahren fort mit der Netzwerkunterst&#252;tzung.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Drucken im Netzwerk mit CUPS und SAMBA</title>
+<section>
+<title>Drucken mit einem Windows-Drucker von einer Linux-Maschine aus</title>
+<body>
+<p>Damit die n&#228;chsten beiden Netzwerkdruckoptionen funktionieren, muss zun&#228;chst SAMBA installiert werden.</p>
+
+<pre>
+# <c>emerge net-fs/samba</c>
+</pre>
+
+<note>
+Mehr Informationen zu SAMBA finden sie in der offiziellen <uri link="http://www.tldp.org/HOWTO/SMB-HOWTO.html">SAMBA HOWTO</uri>.
+</note>
+
+<p>
+Zun&#228;chst erstellen sie mit <i>foomatic</i> eine PPD-Datei f&#252;r den Zieldrucker. Vergessen sie nicht in der Datenbank der Seite <uri link="http://www.linuxprinting.org/printer_list.cgi">linuxprinting.org</uri> nachzusehen, ob ihr Drucker mit Linux kompatibel ist oder nicht.
+Jetzt teilen wir <i>foomatic</i> mit, wo der und welcher Drucker es ist. Anschlie&#223;end verschieben wir die erzeugte PPD an die richtige Stelle.
+</p>
+
+<pre>
+# <c>foomatic-configure -s cups -p printer ID -c smb://user:password@server/share -n queue name -d hpijs </c> 
+# <c>mv /etc/foomatic/your.new.ppd /etc/cups/ppd </c>
+</pre>
+
+<p>
+Setzen sie jetzt ihren Lieblings-Browser auf <uri>http://localhost:631</uri>, um das CUPS-Konfiguration-Interface zu starten.
+F&#252;hren sie jetzt die oben beschriebenen Schritte aus, um einen Drucker hinzuzuf&#252;gen - geben sie jedoch diesmal bei der Frage nach der Schnittstelle <i>smb://user:password@server/share</i> ein.
+Dies setzt CUPS auf den Drucker am Windows-Rechner.
+</p>
+</body>
+</section>
+
+<section>
+<title>Linux als Windows-kompatiblen Drucker-Server verwenden</title>
+<body>
+
+<p>
+Linux eignet sich hervorragend als Drucker-Server, eigentlich f&#252;r jede Art Server.
+Der erste Schritt ist die Bearbeitung der Datei <path>/etc/samba/smb.conf</path>, um die Einstellungen anzupassen.
+Die Datei <i>smb.conf</i> beinhaltet alle Einstellungen, um ihre Linux-Rechner als Windows-NT-Server f&#252;r alle Windows-Rechner zu tarnen.
+Im folgenden habe ich ein allgemeines Beispiel von <i>smb.conf</i> erstellt.
+Passen sie dieses auf ihre Netzwerkumgebung an.
+</p>
+
+<pre>
+<c>[global]</c>
+
+      <c>workgroup = YOUR_WORKGROUP</c>
+      <c>server string = Gentoo Linux Server</c>
+      <c>encrypt passwords = True</c>
+      <c>security = user</c>
+      <c>smb passwd file = /etc/samba/private/smbpasswd</c>
+      <c>log file = /var/log/samba/log.%m</c>
+      <c>socket options = IPTOS_LOWDELAY TCP_NODELAY</c>
+      <c>domain master = Yes</c>
+      <c>local master = Yes</c>
+      <c>preferred master = Yes</c>
+      <c>os level = 65</c>
+      <c>dns proxy = No</c>
+      <c>name resolve order = lmhosts host bcast</c>
+      <c>bind interfaces only = True</c>
+      <c>interfaces = eth0</c>
+      <c>hosts deny = ALL</c>
+      <c>hosts allow = 192.168.1.4 127.0.0.1 (list of allow hosts here) </c>
+      <c>debug level = 1</c>
+      <c>create mask = 0644</c>
+      <c>directory mask = 0755</c>
+      <c>level2 oplocks = True</c>
+      <c>read raw = no</c>
+      <c>write cache size = 262144</c>
+
+<c>[printers]</c>
+      <c>comment = All Printer</c>
+      <c>path = /var/spool/samba</c>
+      <c>browseable = no </c>
+   
+</pre>
+
+<p>
+Jetzt, da SAMBA konfiguriert ist, starten sie es neu, wechseln sie auf ihren Windows-Rechner und installieren sie einen Netzwerkdrucker. Ganz einfach - oder?
+</p>
+</body>
+</section>
+</chapter>
+</guide>
