@@ -401,7 +401,7 @@
                           <tr>
                             <td>
                               <a href="http://www.linuxworldexpo.com">
-							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe"/>
+							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe" border="0"/>
 							  </a>
                             </td>
                             <td valign="middle">Come visit us at the Linux World Expo, January 21-24 in New York City! <br />
