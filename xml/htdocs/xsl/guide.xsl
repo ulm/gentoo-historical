@@ -170,7 +170,7 @@
               </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.phparch.com/bannerclick.php?AID=68&BID=1&BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+                  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
                   <p class="alttext">
 		  php|architect is the monthly magazine for PHP professionals, available
 		  worldwide in print and electronic format. A percentage of all the sales
@@ -684,7 +684,7 @@
         </tr>
           <tr>
             <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&BID=1&BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
               <p class="alttext">
 		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
               </p>
