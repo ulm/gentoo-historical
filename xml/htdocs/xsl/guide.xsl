@@ -296,10 +296,10 @@
         </xsl:choose>
         <xsl:choose>
           <xsl:when test="/mainpage/@id='projects'">
-            <a class="highlight" href="/proj/en/metastructure/projects.xml">Projects</a> |
+            <a class="highlight" href="/proj/en/metastructure/projects.xml?showlevel=1">Projects</a> |
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/proj/en/metastructure/projects.xml">Projects</a> |
+            <a class="menulink" href="/proj/en/metastructure/projects.xml?showlevel=1">Projects</a> |
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
