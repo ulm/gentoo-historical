@@ -12,8 +12,8 @@ sources that are automatically downloaded from the Internet.  This build CD inst
 will work with any x86-compatible system.
 </abstract>
 
-<version>1.4.3</version>
-<date>13 Dec 2001</date>
+<version>1.4.4</version>
+<date>21 Jan. 2002</date>
 
 <chapter>
 <title>About the Install</title>
@@ -265,6 +265,18 @@ the filesystems that will be used to house our data.  Initialize swap as follows
 <pre>
 # <i>mkfs.xfs /dev/hda3</i>
 </pre>
+<note>
+You may want to add a couple of additional flags to the <c>mkfs.xfs</c> command: <c>-d agcount=3 -l size=32m</c>. 
+The <c>-d agcount=3</c> command will lower
+the number of allocation groups.  XFS will insist on using at least 1 allocation group per 4 GB of your partition,
+so, for example, if you hava a 20 GB partition you will need a minimum agcount of 5.  The <c>-l size=32m</c> command
+increases the journal size to 32 MB.
+</note>
+<warn>
+If you are installing an XFS partition over a previous ReiserFS partition, later attempts to mount may fail without
+an explicit <c>mount -t xfs</c>.  The solution is to zero out the partition before creating the XFS filesystem:
+<c>dd if=/dev/zero of=/dev/hd<comment>x</comment> bs=1k</c>. 
+</warn>
 <p>If you'd like to use ext3, you can create ext3 filesystems using <c>mke2fs -j</c>:</p>
 <pre>
 # <i>mke2fs -j /dev/hda3</i>
@@ -459,7 +471,7 @@ your own custom kernel:
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
 # <i>make dep; make clean; make bzImage; make modules; make modules_install</i>
-# <i>mv bzImage bzImage.orig</i> <comment>[if bzImage already exists]</comment>
+# <i>mv /boot/bzImage /boot/bzImage.orig</i> <comment>[if bzImage already exists]</comment>
 # <i>cp /usr/src/linux/arch/i386/boot/bzImage /boot</i>
 </pre>
 <impo>For your kernel to function properly, there are several options that you will
@@ -550,8 +562,8 @@ Remember to specify <c>ext2</c>, <c>ext3</c> or <c>reiserfs</c> filesystem types
 
 # NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
 </comment>
-/dev/BOOT		/boot		ext2		noauto,noatime		1 1
-/dev/ROOT		/		reiserfs	notail,noatime		0 0
+/dev/BOOT		/boot		ext2		noauto,noatime		1 2
+/dev/ROOT		/		reiserfs	notail,noatime		0 1
 /dev/SWAP		none            swap		sw			0 0
 /dev/cdroms/cdrom0	/mnt/cdrom	iso9660		noauto,ro		0 0
 proc			/proc           proc		defaults		0 0
@@ -691,7 +703,8 @@ root (hd0,5)
 chainloader +1
 </pre>
 <note>
-The <path>menu.lst</path> file should end in "lst" as in "list", not "1st" as in "first".
+The <path>menu.lst</path> file should end in "lst" as in "list", not "1st" as in "first".  Also, (hd0,0) should be 
+written without any spaces inside the parentheses.
 </note>
 <p>After saving this file, Gentoo Linux installation is complete.  Selecting the first option will
 tell GRUB to boot Gentoo Linux without a fuss.  The second part of the menu.lst file is optional, and shows you how to
