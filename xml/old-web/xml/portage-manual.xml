@@ -74,6 +74,7 @@ Users and Developers Guide to Portage
 	and <i>RDEPEND</i> lines in any ebuild file.
 	</p>
 
+	<p>[FIXME: need a list of USE settings]</p>
 
 	<p>
 	Portage determines if a USE setting is enabled or disabled by checking
@@ -342,7 +343,7 @@ SYNC="cvs://:pserver:anonymous@gentoo.org:/home/anoncvs"
 GENTOO_MIRRORS="http://www.ibiblio.org/gentoo"
 </pre>
 	<p>To find a Gentoo mirror closer to your location please check the
-	Gentoo website or ask your local friendly mailing list. </p>
+	Gentoo web site or ask your local friendly mailing list. </p>
 </body>
 </section>
 
@@ -411,15 +412,6 @@ PROXY="http://192.168.1.1:8080"
 <title>Package Management</title>
 
 <section>
-<title>Overview</title>
-<body>
-	<p>
-	[Not done yet]
-	</p>
-</body>
-</section>
-
-<section>
 <title>Updating The Portage Tree</title>
 <body>
 	<p>The Portage tree, located within /usr/portage, contains the library
@@ -427,7 +419,7 @@ PROXY="http://192.168.1.1:8080"
 	The tree also contains profile and package.mask information which
 	is vital for keeping your system up to date.  It is important to keep 
 	this tree updated and in sync with the official Portage tree in order
-	to have the newest versions of packages and bugfixes available to you.
+	to have the newest versions of packages and bug fixes available to you.
 	You can update the Portage tree by issuing the following command:
 	</p>
 <pre>
@@ -445,13 +437,13 @@ emerge rsync
 <body>
 	<p>
 	The act of compiling and installing a package through Portage
-	is refered to as <i>merging</i>.  Portage compiles packages
+	is referred to as <i>merging</i>.  Portage compiles packages
 	and temporarily installs them to an "image" directory where it 
 	records the files to be installed.  These files are then moved from
 	the image directory and merged with the real / filesystem. 
 	</p>
 	<p>
-	The <i>emerge</i> command serves as the frontend of the Portage
+	The <i>emerge</i> command serves as the front-end of the Portage
 	system.  The installation and removal of packages is controlled
 	by using this command and its various command-line arguments.
 	</p>
@@ -466,7 +458,7 @@ emerge galeon
 	The command will compile and install any needed dependencies (taking 
 	into account any USE settings) and then compile and install the 
 	newest unmasked version of galeon.  Galeon could also have been
-	refered to using fully qualified name with category: <i>net-www/galeon</i>
+	referred to using fully qualified name with category: <i>net-www/galeon</i>
 	</p>
 	<p>
 	The <i>emerge</i> command also accepts references to actual ebuild 
@@ -599,6 +591,13 @@ emerge unmerge \&lt;=dev-utils/ltrace-0.3.15
 	range specifications work see the <i>emerge --help</i> command.
 	</p>
 
+	<warn>Unmerging packages can be dangerous.  If you remove any
+	core packages your system may cease to function and 
+	the removal of various libraries may cause software to fail.
+	<b>Portage does not warn you if you are removing core packages
+	or dependencies for other packages.</b>
+	</warn>
+
 	<p>If the package to be removed is in fact installed the emerge
 	program will display exactly what packages are to be removed and
 	will wait a specified number of seconds to give the user time to
@@ -620,7 +619,15 @@ emerge unmerge \&lt;=dev-utils/ltrace-0.3.15
 	edited this file after the package was installed or some other package
 	overwrote the file at a later time.  This allows for packages to be
 	updated to newer versions without fear that unmerging the older
-	installed version will remove vital files.
+	installed version will remove vital files.  
+	</p>
+	<p>
+	The <i>!empty</i> flag refers to directories which Portage refuses 
+	to remove due to the directory not being empty (multiple packages 
+	often claim ownership to the same directories).  Configuration File 
+	protection kicks in when you see the <i>cfg</i> flag.  This means 
+	a newer installed package is claiming ownership of this particular
+	configuration file and Portage refuses to remove it.
 	</p>
 	<warn>Files are considered owned by the last package installed.
 	This is dependent on the order of installation and is independent
@@ -630,20 +637,164 @@ emerge unmerge \&lt;=dev-utils/ltrace-0.3.15
 	versions of the same file in the past (assuming the user did not 
 	manually modify the file).
 	</warn>
+	
+</body>
+</section>
 
+<section>
+<title>System Update</title>
+<body>
+	<p>Portage supports the ability to upgrade installed packages
+	automatically with a single command.  The system update feature
+	allows users to update the "core" packages to versions recommended
+	by Gentoo core developers as being important to the operation
+	of any Gentoo Linux system.  A system update does not update
+	nonessential packages, only those packages defined in the Portage
+	profile as being essential for the operation and maintaince of 
+	a system.
+	</p>
+	<p>
+	To perform a system update issue the following command:
+	</p>
+<pre>
+emerge --update system
+</pre>
+	<p>Portage will then compile and install updates depending on
+	what versions and packages you have installed and what is recommended
+	by the current Portage profile.  Users can use the <i>--pretend</i>
+	argument with the above example to get a list of what would be
+	installed and upgraded during this action.
+	</p>
+	<note>You will notice in the install instructions that one of the
+	first steps is to run <i>emerge system</i> to install the base
+	(or "core") packages.  <i>emerge --update system</i> updates
+	those base packages to the latest recommended versions.
+	</note>
+</body>
+</section>
+
+<section>
+<title>World Update</title>
+<body>
+	<p>Portage also supports the ability to automatically upgrade
+	selected non-essential packages with a single command.  Portage's 
+	world update functionality operates much like a "favorites list".
+	</p>
+	<p>
+	Packages that are manually installed by the user through use of the
+	<i>emerge</i> command are recorded in the <i>world</i> file located at
+	<i>/var/cache/edb/world</i>.  Portage assumes that because you took
+	the effort to tell it to install the package then you must have some
+	interest in keeping it up to date.
+	</p>
+	<p>
+	The <i>world</i> file consists of one package name with category per
+	line and may look something like the following:
+	</p>
+<pre>
+net-im/gaim
+net-www/skipstone
+net-www/galeon
+app-editors/vim
+app-text/ispell
+net-mail/evolution
+dev-util/ltrace
+sys-apps/xfsprogs
+=net-www/mozilla-0.9.8-r3
+sys-apps/attr
+sys-apps/dmapi
+sys-kernel/linux-sources
+sys-apps/acl
+app-office/gnucash
+app-cdr/xcdroast
+</pre>
+	<p>
+	Almost all of the entries in this example file were added 
+	automatically by Portage when the user manually merged the specific 
+	packages.  These packages will be upgrade if a newer version is 
+	available.
+	</p>
+	
+	<note>To save time and make sure your favorite packages are kept updated
+	you may manually edit the <i>world</i> file and add entries for these
+	packages.</note>
+	
+	<p>An interesting entry to note is the entry for the mozilla package
+	(<i>=net-www/mozilla-0.9.8-r3</i>).  This entry was added manually
+	by a user to "pin" a specific version.  Package ranges (as discussed
+	in the <i>Unmerge Packages</i> section of this manual) can be used
+	to force Portage to only consider certain version ranges when 
+	updating packages.  This entry in effect "pins" Portage into 
+	considering mozilla-0.9.8-r3 to be the only available version and 
+	thus it will never attempt to update the package during a world
+	update for any reason.
+	</p>
+	
+	<p>World updates are done using the following command:</p>
+<pre>
+emerge --update world
+</pre>
+	<p>Portage will then attempt to update all packages mentioned in
+	the <i>world</i> file and will update any dependencies if needed.
+	Dependencies and other packages not listed in the <i>world</i> file
+	will not be upgraded unless one of the <i>world</i> file packages
+	needs them to be updated.</p>
+
+	<p>To view a list of what would be updated or installed during 
+	a world update, you can use the <i>--pretend</i> argument as 
+	mentioned in previous sections of this chapter.
+	</p>
+
+	<note>A world update also performs a system update automatically.  
+	Core packages cannot be pinned using the <i>world</i> file method as 
+	the current Portage profile will always override it.</note>
 
 	<p>
-	[ Sorry, this document is not finished yet.  We are working as fast
-	as we can to get it all up in time for the Gentoo 1.0 rush... Please
-	check back in a day for more. ]
+	An interesting side effect of how world update works can
+	be exploited by users wishing to recompile all installed software
+	on a system.  Since world update will try to update all packages
+	mentioned in the <i>world</i> file and their dependencies, the use
+	of the argument <i>--emptytree</i> is a way of forcing the recompile
+	of these packages and every dependency except for glibc.
+	This can be useful for users wishing to change their compiler options
+	or USE keyword settings and want these changes to be used by all
+	the software they use without manually remerging every package.
+	Simply populate the <i>world</i> file with all your commonly used
+	applications and issue the following command: 
+	</p>
+<pre>
+emerge --world update --emptytree
+</pre>
+	<p>
+	You can add the <i>--pretend</i> argument to this command to get a 
+	list of packages that would be recompiled as a result of this action.
 	</p>
 	
 </body>
 </section>
 
+<section>
+<title>Useful Utilities</title>
+<body>
+	<p>Several utilities have been made available by Gentoo users
+	to make life easier.  These utilities are available in the
+	<i>app-admin/gentoolkit</i> in the Gentoo Portage tree.
+	</p>
+	<p>
+	<ul>
+	<li><i>pkg-clean</i> : looks for duplicate versions of the same
+	package installed and prompts for removal of the duplicates (can be dangerous if used incorrectly)</li>
+	<li><i>etc-update</i> : shell script using vim to assist with the
+	merging of /etc files (can be dangerous if used incorrectly)</li>
+	<li><i>qpkg</i> : package database query tool</li>
+	<li><i>epm</i> : another package database query tool with RPM like syntax</li>
+	</ul>
+	</p>
+</body>
+</section>
+
 
 </chapter>
-
 
 </guide>
 
