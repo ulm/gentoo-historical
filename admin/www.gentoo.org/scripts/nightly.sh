@@ -18,7 +18,9 @@ ${WEBSCRIPTS}/use-index.py
 ${WEBSCRIPTS}/site-archive.sh
 ${WEBSCRIPTS}/news-index.sh
 ${WEBSCRIPTS}/doc-tarball.sh
-${WEBSCRIPTS}/icons2xml.pl > /home/httpd/gentoo/xml/htdocs/dyn/icons.xml
+${WEBSCRIPTS}/icons2xml.pl -o ${WEBROOT}/dyn/icons.xml 
+
+# this script takes a while (5+ minutes) to run, so leave it as the last one.
 ${WEBSCRIPTS}/distrowatch.sh
 
 
