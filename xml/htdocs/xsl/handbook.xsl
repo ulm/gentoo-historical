@@ -5,6 +5,7 @@
      already defined those, this is a NOP -->
 <xsl:param name="part">0</xsl:param>
 <xsl:param name="chap">0</xsl:param>
+<xsl:param name="full">0</xsl:param>
 
 <!-- A book -->
 <xsl:template match="/book">
@@ -33,12 +34,17 @@
   <xsl:if test="$style = 'printable'">
     <xsl:apply-templates select="author" />
   </xsl:if>
-  <p>Content:</p>
+  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p>
   <ul>
     <xsl:for-each select="part">
       <xsl:variable name="curpart" select="position()" />
       <li>
-        <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
+        <xsl:if test="$full = 0">
+          <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
+        </xsl:if>
+        <xsl:if test="$full = 1">
+          <b><a href="#book_part{$curpart}"><xsl:value-of select="title" /></a></b>
+        </xsl:if>
         <xsl:if test="abstract">
           <br />
           <xsl:value-of select="abstract" />
@@ -47,7 +53,12 @@
           <xsl:for-each select="chapter">
             <xsl:variable name="curchap" select="position()" />
             <li>
-              <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
+              <xsl:if test="$full = 0">
+                <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
+              </xsl:if>
+              <xsl:if test="$full = 1">
+                <b><a href="#book_part{$curpart}_chap{$curchap}"><xsl:value-of select="title" /></a></b>
+              </xsl:if>
               <xsl:if test="abstract">
                 <br/>
                 <xsl:value-of select="abstract" />
@@ -59,13 +70,25 @@
     </xsl:for-each>
   </ul>
   <xsl:call-template name="menubar" />
+
+  <xsl:if test="$full =1">
+    <xsl:apply-templates select="part" />
+  </xsl:if>
+  
   <xsl:apply-templates select="/book/license" />
 </xsl:template>
 
 <!-- Part inside a book -->
 <xsl:template match="/book/part">
-  <xsl:if test="($chap != 0) and ($part = position())">
-    <xsl:apply-templates select="chapter" />
+  <xsl:if test="(($chap != 0) and ($part = position())) or ($full = 1)">
+    <xsl:param name="pos" select="position()"/>
+    <xsl:if test="$full = 1">
+      <a name="book_part{$pos}"/>
+      <h2><xsl:number level="multiple" format="A. " value="$pos"/><xsl:value-of select="title" /></h2>
+    </xsl:if>
+    <xsl:apply-templates select="chapter">
+      <xsl:with-param name="partnum" select="$pos"/>
+    </xsl:apply-templates>
   </xsl:if>
   <xsl:if test="($chap = 0) and ($part = position())">
     <xsl:choose>
@@ -89,7 +112,7 @@
   <xsl:if test="abstract">
     <p><xsl:value-of select="abstract" /></p>
   </xsl:if>
-  <p>Content:</p>
+  <p><xsl:value-of select="xsl:gettext('Content')"/>:</p>
   <ol>
     <xsl:for-each select="chapter">
       <xsl:variable name="curpos" select="position()" />
@@ -114,7 +137,7 @@
   <xsl:variable name="prevchap" select="number($chap) - 1" />
   <xsl:variable name="nextpart" select="number($part) + 1" />
   <xsl:variable name="nextchap" select="number($chap) + 1" />
-  <xsl:if test="$style != 'printable'">
+  <xsl:if test="($style != 'printable') and ($full = 0)">
     <hr />
     <p>
       <!-- Previous Parts -->
@@ -188,7 +211,7 @@
 
 <!-- Chapter inside a part -->
 <xsl:template match="/book/part/chapter">
-  <xsl:if test="$chap = position()">
+  <xsl:if test="($chap = position()) and ($full = 0)">
     <xsl:choose>
       <xsl:when test="$style = 'printable'">
         <xsl:call-template name="printdoclayout" />
@@ -198,52 +221,107 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:if>
+  <xsl:if test="$full = 1">
+    <xsl:call-template name="bookpartchaptercontent">
+      <xsl:with-param name="partnum"><xsl:value-of select="$partnum" /></xsl:with-param>
+    </xsl:call-template>
+  </xsl:if>
 </xsl:template>
 
 <!-- Content of /book/part/chapter -->
 <xsl:template name="bookpartchaptercontent">
+  <xsl:param name="chapnum" select="position()"/>
   <xsl:call-template name="menubar" />
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>
-  <h1><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h1>
+  <xsl:if test="$full = 1">
+    <a name="book_part{$partnum}_chap{$chapnum}"/>
+    <h3><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h3>
+  </xsl:if>
+  <xsl:if test="$full = 0">
+    <h1><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h1>
+  </xsl:if>
   <xsl:variable name="doc" select="include/@href"/>
   <xsl:variable name="FILE" select="document($doc)" />
-  <xsl:if test="$FILE/sections/section/title">
-    <b>Content: </b>
-    <ul>
-      <xsl:for-each select="$FILE/sections/section/title">
-        <xsl:variable name="pos" select="position()" />
-        <li><a href="#doc_chap{$pos}" class="altlink"><xsl:value-of select="." /></a></li>
-      </xsl:for-each>
-    </ul>
+  <xsl:if test="$full = 0">
+    <!-- Chapter content only when rendering a single page -->
+    <xsl:if test="$FILE/sections/section/title">
+      <b><xsl:value-of select="xsl:gettext('Content')"/>: </b>
+      <ul>
+        <xsl:for-each select="$FILE/sections/section/title">
+          <xsl:variable name="pos" select="position()" />
+          <li><a href="#doc_chap{$pos}" class="altlink"><xsl:value-of select="." /></a></li>
+        </xsl:for-each>
+      </ul>
+    </xsl:if>
   </xsl:if>
-  <xsl:apply-templates select="$FILE/sections/section" />
+
+  <xsl:choose>
+    <xsl:when test="$full = 1">
+      <xsl:apply-templates select="$FILE/sections/section">
+        <xsl:with-param name="chapnum" select="$chapnum"/>
+        <xsl:with-param name="partnum" select="$partnum"/>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="$FILE/sections/section">
+        <xsl:with-param name="chapnum" select="$chapnum"/>
+      </xsl:apply-templates>
+    </xsl:otherwise>
+  </xsl:choose>
   
   <xsl:call-template name="menubar" />
-  <xsl:apply-templates select="/book/license" />
+
+  <xsl:if test="$full = 0">
+    <xsl:apply-templates select="/book/license" />
+  </xsl:if>
 </xsl:template>
 
 <!-- Section inside a chapter -->
 <xsl:template match="/sections/section">
   <xsl:param name="pos" select="position()" />
-  <a name="doc_chap{$pos}"/>
+  <xsl:choose>
+    <xsl:when test="$full = 1">
+      <a name="book_{generate-id(../..)}_chap{$pos}"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <a name="doc_chap{$pos}"/>
+    </xsl:otherwise>
+  </xsl:choose>
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>
   <xsl:if test="title">
-    <p class="chaphead"><span class="chapnum"><xsl:value-of select="$chap" />.<xsl:number level="multiple" format="a. " value="position()" /></span><xsl:value-of select="title" /></p>
+    <p class="chaphead"><span class="chapnum"><xsl:value-of select="$chapnum" />.<xsl:number level="multiple" format="a. " value="position()" /></span><xsl:value-of select="title" /></p>
   </xsl:if>
-  <xsl:apply-templates select="body|subsection">
-    <xsl:with-param name="chpos" select="$pos"/>
-  </xsl:apply-templates>
+
+  <xsl:choose>
+    <xsl:when test="$full = 1">
+      <xsl:apply-templates select="body|subsection">
+        <xsl:with-param name="chpos" select="$pos"/>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="body|subsection">
+        <xsl:with-param name="chpos" select="$pos"/>
+      </xsl:apply-templates>
+    </xsl:otherwise>
+  </xsl:choose>
+
 </xsl:template>
 
 <!-- Subsubsection inside a section -->
 <xsl:template match="/sections/section/subsection">
   <xsl:param name="pos" select="position()"/>
-  <xsl:param name="chpos" />
-  <a name="doc_chap{$chpos}_sect{$pos}" />
+  <xsl:choose>
+    <xsl:when test="$full = 1">
+      <a name="book_{generate-id(../../..)}_chap{$chpos}_sect{$pos}"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <a name="doc_chap{$chpos}_sect{$pos}" />
+    </xsl:otherwise>
+  </xsl:choose>
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>

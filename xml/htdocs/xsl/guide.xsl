@@ -5,6 +5,7 @@
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
 <xsl:include href="handbook.xsl" /> 
+<xsl:include href="inserts.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
 <xsl:preserve-space elements="pre"/>
@@ -27,18 +28,22 @@
     </xsl:choose>
   </p>
 
-  <xsl:if test="$style = 'printable'">
-    <xsl:apply-templates select="author" />
-  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="$style = 'printable'">
+      <xsl:apply-templates select="author" />
+    </xsl:when>
+    <xsl:otherwise>
+      <form name="contents" action="http://www.gentoo.org">
+        <b><xsl:value-of select="xsl:gettext('Content')"/></b>:
+        <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
+          <xsl:for-each select="chapter">
+            <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
+          </xsl:for-each>
+        </select>
+      </form>
+    </xsl:otherwise>
+  </xsl:choose>
 
-  <form name="contents" action="http://www.gentoo.org">
-    <b>Contents</b>:
-    <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
-      <xsl:for-each select="chapter">
-        <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
-      </xsl:for-each>
-    </select>
-  </form>
   <xsl:apply-templates select="chapter"/>
   <br/>
   <xsl:if test="/guide/license">
@@ -53,11 +58,11 @@
 <head>
 <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
 <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-<title>Gentoo Linux 
+<title>
   <xsl:choose>
-    <xsl:when test="/guide/@type='project'">Projects</xsl:when>
-    <xsl:when test="/guide/@type='newsletter'">Newsletter</xsl:when>
-    <xsl:otherwise>Documentation</xsl:otherwise>
+    <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
+    <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
+    <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
 -- 
   <xsl:choose>
@@ -103,7 +108,7 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  Updated <xsl:value-of select="/guide/date|/book/date"/>
+                  <xsl:value-of select="xsl:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
                 </td>
               </tr>
               <tr>
@@ -125,7 +130,7 @@
               <tr>
                 <td class="alttext">
                   <!-- Abstract (summary) of the document -->
-                  <b>Summary:</b>&#160;<xsl:apply-templates select="abstract"/>
+                  <b><xsl:value-of select="xsl:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
                 </td>
               </tr>
               <tr>
@@ -916,7 +921,7 @@
 <!-- Figure template -->
 <xsl:template match="figure">
 <xsl:param name="chid"/>
-<xsl:variable name="fignum"><xsl:number level="any" from="chapter" value="figure"/></xsl:variable>
+<xsl:variable name="fignum"><xsl:number level="any" from="chapter" count="figure"/></xsl:variable>
 <xsl:variable name="figid">doc_chap<xsl:value-of select="$chid"/>_fig<xsl:value-of select="$fignum"/></xsl:variable>
 <br/>
 <a name="{$figid}"/>
@@ -926,10 +931,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            Figure <xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -976,7 +981,7 @@
   <tr>
     <td bgcolor="#bbffbb">
       <p class="note">
-        <b>Note: </b>
+        <b><xsl:value-of select="xsl:gettext('Note')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -990,7 +995,7 @@
   <tr>
     <td bgcolor="#ffffbb">
       <p class="note">
-        <b>Important: </b>
+        <b><xsl:value-of select="xsl:gettext('Important')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1004,7 +1009,7 @@
   <tr>
     <td bgcolor="#ffbbbb">
       <p class="note">
-        <b>Warning: </b>
+        <b><xsl:value-of select="xsl:gettext('Warning')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1125,10 +1130,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            Code listing <xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            Code listing <xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -1155,10 +1160,46 @@
 <xsl:choose>
   <xsl:when test="@link">
     <xsl:choose>
-      <xsl:when test="substring(@link,1,1) = '?'">
-        <!-- We are dealing with a handbook link -->
-        <!-- TODO: don't hardcode handbook.xml because of draft -->
-        <a href="handbook.xml{@link}"><xsl:apply-templates/></a>
+      <xsl:when test="($TTOP = 'book') and ($full = 0) and (starts-with(@link, '?'))">
+        <!-- Handbook link pointing to another part/chapter -->
+        <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
+      </xsl:when>
+      <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '?'))">
+        <!-- Handbook link pointing to another part/chapter 
+             Handbook is being rendered in a single page (full=1)
+             Hence link needs to be rewritten as an internal one
+             i.e. handbook.xml?part=1&chap=3 becomes #book_part1_chap3
+             or   handbook.xml?part=2        becomes #book_part2 -->
+        <xsl:choose>
+          <xsl:when test="contains(@link, '&amp;')">
+            <!-- Link points to a chapter (2 params) -->
+            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:param name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
+            <a href="#book_part{$linkpart}_chap{$linkchap}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:otherwise>
+            <!-- Link points to a part (1 param) -->
+            <xsl:param name="linkpart" select="substring-after(@link, '=')" />
+            <a href="#book_part{$linkpart}"><xsl:apply-templates/></a>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '#'))">
+        <!-- Handbook link pointing to another same part/chapter
+             Handbook is being rendered in a single page (full=1)
+             Hence link needs to be rewritten as an internal one that is unique 
+             for the whole handbook, i.e.
+             #doc_part1_chap3 becomes #book_{UNIQUEID}_part1_chap3, but
+             #anything_else_like_an_ID is left unchanged -->
+        <xsl:choose>
+          <xsl:when test="starts-with(@link, '#doc_')">
+            <xsl:param name="locallink" select="substring-after(@link, 'doc_')" />
+            <a href="#book_{generate-id(/)}_{$locallink}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:otherwise>
+            <a href="{@link}"><xsl:apply-templates/></a>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
         <a href="{@link}"><xsl:apply-templates/></a>

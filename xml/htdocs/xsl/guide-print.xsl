@@ -10,10 +10,9 @@
 <head>
   <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <title>
-    Printable Linux 
     <xsl:choose>
-      <xsl:when test="/guide/@type='project'">Projects</xsl:when>
-      <xsl:otherwise>Documentation</xsl:otherwise>
+      <xsl:when test="/guide/@type='project'"><xsl:value-of select="xsl:gettext('PrintablePrj')"/></xsl:when>
+      <xsl:otherwise><xsl:value-of select="xsl:gettext('PrintableDoc')"/></xsl:otherwise>
     </xsl:choose>
     -- 
     <xsl:choose>
