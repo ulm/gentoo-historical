@@ -1,0 +1,19 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <dirent.h>
+
+
+#define CONFD_DIR "/etc/conf.d/"
+#define INIT_DIR "/etc/init.d/"
+//#define RUNLEVEL_DIR "/etc/runlevels/default"
+#define RUNLEVEL_DIR "/tmp/runlevels/default"
+#define SHFUNCS "/sbin/functions.sh"
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
