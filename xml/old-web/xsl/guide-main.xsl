@@ -257,7 +257,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<tr><td class="logobg" valign="top" align="center" height="36"><a href="/index.html"><img border="0" src="http://www.ibiblio.org/gentoo/images/gbot-s.gif"/></a></td></tr>
 	</table>
 			</td>
-			<td valign="bottom" align="left" bgcolor="#000000">
+			<td colspan="2" valign="bottom" align="left" bgcolor="#000000">
 				<p class="menu">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
@@ -338,9 +338,6 @@ of your sale will go towards further Gentoo Linux development.</p>
 					</xsl:choose>
 				</p>
 			</td>
-			<td valign="middle" align="center">
-				<p class="menu"><a href="http://www.uwyn.com" alt="Our sponsor, UWYN bvba"><img border="0" src="http://www.ibiblio.org/gentoo/images/uwyn_sponsor.png"/></a></p>
-			</td>
 	</tr>
 		<tr>
 			<td valign="top" align="right" width="1%" bgcolor="#dddaec">
@@ -392,21 +389,20 @@ User Docs:<br/>
 						Developer Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
-						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a> <font color="#ff0000">(updated!)</font><br/>
-						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide <font color="#ff0000">(new!)</font></a><br/>
+						<a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><font color="#ff0000">(updated!)</font><br/>
+						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
+						<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
 						<br/>
 	
 						Mailing Lists:<br/><br/>
-						General User List:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-user">gentoo-user</a><br/><br/>
-						Developer list:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-dev">gentoo-dev</a><br/><br/>
-						Announcements:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-announce">gentoo-announce</a><br/><br/>
-						Daily CVS logs:<br/>  <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-cvs">gentoo-cvs</a><br/><br/>
-						<a class="altlink" href="http://lists.gentoo.org">Complete list of mailing lists</a><br/>
+						<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/>
 						<br/>
-						Other Resources:<br/>
-						<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
-						IRC: #gentoo on <a class="altlink" href="http://www.openprojects.net/">OPN</a><br/>
+						IRC chat:<br/><br/>
+						<b>#gentoo</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (general discussion)<br/>
+						<b>#gentooppc</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (Gentoo Linux/PPC)<br/>
+						<b>#gentoo-user</b> on <a class="altlink" href="http://www.openprojects.net/">OPN</a> (low-bandwidth chat)<br/>
 						<br/><br/></p></td></tr></table>
 					</td></tr>
 				</table>
