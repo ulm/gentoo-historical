@@ -1,5 +1,5 @@
-        <form name="login_form" method="post" action="index.py?page=perform_login">
-        <input type="hidden" name="page" value="login" />
+        <form name="login_form" method="post" action="index.py">
+        <input type="hidden" name="page" value="perform_login" />
         <table border="0" cellspacing="5" cellpadding="0">
           <tr>
             <td class="style3">Username:</td>

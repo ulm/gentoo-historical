@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.6 2004/11/07 21:10:35 port001 Exp $
+# $Id: User.py,v 1.7 2004/11/07 21:39:22 port001 Exp $
 #
 
 from time import strftime, gmtime
@@ -19,10 +19,8 @@ from GLSRBackend import GLSRBackend as Parent
 
 class User(Parent):
 
-    def __init__(self):
-
-        self._logged_in = False
-        self.tablename = Config.MySQL["user_table"]
+    _logged_in = False
+    self.tablename = Config.MySQL["user_table"]
 
     def Create(self, details):
         """ Add a new user to the database,
