@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="utf-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/devfs-guide.xml,v 1.3 2004/10/09 11:14:42 aaby Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/devfs-guide.xml,v 1.4 2005/03/05 13:59:08 aaby Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -25,8 +25,8 @@ om og hvordan du arbejder med det.
 
 <license/>
 
-<version>0.2</version>
-<date>09. September 2004</date>
+<version>0.3</version>
+<date>2005-02-14</date>
 
 <chapter>
 <title>Hvad er devfs?</title>
@@ -340,97 +340,17 @@ LOOKUP      .*  MODLOAD
 <chapter>
 <title>Ting der er relaterede til rettigheder</title>
 <section>
-<title>At sætte/ændre rettigheder ved brug af PAM</title>
-<body>
-
-<p>
-Selvom du kan sætte rettigheder i <path>/etc/devfsd.conf</path>,
-bliver det anbefalet at du bruger PAM (<e>Pluggable Authentification
-Modules</e>). Dette er fordi at PAM har det sidste ord at sige
-mht. rettigheder, hvilket måske kan ignorere de ændringer du har lavet
-i <path>/etc/devfsd.conf</path>.
-</p>
-
-<p>
-PAM bruger <path>/etc/security/console.perms</path> filen til
-rettigheder. Denne fil består af to dele: den første del beskriver grupper
-og den anden del rettighederne.
-</p>
-
-<p>
-Lad os kigge på gruppe-delen. Som et eksempel kigger vi på
-sound-gruppen (lyd-gruppen):
-</p>
-
-<pre caption = "Sound-gruppen i /etc/security/console.perms">
-&lt;sound&gt;=/dev/dsp* /dev/audio* /dev/midi* \
-    /dev/mixer* /dev/sequencer* \
-    /dev/sound/* /dev/snd/* /dev/beep \
-    /dev/admm* \
-    /dev/adsp* /dev/aload* /dev/amidi* /dev/dmfm* \
-    /dev/dmmidi* /dev/sndstat
-</pre>                  
-
-<p>
-Syntaksen er ganske nem: du starter med et gruppenavn og ender med en
-liste af enheder, som tilhører denne gruppe.
-</p>
-
-<p>
-Grupper er imidlertid ikke særlig brugbare, hvis du ikke kan gøre
-noget med dem. Så den næste del beskriver hvordan rettigheder håndteres.
-</p>
-
-<pre caption = "Rettigheder for sound-gruppen i /etc/security/console.perms">
-&lt;console&gt;  0600 &lt;sound&gt;      0600 root.audio
-</pre>
-
-<p>
-Det første felt er tjekket af terminal. På de fleste systemer er dette
-console-gruppen. PAM tjekker dette felt for hvert login. Hvis at login
-sker på en enhed, der er indeholdt i console-gruppen, så vil PAM tjekke
-og måske ændre rettighederne på nogle enhedsfiler.
-</p>
-
-<p>
-Det andet felt indeholder rettigheder til hvilken enhedsfil, der
-bliver sat ved at succesfuldt login. Når en person logger ind i
-systemet og enhedsfilerne ejes af en standard ejer/gruppe, så vil PAM
-ændre ejerskabet til den bruger, der er logget ind, og sætte
-rettighederne til dem, der står i dette andet felt. I dette tilfælde
-bruges 0600 (bruger har læse og skrive adgang, alle andre har ikke).
-</p>
-
-<p>
-Det tredje felt indeholder enhedsgruppen, hvilkes rettigheder vil
-blive ændret. I dette tilfælde sound-gruppen (alle enhedsfiler
-relateret til sound) vil blive ændret.
-</p>
-
-<p>
-Det fjerde felt definerer de rettigheder til hvilket enhedsfilen
-bliver sat til, efter at blive returneret til stardard tilstanden. Med
-andre ord, hvis den person der ejer alle enhedsfilerne logger ud, så
-vil PAM sætte rettighederne tilbage til en standard tilstand, hvilket
-beskrives i dette fjerde felt.
-</p>
-
-<p>
-Det femte felt definerer ejerskabet (med gruppe, hvis du ønsker dette)
-til hvilken enhed, attributterne bliver sat, efter at være gået tilbage
-til standard tilstand. Med andre ord, hvis den person der ejer alle
-enhedsfilerne logger ud, så vil PAM sætte ejerskabet tilbage til
-standard tilstand, beskrevet i dette femte felt.
-</p>
-
-</body>
-</section>
-<section>
 <title>At sætte/ændre rettigheder med devfsd</title>
 <body>
 
+<note>
+Disse instruktioner er gyldige så lang tid pam_console er slået fra i 
+<path>/etc/pam.d/system-auth</path>. Hvis du har slået pam_console til
+der, så har PAM det sidste ord når det gælder rettigheder.
+</note>
+
 <p>
-Hvis du virkelig vil sætte rettigheder ved brug af
+Hvis du vil sætte rettigheder ved brug af
 <path>/etc/devfsd.conf</path>, så skal du bruge den syntaks der bruges
 i det følgende eksempel:
 </p>
@@ -446,13 +366,8 @@ kan vælge adskillige enhedsfiler i en regel.
 </p>
 
 <p>
-Det fjerde felt er ejerskabet af enhedsfilen. I modsætning til PAM
-ændres dette ikke (medmindre det bliver nævnt i
-<path>console.perms</path> da PAM altid vinder).
-</p>
-
-<p>
-Det femte felt indeholder rettighederne på enhedsfilen.
+Det fjerde felt er ejerskabet af enhedsfilen og det femte felt
+indeholder rettighederne på enhedsfilen.
 </p>
 
 </body>
@@ -464,8 +379,9 @@ Det femte felt indeholder rettighederne på enhedsfilen.
 <p>
 Dette er standard opførsel for Gentoo: hvis du <c>chown</c> (ændre
 ejer) og <c>chmod</c> (ændre tilstand) på nogle enhedsfiler, så vil
-<c>devfsd</c> gemme informationen, når du lukker systemet ned. Dette er
-fordi <path>/etc/devfsd.conf</path> filen indeholder de følgende linier:
+<c>devfsd</c> gemme informationen, sådan at informationen overlever
+gennem genstart af systemet. Dette er fordi
+<path>/etc/devfsd.conf</path> filen indeholder de følgende linier:
 </p>
 
 <pre caption = "/etc/devfsd.conf til at gemme rettigheder">
@@ -487,7 +403,7 @@ RESTORE         /lib/dev-state
 
 <p>
 Med andre ord, ændrede enhedsfiler bliver kopieret over til 
-<path>/lib/dev-state</path> når systemet lukkes ned og kopieret over
+<path>/lib/dev-state</path> så snart ændringen sker og kopieret over
 til <path>/dev</path> når systemet startes op.
 </p>
 
