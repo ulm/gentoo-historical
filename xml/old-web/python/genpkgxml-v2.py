@@ -78,15 +78,25 @@ def create_pkg_db(db):
 			
 		cpv=mysplit[0]+"/"+PN+"-"+ PnV
 		myebuild = portage.db["/"]["porttree"].getname(cpv)
-		print myebuild
 		myroot = "/"
 		edebug=0
-		depend, rdepend = portage.db["/"]["porttree"].dbapi.aux_get(mybest,["DEPEND","RDEPEND"])
+		homepage, license, description, depend, rdepend = portage.db["/"]["porttree"].dbapi.aux_get(mybest,["HOMEPAGE","LICENSE","DESCRIPTION","DEPEND","RDEPEND"])
 
 		if (PR== "r0"):
 			PnV = PV
 		else:
 			PnV=PV + PR
+		print PN+"-"+PnV
+		
+		#XMLize common characters
+		depend=string.replace(depend,'<','&lt;')
+		depend=string.replace(depend,'>','&gt;')
+		rdepend=string.replace(rdepend,'<','&lt;')
+		rdepend=string.replace(rdepend,'>','&gt;')
+		description=string.replace(description,'&','&amp;')
+		description=string.replace(description,'<','&lt;')
+		description=string.replace(description,'>','&gt;')
+			
 		####################
 		# whack in the version
 		####################
@@ -95,44 +105,23 @@ def create_pkg_db(db):
 		if not db[mysplit[0]].has_key(PN):
 			db[mysplit[0]][PN]={}
 		db[mysplit[0]][PN]['version']=PnV
-		#####################
-		# get the ebuild filename and slurp it in
-		#####################
-		file=open(myebuild,"r")
-		filecontent=file.read()
-		file.close()
-		#####################
-		# remove any \ escapes,.. we don't need them,
-		#####################
-		string.replace(filecontent,'\\',' ')
-		#####################
-		# get the description
-		#####################
-		desc_mo=desc_re.search(filecontent)
-		if desc_mo != None:
-			description=desc_mo.group(1)
-			description=string.replace(description,'&','&amp;')
-			description=string.replace(description,'<','&lt;')
-			description=string.replace(description,'>','&gt;')
-			description=re.sub("([a-zA-Z0-9]+[-a-zA-Z0-9\.]*\@[-a-zA-Z0-9]+\.[-a-zA-Z0-9\.]*[a-zA-Z])","<mail link=\"\\1\">\\1</mail>",description)
+		if description: 
 			db[mysplit[0]][PN]['description'] = description
 		else:
 			db[mysplit[0]][PN]['description'] = "(No description)"
 		#####################
 		# Get the license
 		#####################
-		license_mo=license_re.search(filecontent)
-		if license_mo != None:
-			db[mysplit[0]][PN]['license']   = license_mo.group(1)
+		if license:
+			db[mysplit[0]][PN]['license']   = license
 		else:
 			db[mysplit[0]][PN]['license']   = "(No license specified)"
 
 		#####################
 		# Get the homepage
 		#####################
-		homepage_mo=homepage_re.search(filecontent)
-		if homepage_mo != None:
-			db[mysplit[0]][PN]['homepage']  = homepage_mo.group(1)
+		if homepage:
+			db[mysplit[0]][PN]['homepage']  = homepage
 		else:
 			db[mysplit[0]][PN]['homepage']  = "(No homepage specified)"
 
@@ -141,10 +130,6 @@ def create_pkg_db(db):
 		##########################
 		# Theses will need to be cleaned up before final realease
 		##########################
-		depend=string.replace(depend,'<','&lt;')
-		depend=string.replace(depend,'>','&gt;')
-		rdepend=string.replace(rdepend,'<','&lt;')
-		rdepend=string.replace(rdepend,'>','&gt;')
 		db[mysplit[0]][PN]['depend']    = depend
 		db[mysplit[0]][PN]['rdepend']   = rdepend
 		if not db[mysplit[0]].has_key('package_count'): 
@@ -247,63 +232,65 @@ out.close()
 ####################
 # category index pages
 ####################
+mytime=time.asctime(time.localtime())	
 for category in fsort(db.keys()):
 	workdir = pkgdir + category
 	if not os.path.exists(workdir):
 		os.makedirs(workdir)
 	pkg_count=db[category]['package_count']
 	del db[category]['package_count']
+	
+	pkg_desc_dir = workdir #+ "/" +pkg
+	if not os.path.exists(pkg_desc_dir):
+		os.makedirs(pkg_desc_dir)
+	pkg_desc= pkg_desc_dir + "/index.xml"
+	out=open(pkg_desc,"w")
+	header="""<?xml version='1.0'?>
+	<mainpage id="packages">
+	<title>Gentoo Linux Packages</title> 
+	<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
+	<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
+	<version>Current</version>
+	<date>%s</date>
+	<chapter>""" % mytime 
+	tableheader="""<section>
+	<title>Package Category """+ category+"""</title>
+	<body>
+	<p>
+	Number of packages in category: """ + str(pkg_count) + """
+	<table>
+	<tr>
+	<th>Package</th>
+	<th>Version</th>
+	</tr>"""
+	out.write(header)
+	out.write(tableheader)
+	
 	for pkg in fsort(db[category].keys()):
-		pkg_desc_dir = workdir #+ "/" +pkg
-		if not os.path.exists(pkg_desc_dir):
-			os.makedirs(pkg_desc_dir)
-		pkg_desc= pkg_desc_dir + "/index.xml"
-		out=open(pkg_desc,"w")
+		entry="""<tr>
+			<ti><uri link=\"/packages/"""+category+"/"+pkg+".html\">"+pkg+"""</uri></ti>
+			<ti>"""+db[category][pkg]["version"]+"</ti></tr>"
+		out.write(entry)
+		pkg_file=pkg_desc_dir + "/" +pkg +".xml"
+		pkg_out=open(pkg_file,"w")
 		header="""<?xml version='1.0'?>
 		<mainpage id="packages">
-		<title>Gentoo Linux Packages</title> 
+		<title>Gentoo Linux Packages""" + pkg + """</title>
 		<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
 		<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
 		<version>Current</version>
 		<date>%s</date>
-		<chapter>""" % time.asctime(time.localtime())
-		out.write(header)
-		tableheader="""<section>
-				<title>Package Category """+ category+"""</title>
-				<body>
-				<p>
-				Number of packages in category: """ + str(pkg_count) + """
-				<table>
-				<tr>
-				<th>Package</th>
-				<th>Version</th>
-				</tr>"""
-		out.write(tableheader)
-		for pkgname in fsort(db[category].keys()):
-			entry="""<tr>
-				<ti><uri link=\"/packages/"""+category+"/"+pkgname+".html\">"+pkgname+"""</uri></ti>
-				<ti>"""+db[category][pkgname]["version"]+"</ti></tr>"
-			out.write(entry)
-			pkg_file=pkg_desc_dir + "/" +pkgname +".xml"
-			pkg_out=open(pkg_file,"w")
-			header="""<?xml version='1.0'?>
-			<mainpage id="packages">
-			<title>Gentoo Linux Packages""" + pkgname + """</title>
-			<author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
-			<author title="Colin Morey"><mail link="peitolm@gentoo.org">Colin Morey</mail></author>
-			<version>Current</version>
-			<date>%s</date>
-			<chapter>
-			<section>""" % time.asctime(time.localtime())
-			pkg_out.write(header)
-			pkg_entry=do_pkgentry(db,pkgname,category)
-			pkg_out.write(pkg_entry)
-			footer=do_footer()
-			pkg_out.write(footer)
-			pkg_out.close()
-		out.write("</table></p>\n")
+		<chapter>
+		<section>""" % mytime 
+		pkg_out.write(header)
+		pkg_entry=do_pkgentry(db,pkg,category)
+		pkg_out.write(pkg_entry)
 		footer=do_footer()
-		out.write(footer)
-		out.close()
+		pkg_out.write(footer)
+		pkg_out.close()
+		footer=do_footer()
+	out.write("</table></p>\n")
+	out.write(footer)
+	out.close()
 
 	
