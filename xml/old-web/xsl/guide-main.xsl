@@ -284,8 +284,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 							<a class="menulink" href="/index-contract.html"> Social Contract</a> |
 						</xsl:otherwise>
 					</xsl:choose>
-					</xsl:choose>
-						<xsl:choose>
+					<xsl:choose>
 						<xsl:when test="/mainpage/@id='graphics'">
 							<a class="highlight" href="/index-graphics.html"> Graphics</a> |
 						</xsl:when>
@@ -383,7 +382,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
-						<a class="altlink" href="/doc/xml-guide.html">User-Mode Linux Guide <font color="#ff0000">(new!)</font></a><br/>
+						<a class="altlink" href="/doc/uml.html">User-Mode Linux Guide <font color="#ff0000">(new!)</font></a><br/>
 						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<br/>
 	
@@ -407,7 +406,7 @@ User Docs:<br/>
 					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="/images/gentoo-new.gif"/></td></tr></table><br/>
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86-based systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
 							<xsl:for-each select="newsitems/news[position()&lt;10]">
 							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
 							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
@@ -491,10 +490,12 @@ User Docs:<br/>
 							</table>
 						</xsl:when>
 						<xsl:otherwise>
+							<br/>
 							<table border="0" class="content">
 							<tr><td>
 							<xsl:apply-templates select="chapter"/> 
 							</td></tr></table>
+							<br/><br/><br/>
 						</xsl:otherwise>
 					</xsl:choose>
 						<!--content end-->
