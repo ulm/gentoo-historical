@@ -1,16 +1,9 @@
 #!/bin/bash
 # The wine wrapper
 
-# Kindly distributed by Martin Schlemmer <azarah@gentoo.org>
-# Modified by phoen][x <phoenix@gentoo.org>
-# Modified by CoronaLVR <coronalvr@gentoo.org>
+export INSTALLDIR="/usr/"
 
-export INSTALLDIR="/usr/lib/wine"
-
-if [ -z $WINEPREFIX ]
-then
-	export WINEPREFIX="$HOME/.wine"
-fi
+export WINEPREFIX="${WINEPREFIX:-$HOME/.wine}"
 
 export LD_LIBRARY_PATH="$INSTALLDIR/lib/wine:$INSTALLDIR/lib:$LD_LIBRARY_PATH"
 export WINEDLLPATH="$LD_LIBRARY_PATH"
@@ -19,7 +12,7 @@ export WINE_LOADER=wine-pthread
 
 export RUNWINE="${INSTALLDIR}/bin/wine" 
 
-if [ ! -f $WINEPREFIX/config ]
+if [ ! -f "$WINEPREFIX/config" ]
 then
 	echo "!! ~/.wine/config misses"
 	echo "!! Setting up a config file"
@@ -27,14 +20,13 @@ then
 	mkdir -p ${WINEPREFIX}/fake_windows
 
 	# First copy in the new config file.
-	cp "${INSTALLDIR}/.data/config" "${WINEPREFIX}/config"
+	cp "${INSTALLDIR}/share/wine/data/config" "${WINEPREFIX}/config"
 
 	echo "!! Setting up ~/.wine/fake_windows/"
-	cp -R ${INSTALLDIR}/.data/fake_windows/* ${WINEPREFIX}/fake_windows
+	cp -R ${INSTALLDIR}/share/wine/data/fake_windows ${WINEPREFIX}/fake_windows
 
 	echo "!! Setting up default registry."	
-	/usr/bin/regedit-wine "${INSTALLDIR}/.data/winedefault.reg" &> /dev/null
-	sleep 2
+	regedit "${INSTALLDIR}/share/wine/data/winedefault.reg" &> /dev/null
 
 	echo "!! Installation complete."
 	echo "!! Set your drives in ~/.wine/config"
@@ -48,8 +40,5 @@ export __MSVCRT_HEAP_SELECT=__GLOBAL_HEAP_SELECTED,2
 
 export PATH="$INSTALLDIR/bin:$PATH"
 
-if [ "${WINEDEBUG}" == "" ] ; then
-  WINEDEBUG=-all "$RUNWINE" "$@"
-else
-  "$RUNWINE" "$@"
-fi
+export WINEDEBUG="${WINEDEBUG:--all}"
+exec "$RUNWINE" "$@"
