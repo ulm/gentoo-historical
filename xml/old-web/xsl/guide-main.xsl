@@ -330,10 +330,18 @@ of your sale will go towards further Gentoo Linux development.</p>
 					<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='projects'">
-							<a class="highlight" href="/index-projects.html">Projects</a>
+							<a class="highlight" href="/index-projects.html">Projects</a> |
 						</xsl:when>
 						<xsl:otherwise>
-							<a class="menulink" href="/index-projects.html">Projects</a>
+							<a class="menulink" href="/index-projects.html">Projects</a> |
+						</xsl:otherwise>
+					</xsl:choose>
+					<xsl:choose>
+						<xsl:when test="/mainpage/@id='devlist'">
+							<a class="highlight" href="/index-devlist.html">Developers</a>
+						</xsl:when>
+						<xsl:otherwise>
+							<a class="menulink" href="/index-devlist.html">Developers</a>
 						</xsl:otherwise>
 					</xsl:choose>
 				</p>
