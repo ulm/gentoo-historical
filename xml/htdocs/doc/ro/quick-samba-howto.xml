@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/quick-samba-howto.xml,v 1.2 2004/12/22 22:32:45 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/quick-samba-howto.xml,v 1.3 2005/02/20 18:45:38 alin Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/ro/quick-samba-howto.xml" lang="ro">
-<title>Ghid Samba3/CUPS/Clam AV</title>
+<title>Ghid Samba3/CUPS/ClamAV</title>
 <author title="Autor">
   <mail link="daff at dword dot org">Andreas "daff" Ntaflos</mail>
 </author>
@@ -23,8 +23,8 @@ scanare împotriva viruşilor în mod automat.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.10</version>
-<date>2004-12-21</date>
+<version>1.11</version>
+<date>2005-02-07</date>
 
 <chapter>
 <title>Introducere</title>
@@ -116,7 +116,7 @@ subiectele acoperite, aşa cum sunt prezentate:
   La serverul Samba:
     <ul>
       <li>
-      Instalare şi configurare CLAM-AV
+      Instalare şi configurare CLAMAV
       </li>
       <li>
       Instalare şi configurare Samba
@@ -220,7 +220,7 @@ disponibili pentru Samba.
 </p>
 
 <pre caption="Samba foloseşte următoarele valori USE:">
-kerberos mysql xml acl cups ldap pam readline python oav
+kerberos mysql xml acl cups ldap pam readline python oav libclamav
 </pre>
 
 <p>
@@ -343,6 +343,12 @@ instalarea Samba.
     Symantec CarrierScan şi Trend Micro (VSAPI).
   </ti>
 </tr>
+<tr>
+  <th><b>libclamav</b></th>
+  <ti>
+    Activează ClamAV pentru scanare de viruşi.
+  </ti>
+</tr>
 </table>
 
 <p>
@@ -393,18 +399,11 @@ folosi Samba cu propriile setări. Setările folosite pentru acest ghid sunt:
 </p>
 
 <ul>
-  <li>
-  oav
-  </li>
-  <li>
-  cups
-  </li>
-  <li>
-  readline
-  </li>
-  <li>
-  pam
-  </li>
+  <li>oav</li>
+  <li>cups</li>
+  <li>readline</li>
+  <li>pam</li>
+  <li>libclamav</li>
 </ul>
 
 <p>
@@ -414,7 +413,7 @@ pachetului, indicatorii USE sunt anume incluşi sau excluşi.
 
 <pre caption="Instalarea Samba">
 <comment>(Atenţie la indicatorii USE !)</comment>
-# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql&quot; emerge net-fs/samba</i>
+# <i>USE=&quot;oav readline cups pam -python -ldap -kerberos -xml -acl -mysql libclamav&quot; emerge net-fs/samba</i>
 </pre>
 
 <note>
@@ -429,13 +428,13 @@ Această comandă va instala Samba şi CUPS (dacă CUPS nu este deja instalat).
 </body>
 </section>
 <section>
-<title>Instalarea Clam AV</title>
+<title>Instalarea ClamAV</title>
 <body>
 
 <p>
 Deoarece indicatorul USE <e>oav</e> doar oferă o interfată pentru scanarea
 antivirus în momentul accesului, un program antivirus trebuie efectiv instalat.
-Porgramul folosit în acest ghid este Clam AV.  
+Porgramul folosit în acest ghid este ClamAV.  
 </p>
 
 <pre caption="Instalarea clam-av">
@@ -530,13 +529,9 @@ guest ok = yes
 # această opţiune doar pentru o anumită resursă partajată, 
 # pe care doar o vom scana.</comment>
 
-<comment># Pentru Samba 3.x</comment>
+<comment># Pentru Samba 3.x. Activează scanarea la acces cu ClamAV</comment>
 vfs object = vscan-clamav
 vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
-
-<comment># Pentru Samba 2.2.x</comment>
-vfs object = /usr/lib/samba/vfs/vscan-clamav.so
-vfs options = config-file = /etc/samba/vscan-clamav.conf
 
 <comment># Vom preciza acum informaţiile necesare legate de driver-ele pentru imprimare!</comment>
 [print$]
@@ -599,6 +594,11 @@ orice altceva. Nu vă afectează şi vă va proteja cu siguranţă de o mulţime
 probleme.
 </warn>
 
+<warn>
+Activarea scanării la acces în secţiunea <c>[global]</c> va încetini
+performanţele Samba în mod dramatic.
+</warn>
+
 <p>
 Vom creea directoarele cerute de minima configurare a Samba pentru partajarea
 în toată reţeaua a unei imprimante instalate.  
@@ -643,7 +643,7 @@ hosts: files dns <i>wins</i>
 </body>
 </section>
 <section>
-<title>Configurarea Clam AV</title>
+<title>Configurarea ClamAV</title>
 <body>
 
 <p>
@@ -711,13 +711,29 @@ max lru files entries = 100
 lru file entry lifetime = 5
 
 <comment>; locaţia şi numele daemon-ului clamd (implicit: /var/run/clamd)</comment>
-clamd socket name = /var/run/clamd
+clamd socket name = /tmp/clamd
+
+<comment>; numărul portului pe care ascultă ScannerDaemon</comment>
+oav port = 8127
 </pre>
 
 <p>
 În general este o bună idee să porniţi scanarea antivirus imediat. Adăugaţi-o
 la nivelul de rulare <e>implicit</e> şi apoi porniţi serviciul <c>clamd</c>
-imediat.
+imediat. Serviciul are două procese: freshclam menţine baza de date de definiţii actualizată în timp ce clamd este, de fapt, aplicaţia daemon anti-virus. Mai întâi aţi putea să setaţi căile către fişierele de log astfel încât să vă satisfacă preferinţele.
+</p>
+
+<pre caption="Verificarea locaţiei fişierelor de log">
+# <i>vim /etc/clamd.conf</i>
+<comment>(Verificaţi linia "LogFile /var/log/clamd.log")</comment>
+# <i>vim /etc/freshclam.conf</i>
+<comment>(Verificaţi linia "UpdateLogFile /var/log/freshclam.log")</comment>
+# <i>vim /etc/conf.d/clamd</i>
+<comment>(Setaţi "START_CLAMD=yes" şi "START_FRESHCLAM=yes")</comment>
+</pre>
+
+<p>
+Acum, porniţi aplicaţia de scanare de viruşi.
 </p>
 
 <pre caption="Adăugaţi clamd la pornire şi pornirea acestuia">
