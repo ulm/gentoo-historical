@@ -916,7 +916,7 @@
 <!-- Figure template -->
 <xsl:template match="figure">
 <xsl:param name="chid"/>
-<xsl:variable name="fignum"><xsl:number level="any" from="chapter" count="figure"/></xsl:variable>
+<xsl:variable name="fignum"><xsl:number level="any" from="chapter" value="figure"/></xsl:variable>
 <xsl:variable name="figid">doc_chap<xsl:value-of select="$chid"/>_fig<xsl:value-of select="$fignum"/></xsl:variable>
 <br/>
 <a name="{$figid}"/>

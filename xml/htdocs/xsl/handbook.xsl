@@ -36,7 +36,7 @@
   <p>Content:</p>
   <ul>
     <xsl:for-each select="part">
-      <xsl:param name="curpart" select="position()" />
+      <xsl:variable name="curpart" select="position()" />
       <li>
         <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
         <xsl:if test="abstract">
@@ -45,7 +45,7 @@
         </xsl:if>
         <ol>
           <xsl:for-each select="chapter">
-            <xsl:param name="curchap" select="position()" />
+            <xsl:variable name="curchap" select="position()" />
             <li>
               <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
               <xsl:if test="abstract">
@@ -85,14 +85,14 @@
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>
-  <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
+  <h1><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h1>
   <xsl:if test="abstract">
     <p><xsl:value-of select="abstract" /></p>
   </xsl:if>
   <p>Content:</p>
   <ol>
     <xsl:for-each select="chapter">
-      <xsl:param name="curpos" select="position()" />
+      <xsl:variable name="curpos" select="position()" />
       <xsl:if test="title">
         <li>
           <b><a href="{/book/@link}?part={$part}&amp;chap={$curpos}"><xsl:value-of select="title" /></a></b>
@@ -206,14 +206,14 @@
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>
-  <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
+  <h1><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h1>
   <xsl:variable name="doc" select="include/@href"/>
   <xsl:variable name="FILE" select="document($doc)" />
   <xsl:if test="$FILE/sections/section/title">
     <b>Content: </b>
     <ul>
       <xsl:for-each select="$FILE/sections/section/title">
-        <xsl:param name="pos" select="position()" />
+        <xsl:variable name="pos" select="position()" />
         <li><a href="#doc_chap{$pos}" class="altlink"><xsl:value-of select="." /></a></li>
       </xsl:for-each>
     </ul>
@@ -232,7 +232,7 @@
     <a name="{@id}"/>
   </xsl:if>
   <xsl:if test="title">
-    <p class="chaphead"><span class="chapnum"><xsl:value-of select="$chap" />.<xsl:number level="multiple" format="a. " select="position()" /></span><xsl:value-of select="title" /></p>
+    <p class="chaphead"><span class="chapnum"><xsl:value-of select="$chap" />.<xsl:number level="multiple" format="a. " value="position()" /></span><xsl:value-of select="title" /></p>
   </xsl:if>
   <xsl:apply-templates select="body|subsection">
     <xsl:with-param name="chpos" select="$pos"/>
@@ -242,6 +242,7 @@
 <!-- Subsubsection inside a section -->
 <xsl:template match="/sections/section/subsection">
   <xsl:param name="pos" select="position()"/>
+  <xsl:param name="chpos" />
   <a name="doc_chap{$chpos}_sect{$pos}" />
   <xsl:if test="@id">
     <a name="{@id}"/>
