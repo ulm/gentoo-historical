@@ -6,18 +6,28 @@
 
 <func:function name="func:gettext">
   <xsl:param name="str"/>
-  <xsl:param name="LANG" select="//*[1]/@lang"/>
+  <xsl:param name="PLANG"/>
   
 <!-- For Debugging:
-<xsl:message>LANG=<xsl:value-of select="$LANG" /> || Param=<xsl:value-of select="$str" /></xsl:message>
+<xsl:message>PLANG=<xsl:value-of select="$PLANG"/> || str=<xsl:value-of select="$str"/> || gLang=<xsl:value-of select="$GLANG"/></xsl:message>
 -->
 
   <!-- Default to English version when $LANG is undefined, the lang does not
        exist, or is improperly set.  Default to 'UNDEFINED STRING' when the
        requested text is unavailable.
+
+       Used either the passed parameter (e.g. from metadoc.xsl)
+       or the Global $GLANG that was initialized when loading a guide or a book
   -->
+  <xsl:variable name="LANG">
+    <xsl:choose>
+      <xsl:when test="$PLANG"><xsl:value-of select="$PLANG"/></xsl:when>
+      <xsl:when test="$GLANG"><xsl:value-of select="$GLANG"/></xsl:when>
+    </xsl:choose>
+  </xsl:variable>
+
   <xsl:choose>
-    <xsl:when test="contains('|da|en|es|fi|fr|id|it|pl|ro|ru|sv|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|da|en|es|fi|fr|id|it|pl|pt_br|ro|ru|sv|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts-', $LANG, '.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
@@ -189,6 +199,9 @@
 
 <!-- Value of top element's link attribute e.g. "handbook.xml" -->
 <xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param>
+
+<!-- Value of top element's lang attribute e.g. "handbook.xml" -->
+<xsl:param name="GLANG"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
 
 <xsl:template match="/">
