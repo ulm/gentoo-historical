@@ -388,6 +388,7 @@ User Docs:<br/>
 						<a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/java.html">Gentoo Java Guide</a> <font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
 						<a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
 						<br/><br/>
