@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.45 2005/02/07 01:18:21 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.46 2005/02/07 05:31:50 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -86,7 +86,8 @@ class ArchitectureTemplate:
 		# These need to be changed
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
-		for pkg in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if '/' in pkg:
+		packages = [word for word in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if "/" in word]
+		for pkg in packages:
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg =" + pkg, chroot=self._chroot_dir)
 				if ret:

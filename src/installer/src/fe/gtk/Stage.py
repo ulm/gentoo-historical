@@ -33,6 +33,7 @@ Each option has a brief description beside it.
 		hbox.pack_start(self.radio_stages[2], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("Most of the system will be compiled with your CHOST and CFLAGS settings. Don't use\nthis option unless you have a good reason"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
 		self.radio_stages[3] = gtk.RadioButton(self.radio_stages[1], "Stage 3")
 		self.radio_stages[3].set_name("3")
 		self.radio_stages[3].connect("toggled", self.stage_selected, "3")
@@ -41,6 +42,15 @@ Each option has a brief description beside it.
 		hbox.pack_start(self.radio_stages[3], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("The base system will be installed using precompiled packages. You can recompile later\nwith your custom settings if you choose. This is the fastest option"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
 		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
+		self.check_grp = gtk.CheckButton("GRP Install")
+		self.check_grp.set_sensitive(gtk.FALSE)
+		self.check_grp.set_size_request(100, -1)
+		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox.pack_start(self.check_grp, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("Any extra packages installed (beyond the stage3) will be installed using binaries from\nthe LiveCD that you are installing from"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(gtk.Label("Stage tarball URI:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		self.entry_stage_tarball_uri = gtk.Entry()
@@ -52,6 +62,10 @@ Each option has a brief description beside it.
 
 	def stage_selected(self, widget, data=None):
 		self.active_selection = int(data)
+		if int(data) == 3:
+			self.check_grp.set_sensitive(gtk.TRUE)
+		else:
+			self.check_grp.set_sensitive(gtk.FALSE)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
@@ -62,9 +76,14 @@ Each option has a brief description beside it.
 		self.active_selection = int(self.controller.install_profile.get_install_stage()) or 1
 		self.radio_stages[self.active_selection].set_active(gtk.TRUE)
 		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
+		self.check_grp.set_active(self.controller.install_profile.get_grp_install())
 
 	def deactivate(self):
 		self.controller.install_profile.set_install_stage(None, self.active_selection, None)
+		if self.active_selection == 3:
+			self.controller.install_profile.set_grp_install(None, self.check_grp.get_active(), None)
+		else:
+			self.controller.install_profile.set_grp_install(None, False, None)
 		try: self.controller.install_profile.set_stage_tarball_uri(None, self.entry_stage_tarball_uri.get_text(), None)
 		except: pass
 		return True
