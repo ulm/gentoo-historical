@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gnupg-user.xml,v 1.25 2005/02/05 17:03:26 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gnupg-user.xml,v 1.26 2005/02/14 14:25:44 swift Exp $ -->
 
 <guide link = "/doc/en/gnupg-user.xml">
 <title>GnuPG Gentoo user guide</title>
@@ -22,8 +22,8 @@ communication.
 
 <license/>
 
-<version>1.0.10</version>
-<date>2005-02-05</date>
+<version>1.0.11</version>
+<date>2005-02-14</date>
 
 
 <chapter>
@@ -422,6 +422,106 @@ sign it if he trusts it.
 </section>
 </chapter>
 
+<chapter id="gpg-agent">
+<title>Using a GPG Agent</title>
+<section>
+<title>What is a GPG Agent?</title>
+<body>
+
+<p>
+There are cases, when working with certain applications, where you use your GPG
+key very frequently, which means that you have to type your passphrase a lot of
+times. Several applications used to support a passphrase caching mechanism to
+make life easier for users, this however disallowed sharing this cache across
+programs (how secure would that be?) and forced applications to reinvent the
+wheel over and over again.
+</p>
+
+<p>
+A GPG agent is a separate application that GPG uses to cache the passphrase in
+a standard and secure way. It allows applications to use GPG concurrently: if
+you enter your passphrase while working in one application, the other
+application can work with GPG without reiterating the request for the
+passphrase to unlock the key - if the GPG agent is configured to allow so, of
+course.
+</p>
+
+<p>
+Gentoo provides a few GPG agent applications. <c>app-crypt/gpg-agent</c> can be
+considered the reference one, and will be the one we'll use in this document.
+</p>
+
+</body>
+</section>
+<section>
+<title>Installing and Configuring gpg-agent and pinentry</title>
+<body>
+
+<p>
+You should install <c>gpg-agent</c>, obviously, and also <c>pinentry</c>, which
+is the helper application that gpg-agent uses to request the passphrase in a
+graphical window. It comes in three flavors: it can popup a window using the
+gtk+, Qt, or curses library (depending on the USE flag you set when emerging
+it).
+</p>
+
+<pre caption="Installing gpg-agent and pinentry">
+# <i>emerge gpg-agent pinentry</i>
+</pre>
+
+<p>
+Next, create a file called <path>~/.gnupg/gpg-agent.conf</path> and enter the
+following lines which define the default timeout of the passphrase (e.g. 30
+minutes) and the application to be called for when the passphrase should be
+retrieved the first time (e.g. the Qt version of pinentry).
+</p>
+
+<pre caption="Editing ~/.gnupg/gpg-agent.conf">
+pinentry-program /usr/bin/pinentry-qt
+no-grab
+default-cache-ttl 1800
+</pre>
+
+<p>
+Now configure GnuPG to use an agent when appropriate. Edit
+<path>~/.gnupg/gpg.conf</path> and add the following line:
+</p>
+
+<pre caption="Configuring GnuPG to use a GPG Agent">
+use-agent
+</pre>
+
+<p>
+Now your system is (almost) set to use the GPG agent.
+</p>
+
+</body>
+</section>
+<section>
+<title>Automatically Starting the GPG Agent</title>
+<body>
+
+<p>
+If you use KDE as graphical environment, edit
+<path>/usr/kde/3.x/env/agent-startup.sh</path> (system-wide) or
+<path>~/.kde/env/gpgagent.sh</path> (local user) and add the following command
+to it to have KDE automatically starting the GPG agent:
+</p>
+
+<pre caption="Make KDE automatically start the GPG agent">
+eval "$(gpg-agent --daemon)"
+</pre>
+
+<p>
+If you use a different graphical environment, put that line (the same one as
+mentioned above) in <path>~/.xinitrc</path> (if you use <c>startx</c>) or
+<path>~/.xsession</path> (if you use XDM/GDM/KDM/...).
+</p>
+
+</body>
+</section>
+</chapter>
+
 <chapter>
 <title>Working with documents</title>
 <section>
@@ -612,22 +712,21 @@ to use the command line, right?).
 <title>KMail</title>
 <body>
 
-<impo>
-Since KMail 1.7, you need to go through an entire <uri
-link="http://kmail.kde.org/kmail-pgpmime-howto.html">routine</uri> for setting
-up GnuPG with KMail. Please follow those instructions if you are using KMail
-1.7.
-</impo>
-
 <p>
-Kmail is also pretty easy to setup. I will just post a few pictures on how to
-set it up. Basically you have to tell KMail to use GPG and then which key to
-sign with.
+If you have the <c>crypt</c> USE flag set, KMail will be compiled with gpg
+support, and will be able to encrypt and decrypt inline PGP mails automatically
+as well as encrypting OpenPGP/MIME mails. If you want to decrypt OpenPGP/MIME
+mails as well (which you probably want) you need to have a running GPG agent
+(see <uri link="#gpg-agent">Using a GPG Agent</uri>).
 </p>
 
-<figure link="/images/kmail_identity.png" caption="kmail identity options OpenGPG key"/>
-<figure link="/images/kmail_security_openpgp.png" caption="kmail security options OpenPGP"/>
-<figure link="/images/kmail_security_plugins.png" caption="kmail security options Crypto Plugins"/>
+<p>
+You can verify if KMail is properly configured by going to <c>Settings</c>,
+<c>Configure KMail</c>, <c>Security</c>, <c>Crypto Backends</c>. You should see
+a GpgME-based backend listed and you should be able to fill the OpenPGP
+checkbox. If it is listed but grayed out, click on <c>Rescan</c>. If the
+GpgME-based backend remains grayed out, KMail is not working properly.
+</p>
 
 </body>
 </section>
