@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/ja/gentoo-x86-install.xml">
   <title>Gentoo Linux 1.4_rc2 インストール手引書</title>
@@ -36,9 +35,9 @@
   </author>
   <abstract>Gentoo Linux 1.4_rc2のインストール手引書です。この手引書ではゼロからGentoo Linuxを構築することはもちろん、いろいろな段階からのインストールを解説します。
   </abstract>
-  <version>2.3.10</version>
+  <version>2.3.11</version>
   <date>15 January 2003</date>
-  <!-- Original revision: 1.46 -->
+  <!-- Original revision: 1.49 -->
 
 <chapter>
 <title>インストールについて</title>
@@ -150,7 +149,7 @@
 		<p>Gentoo LiveCDはDMAを有効にするはずですが、有効にならなかったときは<c>hdparm</c>を使ってドライブにDMAを設定できます。</p>
 		<pre caption="DMA設定"><comment>hdXをディスクデバイス名で置き換えてください。</comment>
 # hdparm -d 1 /dev/hdX <comment>DMAを有効にする</comment>
-# hdparm -d1 -A1 -m16 -u1 -a64 <comment>DMAを有効にし、他の安全にパフォーマンスを向上させるオプションを有効にする</comment>
+# hdparm -d1 -A1 -m16 -u1 -a64 /dev/hdX <comment>DMAを有効にし、他の安全にパフォーマンスを向上させるオプションを有効にする</comment>
 # hdparm -X66 /dev/hdX <comment>Ultra-DMAを強制的に有効にする。危険! ディスクの中身が台無しになる恐れがあります</comment>
 		</pre>
 		</body>
@@ -369,6 +368,10 @@ eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
 # <c>cd /mnt/gentoo</c>
 <comment>lynxを使って、圧縮ファイルのURLを確認してください。</comment>
 # <c>lynx http://www.ibiblio.org/pub/Linux/distributions/gentoo/releases/1.4_rc2/x86/</c>
+<comment>矢印キーの<c>上</c>と<c>下</c>(あるいは<c>タブキー</c>)を使って希望する圧縮ファイルのあるディレクトリに移動してください。
+カーソルをダウンロードしたいステージファイルに合わせ、<c>d</c>を押すとダウンロードが始まりますのでファイルに保存して終了してください。
+
+<b>あるいは</b>コマンドラインでwgetを使ってダウンロードすることもできます。</comment>
 # <c>wget <comment>ここに必要な圧縮ファイルのURLを指定してください。</comment></c>
 		</pre>
 		</body>
@@ -404,6 +407,7 @@ eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
 # <c>env-update</c>
 Regenerating /etc/ld.so.cache...
 # <c>source /etc/profile</c>
+<comment>上のコマンドはシェルに新しい検索パスを設定し更新されたバイナリが使えるようにします。</comment>
 		</pre>
 		<p>このコマンドを実行すればGentoo Linuxの「中」に入ることができます。</p>
 		</body>
@@ -577,6 +581,8 @@ Regenerating /etc/ld.so.cache...
 		<pre caption = "Linuxカーネルのコンパイル">
 # <c>cd /usr/src/linux</c>
 # <c>source /etc/profile</c>
+<comment>繰り返しますが、上のコマンドは検索パスを更新するためのものです。
+gccコマンドが見つからないといったエラーが出たときには、このコマンドを実行しなければなりません。</comment> 
 # <c>make menuconfig</c>
 # <c>make dep &amp;&amp; make clean bzImage modules modules_install</c>
 # <c>mv /boot/bzImage /boot/bzImage.orig</c>
@@ -763,8 +769,16 @@ depend() {
 </chapter>
 
 <chapter>
-<title>最終設定: GRUB設定</title>
+	<title>最終ステップ: ブートローダの設定</title>
 	<section>
+		<title>注意事項</title> 
+		<body> 
+		<p>Gentooの精神にのっとって、複数のブートローダの中から利用するものを選択することができます。バーチャルパッケージシステムを使うことによって、今のところGRUBとLILOのどちらかを選べます。</p> 
+		<p>気をつけて欲しいのは、両方をインストールする必要などないということです。むしろトラブルの原因となりますので、どちらか一方を選択するようにしてください。</p>
+		</body> 
+	</section> 
+	<section> 
+		<title>GRUBの設定</title>
 		<body>
 		<p>GRUBを理解するのにもっとも重要なことは、GRUBがどうやってハードディスクとパーティションを参照するかということです。<path>/dev/hda1</path>パーティションはGRUBでは<path>(hd0,0)</path>と呼ばれます。hd0,0をカッコでくくる点に注意してください。ハードディスクはaからではなく0から数えます。パーティションは1からではなく0から数えます。注意しなければならないのは、数えられるのはハードディスクだけ、という点です。 CD-ROMプレイヤーやライターといったATAPI-IDEデバイスは数えられません。これはSCSIでも同じです(通常、SCSIはIDEより大きな番号が割り当てられます。ただし、BIOSでSCSIからブートするようになっている場合を除きます)。たとえば、ハードディスクが /dev/hda、CD-ROMドライブが /dev/hdb、CD-Rが /dev/hdc、二つ目のハードディスクが /dev/hddだとすると、<path>/dev/hdd7</path>は変換されて<path>(hd1,6)</path>となります。これはトリッキーに見えますし、実際にトリッキーなのですが、grubはtabキーによる補完の機能をもっているので、ハードディスクやパーティションがたくさんあってもgrubの番号付けで混乱することは少ないでしょう。感じが掴めたら、GRUBをインストールしましょう。</p>
 		<p>GRUBをインストールするもっとも簡単な方法は、chrootから<c>grub</c>とタイプすることです。</p>
@@ -811,11 +825,8 @@ chainloader +1
 			<note>初期のGentoo Linuxには当てはまりませんが、devfsを有効にするために<c>kernel</c>コマンドに<c>devfs=mount</c>を追加する必要はありません。 rc6ではdevfsはデフォルトで有効になっています。</note>
 		</body>
 	</section>
-</chapter>
-
-<chapter>
-<title>最終設定: LILOの設定</title>
 	<section>
+		<title>LILOの設定</title>
 		<body>
 		<p>GRUBは多くの人にとって新しい選択肢ですし、いつも安定しているというわけではありません。LILO(LInuxLOader)はその点ではLinuxブートローダとしての実績があります。安定性や設定が複雑すぎないことを求めるなら、LILOを試してみてください。</p>
 		<p>まず、LILOをマージしてください。</p>
