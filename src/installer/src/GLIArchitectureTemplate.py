@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.59 2005/03/22 18:49:12 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.60 2005/03/24 03:12:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -88,7 +88,7 @@ class ArchitectureTemplate:
 		packages = [word for word in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if "/" in word]
 		for pkg in packages:
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
-				ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg =" + pkg, chroot=self._chroot_dir)
+				ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg =" + pkg)
 				if ret:
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					pass
@@ -400,7 +400,15 @@ class ArchitectureTemplate:
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
 		kernel_pkg = self._install_profile.get_kernel_source_pkg()
-		if kernel_pkg:
+#		if kernel_pkg:
+		if kernel_pkg == "livecd-kernel":
+			PKGDIR = "/usr/portage/packages"
+			PORTAGE_TMPDIR = "/var/tmp/portage"
+			PATH = os.path.abspath(sys.argv[0])
+			ret = GLIUtility.spawn(PATH + '../../misc/mkvardb -p livecd-kernel -c sys-kernel -v 0.1 /boot/kernel-$(uname -r) /boot/initrd-$(uname -r) $(for i in $(find "/lib/modules/$(uname -r)" -type f); do grep --quiet "${i}" /var/db/pkg/*/*/CONTENTS || echo ${i}; done)')
+			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
+			GLIUtility.spawn("emerge -K livecd-kernel", chroot=self._chroot_dir)
+		else:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
 				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
@@ -424,6 +432,8 @@ class ArchitectureTemplate:
 		"Builds kernel"
 		self._logger.mark()
 		self._logger.log("Starting build_kernel")
+		# No building necessary if using the LiveCD's kernel/initrd
+		if self._install_profile.get_kernel_source_pkg() == "livecd-kernel": return
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 		if kernel_config_uri == "":  #use genkernel if no specific config

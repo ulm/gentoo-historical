@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
+import sys
+sys.path.append("../..")
+
 import GLIInstallProfile
 import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
 import gtk
-import sys
 import crypt
 import random
 

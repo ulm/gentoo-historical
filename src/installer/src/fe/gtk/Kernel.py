@@ -25,7 +25,7 @@ a brief description beside it.
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.kernel_sources['vanilla-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("These are the kernel sources straight from kernel.org without\npatches (except where necessary)"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.kernel_sources['gentoo-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "gentoo-sources")
 		self.kernel_sources['gentoo-sources'].set_name("gentoo-sources")
@@ -34,7 +34,7 @@ a brief description beside it.
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.kernel_sources['gentoo-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.kernel_sources['gentoo-dev-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "gentoo-dev-sources")
 		self.kernel_sources['gentoo-dev-sources'].set_name("gentoo-dev-sources")
@@ -43,7 +43,7 @@ a brief description beside it.
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.kernel_sources['gentoo-dev-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.kernel_sources['development-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "development-sources")
 		self.kernel_sources['development-sources'].set_name("development-sources")
@@ -52,16 +52,16 @@ a brief description beside it.
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.kernel_sources['development-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These\nare generally considered stable."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-		self.kernel_sources['hardened-sources'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "hardened-sources")
-		self.kernel_sources['hardened-sources'].set_name("hardened-sources")
-		self.kernel_sources['hardened-sources'].connect("toggled", self.stage_selected, "hardened-sources")
-		self.kernel_sources['hardened-sources'].set_size_request(150, -1)
+		self.kernel_sources['livecd-kernel'] = gtk.RadioButton(self.kernel_sources['vanilla-sources'], "livecd-kernel")
+		self.kernel_sources['livecd-kernel'].set_name("livecd-kernel")
+		self.kernel_sources['livecd-kernel'].connect("toggled", self.stage_selected, "livecd-kernel")
+		self.kernel_sources['livecd-kernel'].set_size_request(150, -1)
 		hbox = gtk.HBox(gtk.FALSE, 0)
-		hbox.pack_start(self.kernel_sources['hardened-sources'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		hbox.pack_start(gtk.Label("These sources are patched with security-related patches that generally\ntighten system security."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		hbox.pack_start(self.kernel_sources['livecd-kernel'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(gtk.Label("This will install the LiveCD's kernel/initrd into your new system. Use this\noption to get your system up and running quickly. You should not tell\nthe installer to emerge any packages that require kernel sources as they\nwon't be present."), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
 		self.add_content(vert)
 

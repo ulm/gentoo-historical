@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
+import sys
+sys.path.append("../..")
+
 import dialog
 import GLIInstallProfile
 import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
 import GLIStorageDevice
-import sys
 import crypt
 import random
 import commands
@@ -252,8 +254,14 @@ def set_boot_loader():
 
 def set_timezone():
 # This section will be for setting the timezone. It will eventually pull from /usr/share/zoneinfo or something
-	code, timezone = d.inputbox("Enter a timezone", init=install_profile.get_time_zone())
-	if code == DLG_OK: install_profile.set_time_zone(None, timezone, None)
+	tzlist = []
+	file = open("/usr/share/zoneinfo/zone.tab")
+	for line in file.readlines():
+		if not line.startswith('#') and len(line) > 0:
+        		tzlist.append("%s" % line.split("\t")[2].strip())
+	tzlist.sort()
+	code, tznum = d.menu("Enter a timezone", choices=dmenu_list_to_choices(tzlist), cancel="Back")
+	if code == DLG_OK: install_profile.set_time_zone(None, tzlist[int(tznum)-1], None)
 
 def set_networking():
 # This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
