@@ -423,13 +423,16 @@
                             <td valign="top">
 							<img src="/images/gentoo-new.gif" alt="new"/>
 							</td>
-                            <td valign="middle">
+                            <!--
+			    <td valign="middle">
 							We produce Gentoo Linux, a special flavor of Linux that can be automatically 
 							optimized and customized for just about any application or need. Extreme
 							performance, configurability and a top-notch user and developer community are
 							all hallmarks of the Gentoo experience.
 							To learn more, <b><a href="/main/en/about.xml">click here</a></b>.
 				</td>
+			    -->
+			    <td valign="middle">We encourage our european friends to make up their mind on a <uri link="http://swpat.ffii.org/">proposed software patents legislation</uri> in the European Union which will be voted on September 1st 2003 in the European Parliament.</td>
                           </tr>
                         </table>
                         <br/>
