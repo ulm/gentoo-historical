@@ -427,13 +427,13 @@ def set_additional_users():
 				continue
 				
 			elif menuitem2 == "Shell":
-				code, shell = d.inputbox("Enter the shell you want the user to use.  Get it right b/c there's no error checking!")
+				code, shell = d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  Get it right b/c there's no error checking!")
 				if code != DLG_OK: continue
 				for user in users:
 					if user[0] == menuitem: user[3] = shell
 				
 			elif menuitem2 == "Home Directory":
-				code, homedir = d.inputbox("Enter the user's home directory.  Get it right b/c there's no error checking!")
+				code, homedir = d.inputbox("Enter the user's home directory. default is /home/username.  Get it right b/c there's no error checking!")
 				if code != DLG_OK: continue
 				for user in users:
 					if user[0] == menuitem: user[4] = homedir

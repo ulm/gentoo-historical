@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.40 2005/01/19 03:44:14 agaffney Exp $
+$Id: GLIClientController.py,v 1.41 2005/01/22 08:28:46 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -101,7 +101,7 @@ class GLIClientController(Thread):
 				'ppc':		'ppcArchitectureTemplate',
 				'ppc64':	'ppc64ArchitectureTemplate'
 			}
-		self._configuration._architecture_template = "x86"  #for our first release this will just be set here ok?
+		#self._configuration._architecture_template = "x86"  #can I take this out yet?
 		
 		if self._configuration._architecture_template not in templates.keys():
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
