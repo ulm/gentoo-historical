@@ -1,0 +1,325 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/udev-guide.xml,v 1.1 2004/03/15 00:27:04 neysx Exp $ -->
+
+<guide link="/doc/fr/udev-guide.xml" lang="fr">
+<title>Guide udev pour Gentoo</title>
+
+<author title="Auteur">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Traducteur">
+    <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
+
+<abstract>
+Ce document explique ce qu'est udev et comment l'utiliser.
+</abstract>
+
+<license/>
+
+<version>0.4</version>
+<date>15 mars 2004</date>
+
+<chapter>
+<title>Qu'est udev ?</title>
+<section>
+<title>Le répertoire /dev</title>
+<body>
+
+<p>
+Les personnes qui ne connaissent pas du tout Linux seraient certainement
+étonnées d'entendre des linuxiens dire «&nbsp;slash dev slash bidule&nbsp;»
+pour désigner un périphérique. Par contre, pour des linuxiens comme nous,
+<path>/dev/hda1</path> représente simplement la première partition du disque
+maître connecté sur l'interface IDE primaire.
+</p>
+
+<p>
+Nous savons ce qu'est un fichier de périphérique, certains savent même que les
+fichiers de périphérique ont des numéros que l'on peut voir en faisant <c>ls
+-l</c> dans <path>/dev</path>. Cependant, nous considérons que
+<path>/dev/hda</path> correspondra toujours au premier disque IDE. Cela vous
+étonnera sans doute, mais c'est une erreur de conception.
+</p>
+
+<p>
+Pensez aux périphériques qui peuvent être connectés à chaud (c-à-d. quand la
+machine est déjà allumée) comme les périphériques USB, IEEE1394 (Firewire) ou
+certaines cartes PCI. Quel est le premier périphérique dans ce cas&nbsp;? Les
+autres périphériques doivent-ils être renommés quand un périphérique est
+déconnecté&nbsp;? Quel sera l'impact sur les processus en cours&nbsp;?
+Imaginez que votre document envoyé à votre nouvelle imprimante laser arrive sur
+votre vieille imprimante matricielle parce vous avez oublié de l'allumer.
+</p>
+
+<p>
+Voilà pourquoi <e>udev</e> a été créé. Les objectifs du projet udev sont
+intéressants et surtout nécessaires&nbsp;:
+</p>
+
+<ul>
+  <li>
+    il doit tourner dans l'espace utilisateur (c-à-d. pas dans le noyau)&nbsp;;
+  </li>
+  <li>
+    les fichiers de périphérique doivent être ajoutés et enlevés
+    dynamiquement&nbsp;;
+  </li>
+  <li>les règles de nommage doivent être cohérentes&nbsp;;</li>
+  <li>
+    une interface de programmation (une «&nbsp;API&nbsp;») doit exister.
+  </li>
+</ul>
+
+<p>
+Pour atteindre ces objectifs, udev a été développé en trois sous-projets&nbsp;:
+<e>namedev</e>, <e>libsysfs</e> et, bien sûr, <e>udev</e>.
+</p>
+
+</body>
+</section>
+<section>
+<title>namedev</title>
+<body>
+
+<p>
+Namedev permet de nommer les périphériques indépendamment de udev. Ceci permet
+d'utiliser des règles de nommage souples définies par des entités différentes.
+Ce sous-système de nommage fournit une interface standard utilisée par udev.
+</p>
+
+<p>
+Actuellement, le seul sous-système de nommage est fournit par LANANA et est
+utilisé par la plupart des systèmes Linux actuels. La majorité des utilisateurs
+de Linux l'utiliseront.
+</p>
+
+<p>
+Namedev utilise une procédure à cinq étapes pour attribuer un nom à un
+périphérique. Dès qu'un nom peut être attribué, la procédure s'arrête et le nom
+est attribué. Ces étapes sont&nbsp;:
+</p>
+
+<ul>
+  <li>un label ou un numéro de série</li>
+  <li>numéro du bus</li>
+  <li>topologie du bus</li>
+  <li>attribution d'un nom statique</li>
+  <li>nom attribué par le noyau</li>
+</ul>
+
+<p>
+La première étape consiste à détecter un label ou un numéro de série qui
+pourrait identifier le périphérique. Par exemple, un appareil USB possède un
+numéro de série unique&nbsp;; un périphérique SCSI a un code UUID unique. Si
+namedev trouve une correspondance entre un tel identifiant et un fichier de
+configuration, le nom indiqué dans ce fichier sera utilisé.
+</p>
+
+<p>
+Ensuite, namedev essaie d'identifier le périphérique en fonction du numéro du
+bus sur lequel il est branché. Dans le cas de périphériques qui ne sont jamais
+déconnectés, ceci suffit généralement. Par exemple, le numéro de bus d'une
+carte PCI change très rarement. Si namedev trouve un fichier de configuration
+qui correspond à ce numéro de bus, le nom indiqué dans ce fichier sera utilisé.
+</p>
+
+<p>
+De façon similaire, l'attribution d'un nom selon la topologie du bus permet une
+définition statique des périphériques pour autant que l'utilisateur ne permute
+pas les périphériques. Quand la position d'un appareil sur le bus sur lequel il
+est connecté correspond à un fichier de configuration défini par l'utilisateur,
+le nom qui y est indiqué est utilisé.
+</p>
+
+<p>
+La quatrième étape consiste à attribuer un nom de façon statique en fonction
+d'une chaîne de caractères. Si le nom par défaut du périphérique tel qu'il est
+connu par le noyau correspond à une chaîne de caractères donnée, le nom associé
+à celle-ci est utilisé.
+</p>
+
+<p>
+Finalement, c'est le nom attribué par le noyau qui sera utilisé par défaut.
+Dans la majorité des cas, ceci permet de conserver les noms utilisés
+actuellement.
+</p>
+
+</body>
+</section>
+<section>
+<title>libsysfs</title>
+<body>
+
+<p>
+Le dialogue entre udev et le noyau passe par le pseudo système de fichiers
+sysfs. Le projet libsysfs offre une interface de programmation standard et
+générique avec le système de fichiers sysfs. Ceci permet d'interroger toutes
+sortes de périphériques sans devoir en connaître le type.
+</p>
+
+</body>
+</section>
+<section>
+<title>udev</title>
+<body>
+
+<p>
+Chaque fois que le noyau détecte un changement quant aux périphériques comme un
+nouvel appareil que l'utilisateur connecte, il appelle le programme
+<path>/sbin/hotplug</path>. Ce dernier lance l'application correspondant au
+périphérique via un lien symbolique dans le sous-répertoire
+<path>/etc/hotplug.d/default</path> où se trouve également un lien vers
+l'application udev. Le programme hotplug relaie l'information reçue du noyau
+vers l'application udev qui réalise les opérations nécessaires dans la structure
+/dev comme la création ou la suppression de fichiers de périphérique.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Utiliser udev avec Gentoo</title>
+<section>
+<title>Prérequis</title>
+<body>
+
+<p>
+Avant de pouvoir utiliser udev avec Gentoo, vous devez installer
+<c>sys-apps/baselayout-1.8.6.13-r1</c>  ou une version plus récente et
+<c>sys-fs/udev</c>. Si nécessaire, modifiez le fichier
+<path>/etc/portage/package.keywords</path> pour que votre système utilise les
+versions «&nbsp;~ARCH&nbsp;» des ebuilds requis pour <c>sys-fs/udev</c>&nbsp;:
+</p>
+
+<pre caption="Fichier /etc/portage/package.keywords">
+sys-fs/udev ~x86
+</pre>
+
+<p>
+Si ce n'est déjà fait, installez aussi <c>sys-apps/hotplug</c>.
+</p>
+
+<pre caption="Installer les outils nécessaires">
+# <i>emerge baselayout udev hotplug</i>
+</pre>
+
+<p>
+À propos du noyau, si vous utilisez les valeurs par défaut de <c>genkernel</c>,
+votre système est prêt. Sinon, veuillez vérifier que les options suivantes ont
+été sélectionnées&nbsp;:
+</p>
+
+<pre caption="Options du noyau nécessaires">
+Bus options (PCI, PCMCIA, EISA, MCA, ISA) ---&gt;
+  [*] Support for hot-pluggable devices
+
+File systems ---&gt;
+  Pseudo filesystems ---&gt;
+    [*] /proc file system support
+    [*] /dev/pts file system for Unix98 PTYs
+    [*] Virtual memory file system support (former shm fs)
+</pre>
+
+<p>
+Vous pouvez laisser l'option <c>/dev file system support (OBSOLETE)</c>
+sélectionnée si vous voulez.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuration</title>
+<body>
+
+<p>
+Si nous n'êtes pas intéressé par les fignolages apportés par les développeurs
+Gentoo pour vous faciliter la vie, n'allez pas plus loin&nbsp;; votre système
+est prêt. Les scripts d'initialisation de Gentoo de lanceront pas le démon
+devfsd et désactiveront devfs au démarrage.
+</p>
+
+<p>
+Cependant, si vous êtes un acharné qui veut un système 100% udev tel qu'il a
+été voulu par ses développeurs, y compris avec les difficultés causées par les
+périphériques absents par faute de support, alors lisez ce qui suit&nbsp;:)
+</p>
+
+<warn>
+Ne vous plaignez pas si quelque chose tourne mal. Vous allez vous passer du
+travail de nombreux développeurs Gentoo qui ont sué pour adapter les scripts
+d'initialisation de Gentoo au système udev.
+</warn>
+
+<p>
+Commençons par désactiver le système de sauvegarde des définitions des fichiers
+de périphérique. À partir de <c>sys-apps/baselayout-1.8.6.13-r1</c>,
+initialisez la variable <c>RC_DEVICE_TARBALL</c> à <c>no</c> dans le fichier
+<path>/etc/conf.d/rc</path>&nbsp;:
+</p>
+
+<pre caption="Fichier /etc/conf.d/rc">
+RC_DEVICE_TARBALL="no"
+</pre>
+
+<p>
+Nous devons aussi créer quelques fichiers de périphérique pour que votre
+système puisse démarrer&nbsp;:
+</p>
+
+<pre caption="Créer les fichiers de périphérique nécessaires">
+# <i>mknod -m 660 /dev/console c 5 1</i>
+# <i>mknod -m 660 /dev/null c 1 3</i>
+</pre>
+
+<p>
+Si le support de devfs a été compilé dans votre noyau, vous pouvez le
+désactiver dans la configuration de votre chargeur de démarrage en passant
+l'option <c>devfs=nomount</c> au noyau.
+</p>
+
+<p>
+Si vous voulez utiliser devfs et désactiver udev, ajoutez l'option
+<c>gentoo=noudev</c> aux options que vous passez à votre noyau.
+</p>
+
+</body>
+</section>
+<section>
+<title>Problèmes actuels</title>
+<body>
+
+<p>
+Veuillez informer les documentalistes Gentoo des <e>solutions temporaires</e>
+que vous pourriez trouver aux problèmes actuels de udev via <uri
+link="http://bugs.gentoo.org">l'interface Bugzilla</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Ressources &amp; remerciements</title>
+<section>
+<body>
+
+<p>
+L'exposé de Greg Kroah-Hartman (IBM Corporation) au Linux Symposium (Ottawa,
+Ontario Canada - 2003) a permis une bonne compréhension du système udev.
+</p>
+
+<p>
+L'<uri
+link="http://webpages.charter.net/decibelshelp/LinuxHelp_UDEVPrimer.html">article
+de Decibel</uri> (en anglais) traite en profondeur de udev sur systèmes Gentoo.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
