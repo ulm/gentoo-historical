@@ -1,0 +1,419 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/en/alsa-guide.xml">
+<title>Gentoo Linux ALSA ガイド</title>
+<author title="Author"><mail link="zu@pandora.be">
+	Vincent Verleye</mail>
+</author>
+
+<author title="Editor"><mail link="zhen@gentoo.org">
+	John P. Davis</mail>
+</author>
+
+<author title="翻訳"><mail link="iwaki_iwaki@hotmail.com">
+	Masanori Iwasaki</mail>
+</author>
+
+<abstract>
+このガイドはGentooLinux上でAdvanced Linux Sound Architecture (ALSA)の設定方法を解説するものです。
+Gentoo Linux Desktop Configuration Guideはこの題材についてさらなる情報を提供します。
+</abstract>
+
+<version>1.0</version>
+<date>30 Oct 2002</date>
+
+<chapter>
+<title>イントロダクション</title>
+<section>
+	<title>ALSAとは何か？</title>
+<body>
+<p>
+ALSA(Advanced Linux Sound Architecture)　とは膨大なLinuxのサウンドサブシステムを書くことにより、サウンドシステムを改善するプロジェクトです。
+ALSAはLinux kernel 2.6 または3.0の早く出荷されたほうに取り込まれると思われます。
+</p>
+
+<p>
+ALSA は オーディオとMIDI　の再生機能をLinuxに提供します。
+</p>
+ 
+<p>
+<uri>http://www.alsa-project.org</uri>からの引用。ALSAには以下の特徴があります。
+<ul><li>通常のサウンドカードからマルチチャンネル対応のオーディオインターフェースまでの能率的なサポート。</li>
+    <li>完全にモジュール化されたサウンド・ドライバ。</li>
+    <li>SMP と thread-safe の設計。</li>
+    <li>ユーザ・スペース・ライブラリー(alsa-lib)はアプリケーション・プログラミングを単純化し、より高いレベルの機能を提供します。</li>
+    <li>古いOSS API をサポートしほとんどのOSSプログラムのバイナリーに互換性がある。</li> 
+</ul>
+その他には、Duplexの再生・録音に完全サポート、
+複数のサウンドカードサポート、ハードウェアミキシングストリーム、
+新しいサウンドカード機能ををサポートする広範囲のミキサー
+….などがります。
+	
+</p>
+</body>
+</section>
+<section>
+	<title>なぜALSAなのか？</title>
+<body>
+<p>
+もしあなたのサウンドカードがリナックスのカーネルサウンドシステム、
+または2.4.xにある商用OSS/4Frontサウンドカードドライバにサポートされているなら、
+あなたはサウンドカード用にモジュールをビルドすることができます。もしそうしたければLinux Sound HOWTOを読んでください。
+</p> 
+<p>
+しかし、OSS/4Frontドライバーは商用のためなどの理由から、いくつかかの制限があります。
+ALSAとは、これらの制限以上の事をオープンソーススタイルですることです。
+ALSAはGPLとLGPに完全に従い、録音、再生、MIDIシークエンスに高いシステムクオリティーを提供します。
+
+</p> 
+</body>
+</section>
+<section>
+	<title>ALSAはどのカードにサポートしてるの？</title>
+<body>
+<p>
+ALSAはオープンソースのドライバの提供によりできるかぎり新しいものも含め多くのカードにサポートしようとしてます。
+しかし、しくつかのベンダーはバイナリのみしか提供しません。
+
+</p>
+<p>
+あなたのカードがサポートされているか知るには、<uri>http://www.alsa-project.org/alsa-doc/</uri>を確かめてください。
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>インストール</title>
+<section>
+	<title>カーネルモジュール</title>
+<body>
+<p>
+まず2.4.xカーネルソースをまだ使うので、カーネールモジュールとALSAモジュールを分けてコンパイルしなけてはいけません。
+</p>
+<p>
+最初にカーネルコンフィギュレーションがALSAを使う準備ができているか確認します。
+やらなければいけないことはSound Card Support をモジュール（M）としてビルドすることです。これは<c>soundcore.o</c>を作成します。
+</p>
+<p>
+<note>
+Sound Card Supportをモジュール（M）の代わりにカーネルに組み込む（Y）こともできます。しかしALSAのドキュメントには、
+ALSAはSound Card Supportモジュールをロードしようとするので、Sound Card Supportをモジュールとしてビルドすることを提案しています。
+</note>
+</p>
+<p>
+もしすでに作業済みのカーネルコンフィギュレーションがあるなら、
+Sound Card Support以外のすべてのサウンドカードドライバを外してあるか確認してください。
+もしリブートせずにこの作業をしたい場合、以下の手順ですることができます。
+</p>
+<pre>
+# <c>cd /usr/src/linux</c>
+# <c>cp .config ‾</c>
+# <c>make mrproper</c>
+# <c>cp ‾/.config .</c>
+# <c>make menuconfig</c>
+</pre>
+<p>
+ 
+
+それでは<e>Sound Card Support</e>をモジュール（M）にして、すべとのサウンドカードドライバーを外してください。
+終了してかネールコンフィギュレーションを保存（Y）してください。
+そしてモジュールをビルドします。
+
+</p>
+<pre>
+# <c>make dep clean</c>
+# <c>make modules modules_install</c>
+</pre>
+<p>
+
+最後のラインは現在のモジュールをすべて消し、新しいモジュールをインストールします。
+以前のインストールしたALSAもです。
+
+</p>
+<p>
+<impo>
+この意味は、カーネルを再構築するたびに<c>alsa-driver</c>も再構築しなければいけないということです。
+</impo>
+</p>
+<p>
+<note>
+
+しかし、<c>nvidia-kernel</c>は再インストールする必要はありません。Nvidiaドライバーは<path>/lib/modules/*/video</path>に別けて配置してあり、
+<c>make modules modules_install</c>で消されることはありません。
+
+</note>
+</p>
+</body>
+</section>
+
+<section>
+	<title>ALSAモジュール</title>
+<body>
+
+<p>
+それではあなたのサウンドカードのためのALSAドライバーをインストールする準備ができました。
+もしあなたのサウンドカードがPCIなら/proc/pciの出力からサウンドカードの種類を特定することができます。
+<pre>#<c>cat /proc/pci  | grep audio</c></pre>
+
+</p>
+
+<p>
+<warn>
+
+もし現在ALSAではないサウンドモジュールがセットしたことがある場合、
+<c>lsmod</c>で確認をしてください。ロードしてあるなら<c>rmmod</c>を使用してサウンド関連のモジュールを<e>今すぐ</e>すべて外してください。 
+
+</warn>
+</p>
+
+<p>
+それでは単純に <c>emerge alsa-driver</c>をしましょう。これは<e>すべて</e>のALSAサウンドドライバをコンパイルしてインストールします。
+</p>
+<p>
+しかし時間の節約のため、<uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> の<e>Install</e>セクションであなたのサウンドカードの<e>モジュールの名前</e>を探しましょう。
+私はSBlive!を持っているので私の場合は<c>EMU10K1</c>でした。emergeする前に環境変数にALSA_CARDS値をセットします。
+そうすればemergeはそのドライバーのみをコンパイルします。
+</p>
+
+<p>
+<pre>
+# <c>env ALSA_CARDS='emu10k1' emerge alsa-driver</c> 
+</pre>
+</p>
+<p>
+<note>
+ALSAドライバを２個以上のサウンドカードにインストールしたい場合、
+<c>env ALSA_CARDS='emu10k1 intel8x0 ens1370' emerge alsa-driver</c>のようにスペースを使い環境変数をセットすることができます。
+</note>
+
+<note>
+もしOSS互換が必要なら、emerge <i>alsa-oss</i>をしてください。これはALSA/OSS互換ラッパーです。
+</note>
+
+</p>
+<p>
+この後、ALSAモジュールはシステムにインストールされたはずです。
+</p>
+</body>
+</section>
+<section>
+	<title>ALSAのコンフィギュレーション</title>
+<body>
+<p>
+ALSAをただしく動かすためにコンフィギュレーションをはじめましょう。
+新しくインストールされたALSAをシステムに知らせるためにいくつかのファイルを編集する必要があります。
+</p>
+<p>
+最初に <path>/etc/modules.d/alsa</path>を編集します。
+</p>
+<warn>
+<path>/etc/modules.conf</path>を編集する必要はありません。その代わり<path>/etc/modules.d</path>の中のファイルをいつも編集します。
+</warn>
+<p>
+ファイルの<e>初めの方</e>の「ALSA portion」をチェックしてください。
+通常は１つですが、ここにラインを追加することであなたのサウンドカードの数を設定できます。
+</p>
+<p>
+<pre caption="/etc/modules.d/alsaの初め">
+# Alsa 0.9.X kernel modules' configuration file.
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/alsa-guide.xml,v 1.1 2002/12/24 15:55:25 nakano Exp $
+
+# ALSA portion
+alias char-major-116 snd
+<c>options snd snd_major=116 snd_cards_limit=1</c>
+# OSS/Free portion
+alias char-major-14 soundcore
+
+##
+## IMPORTANT:
+</pre>
+</p>
+<p>
+どのサウンドドライバーをALSAが使うか明記します。同じファイルをこのように編集してください。
+<pre caption="/etc/modules.d/alsaの少し下あたり">
+## and then run `update-modules' command.
+## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
+##
+##  ALSA portion
+<c>alias snd-card-0 snd-emu10k1</c>
+<c>## If you have more than one, add:
+## alias snd-card-1 snd-intel8x0
+## alias snd-card-2 snd-ens1370</c>
+##  OSS/Free portion
+## alias sound-slot-0 snd-card-0
+## alias sound-slot-1 snd-card-1
+##
+</pre>
+</p>
+<p>
+<note>
+
+ノート：もし２個以上サウンドカードがあるなら<c>snd_cards_limit</c>の値を合わせsnd-card aliasesをこのファイルに追加してください。
+私はこの設定をした経験はありませんが、２個以上サウンドカードを設定の例が
+<uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/alsa-howto.html">ALSA Howto</uri>の
+<uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/c1660.htm">Chapter 6</uri>で見ることができます。
+
+</note>
+</p>
+<p>
+このファイルで最後にすることは、一番下に以下の行があり、コメントアウトされていないかチェックしてください。
+<pre caption="/etc/modules.d/alsaの終わりのほう">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+</pre>
+</p>
+<p>
+<path>/etc/modules.d/alsa</path>をもう一度確認してください。すべての準備ができたら<c>update-modules</c>をしましょう。
+<pre>
+# <c>update-modules</c>
+</pre>
+</p>
+<note>
+Running  here will insert the data from <path>/etc/modules.d/alsa</path> into <path>/etc/modules.conf</path>
+：ここで<c>update-modules</c>をするのは<path>/etc/modules.d/alsa</path>を<path>/etc/modules.conf</path>に書き込むためです。
+</note>
+<p>
+/etc/devfsd.confにALSAデバイスとパーミションが正しく登録されているか確認してくださ。
+</p>
+<pre>
+# nano -w /etc/devfsd.conf
+</pre>
+<pre>
+# ALSA/OSS stuff
+# Comment/change these if you want to change the permissions on
+# the audio devices
+LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
+REGISTER        sound/.*     PERMISSIONS root.audio 660
+REGISTER        snd/.*       PERMISSIONS root.audio 660
+</pre>
+<note>
+devfsd.confが/dev/soundのパーミションをroot.audioにしていることに気付いてください。このようにrootでないユーザーがaudioを使うにはaudioグループに所属していなければいけません。
+</note>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>ALSAの起動</title>
+<section>
+	<title>alsasoundをランレベルに追加する</title>
+<body>
+<p>
+最初にすることは下記のようにboot時ALSAが起動するように設定してください。
+<pre>
+# <c>rc-update add alsasound boot</c>
+</pre>
+</p>
+<p>
+<warn>
+alsasoundスクリプトは”boot”ランレベルに追加すべきです。”default”ではありません。
+</warn>
+</p>
+</body>
+</section>
+<section>
+	<title>起動、ミュート解除する</title>
+<body>
+<p>
+我々はLinuxユーザーです。再起動はしたくありません。Alsasoundスクリプトを手動でスタートさせましょう。
+</p>
+<pre>
+# <c>/etc/init.d/alsasound start</c>
+</pre>
+<p>
+ALSAは起動しました。<c>lsmod</c>を実行した場合ALSAモジュールがロードされているのが見えるはずです。
+しかしチャンネルがミュートになっているためのため、
+まだ音はなりません。このために<c>alsa-utils</c>が必要です。
+</p>
+<pre>
+# <c>emerge alsa-utils</c>
+# <c>amixer</c>
+</pre>
+<p>
+<warn>
+"amixer: Mixer attach default error: No such file or directory"のエラーは出るべきではないですが、
+<e>もし</e>出てしまったら一度手動で <c>snd-mixer-oss</c> と <c>snd-pcm-oss</c> をinsmodしてください。
+その後もう一度amxierを起動しましょう。
+</warn>
+</p>
+<pre caption="amixer実行時にエラーがでた場合のみ">
+# <c>insmod snd-mixer-oss</c>
+# <c>insmod snd-pcm-oss</c>
+# <c>amixer</c>
+</pre>
+<p>
+ここまできたらMasterとPCMチャンネルのミュートを解除します。
+</p>
+<p>
+<pre>
+# <c>amixer set Master 100 unmute</c>
+# <c>amixer set PCM 100 unmute</c>
+# <c>aplay /usr/kde/3/share/sounds/pop.wav</c> <codenote>(pop.wav is part of KDE)</codenote>
+</pre>
+</p>
+サウンドが動くかどうかaplay(alsa play)コマンドを使って確認します。音が聞こえたらサウンドは正常に機能しています。 
+音量を好みにきちんと設定するには調節するにはncursesベースの<c>alsamixer</c>を使うのがいいでしょう。
+<p>
+ALSAをXMMSに対応させたい場合はemerge <c>alsa-xmms</c>をします。
+</p>
+システムをrebootした場合、<e>alsasound</e> initスクリプトは音量の設定を正しく保存します。
+</body>
+</section>
+</chapter>
+<chapter>
+<title>最後に</title>
+<section>
+	<title>After kernel-upgrades..</title>
+<body>
+<p>
+カーネルを再構築、もしくはアップグレードした場合、ALSAモジュールも再構築しなければいけません。
+</p>
+<p>
+しかしながら、<path>/lib/modules/*/kernel/sound/pci/</path>にALSAモジュールが置いてあるなら
+alsa-driver, <c>alsa-libs</c>, <c>alsa-utils</c>のうち再インストールが必要なのは最初の<c>alsa-driver</c>のみです。
+</p>
+<pre caption="カーネルを再構築するたびに必要">
+emerge alsa-driver
+</pre>
+</body>
+</section>
+<section>
+	<title>/etc/modules.autoload</title>
+<body>
+<p>
+ALSAを使用するためにこのファイルを編集する必要はありません。<c>rc-update add alsasound boot</c>の後、
+システムはスタート時に正しいモジュールをロードします。
+</p>
+<p>
+<c>snd-pcm-oss</c> または <c>snd-mixer-oss</c>を<path>/etc/modules.autoload</path>に追加する必要はありません。
+詳細は<uri link="http://www.djcj.org/LAU/guide/alsbook/faq1.html">このFAQ</uri>をチェックしてください。
+</p>
+</body>
+</section>
+<section>
+	<title>リンク..</title>
+<body>
+<p>
+さらなる情報はこちらで確認してください:
+</p>
+<p>
+<ul>
+<li><uri link="http://www.gentoo.org/doc/desktop.html">The Gentoo Linux Desktop Configuration Guide</uri></li>
+<li><uri link="http://www.alsa-project.org">ALSA Project Homepage</uri></li>
+<li><uri link="http://www.alsa-project.org/documentation.php3">ALSA Users Documentation</uri></li>
+<li><uri link="http://www.djcj.org">ALSA Howto's and FAQ's</uri></li>
+<li><uri link="http://tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri></li>
+<li><uri link="http://linux-sound.org/">Sound and MIDI Software For Linux</uri></li>
+</ul>
+</p>
+</body>
+</section>
+</chapter>
+</guide>
