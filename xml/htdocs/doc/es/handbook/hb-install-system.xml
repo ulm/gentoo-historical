@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-system.xml,v 1.16 2005/02/27 17:30:47 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-system.xml,v 1.17 2005/03/31 01:27:25 yoswink Exp $ -->
 
 <sections>
 
-<version>1.66</version>
-<date>2005-02-25</date>
+<version>2.2</version>
+<date>2005-03-29</date>
  
 <section>
 <title>Chrooting</title>
@@ -99,7 +99,7 @@ del entorno chroot.
 Ahora que todas las particiones están inicializadas y el sistema base
 instalado, es hora de entrar en nuestro nuevo entorno de instalación
 <e>chrooting</e>. Esto significa pasar desde el actual
-entorno de instalación (LiveCD o otro medio de instalación) hacia tu 
+entorno de instalación (CD de instalación u otro medio) hacia tu
 entorno de instalación (o sea, las particiones inicializadas).
 </p>
 
@@ -147,6 +147,61 @@ será actualizado durante la instalación.
 
 </body>
 </subsection>
+<subsection>
+<title>Eligiendo el perfil adecuado</title>
+<body>
+
+ <p>
+Primero, una pequeña definición:
+ </p>
+
+ <p>
+Un perfil es la piedra inicial de cualquier sistema Gentoo. No solamente especifica 
+unos valores predeterminados para CHOST, CFLAGS,  y otras variables 
+importantes , también bloquea del sistema ciertos rangos de versiones de algunos 
+paquetes. Son mantenidos por los desarrolladores de  Gentoo.
+</p>
+
+ <p>
+Tiempo atrás, los perfiles raramente los tocaba el usuario. Sin embargo, ahora
+los usuarios de x86, hppa y alpha puede elegir entre dos perfiles, uno para los kernel 
+2.4 y otro para la serie 2.6. Este requisito ha sido impuesto para la integración de los
+kernels 2.6.
+</p>
+
+<p>
+Se puede ver el perfil actualmente utilizado con el siguiente comando:
+</p>
+
+<pre caption="Comprobando el pérfil del sistema">
+ # <i>ls -l /etc/make.profile</i>
+ lrwxrwxrwx  1 root root 48 Mar  7 11:55 /etc/make.profile ->
+       ../usr/portage/profiles/default-linux/x86/2005.0
+</pre>
+ 
+<p>
+Si está utilizando una de las tres arquitecturas mencionadas anteriormente, verá 
+un perfil adicional al que se muestra en el enlace simbólico 
+<path>make.profile</path>:
+</p>
+  	 
+ <pre caption="Comprobando si existen perfiles adicionales">
+ # <i>ls -F /etc/make.profile/</i>
+ 2.4/  packages  parent  virtuals
+ </pre>
+
+ <p>
+Como puede ver en el ejemplo anterior, hay un subdirectorio 2.4. Esto implica
+que el perfil actual utiliza los kernel 2.6. Si quiere cambiar a un sistema basado
+en 2.4 necesita volver a crear el enlace <path>make.profile</path>:
+ </p>
+
+ <pre caption="Volviendo a crear el enlace a un pérfil">
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+ </pre>
+  	 
+ </body>
+ </subsection>
 <subsection id="configure_USE">
 <title>Configurando la variable USE</title>
 <body>
@@ -230,7 +285,8 @@ en su sistema. Después de compilar <c>glibc</c> se crea un amplio conjunto
 de variables locales. En este punto puede activar la variable USE 
 <c>userlocales</c> y especificar solamente las variables locales que necesite
 en <path>/etc/locales.build</path>. Solamente haga esto si conoce que locales
-debe utilizar.
+debe utilizar. Esto no funcionará para el bootstraping, pero cuando glibc se
+recompile posteriormente, lo hará.
 </p>
 <pre caption="Activando la variable USE 'userlocales' para glibc">
 <i>mkdir /etc/portage</i>
@@ -357,19 +413,6 @@ tardará un ratito largo.
 </pre>
 
 <p>
-Cuando haya configurado el parámetro <c>nptl</c> en la variable USE, volver
-a ejecutar <c>bootstrap.sh</c> podría fallar con un mensaje de error que indique
-que <c>linux-headers</c> bloquea <c>linux26-headers</c>. Cuando reciba este
-error, desinstale <c>linux-headers</c> y vuelva a intentarlo:
- </p>
-
- <pre caption="Desinstalando linux-headers de su sistema">
- # <i>emerge -C linux-headers</i>
- # <i>emerge --oneshot --nodeps linux26-headers</i>
- # <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
 Siga con <uri link="#doc_chap4">Pasando de stage2 a stage3</uri>.
 </p>
 
@@ -405,14 +448,21 @@ elegir, no queremos forzarle a usar uno.
 
 <p>
 Si quiere saber que paquetes serán instalados, ejecute <c>emerge
---pretend system</c>. Esto le mostrará un listado con todos los 
+--pretend --emptytree system</c>. Esto le mostrará un listado con todos los 
 paquetes que serán compilados. Como esta lista es algo extensa, puede 
 usar un paginador como <c>less</c> o <c>more</c> para moverse por ella.
 </p>
 
 <pre caption = "Ver que hará 'emerge system'">
-# <i>emerge --pretend system | less</i>
+# <i>emerge --pretend --emptytree system | less</i>
 </pre>
+
+<p>
+Tenga en cuenta que, si no ha tocado la configuración por defecto de 
+CFLAGS/CXXFLAGS, utilizar <c>emerge --pretend --newuse system</c> es 
+suficiente. Si tampoco ha tocado la configuración de la variable USE flag, 
+¿Por qué está llevando a cabo una instalación desde el stage2?
+</p>
 
 </body>
 </subsection>
@@ -428,7 +478,7 @@ la cual descargará todo el código fuente por usted.
 </p>
 
 <pre caption = "Descargando el código fuente">
-# <i>emerge --fetchonly system</i>
+# <i>emerge --fetchonly --emptytree system</i>
 </pre>
 
 </body>
@@ -438,14 +488,19 @@ la cual descargará todo el código fuente por usted.
 <body>
 
 <p>
-Para empezar a compilar el sistema, ejecuta  <c>emerge system</c>. 
+Para empezar a compilar el sistema, ejecuta  <c>emerge --emptytree system</c>. 
 Ahora puede hacer cualquier cosa para mantener su mente ocupada 
 (como leer), porque este paso tardará un buen rato en terminar.
 </p>
 
 <pre caption = "Compilando el Sistema">
-# <i>emerge system</i>
+# <i>emerge --emptytree system</i>
 </pre>
+
+<p>
+De nuevo, si no ha tocado la configuración predeterminada de CFLAGS y CXXFLAGS, 
+utilizar  <c>--newuse</c> es suficiente.
+</p>
 
 <p>
 Puede, por ahora, ignorar tranquilamente cualquier aviso sobre la 
