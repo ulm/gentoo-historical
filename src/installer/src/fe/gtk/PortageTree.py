@@ -21,7 +21,7 @@ a brief description beside it.
 		self.radio_syncs['sync'].set_name("sync")
 		self.radio_syncs['sync'].connect("toggled", self.stage_selected, "sync")
 		self.radio_syncs['sync'].set_size_request(100, -1)
-		self.radio_syncs['sync'].set_sensitive(False) # temporary
+#		self.radio_syncs['sync'].set_sensitive(False) # temporary
 		hbox = gtk.HBox(gtk.FALSE, 0)
 		hbox.pack_start(self.radio_syncs['sync'], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 		hbox.pack_start(gtk.Label("This will run 'emerge sync' to get a local copy of the portage tree (temporarily disabled)"), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
@@ -61,7 +61,7 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
 		self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
-		if self.active_selection == "sync": self.active_selection = "webrsync" # temporary
+#		if self.active_selection == "sync": self.active_selection = "webrsync" # temporary
 		self.radio_syncs[self.active_selection].set_active(gtk.TRUE)
 		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_tree_snapshot_uri())
 
