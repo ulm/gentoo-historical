@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.15 2004/11/05 20:28:09 port001 Exp $
+# $Id: index.py,v 1.16 2004/11/06 21:21:41 port001 Exp $
 #
 
 """
@@ -97,7 +97,7 @@ class PageDispatch:
 
             for module in site_modules.admin.__all__:
                 module_list.append(module)
-                module_object = __import__("site_modules.admin.%s" % module, globals(), locals())
+                module_object = __import__("site_modules.admin.%s" % module, globals(), locals(), [module])
                 setattr(__main__, module, vars(module_object)[module])
         else:
             import site_modules
@@ -105,12 +105,12 @@ class PageDispatch:
 
             for module in site_modules.__all__:
                 module_list.append(module)
-                module_object = __import__("site_modules.%s" % module, globals(), locals())
+                module_object = __import__("site_modules.%s" % module, globals(), locals(), [module])
                 setattr(__main__, module, vars(module_object)[module])
 
         for module in module_list:
 
-            module_object = eval("""%s.%s(form = self._form, uid = self._user_detail["uid"], alias = self._user_detail["alias"], session = self._user_detail["session"])""" % (module, module))
+            module_object = eval("""%s(form = self._form, uid = self._user_detail["uid"], alias = self._user_detail["alias"], session = self._user_detail["session"])""" % module)
 
             try:
                 for mod_page in module_object.pages:
@@ -141,8 +141,8 @@ class PageDispatch:
                 break
 
         if self._tmpl_page == None:
-            failover_page = eval("""%s.%s(form = self._form, alias = self._user_detail["alias"])""" %
-                                                 (self._failover, self._failover))
+            failover_page = eval("""%s(form = self._form, alias = self._user_detail["alias"])""" %
+                                                 self._failover)
             self._tmpl_page = failover_page.display()
         
         if self._tmpl_page == "nodisplay":
