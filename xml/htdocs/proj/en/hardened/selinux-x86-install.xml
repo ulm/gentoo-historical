@@ -1,0 +1,1847 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<guide link="./selinux.html">
+  <title>Gentoo Linux Documentation -- Gentoo SELinux Installation Guide</title>
+  <author title="Author">
+	<mail link="zack@tehunlose.com">Zack Gilburd</mail>
+  </author>
+  <author title="Editor">
+	<mail link="pebenito@gentoo.org">Chris PeBenito</mail>
+  </author>
+  <abstract>
+    This guide will walk you through the steps to installing Gentoo SELinux from scratch. 
+  </abstract>
+<version>1.0</version>
+<date>31 Jul 2003</date>
+<chapter>
+  <title>Part One</title>
+  <section>
+    <title>About the Install</title>
+    <body>
+      <p>
+	<warn>
+	  SELinux is only being developed on the x86 platform.
+	</warn>
+	<impo>
+	  Currently, you must use a stage1 tarball to start with.
+	</impo>
+This new boot CD will boot from nearly any modern IDE CD-ROM drive, as well
+as many SCSI CD-ROM drives, assuming that your CD-ROM and BIOS both support booting.
+Included on the CD-ROM is Linux support for IDE (and PCI IDE) (built-in to the
+kernel) as well as support for all SCSI devices (available as modules.) In
+addition, we provide modules for literally every kind of network card that
+Linux supports, as well as tools to allow you to configure your network and
+establish outbound (as well as inbound) <c>ssh</c> connections and to download
+files.  </p>
+        <p>To install from the build CD, you will need to have a 486+ processor and
+ideally at least 64 Megabytes of RAM. (Gentoo Linux has been successfully
+built with 64MB of RAM + 64MB of swap space, but the build process is awfully
+slow under those conditions.)</p>
+		<p> So, how does one begin the install process? First, you will want to decide which one of our LiveCD ISO images to grab from
+<uri>ftp://ftp.ibiblio.org/pub/linux/distributions/gentoo/releases/1.4_rc4/x86/x86</uri> .  Please consider using one of our mirrors to alleviate the heavy load from
+		the main server.  A list of servers can be found at <uri>http://www.gentoo.org/main/en/mirrors.xml</uri>.
+</p>
+        <p> The LiveCDs are full CD images that should be burned to a CDR or CD-RW
+using CD burning software. Currently, we have two types of LiveCDs. The first
+carries the &quot;gentoo-basic&quot; label, and is approximately 40MB in size, contains only the stage 1 tarball and lives
+in the <path>x86/livecd/</path> directory.  This LiveCD is of minimal size to
+allow for a initial quick download and contains a stage1 tarball that can be
+found in <path>/mnt/cdrom/gentoo/</path> after the CD has booted.</p>
+        <p>The second flavor of LiveCD we currently offer is labeled &quot;gentoo-3stages.&quot;
+This CD is also found in <path>x86/livecd</path>. It
+contains stage 1, 2 and 3 tarballs.  However, since we are only going to cover how to install with a stage1 tarball, this download is somewhat excessive.
+</p>
+        <impo>If you encounter a problem with any part of the install and wish to
+report it as a bug, report it to <uri>http://bugs.gentoo.org</uri>. If the bug
+needs to be sent upstream to the original software developers (eg the KDE team) the
+<e>Gentoo Linux developers</e> will take care of that for you.
+</impo>
+	<note>The installation instructions in the LiveCD may not be the most up-to-date.  Always refer to
+	<uri>http://www.gentoo.org/proj/en/hardened/selinux-x86-install.xml</uri> for the most up-to-date
+	installation instructions.
+	</note>
+        <p>Now, let us quickly review the install process. First, we will download, burn
+and boot a LiveCD. After getting a root prompt, we will create partitions, create
+our filesystems and extract the stage1 tarball.  Once we have done thus, we will progress our system through the separate stages of the install: bootstrapping, <c>emerge system</c>, and configuring.  After that, we will be able to boot a fully-functional SELinux Gentoo system.
+ Here is what is required for installation: </p>
+        <table>
+          <tr>
+            <th>Stage Tarball</th>
+            <th>Requirements for Installation</th>
+          </tr>
+          <tr>
+            <ti>1</ti>
+            <ti>partition/filesystem setup, emerge sync, bootstrap, emerge system, emerge kernel sources, final configuration</ti>
+          </tr>
+        </table>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Booting</title>
+    <section>
+      <body>
+        <p>Start by booting the LiveCD. You should see a fancy boot screen
+		with the Gentoo Linux logo on it. At this screen, you can hit Enter to begin the boot process,
+		or boot the LiveCD with custom boot options by specifying a kernel followed by boot options and then hitting Enter. For example <c>gentoo nousb nohotplug</c>. Consult the following table for a list of available kernels and options or press F2 to view the help screen.</p>
+	
+	<table>
+	<tr>
+		<th>Available kernels.</th>
+		<th>description</th>
+	</tr>
+	
+	<tr><ti>gentoo</ti><ti>basic gentoo kernel (default)</ti></tr>
+	<tr><ti>800</ti><ti>800x600 framebuffer mode</ti></tr>
+	<tr><ti>1024</ti><ti>1024x768 framebuffer mode (default)</ti></tr>
+	<tr><ti>1280</ti><ti>1280x1024 framebuffer mode</ti></tr>
+	<tr><ti>nofb</ti><ti>framebuffer mode disabled</ti></tr>
+	<tr><ti>smp</ti><ti>loads a smp kernel in noframebuffer mode</ti></tr>
+	<tr><ti>acpi</ti><ti>enables acpi=on + loads acpi modules during init</ti></tr>
+	<tr><ti>memtest</ti><ti>boots the memory testing program</ti></tr>
+
+	</table>
+	
+	<p>
+	<table>
+	<tr>
+		<th>Available boot options.</th>
+		<th>description</th>
+	</tr>
+
+	<tr><ti>doataraid</ti>
+	<ti>loads ide raid modules from initrd</ti></tr>
+	
+	<tr><ti>dofirewire</ti>
+	<ti>modprobes firewire modules in initrd (for firewire cdroms,etc)</ti></tr>
+
+	<tr><ti>dokeymap</ti>
+	<ti>enable keymap selection for non-us keyboard layouts</ti></tr>
+
+	<tr><ti>dopcmcia</ti>
+	<ti>starts pcmcia service</ti></tr>
+
+	<tr><ti>doscsi</ti>
+	<ti>scan for scsi devices (breaks some ethernet cards)</ti></tr>
+
+	<tr><ti>noapm</ti>
+	<ti>disables apm module load</ti></tr>
+
+	<tr><ti>nodetect</ti>
+	<ti>causes hwsetup/kudzu and hotplug not to run</ti></tr>
+
+	<tr><ti>nodhcp</ti>
+	<ti>dhcp does not automatically start if nic detected</ti></tr>
+
+	<tr><ti>nohotplug</ti>
+	<ti>disables loading hotplug service</ti></tr>
+
+	<tr><ti>noraid</ti>
+	<ti>disables loading of evms modules</ti></tr>
+
+	<tr><ti>nousb</ti>
+	<ti>disables usb module load from initrd, disables hotplug</ti></tr>
+
+	<tr><ti>ide=nodma</ti>
+	<ti>Force disabling of dma for malfunctioning ide devices</ti></tr>
+
+	<tr><ti>cdcache</ti>
+	<ti>Cache the entire runtime portion of cd in ram, This uses 40mb of RAM , but allows you to umount /mnt/cdrom and mount another cdrom.</ti></tr>
+
+	</table></p>
+
+	<p> Once you hit Enter, you will be greeted with the standard kernel
+booting output, kernel and initrd messages, followed by the normal Gentoo
+Linux boot sequence. You will be automatically logged in as
+&quot;<c>root</c>&quot; and the root password will be set to a random string
+for security purposes. You should have a root (&quot;<c>#</c>&quot;) prompt
+on the current console, and can also switch to other consoles by pressing
+Alt-F2, Alt-F3 and Alt-F4. Get back to the one you started on by pressing
+Alt-F1. At this point you should set the root password, type <c>passwd</c> and
+follow the prompts.
+			</p>
+        <p>You have probably also noticed that above your <c>#</c> prompt is a bunch of help text
+			that explains how to do things like configure your Linux networking and telling you where you can find
+			the Gentoo Linux stage tarballs and packages on your CD.
+			</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Load Kernel Modules</title>
+    <section>
+      <body>
+        <p>If the PCI autodetection missed some of your hardware, you 
+			will have to load the appropriate kernel modules manually.
+			To view a list of all available network card modules, type <c>ls
+			/lib/modules/*/kernel/drivers/net/*</c>.  To load a particular module,
+			type:
+			</p>
+<pre caption="PCI Modules Configuration">
+# <c>modprobe pcnet32</c>
+<comment>(replace pcnet32 with your NIC module)</comment>
+</pre>
+        <p>Likewise, if you want to be able to access any SCSI hardware that was not detected
+			during the initial boot autodetection process, you will need to load the appropriate
+			modules from /lib/modules, again using <c>modprobe</c>:
+			</p>
+<pre caption="Loading SCSI Modules">
+# <c>modprobe aic7xxx</c>
+<comment>(replace aic7xxx with your SCSI adapter module)</comment>
+# <c>modprobe sd_mod</c>
+<comment>(sd_mod is the module for SCSI disk support)</comment>
+</pre>
+			<note>
+			Support for a SCSI CD-ROMs and disks are built-in in the kernel.
+			</note>
+        <p>If you are using hardware RAID, you will need to load the 
+			ATA-RAID modules for your RAID controller.
+			</p>
+<pre caption="Loading RAID Modules">
+# <c>modprobe ataraid</c>    
+# <c>modprobe pdcraid</c>            
+<comment>(Promise Raid Controller)</comment>    
+# <c>modprobe hptraid</c>            
+<comment>(Highpoint Raid Controller)</comment>    
+</pre>
+        <p>The Gentoo LiveCD should have enabled DMA on your disks, but if it did not,
+			<c>hdparm</c> can be used to set DMA on your drives. </p>
+<pre caption="Setting DMA">
+<comment>Replace hdX with your disk device.</comment>
+# hdparm -d 1 /dev/hdX <comment>Enables DMA </comment>
+# hdparm -d1 -A1 -m16 -u1 -a64 /dev/hdX
+<comment>(Enables DMA and other safe performance-enhancing options)</comment>
+# hdparm -X66 /dev/hdX
+<comment>(Force-enables Ultra-DMA -- dangerous -- may cause some drives to mess up)</comment>
+</pre>
+      </body>
+    </section>
+  </chapter>
+<!-- THIS SECTION SHOULD BE DEPRECATED WITH HOTPLUG ENABLED IN 1.4_rc3 (drobbins)
+  <chapter>
+    <title>Loading PCMCIA Kernel Modules</title>
+    <section>
+      <body>
+        <p>If you have a PCMCIA network card, you will need to perform a few extra steps.
+			</p>
+        <warn>To avoid problems with <c>cardmgr</c>, you <e>must</e> run it <e>before</e> you enter the chroot
+			portion of the install. </warn>
+<pre caption="Loading PCMCIA Modules">
+# <i>modprobe pcmcia_core</i>
+# <i>modprobe i82365</i>
+# <i>modprobe ds</i>
+# <i>cardmgr -f</i>
+</pre>
+        <p>As <c>cardmgr</c> detects which hardware is present, your speaker should emit a
+			few reassuring beeps, and your PCMCIA network card should be active. You can
+			of course insert the PCMCIA card after loading <c>cardmgr</c> too, if that is 
+			preferable. (Technically, you need not run 
+			<c>cardmgr</c> if you know exactly which module your PCMCIA card requires. 
+			But if you do not, loading all PCMCIA modules and see which sticks will not work,
+			as all PCMCIA modules load obligingly and hang around for a PCMCIA card to 
+			drop by. <c>cardmgr</c> will also unload the module(s) for any card when you
+			remove it). </p>
+      </body>
+    </section>
+  </chapter>
+-->
+  <chapter>
+    <title>Configuring Networking</title>
+	<section>
+      <title>Maybe it just works?</title>
+      <body>
+		<p>If you are using a 1.4_rc3 or later LiveCD, it is possible that your networking has already been
+		configured automatically for you. If so, you should be able to take advantage of the many included
+		network-aware commands on the LiveCD such as <c>ssh</c>, <c>scp</c>, <c>ping</c>, <c>irssi</c>, <c>wget</c> and <c>lynx</c>,
+		among others.</p>
+	  
+        <p>If networking has been configured for you, the <c>/sbin/ifconfig</c> command should 
+		list some internet interfaces besides <c>lo</c>, such as <c>eth0</c>:
+		</p>
+<pre caption="/sbin/ifconfig for a working network card">
+eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
+          inet addr:192.168.0.2  Bcast:192.168.0.255  Mask:255.255.255.0
+          inet6 addr: fe80::50:ba8f:617a/10 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:1498792 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1284980 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:1984 txqueuelen:100
+          RX bytes:485691215 (463.1 Mb)  TX bytes:123951388 (118.2 Mb)
+          Interrupt:11
+</pre>
+        <p>You may want to also try pinging your ISP's DNS server (found in <path>/etc/resolv.conf</path>),
+		and a Web site of choice, just to make sure that your packets are reaching the net, DNS name
+		resolution is working correctly, etc.
+		</p>
+<pre caption="Further Network Testing">
+# <c>ping -c 3 www.yahoo.com </c>
+</pre>
+		<p>Are you able to use your network? If so, you can skip the rest of this section.</p>
+      </body>
+    </section>
+    <section>
+      <title> PPPoE configuration</title>
+      <body>
+        <p>Assuming you need PPPoE to connect to the internet, the LiveCD (any version) has
+			made things easy for you by including <c>rp-pppoe</c>. Use the provided <c>adsl-setup</c>
+			script to configure your connection. You will be prompted for the ethernet
+			device that is connected to your adsl modem, your username and password,
+			the IPs of your DNS servers, and if you need a basic firewall or not. </p>
+<pre caption="Configuring PPPoE">
+# <c> adsl-setup </c>
+# <c> adsl-start </c>
+</pre>
+        <p>If something goes wrong, double-check that you correctly typed
+			your username and password by looking at <path>/etc/ppp/pap-secrets</path> or
+			<path>/etc/ppp/chap-secrets</path>, and make sure you are using the right ethernet device. </p>
+      </body>
+    </section>
+    <section>
+      <title> Automatic Network Configuration </title>
+      <body>
+       <p>The simplest way to set up networking if it did not get configured automatically is to run the <c>net-setup</c> script.</p>
+<pre caption="Net-Setup Script">
+# <c>net-setup eth0</c>
+</pre>
+        <p>Of course, if you prefer, you may still set up networking manually. This is covered next.</p>
+      </body>
+    </section>
+    <section>
+      <title>Manual DHCP Configuration</title>
+      <body>
+        <p>Network configuration is simple with DHCP; If your ISP is not using
+		DHCP, skip down to the static configuration section below. </p>
+<pre caption="Network configuration with DHCP">
+# <c>dhcpcd eth0</c>
+</pre>
+        <note>Some ISPs require you to provide a hostname.  To do that,
+		add a <c>-h &lt;myhostname&gt;</c> flag to the dhcpcd command line above; whereas <c>&lt;myhostname&gt;</c> is your ISP-provided hostname.
+		</note>
+        <p>If you receive <i>dhcpConfig</i> warnings, do not panic; the errors
+		are most likely cosmetic.  Skip down to Network testing below.</p>
+      </body>
+    </section>
+    <section>
+      <title>Manual Static Configuration</title>
+      <body>
+        <p>We need to setup just enough networking so that we can download
+		sources for the system build, as well as the required localhost interface. The needed information is explained in the next table.  You do not need to do manual static configuration if you have already configured your network interfaces with DHCP.</p>
+
+<table>
+<tr><th>Information</th><th>Description</th><th>Example value</th></tr>
+<tr><ti>IP address</ti><ti>The IP-address you want to assign to your network card</ti><ti>192.168.1.2</ti></tr>
+<tr><ti>Broadcast address</ti><ti>The IP-address which will broadcast the packets to all the hosts in the network.</ti><ti>192.168.1.255</ti></tr>
+<tr><ti>Network mask</ti><ti>The mask which is used together with the IP address to see what part of the address is for network-identification and host-identification</ti><ti>255.255.255.0</ti></tr>
+<tr><ti>Gateway</ti><ti>The IP-address of the computer which will forward the packets that are not meant for the local network (most of the time the computer which shares the internet connection)</ti><ti>192.168.1.1</ti></tr>
+</table>
+        
+		<p>Type in the following commands, replacing
+		$IFACE with your network interface (typically <c>eth0</c>), $IPNUM
+		with your IP address, $BCAST with your broadcast address, and $NMASK
+		with your network mask.  For the <c>route</c> command, replace 
+		$GTWAY with your default gateway.
+		</p>
+<pre caption="Static IP Network Configuration">
+# <c>ifconfig $IFACE $IPNUM broadcast $BCAST netmask $NMASK</c>
+# <c>/sbin/route add -net default gw $GTWAY netmask 0.0.0.0 metric 1 $IFACE</c>
+</pre>
+        <p>Now it is time to create the <path>/etc/resolv.conf</path>
+		file so that name resolution (finding Web/FTP sites by name, rather 
+        than just by IP address) will work. You can use <c>nano -w 
+        /etc/resolv.conf</c> to create <path>/etc/resolv.conf</path>. 
+        <c>nano</c> is a small and easy-to-use editor.</p>
+        <p>Here is a template to follow for creating your /etc/resolv.conf file: </p>
+<pre caption="/etc/resolv.conf template">
+domain mydomain.com
+nameserver 10.0.0.1
+nameserver 10.0.0.2
+</pre>
+        <p>Replace <c>10.0.0.1</c> and <c>10.0.0.2</c> with the IP addresses of your
+		primary and secondary DNS servers respectively.</p>
+      </body>
+    </section>
+    <section>
+      <title>Proxy Configuration</title>
+      <body>
+        <p>If you are behind a proxy, it could be necessary to configure your proxy before
+		you continue. We will export some variables to set up the proxy accordingly.
+		</p>
+<pre caption="Setting a Proxy">
+<codenote>If the proxy restricts HTTP traffic:</codenote>
+# <c>export http_proxy=&quot;machine.company.com:1234&quot; </c>
+<codenote>If the proxy restricts FTP traffic:</codenote>
+# <c>export ftp_proxy=&quot;machine.company.com&quot; </c>
+<codenote>If the proxy restricts RSYNC traffic:</codenote>
+# <c>export RSYNC_PROXY=&quot;machine.company.com&quot; </c>
+</pre>
+      </body>
+    </section>
+        <section>
+      <title>Networking is a go!</title>
+      <body>
+        <p>Networking should now be configured and usable.  You should be able to use the included
+		<c>ssh</c>, <c>scp</c>, <c>lynx</c>, <c>irssi</c> and <c>wget</c> commands to connect to other machines on your LAN or the Internet.</p>
+      </body>
+    </section>
+    <section>
+    	<title>I do not have networking!</title>
+	<body>If you do not have networking there is some help in the
+		<uri link="http://forums.gentoo.org/">Gentoo Forums</uri>.
+		Some useful links can be found at <uri>http://forums.gentoo.org/viewtopic.php?t=43025</uri>.
+	</body>
+  </section>
+  </chapter>
+  <chapter>
+    <title>Setting your system's date and time</title>
+    <section>
+      <body>
+        <p>Now you need to set your system's date and time.
+	   You can do this using the <c>date</c> command.</p>
+<pre caption="Setting your system's date">
+# <c>date</c>
+Thu Feb 27 09:04:42 CST 2003
+<comment>(If your date is wrong, set your date with this next command)</comment>
+# <c>date 022709042003</c>
+<comment> (date MMDDhhmmCCYY)</comment>
+</pre>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Filesystems, partitions and block devices</title>
+    <section>
+		<title>Introduction to block devices</title>
+      <body>
+<p>
+In this section, we will take a good look at disk-oriented aspects of Gentoo Linux and Linux in general, including
+Linux filesystems, partitions and block devices. Then, once you are familiar with the ins and outs of disks and
+filesystems, you will be guided through the process of setting up partitions and filesystems for your Gentoo Linux
+install.
+</p>
+<p>
+To begin, I will introduce "block devices".  The most famous block device is
+probably the one that represents the first IDE drive in a Linux system: <path>/dev/hda</path>.
+</p>
+<p>
+If your system uses SCSI drives, then your first hard drive will be <path>/dev/sda</path>.
+</p>
+<p>The block devices above represent an <i>abstract</i> interface to the disk.
+User programs can use these block devices to interact with your disk without
+worrying about whether your drivers are IDE, SCSI or something else.  The
+program can simply address the storage on the disk as a bunch of contiguous,
+randomly-accessible 512-byte blocks.  </p>
+</body>
+</section>
+<section>
+<title>Partitions and fdisk</title>
+<body>
+<p> Under Linux, we create filesystems by using a special command called
+<c>mkfs</c> (or <c>mke2fs</c>, <c>mkreiserfs</c>, etc,) specifying a particular
+block device as a command-line argument.  </p>
+
+<p> However, although it is theoretically possible to use a "whole disk" block
+device (one that represents the <i>entire</i> disk) like <c>/dev/hda</c> or
+<c>/dev/sda</c> to house a single filesystem, this is almost never done in
+practice.  Instead, full disk block devices are split up into smaller, more
+manageable block devices called "partitions".  Partitions are created using a
+tool called <c>fdisk</c>, which is used to create and edit the partition table
+that is stored on each disk.  The partition table defines exactly how to split
+up the full disk.  </p>
+
+<p> We can take a look at a disk's partition table by running <c>fdisk</c>,
+specifying a block device that represents a full disk as an argument: </p>
+
+<note>Alternate interfaces to the disk's partition table include <c>cfdisk</c>,
+<c>parted</c> and <c>partimage</c>. We recommend <c>fdisk</c> becuase it is
+more powerfull and well known in the Unix/Linux world.</note>
+
+<pre caption="Starting up fdisk">
+# fdisk /dev/hda 
+<comment>or</comment>
+# fdisk /dev/sda
+</pre>
+
+<impo>
+<b>Note that you should <i>not</i> save or make any changes to a disk's
+partition table if any of its partitions contain filesystems that are in use or
+contain important data.  Doing so will generally cause data on the disk to be
+lost.</b>
+</impo>
+
+<p>
+Once in fdisk, you will be greeted with a prompt that looks like this:
+</p>
+
+<pre caption="The fdisk prompt">
+Command (m for help): 
+</pre>
+
+
+<p>
+Type <c>p</c> to display your disk's current partition configuration:
+</p>
+
+<pre caption="An example partition configuration">
+Command (m for help): p
+
+Disk /dev/hda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        49    264600   82  Linux swap
+/dev/hda3            50        70    158760   83  Linux
+/dev/hda4            71      2184  15981840    5  Extended
+/dev/hda5            71       209   1050808+  83  Linux
+/dev/hda6           210       348   1050808+  83  Linux
+/dev/hda7           349       626   2101648+  83  Linux
+/dev/hda8           627       904   2101648+  83  Linux
+/dev/hda9           905      2184   9676768+  83  Linux
+
+Command (m for help): 
+</pre>
+
+<p> This particular disk is configured to house seven Linux filesystems (each
+with a corresponding partition listed as "Linux") as well as a swap partition
+(listed as "Linux swap").  </p>
+
+<p>
+Notice the name of the corresponding partition block
+devices on the left hand side, starting with <c>/dev/hda1</c> and going up to
+<c>/dev/hda9</c>. In the early days of the PC, partitioning software only
+allowed a maximum of four partitions (called "primary" partitions).  This was
+too limiting, so a workaround called an <i>extended partitioning</i> was
+created.  An extended partition is very similar to a primary partition, and
+counts towards the primary partition limit of four.  However, extended
+partitions can hold any number of so-called <i>logical</i> partitions inside
+them, providing an effective means of working around the four partition limit.
+</p>
+
+<p>
+All partitions <c>hda5</c> and higher are logical partitions. The numbers 1
+through 4 are reserved for primary or extended partitions.  </p>
+
+<p> So, In our example, <c>hda1</c> through <c>hda3</c> are primary partitions.
+<c>hda4</c> is an extended partition that contains logical partitions
+<c>hda5</c> through <c>hda9</c>. You would never actually
+<i>use</i> <c>/dev/hda4</c> for storing any filesystems directly -- it simply
+acts as a container for partitions <c>hda5</c> through <c>hda9</c>.  </p>
+
+<p> Also, notice that each partition has an "Id", also called a "partition
+type".  Whenever you create a new partition, you should ensure that the
+partition type is set correctly. '83' is the correct partition type for
+partitions that will be housing Linux filesystems, '82' is the correct
+partition type for Linux swap partitions and 'fd' is the recommended partition
+type for Software RAID partitions. You set the partition type using the
+<c>t</c> option in <c>fdisk</c>.  The Linux kernel uses the partition type
+setting to auto-detect filesystems and swap devices on the disk at boot-time.
+</p>
+</body>
+</section>
+<section>
+<title>Using fdisk to set up partitions</title>
+<body>
+
+<p>Now that you have had your introduction to the way disk partitioning is
+done under Linux, it is time to walk you through the process of setting up disk
+partitions for your Gentoo Linux installation. After we walk you through the
+process of creating partitions on your disk, your partition configuration will
+look like this: </p>
+
+<pre caption="The partition configuration that you will have after following these steps">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1   *         1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+/dev/hda3            82      3876  28690200   83  Linux
+
+Command (m for help):
+</pre>
+
+<p>In our suggested "newbie" partition configuration, we have three partitions.
+The first one (<c>/dev/hda1</c>) at the beginning of the disk is a small
+partition called a boot partition.  The boot partition's purpose is to hold all
+the critical data related to booting -- GRUB boot loader information (if you
+will be using GRUB) as well as your Linux kernel(s).  The boot partition gives
+us a safe place to store everything related to booting Linux. During normal
+day-to-day Gentoo Linux use, your boot partition should remain <e>unmounted</e>
+for safety. If you are setting up a SCSI system, your boot partition will
+likely end up being <c>/dev/sda1</c>.</p> 
+
+<p>It is recommended to have boot partitions (containing everything necessary for
+the boot loader to work) at the beginning of the disk.  While not necessarily
+required anymore, it is a useful tradition from the days when the lilo boot
+loader was not able to load kernels from filesystems that extended beyond disk
+cylinder 1024. 
+</p>
+
+<p>The second partition (<c>/dev/hda2</c>) is used to for swap space. The
+kernel uses swap space as virtual memory when RAM becomes low. This partition,
+relatively speaking, is not very big either, typically somewhere around 512MB.
+If you are setting up a SCSI system, this partition will likely end up
+being called <c>/dev/sda2</c>.  </p>
+
+<p>The third partition (<c>/dev/hda3</c>) is quite large and takes up the rest
+of the disk. This partition is called our "root" partition and will be used to
+store your main filesystem that houses Gentoo Linux itself. On a SCSI system,
+this partition would likely end up being <c>/dev/sda3</c>.</p>
+
+
+<p>Before we partition the disk, here is a quick technical overview of the
+suggested partition and filesystem configuration to use when installing Gentoo
+Linux:</p>
+
+<table>
+	<tr>
+	<th>Partition</th>
+	<th>Size</th>
+	<th>Type</th>
+	<th>example device</th>
+	</tr>
+	<tr>
+	<ti>boot partition, containing kernel(s) and boot information</ti>
+	<ti>32 Megabytes</ti>
+	<ti>ext2/3 highly recommended (easiest); if ReiserFS then mount with <c>-o notail</c>. If you will be using ext3 or ReiserFS, you must add the size of the journal to the partitionsize; in these cases 64 Megabytes is recommended</ti>
+	<ti>/dev/hda1</ti>
+	</tr>
+	<tr>
+	<ti>swap partition (no longer a 128 Megabyte limit, now 2GB)</ti>
+	<ti>Generally, configure a swap area that is between one to two times the size of the physical RAM
+	in your system.</ti>
+	<ti>Linux swap</ti>
+	<ti>/dev/hda2</ti>
+	</tr>
+	<tr>
+	<ti>root partition, containing main filesystem (/usr, /home, etc)</ti>
+	<ti>&gt;=1.5 Gigabytes</ti>
+	<ti>ReiserFS, ext3 recommended; ext2 ok</ti>
+	<ti>/dev/hda3</ti>
+	</tr>
+</table>
+
+<p>OK, now to create the partitions as in the example and table above. First,
+enter fdisk by typing <c>fdisk /dev/hda</c> or <c>fdisk /dev/sda</c>,
+depending on whether you are using IDE or SCSI. Then, type <c>p</c> to view your
+current partition configuration.  Is there anything on the disk that you need
+to keep? If so, <b>stop now</b>.  If you continue with these directions, <b>all
+existing data on your disk will be erased.</b></p>
+
+<impo>Following these instructions below will cause all prior data on your disk
+to <b>be erased</b>! If there is anything on your drive, please be sure that it
+is non-critical information that you do not mind losing. Also make sure that you
+<b>have selected the correct drive</b> so that you do not mistakenly wipe data
+from the wrong drive.</impo>
+
+<p>Now, it is time to delete any existing partitions. To do this, type <c>d</c>
+and hit Enter. You will then be prompted for the partition number you would like
+to delete. To delete a pre-existing <c>/dev/hda1</c>, you would type:</p>
+
+<pre caption="Deleting a partition">
+Command (m for help): d
+Partition number (1-4): 1
+</pre>
+
+<p>The partition has been scheduled for deletion. It will no longer show up if
+you type <c>p</c>, but it will not be erased until your changes have been
+saved.  If you made a mistake and want to abort without saving your changes,
+type <c>q</c> immediately and hit enter and your partition will not be
+deleted.</p>
+<!-- NOTE: THis is not sufficient documentation to cover ATA Raid and I just
+find it confusing, so I'm commenting it out (drobbins)
+<note>If you are using RAID your partitions will be a little different.  You
+will have the partitions like this: <path>/dev/ataraid/discX/partY</path> X are
+the arrays you have made, so if you only have made 1 array, then it will be
+disc0.Y is the partition number as in <path>/dev/hdaY</path> </note>
+-->
+<p>Now, assuming that you do indeed want to wipe out all the partitions on your
+system, repeatedly type <c>p</c> to print out a partition listing and then type
+<c>d</c> and the number of the partition to delete it. Eventually, you will end up
+with a partition table with nothing in it:</p>
+
+<pre caption="An empty partition table">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+
+Command (m for help):
+</pre>
+
+<p>Now that the in-memory partition table is empty, we are ready to create a
+boot partition. To do this, type <c>n</c> to create a new partition, then
+<c>p</c> to tell fdisk you want a primary partition. Then type <c>1</c> to
+create the first primary partition. When prompted for the first cylinder, hit
+enter. When prompted for the last cylinder, type <c>+32M</c> to create a
+partition 32MB in size. You can see output from these steps below:</p>
+
+<note>
+Journaled filesystems require extra space for their journal. Default settings 
+require about 33 Megabytes of space. Therefore, if you are using a journaled 
+filesystem for <path>/boot</path>, you should type <c>+64M</c> when prompted
+for the last cylinder.
+</note>
+
+<pre caption="Steps to create our boot partition">
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+p
+Partition number (1-4): 1
+First cylinder (1-3876, default 1):
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): +32M
+</pre>
+
+<p>Now, when you type <c>p</c>, you should see the following partition printout:</p>
+
+<pre caption="Our first partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+</pre>
+
+<p>Next, let us create the swap partition. To do this, type <c>n</c> to create a
+new partition, then <c>p</c> to tell fdisk that you want a primary partition. Then
+type <c>2</c> to create the second primary partition, <c>/dev/hda2</c> in our case.
+When prompted for the first cylinder, hit enter. When prompted for the last cylinder,
+type <c>+512M</c> to create a partition 512MB in size. After you have done this, type
+<c>t</c> to set the partition type, <c>2</c> to select the partition you just
+created, and then type in <c>82</c> to set the partition
+type to "Linux Swap". After completing these steps, typing <c>p</c> should display
+a partition table that looks similar to this:</p>
+
+<pre caption="Our swap partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+</pre>
+
+<p>Finally, let us create the root partition. To do this, type <c>n</c> to
+create a new partition, then <c>p</c> to tell fdisk that you want a primary
+partition. Then type <c>3</c> to create the third primary partition,
+<c>/dev/hda3</c> in our case.  When prompted for the first cylinder, hit enter.
+When prompted for the last cylinder, hit enter to create a partition that takes
+up the rest of the remaining space on your disk.  After completing these steps,
+typing <c>p</c> should display a partition table that looks similar to
+this:</p>
+
+<pre caption="Our root partition has been created">
+Command (m for help): p
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        81    506520   82  Linux swap
+/dev/hda3            82      3876  28690200   83  Linux
+</pre>
+
+<p>
+Finally, we need to set the "bootable" flag on our boot partition and then write
+our changes to disk. To tag <c>/dev/hda1</c> as a "bootable" partition, type
+<c>a</c> at the menu and then type in <c>1</c> for the partition number. If you
+type <c>p</c> now, you will now see that <c>/dev/hda1</c> has a <c>*</c> in the "Boot"
+column. Now, let us write our changes to disk. To do this, type <c>w</c> and hit
+enter. Your disk partitions are now properly configured for a Gentoo Linux
+install. 
+</p>
+
+<note>If <c>fdisk</c> or <c>cfdisk</c> instruct you to do so, please reboot to
+allow your system to detect the new partition configuration.</note>
+</body>
+</section>
+<section>
+<title>Creating filesystems</title>
+<body>
+<p>Now that the partitions have been created, it is time to set up filesystems on
+the boot and root partitions so that they can be mounted and used to store data. 
+We will also configure the swap partition to serve as swap storage.
+</p>
+
+<p>Gentoo Linux supports a variety of different types of filesystems; each type has
+its strengths and weaknesses and its own set of performance characteristics. Currently,
+we support the creation of ext2, ext3, JFS and ReiserFS filesystems.</p>
+
+<warn>XFS is not supported in SELinux.</warn>
+
+<p>ext2 is the tried and true Linux filesystem but does not have metadata
+journaling, which means that routine ext2 filesystem checks at startup time can
+be quite time-consuming. There is now quite a selection of newer-generation
+<i>journaled</i> filesystems that can be checked for consistency very quickly
+and are thus generally preferred over their non-journaled counterparts.
+Journaled filesystems prevent long delays when you boot your system and your
+filesystem happens to be in an <i>inconsistent</i> state.</p>
+
+<p>ext3 is the journaled version of the ext2 filesystem, providing metadata
+journaling for fast recovery in addition to other enhanced journaling modes
+like full data and ordered data journaling. ext3 is a very good and reliable
+filesystem. It offers generally decent performance under most conditions.
+Because it does not extensively employ the use of "trees" in its internal
+design, it does not scale very well, meaning that it is not an ideal choice for
+very large filesystems, or situations where you will be handling very large
+files or large quantities of files in a single directory. But when used within
+its design parameters, ext3 is an excellent filesystem.</p>
+
+<p>ReiserFS is a B*-tree based filesystem that has very good overall
+performance and greatly outperforms both ext2 and ext3 when dealing with small
+files (files less than 4k), often by a factor of 10x-15x. ReiserFS also scales
+extremely well and has metadata journaling.  As of kernel 2.4.18+, ReiserFS is
+now rock-solid and highly recommended for use both as a general-purpose
+filesystem and for extreme cases such as the creation of large filesystems, the
+use of many small files, very large files, and directories containing tens of
+thousands of files. ReiserFS is the filesystem we recommend by default for all
+non-boot partitions.</p>
+
+<p>JFS is IBM's own high performance journaling filesystem.  It has recently
+become production-ready, and there has not been a sufficient track record to
+comment either positively nor negatively on its general stability at this
+point.</p>
+
+<p>If you are looking for the most rugged journaling filesystem, use ext3.  If
+you are looking for a good general-purpose high-performance filesystem with
+journaling support, use ReiserFS;  both ext3 and ReiserFS are mature,
+refined and recommended for general use.</p>
+
+<p>I vehemently recommend ReiserFS, as I have found it best for combining both stability and speed.  Also, I have several SELinux boxes using ReiserFS, so I can tell you for sure that ReiserFS does play well with SELinux.</p>
+<!-- Corner case, confusing
+		<p>But before creating filesystems, you may want to initialize the
+			beginning of your partition using <c>dd</c> if you are using a pre-existing partition that has been used before. 
+			This is particularly helpful when you're going to create a new XFS filesystem on a partition that previously contained
+			a ReiserFS filesystem. Doing this will ensure that your new filesystem
+			will not be mis-identified by Linux's filesystem auto-detection code.
+			This can be done as follows:	
+			</p>
+<pre caption="Initializing first 1024 bytes of your partition">
+# <c>dd if=/dev/zero of=/dev/hda3 bs=1k count=1</c>
+<comment>(Replace /dev/hda3 with the partition you wish to &quot;clean.&quot;)</comment>
+</pre>
+	<warn>The command above will destroy all data from <path>/dev/hda3</path>. 
+	Be careful and check twice which partition you specify for zeroing.
+	If you make a mistake it might result in a loss of data.
+	</warn>
+-->
+
+<p>Based on our example above, we will use the following commands to initialize
+all our partitions for use:</p>
+
+<pre caption="Initializing our partitions (example)">
+# mke2fs -j /dev/hda1
+# mkswap /dev/hda2
+# mkreiserfs /dev/hda3
+</pre>
+
+<p>We choose ext3 for our <c>/dev/hda1</c> boot partition because it is a
+robust journaling filesystem supported by all major boot loaders. We used
+<c>mkswap</c> for our <c>/dev/hda2 </c> swap partition -- the choice is obvious
+here. And for our main root filesystem on <c>/dev/hda3</c> we choose ReiserFS,
+since it is a solid journaling filesystem offering excellent performance. Now,
+go ahead and initialize your partitions.</p>
+
+<p>For your reference, here are the various <c>mkfs</c>-like commands available
+during the installation process:</p>
+
+	<p><c>mkswap</c> is the command that is used to initialize swap partitions:</p>
+<pre caption="Initializing Swap">
+# <c>mkswap /dev/hda2</c>
+</pre>
+<p>You can use the <c>mke2fs</c> command to create ext2 filesystems:</p>
+<pre caption="Creating an ext2 Filesystem">
+# <i>mke2fs /dev/hda1</i>
+</pre>
+<p>If you would like to use ext3, you can create ext3 filesystems using
+	<c>mke2fs -j</c>:</p>
+<pre caption="Creating an ext3 Filesystem">
+# <c>mke2fs -j /dev/hda3</c>
+</pre>
+        <note>You can find out more about using ext3 under Linux 2.4 at
+	<uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
+        <p>To create ReiserFS filesystems, use the <c>mkreiserfs</c> command:</p>
+<pre caption="Creating a ReiserFS Filesystem">
+# <c>mkreiserfs /dev/hda3</c>
+</pre>
+	<p>To create JFS filesystems, use the <c>mkfs.jfs</c> command:</p>
+<pre caption="Creating a JFS Filesystem">
+# <c>mkfs.jfs /dev/hda3</c>
+</pre>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Mount Partitions</title>
+    <section>
+      <body>
+        <p>Now, we will activate our newly-initialized swap volume, since we may need the additional virtual memory that it
+			provides later:
+			</p>
+<pre caption="Activating Swap">
+# <c>swapon /dev/hda2</c>
+</pre>
+
+        <p>Next, we will create the <path>/mnt/gentoo</path> and <path>/mnt/gentoo/boot</path> mount points,
+			and we will mount our filesystems to these mount points. Once our boot and root filesystems are
+		mounted, any files we copy or create inside <path>/mnt/gentoo</path> will be placed on our new filesystems.
+			Note that if you are setting up Gentoo
+   			Linux with separate <path>/usr</path> or <path>/var</path> filesystems, these would get mounted to
+   			<path>/mnt/gentoo/usr</path> and <path>/mnt/gentoo/var</path> respectively.
+			</p>
+ 
+			 <impo>If your <e>boot</e> partition (the one holding the kernel) is ReiserFS, be sure to mount it
+			with the <c>-o notail</c> option so GRUB gets properly installed. Make sure
+			that <c>notail</c> ends up in your new <path>/etc/fstab</path> boot partition entry, too.
+			We will get to that in a bit. If you are going to use LILO with ReiserFS, then the <c>-o notail</c>
+			is not needed. It is always safe to specify the <c>-o notail</c> option with ReiserFS if you are
+			not sure what to do.
+			</impo>
+
+<pre caption="Creating Mount Points">
+# <c>mount /dev/hda3 /mnt/gentoo</c>
+# <c>mkdir /mnt/gentoo/boot</c>
+# <c>mount /dev/hda1 /mnt/gentoo/boot</c>
+</pre>
+
+                      <impo>If you are having problems mounting your boot partition with ext2, try using
+		   	<c>mount /dev/hXX /mnt/gentoo/boot -t ext2 </c> </impo>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Stage tarballs and chroot</title>
+    <section>
+		<title>Selecting the desired stage tarball</title>
+      <body>
+
+<p>
+Now, you need to decide which one you would like to use as a
+basis for the install if you have not already.</p>
+
+<p>Since we are compiling everything &quot;from-scracth&quot;, as is currently required by the Gentoo SELinux install, we will want to use the <path>stage1-x86-1.4_rc4.tar.bz2</path> image.
+ The stage on the CD is
+accessible at <path>/mnt/cdrom/gentoo</path>, and you can type <c>ls /mnt/cdrom/gentoo</c>
+to see what is available on your CD.</p>
+
+<p>If you would like to perform an install using a stage tarball that is
+<i>not</i> on your CD , this is still possible, but you will need to download the
+stage you want using the following instructions. If you already have the stage
+tarball you want to use (most users), then proceed to the "Extracting the stage
+tarball" section.  (This is most useful if you plan on using an experimental stage tarball.  Please note that these may, and likely do, contain bugs.)</p>
+
+<pre caption="Downloading Required Stage">
+# <c>cd /mnt/gentoo</c>
+<comment>Use lynx to get the URL for your tarball:</comment>
+# <c>lynx http://www.ibiblio.org/pub/Linux/distributions/gentoo/releases/1.4_rc4/x86/</c>
+<comment>Use <c>Up</c> and <c>Down</c> arrows keys (or the <c>TAB</c> key) to go to the right directory
+Highlight the appropriate stage you want to download
+Press <c>d</c> which will initiate the download
+Save the file and quit the browser
+
+<b>OR</b> use wget from the command line:</comment>
+# <c>wget <comment>insert URL to the required stage tarball here.</comment></c>
+</pre>
+      </body>
+    </section>
+    <section>
+		<title>Extracting the stage tarball</title>
+      <body>
+
+<p>Now it is time to extract the compressed stage tarball of your choice to
+<path>/mnt/gentoo/</path>.
+Unpack the stage tarball as follows:</p>
+
+<impo>Be sure to use the <c>p</c> option with <c>tar</c>.  Forgetting to do this will
+cause certain files to have incorrect permissions.</impo>
+
+<pre caption="Unpacking the Stages">
+# <c>cd /mnt/gentoo</c>
+<comment>If you downloaded your stage tarball, change the path below to begin with "/mnt/gentoo/"
+instead of "/mnt/cdrom/gentoo/".</comment>
+# <c>tar -xvjpf /mnt/cdrom/gentoo/stage1-*.tar.bz2</c>
+</pre>
+
+<p>If you downloaded your stage tarball to <path>/mnt/gentoo</path>, you can now delete it by typing
+<c>rm /mnt/gentoo/stage*.tar.bz2</c>.</p>
+</body>
+</section>
+<section>
+<title>Entering the chroot</title>
+<body>
+<p>
+Next, we will <c>chroot</c> over to the new Gentoo Linux build installation to &quot;enter&quot; the new
+Gentoo Linux system.
+</p>
+
+<note>
+You may receive a notice during <c>env-update</c> telling you that 
+<path>/etc/make.profile/make.defaults</path> is not available: ignore it. We are 
+going to issue <c>emerge sync</c> later on in this document which will resolve 
+the problem.
+</note>
+
+<pre caption="Prepping and entering the chroot environment">
+# <c>mount -t proc proc /mnt/gentoo/proc</c>
+# <c>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</c>
+# <c>chroot /mnt/gentoo /bin/bash</c>
+# <c>env-update</c>
+Regenerating /etc/ld.so.cache...
+# <c>source /etc/profile</c>
+<comment>(The above points your shell to the new paths and updated binaries.)</comment>
+</pre>
+        <p>After you execute these commands, you will be &quot;inside&quot; your new Gentoo Linux environment in <path>/mnt/gentoo</path>.
+		We can perform the rest of the installation process inside the chroot.
+		</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Getting the Current Portage Tree using sync</title>
+    <section>
+      <body>
+
+<!-- This is not yet implemented. Uncomment when it is!
+
+<p>In order to maximize the downloadspeed, you should now select rsync- and distfiles mirrors. To simplify this task, we have a tool called <c>mirrorselect</c>. Issue the following two commands:</p>
+
+<pre caption="Selecting a mirror">
+<comment>First we have mirrorselect select 5 close mirrors for us.</comment>
+# <i>mirrorselect -a -s5</i>
+<comment>Now we select an rsync-mirror ourselves:</comment>
+# <i>mirrorselect -i -r</i>
+</pre>
+
+-->
+
+<p>Now, you will need to run <c>emerge sync</c>. This command tells Portage to download
+the most recent copy of the Gentoo Linux Portage tree.
+The Portage tree
+contains all the scripts (called ebuilds) used to build every package
+under Gentoo Linux. Currently, we have ebuild scripts for close to 4000 packages. Once <c>emerge sync</c>
+completes, you will have a complete Portage tree in <path>/usr/portage</path>.</p>
+
+<pre caption="Updating Using sync">
+# <c>emerge sync</c>
+</pre>
+ 
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Setting Gentoo optimizations (make.conf)</title>
+    <section>
+      <body>
+
+<p>We must now change over to the SELinux profile.  Changing the profile is required so that all of the correct SELinux specific packages are emerged.  Some packages that are needed in the main-line Gentoo installation are not needed in the SELinux installation.  In some cases, the said packages can even conflict with your SELinux installation.</p>
+<pre caption="Changing the profile">
+# <c>rm -f /etc/make.profile</c>
+# <c>ln -s /usr/portage/profiles/selinux-x86-1.4 /etc/make.profile</c>
+</pre>
+<p>Now that you have a working copy of the Portage tree, it is time to
+customize the optimization and optional build-time settings to use on your
+Gentoo Linux system. Portage will use these settings when compiling any
+programs for you. To do this, edit the file <path>/etc/make.conf</path>.  In
+this file, you should set your <c>USE</c> flags, which specify optional
+functionality that you would like to be built into packages if available;
+generally, the defaults (an <e>empty</e> or unset <c>USE</c> variable) are
+fine.  More information on <c>USE</c> flags can be found <uri
+link="http://www.gentoo.org/doc/en/use-howto.xml">here</uri>.  A complete list
+of current USE flags can be found <uri
+link="http://www.gentoo.org/dyn/use-index.xml">here</uri>.  </p>
+<p>You also should set appropriate <c>CHOST</c>, <c>CFLAGS</c> and 
+<c>CXXFLAGS</c> settings for the kind of system that you are creating 
+(commented examples can be found further down in the file.)  These settings
+will be used to tell the C and C++ compiler how to optimize the code that
+is generated on your system. It is common for users with Athlon XP processors
+to specify a "-march=athlon-xp" setting in their CFLAGS and CXXFLAGS settings
+so that all packages built will be optimized for the instruction set and
+performance characteristics of their CPU, for example. The <path>/etc/make.conf</path>
+file contains a general guide for the proper settings of CFLAGS and CXXFLAGS.</p>
+			
+<p>If necessary, you can also set proxy information here if you are behind a 
+firewall. Use the following command to edit <path>/etc/make.conf</path> using <c>nano</c>,
+a simple visual editor.
+</p>
+<impo>
+	Some packages that we will need for SELinux are masked in the main-line <path>x86</path> assortment of packages.  Thus, we will be changing our <path>ACCEPT_KEYWORDS</path> variable to allow us to emerge the said packages.
+	</impo>
+<pre caption="Setting make.conf Options">
+# <c>nano -w /etc/make.conf</c>
+<comment>Now we will make the ACCEPT_KEYWORDS change.</comment>
+ACCEPT_KEYWORDS="~x86"
+<comment>You may now edit CHOST, CFLAGS, CXXFLAGS and any necessary USE
+or proxy settings to your liking.</comment>
+</pre>
+        <note>
+			People who need to substantially customize the build process should take a look at
+			the <path>/etc/make.globals</path> file.  This file comprises gentoo defaults and
+			should never be touched. If the defaults do not suffice, then new values should
+			be put in <path>/etc/make.conf</path>, as entries in <path>make.conf</path>
+			<comment>override</comment> the entries in <path>make.globals</path>.  If you are
+			interested in customizing USE settings, look in <path>/etc/make.profile/make.defaults</path>.
+			If you want to turn off any USE settings found here, add an appropriate <c>USE=&quot;-foo&quot;</c>
+			in <path>/etc/make.conf</path> to turn off any <c>foo</c> USE setting enabled by default
+			in <path>/etc/make.globals</path> or <path>/etc/make.profile/make.defaults</path>.
+			</note>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Bootstrapping</title>
+    <section>
+      <body>
+        <p>Now, it is time to start the &quot;bootstrap&quot; process.  This process can take serveral hours on a
+			1200MHz AMD Athlon system.
+During this time, the GNU C library, compiler suite, and other key system programs will be built. Start the bootstrap
+as follows:</p>
+<pre caption="Starting the bootstrap">
+# <c>cd /usr/portage</c>
+# <c>scripts/bootstrap.sh</c>
+</pre>
+        <p>The &quot;bootstrap&quot; process will now begin.</p>
+	<note><c>bootstrap.sh</c> now supports the <c>--fetchonly</c> option. Dial-up users will find this especially handy. It will download all bootstrap related files in one go for later compilation. <c>bootstrap.sh -h</c> for more information.</note>
+        <note>
+			Portage by default uses <c>/var/tmp</c> during package building, often
+			using several hundred megabytes of temporary storage. If you would like to
+			change where Portage stores these temporary files, set a new PORTAGE_TMPDIR <e>before</e>
+			starting the bootstrap process, as follows:
+			</note>
+<pre caption="Changing Portage's Storage Path">
+# <c>export PORTAGE_TMPDIR=&quot;/otherdir/tmp&quot;</c>
+</pre>
+        <p><c>bootstrap.sh</c> will build <c>binutils</c>, <c>gcc</c>, <c>gettext</c>,
+			and <c>glibc</c>, rebuilding <c>gettext</c>
+			after <c>glibc</c>. Needless to say, this process takes a while.
+			Once this process completes, your system will be ready to <c>emerge system</c>
+	  </p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Emerging the Rest of the System</title>
+    <section>
+      <title>Preparing to <c>emerge system</c></title>
+      <body>
+	  	
+		<note>Remember, if you are converting your existing Gentoo Linux installation, you are going to want to skip to chapter $CONVERTING_CHAPTER.
+        </note>
+		
+	<p>
+	  We now need to emerge the kernel before we can move on to <c>emerge system</c>.  This is necessary because there are two kernel options: the <path>hardened-sources</path> and the <path>selinux-sources</path>.  If we were to not emerge the kernel before hand, <c>emerge system</c> would automatically pull in the <path>selinux-sources</path>; Gentoo is all about choices.  The main difference between the two kernels is that the <path>selinux-sources</path> only contain the security patches and SELinux patches that are necessary.  However, the <path>hardened-sources</path> also contain the security and SELinux patches, but in addition have many performance-enhancing patches.
+	</p>
+	<p>
+	  Before we can get our kernel, we need a necessary package: <path>addpatches</path>.  You may notice that we have to append <c>--nodeps</c> to our <c>emerge</c> command below; this is because if we do not append <c>--nodeps</c>, Portage will try to install many of the packages that <path>addpatches</path> normally depends upon.
+	  <pre caption="Emerging addpatches">
+# <c>emerge app-admin/addpatches --nodeps</c></pre>
+	  <pre caption="Emerging the kernel">
+<comment>Only perform one of the following commands:</comment>
+# <c>emerge sys-kernel/hardened-sources --nodeps</c>
+<comment>or</comment>
+# <c>emerge sys-kernel/selinux-sources --nodeps</c>
+<comment>We now need to make the symbolic link of /usr/src/linux to our kernel.
+Make sure to replace <path>$KERNEL</path> with your kernel. (Bash's tab 
+completion is great for this; you merely have to hit tab once you have 
+typed up to <path>$KERNEL</path>.)</comment>
+# <c>ln -s /usr/src/$KERNEL /usr/src/linux</c></pre>
+	</p>
+
+	<p>
+	  We can now move on to emerge the rest of the system.
+	</p>
+<pre caption="Emerging system">
+# <c>emerge -p system</c>
+<comment>(lists the packages to be installed)</comment>
+# <c>emerge system</c>
+</pre>
+               <p>It is going to take a while
+			to finish building the entire base system.  Your reward is that it will be
+			thoroughly optimized for your system, with the SELinux packages installed. 
+			way to keep yourself occupied for some time to come.  The author suggests talking, or listening, in <path>#gentoo-hardened</path> on the <path>irc.freenode.net</path> network.  That way, you can wait for your system to compile <e>and</e> learn a thing or two. ;-)
+			</p>
+			<p>
+			Once the <c>emerge system</c> completes, we are ready to set our timezone.
+			</p>
+      </body>
+    </section>
+  </chapter>
+    <chapter>
+    <title>Setting your time zone</title>
+    <section>
+      <body>
+        <p>Now you need to set your time zone.</p>
+        <p>Look for your time zone (or GMT if you are using Greenwich Mean Time)
+	   in <path>/usr/share/zoneinfo</path>. Then, make a symbolic link to
+	   /etc/localtime by typing:</p>
+<pre caption="Creating a symbolic link for time zone">
+# <c>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</c>
+</pre>
+      </body>
+    </section>
+  </chapter>
+ <chapter>
+    <title>Compiling the Kernel, Emerging a System Logger, and a Cron Daemon</title>
+    <section>
+      <body>
+      <p>It is now time to configure your kernel; it must be done so with security
+module support, SELinux support, devfs and devpts.
+
+<pre caption="Location and required options under menuconfig">
+<comment>Under "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
+<comment>Under "Security options"</comment>
+[*] Enable different security models
+[ ] Socket and Networking Security Hooks
+&lt;*&gt; Capabilities Support
+[*] NSA SELinux Support
+[*]   NSA SELinux Development Support
+[ ]   NSA SELinux MLS policy (EXPERIMENTAL)
+
+<comment>Under "File systems"</comment>
+[*] /dev file system support (EXPERIMENTAL)
+[*]   Automatically mount at boot
+[ ]   Debug devfs
+[*] /dev/pts file system for Unix98 PTYs
+</pre>
+</p>
+<p>
+It is now time to compile the kernel that we have just configured.
+<pre caption="Compiling the kernel">
+<comment>Change directories to /usr/src/linux if you have not already done so.</comment>
+# <c>cd /usr/src/linux</c>
+# <c>make dep &amp;&amp; make clean bzImage modules modules_install</c>
+# <c>cp arch/i386/boot/bzImage /boot</c>
+</pre>
+</p>
+        <p>Your new custom kernel (and modules) are now installed.  Now you need to choose a system
+			logger that you would like to install.  Currently, only two system loggers that have been proven to work with Gentoo SELinux are <path>metalog</path> and <path>syslog-ng</path>.  Most people seem to like <path>metalog</path> the best.  I suggest this logger. 
+			To merge your logger of choice, choose <e>one</e> of the next two sets of commands: 
+			</p>
+<pre caption="Emerging System Logger of Choice">
+# <c>emerge app-admin/metalog</c>
+# <c>rc-update add metalog default</c>
+<comment>or</comment>
+# <c>emerge app-admin/syslog-ng</c>
+# <c>rc-update add syslog-ng default</c>
+</pre>
+        <p>A cron (standing for Commands Run Over Night) daemon is not required, however it is <e>highly</e> recommended that you install <path>vcron</path>.  <path>vcron</path> is currently the only cron daemon that works with SELinux.
+			</p>
+<pre caption="Installing a CRON Daemon">
+# <c>emerge sys-apps/vcron</c>
+# <c>rc-update add vcron default</c>
+</pre>
+			 <p>For more information on starting programs and daemons at startup, see the
+			<uri link="/doc/en/rc-scripts.xml">rc-script guide</uri>. 
+			</p>
+      </body>
+    </section>
+  </chapter>
+    <chapter>
+    <title>Installing miscellaneous necessary packages</title>
+    <section>
+      <body>
+        <p>If you need rp-pppoe to connect to the net, be aware that at this point
+			it has not been installed. It would be the good time to do it. </p>
+<pre caption="Installing rp-pppoe">
+# <c>USE="-X" emerge rp-pppoe</c>
+</pre>
+
+		<note>The <i>USE="-X"</i> prevents pppoe from installing its optional X interface, which is a good thing,
+		because X and its dependencies would also be emerged. You can always recompile <i>rp-pppoe</i> with
+		X support later.
+		</note>
+        <note> Please note that the rp-pppoe is built but not configured.
+			You will have to do it again using <c>adsl-setup</c> when you boot into your Gentoo system
+			for the first time.
+			</note>
+        <p>You may need to install some additional packages in the Portage tree
+			if you are using any optional features like ReiserFS.  If you are
+			using XFS, you should emerge the <c>xfsprogs</c> package: 
+			</p>
+<pre caption="Emerging Filesystem Tools">
+# <c>emerge sys-apps/xfsprogs</c>
+<comment>If you would like to use ReiserFS, you should emerge the ReiserFS tools: </comment>
+# <c>emerge sys-apps/reiserfsprogs</c>
+<comment>If you would like to use JFS, you should emerge the JFS tools: </comment>
+# <c>emerge jfsutils</c>
+</pre>
+        <p>If you are a laptop user and wish to use your PCMCIA slots on your first
+			real reboot, you will want to make sure you install the <i>pcmcia-cs</i> package.
+			</p>
+<pre caption="Emerging PCMCIA-cs">
+# <c>emerge sys-apps/pcmcia-cs</c>
+</pre>
+        <warn>You will have to re-emerge <i>pcmcia-cs</i> after installation to get PCMCIA
+			to work.
+			</warn>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Modifying /etc/fstab for your machine</title>
+    <section>
+      <body>
+        <p>Your Gentoo Linux system is almost ready for use.  All we need to do now is configure
+			a few important system files and install the boot loader. 
+			The first file we need to
+			configure is <path>/etc/fstab</path>.  Remember that you should use
+			the <c>notail</c> option for your boot partition if you chose to create a ReiserFS filesystem on it.
+			Remember to specify <c>ext2</c>, <c>ext3</c> or <c>reiserfs</c> filesystem types as appropriate.
+			</p>
+        <p>Use the <path>/etc/fstab</path> listed below, but of course be sure to replace &quot;BOOT&quot;,
+			&quot;ROOT&quot; and &quot;SWAP&quot; with the actual block devices you are using (such as <c>hda1</c>, etc.)</p>
+
+<pre caption="Editing fstab">
+<comment># /etc/fstab: static file system information.
+#
+# noatime turns off atimes for increased performance (atimes normally are not
+# needed; notail increases performance of ReiserFS (at the expense of storage
+# efficiency).  It is safe to drop the noatime options if you want and to 
+# switch between notail and tail freely.
+
+# &lt;fs&gt;           &lt;mount point&gt;   &lt;type&gt;   &lt;opts&gt;          &lt;dump/pass&gt;
+
+# NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
+</comment>
+/dev/BOOT           /boot       ext2	 noauto,noatime	 1 2
+/dev/ROOT           /           ext3	 noatime         0 1
+/dev/SWAP           none        swap	 sw              0 0
+/dev/cdroms/cdrom0  /mnt/cdrom  iso9660	 noauto,ro       0 0
+proc                /proc       proc	 defaults        0 0
+</pre>
+	<impo>We also need to add a line to the end of our <path>/etc/fstab</path> to ensure that devpts is mounted.</impo>
+	<pre caption="/etc/fstab Settings for devpts">
+none		    /dev/pts	devptsgid=5,mode=620	 0 0
+</pre>
+        <warn>Please notice that <i>/boot</i> is NOT mounted at boot time.
+			This is to protect the data in <i>/boot</i> from
+			corruption. If you need to access <i>/boot</i>, please mount it!
+			</warn>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Setting the Root Password</title>
+    <section>
+      <body>
+        <p>Before you forget, set the root password by typing: </p>
+<pre caption="Setting the root Password">
+# <c>passwd</c>
+</pre>
+
+	<p>In this day and age, a non-root user is essential for running your SELinux box.  It is rather likely that you will want to add several non-root users so that you can test your policies out afterwards.  I can not stress the importance of a non-root user, especially if you plan on doing net-related tasks such as <c>irssi</c>, a command line interface IRC client.  For instructions on how to add the said user(s), please consult the. <uri link="http://www.gentoo.org/doc/en/faq.xml">Gentoo FAQ</uri>.
+	</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Setting your Hostname</title>
+    <section>
+      <body>
+        <p>
+        Edit <path>/etc/hostname</path> so that it contains your hostname 
+        on a single line, i.e. <c>mymachine</c>. 
+        </p>
+<pre caption="Configuring Hostname">
+# <i>echo mymachine &gt; /etc/hostname</i>
+</pre>
+        <p>
+        Then edit <path>/etc/dnsdomainname</path> so that it contains your DNS 
+        domainname, i.e. <c>mydomain.com</c>.
+        </p>
+<pre caption="Configuring Domainname">
+# <i>echo mydomain.com &gt; /etc/dnsdomainname</i>
+</pre>
+        <p>
+        If you have a NIS domain, you should set it in 
+        <path>/etc/nisdomainname</path>.
+        </p>
+<pre caption="Configuring NIS Domainname">
+# <i>echo nis.mydomain.com &gt; /etc/nisdomainname</i>
+</pre>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Modifying /etc/hosts</title>
+    <section>
+      <body>
+        <p>This file contains a list of IP addresses and their associated hostnames.
+			It is used by the system to resolve the IP addresses
+			of any hostnames that may not be in your nameservers.  Here is a template for this file:
+			</p>
+<pre caption="Hosts Template">
+127.0.0.1      localhost
+<comment># the next line contains your IP for your local LAN, and your associated machine name</comment>
+192.168.1.1    mymachine.mydomain.com	mymachine
+</pre>
+        <note>If you are on a DHCP network, it might be helpful to set <i>localhost</i> to your machine's
+			actual hostname. This will help GNOME and many other programs in name resolution.
+			</note>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Final Network Configuration</title>
+    <section>
+      <body>
+        <p>Add the names of any modules that are necessary for the proper functioning of your system to 
+			<path>/etc/modules.autoload</path> file (you can also add any options you
+			need to the same line.) When Gentoo Linux boots, these modules will be automatically
+			loaded.  Of particular importance is your ethernet card module, if you happened to compile
+			it as a module:
+			</p>
+<pre caption="/etc/modules.autoload"><comment>This is assuming that you are using a 3com card. 
+Check <path>/lib/modules/`uname -r`/kernel/drivers/net</path> for your card. </comment>
+3c59x
+</pre>
+        <p>Edit the <path>/etc/conf.d/net</path> script to get your network configured for your
+			first boot: </p>
+<pre caption="Boot time Network Configuration">
+# <c>nano -w /etc/conf.d/net</c>
+# <c>rc-update add net.eth0 default</c>
+</pre>
+        <p>If you have multiple network cards or tokenring interfaces, you need to create additional <path>net.eth<comment>x</comment></path> or <path>net.tr<comment>x</comment></path> 
+			scripts respectively for each one (<comment>x</comment> = 1, 2, ...): </p>
+<pre caption="Multiple Network Interfaces">
+# <c>cd /etc/init.d</c>
+# <c>cp net.eth0 net.eth<comment>x</comment></c>
+# <c>rc-update add net.eth<comment>x</comment> default</c>
+</pre>
+        <p>If you have a PCMCIA card installed, have a quick look into 
+			<path>/etc/init.d/pcmcia</path> to verify that things seem all right for your setup,
+			then add this line to the top of <path>/etc/init.d/net.ethx</path>:
+			</p>
+<pre caption="PCMCIA depend in /etc/init.d/net.ethx">
+depend() {
+	need pcmcia
+}
+</pre>
+        <p>This makes sure that the PCMCIA drivers are autoloaded whenever your network is loaded.
+			</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Final steps: Configure Basic Settings (including the international keymap setting)</title>
+    <section>
+      <body>
+<pre caption="Basic Configuration">
+# <c>nano -w /etc/rc.conf</c>
+</pre>
+        <p>Follow the directions in the file to configure the basic settings.  
+			All users will want to make sure that <c>CLOCK</c> is set to his/her
+			liking.  International keyboard users will want to set the <c>KEYMAP</c>
+			variable (browse <path>/usr/share/keymaps</path> to see the various
+			possibilities).
+			</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Configure a Bootloader</title>
+	<section>
+	<title>Notes</title>
+	<body>
+	<p> In the spirit of Gentoo, users now have more than one bootloader to choose from.
+	Using our virtual package system, users are now able to choose between both GRUB and
+	LILO as their bootloaders.
+	</p>
+	<p> Please keep in mind that having both bootloaders installed is not necessary.
+	In fact, it can be a hindrance, so please only choose one.
+	</p>
+	<impo>If you are installing Gentoo Linux on a system with an NVIDIA nForce or nForce2 chipset
+	with an integrated GeForce graphics card, you should use LILO and avoid GRUB. With on-board
+	video enabled, the low memory area of your RAM may be used as video RAM. Since GRUB also uses low
+	memory at boot time, it may experience an "out of memory" condition. So, if you have an nForce
+	or potentially other board with on-board video, use LILO. Even if you are using off-board video
+	right now, it would be nice to be able to remove the graphics card and use the on-board video in a
+	pinch, would it not? :)</impo>
+    <p>
+    People who have selected framebuffer in their kernel should add <c>vga=xxx</c> to their bootloader configuration file as a kernel parameter. <c>xxx</c> is one of the values in the following table:
+    </p>
+<table>
+<tr><ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th></tr>
+<tr><th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti></tr>
+<tr><th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti></tr>
+<tr><th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti></tr>
+</table>
+	</body>
+	</section>
+    <section>
+	<title>Configuring GRUB</title>
+      <body>
+        <p>The most critical part of understanding GRUB is getting comfortable with how GRUB
+			refers to hard drives and partitions. Your Linux partition <path>/dev/hda1</path> is called
+			<path>(hd0,0)</path> under GRUB.  Notice the parenthesis around the hd0,0 - they are required.  
+			Hard drives count from zero rather than &quot;a&quot;, and partitions start at zero rather than one.
+			Be aware too that with the hd devices, only harddrives are counted, not atapi-ide devices such as
+			cdrom players, burners, and that the same construct can be used with scsi drives.
+			(Normally they get higher numbers than ide drives except when the bios is configured
+			to boot from scsi devices.) Assuming you have a harddrive on /dev/hda, a cdrom player on /dev/hdb,
+			a burner on /dev/hdc, a second hard drive on /dev/hdd and no scsi harddrive,
+			<path>/dev/hdd7</path> gets translated to <path>(hd1,6)</path>.
+
+			It might sound tricky, and tricky it is indeed, but as we will see, grub
+			offers a tab completion mechanism that comes handy for those of you having
+			a lot of harddrives and partitions and who are a little lost in the
+			grub numbering scheme. Having gotten the feel for that,
+			it is time to install GRUB.
+			</p>
+        <p>The easiest way to install GRUB is to simply type <c>grub</c> at your chrooted shell prompt: </p>
+<pre caption="Installing GRUB">
+# <c>emerge grub</c>
+# <c>grub</c>
+</pre>
+        <impo>If you are using hardware RAID this part will not work at
+			this time.
+			Skip to the section on making your <path>grub.conf</path>. After that we will complete the
+			grub setup for RAID controllers
+			</impo>
+        <p>You will be presented with the <c>grub&gt;</c> grub
+			command-line prompt.  Now, you need to type in the
+			right commands to install the GRUB boot record onto your hard drive.  In my example configuration,
+			I want to install the GRUB boot record on my hard drive's MBR (master boot record), so that 
+			the first thing I see when I turn on the computer is the GRUB prompt.  In my case, the commands
+			I want to type are:
+			</p>
+
+<pre caption="GRUB on the MBR">
+grub&gt; <c>root (hd0,0)</c> <codenote>Your boot partition</codenote>
+grub&gt; <c>setup (hd0)</c> <codenote>Where the boot record is installed, here, it is the MBR</codenote>
+</pre>
+	
+<pre caption="GRUB not on the MBR">
+<comment>Alternatively, if you wanted to install the bootloader somewhere other than the MBR</comment>
+grub&gt; <c>root (hd0,0)</c> <codenote>Your boot partition</codenote>
+grub&gt; <c>setup (hd0,4)</c> <codenote>Where the boot record is installed, here it is /dev/hda5</codenote>
+grub&gt; <c>quit</c>
+</pre>
+        
+	<p>Here is how the two commands work.  The first <c>root ( )</c> command tells GRUB
+			the location of your boot partition (in our example, <path>/dev/hda1</path> or 
+			<path>(hd0,0)</path> in GRUB terminology.  Then, the second <c>setup ( )
+			</c> command tells GRUB where to install the
+			boot record - it will be configured to look for its special files at the <c>root
+			( )</c> location that you specified.  In my case, I want the boot record on the
+			MBR of the hard drive, so I simply specify <path>/dev/hda</path> (also known as <path>(hd0)</path>). 
+			If I were using another boot loader and wanted to set up GRUB as a secondary boot-loader, I
+			could install GRUB to the boot record of a particular partition.  In that case,
+			I would specify a particular partition rather than the entire disk.  Once the GRUB
+			boot record has been successfully installed, you can type <c>quit</c> to quit GRUB.  
+			</p>
+
+			<note> The tab completion mechanism of grub can be used from within grub, 
+			assuming you wrote <c> root (</c> and that you hit the TAB key, you would
+			be prompted with a list of the available devices (not only harddrives), 
+			hitting the TAB key having written <c> root (hd</c>, grub would print the
+			available harddrives and hitting the TAB key after writing <c> root (hd0,</c>
+			would make grub print the list of partitions on the first harddrive.
+
+			Checking the syntax of the grub location with completion should really help
+			to make the right choice.
+			</note>
+			
+			<p>
+			Gentoo Linux is now
+			installed, but we need to create the <path>/boot/grub/grub.conf</path> file so that
+			we get a nice GRUB boot menu when the system reboots.  Here is how to do it.
+			</p>
+        <impo>To ensure backwards compatibility with GRUB, make sure to make a link from
+			<i>grub.conf</i> to <i>menu.lst</i>. You can do this by doing
+			<c>ln -s /boot/grub/grub.conf /boot/grub/menu.lst </c>. </impo>
+        <p>Now, create the grub.conf file (<c>nano -w /boot/grub/grub.conf</c>), and add the following to it:
+			</p>
+<pre caption="Grub.conf for GRUB">
+default 0
+timeout 30
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+
+title=My example Gentoo Linux
+root (hd0,0) 
+kernel (hd0,0)/boot/bzImage root=/dev/hda3 
+
+<comment># Below is for setup using hardware RAID</comment>
+title=My Gentoo Linux on RAID
+root (hd0,0)
+kernel (hd0,0)/boot/bzImage root=/dev/ataraid/dXpY
+
+<comment># Below needed only for people who dual-boot</comment>
+title=Windows XP
+root (hd0,5) 
+chainloader (hd0,5)+1
+</pre>
+        <note>
+			(hd0,0) should be written without any spaces inside the parentheses.
+			</note>
+        <impo>
+			If you set up scsi emulation for an IDE cd burner earlier, then to get it to
+			actually work you need to add an &quot;hdx=ide-scsi&quot; fragment to the kernel
+			line in grub.conf (where &quot;hdx&quot; should be the device for your cd burner).
+			</impo>
+        <p>After saving this file, Gentoo Linux installation is complete.  Selecting the first option will
+			tell GRUB to boot Gentoo Linux without a fuss.  The second part of the grub.conf file is optional,
+			and shows you how to use GRUB to boot a bootable Windows partition.
+			</p>
+        <note>Above, <path>(hd0,0)</path> should point to your &quot;boot&quot; partition
+			(<path>/dev/hda1</path> in our example config) and <path>/dev/hda3</path> should point to
+			your root filesystem.  <path>(hd0,5)</path> contains the NT boot
+			loader.
+			</note>
+        <note>
+			The path to the kernel image is relative to the boot partition. If for example you have separated boot partition <path>(hd0,0)</path> and root partition <path>(hd0,1)</path>, all paths in the grub.conf file above will become <path>/bzImage</path>.
+			</note>
+        <p>If you need to pass any additional options to the kernel, simply
+			add them to the end of the <c>kernel</c> command.  We are already passing one option
+			(<c>root=/dev/hda3</c>), but you can pass others as well.  In particular, you can
+			turn off devfs by default (not recommended unless you know what you are doing) by
+			adding the <c>gentoo=nodevfs</c> option to the <c>kernel</c> command.
+			</p>
+        <note>Unlike in earlier versions of Gentoo Linux, you no longer have to add 
+			<c>devfs=mount</c> to the end of the <c>kernel</c> line to enable devfs.  In rc6
+			devfs is enabled by default.
+			</note>
+      </body>
+    </section>
+	<section>
+    <title>Configuring LILO</title>
+      <body>
+        <p>While GRUB may be the new alternative for most people, it is not always the best choice.
+	LILO, the LInuxLOader, is the tried and true workhorse of Linux bootloaders. Here is how to install
+	LILO if you would like to use it instead of GRUB:
+	</p>
+        <p>The first step is to emerge LILO: 
+	</p>
+<pre caption="Emerging LILO">
+# <c>emerge lilo</c>
+</pre>
+        <p>Now it is time to configure LILO. Here is a sample configuration file <path>/etc/lilo.conf</path>
+	</p>
+<pre caption="Example lilo.conf">
+boot=/dev/hda
+map=/boot/map
+install=/boot/boot.b
+prompt
+timeout=50
+lba32
+default=linux
+
+image=/boot/bzImage
+	label=linux
+	read-only
+	root=/dev/hda3
+	
+#For dual booting windows/other OS
+other=/dev/hda1
+	label=dos
+</pre>
+	<ul>
+        <li><i>boot=/dev/hda</i> tells LILO to install itself on the first hard disk on the first IDE controller. </li>
+        <li><i>map=/boot/map</i> states the map file. In normal use, this should not be modified. </li>
+        <li><i>install=/boot/boot.b</i> tells LILO to install the specified file as the new boot sector.
+	In normal use, this should not be altered. If the install line is missing, LILO will
+	assume a default of /boot/boot.b as the file to be used. </li>
+        <li>The existence of <i>prompt</i> tells LILO to display the classic <i>lilo:</i> prompt at bootup.
+	While it is not recommended that you remove the prompt line, if you do remove it, you can still
+	get a prompt by holding down the [Shift] key while your machine starts to boot. </li>
+        <li><i>timeout=50</i> sets the amount of time that LILO will wait for user input before proceeding 
+	with booting the default line entry. This is measured in tenths of a second, with 50 as the default. </li>
+        <li><i>lba32</i> describes the hard disk geometry to LILO. Another common entry here is linear. You should
+	not change this line unless you are very aware of what you are doing. Otherwise, you could put
+	your system in an unbootable state. </li>
+        <li><i>default=linux</i> refers to the default operating system for LILO to boot from the
+	options listed below this line. The name linux refers to the label line below in each of the boot options. </li>
+        <li><i>image=/boot/bzImage</i> specifies the linux kernel to boot with this particular boot option. </li>
+        <li><i>label=linux</i> names the operating system option in the LILO screen. In this case,
+	it is also the name referred to by the default line. </li>
+        <li><i>read-only</i> specifies that the root partition (see the root line below) is read-only and cannot be
+	altered during the boot process. </li>
+        <li><i>root=/dev/hda3</i> tells LILO what disk partition to use as the root partition. </li>
+	</ul>
+        <p>After you have edited your <i>lilo.conf</i> file, it is time to run LILO to load the information
+	into the MBR:
+	</p>
+<pre caption="Running LILO">
+# <c>/sbin/lilo</c>
+</pre>
+        <p>LILO is configured, and now your machine is ready to boot into Gentoo Linux!
+	</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Creating Bootdisks</title>
+    <section>
+      <title>GRUB Bootdisks</title>
+      <body>
+        <p>It is always a good idea to make a boot disk the first
+	time you install any Linux distribution. This is a security
+	blanket, and generally not a bad thing to do. If you are using some kinds of hardware RAID, or your hardware does not let you install a working bootloader from the chrooted environment, you may <e>need</e> to make a GRUB boot
+			disk. With these types of hardware RAID or systems,
+			if you try to install grub from your chrooted shell it will fail. If you are in this camp,
+			make a GRUB
+			boot disk, and when you reboot the first time you can install GRUB
+			to the MBR. Make your
+			bootdisks like this:
+			</p>
+<pre caption="Creating a GRUB Bootdisk">
+# <c>cd /usr/share/grub/i386-pc/</c>
+# <c>cat stage1 stage2 > /dev/fd0</c>
+</pre>
+        <p>Now reboot and load the floppy. At the floppy's <c>grub&gt;</c> prompt, you can now execute the necessary <c>root</c>
+		and <c>setup</c> commands.</p>
+      </body>
+    </section>
+    <section>
+      <title>LILO Bootdisks</title>
+      <body>
+        <p>If you are using LILO, it is also a good idea to make a bootdisk:
+		</p>
+<pre caption="Making a Bootdisk">
+# <c>dd if=/boot/your_kernel of=/dev/fd0 </c>
+<comment>This will only work if your kernel is smaller than 1.4MB</comment>
+</pre>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Pre-Reboot Preparations</title>
+      <section>
+	<body>
+	  <p>
+	    We will now install the default policy for SELinux.  Do not worry about altering the policy for your use just yet, as your machine will not enforce the policy upon boot.  We will also be relabeling our filesystem.</p>
+	    <pre caption="Installing the Policy and Relabeling">
+# <c>cd /etc/security/selinux/src/policy/</c>
+# <c>make install</c>
+# <c>make chroot_relabel</c>
+</pre>
+
+</body>
+</section>
+</chapter>
+  <chapter>
+    <title>Installation Complete!</title>
+    <section>
+      <body>
+        <p>Now, Gentoo Linux is installed.  The only remaining step is to 			update necessary configuration files, exit the chrooted shell, 
+
+			safely unmount your partitions
+			and reboot the system:
+			</p>
+<pre caption="Rebooting the System">
+# <c>etc-update</c>
+# <c>exit</c> 
+<comment>(This exits the chrooted shell; you can also type <c>^D</c>)</comment>
+# <c>cd / </c>
+# <c>umount /mnt/gentoo/boot</c>
+# <c>umount /mnt/gentoo/proc</c>
+# <c>umount /mnt/gentoo</c>
+# <c>reboot</c>
+</pre>
+
+<impor>It is almost a certainty that some files will be changed between the above relabeling and the reboot.  To ensure that all daemons and all processes run in their correct contexts, you must relabel your filesystem again, then reboot again.</impor>
+	  <note>The process of relabeling, rebooting, relabeling again, then rebooting again is a one-time-event.  This is only necessary to do after your first install.  Unfortunately, there is no way around this, yet.</note>
+	  <pre caption="Relabeling the Filesystem for the Second Time">
+# <c>cd /etc/security/selinux/src/policy</c>
+# <c>make relabel</c>
+# <c>reboot</c>
+</pre>
+        <impo>Remember if you are running hardware RAID, you must
+			use the bootdisk for the first reboot.
+			then go back and install grub the way everyone else did the first
+			time. You are done --  congratulations!</impo>
+        <p>If you have any questions or would like to get involved with Gentoo Linux development, 
+			consider joining our gentoo-user and gentoo-dev mailing lists
+			(more information on our <uri link="http://www.gentoo.org/main/en/lists.xml">mailing lists</uri> page).
+			We also have a handy <uri link="http://www.gentoo.org/doc/en/desktop.xml">Desktop configuration guide</uri>
+			that will
+			help you to continue configuring your new Gentoo Linux system, and a useful
+			<uri link="http://www.gentoo.org/doc/en/portage-user.xml">Portage user guide</uri>
+			to help familiarize you with Portage basics. You can find the rest of the Gentoo Documentation
+			<uri link="http://www.gentoo.org/main/en/docs.xml">here</uri>. If you have any other questions
+			involving installation or anything for that matter, please check the Gentoo Linux
+			<uri link="http://www.gentoo.org/doc/en/faq.xml">FAQ</uri>.
+			Enjoy and welcome to Gentoo Linux!
+			</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Gentoo-Stats</title>
+    <section>
+      <body>
+        <p>The Gentoo Linux usage statistics program was started as an attempt to give the developers
+		a way to find out about their user base. It collects information about Gentoo Linux usage to help
+		us in set priorities our development. Installing it is completely optional, and it would be greatly
+		appreciated if you decide to use it. Compiled statistics can be viewed at <uri>http://stats.gentoo.org/</uri>.
+		</p>
+        <p>The gentoo-stats server will assign a unique ID to your system.
+		This ID is used to make sure that each system is counted only once. The ID will not be used
+		to individually identify your system, nor will it be matched against an IP address or
+		other personal information. Every precaution has been taken to assure your privacy in the
+		development of this system. The following are the things that we are monitoring
+		right now through our &quot;gentoo-stats&quot; program:
+		</p>
+        <ul>
+          <li>installed packages and their version numbers</li>
+          <li>CPU information: speed (MHz), vendor name, model name, CPU flags (like &quot;mmx&quot; or &quot;3dnow&quot;)</li>
+          <li>memory information (total available physical RAM, total available swap space)</li>
+          <li>PCI cards and network controller chips</li>
+          <li>the Gentoo Linux profile your machine is using (that is, where the /etc/make.profile link is pointing to).</li>
+        </ul>
+        <p>We are aware that disclosure of sensitive information is a threat to most Gentoo Linux users
+		(just as it is to the developers).
+		</p>
+        <ul>
+          <li>Unless you modify the gentoo-stats program, it will never transmit sensitive
+		information such as your passwords, configuration data, shoe size...</li>
+          <li>Transmission of your e-mail addresses is optional and turned off by default.</li>
+          <li>The IP address your data transmission originates from will never be logged
+		in such a way that we can identify you. There are no &quot;IP address/system ID&quot; pairs.</li>
+        </ul>
+        <p>The installation is easy - just run the following commands:
+		</p>
+<pre caption="Installing gentoo-stats">
+# <c>emerge gentoo-stats</c>   <codenote>Installs gentoo-stats</codenote>
+# <c>gentoo-stats --new</c>    <codenote>Obtains a new system ID</codenote>
+</pre>
+        <p>The second command above will request a new system ID and enter it into
+		<path>/etc/gentoo-stats/gentoo-stats.conf</path> automatically. You can view this file
+		to see additional configuration options.
+		</p>
+        <p>After that, the program should be run on a regular schedule
+		(gentoo-stats does not have to be run as root). Add this line to your <path>crontab</path>:
+		</p>
+<pre caption="Updating gentoo-stats with cron">
+<c>0 0 * * 0,4 /usr/sbin/gentoo-stats --update &gt; /dev/null</c>
+</pre>
+        <p>The <c>gentoo-stats</c> program is a simple perl script which can be
+		viewed with your favorite pager or editor: <path>/usr/sbin/gentoo-stats</path>.	</p>
+      </body>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Credits</title>
+    <section>
+      <title>Works Cited</title>
+      <body>
+	<ul><li><mail link="pebenito@gentoo.org">PeBenito, Chris</mail>.  Gentoo Linux SELinux Quickstart Guide.</li></ul>
+	<ul><li><mail link="drobbins@gentoo.org">Robins, Daniel</mail>.  <uri link="http://www.gentoo.org/doc/en/gentoo-x86-install.xml">Gentoo Linux Installation Instructions</uri>.</li></ul>
+      </body>
+    </section>
+  </chapter>
+</guide>
