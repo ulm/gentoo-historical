@@ -271,7 +271,7 @@ def set_make_conf():
 
 def set_kernel():
 # This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
-	kernel_sources = ("vanilla-sources", "gentoo-sources", "development-sources", "gentoo-dev-sources", "hardened-sources")
+	kernel_sources = ("vanilla-sources", "gentoo-sources", "development-sources", "gentoo-dev-sources", "hardened-sources", "livecd-kernel")
 	code, menuitem = d.menu("Choose a kernel sources package", choices=dmenu_list_to_choices(kernel_sources))
 	if code != DLG_OK: return
 	menuitem = kernel_sources[int(menuitem)-1]

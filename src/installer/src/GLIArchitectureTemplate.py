@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.69 2005/03/25 06:32:53 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.70 2005/03/26 07:33:34 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -413,7 +413,7 @@ class ArchitectureTemplate:
 			if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
 			if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile)
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfle=self._compile_logfile)
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile)
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 		else:
