@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- 
-	Last updated from revision 1.136
+	Last updated from revision 1.138
 	Master document: English version
 -->
 
@@ -59,7 +59,7 @@ afhankelijk van hoeveel je van je systeem zelf wilt compileren.
 </abstract>
 
 <version>2.6.1</version>
-<date>5 Juli 2003</date>
+<date>8 Juli 2003</date>
 
 <chapter>
 <title>Over de installatie</title>
@@ -212,6 +212,11 @@ installatie:
 </tr>
 </table>
 
+<note>
+Hardware RAID gebruikers moeten de sectie over ATA RAID onderaan dit
+document lezen alvorens ze doorgaan.
+</note>
+
 </body>
 </section>
 </chapter>
@@ -334,19 +339,6 @@ van <path>/lib/modules</path> zelf moeten laden, opnieuw via <c>modprobe</c>:
 Ondersteuning voor SCSI CD-ROMs en harde schijven zit al default in de 
 gebruikte kernel.
 </note>
-
-<p>
-Als je hardware RAID gebruikt moet je de ATA-RAID-modules en de module voor
-jouw RAID-controller laden:
-</p>
-
-<pre caption="Laden van RAID modules">    
-# <c>modprobe ataraid</c>    
-# <c>modprobe pdcraid</c>            
-<comment>(Promise Raid Controller)</comment>    
-# <c>modprobe hptraid</c>            
-<comment>(Highpoint Raid Controller)</comment>    
-</pre>
 
 <p>
 De Gentoo LiveCD zou DMA op je schijven moeten geactiveerd hebben, maar
@@ -980,18 +972,6 @@ je wilt afsluiten zonder de aanpassingen door te voeren, type <c>q</c> en druk
 op Enter.
 </p>
 
-<!-- Dit is niet voldoende informatie om ATA Raid te bespreken en drobbins
-vindt het nogal onduidelijk, dus wordt dit eventjes weggecommentarieerd 
-
-<note>
-Als je RAID wilt gebruiken voor je partities moet je een klein beetje 
-verschillend tewerk gaan. Je zal partities hebben die naar de naam 
-<path>/dev/ataraid/discX/partY/</path> luisteren. X is de array die je gemaakt 
-hebt; als je maar 1 array hebt zal dit disc0 zijn. 
-</note>
-
--->
-
 <p>
 Veronderstellende dat je inderdaad alle partities wilt verwijderen van je
 systeem type je nu continue <c>p</c> om de partitielijst te verkrijgen en
@@ -1466,12 +1446,6 @@ negeer deze waarschuwing. We gaan later <c>emerge sync</c> uitvoeren welke
 het probleem zal oplossen.
 </note>
 
-<note>
-Hardware RAID gebruikers die GRUB willen gebruiken moeten <c>mount -o 
-/dev /mnt/gentoo/dev</c> uitvoeren alvorens ze het <c>chroot 
-/mnt/gentoo /bin/bash</c> commando uitvoeren.
-</note>
-
 <pre caption="Voorbereiden van de Gentoo Linux installatieomgeving">
 # <c>mount -t proc /proc /mnt/gentoo/proc</c>
 # <c>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</c>
@@ -1875,15 +1849,6 @@ File systems ---&gt;
 <comment>(Enkel indien je XFS gebruikt)</comment>
 </pre>
 
-
-<p>
-Indien je Hardware RAID gebruikt moet je nog enkele extra opties aanduiden in 
-de Linux-configuratie. Voor Highpoint RAID controllers selecteer je de hpt366 
-chipset ondersteuning, ondersteuning voor de IDE RAID-controllers en 
-Highpoint 370 Software RAID. Voor Promise RAID controllers selecteer je  
-PROMISE PDC202{46|62|65|67|69|70} ondersteuning, ondersteuning voor 
-IDE RAID-controllers en ondersteuning voor Promise Software RAID (Fasttrak(tm))
-</p>
 
 <p>
 Indien je PPPoE gebruikt om naar het internet te connecteren moet je de 
@@ -2448,17 +2413,6 @@ grub&gt; <c>quit</c>
 </pre>
 
 <p>
-Indien je Hardware RAID gebruikt moet je het <c>setup</c> commando 
-aanpassen:
-</p>
-
-<pre caption = "Configureren van GRUB voor hardware RAID">
-grub&gt; <i>root (hd0,0)</i>
-grub&gt; <i>setup --stage2=/boot/grub/stage2 (hd0)</i>
-grub&gt; <i>quit</i>
-</pre>
-
-<p>
 Hier is hoe de commando's werken. Het eerste commando, <c>root ( )</c>, vertelt
 GRUB de locatie van de bootpartitie (in dit voorbeeld, <path>/dev/hda1</path>
 of dus <path>(hd0,0)</path> in GRUB-nomenclatuur). Het tweede commando,
@@ -2509,11 +2463,6 @@ root (hd0,0)
 kernel (hd0,0)/bzImage root=/dev/hda3 
 <comment>(Dit indien (hd0,0) je /boot-partitie is. Indien deze je root is (je hebt geen aparte boot), 
 dan gebruik je best &quot;(hd0,0)/boot/bzImage root=/dev/hda3&quot;</comment> 
-
-<comment># Dit is enkel voor hardware RAID</comment>
-title=Mijn RAID Gentoo Linux voorbeeld
-root (hd0,0)
-kernel (hd0,0)/bzImage root=/dev/ataraid/dXpY
 
 <comment># Dit is enkel voor dual-bootgebruikers</comment>
 title=Windows XP
@@ -2829,5 +2778,78 @@ worden met je favoriete viewer of editor: <path>/usr/sbin/gentoo-stats</path>.
 </body>
 </section>
 </chapter>
-
+<chapter>
+<title>Gentoo op speciale hardware</title>
+<section>
+<title>Hardware ATA RAID</title>
+<body>
+<p>
+Gebruikers die Gentoo Linux op een Hardware ATA RAID willen installeren
+moeten de volgende stappen doornemen en toepassen opdat zij Gentoo Linux
+succesvol kunnen installeren.
+</p>
+<ul>
+<li>Zorg ervoor dat je de LiveCD opstart met de <c>doataraid</c>
+kerneloptie.</li>
+<li>Indien je bovenstaande vergeten bent of de modules zijn misterieus
+niet geladen, laadt ze dan manueel:
+<pre caption = "RAID modules opstarten">
+# <i>modprobe ataraid</i>
+<comment>Voor Promise Raid Controllers:</comment>
+# <i>modprobe pdcraid</i>
+<comment>Voor Highpoint Raid Controllers:</comment>
+# <i>modprobe hptraid</i>
+</pre>
+</li>
+<li>Sommige ATA RAID Controllers vereisen een reboot na het partitioneren;
+formatteren zal anders mislukken.</li>
+<li>Alvorens te chrooten moet je de devicestructuur mounten in je nieuwe
+omgeving:
+<pre caption = "/dev in /mnt/gentoo/dev mounten">
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+</li>
+<li>Gedurende kernelconfiguratie moet je de nodige RAID opties
+selecteren:
+<pre caption = "RAID Configuratie in de kernel">
+<comment>Voor Highpoint RAID controllers:</comment>
+ATA/IDE/MFM/RLL support  ---&gt;
+  [*] HPT36X/37X chipset support 
+  [*] Support for IDE Raid controllers
+  [*] Highpoint 370 software RAID
+<comment>Voor Promise RAID controllers:</comment>
+ATA/IDE/MFM/RLL support  ---&gt;
+  [*] PROMISE PDC202{46|62|65|67} support 
+  <comment>en/of</comment>
+  [*] PROMISE PDC202{68|69|70|71|75|76|77} support
+  [*] Support for IDE Raid controllers
+  [*] Support Promise software RAID (Fasttrak(tm))
+</pre>
+</li>
+<li>Wanneer je GRUB gebruikt moet je <c>--stage2=/boot/grub/stage2</c>
+toevoegen aan het <c>setup</c> commando tijdens het uitvoeren van
+<c>grub</c>:
+<pre caption = "GRUB voor Hardware RAID">
+grub&gt; <i>root (hd0,0)</i>
+grub&gt; <i>setup --stage2=/boot/grub/stage2 (hd0)</i>
+grub&gt; <i>quit</i>
+</pre>
+Tevens moet je in de GRUB configuratie <c>root</c> naar de correcte
+device instellen:
+<pre caption = "grub.conf voor RAID">
+title=Mijn Gentoo Linux on RAID
+root (hd0,0)
+kernel (hd0,0)/boot/bzImage root=/dev/ataraid/dXpY
+</pre>
+</li>
+<li>LILO gebruikers moeten enkel de <c>root</c> aanpassen:
+<pre caption = "lilo.conf voor RAID">
+image=/boot/bzImage
+    label=linux
+    read-only
+    root=/dev/ataraid/dXpY
+</pre></li></ul>
+</body>
+</section>
+</chapter>
 </guide>
