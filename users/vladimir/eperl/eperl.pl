@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.11 2003/04/22 23:54:58 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperl.pl,v 1.12 2003/04/23 00:11:11 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
@@ -9,16 +9,6 @@
 # Please be careful with this, and watch all changes closely.
 # By using it, you accepts all responsibility for your actions.
 # Please have ECHANGELOG_USER set properly.
-#
-# Usage: eperl.pl '<code>' 'ChangeLog reason'
-# 
-# <code> being Perl code that may modify $_, which is each individual line of
-#        all ebuilds.
-#
-# Examples:
-# eperl.pl 's/Copyright (\d{4}-)2003/Copyright ${1}2004/' 'Updated Copyrights'
-# eperl.pl 's/[~-]?x86//g if /^KEYWORDS/' 'x86 abandoned, ppc better afterall'
-# eperl.pl 's/python/perl/g' 'Act of God'
 #
 use strict;
 use File::Find;
@@ -55,10 +45,12 @@ my $path = "";
 
 # Grab options
 my $filter = "";
+my $antifilter = "";
 Getopt::Long::Configure("no_ignore_case", "bundling");
 GetOptions(
     'help|h|?'		=> \&print_usage,
-    'filter=s'		=> \$filter
+    'filter=s'		=> \$filter,
+	'antifilter=s'	=> \$antifilter
 ) or &print_usage, exit;
 
 # Make sure ECHANGELOG_USER is set
@@ -91,6 +83,10 @@ sub wanted {
 	if($filter ne "") {
 	# Filter the worked on files for the --filter option
 		return unless /$filter/;
+	}
+	if($antifilter ne "") {
+	# Filter the worked on files for the --antifilter option
+		return if /$antifilter/;
 	}
 	
 	print BOLD YELLOW "$_", RESET, "\n";
@@ -221,7 +217,9 @@ sub print_usage {
 	my $usage = "[options] '<code>' 'Changelog Reason'";
 	my %options = (
 		"--filter=<regex>" => 
-		"Checked against the path to the ebuild, skipped if it doesn't match"
+		"Checked against the path to the ebuild, skipped if it doesn't match",
+		"--antifilter=<regex>" =>
+		"Checked against the path to the ebuild, skipped if it matches"
 	);
 	
 	print "\n";
