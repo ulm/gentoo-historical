@@ -276,7 +276,17 @@
   <xsl:variable name="fileid"  select="@id"/>
   <xsl:variable name="parentmetadoc" select="@parent"/>
   <tr>
-    <ti><uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri></ti>
+  <!-- Add ?passthru=1 to handbook files, i.e. those with <sections> as a root element
+       because they can't be rendered as-is; at the moment, they give an Err 500.
+       Of course, we could update guide.xsl to make them "renderable" -->
+  <xsl:choose>
+    <xsl:when test="document($fileurl)/sections">
+      <ti><uri link="{$fileurl}?passthru=1"><xsl:value-of select="$fileurl"/></uri></ti>
+    </xsl:when>
+    <xsl:otherwise>
+      <ti><uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri></ti>
+    </xsl:otherwise>
+  </xsl:choose>
     <xsl:variable name="version"><xsl:value-of select="document($fileurl)/guide/version|document($fileurl)/book/version|document($fileurl)/sections/version|document($fileurl)/mainpage/version"/></xsl:variable>
     <ti><xsl:value-of select="$version"/></ti>
     <ti>
