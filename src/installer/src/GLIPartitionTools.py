@@ -41,6 +41,9 @@ try:
 
 			# Define the method to be used upon an error
 			self._exception_handler = self._exceptions
+			
+			# Do a test to make sure we can get the device
+			self._start_pyparted()
 
 		def _exceptions(self, ped_exception):
 			"Handles pyparted exceptions"
@@ -432,7 +435,29 @@ except:
 #	pass
 	
 	
-	
+def detect_devices():
+
+	devices = []
+
+	# To detect partitionable devices we'll use /proc/partitions
+	for line in open("/proc/partitions"):
+		# If we have a device line and the minor is 0 (ie the disk)
+		if len(line.split()) == 4:
+			if line.split()[1] == "0" or line.split()[1] == "64":
+		
+				# Get the name of the device (ie. 'hda')
+				devices.append(line.split()[-1])
+				
+	# Make sure the device is not a cdrom or tape drive
+	for device in devices:
+		if device[:2] == "hd":
+			if open("/proc/ide/"+device+"/media").read().strip() in \
+							[ "cdrom", "tape" ]:
+				deices.remove(device)
+				
+	return 
+			
+		
 
 class NTFSFilesystem:
 	"Class defining an object representing a NTFS Filesystem"
@@ -638,3 +663,89 @@ class Ext2Filesystem:
 		
 		# Run it
 		output = self._run(cmd)
+
+
+def detect_devices():
+	"Returns a list of partitionable devices on the system"
+	
+	devices = []
+	
+	# Make sure sysfs exists
+	if not os.path.exists("/sys/bus"):
+		raise Exception, "no sysfs found (you MUST use a kernel >2.6)"
+	# Make sure /proc/partitions exists
+	if not os.path.exists("/proc/partitions"):
+		raise Exception, "/proc/partitions does not exist!"
+	
+	# Load /proc/partitions into the variable 'partitions'
+	partitions = []
+	for line in open("/proc/partitions"):
+		if len(line.split()) < 4 or not line.split()[0].isdigit() or \
+						not line.split()[1].isdigit():
+			continue
+		
+		# Get the major, minor and device name
+		major = line.split()[0]
+		minor = line.split()[1]
+		device = "/dev/" + line.split()[3]
+		
+		if not major.isdigit() or not minor.isdigit():
+			continue
+			
+		major = int(major)
+		minor = int(minor)
+
+		# If there is no /dev/'device_name', then scan
+		# all the devices in /dev to try and find a
+		# devices with the same major and minor		
+		if not os.path.exists(device):
+			device = None
+			for path, dirs, files in os.walk("/dev"):
+				for file in files:
+					full_file = os.path.join(path, file)
+					if not os.path.exists(full_file):
+						continue
+					statres = os.stat(full_file)
+					fmaj = os.major(statres.st_rdev)
+					fmin = os.minor(statres.st_rdev)
+					if fmaj == major and fmin == minor:
+						device = full_file
+						break
+			if not device:
+				continue
+			
+		partitions.append(( major, minor, device ))
+	
+	# Scan sysfs for the devices of type 'x'
+	# 'x' being a member of the list below:
+	for dev_type in [ "ide", "scsi" ]:	# Other device types? usb? fw?
+		if os.path.exists("/sys/bus/" + dev_type):
+			sysfs_devices = os.listdir("/sys/bus/"+dev_type+"/devices")
+			
+			# For each device in the devices on that bus
+			for sysfs_device in sysfs_devices:
+				dev_file = "/sys/bus/" + dev_type + "/devices/"\
+						+ sysfs_device + "/block/dev"
+						
+				# If the file is not a block device, loop
+				if not os.path.exists(dev_file):
+					continue
+					
+				# Get the major and minor info
+				try:
+					major, minor = open(dev_file).read().split(":")
+					major = int(major)
+					minor = int(minor)
+				except:
+					raise Exception, "invalid major minor in "\
+								+ dev_file
+			
+				# Find a device listed in /proc/partitions
+				# that has the same minor and major as our
+				# current block device.
+				for record in partitions:
+					if major == record[0] and minor == record[1]:
+						devices.append(record[2])
+	
+	# We have assembled the list of devices, so return it
+	return devices
