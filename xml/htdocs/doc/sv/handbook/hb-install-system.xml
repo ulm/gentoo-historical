@@ -1,0 +1,396 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/sv/handbook/hb-install-system.xml,v 1.1 2004/11/16 14:47:27 neysx Exp $ -->
+
+<sections>
+<section>
+<title>Chroota</title>
+<subsection>
+<title>Valfritt: Välj spegling</title>
+<body>
+
+<p>
+Om du har startat från en Gentoo LiveCD kan du använda <c>mirrorselect</c> för att
+uppdatera <path>/etc/make.conf</path> till att använda snabba speglingar för såväl
+Portage som källkod (naturligt bara om du har en fungerande nätverksanslutning):
+</p>
+
+<warn>
+Ett fel i mirrorselect kan resultera i skräptecken efter GENTOO_MIRRORS satsen. Om så är
+fallet så öppna <path>/mnt/gentoo/etc/make.conf</path> och radera skräptecknen i 
+slutet av GENTOO_MIRRORS satsen.
+</warn>
+
+<pre caption="Välj en snabb spegel">
+# <i>mirrorselect -a -s4 -o | grep 'GENTOO_MIRRORS=' &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+Om <c>mirrorselect</c> fallerar av någon anledning finns ingen orsakt till panik. Detta steg är 
+helt frivilligt och standardvärdena är tillräckliga.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Kopiera DNS information</title>
+<body>
+
+<p>
+En sak som fortfarande återstår att göra innan vi kan använda den nya miljön är att kopiera över 
+DNS informationen i <path>/etc/resolv.conf</path>. Du behöver denna för att säkerställa att 
+nätverksanslutningen fungerar även efter det att du bytt till den nya miljön. <path>/etc/resolv.conf</path> 
+innehåller namnservrarna för ditt nätverk. 
+</p>
+
+<pre caption="Kopiera över DNS information">
+<comment>("-L" flaggan är nödvändig för att säkerställa att vi inte kopierar en symbolisk länk)</comment>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Montera proc filsystemet</title>
+<body>
+
+<p>
+Montera <path>/proc</path> filsystemet på <path>/mnt/gentoo/proc</path> för att tillåta installationen
+att använda information som tillhandahålls av kärnan även i den chrootade miljön.
+</p>
+
+<pre caption="Montera /proc">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Byt till den nya miljön</title>
+<body>
+
+<p>
+Nu när alla partitioner är initialiserade och grundsystemet är installerat är det dags att byta till
+vår nya installationsmiljö genom att <e>chroota</e> till det. Detta betyder att vi byter från den
+aktuella miljön (LiveCD eller något liknande installationsmedium) till vårt installerade system 
+(de initialiserade partitionerna).
+</p>
+
+<p>
+Chrootningen görs i tre steg. Först kommer vi att byta rot från <path>/</path> (på installationsmediet)
+ till <path>/mnt/gentoo</path> (på våra partitioner) genom att använda <c>chroot</c>. Därefter 
+skapar vi en ny miljö med <c>env-update</c>, som huvudsakligen skapar miljövariabler. Slutligen 
+laddar vi dessa variabler i minnet med <c>source</c>.
+</p>
+
+<pre caption = "Chroota till den nya miljön">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+ * Caching service dependencies...
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+Gratulerar! Du är nu i din egen Gentoo Linux miljö.
+Du är naturligtvis långt ifrån klar. Det är därför det finns ytterligare
+några avsnitt kvar av installationsbeskrivninen :-)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valfritt: Uppdatera Portageträdet</title>
+<body>
+
+<p>
+Om du inte installerade Portagebilden i det förra kapitlet måste du hämta ner ett aktuellt
+Portageträd från Internet. <c>emerge --sync</c> gör detta åt dig. Övriga användare kan 
+hoppa över detta och fortsätta med <uri link="#configure_USE">Konfigurera USE variablerna</uri>.
+</p>
+
+<pre caption="Uppdatera Portageträdet">
+# <i>emerge --sync</i>
+</pre>
+
+<p>
+Portage använder RSYNC protokollet för att uppdatera Portageträdet. Om ovanstående kommando
+misslyckas på grund av din brandvägg, använder du istället <c>emerge-webrsync</c>  som hämtar
+ner och installerar en portagebild genom att använda det vanliga HTTP protokollet.
+</p>
+
+<pre caption="Uppdatera Portageträdet med emerge-webrsync">
+# <i>emerge-webrsync</i>
+</pre>
+
+<p>
+Om du varnas för att en nyare version av Portage finns tillgänglig och att du ska
+uppdatera Portage, ska du ignorera detta. Portage kommer att uppdateras åt dig
+senare i installationen. 
+</p>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>Konfigurera USE variablerna</title>
+<body>
+
+<p>
+<c>USE</c> är en av de mest kraftfulla variablerna som Gentoo ger sina användare.
+Många program kan kompileras med eller utan valfritt stöd för vissa funktioner. Program kan
+t ex kompileras utan gtk-stöd, eller stöd för qt. Andra kan kompileras med eller utan SSL stöd.
+Vissa program kan till och med kompileras med fb stöd i (svgalib) istället för X11 stöd (X-server).
+</p>
+
+<p>
+De flesta distributioner kompilerar sina paket med stöd för så mycket som möjligt, vilket ger större 
+filstorlekar och längre starttider, för att inte tala om den stora mängd relationer som blir följden. 
+Med Gentoo kan du definiera vilka tillägg ett paket ska kompileras med. Det är här  <c>USE</c> 
+kommer in. 
+</p>
+
+<p>
+I <c>USE</c> variabeln kan du definiera nyckelord som mappas till kompileringsval.
+Några exempel; <e>ssl</e> kommer att kompilera ssl-stöd i program som stöder ssl.
+<e>-X</e> kommer att avlägsna stöder för X-servern (lägg märke till minustecknet). 
+<e>gnome gtk -kde -qt</e> ger dig program med gnome (och gtk) stöd men utan
+stöd för kde (och qt), vilket resulterar i ett system specifik för GNOME.
+</p>
+
+<p>
+Standardvärden för <c>USE</c> anges i <path>/etc/make.profile/make.defaults</path>. 
+Det du anger i <path>/etc/make.conf</path> korrelleras mot dessa standardvärden.
+Om du lägger till något till <c>USE</c> värdet läggs det även till i listan på standardvärden.
+Om du tar bort något från <c>USE</c> värdet (genom att sätta ett minustecken framför) 
+tas det även bort från listan på standardvärden (om det överhuvudtaget finns i den listan).
+Ändra <e>aldrig</e> något i <path>/etc/make.profile</path> katalogen. Det skrivs över varje
+gång du uppdaterar Portage!
+</p>
+
+<p>
+En fullständig beskrivning av <c>USE</c> hittar du i den andra delen av 
+Gentoohandboken, <uri link="?part=2&amp;chap=1">Kapitel 1: USE flaggor</uri>. 
+En fullständig beskrivning av tillgängliga USE flaggor hittar du också i ditt system i
+<path>/usr/portage/profiles/use.desc</path>. 
+</p>
+
+<pre caption="Se tillgängliga USE flaggor">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(Du kan bläddra med piltangenterna, avsluta med 'q')</comment>
+</pre>
+
+<p>
+Som ett exempel ger vi <c>USE</c> värdena för ett KDE-baserat system med DVD, ALSA
+och stöd för CD-bränning:
+</p>
+
+<pre caption="Öppna /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE värden">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Valfritt: Använd distribuerad kompilation</title>
+<body>
+
+<p>
+Om du är intresserad av att ta hjälp av flera system för att kompilera ditt eget system
+kanske vår <uri link="/doc/en/distcc.xml">DistCC guide</uri> kan vara intressant. Genom 
+att använda <c>distcc</c> kan du använda processorkraften från flera system för att 
+hjälpa dig med installationen.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Skillnaderna mellan Stadium1, Stadium2 och Stadium3</title>
+<body>
+
+<p>
+Slå dig nu ner och tänk igenom det du gjort hitills. Vi bad dig tidigare att välja en
+<e>stadium1</e>, <e>stadium2</e> eller <e>stadium3</e> och varnade dig för att 
+detta val är viktigt för den framtida installationen. Du har nu nått den första punkten 
+när det val du då gjorde påverkar de följande steg du behöver följa. 
+</p>
+
+<ul>
+<li>
+  Om du valde <e>stadium1</e>, måste du genomföra <e>båda</e> stegen i detta kapitel
+  (med början med <uri link="#doc_chap3">Gå vidare från Stadium1 till Stadium2</uri>)
+</li>
+<li>
+  Om du valde <e>stadium2</e> kan du bara hoppa över det första steget och börja med det
+  andra (<uri link="#doc_chap4">Gå vidare från Stadium2 till Stadium3</uri>)
+</li>
+<li>
+  Om du valde <e>steg3</e> (antingen med eller utan GRP) kan du hoppa över båda stegen och 
+  fortsätta med <uri link="?part=1&amp;chap=7">Konfigurera kärnan</uri>
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Gå vidare från Steg1 till Steg2</title>
+<subsection>
+<title>Introduktion till Bootstrapping</title>
+<body>
+
+<p>
+Så du vill kompilera allt från grunden? Okey då :-)
+</p>
+
+<p>
+I detta steg kommer vi att <e>bootstrap</e>a ditt Gentoosystem. Detta tar lång tid,
+men resultatet är ett system som har optimerats från grunden för ditt specifik sysem
+och behov. 
+</p>
+
+<p>
+Att <e>Bootstrapp</e>a betyder att bygga GNU C biblioteken, GNU Compiler
+Collection och många andra nyckelsystem och program. 
+</p>
+
+<p>
+Innan vi börjar bootstrapningen ger vi dig några valmöjligheter du kanske vill använda dig av,
+eller kanske inte. Om du inte vill läsa om dessa, fortsätter du <uri link="#bootstrap">
+Bootstrappa systemet</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valfritt: Hämta ner källkoden först</title>
+<body>
+
+<p>
+Om du inte redan har kopierat över all källkod kommer bootstrapskriptet att
+hämta de nödvändiga filerna. Det säger sig självt att detta bara fungerar om
+du har en fungerande nätverksanslutning :-) Om du vill hämta källkoden först och
+först senare låter bootstrappa systemet (om du till exempel inte vill ha internetanslutningen
+öppen under kompileringen) använder du <e>-f</e> flaggan i bootstrapskriptet, 
+detta kommer att hämta (därav bokstaven<e>f</e>; efter engelskan "fetch" ö.a.) all 
+källkod åt dig.
+</p>
+
+<pre caption = "Hämta den nödvändiga källkoden">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh -f</i>
+</pre>
+
+</body>
+</subsection>
+<subsection id="bootstrap">
+<title>Bootstrappa systemet</title>
+<body>
+
+<p>
+Nu så, ta ditt tangentbord och knappa in följande kommandon. Gå sedan och gör 
+något kul, för detta steg tar ett bra tag att slutföra.
+</p>
+
+<pre caption = "Bootstrappa systemet">
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+</pre>
+
+<p>
+Du kan nu fortästta med nästa steg, <uri link="#doc_chap4">Gå vidare från Steg2 till
+Steg3</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Gå vidare från Steg2 till Steg3</title>
+<subsection>
+<title>Inledning</title>
+<body>
+
+<p>
+Om du läser detta avsnitt så har du ett bootstrappat system (antingen för att
+du tidigare har bootstrappat det, eller för att du använder en <e>Stadium2</e>).
+Det är nu tid att bygga alla systempaket.
+</p>
+
+<p>
+<e>Alla</e> systempaket? Nej, egentligen inte. I detta steg kommer du att bygga
+de systempaket till vilka det inte finns några alternativ. Vissa systempaket har flera
+alternativ (såsom systemloggaren) och eftersom Gentoo handlar om valfrihet, kommer
+vi inte tvinga dig att använda något av dem.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valfritt: Visa vad som kommer att ske</title>
+<body>
+
+<p>
+Om du vill veta vilka paket som kommer att installeras, exekvera <c>emerge
+--pretend system</c>. Detta kommer att ge dig en lista på alla paket som kommer att byggas.
+Eftersom detta är en ganska lång lista bör du också använda <c>less</c> eller <c>more</c> 
+för att bläddra uppåt och neråt i listan.
+</p>
+
+<pre caption = "Visa vad 'emerge system' kommer att göra">
+# <i>emerge --pretend system | less</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Valfritt: Hämta ner källkoden</title>
+<body>
+
+<p>
+Om du vill använda <c>emerge</c> till att hämta källkoden innan du fortsätter
+(till exempel om du inte vill ha internetanslutningen öppen medan du bygger alla paket)
+kan du använda flaggan <e>--fetchonly</e> till <c>emerge</c> som gör att all 
+källkod först hämtas åt dig. 
+</p>
+
+<pre caption = "Hämta källkoden">
+# <i>emerge --fetchonly system</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Bygg systemet</title>
+<body>
+
+<p>
+För att börja bygga system exekverar du <c>emerge system</c>. Gå sedan och sysselsätt dig,
+för detta steg tar lång tid att bli klart.
+</p>
+
+<pre caption = "Bygg systemet">
+# <i>emerge system</i>
+</pre>
+
+<p>
+Du kan för tillfället lugnt ignorera eventuella varningar om uppdaterade konfigurationsfiler (och om 
+att köra <c>etc-update</c>). När ditt Gentoosystem är färdiginstallerat och startat läser du 
+dokumentationen kring <uri link="?part=2&amp;chap=4#doc_chap1">Konfigurera filsäkerhet</uri>.
+</p>
+
+<p>
+När byggprocessen är klar fortsätter du med <uri link="?part=1&amp;chap=7">Konfigurera kärnan</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>
