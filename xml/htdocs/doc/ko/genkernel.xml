@@ -1,0 +1,483 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ko/genkernel.xml,v 1.1 2004/11/04 11:45:14 neysx Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/ko/genkernel.xml">
+<title>젠투 리눅스 젠커널 가이드</title>
+
+<author title="저자">
+<mail link="plasmaroo@gentoo.org">Tim Yamin</mail>
+</author>
+<author title="번역자">
+<mail link="asmin77@hotmail.com">Kyoung Min, Yun</mail>
+</author>
+<author title="번역자">
+<mail link="envia@chol.com">Hwang Joonhyung</mail>
+</author>
+
+<abstract>
+이 가이드는 젠커널(genkernel)이 제공하는 모든 기능에 대한 참조 사항을 제공한다.
+</abstract>
+
+<license/>
+
+<version>1.1</version>
+<date>2004년 8월 19일</date>
+
+<chapter>
+<title>소개</title>
+<section>
+<title>소개</title>
+<body>
+
+<p>
+젠커널(genkernel)은 커널을 컴파일하는 데 익숙하지 않은 사용자들이
+여러분의 하드웨어를 자동으로 검색하는 젠투 LiveCD에 쓰이는 것과 비슷한
+설정으로 커널을 컴파일 할 수 있도록 디자인되었다.
+</p>
+
+<p>
+어떤 사용자들은 젠커널을 이용해서 초기화가 필요한 하드웨어를 지원하는 것과
+부팅해보지 않고도 동작할 것이라고 믿어지는 커널을 설치하는 것에도
+관심이 있을 것이다. 젠커널은 자동으로 커널 모듈들을 컴파일하기 때문에,
+모듈 매개 변수를 사용해서 하드웨어를 지원할 수 있다.
+</p>
+
+</body>
+</section>
+<section>
+<title>젠커널(genkernel)이 나를 위한것일까?</title>
+<body>
+
+<p>
+젠커널은 여러분이 커널을 컴파일하는데 익숙치 않거나
+하드웨어 구성(hardware configuration)들에 대해서 잘 알지 못한다면
+대체로 좋은 선택이 될 수 있다.
+</p>
+
+<p>
+그러나 한편으로 젠커널이 일반적인 구성을 사용할수 있게 디자인되었다는 것은,
+여러분의 하드웨어를 대부분 지원하는데 무리가 없지만
+이를 위해 모든 드라이버들과 모듈들이 컴파일된다는 것이기 때문에,
+여러분이 무엇이 필요한지 안다면 더 빨리 커널을 컴파일 할 수 있을 것이다.
+(역주: genkel을 실행할때 --menuconfig 옵션을 주어서 menuconfig를 실행해보면
+대부분의 것이 모듈로 설정되어 있어서 필요없는 것까지 컴파일되므로
+컴파일 시간이 무척이나 길다. 역자처럼 커널 옵션에 대해 어설프게 알고 있다면
+필요없는 옵션을 제거하는게 엄청난 고민거리가 될 수도 있다. :( )
+</p>
+
+<p>
+또한 젠커널은 현재 LVM2/EVMS2 파티션들로부터 부팅 시스템을 지원하지 않는다. 이를 위해서라면 여러분들은 당분간 수동으로 커널을 컴파일해서 사용하기를 추천한다.
+</p>
+
+</body>
+</section>
+<section>
+<title>젠커널 얻기</title>
+<body>
+
+<p>
+여러분은 간단하게 <c>emerge genkernel</c>을 실행함으로써 젠커널을 얻을수 있다.
+만약 여러분이 GRP의 바이너리 패키지들을 이용한다면 emerge를 위해 <c>-k</c>
+플래그를 사용하는 것을 잊지마라. GRP 패키지들은 젠커널의 오래된 버전을
+가지고 있기 때문에 플래그가 달라질수 있다. 이런 이유로, <uri
+link="http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=9">Gentoo Handbook</uri>과
+genkernel --help을 이용해 최신 정보를 얻기 바란다.
+</p>
+
+</body>
+</section>
+<section>
+<title>지원되는 플랫폼</title>
+<body>
+
+<p>
+현재의 젠커널은 3.0.2이고 alpha, amd64, parisc, parisc64, ppc, ppc64,
+sparc, sparc64, x86 플랫폼이 지원된다.
+만약 여러분이 젠커널이 아닌 지원 코드에 문제가 있다고 믿는다면
+<uri link="http://bugs.gentoo.org">젠투 버그질라</uri>에 버그를 보내주기 바란다.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>젠커널 사용법</title>
+<section>
+<title>소개</title>
+<body>
+
+<p>
+젠커널은 세가지 모드로 작업할 수 있게 디자인되었다:
+</p>
+
+<ul>
+<li>"all" 모드 : 이것은 커널(kernel)과 초기램디스크(initrd)를 빌드한다.</li>
+<li>"kernel" 모드 : 이것은 커널 이미지만을 빌드한다.</li>
+<li>"initrd" 모드 : 이것은 초기램디스크만을 빌드한다.</li>
+</ul>
+
+<p>
+대부분의 유저는 단지 "kernel" 모드와 "initrd" 모드보다는
+"all" 모드로 실행하는 것만을 원할 수 있다.
+<b>주의</b> 현재는 "kernel"과 "initrd" 모드는 사용할 수 없고
+"all"모드를 위한 알리아스(alias)일 뿐이란 것을 알아야 한다.
+(역주: kernel이나 initrd 옵션을 주면 all 모드로 시작된다.)
+</p>
+
+<p>
+젠커널은 여러분이 커널을 컴파일을 할때 간편하게 하려는 명령일 뿐이지만,
+커널을 컴파일하거나 구성하는 것을 커스터마이즈(customize)할 수 있게 하기 위한
+다양한 플래그들도 가지고 있다.
+</p>
+
+</body>
+</section>
+<section>
+<title>젠커널 컴파일러 플래그들</title>
+<body>
+
+<p>
+여러분의 커널을 조립(assemble: compile의 의미)할 때
+관련있는 애플리케이션(application)들을 다룰 수 있는 다음의 플래그들을 지원한다.
+</p>
+
+<ul>
+<li>
+  <b>--kernel-as=<c>someAssembler</c></b>:
+  이것은 커널을 컴파일하기 위해 사용할 어셈블러(assembler)를 지정한다.
+</li>
+<li>
+  <b>--kernel-cc=<c>someCompiler</c></b>:
+  이것은 커널을 컴파일하기 위해 사용할 컴파일러를 지정한다.
+</li>
+<li>
+  <b>--kernel-ld=<c>someLinker</c></b>:
+  이것은 커널을 컴파일하기 위해 사용할 링커(linker)를 지정한다.
+</li>
+<li>
+  <b>--kernel-make=<c>someMake</c></b>:
+  이것은 커널을 컴파일하기 위해 사용할 GNU Make를 지정한다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--utils-as=<c>someAssembler</c></b>:
+  이것은 지원 유틸리티(support utility)들을
+  컴파일하기 위해 사용할 어셈블러를 지정한다.
+</li>
+<li>
+  <b>--utils-cc=<c>someCompiler</c></b>:
+  이것은 지원 유틸리티들을 컴파일 하기위해 사용할 컴파일러를 지정한다.
+</li>
+<li>
+  <b>--utils-ld=<c>someLinker</c></b>:
+  이것은 지원 유틸리티들을 컴파일 하기위해 사용할 링커를 지정한다.
+</li>
+<li>
+  <b>--utils-make=<c>someMake</c></b>:
+  이것은 지원 유틸리티들을 컴파일 하기위해 사용할 GNU Make를 지정한다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--makeopts=<c>-jJobs</c></b>:
+  이것은 커널과 유틸리티들이 컴파일 되어질 때
+  GNU Make에서 처리되어질 플래그를 지정한한다.
+  (역주: 예를 들어 -j2 같은 플래그들)
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>젠커널 커널 플래그들</title>
+<body>
+
+<p>
+젠커널은 커널 컴파일에 영향을 미칠수 있는 <c>--<b>no-</b>option</c> 과 같은(equivalent) 다음의 플래그들을 지원한다.
+</p>
+
+<ul>
+<li>
+  <b>--callback="echo Hello"</b>:
+  커널과 관련된 모듈이 빌드된 뒤, initrd가 빌드되기 전에, 지정된 명령을 부른다.
+  이는 여러분이 관련된 아이템을 콜백(callback)을 이용하여
+  설치(emerge)하고 젠커널 모듈 그룹을 재정의하여
+  외부 모듈이 initrd에 설치되도록 하고 싶을 때 유용하다.
+</li>
+<li>
+  <b>--<c>no-</c>clean</b>:
+  이것은 커널을 컴파일 하기 전에 <c>make clean</c>을 실행한다.
+  <e>(실행하지 않는다)</e>
+  이것은 모든 오브젝트 파일들과 의존적인 것들이 삭제되어지게 한다.
+</li>
+<li>
+  <b>--<c>no-</c>mrproper</b>:
+  이것은 커널을 컴파일 하기 전에 <c>make mrproper</c>를 실행한다.
+  <e>(실행하지 않는다)</e>
+  이것은 모든 오브젝트 파일들, 의존적인것들과 <b>구성</b>이 삭제되어지게 한다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--kerneldir=<path>/path/to/sources</path></b>:
+  이것은 기본 위치인 <path>/usr/src/linux</path> 대신,
+  다른 커널 소스 위치를 지정한다 
+</li>
+<li>
+  <b>--kernel-config=<path>/path/to/config-file</path></b>:
+  이것은 기본적으로 사용되어지는 위치인
+  <path>/path/to/sources/.config</path>이 존재하더라도
+  다른 커널 구성 위치을 사용하게 지정한다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--<c>no-</c>bootsplash</b>:
+  이것은 커널 빌드들의 초기램디스크(initrd)에 부트스플래시(bootsplash)
+  지원을 추가한다.
+  <e>(추가하지 않는다)</e>
+  현존하는 모든 아키텍쳐(architecture)들이 부트스플래시를 지원하는 것은 아니다.
+  또한 부트스플래시를 지원하는 커널들에서도 이것을 사용하지 않을 수도 있다.
+  </li>
+<li>
+  <b>--<c>no-</c>menuconfig</b>:
+  이것은 커널을 빌드하기 전에
+  메뉴 방식의 커널 구성 도구(kerenl menu-based configurator)를 실행하게 한다.
+  <e>(실행하지 않게 한다)</e>
+  이전에 실행한 <c>make oldconfig</c>가 있다면 이전 세팅이 로드되어 실행된다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--no-initrdmodules</b>:
+  이것은 젠커널이 생성한 initrd에 어떠한 모듈들도 복사하지 않는다.
+</li>
+<li>
+  <b>--<c>no-</c>install</b>:
+  이것은 컴파일이 끝나면 커널, 모듈들, 그리고 initrd를 설치한다.
+  <e>(설치하지 않는다.)</e>
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>그 밖의(miscellaneous) 젠커널 옵션들</title>
+<body>
+
+<p>
+젠커널은 위의 두가지 카테고리들로도 분류할수 없는 다양한 플래그들도 지원한다.
+</p>
+
+<ul>
+<li>
+  <b>--arch-override=<c>someArch</c></b>:
+  이 플래그는 자동 검색 메카니즘이 동작하지 않을 때
+  젠커널이 여러분이 사용하는 아키텍처가 무엇이라고 생각하는지를
+  무시하기 위해 사용된다. (이런 경우 버그를 제출하라!)
+  여러분이 커널을 크로스 컴파일 하고 싶을 때에도 쓰인다.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--busybox-config=<path>/path/to/busybox-config</path></b>:
+  기본 busybox 설정을 지정된 파일로 덮어씌운다.
+</li>
+<li>
+  <b>--busybox-bin=<path>/path/to/busybox-binary.tar.bz2</path></b>:
+  이 옵션을 사용하는 것은 busybox 바이너리가 컴파일되지 않고,
+  지정된 타르볼이 사용된다는 것을 뜻한다.
+  busybos는 <e>반드시</e> 정적으로 컴파일되어야 한다는 것에 주의하라.
+</li>
+</ul>
+
+<ul>
+<li>
+  <b>--minkernpackage=<path>/output/to/yourkernel.tar.bz2</path></b>:
+  이 플래그는 <path>kernel</path>라고 이름 붙은 커널과
+  <path>initrd</path>라고 이름 붙은 initrd의 타르볼을 출력한다.
+  타르볼에 경로 정보나 모듈은 포함되지 않을 것이다.
+</li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>젠커널 실행하기</title>
+<body>
+
+<p>
+젠커널을 실행하기 위해 필요한 모든 것은 루트로서
+genkernel을 필요한 플래그와 함께 입력하는 것이다.
+예를 들어:
+</p>
+
+<pre caption="젠커널 실행">
+# genkernel --menuconfig --no-clean --no-install --bootsplash all
+<comment>(여러분에게 어떻세 설정하기를 원하는지 물어보고,
+컴파일된 오브젝트 파일들을 남겨두며,
+부트스플래시를 지원하지만 실제로 설치는 하지 않으면서
+커널을 만든다.)</comment>
+</pre>
+
+<p>
+만약 젠커널이 커널을 설치하기를 원하신다면,
+여러분의 <path>/boot</path> 파티션이 마운트 되어 있어야 한다.
+최신 젠커널은 <path>/etc/genkernel.conf</path>의 MOUNTBOOT가
+"yes"로 설정되어 있다면 자동으로 이를 수행할 것이다.
+</p>
+
+<pre caption="/boot 수동으로 마운트하기">
+<comment>(/boot가 /etc/fstab의 올바른 항목일 경우:)</comment>
+# mount /boot
+<comment>(... 그 밖의 경우 IDE 디스크에 대해:)</comment>
+# mount /dev/hda1 /boot
+<comment>(... SCSI 디스크에 대해:)</comment>
+# mount /dev/sda1 /boot
+</pre>
+
+</body>
+</section>
+<section>
+<title>부트로더와 함께 동작하도록 젠커널 설치하기</title>
+<body>
+
+<p>
+젠커널을 여러분의 부트로더와 함께 동작하도록 설치하기 위해,
+여러분의 부트로더 설정에 셋이나 네개의 변화가 필요하다.
+</p>
+
+<ol>
+<li>
+  <c>root=/dev/ram0</c>와 <c>init=/linuxrc</c>를
+  커널 이미지에 넘겨지는 커널 매개 변수에 추가한다.
+</li>
+<li>
+  예를 들어 <path>/dev/hda3</path>이 여러분의 루트 파티션을 포함하고 있다면
+  커널 이미지에 넘겨지는 커널 매개 변수에
+  <c>real_root=/dev/hda3</c>를 추가한다.
+</li>
+<li>
+  만약 부트스플래시를 사용한다면 <c>vga=0x317</c>과 같은
+  적절한 modeline을 커널에 넘겨지는 매개 변수에 추가하고
+  여러분이 부트스플래시에 요구하는 상세한 정도에 따라
+  <c>splash=verbose</c>나 <c>splash=silent</c>도 추가한다.
+</li>
+<li>
+  어떻게 여러분의 부트로더가 initrd를 요구하는지에 따라 initrd를 추가한다.
+  어떻게 여러분이 여러분의 부트로더에 맞게 할 수 있는지에 대한 상세한 정보는
+  <uri link="http://www.gentoo.org/doc/ko/handbook/handbook-x86.xml?part=1&amp;chap=9">젠투 핸드북</uri>을 보라.
+</li>
+</ol>
+
+</body>
+</section>
+<section>
+<title>커널 설정 파일</title>
+<body>
+
+<p>
+젠커널은 여러분의 커널 설정을 <path>/etc/kernels</path>에 저장하고
+여러분이 <c>genkernel</c>을 다시 입력할 때마다 이를 사용한다.
+만약 여러분이 기본값으로 처음부터 다시 시작하고 싶다면,
+<path>/etc/kernels</path> 안의 파일 이름을 바꾸라.
+젠커널은 <path>/usr/share/genkernel/&lt;arch&gt;</path>에 있는
+커널 설정을 대신 사용할 것이다.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>젠커널 포팅</title>
+<section>
+<title>소개</title>
+<body>
+
+<p>
+아키텍처에 따라 젠커널이 필요로하는 모든 라이브러리와 유틸리티들은
+아키텍처에 해당하는 동작하는 커널, 동장하는 컴파일러 모음,
+GNU Make, 동작하는 busybox 배포판이다. 여러분은 시작할 준비가 되었다!
+</p>
+
+<p>
+각 아키텍처에 대해 genkernel은
+<path>/usr/share/genkernel/archName</path>을 설정파일의 이름으로 사용한다.
+</p>
+
+</body>
+</section>
+<section>
+<title>어떻게 시스템 부트스트랩(bootstrap)이 동작하는가</title>
+<body>
+
+<ol>
+<li>
+  부트로더는 젠커널 디렉토리에 있는 설정 파일들에 지정된 대로 빌드된
+  젠커널 이미지를 읽고, 젠커널에 의해 준비된 initrd도 읽는다.
+</li>
+<li>
+  커널이 부트되고 적은 양의 RAM을 할당해서 busybox가 그 안에서 초기화되도록
+  한다. busybox는 아키텍처를 위한 modules_load 목록에 있는 모듈들이 있는지
+  시스템을 조사한다.
+</li>
+<li>
+  일단 끝나면, busybox가 루트 부트 디바이스를 가리키는 <c>real_root</c>
+  매개 변수를 찾으면, 시스템은 그 디바이스로부터 부팅된다.
+</li>
+</ol>
+
+</body>
+</section>
+<section>
+<title>설정 파일들</title>
+<body>
+
+<ul>
+<li>
+  <path>busy-config</path>:
+  여러분의 아키텍처에 맞는 busybox를 빌드할 때 쓰이는 설정.
+</li>
+<li>
+  <path>config.sh</path>:
+  다양한 내부 젠커널 변수를 설정하는 셸 스크립트.
+  예로는 <path>config.sh</path> 파일들 중의 하나를 보라.
+</li>
+<li>
+  <path>modules_load</path>:
+  이 파일에는 SCSI, FireWire, ATARAID, PCMCIA 지원을 위해 읽혀지는
+  공백으로 나누어진 목록이 포함되어 있다.
+  만약 여러분의 플랫폼에 맞는 것이 없다면, 항목들을 비워두라.
+  예로는 <path>modules_load</path> 파일들 중의 하나를 보라.
+</li>
+</ul>
+
+<ul>
+<li>
+  <path>kernel-config</path>:
+  어느 커널 버전에도 쓰일 수 있는 기본 커널 설정.
+</li>
+<li>
+  <path>kernel-config-2.4</path>:
+  2.4 시리즈 커널에 쓰일 수 있는 기본 커널 설정.
+</li>
+<li>
+  <path>kernel-config-2.6</path>:
+  2.6 시리즈 커널에 쓰일 수 있는 기본 커널 설정.
+</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
