@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.35 2005/01/15 06:30:54 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.36 2005/01/19 03:13:52 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -39,6 +39,7 @@ class ArchitectureTemplate:
 		self._architecture_name = "generic"
 		#self._install_steps = [  (self.partition, "Partition"), TEMPORARY thing only.
 		self._install_steps = [
+                                 (self.partition, "Partition"),
                                  (self.mount_local_partitions, "Mount local partitions"),
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
@@ -223,13 +224,13 @@ class ArchitectureTemplate:
 		"""
 		nfsmounts = self._install_profile.get_network_mounts()
 		for netmount in nfsmounts:
-			if nfsmounts[netmount]['type'] == "NFS" or nfsmounts[netmount]['type'] == "nfs":
-				mountopts = nfsmounts[netmount]['mountopts']
+			if netmount['type'] == "NFS" or netmount['type'] == "nfs":
+				mountopts = netmount['mountopts']
 				if mountopts:
 					mountopts = "-o "+mountopts
-				host = nfsmounts[netmount]['host']
-				export = nfsmounts[netmount]['export']
-				mountpoint = nfsmounts[netmount]['mountpoint']
+				host = netmount['host']
+				export = netmount['export']
+				mountpoint = netmount['mountpoint']
 				if not GLIUtility.is_file(self._chroot_dir+mountpoint):
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 					if exitstatus != 0:
