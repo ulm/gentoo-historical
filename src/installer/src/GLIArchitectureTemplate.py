@@ -1,9 +1,8 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.76 2005/03/27 19:07:09 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.77 2005/03/29 04:10:10 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
-
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -544,6 +543,35 @@ class ArchitectureTemplate:
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
 		# Get the list of file system tools to be installed
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+		#in parts['/dev/hda']
+			for partition in parts[device]:
+				#print parts[device][partition]
+				partition_type = parts[device][partition]['type']
+				if partition_type not in filesystem_tools:
+					filesystem_tools.append(partition_type)
+		for filesystem in filesystem_tools:
+			if filesystem.lower() == "xfs":
+				exitstatus = self._emerge("xfsprogs")
+				if exitstatus != 0:
+					self._logger.log("ERROR! : Could not emerge xfsprogs!")
+				else:
+					self._logger.log("FileSystemTool xfsprogs was emerged successfully.")
+			if filesystem.lower() == "reiserfs":
+				exitstatus = self._emerge("reiserfsprogs")
+				if exitstatus != 0:
+					self._logger.log("ERROR! : Could not emerge reiserfsprogs!")
+				else:
+					self._logger.log("FileSystemTool reiserfsprogs was emerged successfully.")
+			if filesystem.lower() == "jfs":
+				exitstatus = self._emerge("jfsutils")
+				if exitstatus != 0:
+					self._logger.log("ERROR! : Could not emerge jfsutils!")
+				else:
+					self._logger.log("FileSystemTool jfsutils was emerged successfully.")
+					
+		"""
 		filesystem_tools = self._install_profile.get_filesystem_tools_pkgs()
 		
 		# If the fstools var is a str, convert it to a list
@@ -558,7 +586,7 @@ class ArchitectureTemplate:
 			#	raise GLIException("FilesystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + package + "!")
 			else:
 				self._logger.log("FileSystemTool "+package+" was emerged successfully.")
-
+		"""
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
 		# If user wants us to install rp-pppoe, then do so
@@ -838,7 +866,10 @@ class ArchitectureTemplate:
 	def finishing_cleanup(self):
 		"This function will handle the various cleanup tasks as well as unmounting the filesystems for reboot."
 		#These are temporary until I come up with a nicer idea.
-		#First we copy the log over to the new system.
+		
+		#get rid of the compile_output file so the symlink doesn't get screwed up.
+		
+		#we copy the log over to the new system.
 		install_logfile = self._client_configuration.get_log_file()
 		try:
 			shutil.copy(install_logfile, self._chroot_dir + install_logfile)
