@@ -129,10 +129,11 @@ def set_partitions():
 						tmppart.set_type(type)
 					elif part_action == "Format":
 						answer = d.yesno("Do you want to format this partition?")
-						if code == DLG_OK: tmppart.set_format(answer)
-						
-						
-						
+						if code == DLG_YES: 
+							tmppart.set_format(True)
+						else
+							tmppart.set_format(False)						
+												
 	if d.yesno("Would you like to save changes?") == DLG_YES:
 		parts_tmp = {}
 		for part in devices.keys():
