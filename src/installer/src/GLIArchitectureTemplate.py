@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.82 2005/04/03 00:24:44 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.83 2005/04/03 00:25:41 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -807,7 +807,7 @@ class ArchitectureTemplate:
 			uid = user[5]
 			comment = user[6]
 			
-			options = [ "-m", "-p " + password_hash  ]
+			options = [ "-m", "-p '" + password_hash + "'" ]
 			
 			# If the groups are specified
 			if groups:
