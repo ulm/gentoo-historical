@@ -6,7 +6,7 @@ Copyright 2004 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, signal, time, shutil, sys, random, commands
+import string, os, re, signal, time, shutil, sys, random, commands, crypt
 from GLIException import *
 
 def is_realstring(string_a):
@@ -343,3 +343,13 @@ def generate_random_password():
 
 def get_value_from_config(filename, value):
 	return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
+
+def hash_password(password):
+	salt = "$1$"
+        chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	for i in range(0, 8):
+		salt += chars[random.randint(0, len(chars)-1)]
+	salt += "$"
+	passwd_hash = crypt.crypt(password, salt)
+
+	return passwd_hash
