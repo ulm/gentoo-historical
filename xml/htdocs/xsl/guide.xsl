@@ -409,7 +409,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
                     <br/>
-                    <a class="hotlink" href="/main/en/performance.xml">Performance benchmarks</a>
+                    <a class="altlink" href="/main/en/performance.xml">Performance benchmarks</a>
                     <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
                     <br/>
