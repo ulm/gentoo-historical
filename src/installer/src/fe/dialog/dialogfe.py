@@ -83,6 +83,7 @@ def set_partitions():
 				minor = devices[drive_to_partition].get_partition_at(int(new_start) - 1) + 1
 				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
 				code, type = d.menu("Type for new partition", choices=dmenu_list_to_choices(part_types))
+				if code != DLG_OK: continue
 				type = part_types[int(type)-1]
 				if type == "other":
 					code, type = d.inputbox("New partition's type?")
