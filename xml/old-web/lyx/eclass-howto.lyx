@@ -1,5 +1,5 @@
-#LyX 1.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 218
+#LyX 1.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 220
 \textclass docbook-chapter
 \language english
 \inputencoding auto
@@ -11,6 +11,8 @@
 \paperpackage a4
 \use_geometry 0
 \use_amsmath 0
+\use_natbib 0
+\use_numerical_citations 0
 \paperorientation portrait
 \secnumdepth 3
 \tocdepth 3
@@ -30,7 +32,7 @@ Gentoo Documentation - eclass HOWTO
 <AUTHOR><A HREF="mailto:danarmak@gentoo.org" >Dan Armak</A></AUTHOR>
 \layout Date
 
-20020330
+20020610
 \layout Abstract
 
 The eclass howto explains the idea behind eclasses, the current eclasses
@@ -139,8 +141,14 @@ inherit()
 
 This function handles inheriting (sourcing) of eclasses.
  It is called like this: 
-\latex latex 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
 inherit <list of eclasses>.
+\end_inset 
+
+
 \layout Standard
 
 Right now, inherit() simply sources files from a hard-coded location.
@@ -595,9 +603,13 @@ If called with a special parameter, it adds predefined dependencies.
 \layout Standard
 
 
-\latex latex 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
 newdepend /autotools: 
-\latex default 
+\end_inset 
+
 add 
 \begin_inset Quotes eld
 \end_inset 
@@ -610,9 +622,13 @@ sys-devel/autoconf sys-devel/automake sys-devel/make
 \layout Standard
 
 
-\latex latex 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
 newdepend /c:
-\latex default 
+\end_inset 
+
  add 
 \begin_inset Quotes eld
 \end_inset 
@@ -673,41 +689,29 @@ cd ${S}
 \layout Code
 
 patch -p0 < ${FILESDIR}/${P}-gentoo.diff
-\layout Subsection
-
-kde.eclass
 \layout Standard
 
-Used by all kde apps, whether directly or indirectly.
- (Not by apps with optional kde functionality though.) This is a higher-level
- eclass, which is intended to provide not only sensible defaults but functions
- which can be used as-is more often then not.
- In fact, none of the high-level kde-* eclasses which inherit from here
- change the functions in any way, and the ebuilds rarely do so.
- This eclass contains the meat of the kde eclass system, while virtual and
- base can be said to provide the skeleton.
-\layout Standard
+One section of base_src_unpack deserves secial mention: the 
+\emph on 
+autopatch
+\emph default 
+ section.
+ Unlike the 
+\emph on 
+patch 
+\emph default 
+section, autopatch is executed by default after unpacking.
+ It patches inside ${S}, with patch level 0, using all files in $PATCHES
+ (absolute patches).
+ So, an ebuild might contain the line PATCHES=
+\begin_inset Quotes erd
+\end_inset 
 
-It inherits autoconf, base and depend.
-\layout Standard
+${DISTDIR}/foo.diff ${FILESDIR}/bar.patch
+\begin_inset Quotes erd
+\end_inset 
 
-Read it to find out what it defines.
- It is quite self-explanatory.
-\layout Standard
-
-Briefly, it handles all standard kde apps that use GNU standard configure/make/m
-ake install cycles.
- It handles all the std.
- configure options e.g.
- qtmt.
-\layout Standard
-
-Note: some kde apps, like widget styles and i18n packages, do not need to
- compile anything.
- Therefore kde.eclass does not inherit c.
- These packages can then inherit straight from here.
- All other packages, which need to compile c code, should inherit from kde-base.e
-class.
+ instead of extending src_unpack.
 \layout Subsection
 
 cvs.eclass
@@ -715,7 +719,7 @@ cvs.eclass
 
 This eclass enables ebuilds to fetch sources from cvs.
  Because cvs ebuilds aren't yet an official feature of portage, it can only
- be found in my kde3pre ebuild package.
+ be found in my kde3pre ebuild package and is not described in detail here.
 \layout Subsection
 
 cvsup.eclass
@@ -737,7 +741,7 @@ This is the main, central KDE eclass.
 
 As with the other eclasses, read it to find out what it does.
  Here is a short summary, with improved readability and comments after every
- part:
+ part (some lines have been skipped):
 \layout Code
 
 inherit base kde-functions
@@ -785,7 +789,12 @@ kde_src_compile() {
             3) myconf="$myconf --prefix=${KDE3DIR}";;
 \layout Code
 
-            *) echo an error and abort (unrecognized version);;
+            *) echo "!!! $ECLASS: $FUNCNAME: myconf: could not set --prefix
+ based on KDEMAJOVER=
+\backslash 
+"$KDEMAJORVER
+\backslash 
+"" && exit 1;;
 \layout Code
 
         esac
@@ -803,6 +812,8 @@ kde_src_compile() {
 \layout Code
 
                         || myconf="$myconf --disable-debug --without-debug"
+\layout Code
+
 \layout Standard
 
 The $myconf variable holds the parameters to be passed to configure.
@@ -1069,6 +1080,14 @@ Used by kde-base/* core packages to get source via cvs or cvsup; uses cvs.eclass
  mode, etc.
  etc.
  But, there are no cvs ebuilds in portage yet, so these stay outside.
+\layout Subsection
+
+kde-patch.eclass
+\layout Standard
+
+Used by kde-base/* packages that come with a cvs snapshot patch, e.g.
+ 3.0.1.20020604.
+ Read the eclass to find out more.
 \layout Section
 
 Writing KDE ebuilds
@@ -1126,7 +1145,7 @@ src_unpack() {
     # some more changes
 \layout Code
 
-    dosed -e 's:1:2:' ${S}/foobar
+    cat foo > ${S}/bar
 \layout Code
 
 }
