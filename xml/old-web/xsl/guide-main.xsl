@@ -379,7 +379,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 <img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/><br/>
 User Docs:<br/>
 						<a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/>
-						<a class="altlink" href="/doc/gentooppc-quickstart.html">GentooPPC Quickstart Guide</a> <font color="#ff0000">(new!)</font><br/>
+						<a class="altlink" href="/doc/gentooppc-quickstart.html">Gentoo/PPC Quickstart Guide</a> <font color="#ff0000">(new!)</font><br/>
 						<a class="altlink" href="/doc/faq.html">FAQ</a><br/>
 						<a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
 						<a class="altlink" href="/doc/portage-manual.html">Portage Manual</a> <font color="#ff0000">(new!)</font><br/>
