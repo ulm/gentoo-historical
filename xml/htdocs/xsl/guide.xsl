@@ -931,7 +931,7 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
             <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
@@ -1130,7 +1130,7 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
             <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
