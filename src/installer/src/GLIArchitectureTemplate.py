@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.30 2005/01/07 07:02:47 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.31 2005/01/07 07:38:08 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -43,6 +43,7 @@ class ArchitectureTemplate:
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
+								 (self.set_root_password, "Set the root password"),
                                  (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.prepare_chroot, "Preparing chroot"),
                                  (self.stage1, "Performing bootstrap"),
@@ -56,7 +57,8 @@ class ArchitectureTemplate:
                                  (self.setup_network_post, "Configuring post-install networking"),
                                  (self.install_bootloader, "Configuring and installing bootloader"),
                                  (self.update_config_files, "Updating config files"),
-                                 (self.configure_rc_conf, "Updating /etc/rc.conf")
+                                 (self.configure_rc_conf, "Updating /etc/rc.conf"),
+								 (self.set_users, "Add additional users.")
                                 ]
 
 
@@ -633,7 +635,7 @@ class ArchitectureTemplate:
 							
 	def set_root_password(self):
 		"Sets the root password"
-		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chpasswd -e', chroot=self._chroot_dir)
+		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e')
 		if not GLIUtility.exit_success(status):
 			raise GLIException("SetRootPasswordError", 'warning', 'set_root_password', "Failure to set root password!")
 
