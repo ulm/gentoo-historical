@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                              xmlns:func="http://exslt.org/functions"
-                                extension-element-prefixes="func"
->
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
 
-<func:function name="xsl:gettext">
+<func:function name="func:gettext">
   <xsl:param name="str" />
   
 <!-- 4DEBUGGING

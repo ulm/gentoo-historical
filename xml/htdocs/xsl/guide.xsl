@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
@@ -34,7 +35,7 @@
     </xsl:when>
     <xsl:otherwise>
       <form name="contents" action="http://www.gentoo.org">
-        <b><xsl:value-of select="xsl:gettext('Content')"/></b>:
+        <b><xsl:value-of select="func:gettext('Content')"/></b>:
         <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
           <xsl:for-each select="chapter">
             <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
@@ -62,7 +63,7 @@
   <xsl:choose>
     <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
-    <xsl:otherwise><xsl:value-of select="xsl:gettext('GLinuxDoc')"/></xsl:otherwise>
+    <xsl:otherwise><xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
 --
   <xsl:choose>
@@ -112,17 +113,17 @@
               <xsl:if test="/book/@link or /guide/@link">
                <tr>
                 <td class="altmenu" align="center">
-                  <xsl:variable name="PrintTip"><xsl:value-of select="xsl:gettext('PrintTip')"/></xsl:variable>
+                  <xsl:variable name="PrintTip"><xsl:value-of select="func:gettext('PrintTip')"/></xsl:variable>
                   <xsl:if test="/book">
                    <xsl:if test="$full=1">
-                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
                    </xsl:if>
                    <xsl:if test="$full=0">
-                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
                    </xsl:if>
                   </xsl:if>
                   <xsl:if test="/guide">
-                    <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="xsl:gettext('Print')"/></a>
+                    <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
                   </xsl:if>
                 </td>
                </tr>
@@ -135,7 +136,7 @@
               <tr>
                 <td align="center" class="alttext">
                   <!-- Update datestamp -->
-                  <xsl:value-of select="xsl:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
+                  <xsl:value-of select="func:gettext('Updated')"/>&#160;<xsl:value-of select="/guide/date|/book/date"/>
                 </td>
               </tr>
               <tr>
@@ -157,7 +158,7 @@
               <tr>
                 <td class="alttext">
                   <!-- Abstract (summary) of the document -->
-                  <b><xsl:value-of select="xsl:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
+                  <b><xsl:value-of select="func:gettext('Summary')"/>:</b>&#160;<xsl:apply-templates select="abstract"/>
                 </td>
               </tr>
               <tr>
@@ -873,6 +874,7 @@
 <xsl:if test="$style != 'printable'">
   <br/>
 </xsl:if>
+<xsl:if test="$style = 'printable'">&#160;</xsl:if>
   <i><xsl:value-of select="@title"/></i>
 </xsl:if>
 <br/>
@@ -945,10 +947,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="func:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:value-of select="xsl:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
+            <xsl:value-of select="func:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
@@ -995,7 +997,7 @@
   <tr>
     <td bgcolor="#bbffbb">
       <p class="note">
-        <b><xsl:value-of select="xsl:gettext('Note')"/>: </b>
+        <b><xsl:value-of select="func:gettext('Note')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1009,7 +1011,7 @@
   <tr>
     <td bgcolor="#ffffbb">
       <p class="note">
-        <b><xsl:value-of select="xsl:gettext('Important')"/>: </b>
+        <b><xsl:value-of select="func:gettext('Important')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1023,7 +1025,7 @@
   <tr>
     <td bgcolor="#ffbbbb">
       <p class="note">
-        <b><xsl:value-of select="xsl:gettext('Warning')"/>: </b>
+        <b><xsl:value-of select="func:gettext('Warning')"/>: </b>
         <xsl:apply-templates/>
       </p>
     </td>
@@ -1144,10 +1146,10 @@
       <p class="caption">
         <xsl:choose>
           <xsl:when test="@caption">
-            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="xsl:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
+            <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/><xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:value-of select="xsl:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
+            <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$prenum"/>
           </xsl:otherwise>
         </xsl:choose>
       </p>
