@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.22 2004/11/21 06:51:00 agaffney Exp $
+$Id: GLIClientController.py,v 1.23 2004/11/21 22:26:45 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -77,6 +77,7 @@ class GLIClientController(Thread):
 
 		self.output("Starting install now...")
 
+		self._install_event.wait()
 		self._arch_template = GLIArchitectureTemplate.ArchitectureTemplate(configuration=self._configuration, install_profile=self._install_profile)
 		self._install_steps = self._arch_template.get_install_steps()
 		while self._install_event.wait():
@@ -204,6 +205,9 @@ class GLIClientController(Thread):
 
 	def start_install(self):
 		self._install_event.set()
+
+	def start_pre_install(self):
+		self.start()
 
 	def output(self, str):
 		if self._verbose:
