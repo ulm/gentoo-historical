@@ -46,12 +46,22 @@
   <body>
  
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $categorie]">
-      <xsl:call-template name="document">
+      <p><b>
+      <xsl:call-template name="documentname">
         <xsl:with-param name="metadoc" select="$metadoc"/>
         <xsl:with-param name="fileid"  select="fileid/text()"/>
         <xsl:with-param name="vpart"   select="fileid/@vpart"/>
         <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+        <xsl:with-param name="docid"   select="@id"/>
       </xsl:call-template>
+      </b>: <xsl:call-template name="documentabstract">
+        <xsl:with-param name="metadoc" select="$metadoc"/>
+        <xsl:with-param name="fileid"  select="fileid/text()"/>
+        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+        <xsl:with-param name="docid"   select="@id"/>
+      </xsl:call-template>
+      </p>
     </xsl:for-each>
   
   </body>
@@ -66,12 +76,22 @@
       <body>
 
         <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $currentcat]">
-          <xsl:call-template name="document">
+          <p><b>
+          <xsl:call-template name="documentname">
             <xsl:with-param name="metadoc"  select="$metadoc"/>
             <xsl:with-param name="fileid"   select="fileid/text()"/>
             <xsl:with-param name="vpart"    select="fileid/@vpart"/>
             <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+            <xsl:with-param name="docid"    select="@id"/>
           </xsl:call-template>
+          </b>: <xsl:call-template name="documentabstract">
+            <xsl:with-param name="metadoc"  select="$metadoc"/>
+            <xsl:with-param name="fileid"   select="fileid/text()"/>
+            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+            <xsl:with-param name="docid"    select="@id"/>
+          </xsl:call-template>
+          </p>
         </xsl:for-each>
       
       </body>
@@ -79,26 +99,52 @@
   </xsl:for-each>
 </xsl:template>
 
-<xsl:template name="document">
+<xsl:template name="documentname">
   <xsl:param name="metadoc"/>
   <xsl:param name="fileid"/>
   <xsl:param name="vpart"/>
   <xsl:param name="vchap"/>
+  <xsl:param name="docid"/>
   <xsl:variable name="link"><xsl:value-of select="document($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
 
   <xsl:choose>
     <xsl:when test="$vpart">
       <xsl:choose>
         <xsl:when test="$vchap">
-          <p><b><uri link="{$link}?part={$vpart}&amp;chap={$vchap}"><xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/title"/></uri></b>: <xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/></p>
+          <uri link="{$link}?part={$vpart}&amp;chap={$vchap}"><xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/title"/></uri>
         </xsl:when>
         <xsl:otherwise>
-          <p><b><uri link="{$link}?part={$vpart}"><xsl:value-of select="document($link)/book/part[position() = $vpart]/title"/></uri></b>: <xsl:value-of select="document($link)/book/part[position() = $vpart]/abstract"/></p>
+          <uri link="{$link}?part={$vpart}"><xsl:value-of select="document($link)/book/part[position() = $vpart]/title"/></uri>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <p><b><uri link="{$link}"><xsl:value-of select="document($link)/guide/title|document($link)/book/title|document($link)/mainpage/title"/></uri></b><xsl:if test="not(document($link)/mainpage)">: <xsl:value-of select="document($link)/guide/abstract|document($link)/book/abstract"/></xsl:if></p>
+      <uri link="{$link}"><xsl:value-of select="document($link)/guide/title|document($link)/book/title|document($link)/mainpage/title"/></uri>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="documentabstract">
+  <xsl:param name="metadoc"/>
+  <xsl:param name="fileid"/>
+  <xsl:param name="vpart"/>
+  <xsl:param name="vchap"/>
+  <xsl:param name="docid"/>
+  <xsl:variable name="link"><xsl:value-of select="document($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="$vpart">
+      <xsl:choose>
+        <xsl:when test="$vchap">
+          <xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="document($link)/book/part[position() = $vpart]/abstract"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:if test="not(document($link)/mainpage)"><xsl:value-of select="document($link)/guide/abstract|document($link)/book/abstract"/></xsl:if>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -127,11 +173,12 @@
   <xsl:param name="catid" select="text()"/>
   <ul><b><xsl:value-of select="document($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $catid]">
-      <xsl:call-template name="linkfile">
+      <xsl:call-template name="documentname">
         <xsl:with-param name="metadoc" select="$metadoc"/>
         <xsl:with-param name="fileid"  select="fileid"/>
         <xsl:with-param name="vpart"   select="fileid/@vpart"/>
         <xsl:with-param name="vchap"   select="fileid/@vchap"/>
+        <xsl:with-param name="docid"   select="@id"/>
       </xsl:call-template>
     </xsl:for-each>
     <xsl:for-each select="document($metadoc)/metadoc/categories/cat[@parent = $catid]">
@@ -143,36 +190,9 @@
   </ul>
 </xsl:template>
 
-<xsl:template name="linkfile">
-  <xsl:param name="metadoc"/>
-  <xsl:param name="fileid"/>
-  <xsl:param name="vpart"/>
-  <xsl:param name="vchap"/>
-  
-  <xsl:variable name="filelink"  select="document($metadoc)/metadoc/files/file[@id = $fileid]"/>
-  <xsl:choose>
-    <xsl:when test="$vpart">
-      <xsl:choose>
-        <xsl:when test="$vchap">
-          <xsl:variable name="filetitle" select="document($filelink)/book/part[position() = $vpart]/chapter[position() = $vchap]/title"/>
-          <li><uri link="{$filelink}?part={$vpart}&amp;chap={$vchap}"><xsl:value-of select="$filetitle"/></uri></li>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:variable name="filetitle" select="document($filelink)/book/part[position() = $vpart]/title"/>
-          <li><uri link="{$filelink}?part={$vpart}"><xsl:value-of select="$filetitle"/></uri></li>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:variable name="filetitle" select="document($filelink)/guide/title|document($filelink)/book/title|document($filelink)/mainpage/title"/>
-      <li><uri link="{$filelink}"><xsl:value-of select="$filetitle"/></uri></li>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 <xsl:template match="overview">
   <xsl:param name="metadoc"/>
-  <chapter>
+  <chapter id="files">
   <title>Files</title>
   <section>
   <body>
@@ -205,6 +225,26 @@
   </tr>
   </xsl:for-each>
   </table>
+
+  </body>
+  </section>
+  </chapter>
+
+  <chapter id="bugs">
+  <title>Bugs</title>
+  <section id="showstoppers">
+  <title>Showstoppers</title>
+  <body>
+
+  <table>
+  <tr><th>Document</th><th>Bug ID</th></tr>
+  </table>
+
+  </body>
+  </section>
+  <section id="normalbugs">
+  <title>Normal Bugs</title>
+  <body>
 
   </body>
   </section>
