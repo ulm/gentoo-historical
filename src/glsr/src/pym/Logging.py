@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.3 2004/07/09 18:34:21 port001 Exp $
+# $Id: Logging.py,v 1.4 2004/07/19 00:55:24 hadfield Exp $
 #
 
 import traceback
@@ -28,6 +28,7 @@ def err(msg, modname):
   
     if Config.HTMLHeadersSent == False:      
         print "Content-type:text/html\n\n"
+        Config.HTMLHeadersSent = True
 
     if Config.Debug == True:
         print ("<table align=\"center\" width=\"90%\">\n" +
