@@ -1,7 +1,8 @@
 #!/sbin/runscript
 # Copyright 1999-2002 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.1 2004/03/21 19:46:44 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.2 2004/04/30 22:52:02 zhen Exp $
+
 echo "0" > /proc/sys/kernel/printk
 DHCP="yes"
 DETECT="yes"
@@ -12,52 +13,35 @@ ACPI="no"
 CMDLINE="`cat /proc/cmdline`"
 for x in $CMDLINE
 do
-        if [ "$x" = "nodetect" ]
-        then
-                DETECT="no"
+	if [ "$x" = "nodetect" ]
+	then
+		DETECT="no"
 		HOTPLUG="no"
 		APM="no"
 		ACPI="no"
-        fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "nodhcp" ]
-        then
-                DHCP="no"
-        fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "dopcmcia" ]
-        then
-                PCMCIA="yes"
-        fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "nohotplug" ]
-        then
-                HOTPLUG="no"
-        fi
-done
-for x in $CMDLINE
-do
-        if [ "$x" = "noapm" ]
-        then
-                APM="no"
-        fi
-done
+	fi
 
-for x in $CMDLINE
-do
-        if [ "$x" = "acpi=on" ]
-        then
-                APM="no"
+	if [ "$x" = "nodhcp" ]
+	then
+		DHCP="no"
+	fi
+
+	if [ "$x" = "dopcmcia" ]
+	then
+		PCMCIA="yes"
+	fi
+	
+	if [ "$x" = "doapm" ]
+	then
+		APM="yes"
+	fi
+
+	if [ "$x" = "acpi=on" ]
+	then
+		APM="no"
 		ACPI="yes"
-        fi
+	fi
 done
-
 
 depend() {
 	need modules
@@ -67,7 +51,7 @@ start() {
 if [ "$DETECT" = "yes" ]
 	then
 		ebegin $WARN"Hardware detection started"
-	PC=`awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
+		PC=`awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null`
 		ebegin $GOOD"$PC"
 		eend		
 		hwsetup -p >/dev/null
@@ -76,20 +60,19 @@ if [ "$DETECT" = "yes" ]
 		ebegin $WARN"Hardware detection disabled via cmdline$NORMAL"
 fi
 
-if [ "$APM" = "no" ]
+if [ "$APM" = "yes" ]
 	then
-        ebegin $GOOD"Not Loading APM Bios support.${NORMAL}"
+		insmod apm power_off=1 >/dev/null 2>&1 && ebegin $GOOD"APM BIOS found, power management functions enabled.$NORMAL"
+		/etc/init.d/apmd start
 	else
-	insmod apm power_off=1 >/dev/null 2>&1 && ebegin $GOOD"APM BIOS found, power management functions enabled.$NORMAL"
-	/etc/init.d/apmd start
+		ebegin $GOOD"Not Loading APM Bios support.${NORMAL}"
 	eend
 fi
 
-
 if [ "$ACPI" = "yes" ]
-        then
-        insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
-        insmod fan >/dev/null
+then
+	insmod processor >/dev/null 2>&1 && ebegin $GOOD ACPI power management functions enabled.$NORMAL
+	insmod fan >/dev/null
 	insmod thermal >/dev/null
 	insmod button >/dev/null
 	insmod battery >/dev/null
@@ -147,11 +130,12 @@ if [ -n "$NETDEVICES" ]
 	ebegin $GOOD"Network device$HILITE$NETDEVICES$GOOD detected,$WARN DHCP broadcasting for IP.$NORMAL"
 	if [ "${DHCP}" = "yes" ]
 	then
-	dhcpcd
+		dhcpcd
 	fi
 	eend
+	
 	else
-	ebegin $BAD"No Network device auto detected.$NORMAL"
+		ebegin $BAD"No Network device auto detected.$NORMAL"
 
 fi
 
@@ -178,7 +162,7 @@ if [ -n "$XDESC" -o -n "$XDESC" ]
         eend
 fi
 
-
 killall hwsetup 2>/dev/null
 echo "6" > /proc/sys/kernel/printk
+
 }
