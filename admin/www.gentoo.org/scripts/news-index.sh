@@ -2,6 +2,9 @@
 # Modified by zhen <zhen@gentoo.org> 5/1/2003 to add support for the
 # arch projects subpages.
 
+#to get WEBROOT and WEBSCRIPTS defined
+source ~/.bashrc
+
 # what arches do we support?
 ARCHES="ppc"
 
