@@ -3,10 +3,10 @@
 <guide link=" /doc/en/virt-mail-howto.xml" >
 <title>Virtual Mailhosting System Guide</title>
 <author title="Author" >
-<mail link="ken@kickasskungfu.com" >Ken Nowack</mail>
+<mail link="antifa@gentoo.org" >Ken Nowack</mail>
 </author>
 <author title="Author" >
-<mail link="ezra@kickasskungfu.com" >Ezra Gorman</mail>
+<mail link="ezra@revoltltd.org" >Ezra Gorman</mail>
 </author>
 <abstract>This document details how to create a virtual mailhosting system based upon postfix, mysql, courier-imap, and cyrus-sasl. </abstract>
 <version>1.0</version>
@@ -118,30 +118,7 @@ XV. Troubleshooting
 <body>
 <p>Next we're going to install cyrus-sasl. Sasl is going to play the role of actually passing your auth variables to pam, which will in turn pass that information to mysql for authentication of smtp users.  For this howto, we'll not even try to verify that sasl is working until mysql is set up and contains a test user. Which is fine since we'll be authenticating against mysql in the end anyway.</p>
 <note>Now for some reason, sasl will not play nicely with pam against the shadow file. I banged my head against this problem for, well, a long time. If anyone knows why sasl will not auth against the shadow file in its current gentoo incarnation, please <mail link="ken@kickasskungfu.com" >email me</mail> as I'd love to hear a solution to this.</note>
-<p>Just to get sasl installed is going to require a bit of hacking. Open up the ebuild file and change the configure flags to disable digest and cram. Here's why: mail clients will try to authenticate against the <e>first</e> method presented to it, usually cram-md5. Since we're not going to set that up, cram authentication will fail and most clients will not by default try another method. This is mostly due to the way mail clients are currently put together. So we're going to disable auth methods we're not using in order to not confuse the clients out there.</p>
 <pre caption="Configuring and installing the cyrus-sasl ebuild" >
-		# <i>cd /usr/portage/dev-libs/cyrus-sasl</i>
-		# <i>nano -w cyrus-sasl.$currentversion.ebuild</i>
-<codenote>Disable digest and cram as show below.</codenote>
-		
-		econf \
-				--with-saslauthd=/var/lib/sasl2 \
-				--with-pwcheck=/var/lib/sasl2 \
-				--with-configdir=/etc/sasl2 \
-				--with-openssl \
-				--with-plugindir=/usr/lib/sasl2 \
-				--with-dbpath=/etc/sasl2/sasldb2 \
-				--with-des \
-				--with-rc4 \
-				--disable-krb4 \
-				--with-gnu-ld \
-				--enable-shared \
-				--disable-sample \
-				--enable-login \
-				--disable-cram \
-				--disable-digest \
-				${myconf} || die &quot;bad ./configure&quot;
-		
 		# <i>USE='-ldap -mysql' emerge cyrus-sasl</i>
 <codenote>We don't have ldap and we're not using sasl's mysql capabilities </codenote>
 <codenote>so we need to turn them off for this build.</codenote>
@@ -150,7 +127,9 @@ XV. Troubleshooting
 <pre caption="Starting sasl" >
 		# <i>nano -w /var/lib/sasl2/smtp.conf</i>
 		pwcheck_method: saslauthd
-	
+		mech_list: LOGIN PLAIN
+<codenote>It's important to turn off auth mehtods we are not using.</codenote>
+<codenote>They cause problems for some mail clients.</codenote>
 		# <i>/etc/init.d/saslauthd start</i>
 </pre>
 </body>
@@ -260,8 +239,8 @@ XV. Troubleshooting
 		250-VRFY
 		250-ETRN
 		250-STARTTLS
-		250-AUTH LOGIN PLAIN OTP
-		250-AUTH=LOGIN PLAIN OTP
+		250-AUTH LOGIN PLAIN 
+		250-AUTH=LOGIN PLAIN
 		250-XVERP
 		250 8BITMIME
 		<i>^]</i>
@@ -655,7 +634,7 @@ XV. Troubleshooting
 </chapter>
 <chapter>
 <title>Content Filtering and Anti-Virus</title>
-<body><p>Coming soon...</p></body>
+<body><p>Coming soon...it would be done already but I need some perl help and testing to make it so. If you'd like to volunteer for that, please email me.</p></body>
 </chapter>
 <chapter>
 <title>Wrap Up</title>
