@@ -1,0 +1,271 @@
+GLEP: 16
+Title: Gentoo Menu System
+Version: $Revision: 1.1 $
+Last-Modified: $Date: 2003/10/04 13:51:00 $
+Author:	Heinrich Wendel <lanius@gentoo.org>,
+Status: Draft
+Type: Standards Track
+Content-Type: text/x-rst
+Created: 09-Sep-2003
+Post-History: 04-Oct-2003
+
+Definitions
+============
+
+   *APP*
+      A graphical application that should be listed in the menus.
+   *WM*
+      A program containing a menu manager (i.e. a program that can display a menu, e.g. a windowmanager).
+   *rule file*
+      A python script that describes how to build the menu for a WM.
+
+
+
+Abstract
+========
+
+This GLEP handles a proposal for the following two goals:
+
+* Create a common menu layout, which would be independent of the WM.
+  This point sound quite important for those people who use more than one WM. 
+* Provide a common way to add applications to the menus.
+
+
+
+Motivation
+==========
+
+GNOME, KDE, Fluxbox, to name only a few, have all their own ways of handling
+menus. There have been several requests [1]_ [2]_ [3]_ [4]_ [5]_ [6]_ from
+users to streamline these menus. Furthermore there are several bug reports
+about applications not having a menu entry [7]_, but since there is not
+standard way to create such an entry, they are just sitting around in
+bugzilla.
+
+
+
+Rationale
+=========
+
+The idea of a common menu system is not new to the Linux world, every big
+distribution (Debian, Mandrake, RedHat, Suse) has such a system. The big DE's,
+KDE and GNOME, with the help of freedesktop.org [8]_ are also trying to
+implement one standard. That will most likely happen in GNOME 2.6 and KDE 3.2
+(Currently they are only implementing different versions of the
+desktop-entry-spec, but interpreting it in an incompatible way).  But there
+are still many other WM's around that are not going to follow these specs in
+the near future. So we are trying to base our work on the specifications GNOME
+and KDE are going to use. (These are no official standards but evolving
+specifications). This has the following advantages:
+
+* follow specified standards
+* i18n support
+* provide the necessary flexibility and modularity 
+* integrate with small changes to our ebuildtree.
+* support for per system and per user menus
+
+This system will be completely optional, nobody will be forced to use it!
+
+Here an short overview, how it is supposed work:
+
+1. Every APP installs a .desktop file.
+2. Every WM installs a rule file.
+3. There is a file which specifies the menu layout.
+4. A script is run and parses all rule and .desktop files and the menu
+   layout and creates the corresponding menus.
+
+We also intent to include a graphical editor for the menus, but this is not
+the primary priority.
+
+
+
+Specification
+=============
+
+1. What packages with an APP should do
+--------------------------------------------
+
+1.1 .desktop file format
+'''''''''''''''''''''''''
+If you want users to be able to find your application you have to create a
+menu entry in the following format::
+
+   [Desktop Entry]
+   Encoding=UTF-8
+   Type=Application
+   Name=KWord
+   GenericName=Word Processing
+   GenericName[it]=Textverarbeitung
+   Categories=Application;Office;Wordprocessor
+   Icon=kword
+   Exec=/usr/kde/3.1/bin/kword
+
+This example does not show all translations of the name and comment, but you
+can see the format of the file and translations from it. The Categories field
+specifies which menu group the application should appear under. In this
+example, the entry is under System Tools. 
+
+The file should follow the xdg desktop-entry spec 0.9.4 [9]_. The Categories
+field is used as described in the menu-spec 0.7 [10]_.
+
+
+1.2 Validating the file
+''''''''''''''''''''''''
+We will provide a tool (possibly included in repoman) which will validate
+.desktop files.
+
+
+1.3 Icon
+'''''''''
+There are two possibilities to install an icon for the application.
+
+1. You install an icon in /usr/share/pixmaps and specify the absolute path to
+   the file in the .desktop file.
+2. You install the file as part of an icon-theme [11]_ and specify the name of
+   the icon in the .desktop file. Possible icon-themes are:
+
+   * default.kde
+   * gnome
+   * gentoo
+
+The preferred format for icons is png with transparent background.
+
+
+1.4 Modifying the ebuild
+'''''''''''''''''''''''''
+To actually install this file, you have add it to the filesdir of the ebuild.
+The extension has to be .desktop. Then change the ebuild to contain a line
+similar to this: "domenu ${FILESDIR}/file.desktop".
+
+
+2. What packages with a WM should do
+---------------------------------------------
+Each WM should provide a rule file in /usr/share/menus/wms which follows a
+specific format. Documentation for this format has still to be written, You
+can find examples at [12]_.
+
+
+3. The Menu layout file
+-------------------------
+
+The format of the menu layout file will follow the xdg menu-spec 0.7 [10]_.
+
+Gentoo will provide a default menu structure. You can find the current
+proposal at [14]_.
+
+
+
+4. Customizing the menus
+------------------------
+
+Customizing of this system can be done in two ways, system-wide or user-wide.
+The locations of the files follow the xdg basedir-spec 0.6 [14]_.
+
+4.1 Changing the default menu layout
+''''''''''''''''''''''''''''''''''''
+The system menu layout is located in /etc/menu/applications.menu, it can be
+overridden by $XDG_CONFIG_HOME/applications.menu.
+
+
+4.2 Adding own WM files
+'''''''''''''''''''''''''''''''''
+The system WM files are located in $XDG_DATA_DIRS/menu/wms/, they can be
+overridden or extended by $XDG_DATA_HOME/wms/.
+
+
+4.3 Adding own menu entries
+'''''''''''''''''''''''''''
+The system .desktop files are located in $XDG_DATA_DIRS/menu/applications/,
+they can be overridden or extended by $XDG_DATA_HOME/menu/applications/.
+
+
+
+Drawbacks
+=========
+
+A concern might be that it involves a changing a lot of ebuilds (every APP
+needs to be changed). There has been a proposal for another solution that
+generates menus from the current menu structures of GNOME/KDE. This would have
+the advantage of not changing the ebuilds, but the disadvantage of not being
+very flexible. A menu layout file or per system/users menus would not be
+possibly.  It seems more like a quick and dirty solution. Consider that we
+don't have to provide massive file-updates, global lists coherent with our
+tree, but each capable and installed package requires a small change that goes
+back and forwards with versions without overhead for version bumps.
+
+
+
+Backwards Compatibility
+=======================
+
+People who want to use the new system have to recompile all packages that use
+the "gentoo-menu" USE flag. This could be easily done by a tool that will parse
+/var/db/pkg and for all ebuilds find corresponding updates with menu info.
+
+Since nobody is forced to use this system, there are no other backward
+compatibility issues, you just have to disable the "gentoo-menu" USE-Flag and
+you'll get the vanilla situation.
+
+
+
+Reference Implementation
+========================
+
+The reference implementation is nearly finished, it's written in Python, you
+can find it here [15]_ [16]_. It contains a sample menu layout
+(/etc/menu/applications.menu), the domenu script, the update-menus script and
+the gentoo icon theme.
+
+Domenu has to be included in Portage, it will install new menu entries in
+/usr/share/menu/applications and run the update-menus script afterwards.
+
+Update-menus parses the menu layout file, the .desktop files and the rule
+files and then creates the menus. If run as user it will create menus only for
+that user, if run as root it will create system wide menus.
+
+
+
+Credits
+=======
+
+Based on suggestions from former discussions on -dev and the Debian
+menu-system documentation [17]_.
+
+
+
+References
+==========
+
+.. [1] http://bugs.gentoo.org/show_bug.cgi?id=5510
+.. [2] http://bugs.gentoo.org/show_bug.cgi?id=10429
+.. [3] http://bugs.gentoo.org/show_bug.cgi?id=4884
+.. [4] http://bugs.gentoo.org/show_bug.cgi?id=25797
+.. [5] http://forums.gentoo.org/viewtopic.php?t=66754
+.. [6] http://forums.gentoo.org/viewtopic.php?p=263106#263106
+.. [7] http://bugs.gentoo.org/show_bug.cgi?id=25756
+.. [8] http://www.freedesktop.org
+.. [9] Desktop Entry Specification
+   [http://www.freedesktop.org/standards/desktop-entry-spec/0.9.4/]
+.. [10] Menu Specification
+   [http://www.freedesktop.org/standards/menu-spec/0.7/]
+.. [11] Icon Theme Specification
+   [http://www.freedesktop.org/standards/icon-theme-spec/0.7/]
+.. [12] Example rule files:
+   [http://www.gentoo.org/cgi-bin/viewcvs.cgi/gentoo-menu/examples/?cvsroot=gentoo-src]
+.. [13] Reference menu layout
+   [http://www.gentoo.org/cgi-bin/viewcvs.cgi/gentoo-menu/etc/applications.menu?cvsroot=gentoo-src]
+.. [14] Basedir Specification
+   [http://www.freedesktop.org/standards/basedir-spec/0.6/]
+.. [15] PyXDG
+   [http://cvs.cojobo.net/cgi-bin/viewcvs.cgi/pyxdg/]
+.. [16] Gentoo-Menu
+   [http://www.gentoo.org/cgi-bin/viewcvs.cgi/gentoo-menu/?cvsroot=gentoo-src]
+.. [17] Debian Menu System documentation
+   [http://www.debian.org/doc/packaging-manuals/menu.html/]
+
+
+
+Copyright
+=========
+
+This document has been placed in the public domain.
