@@ -1,0 +1,817 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="migration-guide.xml">
+<title>A Developers view on Gentoo Installation</title>
+<author title="Senior Developer Manager">
+    <mail link="spider@gentoo.org">Spider</mail>
+</author>
+<author title="Editor">
+    <mail link="peesh@gentoo.org">Jorge Paulo</mail>
+</author>
+<abstract>
+This guide shows a hands-on documented installation by a Senior 
+developer in the Gentoo project. It is meant to show tips, hints and how
+the flexible installation process is used by developers. Perhaps it will
+give you some insight in what the "more experienced users" do that others 
+don't when reinstalling Gentoo Linux. 
+</abstract>
+
+<version>0.6.1</version>
+<date>7 Jun 2003</date>
+<chapter>
+<title>Introduction</title>
+<section>
+<title>The authors notes</title>
+<body>
+
+<p>
+Let me introduce my system first. I run an AMD Athlon Tbird at 1.1 GHz, 
+two hard-drives on two different IDE controllers, both on the same 
+main-board.  My current system is all contained in and installed on one
+hard-drive, and my target is on another. I have some data that I wish to
+keep on the target device, so a full reinstall is not possible.  I also 
+want to keep this in a "flawless" manner: no service disruptions unless
+it is really necessary.
+</p>
+
+<warn>
+I aim this at experienced users, who know better than to blindly copy 
+and paste commands from the documentation into their system. Please, 
+don't do anything hasty. And remember <e>backups</e>!
+</warn>
+
+</body>
+</section>
+<section>
+<title>The authors system</title>
+<body>
+
+<p>
+My current system is installed on <path>/dev/hde3</path> with 
+<path>/home</path> existing on <path>/dev/hde6</path>.  My target 
+<path>/boot</path> is on <path>/dev/hda1</path> and the <path>/</path> 
+is on <path>/dev/hda3</path>. To keep the disruptions to a minimum, 
+<path>/home</path> will remain unchanged.  I also have a separate 
+partition at <path>/mnt/build</path> that contains the portage tree, 
+temporary build files and the distfiles. </p>
+
+</body>
+</section>
+<section>
+<title>Goals</title>
+<body>
+
+<p>
+Since I call myself a "hacker" at core, I can't really do something like
+this without learning something from the experience. (No, my current
+system is not so damaged that I'm forced to reinstall.) So, I shall also 
+try some "new" things that are best off on a clean slate.
+</p>
+
+<p>
+The first of these will be JFS as a change from my normal choice
+of ext3.
+</p>
+
+<p>
+I will also change my default optimizations from <c>-O2</c> to 
+<c>-Os</c> to see if I can reduce a problem I've had recently with large
+memory footprints.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>Pre setup</title>
+<body>
+
+<p>
+I assume you are all familiar with the "normal" <uri link="http://www.gentoo.org/doc/en/gentoo-x86-install.xml">installation guide</uri>. If 
+you have doubts about this, please take the time to read it again as I
+will try to avoid being redundant in this document. 
+</p>
+
+<p>
+First off, I'll wipe the partitions I'm going to install to. This is 
+simple but a bit time-consuming:
+</p>
+
+<pre caption = "Clearing all data from the partitions">
+# <i>dd if=/dev/zero of=/dev/hda1 bs=512</i>
+dd: writing `/dev/hda1': No space left on device
+48133+0 records in
+48132+0 records out
+# <i>dd if=/dev/zero of=/dev/hda3 bs=512</i>
+dd: writing `/dev/hda3': No space left on device
+6104701+0 records in
+6104700+0 records out
+</pre>
+
+<p>
+Then I will initialize the partitions "as I want them". 
+<path>/boot</path> on ext2. Stable. Classic. No frills. 
+</p>
+
+<pre caption = "Initialising the boot partition">
+# <i>mkfs.ext2 /dev/hda1</i>
+</pre>
+
+<p>
+I need the JFS tools on the host to build my target system.
+</p>
+
+<pre caption = "Installing the JFS tools on the host system">
+# <i>emerge sys-apps/jfsutils</i>
+# <i>mkfs.jfs -L root_jfs /dev/hda3</i>
+mkfs.jfs version 1.1.2, 25-Mar-2003
+Warning!  All data on device /dev/hda3 will be lost!
+
+Continue? (Y/N) <i>Y</i>
+   -
+
+Format completed successfully.
+
+3052350 kilobytes total disk space.
+</pre>
+
+<p>
+Now I am going to setup the basic premises for a Gentoo installation, 
+mount the necessary devices, etc. At this point I had to 
+rebuild my kernel with JFS filesystem support. This was done by simply 
+checking JFS as a kernel module in the filesystems section, then 
+<c>make dep &amp;&amp; make modules &amp;&amp; make modules_install</c>.
+</p>
+
+<pre caption = "Setup Target Premises">
+# <i>mkdir /mnt/target</i>
+# <i>mount /dev/hda3 /mnt/target</i>
+# <i>mkdir /mnt/target/boot</i>
+# <i>mount /dev/hda1 /mnt/target/boot</i>
+# <i>df -h /mnt/target</i>
+# <i>mkdir /mnt/target/mnt/build</i>
+# <i>mount --bind /mnt/build /mnt/target/mnt/build</i>
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/hda3             2,9G  524K  2,9G   1% /mnt/target		
+</pre>
+
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Beginning installation</title>
+<section>
+<title>Stage 2</title>
+<body>
+
+<p>
+Now that we have the basic preparations done, we need a stage build. 
+Since I want <c>-Os</c> instead of <c>-O2</c> I will not use a stage3 
+build, which I would normally use. Instead I fetch the latest stage2 
+from <uri>http://www.ibiblio.org/gentoo/experimental/x86/stages/</uri>
+ to test them.
+</p>
+
+<note>
+I don't want to build my compiler/base with -Os, but prefer the stable 
+and known options, so I go with stage2 to shorten time. 
+</note>
+
+
+<pre caption = "Installing and chrooting into a stage2 environment">
+# <i>cd /mnt/target &amp;&amp; tar -xvjpf /root/stage2-x86-1.4_pre20030407.tar.b
+z2</i>
+# <i>mount -t proc proc /mnt/target/proc</i>
+# <i>cp /etc/resolv.conf /mnt/target/etc/resolv.conf</i>
+# <i>chroot /mnt/target /bin/bash</i>
+# <i>env-update ;  source /etc/profile</i>
+</pre>
+
+<p>
+Then I setup <path>/etc/make.conf</path> the way I want it. Here is my 
+current list of USE flags:
+</p>
+
+<pre caption = "USE flags">
+apm avi encode libg++ libwww mikmod mpeg ncurses nls pdflib 
+qtmt quicktime spell xml2 xv zlib gdbm berkdb slang readline 
+aalib tcltk java guile X sdl gpm tcpd pam perl python esd imlib 
+gtk motif mozilla gphoto2 ldap cdr crypt alsa  oggvorbis gnome 
+gpg gpgme bonobo oss ssl xmms 3dnow mmx  opengl  tiff png jpeg 
+smooth truetype gif ggi samba xv gtkhtml dvd -lirc -gtk2 -arts 
+-qt -kde -cups -sse -tetex -doc -svga 
+</pre>
+
+<p>
+I also set the <c>CHOST</c>, <c>CFLAGS</c> and other variables that 
+need to be altered.
+</p>
+
+</body>
+</section>
+<section>
+<title>Portage tree and builds</title>
+<body>
+
+<p>
+I should point out that I have not done an <c>emerge sync</c> yet 
+and will not do so. I will simply re-use my old configuration where the 
+portage tree and build area are on a different partition. This data 
+changes often and so deserves it's own partition.
+</p>
+
+<pre caption = "Altering /etc/make.conf">
+PORTAGE_TMPDIR=/mnt/build
+DISTDIR=/mnt/build/distfiles
+PKGDIR=/mnt/build/packages
+PORTDIR_OVERLAY=/usr/local/portage
+GENTOO_MIRRORS="ftp://ftp.sunet.se/pub/Linux/distributions/gentoo/ http://gentoo
+.oregonstate.edu/"
+MAKEOPTS="-j1"
+</pre>
+
+<note>
+The <c>MAKEOPTS=-j1</c> gives less overhead for background compiling, which is 
+what I want. I don't need the overhead of max performance. I want updates
+to go in the background and behave well.  At least until the system is 
+100%.
+</note>
+
+<pre caption = "Prepare the Portage tree">
+# <i>cd /usr; rm -fr portage; ln -s /mnt/build/gentoo-x86 portage</i>
+</pre>
+
+<note>
+The <path>/mnt/build/portage</path> directory is where things are built,
+I store the Portage tree in <path>/mnt/build/gentoo-x86</path>.
+</note>
+		
+</body>
+</section>
+<section>
+<title>emerge system</title>
+<body>
+
+<p>
+And now it is time to <c>emerge system</c> and hope for the best.
+</p>
+
+<pre caption = "Progressing from stage2 to stage3">
+# <i>time  nice -n +15 emerge -u system</i>
+/bin/sh: line 1: gluUnProject._man: No space left on device
+:79: I/O error on output
+make[5]: *** [gluUnProject._man] Error 1
+make[5]: Target `all' not remade because of errors.
+make[5]: Leaving directory `/mnt/build/portage/xfree-4.2.1-r2/work/xc/doc/man/GLU'
+...
+...
+real    90m11.657s
+user    74m18.390s
+sys     8m19.480s
+</pre>
+
+<p>
+Just great. After deleting some distfiles (the files in 
+<path>/mnt/build/distfiles</path>) I freed about 1.2 Gb of space.  
+At this point I regret not using ccache. Time to enable that :)
+</p>
+
+<pre caption = "Enabling ccache">
+<codenote>This goes in /etc/make.conf</codenote>
+FEATURES="sandbox ccache"
+CCACHE_SIZE="1G"
+<codenote>This is in the (chrooted) shell again</codenote>
+# <i>cat /etc/env.d/99ccache</i>
+CCACHE_DIR=/mnt/build/OLD/cache/
+</pre>
+
+<p>
+And after that disturbance it's back to compiling.
+</p>
+
+<pre caption = "Continuing progressing from stage2 to stage3">
+# <i>time nice -n +15  emerge -u system</i>
+real    106m5.162s
+user    71m40.320s
+sys     10m41.320s
+</pre>
+
+</body>
+</section>
+<section>
+<title>System part 2</title>
+<body>
+
+<p>
+After this I setup the timezone and emerge the following packets:
+</p>
+
+<pre caption = "Emerging necessary packets">
+# <i>emerge sysklogd vanilla-sources jfsutils</i>
+</pre>
+
+<p>
+Now comes the fun part.  Since I have a working kernel running and 
+configured correctly for my system I just copy the host's 
+<path>.config</path>, issue a <c>make oldconfig</c> and then do a quick 
+<c>make menuconfig</c> to check that I have all necessities. 
+</p>
+
+<pre caption = "Compiling the kernel">
+# <i>nice -n +15 make oldconfig dep bzImage modules</i>
+</pre>
+<note>If you added JFS as a module, don't forget to change that to 
+built-in or your system will fail to find root at the first boot.</note>
+
+<p>
+By this time, I have the same kernel built that I have for the host 
+system, which is a good thing in case something does `uname -r` to check
+the system I'm building with. Of course, you could argue that such 
+things are bad and should be removed, but sometimes it is justified.
+</p>
+
+<p>
+After installing the kernel as normal, it's time to make sure I get the 
+right modules built and installed. Checking the host system and 
+installing them on the target is a good start.
+</p>
+
+<pre caption = "Checking the kernel modules">
+# <i>qpkg -v -f /lib/modules</i>
+media-libs/svgalib *
+media-sound/alsa-driver *
+media-video/nvidia-kernel *
+sys-apps/i2c *
+sys-apps/lm_sensors *
+sys-apps/pcmcia-cs *
+sys-kmods/lm_sensors *
+</pre>
+
+<p>
+A bit messy as you can see, but the general populace is <i>i2c</i> 
+(requirement of <i>lm_sensors</i>), <i>pcmcia-cs</i> , 
+<i>alsa-driver</i> and <i>nvidia-kernel</i>. Let's start with 
+<i>pcmcia-cs</i> and <i>nvidia-kernel</i> since those are the most 
+important ones for my system right now. 
+</p>
+
+<pre caption = "Installing the necessary packages">
+# <i>nice -n +20 emerge -pv pcmcia-cs nvidia-kernel lm_sensors</i>
+# <i>ALSA_CARDS="trident dummy" nice -n +15 emerge alsa-driver -pv</i>
+</pre>
+<note>You can add the variable ALSA_CARDS to <path>/etc/make.conf</path> for this setting to be permanent.</note>
+
+
+<p>
+At this time I have not done any configuration at all, but I'd better 
+do that soon. "Or else" :). I'll start by installing a usable editor 
+and some miscellaneous console things that I feel I need. I will also 
+install a  mail-server and a cron daemon. (Mail-server first to satisfy 
+the cron daemons need for a mail-server.)
+</p>
+
+<pre caption = "Installing some tools I need">
+# <i>nice -n +15 emerge lftp vim screen postfix gnupg -v</i>
+# <i>nice -n +15 emerge fcron </i>
+</pre>
+
+<p>
+Oops, I forgot the ntp daemon, wireless-tools and SpamAssassin:
+</p>
+
+<pre caption = "Installing some tools I forgot">
+# <i>nice -n +20 emerge ntp wireless-tools Mail-SpamAssassin</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>System configuration</title>
+<section>
+<title>Service enabling</title>
+<body>
+
+<p>
+In this chapter I'll do the basic configuration that I ignored 
+previously. To avoid problems, I will start by enabling the services (so
+I won't forget it) and go on by configuring each service in it's own 
+section after that.
+</p>
+
+<pre caption = "Activating the initscripts">
+# <i>rc-update add sysklogd default</i>
+# <i>rc-update add fcron default</i>
+# <i>crontab /etc/crontab</i>
+# <i>rc-update add alsasound boot</i>
+# <i>rc-update add sshd default</i>
+# <i>rc-update add lm_sensors default</i>
+# <i>rc-update add pcmcia default</i>
+# <i>rc-update add ntp default</i>
+# <i>rc-update add net.eth0 default</i>
+# <i>rc-update add spamd default</i>
+</pre>
+
+<p>
+This concludes the services section; onwards to configuration.
+</p>
+
+</body>
+</section>
+<section>
+<title>System logger configuration</title>
+<body>
+
+<p>
+I have a little special configuration for my syslogger; namely that I 
+always wish to keep parts of my logs on two open terminals. Setting 
+this up is generally quite simple unless you use Metalog, in which case 
+you have to do extra hacks. See the Metalog documentation for that.  Here
+is a partial diff -u against the original conf to my personalized 
+settings.
+</p>
+
+<pre caption = "Changes made against the original syslog config">
+-#cron.*                         /var/log/cron.log
++cron.*                         /var/log/cron.log
++*.emerg                                                 /dev/tty9
++*.info;kern.none;mail.none;authpriv.none;cron.none;     /dev/tty10
++kern.*                                                  /dev/tty11
+</pre>
+			
+</body>
+</section>
+<section>
+<title>ALSA setup</title>
+<body>
+
+<p>
+Setting up alsa the first time can be a hassle. Therefore, I'm just
+migrating my own settings from the old, proven and working system onto 
+my new partition. I'll post the config diff here for your dubious 
+pleasure.
+</p>
+
+<pre caption = "Diff against the default /etc/modules.d/alsa">
++alias snd-card-0 snd-trident
++alias sound-slot-0 snd-card-0
++
++alias snd-card-1 snd-dummy
++alias sound-slot-1 snd-card-1
+</pre>
+
+<p>
+Just don't forget to run alsamixer once you have rebooted. For my part 
+I just copied <path>/etc/asound.state</path> onto the new partition, 
+retaining all settings perfectly.
+</p>
+
+</body>
+</section>
+<section>
+<title>Sensors configuration</title>
+<body>
+
+<p>
+Unfortunately you cannot do this properly from inside a chroot since 
+it depends on modules being loaded and what not. You will have to redo the
+configuration in your clean booted system at a later moment.
+</p>
+
+</body>
+</section>
+<section>
+<title>PCMCIA configuration</title>
+<body>
+
+<p>
+When I first did this in Gentoo it was something of a black art. I pulled the config from my then working LFS partition (that was 
+adapted from RedHat). This config is still in my system, albeit a bit
+different now. So, I figure it is time to restart configuring it 
+completely and see what can be done about it. 
+</p>
+
+<p>
+On my system <i>eth0</i> is my internal network, on a normal NIC, and <i>eth1</i> is my external network, on a PCMCIA wireless NIC. 
+</p>
+
+<p>
+First, I copy over <path>/etc/init.d/net.eth0</path> script to 
+<path>/etc/init.d/net.eth1</path>. Then I set <i>need pcmcia</i> in
+the <path>net.eth1</path> script. I also modify <path>net.eth0</path> 
+to read <i>before pcmcia</i> instead of <i>use pcmcia</i>. This way I 
+won't be stuck without a network internally if the pcmcia card is down 
+or restarted.
+</p>
+
+<p>
+The default <path>/etc/conf.d/pcmcia</path> was ok for me, which meant I
+have yet to fix <path>/etc/conf.d/net</path> and the pcmcia config.
+</p>
+
+<p>
+Configuring pcmcia networking is pretty straightforward once you 
+understand it. Open <path>/etc/pcmcia/wireless.opts</path> and set it 
+up according to how the documentation inside that configuration 
+explains. Don't forget adding it to the default runlevel.
+</p>
+
+<pre caption = "Adding net.eth1 to the default runlevel">
+# <i>rc-update add net.eth1 default</i>
+</pre>
+
+<p>
+Otherwise you may be without a network.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>NTP configuration</title>
+<body>
+
+<p>
+Setting up NTP is really quite simple. First I want to make sure that 
+ntp actually syncs with servers continuously, not at boot. That means 
+disabling ntpdate and using the normal service. Here is the resulting 
+<path>/etc/ntp.conf</path>:
+</p>
+
+<pre caption = "/etc/ntp.conf">
+logfile         /var/log/ntpd.log
+driftfile       /var/lib/misc/ntp.drift
+
+server ntp1.sp.se prefer
+server ntp1.sth.netnod.se
+server ntp.lth.se
+restrict default ignore
+restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
+</pre>
+
+<p>
+I also take a moment to edit <path>/etc/init.d/ntpd</path> so it has
+an <i>after net.eth1</i> in it. This, together with setting 
+<c>NTPDATE_CMD="ntpd"</c> in <path>/etc/conf.d/ntpd</path>, assures me 
+that most of my timing issues will be gone. 
+</p>
+
+</body>
+</section>
+
+<section>
+<title>SSH configuration</title>
+<body>
+<p>Unless you wish to change how your SSH configuration works, you can 
+simply copy <path>/etc/ssh/ssh_config</path> and 
+<path>/etc/ssh/sshd_config</path> to your target system.</p> 
+
+<pre caption = "Copying over SSH configuration">
+# <i>cp -p /etc/ssh/*conf* /mnt/target/etc/ssh</i>
+</pre>
+<warn>Don't mess up the permissions</warn>
+
+</body>
+</section>
+
+<section>
+<title>Modules setup</title>
+<body>
+
+<p>
+Setting up module loading the way I want it requires some care. First, 
+I  have to make sure I have all the needed hardware support in my kernel 
+(I know I do) and I also need to make the alias work nicely. First I 
+create <path>/etc/modules.d/usb</path> and setup my camera (usb storage,
+generic).
+</p>
+
+<pre caption = "Configuring usb modules in /etc/modules.d/usb">
+alias /dev/sda1 sd_mod
+pre-install sd_mod      modprobe -k usb-storage;sleep 5s
+pre-install usb-storage modprobe -k usb-uhci
+</pre>
+
+<p>
+Second I setup <path>/etc/modules.d/cdrw</path> to automatically "just 
+work" and clean up after it's done.  I also make sure that ide-cd ignores
+the device that is my CDRW (if ide-cd is loaded for that device then 
+burning won't work).
+</p>
+
+<pre caption = "Configuring ide/scsi modules in /etc/modules.d/cdrw">
+options ide-cd ignore=hdb
+alias scd0 sr_mod
+pre-install sg     modprobe -k ide-scsi
+pre-install sr_mod modprobe -k ide-scsi
+pre-install ide-scsi modprobe -k  ide-cd 
+</pre>
+
+<p>
+Then, a quick alias for my network to go into 
+<path>/etc/modules.d/net</path>. Finish off by doing a
+<c>modules-update</c>.
+<pre caption = "Network alias">
+alias eth0 8139too
+</pre>
+
+</p>
+
+<pre caption = "Finishing of modules configuration">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>/etc/fstab setup</title>
+<body>
+
+<p>
+fstab is well documented all around the net and in our normal 
+installation instructions, so I'll just add a few notes about 
+the differences to my settings and the default.
+</p>
+
+<pre caption = "/etc/fstab differences">
+/dev/cdroms/cdrom0  /mnt/cdrom      iso9660    noauto,ro,users,unhide  0 0
+/dev/sda1           /mnt/usb        vfat       noauto,defaults,users   0 0
+</pre>
+
+<p>
+The "users" allows users to mount and unmount; unhide will show even 
+hidden files on the cdrom. <path>/dev/sda1</path> is in my case a 
+digital camera on usb-storage, as configured earlier in the modules 
+section.
+</p>
+
+<p>
+Another thing to setup is to have your "old" system mounted ( say on 
+<path>/mnt/old</path>). This will allow for simple checks 
+between the systems once you have your new system up and running.
+</p>
+
+</body>
+</section>
+<section>
+<title>Misc settings</title>
+<body>
+
+<p>
+The <path>/etc/rc.conf</path> probably doesn't need much mention here. 
+Neither does grub configuration.
+</p>
+
+</body> 
+</section>
+</chapter>
+
+
+
+
+<chapter>
+<title>Migrating settings</title>
+
+
+<section>
+<title>What is migration?</title>
+<body>
+<p>This chapter will deal with how to move other, non service related 
+settings to your new system. This includes users, groups, host 
+identifications and different settings that aren't related to the boot
+ process of the system.</p>
+</body>
+</section>
+
+<section>
+<title>User migration</title>
+<body>
+
+<p>
+Now it is time to migrate the user and group data from your old system
+into the new one; files to watch out for are:
+</p>
+
+<pre caption = "Files concerning user migration">
+/etc/shadow
+/etc/passwd
+/etc/group
+/etc/hosts.allow
+/etc/hosts.deny
+</pre>
+
+<p>
+In this case, <c>diff -u</c> is a handy tool to check that you merged 
+all groups and users. (No, don't just copy things over, doing that might
+mean that new users aren't merged properly between Gentoo versions).  
+</p>
+
+<warn>Don't mess up the permissions</warn>
+
+</body>
+</section>
+
+
+<section>
+<title>SSH migration</title>
+<body>
+<p>
+Migrating SSH host settings is a fairly simple, yet important process. If not done, or done incorrectly, scripts and users who depend on your
+system will have problems from facing a man in the middle warning and 
+connections may fail. Copy over the keys to your new system (make sure 
+you get permissions right): 
+</p>
+
+<pre caption = "Copying over the SSH keys">
+# <i>cp -p /etc/ssh/ssh_host* /mnt/target/etc/ssh</i>
+</pre>
+<warn>Do not forget the -p option to cp</warn>
+</body>
+</section>
+
+
+<section>
+<title>X11 configuration</title>
+<body>
+<p>The most important file is <path>/etc/X11/XF86Config</path>. In many 
+cases it's okay to just copy it as-is into the new system. However, sometimes you may wish to only back it up and then generate a new config from 
+scratch. Especially if you have been adding or removing font 
+configurations or have entries for old hardware left.</p>
+<pre caption = "Copying X11 Configuration">
+# <i>cp /etc/X11/XF86Config /mnt/target/etc/X11</i>
+</pre>
+</body>
+
+</section>
+
+<section>
+<title>Nethack migration</title>
+<body>
+<p>Since nethack stores savegames and bones in the 
+<path>/usr/share/games/nethack</path> directory, we need to copy these
+over into the target system. Since it's also runs as setuid games, we need 
+to preserve permissions.</p>
+
+<pre caption = "Migrating  nethack datafiles">
+# <i>emerge nethack</i>
+# <i>cp -pr /usr/share/games/nethack/save /mnt/target/usr/share/games/nethack</i>
+# <i>cp -p /usr/share/games/nethack/bone* /mnt/target/usr/share/games/nethack</i>
+</pre>
+<note>Dont forget that <path>/home/$USER</path> should be set 
+read+execute by group, and that <path>${HOME}/.nethackrc</path> 
+needs to be readable by group games.</note>
+</body>
+</section>
+
+</chapter>
+
+
+
+<chapter>
+<title>Software installation</title>
+<section>
+<title>Required software</title>
+<body>
+<p>Most systems require far more software than what has been covered
+here. For a normal desktop there is usually a myriad of small programs
+that are in use from time to time. You will miss many of those when 
+scripts break or users complain. This chapter will go through some
+of the necessary parts of finding software which you may want to install 
+on your target system.</p>
+</body>
+</section>
+
+<section>
+<title>Finding previously installed software</title>
+<body>
+<p>There are a few useful tools for identifying commonly used programs.
+One is <c>qpkg</c> from the <i>app-admin/gentoolkit</i> package. Another 
+is <c>epm</c>. For epm you do <c>epm -qf /usr/bin/qpkg</c> to find out 
+what package "qpkg" belongs to. For qpkg the syntax is <c>qpkg -f /usr/bin/qpkg</c>.
+</p>
+
+<p>But above this, there is the <path>/var/cache/edb/world</path> file
+where all explicitly installed packages are listed. This file will 
+contain all packages you've ever installed explicitly through 
+<c>emerge</c>. In my case it isn't desirable to install all the packages
+ that are listed in the world file, instead I will use my judgement and
+only install parts of it. </p>
+<p>
+
+</p>
+
+</body>
+</section>
+
+
+</chapter>
+
+
+</guide>
+
