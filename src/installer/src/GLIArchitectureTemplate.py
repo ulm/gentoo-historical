@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.32 2005/01/09 08:25:16 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.33 2005/01/14 06:31:08 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -37,7 +37,7 @@ class ArchitectureTemplate:
 		# Of course, steps will be different depending on the install_profile
 
 		self._architecture_name = "generic"
-		#self._install_steps = [  (self.do_partitioning, "Partition"), TEMPORARY thing only.
+		#self._install_steps = [  (self.partition, "Partition"), TEMPORARY thing only.
 		self._install_steps = [
                                  (self.mount_local_partitions, "Mount local partitions"),
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
