@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.15 2004/12/30 03:05:19 port001 Exp $
+# $Id: Function.py,v 1.16 2005/01/25 01:12:45 hadfield Exp $
 #
 
 import sys
@@ -74,27 +74,27 @@ class _Values:
         list = []
 
         for key in self._params:
-	    list.append({key: self._params[key]})
+            list.append({key: self._params[key]})
 
-	return list
+        return list
 
     def getvalue(self, key, *args):
 
         if self._params.has_key(key):
-	    return self._params[key]
-	else:
-	    if len(args) >= 1:
-	        return args[0]
-		
-	    return None
+            return self._params[key]
+        else:
+            if len(args) >= 1:
+                return args[0]
+
+            return None
 
     def keys(self):
 
-	return self._params.keys()
+        return self._params.keys()
         
     def has_key(self, key):
 
         if self._params.has_key(key):
-	    return True
+            return True
 
-	return False
+        return False
