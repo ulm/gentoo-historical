@@ -215,7 +215,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': 0, 'minor': int(part), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
+			devdic[part] = { 'mb': 0, 'minor': int(part), 'origminor': tmppart.get_orig_minor(), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
 		return devdic
 
 	def get_extended_partition(self):
@@ -283,6 +283,7 @@ class Partition:
 
 	_device = None
 	_minor = None
+	_orig_minor = ""
 	_bootflag = None
 	_start = None
 	_end = None
@@ -297,6 +298,7 @@ class Partition:
 	def __init__(self, device, minor, bootflag, start, end, blocks, type, mountpoint='', mountopts='', format=True, existing=False):
 		self._device = device
 		self._minor = int(minor)
+		if existing: self._orig_minor = int(minor)
 		self._bootflag = bootflag
 		self._start = int(start)
 		self._end = int(end)
@@ -393,6 +395,12 @@ class Partition:
 
 	def get_minor(self):
 		return int(self._minor)
+
+	def set_orig_minor(self, orig_minor):
+		self._orig_minor = int(orig_minor)
+
+	def get_orig_minor(self):
+		return self._orig_minor
 
 	def set_mountpoint(self, mountpoint):
 		self._mountpoint = mountpoint

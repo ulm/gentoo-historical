@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.32 2005/03/19 09:10:57 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.33 2005/03/20 09:03:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -771,7 +771,7 @@ class InstallProfile:
 				xmldoc += "<device devnode=\"%s\">" % device
 				for minor in partitions[device]:
 					part = partitions[device][minor]
-					xmldoc += "<partition minor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
+					xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
 				xmldoc += "</device>"
 			xmldoc += "</partitions>"
 
@@ -1018,7 +1018,7 @@ class InstallProfile:
 		self._temp_partition_table = {}
 
 	def add_partitions_device_partition(self, xml_path, unused, attr):
-		part_entry = {'end': 0, 'format': None, 'mb': 0, 'minor': 0, 'mountopts': '', 'mountpoint': '', 'start': 0, 'type': ''}
+		part_entry = {'end': 0, 'format': None, 'mb': 0, 'minor': 0, 'mountopts': '', 'mountpoint': '', 'origminor': '', 'start': 0, 'type': ''}
 		if type(attr) == tuple:
 			part_entry['end'] = attr[0]
 			part_entry['format'] = attr[1]
@@ -1026,8 +1026,9 @@ class InstallProfile:
 			part_entry['minor'] = attr[3]
 			part_entry['mountopts'] = attr[4]
 			part_entry['mountpoint'] = attr[5]
-			part_entry['start'] = attr[6]
-			part_entry['type'] = attr[7]
+			part_entry['origminor'] = attr[6]
+			part_entry['start'] = attr[7]
+			part_entry['type'] = attr[8]
 		else:
 			if "minor" in attr.getNames():
 				for attrName in attr.getNames():
@@ -1037,6 +1038,7 @@ class InstallProfile:
 		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = int(part_entry['start'])
 		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = int(part_entry['mb'])
 		if GLIUtility.is_numeric(part_entry['minor']): part_entry['minor'] = int(part_entry['minor'])
+		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
 		self._temp_partition_table[part_entry['minor']] = part_entry
 
 	def set_mta(self, xml_path, mta, xml_attr):
