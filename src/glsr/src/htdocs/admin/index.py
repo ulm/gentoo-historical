@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.1 2004/06/04 06:38:39 port001 Exp $
+# $Id: index.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
 #
 
 import os
@@ -14,8 +14,8 @@ import cgi
 
 sys.path.insert(0, "/usr/local/share/glsr/pym")
 sys.path.insert(0, "/usr/local/share/glsr/")
-sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr/pym")
-sys.path.insert(0, "/var/www/buffmuthers.com/htdocs/projects/glsr/")
+sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/pym")
+sys.path.insert(0, "/var/www/localhost/htdocs/gentoo/src/glsr/src/")
 
 import Config
 import Function

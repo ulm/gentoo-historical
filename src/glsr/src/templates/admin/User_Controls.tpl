@@ -16,15 +16,15 @@
           <tr>
           
            <td height="40" valign="center" class="">&nbsp;&nbsp;
-          {IF TOTAL_USERS == 0}
-          <input type="submit" class="button" name="show_all_users" value="List All Users" />
+          {IF TOTAL == 0}
+          <input type="submit" class="button" name="show_all" value="List All Users" />
           {ELSE}
           <input type="submit" class="button" name="" value="Hide User List" />
           {!IF}
           </td>
 
           <td height="40" valign="center" class="">&nbsp;&nbsp;
-          <input type="submit" class="button" name="show_add_new_user" value="Add New User" />
+          <input type="submit" class="button" name="show_add" value="Add New User" />
           </td>
           </tr>
           </table>
@@ -33,11 +33,11 @@
       </table>
       <br />
 
-      {IF WARN_MESSAGE != ""}
-      <font class="warn_message">{WARN_MESSAGE}</font><br /><br />
+      {IF WARN_MESSAGE == 1}
+      <font class="warn_message">No Users Found</font><br /><br />
       {!IF}
       
-      {IF TOTAL_USERS > 0}
+      {IF TOTAL > 0}
       <!-- Listing of all users in the system -->
       <table width="90%" class="standard_table">
         <tr>
@@ -54,31 +54,31 @@
           <td class="sub_header">Last IP</td>
           <td class="sub_header" align="center">Delete</td>
         </tr>
-        {LOOP USER_LOOP}
+        {LOOP MAIN_LOOP}
 	<tr>
-          <td class="standard_row_{USER_LOOP.row}"><a href="index.py?page=user&show_modify_user={USER_LOOP.user_id}">{USER_LOOP.user_alias}</a></td>
-          <td class="standard_row_{USER_LOOP.row}">{USER_LOOP.user_fullname}</td>
-          <td class="standard_row_{USER_LOOP.row}">{USER_LOOP.user_email}</td>
-          <td class="standard_row_{USER_LOOP.row}">
-{IF USER_LOOP.type == 3}Admin{!IF}{IF USER_LOOP.user_type == 1}Developer{ELSE}User{!IF}</td>
-          <td class="standard_row_{USER_LOOP.row}">{USER_LOOP.user_rank}</td>
-          <td class="standard_row_{USER_LOOP.row}">{USER_LOOP.user_joined}</td>
-          <td class="standard_row_{USER_LOOP.row}">{USER_LOOP.user_lastip}</td>
-          <td class="standard_row_{USER_LOOP.row}" align="center"><input type="checkbox" name="delete" value="{USER_LOOP.user_id}" /></td>
+          <td class="standard_row_{MAIN_LOOP.row}"><a href="index.py?page=user&show_modify={MAIN_LOOP.user_id}">{MAIN_LOOP.user_alias}</a></td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_fullname}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_email}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">
+{IF MAIN_LOOP.type == 3}Admin{!IF}{IF MAIN_LOOP.user_type == 1}Developer{ELSE}User{!IF}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_rank}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_joined}</td>
+          <td class="standard_row_{MAIN_LOOP.row}">{MAIN_LOOP.user_lastip}</td>
+          <td class="standard_row_{MAIN_LOOP.row}" align="center"><input type="checkbox" name="delete_btn" value="{MAIN_LOOP.user_id}" /></td>
 	</tr>
         {!LOOP}
         <tr>
-          <td class="standard_cell" colspan="9" align="right"><input type="submit" class="button" name="delete_users" value="Delete" />&nbsp;&nbsp;</td>
+          <td class="standard_cell" colspan="9" align="right"><input type="submit" class="button" name="delete" value="Delete" />&nbsp;&nbsp;</td>
         </tr>
       </table>
       {!IF}
 
-      {IF MODIFY_USER != 0}
+      {IF MODIFY != 0}
       <!-- The form to add a new user or modify an existing one -->
-      <input type="hidden" name="uid" value="{MODIFY_USER}" />
+      <input type="hidden" name="user_id" value="{MODIFY}" />
       <table width="45%" class="standard_table">
         <tr>
-          <td colspan="" class="header">{IF ADD_USER_FORM == 1}Add New User{ELSE}Modify User{!IF}</td>
+          <td colspan="" class="header">{IF ADD_FORM == 1}Add New User{ELSE}Modify User{!IF}</td>
         </tr>
         
         <tr>
@@ -123,7 +123,7 @@
         </tr>
         <tr>
            <td class="standard_cell">
-           <input type="submit" class="button" name="{IF ADD_USER_FORM == 1}add_new_user{ELSE}modify_user{!IF}" value="Save"/>
+           <input type="submit" class="button" name="{IF ADD_FORM == 1}add{ELSE}modify{!IF}" value="Save"/>
            </td>
         </tr>
       </table>

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Language.py,v 1.1 2004/06/04 06:38:36 port001 Exp $
+# $Id: Language.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
 #
 
 __modulename__ = "Language"
@@ -16,14 +16,11 @@ class Language(Parent):
 
     tablename = Config.MySQL["language_table"]
 
-    def Create(self, name, description):
+    def Create(self, details):
+        """ details is a dictionary with keys [name, descr] """
+        return Parent.Create(self, details, ["name"])
 
-        return Parent.Create(self, {"name": name, "descr": description},
-                             ["name"])
 
+    def Modify(self, details):
 
-    def Modify(self, name, descr):
-
-        return Parent.Modify(self, ["name", "descr"],
-                             {"name": name, "descr": descr})
-
+        return Parent.Modify(self, details.keys(), details)

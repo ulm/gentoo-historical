@@ -1,5 +1,3 @@
-      <form name="script_control_form" method="GET" action="index.py">
-      <input type="hidden" name="page" value="script">
 
       {IF MESSAGE != ""}
       <font class="message">{MESSAGE}</font><br /><br />
@@ -14,6 +12,9 @@
           <td colspan="2" height="40" valign="center" class="standard_cell">
           <table border="0" cellspacing="0" cellpadding="0">
           <tr>
+
+	<form name="script_control_form" method="GET" action="index.py">
+	<input type="hidden" name="page" value="script">
           
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
            {IF TOTAL_SCRIPTS == 0}
@@ -27,22 +28,34 @@
            <input type="submit" class="button" name="open_search_page" value="Search Scripts" />
            </td>
 
+	</form>
+
+	<form name="script_control_form" method="GET" action="index.py">
+	<input type="hidden" name="page" value="category">
+
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
-           <input type="submit" class="button" name="show_all_categories" value="Modify Categories" />
+           <input type="submit" class="button" name="show_all" value="Modify Categories" />
            </td>
 
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
-           <input type="submit" class="button" name="show_add_new_cat" value="Add Category" />
+           <input type="submit" class="button" name="show_add" value="Add Category" />
+           </td>
+
+	</form>
+
+	<form name="script_control_form" method="GET" action="index.py">
+	<input type="hidden" name="page" value="language">
+
+           <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
+           <input type="submit" class="button" name="show_all" value="Modify Languages" />
            </td>
 
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
-           <input type="submit" class="button" name="show_all_languages" value="Modify Languages" />
+           <input type="submit" class="button" name="show_add" value="Add Language" />
            </td>
 
-           <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
-           <input type="submit" class="button" name="show_add_new_lang" value="Add Language" />
-           </td>
-                                 
+	</form>
+
           </tr>
           </table>
          </td>
@@ -50,4 +63,3 @@
       </table>
       <br />
 
-      </form>

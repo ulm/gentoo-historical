@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: News.py,v 1.1 2004/06/04 06:38:36 port001 Exp $
+# $Id: News.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
 #
 
 __modulename__ = "News"
@@ -18,22 +18,17 @@ class News(Parent):
 
     tablename = Config.MySQL["news_table"]
 
-    def Create(self, subject, author, body):
-        """Add a new announcement to the database"""
+    def Create(self, details):
+        """ Add a new announcement to the database.
+            'details' contains [subject, author_id, body] """
 
-        return Parent.Create(self,
-                             {"subject": subject,
-                              "author_id": author,
-                              "date": strftime("%Y-%m-%d %H:%M:%S", gmtime()),
-                              "body": body})
-    
+        details.update({"date": strftime("%Y-%m-%d %H:%M:%S", gmtime())})
+        return Parent.Create(self, details)
 
-    def Modify(self, subject, author, body):
+    def Modify(self, details):
         """ Modify announcement details """
 
-        return Parent.Modify(self, ["subject", "author_id", "body"],
-                             {"subject": subject, "author_id": author,
-                              "body": body})
+        return Parent.Modify(self, details.keys(), details)
 
 
     def AnnidExists(self, annid):

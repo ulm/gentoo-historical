@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.1 2004/06/04 06:38:33 port001 Exp $
+# $Id: User.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
 #
 
 from time import strftime, gmtime
@@ -22,31 +22,23 @@ class User(Parent):
 
     tablename = Config.MySQL["user_table"]
 
-    def Create(self, fullname, alias, passwd, email, type):
-        """Add a new user to the database"""
+    def Create(self, details):
+        """ Add a new user to the database,
+            details contains [alias, fullname, email, type, passwd] """
 
-        return Parent.Create(self,
-                             {"alias":		alias,
-                              "fullname": 	fullname,
-                              "passwd":		passwd,
-                              "email":		email,
-                              "rank":		0,
-                              "type":		type,
-                              "joined":		strftime("%Y-%m-%d", gmtime())
-                              })
+        details.update({"rank": 0, "joined": strftime("%Y-%m-%d", gmtime())})
+        return Parent.Create(self, details)
 
     
-    def Modify(self, alias, fullname, email, type, password):
-        """Modify users details"""
+    def Modify(self, details):
+        """ Modify user's details,
+            details contains [alias, fullname, email, type] and optionally
+            'passwd' """
 
-        details = {"alias": alias, "fullname": fullname,
-                   "email": email, "type": type}
-
-        if password != None:
-            details.update({"passwd": password})
+        if details["passwd"] == None:
+            del details["passwd"]
         
-        return Parent.Modify(self, ["alias", "fullname", "email", "type",
-                                    "passwd"], details)
+        return Parent.Modify(self, details.keys(), details)
 
 
     def UpdateIP(self, ipaddr):
