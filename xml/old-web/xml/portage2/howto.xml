@@ -1,0 +1,349 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE guide SYSTEM "../../gentoo-web/dtd/guide.dtd">
+
+<guide>
+  <title>Portage2 Development HOWTO</title>
+  <author title="Core Developer">
+	<mail link="gbevin@gentoo.org">Geert Bevin</mail>
+  </author>
+  
+  <abstract>Provides all the information that's required to start developing on Portage2</abstract>
+  
+  <version>1.0</version>
+  <date>26 Mar 2002</date>
+  
+  <chapter>
+	<title>Introduction</title>
+	<section>
+	  <title>Overview</title>
+	  <body>
+		<p>Portage2 is a complete, from the ground up, rewrite of the portage package manager.</p>
+		<p>Although Portage v1 works very well, it has been gradually written on a feature-requirement basis. Something was needed and thus it was added. This made it very easy to gain quick insights into what Portage should do, shouldn't do or should do differently. Now the time has come to take that experience and move on to a better design and to better tools and libraries, thus lifting portage to a next level of performance and power.</p>
+	  </body>
+	</section>
+	<section>
+	  <title>Purpose of this document</title>
+	  <body>
+		<p>The previous versions of portage grew naturally out of the need of a package manager for Gentoo. The development was mainly done by Daniel Robbins with occasional contributions by other developers. However, over time the code became very difficult to get acquainted with and someone that wanted to help out had to make a huge effort to get up to speed with the current state. By providing details about every aspect of the development, these documents try to make such efforts for Portage2 developers as small as possible.</p>
+		<p>Additionally, we formalize and stardardize the project's organization. This should make the whole experience as pleasant as possible and will hopefully result in uniform and easy-to-integrate code submissions.</p>
+	  </body>
+	</section>
+  </chapter>
+  
+  <chapter>
+	<title>Installation</title>
+	<section>
+	  <title>Requirements</title>
+	  <body>
+		<p>Portage2 relies on a number of required applications and libraries before being able to function correctly.</p>
+		<p>The following packages all have to be installed on your system :</p>
+		<ul>
+		  
+		  <li>
+			<p>sys-devel/gcc-3.0.4 :</p>
+			<p>Portage2 requires this version of gcc. Sadly, it's currently not possible to install this alongside gcc v2. The following options are available to you :</p>
+			<ol>
+			  <li>
+                <p>Build everything from source and keep gcc v3 as the default compiler</p>
+                <pre caption="Installing gcc v3 safely">$ /usr/lib/portage/bin/quickpkg /var/db/pkg/sys-devel/gcc-2.95.3-r5/
+$ cp -a /usr/lib/gcc-lib/i586-pc-linux-gnu/2.95.3/libstdc++-3-libc6.2-2-2.10.0.so /usr/lib
+$ cp -a usr/lib/gcc-lib/i586-pc-linux-gnu/2.95.3/libstdc++-libc6.2-2.so.3 /usr/lib
+$ ebuild /usr/portage/sys-devel/gcc/gcc-3.0.4-r1.ebuild merge
+$ ebuild /var/db/pkg/sys-devel/gcc-2.95.3-r5/gcc-2.95.3-r5.ebuild unmerge</pre>
+                <p>Now your system uses gcc v3 by default and you've saved a binary copy of gcc v2 to <path>/usr/portage/packages/All/gcc-2.95.3-r5.tbz2</path>. This ensures that you can go back to gcc v2 at any time. You've also copied the gcc v2 version of libstdc++ to <path>/usr/lib</path>. This ensures that applications that were linked against this library continue to function correctly.</p>
+                <p>Compile the packages below with your new gcc v3. If you leave this version installed for other installations, you'll run into incompatible packages sooner or later. The preferred course of action is to fix these packages and to submit the changes. This will make the transition to gcc v3 as the default Gentoo compiler much easier.</p>
+                <p>However, some of these fixes can be quite involving and should remain compatible with gcc v2, therefor you can opt to reinstate gcc v2 as your default compiler at this stage and keep a copy of gcc v3 available for Portage2 development.</p>
+              </li>
+			  <li>
+                <p>Make gcc v2 the default compiler and keep a privately installed version of gcc v3 available for Portage2 compilation.</p>
+                <p>Instead of using gcc v3 as your default compiler, you can install your own private copy of gcc v3 to <path>/opt/gcc-3</path>. Afterwards, you can use the provided <c>switch_to_gcc3.sh</c> script in the Portage2 directory to set up the required environment for Portage2 development. To perform this gcc v3 installation, do the following :</p>
+                <pre caption="Install your personal copy of gcc v3 and restore gcc v2 as the default compiler">$ tar xjvf /usr/portage/distfiles/gcc-3.0.4.tar.bz2
+$ cd gcc-3.0.4
+$ ./configure --prefix=/opt/gcc-3; make bootstrap-lean; make install
+$ ebuild /var/db/pkg/sys-devel/gcc-3.0.4-r1/gcc-3.0.4-r1.ebuild unmerge
+$ emerge --usepkg sys-devel/gcc</pre>
+              </li>
+			  <li>
+                <p>Use binary packages and keep a private copy of gcc v3</p>
+                <p>If you want to start working on Portage2 quickly or don't feel like going through the whole from-source installation process, there are binary packages available that were built for an i586 architecture. You can download them from <uri link="#_sect2">here</uri>.</p>
+                <p>Afterwards, put them in <path>/usr/portage/packages/All</path> and use <c>emerge --usepkg</c> when installing the required components.</p>
+              </li>
+			</ol>
+		  </li>
+			
+		  <li>
+			<p>dev-libs/tinyqt :</p>
+			<p>Stripped down version of Qt 3 for console development.</p>
+			<p>Portage2 uses it as a backend library to make c++ a nicer programming experience.</p>
+			<p>You can find detailed information about TinyQt <uri link="portage2/tinyqt.html">here</uri>.</p>
+		  </li>
+
+		  <li>
+			<p>x11-libs/qt-3 :</p>
+			<p>Full version of Qt that is needed to be able to use QtUnit for unit-testing.</p>
+			<p>This is not required for the runtime execution of the binary Portage2, only tinyqt is required for that.</p>
+		  </li>
+		  
+		  <li>
+			<p>dev-util/qtunit :</p>
+			<p>QtUnit is a unit testing framework for c++.</p>
+			<p>Portage2 development is driven by unittests. This makes us only implement what's really needed and ensures that all code continues to behave as expected. The build process automatically runs the entire testsuite at the end.</p>
+		  </li>
+		  
+		  <li>
+			<p>dev-util/pccts :</p>
+			<p>An embedded C/C++ parser generator.</p>
+			<p>Portage2 contains an integrated query language called PQL (Package Query Language). The lexical scanning, parsing and abstract tree creation is done through the facilities offered by pccts.</p>
+		  </li>
+		  
+		  <li>
+			<p>dev-db/firebird :</p>
+			<p>Firebird is an embedded relational database offering many SQL-92 features.</p>
+			<p>Portage2 stores its package database by using the interfaces and functionalities offered by this database engine. Its rich featureset, small memory footprint and easy embeddebility makes this a great enhancement on the previous filesystem-based database.</p>
+		  </li>
+		  
+		  <li>
+			<p>dev-libs/ibpp :</p>
+			<p>A C++ client API for firebird 1.0.</p>
+			<p>Portage2 uses this api to be able to access firebird through c++ constructs instead of the native c api.</p>
+		  </li>
+		</ul>
+	  </body>
+	</section>
+	<section>
+	  <title>Binary packages</title>
+	  <body>
+		<p>The following packages have all been compiled for an i586 architecture with gcc v3. Download them if you don't feel like compiling these from source.</p>
+		<table>
+		  <tr>
+			<th>Package</th>
+			<th>Size (bytes)</th>
+			<th>Archive</th>
+		  </tr>
+		  <tr>
+			<ti>Firebird 1.0 r1</ti>
+			<ti><i>1,924,777</i></ti>
+			<ti><uri link="portage2/binaries/firebird-1.0-r1.tbz2">firebird-1.0-r1.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>Gcc 3.0.4 r1</ti>
+			<ti><i>15,304,081</i></ti>
+			<ti><uri link="portage2/binaries/gcc-3.0.4-r1.tbz2">gcc-3.0.4-r1.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>Ibpp 1.0.5.2 r1</ti>
+			<ti><i>173,408</i></ti>
+			<ti><uri link="portage2/binaries/ibpp-1.0.5.2-r1.tbz2">ibpp-1.0.5.2-r1.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>Pccts 1.33.32 r1</ti>
+			<ti><i>390,649</i></ti>
+			<ti><uri link="portage2/binaries/pccts-1.33.32-r1.tbz2">pccts-1.33.32-r1.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>Qt 3.0.3</ti>
+			<ti><i>5,259,900</i></ti>
+			<ti><uri link="portage2/binaries/qt-3.0.3.tbz2">qt-3.0.3.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>QtUnit 0.9.6</ti>
+			<ti><i>231,400</i></ti>
+			<ti><uri link="portage2/binaries/qtunit-0.9.6.tbz2">qtunit-0.9.6.tbz2</uri></ti>
+		  </tr>
+		  <tr>
+			<ti>TinyQt 3.0.3</ti>
+			<ti><i>1,223,652</i></ti>
+			<ti><uri link="portage2/binaries/tinyqt-3.0.3.tbz2">tinyqt-3.0.3.tbz2</uri></ti>
+		  </tr>
+		</table>
+		<p>If you want to work with your own private copy of gcc v3 in <path>/opt/gcc-3</path> and you don't want to compile it from source, download the following binary package:</p>
+		<table>
+		  <tr>
+			<th>Package</th>
+			<th>Size (bytes)</th>
+			<th>Archive</th>
+		  </tr>
+		  <tr>
+			<ti>Gcc 3.0.4 r1 opt</ti>
+			<ti><i>15,288,081</i></ti>
+			<ti><uri link="portage2/binaries/gcc-3.0.4-r1-opt.tar.bz2">gcc-3.0.4-r1-opt.tar.bz2</uri></ti>
+		  </tr>
+		</table>
+		<p>Then do the following:</p>
+		<pre caption="Install a private version of gcc v3 from the binary archive">$ cd /opt
+$ tar xjpvf /path/to/gcc-3.0.4-r1-opt.tar.bz2</pre>
+	  </body>
+	</section>
+	<section>
+	  <title>Getting it</title>
+	  <body>
+		<p>The source tree lives in the <path>portage2</path> directory of Gentoo's <path>gentoo-src</path> cvs module.</p>
+		<p>To checkout this tree as an official Gentoo developer, do this:</p>
+		<pre caption="Obtaining the source with cvs account">$ cvs -d ":ext:yourlogin@cvs.gentoo.org:/home/cvsroot" co gentoo-src</pre>
+		<p>If you don't have a cvs account at <path>cvs.gentoo.org</path>, you can still obtain the sources through anonymous cvs access:</p>
+		<pre caption="Obtaining the source without cvs account">$ export CVSROOT=":pserver:anonymous@gentoo.org:/home/anoncvs"
+$ cvs login
+(password is empty)
+$ cvs co gentoo-src</pre>
+	  </body>
+	</section>
+  </chapter>
+  
+  <chapter>
+	<title>Documentation</title>
+	<section>
+	  <title>Standards</title>
+	  <body>
+		<p>The following links point to documentation that you should read before starting to contribute to Portage2. Every developer has to follow what's explained in there. If you disagree with something, submit an RFC (Request For Comments) so that the other developers can comment. Don't ever silently violate the standards since then we'll end up with a non-uniform and unmaintainable codebase.</p>
+		<ul>
+		  <li><p><uri link="portage2/cpp_codingstandard.html">C++ coding standard</uri></p></li>
+		  <li><p>Design documentation (soon)</p></li>
+		</ul>
+	  </body>
+	</section>
+
+	<section>
+	  <title>Contributing</title>
+	  <body>
+		<p>Changements and additions to the Portage2 documentation are tracked and discussed through the bugtracker at <uri>http://bugs.gentoo.org</uri>. Create a new bug submission for the Portage2 product, select the correct component (Code, Documentation, Install, Unittests) and start the summary with "RFC: " (Request For Comments).</p>
+		<p>All Portage2 developers will by default be notified and if they find it relevant, add comments to your submission. As soon as a concensus has been found about your proposition, it will be integrated.</p>
+	  </body>
+	</section>
+  </chapter>
+
+  <chapter>
+	<title>Source distribution</title>
+	<section>
+	  <title>Directory structure</title>
+	  <body>
+		<p>The directory structure of Portage2 has been structured to be as clear and intuitive as possible, as you can see below:</p>
+		<pre caption="Brief overview of Portage2's directory structure">portage2
+ |
+ +- docs                    <c>All documentation, design and analysis.</c>
+ |   |
+ |   +- analysis            <c>Contains all code that has been written to assist</c>
+ |   |   |                  <c>analysis decisions.</c>
+ |   |   |
+ |   |   +- poc             <c>Small proof-of-concept implementations using</c>
+ |   |       |              <c>possible candidate tools and libraries.</c>
+ |   |       |
+ |   |       +- db          <c>Backend (embedded) databases that were tested.</c>
+ |   |       |
+ |   |       +- lang        <c>Alternative languages that were tested.</c>
+ |   |       |
+ |   |       +- lex_parser  <c>The lexical analysis and parser tools that were</c>
+ |   |                      <c>tested.</c>
+ |   |
+ |   +- design              <c>Contains all design documents.</c>
+ |       |
+ |       +- specs           <c>All portage2-related specifications.</c>
+ |
+ +- kdoc                    <c>Contains files that are needed to make it possible</c>
+ |                          <c>for kdoc to crosslink APIs.</c>
+ |
+ +- src                     <c>The source code of Portage2.</c>
+     |
+     +- include             <c>All general include files.</c>
+     |
+     +- libportage          <c>The source code of libportage.</c>
+     |   |
+     |   +- include         <c>The include files that define the public API to</c>
+     |   |                  <c>libportage.</c>
+     |   |
+     |   +- pql             <c>The source code of the Portage Query Language.</c>
+     |
+     +- portage             <c>The source code of the portage executable.</c>
+     |
+     +- unittests           <c>The source code of the unittests.</c>
+         |
+         +- libportage      <c>The source code of the unittests of libportage.</c>
+         |
+         +- portage         <c>The source code of the unittests of the portage</c>
+                            <c>executable.</c></pre>
+	  </body>
+	</section>
+	<section>
+	  <title>Filetypes</title>
+	  <body>
+		<p>While developing on Portage2 you'll encounter the following types of files:</p>
+		<table>
+		  <tr>
+			<th>Extension</th>
+			<th>Description</th>
+		  </tr>
+		  <tr>
+			<ti>.c</ti>
+			<ti>C source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.cpp</ti>
+			<ti>C++ source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.css</ti>
+			<ti>Cascading stylesheet 2 source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.e</ti>
+			<ti>Firebird embedded sql C source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.g</ti>
+			<ti>Pccts lexical scanner and parser source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.gdb</ti>
+			<ti>Firebird database.</ti>
+		  </tr>
+		  <tr>
+			<ti>.h</ti>
+			<ti>C/C++ header file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.kdoc</ti>
+			<ti>KDoc reference file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.lex</ti>
+			<ti>Flex source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.pro</ti>
+			<ti>Qmake project file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.qpj</ti>
+			<ti>QtUnit project file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.sh</ti>
+			<ti>Bash source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.sor</ti>
+			<ti>Pccts sorcerer AST creator source file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.txt</ti>
+			<ti>Ascii text file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.xml</ti>
+			<ti>XML file.</ti>
+		  </tr>
+		  <tr>
+			<ti>.xsl</ti>
+			<ti>XSLT stylesheet.</ti>
+		  </tr>
+		  <tr>
+			<ti>.y</ti>
+			<ti>Bison source file.</ti>
+		  </tr>
+		</table>
+	  </body>
+	</section>
+  </chapter>
+
+</guide>
+
