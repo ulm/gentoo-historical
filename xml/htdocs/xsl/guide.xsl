@@ -403,7 +403,7 @@
                     <br/><br/>
                     Installation:
                     <br/>
-                    <a class="altlink" href="/doc/en/handbook/handbook.xml?part=1">Gentoo Handbook Installation Instructions</a>
+                    <a class="altlink" href="/doc/en/handbook/index.xml">Gentoo Handbook</a>
                    <br/><br/>
                     Resources:
                     <br/>
