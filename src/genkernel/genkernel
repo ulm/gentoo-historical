@@ -1,5 +1,6 @@
 #!/bin/bash  
 # Bob Johnson, 23 March 2003 <livewire@gentoo.org>
+# John Davis, 18 October 2003 <zhen@gentoo.org>
 # Copyright 2002 Gentoo Technologies, Inc; http://www.gentoo.org
 # Released under the GNU General Public License version 2
 
@@ -25,7 +26,8 @@ fi
 KD=`readlink -f /usr/src/linux`
 KV="${KD##*/}"
 KV="${KV##linux-}"
-GK_VERSION=1.9-cvs
+KV_FINE="${KV:0:3}"
+GK_VERSION=2.0-cvs
 GK_SHARE=/usr/share/genkernel
 [ ! -e /sbin/functions.sh ] && die "Can't find /sbin/functions.sh; exiting."
 source /sbin/functions.sh
@@ -36,7 +38,7 @@ CONFIG=/etc/kernels
 source /etc/kernels/settings 
 BUSYBOX_TARBALL=${GK_SHARE}/busybox-0.60.5.tar.bz2
 BUSYBOX_DIR=busybox-0.60.5
-CLOOP_TARBALL=cloop_0.68-2.tar.gz
+CLOOP_TARBALL=${GK_SHARE}/cloop_0.68-2.tar.gz
 CLOOP_DIR=cloop-0.68
 MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
 : ${DISTCC_HOSTS:="`distcc-config --get-hosts 2> /dev/null`"}
@@ -46,18 +48,18 @@ BOOT_SPLASH="no"
 NOINSTALL="no"
 MRPROPER="yes"
 usage() {
-        echo $WARN"* usage: genkernel --options"
-        echo $WARN"*"
-        echo $WARN"*  --config          =       invoke menuconfig"
+	echo $WARN"* usage: genkernel --options"
+    echo $WARN"*"
+    echo $WARN"*  --config          =       invoke menuconfig"
 	echo $WARN"*"
-        echo $WARN"*  --bootsplash      =       install bootsplash initrd also"
-        echo $WARN"*                            add its initrd path to settings"
-        echo $WARN"*"
+    echo $WARN"*  --bootsplash      =       install bootsplash initrd also"
+    echo $WARN"*                            add its initrd path to settings"
+    echo $WARN"*"
 	echo $WARN"*  --buildpkg        =       build a package containing "
-        echo $WARN"*                            kernel,initrd,lib/modules,.config"
+    echo $WARN"*                            kernel,initrd,lib/modules,.config"
 	echo $WARN"*"
-        echo $WARN"*  --livecd          =       build a kernel and initrd for"
-        echo $WARN"*                            livecd usage"
+    echo $WARN"*  --livecd          =       build a kernel and initrd for"
+    echo $WARN"*                            livecd usage"
 	echo $WARN"*"
 	echo $WARN"*  --myconfig        =       will use a personal config file"
 	echo $WARN"*			        /etc/kernels/myconfig"
@@ -68,30 +70,30 @@ for x in $*
         do
         case "${x}" in
         --config)
-        MENUCONFIG="yes"
+        	MENUCONFIG="yes"
         ;;
 
         --buildpkg)
-        PACKAGE="yes"
-	NOINSTALL="yes"
+        	PACKAGE="yes"
+			NOINSTALL="yes"
         ;;
 
-	--livecd)
-	LIVECD="yes"
-	NOINSTALL="yes"
-	;;
+		--livecd)
+			LIVECD="yes"
+			NOINSTALL="yes"
+		;;
 
-	--myconfig)
-        MYCONFIG="yes"
+		--myconfig)
+        	MYCONFIG="yes"
         ;;
 
         --bootsplash)
-        BOOT_SPLASH="yes"
+        	BOOT_SPLASH="yes"
         ;;
 
         --help)
-        usage
-        exit 1
+        	usage
+        	exit 1
         ;;
 	esac
 done
@@ -117,7 +119,7 @@ root_device() {
 
 configuration() {
 	echo "Gentoo Linux genkernel, version ${GK_VERSION}"
-	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins"
+	echo " Copyright 2003 Gentoo Technologies, Inc., Bob Johnson, Daniel Robbins, John Davis"
 	echo " Distributed under the GNU General Public License version 2"		
 	echo
 	echo "Settings:"
@@ -133,15 +135,15 @@ configuration() {
 	
 	if [ "$MYCONFIG" = "yes" ]
 	then 
-	echo -e "user supplied\n config loc: ${CONFIG}/myconfig"
+		echo -e "user supplied\n config loc: ${CONFIG}/myconfig-${KV}"
 	elif [ -e ${CONFIG}/config-${KV} ]
-    	then
-	    	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
-    	elif [ -e ${KD}/kernel-config ]
+    then
+	   	echo -e "gentoo (customized)\n config loc: ${CONFIG}/config-${KV}"
+    elif [ -e ${KD}/kernel-config-${KV_FINE} ]
 	then
-		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config"
+		echo -e "gentoo (default)\n config loc: ${KD}/kernel-config-${KV_FINE}"
 	else
-		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config"
+		echo -e "non-gentoo (default)\n config loc: ${CONFIG}/default-config-${KV_FINE}"
 	fi	 
 	
 	echo -n " initrd config: "
@@ -165,16 +167,16 @@ configuration() {
 	fi
 	if [ "$MYCONFIG" = "yes" ]
 	then
-		cp -f ${CONFIG}/myconfig ${KD}/.config || die "couldn't copy myconfig"
+		cp -f ${CONFIG}/myconfig-${KV} ${KD}/.config || die "couldn't copy myconfig"
 
 	elif [ -e ${CONFIG}/config-${KV} ]
-    	then
-    		cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
-    	elif [ -e ${KD}/kernel-config ]
+    then
+    	cp -f ${CONFIG}/config-${KV} ${KD}/.config || die "couldn't copy 1"
+    elif [ -e ${KD}/kernel-config-${KV_FINE} ]
 	then
-		cp -f ${KD}/kernel-config ${KD}/.config || die "couldn't copy 2"
+		cp -f ${KD}/kernel-config-${KV_FINE} ${KD}/.config || die "couldn't copy 2"
 	else
-		cp -f ${CONFIG}/default-config ${KD}/.config || die "couldn't copy 3"
+		cp -f ${CONFIG}/default-config-${KV_FINE} ${KD}/.config || die "couldn't copy 3"
 	fi	 
 	ebegin "Running \"make oldconfig\""
 	while true;do echo -e "\n";done|make oldconfig >/dev/null
@@ -204,13 +206,23 @@ compile() {
 	local compile	
 	ebegin "Logging to /var/log/genkernel.log"; eend;
 	ebegin "Starting ${KV} build"; eend
-	ebegin "Running \"make dep\""
-	make dep  >/var/log/genkernel.log 2>&1 ||die; eend
-        ebegin "Running \"make bzImage\""
-	make CC="${CC}" ${MAKEOPTS} bzImage >>/var/log/genkernel.log 2>&1 || die; eend
-	ebegin "Running \"make modules\""
+	case ${KV_FINE} in
+		
+		"2.4")
+			ebegin "Running \"make dep\""
+			make dep  >/var/log/genkernel.log 2>&1 ||die; eend
+        	ebegin "Running \"make bzImage\""
+			make CC="${CC}" ${MAKEOPTS} bzImage >>/var/log/genkernel.log 2>&1 || die; eend
+			ebegin "Running \"make modules\""
+		;;
+
+		"2.6")
+			ebegin "Running \"make\""
+			make CC="${CC}" ${MAKEOPTS} >/var/log/genkernel.log 2>&1 ||die; eend
+		;;
+	esac
 	make CC="${CC}" ${MAKEOPTS} modules >>/var/log/genkernel.log 2>&1 || die; eend
-        ebegin "Running \"make modules_install\""
+    ebegin "Running \"make modules_install\""
 	if [ "$PACKAGE" = "yes" ]
 	then
 	install -d ${TEMP}/modules
@@ -307,10 +319,16 @@ initrd() {
 		mods=`echo $modc | tr [:lower:] [:upper:]`_MODULES
 		for i in ${!mods}
 		do
-			mymod=`find /lib/modules/${KV} -name "${i}.o"`
+			if [ ${KV_FINE} = "2.4" ]
+			then
+				mymod=`find /lib/modules/${KV} -name "${i}.o"`
+			elif [ ${KV_FINE} = "2.6" ]
+			then
+				mymod=`find /lib/modules/${KV} -name "${i}.ko"`
+			fi
 			if [ -z "${mymod}" ]
 			then
-				echo "Warning: ${i}.o not found; skipping..."
+				echo "Warning: module ${i} not found; skipping..."
 				continue
 			fi
 			cp $mymod ${TEMP}/kernel-initrd/modules/${modc} 
@@ -319,32 +337,32 @@ initrd() {
         #tweak our storage module settings based on our initrd
         
 	if [ "$LIVECD" = "yes" ]
-        then
-	cd ${TEMP} 
-	rm -rf ${CLOOP_DIR}
-	tar xzf ${GK_SHARE}/${CLOOP_TARBALL}
-	cd ${CLOOP_DIR}
-	make KERNEL_DIR=/usr/src/linux
-	cd ..
-	cp ${TEMP}/${CLOOP_DIR}/cloop.o ${TEMP}/kernel-initrd/modules/cloop.o
-	cp -f ${TEMP}/${CLOOP_DIR}/create_compressed_fs /tmp  >>/var/log/genkernel.log
-	rm -rf ${TEMP}/${CLOOP_DIR}
-	cat ${GK_SHARE}/livecdrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
-					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
-					-e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
-        				-e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
-					-e "s/##USB_MODULES##/${USB_MODULES}/" \
-					> ${TEMP}/kernel-initrd/linuxrc
+    then
+		cd ${TEMP} 
+		rm -rf ${CLOOP_DIR}
+		tar xzf ${GK_SHARE}/${CLOOP_TARBALL}
+		cd ${CLOOP_DIR}
+		make KERNEL_DIR=/usr/src/linux
+		cd ..
+		cp ${TEMP}/${CLOOP_DIR}/cloop.o ${TEMP}/kernel-initrd/modules/cloop.o
+		cp -f ${TEMP}/${CLOOP_DIR}/create_compressed_fs /tmp  >>/var/log/genkernel.log
+		rm -rf ${TEMP}/${CLOOP_DIR}
+		cat ${GK_SHARE}/livecdrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+			-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
+			-e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
+        	-e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
+			-e "s/##USB_MODULES##/${USB_MODULES}/" \
+			> ${TEMP}/kernel-initrd/linuxrc
 	else 
-	cat ${GK_SHARE}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
-                                        -e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
-                                        -e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
-                                        -e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
-                                        -e "s/##USB_MODULES##/${USB_MODULES}/" \
-                                        > ${TEMP}/kernel-initrd/linuxrc
+		cat ${GK_SHARE}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
+            -e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
+            -e "s/##ATARAID_MODULES##/${ATARAID_MODULES}/" \
+            -e "s/##PCMCIA_MODULES##/${PCMCIA_MODULES}/" \
+            -e "s/##USB_MODULES##/${USB_MODULES}/" \
+            > ${TEMP}/kernel-initrd/linuxrc
 	fi
 
-        chmod +x ${TEMP}/kernel-initrd/linuxrc
+    chmod +x ${TEMP}/kernel-initrd/linuxrc
 	umount ${TEMP}/kernel-initrd
 	gzip -f -9 ${TEMP}/initrd
 }
@@ -396,6 +414,8 @@ finish() {
 	rm -rf ${TEMP}/kernel-initrd || die
 	rm -rf ${TEMP}/${BUSYBOX_DIR} || die
 }
+
+###START MAIN PROGRAM###
 
 #root_device
 configuration
