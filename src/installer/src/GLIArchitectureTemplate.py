@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.44 2005/02/06 07:37:54 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.45 2005/02/07 01:18:21 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -82,14 +82,29 @@ class ArchitectureTemplate:
 			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
 
+	def _quickpkg_deps(self, package):
+		# These need to be changed
+		PKGDIR = "/usr/portage/packages"
+		PORTAGE_TMPDIR = "/var/tmp"
+		for pkg in GLIUtility.spawn("emerge -p " + package, chroot=self._chroot_dir, return_output=True)[1].split() if '/' in pkg:
+			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
+				ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg =" + pkg, chroot=self._chroot_dir)
+				if ret:
+					# This package couldn't be quickpkg'd. This may be an error in the future
+					pass
+
 	def _emerge(self, package, binary=False, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
-		if binary_only:
-			return GLIUtility.spawn("emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir)
-		elif binary:
+		if self._install_profile.get_grp_install():
+			self._quickpkg_deps(package)
 			return GLIUtility.spawn("emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir)
 		else:
-			return GLIUtility.spawn("emerge " + package, display_on_tty8=True, chroot=self._chroot_dir)
+			if binary_only:
+				return GLIUtility.spawn("emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir)
+			elif binary:
+				return GLIUtility.spawn("emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir)
+			else:
+				return GLIUtility.spawn("emerge " + package, display_on_tty8=True, chroot=self._chroot_dir)
 
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True):
 		"""
