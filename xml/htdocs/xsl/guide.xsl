@@ -601,7 +601,7 @@
                             <img src="/images/icon-nvidia.png" alt="Nvidia"/>
                           </xsl:when>
                           <xsl:when test="document(.)/news/@category='freescale'">
-                            <img src="/images/icon-freescale.png" alt="Freescale Semiconductor"/>
+                            <img src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
                           </xsl:when>
                         </xsl:choose>
                       </td>
@@ -661,7 +661,7 @@
                           <img src="/images/icon-nvidia.png" alt="nvidia"/>
                         </xsl:when>
                         <xsl:when test="document(.)/news/@category='freescale'">
-                          <img src="/images/icon-freescale.png" alt="Freescale Semiconductor"/>
+                          <img src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
                         </xsl:when>
                       </xsl:choose>
                     </td>
