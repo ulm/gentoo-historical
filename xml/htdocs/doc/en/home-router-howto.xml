@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.22 2005/02/16 02:43:01 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.23 2005/03/07 12:59:56 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/home-router-howto.xml">
@@ -15,8 +15,8 @@ This document details how to turn an old Gentoo machine into a router
 for connecting your home network to the internet.
 </abstract>
 
-<version>1.3</version>
-<date>Feb 15 2005</date>
+<version>1.4</version>
+<date>2005-03-07</date>
 
 <chapter>
 <title>Introduction</title>
@@ -24,33 +24,33 @@ for connecting your home network to the internet.
 <body>
 
 <p>
-Building your own router out of old spare parts has many advantages 
-over buying a pre-made canned router by say Linksys.  The biggest one by 
-far is control over the connection.  The other advantages are left up to 
-your imagination; just about anything can be done in this scenario, 
-it's just a matter of needing it.
+Building your own router out of old spare parts has many advantages over buying
+a pre-made canned router by say Linksys.  The biggest one by far is control
+over the connection.  The other advantages are left up to your imagination;
+just about anything can be done in this scenario, it's just a matter of needing
+it.
 </p>
 
 <p>
-This guide will show you how to setup Network Address Translation (NAT) 
-on the router (kernel and iptables), add and configure common services 
-(Domain Name System (DNS) via dnsmasq, dhcp via dhcpcd, ADSL via 
-rp-pppoe), and conclude with more elaborate and fun things that can be 
-done (port forwarding, traffic shaping, proxies/caching, etc...).
+This guide will show you how to setup Network Address Translation (NAT) on the
+router (kernel and iptables), add and configure common services (Domain Name
+System (DNS) via dnsmasq, dhcp via dhcpcd, ADSL via rp-pppoe), and conclude
+with more elaborate and fun things that can be done (port forwarding, traffic
+shaping, proxies/caching, etc...).
 </p>
 
 <p>
-Before getting started, there's a few basic requirements you must meet.  
-First, you'll need a computer that has at least 2 Network Interface 
-Cards (NICs) in it.  Next, you'll need the configuration settings for 
-your internet connection (may include things like 
-IP/DNS/Gateway/username/password).  Finally, you'll need a bit of spare 
-time and some Gentoo loving.
+Before getting started, there's a few basic requirements you must meet.  First,
+you'll need a computer that has at least 2 Network Interface Cards (NICs) in
+it.  Next, you'll need the configuration settings for your internet connection
+(may include things like IP/DNS/Gateway/username/password).  Finally, you'll
+need a bit of spare time and some Gentoo loving.
 </p>
 
 <p>
 The conventions used in this guide are:
 </p>
+
 <ul>
  <li>eth0 - NIC connected to the Local Area Network (LAN)</li>
  <li>eth1 - NIC connected to the Wide Area Network (WAN)</li>
@@ -60,10 +60,9 @@ The conventions used in this guide are:
 </ul>
 
 <impo>
-Due to security precautions, I would highly suggest you shut down any 
-unneeded services on the router until we have a chance to get the 
-firewall up and rolling.  To view the currently running services, just 
-run <c>rc-status</c>.
+Due to security precautions, I would highly suggest you shut down any unneeded
+services on the router until we have a chance to get the firewall up and
+rolling.  To view the currently running services, just run <c>rc-status</c>.
 </impo>
 
 </body>
@@ -76,11 +75,12 @@ run <c>rc-status</c>.
 <body>
 
 <p>
-Your kernel needs to have the drivers running for both your NICs.  To 
-see if your cards are already setup, just run <c>ifconfig</c>.  Your 
-output may differ slightly from the following, that's fine.  What 
-matters is that the interface shows up at all.
+Your kernel needs to have the drivers running for both your NICs.  To see if
+your cards are already setup, just run <c>ifconfig</c>.  Your output may differ
+slightly from the following, that's fine.  What matters is that the interface
+shows up at all.
 </p>
+
 <pre caption="Checking NICs">
 # <i>ifconfig -a</i>
 eth0      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B8
@@ -99,55 +99,57 @@ eth1      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B9
           RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
           Interrupt:10 Base address:0x9400 
 </pre>
+
 <p>
-If you do not see your two cards showing up and you're not sure what 
-kind of cards you have, try running <c>lspci</c>.  You can get that from 
-<c>emerge pciutils</c>.  Look for "Ethernet controller" in the output.  
-Once you have this information, go into your kernel and add support for 
-the correct drivers.
+If you do not see your two cards showing up and you're not sure what kind of
+cards you have, try running <c>lspci</c>.  You can get that from <c>emerge
+pciutils</c>.  Look for "Ethernet controller" in the output.  Once you have
+this information, go into your kernel and add support for the correct drivers.
 </p>
 
 <p>
-The next thing you'll need is support for iptables and NAT (and packet 
-shaping if you want).  The following list is split up into required 
-(*), suggested (x), and shaper (s) features.  It does not matter whether 
-you build the features into the kernel or as a module so long as when 
-the feature is needed, the correct module(s) are loaded (module loading 
-is left to the reader as a fun exercise however).
+The next thing you'll need is support for iptables and NAT (and packet shaping
+if you want).  The following list is split up into required (*), suggested (x),
+and shaper (s) features.  It does not matter whether you build the features
+into the kernel or as a module so long as when the feature is needed, the
+correct module(s) are loaded (module loading is left to the reader as a fun
+exercise however).
 </p>
+
 <pre caption="Network Options">
-<i>Networking options  ---&gt;</i>
-<i>   [*] TCP/IP networking</i>
-<i>      [*] IP: advanced router</i>
-<i>   [*] Network packet filtering (replaces ipchains)</i>
+Networking options  ---&gt;
+   [*] TCP/IP networking
+      [*] IP: advanced router
+   [*] Network packet filtering (replaces ipchains)
 <comment>If you use 2.4.x, you have to enable the following for DHCP:</comment>
-<i>   [*] Socket Filtering</i>
+   [*] Socket Filtering
 
-<i>   IP: Netfilter Configuration  ---&gt;</i>
-<i>      [*] Connection tracking (required for masq/NAT)</i>
-<i>         [x] FTP protocol support</i>
-<i>         [x] IRC protocol support</i>
-<i>      [*] IP tables support (required for filtering/masq/NAT)</i>
-<i>         [*] IP range match support</i>
-<i>         [x] MAC address match support</i>
-<i>         [*] Multiple port match support</i>
-<i>         [*] Packet filtering</i>
-<i>            [*] REJECT target support</i>
-<i>            [x] REDIRECT target support</i>
-<i>         [*] Full NAT</i>
-<i>            [*] MASQUERADE target support</i>
-<i>         [s] Packet mangling</i>
-<i>            [s] MARK target support</i>
-<i>         [x] LOG target support</i>
+   IP: Netfilter Configuration  ---&gt;
+      [*] Connection tracking (required for masq/NAT)
+         [x] FTP protocol support
+         [x] IRC protocol support
+      [*] IP tables support (required for filtering/masq/NAT)
+         [*] IP range match support
+         [x] MAC address match support
+         [*] Multiple port match support
+         [*] Packet filtering
+            [*] REJECT target support
+            [x] REDIRECT target support
+         [*] Full NAT
+            [*] MASQUERADE target support
+         [s] Packet mangling
+            [s] MARK target support
+         [x] LOG target support
 
-<i>   QoS and/or fair queueing  ---&gt;</i>
-<i>      [s] QoS and/or fair queueing</i>
-<i>         [s] HTB packet scheduler</i>
-<i>         [s] Ingress Qdisc</i>
+   QoS and/or fair queueing  ---&gt;
+      [s] QoS and/or fair queueing
+         [s] HTB packet scheduler
+         [s] Ingress Qdisc
 </pre>
+
 <note>
-Somethings may be slightly different in a 2.4 vs 2.6 kernel, but you 
-should be able to figure it out :).
+Somethings may be slightly different in a 2.4 vs 2.6 kernel, but you should be
+able to figure it out :).
 </note>
 
 </body>
@@ -160,28 +162,28 @@ should be able to figure it out :).
 <section>
 <title>Intro</title>
 <body>
+
 <p>
-There are many ways to connect to the internet so I'll just cover the 
-ones I'm familiar with.  That leaves us with ADSL (PPPoE) and cable 
-modems (static/dynamic).  If there are other methods out there, feel 
-free to write up a little blurb and e-mail me.  Feel free to skip any of 
-the following sections in this chapter that don't apply to you.  This 
-chapter is just about getting the router connected to the internet via 
-eth1.
+There are many ways to connect to the internet so I'll just cover the ones I'm
+familiar with.  That leaves us with ADSL (PPPoE) and cable modems
+(static/dynamic).  If there are other methods out there, feel free to write up
+a little blurb and e-mail me.  Feel free to skip any of the following sections
+in this chapter that don't apply to you.  This chapter is just about getting
+the router connected to the internet via eth1.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>ADSL and PPPoE</title>
 <body>
 
 <p>
-All the fancy PPPoE software has been bundled up into one little nice 
-package nowadays called <uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>.  
-Simply <c>emerge rp-pppoe</c> and you'll be on your way.  Remember how 
-I said you'll need username/password information?  Well I wasn't lying 
-so I hope you have it now!  Load up <path>/etc/ppp/pppoe.conf</path> in 
+All the fancy PPPoE software has been bundled up into one little nice package
+nowadays called <uri link="http://www.roaringpenguin.com/">Roaring
+Penguin</uri>.  Simply <c>emerge rp-pppoe</c> and you'll be on your way.
+Remember how I said you'll need username/password information?  Well I wasn't
+lying so I hope you have it now!  Load up <path>/etc/ppp/pppoe.conf</path> in
 your favorite editor and set it up.
 </p>
 
@@ -194,16 +196,16 @@ baselayout-1.10.1 or later installed on your system.
 <comment>(Replace 'vla9h924' with your username and 'password' with your password)</comment>
 
 # <i>nano /etc/ppp/pppoe.conf</i>
-<comment># Ethernet card connected to ADSL modem
+<comment># Ethernet card connected to ADSL modem</comment>
 ETH=eth1
-# ADSL user name.
-USER=vla9h924</comment>
+<comment># ADSL user name.</comment>
+USER=vla9h924
 # <i>nano /etc/ppp/pap-secrets</i>
-<comment># client    server  secret
-"vla9h924" * "password"</comment>
+<comment># client    server  secret</comment>
+"vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Add an entry for ifconfig_eth1 and set it to adsl:
-ifconfig_eth1=( "adsl" )</comment>
+<comment>Add an entry for ifconfig_eth1 and set it to adsl:</comment>
+ifconfig_eth1=( "adsl" )
 # <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
@@ -232,17 +234,17 @@ gateway, and DNS servers.
 <comment>Dynamic IP Users:</comment>
 # <i>emerge dhcpcd</i>
 # <i>nano /etc/conf.d/net</i>
-<comment>You'll need an entry like so:
-ifconfig_eth1=( "dhcp" )</comment>
+<comment>You'll need an entry like so:</comment>
+ifconfig_eth1=( "dhcp" )
 
 <comment>Static IP Users:</comment>
 # <i>nano /etc/conf.d/net</i>
-<comment>You'll need entries like so:
+<comment>You'll need entries like so:</comment>
 ifconfig_eth1=( "66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0" )
-routes_eth1=( "default gw 66.92.78.1" )</comment>
+routes_eth1=( "default gw 66.92.78.1" )
 # <i>nano /etc/resolv.conf</i>
-<comment>Add one line per DNS server:
-nameserver 123.123.123.123</comment>
+<comment>Add one line per DNS server:</comment>
+nameserver 123.123.123.123
 
 <comment>Dynamic and Static Setup:</comment>
 # <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
@@ -269,8 +271,8 @@ This step is a breeze compared to the previous one.
 
 <pre caption="Setting up eth0">
 # <i>nano /etc/conf.d/net</i>
-<comment>Add a line like the following:
-ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )</comment>
+<comment>Add a line like the following:</comment>
+ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )
 # <i>rc-update add net.eth0 default</i>
 # <i>/etc/init.d/net.eth0 start</i>
 </pre>
@@ -285,77 +287,78 @@ ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )</c
 <section>
 <title>DHCP Server</title>
 <body>
+
 <p>
-I bet it'd be nice if everyone else in your house could just plug 
-their computers into the network and things would just work.  No need to 
-remember mind-numbing details or make them stare at confusing 
-configuration screens!  Life would be grand eh?  Introducing the Dynamic 
-Host Configuration Protocol (DHCP) and why you should care.
+I bet it'd be nice if everyone else in your house could just plug their
+computers into the network and things would just work.  No need to remember
+mind-numbing details or make them stare at confusing configuration screens!
+Life would be grand eh?  Introducing the Dynamic Host Configuration Protocol
+(DHCP) and why you should care.
 </p>
 
 <p>
 DHCP is exactly what its name implies.  It's a protocol that allows you 
-to dynamically configure other hosts automatically.  You run a DHCP 
-server on the router (dhcpd), give it all the information about your 
-network (valid IPs, DNS servers, gateways, etc...), and then when the 
-other hosts start up, they run a DHCP client to automatically configure 
-themselves.  No fuss, no muss!  For more information about DHCP, you can 
-always visit <uri link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>.
+to dynamically configure other hosts automatically.  You run a DHCP server on
+the router (dhcpd), give it all the information about your network (valid IPs,
+DNS servers, gateways, etc...), and then when the other hosts start up, they
+run a DHCP client to automatically configure themselves.  No fuss, no muss!
+For more information about DHCP, you can always visit <uri
+link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>.
 </p>
 
 <pre caption="Setting up dhcpd">
 # <i>emerge dhcp</i>
 # <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>Here is a sample configuration file:
+<comment>(Here is a sample configuration file:)</comment>
 authoritative;
 ddns-update-style ad-hoc;
 subnet 192.168.0.0 netmask 255.255.255.0 {
-	range 192.168.0.100 192.168.0.250;
-	default-lease-time 259200;
-	max-lease-time 518400;
-	option subnet-mask 255.255.255.0;
-	option broadcast-address 192.168.0.255;
-	option routers 192.168.0.1;
-	option domain-name-servers 192.168.0.1;
+    range 192.168.0.100 192.168.0.250;
+    default-lease-time 259200;
+    max-lease-time 518400;
+    option subnet-mask 255.255.255.0;
+    option broadcast-address 192.168.0.255;
+    option routers 192.168.0.1;
+    option domain-name-servers 192.168.0.1;
 }
-</comment>
 # <i>nano /etc/conf.d/dhcp</i>
-<comment>Set IFACE="eth0"</comment>
+<comment>(Set IFACE="eth0")</comment>
 # <i>rc-update add dhcp default</i>
 # <i>/etc/init.d/dhcp start</i>
 </pre>
 
 <p>
-Now your little router is a bona-fide DHCP server!  Plugin those 
-computers and watch them work!  With Windows systems you should go into 
-the TCP/IP Properties and select the 'Obtain an IP address 
-automatically' and 'Obtain DNS server address automatically' options.  
-Sometimes the changes aren't instantaneous, so you may have to run a 
-command prompt and run <c>ipconfig /release</c> and <c>ipconfig 
-/renew</c>.  But enough about Windows, let's get back to our favorite 
-penguin.
+Now your little router is a bona-fide DHCP server!  Plugin those computers and
+watch them work!  With Windows systems you should go into the TCP/IP Properties
+and select the 'Obtain an IP address automatically' and 'Obtain DNS server
+address automatically' options.  Sometimes the changes aren't instantaneous, so
+you may have to run a command prompt and run <c>ipconfig /release</c> and
+<c>ipconfig /renew</c>.  But enough about Windows, let's get back to our
+favorite penguin.
 </p>
+
 </body>
 </section>
 
 <section>
 <title>DNS Server</title>
 <body>
+
 <p>
-When people want to visit a place on the internet, they remember names, 
-not a string of useless numbers.  After all, what's easier to remember, 
-ebay.com or 66.135.192.87?  This is where the DNS steps in.  DNS servers 
-run all over the internet, and whenever someone wants to visit 'ebay.com', 
-these servers turn 'ebay.com' (what we understand) into '66.135.192.87' 
-(what our computers understand).  For more information about DNS, you can 
-always visit <uri link="http://en.wikipedia.org/wiki/DNS">Wikipedia</uri>.
+When people want to visit a place on the internet, they remember names, not a
+string of useless numbers.  After all, what's easier to remember, ebay.com or
+66.135.192.87?  This is where the DNS steps in.  DNS servers run all over the
+internet, and whenever someone wants to visit 'ebay.com', these servers turn
+'ebay.com' (what we understand) into '66.135.192.87' (what our computers
+understand).  For more information about DNS, you can always visit <uri
+link="http://en.wikipedia.org/wiki/DNS">Wikipedia</uri>.
 </p>
 
 <p>
-You may have noticed in the previous section that we told the DHCP 
-clients we have a DNS server at 192.168.0.1.  You may also remember that 
-192.168.0.1 is our little router that we're making.  I don't remember 
-setting up a DNS server ... so let's do so now!
+You may have noticed in the previous section that we told the DHCP clients we
+have a DNS server at 192.168.0.1.  You may also remember that 192.168.0.1 is
+our little router that we're making.  I don't remember setting up a DNS server
+... so let's do so now!
 </p>
 
 <pre caption="Setting up dnsmasq">
@@ -367,13 +370,13 @@ setting up a DNS server ... so let's do so now!
 </pre>
 
 <p>
-Well that was quick, but what did we do?  The great thing is, we didn't 
-have to do very much!  You're welcome to choose other DNS servers if 
-you're more comfortable with them, but the reason dnsmasq is great is 
-because it was designed to do exactly what we want and nothing more.  
-It's a little DNS caching/forwarding server for local networks.  We're 
-not looking to provide DNS for our own domain here, just offer simple DNS 
-services to everyone else on our LAN.
+Well that was quick, but what did we do?  The great thing is, we didn't have to
+do very much!  You're welcome to choose other DNS servers if you're more
+comfortable with them, but the reason dnsmasq is great is because it was
+designed to do exactly what we want and nothing more.  It's a little DNS
+caching/forwarding server for local networks.  We're not looking to provide DNS
+for our own domain here, just offer simple DNS services to everyone else on our
+LAN.
 </p>
 
 </body>
@@ -384,25 +387,25 @@ services to everyone else on our LAN.
 <body>
 
 <p>
-At this point, people on your network can talk to each other and they 
-can look up hostnames via DNS, but they still can't actually connect to 
-the internet.  While you may think that's great (more bandwidth for 
-you!), I bet they're not too happy just yet.
+At this point, people on your network can talk to each other and they can look
+up hostnames via DNS, but they still can't actually connect to the internet.
+While you may think that's great (more bandwidth for you!), I bet they're not
+too happy just yet.
 </p>
 
 <p>
-This is where NAT steps in.  NAT is a way of connecting multiple computers 
-in a private LAN to the internet when you only have a smaller number of 
-IP addresses availabe to you.  Typically you were given 1 IP by your ISP, 
-but you want to let your whole house connect to the internet.  NAT is the 
-magic that makes this possible.  For more information about NAT, you can 
-always visit <uri link="http://en.wikipedia.org/wiki/NAT">Wikipedia</uri>.
+This is where NAT steps in.  NAT is a way of connecting multiple computers in a
+private LAN to the internet when you only have a smaller number of IP addresses
+availabe to you.  Typically you were given 1 IP by your ISP, but you want to
+let your whole house connect to the internet.  NAT is the magic that makes this
+possible.  For more information about NAT, you can always visit <uri
+link="http://en.wikipedia.org/wiki/NAT">Wikipedia</uri>.
 </p>
 
 <note>
-Before we get started, make sure you have iptables on your system.  Although 
-it is automatically installed on most systems, you may not have it.  If you 
-don't, just run <c>emerge iptables</c>.
+Before we get started, make sure you have iptables on your system.  Although it
+is automatically installed on most systems, you may not have it.  If you don't,
+just run <c>emerge iptables</c>.
 </note>
 
 <pre caption="Setting up iptables">
@@ -442,9 +445,8 @@ net.ipv4.conf.default.rp_filter = 1</comment>
 </pre>
 
 <p>
-Once you've typed out all of that, the rest of your network should now 
-be able to use the internet as if they were directly connected 
-themselves.  
+Once you've typed out all of that, the rest of your network should now be able
+to use the internet as if they were directly connected themselves.  
 </p>
 
 </body>
@@ -457,35 +459,38 @@ themselves.
 <section>
 <title>Intro</title>
 <body>
+
 <p>
-Believe it or not, you're done :).  From here on out, I'll cover a bunch 
-of common topics that may interest you.  Everything in this chapter is 
-completely optional.
+Believe it or not, you're done :).  From here on out, I'll cover a bunch of
+common topics that may interest you.  Everything in this chapter is completely
+optional.
 </p>
+
 </body>
 </section>
 
 <section>
 <title>Port Forwarding</title>
 <body>
+
 <p>
-Sometimes you would like to be able to host services on a computer behind 
-the router, or just to make your life easier when connecting remotely.  
-Perhaps you want to run a FTP, HTTP, SSH, or VNC server on one or more 
-machines behind your router and be able to connect to them all.  The only 
-caveat is that you can only have one service/machine combo per port.  
-For example, there is no practical way to setup three FTP servers behind 
-your router and then try to connect to them all through port 21; only one 
-can be on port 21 while the others would have to be on say port 123 and 
-port 567.
+Sometimes you would like to be able to host services on a computer behind the
+router, or just to make your life easier when connecting remotely.  Perhaps you
+want to run a FTP, HTTP, SSH, or VNC server on one or more machines behind your
+router and be able to connect to them all.  The only caveat is that you can
+only have one service/machine combo per port.  For example, there is no
+practical way to setup three FTP servers behind your router and then try to
+connect to them all through port 21; only one can be on port 21 while the
+others would have to be on say port 123 and port 567.
 </p>
 
 <p>
-All the port forwarding rules are of the form <c>iptables -t nat -A PREROUTING 
-[-p protocol] --dport [external port on router] -i eth1 -j DNAT --to [ip/port 
-to forward to]</c>.  iptables does not accept hostnames when port forwarding.  
-If you are forwarding an external port to the same port on the internal machine, 
-you can omit the destination port.  See the iptables(8) page for more information.
+All the port forwarding rules are of the form <c>iptables -t nat -A PREROUTING
+[-p protocol] --dport [external port on router] -i eth1 -j DNAT --to [ip/port
+to forward to]</c>.  iptables does not accept hostnames when port forwarding.
+If you are forwarding an external port to the same port on the internal
+machine, you can omit the destination port.  See the iptables(8) page for more
+information.
 </p>
 
 <pre>
@@ -515,19 +520,22 @@ you can omit the destination port.  See the iptables(8) page for more informatio
 </pre>
 
 <note>
-If you have other common / cool examples, please <uri link="mailto:vapier@gentoo.org">e-mail me</uri>.
+If you have other common / cool examples, please <uri
+link="mailto:vapier@gentoo.org">e-mail me</uri>.
 </note>
+
 </body>
 </section>
 
 <section>
 <title>Identd (for IRC)</title>
 <body>
+
 <p>
-Internet Relay Chat utilizes the ident service pretty heavily.  Now that 
-the IRC clients are behind the router, we need a way to host ident for 
-both the router and the clients.  One such server has been created 
-called <c>midentd</c>.
+Internet Relay Chat utilizes the ident service pretty heavily.  Now that the
+IRC clients are behind the router, we need a way to host ident for both the
+router and the clients.  One such server has been created called
+<c>midentd</c>.
 </p>
 
 <pre caption="Setting up ident">
@@ -537,9 +545,10 @@ called <c>midentd</c>.
 </pre>
 
 <p>
-There are a few other ident servers in portage.  Depending on your needs, 
-I would recommend checking out <c>oidentd</c> and <c>fakeidentd</c>.
+There are a few other ident servers in portage.  Depending on your needs, I
+would recommend checking out <c>oidentd</c> and <c>fakeidentd</c>.
 </p>
+
 </body>
 </section>
 
@@ -619,23 +628,23 @@ tc qdisc add dev $DEV parent 1:10 handle 10: sfq
 <section>
 <title>Time Server</title>
 <body>
+
 <p>
-Keeping your system time correct is essential in maintaing a healthy 
-system.  One of the most common ways of accomplishing this is with 
-the Network Time Protocol (NTP) and the ntp package (which provides 
-implementations for both server and client).
+Keeping your system time correct is essential in maintaing a healthy system.
+One of the most common ways of accomplishing this is with the Network Time
+Protocol (NTP) and the ntp package (which provides implementations for both
+server and client).
 </p>
 
 <p>
-Many people run ntp clients on their computers.  Obviously, the more 
-clients in the world, the larger the load the ntp servers need to 
-shoulder.  In environments like home networks though, we can help 
-keep the load down on public servers while still providing the proper 
-time to all our computers.  As an added bonus, our private updates 
-will be a lot faster for the clients too!  All we have to do is run 
-a ntp server on our router that synchronizes itself with the public 
-internet servers while providing the time to the rest of the computers 
-in the network.  To get started, simply <c>emerge ntp</c> on the 
+Many people run ntp clients on their computers.  Obviously, the more clients in
+the world, the larger the load the ntp servers need to shoulder.  In
+environments like home networks though, we can help keep the load down on
+public servers while still providing the proper time to all our computers.  As
+an added bonus, our private updates will be a lot faster for the clients too!
+All we have to do is run a ntp server on our router that synchronizes itself
+with the public internet servers while providing the time to the rest of the
+computers in the network.  To get started, simply <c>emerge ntp</c> on the
 router.
 </p>
 
@@ -645,10 +654,11 @@ router.
 # <i>rc-update add ntp-client default</i>
 
 # <i>nano /etc/ntp.conf</i>
-<comment>Add the follwing lines:
+<comment>Add the follwing lines:</comment>
 restrict default ignore
 restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
-These will allow only ntp clients with an IP address in the 192.168.0.xxx range to use your ntp server</comment>
+<comment>These will allow only ntp clients with an IP
+address in the 192.168.0.xxx range to use your ntp server</comment>
 # <i>nano /etc/conf.d/ntpd</i>
 <comment>Customize if you wish but the defaults should be fine</comment>
 # <i>rc-update add ntpd default</i>
@@ -658,14 +668,14 @@ These will allow only ntp clients with an IP address in the 192.168.0.xxx range 
 </pre>
 
 <note>
-You should make sure that you allow inbound and outbound communication 
-on the ntp port (123/udp) when setting up the server.  The client just 
-needs outbound access on port 123 over udp.
+You should make sure that you allow inbound and outbound communication on the
+ntp port (123/udp) when setting up the server.  The client just needs outbound
+access on port 123 over udp.
 </note>
 
 <p>
-Now, on your clients, have them <c>emerge ntp</c> also.  However, 
-we will just run the ntp client so setup is a lot simpler.
+Now, on your clients, have them <c>emerge ntp</c> also.  However, we will just
+run the ntp client so setup is a lot simpler.
 </p>
 
 <pre caption="Setting up a NTP client">
@@ -674,21 +684,22 @@ we will just run the ntp client so setup is a lot simpler.
 # <i>rc-update add ntp-client default</i>
 # <i>/etc/init.d/ntp-client start</i>
 </pre>
+
 </body>
 </section>
 
 <section>
 <title>Mail Server</title>
 <body>
+
 <p>
-Sometimes it's nice to run your own Simple Mail Transfer Protocol (SMTP) 
-server on the router.  You may have your own reason for wanting to do so, 
-but I run it so that the users see mail as being sent instantly and the 
-work of retrying/routing is left up to the mail server.  Some ISPs also 
-don't allow for mail relaying for accounts that aren't part of their 
-network (like Verizon).  Also, you can easily throttle the delivery of 
-mail so that large attachments won't seriously lag your connection for 
-half an hour.
+Sometimes it's nice to run your own Simple Mail Transfer Protocol (SMTP) server
+on the router.  You may have your own reason for wanting to do so, but I run it
+so that the users see mail as being sent instantly and the work of
+retrying/routing is left up to the mail server.  Some ISPs also don't allow for
+mail relaying for accounts that aren't part of their network (like Verizon).
+Also, you can easily throttle the delivery of mail so that large attachments
+won't seriously lag your connection for half an hour.
 </p>
 
 <pre caption="Setting up SMTP">
@@ -704,8 +715,8 @@ half an hour.
 -->
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
-<comment>Add an entry like so to the allow section:
-192.168.0.:allow,RELAYCLIENT=""</comment>
+<comment>Add an entry like so to the allow section:</comment>
+192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
 -->
@@ -715,12 +726,12 @@ half an hour.
 </pre>
 
 <p>
-I'm a huge fan of qmail, but you're free to use a different mta :).  
-When you setup e-mail on the hosts in your network, tell them that 
-their SMTP server is 192.168.0.1 and everything should be peachy.  
-You might want to visit the <uri link="http://qmail.org/">qmail 
-homepage</uri> for more documentation.
+I'm a huge fan of qmail, but you're free to use a different mta :).  When you
+setup e-mail on the hosts in your network, tell them that their SMTP server is
+192.168.0.1 and everything should be peachy.  You might want to visit the <uri
+link="http://qmail.org/">qmail homepage</uri> for more documentation.
 </p>
+
 </body>
 </section>
 
@@ -749,13 +760,15 @@ TODO
 <title>Final Notes</title>
 <section>
 <body>
+
 <p>
-I have no final notes other than if you experience any troubles with the guide, 
-please contact <mail link="vapier@gentoo.org">me</mail> or file a bug with 
-<uri link="http://bugs.gentoo.org/">Gentoo's Bugtracking Website</uri>.  If 
-you have some interesting bits you think would enhance this guide, by all means 
-send it my way for inclusion.
+I have no final notes other than if you experience any troubles with the guide,
+please contact <mail link="vapier@gentoo.org">me</mail> or file a bug with <uri
+link="http://bugs.gentoo.org/">Gentoo's Bugtracking Website</uri>.  If you have
+some interesting bits you think would enhance this guide, by all means send it
+my way for inclusion.
 </p>
+
 </body>
 </section>
 </chapter>
