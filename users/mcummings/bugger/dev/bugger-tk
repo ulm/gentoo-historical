@@ -9,11 +9,12 @@
 #
 # mcummings@gentoo.org
 #
-
+package main;
 use Tk;
 use Tk::ToolBar;
 use Tk::HList;
-   use Tk::ItemStyle;
+use Tk::ItemStyle;
+use bugger;
 
 use vars qw/$TOP/;
 
@@ -23,29 +24,11 @@ my $tb = $mw->ToolBar(
       -indicatorcolor blue /
 );
 
-#$TOP= $mw->BuggerWidgets(
-	#-name	=>	'Bugger-TK',
-	#-text	=>	"bugger-tk is a tk interface to bugzilla, currently supporting only Gentoo's implimentation of bugzilla but theoretically capable of supporting other bugzilla sites.",
-	#-title	=>	'Bugger-TK',
-	#-iconname	=>	'bugger-tk',
-#);
-
-#my $panels = $mw->Panedwindow;
-#$panels->pack(qw/-side top -expand yes -fill both -pady 2 -padx 2m/);
-#
-#my $bugidpane = $panels->Label(-text =>"BugID", -background => '#f603f603f603');
-#my $priopane = $panels->Label(-text => "Priority", -background => '#f603f603f603');
-#my $assignpane =$panels->Label(-text => "Assigned to", -background => '#f603f603f603'); 
-#my $titlepane = $panels->Label(-text => "Bug Title", -background => '#fffffae0cdd2');
-#$panels->add($bugidpane,$priopane,$assignpane,$titlepane);
-
 $tb->ToolButton(
     -text    => 'Button',
     -tip     => 'tool tip',
     -command => sub { print "hi\n" }
 );
-# MPC $tb->ToolLabel( -text => 'A Label' );
-# MPC $tb->Label( -text => 'Another Label' );
 $tb->ToolLabEntry(
     -label     => 'Search Bugs',
     -labelPack => [
@@ -56,11 +39,6 @@ $tb->ToolLabEntry(
 );
 
 my $tb2 = $mw->ToolBar;
-# MPC $tb2->ToolButton(
-# MPC     -image   => 'navback22',
-# MPC     -tip     => 'back',
-# MPC     -command => \&back
-# MPC );
 $tb2->ToolButton(
     -image   => 'navforward22',
     -tip     => 'forward',
@@ -82,79 +60,68 @@ $tb2->ToolButton(
    -tip      => 'quit',
    -command  => \&quit
 );
-
-my $hlist = $mw->HList(-columns=>4, -width=>70, -background=>'#ffffffffffff', -command=>\&launch_win,)->pack;
-
-   my $red1  = $hlist->ItemStyle('text', -foreground=>'#800000');
-   my $blue = $hlist->ItemStyle('text', -foreground=>'#000080', -anchor=>'w');
-
-   my $red2  = $hlist->ItemStyle('text', -foreground=>'#800000', -background=>'#fbdaffffb603');
-   my $blue1 = $hlist->ItemStyle('text', -foreground=>'#000080', anchor=>'e');
-   my $black1 = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#ffffffffffff');
-   my $blue2 = $hlist->ItemStyle('text', -foreground=>'#000080', -background=>'#fbdaffffb603', -anchor=>'e');
-   my $black2 = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#fbdaffffb603');
+my $hlist = $mw->Scrolled(qw/HList
+	-columns 3
+	-width 70
+	-command main::launch_win/)->pack(qw/-expand yes -fill both/);
+	#-command launch_win/)->grid(qw/-sticky ns/); $hlist->pack(qw/-expand yes -fill both/);
+   my (@red,@blue,@black);
+   $red[1]  = $hlist->ItemStyle('text', -foreground=>'#800000');
+   $red[2]  = $hlist->ItemStyle('text', -foreground=>'#800000', -background=>'#fbdaffffb603');
+   $blue[1] = $hlist->ItemStyle('text', -foreground=>'#000080');
+   $blue[2] = $hlist->ItemStyle('text', -foreground=>'#000080', -background=>'#fbdaffffb603');
+   $black[1] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#ffffffffffff');
+   $black[2] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#fbdaffffb603');
    my $header;
-   #foreach ([Joe => '$10,000']) {
    $header = $hlist->addchild("");
-   $hlist->itemCreate($header, 0, -itemtype=>'text', -text=>"BugID", -style=>$black1);
-   $hlist->itemCreate($header, 1, -itemtype=>'text', -text=>"Priority", -style=>$black1);
-   $hlist->itemCreate($header, 2, -itemtype=>'text', -text=>"Assigned To", -style=>$black1);
-   $hlist->itemCreate($header, 3, -itemtype=>'text', -text=>"Description", -style=>$black1);
+   $hlist->itemCreate($header, 0, -itemtype=>'text', -text=>"BugID", -style=>$black[1]);
+   $hlist->itemCreate($header, 1, -itemtype=>'text', -text=>"Priority", -style=>$black[1]);
+   $hlist->itemCreate($header, 2, -itemtype=>'text', -text=>"Description", -style=>$black[1]);
 
    
+   my %results = bugger::list_bugs('mcummings@gentoo.org');
+   my $bug_no = scalar(keys %results);
+   my $colorchange = 1;
+   for (my $key = 1; $key <=$bug_no; $key++){
    my $entry;
        $entry = $hlist->addchild("");
        $hlist->itemCreate($entry, 0, -itemtype=>'text',
-                -text=>"32123", -style=>$red2 );
+                -text=>"$results{$key}{'BugID'}", -style=>$red[$colorchange]);
        $hlist->itemCreate($entry, 1, -itemtype=>'text',
-                -text=>"high", -style=>$blue2);
+                -text=>"$results{$key}{'Priority'}", -style=>$blue[$colorchange]);
+       if (length($results{$key}{'Description'}) >=48)
+       	{ substr($results{$key}{'Description'},48) = "..."}
        $hlist->itemCreate($entry, 2, -itemtype=>'text',
-                -text=>"mcummings\@gentoo.org", -style=>$blue2);
-       $hlist->itemCreate($entry, 3, -itemtype=>'text',
-                -text=>"Unable to compile dog crap ", -style=>$blue2);
+                -text=>"$results{$key}{'Description'}", -style=>$blue[$colorchange]);
+	if ($colorchange == 2) {$colorchange = 1}
+	else {$colorchange = 2}
+}	
 	
-       $entry = $hlist->addchild("");
-       $hlist->itemCreate($entry, 0, -itemtype=>'text',
-                -text=>"55454",  -style=>$red1, );
-       $hlist->itemCreate($entry, 1, -itemtype=>'text',
-                -text=>"low", -style=>$blue1);
-       $hlist->itemCreate($entry, 2, -itemtype=>'text',
-                -text=>"zhen\@gentoo.org", -style=>$blue1);
-       $hlist->itemCreate($entry, 3, -itemtype=>'text',
-                -text=>"GCC breaks", -style=>$blue1);
-	
-       $entry = $hlist->addchild("");
-       $hlist->itemCreate($entry, 0, -itemtype=>'text',
-                -text=>"32123", -style=>$red2 );
-       $hlist->itemCreate($entry, 1, -itemtype=>'text',
-                -text=>"high", -style=>$blue2);
-       $hlist->itemCreate($entry, 2, -itemtype=>'text',
-                -text=>"mcummings\@gentoo.org", -style=>$blue2);
-       $hlist->itemCreate($entry, 3, -itemtype=>'text',
-                -text=>"Unable to compile dog crap ", -style=>$blue2);
-	
-       $entry = $hlist->addchild("");
-       $hlist->itemCreate($entry, 0, -itemtype=>'text',
-                -text=>"55454",  -style=>$red1, );
-       $hlist->itemCreate($entry, 1, -itemtype=>'text',
-                -text=>"low", -style=>$blue1);
-       $hlist->itemCreate($entry, 2, -itemtype=>'text',
-                -text=>"zhen\@gentoo.org", -style=>$blue1);
-       $hlist->itemCreate($entry, 3, -itemtype=>'text',
-                -text=>"GCC breaks", -style=>$blue1);
-	
-   #}
 MainLoop;
 
 sub forward { print "going totally forward\n" }
 
 sub launch_win {
-use Data::Dumper;
-my @incoming = @_;
-foreach my $key (@incoming)
-{print Dumper($key)}
-print "all done\n";
+my $incoming = shift;
 
+my $bugID = $results{$incoming}{'BugID'};
+my $mw2 = new MainWindow;
+my $tb = $mw2->ToolBar(
+    qw/-movable 1 -side top
+      -indicatorcolor blue /
+);
+$tb->ToolButton(
+   -image    => 'actexit22',
+   -tip      => 'quit',
+   -command  => [$mw2 => 'destroy']
+);
+ my $text = $mw2->Scrolled(qw/Text -setgrid true -scrollbars e/);
+$text->pack(qw/-expand yes -fill both/);
+my @bugtext = bugger::show_bug($bugID);
+ $text->insert('0.0', "@bugtext");
+    $text->mark(qw/set insert 0.0/);
+	
+MainLoop;
 }
 
 sub quit { print "Thank you for using bugger-tk\n\n";  exit() }
