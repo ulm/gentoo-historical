@@ -219,7 +219,7 @@ sub rm_tarball {
 # make a new tarball of icon files
 #
 sub new_tarball {
-	system `tar -cjf --directory=$searchpath --create -f icons.tar.bz2 ./*.png`;
+	system `tar -vj --directory=$searchpath --create -f icons.tar.bz2 ./*.png`;
 } # new_tarball()
 
 #
