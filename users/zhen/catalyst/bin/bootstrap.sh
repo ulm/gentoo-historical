@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License, v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.4 2003/09/16 04:48:47 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.5 2003/09/18 04:57:40 zhen Exp $
 
 # IMPORTANT NOTE:
 # This script no longer accepts an optional argument.
@@ -192,7 +192,7 @@ export AUTOCLEAN="no"
 # Allow portage to overwrite stuff
 export CONFIG_PROTECT="-*"
 
-USE="-* build bootstrap" emerge ${STRAP_EMERGE_OPTS} ${myPORTAGE} || cleanup 1
+USE="-* build bootstrap" emerge ${STRAP_EMERGE_OPTS} ${myHARDENED_GCC} ${myPORTAGE} || cleanup 1
 
 if [ -x /usr/bin/gcc-config ]
 then
@@ -217,7 +217,7 @@ then
 fi
 
 export USE="${ORIGUSE} bootstrap"
-emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myHARDENED_GCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
+emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
 
 # ncurses-5.3 and up also build c++ bindings, so we need to rebuild it
 export USE="${ORIGUSE}"
