@@ -235,15 +235,18 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			cmd += " | tee /tmp/toreturn.log"
 
 		if display_on_tty8:
-			try:
-				tty = os.open("/dev/vc/8", os.O_RDWR)
-				oldstdout = sys.stdout
-				oldstderr = sys.stderr
-				os.dup2(tty,sys.stdout.fileno())
-				os.dup2(tty,sys.stderr.fileno())
-			except OSError:
-				print "Could not open on tty8. Are you running as root?"
-				tty = None
+			if not is_file("/tmp/tty8_fifo"):
+				spawn("mkfifo /tmp/tty8_fifo")
+			cmd += " | tee /tmp/tty8_fifo"
+#			try:
+#				tty = os.open("/dev/vc/8", os.O_RDWR)
+#				oldstdout = sys.stdout
+#				oldstderr = sys.stderr
+#				os.dup2(tty,sys.stdout.fileno())
+#				os.dup2(tty,sys.stderr.fileno())
+#			except OSError:
+#				print "Could not open on tty8. Are you running as root?"
+#				tty = None
 
 		os.execv('/bin/bash',['/bin/bash', '-c', cmd])
 		sys.exit(1) # Should never be reached.
