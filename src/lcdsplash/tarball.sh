@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V=0.2
+V=${1:-0.3}
 
 tar \
 	-jcf /tmp/lcdsplash-${V}.tar.bz2 \
