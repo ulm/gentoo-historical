@@ -118,100 +118,31 @@ class Installer:
 		self.right_pane_box.set_show_border(gtk.FALSE)
 		self.rightframe.add(self.right_pane_box)
 
-		# Bottom buttons
-		self.backbutton = gtk.Button()
-		self.backbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.backbuttonimg = gtk.Image()
-		self.backbuttonimg.set_from_file(self.__full_path + '/button_images/stock_left.png')
-		self.backbuttonbox.pack_start(self.backbuttonimg)
-		self.backbutton_label = gtk.Label(" _Back ")
-		self.backbuttonbox.pack_start(self.backbutton_label)
-		self.backbutton_label.set_use_underline(gtk.TRUE)
-		self.backbutton.add(self.backbuttonbox)
+		buttons_info = [ ('exit', " _Exit ", '/button_images/stock_exit.png', self.exit_button, 'start'),
+                                 ('help', " _Help ", '/button_images/stock_help.png', self.help, 'start'),
+                                 ('load', " _Load ", '/button_images/stock_open.png', self.load_button, 'start'),
+                                 ('save', " _Save ", '/button_images/stock_save.png', self.save_button, 'start'),
+                                 ('finish', " _Install ", '/button_images/stock_exec.png', self.finish, 'end'),
+                                 ('forward', " _Forward ", '/button_images/stock_right.png', self.forward, 'end'),
+                                 ('back', " _Back ", '/button_images/stock_left.png', self.back, 'end')
+                               ]
+		self.buttons = {}
 
-		# Creates a new button with the label "Forward".
-		self.forwardbutton = gtk.Button()
-		self.forwardbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.forwardbuttonimg = gtk.Image()
-		self.forwardbuttonimg.set_from_file(self.__full_path + '/button_images/stock_right.png')
-		self.forwardbuttonbox.pack_start(self.forwardbuttonimg)
-		self.forwardbutton_label = gtk.Label(" _Forward ")
-		self.forwardbuttonbox.pack_start(self.forwardbutton_label)
-		self.forwardbutton_label.set_use_underline(gtk.TRUE)
-		self.forwardbutton.add(self.forwardbuttonbox)
-
-		# Creates a new button with the label "Show Help".
-		self.helpbutton = gtk.Button()
-		self.helpbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.helpbuttonimg = gtk.Image()
-		self.helpbuttonimg.set_from_file(self.__full_path + '/button_images/stock_help.png')
-		self.helpbuttonbox.pack_start(self.helpbuttonimg)
-		self.helpbutton_label = gtk.Label(" _Help ")
-		self.helpbuttonbox.pack_start(self.helpbutton_label)
-		self.helpbutton_label.set_use_underline(gtk.TRUE)
-		self.helpbutton.add(self.helpbuttonbox)
-
-		# Creates a new button with the label "Exit".
-		self.exitbutton = gtk.Button()
-		self.exitbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.exitbuttonimg = gtk.Image()
-		self.exitbuttonimg.set_from_file(self.__full_path + '/button_images/stock_exit.png')
-		self.exitbuttonbox.pack_start(self.exitbuttonimg)
-		self.exitbutton_label = gtk.Label(" _Exit ")
-		self.exitbuttonbox.pack_start(self.exitbutton_label)
-		self.exitbutton_label.set_use_underline(gtk.TRUE)
-		self.exitbutton.add(self.exitbuttonbox)
-
-		# Creates a new button with the label "Finish".
-		self.finishbutton = gtk.Button()
-		self.finishbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.finishbuttonimg = gtk.Image()
-		self.finishbuttonimg.set_from_file(self.__full_path + '/button_images/stock_exec.png')
-		self.finishbuttonbox.pack_start(self.finishbuttonimg)
-		self.finishbutton_label = gtk.Label(" _Install ")
-		self.finishbuttonbox.pack_start(self.finishbutton_label)
-		self.finishbutton_label.set_use_underline(gtk.TRUE)
-		self.finishbutton.add(self.finishbuttonbox)
-
-		# Creates a new button with the label "Load".
-		self.loadbutton = gtk.Button()
-		self.loadbuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.loadbuttonimg = gtk.Image()
-		self.loadbuttonimg.set_from_file(self.__full_path + '/button_images/stock_open.png')
-		self.loadbuttonbox.pack_start(self.loadbuttonimg)
-		self.loadbutton_label = gtk.Label(" _Load ")
-		self.loadbuttonbox.pack_start(self.loadbutton_label)
-		self.loadbutton_label.set_use_underline(gtk.TRUE)
-		self.loadbutton.add(self.loadbuttonbox)
-
-		# Creates a new button with the label "Save".
-		self.savebutton = gtk.Button()
-		self.savebuttonbox = gtk.HBox(gtk.FALSE, 0)
-		self.savebuttonimg = gtk.Image()
-		self.savebuttonimg.set_from_file(self.__full_path + '/button_images/stock_save.png')
-		self.savebuttonbox.pack_start(self.savebuttonimg)
-		self.savebutton_label = gtk.Label(" _Save ")
-		self.savebuttonbox.pack_start(self.savebutton_label)
-		self.savebutton_label.set_use_underline(gtk.TRUE)
-		self.savebutton.add(self.savebuttonbox)
-
-		# We pack in the buttons
-		self.bottombox.pack_start(self.exitbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_start(self.helpbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_start(self.loadbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_start(self.savebutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_end(self.finishbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_end(self.forwardbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.bottombox.pack_end(self.backbutton, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-
-		# We register the buttons with their callbacks
-		self.finishbutton.connect("clicked", self.finish, None)
-		self.forwardbutton.connect("clicked", self.forward, None)
-		self.backbutton.connect("clicked", self.back, None)
-		self.helpbutton.connect("clicked", self.help, None)
-		self.exitbutton.connect("clicked", self.exit_button, None)
-		self.loadbutton.connect("clicked", self.load_button, None)
-		self.savebutton.connect("clicked", self.save_button, None)
+		for button in buttons_info:
+			self.buttons[button[0]] = gtk.Button()
+			tmpbuttonbox = gtk.HBox(gtk.FALSE, 0)
+			tmpbuttonimg = gtk.Image()
+			tmpbuttonimg.set_from_file(self.__full_path + button[2])
+			tmpbuttonbox.pack_start(tmpbuttonimg)
+			tmpbuttonlabel = gtk.Label(button[1])
+			tmpbuttonlabel.set_use_underline(gtk.TRUE)
+			tmpbuttonbox.pack_start(tmpbuttonlabel)
+			self.buttons[button[0]].add(tmpbuttonbox)
+			self.buttons[button[0]].connect("clicked", button[3], None)
+			if button[4] == "start":
+				self.bottombox.pack_start(self.buttons[button[0]], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+			else:
+				self.bottombox.pack_end(self.buttons[button[0]], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
 		self.make_visible()
 
@@ -245,17 +176,26 @@ class Installer:
 
 	def redraw_buttons(self):
 		self.bottombox.hide_all()
-		self.finishbutton.set_sensitive(self.SHOW_BUTTON_FINISH)
-		self.forwardbutton.set_sensitive(self.SHOW_BUTTON_FORWARD)
-		self.backbutton.set_sensitive(self.SHOW_BUTTON_BACK)
-		self.helpbutton.set_sensitive(self.SHOW_BUTTON_HELP)
-		self.exitbutton.set_sensitive(self.SHOW_BUTTON_EXIT)
+#		self.finishbutton.set_sensitive(self.SHOW_BUTTON_FINISH)
+#		self.forwardbutton.set_sensitive(self.SHOW_BUTTON_FORWARD)
+#		self.backbutton.set_sensitive(self.SHOW_BUTTON_BACK)
+#		self.helpbutton.set_sensitive(self.SHOW_BUTTON_HELP)
+#		self.exitbutton.set_sensitive(self.SHOW_BUTTON_EXIT)
+		self.buttons['finish'].set_sensitive(self.SHOW_BUTTON_FINISH)
+		self.buttons['forward'].set_sensitive(self.SHOW_BUTTON_FORWARD)
+		self.buttons['back'].set_sensitive(self.SHOW_BUTTON_BACK)
+		self.buttons['help'].set_sensitive(self.SHOW_BUTTON_HELP)
+		self.buttons['exit'].set_sensitive(self.SHOW_BUTTON_EXIT)
 		if self.SHOW_BUTTON_FORWARD:
-			self.forwardbutton.set_flags(gtk.CAN_DEFAULT)
-			self.forwardbutton.grab_default()
+#			self.forwardbutton.set_flags(gtk.CAN_DEFAULT)
+#			self.forwardbutton.grab_default()
+			self.buttons['forward'].set_flags(gtk.CAN_DEFAULT)
+			self.buttons['forward'].grab_default()
 		elif self.SHOW_BUTTON_FINISH:
-			self.finishbutton.set_flags(gtk.CAN_DEFAULT)
-			self.finishbutton.grab_default()
+#			self.finishbutton.set_flags(gtk.CAN_DEFAULT)
+#			self.finishbutton.grab_default()
+			self.buttons['finish'].set_flags(gtk.CAN_DEFAULT)
+			self.buttons['finish'].grab_default()
 #		if self.install_profile_xml_file != "":
 #			self.finishbutton.set_sensitive(gtk.TRUE)
 		self.bottombox.show_all()
