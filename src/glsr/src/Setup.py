@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Setup.py,v 1.5 2004/10/29 02:00:01 hadfield Exp $
+# $Id: Setup.py,v 1.6 2004/11/07 21:10:35 port001 Exp $
 #
 
 import sys
@@ -126,7 +126,7 @@ subscript_table = ("CREATE TABLE " + Config.MySQL["prefix"] + """%s (
 	PRIMARY		KEY(%s_id),
 	KEY		%s_id(%s_id));""" %
                    tuple(operator.repeat([Config.MySQL["subscript_table"]],
-                                         12)))
+                                         13)))
 
 cursor.execute(subscript_table)
 db.commit()

@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.16 2004/11/06 21:21:41 port001 Exp $
+# $Id: index.py,v 1.17 2004/11/07 21:10:35 port001 Exp $
 #
 
 """
@@ -85,13 +85,29 @@ class PageDispatch:
                                            self._user_detail["session"])
                 self._ThisUser.SetID(self._user_detail["uid"])
                 self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
+                # TODO: check here if this IP matches their last one,
+                # if not, make them log back in.
                 self._user_detail["alias"] = self._ThisUser.GetAlias()
+                self._ThisUser.SetLoggedIn()
 
     def select_module(self):
 
         module_list = []
+        deny = True
 
         if self._domain == "admin":
+
+            if self._ThisUser.IsLoggedIn():
+                if self._ThisUser.GetType() == 3:
+                    deny = False
+            else:
+                deny = True
+
+            if deny == True:
+                self._send_headers()
+                print "Access Denied"
+                sys.exit(0)
+
             import site_modules.admin
             self._failover = site_modules.admin.failover
 
