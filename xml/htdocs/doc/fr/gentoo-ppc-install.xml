@@ -1,0 +1,955 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/fr/gentoo-ppc-install.xml">
+<title> Instructions d'installation de Gentoo Linux/PPC 1.2 </title>
+<author title="Développeur Gentoo PPC"><mail link="gerk@gentoo.org">Mark Guertin</mail></author>
+<author title="Développeur Gentoo PPC"><mail link="daybird@gentoo.org">David Chamberlain</mail></author>
+<author title="Architecte en chef"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Auteur">Chris Houser</author>
+<author title="Auteur"><mail link="jerry@gentoo.org">Jerry Alexandratos</mail></author>
+<author title="Fantôme"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author> 
+<author title="Collaborateur, Mainteneur"><mail link="rajiv@gentoo.org">Rajiv Manglani</mail></author>
+<author title="Collaborateur"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Traducteur"><mail link="nissen.lutin@libertysurf.fr">nissen</mail></author>
+
+<abstract>Ces instructions vous guident à travers le processus d'installation de
+Gentoo Linux/PPC 1.2. Le processus d'installation de Gentoo Linux permet
+différentes approches selon la partie du système que vous désirez construire à
+partir de rien.</abstract>
+
+<version>1.6.1</version>
+<date>03 Février 2003 (traduction du 1 avril 2003)</date>
+
+<chapter>
+<title>A propos de l'installation</title>
+<section>
+<body>
+
+<p>Ce nouveau CD de démarrage peut démarrer sur tous Macs dit "New World". Pour les Macs dit "OldWorld", il est
+nécessaire d'avoir une partition avec le système MacOS, et d'utiliser le programme Gentoo Installer.sit provenant
+de l'Iso. De plus, nous fournissons des drivers pour la plupart du matériel Apple, tout comme les outils vous
+permettant de configurer votre réseau et d'établir des connexions extérieurs via <c>ssh</c> et de télécharger des
+fichiers.</p>
+
+<p>Pour installer à partir du CD-ROM, il faut un processeur PowerPC 603 au minimum basé sur un système PowerPC PCI
+ou plus (pour l'instant les machines de type Nubus ne sont pas supportées) et idéalement avec au moins 128 Mo de RAM
+(il est possible de faire avec moins, mais le processus de compilation est extrêmement long et peut se bloquer).
+Pour commencer le processus d'installation, récupérez d'abord une de nos images Iso de CD à partir de
+<uri>http://www.ibiblio.org/gentoo/releases/build/</uri>. Pour la Gentoo 1.4 vous trouverez non seulement des images
+pour PPC génériques ainsi que les archives des stages mais aussi des versions optimisées pour G4.</p>
+
+<p>Maintenant, passons rapidement en revue le processus d'installation. Nous allons créer les partitions, créer nos
+systèmes de fichiers, et extraire soit une archive stage1, stage2 ou stage3. Si nous utilisons une archive stage1 ou
+stage2, nous franchirons les étapes appropriées pour amener notre système au stage3. Une fois notre système au stage3,
+nous pourrons le configurer (modifications des fichiers de configuration, installalation d'un gestionnaire de 
+démarrage, etc) et le démarrer et avoir un système Gentoo Linux complètement fonctionnel. En fonction du stage à
+partir duquel vous commencez l'installation, voici ce qui est requis pour l'installation:</p>
+
+<p>
+<table>
+<tr><th>stage</th><th>étapes requises pour l'installation</th></tr>
+<tr><ti>1</ti><ti>création des partitions/du systèmes de fichiers, emerge rsync, bootstrap, emerge system,
+emerge ppc-sources, configuration finale</ti></tr>
+<tr><ti>2</ti><ti>création des partitions/du systèmes de fichiers, emerge rsync, emerge system, emerge linux
+sources, configuration finale</ti></tr>
+<tr><ti>3</ti><ti>création des partitions/du systèmes de fichiers, emerge rsync (facultatif), configuration
+finale</ti></tr>
+</table>
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Démarrage</title>
+<section>
+<body>
+
+<p>Une fois choisi le CD que vous voulez utiliser, continuez et démarrez sur le CD en maintenant la touche 'C'
+enfoncée durant le démarrage du Mac ou lancez l'installeur pour Mac "OldWorld" puis lancez BootX. Vous serez
+accueillis par un petit texte et un prompt <c>boot:</c> au bas de l'écran. A ce prompt, appuyez sur Entrée, et
+Linux commencera à se charger depuis le CD</p>
+
+<p>Ensuite, vous serez accueillis par une petite liste de commandes disponibles au démarrage du CD, incluant
+<c>nano</c> (un clone de l'éditeur pico) ainsi que des instructions pour paramétrer le réseau. Puis, vous serez
+invités à sélectionner votre keymap préféré, suivi par l'autodétection PCI. Le processus d'autodétection PCI
+chargera automatiquement les modules appropriés du noyau pour la plupart des périphériques PCI, SCSI et ethernet.
+Après cela, vous pouvez taper Entrée pour entrer dans l'environnement minimal du CD de démarrage Linux. Vous devriez
+avoir un prompt root dans la console courante ("<c>#</c>"), vous pouvez aussi ouvrir de nouvelles consoles en
+tapant ctrl+alt-f2, ctrl+alt-f3 (sur PowerBooks/IBooks c'est possible avec fn+ctrl+alt+f2), etc et en tapant sur
+Entrée.</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Chargement des modules du noyau</title>
+<section>
+<body>
+
+<p>Nous sommes presque prêt à commencer l'installation de Gentoo Linux, et la plupart des drivers pour les
+périphériques standards sont inclus dans le noyau de l'Iso Gentoo PPC, mais vous aurez peut être besoin d'autres
+drivers que nous avons inclus autant que possible. Pour voir la liste de tous les modules inclus regardez dans
+<c>/lib/modules/*/kernel/drivers/*</c>. Pour charger un module en particulier,
+tapez:</p>
+
+<pre>
+# <i>modprobe nom_module</i>
+	<comment>(remplacez nom_module par le module désiré)</comment>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration et Installation du réseau</title>
+<section>
+<body>
+
+<p>Le nouveau CD de démarrage vous permet de configurer le réseau, vous autorise au besoin l'utilisation de
+<c>ssh</c>, <c>scp</c> ou <c>wget</c> avant le début du processus d'installation. Même si vous n'avez pas
+besoin de tout ça, vous pouvez continuer et installer le réseau maintenant. Une fois installé, Portage sera
+capable d'utiliser le réseau configuré quand vous serez dans l'environnement chrooté (nécessaire pour
+l'installation de Gentoo Linux).</p>
+</body>
+</section>
+
+<section>
+<title>DHCP</title>
+<body>
+<p>
+La configuration réseau est simple en utilisant DHCP. Si votre fournisseur d'accès internet n'utilise pas
+DHCP, passez à la section configuration statique plus bas.
+</p>
+<pre caption="Configuration réseau avec DHCP">
+# <i>dhcpcd eth0</i>
+</pre>
+<note>
+Certains fournisseurs d'accès internet, il est nécessaire de fournir un hostname. Pour cela rajoutez le paramètre
+<c>-h myhostname</c> à la commande au dessus.
+</note>
+<p>Si vous recevez des alertes <i>dhcpConfig</i>, ne paniquez pas; ces erreurs sont surement là pour faire jolies.
+Passez au test du réseau.</p>
+</body>
+</section>
+<section>
+<title>Configuration statique</title>
+<body>
+<p>
+Nous avons besoin de configurer le réseau pour pouvoir télécharger les sources et ainsi construire le système, et
+aussi l'interface localhost. Tapez les commandes suivantes en remplaçant $IFACE par votre interface réseau 
+(normalement <c>eth0</c>), $IPNUM par votre adresse IP, $BCAST par votre adresse de broadcast, et $NMASK par 
+votre masque réseau. Pour la commande <c>route</c>, remplacez $GTWAY par votre passerelle par défaut.
+</p>
+<pre>
+# <i>/sbin/ifconfig $IFACE $IPNUM broadcast $BCAST netmask $NMASK</i>
+# <i>/sbin/route add -net default gw $GTWAY netmask 0.0.0.0 metric 1</i>
+</pre>
+<p>Maintenant, il est temps de créer le fichier <path>/etc/resolv.conf</path> afin que la résolution de noms 
+(trouver un site Web/FTP par son nom plutôt que par son adresse IP) fonctionne.</p>
+
+<note>Pour le moment le seul éditeur installé par défaut est <c>nano</c>, un petit éditeur visuel très simple
+d'utilisation. Utilisez <c>nano</c> avec l'option <c>-w</c> pour désactiver le retour à la ligne automatique.
+</note>
+
+<p>Voici un modèle pour vous aider à la création de votre fichier /etc/resolv.conf:
+</p>
+<pre caption="modèle: /etc/resolv.conf">
+domain mondomaine.com
+nameserver 10.0.0.1
+nameserver 10.0.0.2
+</pre>
+<p>Remplacez <c>10.0.0.1</c> et <c>10.0.0.2</c> respectivement par les adresses IP du DNS primaire et secondaire
+fournis par votre fournisseur d'accès internet.</p>
+</body>
+</section>
+<section>
+<title>Test du réseau</title>
+<body>
+<p>Maintenant que votre réseau a été configuré, la commande <c>/sbin/ifconfig -a</c> devrait vous montrer que
+votre carte réseau fonctionne
+(regardez si un <e>UP</e> et <e>RUNNING</e> apparaissent à l'écran)
+</p>
+<pre caption="/sbin/ifconfig pour une carte réseau en fonction">
+eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
+          inet addr:192.168.0.2  Bcast:192.168.0.255  Mask:255.255.255.0
+          inet6 addr: fe80::50:ba8f:617a/10 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:1498792 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1284980 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:1984 txqueuelen:100
+          RX bytes:485691215 (463.1 Mb)  TX bytes:123951388 (118.2 Mb)
+          Interrupt:11
+</pre>
+<!--
+<note>
+Si vous avez une connection ppp statique, vous pouvez !!! faire ça...!!!
+</note>
+-->
+</body>
+</section>
+<section>
+<title>Le réseau est en route!</title>
+<body>
+<p>Le réseau devrait maintenant être configuré et utilisable. Vous avez la possibilité d'utiliser les commandes
+<c>ssh</c>, <c>scp</c> et <c>wget</c> pour vous connecter à d'autres machines de votre réseau local ou d'internet.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Création des partitions</title>
+<section>
+<body>
+
+<p>Maintenant que le noyau peut voir votre réseau et vos contrôleurs de disques, il est temps de créer les partitions
+pour la Gentoo Linux.</p>
+
+<p>Voici un rapide aperçu de l'organisation standard des partitions sous Gentoo Linux. Nous allons créer au moins
+trois partitions: une partition de swap, une partition racine (qui contiendra la plus grande partie de Gentoo Linux),
+et une partition spécial de bootstrap. La partition de bootstrap est prévue pour contenir les informations sur le
+système de démarrage YABOOT. Pour les utilisateurs de Mac "OldWorld", il n'est pas requis de créer cette partition de
+démarrage bootstrap puisque les machines seront initialisées sous MacOS, et BootX servira à initialiser le noyau Linux
+et les différents scripts de démarrage.
+</p>
+
+<p>Maintenant, parlons des différents types de systèmes de fichiers. Pour l'instant, vous avez quatre options de 
+systèmes de fichiers: XFS, ext2, ext3 (journalisé) et ReiserFS. ext2 est le système de fichiers le plus testé et 
+le vrai systèmes de fichiers de Linux mais n'a pas de journalisation de méta-données. ext3 est la nouvelle version
+de ext2 avec une journalisation des méta-données et une écriture des données ordonnées ce qui permet également la
+journalisation des données de manière efficace. L'une ou l'autre est recommandée pour l'utilisation de GentooPPC.
+ReiserFS et XFS sont toutes les deux de nouveaux types de systèmes de fichiers très performant, mais elles sont
+encore au stade expérimental sous PPC et ne sont pas recommandées.
+</p>
+
+<note>Pour l'instant, créez vos partitions en utilisant mac-fdisk, <c>mac-fdisk /dev/hdx</c> (où x est la lettre 
+correspondant à votre partition, a, b, c - /dev/sdx pour les disques SCSI). Vous avez besoin de créer au minimum
+une partition de bootstrap (l'option <c>b</c> dans mac-fdisk pour les Macs "New World" uniquement), une partition
+swap (généralement il est conseillé de lui donner la taille de deux fois votre RAM, cependant je vous recommanderai
+une partition de swap d'au moins 512 Mo si vous prévoyez de compiler de grands paquetages), et une partition racine.
+Utilisez <c>?</c> au prompt de mac-fdisk pour obtenir la liste des options.
+
+</note>
+
+<p>Une fois que vous avez créé vos partitions avec <c>mac-fdisk</c>, il est temps d'initialiser les systèmes de
+fichiers qui seront utilisés pour stocker nos données. Initialisez la partition swap comme suivant:</p>
+<pre>
+# <i>mkswap /dev/hda3</i>
+</pre>
+<p>Vous pouvez utiliser la commande <c>mke2fs</c> pour un créer un système de fichiers de type ext2:</p>
+<pre>
+# <i>mke2fs /dev/hda4</i>
+</pre>
+<p>Si vous voulez utiliser ext3, vous pouvez créer un système de fichiers de type ext3 avec la commande
+<c>mke2fs -j</c>:</p>
+<pre>
+# <i>mke2fs -j /dev/hda4</i>
+</pre>
+
+<warn>Encore une fois, nous ne recommandons pas les types ReiserFS et XFS pour l'instant. Bien que ReiserFS et XFS
+fonctionnent pour la plupart, la corruption du système de fichiers est un problème trop commun à ces deux la sous
+PPC avec les noyaux de la série 2.4.x.</warn>
+
+<note>Vous pouvez trouver d'autres détails sur l'utilisation de ext3 sous Linux 2.4 à 
+<uri>http://www.zip.com.au/~akpm/linux/ext3/ext3-usage.html</uri>.</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Monter les partitions</title>
+<section>
+<body>
+<p>
+Maintenant, nous allons activer notre nouvelle partition de swap, car nous aurons peut être besoin de l'ajout
+de cette mémoire virtuelle:
+</p>
+<pre>
+# <i>swapon /dev/hda3</i>
+</pre>
+<p>Ensuite, nous allons créer le point de montage <path>/mnt/gentoo</path> et nous allons monter notre système
+de fichiers à ce dernier.
+</p>
+<pre>
+# <i>mkdir /mnt/gentoo</i>
+# <i>mount /dev/hda4 /mnt/gentoo</i>
+</pre>
+<p>Si vous êtes entrain d'installer Gentoo Linux avec une partition pour <path>/usr</path> or <path>/var</path>,
+il faudra monter ces partitions respectivement sur <path>/mnt/gentoo/usr</path> et <path>/mnt/gentoo/var</path>.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Monter le CD-ROM</title>
+<section>
+<body>
+<p>Bien que nous ayons démarré depuis le CD-ROM, le CD-ROM en lui même n'est pas monté sous notre environnement
+de démarrage Linux minimaliste. Nous avons besoin de le monter pour avoir accès  aux archives compressées du CD-ROM.
+Pour monter le CD-ROM, il faut taper habituellement:
+</p>
+<pre>
+# <i>mount /dev/cdroms/cdrom0 /mnt/cdrom -o ro -t iso9660</i>
+</pre>
+<p>Avec le CD-ROM de monté, vous êtes capable de voir les fichiers <c>stage???.tbz2</c> en tapant
+<c>ls /mnt/cdrom/build</c>.</p>
+
+<note>Si vous ne pouvez pas monter le CD-ROM, c'est toujours possible de récupérer les stages 1/2/3 du site ibiblio
+en utilisant la commande:
+<c>wget http://www.ibiblio.org/pub/Linux/distributions/gentoo/releases/build/1.2/stage1-ppc-1.2.tbz2</c></note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+    <title>Décompression du stage que vous voulez utiliser</title>
+<section>
+<body>
+
+<p>Maintenant, il est temps d'extraire l'archive stage compressé de votre choix dans <path>/mnt/gentoo</path>. Puis
+nous allons faire un <c>chroot</c> pour commencer la nouvelle installation de Gentoo Linux.
+</p>
+
+<impo>Etre sûr d'utiliser l'option <c>p</c> avec <c>tar</c>. L'oubli de le faire provoquerai d'incorrect permissions
+sur certains fichiers extraits.</impo>
+
+<impo>Si vous utilisez la méthode d'installation "construire tout à partir de rien", vous voudrez utiliser l'image
+<path>stage1-ppc-1.2.tbz2</path>, cependant vous avez aussi le choix des images de stage2 et de stage3. ces images
+vous permettent de gagner du temps au détriment des possibilités de configurations (nous avons choisi les optimisations
+du compilateur et les variables USE par défaut pour vous). L'image du stage3 inclus aussi l'image de l'arbre de
+portage, éliminant ainsi le besoin de faire un <c>emerge rsync</c> après.
+</impo>
+
+<pre>
+# <i>cd /mnt/gentoo</i>
+# <i>tar -xvjpf /mnt/cdrom/build/stage?-*.tbz2</i>
+# <i>mount -o bind /proc /mnt/gentoo/proc</i>
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+<pre>
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+&gt;&gt;&gt; Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+#
+</pre>
+
+<p>Après l'éxecution de ces commandes, vous serez dans votre nouvelle environnement Gentoo Linux.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Rsync</title>
+<section>
+<body>
+<p>Maintenant, vous avez besoin de lancer <c>emerge rsync</c> qui se connectera à rsync.gentoo.org et téléchargera
+la dernière version des ports de l'arbre de portage:</p>
+
+<pre>
+# <i>emerge rsync</i>
+</pre>
+<p>L'arbre de portage sera téléchargé, il a une taille d'environ 10 Mo.</p>
+<impo>L'adresse du serveur rsync est couramment rsync://rsync.gentoo.org/gentoo-portage. Si vous avez du mal à avoir
+accès au serveur Gentoo rsync, vérifié l'adresse contenue dans la variable SYNC dans votre /etc/make.conf.
+</impo>
+<note>La commande rsync peut être configurée pour utiliser un proxy HTTP si vous êtes derrière un firewall. Pour la
+configurer, mettez <i>RSYNC_PROXY="hostname:port"</i> dans <i>/etc/make.conf</i> ou mettez la en tant que variable
+d'environnement.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Passage du stage1 au stage2</title>
+<section>
+<body>
+
+<impo>Si vous installez à partir de l'archive stage2 ou stage3, nous avons déjà fait l'opération de bootstrap
+pour vous. Il n'y a pas de raison pour vous de recommencer cette opération, à moins que vous décidiez de faire un
+<c>emerge rsync</c> pour être sûr d'avoir la toute dernière version à la minute près du système Gentoo Linux. La
+plupart des personnes ayant utilisé les archives de stage2 ou stage3 ne voudront <i>pas</i> recommencer l'opération
+de bootstrap puisque celle ci peut prendre jusqu'à une heure sur des machines très rapides.</impo>
+
+<p>Maintenant que vous avez une copie fonctionnelle de l'arbre de portage, les personnes utilisant l'archive stage1
+pour l'installation auront besoin d'effectuer un bootstrap de leur système Gentoo Linux comme suivant. D'abord
+éditez le fichier <path>/etc/make.conf</path>. Dans ce fichier, vous devrez configurer les paramètres <c>USE</c>
+qui spécifient les fonctionnalités optionnelles que vous voulez utiliser pour compiler vos paquets; en générale,
+la valeur par défaut (une variable USE vide) est correcte. Vous devriez aussi configurer les paramètres <c>CHOST</c>,
+<c>CFLAGS</c> et <c>CXXFLAGS</c> pour le type de systèmes que vous créez (des exemples commentés peuvent être trouvés
+plus bas dans le fichier.) Si nécessaire, vous pouvez aussi configurer les informations du proxy si vous êtes derrière
+un firewall.</p>
+
+<pre>
+# <i>nano -w /etc/make.conf</i> <comment>(Configurez vos paramètres)</comment>
+</pre>
+<note>
+Les personnes voulant vraiment optimiser le processus de compilation devraient regarder le fichier
+<path>/etc/make.globals</path>. Ce fichier comprend les valeurs par défaut de gentoo et ne devraient pas être modifiés.
+Si les valeurs par défaut ne sont pas suffisantes, alors les nouvelles valeurs devraient être placées dans le fichier
+<path>/etc/make.conf</path>, car les entrées de <path>make.conf</path> sont <comment>prioritaires</comment> sur les
+entrées de <path>make.globals</path>. Si vous êtes intéressés par la configuration des paramètres USE, regardez dans
+le fichier <path>/etc/make.profile/make.defaults</path>. Si vous voulez désactiver un paramètre USE présent dans ce
+fichier, ajoutez le paramètre correspondant <c>USE="-foo"</c> dans /etc/make.conf (pour désactiver le paramètre USE
+<c>foo</c>.)
+</note>
+<p>Maintenant, il est temps de démarrer le processus de bootstrap. Ce processus peut durer de 1 à 4 heures suivant
+la rapidité de votre machine. Durant ce temps, l'image sera décompressée puis préparée pour la compilation du reste
+du système. Le compilateur GNU va être construit ainsi que la librairie GNU C. Ces compilations prennent beaucoup de
+temps et forment la partie principale du processus de bootstrap:</p>
+<pre>
+# <i>cd /usr/portage</i>
+# <i>scripts/bootstrap.sh</i>
+</pre>
+<p>Le processus de "bootstrap" va maintenant commencer.</p>
+<note>
+Portage utilise par défaut <c>/var/tmp</c> durant la construction des paquetages, utilisant plusieurs centaines de
+méga-octets de stockages temporaires. Si vous voulez changer l'endroit de stockages temporaires de Portage, mettez
+un nouveau PORTAGE_TMPDIR <e>avant</e> de commencer le processus de bootstrap, comme suivant:
+</note>
+<pre>
+# <i>export PORTAGE_TMPDIR="/otherdir/tmp"</i>
+</pre>
+<p>
+Le script <c>bootstrap.sh</c> va construire <c>binutils</c>, <c>gcc</c>, <c>gettext</c>, et <c>glibc</c>, puis
+reconstruire <c>binutils</c>, <c>gcc</c>, et <c>gettext</c> une fois que <c>glibc</c> a été construit. Bien entendu,
+ce processus dure un moment. Prenez un peu de repos. Une fois le processus terminée, votre système sera un stage2.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Passage du stage2 au stage3</title>
+<section>
+<body>
+
+<note>
+Si vous ne l'avez pas encore fait, éditez s'il vous plaît le fichier <path>/etc/make.conf</path> pour l'adapter à 
+vos besoins.
+</note>
+
+<p>Une fois votre image construite par bootstrap et que vous êtes en stage2 (encore une fois, si vous utilisez une 
+archive stage3 alors ces étapes ne sont pas requis), il est temps de construire le reste de la base du système
+comme suivant:</p>
+
+<pre>
+# <i>export CONFIG_PROTECT=""</i>
+# <i>emerge --pretend system</i>
+	<comment>[liste les paquetages qui seront installés]</comment>
+# <i>emerge system</i>
+</pre>
+
+<note>La ligne <c>export CONFIG_PROTECT=""</c> permet de s'assurer que de nouveaux scripts installés dans
+<path>/etc</path> écraseront les anciens scripts (stockés dans <path>sys-apps/baselayout</path>), contournant la
+gestion des nouveaux fichiers de configuration de Portage. Tapez <c>emerge --help config</c> pour plus de détails.
+</note>
+
+<p>Cela va prendre un moment avant que la construction du système de base complet soit finie. Votre récompense est
+que votre système sera entièrement optimisé pour votre machine. L'inconvénient est que vous devrez trouver un moyen
+de vous occuper pendant tout ce temps. L'auteur suggère "Star Wars - Super Bombad Racing" pour PS2. Lorsque <c>emerge
+system</c> sera terminé, vous aurez un système Gentoo Linux stage3.</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Etapes finales: timezone</title>
+<section>
+<body>
+
+<note>
+Si vous ne l'avez pas encore fait, éditez s'il vous plaît le fichier <path>/etc/make.conf</path> pour l'adapter à 
+vos besoins.
+</note>
+
+<p>A cette étape, vous devriez avoir un système stage3 qui est prêt pour une configuration finale. Nous allons
+démarrer ce processus en configurant la zone horaire. En configurant la zone horaire avant de construire le noyau,
+nous nous assurons que les utilisateurs auront une sortie <c>uname -a</c> cohérente.</p>
+
+<p>Cherchez votre zone horaire (timezone) (ou GMT si vous utilisez Greenwich Mean Time) dans
+<path>/usr/share/zoneinfo</path>. Puis, faites un lien symbolique en tapant:
+</p><pre>
+# <i>ln -sf /usr/share/zoneinfo/path/to/timezonefile /etc/localtime</i>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Noyau, systèmes de logueur, et cron</title>
+<section>
+<body>
+<p>
+Vous avez maintenant besoin de récupérer les sources du noyau PPC, cela peut se fait avec
+<c>emerge sys-kernel/ppc-sources</c>.
+</p>
+<p>Une fois que vous avez une arborescence des sources du noyau, il est temps de compiler votre noyau optimisé:
+</p>
+<pre>
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+# <i>make dep &amp;&amp; make clean vmlinux modules modules_install</i>
+# <i>cp vmlinux System.map /boot</i>
+</pre>
+<note>Vous devez <e>seulement</e> utiliser les noyaux Gentoo pour les machines basées sur PowerPC
+<c>sys-kernel/ppc-sources</c>.</note>
+
+<warn>Pour que votre noyau puisse fonctionner correctement, il y a plusieurs options que vous devez être sûr d'avoir
+en direct dans le noyau -- c'est à dire, les options <i>doivent être activées et non compilées comme des modules</i>.
+Vous avez besoin d'activer l'option <i>"Code maturity level options --> Prompt for development and/or incomplete
+code/drivers"</i> pour voir plusieurs de ces sélections. Dans la section "File systems" soyez sûr d'activer l'option
+<i>Device File System</i> (notez que vous n'avez <e>pas</e> besoin d'activer l'option "/dev/pts file system support".
+Vous avez aussi besoin d'activer l'option <i>Virtual Memory File system</i>. Aussi dans <i>Macintosh Device Drivers</i>
+soyez sure de désactiver l'option par défaut <i>Support for ADB raw keycodes</i>. Ensuite soyez sûr de <e>désactiver</e>
+l'option <i>Enhanced RTC</i> (dans le menu "Character devices") car ce n'est pas un ami de PPC. Mais dans le menu
+"General setup" activez l'option <i>Support for /dev/rtc</i>. C'est toujours une bonne idée de laisser l'option ext2
+que vous l'utilisez ou pas. Pour les utilisateurs de Macs "OldWorld" devront activer "HFS support" pour qu'il puisse
+copier le noyau compilé dans la partition de MacOS.
+</warn>
+<impo>
+Si vous avez un graveur IDE et/ou un lecteur DVD, vous avez alors besoin d'activer l'émulation SCSI dans le noyau.
+Allez dans "ATA/IDE/MFM/RLL support" puis "IDE, ATA and ATAPI Block devices" et activez l'option "SCSI emulation
+support" (habituellement fait en module), puis dans "SCSI support" activez "SCSI support", "SCSI CD-ROM support"
+et "SCSI generic support" (encore une fois, habituellement fait en module). Si vous choisissez ces modules, faîtes
+<c>echo -e "ide-scsi\nsg\nsr_mod" >> /etc/modules.autoload</c> pour les avoir automatiquement au démarrage. Vous devez
+aussi ajouter la ligne <c>append="hdc=ide-scsi"</c> au fichier /etc/yaboot.conf.
+</impo>
+<impo>Si vous avez une machine "Oldworld" vous avez besoin de monter votre partition HFS (MacOS), puis de copier votre
+noyau pour que BootX puisse le lancer au démarrage. BootX trouvera automatiquement les noyau dans le répertoire
+<path>Linux Kernels</path> qui est dans le répertoire système.</impo>
+<p>
+Votre nouveau noyau optimisé (et les modules) sont maintenant installés. Maintenant vous avez besoin de choisir un
+système de logueur que vous voulez installer. Nous mettons à votre disposition sysklogd, qui est l'ensemble de démons
+logueurs système traditionnel. Nous avons aussi metalog. Les utilisateurs avancés semblent se détourner de sysklogd 
+(qui n'a pas de bonnes performances) pour metalog. En cas de doute, vous pouvez essayer metalog, bien qu'il soit moins
+populaire. Pour installer le logueur de votre choix, tapez <e>une seul</e> de ces deux lignes:
+</p>
+
+<pre>
+# <i>emerge app-admin/sysklogd</i>
+# <i>rc-update add sysklogd default</i>
+<comment>ou</comment>
+# <i>emerge app-admin/metalog</i>
+# <i>rc-update add metalog default</i>
+</pre>
+
+<warn>Si vous utilisez l'archive stage3 de la version 1.2 vous n'avez pas besoin d'installer un système de logueur.
+stage3-ppc-1.2.tbz2 inclus sysklogd (bien que l'ancienne et la nouvelle version ne le font pas). Si vous voulez
+utiliser metalog à la place, vous avez d'abord besoin de désinstaller sysklogd. Après l'installation terminée, empêchez
+sysklogd d'être lancé au démarrage <c>rc-update del sysklogd default</c>. Puis <c>emerge unmerge sysklogd</c> pour
+le désinstaller. Vous devrez probablement effacer à la main les fichiers de configuration de sysklogd dans 
+<path>/etc</path> (cherchez <c>cfgpro</c> dans la liste de fichiers durant la désinstallation). Pour installer metalog,
+lancez <c>emerge metalog</c>, puis <c>rc-update add metalog default</c>.
+</warn>
+<impo>
+Metalog écrit sa sortie sur le disque par blocs, donc les messages ne sont pas immédiatement enregistrés dans les
+journaux systèmes. Si vous essayez de débugguer un démon, ce comportement ne va pas vous faciliter la tâche. Quand
+votre système Gentoo Linux est en cours de fonctionnement, vous pouvez envoyer à metalog un signal USR1 pour
+désactiver temporairement ce comportement (ce qui veut dire que <i>tail -f <path>/var/log/everything/current</path></i>
+va alors fonctionner en temps réel comme attendu) et un signal USR2 pour revenir au comportement original.
+</impo>
+<p>Maintenant vous pouvez choisir de manière optionnelle un paquet cron que vous aimeriez utiliser. Pour l'instant,
+nous vous offrons dcron, fcron et vcron. Si vous ne savez pas lequel utiliser, vous pouvez installer vcron. Ils
+peuvent être installés comme ci-dessous : </p>
+<pre>
+# <i>emerge sys-apps/dcron</i>
+# <i>crontab /etc/crontab</i>
+<comment>ou</comment>
+# <i>emerge sys-apps/fcron</i>
+# <i>crontab /etc/crontab</i>
+<comment>ou</comment>
+# <i>emerge sys-apps/vcron</i>
+# <i>crontab /etc/crontab</i>
+</pre>
+<p>Pour plus d'informations sur le fonctionnement de cron sous Gentoo linux, lire <uri
+link="http://lists.gentoo.org/pipermail/gentoo-announce/2002-April/000151.html"></uri> ce message.</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installation de paquetages additionnels</title>
+<section>
+<body>
+<p>
+Si vous utilisez un ordinateur portable et que vous voulez utiliser vos ports pcmcia dès le premier redémarrage, vous
+devriez être sûr que vous avez installer le paquetage pcmcia-cs.
+</p>
+<pre>
+# <i>emerge sys-apps/pcmcia-cs</i>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Etapes finales: configuration du système</title>
+<section>
+<title>Etapes finales: /etc/fstab</title>
+<body>
+<p>Votre système Gentoo Linux est presque prêt à l'utilisation; Tout ce que nous avons besoin de faire, est de
+configurer des fichiers systèmes important et d'installer le chargeur de démarrage YABOOT.
+Le premier fichier que nous devons configurer est <path>/etc/fstab</path>.
+Souvenez vous de spécifier le système de fichiers appropriés <c>ext2</c> ou <c>ext3</c>.</p>
+<p>Vous pouvez vous inspirer du <path>/etc/fstab</path> ci-dessous, mais bien sûr assurez vous de remplacer "ROOT" et "SWAP" avec les périphériques que vous utilisez (comme <c>hda2</c>, etc.). Note pour les utilisateurs de Macs "New World"
+<e>ne pas</e> rajouter votre partition de bootstrap à ce fichier.</p>
+<pre caption="/etc/fstab">
+<comment>
+# /etc/fstab: static file system information.
+#
+# noatime turns of atimes for increased performance (atimes normally aren't
+# needed; notail increases performance of ReiserFS (at the expense of storage
+# efficiency).  It's safe to drop the noatime options if you want and to
+# switch between notail and tail freely.
+# &lt;fs&gt;           &lt;mountpoint&gt;   &lt;type&gt;   &lt;opts&gt;          &lt;dump/pass&gt;
+</comment>
+/dev/ROOT           /           ext3	 noatime         0 1
+/dev/SWAP           none        swap	 sw              0 0
+/dev/cdroms/cdrom0  /mnt/cdrom  iso9660	 noauto,ro       0 0
+proc                /proc       proc	 defaults        0 0
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Etapes finales: définir le mot de passe root</title>
+<body>
+<p>Avant d'oublier, définissez le mot de passe de root en tapant:</p>
+<pre>
+# <i>passwd</i>
+</pre>
+</body>
+</section>
+<section>
+<title>Etapes finales: /etc/hostname</title>
+<body>
+<p>Editez ce fichier pour qu'il contienne votre nom de domaine sur une ligne, par exemple
+<c>mamachine.mondomaine.com</c>.
+</p>
+</body>
+</section>
+
+<section>
+<title>Etapes finales: /etc/hosts</title>
+<body>
+<p>Ce fichier contient une liste d'adresses IP et leur noms d'hôte associés. Il est utilisé par le système pour
+résoudre les adresses IP de tous les noms d'hôtes qui ne sont pas dans vos serveurs de noms. Voici un exemple de
+ce fichier :
+</p><pre caption="/etc/hosts">
+127.0.0.1      localhost
+<comment># la ligne suivante contient l'IP pour votre réseau local et le nom de machine associé</comment>
+192.168.1.1    mymachine.mydomain.com	mymachine
+</pre>
+</body>
+</section>
+
+<section>
+<title>Configuration du réseau finale</title>
+<body>
+<p>
+Ajoutez les noms des modules qui sont nécessaires au bon fonctionnement de votre
+système dans le fichier <path>/etc/modules.autoload</path> (vous pouvez aussi
+ajouter n'importe quelles options dont vous avez besoin sur la même ligne.)
+Quand Gentoo Linux démarre, ces modules seront automatiquement chargés. Un
+module particulièrement important est celui de votre carte réseau, si vous
+l'avez compilé en tant que module :
+</p>
+<pre caption="/etc/modules.autoload">
+sungem
+</pre>
+<p>Editez le script <path>/etc/conf.d/net</path> pour que votre réseau soit configuré lors du premier démarrage:
+</p>
+<pre>
+# <i>nano -w /etc/conf.d/net</i>
+# <i>rc-update add net.eth0 default</i>
+</pre>
+<p>
+Si vous avez plusieurs cartes réseau vous devez créer un autre script <path>net.eth<comment>x</comment></path> pour
+chaque carte (<comment>x</comment> = 1, 2, ...):
+</p>
+<pre caption="Plusieurs interfaces réseaux">
+# <i>cd /etc/init.d</i>
+# <i>cp net.eth0 net.eth<comment>x</comment></i>
+# <i>rc-update add net.eth<comment>x</comment> default</i>
+</pre>
+<p>
+Si vous avez une carte PCMCIA installée, jetez un bref coup d'oeil dans /etc/init.d/pcmcia pour vérifier que cela
+correspond à votre configuration puis ajoutez
+<pre>
+depend() {
+	need pcmcia
+}
+</pre>
+au début de votre fichier <path>/etc/init.d/net.eth<comment>x</comment></path> pour que les pilotes pcmcia soit
+chargés automatiquement quand votre réseau est chargé.
+</p>
+</body>
+</section>
+
+
+<section>
+<title>Etapes finales : configuration des paramètres de base (incluant la configuration du clavier)</title>
+<body>
+<pre caption="basic configuration">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+<p>
+Suivez les instructions dans ce fichier pour configurer les paramètres de bases.
+Tous les utilisateurs voudront s'assurer que <c>CLOCK</c> est configuré à leur
+convenance. Les utilisateurs de claviers internationaux voudront définir la
+variable <c>KEYMAP</c> (parcourir <path>/usr/share/keymaps</path> pour avoir la
+liste des possibilités).
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration du chargeur de démarrage</title>
+<section>
+<body>
+<p>La principal différence que vous trouverez ici par rapport à Linux sur x86 est son chargeur de démarrage. Les Macs
+"New World" utilisent YABOOT. Les Macs "OldWorld" utilisent BootX.</p>
+</body>
+</section>
+
+<section>
+<title>YABOOT pour les Macs "New World"(installation automatique en utilisant yabootconfig)</title>
+<body>
+<p>Vous pouvez utiliser le nouveau et amélioré yabootconfig, inclus dans yaboot-1.3.8-r1 et après, pour automatiser
+l'installation de YABOOT. yabootconfig détectera automatiquement les partitions de votre machine et installera un
+système de démarrage en combinaison avec MacOS et/ou MacOSX.</p>
+
+<p>Pour utiliser yabootconfig, votre disque dur doit avoir une partition bootstrap, et <path>/etc/fstab</path> doit
+être configuré avec vos partitions Linux. Ces deux points ont été faits dans l'étape précédente. Pour commencer,
+assurez vous que vous avez la dernière version de yaboot installé en lançant <c>emerge -u yaboot</c>. Il est 
+nécessaire que la dernière version soit installé via Portage, mais il se peut qu'il ne soit pas dans les archives des
+différents stage.</p>
+
+<p>A l'invite du prompt, lancez <c>yabootconfig</c>. Le programme va se lancer et il confirmera la localisation 
+de la partition de bootstrap. Tapez <c>Y</c> si c'est correct. Si cela ne l'est pas, revérifiez <path>/etc/fstab</path>.
+yabootconfig va scanner tout votre système, créer <path>/etc/yaboot.conf</path> et lancer <c>mkofboot</c> pour vous.
+(mkofboot est utilisé  pour formater la partition bootstrap, et pour installer le fichier de configuration de YABOOT.)</p>
+
+<p>Vous voulez peut être vérifier le contenu de <path>/etc/yaboot.conf</path>. Si vous faîtes des changements dans
+<path>/etc/yaboot.conf</path> (comme mettre le système d'exploitation voulu par défaut), soyez sûr de relancer
+<c>ybin -v</c> pour appliquer les changements à la partition bootstrap.</p>
+</body>
+</section>
+
+<section>
+<title>yaboot pour les Macs "New World" (configuration manuelle de yaboot.conf)</title>
+<body>
+
+<p>Si pour certaines raisons vous ne voulez pas lancer yabootconfig pour automatiser l'installation de 
+<path>/etc/yaboot.conf</path>, vous pouvez juste éditez le fichier d'exemple qui est installé sur votre système.
+Un fichier complet est fournis en dessous:</p>
+
+<pre caption="/etc/yaboot.conf">
+## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## our bootstrap partition:
+boot=/dev/hda9
+
+##hd: is open firmware speak for hda
+device=hd:
+partition=11
+
+root=/dev/hda11
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options
+#################
+image=/boot/vmlinux
+	label=Linux
+	sysmap=/boot/System.map
+	read-only
+##################
+
+macos=/dev/hda13
+macosx=/dev/hda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>Une fois <path>yaboot.conf</path> est installé comme vous le voulez, vous lancez <c>mkofboot -v</c> pour installer
+vos paramètres dans la partition bootstrap. N'oubliez pas cela! Si tout va bien, et que vous avez les mêmes paramètres
+que l'exemple précédent, votre prochain redémarrage vous donnera un simple menu de démarrage à 5 entrées. Si vous modifiez
+votre configuration de YAbOOT plutard, vous aurez juste à faire <c>ybin -v</c> pour mettre à jour la partition
+bootstrap - mkofbootest seulement la pour l'installation initiale.
+</p>
+
+<note>
+YABOOT a quelques fonctionnalitées non utilisées ici, donc allez à <uri>http://penguinppc.org/projects/yaboot</uri>
+pour plus d'informations.
+</note>
+</body>
+</section>
+
+<section>
+<title>BootX pour les Macs "OldWorld"</title>
+<body>
+<impo>Suivez ces étapes après vous redémarrerez votre machine pour l'étape suivante.</impo>
+<p>Démarrez votre machine avec MacOS et ouvrez le menu de contrôle de BootX. Sélectionnez <c>Options</c>, désactivez
+<c>Used specified RAM disk</c>. Quand vous retournerez vers l'écran principal de BootX, vous trouvez maintenant une 
+option pour spécifier le disque racine de votre machine et la partition racine. Remplissez les champs par les valeurs
+appropriées.</p>
+<p>BootX peut être configuré pour démarrer Linux au démarrage. Si vous faîtes ça, vous verrez d'abord le démarrage de
+MacOS, et durant le lancement, BootX chargera et lancera Linux. Regardez ici
+<uri link="http://penguinppc.org/projects/bootx/">BootX home page</uri> pour plus d'informations.</p>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Installation terminée!</title>
+<section>
+<body>
+<p>Maintenant, Gentoo Linux est installé.  La dernière étape est de quitter l'environnement chroot, de démonter
+proprement vos partitions et de redémarrer le système : </p>
+
+<pre>
+# <i>exit</i>  <codenote>Ceci permet de quitter l'environnement chroot ; vous pouvez aussi taper <c>^D</c></codenote>
+# <i>cd / </i>
+# <i>umount /mnt/gentoo/proc</i>
+# <i>umount /mnt/gentoo</i>
+# <i>reboot</i>
+</pre>
+<note>
+Après avoir redémarré, il est conseillé d'exécuter la commande <c>update-modules</c> pour créer le fichier
+<path>/etc/modules.conf</path>. Plutôt que de modifier ce fichier directement, vous devriez généralement modifier
+les fichiers dans <path>/etc/modules.d</path>.
+</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Extras</title>
+<section>
+<title>Emulation d'une souris à plusieurs boutons</title>
+<body>
+<p>Vous voudrez peut être rajouter ces lignes au fichier <path>/etc/sysctl.conf</path> pour activer l'émulation de 
+boutons de la souris à chaque démarrage. La valeur des touches peut être obtenue par l'utilitaire en ligne de
+commande <c>showkey</c>. Ici c'est un exemple utilisant les touches F11 et F12.
+<pre>
+# Activation de l'émulation des boutons de la souris
+dev.mac_hid.mouse_button_emulation = 1
+# correspondance du 2eme bouton avec 87 - F11
+dev.mac_hid.mouse_button2_keycode = 87
+# correspondance du 2eme bouton avec 88 - F12
+dev.mac_hid.mouse_button3_keycode = 88
+</pre>
+</p>
+</body>
+</section>
+
+<section>
+<title>Gentoo-Stats</title>
+<body>
+<p>L'usage du programme de statistique de Gentoo Linux a commencé comme une tentative pour donner aux développeurs un
+aperçu de l'usage externe. Cela collecte des informations sur l'usage de la Gentoo Linux pour les aider à mettre des
+priorités dans leurs développements. L'installation est complètement optionnelle, et il serait très apprécié si vous 
+décidiez de l'utiliser. Toutes le statistiques peuvent être vues à <uri>http://stats.gentoo.org/</uri>.</p>
+
+<p>Le serveur gentoo-stats vous assignera un ID unique à votre système. Cette ID est utilisé pour être sûr que chaque
+système soit compté une seul fois. L'ID ne sera pas utilisé pour une identification individuelle de votre système, 
+aucune adresses IP ou informations personnelles ne sera marquées. Toutes les précautions ont été prises pour assurer
+votre vie privée dans le développement de ce système. Les informations collectées par notre programme "gentoo-stats"
+, qui nous sont envoyées, sont:</p>
+<ul>
+<li>paquetages installés et les numéros de versions</li>
+<li>Informations sur le CPU: vitesse (MHz), nom du vendeur, nom du modèle, paramètres du CPU (comme "altivec")</li>
+<li>information sur la memoire (total de RAM physique, total de l'espace de swap)</li>
+<li>cartes PCI et cartes réseaux</li>
+<li>le profil utilisé de la Gentoo Linux (c'est à dire, vers où ointe le lien de /etc/make.profile).</li>
+</ul>
+
+<p>Nous sommes conscient que la divulgation de ces informations sensibles est un danger pour la plupart des
+utilisateurs de Gentoo Linux (c'est juste pour les développeurs).</p>
+
+<ul>
+<li>A moins que vous modifiez le programme gentoo-stats, il ne transféra jamais d'informations sensibles tel que vos
+mots de passes, vos données de configuration, vos films favoris...</li>
+<li>La transmission de votre adresse e-mail est optionnelle et désactivée par défaut.</li>
+<li>L'adresse IP utilisée lors des envois de données n'est jamais stockée dans le sens où nous pouvons vous identifier.
+il n'y a pas de "Adresse IP/ID système".</li>
+</ul>
+
+<p>L'installation est simple - juste lancer les commandes suivantes:</p>
+
+<pre caption="Installing gentoo-stats">
+# <c>emerge gentoo-stats</c>   <codenote>Installation de gentoo-stats</codenote>
+# <c>gentoo-stats --new</c>    <codenote>Obtention d'un nouveau ID système</codenote>
+</pre>
+
+<p>La seconde commande au dessus va demander un nouveau ID système et va le mettre automatiquement dans
+<path>/etc/gentoo-stats/gentoo-stats.conf</path>. Vous pouvez visualiser ce fichier pour voir des options additionnelles.
+</p>
+
+<p>Après ça, le programme sera lancer à heure régulière (gentoo-stats n'a pas besoin d'être lancé en tant que root).
+Ajouter cette ligne à votre <path>crontab</path>:</p>
+
+<pre caption="Updating gentoo-stats with cron">
+<c>0 0 * * 0,4 /usr/sbin/gentoo-stats --update > /dev/null</c>
+</pre>
+
+<p>Le programme <c>gentoo-stats</c> est un simple script perl qui peut être visualisé avec votre éditeur préféré:
+<path>/usr/sbin/gentoo-stats</path>.</p>
+
+</body>
+
+</section>
+
+<section>
+<title>Que faire à partir de maintenant</title>
+<body>
+<p>Si vous avez des questions ou vous voulez participer au développement de Gentoo Linux, pensez à rejoindre nos
+mailing lists gentooppc-user et gentooppc-dev (il y a un lien "cliquer pour s'inscrire" sur
+<uri link="http://www.gentoo.org/">page principal</uri>). Nous avons avons aussi de la documentation sur
+<uri link="/doc/fr/desktop.xml">guide de configuration du bureau</uri> qui vous aidera dans la suite de la
+configuration de votre nouveau système Gentoo Linux, et aussi <uri link="/doc/fr/portage-user.xml">Guide Portage</uri>
+pour vous aider à vous familiariser avec Portage. Bienvenue dans Gentoo Linux!</p>
+
+<p>La <uri link="/doc/en/gentoo-ppc-faq.xml">Gentoo Linux/PowerPC FAQ</uri> couvre la plupart des questions usuelles
+à propos de Gentoo Linux/PPC. La générale <uri link="/doc/en/faq.xml">Gentoo Linux FAQ</uri> peut aussi vous aider pour
+les débuts, bien qu'elle soit plus tourner vers les installations x86.
+<uri link="http://forums.gentoo.org/viewforum.php?f=24">Gentoo sur PPC</uri> est un forum en anglais de discussions
+sur tous les types de PowerPC. il y a aussi une discussion en direct de possible sur IRC en anglais. Rejoignez nous
+sur <i>#gentoo-ppc</i> de <i>irc.freenode.net</i>.</p>
+
+<p>Merci et bonne continuation avec Gentoo!</p>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>
