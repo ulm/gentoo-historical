@@ -33,7 +33,7 @@ cd ${GENTOO_WEB_DOCROOT}
 #for x in `ls news/200*.xml | sort -r`
 for x in `ls ${GENTOO_WEB_DOCROOT}/news/200*.xml | sed -e 's/^.*htdocs\///' | sort -r`
 do
-	echo "<uri>/$x</uri>" >> ${GENTOO_WEB_DOCROOT}/dyn/news-index.xml
+	echo "<uri>$x</uri>" >> ${GENTOO_WEB_DOCROOT}/dyn/news-index.xml
 done
 echo "</uris>" >> ${GENTOO_WEB_DOCROOT}/dyn/news-index.xml
 echo "News index generated :)"
@@ -41,11 +41,11 @@ echo "News index generated :)"
 # now the subpages
 for x in ${ARCHES}
 do
-	cd ${GENTOO_WEB_DOCROOT}/proj/en/${x}
+	cd ${GENTOO_WEB_DOCROOT}proj/en/base/${x}
 	#for y in `ls  news/200*.xml | sort -r`
 	for y in `ls ${GENTOO_WEB_DOCROOT}/news/200*.xml | sed -e 's/^.*htdocs\///' | sort -r`
 	do
-		echo "<uri>/${y}</uri>" >> ${GENTOO_WEB_DOCROOT}/dyn/${x}-news-index.xml
+		echo "<uri>${y}</uri>" >> ${GENTOO_WEB_DOCROOT}/dyn/${x}-news-index.xml
 	done
 	echo "</uris>" >> ${GENTOO_WEB_DOCROOT}/dyn/${x}-news-index.xml
 	echo "News index for ${x} generated :)"
