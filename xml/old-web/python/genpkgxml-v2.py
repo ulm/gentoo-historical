@@ -161,7 +161,10 @@ def create_pkg_db(db):
                 rdepend=string.replace(rdepend,'>','&gt;')
                 db[mysplit[0]][PN]['depend']    = depend
                 db[mysplit[0]][PN]['rdepend']   = rdepend
-		db['totalnumberofpackages'] = str(TotalPkgNum)
+		if not db[mysplit[0]].has_key('package_count'): 
+			db[mysplit[0]]['package_count'] = 0
+		db[mysplit[0]]['package_count'] += 1
+	db['totalnumberofpackages'] = str(TotalPkgNum)	
         return db
 
 
@@ -280,7 +283,8 @@ for category in fsort(db.keys()):
         workdir = pkgdir + category
         if not os.path.exists(workdir):
                 os.makedirs(workdir)
-
+	pkg_count=db[category]['package_count']
+	del db[category]['package_count']
         for pkg in fsort(db[category].keys()):
                 pkg_desc_dir = workdir #+ "/" +pkg
                 if not os.path.exists(pkg_desc_dir):
@@ -300,6 +304,7 @@ for category in fsort(db.keys()):
                                 <title>Package Category """+ category+"""</title>
                                 <body>
                                 <p>
+				Number of packages in category: """ + str(pkg_count) + """
                                 <table>
                                 <tr>
                                 <th>Package</th>
