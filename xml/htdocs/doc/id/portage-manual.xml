@@ -1,0 +1,1361 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- English doc rev. 1.18 -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link = "/doc/id/portage-manual.xml">
+<title>Portage Manual</title>
+<author title="Author and Editor">
+<mail link="blocke@shivan.org">Bruce A. Locke</mail>
+</author>
+<author title="Editor"><mail link="carl@gentoo.org">Carl Anderson</mail></author>
+<author title="Editor"><mail link="swift@gentoo.org">Sven Vermeulen</mail></author>
+<author title="Editor"><mail link="peesh@gentoo.org">Jorge Paulo</mail></author>
+<author title="Translator"><mail link="erwin@gentoo.org">Erwin</mail></author>
+
+<abstract>
+Dokumen ini menerangkan Portage secara menyeluruh, 
+informasi konfigurasi secara detail dan memandu pengguna 
+dalam menginstal dan me-maintain paket-paket menggunakan 
+sistem Portage.
+</abstract>
+
+<license/>
+
+<version>0.9.8</version>
+<date>September 15, 2003</date>
+
+<chapter>
+<title>Portage: Secara Garis Besar</title>
+
+<section>
+  <title>Rangkuman</title>
+  <body>
+	<p>
+	Portage adalah sistem manajemen paket advance yang sangat
+	mengagumkan. Fleksibilitas dan kemampuannya sebagai sistem
+	dasar untuk membangun paket ataupun dalam membentuk
+	inti dari distro Linux modern membuat portage pantas disebut
+	sebagai sistem meta-distro. Distro Gentoo Linux dibangun
+	menggunakan sistem Portage.
+	</p>
+	<p>
+	Gentoo Linux sendiri sering juga disebut sebagai meta-distro. Gentoo
+	memiliki Portage dan lebih dari 4000 set script pembangun paket yang
+	dikenal sebagai <c>ebuild</c>. <c>ebuild</c> tersebut
+	memberitahu sistem Portage cara mengkompilasi dan menginstal
+	sebuah paket software. Dengan menggunakan <c>profile</c> dan
+	utilitas berbasis text bernama <c>emerge</c>, user dan developer
+	dapat menggunakan sistem Portage untuk menginstal dan me-maintain
+	paket-paket yang menjadi dasar sistem operasi dan aplikasi pada
+	sistem tersebut.
+	</p>
+	<p>
+	Sistem Gentoo Linux "dikompilasi secara on-the-fly". Instalasi Gentoo
+	Linux melibatkan setting up compiler dan membangun sebuah
+	environment dimana Portage dapat mendownload source code dari
+	internet dan membangun sisa dari "inti" sistem dan aplikasi-aplikasi
+	lainnya. Walaupun Portage mendukung penggunaan paket binary
+	yang telah selesai dikompilasi, cara tersebut merupakan alternatif dan
+	hanya digunakan bagi instalasi pada komputer yang lambat, oleh
+	developer yang mungkin ingin mengembalikan sebuah paket secara
+	cepat, atau bagi user yang mengkompilasi paket-paket pada mesin
+	yang lebih cepat bagi komputer tua.
+	</p>
+	<p>
+	Karena kemampuan tersebut, dan bahwa sistem Portage sangat
+	mudah	dikonfigurasi dalam mengkompilasi dan menginstal paket-paket,
+	sangat sedikit sekali instalasi Gentoo Linux yang sama. Sebagai
+	tambahan, sewaktu seorang pengguna menginstal Gentoo Linux,
+	sistem Portage mengkompilasi distro Linux yang terkustomisasi
+	menurut opsi-opsi yang tertera pada konfigurasi Portage dan
+	ebuild pengguna tersebut.
+	</p>
+	<p>
+	Secara sekilas, ide dari sistem Portage mungkin hampir sama dengan
+	sistem port tradisional BSD. Keduanya mengkompilasi paket-paket dari
+	source dan membantu para pengguna dalam menginstal dan menguninstal
+	software-software secara aman dari sistem mereka dan keduanya juga
+	sama-sama menangani dependency. Banyak ide dari sistem Portage
+	diambil dari sistem port BSD tetapi tentu saja sistem Portage bukan
+	"sistem port curian".
+	</p>
+	<p>
+	Sistem Portage merupakan gabungan dari inti Python dengan <c>ebuild</c>
+	berbasis script Bash. Daripada menggunakan Makefile dan perintah
+	<c>make</c>, sistem Portage menggunakan kehebatan Python dan
+	kemudahan penggunaan scripting shell dengan beberapa karakteristik
+	object oriented untuk membuat sebuah sistem unik yang sangat solid
+	yang berani kami nyatakan merupakan yang terdepan dari sistem
+	port-port saat ini.
+	</p>
+
+	<p>
+	Beberapa fitur-fitur advance yang disediakan Portage adalah kemampuan
+	untuk memiliki beberapa versi dan revisi dari paket yang sama pada
+	sistem anda, dukungan fitur dan resolusi dependency kondisional,
+	manajemen paket yang telah dipoles, instalasi sandbox yang aman,
+	proteksi file konfigurasi, profile, dan banyak lagi. Beberapa fitur-fitur
+	ini akan dibahas secara mendetail nantinya pada dokumen ini.
+	</p>
+  </body>
+</section>
+
+<section>
+<title>Dukungan Fitur dan Resolusi Dependency Kondisional</title>
+<body>
+	<p>
+	Sistem Portage sangat unik dalam hal fleksibilitas yang ditawarkan
+	kepada para pengguna. Sistem port BSD tradisional hanya
+	mendukung satu revisi dari sebuah paket di port tree mereka
+	pada saat yang sama. Portage tidak memiliki batasan seperti itu.
+	Beberapa versi dari paket yang sama dapat diinstal pada sistem anda.
+	Dependency dari paket, yaitu paket-paket yang diperlukan pada
+	saat kompilasi dan digunakan oleh paket lain, dapat ditulis dengan
+	nama paket atau nama paket dengan range revisinya. Hal ini
+	memungkinkan sistem anda memiliki beberapa versi dari paket
+	software dengan aman.
+	</p>
+	<p>
+	Sistem dependency juga mendukung dependency kondisional. Portage
+	memiliki konsep yang bagus bernama sistem <c>setting USE</c>.
+	Dengan mengubah salah satu variabel konfigurasi pada file konfigurasi
+	Portage, anda dapat menonaktifkan dukungan tambahan (dan juga
+	kebutuhan dependency tersebut) bagi fitur tertentu atau library-library
+	pada semua paket-paket pada saat kompilasi. Sistem ini sangat fleksibel
+	dan sangat mengagumkan yang akan dijelaskan lebih lanjut pada seksi
+	berikutnya.
+	</p>
+	<p>
+	Sebagai tambahan, Portage juga mendukung konsep <c>SLOT</c>.
+	Pada saat development Gentoo Linux, para developer merasa kita
+	perlu memiliki beberapa versi dari paket-paket tertentu (mis. library)
+	terinstal untuk memenuhi kebutuhan beberapa paket-paket lainnya.
+	Cara kuno untuk menyelesaikan masalah ini adalah dengan menganggap
+	beberapa versi yang berbeda dari paket yang sama sebagai paket-paket
+	yang berbeda dengan sedikit perubahan nama.
+	</p>
+	<p>
+	Daripada developer menganggap versi-versi tertentu sebagai paket-paket
+	yang berbeda, para developer mengajarkan Portage cara menangani
+	dan me-maintain beberapa versi dari paket yang sama dengan menggunakan
+	sistem <c>SLOT</c>. Sebagai contoh dari sistem ini adalah dengan melihat
+	library umum bernama freetype. freetype versi 1.x tidak kompatibel dengan
+	versi 2.x tetapi kedua versi tersebut diperlukan untuk memenuhi dependency
+	dari beberapa paket-paket software. Kebanyakan distro dan sistem port
+	memiliki sebuah paket "freetype" bagi freetype 1.x dan "freetype2" bagi
+	versi 2.x. Kami menganggap langkah ini sebagai tanda dari sistem manajemen
+	paket yang rusak/jelek. Kami dapat dengan mudah menomori <c>SLOT</c>
+	dengan nomor 1 bagi versi 1.x dan nomor 2 bagi versi 2.x. Dengan informasi
+	ini, Portage dapat me-maintain kedua versi tersebut dan mengupgrade
+	kedua versi jika terdapat update pada cabang versi-versi tersebut.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Profiles</title>
+<body>
+	<p>
+	Sistem Portage mendukung konsep <c>profile</c>. Sebuah profile
+	memiliki list dari nama paket-paket dan versinya serta opsi-opsi
+	konfigurasi default yang digunakan Portage. Sebuah profile memberitahu
+	Portage paket-paket dan versi mana saja yang diizinkan, dilarang, atau
+	ditangani. Para pengguna dapat mengganti profile mereka dengan
+	mengubah file symlink (<path>/etc/make.profile</path>). Hal ini
+	kedengarannya memang sederhana tetapi hal ini membuat Portage
+	membentuk inti dari sebuah distro dan menyediakan sistem
+	kompilasi profesional.
+	</p>
+	<p>
+	Seluruh usaha yang digunakan dalam membentuk distro Gentoo
+	Linux menghasilkan sebuah koleksi file-file <c>ebuild</c> yang
+	digunakan Portage dan sebuah profile. Profile ini mendefenisikan
+	paket-paket mana saja yang dianggap paket-paket "inti" yang
+	vital bagi sistem operasi tersebut. Profile juga membiarkan para
+	developer untuk memblok dan unblok paket-paket tertentu dan
+	versi-versi tertentu untuk menonaktifkan sementara paket-paket
+	yang tidak berfungsi, dll. File-file <c>ebuild</c> memberitahu Portage
+	bagaimana cara membangun dan menginstal paket-paket software
+	yang diperlukan atau diizinkan oleh profile.
+	</p>
+	
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Mengkonfigurasi Portage</title>
+
+<section>
+<title>Rangkuman</title>
+<body>
+	<p>
+	Seksi berikut ini menjelaskan tentang berbagai aspek dari
+	konfigurasi Portage yang penting bagi para pengguna dan juga
+	developer. Portage merupakan sistem yang sangat fleksibel
+	dan anda perlu mengerti bagaimana cara mengkonfigurasi
+	Portage untuk menangani sistem anda dan mengoptimasi
+	program-program bagi kebutuhan anda.
+	</p>
+	<p>
+	Catat bahwa penggunaan kata "pengguna(user)" pada dokumen
+	ini berarti orang yang memiliki hak administratif untuk menggunakan
+	Portage dan mengubah konfigurasi sistem. Anda harus memiliki
+	akses root untuk mengubah konfigurasi Portage dan me-merge
+	serta unmerge paket-paket.
+	</p>
+</body>
+</section>
+
+<section>
+<title>File Konfigurasi Portage</title>
+<body>
+	<p>
+	Hampir semua opsi konfigurasi yang dibicarakan di bawah ini
+	dapat ditemui di <path>/etc/make.conf</path>,
+	<path>/etc/make.profile/make.defaults</path> dan
+	<path>/etc/make.globals</path>.
+	"<path>/etc/make.conf</path> memiliki berbagai variabel
+	yang digunakan oleh Portage. Portage pertama-tama akan
+	memeriksa variabel environment yang terdefenisi-pada-saat-itu.
+	Jika tidak ada setting environment yang terdefenisi, Potage lalu
+	akan memeriksa file <path>/etc/make.profile/make.defaults</path>.
+	Jika tidak ada setting juga yang ditemui pada file tersebut, setting default
+	akan diambil dari <path>/etc/make.globals</path>. Catat bahwa
+	semua setting pengguna harus diset di environment ataupun di
+	file <path>/etc/make.conf</path>, yang ditujukan untuk dapat
+	dikustomisasi oleh para pengguna."
+	Sangat penting untuk dicatat bahwa setting-setting yang terdefenisi
+	di file <path>/etc/make.conf</path> hampir akan selalu menimpa
+	setting-setting di file <path>/etc/make.globals</path>. Segala
+	setting di file <path>/etc/make.conf</path> dan file
+	<path>/etc/make.globals</path> dapat dianggap sebagai setting
+	global sistem selama Portage digunakan.
+	</p>
+	<p>
+	Sewaktu memeriksa apakah sebuah opsi telah terdefenisi, penulis
+	merekomendasikan anda untuk pertama-tama memeriksa file
+	<path>/etc/make.conf</path> lalu memeriksa file
+	<path>/etc/make.globals</path>. Kecuali tertulis dengan jelas,
+	opsi-opsi di file <path>/etc/make.conf</path> akan menimpa
+	opsi di file <path>/etc/make.globals</path>.
+	</p>
+</body>
+</section>
+
+<section>
+  <title>Setting USE</title>
+  <body>
+  	<p>
+	Sistem setting USE sangat fleksibel dalam hal mengaktifkan atau
+	menonaktifkan berbagai fitur pada saat kompilasi paket dalam
+	level global dan juga bagi paket-paket individual. Hal ini memberikan
+	kemampuan bagi administrator untuk mengontrol bagaimana
+	paket-paket dikompilasi dalam hal fitur tambahan yang dapat
+	dikompilasi ke paket-paket tersebut. Sebagai contoh, paket-paket
+	dengan dukungan GNOME opsional dapat diset agar dukungan ini
+	dinonaktifkan pada saat kompilasi dengan menonaktifkan setting
+	USE <c>gnome</c>. Mengaktifkan setting USE <c>gnome</c>
+	akan mengaktifkan dukungan GNOME pada paket-paket yang sama.
+	</p>
+	<p>
+	Efek dari setting USE pada paket-paket tergantung apakah software
+	dan paket ebuild tersebut mendukung setting USE tertentu sebagai
+	fitur opsional. Jika software tersebut tidak memiliki dukungan terhadap
+	sebuah fitur opsional maka setting USE tersebut tentu saja tidak
+	akan berpengaruh pada paket tersebut. Dan juga, banyak dependency
+	paket tidak dianggap opsional bagi sebuah software, karena itu
+	setting USE juga tidak akan berpengaruh pada kebutuhan dependency
+	tersebut. Daftar dari setting USE yang digunakan oleh sebuah paket
+	dapat ditemukan dengan memeriksa baris <c>DEPEND</c> dan
+	<c>RDEPEND</c> pada file ebuild yang bersangkutan.
+	</p>
+
+	<p>
+	Sebuah daftar dari setting USE yang digunakan oleh Gentoo Linux
+	dapat ditemui di <path>/usr/portage/profiles/use.desc</path>.
+	Setiap setting USE tertera pada setiap baris dengan sebuah
+	penjelasan singkat tentang apa yang diaktifkan oleh setting USE
+	tersebut.
+	</p>
+
+	<p>
+	Portage menentukan apakah sebuah setting USE diaktifkan atau
+	dinonaktifkan dengan memeriksa empat lokasi yang berbeda.
+	Lokasi-lokasi ini mengubah setting USE dengan cara "menimpa".
+	Portage melewati setiap lokasi dan mengingat apakah lokasi
+	sebelumnya mengaktifkan atau menonaktifkan sebuah setting.
+	Perubahan setting USE bersifat kumulatif sewaktu Portage
+	melewati setiap lokasi.
+	</p>
+	<p>
+	Lokasi-lokasi yang diperiksa dalam perhitungan setting USE dan
+	urutan yang diperiksa Portage diset di <c>USE_ORDER</c> pada
+	file <path>/etc/make.globals</path>. Untuk menonaktifkan sebuah
+	lokasi, anda dapat dengan mudah menghapus lokasi tersebut dari
+	<c>USE_ORDER</c>.
+	</p>
+	<p>
+	Berikut ini adalah penjelasan dari setiap lokasi yang terdaftar
+	dengan urutan yang didefenisikan di <c>USE_ORDER</c>
+	pada konfigurasi default Portage.
+	</p>
+	
+	
+	<p><b>Defaults</b></p>
+	<p>
+	Profile Portage dapat mendefenisikan sebuah set dari keyword
+	USE default. Set tersebut didefenisikan di file make.defaults
+	pada setiap profile Portage. Karena file
+	<path>/etc/make.profile</path> merupakan link ke profile
+	Portage yang sedang digunakan, file
+	<path>/etc/make.profile/make.defaults</path> berisi
+	setting-setting default yang berfungsi. Kami sangat
+	menganjurkan anda untuk tidak mengubah file ini karena
+	perubahan profile di kemudian hari akan menimpa perubahan
+	anda.
+	</p>
+	
+	<p><b>Auto</b></p>
+	<p>
+	Ini didefenisikan pada file use.defaults di profile Portage
+	(<path>/etc/make.profile/use.defaults</path>). Setiap
+	baris berisi sebuah setting USE dan paket yang bersangkutan.
+	Jika paket yang tertulis pada sebuah keyword USE pada
+	saat itu terinstal, maka setting USE tersebut dianggap
+	diaktifkan. Jadi, sebagai contoh, jika anda menginstal
+	<c>x11-base/xfree</c> dan tidak menonaktifkan setting
+	USE X di lokasi selanjutnya maka keyword X diaktifkan
+	secara global selama paket tersebut terinstal. Kami
+	sangat menganjurkan anda untuk tidak mengubah
+	file ini karena perubahan di kemudian hari mungkin
+	menimpa perubahan yang telah anda lakukan.
+	</p>
+
+	<p><b>Conf</b></p>
+	<p>
+	Jika sebuah opsi konfigurasi <c>USE</c> terdefenisi di
+	file <path>/etc/make.conf</path>, maka setting USE
+	tersebut diikutsertakan. Jika tidak ada setting <c>USE</c>
+	terdefenisi pada file <path>make.conf</path> maka
+	file <path>/etc/make.globals</path> diperiksa. Isi file
+	tersebut dapat berupa:</p>
+
+        <pre caption="Variabel USE">
+USE="slang readline gpm berkdb gdbm tcpd pam libwww ssl gb tk
+     lm_sensors lvm ldap tex bonobo sdl gtk xfs evo pda ldap
+     mmx mitshm perl python guile ruby postgres dvd 3dnow tcl
+     lcms gif sdl vorbis ogg oss libg++ directfb decss snmp
+     gnome X opengl mozilla pdflib gpg -nls gd xface jpilot
+     -kde -qt -esd -motif -alsa oggvorbis"
+	</pre>
+
+	<p>
+	Setting USE dapat diaktifkan dengan menuliskan nama setting
+	yang diinginkan. Setting USE dinonaktifkan dengan memberi
+	tanda <c>-</c> pada awal nama setting USE. Sebagai contoh,
+	<c>gnome</c> mengaktifkan keyword GNOME, sedangkan
+	<c>-motif</c> menonaktifkan keyword motif.
+	</p>
+	<p>
+	Setting <c>USE</c> pada file <path>/etc/make.conf</path>
+	merupakan tempat yang direkomendasikan untuk mengaktifkan
+	dan menonaktifkan keyword USE. File ini tidak akan ditimpa
+	secara otomatis oleh Portage. Penulis menganjurkan anda untuk
+	mengaktifkan dan menonaktifkan keyword USE yang anda
+	inginkan pada kedua file terakhir.
+	</p>
+	
+	<p><b>Env</b></p>
+	<p>
+	Setting keyword USE dapat ditimpa secara manual menggunakan
+	setting environment shell.
+	</p>
+
+<pre caption = "Menimpa keyword USE">
+# <i>export USE="-gnome"</i>
+# <i>emerge net-im/gaim</i>
+</pre>
+
+	<p>
+	Hal ini memungkinkan penggunaan setting USE tertentu untuk
+	instalasi beberapa paket spesifik. Jika anda menjalankan emerge
+	lagi setelah menset USE pada environment shell itu, setting USE
+	tersebut akan tetap berpengaruh selama emerge dijalankan dari
+	shell yang sama.
+	</p>
+	
+	<note>
+	Walaupun Portage saat ini memiliki record setting USE yang dipakai
+	untuk me-merge paket-paket, setting USE ini tidak persisten. Jika
+	paket di-merge lagi atau diupgrade, Portage akan menggunakan
+	setting USE yang sedang aktif dan bukan setting USE yang terdefenisi
+	pada saat paket tersebut pertama kali dimerge.
+	</note>
+	
+  </body>
+</section>
+
+<section>
+<title>Opsi Compiler</title>
+<body>
+	<p>
+	Opsi compiler yang digunakan oleh Portage untuk mengkompilasi
+	paket-paket dapat diset pada file <path>/etc/make.conf</path>
+	dengan mengubah variabel <c>CHOST</c>, <c>CFLAGS</c>, dan
+	<c>CXXFLAGS</c>. Variabel <c>CHOST</c> menentukan untuk platform
+	manakah yang ingin anda kompilasi dan variabel <c>CHOST</c> dan
+	<c>CXXFLAGS</c> menentukan flag compiler yang akan digunakan
+	untuk kompilasi source C dan C++.
+	</p>
+
+	<p>
+	Beberapa setting default disediakan dengan penjelasan pada
+	platform manakah setting tersebut dapat digunakan. Setting
+	default yang disediakan ini dianggap stabil dan telah dites.
+	Perubahan pada variabel-variabel tersebut dapat menyebabkan
+	compiler dan software yang dikompilasi error dan menemui
+	banyak bug. Tolong berhati-hati jika anda memutuskan untuk
+	mengkustomisasi setting default karena anda mungkin dapat
+	berakhir dengan sistem yang tidak dapat dipakai lagi.
+	</p>
+	<p>
+	Para pengguna dengan sistem multiprosesor dapat mengambil
+	untung dengan mengubah opsi <c>MAKEOPTS</c> pada file
+	<path>/etc/make.globals</path>. Opsi ini dikirimkan ke
+	perintah <c>make</c> pada saat kompilasi paket-paket
+	untuk mengaktifkan beberapa program gcc.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Lokasi Directory</title>
+<body>
+	<p>
+	Portage membiarkan anda untuk mengkonfigurasi directory
+	yang digunakan untuk membangun paket-paket dan lokasi
+	dimana portage menyimpan berbagai file-file. Kebanyakan
+	pengguna tidak perlu mengubah lokasi-lokasi tersebut.
+	Opsi-opsi berikut dapat diset:</p>
+
+	<ul>
+	<li><c>PORTDIR</c> - Lokasi Portage tree</li>
+	<li><c>DISTDIR</c> - Cache local dari archive yang didownload</li>
+	<li><c>PKGDIR</c> - Lokasi paket-paket tbz2 pre-compile lokal</li>
+	<li><c>RPMDIR</c> - Lokasi paket-paket RPM lokal</li>
+	<li><c>PORTAGE_TMPDIR</c> - Space sementara yang digunakan untuk kompilasi paket</li>
+	<li><c>BUILD_PREFIX</c> - Berhubungan dengan PORTAGE_TMPDIR</li>
+	<li><c>PKG_TMPDIR</c> - Berhubungan dengan PKGDIR</li>
+	</ul>
+</body>
+</section>
+
+<section>
+<title>Proteksi File Konfigurasi</title>
+<body>
+	<p>
+	Portage memungkinkan proteksi seluruh file konfigurasi pada
+	direktori tertentu. Portage tidak akan menimpa file-file pada
+	direktori-direktori terproteksi. Jika sebuah paket mencoba untuk
+	menginstal sebuah file yang telah ada, file tersebut akan
+	diberi nama yang lain seperti <path>._cfg0000_name</path>.
+	Hal ini dilakukan agar nantinya para pengguna dapat melihat
+	file baru tersebut dan me-merge perbedaan kedua file tersebut
+	secara manual.
+	</p>
+	<p>
+	Direktori-direktori yang terproteksi dapat diset pada variabel
+	<c>CONFIG_PROTECT</c> di file <path>/etc/make.conf</path>
+	atau <path>/etc/make.globals</path>. File-file dan subdirektori
+	tertentu di dalam direktori-direktori yang terproteksi dapat
+	dibuat tidak terproteksi dengan menset variabel
+	<c>CONFIG_PROTECT_MASK</c>.
+	</p>
+	<p>
+	Berikut ini adalah sebuah contoh dan sebaiknya tidak langsung
+	diikuti tanpa dimengerti:
+	</p>
+
+<pre caption = "Memproteksi direktori atau file tertentu">
+CONFIG_PROTECT="/etc /usr/share/config /usr/kde/2/share/config"
+CONFIG_PROTECT_MASK="/etc/gconf /etc/init.d /etc/pam.d"
+</pre>
+
+	<p>
+	User dapat mendapatkan informasi lebih lanjut tentang
+	cara Proteksi File Konfigurasi bekerja dengan menjalankan
+	perintah berikut pada shell:
+	</p>
+
+<pre caption = "Informasi lebih lanjut tentang Proteksi File Konfigurasi">
+# <i>emerge --help config</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>FEATURES</title>
+<body>
+	<p>
+	Portage menyediakan berbagai opsi yang ditujukan bagi para
+	developer untuk mengarahkan bagaimana Portage bekerja
+	dan membersihkan sisa sisa setelah berbagai stage sewaktu
+	me-merge paket-paket. Opsi-opsi ini sebaiknya hanya digunakan
+	oleh para developer dan dapat menimbulkan masalah bagi
+	para user.
+	</p>
+	<p>
+	Berbagai fitur yang dapat diaktifkan dapat diset di variabel
+	<c>FEATURES</c> di file <path>/etc/make.conf</path> atau
+	<path>/etc/make.globals</path>. Berikut ini merupakan
+	sebuah daftar dari opsi-opsi yang tersedia:
+	</p>
+	<p>
+	<ul>
+	<li><c>digest</c> : Membuat digest secara otomatis bagi ebuild-ebuild baru.</li>
+	<li><c>cvs</c> : Commit digest-digest baru secara otomatis ke cvs.</li>
+	<li><c>sandbox</c> : Aktifkan "sandbox" bagi proteksi path prefix.</li>
+	<li><c>noclean</c> : Portage tidak pernah membersihkan sisa-sisa setelah selesai.</li>
+	<li><c>noauto</c> : Jangan jalankan langkah-langkah ebuild secara otomatis.</li>
+    <li><c>distcc</c> : Gunakan kompilasi terdistribusi menggunakan distcc.</li>
+    <li><c>ccache</c> : Simpan file-file object kompilasi agar rekompilasi memakan waktu yang lebih sedikit.</li>
+    <li><c>buildpkg</c> : Ciptakan paket-paket binary bagi setiap ebuild yang di-merge.</li>
+    <li><c>userpriv</c> : Lepaskan priviledge root sewaktu kompilasi.</li>
+    <li><c>usersandbox</c> : Gunakan sandboxing sewaktu <c>userpriv</c> diaktifkan.</li>
+    <li><c>keeptemp</c> : Jangan hapus file-file temporary (${T}) setelah merge.</li>
+	</ul>
+	Beberapa fitur-fitur di atas dapat diset lagi dengan variabel-variabel berikut:
+    <ul>
+    <li><c>CCACHE_SIZE</c> : Variabel ini mendefenisikan berapa besar space yang
+	dapat digunakan oleh <c>ccache</c>. Default adalah 2 Gb.</li>
+    <li><c>DISTCC_HOSTS</c> : Variabel ini mendefenisikan host-host mana yang
+	digunakan dalam kompilasi terdistribusi menggunakan <c>distcc</c>. Semua host-host
+	tersebut harus menjalankan daemon <c>distccd</c>.</li>
+    </ul>
+	</p>
+</body>
+</section>
+
+<section>
+<title>Setting SYNC Portage</title>
+<body>
+	<p>
+	Portage memiliki kemampuan untuk meng-update Portage tree
+	melalui rsync> Jika anda menemui jalan lain untuk mengupdate
+	Portage tree, anda dapat mendefenisikan metode mana yang
+	digunakan oleh Portage melalui variabel <c>SYNC</c> di file
+	<path>/etc/make.conf</path>.</p>
+
+	<p><b>RSYNC</b></p>
+
+	<p>
+	rsync merupakan metode yang paling umum untuk meng-update
+	Portage tree anda. Metode rsync ini diset di <path>/etc/make.conf</path>:
+	</p>
+
+<pre caption = "Set variabel RSYNC">
+SYNC="rsync://rsync.gentoo.org/gentoo-portage"
+</pre>
+
+	<note>
+	Metode rsync akan menimpa semua perubahan yang anda buat
+	di Portage tree anda. Jika anda ingin menyimpan perubahan anda,
+	gunakan variabel PORTDIR_OVERLAY="/dir/tempat/anda/menyimpan/tree-anda"
+	untuk memproteksi perubahan anda.
+	</note>
+	<note>
+	Lihat file <path>/etc/make.conf</path> untuk cara mengeset <c>SYNC</c>
+	untuk mengambil dari rotasi mirror rsync yang lebih dekat. Hal ini akan memilih
+	server-server yang jaraknya lebih dekat dengan anda, yang berarti juga kecepatan
+	transfer yang lebih tinggi. Hal ini juga membantu mendistribusikan beban ke
+	beberapa server.</note>
+
+	<p><b>Developer CVS</b></p>
+
+	<p>
+	Para developer yang memiliki akses penuh ke CVS tree dapat
+	juga membuat <c>emerge</c> men-sync local tree mereka
+	terhadap CVS yang dapat mereka akses melalui SSH.
+	</p>
+	<p>
+	Check out CVS tree menggunakan account anda, pindahkan ke direktori
+	/usr/portage, dan gunakan opsi <c>SYNC</c> berikut ini:
+	</p>
+	
+<pre caption = "Menggunakan CVS sebagai Portage tree anda">
+SYNC="cvs://youraccount@cvs.gentoo.org:/home/cvsroot"
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Mirror</title>
+<body>
+	<p>
+	Proyek Gentoo memiliki mirror lokal dari semua file-file yang
+	digunakan di ebuild di Portage tree. Sering kali file source tarbal
+	asli, dan lain lain berada pada server-server yang lambat yang
+	kadang-kadang down. Dan juga, developer asli dari paket tersebut
+	akan menghapus file-file versi lama dari site ftp mereka pada saat
+	versi baru dirilis. Untuk memudahkan para pengguna Gentoo (dan
+	juga meringankan beban site-site source asli), kami me-mirror
+	file-file tersebut. Hal ini membuat proses download file-file tersebut
+	lebih cepat dan reliable dari site-site mirror yang dekat dengan anda.
+	</p>
+	<p>
+	Kapanpun anda mencoba me-merge sebuah paket, Portage pertama
+	akan memeriksa site-site mirror kami dahulu untuk file-file yang diperlukan.
+	Jika mirror tidak memiliki file yang diperlukan, lalu Portage akan mencoba
+	mendownload file-file tersebut dari server HTTP atau FTP yang
+	terdefenisi di ebuild paket tersebut.
+	</p>
+	<p>
+	Mirror yang digunakan Portage dapat didefenisikan di variabel
+	<c>GENTOO_MIRRORS</c> di file <path>/etc/make.conf</path>.
+	Berikut ini merukan setting defaultnya:
+	</p>
+<pre caption = "Mendefenisikan sebuah mirror">
+GENTOO_MIRRORS="http://www.ibiblio.org/gentoo"
+</pre>
+	<p>
+	Untuk mencari mirror Gentoo yang dekat dengan lokasi anda,
+	silahkan periksa website Gentoo atau bertanya di milis lokal anda.
+	Anda dapat juga menginstal <c>mirrorselect</c> untuk mencari
+	mirror yang paling dekat secara otomatis. Silahkan melihat panduan
+	instalasi untuk informasi lebih lanjut tentang penggunaan program
+	<c>mirrorselect</c>.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Mendownload Program</title>
+<body>
+	<p>
+	Program yang digunakan Portage untuk mendownload file-file
+	dapat diset di variabel <c>FETCHCOMMAND</c> dan
+	<c>RESUMECOMMAND</c>. Beberapa contoh dapat ditemui di
+	file <path>/etc/make.conf</path> dan <path>/etc/make.globals</path>.
+	Portage secara default menggunakan <c>wget</c> yang
+	biasanya telah cukup bagi kebanyakan pengguna.
+	</p>
+
+	<note>
+	Portage menyampaikan informasi proxy HTTP dan FTP ke program tersebut
+	melalui variabel environment HTTP_PROXY dan FTP_PROXY.
+	</note>
+</body>
+</section>
+
+<section>
+<title>Proxy</title>
+<body>
+	<p>
+	Portage dapat diinstruksikan untuk menggunakan kedua proxy HTTP dan
+	FTP sewaktu mendownload file. Proxy tersebut dapat di set di variabel
+	<c>HTTP_PROXY</c> dan <c>FTP_PROXY</c> di file
+	<path>/etc/make.conf</path> atau <path>/etc/make.globals</path>.
+	Jika HTTP dan FTP menggunakan proxy yang sama, anda dapat mengeset
+	variabel <c>PROXY</c> sebagai gantinya.
+	</p>
+	
+	<p>Berikut ini merupakan sebuah contoh:</p>
+
+<pre caption = "Set proxy">
+HTTP_PROXY="http://192.168.1.1:8080"
+FTP_PROXY="http://192.168.1.1:8080"
+<comment>
+atau
+</comment>
+PROXY="http://192.168.1.1:8080"
+</pre>
+
+	<p>
+	Portage dapat juga diinstruksikan untuk menggunakan proxy
+	HTTP bagi RSYNC. Proxy RSYNC dapat dikonfigurasi dengan
+	mengeset variabel RSYNC_PROXY di file <path>/etc/make.conf</path>
+	atau mengeset proxy tersebut sebagai variabel environment.</p>
+	<p>
+	Berikut ini merupakan sebuah contoh:
+	</p>
+
+<pre caption = "Set proxy RSYNC">
+RSYNC_PROXY="192.168.1.1:8080"
+</pre>
+
+	<note>
+	Jika anda berada di belakang firewall dan rsync tidak dapat
+	menggunakan proxy HTTP anda, anda dapat mengupdate
+	Portage tree anda menggunakan tarbal snapshot. Lihat
+	<uri link="/doc/id/faq.xml#doc_chap4_sect10">FAQ</uri>
+	untuk informasi lebih lanjut.
+	</note>
+
+</body>
+</section>
+
+<section>
+<title>Opsi lain-lain</title>
+<body>
+	<p>
+	Berikut ini merupakan opsi-opsi minor yang dapat digunakan:
+	</p>
+
+	<ul>
+	<li><i>NOCOLOR</i> : Menonaktifkan penggunaan warna pada tampilan emerge.</li>
+	<li><i>CLEAN_DELAY</i> : Portage menunda proses unmerge paket selama beberapa detik untuk memberikan user waktu untuk mengcancel. Variabel ini mendefenisikan waktu dalam detik untuk menunggu dan dapat dinonaktifkan dengan memberikan nilai "0".</li>
+	</ul>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Manajemen Paket</title>
+
+<section>
+<title>Mengupdate Portage Tree</title>
+<body>
+	<p>
+	Portage tree, yang berada di /usr/portage, mengandung library
+	dari instruksi build bagi berbagai paket-paket (bernama <c>ebuild</c>).
+	Tree tersebut juga mengandung informasi profile dan package.mask
+	yang sangat vital untuk menjaga sistem anda tetap up-to-date.
+	Sangat penting untuk selalu mengupdate tree ini tersync ke
+	Portage tree official/resmi agar anda memiliki versi-versi terbaru
+	dari paket-paket dan fix-fix dari bug lama. Anda dapat mengupdate
+	Portage tree dengan menjalankan perintah berikut ini:
+	</p>
+<pre caption = "Mengupdate Portage Tree">
+# <i>emerge sync</i>
+</pre>
+	<p>
+	Metode yang digunakan emerge untuk mengupdate portage tree
+	lokal anda dapat diganti. Silahkan lihat <c>Setting SYNC Portage</c>
+	di seksi <c>Mengkonfigurasi Portage</c> untuk informasi lebih
+	lanjut.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Merge Paket</title>
+<body>
+	<p>
+	Proses mengkompilasi dan menginstal sebuah paket menggunakan
+	Portage dikenal sebagai <c>merge</c>. Portage mengkompilasi
+	paket-paket dan menginstal paket tersebut sementara di sebuah
+	direktori "imej" dimana Portage merecord file-file yang akan diinstal.
+	File-file ini akan dipindahkan dari direktori imej dan dimerge ke
+	direktori yang asli.
+	</p>
+	<p>
+	Perintah <c>emerge</c> merupakan front-end dari sistem Portage.
+	Instalasi dan penghapusan paket-paket ditangani oleh perintah tersebut
+	dan berbagai argumen command-line yang tersedia.
+	</p>
+	<p>
+	Untuk menginstal versi unmask terbaru dari sebuah paket, tuliskan
+	saja nama paket yang ingin diinstal seperti berikut ini:
+	</p>
+<pre caption = "Instalasi sebuak paket">
+# <i>emerge galeon</i>
+</pre>
+	<p>
+	Perintah tersebut akan mengkompilasi dan menginstal seluruh
+	dependency yang diperlukan (dihitung juga setiap penggunaan
+	setting USE) dan lalu mengkompilasi dan menginstal versi
+	unmask terbaru dari galeon. Galeon dapat juga ditulis menggunakan
+	nama penuh dengan kategorinya: <c>net-www/galeon</c>.
+	</p>
+	<p>
+	Perintah <c>emerge</c> juga menerima argunem referensi ke file ebuild.
+	Hal ini membiarkan para pengguna untuk me-merge versi-versi lama
+	dari sebuah paket dan me-merge paket-paket berbasis ebuild non-resmi.
+	Berikut ini merupakan sebuah contoh:
+	</p>
+<pre caption = "Instalasi ebuild tertentu">
+# <i>emerge /usr/portage/net-www/galeon/galeon-1.2.0-r3.ebuild</i>
+</pre>
+	<p>
+	Sebagai tambahan nama paket atau file ebuild yang akan dimerge.
+	<c>emerge</c> mendukung beberapa opsi command-line yang
+	sangat berguna. Dari beberapa opsi tersebut, <c>--pretend</c>
+	mungkin merupakan yang paling berguna. Sewaktu opsi ini digunakan,
+	proses yang diinginkan tidak akan dilakukan. Sebagai gantinya, Portage
+	akan menampilkan sebuah daftar dari paket-paket yang akan diinstal
+	atau diupdate sewaktu melakukan proses tersebut. Berikut ini merupakan
+	sebuah contoh daftar yang akan anda merge sewaktu instalasi versi
+	terbaru paket kdevelop:
+	</p>
+
+<pre caption = "Memeriksa apa yang akan dilakukan emerge">
+# <i>emerge --pretend kdevelop</i>
+
+These are the packages that I would merge, in order.
+
+Calculating dependencies ...done!
+[ebuild  N   ] kde-base/kdelibs-2.2.2-r4 to /
+[ebuild  N   ] dev-util/kdbg-1.2.2 to /
+[ebuild   U  ] app-text/psutils-1.17 to /
+[ebuild   U  ] app-text/a2ps-4.13b-r3 to /
+[ebuild   U  ] app-text/jadetex-2.20 to /
+[ebuild  N   ] app-text/sgmltools-lite-3.0.3-r2 to /
+[ebuild  N   ] kde-base/kdoc-2.2.2-r1 to /
+[ebuild  N   ] net-www/htdig-3.1.5-r2 to /
+[ebuild  N   ] app-text/enscript-1.6.3-r1 to /
+[ebuild  N   ] kde-base/kdebase-2.2.2-r2 to /
+[ebuild  N   ] app-doc/qt-docs-2.3.1 to /
+[ebuild  N   ] dev-util/kdevelop-2.0.2 to /
+</pre>
+	<p>
+	Pada daftar di atas, paket-paket yang bertanda <c>N</c>
+	merupakan paket-paket yang belum diinstal dan akan diinstal
+	pada saat proses tersebut. Paket-paket yang bertanda <c>U</c>
+	menandakan versi lama dari paket tersebut telah terinstal dan
+	proses tersebut akan mengupgrade paket itu.	</p>
+	<p>
+	Berikut ini merupakan opsi-opsi lain yang tersedia:
+	</p>
+	<p>
+	<i>--fetchonly</i> : Download file-file yang diperlukan untuk kompilasi
+	paket tersebut saat instalasi dan juga seluruh dependency yang
+	diperlukan.
+	</p>
+	<p>
+	<i>--emptytree</i> : Opsi ini membuat Portage menganggap tidak
+	satupun dependency dari paket ini terinstal. Opsi ini berguna jika
+	dipadukan dengan <c>--pretend</c> untuk menampilkan sebuah
+	daftar lengkap dependency dari sebuah paket tertentu. Seluruh
+	dependency kecuali glibc akan ditampilkan.
+	</p>
+	<p><i>--nodeps</i> : Portage mencoba untuk me-merge hanya
+	paket yang diinginkan dan mengabaikan dependency yang diperlukan.
+	Jika anda tidak memiliki dependency yang tepat terinstal, maka
+	kompilasi mungkin gagal.
+	</p>
+	<p><i>--onlydeps</i> : Hanya dependency dari paket yang diinginkan
+	dimerge. Paket tersebut <u>tidak akan</u> di-merge.
+	</p>
+	<p><i>--noreplace</i> : Lewati proses merge dari paket-paket yang
+	telah terinstal.
+	</p>
+	<p><i>--usepkg</i> : Daripada mengkompilasi paket-paket, Portage
+	akan mencoba untuk menggunakan paket-paket pre-compiled tbz2
+	dari sebuah lokasi tertentu. Lokasi tersebut didefenisikan di variabel
+	environment <c>PKGDIR</c>.
+	</p>
+	<p><i>--debug</i> : Environment ebuild diinstruksikan untuk lebih
+	verbal. Opsi ini berguna bagi para developer yang mencoba untuk
+	mencari syntax error di file-file ebuild berbasis script bash.
+	</p>
+	<p><i>--autoclean</i> : Memaksa <c>emerge</c> untuk membersihkan
+	direktori build sementar sebelum proses tersebut mulai membangun
+	sebuah paket. Portage secara default mengaktifkan opsi ini, jadi opsi
+	ini hanya berguna bagi para developer yang menonaktifkannya.
+	</p>
+	<p><i>--verbose</i> : Menginstruksikan <c>emerge</c> untuk
+	berjalan di mode verbose. Sewaktu digunakan bersamaan dengan opsi
+	<c>--pretend</c>, emerge menampilkan flag-flag USE yang digunakan
+	oleh paket-paket.
+    </p>
+</body>
+</section>
+
+<section>
+<title>Unmerge Paket</title>
+<body>
+	<p>
+	Proses "unmerge" adalah menghapus file-file yang berhubungan dengan
+	sebuah paket yang terinstal dari filesystem anda. Software di paket
+	tersebut dihapus dari sistem dan tidak dapat digunakan sampai paket
+	tersebut di emerge kembali.
+	</p>
+	<p>
+	Paket-paket dihapus dengan menjalankan perintah <c>unmerge</c>
+	dan diikuti oleh opsi <c>unmerge</c> dan nama paket yang ingin
+	dihapus. Contoh berikut ini akan me-unmerge semua versi paket
+	<c>ltrace</c> yang terinstal:
+	</p>
+
+<pre caption = "Unmerge paket">
+# <i>emerge unmerge ltrace</i>
+<comment>
+atau
+</comment>
+# <i>emerge unmerge dev-util/ltrace</i>
+</pre>
+	<p>
+	Portage juga membiarkan anda melakukan proses unmerge
+	versi tertentu dari sebuah paket. Jarak dari versi paket tersebut
+	didefenisikan menggunakan <c>=</c> (versi tepat), <c>&lt;</c>
+	(lebih kecil dari), <c>&gt;</c> (lebih besar dari), <c>&lt;=</c>
+	(lebih kecil atau sama dengan), dan <c>&gt;=</c> (lebih besar
+	atau sama dengan). Perintah berikut ini akan me-unmerge versi-versi
+	ltrace yang lebih lama atau sama dengan 0.3.15:
+	</p>
+
+<pre caption = "Unmerge paket dengan versi tertentu">
+# <i>emerge unmerge \&lt;=dev-utils/ltrace-0.3.15</i>
+</pre>
+
+	<p>
+	Sewaktu menuliskan jarak versi paket, sangat penting untuk
+	meng-escape karakter <c>&gt;</c> dan <c>&lt;</c> agar
+	shell anda tidak menerjemahkannya. Dan juga, anda mungkin
+	ingin menuliskan kategori dari paket tersebut seperti yang
+	tampak pada contoh di atas. Untuk contoh lain tentang spesifikasi
+	jarak versi paket, silahkan melihat tampilan perintah <c>emerge
+	--help</c>.
+	</p>
+
+	<warn>
+	Meng-unmerge paket-paket kadang berbahaya. Jika anda menghapus
+	paket-paket inti, sistem anda mungkin berhenti berfungsi dan penghapusan
+	berbagai library dapat mengakibatkan program-program gagal berjalan.
+	<b>Portage tidak memperingati anda jika anda ingin menghapus paket-paket
+	inti atau dependency bagi paket-paket lain.</b>
+	</warn>
+
+	<p>
+	Jika sebuah paket yang ingin dihapus terinstal, program emerge
+	akan menampilkan paket-paket mana saja yang akan dihapus dan
+	menunggu beberapa detik untuk memberikan para pengguna/user
+	waktu untuk membatalkan. Selama waktu tunggu ini, para user dapat
+	menekan Control-C untuk membatalkan sebelum proses unmerge
+	dimulai.
+	</p>
+	<p>
+	Sewaktu proses unmerge dimulai, anda akan melihat sebuah daftar
+	panjang dari file-file yang dimiliki oleh paket tersebut ditampilkan.
+	Beberapa dari nama file tersebut akan memiliki flag di sebelah kiri
+	mereka. Flag <c>!mtime</c>, <c>!empty</c>, dan <c>cfgpro</c>
+	memberitahukan mengapa file-file tertentu tidak dihapus sewaktu
+	paket tersebut di-unmerge. File-file yang ditampilkan tidak disertai
+	oleh ketiga flag itu dihapus dari sistem anda.
+	</p>
+	<p>
+	Flag <c>!mtime</c> berarti file tersebut dimodifikasi setelah versi
+	paket tersebut diinstal. Hal ini berarti seseorang mengubah file ini
+	setelah paket tersebut diinstal atau ada program lain yang menimpa
+	file tersebut. Hal ini memungkinkan paket-paket untuk diupdate ke
+	versi yang lebih baru tanpa takut file vital tersebut dihapus/ditimpa.
+	</p>tersebut saat diinstal
+	<p>
+	Flag <c>!empty</c> berarti direktori tersebut tidak dihapus oleh
+	Portage karena direktori tersebut tidak kosong (beberapa paket
+	kadang-kadang memiliki direktori-direktori yang sama). Proteksi
+	File Konfigurasi terlibat sewaktu anda melihat flag <c>cfgpro</c>.
+	Hal ini berarti paket versi baru yang terinstal ingin menimpa file
+	tersebut dan Portage menolak untuk menghapusnya.
+	</p>
+	<warn>
+	File-file dianggap dimiliki oleh paket terakhir yang diinstal.
+	Hal ini bergantung kepada urutan instalasi dan tidak tergantung
+	pada versi atau revisi sebenarnya dari paket-paket yang terinstal.
+	Penghapusan (unmerge) paket terbaru yang terinstal yang memiliki
+	file-file tertentu akan selalu menghapus file tersebut walaupun paket
+	versi yang lebih lama pernah menginstal file yang sama (dengan
+	anggapan user tidak pernah memodifikasi file tersebut secara manual).
+	</warn>
+	
+</body>
+</section>
+
+<section>
+<title>Update System</title>
+<body>
+	<p>
+	Portage memiliki kemampuan untuk mengupgrade paket-paket yang
+	terinstal secara otomatis dengan sebuah perintah saja. Fitur update
+	sistem ini memungkinkan para pengguna (user) untuk mengupdate
+	paket-paket "inti" ke versi yang direkomendasikan oleh Developer
+	Gentoo Linux untuk kepentingan operasi sistem Gentoo Linux.
+	Menjalankan update sistem tidak akan mengupdate paket-paket yang
+	tidak penting, hanya paket-paket yang terdefenisi di profile Portage
+	untuk kepentingan operasi dan maintaince sebuah sistem.
+	</p>
+	<p>
+	Untuk melakukan update sistem, jalankan perintah berikut ini:
+	</p>
+<pre caption = "Update sistem anda">
+# <i>emerge --update system</i>
+</pre>
+	<p>
+	Portage lalu akan mengkompilasi dan menginstal update-update
+	tergantung versi dan paket apa saja yang anda instal dan apa
+	yang direkomendasikan oleh profile Portage saat ini. Para pengguna
+	dapat menambahkan opsi <c>--pretend</c> ke perintah di atas
+	untuk melihat paket-paket apa saja yang akan diinstal dan diupgrade
+	sewaktu menjalankan perintah tersebut.
+	</p>
+	<note>
+	Anda mungkin menyadari salah satu perintah pertama di instruksi instalasi
+	adalah menjalankan <c>emerge system</c> untuk menginstal paket-paket
+	dasar (atau "inti"). <c>emerge --update system</c> mengupdate
+	paket-paket dasar tersebut ke versi terakhir yang direkomendasikan.
+	</note>
+</body>
+</section>
+
+<section>
+<title>World Update</title>
+<body>
+	<p>
+	Portage juga memiliki kemampuan untuk mengupgrade secara otomatis
+	paket-paket tak-penting yang dipilih dengan satu perintah saja. Sistem
+	Portage memiliki kemampuan untuk mengupgrade sebuah sistem secara
+	aman walaupun terdapat beberapa versi paket yang saling konflik.
+	</p>
+
+	<p>
+	Fitur update world dari Portage memeriksa profile sistem anda, daftar
+	paket-paket yang diblok (<path>package.mask</path>), profile world
+	dan dependency-dependency (termasuk jarak versi-versi) dari paket-paket
+	yang terdaftar di profile world sewaktu menentukan paket-paket mana
+	yang perlu diupgrade. Sebuah paket hanya akan diupgrade jika terdapat
+	versi yang lebih baru dan paket tersebut terdaftar di profile world atau
+	merupakan dependency dari sebuah paket di profile world. Sebagai
+	tambahan, paket atau versi tertentu dari paket tersebut tidak boleh
+	terblok di profile sistem atau di <c>package.mask</c>.
+	</p>
+
+	<p>
+	Sewaktu menentukan paket-paket mana saja yang akan diupgrade,
+	Portage mencoba untuk mengupgrade semua paket-paket yang
+	terdaftar di profile world ke versi terbaru yang tidak terblok yang
+	tersedia. Portage juga memeriksa dependency-dependency dari
+	setiap paket yang terdaftar di profile world dan akan mencoba
+	untuk mengupgrade dependency tersebut ke versi yang lebih baru
+	jika tersedia, sesuai dengan jarak versi yang terdefenisi, dan tidak
+	diblok oleh profile system atau <path>package.mask</path>.
+	Portage juga memeriksa <c>SLOT</c> seperti yang dijelaskan
+	di seksi sebelumnya.
+	</p>
+
+	<p>
+	Para pengguna yang terbiasa dengan distro lain dan metode
+	manajemen paket selain Portage mungkin akan bingung mengapa
+	Portage tidak langsung melakukan upgrade paket-paket berdasarkan
+	nomor versi (seperti yang dilakukan sebelum Gentoo 1.0). Banyak
+	paket-paket yang disertakan di Portage Tree Gentoo memiliki
+	beberapa versi yang tersedia. Versi lama atau yang lebih baru
+	dari sebuah paket mungkin saja tidak kompatibel terhadap software
+	yang bergantung padanya. Mengupgrade library dan aplikasi secara
+	langsung tanpa memeriksa kebutuhan dari paket-paket lain akan
+	cepat sekali menimbulkan banyak masalah. Untuk menghindari ini,
+	Portage mencoba untuk memeriksa kebutuhan dari semua paket-paket
+	berdasarkan ebuild paket-paket tersebut sewaktu melakukan
+	proses upgrade.
+	</p>
+	
+	<p>
+	Inti dari update world Portage adalah profile world. Tidak seperti
+	profile system yang biasanya didefenisikan oleh para developer dan
+	tidak pernah disentuh oleh para user, profile update world dibuat
+	secara tidak langsung oleh perintah-perintah yang dijalankan para
+	pengguna. Profile world bekerja seperti "daftar favorit". Paket-paket
+	yang diinstal secara manual oleh para user melalui perintah
+	<c>emerge</c> disimpan di file <c>world</c> yang berada di
+	<path>/var/cache/edb/world</path>. Portage menganggap jika
+	anda menginstal paket tersebut, maka anda tentu saja tertarik
+	untuk menjaga paket tersebut untuk selalu up-to-date.
+	</p>
+	<p>
+	File world memiliki satu nama paket dengan kategorinya per baris
+	dan akan tampak seperti berikut:
+	</p>
+<pre caption = "Contoh /var/cache/edb/world">
+net-im/gaim
+net-www/skipstone
+net-www/galeon
+app-editors/vim
+app-text/ispell
+net-mail/evolution
+dev-util/ltrace
+sys-fs/xfsprogs
+=net-www/mozilla-0.9.8-r3
+sys-apps/attr
+sys-apps/dmapi
+sys-kernel/linux-sources
+sys-apps/acl
+app-office/gnucash
+app-cdr/xcdroast
+</pre>
+	<p>
+	Hampir semua isi di contoh file ini ditambahkan secara otomatis
+	oleh Portage sewaktu pengguna me-merge sebuah paket secara
+	manual. Paket-paket ini akan diupgrade ke versi yang lebih baru
+	jika tersedia.
+	</p>
+	
+	<note>
+	Untuk menghemat waktu dan memastikan paket-paket favorit anda
+	tetap up-to-date, anda dapat memodifikasi file <c>world</c> secara
+	manual dan menambahkan baris-baris untuk paket-paket tersebut.
+	Para pengguna yang mengupgrade Portage versi lama mungkin
+	harus mengisi file ini. Instalasi Gentoo dan Portage yang baru
+	seharusnya telah memiliki profile world yang berisi yang
+	diciptakan sewaktu instalasi.
+	</note>
+	
+	<p>
+	Baris yang menarik untuk dicatat adalah baris paket mozilla
+	(<c>=net-www/mozilla-0.9.8-r3</c>). Baris ini ditambahkan
+	secara manual oleh user untuk "memilih" versi spesifik.
+	Jarak (range) versi paket (seperti yang dibicarakan di seksi
+	<c>Unmerge Paket</c> di atas) dapat digunakan untuk
+	memaksa Portage menggunakan jarak versi tertentu sewaktu
+	mengupdate paket-paket. Baris ini "memaksa" Portage untuk
+	menggunakan mozilla-0.9.8-r3 sebagai satu-satunya versi
+	yang tersedia dan karena itu, Portage tidak akan pernah mencoba
+	mengupdate paket tersebut selama update world.
+	</p>
+	
+	<p>Update world dapat dilakukan dengan perintah berikut ini:</p>
+<pre caption = "Update semuanya">
+# <i>emerge --update world</i>
+</pre>
+	<p>
+	Portage lalu akan mencoba mengupdate seluruh paket-paket
+	yang terdaftar di file <c>world</c> dan akan mengupdate
+	dependency-dependencynya jika diperlukan. Dependency
+	akan diupgrade ke versi terbaru yang tersedia untuk memenuhi
+	kebutuhan paket-paket lain yang diupgrade. Paket-paket yang
+	tidak terdaftar di file <c>world</c> dan bukan merupakan
+	dependency dari paket-paket world tidak akan diupdate.
+	</p>
+
+	<warn>
+	Portage tidak akan menimpa file-file di direktori-direktori
+	yang diproteksi oleh Proteksi File Konfigurasi. Anda harus
+	menggabungkan secara manual perbedaan antara
+	file konfigurasi sekarang anda dengan file konfigurasi baru
+	yang disimpan oleh Portage. Jika anda tidak mengupdate
+	file konfigurasi anda, paket-paket yang terinstal mungkin
+	akan berhenti berfungsi. Silahkan melihat <c>Proteksi
+	File Konfigurasi</c> di seksi <c>Mengkonfigurasi Portage</c>
+	atau dengan menjalankan perintah <c>emerge --help
+	config</c> untuk informasi lebih lanjut.
+	</warn> 
+
+	<p>
+	Untuk melihat daftar dari paket-paket yang akan diupdate
+	atau diinstal sewaktu update world, anda dapat menambahkan
+	opsi <c>--pretend</c> seperti yang dijelaskan di seksi
+	sebelumnya.
+	</p>
+
+	<note>
+	Update world juga melakukan update system secara otomatis.
+	Paket-paket inti tidak dapat dipilih menggunakan metode file
+	<c>world</c> di atas karena profile Portage akan selalu
+	menimpanya.
+	</note>
+
+	<p>
+	Efek menarik dari cara kerja update world dapat digunakan
+	oleh para pengguna yang ingin mengkompilasi ulang semua
+	paket-paket yang terinstal. Karena update world akan mencoba
+	untuk mengupdate semua paket-paket yang terdaftar di file
+	<c>world</c> dan dependency-dependencynya, penambahan
+	opsi <c>--emptytree</c> akan menginstruksikan portage untuk
+	mengkompilasi seluruh paket-paket dan dependencynya kecuali
+	glibc. Hal ini dapat berguna bagi para pengguna yang ingin mengubah
+	opsi kompiler atau setting USE dan ingin perubahan ini digunakan
+	oleh seluruh paket-paket yang terinstal tanpa me-merge setiap
+	paket secara manual. Isi saja file <c>world</c> anda dengan
+	aplikasi-aplikasi yang sering anda gunakan dan jalankan perintah
+	berikut:
+	</p>
+<pre caption = "Mengkompilasi semua dependency juga">
+# <i>emerge --update world --emptytree</i>
+</pre>
+	<p>
+	Anda dapat menambahkan opsi <c>--pretend</c> ke perintah
+	tersebut untuk melihat daftar paket-paket yang akan dikompilasi
+	ulang.
+	</p>
+	
+</body>
+</section>
+
+<section>
+<title>Membersihkan Sistem</title>
+<body>
+	<p>
+	Portage memiliki kemampuan untuk menginstal beberapa
+	versi dari versi yang sama. Ada beberapa paket-paket di
+	Portage Tree Gentoo yang menggunakan fitur ini (untuk
+	kompatibilitas karena aplikasi-aplikasi lama mungkin
+	tidak kompatibel dengan versi yang lebih baru dari paket
+	lain)
+	</p>
+	<p>
+	Dalam kebanyakan kasus, sewaktu versi yang lebih baru dari
+	sebuah paket diinstal, paket lama akan ditimpa dan yang tersisa
+	hanya beberapa file dokumentasi dan file-file lain yang tidak
+	penting bagi sistem anda. Setelah selang waktu tertentu, "sisa-sisa"
+	ini dapat menghabiskan space disk anda.
+	</p>
+	<p>
+	Untuk mengatasi hal ini, Portage menyediakan cara yang mudah
+	untuk menghapus sisa-sisa dari versi lama di sebuah sistem.
+	Fungsi ini dikenal sebagai opsi <c>clean</c> emerge dan dapat
+	dijalankan dengan perintah berikut:
+	</p>
+<pre caption = "Menghapus versi-versi lama dari paket-paket">
+# <i>emerge clean</i>
+</pre>
+	<p>
+	Lalu, <c>emerge</c> akan menampilkan sebuah daftar revisi
+	dan versi paket yang akan dihapus, versi yang disimpan, dan
+	memberikan user waktu untuk membatalkan aksi tersebut dengan
+	menekan Control-C. Pada umumnya, sebuah daftar paket-paket
+	yang panjang akan ditampilkan yang nantinya akan dihapus
+	atau disimpan.
+	</p>
+
+	<p>
+	Kecuali didefenisikan, Portage mengasumsikan opsi clean digunakan
+	pada <c>world</c> (semua paket-paket yang terinstal). Anda dapat
+	mempersempit jarak clean dengan menggunakan opsi-opsi seperti
+	<c>world</c>, <c>system</c>, daftar paket-paket, dan jarak versi
+	paket seperti yang dijelaskan di seksi unmerge.
+	</p>
+
+	<p>
+	Sewaktu memeriksa versi-versi paket mana saja yang akan dihapus,
+	sistem Portage memeriksa berbagai profile, kebutuhan dari paket-paket
+	lain yang terinstal, dan SLOT paket-paket. Dengan asumsi semua
+	dependency telah didefenisikan dengan benar untuk semua paket-paket,
+	opsi clean akan dengan aman menghapus paket-paket lama dan
+	tidak akan menghapus paket-paket yang dibutuhkan sistem untuk
+	berfungsi.
+	</p>	
+</body>
+</section>
+
+<section>
+<title>Menghapus (Prune) Paket-Paket</title>
+<body>
+	<p>
+	Portage juga memiliki opsi <c>prune</c> paket. Opsi prune ini
+	merupakan bentuk lain dari opsi clean yang tidak aman. Opsi ini
+	menghapus semua versi paket-paket kecuali versi terakhir yang
+	terinstal. Opsi ini tidak melakukan pemeriksaan yang dilakukan
+	oleh opsi <c>clean</c> dan dapat menghapus dependency
+	yang dibutuhkan oleh sistem anda. Pengguna opsi ini dapat dengan
+	mudah merusak sistem mereka dan penggunaannya tidak
+	direkomendasikan kecuali di situasi-situasi khusus tertentu.
+	</p>
+
+	<p>
+	Opsi <c>prune</c> dapat digunakan juga dengan argumen-argumen
+	<c>clean</c> dan dapat dijalankan dengan perintah berikut:
+	</p>
+<pre caption = "Prune sistem">
+# <i>emerge prune</i>
+</pre>
+</body>
+</section>
+
+
+<section>
+<title>Mencari di Portage Tree</title>
+<body>
+	<p>
+	Portage Tree yang membentuk inti dari distro Gentoo Linux
+	sangat besar. Perintah <c>emerge</c> menyediakan fitur
+	pencarian yang menerima argumen string pencarian dalam bentuk
+	"regular expression" di dalam tanda kutip. Regex (Regular expressions)
+	merupakan argumen yang sangat rumit jadi penulis merekomendasikan
+	anda untuk mencari sebuah buku tentang regex jika anda tertarik
+	untuk menggunakan regex secara penuh.
+	</p>
+	<p>
+	Kebanyakan pencarian sederhana dapat dilakukan tanpa harus
+	mengetahui cara menggunakan regex. Berikut ini merupakan
+	sebuah contoh pencarian sederhana untuk paket yang bernama
+	"gcc" atau memiliki kata "gcc" di nama paketnya:
+	</p>
+<pre caption = "Mencari regex">
+# <i>emerge search gcc</i>
+</pre>
+	<p>
+	Untuk setiap hasil pencarian, emerge menampilkan nama paket,
+	versi terbaru yang tersedia, versi terbaru yang terinstal, alamat
+	homepagenya, dan sebuah deskripsi tentang paket tersebut.
+	</p>
+</body>
+</section>
+
+<section>
+<title>Mendapatkan Bantuan</title>
+<body>
+	<p>
+	Informasi lebih lanjut tentang opsi-opsi perintah <c>emerge</c>
+	dapat ditemukan dengan menjalankan perintah:
+	</p>
+<pre caption = "Mendapatkan Bantuan">
+# <i>emerge --help</i>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Utilitas-Utilitas yang berguna</title>
+<body>
+	<p>
+	Beberapa utilitas telah diikutsertakan oleh pengguna Gentoo
+	untuk memudahkan beberapa tugas. Utilitas-utilitas ini
+	tersedia di paket <c>app-admin/gentoolkit</c> di Portage
+	Tree Gentoo.
+	</p>
+	<p>
+	<ul>
+	<li><i>etc-update</i> : skrip shell yang menggunakan vim
+	untuk membantu proses merge file-file di /etc (berbahaya jika
+	digunakan dengan tidak benar)</li>
+	<li><i>qpkg</i> : utilitas query database paket</li>
+	<li><i>epm</i> : utilitas query database paket lain dengan
+	syntax yang hampir sama dengan RPM</li>
+    <li><i>etcat</i> : tampilkan dan deskripsikan flag-flag USE
+	yang digunakan sebuah paket</li>
+	</ul>
+	</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Apakah paket masked itu?</title>
+<section>
+<body>
+	<p>
+	Banyak orang sering kali bertanya mengapa paket-paket yang
+	baru dirilis tidak diikutsertakan sewaktu mereka menjalankan
+	<c>emerge -u world</c>. Sebagai contoh adalah xfree-4.3.0
+	(versi pada saat penulisan ini). Jika anda menjalankan
+	<c>emerge sync</c> dan diikuti oleh <c>emerge -u world</c>,
+	anda tidak akan menemukan xfree untuk diupdate. Mengapa?
+	</p>
+	<p>
+	Alasannya adalah karena beberapa paket-paket diberi tanda
+	"masked" -- artinya, paket tersebut tidak akan diupgrade atau
+	diinstal secara otomatis, kecuali anda melakukan beberapa
+	perintah tertentu. Untuk penjelasan tentang cara melakukan
+	instalasi paket-paket yang termask, silahkan membaca
+	<uri link="http://forums.gentoo.org/viewtopic.php?t=33534">
+	Masked Packages FAQ</uri> di <uri link="http://forums.gentoo.org/">
+	Forum Gentoo</uri>.
+	</p>
+</body>
+</section>
+</chapter>
+</guide>
+
