@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.3 2003/03/06 12:31:14 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.4 2003/03/06 12:37:35 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -24,7 +24,7 @@ $ACCEPT_KEYWORDS = $1 if $ACCEPT_KEYWORDS =~ m/^ACCEPT_KEYWORDS="([^"]+)"/;
 
 my %done;
 
-open FILE, ">packages.txt" or die "Can't open packages.txt to write the DB;
+open FILE, ">packages.txt" or die "Can't open packages.txt to write the DB";
 
 # First line contains a space seperated list of all acceptable keywords
 print FILE "$ARCH $ACCEPT_KEYWORDS\n";
@@ -52,11 +52,15 @@ sub wanted {
 	# Next file if this one has a bad name
 	return if scalar @chunks < 3;
 	
+	
 	unless(defined $done{"$chunks[0]/$chunks[1]"}) {
+	# Don't open an ebuild of the same name but different version as one
+	#   that we've already done
 		my @contents = get_file($ebuild);
 		print FILE "$chunks[0]/$chunks[1]\0";
 		my ($desc, $page, $key);
 		for (@contents) {
+		# Write all the cruft
 			my ($gotdesc, $gotpage, $gotkey);
 			if (m/^DESCRIPTION="([^"]+)"/) {
 				$desc = "$1\0";
@@ -67,18 +71,22 @@ sub wanted {
 				$gotpage++;
 			}
 			elsif (m/^KEYWORDS="([^"]+)"/) {
+			# Padded with spaces to make parsing easier later
 				$key = " $1 ";
 				$key =~ s/\s+/ /g;
 				$gotkey++;
 			}
 			last if $gotdesc && $gotpage && $gotkey;
 		}
+		
+		# Set up sane defaults
 		print FILE $desc ? $desc : "No description available\0";
 		print FILE $page ? $page : "No home page available\0";
 		print FILE $key  ? $key  : "No KEYWORDS available\0";
 		print FILE "\n";
 	}
 	
+	# Make sure we skip the same category/name next time
 	$done{"$chunks[0]/$chunks[1]"} = 1;
 	
 }
