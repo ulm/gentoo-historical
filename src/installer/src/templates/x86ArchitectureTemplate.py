@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.6 2005/01/07 05:07:23 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.7 2005/01/07 07:00:13 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -179,3 +179,136 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		f = open(file_name, 'w')
 		f.writelines(newgrubconf)
 		f.close()
+		
+	def _cylinders_to_sectors(self, minor, start, end, sectors_in_cylinder):
+		cylinders = int(end) - int(start) + 1
+		total_sectors = cylinders * int(sectors_in_cylinder)
+		start_sector = int(start) * sectors_in_cylinder
+		end_sector = start_sector + total_sectors - 1
+		if int(minor) == 1 and start_sector == 0: start_sector = 63
+		return (start_sector, end_sector)
+
+	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
+		return float((float(sectors) * sector_bytes)/ float(1024*1024))
+
+	def _sectors_to_bytes(self, sectors, sector_bytes=512):
+		return (int(sectors) * sector_bytes)
+
+	def _run_parted_command(self, device, cmd):
+		parted_output = commands.getoutput("parted -s " + device + " " + cmd)
+		print "parted -s " + device + " " + cmd
+
+	def _add_partition(self, device, start, end, type, fs):
+		start = self._sectors_to_megabytes(start)
+		end = self._sectors_to_megabytes(end)
+		self._run_parted_command(device, "mkpart " + type + " " + fs + " " + str(start) + " " + str(end))
+		if type == "ntfs":
+			pass
+		elif type == "ext2" or type == "ext3":
+			pass
+		else:
+			pass
+
+	def do_partitioning(self):
+		import GLIStorageDevice, parted, pprint
+
+		devices_old = {}
+		parts_old = {}
+		parts_new = self._install_profile.get_partition_tables()
+		drives = GLIStorageDevice.detect_devices()
+		drives.sort()
+		for drive in drives:
+			devices_old[drive] = GLIStorageDevice.Device(drive)
+			devices_old[drive].set_partitions_from_disk()
+		for part in devices_old.keys(): parts_old[part] = devices_old[part].get_install_profile_structure()
+
+		pp = pprint.PrettyPrinter(indent=4)
+		pp.pprint(parts_old)
+		pp.pprint(parts_new)
+
+		for dev in parts_old.keys():
+			parts_active = []
+			parts_lba = []
+			print "\nProcessing " + dev + "..."
+			parted_dev = parted.PedDevice.get(dev)
+			parted_disk = parted.PedDisk.new(parted_dev)
+			last_partition_touched = 0
+			sectors_in_cylinder = devices_old[dev]._sectors_in_cylinder
+			# First pass to delete old partitions that aren't resized
+			for part in parts_old[dev]:
+				oldpart = parts_old[dev][part]
+				old_start, old_end = self._cylinders_to_sectors(part, oldpart['start'], oldpart['end'], sectors_in_cylinder)
+				matchingminor = 0
+				for new_part in parts_new[dev]:
+					tmppart = parts_new[dev][new_part]
+					new_start, new_end = self._cylinders_to_sectors(new_part, tmppart['start'], tmppart['end'], sectors_in_cylinder)
+					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
+						matchingminor = new_part
+						print "  Deleting old minor " + str(part) + " to be recreated later"
+						self._run_parted_command(dev, "rm " + str(part))
+						break
+					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
+						matchingminor = new_part
+						print "  Ignoring old minor " + str(part) + " to resize later"
+						break
+				if not matchingminor:
+					print "  No match found...deleting partition " + str(part)
+					self._run_parted_command(dev, "rm " + str(part))
+				else:
+					if parted_disk.get_partition(part).get_flag(1): # Active/boot
+						print "  Partition " + str(part) + " was active...noted"
+						parts_active.append(int(matchingminor))
+					if parted_disk.get_partition(part).get_flag(7): # LBA
+						print "  Partition " + str(part) + " was LBA...noted"
+						parts_lba.append(int(matchingminor))
+			# Second pass to resize old partitions that need to be resized
+			print " Second pass..."
+			for part in parts_old[dev]:
+				oldpart = parts_old[dev][part]
+				old_start, old_end = self._cylinders_to_sectors(part, oldpart['start'], oldpart['end'], sectors_in_cylinder)
+				for new_part in parts_new[dev]:
+					tmppart = parts_new[dev][new_part]
+					new_start, new_end = self._cylinders_to_sectors(new_part, tmppart['start'], tmppart['end'], sectors_in_cylinder)
+					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
+						print "  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end'])
+						type = tmppart['type']
+						device = dev
+						minor = part
+						start = int(new_start)
+						end = int(new_end)
+						if type == "ext2" or type == "ext3":
+							total_sectors = end - start + 1
+							commands.getstatus("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
+							print "resize2fs " + device + str(minor) + " " + str(total_sectors) + "s"
+						elif type == "ntfs":
+							total_sectors = end - start + 1
+							total_bytes = int(self._sectors_to_bytes(total_sectors))
+							commands.getstatus("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
+							print "ntfsresize --size " + str(total_bytes) + " " + device + str(minor)
+						else:
+							start = float(self._sectors_to_megabytes(start))
+							end = float(self._sectors_to_megabytes(end))
+							self._run_parted_command(device, "resize " + str(minor) + " " + str(start) + " " + str(end))
+						print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
+						self._run_parted_command(dev, "rm " + str(part))
+						break
+			# Third pass to create new partition table
+			print " Third pass..."
+			for part in parts_new[dev]:
+				newpart = parts_new[dev][part]
+				new_start, new_end = self._cylinders_to_sectors(part, newpart['start'], newpart['end'], sectors_in_cylinder)
+				if newpart['type'] == "extended":
+					print "  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._add_partition(dev, new_start, new_end, "extended", "")
+				elif int(part) < 5:
+					print "  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._add_partition(dev, new_start, new_end, "primary", newpart['type'])
+				elif int(part) > 4:
+					print "  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					self._add_partition(dev, new_start, new_end, "logical", newpart['type'])
+				if int(part) in parts_active and not newpart['format']:
+					print "   Partition was previously active...setting"
+					self._run_parted_command(dev, "set " + str(part) + " boot on")
+				if int(part) in parts_lba and not newpart['format']:
+					print "   Partition was previously LBA...setting"
+					self._run_parted_command(dev, "set " + str(part) + " lba on")
