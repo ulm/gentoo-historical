@@ -41,46 +41,6 @@
 			</tr>
 		</table>
 	</td>
-<!--	
-	<td width="99%" valign="bottom" bgcolor="#000000">
-		<table class="menu" border="0" cellpadding="10" cellspacing="0">
-			<tr>
-				<td valign="top">
-					<xsl:variable name="mylink"><xsl:value-of select="/guide/@link"/></xsl:variable>
-					main menu ::<br/>
-					&#160;<a class="oldlink" href="/index.html">About Gentoo Linux</a><br/>
-					&#160;<a class="oldlink" href="/index-download.html">Download/Install</a><br/> 
-					&#160;<a class="oldlink" href="/index-changelog.html">CVS Changelog</a><br/> 
-					&#160;<a class="oldlink" href="/index-projects.html">Projects</a><br/> 
-					<br/>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<xsl:choose>
-					<xsl:when test="/guide/@type='project'">
-						projects
-					</xsl:when>
-					<xsl:otherwise>
-						docs 
-					</xsl:otherwise>
-					</xsl:choose>
-					::
-					<a class="highlight" href="{$mylink}">
-					<xsl:choose>
-					<xsl:when test="/guide/subtitle">
-						<xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/>
-					</xsl:when>
-					<xsl:otherwise>
-					<xsl:value-of select="/guide/title"/>
-					</xsl:otherwise>
-					</xsl:choose>
-					</a>
-				</td>
-			</tr>
-			</table>
-			/td>
--->
 	</tr>
 	<tr>
 		<td valign="top" align="right" bgcolor="#ffffff">
@@ -153,7 +113,7 @@
                 <tr>
                   <td align="center">
 <!-- Begin PayPal Logo -->
-					<p class="alttext"><b>Donate</b> to support our development efforts.</p>
+		<p class="alttext"><b>Donate</b> to support our development efforts.</p>
                     <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
                       <input type="hidden" name="cmd" value="_xclick"/>
                       <input type="hidden" name="business" value="drobbins@gentoo.org"/>
@@ -347,7 +307,6 @@
           </tr>
           <tr>
             <td valign="top" align="right" width="1%" bgcolor="#dddaec">
-<!--<table width="100%" height="100%" cellspacing="0" cellpadding="0" border="0">-->
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td height="1%" valign="top" align="right">
@@ -358,122 +317,37 @@
                   <td height="99%" valign="top" align="right">
 <!--info goes here-->
                     <table cellspacing="0" cellpadding="5" border="0">
-<!--<table width="90%" height="100%" cellspacing="0" cellpadding="5" border="0">-->
                       <tr>
                         <td valign="top">
                           <p class="altmenu"><xsl:if test="/mainpage/@id='news'">
-						Recent Gentoo Linux news:<br/>
-						<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
-						<br/><br/>
-						Recent Other News:<br/>
-						<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
-						<br/><br/>
-						</xsl:if>
-						Download Mirrors:<br/>
-						<a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/>
-						<a class="altlink" href="ftp://ftp.gtlib.cc.gatech.edu/pub/gentoo">gatech.edu (USA)</a><br/>
-						<a class="altlink" href="http://mirrors.sunsite.dk/gentoo/">sunsite.dk (Denmark)</a><br/>
-						<a class="altlink" href="ftp://sunsite.dk/mirrors/gentoo/">sunsite.dk (Denmark/ftp)</a><br/>
-						<a class="altlink" href="http://gentoo.linux.no/">linux.no (Norway)</a><br/>
-						<a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/>
-						<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/>
-						<a class="altlink" href="/doc/mirroring.html">(how to set up an rsync mirror)</a><br/>
-						<br/><br />
-						<a href="http://www.qksrv.net/click-477620-5033206" target="_top"><img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/>
-						<br/><br />
-<!--
-User Docs:<br/>
-   x86 Install Instructions<br/>
-   <a class="altlink" href="/doc/build.html">English</a>|<a class="altlink" href="/doc/build-fr.html">Français</a>|<a class="altlink" href="/doc/build-es.html">Español</a>|<a class="altlink" href="/doc/build-nl.html">Nederlands</a><br/>
-   PowerPC Install Instructions<br/>
-   <a class="altlink" href="/doc/gentoo-ppc-install.html">English</a>|<a class="altlink" href="/doc/gentooppc-quickstart-es.html">Español</a><br/>
-   SPARC Install Instructions<br/>
-   <a class="altlink" href="/doc/gentoo-sparc-install.html">English</a><br/>
-   FAQ<br/>
-   <a class="altlink" href="/doc/faq.html">English</a>|<a class="altlink" href="/doc/faq-fr.html">Français</a>|<a class="altlink" href="/doc/faq-es.html">Español</a><br/>
-   Desktop Guide<br/>
-   <a class="altlink" href="/doc/desktop.html">English</a>|<a class="altlink" href="/doc/desktop-fr.html">Français</a>|<a class="altlink" href="/doc/desktop-es.html">Español</a><br/>
-   Portage Manual<br/>
-   <a class="altlink" href="/doc/portage-manual.html">English</a>|<a class="altlink" href="/doc/portage-manual-fr.html">Français</a>|<a class="altlink" href="/doc/portage-manual-es.html">Español</a><br/>
-   Portage User Guide<br/>
-   <a class="altlink" href="/doc/portage-user.html">English</a>|<a class="altlink" href="/doc/portage-user-fr.html">Français</a>|<a class="altlink" href="/doc/portage-user-es.html">Español</a><br/>
-   Gentoolkit Guide<br/>
-   <a class="altlink" href="/doc/gentoolkit.html">English</a><br/>
-   USE variable HOWTO<br/>
-   <a class="altlink" href="/doc/use-howto.html">English</a>|<a class="altlink" href="/doc/use-howto-fr.html">Français</a>|<a class="altlink" href="/doc/use-howto-es.html">Español</a><br/>
-   ENV.D HOWTO Guide<br/>
-   <a class="altlink" href="/doc/env.d-howto.html">English</a><br/>
-   Gentoo rc-scripts Guide<br/>
-   <a class="altlink" href="/doc/rc-scripts.html">English</a>|<a class="altlink" href="/doc/rc-scripts-fr.html">Français</a><br/>
-   Gentoo Security Guide<br/>
-   <a class="altlink" href="/doc/gentoo-security.html">English</a>|<a class="altlink" href="/doc/gentoo-security-es.html">Español</a><br/>
-   Gentoo Java Guide<br/>
-   <a class="altlink" href="/doc/java.html">English</a>|<a class="altlink" href="/doc/java-fr.html">Français</a><br/>
-   Nano Basics Guide<br/>
-   <a class="altlink" href="/doc/nano-basics-guide.html">English</a>|<a class="altlink" href="/doc/nano-basics-guide-fr.html">Français</a>|<a class="altlink" href="/doc/nano-basics-guide-es.html">Español</a><br/>
-   Alternative Installation Guide<br/>
-   <a class="altlink" href="/doc/altinstall.html">English</a><a class="altlink" href="/doc/altinstall-fr.html">Français</a>|<a class="altlink" href="/doc/altinstall-es.html">Español</a><br/>
-   OpenAFS Installation Guide<br/>
-   <a class="altlink" href="/doc/openafs.html">English</a><br/>
-   Printing Howto<br/>
-   <a class="altlink" href="/doc/printing-howto.html">English</a><br/>
-   <br/><br/>
-
-Developer Resources:<br/>
-   <a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a>|<a class="altlink" href="/doc/cvs-tutorial-fr.html">Français</a><br/>
-   <a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a>|<a class="altlink" href="/doc/gentoo-howto-fr.html">Français</a><br/>
-   <a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a>|<a class="altlink" href="/doc/eclass-howto-fr.html">Français</a><br/>
-   <a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a>|<a class="altlink" href="/doc/xml-guide-es.html">Español</a><br/>
-   <a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/>
-   <a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a>|<a class="altlink" href="/doc/ebuild-submit-fr.html">Français</a>|<a class="altlink" href="/doc/ebuild-submit-es.html">Español</a><br/>
-   <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
-   <br/><br/>
-Documentation en Français:<br/>
-<a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide nVidia</a><br/>
-<br/><br/>
-Documentación en Español: <br/>
-Para usuarios:<br/>
-<a class="altlink" href="/doc/gentooppc-quickstart-es.html">Instalación en PPC</a><br/>
-Otros:<br/>
-<a class="altlink" href="/doc/main-about-es.html">Sobre Gentoo Linux</a><br/>
-<a class="altlink" href="/doc/main-contract-es.html">Contrato Social</a><br/>
-<a class="altlink" href="/doc/project-xml-es.html">Proyectos XML</a><br/>
-<a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/>
-<br/><br/>
--->
-Documentation:
-<br />
-<a class="altlink" href="/index-docs.html#top"> User Docs </a>
-<br />
-<a class="altlink" href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>
-<br />
-<a class="altlink" href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>
-<br /><br />
-<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/>
-<br />
-
-
-
-				Mailing Lists:<br/><br/>
-				<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a>
+				Recent Gentoo Linux news:<br/>
+				<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
 				<br/><br/>
-				IRC chat on <a class="altlink" href="http://www.freenode.org/">Freenode</a>:
+				Recent Other News:<br/>
+				<xsl:for-each select="newsitems/news[@gentoo!='yes'][position()&lt;7]"><xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable><a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/></xsl:for-each>
 				<br/><br/>
-				General Discussion:<br/>#gentoo<br/><br/>
-				Gentoo Linux/PPC:<br/>#gentoo-ppc <br/><br/>
-				Gentoo Linux/Sparc:<br/>#gentoo-sparc <br/><br/>
-				Low-bandwidth chat:<br/>#gentoo-user<br/><br/>
-				Server-related chat:<br/>#gentoo-server<br/><br/>
-				En Français:<br/>#gentoofr<br/><br/>
-				En Español:<br/>#gentoo-es<br/><br/>
-				På norsk:<br/>#gentoo-no <br/><br/>
-				På svenska:<br/>#gentoo-se <br/><br/>
-				In het Nederlands:<br/>#gentoo-nl <br/>#gentoo-be<br/><br />
-				Auf Deutsch:<br/>#gentoo.de <br/><br/>
-				Em Português:<br />#gentoo-pt<br /><br />
-				Japanese Discussion:<br /> #gentoo-ja<br/><br/>
+				</xsl:if>
+				Documentation:
+				<br />
+				<a class="altlink" href="/index-docs.html#top"> User Docs </a>
+				<br />
+				<a class="altlink" href="/index-docs.html#doc_chap1_sect2"> Developer Docs </a>
+				<br />
+				<a class="altlink" href="/index-docs.html#doc_chap1_sect3"> Other Docs/Translations </a>
+				<br />
+				<br />
+				Resources:
+				<br />
+				<a class="altlink" href="/index-mirrors.html">Download Mirrors</a>
+				<br />
+				<a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">Veiw our CVS via the web</a>
+				<br/>
+				<a class="altlink" href="http://lists.gentoo.org">Mailling lists</a>
+				<br/>
+				<a class="altlink" href="/index-irc.html">Official Gentoo IRC channels</a><br/><br/>
 				<br/><br/>
 				</p>
+				<br/><br />
                         </td>
                       </tr>
                     </table>
