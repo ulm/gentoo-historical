@@ -1,10 +1,9 @@
 <?xml version='1.0' encoding="iso-8859-1"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output encoding="iso-8859-1" method="xml" indent="yes"/>
-
+<xsl:output method="xml" doctype-system="/dtd/guide.dtd"  />
 <xsl:template match="/changelog">
 	<xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
-  &lt;!DOCTYPE mainpage SYSTEM "/dtd/guide.dtd"&gt;
 	<mainpage id="changelog">
 	<title>Gentoo Linux Development Changelog for <xsl:value-of select="entry/date"/></title>
 	<author title="script">cvs-xml.xsl</author>
