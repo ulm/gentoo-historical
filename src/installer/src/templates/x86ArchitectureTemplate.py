@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.18 2005/01/19 06:17:03 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.19 2005/01/22 00:38:37 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -98,22 +98,25 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if part > 4: continue
 				oldpart = parts_old[dev][part]
 				matchingminor = 0
+				delete = 0
 				if oldpart['type'] == "extended":
 					logical_to_resize = 0
 					for part_log in parts_old[dev]:
 						if part_log < 5: continue
 						matchingminor = 0
+						delete_log = 0
 						for new_part in parts_new[dev]:
 							if new_part < 5: continue
 							tmppart = parts_new[dev][new_part]
 							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
 								matchingminor = new_part
 								print "  Deleting old minor " + str(part_log) + " to be recreated later"
-								parted_disk.delete_partition(parted_disk.get_partition(part_log))
+								delete_log = 1
 								break
 							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
 								matchingminor = new_part
 								print "  Ignoring old minor " + str(part_log) + " to resize later"
+								logical_to_resize = 1
 								break
 						if not matchingminor:
 							print "  No match found...deleting partition " + str(part_log)
@@ -125,7 +128,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							if parted_disk.get_partition(part_log).get_flag(7): # LBA
 								print "  Partition " + str(part_log) + " was LBA...noted"
 								parts_lba.append(int(matchingminor))
-							logical_to_resize = 1
+							if delete_log:
+								parted_disk.delete_partition(parted_disk.get_partition(part_log))
 					if not logical_to_resize:
 						print "  Deleting old minor " + str(part)
 						parted_disk.delete_partition(parted_disk.get_partition(part))
@@ -135,7 +139,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
 						matchingminor = new_part
 						print "  Deleting old minor " + str(part) + " to be recreated later"
-						parted_disk.delete_partition(parted_disk.get_partition(part))
+						delete = 1
 						break
 					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
 						matchingminor = new_part
@@ -143,7 +147,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						break
 				if not matchingminor:
 					print "  No match found...deleting partition " + str(part)
-					# This is broke for logical partitions
 					parted_disk.delete_partition(parted_disk.get_partition(part))
 				else:
 					if parted_disk.get_partition(part).get_flag(1): # Active/boot
@@ -152,6 +155,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					if parted_disk.get_partition(part).get_flag(7): # LBA
 						print "  Partition " + str(part) + " was LBA...noted"
 						parts_lba.append(int(matchingminor))
+					if delete:
+						parted_disk.delete_partition(parted_disk.get_partition(part))
 			parted_disk.commit()
 			# Second pass to resize old partitions that need to be resized
 			print " Second pass..."
