@@ -4,9 +4,13 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/Attic/hb-install-x86-bootloader.xml,v 1.2 2004/05/23 10:58:31 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/Attic/hb-install-x86-bootloader.xml,v 1.3 2005/01/08 20:14:24 mush Exp $ -->
 
 <sections>
+
+<version>1.21</version>
+<date>2004-12-23</date>
+
 <section>
 <title>La scelta</title>
 <subsection>
@@ -32,6 +36,10 @@ lo sfondo che viene fornito da Gentoo).
 <e>Se</e> si è configurato il kernel con il supporto framebuffer (o si è usata la configurazione di default <c>genkernel</c>, si deve aggiungere un una istruzione <c>vga</c> al file di configurazione del bootloader, se si vuole avere il framebuffer. La prossima tabella elenca i valori disponibili di <c>vga</c> che si possono usare. Nel file di configurazione di esempio, si unsa una risoluzione di <e>800x600 a 16bpp</e>, e quindi si inserisce <e>788</e>.
 </p>
 
+<p>
+Per il parametro <c>vga</c>:
+</p>
+
 <table>
 <tr>
   <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
@@ -48,11 +56,19 @@ lo sfondo che viene fornito da Gentoo).
 </table>
 
 <p>
-E' importante ricordare (o annotare) i propri valori per dopo.
+Se si sta utilizzando un kernel 2.6 e si è scelto di usare vesafb-tng, è necessario
+utilizzare il paramtro <c>video</c>. La sintassi è
+&lt;larghezza&gt;x&lt;altezza&gt;-&lt;profondità del colore&gt;@&lt;refresh&gt;, ad esempio
+<c>1024x768-16@60</c>.
 </p>
 
 <p>
-Ora selezionare il bootloader preferito dalla tabella sopra.
+Ulteriori informazioni sono disponibili in
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path>.
+</p>
+
+<p>
+E' importante ricordare (o annotare) i propri valori per dopo.
 </p>
 
 <p>
@@ -100,6 +116,150 @@ Per installare GRUB, si deve prima emergerlo:
 </pre>
 
 <p>
+Nonostante GRUB sia installato, si deve ancora modificare un file di configurazione perchè GRUB
+venga installato nel MBR in modo che possa avviare il nuovo kernel. Creare <path>/boot/grub/grub.conf</path> con <c>nano</c> (o con un altro editor):
+</p>
+
+<pre caption="Creare /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+Ora è necessario modificare <path>grub.conf</path>. Seguono due possibili <path>grub.conf</path> per l'esempio di partizione usato in questa guida che utilizza l'immagine del kernel <path>kernel-2.4.26-gentoo-r9</path>. Viene però analizzato a fondo solo il primo <path>grub.conf</path>. Assicurarsi di personalizzare le impostazioni indicando la
+propria immagine del kernel e il proprio initrd.
+</p>
+
+<ul>
+  <li>
+    Il primo <path>grub.conf</path> è per chi non ha usato <c>genkernel</c> per compilare il kernel
+  </li>
+  <li>
+    Il secondo <path>grub.conf</path> è per chi ha usato <c>genkernel</c>
+  </li>
+</ul>
+
+<pre caption="grub.conf per utenti che non hanno usato genkernel">
+<comment># Quale opzione viene avviata di default. 0 è la prima, 1 la seconda etc.</comment>
+default 0
+<comment># Quanti secondi attenedere prima di avviare l'opzione di default.</comment>
+timeout 30
+<comment># Un'immagine gradevole
+# Da commentare se non si dispone di scheda grafica</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r9
+<comment># La partizione dove si trova l'immagine del kernel (o il sistema operativo)</comment>
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r9 root=/dev/hda3
+
+<comment># Le prossime tre righe vanno messe solo se si ha un dualboot con Windows.</comment>
+<comment># In questo caso, Windows è in /dev/hda6.</comment>
+title=Windows XP
+rootnoverify (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+<pre caption="grub.conf per utenti che hanno usato genkernel">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r9
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r9 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initrd-2.4.26-gentoo-r9
+
+<comment># Solo nel caso si desideri il dual-boot</comment>
+title=Windows XP
+root (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+<note>
+Se si usa uno schema di partizioni e/o un'immagine del kernel differenti da quelli dell'esempio, cambiare le impostazioni di conseguenza. Assicurarsi che qualsiasi cosa che segue un GRUB-device (come <path>(hd0,0)</path>), sia relativa al mountpoint, e non a root. In altre parole, <path>(hd0,0)/grub/splash.xpm.gz</path> è <path>/boot/grub/splash.xpm.gz</path> poichè <path>(hd0,0)</path> è <path>/boot</path>.
+</note>
+
+<p>
+Se si ha bisogno di inserire opzioni ulteriori al kernel, si deve aggiungerle alla fine del comando kernel. Si è già inserita una opzione (<c>root=/dev/hda3</c> o <c>real_root=/dev/hda3</c>), ma se ne possono inserire altre, ad esempio l'istruzione <c>vga</c> per il framebuffer, di cui si è parlato precedentemente:
+</p>
+
+<pre caption="Aggiungere l'istruzione vga come opzione del kernel">
+title=Gentoo Linux 2.4.26-r9
+  root (hd0,0)
+  kernel /kernel-2.4.26-gentoo-r9 root=/dev/hda3 vga=788
+</pre>
+
+<p>
+Se si utilizza un kernel successivo al 2.6.7 e il proprio BIOS non riconosce
+i drive grandi è necessario aggiungere l'istruzione
+<c>hdx=stroke</c>.
+</p>
+
+<p>
+Coloro che usano <c>genkernel</c> devono sapere che i loro kernel hanno le stesse opzioni di boot del LiveCD. Per esempio, se si disponde di un disco SCSI, si dovrebbe aggiungere <c>doscsi</c> come opzione del kernel.
+</p>
+
+<p>
+Salvare ora il file <path>grub.conf</path> e uscire. Bisogna ancora installare
+GRUB nel MBR (Master Boot Record) in modo che GRUB venga eseguito automaticamente al boot del sistema.
+</p>
+
+<p>
+Gli sviluppatori di GRUB raccomandano l'utilizzo di <c>grub-install</c>.
+In ogni caso, se per qualche ragione <c>grub-install</c> non funzionasse
+è ancora possibile installare GRUB manualmente.
+</p>
+
+<p>
+Continuare la lettura con <uri link="#grub-install-auto">Default: Impostare GRUB con
+grub-install</uri> o <uri link="#grub-install-manual">Alternativa: Impostare
+GRUB manualmente</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-auto">
+<title>Default: Impostare GRUB con grub-install</title>
+<body>
+
+<p>
+Per installare GRUB è necessario lanciare il comando <c>grub-install</c>. In questo caso però
+<c>grub-install</c> non può funzionare come al solito, perchè siamo in un ambiente in chroot.
+Dobbiamo prima aggiornare <path>/etc/mtab</path> (il file contenente le informazioni sui filesystem montati): fortunatamente c'è un modod semplice di farlo,
+copiando <path>/proc/mounts</path> in <path>/etc/mtab</path>:
+</p>
+
+<pre caption="Aggiornamento di /etc/mtab">
+# <i>cp /proc/mounts /etc/mtab</i>
+</pre>
+
+<p>
+Ora è possibile installare GRUB con <c>grub-install</c>:
+</p>
+
+<pre caption="Eseguire grub-install">
+# <i>grub-install --root-directory=/boot /dev/hda</i>
+</pre>
+
+<p>
+Per ulteriori informazioni riguardanti GRUB consultare le <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> o il <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
+</p>
+
+<p>
+Continuare la lettura con il <uri link="#reboot">Reboot del sistema</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-manual">
+<title>Alternativa: Impostare GRUB manualmente</title>
+<body>
+
+<p>
 Per iniziare la configurazione di GRUB, digitare <c>grub</c>. Viene visualizzato il prompt della linea di comando di grub, <path>grub&gt;</path>. Ora si può procedere a digitare i comandi corretti per installare il boot record di GRUB sull'hard disk.
 </p>
 
@@ -113,7 +273,7 @@ al comando precedente per evitare che grub lo cerchi.
 </note>
 
 <p>
-Nella configurazione di esempio, si desidera installare GRUB in modo che legga le proprie informazioni dalla partizione di boot <path>/dev/hda1</path> e installare il boot record di GRUB nel MBR (master boot record) dell'hard disk, in modo che la prima cosa che si veda, quando si accende il computer, è il prompt di GRUB. Se non si è seguita la configurazione di esempio durante l'installazione, è necessario cambiare i comandi di conseguenza.
+Nella configurazione di esempio, si desidera installare GRUB in modo che legga le proprie informazioni dalla partizione di boot <path>/dev/hda1</path> e installare il boot record di GRUB nel MBR (master boot record) dell'hard disk, in modo che la prima cosa che si veda, quando si accende il computer, sia il prompt di GRUB. Se non si è seguita la configurazione di esempio durante l'installazione, è necessario cambiare i comandi di conseguenza.
 </p>
 
 <p>
@@ -121,7 +281,7 @@ Il meccanismo di completamento con il tasto TAB, può essere usato da dentro GRU
 </p>
 
 <p>
-Con il tasto TAB non dovrebbe essere difficile impostare GRUB . Ecco ora la vera e propria configurazione di GRUB.
+Con il tasto TAB non dovrebbe essere difficile impostare GRUB. Ecco ora la vera e propria configurazione di GRUB.
 </p>
 
 <pre caption="Installare GRUB nel MBR">
@@ -135,89 +295,20 @@ Se si desidera installare GRUB in un'altra partizione, invece che nel MBR, è ne
 </note>
 
 <p>
-Nonostante GRUB sia installato, si deve ancora modificare un file di configurazione perchè GRUB possa avviare il kernel. Creare <path>/boot/grub/grub.conf</path> con <c>nano</c> (o con un altro editor):
+Per ulteriori informazioni riguardanti GRUB consultare le <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> o il <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
 </p>
-
-<pre caption="Creare /boot/grub/grub.conf">
-# <i>nano -w /boot/grub/grub.conf</i>
-</pre>
-
-<p>
-Ora è necessario modificare <path>grub.conf</path>. Seguono due possibili <path>grub.conf</path> per l'esempio di partizione usato in questa guida che utilizza l'immagine del kernel <path>kernel-2.4.25-gentoo</path>. Viene però analizzato a fondo solo il primo <path>grub.conf</path>.
-</p>
-
-<ul>
-  <li>
-    Il primo <path>grub.conf</path> è per chi non ha usato <c>genkernel</c> per compilare il kernel
-  </li>
-  <li>
-    Il secondo <path>grub.conf</path> è per chi ha usato <c>genkernel</c> dal LiveCD per compilare il kernel (per esempio il <c>genkernel</c> installato con i pacchetti GRP)
-  </li>
-</ul>
-
-<pre caption="grub.conf per utenti che non hanno usato genkernel">
-<comment># Quale opzione viene avviata di default. 0 è la prima, 1 la seconda etc.</comment>
-default 0
-<comment># Quanti secondi attenedere prima di avviare l'opzione di default.</comment>
-timeout 30
-<comment># Un'immagine gradevole
-# Da commentare se non si dispone di scheda grafica</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
-
-title=Gentoo Linux 2.4.25
-<comment># La partizione dove si trova l'immagine del kernel (o il sistema operativo)</comment>
-root (hd0,0)
-kernel /kernel-2.4.25-gentoo root=/dev/hda3
-
-<comment># Le prossime tre righe vanno messe solo se si ha un dualboot con Windows.</comment>
-<comment># In questo caso, Windows è in /dev/hda6.</comment>
-title=Windows XP
-rootnoverify (hd0,5)
-chainloader +1
-</pre>
-
-<pre caption="grub.conf per utenti che hanno usato il genkernel">
-default 0
-timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
-
-title=Gentoo Linux 2.4.25
-root (hd0,0)
-kernel /kernel-2.4.25-gentoo root=/dev/ram0 init=/linuxrc real_root=/dev/hda3
-initrd /initrd-2.4.25-gentoo
-
-<comment># Solo nel caso si desideri il dual-boot</comment>
-title=Windows XP
-root (hd0,5)
-chainloader +1
-</pre>
 
 <note>
-Se si usa uno schema di partizioni e/o un'immagine del kernel differenti da quelli dell'esempio, cambiare le impostazioni di conseguenza. Assicurarsi che qualsiasi cosa che segue un GRUB-device (come <path>(hd0,0)</path>), sia relativa al mountpoint, e non a root. In altre parole, <path>(hd0,0)/grub/splash.xpm.gz</path> è <path>/boot/grub/splash.xpm.gz</path> poichè <path>(hd0,0)</path> è <path>/boot</path>.
+Quando si reinstalla un kernel, non è più necessario copiare i file.
+E' sufficiente eseguire <c>make install</c> dopo la compilazione del kernel e
+automaticamente vengono copiati i file e reimpostata la configurazione
+di grub.
 </note>
 
 <p>
-Se si ha bisogno di inserire opzioni ulteriori al kernel, si deve aggiungerle alla fine dei comandi del kernel. Si è già inserita una opzione (<c>root=/dev/hda3</c> o <c>real_root=/dev/hda3</c>), ma se ne possono inserire altre, ad esempio l'istruzione <c>vga</c> per il framebuffer, di cui si è parlato precedentemente:
-</p>
-
-<pre caption="Aggiungere l'istruzione vga come opzione del kernel">
-title=Gentoo Linux 2.4.25
-  root (hd0,0)
-  kernel (hd0,0)/kernel-2.4.25-gentoo root=/dev/hda3 vga=788
-</pre>
-
-<p>
-Coloro che usano <c>genkernel</c> devono sapere che i loro kernel hanno le stesse opzioni di boot del LiveCD. Per esempio, se si disponde di un disco SCSI, si dovrebbe aggiungere <c>doscsi</c> come opzione del kernel.
-</p>
-
-<p>
-Salvare il file <path>grub.conf</path> e uscire. GRUB è completamente configurato e si può continuare con l'<uri link="?part=1&amp;chap=10">Installazione degli strumenti di sistema</uri>.
-</p>
-
-<p>
-In caso di dubbi o domande riguardanti GRUB consultare le<uri
-link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> o il <uri
-link="http://www.gnu.org/software/grub/manual/">Manuale GRUB</uri>.
+Continuare la lettura con il <uri link="#reboot">Reboot del sistema</uri>.
 </p>
 
 </body>
@@ -256,7 +347,7 @@ Per configurare LILO si deve creare <path>/etc/lilo.conf</path>. Aprire l'editor
 </pre>
 
 <p>
-In una sezione precedente, si è chiesto di ricordare il nome dell'immagine del kernel che si è creata. Nel prossimo esempio di <path>lilo.conf</path> si suppone che il nome dell'immagine sia <path>kernel-2.4.25-gentoo</path>. In questo esempio si usa anche lo schema di partizioni dell'esempio precedente. Ci sono due sezioni separate:
+In una sezione precedente, si è chiesto di ricordare il nome dell'immagine del kernel che si è creata. Nel prossimo esempio di <path>lilo.conf</path> si suppone che il nome dell'immagine sia <path>kernel-2.4.26-gentoo-r9</path>. In questo esempio si usa anche lo schema di partizioni dell'esempio precedente. Ci sono due sezioni separate:
 </p>
 
 <ul>
@@ -268,6 +359,11 @@ In una sezione precedente, si è chiesto di ricordare il nome dell'immagine del 
   </li>
 </ul>
 
+<p>
+E' importante assicurarsi di usare la <e>propria</e> immagine del kernel ed eventualmente
+il <e>proprio</e> initrd.
+</p>
+
 <pre caption="Esempio di /etc/lilo.conf">
 boot=/dev/hda             <comment># Installa LILO nel MBR</comment>
 prompt                    <comment># Dà possibilità di selezionare un'altra sezione</comment>
@@ -277,18 +373,18 @@ default=gentoo            <comment># Passato il timeout, avvia la sezione "gento
 vga=788                   <comment># Impostazione framebuffer, da personalizzare</comment>
 
 <comment># Per utenti che non hanno usato genkernel</comment>
-image=/boot/kernel-2.4.25-gentoo
+image=/boot/kernel-2.4.26-gentoo-r9
   label=gentoo            <comment># Il nome dato alla sezione</comment>
   read-only               <comment># Avvio con root di sola lettura. Non modificare!</comment>
   root=/dev/hda3          <comment># Posizione del filesystem root</comment>
 
 <comment># Per utenti che hanno usato genkernel</comment>
-image=/boot/kernel-2.4.25-gentoo
+image=/boot/kernel-2.4.26-gentoo-r9
   label=gentoo
   read-only
   root=/dev/ram0
-  append="init=/linuxrc real_root=/dev/hda3"
-  initrd=/boot/initrd-2.4.25-gentoo
+  append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.26-gentoo-r9
 
 <comment># Le due righe seguenti sono necessarie solo per un dualboot con Windows.</comment>
 <comment># In questo caso, Windows è in /dev/hda6.</comment>
@@ -301,11 +397,11 @@ Se si usa uno schema di partizioni differente e/o un'immagine del kernel non ugu
 </note>
 
 <p>
-Se si ha bisogno di inserire ulteriori opzioni al kernel, si deve aggiungere <c>append</c> alla sezione. Come esempio, si usa <c>acpi=off</c> per disabilitare il supporto ACPI:
+Se si ha bisogno di inserire ulteriori opzioni al kernel, si deve aggiungere <c>append</c> alla sezione. Come esempio, si usa <c>vga=788</c> per abilitare il framebuffer:
 </p>
 
 <pre caption="Usare append per aggiungere opzioni al kernel">
-image=/boot/kernel-2.4.25-gentoo
+image=/boot/kernel-2.4.26-gentoo-r9
   label=gentoo
   read-only
   root=/dev/hda3
@@ -313,20 +409,63 @@ image=/boot/kernel-2.4.25-gentoo
 </pre>
 
 <p>
+Se si utilizza un kernel successivo al 2.6.7 e il proprio BIOS non riconosce
+i drive grandi è necessario aggiungere l'istruzione
+<c>hdx=stroke</c>.
+</p>
+
+<p>
 Coloro che usano <c>genkernel</c> devono sapere che i loro kernel hanno le stesse opzioni di boot del LiveCD. Per esempio, se si disponde di un disco SCSI, si deve aggiungere <c>doscsi</c> come opzione del kernel.
 </p>
 
 <p>
 Ora salvare il file e uscire. Per finire, si deve eseguire <c>/sbin/lilo</c>, così LILO può applicare <path>/etc/lilo.conf</path> al sistema (per esempio, installarsi sul disco). E' importante ricordare di eseguire <c>/sbin/lilo</c> ogni volta che si
-installa un nuovo kernel.
+installa un nuovo kernel o si cambiano le impostazioni del menu.
 </p>
 
 <pre caption="Finire l'installazione di LILO">
 # <i>/sbin/lilo</i>
 </pre>
 
+<note>
+Quando si reinstalla un kernel, non è più necessario copiare i file.
+E' sufficiente eseguire <c>make install</c> dopo la compilazione del kernel e
+automaticamente vengono copiati i file e reimpostata la configurazione
+di LILO.
+</note>
+
 <p>
-Continuare con l'<uri link="?part=1&amp;chap=10">Installazione degli strumenti di sistema</uri>.
+Continuare ora con il <uri link="#reboot">Reboot del sistema</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="reboot">
+<title>Reboot del sistema</title>
+<subsection>
+<body>
+
+<p>
+Uscire dall'ambiente in chroot e smontare tutte le partizioni. Ed eseguire poi
+l'ultimo comando, <c>reboot</c>.
+</p>
+
+<pre caption="Umount della partizioni e reboot">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+Non dimenticare di rimuovere il CD bootabile, altrimenti verrà di nuovo
+avviato il CD al posto del sistema appena installato.
+</p>
+
+<p>
+Una volta effettuato il reboot nella nuova installazione Gentoo, concludere con <uri
+link="?part=1&amp;chap=11">Termine dell'installazione di Gentoo</uri>.
 </p>
 
 </body>
