@@ -38,12 +38,14 @@
 						<img border="0" src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gbot-s.gif" alt="Gentoo Logo Side"/>
 					</a>
 				</td>
-			</tr>
+</tr>
 		</table>
+	
+	
 	</td>
-	</tr>
+</tr>
 	<tr>
-		<td valign="top" align="right" bgcolor="#ffffff">
+		<td valign="top" align="right" colspan="1" bgcolor="#ffffff">
 <!--content begin-->
 <!--Netscape 4.7 hack table start-->
 <!--<table border="0" cellspacing="5" cellpadding="0" height="100%" width="100%">-->
@@ -174,9 +176,8 @@
 			</td>
           </tr>
           <tr>
-            <td align="right" class="infohead" width="100%" bgcolor="#7a5ada">
-			Copyright 2001-2002 Gentoo
-		Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+            <td colspan="2" align="right" class="infohead" width="100%" bgcolor="#7a5ada">
+			Copyright 2001-2002 Gentoo Technologies, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
 			</td>
           </tr>
         </table>
@@ -212,7 +213,7 @@
                 </tr>
               </table>
             </td>
-            <td colspan="2" valign="bottom" align="left" bgcolor="#000000">
+            <td valign="bottom" align="left" bgcolor="#000000">
               <p class="menu">
 	      	<xsl:choose>
 			<xsl:when test="/mainpage/@id='news'">
@@ -259,7 +260,9 @@
 			<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
 		<a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store (new!)</a></p>
             </td>
-          </tr>
+
+		  
+		  </tr>
           <tr>
             <td valign="top" align="right" width="1%" bgcolor="#dddaec">
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -275,6 +278,18 @@
                       <tr>
                         <td valign="top">
                           <p class="altmenu">
+				Search gentoo.org:<table border="0" cellspacing="0" cellpadding="0"><tr><td>
+				<form method="get" action="http://www.gentoo.org/cgi-bin/perlfect/search/search.pl">
+					<input type="hidden" name="p" value="1"/>
+					<input type="hidden" name="lang" value="en"/>
+					<input type="hidden" name="include" value=""/>
+					<input type="hidden" name="exclude" value=""/>
+					<input type="hidden" name="penalty" value="0"/>
+					<input type="hidden" name="mode" value="all"/>
+					<input type="text" name="q"/>
+				</form>
+				</td></tr></table>
+				<br/>	
 				Documentation:
 				<br/>
 				<a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
