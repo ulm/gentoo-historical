@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.22 2005/02/04 00:03:25 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.23 2005/03/19 04:39:35 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -59,6 +59,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		import GLIStorageDevice
 		import pprint
 
+		MEGABYTE = 1024 * 1024
 		devices_old = {}
 		parts_old = {}
 		parts_new = self._install_profile.get_partition_tables()
@@ -74,26 +75,67 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #		pp.pprint(parts_new)
 
 		for dev in parts_old.keys():
+			parted_dev = parted.PedDevice.get(dev)
+			parted_disk = parted.PedDisk.new(parted_dev)
 			if not parts_new.has_key(dev) or not parts_new[dev]:
 				print "Partition table for " + dev + " does not exist in install profile"
 				continue
-			table_changed = 1
-			for part in parts_old[dev]:
-				oldpart = parts_old[dev][part]
-				newpart = parts_new[dev][part]
-				if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
-					table_changed = 0
-				else:
-					table_changed = 1
-					break
-			if not table_changed:
-				print "Partition table for " + dev + " is unchanged"
-				continue
+			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
+				# Change MB/%/* into sectors
+				total_sectors = parted_dev.length
+				sector_size = parted_dev.sector_size
+				total_mb = float(total_sectors * sector_size) / MEGABYTE
+				start_sector = 63
+				mb_left = total_mb
+				for part in parts_new[dev]:
+					tmppart = parts_new[dev][part]
+					if tmppart['type'] == "extended": continue
+					if tmppart['mb'][-1] == "%":
+						tmppart['mb'] = float(tmppart['mb'][:-1]) / 100 * total_mb
+					mb_left = mb_left - float(tmppart['mb'])
+				partlist = parts_new.keys()
+				partlist.sort()
+				for part in partlist:
+					if part > 4: continue
+					tmppart = parts_new[dev][part]
+					if tmppart['type'] == "extended":
+						for part_log in partlist:
+							if part < 5: continue
+							tmppart_log = parts_new[dev][part_log]
+							if not tmppart['start']:
+								tmppart['start'] = start_sector
+							if tmppart_log['mb'] == "*":
+								tmppart_log['mb'] = mb_left
+							part_bytes = int(tmppart_log['mb'] * MEGABYTE)
+							part_sectors = round(part_bytes / sector_size)
+							tmppart_log['start'] = start_sector
+							tmppart_log['end'] = start_sector + part_sectors - 1
+							tmppart['end'] = tmppart_log['end']
+							start_sector = start_sector + part_sectors
+						continue
+					if tmppart['mb'] == "*":
+						tmppart['mb'] = mb_left
+					part_bytes = int(tmppart['mb'] * MEGABYTE)
+					part_sectors = round(part_bytes / sector_size)
+					tmppart['start'] = start_sector
+					tmppart['end'] = start_sector + part_sectors - 1
+					start_sector = start_sector + part_sectors
+			else:
+				table_changed = 1
+				for part in parts_old[dev]:
+					oldpart = parts_old[dev][part]
+					newpart = parts_new[dev][part]
+					if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
+						table_changed = 0
+					else:
+						table_changed = 1
+						break
+				if not table_changed:
+					print "Partition table for " + dev + " is unchanged"
+					continue
 			parts_active = []
 			parts_lba = []
 			print "\nProcessing " + dev + "..."
-			parted_dev = parted.PedDevice.get(dev)
-			parted_disk = parted.PedDisk.new(parted_dev)
 			# First pass to delete old partitions that aren't resized
 			for part in parts_old[dev]:
 				if part > 4: continue
