@@ -145,70 +145,73 @@
                       <tr>
                         <td class="alttext"><b>Summary:</b> <xsl:apply-templates select="abstract"/></td>
                       </tr>
-<!--
-				<tr>
-				<td>
-				<img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
-				</td>
-				</tr>
-				<tr>
-				<td class="altmenu">
-					Contents:<br/>	
-						<xsl:for-each select="chapter">
-						<xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable>
-						&#160;<xsl:number/>&#160;<a class="altlink" href="#{$chapid}"><xsl:value-of select="title"/></a><br/>
-						</xsl:for-each>		
-					</td>
-				</tr> -->
                       <tr>
                         <td>
                           <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                         </td>
                       </tr>
-                      <tr>
-                        <td align="center">
-                          <p class="alttext">Support our development efforts by donating via credit card!</p>
+                <tr>
+                  <td align="center">
 <!-- Begin PayPal Logo -->
-                          <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-                            <input type="hidden" name="cmd" value="_xclick"/>
-                            <input type="hidden" name="business" value="drobbins@gentoo.org"/>
-                            <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
-                            <input type="hidden" name="item_number" value="1000"/>
-                            <input type="hidden" name="image_url" value="http://www.gentoo.org/images/paypal.png"/>
-                            <input type="hidden" name="no_shipping" value="1"/>
-                            <input type="hidden" name="return" value="http://www.gentoo.org"/>
-                            <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-                            <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
-                          </form>
-<!-- End PayPal Logo -->
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td align="center">
-                          <p class="alttext">Purchase RAM using this link, and a percentage
-of your sale will go towards further Gentoo Linux development.</p>
-                          <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
-                            <img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/>
-                          </a>
-                          <p class="alttext">Why these guys?  Because <b>cvs.gentoo.org</b> and <b>inventor.gentoo.org</b> use high-quality Crucial RAM. We know that it's good stuff because we rely on it ourselves.</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
-                        </td>
-                      </tr>
-                    </table>
+					<p class="alttext"><b>Donate</b> to support our development efforts.</p>
+                    <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+                      <input type="hidden" name="cmd" value="_xclick"/>
+                      <input type="hidden" name="business" value="drobbins@gentoo.org"/>
+                      <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
+                      <input type="hidden" name="item_number" value="1000"/>
+                      <input type="hidden" name="image_url" value="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/paypal.png"/>
+                      <input type="hidden" name="no_shipping" value="1"/>
+                      <input type="hidden" name="return" value="http://www.gentoo.org"/>
+                      <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
+                      <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+                    </form>
                   </td>
                 </tr>
-              </table>
+                <tr>
+                  <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
+				<tr>
+                  <td align="center">
+                    <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
+                      <img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/>
+                    </a>
+                    <p class="alttext">Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
+<tr>
+					<td>
+					<p class="alttext">
+					<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
+					largest directory of Web developers and other marketing-oriented firms. Use
+					Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
+					that meets your exact needs.
+					<br/><br/>
+					<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
+					get noticed world-wide!
+					<br/><br/>
+					When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
+					will donate a portion of revenue to the Gentoo Linux free software project.
+					</p>
+					</td>
+				</tr>
+			      <tr>
+                  <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
+			</table>
+			</td>
+			</tr>
+			</table>
 <!--Netscape 4.7 hack end-->
-            </td>
+			</td>
           </tr>
           <tr>
             <td align="right" class="infohead" width="100%" bgcolor="#7a5ada">
@@ -217,7 +220,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 			</td>
           </tr>
         </table>
-      </body>
+	  </body>
     </html>
   </xsl:template>
   <xsl:template match="/mainpage | /news">
@@ -417,7 +420,7 @@ Otros:<br/>
                             <td>
                               <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif" alt="new"/>
                             </td>
-                            <td valign="middle">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
+                            <td valign="middle">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, UltraSparc and Alpha Processor systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td>
                           </tr>
                         </table>
                         <br/>
@@ -437,7 +440,10 @@ Otros:<br/>
                             <tr>
                               <td width="100" align="center" valign="middle">
                                 <xsl:choose>
-                                  <xsl:when test="@category='kde'">
+                                  <xsl:when test="@category='alpha'">
+                                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+                                  </xsl:when>
+	                                  <xsl:when test="@category='kde'">
                                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/icon-kde.png" alt="KDE"/>
                                   </xsl:when>
 									<xsl:when test="@category='gentoo'">
@@ -566,8 +572,8 @@ Otros:<br/>
                 </tr>
                 <tr>
                   <td align="center">
-                    <p class="alttext">Support our development efforts by donating via credit card!</p>
 <!-- Begin PayPal Logo -->
+					<p class="alttext"><b>Donate</b> to support our development efforts.</p>
                     <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
                       <input type="hidden" name="cmd" value="_xclick"/>
                       <input type="hidden" name="business" value="drobbins@gentoo.org"/>
@@ -579,7 +585,6 @@ Otros:<br/>
                       <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
                       <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
                     </form>
-<!-- End PayPal Logo -->
                   </td>
                 </tr>
                 <tr>
@@ -587,14 +592,12 @@ Otros:<br/>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
-                <tr>
+				<tr>
                   <td align="center">
-                    <p class="alttext">Purchase RAM using this link, and a percentage
-of your sale will go towards further Gentoo Linux development.</p>
                     <a href="http://www.qksrv.net/click-477620-5032687" target="_top">
                       <img src="http://www.qksrv.net/image-477620-5032687" width="125" height="125" alt="DDR Memory at Crucial.com" border="0"/>
                     </a>
-                    <p class="alttext">Why these guys?  Because <b>cvs.gentoo.org</b> and <b>inventor.gentoo.org</b> use high-quality Crucial RAM. We know that it's good stuff because we rely on it ourselves.</p>
+                    <p class="alttext">Purchase RAM from <b>Crucial.com</b> and a percentage of your sale will go towards further Gentoo Linux development.</p>
                   </td>
                 </tr>
                 <tr>
@@ -602,7 +605,28 @@ of your sale will go towards further Gentoo Linux development.</p>
                     <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
                   </td>
                 </tr>
-              </table>
+<tr>
+					<td>
+					<p class="alttext">
+					<b>Looking for the right Web designer?</b> Marketingtool.com is the world's
+					largest directory of Web developers and other marketing-oriented firms. Use
+					Marketingtool.com's free <a href="http://www.marketingtool.com/editorspick.php?gentoo=1">"Editor's Pick" service</a> to find the Web design team
+					that meets your exact needs.
+					<br/><br/>
+					<b>Are you a Web designer?</b> Then <a href="http://www.marketingtool.com/contribute/webfirm.html?gentoo=1">place a featured listing</a> on Marketingtool.com to
+					get noticed world-wide!
+					<br/><br/>
+					When you use "Editor's Pick" or place a featured listing, <a href="http://www.marketingtool.com?gentoo=1">Marketingtool.com</a>
+					will donate a portion of revenue to the Gentoo Linux free software project.
+					</p>
+					</td>
+				</tr>
+			      <tr>
+                  <td>
+                    <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/line.gif" alt="line"/>
+                  </td>
+                </tr>
+</table>
             </td>
 <!--
 			<td width="15%" class="infotext" valign="top" align="left" bgcolor="#ddddff">
