@@ -10,7 +10,7 @@
 <!-- Start outputting data -->
 <xsl:template match="/doc">
 
-<guide link="testdate.xml" lang="fr">
+<guide link="testdate.xml">
 <title>Test Date Formatting</title>
 
 <author title="Author">
@@ -24,7 +24,7 @@ This page shows how dates could be formatted for each language
 <license/>
 
 <version>1.1</version>
-<date>2004-11-20</date>
+<date>2004-11-21</date>
 
 <chapter>
 <title>Introduction</title>
@@ -33,14 +33,14 @@ This page shows how dates could be formatted for each language
 <body>
 
 <p>
-At the moment, we can't process the date elements easily to do some
-comparisons, sorting... because it is written in plain English and in many
-different languages.
+In order to be able to process the date elements in XSLT or scripts, we have
+added support for a <e>YYYY-MM-DD</e> formatted date element.
 </p>
 
 <p>
 Besides, some people have been very creative and dates are formatted in many
-different ways in English and in many translations.
+different ways in English and in many translations. This allows for consistency
+across all pages.
 </p>
 
 <p>
@@ -55,36 +55,29 @@ All we need is to be able to display YYYY-MM-DD in a limited set of languages.
 
 <p>
 The table below shows different examples of dates formatted for different
-languages.  Illegal dates are shown on purpose. I'll include validation later
-on but I don't need your feedback for that.
+languages.
 </p>
 
 <p>
-The <c>&lt;date&gt;</c> element in our documentation would be expected to be
-formatted as <path>YYYY-MM-DD</path> so that it can be easily used in automatic
-processing. If a date does not match that pattern, it would be copied verbatim
-for backwards compatibility. Otherwise, it is formatted for the given language
-which defaults to the lang attribute of the root element. The default language
-is English of course.
+The <c>&lt;date&gt;</c> element in our documentation is expected to be
+formatted as <e>YYYY-MM-DD</e> so that it can be easily used in automatic
+processing. If a date does not match that pattern, it is copied verbatim for
+backwards compatibility. Otherwise, it is formatted for the given language
+according to the lang attribute of the root element. The default language is
+English of course.
 </p>
 
 </body>
 </section>
 <section>
-<title>I need your feedback</title>
+<title>Test and send feedback</title>
 <body>
 
 <p>
 The dates below have been formatted based on my limited knowledge of dates in
-plenty of languages and on how they currently appear in the docs. Some guesses
-are probably right, some less because of the many different formats currently
-used.
-</p>
-
-<p>
-Please check the dates below in your language and let me know if they look good
-or what needs to be fixed. Most Asian docs use Arabic digits but some don't.
-Please let me know what is best.
+plenty of languages, on how they currently appear in the docs and on your
+feedback. Some guesses are probably right, some less because of the many
+different formats currently used.
 </p>
 
 <p>
