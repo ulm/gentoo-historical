@@ -573,7 +573,9 @@ of your sale will go towards further Gentoo Linux development.</p>
 
 <!--figure without a caption; just a graphical element-->
 <xsl:template match="fig">
+	<center>
 	<img src="{@link}" alt="{@short}"/>
+	</center>
 </xsl:template>
 
 <xsl:template match="br"><br/></xsl:template>
