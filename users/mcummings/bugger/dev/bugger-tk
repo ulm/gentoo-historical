@@ -1,253 +1,494 @@
 #!/usr/bin/perl
-
-# WARNING
-#
-# THIS IS A WORK IN PROGRESS. ALL CODE IS SUBJECT TO CHANGE.
-# And cleaning ;0
-#
-# This is a test framework for a graphical version of bugger
-#
-# mcummings@gentoo.org
-#
 package main;
-use Tk;
-use Tk::ToolBar;
-use Tk::HList;
-use Tk::ItemStyle;
-use Tk::widgets qw(TextUndo Scrollbar Menu Dialog);
 use bugger;
-use subs qw/splash search/;
 
-use vars qw/$TOP/;
-my %results;
-#&splash;
-$QUIT_COMMAND = sub {exit};
-my $BW = new MainWindow;
-$BW->title("bugger");
-$BW->iconname("bugger");
-$BW->minsize(50,50);
-$BW->protocol('WM_DELETE_WINDOW' => $QUIT_COMMAND);
+sub start {
+    use Tk;
 
-my $l = $BW->Label( qw/ -background white -width 220 -height 220 /)->pack;
-my $f1 = $BW->Photo( -file => 'bugger-splash.pnm');
-$l->configure( -image=>$f1);
-$f1->update;
-my $mw = new MainWindow;
+    use Tk::widgets
+      qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
+    use subs qw/splash search initconfig/;
 
-my $search_string = '';
-my $searchbox = $mw->ToolBar(
-    qw/-movable 1 
-      -indicatorcolor blue
-      /
-);
-my $radiovar = "assigned";
-my $ccd = $searchbox->Radiobutton(-text => 'CC List',
-                                        -variable => \$radiovar,
-                                        -value => 'cc');
-my $assigned = $searchbox->Radiobutton(-text => 'Assigned To',
-                                        -variable => \$radiovar,
-                                        -value => 'assigned');
-my $keyword = $searchbox->Radiobutton(-text => 'Keyword',
-                                        -variable => \$radiovar,
-                                        -value => 'keyword');
-$assigned->pack(qw/-side left/, -fill => 'x');
-$ccd->pack(qw/-side left/, -fill => 'x');
-$keyword->pack(qw/-side left/, -fill => 'x');
-my $ss = $searchbox->LabEntry(
-    -label     => 'Search Bugs',
-    -labelPack => [
-        -side   => "left"
-    ],
-    -textvariable => \$search_string
-)->pack(qw/-side left -expand yes/);
-$ss->configure(-width => 40);
-$ss->Subwidget('entry')->focus;
-my $ss_button = $searchbox->ToolButton(
-	-image => 'navforward22',
-	-tip => 'Search',
-	);
-	#-command => \&search,
-$ss_button->pack(qw/-side left -pady 5 -padx 10/);
+    use vars qw/$TOP/;
+    my %results;
 
-my $search_command = sub { main::search $radiovar, $search_string, $ss};
-$ss_button->configure(-command => $search_command);
-$ss->bind('<Return>' => $search_command);
+    #build the splash
+    $QUIT_COMMAND = sub { exit };
+    our $BW = new MainWindow;
+    $BW->title("bugger");
+    $BW->iconname("bugger");
+    $BW->minsize( 50, 50 );
+    $BW->protocol( 'WM_DELETE_WINDOW' => $QUIT_COMMAND );
 
+    my $l = $BW->Label(qw/ -background white -width 220 -height 220 /)->pack;
+    my $f1 = $BW->Photo( -file => 'bugger-splash.pnm' );
+    $l->configure( -image => $f1 );
+    $f1->update;
 
-$searchbox->separator;
-my $tb2 = $mw->ToolBar;
-$tb2->separator;
-$tb2->ToolButton(
-    -image   => 'navhome22',
-    -tip     => 'home',
-    -command => \&home
-);
-$tb2->ToolButton(
-    -image   => 'actreload22',
-    -tip     => 'reload',
-    -command => \&reload
-);
-$tb2->ToolButton(
-   -image    => 'actexit22',
-   -tip      => 'quit',
-   -command  => \&quit
-);
+    # check configs
+    use Config::General;
 
-my $hlist = $mw->Scrolled(qw/HList
-	-columns 3
-	-width 70
-	-command main::launch_win/)->pack(qw/-expand yes -fill both/);
-	#-command launch_win/)->grid(qw/-sticky ns/); $hlist->pack(qw/-expand yes -fill both/);
-sleep(2);
-$BW->withdraw;
-MainLoop;
+    our $configfile = "$ENV{'HOME'}/.bugger-config";
 
-sub search { 
-
-my ($assignment, $search, $tkref) = @_;
-
-   %results = bugger::list_bugs($search, $assignment);
-   my $bug_no = scalar(keys %results);
-
-   if ($bug_no <1)
-   {
-	my $button = $mw->messageBox('-icon' => "error", -type => "OK",
-		-title => 'ERROR',
-		-message => "Your search returned no results");
-		
-   } else {
-$hlist->delete(all);
-   my (@red,@blue,@black);
-   $red[1]  = $hlist->ItemStyle('text', -foreground=>'#800000');
-   $red[2]  = $hlist->ItemStyle('text', -foreground=>'#800000', -background=>'#fbdaffffb603');
-   $blue[1] = $hlist->ItemStyle('text', -foreground=>'#000080');
-   $blue[2] = $hlist->ItemStyle('text', -foreground=>'#000080', -background=>'#fbdaffffb603');
-   $black[1] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#ffffffffffff');
-   $black[2] = $hlist->ItemStyle('text', -foreground=>'#000000000000', -background=>'#fbdaffffb603');
-   my $header;
-   $header = $hlist->add("0");
-   #$header = $hlist->addchild("");
-   $hlist->itemCreate($header, 0, -itemtype=>'text', -text=>"BugID", -style=>$black[1]);
-   $hlist->itemCreate($header, 1, -itemtype=>'text', -text=>"Priority", -style=>$black[1]);
-   $hlist->itemCreate($header, 2, -itemtype=>'text', -text=>"Description", -style=>$black[1]);
-
-   
-   my $colorchange = 1;
-   for (my $key = 1; $key <=$bug_no; $key++){
-   my $entry;
-       $entry = $hlist->add("$key",-data =>"$results{$key}{'BugID'}");
-       $hlist->itemCreate($entry, 0, -itemtype=>'text',
-                -text=>"$results{$key}{'BugID'}", -style=>$red[$colorchange]);
-       $hlist->itemCreate($entry, 1, -itemtype=>'text',
-                -text=>"$results{$key}{'Priority'}", -style=>$blue[$colorchange]);
-       if (length($results{$key}{'Description'}) >=48)
-       	{ substr($results{$key}{'Description'},48) = "..."}
-       $hlist->itemCreate($entry, 2, -itemtype=>'text',
-                -text=>"$results{$key}{'Description'}", -style=>$blue[$colorchange]);
-	if ($colorchange == 2) {$colorchange = 1}
-	else {$colorchange = 2}
-}	
-	
-
+    unless (( -f $configfile ) && (-s $configfile)) { main::initconfig(); }
+	else {main::init_main_win()}
+    MainLoop;
 }
+
+sub init_main_win {
+    our $mw = new MainWindow;
+
+    my $search_string = '';
+    my $searchbox     = $mw->ToolBar(
+        qw/-movable 1
+          -indicatorcolor blue
+          /
+    );
+    my $radiovar = "assigned";
+    my $ccd      = $searchbox->Radiobutton(
+        -text     => 'CC List',
+        -variable => \$radiovar,
+        -value    => 'cc'
+    );
+    my $assigned = $searchbox->Radiobutton(
+        -text     => 'Assigned To',
+        -variable => \$radiovar,
+        -value    => 'assigned'
+    );
+    my $keyword = $searchbox->Radiobutton(
+        -text     => 'Keyword',
+        -variable => \$radiovar,
+        -value    => 'keyword'
+    );
+    $assigned->pack( qw/-side left/, -fill => 'x' );
+    $ccd->pack( qw/-side left/,      -fill => 'x' );
+    $keyword->pack( qw/-side left/,  -fill => 'x' );
+    my $ss = $searchbox->LabEntry(
+        -label        => 'Search Bugs',
+        -labelPack    => [ -side => "left", ],
+        -textvariable => \$search_string
+    )->pack(qw/-side left -expand yes/);
+    $ss->configure( -width => 40 );
+    $ss->Subwidget('entry')->focus;
+    my $ss_button = $searchbox->ToolButton(
+        -image => 'navforward22',
+        -tip   => 'Search',
+    );
+
+    #-command => \&search,
+    $ss_button->pack(qw/-side left -pady 5 -padx 10/);
+
+    my $search_command = sub { main::search $radiovar, $search_string, $ss };
+    $ss_button->configure( -command => $search_command );
+    $ss->bind( '<Return>' => $search_command );
+
+    $searchbox->separator;
+    my $tb2 = $mw->ToolBar;
+    $tb2->separator;
+    $tb2->ToolButton(
+        -image   => 'navhome22',
+        -tip     => 'home',
+        -command => \&home
+    );
+    $tb2->ToolButton(
+        -image   => 'actreload22',
+        -tip     => 'reload',
+        -command => \&reload
+    );
+    $tb2->ToolButton(
+        -image   => 'actexit22',
+        -tip     => 'quit',
+        -command => \&quit
+    );
+
+    our $hlist = $mw->Scrolled(
+        qw/HList
+          -columns 3
+          -width 70
+          -command main::launch_win/
+    )->pack(qw/-expand yes -fill both/);
+
+    sleep(2);
+    $BW->withdraw;
+}
+
+sub search {
+
+    my ( $assignment, $search, $tkref ) = @_;
+
+    %results = bugger::list_bugs( $search, $assignment );
+    my $bug_no = scalar( keys %results );
+
+    if ( $bug_no < 1 ) {
+        my $button = $mw->messageBox(
+            '-icon'  => "error",
+            -type    => "OK",
+            -title   => 'ERROR',
+            -message => "Your search returned no results"
+        );
+
+    }
+    else {
+        $hlist->delete(all);
+        my ( @red, @blue, @black );
+        $red[1] = $hlist->ItemStyle( 'text', -foreground => '#800000' );
+        $red[2] = $hlist->ItemStyle(
+            'text',
+            -foreground => '#800000',
+            -background => '#fbdaffffb603'
+        );
+        $blue[1] = $hlist->ItemStyle( 'text', -foreground => '#000080' );
+        $blue[2] = $hlist->ItemStyle(
+            'text',
+            -foreground => '#000080',
+            -background => '#fbdaffffb603'
+        );
+        $black[1] = $hlist->ItemStyle(
+            'text',
+            -foreground => '#000000000000',
+            -background => '#ffffffffffff'
+        );
+        $black[2] = $hlist->ItemStyle(
+            'text',
+            -foreground => '#000000000000',
+            -background => '#fbdaffffb603'
+        );
+        my $header;
+        $header = $hlist->add("0");
+
+        #$header = $hlist->addchild("");
+        $hlist->itemCreate(
+            $header, 0,
+            -itemtype => 'text',
+            -text     => "BugID",
+            -style    => $black[1]
+        );
+        $hlist->itemCreate(
+            $header, 1,
+            -itemtype => 'text',
+            -text     => "Priority",
+            -style    => $black[1]
+        );
+        $hlist->itemCreate(
+            $header, 2,
+            -itemtype => 'text',
+            -text     => "Description",
+            -style    => $black[1]
+        );
+
+        my $colorchange = 1;
+        for ( my $key = 1 ; $key <= $bug_no ; $key++ ) {
+            my $entry;
+            $entry = $hlist->add( "$key", -data => "$results{$key}{'BugID'}" );
+            $hlist->itemCreate(
+                $entry, 0,
+                -itemtype => 'text',
+                -text     => "$results{$key}{'BugID'}",
+                -style    => $red[$colorchange]
+            );
+            $hlist->itemCreate(
+                $entry, 1,
+                -itemtype => 'text',
+                -text     => "$results{$key}{'Priority'}",
+                -style    => $blue[$colorchange]
+            );
+            if ( length( $results{$key}{'Description'} ) >= 48 ) {
+                substr( $results{$key}{'Description'}, 48 ) = "...";
+            }
+            $hlist->itemCreate(
+                $entry, 2,
+                -itemtype => 'text',
+                -text     => "$results{$key}{'Description'}",
+                -style    => $blue[$colorchange]
+            );
+            if ( $colorchange == 2 ) { $colorchange = 1 }
+            else { $colorchange = 2 }
+        }
+
+    }
 }
 
 sub launch_win {
-my $incoming = shift;
-my $bugID = $hlist->info(data, $incoming);
-if ($bugID <1)
-{
-	my $button = $mw->messageBox('-icon' => "error", -type => "OK",
-		-title => 'ERROR',
-		-message => "No bug ID was passed");
-		
-   } else {
+    my $incoming = shift;
+    my $bugID = $hlist->info( data, $incoming );
+    if ( $bugID < 1 ) {
+        my $button = $mw->messageBox(
+            '-icon'  => "error",
+            -type    => "OK",
+            -title   => 'ERROR',
+            -message => "No bug ID was passed"
+        );
 
-my %bugtext = bugger::show_bug($bugID);
-my $mw2 = new MainWindow;
-my $tb = $mw2->ToolBar(
-    qw/-movable 1 -side top
-      -indicatorcolor blue /
-);
-$tb->ToolButton(
-   -image    => 'actexit22',
-   -tip      => 'quit',
-   -command  => [$mw2 => 'destroy']
-);
-$mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
-my $text = $mw2->Scrolled(qw/Text -setgrid true -width  70 -height 32
-			   -font normal -wrap word -scrollbars e/);
-    $text->pack(qw/-expand yes -fill both/);
-$text->tag(qw/configure bold    -font C_bold/);
-$text->tag(qw/configure color1 -background black -foreground white/);
+    }
+    else {
 
+        my %bugtext = bugger::show_bug($bugID);
+        my $mw2     = new MainWindow;
+        my $tb      = $mw2->ToolBar(
+            qw/-movable 1 -side top
+              -indicatorcolor blue /
+        );
+        $tb->ToolButton(
+            -image   => 'actexit22',
+            -tip     => 'quit',
+            -command => [ $mw2 => 'destroy' ]
+        );
+        $mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
+        my $text = $mw2->Scrolled(
+            qw/Text -setgrid true -width  70 -height 32
+              -font normal -wrap word -scrollbars e/
+        );
+        $text->pack(qw/-expand yes -fill both/);
+        $text->tag(qw/configure bold    -font C_bold/);
+        $text->tag(qw/configure color1 -background black -foreground white/);
 
-$text->insert('0.0',"$bugtext{header}\n\n",'bold');
-$text->insert('insert',"\tReporter: ", 'bold');
-$text->insert('insert',"$bugtext{reporter}\n");
-$text->insert('insert',"\tCC List: ",'bold');
-$text->insert('insert',"$bugtext{cclist}\n");
-$text->insert('insert',"\tStatus: ",'bold');
-$text->insert('insert',"$bugtext{status}\n");
-$text->insert('insert',"\tPriority: ",'bold');
-$text->insert('insert',"$bugtext{priority}\n");
-$text->insert('insert',"\tResolution: ",'bold');
-$text->insert('insert',"$bugtext{resolution}\n");
-$text->insert('insert',"\tSeverity: ",'bold');
-$text->insert('insert',"$bugtext{severity}\n");
-$text->insert('insert',"\tAssigned To: ",'bold');
-$text->insert('insert',"$bugtext{assigned}\n");
-$text->insert('insert',"\tURL: ",'bold');
-$text->insert('insert',"$bugtext{URL}\n");
-$text->insert('insert',"\tBug Report:",'bold');
-$text->insert('insert',"$bugtext{textblock}\n");
+        $text->insert( '0.0',    "$bugtext{header}\n\n", 'bold' );
+        $text->insert( 'insert', "\tReporter: ",         'bold' );
+        $text->insert( 'insert', "$bugtext{reporter}\n" );
+        $text->insert( 'insert', "\tCC List: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{cclist}\n" );
+        $text->insert( 'insert', "\tStatus: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{status}\n" );
+        $text->insert( 'insert', "\tPriority: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{priority}\n" );
+        $text->insert( 'insert', "\tResolution: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{resolution}\n" );
+        $text->insert( 'insert', "\tSeverity: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{severity}\n" );
+        $text->insert( 'insert', "\tAssigned To: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{assigned}\n" );
+        $text->insert( 'insert', "\tURL: ", 'bold' );
+        $text->insert( 'insert', "$bugtext{URL}\n" );
+        $text->insert( 'insert', "\tBug Report:", 'bold' );
+        $text->insert( 'insert', "$bugtext{textblock}\n" );
 
-$text->mark(qw/set insert 0.0/);
+        $text->mark(qw/set insert 0.0/);
 
-# Comment text block
-my $comment = $mw2->Scrolled(qw/TextUndo -height 5 -scrollbars se/);
-$comment->pack(qw/-expand yes -fill both/);
-$comment->mark(qw/set insert 0.0/);
-my @menubuttons;
-foreach (qw/update close/) {
-my $pos = ucfirst;
-my $menubutton = $mw2->Menubutton(qw/-underline 0 -relief raised/, -text => $pos);
-push @menubuttons, $menubutton;
-my $menu = $menubutton->menu(qw/-tearoff 0/);
-$menubutton->configure(-menu => $menu);
-$menubutton->command(-label => "$pos", -command => sub{$comment->Save("/tmp/mike")});
+        # Comment text block
+        my $comment = $mw2->Scrolled(qw/TextUndo -height 5 -scrollbars se/);
+        $comment->pack(qw/-expand yes -fill both/);
+        $comment->mark(qw/set insert 0.0/);
+        my @menubuttons;
+        foreach (qw/update close/) {
+            my $pos        = ucfirst;
+            my $menubutton =
+              $mw2->Menubutton( qw/-underline 0 -relief raised/,
+                -text => $pos );
+            push @menubuttons, $menubutton;
+            my $menu = $menubutton->menu(qw/-tearoff 0/);
+            $menubutton->configure( -menu => $menu );
+            $menubutton->command(
+                -label   => "$pos",
+                -command => sub { $comment->Save("/tmp/mike") }
+            );
 
+        }
+        $menubuttons[0]->grid(qw/-row 0 -column 1 -sticky s/);
+        $menubuttons[1]->grid(qw/-row 0 -column 1 -sticky s/);
+
+        #my $combut = $mw2->ToolBar;
+        #$combut->separator;
+        #$combut->ToolButton(
+        #-image =>'filesave22',
+        #-tip => 'save',
+        #-command => sub{$comment->Save("/tmp/mike")}
+        #);
+
+        MainLoop;
+    }
 }
-$menubuttons[0]->grid(qw/-row 0 -column 1 -sticky s/);
-$menubuttons[1]->grid(qw/-row 0 -column 1 -sticky s/);
-#my $combut = $mw2->ToolBar;
-#$combut->separator;
-#$combut->ToolButton(
-	#-image =>'filesave22',
-	#-tip => 'save',
-	#-command => sub{$comment->Save("/tmp/mike")}
-	#);
 
-
-MainLoop;
-}}
-
-sub quit { print "Thank you for using bugger-tk\n\n";  exit() }
-
+sub quit { print "Thank you for using bugger-tk\n\n"; exit() }
 
 sub splash {
-$QUIT_COMMAND = sub {exit};
-my $BW = new MainWindow;
-$BW->title("bugger");
-$BW->iconname("bugger");
-$BW->minsize(50,50);
-$BW->protocol('WM_DELETE_WINDOW' => $QUIT_COMMAND);
+    $QUIT_COMMAND = sub { exit };
+    my $BW = new MainWindow;
+    $BW->title("bugger");
+    $BW->iconname("bugger");
+    $BW->minsize( 50, 50 );
+    $BW->protocol( 'WM_DELETE_WINDOW' => $QUIT_COMMAND );
 
-my $l = $BW->Label( qw/ -background white -width 220 -height 220 /)->pack;
-my $f1 = $BW->Photo( -file => 'bugger-splash.pnm');
-$l->configure( -image=>$f1);
-$f1->update;
-sleep(5);
-$BW->withdraw;
+    my $l = $BW->Label(qw/ -background white -width 220 -height 220 /)->pack;
+    my $f1 = $BW->Photo( -file => 'bugger-splash.pnm' );
+    $l->configure( -image => $f1 );
+    $f1->update;
+
+    $BW->withdraw;
 
 }
+
+sub initconfig {
+
+    #my $configfile = shift;
+    my $conf = new Config::General(
+        -AutoTrue          => 1,
+        -AllowMultiOptions => "yes",
+        -ExtendedAccess    => 1,
+    );
+
+    our $CONF_WIN = new MainWindow;
+
+    $CONF_WIN->title("bugger::Configure");
+    $CONF_WIN->iconname("buggerconf");
+    $CONF_WIN->minsize( 50, 50 );
+
+    my $ConnectInfo =
+      $CONF_WIN->Labelframe( -text => 'Connection Information' );
+    my $Login;
+    my $logid = "";
+    $Login = $ConnectInfo->LabEntry(
+        -label        => "Login ID: ",
+        -validate     => 'key',
+        -labelPack    => [qw/-side left -anchor w/],
+        -textvariable => \$logid
+    );
+    $Login->pack(qw/-fill x -expand 1/);
+
+    my $passphrase = "";
+    my $pass       = $ConnectInfo->LabEntry(
+        -label           => "Password: ",
+        -validate        => 'key',
+        -show            => '*',
+        -validatecommand => sub {
+            my ( $proposed, $changes, $current, $index, $type ) = @_;
+            return $proposed =~ m/\w{1,}/g ? 1 : 0;
+        },
+        -labelPack    => [qw/-side left -anchor w/],
+        -textvariable => \$passphrase
+    );
+    $pass->pack(qw/-fill x -expand 1/);
+
+    my $servername = '';
+    my $serv       = $ConnectInfo->LabEntry(
+        -label           => "Bugzilla Server",
+        -validate        => 'key',
+        -validatecommand => sub {
+            my ( $proposed, $changes, $current, $index, $type ) = @_;
+            return length($proposed) >= 0 ? 1 : 0;
+        },
+        -labelPack    => [qw/-side left -anchor w/],
+        -textvariable => \$servername
+    );
+    $serv->pack(qw/-fill x -side left -expand 1/);
+    # ADD DOWNDIR HERE - MPC
+    my $downdir = '';
+    my $down = $ConnectInfo->LabEntry(
+	-label => "Download Directory",
+	-validate => 'key',
+        -validatecommand => sub {
+            my ( $proposed, $changes, $current, $index, $type ) = @_;
+            return length($proposed) >= 0 ? 1 : 0;
+        },
+        -labelPack    => [qw/-side left -anchor w/],
+        -textvariable => \$downdir
+    );
+    my $radiovar = "mode";
+    my $tkmode = $ConnectInfo->Radiobutton(
+    	-text => 'Run TK by default',
+	-variable => \$radiovar,
+	-value => 'tkmode'
+    );
+    my $flatmode = $ConnectInfo->Radiobutton(
+	-text => 'Run console by default',
+	-variable => \$radiovar,
+	-value => 'flatmode'
+    );
+    $tkmode->pack( qw/-side left/, -fill => 'x');
+    $flatmode->pack( qw/-side left/, -fill => 'x');
+    
+
+    my $frame = $CONF_WIN->Frame;
+    $frame->lower;
+    $ConnectInfo->grid( $ConnectInfo, -in => $frame );
+    $frame->gridColumnconfigure( [0], -uniform => 1 );
+    $frame->pack(qw/-fill both -expand 1/);
+
+    my $tb = $CONF_WIN->ToolBar(
+        qw/-movable 1 -side top
+          -indicatorcolor blue /
+    );
+    $QUIT_COMMAND = sub { exit };
+
+    $tb->ToolButton(
+        -image   => 'filesave22',
+        -tip     => 'save',
+        -command => sub { 
+		my $message = "";
+		chomp($logid);
+		chomp($passphrase);
+		chomp($servername);
+		unless ((($logid) && ($logid =~ m/\S\@\S/g))
+		&& (($passphrase) && ($passphrase =~ m/\S+/g))
+		&& (($servername) && ($servername =~ m/\S+\.\S+/g)))
+		  { 
+		  $message .= "Check that you included the following:\n";
+		  $message .= "\n* You must provide a login ID in the form of someone\@somewhere.blah\n";
+		  $message .= "\n* You must provide a password for connecting\n";
+		  #print "I was looking at:\n$logid\n$passphrase\n$servername\n";
+		  $message .= "\n* You must provide a server to connect to\n";}
+		  else {$message = ""}
+		if ($message =~ m/\S/g) {
+		  main::conf_pop($message);
+		  $message = "";
+		}
+		else
+		{
+		my %contents;
+		$contents{'server'} = "$servername";
+		$contents{'login'} = "$logid";
+		$contents{'password'} = "$passphrase";
+		$contents{'rows'} = "20";
+		$contents{'downdir'} = "$downdir"|| "/tmp";
+		$conf->save_file("$configfile",\%contents)
+			or die "Can't save configfile! $!\n";
+		my $mode = '0600';
+		my @files = $configfile;
+		chmod oct($mode), @files;
+		main::conf_pop("Configuration saved!");
+		$CONF_WIN->withdraw; 
+		main::init_main_win()
+		}
+		}
+
+    );
+
+}
+
+sub conf_pop {
+my $message = shift;
+my $button = $CONF_WIN->messageBox(
+	'-icon' => "error",
+	-type  => "OK",
+	-title => "ERROR",
+	-message => "$message"
+	);
+$message = "";
+}
+sub callsome {
+    # This is the block where we will do the actual config writing for the first time. 
+    open( FILE, ">$configfile" );
+    close(FILE);
+    return;
+}
+
+sub entry_flash {
+    my ( $w, $fg, $bg ) = @_;
+    $w->focusForce;
+    $w->{count} = 7 unless defined $w->{count};
+    if ( $w->{count} < 1 ) {
+        $w->configure( -foreground => $fg, -background => $bg );
+        $w->{count} = 9;
+    }
+    else {
+        if ( $w->{count} % 2 ) {
+            $w->configure( -foreground => $bg, -background => $fg );
+        }
+        else {
+            $w->configure( -foreground => $fg, -background => $bg );
+        }
+        $w->{count}--;
+        $w->after( 200 => [ \&entry_flash, $w, $fg, $bg ] );
+    }
+}
+
+1;
