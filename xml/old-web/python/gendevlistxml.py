@@ -39,7 +39,8 @@ tableheader = """<table>
 """
 footer = """</table>
 <note>Developers may be reached by sending e-mail to the developer's user
-name @gentoo.org.</note>
+name @gentoo.org.  Many developers may be found on IRC (OPN) in #gentoo
+using their user name as their IRC nick.</note>
 </body>
 </section>
 </chapter>
