@@ -1,6 +1,9 @@
 PATH="/usr/bin:/bin:/usr/sbin:/sbin"
 NO_NET_FS_LIST="noafs,nocifs,nocode,noncpfs,nonfs,nonfs4,noshfs,nosmbfs"
 
+#ls -lah /var/lib/init.d/started
+#cat /proc/mounts
+
 einfo() {
 	echo "EINFO: $*"
 }
