@@ -43,6 +43,8 @@ def compile_defaults(subarch):
 			uf.append("3dnow")
 		if subarch in [ "athlon","athlon-xp","athlon-mp","pentium-mmx","pentium3","pentium4" ]:
 			uf.append("mmx")
+		if subarch in [ "pentium3", "pentium4" ]:
+			uf.append("sse")
 		if subarch in ["pentium-mmx", "pentium3", "pentium4"]:
 			cf+=" -fprefetch-loop-arrays"
 		if subarch in ["i386","i486","i586"]:
