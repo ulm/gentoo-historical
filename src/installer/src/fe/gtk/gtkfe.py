@@ -332,9 +332,22 @@ class Installer:
 			filesel.set_filename("installprofile.xml")
 		else:
 			filesel.set_filename(self.install_profile_xml_file)
-		if filesel.run() == gtk.RESPONSE_OK:
-			self.install_profile_xml_file = filesel.get_filename()
+		resp = filesel.run()
+		filename = filesel.get_filename()
 		filesel.destroy()
+		if resp == gtk.RESPONSE_OK:
+			self.install_profile_xml_file = filename
+			try:
+				configuration = open(filename, "w")
+				configuration.write(self.install_profile.serialize())
+				configuration.close()
+				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install profile saved successfully!")
+				msgdlg.run()
+				msgdlg.destroy()
+			except:
+				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured saving the install profile")
+				errdlg.run()
+				errdlg.destroy()
 
 	def delete_event(self, widget, event, data=None):
 		# If you return FALSE in the "delete_event" signal handler,
