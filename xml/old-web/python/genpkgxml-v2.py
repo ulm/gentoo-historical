@@ -155,6 +155,7 @@ def getcurrentpkgs():
 # for that package:
 # <name> <version> <category>
 def do_pkgentry(db,pkgname,category):
+	nice_homepage=string.replace(db[category][pkgname]["homepage"],'&','&amp;')
 	pkgentry ="""
 	<title>"""+pkgname+""" Information</title>
 	<body>
@@ -170,7 +171,7 @@ def do_pkgentry(db,pkgname,category):
 	</tr>
 	<tr>    
 	<th>Package Homepage</th>
-	<ti><uri>"""+db[category][pkgname]["homepage"]+"""</uri></ti>
+	<ti><uri link=""" +'"' + nice_homepage + '"' + """>"""+nice_homepage+"""</uri></ti>
 	</tr>
 	<tr>
 	<th>Package Dependencies</th>
