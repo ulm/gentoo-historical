@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.43 2005/02/06 04:51:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.44 2005/02/06 07:37:54 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -638,7 +638,7 @@ class ArchitectureTemplate:
 
 		# Fetch interfaces
 		interfaces = self._install_profile.get_network_interfaces()
-		
+		emerge_dhcp = false
 		# Parse each interface
 		for interface in interfaces.keys():
 		
@@ -700,7 +700,14 @@ class ArchitectureTemplate:
 				#
 				else:
 					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp"})
-							
+					emerge_dhcp = true
+		if emerge_dhcp:
+			exitstatus = self._emerge("dhcpcd")
+			if exitstatus != 0:
+				self._logger.log("ERROR! : Could not emerge dhcpcd!")
+			else:
+				self._logger.log("dhcpcd emerged.")		
+		
 	def set_root_password(self):
 		"Sets the root password"
 		status = GLIUtility.spawn('echo "root:' + self._install_profile.get_root_pass_hash() + '" | chroot '+self._chroot_dir+' chpasswd -e', quiet=true)
