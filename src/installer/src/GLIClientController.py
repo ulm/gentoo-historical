@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.5 2004/08/23 16:38:02 samyron Exp $
+$Id: GLIClientController.py,v 1.6 2004/08/23 19:57:17 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -15,18 +15,17 @@ Steps (based on the ClientConfiguration):
 """
 
 import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, sys
+from threading import Thread, Event
 
-class GLIClientController:
+class GLIClientController(Thread):
 
-	def __init__(self,configuration=None,install_profile=None,configuration_generator=None,install_profile_generator=None):
+	def __init__(self,configuration=None,install_profile=None):
+
 		if configuration == None and os.path.isfile('/etc/gli.conf'):
 			print "Using /etc/gli.conf..."
 			configuration = GLIClientConfiguration.ClientConfiguration()
 			configuration.parse('/etc/gli.conf')
-		elif configuration == None:
-			if configuration_generator != None:
-				configuration = configuration_generator()
-			else:
+		else:
 				print "Configuration file not found and no function given to generate a valid configuration."
 
 		if install_profile == None:
@@ -38,17 +37,10 @@ class GLIClientController:
 					install_profile.parse('/tmp/install_profile.xml')
 				else:
 					print "The installer could not download the profile specified by:", self._configuration.get_profile_uri() + "."
-					# Generate one, if we can
-					if install_profile_generator != None:
-						install_profile = install_profile_generator()
-			else:
-				if install_profile_generator != None:
-					install_profile = install_profile_generator()				
 
 		self._install_profile = install_profile
 		self._configuration = configuration
-		self._install_profile_generator = install_profile_generator
-		self._configuration_generator = configuration_generator
+		self._install_event = Event()
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -71,6 +63,11 @@ class GLIClientController:
 		elif self._install_profile == None and not interactive:	
 			print "You can not do a non-interactive install without an InstallProfile!"
 			sys.exit(1)
+
+		# Do Pre-install client-specific things here.
+
+		# Wait for the self._install_event to be set before starting the installation.
+		self._install_event.wait()
 
 	def set_root_passwd(self):
 		print "GLI: Setting root password."
@@ -128,9 +125,5 @@ class GLIClientController:
 
 
 
-	def execute_profile(self):
-		pass
-
-if __name__ == '__main__':
-	controller = GLIClientController()
-	controller.run()
+	def start_install(self):
+		self._install_event.set()
