@@ -318,22 +318,23 @@
 						<a href="http://www.qksrv.net/click-477620-5033206" target="_top"><img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/>
 						<br/>
 User Docs:<br/>
-   <a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/>
+   <a class="altlink" href="/doc/build.html">x86 Install Instructions</a><font color="#ff0000">(updated!)</font><br/>
    <a class="altlink" href="/doc/gentoo-ppc-install.html">PowerPC Install Instructions</a><font color="#ff0000">(updated!)</font><br/>
    <a class="altlink" href="/doc/gentoo-sparc-install.html">SPARC Install Instructions</a><font color="#ff0000">(New!)</font><br/>
-   <a class="altlink" href="/doc/faq.html">FAQ</a><br/>
+   <a class="altlink" href="/doc/faq.html">FAQ</a><font color="#ff0000">(updated!)</font><br/>
    <a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/>
    <a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><br/>
    <a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/>
    <a class="altlink" href="/doc/gentoolkit.html">Gentoolkit Guide</a><font color="#ff0000">(new)</font><br/>
    <a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a><br/>
+   <a class="altlink" href="/doc/env.d-howto.html">ENV.D HOWTO Guide</a><font color="#ff0000">(new)</font><br/>
    <a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a><br/>
    <a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><br/>
    <a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><br/>
    <a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a><br/>
    <a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/>
    <a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/>
-   <a class="altlink" href="/doc/printing-howto.html">Printing Howto</a><font color="#ff0000">(New!)</font><br/>
+   <a class="altlink" href="/doc/printing-howto.html">Printing Howto</a><br/>
    <br/><br/>
 
 Developer Resources:<br/>
