@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLILogger.py,v 1.3 2004/08/17 15:32:04 samyron Exp $
+$Id: GLILogger.py,v 1.4 2004/08/18 14:43:57 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Logger is a singleton style generic logger object.
@@ -23,7 +23,7 @@ class Logger(object):
 	def __init__(self,logfile=None):
 		if logfile == None:
 			self._file = file(Logger._LOG_FILE_PATH, 'a')
-		else
+		else:
 			self._file = file(logfile,'a')
 
 	def log(self, message):
