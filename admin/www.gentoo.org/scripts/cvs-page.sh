@@ -4,6 +4,9 @@ OUTLOG=/tmp/clog
 source ~/.bashrc
 source ~/.keychain/*-sh
 export CVS_RSH=ssh
+
+[ -z "${WEBROOT}" ] && echo "\$WEBROOT not set; exiting" && exit 1
+
 cd ~/gentoo-x86 
 echo ">>> Updating cvs..."
 cvs -z3 -q update -dP
@@ -12,7 +15,7 @@ today=`date -d "00:00" -R`
 cvsdate=-d\'${yesterday}\<${today}\'
 nicedate=`date -d yesterday +"%d %b %Y %Z (%z)"`
 echo ">>> Generating cvs log..."
-~/gentoo-xml/scripts/cvs2cl.pl --xml -f $OUTLOG -l "${cvsdate}" 2> /dev/null
+${WEBROOT}/../scripts/cvs2cl.pl --xml -f $OUTLOG -l "${cvsdate}" 2> /dev/null
 /usr/bin/sed -e 's/xmlns=".*"//' $OUTLOG > ${OUTLOG}.2
 install -d ${WEBROOT}/dyn
 $XSLTP ${WEBROOT}/xsl/cvs.xsl ${OUTLOG}.2 > ${WEBROOT}/dyn/index-cvs.xml
