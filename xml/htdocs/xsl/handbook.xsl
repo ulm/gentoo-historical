@@ -38,23 +38,23 @@
     <xsl:for-each select="chapter">
       <xsl:param name="curchap" select="position()" />
       <li>
-        <a href="?chap={$curchap}&amp;sect=0&amp;style={$style}" class="menulink"><xsl:value-of select="title" /></a>
+        <b><a href="?chap={$curchap}&amp;sect=0&amp;style={$style}"><xsl:value-of select="title" /></a></b>
         <xsl:if test="abstract">
-          <br/>
-          <p><xsl:value-of select="abstract" /></p>
+          <br />
+          <xsl:value-of select="abstract" />
         </xsl:if>
-        <ul>
+        <ol>
           <xsl:for-each select="section">
             <xsl:param name="cursect" select="position()" />
             <li>
-              <a href="?chap={$curchap}&amp;sect={$cursect}&amp;style={$style}" class="menulink"><xsl:value-of select="title" /></a>
+              <b><a href="?chap={$curchap}&amp;sect={$cursect}&amp;style={$style}"><xsl:value-of select="title" /></a></b>
               <xsl:if test="abstract">
                 <br/>
-                <p><xsl:value-of select="abstract" /></p>
+                <xsl:value-of select="abstract" />
               </xsl:if>
             </li>
           </xsl:for-each>
-        </ul>
+        </ol>
       </li>
     </xsl:for-each>
   </ul>
@@ -87,19 +87,19 @@
     <p><xsl:value-of select="abstract" /></p>
   </xsl:if>
   <p>Content:</p>
-  <ul>
+  <ol>
     <xsl:for-each select="section">
       <xsl:param name="curpos" select="position()" />
       <xsl:if test="title">
         <li>
-          <a href="?chap={$chap}&amp;sect={$curpos}&amp;style={$style}"><xsl:value-of select="title" /></a>
+          <b><a href="?chap={$chap}&amp;sect={$curpos}&amp;style={$style}"><xsl:value-of select="title" /></a></b>
           <xsl:if test="abstract">
-            <br/><p><xsl:value-of select="abstract" /></p>
+            <br/><xsl:value-of select="abstract" />
           </xsl:if>
         </li>
       </xsl:if>
     </xsl:for-each>
-  </ul>
+  </ol>
   
   <xsl:call-template name="menubar" />
   <xsl:apply-templates select="/book/license" />
