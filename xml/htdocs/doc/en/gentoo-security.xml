@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.72 2005/02/07 19:08:59 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-security.xml,v 1.73 2005/02/14 16:06:15 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link = "/doc/en/gentoo-security.xml">
@@ -44,8 +44,8 @@ This is a step-by-step guide for hardening Gentoo Linux.
 
 <license/>
 
-<version>0.4.43</version>
-<date>2005-02-07</date>
+<version>0.4.44</version>
+<date>2005-02-14</date>
 
 <chapter>
 <title>Introduction</title>
@@ -1224,6 +1224,65 @@ The only SUID files that I have on my system are <c>su</c>, <c>passwd</c>,
 But if you are running X, you might have some more, since X needs the elevated
 access afforded by SUID.
 </p>
+</body>
+</section>
+<section>
+<title>SUID/SGID binaries and Hardlinks</title>
+<body>
+
+<p>
+A file is only considered deleted when there are no more links pointing to it. 
+This might sound like a strange concept, but consider that a filename like 
+<path>/usr/bin/perl</path> is actually a link to the inode where the data is 
+stored. Any number of links can point to the file, and until all of them are
+gone, the file still exists.
+</p>
+
+<p>
+If your users have access to a partition that isn't mounted with <c>nosuid</c>
+or <c>noexec</c> (for example, if <path>/tmp</path>, <path>/home</path>, or 
+<path>/var/tmp</path> are not seperate partitions) you should take care to 
+ensure your users don't create hardlinks to SUID or SGID binaries, so that 
+after Portage updates they still have access to the old versions.
+</p>
+
+<warn>
+if you have received a warning from portage about remaining hardlinks, and your 
+users can write to a partition that allows executing SUID/SGID files, you 
+should read this section carefully. One of your users may be attempting to 
+circumvent your update by keeping an outdated version of a program. If your 
+users cannot create their own SUID files, or can only execute programs using
+the dynamic loader (partitions mounted <c>noexec</c>), you do not have to 
+worry.
+</warn>
+
+<note>
+Users do not need read access to a file to create a link to it, they only need 
+read permission to the directory that contains it.
+</note>
+
+<p>
+To check how many links a file has, you can use the <c>stat</c> command.
+</p>
+
+<pre caption="Stat command">
+$ stat /bin/su    
+  File: `/bin/su'
+  Size: 29350           Blocks: 64         IO Block: 131072 regular file
+Device: 900h/2304d      Inode: 2057419     Links: 1
+Access: (4711/-rws--x--x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2005-02-07 01:59:35.000000000 +0000
+Modify: 2004-11-04 01:46:17.000000000 +0000
+Change: 2004-11-04 01:46:17.000000000 +0000
+</pre>
+
+<p>
+To find the SUID and SGID files with multiple links, you can use <c>find</c>.
+</p>
+
+<pre caption="Finding multiply linked suid/sgid binaries">
+$ find / -type f \( -perm -004000 -o -perm -002000 \) -links +1 -ls
+</pre>
 
 </body>
 </section>
