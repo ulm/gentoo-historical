@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License, v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.3 2003/09/15 04:30:31 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.4 2003/09/16 04:48:47 zhen Exp $
 
 # IMPORTANT NOTE:
 # This script no longer accepts an optional argument.
@@ -68,7 +68,7 @@ then
 fi
 
 echo
-echo -e "${GOOD}Gentoo Linux${GENTOO_VERS}; \e[34;01mhttp://www.gentoo.org/${NORMAL}"
+echo -e "${GOOD}Gentoo Linux${GENTOO_VERS}; http://www.gentoo.org/${NORMAL}"
 echo -e "Copyright 2001-2003 Gentoo Technologies, Inc.; Distributed under the GPL"
 if [ "$STRAP_EMERGE_OPTS" = "-f" ]
 then
@@ -217,7 +217,7 @@ then
 fi
 
 export USE="${ORIGUSE} bootstrap"
-emerge ${STRAP_EMERGE_OPTS} ${myHARDENED_GCC} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myHARDENED_GCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
+emerge ${STRAP_EMERGE_OPTS} ${myTEXINFO} ${myGETTEXT} ${myBINUTILS} ${myGCC} ${myHARDENED_GCC} ${myGLIBC} ${myBASELAYOUT} ${myZLIB} || cleanup 1
 
 # ncurses-5.3 and up also build c++ bindings, so we need to rebuild it
 export USE="${ORIGUSE}"
