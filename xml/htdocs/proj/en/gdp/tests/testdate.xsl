@@ -4,105 +4,13 @@
 
 <xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
 
-<func:function name="func:format-date">
-  <xsl:param name="datum" />
-  <xsl:param name="lingua" select="//*[1]/@lang"/>
-
-  <xsl:variable name="mensis" select="document('months.xml')"/>
-
-  <xsl:choose>
-    <xsl:when test="string-length($datum)=10 and substring($datum,5,1)='-' and substring($datum,8,1)='-' and contains('|01|02|03|04|05|06|07|08|09|10|11|12|',concat('|',substring($datum,6,2),'|'))">
-      <xsl:variable name="Y"><xsl:value-of select="number(substring($datum,1,4))"/></xsl:variable>
-      <xsl:variable name="M"><xsl:value-of select="number(substring($datum,6,2))"/></xsl:variable>
-      <xsl:variable name="D"><xsl:value-of select="number(substring($datum,9,2))"/></xsl:variable>
-      <xsl:choose>
-        <!-- Formatting per language happens here -->
-
-        <!-- For complex and/or repeated cases, better use a dedicated function -->
-
-        <!-- English -->
-        <xsl:when test="$lingua='en'">
-          <func:result select="func:format-date-en($mensis, $Y, $M, $D)"/>
-        </xsl:when>
-
-        <!-- Danish / German / Finnish -->
-        <xsl:when test="$lingua='da' or $lingua='de' or $lingua='fi'">
-          <func:result select="concat($D, '. ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $Y)"/>
-        </xsl:when>
-
-        <!-- Spanish -->
-        <xsl:when test="$lingua='es'">
-          <func:result select="concat($D, ' de ', $mensis//months[@lang=$lingua]/month[position()=$M], ', ', $Y)"/>
-        </xsl:when>
-        
-        <!-- Brazilain Portuguese -->
-        <xsl:when test="$lingua='pt_br'">
-          <func:result select="concat($D, ' de ', $mensis//months[@lang=$lingua]/month[position()=$M], ' de ', $Y)"/>
-        </xsl:when>
-        
-        <!-- Hungarian -->
-        <xsl:when test="$lingua='hu'">
-          <func:result select="concat($Y, '. ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $D, '.')"/>
-        </xsl:when>
-
-        <!-- Chinese / Japanese -->
-        <xsl:when test="$lingua='zh_cn' or $lingua='zh_tw' or $lingua='ja'">
-          <func:result select="concat($Y, '年 ', $M, '月 ', $D, '日 ')"/>
-        </xsl:when>
-
-        <!-- Korean -->
-        <xsl:when test="$lingua='ko'">
-          <func:result select="concat($Y, '년 ', $M, '월 ', $D, '일')"/>
-        </xsl:when>
-
-        <!-- French -->
-        <xsl:when test="$lingua='fr'">
-          <func:result select="func:format-date-fr($mensis, $Y, $M, $D)" />
-        </xsl:when>
-
-        <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish -->
-        <xsl:when test="$lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr'">
-          <func:result select="concat($D, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $Y)"/>
-        </xsl:when>
-
-        <xsl:otherwise> <!-- Default to English -->
-          <func:result select="func:format-date-en($mensis, $Y, $M, $D)" />
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:when>
-    <xsl:otherwise>
-      <func:result select="$datum" />
-    </xsl:otherwise>
-  </xsl:choose>
-</func:function>
-
-<!-- Format date in  ENGLISH -->
-<func:function name="func:format-date-en">
-  <xsl:param name="mensis" />
-  <xsl:param name="Y" />
-  <xsl:param name="M" />
-  <xsl:param name="D" />
-  <func:result select="concat($mensis//months[@lang='en']/month[position()=$M], ' ', $D, ', ', $Y)" />
-</func:function>
-
-<!-- Format date in  FRENCH -->
-<func:function name="func:format-date-fr">
-  <xsl:param name="mensis" />
-  <xsl:param name="Y" />
-  <xsl:param name="M" />
-  <xsl:param name="D" />
-  <func:result>
-    <xsl:value-of select="$D"/>
-    <xsl:if test="$D=1">er</xsl:if>
-    <xsl:value-of select="concat(' ', $mensis//months[@lang='fr']/month[position()=$M], ' ', $Y)"/>
-  </func:result>
-</func:function>
+<xsl:include href="/xsl/inserts.xsl" />
 
 <xsl:param name="date">1967-06-05</xsl:param>
 <!-- Start outputting data -->
 <xsl:template match="/doc">
 
-<guide link="testdate.xml">
+<guide link="testdate.xml" lang="fr">
 <title>Test Date Formatting</title>
 
 <author title="Author">
@@ -115,8 +23,8 @@ This page shows how dates could be formatted for each language
 
 <license/>
 
-<version>1.0</version>
-<date>November 13, 2004</date>
+<version>1.1</version>
+<date>2004-11-20</date>
 
 <chapter>
 <title>Introduction</title>
