@@ -371,8 +371,8 @@
 				<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
 				<br/>
 				<a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
-				<br/>
-				<a class="altlink" href="/main/en/devlist.xml">Gentoo Linux developer list</a>
+				<!--<br/>
+				<a class="altlink" href="/main/en/devlist.xml">Gentoo Linux developer list</a>-->
 				<br/><br/>
 				Graphics:
 				<br/>
