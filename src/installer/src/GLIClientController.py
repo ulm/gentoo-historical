@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.41 2005/01/22 08:28:46 codeman Exp $
+$Id: GLIClientController.py,v 1.42 2005/01/26 03:59:44 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -184,7 +184,7 @@ class GLIClientController(Thread):
 			raise GLIException("PasswordError", 'warning', 'set_root_passwd', "Could not set the root password!")
 
 	def start_portmap(self):
-		status = GLIUtility.spawn('/etc/init.d/portmap start')
+		status = GLIUtility.spawn('/etc/init.d/portmap start', display_on_tty8=True)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("PortmapError", 'warning', 'start_portmap', "Could not start the portmap service!")
 

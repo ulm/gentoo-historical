@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.20 2005/01/22 08:58:05 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.21 2005/01/26 03:59:44 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -250,10 +250,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		minornum = 0
 		#Assign root to the root mount point to make lines more readable
 		root = self._chroot_dir
-		file_name  = root + "/boot/grub/bootdevice"
-		file_name1 = root + "/boot/grub/rootdevice"
 		file_name2 = root + "/boot/grub/device.map"
 		file_name3 = root + "/boot/grub/kernel_name"
+		file_name4 = root + "/boot/grub/initrd_name"
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
@@ -269,15 +268,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_minor = str(parts[device][partition]['minor'])
 					grub_root_minor = str(parts[device][partition]['minor'] - 1)
 					root_device = device
-				
-					
-		exitstatus0 = GLIUtility.spawn("ls -l " + boot_device + " > " + file_name)
-		exitstatus1 = GLIUtility.spawn("ls -l " + root_device + " > " + file_name1)
-		exitstatus2 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
-		exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
-		exitstatus4 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
-		if (exitstatus0 != 0) or (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0) or (exitstatus4 != 0):
-			raise GLIException("BootloaderError", 'fatal', '_install_grub', "Error in one of THE FOUR run commands")
+		if GLIUtility.is_file(root+file_name2):
+			exitstatus = GLIUtility.spawn("rm "+root+file_name2)		
+		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
+		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
+		exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/initrd-* > "+file_name4)
+		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):
+			raise GLIException("BootloaderError", 'fatal', '_install_grub', "Error in one of THE THREE run commands")
 		
 		"""
 		read the device map.  sample looks like this:
@@ -286,40 +283,34 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		(hd1)   /dev/ide/host0/bus0/target0/lun0/disc
 		(hd2)   /dev/ide/host0/bus0/target1/lun0/disc
 		"""
-		e = open(file_name)   #Looking for the boot device
-		ls_output = e.readlines()
-		e.close()
-		# looks like lr-xr-xr-x  1 root root 32 Oct  1 16:09 /dev/hda -> ide/host0/bus0/target0/lun0/disc
-		ls_output = ls_output[0].split(">")[-1]
-		ls_output = ls_output[1:]
-
-		eb = open(file_name1)  #Looking for the root device
-		ls_outputb = eb.readlines()
-		eb.close()
-		ls_outputb = ls_outputb[0].split(">")[-1]
-		ls_outputb = ls_outputb[1:]
 		
 		# Search for the key
-		f = open(file_name2)
+		f = open(file_name2)  #open the device map
 		file = f.readlines()
 		f.close()
 		for i in range(len(file)):
-			if file[i][11:] == ls_output:
+			if file[i][6:-1] == boot_device:
 				#eurika we found the drivenum
 				grub_boot_drive = file[i][1:4]
-			if file[i][11:] == ls_outputb:
+			if file[i][6:-1] == root_device:
 				grub_root_drive = file[i][1:4]
 		if (not grub_root_drive) or (not grub_boot_drive):
 			raise GLIException("BootloaderError", 'fatal', '_install_grub',"Couldn't find the drive num in the list from the device.map")
 
 		g = open(file_name3)
+		h = open(file_name4)
+		initrd_name = h.readlines()
 		kernel_name = g.readlines()
 		g.close()
+		h.close()
 		if not kernel_name[0]:
 			raise GLIException("BootloaderError", 'fatal', '_install_grub',"Error: We have no kernel in /boot to put in the grub.conf file!")
 		kernel_name = map(string.strip, kernel_name)
-		kernel_name[0] = kernel_name[0].split(root)[1]
-		kernel_name[1] = kernel_name[1].split(root)[1]
+		initrd_name = map(string.strip, initrd_name)
+		for i in range(len(kernel_name)):
+			grub_kernel_name = kernel_name[i].split(root)[1]
+		for i in range(len(initrd_name)):
+			grub_initrd_name = initrd_name[i].split(root)[1]
 		#-------------------------------------------------------------
 		#OK, now that we have all the info, let's build that grub.conf
 		newgrubconf = ""
@@ -331,14 +322,20 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			
 		newgrubconf += "title=Gentoo Linux\n"
 		newgrubconf += "root (" + grub_boot_drive + "," + grub_boot_minor + ")\n"
-		if foundboot:
-			newgrubconf += "kernel " + kernel_name[0][5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-			newgrubconf += root_device + root_minor + "\n"
-			newgrubconf += "initrd " + kernel_name[1][5:] + "\n"
+		if self._install_profile.get_kernel_config_uri() != "":  #using CUSTOM kernel
+			if foundboot:
+				newgrubconf += "kernel " + grub_kernel_name[5:] + " root="+root_device+root_minor+"\n"
+			else:
+				newgrubconf += "kernel /boot"+ grub_kernel_name[5:] + " root="+root_device+root_minor+"\n"
 		else:
-			newgrubconf += "kernel /boot" + kernel_name[0][5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
-			newgrubconf += root_device + root_minor + "\n"
-			newgrubconf += "initrd /boot" + kernel_name[1][5:] + "\n"
+			if foundboot:
+				newgrubconf += "kernel " + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
+				newgrubconf += root_device + root_minor + "\n"
+				newgrubconf += "initrd " + grub_initrd_name[5:] + "\n"
+			else:
+				newgrubconf += "kernel /boot" + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
+				newgrubconf += root_device + root_minor + "\n"
+				newgrubconf += "initrd /boot" + grub_initrd_name[5:] + "\n"
 		
 		#-------------------------------------------------------------
 		#OK, now that the file is built.  Install grub.
