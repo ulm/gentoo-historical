@@ -1,0 +1,371 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-x86-bootloader.xml,v 1.1 2004/10/13 20:57:04 enderson Exp $ -->
+
+<sections>
+<section>
+<title>Fazendo a escolha</title>
+<subsection>
+<title>Introdução</title>
+<body>
+
+<p>
+Agora que o seu kernel está configurado e compilado e os arquivos de configuração
+necessário pra o sistema estão preechidos corretamente, está na hora de instalar um
+programa que irá chamar o seu kernel quando você iniciar o sistema. Tal programa é
+chamado de <e>bootloader</e>. Para x86, o Gentoo Linux fornece <uri
+link="#grub">GRUB</uri> e <uri link="#lilo">LILO</uri>. Mas antes de 
+instalarmos um destes bootloaders, informaremos a você coom configurar o framebuffer
+(caso você o queira claro). Com o framebuffer você pode ver a linha de comando do Linux
+com (limited) características gráficas (como se estivesse a ótima imagem de bootsplash
+que o Gentoo fornece).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Framebuffer</title>
+<body>
+
+<p>
+<e>Se</e> você configurou o kernel com suporte a framebuffer (ou se você
+usou a configuração padrão do <c>genkernel</c>), você
+tem que adiciona a opção <c>vga</c> no arquivo de configuração do bootloader 
+se você optar por usar framebuffer. A próxima tabela lista os valores da
+opção <c>vga</c> que você pode usar. No arquivo de configuração de exemplo nós
+usamos <e>800x600 @ 16bpp</e>, assim <e>788</e>.
+</p>
+
+<table>
+<tr>
+<ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+<th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+<th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+<th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+Lembre-se  (ou anote) seu valor; você precisará dele daqui a pouco.
+</p>
+
+<p>
+Agora continue instalando <uri link="#grub">GRUB</uri> <e>ou</e> <uri
+link="#lilo">LILO</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="grub">
+<title>Padrão: Usando GRUB</title>
+<subsection>
+<title>Entendendo a terminologia do GRUB</title>
+<body>
+
+<p>
+A parte mais crítica em compreender o GRUB é sentir-se confortável em
+como o GRUB se refere aos dicos rígidos e partições. Sua partição Linux
+<path>/dev/hda1</path> é chamada de <path>(hd0,0)</path> no GRUB. Perceba que 
+os parênteses no <path>hd0,0</path> - eles são requeridos.
+</p>
+
+<p>
+Discos rígidos contam a partir de 0 (zero) ao invés de "a" e as partições iniciam em 0 (zero)
+ao invés de 1 (um). Esteja atento para isto com os hds, somente os discos rígidos são
+contados, dispositivos atapi-ide tais como leitores e gravadores de cdrom. O mesmo
+acontece com dispositivos scsi. (Normalmente eles recebem números maiores
+que os dispositivos ide exceto quando a bios está configurada para iniciar a partir do scsi.)
+</p>
+
+<p>
+Supondo que você tenha um disco rígigo em <path>/dev/hda</path>, um leitor de cdrom em
+<path>/dev/hdb</path>, uma gravadora em <path>/dev/hdc</path>, um segundo disco rígido
+em <path>/dev/hdd</path> e nenhum disco rígido SCSI, <path>/dev/hdd7</path> seria 
+conhecido como <path>(hd1,6)</path>. Pode parecer difícil, e difícil é 
+de fato, mas como veremos, o GRUB oferece um mecanismo de "autocompletar" com o tab
+que será util para os que tiverem vários discos rígidos e partições
+e que estão um pouco perdidos na maneira de numerar do GRUB.
+</p>
+
+<p>
+Agora que compreendemos como trabalhar com o GRUB, está na hora de instalá-lo.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Instalando o GRUB</title>
+<body>
+
+<p>
+Para instalar o GRUB, vamos primeiro emergí-lo:
+</p>
+
+<pre caption = "Instalando o GRUB">
+# <i>emerge grub</i>
+</pre>
+
+<p>
+Embora o GRUB esteja instalado, ainda precisamos criar um
+arquivo de configuração para ele e gravar o GRUB na MBR para que o mesmo inicie
+automaticamente o kernel que acaou de ser compilado. Crie o arquivo <path>/boot/grub.conf</path>
+com o <c>nano</c> (or, se posível, com outro editor):
+</p>
+
+<pre caption = "Criando o /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+Agora iremos criar o arquivo <path>grub.conf</path>. Abaixo você
+encontrará dois possíveis <path>grub.conf</path> para para o exemplo de particionamento
+que é usado neste guia, com a imagem do kernel <path>kernel-2.4.25</path>. Nós somente
+comentamos extensivamente o primeiro <path>grub.conf</path>. Certifique-se de usar
+o arquivo de imagem do <e>seu</e> kernel e, se for apropriado, o arquivo de imagem do
+<e>seu</e> initrd.
+</p>
+
+<ul>
+  <li>
+    O primeiro <path>grub.conf</path> é para pessoas que não usaram o genkernel
+    <c>genkernel</c> para gerar o kernel
+  </li>
+  <li>
+    O segundo <path>grub.conf</path> é para pessoas que usaram o
+    <c>genkernel</c> para gerar o kernel
+  </li>
+</ul>
+
+<pre caption = "grub.conf para quem não usou o genkernel">
+<comment># Qual opção iniciar por padrão. 0 é a primeira, 1 é a segunda, etc.</comment>
+default 0
+<comment># Quantos segundos esperar antes da opção padrão ser iniciada.</comment>
+timeout 30
+<comment># Uma imagem bem legal pra melhorar o visual :)
+# Comente se você não tem nenhuma placa gráfica instalada</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r6
+<comment># partição onde a imagem do kernel (ou sistema operacional) está localizado</comment>
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r6 root=/dev/hda3
+
+<comment># As proximas 3 linhas são somente necessárias se você tem o Windows instalado.</comment>
+<comment># Neste caso, o Windows está em /dev/hda6.</comment>
+title=Windows XP
+rootnoverify (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+
+<pre caption = "grub.conf para quem usou o genkernel">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.26-r6
+root (hd0,0)
+kernel /kernel-2.4.26-gentoo-r6 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initrd-2.4.26-gentoo-r6
+
+<comment># Only in case you want to dual-boot</comment>
+title=Windows XP
+root (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+
+<note>
+Se você usou um esquema diferente de particionamento  e/ou uma imagem do kernel, ajuste 
+de acordo. Portanto, certifique-se que tudo que segue um dispositovo no GRUB
+(como <path>(hd0,0)</path>) é ralativo ao ponto de montagem, e não à raiz. Em
+outras palavras, <path>(hd0,0)/grub/splash.xpm.gz</path> é realmente 
+<path>/boot/grub/splash.xpm.gz</path> já que <path>(hd0,0)</path> é  
+<path>/boot</path>.
+</note>
+
+<p>
+Se você precisa passar alguma opção adicional ao kernel, é só adicioná-los
+ao fim da linha do kernel. Nós já estamos passando uma opção
+(<c>root=/dev/hda3</c> ou <c>real_root=/dev/hda3</c>), mas você pode passar outras 
+caso queira. Como um exemplo nós usamos a opção <c>vga</c> para o framebuffer que
+discutimos anteriormente:
+</p>
+
+<pre caption = "Adicionando a opção vga como uma opção do kernel">
+title=Gentoo Linux
+  root (hd0,0)
+  kernel (hd0,0)/kernel-2.4.25 root=/dev/hda3 vga=788
+</pre>
+
+<p>
+If you're using a 2.6.7 or higher kernel and you jumpered your harddrive
+because the BIOS can't handle large harddrives you'll need to append
+<c>hdx=stroke</c>.
+</p>
+
+<p>
+Quem usou o <c>genkernel</c> deve saber que o kernel gerado aceitam as mesmas opções de inicialização
+que são usadas para o LiveCD. Por exemplo, se você tem dispositivos SCSI, você deveria adicionar
+a opção <c>doscsi</c> para o kernel.
+</p>
+
+<p>
+Agora salve o <path>grub.conf</path> e saia. A partir de agora, GRUB está
+configurado por completo, e você pode continuar com <uri
+link="?part=1&amp;chap=10">Installing Necessary System Tools</uri>.
+</p>
+
+<p>
+Se você tem mais dúvidas sobre o GRUB, favor consultar o <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> ou o <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
+</p>
+
+
+</body>
+</subsection>
+</section>
+<section id="lilo">
+<title>Alternativo: Usando LILO</title>
+<subsection>
+<title>Instalando o LILO</title>
+<body>
+
+<p>
+O LILO (LInuxLOader), is the tried and true workhorse of Linux
+bootloaders. Porém, ele perde em alguma características que o GRUB tem 
+(que também é o motivo pelo qual o GRUB tem ganhado popularidade). A razão
+pela qual o LILO ainda é usado, é que, em alguns sistemas, o GRUB não funciona e
+o LILO sim. É claro que, ele também é usado pelos que conhecem o LILO and
+querem permanecer com ele. De qualquer forma, Gentoo suporta os dois, e aparentemente
+vocÊ escolheu o LILO.
+</p>
+
+<p>
+Instalar o LILO é moleza; apenas use <c>emerge</c>.
+</p>
+
+<pre caption = "Instalando o LILO">
+# <i>emerge --usepkg lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurando o LILO</title>
+<body>
+
+<p>
+Para configurar o LILO, você deve criar o arquivo <path>/etc/lilo.conf</path>. Inicie
+seu editor favorito (neste handbook nós usamos o <c>nano</c> para
+consistência) e crie o arquivo.
+</p>
+
+<pre caption = "Criando o /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+Algumas seções atrás nós perguntamos a você para lembrar-se do nome da imagem do kernel
+que você criou. No próximo exemplo do arquivo <path>lilo.conf</path> nós supomos
+que o nome da imagem é <path>kernel-2.4.25</path>. Nós também usamos o
+esquema de particionamento de exemplo. Existem duas partes separadas: 
+</p>
+
+<ul>
+  <li>
+    Uma para aqueles que não usaram o <c>genkernel</c> para gerar o kernel
+  </li>
+  <li>
+    Uma para aqueles que usaram o <c>genkernel</c> para gerar o kernel
+  </li>
+</ul>
+
+<pre caption = "Arquivo /etc/lilo.conf de exemplo">
+boot=/dev/hda             <comment># Install LILO in the MBR</comment>
+prompt                    <comment># Give the user the chance to select another section</comment>
+timeout=50                <comment># Wait 5 (five) seconds before booting the default section</comment>
+default=gentoo            <comment># When the timeout has passed, boot the "gentoo" section</comment>
+<comment># Only if you use framebuffer. Otherwise remove the following line:</comment>
+vga=788                   <comment># Framebuffer setting. Adjust to your own will</comment>
+
+<comment># For non-genkernel users</comment>
+image=/boot/kernel-2.4.24
+  label=gentoo            <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/hda3          <comment># Location of the root filesystem</comment>
+
+<comment># For genkernel users</comment>
+image=/boot/kernel-2.4.24
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.24
+
+<comment># The next two lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+Se você usou um esquema diferente de particionamento  e/ou uma imagem do kernel, ajuste 
+de acordo.
+</note>
+
+<p>
+Se você precisa passar alguma opção para o kernel, adicione a opção
+<c>append</c> na seção. Como um exemplo, nós adicionamos a opção
+<c>acpi=off</c> para desabilitar o suporte ao ACPI:
+</p>
+
+<pre caption = "Adicionando opções ao kernel com o append">
+image=/boot/kernel-2.4.24
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="vga=788"</i>
+</pre>
+
+<p>
+Usuários do <c>genkernel</c> devem saber que o kernel compilado com ele usa as mesmas opções
+de boot usadas no LiveCD. Por exemplo, se você tem algum dispositivo SCSI, você deve
+adicionar <c>doscsi</c> como uma opção do kernel.
+</p>
+
+
+<p>
+Agora salve o arquivo e saia. Para finalizar, você tem que executar
+<c>/sbin/lilo</c> para que o LILO possa aplicar as configurações do <path>/etc/lilo.conf</path> ao
+seu sistema (instalar-se no disco). Lembre-se que você também 
+terá de retornar ao  <c>/sbin/lilo</c> sempre que você istalar um novo kernel!
+</p>
+
+<pre caption = "Finalizando a instalação o LILO">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
