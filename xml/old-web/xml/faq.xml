@@ -5,8 +5,8 @@
 
 <abstract>This FAQ is a collection of questions and answers collected from the gentoo-dev mailing list and from IRC -- if you have any questions (or answers!) to add, please contact an author.</abstract>
 
-<version>1.0.7</version>
-<date>22 Feb. 2002</date>
+<version>1.0.8</version>
+<date>18 March 2002</date>
 
 <chapter>
 	<title>Getting Started</title>
@@ -27,8 +27,34 @@
 	<title>Installation</title>
 
 	<section>
-		<title>What is the differenence between the sys and build tarballs?</title>
-		<body><p>The <e>build</e> tarball is a minimal system capable of connecting to the internet and rebuilding itself, whereas <e>sys</e> is a complete comfortable system.</p>
+		<title>What is the difference between the .iso and .tbz2 files?</title>
+		<body><p>The build <e>.tbz2</e> file is a minimal set of system files
+		that is necessary for allowing a user to bootstrap and install
+		Gentoo Linux.  The build <e>.iso</e> is a complete, bootable CD image that
+		contains a system kernel, a reasonably complete set of kernel modules,
+		necessary system tools such as <c>mkfs</c> and networking support,
+		as well as the <e>.tbz2</e> minimal-system tarball.  Most users will install
+		Gentoo Linux by burning the .iso file onto a CD, booting off of the CD,
+		and installing from within the minimal linux environment provided by
+		the Gentoo boot CD.  It is possible, however, for users to install
+		Gentoo Linux directly from an already-existing Linux distribution.
+		Such users need only download the .tbz2 file, install the contents
+		on a spare partition (making sure to use the <c>p</c> flag when
+		untarring the tarball!), chroot, and install in the usual fashion.</p>
+	</body>
+	</section>
+
+	<section>
+		<title>Why do the build .iso and .tbz2 files sometimes have different -r (revision) numbers?</title>
+		<body><p>
+		The .tbz2 minimal-system tarball only needs to be revised when there have
+		been significant changes to the core Gentoo Linux system (such as baselayout
+		changes, or a new profile), and as such .tbz2 updates are relatively rare.
+		The .iso file tends to get updated whenever we discover that somebody has
+		hardware that won't boot from our .iso.  Since new kernel modules and
+		patches are constantly being generated, this situation probably won't
+		stabilize anytime soon.
+		</p>
 	</body>
 	</section>
 
@@ -76,22 +102,29 @@ boot: <i>rescue ide2=0x180,0x386</i>
 		<title>How do I enable devfs?</title>
 		<body>
 <p>
-<e>devfs</e> support is compiled-in to our standard kernels, and is enabled by default on Gentoo Linux 1.0_rc5 and above.  If you're using 1.0_rc5 or greater, you don't need to do anything special to get devfs working; it's already active.  However, if you are using a version of Gentoo Linux <e>prior</e> to version 1.0_rc5, add <c>devfs=mount</c> to your <c>GRUB</c> kernel boot options so that the line looks something like <c>kernel /boot/boot/bzImage devfs=mount foo=bar</c>  The kernel will then mount the <path>/dev</path> <e>devfs</e> filesystem automatically at boot-time.
+If you're using 1.0_rc5 or greater, you don't need to do anything special to get 
+devfs working; it's already active (you did make sure that devfs was built into the
+kernel, didn't you?).  
+However, if you are using a version of Gentoo Linux <e>prior</e> to version 1.0_rc5, add <c>devfs=mount</c> to your <c>GRUB</c> kernel boot options so that the line looks something like <c>kernel /boot/boot/bzImage devfs=mount foo=bar</c>  The kernel will then mount the <path>/dev</path> <e>devfs</e> filesystem automatically at boot-time.
 </p>
 	</body>
 	</section>
 	<section>
 		<title>How to I disable devfs?</title>
 		<body>
-<p>Under Gentoo Linux 1.0_rc6 and later, you can disable devfs by passing the <c>gentoo=nodevfs</c> to the kernel.  Please
-note that this works even if you are using "non-official" Linux kernel that you compiled yourself.</p>
+<p>Under Gentoo Linux 1.0_rc6 and later, you can disable devfs by passing the <c>gentoo=nodevfs</c> to the kernel.</p>
 		</body>
 	</section>
 	<section>
 		<title>How do I get a <path>/dev/mouse </path> that
-		doesn't go away when I reboot?</title>
+		doesn't go away when I reboot (when using devfs)?</title>
 		<body>
-		<p>You need to edit <path>/etc/devfsd.conf</path>
+		<p>
+		If you are using 1.0_rc6 or later, then you can just use <c>ln -s</c>
+		to make the usual symbolic link from <path>/dev/mouse</path>, and
+		it will be preserved between reboots.
+		</p>
+		<p>All other users need to edit <path>/etc/devfsd.conf</path>
 		and add these lines:</p>
 <pre>
 REGISTER        ^misc/psaux$    CFUNCTION GLOBAL symlink misc/psaux mouse
@@ -116,7 +149,7 @@ adjust the <c>misc/psaux</c> strings above accoringly.  You'll then want to <c>k
 		forgetting to mount the boot partition at <path>/boot</path>
 		before either unpacking the build snapshot or running
 		<c>emerge --usepkg system</c>, or (c) forgetting the
-		<c>notail</c> option when mounting <path>/boot</path>.
+		<c>notail</c> option when mounting a ReiserFS <path>/boot</path> partition.
 		You can get more information on grub, including how to
 		debug grub from the grub prompt, by reading the 
 		<uri link="http://www-105.ibm.com/developerworks/education.nsf/linux-onlinecourse-bytitle/0F1731DC664023B7862569D0005C44AF?OpenDocument">IBM developerWorks Grub tutorial</uri>.
@@ -227,7 +260,9 @@ the various configuration files is as follows (highest first):
 		<c>emerge --help config</c> for more details.  The (overly) simple answer is that if
 		a package installs <path>foo</path> somewhere under <path>/etc</path>, and
 		another <path>foo</path> already exists there, then the new <path>foo</path> will
-		instead be renamed to <path>._cfgxxxx_foo</path> in that directory.
+		instead be renamed to <path>._cfgxxxx_foo</path> in that directory.  A useful
+		tool for examining and updating any protected config files is <c>etc-update</c>,
+		currently obtained by <c>emerge app-admin/gentoolkit</c>.
 		</p></body>
 	</section>
 
@@ -285,8 +320,9 @@ the various configuration files is as follows (highest first):
 
 	<section>
 		<title>How do I set up an International Keyboard Layout?</title>
-		<body><p>I haven't a clue.  If somebody would tell me I would be
-		extremely grateful!</p>
+		<body><p>Edit the <c>KEYMAP</c> variable in <path>/etc/rc.conf</path>.
+		Then either reboot or restart the keymaps script:
+		<c>/etc/init.d/keymaps restart</c>.</p>
 		</body>
 	</section>
 
@@ -311,26 +347,20 @@ the various configuration files is as follows (highest first):
 	<section>
 		<title>ReiserFS and filesystem corruption issues -- how to fix'em, etc</title>
 		<body>
-
-
-		<p>Since kernel 2.4.4, ReiserFS has been very stable and ready for
-		production environments.  However, if you have been using ReiserFS
-		since before kernel 2.4.4, then it's recommended that you back up all
-		your important data and recreate your ReiserFS filesystems with a
-		2.4.4+ kernel and a recent version of <path>reiserfsutils</path>.  If
-		this isn't possible, try using a recent Gentoo Linux <uri
-		path="http://www.ibiblio.org/gentoo/snapshots/disks/">boot/rootdisk</uri>
-		to boot your system, and then run <c>reiserfsck --rebuild-tree</c> on
+		<p>
+		ReiserFS has had serious problems with the 2.4-series kernels; we
+		highly recommend avoiding ReiserFS for the time being.  If your
+		ReiserFS partition is already corrupt, try booting the Gentoo 
+		Linux boot CD and run <c>reiserfsck --rebuild-tree</c> on
 		the corrupted filesystem.  This should make the filesystem consistent
-		again, although you may have lost some files or directories due to
-		corruption.</p>
-
-
+		again, although you may have lost some files or directories due
+		to the corruption.
+		</p>
 		</body>
 	</section>
 
 	<section>
-		<title>How to I view the timestamps in /var/log/syslog.d, etc.</title>
+		<title>How to I view the timestamps in /var/log/syslog.d, etc. on a pre-1.0_rc5 Gentoo system?</title>
 		<body>
 
 <p>To view multilog (Gentoo Linux 1.0_rc5 and earlier) timestamps, you need to pipe the current log through the <c>tai64nlocal</c>
@@ -389,6 +419,19 @@ command:</p>
 		<title>Can I buy a CD of Gentoo Linux?</title>
 		<body><p>Not currently, although we will most likely be selling CDs in the future.  Stay tuned!
 		</p></body>
+	</section>
+	<section>
+		<title>This FAQ hasn't answered my question.  What do I do now?</title>
+		<body>
+		<p>A good first step is to browse the various Gentoo Linux mailing
+		lists listed on <uri>www.gentoo.org</uri>.  Even better, Google
+		(<uri>www.google.com</uri>) is a wonderful resource for searching
+		the Gentoo lists: just enter "lists.gentoo.org foo" to search the
+		Gentoo mailing lists for "foo".  If all else fails, or you just want
+		to hang out with Gentoo folks, visit us on irc: <c>#gentoo</c>
+		on <uri>irc.openprojects.net</uri>.
+		</p>
+		</body>
 	</section>
 </chapter>
 </guide>
