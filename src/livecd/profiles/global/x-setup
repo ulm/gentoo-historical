@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#try to load the agpgart module; use it if it loads. Otherwise default to NvAGP
+modprobe agpgart
+#now, for the key component :)
+modprobe nvidia
+if [ "`lsmod | cut -f1 -d\" \" | grep ^nvidia$`" = "nvidia" ]
+then
+	echo "NVIDIA driver loaded."
+else
+	echo "NVIDIA driver was unable to load; aborting."
+	echo "This demo requires NVIDIA graphics hardware."
+	exit 1
+fi
+opengl-update nvidia
+
+source /etc/sysconfig/mouse
+
+VERTREFRESH=`ddcxinfo -vsync`
+
+if [ "$VERTREFRESH" = "0-0" ]
+then
+	echo "No DDC information detected; assuming reasonable defaults."
+	VERTREFRESH=50-80
+	HORIZSYNC=30-70
+else
+	HORIZSYNC=`ddcxinfo -hsync`
+fi
+
+sed -e "s/##MOUSETYPE##/$XMOUSETYPE/" \
+	-e "s/##MOUSEDEV##/$DEVICE/" \
+	-e "s/##VERTREFRESH##/$VERTREFRESH/" \
+	-e "s/##HORIZSYNC##/$HORIZSYNC/" \
+/etc/X11/XF86Config.master > /etc/X11/XF86Config
+#time to fire up X
+exec /usr/X11R6/bin/xinit
+

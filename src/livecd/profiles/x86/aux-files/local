@@ -1,0 +1,102 @@
+#!/sbin/runscript
+# Copyright 1999-2002 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License, v2 or later
+# $Header: /var/cvsroot/gentoo/src/livecd/profiles/x86/aux-files/Attic/local,v 1.1 2003/10/19 03:10:55 livewire Exp $
+
+HILITE="\033[1m"
+NORMAL="\033[0m"
+
+NET="no"
+GAME="yes"
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+	if [ "$x" = "forceloadnet" ]
+	then
+		NET="yes"
+	elif [ "$x" = "noX" ]
+	then
+		GAME="no"
+	fi
+done
+
+depend() {
+	before autoconfig
+}
+
+blurb() {
+	echo -ne ${HILITE}${1}
+	#blurblen=${#1}
+}
+
+backup() {
+	echo -ne "\033[0G\033[0K"
+}
+
+start() {
+	umount /initrd
+	/sbin/freeramdisk /dev/ram0
+	#make our mtab look sane...
+	local mycdloc
+	mycdloc=`cat /tmp/mycd`
+	mycdloc=${mycdloc#/newroot*}
+	mount -f $mycdloc /mnt/cdrom -t iso9660 -o ro
+	if [ -e /mnt/livecd.cloop ]
+	then
+		mount -f /mnt/livecd.cloop /mnt/cloop -t ext2 -o ro
+		#cloop was cached to tmpfs so that CD could be unmounted.
+	else
+		mount -f /mnt/cdrom/livecd.cloop /mnt/cloop -t ext2 -o ro
+	fi
+	rm /tmp/mycd
+	FOUNDMEM="$(awk '/MemTotal/{print $2}' /proc/meminfo)"
+	TOTALMEM="$(awk 'BEGIN{m=0};/MemFree|Cached/{m+=$2};END{print m}' /proc/meminfo)"
+	MINSIZE=2000
+	# At least this much memory minus 30% should remain when home and var are full.
+	MINLEFT=16000
+	# Maximum ramdisk size	
+	MAXSIZE="$(expr $TOTALMEM - $MINLEFT)"
+	# Default ramdisk size for ramdisk
+	RAMSIZE="$(expr $TOTALMEM / 5)"
+	# Check for sufficient memory to mount extra ramdisk for /home + /var
+	if test -n "$TOTALMEM" -a "$TOTALMEM" -gt "$MINLEFT"; then
+	test -z "$RAMSIZE" && RAMSIZE=1000000
+	fi
+# tmpfs/varsize version, can use swap
+	RAMSIZE=$(expr $RAMSIZE \* 5)
+
+	mount -f tmpfs / -t tmpfs -o rw,size=${RAMSIZE}k
+	echo "10000" > /proc/sys/fs/file-max
+	echo root:`pwgen -s 16` | chpasswd  > /dev/null 2>&1
+	if [ "$NET" = "yes" ]
+	then
+		ebegin "Auto-detecting network modules"
+		# Disable kernel messages to console:
+		echo "0" > /proc/sys/kernel/printk
+		local x
+		for x in /lib/modules/*/kernel/drivers/net/*
+		do
+			y=${x##*/}
+			y=${y%%.*}
+			echo -ne " ${GOOD}*${NORMAL} Scanning for ${y}..."
+			insmod -f ${x} > /dev/null 2>&1
+			backup
+		done
+		echo "6" > /proc/sys/kernel/printk
+	fi
+	if [ "$GAME" = "yes" ]
+	then
+		touch /etc/startgame
+	fi
+	if [ -e /etc/conf.d/local.start ]
+        then
+                source /etc/conf.d/local.start
+        fi
+
+}
+
+stop() {
+	return
+}
+
+# vim:ts=4

@@ -1,0 +1,198 @@
+#!/bin/sh
+#
+# Script to boot up a system with autodetection of CD location
+# 
+# Daniel Robbins <drobbins@gentoo.org>
+# Copyright 2002 Gentoo Technologies, Inc.
+# Distributed under the GPL
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+BACK_UP="\033[1K\033[0G"
+HILITE="\033[1m"
+NORMAL="\033[0m"
+mount -oremount,rw /
+mount /proc
+# Disable kernel messages to console:
+echo "0" > /proc/sys/kernel/printk
+SCSI="yes"
+CDCACHE="no"
+IDEBUG="no"
+CMDLINE="`cat /proc/cmdline`"
+for x in $CMDLINE
+do
+	if [ "$x" = "noscsi" ]
+	then
+		SCSI="no"
+	elif [ "$x" = "cdcache" ]
+	then
+		CDCACHE="yes"
+	elif [ "$x" = "idebug" ]
+	then
+		IDEBUG="yes"
+	fi
+done
+
+blurb() {
+	echo -ne ${HILITE}${1}
+}
+
+backup() {
+	echo -ne "\033[0G\033[0K"
+}
+
+# Create the new root FS
+mkdir newroot
+mount -t tmpfs tmpfs /newroot
+cd /newroot
+mkdir dev mnt mnt/cdrom mnt/cloop mnt/.init.d mnt/gentoo
+
+if [ ! -e /newroot/dev/.devfsd ]
+then
+	#mount devfs
+	mount -t devfs devfs /newroot/dev
+fi
+
+mounted=""
+
+initmsg() {
+	echo -e "${HILITE}${*}${NORMAL}"
+}
+
+nocd() {
+	echo -e "${HILITE}---- CD not found${NORMAL}"
+	umount /newroot
+	ash
+	umount /proc
+	exec /linuxrc
+}
+
+getkeymap() {
+	local mykeymap
+	echo -ne ${HILITE}
+	cat /keymaps/key.lst
+	echo -ne ${NORMAL}
+	read -p "Keymap selection: " mykeymap
+	if [ -e /keymaps/${mykeymap}.map ]
+	then
+		echo -e "${HILITE}---- Loading ${mykeymap} keymap${NORMAL}"
+		loadkmap < /keymaps/${mykeymap}.map
+	elif [ "$mykeymap" = "" ]
+	then
+		#default keymap is "us"
+		echo -e "${HILITE}---- Loading default (US) keymap${NORMAL}"
+		loadkmap < /keymaps/us.map
+	else	
+		getkeymap
+	fi
+}
+
+modules_scan() {
+	local type
+	type=${1}; shift
+	for x in "$@"
+	do
+		if [ ! -e /modules/${type}/${x}.o ]
+		then
+			echo -e "${HILITE}---- Module ${x}.o not found; skipping...${NORMAL}"
+			continue
+		fi
+		blurb "---- Scanning for ${x}..."
+		insmod -f /modules/${type}/${x}.o > /dev/null 2>&1
+		if [ $? -eq 0 ]
+		then
+			backup
+			echo -e "---- Detected ${x} hardware${NORMAL}"
+		else
+			backup
+			echo -ne "${NORMAL}"
+		fi
+	done
+}
+
+findmount() {
+	if [ "$*" = "" ]
+	then
+		nocd
+	fi
+	while ! mount -t iso9660 -r $1 /newroot/mnt/cdrom; do
+		shift
+		if [ "$1" = "" ]; then
+			nocd
+		fi
+	done
+	if [ ! -e /newroot/mnt/cdrom/livecd.cloop -a ! -e /newroot/mnt/cdrom/livecd.loop ]; then
+		echo -e "${HILITE}---- $1 is not a LiveCD; skipping...${NORMAL}"
+		umount /newroot/mnt/cdrom
+		shift
+		findmount $*
+	fi
+	mounted=$1	
+	echo -e "${HILITE}---- CD medium found on $1${NORMAL}"
+}
+
+# Mount the CD
+if [ "$SCSI" = "yes" ]
+then
+	echo -e "${HILITE}---- Beginning storage hardware detection${NORMAL}"
+	# This next "## ##" gets sed tweaked:
+	modules_scan storage ##STORAGE_MODULES##
+fi
+
+getkeymap
+
+initmsg "---- Mounting the CD"
+findmount /newroot/dev/cdroms/*
+if [ "$IDEBUG" = "yes" ]
+then
+	exec /bin/sh
+fi
+if [ -e /newroot/mnt/cdrom/livecd.cloop ]
+then
+	#compressed loopback
+	mknod /dev/cloop b 240 0
+	if [ "$CDCACHE" = "yes" ]
+	then
+		initmsg "---- Attempting to cache CD image to tmpfs"
+		cp /newroot/mnt/cdrom/livecd.cloop /newroot/mnt/ 
+		if [ $? -ne 0 ]
+		then
+			initmsg "---- Caching failed (likely due to lack of space"
+			CDCACHE="no"
+			rm -f /newroot/mnt/livecd.cloop
+		else
+			insmod /modules/cloop.o file=/newroot/mnt/livecd.cloop
+			mount -o ro -t ext2 /dev/cloop /newroot/mnt/cloop
+		fi
+	fi
+	if [ "$CDCACHE" = "no" ]
+	then
+		initmsg "---- Mounting compressed loopback filesystem"
+		insmod /modules/cloop.o file=/newroot/mnt/cdrom/livecd.cloop
+		mount -o ro -t ext2 /dev/cloop /newroot/mnt/cloop
+	fi
+else
+	mknod /dev/loop0 b 7 0
+	initmsg "---- Mounting loopback filesystem"
+	losetup /dev/loop0 /newroot/mnt/cdrom/livecd.loop
+	mount -o ro -t ext2 /dev/loop0 /newroot/mnt/cloop
+fi
+# Now the CD is mounted on /newroot/cdrom
+initmsg "---- Copying and symlinking files from CD to populate /"
+
+cd /newroot/
+for x in bin sbin lib boot usr opt
+do
+	ln -s mnt/cloop/${x} ${x}
+done
+mkdir initrd proc tmp 
+chmod 1777 tmp 
+(cd /newroot/mnt/cloop; cp -a etc root home var /newroot)
+#store name of mounted CD so we can add it to mtab.... (/etc/init.d/local will take it
+#from here...
+echo $mounted > tmp/mycd
+
+initmsg "---- Switching to tmpfs root filesystem"
+echo "6" > /proc/sys/kernel/printk
+umount /proc
+pivot_root . initrd
+exec chroot . /sbin/init </dev/console >/dev/console 2>&1

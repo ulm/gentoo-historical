@@ -1,0 +1,55 @@
+#!/bin/bash
+if [ -z "$CD_BUILDCHROOT" ]
+then
+	echo "Error: \$CD_BUILDCHROOT not defined."
+	exit 1
+fi
+
+#keep important C/C++/Java shared libraries
+touch ${CD_BUILDCHROOT}/usr/lib/gcc-lib/*/*/*.so*
+touch ${CD_BUILDCHROOT}/usr/lib/libstdc++*
+touch ${CD_BUILDCHROOT}/etc/env.d/??gcc*
+
+mount_all
+#remove extra build-related packages
+chroot ${CD_BUILDCHROOT} /bin/bash -e <<EOF
+source /etc/profile
+emerge -C genkernel automake autoconf bison patch linux-headers man-pages || exit 1
+emerge -C sash bison flex gettext ccache addpatches perl man groff lib-compat python miscfiles || exit 1
+EOF
+#detect chroot errors:
+[ $? -ne 0 ] && chroot_die "problems cleaning packages"
+umount_all
+
+#final cleanups
+for x in /var/tmp/portage /var/db /var/empty /var/cache \
+/var/lock /tmp /usr/portage /usr/share/man /usr/share/unimaps \
+/usr/include /usr/share/dict /usr/share/doc /usr/share/ss /usr/share/state /usr/share/texinfo \
+/var/tmp /usr/lib/python2.2 /usr/lib/portage /usr/share/gettext /usr/share/rfc \
+/usr/X11R6/man /usr/X11R6/include /usr/X11R6/lib/X11/doc
+do
+	rm -rf ${CD_BUILDCHROOT}/${x}/* ${CD_BUILDCHROOT}/${x}/.*
+done
+#rm -rf ${CD_BUILDCHROOT}/usr/share/keymaps
+
+for x in /sbin/insmod.static /sbin/sln \
+/usr/X11R6/bin/Xnest \
+/usr/X11R6/bin/Xprt \
+/usr/X11R6/bin/Xvfb 
+do
+	rm ${CD_BUILDCHROOT}/${x}
+done
+
+#clean up the kernel source tree...
+rm -rf ${CD_BUILDCHROOT}/usr/src/linux*
+rm -rf ${CD_BUILDCHROOT}/var/db/pkg/sys-kernel/*
+rm -rf ${CD_BUILDCHROOT}/usr/lib/gcc-lib/*/*/libgcj*
+rm -rf ${CD_BUILDCHROOT}/usr/lib/*.a
+rm -rf ${CD_BUILDCHROOT}/lib/*.a
+rm -rf ${CD_BUILDCHROOT}/usr/X11R6/lib/*.a
+#remove entire directory trees (argument 1) *except* for these files/dir trees (arguments 2+)
+#zapmost /usr/share/terminfo l/linux v/vt100 v/vt102 n/nxterm x/xterm x/xterm-color
+#zapmost /usr/share/locale C en_US
+#zapmost /usr/X11R6/lib/X11/locale iso8859-1 iso8859-15 common en_US.UTF-8
+#[ -e ${CD_BUILDCHROOT}/usr/lib/locale ] && zapmost /usr/lib/locale en_US
+zapmost /usr/share/misc magic pci.ids
