@@ -1,0 +1,190 @@
+<?xml version='1.0'?>
+<guide>
+<title>The Gentoo Linux alternative installation method howto</title>
+<author title="Author"><mail link="lordviram@nesit.org">Travis Tilley</mail></author>
+<abstract>
+This HOWTO is meant to be a repository of alternative Gentoo installation
+methods, for those with special installation needs such as lack of a cdrom
+or a computer that cant boot cds.
+</abstract>
+
+<version>0.1</version>
+<date>23 Feb. 2002</date>
+
+<chapter>
+<title>About this document</title>
+<section>
+<body>
+
+<p>Currently, if you want to install Gentoo Linux, you dont have all too
+many options to choose from. This limits Gentoo's userbase to those that
+can install via the methods available in howtos and those that can figure
+out tricky ways of installing Gentoo themselves. This document serves to
+provide information on installation techniques to those that need them,
+and to be a place to put your wacky installation methods. If you have an
+installation method that you yourself find usefull, or have devised an
+amusing way of installing gentoo... please dont hesitate to write something
+up and  <mail link="lordviram@nesit.org">send it to me.</mail></p>
+
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>netboot install</title>
+<section>
+<body>
+
+<p>The requirements for a netboot install are a tftp server and a computer
+that can either netboot itself via bios or a floppy drive used to boot GRUB
+or another network bootloader. A dhcp server might also be necessary. Of
+course, you will also need the latest build ISO, which can be found at
+<uri>http://www.ibiblio.org/gentoo/snapshots/build/ix86-linux-gnu/</uri></p>
+
+</body>
+</section>
+<section>
+<title>overview</title>
+<body>
+
+<p>In order to load images off the network, the first thing a netboot machine
+must do is obtain an ip. There are multiple ways of obtaining an ip, and any
+one of them will do. Personally, I prefer to use GRUB for everything, but if
+your computer supports booting from a network already then grub might not
+be necessary, even if it might be easier to just use GRUB's ifconfig command
+instead of setting up a bootp or dhcp server.</p>
+
+<p>Once your computer has obtained an ip, the next logical step is to find
+out what you are going to be booting and where it might be held. Once again,
+it would be easiest to do this with GRUB commands as opposed to setting up
+a bootp or dhcp server. You will also need to specify how to obtain an initrd
+and tell the kernel that it will be using this as it's root filesystem.</p>
+
+<p>With your kernel loaded and root filesystem mounted, you may proceed
+with installation as normal. The build image could be loaded from a cd, or it
+can be downloaded from the network via tftp.</p>
+
+</body>
+</section>
+<section>
+<title>Using GRUB</title>
+<body>
+
+<p>To use GRUB for network booting purposes, you must first have GRUB
+compiled with support for your network card. It doesn't matter if you install
+to floppy, or to the hard drive of the computer you wish to install Gentoo
+on. If your install target already has GRUB with network support installed,
+then you are one step ahead. GRUB can be downloaded from
+<uri>ftp://alpha.gnu.org/gnu/grub/</uri></p>
+
+<p>A configure example for enabling tulip support, the network card in my
+box:</p>
+
+<pre>
+swift grub-0.91 # ./configure --enable-tulip --prefix=/usr
+swift grub-0.91 # make &amp;&amp; make install
+</pre>
+
+<p>If you are currently in Gentoo and wish to install GRUB using Gentoo
+tools, then you need to install step by step in order to configure in support
+for your network card. An example for using ebuild to install GRUB with
+tulip support:</p>
+
+<pre>
+swift root # cd /usr/portage/
+swift portage # ebuild sys-apps/grub/grub-0.91.ebuild unpack
+swift portage # cd /var/tmp/portage/grub-0.91/work/grub-0.91/
+swift grub-0.91 # ./configure --prefix=/usr --sbindir=/sbin --mandir=/usr/share/man --infodir=/usr/share/info --enable-tulip
+swift grub-0.91 # make
+swift grub-0.91 # touch /var/tmp/portage/grub-0.91/.compiled
+swift grub-0.91 # cd /usr/portage/
+swift portage # ebuild sys-apps/grub/grub-0.91.ebuild install
+swift portage # ebuild sys-apps/grub/grub-0.91.ebuild qmerge
+</pre>
+
+<p>Now that we have the GRUB shell itself installed, we need to install to
+a boot sector. There are two ways of doing this. You can use the GRUB
+shell itself, or you can use a provided script called grub-install. It is
+preferable to use grub-install when installing GRUB to a floppy.</p>
+
+<p>grub-install example:</p>
+
+<pre>
+swift root # mkfs.ext2 /dev/fd0
+swift root # mount /dev/fd0 /mnt/floppy/
+swift root # grub-install --root-directory=/mnt/floppy/ '(fd0)'
+swift root # umount /mnt/floppy/
+</pre>
+
+<p>grub-install does not always work... and isn't always the best way to install
+GRUB. And since the GRUB shell works exactly like GRUB would when booted
+via the boot sector, it might be more desirable just to use the GRUB shell. Here
+is an example of how to use the GRUB shell to install GRUB to a floppy:</p>
+
+<pre>
+swift root # mkfs.ext2 /dev/fd0
+swift root # mount /dev/fd0 /mnt/floppy/
+swift root # mkdir -p /mnt/floppy/boot/grub/
+swift root # cp -v /usr/share/grub/i386-pc/* /mnt/floppy/boot/grub/
+swift root # grub
+grub> root (fd0)
+grub> setup (fd0)
+grub> quit
+swift root # umount /mnt/floppy/
+</pre>
+
+<p>Now that we have a bootable GRUB floppy, we need to set up a tftp server
+for loading our kernel and initrd. if you use inetd, then you need a tftp server
+installed (I suggest netkit's tftp server) and a line in your /etc/inetd.conf that looks
+like this:</p>
+
+<pre>
+tftp	dgram	udp	wait	nobody	/usr/sbin/tcpd	in.tftpd
+</pre>
+
+<p>To install the netkit tftp server under gentoo linux, emerge net-misc/netkit-tftp</p>
+
+<note>There is an ebuild for xinetd... if you prefer to use this than feel free to do
+so. However I do not use xinetd, and do not know how to set up tftp with it. If you
+use it and such, please send it edits on how to get xinetd working and I will include
+them in this howto.</note>
+
+<p>Now that we have our tftp server ready, we need a kernel and a root initrd to
+put in it. You can compile a custom kernel yourself, but make sure it has all the
+things necessary for running gentoo (like devfs) and for netbooting (like initrd
+support). The root initrd will be the rescue.gz included in the gentoo ISO.</p>
+
+<note>Mounting an ISO file without burning it to cd requires loopback filesystem
+support.</note>
+
+<pre>
+swift root # mkdir /tftpboot
+swift root # mount -o loop ./build-ix86-1.0_rc6-r14.iso /mnt/cdrom/
+swift root # cp /mnt/cdrom/isolinux/kernel /mnt/cdrom/isolinux/rescue.gz /tftpboot
+swift root # chmod 644 /tftpboot/*
+swift root # umount /mnt/cdrom/
+</pre>
+
+<p>Boot the machine you want to install to with your incredibly usefull grub floppy.
+Once booted you need to specify a way for the machine to get an ip, specify where
+to get a kernel and it's options, and where to get it's initrd.</p>
+
+<pre>
+grub> ifconfig --address=192.168.0.10 --server=192.168.0.2
+grub> root (nd)
+grub> kernel /tftpboot/kernel devfs=nomount vga=normal load_ramdisk=1 prompt_ramdisk=0 ramdisk_size=18580 root=/dev/ram0 rw
+grub> initrd /tftpboot/rescue.gz
+grub> boot
+</pre>
+
+<note>You can also use bootp and dhcp to configure your ip via grub. Use the bootp
+and dhcp commands.</note>
+
+<p>Now that you have your machine booted, you can install as normal. Refer to the
+from source cd install howto.</p>
+
+</body>
+</section>
+</chapter>
+</guide>
