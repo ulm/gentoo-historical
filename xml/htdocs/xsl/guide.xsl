@@ -564,7 +564,7 @@
                           <xsl:when test="document(.)/news/summary">
                             <xsl:apply-templates select="document(.)/news/summary"/>
                             <br/>
-                            <a href="{@external}"><b>(full story)</b></a>
+                            <a href="{.}"><b>(full story)</b></a>
                           </xsl:when>
                           <xsl:otherwise>
                             <xsl:apply-templates select="document(.)/news/body"/>
