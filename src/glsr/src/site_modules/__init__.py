@@ -9,13 +9,3 @@ __all__ = {
 # The page to display when all else fails.
 # Note that this display module should not have any required form inputs.
 failover = {"module": "Page_Main", "page": "main"}
- 
-class SiteModule:
-    """The parent class for all site modules."""
-
-    import Template as TemplateHandler
-
-    tmpl = TemplateHandler.Template()
-    show_border = True
-
-class Redirect(Exception): pass

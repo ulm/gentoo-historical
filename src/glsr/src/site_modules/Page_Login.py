@@ -5,69 +5,63 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.11 2004/12/28 19:28:25 port001 Exp $
+# $Id: Page_Login.py,v 1.12 2004/12/30 03:05:19 port001 Exp $
 #
-
-import os
 
 import State
 import Config
 from User import User
-from site_modules import SiteModule, Redirect
+from SiteModule import SiteModule, Redirect
 
 class Page_Login(SiteModule):
 
-    def __init__(self, req, **args):
+    def init(self):
 
-        self.req = req       
-        self.page = args['page']
-        self.template = Config.Template["login"]
-        self.username = self.req.Values.getvalue('username')
-        self.password = self.req.Values.getvalue('password')
-        self.alias = args["alias"]
-        self.uid = args["uid"]
-        self.session = args["session"]
+        self._template = Config.Template['login']
+        self._username = self._req.Values.getvalue('username')
+        self._password = self._req.Values.getvalue('password')
 
-        self.user_obj = User()
-        
-    def display(self):
-
-        # Is the user logging in or logging out?
-        if self.page == "perform_login":
-
-            if self._login_user():
-                self.alias = self.req.Values.getvalue('username')
-                self.uid = self.user_obj.GetUid(self.alias)
-        
-            raise Redirect, "index.py?page=main"
- 
-        elif self.page == "logout":
-        
-            if self.ThisSession.ValidateSession(self.uid, self.session):
-                self.ThisSession.RemoveCookie(self.session)        
-
-            self.uid = 0
-            self.alias = ""
-
-            raise Redirect, "index.py?page=main"
-
-        # we fell through, the user wants to login
-        self.tmpl.compile(self.template)
-        return self.tmpl 
-
+        self._user_obj = User()
+	
     def _login_user(self):
 
-        uid = self.user_obj.GetUid(self.username)
+        self._uid = self._user_obj.GetUid(self._username)
 
-        self.user_obj.SetID(uid)
+        self._user_obj.SetID(self._uid)
 
-        if not self.user_obj.ValidateAlias(self.username, self.password):
+        if not self._user_obj.ValidateAlias(self._username, self._password):
             return False
 
         # Update IP address
-        self.user_obj.UpdateIP(self.req.environ['REMOTE_ADDR'])
+        self._user_obj.UpdateIP(self._req.environ['REMOTE_ADDR'])
     
         # Assign uid to current session
-        State.ThisSession.assign_uid(uid)
+        State.ThisSession.assign_uid(self._uid)
     
         return True
+
+    def display(self):
+
+        # Is the user logging in or logging out?
+        if self._page == 'perform_login':
+
+            if self._login_user():
+                self._alias = self._req.Values.getvalue('username')
+                self._uid = self._user_obj.GetUid(self._alias)
+        
+            raise Redirect, 'index.py?page=main'
+ 
+        elif self._page == 'logout':
+        
+            State.ThisSession.remove()        
+
+            self._uid = 0
+            self._alias = ''
+
+            raise Redirect, 'index.py?page=main'
+
+        # we fell through, the user wants to login
+        self._tmpl.compile(self._template)
+        return self._tmpl 
+
+

@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.14 2004/12/29 00:17:02 port001 Exp $
+# $Id: Function.py,v 1.15 2004/12/30 03:05:19 port001 Exp $
 #
 
 import sys
@@ -88,7 +88,7 @@ class _Values:
 		
 	    return None
 
-    def keys(key):
+    def keys(self):
 
 	return self._params.keys()
         

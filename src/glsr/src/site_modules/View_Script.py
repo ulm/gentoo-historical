@@ -3,95 +3,90 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: View_Script.py,v 1.5 2004/12/28 19:28:25 port001 Exp $
+# $Id: View_Script.py,v 1.6 2004/12/30 03:05:19 port001 Exp $
 #
 
 import time
 
-import User
 import Config
-import Script
-import Comment
-import Language
-import Category
-from site_modules import SiteModule
+from User import User
+from Comment import Comment
+from Language import Language
+from Category import Category
+from SiteModule import SiteModule
+from Script import Script, SubScript
 
 __modulename__ = 'View_Script'
 
 class View_Script(SiteModule):
 
-    def __init__(self, req, **args):
+    def init(self):
 
-        self.req = req
-        self.page = args['page']
-        self.template = Config.Template['view_script']
-        self.uid = args['uid']
+        self._template = Config.Template['view_script']
 
     def _set_params(self):
 
-        script_id = self.req.Values.getvalue('script_id')
-        script_obj = Script.Script(script_id)
+        script_id = self._req.Values.getvalue('script_id')
+        script_obj = Script(script_id)
         scripts = script_obj.ListScripts({'id': script_id})
-
-        self.tmpl.param('MESSAGE', '')
         
         if len(scripts):
             
             details = scripts[0]
 
-            category_obj = Category.Category(details['script_category_id'])
-            language_obj = Language.Language(details['script_language_id'])
-            user_obj = User.User(details['script_submitter_id'])
+            category_obj = Category(details['script_category_id'])
+            language_obj = Language(details['script_language_id'])
+            user_obj = User(details['script_submitter_id'])
             
-            self.tmpl.param('NAME', details['script_name'])
-            self.tmpl.param('DESCR', details['script_descr'])
-            self.tmpl.param('RANK', details['script_rank'])
-            self.tmpl.param('CATEGORY', category_obj.Name())
-            self.tmpl.param('LANGUAGE', language_obj.Name())
-            self.tmpl.param('AUTHOR', user_obj.GetAlias())
+            self._tmpl.param('NAME', details['script_name'])
+            self._tmpl.param('DESCR', details['script_descr'])
+            self._tmpl.param('RANK', details['script_rank'])
+            self._tmpl.param('CATEGORY', category_obj.Name())
+            self._tmpl.param('LANGUAGE', language_obj.Name())
+            self._tmpl.param('AUTHOR', user_obj.GetAlias())
 
-            self.tmpl.param('CREATION_DATE', details['subscript_date'])
-            self.tmpl.param('VERSION', details['subscript_version'])
-            self.tmpl.param('BODY', details['subscript_body'])
-            self.tmpl.param('SCRIPT_ID', script_id)
-            self.tmpl.param('SUBSCRIPT_ID', details['subscript_id'])
+            self._tmpl.param('CREATION_DATE', details['subscript_date'])
+            self._tmpl.param('VERSION', details['subscript_version'])
+            self._tmpl.param('BODY', details['subscript_body'])
+            self._tmpl.param('SCRIPT_ID', script_id)
+            self._tmpl.param('SUBSCRIPT_ID', details['subscript_id'])
 
-            comment_obj = Comment.Comment()
+            comment_obj = Comment()
             comments = comment_obj.List({'script_id': details['script_id']})
+	    
             for comment in comments:
-                user_obj2 = User.User(comment['comment_submitter_id'])
+                user_obj2 = User(comment['comment_submitter_id'])
                 comment['submitter'] = user_obj2.GetAlias()
                 date = time.strptime(comment['comment_date'],
                                       "%Y-%m-%d %H:%M:%S")
                 comment['date'] = time.strftime("%a %b %d, %Y %I:%M %p", date)
 
-
-            self.tmpl.param('COMMENTS_LOOP_COUNT', len(comments))
-            self.tmpl.param('COMMENTS_LOOP', comments, 'loop')
+            self._tmpl.param('COMMENTS_LOOP_COUNT', len(comments))
+            self._tmpl.param('COMMENTS_LOOP', comments, 'loop')
 
         else:
-            self.tmpl.param('WARN_MESSAGE', 1)
-
+            self._report_type = "warn"
+	    
     def _action_save_comment(self):
 
-        subscript_id = self.req.Values.getvalue('subscript_id')
-        subscript_obj = Script.SubScript(subscript_id)
+        subscript_id = self._req.Values.getvalue('subscript_id')
+        subscript_obj = SubScript(subscript_id)
         script_id = subscript_obj.GetParentID()
 
-        # Don't save the comment if there is not body or subject
-        if (self.req.Values.getvalue('body') is None and
-            self.req.Values.getvalue('subject') is None):
+        # Don't save the comment if there is no body or subject
+        if (self._req.Values.getvalue('body') is None and
+            self._req.Values.getvalue('subject') is None):
             return
         
         details = {
-            'submitter_id': self.uid,
+            'submitter_id': self._uid,
             'script_id': script_id,
             'subscript_id': subscript_id,
-            'subject': self.req.Values.getvalue('subject', ''),
-            'body': self.req.Values.getvalue('body')
+            'subject': self._req.Values.getvalue('subject', ''),
+            'body': self._req.Values.getvalue('body')
             }
 
-        comment_obj = Comment.Comment()
+        comment_obj = Comment()
         comment_obj.Create(details)
         
     def _select_action(self):
@@ -103,7 +98,7 @@ class View_Script(SiteModule):
 
         self._select_action()
         self._set_params()
-        self.tmpl.compile(self.template)
-        return self.tmpl
+        self._tmpl.compile(self._template)
+        return self._tmpl
     
     

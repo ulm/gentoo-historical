@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.32 2004/12/28 19:28:24 port001 Exp $
+# $Id: index.py,v 1.33 2004/12/30 03:05:19 port001 Exp $
 #
 
 """
@@ -43,12 +43,11 @@ import Config
 from User import User
 import Logging as LogHandler
 from Session import Session
-import Template as TemplateHandler
+from SiteModule import Redirect
+from Template import Template
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
 from Function import start_timer, stop_timer, eval_timer, _Values
-
-from site_modules import Redirect
 
 class RequestHandler(cgi.Handler):
 
@@ -56,7 +55,6 @@ class RequestHandler(cgi.Handler):
 
         # OK, this is pretty hacky but its the best solution I could
 	# come up with atm. Rewrite later.
-
 	req.Values = req._Values()
         req.Values._store_params(req.params)
 
@@ -229,7 +227,7 @@ class _PageDispatch:
         self._send_headers()
  
         if self._show_border:
-            tmpl_head = TemplateHandler.Template()
+            tmpl_head = Template()
             if self._domain == "admin":
                 tmpl_str = "admin_header"
             else:
@@ -250,7 +248,7 @@ class _PageDispatch:
     def dispatch_footer(self):
 
         if self._show_border:
-            tmpl_foot = TemplateHandler.Template()
+            tmpl_foot = Template()
             tmpl_foot.compile(Config.Template["footer"],
                               {"GLSR_VERSION":	Config.Version,
                                "GLSR_URL":	Config.URL,

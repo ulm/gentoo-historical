@@ -3,14 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.14 2004/12/28 19:28:25 port001 Exp $
+# $Id: Page_Main.py,v 1.15 2004/12/30 03:05:19 port001 Exp $
 #
 
 import State
 import Config
 from User import User
 from Session import Session
-from site_modules import SiteModule, Redirect
+from SiteModule import SiteModule
 from Admin import optimize_tables, get_optimize_days
 from Logging import ReturnErrorReports, FlushErrorReportLog
 
@@ -18,24 +18,21 @@ class Page_Main(SiteModule):
 
     __modulename__ = 'Page_Main'
 
-    def __init__(self, req, **args):
+    def init(self):
 
-        self.req = req
-
-        self.page = args['page']
-        self.template = Config.Template['admin_main']
+        self._template = Config.Template['admin_main']
     
     def _set_params(self):
 
         registered_sessions_online = []
-        row = "even"
+        row = 'even'
 
         (user_list, guest_count) = Session.get_active(Config.WhoIsOnlineOffset)
 
         if len(user_list) == 0 and guest_count == 0:
-            self.tmpl.param('REGISTERED_SESSIONS_ONLINE', [], 'loop')
+            self._tmpl.param('REGISTERED_SESSIONS_ONLINE', [], 'loop')
         else:
-            self.tmpl.param('GUEST_SESSIONS_ONLINE', guest_count)
+            self._tmpl.param('GUEST_SESSIONS_ONLINE', guest_count)
             for user in user_list:
                 ThisUser = User(user)
                 alias = ThisUser.GetAlias()
@@ -54,13 +51,13 @@ class Page_Main(SiteModule):
                 else:
                     row = 'even'
 
-            self.tmpl.param('REGISTERED_SESSIONS_ONLINE', registered_sessions_online, 'loop')
-	    self.tmpl.param('REGISTERED_SESSIONS_ONLINE_COUNT', len(registered_sessions_online))
+            self._tmpl.param('REGISTERED_SESSIONS_ONLINE', registered_sessions_online, 'loop')
+	    self._tmpl.param('REGISTERED_SESSIONS_ONLINE_COUNT', len(registered_sessions_online))
 
         if Config.ErrorReporting == True:
             list_offset = int()
-            if self.req.Values.getvalue('error_report_offset') != None:
-                list_offset = self.req.Values.getvalue('error_report_offset')
+            if self._req.Values.getvalue('error_report_offset') != None:
+                list_offset = self._req.Values.getvalue('error_report_offset')
                 if str(list_offset).lower() == 'all':
                     list_offset = -1
                 else:
@@ -69,29 +66,29 @@ class Page_Main(SiteModule):
                 list_offset = Config.ErrorReportListOffset
             error_report_list = ReturnErrorReports(list_offset)
             if error_report_list == False:
-                self.tmpl.param('ERROR_REPORTING', 'False')
-                self.tmpl.param('ERROR_REPORT_LIST', [], 'loop')
+                self._tmpl.param('ERROR_REPORTING', 'False')
+                self._tmpl.param('ERROR_REPORT_LIST', [], 'loop')
             else:
-                self.tmpl.param('ERROR_REPORTING', 'True')
-                self.tmpl.param('ERROR_REPORT_LIST', error_report_list, 'loop')
+                self._tmpl.param('ERROR_REPORTING', 'True')
+                self._tmpl.param('ERROR_REPORT_LIST', error_report_list, 'loop')
         else:
-            self.tmpl.param('ERROR_REPORTING', 'False')
-            self.tmpl.param('ERROR_REPORT_LIST', [], 'loop')
+            self._tmpl.param('ERROR_REPORTING', 'False')
+            self._tmpl.param('ERROR_REPORT_LIST', [], 'loop')
 
-        self.tmpl.param('OPTIMIZE_DAYS', get_optimize_days())
-        self.tmpl.param('GLSR_URL', Config.URL)
+        self._tmpl.param('OPTIMIZE_DAYS', get_optimize_days())
+        self._tmpl.param('GLSR_URL', Config.URL)
 
     def _select_action(self):
 
-        if self.req.Values.getvalue('flush_error_reports'):
+        if self._req.Values.getvalue('flush_error_reports'):
             FlushErrorReportLog()
 
-        if self.req.Values.getvalue('optimize_tables'):
+        if self._req.Values.getvalue('optimize_tables'):
             optimize_tables()
 
     def display(self):
 
         self._select_action()
         self._set_params()
-        self.tmpl.compile(self.template)
-        return self.tmpl
+        self._tmpl.compile(self._template)
+        return self._tmpl
