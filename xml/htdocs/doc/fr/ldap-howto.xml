@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/ldap-howto.xml,v 1.11 2004/10/26 09:46:03 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/ldap-howto.xml,v 1.12 2004/12/23 11:20:37 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/ldap-howto.xml" lang="fr">
@@ -33,21 +33,14 @@ Gentoo.
 
 <license/>
 
-<version>0.8</version>
-<date>16 septembre 2004</date>
+<version>0.10</version>
+<date>2004-11-28</date>
 
 <chapter>
 <title>Bien démarrer avec OpenLDAP</title>
 <section>
 <title>Qu'est-ce que LDAP ?</title>
 <body>
-
-<warn>
-Ce document n'est plus maintenu à jour et n'est disponible que pour permettre à
-d'éventuels contributeurs de le corriger. Les bogues connus sont <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=39718">#39718</uri>, <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=68855">#68855</uri>.
-</warn>
 
 <p>
 LDAP signifie <e>Lightweight Directory Access Protocol</e> (protocole léger
@@ -126,7 +119,6 @@ d'administration de OpenLDAP</uri>.
 
 </chapter>
 
-
 <chapter>
 <title>Configurer OpenLDAP</title>
 <section>
@@ -144,7 +136,14 @@ Commençons par installer les composants sur le serveur&nbsp;:
 </p>
 
 <pre caption="Installer OpenLDAP">
-# <i>emerge openldap pam_ldap nss_ldap migrationtools</i>
+# <i>emerge openldap pam_ldap nss_ldap</i>
+
+<comment>(On a besoin de migrationtools-64 qui, au moment de l'écriture de ce guide,
+n'est disponible que pour les architectures ~ARCH</comment>
+
+# <i>mkdir -p /etc/portage</i>
+# <i>echo "net-nds/migrationtools" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge migrationtools</i>
 # <i>chown ldap:ldap /var/lib/openldap-ldbm /var/lib/openldap-data /var/lib/openldap-slurp</i>
 </pre>
 
@@ -297,16 +296,28 @@ par LDAP. Ajoutons-les à notre annuaire&nbsp;:
 
 <p>
 Ensuite, nous configurons PAM pour permettre les autorisations par LDAP.
-Ajoutez les lignes suivantes en un bloc au fichier
-<path>/etc/pam.d/system-auth</path>&nbsp;:
+Modifiez le fichier <path>/etc/pam.d/system-auth</path> comme suit&nbsp;:
 </p>
 
 <pre caption="/etc/pam.d/system-auth">
-auth        sufficient    /lib/security/pam_ldap.so use_first_pass
-account     sufficient    /lib/security/pam_ldap.so
-password    sufficient    /lib/security/pam_ldap.so use_authtok
-session     required      /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0
-session     optional      /lib/security/pam_ldap.so
+auth    required    /lib/security/pam_env.so
+auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
+auth    sufficient  /lib/security/pam_ldap.so use_first_pass
+auth    required    /lib/security/pam_deny.so
+ 
+account sufficient  /lib/security/pam_unix.so
+account sufficient  /lib/security/pam_ldap.so
+account required    /lib/security/pam_deny.so
+  
+password    required /lib/security/pam_cracklib.so retry=3
+password    sufficient /lib/security/pam_unix.so nullok use_authtok shadow md5
+password    sufficient /lib/security/pam_ldap.so use_authtok
+password    required /lib/security/pam_deny.so
+   
+session required    /lib/security/pam_limits.so
+session required    /lib/security/pam_unix.so
+session required     /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0
+session optional    /lib/security/pam_ldap.so
 </pre>
 
 <p>
@@ -410,12 +421,12 @@ normaux de lire les mots de passe cryptés des autres.
 </p>
 
 <pre caption="/etc/openldap/slapd.conf">
-access to dn=".*,dc=genfic,dc=com" attr="userPassword"
+access to attribute="userPassword"
   by dn="uid=root,ou=people,dc=genfic,dc=com" write
-  by dn="uid=John, ou=People,dc=genfic,dc=com" write
+  by dn="uid=John,ou=People,dc=genfic,dc=com" write
   by anonymous auth
   by self write
-  by * search
+  by * none
  
 access to *
   by dn="uid=root,ou=People,dc=genfic,dc=com" write
