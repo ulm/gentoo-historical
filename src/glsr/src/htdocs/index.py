@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.3 2004/07/19 00:43:20 hadfield Exp $
+# $Id: index.py,v 1.4 2004/07/20 15:23:55 port001 Exp $
 #
 
 import os
@@ -113,7 +113,7 @@ def main():
 
     logwrite("Request for page '%s' completed in %.5f(s)" %
              (page, eval_timer(t_start, stop_timer())),
-             __modulename__, "All")
+             __modulename__, "Info")
 
 if __name__ == "__main__":
     main()
