@@ -172,6 +172,22 @@ def outputdir(path):
 		warn("Directory " + path + " does not exist.")
 		warn("This path will be created next time you emerge a kernel")
 
+# getoutput() queries for the current KBUILD_OUTPUT_PREFIX and prints that 
+# string to stdout. Used in kernel-2.eclass to figure out what to set the output
+# to.
+def getOutputPrefix():
+	out, err = getenv('KBUILD_OUTPUT_PREFIX')
+	if err:
+		print ""
+		sys.exit(2)
+	
+	if not out:
+		print ""
+		sys.exit(2)
+	else:
+		print out
+		sys.exit()
+
 # makekoutput converts the kernel found at "path" to using a seperate output
 # directory
 def makekoutput(path):
