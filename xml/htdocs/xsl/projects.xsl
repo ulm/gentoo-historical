@@ -45,7 +45,7 @@
 			  <xsl:if test="$showlevel&lt;=1">
 			    <tr>
 			      <th>toplevel</th>
-			      <th>lead</th>
+			      <th>lead(s)</th>
 			      <th>members</th>
 			      <th>description</th>
 			    </tr>
@@ -68,7 +68,7 @@
       <th>toplevel</th>
       <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
       <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
-      <th>lead</th>
+      <th>lead(s)</th>
       <th>members</th>
       <th>description</th>
     </tr>
@@ -111,7 +111,10 @@
           </ti>
         </xsl:if>
         <ti>
-          <xsl:value-of select='project/dev[@role="lead"]'/>
+          <xsl:for-each select='project/dev[@role="lead"]'>
+            <xsl:value-of select="text()"/>
+            <xsl:if test="not(position() = last())">, </xsl:if>
+          </xsl:for-each>
         </ti>
         <ti>
           <xsl:for-each select="project/dev[not(@role='lead')]">
@@ -159,7 +162,7 @@
       <th>toplevel</th>
       <xsl:if test="$showlevel>1"><th>project</th></xsl:if>
       <xsl:if test="$showlevel>2"><th>subproject</th></xsl:if>
-      <th>lead</th>
+      <th>lead(s)</th>
       <th>members</th>
       <th>description</th>
     </tr>
