@@ -12,7 +12,7 @@
 Alpha hardware.</abstract>
 
 <version>1.0</version>
-<date>22 Apr 2003</date>
+<date>5 Jun 2003</date>
 <chapter>
 <title>Introduction</title>
 <section>
@@ -59,7 +59,7 @@ Some Alpha systems are capable of using Both SRM and ARCs, if this describes you
 <title>Using an Existing Linux Installation</title>
 	<body>
 	<p>
-	If you already have a Linux Distribution installed on your Alpha, you can use it to prepare and install Gentoo Linux. Any of the popular distributions will work just fine, debian, SuSE, RedHat, Slackware, etc. The main requirement is the `chroot` command, use the command below to verify it exists on your machine.
+	If you already have a Linux Distribution installed on your Alpha, you can use it to prepare and install Gentoo Linux. Any of the popular distributions will work just fine, debian, SuSE, RedHat, Slackware, etc. The main requirement is the `<i>chroot</i>` command, use the command below to verify it exists on your machine.
 	</p>
 	<pre caption="Checking for chroot">
 # <i>which chroot</i>
@@ -156,7 +156,7 @@ If your system can boot from a CD-ROM, Gentoo provides a bootable cd image which
 	</p>
 	<p>
 	<pre caption="Starting fdisk">
-# <i>fdisk /dev/scsi/host0/bus0/target0/lun0/disc</i>
+# <i>fdisk /dev/sda</i>
 </pre>
 	</p>
 	<p>
@@ -187,8 +187,8 @@ to set the end at the reported maximum minus 1.</note>
 	Here is an example setup since I know the above is confusing.
 	</p>
 <pre caption="Example fdisk session">
-# <i>fdisk /dev/scsi/host0/bus0/target0/lun0/disc</i>
-Detected an OSF/1 disklabel on /dev/scsi/host0/bus0/target0/lun0/disc,
+# <i>fdisk /dev/sda</i>
+Detected an OSF/1 disklabel on /dev/sda,
 entering disklabel mode.
 
 BSD disklabel command (m for help): <i>p</i>
@@ -256,16 +256,16 @@ quit from fdisk.</note>
 You can now Enable the swap partition, allowing us to use it during the bootstrap process.
 </p>
 <pre caption="Setting up Swap partition">
-    # <i>mkswap /dev/scsi/host0/bus0/target0/lun0/part1</i>
-    # <i>swapon /dev/scsi/host0/bus0/target0/lun0/part1</i>
+    # <i>mkswap /dev/sda1</i>
+    # <i>swapon /dev/sda1</i>
 </pre>
 <p>
 Now setup your root partition, This example will create and mount an ext3 filesystem (journaled ext2).
 </p>
 <pre caption="Creating Filesystems">
-    # <i>mke2fs -j /dev/scsi/host0/bus0/target0/lun0/part2</i>
-    # <i>mkdir /target</i>
-    # <i>mount /dev/scsi/host0/bus0/target0/lun0/part2/target</i>
+    # <i>mke2fs -j /dev/sda1</i>
+    # <i>mkdir /mnt/gentoo</i>
+    # <i>mount /dev/sda2 /mnt/gentoo</i>
 </pre>
 <p>
 <warn>Hope there wasn't anything on that disk that you needed... ;-)</warn>
@@ -298,12 +298,12 @@ Now setup your root partition, This example will create and mount an ext3 filesy
 Now that your disks are ready to install gentoo, we need to collect the stage 1 tarball which creates the directory structure and base layout required for bootstrapping.
 </p>
 <pre caption="Getting the Stage1 tarball">
-    # <i>tftp -g -l /target/stage1-alpha-1.4.tar.gz -r \
+    # <i>tftp -g -l /mnt/gentoo/stage1-alpha-1.4.tar.gz -r \
     /home/tftp/stage1-alpha-1.4.tar.gz tftp_host</i> <codenote>fetching via tftp</codenote>
     # <i>wget http://distro.ibiblio.org/pub/linux/distributions\
     /gentoo/releases/1.4_rc1/alpha/stage1-alpha-1.4-r1.tbz2</i> <codenote>fetching with wget</codenote>
     
-    # <i>cd /target </i>
+    # <i>cd /mnt/gentoo </i>
     # <i>tar -jxvpf stage1-alpha-1.4-r1.tbz2  </i>
 </pre>
 <p>
@@ -314,31 +314,31 @@ Now that your disks are ready to install gentoo, we need to collect the stage 1 
 You should now mount the /proc filing system, which is used during bootstrapping
 </p>
 <pre caption="Mounting proc filing system">
-    # <i>mount --bind /proc /target/proc</i>
+    # <i>mount --bind /proc /mnt/gentoo/proc</i>
 </pre>
 <p>
 Create a resolv.conf in the target area so that name resolution works, you can base it on the template below, or copy your existing one from /etc.
 </p>
 <pre>
-# <i>cat > /target/etc/resolv.conf</i>      <codenote> create a new resolv.conf</codenote>
+# <i>cat > /mnt/gentoo/etc/resolv.conf</i>      <codenote> create a new resolv.conf</codenote>
 <i>domain example.net
 nameserver     123.12.12.106
 nameserver     13.340.0.12
 ^D</i>
-# <i>cp /etc/resolv.conf /target/etc/resolv.conf</i> <codenote> copy existing</codenote>
+# <i>cp /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i> <codenote> copy existing</codenote>
 </pre>
 <p>
 You can now set a hostname, and get it to be set on boot.
 </p>
 <pre caption="Setting a hostname">
     # <i>hostname my_hostname.domain.com </i>
-    # <i>echo my_hostname.domain.com > /target/etc/hostname</i>
+    # <i>echo my_hostname.domain.com > /mnt/gentoo/etc/hostname</i>
 </pre>
 <p>
 Chroot to the target area:
 </p>
 <pre>
-    # <i>chroot /target /bin/bash </i>
+    # <i>chroot /mnt/gentoo /bin/bash </i>
     # <i>env-update</i>
     # <i>. /etc/profile</i>
 </pre>
@@ -371,9 +371,8 @@ There are a few things you will need to change before you continue, your USE fla
 </p>
 <p>
 <pre caption="make.conf settings">
-    USE="zlib ev6"
-    <codenote>if you neglect zlib then some of gnome won't build... it's a</codenote>
-    <codenote>bug...  only USE ev6 if you really have ev6+</codenote>
+    USE="zlib ev6 X -qt -kde gtk"
+    <codenote>only USE ev6 if you really have ev6+</codenote>
 
     CHOST="alpha-unknown-linux-gnu"
     CFLAGS="-mcpu=cpu_type -O3 -pipe"
@@ -471,8 +470,8 @@ In the fstab, you should comment out /dev/BOOT since we're not using a
 separate boot partition.  /dev/ROOT and /dev/SWAP should be deleted
 (use ctrl-k) and replaced with something like the following.
 	<pre caption="fstab settings">
-    /dev/scsi/host0/bus0/target0/lun0/part1  none  swap  sw      0 0
-    /dev/scsi/host0/bus0/target0/lun0/part2  /     ext3  noatime 0 0
+    /dev/sda1  none  swap  sw      0 0
+    /dev/sda2  /     ext3  noatime 0 0
     </pre>
     </p>
 	<note>noatime will stop access times from being stored, improving performance</note>
@@ -482,7 +481,7 @@ separate boot partition.  /dev/ROOT and /dev/SWAP should be deleted
 <title>Installing a Kernel</title>
 <body>
 	<p>
-You now need to choose and install a kernel, there are three choices for the alpha users, vanilla-sources, alpha-sources and compaq-sources. alpha-sources contains a patchset specifically for alpha-users, including extra functionality and bugfixes. vanilla-sources are the same sources you would get from kernel.org. compaq-sources is the kernel shipped with Red Hat Linux 7.2 for Alpha, maintained yb Compaq as part of the Alpha Tools.
+You now need to choose and install a kernel, there are three choices for the alpha users, vanilla-sources, alpha-sources and compaq-sources. alpha-sources contains a patchset specifically for alpha-users, including extra functionality and bugfixes. vanilla-sources are the same sources you would get from kernel.org. compaq-sources is the kernel shipped with Red Hat Linux 7.2 for Alpha, maintained by Compaq as part of the Alpha Tools.
 	</p>
 	<p>
 	<pre caption="Getting a kernel">
@@ -638,8 +637,8 @@ You can now install the kernel into /boot, the method below allows you to instal
 	</p>
 	<pre caption="rebooting">
     # <i>exit</i>
-    # <i>umount /target/proc</i>
-    # <i>umount /target</i>
+    # <i>umount /mnt/gentoo/proc</i>
+    # <i>umount /mnt/gentoo</i>
     # <i>sync</i>
     # <i>halt</i>
     <codenote>&lt; You should now get back to the SRM console &gt;</codenote>
