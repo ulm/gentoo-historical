@@ -15,6 +15,7 @@
 		<link><xsl:value-of select="link" /></link>
 		<description><xsl:value-of select="description" /></description>
 		<dc:creator>rajiv@gentoo.org</dc:creator>
+		<dc:language>en-US</dc:language>
 		<admin:errorReportsTo rdf:resource="mailto:rajiv@gentoo.org" />
 		<items>
 			<rdf:Seq>
