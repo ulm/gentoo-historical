@@ -353,7 +353,7 @@ resize partitions.
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size_cyl = round(self.active_part_max_size * part_space)
 			start = self.active_part_start_cyl
-			end = int(start + part_size_cyl)
+			end = int(start + part_size_cyl - 1)
 			if self.resize_info_part_type.get_active() == 1 and self.devices[self.active_device].get_extended_partition() == 0: # Logical and no extended partition
 				free_start, free_end = self.devices[self.active_device].get_free_space(start)
 				self.devices[self.active_device].add_partition(self.devices[self.active_device].get_free_minor_at(start, end), free_start, free_end, "extended")
