@@ -97,7 +97,7 @@ class RunInstall(gtk.Window):
 			line = self.tail_pipe.readline()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
-			self.textview.scroll_to_iter(iter_end, 0.5)
+			self.textview.scroll_to_iter(iter_end, 0.0)
 		return True
 
 	def make_visible(self):
