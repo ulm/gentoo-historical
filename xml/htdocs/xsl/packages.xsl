@@ -2,7 +2,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:include href="util.xsl"/>
 <xsl:output encoding="UTF-8" method="xml" indent="yes"/>
-<xsl:param name="search" select='""'/>
+<!--xsl:param name="search" select='""'/-->
 <xsl:template match="/packages">
   <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
   <mainpage id="packages">
@@ -11,8 +11,8 @@
     <date><xsl:value-of select="date"/></date>
     <chapter>
       <section>
-        <xsl:choose>
-          <xsl:when test='$search=""'>
+<!--        <xsl:choose>
+          <xsl:when test='$search=""'>-->
             <title>Gentoo Package List - index</title>
             <body>
               <p>Total number of packages available:
@@ -41,7 +41,7 @@
                 <xsl:text disable-output-escaping="yes">&lt;/tr&gt;</xsl:text>
               </table>
             </body>
-          </xsl:when>
+<!--          </xsl:when>
           <xsl:otherwise>
             <title>Gentoo Package List - search (<xsl:value-of select="$search"/>)</title>
             <body>
@@ -66,7 +66,7 @@
 	      </table>
 	    </body>
           </xsl:otherwise>
-        </xsl:choose>
+        </xsl:choose>-->
       </section>
     </chapter>
   </mainpage>
