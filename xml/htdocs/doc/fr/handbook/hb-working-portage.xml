@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-portage.xml,v 1.11 2004/08/23 15:37:13 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-portage.xml,v 1.12 2004/09/02 11:56:15 neysx Exp $ -->
 
 <sections>
 <section>
@@ -582,6 +582,28 @@ de n'installer que les dépendances et pas le paquet lui-même.
 # <i>emerge --onlydeps gnumeric</i>
 </pre>
 
+<p>
+Qunad vous désinstallez un logiciel, Portage ne supprime pas les dépendances
+qui ne seraient plus utilisées par aucun paquet. Si vous voulez supprimer ces
+dépendances, utilisez <c>emerge depclean</c>. Cette commande recherche et
+supprime tous les paquets que vous n'avez pas installés explicitement,
+c'est-à-dire qui ont été installés parce qu'un autre paquet en avait besoin, et
+qui ne sont plus nécessaires sur votre système parce qu'aucun paquet n'en a
+besoin.
+</p>
+
+<warn>
+La commande <c>emerge depclean</c> peut laisser votre système instable.
+Utilisez-la avec prudence et vérifiez toujours quels paquets vont être
+supprimés avec l'option <c>-p</c>.
+</warn>
+
+<pre caption="Afficher et supprimer les paquets devenus inutiles">
+# <i>emerge -p depclean</i>
+<comment>(Après bien lu la liste, supprimez les paquets inutiles.)</comment>
+# <i>emerge depclean</i>
+</pre>
+
 </body>
 </subsection>
 <subsection>
@@ -749,19 +771,67 @@ indicateur sont supprimés. Les indicateurs ont les significations suivantes
 <body>
 
 <p>
-Gentoo classe ses paquets dans deux états possibles&nbsp;: <e>ARCH</e> et
-<e>~ARCH</e>. Remplacez <e>ARCH</e> par l'architecture que vous utilisez, par
-exemple, <e>x86</e> et <e>~x86</e> pour des systèmes x86, ou <e>ppc</e> et
-<e>~ppc</e> pour des machines PowerPC, etc.
+Les ebuilds contiennent le mot-clé <c>KEYWORDS</c> qui indique à Portage la
+disponibilité et la qualité du paquet pour une ou plusieurs architectures. Le
+tableau ci-dessous décrit les différentes possibilités. Le mot-clé <c>ARCH</c>
+correspond aux différentes architectures comme <c>x86</c>, <c>ppc</c>,
+<c>amd64</c>, etc. Il est précédé d'un caractére dont la signification est
+décrite ci-dessous&nbsp;:
 </p>
 
+<table>
+<tr>
+  <th>Mot-clé</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>ARCH</ti>
+  <ti>Le paquet fonctionne sur cette architecture</ti>
+</tr>
+<tr>
+  <ti>~ARCH</ti>
+  <ti>Le paquet fonctionne probablement, mais a besoin de plus de tests</ti>
+</tr>
+<tr>
+  <ti>-ARCH</ti>
+  <ti>Le paquet ne fonctionne pas sur cette architecture</ti>
+</tr>
+<tr>
+  <ti>-*</ti>
+  <ti>Le paquet et connu pour ne fonctionner sur aucune architecture</ti>
+</tr>
+</table>
+
 <p>
-La classe <e>~ARCH</e> indique que l'ebuild fonctionne pour le développeur qui
-en est responsable, mais qu'il n'a pas encore été testé à grande échelle par la
-communauté. Les paquets classés <e>~ARCH</e> passent généralement en
-<e>ARCH</e> après qu'un certain laps de temps se soit écoulé sans qu'un bug
-n'ait été signalé.
+Prenons un exemple&nbsp;:
 </p>
+
+<pre caption="Exemple du mot-clé KEYWORD">
+KEYWORDS="x86 -sparc ~alpha ~ppc"
+</pre>
+
+<p>
+L'exemple ci-dessus indique que l'ebuild concerné
+</p>
+
+<ul>
+  <li>
+    fonctionne bien pour l'architecture x86
+  </li>
+  <li>
+    ne fonctionne pas du tout sur sparc
+  </li>
+  <li>
+    devrait fonctionner sur des machines alpha, mais a besoin de plus de tests
+  </li>
+  <li>
+    devrait fonctionner sur des machines ppc, mais a besoin de plus de tests
+  </li>
+  <li>
+    peut peut-être fonctionner sur d'autres architectures, mais cela n'a pas
+    été essayé.
+  </li>
+</ul>
 
 <p>
 Votre système utilise les ebuilds classés <e>ARCH</e> par défaut. Si vous
@@ -813,10 +883,38 @@ Un paquet peut être masqué pour plusieurs raisons&nbsp;:
 </ol>
 
 <p>
-Dans le premier cas, si vous voulez <e>absolument</e> l'installer (en sachant
-qu'il y a peut-être une bonne raison qu'il ne soit pas classé <e>ARCH</e>),
-vous pouvez accepter la version <e>~ARCH</e> du paquet en l'ajoutant dans votre
-fichier <path>/etc/portage/package.keywords</path>&nbsp;:
+Portage vous indiquera pourquoi un paquet ne peut être installé&nbsp;:
+</p>
+
+<ul>
+  <li>
+    <b>~arch keyword</b>&nbsp;: le paquet devrait fonctionner sur cette
+    architecture, mais a besoin de plus de test et votre système est configuré
+    pour n'accepter que des paquets pleinement testés.
+  </li>
+  <li>
+    <b>-arch keyword</b>&nbsp;: le paquet ne fonctionne pas sur votre
+    architecture.
+  </li>
+  <li>
+    <b>-* keyword</b>&nbsp;: le paquet ne fonctionne sur aucune architecture.
+  </li>
+  <li>
+    <b>package.mask</b>&nbsp;: le paquet est repris dans le fichier
+    <path>package.mask</path> parce qu'il cause des problèmes, plante les
+    machines, pose des problèmes de sécurité, ou même pire.
+  </li>
+  <li>
+    <b>profile</b>&nbsp;: le paquet n'est pas disponible dans votre profil.
+  </li>
+</ul>
+
+<p>
+Si le paquet est masqué par <b>~arch keyword</b> et si vous voulez
+<e>absolument</e> l'installer (en sachant qu'il y a peut-être une bonne raison
+qu'il ne soit pas classé <e>ARCH</e>), vous pouvez accepter la version
+<e>~ARCH</e> du paquet en l'ajoutant dans votre fichier
+<path>/etc/portage/package.keywords</path>&nbsp;:
 </p>
 
 <pre caption="Accepter la version ~ARCH d'un paquet">
@@ -828,14 +926,42 @@ fichier <path>/etc/portage/package.keywords</path>&nbsp;:
 </pre>
 
 <p>
-Dans le deuxième cas, le paquet est repris dans la liste de paquets masqués
-dans <path>/usr/portage/profiles/package.mask</path>. En général, un
-commentaire explique pourquoi le paquet est masqué. Si vous voulez quand même
-installer le paquet malgré les avertissements du type «&nbsp;rend votre système
+Si vous voulez installer un paquet marqué <b>-arch keyword</b> ou <b>-*
+keyword</b> bien qu'il ne soit pas considéré comme disponible, éditez le
+fichier <path>/etc/portage/package.keywords</path> et ajoutez le nom du paquet
+avec le mot-clé correspondant à votre architecture&nbsp;:
+</p>
+
+<pre caption="Accepter la version -arch ou -* d'un paquet">
+<comment>(Créez le répertoire /etc/portage s'il n'existe pas déjà)</comment>
+# <i>mkdir -p /etc/portage</i>
+
+# <i>echo "app-office/gnumeric -x86" &gt;&gt; /etc/portage/package.keywords</i>
+<comment>(ou)</comment>
+# <i>echo "app-office/gnumeric -*" &gt;&gt; /etc/portage/package.keywords</i>
+# <i>emerge gnumeric</i>
+</pre>
+
+<p>
+Si vous vouler autoriser l'installation d'une version spécifique d'un paquet,
+utilisez les opérateurs «&nbsp;&lt;, &lt;=, =, &gt;= or &gt;&nbsp;».
+</p>
+
+<pre caption="Accepter une version spécifique d'un paquet -arch ou -*">
+# <i>echo "=app-office/gnumeric-2.0 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+</pre>
+
+<p>
+Quand un paquet est masqué à cause de <b>package.mask</b>, il est repris dans
+la liste de paquets masqués dans
+<path>/usr/portage/profiles/package.mask</path>. En général, un commentaire
+explique pourquoi le paquet est masqué. Si vous voulez quand même installer le
+paquet malgré les avertissements du type «&nbsp;rend votre système
 inutilisable&nbsp;», «&nbsp;rend d'autres paquets inutilisables&nbsp;» ou
 «&nbsp;très insuffisamment testé&nbsp;», vous pouvez créer le fichier
 <path>/etc/portage/package.unmask</path> et y ajouter le paquet en question en
-respectant le format du fichier <path>/usr/portage/profiles/package.mask</path>.
+respectant le format du fichier
+<path>/usr/portage/profiles/package.mask</path>.
 </p>
 
 <pre caption="Démasquer une application masquée en dur">
@@ -869,6 +995,31 @@ même format que précédemment).
 
 # <i>echo "&gt;app-office/gnumeric-1.2.10" &gt;&gt; /etc/portage/package.mask</i>
 </pre>
+
+<p>
+Quand Portage vous refuse l'installation d'un paquet à cause de votre
+<b>profil</b>, cela signifie que le paquet n'est pas disponible dans votre
+profil. Mais qu'est donc un profil&nbsp;?
+</p>
+
+<p>
+Un profil contient une liste de noms de paquets et définit une configuration
+par défaut pour Portage. Un profil indique à Portage quels paquets et quelles
+versions de ceux-ci doivent être autorisés, exclus ou requis. Vous pouvez
+changer de profil en modifiant un lien symbolique
+(<path>/etc/make.profile</path>).
+</p>
+
+<p>
+Il est impossible de faire accepter un paquet bloqué par votre profil. Si vous
+voulez vraiment installer un tel paquet, vous devez modifier votre profil.
+</p>
+
+<p>
+Vous trouverez plus d'informations dans la documentation sur les <uri
+link="/proj/en/releng/docs/cascading-profiles.xml">profils en cascade</uri> (en
+anglais).
+</p>
 
 </body>
 </subsection>
