@@ -1,11 +1,12 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.2 2003/10/10 01:33:53 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/functions.sh,v 1.3 2003/10/11 19:28:46 drobbins Exp $
 
 usage() {
-	einfo "Catalyst: Gentoo Linux Stage Building tool v${VERSION}"
-	einfo "Copyright 2003, Gentoo Technologies. Licensed under the GPLv2"
+	einfo "Catalyst: Gentoo Linux Stage Building tool ${VERSION}"
+	einfo "Copyright 2003 Gentoo Technologies, Inc."
+	einfo "Licensed under the GNU General Public License version 2"
 	echo
 	einfo "Syntax: catalyst <arch> <stage> srcver destver"
 	einfo "Valid stage targets: [0|1|2|3]"

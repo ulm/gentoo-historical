@@ -1,16 +1,10 @@
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.2 2003/10/10 01:33:53 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/include/build_functions.sh,v 1.3 2003/10/11 19:28:46 drobbins Exp $
 
 # <zhen@gentoo.org> We source this file to get the build functions
 
 get_arch() {
-	
-	SUBARCH=$1
-	DESTSTAGE="${2}"
-	DESTVER="${3}"
-	CFLAGS="${CFLAGS} -pipe"
-	SRCFORTAR=${CHROOTDIR}
 
 	if [ "${SUBARCH}" = "athlon-mp" ]
 	then
