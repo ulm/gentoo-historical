@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.4 2004/07/22 21:17:35 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.5 2004/07/27 00:58:04 vapier Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/home-router-howto.xml">
@@ -498,17 +498,6 @@ If you have other common / cool examples, please <uri link="mailto:vapier@gentoo
 </body>
 </section>
 
-<!--
-<section>
-<title>Traffic Shaping</title>
-<body>
-<p>
-TODO
-</p>
-</body>
-</section>
--->
-
 <section>
 <title>Identd (for IRC)</title>
 <body>
@@ -531,6 +520,79 @@ I would recommend checking out <c>oidentd</c> and <c>fakeidentd</c>.
 </p>
 </body>
 </section>
+
+<!--
+<section>
+<title>Traffic Shaping</title>
+<body>
+<p>
+This is an attempt to simply and Gentooify the <uri link="http://www.tldp.org/HOWTO/ADSL-Bandwidth-Management-HOWTO/">ADSL Bandwidth Management HOWTO</uri> 
+found over at the TLDP.  Feel free to refer to the original document 
+for more details.
+</p>
+
+<p>
+Here we will be setting up what some people refer to as a "Packet Shaper", 
+<uri link="http://en.wikipedia.org/wiki/Traffic_shaping">"Traffic Shaping"</uri>, 
+or <uri link="http://en.wikipedia.org/wiki/QoS">"Quality of Service"</uri>.  
+Simply put, we want to setup rules on our router that will slow down 
+certain activities (like sending large e-mails or downloading from P2P 
+networks) while keeping other activities (like browsing the web or playing 
+online video games) reasonably fast.  A 30 second difference in a video 
+game is a lot worse than a 30 second difference in downloading large 
+files :).
+</p>
+
+<p>
+The first thing is to make sure your kernel has all the features added to 
+it.  See the chapter on <uri link="#doc_chap2">Kernel setup</uri> for more 
+information.  Next, you will need to <c>emerge iptables iputils</c> so that 
+you will have access to the <c>iptables</c>, <c>ip</c>, and <c>tc</c> 
+commands.
+</p>
+
+<p>
+Before we jump into the commands, let's cover a little of the theory.  The 
+way this whole system works is to classify common network streams and then 
+to prioritize them.  You use iptables to classify network streams, iputils 
+to define the different priority levels, and the kernel to adjust speeds.  
+Just remember that although you can control outbound traffic pretty tightly 
+(from the LAN to the WAN), your ability to control inbound traffic (from 
+the WAN to the LAN) is somewhat limited.  Just remember that the following 
+examples are to get your feet wet; if you want more then I'd suggest 
+reading up on the subject.  In this example, we will be using the 
+<uri link="http://luxik.cdi.cz/~devik/qos/htb/">Hierarchical Token Buckets (HTB)</uri> 
+packet scheduling algorithm.  Still with me?  Great, let's start shaping :).
+</p>
+
+<pre caption="Setup">
+DEV=eth1 <comment>NIC connected to WAN</comment>
+RATE_OUT=100 <comment>Available outbound bandwidth (in kilobits [kb])</comment>
+RATE_IN=1400 <comment>Available inbound bandwidth (in kb)</comment>
+
+<comment>Here we initialize the priority system.  The 45 is used to set the default classification level.</comment>
+ip link set dev ${DEV} qlen 30
+tc qdisc add dev ${DEV} root handle 1: htb default 45
+tc class add dev ${DEV} parent 1: classid 1:1 htb rate ${RATE_OUT}kbit
+</pre>
+
+<p>
+Here we initialized the system which will be used to prioritize all of 
+our network traffic.  We created our queue, told it to use the HTB 
+algorithm, and set the default classification level to '45'.  The 
+default is completely arbitrary, as are the levels we choose from 
+here on out.  The only thing that matters is how the levels compare 
+relatively; a level '10' packet will be given preference over a 
+level '45' packet.  Let's move on to declaring different levels.
+</p>
+
+<pre caption="Declaring levels">
+tc class add dev $DEV parent 1:1 classid 1:10 htb rate $rkbit ceil $tkbit prio $p
+tc qdisc add dev $DEV parent 1:10 handle 10: sfq
+</pre>
+</body>
+</section>
+-->
 
 <section>
 <title>Mail Server</title>
