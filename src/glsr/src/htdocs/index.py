@@ -15,7 +15,7 @@ appropriate page handler, and prints out the footer.
 It also manages session handling and errors.
 """
 
-__revision__ = '$Id: index.py,v 1.38 2005/01/26 20:59:57 port001 Exp $'
+__revision__ = '$Id: index.py,v 1.39 2005/01/26 22:15:03 port001 Exp $'
 __modulename__ = 'index'
 
 import os
@@ -91,9 +91,9 @@ class _PageDispatch:
                              "alias": "",
                              "session": None}
 
-		State.UserDetail = self._user_details
-		State.Domian = self._domain
-		State.Req = self._req
+        State.UserDetail = self._user_detail
+        State.Domian = self._domain
+        State.Req = self._req
 
         self._ThisSession = Session(self._req, self._page)        
         self._ThisUser = User()

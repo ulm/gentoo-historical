@@ -9,7 +9,7 @@ from time import gmtime, strftime
 import State
 import Config
 
-__revision__ = '$Id: Logging.py,v 1.15 2005/01/26 20:59:57 port001 Exp $'
+__revision__ = '$Id: Logging.py,v 1.16 2005/01/26 22:15:03 port001 Exp $'
 __modulename__ = 'Logging'
 
 def FlushErrorReportLog():
@@ -58,7 +58,7 @@ def logwrite(msg, modname, type, error_uncaught=False):
     if Config.ErrorReporting == True and logtype == 'error':
 	# FIXME: log warnings also
 	
-	    contents = []
+        contents = []
 
         try:
             readfd = open(Config.ErrorReportLog, 'r')
@@ -69,11 +69,11 @@ def logwrite(msg, modname, type, error_uncaught=False):
 
         try:
             writefd = open(Config.ErrorReportLog, 'w')
-			if error_uncaught == True:
-			    # FIXME: Print the traceback directly to log
-			    writefd.write("%s||Unknown||Uncaught exception, see glsr.log entry for this date and time.\n" \
+            if error_uncaught == True:
+            # FIXME: Print the traceback directly to log
+                writefd.write("%s||Unknown||Uncaught exception, see glsr.log entry for this date and time.\n" \
 			                                                        % strftime('%d %b %Y %H:%M:%S', logtime))
-			else:
+            else:
                 writefd.write("%s||%s||%s\n" % (strftime('%d %b %Y %H:%M:%S', logtime),
                                                                          modname, msg))
             writefd.write(''.join(contents))

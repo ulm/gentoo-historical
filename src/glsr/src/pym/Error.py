@@ -11,10 +11,10 @@ the possibility of breakage from importing a dodgy module
 a function might not use.
 """
 
-__revision__ = '$Id: Error.py,v 1.9 2005/01/26 20:59:57 port001 Exp $'
+__revision__ = '$Id: Error.py,v 1.10 2005/01/26 22:15:03 port001 Exp $'
 __modulename__ = 'Error'
 
-def error_uncaught():
+def error_uncaught(req):
 
     import sys
     import traceback
@@ -27,7 +27,7 @@ def error_uncaught():
     from Logging import logwrite
 
     try:
-	    State.Req.clear_output()
+        req.clear_output()
     except SequencingError:
         pass
     
@@ -39,7 +39,7 @@ def error_uncaught():
     logwrite(tblines, 'Unknown', 'Error', error_uncaught=True) 
 
     if Config.Debug == True:
-        State.Req.write("""<table align="center" width="90%">\n
+        req.write("""<table align="center" width="90%">\n
                      <tr>\n
                      <td align="left">\n
                      <br />\n
@@ -49,28 +49,28 @@ def error_uncaught():
                      <br /><br />\n
 		  """)
 
-        State.Req.write("""<b>Exception:</b>\n 
+        req.write("""<b>Exception:</b>\n 
                      <br /><br />\n
 	          """)
 
-        State.Req.write(tblines[-1].replace('\n', '<br />').replace(' ', '&nbsp;'))
+        req.write(tblines[-1].replace('\n', '<br />').replace(' ', '&nbsp;'))
 	    
-        State.Req.write("""<br />
+        req.write("""<br />
 	             <b>Traceback:</b>\n
                      <br /><br />\n
 	          """)
 		      
         for line in tblines:
-	    State.Req.write(line.replace('\n', '<br />').replace(' ', '&nbsp;'))
+	        req.write(line.replace('\n', '<br />').replace(' ', '&nbsp;'))
 
-        State.Req.write("""<br /><br />\n
+        req.write("""<br /><br />\n
                      <b>Execution terminated.<b>\n
                      </td>\n
                      </tr>\n
                      </table>\n
 	          """)
     else:
-        State.Req.write("""<table align="center" width="90%">\n
+        req.write("""<table align="center" width="90%">\n
                      <tr>\n
                      <td align="left">\n
                      <br />\n
@@ -81,12 +81,12 @@ def error_uncaught():
     	          """)
 
         if Config.ErrorReporting == True:
-            State.Req.write('This error has been reported to the administration.\n')
+            req.write('This error has been reported to the administration.\n')
         else:
-            State.Req.write("Please contact <b>%s</b> and quote the time '<b>%s</b>'" \
+            req.write("Please contact <b>%s</b> and quote the time '<b>%s</b>'" \
                        % (Config.Contact, exception_time))
 
-        State.Req.write("""<br />\n
+        req.write("""<br />\n
                      </td>\n
                      </tr>\n
                      </table>\n
@@ -97,16 +97,16 @@ def error(msg, modname):
 	Display internal error user, send it to the log and error report log
 	"""
 
-	import State
-	import Config
+    import State
+    import Config
 
     logwrite(msg, modname, 'Error')
     cur_time = strftime("%d/%b/%Y %H:%M:%S", gmtime())
 
     if State.HTMLHeadersSent == False:      
         State.Req.set_header('Content-Type', 'text/html; charset=utf-8')
-	    State.Req.output_headers()
-		State.HTMLHeadersSent = True
+        State.Req.output_headers()
+        State.HTMLHeadersSent = True
 
     output = ("""
     <table align="center" width="90%">
@@ -162,17 +162,17 @@ def error(msg, modname):
     # And don't print the footer if the error came from the Template module.
     if State.HeaderTmplSent == True and modname != 'Template':
 
-	    from Template import Template
+        from Template import Template
         
-		tmpl_footer = Template()
-		tmpl_footer.param('GLSR_VERSION', Config.Version)
-		tmpl_footer.param('GLSR_URL', Config.URL)
-		tmpl_footer.param('CONTACT', Config.Contact)
+        tmpl_footer = Template()
+        tmpl_footer.param('GLSR_VERSION', Config.Version)
+        tmpl_footer.param('GLSR_URL', Config.URL)
+        tmpl_footer.param('CONTACT', Config.Contact)
         tmpl_footer.compile(Config.Template['footer'])
 
-		State.Req.write(tmpl_footer.output())
+        State.Req.write(tmpl_footer.output())
 
-	sys.exit(0)
+    sys.exit(0)
 
 def error_user(title, description):
     """
@@ -185,37 +185,37 @@ def error_user(title, description):
     import Config
     from Template import Template
 
-	if str(title) == '':
-	    raise ErrorModuleError, 'Zero length error title'
+    if str(title) == '':
+        raise ErrorModuleError, 'Zero length error title'
 	
-	if str(description) == '':
-	    raise ErrorModuleError, 'Zero length error description'
+    if str(description) == '':
+        raise ErrorModuleError, 'Zero length error description'
 
     tmpl_header = Template()
-	tmpl_header.param('GLSR_URL', Config.URL)
-	tmpl_header.param('USER_ALIAS', State.UserDetail['alias'])
-	tmpl_header.param('USER_ID', State.UserDetail['uid'])
+    tmpl_header.param('GLSR_URL', Config.URL)
+    tmpl_header.param('USER_ALIAS', State.UserDetail['alias'])
+    tmpl_header.param('USER_ID', State.UserDetail['uid'])
 	
-	if State.Domain == 'admin':
-	    tmpl.compile(Config.Template['header']
+    if State.Domain == 'admin':
+        tmpl.compile(Config.Template['admin_header'])
     else:
-	    tmpl.compile(Config.Template['header']
+        tmpl.compile(Config.Template['header'])
 
     State.Req.write(tmpl_header.output())
 
-	tmpl = Template()
-	tmpl.param('ERROR_TITLE', title)
-	tmpl.param('ERROR_DESCRIPTION', description)
-	tmpl.compile(Config.Template['error_user']
+    tmpl = Template()
+    tmpl.param('ERROR_TITLE', title)
+    tmpl.param('ERROR_DESCRIPTION', description)
+    tmpl.compile(Config.Template['error_user'])
 	
-	State.Req.write(tmpl.output())
+    State.Req.write(tmpl.output())
 
-	tmpl_footer = Template()
-	tmpl_footer.param('GLSR_VERSION', Config.Version)
-	tmpl_footer.param('GLSR_URL', Config.URL)
-	tmpl_footer.param('CONTACT', Config.Contact)
-	tmpl_footer.compile(Config.Template['footer'])
+    tmpl_footer = Template()
+    tmpl_footer.param('GLSR_VERSION', Config.Version)
+    tmpl_footer.param('GLSR_URL', Config.URL)
+    tmpl_footer.param('CONTACT', Config.Contact)
+    tmpl_footer.compile(Config.Template['footer'])
 	
-	State.Req.write(tmpl_footer.output())
+    State.Req.write(tmpl_footer.output())
 
-	sys.exit(0)
+    sys.exit(0)
