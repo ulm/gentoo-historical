@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/2.6-koutput-user.xml">
+
+<title>2.6 Kernels and "koutput"</title>
+<author title="Developer">
+  <mail link="latexer@gentoo.org">Peter Johanson</mail>
+</author>
+<author title="Editor">
+  <mail link="antifa@gentoo.org">Ken Nowack</mail>
+</author>
+<author title="Editor">
+  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+
+<abstract>
+This guide covers how to use Gentoo's new "koutput" method to handle 2.6
+kernels and kernel modules.
+</abstract>
+
+<license/>
+
+<version>1.0</version>
+<date>March 14, 2004</date>
+
+<chapter>
+<title>Overview</title>
+<section>
+<body>
+
+<p>
+The 2.6 kernel, among other things, provides many enhancements to the kernel
+build infrastructure, or "kbuild system." Among the features that have been
+added, the 2.6 kernel now allows all of the files created by the kernel to be
+output to a arbitrary seperate location. This has several advantages over the
+old method:
+</p>
+
+<ul>
+  <li>
+    Arbitrary users can all use the same sources to build kernels, outputting
+    to some location in their home directory.
+  </li>
+  <li>
+    Kernels can be built for multiple target architectures, and the generated
+    files for each architecture won't be lost.
+  </li>
+  <li>
+    <path>/usr</path> can be mounted read-only and still allow kernels to be
+    generated, reconfigured, etc
+  </li>
+  <li>
+    External modules can be built without requiring write access to
+    <path>/usr/src/linux</path>
+  </li>
+</ul>
+
+<p>
+This last fact is important, as previously portage would need to be given
+temporary write access to a directory on the live filesystem in order to compile
+external modules against a 2.6 kernel source tree. If you chose <b>not</b> to
+use koutput for 2.6 kernels, most kernel modules will fail, due to this
+restriction. To allow portage to write to <path>/usr/src/linux</path> during
+kernel module emerges, you can use config-kernel:
+</p>
+
+<note>
+Not all of config-kernel's features are discussed in this guide. For the
+rest of the information see <b>man config-kernel</b>
+</note>
+
+<pre caption="Enabling writing to /usr/src/linux">
+# <i>config-kernel --allow-writable yes</i>
+</pre>
+
+<p>
+At any later time you can revert this decision by using config-kernel again.
+</p>
+
+<pre caption="Disabling writing to /usr/src/linux">
+# <i>config-kernel --allow-writable no</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Enabling koutput</title>
+<section>
+<body>
+
+<p>
+2.6 kernels determine where to output their files based on two environmental
+variables, <c>KBUILD_OUTPUT</c> and <c>O</c>. <c>KBUILD_OUTPUT</c> should be set
+environmentally, and can then be overriden on the command line by specifying a
+new <c>O</c> value. e.g.:
+</p>
+
+<pre caption="Setting an output by hand">
+# <i>cd /usr/src/linux></i>
+# <i>export KBUILD_OUTPUT="/var/tmp/kernel-output/2.6.4"</i>
+# <i>mkdir /var/tmp/kernel-output/2.6.4</i>
+<comment>Set our output location, and make sure that directory exists</comment>
+# <i>make menuconfig</i>
+<comment>The generated .config ends up in
+<path>/var/tmp/kernel-output/2.6.4</path></comment>
+# <i>make O=/home/joe/kernels/2.6.4 menuconfig</i>
+<comment>The generated .config now ends up in
+<path>/home/joe/kernels/2.6.4</path></comment>
+</pre>
+
+<p>
+Gentoo's tool <b>config-kernel</b> provides a mechanism for automating some of
+this processes. Using config-kernel, you can define a prefix for where kernels
+that get installed by portage will output their files to.
+</p>
+
+<pre caption="Prepare environment with config-kernel">
+# <i>config-kernel --output-dir=/home/joe/kernels</i>
+</pre>
+
+<p>
+The above command will make all new kernels installed send their output by
+default to <path>/home/joe/kernels/KV</path> where <b>KV</b> is the kernel
+version. To set the output path to the Gentoo default, which is
+<path>/var/tmp/kernel-output/</path>, you can do:
+</p>
+
+<pre caption="Prepare environment with config-kernel">
+# <i>config-kernel --output-dir=default</i>
+</pre>
+
+<p>
+User can also convert already installed 2.6 kernels to the new method using
+config-kernel. Beware that this will cause all your previously generated files
+to be erased, since <i>make mrproper</i> must be run during this process.
+</p>
+
+<pre caption="Converting a current kernel">
+# <i>config-kernel --make-koutput=/usr/src/linux-2.6.3</i>
+</pre>
+
+<p>
+The above command converts the kernel found in <path>/usr/src/linux-2.6.3</path>
+to outputting to a different directory. If the output directory has been set
+previously with <c>--output-dir=foo</c>, then that prefix will be used.
+Otherwise, the Gentoo default of <path>/var/tmp/kernel-output/KV</path> will be
+used.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Repercussions</title>
+<section>
+<body>
+
+<p>
+After configuring to use a different output directory, the changes go largly
+unnoticed when configuring and installing a kernel. There are a few key file
+location changes that you should be aware of though. The main files to be
+concered with are .config, and the generated bzImage after compiling a kernel.
+Below is a table showing the original and new locations for these key files. The
+table assumes a 2.6.4 kernel outputting to the Gentoo default of
+<path>/var/tmp/kernel-output/2.6.4</path>.
+</p>
+
+<table>
+<tr>
+  <th>Old file location</th>
+  <th>New file location</th>
+</tr>
+<tr>
+  <ti>/usr/src/linux/.config</ti>
+  <ti>/var/tmp/kernel-output/2.6.4/.config</ti>
+</tr>
+<tr>
+  <ti>/usr/src/linux/arch/i386/boot/bzImage</ti>
+  <ti>/var/tmp/kernel-output/2.6.4/arch/i386/boot/bzImage</ti>
+</tr>
+</table>
+
+</body>
+</section>
+</chapter>
+</guide>
