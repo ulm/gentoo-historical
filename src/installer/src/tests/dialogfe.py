@@ -540,21 +540,19 @@ while 1:
 		save_install_profile(xmlfilename=install_profile_xml_file, askforfilename=False)
 		cc.set_install_profile(install_profile_xml_file)
 		cc.start_install()
+		# This next line gives the ClientController time to actually get to the install step loop
 		while not next_step_waiting: pass
 		while 1:
-			if cc.has_more_steps():
-				cc.next_step()
-			else:
-				print "No more steps"
-			while 1:
-				if next_step_waiting:
-					next_step_waiting = False
-					next_step = cc.get_next_step_info()
-					print "Next step: " + next_step
-					break
-				if install_done:
-					print "Install done!"
-					sys.exit(0)
-				if exception_waiting:
-					print "Exception received"
-					pass
+			if next_step_waiting:
+				next_step_waiting = False
+				next_step = cc.get_next_step_info()
+				print "Next step: " + next_step
+				if cc.has_more_steps():
+					cc.next_step()
+				continue
+			if install_done:
+				print "Install done!"
+				sys.exit(0)
+			if exception_waiting:
+				print "Exception received"
+				pass
