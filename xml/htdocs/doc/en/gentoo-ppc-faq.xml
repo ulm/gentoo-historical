@@ -7,8 +7,8 @@
 <author title="Editor"><mail link="rajiv@gentoo.org">Rajiv Manglani</mail></author>
 <abstract>This FAQ is a collection of questions and answers collected from the gentoo-ppc-dev mailing list and from IRC -- if you have any questions (or answers!) to add, please contact either an author or a member of the documentation team.</abstract>
 
-<version>1.2</version>
-<date>15 November 2002</date>
+<version>1.3</version>
+<date>24 November 2002</date>
 
 
 <chapter>
@@ -25,6 +25,11 @@
 			<p>Be sure to read the <uri link="http://penguinppc.org/projects/quik/quirks.shtml">Quik quirks page</uri>. Also see "<uri link="http://lppcfom.sourceforge.net/fom-serve/cache/574.html">Is Quik Bootloader for Mac OS Dead?</uri>" and "<uri link="http://www.imaclinux.net/php/imaclinux_g_h.php3?single=17+index=0">Guide: Quik - Direct Booting for Older PowerMacs</uri>". "<uri link="http://www.netbsd.org/Ports/macppc/models.html">NetBSD/macppc Model Support</uri>" documents OpenFirmware versions for various Apple and clone PowerPC machines.</p>
 			<p>Thanks to vladimir for this information.</p>
 		</body>
+	</section>
+
+	<section>
+		<title>I have a Beige G3 machine. Can I install Gentoo Linux/PPC on a second IDE hard drive?</title>
+		<body><p>Early Beige G3 machines (those with a "Rev 1" motherboard with an ATI RageII+ chip) do not support slave IDE drives. To use a second hard drive with this machine, you would have to attach it to the internal or external SCSI connector, use install a PCI IDE card. Later G3 machines do not have this limitation. See <uri>http://www.xlr8yourmac.com/G3-ZONE/IDE/index.html</uri> for more information.</p></body>
 	</section>
 
 	<section>
@@ -91,6 +96,31 @@ This way, you will still be able to use <path>/proc/sys/dev/mac_hid</path> to em
 	</section>
 
 	<section>
+		<title>How do I play Audio CDs on my PowerBook G4?</title>
+		<body><p>The Apple PowerBook G4 has no audio connection between the CD-ROM drive and the sound hardware. Therefore, audio information must be read as data and then piped to the sound hardware. This is possible using xmms and the cdread plugin. First, you will need to rebuild your kernel with the following options:
+<pre>
+<codenote>In "ATA/IDE/MFM/RLL Support"</codenote>
+<codenote>In "IDE, ATA, and ATAPI Block Devices"</codenote>
+   &lt; &gt; Include IDE/ATAPI CDROM support  <codenote>turn this OFF</codenote>
+   &lt;M&gt; SCSI emulation support           <codenote>compile this as a module</codenote>
+
+<codenote>In "SCSI Support"</codenote>
+   &lt;M&gt; SCSI support                     <codenote>compile this as a module</codenote>
+   &lt;M&gt; SCSI CD-ROM support              <codenote>compile this as a module</codenote>
+</pre>
+Then, append <c>hdX=ide-scsi</c> to the kernel image description(s) in <path>/etc/yaboot.conf</path> where <c>hdX</c> is the IDE device corresponding to your CD player. On G4 PowerBooks this is generally <c>hdc</c>. Type <c>mkofboot -v</c> to install the new yaboot.conf settings. Edit <path>/etc/group</path> add any users who should be able to play CDs to the <c>cdrom</c> group. You will now need to reboot your system for the kernel changes to take effect.</p>
+		<p>Upon reboot, <c>su</c> to root and change the permissions of the cd device, then install xmms:
+<pre>
+# <c>chown root.cdrom /dev/scsi/host0/bus0/target0/lun0/cd</c>
+# <c>chmod 660 /dev/scsi/host0/bus0/target0/lun0/cd</c>
+# <c>emerge xmms xmms-cdread</c>
+</pre>
+<note>Make sure to use the path corresponding to the CD drive on your machine.</note>
+To play a CD, fire up <c>xmms</c> and enter <c>/dev/cdrom</c> as the file you want to play.</p>
+		</body>
+	</section>
+
+	<section>
 		<title>How can I configure my machine's Airport or other Wi-Fi card?</title>
 		<body><p>First, make sure you have support for the card complied into the kernel, or compiled as a module and loaded. Then, <c>emerge wireless-tools; iwconfig</c>.</p></body>
 	</section>
@@ -106,10 +136,8 @@ This way, you will still be able to use <path>/proc/sys/dev/mac_hid</path> to em
 <pre>
 &lt;*&gt; Sound card support
 &lt;*&gt;   PowerMac DMA sound support
-<codenote>and</codenote>
-&lt;*&gt;   OSS sound modules
 </pre>
-			(or selected as modules and loaded). Second, users who should have access to the audio devices need to be added to the appropriate group with the command <c>chmod -g audio [username]</c>.</p></body>
+			(or selected as modules and loaded). Second, users who should have access to the audio devices need to be added to the appropriate group with the command <c>chmod -g audio [username]</c>. If the dmasound_pmac module does not load, you probably need to enable i2c-core in the kernel or as a module.</p></body>
 	</section>
 
 	<section>
