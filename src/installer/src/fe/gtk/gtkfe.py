@@ -197,6 +197,8 @@ class Installer:
 		self.backbutton.connect("clicked", self.back, None)
 		self.helpbutton.connect("clicked", self.help, None)
 		self.exitbutton.connect("clicked", self.exit_button, None)
+		self.loadbutton.connect("clicked", self.load_button, None)
+		self.savebutton.connect("clicked", self.save_button, None)
 
 		self.make_visible()
 
@@ -294,11 +296,45 @@ class Installer:
 		print "Help was clicked"
 
 	def exit_button(self, widget, data=None):
-		print "Exit was clicked"
-		self.exit()
+		msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to exit?")
+		resp = msgdlg.run()
+		msgdlg.destroy()
+		if resp == gtk.RESPONSE_YES:
+			self.exit()
 
 	def finish(self, widget, data=None):
 		print "Finish was clicked"
+
+	def load_button(self, widget, data=None):
+		filesel = gtk.FileSelection("Select the install profile to load")
+		if self.install_profile_xml_file == "":
+			filesel.set_filename("installprofile.xml")
+		else:
+			filesel.set_filename(self.install_profile_xml_file)
+		resp = filesel.run()
+		filename = filesel.get_filename()
+		filesel.destroy()
+		if resp == gtk.RESPONSE_OK:
+			self.install_profile_xml_file = filename
+			try:
+				self.install_profile.parse(self.install_profile_xml_file)
+				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install profile loaded successfully!")
+				msgdlg.run()
+				msgdlg.destroy()
+			except:
+				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured loading the install profile")
+				errdlg.run()
+				errdlg.destroy()
+
+	def save_button(self, widget, data=None):
+		filesel = gtk.FileSelection("Select the location to save the install profile")
+		if self.install_profile_xml_file == "":
+			filesel.set_filename("installprofile.xml")
+		else:
+			filesel.set_filename(self.install_profile_xml_file)
+		if filesel.run() == gtk.RESPONSE_OK:
+			self.install_profile_xml_file = filesel.get_filename()
+		filesel.destroy()
 
 	def delete_event(self, widget, event, data=None):
 		# If you return FALSE in the "delete_event" signal handler,
