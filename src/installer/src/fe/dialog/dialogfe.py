@@ -371,32 +371,32 @@ def set_root_password():
 
 def set_additional_users():
 # This section will be for adding non-root users
-	users = copy.deepcopy(install_profile.get_users())
-	if type(users) == "list":
-		tmpusers = {}
-#		for user in users:
-#			tmpusers[user[0]] = [user[0], user[1], user[2], user[3]
+	users = {}
+	for user in install_profile.get_users():
+		users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 	while 1:
 		menu_list = []
 		for user in users:
-			menu_list.append(user[0])
+			menu_list.append(user)
 		menu_list.sort()
 		menu_list.append("Add user")
 		code, menuitem = d.menu("Choose a user to edit", choices=dmenu_list_to_choices(menu_list), cancel="Done")
 		if code != DLG_OK:
 			if d.yesno("Do you want to save changes?") == DLG_YES:
-				install_profile.set_users(users)
+				tmpusers = []
+				for user in users:
+					tmpusers.append(users[user])
+				install_profile.set_users(tmpusers)
 			break
 		menuitem = menu_list[int(menuitem)-1]
 		if menuitem == "Add user":
 			code, newuser = d.inputbox("Enter the username for the new user")
 			if code != DLG_OK: continue
-			for user in users:
-				if newuser == user[0]:
-					d.msgbox("A user with that name already exists")
-					continue
+			if newuser in users:
+				d.msgbox("A user with that name already exists")
+				continue
 			new_user = [newuser, '', ('users'), '/bin/bash', '/home/' + newuser, '', '']
-			users.append(new_user)
+			users[newuser] = new_user
 			menuitem = newuser
 		while 1:
 			menulist = ["Password", "Group Membership", "Shell", "Home Directory", "UID", "Comment", "Delete"]
@@ -411,50 +411,35 @@ def set_additional_users():
 				if passwd1 != passwd2:
 					d.msgbox("The passwords do not match")
 					continue
-				for user in users:
-					if user[0] == menuitem: user[1] = crypt.crypt(passwd1, get_random_salt())
-					continue
+				users[menuitem][1] = crypt.crypt(passwd1, get_random_salt())
 			elif menuitem2 == "Group Membership":
-				code, groups = d.inputbox("Enter a space-separated list of groups the user is to be in")
+				code, groups = d.inputbox("Enter a space-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
 				if code != DLG_OK: continue
-				newgroups = []
-				groups = string.split(groups)
-				for group in groups:
-					new_groups.append(group)
-				for user in users:
-					if user[0] == menuitem:
-						user[2] = new_groups
-				continue
-				
+#				new_groups = []
+#				groups = string.split(groups)
+#				for group in groups:
+#					new_groups.append(group)
+				users[menuitem][2] = string.split(groups, ",")
 			elif menuitem2 == "Shell":
-				code, shell = d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  Get it right b/c there's no error checking!")
+				code, shell = d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  Get it right b/c there's no error checking!", init=users[menuitem][3])
 				if code != DLG_OK: continue
-				for user in users:
-					if user[0] == menuitem: user[3] = shell
-				
+				users[menuitem][3] = shell
 			elif menuitem2 == "Home Directory":
-				code, homedir = d.inputbox("Enter the user's home directory. default is /home/username.  Get it right b/c there's no error checking!")
+				code, homedir = d.inputbox("Enter the user's home directory. default is /home/username.  Get it right b/c there's no error checking!", init=users[menuitem][4])
 				if code != DLG_OK: continue
-				for user in users:
-					if user[0] == menuitem: user[4] = homedir
-				
+				users[menuitem][4] = homedir
 			elif menuitem2 == "UID":
-				code, uid = d.inputbox("Enter the user's UID. ")
+				code, uid = d.inputbox("Enter the user's UID. ", init=users[menuitem][5])
 				if code != DLG_OK: continue
 				if type(uid) != int: continue
-				for user in users:
-					if user[0] == menuitem: user[4] = uid
+				users[menuitem][5] = uid
 			elif menuitem2 == "Comment":
-				code, comment = d.inputbox("Enter the user's comment.")
+				code, comment = d.inputbox("Enter the user's comment.", init=users[menuitem][6])
 				if code != DLG_OK: continue
-				for user in users:
-					if user[0] == menuitem: user[4] = comment
+				users[menuitem][6] = comment
 			elif menuitem2 == "Delete":
 				if d.yesno("Are you sure you want to delete the user " + menuitem + "?") == DLG_YES:
-					for i in range(0, len(users)):
-						if users[i][0] == menuitem:
-							users.pop(i)
-							break
+					del users[menuitem]
 					break
 
 def set_services():
