@@ -46,7 +46,7 @@
       </tr>
       <tr>
          <td class="standard_cell">Tables were last optimized on the {OPTIMIZE_DAYS}.</td>
-         <td class="standard_cell" align="right"><input type="submit" class="button" name="optimize_tables" value="$
+         <td class="standard_cell" align="right"><input type="submit" class="button" name="optimize_tables" value="Optimize"></td>
       </tr>
     </table>
     </form>
