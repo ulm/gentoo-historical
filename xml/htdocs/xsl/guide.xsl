@@ -465,7 +465,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
                     <br/>
-                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    <!--<a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>-->
                     <br/>
                     <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
                     <br/>
