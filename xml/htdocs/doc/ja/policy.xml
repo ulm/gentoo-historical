@@ -1,0 +1,273 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/ja/policy.xml">
+<title>Gentoo Linux 開発者ポリシー</title>
+<author title="Original Author">Owen Stampflee</author> 
+<author title="Author"><mail link="karltk@gentoo.org">Karl Trygve Kalleberg</mail></author> 
+<author title="Author/Editor"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author> 
+<author title="Editor"><mail link="seemant@gentoo.org">Seemant Kulleen</mail></author> 
+<author title="翻訳"><mail link="nakano@gentoo.org">中野正智</mail></author> 
+<abstract>
+このガイドはGentoo Linuxの開発ポリシーを参照するために記述された決定版です。
+新しい開発者の手順を追加するたびに度々更新されます。
+</abstract>
+
+<version>1.0</version>
+<date>17 Dec 2002</date>
+<!-- Original revision: 1.10 -->
+
+<chapter>
+<title>一般的なガイドライン</title>
+<section>
+<body>
+<p>以下はいくつかの一般的な開発者のガイドラインです。</p>
+<ul>
+
+<li>変更点はいつもrepomanで確認してください。cvs commitの代わりにrepoman commit を使用してください。</li>
+<li>あるパッケージが現在のバージョンで壊れている場合、またはとても汚ないbuild/installを行なっている場合には、他のディストリビューションでどうしているかを見てください。<ul>
+<li><uri>http://cvs.mandrakesoft.com/cgi-bin/cvsweb.cgi/SPECS/</uri></li>
+<li><uri>http://www.debian.org/distrib/packages</uri></li> </ul> </li>
+<li>エンドユーザーは、完成してunmaskされたebuildパッケージを"普通に動作する"と考えます。インストールされたパッケージをいじることは、オプションであるべきです。したがって妥当なデフォルトのセッティングでインストールするべきです。</li>
+<li>オンラインドキュメントや多くのシニア開発者によって記述、メンテナンスされているebuildを参照して参考にしてください。</li>
+
+</ul>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>ebuild ポリシー</title>
+<section>
+<title>命名 ポリシー</title>
+<body>
+
+<p>ebuild ファイル名は 4つの部分から成り立っています。：</p>
+
+<p><c>pkg-ver{_suf{#}}{-r#}.ebuild</c></p>
+
+<note>括弧 (<c>{}</c>) はオプションフィールドを表わし、パッケージ名に
+は現れません。 <c>#</c> は、0以外の正数に置き代わります。</note>
+
+<p>最初の <c>pkg</c> セクションは英小文字、0-9の数字、ハイフン
+(<c>-</c>)しか含むべきではないパッケージ名です。 
+たとえば、<c>util-linux</c>、 <c>sysklogd</c>、 <c>glibc</c>があります。
+Portage ツリーにはいくつかのこのルールに従っていないパッケージがあります、しかし<i>あなたの</i>パッケージは従うべきです。</p>
+
+<p>2つ目のセクション<c>ver</c>はパッケージのバージョンです。通常はそのパッケージのメインのソースtarballと同じになります。そのバージョンは<c>1.2</c>や<c>4.5.2</c>のように2、3以上の部分にピリオドで区切られています。また最後に一文字のアルファベットが来ることがあります。例：<c>1.4b</c>、<c>2.6h</c>。パッケージのバージョンはパッケージ名とハイフンで継がります。例：<c>foo-1.0</c>、<c>bar-2.4.6</c>。</p>
+
+<p>3つ目のセクション<c>{_suf{#}}</c>は必須ではなくで以下のあらかじめ定義されたsuffixを持ちます。なお、古い→新しい順に並んでいます。</p>
+
+<table>
+<tr><th>Suffix</th><th>Meaning</th></tr>
+<tr><ti><c>_alpha</c></ti><ti>Alpha release</ti></tr>
+<tr><ti><c>_beta</c></ti><ti>Beta release</ti></tr>
+<tr><ti><c>_pre</c></ti><ti>Prerelease</ti></tr>
+<tr><ti><c>_rc</c></ti><ti>Release candidate</ti></tr>
+<tr><ti>(none)</ti><ti>Normal release</ti></tr>
+<tr><ti><c>_p</c></ti><ti>Patch level (normally accompanied by trailing integer</ti></tr>
+</table>
+
+<p>suffixのどれもすぐ後に正の数が続く場合があります。例：<c>linux-2.4.0_pre10</c>。同一のバージョン部分では、suffixは古い順に並びます。<c>_alpha</c> &lt;
+<c>_beta</c> &lt; <c>_pre</c> &lt; <c>_rc</c> &lt; (suffixなし) &lt;
+<c>_p</c></p>
+
+<p>同一のsuffixで後に続く数字を比較する場合、数字が大きい程最近のものになります。例：<c>foo-1.0_alpha4</c>は<c>foo-1.0_alpha3</c>より新しいです。</p>
+
+<p>4つ目のセクション(<c>{-r#}</c>)はGentoo Linux特定のリビジョンナンバーです。
+このセクションはsuffixと同様に、必須ではありません。
+<c>#</c>は1以上の正数です。例：<c>package-4.5.3-r3</c>. </p>
+
+<p>このリビジョンナンバーはオリジナルのソースtarballに依存せず、ユーザーに改良されたパッケージが存在することを知らせるために使用します。ebuildの初期リリースではリビジョンナンバーは付けません。例：<c>package-4.5.3</c>。Portage内ではリビジョンナンバー0として扱われます。これは次のことをを意味しています。
+<c>1.0</c> (初期バージョン)、<c>1.0-r1</c>、<c>1.0-r2</c>、…。 </p>
+
+</body>
+</section>
+<section>
+<title>バージョン、リビジョンアップ</title>
+<body>
+
+<p>パッケージリビジョンナンバーは、ebuildにユーザーがアップグレードする必要のある修正を行なったときに、Gentoo Linuxデベロッパーによって増やされます。
+ebuildを修正したことによって、同じソースtarballを使用しているにもかかわらず、インストールされるファイルが以前と変わることがよくあります。
+内部的な書式の変更などをebuildにした場合に、インストールされるファイルが変更ない場合には、リビジョンナンバーを増やす必要はありません。
+同様に、一部のユーザーが影響を受けるコンパイルの問題でebuildを修正した場合には、リビジョンナンバーを増やす必要はありません。なぜなら、正常にインストールできている人が再度新しいリビジョンをインストールする価値がないからです。そして、その問題に直面した人はそのパッケージをインストールしていません(なぜならコンパイル失敗のため)。このような理由から新しいリビジョンで強制的にアップグレードする必要がないわけです。</p>
+
+<impo>新しいリビジョンのebuildを作成するときには必ずebuildと同じ場所にある<path>ChangeLog</path>を更新してください。それをしないと、とてもまずいことになります。</impo>
+
+</body> 
+</section> 
+<section>
+<title>virtual機能</title>
+<body>
+
+<p>Portageは"virtual"パッケージと呼ばれる概念を持っています。virtualパッケージを使用すると、特定のcategory/package名を他のものに結びつけることができます。virtualパッケージを使い方の例を示します。<c>foocron</c>という新しいパッケージを作成したとしましょう。Gentoo Linuxではcronパッケージに依存する必要のあるパッケージは、<c>virtual/cron</c>パッケージに依存させています。こうすることでユーザーがいくつかのcronパッケージから好きなものを柔軟にインストールすることができます。作成した<path>foocron-1.0.ebuild</path>をこの仕組に加えるためには、以下の行をebuildに加えてください。</p>
+
+<pre>
+PROVIDE="virtual/cron"
+</pre>
+
+<p><c>foocron-1.0</c>がインストールされたとき、<c>virtual/cron</c>パッケージが登録されたことになります。これまでにcronパッケージをひとつもインストールしていなかった場合に、今後<c>virtual/cron</c>への<e>依存</e>を満足することになります。
+注意点として、どのタイプのパッケージでも<c>PROVIDE</c>の値を指定することはできます。つまり<c>virtual/</c>で始まっている必要はないのです。
+しかしながら、リネームされたパッケージを扱うために<c>PROVIDE</c>機能を使用するのでなければ、<c>virtual/</c>カテゴリを使用する<e>べき</e>です。</p>
+
+<p>Gentoo Linuxのvitual機能の実装は第2のコンポーネントがあります。
+<c>virtual/cron</c>をPROVIDEするパッケージがインストールされていない場合、どのようなことが起こるのでしょうか？
+Portageはどうやって<c>virtual/cron</c>依存を満足させる"正しい"cronを選ぶのでしょうか？
+Portageはこのような状態で、profileディレクトリ<path>/etc/make.profile</path>にある<path>virtuals</path>という名のprofile-specific virtual mappingファイルを使用することによって解決します。
+<path>virtuals</path>ファイルを見てください。次のようなものを見ることができます。</p>
+
+<pre caption="サンプル virtuals ファイル">
+virtual/lpr             net-print/cups
+virtual/python          dev-lang/python
+virtual/mta             net-mail/ssmtp
+</pre>
+
+<p>このファイルの1行目は、<c>virtual/lpr</c>に依存しているパッケージをインストルールするとき、まだ<c>virtual/lpr</c>が存在しない場合に<c>net-print/cups</c>がインストールされることを、示しています。
+
+<c>net-print/cups</c>は<c>PROVIDE="virtual/lpr"</c>の行を含んでいます。だから、今後<c>virtual/lpr</c>への依存は満足されます。</p>
+
+<p>この文ははデベロッパー向けのガイドラインです。<c>foocron</c>パッケージを加えた場合、<c>virtual/cron</c>に依存するすべてのプログラムが動くことを保証しないといけません。
+そして、<c>virtual/cron</c>に依存する<c>foobarosity</c>というパッケージを加えたとき、同様にすべての<c>virtual/cron</c>をprovideするパッケージが<c>foobarosity</c>の提供する機能を満足しなければなりません。
+</p>
+</body>
+</section>
+<section>
+<title>CVS ソースポリシー</title>
+<body>
+
+<p>開発用のCVS treeからebuildをbuildするには2つの方法があります。第一の方法として、上流のCVS treeからあなた自身がスナップショットtarballを作成し、私たちの公式distfileレポジトリにそれを置き、ebuildはそのスナップショットtarball用に記述する方法です。このタイプのCVS ebuildを以下では"CVS snapshot ebuilds"と呼びます。
+</p>
+<p>
+CVSを利用してebuildを作成する他の方法として、"live"CVSを用いて作成するために<path>cvs.eclass</path>を利用する方法があります。そのebuildは最新のCVSレポジトリから"fetch"した時にソースをダイナミックに取得します。そのためできる限り最新のソースを利用することができます。</p>
+
+<p>以下の段落ではCVSを利用したebuildについてのポリシーを詳細に説明します。Portage ツリーにそのようなebuildを追加するためには厳格なルールがあるのを、注意する必要があります。</p>
+
+<p>スナップショットCVS ebuildは"live"<path>cvs.eclass</path>よりも大きく好まれます。</p> 
+
+<p>スナップショットCVS ebuildは、CVS スナップショットにソフトウエアに必要なよく知られたバグフィクスが含まれている場合、またはCVSバージョンが普通のリリースバージョンよりも単純に"良好に動く"場合に許可されます。</p>
+
+<p>"live" <path>cvs.eclass</path>ebuildは一般的にデベロッパーの簡便さのためにだけ利用され、<c>~[arch]</c>キーワードでマスクされた状態にされているべきです。
+
+上流のCVS treeがいつでも変更されていることがあるので、"live" <path>cvs.eclass</path>を使用して確実な保証をすることは不可能です。それがいつもマスクされているべきである理由です。</p> 
+
+<p>"live" CVS ebuildや"snapshot" CVS ebuildも、<b>あなたはデベロッパーとして正しく動くことに責任があります</b>。しかしこれは"live" CVS ebuildに関しては明白な理由で格段に難しいです。</p>
+
+<p>ebuild(どんな方法でも)が正しく動かなかったりおかしいときには、修正するかPortage Treeから削除されるべきです。"live" ebuildの場合、永遠に<c>~[arch]</c>キーワードでマスクされる可能性があります。(以下で説明します。)</p>
+
+<p>ユーザーが特に"live" CVS ebuildを要求した場合に、あなたは追加することができます。他のユーザーが信用してそれをmergeしてしまわないように、<c>~[arch]</c>キーワードを設定する必要があります。</p>
+
+<p>この方法だと、それを要求したユーザーはインストールでき、それ以外のユーザは実際のmergeをしなくてすみます。もう一度確認すると、これは"live" <path>cvs.eclass</path>を要求する場合にのみ適用されます。スナップショットebuildは通常のリリースバージョンよりも安定して優れた機能を提供する目的でPortage ツリーに加えられるべきです。</p>
+
+<impo>
+<e>pre-release</e>のスナップショットebuildは次の名前になるべきです。
+<path>foo-x.y_preYYYYMMDD.ebuild</path>。<c>foo</c>はパッケージの名前です。
+<c>x.y</c>は<e>予定されている</e>リリースバージョンナンバーです。
+<c>_pre</c>は固定の文字列です。そして<c>YYYYMMDD</c>はCVSスナップショッ
+トを取得した日付です。<c>x.y.1</c>リリースバージョンは<c>x.y</c>スナッ
+プショットよりも古いとは考えられないとき、また同時に公式の<c>x.y</c>リ
+リースが作成したCVSスナップバージョンと比較して<e>より新しい</e>と考え
+られる場合に、この命名を使用してください。
+
+<e>すでにリリースされた</e>バージョン以降のCVSスナップショットのためには、<path>foo-x.y_pYYYYMMDD.ebuild</path>を使用してください。 (<c>_p</c>は"patchlevel."を表わします。)
+これは、作成したebuildが通常の<c>x.y</c>リリースよりも<e>より新しい</e>と考えられるときに使用します。
+</impo>
+
+<impo>現在、"live"CVS ebuildのための名前のポリシーは、パッケージ名の後ろに<c>-cvs</c>を設定することになっています。</impo>
+
+</body>
+</section>
+<section>
+<title>一般ユーザー登録ebuild</title>
+<body>
+<p>一般のユーザーが登録したebuildはやみくもに信じてはいけません。またいつも十分にテストをし、CVSへcommitする前に検査しなければなりません。
+<b>もし一般ユーザーが登録したebuildに問題があった場合、あなたに責任があります。</b> それをCVSにcommitすることは、あなたがすべてのGentoo Linux の開発標準にそのebuildが適合していると保証することになります。
+</p>
+
+<p>ユーザーが登録したebuildに次のようなヘッダーが含まれていないことを確認してください。</p>
+
+<pre caption="ChangeLogに移動するべきカスタムヘッダー">
+# Ebuild updated by: me &lt;me@me.com&gt;
+</pre>
+
+<p>この情報は<path>ChagenLog</path>に適切なChangeLog書式で記述されるべきです。<b>いつもChangeLogにはebuildを登録したユーザーのクレジットを記述するようにしてください。この情報はChangeLogの最初に記述します。</b></p>
+
+<p>また、新しいebuildをcommitするときには次の行が含まれていることを確認してください。</p>
+<pre>
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/policy.xml,v 1.1 2003/03/03 04:26:57 nakano Exp $
+</pre>
+<p>多くのrsyncされるユーザー提供ebuildファイルには、不正なヘッダー行が含まれています。</p>
+
+<p>ebuildをアップグレードする場合には、すでに存在するebuildとの差分を取ることを推奨します。これをすることによって、以前修正されたバグが再び"新しい"ebuildに入ってしまうことを防ぐことの助けになります。ebuildの差分ではなくebuild自体がユーザーから提供された場合、何が変化したか(何が新しいebuildに入っているか、新しいebuildでfixされたもの削除されたもの)を見るために<c>diff</c>コマンドを使ってください。</p>
+
+<p>一般的に、あなたがユーザー提供のebuildをきれいに<e>したい</e>と思う場合以外の場合、ebuildを標準のレベルに達っするように変更することをユーザーに要求してください。
+ユーザーが自分の間違いから正しいebuildの記述を学習し、将来的には正しいebuildをsubmitすることになるので、ユーザーに作業してもらうことは良いことです。
+たとえ提供されたものが良いものでなくても、感謝してください。親切に丁寧にしてください。
+そのebuildが使えなくても、ebuildを記述する技術がないことを侮辱せずにそのユーザーに言うことはできます。壊れたebuildをsubmitしたユーザーが将来的にはGentoo Linux プロジェクトのスキルを持った優秀なメンバーになるかもしれないことを覚えておいてください。彼らが適切に励まされ支援を受けつつ自分の能力を伸ばそうとするならば。
+</p>
+</body>
+</section>
+</chapter> 
+<chapter>
+<title>QA ポリシー</title>
+<section>
+<title>Portage リリースポリシー</title>
+<body>
+<note>2002/12/17現在、Nick Jones (carpaski)がPortage管理者です。</note>
+
+<p>
+Portage管理者だけがmaskやunmaskedすることによって、新しいPortageをリリースする権限を持っています。他の<b>誰も</b>新しいPortageのリリースをする権限を持っていません。</p>
+
+<p>
+このルールの唯一の例外は、Portaeg管理者が長期間の間不在でかつ重大なバグがPortageに存在した場合です。この緊急時には、シニアデベロッパーにその修正をテストし、それから新しいリリースをすることが許されます。
+</p>
+
+<p>
+この"例外規定"を適用する前には、以下のことをもう一度確認してください。Portage管理者は本当に不在なのか。この修正は本当にすぐにPortageツリーに入れるようなとても重大なものなのか。修正したコードが<e>すべて</e>正常に動作することのテストを行なったのか。<b>これは重要です。</b>もしあなたの修正したPortageが壊れていた場合、<e>特に</e>それがunmaskされた場合に、すべてのGentooユーザーにとって<e>重大な問題</e>となることを覚えておいてください。この"例外規定"を使用するのは、<e>絶対的に</e>必要な場合だけ、つまりこの例外規定を使用しない場合の影響が非常に大きい場合だけにしてください。
+</p>
+
+<p>
+そしてそれを行なったら、その緊急の修正はアクセス可能なすべてのデベロッパーの協力によって、新しいバージョンのテスト等が行われるべきです。"一人だけ"でするべきではありません。そして"緊急"バージョンのことを周知し、それが必要だった理由、Portage管理者を待つことをしなかった理由を説明するために、gentoo-coreメーリングリストに投稿しなくてはなりません。
+</p>
+
+<p>
+Portage管理者は確実な特別の人たちにPortage開発用cvsツリーにcommitをすることを許可<e>します。</e>
+しかしながら、たとえあなたがこのメンバーの一人だとしても、この権限はPortageの新しいリリースを行なう権限ではありません。それはPortage管理者の仕事です。その人はPortageの新しいリリースの前に、変更に対してのレビューを行ない、妥当なQAテストをします。この仕事がPortage管理者によって行なわれ、このルールを破らないことを考慮に入れてください。この明確なポリシーが今後のPortage QA問題を防ぐ助けになることを期待します。
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>変数</title>
+<section>
+<title>必須の変数</title>
+<body>
+<p>
+Gentoo Linuxポリシーでは<c>KEYWORDS</c>、<c>LICENSE</c>、<c>SLOT</c>変数がすべてのebuildに含まれている必要があります。
+<c>HOMEPAGE</c>、 <c>SRC_URI</c>、 <c>DESCRIPTION</c>もまた特別な状況を除いて含まれているべきです。また<c>DEPEND</c>、<c>RDEPEND</c>はパッケージが他のパッケージ又はランタイムにそれぞれ依存している場合には含まれているべきです。
+</p>
+</body>
+</section>
+<section>
+<title>DEPENDとRDEPEND</title>
+<body>
+
+<p><c>DEPEND</c>はビルド時に必須の特定パッケージの依存を定義します。また<c>RDEPEND</c>は<e>実行</e>時に必須の特定パッケージの依存を定義します。そしてまた重要なことはバイナリ<c>.tbz2</c>パッケージをインストールする際には、<c>RDEPEND</c>依存だけが満足されていれば良いということです。このことは<c>RDEPEND</c>依存に何を正しく選べばよいのかという助けになります。もしebuildの<c>RDEPEND</c>が定義されていないと、デフォルト値として<c>DEPEND</c>の値がセットされます。
+</p>
+
+<p>
+パッケージは依存を満足する最も古いバージョンに依存するべきです。<c>libfoo-1.2.x</c>で動く場合には、あなたが<c>libfoo-2.x</c>をインストールしているだけという理由ででそれに依存しないようにします。
+</p>
+
+<p>一般的に、パッケージは<c>&gt;=libfoo-1.2</c>の代わりに<c>=libfoo-1.2*</c>に依存されているべきです。そうでなければ、<c>libfoo-2.0</c>が導入されたときに恐ろしく壊れはじめかもしれません。</p>
+
+<p><c>virtual/foo</c>のようにvirtualパッケージへの依存は、複数の異ったパッケージが<c>virtual/foo</c>といった同一のインターフェースを持っているときに有効です。例えば<c>virtual/jdk-1.3</c>を考えてみます。いくつかのパッケージは<c>ibm-jdk-1.3</c>では動かずに、一方では<c>sun-jdk-1.3</c>では動くとします。こういう理由で、パッケージはunmaskされる前にすべてのvirtual provideパッケージについてテストされる必要があります。そのvirtualパッケージ自身よりもむしろそのvirtual内のパッケージの一部にのみ依存している可能性があります。
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>

@@ -1,0 +1,244 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+	
+<guide link="doc/ja/prelink-howto.xml">
+<title>Gentoo Linux Prelink Guide</title>
+<author title="Author"><mail link="cretin@gentoo.org">Stefan Jones</mail>
+</author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail>
+</author>
+<author title="翻訳"><mail link="nakano@gentoo.org">中野正智</mail>
+</author>
+
+<abstract>このガイドはportage2.0.46以降でサポートしているprelinkの使い方について記述しています。</abstract>
+
+<version>1.3</version>
+<date>1 Jan 2003</date>
+<!-- Original revision: 1.11 -->
+
+<chapter>
+<title>紹介</title>
+<section>
+<title>prelinkとは何ですか？ それは何の役に立つのですか？</title>
+<body>
+
+<p>大部分の一般的なアプリケーションは共有ライブラリを使用します。
+これらの共有ライブラリは起動時にメモリーに読み込まれる必要があります。
+また各種シンボルの参照が解決される必要があります。
+多くの小さなプログラムにとってこのダイナミックリンクはとても素早く行われます。
+しかしC++で書かれたプログラムやたくさんのライブラリに依存するプログラムにとってダイナミックリンクはかなりの時間がかかります。</p>
+
+<p>大部分のシステムでは、ライブラリはそんなに変更されることがありません。そしてプログラムが起動されるときにリンクされるプログラムは毎回同じです。prelinkはlink情報を取り出し、それを実行ファイルに格納することによって要するにprelinkを行ないます。リンカーのために、glibc内のld-linux.soが必要です。またprelinkを見分けるためにglibc&gt;=2.3を必要とします。</p>
+
+<p>prelinkはアプリケーションの起動時間を短縮できます。例えば、典型的なKDEプログラムの起動時間は50%も短縮することができます。prelinkの唯一必要なメンテナンスは、ライブラリをアップグレードしたときに毎回prelinkしている実行ファイルを再度prelinkすることです。</p>
+
+</body>
+</section>
+<section>
+<title>概要</title>
+<body>
+<ul>
+<li>
+驚いたことにはprelinkはprelinkと呼ばれるプログラムによって行なわれます。
+それはバイナリプログラムの起動時間を早くします。</li>
+
+<li>prelinkを行なった後で、アプリケーションが依存しているライブラリが変更した場合、アプリケーションのprelinkをし直す必要があります。それをしないとスピードアップの効果を得ることができません。</li>
+
+<li>prelinkによるバイナリの変更は完全な可逆性を持っています。つまりprelinkには元に戻す機能があるのです。</li>
+
+<li>portageの新しいバージョンは、prelinkを通じてのバイナリのMD5sum、mtimeの変更を処理することができます。</li>
+
+<li>binutils-2.13.90.0.xxによってコンパイルされたglibc-2.3以降が必要です。</li>
+
+</ul>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>prelinkの設定</title>
+<section>
+<title>プログラムのインストール</title>
+<body>
+<note>
+Gentoo-1.4システムがすでにインストールされていて、それがgcc-3.2以降とbinutils-2.13.90.0.xxによってbuildされていると想定します。この環境はバイナリのprelinkを行なうために必要です。</note>
+
+<warn>glibc 2.3.1以降が必要です。そうでないとprelinkによってすべてのバイナリを壊してしまうことがあります。</warn>
+
+<p>prelinkに必要とされる多くのアプリケーションが最新でbugfixされたものが確実にインストールされるために、最初にportageツリーを更新します。</p>
+<pre caption = "portageツリーの更新">
+# <c>emerge rsync</c>
+</pre>
+
+<p>次にportage-2.0.46以降がインストールされているか確認します。これはportageがprelinkされたバイナリを認識し、正しくアンインストールするために必要となります。なぜならprelinkはバイナリのMD5sumを変更してしまうからです。</p>
+
+<pre caption = "Portage Versionnのチェック">
+# <c>emerge ">=portage-2.0.46"</c>
+</pre>
+
+<p>これで、prelinkツールをインストールすることができます。emergeは、システムがprelinkを安全にできるか自動的に確認します。</p>
+
+<pre caption = "prelinkインストール">
+# <c>emerge prelink</c>
+</pre>
+
+<p>多くの人がprelinkのemergeで確認テストエラーがでます。そのテストはいくつかの安全性のために行われています。prelinkの動作はそれらを無効にすると、定義されません。そのemergeエラーは通常binutils,gcc,glibcといったcoreパッケージに依存しています。それらのパッケージをその順番で再度emergeしてみてください。</p>
+
+   <note>Tip: もしエラーが出たら、あなた自身でprelinkのコンパイル、テスト(./configure ; make ; make check)を行ってみてください。するとエラー時に、testsuiteディレクトリに*.logファイルが作成されます。そのファイルにはいくつかの役立つ手掛りが載っています。</note>
+   
+   <p>他のシステム(マシン)で再びエラーがおきる場合には、<mail link="cretin@gentoo.org">Stefan Jones</mail>までメールしてください。</p>
+
+</body>
+</section>
+
+<section>
+<title>設定</title>
+<body>
+
+<p>portageは自動的に"/etc/prelink.conf"ファイルを作成します。このファイルはどのファイルをprelinkするかを記述します。</p>
+
+<p>残念ながら古いバージョンのbinutilsをよってコンパイルされていたファイルはprelinkできません。これらのアプリケーションの大部分は/optにインストールされているバイナリのみのパッケージです。次のファイルを記述することによってそれらをprelinkしないようにします。</p>
+
+<pre caption="/etc/env.d/99prelink">
+PRELINK_PATH_MASK="/opt"
+</pre>
+
+<note>コロンで区切って複数のディレクトリを記述することができます。</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>prelink</title>
+<section>
+<title>prelinkの使い方</title>
+<body>
+<p>/etc/prelink.confによって与えられたディレクトリのバイナリすべてをprelinkするために以下のコマンドが使えます。</p>
+
+<pre caption = "listされたファイルのprelink">
+# <c>prelink -afmR</c>
+</pre>
+
+<warn></warn>
+
+<warn>ディスクの残りスペースが少ないときには、バイナリの一部分が切り捨てられてしまう場合があります。この結果システムが壊れてしまいます。"file"や"readelf"コマンドを使ってバイナリファイルの状態をチェックしてください。</warn>
+
+<p>オプションの説明</p>
+
+<p><b>-a</b></p><p>all すべてのバイナリをprelinkする。</p>
+
+<p><b>-f</b></p><p>force すでにprelinkされているバイナリも再度prelinkを行なう。これは以前prelinkしたファイルが存在し、依存しているライブラリが変更された場合にprelinkを上書きするために必要です。</p>
+
+<p><b>-m</b></p><p>memory 仮想メモリ空間を保持します。prelinkするライブラリが多い場合に必要です。</p>
+
+<p><b>-R</b></p><p>random アドレスの順序をランダムにします。これはbuffer overflowに対してのセキュリティが増大します。</p>
+
+<p>他のオプションや詳細は<i>man prelink</i>を見てください。</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>既知の問題と解決策</title>
+
+<section>
+<title>&quot;non-PIC共有ライブラリがprelinkできない&quot;</title>
+<body>
+<p>この問題の原因は、-fPIC gccオプションなしですべてのobjectファイルをコンパイルした共有ライブラリにあります。</p>
+
+<p>次のリストは問題のあるライブラリです。もし上記のエラーが起きたらそのパッケージを再度mergeしてください。</p>
+
+<pre caption = "解決方法">
+<codenote>For the ORBit library /usr/lib/libIIOP.so.0.5.17</codenote>
+emerge ">=sys-apps/tcp-wrappers-7.6-r4" ORBit
+<codenote>For zlib library usr/lib/libz.so.1.1.4</codenote>
+emerge ">=sys-libs/zlib-1.1.4"
+<codenote>For svgalib, /usr/lib/libsvga.so.xx</codenote>
+emerge ">=media-libs/svgalib-1.9.16"
+<codenote>For the XFree openGL library, libGLU.so.1</codenote>
+emerge ">=x11-base/xfree-4.2.1-r2"
+<codenote>For libpcap.so.0.6</codenote>
+emerge ">=net-libs/libpcap-0.7.1-r2"
+<codenote>For the lcms library, /usr/lib/liblcms.so.1</codenote>
+emerge ">=media-libs/lcms-1.09"
+</pre>
+
+<note>多くのライブラリは静的にzlibやtcp-wrappersにlinkしています。だから最初にそれらをemergeしてから、問題のライブラリを再度emergeしてみてください。</note>
+
+<p>QT/KDEでprelinkに問題が発生したら、まず始めに>=x11-base/xfree-4.2.1-r2 と >=x11-libs/qt-3.1.0-r1にアップグレードしてください。それでもQTが失敗するならば、xineramaサポートをmyconf="-no-xinerama ${myconf}"とqtのebuildに記述することによって無効にしてからコンパイルしてみてください。
+</p>
+
+
+<p>以下は、まだ修正が終わっていないか修正できないライブラリです。</p>
+<ul>
+<li>winexを含むwineパッケージのライブラリ。MS Windows実行ファイルはスピードアップしません。</li>
+<li>media-video/mjpegtoolsの/usr/lib/liblavfile-1.6.so.0ライブラリ</li>
+</ul>
+
+<p>このリストに載っていない問題のあるライブラリがある場合には、できれば<i>-fPIC</i>を適切なCFLAGSに追加したパッチと一緒に連絡してください。
+</p>
+
+</body>
+</section>
+
+<section>
+<title>&quot;1631 Aborted ....&quot; のような表示が出てprelinkが中断する</title>
+<body>
+
+<p><i>-f</i>オプションをprelinkで使用する必要があります。0から再度システム全体のprelinkをするには、<i>prelink -af</i>を試してください。</p>
+
+</body>
+</section>
+
+<section>
+<title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected reloc type...&quot;</title>
+<body>
+<p>これは2002/11/18の<i>sys-libs/glibc-2.3.1-r2</i>で解決されています。それより古い場合には再度glibcをemergeしてください。</p>
+
+<p><i>prelink -u -a -m ; prelink -a -m</i>をすることによって再度役にたつ情報を知ることができます。他のすべてが失敗する場合、単に<i>prelink -u &lt;file&gt;</i>を実行します。</p>
+
+</body>
+</section>
+
+<section>
+<title>Nvidia openGLライブラリで問題が発生します</title>
+<body>
+<p>nvidia-glxパッケージ内のaccelerated openGLライブラリは一般的ではない方法でコンパイルされます。だからprelinkはwarningを発生します。これについて気にする必要はありませんし、nvidiaでないとこれを直すことはできません。いつでも3Dアクセラレーションが必要なくなったら、libGL.soのxfreeバージョンを戻すことができます。そういは言うもののnvidia xfreeドライバーは無事に動きます。</p> 
+   </body>
+   </section>
+   
+   <section>
+   <title>システムをprelinkしたらいくつかのスタティックバイナリが動か	 なくなりました。</title>
+   <body>
+   
+   <p>glibcが関係しているところでは、100% スタティックバイナリのことはありません。glibcと静的にコンパイルした場合には、他のシステムに依存していることになります。以下はDick Howellによる説明です。</p>
+
+   <p>&quot;ダウンロードしたバイナリパッケージはすべてを自分自身に含んでいるため、ターゲットシステムのローカルライブラリに依存しないと考えます。しかしあいにくLinux、また他のGLIBCを使用したシステムで、これは完全に真ではありません。さまざまなデータベースへの認証、ネットワーク情報などの機能を提供する"libnss"(ネームサービススイッチライブラリ。
+ネットワークセキュリティシステムと呼ばれることもある)があります。これはそのマシンの実際のネットワークに依存しないアプリケーションプログラムを作ることができます。良い考えですが、GLIBCを変更するとロードするときに問題が置こる場合があります。"libnss"をスタティックリンクすることはできません。なぜならそれぞれのマシン個々で設定されているからです。その問題は主に他のGLIBCライブラリと静的にリンクれている場合に起こると考えます。特に"libnss"から個々に呼ばれる"libpthread"、"libm"、"libc"で起こります。&quot;</p>
+</body>
+</section>
+
+<section>
+<title>Prelinkが&quot;prelink: dso.c:306: fdopen_dso: Assertion `j == k' failed.&quot; のメッセージを出して異常終了しました。</title>
+<body>
+<p>これは良く知られた問題です。<uri link="http://bugs.gentoo.org/show_bug.cgi?id=13878">ここ</uri>で、親切に解説されています。
+prelinkはUPX圧縮された実行形式を処理することができません。
+prelink-20021213の時点で、prelinkの最中にそのファイルを隠しておくことしか、解決する方法はありません。ファイルを隠す簡単な方法が<uri link="#doc_chap2_sect2">prelinkの設定</uri>にあるので見てください。</p>
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>最後に</title>
+<section>
+<body>
+<p>prelinkは多くの巨大なアプリケーションの起動時間を短縮することができます。そしてPortageでサポートされています。prelinkはまたもし問題に直面した場合には安全にいつでもどのバイナリでも元に戻すことができます。つまり、がんばってね!</p>
+</body>
+</section>
+</chapter>
+
+</guide>
