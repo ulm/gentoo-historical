@@ -214,7 +214,7 @@ sub rm_tarball {
 # make a new tarball of icon files
 #
 sub new_tarball {
-	system `tar -cjf $searchpath/icons.tar.bz2 $searchpath/*.png`;
+	system `tar -vj --exclude=CVS --directory /home/httpd/gentoo/xml/images/icons/ --create -f /home/httpd/gentoo/xml/images/icons/icons.tar.bz2 ./`;
 } # new_tarball()
 
 #
