@@ -1,0 +1,199 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/nvidia-guide.xml,v 1.1 2004/11/11 11:38:02 chiguire Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/nvidia-guide.xml">
+<title>Gentoo Linux nVidia Guide</title>
+
+<author title="Author">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+Many Gentooists have an nVidia chipset on their system. nVidia provides specific
+Linux drivers to boost the performance of your card. This guide informs you how
+to install and configure these drivers.
+</abstract>
+
+<license/>
+
+<version>1.6</version>
+<date>October 19, 2004</date>
+
+<chapter>
+<title>Configuring your Card</title>
+<section>
+<title>Installing the Appropriate Drivers</title>
+<body>
+
+<p>
+The nVidia drivers include kernel modules that must integrate in your current
+kernel. To accomplish this, your kernel must support the loading of kernel
+modules. If you used <c>genkernel</c> to configure the kernel for you then
+you're all set. If not, double check your kernel configuration so that this
+support is enabled:
+</p>
+
+<pre caption="Enabling the Loading of Kernel Modules">
+Loadable module support ---&gt;
+  [*] Enable loadable module support
+</pre>
+
+<p>
+You also need to enable <e>Memory Type Range Register</e> in your kernel:
+</p>
+
+<pre caption="Enabling MTRR">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+
+<p>
+nVidia's modules and libraries are combined in two packages: <c>nvidia-glx</c> 
+and <c>nvidia-kernel</c>. The former are the X11 GLX libraries while the latter 
+are the kernel modules. Since <c>nvidia-glx</c> depends on <c>nvidia-kernel</c>,
+installing <c>nvidia-glx</c> is sufficient:
+</p>
+
+<pre caption="Installing the nVidia modules">
+# <i>emerge nvidia-glx</i>
+</pre>
+
+<p>
+Once the installation has finished, run <c>modprobe nvidia</c> to load the
+kernel module into memory.
+</p>
+
+<pre caption="Loading the kernel module">
+# <i>modprobe nvidia</i>
+</pre>
+
+<p>
+You probably want to have this done each time you boot your system, so edit
+<path>/etc/modules.autoload.d/kernel-2.6</path> (or <path>kernel-2.4</path>) and
+add <c>nvidia</c> to it. Don't forget to run <c>modules-update</c> afterwards!
+</p>
+
+<pre caption="Running modules-update">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Configuring the X Server</title>
+<body>
+
+<p>
+Once the appropriate drivers are installed you need to configure your X Server
+(XFree86 or Xorg) to use the <c>nvidia</c> driver instead of the default
+<c>nv</c> driver.
+</p>
+
+<p>
+Open <path>/etc/X11/XF86Config</path> (or <path>/etc/X11/xorg.conf</path>) with
+your favorite editor (such as <c>nano</c> or <c>vim</c>) and go to the
+<c>Device</c> section. In that section, change the <c>Driver</c> line:
+</p>
+
+<pre caption="Changing nv to nvidia in the X Server configuration">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  <i>Driver     "nvidia"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+<p>
+Then go to the <c>Module</c> section and make sure the <c>glx</c> module gets
+loaded while the <c>dri</c> module doesn't:
+</p>
+
+<pre caption="Updating the Module section">
+Section "Module"
+  <comment>(...)</comment>
+  <i># Load  "dri"
+  Load  "glx"</i>
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+Run <c>opengl-update</c> so that the X Server uses the nVidia GLX libraries:
+</p>
+
+<pre caption="Running opengl-update">
+# <i>opengl-update nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Testing your Card</title>
+<body>
+
+<p>
+To test your nVidia card, fire up X and run the <c>glxinfo | grep direct</c>
+command. It should say that direct rendering is activated:
+</p>
+
+<pre caption="Checking the direct rendering status">
+$ <i>glxinfo | grep direct</i>
+direct rendering: Yes
+</pre>
+
+<p>
+To monitor your FPS, run <c>glxgears</c>. 
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Troubleshooting</title>
+<section>
+<title>Getting 2D to work on machines with 4Gb or more memory</title>
+<body>
+
+<p>
+If you are having troubles with the nVidia 2D acceleration it is likely that you
+are unable to set up a write-combining range with MTRR. To verify, check the
+contents of <path>/proc/mtrr</path>:
+</p>
+
+<pre caption="Checking if you have write-combining enabled">
+# <i>cat /proc/mtrr</i>
+</pre>
+
+<p>
+Every line should contain "write-back" or "write-combining". If you see a line
+with "uncachable" in it you will need to change a BIOS setting to fix this.
+</p>
+
+<p>
+Reboot and enter the BIOS, then find the MTRR settings (probably under "CPU
+Settings"). Change the setting from "continuous" to "discrete" and boot back
+into Linux. You will now find out that there is no "uncachable" entry anymore
+and 2D acceleration now works without any glitches.
+</p>
+
+</body>
+</section>
+<section>
+<title>I receive warnings about unsupported 4K stack sizes</title>
+<body>
+
+<p>
+<c>nvidia-kernel</c> packages older than 1.0.6106 only support kernels using 
+an 8K stack size. More recent kernels (2.6.6 and higher) have support for 4K 
+stack size's as well. Do not select 4K stack size in your kernel 
+configuration if you are using such an <c>nvidia-kernel</c>package. You can 
+find this option in the section <c>Kernel Hacking</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
