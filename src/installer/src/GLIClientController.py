@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.33 2005/01/04 00:24:27 codeman Exp $
+$Id: GLIClientController.py,v 1.34 2005/01/04 01:16:35 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -43,7 +43,6 @@ class GLIClientController(Thread):
 		self._install_step = -1
 		self._pretend = pretend
 		self.setDaemon(True)
-		self._configuration._architecture_template = "x86"  #for our first release this will just be set here ok?
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -99,7 +98,7 @@ class GLIClientController(Thread):
 				'ppc':		'ppcArchitectureTemplate',
 				'ppc64':	'ppc64ArchitectureTemplate'
 			}
-
+		self._configuration._architecture_template = "x86"  #for our first release this will just be set here ok?
 		
 		if self._configuration._architecture_template not in templates.keys():
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration._architecture_template + ' is not supported by the Gentoo Linux Installer!')))
@@ -241,7 +240,7 @@ class GLIClientController(Thread):
 					install_profile = GLIInstallProfile.InstallProfile()
 					install_profile.parse('/tmp/install_profile.xml')
 				else:
-					raise GLIException("InstallProfileError", 'fatal', 'get_install_profile', 'Could not download/copy the install profile from: ' + self._configuration.get_profile_uri)
+					raise GLIException("InstallProfileError", 'fatal', 'get_install_profile', 'Could not download/copy the install profile from: ' + self._configuration.get_profile_uri())
 
 		self._install_profile = install_profile
 
