@@ -17,15 +17,20 @@ int main(int argc, char **argv) {
 
 	/* if we don't have the right number of args, fail */
 	if(argc < 3) {
-		printf("Invalid number of arguments");
-		exit(1);
+		printf("Invalid number of arguments\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* find the deps, and make sure all the right stuff is started first */
+	init_script_FILE=fopen(argv[1], "r");
+	if (init_script_FILE == NULL) {
+		perror(argv[1]);
+		exit(EXIT_FAILURE);
 	}
 
 	line=(void *)malloc(1000);
 	memset(line, 0, 1000);
-	
-	/* find the deps, and make sure all the right stuff is started first */
-	init_script_FILE=fopen(argv[1], "r");
+
 	while(fgets(line, 999, init_script_FILE)) {
 		if(strstr(line, "\tneed ")) {
 			/* these are non-optional deps that have to be started before */
@@ -71,15 +76,13 @@ int main(int argc, char **argv) {
 	free(line);
 	runscript(argv[1], argv[2]);
 
-	return 0;
+	exit(EXIT_SUCCESS);
 }
 
 int runscript(char *init_script, char *func_to_run) {
-	char *command;
+	char *command = NULL;
 	char *confd_file;
 	
-	command=(void *)malloc(5000);
-	memset(command, 0, 5000);
 	confd_file=(void *)malloc(FILENAME_MAX);
 	memset(confd_file, 0, FILENAME_MAX);
 
@@ -94,7 +97,7 @@ int runscript(char *init_script, char *func_to_run) {
 	 *	we source the script itself (init_script)
 	 *	we run the funtion that the user has called for (func_to_run)
 	 */
-	snprintf(command, 4999, "/bin/sh -c \". %s ; . %s%s ; . %s ; %s\"",
+	asprintf(&command, "/bin/sh -c \". %s ; . %s%s ; . %s ; %s\"",
 		SHFUNCS, CONFD_DIR, confd_file, init_script, func_to_run);
 	printf("%s\n", command);
 
@@ -113,24 +116,28 @@ int in_runlevel(char *script) {
 	struct dirent *svc_script;
 	char *alias;
 	
-	alias=malloc(1000);
-	memset(alias, 0, 1000);
-	
 	rlvldir=opendir(RUNLEVEL_DIR);
+	if (rlvldir == NULL) {
+		perror(RUNLEVEL_DIR);
+		return FALSE;
+	}	
+
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
 		if((ret=strcmp(svc_script->d_name, script)) == 0) {
 			/* we have a match */
-			free(alias);
 			return TRUE;
 		}
 		printf("%s: %s-%s\n", __func__, script, svc_script->d_name);
+		alias=malloc(1000);
+		memset(alias, 0, 1000);
 		if(find_alias(alias, script))
 			printf("%s\n", alias);
+		free(alias);
+
 		//printf("%s==%s:%d\n", svc_script->d_name, script, ret);
 	}
-	free(alias);
 	return FALSE;
 
 }
@@ -145,18 +152,25 @@ int find_alias(char *alias, char *script) {
 	DIR *initdir;
 	struct dirent *svc_script;
 	
-	initdir=opendir(INIT_DIR);
+	if ((initdir=opendir(INIT_DIR)) == NULL)
+		return FALSE;
+
 	while((svc_script=readdir(initdir)) != NULL) {
 		char *line, *svc_script_path;
 		FILE *svc_script_FILE;
 		
-		line=(void *)malloc(1000);
-		memset(line, 0, 1000);
 		svc_script_path=(void *)malloc(1000);
 		memset(svc_script_path, 0, 1000);
 
 		snprintf(svc_script_path, 999, "%s%s", INIT_DIR, svc_script->d_name);
 		svc_script_FILE=fopen(svc_script_path, "r");
+		if (svc_script_FILE == NULL) {
+			perror(svc_script_path);
+			return FALSE;
+		}
+
+		line=(void *)malloc(1000);
+		memset(line, 0, 1000);
 
 		while(fgets(line, 999, svc_script_FILE)) {
 			if(strstr(line, "\talias ")) {
