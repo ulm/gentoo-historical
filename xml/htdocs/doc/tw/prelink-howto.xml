@@ -1,0 +1,433 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/tw/Attic/prelink-howto.xml,v 1.1 2004/05/30 08:31:42 bennyc Exp $ -->
+<!-- rev 1.25 by Freak -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="doc/tw/prelink-howto.xml">
+<title>Gentoo Linux Prelink 指南</title>
+
+<author title="Author">
+  <mail link="cretin@gentoo.org">Stefan Jones</mail>
+</author>
+<author title="Editor"><!-- zhen@gentoo.org -->
+  John P. Davis
+</author>
+<author title="Editor">
+  <mail link="peesh@gentoo.org">Jorge Paulo</mail>
+</author>
+<author title="Editor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Editor">
+  <mail link="erwin@gentoo.org">Erwin</mail>
+</author>
+<author title="Translator">
+  <mail link="k92902003@csie.ntu.edu.tw">Tien-Ren Chen</mail>
+</author>
+<author title="Reviewer">
+  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+
+<abstract>
+這份指南用來解說如何利用 portage 2.0.46 以後的 prelink 支援.
+</abstract>
+
+<license/>
+
+<version>1.4</version>
+<date>September 7, 2003</date>
+
+
+<chapter>
+<title>簡介</title>
+<section>
+<title>什麼是 Prelink ? 它能為我做什麼 ?</title>
+<body>
+
+<p>
+許多的應用程式使用共用函式庫. 在這些程式被執行的時候,
+共用函式庫會被讀進記憶體中, 並且跟程式中所參用到的符號(symbol)連結起來.
+對大多的小程式而言, 通常這樣的動態連結非常快.
+但是對一些依存於大量函式庫的 C++ 程式而言, 動態連結卻可能花上不少的時間.
+</p>
+
+<p>
+在大多數的系統上, 函式庫並不會常常被更動, 每次程式被執行時所進行的連結動作都是完
+全相同的,Prelink 利用這點, 將程式與函式庫連結的方式弄出來記錄在執行檔中, 
+達成"預先連結"的效果. 你需要 glibc 中的 ld-linux.so 來進行連結, 要能夠認出"預先
+連結"的紀錄則需要 &gt;=glibc-2.3.1-r2.
+</p>
+
+<p>
+"預先連結"能夠節省應用程式的啟動時間.
+以典型的 KDE 程式為例, 程式的讀取時間能夠減少 50% 那麼多.
+唯一必要的維護只有每當被"預先連結"過的執行檔所連結到的函式庫有所更新時,
+需要再次執行 prelink.
+</p>
+
+</body>
+</section>
+<section>
+<title>摘要</title>
+<body>
+
+<ul>
+  <li>
+    我們可以用一個就叫做 <path>prelink</path> 的程式來進行"預先連結".
+    它能夠修改執行檔的內容, 使啟動的時間變短.
+  </li>
+  <li>
+    如果某個"預先連結"過的應用程式所依存的函式庫有所變動,
+    你必須重新"預先連結"這個應用程式, 不然速度上的增快將繼續無法作用.
+    也就是說, 每次你用 portage 更新一些套件而更新了一些函式庫,
+    這些函式庫必須重新被"預先連結"起來.
+  </li>
+  <li>
+    對執行檔的更動是完全可逆的. <path>prelink</path> 擁有復原的功能.
+  </li>
+  <li>
+    新版的 Portage 能夠應付 <path>prelink</path> 對執行檔的 MD5sum 與 mtime 造成的改變.
+  </li>
+  <li>
+    你需要 glibc-2.3.1-r2 或更新版本, 以及 binutils-2.13.90.0.xx 或更新版本所編
+    譯出的執行檔.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>設定 Prelink</title>
+<section>
+<title>安裝所需程式</title>
+<body>
+
+<note>
+我們假設你的系統是 Gentoo-1.4, 並且是使用 gcc-3.2 與 binutils-2.13.90.0.xx 以後
+版本編出來的. 這樣編出來的執行檔才能夠進行"預先連結".
+</note>
+
+<warn>
+你必須已經安裝了 glibc-2.3.1-r2 或更新的版本, 不然 <path>prelink</path> 會搞爛你
+的執行檔!
+</warn>
+
+<p>
+先更新你的 portage tree, 因為大多數需要用到的程式都還新, 而常常加入新的錯誤修正.
+</p>
+
+<pre caption = "更新你的 portage tree">
+# <i>emerge sync</i>
+</pre>
+
+<p>
+接下來確定你已經安裝了 portage-2.0.46 或更新版本.
+這樣 portage 才能夠認出"預先連結"過的執行檔, 在使用者要反安裝時才能正確移除.
+需要這樣做是因為"預先連結"會造成執行檔的 MD5sum 值改變.
+</p>
+
+<pre caption = "確保 Portage 的版本">
+# <i>emerge ">=portage-2.0.46"</i>
+</pre>
+
+<p>
+現在你可以開始安裝"預先連結"工具了. emerge 程式能夠自動測試你的系統是否能夠安全
+正常地進行"預先連結".
+</p>
+
+<pre caption = "安裝 Prelink">
+# <i>emerge prelink</i>
+</pre>
+
+<p>
+有不少人在安裝 prelink 的時候遭遇到測試失敗的錯誤訊息.
+這些測試是為了安全理由才被放上的, 如果你關閉這些測試, prelink 的行為將無法保證.
+這些錯誤大多是由這些核心套件造成: binutils, gcc, 及 glibc. 試試看照以上順序重新
+安裝這些套件.
+</p>
+
+<note>
+小提示: 如果你在嘗試自行手動編譯測試 <c>prelink</c> (<c>./configure</c> ; 
+<c>make</c> ; <c>make check</c> )時遭遇到錯誤, 你可以察看 testsuite 目錄中的 
+*.log 檔案, 它們可能能給你一些有用的線索.
+</note>
+
+<p>
+如果你能提出一套能在多個系統上復現產生 emerge 錯誤的步驟,
+請 e-mail 給 <mail link="cretin@gentoo.org">Stefan Jones</mail>.
+</p>
+
+</body>
+</section>
+<section>
+<title>組態設定</title>
+<body>
+
+<p>
+Portage 會自動產生 <path>/etc/prelink.conf</path> 檔告訴 <path>prelink</path> 哪
+些檔案需要"預先連結".
+</p>
+
+<p>
+可惜的是你沒辦法"預先連結"舊版 binutils 編出來的程式.
+大多這些來自預先編好, 執行檔發佈的套件都被安裝在 <path>/opt</path>.
+編寫以下檔案能告知 prelink 不要嘗試去"預先連結"它們.
+</p>
+
+<pre caption="/etc/env.d/99prelink">
+PRELINK_PATH_MASK="/opt"
+</pre>
+
+<note>
+你可以用冒號分隔加入更多的目錄在這個清單中.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>進行"預先連結"</title>
+<section>
+<title>Prelink 使用方式</title>
+<body>
+
+<p>
+我們可以用下列指令來"預先連結"所有列在 <path>/etc/prelink.conf</path> 中的目錄裡
+的執行檔.
+</p>
+
+<pre caption = "預先連結清單中的檔案">
+# <i>prelink -afmR</i>
+</pre>
+
+<warn>
+有人發現如果你在磁碟空間吃緊的時候"預先連結"系統上所有執行檔,
+你的執行檔有可能會被截斷, 這樣會弄爆你的系統.
+你可以用 <c>file</c> 或 <c>readelf</c> 來檢查執行檔的狀態.
+或者每次在進行"預先連結"前先用 <c>df -h</c> 檢查硬碟的剩餘空間.
+</warn>
+
+<table>
+<tr>
+  <th>每個選項的解說:</th>
+</tr>
+<tr>
+  <th>-a</th>
+  <ti>"All": 對所有執行檔進行"預先連結".</ti>
+</tr>
+<tr>
+  <th>-f</th>
+  <ti>
+    強制 <path>prelink</path> 重新"預先連結"已經做過"預先連結"的執行檔.
+    加上這個選項是因為 <path>prelink</path> 在看見做過"預先連結"的執行檔的時候會
+    中止執行, 即使相依的函式庫有更動過.
+  </ti>
+</tr>
+<tr>
+  <th>-m</th>
+  <ti>
+    節省虛擬定址分配. 如果你有一卡車的函式庫要"預先連結"就會需要這個選項.
+    (譯註: 這裡的原文 virtual memory space 是有問題的, 應該是 virtual address 
+    space 比較正確.)
+  </ti>
+</tr>
+<tr>
+  <th>-R</th>
+  <ti>
+    Random -- 用亂數進行定址分配, 這樣可以增進安全性對緩衝區溢出(buffer overflow)
+    攻擊的抵抗能力.
+  </ti>
+</tr>
+</table>
+
+<note>
+如想知道更多的選項細節, 請見 <c>man prelink</c>.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>已知問題與處理</title>
+<section>
+<title>&quot;Cannot prelink against non-PIC shared library&quot;</title>
+<body>
+
+<p>
+這個問題是由那些沒有使用 -fPIC gcc 選項編譯全部目的檔(object file)的問題函式庫所
+造成.
+</p>
+
+<p>
+以下是一份問題函式庫, 以及當你遇到上述問題時需要重新安裝的對應套件.
+</p>
+
+<pre caption = "修正">
+<codenote>對 ORBit 函式庫, /usr/lib/libIIOP.so.0.5.17</codenote>
+# <i>emerge "&gt;=sys-apps/tcp-wrappers-7.6-r4" ORBit</i>
+
+<codenote>對 zlib 函式庫, /usr/lib/libz.so.1.1.4</codenote>
+# <i>emerge "&gt;=sys-libs/zlib-1.1.4"</i>
+
+<codenote>對 svgalib, /usr/lib/libsvga.so.xx</codenote>
+# <i>emerge "&gt;=media-libs/svgalib-1.9.16"</i>
+
+<codenote>對 XFree openGL 函式庫, libGLU.so.1</codenote>
+# <i>emerge "&gt;=x11-base/xfree-4.2.1-r2"</i>
+
+<codenote>對 libpcap.so.0.6</codenote>
+# <i>emerge "&gt;=net-libs/libpcap-0.7.1-r2"</i>
+
+<codenote>對 lcms 函式庫, /usr/lib/liblcms.so.1</codenote>
+# <i>emerge "&gt;=media-libs/lcms-1.09"</i>
+</pre>
+
+<note>
+許多函式庫有靜態連結到 zlib 與/或 tcp-wrappers, 所以先試著安裝它們,
+並重新安裝問題函式庫. 
+</note>
+
+<p>
+如果你在"預先連結" QT/KDE 時遇到問題, 先試著更新到
+&gt;=x11-base/xfree-4.2.1-r2 與 &gt;=x11-libs/qt-3.1.0-r1 套件.
+如果 QT 還是不過的話, 則可以試著在 qt 的 ebuild 檔中加上 myconf="-no-xinerama 
+${myconf}" 來編譯不包含 xinerama 支援的 QT .
+</p>
+
+<p>
+這裡有一些函式庫是還沒修正或是無法修正的:
+</p>
+
+<ul>
+  <li>
+    wine 套件中的函式庫, winex 也不例外.
+    但是"預先連結"本來就無法對 MS Windows 執行檔進行加速.
+  </li>
+  <li>
+    media-video/mjpegtools 中的函式庫
+    <path>/usr/lib/liblavfile-1.6.so.0</path>.
+  </li>
+</ul>
+
+<p>
+如果你的問題函式庫沒有在列表中, 請回報,
+最好能夠附上一份為相映的 CFLAGS 加上 <c>-fPIC</c> 選項的修補檔.
+</p>
+
+</body>
+</section>
+<section>
+<title>當對檔案進行"預先連結"的時候發生中止, 像是 &quot;1631 Aborted ....&quot;</title>
+<body>
+
+<p>
+你需要為 <path>prelink</path> 加上 <c>-f</c> 參數.
+也就是說, 如果你要對整個系統重新進行"預先連結"的話, 用 <c>prelink -af</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>&quot;&lt;檔名&gt;: error while loading shared libraries: unexpected
+reloc type...&quot;</title>
+<body>
+
+<p>
+這個錯誤在 2002/11/18 時, 在 <c>sys-libs/glibc-2.3.1-r2</c> 中已修正了,
+如果你還在用舊版本的話, 請重新安裝 glibc.
+</p>
+
+<p>
+已知 <c>prelink -u -a -m</c> ; <c>prelink -a -m</c> 可能也有用.
+如果這些方法都失敗的話就 <c>prelink -u &lt;file&gt;</c> 吧.
+</p>
+
+</body>
+</section>
+<section>
+<title>我的 nVIDIA openGL 函式庫發生問題</title>
+<body>
+
+<p>
+nvidia-glx 套件中具有加速功能的 openGL 函式庫是用非標準的方式編譯出來的,
+所以 <path>prelink</path> 會發出警告.
+這沒什麼好擔心的, 而且除了 nVIDIA 以外沒有人能夠進行修正.
+如果你不需要 3D 加速的話, 你也可以隨時換回 XFree 內建的 libGL.so.
+XFree 的 nvidia 驅動程式足以正常運作了.
+</p>
+
+</body>
+</section>
+<section>
+<title>當我對整個系統進行"預先連結"之後, 一些靜態連結的執行檔不會動了</title>
+<body>
+
+<p>
+就 glibc 而言是沒有 100% 的靜態連結執行檔這回事的.
+如果你是用 glibc 靜態編譯了一個執行檔, 則這個執行檔還是有可能會依存其它系統檔案.
+以下是 Dick Howell 的解釋.
+</p>
+
+<p>
+&quot;我想你的想法是認為所有相依函式庫都會在下載下來的檔案之中(譯註: 下載下來的
+靜態連結執行檔), 所以它不用依賴任何本地端的函式庫. 但是很可惜的, 對於 Linux, 甚
+至我想對於任何使用 glibc 的系統, 這樣的想法並不正確. 有個叫做 &quot;libnss&quot;
+的東西 (名稱服務選擇 name service switch, 也有人管它叫網路安全系統, network 
+security system), 它提供了一些處理認證資料庫, 網路資訊, 以及一些其它東西的函式.
+它被設計來使應用程式可以直接適應於不同的網路環境. 這是個聰明的設計, 但是使用不同
+系統的 glibc 卻可能對它的載入造成問題. 但它又根據不同的系統設定而有所不同, 所以
+你沒辦法對它作靜態連結. 我想問題就是這樣發生的, 程式靜態連結了不同系統的 glibc 
+函式庫, 主要是 &quot;libpthread&quot;, &quot;libm&quot;, &quot;libc&quot;, 這些
+函式庫對 &quot;libnss&quot; 呼叫了不相容的函式.&quot;
+</p>
+
+</body>
+</section>
+<section>
+<title>Prelink 發出 &quot;prelink: dso.c:306: fdopen_dso: Assertion
+`j == k' failed.&quot; 並中止了</title>
+<body>
+
+<p>
+這是個已知的問題, <uri link="http://bugs.gentoo.org/show_bug.cgi?id=13878">
+這裡</uri> 有親切的解說. Prelink 沒辦法處理用 UPX 壓縮過的執行檔. 直到了 
+prelink-20021213 都還沒有修正, 你只能在進行"預先連結"時把這些壓縮過的執行檔藏起來.
+你可以參考上方的 <uri link="#doc_chap2_sect2">組態設定 章節</uri> 來簡單地完成這件事.
+</p>
+
+</body>
+</section>
+<section>
+<title>我使用 grsecurity 而"預先連結"似乎無法運作</title>
+<body>
+
+<p>
+如果你要在一個使用 grsecurity 使 mmap() 基底位址亂數化(randomized mmap() base)的
+系統上使用"預先連結", 你必須把 <path>/lib/ld-2.3.*.so</path> 的 "randomized 
+mmap() base" 設定關閉. 你可以用 <c>chpax</c> 公用程式來完成這個動作,但是這必須在
+該檔沒有在使用時才能進行. (比方說用救援光碟開機)
+</p>
+
+</body>
+</section>    
+</chapter>
+
+<chapter>
+<title>結論</title>
+<section>
+<body>
+
+<p>
+"預先連結"可以大大地增進一些大型應用程式的啟動時間.
+Portage 也有內建的支援. "預先連結"也很安全, 發生問題的時候你可以還原任何的執行檔.
+你只要記得當更新了 glibc 或其它有被"預先連結"到的函式庫時必須重新執行 
+<path>prelink</path>. 總之最後, 祝你好運!
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
