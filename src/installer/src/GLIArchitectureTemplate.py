@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.22 2005/01/05 07:52:28 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.23 2005/01/05 08:26:42 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -176,7 +176,7 @@ class ArchitectureTemplate:
 		for device in parts:
 		#in parts['/dev/hda']
 			for partition in parts[device]:
-				print parts[device][partition]
+				#print parts[device][partition]
 				mountpoint = parts[device][partition]['mountpoint']
 				mountopts = parts[device][partition]['mountopts']
 				minor = str(parts[device][partition]['minor'])
@@ -186,6 +186,10 @@ class ArchitectureTemplate:
 						mountopts = "-o "+mountopts+" "
 					if partition_type:
 						partition_type = "-t "+partition_type+" "
+					if not GLIUtility.is_file(self._chroot_dir+partition):
+						exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
+						if exitstatus != 0:
+							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
 					ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint)
 					if not GLIUtility.exitsuccess(ret):
 						raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
@@ -263,7 +267,7 @@ class ArchitectureTemplate:
 		partitions = self._install_profile.get_fstab()
 		for partition in partitions:
 			if not GLIUtility.is_file(self._chroot_dir+partition):
-				exitstatus = GLIUtility.spawn("mkdir " + partition, True)
+				exitstatus = GLIUtility.spawn("mkdir " + self._chroot_dir + partition)
 				if exitstatus != 0:
 					raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
 			newfstab += partitions[partition][0] + "\t " + partition + "\t " + partitions[partition][1]
