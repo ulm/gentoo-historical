@@ -58,8 +58,10 @@ def fsort(L, f=cmp):
 ###############
 
 def create_pkg_db(db):
+	TotalPkgNum=0
         tree = portage.portagetree()
         for node in tree.getallnodes():
+		TotalPkgNum += 1
                 mybest=tree.dep_bestmatch(node)
                 if not mybest:
                         continue
@@ -67,9 +69,15 @@ def create_pkg_db(db):
                 mysplit=mybest.split("/")
                 mydbkey="/var/cache/edb/dep/dep-"+mysplit[1]+".ebuild"
                 PN, PV, PR = portage.pkgsplit(mysplit[1])
-                cpv=mysplit[0]+"/"+PN+"-"+ PV+"-"+PR
+		if (PR== "r0"):
+			PnV = PV
+		else:
+			PnV=PV + "-"+PR
+			
+		cpv=mysplit[0]+"/"+PN+"-"+ PnV
                 myebuild = portage.db["/"]["porttree"].getname(cpv)
-                myroot = "/"
+		print myebuild
+		myroot = "/"
                 edebug=0
                 #use the cached info if it is available and more recent than the ebuild itself (mtime)
                 dbstat=0
@@ -153,6 +161,7 @@ def create_pkg_db(db):
                 rdepend=string.replace(rdepend,'>','&gt;')
                 db[mysplit[0]][PN]['depend']    = depend
                 db[mysplit[0]][PN]['rdepend']   = rdepend
+		db['totalnumberofpackages'] = str(TotalPkgNum)
         return db
 
 
@@ -230,16 +239,19 @@ def do_pkgentry(db,pkgname,category):
 ############
 # main processing loop
 ############
+TotalPkgNum=0
 db ={}
 create_pkg_db(db)
 out = file(sys.argv[1], "w")
 header=do_header('index')
 content="""<p>
+	Total number of packages available: """ + db['totalnumberofpackages'] + """
         <table>
         <tr>
         <th>Category</th>
         </tr>
 """
+del db['totalnumberofpackages']
 out.write(header)
 out.write(content)
 side='1'
