@@ -21,7 +21,7 @@
 </mainpage>
 </xsl:template>
 
-<xsl:template match="cat">
+<xsl:template match="catid">
   <xsl:param name="metadoc"/>
   <xsl:variable name="categorie"><xsl:value-of select="text()"/></xsl:variable>
   <chapter>
@@ -48,9 +48,9 @@
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $categorie]">
       <xsl:call-template name="document">
         <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="fileid"  select="file/text()"/>
-        <xsl:with-param name="vpart"   select="file/@vpart"/>
-        <xsl:with-param name="vchap"   select="file/@vchap"/>
+        <xsl:with-param name="fileid"  select="fileid/text()"/>
+        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
       </xsl:call-template>
     </xsl:for-each>
   
@@ -68,9 +68,9 @@
         <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $currentcat]">
           <xsl:call-template name="document">
             <xsl:with-param name="metadoc"  select="$metadoc"/>
-            <xsl:with-param name="fileid"   select="file/text()"/>
-            <xsl:with-param name="vpart"    select="file/@vpart"/>
-            <xsl:with-param name="vchap"    select="file/@vchap"/>
+            <xsl:with-param name="fileid"   select="fileid/text()"/>
+            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
           </xsl:call-template>
         </xsl:for-each>
       
@@ -129,9 +129,9 @@
     <xsl:for-each select="document($metadoc)/metadoc/docs/doc[memberof = $catid]">
       <xsl:call-template name="linkfile">
         <xsl:with-param name="metadoc" select="$metadoc"/>
-        <xsl:with-param name="fileid"  select="file"/>
-        <xsl:with-param name="vpart"   select="file/@vpart"/>
-        <xsl:with-param name="vchap"   select="file/@vchap"/>
+        <xsl:with-param name="fileid"  select="fileid"/>
+        <xsl:with-param name="vpart"   select="fileid/@vpart"/>
+        <xsl:with-param name="vchap"   select="fileid/@vchap"/>
       </xsl:call-template>
     </xsl:for-each>
     <xsl:for-each select="document($metadoc)/metadoc/categories/cat[@parent = $catid]">
