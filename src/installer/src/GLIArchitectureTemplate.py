@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.40 2005/01/26 05:52:43 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.41 2005/01/26 06:24:37 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -430,7 +430,9 @@ class ArchitectureTemplate:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
 						
 			#i'm sure i'm forgetting something here.
-			
+			#cleanup
+			exitstatus = GLIUtility.spawn("rm "+self._chroot_dir+"/root/kernel_script")
+			#it's not important if this fails.
 	def install_logging_daemon(self):
 		"Installs and sets up logger"
 		# Get loggin daemon info
