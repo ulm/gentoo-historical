@@ -23,7 +23,9 @@
 
 <!-- Content of /guide -->
 <xsl:template name="guidecontent">
-  <br />
+  <xsl:if test="$style != 'printable'">
+    <br />
+  </xsl:if>
   <h1>
     <xsl:choose>
       <xsl:when test="/guide/subtitle"><xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
@@ -34,6 +36,8 @@
   <xsl:choose>
     <xsl:when test="$style = 'printable'">
       <xsl:apply-templates select="author" />
+      <br/>
+      <i><xsl:call-template name="contentdate"/></i>
     </xsl:when>
     <xsl:otherwise>
       <form name="contents" action="http://www.gentoo.org">
@@ -137,43 +141,7 @@
               </tr>
               <tr>
                 <td align="center" class="alttext">
-                  <!-- Update datestamp -->
-                  <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-                  <xsl:choose>
-                    <xsl:when test="/book">
-                      <!-- In a book: look for max(/date, include_files/sections/date) -->
-                      <xsl:for-each select="/book/part/chapter/include">
-                        <xsl:sort select="document(@href)/sections/date" order="descending" />
-                        <xsl:if test="position() = 1">
-
-                          <!-- Compare the max(date) from included files with the date in the master file
-                               Of course, XSLT 1.0 knows no string comparison operator :-(
-                               So we build a node set with the two dates and we sort it.
-                            -->
-                          <xsl:variable name="theDates">
-                            <xsl:element name="bookDate">
-                              <xsl:value-of select="/book/date"/>
-                            </xsl:element>
-                            <xsl:element name="maxChapterDate">
-                              <xsl:value-of select="document(@href)/sections/date"/>
-                            </xsl:element>
-                          </xsl:variable>
-                          <xsl:variable name="sortedDates">  
-                            <xsl:for-each select="exslt:node-set($theDates)/*">  
-                              <xsl:sort select="." order="descending" />
-                              <xsl:copy-of select="."/>
-                            </xsl:for-each>   
-                          </xsl:variable>
-                          <!-- First date is the one we want -->
-                          <xsl:value-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
-
-                        </xsl:if>
-                      </xsl:for-each>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <xsl:value-of select="func:format-date(/guide/date)"/>
-                    </xsl:otherwise>
-                  </xsl:choose>
+                  <xsl:call-template name="contentdate"/>
                 </td>
               </tr>
               <tr>
@@ -1387,6 +1355,45 @@
     <tr><xsl:apply-templates/></tr>
   </xsl:for-each>
   </table>
+</xsl:template>
+
+
+<xsl:template name="contentdate">
+  <!-- Update datestamp -->
+  <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
+  <xsl:choose>
+    <xsl:when test="/book">
+      <!-- In a book: look for max(/date, include_files/sections/date) -->
+      <xsl:for-each select="/book/part/chapter/include">
+        <xsl:sort select="document(@href)/sections/date" order="descending" />
+        <xsl:if test="position() = 1">
+          <!-- Compare the max(date) from included files with the date in the master file
+               Of course, XSLT 1.0 knows no string comparison operator :-(
+               So we build a node set with the two dates and we sort it.
+            -->
+          <xsl:variable name="theDates">
+            <xsl:element name="bookDate">
+              <xsl:value-of select="/book/date"/>
+            </xsl:element>
+            <xsl:element name="maxChapterDate">
+              <xsl:value-of select="document(@href)/sections/date"/>
+            </xsl:element>
+          </xsl:variable>
+          <xsl:variable name="sortedDates">  
+            <xsl:for-each select="exslt:node-set($theDates)/*">  
+              <xsl:sort select="." order="descending" />
+              <xsl:copy-of select="."/>
+            </xsl:for-each>   
+          </xsl:variable>
+          <!-- First date is the one we want -->
+          <xsl:value-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="func:format-date(/guide/date)"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

@@ -41,6 +41,8 @@
   <h1><xsl:value-of select="title" /></h1>
   <xsl:if test="$style = 'printable'">
     <xsl:apply-templates select="author" />
+    <br/>
+    <i><xsl:call-template name="contentdate"/></i>
   </xsl:if>
   <p><xsl:value-of select="func:gettext('Content')"/>:</p>
   <ul>
