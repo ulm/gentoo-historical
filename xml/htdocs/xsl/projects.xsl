@@ -20,6 +20,20 @@
 		<chapter>
 			<title>Project listing</title>
 			<section><body>
+			<p>
+			  <xsl:choose>
+			    <xsl:when test="$showlevel&lt;=1">
+			      <uri link="projects.xml?showlevel=2">
+			        Show sub-projects
+			      </uri>
+			    </xsl:when>
+			    <xsl:otherwise>
+			      <uri link="projects.xml?showlevel=1">
+			        Hide sub-projects
+			      </uri>
+			    </xsl:otherwise>
+			  </xsl:choose>
+			</p>
 			<table>
 			  <xsl:if test="$showlevel&lt;=1">
 			    <tr>
