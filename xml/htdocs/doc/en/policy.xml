@@ -5,11 +5,12 @@
 
 <guide>
 <title>Gentoo Linux Development Policy</title>
+<author title="Original Author">Owen Stampflee</author> 
 <author title="Author"><mail link="karltk@gentoo.org">Karl Trygve Kalleberg</mail></author> 
 <author title="Author/Editor"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author> 
 <author title="Editor"><mail link="seemant@gentoo.org">Seemant Kulleen</mail></author> 
 <abstract>
-This guide is meant to be the authoritative written reference on Gentoo Linux development policy.
+This guide is meant to be the authoritative written reference for Gentoo Linux development policy.
 It will be updated periodically to reflect new developer procedures.
 </abstract>
 
@@ -101,9 +102,152 @@ is used to inform people that a new and improved Gentoo Linux revision of a
 particular package is available. Initial releases of ebuilds must have no
 revision number, e.g. <c>package-4.5.3</c> and are considered by Portage to
 have a revision number of zero. This means that counting goes as follows:
-<c>1.0</c> (initial version), <c>1.0-r1</c>, <c>1.0-r2</c>, etc. Revision
-numbers should be incremented by Gentoo Linux developers when the ebuild has
-changed to the point where users would want to upgrade. Typically, this is the
-case when fixes are made to an ebuild that affect the resultant installed
-files, but the ebuild uses the same source tarball as the previous release.</p>
-</body> </section> </chapter> </guide>
+<c>1.0</c> (initial version), <c>1.0-r1</c>, <c>1.0-r2</c>, etc. </p>
+</body>
+</section>
+<section>
+<title>Versioning and revision bumps</title>
+<body>
+
+<p>Package revision numbers should be incremented by Gentoo Linux developers
+when the ebuild has changed to the point where users would want to upgrade.
+Typically, this is the case when fixes are made to an ebuild that affect the
+resultant installed files, but the ebuild uses the same source tarball as the
+previous release.  If you make an internal, stylistic change to the ebuild that
+does not change any of the installed files, then there is no need to bump the
+revision number.  Likewise, if you fix a compilation problem in the ebuild that
+was affecting some users, there is no need to bump the revision number, since
+those for whom it worked perfectly would see no benefit in installing a new
+revision, and those who experienced the problem do not have the package
+installed (since compilation failed) and thus have no need for the new revision
+number to force an upgrade.</p>
+
+<impo>Whenever you create a new revision of an ebuild, be sure to update the
+<path>ChangeLog</path> file in the ebuild directory. Failing to do so is
+considered to be in very poor taste and many result in disciplinary
+action.</impo>
+
+</body> 
+</section> 
+<section>
+<title>Virtuals</title>
+<body>
+
+<p>Portage supports a concept called "virtual" packages. Using virtual
+packages, it is possible to have a particular category/package name map to
+another. Here's an example of how to use virtual packages. Let's say you create
+a new cron package called <c>foocron</c>. Gentoo Linux is currently set up so
+that things that need a cron package of some kind depend on the
+<c>virtual/cron</c> package. This allows ebuilds to ensure that there is some
+kind of cron available while allowing users the flexibility to install the cron
+package that they prefer. To plug your <path>foocron-1.0.ebuild</path> into
+this system, you'd add a line to the ebuild that reads:</p>
+
+<pre>
+PROVIDE="virtual/cron"
+</pre>
+
+<p>Now, when <c>foocron-1.0</c> is installed, the <c>virtual/cron</c> package
+will be registered. If you didn't have any cron package installed before, this
+would mean that any package <e>depending</e> on <c>virtual/cron</c> would have
+that dependency fully satisfied. Note that is is possible to specify a
+<c>PROVIDES</c> value for any type of package -- it need not begin with
+<c>virtual/</c>. However, you <e>should</e> use the <c>virtual/</c> category
+unless you are using the <c>PROVIDES</c> functionality to handle packages that
+have been renamed.  </p>
+
+<p>There is a second component to the Gentoo Linux virtuals implementation.
+What would happen if there were no installed package that provided
+<c>virtual/cron</c>? How would Portage choose the "correct" cron to install to
+satisfy the <c>virtual/cron</c> dependency? Portage takes care of this
+situation by using a profile-specific virtual mapping file called
+<path>virtuals</path> which is stored in the profile directory
+<path>/etc/make.profile</path>. If you take a look at your
+<path>virtuals</path> file, you'll find that the contents look something like
+this: </p>
+
+<pre caption="Sample virtuals file">
+virtual/lpr             net-print/cups
+virtual/python          dev-lang/python
+virtual/mta             net-mail/ssmtp
+</pre>
+
+<p>The first line of this file tells Portage that if a package depends on
+<c>virtual/lpr</c> and no <c>virtual/lpr</c> is installed and no
+<c>virtual/lpr</c> package is available in the Portage tree, then
+<c>net-print/cups</c> should be installed to satisfy this dependency.
+<c>net-print/cups</c> contains a line that reads <c>PROVIDE="virtual/lpr"</c>
+so that future dependencies on <c>virtual/lpr</c> will be satisfied.</p>
+
+<p>Now for the developer guidelines. If you were to add the <c>foocron</c>
+package, you would obviously want to ensure that all programs that depend upon
+<c>virtual/cron</c> are able to work correctly with it. And if you were to add
+a package named <c>foobarosity</c> that depended on <c>virtual/cron</c>, you
+should likewise ensure that all packages that provide <c>virtual/cron</c> will
+be satisfactory for the proper functioning of <c>foobarosity</c>.</p>
+</body>
+</section>
+<section>
+<title>CVS snapshot policy</title>
+<body>
+<p><e>(coming soon)</e></p>
+</body>
+</section>
+<section>
+<title>User-submitted ebuilds</title>
+<body>
+<p>User-submitted ebuilds should never be blindly trusted and should always be
+well-tested and audited before being committed to CVS. <b>If a user-submitted
+ebuild has problems, you will be held accountable.</b> By committing it to CVS,
+you are vouching that the ebuild meets all Gentoo Linux development standards.</p>
+
+<p>Make sure that the user-submitted ebuild doesn't contain custom headers like this:</p>
+
+<pre caption="A custom header that should be transferred to the ChangeLog">
+# Ebuild updated by: me &lt;me@me.com&gt;
+</pre>
+
+<p>This information should be added to the <file>ChangeLog</file> using proper ChangeLog
+comment syntax. <b>Always ensure that the ChangeLog gives proper credit to the user
+who submitted the ebuild. This information should appear in the first ChangeLog entry.</b></p>
+
+<p>Also ensure that any new ebuilds you commit contain the following line:</p>
+<pre>
+# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/Attic/policy.xml,v 1.2 2002/11/15 17:32:58 drobbins Exp $
+</pre>
+<p>Quite a few user-submitted ebuilds are based on files from rsync, which can contain
+incorrect header lines.</p>
+
+<p>Encourage users to submit diffs to existing ebuilds if they are submitting
+an upgrade.  By doing this, we can help avoid the re-introduction of
+previously-fixed bugs into our "new" ebuilds. If you are not working from a user-submitted
+diff but a complete ebuild, then use the <c>diff</c> command to see what has changed, keeping
+an eye open for anything from our current ebuild that should appear in the new ebuild, or
+anything in the new ebuild that should be fixed or removed.</p>
+
+<p>In general, let the user do the work required to get his or her ebuild up to par, unless
+you <e>want</e> to clean up the ebuild on his or her behalf.  Even so, it's often better
+to have the user do the work so that they can learn from their mistakes and submit cleaner ebuilds
+in the future. Be sure to be thankful for any submission, even if it isn't very good. Be polite
+but honest -- if an ebuild isn't usable, the user can be told in a way that does not insult their
+current ebuild-writing abilities. Remember that the user who submitted that broken ebuild may
+be a skilled an productive member of our project in the future -- that is, if they receive the right
+amount of encouragement and support and continue to improve in their abilities.</p>
+</body>
+</section>
+</chapter> 
+<chapter>
+<title>Variables</title>
+<section>
+<title>Required variables</title>
+<body>
+<p>Gentoo Linux policy requires that all ebuilds contain <c>KEYWORDS</c>, <c>LICENSE</c> and <c>SLOT</c> variables.
+<c>HOMEPAGE</c>, <c>SRC_URI</c> and <c>DESCRIPTION</c> should also be included except for special circumstances,
+and <c>DEPEND</c> and <c>RDEPEND</c> should be included if your package has any build or runtime dependencies
+respectively.
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>
