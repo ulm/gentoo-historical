@@ -346,6 +346,8 @@
 				<br/>
 				<a class="altlink" href="http://cvs.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
 				<br/>
+				<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
+				<br/>
 				<a class="altlink" href="/main/en/devlist.xml">Gentoo Linux developer list</a>
 				<br/><br/>
 				Graphics:
