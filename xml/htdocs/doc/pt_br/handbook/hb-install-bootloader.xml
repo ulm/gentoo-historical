@@ -1,0 +1,941 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/Attic/hb-install-bootloader.xml,v 1.1 2004/05/12 14:50:53 azambuja Exp $ -->
+
+<sections>
+<section>
+<title>Fazendo a escolha</title>
+<subsection>
+<title>Introdução</title>
+<body>
+
+<p>
+Agora que o seu kernel está configurado e compilado e os arquivos de configuração
+necessário pra o sistema estão preechidos corretamente, está na hora de instalar um
+programa que irá chamar o seu kernel quando você iniciar o sistema. Tal programa é
+chamado de <e>bootloader</e>. Man antes de iniciar, considere as opções...
+</p>
+
+<p>
+Existem vários bootloaders para o Linux. Porém, estes bootloaders somente
+funcionam em algumas arquiteturas. Então você deve escolher entre os
+bootloaders que suportam sua arquitetura.
+</p>
+
+<p>
+A próxima tabela lista as arquiteturas e os bootloaders suportados.
+Escolha um bootloader baseado em sua arquitetetura. Por exemplo, se você tem
+um Pentium IV, então sua arquitetura é <e>x86</e>. Você tem a escoha
+entre o GRUB (recomendado) e LILO.
+</p>
+
+<table>
+<tr>
+  <th>Arquitetura</th>
+  <th>Recomendado</th>
+  <th>Alternativas</th>
+</tr>
+<tr>
+  <th>x86</th>
+  <ti><uri link="#doc_chap2">GRUB</uri></ti>
+  <ti><uri link="#doc_chap3">LILO</uri></ti>
+</tr>
+<tr>
+  <th>alpha</th>
+  <ti><uri link="#doc_chap4">aBoot</uri></ti>
+  <ti><uri link="#doc_chap5">MILO</uri></ti>
+</tr>
+<tr>
+  <th>sparc</th>
+  <ti><uri link="#doc_chap6">SILO</uri></ti>
+  <ti></ti>
+</tr>
+<tr>
+  <th>ppc</th>
+  <ti>
+    <uri link="#doc_chap8">yaBoot</uri> (NewWorld), 
+    <uri link="#doc_chap9">BootX</uri> (OldWorld)
+  </ti>
+  <ti></ti>
+</tr>
+<tr>
+  <th>hppa</th>
+  <ti><uri link="#doc_chap7">PALO</uri></ti>
+  <ti></ti>
+</tr>
+<tr>
+  <th>mips</th>
+  <ti><uri link="#doc_chap10">MIPS PROM</uri></ti>
+  <ti></ti>
+</tr>
+<tr>
+  <th>amd64</th>
+  <ti><uri link="#doc_chap2">GRUB</uri></ti>
+  <ti></ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcional: Framebuffer</title>
+<body>
+
+<note>
+Esta seção somente se aplica usuários de x86, AMD64 e PPC que configuraram 
+suporte a framebuffer em seu kernel. Isto inclui quem usou o <c>genkernel</c>.
+</note>
+
+<p>
+<e>Se</e> você configurou o kernel com suporte a framebuffer, você
+tem que adiciona a opção <c>vga</c> no arquivo de configuração do bootloader 
+se você optar por usar framebuffer. A próxima tabela lista os valores da
+opção <c>vga</c> que você pode usar. No arquivo de configuração de exemplo nós
+usamos <e>800x600 @ 16bpp</e>, assim <e>788</e>.
+</p>
+
+<table>
+<tr>
+  <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+  <th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+  <th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+  <th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+Lembre-se  (ou anote) seu valor; você precisará dele daqui a pouco.
+</p>
+
+<p>
+Agora escolha o bootloader de sua preferência na tabela acima.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Padrão: Usando GRUB</title>
+<subsection>
+<title>Entendendo a terminologia do GRUB</title>
+<body>
+
+<impo>
+O GRUB somente pode ser usado sistemas baseados em x86 e AMD64!
+</impo>
+
+<p>
+A parte mais crítica em compreender o GRUB é sentir-se confortável em
+como o GRUB se refere aos dicos rígidos e partições. Sua partição Linux
+<path>/dev/hda1</path> é chamada de <path>(hd0,0)</path> no GRUB. Perceba que 
+os parênteses no <path>hd0,0</path> - eles são requeridos.
+</p>
+
+<p>
+Discos rígidos contam a partir de 0 (zero) ao invés de "a" e as partições iniciam em 0 (zero)
+ao invés de 1 (um). Esteja atento para isto com os hds, somente os discos rígidos são
+contados, dispositivos atapi-ide tais como leitores e gravadores de cdrom. O mesmo
+acontece com dispositivos scsi. (Normalmente eles recebem números maiores
+que os dispositivos ide exceto quando a bios está configurada para iniciar a partir
+do scsi.)
+</p>
+
+<p>
+Supondo que você tenha um disco rígigo em <path>/dev/hda</path>, um leitor de cdrom em
+<path>/dev/hdb</path>, uma gravadora em <path>/dev/hdc</path>, um segundo disco rígido
+em <path>/dev/hdd</path> e nenhum disco rígido SCSI, <path>/dev/hdd7</path> seria 
+conhecido como <path>(hd1,6)</path>. Pode parecer difícil, e difícil é 
+de fato, mas como veremos, o GRUB oferece um mecanismo de "autocompletar" com o tab
+que será util para os que tiverem vários discos rígidos e partições
+e que estão um pouco perdidos na maneira de numerar do GRUB.
+</p>
+
+<p>
+Agora que compreendemos como trabalhar com o GRUB, está na hora de instalá-lo.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Instalando o GRUB</title>
+<body>
+
+<p>
+Para instalar o GRUB, vamos primeiro emergi-lo . Usuários da arquitetura x86 tem que
+instalar o <c>grub</c>, usuário da AMD64 irão emergir o <c>grub-static</c>:
+</p>
+
+<pre caption = "Instalando o GRUB">
+<comment>(For the x86 architecture)</comment>
+# <i>emerge grub</i>
+
+<comment>(For the AMD64 architecture)</comment>
+# <i>emerge grub-static</i>
+# <i>cp -Rpv /usr/share/grub/i386-pc/* /boot/grub</i>
+</pre>
+
+<p>
+Para iniciar a configuração do GRUB, você digita <c>grub</c>. Você será apresentado
+ao prompt: <path>grub&gt;</path>. Agora, você precisa digitar os
+comandos corretos para instalar o registro de inicialização do GRUB no seu disco rígido.
+</p>
+
+<pre caption = "Iniciando com o promt GRUB">
+# <i>grub</i>
+</pre>
+
+<note>
+Se o seu sistema não tem nenhum dispositivo de disco flexível, adicione a opção
+<c>--no-floppy</c> ao comando acima para prevenir que o grub de procurar pelo
+disquete (não existente).
+</note>
+
+<p>
+Na configuração de exemplo nós queremos instalar o GRUB de tal forma que ele leia
+as informações da partição de boot <path>/dev/hda1</path>, e instalar o registro
+de inicialização do GURB no MBR (master boot record) do disco rígido para que a primeira
+coisa que vejamos quando ligarmos o computador seja o prompt do GRUB. É claro que se você
+não seguiu a configuração de exemplo durante a instalação modifique os comando de acordo.
+</p>
+
+<p>
+O mecanismo de "autocompletar" com o tab do GRUB pode ser usado no prompt.
+Por exemplo, se você digitar "<c>root (</c>" seguido pela tecla TAB, será
+exibida uma lista de dispositivos (como <path>hd0</path>). Se você
+digitar "<c>root (hd0,</c>" seguido pela tecla TAB, será exibida uma lista
+das partições disponíveis (como <path>hd0,0</path>).
+</p>
+
+<p>
+Usando o tab, a configuração do GRUB não deve ser tão dificil.
+Agora vamos lá, continuar a configuração do GRUB? :-)
+</p>
+
+<pre caption = "instalando o GRUB na MBR">
+grub&gt; <i>root (hd0,0)</i>          <comment>(Specify where your /boot partition resides)</comment>
+grub&gt; <i>setup (hd0)</i>           <comment>(Install GRUB in the MBR)</comment>
+grub&gt; <i>quit</i>                  <comment>(Exit the GRUB shell)</comment>
+</pre>
+
+<note>
+Se você quer instalar o GRUB em outra partição e não na MBR,
+você deve alterar o comando <c>setup</c> para que ele aponte para a partição
+correta. Por exemplo, se você quer o GRUB instalado em 
+<path>/dev/hda3</path>, então o comando seria <c>setup (hd0,2)</c>.
+Poucos usuários iriam querer fazer isto.
+</note>
+
+<p>
+Agora o GRUB está instalado, mas ainda precisamos criar um 
+arquivo de configuração para ele, para que o GRUB automaticamente inicie
+os kernels criados. Crie o arquivo <path>/boot/grub/grub.conf</path> com o
+<c>nano</c> (ou, se for o caso, outro editor):
+</p>
+
+<pre caption = "Criando o /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+Agora iremos criar o arquivo <path>grub.conf</path>. Abaixo você
+encontrará dois possíveis <path>grub.conf</path> para para o exemplo de particionamento
+que é usado neste guia, com a imagem do kernel <path>kernel-2.4.25</path>. Nós somente
+comentamos extensivamente o primeiro <path>grub.conf</path>. 
+</p>
+
+<ul>
+  <li>
+    O primeiro <path>grub.conf</path> é para pessoas que não usaram o genkernel
+    <c>genkernel</c> para gerar o kernel
+  </li>
+  <li>
+    O segundo <path>grub.conf</path> é para pessoas que usaram o
+    <c>genkernel</c> para gerar o kernel
+  </li>
+</ul>
+
+<pre caption = "grub.conf para quem não usou o genkernel">
+<comment># Which listing to boot as default. 0 is the first, 1 the second etc.</comment>
+default 0
+<comment># How many seconds to wait before the default listing is booted.</comment>
+timeout 30
+<comment># Nice, fat splash-image to spice things up :)</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.25
+<comment># Partition where the kernel image (or operating system) is located</comment>
+root (hd0,0)
+kernel (hd0,0)/kernel-2.4.25 root=/dev/hda3
+
+<comment># The next three lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
+<pre caption = "grub.conf para quem usou o genkernel">
+default 0
+timeout 30
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.4.25
+root (hd0,0)
+kernel (hd0,0)/kernel-2.4.25 root=/dev/ram0 init=/linuxrc real_root=/dev/hda3
+initrd (hd0,0)/initrd-2.4.25
+
+<comment># Only in case you want to dual-boot</comment>
+title=Windows XP
+root (hd0,5)
+chainloader +1
+</pre>
+
+
+<note>
+Se você usou um esquema diferente de particionamento  e/ou uma imagem do kernel, ajuste 
+de acordo. Portanto, certifique-se que tudo que segue um dispositovo no GRUB
+(como <path>(hd0,0)</path>) é ralativo ao ponto de montagem, e não à raiz. Em
+outras palavras, <path>(hd0,0)/grub/splash.xpm.gz</path> é realmente 
+<path>/boot/grub/splash.xpm.gz</path> já que <path>(hd0,0)</path> é  
+<path>/boot</path>.
+</note>
+
+<p>
+Se você precisa passar alguma opção adicional ao kernel, é só adicioná-los
+ao fim da linha do kernel. Nós já estamos passando uma opção
+(<c>root=/dev/hda3</c> ou <c>real_root=/dev/hda3</c>), mas você pode passar outras 
+caso queira. Como um exemplo nós usamos a opção <c>vga</c> para o framebuffer que
+discutimos anteriormente:
+</p>
+
+<pre caption = "Adicionando a opção vga como uma opção do kernel">
+title=Gentoo Linux
+  root (hd0,0)
+  kernel (hd0,0)/kernel-2.4.25 root=/dev/hda3 vga=788
+</pre>
+
+<p>
+Quem usou o <c>genkernel</c> deve saber que o kernel gerado aceitam as mesmas opções de inicialização
+que são usadas para o LiveCD. Por exemplo, se você tem dispositivos SCSI, você deveria adicionar
+a opção <c>doscsi</c> para o kernel.
+</p>
+
+<p>
+Agora salve o <path>grub.conf</path> e saia. A partir de agora, GRUB está
+configurado por completo, e você pode continuar com <uri
+link="?part=1&amp;chap=10">Installing Necessary System Tools</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Alternativo: Usando LILO</title>
+<subsection>
+<title>Instalando o LILO</title>
+<body>
+
+<impo>
+O LILO somente pode ser usado em sistemas x86!
+</impo>
+
+<p>
+O LILO (LInuxLOader), is the tried and true workhorse of Linux
+bootloaders. Porém, ele perde em alguma características que o GRUB tem 
+(que também é o motivo pelo qual o GRUB tem ganhado popularidade). A razão
+pela qual o LILO ainda é usado, é que, em alguns sistemas, o GRUB não funciona e
+o LILO sim. É claro que, ele também é usado pelos que conhecem o LILO and
+querem permanecer com ele. De qualquer forma, Gentoo suporta os dois, e aparentemente
+vocÊ escolheu o LILO.
+</p>
+
+<p>
+Instalar o LILO é moleza; apenas use <c>emerge</c>.
+</p>
+
+<pre caption = "Instalando o LILO">
+# <i>emerge lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurando o LILO</title>
+<body>
+
+<p>
+Para configurar o LILO, você deve criar o arquivo <path>/etc/lilo.conf</path>. Inicie
+seu editor favorito (neste handbook nós usamos o <c>nano</c> para
+consistência) e crie o arquivo.
+</p>
+
+<pre caption = "Criando o /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+Algumas seções atrás nós perguntamos a você para lembrar-se do nome da imagem do kernel
+que você criou. No próximo exemplo do arquivo <path>lilo.conf</path> nós supomos
+que o nome da imagem é <path>kernel-2.4.25</path>. Nós também usamos o
+esquema de particionamento de exemplo. Existem duas partes separadas: 
+</p>
+
+<ul>
+  <li>
+    Uma para aqueles que não usaram o <c>genkernel</c> para gerar o kernel
+  </li>
+  <li>
+    Uma para aqueles que usaram o <c>genkernel</c> para gerar o kernel
+  </li>
+</ul>
+
+<pre caption = "Arquivo /etc/lilo.conf de exemplo">
+boot=/dev/hda             <comment># Install LILO in the MBR</comment>
+prompt                    <comment># Give the user the chance to select another section</comment>
+delay=50                  <comment># Wait 5 (five) seconds before booting the default section</comment>
+default=gentoo            <comment># When the timeout has passed, boot the "gentoo" section</comment>
+<comment># Only if you use framebuffer. Otherwise remove the following line:</comment>
+vga=788                   <comment># Framebuffer setting. Adjust to your own will</comment>
+
+<comment># For non-genkernel users</comment>
+image=/boot/kernel-2.4.25
+  label=gentoo            <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/hda3          <comment># Location of the root filesystem</comment>
+
+<comment># For genkernel users</comment>
+image=/boot/kernel-2.4.25
+  label=gentoo
+  read-only
+  root=/dev/ram0
+  append="init=/linuxrc real_root=/dev/hda3"
+  initrd=/boot/initrd-2.4.25
+
+<comment># The next two lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+Se você usou um esquema diferente de particionamento  e/ou uma imagem do kernel, ajuste 
+de acordo.
+</note>
+
+<p>
+Se você precisa passar alguma opção para o kernel, adicione a opção
+<c>append</c> na seção. Como um exemplo, nós adicionamos a opção
+<c>acpi=off</c> para desabilitar o suporte ao ACPI:
+</p>
+
+<pre caption = "Adicionando opções ao kernel com o append">
+image=/boot/kernel-2.4.25
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="acpi=off"</i>
+</pre>
+
+<p>
+Quem usou o <c>genkernel</c> deve saber que o kernel gerado aceitam as mesmas opções de inicialização
+que são usadas para o LiveCD. Por exemplo, se você tem dispositivos SCSI, você deveria adicionar
+a opção <c>doscsi</c> para o kernel.
+</p>
+
+<p>
+Agora salve o arquivo e saia. Para finalizar, você deve executar
+<c>/sbin/lilo</c> para que o LILO possa aplicar as definições do
+<path>/etc/lilo.conf</path> ao seu sistema (i.e. se instalar no disco).
+</p>
+
+<pre caption = "Finalizando a instalação do LILO">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Alterativa: Usando o aboot</title>
+<body>
+
+<impo>
+O aboot somente pode ser usado em sistemas alpha!
+</impo>
+
+<p>
+Primeiro nós instalamos aboot em nosso sistema. Claro que usamos <c>emerge</c> 
+para fazê-lo:
+</p>
+
+<pre caption = "Instalando o aboot">
+# <i>emerge aboot</i>
+</pre>
+
+<p>
+O próximo passo é gerar o disco de inicialização. Isto iniciará o 
+<c>aboot</c> quando você iniciar o sistema. Nós tonamos nosso disco inicializável
+gravando o <c>aboot</c> no início do disco.
+</p>
+
+<pre caption = "Gerando o disco de inicialização">
+# <i>swriteboot -f3 /dev/sda /boot/bootlx</i> 
+# <i>abootconf /dev/sda 2</i>
+</pre>
+
+<note>
+Se você um esquema diferente de particionamento diferente do que
+usamos neste capítulo, você tem que mudar os comandos de acordo.
+Favor leia páginas de manual apropriadas (<c>man 8 swriteboot</c> e
+<c>man 8 abootconf</c>).
+</note>
+
+<p>
+Adicionalmente, você pode fazer com que o Gentoo inicie mais facilmente configurando o 
+arquivo de configuração do aboot e a variável SRM boot_osflags. Você terá de certificar-se
+que o bootdef_dev está configurado corretamente (mais fácil de fazer no
+console do que a partir do Linux).
+</p>
+
+<pre caption = "Melhorando a inicialização do Gentoo">
+# <i>echo '0:2/boot/vmlinux.gz root=/dev/sda2' &gt; /etc/aboot.conf</i>
+# <i>echo -n 0 &gt; /proc/srm_environment/named_variables/boot_osflags</i>
+# <i>echo -n '' &gt; /proc/srm_environment/named_variables/boot_file</i>
+</pre>
+
+<p>
+Se você está instalando usando o console serial, não se esqueça de incluir
+the serial console boot flag in <path>aboot.conf</path>. See 
+<path>/etc/aboot.conf.example</path> for some further information. 
+Additionally, you need to allow login on the serial port:
+</p>
+
+<pre caption = "Allowing login on the serial port">
+# <i>echo tts/0 &gt;&gt; /etc/securetty</i>
+# <i>echo 's0:12345:respawn:/sbin/agetty 9600 tts/0 vt100' &gt;&gt; /etc/inittab</i>
+</pre>
+
+<p>
+O Aboot já está configurado e pronto para ser usado. Continue com <uri
+link="?part=1&amp;chap=10">Installing Necessary System Tools</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Alternativa: Usando o MILO</title>
+<body>
+
+<impo>
+O MILO somente pode ser usado em sistemas alpha!
+</impo>
+
+<p>
+Antes de continuar, você deve decidir como vai usar o MILO. Nesta
+seção, iremos supor que você quer fazer um disquete inicializável com o MILO.
+Se você for iniciar a partir de uma partição MS-DOS em seu disco rígido, você deve
+adicionar os comandos apropriados.
+</p>
+
+<p>
+Para instalar o MILO, nós usamos o <c>emerge</c>.
+</p>
+
+<pre caption = "Instalando o MILO">
+# <i>emerge milo</i>
+</pre>
+
+<p>
+Após o MILO ter sido instalado, as imagens do MILO devem estar em
+<path>/opt/milo</path>. Os comando abaixo criam um disquete de inicialização para
+se usado com o MILO. Lembre-se de usar a imagem correta para o seu sistema Alpha.
+</p>
+
+<pre caption = "Instalando o MILO em um disquete">
+<comment>(First insert a blank floppy)</comment>
+# <i>fdformat /dev/fd0</i>
+# <i>mformat a:</i>
+# <i>mcopy /opt/milo/milo-2.2-18-gentoo-ruffian a:\milo</i>
+# <i>mcopy /opt/milo/linload.exe a:\lilnload.exe</i>
+<comment>(Only if you have a Ruffian:</comment>     
+  # <i>mcopy /opt/milo/ldmilo.exe a:\ldmilo.exe</i>
+<comment>)</comment>
+# <i>echo -ne '\125\252' | dd of=/dev/fd0 bs=1 seek=510 count=2</i>
+</pre>
+
+<p>
+Seu disquete de inicialização do MILO está pronto para iniciar o Gentoo Linux. Você pode precisar
+configurar as variaveis de ambiente em seu ARCS Firmware para que o MILO inicie;
+isto é explicado no <uri
+link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> com alguns exemplos
+nos sistemas mais comuns, e exemplos de comandos para usar no modo interativo.
+</p>
+
+<p>
+Ficar sem ler o <uri link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> 
+é uma <e>péssima</e> idéia.
+</p>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Alternativa: Usando o SILO</title>
+<body>
+
+<p>
+Agora é hora de instalar e configurar o <uri
+link="http://www.sparc-boot.org">SILO</uri>(Sparc Improved boot
+LOader.
+</p>
+
+<pre caption = "Instalando o SILO">
+# <i>emerge silo</i>
+</pre>
+
+<p>
+Agora inicie o seu editor favorito (nós usamos o <c>nano</c> como exemplo) e
+crie o arquivo <path>/etc/silo.conf</path>.
+</p>
+
+<pre caption = "Criando o arquivo /etc/silo.conf">
+# <i>nano -w /etc/silo.conf</i>
+</pre>
+
+<p>
+Abaixo você encontrará um exemplo do arquivo <path>silo.conf</path>. Nele é usado o
+esquema de particionamento que nós usamos durante este livro e o arquivo
+<path>kernel-2.4.25</path> como imagem do kernel.
+</p>
+
+<pre caption = "Exemplo do /etc/silo.conf">
+partition = 1         <comment># Boot partition</comment>
+root = /dev/hda4      <comment># Root partition</comment>
+timeout = 15          <comment># Wait 15 seconds before booting the default section</comment>
+
+image = /boot/kernel-2.4.25
+  label = linux
+</pre>
+
+<p>
+Se você usa o exemplo do <path>silo.conf</path> que é instalado pelo Portage, 
+certifique-se de descomentar <e>todas</e> as linhas que você não precisa.
+</p>
+
+<p>
+Se você tem uma partição <path>/boot</path> separada, copie o
+arquivo de configuração para o <path>/boot</path> e execute <c>/sbin/silo</c>:
+</p>
+
+<pre caption = "Somente se você tiver o /boot em uma partição separada">
+# <i>cp /etc/silo.conf /boot</i>
+# <i>/sbin/silo -C /boot/silo.conf</i>
+/boot/silo.conf appears to be valid
+</pre>
+
+<p>
+Se o diretório <path>/boot</path> estiver na oartição raiz,
+é só executar <c>/sbin/silo</c>:
+</p>
+
+<pre caption = "Executando o silo">
+# <i>/sbin/silo</i>
+/etc/silo.conf appears to be valid
+</pre>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Alternativa: Usando o PALO</title>
+<body>
+
+<impo>
+O PALO somente pode ser usando em sistemas HPPA!
+</impo>
+
+<p>
+Na plataforma  PA-RISC, o bootloader é chamado de palo. Você pode encontrar
+o arquivo de configuração em <path>/etc/palo.conf</path>. Aqui está um arquivo
+de configuração de exemplo:
+</p>
+
+<pre caption = "Exemplo do /etc/palo.conf">
+--commandline=2/vmlinux root=/dev/sdb2 HOME=/
+--recoverykernel=/vmlinux.old
+--init-partitioned=/dev/sdb
+</pre>
+
+<p>
+A primeira linha informa ao palo a localização do kernel e quais parametros de
+inicialização devem ser usados. <c>2/vmlinux</c> significa que o kernel de nome <c>/vmlinux</c>
+encontra-se na segunda partição. Cuidado, o caminho para o kernel é relativo à
+partição, e não à raiz do seu sistema.
+</p>
+
+<p>
+A segunda linha indica qual kernel de recuperação usar. Se é a sua primeira
+instalação e você não tem nenhum kernel de recuperação, favor comentar esta
+linha. A terceira linha indica em qual disco encontra-se o palo. 
+</p>
+
+<p>Quando a configuração tiver acabado, é só executar o <c>palo</c>.
+</p>
+
+<pre caption = "Aplicando as configurações do PALO">
+# <i>palo</i>
+</pre>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Alternativa: Usando o yaBoot</title>
+<subsection>
+<title>Introdução</title>
+<body>
+
+<impo>
+O yaBoot somente pode ser usado sistemas NewWorld PPC!
+</impo>
+
+<p>
+Existem duas maneira de configurar o yaBoot no seu sistema. Você pode usar
+novo e melhorado <c>yabootconfig</c> que vem junto com o
+<path>yaboot-1.3.8-r1</path> e mais novos, para configurar o yaboot automaticamente. Se
+por algum motivo você não quer usar o <c>yabootconfig</c> para configurar
+automaticamente o arquivo <path>/etc/yaboot.conf</path>, você pode simplesmente editar
+o arquivo de exemplo já instalado em seu sistema.
+</p>
+
+<ul>
+  <li><uri link="#doc_chap8_sect2">Padrão: Usando o yabootconfig</uri></li>
+  <li>
+    <uri link="#doc_chap8_sect3">Alternativa: Configuração Manual do yaBoot</uri>
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>Padrão: Usando o  yabootconfig</title>
+<body>
+
+<p>
+O <c>yabootconfig</c> irá auto-detectar as partições na sua maquina e irá
+configurar a inicializações dupla e tripla com Linux, Mac OS, e Mac OS
+X.
+</p>
+
+<p>
+Para usar o <c>yabootconfig</c>, seu disco rígido de ter uma partição bootstrap, e o
+arquivo <path>/etc/fstab</path> deve estar configurado com as partições Linux. Isto já deve
+ter sido feito nos passos anteriores. Para iniciar, certifique-se que
+você tenha a última versão do yaboot instalado executando <c>emerge --update
+yaboot</c>. Isto é necessário já que a última versão estará disponível pelo 
+Portage, mas pode não estar nos arquivos de stages.
+</p>
+
+<pre caption = "Instalando o yaboot">
+# <i>emerge --update yaboot</i>
+</pre>
+
+<p>
+Agora execute <c>yabootconfig</c>. O programa irá executar e confirmará
+a localização da partição bootstrap. Digite <c>Y</c> se for a correta. Se
+não, verifique o arquivo <path>/etc/fstab</path>. O yabootconfig irá então verificar
+a configuração do seu sistema, criar o arquivo <path>/etc/yaboot.conf</path> e executar o <c>mkofboot</c> pra você. O <c>mkofboot</c> é usado para formatar a partição bootstrap,
+e instalar o arquivo de configuração do yaboot nela.
+</p>
+
+<p>
+Você pode querer verifica o conteúdo do arquivo <path>/etc/yaboot.conf</path>. Se 
+se você modificar o <path>/etc/yaboot.conf</path> (como configurar o
+sistema padrão), certifique-se de executar novamente <c>ybin -v</c> para aplicar as 
+modificações a partição bootstrap.
+</p>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Alternativa: Configuração Manual do yaBoot</title>
+<body>
+
+<p>
+Primeiro certifique-se que você tem a última versão do <c>yaboot</c> 
+instalada em seu sistema:
+</p>
+
+<pre caption = "Instalando o yaboot">
+# <i>emerge --update yaboot</i>
+</pre>
+
+<p>
+Abaixo você encontrará um arquivo <path>yaboot.conf</path> completo. Altere ao seu gosto:
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## our bootstrap partition:</comment>
+
+boot=/dev/hda9
+
+<comment>##hd: is open firmware speak for hda</comment>
+device=hd:
+partition=11
+
+root=/dev/hda11
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options
+#################</comment>
+image=/boot/vmlinux
+  label=Linux
+  sysmap=/boot/System.map
+  read-only
+<comment>##################</comment>
+
+macos=/dev/hda13
+macosx=/dev/hda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+Uma vez que o <path>yaboot.conf</path> está configurado do jeito que você quer, exeute
+<c>mkofboot -v</c> para instalar as configurações na partição bootstrap. <e>Não
+esqueça disto!</e> Se tudo ocorrer bem, e você tem as mesmas opção que o exemplo 
+acima, a sua próxima inicialização irá um menu com cinco opções de inicialização. Se você 
+atualizar a configuração do yaboot depois, você só precisará executar <c>ybin -v</c> para 
+atualizar a partição bootstrap - <c>mkofboot</c> é omente para configuração inicial.
+</p>
+
+<p>
+Para maiores informações sobre o  yaboot, dê uma olhada em <uri
+link="http://penguinppc.org/projects/yaboot">yaboot project</uri>. 
+Agora, continue a instalação com <uri link="?part=1&amp;chap=10">Installing
+Necessary System Tools</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Alternativa: BootX</title>
+<body>
+
+<impo>
+O BootX somente pode ser usado em sistemas OldWorld PPC!
+</impo>
+
+<p>
+Se você quer usar o BootX, você não precisa fazer nada neste 
+momento. Porém, após reiniciar, você terá que fazer algumas configurações no
+painel de controle do BootX (dentro do MacOS). Nós veremos isto depois na istalação.
+</p>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary
+System Tools</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Alternativa: MIPS PROM</title>
+<subsection>
+<body>
+
+<p>
+O MIPS não requer que você instale um bootloader. O MIPS PROM cuida da
+inicialização, mas você precisa instalar seu kernel como uma opção disponível. 
+</p>
+
+<p>
+Primeiro, instale o <c>dvhtool</c>, necessário para copiar o kernel para o Cabeçalho de Volume 
+SGI.
+</p>
+
+<pre caption="Instalando o dvhtool">
+# <i>emerge dvhtool</i>
+</pre>
+
+<p>
+Agora copie o kernel para o Cabeçalho de Volume SGI. Por padrão o <c>dvhtool</c>
+supõe que o Cabeçalho de Volume SGI esteja em <path>/dev/sda</path>. Se este não 
+for o caso (por exemplo quando o IRIX estiver instalado em <path>/dev/sda</path> e
+o Gentoo/MIPS em <path>/dev/sdb</path>) você precisa informar ao <c>dvhtool</c> sobre isto 
+usando <c>-d &lt;device&gt;</c>.
+</p>
+
+<pre caption="Copiando o kernel para o Cabeçalho de Volume SGI">
+# <i>dvhtool --unix-to-vh &lt;kernel name in /boot&gt; &lt;name you want to give in volume header&gt;</i>
+</pre>
+
+<p>
+Se você quer ver todas as entradas disponíveis no volume, use
+<c>--print-volume-directory</c>:
+</p>
+
+<pre caption="Vendo todas as entrada disponíveis no volume">
+# <i>dvhtool --print-volume-directory</i>
+</pre>
+
+<p>
+Para conigurar o seu sistema para iniciar o Gentoo/MIPS você precisará fazer alguns ajustes no  MIPS PROM. Iremos descrever isto depois quando a instalação do Gentoo tiver acabado.
+</p>
+
+<p>
+Agora continue com <uri link="?part=1&amp;chap=10">Installing Necessary System
+Tools</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

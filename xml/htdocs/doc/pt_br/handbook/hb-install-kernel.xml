@@ -1,0 +1,1047 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/Attic/hb-install-kernel.xml,v 1.1 2004/05/12 14:50:54 azambuja Exp $ -->
+
+<sections>
+<section>
+<title>Fuso horário</title>
+<body>
+
+<p>
+Primeiramente você precisa selecionar seu fuso horário para que seu sistema saiba onde ele está 
+localizado. Veja seu fuso horário em <path>/usr/share/zoneinfo</path>, e então faça um link 
+simbólico para <path>/etc/localtime</path> usando o <c>ln</c>:
+</p>
+
+<pre caption="Configurando a informação de fuso horário">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use GMT)</comment>
+# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalando os Fontes</title>
+<subsection>
+<title>Escolhendo um Kernel</title>
+<body>
+
+<p>
+A base sob qual todas as distribuições são construídas é o kernel do Linux. Ele é a 
+camada entre os programas dos usuários e o hardware do seu sistema. O Gentoo fornece a seus 
+usuário várias possíbilidades de fontes de kernel. Uma listagem completa com as descrições está  
+disponível no <uri link="/doc/en/gentoo-kernel.xml">Gentoo Kernel
+Guide</uri>. 
+</p>
+
+<p>
+Para sistemas x86 nós temos, entre outros kernels, <c>vanilla-sources</c> 
+(o fonte do kernel padrão desenvolvido pela equipe do kernel do linux), 
+<c>gentoo-sources</c> (fonte do kernel com alterações de melhoria de performance), 
+<c>gentoo-dev-sources</c> (fonte do kernel v2.6 com alterações de melhoria 
+de performance e estabilidade), <c>xfs-sources</c> (fonte do kernel com suporte 
+mais atual ao  XFS), <c>gs-sources</c> (fonte do kernel com alterações para 
+uso em servidores), <c>gaming-sources</c> (fonte do kernel com alterações par  
+melhor performance em jogos), <c>development-sources</c> (fonte do kernel vanilla 
+versão 2.6), ...
+</p>
+
+<p>
+Para sistemas alpha nóe temos o <c>vanilla-sources</c> (o fonte do kernel 
+desenvolvido pela equipe do kernel do linux), <c>alpha-sources</c> 
+(fonte do kernel otimizado para usuário do alpha) e <c>compaq-sources</c> (fonte 
+do kernel, o mesmo do RedHat para Alpha, mantido pela Compaq).
+</p>
+
+<p>
+Para sistemas sparc nós temos <c>vanilla-sources</c> (o fonte do kernel 
+padrão desenvolvido pela equipe do kernel do linux) e <c>sparc-sources</c>
+(fonte do kernel otimizado par usuário do SPARC).
+</p>
+
+<p>
+Sistenas MIPS podem escolher entre <c>mips-sources</c> (o fonte do kernel 
+para arquitetura MIPS) e <c>mips-prepatch-sources</c> (árvore <e>prerelease</e> 
+do  kernel).
+</p>
+
+<p>
+Para sistema AMD64 nós temos <c>gentoo-dev-sources</c> (fonte do kernel v2.6 
+com alterações específicas para AMD64, com correções para estabilidade, performance 
+e suporte a hardware). 
+</p>
+
+<p>
+Outras arquiteturas devem usar os fontes do kernel otimizados específicamente para 
+suas arquiteturas: <c>hppa-sources</c> (HPPA) ou <c>ppc-sources</c> (PowerPC).
+</p>
+
+<p>
+Se você está fazendo uma instalação sem internet, você não poderá escolher qualquer 
+kernel disponível, pois somente fornecemos os fontes de alguns. A tabela a seguir lista 
+os fontes do kernel disponívels para instalações sem internet.
+</p>
+
+<table>
+<tr>
+  <th>Arquitetura</th>
+  <th>Fonte do Kernel Dsponível</th>
+</tr>
+<tr>
+  <ti>x86</ti>
+  <ti>vanilla-sources-2.4.24</ti>
+</tr>
+<tr>
+  <ti>ppc</ti>
+  <ti>ppc-sources-2.4.24-r2, ppc-development-sources-2.6.3-r2</ti>
+</tr>
+<tr>
+  <ti>sparc</ti>
+  <ti>sparc-sources</ti>
+</tr>
+<tr>
+  <ti>amd64</ti>
+  <ti>gentoo-dev-sources-2.6.3-r2</ti>
+</tr>
+</table>
+
+<p>
+Escolha a fonte do kernel e instale usando o <c>emerge</c>. 
+</p>
+
+<p>
+No próximo exemplo nós instalamos o <c>vanilla-sources-2.4.24</c> (já 
+que o fonte do kernel disponível para a instalação sem internet para x86). 
+Substitua com o fonte de sua escolha, isto é comente um exemplo:
+</p>
+
+<pre caption="Instalando o fonte do kernel">
+# <i>emerge =vanilla-sources-2.4.24</i>
+</pre>
+
+<p>
+Quando você ver em <path>/usr/src</path> você deve perceber um link simbólico chamado 
+<path>linux</path> apontando para o seu fonte do kernel:
+</p>
+
+<pre caption="Vendo o link simbólico para o fonte do kernel">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.24
+</pre>
+
+<p>
+Se este não for o caso (ex.: o link simbólico aponta para um fonte do kernel diferente) 
+modifique o link simbólico antes de continuar:
+</p>
+
+<pre caption="Mudando o link simbólico para o kernel">
+# <i>rm /usr/src/linux &amp;&amp; ln -s /usr/src/linux-2.4.24 /usr/src/linux</i>
+</pre>
+
+<p>
+Agora é hora de configurar e compilar o kernel. Todas as arquitetura  
+pode usar o <c>genkernel</c> para isto, que construirá um kernel genérico como o usado  
+pelo LiveCD. Nós explicaremos a configuração manual em primeiro lugar, já que esta é 
+a melhor maneira de otimizar o seu ambiente.
+</p>
+
+<p>
+Se você quer conigurar seu kernel manualmente, continue agora com <uri
+link="#doc_chap3">Default: Manual Configuration</uri>. Se você quer usar 
+o <c>genkernel</c> você deve ler <uri link="#doc_chap4">Alternativa: Usando 
+o genkernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Padrão: Configuração Manual</title>
+<subsection>
+<title>Introdução</title>
+<body>
+
+<p>
+Confiurar um kernel manualmente é sempre visto como a tarefa mais difícil que um
+usuário do Linux tem que fazer. Ná é mais verdade -- após configurar o kernel 
+algumas vezes você nem lembrará que já foi difícil ;)
+</p>
+
+<p>
+De qualquer maneira, uma coisa <e>é</e> verdade: você deve conhecer seu sistema quando 
+começar a configurara o kernel manualmente.
+configuring a kernel manually. Most information can be gathered by viewing the
+contents of <path>/proc/pci</path> (or by using <c>lspci</c> if available). You
+can also run <c>lsmod</c> to see what kernel modules the LiveCD uses (it might
+provide you with a nice hint on what to enable).
+</p>
+
+<p>
+Now go to your kernel source directory and execute <c>make menuconfig</c>. This
+will fire up an ncurses-based configuration menu.
+</p>
+
+<pre caption="Invoking menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+You will be greeted with several configuration sections. We'll first list some
+options you must activate (otherwise Gentoo will not function, or not function
+properly without additional tweaks).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating Required Options</title>
+<body>
+
+<p>
+First of all, activate the use of development and experimental code/drivers.
+You need this, otherwise some very important code/drivers won't show up:
+</p>
+
+<pre caption="Selecting experimental code/drivers">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+</pre>
+
+<p>
+Now go to <c>File Systems</c> and select support for the filesystems you use.
+<e>Don't</e> compile them as modules, otherwise your Gentoo system will not be
+able to mount your partitions. Also select <c>Virtual memory</c>, <c>/proc
+file system</c>, <c>/dev file system</c> + <c>Automatically mount at boot</c>:
+</p>
+
+<pre caption="Selecting necessary file systems">
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+
+<comment>(Deselect the following unless you have a 2.6 kernel)</comment>
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(Select one or more of the following options as needed by your system)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<note>
+Users of a 2.6 kernel will find some of the mentioned options under <c>Pseudo
+filesystems</c> which is a subpart of <c>File systems</c>.
+</note>
+
+<p>
+If you are using PPPoE to connect to the Internet or you are using a dial-up
+modem, you will need the following options in the kernel:
+</p>
+
+<pre caption="Selecting PPPoE necessary drivers">
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<note>
+Users of a 2.6 kernel will find the mentioned options under <c>Networking
+support</c> which is a subpart of <c>Device Drivers</c>.
+</note>
+
+<p>
+The two compression options won't harm but are not definitely needed, neither
+does the <c>PPP over Ethernet</c> option, that might only be used by 
+<c>rp-pppoe</c> when configured to do kernel mode PPPoE.
+</p>
+
+<note>
+Users of a 2.6 kernel will find the mentioned options under <c>Device
+Drivers</c>.
+</note>
+
+<p>
+If you require it, don't forget to include support in the kernel for your
+ethernet card.
+</p>
+
+<p>
+Now, dependent on your architecture, you might need to select more options:
+</p>
+
+<ul>
+<li><uri link="#doc_chap3_sect3">Activating x86-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect4">Activating Alpha-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect5">Activating HPPA-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect6">Activating PPC-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect7">Activating SPARC-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect8">Activating MIPS-recommended Options</uri></li>
+<li><uri link="#doc_chap3_sect9">Activating AMD64-recommended Options</uri></li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating x86-recommended Options</title>
+<body>
+
+<p>
+If you have an Intel CPU that supports HyperThreading (tm), or you have a
+multi-CPU system, you should activate "Symmetric multi-processing support":
+</p>
+
+<pre caption="Activating SMP support">
+Processor type and features  ---&gt;
+  [*] Symmetric multi-processing support
+</pre>
+
+<p>
+When you've finished configuring the kernel, continue with <uri 
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating Alpha-recommended Options</title>
+<body>
+
+<p>
+The following options are recommended for Alpha-users:
+</p>
+
+<pre caption="Alpha-specific options">
+General setup ---&gt;
+  &lt;*&gt; SRM environment through procfs
+  &lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+    &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+  Ethernet (10 or 100 Mbit) ---&gt;
+    &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+    &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+    &lt;M&gt; EtherExpressPro/100 support (eepro100)
+    &lt;M&gt; EtherExpressPro/100 support (e100)
+  Ethernet (1000 Mbit) ---&gt;
+    &lt;M&gt; Alteon AceNIC
+      [*] Omit support for old Tigon I
+    &lt;M&gt; Broadcom Tigon3
+  [*] FDDI driver support
+  &lt;M&gt; Digital DEFEA and DEFPA
+  &lt;*&gt; PPP support
+    &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+  [*] Support for console on serial port
+  [*] Direct Rendering Manager
+
+File systems ---&gt;
+  &lt;*&gt; Kernel automounter version 4 support
+  Network File Systems ---&gt;
+    &lt;*&gt; NFS
+      [*] NFSv3 client
+      &lt;*&gt; NFS server
+      [*] NFSv3 server
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*] Alpha OSF partition support
+  Native Language Support
+    &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+  &lt;M&gt; Sound card support
+    &lt;M&gt; OSS sound modules
+      [*] Verbose initialisation
+      [*] Persistent DMA buffers
+      &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+When you've finished configuring the kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating HPPA-recommended Options</title>
+<body>
+
+<p>
+If you have a HIL mouse or keyboard, do not forget to compile in support for
+them.
+</p>
+
+<pre caption="Activating HIL support">
+Input core support ---&gt;
+  [*] Keyboard support
+  [*] Mouse support
+  [*] Event interface support
+</pre>
+
+<p>
+If you have no mouse on your HIL port, only use the basic support:
+</p>
+
+<pre caption="Basic HIL support">
+HIL support ---&gt;
+  [*] HIL Keyboard (basic) support
+</pre>
+
+<p>
+If you however want <e>full</e> HIL support, select the following options:
+</p>
+
+<pre caption="Full HIL support">
+HIL support ---&gt;
+  [*] HP System Device Controller i8042 Support
+  [*] HIL MLC Support
+  [*] HIL Keyboard (full) support
+  [*] HIL Mouse &amp; Pointer support
+</pre>
+
+<p>
+Also include display driver support:
+</p>
+
+<pre caption="Display Driver support">
+Graphics support ---&gt;
+  [*] Support for frame buffer devices
+      [*] HP STI frame buffer device support
+  Console display driver support ---&gt;
+      [*] STI text console
+</pre>
+
+<p>
+When you're done configuring your kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating PPC-recommended Options</title>
+<body>
+
+<p>
+First of all, disable ADB raw keycodes:
+</p>
+
+<pre caption="Disabling ADB raw keycodes">
+Macintosh Device Drivers ---&gt;
+  [ ] Support for ADB raw keycodes
+</pre>
+
+<p>
+Also choose the correct RTC support (<e>disable</e> the <c>Enhanced RTC</c> 
+option):
+</p>
+
+<pre caption="Activating the correct RTC option">
+Character devices ---&gt;
+  [ ] Enhanced RTC
+
+General setup ---&gt;
+  [*] Support for /dev/rtc
+</pre>
+
+<p>
+Users of OldWorld machines will want HFS support so they can copy compiled
+kernels to the MacOS partition.
+</p>
+
+<pre caption="Activating HFS support">
+File Systems ---&gt;
+  [*] HFS Support
+</pre>
+
+<p>
+When you're done configuring your kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating SPARC-recommended Options</title>
+<body>
+
+<p>
+First activate the correct bus-support:
+</p>
+
+<pre caption="Activating SBUS/UPA">
+Console drivers ---&gt;
+  Frame-buffer support ---&gt;
+    [*] SBUS and UPA framebuffers             
+      [*] Creator/Creator3D support     <comment>(Only for UPA slot adapter used in many Ultras)</comment>
+    [*] CGsix (GX,TurboGX) support      <comment>(Only for SBUS slot adapter used in many SPARCStations)</comment>
+</pre>
+
+<p>
+Of course you want support for the OBP:
+</p>
+
+<pre caption="Activating OBP Support">
+Misc Linux/SPARC drivers ---&gt;
+  [*]  /dev/openprom device support
+</pre>
+
+<p>
+You will also need SCSI-specific support:
+</p>
+
+<pre caption="Activating SCSI-specific support">
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; Sparc ESP Scsi Driver             <comment>(Only for SPARC ESP on-board SCSI adapter)</comment>
+    &lt;*&gt; PTI Qlogic, ISP Driver            <comment>(Only for SBUS SCSI controllers from PTI or QLogic)</comment>
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support  <comment>(Only for Ultra 60 on-board SCSI adapter)</comment>
+</pre>
+
+<p>
+To support your network card, select one of the following:
+</p>
+
+<pre caption="Activating networking support">
+Network device support ---&gt;
+  Ethernet (10 or 100Mbit) ---&gt;
+    &lt;*&gt; Sun LANCE support                   <comment>(Only for SPARCStation, older Ultra systems, and as Sbus option)</comment>
+    &lt;*&gt; Sun Happy Meal 10/100baseT support  <comment>(Only for Ultra; also supports "qfe" quad-ethernet on PCI and Sbus)</comment>
+</pre>
+
+<p>
+When you're done configuring your kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>. However, after having
+compiled the kernel, check its size:
+</p>
+
+<pre caption="Check kernel size">
+# <i>ls -lh vmlinux</i>
+-rw-r--r--    1 root     root         2.4M Oct 25 14:38 vmlinux
+</pre>
+
+<p>
+If the (uncompressed) size is bigger than 2.5Mb (for Sparc32) or 3.5Mb (for 
+Sparc64), reconfigure your kernel untill it doesn't exceed these limits. One way
+of accomplishing this is by having most kernel drivers compiled as modules.
+Ignoring this can lead to a non-booting kernel.
+</p>
+
+<p>
+Also, if your kernel is just a tad too big, you can try stripping it using the
+<c>strip</c> command:
+</p>
+
+<pre caption="Stripping the kernel">
+# <i>strip -R .comment -R .note vmlinux</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating MIPS-recommended Options</title>
+<body>
+
+<p>
+If you are using an Indy/Indigo2 based system, you need to activate support for
+it.
+</p>
+
+<pre caption="Activating SGI IP22">
+Machine selection ---&gt;
+  [*] Support for SGI IP22 (Indy/Indigo2)
+</pre>
+
+<p>
+If you want to run Irix binaries, include the following option:
+</p>
+
+<pre caption="Including IRIX Binary support">
+General setup ---&gt;
+  [*] Include IRIX binary compatibility
+</pre>
+
+<p>
+If you have ISA/EISA cards in your SGI Indigo2, enable support for it.
+</p>
+
+<pre caption="Enabling ISA/EISA support for SGI Indigo2">
+General setup ---&gt;
+  [*] Indigo-2 (IP22) EISA bus support
+  [*]   ISA bus support
+</pre>
+
+<p>
+If you have a SGI parallel port, you can enable support for it. If you have an
+ISA parallel port you should select "PC-style hardware" instead.
+</p>
+
+<pre caption="Enabling SGI Parallel Port Support">
+Parallel port support  ---&gt;
+  &lt;*&gt; Parallel port support
+  &lt;*&gt;   SGI Indy/Indigo2 hardware (EXPERIMENTAL) (NEW)
+  &lt;*&gt;   IEEE 1284 transfer modes (NEW)
+</pre>
+
+<p>
+If you want to use the Indigo2 ISA slots, enable the plug and play support.
+</p>
+
+<pre caption="Enabling PnP support for ISA">
+Plug and Play configuration  ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;*&gt;   ISA Plug and Play support
+</pre>
+
+<p>
+Don't forget to enable SCSI support, and use the SGI WD93C93 Driver:
+</p>
+
+<pre caption="Enabling WD93C93 Driver Support">
+SCSI low-level drivers  ---&gt;
+  &lt;*&gt; SGI WD93C93 SCSI Driver
+</pre>
+
+<p>
+For network cards you probably need support for the SGI Seeq ethernet
+controller:
+</p>
+
+<pre caption="Enabling SGI Seeq Support">
+Network device support  ---&gt;
+  Ethernet (10 or 100Mbit)  ---&gt;
+    [*] Ethernet (10 or 100Mbit)
+    [*]   SGI Seeq ethernet controller support
+</pre>
+
+<p>
+Don't forget to enable serial console support and enable support for the SGI
+Zilog85C30:
+</p>
+
+<pre caption="Enable SGI Zilog85C30 Support">
+Character devices ---&gt;
+  [*] Non-standard serial port support
+  [*]   SGI Zilog85C30 serial support
+</pre>
+
+<p>
+Also don't forget to enable the Indy/I2 Watchdog support as well as the SGI
+DS1286 RTC support:
+</p>
+
+<pre caption="Enable Watchdog and RTC Support">
+Character Devices ---&gt;
+  [*] SGI DS1286 RTC support
+  Watchdog Cards  ---&gt;
+    [*] Watchdog Timer Support
+    &lt;*&gt;   Indy/I2 Hardware Watchdog
+</pre>
+
+<p>
+You should also enable support for SGI partitions :)
+</p>
+
+<pre caption="Enabling Support for SGI Partitions">
+File Systems ---&gt;
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*]   SGI partition support
+</pre>
+
+<p>
+If you have an SGI Newport (XL Gfx) Card and want to use it, then you'll want to
+enable support for it:
+</p>
+
+<pre caption="Enabling Support for the SGI Newport Card">
+Console drivers  ---&gt;
+  &lt;*&gt; SGI Newport Console support (NEW)
+</pre>
+
+<p>
+If you want sound support on your Indy/Indigo2, enable support for it:
+</p>
+
+<pre caption="Enabling Support for the SGI HAL2">
+Sound  ---&gt;
+  &lt;*&gt; Sound card support
+  &lt;*&gt;   SGI HAL2 sound (EXPERIMENTAL)
+</pre>
+
+<p>
+When you're done configuring your kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating AMD64-recommended Options</title>
+<body>
+
+<p>
+If you have a multi-CPU Opteron system, you should activate "Symmetric
+multi-processing support":
+</p>
+
+<pre caption="Activating SMP support">
+Processor type and features ---&gt;
+  [*] Symmetric multi-processing support
+</pre>
+
+<p>
+When you've finished configuring the kernel, continue with <uri
+link="#compiling">Compiling and Installing</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compiling and Installing</title>
+<body>
+
+<p>
+Now that your kernel is configured, it is time to compile and install it. Exit 
+the configuration and run <c>make dep &amp;&amp; make bzImage modules 
+modules_install</c>:
+</p>
+
+<pre caption="Compiling the kernel">
+<comment>(For x86-based systems, 2.4 kernel)</comment>
+# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
+
+<comment>(For other systems, 2.4 kernel)</comment>
+# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+
+<comment>(For 2.6 kernel)</comment>
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+When the kernel is done compiling, copy over the kernel image to
+<path>/boot</path>. In the next example we assume you have configured and
+compiled <c>vanilla-sources-2.4.24</c> (which may not be the right kernel for
+your architecture!):
+</p>
+
+<pre caption="Installing the kernel">
+<comment>(For x86-based systems)</comment>
+# <i>cp arch/i386/boot/bzImage /boot/kernel-2.4.24</i>
+# <i>cp System.map /boot/System.map-2.4.24</i>
+
+<comment>(For amd64-based systems)</comment>
+# <i>cp arch/x86_64/boot/bzImage /boot/kernel-2.4.24</i>
+
+<comment>(For other systems)</comment>
+# <i>cp vmlinux /boot/kernel-2.4.24</i>
+# <i>cp System.map /boot/System.map-2.4.24</i>
+</pre>
+
+<p>
+It is also wise to copy over your kernel configuration file to
+<path>/boot</path>, just in case :)
+</p>
+
+<pre caption="Backing up your kernel configuration">
+# <i>cp .config /boot/config-2.4.24</i>
+</pre>
+
+<p>
+If you are a MIPS user and your system doesn't boot ELF kernels, compile the
+kernel using <c>make vmlinux.ecoff</c> instead of <c>make vmlinux</c>. The
+kernel image will be saved as <path>arch/mips/boot/vmlinux.ecoff</path> instead
+of <path>vmlinux</path>.
+</p>
+
+<p>
+Now continue with <uri link="#doc_chap5">Installing Separate Kernel
+Modules</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Alternative: Using genkernel</title>
+<body>
+
+<p>
+If you are reading this section, you have chosen to use our <c>genkernel</c>
+script to configure your kernel for you.
+</p>
+
+<p>
+Now that your kernel source tree is installed, it's now time to compile your 
+kernel by using our <c>genkernel</c> script to automatically build a kernel for 
+you. <c>genkernel</c> works by configuring a kernel nearly identically to the 
+way our LiveCD kernel is configured. This means that when you use 
+<c>genkernel</c> to build your kernel, your system will generally detect all 
+your hardware at boot-time, just like our Live CD does. Because genkernel 
+doesn't require any manual kernel configuration, it is an ideal solution for 
+those users who may not be comfortable compiling their own kernels.
+</p>
+
+<p>
+Now, let's see how to use genkernel. First, emerge the genkernel ebuild:
+</p>
+
+<pre caption="Emerging genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Now, compile your kernel sources by running <c>genkernel all</c>.
+Be aware though, as <c>genkernel</c> compiles a kernel that supports almost all 
+hardware, this compilation will take quite a while to finish!
+</p>
+
+<p>
+Note that, if your boot partition doesn't use ext2 or ext3 as filesystem you
+need to manually configure your kernel using <c>genkernel --menuconfig all</c>
+and add support for your filesystem <e>in</e> the kernel (i.e. <e>not</e> as a
+module).
+</p>
+
+<pre caption="Running genkernel">
+# <i>genkernel all</i>
+GenKernel v3.0.1_beta10
+* ARCH: x86    
+* KERNEL VER: 2.4.24
+* kernel: configuring source
+* kernel: running mrproper
+<comment>(Output removed to increase readability)</comment>
+* Kernel compiled successfully!
+* Required Kernel Params:
+*   : root=/dev/ram0 init=/linuxrc real_root=/dev/$ROOT
+*     where $ROOT is the devicenode for your root partition as
+*     you should have specified in /etc/fstab
+*              
+* You MUST tell your bootloader to use the generated initrd
+*              
+* Recommended Kernel Params:
+*   : vga=0x317 splash=verbose
+*              
+* Do NOT report kernel bugs (configs included) as genkernel bugs.
+* Make sure you have the latest genkernel before reporting bugs
+*              
+* For more info see /usr/share/genkernel/README
+</pre>
+
+<p>
+Once <c>genkernel</c> completes, a kernel, full set of modules and 
+<e>initial root disk</e> (initrd) will be created. We will use the kernel 
+and initrd when configuring a boot loader later in this document. Write
+down the names of the kernel and initrd as you will need it when writing
+the bootloader configuration file. The initrd will be started immediately after 
+booting to perform hardware autodetection (just like on the Live CD) before 
+your "real" system starts up.
+</p>
+
+<p>
+Now, let's perform one more step to get our system to be more like the Live 
+CD -- let's emerge <c>hotplug</c>. While the initrd autodetects hardware that 
+is needed to boot your system, <c>hotplug</c> autodetects everything else.
+To emerge and enable <c>hotplug</c>, type the following:
+</p>
+
+<pre caption="Emerging and enabling hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Installing Separate Kernel Modules</title>
+<subsection>
+<title>Installing Extra Modules</title>
+<body>
+
+<p>
+If appropriate, you should emerge ebuilds for any additional hardware that is 
+on your system. Here is a list of kernel-related ebuilds that you could emerge:
+</p>
+
+<table>
+<tcolumn width="1in"/>
+<tcolumn width="4in"/>
+<tcolumn width="2in"/>
+<tr>
+  <th>Ebuild</th>
+  <th>Purpose</th>
+  <th>Command</th>
+</tr>
+<tr>
+  <ti>nvidia-kernel</ti>
+  <ti>Accelerated NVIDIA graphics for XFree86</ti>
+  <ti><c>emerge nvidia-kernel</c></ti>
+</tr>
+<tr>
+  <ti>nforce-net</ti>
+  <ti>On-board ethernet controller on NVIDIA NForce(2) motherboards</ti>
+  <ti><c>emerge nforce-net</c></ti>
+</tr>
+<tr>
+  <ti>nforce-audio</ti>
+  <ti>On-board audio on NVIDIA NForce(2) motherboards</ti>
+  <ti><c>emerge nforce-audio</c></ti>
+</tr>
+<tr>
+  <ti>e100</ti>
+  <ti>Intel e100 Fast Ethernet Adapters</ti>
+  <ti><c>emerge e100</c></ti>
+</tr>
+<tr>
+  <ti>e1000</ti>
+  <ti>Intel e1000 Gigabit Ethernet Adapters</ti>
+  <ti><c>emerge e1000</c></ti>
+</tr>
+<tr>
+  <ti>emu10k1</ti>
+  <ti>Creative Sound Blaster Live!/Audigy support</ti>
+  <ti><c>emerge emu10k1</c></ti>
+</tr>
+<tr>
+  <ti>ati-drivers</ti>
+  <ti>Accelerated ATI Radeon 8500+/FireGL graphics for XFree86</ti>
+  <ti><c>emerge ati-drivers</c></ti>
+</tr>
+<tr>
+  <ti>ati-drivers-extra</ti>
+  <ti>Graphical ATI tools</ti>
+  <ti><c>emerge ati-drivers-extra</c></ti>
+</tr>
+<tr>
+  <ti>xfree-drm</ti>
+  <ti>
+    Accelerated graphics for ATI Radeon up to 9200, Rage128, Matrox, Voodoo and
+    other cards for XFree86. Please check the <c>IUSE_VIDEO_CARDS</c> variable
+    in the <path>/usr/portage/x11-base/xfree-drm</path> ebuilds to see what you
+    need to fill in as <c>yourcard</c>.
+  </ti>
+  <ti><c>VIDEO_CARDS="yourcard" emerge xfree-drm</c></ti>
+</tr>
+</table>
+
+<p>
+If you receive an error which mentions <c>masked by: -keyword</c> or <c>masked
+by: ~keyword</c> then this means that the kernel module you want to install 
+isn't available for your architecture or not deemed stable enough yet.
+</p>
+
+<p>
+Beware though, some of these ebuilds might deal with big dependencies. To verify
+what packages will be installed by emerging an ebuild, use <c>emerge 
+--pretend</c>. For instance, for the <c>emu10k1</c> package:
+</p>
+
+<pre caption="View full installation package listing">
+# <i>emerge --pretend emu10k1</i>
+</pre>
+
+<p>
+If you don't like the packages it wants to install, use <c>emerge --pretend 
+--verbose</c> to see what USE-flags are checked when deciding the dependencies:
+</p>
+
+<pre caption="View USE-flag usage">
+# <i>emerge --pretend --verbose emu10k1</i>
+<comment>...</comment>
+[ebuild  N    ] media-sound/aumix-2.8  +gpm +nls +gtk +gnome +alsa -gtk2
+</pre>
+
+<p>
+In the previous example you can see that one of <c>emu10k1</c>'s dependencies
+(<c>aumix</c>) uses the <c>gtk</c> and <c>gnome</c> USE-flags, making gtk (which
+depends on XFree) be compiled with it.
+</p>
+
+<p>
+If you don't want all this to be compiled, deselect all USE-flags, for instance:
+</p>
+
+<pre caption="Emerging emu10k1 with all USE-flags deselected">
+# <i>USE="-gpm -nls -gtk -gnome -alsa" emerge --pretend emu10k1</i>
+</pre>
+
+<p>
+When you're happy with the results, remove the <c>--pretend</c> to start
+installing <c>emu10k1</c>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configuring the Modules</title>
+<body>
+
+<p>
+You should list the modules you want automatically loaded in 
+<path>/etc/modules.autoload.d/kernel-2.4</path> (or <path>kernel-2.6</path>). 
+You can add extra options to the modules too if you want.
+</p>
+
+<p>
+To view all available modules, run the following <c>find</c> command. Don't
+forget to substitute "&lt;kernel version&gt;" with the version of the kernel you
+just compiled:
+</p>
+
+<pre caption="Viewing all available modules">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+For instance, to automatically load the <c>3c59x.o</c> module, edit the
+<path>kernel-2.4</path> or <path>kernel-2.6</path> file and enter the module
+name in it.
+</p>
+
+<pre caption="Editing /etc/modules.autoload.d/kernel-2.4">
+<comment>(Example for 2.4 kernels)</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 or kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Now run <c>modules-update</c> to commit your changes to the
+<path>/etc/modules.conf</path> file:
+</p>
+
+<pre caption="Running modules-update">
+# <i>modules-update</i>
+</pre>
+
+<p>
+Continue the installation with <uri link="?part=1&amp;chap=8">Configuring 
+your System</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
