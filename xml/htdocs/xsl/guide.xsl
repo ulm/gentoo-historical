@@ -473,6 +473,8 @@
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
+                    <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrent Tracker</a>
+                    <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
                     <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
