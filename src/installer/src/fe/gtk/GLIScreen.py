@@ -9,16 +9,16 @@ class GLIScreen(gtk.VBox):
 		self.controller = controller
 		self.full_path = os.path.abspath(os.path.dirname(__file__))
 
-		gtk.VBox.__init__(self, gtk.FALSE, 0)
+		gtk.VBox.__init__(self, False, 0)
 
 		if show_title:
 			right_title_label = gtk.Label()
 			right_title_label.set_markup('<span><b>'+self.title+'</b></span>')
-			right_title_label.set_use_markup(gtk.TRUE)
-			self.pack_start(right_title_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+			right_title_label.set_use_markup(True)
+			self.pack_start(right_title_label, expand=False, fill=False, padding=10)
 
 	def add_content(self, content):
-		self.pack_end(content, gtk.TRUE, gtk.TRUE, 0)
+		self.pack_end(content, True, True, 0)
 
 	def activate(self):
 		print "Bad boy! You should really impliment this function in your subclass."

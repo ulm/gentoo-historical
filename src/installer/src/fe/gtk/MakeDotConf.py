@@ -24,14 +24,14 @@ class Panel(GLIScreen.GLIScreen):
 		self.system_features = commands.getoutput("portageq envvar FEATURES").strip()
 		self.system_accept_keywords = commands.getoutput("portageq envvar ACCEPT_KEYWORDS").strip()
 
-		vert = gtk.VBox(gtk.FALSE, 0)
+		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
 		content_str = """On this screen, you'll define all of your /etc/make.conf settings.
 """
 
 		content_label = gtk.Label(content_str)
-		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		vert.pack_start(content_label, expand=False, fill=False, padding=0)
 
 		f = open("/usr/portage/profiles/use.desc", "r")
 		for line in f:
@@ -57,11 +57,11 @@ class Panel(GLIScreen.GLIScreen):
 			self.use_desc[flagname] = desc
 		f.close()
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox = gtk.HBox(False, 0)
 		label = gtk.Label()
 		label.set_markup("<b>USE flags:</b>")
-		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(label, expand=False, fill=False, padding=0)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
 		sorted_use = self.use_desc.keys()
 		sorted_use.sort()
@@ -76,71 +76,71 @@ class Panel(GLIScreen.GLIScreen):
                 self.columns.append(gtk.TreeViewColumn("Flag", gtk.CellRendererText(), text=1))
                 self.columns.append(gtk.TreeViewColumn("Description", gtk.CellRendererText(), text=2))
                 for column in self.columns:
-                        column.set_resizable(gtk.TRUE)
+                        column.set_resizable(True)
                         self.treeview.append_column(column)
                 self.treewindow = gtk.ScrolledWindow()
                 self.treewindow.set_size_request(-1, 140)
                 self.treewindow.set_shadow_type(gtk.SHADOW_IN)
                 self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
                 self.treewindow.add(self.treeview)
-                vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+                vert.pack_start(self.treewindow, expand=False, fill=False, padding=10)
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox = gtk.HBox(False, 0)
 		label = gtk.Label()
 		label.set_markup("<b>CFLAGS:</b>")
-		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(label, expand=False, fill=False, padding=0)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
-		hbox.pack_start(gtk.Label("Processor:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox = gtk.HBox(False, 0)
+		hbox.pack_start(gtk.Label("Processor:"), expand=False, fill=False, padding=0)
 		self.proc_combo = gtk.combo_box_new_text()
 		for proc in self.arch_procs['x86']:
 			self.proc_combo.append_text(proc)
 		self.proc_combo.set_active(0)
-		hbox.pack_start(self.proc_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		hbox.pack_start(gtk.Label("Optimizations:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox.pack_start(self.proc_combo, expand=False, fill=False, padding=10)
+		hbox.pack_start(gtk.Label("Optimizations:"), expand=False, fill=False, padding=0)
 		self.optimizations_combo = gtk.combo_box_new_text()
 		for opt in self.optimizations:
 			self.optimizations_combo.append_text(opt)
 		self.optimizations_combo.set_active(0)
-		hbox.pack_start(self.optimizations_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		hbox.pack_start(gtk.Label("Custom:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox.pack_start(self.optimizations_combo, expand=False, fill=False, padding=10)
+		hbox.pack_start(gtk.Label("Custom:"), expand=False, fill=False, padding=0)
 		self.custom_cflags_entry = gtk.Entry()
 		self.custom_cflags_entry.set_width_chars(25)
 		self.custom_cflags_entry.set_text("-pipe")
-		hbox.pack_start(self.custom_cflags_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(self.custom_cflags_entry, expand=False, fill=False, padding=10)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox = gtk.HBox(False, 0)
 		label = gtk.Label()
 		label.set_markup("<b>Other:</b>")
-		hbox.pack_start(label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(label, expand=False, fill=False, padding=0)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
+		hbox = gtk.HBox(False, 0)
 		self.unstable_packages_check = gtk.CheckButton("Use unstable (~arch) packages")
-		hbox.pack_start(self.unstable_packages_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox.pack_start(self.unstable_packages_check, expand=False, fill=False, padding=0)
 		self.build_binary_check = gtk.CheckButton("Build binary packages")
-		hbox.pack_start(self.build_binary_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
+		hbox.pack_start(self.build_binary_check, expand=False, fill=False, padding=20)
 		self.use_distcc_check = gtk.CheckButton("Use DistCC")
-		hbox.pack_start(self.use_distcc_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox.pack_start(self.use_distcc_check, expand=False, fill=False, padding=0)
 		self.use_ccache_check = gtk.CheckButton("Use ccache")
-		hbox.pack_start(self.use_ccache_check, expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(self.use_ccache_check, expand=False, fill=False, padding=20)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
-		hbox = gtk.HBox(gtk.FALSE, 0)
-		hbox.pack_start(gtk.Label("CHOST:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox = gtk.HBox(False, 0)
+		hbox.pack_start(gtk.Label("CHOST:"), expand=False, fill=False, padding=0)
 		self.chost_combo = gtk.combo_box_new_text()
 		for chost in self.arch_chosts['x86']:
 			self.chost_combo.append_text(chost)
 		self.chost_combo.set_active(0)
-		hbox.pack_start(self.chost_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		hbox.pack_start(gtk.Label(" "), expand=gtk.FALSE, fill=gtk.FALSE, padding=15)
-		hbox.pack_start(gtk.Label("MAKEOPTS:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		hbox.pack_start(self.chost_combo, expand=False, fill=False, padding=10)
+		hbox.pack_start(gtk.Label(" "), expand=False, fill=False, padding=15)
+		hbox.pack_start(gtk.Label("MAKEOPTS:"), expand=False, fill=False, padding=0)
 		self.makeopts_entry = gtk.Entry()
 		self.makeopts_entry.set_width_chars(7)
-		hbox.pack_start(self.makeopts_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-		vert.pack_start(hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		hbox.pack_start(self.makeopts_entry, expand=False, fill=False, padding=10)
+		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
 		self.add_content(vert)
 
@@ -156,11 +156,11 @@ class Panel(GLIScreen.GLIScreen):
 		return
 
 	def activate(self):
-		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.controller.SHOW_BUTTON_EXIT    = True
+		self.controller.SHOW_BUTTON_HELP    = True
+		self.controller.SHOW_BUTTON_BACK    = True
+		self.controller.SHOW_BUTTON_FORWARD = True
+		self.controller.SHOW_BUTTON_FINISH  = False
 		self.make_conf_values = self.controller.install_profile.get_make_conf()
 		# Parsing USE
 		self.use_flags = {}
@@ -210,23 +210,23 @@ class Panel(GLIScreen.GLIScreen):
 		if not self.make_conf_values.has_key('ACCEPT_KEYWORDS') or not self.make_conf_values['ACCEPT_KEYWORDS']:
 			self.make_conf_values['ACCEPT_KEYWORDS'] = self.system_accept_keywords
 		if self.make_conf_values['ACCEPT_KEYWORDS'].find("~x86") != -1:
-			self.unstable_packages_check.set_active(gtk.TRUE)
+			self.unstable_packages_check.set_active(True)
 		else:
-			self.unstable_packages_check.set_active(gtk.FALSE)
+			self.unstable_packages_check.set_active(False)
 		# Parsing FEATURES
 		if not self.make_conf_values.has_key('FEATURES') or not self.make_conf_values['FEATURES']:
 			self.make_conf_values['FEATURES'] = self.system_features
-		self.use_distcc_check.set_active(gtk.FALSE)
-		self.use_ccache_check.set_active(gtk.FALSE)
-		self.build_binary_check.set_active(gtk.FALSE)
+		self.use_distcc_check.set_active(False)
+		self.use_ccache_check.set_active(False)
+		self.build_binary_check.set_active(False)
 		for feature in self.make_conf_values['FEATURES'].split(" "):
 			feature = feature.strip()
 			if feature == "distcc":
-				self.use_distcc_check.set_active(gtk.TRUE)
+				self.use_distcc_check.set_active(True)
 			elif feature == "ccache":
-				self.use_ccache_check.set_active(gtk.TRUE)
+				self.use_ccache_check.set_active(True)
 			elif feature == "buildpkg":
-				self.build_binary_check.set_active(gtk.TRUE)
+				self.build_binary_check.set_active(True)
 		# Parsing CHOST
 		if not self.make_conf_values.has_key('CHOST') or not self.make_conf_values['CHOST']:
 			self.make_conf_values['CHOST'] = self.system_chost

@@ -23,7 +23,7 @@ class Widgets:
     
     # This creates a new Vbox
     def newVbox(self):
-      new_vbox=gtk.VBox(gtk.FALSE, 10)
+      new_vbox=gtk.VBox(False, 10)
       return new_vbox
       
     # This creates a textbox with a specified max length,
@@ -39,12 +39,12 @@ class Widgets:
       self.new_entry.set_width_chars(26)
 
       # This creates the actual box to enter stuff
-      self.new_entry_hbox       = gtk.HBox(gtk.TRUE, 10)
-      self.new_entry_hbox.pack_start(new_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-      self.new_entry_hbox.pack_end(self.new_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)	
+      self.new_entry_hbox       = gtk.HBox(True, 10)
+      self.new_entry_hbox.pack_start(new_label, expand=False, fill=False, padding=0)
+      self.new_entry_hbox.pack_end(self.new_entry, expand=False, fill=False, padding=0)	
 
-      new_vbox = gtk.VBox(gtk.FALSE, 10)
-      new_vbox.pack_start(self.new_entry_hbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+      new_vbox = gtk.VBox(False, 10)
+      new_vbox.pack_start(self.new_entry_hbox, expand=False, fill=False, padding=0)
       return new_vbox
     
     # this is a temporary class to port over textBox
@@ -67,22 +67,22 @@ class Widgets:
     def hBoxThese(self,homogenous,spacing,list,pad=0):
      new_box=gtk.HBox(homogenous,spacing)
      for item in list:
-      new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=pad)
+      new_box.pack_start(item,expand=False,fill=False,padding=pad)
      return new_box
      
     # a method that can box an arbitrary number of things into an hbox
     def vBoxThese(self,homogenous,spacing,list):
      new_box=gtk.VBox(homogenous,spacing)
      for item in list:
-      new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+      new_box.pack_start(item,expand=False,fill=False,padding=0)
      return new_box
  
     # This makes a label on the left hand of any element
     def labelIt(self,label,object):
      new_label=gtk.Label(label)
-     new_box = gtk.HBox(gtk.TRUE,10)
-     new_box.pack_start(new_label,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-     new_box.pack_start(object,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+     new_box = gtk.HBox(True,10)
+     new_box.pack_start(new_label,expand=False,fill=False,padding=0)
+     new_box.pack_start(object,expand=False,fill=False,padding=0)
      return new_box
 
     # This creates the *first* radio button
@@ -92,8 +92,8 @@ class Widgets:
       button = gtk.RadioButton(group, heading)
       button.set_name(str(name))
       button.connect("toggled", callback, heading)
-      #button.set_active(gtk.TRUE)
-      #new_vbox.pack_start(button, gtk.TRUE, gtk.TRUE, 0)
+      #button.set_active(True)
+      #new_vbox.pack_start(button, True, True, 0)
       button.show()
       #return new_vbox
       return button
@@ -169,24 +169,24 @@ class Widgets:
     
     # This h boxes anything you give it!
     def hBoxIt(self,whatToBox):
-      self.new_hbox=gtk.HBox(gtk.TRUE,10)
-      self.new_hbox.pack_start(whatToBox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+      self.new_hbox=gtk.HBox(True,10)
+      self.new_hbox.pack_start(whatToBox,expand=False,fill=False,padding=0)
       return self.new_hbox
 
     def hBoxIt2(self,homogeneous,spacing,whatToBox):
       new_hbox=gtk.HBox(homogeneous,spacing)
-      new_hbox.pack_start(whatToBox,expand=gtk.FALSE,fill=gtk.FALSE,padding=5)
+      new_hbox.pack_start(whatToBox,expand=False,fill=False,padding=5)
       return new_hbox
     
     def hBoxIt3(self,homogeneous,spacing,whatToBox,pad):
       new_hbox=gtk.HBox(homogeneous,spacing)
-      new_hbox.pack_start(whatToBox,expand=gtk.FALSE,fill=gtk.FALSE,padding=pad)
+      new_hbox.pack_start(whatToBox,expand=False,fill=False,padding=pad)
       return new_hbox
       
     # This v boxes anything you give it!
     def vBoxIt(self,whatToBox):
-      new_vbox=gtk.VBox(gtk.TRUE,10)
-      new_vbox.pack_start(whatToBox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+      new_vbox=gtk.VBox(True,10)
+      new_vbox.pack_start(whatToBox,expand=False,fill=False,padding=0)
       return new_vbox
 
     def error_Box(self,header,string_display):
@@ -198,7 +198,7 @@ class Widgets:
           label=gtk.Label(string_display)
           image=gtk.Image()
           image.set_from_stock(gtk.STOCK_DIALOG_WARNING,gtk.ICON_SIZE_DIALOG)
-          table=gtk.Table(1,2,gtk.FALSE)
+          table=gtk.Table(1,2,False)
           table.attach(image,0,1,0,1)
           table.attach(label,1,2,0,1)
           table.show()
@@ -216,7 +216,7 @@ class Widgets:
           label=gtk.Label(string_display)
           image=gtk.Image()
           image.set_from_stock(gtk.STOCK_DIALOG_WARNING,gtk.ICON_SIZE_DIALOG)
-          table=gtk.Table(1,2,gtk.FALSE)
+          table=gtk.Table(1,2,False)
           table.attach(image,0,1,0,1)
           table.attach(label,1,2,0,1)
           table.show()

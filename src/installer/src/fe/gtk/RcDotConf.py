@@ -15,15 +15,15 @@ class Panel(GLIScreen.GLIScreen):
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+        vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
+	horiz   = gtk.HBox(False, 10)
 
         content_str = """
 This is where you setup rc.conf.
 [short explanation of what rc.conf is here, and should also pull default values.]
 """
 	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 
 	widgets=Widgets()
 	
@@ -37,7 +37,7 @@ This is where you setup rc.conf.
 	 self.rc_options_widgets.append(new_box)
 	 new_box=widgets.labelIt(option,new_box)
 	 new_box=widgets.hBoxIt(new_box)
-	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+	 vert.pack_start(new_box, expand=False, fill=False, padding=0)
      
     	self.add_content(vert)
 
@@ -50,11 +50,11 @@ This is where you setup rc.conf.
 		number=self.rc_options.index(item)
 		self.rc_options_widgets[number].set_text(rc_conf[item])
 		
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False
     
     def entrycallback(self,widget,data=None):
 	print data.get_text()

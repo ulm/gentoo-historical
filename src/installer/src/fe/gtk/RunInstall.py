@@ -23,20 +23,20 @@ class RunInstall(gtk.Window):
 		self.set_geometry_hints(None, min_width=800, min_height=600, max_width=800, max_height=600)
 		self.set_title("Gentoo Linux Installer")
 
-		self.globalbox = gtk.VBox(gtk.FALSE, 0)
+		self.globalbox = gtk.VBox(False, 0)
 		self.globalbox.set_border_width(10)
 
 		self.notebook = gtk.Notebook()
-		self.tailpage = gtk.VBox(gtk.FALSE, 0)
+		self.tailpage = gtk.VBox(False, 0)
 		self.notebook.append_page(self.tailpage, tab_label=gtk.Label("Output"))
-		self.docpage = gtk.VBox(gtk.FALSE, 0)
+		self.docpage = gtk.VBox(False, 0)
 		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
 		self.globalbox.add(self.notebook)
 
 		self.progress = gtk.ProgressBar()
 		self.progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.progress.set_text("Preparing...")
-		self.globalbox.pack_end(self.progress, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.globalbox.pack_end(self.progress, expand=False, fill=False, padding=10)
 
 		self.add(self.globalbox)
 		self.make_visible()
@@ -88,10 +88,10 @@ class RunInstall(gtk.Window):
 		print "delete event occurred"
 		# Change TRUE to FALSE and the main window will be destroyed with
 		# a "delete_event".
-		return gtk.FALSE
+		return False
 
 	# Destroy callback
 	def destroy(self, widget, data=None):
 		print "destroy function"
 		gtk.main_quit()
-		return gtk.TRUE
+		return True

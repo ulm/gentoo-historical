@@ -15,14 +15,14 @@ class Panel(GLIScreen.GLIScreen):
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+        vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
+	horiz   = gtk.HBox(False, 10)
 
         content_str = """
 If you click finish here, the installer will generate the xml profile.
 """
 	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 
 	widgets=Widgets()
 	self.treestore = gtk.TreeStore(str)
@@ -45,16 +45,16 @@ If you click finish here, the installer will generate the xml profile.
 	scrolled_window = gtk.ScrolledWindow()
 	scrolled_window.set_border_width(10)
 	scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-	vert.pack_start(scrolled_window, gtk.TRUE, gtk.TRUE, 0)
+	vert.pack_start(scrolled_window, True, True, 0)
 	scrolled_window.show()
 	scrolled_window.add_with_viewport(self.treeview)
-	#vert.pack_start(self.treeview, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	#vert.pack_start(self.treeview, expand=False, fill=False, padding=10)
 	
     	self.add_content(vert)
 
     def activate(self):
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.TRUE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = True

@@ -87,23 +87,23 @@ class Installer:
 		self.window.set_default_size(800,600)
 		self.window.set_geometry_hints(None, min_width=800, min_height=600, max_width=800, max_height=600)
 		self.window.set_title("Gentoo Linux Installer")
-		self.globalbox = gtk.VBox(gtk.FALSE, 0)
+		self.globalbox = gtk.VBox(False, 0)
 		self.window.add(self.globalbox)
-		self.headerbox = gtk.HBox(gtk.FALSE, 0)
+		self.headerbox = gtk.HBox(False, 0)
 		headerimg = gtk.Image()
 		headerimg.set_from_file(self.__full_path + '/installer-banner-800x64.png') # '/header.png')
 		self.headerbox.add(headerimg)
-		self.topbox = gtk.HBox(gtk.FALSE, 0)
-		self.bottombox = gtk.HBox(gtk.FALSE, 0)
-		self.globalbox.pack_start(self.headerbox, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		self.globalbox.pack_start(self.topbox, expand=gtk.TRUE, fill=gtk.TRUE, padding=5)
-		self.globalbox.pack_end(self.bottombox, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		self.topbox = gtk.HBox(False, 0)
+		self.bottombox = gtk.HBox(False, 0)
+		self.globalbox.pack_start(self.headerbox, expand=False, fill=False, padding=0)
+		self.globalbox.pack_start(self.topbox, expand=True, fill=True, padding=5)
+		self.globalbox.pack_end(self.bottombox, expand=False, fill=False, padding=5)
 		self.leftframe = gtk.Frame()
 		self.rightframe = gtk.Frame()
 		self.leftframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
 		self.rightframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-		self.topbox.pack_start(self.leftframe, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-		self.topbox.pack_end(self.rightframe, expand=gtk.TRUE, fill=gtk.TRUE, padding=5)
+		self.topbox.pack_start(self.leftframe, expand=False, fill=False, padding=5)
+		self.topbox.pack_end(self.rightframe, expand=True, fill=True, padding=5)
 		self.globalbox.show_all();
 
 		self.redraw_left_pane(firstrun=True)
@@ -116,8 +116,8 @@ class Installer:
 			panel = item['module'].Panel(self)
 			self.panels.append(panel)
 			self.right_pane_box.append_page(panel)
-		self.right_pane_box.set_show_tabs(gtk.FALSE)
-		self.right_pane_box.set_show_border(gtk.FALSE)
+		self.right_pane_box.set_show_tabs(False)
+		self.right_pane_box.set_show_border(False)
 		self.rightframe.add(self.right_pane_box)
 
 		buttons_info = [ ('exit', " _Exit ", '/button_images/stock_exit.png', self.exit_button, 'start'),
@@ -132,38 +132,38 @@ class Installer:
 
 		for button in buttons_info:
 			self.buttons[button[0]] = gtk.Button()
-			tmpbuttonbox = gtk.HBox(gtk.FALSE, 0)
+			tmpbuttonbox = gtk.HBox(False, 0)
 			tmpbuttonimg = gtk.Image()
 			tmpbuttonimg.set_from_file(self.__full_path + button[2])
 			tmpbuttonbox.pack_start(tmpbuttonimg)
 			tmpbuttonlabel = gtk.Label(button[1])
-			tmpbuttonlabel.set_use_underline(gtk.TRUE)
+			tmpbuttonlabel.set_use_underline(True)
 			tmpbuttonbox.pack_start(tmpbuttonlabel)
 			self.buttons[button[0]].add(tmpbuttonbox)
 			self.buttons[button[0]].connect("clicked", button[3], None)
 			if button[4] == "start":
-				self.bottombox.pack_start(self.buttons[button[0]], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+				self.bottombox.pack_start(self.buttons[button[0]], expand=False, fill=False, padding=5)
 			else:
-				self.bottombox.pack_end(self.buttons[button[0]], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+				self.bottombox.pack_end(self.buttons[button[0]], expand=False, fill=False, padding=5)
 
 		self.make_visible()
 
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
-		self.navlinks = gtk.VBox(gtk.FALSE, 5)
+		self.navlinks = gtk.VBox(False, 5)
 		self.navlinks.set_size_request(140, -1)
 		navlinkslabel = gtk.Label("    Installation Steps    ")
-		self.navlinks.pack_start( navlinkslabel, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.navlinks.pack_start( navlinkslabel, expand=False, fill=False, padding=10)
 		self.num_times = 0
 		for item_ in self.menuItems:
 			item = str(self.num_times+1) + ". " + item_['text']
-			self.box = gtk.HBox(gtk.FALSE,5)
+			self.box = gtk.HBox(False,5)
 			box_string = item
 			box_label=gtk.Label(box_string)
 			box_label.set_alignment(0,0)
-			self.box.pack_start( box_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
-			self.navlinks.pack_start( self.box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-			box_label.set_sensitive(gtk.TRUE)
+			self.box.pack_start( box_label, expand=False, fill=False, padding=5)
+			self.navlinks.pack_start( self.box, expand=False, fill=False, padding=3)
+			box_label.set_sensitive(True)
 
 			if self._cur_panel == self.num_times:
 				box_label.set_markup('<b>'+box_string+'</b>')
@@ -195,7 +195,7 @@ class Installer:
 			self.buttons['finish'].set_flags(gtk.CAN_DEFAULT)
 			self.buttons['finish'].grab_default()
 #		if self.install_profile_xml_file != "":
-#			self.finishbutton.set_sensitive(gtk.TRUE)
+#			self.finishbutton.set_sensitive(True)
 		self.bottombox.show_all()
 
 	def refresh_right_panel(self):
@@ -217,7 +217,7 @@ class Installer:
 		return os.path.abspath(os.path.dirname(__file__))
 
 	def add_content(self, content):
-		self.right_pane_box.pack_end(content, gtk.TRUE, gtk.TRUE, 0)
+		self.right_pane_box.pack_end(content, True, True, 0)
 
 	def get_commands(self):
 		pass
@@ -317,13 +317,13 @@ class Installer:
 		print "delete event occurred"
 		# Change TRUE to FALSE and the main window will be destroyed with
 		# a "delete_event".
-		return gtk.FALSE
+		return False
 
 	# Destroy callback
 	def destroy(self, widget, data=None):
 		print "destroy function"
 		gtk.main_quit()
-		return gtk.TRUE
+		return True
 	
 	def exit(self):
 		gtk.main_quit()

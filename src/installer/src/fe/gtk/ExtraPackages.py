@@ -27,10 +27,10 @@ class Panel(GLIScreen.GLIScreen):
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+        vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
+	horiz   = gtk.HBox(False, 10)
 	
-	vert2    = gtk.VBox(gtk.FALSE, 10)
+	vert2    = gtk.VBox(False, 10)
         
         content_str = """
 This is where you emerge extra packages that your system may need.
@@ -38,7 +38,7 @@ This is where you emerge extra packages that your system may need.
 """
 	#self.categories={""}
 	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 	
 	scrolled_window = gtk.ScrolledWindow(hadjustment=None, vadjustment=None)
 	scrolled_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
@@ -60,18 +60,18 @@ This is where you emerge extra packages that your system may need.
         viewport.set_shadow_type (gtk.SHADOW_IN)
 	viewport.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse ("white"))
 	
-	vert.pack_start(scrolled_window,expand=gtk.TRUE,fill=gtk.TRUE,padding=0)
-	vert.pack_start(self.custom_box,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	vert.pack_start(scrolled_window,expand=True,fill=True,padding=0)
+	vert.pack_start(self.custom_box,expand=False,fill=False,padding=0)
 	self.add_content(vert)
 	
 
 	
     def activate(self):
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False
 	
 	# load the custom packages bar
 	s=" ".join(self.controller.install_profile.get_install_packages())
@@ -117,21 +117,21 @@ This is where you emerge extra packages that your system may need.
 	def create_gtk_gui(self,vert2):
 	    """ Adds the section and categories to the given element.
 	    """
-	    section_hbox=gtk.HBox(gtk.TRUE,0)
+	    section_hbox=gtk.HBox(True,0)
 	    section_name=gtk.Label("")
 	    section_name.set_markup('<span size="x-large" weight="bold" foreground="white">'+self.title+'</span>')
 	    section_name.set_justify(gtk.JUSTIFY_LEFT)
 	    
-	    test_table = gtk.Table(1, 1, gtk.FALSE)
+	    test_table = gtk.Table(1, 1, False)
 	    test_table.set_col_spacings(10)
 	    test_table.set_row_spacings(6)
 	    test_table.attach(section_name,0,1,0,1)
 	    
 	    eb=gtk.EventBox()
-	    eb.add(Widgets().hBoxIt2(gtk.FALSE,0,test_table))
+	    eb.add(Widgets().hBoxIt2(False,0,test_table))
 	    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("#737db5"))
 	    
-	    vert2.pack_start(eb,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	    vert2.pack_start(eb,expand=False,fill=False,padding=0)
 	    
 	    # now create each category gui and add it to the section.
 	    for item in self.section_list:
@@ -154,8 +154,8 @@ This is where you emerge extra packages that your system may need.
 	    print self.title + "\n"
 	
 	def create_gtk_gui(self,vert2):
-	    category_hbox=gtk.HBox(gtk.FALSE,0)
-	    category_table = gtk.Table(5, 5, gtk.FALSE)
+	    category_hbox=gtk.HBox(False,0)
+	    category_table = gtk.Table(5, 5, False)
 	    category_table.set_col_spacings(10)
 	    category_table.set_row_spacings(6)
 	    
@@ -166,11 +166,11 @@ This is where you emerge extra packages that your system may need.
 	    button.add(category_title)
 	    
 	    button.connect("toggled", self.Category1, self.title)
-	    category_table.attach(Widgets().hBoxIt2(gtk.FALSE,0,button),1,2,0,1)
+	    category_table.attach(Widgets().hBoxIt2(False,0,button),1,2,0,1)
 	    
 	    self.button = button
 	    # the image on the left side
-	    category_hbox=gtk.HBox(gtk.FALSE,0)
+	    category_hbox=gtk.HBox(False,0)
 	    if self.picture==None:
 		left_image=gtk.Image()
 		left_image.set_from_stock(gtk.STOCK_ADD,gtk.ICON_SIZE_LARGE_TOOLBAR)
@@ -180,18 +180,18 @@ This is where you emerge extra packages that your system may need.
 	    
 	    category_description=gtk.Label(self.description)
 	    #category_description.set_width_chars(45)
-	    category_description.set_line_wrap(gtk.TRUE)
-	    category_table.attach(Widgets().hBoxThese(gtk.FALSE,10,[left_image,category_description],0),1,2,1,2,xpadding=25)
-	    #category_table.attach(widgets.hBoxIt2(gtk.FALSE,0,category_description),2,3,1,2)
+	    category_description.set_line_wrap(True)
+	    category_table.attach(Widgets().hBoxThese(False,10,[left_image,category_description],0),1,2,1,2,xpadding=25)
+	    #category_table.attach(widgets.hBoxIt2(False,0,category_description),2,3,1,2)
 	    category_table.attach(self.details_click.get_details_gui(),1,2,2,3)
 	    # the details button
 	    #category_button=gtk.Button("Details")
 	    #category_button.connect("clicked", self.Category1,self.title)
-	    #category_table.attach(Widgets().hBoxIt2(gtk.FALSE,0,category_button),4,5,0,1)
+	    #category_table.attach(Widgets().hBoxIt2(False,0,category_button),4,5,0,1)
 	    
 	    
-	    category_hbox.pack_start(category_table,expand=gtk.FALSE,fill=gtk.FALSE,padding=5)
-	    vert2.pack_start(category_hbox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	    category_hbox.pack_start(category_table,expand=False,fill=False,padding=5)
+	    vert2.pack_start(category_hbox,expand=False,fill=False,padding=0)
 	    
 	def Category1(self,widget,data=None):
 	    #self.details_click.show()
@@ -207,7 +207,7 @@ This is where you emerge extra packages that your system may need.
 	
 	def turn_off_checkbox(self,value):
 	    #self.Category1(self.button,"NO")
-	    if value != gtk.TRUE:
+	    if value != True:
 		self.button.set_active(value)
 	    
 	class Details:
@@ -226,7 +226,7 @@ This is where you emerge extra packages that your system may need.
 		
 		self.treestore = gtk.TreeStore(gobject.TYPE_BOOLEAN,gobject.TYPE_STRING)
 		self.treeview = gtk.TreeView(self.treestore)
-		self.treeview.set_headers_visible(gtk.FALSE)
+		self.treeview.set_headers_visible(False)
 		
 		self.renderer = gtk.CellRendererToggle()
 		self.renderer.set_property('activatable', True)
@@ -257,7 +257,7 @@ This is where you emerge extra packages that your system may need.
 		    print "outside here"+str(self.number)
 		else:
 		    piter = self.treestore.append(None,(None,"No Extra Packages To Select"))
-		self.treeview.set_sensitive(gtk.FALSE)
+		self.treeview.set_sensitive(False)
 		return self.treeview
 	    
 	    def show(self):
@@ -288,9 +288,9 @@ This is where you emerge extra packages that your system may need.
 		    
 		    # also untoggle the big one
 		    if model["0"][0] == True:
-			self.controller.turn_off_checkbox(gtk.TRUE)
+			self.controller.turn_off_checkbox(True)
 		    else:
-			self.controller.turn_off_checkbox(gtk.FALSE)
+			self.controller.turn_off_checkbox(False)
 		    
 		else:
 		    # toggle just that one
@@ -309,7 +309,7 @@ This is where you emerge extra packages that your system may need.
 				value_h=True
 			if value_h==False:
 			    # its the last one unchecked so uncheck the big box
-			    self.controller.turn_off_checkbox(gtk.FALSE)
+			    self.controller.turn_off_checkbox(False)
 		
 		return
 	    
@@ -321,11 +321,11 @@ This is where you emerge extra packages that your system may need.
 	    
 	    def activate_treeview(self):
 		self.treeview.expand_all()
-		self.treeview.set_sensitive(gtk.TRUE)
+		self.treeview.set_sensitive(True)
 	    
 	    def deactivate_treeview(self):
 		self.treeview.collapse_all()
-		self.treeview.set_sensitive(gtk.FALSE)
+		self.treeview.set_sensitive(False)
 	    
 	    def untoggle_all(self):
 		# toggle them all off!

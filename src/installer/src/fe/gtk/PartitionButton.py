@@ -65,9 +65,9 @@ class Partition(gtk.Button):
 #			old_fg_color = self.gc.foreground
 			old_fg_color = gtk.gdk.color_parse("black")
 			self.gc.set_rgb_fg_color(self._color1)
-			self.window.draw_rectangle(gc = self.gc, filled = gtk.TRUE, x = 0, y = 0, width = self._division, height = self._height)
+			self.window.draw_rectangle(gc = self.gc, filled = True, x = 0, y = 0, width = self._division, height = self._height)
 			self.gc.set_rgb_fg_color(self._color2)
-			self.window.draw_rectangle(gc = self.gc, filled = gtk.TRUE, x = self._division, y = 0, width = self._width - self._division, height = self._height)
+			self.window.draw_rectangle(gc = self.gc, filled = True, x = self._division, y = 0, width = self._width - self._division, height = self._height)
 			w, h = self.layout.get_pixel_size()
 			self.window.draw_layout(gc = self.gc, x = (self._width - w) / 2, y = (self._height - h) / 2, foreground = gtk.gdk.color_parse("black"), layout = self.layout)
 			self.gc.set_rgb_fg_color(old_fg_color)

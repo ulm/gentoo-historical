@@ -27,7 +27,7 @@ class Panel(GLIScreen.GLIScreen):
 		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
 		self._parent = parent
 
-		vert = gtk.VBox(gtk.FALSE, 0)
+		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
 		content_str = """On this screen, you will be presented with a list of detected partitionable devices. Selecting
@@ -36,27 +36,27 @@ resize partitions.
 """
  
 		content_label = gtk.Label(content_str)
-		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0) # This was removed for screen space
-		container = gtk.HBox(gtk.FALSE, 0)
+		vert.pack_start(content_label, expand=False, fill=False, padding=0) # This was removed for screen space
+		container = gtk.HBox(False, 0)
 		detected_dev_label = gtk.Label("Devices:")
-		container.pack_start(detected_dev_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		container.pack_start(detected_dev_label, expand=False, fill=False, padding=10)
 		self.detected_dev_combo = gtk.combo_box_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
-		container.pack_start(self.detected_dev_combo, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		container.pack_start(self.detected_dev_combo, expand=False, fill=False, padding=0)
 
-		vert.pack_start(container, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		vert.pack_start(container, expand=False, fill=False, padding=10)
 
 		# This builds the container for the "whole disk" display at the top
 		part_table_frame = gtk.Frame()
 		part_table_frame.set_shadow_type(gtk.SHADOW_IN)
-		self.part_table = gtk.Table(1, 1, gtk.FALSE)
+		self.part_table = gtk.Table(1, 1, False)
 		self.part_table.set_size_request(-1, 40)
 		part_table_frame.add(self.part_table)
-		vert.pack_start(part_table_frame, expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
+		vert.pack_start(part_table_frame, expand=False, fill=False, padding=5)
 
 		# This builds the partition info box
-		self.part_info_box = gtk.HBox(gtk.FALSE, 0)
-		part_info_table = gtk.Table(6, 2, gtk.FALSE)
+		self.part_info_box = gtk.HBox(False, 0)
+		part_info_table = gtk.Table(6, 2, False)
 		part_info_table.set_col_spacings(10)
 		info_partition_label = gtk.Label("Partition:")
 		info_partition_label.set_alignment(0.0, 0.5)
@@ -94,21 +94,21 @@ resize partitions.
 		part_info_table.attach(self.info_end, 1, 2, 4, 5)
 		part_info_table.attach(info_size_label, 0, 1, 5, 6)
 		part_info_table.attach(self.info_size, 1, 2, 5, 6)
-		self.part_info_box.pack_start(part_info_table, expand=gtk.FALSE, fill=gtk.FALSE)
-		vert.pack_start(self.part_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_info_box.pack_start(part_info_table, expand=False, fill=False)
+		vert.pack_start(self.part_info_box, expand=False, fill=False, padding=10)
 
 		# This builds the row of buttons
-		self.part_button_box = gtk.HBox(gtk.FALSE, 0)
+		self.part_button_box = gtk.HBox(False, 0)
 		self.part_button_delete = gtk.Button(" Delete ")
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
-		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.part_button_box.pack_start(self.part_button_delete, expand=False, fill=False, padding=0)
 		self.part_button_properties = gtk.Button(" Properties ")
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
-		self.part_button_box.pack_start(self.part_button_properties, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=10)
 		part_button_dump_info = gtk.Button(" Dump to console (debug) ")
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=0)
+		vert.pack_start(self.part_button_box, expand=False, fill=False, padding=10)
 
 		# This builds the color key at the bottom
 		color_codes = [ { 'label': "Swap", 'color': '#12ff99' },
@@ -120,8 +120,8 @@ resize partitions.
                                 { 'label': "Free space", 'color': '#ffffff' },
                                 { 'label': "Unallocated", 'color': '#a2a2a2' }
                               ]
-		color_codes_box = gtk.HBox(gtk.FALSE, 0)
-		vert.pack_end(color_codes_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=2)
+		color_codes_box = gtk.HBox(False, 0)
+		vert.pack_end(color_codes_box, expand=False, fill=False, padding=2)
 		for color in color_codes:
 			temp_xpm = [ "12 12 2 1",
                                      "B c #000000",
@@ -142,8 +142,8 @@ resize partitions.
 			pixmap, mask = gtk.gdk.pixmap_create_from_xpm_d(self.controller.window.window, None, temp_xpm)
 			tmp_image = gtk.Image()
 			tmp_image.set_from_pixmap(pixmap, mask)
-			color_codes_box.pack_start(tmp_image, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-			color_codes_box.pack_start(gtk.Label(color['label']), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
+			color_codes_box.pack_start(tmp_image, expand=False, fill=False, padding=3)
+			color_codes_box.pack_start(gtk.Label(color['label']), expand=False, fill=False, padding=3)
 
 		self.add_content(vert)
 #		self.detected_dev_combo.set_active(0)
@@ -188,7 +188,7 @@ resize partitions.
 		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		self.info_size.set_text(str(part_size) + " MB")
 		self.active_part_minor = tmppart.get_minor()
-		self.part_button_delete.set_sensitive(gtk.TRUE)
+		self.part_button_delete.set_sensitive(True)
 		self.part_info_box.show_all()
 		self.part_button_box.show_all()
 
@@ -286,11 +286,11 @@ resize partitions.
 		props.run()
 
 	def activate(self):
-#		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-#		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-#		self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-#		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-#		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+#		self.controller.SHOW_BUTTON_EXIT    = True
+#		self.controller.SHOW_BUTTON_HELP    = True
+#		self.controller.SHOW_BUTTON_BACK    = True
+#		self.controller.SHOW_BUTTON_FORWARD = True
+#		self.controller.SHOW_BUTTON_FINISH  = False
 
 		if not len(self.drives):
 			part_load_error = 0
@@ -315,9 +315,9 @@ resize partitions.
 					msgdlg.run()
 					msgdlg.destroy()
 #					self._parent.switch_screen(None, 1) # Switch to ugly screen
-					self._parent.radio_ugly.set_active(gtk.TRUE)
-					self._parent.radio_pretty.set_sensitive(gtk.FALSE)
-					self._parent.radio_ugly.set_sensitive(gtk.FALSE)
+					self._parent.radio_ugly.set_active(True)
+					self._parent.radio_pretty.set_sensitive(False)
+					self._parent.radio_ugly.set_sensitive(False)
 					return
 					
 		if len(self.drives):

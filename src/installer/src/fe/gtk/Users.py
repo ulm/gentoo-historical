@@ -19,8 +19,8 @@ class Panel(GLIScreen.GLIScreen):
 
         #self.__full_path = self.controller.get_current_path()
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+        vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
+	horiz   = gtk.HBox(False, 10)
 
         content_str = """
 This is where you setup any users that will be 
@@ -28,7 +28,7 @@ using your computer.
 [short explanation of what to do here]
 """	
 	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 	
 	# instantiate widgets class
 	widgets=Widgets()
@@ -41,9 +41,9 @@ using your computer.
 	 #new_box=widgets.textBox2(self,26,option)
 	 #new_button=widgets.normalButton("Add")
 	 ## pack the "add a new entry box"
-	 #packIt = widgets.hBoxThese(gtk.FALSE,0,[new_label,new_box,new_button])
+	 #packIt = widgets.hBoxThese(False,0,[new_label,new_box,new_button])
 	 #packItV = widgets.hBoxIt(packIt)
-	 #vert.pack_start(packItV, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+	 #vert.pack_start(packItV, expand=False, fill=False, padding=0)
         
         # default user ( only user automatically added )
 	self.users = ["root"]
@@ -58,15 +58,15 @@ using your computer.
 	#entry = widgets.labelIt("Current Devices: ",new_box)
 	
 	# packs the label and the option menu
-	packIt = widgets.hBoxThese(gtk.FALSE,0,[gtk.Label("Current Users"),menu])
+	packIt = widgets.hBoxThese(False,0,[gtk.Label("Current Users"),menu])
 	packItV=widgets.hBoxIt(packIt)
-	vert.pack_start(packItV,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	vert.pack_start(packItV,expand=False,fill=False,padding=0)
 	
 	# create a table to hold the input fields
-	table=gtk.Table(4,2,gtk.FALSE)
+	table=gtk.Table(4,2,False)
 	table.set_col_spacing(0,10)
-	tableH=widgets.hBoxIt2(gtk.TRUE,20,table)
-	vert.pack_start(tableH,expand=gtk.FALSE,fill=gtk.FALSE,padding=10)
+	tableH=widgets.hBoxIt2(True,20,table)
+	vert.pack_start(tableH,expand=False,fill=False,padding=10)
 
 	# password confirmation for each user
 	list=["Password: ","Password: (confirm)"]
@@ -75,7 +75,7 @@ using your computer.
 	i=0
 	for item in list:
 	 #box=self.createSettings(item)
-	 #vert.pack_start(box,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	 #vert.pack_start(box,expand=False,fill=False,padding=0)
 	 table.attach(gtk.Label(item),0,1,i,i+1)
 	 i=i+1
 	
@@ -92,8 +92,8 @@ using your computer.
       
     def createSettings(self,name):
       widgets=Widgets()
-      new_box=widgets.hBoxThese(gtk.FALSE,0,[gtk.Label(name),widgets.textBox2(self,15)])
-      new_box=widgets.hBoxIt2(gtk.FALSE,10,new_box)
+      new_box=widgets.hBoxThese(False,0,[gtk.Label(name),widgets.textBox2(self,15)])
+      new_box=widgets.hBoxIt2(False,10,new_box)
       return new_box
     
     # call back for when they change the user
@@ -145,8 +145,8 @@ using your computer.
      print "Entry contents: %s\n" % data.get_text()
 
     def activate(self):
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False

@@ -34,7 +34,7 @@ This is where you setup Networking.
 """
 	self.ethernet_devices = self.get_ethernet_devices()
 	
-	vert = gtk.VBox(gtk.FALSE, 0)
+	vert = gtk.VBox(False, 0)
 	vert.set_border_width(10)
 	
 	self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
@@ -50,7 +50,7 @@ This is where you setup Networking.
 	self.columns.append(gtk.TreeViewColumn("Default Gateway", gtk.CellRendererText(), text=5))
 	col_num = 0
 	for column in self.columns:
-		column.set_resizable(gtk.TRUE)
+		column.set_resizable(True)
 		column.set_sort_column_id(col_num)
 		self.treeview.append_column(column)
 		col_num += 1
@@ -59,10 +59,10 @@ This is where you setup Networking.
 	self.treewindow.set_shadow_type(gtk.SHADOW_IN)
 	self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 	self.treewindow.add(self.treeview)
-	vert.pack_start(self.treewindow, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+	vert.pack_start(self.treewindow, expand=False, fill=False, padding=0)
 
-	self.networking_info_box = gtk.HBox(gtk.FALSE, 0)
-	networking_info_table = gtk.Table(5, 5, gtk.FALSE)
+	self.networking_info_box = gtk.HBox(False, 0)
+	networking_info_table = gtk.Table(5, 5, False)
 	networking_info_table.set_col_spacings(10)
 	networking_info_table.set_row_spacings(6)
 	
@@ -95,7 +95,7 @@ This is where you setup Networking.
 	# DHCP Checkbox
 	self.dhcp_checkbox=gtk.CheckButton("DHCP")
 	self.dhcp_checkbox.connect("toggled", self.checkbutton, "check button 1")
-	networking_info_table.attach(widgets.hBoxIt2(gtk.FALSE,0,self.dhcp_checkbox), 2, 3, 1, 2)
+	networking_info_table.attach(widgets.hBoxIt2(False,0,self.dhcp_checkbox), 2, 3, 1, 2)
 
 	
 	# Mask
@@ -123,28 +123,28 @@ This is where you setup Networking.
 	networking_info_table.attach(self.networking_info_gateway, 1, 2, 4, 5)
 	
 	# Pack it all
-	self.networking_info_box.pack_start(networking_info_table, expand=gtk.FALSE, fill=gtk.FALSE)
-	vert.pack_start(self.networking_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.networking_info_box.pack_start(networking_info_table, expand=False, fill=False)
+	vert.pack_start(self.networking_info_box, expand=False, fill=False, padding=10)
 
 	# The bottom box of buttons
-	networking_button_box = gtk.HBox(gtk.FALSE, 0)
+	networking_button_box = gtk.HBox(False, 0)
 	networking_button_new = gtk.Button(" _New ")
 	networking_button_new.connect("clicked", self.new_device)
-	networking_button_box.pack_start(networking_button_new, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	networking_button_box.pack_start(networking_button_new, expand=False, fill=False, padding=10)
 	self.networking_button_update = gtk.Button(" _Update ")
 	self.networking_button_update.connect("clicked", self.update_device)
-	self.networking_button_update.set_sensitive(gtk.FALSE)
-	networking_button_box.pack_start(self.networking_button_update, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.networking_button_update.set_sensitive(False)
+	networking_button_box.pack_start(self.networking_button_update, expand=False, fill=False, padding=10)
 	self.networking_button_delete = gtk.Button(" _Delete ")
 	self.networking_button_delete.connect("clicked", self.delete_device)
-	self.networking_button_delete.set_sensitive(gtk.FALSE)
-	networking_button_box.pack_start(self.networking_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	self.networking_button_delete.set_sensitive(False)
+	networking_button_box.pack_start(self.networking_button_delete, expand=False, fill=False, padding=10)
 	
-	vert.pack_start(networking_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(networking_button_box, expand=False, fill=False, padding=10)
 	
 	# The hostname and dnsdomainname box
-	naming_button_box = gtk.HBox(gtk.FALSE, 0)
-	naming_table = gtk.Table(5, 5, gtk.FALSE)
+	naming_button_box = gtk.HBox(False, 0)
+	naming_table = gtk.Table(5, 5, False)
 	naming_table.set_col_spacings(10)
 	naming_table.set_row_spacings(6)
 	
@@ -156,7 +156,7 @@ This is where you setup Networking.
 	self.hostname.set_width_chars(25)
 	naming_table.attach(self.hostname, 1, 2, 0, 1)
 	hostname_explain=gtk.Label("The name of your computer, ex, 'tux'")
-	naming_table.attach(widgets.hBoxIt2(gtk.FALSE,0,hostname_explain), 2, 3, 0, 1)
+	naming_table.attach(widgets.hBoxIt2(False,0,hostname_explain), 2, 3, 0, 1)
 	
 	# dnsdomainname
 	dnsdomainname_label = gtk.Label("DNS Domain Name:")
@@ -166,29 +166,29 @@ This is where you setup Networking.
 	self.dnsdomainname.set_width_chars(25)
 	naming_table.attach(self.dnsdomainname, 1, 2, 1, 2)
 	dnsdomainname_explain=gtk.Label("ex. gentoo.org")
-	naming_table.attach(widgets.hBoxIt2(gtk.FALSE,0,dnsdomainname_explain), 2, 3, 1, 2)
+	naming_table.attach(widgets.hBoxIt2(False,0,dnsdomainname_explain), 2, 3, 1, 2)
 	
-	naming_button_box.pack_start(naming_table, expand=gtk.FALSE, fill=gtk.FALSE)
-	vert.pack_start(naming_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	naming_button_box.pack_start(naming_table, expand=False, fill=False)
+	vert.pack_start(naming_button_box, expand=False, fill=False, padding=10)
 	
 	self.add_content(vert)
 
     def disable_all_fields(self):
 	if(self.networking_info_ip.get_text()!="dhcp"):
-	    self.dhcp_checkbox.set_sensitive(gtk.FALSE)
+	    self.dhcp_checkbox.set_sensitive(False)
 	    self.networking_info_ip.set_text("")
 	    
 	
-	self.networking_info_ip.set_sensitive(gtk.FALSE)
+	self.networking_info_ip.set_sensitive(False)
 	    
 	self.networking_info_broadcast.set_text("")
 	self.networking_info_gateway.set_text("")
 	self.mask.set_text("")
 	
-	self.mask.set_sensitive(gtk.FALSE)
-	self.networking_info_broadcast.set_sensitive(gtk.FALSE)
-	self.networking_info_gateway.set_sensitive(gtk.FALSE)
-	self.networking_info_device.set_sensitive(gtk.FALSE)
+	self.mask.set_sensitive(False)
+	self.networking_info_broadcast.set_sensitive(False)
+	self.networking_info_gateway.set_sensitive(False)
+	self.networking_info_device.set_sensitive(False)
 
     def enable_all_fields(self):
 	self.networking_info_broadcast.set_text("")
@@ -197,14 +197,14 @@ This is where you setup Networking.
 	self.networking_info_ip.set_text("")
 	self.networking_info_device.get_child().set_text("")
 	
-	if self.gateway_info[0]==None: self.networking_info_gateway.set_sensitive(gtk.TRUE)
-	else: self.networking_info_gateway.set_sensitive(gtk.FALSE)
+	if self.gateway_info[0]==None: self.networking_info_gateway.set_sensitive(True)
+	else: self.networking_info_gateway.set_sensitive(False)
 	
-	self.networking_info_broadcast.set_sensitive(gtk.TRUE)
-	self.networking_info_device.set_sensitive(gtk.TRUE)
-	self.dhcp_checkbox.set_sensitive(gtk.TRUE)
-	self.mask.set_sensitive(gtk.TRUE)
-	self.networking_info_ip.set_sensitive(gtk.TRUE)
+	self.networking_info_broadcast.set_sensitive(True)
+	self.networking_info_device.set_sensitive(True)
+	self.dhcp_checkbox.set_sensitive(True)
+	self.mask.set_sensitive(True)
+	self.networking_info_ip.set_sensitive(True)
 
     def refresh_list_at_top(self):
 	self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
@@ -224,21 +224,21 @@ This is where you setup Networking.
 	mount = self.networking[self.active_entry]
 	self.enable_all_fields()
 
-	self.networking_button_update.set_sensitive(gtk.TRUE)
-	self.networking_button_delete.set_sensitive(gtk.TRUE)
+	self.networking_button_update.set_sensitive(True)
+	self.networking_button_delete.set_sensitive(True)
 	
 	self.networking_info_device.get_child().set_text(mount['device'])
 	self.networking_info_ip.set_text(str(mount['ip']))
 	
 	if(self.networking_info_ip.get_text()=="dhcp"):   
-	    self.networking_info_broadcast.set_sensitive(gtk.FALSE)
-	    self.networking_info_gateway.set_sensitive(gtk.FALSE)
-	    self.networking_info_ip.set_sensitive(gtk.FALSE)
-	    self.mask.set_sensitive(gtk.FALSE)
+	    self.networking_info_broadcast.set_sensitive(False)
+	    self.networking_info_gateway.set_sensitive(False)
+	    self.networking_info_ip.set_sensitive(False)
+	    self.mask.set_sensitive(False)
 	    # now check the checkbox
-	    self.dhcp_checkbox.set_active(gtk.TRUE)
+	    self.dhcp_checkbox.set_active(True)
 	else:
-	    self.dhcp_checkbox.set_active(gtk.FALSE)	
+	    self.dhcp_checkbox.set_active(False)	
 	
 	self.networking_info_device.get_child().set_text(mount['device'])
 	self.networking_info_ip.set_text(str(mount['ip']))
@@ -246,18 +246,18 @@ This is where you setup Networking.
 	self.networking_info_broadcast.set_text(str(mount['broadcast']))
 	print self.gateway_info[0]
 	if self.networking_info_ip.get_text()!="dhcp" and (str(self.gateway_info[0])==str(mount['device']) or str(self.gateway_info[0])==str(None)): 
-	    self.networking_info_gateway.set_sensitive(gtk.TRUE)
+	    self.networking_info_gateway.set_sensitive(True)
 	    self.networking_info_gateway.set_text(str(mount['gateway']))
-	else: self.networking_info_gateway.set_sensitive(gtk.FALSE)
+	else: self.networking_info_gateway.set_sensitive(False)
 
     def new_device(self, button, data=None):
 	self.active_entry = -1
-	self.networking_button_update.set_sensitive(gtk.TRUE)
-	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	self.networking_button_update.set_sensitive(True)
+	self.networking_button_delete.set_sensitive(False)
 	
 	# if the checkbutton is checked, uncheck it cause its a new device!
 	if(self.dhcp_checkbox.get_active()):
-	    self.dhcp_checkbox.set_active(gtk.FALSE)
+	    self.dhcp_checkbox.set_active(False)
 	    
 	self.networking_info_broadcast.set_text("")
 	self.networking_info_gateway.set_text("")
@@ -265,14 +265,14 @@ This is where you setup Networking.
 	self.networking_info_ip.set_text("")
 	self.networking_info_device.get_child().set_text("")
 	
-	if self.gateway_info[0]==None: self.networking_info_gateway.set_sensitive(gtk.TRUE)
-	else: self.networking_info_gateway.set_sensitive(gtk.FALSE)
+	if self.gateway_info[0]==None: self.networking_info_gateway.set_sensitive(True)
+	else: self.networking_info_gateway.set_sensitive(False)
 	    
-	self.networking_info_broadcast.set_sensitive(gtk.TRUE)
-	self.networking_info_device.set_sensitive(gtk.TRUE)
-	self.dhcp_checkbox.set_sensitive(gtk.TRUE)
-	self.mask.set_sensitive(gtk.TRUE)
-	self.networking_info_ip.set_sensitive(gtk.TRUE)
+	self.networking_info_broadcast.set_sensitive(True)
+	self.networking_info_device.set_sensitive(True)
+	self.dhcp_checkbox.set_sensitive(True)
+	self.mask.set_sensitive(True)
+	self.networking_info_ip.set_sensitive(True)
 	
 	self.networking_info_device.grab_focus()
 
@@ -311,8 +311,8 @@ This is where you setup Networking.
 		    msgdialog.destroy()
 		    print "nothing changed"   
 		    
-	    self.networking_button_update.set_sensitive(gtk.FALSE)
-	    self.networking_button_delete.set_sensitive(gtk.FALSE)
+	    self.networking_button_update.set_sensitive(False)
+	    self.networking_button_delete.set_sensitive(False)
 	    self.refresh_list_at_top()
 	    self.disable_all_fields()
 
@@ -323,23 +323,23 @@ This is where you setup Networking.
 	    
 	self.added_devices.remove(self.networking_info_device.get_child().get_text())
 	print self.networking
-	self.networking_info_device.set_sensitive(gtk.FALSE)
+	self.networking_info_device.set_sensitive(False)
 	#print self.added_devices
 	self.networking.pop(self.active_entry)
 	#print self.networking
 	self.active_entry = -1
-	self.networking_button_update.set_sensitive(gtk.FALSE)
-	self.networking_button_delete.set_sensitive(gtk.FALSE)
+	self.networking_button_update.set_sensitive(False)
+	self.networking_button_delete.set_sensitive(False)
 	#self.added_devices.remove(self.ethernet_devices[self.networking_info_device.get_active()])
 	self.refresh_list_at_top()
 	self.disable_all_fields()
 
     def activate(self):
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False
 	self.refresh_list_at_top()
 	self.disable_all_fields()
 	# load the saved data ( if any )
@@ -414,10 +414,10 @@ This is where you setup Networking.
 	    self.networking_info_gateway.set_text("")
 	    self.networking_info_broadcast.set_text("None")
 	    self.mask.set_text("None")
-	    self.networking_info_ip.set_sensitive(gtk.FALSE)
-	    self.mask.set_sensitive(gtk.FALSE)
-	    self.networking_info_broadcast.set_sensitive(gtk.FALSE)
-	    self.networking_info_gateway.set_sensitive(gtk.FALSE)	    
+	    self.networking_info_ip.set_sensitive(False)
+	    self.mask.set_sensitive(False)
+	    self.networking_info_broadcast.set_sensitive(False)
+	    self.networking_info_gateway.set_sensitive(False)	    
 	else:
 	    self.networking_info_ip.set_text("")
 	    self.enable_all_fields()

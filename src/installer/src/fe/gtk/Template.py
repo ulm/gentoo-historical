@@ -7,7 +7,7 @@ class Panel(GLIScreen.GLIScreen):
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
-		vert = gtk.VBox(gtk.FALSE, 0)
+		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
 		content_str = """
@@ -27,13 +27,13 @@ button to load your previous settings as defaults.
 """
  	
 		content_label = gtk.Label(content_str)
-		vert.pack_start(content_label, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)            
+		vert.pack_start(content_label, expand=False, fill=False, padding=0)            
 
 		self.add_content(vert)
 
 	def activate(self):
-		self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-		self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-		self.controller.SHOW_BUTTON_BACK    = gtk.FALSE
-		self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-		self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+		self.controller.SHOW_BUTTON_EXIT    = True
+		self.controller.SHOW_BUTTON_HELP    = True
+		self.controller.SHOW_BUTTON_BACK    = False
+		self.controller.SHOW_BUTTON_FORWARD = True
+		self.controller.SHOW_BUTTON_FINISH  = False

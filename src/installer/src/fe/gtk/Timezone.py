@@ -17,8 +17,8 @@ class Panel(GLIScreen.GLIScreen):
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
 
-        vert    = gtk.VBox(gtk.FALSE, 10) # This box is content so it should fill space to force title to top
-	horiz   = gtk.HBox(gtk.FALSE, 10)
+        vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
+	horiz   = gtk.HBox(False, 10)
 
         content_str = """
 This is where you select what timezone you are in.
@@ -26,16 +26,16 @@ This is where you select what timezone you are in.
 """
  	
 	# pack the description
-	vert.pack_start(gtk.Label(content_str), expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
+	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 
 	widgets=Widgets()
 	
 	# creates the drop-down
 	#menu=widgets.createComboEntry(self,"Timezone",self.generate_timezones())
 	# packs the label and the option menu
-	#packIt = widgets.hBoxThese(gtk.FALSE,0,[gtk.Label("Timezones"),menu])
+	#packIt = widgets.hBoxThese(False,0,[gtk.Label("Timezones"),menu])
 	#packItV=widgets.hBoxIt(packIt)
-	#vert.pack_start(packItV,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	#vert.pack_start(packItV,expand=False,fill=False,padding=0)
 	
 	self.treestore = gtk.TreeStore(str)
 	# generates/adds to the treestore
@@ -49,9 +49,9 @@ This is where you select what timezone you are in.
 	# add the box to tell you what timezone you selected
 	label=gtk.Label("Your Selection: ")
 	self.label2=gtk.Label("")
-	selection = widgets.hBoxThese(gtk.FALSE,10,[label,self.label2])
-	selection = widgets.hBoxThese(gtk.TRUE,10,[selection])
-	vert.pack_start(selection,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+	selection = widgets.hBoxThese(False,10,[label,self.label2])
+	selection = widgets.hBoxThese(True,10,[selection])
+	vert.pack_start(selection,expand=False,fill=False,padding=0)
 	
 	self.treeview = gtk.TreeView(self.treestore)
 #	self.treeview.connect("select-cursor-row",self.callback2,self.treeview.get_selection())
@@ -69,8 +69,8 @@ This is where you select what timezone you are in.
 	scrolled_window.add_with_viewport(self.treeview)
 	scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
 	
-	#treeview=widgets.hBoxIt3(gtk.FALSE,10,scrolled_window,10)
-	vert.pack_start(scrolled_window,expand=gtk.TRUE,fill=gtk.TRUE,padding=0)
+	#treeview=widgets.hBoxIt3(False,10,scrolled_window,10)
+	vert.pack_start(scrolled_window,expand=True,fill=True,padding=0)
     	
     	self.add_content(vert)
 
@@ -168,8 +168,8 @@ This is where you select what timezone you are in.
 	timezone=timezone[19:]
 	self.label2.set_label(timezone)
 	
-	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
-	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE
-	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
-	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
-	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	self.controller.SHOW_BUTTON_EXIT    = True
+	self.controller.SHOW_BUTTON_HELP    = True
+	self.controller.SHOW_BUTTON_BACK    = True
+	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FINISH  = False
