@@ -400,12 +400,11 @@
                         <table class="content" cellpadding="4" width="100%" border="0">
                           <tr>
                             <td valign="top">
-                              <a href="http://www.linuxworldexpo.com" target="_blank">
-							  <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/lwe.gif" alt="lwe" border="0"/>
-							  </a>
-                            </td>
-                            <td valign="middle">Come visit us at the Linux World Expo, January 21-24 in New York City! <br />
-							We will be at the .org Pavilion, booth number 8. Hope to see you there!</td>
+                            <img src="http://www.ibiblio.org/pub/Linux/distributions/gentoo/images/gentoo-new.gif" alt="new"/>
+							</td>
+                            <td valign="middle">
+							Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, UltraSparc and Alpha Processor systems.  To learn more, <b><a href="/main/en/about.xml">click here</a></b>.	
+							</td>
                           </tr>
                         </table>
                         <br/>
@@ -1081,4 +1080,10 @@
       <xsl:apply-templates/>
     </li>
   </xsl:template>
+    <xsl:template match="ignoreinemail">
+        <xsl:apply-templates/>
+	  </xsl:template>
+	    <xsl:template match="ignoreinguide">
+	      </xsl:template>
+
 </xsl:stylesheet>
