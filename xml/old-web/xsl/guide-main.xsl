@@ -405,13 +405,13 @@ User Docs:<br/>
 						<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/>
 						<br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
-						#gentoo (general discussion)<br/>
-						#gentooppc (Gentoo Linux/PPC) <font color="#ff0000">(new!)</font><br/>
-						#gentoospace (Gentoo Linux/Sparc) <font color="#ff0000">(new!)</font><br/>
-						#gentoo-user (low-bandwidth chat) <font color="#ff0000">(new!)</font><br/>
-						#gentoo-server (Gentoo servers) <font color="#ff0000">(new!)</font><br/>
-						#gentoofr (Fran&amp;ccedil;ais) <font color="#ff0000">(new!)</font><br/>
-						#gentoo-es (Espa&amp;ntilde;ol) <font color="#ff0000">(new!)</font><br/>
+						General Discussion:<br/>#gentoo<br/><br/>
+						Gentoo Linux/PPC:<br/>#gentooppc <font color="#ff0000">(new!)</font><br/><br/>
+						Gentoo Linux/Sparc:<br/>#gentoosparc <font color="#ff0000">(new!)</font><br/><br/>
+						Low-bandwidth chat:<br/>#gentoo-user <font color="#ff0000">(new!)</font><br/><br/>
+						Server-related chat:<br/>#gentoo-server <font color="#ff0000">(new!)</font><br/><br/>
+						En Fran&#231;ais:<br/>#gentoofr <font color="#ff0000">(new!)</font><br/><br/>
+						En Espa&#241;ol:<br/>#gentoo-es <font color="#ff0000">(new!)</font><br/><br/>
 						<br/><br/></p></td></tr></table>
 					</td></tr>
 				</table>
@@ -422,7 +422,7 @@ User Docs:<br/>
 					<td valign="top" align="left">
 					<xsl:choose>
 						<xsl:when test="/mainpage/@id='news'">
-							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/gentoo/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for the x86 and PowerPC.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
+							<table class="content" cellpadding="4" width="100%" border="0"><tr><td><img src="http://www.ibiblio.org/gentoo/images/gentoo-new.gif"/></td><td valign="center">Gentoo Linux is a high-performance ports-based Linux metadistribution for x86, PowerPC, Sparc and Sparc64 systems.  To learn more, <b><a href="/index-about.html">click here</a></b>.</td></tr></table><br/>
 							<xsl:for-each select="newsitems/news[position()&lt;10]">
 							<table class="content" cellpadding="4" width="100%" border="0"><tr><td colspan="2" bgcolor="#7a5ada">
 							<font color="#ffffff"><b><xsl:value-of select="title"/></b><br/>
