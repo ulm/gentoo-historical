@@ -1,0 +1,242 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="../../xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/tw/alsa-guide.xml">
+<title>Gentoo Linux ALSA 指南</title>
+<author title="Author"><mail link="zu@pandora.be">Vincent Verleye</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Translator"><mail link="palatis@gentoo.org.tw">【Palatis】</mail></author>
+<author title="Reviewer"><mail link="bennyc@gentoo.org">Benny Chuang</mail></author>
+
+<abstract>這篇文章交您怎樣在 Gentoo Linux 上設定 Advanced Linux Sound Architecture (進階 Linux 音效架構)。給讀過 Gentoo Linux 桌面系統設定指南的讀者，這篇指南是希望能給您更進一步有關 ALSA 的資訊。</abstract>
+
+<version>1.2</version>
+<date>18 February 2003</date>
+<!-- Translate date : 18 April 2003 -->
+
+<chapter>
+<title>介紹</title>
+	<section>
+		<title>什麼是 ALSA？</title>
+		<body>
+		<p>ALSA (Advanced Linux Sound Architecture - 進階 Linux 音效架構) 是個透過重寫程式碼來增進 Linux 音效子系統的計畫。我們預計在準備好後 ALSA 將整合進 Linux 核心 2.6.x (或 3.x.x，看那個先出來)。</p>
+		<p>ALSA 為 Linux 提供聲音以及 MIDI 功能！</p>
+		<p>根據 <uri>http://www.alsa-project.org</uri> 所言，ALSA 擁有底下的特色：</p>
+		<ul>
+		  <li>有效的支援所有種類的音效介面，從消費性音效卡至專業多聲道音效介面。</li>
+		  <li>完全模組化的音效驅動程式。</li>
+		  <li>SMP 以及安全執行緒設計</li>
+		  <li>使用者級的函式庫 (alsa-lib) 讓撰寫應用程式變簡單，也提供更高級的功能。</li>
+		  <li>支援較早的 OSS API，提供大部份的 OSS 程式二進位支援。</li>
+		</ul>
+		<p>ALSA 還有很多其他特色，例如支援全雙工錄放音、多音效卡支援、硬體音效混合、延伸混音器支援 (以支援新音效卡的進階功能)...</p>
+		</body>
+	</section>
+
+	<section>
+		<title>為什麼要用 ALSA？</title>
+		<body>
+		<p>如果您的音效卡被 Linux 2.4.x 核心內建的商業版 OSS/4Front 音效驅動系統支援，您還是可以使用<e>那些模組</e>來驅動您的音效卡。如果是這樣，請閱讀 <uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri>。</p>
+		<p>無論如何，那些 OSS/4Front 驅動程式還是有限制 - 商業版只是其中之一。ALSA 試圖超越那些限制而且以開放原始碼的方式來做。ALSA 是完全使用 GPL 以及 LGPL 的音效驅動系統，提供您專業品質的錄音、放音、以及 MIDI 撥放。</p>
+		</body>
+	</section>
+
+	<section>
+		<title>ALSA 支援那些音效卡？</title>
+		<body>
+		<p>ALSA 嘗試以提公開放原始碼驅動程式的方式支援所有 (新的) 音效卡。無論如何，某些廠商只願意提供執行套件。</p>
+		<p>想知道您的卡有沒有被支援，您可以在以下的網址找到所有支援或不支援的音效卡清單：<uri>http://www.alsa-project.org/alsa-doc/</uri>。</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>安裝</title>
+	<section>
+		<title>核心模組</title>
+		<body>
+		<p>由於我們還在使用 2.4.x 的核心程式碼，我們都需要將核心與 ALSA 模組分開編譯。那些使用 2.5.x 核心的人可以直接設定核心時順便設定，因為 ALSA 模組已經被包含在核心中所以應該也得在那裡編譯。</p>
+		<p>首先我們要確定核心設定可以使用 ALSA。您必須做的只有打開 Sound Card Support 並且讓它編譯成模組 (M)。它的名字會叫 <c>soundcore.o</c>。</p>
+		<note>如果您將 Sound Card Support 編譯進核心 (Y) 而不是編譯成模組 (M)，ALSA 也應該還是可以用。無論如何，官方的 ALSA 文件建議您將它編成模組，畢竟 ALSA 會嘗試載入它。</note>
+		<p>如果您已經有個可以工作的核心設定檔，確定您將所有音效驅動程式移除 (Sound Card Support 例外)。如果您不想重開，您可以這麼做：</p>
+<pre>
+# <c>cd /usr/src/linux</c>
+# <c>cp .config ~/</c>
+# <c>make mrproper</c>
+# <c>cp ~/.config .</c>
+# <c>make menuconfig</c>
+</pre>
+		<p>現在將 <e>Sound Card Support</e> 設定成模組 (M) 並且取消其他所有音效驅動程式，然後離開並且選 Y 來儲存您的核心設定檔。在這之後，編譯模組：</p>
+<pre>
+# <c>make dep clean</c>
+# <c>make modules modules_install</c>
+</pre>
+		<p>在您安裝新的模組之前，您必須知道這會移除您之前安裝的所有模組，包括您之前安裝的 ALSA 模組在內。</p>
+		<impo>這表示，當您以後重新編譯核心的時候，也必須重新編譯 <c>alsa-driver</c>。</impo>
+		<note>無論如何，您不需要重新安裝 <c>nvidia-kernel</c>，因為 Nvidia 的驅動程式放在 <path>/lib/modules/*/video</path> 這個分開的子目錄裡，所以不會因為 <c>make modules modules_install</c> 被刪除。</note>
+		</body>
+	</section>
+
+	<section>
+		<title>ALSA 模組</title>
+		<body>
+		<p>現在是為您的音效卡安裝 ALSA 驅動程式的時候了！如果您使用 pci 音效卡，您可以從 /proc/pci 找出它的資訊以及型號：</p>
+		<pre># <c>grep audio /proc/pci</c></pre>
+		<warn>如果您之前的非 ALSA 音效模組還是載入中，<e>現在</e>卸載它們。使用 <c>lsmod</c> 檢查，並使用 <c>rmmod</c> 來卸載系統中所有音效相關的模組。</warn>
+		<p>接下來只要 <c>emerge alsa-driver</c> 了，這將編譯以及安裝<e>全部</e>的 ALSA 音效驅動程式。</p>
+		<p>無論如何，為了節省時間，在 <uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> 查詢您音效卡的<e>模組名稱</e>，
+		在 <e>Driver and Docs</e> 中的 <e>Details</e> 連結可以找到，我的是 <c>snd-emu10k1</c>，畢竟我有張 SBlive! 音效卡跟 <e>EMU10K1</e> 晶片。
+		我們在 emerge 之前將 ALSA_CARDS 環境變數設定成模組的名稱 (不過不要加入 snd 前置字串)，所以 emerge 只會編譯我們需要的驅動程式。</p>
+<pre>
+# <c>env ALSA_CARDS='emu10k1' emerge alsa-driver</c>
+</pre>
+		<note>您可以將這個設定加入 <path>/etc/make.conf</path>，那麼以後您想再次對 alsa-driver 做 emerge 的時候只要執行 <c>emerge alsa-driver</c> 就好。例如，類似這樣：<c>echo 'ALSA_CARDS="emu10k1"' >> /etc/make.conf</c>。</note>
+		<note>當您想要安裝一種以上的 ALSA 音效卡驅動程式的時候，您可以使用空白鍵來分隔驅動程式清單；類似這樣：<c>env ALSA_CARDS='emu10k1 intel8x0 ens1370' emerge alsa-driver</c>。</note>
+		<note>如果您想要 OSS 相容性，請確認您 emerge <i>alsa-oss</i>，他是 ALSA/OSS 相容轉換器。</note>
+		<p>在這之後，ALSA 模組應該裝進您的系統了。</p>
+		</body>
+	</section>
+
+	<section>
+		<title>ALSA 的設定</title>
+		<body>
+		<p>現在我們嘗試設定 ALSA 讓它正常工作。我們必須編輯幾個檔案，讓系統知道我們剛才安裝了燒燙燙的 ALSA 模組。</p>
+		<p>首先編輯 <path>/etc/modules.d/alsa</path>。</p>
+		<warn>請不要直接編輯 <path>/etc/modules.conf</path>，取而代之，請永遠編輯 <path>/etc/modules.d</path> 裡面的檔案。</warn>
+		<p>檢查<e>檔案最後</e>的 ALSA 設定，改變這個設定您可以指定最大的音效卡數量 (一般來說，只有一張)。</p>
+<pre caption="在 /etc/modules.d/alsa 最後">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+
+# 將這個設定成正確的音效卡數目。
+# Set this to the correct number of cards.
+<c>options snd cards_limit=1</c>
+</pre>
+		<p>現在我們指定 ALSA 要用的音效驅動程式。在同一個檔案，編輯如下：</p>
+<pre caption="/etc/modules.d/alsa">
+## and then run `update-modules' command.
+## Read alsa-driver's INSTALL file in /usr/share/doc for more info.
+##
+##  ALSA portion
+<c>alias snd-card-0 snd-emu10k1</c>
+<c>## 如果您的卡超過一張，加入：
+## If you have more than one, add:
+## alias snd-card-1 snd-intel8x0
+## alias snd-card-2 snd-ens1370</c>
+##  OSS/Free portion
+## alias sound-slot-0 snd-card-0
+## alias sound-slot-1 snd-card-1
+##
+</pre>
+		<note>如果您有一張以上的音效卡，調整 <c>cards_limit</c> 並在檔案中加入更多 snd-card 別名。我沒有這樣的經驗，不過您可以在 <uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/alsa-howto.html">ALSA Howto</uri> 的<uri link="http://www.alsa-project.org/alsa-doc/alsa-howto/c1660.htm">第六章</uri>找到兩張尾上網卡的範例設定檔。</note>
+		<p>我們最後要對這個檔案做的事，檢查這些東西有存在並且沒有被註解掉：</p>
+<pre caption="Near the end of /etc/modules.d/alsa">
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+</pre>
+		<p>現在，再次檢查一遍 <path>/etc/modules.d/alsa</path> 當您確定一切 ok 之後，執行 <c>update-modules</c>。</p>
+<pre>
+# <c>update-modules</c>
+</pre>
+		<note>執行 <c>update-modules</c> 會將 <path>/etc/modules.d/alsa</path> 的資料加入至 <path>/etc/modules.conf</path>。</note>
+		<p>您也應該檢查 /etc/devfsd.conf 中包含 ALSA 設備以及註冊了正確的權限。</p>
+<pre caption="/etc/devfsd.conf">
+# ALSA/OSS stuff
+# Comment/change these if you want to change the permissions on
+# the audio devices
+LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
+REGISTER        sound/.*     PERMISSIONS root.audio 660
+REGISTER        snd/.*       PERMISSIONS root.audio 660
+</pre>
+		<note>請注意 devfsd.conf 只將 /dev/sound 開放給 root.audio。所以，不是根 (root) 使用者的使用者想使用音效設備，您必須把它們加入 audio 群組。</note>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>啟動 ALSA</title>
+	<section>
+		<title>將 alsasound 加入 runlevel</title>
+		<body>
+		<p>首先您必須確定 ALSA 在開機時啟動。像這樣：</p>
+<pre>
+# <c>rc-update add alsasound boot</c>
+</pre>
+		<warn>alsasound 命令稿應該被加入至 "boot" runlevel 而不是 "default" runlevel。</warn>
+		</body>
+	</section>
+
+	<section>
+		<title>執行以及取消靜音</title>
+		<body>
+		<p>畢竟我們是 Linux 使用者，我們不想重開機。所以只好手動啟動 alsascript 命令稿：</p>
+<pre>
+# <c>/etc/init.d/alsasound start</c>
+</pre>
+		<p>現在 ALSA 已經啟動了！如果一切 ok，您現在應該可以在執行 <c>lsmod</c> 中看到 ALSA 模組。無論如何，您的電腦還是發不出聲音，因為它們還被靜音中。我們需要 <c>alsa-utils</c> 才能取消靜音。</p>
+<pre>
+# <c>emerge alsa-utils</c>
+# <c>amixer</c>
+</pre>
+		<warn>您不應該得到這個錯誤，不過<e>如果</e>您看到螢幕上說 "amixer: Mixer attach default error: No such file or directory"，您必須手動 insmod <c>snd-mixer-oss</c> 和 <c>snd-pcm-oss</c>。在這之後再執行 amixer 一次。</warn>
+<pre caption="在執行 amixer 出問題的時候">
+# <c>insmod snd-mixer-oss</c>
+# <c>insmod snd-pcm-oss</c>
+# <c>amixer</c>
+</pre>
+		<p>如果您做到了這裡，現在可以解除 Master 和 PCM 聲道的靜音了。</p>
+<pre>
+# <c>amixer set Master 100 unmute</c>
+# <c>amixer set PCM 100 unmute</c>
+# <c>aplay /usr/kde/3/share/sounds/pop.wav</c> <codenote>(pop.wav is part of KDE)</codenote>
+</pre>
+		<p>我們使用 aplay (alsa play) 指令來測試音效裝置。如果您聽到了一聲 "pop"，那麼音效絕對已經起來了。然後，調整您的音量設定；使用 ncurses 的 <c>alsamixer</c> 是個好工具。</p>
+		<p>您可能會想 emerge <c>alsa-xmms</c>，它提供 XMMS 的 ALSA 支援。</p>
+		<p>當您重新啟動系統時，<e>alsasound</e> 起始命令稿會自動回復您的音量設定。</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>最後的筆記</title>
+	<section>
+		<title>更新核心之後...</title>
+		<body>
+		<p>當您重新編譯核心，或升級到其他核心，您必須重新編譯 ALSA 模組。</p>
+		<p>您可能安裝了 <c>alsa-driver</c>、<c>alsa-libs</c> 和 <c>alsa-utils</c>，只有第一個需要重新安裝，畢竟它會把 alsa 模組放在 <path>/lib/modules/*/kernel/sound/pci/</path>。</p>
+<pre caption="每次編譯核心之後">
+# <c>emerge alsa-driver</c>
+</pre>
+		</body>
+	</section>
+
+	<section>
+		<title>/etc/modules.autoload</title>
+		<body>
+		<p>使用 ALSA 的時候，您不需要編輯這個檔案。在 <c>rc-update add alsasound boot</c> 之後，系統會自動在開機時載入適當的模組。</p>
+		<p>您也不需要將 <c>snd-pcm-oss</c> 或 <c>snd-mixer-oss</c> 加入這個檔案。查看<uri link="http://www.djcj.org/LAU/guide/alsbook/faq1.html">這篇 FAQ</uri> 取得更多資訊。</p>
+		</body>
+	</section>
+
+	<section>
+		<title>更多連結...</title>
+		<body>
+		<p>您可以在這裡找到更多資訊：</p>
+		<ul>
+		  <li><uri link="http://www.gentoo.org/doc/en/desktop.xml">The Gentoo Linux Desktop Configuration Guide</uri></li>
+		  <li><uri link="http://www.alsa-project.org">ALSA Project Homepage</uri></li>
+		  <li><uri link="http://www.alsa-project.org/documentation.php3">ALSA Users Documentation</uri></li>
+		  <li><uri link="http://www.djcj.org">ALSA Howto's and FAQ's</uri></li>
+		  <li><uri link="http://tldp.org/HOWTO/Sound-HOWTO/index.html">Linux Sound HOWTO</uri></li>
+		  <li><uri link="http://linux-sound.org/">Sound and MIDI Software For Linux</uri></li>
+		</ul>
+		</body>
+	</section>
+</chapter>
+</guide>
