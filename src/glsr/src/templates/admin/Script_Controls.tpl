@@ -24,7 +24,8 @@
           <tr>
 
 	<form name="script_control_form" method="GET" action="index.py">
-	<input type="hidden" name="page" value="script">
+	<input type="hidden" name="domain" value="admin">
+        <input type="hidden" name="page" value="script">
           
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
            {IF TOTAL_SCRIPTS == 0}
@@ -41,6 +42,7 @@
 	</form>
 
 	<form name="script_control_form" method="GET" action="index.py">
+        <input type="hideen" name="domain" value="admin">
 	<input type="hidden" name="page" value="category">
 
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
@@ -54,7 +56,8 @@
 	</form>
 
 	<form name="script_control_form" method="GET" action="index.py">
-	<input type="hidden" name="page" value="language">
+	<input type="hideen" name="domain" value="admin">
+        <input type="hidden" name="page" value="language">
 
            <td height="40" valign="center" class="" nowrap>&nbsp;&nbsp;
            <input type="submit" class="button" name="show_all" value="Modify Languages" />

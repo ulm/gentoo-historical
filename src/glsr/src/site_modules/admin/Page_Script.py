@@ -3,67 +3,40 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Script.py,v 1.3 2004/09/30 03:09:36 hadfield Exp $
+# $Id: Page_Script.py,v 1.4 2004/12/30 14:08:09 port001 Exp $
 #
 
-MetaData = {"page" : ("script","category","language"), "params" : "form"}
-
-import Template as TemplateHandler
 import Config
-
 from Script import Script
-from SiteModuleBE import SiteModuleBE as Parent
+from SiteModule import SiteModule
 
-def Display(form):
+class Page_Script(SiteModule):
 
-    page = Page_Script(form)
-    page.selectDisplay()
+    __modulename__ = 'Page_Script'
 
+    def init(self):
 
-class Page_Script(Parent):
+        self._template = Config.Template['admin_script']
+	self._class_name = 'script'
+	self._object = Script()
+	self._tmpl.params('TOTAL_SCRIPTS', 0)
 
-    class_type = "script"
-    script_arr = []
-    template = Config.Template["admin_script"]
-    obj_attributes = {}
+    def _select_action(self):
 
-    obj = Script()
+        if "open_search_page" in self._action_inputs:
+	    self._template = Config.Template['admin_script_search']
+	elif "search_script"in self._action_inputs:
+	    self._template = Config.Template['admin_script_results']
+	    self._get_search_results()    
 
-    def selectDisplay(self):
-
-        if "open_search_page" in self.form_inputs:
-            self.__displaySearchForm()
-
-        elif "list_all_scripts" in self.form_inputs:
-            self.display()
-            #self.__displaySearchResults()
-
-        elif "search_script" in self.form_inputs:
-            self.__displaySearchResults()
-
-        else:
-            self.display()
-
-    def display(self):
-
-        AdminScriptTemplate = TemplateHandler.Template()
-        AdminScriptTemplate.compile(
-            self.template,
-            {"GLSR_URL":	Config.URL,
-             "MESSAGE":		"",
-             "WARN_MESSAGE": 	0,
-             "TOTAL_SCRIPTS": 	0})
-        print AdminScriptTemplate.output()
-        
-
-    def __displaySearchResults(self):
+    def _get_search_results(self):
 
         search_terms = {}
         search_terms["language"] = []
         search_terms["category"] = []
         search_terms["status"] = []
 
-        for key in self.form.keys():
+        for key in self._req.Values.keys():
 
             if key[:key.find('_')] == "lang":
                 search_terms["language"].append(key[key.find('_')+1:])
@@ -75,27 +48,13 @@ class Page_Script(Parent):
                 search_terms["status"].append(key[key.find('_')+1:])
 
         for key in ["name", "descr", "submitter", "most_recent"]:
-            if key in self.form.keys():
-                search_terms[key] = self.form[key].value
+            if key in self._req.Values.keys():
+                search_terms[key] = self._req.Values.getvalue(key)
 
-        script_obj = Script()
-        results = script_obj.Search(search_terms)
+        results = self._object.Search(search_terms)
 
-        warn_message = 0
         if not len(results):
-            warn_message = 1
+            self._report_type = "warn"
 
-        ScriptResultsTemplate = TemplateHandler.Template()
-        ScriptResultsTemplate.compile(Config.Template["admin_script_results"],
-                                          {"GLSR_URL":	Config.URL,
-                                           "TOTAL_SCRIPTS":	len(results),
-                                           "WARN_MESSAGE":	warn_message},
-                                          {"SCRIPT_LOOP": 	results})
-        print ScriptResultsTemplate.output()
-
-    def __displaySearchForm(self):
-        
-        ScriptSearchTemplate = TemplateHandler.Template()
-        ScriptSearchTemplate.compile(Config.Template["admin_script_search"],
-                                     {"GLSR_URL":	Config.URL})
-        print ScriptSearchTemplate.output()
+	self._tmpl.param('TOTAL_SCRIPTS', len(results))
+	self._tmpl.param('SCRIPT_LOOP', results, 'loop')

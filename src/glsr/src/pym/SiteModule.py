@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2  
 #
-# $Id: SiteModule.py,v 1.1 2004/12/30 03:05:19 port001 Exp $  
+# $Id: SiteModule.py,v 1.2 2004/12/30 14:08:09 port001 Exp $  
 #
 
 __modulename__ = 'SiteModule'
@@ -26,7 +26,7 @@ class SiteModule:
     _object = None
     _obj_attributes = None
     _class_name = None
-    _params = ()
+    _params = {}
 
     _tmpl = Template()
     _action_inputs = []
@@ -156,8 +156,8 @@ class SiteModule:
         self._tmpl.param('TOTAL', len(self._main_loop))
         self._tmpl.param('MODIFY', self._modify_obj)
         self._tmpl.param('ADD_FORM', self._add_obj)
-        self._tmpl.param('MESSAGE', self._report)
-        self._tmpl.param('MESSAGE_TYPE', self._report_type)
+        self._tmpl.param('REPORT', self._report)
+        self._tmpl.param('REPORT_TYPE', self._report_type)
         self._tmpl.param('MAIN_LOOP', self._main_loop, 'loop')
 
         for key, value in self._obj_attributes.items():
