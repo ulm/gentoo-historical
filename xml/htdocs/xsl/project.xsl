@@ -64,6 +64,7 @@
 			</body></section>
 		</chapter>			
 		</xsl:if>
+		<xsl:apply-templates select='extrachapter[@position="resources"]'/>
 		<xsl:if test="subproject|extraproject">
 		<chapter>
 			<title>Subprojects</title>
@@ -122,7 +123,6 @@
 		</chapter>
 		</xsl:if>		
 	
-
 		<xsl:apply-templates select='extrachapter[@position="bottom"]|extrachapter[@position=""]'/>
 	</guide>
 </xsl:template>
