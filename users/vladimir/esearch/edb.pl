@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.7 2003/03/07 05:53:57 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.8 2003/03/07 06:57:09 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -136,5 +136,3 @@ sub get_file {
 	return @contents;
 }
 
-
-/msg chanserv akick #chatzone del 1
