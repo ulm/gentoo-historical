@@ -18,7 +18,247 @@
 
     <license/>
 
-    <version>$Revision: 1.1 $</version>
-    <date>$Date: 2003/10/17 01:55:16 $</date>
+    <version>$Revision: 1.2 $</version>
+    <date>$Date: 2003/10/17 07:28:25 $</date>
+
+    <chapter>
+        <title>"Prepare to abandon ship!" - Cleaning up your system</title>
+        <section>
+            <title>Old setups?</title>
+            <body>
+                <p>For the purposes of this guide, we assume that you have only
+                    a basic mail setup in Gentoo at this point, such as only
+                    SSMTP or Nullmailer.</p>
+                <p>If this is not the case, you may have to adapt some of the
+                    instructions.</p>
+            </body>
+        </section>
+        <section>
+            <title>Removing your old MTA</title>
+            <body>
+                <p>Every Gentoo system has an MTA (Mail Transfer Agent)
+                    installed by default. SSMTP is the default for most
+                    platforms, but Nullmailer is also becoming more common.</p>
+                <p>We need to remove the existing MTA before we can install a
+                    new one.</p>
+
+<pre caption="Checking for obstructing MTA's">
+# <i>emerge -p qmail</i>
+
+These are the packages that I would merge, in order:
+
+Calculating dependencies ...done!
+[blocks B     ] net-mail/ssmtp ("virtual/mta" from pkg net-mail/qmail-1.03-r12)
+[ebuild  N    ] net-mail/qmail-1.03-r12
+<codenote>(The above output may be somewhat different depending on what you have installed already)</codenote>
+</pre>
+
+<p>Ok, so we can see that we have <e>net-mail/ssmtp</e> 
+installed and it's blocking us from installing qmail. We
+don't want SSMTP, so lets get rid of it!</p>
+
+<pre caption="Removing obstructing MTA's">
+# <i>emerge -C ssmtp</i>
+
+ net-mail/ssmtp
+    selected: 2.60.4
+   protected: none
+     omitted: none
+<codenote>(output from removing here)</codenote>
+</pre>
+
+<p>We have now removed SSMTP from our system. At this point NO
+email is being delivered on the system.</p>
+
+</body>
+</section>
+
+<section>
+<title>USE flags and ACCEPT_KEYWORDS</title>
+<body>
+    <p>This document assumes that you have the following USE flags enabled:
+        <c>mysql pam nls fam ssl</c>. You may also be interested in the
+        <c>clearpasswd</c> USE flag. By default, vpopmail will not store
+        cleartext passwords, however as a sysadmin, you may wish to have
+        cleartext passwords in the database for debugging and reference.
+        <e>(Possibly cleartext passwords required for (CRAM|DIGEST)-MD5
+            ?)</e></p>
+
+    <p>This document deals with &gt;=net-mail/qmail-1.03-r12,
+        &gt;=net-mail/courier-imap-2.1.2-r1 presently. These packages are in
+        ACCEPT_KEYWORDS="~x86" and as such they are not available to x86 yet.</p>
+</body>
+</section>
+</chapter>
+
+
+    <chapter>
+        <title>"Good evening, I'll be your MTA tonight" - Qmail</title>
+        <section>
+            <title>
+                Qmail
+                - 
+                <e>The basics</e>
+            </title>
+            <body>
+                <p>Now that our system is ready for it, let's install qmail!</p>
+<pre caption="Emerging qmail">
+# <i>emerge qmail</i>
+<codenote>(At this point qmail and all of it's dependancies will be installed)</codenote>
+<codenote>...</codenote>
+ * To setup qmail to run out-of-the-box on your system, run:
+ * ebuild /var/db/pkg/net-mail/qmail-1.03-r12/qmail-1.03-r12.ebuild config
+
+ * To start qmail at boot you have to add svscan to your startup
+ * and create the following links :
+ * ln -s /var/qmail/supervise/qmail-send /service/qmail-send
+ * ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd
+
+ * To start the pop3 server as well, create the following link :
+ * ln -s /var/qmail/supervise/qmail-pop3d /service/qmail-pop3d
+
+ * Additionally, the QMTP and QMQP protocols are supported, and can be started as:
+ * ln -s /var/qmail/supervise/qmail-qmtpd /service/qmail-qmtpd
+ * ln -s /var/qmail/supervise/qmail-qmqpd /service/qmail-qmqpd
+
+ * Additionally, if you wish to run qmail right now, you should run this before anything else:
+ * source /etc/profile
+<codenote>...</codenote>
+</pre>
+
+<p>For the moment, we are going to ignore most of these instructions, as we want to do a bit more setup first, and avoid restarting qmail.</p>
+
+<pre caption="Setting up qmail">
+# <i>ebuild /var/db/pkg/net-mail/qmail-1.03-r12/qmail-1.03-r12.ebuild config</i>
+eutils
+fixheadtails
+Your fully qualified host name is cherenkov-int.
+Putting <i>$hostname</i> into control/me...
+Putting <i>$hostname</i> into control/defaultdomain...
+Putting <i>$hostname</i> into control/plusdomain...
+Putting <i>$hostname</i> into control/locals...
+Putting <i>$hostname</i> into control/rcpthosts...
+Now qmail will refuse to accept SMTP messages except to <i>$hostname</i>.
+Make sure to change rcpthosts if you add hosts to locals or virtualdomains!
+ * Accepting relaying by default from all ips configured on this machine.
+ssl
+Creating a self-signed ssl-cert:
+Generating a 1024 bit RSA private key
+..........................++++++
+.................++++++
+writing new private key to '//var/qmail/control/servercert.pem'
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+<codenote>The following values are for MY location, you should enter your own details instead!</codenote>
+Country Name (2 letter code) [AU]:<i>CA</i>
+State or Province Name (full name) [Some-State]:<i>British Columbia</i>
+Locality Name (eg, city) []:<i>Burnaby</i>
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:<i>Orbis-Terrarum Networks</i>
+<codenote>I recommend that you leave this value at "Qmail SMTP server" due to the nature of SSL certificates</codenote>
+Organizational Unit Name (eg, section) []:<i>Qmail SMTP server</i>
+<codenote>This MUST be a hostname that resolves to the IP of your server</codenote>
+Common Name (eg, YOUR name) []:<i>mail.orbis-terrarum.net</i>
+<codenote>These should be the address of the person administering the server</codenote>
+Email Address []:<i>robbat2@orbis-terrarum.net</i>
+ * If You want to have a signed cert, do the following:
+ * openssl req -new -nodes -out req.pem \
+ * -keyout /var/qmail/control/servercert.pem
+ * Send req.pem to your CA to obtain signed_req.pem, and do:
+ * cat signed_req.pem >> /var/qmail/control/servercert.pem
+</pre>
+<note>Qmail's is fussy in that it doesn't let simple self-signed certificates
+get used for SSL/TLS communications, the certificate has to be signed by some
+CA, and you need to give it all of the certifcate chain in a single
+file. Due to this, I leave it out for the moment.</note>
+
+            </body>
+        </section>
+        <section>
+            <title>
+                qmail-scanner
+                -
+                <e>Spam and Virus contraceptives</e>
+            </title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+        <section>
+            <title>Starting up qmail</title>
+            <body>
+                <p>TODO</p>
+            </body>
+    
+        </section>
+    </chapter>
+
+    <chapter>
+        <title>"Who the who what now?" - vpopmail (optional)</title>
+        <section>
+            <title>MySQL - <e>A database for the masses</e></title>
+            <body>
+                <note>This entire chapter is optional. if you don't need
+virtual email domains, then skip this chapter!</note>
+                <p>TODO</p>
+            </body>
+        </section>
+        <section>
+            <title>vpopmail - <e></e></title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+    </chapter>
+
+    <chapter>
+        <title>"(l)user interface" - Courier-IMAP</title>
+        <section>
+            <title>Courier-IMAP - IMAP &amp; POP3 (both optionally with SSL/TLS)</title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+    </chapter>
+    
+    <chapter>
+        <title>"(insert witty title here)" - various additional options</title>
+        <section>
+            <title>relayctrl - Simple and portable SMTP-after-(IMAP|POP3)</title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+        <section>
+            <title>AUTH SMTP for users</title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+        <section>
+            <title>AUTH SMTP for outgoing mail</title>
+            <body>
+                <p>TODO</p>
+            </body>
+        </section>
+    </chapter>
+
+    <!--
+    <chapter>
+        <title></title>
+        <section>
+            <title></title>
+            <body>
+                <p></p>
+            </body>
+        </section>
+    </chapter>
+    -->
+
 
 </guide>
