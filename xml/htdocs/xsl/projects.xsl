@@ -34,9 +34,7 @@
 			    </xsl:when>
 			    <xsl:otherwise>
 			      <uri link="/proj/en/index.xml?showlevel=1">
-			        Hide sub-projects</uri>
-                              <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]></xsl:text>
-			      <uri link="/proj/en/index.xml?showlevel=3">Show sub-sub-projects
+			        Hide sub-projects</uri>&#160;&#160;&#160;&#160;<uri link="/proj/en/index.xml?showlevel=3">Show sub-sub-projects
 			      </uri>
 			    </xsl:otherwise>
 			  </xsl:choose>
@@ -199,6 +197,4 @@
     </tr>
   </xsl:if>
 </xsl:template>
-
-
 </xsl:stylesheet>
