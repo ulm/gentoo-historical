@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.8 2003/09/15 03:57:06 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.9 2003/09/15 16:59:03 zhen Exp $
 
 # source the config file
 VERSION="1.0"
@@ -84,7 +84,7 @@ tardir() {
 	cd ${SRCFORTAR} || die "Couldn't chdir; exiting."
 	tar -cjf ${DESTBALL} . --numeric-owner || die "Tarball creation error; exiting."
 	cd ${BASEDIR}
-	end " done."
+	eend " done."
 }
 
 makeconf() {
@@ -104,142 +104,6 @@ print_build() {
 	einfo " Source tarball: ${SRCBALL}"
 	einfo " Portage snapshot: ${SNAPBALL}"
 	echo
-}
-
-pre_build() {
-	case $1 in
-		1)
-			SRCSTAGE=2
-			SRCVER=${2}
-			SRCARCH=${MAINARCH}
-			DESTARCH=${MAINARCH}
-			SRCFORTAR=${CHROOTDIR}/tmp/stage1root
-		;;
-		2)
-			SRCSTAGE=1
-			SRCVER=${2}
-			SRCARCH=${MAINARCH}
-			DESTARCH=${SUBARCH}
-		;;
-		3)
-			SRCSTAGE=2
-			SRCVER=${2}
-			SRCARCH=${SUBARCH}
-			DESTARCH=${SUBARCH}
-		;;
-		grp)
-			SRCSTAGE=3
-			SRCVER=${2}
-			SRCARCH=${SUBARCH}
-			DESTARCH=${SUBARCH}
-		;;
-
-	esac
-	if [ "$1" = "grp" ]
-	then
-		MY_PKGDIR="${BASEDIR}/packages/grp-${DESTARCH}-${DESTVER}"
-	else
-		MY_PKGDIR="${BASEDIR}/packages/stage${DESTSTAGE}-${DESTARCH}-${DESTVER}"
-	fi
-	install -d ${STAGEDIR} ${MY_PKGDIR} ${SNAPDIR}
-
-	if [ "`uname -m`" = "x86_64" -a "$MAINARCH" = "x86" ]
-	then
-		if [ ! -e /bin/linux32 ]
-		then
-			eerror "Can't find linux32 executable. Please emerge sys-apps/linux32"
-			eerror "and try again."
-			die "linux32 not found; aborting."
-		fi
-		CHROOT="linux32 chroot"
-	else
-		CHROOT=chroot
-	fi
-	
-	# necessary internal definitions
-	DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-h-${2}.tar.bz2"
-	SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-h-${SRCVER}.tar.bz2"
-
-	einfo "Cleaning up build directory..."
-	rm -rf ${CHROOTDIR}
-	install -d ${CHROOTDIR}
-
-	#enable our signal handler
-	trap "die" INT QUIT 
-
-	umount_all
-	[ ! -e ${SRCBALL} ] && die "Can't find source tarball ${SRCBALL}; exiting."
-	einfo "Unpacking ${SRCBALL}..."
-	unpack ${SRCBALL}
-	#bind-mount filesystems/directories
-	mount_all
-	print_build
-
-	#copy resolv.conf
-	cp /etc/resolv.conf ${CHROOTDIR}/etc || die
-
-	#install our make.conf into the main compilation dir
-	makeconf $CHROOTDIR
-
-	#now, it's time to build...
-	cd ${CHROOTDIR}
-	if [ -e ${BASEDIR}/make.profile ]
-	then
-		rm ${BASEDIR}/make.profile
-	fi
-	# <zhen@gentoo.org> REMINDER: The hardened profile is a local one that I use. 
-	ln -sf /usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} ${BASEDIR}/make.profile
-	if [ ${CCACHE} > 0 ]
-	then
-		export FEATURES="ccache"
-	fi
-
-	if [ ${1} != "grp" ]
-	then
-		einfo " Destination tarball: ${DESTBALL}"
-	else
-		einfo " Target: GRP build"
-	fi
-	einfo "Build Settings:"
-	if [ ${CCACHE} > 0 ]
-	then
-		einfo " ccache support: Enabled"
-	else
-		einfo " ccache support: Disabled"
-	fi
-}
-
-post_build() {
-	case "$1" in
-	1)
-		$CHROOT . /tmp/stage1 clean /tmp/stage1root
-		;;
-	2|3)
-		$CHROOT . /bin/bash << EOF
-		if [ ${CCACHE} > 0 ]
-		then
-			emerge -C ccache
-		fi
-EOF
-		rm -rf ${CHROOTDIR}/tmp/* 
-		rm -rf ${CHROOTDIR}/var/tmp/portage/*
-		rm -f ${CHROOTDIR}/etc/ld.so.preload
-		;;
-	esac
-	
-	umount_all
-	
-	rm ${CHROOTDIR}/etc/resolv.conf
-	einfo "Removing Portage tree from chroot image..."
-	rm -rf ${CHROOTDIR}/usr/portage
-
-	#pack up directory to ${DESTBALL}
-	if [ "$1" != "grp" ]
-	then
-		tardir
-	fi
-
-	einfo "Build Complete!"
 }
 
 prechecks() {
@@ -318,6 +182,115 @@ check_special() {
 	fi
 }
 
+pre_build() {
+	case $1 in
+		1)
+			SRCSTAGE=2
+			SRCVER=${2}
+			SRCARCH=${MAINARCH}
+			DESTARCH=${MAINARCH}
+			SRCFORTAR=${CHROOTDIR}/tmp/stage1root
+		;;
+		2)
+			SRCSTAGE=1
+			SRCVER=${2}
+			SRCARCH=${MAINARCH}
+			DESTARCH=${SUBARCH}
+		;;
+		3)
+			SRCSTAGE=2
+			SRCVER=${2}
+			SRCARCH=${SUBARCH}
+			DESTARCH=${SUBARCH}
+		;;
+		grp)
+			SRCSTAGE=3
+			SRCVER=${2}
+			SRCARCH=${SUBARCH}
+			DESTARCH=${SUBARCH}
+		;;
+
+	esac
+	if [ "$1" = "grp" ]
+	then
+		MY_PKGDIR="${BASEDIR}/packages/grp-${DESTARCH}-${DESTVER}"
+	else
+		MY_PKGDIR="${BASEDIR}/packages/stage${DESTSTAGE}-${DESTARCH}-${DESTVER}"
+	fi
+	install -d ${STAGEDIR} ${MY_PKGDIR} ${SNAPDIR}
+
+	if [ "`uname -m`" = "x86_64" -a "$MAINARCH" = "x86" ]
+	then
+		if [ ! -e /bin/linux32 ]
+		then
+			eerror "Can't find linux32 executable. Please emerge sys-apps/linux32"
+			eerror "and try again."
+			die "linux32 not found; aborting."
+		fi
+		CHROOT="linux32 chroot"
+	else
+		CHROOT=chroot
+	fi
+	
+	# necessary internal definitions
+	DESTBALL="${BASEDIR}/stages/stage${1}-${DESTARCH}-h-${2}.tar.bz2"
+	SRCBALL="${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-h-${SRCVER}.tar.bz2"
+
+	einfo "Cleaning up build directory..."
+	rm -rf ${CHROOTDIR}
+	install -d ${CHROOTDIR}
+
+	#enable our signal handler
+	trap "die" INT QUIT 
+
+	umount_all
+	[ ! -e ${SRCBALL} ] && die "Can't find source tarball ${SRCBALL}; exiting."
+	einfo "Unpacking ${SRCBALL}..."
+	unpack ${SRCBALL}
+	#bind-mount filesystems/directories
+	mount_all
+	print_build
+
+	#copy resolv.conf
+	cp /etc/resolv.conf ${CHROOTDIR}/etc || die
+
+	if [ $1 = "2" ]
+	then
+		# copy our bootstrap file
+		cp -a ${BASEDIR}/bin/bootstrap.sh ${CHROOTDIR}/usr/portage || die
+	fi
+
+	#install our make.conf into the main compilation dir
+	makeconf $CHROOTDIR
+
+	#now, it's time to build...
+	cd ${CHROOTDIR}
+	if [ -e ${BASEDIR}/make.profile ]
+	then
+		rm ${BASEDIR}/make.profile
+	fi
+	# <zhen@gentoo.org> REMINDER: The hardened profile is a local one that I use. 
+	ln -sf /usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} ${BASEDIR}/make.profile
+	if [ ${CCACHE} > 0 ]
+	then
+		export FEATURES="ccache"
+	fi
+
+	if [ ${1} != "grp" ]
+	then
+		einfo " Destination tarball: ${DESTBALL}"
+	else
+		einfo " Target: GRP build"
+	fi
+	einfo "Build Settings:"
+	if [ ${CCACHE} > 0 ]
+	then
+		einfo " ccache support: Enabled"
+	else
+		einfo " ccache support: Disabled"
+	fi
+}
+
 build() {
 	case ${1} in
 		1)	
@@ -343,7 +316,7 @@ build() {
 				emerge --oneshot --nodeps ccache || exit 1
 			fi
 			emerge --oneshot --nodeps hardened-gcc || exit 1
-			${BASEDIR}/bin/hardened-bootstrap.sh || exit 1
+			/usr/portage/bootstrap.sh || exit 1
 EOF
 			[ $? -ne 0 ] && die "Stage 2 build failure"
 		;;
@@ -394,6 +367,39 @@ EOF
 			[ $? -ne 0 ] && die "GRP build failure"
 			;;
 	esac
+}
+
+post_build() {
+	case "$1" in
+	1)
+		$CHROOT . /tmp/stage1 clean /tmp/stage1root
+		;;
+	2|3)
+		$CHROOT . /bin/bash << EOF
+		if [ ${CCACHE} > 0 ]
+		then
+			emerge -C ccache
+		fi
+EOF
+		rm -rf ${CHROOTDIR}/tmp/* 
+		rm -rf ${CHROOTDIR}/var/tmp/portage/*
+		rm -f ${CHROOTDIR}/etc/ld.so.preload
+		;;
+	esac
+	
+	umount_all
+	
+	rm ${CHROOTDIR}/etc/resolv.conf
+	einfo "Removing Portage tree from chroot image..."
+	rm -rf ${CHROOTDIR}/usr/portage
+
+	#pack up directory to ${DESTBALL}
+	if [ "$1" != "grp" ]
+	then
+		tardir
+	fi
+
+	einfo "Build Complete!"
 }
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]
