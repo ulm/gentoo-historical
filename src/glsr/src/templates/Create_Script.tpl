@@ -3,10 +3,19 @@
       <input type="hidden" name="script_id" value="{SCRIPT_ID}" />
       <input type="hidden" name="parent_script_id" value="{PARENT_SCRIPT_ID}" />
 
-      {IF MESSAGE != ""}
-      <font class="message">{MESSAGE}</font><br /><br />
+      {IF REPORT != ""}
+        {IF REPORT_TYPE == "normal"}
+          <font class="report_normal">
+        {!F}
+        {IF REPORT_TYPE == "warn"}
+          <font class="report_warn">
+        {!IF}
+        {IF REPORT_TYPE == "fatal"}
+          <font class="report_fatal">
+        {!IF}
+        {REPORT}
+        </font><br /><br />
       {!IF}
-
 
       <!-- The form to add a new script -->
       <table width="90%" class="standard_table">

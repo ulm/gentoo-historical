@@ -1,8 +1,18 @@
       <form name="news_control_form" method="GET" action="index.py">
       <input type="hidden" name="page" value="news">
            
-      {IF MESSAGE != ""}
-      <font class="message">{MESSAGE}</font><br /><br />
+      {IF REPORT != ""}
+        {IF REPORT_TYPE == "normal"}
+          <font class="report_normal">
+        {!F}
+        {IF REPORT_TYPE == "warn"}
+          <font class="report_warn">
+        {!IF}
+        {IF REPORT_TYPE == "fatal"}
+          <font class="report_fatal">
+        {!IF}
+        {REPORT}
+        </font><br /><br />
       {!IF}
 
       <table width="90%" class="standard_table">
@@ -34,8 +44,8 @@
       
       <br />
 
-      {IF WARN_MESSAGE == 1}
-      <font class="warn_message">No News Announcements Found</font><br /><br />
+      {IF REPORT_TYPE == "warn"}
+      <font class="report_warn">No News Announcements Found</font><br /><br />
       {!IF}
 
       {IF TOTAL > 0}

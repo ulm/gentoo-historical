@@ -1,14 +1,19 @@
       <form name="user_control_form" method="GET" action="index.py">
       <input type="hidden" name="page" value="yourscripts">
 
-      {IF MESSAGE != ""}
-      <font class="message">{MESSAGE}</font><br /><br />
+      {IF REPORT != ""}
+        {IF REPORT_TYPE == "normal"}
+          <font class="report_normal">
+        {!F}
+        {IF REPORT_TYPE == "warn"}
+          <font class="report_warn">
+        {!IF}
+        {IF REPORT_TYPE == "fatal"}
+          <font class="report_fatal">
+        {!IF}
+        {REPORT}
+        </font><br /><br />
       {!IF}
-      
-      {IF WARN_MESSAGE == 1}
-      <font class="warn_message">No Scripts Found</font><br /><br />
-      {!IF}
-
 
       {IF TOTAL > 0}
       <!-- Listing of all your scripts in the system -->

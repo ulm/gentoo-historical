@@ -1,14 +1,19 @@
 
-      {IF MESSAGE != ""}
-      <font class="message">{MESSAGE}</font><br /><br />
-      {!IF}
-      
-      {IF WARN_MESSAGE == 1}
-      <font class="warn_message">No Scripts Found With That ID!</font><br /><br />
+      {IF REPORT != ""}
+        {IF REPORT_TYPE == "normal"}
+          <font class="report_normal">
+        {!F}
+        {IF REPORT_TYPE == "warn"}
+          <font class="report_warn">
+        {!IF}
+        {IF REPORT_TYPE == "fatal"}
+          <font class="report_fatal">
+        {!IF}
+        {REPORT}
+        </font><br /><br />
       {!IF}
 
-
-      {IF WARN_MESSAGE != 1}
+      {IF REPORT_TYPE == "normal"}
       <table width="90%" class="standard_table">
         <tr>
           <td colspan="2" class="header">View Script</td>

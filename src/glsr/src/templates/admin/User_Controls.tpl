@@ -1,8 +1,18 @@
       <form name="user_control_form" method="GET" action="index.py">
       <input type="hidden" name="page" value="user">
 
-      {IF MESSAGE != ""}
-      <font class="message">{MESSAGE}</font><br /><br />
+      {IF REPORT != ""}
+        {IF REPORT_TYPE == "normal"}
+          <font class="report_normal">
+        {!F}
+        {IF REPORT_TYPE == "warn"}
+          <font class="report_warn">
+        {!IF}
+        {IF REPORT_TYPE == "fatal"}
+          <font class="report_fatal">
+        {!IF}
+        {REPORT}
+        </font><br /><br />
       {!IF}
       
       <table width="90%" class="standard_table">
@@ -33,8 +43,8 @@
       </table>
       <br />
 
-      {IF WARN_MESSAGE == 1}
-      <font class="warn_message">No Users Found</font><br /><br />
+      {IF REPORT_TYPE == "warn"}
+      <font class="report_warn">No Users Found</font><br /><br />
       {!IF}
       
       {IF TOTAL > 0}
