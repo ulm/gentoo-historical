@@ -1,0 +1,322 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!--
+    English doc rev 1.4
+-->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link = "/doc/nl/lvm.xml">
+<title>Gentoo LVM installatie</title>
+<author title="Author">
+    <mail link="avi@CFFtechnologies.com">Avi Schwartz</mail>
+</author>
+
+<abstract>
+In deze gids leg ik uit hoe ik mijn Gentoo pc uitgerust heb met de Logical
+Volume Manager (LVM). Alhoewel alle voorbeelden specifiek zijn voor mijn
+installatie kan het als startpunt dienen voor jouw eigen installatie.
+</abstract>
+
+<version>1.0</version>
+<date>1 April 2003</date>
+
+<chapter>
+<title>Voorwoord</title>
+<body>
+<p>
+Deze gids geeft mijn ervaringen weer in het opstellen van mijn Gentoo systeem
+met de Logical Volume Manager (LVM). Dat wil zeggen dat je hoogstwaarschijnlijk
+de disk, partitie-naam en -groottes zal moeten aanpassen naar je eigen smaak.
+</p>
+
+<impo>
+Het is niet de bedoeling van dit document om een LVM tutorial te worden. Het
+dient als een aanvulling voor het Gentoo Installatiedocument en verwijst dus
+naar de verschillende stappen in de installatie-handleiding. Zorg er dus voor
+dat je de Gentoo Installatie Gids leest <b>alvorens</b> je het
+installatieproces start.
+</impo>
+
+<note>
+Voor een volledige LVM HOWTO ga je best naar 
+<uri>http://tldp.org/HOWTO/LVM-HOWTO</uri>/
+</note>
+</body>
+
+<section>
+<title>Partities</title>
+<body>
+<p>
+Ik heb 2 SCSI drivers, elk 36 GiB groot, en nog een derde schijf (IDE) van zo'n
+100 GiB. In dit voorbeeld zal ik de IDE-drive niet gebruiken aangezien het mijn
+bedoeling is om de data daarvan naar een LVM over te zetten alvorens ik die
+herformatteer en toevoeg aan het volume.
+</p>
+
+<p>
+De partitiebenamingen op mijn systeem zijn:
+</p>
+
+<ul>
+<li>/dev/sda1  --  /boot</li>
+<li>/dev/sda2  --  /</li>
+<li>/dev/sda3  --  Zal door LVM ingenomen worden</li>
+<li>/dev/sdb1  --  Zal door LVM ingenomen worden</li>
+</ul>
+
+<p>OK, tijd om te starten...</p>
+</body>
+</section>
+</chapter>
+
+<chapter><title>Installatie</title>
+<body>
+<ol>
+ <p><li>
+Voer eerst de eerste 5 stappen van de installatiehandleiding uit.
+ </li></p>
+
+ <p><li>
+De stappen 3 - 9 van dit document vervangen stap 6 (opstellen van partities) in
+de installatie-handleiding.
+</li></p>
+
+ <p><li>
+Maak een kleine /boot partitie aan. In dit voorbeeld zal /boot niet door LVM
+beheerd worden. Deze partitie zal de kernel en de grub-bestanden bevatten.
+Ikzelf maak gebruik van een 100 MiB partitie, genoeg voor verschillende
+kernels.
+</li></p>
+
+ <p><li>
+Maak een / (root) partitie. Indien je geinteresseerd bent in het plaatsen van /
+onder LVM, gelieve dan de documenten die op het eind van dit document vermeld
+worden te lezen. De grootte van de rootpartitie moet niet groot zijn indien je
+/opt, /usr, /home, /var en /tmp in een LVM Volume Groep (vg) wil steken.
+    <note>
+Ik raad aan om de volgende directories <e>niet</e> in een LVM te steken:
+<ul>
+<li>/etc</li>
+<li>/lib</li>
+<li>/mnt</li>
+    <li>/proc</li>
+<li>/sbin</li>
+<li>/dev</li>
+<li>/root</li>
+</ul>
+
+    <p>
+    Hierdoor zal je nog steeds kunnen inloggen op je systeem (zonder veel
+    mogelijkheden, maar tenminste nog bruikbaar) indien er iets totaal verkeerd
+    loopt.
+    </p>
+    </note>
+ </li></p>
+
+ <p><li>
+In de veronderstelling dat /boot en de rootpartitie niet de volledige disk
+innemen maken we een derde partitie aan en stellen dit type in als type 8e
+(Linux LVM). Indien je meer fysische schijven hebt die je wil gebruiken met
+LVM, maak dan 1 partitie aan op elk van hen en geef hen dezelfde type (8e).
+    <note>You can also prepare a whole device instead of a partition.</note>
+ </li></p>
+
+ <p><li>
+Initialiseer de partities:
+<pre>
+pvcreate /dev/sda3
+pvcreate /dev/sdb1
+</pre>
+ </li></p>
+
+ <p><li>
+Stel een volume groep in.
+<impo>
+vgcreate aanvaardt geen links die wijzen naar de werkelijke fysische partitie,
+dus gebruik
+<pre>
+ls -l /dev/hd* en/of /dev/sd*
+</pre>
+om de werkelijke apparaatbestanden te vinden.
+</impo>
+
+    <p>
+    In mijn geval zijn /dev/sda1 en /dev/sda2 de /boot en root partities, dus
+    ben ik enkel geinteresseerd in /dev/sda3 en /dev/sdb1. 
+    /dev/sda3 wijst naar /dev/scsi/host1/bus0/target0/lun0/part3 en /dev/sdb1
+    wijst naar /dev/scsi/host1/bus0/target1/lub0/part1. Dus mijn vgcreate ziet
+    er als volgt uit:
+    </p>
+
+<pre>
+vgcreate vg /dev/scsi/host1/bus0/target0/lun0/part2 \
+            /dev/scsi/host1/bus0/target1/lun0/part1
+</pre>
+ </li></p>
+
+ <p><li>
+Maak de logical volume aan. Logical volumes zijn het equivalente van partities
+die je aanmaakt met fdisk in een niet-LVM omgeving. In mijn voorbeeld maak ik
+de volgende partities:
+
+    <table>
+    <tr>
+<th>Directorie</th>
+<th>Grootte</th>
+    </tr>
+    <tr>
+<ti>/usr</ti><ti>10 GiB</ti>
+    </tr>
+    <tr>
+<ti>/home</ti><ti>5 GiB</ti>
+    </tr>
+    <tr>
+<ti>/opt</ti><ti>5 GiB</ti>
+    </tr>
+    <tr>
+        <ti>/var</ti><ti>10 GiB</ti>
+    </tr>
+    <tr>
+<ti>/tmp</ti><ti>2 GiB</ti>
+    </tr>
+    </table>
+
+    <p>
+    Aangezien ik van plan was om LVM te gebruiken moest ik niet al te veel
+    nadenken over partitiegroottes aangezien ik altijd ruimte kan verschuiven
+    indien dat nodig blijkt.
+    </p>
+
+    <note>
+Terje Kvernes merkte terecht op dat het gemakkelijker is om de grootte van een
+partitie te vergroten dan te verkleinen. Je wil dus misschien starten met
+kleinere partities en gaandeweg vergroten wanneer de noodzaak de kop opsteekt.
+</note>
+
+    <note>
+Ik maakte ook mijn swappartitie op LVM. Je bent misschien beter af indien je
+dat niet doet, maar ik had gelijk goesting om dat te proberen :)
+</note>
+
+<pre>
+lvcreate -L10G -nusr vg
+lvcreate -L5G -nhome vg
+...
+lvcreate -L2G -ntmp vg
+</pre>
+ </li></p>
+
+ <p><li>
+Formatteer de logical volumes op dezelfde manier als dat je een gewone partitie
+formatteert.
+    <p>
+    Laten we eerst eens kijken naar de swap logical volume:
+    </p>
+
+<pre>
+    mkswap /dev/vg/swap
+</pre>
+
+    <p>
+    Ik gebruik ext3 op de rest van de logical volumes:
+    </p>
+
+<pre>
+    mke2fs -j /dev/vg/usr
+    ...
+</pre>
+
+    <note>
+De rest van de installatie is ongeveer dezelfde dus ik zal niet alles
+doornemen, behalve bij de werkelijke verschillen.
+</note>
+ </li></p>
+
+ <p><li>
+Volg stap 7 (Mounten van partities) van het installatie-document waarbij je
+natuurlijk de partitiebenaming /dev/hdxy vervangt met de /dev/vg/partitie_naam
+(behalve voor de partities die niet in LVM zitten natuurlijk).
+</li></p>
+
+ <p><li>
+Stap 14 (Finale stappen: kernel en systeem logger) - Zorg ervoor dat je kernel
+zeker LVM ondersteunt. Je kan deze optie vinden in
+    <p>Multi-device support (RAID and LVM)</p>
+
+    <p>
+    emerge tevens de lvm-user package.
+    </p>
+ </li></p>
+
+ <p><li>
+Stap 16 (Finale stappen: /etc/fstab) - Voeg je LVM-partities toe aan /etc/fstab
+zoals noodzakelijk is. Hier zijn enkele regels van mijn machine:
+<pre>
+/dev/sda1   /boot   ext3    noauto,noatime 1 1
+/dev/sda2   /       ext3    noatime        0 0
+/dev/vg/opt /opt    ext3    noatime        0 0
+/dev/vg/usr /usr    ext3    noatime        0 0
+...
+</pre>
+
+    <p>
+    Indien je LVM als module geselecteerd hebt in de kernel, zorg er dan voor
+    dat /etc/modules.autoload de volgende regel bevat:
+    </p>
+
+<pre>
+lvm-mod
+</pre>
+ </li></p>
+
+ <p><li>
+Stap 17 (Installatie afgewerkt) - Vergeet niet om al je LVM-partities te
+unmounten, en om zeker te zijn is het aangeraden het volgende commando uit te
+voeren alvorens je reboot:
+<pre>
+vgchange -an
+</pre>
+ </li></p>
+
+ <p><li>
+Reboot je machine, maar wees gewaarschuwd: het boot process zal waarschijnlijk
+veel foutmeldingen geven aangezien het localmount-script de LVM-partities niet
+zal herkennen. Eenmaal je ingelogt bent op je systeem, voer dan het volgende
+commando uit:
+<pre>
+vgscan
+</pre>
+
+Dit zal het /etc/lvmtab bestand aanmaken zodat het localmount script de
+LVM-partities mount. Herstart je machine en bemerk dat nu alle partities
+gemount worden en beschikbaar zijn.
+</li></p>
+</ol>
+</body>
+</chapter>
+
+<chapter>
+<title>Resources</title>
+<body>
+<p>De LVM Howto:
+<uri>http://tldp.org/HOWTO/LVM-HOWTO</uri></p>
+<p>Daniel Robbins' artikels over LVM ap IBM's DeveloperWorks:
+<uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
+<uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri></p>
+<p>Hoe je je root onder LVM brengt:
+<uri>http://www.the-infinite.org/archive/docs/lvm/howto-boot-off-root-lv.txt</uri></p>
+</body>
+</chapter>
+
+<chapter>
+<title>Credits</title>
+<body>
+<p>
+Ik wil mijn dank betuigen aan <mail link="bangert@gentoo.org">Thilo
+Bangert</mail> en <mail link="terjekv@math.uio.no">Terje Kvernes</mail> voor
+hun hulp en commentaar bij dit document.
+</p>
+</body>
+</chapter>
+</guide>
