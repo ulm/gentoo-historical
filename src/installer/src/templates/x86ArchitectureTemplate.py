@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.16 2005/01/18 08:03:23 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.17 2005/01/19 02:48:29 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -68,9 +68,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			devices_old[drive].set_partitions_from_disk()
 		for part in devices_old.keys(): parts_old[part] = devices_old[part].get_install_profile_structure()
 
-		pp = pprint.PrettyPrinter(indent=4)
-		pp.pprint(parts_old)
-		pp.pprint(parts_new)
+#		pp = pprint.PrettyPrinter(indent=4)
+#		pp.pprint(parts_old)
+#		pp.pprint(parts_new)
 
 		for dev in parts_old.keys():
 			if not parts_new.has_key(dev) or not parts_new[dev]:
@@ -190,7 +190,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							except:
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
 						print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
-#						self._run_parted_command(dev, "rm " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 						break
 			parted_disk.delete_all()
@@ -215,7 +214,24 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if int(part) in parts_lba and not newpart['format']:
 					print "   Partition was previously LBA...setting"
 					parted_disk.get_partition(part).set_flag(7)
-			parted_disk.commit()
+				parted_disk.commit()
+				if newpart['format']:
+					if newpart['type'] == "ext2":
+						if GLIUtility.spawn("mke2fs " + dev + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext2 filesystem on " + dev + str(part))
+					elif newpart['type'] == "ext3":
+						if GLIUtility.spawn("mke2fs -j " + dev + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext3 filesystem on " + dev + str(part))
+					elif newpart['type'] == "linux-swap":
+						if GLIUtility.spawn("mkswap " + dev + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create swap on " + dev + str(part))
+					elif newpart['type'] == "fat32":
+						if GLIUtility.spawn("mkfs.vfat -F 32 " + dev + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create fat32 filesystem on " + dev + str(part))
+					elif newpart['type'] == "ntfs":
+						if GLIUtility.spawn("mkntfs " + dev + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + dev + str(part))
+
 	def _install_grub(self):
 		boot_device = ""
 		boot_minor = ""
