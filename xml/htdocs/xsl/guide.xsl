@@ -347,6 +347,8 @@
 				<a class="altlink" href="/doc/en/gentoo-ppc-install.xml">Gentoo Linux/PowerPC</a>
 				<br/>
 				<a class="altlink" href="/doc/en/gentoo-sparc-install.xml">Gentoo Linux/Sparc</a>
+				<br/>
+				<a class="altlink" href="/doc/en/gentoo-hppa-install.xml">Gentoo Linux/HPPA</a>
 				<br/><br/>
 				Resources:
 				<br/>
