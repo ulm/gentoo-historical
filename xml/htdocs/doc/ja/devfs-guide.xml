@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/devfs-guide.xml,v 1.3 2004/12/13 18:20:28 nakano Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/devfs-guide.xml,v 1.4 2005/02/26 21:04:13 idani Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -20,9 +20,9 @@
 </abstract>
 <license/>
 
-<version>0.1</version>
-<date>September 11, 2003</date>
-<!-- Original revision: 1.5 -->
+<version>0.3</version>
+<date>2005-02-14</date>
+<!-- Original revision: 1.8 -->
 <chapter>
 <title>devfsとは?</title>
 
@@ -87,7 +87,7 @@ read-writeでマウントする必要がない場合でも、デバイス・フ�
 </body>
 </section>
 <section>
-<title>すべてにおける勝者としてのdevfs</title>
+<title>devfsはすべてにおける勝者なのか？</title>
 <body>
 
 <p>
@@ -96,6 +96,14 @@ devfsは全ての報告された問題に取り組みました。それは、ユ
 
 <p>
 例えば、 devfsを使えば major/minorペアを気にする必要がありません。これは、まだ（下位互換として）サポートされているものの、必要ではありません。このことは、Linuxにさらに多くのデバイスのサポートを可能にさせました。なぜなら、これ以上に制限するものがないためです（数にはいつも限界がありますが :）
+</p>
+
+<p>
+まだ、devfsの使用は、それ自身が引き起こす問題を抱えています。利用者には、この問題は本当に目につきませんが、カーネルメンテナーには、この問題は大きく、devfsを<e>廃止にし</e>、 <uri link="udev-guide.xml">udev</uri>を支持しています(もちろんGentooもサポートしています:)。
+</p>
+
+<p>
+devfsがなぜ廃止になったかという詳細な情報については、<uri link="http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-FAQ">udev FAQ</uri>や<uri link="http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev_vs_devfs">udev versus devfs document</uri>をお読みください。
 </p>
 
 </body>
@@ -240,71 +248,15 @@ LOOKUP      .*  MODLOAD
 <chapter>
 <title>アイテムに関連したパーミッション</title>
 <section>
-<title>PAMを用いたパーミッションの設定と変更</title>
-<body>
-
-<p>
-<path>/etc/devfsd.conf</path> でパーミッションを設定することもできますが、 PAM (<e>Pluggable Authentification Modules</e>) を使用することをお勧めします。これは、PAMには、<path>/etc/devfsd.conf</path> に施した変更を無視するといった、パーミッションに関する最終決定権があるためです。
-</p>
-
-<p>
-PAM は、パーミッション設定に <path>/etc/security/console.perms</path> ファイルを用います。このファイルは、最初はグループを記述する部分、2番目にはパーミッションについて記述をする部分という、2つの部分から構成されています。
-</p>
-
-<p>
-では、最初にグループの部分について見てみましょう。例として、sound-groupを見てみます:
-</p>
-
-<pre caption = "/etc/security/console.perms 内の sound group">
-&lt;sound&gt;=/dev/dsp* /dev/audio* /dev/midi* \
-    /dev/mixer* /dev/sequencer* \
-    /dev/sound/* /dev/snd/* /dev/beep \
-    /dev/admm* \
-    /dev/adsp* /dev/aload* /dev/amidi* /dev/dmfm* \
-    /dev/dmmidi* /dev/sndstat
-</pre>                  
-
-<p>
-このシンタックスは極めて簡単です: グループの名前で始まり、そのグループに属するデバイスのリストで終わります。
-</p>
-
-<p>
-さて、もしグループに何もすることができないのであれば、グループはあまり便利なものではありません。次の部分では、どのようにパーミッションが扱われているのかを記述しています。
-</p>
-
-<pre caption = "/etc/security/console.perms での sound group に対するパーミッション">
-&lt;console&gt;  0600 &lt;sound&gt;      0600 root.audio
-</pre>
-
-<p>
-最初の欄は、ターミナル・チェックです。ほとんどのシステムでは、ここはコンソール・グループです。PAMはログインするごとにこの欄を確認します。コンソール・グループに含まれるデバイスについてログインが起こった場合、PAMはデバイス・ファイルのパーミッションを確認し、変更します。
-</p>
-
-<p>
-2番目の欄は、成功したログインに対してデバイス・ファイルに設定されるパーミッションが記述されています。ある人がシステムにログインし、デバイスがデフォルトの所有者/グループに所有されていた場合、PAMはログオンしたユーザーに所有権を変更し、この2番目の欄に記されたものへとパーミッションを設定します。この場合は、0600が使われています（ユーザーは読み込み/書き込みでき、その他の人はできません）。
-</p>
-
-<p>
-3番目の欄は、パーミッションが変更されるデバイス・グループが記述されています。この場合では、サウンド・グループ（サウンドに関係した全てのデバイス・ファイル）が変更されます。
-</p>
-
-<p>
-4番目の欄では、デフォルトの状態に戻った後に設定されるデバイス・ファイルのパーミッションが定義されています。言い替えるなら、全てのデバイス・ファイルを所有する人がログアウトした場合に、PAMはこの4番目の欄に記述されたデフォルトの状態にパーミッションを戻します。
-</p>
-
-<p>
-5番目の欄は、デフォルトの状態に戻った後に設定されるデバイス属性の所有権（もしのぞむならグループとともに）を定義しています。言い替えるなら、全てのデバイス・ファイルを所有する人がログアウトした場合、PAMはこの5番目の欄に記述されたデフォルトの状態に所有権を設定します。
-</p>
-
-</body>
-</section>
-
-<section>
 <title>devfsdによるパーミッションの設定と変更</title>
 <body>
 
+<note>
+これらの操作はpam_consoleが<path>/etc/pam.d/system-auth</path>の中で無効になっている限り有効です。pam_consoleを有効にしている場合、PAMがパーミション上最終的に保証するものになります。
+</note>
+
 <p>
-もし、本当に <path>/etc/devfsd.conf</path> を用いてパーミッションの設定をしたいなら、次の例で用いられているシンタックスを利用してください: 
+もし、<path>/etc/devfsd.conf</path> を用いてパーミッションの設定をしたいなら、次の例で用いられているシンタックスを利用してください: 
 </p>
 
 <pre caption = "/etc/devfsd.conf でのパーミッション">
@@ -316,11 +268,8 @@ REGISTER    ^cdroms/.*  PERMISSIONS root.cdrom 0660
 </p>
 
 <p>
-4番目の欄は、デバイス・ファイルの所有権です。PAMとは異なり、これは変更されません（ <path>console.perms</path> に記載しない限り、いつもPAMが勝利を納めるため）。
-</p>
-
-<p>
-5番目の欄は、デバイス・ファイルのパーミッションを記述しています。
+4番目の欄は、デバイス・ファイルの所有権です。
+そして5番目の欄は、デバイス・ファイルのパーミッションを記述しています。
 </p>
 
 </body>
@@ -331,7 +280,7 @@ REGISTER    ^cdroms/.*  PERMISSIONS root.cdrom 0660
 <body>
 
 <p>
-これはGentooでは、デフォルトの動作です: もし、デバイス・ファイルを <c>chown</c> (CHange OWNer) や <c>chmod</c> (CHange MODe) した場合には、 <c>devfsd</c> は、システムがシャットダウンしている時にこの情報をセーブします。この動作は、 <path>/etc/devfsd.conf</path> ファイルに以下の行が記述されているためです:
+これはGentooでは、デフォルトの動作です: もし、デバイス・ファイルを <c>chown</c> (CHange OWNer) や <c>chmod</c> (CHange MODe) した場合には、 <c>devfsd</c> は、再起動してもこの状態を維持するために、この情報をセーブします。この動作は、 <path>/etc/devfsd.conf</path> ファイルに以下の行が記述されているためです:
 </p>
 
 <pre caption = "/etc/devfsd.conf のパーミッションのセーブ">
@@ -352,7 +301,7 @@ RESTORE         /lib/dev-state
 </pre>
 
 <p>
-言い替えれば、変更されたデバイス・ファイルはシャットダウン中に <path>/lib/dev-state</path> へコピーされ、そしてシステムがブートされるとき <path>/dev</path> ファイルにコピーされます。
+言い替えれば、変更されたデバイス・ファイルは変更が行われたときに <path>/lib/dev-state</path> へコピーされ、そしてシステムがブートされるとき <path>/dev</path> ファイルにコピーされます。
 </p>
 
 <p>
