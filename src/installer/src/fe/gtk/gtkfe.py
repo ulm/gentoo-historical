@@ -278,7 +278,6 @@ class Installer:
 		self.panels[panel].activate()
 		self.redraw_buttons()
 		self.redraw_left_pane()
-#		self.make_visible()
 
 	def run(self):
 		self.loadPanel()
@@ -306,7 +305,6 @@ class Installer:
 		print "Finish was clicked"
 		self.make_invisible()
 		self.install_window = RunInstall.RunInstall(self)
-#		self.install_window.run()
 
 	def load_button(self, widget, data=None):
 		filesel = gtk.FileSelection("Select the install profile to load")
