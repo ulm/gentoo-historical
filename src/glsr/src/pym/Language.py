@@ -3,13 +3,14 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Language.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: Language.py,v 1.3 2004/07/19 00:48:37 hadfield Exp $
 #
 
 __modulename__ = "Language"
 
 import MySQL
 import Config
+from Logging import err
 from GLSRBackend import GLSRBackend as Parent
 
 class Language(Parent):
@@ -23,4 +24,14 @@ class Language(Parent):
 
     def Modify(self, details):
 
-        return Parent.Modify(self, details.keys(), details)
+        return Parent.Modify(self, details, ["name"])
+
+    def Name(self):
+
+        results = self.GetDetails()
+        if results != None:
+            return results["%s_name" % self.tablename]
+        
+        else:
+            err("Invalid User ID!", __modulename__)
+            return False
