@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-amd64-bootloader.xml,v 1.3 2004/07/06 20:42:35 aaby Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-amd64-bootloader.xml,v 1.4 2004/08/23 20:30:49 broeman Exp $ -->
 
 <sections>
 <section>
@@ -109,62 +109,7 @@ For at installere GRUB, skal du først emerge den.
 </pre>
 
 <p>
-For at starte opsætningen af GRUB, skriver du <c>grub</c>. Du vil nu blive 
-præsenteret for GRUBs <path>grub&gt;</path> kommandolinjeprompt. Du skal nu 
-indtaste de rigtige kommandoer for at installere GRUBs boot-optegnelse på din
-harddisk.
-</p>
-
-<pre caption = "Start af GRUBs shell (skal)">
-# <i>grub</i>
-</pre>
-
-<note>
-Hvis dit system ikke har nogen floppydrev, tilføj <c>--no-floppy</c>
-valgmuligheden til den ovenstående kommando, for at forhindre grub i
-at efterprøve (ikke-eksisterende) diskettedrev.  
-</note>
-
-<p>
-I opsætningseksemplet vil vi installere GRUB, så det læser informationerne fra 
-opstartspartitionen <path>/dev/hda1</path> og installerer GRUBs 
-opstartfortegnelse på harddiskens MBR (master boot record), så det første vi 
-ser når vi starter vores computer er GRUB-prompten. Hvis du ikke har fulgt 
-opsætningskonfigurationen under installation, skal du naturligvis ændre 
-kommandoerne tilsvarende.
-</p>
-
-<p>
-Tab-færdiggørelsen i GRUB kan benyttes inde fra GRUB. Hvis du f.eks. indtaster 
-"<c>root (</c>" efterfulgt af et TAB, vil du blive præsenteret for en liste
-med af enheder (som f.eks. <path>hd0</path>). Hvis du indtaster 
-"<c>root (hd0,</c>" efterfulgt af et TAB, får du en liste over mulige 
-partition du kan vælge imellem (som fx <path>hd0,0</path>).
-</p>
-
-<p>
-Ved brug af tab-færdiggørelse burde opsætningen af GRUB ikke være så svær.
-Skal vi så fortsætte og installere GRUB? :-)
-</p>
-
-<pre caption = "Installering af GRUB i MBR">
-grub&gt; <i>root (hd0,0)</i>          <comment>(Angiv hvor din /boot partition findes)</comment>
-grub&gt; <i>setup (hd0)</i>           <comment>(Installer GRUB i MBR)</comment>
-grub&gt; <i>quit</i>                  <comment>(Afslut GRUBs skal)</comment>
-</pre>
-
-<note>
-Hvis du vil installere GRUB i en partition i stedet for MBR, skal du ændre 
-kommandoen for <c>setup</c> så den peger på den rigtige partition. Hvis du f.eks. 
-vil have GRUB installeret i <path>/dev/hda3</path>, bliver kommandoen 
-<c>setup (hd0,2)</c>.  Få brugere vil dog gøre dette.
-</note>
-
-<p>
-Selv om GRUB nu er installeret, mangler vi stadigvæk at skrive en 
-opsætningsfil til det, så GRUB automatisk starter din fornylige oprettede kerne. 
-Opret <path>/boot/grub/grub.conf</path> med <c>nano</c> (eller evt. en 
-anden editor):
+Selv om GRUB nu er installeret, mangler vi stadigvæk at skrive en opsætningsfil til den, og installere GRUB på MBR, så GRUB automatisk starter din fornylige oprettede kerne. Opret <path>/boot/grub/grub.conf</path> med <c>nano</c> (eller evt. et andet redigeringsprogram):
 </p>
 
 <pre caption = "Oprettelse af /boot/grub/grub.conf">
@@ -207,6 +152,7 @@ kernel /boot/kernel-2.6.5 root=/dev/hda3
 <comment># I dette tilfølde er Windows placeret på /dev/hda6.</comment>
 title=Windows XP
 rootnoverify (hd0,5)
+makeactive
 chainloader +1
 </pre>
 
@@ -223,6 +169,7 @@ initrd /initrd-2.6.5-gentoo
 <comment># Kun hvis du vil dual-boote</comment>
 title=Windows XP
 root (hd0,5)
+makeactive
 chainloader +1
 </pre>  	 
 
@@ -257,13 +204,53 @@ bør du tilføje <c>doscsi</c> som kerne-parameter.
 </p>
 
 <p>
-Gem nu filen <path>grub.conf</path> og afslut. Fra nu af er GRUB færdigopsat, 
-og du kan fortsætte med <uri link="?part=1&amp;chap=10">Installation af 
-nødvendige systemværktøjer</uri>.
+Gem nu filen <path>grub.conf</path> og afslut. Vi mangler stadigvæk at installere GRUB på MBR (Master Boot Record) endnu. Dettte er let gjort ved brug af <c>grub-install</c>-scriptet. Dog, da vi er inde i det chrootede miljø, vil <c>grub-install</c> ikke virke bare sådan. Vi mangler at opdatere <path>/etc/mtab</path> (som indeholder informationer om alle mountede filsystemer) først: heldigvis er der en let metode for at gøre dette. Kopier bare <path>/proc/mounts</path> til <path>/etc/mtab</path>:
 </p>
+
+<pre caption="Opdatering af /etc/mtab">
+# <i>cp /proc/mounts /etc/mtab</i>
+</pre>
+
+<p>
+Kør nu <c>grub-install</c> programmet:
+</p>
+
+<pre caption="Kørsel af grub-install">
+# <i>grub-install --root-directory=/boot /dev/hda</i>
+</pre>
 
 <p>
 Hvis du har flere spørgsmål angående GRUB, konsulter venligst <uri link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> eller <uri link="http://www.gnu.org/software/grub/manual/">GRUB-vejledningen</uri>.
+</p>
+
+<p>
+Fortsæt nu med <uri link="#reboot">Genstart af systemet</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="reboot">
+<title>Genstart af systemet</title>
+<subsection>
+<body>
+
+<p>
+Afslut det chrooted miljø og afmount alle mountede partitioner. Indtast så den magiske kommando, du har ventet på: <c>reboot</c>.
+</p>
+
+<pre caption="Afslutning af chroot og afmount af partitioner samt genstart">
+# <i>exit</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+Selvfølgelig, glem ikke at fjerne den opstartbare CD, ellers vil CDen igen starte op i stedet for dit nye Gentoo system.
+</p>
+
+<p>
+Når du har genstartet din Gentoo installation, afslut med <uri link="?part=1&amp;chap=11">Afslutning af din Gentoo installation</uri>.
 </p>
 
 </body>
