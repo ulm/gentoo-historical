@@ -138,9 +138,9 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-              <tr>
+              <!--//
+	      <tr>
                 <td align="center">
-                  <!-- Begin PayPal Logo -->
                   <p class="alttext">
                     <b>Donate</b> to support our development efforts.
                   </p>
@@ -162,24 +162,12 @@
                   <img src="/images/line.gif" alt="line"/>
                 </td>
               </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-              <p class="alttext">
-		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
+	      //-->
               <tr>
                 <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
-		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
                 </td>
               </tr>
@@ -201,11 +189,24 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
                   <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
                 </td>
               </tr>
@@ -659,9 +660,9 @@
             </tr>
           </xsl:when>
         </xsl:choose>
-        <tr>
+        <!--//
+	<tr>
           <td align="center">
-            <!-- Begin PayPal Logo -->
             <p class="alttext">
               <b>Donate</b> to support our development efforts.
             </p>
@@ -683,24 +684,12 @@
             <img src="/images/line.gif" alt="line"/>
           </td>
         </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-              <p class="alttext">
-		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
+	//-->
               <tr>
                 <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
+                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
                   <p class="alttext">
-		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
                   </p>
                 </td>
               </tr>
@@ -722,11 +711,24 @@
               <img src="/images/line.gif" alt="line"/>
             </td>
           </tr>
+          <tr>
+            <td align="center">
+              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
+              <p class="alttext">
+		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="/images/line.gif" alt="line"/>
+            </td>
+          </tr>
               <tr>
                 <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
+                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
                   <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
                   </p>
                 </td>
               </tr>
