@@ -1,0 +1,76 @@
+2005-01-18: Alan Modra <amodra at bigpond dot net dot au>:
+
+bfd/
+	* bfd.c (bfd_link_just_syms): Add abfd param.
+	* bfd-in2.h: Regenerate.
+ld/
+	* ldlang.c (section_already_linked): Adjust bfd_link_just_syms call.
+	(lang_place_orphans): Don't abort on just_syms_flag, instead call
+	bfd_link_just_syms.
+
+Index: bfd/bfd.c
+===================================================================
+RCS file: /cvs/src/src/bfd/bfd.c,v
+retrieving revision 1.70
+diff -u -p -r1.70 bfd.c
+--- bfd/bfd.c	16 Oct 2004 18:13:52 -0000	1.70
++++ bfd/bfd.c	18 Jan 2005 08:08:17 -0000
+@@ -1203,7 +1203,7 @@ DESCRIPTION
+ .#define bfd_link_add_symbols(abfd, info) \
+ .	BFD_SEND (abfd, _bfd_link_add_symbols, (abfd, info))
+ .
+-.#define bfd_link_just_syms(sec, info) \
++.#define bfd_link_just_syms(abfd, sec, info) \
+ .	BFD_SEND (abfd, _bfd_link_just_syms, (sec, info))
+ .
+ .#define bfd_final_link(abfd, info) \
+Index: bfd/bfd-in2.h
+===================================================================
+RCS file: /cvs/src/src/bfd/bfd-in2.h,v
+retrieving revision 1.315
+diff -u -p -r1.315 bfd-in2.h
+--- bfd/bfd-in2.h	17 Jan 2005 14:08:08 -0000	1.315
++++ bfd/bfd-in2.h	18 Jan 2005 08:51:49 -0000
+@@ -4193,7 +4193,7 @@
+ #define bfd_link_add_symbols(abfd, info) \
+        BFD_SEND (abfd, _bfd_link_add_symbols, (abfd, info))
+ 
+-#define bfd_link_just_syms(sec, info) \
++#define bfd_link_just_syms(abfd, sec, info) \
+        BFD_SEND (abfd, _bfd_link_just_syms, (sec, info))
+ 
+ #define bfd_final_link(abfd, info) \
+Index: ld/ldlang.c
+===================================================================
+RCS file: /cvs/src/src/ld/ldlang.c,v
+retrieving revision 1.169
+diff -u -p -r1.169 ldlang.c
+--- ld/ldlang.c	17 Dec 2004 15:50:02 -0000	1.169
++++ ld/ldlang.c	18 Jan 2005 08:08:53 -0000
+@@ -1284,7 +1284,7 @@ section_already_linked (bfd *abfd, asect
+      discard all sections.  */
+   if (entry->just_syms_flag)
+     {
+-      bfd_link_just_syms (sec, &link_info);
++      bfd_link_just_syms (abfd, sec, &link_info);
+       return;
+     }
+ 
+@@ -4442,9 +4442,8 @@ lang_place_orphans (void)
+ 		 around for a sensible place for it to go.  */
+ 
+ 	      if (file->just_syms_flag)
+-		abort ();
+-
+-	      if ((s->flags & SEC_EXCLUDE) != 0)
++		bfd_link_just_syms (file->the_bfd, s, &link_info);
++	      else if ((s->flags & SEC_EXCLUDE) != 0)
+ 		s->output_section = bfd_abs_section_ptr;
+ 	      else if (strcmp (s->name, "COMMON") == 0)
+ 		{
+
+
+-- 
+Alan Modra
+IBM OzLabs - Linux Technology Centre
+
