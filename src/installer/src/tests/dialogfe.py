@@ -17,7 +17,7 @@ import pprint
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
 install_profile = GLIInstallProfile.InstallProfile()
-cc = GLIClientController.ClientController()
+cc = GLIClientController.GLIClientController()
 waiting_for_install = False
 gauge_progress = 0
 exception_waiting = None
