@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-security.xml,v 1.29 2005/02/09 10:27:13 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-security.xml,v 1.30 2005/03/07 10:44:12 neysx Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -46,6 +46,9 @@
 <author title="Traducteur">
   <mail link="ribosome@gentoo.org">Olivier Fisette</mail>
 </author>
+<author title="Traducteur">
+  <mail link="clement@varaldi.org">Clément Varaldi</mail>
+</author>
 
 <abstract>
 Ce manuel vous guide pas à pas pour vous aider à sécuriser
@@ -54,8 +57,8 @@ Gentoo Linux.
 
 <license/>
 
-<version>0.4.43</version>
-<date>2005-02-07</date>
+<version>0.4.44</version>
+<date>2005-02-14</date>
 
 <chapter>
 <title>Introduction</title>
@@ -1343,6 +1346,72 @@ Les seuls fichiers en mode SUID que j'ai sur mon système sont <c>su</c>,
 <c>pwdb_chkpwd</c>. Mais, si vous utilisez X, vous en aurez sans doute
 davantage, puisque X requiet l'accès privilégié qui lui est conféré par SUID.
 </p>
+</body>
+</section>
+
+<section>
+<title>Binaires SUID/SGID et liens non symboliques</title>
+<body>
+
+<p>
+Un fichier n'est considéré comme effacé qu'une fois qu'il n'y a plus de liens
+pointant vers celui-ci. Cela peut sembler un peu étrange, mais regardez&nbsp;:
+un fichier comme <path>/usr/bin/perl</path> n'est en fait qu'un lien vers
+l'inode sur lequel les données sont sauvegardées. On peut créer le nombre de
+liens qu'on veut vers ce fichier, et tant que tous n'auront pas été supprimés,
+le fichier continuera d'exister.
+</p>
+
+<p>
+Si vos utilisateurs ont accès à une partition qui n'est pas montée avec l'option
+<c>nosuid</c> ou <c>noexec</c> (par exemple, si <path>/tmp</path>,
+<path>/home</path>, ou <path>/var/tmp</path> ne sont pas des partitions
+séparées) vous devez faire attention à ce que vos utilisateurs ne créent pas
+de liens en dur vers des binaires SGID, pour qu'après une mise à jour avec
+Portage, ils puissent continuer à avoir accès aux anciennes versions.
+</p>
+
+<warn>
+Si vous obtenez un avertissement de Portage à propos de liens en durs qui
+resteraient, et que vos utilisateurs peuvent écrire sur une partition qui leur
+permette d'exécuter des fichiers SUID/SGID, vous devez lire cette section
+avec attention. L'un de vos utilisateur pourrait essayer de contourner votre
+mise à jour pour garder une ancienne version d'un programme. Si vos utilisateurs
+ne peuvent pas créer leurs propres fichiers SUID, ou qu'ils ne peuvent exécuter
+de programmes qu'en utilisant un chargeur dynamique (partitions montées avec
+l'option <c>noexec</c>), vous n'avez pas à vous inquiéter.
+</warn>
+
+<note>
+Les utilisateurs n'ont pas besoin de pouvoir avoir un accès en lecture pour
+créer un lien pointant vers celui-ci. Ils ont seulement besoin d'une permission
+de lecture sur le répertoire qui le contient.
+</note>
+
+<p>
+Pour vérifier de combien de liens un fichier dispose, vous pouvez utiliser la
+commande <c>stat</c>.
+</p>
+
+<pre caption="La commande stat">
+$ stat /bin/su    
+  File: `/bin/su'
+  Size: 29350           Blocks: 64         IO Block: 131072 regular file
+Device: 900h/2304d      Inode: 2057419     Links: 1
+Access: (4711/-rws--x--x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2005-02-07 01:59:35.000000000 +0000
+Modify: 2004-11-04 01:46:17.000000000 +0000
+Change: 2004-11-04 01:46:17.000000000 +0000
+</pre>
+
+<p>
+Pour trouver les fichiers SUID ou SGID disposant de plusieurs liens, vous pouvez
+utiliser <c>find</c>.
+</p>
+
+<pre caption="Trouver les binaires SUID/SGID ayant plusieurs liens">
+$ find / -type f \( -perm -004000 -o -perm -002000 \) -links +1 -ls
+</pre>
 
 </body>
 </section>
