@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.9 2004/11/10 15:32:44 port001 Exp $
+# $Id: Config.py,v 1.10 2004/11/10 16:33:33 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -77,9 +77,6 @@ CookieSecure = "No"
 SessionTimeOut = 259200 # Time in seconds (1 day = 86400)
 
 WhoIsOnlineOffset = 300
-
-# Do not edit
-HTMLHeadersSent = False
 
 # Should all scripts being submitted require approval by an admin?
 RequireApproval = False

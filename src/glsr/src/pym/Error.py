@@ -9,7 +9,7 @@
     the possibility of breakage from importing a dodgy module
     a function might not use. """
 
-__revision__ = "$Id: Error.py,v 1.3 2004/07/24 16:11:22 port001 Exp $"
+__revision__ = "$Id: Error.py,v 1.4 2004/11/10 16:33:33 port001 Exp $"
 __rating__ = "9.09/10"
 __modulename__ = "Error"
 
@@ -19,6 +19,7 @@ def exception_handler(tbtype, value, traceb):
     import traceback
     from time import gmtime, strftime
 
+    import State
     import Config
     from Logging import logwrite
 
@@ -37,9 +38,9 @@ def exception_handler(tbtype, value, traceb):
     if Config.Logging == True:
         logwrite(lines, "Unknown", "Error") 
 
-    if Config.HTMLHeadersSent == False:
+    if State.HTMLHeadersSent == False:
         print "Content-type:text/html\n\n"
-        Config.HTMLHeadersSent = True
+        State.HTMLHeadersSent = True
 
     if Config.Debug == True:
         print ("<table align=\"center\" width=\"90%\">\n" +

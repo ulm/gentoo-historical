@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.22 2004/11/10 16:20:02 port001 Exp $
+# $Id: index.py,v 1.23 2004/11/10 16:33:33 port001 Exp $
 #
 
 """
@@ -187,9 +187,9 @@ class PageDispatch:
 
     def _send_headers(self):
 
-        if Config.HTMLHeadersSent == False:
+        if State.HTMLHeadersSent == False:
             print "Content-type:text/html\n\n",
-            Config.HTMLHeadersSent = True
+            State.HTMLHeadersSent = True
 
     def dispatch_header(self):
 

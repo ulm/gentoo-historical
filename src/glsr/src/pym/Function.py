@@ -2,12 +2,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Function.py,v 1.9 2004/11/10 16:27:05 port001 Exp $
+# $Id: Function.py,v 1.10 2004/11/10 16:33:33 port001 Exp $
 #
 
 import sys
 from time import time
 
+import State
 import Config
 
 __modulename__ = "Function"
@@ -30,9 +31,9 @@ def dprint(str):
     if not Config.Debug:
         return True
 
-    if Config.HTMLHeadersSent == False:
+    if State.HTMLHeadersSent == False:
         print "Content-type:text/html\n\n"
-        Config.HTMLHeadersSent = True
+        State.HTMLHeadersSent = True
 
     print "DEBUG:%s\n" % str
     return True
@@ -43,9 +44,9 @@ class stderr_redirect:
 
         if Config.Debug == True:
 
-            if Config.HTMLHeadersSent == False:
+            if State.HTMLHeadersSent == False:
                 print "Content-type:text/html\n\n"
-                Config.HTMLHeadersSent = True
+                State.HTMLHeadersSent = True
 
             print "<font color=\"FF0000\"><b>DEBUG:</b></font> %s <br />" % msg.strip()
         

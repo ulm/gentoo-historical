@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Logging.py,v 1.11 2004/11/10 16:20:02 port001 Exp $
+# $Id: Logging.py,v 1.12 2004/11/10 16:33:33 port001 Exp $
 #
 
 import traceback
@@ -31,9 +31,9 @@ def err(msg, modname):
 
     logwrite(msg, modname, "Error")
   
-    if Config.HTMLHeadersSent == False:      
+    if State.HTMLHeadersSent == False:      
         print "Content-type:text/html\n\n"
-        Config.HTMLHeadersSent = True
+        State.HTMLHeadersSent = True
 
     output = ("""
     <table align="center" width="90%">
