@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.7 2004/08/09 17:30:44 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.8 2004/08/09 19:43:57 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -60,6 +60,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		self._dns_servers = ()
 		self._network_type = ""
 		self._network_data = ()
+		self._default_gateway = ()
 
 		# Internal SAX state info
 		self._xml_elements = [];
@@ -76,6 +77,9 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		return self._profile_uri
 	
 	def set_profile_uri(self, profile_uri):
+		if not GLIUtility.is_uri(profile_uri):
+			raise "URIError", "The URI specified is not valid!"
+
 		self._profile_uri = profile_uri
 
 	def get_install_steps_completed(self):
@@ -116,8 +120,8 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 	shared_client_configuration = classmethod(shared_client_configuration)
 
-	def set_network_info(self, type):
-		if type == 'specified':
+	def set_network_type(self, type):
+		if type == 'specified' and self._xml_current_attr != None:
 			attr = self._xml_current_attr
 			ip = broadcast = netmask = interface = ""
 
@@ -131,7 +135,7 @@ class ClientConfiguration(xml.sax.ContentHandler):
 				elif attrName == 'interface':
 					interface = str(attr.getValue(attrName))
 
-			self._network_data = (interface, ip, broadcast, netmask)
+			self.set_network_data((interface, ip, broadcast, netmask))
 
 		self._network_type = type
 
@@ -140,6 +144,42 @@ class ClientConfiguration(xml.sax.ContentHandler):
 
 	def get_network_info(self):
 		return self._network_data
+
+	def set_network_data(self, network_info):
+		interface = network_info[0]
+		ip = network_info[1]
+		broadcast = network_info[2]
+		netmask = network_info[3]
+
+		if not GLIUtility.is_eth_device(interface):
+			raise "InterfaceError", "Interface " + interface + " must be a valid device!"
+	
+		if not GLIUtility.is_ip(broadcast) and not GLIUtility.is_ip(netmask) and not GLIUtility.is_ip(ip):
+			raise "IPError", "broadcast, netmask and ip address must be valid IP addresses!"
+		
+		self._network_data = network_info
+
+	def set_default_gateway(self, gateway, interface=""):
+		"""
+		This sets the default gateway to a tuple of the format:
+		(<interface>, <gateway ip address>)
+		"""
+
+		if interface == "":
+			if self._xml_current_attr != None and self._xml_current_attr.has_key('interface'):
+				interface = self._xml_current_attr.getValue('interface')
+				print "interface =", interface
+
+		if interface[0:3] not in ('eth', 'ppp', 'wla'):
+			raise "DefaultGateway", "Invalid interface!"
+
+		if not GLIUtility.is_ip(gateway):
+			raise "DefaultGateway", "The IP Provided is not valid!"
+
+		self._default_gateway = (interface, gateway)
+
+	def get_default_gateway(self):
+		return self._default_gateway
 
 	def set_dns_servers(self, nameservers):
 		nameservers = nameservers.split(" ")
@@ -168,8 +208,9 @@ class ClientConfiguration(xml.sax.ContentHandler):
 					'client-configuration/profile-uri': self.set_profile_uri,
 					'client-configuration/root-mount-point': self.set_root_mount_point,
 					'client-configuration/log-file': self.set_log_file,
-					'client-configuration/network-setup': self.set_network_info,
-					'client-configuration/dns-servers': self.set_dns_servers
+					'client-configuration/network-setup': self.set_network_type,
+					'client-configuration/dns-servers': self.set_dns_servers,
+					'client-configuration/default-gateway': self.set_default_gateway
 				}
 
 		path = self._xml_element_path()
@@ -223,11 +264,12 @@ class ClientConfiguration(xml.sax.ContentHandler):
 		if net_type == "specified":
 			net_info = self.get_network_info()
 			data +=  "<network-setup interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</network-setup>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_type)
+			gateway = self.get_default_gateway()
+			data += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gateway[0], gateway[1])
+			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
 		else:
 			data += "<network-setup>%s</network-setup>" % net_type
 	
-
-		data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
 
 		data += "</client-configuration>"
 

@@ -122,17 +122,17 @@ def is_uri(uri):
 	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
 		
 		# Check for hostname or ip address
-		if (not _is_hostname(uri.split('/')[2])) and (not _is_ip(uri.split('/')[2])):
+		if (not is_hostname(uri.split('/')[2])) and (not is_ip(uri.split('/')[2])):
 			return False
 		
 		# Check to make sure the rest is a propper path
-		if not _is_path(string.join(uri.split('/')[3:], '/')):
+		if not is_path(string.join(uri.split('/')[3:], '/')):
 			return False
 
 	# If we are dealing with a local uri
 	else:
 		# Check for file validity
-		if not _is_file(uri[colon_location + 3:]):
+		if not is_file(uri[colon_location + 3:]):
 			return False
 				
 		
