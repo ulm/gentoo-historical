@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: News.py,v 1.2 2004/06/27 23:24:58 hadfield Exp $
+# $Id: News.py,v 1.3 2004/07/19 00:56:45 hadfield Exp $
 #
 
 __modulename__ = "News"
@@ -28,7 +28,7 @@ class News(Parent):
     def Modify(self, details):
         """ Modify announcement details """
 
-        return Parent.Modify(self, details.keys(), details)
+        return Parent.Modify(self, details)
 
 
     def AnnidExists(self, annid):
