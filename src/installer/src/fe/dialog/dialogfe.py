@@ -482,7 +482,36 @@ def set_root_mount_point():
 	code, rootmountpoint = d.inputbox("Enter the mount point for the chroot enviornment:", init="/mnt/gentoo")
 	if code == DLG_OK: client_profile.set_root_mount_point(None, rootmountpoint, None)
 def set_client_networking():
-	d.msgbox("You shall have no networking for the install until samyron writes this function (please bug him to!).")
+	network_choices = ('DHCP', 'Static IP');
+	code, menuitem = d.menu("Please select networking configuration:", choices=dmenu_list_to_choices(network_choices))
+	
+	network_data = None
+	if code == DLG_OK:
+		menuitem = network_choices[int(menuitem)-1]
+		if menuitem == 'Static IP':
+			code, interface = d.inputbox("Enter the interface (NIC) you would like to use for installation (e.g. eth0):")
+			if code != DLG_OK: return
+			code, ip_address = d.inputbox("Enter your IP address:")
+			if code != DLG_OK: return
+			code, broadcast = d.inputbox("Enter your Broadcast address:")
+			if code != DLG_OK: return
+			code, netmask = d.inputbox("Enter your Netmask:")
+			if code != DLG_OK: return
+			code, gateway = d.inputbox("Enter your default gateway:")
+			if code != DLG_OK: return
+			network_data = (interface, ip_address, broadcast, netmask, gateway)
+			network_type = 'static'
+		else:
+			network_type = 'dhcp'
+	else:
+		return
+
+	try:
+		client_profile.set_network_type(None, network_type, network_data):
+	except GLIException e:
+		d.msgbox(e)
+
+
 def set_livecd_password():
 # The root password will be set here
 	code, passwd1 = d.passwordbox("Enter the new LIVECD root password")
