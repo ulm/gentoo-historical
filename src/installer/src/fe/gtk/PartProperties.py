@@ -50,6 +50,7 @@ class PartProperties(gtk.Window):
 		self.resize_hpaned.add2(self.resize_unalloc_space_frame)
 		self.resize_hpaned.set_position(0)
 		self.resize_box.pack_start(self.resize_hpaned, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+		self.resize_box.pack_start(gtk.Label("You can slide above or enter values below"), expand=gtk.FALSE, padding=2)
 		resize_text_box = gtk.HBox(gtk.FALSE, 0)
 		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		self.resize_info_part_size = gtk.Entry(max=9)
@@ -113,7 +114,6 @@ class PartProperties(gtk.Window):
 
 		self.part_info_box.pack_start(part_info_table, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		self.globalbox.pack_start(self.part_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-
 
 		bottom_box = gtk.HBox(gtk.TRUE, 0)
 		ok_button = gtk.Button(" OK ")
