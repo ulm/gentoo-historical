@@ -35,6 +35,9 @@ def do_header(package_name):
 
 def do_footer():
 	footer = """
+	<p>
+	<uri link="/index-packages-old.html">Old Style List</uri>
+	</p>
 	</body>
 	</section>
 	</chapter>
