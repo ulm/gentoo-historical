@@ -305,25 +305,25 @@ of your sale will go towards further Gentoo Linux development.</p>
 User Docs:<br/><a class="altlink" href="/doc/build.html">x86 Install Instructions</a><br/><a class="altlink" href="/doc/gentooppc-quickstart.html">PowerPC Install Instructions</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/faq.html">FAQ</a><br/><a class="altlink" href="/doc/desktop.html">Desktop Guide</a><br/><a class="altlink" href="/doc/portage-manual.html">Portage Manual</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/portage-user.html">Portage User Guide</a><br/><a class="altlink" href="/doc/use-howto.html">USE variable HOWTO</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/rc-scripts.html">Gentoo rc-scripts Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/gentoo-security.html">Gentoo Security Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/java.html">Gentoo Java Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/nano-basics-guide.html">Nano Basics Guide</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/altinstall.html">Alternative Installation Guide</a><br/><a class="altlink" href="/doc/openafs.html">OpenAFS Installation Guide</a><br/><br/><br/>
 						Developer Resources:<br/><a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/><a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><font color="#ff0000">(updated!)</font><br/><a class="altlink" href="/doc/eclass-howto.html">Eclass (OOP-like ebuild) HOWTO</a><font color="#ff0000">(new!)</font><br/><a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/><a class="altlink" href="/doc/uml.html">User-Mode Linux Guide</a><br/><a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/><a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">viewcvs</a> (browse our repository)<br/><br/><br/>
 						Documentation en Français:<br/><a class="altlink" href="/doc/build-fr.html">Instructions d' Installation</a><br/><a class="altlink" href="/doc/altinstall-fr.html">Methode d' Alternative Installation</a><br/><a class="altlink" href="/doc/faq-fr.html">Foire Aux Questions</a><br/><a class="altlink" href="/doc/portage-manual-fr.html">Manuel Portage</a><br/><a class="altlink" href="/doc/portage-user-fr.html">Guide de l' Utilisateur d' Portage</a><br/><a class="altlink" href="/doc/desktop-fr.html">Guide de Bureau</a><br/><a class="altlink" href="/doc/rc-scripts-fr.html">System d'Initialisation</a><br/><a class="altlink" href="/doc/nvidia_tsg-fr.html">Guide d' nVidia</a><br/><br/><br/>
-Documentación en Español: <br/>
-<font color="#ff0000">(new!)</font>:<br/>
+Documentación en Español: <br/><font color="#ff0000">(new!)</font>:<br/>
 Para usuarios:<br/>
-<a class="altlink" href="/doc/faq-es.html">Preguntas
-frecuentes</a><br/><a class="altlink"
-href="/doc/portage-user-es.html">Guía de Usuario de Portage</a><br/><a
-class="altlink" href="/doc/use-howto-es.html">Guía de parámetros
-USE</a><br/><a class="altlink" href="/doc/altinstall-es.html">Método
-alternativo de instalación</a><br/>
+<a class="altlink" href="/doc/faq-es.html">Preguntas frecuentes</a><br/>
+<a class="altlink" href="/doc/portage-user-es.html">Guía de Usuario de Portage</a><br/>
+<a class="altlink" href="/doc/portage-manual-es.html">Manual de Portage</a><br/>
+<a class="altlink" href="/doc/desktop-es.html">Guía de Escritorio</a><br/>
+<a class="altlink" href="/doc/use-howto-es.html">Guía de parámetros USE</a><br/>
+<a class="altlink" href="/doc/altinstall-es.html">Método alternativo de instalación</a><br/>
+<a class="altlink" href="/doc/nano-basics-guide-es.html"></a>Guía básica de Nano<br/>
+<a class="altlink" href="/doc/openafs-es.html"></a>Guía de OpenAFS<br/>
 Para Desarrolladores:<br/>
-<a class="altlink" href="/doc/xml-guide-es.html">Guía de
-documentación</a><br/><a class="altlink"
-href="/doc/ebuild-submit-es.html">Mandando Ebuilds</a><br/>
+<a class="altlink" href="/doc/xml-guide-es.html">Guía de documentación</a><br/>
+<a class="altlink" href="/doc/ebuild-submit-es.html">Mandando Ebuilds</a><br/>
 Otros:<br/>
-<a class="altlink" href="/doc/main-about-es.html">Sobre Gentoo
-Linux</a><br/><a class="altlink"
-href="/doc/main-contract-es.html">Contrato Social</a><br/><a
-class="altlink" href="/doc/project-xml-es.html">Proyectos XML</a><br/>
-<a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/><br/><br/>
+<a class="altlink" href="/doc/main-about-es.html">Sobre Gentoo Linux</a><br/>
+<a class="altlink" href="/doc/main-contract-es.html">Contrato Social</a><br/>
+<a class="altlink" href="/doc/project-xml-es.html">Proyectos XML</a><br/>
+<a class="altlink" href="/doc/mirroring-es.html">Réplica Cómo</a><br/>
+<br/><br/>
 	
 						Mailing Lists:<br/><br/><a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a><br/><br/>
 						IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:<br/><br/>
