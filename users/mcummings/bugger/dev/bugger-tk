@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use Tk;
 use Tk::widgets
-  qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog);
+  qw(LabEntry HList ToolBar ItemStyle TextUndo Scrollbar Menu Dialog NoteBook);
 
 #use bugger;
 #use diagnostics;
@@ -12,7 +12,7 @@ use subs qw/splash search initconfig launch_win init_main_win/;
 use vars qw/$BW $mw $mw2 $hlist/;
 
 if ( $selfname =~ m/bugger-tk/ ) { use bugger; main::start() }
-
+my %mw2;
 sub start {
 
     #use vars qw/$BW/;
@@ -37,13 +37,16 @@ sub start {
     our $configfile = "$ENV{'HOME'}/.bugger-config";
 
     unless ( ( -f $configfile ) && ( -s $configfile ) ) {
-        main::initconfig("1");
+        main::initconfig("0");
     }
     else { main::init_main_win() }
     MainLoop;
 }
 
 sub init_main_win {
+    
+    # Build config information
+
     my $conf = new Config::General(
         -AutoTrue          => 1,
         -AllowMultiOptions => "yes",
@@ -58,10 +61,33 @@ sub init_main_win {
     our $downdir  = $config{'downdir'} || "/tmp";
     our $runmode  = $config{'mode'};
 
-    our $mw = new MainWindow;
+    our $frame = new MainWindow;
+    my $tb2 = $frame->ToolBar;
+    $tb2->ToolButton(
+        -image   => 'actexit22',
+        -tip     => 'quit',
+        -command => sub { &quit; $frame->withdraw; exit; }
+    );
+    our $windows = $frame->NoteBook(-font => [-size => 12])->pack(-expand => 1, -fill=> 'both');
+
+# Build our tabs =:)
+    our $tabsearch = $windows->add("Search", -label=>"Search",);
+    our $tabbugadd = $windows->add("Add Bug", -label=>"Add Bug",);
+    our $tabconfig = $windows->add("Config", -label=>"Config",);
+
+    our $querytab = $tabsearch->NoteBook(-font => [-size =>12])->pack(-expand => 1, -fill=>'both');
+
+    our $searchwin = $querytab->add("Search Page",-label=>"Search Page",);
+    
+    build_search();
+    initconfig(1);
+    $BW->withdraw;
+}
+
+sub build_search {
     our $search_string = '';
-    my $searchbox     = $mw->ToolBar(
-        qw/-movable 1
+    my $searchbox     = $searchwin->ToolBar(
+        qw/-movable 0
           -indicatorcolor blue
           /
     );
@@ -102,41 +128,21 @@ sub init_main_win {
         -tip   => 'Search',
     );
 
-    #-command => \&search,
     $ss_button->pack(qw/-side left -pady 5 -padx 10/);
 
     my $search_command = sub { main::search $radiovar, $search_string, $ss };
     $ss_button->configure( -command => $search_command );
     $ss->bind( '<Return>' => $search_command );
 
-    $searchbox->separator;
-    my $tb2 = $mw->ToolBar;
-    $tb2->separator;
-    $tb2->ToolButton(
-        -image   => 'navhome22',
-        -tip     => 'home',
-        -command => \&initconfig
-    );
-    $tb2->ToolButton(
-        -image   => 'actreload22',
-        -tip     => 'reload',
-        -command => \&reload
-    );
-    $tb2->ToolButton(
-        -image   => 'actexit22',
-        -tip     => 'quit',
-        -command => sub { &quit; $mw->withdraw; exit; }
-    );
 
-    our $hlist = $mw->Scrolled(
+    our $hlist = $searchwin->Scrolled(
         qw/HList
           -columns 3
           -width 70
+	  -height 20
           -command main::launch_win/
     )->pack(qw/-expand yes -fill both/);
 
-    sleep(2);
-    $BW->withdraw;
 }
 
 sub search {
@@ -147,7 +153,7 @@ sub search {
     my $bug_no = scalar( keys %results );
 
     if ( $bug_no < 1 ) {
-        my $button = $mw->messageBox(
+        my $button = $tabsearch->messageBox(
             '-icon'  => "error",
             -type    => "OK",
             -title   => 'ERROR',
@@ -237,9 +243,9 @@ sub search {
 
 sub launch_win {
     my $incoming = shift;
-    my $bugID = $hlist->info( 'data', $incoming );
+    our $bugID = $hlist->info( 'data', $incoming );
     if ( $bugID < 1 ) {
-        my $button = $mw->messageBox(
+        my $button = $tabsearch->messageBox(
             '-icon'  => "error",
             -type    => "OK",
             -title   => 'ERROR',
@@ -250,7 +256,8 @@ sub launch_win {
     else {
 
         my %bugtext = bugger::show_bug($bugID);
-        our $mw2     = new MainWindow;
+        #our $mw2     = new MainWindow;
+        my $mw2     = $querytab->add($bugID,-label=>"Bug $bugID",);
         my $tb      = $mw2->ToolBar(
             qw/-movable 1 -side top
               -indicatorcolor blue /
@@ -258,11 +265,11 @@ sub launch_win {
         $tb->ToolButton(
             -image   => 'actexit22',
             -tip     => 'quit',
-            -command => sub { $mw2->withdraw }
+            -command => sub { $querytab->delete($bugID) }
         );
-        $mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
+        #$mw2->fontCreate(qw/C_bold   -family courier   -size 12 -weight bold/);
         my $text = $mw2->Scrolled(
-            qw/Text -setgrid true -width  70 -height 32
+            qw/Text -setgrid true -width  70 -height 12
               -font normal -wrap word -scrollbars e/
         );
         $text->pack(qw/-expand yes -fill both/);
@@ -359,8 +366,8 @@ sub launch_win {
             $key->pack(qw/-side left/);
         }
 
-
-        MainLoop;
+	$querytab->raise($bugID);
+        #MainLoop;
     }
     return;
 }
@@ -394,13 +401,18 @@ sub initconfig {
         -AllowMultiOptions => "yes",
         -ExtendedAccess    => 1,
     );
+    our $CONF_WIN;
 
-    our $CONF_WIN = new MainWindow;
+    print "$runtype\n";
+    if ($runtype ==1 )
+    { $CONF_WIN = $tabconfig;}
+    else {
+    $CONF_WIN = new MainWindow;
 
     $CONF_WIN->title("bugger::Configure");
     $CONF_WIN->iconname("buggerconf");
     $CONF_WIN->minsize( 50, 50 );
-
+}
     my $ConnectInfo =
       $CONF_WIN->Labelframe( -text => 'Connection Information' );
     my $Login;
@@ -418,10 +430,10 @@ sub initconfig {
         -label           => "Password: ",
         -validate        => 'key',
         -show            => '*',
-        -validatecommand => sub {
-            my ( $proposed, $changes, $current, $index, $type ) = @_;
-            return $proposed =~ m/\w{1,}/g ? 1 : 0;
-        },
+        #-validatecommand => sub {
+        #    my ( $proposed, $changes, $current, $index, $type ) = @_;
+        #    return $proposed =~ m/\w{1,}/g ? 1 : 0;
+        #},
         -labelPack    => [qw/-side left -anchor w/],
         -textvariable => \$passphrase
     );
@@ -493,9 +505,12 @@ sub initconfig {
             chomp($logid);
             chomp($passphrase);
             chomp($servername);
-            unless ( ( ($logid) && ( $logid =~ m/\S\@\S/g ) )
-                && ( ($passphrase) && ( $passphrase =~ m/\S+/g ) )
-                && ( ($servername) && ( $servername =~ m/\S+\.\S+/g ) ) )
+            #unless ( ( ($logid) && ( $logid =~ m/\S\@\S/g ) )
+            #    && ( ($passphrase) && ( $passphrase =~ m/\S+/g ) )
+            #    && ( ($servername) && ( $servername =~ m/\S+\.\S+/g ) ) )
+            if ( ( $logid !~ m/\@/ ) 
+                ||( $passphrase eq "" ) 
+                ||( $servername !~ m/\./ ) ) 
             {
                 $message .= "Check that you included the following:\n";
                 $message .=
@@ -524,8 +539,8 @@ sub initconfig {
                 my @files = $configfile;
                 chmod oct($mode), @files;
                 main::conf_pop("Configuration saved!");
-                $CONF_WIN->withdraw;
-                if ( $runtype == 1 ) { main::init_main_win() }
+		if ($runtype != 1){ $CONF_WIN->withdraw;
+                 main::init_main_win() }
             }
           }
 

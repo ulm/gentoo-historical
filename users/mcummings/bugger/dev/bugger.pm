@@ -1,5 +1,6 @@
 package bugger;
 
+use vars qw/$mech/;
 use WWW::Bugzilla;
 my $bugver = $WWW::Bugzilla::VERSION;
 if ( $bugver < 0.4 ) {
