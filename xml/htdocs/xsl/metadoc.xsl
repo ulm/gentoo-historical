@@ -190,7 +190,7 @@
   <xsl:variable name="footnote">
     <xsl:variable name="parentmetadoc" select="document($metadoc)/metadoc/@parent"/>
     <xsl:variable name="parentfile" select="document($parentmetadoc)/metadoc/files/file[@id = $fileid]"/>
-    <xsl:if test="$link = $parentfile"><xsl:text disable-output-escaping="yes">&amp;</xsl:text>nbsp;¹</xsl:if>
+    <xsl:if test="$link = $parentfile">&#160;¹</xsl:if>
   </xsl:variable>
 
   <xsl:choose>
@@ -384,10 +384,8 @@
       <uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri>
     </xsl:otherwise>
   </xsl:choose>
-  <xsl:if test="$parentfile and $parentfile = $fileurl">
-    <!-- Untranslated file -->
-    <xsl:text disable-output-escaping="yes">&amp;</xsl:text>nbsp;¹
-  </xsl:if>
+  <!-- Untranslated file -->
+  <xsl:if test="$parentfile and $parentfile = $fileurl">&#160;¹</xsl:if>
   </ti>
     <xsl:variable name="version"><xsl:value-of select="translate(document($fileurl)//version[1],'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/></xsl:variable>
     <ti><xsl:value-of select="$version"/></ti>
