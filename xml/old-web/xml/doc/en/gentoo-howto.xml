@@ -14,7 +14,7 @@
 to create new packages for Gentoo, and is also meant to be somewhat of
 a standard for the Gentoo Developers. It is a work in progress, and is
 constantly being updated and changed. It is by no means complete.</abstract>
-<version>1.2</version>
+<version>1.3</version>
 <date>24 October 2002</date>
 
 
@@ -39,7 +39,7 @@ package (regardless of version)</e>, share the same <path>mycat/mypkg</path> dir
 <title>Checking Out the Portage Tree from CVS</title>
 <body>
 <p>If you are unfamiliar with the CVS system, please check the
-<uri link=http://www.gentoo.org/doc/cvs-tutorial.html">CVS Tutorial</uri> for more
+<uri link="http://www.gentoo.org/doc/cvs-tutorial.html">CVS Tutorial</uri> for more
 information. </p>
 
 <p>The Portage tree can be found in the <i>gentoo-x86</i> package of the Gentoo Linux tree.
@@ -52,7 +52,16 @@ then check out the <i>gentoo-x86</i> tree. </p>
 <section>
 <title> What (not) to put in the Portage tree</title>
 
-<body><p>In general, the Portage tree should only be used for storing
+<body>
+
+<p>Before writing any ebuild, check <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> for an ebuild
+corresponding to the ebuild you want to write, but that
+has not yet been put into the Portage tree. Go to <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri>, choose query, 
+as product select "Gentoo Linux", as component select "ebuilds".
+In the search field put the name of the ebuild and as status
+select NEW, ASSIGNED, REOPENED and RESOLVED (RESOLVED is important), then submit the query. </p>
+
+<p>In general, the Portage tree should only be used for storing
 <path>.ebuild</path> files, as well as any relatively small companion files,
 such as patches or sample configuration files.  These types of files should be
 placed in the <path>/usr/portage/mycat/mypkg/files</path> directory to keep the
@@ -73,9 +82,42 @@ for obvious reasons.  Also, speaking of merging changes, any patches you add to
 Portage should generally <e>not</e> be compressed.  This will allow CVS to
 merge changes and inform developers of conflicts correctly.  </p>
 
+<p>Remember, the packages that you commit must be <e>ready</e> "out of the box" for
+end users when commited as stable. Make sure that you have a good 
+set of default settings that will satisfy the majority of systems and users that will
+use your package. If your package is broken, and you are not sure how to get it to work,
+check some other distributions that have done their own versions of the package. You can
+check <uri link="http://cvs.mandrakesoft.com/cgi-bin/cvsweb.cgi/SPECS/">Mandrake</uri> or
+<uri link="http://www.debian.org/distrib/packages">Debian</uri> for some
+examples. </p>
+
+<p>When commiting to CVS, all developers should use <c>repoman commit</c> instead
+of <c>cvs commit</c> to submit their ebuilds. Before commiting, please run your
+digest, Changelog and ebuild through <c>lintool</c>. </p>
+
 </body>
 </section>
 
+<section>
+<title>CVS Commit Policy</title>
+<body>
+
+<ul>
+<li>Always run repoman scan before you commit. </li> 
+<li>Please run lintool before you commit. </li> 
+<li>Always test that package.mask is okay by doing 'emerge --pretend glibc' before you commit and check that it
+   doesn't contain any conflicts. </li> 
+<li>Always update the ChangeLog before you commit. </li> 
+<li>Always commit the updated package.mask before the updated package, in case conflicts occur
+while you commit package.mask. </li> 
+<li>Always do atomic commits; if you commit a package with a new license, that is masked, 
+first commit the revised package.mask, then commit the ebuild, ChangeLog and license _one_ go, unless
+you want to break the users' installations. </li>
+</ul>
+
+</body>
+</section>
+								 
 <section>
 <title>The files Directory</title>
 <body>
@@ -88,7 +130,7 @@ with a version-specific name, such as <path>mypkg-1.0-gentoo.diff</path>.  Also
 note that the <path>gentoo</path> extension informs people that this patch was
 created by us, the Gentoo Linux developers, rather than having been grabbed
 from a mailing list or somewhere else.  Again, you should not compress these
-diffs because cvs does not play well with binary files.  </p>
+diffs because CVS does not play well with binary files.  </p>
 
 <p>Consider adding a suffix such as <path>mypkg-1.0</path> to the tail of every
 file you put into the <path>files</path> directory, so that the files used for
@@ -197,7 +239,9 @@ copy the ebuild file to a new file with the revision number incremented by 1.
 Initial releases normally have no revision number, e.g.
 <path>package-4.5.3</path> and are considered by Portage to have a a revision
 number of zero.  This means that counting goes as follows: <c>1.0</c> (initial
-version), <c>1.0-r1</c>, <c>1.0-r2</c>, etc.
+version), <c>1.0-r1</c>, <c>1.0-r2</c>, etc. Remember to <e>always</e> make
+mentions of your changes in the Changelog. You are in serious trouble if you do not
+do this, your CVS access may be revoked.
 </p>
 
 <p>And I suppose that we actually have a <e>fifth</e> section of the ebuild name -- the
@@ -223,12 +267,13 @@ variable settings. The variables you can set are:</p>
 
 <tr><ti><c>LICENSE</c></ti><ti>This variables specifies what license the program is covered under. i.e. GPL, GPL2. </ti></tr>
 
-<tr><ti><c>ARCH</c></ti><ti>This variable now supports a couple of different functions. First of all, this variable specifies what
-architecture the ebuild is meant for. These keywords include: <e>x86, ppc, alpha, sparc, sparc64 </e>. Obviously, you would set this
-to reflect the architecture of the target machine. Portage will not allow an x86 machine to build anything but x86, as specified
-by the <i>ARCH</i> USE variable. Packages that are not the native architecture are automatically masked by Portage. If the <i>ARCH</i>
-flag has a preceeding <e>~</e>, then that indicates that the particular ebuild is part of the testing tree, which you can allow
-installation of via <path>make.conf</path>. </ti></tr>
+<tr><ti><c>ARCH</c></ti><ti>This variable now supports a couple of different functions. First of all, this variable specifies what architecture the ebuild is meant for. These keywords include: <e>x86, ppc, alpha, sparc, sparc64 </e>. Obviously, 
+you would set this to reflect the architecture of the target machine. Portage will not allow an x86 machine to build anything but x86, as specified by the <i>ARCH</i> USE variable. Packages that are not the native architecture are automatically 
+masked by Portage. If the <i>ARCH</i> flag has a preceeding <e>~</e>, then that indicates that the particular ebuild 
+works, but is not considered stable with the given keyword. If the <i>ARCH</i> flag has a preceeding <e>-</e>, then
+the package does not work with the given keyword. If there is nothing leading <i>ARCH</i>, then the package
+is considered stable. You can allow installation of these different types of packages through
+<path>make.conf</path>. </ti></tr>
 
 <tr><ti><c>DESCRIPTION</c></ti><ti>a short, one line description of your package</ti></tr>
 
@@ -248,15 +293,24 @@ to <c>IUSE="" </c>. </ti></tr>
 <p>There are a number of different functions that you can define in ebuild files that control the building and installation process of your package.</p>
 <table>
 <tr><ti><c>pkg_setup</c></ti><ti>Use this function to perform any miscellaneous prerequisite tasks.  This might include adding system accounts or checking for an existing configuration file.  This function must return 0 in order for processing to proceed.</ti></tr>
+
 <tr><ti><c>src_unpack</c></ti><ti>Use this function to unpack your sources and run autoconf/automake/etc. if necessary. By default, it unpacks the packages in <c>${A}</c>. The default starting directory is <c>${WORKDIR}</c>.</ti></tr>
+
 <tr><ti><c>src_compile</c></ti><ti>Use this function to configure and build the package. Default starting directory is <c>${S}</c>.</ti></tr>
+
 <tr><ti><c>src_install</c></ti><ti>Use this function install the package to an image in <c>${D}</c>. If your package uses automake, you can do this simply with <c>make DESTDIR=${D} install</c>. <e>Make sure your package installs all its files using <c>${D}</c> as the root!</e></ti></tr>
+
 <tr><ti><c>pkg_preinst</c></ti><ti>The commands in this function are run just prior to merging a package image into the filesystem.</ti></tr>
+
 <tr><ti><c>pkg_postinst</c></ti><ti>The commands in this function are run just following merging a package image into the filesystem.</ti></tr>
+
 <tr><ti><c>pkg_prerm</c></ti><ti>The commands in this function are run just prior to unmerging a package image from the filesystem.</ti></tr>
+
 <tr><ti><c>pkg_postrm</c></ti><ti>The commands in this function are run just following unmerging a package image from the filesystem.</ti></tr>
+
 <tr><ti><c>pkg_config</c></ti><ti>You use this function to setup an initial configuration for the package after it's installed. All paths in this function should be prefixed with ${ROOT}.  This function is <e>only</e> executed if and when the user runs: <c>ebuild /var/db/pkg/${CATEGORY}/${PF}/${PF}.ebuild config</c>.</ti></tr>
 </table>
+
 </body>
 </section>
 
