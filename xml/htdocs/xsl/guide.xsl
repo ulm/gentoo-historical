@@ -385,6 +385,10 @@
                     <br/><br/>
                     Installation:
                     <br/>
+                    <a class="altlink" href="/doc/en/handbook/handbook.xml?part=1">Gentoo Handbook Installation Instructions</a>
+                    <br/><br/>
+                    Older Installation Guides:
+                    <br/>
                     <a class="altlink" href="/doc/en/gentoo-x86-install.xml">Gentoo Linux/x86</a>
                     <br/>
                     <a class="altlink" href="/doc/en/gentoo-ppc-install.xml">Gentoo Linux/PowerPC</a>
