@@ -11,7 +11,7 @@
 source ~/.bashrc
 
 WORKDIR=/home/httpd
-RSYNC_ARGS="--rsh=ssh -a"
+RSYNC_ARGS="--rsh=ssh -a --delete --delete-excluded"
 
 # create the directory if this is the first time this has run
 mkdir -p ${WORKDIR}/cvsroot
