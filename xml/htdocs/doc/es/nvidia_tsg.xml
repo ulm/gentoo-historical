@@ -1,0 +1,939 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/es/nvidia_tsg.xml">
+<title>Solucionando problemas con el driver nvidia</title>
+<author><mail link="phoenix@minion.de">Christian Zander</mail></author>
+<author><mail link="mthome@bbn.com">Michael Thome</mail></author>
+<author title="Traductor"><mail link="edulix@iespana.es">Eduardo Robles Elvira</mail></author>
+<abstract>
+Este documento es una guía para el uso del driver de nVidia en Linux,
+pero nótese que no es específico de Gentoo Linux.</abstract>
+<version>1.4</version>
+<date>Mon 13 2003</date>
+<chapter>
+	<title>Introducción</title>
+	<section>
+		<title>¿Y ahora qué?</title>
+		<body>
+		<p>
+		Bien, ya tiene instalado en Linux el driver nvidia y lanzadas las X en previsión de las maravillosas cosas
+		que podrá hacer con ellas. Pero, por alguna razón, las cosas no funcionan tal como esperaba, y ahora está sentado
+		mirando una pantalla en blanco, o quizás, si ha tenido suerte, a una apreciado terminal. Aunque no se puede negar la belleza
+		de un terminal 80x40, tampoco se puede evitar la pregunta que le susurra alguien desde la puerta... ¿Y ahora qué?</p>
+		<p>
+		Por suerte, hay otras personas que ya han encontrado la mayor parte de los problemas que haya podido tener. Mejor aun,
+		ya existen soluciones para todos esos problemas. Pero, ¿Dónde buscar y conseguir respuestas a ellos?
+		Pues este documento puede ser lo que usted necesita.
+		</p>
+		<p>
+		Antes de ir más lejos, le diré que la mayor parte de la información contenida en este documento la saqué de 
+		<c>#nvidia</c> (<uri link="http://www.openprojects.net">irc.openprojects.net</uri>), sumándole mi propia experiencia con los drivers.
+		También me tomé la libertad de documentarme un poco sobre el driver de nVidia. El canal de IRC anteriormente mencionado
+		es un buen sitio donde encontrar información asi como archivos o parches.</p>
+		<p>
+		Antes que nada, debería de checar su sistema con <c>nv_check.sh</c>. Lo puede descargar de <c>iCE-DCC</c> (un bot del canal <c>#nvidia</c>),
+		al igual que todos los ficheros a los que vaya nombrando.</p>
+		</body>
+	</section>
+	<section>
+		<title>Contactar con el autor</title>
+		<body>
+		<p>Para preguntas, sugerencias, etc, el email del autor del documento es <mail link="phoenix@minion.de">Christian Zander</mail> </p>
+		</body>
+	</section>
+</chapter>
+<chapter>
+	<title>AGP/KERNEL</title>
+	<section>
+		<title>Introducción</title>
+		<body>
+		<p>		
+		Como ya pudo haber notado, el driver de nVidia necesita un gestor de recursos a nivel del núcleo
+		para funcionar apropiadamente, y este gestor de recursos es el módulo del kernel de nVidia. Entre otras,
+		sus responsabilidades son  el control de acceso al/a los dispositivo(s), localizar e
+		inicializar ciertos aspectos del hardware, controlar el driver AGP, DMA.. </p>
+		<p>
+		Es extremadamente importante que el módulo del kernel funcione correctamente, o no podrá aprovechar ese hardware
+		que tanto dinero costó.</p>
+		</body>
+	</section>
+	<section>
+		<title>AGPGART vs. NVAGP</title>
+		<body>
+		<p>
+		Linux fue diseñado de manera que su radiante puerto AGP funciona como otro PCI más,
+		y de hecho es detectado como tal. Puesto que necesitamos usar características del puerto AGP que van 
+		más allá de las de un simple puerto PCI, necesitamos el driver apropiado para ello. En los drivers
+		de nVidia tenemos que elegir entre el driver de AGP que fue portado desde NT, NVART, y el AGPGART,
+		que lo desarrollaron Jeff Hartmann conjunto con un grupo de programadores. AGPGART es parte del kernel oficial
+		actual, y está activado prácticamente en todas las distribuciones por defecto. ¿Cuál utilizar? La 
+		elección se hará en base a: (1) su chipset AGP (2) sus preferencias.
+		</p>
+		<p>
+		Si todo funciona correctamente con los dos drivers, no ha de preocuparse de este tema. No hace falta
+		que se complique, puede pasar directamente a la siguiente sección.
+		</p>
+		<p>
+		Una forma de saber si su driver AGP está causando problemas (y a veces la única forma de que las cosas
+		vayan bien) es inhabilitar totalmente la ayuda de AGP en el driver. Para hacer esto, debe de añadir
+		la siguiente opción a la sección <e>Screen</e> de su archivo <path>XF86Config</path>: 
+		</p>
+		<pre>Option "<i>NvAgp</i>" "<i>0</i>"</pre>
+		<p>
+		Algunas combinaciones de drivers y chipsets AGP pueden hacer su sistema inestable o inutilizable,
+		tenga cuidado con las combinaciones que debe usar (esta tabla está muy incompleta, háganme saber de
+		otras configuraciones via email): 
+		</p>
+		<!--<p>Intel:</p>-->
+		<table>
+		<tr>
+			<th>Chipset</th>
+			<th>Driver</th>
+		</tr>
+		<tr>
+			<ti>Intel</ti>
+			<ti><pre>440BX   NVAGP   / AGPGART <comment># A veces no funciona</comment>
+810     NVAGP   / AGPGART
+815(e)  NVAGP   / AGPGART <comment># Con el parche para 815</comment></pre></ti>
+                 </tr>
+		<tr>
+			<ti>VIA</ti>
+			<ti><!--<p>VIA:</p>--><pre>Apollo  AGPGART / NVAGP
+MVP3    AGPGART
+MVP4    AGPGART
+KX133   NVAGP
+KT133   NVAGP</pre></ti>
+		</tr>
+		<tr>
+			<ti>Ali</ti>
+			<ti><!--<p>Ali:</p>--><pre>...     AGPGART <comment># 2.4.0+, 2.2.18 con el parche para ALi</comment></pre>
+		</ti></tr>
+		<tr>
+			<ti>SiS</ti>
+			<ti><!--<p>SiS:</p>--><pre>...     AGPGART <comment># ?</comment></pre></ti>
+		</tr>
+		</table>
+		<p>
+		Si se está preguntando qué chipset de AGP puede utilizar su placa base consulte su documentación
+		o intente recuperar la información de <path>/proc/pci</path>.
+		</p>
+		<pre>$ <i>grep AGP /proc/pci</i></pre>
+		<p>Ya que sabe que driver quiere, ¿Cómo configurar el sistema correctamente para que lo use? </p>
+        	<table>
+		<tr>
+			<th>Opción</th>
+			<th>Efecto</th>
+		</tr>
+		<tr>
+			<ti>NVAGP</ti>
+			<ti><!--
+		<p>Para compilar el módulo de nvidia para el  kernel:</p>
+		<pre>$ <i>make clean</i>
+$ <i>make nvidia BUILD_PARAMS=NOAGPGART</i>
+# <i>make install</i></pre>--><p>Activa el soporte de NVAGP</p></ti>
+		</tr>
+		<tr>
+			<ti>AGPGART</ti>
+			<ti>
+			El soporte de AGPGART en el kernel es automáticamente activado por defecto por el módulo de nvidia. Es
+			altamente recomendable usar versiones del kernel iguales o siguientes al 2.2.18.</ti>
+		</tr>
+		</table>
+		<p>Para activar el soporte de NVAGP, ha de compilar el módulo de nVidia con:</p>
+		<pre>$ <i>make clean</i>
+$ <i>make nvidia BUILD_PARAMS=NOAGPGART</i>
+# <i>make install</i></pre>
+		<impo><p>Cambios en la versión 0.9-6:</p>
+		<p>
+		A partir de esta versión, el driver cargará el driver AGP automáticamente cuando inicien las X.
+		Cual de los drivers será cargado lo controla la opción NvAgp de la sección <e>Screen</e> (archivo 
+		<path>XF86Config</path>):</p></impo>
+		<pre>Option "<i>NvAgp</i>" "<i>0</i>"  <comment># desactiva el soporte de AGP</comment>
+Option "<i>NvAgp</i>" "<i>1</i>"  <comment># Para usar NVAGP</comment>
+Option "<i>NvAgp</i>" "<i>2</i>"  <comment># Para usar AGPGART</comment></pre>
+		<p>
+		Cerciórese de que no tiene otro driver AGP cargado (p.e. NVAGP) al cargar las X.
+		Algunas distribuciones cargan AGPGART por defecto. Las X acojen este caso, pero no podrá
+		cambiar el driver AGP al vuelo (Mirar más abajo).</p>
+		<p>
+		Considere que cambiar los drivers AGP o inhabilitarlos requiere generalmente un reinicio del 
+		sistema para que el cambio tenga efecto. Cargar diferentes drivers AGP sin reinciar puede causar
+		cuelgues e inestabilidad en el sistema.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Apertura del AGP</title>
+		<body>
+		<p>
+		Físicamente, esta es la cantidad de RAM que usted permite a su tg. gráfica usar
+		desde el interfaz AGP (para texturas, etc). Es recomendable usar no más de 1/2
+		de su memoria RAM, 32-64 Mb son valores razonables. No fije este valor a una 
+		cantidad igual o mayor a su RAM. AGPGART puede elegir esto por usted (fije esta
+		opción en la BIOS del ordenador).
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Escritura rápida AGP</title>
+		<body>
+		<p>
+		Significando incremento de rendimiento, esta opción suele colgar el sistema. En cualquier
+		caso, el rendimiento ganado no vale la pena, aunque puede fijar esta opción en la BIOS.</p>
+		<p>(Alternativamente, puede pasarle la opción <c>NVreg_EnableAGPFW=0</c> al driver de nvidia)</p>
+		</body>
+	</section>
+	<section>
+		<title>Velocidad del puerto AGP (1x, 2x, 4x)</title>
+		<body>
+		<p>
+		Con ésto controlamos el ancho de banda al que operará el puerto AGP. Mientras que
+		la mayoría de los chipsets actuales funcionan a 4x, esta velocidad causa cuelgues y
+		extraños comportamientos en algunos casos. No obstante el driver de nvidia reconoce
+		muchos de estas deficiencias y tiene métodos para solucionarlos. Los chipsets VIA están
+		forzados a 2x por defecto.
+		</p>
+		<p>
+		Puede cambiar la velocidad del AGP conu una opcion que se le pasa al driver de nvidia:
+		</p>
+           <pre># <i>modprobe nvidia NVreg_ReqAGPRate=0x2</i> <codenote>0x1 | 0x2 | 0x4</codenote></pre>
+		<p>
+       o con una opción en el archivo <path>modules.conf</path>:
+		</p>
+           <pre>alias char-major-195 NVdriver
+           options nvidia NVreg_ReqAGPRate=<i>0x2</i></pre>
+		<p>
+       (para usar la velocidad 4x en chipsets VIA, use <c>NVreg_EnableVia4x=1</c>)
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Soluciones para AGP &amp;&amp; AGPGART</title>
+		<body>
+		<p>
+		Como mencionamos en la sección anterior, el driver activa una serie de
+		soluciones (workarounds) para ciertos chipsets. desde la versión 0.9-5
+		del driver, estos "workarounds" son aplicados indistintamente a AGPGART 
+		y NVAGP. Si no quieres tenerlos activos con AGPGART (por la razón que 
+		sea), puede desactivarlos con la opción <c>NVreg_UpdateKernelAGP=0</c>
+		de nvidia.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>
+      IRQ / Asignando un  Interruptor a VGA
+		</title>
+		<body>
+		<p>
+		El driver de nVidia necesita un IRQ asignado al adaptador
+		gráfico para funcionar correctamente. Asegúrese de que tiene
+		activado la opción '<c>assign IRQ to vga</c>' option en la
+		BIOS.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>
+		Compilando nvidia</title>
+		<body><p>
+La compilación del módulo de nVidia para el kernel es siempre igual en la mayoría de los casos:
+		</p>
+<pre>$ make clean
+$ <i>make nvidia <codenote>opcionalmente BUILD_PARAMS=NOAGPGART, mirar más arriba</codenote></i>
+# <i>make install</i></pre>
+<p>
+Sin embargo hay situaciones en las que ésto no funcionará, con lo que tendrá que seleccionar
+entre AGPGART y NVAGP de la manera que se comentó en <uri link="#doc_chap2_sect2">AGPGART vs. NVAGP</uri>.
+</p>
+<p>
+El driver asume que Ud tiene las cabeceras del kernel (kernel headers) instaladas en <path>/usr/src/linux/include</path>.
+Si ésto no coincide con su configuración, puede usar la opción <c>SYSINCLUDE</c>:
+</p>
+<pre>$ <i>make clean</i>
+$ <i>make nvidia SYSINCLUDE=/where/ever/your/headers/are</i>
+# <i>make install</i></pre>
+		</body>
+	</section>
+	<section>
+		<title>
+		Archivos de carácter especial
+		</title>
+		<body><p>
+		El módulo del driver de nVidia para XFree86 se comunica con el módulo de nVidia para el kernel
+		através de un conjunto de archivos de carácter especial situados en el directorio <path>/dev</path>.
+		Si no esan creados o tienen permisos inapropiados, las X fallarán.
+		</p>
+		<pre>
+		crw-rw----    1 root     video    195,   0 Jan  4 23:19 /dev/nvidia0
+		crw-rw----    1 root     video    195,   1 Jan  4 23:19 /dev/nvidia1
+		crw-rw----    1 root     video    195,   2 Jan  4 23:19 /dev/nvidia2
+		crw-rw----    1 root     video    195,   3 Jan  4 23:19 /dev/nvidia3
+		crw-rw----    1 root     video    195, 255 Jan  4 23:19 /dev/nvidiactl
+		</pre>
+		<p>
+		Como se puede ver, elejí hacer accesibles los ficheros sólo para el usuario root
+		así como a los miembros del grupo <c>video</c>.  Sin embargo su elección puede
+		diferir de la mía. En cualquier caso, asegúrese seguro de que el usuario que Ud
+		usa para ejecutar las X tiene acceso a estos ficheros (de lectura y escritura).
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>devFS</title>
+		<body><p>
+		Desde la versión 2.3.?? del kernel, se introdujo un método alternativo de instalación,
+		con el sobrenombre de <c>devFS</c>. Aunque explicar el mecanismo en sí está
+		fuera del ámbito de este documento, quiero dejar claro que existe un parche de devFS para los drivers nvidia.
+		</p></body>
+	</section>
+	<section>
+		<title>procFS</title>
+		<body><p>
+		Desde la v. 0.9-6, el driver de nVidia provee información sobre su instalación en
+		<path>/proc/nv/card[0-3]</path>. Y existe un parche para activar esta función para la v.
+		0.9-5 del driver de nVidia.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>BIOS test</title>
+		<body><p>
+		El driver intenta hacer una test de arranque (Bios repost) a la BIOS de 
+		la(s) tarjeta(s) para saber que está en un estado conocido por nvidia.
+		Desafortunadamente,	esto puede causar problemas con algunas tarjetas. 
+		Puede desactivar esta característica con la siguiente opción:
+		</p>
+		<pre>
+           modprobe nvidia NVreg_SkipBiosPost=<i>1</i>
+		</pre>
+		</body>
+	</section>
+	<section>
+		<title>TNT SGRAM vs. SDRAM</title>
+		<body><p>
+		El driver detecta el tipo de memoria usada en tarjetas TNT leyendo su
+		BIOS embebida. Sin embargo, algunas tarjetas han sido flasheadas
+		con BIOS inapropiadas. Si cree que esto puede ser la causa de su problema,
+		debería intentar solucionarlo mediante el paso de la opción 
+		<c>NVreg_VideoMemoryTypeOverride</c> a nvidia (<c>SDRAM = 1, SGRAM = 2</c>).
+		Aun así esto no siempre funciona, mire en <path>os-registry.c</path> para obtener
+		más información.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Kernel 2.4.0</title>
+		<body><p>
+		Hubo algunos cambios desde el kenrel 2.2.x, y muchos de ellos afectaron al driver de nVidia.
+		Puede obtener parches para esta serie de kernels de <c>#nvidia</c>.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>	
+       "Ignoring changed section attributes for .modinfo"
+		</title>
+		<body><p>
+		Si le molesta que este mensaje aparezca, ha comentar la linea adeacuada en 
+		<path>/usr/src/linux/include/linux/modules.h</path> para que no salga más. Pero si no es el caso, sepa que el mensaje es
+		inofensivo para su sistema.
+		</p>
+		<p>La siguiente sección fue añadida por <mail link="edulix@iespana.es">Eduardo Robles Elvira</mail></p>
+		</body>
+	</section>
+	<section><!--New section aded by Eduardo RE-->
+		<title>	
+       ¿NVdriver o nvidia?
+		</title>
+		<body><p>
+		En las versiones más actuales del driver de nVidia, éste ha cambiado su nombre de NVdriver
+		a nvidia, y esto puede causar problemas, por ejemplo, si ha tenido otra versión del driver
+		instalada anteriormente, el sistema puede intentar cargar el driver antiguo. Puede
+		pasar por varias razones y tener así distintas soluciones:
+		
+		 (1) No cambió de NVdriver a <c>nvidia</c> en el fichero <path>/etc/modules.autoload</path>.
+		 Éste es mi <c>modules.autoload</c>:</p>
+		 
+		 <pre>
+        # Copyright 1999-2002 Gentoo Technologies, Inc.
+		# Distributed under the terms of the GNU General Public License, v2 or later
+		# $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/Attic/nvidia_tsg.xml,v 1.1 2003/03/13 22:10:06 bass Exp $
+		# /etc/modules.autoload:  kernel modules to load when system boots.
+		#
+		# Add the names of modules that you'd like to load when the system
+		# starts into this file, one per line.  Comments begin with # and
+		# are ignored.  Read man modules.autoload for additional details.
+		# For example:
+		# 3c59x
+		#NVdriver
+		<i>nvidia</i>
+		hid
+		mousedev
+		ide-scsi
+		scanner
+		</pre>
+		<p>
+		(2) Ha de editar /etc/modules.d/aliases o /etc/modules/nvidia
+		
+		El fichero <i>Aliases</i> le dice a insmod/modprobe que módulos usar.
+		El fichero <i>nvidia</i> tiene el mismo uso que el anterior, pero
+		especial y únicamente para el driver de nVidia. Puede que sólo este 
+		último esté mal configurado, y como es el último en cargar, es el que
+		relamente dice que módulo se ha de usar para el driver de nVidia. Inclusive puede
+		que tenga copias del fichero <i>nvidia</i> (nvidia~, nvidia.save),
+		restos de instalaciones anteriores. Estos ficheros los puede eliminar tranquilamente, 
+		o al menos comentarlos (poniendo # delante de cada línea).
+		Finalmente, la línea que ha de tener en los ficheros aliases y/o nvidia, es:
+		<pre>
+		alias char-major-195 <i>nvidia.o</i>
+		</pre>
+		 
+		</p>
+		</body>
+	</section>
+</chapter>
+<chapter>
+	<title>XFree86 / OpenGL</title>
+	<section>
+		<title>Introducción</title>
+		<body><p>
+		Antes de empezar a describir algunos de los problemas más comunes
+		con esta parte del driver, quiero explicar algunas cosas que se 
+		suelen malentender y suelen confundir a mucha gente:
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Arquitectura de nVidia vs. DRI y DRM</title>
+		<body><p>
+		Los drivers de nVidia  dejaron de usar DRI (Direct Rendering Interface)
+		desde XFree86 4.0.0. En vez de DRI, nVidia implementó su propio sistema.
+		Las dos arquitecturas son muy similares: cuando se ejecutan localmente, 
+		las dos usan un gestor de recursos a nivel del núcleo, lo que significa 
+		que la representación de OpenGL de alto rendimiento puede ser alcanzada,
+		permitiendo a OpenGL comunicarse directamente con el hardware en vez de 
+		usar GLX.
+		</p></body>
+	</section>
+	<section>
+		<title>Implementación OpenGL por nVidia vs. Mesa</title>
+		<body><p>
+		El driver de nVidia viene, como dijimos, con su propia implementación
+		de OpenGL, y no usa Mesa, que es lo que trae XFree86. Las librerías 
+		OpenGL de nVidia están basadas en la versión de SGI de OpenGL 1.2, y
+		traen consigo un conjunto de extensiones que permiten usar funciones
+		avanzadas, tales como compresión de texturas S2TC.
+		</p></body>
+	</section>
+	<section>
+		<title>Módulo XFree86 del driver de nVidia vs. XFree86's</title>
+		<body><p>
+		El módulo del driver <c>nv</c> que trae XFree86 no tiene nada en común con
+		el módulo 'nvidia' que provee nVidia. No se vale de un módulo del núcleo 
+		para funcionar, no requiere un IRQ y 'sólo' permite operaciones en
+		2D. Desde la v. 4.0.2 de XFree86 funciona con todos las tarjetas gráficas de nVidia, 
+		incluyendo tarjetas Geforce 2. Si tiene instalada una distribución con
+		XFree86 4.0.x, es probable que tenga este driver instalado. Es una buena idea
+		que pruebe sus X con el módulo del driver <c>nv</c>.
+		</p>
+    		<p>
+			Ahora si que listaré algunos de los problemas más comunes que pueda
+			encontrar con los drivers de nVidia. Muchos de ellos están también
+			dentro de la documentación oficial incluida con el driver de nVidia,
+			pero como parece que nadie lo lee, los listaré de todas formas.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>libglx.a / libGLcore.a / libGL.so.1.2.303... (Mesa)</title>
+		<body><p>
+		Mi favorita... como mencioné anteriormente, los drivers de nVidia no
+		hacen uso de las librerías Mesa que vienen con con XFree86. Por ello,
+		éstas tienen conflictos con los drivers.
+		</p>
+       <warn><e>Ésta</e> es la fuente de la mayoría de los errores</warn>
+		<p>
+		Si  su distribución instaló y configuró las X por usted, seguramente tendrá
+		una sección <i>Module</i> en su <path>XF86Config</path> tal que así:
+		</p>
+<pre>Section "<i>Module</i>"
+	...
+	Load  "<i>glx</i>"
+	Load  "<i>GLcore</i>"
+	...
+EndSection</pre>
+	<p>
+       Estas son las dos sentencias a las que tiene que prestar más atención:
+	</p>
+		</body>
+	</section>
+	<section>
+		<title>Load "glx"</title>
+		<body><p>
+		Esto indica a las X que cargue el módulo de extensión GLX. Por defecto, en XFree86,
+		esto se traduce en <path>libglx.a</path>. El driver de nVidia provee su propia
+		extensión GLX, <path>libglx.so</path>. Aquí es donde empieza la parte más divertida:
+		si no elimina el fichero <path>libglx.a</path>, las X seguirán cargando
+		<path>libglx.a</path>, fichero que no funciona con el driver de nVidia.
+		</p>
+          <impo>Elimine o cambie el nombre a <path>libglx.a</path> (<path>/usr/X11R6/lib/modules/extensions</path>)</impo>
+	</body></section>
+	<section>
+		<title>Load "GLcore"</title>
+		<body><p>
+          Además de que no le conviene tener activada esta línea, no hay mucho más
+		  que decir. La librería libGLcore.so que provee nVidia será cargada
+		  dinámicamente - No cargue esto como una extensión para las X, por que no
+		  funcionará.
+		</p>
+		<p>
+		Puede encontrar fácilmente si está cargando <path>libglx.a</path> y/o
+          libGLcore.a mirando <path>/var/log/XFree86.0.log</path>:
+		</p>
+<pre>...
+(II) LoadModule: "glx"
+(II) Loading /usr/X11R6/lib/modules/extensions/libglx.a
+(II) Module glx: vendor="The XFree86 Project"
+	compiled for 4.0.1, module version = 1.0.0
+	ABI class: XFree86 Server Extension, version 0.1
+(II) Loading extension GLX
+(II) Loading sub module "GLcore"
+(II) LoadModule: "GLcore"
+(II) Reloading /usr/X11R6/lib/modules/extensions/libGLcore.a
+...</pre>
+		<p>
+          Lo que debería de ver en este fichero, en vez de lo anterior, 
+		  sería algo parecido a:
+		</p>
+<pre>...
+(II) LoadModule: "glx"
+(II) Loading /usr/X11R6.4/lib/modules/extensions/libglx.so
+(II) Module glx: vendor="NVIDIA Corporation"
+	compiled for 4.0.1, module version = 1.0.5
+	Module class: XFree86 Server Extension
+	ABI class: XFree86 Server Extension, version 0.1
+(II) Loading extension GLX
+...</pre>
+    		<p>
+			La última parte de Mesa que puede causar problemas es la versión actual de
+			la librería OpenGL, llamada<path>libGL.so.1.2.303</path>... o similar.
+			Dependiendo de donde esté instalado Mesa, puede crear conflictos con la
+			librería homóloga de nVidia.  La mayoría de los juegos cargan <path>libGL.so</path>
+			dinámicamente - La cargan cuando se inicia el juego, y la recargan al
+			cargar un escenario o al aplicar una nueva configuración de vídeo. A menudo
+			los juegos cargan la libGL.so apropiada al inicio, pero después cargan la de Mesa.
+		</p>
+		<p>
+		Algunos sintomas del conflicto con Mesa (tanto librerías como extensiones) son
+		cuelgues con Segmentation Faults (Signal 11), o instantáneamente después de
+		cargar las X, o al intentar ejecutar una aplicación que use OpenGL. Otro
+		indicador del conflicto puede ser un rendimiento pésimo (1-5 fps), sucede
+		cuando se usa el software Mesa de rendering.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>nv_drv.o vs. nvidia_drv.o</title>
+		<body><p>
+		Otro problema bastante común: Tras una instalación "por defecto". El módulo del 
+		driver de XFree86 <c>nv</c> será cargado. Ud necesita cargar <c>nvidia</c>.
+		Estese seguro de que en la seccion <i>Device</i> de <path>XF86Config</path> aparezca algo como:
+		</p>
+<pre>Section "<i>Device</i>"
+	Identifier  "<i>nVidia GeForce 256 DDR</i>"
+	Driver      "<i>nvidia</i>"
+EndSection</pre>
+		</body>
+	</section>
+	<section>
+		<title>
+    Las X se cierran instantáneamente dando "Signal 11"
+		</title>
+		<body><p>
+       Mire si en el fichero de alertas <path>/var/log/XFree86.0.log</path> aparece algo parecido a:
+		</p>
+		<pre>
+       (WW) module ABI minor version (2) is newer than the server's version (1)
+		</pre>
+		<p>
+		Suele pasar cuando se intenta correr el driver de nVidia 0.9-5 o versiones 
+		siguientes con XFree86 4.0.0, o el driver 0.9-4 o anteriores con XFree 4.0.1
+		o versiones superiores. Recomiendo actualizar las a X 4.0.2+, y a el
+		último driver de nVidia.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>
+    Las X se cierran por algo relacionado con DMA
+		</title>
+		<body><p>
+		Probablemente, usted usa un kernel inapropiado. Use 2.2.18+ o 2.4.0+.
+		</p>
+	</body></section>
+	<section>
+		<title>
+    El monitor aparece en negro cuando se inician las X
+		</title>
+		<body><p>
+		Puede haber varias razones:
+       <ul>
+		<li><p>
+		Especificó algún modo inapropiada. Elimine cualquier 
+		modo que pueda haber en la sección <c>Monitor</c> o corríjalo.
+		</p>
+</li>
+		<li>
+       <p>Las modos pasados al monitor son correctos, pero  el driver no es visible para ellos:
+	   intente insertando las siguientes opciones en la sección <c>Screen</c>:</p>
+<pre>Option      "<i>IgnoreEdid</i>"       "<i>1</i>"
+Option      "<i>GenerateRTList</i>"   "<i>0</i>"</pre>
+		</li>
+	</ul>
+	</p>	</body>
+	</section>
+	<section>
+		<title>X &amp;&amp; MTRRs</title>
+		<body><p>
+		Si quiere soporte para MTRRs (¡lo quiere!), debería de activarlo en
+		el kernel para que el driver pueda usar MTRRs. El soporte para MTRRs incrementará
+		en gran medida el rendimiento de su tarjeta gráfica.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>X elimina los modos de pantalla deseados (hsync out of range)</title>
+		<body><p>
+		Resulta que las X deciden que su monitor no es capaz de usar de
+		forma seguro el modo que usted le indicó. Asegúrese de que los
+		valores que especificó para <c>HorizSync</c> y <c>VertRefresh</c> coiniciden con
+		los soportados por su monitor (puede consultarlo en el manual de su
+		monitor). Si no hay ningún valor especificado, las X usarán valores
+		algo bajos pero más seguros.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>Las X se ralentizan y luego dan un error sobre una opción de polaridad</title>
+		<body><p>
+		Suele ocurrir cuando se pasa al modo consola - Normalmente es
+		inofensivo. Si no sabe que errores dan las X y desea librarse
+		de los mensajes de error, use la siguiente opción en la
+		sección <c>Screen</c>:
+		</p>
+           <pre>Option      "<i>OverridePolarity</i>" "<i>1</i>"</pre>
+		<p>
+		Esto también debería aumentar la velocidad de cambio al modo
+		consola.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>DDC</title>
+		<body><p>
+		Si, XFree86 4.0.x+ soporta DDC - Puede activar su soporte cargando el módulo apropiado:
+		</p>
+           <pre>Load "<i>ddc</i>"</pre>
+		<p>
+		Note que sólo funciona si tanto su tarjeta de vídeo como su monitor
+		soportan DDC. No use modos específicos con esta opción.
+		</p>
+		</body>
+	</section>
+	<section>
+		<title>
+		El juego XY no abarca toda la pantalla en modo pantalla completa
+		</title>
+		<body><p>
+		Esto es sin duda un problema de configuración. Deben de cumplirse
+		dos requisitos para ser capaz de cambiar de resolución usando la
+		extension <c>Vidmode</c> de las X:
+		</p>
+		<p>
+		Necesita añadir la siguiente línea a la sección <c>Module</c> del
+		archivo XF86Config:
+		</p>
+           <pre>Load "<i>extmod</i>"    <comment># o, de manera alternativa, una subsección llamada <e>extmod</e></comment></pre>
+		<p>
+		Debe de tener definidos todos los modos de pantalla que quiera usar para cada
+		profundidad de color que vaya a usar (8, 16, 24..) en la subsección <c>Display</c>
+		de la sección <c>Screen</c>, p.e.:
+		</p>
+<pre>Subsection "<i>Display</i>"
+	Depth  <i>24</i>
+	Modes  "<i>1152x864</i>" "<i>1024x768</i>" "<i>800x600</i>" "<i>640x480</i>"
+EndSubsection</pre>
+		</body>
+	</section>
+	<section>
+	<title>
+	Las X van a 16bpp, porque aunque queremos 32 esa profundidad de color no funciona
+	</title>
+		<body><p>
+		24/32bpp en X 4.x se han renombrado a profundidad 24. Esto está controlado por
+		dos opciones de la sección <c>Screen</c>:
+		</p><pre>
+           DefaultDepth <i>24</i>
+           DefaultFbBpp <i>32</i>
+		</pre>
+		<p>
+		Y, otra vez, asegúrese de que tiene una subsección <c>Display</c> correctamente
+		configurada.
+		</p></body>
+	</section>
+	<section>
+		<title>La rueda del ratón no funciona</title>
+		<body><p>
+		Aunque no tenga que ver con nvidia, es tan preguntado que lo he de incluir aquí.
+		Ha de cambiar el protocolo a IMPS/2 y mapear el botón 4th y 5th al eje Z. Ésta es,
+		por ejemplo, mi configuración:
+		</p><pre>
+           Section "<i>InputDevice</i>"
+             Identifier  "<i>Mouse</i>"
+             Driver      "<i>mouse</i>"
+             Option      "<i>Device</i>"  "<i>/dev/mouse</i>"
+             Option      "<i>Protocol</i>"    "<i>IMPS/2</i>"
+             Option      "<i>ZAxisMapping</i>"   "<i>4 5</i>"
+           EndSection
+		</pre><p>
+		Estoy usando un ratón USB, <path>/dev/mouse</path>, que en mi caso es un enlace 
+		simbólico a <path>/dev/input/mice</path>.</p>
+		</body>
+	</section>
+	<section>
+		<title> El ratón va FATAL en los juegos (Quake III, FPS XY)</title>
+		<body><p>
+		Resulta que muchos juegos usan el modo ratón DGA como dispositivo de entrada.
+		Es similar al DirectMouse de Windows. Todas la versiones de XFree86 anteriores
+		a la v. 4.0.2 tenían una dirección algo "quebrada" del ratón con DGA 1. Si
+		quiere tener un rendimiento del ratón decente actualizese a una versión igual o
+		posterior de XFree86 4.0.2.
+</p>
+		<p>
+		Ahora necesita cargar la extensión DGA. Muchísimas herramientas de configuración
+		automática desactivan esta opción por defecto. Debe añadir:
+</p>
+           <pre>Load "<i>extmod</i>"</pre>
+		<p>
+		En vez de una subsección si quiere estar seguro de que DGA se carga.
+		Tras esto, debe de activar DGA en el mismo juego. En Quake III se
+		activa con:
+		</p>
+           <pre>seta in_dgamouse "<i>1</i>"</pre>
+		<p>
+       En el archivo de configuración de Quake III (<path>~/.q3a/baseq3/q3config.cfg</path>).
+		</p>
+		<note>
+		La v. 4.0.2 de XFree86 introdujo DGA 2, que al parecer funciona
+		aun mejor. Aunque Quake III no lo soporta aun, puede que
+		haga delicias en los juegos de Loki, pues usan SDL compilado
+		con el soporte de DGA 2.
+		</note>
+		</body>
+	</section>
+	<section>
+		<title>La aplicación XY no encuentra GLUT o GLU (glut.h / glu.h)</title>
+		<body>
+       <p>
+	   GLUT es una herramienta para hacer ventanas que permite a los
+	   programadores una forma sencilla de hacer ventanas en contextos
+	   OpenGL, y permite manejar algunos eventos básicos (por que OpenGL
+	   no sabe nada de esto). No se distribuye como parte del driver de
+	   nVidia. Por su parte, GLU es una útil librería que se asienta en OpenGL.
+	   Tampoco se incluye en el driver de nVidia.
+	</p>
+	<p>
+		Tanto GLUT como GLU se pueden obtener de la página del proyecto
+		Mesa y están disponibles como paquetes paquetes de su distribución
+		de Linux. 
+	</p>
+	<p>Las siguientes secciones fueron añadidas por <mail link="mthome@bbn.com">Michael Thome</mail></p>
+	<ul><li>
+      <p>
+	  No utilice el driver nvidia <c>FBdev</c> para el kernel, pues entra
+	  en conflicto con los drivers propietarios de nVidia y puede
+	  causar todo tipo de problemas indeseados (cuelgues, problemas
+	  de visualización, etc)</p>
+	</li>
+	<li>
+      <p>
+	  Los drivers de código cerrado Aureal, parece que no vienen con los
+	  drivers binarios de nVidia y con algunas configuraciones, posiblemente
+	  debido a conflictos IRQ.</p>
+	<warn>
+			Parece que el compartir IRQ es un problema con el driver de nVidia.
+			A mi me fue imposible hacer que una tarjeta Fast Ethernet (RTL8139)
+			trabajase junto con con el driver bajo IRQ compartido. Si tiene
+			problemas con el hardware, por no funcionar correctamente, o 
+			simplemente no funcionar, deberá comprobar con minuciosidad que no está
+			compartiendo el IRQ de su tarjeta gráfica con otro dispositivo.
+	</warn>
+	</li>
+	</ul>
+	</body></section>
+<section><title>A 100dpi
+</title><body><p>
+		Al contrario que el driver de xFree86, el módulo de nVidia no
+		usa DDC para calcular la resolución de la la pantalla (dpi).
+		Yo necesito añadir el código siguiente a la sección "Monitor"
+		para ir a 100dpi:
+</p>
+<pre>Section "<i>Monitor</i>"
+	Identifier   "<i>Monitor0</i>"
+	VendorName   "<i>Dell</i>"
+	ModelName    "<i>Monitor Model</i>"
+	HorizSync    <i>30.0-107.0</i>
+	VertRefresh  <i>48.0-160.0</i>
+	<comment># Para 100dpi</comment>
+	DisplaySize  <i>406 304</i>
+EndSection</pre>
+<p>
+		Los parámetros son la anchura y altura del monitor en milímetros. Elegí estos valores
+		para ir a 100x100dpi a una resolución de 1600x1200.
+</p>
+</body></section></chapter>
+<chapter>
+	<title>Recursos</title>
+	<section>
+		<title>
+    Mi <path>/etc/X11/XF86Config</path> [0.9-6], para aquellos que estén interesados en él:
+</title><body>
+<pre>    Section "<i>Module</i>"
+      Load  "<i>bitmap</i>"
+      Load  "<i>dbe</i>"
+      Load  "<i>extmod</i>"
+      Load  "<i>freetype</i>"
+      Load  "<i>glx</i>"
+      Load  "<i>type1</i>"
+      Load  "<i>v4l</i>"
+    EndSection
+    Section "<i>Files</i>"
+      RgbPath   "<i>/usr/X11R6.4/lib/X11/rgb</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/misc/</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/75dpi/:unscaled</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/100dpi/:unscaled</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/75dpi/</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/100dpi/</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/TrueType/</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/local/</i>"
+      FontPath  "<i>/usr/X11R6.4/lib/X11/fonts/Type1/</i>"
+    EndSection
+    Section "<i>ServerFlags</i>"
+      Option  "<i>SuspendTime</i>"  "<i>0</i>"
+      Option  "<i>StandbyTime</i>"  "<i>0</i>"
+      Option  "<i>BlankTime</i>"    "<i>0</i>"
+      Option  "<i>OffTime</i>"      "<i>0</i>"
+    EndSection
+    Section "<i>InputDevice</i>"
+      Identifier  "<i>Keyboard</i>"
+      Driver      "<i>Keyboard</i>"
+      Option      "<i>XkbRules</i>"  "<i>xfree86</i>"
+      Option      "<i>XkbModel</i>"    "<i>pc102</i>"
+      Option      "<i>XkbLayout</i>"      "<i>us</i>"
+    EndSection
+    Section "<i>InputDevice</i>"
+      Identifier  "<i>Mouse</i>"
+      Driver      "<i>mouse</i>"
+      Option      "<i>Device</i>"  "<i>/dev/mouse</i>"
+      Option      "<i>Protocol</i>"    "<i>IMPS/2</i>"
+      Option      "<i>ZAxisMapping</i>"   "<i>4 5</i>"
+      Option      "<i>Buttons</i>"          "<i>5</i>"
+    EndSection
+    Section "<i>Monitor</i>"
+      Identifier  "<i>Vision Master Pro 17</i>"
+      HorizSync    <i>27.0-92.0</i>
+      VertRefresh  <i>50-160</i>
+      Mode "<i>1152x864</i>"
+        DotClock <i>137.65</i>
+        HTimings <i>1152 1184 1312 1536</i>
+        VTimings  <i>864  866  882  902</i>
+        Flags    "<i>-HSync</i>" "<i>-VSync</i>"
+      EndMode
+      Mode "<i>1024x768</i>"
+        DotClock <i>115.50</i>
+        HTimings <i>1024 1056 1248 1440</i>
+        VTimings  <i>768  771  781  802</i>
+        Flags    "<i>-HSync</i>" "<i>-VSync</i>"
+      EndMode
+      Mode "<i>800x600</i>"
+        DotClock <i>69.65</i>
+        HTimings <i>800 864 928 1088</i>
+        VTimings <i>600 604 610  640</i>
+        Flags    "<i>-HSync</i>" "<i>-VSync</i>"
+      EndMode
+      Mode "<i>640x480</i>"
+        DotClock <i>45.80</i>
+        HTimings <i>640 672 768 864</i>
+        VTimings <i>480 488 494 530</i>
+        Flags    "<i>-HSync</i>" "<i>-VSync</i>"
+      EndMode
+    EndSection
+    Section "<i>Device</i>"
+      Identifier  "<i>nVidia GeForce 256 DDR</i>"
+      Driver      "<i>nvidia</i>"
+    EndSection
+    Section "<i>Screen</i>"
+      Identifier  "<i>Screen</i>"
+      Device      "<i>nVidia GeForce 256 DDR</i>"
+      Monitor     "<i>Vision Master Pro 17</i>"
+      Option      "<i>NvAgp</i>" "<i>2</i>"
+      DefaultDepth <i>24</i>
+      DefaultFbBpp <i>32</i>
+      Subsection "<i>Display</i>"
+        Depth  <i>16</i>
+        Modes  "<i>1152x864</i>" "<i>1024x768</i>" "<i>800x600</i>" "<i>640x480</i>"
+      EndSubsection
+      Subsection "<i>Display</i>"
+        Depth  <i>24</i>
+        Modes  "<i>1152x864</i>" "<i>1024x768</i>" "<i>800x600</i>" "<i>640x480</i>"
+      EndSubsection
+    EndSection
+    Section "<i>ServerLayout</i>"
+      Identifier   "<i>Chronos</i>"
+      Screen       "<i>Screen</i>"
+      InputDevice  "<i>Keyboard</i>" "<i>CoreKeyboard</i>"
+      InputDevice  "<i>Mouse</i>"  "<i>CorePointer</i>"
+    EndSection</pre>
+</body>
+</section>
+<section>
+<title>Mi host.def</title>
+<body><p>
+	Para aquellos que compilan las X por si mismos, éste es mi <path>host.def</path>
+	con el que me  libero de algunas cosas que no se necesitarán y que añade algo de
+	optimización para PPro (cópielo a <path>xc/config/cf</path>):
+</p>
+<pre>    #define DefaultCCOptions     <i>-O3 -march=i686 -Wall -ansi -pedantic</i>
+    #define DefaultGcc2i386Opt   <i>-O3 -march=i686 -fno-strength-reduce</i>
+    #define LibraryCDebugFlags   <i>-O3 -march=i686 -fno-strength-reduce</i>
+    #define DefaultCDebugFlags   <i>-O3 -march=i686 -fno-strength-reduce</i>
+    #define OptimizedCDebugFlags <i>-O3 -march=i686 -fno-strength-reduce</i>
+    #define Freetype2Dir      <i>/usr/local</i>
+    #define ProjectRoot     <i>/usr/X11R6.4</i>
+    #define XF86CardDrivers       <i>nv v4l</i>
+    #define XInputDrivers          <i>mouse</i>
+    #define BuildServersOnly          <i>NO</i>
+    #define BuildXF86DRI              <i>NO</i>
+    #define XnestServer               <i>NO</i>
+    #define XprtServer                <i>NO</i>
+    #define XVirtualFramebufferServer <i>NO</i>
+    #define BuildFontServer           <i>NO</i>
+    #define BuildXinerama             <i>NO</i>
+    #define BuildXF86RushExt          <i>NO</i>
+    #define BuildPexExt               <i>NO</i>
+    #define BuildGlxExt               <i>NO</i>
+    #define LinuxFBDevSupport         <i>NO</i>
+    #define XF1Bpp                    <i>NO</i>
+    #define XF4Bpp                    <i>NO</i>
+    #define BuildXTrueType            <i>NO</i>
+    #define BuildSpeedo               <i>NO</i>
+    #define BuildCID                  <i>NO</i>
+    #define BuildCyrillicFonts        <i>NO</i>
+    #define BuildSpeedoFonts          <i>NO</i>
+    #define BuildCIDFonts             <i>NO</i>
+    #define MakeLocalFontDir          <i>NO</i></pre>
+</body>
+</section>
+</chapter></guide>
