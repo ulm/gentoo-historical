@@ -574,7 +574,14 @@ of your sale will go towards further Gentoo Linux development.</p>
 <!--figure without a caption; just a graphical element-->
 <xsl:template match="fig">
 	<center>
-	<img src="{@link}" alt="{@short}"/>
+	<xsl:choose>
+		<xsl:when test="@linkto">
+			<a href="{@linkto}"><img src="{@link}" alt="{@short}"/>
+		</xsl:when>
+		<xsl:otherwise>
+			<img src="{@link}" alt="{@short}"/>
+		</xsl:otherwise>
+	</xsl:choose>
 	</center>
 </xsl:template>
 
