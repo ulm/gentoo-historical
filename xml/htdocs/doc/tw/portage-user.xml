@@ -1,0 +1,318 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/tw/portage-user.xml">
+<title>Portage 使用者指南</title>
+<author title="Chief Architect"><mail link="drobbins@gentoo.org">Daniel Robbins</mail></author>
+<author title="Editor"><mail link="thomasfl@gentoo.org">Thomas Flavel</mail></author>
+<author title="Editor"><mail link="zhen@gentoo.org">John P. Davis</mail></author>
+<author title="Editor"><mail link="carl@gentoo.org">Carl Anderson</mail></author>
+<author title="Editor"><mail link="peesh@gentoo.org">Jorge Paulo</mail></author>
+<author title="Editor"><mail link="swift@gentoo.org">Sven Vermeulen</mail></author>
+<author title="Translator"><mail link="ricklan0224@hotmail.com">Rick Lan</mail></author>
+<author title="Reviewer"><mail link="bennyc@gentoo.org">Benny Chuang</mail></author>
+<!-- Current Version: 1.3, Date: 21/05/2003  -->
+<abstract>這篇文章將簡單地指導您如何保養您的系統以及如何將您系統上的套件更新至最新版本。</abstract>
+
+<version>1.3</version>
+<date>21 May 2003</date>
+
+<chapter>
+<title>開始</title>
+
+<section>
+<title>更新 Portage 至最新版本</title>
+<body>
+
+<p>在您安裝完 Gentoo Linux 並到處摸索後，您可能會發現許多套件可能會有臭蟲或一些問題，或者
+您想要安裝/更新最新的套件。如果這是您想要的，您將需要下載我們的 Portage tree。我們提供許多
+可以暱名登入的 rsync 伺服器，讓你可以下載我們最新的 Portage tree。以下是使用的方法。</p>
+
+<p>使用下面的指令來同步您的 Portage tree：</p>
+
+<pre caption = "更新 Portage tree 至最新狀態">
+# <c>emerge sync</c>
+</pre>
+
+<p>請注意：<c>emerge sync</c> 這個指令將自動使用 <i>--clean</i> 參數，這將會刪除任何您自行
+修正/加入到 <path>/usr/portage tree</path> 的資料，如果您想要保留您自已的 ebuilds，請使用
+<i>PORTDIR_OVERLAY</i> 功能。
+</p>
+
+<pre caption = "使用 PORTDIR_OVERLAY">
+<comment>將下面這行碼加至 <path>/etc/make.conf</path></comment>
+PORTDIR_OVERLAY="/dir/where/your/ebuilds/are"
+</pre>
+
+<p>如果您開始修改許多 ebuilds、修正臭蟲…等，您可以考慮成為 Gentoo Linux 發展團隊
+的一分子。請與 <mail link = "drobbins@gentoo.org">Daniel Robbins</mail> 或
+<mail link = "seemant@gentoo.org">Seemant Kulleen</mail> 聯絡來取得更多的資訊。
+</p>
+
+</body>
+</section>
+
+<section>
+<title>更新 Portage</title>
+<body>
+<p>在您使用我們的 Portage tree之前，請記得先利用下面的指令更新您的 Portage：
+</p>
+
+<pre caption = "更新 Portage">
+<comment>這將會告訴您那些套件會被更新</comment>
+# <c>emerge -up system </c>
+<comment>這將會更新必要的套件</comment>
+# <c>emerge -u system </c>
+</pre>
+
+<p>現在您有了最新版本的 portage，您可以開始使用我們的 ebuild 系統來更新您安裝過的軟體。</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title><c>emerge</c> 介紹</title>
+<section>
+<title><c>emerge --pretend</c></title>
+<body> 
+
+<p>
+在安裝之前，先檢視那些依存套件會預先安裝、那些套件會被更新等等是個不錯主意。
+<c>emerge --pretend</c> 或 <c>emerge -p</c> 便可以幫您這個忙。
+</p>
+
+<pre caption = "使用 emerge -p">
+# <c>emerge -p xchat</c>
+
+These are the packages that I would emerge, in order.
+
+Calculating dependencies......... done!
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>在上面這個例子中, 我們試著在沒有安裝 X 套件的系統上 emerge <i>xchat</i>。
+因此，<c>emerge --pretend</c> 會找出要滿足安裝 xchat 所有的依存套件，依照類
+別，除了 <path>sys-libs/zlib</path> 和 <path>dev-libs/glib</path> 需要更新外，
+接下來的所有 ebuilds (當然還包括 <path>x11-base/xfree</path>) 需要被 emerge。
+</p>
+
+</body>
+</section>
+<section>
+<title>USE 以及 <c>emerge</c></title>
+<body>
+<p>
+在上面，我在一個 <c>USE</c> 變數(<path>/etc/make.conf</path>) 裡面沒有
+定義 <c>gnome</c> 的系統上執行了 <c>emerge --pretend</c>指令。這代表依照
+目前的狀況，程式對 GNOME 額外的支援將不會被開啟。然而，<path>xchat</path> 
+對 GNOME <e>有</e>額外的支援，就讓我們看看將 <c>gnome</c> 加到 <path>/etc/make.conf</path>
+裡的 <c>USE</c> 環境變數後，<c>emerge --pretend</c> 會有什麼不同：
+</p>
+
+<pre caption = "使用 emerge 加上 USE 變數">
+# <c>emerge -p xchat</c>
+
+These are the packages that I would emerge, in order.
+
+Calculating dependencies............................ done!
+[ebuild N  ] media-libs/jpeg-6b-r2 to /
+[ebuild N  ] gnome-base/libghttp-1.0.9 to /
+[ebuild N  ] media-libs/audiofile-0.2.1 to /
+[ebuild N  ] media-sound/esound-0.2.22-r2 to /
+[ebuild N  ] gnome-base/gnome-env-1.0 to /
+[ebuild N  ] gnome-base/libxml-1.8.11 to /
+[ebuild N  ] gnome-base/ORBit-0.5.8 to /
+[ebuild N  ] gnome-base/oaf-0.6.5 to /
+[ebuild   U] dev-libs/glib-1.2.10 to /
+[ebuild N  ] net-libs/libwww-5.3.2-r1 to /
+[ebuild N  ] media-libs/giflib-4.1.0-r3 to /
+[ebuild N  ] dev-util/guile-1.4-r3 to /
+[ebuild   U] sys-libs/zlib-1.1.3-r2 to /
+[ebuild N  ] x11-base/xfree-4.0.3-r3 to /
+[ebuild N  ] x11-libs/gtk+-1.2.10-r1 to /
+[ebuild N  ] media-libs/tiff-3.5.6_beta to /
+[ebuild N  ] media-libs/imlib-1.9.10 to /
+[ebuild N  ] gnome-base/gnome-libs-1.2.13 to /
+[ebuild N  ] gnome-base/glibwww-0.2-r1 to /
+[ebuild N  ] gnome-base/gdk-pixbuf-0.11.0 to /
+[ebuild N  ] gnome-base/gconf-1.0.0 to /
+[ebuild N  ] gnome-base/gnome-vfs-1.0.1 to /
+[ebuild N  ] gnome-base/control-center-1.4.0.1 to /
+[ebuild N  ] gnome-base/scrollkeeper-0.2 to /
+[ebuild N  ] dev-util/xml-i18n-tools-0.8.1 to /
+[ebuild N  ] gnome-base/libglade-0.16-r1 to /
+[ebuild N  ] gnome-base/gnome-core-1.4.0.4 to /
+[ebuild N  ] net-irc/xchat-1.4.3 to /
+</pre>
+
+<p>如您所看到, 將 <c>gnome</c> 加入至 <c>USE</c> 後，emerge 識別出 xchat
+應該包含其他 GNOME 套件的支援。當然，若是要讓這些其它的 GNONE 正確的編譯
+和執行，GNOME 本身必須先安裝。<c>emerge</c> 評估出所有編譯 GNOME 需要的套
+件並加入它們至 emerge 時用的 ebuild 列表。若是您的 <c>USE</c> 變數沒有設置
+正確，<c>emerge</c> 將會意外地加入或排除程式額外的支援。這就是為什麼我建議您
+在使用 <c>emerge</c> 時先使用 <c>emerge --pretend</c>，特別是對新的或
+不熟悉的 ebuilds。當看起來沒問題後，您便可以開始實際的使用 <c>emerge</c> 指令
+(不需要加入 --pretend 參數)：
+</p>
+
+<pre caption = "Emerging xchat">
+# <c>emerge xchat</c>
+</pre>
+
+<p>當所有的依存套件被 emerge 後 (如果它們需要；並非所有的套件有依存問題)，
+系統將會開始下載 xchat 的原始碼 (至 <path>/usr/portage/distfiles</path>)，
+經檢測、解壓縮、編譯然後再安裝到一個稱做 sandbox 的暫存目錄裡。然後它們
+才會被 emerge 至本地端的檔案系統，並於 <path>/var/db/pkg/net-irc/xchat-1.4.3/CONTENTS</path>
+建立一個含有安裝檔案以及它們的 md5sum 值的套件資料庫裡。
+</p>
+
+<p>
+如果您想查看什麼 USE 變數可以使用在什麼套件裡，或是您的系統上已經使用了那些
+USE 變數，加入 <c>-v</c> 或 <c>--verbose</c> 參數到 <c>emerge -p</c>：
+</p>
+
+<pre caption = "使用 emerge 加上 --verbose 參數">
+# <i>emerge -pv gentoo-sources</i>
+
+These are the packages that I would merge, in order:
+
+Calculating dependencies ...done!
+[ebuild    U ] sys-kernel/gentoo-sources-2.4.20-r5 -build +crypt -evms2 
+-aavm -usagi 
+</pre>
+
+</body>
+</section>
+<section>
+<title>找出版本差異</title>
+<body>
+
+<p>
+如果您想找出包裝的版本、您目前安裝的版本、與 Portage 上的版本之間的不同，
+請加入 <c>--changelog</c> 或 <c>-l</c> 參數：
+</p>
+
+<pre caption = "翻閱更新記錄 (ChangeLog)">
+# <i>emerge -pl mozilla</i>
+
+These are the packages that I would merge, in order:
+
+Calculating dependencies ...done!
+[ebuild    U ] net-www/mozilla-1.3-r1 [1.2.1-r5] 
+
+*mozilla-1.3-r1
+
+  22 Mar 2003; Martin Schlemmer &lt;azarah@gentoo.org&gt; mozilla-1.3-r1.ebuild :
+  Add Gtk2 patch.  Add default/prefs/xft.js when Xft is enabled.  Some other
+  long overdue cleanups.
+
+*mozilla-1.3
+
+  21 Mar 2003; Jay Kwak &lt;jayskwak@gentoo.org&gt; mozilla-1.3.ebuild :
+  Add XIM input patch for GTK
+             
+  18 Mar 2003; Martin Schlemmer &lt;azarah@gentoo.org&gt; mozilla-1.3.ebuild :
+  New version.
+
+  13 Mar 2003; Olivier Reisch &lt;doctomoe@gentoo.org&gt; mozilla-1.2.1-r5.ebuild :
+  Marked ppc stable
+
+*mozilla-1.3_beta
+
+  23 Feb 2003; Martin Schlemmer &lt;azarah@gentoo.org&gt; mozilla-1.3_beta.ebuild :
+  New version.
+
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>更新套件</title>
+<section>
+<body>
+
+<p>更新至 Portage 裡的套件的標準方法是使用 <c>emerge --update</c> 或 <c>emerge -u</c>。
+</p>
+
+<pre caption = "使用 emerge -u">
+# <c>emerge -u xchat</c>
+</pre>
+
+<p>
+Portage 使用一個稱作 “安全” unmerge；它只會將原先的檔案取消連結 (unlink)。如果
+原始檔案被覆寫或是被更改，連結仍會被留在檔案系統裡 (推斷您已經安裝了該包裝的新版)。
+所以，如果您 emerge 新版本的 xchat 之後再 unmerge 舊的版本，xchat 的執行檔將不會
+從檔案系統中刪除，因為它有了一個比較新的時間標記(timestamp) 以及不同的 md5sum。
+安全 unmerge 可以確認該程式的某些版本隨時都可以使用。如果您事先 unmerge，則 xchat
+將在新的版本完成下載、編譯、安裝、以及 emerge 之前，這段時間內將無法使用。
+</p>
+
+<impo> Portage 現在多了一個叫作“設定檔保護”的功能。這個功能的目定是用來防止當
+安裝新的套件時，自動改寫已存在系統裡的設定檔。依照預設值，/etc 以及 KDE 的設定目錄
+會啟動設定檔保護功能；將來會有更多的目錄加入。請輸入
+<c>emerge --help config</c> 來查看更多的資訊。</impo>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>控制 Portage 的行為</title>
+<section>
+<body>
+
+<p>
+如果您想要更改 Portage 的行為，您應該編輯 <path>/etc/make.conf</path>。
+它包含了讓您改變 Portage 行為的變數(或變數值的範例)。
+譬如，如果您要變更 Portage 下載原始碼的方式，您應該自行定義 <c>FETCHCOMMAND</c>。
+</p>
+
+<p>
+<path>/etc/make.conf</path> 包含了許多變數值的設定範例，這將可以讓您了解
+如何的去設置它們。您應該翻閱一下 <path>make.conf</path> 的 manpage
+(<c>man make.conf</c>)，如果您想要更深入了解 Portage，請閱讀
+<uri link="/doc/en/portage-manual.xml">Portage 手冊</uri>
+</p>
+
+<p>
+如果您需要特別安裝某個包裝而變更變數的話，您可以將之設定成環境變數而不需
+要再次的修改 <path>/etc/make.conf</path>，譬如 <c>AUTOCLEAN="no" emerge kde</c>
+指的是只有在 <c>emerge kde</c> 時會取消自動清除 (autocleaning) 的動作。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>什麼是 masked 的套件？</title>
+<section>
+<body>
+<p>
+許多人好奇為什麼在執行 <c>emerge -u world</c> 時，一些新發表的包裝不會被
+包含。 xfree-4.3.0 是一個很好的例子 (在寫這篇文件時的版本)。如果您在執行
+<c>emerge sync</c> 後馬上執行 <c>emerge -u world</c>，您將不會在更新列表
+中看到 xfree。為什麼？
+</p>
+<p>
+理由是某此包裝記成 “masked” -- 所以，除非您採取特別的行動。否則包裝
+將不會自動更新或是安裝。為了說明如何啟動安裝 masked 的套件，我們建議您
+翻閱在我們 <uri link="http://forums.gentoo.org/">Gentoo 討論版</uri>裡
+的 <uri link="http://forums.gentoo.org/viewtopic.php?t=33534">Masked Packages
+FAQ</uri> 這篇文章。
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
