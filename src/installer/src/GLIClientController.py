@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.19 2004/11/14 02:39:43 agaffney Exp $
+$Id: GLIClientController.py,v 1.20 2004/11/14 03:02:48 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -27,10 +27,8 @@ class GLIClientController(Thread):
 			configuration = GLIClientConfiguration.ClientConfiguration()
 			configuration.parse('/etc/gli.conf')
 
-		self._install_profile = install_profile
-		self._configuration = configuration
-		self._verbose = self._configuration.get_verbose()
-		self._logger = GLILogger.Logger(self._configuration.get_log_file())
+		self.set_install_profile(install_profile)
+		self.set_configuration(configuration)
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
 		self._install_steps = []
@@ -44,6 +42,9 @@ class GLIClientController(Thread):
 
 	def set_configuration(self, configuration):
 		self._configuration = configuration
+		if self._configuration != None:
+			self._verbose = self._configuration.get_verbose()
+			self._logger = GLILogger.Logger(self._configuration.get_log_file())
 
 	def get_configuration(self):
 		return self._configuration

@@ -17,8 +17,11 @@ import pprint
 d = dialog.Dialog()
 client_profile = GLIClientConfiguration.ClientConfiguration()
 install_profile = GLIInstallProfile.InstallProfile()
+cc = GLIClientController.ClientController()
 waiting_for_install = False
 gauge_progress = 0
+exception_waiting = None
+next_step_waiting = False
 
 DLG_OK = 0
 DLG_YES = 0
@@ -34,20 +37,25 @@ def dmenu_list_to_choices(list):
 	for i in range(0, len(list)):
 		choices.append((str(i + 1), list[i]))
 
-#	pp = pprint.PrettyPrinter(indent=4)
-#	pp.pprint(choices)
-#	sys.exit()
-
 	return choices
 
 def signal_handler(signum, frame):
 	global gauge_progress
 	global waiting_for_install
-	gauge_progress += 10
-	d.gauge_update(gauge_progress, text="Install progress:", update_text=1)
-	if gauge_progress >= 100:
-		waiting_for_install = False
-		d.gauge_stop()
+	global exception_waiting
+	global next_step_waiting
+
+	while 1:
+		notification = cc.getNotification()
+		if notification == None: break
+		if notification.get_type() == "exception":
+			exception_waiting = notification.get_data()
+
+#	gauge_progress += 10
+#	d.gauge_update(gauge_progress, text="Install progress:", update_text=1)
+#	if gauge_progress >= 100:
+#		waiting_for_install = False
+#		d.gauge_stop()
 
 def run(cmd):
 	output_string = commands.getoutput(cmd)
