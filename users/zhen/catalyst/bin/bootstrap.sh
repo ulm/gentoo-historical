@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License, v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/Attic/hardened-bootstrap.sh,v 1.1 2003/09/10 15:05:37 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/bootstrap.sh,v 1.3 2003/09/15 04:30:31 zhen Exp $
 
 # IMPORTANT NOTE:
 # This script no longer accepts an optional argument.
