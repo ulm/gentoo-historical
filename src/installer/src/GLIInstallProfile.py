@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.28 2005/01/07 07:02:47 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.29 2005/01/19 06:17:03 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -296,7 +296,8 @@ class InstallProfile:
 				elif attrName == 'homedir':
 					homedir = str(attr[attrName])
 				elif attrName == 'uid':
-					uid = int(attr[attrName])
+					if attr[attrName]:
+						uid = int(attr[attrName])
 				elif attrName == 'comment':
 					comment = str(attr[attrName])
 
@@ -338,7 +339,8 @@ class InstallProfile:
 
 		if users != None:
 			for user in users:
-				self.add_user(user)
+				#self.add_user(user)  not sure what someone was doing here.  remove later if not needed
+				self._users.append(user)
 
 	def get_root_pass_hash(self):
 		"returns root_pass_hash"

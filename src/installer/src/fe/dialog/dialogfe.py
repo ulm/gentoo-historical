@@ -395,7 +395,7 @@ def set_additional_users():
 				if newuser == user[0]:
 					d.msgbox("A user with that name already exists")
 					continue
-			new_user = (newuser, '', ('users'), '/bin/bash', '/home' + newuser, '', '')
+			new_user = [newuser, '', ('users'), '/bin/bash', '/home' + newuser, '', '']
 			users.append(new_user)
 			menuitem = newuser
 		while 1:
@@ -415,7 +415,17 @@ def set_additional_users():
 					if user[0] == menuitem: user[1] = crypt.crypt(passwd1, get_random_salt())
 					continue
 			elif menuitem2 == "Group Membership":
-				d.msgbox("Groups")
+				code, groups = d.inputbox("Enter a space-separated list of groups the user is to be in")
+				if code != DLG_OK: continue
+				newgroups = []
+				groups = string.split(groups)
+				for group in groups:
+					new_groups.append(group)
+				for user in users:
+					if user[0] == menuitem:
+						user[2] = new_groups
+				continue
+				
 			elif menuitem2 == "Shell":
 				d.msgbox("Shell")
 			elif menuitem2 == "Home Directory":

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.17 2005/01/19 02:48:29 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.18 2005/01/19 06:17:03 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -434,5 +434,5 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for partition in parts[device]:
 				if (parts[device][partition]['type'] == "vfat") or (parts[device][partition]['type'] == "ntfs"):
 					newliloconf += "other="+device+str(parts[device][partition]['minor'])+"\n"
-					newliloconf += "label=Possible Windows Partition"+str(parts[device][partition]['minor'])+"\n\n"
+					newliloconf += "label=Windows_P"+str(parts[device][partition]['minor'])+"\n\n"
 		return newliloconf
