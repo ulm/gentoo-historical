@@ -13,7 +13,7 @@ class PartProperties(gtk.Window):
 		self.end = end
 		if minor == -1:
 			self.min_size = 0
-			self.max_size = end - start + 1
+			self.max_size = end - start
 		else:
 			self.min_size = min_size
 			self.max_size = max_size
@@ -135,8 +135,8 @@ class PartProperties(gtk.Window):
 		if self.minor == -1:
 			hpaned_width = self.resize_hpaned.get_allocation().width
 			hpaned_pos = hpaned_width - 5
-			if self.max_size > self.end:
-				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
+#			if self.max_size > self.end:
+#				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
 			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s, start = %s, end = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos), str(self.start), str(self.end))
 			self.info_partition.set_text(self.device + " (unallocated)")
@@ -194,7 +194,7 @@ class PartProperties(gtk.Window):
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
 #			start = self.active_part_start_cyl
-			end = int(self.start + part_size + 1) # - 1
+			end = int(self.start + part_size) # - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				free_start, free_end = self.controller.devices[self.device].get_free_space(self.start)
 				self.controller.devices[self.device].add_partition(self.controller.devices[self.device].get_free_minor_at(self.start, end), free_start, free_end, "extended")
