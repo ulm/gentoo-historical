@@ -21,8 +21,8 @@ kernels and kernel modules.
 
 <license/>
 
-<version>1.0</version>
-<date>March 14, 2004</date>
+<version>1.1</version>
+<date>March 26, 2004</date>
 
 <chapter>
 <title>Overview</title>
@@ -86,6 +86,36 @@ At any later time you can revert this decision by using config-kernel again.
 </section>
 </chapter>
 <chapter>
+<title>Advantages</title>
+<section>
+<body>
+
+<p>
+You may be asking yourself, "Why should I bother?" The problem that inspired
+this functionality was in fact an issue with kernel module ebuilds like
+nvidia-kernel or hostap-driver. These ebuilds  need to use the kernel build
+system to compile, however building them would require updating files in
+<path>/usr/src/linux</path>, and fail because of sandbox violations.
+</p>
+
+<note>
+Gentoo's <b>sandbox</b> is system that prevents portage from writing to the live
+filesystem until the final merge step of the package installation.
+</note>
+
+<p>
+Several dependant steps can be taken to resolve this issue. In short, kernel
+builds must output all of their files to a different location when they are
+compiled, and later external module compiles must <b>also</b> do this, only they
+output to some subdirectory of the temporary build location. By letting the
+modules output their built files into the permitted build location, those nasty
+sandbox errors are prevented.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
 <title>Enabling koutput</title>
 <section>
 <body>
@@ -117,7 +147,7 @@ that get installed by portage will output their files to.
 </p>
 
 <pre caption="Prepare environment with config-kernel">
-# <i>config-kernel --output-dir=/home/joe/kernels</i>
+# <i>config-kernel --output-dir /home/joe/kernels</i>
 </pre>
 
 <p>
@@ -128,7 +158,7 @@ version. To set the output path to the Gentoo default, which is
 </p>
 
 <pre caption="Prepare environment with config-kernel">
-# <i>config-kernel --output-dir=default</i>
+# <i>config-kernel --output-dir default</i>
 </pre>
 
 <p>
@@ -138,13 +168,13 @@ to be erased, since <i>make mrproper</i> must be run during this process.
 </p>
 
 <pre caption="Converting a current kernel">
-# <i>config-kernel --make-koutput=/usr/src/linux-2.6.3</i>
+# <i>config-kernel --make-koutput /usr/src/linux-2.6.3</i>
 </pre>
 
 <p>
 The above command converts the kernel found in <path>/usr/src/linux-2.6.3</path>
 to outputting to a different directory. If the output directory has been set
-previously with <c>--output-dir=foo</c>, then that prefix will be used.
+previously with <c>--output-dir /some/path</c>, then that prefix will be used.
 Otherwise, the Gentoo default of <path>/var/tmp/kernel-output/KV</path> will be
 used.
 </p>
@@ -181,6 +211,56 @@ table assumes a 2.6.4 kernel outputting to the Gentoo default of
   <ti>/var/tmp/kernel-output/2.6.4/arch/i386/boot/bzImage</ti>
 </tr>
 </table>
+
+<p>
+This change of location is important. Two processes are largely affected by this
+new file location, copy a kernel config into the proper location when updating
+kernel sources, and copying a newly compiled bzImage into <path>/boot</path>. In
+particular, when copying your .config, it's important to remember that you need
+to copy it from the kernel output location of the original into the kernel
+output location of the new kernel. To demonstrate how a kernel upgrade would be
+performed using koutput, an example upgrade from vanilla-sources-2.6.4 to
+vanilla-sources-2.6.5 is depicted:
+</p>
+
+<note>
+Here, we assume the output prefix is set to <path>/var/tmp/kernel-output</path>
+and that both kernel sources are already installed
+</note>
+
+<pre caption="Kernel Upgrade with koutput">
+# <i>cp /var/tmp/kernel-output/2.6.4/.config /var/tmp/kernel-output/2.6.5/</i>
+<comment>Copy our .config into the new output directory</comment>
+# <i>config-kernel --set-symlink 2.6.5</i>
+# <i>cd /usr/src/linux</i>
+<comment>Move into our new source tree</comment>
+# <i>make oldconfig</i>
+# <i>make &amp;&amp; make modules_install</i>
+<comment>Compile our new kernel and modules</comment>
+# <i>mount /boot</i>
+# <i>cp /var/tmp/kernel-output/2.6.5/arch/i386/boot/bzImage /boot/</i>
+# <i>umount /boot</i>
+<comment>Install the new kernel image</comment>
+</pre>
+
+<p>
+For kernel modules building against kernels using the new system, nothing more
+should be required beyond emerging the desired kernel module package as usual.
+At the time of this writing, there are still some kernel modules being converted
+over to the new setup, or still in testing phase. If the stable version of a
+kernel module fails, try installing the <b>~arch</b> version first:
+</p>
+
+<pre>
+# <i>ACCEPT_KEYWORDS='~x86' emerge foo</i>
+<comment>The above command installs the testing version of the foo package</comment>
+</pre>
+
+<p>
+If this still fails, please open a bug at <uri
+link="http://bugs.gentoo.org">http://bugs.gentoo.org</uri>, and the kernel
+module ebuild will be updated to the new system as soon as possible.
+</p>
 
 </body>
 </section>
