@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2002 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.14 2005/01/26 21:35:29 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.15 2005/01/28 16:43:28 wolf31o2 Exp $
 
 echo "0" > /proc/sys/kernel/printk
 DHCP="yes"
@@ -34,7 +34,7 @@ for x in ${CMDLINE} ; do
 		ACPI="no"
 	fi
 
-	if [ "${x}" = "acpi=on" ]; then
+	if [ "${x}" = "acpi=on" -o "${x}" = "acpi=force"]; then
 		APM="no"
 		ACPI="yes"
 	fi
@@ -62,19 +62,19 @@ start() {
 
 	if [ "${APM}" = "yes" ]; then
 		insmod apm power_off=1 >/dev/null 2>&1 && ebegin ${GOOD}"APM BIOS found, power management functions enabled.${NORMAL}"
-		/etc/init.d/apmd start
+		[ -x /etc/init.d/apmd ] && /etc/init.d/apmd start
 	else
 		ebegin ${GOOD}"Not Loading APM Bios support.${NORMAL}"
 		eend
 	fi
 
-	if [ "${ACPI}" = "yes" ]; then
+	if [ "${ACPI}" = "yes" -o "${ACPI}" = "force" ]; then
 		insmod processor >/dev/null 2>&1 && ebegin ${GOOD} ACPI power management functions enabled.${NORMAL} && insmod thermal >/dev/null
 		insmod fan >/dev/null 2>&1
 		insmod button >/dev/null 2>&1
 		insmod battery >/dev/null 2>&1
 		insmod ac >/dev/null 2>&1
-		/etc/init.d/acpid start
+		[ -x /etc/init.d/acpid ] && /etc/init.d/acpid start
 		eend
 	fi
 
@@ -109,7 +109,7 @@ start() {
 				echo "MOUSEDEV=${DEVICE}" >>/etc/conf.d/gpm
 			fi
 			if [ "$GPM" = "yes" ]; then
-				/etc/init.d/gpm start
+				[ -x /etc/init.d/gpm ] && /etc/init.d/gpm start
 			fi
 		eend
 	fi
@@ -119,7 +119,7 @@ start() {
 		if [ -x /etc/init.d/coldplug ]; then
 			/etc/init.d/coldplug start
 		else
-			/etc/init.d/hotplug start
+			[ -x /etc/init.d/hotplug ] && /etc/init.d/hotplug start
 		fi
 	else
 		ebegin ${BAD}"Hotplug disabled via cmdline${NORMAL}"
@@ -154,16 +154,32 @@ start() {
 		ebegin ${WARN}"              driver = ${SOUND_DRIVER}"${HILITE}
 		if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]; then
 			amixer scontrols > /etc/amixer
-			[ -n "`grep Master /etc/amixer`" ] && amixer -q set Master 75% \
-				&& amixer -q set Master unmute
-			[ -n "`grep PCM /etc/amixer`" ] && amixer -q set PCM 75% \
-				&& amixer -q set PCM unmute
-			[ -n "`grep Mic /etc/amixer`" ] && amixer -q set Mic 75% \
-				&& amixer -q set Mic cap
-			[ -n "`grep Wave /etc/amixer`" ] && amixer -q set Wave 75% \
-				&& amixer -q set Wave unmute
-			[ -n "`grep Capture /etc/amixer`" ] && amixer -q set Capture 75% \
-				&& amixer -q set Capture cap && amixer -q set Capture unmute
+			if [ -n "`grep Master /etc/amixer`" ]
+			then
+				amixer -q set Master 75% >/dev/null 2>&1
+				amixer -q set Master unmute >/dev/null 2>&1
+			fi
+			if [ -n "`grep PCM /etc/amixer`" ]
+			then
+				amixer -q set PCM 75% >/dev/null 2>&1
+				amixer -q set PCM unmute >/dev/null 2>&1
+			fi
+			if [ -n "`grep Mic /etc/amixer`" ]
+			then
+				amixer -q set Mic 75% >/dev/null 2>&1
+				amixer -q set Mic cap >/dev/null 2>&1
+			fi
+			if [ -n "`grep Wave /etc/amixer`" ]
+			then
+				amixer -q set Wave 75% >/dev/null 2>&1
+				amixer -q set Wave unmute >/dev/null 2>&1
+			fi
+			if [ -n "`grep Capture /etc/amixer`" ]
+			then
+				amixer -q set Capture 75% >/dev/null 2>&1
+				amixer -q set Capture cap >/dev/null 2>&1
+				amixer -q set Capture unmute >/dev/null 2>&1
+			fi
 		fi
 	fi
 
