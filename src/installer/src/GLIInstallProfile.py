@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.20 2004/12/04 08:33:47 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.21 2004/12/05 03:13:17 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -390,8 +390,8 @@ class InstallProfile:
 		if type(install_stage) != int:
 			if type(install_stage) == str:
 				install_stage = int(install_stage)
-		else:
-			raise "InstallStageError", "Must be an integer!"
+			else:
+				raise "InstallStageError", "Must be an integer!"
 		
 		# Check for stage bounds
 		if 0 < install_stage < 4:
