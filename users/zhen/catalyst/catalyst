@@ -1,11 +1,17 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.35 2003/10/13 00:14:41 zhen Exp $
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/catalyst,v 1.36 2003/10/13 01:34:38 drobbins Exp $
 
 VERSION="2.2"
 
 source /sbin/functions.sh
+if [ "`whoami`" != "root" ]
+then
+	eerror "$0: This script requires root privileges to operate."
+	exit 1
+fi
+	
 source include/functions.sh
 source include/build_functions.sh
 [ -e files/catalyst.conf ] && source files/catalyst.conf || die "Config file files/catalyst.conf not found."
@@ -34,15 +40,10 @@ MYPROFILEDIR="/usr/portage/profiles/${BUILDTYPE}-${MAINARCH}-${MAINVERSION}"
 
 #} #end umount
 	
-if [ "`whoami`" != "root" ]
-then
-	eerror "$0: This script requires root privileges to operate."
-	exit 1
-fi
-	
+
 if [ -z ${MYPROFILEDIR} ]
 then
-	eerror "!!! Profile missing! You must 'emerge sync'"
+	eerror "Profile missing."
 	exit 1
 fi
 
@@ -68,10 +69,8 @@ case "$1" in
 	;;
 
 	*)
-		# basically we try to remove $1 from $SUBARCHES
-        # then test if it did get removed or not
-        SUBARCHES_TEST="`echo ${SUBARCHES} | sed "s/\W${1}\>//g;s/^${1}\>//"`"
-        if [ ! "${SUBARCHES_TEST}" = "${SUBARCHES}" ]
+		include/catalyst-subarches $1
+		if [ $? -eq 0 ]
 		then
 			start_build $1 $2 $3 $4
 			exit 0
