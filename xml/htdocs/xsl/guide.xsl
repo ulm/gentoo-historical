@@ -906,12 +906,12 @@
 <xsl:param name="chid"/>
 <xsl:if test="title">
   <xsl:variable name="sectid">doc_chap<xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
+  <xsl:if test="@id">
+    <a name="{@id}"/>
+  </xsl:if>
   <p class="secthead">
     <a name="{$sectid}"><xsl:value-of select="title"/>&#160;</a>
   </p>
-</xsl:if>
-<xsl:if test="@id">
-  <a name="{@id}"/>
 </xsl:if>
 <xsl:apply-templates select="body">
   <xsl:with-param name="chid" select="$chid"/>
