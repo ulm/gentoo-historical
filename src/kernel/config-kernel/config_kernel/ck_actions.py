@@ -185,9 +185,11 @@ def makekoutput(path):
 	warn ("You will lose all of your compiled files in " + path)
 	warn ("Hit Control C to cancel this now.")
 	for count in range(5):
-		print red(5 - count),
+		i = (5-count)
+		print red(str(i)),
 		sys.stdout.flush()
 		sleep(1)
+	print ""
 
 	# Backup our config
 	info("Backing up your .config file")
@@ -213,8 +215,6 @@ def makekoutput(path):
 		copy(os.path.join(gettempdir(), ".config"),outputpath)
 		warn ("Restoring your .config to " + path)
 		sys.exit(2)
-	else:
-		ret.close()
 
 	os.mkdir(outputpath)
 	info("Copying your .config into " + outputpath)
@@ -246,7 +246,7 @@ def makekoutputGetDir(path):
 		warn ("/var/tmp/kernel-output/$KV")
 		outputdir = os.path.join("/", "var", "tmp", "kernel-output")
 
-	makeoutput = os.path.join(outputdir, "$(VERSION).$(SUBLEVEL).$(PATCHLEVEL)$(EXTRAVERSION)")
+	makeoutput = os.path.join(outputdir, "$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)")
 
 	kv, error = ExtractKernelVersion(path)
 
