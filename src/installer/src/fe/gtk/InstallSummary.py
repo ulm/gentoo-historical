@@ -28,10 +28,12 @@ If you click finish here, the installer will generate the xml profile.
 	self.treestore = gtk.TreeStore(str)
 	
         # we'll add some data now - 4 rows with 3 child rows each
-	for parent in range(5):
-	 piter = self.treestore.append(None, ['parent %i' % parent])
-	 for child in range(4):
-	  self.treestore.append(piter, ['child %i of parent %i' % (child, parent)])
+	#for parent in range(5):
+	# piter = self.treestore.append(None, ['parent %i' % parent])
+	# for child in range(4):
+	#  self.treestore.append(piter, ['child %i of parent %i' % (child, parent)])
+	for item in self.controller.menuItems:
+	    self.treestore.append(None, [item['text']])
 	self.treeview = gtk.TreeView(self.treestore)
 	self.tvcolumn = gtk.TreeViewColumn('Current Install Options')
 	self.treeview.append_column(self.tvcolumn)

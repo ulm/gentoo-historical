@@ -31,7 +31,10 @@ This is where you setup rc.conf.
 		"CLOCK","EDITOR","PROTOCOLS","DISPLAYMANAGER","XSESSION"]
 	
 	for option in options:
-	 new_box=widgets.textBox(26,option)
+	 #new_box=widgets.textBox(26,option)
+	 new_box=widgets.textBox2(self,26,option)
+	 new_box=widgets.labelIt(option,new_box)
+	 new_box=widgets.hBoxIt(new_box)
 	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
      
     	self.add_content(vert)
@@ -42,3 +45,11 @@ This is where you setup rc.conf.
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+    
+    def entrycallback(self,widget,data=None):
+	print data.get_text()
+	make_conf = self.controller.install_profile.get_rc_conf()
+	make_conf[widget.get_name()]=data.get_text()
+	print "Stored rc.conf"
+	print self.controller.install_profile.get_rc_conf()
+	self.controller.install_profile.set_rc_conf(make_conf)

@@ -1,6 +1,7 @@
 import gtk
 import GLIScreen
 from Widgets import Widgets
+from Storage import Storage
 
 class Panel(GLIScreen.GLIScreen):
     """
@@ -12,6 +13,8 @@ class Panel(GLIScreen.GLIScreen):
     # Attributes:
     title="Make.conf Settings"
     # Operations
+    # commands.getoutput("source /etc/make.conf; echo $VALUE_YOU_WANT")
+    # blah = GLIUtility.get_value_from_config(filename, value)
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)
 
@@ -30,9 +33,12 @@ This is where you setup make.conf.
 	makeoptions=["ACCEPT_KEYWORDS","CFLAGS","CHOST","MAKEOPTS","FEATURES","USE"]
 	
 	for makeoption in makeoptions:
-	 new_box=widgets.textBox(26,makeoption)
+	 #new_box=widgets.textBox(26,makeoption)
+	 new_box=widgets.textBox2(self,26,makeoption)
+	 new_box=widgets.labelIt(makeoption,new_box)
+	 new_box=widgets.hBoxIt(new_box)
 	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-     
+	
     	self.add_content(vert)
 
     def activate(self):
@@ -41,3 +47,12 @@ This is where you setup make.conf.
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	
+    def entrycallback(self,widget,data=None):
+	print data.get_text()
+	make_conf = self.controller.install_profile.get_make_conf()
+	make_conf[widget.get_name()]=data.get_text()
+	print "Stored make.conf"
+	print self.controller.install_profile.get_make_conf()
+	self.controller.install_profile.set_make_conf(make_conf)
+	

@@ -1,6 +1,7 @@
 import gtk
 import GLIScreen
 from Widgets import Widgets
+from Storage import Storage
 
 class Panel(GLIScreen.GLIScreen):
     """
@@ -32,13 +33,13 @@ This is where you select which kind of kernel you wish to have.
 	
 	i=0
 	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,options[0])
+	new_boxt=widgets.radioButton(None,self.callback,options[0],options[0])
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt(new_boxt) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for option in options:
+	for counter in range(len(options)):
 	 if i!=0: 
-	  new_box=widgets.radioButton(new_boxt,option)
+	  new_box=widgets.radioButton(new_boxt,self.callback,options[counter],options[counter])
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt(new_box)			  
@@ -48,8 +49,10 @@ This is where you select which kind of kernel you wish to have.
      
     	self.add_content(vert)
 
-#    def callback(self, widget, data=None):
-#      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+    def callback(self, widget, data=None):
+      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+      self.controller.install_profile.set_kernel_source_pkg(None, widget.get_name(), None)
+      print "current kernel: "+self.controller.install_profile.get_kernel_source_pkg()
 
     def activate(self):
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE

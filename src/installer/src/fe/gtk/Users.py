@@ -33,17 +33,17 @@ using your computer.
 	# instantiate widgets class
 	widgets=Widgets()
 	
-	options=["Add a user"]
+	#options=["Add a user"]
 	
-	for option in options:
-	 # define the elements
-	 new_label=gtk.Label(option)
-	 new_box=widgets.textBox2(self,26)
-	 new_button=widgets.normalButton("Add")
-	 # pack the "add a new entry box"
-	 packIt = widgets.hBoxThese(gtk.FALSE,0,[new_label,new_box,new_button])
-	 packItV = widgets.hBoxIt(packIt)
-	 vert.pack_start(packItV, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
+	#for option in options:
+	 ## define the elements
+	 #new_label=gtk.Label(option)
+	 #new_box=widgets.textBox2(self,26,option)
+	 #new_button=widgets.normalButton("Add")
+	 ## pack the "add a new entry box"
+	 #packIt = widgets.hBoxThese(gtk.FALSE,0,[new_label,new_box,new_button])
+	 #packItV = widgets.hBoxIt(packIt)
+	 #vert.pack_start(packItV, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
         
         # default user ( only user automatically added )
 	self.users = ["root"]
@@ -82,7 +82,7 @@ using your computer.
 	# attaches the stuff into the right frame of the table
 	i=0
 	for item in list:
-	 tb=widgets.textBox2(self,15)
+	 tb=widgets.textBox2(self,15,item)
 	 self.textBoxen.append(tb)
 	 table.attach(tb,1,2,i,i+1)
 	 i=i+1

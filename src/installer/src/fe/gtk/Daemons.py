@@ -4,7 +4,7 @@ from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
     """
-    The Timezone section of the installer.
+    The Daemons section of the installer.
     
     @author:    John N. Laliberte <allanonl@bu.edu>
     @license:   GPL
@@ -40,13 +40,13 @@ This is where you select what cron and logging daemons you want, if any.
 	
 	i=0
 	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,options[0])
+	new_boxt=widgets.radioButton(None,self.callback_cron,options[0],options[0])
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for option in options:
+	for counter in range(len(options)):
 	 if i!=0: 
-	  new_box=widgets.radioButton(new_boxt,option)
+	  new_box=widgets.radioButton(new_boxt,self.callback_cron,options[counter],options[counter])
           #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
           new_box.show()
 	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)			  
@@ -61,13 +61,13 @@ This is where you select what cron and logging daemons you want, if any.
 	# logging daemon
 	i=0
 	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,options[0])
+	new_boxt=widgets.radioButton(None,self.callback_logger,options[0],options[0])
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_boxt,10)
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for option in options:
+	for counter in range(len(options)):
 	 if i!=0:
-	  new_box=widgets.radioButton(new_boxt,option)
+	  new_box=widgets.radioButton(new_boxt,self.callback_logger,options[counter],options[counter])
 	  #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
 	  new_box.show()
 	  hBoxed=widgets.hBoxIt3(gtk.FALSE,5,new_box,10)
@@ -77,8 +77,16 @@ This is where you select what cron and logging daemons you want, if any.
 													      
     	self.add_content(vert)
 
-#    def callback(self, widget, data=None):
-#      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+    def callback_cron(self, widget, data=None):
+      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+      self.controller.install_profile.set_cron_daemon_pkg(None,widget.get_name(),None)
+      print "current cron: "+self.controller.install_profile.get_cron_daemon_pkg()
+      
+    def callback_logger(self, widget, data=None):
+      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+      self.controller.install_profile.set_logging_daemon_pkg(None,widget.get_name(),None)
+      print "current logger: "+self.controller.install_profile.get_logging_daemon_pkg()
+      
     def activate(self):
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE
 	self.controller.SHOW_BUTTON_HELP    = gtk.TRUE

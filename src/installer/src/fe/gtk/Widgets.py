@@ -11,6 +11,8 @@ class Widgets:
     
     fix textBox to not Hbox/Vbox automatically and use
     hBoxIt and vBoxIt.
+    
+    combine textbox methods.
 
     remove extraneous hBox methods
     """
@@ -46,12 +48,21 @@ class Widgets:
       return new_vbox
     
     # this is a temporary class to port over textBox
-    def textBox2(self,controller,length):
+    def textBox2(self,controller,length,name):
       new_entry=gtk.Entry(max=length)
+      new_entry.set_name(name)
       new_entry.connect("changed",controller.entrycallback,new_entry)
       new_entry.set_width_chars(length)
       return new_entry
-      
+    
+    # this is to call the specified callback in network frame
+    def textBox3(self,callback,length,name):
+      new_entry=gtk.Entry(max=length)
+      new_entry.set_name(name)
+      new_entry.connect("changed",callback,new_entry)
+      new_entry.set_width_chars(length)
+      return new_entry
+  
     # a method that can box an arbitrary number of things into an hbox
     def hBoxThese(self,homogenous,spacing,list):
      new_box=gtk.HBox(homogenous,spacing)
@@ -59,6 +70,13 @@ class Widgets:
       new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
      return new_box
      
+    # a method that can box an arbitrary number of things into an hbox
+    def vBoxThese(self,homogenous,spacing,list):
+     new_box=gtk.VBox(homogenous,spacing)
+     for item in list:
+      new_box.pack_start(item,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
+     return new_box
+ 
     # This makes a label on the left hand of any element
     def labelIt(self,label,object):
      new_label=gtk.Label(label)
@@ -69,32 +87,26 @@ class Widgets:
 
     # This creates the *first* radio button
     # o HEADING
-    def radioButton(self,group,heading):
+    def radioButton(self,group,callback,heading,name):
       new_vbox=self.newVbox()
       button = gtk.RadioButton(group, heading)
-      button.connect("toggled", self.callback, heading)
+      button.set_name(str(name))
+      button.connect("toggled", callback, heading)
       #button.set_active(gtk.TRUE)
       #new_vbox.pack_start(button, gtk.TRUE, gtk.TRUE, 0)
       button.show()
       #return new_vbox
       return button
     
-    # This is the callback for the radio buttons
-    def callback(self, widget, data=None):
-      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-    
-    # This is the callback for the dropdown menu
-    def callback2(self,widget,data=None):
-     print "%s was selected " % (data)
-    
     # This will create a regular button
-    def normalButton(self,heading):
-      button = gtk.Button(heading)
-      button.connect("clicked",self.callback,heading)
-      button.show()
-      return button
+    #def normalButton(self,heading):
+    #  button = gtk.Button(heading)
+    #  button.connect("clicked",self.callback,heading)
+    #  button.show()
+    #  return button
     
     #------Drop-down Menu-----#
+    # These methods are deprecated! fix!
     # This will create a menu
     def createOptionMenu(self):
      opt = gtk.OptionMenu()
@@ -140,6 +152,17 @@ class Widgets:
      return optionMenu
     #--------------------------#
     
+    # creates a combo entry box.
+    def createComboEntry(self,controller,name,list):
+        comboboxentry = gtk.combo_box_entry_new_text()
+        comboboxentry.set_name(name)
+        for item in list:
+            comboboxentry.append_text(item)
+        comboboxentry.child.connect('changed', controller.callback2)
+        #comboboxentry.connect('changed', controller.callback2)
+        #comboboxentry.set_active(0)
+        return comboboxentry
+        
     # This creates a table of any size
     def createTable(self,x,y,value):
      return gtk.Table(x,y,value)
@@ -165,3 +188,21 @@ class Widgets:
       new_vbox=gtk.VBox(gtk.TRUE,10)
       new_vbox.pack_start(whatToBox,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
       return new_vbox
+
+    def error_Box(self,header,string_display):
+          dialog = gtk.Dialog(header,
+                     None,
+                     gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                     (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+          
+          label=gtk.Label(string_display)
+          image=gtk.Image()
+          image.set_from_stock(gtk.STOCK_DIALOG_WARNING,gtk.ICON_SIZE_DIALOG)
+          table=gtk.Table(1,2,gtk.FALSE)
+          table.attach(image,0,1,0,1)
+          table.attach(label,1,2,0,1)
+          table.show()
+          dialog.vbox.add(table)
+          label.show()
+          image.show()
+          return dialog

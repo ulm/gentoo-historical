@@ -1,10 +1,11 @@
 import gtk
 import GLIScreen
+import GLIInstallProfile
 from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
     """
-    The make.conf section of the installer.
+    The stage selection section of the installer.
     
     @author:    John N. Laliberte <allanonl@bu.edu>
     @license:   GPL
@@ -31,14 +32,16 @@ This is where you select what kind of portage tree you will use.
 	
 	i=0
 	#new_vbox=gtk.
-	new_boxt=widgets.radioButton(None,options[0])
+	new_boxt=widgets.radioButton(None,self.callback,options[0],1)
 	new_boxt.set_active(gtk.TRUE)
 	hBoxed=widgets.hBoxIt(new_boxt) 
 	vert.pack_start(hBoxed,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
-	for option in options:
+	#for option in options:
+	for counter in range(len(options)):
+	 print counter
 	 if i!=0: 
-	  new_box=widgets.radioButton(new_boxt,option)
-          #new_vbox.pack_start(new_box, gtk.TRUE, gtk.TRUE, 0)
+	  new_box=widgets.radioButton(new_boxt,self.callback,options[counter],counter)
+	  print counter
           new_box.show()
 	  hBoxed=widgets.hBoxIt(new_box)			  
 	  vert.pack_start(hBoxed, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
@@ -53,8 +56,11 @@ This is where you select what kind of portage tree you will use.
 	 
 	self.add_content(vert)
 
-#    def callback(self, widget, data=None):
-#      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+    def callback(self, widget, data=None):
+      print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+      print widget.get_name()
+      self.controller.install_profile.set_install_stage(None,widget.get_name(),None)
+      print self.controller.install_profile.get_install_stage()
 
     def activate(self):
 	self.controller.SHOW_BUTTON_EXIT    = gtk.TRUE

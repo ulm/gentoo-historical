@@ -27,10 +27,12 @@ This is where you setup your root password
 
 	widgets=Widgets()
 	
-	makeoptions=["Root Password:","Root Password(confirm):"]
+	options=["Root Password:","Root Password(confirm):"]
 	
-	for makeoption in makeoptions:
-	 new_box=widgets.textBox(26,makeoption)
+	for option in options:
+	 new_box=widgets.textBox2(self,26,option)
+	 new_box=widgets.labelIt(option,new_box)
+	 new_box=widgets.hBoxIt(new_box)
 	 vert.pack_start(new_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
      
     	self.add_content(vert)
@@ -41,3 +43,12 @@ This is where you setup your root password
 	self.controller.SHOW_BUTTON_BACK    = gtk.TRUE
 	self.controller.SHOW_BUTTON_FORWARD = gtk.TRUE
 	self.controller.SHOW_BUTTON_FINISH  = gtk.FALSE
+	
+    def entrycallback(self,widget,data=None):
+	# This won't work.
+	print data.get_text()
+	#make_conf = self.controller.install_profile.get_root_pass_hash()
+	#make_conf[widget.get_name()]=data.get_text()
+	print "Stored root pass hash"
+	print self.controller.install_profile.get_root_pass_hash()
+	self.controller.install_profile.set_root_pass_hash(None, crypt.crypt(passwd1, get_random_salt()), None)

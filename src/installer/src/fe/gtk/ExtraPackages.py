@@ -11,6 +11,7 @@ class Panel(GLIScreen.GLIScreen):
     """
     # Attributes:
     title="Do you need any extra packages?"
+    # slocate, esearch, and dhcpcd
     # Operations
     def __init__(self, controller):
 	GLIScreen.GLIScreen.__init__(self, controller)

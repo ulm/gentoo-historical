@@ -1,5 +1,6 @@
 import gtk
 import GLIScreen
+import GLIUtility
 from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
@@ -34,9 +35,9 @@ This is where you select what timezone you are in.
 			      "GMT",
 			      "MoreToCome"
 			      ]
-	
+
 	# creates the drop-down
-	menu=widgets.createAndAppendOptionMenu(self,"Timezone",self.timezoneOptions)
+	menu=widgets.createAndAppendOptionMenu(self,"Timezone",GLIUtility.generate_timezones())
 	# packs the label and the option menu
 	packIt = widgets.hBoxThese(gtk.FALSE,0,[gtk.Label("Timezones"),menu])
 	packItV=widgets.hBoxIt(packIt)
