@@ -3,14 +3,16 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: SiteModuleBE.py,v 1.4 2004/09/30 03:09:36 hadfield Exp $
+# $Id: SiteModuleBE.py,v 1.5 2004/12/16 14:06:26 port001 Exp $
 #
+
+__modulename__ = "SiteModuleBE"
 
 import string
 
-import Template as TemplateHandler
 import Config
-import MySQL
+from MySQL import MySQL
+import Template as TemplateHandler
 
 class SiteModuleBE:
 
@@ -84,7 +86,7 @@ class SiteModuleBE:
 
             self.obj_attributes[key] = self.form.getvalue(key)
             #self.obj_attributes[key] = (
-            #    MySQL.ValidateArgs(Config.MySQL["user_table"],
+            #    MySQL.validate_args(Config.MySQL["user_table"],
             #                       {key: self.form.getvalue(key)}))
     
     def display(self):

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: GLSRBackend.py,v 1.6 2004/10/29 01:26:33 hadfield Exp $
+# $Id: GLSRBackend.py,v 1.7 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "GLSRBackend"
@@ -12,9 +12,11 @@ import string
 import operator
 import types
 
-import MySQL
 import Config
 import GLSRException
+from MySQL import MySQL
+
+MySQLHandler = MySQL()
 
 class GLSRBackend:
 
@@ -73,10 +75,10 @@ class GLSRBackend:
         if type(fields) != types.TupleType:
             return True
         
-        MySQL.Query("INSERT INTO %s%s SET " %
-                    (Config.MySQL["prefix"], self.tablename) +
-                    "%s%s%s" % (fields[0], fields[1], fields[2]),
-                    details.values() + encrypt.values(), fetch="none")
+        MySQLHandler.query("INSERT INTO %s%s SET " %
+                           (Config.MySQL["prefix"], self.tablename) +
+                           "%s%s%s" % (fields[0], fields[1], fields[2]),
+                           details.values() + encrypt.values(), fetch="none")
 
         # Get the id for the record that was just inserted
         cmp = string.join(map(lambda x: "%s_%s=%%s" % (self.tablename, x),
@@ -84,7 +86,7 @@ class GLSRBackend:
 
         if cmp != "":
             
-            results = MySQL.Query(
+            results = MySQLHandler.query(
                 "SELECT %s_id FROM %s%s " %
                 (self.tablename, Config.MySQL["prefix"], self.tablename) +
                 "WHERE %s" % cmp, details.values(), fetch="all")
@@ -101,11 +103,10 @@ class GLSRBackend:
         if not self.id:
             return False
         
-        MySQL.Query("DELETE FROM %s%s " %
-                    (Config.MySQL["prefix"], self.tablename) +
-                    "WHERE %s_id = " % self.tablename + "%s", self.id,
-                    fetch="none")
-
+        MySQLHandler.query("DELETE FROM %s%s " %
+                           (Config.MySQL["prefix"], self.tablename) +
+                           "WHERE %s_id = " % self.tablename + "%s", self.id,
+                           fetch="none")
 
     def Modify(self, details, keys = (), encrypt = {}):
         """ Modify the specified 'fields' if they were set in 'details' """
@@ -118,11 +119,10 @@ class GLSRBackend:
         if type(fields) != types.TupleType:
             return True
 
-        MySQL.Query("UPDATE %s%s SET " %
-                    (Config.MySQL["prefix"], self.tablename) +
-                    "%s%s%s" % (fields[0], fields[1], fields[2]),
-                    details.values() + encrypt.values(), fetch="none")
-
+        MySQLHandler.query("UPDATE %s%s SET " %
+                           (Config.MySQL["prefix"], self.tablename) +
+                           "%s%s%s" % (fields[0], fields[1], fields[2]),
+                           details.values() + encrypt.values(), fetch="none")
 
     def List(self, constraint = {}):
         """ Return all rows from self.tablename.
@@ -136,9 +136,9 @@ class GLSRBackend:
         if where_str != "":
             where_str = "WHERE %s" % where_str
 
-        return MySQL.Query("SELECT * FROM %s%s %s" %
-                           (Config.MySQL["prefix"], self.tablename,
-                            where_str), constraint.values(), fetch="all")
+        return MySQLHandler.query("SELECT * FROM %s%s %s" %
+                                  (Config.MySQL["prefix"], self.tablename,
+                                   where_str), constraint.values(), fetch="all")
 
     
     def GetDetails(self):
@@ -147,23 +147,21 @@ class GLSRBackend:
             return None
             #raise GLSRException("", "ID is not set")
         
-        return MySQL.Query("SELECT * FROM %s%s" %
-                           (Config.MySQL["prefix"], self.tablename) +
-                           " WHERE %s_id = " % self.tablename + "%s", self.id,
-                           fetch="one")
-
+        return MySQLHandler.query("SELECT * FROM %s%s" %
+                                  (Config.MySQL["prefix"], self.tablename) +
+                                  " WHERE %s_id = " % self.tablename + "%s", self.id,
+                                  fetch="one")
     
     def Exists(self, field, value):
         """ Tests if a record with the specified field values exists in
         the table. """
         
-        result = MySQL.Query("SELECT %s_%s FROM %s%s WHERE %s_%s = " %
-                             (self.tablename, field, Config.MySQL["prefix"],
-                              self.tablename, self.tablename, field) +
-                             "%s", value, fetch = "one")
+        result = MySQLHandler.query("SELECT %s_%s FROM %s%s WHERE %s_%s = " %
+                                    (self.tablename, field, Config.MySQL["prefix"],
+                                     self.tablename, self.tablename, field) +
+                                    "%s", value, fetch = "one")
 
         return (result != None)
-
 
     def SetID(self, id):
 

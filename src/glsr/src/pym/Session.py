@@ -3,14 +3,15 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.2 2004/07/24 19:03:28 hadfield Exp $
+# $Id: Session.py,v 1.3 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "Session"
 
-import MySQL
 import Config
+from MySQL import MySQL
 
+MySQLHandler = MySQL()
 
 class New:
 
@@ -27,9 +28,9 @@ class New:
         i = 0
         chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     
-        result = MySQL.Query("SELECT %s_id FROM %s " %
-                             (self.tablename, self.full_tablename),
-                             fetch="all")
+        result = MySQLHandler.query("SELECT %s_id FROM %s " %
+                                   (self.tablename, self.full_tablename),
+                                   fetch="all")
         ran = Random()
         
         while 1:
@@ -46,10 +47,10 @@ class New:
 
     def SessionIDExists(self, uid, sessid):
 
-        result = MySQL.Query("SELECT %s_id FROM %s WHERE %s_id = " %
-                             (self.tablename, self.full_tablename,
-                              self.tablename) +
-                             "%s", sessid.value, fetch="one")
+        result = MySQLHandler.query("SELECT %s_id FROM %s WHERE %s_id = " %
+                                   (self.tablename, self.full_tablename,
+                                    self.tablename) +
+                                   "%s", sessid.value, fetch="one")
 
         return result != None
 
@@ -92,12 +93,11 @@ class New:
 
     def DeleteSession(self, sessid):
     
-        MySQL.Query("DELETE FROM %s WHERE %s_id = " %
-                    (self.full_tablename, self.tablename) + "%s", sessid,
-                    fetch = "none")
+        MySQLHandler.query("DELETE FROM %s WHERE %s_id = " %
+                          (self.full_tablename, self.tablename) + "%s", sessid,
+                          fetch = "none")
 
         return True
-
     
     def ValidateCookie(self, HTTP_COOKIE):
         """ Checks that the COOKIE matches valid glsr cookie data """
@@ -157,16 +157,16 @@ class New:
     def ValidateSession(self, uid, sessid):
     
         # Delete all old sessions
-        MySQL.Query("DELETE FROM %s WHERE " % self.full_tablename +
-                    "(%s_user_id = %%s AND " % self.tablename +
-                    "%s_id != %%s) OR " % self.tablename +
-                    "%s_time < UNIX_TIMESTAMP() - %%s" % self.tablename,
-                    (uid, sessid, Config.SessionTimeOut),
-                    fetch = "none")
+        MySQLHandler.query("DELETE FROM %s WHERE " % self.full_tablename +
+                           "(%s_user_id = %%s AND " % self.tablename +
+                           "%s_id != %%s) OR " % self.tablename +
+                           "%s_time < UNIX_TIMESTAMP() - %%s" % self.tablename,
+                           (uid, sessid, Config.SessionTimeOut),
+                           fetch = "none")
         
-        result = MySQL.Query("SELECT * FROM %s WHERE %s_user_id = " %
-                             (self.full_tablename, self.tablename) + "%s", uid,
-                             fetch="one")
+        result = MySQLHandler.query("SELECT * FROM %s WHERE %s_user_id = " %
+                                    (self.full_tablename, self.tablename) + "%s", uid,
+                                    fetch="one")
 
         return result != None
 
@@ -176,25 +176,25 @@ class New:
         if self.ValidateSession(uid, sessid):
             self.UpdateTS(uid, sessid)
         else:
-            MySQL.Query("INSERT INTO %s (%s_id, %s_user_id, %s_time) " %
-                        (self.full_tablename, self.tablename, self.tablename,
-                         self.tablename) +
-                        "VALUES (%s, %s, UNIX_TIMESTAMP())", (sessid, uid),
-                        fetch="none")
+            MySQLHandler.query("INSERT INTO %s (%s_id, %s_user_id, %s_time) " %
+                               (self.full_tablename, self.tablename, self.tablename,
+                                self.tablename) +
+                               "VALUES (%s, %s, UNIX_TIMESTAMP())", (sessid, uid),
+                               fetch="none")
             
     def UpdateTS(self, uid, sessid):
         """ Update the sessions timestamp """
         
-        MySQL.Query("UPDATE %s SET %s_time = UNIX_TIMESTAMP() " %
-                    (self.full_tablename, self.tablename) +
-                    "WHERE %s_id = %%s AND %s_user_id = " %
-                    (self.tablename, self.tablename) +
-                    "%s", (sessid, uid), fetch="none")
+        MySQLHandler.query("UPDATE %s SET %s_time = UNIX_TIMESTAMP() " %
+                           (self.full_tablename, self.tablename) +
+                           "WHERE %s_id = %%s AND %s_user_id = " %
+                           (self.tablename, self.tablename) +
+                           "%s", (sessid, uid), fetch="none")
 
     def ListSessionsOnline(self, grace):
 
-        return MySQL.Query("SELECT %s_id, %s_user_id FROM %s " %
-                           (self.tablename, self.tablename,
-                            self.full_tablename) +
-                           "WHERE (UNIX_TIMESTAMP() - %s_time) <= " %
-                           self.tablename + "%s", grace, fetch="all")
+        return MySQLHandler.query("SELECT %s_id, %s_user_id FROM %s " %
+                                  (self.tablename, self.tablename,
+                                   self.full_tablename) +
+                                  "WHERE (UNIX_TIMESTAMP() - %s_time) <= " %
+                                  self.tablename + "%s", grace, fetch="all")

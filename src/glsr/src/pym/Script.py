@@ -4,7 +4,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Script.py,v 1.5 2004/12/15 00:31:42 hadfield Exp $
+# $Id: Script.py,v 1.6 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "Script"
@@ -13,10 +13,12 @@ import types
 import string
 from time import strftime, gmtime
 
-import MySQL
 import Config
 from Logging import err
+from MySQL import MySQL
 from GLSRBackend import GLSRBackend as Parent
+
+MySQLHandler = MySQL()
 
 class Script(Parent):
 
@@ -43,7 +45,7 @@ class Script(Parent):
     def RecentSub(self):
         """Returns the id of the most recent (i.e. current) subscript."""
         
-        results = MySQL.Query(
+        results = MySQLHandler.query(
             "SELECT subscript_id FROM glsr_subscript WHERE " +
             "subscript_parent_id = %s ORDER BY subscript_date DESC", self.id,
             fetch="one")
@@ -109,8 +111,8 @@ class Script(Parent):
         if qStr != "":
             qStr = "WHERE " + qStr
 
-        scripts = MySQL.Query("SELECT * FROM %s%s %s" %
-                              (Config.MySQL["prefix"], self.tablename, qStr))
+        scripts = MySQLHandler.query("SELECT * FROM %s%s %s" %
+                                    (Config.MySQL["prefix"], self.tablename, qStr))
 
         # FIXME: This won't work because submitter is not in the script table,
         # submitter_id is. Thus we can't obtain a partial match on the
@@ -139,13 +141,13 @@ class Script(Parent):
             
             if "most_recent" in Terms.keys():
                 
-                subscript = MySQL.Query(qStr + " ORDER BY version",
+                subscript = MySQLHandler.query(qStr + " ORDER BY version",
                                         fetch = "one")
                 found[i].update(subscript)
                 
             else:
                 
-                subscripts = MySQL.Query(qStr, fetch = "all")
+                subscripts = MySQLHandler.query(qStr, fetch = "all")
                 
                 for subscript in subscripts[1:]:
                     found.append(found[i])
@@ -186,8 +188,6 @@ class Script(Parent):
                 qStr = qStr + self.__mk_query_str(key, Terms)
         
         return qStr
-
-
 
 class SubScript(Parent):
 

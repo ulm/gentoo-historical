@@ -3,13 +3,12 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_User.py,v 1.2 2004/08/22 23:23:39 hadfield Exp $
+# $Id: Page_User.py,v 1.3 2004/12/16 14:06:26 port001 Exp $
 #
 
 MetaData = {"page" : ("user",), "params" : "form, uid"}
 
 import Config
-import MySQL
 from User import User
 from SiteModuleBE import SiteModuleBE as Parent
 

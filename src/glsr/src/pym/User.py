@@ -1,21 +1,20 @@
-#!/usr/bin/env python2
-#
 # Copyright 2004 Ian Leitch
 # Copyright 2004 Scott Hadfield
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: User.py,v 1.8 2004/12/15 00:31:42 hadfield Exp $
+# $Id: User.py,v 1.9 2004/12/16 14:06:26 port001 Exp $
 #
+
+__modulename__ = "User"
 
 from time import strftime, gmtime
 
-__modulename__ = "User"
-__productname__ = "glsr"
-
-import MySQL
+from MySQL import MySQL
 import Config
 from GLSRBackend import GLSRBackend as Parent
+
+MySQLHandler = MySQL()
 
 class User(Parent):
 
@@ -61,10 +60,10 @@ class User(Parent):
     def GetUid(self, alias):
         """Return UID for given alias"""
 
-        result = MySQL.Query("SELECT %s_id FROM %s%s WHERE %s_alias=" %
-                             (self.tablename, Config.MySQL["prefix"],
-                              self.tablename, self.tablename) +
-                             "%s", alias, fetch="one")
+        result = MySQLHandler.query("SELECT %s_id FROM %s%s WHERE %s_alias=" %
+                                   (self.tablename, Config.MySQL["prefix"],
+                                    self.tablename, self.tablename) +
+                                    "%s", alias, fetch="one")
 
         if result == None:
             return False
@@ -98,25 +97,24 @@ class User(Parent):
 
         rank = 0
         
-        result = MySQL.Query("SELECT rank FROM %s%s WHERE %s_submitter_id = " %
-                             (Config.MySQL["prefix"],
-                              Config.MySQL["script_table"],
-                              Config.MySQL["script_table"]) +
-                             "%s", (self.id), fetch="all")
+        result = MySQLHandler.query("SELECT rank FROM %s%s WHERE %s_submitter_id = " %
+                                   (Config.MySQL["prefix"],
+                                    Config.MySQL["script_table"],
+                                    Config.MySQL["script_table"]) +
+                                    "%s", (self.id), fetch="all")
 
         for tuple in result:
             rank = rank + tuple[0]
 
         return rank
 
-
     def ValidateAlias(self, alias, password):
 
-        result = MySQL.Query("SELECT * FROM %s%s " %
-                             (Config.MySQL["prefix"], self.tablename) +
-                             "WHERE %s_alias = %%s AND " % self.tablename +
-                             "%s_passwd = PASSWORD(%%s)" % self.tablename,
-                             (alias, password))
+        result = MySQLHandler.query("SELECT * FROM %s%s " %
+                                   (Config.MySQL["prefix"], self.tablename) +
+                                    "WHERE %s_alias = %%s AND " % self.tablename +
+                                    "%s_passwd = PASSWORD(%%s)" % self.tablename,
+                                   (alias, password))
 
         if len(result) == 0:
             return False

@@ -3,12 +3,11 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Language.py,v 1.3 2004/07/19 00:48:37 hadfield Exp $
+# $Id: Language.py,v 1.4 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "Language"
 
-import MySQL
 import Config
 from Logging import err
 from GLSRBackend import GLSRBackend as Parent
@@ -20,7 +19,6 @@ class Language(Parent):
     def Create(self, details):
         """ details is a dictionary with keys [name, descr] """
         return Parent.Create(self, details, ["name"])
-
 
     def Modify(self, details):
 

@@ -3,15 +3,18 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Validation.py,v 1.3 2004/07/13 15:07:48 hadfield Exp $
+# $Id: Validation.py,v 1.4 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "Validation"
 
-from Config import MySQL
-from MySQL import Query
-from Auth import GenMd5
 from re import compile,match
+
+from Config
+from MySQL import MySQL
+from Auth import GenMd5
+
+MySQLHandler = MySQL()
 
 def CheckPageRequest(page):
 
@@ -29,7 +32,7 @@ def CheckPageRequest(page):
 def ValidatePasswd(uid, passwd):
 
     unknownmd5 = GenMd5(passwd)
-    correctmd5 = Query("SELECT passwd FROM %s " % MySQL["user_table"] +
+    correctmd5 = MySQLHandler.query("SELECT passwd FROM %s " % Config.MySQL["user_table"] +
                        "WHERE uid = %s", uid, fetch="one")
 
     if unknownmd5 != correctmd5[0]:

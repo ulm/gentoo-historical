@@ -2,77 +2,94 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: MySQL.py,v 1.7 2004/08/22 23:19:27 hadfield Exp $
+# $Id: MySQL.py,v 1.8 2004/12/16 14:06:26 port001 Exp $
 #
-
-import sys
-from time import strftime, gmtime
-from _mysql_exceptions import MySQLError, OperationalError
-
-import Config
-
-if Config.Memcache == True:
-    import memcache
-
-import Const
-import MySQLdb
-from Function import start_timer, stop_timer, eval_timer
-from Logging import err, logwrite
 
 __modulename__ = "MySQL"
 
-def Connect():
-    try:
-        db = MySQLdb.connect(host=Config.MySQL["host"],
-                             user=Config.MySQL["user"],
-                             passwd=Config.MySQL["passwd"],
-                             db=Config.MySQL["db"])
-    except OperationalError, errmsg:
-        err(errmsg, __modulename__)
-        sys.exit(1)
+import sys
+from time import strftime, gmtime
 
-    return db.cursor(MySQLdb.cursors.DictCursor), db
+import MySQLdb
+from _mysql_exceptions import MySQLError, OperationalError
 
-def ValidateArgs(table, args):
-    """ A last ditch effort to make sure that no database inputs are too
-    long. """
-    retval = []
-    for key,val in args.iteritems():
-        retval.append(val[:Const.FIELD_LEN[table][key]])
-    return retval
+import Config
+import Const
+from Logging import err, logwrite
+from Function import start_timer, stop_timer, eval_timer
 
-def Query(query, args=None, fetch="all"):
-    """ Returns a list of dictionaries of {column: value} pairs.
-    Each dictionary in the list represents one record for the query.
-    e.g ({uid: 1043, name: Ian}, {uid: 3456, Scott})
-    """
-    
-    return _Fetch(_InitQuery(query, args), query, args, fetch)
+class MySQL:
 
+    def __init__(self):
 
-def _InitQuery(query, args):
-    t_start = start_timer()
-    cursor, db = Connect()
-    
-    try:
-        cursor.execute(query, args)
-    except MySQLError, errmsg:
-        err("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, query, args),
-            __modulename__)
-        sys.exit(1)
+        self._db = None
+	self._cursor = None
+	self._t_start = 0
+	self._fetch = ""
+	self._result = None
 
-    db.commit()
-    return cursor, t_start
+    def _connect(self):
 
-def _Fetch((cursor, t_start), query, args, fetch):
-    if fetch == "one":
-        result = cursor.fetchone()
-        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
-    elif fetch == "none":
-        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
-        return
-    else:
-        result = cursor.fetchall()
-        logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (query, args, eval_timer(t_start, stop_timer())), __modulename__, "Query")
+        try:
+            self._db = MySQLdb.connect(host=Config.MySQL["host"],
+                                 user=Config.MySQL["user"],
+                                 passwd=Config.MySQL["passwd"],
+                                 db=Config.MySQL["db"])
+        except OperationalError, errmsg:
+            err(errmsg, __modulename__)
+            sys.exit(1)
+                                                                        
+        self._cursor = db.cursor(MySQLdb.cursors.DictCursor)
 
-    return result        
+    def validate_args(self):
+        """
+	A last ditch effort to make sure that no database inputs are too long.
+	"""
+	
+	retval = []
+	
+        for key,val in self._args.iteritems():
+            retval.append(val[:Const.FIELD_LEN[table][key]])
+        return retval
+
+    def _init_query(self):
+
+        self._t_start = start_timer()
+	self._connect()
+
+        try:
+            self._cursor.execute(self._query, self._args)
+        except MySQLError, errmsg:
+            err("%s<br />\nQuery: %s<br />\nValues: %s" % (errmsg, self._query, self._args),
+                __modulename__)
+            sys.exit(1)
+                                                                                
+        self._db.commit()
+        
+    def _fetch(self):
+                                                                                                                                      
+        if self._fetch == "one":
+            self._result = self._cursor.fetchone()
+            logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query")
+        elif self._fetch == "none":
+            logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query")
+            return
+        else:
+            self._result = self._cursor.fetchall()
+            logwrite("""%s, Args: %s, Timing: %.5f(s)""" % (self._query, self._args, eval_timer(self._t_start, stop_timer())), __modulename__, "Query") 
+
+    def query(self, query, args=None, fetch="all"):
+        """ Returns a list of dictionaries of {column: value} pairs.
+        Each dictionary in the list represents one record for the query.
+        e.g ({uid: 1043, name: Ian}, {uid: 3456, Scott})
+        """
+
+        self._query = query
+	self._args = args
+	self._fetch = fetch
+
+        self._init_query()
+        return self._fetch()
+
+    validate_args = classmethod(self.validate_args)
+

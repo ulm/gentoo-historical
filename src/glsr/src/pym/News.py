@@ -3,14 +3,13 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: News.py,v 1.3 2004/07/19 00:56:45 hadfield Exp $
+# $Id: News.py,v 1.4 2004/12/16 14:06:26 port001 Exp $
 #
 
 __modulename__ = "News"
 
 from time import strftime, gmtime
 
-import MySQL
 import Config
 from GLSRBackend import GLSRBackend as Parent
 
@@ -29,7 +28,6 @@ class News(Parent):
         """ Modify announcement details """
 
         return Parent.Modify(self, details)
-
 
     def AnnidExists(self, annid):
         """ Check for existence of given AnnID """
