@@ -36,7 +36,7 @@ CONFIG=/etc/kernels
 source /etc/kernels/settings 
 BUSYBOX_TARBALL=${GK_SHARE}/busybox-0.60.5.tar.bz2
 BUSYBOX_DIR=busybox-0.60.5
-MAKEOPTS="`${PYTHON} -c 'import portage; print portage.settings["MAKEOPTS"];'`"
+MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
 MENUCONFIG="no"
 for x in $@
 do
@@ -77,9 +77,14 @@ configuration() {
 	echo
 	echo "Settings:"
 #	echo " root device: ${ROOT_DEVICE}"
-	echo " compile optimization: $CPUS processor(s)"
+	if [ "$MAKEOPTS" = "" ]
+	then
+		echo " make options: (none) (set in make.conf)"
+	else
+		echo " make options: ${MAKEOPTS} (from Portage/make.conf)"
+	fi
 	echo " source tree: ${KD}"
-	echo -n " config: "
+	echo -n " config type: "
 	
 	if [ -e ${CONFIG}/config-${KV} ]
     	then
@@ -158,7 +163,13 @@ compile() {
 	ebegin "Copying System.map to /boot/System.map-${KV}"
 	cp System.map /boot/System.map-${KV}
 	rm -f /boot/System.map.old
-	mv -f /boot/System.map /boot/System.map.old
+	if [ -L /boot/System.map ]
+	then
+		rm /boot/System.map
+	elif [ -e /boot/System.map ]
+	then
+		mv -f /boot/System.map /boot/System.map.old
+	fi
 	ln -s System.map-${KV} /boot/System.map
 	eend 
 }
@@ -205,65 +216,22 @@ EOF
 	eend
 }
 initrd() {
-	local init
         ebegin "Creating initrd"
-        install -d ${TEMP}/kernel-initrd/modules/storage
-        install -d ${TEMP}/kernel-initrd/modules/firewire
-        install -d ${TEMP}/kernel-initrd/modules/ataraid
-        install -d ${TEMP}/kernel-initrd/modules/pcmcia
-        install -d ${TEMP}/kernel-initrd/modules/usb
-
-	local mymod
-        for i in $STORAGE_MODULES
-	do
-                mymod=`find /lib/modules/${KV} -name "${i}.o"`
-                if [ -z "${mymod}" ]
-                then
-                        echo "Error: ${i}.o not found; skipping..."
-                        continue
-                fi
-                cp $mymod ${TEMP}/kernel-initrd/modules/storage 
-        done
-	for i in $FIREWIRE_MODULES
+	local modc i mods mymod
+	for modc in storage firewire ataraid pcmcia usb
         do
-                mymod=`find /lib/modules/${KV} -name "${i}.o"`
-                if [ -z "${mymod}" ]
-                then
-                        echo "Error: ${i}.o not found; skipping..."
-                        continue
-                fi
-                cp $mymod ${TEMP}/kernel-initrd/modules/firewire 
+		mods=`echo $modc | tr [:lower:] [:upper:]`_MODULES
+		for i in ${!mods}
+		do
+			mymod=`find /lib/modules/${KV} -name "${i}.o"`
+			if [ -z "${mymod}" ]
+			then
+				echo "Error: ${i}.o not found; skipping..."
+				continue
+			fi
+			cp $mymod ${TEMP}/kernel-initrd/modules/${modc} 
+		done
 	done
-        for i in $ATARAID_MODULES
-        do
-                mymod=`find /lib/modules/${KV} -name "${i}.o"`
-                if [ -z "${mymod}" ]
-                then
-                        echo "Error: ${i}.o not found; skipping..."
-                        continue
-                fi
-                cp $mymod ${TEMP}/kernel-initrd/modules/ataraid 
-        done
-        for i in $PCMCIA_MODULES
-        do
-                mymod=`find /lib/modules/${KV} -name "${i}.o"`
-                if [ -z "${mymod}" ]
-                then
-                        echo "Error: ${i}.o not found; skipping..."
-		        continue
-                fi
-                cp $mymod ${TEMP}/kernel-initrd/modules/pcmcia 
-        done
-        for i in $USB_MODULES
-        do
-                mymod=`find /lib/modules/${KV} -name "${i}.o"`
-                if [ -z "${mymod}" ]
-                then
-                        echo "Error: ${i}.o not found; skipping..."
-                        continue
-                fi
-                cp $mymod ${TEMP}/kernel-initrd/modules/usb 
-        done
         #tweak our storage module settings based on our initrd
         cat ${GK_SHARE}/linuxrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
 					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
@@ -315,7 +283,6 @@ finish() {
 }
 
 #root_device
-get_number_of_jobs
 configuration
 compile
 ebegin "Building busybox"
