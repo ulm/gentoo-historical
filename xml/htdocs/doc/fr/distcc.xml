@@ -1,0 +1,423 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/distcc.xml,v 1.1 2003/10/16 18:54:55 neysx Exp $ -->
+
+<guide link="/doc/fr/distcc.xml">
+
+<title>Distcc pour Gentoo</title>
+
+<author title="Auteur">
+<mail link="lisa@gentoo.org">Lisa Seelye</mail>
+</author>
+
+<author	title="Traducteur">
+<mail link="gerald@djayux.net">Gérald FENOY</mail>
+</author>
+
+<license/>
+
+<version>1.2.4</version>
+<date>12 octobre 2003</date>
+
+<abstract>Ce document est un mini-guide pour utiliser distcc avec Gentoo.</abstract>
+
+<chapter>
+<title>Introduction</title>
+
+<section>
+<title>Qu'est-ce que distcc ?</title>
+<body>
+<p>
+Distcc est un programme conçu pour distribuer les tâches de compilation entre
+plusieurs machines en réseau.  Il est composé d'un serveur, <c>distccd</c>, et
+d'un programme client, <c>distcc</c>.  Distcc, après une petite étape de
+configuration, peut fonctionner de façon transparente avec <uri
+link="http://ccache.samba.org">ccache</uri> et Portage.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installation</title>
+
+<section>
+<title>Dépendances</title>
+<body>
+<pre caption="Dépendances distcc (version 2.8 jusqu'à 2.10)">
+&gt;=sys-apps/portage-2.0.46-r11
+<codenote>Distcc-2.11 ou plus récent nécessite &gt;=sys-apps/portage-2.0.49-r6</codenote>
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>Lorsque vous utilisez <i>gtk</i> dans vos options <i>USE</i>, distcc a les dépendances optionnelles suivantes (depuis la version 2.8 jusqu'à 2.11)</codenote>
+&gt;=x11-libs/gtk+-2.2.1
+</pre>
+<pre caption="Dépendances distcc (supérieure à 2.11.1)">
+&gt;=sys-apps/portage-2.0.49-r6
+&gt;=sys-devel/gcc-config-1.3.1
+sys-apps/shadow
+<codenote>Dans cette version, vous pouvez choisir entre une interface Gnome ou GTK pour le moniteur de supervision, ils ont les dépendances supplémentaires suivantes</codenote>
+<codenote>Pour GTK :</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+<codenote>Pour Gnome :</codenote>
+&gt;=x11-libs/gtk+-2.0.0
+&gt;=gnome-base/libglade-2.0.0
+x11-libs/pango
+&gt;=gnome-base/libgnomeui-2.0.0.0
+&gt;=gnome-base/libgnome-2.0.0
+</pre>
+</body>
+</section>
+
+<section>
+<title>Installation de distcc</title>
+<body>
+<p>
+L'installation de distcc est vraiment simple.  Définissez vos options USE et
+lancez <i>emerge distcc</i>.  Il y a néamoins quelques options que vous devriez
+connaître.
+</p>
+<p>
+Distcc est fourni avec deux interfaces graphiques qui permettent la supervision
+des tâches que votre ordinateur envoie pour la compilation.  Si vous utilisez
+Gnome, alors il vous suffit d'ajouter 'gnome' à vos options USE.  Cependant, si
+vous n'utilisez pas gnome et que vous souhaitez néamoins avoir un outil de
+supervision, alors vous pouvez ajouter 'gtk' à vos options USE.
+</p>
+</body>
+</section>
+
+<section>
+<title>Configurer Portage pour qu'il utilise distcc</title>
+<body>
+<p>
+Configurer distcc est très simple avec Portage.  Sur chaque ordinateur où vous
+voulez utiliser distcc, suivez simplement les étapes suivantes :
+</p>
+<pre caption="Intégrer distcc à Portage">
+# <i>emerge distcc</i>
+# <i>nano -w /etc/make.conf</i>
+</pre>
+<impo>
+Si vous utilisez distcc-2.11.1 ou supérieure avec &gt;=portage-2.0.49-r6, tout
+ce que vous aurez à faire, c'est de définir la liste de vos serveurs (voyez le
+bloc de code suivant), de modifier MAKEOPTS dans <path>/etc/make.conf</path> et
+d'ajouter 'distcc' à vos FEATURES dans le même <path>/etc/make.conf</path>.
+</impo>
+
+<note>
+Éditez vos options FEATURES pour y inclure &quot;distcc&quot;
+</note>
+
+<note>
+Vous devriez également décommenter la ligne qui contient la variable
+PORTAGE_TMPDIR dans <path>/etc/make.conf</path>.
+</note>
+
+<note>
+Affectez <i>DISTCC_DIR=${PORTAGE_TMPDIR}/portage/.distcc</i> à la fin du
+fichier
+</note>
+
+<p>
+Ensuite, vous devez définir quels sont les serveurs que vous voulez utiliser.
+Pour ce faire, vous pouvez utiliser la commande <c>distcc-config</c> pour créer
+la liste des serveurs.  Voici un exemple de la définition de quelques serveurs
+qui pourraient se trouver dans votre liste :
+</p>
+
+<pre caption="Examples de liste de serveurs">
+192.168.0.1          192.168.0.2                       192.168.0.3
+192.168.0.1/2        192.168.0.2                       192.168.0.3/10
+192.168.0.1:4000/2   192.168.0.2/1                     192.168.0.3:3632/4
+@192.168.0.1         @192.168.0.2:/usr/bin/distccd     192.168.0.3
+</pre>
+
+<p>
+Cela peut sembler compliqué, mais dans la plupart des cas, une variante des
+lignes 1 ou 2 suffira.  Voici une explication de chaque ligne : la ligne 1
+représente juste une liste de serveurs délimités par un espace qui utiliseront
+les options par défaut.  La ligne 2 est une liste de serveurs qui utilise
+l'option <c>/N</c> pour indiquer le nombre maximum de requêtes simultanées à
+envoyer à ce serveur.  Etant donné que la plupart des gens n'utiliseront pas
+les lignes 3 et 4, je vous prierai de vous référer à la <uri
+link="http://distcc.samba.org/man/distcc_1.html">documentation</uri> de distcc
+pour de plus amples d'informations.
+</p>
+<p>
+Un exemple d'utilisation de la commande pour ajouter des serveurs (pour la ligne 1) :
+</p>
+
+<pre caption="Exemple de commande pour ajouter des serveurs">
+# <i>/usr/bin/distcc-config --set-hosts "192.168.0.1 192.168.0.2 192.168.0.3"</i>
+</pre>
+
+<p>
+L'étape finale pour intégrer distcc à Portage est d'éditer votre fichier
+<path>/etc/make.conf</path> et d'y modifier la ligne qui contient
+<c>MAKEOPTS</c> pour y mettre <c>-jN</c> (où N est un entier).  Généralement,
+vous placerez ici le nombre total de processeurs présents dans votre réseau
+plus un.
+</p>
+
+<pre caption="Étape finale : l'édition du make.conf">
+# <i>nano -w /etc/make.conf</i>
+MAKEOPTS=-jN
+</pre>
+
+<impo>
+N'oubliez pas de lancer le démon distcc avec la commande : <c>/etc/init.d/distccd start</c>
+</impo>
+</body>
+</section>
+
+<section>
+<title>Configurer distcc pour fonctionner avec automake</title>
+<body>
+<p>
+Parfois, ceci est encore plus simple que la mise en place avec Portage.  Il
+vous suffit de modifier votre variable d'environnement <c>PATH</c> pour y
+insérer <path>/usr/lib/distcc/bin</path> avant le chemin où se trouve gcc
+(<path>/usr/bin</path>).  Cependant, si vous utilisez ccache, prenez garde à
+mettre le chemin de distcc après celui de ccache, ce qui se fait de la façon
+suivante :
+</p>
+
+<pre caption="Configurer votre PATH">
+# <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
+</pre>
+
+<p>
+Ceci fait, au lieu de lancer <c>make</c>, vous devez utiliser <c>make -jN</c>
+(où N est un entier).  Une valeur sûre pour N varie selon votre réseau et le
+type d'ordinateurs que vous utilisez pour compiler.  Pour ma part, j'ai un
+ordinateur bi-processeurs P3 et un K6-2/400 qui compilent tout pour mon
+ordinateur de bureau (un Athlon Thunderbird 1200MHz) et j'utilise -j5.  Testez
+vos propres valeurs afin de trouver la plus appropriée.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>La compilation croisée (Cross-Compiling)</title>
+<section>
+<title>Une note sur la compilation croisée</title>
+<body>
+<p>
+La compilation croisée utilise un certain type d'architecture afin de générer
+des programmes pour un autre type d'architecture.  Ceci peut être aussi simple
+que d'utiliser un Athlon (i686) pour générer des programmes pour un K6-2 (i586)
+ou d'utiliser une Sparc pour compiler un programme pour un ppc.
+</p>
+</body>
+</section>
+
+<section>
+<title>Une note personnelle sur la compilation croisée</title>
+<body>
+<p>
+J'aimerais être capable de prendre part à l'effort accompli par Gentoo pour la
+compilation croisée, mais je n'ai pas de machine non-x86.  Ce que j'écris
+fonctionne <e>en théorie</e>, mais je dépends d'autres personnes pour les
+tests.  Cela fonctionne jusqu'à un certain point, mais c'est dur.  ;-)
+</p>
+<p>
+Dans un futur, proche j'espère acquérir une Sparc et y mettre une gentoo.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Utiliser distcc pour l'installation (bootstrap)</title>
+<section>
+<title>Étape 1: configurez votre nouvelle bécane</title>
+<body>
+<p>
+Vous devez démarrer votre nouvelle bécane avec le LiveCD de Gentoo et
+suivre toutes les étapes jusqu'au bootstrap.  Procédez alors à la petite
+installation préliminaire qui suit sur votre nouvelle bécane.
+</p>
+
+<pre caption="Configuration préliminaire">
+<codenote>Ici nous ajoutons distcc aux FEATURES</codenote>
+# <i>nano -w /etc/make.conf</i>
+<codenote>Ajouter &quot;distcc&quot; à FEATURES</codenote>
+<codenote>Modifier MAKEOPTS dans <path>/etc/make.conf pour y affecter -jN (comme décrit précédemment)</path></codenote>
+</pre>
+
+<p>
+Ensuite, ajoutez l'utilisateur distcc à votre fichier <path>/etc/passwd</path>:
+</p>
+
+<pre caption="Ajouter l'utilisateur distcc à votre fichier /etc/passwd">
+# <i>echo "distcc:x:240:2:distccd:/dev/null:/bin/false" &gt;&gt;/etc/passwd</i>
+<codenote>N'oubliez pas le `<i>&gt;&gt;</i>'</codenote>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Étape 2: obtenir distcc</title>
+<body>
+<p>
+Ensuite, vous devez exécuter la commande suivante dans le chroot sur la nouvelle bécane :
+</p>
+
+<pre caption="Obtenir distcc sur la nouvelle bécane">
+# <i>emerge --nodeps distcc</i>
+</pre>
+</body>
+</section>
+
+<section>
+<title>Étape 3: configurer distcc lui-même</title>
+<body>
+<p>
+Maintenant, configurez distcc lui-même...
+</p>
+
+<pre caption="Configuration finale de distcc">
+# <i>/usr/bin/distcc-config --install</i>
+# <i>/usr/bin/distcc-config --set-hosts "localhost host1 host2 host3 ..."</i>
+</pre>  
+
+<p>
+Distcc devrait maintenant être configuré pour le bootstrap !
+Reprenez le guide officiel d'installation où vous l'avez laissé, et n'oubliez
+pas de refaire un emerge de distcc après l'<c>emerge system</c>.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Problèmes fréquents</title>
+<section>
+<title>Mozilla et Xfree</title>
+<body>
+<p>
+Parfois, vous noterez que vos compilations de paquets ne sont pas toutes
+distribuées (et en effet pas créées en parallèle).  La raison est que les
+développeurs des ebuilds de Mozilla et Xfree ont désactivé la possibilité de
+génération en parallèle car ces paquets sont connus pour poser des problèmes.
+Ceci n'est pas nécessairement un problème de distcc.
+</p>
+<p>
+Cela ne veut pas dire que parfois distcc entraînera l'echec d'une compilation.
+</p>
+</body>
+</section>
+
+<section>
+<title>Un mélange de serveurs hardened-gcc et de non-hardened-gcc sera défectueux</title>
+<body>
+<p>
+Avec un aussi long titre, toute explication est presque superflue.  Cependant,
+si vous envisagez d'utiliser distcc sur des serveurs qui ont <uri
+link="http://www.gentoo.org/proj/en/hardened/etdyn-ssp.xml">PaX/hardened-gcc</uri>
+avec d'autres qui ne l'ont pas, vous allez avoir des problèmes.
+</p>
+<p>
+La solution requiert un peu de prévoyance de votre part.  Vous devez exécuter
+<c>hardened-gcc -R</c> sur le serveur qui possède PaX/hardened-gcc, ou vous
+devez activer les protections PaX dans votre noyau et exécuter <c>emerge
+hardened-gcc</c>.  Les deux sont de bonnes solutions du fait que la plupart des
+protections offertes par ces deux paquets sont bonnes et sont transparentes
+pour l'utilisateur.
+</p>
+</body>
+</section>
+
+<section>
+<title>Mélange de diverses versions de GCC</title>
+<body>
+<p>
+Si vous avez différentes versions de GCC sur vos serveurs, d'étranges problèmes
+surviendront. La solution est de vous assurer que tous les serveurs ont la même
+version de gcc.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Les suppléments de distcc</title>
+<section>
+<title>Les outils de supervision Distcc</title>
+<body>
+<p>
+Distcc est fourni avec deux outils de supervision.  Une version qui fonctionne
+en mode texte est automatiquement installée, elle s'appelle
+<c>distccmon-text</c>.  À la première exécution, l'outil peut paraître
+déroutant mais il est en fait très simple d'utilisation.  Si vous l'exécutez
+sans paramètre, il s'exécutera une seule fois.  Cependant, si vous lui passez
+un nombre N en argument, il affichera les informations toutes les N secondes.
+</p>
+<p>
+L'autre moniteur est seulement installé si vous utilisez <c>gtk</c> ou
+<c>gnome</c> dans vos options <c>USE</c>.  Celui-ci est en mode graphique
+(comme vous l'aviez sans doute deviné) et est basé sur la librairie GTK+, il
+est vraiment joli.
+</p>
+<p>
+Veuillez noter que si vous souhaitez superviser tous les emerges, vous devez
+lancer les moniteurs de supervision de la façon suivante :
+</p>
+
+<pre caption="Démarrer la supervision">
+# <i>DISTCC_DIR=/chemin/vers/distccdir distccmon-text N</i>
+<codenote>Ou vous pouvez lancer le superviseur graphique ...</codenote>
+# <i>DISTCC_DIR=/chemin/vers/distccdir distccmon-gnome</i>
+</pre>
+
+<impo>
+Si vous utilisez Portage et que vous avez utilisé l'exemple précédent,
+l'affectation devra être <c>DISTCC_DIR=/var/tmp/portage/.distcc</c>.
+</impo>
+<note>
+Si vous n'utilisez pas Portage, vous ne devez pas spécifier de valeur pour
+DISTCC_DIR (lancez juste distccmon-text N).
+</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Avenir de distcc et Gentoo</title>
+<section>
+<title>distcc-subnetscan</title>
+<body>
+<p>
+<c>distcc-subnetscan</c> est un programme perl en cours de développement qui
+sera capable de scanner un sous-réseau à la recherche de serveurs sur lesquels
+tourne un démon distcc.  Il sera également capable de vérifier que les démons
+sont conformes à une valeur spécifique de CHOST pour faciliter la compilation
+croisée.
+</p>
+<p>
+Le script perl est disponible <uri
+link="http://dev.gentoo.org/~lisa/distcc/distcc-subnetscan/distcc-subnetscan.pl">ici</uri>
+jusqu'à ce qu'un meilleur endroit soit trouvé.
+</p>
+</body>
+</section>
+
+<section>
+<title>distcc-config</title>
+<body>
+<p>
+<c>distcc-config</c>, l'outil de configuration de l'espace utilisateur n'est
+plus à jour.  Il sera bientôt récrit pour être utilisé avec la version actuelle
+de distcc.
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>
+
+
