@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLILocalization.py,v 1.2 2005/02/18 19:14:16 agaffney Exp $
+$Id: GLILocalization.py,v 1.3 2005/02/18 19:33:49 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -29,8 +29,7 @@ class Localization:
 			self.messages[parts[0]][parts[1]] = parts[2]
 
 	def get_localized_message(self, message):
-		localized_message = None
-
 		if message in self.messages and self.lang in self.messages[message]:
-			localized_message = self.messages[message][self.lang]
-		return localized_message
+			return self.messages[message][self.lang]
+		else:
+			return None
