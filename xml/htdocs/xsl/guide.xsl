@@ -348,7 +348,7 @@
 				<br/>
 				<a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
 				<br/>
-				<a class="altlink" href="/main/en/where.xml#doc_chap3">Download Mirrors</a>
+				<a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
 				<br/>
 				<a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
 				<br/>
