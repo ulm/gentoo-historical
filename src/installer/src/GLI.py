@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.5 2004/02/19 03:24:06 npmccallum Exp $
+$Id: GLI.py,v 1.6 2004/02/19 18:23:01 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -49,6 +49,61 @@ class InstallProfile(xml.sax.ContentHandler):
 
 	def __init__(self):
 		pass
+		
+	def _is_ip(self, ip):
+		"Check to see if a string is a valid ip. Returns bool."
+		
+		# Make sure it is a string
+		if type(ip) != str:
+			return False
+		
+		# Make sure there are only 4 elements when split by '.'s.
+		if len(ip.split(".")) != 4:
+			return False
+		
+		# Make sure each element is a number within the propper range
+		for number in ip.split("."):
+			try:
+				int(number)
+			except:
+				return False
+				
+			if int(number) > 255:
+				return False
+				
+			if int(number) < 0:
+				return False
+		
+		return True
+		
+	def _is_device(self, path):
+		"Check to see if the string passed is a valid device. Returns bool."
+		
+		# Make sure the string starts with /dev/
+		if path[0:5] != '/dev/':
+			return False
+			
+		# Check to make sure the device exists
+		return os.access(path, os.F_OK)
+		
+	def _is_hostname(self, hostname):
+		"Check to see if the string is a valid hostname. Returns bool."
+		
+		# These are the characters that are not letters or numbers
+		# but are still allowed to be in a hostname.  Any others?
+		# I am allowing '.' for FQHNs.
+		non_alphanum_chars = '-_.'
+		
+		# Make sure that each 
+		for letter in hostname:
+			if letter in string.letters or letter in string.digits:
+				continue
+			elif letter in non_alphanum_chars:
+				continue
+			else:
+				return False
+				
+		return True
 
 	def startElement(self, name, attr):
 		"""
@@ -304,7 +359,14 @@ class InstallProfile(xml.sax.ContentHandler):
 	def set_partition_tables(self, partition_tables):
 		"""
 		Sets the partition tables.  A partition is a multi level dictionary in the following format:
-		{ <device>: { <minor>: ( <size in mb>, <type>, <mount point> ) } }
+		{ <device (local)>: <partition table>, <device (nfs)>: <mount point> }
+		
+		<device (local)> is a string containing the path to the local file. (ie. '/dev/hda')
+		<device (nfs)> is a string containing the ip address of the nfs mount. (ie. '192.168.1.2')
+		
+		<partition table> is a dictionary in the following format:
+			{ <minor>: ( <size in mb>, <type>, <mount point> ) }
+		
 		ie. partition_tables['/dev/hda'][1] would return ( 64, 'ext3', '/boot' )
 
 		Types are as follows:
@@ -325,33 +387,45 @@ class InstallProfile(xml.sax.ContentHandler):
 		
 		for device in partition_tables:
 		
-			# Make sure the device (the /dev file) exists
-			if not os.access(device, os.F_OK):
-				raise "PartitionTableError", "The device you specified (" + device + ") does not exist!"
-				
-			# We should check to make sure device is in /proc/partitions
-			# If it is in /proc/partitions, it is a partitionable device
+			# If the device is a valid local device...
+			if self._is_device(device):
 			
-			for minor in partition_tables[device]:
+				# We should check to make sure device is in /proc/partitions
+				# If it is in /proc/partitions, it is a partitionable device
+			
+				# ... then loop through each minor to check data
+				for minor in partition_tables[device]:
 
-				# Make sure that the <minor> is an integer or can be converted to one
-				try:
-					int(minor)
-				except:
-					raise "ParitionTableError", "The minor you specified (" + minor + ") is not an integer!"
+					# Make sure that the <minor> is an integer or can be converted to one
+					try:
+						int(minor)
+					except:
+						raise "ParitionTableError", "The minor you specified (" + minor + ") is not an integer!"
 					
-				# Make sure that a minor number is valid
-				if minor < 1
-					raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
+					# Make sure that a minor number is valid
+					if minor < 1
+						raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
 				
-				# Make sure that <size>, <type> and <mount point> are all set
-				if len(partition_tables[device][minor]) != 3:
-					raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
+					# Make sure that <size>, <type> and <mount point> are all set
+					if len(partition_tables[device][minor]) != 3:
+						raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
 					
-				# Make sure that the <size> is an integer or can be converted to one
-				try:
-					int(partition_tables[device][minor][0])
-				except:
-					raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
-					
+					# Make sure that the <size> is an integer or can be converted to one
+					try:
+						int(partition_tables[device][minor][0])
+					except:
+						raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
+
+			# Else, if the device is a valid remote device (hostname or ip)
+			elif self._is_ip(device) or self._is_hostname(device):
+			
+					# Make sure that only the mount point is set
+					if type(partition_tables[device]) != str:
+						raise "ParitionTableError", "Invalid mount point for nfs mount (device: " + device + ")!"
+						
+			# If the device is not a local or remote device, then it is invalid
+			else:
+				raise "PartitionTableError", "The device you specified (" + device + ") is not valid!"
+
+		# If all the tests clear, then set the variable
 		self._partition_tables = partition_tables
