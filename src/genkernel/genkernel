@@ -25,7 +25,7 @@ fi
 KD=`readlink -f /usr/src/linux`
 KV="${KD##*/}"
 KV="${KV##linux-}"
-GK_VERSION=1.9
+GK_VERSION=1.9-cvs
 GK_SHARE=/usr/share/genkernel
 [ ! -e /sbin/functions.sh ] && die "Can't find /sbin/functions.sh; exiting."
 source /sbin/functions.sh
@@ -39,8 +39,10 @@ BUSYBOX_DIR=busybox-0.60.5
 CLOOP_TARBALL=cloop_0.68-2.tar.gz
 CLOOP_DIR=cloop-0.68
 MAKEOPTS="`python -c 'import portage; print portage.settings["MAKEOPTS"];'`"
+: ${DISTCC_HOSTS:="`distcc-config --get-hosts 2> /dev/null`"}
+[ ! -z "${DISTCC_HOSTS}" ] && CC="distcc gcc" || CC="gcc"
 MENUCONFIG="no"
-BOOTSPLASH="no"
+BOOT_SPLASH="no"
 NOINSTALL="no"
 MRPROPER="yes"
 usage() {
@@ -84,7 +86,7 @@ for x in $*
         ;;
 
         --bootsplash)
-        BOOTSPLASH="yes"
+        BOOT_SPLASH="yes"
         ;;
 
         --help)
@@ -205,19 +207,19 @@ compile() {
 	ebegin "Running \"make dep\""
 	make dep  >/var/log/genkernel.log 2>&1 ||die; eend
         ebegin "Running \"make bzImage\""
-	make $MAKEOPTS bzImage >/var/log/genkernel.log 2>&1 || die; eend
+	make CC="${CC}" ${MAKEOPTS} bzImage >>/var/log/genkernel.log 2>&1 || die; eend
 	ebegin "Running \"make modules\""
-	make $MAKEOPTS modules >/var/log/genkernel.log 2>&1 || die; eend
+	make CC="${CC}" ${MAKEOPTS} modules >>/var/log/genkernel.log 2>&1 || die; eend
         ebegin "Running \"make modules_install\""
 	if [ "$PACKAGE" = "yes" ]
 	then
 	install -d ${TEMP}/modules
-	INSTALL_MOD_PATH="${TEMP}/modules" make modules_install >/var/log/genkernel.log 2>&1 || die; eend
+	INSTALL_MOD_PATH="${TEMP}/modules" make modules_install >>/var/log/genkernel.log 2>&1 || die; eend
 	mkdir ${TEMP}/genkernel
 	cp -rf ${TEMP}/modules/lib/modules/${KV} ${TEMP}/genkernel
 	rm -rf ${TEMP}/modules
 	else
-	make modules_install >/var/log/genkernel.log 2>&1 || die; eend
+	make modules_install >>/var/log/genkernel.log 2>&1 || die; eend
 	fi
 	mount /boot > /dev/null 2>&1
 	if [ "$LIVECD" = "yes" ]
@@ -325,6 +327,7 @@ initrd() {
 	make KERNEL_DIR=/usr/src/linux
 	cd ..
 	cp ${TEMP}/${CLOOP_DIR}/cloop.o ${TEMP}/kernel-initrd/modules/cloop.o
+	cp -f ${TEMP}/${CLOOP_DIR}/create_compressed_fs /tmp  >>/var/log/genkernel.log
 	rm -rf ${TEMP}/${CLOOP_DIR}
 	cat ${GK_SHARE}/livecdrc | sed -e "s/##STORAGE_MODULES##/${STORAGE_MODULES}/" \
 					-e "s/##FIREWIRE_MODULES##/${FIREWIRE_MODULES}/" \
@@ -346,7 +349,7 @@ initrd() {
 	gzip -f -9 ${TEMP}/initrd
 }
 bootsplash() {
-	if [ "$BOOTSPLASH" = "yes" ]
+	if [ "$BOOT_SPLASH" = "yes" ]
 	then
 	ebegin "Adding Bootsplash Initrd"
         cat ${BOOT_SPLASH_INITRD} >> ${TEMP}/initrd.gz || die
@@ -354,14 +357,14 @@ bootsplash() {
 	if [ "$LIVECD" = "yes" ]
 	then
 	ebegin "Moving initrd to /initrd-${KV}-livecd"
-	mv -f ${TEMP}/initrd.gz /initrd-${KV}-livecd
+	mv -f ${TEMP}/initrd.gz /initrd-${KV}-livecd || die
 	else
 	if [ "$NOINSTALL" = "yes" ]
 	then
-	mv -f ${TEMP}/initrd.gz ${TEMP}/initrd-${KV}
+	mv -f ${TEMP}/initrd.gz ${TEMP}/initrd-${KV} || die
 	else
 	ebegin "Moving initrd to /boot/initrd-${KV}"
-	        mv -f ${TEMP}/initrd.gz /boot/initrd-${KV}
+	        mv -f ${TEMP}/initrd.gz /boot/initrd-${KV} || die
 	eend
 	fi
 fi
@@ -373,12 +376,12 @@ if [ "$PACKAGE" = "yes" ]
 	mv ${TEMP}/kernel-${KV} ${TEMP}/genkernel || die "cannot copy kernel"
 	mv ${TEMP}/initrd-${KV} ${TEMP}/genkernel || die "cannot copy initrd"
 	eend
-	cp -f /usr/src/linux-${KV}/.config ${TEMP}/genkernel/config >/var/log/genkernel.log 2>&1
+	cp -f /usr/src/linux-${KV}/.config ${TEMP}/genkernel/config >>/var/log/genkernel.log 2>&1
 	cd ${TEMP}
 	ebegin "Copying Kernel package to /kernel-${KV}.tar.bz2"
-	tar -jcvf /kernel-${KV}.tar.bz2 genkernel >/var/log/genkernel.log 2>&1 || die
+	tar -jcvf /kernel-${KV}.tar.bz2 genkernel >>/var/log/genkernel.log 2>&1 || die
 	eend
-	rm -rf ${TEMP}/genkernel
+	rm -rf ${TEMP}/genkernel || die
 	fi
 }
 finish() {
@@ -389,21 +392,19 @@ finish() {
 	einfo "when customizing your boot loader configuration files."
 	echo
 	einfo "A detailed log can be found at /var/log/genkernel.log."
-	rm -rf /tmp/KV
-	umount ${TEMP}/kernel-initrd >/var/log/genkernel.log 2>&1
-
-	rm -rf ${TEMP}/kernel-initrd
-	rm -rf ${TEMP}/${BUSYBOX_DIR}
+#	umount ${TEMP}/kernel-initrd >>/var/log/genkernel.log 2>&1
+	rm -rf ${TEMP}/kernel-initrd || die
+	rm -rf ${TEMP}/${BUSYBOX_DIR} || die
 }
 
 #root_device
 configuration
 compile
 ebegin "Building busybox"
-busybox >/var/log/genkernel.log 2>&1
+busybox >>/var/log/genkernel.log 2>&1
 eend
 ebegin "Creating initrd"
-initrd >/var/log/genkernel.log 2>&1
+initrd >>/var/log/genkernel.log 2>&1
 eend
 bootsplash
 buildpkg
