@@ -1,0 +1,63 @@
+--- linux-2.6.4/security/selinux/hooks.c	2004-04-13 00:51:48.225259424 -0500
++++ linux-2.6.5-hardened/security/selinux/hooks.c	2004-04-13 00:34:15.067464600 -0500
+@@ -1673,6 +1673,11 @@
+ 
+ static int selinux_bprm_check_security (struct linux_binprm *bprm)
+ {
++	int rc;
++
++	rc = secondary_ops->bprm_check_security(bprm);
++	if (rc) 
++		return rc;
+ 	return 0;
+ }
+ 
+@@ -2013,6 +2018,11 @@
+ 
+ static int selinux_inode_unlink(struct inode *dir, struct dentry *dentry)
+ {
++	int rc;
++	
++	rc = secondary_ops->inode_unlink(dir, dentry);
++	if (rc)
++		return rc;
+ 	return may_link(dir, dentry, MAY_UNLINK);
+ }
+ 
+@@ -2081,11 +2091,17 @@
+ static int selinux_inode_permission(struct inode *inode, int mask,
+ 				    struct nameidata *nd)
+ {
++	int rc;
++
+ 	if (!mask) {
+ 		/* No permission to check.  Existence test. */
+ 		return 0;
+ 	}
+ 
++	rc = secondary_ops->inode_permission(inode, mask, nd);
++	if (rc)
++		return rc;
++
+ 	return inode_has_perm(current, inode,
+ 			       file_mask_to_av(inode->i_mode, mask), NULL, NULL);
+ }
+@@ -2358,6 +2374,7 @@
+ static int selinux_file_mmap(struct file *file, unsigned long prot, unsigned long flags)
+ {
+ 	u32 av;
++	int rc;
+ 
+ 	if (file) {
+ 		/* read access is always possible with a mapping */
+@@ -2369,6 +2386,10 @@
+ 
+ 		if (prot & PROT_EXEC)
+ 			av |= FILE__EXECUTE;
++	
++		rc = secondary_ops->file_mmap(file, prot, flags);
++		if (rc)
++			return rc;
+ 
+ 		return file_has_perm(current, file, av);
+ 	}
