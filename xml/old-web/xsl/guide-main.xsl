@@ -8,7 +8,7 @@
 	<xsl:template match="/guide">
 	<html>
 	<head>
-	<link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
+<link title="new" rel="stylesheet" href="http://www.gentoo.org/main-new.css" type="text/css"/>
 	<link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
 	<title>Gentoo Linux 
 	<xsl:choose><xsl:when test="/guide/@type='project'">
@@ -253,32 +253,96 @@
               </table>
             </td>
             <td colspan="2" valign="bottom" align="left" bgcolor="#000000">
-              <p class="menu"><xsl:choose><xsl:when test="/mainpage/@id='news'"><a class="highlight" href="/index.html">News</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index.html">News</a> |
-						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='about'"><a class="highlight" href="/index-about.html"> About Gentoo Linux</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
-						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='contract'"><a class="highlight" href="/index-contract.html"> Social Contract</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-contract.html"> Social Contract</a> |
-						</xsl:otherwise></xsl:choose><a class="menulink" href="http://forums.gentoo.org">Forums</a> |
-					<xsl:choose><xsl:when test="/mainpage/@id='packages'"><a class="highlight" href="/index-packages.html"> Packages</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-packages.html"> Packages</a> |
-						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='graphics'"><a class="highlight" href="/index-graphics.html"> Graphics</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-graphics.html"> Graphics</a> |
-						</xsl:otherwise></xsl:choose><a class="menulink" href="/doc/shots.html">ScreenShots</a> |
-					<xsl:choose><xsl:when test="/mainpage/@id='articles'"><a class="highlight" href="/index-articles.html">Articles</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-articles.html">Articles</a> |
-						</xsl:otherwise></xsl:choose>
-					Install: <a class="menulink" href="/doc/build.html">x86</a> / <a class="menulink" href="/doc/gentoo-ppc-install.html">PowerPC</a>/
-						 <a class="menulink" href="/doc/gentoo-sparc-install.html">SPARC</a>
-					| <a class="menulink" href="/doc/faq.html">FAQ</a> |
-					<xsl:choose><xsl:when test="/mainpage/@id='docs'"><a class="highlight" href="/index-docs.html">Documentation</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-docs.html">Documentation</a> |
-						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='changelog'"><a class="highlight" href="/index-changelog.html">Changelog</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-changelog.html">Changelog</a> |
-						</xsl:otherwise></xsl:choose><a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
-					<xsl:choose><xsl:when test="/mainpage/@id='projects'"><a class="highlight" href="/index-projects.html">Projects</a> |
-						</xsl:when><xsl:otherwise><a class="menulink" href="/index-projects.html">Projects</a> |
-						</xsl:otherwise></xsl:choose><xsl:choose><xsl:when test="/mainpage/@id='devlist'"><a class="highlight" href="/index-devlist.html">Developers</a></xsl:when><xsl:otherwise><a class="menulink" href="/index-devlist.html">Developers</a></xsl:otherwise></xsl:choose> | <a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store (new!)</a></p>
+              <p class="menu">
+	      	<xsl:choose>
+			<xsl:when test="/mainpage/@id='news'">
+				<a class="highlight" href="/index.html">News</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index.html">News</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='about'">
+				<a class="highlight" href="/index-about.html"> About Gentoo Linux</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-about.html"> About Gentoo Linux</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='contract'">
+				<a class="highlight" href="/index-contract.html"> Social Contract</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-contract.html"> Social Contract</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<a class="menulink" href="http://forums.gentoo.org">Forums</a> |
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='packages'">
+				<a class="highlight" href="/index-packages.html"> Packages</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-packages.html"> Packages</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='graphics'">
+				<a class="highlight" href="/index-graphics.html"> Graphics</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-graphics.html"> Graphics</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<a class="menulink" href="/doc/shots.html">ScreenShots</a> |
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='articles'">
+				<a class="highlight" href="/index-articles.html">Articles</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-articles.html">Articles</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		Install:<a class="menulink" href="/doc/build.html"> x86 </a>/
+			<a class="menulink" href="/doc/gentoo-ppc-install.html">PowerPC </a>/
+			<a class="menulink" href="/doc/gentoo-sparc-install.html">SPARC </a>| 
+		FAQ:	<a class="menulink" href="/doc/faq.html">General(x86)</a> /
+			<a class="menulink" href="/doc/gentoo-ppc-faq.html">PPC</a> |
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='docs'">
+				<a class="highlight" href="/index-docs.html">Documentation</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-docs.html">Documentation</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='changelog'">
+				<a class="highlight" href="/index-changelog.html">Changelog</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-changelog.html">Changelog</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='projects'">
+				<a class="highlight" href="/index-projects.html">Projects</a> |
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-projects.html">Projects</a> |
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:choose>
+			<xsl:when test="/mainpage/@id='devlist'">
+				<a class="highlight" href="/index-devlist.html">Developers</a>
+			</xsl:when>
+			<xsl:otherwise>
+				<a class="menulink" href="/index-devlist.html">Developers</a>
+			</xsl:otherwise>
+		</xsl:choose> 
+		| <a class="menulink" href="http://www.cafeshops.com/cp/store.aspx?s=gentoolinux">Store(new!)</a></p>
             </td>
           </tr>
           <tr>
