@@ -174,7 +174,7 @@
 		<tr>
                   <td align="center">
                     <a href="http://www.tek.net" target="_top">
-                      <img src="http://www.gentoo.org/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
+                      <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
                     </a>
                     <p class="alttext">Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.</p>
                   </td>
@@ -677,7 +677,7 @@
 		<tr>
                   <td align="center">
                     <a href="http://www.tek.net" target="_top">
-                      <img src="http://www.gentoo.org/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
+                      <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
                     </a>
                     <p class="alttext">Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.</p>
                   </td>
