@@ -550,14 +550,14 @@ class GLIInstallTemplate:
 		
 		# Get loggin daemon info
 		logging_daemon_pkg = self._install_profile.get_logging_daemon_pkg()
+		if logging_daemon_pkg:
+			# Emerge Logging Daemon
+			exitstatus = self._emerge(logging_daemon_pkg)
+			if exitstatus != 0:
+				raise "LoggingDaemonError", "Could not emerge " + logging_daemon_pkg + "!"
 
-		# Emerge Logging Daemon
-		exitstatus = self._emerge(logging_daemon_pkg)
-		if exitstatus != 0:
-			raise "LoggingDaemonError", "Could not emerge " + logging_daemon_pkg + "!"
-
-		# Add Logging Daemon to default runlevel
-		self._add_to_runlevel(logging_daemon_pkg)
+			# Add Logging Daemon to default runlevel
+			self._add_to_runlevel(logging_daemon_pkg)
 
 	def install_cron_daemon(self):
 		"Installs and sets up cron"
@@ -566,20 +566,20 @@ class GLIInstallTemplate:
 		
 		# Get cron daemon info
 		cron_daemon_pkg = self._install_profile.get_cron_daemon_pkg()
-
-		# Emerge Cron Daemon
-		exitstatus = self._emerge(cron_daemon_pkg)
-		if exitstatus != 0:
-			raise "CronDaemonError", "Could not emerge " + cron_daemon_pkg + "!"
-
-		# Add Cron Daemon to default runlevel
-		self._add_to_runlevel(cron_daemon_pkg)
-		
-		# If the Cron Daemon is not vixie-cron, run crontab			
-		if cron_daemon_pkg != "vixie-cron":
-			exitstatus = self._run("crontab /etc/crontab", True)
+		if cron_daemon_pkg:
+			# Emerge Cron Daemon
+			exitstatus = self._emerge(cron_daemon_pkg)
 			if exitstatus != 0:
-				raise "CronDaemonError", "Failure making crontab!"
+				raise "CronDaemonError", "Could not emerge " + cron_daemon_pkg + "!"
+
+			# Add Cron Daemon to default runlevel
+			self._add_to_runlevel(cron_daemon_pkg)
+		
+			# If the Cron Daemon is not vixie-cron, run crontab			
+			if cron_daemon_pkg != "vixie-cron":
+				exitstatus = self._run("crontab /etc/crontab", True)
+				if exitstatus != 0:
+					raise "CronDaemonError", "Failure making crontab!"
 
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
