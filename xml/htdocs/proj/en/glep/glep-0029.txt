@@ -1,13 +1,13 @@
 GLEP: 29
 Title: USE flag groups
-Version: $Revision: 1.3 $
+Version: $Revision: 1.4 $
 Author: Ciaran McCreesh <ciaranm@gentoo.org>
-Last-Modified: $Date: 2004/10/18 15:32:10 $
+Last-Modified: $Date: 2004/10/25 16:57:09 $
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 19-August-2004
-Post-Date: 21-August-2004, 18-October-2004
+Post-Date: 21-August-2004, 18-October-2004, 25-October-2004
 
 Abstract
 ========
@@ -27,8 +27,12 @@ have an X11 server or sound support, whereas both would be desirable on
 most desktop systems.
 
 With several hundred USE flags available, deciding upon which USE flags to
-enable and which to disable can take a long time. This GLEP proposes a
-mechanism for grouping USE flags to simplify selection.
+enable and which to disable can take a long time. Although the default USE
+flag settings are reasonable, they are clearly not appropriate for every
+system. In addition, using "-*" to disable all default USE flags can be
+risky as certain USE flags should not generally be turned off.  This GLEP
+proposes a mechanism for grouping USE flags to simplify selection and to
+make USE="-*" less dangerous.
 
 Specification
 =============
@@ -36,13 +40,17 @@ Specification
 Group Specification
 -------------------
 
-A group shall consist of one or more USE flags. These groups are defined
-in ``${PORTDIR}/profiles/use.groups``. It is proposed that uppercase names
-only are used for groups to keep them visually distinct from normal USE
-flags, although this should not be enforced programatically. The file
-should be similar in format to the existing use.* files. In the following,
-``SOME_GROUP`` and ``OTHER_GROUP`` are group names, and ``flag1`` through
-``flag5`` are USE flag names:
+A group shall consist of one or more tokens. Each token may be a USE flag,
+a -USE flag, a reference to another group or a negative reference to
+another group.
+
+These groups are defined in ``${PORTDIR}/profiles/use.groups``. It is
+proposed that uppercase names only are used for groups to keep them
+visually distinct from normal USE flags (almost all USE flags are
+lowercase), although this should not been forced programmatically. The
+file should be similar in format to the existing use.* files. In the
+following, ``SOME_GROUP`` and ``OTHER_GROUP`` are group names, and
+``flag1`` through ``flag5`` are USE flag names:
 
 ::
 
@@ -50,7 +58,8 @@ should be similar in format to the existing use.* files. In the following,
 	OTHER_GROUP flag2 flag4
 
 Groups may recursively include other groups. For consistency with GLEP 23
-[1], it is proposed that group names are prefixed with an 'at' symbol (@):
+[1]_, it is proposed that group names have their name prefixed with an
+'at' symbol (@):
 
 ::
 
@@ -78,6 +87,24 @@ hash symbol (#) are comments.
 Users may create their own groups using ``/etc/portage/use.groups``. This
 file overrides the profile settings in the case of duplicates.
 
+It should be legal for groups to specify -use flags, although for reasons
+discussed below this feature should not generally be used. The syntax is
+the same:
+
+::
+
+	# This group contains two negative flags
+	GROUP1 flag1 -flag2 -flag3 flag4
+
+Groups may *not* contain circular group references. The following example
+is illegal:
+
+::
+
+	# Illegal circular references
+	GROUP1 @GROUP2 foo
+	GROUP2 @GROUP1 bar
+
 Group Descriptions
 ------------------
 
@@ -96,28 +123,90 @@ Using Groups
 ------------
 
 Groups may be used in ``/etc/make.conf``, ``/etc/portage/package.use`` and
-other places where USE flags are normally specified. Again, the @ symbol
-is used. For example, a ``make.conf`` for a desktop system might resemble:
+other places where USE flags are normally specified. They may *not* be
+used inside ``IUSE`. As before, the @ symbol is used to indicate that a
+group is being referenced. For example, a ``make.conf`` for a KDE desktop
+system might resemble:
 
 ::
 
 	USE="@DESKTOP @KDE perl alsa dvd"
 
-Additional Issues
------------------
+Groups may be preceded by a -sign to invert their contents (that is, all
+'enable' use flags become -flags, and all -flags become enable flags). Be
+warned that this feature can cause confusion (see below). Example usage:
 
-Groups should *not* generally contain negative USE flags, as this would
-lead to confusion. Groups are intended to specify what will be enabled for
-a given role, not what will be turned off. For example, if the @KDE group
-disabled Gnome-related USE flags, and a user used ``USE="@GNOME @KDE"`` to
-specify that they wanted both Gnome *and* KDE to be used where applicable,
-chaos would ensue. However, for the sake of consistency, -flags should be
-supported even if their use is strongly discouraged.
+::
 
-It is proposed that ``-@GROUP`` syntax should *not* be supported. Instead,
-users wishing to turn most things off could use the ``-*`` USE syntax
-along with a group (for example, @RECOMMENDED or @MINIMAL) which turned on
-flags (for example, pam and readline) which should usually be used.
+	# We have the following groups defined...
+	GROUP1 foo bar
+	GROUP2 -bar baz -fnord
+	GROUP3 @GROUP1 -@GROUP2 -bar foo
+	GROUP4 -foo -bar
+
+	# And the following...
+	USE="-@GROUP3 @GROUP4 bar"
+
+	# which resolves to...
+	USE="-@GROUP1 @GROUP2 bar -foo -foo -bar bar"
+	USE="-foo -bar bar -baz fnord bar -foo -foo -bar bar"
+	USE="-baz fnord -foo bar"
+
+
+Issues with -flags and -@GROUPS
+-------------------------------
+
+Earlier drafts of this GLEP did not allow -use flags or -@GROUPS. However,
+because of feedback along the lines of "we shouldn't disallow features
+just because some users won't understand them" (for example, [3]_), these
+are now allowed but discouraged.
+
+The problems are best illustrated by example. Say we have the following
+groups defined:
+
+::
+
+	KDE X kde qt
+	GNOME X gtk gtk2 gnome
+
+A user who wants a KDE desktop but no GNOME may do the following:
+
+::
+
+	USE="@KDE -@GNOME"
+
+However, this will not give the desired effect -- the ``X`` USE flag will
+end up being disabled.
+
+Similarly, -use flags could cause a lot of confusion if misused. If, for
+example, the KDE group turned off GNOME things and the GNOME group turned
+off KDE things:
+
+::
+
+	KDE X kde qt -gtk -gnome
+	GNOME X gtk gtk2 gnome -kde -qt
+
+And a user wished to use both KDE and GNOME on a system, and so had USE
+flags as follows:
+
+::
+
+	USE="@KDE @GNOME"
+
+They would end up with:
+
+::
+
+	USE="X kde qt -gtk -gnome X gtk gtk2 gnome -kde -qt"
+
+Which simplifies:
+
+::
+
+	USE="X gtk gtk2 gnome -kde -qt"
+
+This is clearly not the desired effect.
 
 Adding New Groups
 -----------------
@@ -126,6 +215,9 @@ The actual groups to be created is beyond the scope of this GLEP, and any
 group names contained herein should be treated as examples only. Creation
 of new groups and changing a group's flags should be discussed on the
 gentoo-dev mailing list as per existing policy for new global USE flags.
+
+In particular, any changes involving -flags *must* be thoroughly discussed
+before implementation.
 
 Rationale
 =========
@@ -138,7 +230,7 @@ Reference Implementation
 
 TODO
 
-Backwards Compatability
+Backwards Compatibility
 =======================
 
 The user will not need to make any changes to keep their current setup.
@@ -148,8 +240,8 @@ carry on using current syntax with no side-effects.
 Some tools which work with make.conf and / or USE flags (for example,
 ``ufed``) will need to be updated to understand the new group syntax.
 
-There is currently a dymanic list of USE flags available on the Gentoo
-website [2]. For consistency, a similar list will be needed for USE
+There is currently a dynamic list of USE flags available on the Gentoo
+website [2]_. For consistency, a similar list will be needed for USE
 groups.
 
 References
@@ -158,6 +250,8 @@ References
 .. [1] GLEP 23: Portage handling of ACCEPT_LICENSE
        (http://www.gentoo.org/proj/en/glep/glep-0023.html)
 .. [2] http://www.gentoo.org/dyn/use-index.xml
+.. [3] GLEP 29 discussion on the gentoo-dev mailing list
+       (http://marc.theaimsgroup.com/?l=gentoo-dev&m=109813990013812)
 
 Copyright
 =========
