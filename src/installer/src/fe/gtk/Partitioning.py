@@ -105,9 +105,6 @@ resize partitions.
 
 		# This builds the row of buttons
 		self.part_button_box = gtk.HBox(gtk.FALSE, 0)
-#		self.part_button_create = gtk.Button(" Create ")
-#		self.part_button_create.connect("clicked", self.part_button_create_clicked)
-#		self.part_button_box.pack_start(self.part_button_create, expand=gtk.FALSE, fill=gtk.FALSE)
 		self.part_button_delete = gtk.Button(" Delete ")
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
@@ -119,101 +116,40 @@ resize partitions.
 		self.part_button_box.pack_start(part_button_dump_info, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
 		vert.pack_start(self.part_button_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
 
-		# This builds the resize slider and the Entry widgets below it
-#		self.resize_box = gtk.VBox(gtk.FALSE, 0)
-#		self.resize_hpaned = gtk.HPaned()
-#		self.resize_hpaned.connect("size-allocate", self.part_resized)
-#		self.resize_part_space_frame = gtk.Frame()
-#		self.resize_part_space_frame.set_shadow_type(gtk.SHADOW_IN)
-#		self.resize_part_space = PartitionButton.Partition(color1=self.colors['linux-swap'], color2=self.colors['free'], division=0, label="")
-#		self.resize_part_space.set_sensitive(gtk.FALSE)
-#		self.resize_part_space_frame.add(self.resize_part_space)
-#		self.resize_hpaned.pack1(self.resize_part_space_frame, resize=gtk.TRUE, shrink=gtk.TRUE)
-#		self.resize_unalloc_space_frame = gtk.Frame()
-#		self.resize_unalloc_space_frame.set_shadow_type(gtk.SHADOW_IN)
-#		self.resize_unalloc_space = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="")
-#		self.resize_unalloc_space.set_sensitive(gtk.FALSE)
-#		self.resize_unalloc_space_frame.add(self.resize_unalloc_space)
-#		self.resize_hpaned.add2(self.resize_unalloc_space_frame)
-#		self.resize_hpaned.set_position(0)
-#		self.resize_box.pack_start(self.resize_hpaned, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		resize_text_box = gtk.HBox(gtk.FALSE, 0)
-#		resize_text_box.pack_start(gtk.Label("Type:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-#		self.resize_info_part_type = gtk.combo_box_new_text()
-#		self.resize_info_part_type.append_text("Primary")
-#		self.resize_info_part_type.append_text("Logical")
-#		self.resize_info_part_type.set_active(0)
-#		resize_text_box.pack_start(self.resize_info_part_type, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		resize_text_box.pack_start(gtk.Label("Filesystem:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-#		self.resize_info_part_filesystem = gtk.combo_box_new_text()
-#		for fs in self.supported_filesystems:
-#			self.resize_info_part_filesystem.append_text(fs)
-#		self.resize_info_part_filesystem.set_active(0)
-#		self.resize_info_part_filesystem.connect("changed", self.filesystem_changed)
-#		resize_text_box.pack_start(self.resize_info_part_filesystem, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		resize_text_box.pack_start(gtk.Label("New size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-#		self.resize_info_part_size = gtk.Entry(max=9)
-#		self.resize_info_part_size.set_width_chars(7)
-#		self.resize_info_part_size.connect("insert-text", self.validate_keypress)
-#		self.resize_info_part_size.connect("focus-out-event", self.update_slider_and_entries, "part_size")
-#		resize_text_box.pack_start(self.resize_info_part_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-#		resize_text_box.pack_start(gtk.Label("Unalloc. size:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=6)
-#		self.resize_info_unalloc_size = gtk.Entry(max=9)
-#		self.resize_info_unalloc_size.set_width_chars(7)
-#		self.resize_info_unalloc_size.connect("insert-text", self.validate_keypress)
-#		self.resize_info_unalloc_size.connect("focus-out-event", self.update_slider_and_entries, "unalloc-size")
-#		resize_text_box.pack_start(self.resize_info_unalloc_size, expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		resize_text_box.pack_start(gtk.Label("MB"), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-#		self.resize_box.pack_start(resize_text_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-#		vert.pack_start(self.resize_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-
-		# This builds the mount point/options things
-#		self.part_mount_info_box = gtk.HBox(gtk.FALSE, 0)
-#		self.part_mount_info_box.pack_start(gtk.Label("Mount point:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		self.part_mount_point_entry = gtk.Entry()
-#		self.part_mount_info_box.pack_start(self.part_mount_point_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-#		self.part_mount_info_box.pack_start(gtk.Label("   "), expand=gtk.FALSE, fill=gtk.FALSE, padding=20)
-#		self.part_mount_info_box.pack_start(gtk.Label("Mount options:"), expand=gtk.FALSE, fill=gtk.FALSE, padding=0)
-#		self.part_mount_opts_entry = gtk.Entry()
-#		self.part_mount_info_box.pack_start(self.part_mount_opts_entry, expand=gtk.FALSE, fill=gtk.FALSE, padding=10)
-#		vert.pack_start(self.part_mount_info_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-
 		# This builds the color key at the bottom
+		color_codes = [ { 'label': "Swap", 'color': '#12ff99' },
+                                { 'label': "Ext2/3", 'color': '#0af2fe' },
+                                { 'label': "ReiserFS", 'color': '#e9f704' },
+                                { 'label': "FAT", 'color': '#3d07f9' },
+                                { 'label': "NTFS", 'color': '#f20600' },
+                                { 'label': "Other", 'color': '#ed03e0' },
+                                { 'label': "Free space", 'color': '#ffffff' },
+                                { 'label': "Unallocated", 'color': '#a2a2a2' }
+                              ]
 		color_codes_box = gtk.HBox(gtk.FALSE, 0)
-		linuxswap_color = gtk.Image()
-		linuxswap_color.set_from_file(self.full_path + "/linuxswap_color_square.jpg")
-		color_codes_box.pack_start(linuxswap_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Linux swap"), padding=3)
-		ext2_color = gtk.Image()
-		ext2_color.set_from_file(self.full_path + "/ext2_color_square.jpg")
-		color_codes_box.pack_start(ext2_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Ext2/3"), padding=3)
-		reiserfs_color = gtk.Image()
-		reiserfs_color.set_from_file(self.full_path + "/reiserfs_color_square.jpg")
-		color_codes_box.pack_start(reiserfs_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Reiser"), padding=3)
-		fat_color = gtk.Image()
-		fat_color.set_from_file(self.full_path + "/fat_color_square.jpg")
-		color_codes_box.pack_start(fat_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("FAT"), padding=3)
-		ntfs_color = gtk.Image()
-		ntfs_color.set_from_file(self.full_path + "/ntfs_color_square.jpg")
-		color_codes_box.pack_start(ntfs_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("NTFS"), padding=3)
-		unknown_color = gtk.Image()
-		unknown_color.set_from_file(self.full_path + "/unknown_color_square.jpg")
-		color_codes_box.pack_start(unknown_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Unknown/Other"), padding=3)
-		freespace_color = gtk.Image()
-		freespace_color.set_from_file(self.full_path + "/freespace_color_square.jpg")
-		color_codes_box.pack_start(freespace_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Free space"), padding=3)
-		unalloc_color = gtk.Image()
-		unalloc_color.set_from_file(self.full_path + "/unalloc_color_square.jpg")
-		color_codes_box.pack_start(unalloc_color, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
-		color_codes_box.pack_start(gtk.Label("Unallocated"), padding=3)
 		vert.pack_end(color_codes_box, expand=gtk.FALSE, fill=gtk.FALSE, padding=2)
+		for color in color_codes:
+			temp_xpm = [ "12 12 2 1",
+                                     "B c #000000",
+                                     "C c " + color['color'],
+                                     "BBBBBBBBBBBB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BCCCCCCCCCCB",
+                                     "BBBBBBBBBBBB"
+                                   ]
+			pixmap, mask = gtk.gdk.pixmap_create_from_xpm_d(self.controller.window.window, None, temp_xpm)
+			tmp_image = gtk.Image()
+			tmp_image.set_from_pixmap(pixmap, mask)
+			color_codes_box.pack_start(tmp_image, expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
+			color_codes_box.pack_start(gtk.Label(color['label']), expand=gtk.FALSE, fill=gtk.FALSE, padding=3)
 
 		self.add_content(vert)
 		self.detected_dev_combo.set_active(0)

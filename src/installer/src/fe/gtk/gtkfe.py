@@ -78,6 +78,7 @@ class Installer:
 		self.__full_path = self.get_current_path()
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.title="Gentoo Linux Installer"
+		self.window.realize()
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
 		self.window.set_border_width(0)
