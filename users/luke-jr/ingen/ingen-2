@@ -1,0 +1,91 @@
+#!/bin/bash
+# Step 2: Copy system, unmerging disabled pkgs live
+adsc() {
+	ns="$@" os=""
+	while test "$ns" != "$os"; do
+		os="$ns" ns="`echo "$ns" | sed 's/\/\//\//'`"
+	done
+	echo $ns
+}
+ads() {
+	eval "$1"='"`adsc "${@:2}"`"'
+}
+# first make a list of files not to copy based on
+#  /var/db/pkg/Category/Pkg/CONTENTS -- don't forget to rm this dir too
+# also remove from world file if it's in there
+scan_exclude_pkgs() {
+	COPY_EXCLUDE=""	PKG_EXCLUDE=""
+	for pkg in `cat $INGEN_DATA/exclude_pkgs 2>/dev/null`; do
+		PKG_EXCLUDE="$PKG_EXCLUDE:`echo /usr/portage/*/$pkg* | sed 's%^.*/%%'`"
+		if ! echo $pkg | egrep -q '/' -- ; then pkg="*/$pkg"; fi
+		pkg="`echo /var/db/pkg/$pkg*`"
+		COPY_EXCLUDE="$COPY_EXCLUDE:$pkg"
+		while read ft fn xtra; do
+			case "$ft" in
+			"obj" | "sym")
+				COPY_EXCLUDE="$COPY_EXCLUDE:$fn"
+				;;
+			"dir")	;;				# Do nothing for dirs
+			*)
+				debug "WARNING: Unknown content type: $ft"
+				;;
+			esac
+		done < $pkg/CONTENTS
+	done
+}
+docopy() {
+	ads item $1
+	ads itemd $1/
+	case ":$COPY_EXCLUDE:" in
+	*:$item:*)	# Exclude this dir/file
+		sdebug "Exclude: $item"
+		;;
+	*:$itemd:*)			# Exclude contents
+		mkdir -p $SYSROOT/$item		#should perhaps copy perms?
+		sdebug "Mkdir: $item"
+		;;
+	*:$itemd*)
+		# Need to check each file? Note: THIS IS NOT GOOD FOR SYMLINK DIRS
+		debug "Entering Dir: $item"
+		mkdir -p $SYSROOT/$item
+		pushvar item
+		for f in $item/*; do
+			docopy "`adsc "$f"`"
+		done
+		popvar item
+		# TODO: find replacement for this test; ls can take some time
+		if outnull ls -d $item/*			&&
+		 ! outnull ls -d $SYSROOT/$item/*	; then
+			rmdir $SYSROOT/$item	# Contents were excluded
+			debug "Excluding Dir: $item"
+		fi
+		;;
+	*)
+		sdebug "Copy: $item"
+		outnull cp -af $item $SYSROOT/$item
+		;;
+	esac
+}
+cp -f "$INGEN_DATA/exclude_pkgs" "$INGEN_DATA/.exclude_pkgs.read"
+scan_exclude_pkgs
+COPY_EXCLUDE="$COPY_EXCLUDE:/var/cache/edb/world"	# Rebuild this later
+COPY_EXCLUDE="$COPY_EXCLUDE:/tmp/:/mnt/"	# Contents [re]built later
+COPY_EXCLUDE="$COPY_EXCLUDE:/proc/:/dev/"	# Shouldn't copy these contents
+COPY_EXCLUDE="$COPY_EXCLUDE:/initrd:/boot/boot"	# A loop?
+sdebug "COPY_EXCLUDE=$COPY_EXCLUDE"
+docopy '/'
+debug "PKG_EXCLUDE=$PKG_EXCLUDE"
+debug "Transferring world file..."
+echo -n "" > $SYSROOT/var/cache/edb/world
+for wpe in `cat /var/cache/edb/world`; do
+	wpes="`echo $wpe | sed 's%^.*/%%'`"
+	case ":$PKG_EXCLUDE:" in
+	*:$wpes:*)		# Don't copy
+		sdebug "World Exclude: $wpe"
+		;;
+	*)
+		echo $wpe >> $SYSROOT/var/cache/edb/world
+		sdebug "World Copy: $wpe"
+		;;
+	esac
+done

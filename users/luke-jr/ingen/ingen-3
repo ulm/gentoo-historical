@@ -1,0 +1,19 @@
+#!/bin/bash
+# Step 3: Create users
+passwd_encode() {
+	openssl passwd -1 "$1"
+}
+
+cp -f "$INGEN_DATA/users" "$INGEN_DATA/.users.read"
+IFS=:
+while read uname upass ufull uicon xtra; do
+	# TODO: Handle root overrides?
+	uacmd="useradd -c '$ufull' -m -p '`passwd_encode $upass`' $uname"
+ 	debug $uacmd
+	chroot /mnt/gentoo /bin/bash -c "$uacmd" 2>&1 | 
+		while read output; do
+			debug WARNING: "$output"
+		done
+	# TODO: put icon in KDM/GDM configs?
+done < $INGEN_DATA/users
+unset IFS
