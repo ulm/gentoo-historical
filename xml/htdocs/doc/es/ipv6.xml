@@ -1,0 +1,930 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/es/ipv6.xml">
+
+<title>Guía del router IPv6 en Gentoo</title>
+<author title="Developer">
+    <mail link="latexer@gentoo.org">Peter Johanson</mail>
+</author>
+<author title="Traductor">
+    <mail link="fiam@asturlinux.org">Alberto García Hierro</mail>
+</author>
+<author title="Editor-Es">
+    <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
+</author>
+
+<abstract>
+Esta guía muestra como configurar IPv6 en un sistema con Gentoo. Incluye
+establecer un túnel con un broker, la configuración básica del DNS
+y la configuración de los clientes para usar el sistema para conectar con
+una diracción IPv6.
+</abstract>
+
+<version>1.0</version>
+<date>24 de Agosto de 2003</date>
+
+<chapter>
+
+<title>Configuración del kernel</title>
+
+<section>
+<title>Configuración básica del kernel</title>
+<body>
+<p>
+Cualquiera de los kernel 2.4 disponibles en Gentoo soportará IPv6
+fácilmente. Además, tanto <c>sys-kernel/gentoo-sources</c> como
+<c>sys-kernel/pfeifer-sources</c> cuentan con la opción de aplicar
+los parches de USAGI. El conjunto de parches USAGI no es indispensable,
+pero está en desarrollo e implementa muchos elementos de IPv6 que de
+otra manera no están presentes en el kernel. Para utilizar el conjunto
+de parches USAGI, asegúrese de que su variable USE contiene 'usagi' cuando
+emerja cualquiera de estas fuentes del kernel. El kernel en desarrollo 2.5.x
+tiene un soporte IPv6 excelente también, incorporando gran parte del código
+de USAGI.
+</p>
+
+<pre caption="Emergiendo un kernel">
+# <i>USE="usagi" emerge gentoo-sources</i>
+<comment>o</comment>
+# <i>USE="usagi" emerge pfeifer-sources</i>
+</pre>
+
+<p>
+Ahora estamos listos para entrar en el directorio de las fuentes
+del kernel y comenzar con su configuración.
+</p>
+
+<pre caption="Configurando el kernel de Linux">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<note>
+Esta guía asume que el enlace <path>/usr/src/linux</path> apunta
+a las fuentes que estará usando.
+</note>
+
+<note>
+Asegúrese de que tiene <path>Prompt for development and/or incomplete 
+code/drivers</path> activado en su configuración del kernel.
+</note>
+
+<pre caption = "'make menuconfig' options">
+Networking options ---&gt;
+   &lt;*&gt; IP: tunneling
+   ...
+   &lt;*&gt; The IPv6 protocol (EXPERIMENTAL) ---&gt;
+
+<codenote>Las opciones IPv6 por debajo de esta pueden ser útiles para
+muchas otras aplicaciones,</codenote>
+<codenote>pero no deberían ser necesarias para una configuración básica.</codenote>
+
+Network device support ---&gt;
+   &lt;*&gt; Universal TUN/TAP device driver support
+<codenote>Esta opción solo es necesaria si está usando ptrtd o la conversión
+6a4.</codenote>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Probando el soporte IPv6</title>
+<body>
+
+<p>
+Después de activar las opciones recomendadas, recompile su kernel y reinicie
+usando su nuevo kernel con Ipv6 activado. Si pv6 está funcionando, el
+dispositivo de loopback debería mostar una dirección IPv6.
+</p>
+
+<pre caption = "Comprobando el dispositivo de loopback">
+# <i>ifconfig lo</i>
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+	  inet6 addr: ::1/128 Scope:Host
+	  <codenote>Las líneas a continuación demuestran que las cosas funcionan</codenote>
+	  UP LOOPBACK RUNNING  MTU:16436  Metric:1
+	  RX packets:6 errors:0 dropped:0 overruns:0 frame:0
+	  TX packets:6 errors:0 dropped:0 overruns:0 carrier:0
+	  collisions:0 txqueuelen:0
+	  RX bytes:456 (456.0 b)  TX bytes:456 (456.0 b)
+</pre>
+
+</body>
+</section>
+
+</chapter>
+<chapter>
+
+<title>Configuración del túnel</title>
+
+<section>
+<title>Configuración básica</title>
+<body>
+
+<p>
+La mayoría de los ISP ( Proveedor de Servicios de Internet ) todavía no ofrecen
+conexiones IPv6 de modo nativo. Para saltarse está limitación, existen
+varios "tunnel brokers" que ofrecen túneles IPv6 de manera gratuita. Esto le permite hacer un túnel para todas las conexiones IPv6 a través de una
+conexión IPv4.
+</p>
+
+<table>
+<tr><th>Broker</th><th>Situación geográfica</th></tr>
+<tr><ti><uri link="http://tunnelbroker.net">Hurricane Electric</uri></ti><ti>EE.UU./Canada</ti></tr>
+<tr><ti><uri link="http://www.freenet6.net">Freenet6</uri></ti><ti>EE.UU.</ti></tr>
+<tr><ti><uri link="http://ipng.org.uk">IPnG</uri></ti><ti>Reino Unido</ti></tr>
+<tr><ti><uri link="http://tb.ipv6.btexact.com">BTExact</uri></ti><ti>Europa</ti></tr>
+</table>
+
+<p>
+Veamos ahora dos ejemplos de configuración de un túnel IPv6 con dos
+populares brokers de Norteamérica: Hurricane Electric y Freenet6.
+</p>
+</body>
+</section>
+
+<section>
+<title>Hurricane Electric</title>
+<body>
+
+<p>
+Hurricane Electric (HE de una forma abreviada) ofrece túneles IPv6
+de forma gratuira y asigna un bloque /64 de direcciones para usted.
+También permite configurar un DNS inverso. Conseguir un túnel
+es sencillo. Simplemente vaya a
+<uri>http://www.tunnelbroker.net</uri> y rellene el formulario.
+</p>
+
+<note>
+Para registrarse debe de indicar algunos datos como su dirección
+y número de teléfono.
+</note>
+
+<warn>
+Los túneles de HE tardan 24 horas en activarse, con el fin de
+evitar abusos.
+</warn>
+
+<p>
+Una vez que tenga el túnel activado y le haya sido asignado un bloque
+/64 , puede configurar su máquina en Gentoo. HE proporciona configuraciones
+de ejemplo basadas en las utilidades ifconfig e iproute. Los dos
+siguientes ejemplos asumen que tiene la siguiente configuración:
+</p>
+
+<table>
+<tr><ti>Dirección IPv4 Local</ti><ti>68.36.91.195</ti></tr>
+<tr><ti>Dirección IPv4 de HE</ti><ti>64.71.128.82</ti></tr>
+<tr><ti>Dirección local del túnel IPv6</ti><ti>2001:470:1F00:FFFF::189</ti></tr>
+<tr><ti>Bloque IPv6k</ti><ti>2001:470:1F00:296::/64</ti></tr>
+</table>
+
+<p>
+Usando las net-tools e <c>ifconfig</c>, puede hacer lo siguiente:
+</p>
+
+<pre caption="Configuración con ifconfig">
+# <i>ifconfig sit0 up</i>
+# <i>ifconfig sit0 inet6 tunnel ::64.71.128.82 </i>
+<codenote>Añadir un túnel a la dirección IPv4 de HE</codenote>
+# <i>ifconfig sit1 up</i>
+# <i>ifconfig sit1 inet6 add 2001:470:1F00:FFFF::189/127</i>
+# <i>route -A inet6 add ::/0 dev sit1</i>
+<codenote>Enrutar todo el tráfico IPv6 de través del dispositivo
+'sit1'</codenote>
+</pre>
+
+<p>
+Usando el paquete iproute y el comando <c>ip</c>, debería hacer
+lo siguiente:
+</p>
+
+<pre caption="Configuración con ip">
+# <i>ip tunnel add sixbone mode sit remote 64.71.128.82 local 68.36.91.195 ttl 255</i>
+<codenote>Crear un túnel entre la dirección IPv4 y la dirección IPv4
+remota de HE</codenote>
+# <i>ip link set sixbone up</i>
+# <i>ip addr add 2001:470:1F00:FFFF::189/127 dev sixbone</i>
+<codenote>Levantar el túnel, y asignarle la dirección IPv6</codenote>
+# <i>ip route add ::/0 dev sixbone</i>
+<codenote>Enrutar todo el tráfico IPv6 a través del dispositivo
+de túnel 'sixbone'</codenote>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Freenet6</title>
+<body>
+
+<p>
+<uri link="www.freenet6.net">Freenet6</uri> es otro proveedor de túneles
+(broker) gratuito. El registro solo requiere un nombre de usuario y una
+dirección de correo electrónico válida. En Freenet6 han escogido
+utilizar una estructura de cliente/servidor para administrar
+el túnel y han creado el cliente <c>tspc</c>. El cliente está disponible
+en el portage, pero todavía permanece esmascarado pendiente de que se
+pruebe más. Para instalarlo haga:
+</p>
+
+<pre>
+# <i>USE="~x86" emerge freenet6</i>
+</pre>
+
+<p>
+Ahora necesita configurar freenet6 editando:
+<path>/etc/freenet6/tspc.conf</path>. Solamente debería tener que
+cambiar los campos de usuario y contraseña
+(<path>userid</path> y <path>passwd</path>) colocando los asignados
+por Freenet6. Debajo tiene una configuración de ejemplo completa.
+</p>
+
+<pre caption="ejemplo de tspc.conf">
+tsp_version=1.0.1
+tsp_dir=/etc/freenet6
+auth_method=any
+client_v4=auto
+<i>userid=anonymous</i>
+<i>passwd=foobar</i>
+template=gentoo
+server=tsps1.freenet6.net
+retry_delay=0
+if_tunnel=sit3
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Probando su conexión</title>
+<body>
+
+<p>
+Ahora que su túnel está configurado, puede probar su conexión. La forma
+más sencilla de hacerlo es usando la utilidad <c>ping6</c> e intentando
+hacer ping a un nombre de máquina IPv6.
+</p>
+
+<pre caption = "Probando la conexión">
+# <i>emerge iputils</i>
+# <i>ping6 www.kame.net</i>
+PING www.kame.net(orange.kame.net) 56 data bytes
+64 bytes from orange.kame.net: icmp_seq=1 ttl=52 time=290 ms
+64 bytes from orange.kame.net: icmp_seq=2 ttl=52 time=277 ms
+64 bytes from orange.kame.net: icmp_seq=3 ttl=52 time=280 ms
+64 bytes from orange.kame.net: icmp_seq=4 ttl=52 time=279 ms
+64 bytes from orange.kame.net: icmp_seq=5 ttl=52 time=277 ms
+
+--- www.kame.net ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4038ms
+rtt min/avg/max/mdev = 277.040/281.041/290.046/4.699 ms
+</pre>
+
+<p>
+Actualmente se está trabajando para añadir mejor soporte IPv6 a los
+scripts de inicio de la red. Si desea conocer su estado  y/o ofrecer
+ayuda, escriba a <mail link="latexer@gentoo.org">latexer@gentoo.org</mail>.
+</p>
+
+</body>
+</section>
+
+</chapter>
+<chapter>
+
+<title>Soporte IPv6 en aplicaciones</title>
+
+<section>
+<title>Re-emergiendo paquetes</title>
+<body>
+
+<p>
+A menos que tenga USE="ipv6" en su <path>/etc/make.conf</path> previamente,
+probablemente necesitará re-emerger unos cuantos paquetes para compilarlos
+con soporte IPv6. Para obtener una lista de todos los paquetes instalados
+en los que influye la variable del USE 'ipv6', puede ejecutar el siguiente
+comando.
+</p>
+
+<pre caption="Candidatos para ser re-emergidos">
+# <i>emerge -epv world | grep ipv6 | sed "s:^.*\] ::; s:-[0-9]\+.*::" | cut -d' ' -f1</i>
+</pre>
+
+<p>
+Para re-emergerlos fácilmente, haga:
+</p>
+
+<pre caption="Candidatos para ser re-emergidos">
+# <i>emerge -epv world | grep ipv6 | sed "s:^.*\] ::; s:-[0-9]\+.*::" | \</i>
+&gt; <i>cut -d' ' -f1 > packages</i>
+</pre>
+
+<p>
+Ahora, edite el fichero <path>packages</path> para eliminar
+cualquier paquete que no quiera recompilar en este momento. Después,
+simplemente ejecute:
+</p>
+
+<pre>
+# <i>emerge `cat packages`</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Paquetes específicos de IPv6</title>
+<body>
+
+<p>
+Hay unos pocos paquetes que tratan con artículos IPv6. La
+mayoría de ellos se encuentran en <path>/usr/portage/net-misc</path>.
+</p>
+
+<table>
+<tr><th>Paquete</th><th>Descripción</th></tr>
+<tr><ti>net-misc/ipv6calc</ti><ti>Convierte una dirección IPv6
+a un formato comprimido</ti></tr>
+<tr><ti>net-misc/nc6</ti><ti>Versión de netcatque soporta tanto
+IPv6 como IPv4</ti></tr>
+<tr><ti>dev-perl/Socket6</ti><ti>La parte de las
+definiciones de socket.h de C y los manipuladores de estructuras
+relacionados con IPv6</ti></tr>
+</table>
+</body>
+</section>
+
+</chapter>
+<chapter>
+
+<title>Configuración de DNS</title>
+
+<section>
+<title>IPv6 y DNS</title>
+<body>
+
+<p>
+Los DNS para IPv4 utilizan registros A, los DNS para IPv6 usan registros
+AAAA. (Esto se debe a que IPv4 tiene un espacio de direcciones de 2^32
+mientras que el de IPv6 es de 2^128). Para el DNS inversio, el estándar
+INT es el más usado. ARPA es el último formato pero no está tan difundido
+como INT. El soporte para el formato INT será descrito ahora.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuración de BIND</title>
+<body>
+
+<p>
+Las versiones recientes de BIND incluyen un soporte IPv6 excelente. Esta
+sección asumirá que tiene un mínimo conocimiento sobre configuración y
+uso de BIND. Asumiremos que no está corriendo BIND en una jaula chroot.
+Si, por el contrario, usted esta corriéndolo dentro, simplemente añada
+el prefijo de la jaula a la mayoría de las rutas en la siguiente sección.
+</p>
+
+<p>
+Lo primero que necesita es añadir entradas tanto para la resolución directa
+como para la resolución inversa en <path>/etc/bind/named.conf</path>.
+</p>
+
+<pre caption="entradas en named.conf">
+zone "ipv6-rules.com" IN {
+	type master;
+	file "pri/ipv6-rules.com";
+};
+<codenote>Esto proporcionará el DNS directo para el dominio 'ipv6-rules.com'</codenote>
+zone "6.9.2.0.0.0.f.1.0.7.4.0.1.0.0.2.ip6.int" {
+	type master;
+	file "pri/rev-ipv6-rules.com.int";
+};
+<codenote>El formato para el DNS inverso se obtiene bit a bit. Se hace tomando
+el prefijo IPv6,</codenote>
+<codenote>dándole la vuelta a los números y colocando un punto entre
+cada número</codenote>
+</pre>
+
+<p>
+Ahora debemos crear los archivos de zona y añadir entradas para todas
+nuestros nombres de máquina:
+</p>
+
+<pre caption="pri/ipv6-rules.com">
+$TTL    2h
+@       IN      SOA     ipv6-rules.com. webmaster.ipv6-rules.com.  (
+                                2003052501 ; Serial
+				28800      ; Refresh
+				14400      ; Retry
+				3600000    ; Expire
+				86400 )    ; Minimum
+			NS      ns1.ipv6-rules.com
+
+	IN	AAAA	2001:470:1f00:296::1 ; address for ipv6-rules.com
+host1	IN	AAAA	2001:470:1f00:296::2 ; address for host1.ipv6-rules.com
+host2	IN	AAAA	2001:470:1f00:296::3:3 ; address for host2.ipv6-rules.com
+</pre>
+
+<pre caption="pri/rev-ipv6-rules.com.int">
+$TTL 3d ; Default TTL (bind 8 needs this, bind 9 ignores it)
+@       IN SOA ipv6-rules.com. webmaster.ipv6-rules.com. (
+                        2003052501      ; Serial number (YYYYMMdd)
+			24h             ; Refresh time
+			30m             ; Retry time
+			2d              ; Expire time
+			3d )            ; Default TTL
+	IN      NS     ns1.ipv6-rules.com.
+; IPv6 PTR entries
+$ORIGIN 6.9.2.0.0.0.f.1.0.7.4.0.1.0.0.2.ip6.int.
+
+1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0 IN      PTR     ipv6-rules.com.
+2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0 IN      PTR     host1.ipv6-rules.com.
+3.0.0.0.3.0.0.0.0.0.0.0.0.0.0.0 IN      PTR     host2.ipv6-rules.com.
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuración de DJBDNS</title>
+<body>
+
+<p>
+Actualmente hay algunos parches hechos por otros para DJBDNS disponibles
+en <uri link="http://www.fefe.de/dns/">http://www.fefe.de/dns/</uri> 
+que le permiten funcionar con IPv6. DJBDNS puede instalarse con estos
+parches emergiéndolo con "ipv6" en el USE.
+</p>
+
+<warn>
+Todavía no están soportados todos los tipos de registro con estos parches.
+En particular, los registros MX y NS no están soportados.
+</warn>
+
+<pre>
+# <i>USE="ipv6" emerge djbdns</i>
+</pre>
+
+<p>
+Una vez que djbdns está instalado, puede configurarlo ejecutando
+<c>tinydns-setup</c> y responandiendo unas pocas preguntas
+acerca de las direcciones IP en las que debe escuchar,
+donde instalarlo, etc.
+</p>
+
+<pre caption = "Configurando tinydns">
+# <i>tinydns-setup</i>
+</pre>
+
+<p>
+Asumiendo que hemos instalado <c>tinydns</c> en <path>/var/tinydns</path>, 
+ahora editaremos <path>/var/tinydns/root/data</path>. Este archivo contendrá
+todos los datos necesarios para conseguir que tinydns maneje los DNS
+para su delegación IPv6.
+</p>
+
+<pre caption="archivo data de ejemplo">
+.ipv6-rules.com:192.168.0.1:a:259200
+<codenote>*.ipv6-rules.com is authoritatively handled by 192.168.0.1</codenote>
+.6.9.2.0.0.0.f.1.0.7.4.0.1.0.0.2.ip6.int:192.168.0.1:a
+<codenote>DNS autoritativo inverso para 2001:470:1f00:296::/64</codenote>
+6host1.ipv6-rules.com:200104701f0002960000000000000001:86400
+6host2.ipv6-rules.com:200104701f0002960000000000000002:86400
+<codenote>Especifica las IPs para host1 and host2</codenote>
+3www.ipv6-rules.com:200104701f0002960000000000000002:86400
+<codenote>www apunta a host1</codenote>
+</pre>
+
+<p>
+Las líneas que comienzan con <c>6</c> deben tener creado tanto
+un registro AAAA como un registro PTR. Aquellas que comiencen con
+un <c>3</c> solamente tendrán un registro AAAA creado. Además de editar
+manualmente el archivo <path>data</path> , puede usar los scripts
+<c>add-host6</c> y <c>add-alias6</c> para añadir nuevas entradas.
+Una vez haya hecho los cambios al archivo <path>data</path> , simplemete
+necesita ejecutar <c>make</c> en <path>/var/tinydns/root</path>. Así
+se creará <path>/var/tinydns/root/data.cfb</path>, el cual usa tinydns
+como fuente de información para las peticiones DNS.
+</p>
+
+</body>
+</section>
+
+</chapter>
+<chapter>
+
+<title>Router IPv6</title>
+
+<section>
+<title>Configurar el enrutado</title>
+<body>
+
+<p>
+Si queremos que nuestro sistema funcione como router para otros clientes
+que deseen conectar al mundo exterior con IPv6, se necesita algo más de 
+configuración. Necesitamos activar el reenvio de paquetes Ipv6. Podemos
+hacerlo de dos maneras.
+</p>
+
+<pre caption="Activando el reenvío">
+# <i>echo 1 > /proc/sys/net/ipv6/conf/all/forwarding</i>
+or
+# <i>sysctl -w net.ipv6.conf.all.forwarding</i>
+</pre>
+
+<warn>
+El script de inicio radvd activa el reenvío, haciendo el paso
+siguiente innecesario.
+</warn>
+
+<p>
+Para activar el reenvío en el inicio, necesitará editar
+<path>/etc/sysctl.conf</path> y editar la línea siguiente.
+</p>
+
+<pre caption="Fragmento a añadir en sysctl.conf">
+net.ipv6.conf.default.forwarding=1
+</pre>
+
+<p>
+Ahora el tráfico debería ser reenviado desde esta máquina a través del
+túnel que hemos establecido con nuestro broker.
+</p>
+
+<p>
+Para asignar direcciones IPv6 a los clientes, las especificación IPv6
+permite tanto la asignación con estado como sin estado. La
+asignación sin estado usa un proceso llamado 'Router Advertisement' y
+permite a los clientes obtener una IP y una ruta predeterminada simplemente
+levantando el dispositivo un red. Se denomina sin estado porque no se
+guarda ningún registro del estado de las IPs asignadas y las máquinas
+a las cuales se les ha asignado. La asignación con estado se maneja 
+mediante DHCPv6. Se llama así porque el servidor mantiene un registro
+con el estado de los clientes que han solicitado una IP y la han obtenido.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuración sin estado</title>
+<body>
+
+<p>
+La configuración sin estado se lleva a cabo de una manera sencilla
+usando el demonio de 'Router Advertisement', o radvd.
+</p>
+
+<pre caption="Configurando radvd">
+# <i>emerge radvd</i>
+</pre>
+
+<p>
+Después de emerger radvd, necesitamos crear 
+<path>/etc/radvd/radvd.conf</path> que contiene información acerca
+del bloque de IP del que se asignarán las IPs. Aquí tiene un ejemplo
+del archivo <path>radvd.conf</path> usando el prefijo asignado por
+nuestro broker.
+</p>
+
+<pre caption="Ejemplo de radvd.conf">
+interface eth0
+{
+        AdvSendAdvert on;
+	<codenote>Send advertisement messages to other hosts</codenote>
+	AdvLinkMTU 1280;
+	MaxRtrAdvInterval 300;
+	prefix 2001:470:1F00:296::/64
+	<codenote>El grupo de IPs que tenemos a nuestra dispocisión</codenote>
+	{
+		AdvOnLink on;
+		AdvAutonomous on;
+	};
+};
+</pre>
+
+<p>
+En <c>man radvd.conf</c> está disponible información más detallada.
+Ahora podemos iniciar radvd y configurarlo para que se cargue al inicio.
+</p>
+
+<pre caption = "Iniciando radvd">
+# <i>/etc/init.d/radvd start</i>
+# <i>rc-update add radvd default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuración con estado</title>
+<body>
+
+<p>
+Si desea usar configuración con estado, necesitará instalar y configurar
+dhcpv6.
+</p>
+
+<pre caption = "Instalando dhcpv6">
+# <i>emerge dhcpv6</i>
+</pre>
+
+<p>
+Ahora debemos configurar el servidor DHCPv6 editando
+<path>/etc/dhcp6s.conf</path>.
+</p>
+
+<pre caption="Ejemplo de dhcp6s.conf">
+prefer-life-time 10000;
+valid-life-time 20000;
+renew-time 5000;
+rebind-time 8000;
+interface eth1 {
+	link AAA {
+		allow unicast;
+		send unicast;
+		allow rapid-commit;
+		send server-preference 5;
+		renew-time 1000;
+		rebind-time 2400;
+		prefer-life-time 2000;
+		valid-life-time 3000;
+		range 2001:470:1f00:296::10 to 2001:470:1f00:296::110/64;
+		prefix 2001:470:1f00:296::/64;
+	};
+};
+</pre>
+
+<p>
+Ahora podemos arrancar dhcp6s y configurarlo para que se cargue al inicio.
+</p>
+
+<pre caption = "Iniciando dhcp6s">
+# <i>/etc/init.d/dhcp6s start</i>
+# <i>rc-update add dhcp6s default</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Clientes IPv6</title>
+<section>
+<title>Usando radvd</title>
+<body>
+
+<p>
+Los clientes que se encuentren detrás de este router, ahora deben ser
+capaces de acceder a la red vía IPv6. Si está usando radvd, configurar
+las máquinas debería ser tan sencillo como levantar el dispositivo de red.
+(Probablemente ya lo hayan hecho sus scripts de inicio net.ethX).
+</p>
+
+<pre caption = "Conectando a través IPv6">
+# <i>ifconfig eth0 up</i>
+# <i>ifconfig eth0</i>
+eth0      Link encap:Ethernet  HWaddr 00:09:6B:06:B7:B4
+          inet6 addr: fe80::209:6bff:fe06:b7b4/64 Scope:Link
+          inet6 addr: 2001:470:1f00:296:209:6bff:fe06:b7b4 Scope:Global
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:4 errors:0 dropped:0 overruns:0 carrier:0 
+          collisions:0 txqueuelen:100
+          RX bytes:0 (0.0 b)  TX bytes:828 (828.0 b)
+          Interrupt:11 Base address:0x8400 Memory:d0204000-d0204038
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Usando DHCPv6</title>
+<body>
+
+<p>
+Si su router está configurado para usar DCPv6, sus clientes también
+necesitarán tener el paquete dhcpv6 instalado. Una vez haya hecho esto,
+tendrá que configurar sus clientes editando <path>/etc/dhcp6c.conf</path>.
+</p>
+
+<pre caption="Ejemplo de dhcp6c.conf">
+interface eth0 {
+	send rapid-commit;
+	request prefix-delegation;
+	request domain-name-servers;
+	request temp-address;
+	iaid 11111;
+	renew-time 11000;
+	rebind-time 21000;
+};
+</pre>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Usando conversión 6a4</title>
+<section>
+<title>Principios básicos</title>
+<body>
+
+<p>
+La conversión 6a4 puede usarse si tiene máquinas que necesitan comunicarse
+con máquinas con direcciones IPv4 sobre una conexión IPv6 pura.
+Puede tener una red interna funcionando enteramente con IPv6, con una máquina
+tratando las conexión hacia el mundo exterior IPv4/IPv6.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuración DNS</title>
+<body>
+
+<p>
+Para tener la conversión 6a4 funcionando necesita configurar
+un proxy DNS, <c>totd</c>, que enviará registros AAAA para los sitios
+que realmente solo tiene un registro A. Estos registros AAAA apuntarán a
+direcciones IPv6 que realmente no existen, pero serán enrutadas a través de
+un proxy 6a4. <c>totd</c> todavía están en <c>~x86</c>, enmascarado, 
+pendiente más pruebas.
+</p>
+
+<pre caption = "Instalando totd">
+# <i>ACCEPT_KEYWORDS="~x86" emerge totd</i>
+</pre>
+
+<p>
+Ahora, necesitamos configurar <path>/etc/totd.conf</path> con
+alguna información básica de configuración.
+</p>
+
+<pre caption="Ejemplo de /etc/totd.conf">
+forwarder 192.168.0.2 port 53
+<codenote>Apunta a un DNS real</codenote>
+prefix 3ffe:abcd:1234:9876::
+<codenote>El prefijo que se colocará delante de los
+registros AAAA falsos.</codenote>
+port 5005
+<codenote>El puerto en el que correrá totd</codenote>
+pidfile /var/run/totd.pid
+<codenote>El archivo PID a usar</codenote>
+stf
+<codenote>Hacer realmente las tareas 6a4</codenote>
+</pre>
+
+<note>
+<c>totd</c> debe configurarse para usar un puerto diferente al 53
+si otro servidor de nombres está corriendo en la misma máquina. 
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Proxy 6a4</title>
+<body>
+
+<p>
+<c>ptrtd</c> se usará como proxy 6a4, permitiendo conexiones entre
+las máquinas IPv6 de la red interna y las máquinas IPv4 de fuera.
+</p>
+
+<pre caption = "Instalando ptrtd">
+# <i>ACCEPT_KEYWORDS="~x86" emerge ptrtd</i>
+</pre>
+
+<p>
+Ahora necesitamos configurar <c>ptrtd</c>, especificándole
+el falso prefijo (el que le especificamos a <c>totd</c> que usase)
+para crear las conexiones del proxy. 
+Edite <path>/etc/conf.d/ptrtd</path> y configure <c>IPV6_PREFIX</c>. Recuerde
+que debe ser el mismo prefijo con el cual se configuró <c>totd</c>.
+</p>
+
+<pre caption="Ejemplo de /etc/ptrtd.conf">
+IPV6_PREFIX="3ffe:abcd:1234:9876::"
+</pre>
+
+<p>
+Ahora puede iniciar totd, y configurarlo para que se cargue en el inicio.
+</p>
+
+<pre caption = "Starting totd">
+# <i>/etc/init.d/totd start</i>
+# <i>rc-update add totd default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuración de los clientes y pruebas</title>
+<body>
+
+<p>
+Los clientes ahora deberían estar configurados para conectar con
+máquinas tanto IPv4 como IPv6 a través de una conexión basada solamente
+en IPv6. Asumiendo que los clientes ya han recibido una dirección IPv6
+de radvd, simplemente necesitamos añadir una nueva entrada para la
+resolución de DNS y ana ruta predeterminada para esa "direcciones
+falsas". En primer lugar, añada una entrada al principio de su
+<path>/etc/resolv.conf</path> apuntando a la máquina que está corriendo
+<c>totd</c>.
+</p>
+
+<pre caption="Ejemplo de /etc/resolv.conf">
+nameserver 2001:470:1f00:296::1
+<codenote>El servidor corriendo totd</codenote>
+</pre>
+
+<p>
+Para probar la resolución de nombres, solicite un registro AAAA
+para un sitio puramente IPv4 conocido.
+</p>
+
+<pre caption = "Probando la resolución de nombres">
+# <i>host -t aaaa google.com</i>
+google.com has AAAA address 3ffe:abcd:1234:9876::d8ef:3364
+google.com has AAAA address 3ffe:abcd:1234:9876::d8ef:3564
+</pre>
+
+<p>
+Ahora añadiremos una ruta predeterminada para todas las
+direcciones que comiencen con nuestro falso prefijo.
+</p>
+
+<pre caption="Usando route">
+# <i>route -A inet6 add 3ffe:abcd:1234:9876::/64 gw 2001:470:1f00:296::1</i>
+</pre>
+
+<pre caption="Usando iproute">
+# <i>ip route add 3ffe:abcd:1234:9876::/64 via 2001:470:1f00:296::1 dev eth0</i>
+</pre>
+
+<p>
+Finalmente, use <c>ping6</c> para hacer ping a google.com a su
+falsa dirección IPv6.
+</p>
+
+<pre caption="Probando 6a4">
+# <i>ping6 -c 2 google.com</i>
+PING 3ffe:abcd:1234:9876::d8ef:3364(3ffe:abcd:1234:9876::d8ef:3364) 56 data bytes
+64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=1 ttl=255 time=0.106 ms
+64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=2 ttl=255 time=0.090 ms
+
+--- 3ffe:abcd:1234:9876::d8ef:3364 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 0.090/0.098/0.106/0.008 ms
+</pre>
+
+<note>
+El router corriendo <c>ptrtd</c> está respondiendo, lo cual nos muestra
+que todo está funcionando.
+</note>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Otros recursos</title>
+<body>
+
+<p>
+En la red, hay una gran cantidad de recursos muy buenos relacionados IPv6.
+</p>
+
+<table>
+<tr><th>Sitio web</th><th>Recurso</th></tr>
+<tr><ti><uri link="http://www.ipv6.org/">www.ipv6.org</uri></ti><ti>Información general sobre IPv6</ti></tr>
+<tr><ti><uri link="http://www.linux-ipv6.org/">www.linux-ipv6.org/</uri></ti><ti>Proyecto USAGI</ti></tr>
+<tr><ti><uri link="http://www.deepspace6.net/">www.deepspace6.net</uri></ti><ti>Sitio sobre Linux/IPv6</ti></tr>
+<tr><ti><uri link="http://www.hs247.com/">www.hs247.com</uri></ti><ti>Todo sobreIPv6</ti></tr>
+<tr><ti><uri link="http://www.ipv6-net.org/">www.ipv6-net.org</uri></ti><ti>Sitio alemán sobre IPv6</ti></tr>
+<tr><ti><uri link="http://www.kame.net/">www.kame.net</uri></ti><ti>Implementación *BSD</ti></tr>
+</table>
+
+<p>
+En el IRC, puede probar <c>#gentoo-ipv6</c> o <c>#ipv6</c> en 
+<uri link="http://www.freenode.net">Freenode</uri>. 
+Puede conectarse a los servidores de Freenode mediante IPv6 usando 
+<b>irc.ipv6.freenode.net</b>.
+</p>
+
+</body>
+</chapter>
+
+
+</guide>
