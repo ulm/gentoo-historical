@@ -198,7 +198,7 @@
   <xsl:call-template name="menubar" />
   <h1><xsl:number level="multiple" format="1. " select="position()"/><xsl:value-of select="title" /></h1>
   <xsl:variable name="doc" select="include/@href"/>
-  <xsl:variable name="FILE" select="document(concat('/doc/en/handbook/',$doc))" />
+  <xsl:variable name="FILE" select="document($doc)" />
   <xsl:if test="$FILE/section/subsection/title">
     <b>Content: </b>
     <ul>
