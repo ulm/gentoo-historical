@@ -756,7 +756,7 @@ Gebruikers Documentatie in het Nederlands: <br/>
   <xsl:template match="section">
     <xsl:param name="chid"/>
     <xsl:if test="title">
-      <xsl:variable name="sectid"><xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
+      <xsl:variable name="sectid">doc_chap<xsl:value-of select="$chid"/>_sect<xsl:number/></xsl:variable>
       <p class="secthead">
         <a name="{$sectid}"><xsl:value-of select="title"/> </a>
       </p>
