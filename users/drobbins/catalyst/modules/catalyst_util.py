@@ -15,6 +15,15 @@ class generic_target:
 		self.settings=myset
 	def path(self):
 		return "stages/stage1-"+self.settings["subarch"]+"-"+self.settings["buildno"]+".tar.bz2"
+	def read_spec_file(self,myfile):
+		#read in a spec file, grab settings we need.
+		pass
+	def execute_script(self,myscript):
+		#export env vars, execute script, look at return value
+		pass
+	def build(self):
+		#do the actual stage1 building
+		return execute_script("targets/stage1/build.sh")
 	def unpack(self):
 		#unpack stages
 	def mount_all(self):
@@ -27,7 +36,7 @@ class generic_target:
 		#clean up temporary build directory
 	def pack(self):
 		#tar up anything like a stage and put in right place
-	def build(self):
+	def run(self):
 		self.unpack()
 		self.setup()
 		self.mount_all()
