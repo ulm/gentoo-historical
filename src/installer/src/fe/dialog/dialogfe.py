@@ -52,13 +52,6 @@ def run(cmd):
 
 	return output_list
 
-def get_random_salt():
-        chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        chars = list(chars)
-        c1 = chars[random.randint(0,len(chars)-1)]
-        c2 = chars[random.randint(0,len(chars)-1)]
-        return c1 + c2
-
 def set_partitions():
 	if not d.yesno("This will reset any changes you have made. Continue?") == DLG_YES: return
 #	devices = copy.deepcopy(install_profile.get_partition_tables())
@@ -375,7 +368,7 @@ def set_root_password():
 	if passwd1 != passwd2:
 		d.msgbox("The passwords do not match")
 		return
-	install_profile.set_root_pass_hash(None, crypt.crypt(passwd1, get_random_salt()), None)
+	install_profile.set_root_pass_hash(None, GLIUtility.hash_password(passwd1), None)
 
 def set_additional_users():
 # This section will be for adding non-root users
@@ -419,7 +412,7 @@ def set_additional_users():
 				if passwd1 != passwd2:
 					d.msgbox("The passwords do not match")
 					continue
-				users[menuitem][1] = crypt.crypt(passwd1, get_random_salt())
+				users[menuitem][1] = GLIUtility.hash_password(passwd1)
 			elif menuitem2 == "Group Membership":
 				code, groups = d.inputbox("Enter a space-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
 				if code != DLG_OK: continue
@@ -524,7 +517,8 @@ def set_livecd_password():
 	if passwd1 != passwd2:
 		d.msgbox("The passwords do not match")
 		return
-	client_profile.set_root_passwd(None, crypt.crypt(passwd1, get_random_salt()), None)
+	client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
+
 def set_enable_ssh():
 	if d.yesno("Do you want SSH enabled during the install?") == DLG_YES:
 		client_profile.set_enable_ssh(None, True, None)

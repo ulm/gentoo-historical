@@ -67,7 +67,7 @@ class Installer:
 		self.client_profile.set_architecture_template(None, "x86", None)
 		self.client_profile.set_log_file(None, "/tmp/install.log", None)
 		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
-		self.client_profile.set_root_passwd(None, crypt.crypt('blah', self.get_random_salt()), None)
+		self.client_profile.set_root_passwd(None, GLIUtility.hash_password("blah"), None)
 		self.client_profile.set_enable_ssh(None, False, None)
 		self.cc.set_configuration(self.client_profile)
 		self.cc.start_pre_install()
@@ -145,10 +145,6 @@ class Installer:
 				self.bottombox.pack_end(self.buttons[button[0]], expand=gtk.FALSE, fill=gtk.FALSE, padding=5)
 
 		self.make_visible()
-
-	def get_random_salt(self):
-		chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		return random.choice(chars) + random.choice(chars)
 
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
