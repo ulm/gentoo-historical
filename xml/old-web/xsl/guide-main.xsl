@@ -328,6 +328,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 						<!--<table width="90%" height="100%" cellspacing="0" cellpadding="5" border="0">-->
 						<tr><td valign="top">
 						<p class="altmenu">
+						<xsl:if test="/mainpage/@id='news'">
 						Recent Gentoo Linux news:<br/>
 						<xsl:for-each select="newsitems/news[@gentoo='yes'][position()&lt;7]">
 						<xsl:variable name="newsurl"><xsl:value-of select="@external"/></xsl:variable>
@@ -340,6 +341,7 @@ of your sale will go towards further Gentoo Linux development.</p>
 						<a class="altlink" href="{@external}"><xsl:value-of select="title"/></a><br/>
 						</xsl:for-each>
 						<br/><br/>
+						</xsl:if>
 						Download Mirrors:<br/>
 							<a class="altlink" href="http://www.ibiblio.org/gentoo">ibiblio.org (USA)</a><br/>
 							<a class="altlink" href="http://gentoo.latinux.org">latinux.org (Venezuela)</a><br/>
