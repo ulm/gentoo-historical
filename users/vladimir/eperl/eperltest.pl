@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.7 2003/03/08 10:28:14 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.8 2003/04/22 23:54:58 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
@@ -156,7 +156,6 @@ sub apply_code {
 		next if /\$Header:/;
 		chomp;
 		my $temp = $_;
-		
 		# This dies if it didn't make it to "return 1", ie, $code b0rked
 		eval "$code;return 1;" or die "Couldn't eval $code: $!\n";
 		
@@ -193,6 +192,16 @@ sub postprocess {
 			system("echangelog", "$ARGV[1]") == 0
 			  or die "Couldn't echangelog $ARGV[1]";
 		}
+		# Run repoman in the ebuild dir
+		print RED "repoman committing' in $path for $path_changes ";
+		print "changed files...", RESET "\n\n";
+		chdir $path or die "Couldn't chdir to $path: $!\n";
+		unless($debug) {
+			system("repoman", "commit", "-m", "$ARGV[1]") == 0
+			  or die "Couldn't repoman commit $ARGV[1]";
+		}
+		
+		
 		$path_changes = 0;
 	}
 }
