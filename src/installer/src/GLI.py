@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.13 2004/02/21 22:48:05 npmccallum Exp $
+$Id: GLI.py,v 1.14 2004/03/16 02:38:19 esammer Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -10,6 +10,7 @@ The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 import string
 import xml.sax
 import os
+import GLIUtility
 
 class InstallProfile(xml.sax.ContentHandler):
 	"""
@@ -50,159 +51,6 @@ class InstallProfile(xml.sax.ContentHandler):
 
 	def __init__(self):
 		pass
-		
-	def _is_ip(self, ip):
-		"Check to see if a string is a valid ip. Returns bool."
-		
-		# Make sure it is a string
-		if type(ip) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(ip) == '':
-			return False
-		
-		# Make sure there are only 4 elements when split by '.'s.
-		if len(ip.split(".")) != 4:
-			return False
-		
-		# Make sure each element is a number within the propper range
-		for number in ip.split("."):
-			try:
-				int(number)
-			except:
-				return False
-				
-			if int(number) > 255:
-				return False
-				
-			if int(number) < 0:
-				return False
-		
-		return True
-		
-	def _is_device(self, device):
-		"Check to see if the string passed is a valid device. Returns bool."
-
-		# Make sure it is a string
-		if type(device) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(device) == '':
-			return False
-
-		# Make sure the string starts with /dev/
-		if device[0:5] != '/dev/':
-			return False
-			
-		# Check to make sure the device exists
-		return os.access(device, os.F_OK)
-		
-	def _is_hostname(self, hostname):
-		"Check to see if the string is a valid hostname. Returns bool."
-
-		# Make sure it is a string
-		if type(hostname) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(hostname) == '':
-			return False
-
-		# These are the characters that are not letters or numbers
-		# but are still allowed to be in a hostname.  Any others?
-		# I am allowing '.' for FQHNs.
-		non_alphanum_chars = '-_.'
-		
-		# Make sure that each 
-		for letter in hostname:
-			if not letter in (string.letters + string.digits + non_alphanum_chars):
-				return False
-				
-		return True
-		
-	def _is_path(self, path):
-		"Check to see if the string is a valid path. Returns bool."
-
-		# Make sure it is a string
-		if type(path) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(path) == '':
-			return False
-
-		# These are the characters that are not letters or numbers
-		# but are still allowed to be in a path.  Any others?
-		non_alphanum_chars = '-_./'
-		
-		# Make sure that each 
-		for letter in path:
-			if not letter in (string.letters + string.digits + non_alphanum_chars):
-				return False
-				
-		return True
-		
-	def _is_file(self, file):
-		"Check to see if the string is a valid file. Returns bool."
-
-		# Make sure it is a string
-		if type(file) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(file) == '':
-			return False
-
-		# Check to make sure the device exists
-		return os.access(path, os.F_OK)
-		
-	def _is_uri(self, uri):
-		"Check to see if the string is a valid URI. Returns bool."
-		
-		# Make sure it is a string
-		if type(uri) != str:
-			return False
-			
-		# Make sure it isn't null
-		if type(uri) == '':
-			return False
-		
-		# Set the valid uri types
-		valid_uri_types = ( 'ftp:', 'rsync:', 'http:', 'file:' )
-		
-		# Check colon and double slash location
-		colon_location = uri.find(':')
-		if not ( 6 > colon_location > 2):
-			return False
-		if uri[colon_location + 1:colon_location + 3] != "//":
-			return False
-		
-		# Check for valid uri type
-		if not uri.split('/')[0] in valid_uri_types:
-			return False
-		
-		# If we are dealing with a network uri...
-		if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
-		
-			# Check for hostname or ip address
-			if (not self._is_hostname(uri.split('/')[2])) and (not self._is_ip(uri.split('/')[2])):
-				return False
-		
-			# Check to make sure the rest is a propper path
-			if not self._is_path(string.join(uri.split('/')[3:], '/')):
-				return False
-
-		# If we are dealing with a local uri
-		elif uri.split('/')[0] == "file:":
-		
-			# Check for file validity
-			if not self._is_file(uri[colon_location + 3:]):
-				return False
-				
-		
-		return True
 		
 	def startElement(self, name, attr):
 		"""
@@ -274,7 +122,9 @@ class InstallProfile(xml.sax.ContentHandler):
 		Called when the SAX parser encounters character data.
 		"""
 
-		self._xml_current_data += data
+		# This converts data to a string instead of being Unicode
+		# Maybe we should use Unicode strings instead of normal strings?
+		self._xml_current_data += str(data)
 
 	def _xml_element_path(self):
 		"""
@@ -378,7 +228,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			raise "KernelConfigURIError", "Must be a string!"
 
 		# Check validity
-		if not self._is_uri(kernel_config_uri):
+		if not GLIUtility._is_uri(kernel_config_uri):
 			raise "KernelConfigURIError", "Invalid URI!"
 
 		self._kernel_config_uri = kernel_config_uri
@@ -517,7 +367,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			raise "CustomStage3TarballURIError", "Must be a string!"
 
 		# Check validity
-		if not self._is_uri(kernel_config_uri):
+		if not GLIUtility._is_uri(kernel_config_uri):
 			raise "CustomStage3TarballURIError", "Invalid URI!"
 		
 		self._custom_stage3_tarball_uri = custom_stage3_tarball_uri
@@ -564,7 +414,7 @@ class InstallProfile(xml.sax.ContentHandler):
 			raise "PortageTreeSnapshotURIError", "Must be a string!"
 
 		# Check validity
-		if not self._is_uri(portage_tree_snapshot_uri):
+		if not GLIUtility._is_uri(portage_tree_snapshot_uri):
 			raise "PortageTreeSnapshotURIError", "Invalid URI!"
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
@@ -644,7 +494,7 @@ class InstallProfile(xml.sax.ContentHandler):
 		for device in partition_tables:
 		
 			# If the device is a valid local device...
-			if self._is_device(device):
+			if GLIUtility._is_device(device):
 			
 				# We should check to make sure device is in /proc/partitions
 				# If it is in /proc/partitions, it is a partitionable device
@@ -673,7 +523,7 @@ class InstallProfile(xml.sax.ContentHandler):
 						raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
 
 			# Else, if the device is a valid remote device (hostname or ip)
-			elif self._is_ip(device) or self._is_hostname(device):
+			elif GLIUtility._is_ip(device) or GLIUtility._is_hostname(device):
 			
 				# Make sure that only the mount point is set
 				if type(partition_tables[device]) != str:
@@ -738,15 +588,15 @@ class InstallProfile(xml.sax.ContentHandler):
 				
 					# If the user does not desire DHCP, then validate each ip address provided
 					if network_interfaces[device][i] != None:
-						if not self._is_ip(network_interfaces[device][i][0]):
+						if not GLIUtility._is_ip(network_interfaces[device][i][0]):
 							raise "NetworkInterfacesError", "The ip address you specified for " + device + " is not valid!"
-						if not self._is_ip(network_interfaces[device][i][1]):
+						if not GLIUtility._is_ip(network_interfaces[device][i][1]):
 							raise "NetworkInterfacesError", "The broadcast address you specified for " + device + " is not valid!"
-						if not self._is_ip(network_interfaces[device][i][2]):
+						if not GLIUtility._is_ip(network_interfaces[device][i][2]):
 							raise "NetworkInterfacesError", "The netmask address you specified for " + device + " is not valid!"
 						
 						# If gateway is set to none, check the validity of the ip
-						if (network_interfaces[device][i][3] != None) and (not self._is_ip(network_interfaces[device][i][3])):
+						if (network_interfaces[device][i][3] != None) and (not GLIUtility._is_ip(network_interfaces[device][i][3])):
 							raise "NetworkInterfacesError", "The gateway address you specified for " + device + " is not valid!"
 							
 						# Check the validity of aliases if they exist
@@ -772,11 +622,11 @@ class InstallProfile(xml.sax.ContentHandler):
 									raise "NetworkInterfacesError", "Alias must have ip address, netmask and broadcast defined (device: " + device + ")!"
 								
 								# Alias must have an ip address, netmask, and broadcast defined
-								if not self._is_ip(alias[0]):
+								if not GLIUtility._is_ip(alias[0]):
 									raise "NetworkInterfacesError", "Invalid ip address for alias (device: " + device + ")!"
-								if not self._is_ip(alias[1]):
+								if not GLIUtility._is_ip(alias[1]):
 									raise "NetworkInterfacesError", "Invalid broadcast address for alias (device: " + device + ")!"
-								if not self._is_ip(alias[2]):
+								if not GLIUtility._is_ip(alias[2]):
 									raise "NetworkInterfacesError", "Invalid netmask address for alias (device: " + device + ")!"
 			
 			# Other device types

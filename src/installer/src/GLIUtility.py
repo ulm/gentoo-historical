@@ -1,0 +1,149 @@
+"""
+Gentoo Linux Installer
+
+$Id: GLIUtility.py,v 1.1 2004/03/16 02:38:19 esammer Exp $
+Copyright 2004 Gentoo Technologies Inc.
+
+The GLIUtility module contians all utility functions used throughout GLI.
+"""
+
+import string
+import os
+import re
+
+def _is_realstring(string_a):
+	"Check to see if a string is actually a string, and if it is not null. Returns bool."
+	# Make sure it is a string
+	if type(string_a) != str:
+		return False
+		
+	# Make sure it isn't null
+	if type(string_a) == '':
+		return False
+	
+	return True
+
+def _is_ip(ip):
+	"Check to see if a string is a valid ip. Returns bool."
+	
+	# Make sure it is a string
+	if not _is_realstring(ip):
+		return False
+
+	# Compile the regular expression that validates an IP. It will also check for valid ranges.
+	expr = re.compile('(([0-9]|[01]?[0-9]{2}|2([0-4][0-9]|5[0-5]))\.){3}([0-9]|[01]?[0-9]{2}|2([0-4][0-9]|5[0-5]))$')
+
+	# Run the test.
+	res = expr.match(ip)
+
+	# Return True only if there are results.
+	return(res != None)
+		
+def _trim_ip(ip):
+        # Remove leading zero's on the first octet
+	ip = re.sub('^0{1,2}','',ip)
+
+	# Remove leading zero's from the other octets
+	res = re.sub('((?<=\.)(00|0)(?P<num>\d))','\g<num>',ip)
+
+	return(res)
+
+def _is_device(device):
+	"Check to see if the string passed is a valid device. Returns bool."
+
+	# Make sure it is a string
+	if not _is_realstring(device):
+		return False
+			
+	# Make sure the string starts with /dev/
+	if device[0:5] != '/dev/':
+		return False
+			
+	# Check to make sure the device exists
+	return os.access(device, os.F_OK)
+		
+def _is_hostname(hostname):
+	"Check to see if the string is a valid hostname. Returns bool."
+
+	# Make sure it is a string
+	if not _is_realstring(hostname):
+		return False
+			
+	# These are the characters that are not letters or numbers
+	# but are still allowed to be in a hostname.  Any others?
+	# I am allowing '.' for FQHNs.
+	non_alphanum_chars = '-_.'
+		
+	# Make sure that each 
+	for letter in hostname:
+		if not letter in (string.letters + string.digits + non_alphanum_chars):
+			return False
+			
+	return True
+		
+def _is_path(path):
+	"Check to see if the string is a valid path. Returns bool."
+	
+	# Make sure it is a string
+	if not _is_realstring(path):
+		return False
+
+	# Create a regular expression that matches all words and the symbols '-_./' _ is included in the \w
+	expr = re.compile('^[\w\.\-\/]+$')
+
+	# Run the match
+	res = expr.match(path)
+
+	# Return True only if there are results
+	return(res != None)
+		
+def _is_file(file):
+	"Check to see if the string is a valid file. Returns bool."
+
+	# Make sure it is a string
+	if not _is_realstring(file):
+		return False
+			
+	# Check to make sure the device exists
+	return os.access(file, os.F_OK)
+		
+def _is_uri(uri):
+	"Check to see if the string is a valid URI. Returns bool."
+	
+	# Make sure it is a string
+	if not _is_realstring(uri):
+		return False
+			
+	# Set the valid uri types
+	valid_uri_types = ( 'ftp:', 'rsync:', 'http:', 'file:' )
+		
+	# Check colon and double slash location
+	colon_location = uri.find(':')
+	if not ( 6 > colon_location > 2):
+		return False
+	if uri[colon_location + 1:colon_location + 3] != "//":
+		return False
+		
+	# Check for valid uri type
+	if not uri.split('/')[0] in valid_uri_types:
+		return False
+		
+	# If we are dealing with a network uri...
+	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:' ):
+		
+		# Check for hostname or ip address
+		if (not _is_hostname(uri.split('/')[2])) and (not _is_ip(uri.split('/')[2])):
+			return False
+		
+		# Check to make sure the rest is a propper path
+		if not _is_path(string.join(uri.split('/')[3:], '/')):
+			return False
+
+	# If we are dealing with a local uri
+	else:
+		# Check for file validity
+		if not _is_file(uri[colon_location + 3:]):
+			return False
+		
+	return True
+
