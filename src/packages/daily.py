@@ -96,7 +96,7 @@ query = ('SELECT ebuild.category,'
 	'homepage,'
 	'license '
 	'FROM ebuild,package '
-	'WHERE TO_DAYS(when_found) = TO_DAYS("%s-%02d-%02d") '
+	'WHERE SUBSTRING(when_found FROM 1 FOR 8) = "%s%02d%02d" '
 	'AND ebuild.name = package.name '
 	'AND ebuild.category = package.category %s'
 	'ORDER BY when_found desc' %
