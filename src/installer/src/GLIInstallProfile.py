@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.27 2005/01/04 23:29:07 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.28 2005/01/07 07:02:47 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -58,6 +58,8 @@ class InstallProfile:
 		parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
 		parser.addHandler('gli-profile/mta', self.set_mta)
 		parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
+		parser.addHandler('gli-profile/services', self.set_services)
+		parser.addHandler('gli-profile/grp-install', self.set_grp_install)
 		
 		self._parser = parser
 
@@ -74,7 +76,7 @@ class InstallProfile:
 		self._users = []
 		self._root_pass_hash = ""
 		self._time_zone = ""
-		self._stage_tarball_uri = ""
+		self._stage_tarball_uri = "file:///mnt/cdrom/stages/"
 		self._install_stage = 1
 		self._portage_tree_sync_type = "sync"
 		self._portage_tree_snapshot_uri = "file:///mnt/cdrom/snapshots/portage-20040710.tar.bz2"
@@ -94,7 +96,9 @@ class InstallProfile:
 		self._default_gateway = ()
 		self._fstab = {}
 		self._install_packages = ()
+		self._services = ()
 		self._mta = ""
+		self._grp_install = False
 
 	def parse(self, filename):
 		self._parser.parse(filename)
@@ -657,6 +661,7 @@ class InstallProfile:
 				'install-rp-pppoe':	self.get_install_rp_pppoe,
 				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
 				'mta':			self.get_mta,
+				'grp-install':	self.get_grp_install,
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -747,6 +752,11 @@ class InstallProfile:
 			xmldoc += "<install-packages>"
 			xmldoc += string.join(self.get_install_packages(), ' ')
 			xmldoc += "</install-packages>"
+			
+		if self.get_services() != ():
+			xmldoc += "<services>"
+			xmldoc += string.join(self.get_services(), ' ')
+			xmldoc += "</services>"
  
 		if self.get_default_gateway() != ():
 			gw = self.get_default_gateway()
@@ -1055,3 +1065,40 @@ class InstallProfile:
 
 	def get_network_mounts(self):
 		return self._network_mounts
+	def set_services(self, xml_path, services, xml_attr):
+		"""
+		Set the services to be started on bootup.
+		"""
+
+		if type(services) == str:
+			services = string.split(services)
+		else:
+			raise GLIException("ServicesError", 'fatal', 'set_services',  "Invalid input!")
+
+		for service in services:
+			if not GLIUtility.is_realstring(service):
+				raise GLIException("ServicesError", 'fatal', 'set_services',  service + " must be a valid string!")
+
+		self._services = services
+ 
+	def get_services(self):
+		""" 
+		This returns a list of the packages:
+		"""
+		return self._services
+		
+	def get_grp_install(self):
+		"returns grp_install"
+		return self._grp_install
+
+	def set_grp_install(self, xml_path, grp_install, xml_attr):
+		"grp_install is a bool. True installs GRP.  False doesn't."
+		
+		# Check data type
+		if type(grp_install) != bool:
+			if type(grp_install) == str:
+				grp_install = GLIUtility.strtobool(grp_install)
+			else:
+				raise GLIException("GRPInstall", 'fatal', 'set_grp_install',  "Input must be type 'bool'!")
+		
+		self._grp_install = grp_install

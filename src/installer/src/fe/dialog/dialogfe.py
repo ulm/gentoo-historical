@@ -195,8 +195,14 @@ def set_nfs_mounts():
 
 def set_install_stage():
 # The install stage and stage tarball will be selected here
-	code, install_stage = d.inputbox("Which stage do you want to start at?", init=str(install_profile.get_install_stage()))
-	if code == DLG_OK: install_profile.set_install_stage(None, install_stage, None)
+	install_stages = ("1","2","3","3 + GRP (use binary packages)")
+	code, install_stage = d.menu("Which stage do you want to start at?", choices=dmenu_list_to_choices(install_stages))
+	if code == DLG_OK:
+		install_stage = install_stages[int(install_stage)-1]
+		if install_stage == "3 + GRP (use binary packages)":
+			install_stage = "3"
+			install_profile.set_grp_install(None, True, None)
+		install_profile.set_install_stage(None, install_stage, None)
 	code, stage_tarball = d.inputbox("Where is the stage tarball located (URL or local file)?", init=install_profile.get_stage_tarball_uri())
 	try:
 		if code == DLG_OK: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
@@ -333,8 +339,10 @@ def set_logger():
 		install_profile.set_logging_daemon_pkg(None, menuitem, None)
 
 def set_extra_packages():
-	d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
-
+	#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
+	code, install_packages = d.inputbox("Enter a space-separated list of extra packages to install on the system")
+	if code == DLG_OK: install_profile.set_install_packages(None, install_packages, None)
+	
 def set_rc_conf():
 # This section is for editing /etc/rc.conf
 	rc_conf = install_profile.get_rc_conf()
@@ -424,6 +432,9 @@ def set_additional_users():
 							break
 					break
 
+def set_services():
+	code, services = d.inputbox("Enter a space-separated list of services to start on boot")
+	if code == DLG_OK: install_profile.set_services(None, services, None)
 def save_install_profile(xmlfilename="", askforfilename=True):
 	code = 0
 	filename = xmlfilename
@@ -437,6 +448,7 @@ def save_install_profile(xmlfilename="", askforfilename=True):
 	configuration.write(install_profile.serialize())
 	configuration.close()
 	return filename
+
 
 #----------------------------Now for the client_config functions
 def set_arch_template():
@@ -535,6 +547,7 @@ fn = (
 	{ 'text': "Cron daemon", 'fn': set_cron_daemon },
 	{ 'text': "Logging daemon", 'fn': set_logger },
 	{ 'text': "Extra packages", 'fn': set_extra_packages },
+	[ 'text': "Services", 'fn': set_services ],
 	{ 'text': "rc.conf", 'fn': set_rc_conf },
 	{ 'text': "Root password", 'fn': set_root_password },
 	{ 'text': "Additional Users", 'fn': set_additional_users },

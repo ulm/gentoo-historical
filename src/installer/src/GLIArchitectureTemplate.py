@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.29 2005/01/07 07:00:13 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.30 2005/01/07 07:02:47 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -240,7 +240,7 @@ class ArchitectureTemplate:
 		for key in options.keys():
 		
 			# Add/Edit it into make.conf
-			self._edit_config(self._chroot_dir + "/etc/make.conf", key, options[key])
+			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: options[key]})
 
 	def install_portage_tree(self):
 		"Get/update the portage tree"
@@ -478,7 +478,7 @@ class ArchitectureTemplate:
 		for key in options.keys():
 		
 			# Add/Edit it into rc.conf
-			self._edit_config(self._chroot_dir + "/etc/rc.conf", key, options[key])
+			self._edit_config(self._chroot_dir + "/etc/rc.conf", {key: options[key]})
 			
 	def setup_network_post(self):
 		"Sets up the network for the first boot"
