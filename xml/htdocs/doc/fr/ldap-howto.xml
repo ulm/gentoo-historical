@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/ldap-howto.xml,v 1.14 2005/04/06 09:45:38 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/ldap-howto.xml,v 1.15 2005/04/06 17:22:19 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/ldap-howto.xml" lang="fr">
@@ -8,19 +8,15 @@
 <author title="Auteur">
   <mail link="sj7trunks@gentoo.org">Benjamin Coles</mail>
 </author>
-
 <author title="Correcteur">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-
 <author title="Correcteur">
   <mail link="tseng@gentoo.org">Brandon Hale</mail>
 </author>
-
 <author title="Correcteur">
   <mail link="bennyc@gentoo.org">Benny Chuang</mail>
 </author>
-
 <author title="Traducteur">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
@@ -33,8 +29,8 @@ Gentoo.
 
 <license/>
 
-<version>0.11</version>
-<date>2005-01-22</date>
+<version>0.16</version>
+<date>2005-03-29</date>
 
 <chapter>
 <title>Bien démarrer avec OpenLDAP</title>
@@ -89,7 +85,7 @@ comment stocker cette information dans sa hiérarchie.
 Regardez cet exemple d'une société fictive&nbsp;:
 </p>
 
-<pre caption = "Organigramme de GenFic, une société imaginaire">
+<pre caption="Organigramme de GenFic, une société imaginaire">
 dc:         com
              |
 dc:        genfic         <comment>(Organisation)</comment>
@@ -116,7 +112,34 @@ d'administration de OpenLDAP</uri>.
 
 </body>
 </section>
+<section>
+<title>Bon alors, à quoi ça sert&nbsp;?</title>
+<body>
 
+<p>
+LDAP peut être utilisé pour de nombreuses tâches. Ce document s'intéresse plus
+particulièrement à la gestion des utilisateurs, mais d'autres buts peuvent être
+atteints grâce à LDAP. À l'aide de LDAP, les comptes utilisateurs seront
+centralisés sur un unique serveur LDAP (ce qui ne signifie pas pour autant que
+l'hébergement se fait sur un serveur unique puisque LDAP supporte la haute
+disponibilité et la redondance). Parmi les applications courantes pour
+LDAP&nbsp;:
+</p>
+
+<ul>
+  <li>Infrastructure de gestion de clefs publiques&nbsp;;</li>
+  <li>Calendrier distribué&nbsp;;</li>
+  <li>Carnet d'adresse distribué&nbsp;;</li>
+  <li>Stockage pour le DHCP, le DNS, etc.</li>
+  <li>
+    Directives de configuration de systèmes (garder une trace des configurations
+    sur plusieurs serveurs)&nbsp;;
+  </li>
+  <li>...</li>
+</ul>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
@@ -151,15 +174,15 @@ include         /etc/openldap/schema/cosine.schema
 include         /etc/openldap/schema/inetorgperson.schema
 include         /etc/openldap/schema/nis.schema
 
-<comment># Use crypt to hash the passwords</comment>
-password-hash {crypt}
+<comment># Use md5 to hash the passwords</comment>
+password-hash {md5}
 
 <comment># Define SSL and TLS properties (optional)</comment>
 TLSCertificateFile /etc/ssl/ldap.pem
 TLSCertificateKeyFile /etc/openldap/ssl/ldap.pem
 TLSCACertificateFile /etc/ssl/ldap.pem
 
-<comment>(Et plus bas...)</comment>
+<comment>Et plus bas...</comment>
 
 database        ldbm
 suffix          "dc=genfic,dc=com"
@@ -168,7 +191,7 @@ rootpw          <i>{MD5}Xr4ilOzQ4PCOq3aQ0qbuaQ==</i>
 directory       /var/lib/openldap-ldbm
 index           objectClass     eq
 
-<comment>(Le mot de passe ci-dessus est obtenu en faisant slappasswd -h {Md5})</comment>
+<comment>Le mot de passe ci-dessus est obtenu en faisant slappasswd -h {Md5}</comment>
 </pre>
 
 <p>
@@ -177,7 +200,7 @@ Ensuite, modifions le fichier de configuration de LDAP&nbsp;:
 
 <pre caption="/etc/openldap/ldap.conf">
 # <i>nano -w /etc/openldap/ldap.conf</i>
-<comment>(Ajoutez ceci :)</comment>
+<comment>Ajoutez ceci :</comment>
 
 BASE         dc=genfic, dc=com
 URI          ldaps://auth.genfic.com:636/
@@ -277,25 +300,42 @@ par LDAP. Ajoutons-les à notre annuaire&nbsp;:
 # <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/hosts.ldif</i>
 </pre>
 
+<p>
+Si vous rencontrez une erreur dans vos fichiers ldif, vous pouvez reprendre là
+où vous en étiez en utilisant <c>ldapadd -c</c>.
+</p>
+
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>Configuration de l'authentification</title>
+<title>Configuration du client</title>
 <section>
 <title>Configurer PAM</title>
 <body>
 
 <p>
-Ensuite, nous configurons PAM pour permettre les autorisations par LDAP.
-Modifiez le fichier <path>/etc/pam.d/system-auth</path> comme suit&nbsp;:
+Nous allons tout d'abord configurer PAM pour permettre une authentification
+LDAP. Installez <c>net-libs/pam_ldap</c> afin que PAM dispose du support LDAP et
+<c>net-libs/nss_ldap</c> pour que le système puisse utiliser des serveurs LDAP
+pour obtenir des informations supplémentaires (utilisé par le fichier
+<path>nsswitch.conf</path>).
+</p>
+
+<pre caption="Installation de pam_ldap et nss_ldap">
+# <i>emerge pam_ldap nss_ldap</i>
+</pre>
+
+<p>
+Maintenant, éditez le fichier <path>/etc/pam.d/system-auth</path> pour qu'il
+ressemble à ceci&nbsp;:
 </p>
 
 <pre caption="/etc/pam.d/system-auth">
 auth    required    /lib/security/pam_env.so
-auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
 auth    sufficient  /lib/security/pam_ldap.so use_first_pass
+auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
 auth    required    /lib/security/pam_deny.so
  
 account sufficient  /lib/security/pam_unix.so
@@ -380,7 +420,10 @@ l'opération terminée.
 
 </body>
 </section>
+</chapter>
 
+<chapter>
+<title>Configuration de la sécurité du serveur LDAP</title>
 <section>
 <title>Permissions OpenLDAP</title>
 <body>
@@ -414,7 +457,7 @@ normaux de lire les mots de passe cryptés des autres.
 </p>
 
 <pre caption="/etc/openldap/slapd.conf">
-access to attribute="userPassword"
+access to attrs="userPassword"
   by dn="uid=root,ou=people,dc=genfic,dc=com" write
   by dn="uid=John,ou=People,dc=genfic,dc=com" write
   by anonymous auth
