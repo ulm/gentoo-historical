@@ -2,12 +2,12 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.19 2005/01/26 20:59:57 port001 Exp $
+# $Id: Config.py,v 1.20 2005/01/27 19:48:07 port001 Exp $
 #
 
 __modulename__ = "Config"
 
-Version = "0.2"
+Version = "0.3"
 
 MySQL = {
     "host":		"localhost",
