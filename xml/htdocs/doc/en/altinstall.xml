@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/altinstall.xml,v 1.25 2004/04/11 13:05:50 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/altinstall.xml,v 1.26 2004/04/21 16:15:21 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 	  
 
@@ -24,8 +24,8 @@ or a computer that can't boot cds.
 
 <license/>
 
-<version>0.37</version>
-<date>April 11, 2004</date>
+<version>0.38</version>
+<date>April 21, 2004</date>
 
 <chapter>
 <title>About this document</title>
@@ -141,177 +141,6 @@ up and  <mail link="antifa@gentoo.org">send it to me.</mail></p>
 
 <p>Get the latest portage snapshot from <uri>http://distro.ibiblio.org/pub/linux/distributions/gentoo/snapshots/</uri> (or your favorite <uri link="http://www.gentoo.org/main/en/mirrors.xml">mirror</uri>). Either place this tarball on an existing partition on the computer your are installing to, or burn it to a CD.</p>
 
-<p>You'll also need a package list for the stage packages. Place the following dl-list.sh script on the same medium as the portage snapshot, you'll need it later.</p>
-
-<pre caption="dl-list.sh">
-#!/bin/bash
-
-# set your defaults here:
-user_defs() {
- 
-  # portage directory (without a trailing "/"):
-  portage_dir="/usr/portage"
- 
-  # default download mirror (without a trailing "/"):
-  gentoo_mirror="http://www.ibiblio.org/pub/Linux/distributions/gentoo"
- 
-  # default sourceforge mirror (unc, telia, belnet):
-  sourceforge_mirror="unc"
- 
-  # fix gnu mirror entries
-  gnu_url="ftp:\/\/ftp.gnu.org\/pub\/gnu"
- 
-}
-
-
-#------------------------------------------------------------
-
-# function to remove temporary files
-cleanup() {
- 
-  rm -f $temp_file_1 $temp_file_2
-  exit $1
- 
-}
-
-# set user defaults
-user_defs
-
-# set the complete url for the sourceforge mirror
-# (the \'s are needed because this goes in a sed command)
-sourceforge_mirror_complete="http:\/\/$sourceforge_mirror.dl.sourceforge.net\/sourceforge"
-
-# initialize counters
-num_files=0
-num_alt_urls=0
-total_size=0
-
-# initialize lists (arrays)
-declare -a def_urls_arr
-declare -a alt_urls_arr
-
-# create 2 temporary files
-temp_file_1=`mktemp -t dl-list.XXXXXX` || cleanup 1
-temp_file_2=`mktemp -t dl-list.XXXXXX` || cleanup 1
-
-# run "emerge -p &lt;args&gt;" (too easy to forget the "-p" in the command line...)
-emerge -p $@ &gt; $temp_file_1 || cleanup 1
-
-# remove the lines that do not contain the word "ebuild"
-sed -n -e '/ebuild/p' $temp_file_1 &gt; $temp_file_2
-
-# count how many lines were left
-num_ebuilds=`wc -l $temp_file_2 | sed -e 's/\(.*\) \(.*\)/\1/'`
-
-# extract the useful information from those lines: category, package and version
-#sed -e 's:\(.*\) \(.*\)/\(.*\)-\([0-9].*\) \(.*\) \(.*\):\2 \3 \4:' $temp_file_2 &gt; $temp_file_1
-sed -e 's:\(.*\) \(.*\)/\(.*\)-\([0-9].*\):\2 \3 \4:' $temp_file_2 &gt; $temp_file_1
-
-# display starting message :)
-echo -n "Generating list " &gt;&amp;2
-
-# process each package in turn
-while read category package version rest
-do
- 
-  # form the name of the digest file
-
-digest_file="$portage_dir/$category/$package/files/digest-$package-$version"
- 
-  # process the contents of the digest file
-  while read md5_flag md5_sum file_name file_size
-  do
-   
-    # form the default url to download the file
-    def_urls_arr[$num_files]="$gentoo_mirror/distfiles/$file_name"
-   
-    # increment the file counter
-    num_files=$(($num_files + 1))
-   
-    # update the size accumulator (in kilobytes)
-    total_size=$(($total_size + $file_size / 1024))
-   
-  done &lt; $digest_file
-
-  # form the "ebuild depend" command line
-  ebuild_depend_cmd="ebuild $portage_dir/$category/$package/$package-${version}.ebuild depend"
-
-  # execute the "ebuild depend" command
-  $ebuild_depend_cmd || cleanup 1
-
-  # form the name of the dependency file
-  dependency_file="/var/cache/edb/dep/$category/$package-$version"
-
-  # read in the 4th line from the dependency file,
-  # which contains the official download urls
-  alt_urls=`head -n 4 $dependency_file | tail -n 1`
- 
-  # ignore empty url list
-  if [ -n "$alt_urls" ]
-  then
-   
-    # split the urls list into $1..$N
-    set $alt_urls
-   
-    # process each url in turn
-    for i in $@
-    do
-     
-      # remove the (use)? strings from the url list
-      alt_url_tmp=`echo "$i" | sed -e '/\?$/d'`
-     
-      # remove the "mirror://gnome" urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/gnome/d'`
-     
-      # remove the "mirror://kde" urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/kde/d'`
-     
-      # remove the "mirror://gentoo" urls (already included)
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e '/^mirror:\/\/gentoo/d'`
-     
-      # translate the "mirror://sourceforge" urls into valid urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e "s/mirror:\/\/sourceforge/$sourceforge_mirror_complete/"`
-
-      # translate the "mirror://gnu" urls into valid urls
-      alt_url_tmp=`echo "$alt_url_tmp" | sed -e "s/mirror:\/\/gnu/$gnu_url/"`
-      # ignore empty urls
-      if [ -n "$alt_url_tmp" ]
-      then
-       
-        # add the url to the list
-        alt_urls_arr[$num_alt_urls]=$alt_url_tmp
-       
-        # increment the alternate url counter
-        num_alt_urls=$(($num_alt_urls + 1))
-       
-      fi
-     
-    done
-   
-  fi
-
-  # a progress bar :)
-  echo -n "." &gt;&amp;2
-
-done &lt; $temp_file_1
-
-# display ending message :)
-echo " done." &gt;&amp;2
-
-# display default urls list
-for i in ${def_urls_arr[@]}; do echo $i; done | sort
-
-# display alternate urls list
-for i in ${alt_urls_arr[@]}; do echo $i; done | sort
-
-# display totals
-echo "Totals:" $num_ebuilds "ebuilds," $num_files "files," $num_files "default urls," \n
-$num_alt_urls "alternate urls," "${total_size}Kb." &lt;&amp;2
-
-# remove temporary files and exit
-cleanup 0
-</pre>
-
 <p>Follow all instructions of Gentoo Install Doc up to <c>chroot /mnt/gentoo</c> in Step 8. If you only have one CD-ROM remember to use the <c>cdcache</c> option while booting so you can unmount the LiveCD and mount your portage snapshot CD.</p>
 
 <p>Open a new console (Alt-F2), we will continue with the Install Doc up to running the bootstrap.sh script.</p>
@@ -319,17 +148,15 @@ cleanup 0
 <warn>Older realeases of the livecd required you to change the password using the <c>passwd</c> command, before logging in manually.</warn>
 				   
 
-<p>Go back to the first console (Alt-F1, without chroot) and mount a second CD on <path>/mnt/gentoo/mnt/cdrom2</path>. Copy the portage tarball from cdrom2 and unpack it to <path>/mnt/gentoo/usr/portage</path>. Further, grab the dl-list.sh script and place it in <path>/usr/sbin</path> and make it executable.</p>
+<p>Go back to the first console (Alt-F1, without chroot) and mount a second CD on <path>/mnt/gentoo/mnt/cdrom2</path>. Copy the portage tarball from cdrom2 and unpack it to <path>/mnt/gentoo/usr/portage</path>.</p>
 
 <pre caption="Mount the snapshot cd">
 # <i>umount /mnt/cdrom</i>
 # <i>mkdir /mnt/gentoo/mnt/cdrom2</i>
 # <i>mount /dev/cdroms/cdrom0 /mnt/gentoo/mnt/cdrom2</i>
 # <i>cp /mnt/gentoo/mnt/cdrom2/portage-$date.tar.bz2 /mnt/gentoo/usr/portage</i>
-# <i>cp /mnt/gentoo/mnt/cdrom2/dl-list.sh /mnt/gentoo/usr/sbin</i>
 # <i>cd /mnt/gentoo/usr/portage</i>
 # <i>tar xvjpf portage-$date.tar.bz2</i>
-# <i>chmod +x /mnt/gentoo/usr/sbin/dl-list.sh</i>
 </pre>
 
 <p>Switch back to the F2 console. Now if you try to run bootstrap.sh it will fail because it won't be able to download any files. We will fetch these files somewhere else and put them in /usr/portage/distfiles (on F2 console). </p>
@@ -338,16 +165,30 @@ cleanup 0
 
 <note>Note that you need the versions of each package synced with your portage tree.</note>
 
- <p>Now use the dl-list.sh script to generate the package list that you need. Then copy the subsequent list to a floppy.</p>
-
 <pre caption="Using dl-list.sh">
-# <i>dl-list.sh glibc baselayout texinfo gettext zlib binutils gcc ncurses > stage1.list</i>
+<comment>(Don't forget the 2 in front of the &gt;)</comment>
+# <i>emerge -fp glibc baselayout texinfo gettext zlib binutils gcc ncurses 2&gt; stage1.list</i>
 # <i>mount -t vfat /dev/fd0 /mnt/floppy</i>
 # <i>cp /mnt/gentoo/stage1.list /mnt/floppy</i>
 # <i>umount /mnt/floppy</i>
 </pre>
 
-<p>Take the floppy to the computer that has fast access and feed this list to wget:</p>
+<p>
+Take the floppy to the computer that has fast access. If you take a look at the
+<path>stage1.list</path> file, you'll see that it provides you with several URLs
+to download. Sadly, it lists several possible URLs for each package as well,
+which isn't what you want. Strip all but one of the URLs first:
+</p>
+
+<pre caption="Stripping URLs">
+<comment>(This script is depending on the output format given by emerge which
+ might change in the future without further notice - use with caution!)</comment>
+# <i>cut -f 1 -d ' ' stage1.list > stage1.download</i>
+</pre>
+
+<p>
+Now use <c>wget</c> to fetch all the listed sources:
+</p>
 
 <pre caption="Use wget to grab your source packages">
 # <i>wget -N -i stage1.list</i>
