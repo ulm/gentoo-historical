@@ -243,7 +243,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	ret = os.waitpid(pid,0)[1]
 	if return_output:
 		cmd_output = commands.getoutput("cat /tmp/toreturn.log")
-		commands.system("rm /tmp/toreturn.log")
+		os.system("rm /tmp/toreturn.log")
 		return ret, cmd_output
 	else:
 		return ret

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.13 2004/10/01 17:31:04 samyron Exp $
+$Id: GLIClientController.py,v 1.14 2004/11/11 17:53:57 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -14,7 +14,7 @@ Steps (based on the ClientConfiguration):
 
 """
 
-import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys
+import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal
 from GLIException import *
 from threading import Thread, Event
 
@@ -32,6 +32,7 @@ class GLIClientController(Thread):
 		self._verbose = self._configuration.get_verbose()
 		self._logger = GLILogger.Logger(self._configuration.get_log_file())
 		self._install_event = Event()
+		self._notification_queue = []
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -179,3 +180,16 @@ class GLIClientController(Thread):
 	def output(self, str):
 		if self._verbose:
 			print str
+
+	def notify(self):
+		os.kill(os.getpid(), signal.SIGUSR1)
+
+	def getNotification(self):
+		if len(self._notification_queue) > 0:
+			notification = self._notification_queue.pop()
+			return notification
+		else:
+			return None
+
+	def addNotification(self, notification):
+		self._notification_queue.append(notification)
