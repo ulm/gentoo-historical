@@ -108,12 +108,13 @@ int main(int argc, char **argv) {
 
 int mark_started(char *script) {
 	char *command = NULL;
-	char *cmdline[] = { "start", 0 };
+	char *cmdline[] = { NULL, "start", 0 };
 
 	/* start everything with "before *", and mark it as started */
 	printf("Starting %s\n", script);
 
 	asprintf(&command, "%s%s", INIT_DIR, script);
+	cmdline[0]=command;
 
 	/* so we can get return values and decide if we should call mark_started() */
 	if ((execvp(command, cmdline)) == 0) {
@@ -122,7 +123,8 @@ int mark_started(char *script) {
 		symlink(command, basename(script));
 		free(command);
 		return TRUE;
-	}        
+	}
+	printf("Failed to start %s (%s)\n", script, strerror(errno));
 	free(command);
 	return FALSE;
 }

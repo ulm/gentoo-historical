@@ -6,11 +6,12 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define CONFD_DIR "/etc/conf.d/"
 #define INIT_DIR "/etc/init.d/"
-//#define RUNLEVEL_DIR "/etc/runlevels/default"
-#define RUNLEVEL_DIR "/tmp/runlevels/default"
+#define RUNLEVEL_DIR "/etc/runlevels/default"
+//#define RUNLEVEL_DIR "/tmp/runlevels/default"
 #define SHFUNCS "/sbin/functions.sh"
 
 #ifndef TRUE

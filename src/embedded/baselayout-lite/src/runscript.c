@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
 
 	/* if we don't have the right number of args, fail */
 	if(argc < 3) {
-		printf("Invalid number of arguments\n");
+		printf("Invalid number of arguments (%d: %s %s %s)\n",
+			argc, argv[0], argv[1], argv[2]);
 		exit(EXIT_FAILURE);
 	}
 
