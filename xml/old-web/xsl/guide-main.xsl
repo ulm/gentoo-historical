@@ -330,15 +330,14 @@ User Docs:<br/>
 										<a href="http://www.qksrv.net/click-477620-57886" target="_top" >
 					<img src="http://www.qksrv.net/image-477620-57886" width="88" height="31" alt="Online Auto Loans" border="0"/></a><br/><br/>	
 						Developer Docs:<br/>
-						<font color="#ff0000">New!</font> <a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
+						<a class="altlink" href="/doc/cvs-tutorial.html">CVS Tutorial</a><br/>
 						<a class="altlink" href="/doc/gentoo-howto.html">Development HOWTO</a><br/>
 						<a class="altlink" href="/doc/xml-guide.html">XML Documentation Guide</a><br/>
+						<a class="altlink" href="/doc/ebuild-submit.html">How to submit ebuilds</a><br/>
 						<br/>
 	
 						Mailing Lists:<br/><br/>
-						<font color="#ff0000">New! General User List:</font><br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-user">gentoo-user</a><br/><br/>
-						<font color="#ff0000">New! Ebuild submissions:</font><br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-ebuild">gentoo-ebuild</a><br/><br/>
-						
+						General User List:</font><br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-user">gentoo-user</a><br/><br/>
 						Developer list:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-dev">gentoo-dev</a><br/><br/>
 						Announcements:<br/> <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-announce">gentoo-announce</a><br/><br/>
 						Daily CVS logs:<br/>  <a class="altlink" href="http://lists.gentoo.org/mailman/listinfo/gentoo-cvs">gentoo-cvs</a><br/><br/>
