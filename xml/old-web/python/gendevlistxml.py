@@ -51,11 +51,32 @@ def buildxml(devinfo):
 	for line in devinfo:
 		# remove \n
 		line = line[:-1]
-		# separate into user name, name, location, responsibilities
-		user,name,location,duties = line.split(":")
+		# separate into user name, name, location, responsibilities, web page
+		user,name,location,duties,web = line.split(":")
 		# generate the table entry for the current developer
-		tablexml = '\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti><mail link="%s@gentoo.org">%s</mail></ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n' \
-			% (name,user,user,location,duties)
+		# commented out version w/ mail links because of spam robots.
+		#tablexml = '\t<tr>\n\t\t<ti>%s</ti>\n\t\t<ti><mail link="%s@gentoo.org">%s</mail></ti>\n\t\t<ti>%s</ti>\n\t\t<ti>%s</ti>\n\t</tr>\n' \
+		#	% (name,user,user,location,duties)
+		if web:
+			if web == "yes":
+				url = "http://www.gentoo.org/~%s/" % user
+			else:
+				url = web
+			tablexml = '\t<tr>\n' \
+					   '\t\t<ti><uri link="%s">%s</uri></ti>\n' \
+			           '\t\t<ti>%s</ti>\n' \
+					   '\t\t<ti>%s</ti>\n' \
+					   '\t\t<ti>%s</ti>\n' \
+					   '\t</tr>\n' \
+					      % (url,name,user,location,duties)
+		else: #no web page
+			tablexml = '\t<tr>\n' \
+					   '\t\t<ti>%s</ti>\n' \
+			           '\t\t<ti>%s</ti>\n' \
+					   '\t\t<ti>%s</ti>\n' \
+					   '\t\t<ti>%s</ti>\n' \
+					   '\t</tr>\n' \
+					      % (name,user,location,duties)
 		xml += tablexml
 	xml += footer
 	return xml
