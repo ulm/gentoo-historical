@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.23 2004/11/21 22:26:45 agaffney Exp $
+$Id: GLIClientController.py,v 1.24 2004/11/21 22:40:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -20,7 +20,7 @@ from threading import Thread, Event
 
 class GLIClientController(Thread):
 
-	def __init__(self,configuration=None,install_profile=None):
+	def __init__(self,configuration=None,install_profile=None,pretend=False):
 		Thread.__init__(self)
 		if configuration == None and os.path.isfile('/etc/gli.conf'):
 			self.output("Using /etc/gli.conf...")
@@ -32,6 +32,7 @@ class GLIClientController(Thread):
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
 		self._install_step = -1
+		self._pretend = pretend
 
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
@@ -60,7 +61,8 @@ class GLIClientController(Thread):
 		while len(steps) > 0:
 			try:
 				step = steps.pop(0)
-				step()
+				if not self._pretent:
+					step()
 			except GLIException, error:
 				if error.get_error_level() != 'fatal':
 					self._logger.log("Error:", error.get_function_name() + ": " + error.get_error_msg())
@@ -83,7 +85,8 @@ class GLIClientController(Thread):
 		while self._install_event.wait():
 			if self._install_step <= (len(self._install_steps) - 1):
 				try:
-					self._install_steps[self._install_step]()
+					if not self._pretent:
+						self._install_steps[self._install_step]()
 					self.addNotification("int", 1) # Install step done
 				except GLIException, error:
 					self.addNotification("exception", error)
