@@ -19,14 +19,19 @@ converted to html or xml for viewing with a browser.
 Converting ReST to html or xml requires the "docutils" python package
 [#docutils]_::
 	
-	# emerge docutils
+	# USE=glep emerge docutils
 
-The Gentoo Linux docutils package includes the *glep.py* program 
+You will also need to have the ``docutils.conf`` file and the ``tools``
+subdirectory (with ``glep.css`` and ``glep-html-template``, all found in the
+same place as this README.txt file) in the directory where you intend to
+process GLEPs.
+
+The Gentoo Linux docutils package includes the *docutils-glep.py* program 
 which transforms a GLEP in text form to the equivalent html version::
 
 	# docutils-glep.py glep-0001.txt glep-0001.html
 
-(Incidentally, *glep.py* contains special code to verify that
+(Incidentally, *docutils-glep.py* contains special code to verify that
 the GLEP header is reasonable.  This README lacks that header,
 so to convert this file to html using docutils you need to 
 use the more generic transformation program::
