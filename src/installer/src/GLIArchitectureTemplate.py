@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.48 2005/02/18 23:52:38 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.49 2005/03/01 06:29:25 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -236,7 +236,7 @@ class ArchitectureTemplate:
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if exitstatus != 0:
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
-			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint, display_on_tty8=true)
+			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint, display_on_tty8=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
 			self._logger.log("Mounted mountpoint:"+mountpoint)
