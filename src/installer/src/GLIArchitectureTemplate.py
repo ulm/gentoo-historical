@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.58 2005/03/22 02:41:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.59 2005/03/22 18:49:12 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -450,6 +450,16 @@ class ArchitectureTemplate:
 			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile)
 			if exitstatus != 0:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
+			
+			exitstatus = self._emerge("hotplug")
+			if exitstatus != 0:
+				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
+			self._logger.log("Hotplug emerged.")
+			exitstatus = self._emerge("coldplug")
+			if exitstatus != 0:
+				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
+			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
+			
 			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 			self._logger.log("Genkernel complete.")
