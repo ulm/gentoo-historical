@@ -1,0 +1,1248 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/diskless-howto.xml,v 1.1 2003/11/21 14:33:19 neysx Exp $ -->
+
+<guide link="/doc/fr/diskless-howto.xml">
+
+<title>Gentoo sur des machines sans disque</title>
+
+<author title="Auteur">
+    <mail link="ma53@drexel.edu">Michael Andrews</mail>
+</author>
+<author title="Correcteur">
+    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Correcteur, Traducteur">
+    <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
+
+<license/>
+
+<abstract>
+Ce guide vous explique comment installer des
+stations sans disque avec Gentoo.
+</abstract>
+
+<version>1.1</version>
+<date>20 novembre 2003</date>
+
+<chapter>
+<title>Introduction</title>
+
+<section>
+<title>À propos de ce guide</title>
+<body>
+
+<p>
+Ce guide va vous montrer comment installer des stations <e>diskless</e> (sans
+disque).  Il est basé sur la distribution Gentoo. Nous avons essayé de rendre
+ce guide aussi accessible que possible en pensant au débutant que nous avons
+tous été.  Bien qu'un utilisateur plus expérimenté puisse réussir à assimiler
+les différents guides sur les stations sans disque et les réseaux, nous
+espérons que ce guide vous épargnera bien des ecueils.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Qu'est-ce qu'une machine diskless ?</title>
+<body>
+
+<p>
+Une machine diskless est un PC dépourvu des périphériques de démarrage
+habituels, c-à-d. sans disque dur ni lecteur de CDROM ou de disquette.  Un PC
+diskless démarre sur le réseau et a besoin d'un serveur qui va lui fournir de
+l'espace disque comme un disque dur local.  Nous appellerons le serveur le
+<e>maître</e> et les machines sans disque des <e>esclaves</e>.  Un esclave a
+besoin d'une carte réseau qui supporte le démarrage via PXE.  La plupart des
+cartes modernes le font, les adaptateurs réseau intégrés sur les cartes-mères
+aussi.
+</p>
+
+</body>
+
+</section>
+
+<section>
+<title>Avant de commencer</title>
+<body>
+
+<p>
+Gentoo devrait être installée sur votre maître et celui-ci devrait
+disposer de suffisamment d'espace disque pour stocker les systèmes de
+fichiers des noeuds esclaves.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration des noeuds maître et esclaves</title>
+
+<section>
+<title>À propos du noyau</title>
+<body>
+
+<note>
+Si vous avez l'intention de construire un cluster openMosix, vous devez
+utiliser le noyau patché pour openMosix. Il se trouve dans Portage sous
+<path>sys-kernel/openmosix-sources</path>. Vous devriez lire notre <uri
+link="openmosix-howto.xml">guide openMosix</uri> pour savoir quelles options
+sélectionner dans un noyau openMosix.
+</note>
+
+<p>
+Le noyau est le logiciel qui sert d'interface entre votre matériel et
+l'ensemble des logiciels installés sur votre machine. Il est le coeur
+de tout système construit autour d'un noyau.
+Quand votre PC démarre, le BIOS exécute les instructions qu'il trouve dans
+le secteur de démarrage de votre disque dur (boot sector en anglais).
+Ces instructions sont communément appelées le "boot loader". Celui-ci
+charge le noyau en mémoire et lui passe la main.
+</p>
+
+<p>
+Pour plus d'informations relatives au noyau et à sa configuation,
+vous pouvez consulter le <uri
+link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">kernel howto</uri>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuration du noyau du noeud maître</title>
+<body>
+
+<p>
+Peu importe la taille et le niveau de paramétrage du noyau maître, 
+certaines options sont indispensables. Voici comment configurer votre noyau&nbsp;:
+</p>
+
+<pre caption="Modifier la configuration du noyau du noeud maître">
+# <i>cd /usr/src/linuxx</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Une interface devrait apparaître et vous permettre de
+configurer votre noyau plus facilement qu'en modifiant manuellement le
+fichier <path>/usr/src/linux/.config</path>. Si votre noyau actuel
+fonctionne, vous voulez peut-être garder une copie de sa configuration.
+Quittez l'écran de configuration et tapez&nbsp;:
+</p>
+
+<pre caption="Sauvegarder une copie de la configuration du noyau maître">
+# <i>cp .config .config_working</i>
+</pre>
+
+<p>
+Vérifiez que les options listées ci-dessous sont bien sélectionnées pour
+être compilées en dur et <e>PAS</e> comme modules. Les options affichées
+ci-dessous proviennent du noyau 2.4.22. Si vous utilisez une autre version, il
+se peut que le texte ou l'ordre diffère quelque peu.
+</p>
+
+<pre caption="Les options du noyau maître">
+Code maturity level options  ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+
+
+Networking options ---&gt;
+  &lt;*&gt; Packet socket
+  [ ]   Packet socket: mmapped IO
+  &lt; &gt; Netlink device emulation
+  [ ] Network packet filtering (replaces ipchains)
+  [ ] Socket Filtering
+  &lt;*&gt; Unix domain sockets
+  [*] TCP/IP networking
+  [*]   IP: multicasting
+
+  
+File systems ---&gt;
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot    
+  Network File Systems  ---&gt;
+    &lt;*&gt; NFS server support
+    [*]   Provide NFSv3 server support
+</pre>
+
+<note>
+Ces options de configuration du noyau s'ajoutent aux options spécifiques
+à votre matériel, elles ne les remplacent pas.
+</note>
+
+<p>
+Après avoir configuré le noyau maître, vous devez le compiler.
+Tapez ceci&nbsp;:
+</p>
+
+<pre caption="Recompiler le noyau maître et ses modules">
+# <i>make dep</i>
+# <i>make clean bzImage modules modules_install</i>
+<comment>(Vérifiez que /boot est monté avant d'y copier le noyau)</comment>
+# <i>cp arch/i386/boot/bzImage /boot/bzImage-master</i>
+# <i>cp System.map /boot/System.map-master</i>
+</pre>
+
+<p>
+Maintenant que le nouveau fichier bzImage a été copié dans votre répertoire
+<path>/boot</path>, il ne vous reste plus qu'à vous assurer que votre
+gestionnaire de démarrage (le bootloader) l'utilise. 
+Modifiez <path>lilo.conf</path> ou <path>grub.conf</path> selon le
+bootloader que vous utilisez.
+Ensuite, vous pouvez redémarrer votre machine pour activer ces nouvelles options.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>À propos du noyau esclave</title>
+<body>
+
+<p>
+Il est recommandé de compiler le noyau esclave sans modules, c-à-d. avec les
+options compilées en dur parce qu'il est difficile et inutile de charger des
+modules lors d'un démarrage via le réseau et parce que ce noyau doit être aussi
+compact que possible pour démarrer plus rapidement. Nous allons compiler le
+noyau esclave au même endroit que le noyau maître.
+</p>
+
+<p>
+Pour éviter toute confusion et toute perte de temps, il vaut mieux garder une
+copie de la configuration du noyau maître comme ceci&nbsp;:
+</p>
+
+<pre caption="Sauvegarder une copie de la configuration du noyau maître">
+# <i>cp /usr/src/linux/.config /usr/src/linux/.config_master</i>
+</pre>
+
+<p>
+Nous devons maintenant configurer le noyau des noeuds esclaves de la même
+façon que pour le noyau maître. Si vous préférez repartir d'une
+configuration vierge, vous pouvez réinitialiser
+<path>/usr/src/linux/.config</path> comme ceci&nbsp;:
+</p>
+
+<pre caption="Obtenir une configuration de noyau vierge">
+# <i>cd /usr/src/linux</i>
+# <i>make mrproper</i>
+</pre>
+
+<p>
+Ensuite, utilisez l'interface de configuration&nbsp;:
+</p>
+
+<pre caption="Modifier la configuration du noyau du noeud esclave">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Assurez-vous que les options suivantes sont sélectionnées pour une compilation
+en dur dans le noyau et <e>PAS</e> comme module&nbsp;:
+</p>
+
+<pre caption="Options du noyau esclave">
+Code maturity level options  ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+
+Networking options ---&gt;
+  &lt;*&gt; Packet socket
+  [ ]   Packet socket: mmapped IO
+  &lt; &gt; Netlink device emulation
+  [ ] Network packet filtering (replaces ipchains)
+  [ ] Socket Filtering
+  &lt;*&gt; Unix domain sockets
+  [*] TCP/IP networking
+  [*]   IP: multicasting
+  [*]   IP: kernel level autoconfiguration
+  [*]     IP: DHCP support (NEW)
+
+
+File systems ---&gt;
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+  Network File Systems  ---&gt;
+    &lt;*&gt; file system support 
+    [*]   Provide NFSv3 client support
+    [*]   Root file system on NFS
+</pre>
+
+<p>
+Compilons le noyau esclave. Vous devez prendre garde de ne pas
+écraser les modules que vous avez construits pour le noeud maître.
+Faites&nbsp;:
+</p>
+
+<pre caption="Compiler le noyau esclave">
+# <i>cd /usr/src/linux</i>
+# <i>make clean dep bzImage</i>
+</pre>
+
+<p>
+Maintenant, créez le répertoire qui va accueillir le système de fichiers des
+noeuds esclaves sur le maître et copiez y le fichier <path>bzImage</path>. Nous
+utilisons <path>/diskless</path>, mais vous pouvez utiliser un autre nom.
+</p>
+
+<pre caption="Copier le noyau esclave">
+# <i>mkdir /diskless</i>
+# <i>cp /usr/src/linux/arch/i386/boot/bzImage /diskless</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuration d'un premier système de fichiers pour les noeuds esclaves</title>
+<body>
+
+<p>
+Les systèmes de fichiers des noeuds maître et esclaves peuvent subir de
+nombreuses adaptations. Concentrons-nous d'abord sur les fichiers de
+configuration et les points de montage. Nous avons besoin d'un répertoire sous
+<path>/diskless</path> pour le premier noeud esclave. Chaque esclave a besoin
+de son propre système de fichiers racine (le "root") parce que certains fichiers ne
+peuvent pas être communs à plusieurs machines sans causer de graves problèmes.
+Peu importe les noms des sous-répertoires, vous pouvez, par exemple, les nommer
+d'après les adresses IP car elles sont uniques et explicites. Dans cet exemple,
+l'adresse IP du premier noeud esclave est <c>192.168.1.21</c>&nbsp;:
+</p>
+
+<pre caption="Créer le répertoire / du premier noeud esclave">
+# <i>mkdir /diskless/192.168.1.21</i>
+</pre>
+
+<p>
+Certains fichiers de configuration de <path>/etc</path> doivent être modifiés
+pour les esclaves. Copiez d'abord le répertoire <path>/etc</path> du maître
+dans le nouveau répertoire destiné au noeud esclave&nbsp;:
+</p>
+
+<pre caption="Créer /etc pour l'esclave">
+# <i>cp -r /etc /diskless/192.168.1.21/etc</i>
+</pre>
+
+<p>
+Le système de fichiers est encore incomplet, il lui manque différents
+points de montage&nbsp;:
+</p>
+
+<pre caption="Créer les points de montage pour l'esclave">
+# <i>mkdir /diskless/192.168.1.21/home</i>
+# <i>mkdir /diskless/192.168.1.21/dev</i>
+# <i>mkdir /diskless/192.168.1.21/proc</i>
+# <i>mkdir /diskless/192.168.1.21/tmp</i>
+# <i>mkdir /diskless/192.168.1.21/mnt</i>
+# <i>mkdir /diskless/192.168.1.21/mnt/.initd</i>
+# <i>mkdir /diskless/192.168.1.21/root</i>
+# <i>mkdir /diskless/192.168.1.21/var</i>
+# <i>mkdir /diskless/192.168.1.21/var/empty</i>
+# <i>mkdir /diskless/192.168.1.21/var/lock</i>
+# <i>mkdir /diskless/192.168.1.21/var/log</i>
+# <i>mkdir /diskless/192.168.1.21/var/run</i>
+<comment>(uniquement pour openMosix)</comment>
+# <i>mkdir /diskless/192.168.1.21/mfs</i>
+</pre>
+
+<p>
+La plupart de ces noms devraient vous être familiers.
+Les points tels que <path>/dev</path> ou <path>/proc</path> seront utilisés
+au démarrage de l'esclave, les autres seront montés un peu plus tard.
+Vous devez également indiquer le nom de machine de l'esclave dans le fichier
+<path>/diskless/192.168.1.21/etc/hostname</path>.
+Les programmes, bibliothèques et autres fichiers seront copiés au bon endroit
+plus loin dans ce guide, en fait, juste avant de démarrer l'esclave.
+</p>
+
+</body>
+</section>
+
+<!--
+<section>
+<title>Options manquantes</title>
+<body>
+
+<p>
+Si vous ne voyez pas certaines options lors de la configuration du noyau,
+assurez-vous que l'option suivante est activée&nbsp;:
+</p>
+
+<ul>
+<li>Code maturity level options - - -&gt;</li>
+<ul><li>Prompt for development and/or incomplete code/drivers</li></ul>
+</ul>
+
+</body>
+</section>
+-->
+</chapter>
+
+
+<chapter>
+<title>Configuration du serveur DHCP</title>
+
+<section>
+<title>À propos du serveur DHCP</title>
+<body>
+
+<p>
+DHCP signifie "Dynamic Host Configuration Protocol". Le serveur DHCP est le
+premier ordinateur contacté par les noeuds esclaves quand ils démarrent par le
+système PXE via le réseau. La principale fonction d'un serveur DHCP est
+d'attribuer des adresses IP. Un tel serveur peut attribuer des adresses en se
+basant sur les adresses MAC des cartes réseau (Ndt: l'adresse MAC est censée
+être unique pour chaque carte sur le marché et est attribuée par le
+constructeur). Une fois l'adresse attribuée, le serveur DHCP indique au noeud
+esclave où il peut obtenir son noyau et son système de fichiers intial.
+</p>
+
+</body>
+</section>
+
+
+<section>
+<title>Avant de commencer</title>
+<body>
+
+<p>
+Vous devez vérifier plusieurs choses avant de poursuivre.
+D'abord, vérifions si votre connexion réseau fonctionne&nbsp;:
+</p>
+
+<pre caption="Vérifier la connexion réseau">
+# <i>ifconfig eth0 enable multicast</i>
+# <i>ifconfig -a</i>
+</pre>
+
+<p>
+Vous devez vérifier que vous avez un périphérique <e>eth0</e> qui fonctionne.
+Vous devriez voir quelque chose comme ceci&nbsp;:
+</p>
+
+<pre caption="Un périphérique eth0 activé">
+eth0      Link encap:Ethernet  HWaddr 00:E0:83:16:2F:D6
+          inet addr:192.168.1.1  Bcast:192.168.1.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:26460491 errors:0 dropped:0 overruns:2 frame:0
+          TX packets:32903198 errors:0 dropped:0 overruns:0 carrier:1
+          collisions:0 txqueuelen:100
+          RX bytes:2483502568 (2368.4 Mb)  TX bytes:1411984950 (1346.5 Mb)
+          Interrupt:18 Base address:0x1800
+</pre>
+
+<p>
+L'option <e>MULTICAST</e> est essentielle, si vous ne l'avez pas, vous devez
+recompiler votre noyau avec cette option activée dans sa configuration.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Installation du serveur DHCP</title>
+<body>
+
+<p>
+Si votre réseau n'a pas encore de serveur DHCP, vous devez en installer un&nbsp;:
+</p>
+
+<pre caption="Installer un serveur dhcp">
+# <i>emerge dhcp</i>
+</pre>
+
+<p>
+Si un serveur DHCP est déjà installé sur votre réseau, vous devez modifier
+sa configuration pour permettre un démarrage via PXE.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuration du serveur DHCP</title>
+<body>
+
+<p>
+Le serveur DHCP est configuré grâce au seul fichier
+<path>/etc/dhcp/dhcpd.conf</path>.  Le répertoire <path>/etc/dhcp</path>
+devrait contenir un exemple que vous pouvez utiliser comme point de départ&nbsp;:
+</p>
+
+<pre caption="Editer le fichier de configuration du serveur dhcp">
+# <i>cp /etc/dhcp/dhcpd.conf.sample /etc/dhcp/dhcpd.conf</i>
+# <i>nano -w /etc/dhcp/dhcpd.conf</i>
+</pre>
+
+<p>
+Le fichier de configuration est organisé et indenté comme ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de dhcpd.conf">
+<comment># global options here</comment>
+
+ddns-update-style none;
+shared-network LOCAL-NET {
+
+<comment># shared network options here</comment>
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+
+    <comment># subnet network options here</comment>
+
+    host slave{
+        <comment># host specific options here</comment>
+    }
+
+    group {
+        <comment># group specific options here</comment>
+    }
+}
+}
+</pre>
+
+<p>
+La mention <c>shared-network</c> est facultative et est réservée pour des
+adresses IP que vous voulez attribuer aux noeuds qui font partie de votre réseau.
+Vous devez avoir au moins une section <c>subnet</c> et la section facultative
+<c>group</c> permet de définir des options communes aux noeuds spécifiés dans la
+section <c>subnet</c>. Voici un exemple de <path>dhcpd.conf</path> complet&nbsp;:
+</p>
+
+<pre caption="Exemple de dhcpd.conf">
+# DHCP configuration file for DHCP ISC 3.0
+ 
+ddns-update-style none;
+ 
+# Definition of PXE-specific options
+# Code 1: Multicast IP address of boot file server
+# Code 2: UDP port that client should monitor for MTFTP responses
+# Code 3: UDP port that MTFTP servers are using to listen for MTFTP requests
+# Code 4: Number of seconds a client must listen for activity before trying
+#         to start a new MTFTP transfer
+# Code 5: Number of seconds a client must listen before trying to restart
+#         a MTFTP transfer
+ 
+option space PXE;
+option PXE.mtftp-ip               code 1 = ip-address;
+option PXE.mtftp-cport            code 2 = unsigned integer 16;
+option PXE.mtftp-sport            code 3 = unsigned integer 16;
+option PXE.mtftp-tmout            code 4 = unsigned integer 8;
+option PXE.mtftp-delay            code 5 = unsigned integer 8;
+option PXE.discovery-control      code 6 = unsigned integer 8;
+option PXE.discovery-mcast-addr   code 7 = ip-address;
+ 
+subnet 192.168.1.0 netmask 255.255.255.0 {
+ 
+  class "pxeclients" {
+    match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
+    option vendor-class-identifier "PXEClient";
+    vendor-option-space PXE;
+ 
+    # At least one of the vendor-specific PXE options must be set in
+    # order for the client boot ROMs to realize that we are a PXE-compliant
+    # server.  We set the MCAST IP address to 0.0.0.0 to tell the boot ROM
+    # that we can't provide multicast TFTP (address 0.0.0.0 means no
+    # address).
+ 
+    option PXE.mtftp-ip 0.0.0.0;
+ 
+    # This is the name of the file the boot ROMs should download.
+    filename "pxelinux.0";
+    # This is the name of the server they should get it from.
+    <comment># Use the master's IP</comment>
+    next-server 192.168.1.1;
+  }
+ 
+  pool {
+    max-lease-time 86400;
+    default-lease-time 86400;
+    <comment># This prevents unlisted machines from getting an IP</comment>
+    deny unknown clients;
+  }
+ 
+  host slave21 {
+       <comment># Use your slave's MAC address</comment>
+       hardware ethernet                00:40:63:C2:CA:C9;
+       <comment># Give your slave a static IP</comment>
+       fixed-address                    192.168.1.21;
+       server-name                      "master";
+       <comment># Use your gateway IP, if required</comment>
+       option routers                   192.168.1.1;
+       <comment># Use your DNS IP, if required</comment>
+       option domain-name-servers       192.168.1.1;
+       option domain-name               "mydomain.com";
+       <comment># Use your slave hostname</comment>
+       option host-name                 "slave21";
+  }
+}
+</pre>
+
+<p><!--
+Les options <c>allow bootp</c> and <c>allow booting</c> sont essentielles
+si vous voulez placer vos stations sans disque sur ce sous-réseau particulier.
+Les options <c>default-lease-time</c>, <c>max-lease-time</c> et <c>range</c>
+permettent d'attribuer des adresses dynamiquement dans un intervalle donné
+pour un laps de temps limité. Le mot-clef <c>group</c> permet de définir
+les options <c>filename</c> et <c>nextserver</c> communes pour les machines
+définies juste après. -->
+L'option <c>next-server</c> indique l'adresse IP de
+la machine à laquelle le noeud esclave doit demander le fichier <c>filename</c>
+après avoir reçu son adresse IP.
+Cette adresse est l'adresse du serveur TFTP, généralement la même que celle du noeud maître. Le nom du fichier 
+spécifié dans l'option <c>filename</c> est relatif au répertoire
+<path>/diskless</path> si votre serveur tftp est configuré comme indiqué
+plus loin dans ce guide.
+La section <c>host</c> contient l'adresse matérielle (la "MAC address") de
+votre carte réseau et l'option <c>fixed-address</c> permet d'y associer
+l'adresse IP spécifiée. Il est judicieux d'indiquer le nom du noeud dans
+l'option <c>host-name</c>. L'ensemble des options du fichier <path>dhcpd.conf</path>
+n'ont pas leur place dans ce guide, mais sont évidemment disponibles dans
+les pages man.
+</p>
+
+<pre caption="Consulter les pages man de dhcpd.conf">
+# <i>man dhcpd.conf</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Activer le serveur DHCP</title>
+<body>
+
+<p>
+Avant de lancer le script d'initialisation de DHCP, vous devez
+modifier le fichier <path>/etc/conf.d/dhcp</path> pour
+qu'il ressemble à ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/conf.d/dhcp">
+IFACE="eth0"
+<comment># insert any other options needed</comment>
+DHCPD_OPTS="-d"
+</pre>
+
+<p>
+L'option -d demande au serveur de fournir plus de messages, c'est utile en cas
+de problème. La variable <c>IFACE</c> indique le péripherique réseau sur lequel
+sont connectés les noeuds esclaves, dans notre cas, c'est <c>eth0</c>.
+Il peut être intéressant d'ajouter des valeurs à <c>IFACE</c> si le serveur
+est équipé de plusieurs cartes réseau. Pour démarrer le serveur DHCP, faites&nbsp;:
+</p>
+
+<pre caption="Démarrage du serveur dhcp sur le noeud maître">
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Pour faire démarrer le serveur DHCP automatiquement par votre machine, faites&nbsp;:
+</p>
+
+<pre caption="Ajout du serveur DHCP dans la procédure de démarrage de la machine">
+# <i>rc-update add dhcp default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Problèmes avec le serveur DHCP</title>
+<body>
+
+<p>
+Quand un noeud esclave démarre, vous devriez voir des messages
+semblables dans le fichier <path>/var/log/daemon.log</path> sur le maître&nbsp;:
+</p>
+
+<pre caption="Exemple de messages de DHCP">
+DHCPDISCOVER from 00:00:00:00:00:00 via eth0
+DHCPOFFER on 192.168.1.21 to 00:00:00:00:00:00 via eth0
+DHCPREQUEST for 192.168.1.21 from 00:00:00:00:00:00 via eth0
+DHCPACK on 192.168.1.21 to 00:00:00:00:00:00 via eth0
+</pre>
+
+<note>
+Ce fichier peut aussi vous aider à trouver les adresses MAC des noeuds esclaves.
+</note>
+
+<p>
+Si vous voyez le message ci-dessous, cela indique que le serveur DHCP
+émet bien sur le réseau, mais qu'il y a une erreur dans le fichier
+de configuration.
+</p>
+
+<pre caption="Exemple d'erreur dhpc">
+no free leases on subnet LOCAL-NET
+</pre>
+
+<p>
+Chaque fois que vous modifiez le fichier de configuration,
+vous devez relancer le server DHCP comme ceci&nbsp;:
+</p>
+
+<pre caption="Relancer le serveur dhcp sur le maître">
+# <i>/etc/init.d/dhcpd restart</i>
+</pre>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Configuration du serveur TFTP et du démarrage via PXE</title>
+<section>
+<title>À propos du serveur TFTP</title>
+<body>
+
+<p>
+TFTP signifie "Trivial File Transfer Protocol". Le serveur TFTP va fournir
+un noyau et un système de fichiers aux noeuds esclaves. Tous les noyaux des
+esclaves et leur système de fichiers seront stockés sur le serveur TFTP.
+Il est donc recommandé de l'installer sur le noeud maître.
+</p>
+
+</body>
+
+</section>
+<section>
+<title>À propos de PXELINUX</title>
+<body>
+
+<p>
+PXELINUX est l'équivalent réseau de LILO ou de GRUB, il est envoyé par
+le serveur TFTP. Il s'agit en fait d'un petit bout de code qui
+indique au client où trouver son noyau et son système de fichiers initial
+et qui permet de passer quelques options au noyau.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Avant de commencer</title>
+<body>
+
+<p>
+Vous avez besoin du fichier <path>pxelinux.0</path> fourni avec le paquet
+SYSLINUX de H. Peter Anvin. Vous pouvez l'installer comme ceci&nbsp;:
+</p>
+
+<pre caption="Installer syslinux">
+# <i>emerge syslinux</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Installation du serveur TFTP</title>
+<body>
+
+<p>
+Un serveur tftp reconnu est celui compris dans le paquet tftp-hpa.
+Il se trouve qu'il a été écrit par le même auteur que SYSLINUX et ils
+fonctionnent très bien ensemble. Faites&nbsp;:
+</p>
+
+<pre caption="Installer le serveur tfp">
+# <i>emerge tftp-hpa</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Configuration de PXELINUX</title>
+<body>
+
+<p>
+Avant de démarrer votre serveur TFTP, vous devez installer pxelinux.
+Copiez le binaire de pxelinux dans <path>/diskless</path> comme ceci&nbsp;:
+</p>
+
+<pre caption="Installer le démarreur à distance">
+# <i>cp /usr/lib/syslinux/pxelinux.0 /diskless</i>
+# <i>mkdir /diskless/pxelinux.cfg</i>
+# <i>touch /diskless/pxelinux.cfg/default</i>
+</pre>
+
+<p>
+Cela va créer un fichier de configuration par défaut pour syslinux.
+Le binaire <path>pxelinux.0</path> cherche son fichier de configuration
+dans le répertoire <path>pxelinux.cfg</path>. Il commence par chercher
+un fichier dont le nom est l'adresse IP attribuée au noeud écrite
+en hexadécimal. Si un tel fichier n'existe pas, <path>pxelinux.0</path>
+enlève successivement le chiffre le plus à droite et regarde si
+un fichier correspondant existe jusqu'à ce qu'il trouve un fichier ou qu'il
+n'y ait plus de chiffre, dans ce cas, il cherche
+un fichier basé sur l'adresse MAC de la carte réseau (depuis la version 2.05)
+et, en dernier recours, il utilise le fichier <path>default</path>.
+</p>
+
+<pre caption="Recherche du fichier de configuration dans pxelinux.cfg/">
+<codenote>Pour le noeud avec l'adresse IP 192.168.1.21,</codenote>
+<codenote>pxelinux.0 considère les fichiers suivants :</codenote>
+C0A80115
+C0A8011
+C0A801
+C0A80
+C0A8
+C0A
+C0
+C
+<codenote>À partir de la version 2.05 et pour, par exemple, </codenote>
+<codenote>une carte ethernet qui a pour adresse MAC 88:99:AA:BB:CC:DD</codenote>
+01-88-99-aa-bb-cc-dd <codenote>le préfixe 01 indique le type ethernet</codenote>
+default
+</pre>
+
+<p>
+Utilisons simplement un fichier <path>default</path>&nbsp;:
+</p>
+
+<pre caption="Exemple de pxelinux.cfg/default">
+DEFAULT /diskless/bzImage
+APPEND ip=dhcp root=/dev/nfs nfsroot=192.168.1.1:/diskless/192.168.1.21
+</pre>
+
+<p>
+L'option <c>DEFAULT</c> indique le chemin vers le noyau.
+L'option <c>APPEND</c> fournit les paramètres à passer au noyau. Puisque nous
+avons compilé le noyau avec l'option <c>NFS_ROOT_SUPPORT</c>, nous indiquons ici
+le chemin vers notre système de fichiers racine (le "root" via NFS).
+La première adresse IP est l'adresse du noeud maître et la seconde est le
+nom du répertoire que nous avons créé dans <path>/diskless</path> et qui contient
+le système de fichiers de l'esclave.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuration du serveur TFTP</title>
+<body>
+
+<p>
+Modifiez le fichier <path>/etc/conf.d/in.tftpd</path>.
+Vous devez y indiquer le répertoire principal servi par le serveur
+TFTP dans l'option <c>INTFTPD_PATH</c>. Les éventuelles options de la ligne
+de commande utilisée pour lancer le serveur viennent après <c>INTFTPD_OPTS</c>.
+Votre fichier devrait ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/conf.d/in.tftpd">
+INTFTPD_PATH="/diskless"
+INTFTPD_OPTS="-l -v -s ${INTFTPD_PATH}"
+</pre>
+
+<p>
+L'option -l indique que le serveur doit écouter lui-même sur le réseau, ce qui
+vous évite d'utiliser inetd. L'option -v demande au serveur de fournir plus
+de messages dans son journal. L'option -s spécifie
+le répertoire racine du serveur.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Activer le serveur TFTP</title>
+<body>
+
+<p>
+Pour lancer le serveur TFTP, faites&nbsp;:
+</p>
+
+<pre caption="Lancer le serveur ttfp sur le maître">
+# <i>/etc/init.d/in.tftpd start</i>
+</pre>
+
+<p>
+Ce script va lancer le serveur tftp avec les options spécifiées dans
+le fichier <path>/etc/conf.d/in.tfpd</path>. Si voulez que le serveur TFTP
+soit lancé au démarrage de votre machine, faites&nbsp;:
+</p>
+
+<pre caption="Lancer le serveur tftp au démarrage du noeud maître">
+# <i>rc-update add in.tftpd default</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Problèmes lors du démarrage via le réseau</title>
+<body>
+
+<p>
+Il y a plusieurs façons de résoudre les problèmes de démarrage via le réseau.
+Un outil fréquemment utilisé est <c>tcpdump</c>.
+Pour l'installer, faites&nbsp;:
+</p>
+
+<pre caption="Installer tcpdump">
+# <i>emerge tcpdump</i>
+</pre>
+
+<p>
+Maintenant, vous pouvez surveiller le trafic réseau et vous
+assurer que votre serveur et les clients se parlent.
+En cas de problèmes, vous devriez d'abord vérifier que vos machines sont
+physiquement connectées et que les câbles ne sont pas endommagés.
+Vous devriez aussi vous assurer que le trafic n'est pas bloqué par un
+pare-feu.
+Pour visualiser le dialogue entre deux ordinateurs, faites&nbsp;:
+</p>
+
+<pre caption="Visualiser le dialogue entre deux ordinateurs avec tcpdump">
+# <i>tcpdump host </i><comment>ip_client</comment><i> and </i><comment>ip_server</comment>
+</pre>
+
+<p>
+Vous pouvez aussi surveiller un port particulier, celui du serveur tftp par exemple&nbsp;:
+</p>
+
+<pre caption="Surveiller le port du serveur tftp">
+# <i>tcpdump port 69</i>
+</pre>
+
+<p>
+Une erreur fréquente est "PXE-E32: TFTP open time-out".
+Elle est généralement causée par un pare-feu.
+Si vous utilisez <c>TCPwrappers</c>, vous devriez aussi vérifier que
+les fichiers <path>/etc/hosts.allow</path> et <path>etc/hosts.deny</path>
+sont correctement configurés. Les noeuds esclaves doivent avoir accès
+au maître.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration du serveur NFS</title>
+<section>
+<title>À propos du serveur NFS</title>
+<body>
+
+<p>
+NFS signifie "Network File System". Un serveur NFS fournit un système de
+fichiers via le réseau. Cette partie peut être reconfigurée plus tard, mais
+nous voulons d'abord un système de base qui permet au noeud esclave de démarrer.
+</p>
+
+</body>
+</section>
+<section>
+<title>À propos de portmap</title>
+<body>
+
+<p>
+Certains services ne sont pas toujours liés au même port, mais utilisent
+le système d'appel de fonction à distance (les RPC en anglais pour
+Remote Procedure Call). Dans ce cas, lorsqu'un service démarre,
+il écoute sur un port disponible choisi au hasard et il s'inscrit
+dans la liste de tels services tenue par le programme portmap.
+NFS utilise ce mécanisme et a besoin que le programme portmap soit
+actif avant de démarrer.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Avant de commencer</title>
+<body>
+
+<p>
+Pour pouvoir activer le serveur NFS, vous devez avoir compilé le noyau avec
+les options adéquates. Pour vérifier que cela a bien été fait, tapez&nbsp;:
+</p>
+
+<pre caption="Afficher les options NFS dans la configuration du noyau">
+# <i>grep NFS /usr/src/linux/.config_master</i>
+</pre>
+
+<p>
+L'affichage devrait ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Configuration NFS correcte du noyau maître">
+# CONFIG_ROOT_NFS is not set
+CONFIG_NFSD=y
+CONFIG_NFSD_V3=y
+# CONFIG_NFSD_TCP is not set
+# CONFIG_NCPFS_NFS_NS is not set
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Installation du serveur NFS</title>
+<body>
+
+<p>
+Le paquet NFS est installé via Portage comme ceci&nbsp;:
+</p>
+
+<pre caption="Installer nfs-utils">
+# <i>emerge nfs-utils</i>
+</pre>
+
+<p>
+Ce paquet comprend le programme portmap, le serveur nfs et les utilitaires
+pour les clients NFS. Les dépendances lors de l'initialisation sont correctement
+résolues.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Configuration du serveur NFS</title>
+<body>
+
+<p>
+Il y a trois fichiers principaux à modifier&nbsp;:
+</p>
+
+<pre caption="Les fichiers de configuration relatifs à NFS">
+/etc/exports
+/diskless/192.168.1.21/etc/fstab
+/etc/conf.d/nfs
+</pre>
+
+<p>
+Le fichier <path>/etc/exports</path> indique comment, à qui et quels
+répertoires sont disponibles pour les clients NFS.
+le fichier <path>/etc/fstab</path> des noeuds esclaves sera modifié
+pour monter les répertoires exportés par le maître.
+</p>
+
+<p>
+Le fichier <path>/etc/exports</path> du maître devrait ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/exports sur le maître">
+<comment># Une ligne comme celle-ci par esclave</comment>
+/diskless/192.168.1.21   192.168.1.21(rw,no_root_squash,no_all_squash)
+<comment># Valable pour tous les esclaves</comment>
+/opt   192.168.1.0/24(ro,no_root_squash,no_all_squash)
+/usr   192.168.1.0/24(ro,no_root_squash,no_all_squash)
+/home  192.168.1.0/24(rw,no_root_squash,no_all_squash)
+<comment># Si vous voulez un journal commun à tous les noeuds</comment>
+/var/log   192.168.1.21(rw,no_root_squash,no_all_squash)
+</pre>
+
+<p>
+Le premier champ indique le nom du répertoire à exporter et le suivant
+spécifie qui peut l'utiliser et comment.
+Le "qui" indique quel noeud peut monter ce répertoire via le réseau
+et le "comment" liste ce que le noeud peut faire.
+L'option <c>ro</c> interdit l'écriture (=read-only) et <c>rw</c>
+l'autorise. Les options <c>no_root_squash</c> et <c>no_all_squash</c>
+sont importantes dans le cas de machines sans disque, elles permettent
+de préserver les identifiants (uid/gid) des clients.
+</p>
+<p>
+Le fichier fstab <path>/diskless/192.168.1.21/etc/fstab</path> du noeud
+esclave devrait ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/fstab du noeud esclave">
+<comment># Ces lignes sont essentielles</comment>
+master:/diskless/192.168.1.21  /         nfs   hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
+master:/opt                    /opt      nfs   hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
+master:/usr                    /usr      nfs   hard,intr,ro,nolock,rsize=8192,wsize=8192    0 0
+master:/home                   /home     nfs   hard,intr,rw,nolock,rsize=8192,wsize=8192    0 0
+none                           /proc     proc  defaults                                     0 0
+<comment># Utile, mais facultatif</comment>
+master:/var/log                /var/log  nfs   hard,intr,rw                                 0 0
+<comment>(Uniquement pour des clusters openMosix)</comment>
+none                           /mfs      mfs   dfsa=1                                       0 0
+</pre>
+
+<p>
+Dans cet exemple, <e>master</e> est le nom du noeud maître, mais il pourrait
+être remplacé par son adresse IP. Le premier champ indique l'endroit du
+répertoire à monter et le deuxième spécifie le point de montage sur le noeud 
+esclave. Le troisième champ indique le type de système de fichiers (NFS dans
+notre cas). Le quatrième champ donne des indications au processus
+de montage des répertoires (voir mount(1) pour plus d'infos).
+Certains ont rencontré des problèmes avec l'option soft et nous avons donc opté pour des points
+montés avec l'option hard. vous devriez consulter la documentation relative
+aux options de <path>/etc/fstab</path>.
+</p>
+
+<p>
+Le dernier fichier à modifier est <path>/etc/conf.d/nfs</path>.
+Il décrit les options de démarrage du serveur NFS. Il devrait
+ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/init.d/nfs sur le maître">
+# Config file for /etc/init.d/nfs
+
+# Number of servers to be started up by default
+RPCNFSDCOUNT=20
+
+# Options to pass to rpc.mountd
+RPCMOUNTDOPTS=""
+</pre>
+
+<p>
+Vous devriez indiquer le nombre de machines sans disque de votre réseau
+sur l'option <c>RPCNFSDCOUNT</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Activer le serveur NFS</title>
+<body>
+
+<p>
+Vous pouvez lancer le serveur NFS grâce au script situé dans <path>/etc/init.d</path>
+comme ceci&nbsp;:
+</p>
+
+<pre caption="Lancer le serveur NFS sur le maître">
+# <i>/etc/init.d/nfs start</i>
+</pre>
+
+<p>
+Si vous voulez ajouter ce script au processus de démarrage du maître,
+faites&nbsp;:
+</p>
+
+<pre caption="Lancer le serveur NFS au démarrage du noeud maître">
+# <i>rc-update add nfs default</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Finaliser le système de fichiers du noeud esclave</title>
+<section>
+<title>Copier les fichiers nécessaires</title>
+<body>
+
+<p>
+vous devez copier des fichiers du noeud maître
+dans le système de fichiers du noeud esclave.
+Faites ceci&nbsp;:
+</p>
+
+<pre caption="Créer le système de fichiers esclave">
+# <i>cp -r /bin /diskless/192.168.1.21/bin</i>
+# <i>cp -r /sbin /diskless/192.168.1.21/sbin </i>
+# <i>cp -r /lib /diskless/192.168.1.21/lib </i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Scripts d'initialisation</title>
+<body>
+
+<p>
+Les scripts d'initialisation exécutent <e>checkroot</e>, ce qui n'a aucun sens sur
+une machine diskless. La solution difficile est de modifier le script
+<path>/diskless/192.168.1.21/sbin/rc</path>, mais cela est risqué et pourrait
+vous poser des problèmes si vous faites une mise à jour des fichiers de votre noeud
+esclave et que vous oubliez de ne pas toucher à ce fichier.
+L'astuce consiste à créer un fichier <path>/fastboot</path> au démarrage.
+Ce fichier indique à <e>checkroot</e> de ne pas lancer la vérification du
+système de fichiers. Cependant, le fichier <path>/fastboot</path> est supprimé
+automatiquement par les scripts d'initialisation. C'est pourquoi il faut
+recréer ce fichier à la fin du processus de démarrage.
+</p>
+
+<pre caption="Empêcher les scripts d'init de vérifier le système de fichiers">
+<comment>(Créer le fichier /fastboot pour le prochain démarrage)</comment>
+# <i>touch /diskless/192.168.1.21/fastboot</i>
+<comment>(Créer le fichier /fastboot à chaque démarrage)</comment>
+# <i>echo "touch /fastboot" &gt;&gt; /diskless/192.168.1.21/etc/conf.d/local.start</i>
+</pre>
+
+<p>
+Vous pouvez avoir autant de scripts liés dans le sous-répertoire
+<path>/diskless/192.168.1.21/etc/runlevel</path> que de services
+à lancer sur votre noeud esclave.
+Cela ne dépend que de ce que vous voulez que vos esclaves fassent.
+</p>
+
+<warn>
+N'utilisez pas <c>rc-update</c> pour ajouter ou enlever des scripts
+d'initialisation sur vos esclaves en étant connecté sur le maître, car
+cela modifierait les &quot;runlevels&quot; du maître.
+Vous devez créer les links symboliques manuellement ou vous connecter
+au noeud esclave via ssh ou un clavier et un écran attachés à l'esclave.
+</warn>
+
+<pre caption="Exemple de runlevels d'un esclave">
+/diskless/192.168.1.21/etc/runlevels/:
+total 16
+drwxr-xr-x    2 root     root         4096 2003-11-09 15:27 boot
+drwxr-xr-x    2 root     root         4096 2003-10-01 21:10 default
+drwxr-xr-x    2 root     root         4096 2003-03-13 19:05 nonetwork
+drwxr-xr-x    2 root     root         4096 2003-02-23 12:26 single
+ 
+/diskless/192.168.1.21/etc/runlevels/boot:
+total 0
+lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 bootmisc -> /etc/init.d/bootmisc
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 checkfs -> /etc/init.d/checkfs
+lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 clock -> /etc/init.d/clock
+lrwxrwxrwx    1 root     root           23 2003-10-18 17:28 consolefont -> /etc/init.d/consolefont
+lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 hostname -> /etc/init.d/hostname
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 keymaps -> /etc/init.d/keymaps
+lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 localmount -> /etc/init.d/localmount
+lrwxrwxrwx    1 root     root           18 2003-10-18 17:28 net.lo -> /etc/init.d/net.lo
+lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 netmount -> /etc/init.d/netmount
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 portmap -> /etc/init.d/portmap
+lrwxrwxrwx    1 root     root           21 2003-10-18 17:28 rmnologin -> /etc/init.d/rmnologin
+lrwxrwxrwx    1 root     root           18 2003-10-18 17:28 serial -> /etc/init.d/serial
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 urandom -> /etc/init.d/urandom
+ 
+/diskless/192.168.1.21/etc/runlevels/default:
+total 0
+lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 clock -> /etc/init.d/clock
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 distccd -> /etc/init.d/distccd
+lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 local -> /etc/init.d/local
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 metalog -> /etc/init.d/metalog
+lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 ntp-client -> /etc/init.d/ntp-client
+lrwxrwxrwx    1 root     root           16 2003-10-18 17:28 ntpd -> /etc/init.d/ntpd
+lrwxrwxrwx    1 root     root           16 2003-10-18 17:28 sshd -> /etc/init.d/sshd
+lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 vcron -> /etc/init.d/vcron
+ 
+/diskless/192.168.1.21/etc/runlevels/nonetwork:
+total 0
+lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 local -> /etc/init.d/local
+ 
+/diskless/192.168.1.21/etc/runlevels/single:
+total 0
+</pre>
+
+<p>
+C'est le moment de démarrer votre noeud esclave et de croiser les doigts.
+Ça marche&nbsp;?
+Bravo, vous disposez maintenant d'un PC sans disque fonctionnel.
+</p>
+
+
+</body>
+</section>
+</chapter>
+
+</guide>
