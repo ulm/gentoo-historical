@@ -24,6 +24,12 @@ and come back at a later time to finish.
 If you have installed Gentoo Linux previously using this installer
 and you saved your configuration settings, you can click the "Load"
 button to load your previous settings as defaults.
+
+NOTE: I was feeling lazy when I "fixed" this program to actually run
+the install, so for now, your arch is x86, the logfile is
+/var/log/install.log, the root mountpoint is /mnt/gentoo, the LiveCD
+root password is 'blah' and you get no SSH. Go whine to someone who
+has had more sleep :P
 """
 
 		content_label = gtk.Label(content_str)

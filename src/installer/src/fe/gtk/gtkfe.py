@@ -6,6 +6,8 @@ import GLIClientController
 import GLIUtility
 import gtk
 import sys
+import crypt
+import random
 
 import Welcome
 import Partitioning
@@ -55,8 +57,15 @@ class Installer:
 	def __init__(self):
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
 		self.install_profile = GLIInstallProfile.InstallProfile()
-		self.cc = GLIClientController.GLIClientController(pretend=True)
+		# Removed the training wheels!
+		self.cc = GLIClientController.GLIClientController() # pretend=True)
+		# I'm feeling lazy
 		self.client_profile.set_interactive(None, True, None)
+		self.client_profile.set_architecture_template(None, "x86", None)
+		self.client_profile.set_log_file(None, "/var/log/install.log", None)
+		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
+		self.client_profile.set_root_passwd(None, crypt.crypt('blah', self.get_random_salt()), None)
+		self.client_profile.set_enable_ssh(None, False, None)
 		self.cc.set_configuration(self.client_profile)
 		self.cc.start_pre_install()
 
@@ -201,6 +210,13 @@ class Installer:
 		self.savebutton.connect("clicked", self.save_button, None)
 
 		self.make_visible()
+
+	def get_random_salt(self):
+		chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		chars = list(chars)
+		c1 = chars[random.randint(0,len(chars)-1)]
+		c2 = chars[random.randint(0,len(chars)-1)]
+		return c1 + c2
 
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
