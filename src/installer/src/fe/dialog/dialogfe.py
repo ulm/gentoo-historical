@@ -276,19 +276,20 @@ def set_kernel():
 	if code != DLG_OK: return
 	menuitem = kernel_sources[int(menuitem)-1]
 	install_profile.set_kernel_source_pkg(None, menuitem, None)
-	if d.yesno("Do you want to use genkernel to automatically generate your kernel?") == DLG_NO:
-		code, custom_kernel_uri = d.inputbox("Enter the custom kernel uri")
-		if code == DLG_OK: 
-			if custom_kernel_uri: 
-					if not GLIUtility.is_uri(custom_kernel_uri, checklocal=local_install):
-						d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-					else: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
-			else: d.msgbox("No URI was specified!")
-	else: 
-		if d.yesno("Do you want the bootsplash?") == DLG_YES:
-			install_profile.set_kernel_bootsplash(None, True, None)
-		else:
-			install_profile.set_kernel_bootsplash(None, False, None)
+	if not menuitem == "livecd-kernel":
+		if d.yesno("Do you want to use genkernel to automatically generate your kernel?") == DLG_NO:
+			code, custom_kernel_uri = d.inputbox("Enter the custom kernel uri")
+			if code == DLG_OK: 
+				if custom_kernel_uri: 
+						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=local_install):
+							d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+						else: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+				else: d.msgbox("No URI was specified!")
+		else: 
+			if d.yesno("Do you want the bootsplash?") == DLG_YES:
+				install_profile.set_kernel_bootsplash(None, True, None)
+			else:
+				install_profile.set_kernel_bootsplash(None, False, None)
 
 def set_boot_loader():
 	boot_loaders = ("grub", "lilo")
@@ -470,7 +471,7 @@ def set_additional_users():
 			if newuser in users:
 				d.msgbox("A user with that name already exists")
 				continue
-			new_user = [newuser, '', ('users'), '/bin/bash', '/home/' + newuser, '', '']
+			new_user = [newuser, '', ('users',), '/bin/bash', '/home/' + newuser, '', '']
 			users[newuser] = new_user
 			menuitem = newuser
 		while 1:
