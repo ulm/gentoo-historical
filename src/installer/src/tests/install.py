@@ -2,7 +2,7 @@
 
 import sys
 import GLIUtility
-#import GLIArchitectureTemplate
+import GLIArchitectureTemplate
 import GLIInstallProfile
 
 def usage():
