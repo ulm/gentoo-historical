@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLI.py,v 1.4 2004/02/15 01:38:39 esammer Exp $
+$Id: GLI.py,v 1.5 2004/02/19 03:24:06 npmccallum Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -9,6 +9,7 @@ The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 
 import string
 import xml.sax
+import os
 
 class InstallProfile(xml.sax.ContentHandler):
 	"""
@@ -38,6 +39,8 @@ class InstallProfile(xml.sax.ContentHandler):
 	_domainname = ""
 	_hostname = ""
 	_nisdomainname = ""
+	_partition_tables = {}
+
 
 	# Internal SAX state info
 	_xml_elements = [];
@@ -293,4 +296,62 @@ class InstallProfile(xml.sax.ContentHandler):
 	def set_nisdomainname(self, nisdomainname):
 		"nisdomainname is a string containing the NIS domainname for the new system."
 		self._nisdomainname = nisdomainname
+		
+	def get_partition_tables(self):
+		"returns partition_tables"
+		return self._partition_tables
 
+	def set_partition_tables(self, partition_tables):
+		"""
+		Sets the partition tables.  A partition is a multi level dictionary in the following format:
+		{ <device>: { <minor>: ( <size in mb>, <type>, <mount point> ) } }
+		ie. partition_tables['/dev/hda'][1] would return ( 64, 'ext3', '/boot' )
+
+		Types are as follows:
+		string: <device>, <type>, <mount point>
+		integer: <minor>, <size in mb>
+		
+		Current <type> options include:
+		ext2, ext3, reiserfs, xfs, jfs, swap, extended, resize, others?
+		
+		There will be a method in the partitioning code to make sure that the current parition_tables can actually be implemented.
+		Should we call that function to test the culpability of our potential partitioning scheme?
+		Should we create a method in the Controller to take raw variables and put them in the proper structure?
+		Are all filesystems supported by all arches?
+		"""
+		
+		if type(partition_tables) != dict:
+			raise "PartitionTableError", "Invalid data type! partition_tables is a dict..."
+		
+		for device in partition_tables:
+		
+			# Make sure the device (the /dev file) exists
+			if not os.access(device, os.F_OK):
+				raise "PartitionTableError", "The device you specified (" + device + ") does not exist!"
+				
+			# We should check to make sure device is in /proc/partitions
+			# If it is in /proc/partitions, it is a partitionable device
+			
+			for minor in partition_tables[device]:
+
+				# Make sure that the <minor> is an integer or can be converted to one
+				try:
+					int(minor)
+				except:
+					raise "ParitionTableError", "The minor you specified (" + minor + ") is not an integer!"
+					
+				# Make sure that a minor number is valid
+				if minor < 1
+					raise "ParitionTableError", "The minor you specified (" + minor + ") is not a valid minor!"
+				
+				# Make sure that <size>, <type> and <mount point> are all set
+				if len(partition_tables[device][minor]) != 3:
+					raise "ParitionTableError", "The number of attributes for minor " + minor + " is incorrect!"
+					
+				# Make sure that the <size> is an integer or can be converted to one
+				try:
+					int(partition_tables[device][minor][0])
+				except:
+					raise "ParitionTableError", "The size you specified (" + partition_tables[device][minor][0] + ") is not an integer!"
+					
+		self._partition_tables = partition_tables
