@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.10 2005/01/10 08:32:35 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.11 2005/01/11 08:54:17 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -305,8 +305,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						type = tmppart['type']
 						device = dev
 						minor = part
-						start = int(new_start)
-						end = int(new_end)
+						start = tmppart['start']
+						end = tmppart['end']
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
 #							commands.getstatus("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
@@ -317,9 +317,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #							commands.getstatus("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
 #							print "ntfsresize --size " + str(total_bytes) + " " + device + str(minor)
 						else:
-							start = float(self._sectors_to_megabytes(start))
-							end = float(self._sectors_to_megabytes(end))
-#							self._run_parted_command(device, "resize " + str(minor) + " " + str(start) + " " + str(end))
+							parted_fs = parted_disk.get_partition(part).geom.file_system_open()
+							resize_constraint = parted_fs.get_resize_constraint()
+							if end < (start + resize_constraint.min_size) or start != resize_constraint.start_range.start:
+								raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + dev + str(minor) + " is not within allowed boundaries")
+							new_geom = resize_constraint.start_range.duplicate()
+							new_geom.set_start(start)
+							new_geom.set_end(end)
+							parted_fs.resize(new_geom)
+							
 						print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
 #						self._run_parted_command(dev, "rm " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))

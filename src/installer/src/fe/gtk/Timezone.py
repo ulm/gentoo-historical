@@ -54,7 +54,8 @@ This is where you select what timezone you are in.
 	vert.pack_start(selection,expand=gtk.FALSE,fill=gtk.FALSE,padding=0)
 	
 	self.treeview = gtk.TreeView(self.treestore)
-	self.treeview.connect("select-cursor-row",self.callback2,self.treeview.get_selection())
+#	self.treeview.connect("select-cursor-row",self.callback2,self.treeview.get_selection())
+	self.treeview.connect("cursor-changed",self.callback2,self.treeview.get_selection())
 	self.treeview.connect("row-activated",self.callback2)
 	self.selected_path=[]
 	self.tvcolumn = gtk.TreeViewColumn('Please Select A Timezone: ')
