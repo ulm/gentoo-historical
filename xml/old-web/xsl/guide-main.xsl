@@ -390,7 +390,7 @@ Otros:<br/>
 				Mailing Lists:<br/><br/>
 				<a class="altlink" href="http://lists.gentoo.org">Click here for complete list</a>
 				<br/><br/>
-				IRC chat on <a class="altlink" href="http://www.openprojects.net/">OPN</a>:
+				IRC chat on <a class="altlink" href="http://www.freenode.org/">Freenode</a>:
 				<br/><br/>
 				General Discussion:<br/>#gentoo<br/><br/>
 				Gentoo Linux/PPC:<br/>#gentoo-ppc <br/><br/>

@@ -16,7 +16,7 @@
 import time, sys
 
 # xml boilerplate
-header = """<?xml version='1.0'?>
+header = """<?xml version='1.0' encoding="ISO-8859-15" ?>
 <mainpage id="devlist">
 <title>Gentoo Linux Developers</title>
 <author title="Grant Goodyear"><mail link="g2boojum@gentoo.org">Grant Goodyear</mail></author>
@@ -39,7 +39,7 @@ tableheader = """<table>
 """
 footer = """</table>
 <note>Developers may be reached by sending e-mail to the developer's user
-name @gentoo.org.  Many developers may be found on IRC (OPN) in #gentoo
+name @gentoo.org.  Many developers may be found on IRC (FreeNode) in #gentoo
 using their user name as their IRC nick.</note>
 </body>
 </section>
