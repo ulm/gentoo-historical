@@ -1,0 +1,497 @@
+#!/bin/bash
+# Copyright 1999-2003 Gentoo Technologies, Inc.
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/users/zhen/catalyst/bin/Attic/catalyst,v 1.1 2003/09/09 06:24:51 zhen Exp $
+
+# please note that you SHOULD not tinker with variables in here unless
+# you ABSOLUTELY know what you are doing. Please use files/catalyst.conf instead.
+
+VERSION="1.0"
+BASEDIR=`pwd`
+DESTBALL=${BASEDIR}/stages/stage${2}-${DESTARCH}-h-${4}.tar.bz2
+SRCBALL=${BASEDIR}/stages/stage${SRCSTAGE}-${SRCARCH}-h-${SRCVER}.tar.bz2
+
+source ${BASEDIR}/files/catalyst.conf
+source /sbin/functions.sh
+
+usage() {
+	einfo "Copyright 2003, Gentoo Technologies. Licensed under the GPL v2"
+	echo
+	einfo "Please mail assign all bug reports to <zhen@gentoo.org>"
+	echo
+	einfo "Catalyst: Gentoo Hardened stage tarball building tool v${VERSION}"
+	einfo "Syntax: catalyst <arch> <stage> srcver destver"
+	echo
+	einfo "Valid stage targets: [0|1|2|3]" 
+	einfo "Valid stage target architectures: "
+	echo "${SUBARCHES}"
+}
+
+umount_all() {
+	local x
+	for x in /usr/portage/packages /usr/portage/distfiles /var/tmp/distfiles /proc /root/.ccache /dev
+	do
+		umount ${CHROOTDIR}${x} 2>/dev/null || true 
+	done
+}
+
+die() {
+	#unmount filesystems if script is aborted
+	[ -n "${1}" ] && echo "${0}: error: ${1}"
+	umount_all 
+	exit 1
+}
+
+mount_all() {
+	local x
+	if [ ! -d /root/.ccache ]
+	then 
+		mkdir /root/.ccache || die "Couldn't create /root/.ccache dir"
+	fi
+	for x in /root/.ccache /proc  
+	do
+		[ ! -e ${CHROOTDIR}${x} ] && install -d ${CHROOTDIR}${x}
+		mount --bind ${x} ${CHROOTDIR}${x} || die "Couldn't bind-mount ${x}"
+	done
+	[ ! -e ${SNAPBALL} ] && die "Can't find $( basename $SNAPBALL ); exiting." 	
+	echo "Extracting Portage tree snapshot..."
+	tar xjf ${SNAPBALL} -C ${CHROOTDIR}/usr || die "Error extracting Portage snapshot"
+	[ ! -e ${CHROOTDIR}/usr/portage/packages ] && install -d ${CHROOTDIR}/usr/portage/packages
+	mount --bind ${MY_PKGDIR} ${CHROOTDIR}/usr/portage/packages || die
+	[ ! -e ${CHROOTDIR}/usr/portage/distfiles ] && install -d ${CHROOTDIR}/usr/portage/distfiles
+	mount --bind ${MY_DISTDIR} ${CHROOTDIR}/usr/portage/distfiles || die
+	[ ! -e ${CHROOTDIR}/var/tmp/distfiles ] && install -d ${CHROOTDIR}/var/tmp/distfiles
+	mount --bind ${MY_DIST_LOCALS} ${CHROOTDIR}/var/tmp/distfiles || die
+
+	if [ "$2" = "3" ]
+	then
+		#stage3, needed for perl? Let's see.
+		mount --bind /dev ${CHROOTDIR}/dev
+	fi
+}
+
+unpack() {
+	[ ! -d ${CHROOTDIR} ] && die "Chroot directory doesn't exist; exiting."
+	tar xjpf ${1} -C ${CHROOTDIR} || die "Error unpacking ${1}; exiting."
+}
+
+tardir() {
+	echo -n "Creating ${DESTBALL}..."
+	cd ${SRCFORTAR} || die "Couldn't chdir; exiting."
+	tar -cjf ${DESTBALL} . --numeric-owner || die "Tarball creation error; exiting."
+	cd ${BASEDIR}
+	echo " done."
+}
+
+makeconf() {
+	[ ! -d ${1}/etc ] && install -d ${1}/etc
+	cat ${BASEDIR}/files/make.conf.${MAINARCH} | sed -e "s:##CFLAGS##:${CFLAGS}:" \
+	-e "s:##CHOST##:${CHOST}:" > ${1}/etc/make.conf || die
+}
+
+print_build() { 
+	einfo "Gentoo Hardned stager (Catalyst) V${VERSION} starting."
+	einfo 
+	einfo "Tarball Settings:"
+	einfo " Architecture: ${MAINARCH}"
+	einfo " Sub-architecture: ${SUBARCH}"
+	einfo " CFLAGS: ${CFLAGS}"
+	einfo " CHOST: ${CHOST}"
+	einfo " Source tarball: ${SRCBALL}"
+	einfo " Portage snapshot: ${SNAPBALL}"
+}
+
+pre_build() {
+	einfo "Cleaning up build directory..."
+	rm -rf ${CHROOTDIR}
+	install -d ${CHROOTDIR}
+
+	#enable our signal handler
+	trap "die" INT QUIT 
+
+	umount_all
+	echo
+	[ ! -e ${SRCBALL} ] && die "Can't find source tarball ${SRCBALL}; exiting."
+	einfo "Unpacking ${SRCBALL}..."
+	unpack ${SRCBALL}
+	#bind-mount filesystems/directories
+	mount_all
+	print_build
+
+	#copy resolv.conf
+	cp /etc/resolv.conf ${CHROOTDIR}/etc || die
+
+	#install our make.conf into the main compilation dir
+	makeconf $CHROOTDIR
+
+	#now, it's time to build...
+	cd ${CHROOTDIR}
+	rm etc/make.profile
+	# <zhen@gentoo.org> REMINDER: The hardened profile is a local one that I use. 
+	ln -sf ../usr/portage/profiles/hardened-${MAINARCH}-${MAINVERSION} etc/make.profile
+	if [ ${CCACHE} > 0 ]
+	then
+		export FEATURES="ccache"
+	fi
+
+	if [ ${2} != "grp" ]
+	then
+		einfo " Destination tarball: ${DESTBALL}"
+	else
+		einfo " Target: GRP build"
+	fi
+	echo "Build Settings:"
+	if [ ${CCACHE} > 0 ]
+	then
+		einfo " ccache support: Enabled"
+	else
+		einfo " ccache support: Disabled"
+	fi
+}
+
+post_build() {
+	#umount all filesystems
+	umount_all
+	rm ${CHROOTDIR}/etc/resolv.conf
+	einfo "Removing Portage tree from chroot image..."
+	rm -rf ${CHROOTDIR}/usr/portage
+
+	#pack up directory to ${DESTBALL}
+	if [ "$2" != "grp" ]
+	then
+		tardir
+	fi
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]
+then
+	usage
+	exit 1
+fi
+
+if [ "`whoami`" != "root" ]
+then
+	echo "$0: This script requires root privileges to operate."
+	exit 1
+fi
+
+
+if [ "$1" = "enter" -o "$1" = "umount" -o "$1" = "snap" ]
+then
+	SPECIALMODE=$1
+	shift
+fi
+
+#unset so chroot doesn't get our custom setting
+unset PORTDIR DISTDIR
+[ ! -e "$MY_PORTDIR" ] && die "Portage dir $MY_PORTDIR not found, exiting."
+[ ! -e "$MY_DISTDIR" ] && die "Distdir $MY_DISTDIR not found; exiting."
+
+# setup how the special modes are handled
+if [ "$SPECIALMODE" = "snap" ]
+then
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/stager/build/snap-${1}" || CHROOTDIR="$TMPDIR/snap-${1}"
+	SNAPBALL=${SNAPDIR}/portage-${1}.tar.bz2
+else
+	MY_DIST_LOCALS=${BASEDIR}/dists/${4}
+	install -d $MY_DIST_LOCALS
+	[ "$TMPDIR" = "" ] && CHROOTDIR="/var/tmp/stager/build/stage-${2}-${4}" || CHROOTDIR="$TMPDIR/stage-${2}-${4}"
+	SNAPBALL=${SNAPDIR}/portage-${4}.tar.bz2
+fi
+
+if [ "$SPECIALMODE" = "snap" ]
+then
+	install -d ${SNAPDIR}
+	echo "Cleaning up build directory..."
+	rm -rf ${CHROOTDIR}
+	install -d ${CHROOTDIR}
+	echo "Creating Portage tree snapshot..."	
+	rsync -a --exclude /packages/ --exclude /distfiles/ --exclude CVS/ ${MY_PORTDIR}/ ${CHROOTDIR}/portage/ || die
+	echo -n "Creating Portage tree tarball..."
+	( cd $CHROOTDIR; tar cjf ${SNAPBALL} portage ) || die
+	echo " done."
+	exit 0
+fi
+
+if [ "$SPECIALMODE" = "umount" ]
+then
+	echo "Unmounting..."
+	umount_all
+	exit 0
+
+install -d ${CHROOTDIR}
+cd ${CHROOTDIR}
+
+elif [ "$SPECIALMODE" = "enter" ]
+then
+	mount_all
+	echo "Chrooting to ${CHROOTDIR}..."
+	$CHROOT ${CHROOTDIR}
+	umount_all
+	exit 0
+fi
+
+case "${1}" in
+	amd64)
+		MAINARCH="amd64"
+		CFLAGS="-O2 -fPIC"
+		CHOST="x86_64-pc-linux-gnu"
+	;;
+	
+	hppa|hppa1.1|hppa2.0)
+		MAINARCH="hppa"
+		case "${1}" in
+			hppa|hppa1.1)
+				CFLAGS="-march=1.1"
+				;;
+			hppa2.0)
+				CLAGS="-march=2.0"
+				;;
+		esac
+		CHOST="hppa-unknown-linux-gnu"
+		CFLAGS="-O2 $CFLAGS"
+	;;
+	
+	x86|i386|i486|i586|i686|athlon|athlon-xp|athlon-mp|pentium-mmx|pentium3|pentium4 )
+		MAINARCH="x86"
+		if [ "${1}" = "x86" ]
+		then
+			CFLAGS="-O3 -mcpu=i686"
+		elif [ "${1}" = "athlon-mp" ]
+		then
+			#MP and XP are functionally equivalent
+			CFLAGS="-O3 -march=athlon-xp"
+		else
+			CFLAGS="-O3 -march=${1} -fprefetch-loop-arrays"
+		fi
+		
+		# please don't touch these additional optimizations without consulting
+		# either zhen or drobbins
+		CFLAGS="$CFLAGS -funroll-loops"
+		case "${1}" in
+			i386|i486|i586)
+				CHOST="${1}-pc-linux-gnu"
+				;;
+			x86)
+				CHOST="i486-pc-linux-gnu"
+				;;
+			*)
+				CHOST=i686-pc-linux-gnu
+				;;
+		esac
+		
+		case "${1}" in
+			athlon|pentium-mmx|pentium3|pentium4 )
+				CFLAGS="$CFLAGS -fprefetch-loop-arrays"
+				;;
+		esac
+	;;
+	
+	ppc|g3|g4 )
+		MAINARCH="ppc"
+		CHOST="powerpc-unknown-linux-gnu"
+		CFLAGS="-O2 -fsigned-char"
+		if [ "${1}" = "g3" ]
+		then
+			CFLAGS="-O2 -mcpu=750 -mpowerpc-gfxopt -fsigned-char"
+		elif [ "${1}" = "g4" ]
+		then
+			CFLAGS="-O2 -mcpu=7400 -maltivec -mabi=altivec -mpowerpc-gfxopt -fsigned-char"
+		fi
+	;;
+	
+	sparc|sparc64 )
+		MAINARCH="${1}"
+		CHOST="sparc-unknown-linux-gnu"
+		CFLAGS=""
+		if [ "$1" = "sparc" ]
+		then
+			CFLAGS="-O2"
+		else
+			CFLAGS="-O3 -mcpu=ultrasparc -mtune=ultrasparc"
+		fi
+	;;
+	
+	mips )
+		MAINARCH="mips"
+		CHOST="mips-unknown-linux-gnu"
+		CFLAGS="-O2"
+	;;
+	
+	alpha|ev4|ev5|ev56|pca56|ev6|ev67 )
+		MAINARCH="alpha"
+		if [ "${1}" = "alpha" ]
+		then
+		        # defaults to ev5 code, which runs on anything
+			CHOST="alpha-unknown-linux-gnu"
+			CFLAGS="-O3 -mcpu=ev5"
+		else
+			CHOST="alpha${1}-linux-gnu"
+			CFLAGS="-O3 -mcpu=${1}"
+		fi
+	;;
+
+	* )
+		usage
+	;;
+esac
+
+if [ "${SUBARCH}" = "athlon-mp" ]
+then
+	SUBARCH=athlon-xp
+else
+	SUBARCH="${1}"
+fi
+DESTSTAGE="${2}"
+DESTVER="$4"
+CFLAGS="${CFLAGS} -pipe"
+SRCFORTAR=${CHROOTDIR}
+
+case "${2}" in
+	1)
+		SRCSTAGE=2
+		SRCVER=${3}
+		SRCARCH=${MAINARCH}
+		DESTARCH=${MAINARCH}
+		SRCFORTAR=${CHROOTDIR}/tmp/stage1root
+		;;
+	2)
+		SRCSTAGE=1
+		SRCVER=${3}
+		SRCARCH=${MAINARCH}
+		DESTARCH=${SUBARCH}
+		;;
+	3)
+		SRCSTAGE=2
+		SRCVER=${3}
+		SRCARCH=${SUBARCH}
+		DESTARCH=${SUBARCH}
+		;;
+	grp)
+		SRCSTAGE=3
+		SRCVER=${3}
+		SRCARCH=${SUBARCH}
+		DESTARCH=${SUBARCH}
+		;;
+
+esac
+if [ "$2" = "grp" ]
+then
+	MY_PKGDIR="${BASEDIR}/packages/grp-${DESTARCH}-${DESTVER}"
+else
+	MY_PKGDIR="${BASEDIR}/packages/stage${DESTSTAGE}-${DESTARCH}-${DESTVER}"
+fi
+install -d ${STAGEDIR} ${MY_PKGDIR} ${SNAPDIR}
+
+if [ "`uname -m`" = "x86_64" -a "$MAINARCH" = "x86" ]
+then
+	if [ ! -e /bin/linux32 ]
+	then
+		echo "Can't find linux32 executable. Please emerge sys-apps/linux32"
+		echo "and try again."
+		die "linux32 not found; aborting."
+	fi
+	CHROOT="linux32 chroot"
+else
+	CHROOT=chroot
+fi
+
+# prepare to build
+pre_build
+
+case ${2} in
+	1)	
+		cp ${BASEDIR}/bin/stage1 ${CHROOTDIR}/tmp
+		#CHOST is for the gcc-config initialization step
+		export MAINVERSION MAINARCH CHOST CCACHE
+		#get our make.conf instide our new tree
+		#good idea because make.conf should be there.
+		#also necessary because the "stage1" script runs gcc-config, which
+		#uses portage, which requires /etc/make.conf to exist.
+		makeconf ${CHROOTDIR}/tmp/stage1root
+		$CHROOT . /tmp/stage1 build /tmp/stage1root
+		[ $? -ne 0 ] && die "Stage 1 build failure"
+		;;
+	2)	
+		$CHROOT . /bin/bash << EOF
+		env-update
+		source /etc/profile
+		mkdir -p /usr/portage/packages/All
+		export EMERGE_OPTS="--usepkg --buildpkg"
+		if [ ${CCACHE} > 0 ]
+		then
+			emerge --oneshot --nodeps ccache || exit 1
+		fi
+		emerge --oneshot --nodeps hardened-gcc || exit 1
+		${BASEDIR}/bin/bootstrap.sh || exit 1
+EOF
+		[ $? -ne 0 ] && die "Stage 2 build failure"
+		;;
+	3)
+		$CHROOT . /bin/bash << EOF
+		env-update
+		source /etc/profile
+		if [ ${CCACHE} > 0 ]
+		then
+			emerge --oneshot --nodeps --usepkg --buildpkg ccache || exit 1
+		fi
+		emerge --oneshot --nodeps hardened-gcc || exit 1
+		export CONFIG_PROTECT="-*"
+		emerge system --usepkg --buildpkg || exit 1
+EOF
+		[ $? -ne 0 ] && die "Stage 3 build failure"
+		;;
+	grp) 
+		cp ${BASEDIR}/grp/${MAINARCH}.* ${CHROOTDIR}/tmp || die
+		$CHROOT . /bin/bash << EOF
+		env-update
+		source /etc/profile
+		export CONFIG_PROTECT="-*"
+		source /tmp/${MAINARCH}.conf
+		#add bindist for this part
+		export USE="\$USE bindist"
+		#CD 1 contains "base" packages: kernel sources, hardware, crons, loggers, X
+		export PKGDIR=/usr/portage/packages/cd1
+		for x in \$( cat /tmp/${MAINARCH}.pkg.cd1  | grep -v ^# )
+		do
+			emerge --noreplace --buildpkg --usepkg \$x || exit 1
+		done
+		#CD 2 contains application packages: GNOME, KDE, and others
+		export PKGDIR=/usr/portage/packages/cd2
+		for x in \$( cat /tmp/${MAINARCH}.pkg.cd2  | grep -v ^# )
+		do
+			emerge --noreplace --buildpkg --usepkg \$x || exit 1
+		done
+		source /tmp/${MAINARCH}.conf
+		#export GENTOO_MIRRORS="/usr/portage"
+		export DISTDIR="/var/tmp/distfiles"
+		install -d \$DISTDIR
+		for x in \$( cat /tmp/${MAINARCH}.src | grep -v ^# )
+		do
+			emerge --fetchonly \$x || exit 1
+		done
+EOF
+		[ $? -ne 0 ] && die "GRP build failure"
+		;;
+esac
+
+#additional cleanup
+case "$2" in
+	1)
+		$CHROOT . /tmp/stage1 clean /tmp/stage1root
+		;;
+	2|3)
+		$CHROOT . /bin/bash << EOF
+		if [ ${CCACHE} > 0 ]
+		then
+			emerge -C ccache
+		fi
+EOF
+		rm -rf ${CHROOTDIR}/tmp/* 
+		rm -rf ${CHROOTDIR}/var/tmp/portage/*
+		rm -f ${CHROOTDIR}/etc/ld.so.preload
+		;;
+esac
+
+post_build
+einfo "Build finished!"
