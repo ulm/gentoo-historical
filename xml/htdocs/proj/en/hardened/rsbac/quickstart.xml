@@ -1,0 +1,244 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd"> 
+
+<guide link="quickstart.xml">
+
+<title>Rule Set Based Access Control (RSBAC) for Linux - Quickstart</title>
+
+<author title="Author">
+  <mail link="albeiro@gentoo.pl">Michal Purzynski</mail>
+</author>
+<author title="Editor">
+  <mail link="kang@gentoo.org">Guillaume Destuynder</mail>
+</author>
+
+<abstract>This document will guide you through the installation of the RSBAC on Gentoo Linux</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<license/>
+
+<version>1.0</version> 
+<date>1 June 2004</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+
+<p>
+This guide will help you to install RSBAC on Gentoo Linux. It is assumed that the users have read the <uri link="intro.xml">Introduction</uri> and the <uri link="overview.xml">Overview</uri> already, so that they knows what is RSBAC and its main concepts.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installation of the RSBAC enabled kernel</title>
+<section>
+<title>Emerging the RSBAC kernel</title>
+<body>
+
+<p>
+This step is pretty straight forward, thanks to the way Gentoo handles kernel installations. Start by emerging the rsbac-dev-sources kernel from your portage.
+</p>
+
+<note>
+There are two rsbac-sources kernel available: rsbac-sources runs RSBAC over a 2.4 kernel, while rsbac-dev-sources runs RSBAC over a 2.6 kernel. It is exactly the same naming scheme as for the hardened-sources.
+</note>
+
+<pre caption="RSBAC kernel installation (using the 2.6 kernel)">
+# <i>emerge rsbac-dev-sources</i>
+</pre>
+
+<pre caption="RSBAC kernel installation (using the 2.4 kernel)">
+# <i>emerge rsbac-sources</i>
+</pre>
+
+<impo>
+It is strongly advised that you build two RSBAC kernels: the difference between the two being that one of them should have the "RSBAC Maintenance Kernel" item enabled. The Maintenance Kernel gives 
+you a last chance to administer the system almost as you would do on a standard kernel (as root) and can also be used as a rescue kernel in case you loose control of the  RSBAC system or missconfigure something.
+</impo>
+
+</body>
+</section>
+<section>
+<title>Configuring the RSBAC kernel</title>
+<body>
+
+<p>
+We will now configure the kernel. It is recommended that you enable the following options, in the "Rule Set Based Access Control (RSBAC)" category:
+</p>
+
+<pre caption="Configuring and compiling the RSBAC kernel">
+<comment>Under "General RSBAC options"</comment>
+[*] RSBAC proc support
+[*] Check on init
+[*] RSBAC debugging support
+
+<comment>Under "RSBAC networking options": all</comment>
+
+<comment>Under "Decision module (policy) options"</comment>
+[*]     Build REG sample modules
+
+<comment>Under "Softmode and switching"</comment>
+[*] RSBAC policies switchable
+[*] RSBAC soft mode
+[*]     Individual module softmode support
+
+<comment>Under "Logging": all except "Log to remote UDP network socket" if you don't want to log to remote machine</comment>
+
+<comment>Under "RSBAC symlink redirection": check Add user ID/RC role number</comment>
+
+<comment>Under "Other RSBAC options"</comment>
+[*] Intercept sys_read and sys_write
+[*] Intercept Semaphore IPC operations
+[*] Control DAC process owner (seteuid, setfsuid)
+[*] Hide processes in /proc
+[*] RSBAC check sys_syslog
+</pre>
+
+<p>
+</p>
+
+<warn>
+Softmode will allow to switch off RSBAC either partially or completely. It is usefull when writing your policies, but these options should never  be checked on production system.
+</warn>
+
+<p>
+Choose modules which you want to use: we recommend the RC, FF, AUTH, ACL, CAP, JAIL, PaX and RES modules.
+Make sure that in the selected items you only enabled <c>"NAME-OF-MODULE protection for AUTH module"</c>, and  <e>not</e> <c>"NAME-OF-MODULE protection by role"</c>.
+</p>
+
+<p>
+In the RC and ACL module check the items <c>"RC network device protection"</c> and <c>"RC network object protection"</c>. In the CAP module, <c>"Support CAP process hiding"</c> is also a usefull one.
+Finally, in JAIL, <c>"JAIL network device protection"</c> should be checked.
+</p>
+
+<p>
+If you plan to run a X Window server (such as X.org or XFree86), please also enable <c>"[*] X support (normal user MODIFY_PERM access to ST_ioports)"</c>.
+</p>
+
+<p>
+It is strongly advised that you also enable the PaX memory protection (under "Security Options"). You should refer to the PaX project site and kernel help for futher information.
+</p>
+
+<p>
+You can now compile and install the kernel as you would do with a normal one concerning the other options.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Installation of the RSBAC admin utilities</title>
+<section>
+<body>
+
+<p>
+In order to administrate your RSBAC enabled Gentoo, some userspace utilites are required. Those are included in the rsbac-admin package and it needs to be installed.
+</p>
+
+<pre caption="Installing the RSBAC admin utilites">
+# <i>emerge rsbac-admin</i>
+</pre>
+
+<p>
+Once emerged, the package will have created a new user account on your system (secoff, with uid 400). He will become the security administrator during the first boot. This is the only user, who is able to change the RSBAC configuration. He will commonly be called the Security Officer.
+</p>
+
+<warn>
+In order to compile sucessfully the rsbac-admin package, the kernel need to be ALREADY compiled (the beginning of the compilation should be sufficient). It is because rsbac-admin requires some files which are created during the kernel compilation.
+</warn>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>First boot</title>
+<section>
+<body>
+
+<p>
+At the first boot, login into the system won't be possible, due to the AUTH module <e>restricting</e> the programs privileges. Fortunaltely, there are two ways to overcome this problem:
+</p>
+<p>
+The first one is to reboot the system with <c>"rsbac_auth_enable_login"</c> as kernel boot time parameters (these parameters needs to be append only at the first boot).
+The other way is to reboot Gentoo using your maintenance kernel, then login as the Security Officer (secoff) and finally enter the following command: 
+</p>
+
+<pre caption="Allowing users to login">
+# <i>attr_set_fd FILE auth_may_setuid /bin/login</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Learning mode and the AUTH module</title>
+<section>
+<title>Creating a policy for OpenSSH</title>
+<body>
+
+<p>
+Because there is almost no policy made yet (except the one generated during the first boot), the AUTH module does not allows uid changes. 
+</p>
+<p>
+Thanks to the intelligent learning mode there is an easy way to alleviate this new problem: The AUTH module can automagically generate the necessary policy by watching services while they start up, and note the uids they are trying to switch to. For example to teach the AUTH module about the uids needed by sshd (OpenSSH daemon), do the following:
+</p>
+
+<pre caption="Making a policy for sshd, using the learning mode">
+<comment>Enable the learning mode for sshd</comment>
+# <i>attr_set_file_dir AUTH FILE `which sshd` auth_learn 1</i>
+
+<comment>Start the service</comment>
+# <i>/etc/init.d/sshd start</i>
+
+<comment>Disable the learning mode</comment>
+# <i>attr_set_file_dir AUTH FILE `which sshd` auth_learn 0</i>
+</pre>
+
+<note>
+One should also login to the system before switching the learning mode off, because sshd will also attempt to change it's uids when the user will login in.
+</note>
+
+<p>
+Now sshd should be working as expected again, <e>congratulations</e>, you made your first policy :)
+The same procedure can be used on every other daemon you will need.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Further information</title>
+<section>
+<body>
+
+<p>
+	It is also strongly suggested that you subscribe to the <uri link="http://www.gentoo.org/main/en/lists.xml">gentoo-hardened mailing-list</uri>. It is generally a low traffic list, and RSBAC announcements for Gentoo will be available there. We also recommend you to subscribe to the <uri link="http://rsbac.org/mailman/listinfo/rsbac/">RSBAC mailing-list</uri>. 
+</p>
+
+<table>
+<tr>
+  <ti>Links:</ti>
+  <ti><uri link="http://www.rsbac.org">RSBAC Official site</uri></ti>
+  <ti><uri link="http://zhware.ath.cx/rsbac">RSBAC Wiki</uri></ti>
+</tr>
+<tr>
+  <ti>IRC channels:</ti>
+  <ti><uri link="irc://irc.freenode.org/gentoo-hardened">#gentoo-hardened</uri></ti>
+  <ti><uri link="irc://irc.freenode.org/rsbac">#rsbac</uri></ti>
+</tr>
+</table>
+
+</body>
+</section>
+</chapter>
+
+</guide>
