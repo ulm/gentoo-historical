@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/rsync.xml,v 1.11 2004/07/01 23:30:29 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/rsync.xml,v 1.12 2004/08/07 01:12:53 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/rsync.xml" lang="fr">
@@ -11,7 +11,7 @@
 <author title="Traducteur">
   <mail link="mat@frheaven.com">Matthieu Montaudouin</mail>
 </author>
-<author title="Traducteur">
+<author title="Correcteur, Traducteur">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
 
@@ -21,8 +21,8 @@ Guide et règles pour la mise en place d'un miroir rsync pour Gentoo Linux.
 
 <license/>
 
-<version>1.4</version>
-<date>29 juin 2004</date>
+<version>1.6</version>
+<date>15 juillet 2004</date>
 
 <chapter>
 <title>Demande de matériel</title>
@@ -352,6 +352,12 @@ R: Voyez la section «&nbsp;Exemples de scripts&nbsp;».
 <section>
 <body>
 
+<note>
+Vous trouverez un exemple de configuration et des fichiers de script dans le
+paquet <c>gentoo-rsync-mirror</c>. Faites juste <c>emerge
+gentoo-rsync-mirror</c>.
+</note>
+
 <p>
 Actuellement, faire un miroir de notre arbre de Portage ne demande qu'environ
 250&nbsp;Mo d'espace disque. Avoir 500 Mo de libre devrait permettre de voir
@@ -488,6 +494,152 @@ Si vous utilisez ce script, n'oubliez pas d'effectuer une rotation quotidienne
 de vos fichiers de journaux («&nbsp;logs&nbsp;») et définissez le chemin vers
 votre fichier rsyncd.conf. Le script a été testé sur Gentoo, mais devrait
 fonctionner dans d'autres environnements qui supportent rsync et perl.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Mise en place de votre propre miroir loal rsync</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Beaucoup d'utilisateurs utilisent Gentoo sur plusieurs machines et doivent
+lancer <c>emerge sync</c> sur chacunes d'elles. L'utilisation de miroirs publics
+est un gaspillage de bande passante pour tout le monde. Pour économiser les
+ressources des miroirs Gentoo et la bande passante de l'utilisateur, il faut
+qu'une machine se synchronise à un miroir puis que toutes les autres se
+synchronisent à cette première machine.
+</p>
+
+<p>
+Tout ce que vous avez à faire est de sélectionner laquelle de vos machines sera
+votre miroir local rsync et la mettre en place. Choisissez une machine qui peut
+gérer la charge processeur et la charge disque que rsync va demander. Votre
+miroir local doit également être disponible au moment où vos autres machines
+voudront synchroniser leur arbre Portage. De plus, il devra avoir une adresse IP
+statique ou bien un nom qui permette de résoudre son adresse. La configuration
+d'un serveur DHCP ou DNS dépasse le cadre de ce guide.
+</p>
+
+</body>
+</section>
+<section>
+<title>Mise en place du serveur</title>
+<body>
+
+<p>
+Aucun paquet particulier n'est requis car tous les programmes nécessaires sont
+déjà présents sur votre ordinateur. La mise en place de votre propre miroir
+local rsync n'est qu'une question de configuration du serveur <c>rsyncd</c>
+afin de rendre le répertoire <path>/usr/portage</path> disponible pour la
+synchronisation. Créez le fichier de configuration
+<path>/etc/rsync/rsyncd.conf</path> suivant&nbsp;:
+</p>
+
+<pre caption="Exemple de /etc/rsync/rsyncd.conf">
+pid file = /var/run/rsyncd.pid
+max connections = 5
+use chroot = yes
+uid = nobody
+gid = nobody
+<comment># Optionnel : restriction de l'accès à vos machines Gentoo</comment>
+hosts allow = 192.168.0.1 192.168.0.2 192.168.1.0/24
+hosts deny  = *
+
+[portage]
+path=/usr/portage
+comment=Gentoo Portage
+exclude=distfiles/ packages/
+</pre>
+
+<p>
+Vous n'êtes pas obligé d'utiliser les options <c>hosts allow</c> et <c>hosts
+deny</c>. Par défaut, tous les clients seront acceptés. L'ordre dans lequel vous
+écrivez les options n'est pas important. Le serveur traitera toujours l'option
+<c>hosts allow</c> en premier et autorisera les connexions si l'adresse de la
+machine client correspond à une des adresses listées. Le serveur traitera
+ensuite l'option <c>hosts deny</c> et refusera les connexions si une
+correspondance est trouvée. Les adresses qui ne correspondent nulle part sont
+acceptées. Veuillez lire la page de manuel (<c>man rsyncd.conf</c>) pour plus
+d'information.
+</p>
+
+<p>
+Maintenant, démarrez votre démon rsync avec la commande suivante en tant
+qu'utilisateur root&nbsp;:
+</p>
+
+<pre caption="Démarrage du démon rsync">
+<comment>(Démarrez le démon de suite)</comment>
+# <i>/etc/init.d/rsyncd start</i>
+<comment>(Ajoutez le démon au niveau d'exécution par défaut)</comment>
+# <i>rc-update add rsyncd default</i>
+</pre>
+
+<p>
+Testons votre miroir rsync. Vous n'avez pas besoin de l'essayer depuis une autre
+machine mais ce serait une bonne idée de le faire. Si votre serveur n'a pas de
+nom connu par les autres machines, vous pouvez utiliser son adresse IP à la
+place.
+</p>
+
+<pre caption="Test du miroir">
+<comment>(Vous pouvez utiliser le nom du serveur ou son adresse IP)</comment>
+# <i>rsync 192.168.0.1::</i>
+portage         Gentoo Portage
+# <i>rsync le_nom_du_serveur::portage</i>
+<comment>(Vous devriez voir le contenu de /usr/portage de votre miroir)</comment>
+</pre>
+
+<p>
+Votre miroir rsync est maintenant prêt. Continuez à lancer <c>emerge sync</c>
+comme d'habitude pour le maintenir à jour.
+</p>
+
+<note>
+Veuillez noter que la majorité des administrateurs de miroirs publics
+considèrent que se synchroniser plus d'une ou deux fois par jour est un abus.
+</note>
+
+</body>
+</section>
+<section>
+<title>Configuration des clients</title>
+<body>
+
+<p>
+Maintenant, faites en sorte que vos autres machines utilisent le miroir local.
+Éditez votre <path>/etc/make.conf</path> et faites pointer la variable
+<c>SYNC</c> vers votre serveur.
+</p>
+
+<pre caption="Définition de SYNC dans /etc/make.conf">
+<comment>(Utilisez l'adresse IP du serveur)</comment>
+SYNC="rsync://<i>192.168.0.1</i>/portage"
+<comment>(Ou utilisez son nom)</comment>
+SYNC="rsync://<i>le_nom_du_serveur</i>/portage"
+</pre>
+
+<p>
+Vous pouvez vérifier que votre ordinateur a été correctement configuré et
+synchronisé sur votre propre miroir local pour la première fois&nbsp;:
+</p>
+
+<pre caption="Vérification et synchronisation">
+<comment>(Vérifiez que la variable SYNC a été réglée)</comment>
+# <i>emerge --info | grep SYNC</i>
+SYNC="rsync://your_server_name/portage"
+<comment>(Synchronisez sur votre miroir local)</comment>
+# <i>emerge sync</i>
+</pre>
+
+<p>
+Et voilà ! Tous vos ordinateurs utiliseront maintenant votre miroir local rsync
+lorsque vous ferez un <c>emerge sync</c>.
 </p>
 
 </body>
