@@ -179,6 +179,9 @@ sharedir="/home/drobbins/cvs/gentoo/src/catalyst"
 	set of <c>USE</c> variables that are enabled on that sub-architecture. The <c>USE</c> settings are intended
 	to enable any CPU-specific options, such as <c>mmx</c> or <c>altivec</c>.</p>
 
+	<note>Catalyst currently also supports the ability to build <c>x86</c> architecture stages on <c>amd64</c> systems.
+	To do this, simply <c>emerge linux32</c> and use catalyst like you normally would on an x86 system. The resultant
+	builds will be fully 32-bit.</note>
 
 	</body>
 	</section>
@@ -215,8 +218,111 @@ sharedir="/home/drobbins/cvs/gentoo/src/catalyst"
 	<p>The target directory path is determined as follows: <c>[storedir]/builds/[rel_type]-[mainarch]-[rel_version]</c>.
 	The substring <c>[rel_type]-[mainarch]-[rel_version]</c> should expand to match the name of the profile (from <path>/usr/portage/profiles</path> you are
 	going to use for building. <c>[mainarch]</c> is catalyst's keyword for the "architecture" of the build. Variable
-	names that we haven't introduced yet, such as <c>[rel_type]</c> and <c>[rel_version]</c>, will be passed to <c>catalyst</c> as arguments in just a bit.</p>
+	names that we haven't introduced yet, such as <c>[rel_type]</c> and <c>[rel_version]</c>, will be passed to <c>catalyst</c> as arguments in just a bit. This may be a bit confusing, but should become easier to understand as we proceed.</p>
 
+	<p>OK, now we will need to create what is called a catalyst "spec" file. A spec file contains all the
+	information and settings that catalyst needs to build your target, which in our case is our new stage1.
+	Create a file and add the following information to it:</p>
+
+	<pre caption="x86-stage1-20031109.spec: Our initial catalyst spec file for building a new stage1">
+subarch: x86
+version_stamp: 20031109
+target: stage1
+rel_type: default
+rel_version: 1.4
+snapshot: 20031109
+source_subpath: default-x86-1.4/stage2-x86-20031102
+	</pre>
+
+	<p>Now, I'll explain what this information means. The <c>subarch</c> keyword specifies the sub-architecture
+	of the target stage1. For a stage1, this should always be a "generic" sub-arch, such as <c>x86</c> or <c>ppc</c>.
+	You'll notice that we don't specify a "main" architecture (also known as <c>mainarch</c>.) catalyst figures out our architecture by looking
+	at the <c>subarch</c> variable. The <c>snapshot</c> variable specifies the Portage snapshot that will be used to build our new stage1,
+	and should match the <c>version_stamp</c> you specified to catalyst when you created your Portage tree snapshot.
+	</p>
+
+	<p>
+	Catalyst will use the stage tarball specified in <c>source_subpath</c> to build our new stage1. It will look for this
+	stage tarball in <c>[storedir]/builds/[source_subpath].tar.bz2</c>.
+	<c>version_stamp</c> specifies the version that will be assigned to our completed stage1 tarball. Our completed
+	stage1 tarball will be stored at the following location: <c>[storedir]/builds/[rel_type]-[mainarch]-[rel_version]/[target]-[subarch]-[version_stamp].tar.bz2</c>. The Portage profile that will be used to build our stage1 will be found in our Portage tree snapshot, at <c>/usr/portage/profiles/[rel_type]-[mainarch]-[rel_version]</c></p>
+
+	<p>OK, now it's time to build our stage1 tarball. To do this, type the following command, specifying the path to your
+	spec file as the last argument:</p>
+
+	<path caption="Telling catalyst to build a new stage1">
+# catalyst -f /path/to/x86-stage1-20031109.spec
+	</path>
+
+	<p>Catalyst will begin unpacking and building, and should complete successfully. Once completed, you should have a new
+	stage1 tarball at the following location:</p>
+
+	<path>
+/var/tmp/catalyst/builds/default-x86-1.4/stage1-x86-20031109.tar.bz2
+</path>
+
+	<p>To build a new stage2, create the following spec file:</p>
+
+	<pre caption="x86-stage2-20031109.spec: Spec file for building a stage2 tarball">
+subarch: x86
+version_stamp: 20031109
+target: stage2
+rel_type: default
+rel_version: 1.4
+snapshot: 20031109
+source_subpath: default-x86-1.4/stage1-x86-20031109
+	</pre>
+	
+	<p>Note that the <c>target</c> and <c>source_subpath</c> keywords have been update to reflect the fact that
+	we are building a stage2 tarball, and that we are using the stage1 tarball that we just build as the "seed"
+	tarball for this new stage2. Then call catalyst as follows:</p>
+
+	<pre>
+# catalyst -f /path/to/x86-stage2-20031109.spec
+</pre>
+	<p>Once the stage2 tarball has finished building, it can be used to build a new x86 stage3. To do this,
+	use the following spec file:</p>
+
+	<pre caption="x86-stage3-20031109.spec: Spec file for building a stage3 tarball">
+subarch: x86
+version_stamp: 20031109
+target: stage3
+rel_type: default
+rel_version: 1.4
+snapshot: 20031109
+source_subpath: default-x86-1.4/stage2-x86-20031109
+	</pre>
+	
+	<p>Again, note that <c>target</c> and <c>source_subpath</c> have been updated accordingly. Tell catalyst
+	to build the stage3 tarball by typing:</p>
+
+<pre>
+# catalyst -f /path/to/x86-stage3-20031109.spec
+</pre>
+
+	<p>Once complete, you should find a stage3 tarball at <c>/var/tmp/catalyst/builds/default-x86-1.4/stage3-x86-20031109.tar.bz2</c>.</p>
+	
+	<p>Some questions and answers follow.</p>
+
+	<p><b>Q: How do I build a stage2 and stage3 tarball for a non-generic CPU type, such as <c>pentium4</c> or <c>g4</c>?</b></p>
+	<p>A: First, make sure that your hardware is capable of building such a stage. If you want to build a <c>pentium4</c> stage,
+	you will need to build on a Pentium 4 or AMD64/Opteron system. You can't build a <c>pentium4</c> stage on an Athlon XP system,
+	as Athlon XP CPUs do not support SSE2 instructions, and SSE2 instructions will be enabled for <c>pentium4</c> stages. Likewise,
+	if you want to build a <c>g4</c> stage, you will need to do this on a PowerPC G4 or G5 system.</p>
+	<p>Once you've made sure that you're building on the right hardware, simply follow the steps above, but for building the stage2,
+	simply change the <c>subarch</c> setting to a valid non-generic subarchitecture (ie. <c>pentium4</c>.) Then your stage2 will
+	be built for the subarchitecture that you specify. Then, use this stage2 as the "seed" stage to build your stage3. Of course,
+	you will also want to modify the <c>subarch</c> setting in your stage3 spec to match what you used in your stage2 spec.</p>
+
+	<p><b>Q: I want to build a bunch of stages for various subarches. How should I do this?</b></p>
+	<p>A: First, build a generic stage1. Then use this stage1 to build a specialized stage2 and stage3. Use the stage1 again to
+	build another specialized stage2 and stage3. You do not need to re-build the stage1 -- all your specialized stage2s and stage3s
+	can use the same "seed" stage1.</p>
+
+	<p><b>Q: Can I build a stage1 for a non-generic CPU type?</b></p>
+	<p>A: This is a very bad idea, as users expect stage1's to work on any type of sub-architecture. This way, they can use
+	the stage1 on any system without worries. You should be sure to not "pollute" your stage1 with non-generic-CPU-specific code.
+	Always use a "generic" stage2 or stage3 to build a new stage1.</p>
 
 	</body>
 	</section>
