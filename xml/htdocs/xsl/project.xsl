@@ -318,7 +318,7 @@
 	</tr>
 	<xsl:if test="enddate">
           <tr>
-	    <th>end date:</th><ti><xsl:value-of select="enddate"/></ti>
+	    <th>End date:</th><ti><xsl:value-of select="enddate"/></ti>
 	  </tr>
 	</xsl:if>
 	<xsl:for-each select="dev">
@@ -342,25 +342,38 @@
 	    <ti><xsl:apply-templates select="uri|bug|mail"/></ti>
 	  </tr>
 	</xsl:for-each>
-	<xsl:for-each select="milestone">
-	  <xsl:sort select="enddate"/>
-	  <tr>
-	    <th>milestone (<xsl:value-of select="position()"/>)
-	      <xsl:if test='@finished="yes"'> (Finished)</xsl:if>:
-	    </th>
-	    <ti><p>End date: <xsl:value-of select="enddate"/></p>
-	      <p><xsl:value-of select="description"/></p>
-	    </ti>
-	  </tr>      
-	</xsl:for-each>
-	<xsl:for-each select="depends">
-	  <tr><th>Depends on</th>
-	    <ti>This task depends on the
-	      <brite><xsl:value-of select="id(@ref)/name"/></brite> task
-	    </ti>
-	  </tr>
-	</xsl:for-each>
       </table>
+      <xsl:if test="milestone">
+        <table>
+          <tr><th>Milestone #</th><th>ETA</th><th>Description</th></tr>
+          <xsl:for-each select="milestone">
+            <xsl:sort select="enddate"/>
+            <tr>
+              <ti><xsl:value-of select="position()"/></ti>
+              <xsl:choose>
+                <xsl:when test='@finished="yes"'>
+                  <th>Finished</th>
+                </xsl:when>
+                <xsl:otherwise>
+                  <ti><xsl:value-of select="enddate"/></ti>
+                </xsl:otherwise>
+              </xsl:choose>
+              <ti><xsl:value-of select="description"/></ti>
+            </tr>      
+          </xsl:for-each>
+        </table>
+      </xsl:if>
+      <xsl:if test="depends">
+        <table>
+          <xsl:for-each select="depends">
+            <tr><th>Depends on</th>
+              <ti>This task depends on the
+                <brite><xsl:value-of select="id(@ref)/name"/></brite> task
+              </ti>
+            </tr>
+          </xsl:for-each>
+        </table>
+      </xsl:if>
     </body>
   </section>
 </xsl:template>
