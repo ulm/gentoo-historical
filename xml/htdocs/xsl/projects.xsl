@@ -8,13 +8,13 @@
                 <title>Project Listing</title>
 		<author title="script generated">Gentoo Project</author>
 		<abstract>This is an overview of all current gentoo projects</abstract>
-		<version>1.0</version>
-		<date>20 Sept 2003</date>
+		<version>1.1</version>
+		<date>30 Dec 2003</date>
 		<chapter>
 			<title>Gentoo Projects</title>
 			<section><body>
 			<p>This page is meant to give an overview of all gentoo projects</p>
-			<p>The old, static, version of the document is available <uri link="oldprojects.xml">here</uri></p>
+			<p>The old static unmaintained version of the document is available <uri link="/proj/en/metastructure/oldprojects.xml">here</uri></p>
 			</body></section>
 		</chapter>
 		<chapter>
