@@ -429,6 +429,8 @@
                     <br/>
                     <a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
                     <br/>
+                    <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
+                    <br/>
                     <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
                     <br/>
                     <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
