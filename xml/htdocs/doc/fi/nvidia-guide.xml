@@ -1,0 +1,221 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/nvidia-guide.xml,v 1.1 2005/03/10 05:19:00 flammie Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/nvidia-guide.xml" lang="fi">
+<title>Gentoo Linuxin nVidia-opas</title>
+
+<author title="Tekijä">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Vastuullinen kääntäjä">
+  <mail link="flammie@gentoo.org">Flammie Pirinen</mail>
+</author>
+
+<abstract>
+Monilla Gentoon käyttäjillä on nVidian piirejä grafiikkakorteissaan. nVidia
+on tehnyt Linuxille erityiset ajurit, jotka tehostavat näiden suorituskykyä.
+Tässä oppaasse kerrotaan kuinka ajurit asennetaan ja säädetään kuntoon.
+</abstract>
+
+<license/>
+
+<version>1.8</version>
+<date>2005-02-25</date>
+
+<chapter>
+<title>Kortin asetusten tekeminen</title>
+<section>
+<title>Ajurien asennus</title>
+<body>
+
+<p>
+nVidian ajureihin kuuluu ydinmoduuli joka pitää liittää nykyiseen ytimeen. Jotta
+tämä toimisi on ytimessä oltava ladattavien moduulien tuki. Jos teit ytimen
+<c>genkernel</c>illä, kaikki on jo kunnossa, muutoin tarkista että ytimen
+asetuksissa on tämä asetus asetettuna:
+</p>
+
+<pre caption="Ladattavien ydinmoduulien tuen asettaminen">
+Loadable module support ---&gt;
+  [*] Enable loadable module support
+</pre>
+
+<p>
+Myös <e>Memory Type Range Register</e> -tuki pitää olla kernelissä:
+</p>
+
+<pre caption="MTRR:n asettaminen">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+
+<p>
+nVidian moduulit ja kirjastot ovat kahdessa paketissa: <c>nvidia-glx</c> ja
+<c>nvidia-kernel</c>. Ensimmäisessä on X11:n GLX-kirjastot ja jälkimmäisessä
+ydinmoduulit. Koska nvidia-glx kuitenkin riippuu -kernelistä, riittää sen
+asentaminen valitsemaan molemmat.
+</p>
+
+<pre caption="nVidian pakettien asennus">
+# <i>emerge nvidia-glx</i>
+</pre>
+
+<p>
+Kun asennus on ohi, aja <c>modprobe nvidia</c> ladataksesi ytimen moduulit
+muistiin.
+</p>
+
+<pre caption="Ydinmoduulien lataus">
+# <i>modprobe nvidia</i>
+</pre>
+
+<p>
+Halunnet tämän toiminnon tapahtuvan jokaisessa käynnistymisessä, siispä lisäät
+tiedostoon <path>/etc/modules.autoload.d/kernel-2.6</path> (tai
+<path>kernel-2.4</path>) rivin <c>nvidia</c>. Muista suorittaa
+<c>modules-update</c> sen jälkeen!
+</p>
+
+<pre caption="Modules-updaten suoritus">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>X-palvelimen asetukset</title>
+<body>
+
+<p>
+Kun ajurit on asennettu, X-palvelin (XFree86 tai Xorg) pitää asettaa käyttämään
+<c>nvidia</c>-ajuria oletusarvoisen <c>nv</c>:n asemesta.
+</p>
+
+<p>
+Avaa <path>/etc/X11/xorg.conf</path> (tai <path>/etc/X11/XF86Config</path>)
+suosikkieditorillasi (kuten <c>nano</c>lla tai <c>vim</c>illä) ja etsi
+kohta <c>Device</c>. Siellä muokkaa riviä <c>Driver</c>:
+</p>
+
+<pre caption="nv:n muutos nvidiaksi X:n ajuriosiossa">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  <i>Driver     "nvidia"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+<p>Sitten etsit <c>Module</c>-osion asetustiedostosta ja varmistat että
+glx-moduuli ladataan kun taas dri:tä ei:</p>
+
+<pre caption="Module-osion päivitys">
+Section "Module"
+  <comment>(...)</comment>
+  <i># Load  "dri"
+  Load  "glx"</i>
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+Kun suoritat <c>opengl-update</c>n, X-palvelin ryhtyy käyttämään nVidian
+GLX-kirjastoa:
+</p>
+
+<pre caption="opengl-updaten ajaminen">
+# <i>opengl-update nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Kortin testaus</title>
+<body>
+
+<p>
+Kortin voi testata käynnistämällä X:n ja suorittamalla
+<c>glxinfo | grep direct</c>. Sen pitäisi tulostaa jotta direct rendering on
+päällä:
+</p>
+
+<pre caption="Direct renderingin tarkastelu">
+$ <i>glxinfo | grep direct</i>
+direct rendering: Yes
+</pre>
+
+<p>
+FPS:iä voi tarkastella komennolla <c>glxgears</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>nVidia-tuen hyödyntäminen ohjelmissa</title>
+<body>
+
+<p>
+Jotkin sovellukset, kuten <c>mplayer</c> tai <c>xine-lib</c>, käyttävät
+paikallista USE-flägiä nvidia, jolla saa käyttöön XvMCNVIDIA-tuen vaikkapa
+korkearesoluutiovideoita varten. Tämän voi asettaa päälle joko
+<path>/etc/make.conf</path>in globaaleihin USE-flägeihin tai pakettikohtaisesti
+<c>media-video/mplayer</c>ille tai <c>media-libs/xine-lib</c>ille tiedostoon
+<path>/etc/portage/package.use</path>.
+</p>
+
+<p>
+USE-flägimuutosten jälkeen komento <c>emerge -uD --newuse world</c> kääntää
+uudelleen sovellukset joihin muutokset vaikuttavat.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Vianpaikannus</title>
+<section>
+<title>2D toimimaan yli 4 Gigatavun muistilla varustetuilla koneilla</title>
+<body>
+
+<p>
+Jos nVidian 2D-kiihdytys tuottaa ongelmia, vika on todennäköisesti siinä, ettei
+MTRR:n write-combining-aluetta voida asettaa. Tämän voit varmistaa tiedoston
+<path>/proc/mtrr</path> sisällöstä:
+</p>
+
+<pre caption="Tarkasta että write-combining on päällä">
+# <i>cat /proc/mtrr</i>
+</pre>
+
+<p>
+Joka rivillä tulisi olla "write-back" tai "write-combining". Jos jollain
+rivillä lukee "uncachable", joudut säätämään BIOSia korjataksesi sen.
+</p>
+
+<p>
+Uudelleenkäynnistä BIOSiin, etsi sieltä MTRR-asetukset (yleensä kohdassa "CPU
+Settings" tai vastaavaa). Muuta asetus arvosta "continuous" arvoksi "discrete"
+ja käynnistä uudelleen. Nyt "uncachable"-kohtien pitäisi olla poissa ja
+2D-kiihdytyksen toimia ongelmitta.
+</p>
+
+</body>
+</section>
+<section>
+<title>Varoitukset 4K stackista</title>
+<body>
+
+<p>
+Versiota 1.0-6106 vanhemmat <c>nvidia-kernel</c>it eivät tue kuin 8 kilon
+pinokokoa.
+Tuoreimmissa kerneleissä (2.6.6:a uudemmissa) on tuki myös 4 kilon pinoille,
+älä valitse tätä asetusta, jos käytät vanhempaa <c>nvidia-kernel</c>iä. Asetus
+on osiossa <c>Kernel Hacking</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
