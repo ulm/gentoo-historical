@@ -314,11 +314,9 @@
 						<a class="altlink" href="ftp://gentoo.linux.no/pub/gentoo/">linux.no (Norway/ftp)</a><br/>
 						<a class="altlink" href="http://ibiblio.org/pub/Linux/MIRRORS.html">(worldwide ibiblio mirrors)</a><br/>
 						<a class="altlink" href="/doc/mirroring.html">(how to set up an rsync mirror)</a><br/>
-						<br/>
-						&lt;--Ad--&gt;<br />
+						<br/><br />
 						<a href="http://www.qksrv.net/click-477620-5033206" target="_top"><img src="http://www.qksrv.net/image-477620-5033206" width="88" height="31" alt="Factory-direct memory upgrades" border="0"/></a><br/>
-						&lt;--Ad--&gt;<br />
-						<br/>
+						<br/><br />
 <!--
 User Docs:<br/>
    x86 Install Instructions<br/>
