@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.1 2004/12/16 20:46:10 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.2 2005/02/25 16:33:00 so Exp $ -->
 
 <sections>
 
-<version>1.6</version>
-<date>2004-09-01</date>
+<version>1.7</version>
+<date>2005-02-14</date>
 
 <section>
 <title>Timezone</title>
@@ -20,8 +20,6 @@ Innanzitutto è necessario selezionare la propria timezone, in modo che il siste
 </p>
 
 <pre caption="Abilitare le informazioni sulla timezone">
-# <i>ls /usr/share/zoneinfo</i>
-<comment>(Per esempio GMT:)</comment>
 # <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
 </pre>
 
@@ -45,8 +43,16 @@ Sistemi basati su MIPS possono scegliere tra <c>mips-sources</c> (il sorgente de
 Dopo la scelta del kernel, è necessario installarlo con <c>emerge</c>. Sostituire il kernel con quello scelto, il seguente è solo un esempio:
 </p>
 
+<note>
+Sono necessarie patch speciali per far funzionare un kernel su server Cobalt. Si deve usare il comando <c>USE=cobalt export mips-sources</c> -- si ottengono e si applicano le patch.
+</note>
+
 <pre caption="Installare un sorgente del kernel">
+<comment>(Per macchine SGI)</comment>
 # <i>emerge mips-sources</i>
+
+<comment>(Per macchine Cobalt)</comment>
+# <i>USE=cobalt emerge mips-sources</i>
 </pre>
 
 <p>
@@ -76,227 +82,62 @@ Ora si procede a configurare e compilare il sorgente del kernel.
 </subsection>
 </section>
 <section>
-<title>Configurazione manuale</title>
+<title>Compilazione &amp; installazione del kernel</title>
 <subsection>
 <title>Introduzione</title>
 <body>
 
 <p>
-La configurazione manuale del kernel è spesso considerata la parte più difficile che ogni utente Linux incontra. Non è assolutamente vero -- dopo aver configurato un po' di kernel, l'operazione risulta semplice.
+Di solito si è vista la configurazione manuale del sorgente del kernel. Adesso invece si vedranno alcuni esempi di configurazione, sui quali si può basare la propria. Si deve scegliere tra le opzioni che più si avvicinano alla combinazione tra il proprio sistema e il kernel che si usa. Si possono trovare altri esempi di configurazione nei link qui sotto.
 </p>
+
+<table>
+  <tr>
+    <th>Sistema</th>
+    <th>Versione del kernel</th>
+  </tr>
+  <tr>
+    <ti>SGI IP22 (Indy, Indigo 2, Challenge S)</ti>
+    <ti>
+      <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config/2.4.29-mipscvs-20050130.gz">2.4.29</uri>
+    </ti>
+  </tr>
+  <tr>
+    <ti>Cobalt Qube/Raq 2800</ti>
+    <ti>
+      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2605.config">2.6.5</uri>
+      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2606.config">2.6.6</uri>
+      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-config-2609">2.6.9</uri>
+    </ti>
+  </tr>
+</table>
+
+<ul>
+  <li>
+    Configurazioni IP22 (Indy, Indigo2, Challenge S)
+    <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config">
+      http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config
+    </uri>
+  </li>
+  <li>
+    Configurazioni Cobalt Server
+    <uri link="http://dev.gentoo.org/~kumba/mips">
+      http://dev.gentoo.org/~kumba/mips
+    </uri>
+  </li>
+</ul>
 
 <p>
-Una cosa <e>è</e> però vera: si deve conoscere il proprio sistema quando si comincia una configurazione manuale del kernel. La maggior parte delle informazioni può essere raccolta vedendo il contenuto di <path>/proc/pci</path> (o usando <c>lspci</c> se disponibile). Si può anche eseguire <c>lsmod</c> per vedere che moduli del kernel usa il LiveCD (potrebbe fornire un buon suggerimento su cosa abilitare).
+Una volta trovata una configurazione, si deve scaricarla nella directory del sorgente del kernel, e rinominarla in <path>.config</path>. Da lì, si può eseguire <c>make oldconfig</c> per aggiornare e per cambiare la configurazione prima della compilazione.
 </p>
 
-<p>
-Andare nella directory del sorgente del kernel, e digitare <c>make menuconfig</c> per visualizzare un menu di configurazione basato su ncurses.
-</p>
-
-<pre caption="Aprire menuconfig">
+<pre caption="Configurare il kernel">
 # <i>cd /usr/src/linux</i>
+# <i>cp /path/to/example-config .config</i>
+# <i>make oldconfig</i>
+<comment>(Premere invio ad ogni prompt per accettare il default, cambiamenti sono fatti più avanti)</comment>
 # <i>make menuconfig</i>
 </pre>
-
-<p>
-Vengono visualizzate molte sezioni di configurazione. Ecco ora alcune opzioni che devono essere attivate (altrimenti Gentoo non può funzionare, o non funziona correttamente senza modifiche aggiuntive).
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Attivare le opzioni indispensabili</title>
-<body>
-
-<p>
-Prima di tutto, si deve attivare l'uso di codice/driver di sviluppo e sperimentale. Se non lo si fa, non si ha la possibilità di utilizzare qualche codice/driver molto importante:
-</p>
-
-<pre caption="Selezionare codice/driver sperimentale">
-Code maturity level options ---&gt;
-  [*] Prompt for development and/or incomplete code/drivers
-</pre>
-
-<p>
-Andare su <c>File Systems</c> e selezionare il supporto per il filesystem che si usa. <e>Non</e> compilarlo come modulo, altrimenti Gentoo non può montare le partizioni. Selezionare anche <c>Virtual memory</c>, <c>/proc file system</c>, <c>/dev file system</c> e <c>Automatically mount at boot</c>:
-</p>
-
-<pre caption="Selezionare il filesystem">
-<comment>(Con un kernel 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Con un kernel 2.6.x)</comment>
-File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /proc file system support
-    [*] /dev file system support (OBSOLETE)
-    [*]   Automatically mount at boot
-    [*] Virtual memory file system support (former shm fs)
-
-<comment>(Selezionare una o più delle seguenti opzioni necessarie per il proprio sistema)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
-  &lt;*&gt; Second extended fs support
-  &lt;*&gt; XFS filesystem support
-</pre>
-
-<p>
-Se si sta usando PPPoE per connettersi a Internet o si sta usando un modem dial-up, si ha bisogno delle seguenti opzioni nel kernel:
-</p>
-
-<pre caption="Selezionare i driver necessari per PPPoE">
-<comment>(Con un kernel 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Con un kernel 2.6.x)</comment>
-Device Drivers ---&gt;
-  Networking support ---&gt;
-    &lt;*&gt; PPP (point-to-point protocol) support
-    &lt;*&gt;   PPP support for async serial ports
-    &lt;*&gt;   PPP support for sync tty ports
-</pre>
-
-<p>
-Le due opzioni di compressione non sono dannose, ma neppure necessarie; lo stesso vale per <c>PPP over Ethernet</c>, che potrebbe essere usata soltanto da <c>rp-pppoe</c> se configurato in modalità kernel.
-</p>
-
-<p>
-Chi ne ha bisogno, non deve dimenticare di includere il supporto per la scheda ethernet nel kernel.
-</p>
-
-<p>
-Se si sta usando un sistema basato su Indy/Indigo2, si deve attivare il supporto per esso.
-</p>
-
-<pre caption="Attivare SGI IP22">
-Machine selection ---&gt;
-  [*] Support for SGI IP22 (Indy/Indigo2)
-</pre>
-
-<p>
-Se si desidera eseguire binari Irix, includere la seguente opzione:
-</p>
-
-<pre caption="Includere il supporto IRIX Binary">
-General setup ---&gt;
-  [*] Include IRIX binary compatibility
-</pre>
-
-<p>
-Se si ha una scheda ISA/EISA in SGI Indigo2, abilitare il suo supporto.
-</p>
-
-<pre caption="Abilitare il supporto ISA/EISA per SGI Indigo2">
-General setup ---&gt;
-  [*] Indigo-2 (IP22) EISA bus support
-  [*]   ISA bus support
-</pre>
-
-<p>
-Se si ha una porta parallela SGI, si può abilitarne il supporto. Invece se si ha una porta parallela ISA si dovrebbe selezionare "PC-style hardware".
-</p>
-
-<pre caption="Abilitare il SGI Parallel Port Support">
-Parallel port support  ---&gt;
-  &lt;*&gt; Parallel port support
-  &lt;*&gt;   SGI Indy/Indigo2 hardware (EXPERIMENTAL) (NEW)
-  &lt;*&gt;   IEEE 1284 transfer modes (NEW)
-</pre>
-
-<p>
-Se si desiderano usare gli slot ISA Indigo2, abilitare il supporto plug and play.
-</p>
-
-<pre caption="Abilitare il supporto PnP per ISA">
-Plug and Play configuration  ---&gt;
-  &lt;*&gt; Plug and Play support
-  &lt;*&gt;   ISA Plug and Play support
-</pre>
-
-<p>
-Non dimenticarsi di abiltare il supporto SCSI, e usare il SGI WD93C93 Driver:
-</p>
-
-<pre caption="Abilitare WD93C93 Driver Support">
-SCSI low-level drivers  ---&gt;
-  &lt;*&gt; SGI WD93C93 SCSI Driver
-</pre>
-
-<p>
-Per le schede di rete probabilmente si ha bisogno del supporto per il SGI Seeq ethernet controller:
-</p>
-
-<pre caption="Abilitare SGI Seeq Support">
-Network device support  ---&gt;
-  Ethernet (10 or 100Mbit)  ---&gt;
-    [*] Ethernet (10 or 100Mbit)
-    [*]   SGI Seeq ethernet controller support
-</pre>
-
-<p>
-Non dimenticarsi di abilitare il supporto per la console seriale e il supporto per il SGI Zilog85C30:
-</p>
-
-<pre caption="Abilitare SGI Zilog85C30 Support">
-Character devices ---&gt;
-  [*] Non-standard serial port support
-  [*]   SGI Zilog85C30 serial support
-</pre>
-
-<p>
-Non dimenticarsi di abilitare il supporto Indy/I2 Watchdog e anche SGI DS1286 RTC:
-</p>
-
-<pre caption="Abilitare Watchdog e RTC Support">
-Character Devices ---&gt;
-  [*] SGI DS1286 RTC support
-  Watchdog Cards  ---&gt;
-    [*] Watchdog Timer Support
-    &lt;*&gt;   Indy/I2 Hardware Watchdog
-</pre>
-
-<p>
-Si dovrebbe anche abilitare il supporto per le partizioni SGI.
-</p>
-
-<pre caption="Abilitare il supporto per le partizioni SGI">
-File Systems ---&gt;
-  Partition Types ---&gt;
-    [*] Advanced partition selection
-    [*]   SGI partition support
-</pre>
-
-<p>
-Se si ha una SGI Newport (XL Gfx) Card e si desidera usarla, allora se ne deve abilitare il supporto:
-</p>
-
-<pre caption="Abilitare il supporto per la SGI Newport Card">
-Console drivers  ---&gt;
-  &lt;*&gt; SGI Newport Console support (NEW)
-</pre>
-
-<p>
-Se si desidera il supporto sonoro sulla Indy/Indigo2, lo si deve abilitare:
-</p>
-
-<pre caption="Abilitare il supporto per il SGI HAL2">
-Sound  ---&gt;
-  &lt;*&gt; Sound card support
-  &lt;*&gt;   SGI HAL2 sound (EXPERIMENTAL)
-</pre>
-
-<p>
-Una volta terminata la configurazione del kernel continuare con <uri link="#compiling">Compilazione e Installazione</uri>.
-</p>
 
 </body>
 </subsection>
@@ -333,10 +174,11 @@ E' inoltre consigliato copiare il file di configurazione del kernel in <path>/bo
 # <i>cp .config /boot/config-2.4.24</i>
 </pre>
 
+<!--
 <p>
 Se il sistema non avvia i kernel ELF, compilare il kernel con <c>make vmlinux.ecoff</c> invece di <c>make vmlinux</c>. L'immagine del kernel sarà salvata come <path>arch/mips/boot/vmlinux.ecoff</path>, invece di <path>vmlinux</path>.
 </p>
-
+-->
 </body>
 </subsection>
 </section>
@@ -347,7 +189,17 @@ Se il sistema non avvia i kernel ELF, compilare il kernel con <c>make vmlinux.ec
 <body>
 
 <p>
-Si dovrebbero inserire i moduli che si vogliono caricare in <path>/etc/modules.autoload.d/kernel-2.4</path> (o <path>kernel-2.6</path>). Se si vuole, si possono anche aggiungere altre opzioni ai moduli.
+Si dovrebbero inserire i moduli che si vogliono caricare in uno dei file elencati qui sotto. Se si vuole, si possono anche aggiungere altre opzioni ai moduli.
+</p>
+
+<ul>
+  <li><path>/etc/modules.autoload.d/kernel-2.4</path> - Solo kernel 2.4</li>
+  <li><path>/etc/modules.autoload.d/kernel-2.6</path> - Solo kernel 2.6</li>
+  <li><path>/etc/modules.autoload</path> - Tutti i kernel</li>
+</ul>
+
+<p>
+Se si desidera caricare un modulo del kernel, comune al 2.4 e al 2.6, metterlo in <path>/etc/modules.autoload</path>. Altrimenti, nel file appropriato.
 </p>
 
 <p>
@@ -359,16 +211,24 @@ Per vedere tutti i moduli disponibili, eseguire il comando <c>find</c>. Non dime
 </pre>
 
 <p>
-Per esempio, per caricare automaticamente il modulo <c>3c59x.o</c>, modificare il file <path>kernel-2.4</path> o <path>kernel-2.6</path> e inserire il nome.
+Per esempio, per caricare automaticamente il modulo <c>3c59x.o</c>, modificare il file appropriato e inserire il nome.
 </p>
 
 <pre caption="Modificare /etc/modules.autoload.d/kernel-2.4">
-<comment>(Esempio per i kernel 2.4)</comment>
 # <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
 </pre>
 
 <pre caption="/etc/modules.autoload.d/kernel-2.4 o kernel-2.6">
 3c59x
+</pre>
+
+<p>
+Questo può essere fatto anche con una riga sola:
+</p>
+
+<pre caption="Aggiungere un modulo -- con una riga sola">
+# <i>echo '3c59x' >> /etc/modules.autoload.d/kernel-2.4</i>
+<comment>(o kernel-2.6, o /etc/modules.autoload.....)</comment>
 </pre>
 
 <p>
