@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.32 2005/03/07 14:15:39 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.33 2005/03/28 16:19:25 neysx Exp $ -->
 
 <sections>
 
-<version>1.66</version>
-<date>2005-02-25</date>
+<version>2.1</version>
+<date>2005-03-28</date>
 
 <section>
 <title>Entrer dans le nouvel environnement (chroot)</title>
@@ -99,8 +99,8 @@ l'environnement chroot.
 Maintenant que toutes les partitions sont initialisées et que l'environnement
 de base est installé, il est temps d'entrer dans notre nouvel environnement
 d'installation. Cela signifie que l'on passe de l'environnement d'installation
-actuel (LiveCD ou autre environnement d'installation) à l'environnement de
-votre système (soit les partitions initialisées).
+actuel (CD d'installation ou autre environnement d'installation) à
+l'environnement de votre système (soit les partitions initialisées).
 </p>
 
 <p>
@@ -148,6 +148,64 @@ qu'une nouvelle version est disponible, vous devez l'ignorer. Portage sera mis
 
 </body>
 </subsection>
+
+<subsection>
+<title>Choisir le bon profil</title>
+<body>
+
+<p>
+Qu'est-ce qu'un profil&nbsp;?
+</p>
+
+<p>
+Un profil est un composant important d'une installation de Gentoo. Il spécifie
+non seulement les valeurs par défaut des options de compilation (les variables
+CFLAGS et CXXFLAGS) et d'autres paramètres importants, mais aussi quels paquets
+sont disponibles ou pas. Les profils sont mis à jour par les développeurs
+Gentoo.
+</p>
+
+<p>
+Les utilisateurs n'avaient pas à se préoccuper des profils jusqu'à présent.
+Depuis peu, les utilisateurs de machines x86, hppa et alpha peuvent choisir
+entre deux profils, un pour le noyau 2.4 et un pour le noyau 2.6. Ceci est
+nécessaire pour assurer une transition en douceur vers le noyau 2.6.
+</p>
+
+<p>
+Pour connaître le profil que vous utilisez, lancez la commande suivante&nbsp;:
+</p>
+
+<pre caption="Connaître son profil">
+# <i>ls -l /etc/make.profile</i>
+lrwxrwxrwx  1 root root 48 Mar  7 11:55 /etc/make.profile -&gt;
+      ../usr/portage/profiles/default-linux/x86/2005.0
+</pre>
+
+<p>
+Si vous utilisez une des trois architectures mentionnées ci-dessus, vous verrez
+un profil supplémentaire&nbsp;:
+</p>
+
+<pre caption="Savoir si un profil supplémentaire existe">
+# <i>ls -F /etc/make.profile/</i>
+2.4/  packages  parent  virtuals
+</pre>
+
+<p>
+Comme vous pouvez le voir, un sous-répertoire <path>2.4</path> existe. Cela
+signifie que le profil en cours utilise le noyau 2.6 et que si vous voulez un
+système qui utilise le noyau 2.4, vous devez modifier le lien symbolique
+<path>make.profile</path> comme suit&nbsp;:
+</p>
+
+<pre caption="Recréer le profil">
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+</pre>
+
+</body>
+</subsection>
+
 <subsection id="configure_USE">
 <title>Configurer la variable USE</title>
 <body>
@@ -365,19 +423,6 @@ cette étape prend pas mal de temps.
 </pre>
 
 <p>
-Si vous avez activé l'option <c>nptl</c> de la variable USE, une deuxième
-exécution de <c>bootstrap.sh</c> peut coincer, car le paquet
-<c>linux-headers</c> bloque <c>linux26-headers</c>.  Si vous avez le problème,
-supprimez <c>linux-headers</c> et réessayez&nbsp;:
-</p>
- 
-<pre caption="Supprimer linux-headers">
-# <i>emerge -C linux-headers</i>
-# <i>emerge --oneshot --nodeps linux26-headers</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
 Maintenant, poursuivez avec la prochaine étape, <uri
 link="#doc_chap4">Passer du stage2 au stage3</uri>.
 </p>
@@ -413,14 +458,20 @@ ne vous est imposé.
 
 <p>
 Si vous voulez savoir quels paquets vont être installés, exécutez <c>emerge
---pretend system</c>. Cela affiche une liste de tous les paquets qui seront
-installés. Comme cette liste est volumineuse, vous devriez utiliser un
-afficheur tel que <c>less</c> ou <c>more</c> pour la parcourir.
+--pretend --emptytree system</c>. Cela affiche une liste de tous les paquets
+qui seront installés. Comme cette liste est volumineuse, vous devriez utiliser
+un afficheur tel que <c>less</c> ou <c>more</c> pour la parcourir.
 </p>
 
 <pre caption="Visualiser ce que « emerge system » installera">
-# <i>emerge --pretend system | less</i>
+# <i>emerge --pretend --emptytree system | less</i>
 </pre>
+
+<p>
+Si vous n'avez pas changé les variables CFLAGS/CXXFLAGS, la commande <c>emerge
+--pretend --newuse system</c> suffit. Si vous n'avez pas modifié la variable
+USE non plus, pourquoi passez-vous par le stage2&nbsp;?
+</p>
 
 </body>
 </subsection>
@@ -436,7 +487,7 @@ Les sources seront alors téléchargées pour vous.
 </p>
 
 <pre caption="Télécharger les sources">
-# <i>emerge --fetchonly system</i>
+# <i>emerge --fetchonly --emptytree system</i>
 </pre>
 
 </body>
@@ -446,14 +497,19 @@ Les sources seront alors téléchargées pour vous.
 <body>
 
 <p>
-Pour lancer la construction du système, exécutez <c>emerge system</c>.
-Ensuite, trouvez quelque chose pour vous tenir occupé, car cette étape est
-très longue.
+Pour lancer la construction du système, exécutez <c>emerge --emptytree
+system</c>.  Ensuite, trouvez quelque chose pour vous tenir occupé, car cette
+étape est très longue.
 </p>
 
 <pre caption="Construire le système">
-# <i>emerge system</i>
+# <i>emerge --emptytree system</i>
 </pre>
+
+<p>
+Si vous n'avez pas modifié les variables CFLAGS/CXXFLAGS, l'option
+<c>--newuse</c> suffit.
+</p>
 
 <p>
 Ignorez simplement les messages d'avertissement à propos de fichiers de
