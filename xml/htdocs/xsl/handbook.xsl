@@ -21,6 +21,20 @@
   </xsl:choose>
 </xsl:template>
 
+<!-- <sections>, i.e. when user tries to access a book file directly -->
+<xsl:template match="/sections">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"/>
+  <meta http-equiv="REFRESH" content="0; URL=/doc/en/"/>
+  <title>Please use main index</title>
+</head>
+<body>
+  Please use the <a href="/doc/en/">main index</a> to access handbook parts.
+</body>
+</html>
+</xsl:template>
+
 <!-- Content of /book -->
 <xsl:template name="bookcontent">
   <xsl:call-template name="menubar" />
