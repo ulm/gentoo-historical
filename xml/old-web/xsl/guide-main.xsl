@@ -400,6 +400,7 @@ Otros:<br/>
 						En Español:<br/>#gentoo-es<br/><br/>
 						På norsk:<br/>#gentoo-no <br/><br/>
 						På svenska:<br/>#gentoo-se <br/><br/>
+						In het Nederlands:<br/>#gentoo-nl <br/><br/>
 						Auf Deutsch:<br/>#gentoo.de <br/><br/><br/><br/></p>
                         </td>
                       </tr>
