@@ -1333,4 +1333,14 @@
   <xsl:apply-templates select="document('/dyn/glsa-index.xml')/guide/chapter[1]/section[1]/body"/>
 </xsl:template>
 
+<!-- GLSA Latest (max 10) -->
+<xsl:template match="glsa-latest">
+  <xsl:variable name="src" select="'/dyn/glsa-index.xml'"/>
+  <table>
+  <xsl:for-each select="document($src)/guide/chapter[1]/section[1]/body/table[1]/tr[position()&lt;11]">
+    <tr><xsl:apply-templates/></tr>
+  </xsl:for-each>
+  </table>
+</xsl:template>
+
 </xsl:stylesheet>
