@@ -27,6 +27,13 @@ class RunInstall(gtk.Window):
 		self.globalbox = gtk.VBox(gtk.FALSE, 0)
 		self.globalbox.set_border_width(10)
 
+		self.notebook = gtk.Notebook()
+		self.tailpage = gtk.VBox(gtk.FALSE, 0)
+		self.notebook.append_page(self.tailpage, tab_label=gtk.Label("Output"))
+		self.docpage = gtk.VBox(gtk.FALSE, 0)
+		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
+		self.globalbox.add(self.notebook)
+
 		self.progress = gtk.ProgressBar()
 		self.progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.progress.set_text("Preparing...")
