@@ -333,7 +333,7 @@
 	  <xsl:sort select="enddate"/>
 	  <tr>
 	    <th>milestone (<xsl:value-of select="position()"/>)
-	      <xsl:if test='@fininished="yes"'> (Finished)</xsl:if>:
+	      <xsl:if test='@finished="yes"'> (Finished)</xsl:if>:
 	    </th>
 	    <ti><p>End date: <xsl:value-of select="enddate"/></p>
 	      <p><xsl:value-of select="description"/></p>
