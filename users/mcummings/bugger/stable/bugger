@@ -2,6 +2,28 @@
 use Getopt::Long;
 use Config::General;
 my $configfile = "$ENV{'HOME'}/.bugger-config";
+use WWW::Bugzilla;
+my $bugver = $WWW::Bugzilla::VERSION;
+if ( $bugver < 0.4 ) {
+    print
+"bugger requires at least WWW::Bugzilla 0.4.\nPlease emerge a newer version\n\n";
+    exit();
+}
+use WWW::Mechanize;
+my $mechver = $WWW::Mechanize::VERSION;
+if ( $mechver < 1.02 ) {
+    print
+"bugger requires at least WWW::Mechanize 1.02.\nPlease emerge a newer version\n\n";
+    exit();
+}
+
+use HTML::Strip;
+my $stripver = $HTML::Strip::VERSION;
+if ( $stripver < 1.02 ) {
+    print
+"bugger requires at least HTML::Strip 1.02.\nPlease emerge a newer version\n\n";
+    exit();
+}
 
 unless ( ( -f $configfile ) && ( -s $configfile ) ) {
     my $conf = new Config::General(
@@ -127,7 +149,7 @@ sub helpme {
 sub list_bugs {
     my $bugfor = shift;
     chomp($bugfor);
-    my $mech = connect_bugz();
+    my $mech = connect_mech();
     $mech->form_number(1);
     $mech->field( 'email1', $bugfor );
     $mech->field( 'email2', "" );
@@ -146,7 +168,7 @@ sub list_bugs {
 sub cclist_bugs {
     my $bugfor = shift;
     chomp($bugfor);
-    my $mech = connect_bugz();
+    my $mech = connect_mech();
     $mech->form_number(1);
     $mech->field( 'email1', $bugfor );
     $mech->field( 'email2', "" );
@@ -165,7 +187,6 @@ sub cclist_bugs {
 }
 
 sub add_bug {
-    use WWW::Bugzilla;
 
     # Recreating the form is just fun
     my $bugz = WWW::Bugzilla->new(
@@ -366,29 +387,34 @@ sub show_bug {
 
     my $BUG = shift;
     chomp($BUG);
-    my $mech = connect_bugz();
-
+    my $mech = connect_mech();
     $mech->submit_form(
         form_number => 2,
         fields      => { id => "$BUG", }
     );
     $mech->follow_link( text_regex => qr/format for printing/i );
-    use HTML::Strip;
 
     my $TextBody = $mech->content();
     our $hs = HTML::Strip->new();
-    my $hrcount;
-
-    my $intext = $hs->parse("$TextBody");
+    my @semper = split( /\<\!\-\- 1\.0\@bugzilla\.org \-\-\>/, $TextBody );
+    my @fulltext;
+    $fulltext[0] = $hs->parse("$semper[2]");
+    $fulltext[1] = $hs->parse("$semper[3]");
+    $fulltext[0] =~ s/Bug\#\:\n/Bug\#\:/i;
+    $fulltext[0] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[1] =~ s/\n\s{0,}/\n/mg;
+    $fulltext[0] =~ s/\n\n/\n/mg;
+    $fulltext[1] =~ s/\n\n/\n/mg;
+    my $intext  = "@fulltext";
     my @sintext = split( /\n/, $intext );
-    for ( my $lcount = 58 ; $lcount <= @sintext ; $lcount++ ) {
-        chomp( $sintext[$lcount] );
-        $sintext[$lcount] =~ s/\s+/ /mg;
-        next if ( $sintext[$lcount] =~ m/^\s+$/ );
-        next if ( $sintext[$lcount] =~ m/^\n/ );
-        next if ( $sintext[$lcount] =~ m/^\s{0,}\n$/ );
-        last if ( $sintext[$lcount] =~ m/Bugzilla Version/ );
-        print "$sintext[$lcount]\n";
+
+    foreach my $TextLine (@sintext) {
+        chomp($TextLine);
+        $TextLine =~ s/\s+/ /mg;
+        next if ( $TextLine =~ m/^\s+$/ );
+        next if ( $TextLine =~ m/^\n/ );
+        next if ( $TextLine =~ m/^\s{0,}\n$/ );
+        print "$TextLine\n";
         $rowcount++;
 
         if ( $rowcount >= $rows ) {
@@ -400,12 +426,14 @@ sub show_bug {
 }
 
 sub download_attach {
-    my $BUG = shift;
-    use WWW::Mechanize;
-    my $downdir = $config{'downdir'} || "/tmp";
-    my $agent = WWW::Mechanize->new();
-    $agent->get("http://bugs.gentoo.org/show_bug.cgi?id=$BUG");
-    my $TextBody = $agent->content();
+    my $BUG  = shift;
+    my $mech = connect_mech();
+    $mech->submit_form(
+        form_number => 2,
+        fields      => { id => "$BUG", }
+    );
+    my $downdir  = $config{'downdir'} || "/tmp";
+    my $TextBody = $mech->content();
     my @TextBody = split( /\n/, $TextBody );
     my %grabbed  = ();
     foreach my $line (@TextBody) {
@@ -418,7 +446,7 @@ sub download_attach {
 
                 print "  Downloading $down...\n ";
                 my $response =
-                  $agent->mirror( $down, "$downdir/$BUG-attachment-$id" );
+                  $mech->mirror( $down, "$downdir/$BUG-attachment-$id" );
             }
         }
 
@@ -459,7 +487,6 @@ sub clearscreen {
 }
 
 sub new_dev {
-    use WWW::Bugzilla;
 
     # Recreating the form is just fun
     my $bugz = WWW::Bugzilla->new(
@@ -502,7 +529,6 @@ sub new_dev {
 }
 
 sub dev_rel {
-    use WWW::Bugzilla;
 
     # Recreating the form is just fun
     my $bugz = WWW::Bugzilla->new(
@@ -547,7 +573,7 @@ sub dev_rel {
 sub reporter {
 
     my $bugfor = shift;
-    my $mech   = connect_bugz();
+    my $mech   = connect_mech();
 
     $mech->form_number(1);
     $mech->field( 'email1', $bugfor );
@@ -568,7 +594,7 @@ sub reporter {
 sub closed_by {
     my $owner = shift;
     chomp($owner);
-    my $mech = connect_bugz();
+    my $mech = connect_mech();
 
     $mech->form_number(1);
     my @status = ( RESOLVED, VERIFIED, CLOSED );
@@ -596,7 +622,7 @@ sub closed_by {
 sub closed_with {
     my $owner = shift;
     chomp($owner);
-    my $mech = connect_bugz();
+    my $mech = connect_mech();
 
     $mech->form_number(1);
     my @status = ( RESOLVED, VERIFIED, CLOSED );
@@ -621,14 +647,7 @@ sub closed_with {
     display_csv($content);
 }
 
-sub connect_bugz {
-    use WWW::Mechanize;
-    my $mechver = $WWW::Mechanize::VERSION;
-    if ( $mechver <= 1.01 ) {
-        print
-"\n\nbugger requires that you have at least version 1.02 of WWW::Mechanize\nPlease emerge -U WWW-Mechanize before using bugger.\n\n";
-        exit();
-    }
+sub connect_mech {
     my $agent = WWW::Mechanize->new();
     $agent->get("http://bugs.gentoo.org/query.cgi?GoAheadAndLogIn=1");
     $agent->submit_form(
