@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.6 2003/03/08 06:16:07 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/eperl/eperltest.pl,v 1.7 2003/03/08 10:28:14 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later, and all that cruft
 # 
@@ -156,6 +156,7 @@ sub apply_code {
 		next if /\$Header:/;
 		chomp;
 		my $temp = $_;
+		
 		# This dies if it didn't make it to "return 1", ie, $code b0rked
 		eval "$code;return 1;" or die "Couldn't eval $code: $!\n";
 		

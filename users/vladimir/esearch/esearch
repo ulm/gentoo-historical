@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/esearch,v 1.1 2003/03/07 07:46:31 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/esearch,v 1.2 2003/03/08 10:28:14 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 #
@@ -8,8 +8,10 @@
 #
 use strict;
 use File::Find;
+use File::Basename;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long;
+use Time::HiRes qw(time);
 
 ###############################################################################
 #  User prefs
@@ -21,6 +23,7 @@ my $showmasked = '1';
 ###############################################################################
 #  Main
 #
+my $starttime = time;
 Getopt::Long::Configure("no_ignore_case", "bundling");
 GetOptions(
     'help|h|?'		=> sub { &print_usage; exit; },
@@ -60,6 +63,8 @@ else {
 #   as set in /etc/make.conf
 my @ACCEPT_KEYWORDS = split/ /, shift @packages;
 
+# Number of packages matched, for a summary
+my $hitcount = 0;
 
 for (@packages) {
 # Search the DB, line by line
@@ -100,7 +105,7 @@ for (@packages) {
 	
 	# Print keywords in green if accepted, in red otherwise
 	print "[ ";
-	print $keyworks ? GREEN : RED;
+	print $keyworks ? BOLD GREEN : BOLD RED;
 	print $keywords, RESET;
 	print "]\n";
 	
@@ -108,7 +113,14 @@ for (@packages) {
 	print "    Description : $desc\n";
 	print "    Home page   : $homepage", RESET, "\n\n";
 	
+	$hitcount++;
 }
+
+my $bragstring = "Matched $hitcount package"
+  . ($hitcount > 1 ? "s" : "") . " in "
+  . sprintf( "%.3f", (time - $starttime)) . " seconds";
+
+print BOLD YELLOW $bragstring, RESET, "\n\n";
 
 ###############################################################################
 #  Subroutines
@@ -123,17 +135,29 @@ sub get_file {
 }
 
 sub print_usage {
-	print BOLD;
-	print "\nesearch.pl - Lightweight, extremely fast Portage search";
-	print RESET, "\n\n";
+# If you're wondering, give up now
+	my $desc = "Lightweight, extremely fast Portage search";
+	my $usage = "[options] search string";
+	
+	my %options = (
+		"--help|h|?"     => "Display this",
+		"--regex|r"      => "Toggle Perl regular expressions (Default: Off)",
+		"--searchall|S"  => "Toggle search all fields (Default: Off)",
+		"--showmasked|m" => "Toggle showing of masked packages (Default: On)",
+	);	
+	
+	print "\n";
+	print BOLD basename($0), "- $desc", RESET;
+	print "\n\n";
 	print BOLD YELLOW "Usage:", RESET, "\n";
-	print "   esearch.pl [options] search string\n";
+	print "   " . basename($0) . " $usage\n\n";
 	print BOLD YELLOW "Options:", RESET, "\n";
-	print "   --help|h|?		Display this\n";
-	print "   --regex|r		Toggle Perl regular expressions   (Default: Off)\n";
-	print "   --searchall|S	Toggle search all fields          (Default: Off)\n";
-	print "   --showmasked|m	Toggle showing of masked packages ";
-	print "(Default: On)\n\n";
-	print BOLD "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>";
-	print RESET, "\n\n";
+	for (sort keys %options) {
+		print "   $_\t$options{$_}\n";
+	}
+	print "\n";
+	print BOLD "Copyright (c) 2003 Graham Forest <vladimir\@gentoo.org>", RESET;
+	print "\n\n";
+	
+	exit;
 }
