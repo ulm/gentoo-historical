@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.1 2003/03/06 10:12:43 vladimir Exp $
+# $Header: /var/cvsroot/gentoo/users/vladimir/esearch/Attic/edb.pl,v 1.2 2003/03/06 11:36:04 vladimir Exp $
 # Copyright (c) 2003 Graham Forest <vladimir@gentoo.org>
 # Distributed under the GPL v2 or later
 use strict;
@@ -10,6 +10,12 @@ use Term::ANSIColor qw(:constants);
 #  User prefs
 #
 my $PORTDIR = "/usr/portage/";
+my $ARCH = `uname -a`;
+$ARCH = (split/ /, $ARCH)[10];
+
+my ($ACCEPT_KEYWORDS) = grep(/^ACCEPT_KEYWORDS/, get_file("/etc/make.conf"))
+  || "none";
+$ACCEPT_KEYWORDS = $1 if $ACCEPT_KEYWORDS =~ m/^ACCEPT_KEYWORDS="([^"]+)"/;
 
 ###############################################################################
 #  Main - Check &wanted for the real meat
@@ -18,6 +24,10 @@ my $PORTDIR = "/usr/portage/";
 my %done;
 
 open FILE, ">packages.txt";
+
+print FILE "$ARCH $ACCEPT_KEYWORDS\n";
+
+
 find(
 	{ 
 		wanted => \&wanted,
@@ -33,25 +43,37 @@ sub wanted {
 	# We want only proper ebuilds
 	return if m/skel\.ebuild$/ || ! m/\.ebuild$/;
 	my $ebuild = $_;
-	
 	s/^$PORTDIR//;
+	
 	my @chunks = ebuild_path_to_name($_);
+	
+	# Next file if this one has a bad name
+	return if scalar @chunks < 3;
 	
 	unless(defined $done{"$chunks[0]/$chunks[1]"}) {
 		my @contents = get_file($ebuild);
-		print FILE "$chunks[0]/$chunks[1]#";
+		print FILE "$chunks[0]/$chunks[1]\0";
+		my ($desc, $page, $key);
 		for (@contents) {
-			my ($gotdesc, $gotpage);
+			my ($gotdesc, $gotpage, $gotkey);
 			if (m/^DESCRIPTION="([^"]+)"/) {
-				print FILE "$1#";
+				$desc = "$1\0";
 				$gotdesc++;
 			}
 			elsif (m/^HOMEPAGE="([^"]+)"/) {
-				print FILE "$1";
+				$page = "$1\0";
 				$gotpage++;
 			}
-			last if $gotdesc && $gotpage;
+			elsif (m/^KEYWORDS="([^"]+)"/) {
+				$key = " $1 ";
+				$key =~ s/\s+/ /g;
+				$gotkey++;
+			}
+			last if $gotdesc && $gotpage && $gotkey;
 		}
+		print FILE $desc ? $desc : "No description available\0";
+		print FILE $page ? $page : "No home page available\0";
+		print FILE $key  ? $key  : "No KEYWORDS available\0";
 		print FILE "\n";
 	}
 	
@@ -60,7 +82,7 @@ sub wanted {
 }
 
 sub ebuild_path_to_name {
-	return ($1, $2, $3) if $_[0] =~ /^
+	return ($1, $2, $3) if $_[0] =~ m/^
 	([\w0-9-]+)						# Category
 	\/								# Slash
 	([\w0-9+-]+)					# Name
@@ -74,6 +96,7 @@ sub ebuild_path_to_name {
 	)
 	\.ebuild						# Hrmmmm...
 	$/x;
+	print RED "Bad ebuild name:", RESET, "$PORTDIR$_[0] - Ignoring\n";
 	return 0;
 }
 
