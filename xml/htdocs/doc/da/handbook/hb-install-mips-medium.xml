@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-mips-medium.xml,v 1.6 2005/01/09 13:17:04 broeman Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-mips-medium.xml,v 1.7 2005/03/20 21:04:33 broeman Exp $ -->
 
 <sections>
 
-<version>1.4</version>
-<date>2005-01-04</date>
+<version>1.5</version>
+<date>2005-02-14</date>
 
 <section>
 <title>Hardwarekrav</title>
@@ -69,8 +69,8 @@ er en tarbal (komprimeret arkiv), som indeholder et minimalt miljø.
 
 <ul>
 	<li>
-	En stage1-fil indeholder ikke andet end en kompiler, Portage (Gentoos softwarehåndteringssystem)
-    et par pakker, som kompileren eller Portage afhænger af.
+	En stage1-fil indeholder ikke andet end en kompiler (kun C, ingen C++), Portage (Gentoos softwarehåndteringssystem)
+    og et par pakker, som kompileren eller Portage afhænger af.
 	</li>
 	<li>
 	En stage2-fil indeholder en såkaldt bootstrappet system, et minimalt miljø, fra 
@@ -220,10 +220,6 @@ også, hvis du vil installere Gentoo ved brug af præbyggede pakker eller uden e
   <th>-</th>
   <ti>Du kan ikke fin-indstille dit system - det er allerede bygget</ti>
 </tr>
-<tr>
-  <th>-</th>
-  <ti>Du kan ikke blære dig med at have brugt stage1 eller stage2</ti>
-</tr>
 </table>
 
 <p>
@@ -234,67 +230,498 @@ de ny optimeringsindstillinger.
 
 </body>
 </subsection>
-</section>
-<section>
-<title>Net-opstart</title>
 <subsection>
-<title>MIPS Netopstart billedfiler</title>
+<title>Et notat omkring processor-arkitekturer</title>
 <body>
 
 <p>
-I tilfælde hvor dit system har en netværksgrænseflade og en BIOS/ROM-mulighed for at 
-udføre en netboot (PXE), kan du hente et lille system ved opstarten og installere
-videre fra dette system.
+På mange arkitekturer, har processoren gået igennem adskillige generationer, hvor hver
+ny generation bygges på fundamentet af den tidligere.  MIPS er ingen
+undtagelse.  Der er adskillige generationer af CPUer dækket under MIPS-arkitekturen.
+For at vælge dit netboot-billedfil, stage-tarball og
+<c>CFLAGS</c> rigtigt, skal du være klar over hvilken familie, dit systems
+CPU tilhører.  Disse familier er refereret som værende <b>I</b>nstruktions
+<b>S</b>æt <b>A</b>rkitektur.
+</p>
+
+<table>
+   <tr>
+     <th>MIPS ISA</th>
+     <th>32/64-bit</th>
+     <th>CPU dækket</th>
+   </tr>
+   <tr>
+     <ti>MIPS 1</ti>
+     <ti>32-bit</ti>
+     <ti>
+       <uri link="http://www.linux-mips.org/wiki/index.php/R2000">R2000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R2000">R3000</uri>
+     </ti>
+   </tr>
+   <tr>
+     <ti>MIPS 2</ti>
+     <ti>32-bit</ti>
+     <ti>
+       <uri link="http://www.linux-mips.org/wiki/index.php/R6000">R6000</uri>
+     </ti>
+   </tr>
+   <tr>
+     <ti>MIPS 3</ti>
+     <ti>64-bit</ti>
+     <ti>
+       <uri link="http://www.linux-mips.org/wiki/index.php/R4000">R4000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R4000">R4400</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R4000">R4600</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R4000">R4700</uri>
+     </ti>
+   </tr>
+   <tr>
+     <ti>MIPS 4</ti>
+     <ti>64-bit</ti>
+     <ti>
+       <uri link="http://www.linux-mips.org/wiki/index.php/R5000">R5000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R5000">RM5000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/RM7000">RM7000</uri>
+       <uri link="http://www.linux-mips.org/wiki/index.php/R8000">R8000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R10000">R10000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R10000">R12000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R10000">R14000</uri>,
+       <uri link="http://www.linux-mips.org/wiki/index.php/R10000">R16000</uri>
+     </ti>
+   </tr>
+   <tr>
+     <ti>MIPS 5</ti>
+     <ti>64-bit</ti>
+     <ti>
+       Ingen endnu
+     </ti>
+   </tr>
+</table>
+  	 
+<p>
+Også, et andet vigtigt koncept, som du skal tænke over, er konceptet omkring <b>endianness</b>.
+Endianness referer til dne måde din CPU læser ord fra hovedhukommelsen.  Et ord
+kan blive læst som enten en <e>stor</e> endian (mest signifikante bit først) eller
+<e>lille</e> endian (mindst signifikante bit først).  Intel x86-maskiner er
+generelt Lille Endianer, imens Apple og Sparc-maskiner er Store Endianer.  På
+MIPS, kan man vælge imellem dem.  For at separere dem, tilføjer vi <c>el</c> til
+arkitektur-navnet for at erklære Lille Endian.
+</p>
+  	 
+<table>
+   <tr>
+     <th>Arkitektur</th>
+     <th>32/64-bit</th>
+     <th>Endianness</th>
+     <th>Maskiner dækket</th>
+   </tr>
+   <tr>
+     <ti><c>mips</c></ti>
+     <ti>32-bit</ti>
+     <ti>Stor Endian</ti>
+     <ti>Silicon Graphics</ti>
+   </tr>
+   <tr>
+     <ti><c>mipsel</c></ti>
+     <ti>32-bit</ti>
+     <ti>Lille Endian</ti>
+     <ti>DECStations, Cobalt Servers, PlayStation 2</ti>
+   </tr>
+   <tr>
+     <ti><c>mips64</c></ti>
+     <ti>64-bit</ti>
+     <ti>Stor Endian</ti>
+     <ti>Silicon Graphics</ti>
+   </tr>
+   <tr>
+     <ti><c>mips64el</c></ti>
+     <ti>64-bit</ti>
+     <ti>Lille Endian</ti>
+     <ti>Cobalt Servers, PlayStation 2</ti>
+   </tr>
+</table>
+	 
+<p>
+For dem der er interesseret i at lære mere omkring ISAer, kan man læse følgende
+hjemmesider.
+</p>
+  	 
+<ul>
+   <li>
+     <uri link="http://www.linux-mips.org/wiki/index.php/Instruction_Set_Architecture">
+       Linux/MIPS Website: MIPS ISA
+     </uri>
+   </li>
+   <li>
+     <uri link="http://www.linux-mips.org/wiki/index.php/Endianess">
+       Linux/MIPS Website: Endianness
+     </uri>
+   </li>
+   <li>
+     <uri link="http://www.linux-mips.org/wiki/index.php/Processors">
+       Linux/MIPS Website: Processors
+     </uri>
+   </li>
+   <li>
+     <uri link="http://en.wikipedia.org/wiki/Instruction_set">
+       Wikipedia: Instruction Set
+     </uri>
+   </li>
+</ul>
+  	 
+</body>
+</subsection>
+</section>
+<section>
+<title>Net-opstart oversigt</title>
+<subsection>
+<body>
+
+<p>
+I denne sektion, dækker vi hvad du manger for at opstarte via net-opstart på en
+Silicon Graphics arbejdsstation eller Cobalt Servere. Dette er kun en overfladisk
+vejledning, den er ikke ment som at være gennemgående. For flere informationer, bør
+du læse <uri link="/doc/da/diskless-howto.xml">Diskfri HOWTO</uri>.
 </p>
 
 <p>
-Du bør allerede have en fungerende DHCP- og TFTP-server. Informationer om at opsætte en
-<uri link="/doc/da/diskless-howto.xml#doc_chap3">DHCP-server</uri> og en
-<uri link="/doc/da/diskless-howto.xml#doc_chap4">TFTP-server</uri> er tilgængelig i
-<uri link="/doc/da/diskless-howto.xml">Diskfri HOWTO</uri>-dokumentet.
+Hvad du får brug for: Afhængigt af din maskine, er der nogle hardwarekrav, som
+du skal have opfyldt for at kunne net-opstarte og installere Linux.
+</p>
+
+<ul>
+	<li>
+     Generelt:
+     <ul>
+	   <li>DHCP/BOOTP server (ISC DHCPd anbefalet)</li>
+       <li>Tålmodighed -- og rigtigt meget af det</li>
+     </ul>
+   </li>
+   <li>
+     Til Silicon Graphics arbejdsstationer:
+     <ul>
+       <li>TFTP server (tftp-hpa anbefalet)</li>
+       <li>
+         Hvis du ønsker/behøver at bruge en seriel konsol:
+         <ul>
+           <li>MiniDIN8 --&gt; RS-232 serial cable</li>
+           <li>Null-modem cable</li>
+           <li>VT100 or ANSI compatable terminal capable of 9600 baud</li>
+         </ul>
+       </li>
+     </ul>
+   </li>
+   <li>
+     Til Cobalt Servere (IKKE den originale Qube):
+     <ul>
+       <li>NFS-server</li>
+       <li>Null-modem kabel</li>
+       <li>VT100 eller ANSI-kompatibel terminal, som har mulighed for 115200 baud</li>
+     </ul>
+   </li>
+</ul>
+
+<note>
+SGI-maskiner bruger en MiniDIN 8-connector til de serielle porte. Åbenbart virker Apples
+modemkabler fint som serielle kabler, men da Apple-maskiner er udstyret med
+med USB &amp; interne modemer, er disse blevet svære at finde.
+Et antal af sider beskriver hvordan man laver disse kabler (Google er din ven).
+Den følgende side beskriver hvordan man laver sådan et kabel. Den er på tysk,
+men har et rimeligt godt diagram.
+<uri link="http://www.arbeitsplatzvernichtung-durch-outsourcing.de/marty44/sgihard.html">
+http://www.arbeitsplatzvernichtung-durch-outsourcing.de/marty44/sgihard.html
+</uri>
+</note>
+  	 
+<note>
+Til terminalen, kunne det være en rigtig VT100/ANSI terminal eller det kunne være en PC,
+som kører terminal-emulationssoftware (f.eks. HyperTerminal, Minicom, seyon,
+Telex, xc, screen -- eller hvad din yndlingsterminal hedder).  Det betyder ikke noget, hvilken platform
+denne maskine kører -- så længe den har en RS-232 serielport, som du kan bruge og det
+tilhørende software.
+</note>
+  	 
+<note>
+Noter at denne vejlening dækker IKKE den originale Qube.  Den originale Qube server
+mangler en seriel port på standardopsætningen, og det er derfor ikke muligt
+at installere Gentoo på den, uden brug af en skruetrækker og en
+stedfortrædende maskine for at udføre installationen.
+Den følgende side har en vejledning i at installere Gentoo på disse maskiner.
+<uri link="http://www.metzner.org/projects/qube/">
+http://www.metzner.org/projects/qube/
+</uri>
+
+</note>
+</body>
+</subsection>
+<subsection>
+<title>Opstart af TFTP og DHCP -- en kort vejledning</title>
+<body>
+
+<p>
+Okay, så du har fået de forskellige ting gjort op, og du er klar til at opsætte alt. Som
+tidligere nævnt -- dette er ikke en komplet vejledning, det er en bare-bone opsætning,
+som får ting til at køre. Du kan enten bruge dette når du starter en opsætning op fra
+begyndelsen af, eller bruge det til at tilføje mulighederne til din eksisterende opsætning, for
+at understøtte net-opstart.
 </p>
 
 <p>
-Afhængigt at din opsætning vil du nok oprette eller hente en kerne-billedfil til dit system.
+Serverne behøves ikke nødvendigvis at køre Gentoo Linux, du kunne sagtens med grund bruge
+FreeBSD eller en anden Unix-lignende platform. Dog, denne vejledning forudsætter at du kører
+Gentoo Linux. Du kan også køre TFTP/NFS på en separat maskine til DHCP-serveren, hvis ønsket.
+</p>
+
+<p>
+Første trin -- opsætning af DHCP. For at få ISC DHCP-daemonen til at svare til BOOTP-svar
+(som krævet af SGI &amp; Cobalt BOOTROM), skal du først aktivere dynamic BOOTP på
+gruppen af adresser, som skal bruges; og derefter opsætte et punkt for hver klient med
+pointere til boot-billedfilen.
+</p>
+
+<pre caption="Installation af ISCs DHCP">
+# <i>emerge dhcp</i>
+</pre>
+
+<p>
+Når det er installeret, skal du oprette <path>/etc/dhcp/dhcpd.conf</path>. Her er 
+en bare-bone opsætning, som hjælper dig med at starte.
+</p>
+
+<pre caption="Bare-bone dhcpd.conf">
+<comment># Fortæl dhcpd at deaktivere dynamisk DNS.</comment>
+<comment># dhcpd vil nægte at starte uden dette.</comment>
+ddns-update-style none;
+  	 
+<comment># Oprettelse af et subnet:</comment>
+subnet <i>192.168.10.0</i> netmask <i>255.255.255.0</i> {
+<comment># Address-mængden til vores boot-klienter.  Glem ikke 'dynamic-bootp' delen!</comment>
+  pool {
+   range dynamic-bootp <i>192.168.10.1 192.168.10.254</i>;
+  }
+  	 
+<comment># DNS servere og standard gateway -- erstat så det passer til dig</comment>
+  option domain-name-servers <i>203.1.72.96</i>, <i>202.47.56.17</i>;
+  option routers <i>192.168.10.1</i>;
+  	 
+<comment># Fortæl DHCP-serveren at den har magten over dette subnet.</comment>
+  authoritative;
+ 	 
+<comment># Tillad BOOTP at blive brugt til dette subnet.</comment>
+  allow bootp;
+}
+</pre>
+
+<p>
+Med sådan en opsætning, kan en tilføje et antal klienter indenfor subnet-klausulen. Vi
+vil dække hvad du mangler at putte ind senere i denne vejledning.
+</p>
+
+<p>
+Næste trin -- opsætning af TFTP-server. For meningen af denne vejledning, vil jeg
+begrænse dette til tftp-hpa TFTP-daemonen. Jeg bruger dette selv på SGI-maskiner,
+Cobalt Servere og PXE-klienter uden problemer. Installation og opsætning er ligefrem:
+</p>
+
+<pre caption="Installation af tftp-hpa">
+# <i>emerge net-ftp/tftp-hpa</i>
+</pre>
+  	 
+<p>
+Nu ville jeg personligt flytte min <path>/tftpboot</path>-folder til
+<path>/home</path>, hvor jeg har mere plads.  Dette er helt valgfrit, og kan blive
+opsat igennem <path>/etc/conf.d/in.tftpd</path>-filen.  For meningen af denne
+vejledning, forudsætter jeg at du har lagt den på standard-placeringen.
+</p>
+  	 
+<p>
+Nu da alt er opsat, er du klar til at starte på det sjove --
+skrædersy vores opsætning til at tilpasse maskinen, som vi ønsker at net-opstarte.
 </p>
 
 </body>
 </subsection>
+</section>
+<section>
+<title>Netopstart på SGI arbejdsstationer</title>
 <subsection>
-<title>Netopstart af et MIPS-system</title>
+<title>Hentning af net-opstart billedfil</title>
 <body>
 
 <p>
-For at kunne installere Gentoo, burde billedfilen, som du hentede fra TFTP-serveren,
-levere de nødvendige værktøjer til at lave filsystemer, lave og mounte partitioner,
-udpakke en tarball og chroot. Du kan hente eksisterende netopstartsbilledfiler, som
-har alle værktøjer i dem...
+Afhængigt af dit system, som du installerer for, er der flere forskellige mulige billedfiler 
+tilgængelig til dit system. Disse er navngivet efter systemtype og CPU, som de er bygget til.
+Disse maskiner er som følgende:
 </p>
 
-<p>
-Hent først én af de mulige netopstartsbilledfiler fra en af vores <uri link="main/en/mirrors.xml">
-filspejle</uri>. Netstart-billedfilerne er placeret i <path>experimental/mips/netboot</path>-folderen.
-</p>
+<table>
+  	   <tr>
+  	     <th>Kodenavn</th>
+  	     <th>Maskiner</th>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP22</ti>
+  	     <ti>Indy, *Indigo 2, **Challenge S</ti>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP26</ti>
+  	     <ti>*Indigo 2 Power</ti>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP27</ti>
+  	     <ti>Origin 200, Origin 2000</ti>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP28</ti>
+  	     <ti>*Indigo 2 Impact</ti>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP30</ti>
+  	     <ti>Octane</ti>
+  	   </tr>
+  	   <tr>
+  	     <ti>IP32</ti>
+  	     <ti>O2</ti>
+  	   </tr>
+  	 </table>
+  	 
+  	 <note>
+  	 * Det er en typisk fejltagelse at tage fejl af IRIS Indigo (IP12 w/ R3000 CPU or IP20 w/
+  	 R4000 CPU, ingen af dem kan køre Linux), Indigo 2 (IP22, som kører
+  	 Linux fint), den R8000-baserede Indigo 2 Power (som ikke kører Linux overhovedet) og
+  	 den R10000-baserede Indigo 2 Impact (IP28, som er meget eksperimental).
+  	 Tænk venligst på at disse maskiner er vidt forskellige.
+  	 </note>
+  	 
+  	 <note>
+  	 ** På Challenge S, er UTP-netværksporten hængt af et WD33C95 SCSI
+  	 kort, som på nuværende tidspunkt ikke er understøttet i Linux.  Selvfølgelig er dette en begrænsning,
+  	 så du bliver nødt til at bruge en AUI--&gt;UTP transceiver tilsluttet til AUI-porten.
+     </note>
 
 <p>
-Opsæt nu din DHCP-server til at sende denne fil til en startende klient. SGI-maskiner
-kræver dog nogle mindre fin-indstillinger til værten, for at TFTP kan
-virke ordentligt:
+Også, i filnavnet, refererer r4k til R4000-series processorer, r5k til R5000,
+rm5k til RM5200 og r10k til R10000. Du vil finde billedfilerne på
+<uri link="http://dev.gentoo.org/~kumba/mips/netboot">
+http://dev.gentoo.org/~kumba/mips/netboot.
+</uri>
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>DHCP-opsætning på en SGI-klient</title>
+<body>
+
+<p>
+Når du har hentet filen, placer den bare i din
+<path>/tftpboot</path>-folder. Så rediger din
+<path>/etc/dhcp/dhcpd.conf</path> og tilføj et punkt
+for din SGI-klient.
+</p>
+
+<note>
+Du bliver måske nød til at oprette <path>/tftpboot</path>-folder, hvis den
+ikke allerede er der.
+</note>
+
+<pre caption="dhcpd.conf udklip til SGI arbejdsstation">
+subnet xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx {
+<comment># ... de typiske ting her ...</comment>
+
+<comment># SGI arbejdsstation... ændre 'sgi' til din SGI-maskines værtsnavn.</comment>
+host <i>sgi</i> {
+  	 
+    <comment># MAC-adresse på SGI-maskinen.  Normalt er den skrevet på bagsiden eller</comment>
+    <comment># ovenpå maskinen.</comment>
+    hardware ethernet <i>08:00:69:08:db:77</i>;
+  	 
+    <comment># TFTP-server til at hente fra (som standard, det samme som DHCP-serveren)</comment>
+    next-server <i>192.168.10.1</i>;
+  	 
+    <comment># IP-adresse som gives til SGI-maskine</comment>
+    fixed-address <i>192.168.10.3</i>;
+  	 
+    <comment># Filnavn til PROMen til at hente og starte</comment>
+    filename "<i>/gentoo-r4k.img</i>";
+   }
+}
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Kerne-valgmuligheder</title>
+<body>
+
+<p>
+Vi er snart færdig, men der er nogle få små-ændringer, som stadigvæk skal gøres. Start
+en konsol med root-rettigheder og indtast følgende kommandoer.
 </p>
 
 <pre caption="Nogle reparationer til SGI-maskiner for at TFTP kan virke ordentligt">
 <comment>(Deaktiver "Path Maximum Transfer Unit", ellers vil SGI Prom ikke kernen)</comment>
 # <i>echo 1 &gt; /proc/sys/net/ipv4/ip_no_pmtu_disc</i>
+
 <comment>(Indstil port-omfanget, som kan bruges af SGI Prom)</comment>
 # <i>echo "2048 32767" &gt; /proc/sys/net/ipv4/ip_local_port_range</i>
 </pre>
 
 <p>
-Tænd nu for din maskine, kom ind til PROM-monitor og udfør kommandoen til
-at starte en kerne over netværk:
+Det bør være nok for at tillade Linux-serveren at lege med SGis PROM
+</p>
+</body>
+</subsection>
+<subsection>
+<title>Start din daemons...</title>
+<body>
+
+<p>
+Ved dette sted, bør du allerede være klar til at starte daemons.  Indtast følgende:
+</p>
+  	 
+<pre caption="Start af DHCP- og TFTP-daemons">
+# <i>/etc/init.d/dhcp start</i>
+# <i>/etc/init.d/in.tftpd start</i>
+</pre>
+  	 
+<p>
+Hvis intet gik galt i det sidste trin, skulle du være klar til at tænde for
+arbejdsstationen og fortsætte med denne vejledning.  Hvis DHCP-serveren ikke starter op, pga.
+et eller andet, prøv at kør 'dhcpd' i kommandolinien og se hvad den fortæller
+dig -- hvis alt er ok, bør den bare skubbe sig i baggrunden, ellers vil du
+se 'exiting.' lige under dens klagen.
 </p>
 
-<pre caption="Netopstart af MIPS">
+<p>
+En nem metode at verificere om tftp-daemonen kører, er ved at taste følgende kommando --
+hvis du ser noget lignende det output nedenfor er alt i orden.
+</p>
+
+<pre caption="Tjek om TFTPd kører">
+# <i>netstat -al | grep ^udp</i>
+udp        0      0 *:bootpc                *:*
+udp        0      0 *:631                   *:*
+udp        0      0 *:xdmcp                 *:*
+udp        0      0 *:tftp                  *:* <comment>&lt;-- (look for this line)</comment>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Netboot af SGI-maskinen</title>
+<body>
+  	 
+<p>
+Okay, alt er klar nu, DHCP kører, ligeså gør TFTP. Nu er tid til at fyre op for
+SGI-maskinen. Tænd enheden -- når du ser "Running power-on diagnostics" på skærmen,
+klik enten "Stop For Maintenance" eller tryk ESCAPE. Du vil nu blive præsenteret
+med en menu som følgende. Indtast kommandoerne vist nedenfor.
+</p>
+
+<pre caption="SGI PROM Maintenance Menu">
         Running power-on diagnostics
 
 System Maintenance Menu
@@ -310,35 +737,76 @@ Command Monitor. Type "exit" to return to the menu.
 &gt;&gt; <i>bootp(): root=/dev/ram0</i>
 </pre>
 
-<note>
-Du bliver måske nødt til at trykke Esc-tasten for at komme til ovenstående menu, ellers vil
-systemet prøve at starte systemet direkte. 
-</note>
+<p>
+Fra dette punkt, bør maskinen starte med at hente billedfilen, og så, efter
+ca. 20 sekunder, starte Linux. Hvis alt er vel, bør du være smidt af ved
+Busybox <c>ash</c>-skallen (shell) som vist forneden, hvor du kan gå videre
+til <uri link="?part=1&amp;chap=3">Opsæting af dit netværk</uri>.
+</p>
+
+<pre caption="When things are going right...">
+init started:  BusyBox v1.00-pre10 (2004.04.27-02:55+0000) multi-call binary
+ 	 
+Gentoo Linux; http://www.gentoo.org/
+ Copyright 2001-2004 Gentoo Technologies, Inc.; Distributed under the GPL
+	 
+Gentoo/MIPS Netboot for Silicon Graphics Machines
+ Build Date: April 26th, 2004
+ 	 
+ * To configure networking, do the following:
+ 
+ * For Static IP:
+ * /bin/net-setup &lt;IP Address&gt; &lt;Gateway Address&gt; [telnet]
+ 	 
+ * For Dynamic IP:
+ * /bin/net-setup dhcp [telnet]
+  	 
+ * If you would like a telnetd daemon loaded as well, pass "telnet"
+ * As the final argument to /bin/net-setup.
+  	 
+Please press Enter to activate this console.
+</pre>
+  	 
+</body>
+</subsection>
+<subsection>
+<title>Fejlfinding</title>
+<body>
 
 <p>
-Nogen gange er netopstart ikke nemt at arbejde med. Følgende
-PROM-kommandoer nedenfor kan måske hjælpe, men det er ikke
-garanteret. Hvis din maskine nægter at net-opstarte, dobbeltjek alle
-tinge på værten, TFTP-maskinen, for at være sikker på at:
+Hvis maskinen er stædig og nægter at hente dens billedfil, kan det være en af
+to ting, (1) du har lavet en bommert et eller andet sted eller (2) den mangler
+en kærlig hentydning (nej, læg den forhammer ned!). Her er en liste over småting
+du kan kigge på:
 </p>
 
 <ul>
-  <li>dhcpd giver SGI-maskinen en IP-adresse</li>
   <li>
-    rettighederne er indstillet korrekt i din tftp-bibliotek (typisk 
-    <path>/tftpboot</path>)
+    dhcpd giver SGI-maskinen en IP-adresse. Du bør se nogle beskeder
+    omkring en BOOTP-request i systemlog. <c>tcpdump</c> er også
+    brugbar her.  
   </li>
   <li>
-    tjek system-logfilerne for at se hvad tftp-serveren rapporterer (måske
+    Rettighederne er indstillet korrekt i din tftp-bibliotek (typisk 
+    <path>/tftpboot</path> -- den skal være globalt læsbar)
+  </li>
+  <li>
+    Tjek system-logfilerne for at se hvad tftp-serveren rapporterer (måske
     fejl)
   </li>
+<!-- Jeg tror at den her kan smutte ...
   <li>
-    bed til en Tux-plysbjørn (dette vil måske eller måske ikke virke, men det er ikke en officiel
+    Bed til en Tux-plysbjørn (dette vil måske eller måske ikke virke, men det er ikke en officiel
     understøttet fejlfindingsteknik)
-  </li>
+  </li> -->
 </ul>
 
-<pre caption="Net-opstart tricks">
+<p>
+Hvis du har kigget alt på serveren, og du får timeouts osv. på SGI-maskinen,
+prøv at indtaste følgende i konsollen.
+</p>
+
+<pre caption="Klyt med SGI PROM for at virke">
 &gt;&gt; <i>resetenv</i>
 &gt;&gt; <i>unsetenv netaddr</i>
 &gt;&gt; <i>unsetenv dlserver</i>
@@ -346,13 +814,443 @@ tinge på værten, TFTP-maskinen, for at være sikker på at:
 &gt;&gt; <i>bootp(): root=/dev/ram0</i>
 </pre>
 
+</body>
+</subsection>
+</section>
+  	 
+<section>
+<title>Net-opstart på Cobalt-servere</title>
+<subsection>
+<body>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>Oversigt over net-opstartsproceduren</title>
+<body>
+  	 
 <p>
-Hvis alt dette går, så er du nu smidt af på busybox' <c>ash</c> skal (shell). Du
-kan nu fortsætte med <uri link="?part=1&amp;chap=3">Opsætning af dit
-netværk</uri>.
+I modsætning til SGI-maskiner, bruger Cobalt-server NFS til at overføre deres kerne til
+opstart. Du starter maskinen ved at holde højre &amp; venstre pil-taster
+nede, imens du tænder for enheden. Maskinen vil så prøve at opnå en
+IP-adresse via BOOTP, mounte <path>/nfsroot</path>-folderen fra serveren via
+NFS og så prøve at hente og starte filen <path>vmlinux_raq-2800.gz</path>,
+som den forudsætter at være en standard ELF-binær.
+</p>
+
+<p>
+Desværre tillader Cobalt BOOTROM os ikke have noget at sige i denne procedure,
+så filen SKAL være placeret i <path>/nfsroot</path>-folder, og den skal være mindre
+end 675 KB i størrelse.  I denne vejledning, vil vi opsætte
+<uri link="http://www.colonel-panic.org/cobalt-mips/">CoLo</uri> for at tillade os at
+starte større kerner, over dens begrænsning. CoLo understøtter også embedded ramdiske,
+og derfor befrier den til behovet for et fuldt rod-filsystem, placeret i
+<path>/nfsroot</path>.
 </p>
 
 </body>
 </subsection>
+
+<subsection>
+<title>Hente en Netboot-billedfil</title>
+<body>
+  	 
+<p>
+Inden i
+<uri link="http://dev.gentoo.org/~kumba/mips/cobalt/netboot/">
+http://dev.gentoo.org/~kumba/mips/cobalt/netboot/</uri>
+vil du finde de nødvendige opstartsbilledfiler, til at opsætte en Cobalt
+og få den til at køre. Filerne, som du behøver, vil være navngivet
+<path>cobalt-netboot-YYYYMMDD.img.gz</path> -- vælg den nyeste og
+placer den i din <path>/nfsroot</path>-folder. For at gøre det nemt, omdøb
+filen til <path>gentoo-cobalt.img.gz</path> -- Jeg vil forudsætte at du har gjort
+dette.
+</p>
+  	 
+<p>
+Når dette er gjort, gå videre med
+<uri link="http://www.colonel-panic.org/cobalt-mips/">
+http://www.colonel-panic.org/cobalt-mips/</uri> og
+hent den nyeste udgivelse af CoLo-boot-loaderen.  Untar denne et sted
+nemt. Inden i <path>colo-1.XX/binaries</path>-folderen, som er oprettet,
+bør du finde den under en fil, kaldet <path>colo-chain.elf</path>.  Gzip denne
+fil og placer den i <path>/nfsroot</path>, ved at kalde den
+<path>vmlinux_raq-2800.gz</path>. Du kan gøre dette på én gang, ved at bruge
+disse kommandoer:
+</p>
+  	 
+<pre caption="Indsætte CoLo i nfsroot">
+# <i>tar -xzvf colo-1.XX.tar.gz</i>
+# <i>cd colo-1.XX/binaries</i>
+# <i>gzip -9vc colo-chain.elf &gt; /nfsroot/vmlinux_raq-2800.gz</i>
+</pre>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>Opsætning af NFS-server</title>
+<body>
+  	 
+<p>
+Siden maskinen bruger NFS til at hente dens billedfil, vil du få brug for at eksportere
+<path>/nfsroot</path> på din server.  Hvis du ikke allerede har gjort sdådan, vil du
+få brug for at installere net-fs/nfs-utils-pakken.
+</p>
+
+<pre caption="Installation af nfs-utils">
+# <i>emerge net-fs/nfs-utils</i>
+</pre>
+  	 
+<p>
+Når dette er gjort, placer det følgende i din <path>/etc/exports</path>-fil.
+Du kan sætte hårdere restriktioner, hvis du ønsker.
+</p>
+  	 
+<pre caption="Export af /nfsroot-folderen">
+/nfsroot      *(ro,sync)
+</pre>
+  	 
+<p>
+Nu, da dette er gjort, kan du starte NFS-serveren:
+</p>
+  	 
+<pre caption="Start af NFS-serveren">
+# <i>/etc/init.d/nfs start</i>
+</pre>
+  	 
+<p>
+Hvis NFS-serveren allerede kørte på tidspunktet, kan du fortælle den at kigge
+en gang til på dens <c>exports</c>-fil, ved at bruge <c>exportfs</c>.
+</p>
+  	 
+<pre caption="Export af nyt filsystem">
+# <i>exportfs -av</i>
+</pre>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>DHCP-opsætning for en Cobalt-maskine</title>
+<body>
+  	 
+<p>
+Nu er DHCP-siden af tingene relativt ligefrem. Tilføj følgende
+til din <path>/etc/dhcp/dhcpd.conf</path>-fil.
+</p>
+  	 
+<pre caption="dhcpd.conf udkast til Cobalt server">
+subnet xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx {
+  <comment># ... det typiske her ...</comment>
+ 	 
+  <comment># Opsætning af en Cobalt-server</comment>
+  <comment># Indstil værtsnavnet her:</comment>
+  host <i>qube</i> {
+   <comment># Sti til nfsroot-folderen.</comment>
+   <comment># Dette er mest kun til når man bruger TFTP-opstartsvalgmuligheden til CoLo</comment>
+   option root-path "/nfsroot";
+  	 
+   <comment># Cobalt-servers ethernet MAC-adresse</comment>
+   hardware ethernet <i>00:10:e0:00:86:3d</i>;
+  	 
+   <comment># Server til at hente billedfil fra</comment>
+   next-server <i>192.168.10.1</i>;
+ 	 
+   <comment># IP-adresse for cobalt-serveren</comment>
+   fixed-address <i>192.168.10.2</i>;
+  	 
+   <comment># Billefil til at hente</comment>
+   <comment># Igen, dette har mere at gøre med CoLo</comment>
+   filename "<i>gentoo-cobalt.img.gz</i>";
+   }
+}
+</pre>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>Start dine daemoner...</title>
+<body>
+  	 
+<p>
+På dette tidspunkt bør du være klar til at starte daemonerne. Indtast følgende:
+</p>
+  	 
+<pre caption="Start af DHCP- og NFS-daemoner">
+# <i>/etc/init.d/dhcp start</i>
+# <i>/etc/init.d/nfs start</i>
+</pre>
+  	 
+<p>
+Hvis ingenting gik galt i sidste trin, bør du være klar til at opstarte din
+arbejdsstation og fortsætte med denne vejledning. Hvis DHCP-serveren ikke er fyret op for en
+eller anden grund, prøv at køre 'dhcpd' på kommandolinien og se hvad den fortæller
+dig -- hvis alt er i orden, bør den forsvinde ind i baggrunden, ellers vil du se
+'exiting.' nedenunder dens klagen.
+</p>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>Netopstart af Cobalt-maskinen</title>
+<body>
+  	 
+<p>
+Okay, alt er klart, DHCP kører, og det gør NFS også. Nu er der tid til at fyre op for
+Cobalt-maskinen. Forbind dit null-modem-kabel, og opsæt den serielle terminal
+til at bruge 115200 baud, 8 bits, ingen paritet, 1 stop bit, VT100 emulation. Når dette
+er gjort, hold højre &amp; venstre piltaster nede, imens du tænder for
+enheden.
+</p>
+  	 
+<p>
+Hvis alt er i orden, vil bag-panelet viser "Net Booting" og du bør
+kunne se noget netværksaktivitet, forfulgt tæt af at CoLo går i gang.  På bag-panelet
+scroll ned i menuen, til du ser "Boot Shell" og tast ENTER.  På den
+serielle konsol, bør du være kommet til en prompt, som vist nedenfor.
+</p>
+  	 
+<pre caption="CoLo starter til en prompt">
+[ "CoLo" v1.13 ]
+stage2: 87fb0000-88000000
+pci: unit type &lt;Qube2&gt;
+tulip: {00:10:e0:00:86:3d}
+ide: resetting
+boot: running boot menu
+&gt;
+</pre>
+  	 
+<p>
+Første trin, fortæl maskinen at hente en adresse via DHCP.  Tast <c>dhcp</c> ved
+prompten.
+</p>
+  	 
+<pre caption="Fangst af en adresse via DHCP">
+&gt; <i>dhcp</i>
+net: interface up
+dhcp: DISCOVER
+dhcp: OFFER 10.0.0.1 &lt;-- 192.168.10.254
+dhcp: REQUEST
+arp: sent request for 192.168.10.254
+udp: no matching socket 192.168.5.1:67 --&gt; 10.0.0.1:68
+arp: resolved 192.168.10.254
+udp: no matching socket 192.168.5.1:67 --&gt; 10.0.0.1:68
+dhcp: DISCOVER
+dhcp: OFFER 10.0.0.1 &lt;-- 192.168.10.254
+dhcp: REQUEST
+udp: no matching socket 192.168.5.1:67 --&gt; 10.0.0.1:68
+dhcp: ACK
+net: interface down
+net: interface up
+  address     10.0.0.1
+  netmask     255.255.255.0
+  gateway     10.0.0.254
+  name server 192.168.5.1
+</pre>
+  	 
+<p>
+NOTAT: Hvis du har et Windows-netværk, vil du se beskeder som f.eks.
+<c>udp: no matching socket</c>. Det er i respons til netværksafsendelser på
+porte, som CoLo ikke kan forstå. Selvom de er meget irriterende, er de helt
+harmløse.
+</p>
+  	 
+<pre caption="'no matching socket' fejlbeskeder">
+udp: no matching socket 10.0.0.254:138 --&gt; 10.0.0.255:138
+udp: no matching socket 10.0.0.254:138 --&gt; 10.0.0.255:138
+udp: no matching socket 10.0.0.253:1062 --&gt; 10.0.0.255:137
+udp: no matching socket 10.0.0.253:1062 --&gt; 10.0.0.255:137
+</pre>
+  	 
+<p>
+Okay, næste trin er at fortælle Cobalt-serveren at hente dens kerne.
+</p>
+  	 
+<pre caption="Hentning af kernen">
+&gt; <i>nfs 10.0.0.254 /nfsroot gentoo.img.gz</i>
+arp: sent request for 10.0.0.254
+arp: resolved 10.0.0.254
+udp: no matching socket 10.0.0.253:1062 --&gt; 10.0.0.255:137
+nfs: mounted "/nfsroot"
+nfs: lookup "gentoo.img.gz"
+nfs: mode &lt;0100644&gt;
+4651KB loaded (1240KB/sec)
+0048ada0 4763040t
+</pre>
+  	 
+<p>
+Og det var det... den har nu hentet sin kerne, og vi kan fortælle den at gå i gang med
+opstarten.
+</p>
+  	 
+<pre caption="Opstart af kernen">
+&gt; <i>execute</i>
+elf: 80080000 &lt;-- 00001000 6586368t + 192624t
+elf: entry 80328040
+net: interface down
+CPU revision is: 000028a0
+FPU revision is: 000028a0
+Primary instruction cache 32kB, physically tagged, 2-way, linesize 32 bytes.
+Primary data cache 32kB 2-way, linesize 32 bytes.
+Linux version 2.4.26-mipscvs-20040415 (root@khazad-dum) (gcc version 3.3.3...
+Determined physical RAM map:
+ memory: 08000000 @ 00000000 (usable)
+Initial ramdisk at: 0x80392000 (3366912 bytes)
+On node 0 totalpages: 32768
+zone(0): 32768 pages.
+zone(1): 0 pages.
+zone(2): 0 pages.
+Kernel command line: console=ttyS0,115200 root=/dev/ram0
+Calibrating delay loop... 249.85 BogoMIPS
+Memory: 122512k/131072k available (2708k kernel code, 8560k reserved, 3424k dat)
+</pre>
+  	 
+<p>
+Hvis alt er i orden, bør du blive afsat ved
+Busyboxens <c>ash</c>-shell, som vist nedenfor, hvor du kan gå videre med
+<uri link="?part=1&amp;chap=3">Opsætning af dit netværk</uri>.
+</p>
+  	 
+<pre caption="Når ting gør den rigtige vej...">
+VFS: Mounted root (ext2 filesystem) readonly.
+Freeing unused kernel memory: 280k freed
+init started:  BusyBox v1.00-pre10 (2004.04.27-02:55+0000) multi-call binary
+  	 
+Gentoo Linux; http://www.gentoo.org/
+ Copyright 2001-2004 Gentoo Technologies, Inc.; Distributed under the GPL
+  	 
+ Gentoo/MIPS Netboot for Cobalt Microserver Machines
+ Build Date: April 26th, 2004
+  	 
+ * To configure networking, do the following:
+  	 
+ * For Static IP:
+ * /bin/net-setup &lt;IP Address&gt; &lt;Gateway Address&gt; [telnet]
+  	 
+ * For Dynamic IP:
+ * /bin/net-setup dhcp [telnet]
+  	 
+ * If you would like a telnetd daemon loaded as well, pass "telnet"
+ * As the final argument to /bin/net-setup.
+  	 
+ Please press Enter to activate this console.
+</pre>
+  	 
+</body>
+</subsection>
+  	 
+<subsection>
+<title>Fejlfinding</title>
+<body>
+  	 
+<p>
+Hvis maskinen er stædig og nægter at hente dens billedfil, kan det være en af
+to ting, (1) du har lavet en bommert et eller andet sted eller (2) den mangler
+en kærlig hentydning (nej, læg den forhammer ned!). Her er en liste over småting
+du kan kigge på:
+</p>
+
+<ul>
+  <li>
+    dhcpd giver Cobalt-maskinen en IP-adresse. Du bør se nogle beskeder
+    omkring en BOOTP-request i systemlog. <c>tcpdump</c> er også
+    brugbar her.  
+  </li>
+  <li>
+    Rettighederne er indstillet korrekt i din <path>/nfsroot</path>-folder 
+    (den skal være globalt læsbar)
+  </li>
+  <li>
+    Vær sikker på at NFS-serveren kører og eksportere <path>/nfsroot</path>-folderen.
+    Tjek dette ved at bruge <c>exportfs -v</c> på serveren.
+  </li>
+</ul>
+  	 
+</body>
+</subsection>
 </section>
+ 
+<!--
+Commented Out Until Further Notice
+  	 
+<section>
+<title>Gentoo/MIPS LiveCD</title>
+<subsection>
+<title>Overview</title>
+<body>
+  	 
+<p>
+On Silicon Graphics machines, it is possible to boot from a CD in order to
+install operating systems.  (This is how one installs IRIX for instance)
+Recently, images for such bootable CDs to install Gentoo have been made
+possible.  These CDs are designed to work in the same way.
+</p>
+  	 
+<p>
+At the moment the Gentoo/MIPS Live CD will only work on the SGI Indy,
+Indigo 2 and O2 workstations equipped with R4000 and R5000-series CPUs, however
+other platforms may be possible in future.
+</p>
+  	 
+<p>
+You can find the Live CD images for download on your favourite Gentoo Mirror
+under the <path>experimental/mips/livecd</path> directory.
+</p>
+  	 
+<warn>
+These CDs are highly experimental at this time.  They may or may not work at
+this time.  You can report success or failures either on
+<uri link="http://bugs.gentoo.org">Bugzilla</uri>,
+<uri link="http://forums.gentoo.org/viewtopic.php?t=242518">this forum
+thread</uri> or in the <c>#gentoo-mips</c>
+<uri link="http://www.gentoo.org/main/en/irc.xml">IRC channel</uri>.  We would
+love to hear from you.
+</warn>
+  	 
+</body>
+  	 
+</subsection>
+  	 
+<subsection>
+<title>Burning a Live CD</title>
+<body>
+  	 
+  	 <p>
+  	 An important thing to note, the SGI PROM does not understand the ISO9660 format,
+  	 nor does it know anything about the El Torito boot standard.  These CD images
+  	 are constructed as a SGI disklabel with the boot image in the volume header like
+  	 a hard drive.  Therefore, care must be taken when burning the CD image.
+  	 </p>
+  	 
+  	 <p>
+  	 Below is an example command that assumes 24x burning speed on an IDE burner.  If
+  	 you have a SCSI burner for instance, you may want to adjust the <c>dev</c>
+  	 statement as appropriate.  Likewise with the <c>speed</c> option - if you
+  	 strike troubles, you might want to try dropping the speed.
+  	 </p>
+  	 
+  	 <pre caption="Burning using cdrecord">
+  	 # <i>bzip2 -d mips-livecd-prototype-rc2-20041027.img.bz2</i>
+  	 # <i>cdrecord -vv -pad speed=24 dev=ATAPI:0,0,0 -tao mips-livecd-prototype-rc2-20041027.img</i>
+  	 </pre>
+  	 
+  	 <note>
+  	 It may be possible to burn these CDs under Windows, assuming your burning
+  	 program just blindly burns the image as is.  However, no one has succeeded in
+  	 making a working CD this way to date.
+  	 </note>
+  	 
+  	 <note>
+  	 If you don't know what to put as your <c>dev</c> argument, run <c>cdrecord
+  	 -scanbus</c> as root - this will tell you where your burner is located.
+  	 </note>
+  	 
+</body>
+</subsection>
+</section>
+-->
 </sections>
