@@ -1,0 +1,237 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/lang/the-doc.xml">
+<title>Gentoo USB Guide</title>
+
+<author title = "Author">
+<mail link = "zhen@gentoo.org">John Davis</mail></author>
+
+<version>1.0</version>
+<date>5 May 2003</date>
+
+<abstract>This guide explains how to get USB up and running under
+Gentoo Linux.
+</abstract>
+
+<chapter>
+	<title>Preliminaries</title>
+	<section>
+		<title>Introduction</title>
+		<body>
+			<p>USB under GNU/Linux has always been a fairly easy, but undocumented,
+			task. Users are often confused on whether or not to use modules,
+			what the difference between UHCI, OHCI, and EHCI is, and why in the world
+			their USB device X is not working. I hope to alleviate some of those problems
+			in this guide by enlightening the user on the different aspects of the GNU/Linux
+			USB system.
+			</p>
+
+			<p>While writing this guide, I assume that you are familiar with how to compile
+			your kernel, as well as the basic operation of Gentoo Linux. For more information on
+			these subjects, please visit our <uri link="http://www.gentoo.org/en/docs-index.xml">
+			Documentation Index</uri>, which catalogs our current set of Gentoo specific documentation.
+			</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>USB via the GNU/Linux Kernel</title>
+	<section>
+		<title>Compiling USB support into the kernel</title>
+		<body>
+			<p>As you may know, there are two ways that kernel support for devices can be
+			configured; either as modules, or statically compiled into the kernel. Modular
+			design allows for a smaller kernel size, and quicker boot times. Statically compiled
+			support allows for boot-time detection of devices as well as taking away the fuss
+			of module dependencies. Both of these methods have their ups and downs, but I would
+			suggest using modules initially because of their easy trouble-shooting nature.
+			Later, when you get everything working, you may statically compile your device support
+			for convienence.
+			</p>
+
+			<p>If you have not already, emerge your kernel sources of choice: </p>
+
+			<pre caption="Emerging your kernel sources">
+# <c>emerge -s sources</c>
+<codenote>This will show a list of all our kernel sources</codenote>
+# <c>emerge your-kernel-sources</c>
+			</pre>
+
+			<p>After that has completed, you will want to <c>cd</c> to your kernel source directory,
+			and enter the ncurses-based GUI configuration: </p>
+
+			<pre caption="Configuring your kernel for USB">
+# <c>cd /usr/src/your-kernel-sources</c>
+			</pre>
+
+			<p>Before proceeding to the next step, it is important to know what kind of USB controller
+			your system uses. Using the <i>pciutils</i> package, this is a relatively trivial task. </p>
+
+			<p>If you have not emerged <i>pciutils</i>, please do so now: </p>
+
+			<pre caption="Emerging pciutils">
+# <c>emerge pciutils</c>
+			</pre>
+
+			<p>After this is complete run <c>lspci</c>, and you should get an output that looks much like this: </p>
+
+			<pre caption="lspci output">
+# <c>lspci</c>
+00:00.0 Host bridge: Advanced Micro Devices [AMD] AMD-760 [IGD4-1P] System Controller (rev 13)
+00:01.0 PCI bridge: Advanced Micro Devices [AMD] AMD-760 [IGD4-1P] AGP Bridge
+00:07.0 ISA bridge: VIA Technologies, Inc. VT82C686 [Apollo Super South] (rev 40)
+00:07.1 IDE interface: VIA Technologies, Inc. VT82C586A/B/VT82C686/A/B/VT8233/A/C/VT8235 PIPC Bus Master IDE (rev 06)
+<i>00:07.2 USB Controller: VIA Technologies, Inc. USB (rev 1a)</i>
+<i>00:07.3 USB Controller: VIA Technologies, Inc. USB (rev 1a)</i>
+00:07.4 SMBus: VIA Technologies, Inc. VT82C686 [Apollo Super ACPI] (rev 40)
+00:08.0 Serial controller: US Robotics/3Com 56K FaxModem Model 5610 (rev 01)
+00:0b.0 VGA compatible controller: nVidia Corporation NV11DDR [GeForce2 MX 100 DDR/200 DDR] (rev b2)
+00:0d.0 Ethernet controller: 3Com Corporation 3c905C-TX/TX-M [Tornado] (rev 78)
+00:0f.0 Multimedia audio controller: Creative Labs SB Live! EMU10k1 (rev 08)
+00:0f.1 Input device controller: Creative Labs SB Live! MIDI/Game Port (rev 08)
+01:05.0 VGA compatible controller: nVidia Corporation NV25 [GeForce4 Ti 4400] (rev a2)
+			</pre>
+
+			<p>As you can see, <c>lspci</c> gives a complete listing of all PCI/ PCI Bus Masters that your computer
+			uses. The lines that are highlighted should be similar to what you are looking for in your <c>lspci</c>
+			readout. Since I am using a VIA controller, I will be using the UHCI USB driver. For other chipsets,
+			you would pick from one of the choices listed below: </p>
+			
+			<table>
+			<tr>
+				<th>Driver</th>
+				<th>Chipset</th>
+			</tr>
+			<tr>
+				<ti>EHCI</ti>
+				<ti>USB 2.0 Support</ti>
+			</tr>
+			<tr>
+				<ti>UHCI</ti>
+				<ti>All Intel , All VIA Chipsets</ti>
+			</tr>
+			<tr>
+				<ti>JE (Alternate to UHCI</ti>
+				<ti>If UHCI does not work, and you have an Intel or VIA chipset, try JE. </ti>
+			</tr>
+			<tr>
+				<ti>OHCI</ti>
+				<ti>Compaq, iMacs, OPTi, SiS, ALi</ti>
+			</tr>
+			</table>
+			
+			<p>After you have discovered what host controller your system uses, it is time to enable
+			support for your USB system in your kernel. In your kernel configuration, you will want to
+			locate the <i>USB Support</i> section, and procede from there. The options are rather straightforward,
+			just remember to make everything a module, and to enable support for your host controller
+			that you discovered above. </p>
+
+			<pre caption="Kernel configuration">
+# <c>make menuconfig</c>
+			</pre>
+
+			<p>After your kernel is finished compiling, install it and reboot as normal. </p>
+			
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>USB Peripherals</title>
+	<section>
+		<title>Configuring a USB Mouse</title>
+		<body>
+			<p>Perhaps the most common USB device that most people use is a USB mouse. Not only is it easy to install,
+			but it offers Plug and Play flexibility for laptop users like myself who would
+			rather not use the homicide-inducing trackpad. </p>
+
+			<p>As with most things, it is necessary to compile USB mouse support into the kernel in order
+			to get the full affect of the USB mouse. There are two options that you should enable: </p>
+
+			<table>
+				<tr>
+					<th>Menuconfig location</th>
+					<th>Option</th>
+					<th>Reason</th>
+				</tr>
+
+				<tr>
+					<ti>Input Core Support</ti>
+					<ti>Mouse Support <i>(Don't forget to input your screen resolution!)</i></ti>
+					<ti>This will hone your mouse to your resolution, which makes tracking across
+						large resolutions much nicer. </ti>
+				</tr>
+
+				<tr>
+					<ti>USB Support/ USB Human Interface Devices (HID)</ti>
+					<ti>USB HIDPB Mouse (basic) Support</ti>
+					<ti>Since your USB mouse is a USB HID device, this will enable support for that</ti>
+				</tr>
+			</table>
+
+			<p>After all of these options are comiled into your kernel as modules, install your kernel
+			and reboot. </p>
+
+			<p>Once your new kernel is installed and you have rebooted, go ahead and plug in your USB mouse.
+			If you already had the mouse plugged in while the machine is booting, no worries as it will
+			still work alright, providing that you got all of the necessary items compiled into the kernel. </p>
+
+			<p>Once you plug in the mouse, use <c>dmesg</c> to see if it was detected by the kernel:</p>
+
+			<pre caption="Checking kernel messages">
+# <c>dmesg</c>
+<codenote>You will be looking for lines like the one below:</codenote>
+hub.c: new USB device 10:19.0-1, assigned address 2
+input4: USB HID v0.01 Mouse [Microsoft Microsoft IntelliMouse Optical] on usb2:2.0
+			</pre>
+
+			<p>Once you have confirmed that your mouse is recognized by the kernel, it is time to configure
+			X to use it. </p>
+
+			<p>If you already have X installed and running with a non-USB mouse, there is not much
+			of a configuration change needed to use your USB mouse. The only item that will be changed
+			is what device X uses for your mouse. For our purposes, we will be using the <path>/dev/input/mice</path>
+			device since it supports hotplugging of your mouse, which can be very handy for desktop and laptop
+			users alike. Your <i>XF86Config</i> Input Device section should look similar to the example here: </p>
+
+			<pre caption="Example pointer section for XF86Config">
+Section "InputDevice"
+	Identifier				"Mouse0"
+	Driver					"mouse"
+	Option  		"Protocol"      "IMPS/2"
+	Option          	"ZAxisMapping"  "4 5"
+	Option          	"Device"        "/dev/input/mice"
+EndSection
+			</pre>
+
+			<p>Now, restart X, and your USB mouse should be working just fine. Since everything is working,
+			I would go ahead and compile your USB modules into the kernel statically. Of course, this is completely
+			optional, so if you would like to keep your modules as modules, don't forget to add the necessary modules
+			to <path>/etc/modules.autoload</path> so that they are automatically loaded at boot time. </p>
+
+			<pre caption="Adding entries to /etc/modules.autoload">
+# <c>echo $'\n'mousedev $'\n'hid $'\n'usbcore $'\n'input >> /etc/modules.autoload</c>
+			</pre>
+
+		</body>
+	</section>
+</chapter>
+
+<chapter>
+	<title>Conclusion</title>
+	<section>
+		<title>Closing Notes</title>
+		<body>
+			<p>Of course, this guide is no way near comprehensive for all USB devices supported via the
+			GNU/Linux kernel. If you would like to find out more about USB and linux, please visit
+			the <uri link="http://www.linux-usb.org">official Linux USB project</uri> page for more information.
+			Additionally, if you would like more Gentoo specific information, please reference the
+			many guides on our <uri link="http://www.gentoo.org/en/docs-index.xml">Documentation Index</uri>. </p>
+		</body>
+	</section>
+</chapter>
+</guide>
