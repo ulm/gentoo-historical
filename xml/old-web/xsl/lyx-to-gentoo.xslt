@@ -63,7 +63,11 @@
 	<xsl:template match="PROGRAMLISTING">
 		<pre><xsl:value-of select="."/></pre>
 	</xsl:template>
-
+	
+	<xsl:template match="EMPHASIS">
+		<i><xsl:value-of select="."/></i>
+	</xsl:template>
+	
 	<!-- There is no equivalent for SECT3 in Gentoo'sGuide DTD. We can
 		try to simulate it though using other Gentoo Guide DTD elements,
 		but this is probably poor form since it makes an assumption about
