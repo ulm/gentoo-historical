@@ -3,198 +3,183 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Session.py,v 1.3 2004/12/16 14:06:26 port001 Exp $
+# $Id: Session.py,v 1.4 2004/12/25 01:36:24 port001 Exp $
 #
 
 __modulename__ = "Session"
 
+import sha
+import hmac
+from time import time
+from random import Random
+
+import Cookie
+
 import Config
-from MySQL import MySQL
+import MySQL
 
-MySQLHandler = MySQL()
+MySQLHandler = MySQL.MySQL()
 
-class New:
+class Session:
 
     full_tablename = Config.MySQL["prefix"] + Config.MySQL["session_table"]
     tablename = Config.MySQL["session_table"]
-    
-    def GenerateSessionID(self):
 
-        # This could be done a lot faster, no need to fetch the whole table. 
+    def __init__(self, req, page):
 
-        from random import Random, random
-    
-        sessid = ""
-        i = 0
-        chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    
-        result = MySQLHandler.query("SELECT %s_id FROM %s " %
-                                   (self.tablename, self.full_tablename),
-                                   fetch="all")
+        self._req = req
+        self._page = page
+
+        self.is_registered = False
+
+        self._sid = None
+        self._hash = None
+
+    def _gen_hash(self):
+
+        return hmac.new(Config.CookieSecret, self._sid, sha).hexdigest()[:10]
+
+    def _gen_sid(self):
+
         ran = Random()
-        
-        while 1:
-            num = ran.randint(0, 10000000000000000000000000)
-    
-            while i < 30:
-                sessid = sessid + ran.choice(chars + str(num))
-                i += 1
-    
-            if sessid not in result:
-                break
-    
-        return sessid
 
-    def SessionIDExists(self, uid, sessid):
+        return sha.new(str(time() * ran.randint(0, 10000000000000000000000000)) + \
+                       str(self._req.environ.get("UNIQUE_ID"))).hexdigest()[:10]
 
-        result = MySQLHandler.query("SELECT %s_id FROM %s WHERE %s_id = " %
-                                   (self.tablename, self.full_tablename,
-                                    self.tablename) +
-                                   "%s", sessid.value, fetch="one")
+    def _set_cookie(self):
 
-        return result != None
-
-    def SetCookie(self, uid, sessid):
-
-        import Cookie
-        import Config
-        
         bourbon = Cookie.SimpleCookie()
 
-        bourbon["glsr_sessid"] = sessid
-        #bourbon["glsr_sessid"]["domain"] = Config.CookieDomain
-        #bourbon["glsr_sessid"]["path"] = Config.CookiePath
-        if Config.CookieSecure == "Yes":
-            bourbon["glsr_sessid"]["secure"] = 1
-    
-        bourbon["glsr_uid"] = uid
-        #bourbon["glsr_uid"]["domain"] = Config.CookieDomain
-        #bourbon["glsr_uid"]["path"] = Config.CookiePath
-        if Config.CookieSecure == "Yes":
-            bourbon["glsr_uid"]["secure"] = 1
+        bourbon["glsrid"] = self._sid + self._hash
+        #bourbon["glsrid"]["domain"] = Config.CookieDomain
+        #bourbon["glsrid"]["path"] = Config.CookiePath
 
-        print bourbon
+        if Config.CookieSecure:
+            bourbon["glsrid"]["secure"] = 1
 
-    def RemoveCookie(self, sessid):
+        self._req.add_header("Set-Cookie", bourbon["glsrid"].OutputString())
 
-        import Cookie
-    
-        chocchip = Cookie.SimpleCookie()
+    def _remove_cookie(self):
+
+        chocchip = self._req.cookies
+
+        chocchip["glsrid"] = None
+        chocchip["glsrid"]["max-age"] = 0
+
+        self._req.add_header("Set-Cookie", chocchip["glsrid"].OutputString())
         
-        self.DeleteSession(sessid)
-        
-        # Who the fuck designed cookies? This is fucking stupid! 
-        chocchip["glsr_sessid"] = None
-        chocchip["glsr_sessid"]["max-age"] = 0
-        chocchip["glsr_uid"] = None
-        chocchip["glsr_uid"]["max-age"] = 0
+    def _remove_session(self):
 
-        print chocchip
-
-    def DeleteSession(self, sessid):
-    
         MySQLHandler.query("DELETE FROM %s WHERE %s_id = " %
-                          (self.full_tablename, self.tablename) + "%s", sessid,
+                          (self.full_tablename, self.tablename) + "%s", self._sid,
                           fetch = "none")
 
-        return True
-    
-    def ValidateCookie(self, HTTP_COOKIE):
-        """ Checks that the COOKIE matches valid glsr cookie data """
+    def _load_cookie(self):
 
-        import Cookie, sys
-        
-        fudge = Cookie.SimpleCookie(HTTP_COOKIE)
-
-        if (not fudge.has_key("glsr_uid") or not
-            fudge.has_key("glsr_sessid")):
+        if self._req.cookies.has_key("glsrid"):
+            self._sid = self._req.cookies["glsrid"].value[:10]
+            self._hash = self._req.cookies["glsrid"].value[10:]
+            return True
+        else:
             return False
 
-        if (not self.ValidateCookieData(fudge["glsr_uid"].value,
-                                        fudge["glsr_sessid"].value)):
-            return False
+    def _is_valid(self):
 
-        if (not self.ValidateSession(fudge["glsr_uid"].value,
-                                     fudge["glsr_sessid"].value)):
-            return False
-
-        # Check the database for a matchine session
-        if not self.SessionIDExists(fudge["glsr_uid"], fudge["glsr_sessid"]):
+        if self._hash != self._gen_hash():
+            self._sid = None
             return False
 
         return True
 
-    
-    def ValidateCookieData(self, uid, sessid):
+    def _update_ts(self):
 
-        import re
-    
-        sessid_regex = "^[\da-zA-Z]{30}$"
-        uid_regex = "^[\d]{1,5}$"
-    
-        p_sessid = re.compile(sessid_regex)
-        p_uid = re.compile(uid_regex)
+        MySQLHandler.query("UPDATE %s SET %s_time = UNIX_TIMESTAMP() " %
+                           (self.full_tablename, self.tablename) +
+                           "WHERE %s_id =" % self.tablename + " %s",
+                           self._sid, fetch="none")
 
-        o_sessid =  p_sessid.match(sessid)
-        if not o_sessid:
-            return "Invalid"
-        o_uid = p_uid.match(str(uid))
-        if not o_uid:
-            return "Invalid"
+    def _save_session(self):
 
-        return "Valid"
+         MySQLHandler.query("INSERT INTO %s (%s_id) " % 
+                            (self.full_tablename, self.tablename) +
+                            "VALUES (%s)", self._sid, fetch="none")
 
-    def LoadCookieData(self, HTTP_COOKIE):
+    def _resume(self):
 
-        import Cookie
+        self._update_ts()
 
-        custardcream = Cookie.SimpleCookie()
-        custardcream.load(HTTP_COOKIE)
+    def _create(self):
 
-        return (custardcream["glsr_uid"].value,
-                custardcream["glsr_sessid"].value)
+        self._sid = self._gen_sid()
+        self._hash = self._gen_hash()
+        self._save_session()
+        self._set_cookie()
 
-    def ValidateSession(self, uid, sessid):
-    
-        # Delete all old sessions
-        MySQLHandler.query("DELETE FROM %s WHERE " % self.full_tablename +
-                           "(%s_user_id = %%s AND " % self.tablename +
-                           "%s_id != %%s) OR " % self.tablename +
-                           "%s_time < UNIX_TIMESTAMP() - %%s" % self.tablename,
-                           (uid, sessid, Config.SessionTimeOut),
-                           fetch = "none")
-        
-        result = MySQLHandler.query("SELECT * FROM %s WHERE %s_user_id = " %
-                                    (self.full_tablename, self.tablename) + "%s", uid,
+    def _is_registered(self):
+
+        result = MySQLHandler.query("SELECT %s_user_id FROM %s " % 
+                                    (self.tablename, self.full_tablename) +
+                                    "WHERE %s_id = " % self.tablename + "%s",
+                                    self._sid, fetch="one")
+
+        if result == None:
+            return False
+        elif result["%s_user_id" % self.tablename] == 0:
+	    return False
+
+        return True
+
+    def _has_expired(self):
+
+        result = MySQLHandler.query("SELECT %s_id FROM %s " %
+                                    (self.tablename, self.full_tablename) +
+                                    "WHERE %s_id =  " % self.tablename +
+                                    "%s " + "AND %s_time " % self.tablename +
+                                    "< UNIX_TIMESTAMP() - %s", (self._sid, Config.SessionTimeout),
                                     fetch="one")
 
         return result != None
 
-    def CreateSession(self, uid, sessid):
+    def init(self):
 
-        # Check to see if the session is new, or just needs updating
-        if self.ValidateSession(uid, sessid):
-            self.UpdateTS(uid, sessid)
+        if self._load_cookie() and self._is_valid():
+            if self._page != "logout":
+                if self._is_registered():
+                    self.is_registered = True
+                    self._resume()
+                elif self._has_expired():
+                    self._remove_session()
+                    self._create()
+                else:
+                    self._resume()
         else:
-            MySQLHandler.query("INSERT INTO %s (%s_id, %s_user_id, %s_time) " %
-                               (self.full_tablename, self.tablename, self.tablename,
-                                self.tablename) +
-                               "VALUES (%s, %s, UNIX_TIMESTAMP())", (sessid, uid),
-                               fetch="none")
-            
-    def UpdateTS(self, uid, sessid):
-        """ Update the sessions timestamp """
-        
-        MySQLHandler.query("UPDATE %s SET %s_time = UNIX_TIMESTAMP() " %
-                           (self.full_tablename, self.tablename) +
-                           "WHERE %s_id = %%s AND %s_user_id = " %
-                           (self.tablename, self.tablename) +
-                           "%s", (sessid, uid), fetch="none")
+             self._create()
 
-    def ListSessionsOnline(self, grace):
+    def assign_uid(self, uid):
 
+        MySQLHandler.query("UPDATE %s SET " % self.full_tablename +
+                           "%s_user_id " % self.tablename +
+                           "= %s" + " WHERE %s_id" % self.tablename +
+                           "= %s", (uid, self._sid), fetch="none")
+
+    def remove(self):
+
+        self._remove_cookie()
+        self._remove_session()
+
+    def get_uid(self):
+
+        return MySQLHandler.query("SELECT %s_user_id FROM %s " % (self.tablename, self.full_tablename) +
+	                          "WHERE %s_id " % self.tablename +
+                                  "= %s", self._sid, fetch="one")["%s_user_id" % self.tablename]
+
+    def get_active(self, grace):
+
+        #FIXME: Make mysql do the counting
         return MySQLHandler.query("SELECT %s_id, %s_user_id FROM %s " %
                                   (self.tablename, self.tablename,
-                                   self.full_tablename) +
+                                  self.full_tablename) +
                                   "WHERE (UNIX_TIMESTAMP() - %s_time) <= " %
                                   self.tablename + "%s", grace, fetch="all")
+
+    get_active = classmethod(get_active)

@@ -2,7 +2,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Config.py,v 1.15 2004/12/18 02:14:12 port001 Exp $
+# $Id: Config.py,v 1.16 2004/12/25 01:36:24 port001 Exp $
 #
 
 __modulename__ = "Config"
@@ -74,9 +74,10 @@ ErrorReportListOffset = 5
 
 CookieDomain = "glsr.gentoo.org"
 CookiePath = "/"
-CookieSecure = "No"
+CookieSecure = False
+CookieSecret = "T0mm3yT4n5"
 
-SessionTimeOut = 259200 # Time in seconds (1 day = 86400)
+SessionTimeout = 259200 # Time in seconds (1 day = 86400)
 
 WhoIsOnlineOffset = 300
 

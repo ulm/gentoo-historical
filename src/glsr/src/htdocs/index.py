@@ -5,7 +5,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: index.py,v 1.29 2004/12/21 18:54:31 port001 Exp $
+# $Id: index.py,v 1.30 2004/12/25 01:36:24 port001 Exp $
 #
 
 """
@@ -24,6 +24,9 @@ import sys
 import cgi
 import __main__
 
+import jon.cgi as cgi
+import jon.fcgi as fcgi
+
 sys.path.insert(0, "/usr/local/share/glsr/pym/")
 sys.path.insert(0, "/usr/local/share/glsr/")
 sys.path.insert(0, "../pym")
@@ -33,13 +36,13 @@ from Error import exception_handler
 sys.excepthook = exception_handler
 
 from Function import stderr_redirect
-sys.stderr = stderr_redirect()
+#sys.stderr = stderr_redirect()
 
 import State
 import Config
 from User import User
 import Logging as LogHandler
-import Session as SessionHandler
+from Session import Session
 import Template as TemplateHandler
 from GLSRException import GLSRException
 from Validation import CheckPageRequest
@@ -47,25 +50,54 @@ from Function import start_timer, stop_timer, eval_timer
 
 from site_modules import Redirect
 
-class PageDispatch:
+class RequestHandler(cgi.Handler):
 
-    def __init__(self):
+    def process(self, req):
+
+        Dispatcher = _PageDispatch(req)
+
+        Dispatcher.log_request()
+        Dispatcher.check_session()
+        Dispatcher.check_access()
+        Dispatcher.select_module()
+        Dispatcher.dispatch_header()
+        Dispatcher.dispatch_page()
+        Dispatcher.dispatch_footer()
+        Dispatcher.log_request_end()
+
+#    def traceback(self):
+#
+#        WRITE ME
+
+
+class _PageDispatch:
+
+    def __init__(self, req):
+
+        self._req = req
 
         self._tmpl_page = None
         self._show_border = True
         self._t_start = 0
         self._failover = ""
-        self._form = cgi.FieldStorage()
-        self._page = self._form.getvalue("page")
+        self._form = self._req.params
+        if self._req.params.has_key('page'):
+            self._page = self._req.params['page']
+        else:
+            self._page = None
         self._domain = "user"
-        if self._form.getvalue("domain") == "admin":
-            self._domain = "admin"
+        if self._req.params.has_key('domain'):
+            if self._req.params['domain'] == 'admin':
+                self._domain = 'admin'
         self._user_detail = {"uid": 0,
                              "alias": "",
                              "session": None}
 
-        self._ThisSession = SessionHandler.New()
+        self._ThisSession = Session(self._req, self._page)        
         self._ThisUser = User()
+
+        # Make the session instance available to only the modules that need it
+        State.ThisSession = self._ThisSession
 
         self._init_timer()
 
@@ -75,19 +107,13 @@ class PageDispatch:
 
     def check_session(self):
 
-        # Does the user have a cookie for me? Load and eat.
-        if (os.environ.has_key("HTTP_COOKIE") and
-            self._ThisSession.ValidateCookie(os.environ["HTTP_COOKIE"])):
-            
-            (self._user_detail["uid"], self._user_detail["session"]) = (
-                self._ThisSession.LoadCookieData(os.environ["HTTP_COOKIE"]))
-                
-            # OK, we have a returning user.
-            self._ThisSession.UpdateTS(self._user_detail["uid"], 
-                                       self._user_detail["session"])
-            self._ThisUser.SetID(self._user_detail["uid"])
+        self._ThisSession.init()
+
+        if self._ThisSession.is_registered:
+            self._user_detail['uid'] = self._ThisSession.get_uid()
+            self._ThisUser.SetID(self._user_detail['uid'])
             self._ThisUser.UpdateIP(os.environ['REMOTE_ADDR'])
-            
+
             # TODO: check here if this IP matches their last one,
             # if not, make them log back in.
             self._user_detail["alias"] = self._ThisUser.GetAlias()
@@ -157,7 +183,8 @@ class PageDispatch:
                                  self._page, __modulename__, "Info")
 
         module_object = eval(matched_module + "(" +
-                             "form = self._form," +
+	                     "self._req," +
+			     "page = self._page," +
                              "uid = self._user_detail[\"uid\"]," +
                              "alias = self._user_detail[\"alias\"]," +
                              "session = self._user_detail[\"session\"])")
@@ -167,7 +194,9 @@ class PageDispatch:
             self._show_border = module_object.show_border
                                                                                                     
         except Redirect, location_str:
-            print "Location: %s\n\n" % location_str
+	    LogHandler.logwrite("Request redirected to %s" % location_str, __modulename__, type="info")
+            self._req.add_header("Location", location_str)
+            self._send_headers()
             sys.exit(0)
                                                                                                     
         except GLSRException, error:
@@ -181,8 +210,11 @@ class PageDispatch:
     def _send_headers(self):
 
         if State.HTMLHeadersSent == False:
-            print "Content-type:text/html\n\n",
-            State.HTMLHeadersSent = True
+            #self._req.set_encoding("utf-8", "iso-8859-1") # In the docs but not the API????
+            self._req.set_header("Content-Type", "text/html; charset=utf-8")
+            State.HTMLHeadersSent = True # not needed anymore?
+
+	self._req.output_headers()
 
     def dispatch_header(self):
 
@@ -233,14 +265,4 @@ class PageDispatch:
                             __modulename__, "Info")
 
 if __name__ == "__main__":
-
-    Dispatcher = PageDispatch()
-
-    Dispatcher.log_request()
-    Dispatcher.check_session()
-    Dispatcher.check_access()
-    Dispatcher.select_module()
-    Dispatcher.dispatch_header()
-    Dispatcher.dispatch_page()
-    Dispatcher.dispatch_footer()
-    Dispatcher.log_request_end()
+    fcgi.Server({fcgi.FCGI_RESPONDER: RequestHandler}).run()

@@ -3,7 +3,7 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Main.py,v 1.5 2004/12/18 22:05:18 port001 Exp $
+# $Id: Page_Main.py,v 1.6 2004/12/25 01:36:24 port001 Exp $
 #
 
 import Config
@@ -13,7 +13,7 @@ class Page_Main(SiteModule):
 
     __modulename__ = "Page_Main"
 
-    def __init__(self, **args):
+    def __init__(self, req, **args):
 
         self.template = Config.Template["main"]
 

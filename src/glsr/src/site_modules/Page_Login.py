@@ -5,11 +5,12 @@
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
 #
-# $Id: Page_Login.py,v 1.8 2004/12/18 22:05:18 port001 Exp $
+# $Id: Page_Login.py,v 1.9 2004/12/25 01:36:24 port001 Exp $
 #
 
 import os
 
+import State
 import Config
 from User import User
 import Session as SessionHandler
@@ -17,14 +18,19 @@ from site_modules import SiteModule, Redirect
 
 class Page_Login(SiteModule):
 
-    def __init__(self, **args):
+    def __init__(self, req, **args):
 
-        self.form = args["form"]       
-        self.page = self.form.getvalue("page")
-        
+        self.req = req       
+        self.page = args['page']
         self.template = Config.Template["login"]
-        self.username = self.form.getvalue("username")
-        self.password = self.form.getvalue("password")
+        if self.req.params.has_key('username'):
+            self.username = self.req.params['username']
+        else:
+            self.username = None
+        if self.req.params.has_key('password'):
+            self.password = self.req.params['password']
+        else:
+            self.password = None
         self.alias = args["alias"]
         self.uid = args["uid"]
         self.session = args["session"]
@@ -38,7 +44,7 @@ class Page_Login(SiteModule):
         if self.page == "perform_login":
 
             if self._login_user():
-                self.alias = self.form.getvalue("username")
+                self.alias = self.req.params["username"]
                 self.uid = self.user_obj.GetUid(self.alias)
         
             raise Redirect, "index.py?page=main"
@@ -59,7 +65,9 @@ class Page_Login(SiteModule):
 
     def _login_user(self):
 
-        self.user_obj.SetID(self.user_obj.GetUid(self.username))
+        uid = self.user_obj.GetUid(self.username)
+
+        self.user_obj.SetID(uid)
 
         if not self.user_obj.ValidateAlias(self.username, self.password):
             return False
@@ -67,12 +75,7 @@ class Page_Login(SiteModule):
         # Update IP address
         self.user_obj.UpdateIP(os.environ['REMOTE_ADDR'])
     
-        # Setup Session Variables
-        sess = SessionHandler.New()
-        sessid = sess.GenerateSessionID()
-        sess.SetCookie(self.user_obj.id, sessid)
-
-        # Update session table in the db
-        sess.CreateSession(self.user_obj.id, sessid)
+        # Assign uid to current session
+        State.ThisSession.assign_uid(uid)
     
         return True
