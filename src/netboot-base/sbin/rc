@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/netboot-base/sbin/rc,v 1.2 2004/10/07 20:37:06 vapier Exp $
+# $Header: /var/cvsroot/gentoo/src/netboot-base/sbin/rc,v 1.3 2005/01/10 14:22:22 gmsoft Exp $
 
 . /sbin/functions.sh
 
@@ -44,7 +44,7 @@ case $1 in
 		ln -sf /proc/mounts /etc/mtab
 
 		ebegin "Starting devfsd"
-		devfsd /dev > /dev/null
+		devfsd /dev > /dev/null 2>&1
 		eend $? "Failed to start devfsd"
 		
 		ebegin "Starting syslogd"
@@ -52,6 +52,9 @@ case $1 in
 		eend $? "Failed to start logger"
 
 		cat /etc/motd
+
+		# Sleep 1 sec to allow motd to display correctly on serial console
+		sleep 1
 
 		;;
 
@@ -62,23 +65,23 @@ case $1 in
 
 		# Stopping syslog
 		ebegin "Stopping syslogd"
-		killall -15 syslogd 2>&1 > /dev/null
+		kill -15 `my_pidof syslogd` > /dev/null 2>&1
 		eend $? "Failed to stop logger"
 
 		# Stopping devfsd 
 		ebegin "Stopping devfsd"
-		killall -15 devfsd 2>&1 > /dev/null
+		kill -15 `my_pidof devfsd` > /dev/null 2>&1
 		eend $? "Failed to stop devfsd"
 
 		# Umount everything
 		ebegin "Unmounting all filesystems"
-		umount -a -r 2>&1 > /dev/null
+		umount -a -r > /dev/null 2>&1
 		ret=$?
 		eend ${ret} "Failed to unmount filesystems"
 		if [ ${ret} -ne 0 ]
 		then
 			ebegin "Retrying unmount"
-			umount -a -r 2>&1 > /dev/null
+			umount -a -r > /dev/null 2>&1
 			eend ${ret} "Failed to unmount again; giving up"
 		fi
 
