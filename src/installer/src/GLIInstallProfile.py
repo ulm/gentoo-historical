@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.39 2005/04/08 17:15:12 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.40 2005/04/08 20:09:07 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -582,18 +582,20 @@ class InstallProfile:
 		eth_device can be a valid ethernet device eth0, eth1, wlan*... OR 
 		it can be a valid MAC address.
 
-		The format of the options tuple is:
-		( <ip address>, <broadcast>, <netmask>, <MAC address> )
+		The format of the options tuple is for a static IP:
+		( <ip address>, <broadcast>, <netmask> )
 
-		If the user wants to use DHCP, the <ip address> will be set to 'dhcp'
-		and broadcast and netmask will both be set to None. the MAC address
-		might still be specified for DHCP.
+		For DHCP, the format of the options tuple is:
+		( 'dhcp', <dhcp options>, None )
 
+		We keep the None as a placeholder, to not break anything that uses this
+		in other parts of the installer.
+		
 		Aliases are no longer needed in the tuple because they can be treated like
 		an individual interface. GLIUtility.is_eth_device will recogniz
 		"""
 		options = None
-		ip = broadcast = netmask = None
+		ip = broadcast = netmask = dhcp_options = None
 		dhcp = True
 
 		if type(device) != str:
@@ -618,6 +620,8 @@ class InstallProfile:
 					broadcast = str(attr[attrName])
 				elif attrName == 'netmask':
 					netmask = str(attr[attrName])
+				elif attrName == 'options':
+					dhcp_options = str(attr[attrName])
 
 			if ip != 'dhcp' and ip != None:
 				dhcp = False
@@ -631,7 +635,7 @@ class InstallProfile:
 				raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "The netmask address you specified for " + device + " is not valid!")
 			options = (ip, broadcast, netmask)
 		else:
-			options = ('dhcp', None, None)
+			options = ('dhcp', dhcp_options, None)
 
 		self._network_interfaces[device] = options
 
@@ -743,7 +747,11 @@ class InstallProfile:
 			interfaces = self.get_network_interfaces()
 			for iface in interfaces:
 				if interfaces[iface][0] == 'dhcp':
-					xmldoc += "<device>%s</device>" % iface
+					attrs = "ip=\"dhcp\""
+					if interfaces[iface][1] != None:
+						dhcp_options = "options=\"%s\"" % interfaces[iface][1]
+						attrs = attrs + " " + dhcp_options
+					xmldoc += "<device %s>%s</device>" % (attrs, iface)
 				else:
 					xmldoc += "<device ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</device>" % (interfaces[iface][0], interfaces[iface][1], interfaces[iface][2], iface)
 			xmldoc += "</network-interfaces>"
