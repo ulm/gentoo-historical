@@ -44,6 +44,28 @@ def is_ip(ip):
 
 	# Return True only if there are results.
 	return(res != None)
+
+def is_mac(mac):
+        """
+        Check to see if mac is a valid MAC address. Make sure use format_mac
+        before using this function.
+        Returns bool.
+        """
+        expr = re.compile('([0-9A-F]{2}:){5}[0-9A-F]{2}')
+        res = expr.match(mac)
+        return(res != None)
+
+def format_mac(mac):
+	"Format's a mac address properly. Returns the correctly formatted MAC. (a string)"
+
+        mac = string.replace(mac, '-', ':')
+        mac = string.upper(mac)
+
+        mac = string.split(mac, ':')
+        for i in range(0, len(mac)):
+                if len(mac[i]) < 2:
+                        mac[i] = "0" + mac[i]
+        return string.join(mac, ":")
 		
 def trim_ip(ip):
         # Remove leading zero's on the first octet

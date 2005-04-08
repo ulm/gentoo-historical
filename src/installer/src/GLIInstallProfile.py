@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.38 2005/03/30 05:33:47 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.39 2005/04/08 17:15:12 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -579,11 +579,15 @@ class InstallProfile:
 		The format of this dictionary is:
 		{ <eth_device> : (options tuple), ... }
 
+		eth_device can be a valid ethernet device eth0, eth1, wlan*... OR 
+		it can be a valid MAC address.
+
 		The format of the options tuple is:
-		( <ip address>, <broadcast>, <netmask> )
+		( <ip address>, <broadcast>, <netmask>, <MAC address> )
 
 		If the user wants to use DHCP, the <ip address> will be set to 'dhcp'
-		and broadcast and netmask will both be set to None.
+		and broadcast and netmask will both be set to None. the MAC address
+		might still be specified for DHCP.
 
 		Aliases are no longer needed in the tuple because they can be treated like
 		an individual interface. GLIUtility.is_eth_device will recogniz
@@ -596,7 +600,9 @@ class InstallProfile:
 			raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "Invalid or unimplimented device type (" + device + ")!")
 	
 		if not GLIUtility.is_eth_device(device):
-			raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "Invalid or unimplimented device type (" + device + ")!")
+			device = GLIUtility.format_mac(device)
+			if not GLIUtility.is_mac(device):
+				raise GLIException("NetworkInterfacesError", 'fatal', 'add_network_interface',  "Invalid or unimplimented device type (" + device + ")!")
 
 		if type(attr) == tuple:
 			ip = attr[0]
@@ -605,14 +611,15 @@ class InstallProfile:
 			if ip != 'dhcp':
 				dhcp = False
 		else:
-			if "ip" in attr.getNames():
-				for attrName in attr.keys():
-					if attrName == 'ip':
-						ip = str(attr[attrName])
-					elif attrName == 'broadcast':
-						broadcast = str(attr[attrName])
-					elif attrName == 'netmask':
-						netmask = str(attr[attrName])
+			for attrName in attr.keys():
+				if attrName == 'ip':
+					ip = str(attr[attrName])
+				elif attrName == 'broadcast':
+					broadcast = str(attr[attrName])
+				elif attrName == 'netmask':
+					netmask = str(attr[attrName])
+
+			if ip != 'dhcp' and ip != None:
 				dhcp = False
 
 		if not dhcp:
