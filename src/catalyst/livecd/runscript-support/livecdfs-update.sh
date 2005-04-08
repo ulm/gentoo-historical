@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.1 2005/04/06 11:41:38 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.2 2005/04/08 11:41:13 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -208,5 +208,6 @@ then
 	tar cjpf /lib/firmware.tar.bz2 .
 	rm -f /lib/firmware/*
 	mkdir -p /usr/lib/hotplug
+	rm -rf /usr/lib/hotplug/firmware
 	ln -sf /lib/firmware /usr/lib/hotplug/firmware
 fi
