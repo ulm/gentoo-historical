@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+
+<sections>
+
+<version>0.2</version>
+<date>2005-04-06</date>
+
+<section>
+<title>Advanced Configuration</title>
+<body>
+
+<p>
+The config_eth0 variable is the heart of an interface's configuration.
+It's a high level instruction list for configuring the interface (eth0 in
+this case). Each command in the instruction list is performed sequentially.
+The interface is deemed OK if at least one command works.
+</p>
+
+<p>
+Here's a list of in-built instructions.
+</p>
+
+<table>
+  <tr>
+    <th>Command</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <ti>null</ti>
+    <ti>Do nothing</ti>
+  </tr>
+  <tr>
+    <ti>noop</ti>
+    <ti>
+      If the interface is up and there is an address then abort configuration
+      successfully
+    </ti>
+  </tr>
+  <tr>
+    <ti>an IPv4 or IPv6 address</ti>
+    <ti>Add the address to the interface</ti>
+  </tr>
+  <tr>
+    <ti>
+      dhcp, adsl or apipa<br/>
+      (or a custom command from a 3rd party module)
+    </ti>
+    <ti>
+      Run the module which provides the command. For example "dhcp" will
+      run a module that provides dhcp which can be one of either dhcpcd,
+      udhcpc, dhclient or pump.
+    </ti>
+  </tr>
+</table>
+
+<p>
+If a command fails, you can specify a fallback command. The fallback has to
+match the config structure exactly.
+</p>
+
+<p>
+You can chain these commands together. Here are some real world some examples.
+</p>
+
+<pre caption="config examples">
+<comment># Adding three IPv4 addresses</comment>
+config_eth0=(
+	"192.168.0.2/24"
+	"192.168.0.3/24"
+	"192.168.0.4/24"
+)
+
+<comment># Adding an IPv4 address and two IPv6 addresses</comment>
+config_eth0=(
+	"192.168.0.2/24"
+	"4321:0:1:2:3:4:567:89ab"
+	"4321:0:1:2:3:4:567:89ac"
+)
+
+<comment># Keep our kernel assigned address, unless the interface goes
+# down so assign another via DHCP. If DHCP fails then add a
+# static address determined by APIPA</comment>
+config_eth0=(
+	"noop"
+	"dhcp"
+)
+fallback_eth0=(
+	"null"
+	"apipa"
+)
+</pre>
+
+<note>
+When using the ifconfig module and adding more than one address, interface
+aliases are created for each extra address. So with the above two examples you
+will get interfaces eth0, eth0:1 and eth0:2.
+You cannot do anything special with these interfaces as the kernel and other
+programs will just treat eth0:1 and eth0:2 as eth0
+</note>
+
+<impo>
+The fallback order is important! If we did not specify the "null" option then
+the "apipa" command would only be run if the "noop" command failed.
+</impo>
+
+<note>
+<uri link="hb_part1_chap3.html#doc_chap4">APIPA</uri> and
+<uri link="hb_part1_chap3.html#doc_chap3">DHCP</uri> are discussed later
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Network Dependencies</title>
+<body>
+
+<p>Init scripts in <path>/etc/init.d</path> can depend on a specific network
+interface or just net. "net" can be defined in <path>/etc/conf.d/rc</path> to
+mean different things using the <c>RC_NET_STRICT_CHECKING</c> variable.
+</p>
+
+<table>
+  <tr>
+    <th>Value</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <ti>none</ti>
+    <ti>The net service is always considered up</ti>
+  </tr>
+  <tr>
+    <ti>no</ti>
+    <ti>
+      This basically means that at least one net.* service besides net.lo
+      must be up.  This can be used by notebook users that have a wifi and
+      a static nic, and only wants one up at any given time to have the
+      net service seen as up.
+    </ti>
+  </tr>
+  <tr>
+    <ti>lo</ti>
+    <ti>
+      This is the same as the 'no' option, but net.lo is also counted.
+      This should be useful to people that do not care about any specific
+      interface being up at boot.
+    </ti>
+  </tr>
+  <tr>
+    <ti>yes</ti>
+    <ti>
+      For this ALL network interfaces MUST be up for the 'net' service to
+      be considered up.
+    </ti>
+  </tr>
+</table>
+
+<p>
+But what about net.br0 depending on net.eth0 and net.eth1?
+net.eth1 may be a wireless or ppp device that needs configuration before it
+can be added to the bridge.
+This cannot be done in <path>/etc/init.d/net.br0</path> as that's a symbolic
+link to net.lo
+</p>
+
+<p>
+The answer is making your own depend() function in <path>/etc/conf.d/net</path>
+</p>
+
+<pre caption="net.br0 dependency in /etc/conf.d/net">
+<comment># You can use any dependency (use, after, before) as found in current scripts</comment>
+depend_br0() {
+	need net.eth0 net.eth1
+}
+</pre>
+
+<p>
+For a more detailed discussion about dependency,
+<uri link="http://www.gentoo.org/doc/en/handbook-x86.xml?part=2&amp;chap=4#doc_chap4">
+consult the Gentoo Handbook</uri>
+</p>
+
+</body>
+</section>
+
+</sections>
