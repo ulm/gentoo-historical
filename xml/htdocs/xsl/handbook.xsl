@@ -49,12 +49,21 @@
     <xsl:for-each select="part">
       <xsl:variable name="curpart" select="position()" />
       <li>
-        <xsl:if test="$full = 0">
-          <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
-        </xsl:if>
-        <xsl:if test="$full = 1">
-          <b><a href="#book_part{$curpart}"><xsl:value-of select="title" /></a></b>
-        </xsl:if>
+        <xsl:choose>
+          <xsl:when test="$full = 0">
+            <xsl:choose>
+              <xsl:when test="$style != 'printable'">
+                <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
+              </xsl:when>
+              <xsl:otherwise>
+                <b><a href="{/book/@link}?part={$curpart}&amp;chap=0&amp;style=printable"><xsl:value-of select="title" /></a></b>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+            <b><a href="#book_part{$curpart}"><xsl:value-of select="title" /></a></b>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:if test="abstract">
           <br />
           <xsl:value-of select="abstract" />
@@ -63,12 +72,21 @@
           <xsl:for-each select="chapter">
             <xsl:variable name="curchap" select="position()" />
             <li>
-              <xsl:if test="$full = 0">
-                <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
-              </xsl:if>
-              <xsl:if test="$full = 1">
-                <b><a href="#book_part{$curpart}_chap{$curchap}"><xsl:value-of select="title" /></a></b>
-              </xsl:if>
+              <xsl:choose>
+                <xsl:when test="$full = 0">
+                  <xsl:choose>
+                    <xsl:when test="$style != 'printable'">
+                      <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}"><xsl:value-of select="title" /></a></b>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <b><a href="{/book/@link}?part={$curpart}&amp;chap={$curchap}&amp;style=printable"><xsl:value-of select="title" /></a></b>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                  <b><a href="#book_part{$curpart}_chap{$curchap}"><xsl:value-of select="title" /></a></b>
+                </xsl:otherwise>
+              </xsl:choose>
               <xsl:if test="abstract">
                 <br/>
                 <xsl:value-of select="abstract" />

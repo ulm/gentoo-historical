@@ -4,7 +4,11 @@
                 xmlns:func="http://exslt.org/functions"
                 extension-element-prefixes="exslt func" >
 
+<xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
+<!--
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
+-->
+
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
 <xsl:include href="handbook.xsl" />
@@ -15,6 +19,7 @@
 
 <!-- Global definition of style parameter -->
 <xsl:param name="style">0</xsl:param>
+<xsl:param name="newsitemcount">6</xsl:param>
 
 <!-- img tag -->
 <xsl:template match="img">
@@ -42,7 +47,7 @@
     <xsl:otherwise>
       <form name="contents" action="http://www.gentoo.org">
         <b><xsl:value-of select="func:gettext('Content')"/></b>:
-        <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:Arial,Helvetica, sans-serif; font-size:10">
+        <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:sans-serif,Arial,Helvetica">
           <xsl:for-each select="chapter">
             <xsl:variable name="chapid">doc_chap<xsl:number/></xsl:variable><option value="#{$chapid}"><xsl:number/>. <xsl:value-of select="title"/></option>
           </xsl:for-each>
@@ -91,6 +96,7 @@
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" bgcolor="#45347b">
+    <!--
       <table cellspacing="0" cellpadding="0" border="0" width="193">
         <tr>
           <td class="logobg" valign="top" align="center" height="88">
@@ -103,6 +109,8 @@
           </td>
         </tr>
       </table>
+    -->
+    <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
     </td>
   </tr>
   <tr>
@@ -114,161 +122,14 @@
             <xsl:call-template name="content"/>
           </td>
           <td width="1%" bgcolor="#dddaec" valign="top">
-            <table border="0" cellspacing="5" cellpadding="0">
-              <!-- Add a "printer-friendly" button when link attribute exists -->
-              <xsl:if test="/book/@link or /guide/@link">
-               <tr>
-                <td class="altmenu" align="center">
-                  <xsl:variable name="PrintTip"><xsl:value-of select="func:gettext('PrintTip')"/></xsl:variable>
-                  <xsl:if test="/book">
-                   <xsl:if test="$full=1">
-                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-                   </xsl:if>
-                   <xsl:if test="$full=0">
-                    <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-                   </xsl:if>
-                  </xsl:if>
-                  <xsl:if test="/guide">
-                    <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-                  </xsl:if>
-                </td>
-               </tr>
-              </xsl:if>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" class="alttext">
-                  <xsl:call-template name="contentdate"/>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td class="alttext">
-                  <!-- Authors -->
-                  <xsl:apply-templates select="/guide/author|/book/author"/>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td class="alttext">
-                  <!-- Abstract (summary) of the document -->
-                  <b><xsl:value-of select="func:gettext('Summary')"/>: </b>
-                  <xsl:apply-templates select="abstract"/>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-	      <tr>
-                <td align="center">
-                  <p class="alttext">
-                    <b>Donate</b> to support our development efforts.
-                  </p>
-                  <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-                    <input type="hidden" name="cmd" value="_xclick"/>
-                    <input type="hidden" name="business" value="paypal@gentoo.org"/>
-                    <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
-                    <input type="hidden" name="item_number" value="1000"/>
-                    <input type="hidden" name="image_url" value="/images/paypal.png"/>
-                    <input type="hidden" name="no_shipping" value="1"/>
-                    <input type="hidden" name="return" value="http://www.gentoo.org"/>
-                    <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-                    <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
-                  </form>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
-              <p class="alttext">
-                Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-              <p class="alttext">
-		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
-        <tr>
-          <td align="center">
-            <a href="http://store.gentoo.org">
-              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
-            </a>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-
-              <tr>
-                <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
-                  <p class="alttext">
-		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
-                  <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-
-            </table>
+            <xsl:call-template name="rhcol"/>
           </td>
         </tr>
       </table>
     </td>
   </tr>
   <tr>
-    <td colspan="2" align="right" class="infohead" width="100%" bgcolor="#7a5ada">
+    <td colspan="2" align="right" class="infohead">
       Copyright 2001-2005 Gentoo Foundation, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
@@ -308,92 +169,86 @@
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" width="1%" bgcolor="#45347b">
-      <table cellspacing="0" cellpadding="0" border="0" width="100%">
-        <tr>
-          <td class="logobg" valign="top" align="center" height="88">
-            <a href="/">
-              <img border="0" src="/images/gtop-s.jpg" alt="Gentoo Logo"/>
-            </a>
-          </td>
-        </tr>
-        <tr>
-          <td class="logobg" valign="top" align="center" height="36">
-            <a href="/">
-              <img border="0" src="/images/gbot-s.gif" alt="Gentoo Logo Side"/>
-            </a>
-          </td>
-        </tr>
-      </table>
+    <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
     </td>
+
     <td valign="bottom" align="left" bgcolor="#000000" colspan="2">
       <p class="menu">
         <xsl:choose>
           <xsl:when test="/mainpage/@id='about'">
-            <a class="highlight" href="/main/en/about.xml">About</a> |
+            <a class="highlight" href="/main/en/about.xml">About</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/about.xml">About</a> |
+            <a class="menulink" href="/main/en/about.xml">About</a>
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='projects'">
-            <a class="highlight" href="/proj/en/index.xml?showlevel=1">Projects</a> |
+            <a class="highlight" href="/proj/en/index.xml?showlevel=1">Projects</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a> |
+            <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a>
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='contract'">
-            <a class="highlight" href="/main/en/philosophy.xml">Philosophy</a> |
+            <a class="highlight" href="/main/en/philosophy.xml">Philosophy</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a> |
+            <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a>
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='docs'">
-            <a class="highlight" href="/doc/en/index.xml">Docs</a> |
+            <a class="highlight" href="/doc/en/index.xml">Docs</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/doc/en/index.xml">Docs</a> |
+            <a class="menulink" href="/doc/en/index.xml">Docs</a>
           </xsl:otherwise>
         </xsl:choose>
-        <a class="menulink" href="http://forums.gentoo.org">Forums</a> |
+        | <a class="menulink" href="http://forums.gentoo.org">Forums</a>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='lists'">
-            <a class="highlight" href="/main/en/lists.xml">Lists</a> |
+            <a class="highlight" href="/main/en/lists.xml">Lists</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/lists.xml">Lists</a> |
+            <a class="menulink" href="/main/en/lists.xml">Lists</a>
           </xsl:otherwise>
         </xsl:choose>
-        <a class="menulink" href="http://bugs.gentoo.org">Bugs</a> |
-        <a class="menulink" href="http://store.gentoo.org">Store</a> |
+        | <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
+        | <a class="menulink" href="http://store.gentoo.org">Store</a>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='newsletter'">
-            <a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a> |
+            <a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/news/en/gwn/gwn.xml"> GWN</a> |
+            <a class="menulink" href="/news/en/gwn/gwn.xml"> GWN</a>
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='where'">
-            <a class="highlight" href="/main/en/where.xml">Get Gentoo!</a> |
+            <a class="highlight" href="/main/en/where.xml">Get Gentoo!</a>
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/where.xml">Get Gentoo!</a> |
+            <a class="menulink" href="/main/en/where.xml">Get Gentoo!</a>
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='support'">
-            <a class="highlight" href="/main/en/support.xml">Support</a> | 
+            <a class="highlight" href="/main/en/support.xml">Support</a> 
           </xsl:when>
           <xsl:otherwise>
-            <a class="menulink" href="/main/en/support.xml">Support</a> | 
+            <a class="menulink" href="/main/en/support.xml">Support</a> 
           </xsl:otherwise>
         </xsl:choose>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='sponsors'">
             <a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
@@ -402,6 +257,7 @@
             <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a>
           </xsl:otherwise>
         </xsl:choose>
+        | <a class="menulink" href="http://planet.gentoo.org">Planet</a>
       </p>
     </td>
   </tr>
@@ -454,14 +310,15 @@
                     <br/>
                     <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
                     <br/>
-                    <!--<a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>-->
+                    <!--
+                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    -->
                     <br/>
-                    <a class="altlink" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi">View our CVS via the web</a>
+                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS via the web</a>
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
                     <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrent Tracker</a>
-                    <br/>
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
                     <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
@@ -484,11 +341,12 @@
                     <br/>
                     <a class="altlink" href="/main/en/articles.xml">IBM dW/Intel article archive</a>
                     <xsl:if test="/mainpage/@id='news'">
-                      <br/><br/>
+                      <br/>
                       Older News:<br/>
-                      <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;=7][position()&lt;20]/text()">
+                      <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;$newsitemcount][position()&lt;20]/text()">
                         <xsl:variable name="newsuri" select="."/>
-                        <a class="altlink" href="{$newsuri}"><xsl:value-of select="document(.)/news/title"/></a><br/>
+                        <a class="altlink" href="{$newsuri}"><xsl:value-of select="document(.)/news/title"/></a>
+                        <br/>
                       </xsl:for-each>
                     </xsl:if>
                   </p>
@@ -500,138 +358,122 @@
         </tr>
       </table>
     </td>
-    <td valign="top" align="right" bgcolor="#ffffff">
-      <table border="0" cellspacing="5" cellpadding="0" width="100%">
-        <tr>
-          <td valign="top" align="left">
+    <!-- Content below top menu and between left menu and ads -->
+    <td valign="top" bgcolor="#ffffff">
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
-                <table class="content" cellpadding="4" width="100%" border="0">
-                  <tr>
-                    <td valign="top">
-                      <img src="/images/gentoo-new.gif" alt="new"/>
-                    </td>
-                    <td valign="middle">
-                      We produce Gentoo Linux, a special flavor of Linux that
-                      can be automatically optimized and customized for just
-                      about any application or need. Extreme performance,
-                      configurability and a top-notch user and developer
-                      community are all hallmarks of the Gentoo experience.
-                      To learn more, read <b><a href="/main/en/about.xml">About
-                      Gentoo</a></b>.
-                    </td>
-                  </tr>
-                </table>
-                <br/>
-                <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;7]/text()">
-                  <table class="content" cellpadding="4" width="100%" border="0">
-                    <tr>
-                      <td colspan="2" bgcolor="#7a5ada">
-                        <font color="#ffffff">
-                          <b>
-                            <xsl:value-of select="document(.)/news/title"/>
-                          </b>
-                          <br/>
-                          <font size="-3">Posted on <xsl:value-of select="func:format-date(document(.)/news/date)"/> by <xsl:value-of select="document(.)/news/poster"/></font>
-                        </font>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td width="100" align="center" valign="middle">
-                        <xsl:choose>
-                          <xsl:when test="document(.)/news/@category='alpha'">
-                            <img src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='kde'">
-                            <img src="/images/icon-kde.png" alt="KDE"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='gentoo'">
-                            <img src="/images/icon-gentoo.png" alt="gentoo"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='main'">
-                            <img src="/images/icon-stick.png" alt="stick man"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='ibm'">
-                            <img src="/images/icon-ibm.gif" alt="ibm"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='linux'">
-                            <img src="/images/icon-penguin.png" alt="tux"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='moo'">
-                            <img src="/images/icon-cow.png" alt="Larry the Cow"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='plans'">
-                            <img src="/images/icon-clock.png" alt="Clock"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='nvidia'">
-                            <img src="/images/icon-nvidia.png" alt="Nvidia"/>
-                          </xsl:when>
-                          <xsl:when test="document(.)/news/@category='freescale'">
-                            <img src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
-                          </xsl:when>
-                        </xsl:choose>
-                      </td>
-                      <td valign="top">
-                        <xsl:choose>
-                          <xsl:when test="document(.)/news/summary">
-                            <xsl:apply-templates select="document(.)/news/summary"/>
-                            <br/>
-                            <a href="{.}"><b>(full story)</b></a>
-                          </xsl:when>
-                          <xsl:otherwise>
-                            <xsl:apply-templates select="document(.)/news/body"/>
-                          </xsl:otherwise>
-                        </xsl:choose>
-                      </td>
-                    </tr>
-                  </table>
-                  <br/>
-                </xsl:for-each>
+              <p class="news">
+                <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo-"/>
+                <span class="newsitem">We produce Gentoo Linux, a special flavor of Linux that
+                can be automatically optimized and customized for just
+                about any application or need. Extreme performance,
+                configurability and a top-notch user and developer
+                community are all hallmarks of the Gentoo experience.
+                To learn more, read our <b><a href="/main/en/about.xml">about
+                page</a></b>.</span>
+              </p>
+
+              <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;=$newsitemcount]/text()">
+                <div class="news">
+                  <p class="newshead">
+                    <b><xsl:value-of select="document(.)/news/title"/></b>
+                    <br/>
+                    <font size="0.90em">
+                    Posted on <xsl:value-of select="func:format-date(document(.)/news/date)"/>
+                    by <xsl:value-of select="document(.)/news/poster"/>
+                    </font>
+                  </p>
+                  <xsl:choose>
+                    <xsl:when test="document(.)/news/@category='alpha'">
+                      <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='kde'">
+                      <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='gentoo'">
+                      <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='main'">
+                      <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='ibm'">
+                      <img class="newsicon" src="/images/icon-ibm.gif" alt="ibm"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='linux'">
+                      <img class="newsicon" src="/images/icon-penguin.png" alt="tux"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='moo'">
+                      <img class="newsicon" src="/images/icon-cow.png" alt="Larry the Cow"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='plans'">
+                      <img class="newsicon" src="/images/icon-clock.png" alt="Clock"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='nvidia'">
+                      <img class="newsicon" src="/images/icon-nvidia.png" alt="Nvidia"/>
+                    </xsl:when>
+                    <xsl:when test="document(.)/news/@category='freescale'">
+                      <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
+                    </xsl:when>
+                  </xsl:choose>
+                  
+                  <div class="newsitem">
+                  <xsl:choose>
+                    <xsl:when test="document(.)/news/summary">
+                      <xsl:apply-templates select="document(.)/news/summary"/>
+                      <br/>
+                      <a href="{.}"><b>(full story)</b></a>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:apply-templates select="document(.)/news/body"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                  </div>
+                </div>
+              </xsl:for-each>
+              <!-- Add content after newsitems if any -->
+
+
               </xsl:when>
               <xsl:when test="/news">
-                <table class="content" cellpadding="4" width="100%" border="0">
-                  <tr>
-                    <td colspan="2" bgcolor="#7a5ada">
-                      <font color="#ffffff">
-                        <b><xsl:value-of select="title"/></b>
-                      </font>
-                      <br/>
-                      <font size="-3">Posted on <xsl:value-of select="date"/> by <xsl:value-of select="poster"/></font>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td width="100" align="center" valign="top">
+                <div class="news">
+                  <p class="newshead">
+                    <b><xsl:value-of select="title"/></b>
+                    <br/>
+                    <font size="0.90em">
+                    Posted on <xsl:value-of select="func:format-date(date)"/>
+                    by <xsl:value-of select="poster"/></font>
+                  </p>
                       <xsl:choose>
                         <xsl:when test="@category='alpha'">
-                          <img src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+                          <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
                         </xsl:when>
                         <xsl:when test="@category='kde'">
-                          <img src="/images/icon-kde.png" alt="KDE"/>
+                          <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
                         </xsl:when>
                         <xsl:when test="@category='gentoo'">
-                          <img src="/images/icon-gentoo.png" alt="gentoo"/>
+                          <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
                         </xsl:when>
                         <xsl:when test="@category='main'">
-                          <img src="/images/icon-stick.png" alt="stick man"/>
+                          <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
                         </xsl:when>
                         <xsl:when test="@category='ibm'">
-                          <img src="/images/icon-ibm.gif" alt="IBM"/>
+                          <img class="newsicon" src="/images/icon-ibm.gif" alt="IBM"/>
                         </xsl:when>
                         <xsl:when test="@category='linux'">
-                          <img src="/images/icon-penguin.png" alt="Tux the Penguin"/>
+                          <img class="newsicon" src="/images/icon-penguin.png" alt="Tux the Penguin"/>
                         </xsl:when>
                         <xsl:when test="@category='moo'">
-                          <img src="/images/icon-cow.png" alt="Larry the Cow"/>
+                          <img class="newsicon" src="/images/icon-cow.png" alt="Larry the Cow"/>
                         </xsl:when>
                         <xsl:when test="@category='nvidia'">
-                          <img src="/images/icon-nvidia.png" alt="nvidia"/>
+                          <img class="newsicon" src="/images/icon-nvidia.png" alt="nvidia"/>
                         </xsl:when>
                         <xsl:when test="document(.)/news/@category='freescale'">
-                          <img src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
+                          <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
                         </xsl:when>
                       </xsl:choose>
-                    </td>
-                    <td valign="top">
+
+                    <span class="newsitem">
                       <xsl:choose>
                         <xsl:when test="body">
                           <xsl:apply-templates select="body"/>
@@ -640,165 +482,34 @@
                           <xsl:apply-templates select="section"/>
                         </xsl:when>
                       </xsl:choose>
-                    </td>
-                  </tr>
-                </table>
+                    </span>
+              </div>
               </xsl:when>
               <xsl:when test="/email">
                 <xsl:apply-templates select="/email/body"/>
               </xsl:when>
-              <xsl:otherwise>
-                <br/>
-                <table border="0" class="content">
-                  <tr>
-                    <td>
-                      <xsl:apply-templates select="chapter"/>
-                    </td>
-                  </tr>
-                </table>
-                <br/>
-                <br/>
-                <br/>
-              </xsl:otherwise>
             </xsl:choose>
+            <br/>
+            <table border="0" class="content">
+              <tr>
+                <td>
+                  <xsl:apply-templates select="chapter"/>
+                </td>
+              </tr>
+            </table>
+            <br/>
+            <xsl:if test="/mainpage/license">
+              <xsl:apply-templates select="license" />
+            </xsl:if>
+            <br/>
             <!--content end-->
-          </td>
-        </tr>
-      </table>
     </td>
     <td width="1%" bgcolor="#dddaec" valign="top">
-      <table border="0" cellspacing="5" cellpadding="0">
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-        <xsl:choose>
-          <xsl:when test="/mainpage/date">
-            <tr>
-              <td align="center" class="alttext">
-                <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-                <xsl:value-of select="func:format-date(/mainpage/date)"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <img src="/images/line.gif" alt="line"/>
-              </td>
-            </tr>
-          </xsl:when>
-          <xsl:when test="/news/date">
-            <tr>
-              <td align="center" class="alttext">
-                Updated <xsl:value-of select="/news/date"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <img src="/images/line.gif" alt="line"/>
-              </td>
-            </tr>
-          </xsl:when>
-        </xsl:choose>
-	      <tr>
-                <td align="center">
-                  <p class="alttext">
-                    <b>Donate</b> to support our development efforts.
-                  </p>
-                  <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-                    <input type="hidden" name="cmd" value="_xclick"/>
-                    <input type="hidden" name="business" value="paypal@gentoo.org"/>
-                    <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
-                    <input type="hidden" name="item_number" value="1000"/>
-                    <input type="hidden" name="image_url" value="/images/paypal.png"/>
-                    <input type="hidden" name="no_shipping" value="1"/>
-                    <input type="hidden" name="return" value="http://www.gentoo.org"/>
-                    <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
-                    <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
-                  </form>
-                </td>
-              </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.tek.net" target="_top"><img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/></a>
-              <p class="alttext">
-                Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
-          <tr>
-            <td align="center">
-              <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top"><img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/></a>
-              <p class="alttext">
-		php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="/images/line.gif" alt="line"/>
-            </td>
-          </tr>
-        <tr>
-          <td align="center">
-            <a href="http://store.gentoo.org">
-              <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
-            </a>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/images/line.gif" alt="line"/>
-          </td>
-        </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.sevenl.net" target="_top"><img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/></a>
-                  <p class="alttext">
-		  Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <a href="http://www.vr.org"><img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/></a>
-                  <p class="alttext">
-		  No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <img src="/images/line.gif" alt="line"/>
-                </td>
-              </tr>
-
-      </table>
+      <xsl:call-template name="rhcol"/>
     </td>
-  <!--
-    <td width="15%" class="infotext" valign="top" align="left" bgcolor="#ddddff">
-      <table border="0" cellspacing="5" cellpadding="0" width="100%">
-        <tr>
-          <td>
-            <br/>
-          </td>
-        </tr>
-      </table>
-    </td>
-  -->
   </tr>
   <tr>
-    <td align="right" class="infohead" width="100%" colspan="3" bgcolor="#7a5ada">
+    <td align="right" class="infohead" colspan="3">
       Copyright 2001-2005 Gentoo Foundation, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
@@ -879,17 +590,17 @@
 <!-- Author -->
 <xsl:template match="author">
 <xsl:apply-templates/>
-<xsl:if test="@title">
-<xsl:if test="$style != 'printable'">
+  <xsl:if test="@title">
+    <xsl:if test="$style != 'printable'">
+      <br/>
+    </xsl:if>
+    <xsl:if test="$style = 'printable'">&#160;</xsl:if>
+    <i><xsl:value-of select="@title"/></i>
+  </xsl:if>
   <br/>
-</xsl:if>
-<xsl:if test="$style = 'printable'">&#160;</xsl:if>
-  <i><xsl:value-of select="@title"/></i>
-</xsl:if>
-<br/>
-<xsl:if test="$style != 'printable'">
-  <br/>
-</xsl:if>
+  <xsl:if test="$style != 'printable' and position()!=last()">
+    <br/>
+  </xsl:if>
 </xsl:template>
 
 <!-- Chapter -->
@@ -948,12 +659,22 @@
 <xsl:param name="chid"/>
 <xsl:variable name="fignum"><xsl:number level="any" from="chapter" count="figure"/></xsl:variable>
 <xsl:variable name="figid">doc_chap<xsl:value-of select="$chid"/>_fig<xsl:value-of select="$fignum"/></xsl:variable>
+<xsl:variable name="llink">
+  <xsl:choose>
+    <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
+      <xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="@link"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:variable>
 <br/>
 <a name="{$figid}"/>
 <table cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td class="infohead" bgcolor="#7a5ada">
-      <p class="caption">
+    <td bgcolor="#7a5ada">
+      <p class="codetitle">
         <xsl:choose>
           <xsl:when test="@caption">
             <xsl:value-of select="func:gettext('Figure')"/>&#160;<xsl:value-of select="$chid"/>.<xsl:value-of select="$fignum"/><xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
@@ -969,10 +690,10 @@
     <td align="center" bgcolor="#ddddff">
       <xsl:choose>
         <xsl:when test="@short">
-          <img src="{@link}" alt="Fig. {$fignum}: {@short}"/>
+          <img src="{$llink}" alt="Fig. {$fignum}: {@short}"/>
         </xsl:when>
         <xsl:otherwise>
-          <img src="{@link}" alt="Fig. {$fignum}"/>
+          <img src="{$llink}" alt="Fig. {$fignum}"/>
         </xsl:otherwise>
       </xsl:choose>
     </td>
@@ -1044,7 +765,11 @@
 
 <!-- Code note -->
 <xsl:template match="codenote">
-<span class="comment">// <xsl:value-of select="."/></span>
+<span class="comment">
+  <xsl:if test='not(starts-with(., "("))'>(</xsl:if>
+  <xsl:apply-templates/>
+  <xsl:if test='not(starts-with(., "("))'>)</xsl:if>
+</span>
 </xsl:template>
 
 <!-- Regular comment -->
@@ -1151,8 +876,8 @@
 <a name="{$preid}"/>
 <table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td class="infohead" bgcolor="#7a5ada">
-      <p class="caption">
+    <td bgcolor="#7a5ada">
+      <p class="codetitle">
       <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
       <xsl:if test="@caption">
         <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
@@ -1183,7 +908,14 @@
     <xsl:choose>
       <xsl:when test="($TTOP = 'book') and ($full = 0) and (starts-with(@link, '?'))">
         <!-- Handbook link pointing to another part/chapter, normal case -->
-        <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
+        <xsl:choose>
+          <xsl:when test="$style != 'printable'">
+            <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
+          </xsl:when>
+          <xsl:otherwise>
+            <a href="{$LINK}{@link}&amp;style=printable"><xsl:apply-templates/></a>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:when>
       <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '?'))">
         <!-- Handbook link pointing to another part/chapter
@@ -1231,7 +963,57 @@
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <a href="{@link}"><xsl:apply-templates/></a>
+        <!-- Strip http://www.gentoo.org from links but leave links to viewcvs intact
+             Has no effect on actual www.g.o but helps when surfing on a local copy -->
+        <xsl:variable name="llink">
+          <xsl:choose>
+            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/cgi-bin/')"><xsl:value-of select="@link" /></xsl:when>
+            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')" /></xsl:when>
+            <xsl:otherwise><xsl:value-of select="@link" /></xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+
+        <!-- Now, insert style=printable in the URL if necessary -->
+        <xsl:variable name="alink">
+          <xsl:choose>
+          <xsl:when test="$style != 'printable'  or  contains($llink, 'style=printable')">
+            <!-- Not printable style or style=printable already in URL, copy link -->
+            <xsl:value-of select="$llink" />
+          </xsl:when>
+          <xsl:when test="contains($llink, '://')">
+            <!-- External link, copy link -->
+            <xsl:value-of select="$llink" />
+          </xsl:when>
+          <xsl:when test="starts-with($llink, '#')">
+            <!-- Anchor, copy link -->
+            <xsl:value-of select="$llink" />
+          </xsl:when>
+          <xsl:otherwise>
+            <!--  We should have eliminated all other cases,
+                  style printable, local link, then insert ?style=printable -->
+            <xsl:choose>
+              <xsl:when test="starts-with($llink, '?')">
+                <xsl:value-of select="concat( '?style=printable&amp;', substring-after($llink, '?'))" />
+              </xsl:when>
+              <xsl:when test="contains($llink, '.xml?')">
+                <xsl:value-of select="concat(substring-before($llink, '.xml?'), '.xml?style=printable&amp;', substring-after($llink, '.xml?'))" />
+              </xsl:when>
+              <xsl:when test="contains($llink, '.xml#')">
+                <xsl:value-of select="concat(substring-before($llink, '.xml#'), '.xml?style=printable#', substring-after($llink, '.xml#'))" />
+              </xsl:when>
+              <xsl:when test="substring-after($llink, '.xml') = ''">
+                <xsl:value-of select="concat($llink, '?style=printable')" />
+              </xsl:when>
+              <xsl:otherwise>
+                <!-- Have I forgotten anything?
+                     Copy link -->
+                <xsl:value-of select="$llink" />
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <a href="{$alink}"><xsl:apply-templates/></a>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:when>
@@ -1284,14 +1066,14 @@
 
 <!-- Table Item -->
 <xsl:template match="ti">
-<td bgcolor="#ddddff" class="tableinfo">
+<td class="tableinfo">
   <xsl:apply-templates/>
 </td>
 </xsl:template>
 
 <!-- Table Heading -->
 <xsl:template match="th">
-<td bgcolor="#7a5ada" class="infohead">
+<td class="infohead">
   <b>
     <xsl:apply-templates/>
   </b>
@@ -1330,10 +1112,9 @@
 
 <!-- License Tag -->
 <xsl:template match="license">
-<tt>
-  <br/>
+<p class="copyright">
   <xsl:apply-templates select="func:gettext('License')"/>
-</tt>
+</p>
 </xsl:template>
 
 <!-- GLSA Index -->
@@ -1388,6 +1169,156 @@
       <xsl:value-of select="func:format-date(/guide/date)"/>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<xsl:template name="rhcol">
+<!-- Right-hand column with date/authors/ads -->
+  <table border="0" cellspacing="4px" cellpadding="4px">
+    <!-- Add a "printer-friendly" button when link attribute exists -->
+    <xsl:if test="/book/@link or /guide/@link">
+     <tr>
+      <td class="topsep" align="center">
+        <p class="altmenu">
+        <xsl:variable name="PrintTip"><xsl:value-of select="func:gettext('PrintTip')"/></xsl:variable>
+        <xsl:if test="/book">
+         <xsl:if test="$full=1">
+          <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
+         </xsl:if>
+         <xsl:if test="$full=0">
+          <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
+         </xsl:if>
+        </xsl:if>
+        <xsl:if test="/guide">
+          <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
+        </xsl:if>
+        </p>
+      </td>
+     </tr>
+    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="/book/date or /guide/date">
+        <tr>
+          <td align="center" class="topsep">
+            <p class="alttext">
+            <xsl:call-template name="contentdate"/>
+            </p>
+          </td>
+        </tr>
+      </xsl:when>
+      <xsl:when test="/mainpage/date">
+        <tr>
+          <td align="center" class="topsep">
+            <p class="alttext">
+            <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
+            <xsl:value-of select="func:format-date(/mainpage/date)"/>
+            </p>
+          </td>
+        </tr>
+      </xsl:when>
+      <xsl:when test="/news/date">
+        <tr>
+          <td align="center" class="topsep">
+            <p class="alttext">
+            <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
+            <xsl:value-of select="func:format-date(/news/date)"/>
+            </p>
+          </td>
+        </tr>
+      </xsl:when>
+    </xsl:choose>
+    <xsl:if test="/book/abstract[normalize-space(.)] or /guide/abstract[normalize-space(.)]">
+      <tr>
+        <td class="topsep">
+          <p class="alttext">
+            <!-- Abstract (summary) of the document -->
+            <b><xsl:value-of select="func:gettext('Summary')"/>: </b>
+            <xsl:apply-templates select="abstract"/>
+          </p>
+        </td>
+      </tr>
+    </xsl:if>
+    <xsl:if test="/book/author or /guide/author">
+    <tr>
+      <td class="topsep">
+        <p class="alttext">
+          <!-- Authors -->
+          <xsl:apply-templates select="/guide/author|/book/author"/>
+        </p>
+      </td>
+    </tr>
+    </xsl:if>
+
+      <tr>
+      <td align="center" class="topsep">
+        <p class="alttext">
+          <b>Donate</b> to support our development efforts.
+        </p>
+
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+          <input type="hidden" name="cmd" value="_xclick"/>
+          <input type="hidden" name="business" value="paypal@gentoo.org"/>
+          <input type="hidden" name="item_name" value="Gentoo Linux Support"/>
+          <input type="hidden" name="item_number" value="1000"/>
+          <input type="hidden" name="image_url" value="/images/paypal.png"/>
+          <input type="hidden" name="no_shipping" value="1"/>
+          <input type="hidden" name="return" value="http://www.gentoo.org"/>
+          <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
+
+          <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+        </form>
+      </td>
+    </tr>
+    <tr>
+    <td align="center" class="topsep">
+      <a href="http://www.tek.net" target="_top">
+        <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
+      </a>
+      <p class="alttext">
+        Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+      </p>
+    </td>
+    </tr>
+    <tr>
+      <td align="center" class="topsep">
+        <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
+          <img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/>
+        </a>
+        <p class="alttext">
+    php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
+        </p>
+      </td>
+    </tr>
+    <tr>
+    <td align="center" class="topsep">
+      <a href="http://store.gentoo.org">
+        <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
+      </a>
+    </td>
+    </tr>
+    <tr>
+    <td align="center" class="topsep">
+      <a href="http://www.sevenl.net" target="_top">
+        <img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/>
+      </a>
+      <p class="alttext">
+Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+      </p>
+    </td>
+    </tr>
+    <tr>
+      <td align="center" class="topsep">
+        <a href="http://www.vr.org">
+          <img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/>
+        </a>
+        <p class="alttext">
+No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
+        </p>
+      </td>
+    </tr>
+    <tr>
+    <td align="center" class="topsep"/>
+    </tr>
+  </table>
 </xsl:template>
 
 </xsl:stylesheet>
