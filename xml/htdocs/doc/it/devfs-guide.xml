@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
-
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/devfs-guide.xml,v 1.7 2005/04/09 17:06:08 so Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/it/devfs-guide.xml" lang="it">
+<guide link="/doc/devfs-guide.html">
 <title>Device File System Guide</title>
 <author title="Autore">
     <mail link="swift@gentoo.org">Sven Vermeulen</mail>
@@ -19,8 +19,10 @@
     devfs e sul suo utilizzo .
 </abstract>
 
-<version>0.1</version>
-<date>11 Settembre 2003</date>
+<license />
+
+<version>0.3</version>
+<date>2005-03-14</date>
 <chapter>
     <title>Cos'è devfs?</title>
     <section>
@@ -145,6 +147,20 @@ brw-rw----    1 root     disk       3,   0 Jul  5  2000 /dev/hda
             ancora più periferiche, dato che non ci sono più
             limiti (i numeri hanno sempre dei confini :)
         </p>
+ <p>
+        Anche devfs ha i propri problemi che per gli utenti finali
+        non sono realmente visibili, ma lo sono per i manutentori
+        del kernel. E per loro sono talmente gravi che hanno marcato
+devfs come <e>obsoleto</e> in favore di <uri link="udev-guide.xml">udev</uri>
+(Supportato anche da Gentoo).
+</p>
+<p>
+Per avere maggiori informazioni sul perché devfs è marcato come obsoleto,
+potete leggere queste
+  	 <uri link="http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-FAQ">udev
+  	 FAQ</uri> e il documento <uri
+  	 link="http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev_vs_devfs">udev contro devfs</uri>.
+  	 </p>
     </body>
     </section>
 </chapter>
@@ -314,100 +330,14 @@ LOOKUP      .*  MODLOAD
 <chapter>
     <title>Punti riguardanti i permessi</title>
     <section>
-        <title>Impostare/cambiare i permessi usando PAM</title>
-        <body>
-            <p>
-               Anche se potete impostare i permessi in <path>/etc/devfsd.conf</path>,
-               vi raccomandiamo di usare PAM (<e>Pluggable Authentication Modules</e>).
-               Questo perché PAM ha l'ultima parola sui permessi e può
-               ignorare le modifiche apportate a <path>/etc/devfsd.conf</path>.
-            </p>
-
-            <p>
-                PAM usa il file <path>/etc/security/console.perms</path>
-                per i permessi. Il file consiste in due parti: la prima descrive
-                i gruppi e la seconda i permessi.
-            </p>
-
-            <p>
-                Date prima un'occhiata alla parte relativa ai gruppi.
-                Ecco un esempio di come si presenta il gruppo sound:
-            </p>
-<pre caption = "Sound group in /etc/security/console.perms">
-&lt;sound&gt;=/dev/dsp* /dev/audio* /dev/midi* \
-    /dev/mixer* /dev/sequencer* \
-    /dev/sound/* /dev/snd/* /dev/beep \
-    /dev/admm* \
-    /dev/adsp* /dev/aload* /dev/amidi* /dev/dmfm* \
-    /dev/dmmidi* /dev/sndstat
-</pre>                  
-
-
-            <p>
-                La sintassi è abbastanza semplice: si parte con il nome del gruppo
-                e si finisce con una lista dei dispositivi che appartengono a questo
-                gruppo.
-            </p>
-
-            <p>
-                I gruppi non sono veramente utili se non potete
-                farci niente. Così la prossima parte descrive come
-                gestire i permessi.
-            </p>
-<pre caption = "Permessi per il gruppo sound  in /etc/security/console.perms">
-&lt;console&gt;  0600 &lt;sound&gt;      0600 root.audio
-</pre>
-
-            <p>
-                Il primo campo è il controllo sul terminale. Su molti
-                sistemi, questo è il gruppo console. PAM controllerà  questo
-                campo ad ogni login. Se il login avviene su un dispositivo
-                contenuto nel gruppo console, PAM controllerà e possibilmente
-                cambierà i permessi di qualche  file di periferica.
-            </p>
-            
-            <p>
-                Il secondo campo contiene i permessi che vengono
-                assegnati al file di periferica dopo un login corretto.
-                Quando una persona esegue un login sul sistema, e
-                i file di periferica sono di proprietà del proprietario/gruppo
-                di default, PAM cambierà il proprietario nello user
-                loginato e imposterà i permessi a quelli nel secondo campo.
-                In questo caso sarà usato 0600 (l'utente ha accesso in
-                lettura/scrittura, tutti gli altri non hanno permessi).
-            </p>
-
-            <p>
-                Il terzo campo contiene il gruppo di periferiche i cui permessi
-                saranno cambiati. In questo caso, il gruppo sound
-                (tutte le periferiche relative al suono) subiranno
-                cambiamenti.
-            </p>
-
-            <p>
-                Il quarto campo definisce i permessi che verranno
-                assegnati al file di periferica una volta tornato allo stato
-                iniziale. In altre parole, se la persona che ha
-                la proprietà su tutti i file di periferica esce dal sistema
-                (esegue un logout), PAM riporterà i permessi allo stato
-                di default, descritti in questo quarto campo.
-            </p>
-
-            <p>
-                Il quinto campo definisce il proprietario (col gruppo se
-                volete) assegnato al dispositivo una volta tornato allo
-                stato iniziale. In altre parole, se la persona proprietaria
-                di tutti i dispositivi esce dal sistema (esegue un logout),
-                PAM riassegnerà la proprietà dei dispositivi a quella iniziale,
-                come definita in questo quinto campo.
-            </p>
-
-        </body>
-    </section>
-    
-    <section>
         <title>Impostare/cambiare i permessi con devfsd</title>
         <body>
+         <note>
+            Queste istruzioni sono valide finché pam_console è disabilitato
+in
+  	 <path>/etc/pam.d/system-auth</path>. Se pam_console viene abilitato,
+PAM ha l'ultima parola sui permessi.
+  	 </note>
             <p>
                 Se realmente volete impostare i permessi attraverso
                 <path>/etc/devfsd.conf</path>, usate la sintassi
@@ -424,12 +354,6 @@ REGISTER    ^cdroms/.*  PERMISSIONS root.cdrom 0660
             
             <p>
                 Il quarto campo è il proprietario del file di periferica.
-                A differenza delle PAM, questo non cambia (a meno
-                che non sia menzionato in <path>console.perms</path>
-                dato che PAM vince sempre).
-            </p>
-
-            <p>
                 Il quinto campo contiene i permessi del file di periferica.
             </p>
 
@@ -444,8 +368,8 @@ REGISTER    ^cdroms/.*  PERMISSIONS root.cdrom 0660
                 Questo è ciò che Gentoo fa di default: se
                 cambiate proprietario (con <c>chown</c>) e  permessi
                 (con <c>chmod</c>) di alcuni file di periferica, <c>devfsd</c>
-                salverà le informazioni al momento dello shutdown
-                del sistema. Questo perché il file <path>/etc/devfsd.conf</path>
+                salverà le informazioni in modo tale da renderle persistenti
+ad ogni riavvio  del sistema. Questo perché il file <path>/etc/devfsd.conf</path>
                 contiene le seguenti righe:
             </p>
 
@@ -469,8 +393,8 @@ RESTORE         /lib/dev-state
 
         <p>
             In altre parole, le modifiche ai file di periferica sono copiate
-            in <path>/lib/dev-state</path> durante lo shutdown del
-            sistema e ripristinate in <path>/dev</path> all'avvio
+            in <path>/lib/dev-state</path> non appena avviene il cambiamento
+            e ripristinate in <path>/dev</path> all'avvio
             del sistema.
         </p>
 
@@ -544,4 +468,5 @@ devfs</uri></li>
 </section>
 </chapter>
 </guide>         
+
 
