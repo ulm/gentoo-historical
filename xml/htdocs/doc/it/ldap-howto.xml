@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-
-<guide link="/doc/it/ldap-howto.xml">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/ldap-howto.xml,v 1.11 2005/04/09 17:45:19 so Exp $ -->
+<guide link="/doc/it/ldap-howto.xml" lang="it">
 <title>Gentoo Guide all'autenticazione OpenLDAP </title>
 
 <author title="Autore">
@@ -32,8 +32,8 @@
 
 <license />
 
-<version>0.11</version>
-<date>22 Gennaio 2005</date>
+<version>0.16</version>
+<date>2005-03-29</date>
 
 <chapter>
 <title>Iniziamo con OpenLDAP</title>
@@ -120,6 +120,33 @@ uid: ..   jhon            <comment>(OU-specific data)</comment>
 
     </body>
     </section>
+    	 <section>
+  	 <title>Per cosa si usa LDAP</title>
+  	 <body>
+  	 
+  	 <p>
+	 LDAP può essere usato per vari scopi. Questo documento si focalizza
+	 sulla gestione centralizzata degli utenti, mantenendo tutti gli
+	 account utente in una singola collocazione LDAP (il che non significa
+	 che sia alloggiato su un singolo server, LDAP supporta scalabilità e
+	 ridondanza), sono comunque raggiungibili anche altri obiettivi usando LDAP.
+  	 </p>
+  	 
+  	 <ul>
+  	   <li>Infrastruttura pe chiavi pubbliche</li>
+  	   <li>Calendari condivisi</li>
+  	   <li>Rubriche condivise</li>
+  	   <li>Depositi per DHCP, DNS, ...</li>
+  	   <li>
+	     Direttive di classe per la configurazione di sistemi (tenendo traccia
+	     delle configurazioni di vari server)
+  	   </li>
+  	   <li>...</li>
+  	 </ul>
+  	 
+  	 </body>
+  	 </section>
+    
 </chapter>
 
 <chapter>
@@ -157,8 +184,8 @@ include         /etc/openldap/schema/cosine.schema
 include         /etc/openldap/schema/inetorgperson.schema
 include         /etc/openldap/schema/nis.schema
 
-<comment># Use crypt to hash the passwords</comment>
-password-hash {crypt}
+<comment># Usare md5 per fare l'hash delle password</comment>
+password-hash {md5}
 
 <comment># Define SSL and TLS properties (optional)</comment>
 TLSCertificateFile /etc/ssl/ldap.pem
@@ -174,8 +201,8 @@ rootpw          <i>{MD5}Xr4ilOzQ4PCOq3aQ0qbuaQ==</i>
 directory       /var/lib/openldap-ldbm
 index           objectClass     eq
 
-<comment>(
-Potete avere una password cryptata come quella sopra, con slappasswd -h {Md5})</comment>
+<comment>
+(Potete avere una password cryptata come quella sopra, con slappasswd -h {Md5})</comment>
 </pre>
 
             <p>
@@ -239,6 +266,10 @@ OPTS="-h 'ldaps:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
     </section>
 </chapter>
 
+
+
+
+
 <chapter>
     <title>Migrare dati esistenti</title>
     <section>
@@ -281,26 +312,48 @@ $EXTENDED_SCHEMA = 1;
 # <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/passwd.ldif</i>
 # <i>ldapadd -D "cn=Manager,dc=gentoo,dc=org" -W -f /tmp/hosts.ldif</i>
 </pre>
+	 <p>
+	 Se si raggiunge un errore nei file ldif, si può riprendere da dove
+	 si è terminato usando <c>ldapadd -c</c>.
+  	 </p>
         
         </body>
     </section>
+
+
+
+
 </chapter>
 
 <chapter>
-    <title>Configurazione dell'autenticazione</title>
+    <title>Configurazione del client</title>
     <section>
         <title>Configurazione di PAM</title>
         <body>
             <p>
-                Passeremo ora alla configurazione di PAM per 
-                permettere l'autorizzazione LDAP. Editare 
- <path>/etc/pam.d/system-auth</path> in modo che appaia come l'esempio che segue:
+
+	Il primo passo è di configurare PAM per permettere l'autorizzazione
+	LDAP. Installare
+	 <c>net-libs/pam_ldap</c> per fornire il supporto dell'autorizzazione
+	 LDAP a PAM e 
+  	 <c>net-libs/nss_ldap</c> in modo tale che il sistema
+	 possa far fronte ai server LDAP per informazioni aggiuntive
+         (usate da <path>nsswitch.conf</path>).
+  	 </p>
+  	 
+  	 <pre caption="Installing pam_ldap and nss_ldap">
+  	 # <i>emerge pam_ldap nss_ldap</i>
+  	 </pre>
+  	 
+  	 <p>
+  	 Now edit <path>/etc/pam.d/system-auth</path> so it looks like the following:
+
             </p>
 
  <pre caption="/etc/pam.d/system-auth">
 auth    required    /lib/security/pam_env.so
-auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
 auth    sufficient  /lib/security/pam_ldap.so use_first_pass
+auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
 auth    required    /lib/security/pam_deny.so 
 account sufficient  /lib/security/pam_unix.so
 account sufficient  /lib/security/pam_ldap.so
@@ -384,7 +437,10 @@ root:x:0:0:root:/root:/bin/bash
             </p>
         </body>
     </section>
-
+ </chapter>
+  	 
+  	 <chapter>
+  	 <title>Configurazioni per LDAP Server Security</title>
     <section>
         <title>Permessi OpenLDAP</title>
         <body>
@@ -395,7 +451,7 @@ root:x:0:0:root:/root:/bin/bash
                 di quali dati gli utenti possono leggere e/o scrivere:
             </p>
 <pre caption="/etc/openldap/slapd.conf">
-access to attribute="userPassword"
+access to attrs="userPassword"
  by dn="uid=root,ou=people,dc=genfic,dc=com" write
  by dn="uid=John, ou=People,dc=genfic,dc=com" write
  by anonymous auth
@@ -479,3 +535,4 @@ access to *
     </section>
 </chapter>
 </guide>
+
