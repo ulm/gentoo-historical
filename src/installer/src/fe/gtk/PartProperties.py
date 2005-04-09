@@ -3,28 +3,21 @@ import PartitionButton
 
 class PartProperties(gtk.Window):
 
-	def __init__(self, controller, device, minor, start, end, min_size, max_size, fstype, bytes_in_sector):
+	def __init__(self, controller, device, minor, min_size, max_size, fstype, bytes_in_sector=512):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
 		self.controller = controller
 		self.device = device
 		self.minor = minor
-		self.start = start
-		self.end = end
-		if minor == -1:
-			self.min_size = 0
-			self.max_size = end - start
-		else:
-			self.min_size = min_size
-			self.max_size = max_size
+		self.min_size = min_size
+		self.max_size = max_size
 		self.fstype = fstype
 		self.bytes_in_sector = bytes_in_sector
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
 		self.set_default_size(400,300)
-#		self.set_geometry_hints(None, min_width=800, min_height=600, max_width=800, max_height=600)
-		if self.minor == -1:
+		if self.fstype == "free":
 			self.set_title("New partition on " + device)
 		else:
 			self.set_title("Properties for " + device + str(minor))
@@ -132,18 +125,18 @@ class PartProperties(gtk.Window):
 		self.make_visible()
 
 	def run(self):
-		if self.minor == -1:
+		if self.fstype == "free":
 			hpaned_width = self.resize_hpaned.get_allocation().width
 			hpaned_pos = hpaned_width - 5
 #			if self.max_size > self.end:
 #				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
-			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s, start = %s, end = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos), str(self.start), str(self.end))
+			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
 			self.info_partition.set_text(self.device + " (unallocated)")
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors['ext3'], self.controller.colors['ext3'])
 			if self.controller.devices[self.device].get_extended_partition():
-				if self.controller.devices[self.device].get_partition_at(self.start, ignore_extended=0) != 0:
+				if self.controller.devices[self.device].get_partitions()[self.minor].is_logical():
 					self.resize_info_part_type.set_active(1)
 				else:
 					self.resize_info_part_type.set_active(0)
@@ -168,10 +161,10 @@ class PartProperties(gtk.Window):
 					break
 			hpaned_width = self.resize_hpaned.get_allocation().width
 			hpaned_pos = hpaned_width - 5
-			if self.max_size > self.end:
-				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
+#			if self.max_size > self.end:
+#				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
-			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s, start = %s, end = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos), str(self.start), str(self.end))
+			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors[self.fstype])
 			self.resize_hpaned.set_sensitive(False)
@@ -188,21 +181,21 @@ class PartProperties(gtk.Window):
 	def ok_clicked(self, button):
 		print "OK"
 
-		if self.minor == -1:
+		if self.fstype == "free":
 			hpaned_width = self.resize_hpaned.get_allocation().width - 5
 			hpaned_pos = self.resize_hpaned.get_position()
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
 #			start = self.active_part_start_cyl
-			end = int(self.start + part_size) - 1
+#			end = int(self.start + part_size) - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
-				free_start, free_end = self.controller.devices[self.device].get_free_space(self.start)
-				self.controller.devices[self.device].add_partition(self.controller.devices[self.device].get_free_minor_at(self.start, end), free_start, free_end, "extended")
-			minor = self.controller.devices[self.device].get_free_minor_at(self.start, end)
+				self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, "extended")
+				self.minor = 4.9
+#			minor = self.controller.devices[self.device].get_free_minor_at(self.start, end)
 			type = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-			self.controller.devices[self.device].add_partition(minor, self.start, end, type, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
+			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, type, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
-			self.controller.part_selected(None, self.device, minor)
+			self.controller.part_selected(None, self.device, int(self.minor)+1)
 		else:
 			tmppart = self.controller.devices[self.device].get_partitions()[self.minor]
 			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
@@ -218,12 +211,14 @@ class PartProperties(gtk.Window):
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-		part_size_cyl = round(self.max_size * part_space)
-		part_size_mib = int(round(part_size_cyl * self.bytes_in_sector / 1024 / 1024))
-		self.resize_info_part_size.set_text(str(part_size_mib))
-		part_unalloc_cyl = self.max_size - part_size_cyl
-		part_unalloc_mib = int(round(part_unalloc_cyl * self.bytes_in_sector / 1024 / 1024))
-		self.resize_info_unalloc_size.set_text(str(part_unalloc_mib))
+#		part_size_cyl = round(self.max_size * part_space)
+#		part_size_mib = int(round(part_size_cyl * self.bytes_in_sector / 1024 / 1024))
+		part_size_mb = int(round(part_space * self.max_size))
+		self.resize_info_part_size.set_text(str(part_size_mb))
+#		part_unalloc_cyl = self.max_size - part_size_cyl
+#		part_unalloc_mib = int(round(part_unalloc_cyl * self.bytes_in_sector / 1024 / 1024))
+		part_unalloc_mb = int(self.max_size - part_size_mb)
+		self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 
 	def validate_keypress(self, editable, new_text, new_text_length, position):
 		if new_text == ".": return
@@ -236,11 +231,13 @@ class PartProperties(gtk.Window):
 		print "Entry " + which_one + " has been updated"
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		if which_one == "part-size":
-			part_size_sec = round(long(self.resize_info_part_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
-			hpaned_pos = round((float(part_size_sec) / self.max_size) * hpaned_width)
+#			part_size_sec = round(long(self.resize_info_part_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
+			part_size_mb = round(long(self.resize_info_part_size.get_text()))
+			hpaned_pos = round((float(part_size_mb) / self.max_size) * hpaned_width)
 		else:
-			part_unalloc_sec = round(long(self.resize_info_unalloc_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
-			hpaned_pos = hpaned_width - round((float(part_unalloc_sec) / self.max_size) * hpaned_width)
+#			part_unalloc_sec = round(long(self.resize_info_unalloc_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
+			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
+			hpaned_pos = hpaned_width - round((float(part_unalloc_mb) / self.max_size) * hpaned_width)
 		if hpaned_pos <= hpaned_width:
 			self.resize_hpaned.set_position(hpaned_pos)
 		else:
@@ -249,7 +246,7 @@ class PartProperties(gtk.Window):
 	def filesystem_changed(self, widget, data=None):
 		fs = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.resize_part_space.set_colors(self.controller.colors[fs], self.controller.colors[fs])
-		if self.minor == -1: self.resize_part_space.get_child().expose_event(None, None)
+		if self.fstype == "free": self.resize_part_space.get_child().expose_event(None, None)
 
 	def delete_event(self, widget, event, data=None):
 		return False

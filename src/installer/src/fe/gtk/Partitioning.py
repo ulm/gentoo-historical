@@ -70,14 +70,14 @@ resize partitions.
 		info_filesystem_label.set_alignment(0.0, 0.5)
 		self.info_filesystem = gtk.Label()
 		self.info_filesystem.set_alignment(0.0, 0.5)
-		info_start_label = gtk.Label("Start sector:")
-		info_start_label.set_alignment(0.0, 0.5)
-		self.info_start = gtk.Label()
-		self.info_start.set_alignment(0.0, 0.5)
-		info_end_label = gtk.Label("End sector:")
-		info_end_label.set_alignment(0.0, 0.5)
-		self.info_end = gtk.Label()
-		self.info_end.set_alignment(0.0, 0.5)
+#		info_start_label = gtk.Label("Start sector:")
+#		info_start_label.set_alignment(0.0, 0.5)
+#		self.info_start = gtk.Label()
+#		self.info_start.set_alignment(0.0, 0.5)
+#		info_end_label = gtk.Label("End sector:")
+#		info_end_label.set_alignment(0.0, 0.5)
+#		self.info_end = gtk.Label()
+#		self.info_end.set_alignment(0.0, 0.5)
 		info_size_label = gtk.Label("Size:")
 		info_size_label.set_alignment(0.0, 0.5)
 		self.info_size = gtk.Label()
@@ -88,10 +88,10 @@ resize partitions.
 		part_info_table.attach(self.info_type, 1, 2, 1, 2)
 		part_info_table.attach(info_filesystem_label, 0, 1, 2, 3)
 		part_info_table.attach(self.info_filesystem, 1, 2, 2, 3)
-		part_info_table.attach(info_start_label, 0, 1, 3, 4)
-		part_info_table.attach(self.info_start, 1, 2, 3, 4)
-		part_info_table.attach(info_end_label, 0, 1, 4, 5)
-		part_info_table.attach(self.info_end, 1, 2, 4, 5)
+#		part_info_table.attach(info_start_label, 0, 1, 3, 4)
+#		part_info_table.attach(self.info_start, 1, 2, 3, 4)
+#		part_info_table.attach(info_end_label, 0, 1, 4, 5)
+#		part_info_table.attach(self.info_end, 1, 2, 4, 5)
 		part_info_table.attach(info_size_label, 0, 1, 5, 6)
 		part_info_table.attach(self.info_size, 1, 2, 5, 6)
 		self.part_info_box.pack_start(part_info_table, expand=False, fill=False)
@@ -157,8 +157,8 @@ resize partitions.
 		self.info_partition.set_text("")
 		self.info_type.set_text("")
 		self.info_filesystem.set_text("")
-		self.info_start.set_text("")
-		self.info_end.set_text("")
+#		self.info_start.set_text("")
+#		self.info_end.set_text("")
 		self.info_size.set_text("")
 		self.part_info_box.hide_all()
 #		self.resize_box.hide_all()
@@ -183,17 +183,18 @@ resize partitions.
 			self.info_filesystem.set_text(type)
 		start = tmppart.get_start()
 		end = tmppart.get_end()
-		self.info_start.set_text(str(start))
-		self.info_end.set_text(str(end))
-		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
+#		self.info_start.set_text(str(start))
+#		self.info_end.set_text(str(end))
+#		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
+		part_size = int(tmppart.get_mb())
 		self.info_size.set_text(str(part_size) + " MB")
-		self.active_part_minor = tmppart.get_minor()
+		self.active_part_minor = int(tmppart.get_minor())
 		self.part_button_delete.set_sensitive(True)
 		self.part_info_box.show_all()
 		self.part_button_box.show_all()
 
-	def unalloc_selected(self, button, dev=None, extended=False, start=0, end=0):
-		props = PartProperties.PartProperties(self, self.active_device, -1, start, end, 0, 0, "", self.active_device_bytes_in_sector)
+	def unalloc_selected(self, button, dev=None, extended=False, mb=0, minor=0):
+		props = PartProperties.PartProperties(self, self.active_device, minor, 0, mb, "free", self.active_device_bytes_in_sector)
 		props.run()
 
 	def part_button_delete_clicked(self, button, data=None):
@@ -213,6 +214,7 @@ resize partitions.
 		tmpparts = self.devices[self.active_device].get_partitions()
 		cylinders = self.devices[self.active_device].get_num_cylinders()
 		sectors = self.devices[self.active_device].get_num_sectors()
+		total_mb = self.devices[self.active_device].get_total_mb()
 		for button in self.part_buttons.keys():
 			self.part_table.remove(self.part_buttons[button])
 		self.part_table.resize(1, 100)
@@ -222,51 +224,54 @@ resize partitions.
 		extended_part = 0
 		extended_table = None
 		for part in partlist:
-			if re.compile("^Free Space").match(part) != None:
-				new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part).groups()
-				partsize = int(new_end) - int(new_start) + 1
-				percent = (float(partsize) / float(sectors)) * 100
-				if percent > 0 and percent < 1: percent = 1
+			tmppart = tmpparts[part]
+			if tmppart.get_type() == "free":
+				partsize = tmppart.get_mb()
+				percent = (float(partsize) / float(total_mb)) * 100
+				if percent < 1: percent = 1
 				percent = int(percent)
-				if self.devices[self.active_device].get_partition_at(int(new_start), ignore_extended=0):
+				print "minor: " + str(part) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
+				if tmppart.is_logical():
 					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
+					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
 					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
 					last_log_percent = last_log_percent + percent
 				else:
-					self.part_buttons['free_' + new_start + '_' + new_end] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+					self.part_buttons['free_' + str(part)] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
 					if self.devices[self.active_device].get_partitions().has_key(1) and self.devices[self.active_device].get_partitions().has_key(2) and self.devices[self.active_device].get_partitions().has_key(3) and self.devices[self.active_device].get_partitions().has_key(4):
-						self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.show_no_more_primary_message)
+						self.part_buttons['free_' + str(part)].connect("clicked", self.show_no_more_primary_message)
 					else:
-						self.part_buttons['free_' + new_start + '_' + new_end].connect("clicked", self.unalloc_selected, self.active_device, False, int(new_start), int(new_end))
-					self.part_table.attach(self.part_buttons['free_' + new_start + '_' + new_end], last_percent, (last_percent + percent), 0, 1)
+						self.part_buttons['free_' + str(part)].connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
+					self.part_table.attach(self.part_buttons['free_' + str(part)], last_percent, (last_percent + percent), 0, 1)
 					last_percent = last_percent + percent
-			elif re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part) != None:
-				tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part).groups()
-				partsize = tmpparts[int(tmpminor)].get_end() - tmpparts[int(tmpminor)].get_start() + 1
-				percent = (float(partsize) / float(sectors)) * 100
-				if percent > 0 and percent < 1: percent = 1
+			else:
+				partsize = tmppart.get_mb()
+				percent = (float(partsize) / float(total_mb)) * 100
+				if percent < 1: percent = 1
 				percent = int(percent)
-				if tmpparts[int(tmpminor)].is_extended():
+				tmpminor = int(tmppart.get_minor())
+				tmpdevice = self.active_device
+				print "minor: " + str(tmpminor) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
+				if tmppart.is_extended():
 					extended_table = gtk.Table(1, percent)
 					extended_table.set_border_width(3)
-					extended_part = int(tmpminor)
-					self.part_buttons[int(tmpminor)] = extended_table
-					self.part_table.attach(self.part_buttons[int(tmpminor)], last_percent, (last_percent + percent), 0, 1)
+					extended_part = tmpminor
+					self.part_buttons[tmpminor] = extended_table
+					self.part_table.attach(self.part_buttons[tmpminor], last_percent, (last_percent + percent), 0, 1)
 					last_percent = last_percent + percent
-				elif tmpparts[int(tmpminor)].is_logical():
-					tmpbutton = PartitionButton.Partition(color1=self.colors[tmpparts[int(tmpminor)].get_type()], color2=self.colors[tmpparts[int(tmpminor)].get_type()], label="", division=0)
+				elif tmppart.is_logical():
+					tmpbutton = PartitionButton.Partition(color1=self.colors[tmppart.get_type()], color2=self.colors[tmppart.get_type()], label="", division=0)
 					if percent >= 15:
-						tmpbutton.set_label(tmpdevice + tmpminor)
+						tmpbutton.set_label(tmpdevice + str(tmpminor))
 					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
 					last_log_percent = last_log_percent + percent
 					tmpbutton.connect("clicked", self.part_selected, tmpdevice, tmpminor)
 				else:
-					self.part_buttons[int(tmpminor)] = PartitionButton.Partition(color1=self.colors[tmpparts[int(tmpminor)].get_type()], color2=self.colors[tmpparts[int(tmpminor)].get_type()], label="", division=0)
+					self.part_buttons[tmpminor] = PartitionButton.Partition(color1=self.colors[tmppart.get_type()], color2=self.colors[tmppart.get_type()], label="", division=0)
 					if percent >= 15:
-						self.part_buttons[int(tmpminor)].set_label(tmpdevice + tmpminor)
-					self.part_buttons[int(tmpminor)].connect("clicked", self.part_selected, tmpdevice, tmpminor)
-					self.part_table.attach(self.part_buttons[int(tmpminor)], last_percent, (last_percent + percent), 0, 1)
+						self.part_buttons[tmpminor].set_label(tmpdevice + str(tmpminor))
+					self.part_buttons[tmpminor].connect("clicked", self.part_selected, tmpdevice, tmpminor)
+					self.part_table.attach(self.part_buttons[tmpminor], last_percent, (last_percent + percent), 0, 1)
 					last_percent = last_percent + percent
 		self.part_table.show_all()
 
@@ -282,7 +287,8 @@ resize partitions.
 
 	def part_button_properties_clicked(self, widget, data=None):
 		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
-		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_start(), tmppart.get_end(), tmppart.get_min_sectors_for_resize(), tmppart.get_max_sectors_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector)
+#		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_min_sectors_for_resize(), tmppart.get_max_sectors_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector)
+		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, tmppart.get_mb(), tmppart.get_type(), self.active_device_bytes_in_sector)
 		props.run()
 
 	def activate(self):
@@ -303,6 +309,7 @@ resize partitions.
 					self.detected_dev_combo.append_text(drive)
 					self.drives.append(drive)
 				except:
+					print "Exception received while loading partitions"
 					if self.devices.has_key(drive): del self.devices[drive]
 					part_load_error = 1
 			if part_load_error:

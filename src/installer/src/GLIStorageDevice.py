@@ -1,5 +1,7 @@
 import commands, string, re, os, parted
 
+MEGABYTE = 1024 * 1024
+
 class Device:
 	"Class representing a partitionable device."
 	
@@ -13,95 +15,110 @@ class Device:
 	_parted_dev = None
 	_parted_disk = None
 	_sector_bytes = 0
+	_total_mb = 0
+	_arch = None
+
+	archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
+                     'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "boot" } ], 'disklabel': 'msdos', 'extended': False },
+                     'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
+                     'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
+                   }
 	
-	def __init__(self, device):
+	def __init__(self, device, arch="x86"):
 		self._device = device
 		self._partitions = {}
 		self._geometry = {'cylinders': 0, 'heads': 0, 'sectors': 0, 'sectorsize': 512}
 		self._total_bytes = 0
 		self._cylinder_bytes = 0
+		self._arch = arch
 		self._parted_dev = parted.PedDevice.get(self._device)
 		self._parted_disk = parted.PedDisk.new(self._parted_dev)
 		self.set_disk_geometry_from_disk()
 
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
-#		if string.strip(commands.getoutput("echo " + self._device + " | grep '/hd'")) == self._device: # IDE
-#			proc_dir = "/proc/ide/" + commands.getoutput("echo " + self._device + " | cut -d '/' -f 3")
-#			proc_dir = string.strip(proc_dir)
-#			heads = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 2")
-#			sectors = commands.getoutput("cat " + proc_dir + "/geometry | grep logical | cut -d '/' -f 3")
-#			total_sectors = commands.getoutput("cat " + proc_dir + "/capacity")
-#			cylinders = int(total_sectors) / (int(heads) * int(sectors))
-#			self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = int(heads), int(sectors), int(cylinders)
-#		else: #SCSI
 		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
-
 		self._sector_bytes = self._parted_dev.sector_size
 		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._sector_bytes
-#		self._total_sectors = self._geometry['cylinders'] * self._geometry['heads'] * self._geometry['sectors']
 		self._total_sectors = self._parted_dev.length
 		self._sectors_in_cylinder = self._geometry['heads'] * self._geometry['sectors']
+		self._total_mb = int(self._total_bytes / MEGABYTE)
 
 	def set_partitions_from_disk(self):
+		last_part = 0
+		last_log_part = 4
 		parted_part = self._parted_disk.next_partition()
-		while parted_part != None:
-			if parted_part.num < 1:
-				parted_part = self._parted_disk.next_partition(parted_part)
-				continue
-			fs_type = ""
-			if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
-			if parted_part.type == 2: fs_type = "extended"
-			self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, '', parted_part.geom.start, parted_part.geom.end, (parted_part.geom.end - parted_part.geom.start), fs_type, format=False, existing=True)
-			parted_part = self._parted_disk.next_partition(parted_part)
-
-	def set_partitions_from_install_profile_structure(self, ips):
-		for part in ips:
-			tmppart = ips[part]
-			existing = False
-			parted_part = self._parted_disk.get_partition(part)
-			if parted_part != None:
-				start = parted_part.geom.start / self._sectors_in_cylinder
-				end = parted_part.geom.end / self._sectors_in_cylinder
+		while parted_part:
+			part_mb = int((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
+			if parted_part.num >= 1:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
-				if int(tmppart['start']) == int(start) and int(tmppart['end']) == int(end) and tmppart['type'] == fs_type and tmppart['format'] == False:
-					existing = True
-			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
+				# Insert code to calculate MB here ---------------------------------------v
+				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
+			elif parted_part.type_name == "free":
+				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)
+				if parent_part:
+					# And here ----------------------------------------------------------------------------v
+					self._partitions[float(last_log_part+0.9)] = Partition(self, float(last_log_part+0.9), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					last_log_part += 1
+				else:
+					# And here ----------------------------------------------------------------------------v
+					self._partitions[float(last_log_part+0.1)] = Partition(self, float(last_log_part+0.1), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					last_part += 1
+			parted_part = self._parted_disk.next_partition(parted_part)
+
+	def set_partitions_from_install_profile_structure(self, ips):
+		pass
+#		for part in ips:
+#			tmppart = ips[part]
+#			existing = False
+#			parted_part = self._parted_disk.get_partition(part)
+#			if parted_part != None:
+#				start = parted_part.geom.start / self._sectors_in_cylinder
+#				end = parted_part.geom.end / self._sectors_in_cylinder
+#				fs_type = ""
+#				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
+#				if parted_part.type == 2: fs_type = "extended"
+#				if int(tmppart['start']) == int(start) and int(tmppart['end']) == int(end) and tmppart['type'] == fs_type and tmppart['format'] == False:
+#					existing = True
+#			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
 
 	def get_device(self):
 		return self._device
 
-	def clear_partitions(self):
-		self._partitions = {}
-
-	def add_partition(self, minor, start, end, type, mountpoint='', mountopts=''):
-		free_start, free_end = self.get_free_space(start)
-		minor = int(minor)
-		if not free_end:
-			return False
-		if self._partitions.has_key(minor):
+	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
+		free_minor = float(free_minor)
+		new_minor = int(free_minor) + 1
+		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
 			parts.sort()
 			parts.reverse()
 			hole_at = 0
 			for i in range(1, parts[0]+1):
-				if i <= minor: continue
-				if not self._partitions.has_key(int(i)):
+				if i <= new_minor: continue
+				if not self._partitions.has_key(i):
 					hole_at = i
 					break
 			stopscooting = 0
 			for i in parts:
 				if stopscooting: break
-				if (i >= hole_at) and (hole_at): continue
-				if i >= minor:
+				if i >= hole_at and hole_at: continue
+				if i >= new_minor:
 					self._partitions[i].set_minor(i+1)
 					self._partitions[i+1] = self._partitions[i]
-					if i == minor: stopscooting = 1
-		self._partitions[minor] = Partition(self, minor, '', start, end, 0, type, mountpoint=mountpoint, mountopts=mountopts)
+					if i == new_minor: stopscooting = 1
+		del self._partitions[free_minor]
+		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts)
 
 	def remove_partition(self, minor):
+		tmppart = self._partitions[int(minor)]
+		free_minor = 0
+		if tmppart.is_logical():
+			free_minor = float(minor)-0.1
+		else:
+			free_minor = float(minor)-0.9
+		self._partitions[free_minor] = Partition(self, free_minor, tmppart.get_mb(), 0, 0, "free", format=False, existing=False)
 		del self._partitions[int(minor)]
 
 	def get_free_space(self, start):
@@ -183,39 +200,24 @@ class Device:
                 parts = self._partitions.keys()
                 parts.sort()
                 partlist = []
-                free_start, free_end = self.get_free_space(0)
-                tmppart = None
+		tmppart = None
 		tmppart_log = None
-                for part in parts:
-			if part > 4: break
+		for part in parts:
+			if self.archinfo[self._arch]['extended'] and part > 4.1: break
 			tmppart = self._partitions[part]
-			if free_end < tmppart.get_start() and not free_start == -1:
-				partlist.append("Free Space (" + str(free_start) + "-" + str(free_end) + ")")
-				free_start, free_end = self.get_free_space(free_end)
-			newitem = self._device + str(part) + ": " + str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-			if tmppart.is_extended(): newitem = newitem + " extended"
-			partlist.append(newitem)
+			partlist.append(part)
 			if tmppart.is_extended():
 				for part_log in parts:
-					if part_log < 5: continue
+					if part_log < 4.9: continue
 					tmppart_log = self._partitions[part_log]
-					if free_end < tmppart_log.get_start() and free_end <= tmppart.get_end() and not free_start == -1:
-						partlist.append("Free Space (" + str(free_start) + "-" + str(free_end) + ")")
-						free_start, free_end = self.get_free_space(free_end)
-					newitem = self._device + str(part_log) + ": " + str(tmppart_log.get_start()) + "-" + str(tmppart_log.get_end()) + " logical"
-					partlist.append(newitem)
-				if ((tmppart_log == None) or (free_start > tmppart_log.get_end())) and free_start < tmppart.get_end():
-					partlist.append("Free Space (" + str(free_start) + "-" + str(free_end) + ") logical")
-					free_start, free_end = self.get_free_space(free_end)
-		if (tmppart == None) or (free_start > tmppart.get_end()):
-			partlist.append("Free Space (" + str(free_start) + "-" + str(free_end) + ")")
+					partlist.append(part_log)
 		return partlist
 
 	def get_install_profile_structure(self):
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': 0, 'minor': int(part), 'origminor': tmppart.get_orig_minor(), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
+			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
 		return devdic
 
 	def get_extended_partition(self):
@@ -240,12 +242,15 @@ class Device:
 	def get_drive_bytes(self):
 		return int(self._total_bytes)
 
+	def get_total_mb(self):
+		return self._total_mb
+
 	def get_partitions(self):
 		return self._partitions
 
-	def print_partitions(self):
-		for part in self._partitions.keys():
-			print self._partitions[part].return_info()
+#	def print_partitions(self):
+#		for part in self._partitions.keys():
+#			print self._partitions[part].return_info()
 
 	def print_geometry(self):
 		print self._total_bytes, self._geometry
@@ -282,35 +287,31 @@ class Partition:
 	"Class representing a single partition within a Device object"
 
 	_device = None
-	_minor = None
-	_orig_minor = ""
-	_bootflag = None
-	_start = None
-	_end = None
-	_blocks = None
+	_minor = 0
+	_orig_minor = 0
+	_start = 0
+	_end = 0
 	_type = None
 	_mountpoint = None
 	_mountopts = None
 	_format = None
 	_resizeable = None
 	_min_sectors_for_resize = 0
+	_mb = 0
 	
-	def __init__(self, device, minor, bootflag, start, end, blocks, type, mountpoint='', mountopts='', format=True, existing=False):
+	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False):
 		self._device = device
-		self._minor = int(minor)
+		self._minor = float(minor)
 		if existing: self._orig_minor = int(minor)
-		self._bootflag = bootflag
 		self._start = int(start)
 		self._end = int(end)
-		self._blocks = int(blocks)
-		if type == "": type = "unknown"
-		self._type = type
+		self._type = type or "unknown"
 		self._mountpoint = mountpoint
 		self._mountopts = mountopts
 		self._format = format
-		if blocks == 0:
-			self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
+		self._mb = mb
 		if existing:
+			self._orig_minor = self._minor
 			parted_part = device._parted_disk.get_partition(minor)
 			label_type = device._parted_disk.type.name
 			if label_type == "loop":
@@ -329,7 +330,7 @@ class Partition:
 				self._min_sectors_for_resize = (self._end - self._start + 1) - free_sec
 				self._resizeable == True
 			else:
-				parted_part = self._device._parted_disk.get_partition(self._minor)
+				parted_part = self._device._parted_disk.get_partition(int(self._minor))
 				try:
 					parted_fs = parted_part.geom.file_system_open()
 				except:
@@ -348,10 +349,15 @@ class Partition:
 			return False
 
 	def is_logical(self):
-		part = self._device.get_partition_at(self._start, ignore_extended=0)
-		if part and self._device._partitions[part].is_extended() and not part == self._minor:
+		if self._type == "free":
+			if int(self._minor) + 0.9 == self._minor:
+				return True
+			else:
+				return False
+		elif self._device.archinfo[self._device._arch]['extended'] and self._minor > 4:
 			return True
-		return False
+		else:
+			return False
 
 	def get_logicals(self):
 		if not self.is_extended():
@@ -386,6 +392,9 @@ class Partition:
 	def get_end(self):
 		return int(self._end)
 
+	def get_mb(self):
+		return int(self._mb)
+
 	def set_type(self, type):
 		self._type = type
 
@@ -396,10 +405,10 @@ class Partition:
 		return self._device
 
 	def set_minor(self, minor):
-		self._minor = int(minor)
+		self._minor = float(minor)
 
 	def get_minor(self):
-		return int(self._minor)
+		return float(self._minor)
 
 	def set_orig_minor(self, orig_minor):
 		self._orig_minor = int(orig_minor)
