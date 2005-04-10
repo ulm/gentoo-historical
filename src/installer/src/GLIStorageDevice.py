@@ -100,28 +100,44 @@ class Device:
 					if part_log < Decimal("4.9"): continue
 					tmppart_log = self._partitions[part_log]
 					if tmppart_log.get_type() == "free":
-						if not last_log_free:
-							tmppart_log.set_minor(Decimal(str(last_log_minor + 0.9)))
+						if last_log_minor < last_log_free:
+							self._partitions[last_log_free].set_mb(self._partitions[last_log_free].get_mb()+tmppart_log.get_mb())
+							del self._partitions[part_log]
 						else:
-							if last_log_minor < last_log_free:
-								self._partitions[last_log_free].set_mb(self._partitions[last_log_free].get_mb()+tmppart_log.get_mb())
-								del self._partitions[part_log]
+							if not last_log_free:
+								last_log_free = Decimal(str(last_log_minor + 0.9))
+							tmppart_log.set_minor(last_log_free)
+							self._partitions[last_log_free] = tmppart_log
+							if part_log != last_log_free: del self._partitions[part_log]
+							continue
 						last_log_free = part_log
 					else:
 						if part_log > (last_log_minor + 1):
 							tmppart_log.set_minor(last_log_minor + 1)
+							last_log_minor = last_log_minor + 1
+							self._partitions[last_log_minor] = tmppart_log
+							del self._partitions[part_log]
+							continue
 						last_log_minor = part_log
 			if tmppart.get_type() == "free":
-				if not last_free:
-					tmppart.set_minor(Decimal(str(last_minor + 0.1)))
+				if last_minor < last_free:
+					self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
+					del self._partitions[part]
 				else:
-					if last_minor < last_free:
-						self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
-						del self_partitions[part]
+					if not last_free:
+						last_free = Decimal(str(last_minor + 0.1))
+					tmppart.set_minor(last_free)
+					self._partitions[last_free] = tmppart
+					if part != last_free: del self._partitions[part]
+					continue
 				last_free = part
 			else:
 				if part > (last_minor + 1):
 					tmppart.set_minor(last_minor + 1)
+					last_minor = last_minor + 1
+					self._partitions[last_minor] = tmppart
+					del self._partitions[part]
+					continue
 				last_minor = part
 
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
