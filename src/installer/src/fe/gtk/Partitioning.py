@@ -230,7 +230,7 @@ resize partitions.
 				percent = (float(partsize) / float(total_mb)) * 100
 				if percent < 1: percent = 1
 				percent = int(percent)
-				print "minor: " + str(part) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
+#				print "minor: " + str(part) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
 				if tmppart.is_logical():
 					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
 					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
@@ -251,7 +251,7 @@ resize partitions.
 				percent = int(percent)
 				tmpminor = int(tmppart.get_minor())
 				tmpdevice = self.active_device
-				print "minor: " + str(tmpminor) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
+#				print "minor: " + str(tmpminor) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
 				if tmppart.is_extended():
 					extended_table = gtk.Table(1, percent)
 					extended_table.set_border_width(3)

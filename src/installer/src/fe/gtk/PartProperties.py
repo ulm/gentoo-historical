@@ -189,7 +189,7 @@ class PartProperties(gtk.Window):
 #			start = self.active_part_start_cyl
 #			end = int(self.start + part_size) - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
-				self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, "extended")
+				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4.9
 #			minor = self.controller.devices[self.device].get_free_minor_at(self.start, end)
 			type = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]

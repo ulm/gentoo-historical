@@ -1,4 +1,5 @@
 import commands, string, re, os, parted
+from decimal import Decimal
 
 MEGABYTE = 1024 * 1024
 
@@ -54,17 +55,14 @@ class Device:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
-				# Insert code to calculate MB here ---------------------------------------v
 				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
 			elif parted_part.type_name == "free":
 				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)
 				if parent_part:
-					# And here ----------------------------------------------------------------------------v
-					self._partitions[float(last_log_part+0.9)] = Partition(self, float(last_log_part+0.9), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					self._partitions[Decimal(str(float(last_log_part+0.9)))] = Partition(self, Decimal(str(float(last_log_part+0.9))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_log_part += 1
 				else:
-					# And here ----------------------------------------------------------------------------v
-					self._partitions[float(last_log_part+0.1)] = Partition(self, float(last_log_part+0.1), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					self._partitions[Decimal(str(float(last_log_part+0.1)))] = Partition(self, Decimal(str(float(last_log_part+0.1))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_part += 1
 			parted_part = self._parted_disk.next_partition(parted_part)
 
@@ -87,9 +85,49 @@ class Device:
 	def get_device(self):
 		return self._device
 
+	def tidy_partitions(self):
+		last_minor = 0
+		last_log_minor = 4
+		last_free = 0
+		last_log_free = 0
+		parts = self._partitions.keys()
+		parts.sort()
+		for part in parts:
+			if self.archinfo[self._arch]['extended'] and part > 4: break
+			tmppart = self._partitions[part]
+			if tmppart.get_type() == "extended":
+				for part_log in parts:
+					if part_log < Decimal("4.9"): continue
+					tmppart_log = self._partitions[part_log]
+					if tmppart_log.get_type() == "free":
+						if not last_log_free:
+							tmppart_log.set_minor(Decimal(str(last_log_minor + 0.9)))
+						else:
+							if last_log_minor < last_log_free:
+								self._partitions[last_log_free].set_mb(self._partitions[last_log_free].get_mb()+tmppart_log.get_mb())
+								del self._partitions[part_log]
+						last_log_free = part_log
+					else:
+						if part_log > (last_log_minor + 1):
+							tmppart_log.set_minor(last_log_minor + 1)
+						last_log_minor = part_log
+			if tmppart.get_type() == "free":
+				if not last_free:
+					tmppart.set_minor(Decimal(str(last_minor + 0.1)))
+				else:
+					if last_minor < last_free:
+						self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
+						del self_partitions[part]
+				last_free = part
+			else:
+				if part > (last_minor + 1):
+					tmppart.set_minor(last_minor + 1)
+				last_minor = part
+
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
-		free_minor = float(free_minor)
+		free_minor = Decimal(str(free_minor))
 		new_minor = int(free_minor) + 1
+#		print "add_partition(): free_minor=" + str(free_minor) + ", new_minor=" + str(new_minor)
 		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
 			parts.sort()
@@ -108,18 +146,32 @@ class Device:
 					self._partitions[i].set_minor(i+1)
 					self._partitions[i+1] = self._partitions[i]
 					if i == new_minor: stopscooting = 1
-		del self._partitions[free_minor]
+		if mb != self._partitions[free_minor].get_mb():
+			old_free_mb = self._partitions[free_minor].get_mb()
+			del self._partitions[free_minor]
+			if self.archinfo[self._arch]['extended'] and new_minor >= 5:
+				free_minor = Decimal(str(new_minor + 0.9))
+			else:
+				free_minor = Decimal(str(new_minor + 0.1))
+			self._partitions[free_minor] = Partition(self, free_minor, old_free_mb-mb, 0, 0, "free")
+#			print "add_partition(): new part doesn't use all freespace. new free part is: minor=" + str(free_minor)
+		else:
+			del self._partitions[free_minor]
 		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts)
+		if type == "extended":
+			self._partitions[Decimal("4.9")] = Partition(self, Decimal("4.9"), mb, 0, 0, "free")
+		self.tidy_partitions()
 
 	def remove_partition(self, minor):
 		tmppart = self._partitions[int(minor)]
 		free_minor = 0
 		if tmppart.is_logical():
-			free_minor = float(minor)-0.1
+			free_minor = Decimal(str(float(minor)-0.1))
 		else:
-			free_minor = float(minor)-0.9
+			free_minor = Decimal(str(float(minor)-0.9))
 		self._partitions[free_minor] = Partition(self, free_minor, tmppart.get_mb(), 0, 0, "free", format=False, existing=False)
 		del self._partitions[int(minor)]
+		self.tidy_partitions()
 
 	def get_free_space(self, start):
 		GAP_SIZE = 100
@@ -203,12 +255,12 @@ class Device:
 		tmppart = None
 		tmppart_log = None
 		for part in parts:
-			if self.archinfo[self._arch]['extended'] and part > 4.1: break
+			if self.archinfo[self._arch]['extended'] and part > Decimal("4.1"): break
 			tmppart = self._partitions[part]
 			partlist.append(part)
 			if tmppart.is_extended():
 				for part_log in parts:
-					if part_log < 4.9: continue
+					if part_log < Decimal("4.9"): continue
 					tmppart_log = self._partitions[part_log]
 					partlist.append(part_log)
 		return partlist
@@ -350,7 +402,7 @@ class Partition:
 
 	def is_logical(self):
 		if self._type == "free":
-			if int(self._minor) + 0.9 == self._minor:
+			if int(self._minor) + Decimal("0.9") == Decimal(str(self._minor)):
 				return True
 			else:
 				return False
@@ -394,6 +446,9 @@ class Partition:
 
 	def get_mb(self):
 		return int(self._mb)
+
+	def set_mb(self, mb):
+		self._mb = int(mb)
 
 	def set_type(self, type):
 		self._type = type
