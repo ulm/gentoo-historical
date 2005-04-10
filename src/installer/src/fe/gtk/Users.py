@@ -12,16 +12,6 @@ class Panel(GLIScreen.GLIScreen):
 	@author:    John N. Laliberte <allanonjl@gentoo.org>
 	@license:   GPL
 	"""
-	# USERS TODO:
-	# 1. Remove methods / structures that are not needed anymore and
-	#    make more use of queries against the backend storage instead
-	#    of trying to hold data locally.
-	# 2. More testing to remove UI bugs and ensure that hashes are
-	#    being preserved.
-	# 3. In GLIInstallProfile, add storage check to make sure UID is
-	#    being stored as an int.
-	# 4. Make an actual reset button within the Notebook on the reset
-	#    root password frame.  Rename the button to "Root Password".
 	
 	# Attributes:
 	title="User Settings"
@@ -84,14 +74,14 @@ class Panel(GLIScreen.GLIScreen):
 		#frame.add(frame_vert)
 		
 		# setup the action buttons
-		reset = gtk.Button("(Re)Set Root Pass", stock=None)
-		reset.connect("clicked", self.reset, "root")
+		reset = gtk.Button("Root Password", stock=None)
+		reset.connect("clicked", self.root, "root")
 		reset.set_size_request(150, -1)
 		reset.show()
 		hbox.pack_start(reset, expand=False, fill=False, padding=5)
 
-		edit = gtk.Button("Add/Edit user", stock=None)
-		edit.connect("clicked", self.edit, "edit")
+		edit = gtk.Button("Add user", stock=None)
+		edit.connect("clicked", self.addu, "edit")
 		edit.set_size_request(150, -1)
 		edit.show()
 		hbox.pack_start(edit, expand=False, fill=False, padding=5)
@@ -118,6 +108,7 @@ class Panel(GLIScreen.GLIScreen):
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		frame_vert.add(hbox)
+		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("")
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
@@ -144,7 +135,7 @@ class Panel(GLIScreen.GLIScreen):
 		hbox.pack_start(self.root2, expand=False, fill=False, padding=5)
 		verify = gtk.Button("Verify!")
 		verify.connect("clicked", self.verify_root_password, "delete")
-		verify.set_size_request(150, 5)
+		verify.set_size_request(150, -1)
 		hbox.pack_start(verify, expand=False, fill=False, padding=5)
 		self.verified = gtk.Image()
 		self.verified.set_from_stock(gtk.STOCK_CANCEL, gtk.ICON_SIZE_SMALL_TOOLBAR)
@@ -153,9 +144,19 @@ class Panel(GLIScreen.GLIScreen):
 		
 		# two more blank hboxes
 		hbox = gtk.HBox(False, 0)
-		label = gtk.Label("")
-		label.set_size_request(150, -1)
-		hbox.pack_start(label, expand=False, fill=False, padding=5)
+		# reset button if they want to reset the root password
+		# loaded from a user profile
+		self.reset_pass2 = gtk.Button("Reset root password")
+		self.reset_pass2.connect("clicked", self.reset, "root")
+		self.reset_pass2.set_size_request(150, -1)
+		self.reset_pass2.set_sensitive(True)
+		fake_label=gtk.Label("")
+		fake_label.set_size_request(150,-1)
+		fake_label2=gtk.Label("")
+		fake_label2.set_size_request(150,-1)
+		hbox.pack_start(fake_label, expand=False, fill=False, padding=5)
+		hbox.pack_start(fake_label2, expand=False, fill=False, padding=5)
+		hbox.pack_start(self.reset_pass2, expand=False, fill=False, padding=5)
 		frame_vert.add(hbox)
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("")
@@ -252,7 +253,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.comment.set_size_request(150, -1)
 		self.comment.set_name("comment")
 		hbox.pack_start(self.comment, expand=False, fill=False, padding=5)
-		button = gtk.Button("Add/Modify User")
+		button = gtk.Button("Accept Changes")
 		button.connect("clicked", self.add_edit_user, "add/edit user")
 		button.set_size_request(150, -1)
 		hbox.pack_start(button, expand=False, fill=False, padding=5)
@@ -273,8 +274,9 @@ class Panel(GLIScreen.GLIScreen):
 	def selection_changed(self, treeview, data=None):
 		treeselection = treeview.get_selection()
 		treemodel, treeiter = treeselection.get_selected()
-		row = treemodel.get(treeiter, 0)
-		print row
+		self.edit(treemodel,treeiter)
+		#row = treemodel.get(treeiter, 0)
+		#print row
 	
 	def reset(self, widget, data=None):
 		# enable the boxen
@@ -290,11 +292,19 @@ class Panel(GLIScreen.GLIScreen):
 		self.blank_the_boxes()
 		self.notebook.set_current_page(0)
 	
-	def edit(self, widget, data=None):
+	def root(self,widget, data=None):
+		# select the root notebook page.
+		self.notebook.set_current_page(0)
+	
+	def addu(self,widget, data=None):
+		# select that page
+		self.notebook.set_current_page(1)
+		
+	def edit(self, treemodel=None,treeiter=None):
 		self.blank_the_boxes()
 		# retrieve the selected stuff from the treeview
-		treeselection = self.treeview.get_selection()
-		treemodel, treeiter = treeselection.get_selected()
+		#treeselection = self.treeview.get_selection()
+		#treemodel, treeiter = treeselection.get_selected()
 		
 		# if theres something selected, need to show the details
 		if treeiter != None:
@@ -318,7 +328,7 @@ class Panel(GLIScreen.GLIScreen):
 				self.password.set_sensitive(True)
 			
 		# show the edit box
-		self.notebook.set_current_page(1)
+		#self.notebook.set_current_page(1)
 	
 	def delete(self, widget, data=None):
 		self.blank_the_boxes()
@@ -332,15 +342,27 @@ class Panel(GLIScreen.GLIScreen):
 			box=self.user[entry_box]
 			data[box.get_name()] = box.get_text()
 			
-		self.add_user(data)
-		# blank the current entries
-		self.blank_the_boxes()
+		success = self.add_user(data)
+		
+		# if it was successful, blank the current entries
+		if success == True:
+			self.blank_the_boxes()
 			
 	def add_user(self,data):
-		# if its not empty, then its valid data! ( just replace i
-		#if self.is_data_empty(data) and self.was_previously_added(data):
+		return_val = False
+		
 		# test to make sure uid is an INT!!!
-		if self.is_data_empty(data): #and data['userid'].type:
+		test = False
+		try:
+			uid_test = int(data["userid"])
+			test = True
+		except:
+			# its not an integer, raise the exception.
+			msgbox=Widgets().error_Box("Error","UID must be an integer, and you entered a string!")
+			msgbox.run()
+			msgbox.destroy()
+			
+		if self.is_data_empty(data) and test==True:
 			# now add it to the box
 			# ( <user name>, <password hash>, (<tuple of groups>), <shell>, 
 			#    <home directory>, <user id>, <user comment> )
@@ -361,6 +383,9 @@ class Panel(GLIScreen.GLIScreen):
 										data["shell"], data["homedir"], 
 										data["userid"], data["comment"]])
 			#self.current_users.append(data['username'])
+			return_val=True
+		
+		return return_val
 			
 	def delete_user(self):
 		# get which one is selected
@@ -371,7 +396,7 @@ class Panel(GLIScreen.GLIScreen):
 			row = treemodel.get(treeiter, 1)
 			
 			# remove it from the current_users
-			self.current_users.remove(row[0])
+			#self.current_users.remove(row[0])
 			
 			# remove it from the profile
 			self.controller.install_profile.remove_user(row[0])
@@ -380,13 +405,18 @@ class Panel(GLIScreen.GLIScreen):
 			iter = self.treedata.remove(treeiter)
 	
 	def verify_root_password(self, widget, data=None):
-		if self.root1.get_text() == self.root2.get_text():
+		if self.root1.get_text() == self.root2.get_text() and self.root1.get_text()!="":
 			# passwords match!
 			self.root_verified = True
 			# disable the boxen
 			self.root1.set_sensitive(False)
 			self.root2.set_sensitive(False)
 			self.verified.set_from_stock(gtk.STOCK_APPLY, gtk.ICON_SIZE_SMALL_TOOLBAR)
+		else:
+			# password's don't match.
+			msgbox=Widgets().error_Box("Error","Passwords do not match! ( or they are blank )")
+			msgbox.run()
+			msgbox.destroy()
 			
 	def blank_the_boxes(self):
 		# blank the current entries
@@ -552,12 +582,12 @@ class Panel(GLIScreen.GLIScreen):
 				if user[0] not in self.current_users and user[0] not in stored_users:
 					# user is not in stored profile, and hasn't been previously added
 					self.controller.install_profile.add_user(None, (user[0], user[1], user[2], user[3], user[4], user[5], user[6]), None)
-					self.current_users.append(user[0])
+					#self.current_users.append(user[0])
 				elif user[0] in stored_users:
 					# user is in stored profile, need to remove, then readd the user
 					self.controller.install_profile.remove_user(user[0])
 					self.controller.install_profile.add_user(None, (user[0], user[1], user[2], user[3], user[4], user[5], user[6]), None)
-					self.current_users.append(user[0])
+					#self.current_users.append(user[0])
 				
 			return True
 		else:
