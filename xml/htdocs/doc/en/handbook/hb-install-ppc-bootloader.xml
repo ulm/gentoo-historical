@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.24 2005/04/11 08:03:33 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.25 2005/04/11 11:57:05 josejx Exp $ -->
 
 <sections>
 
-<version>2.2</version>
+<version>2.3</version>
 <date>2005-04-11</date>
 
 <section>
@@ -67,6 +67,27 @@ automatically set up <path>/etc/yaboot.conf</path> or you are installing Gentoo
 on a G5 (on which <c>yabootconfig</c> does not always work), you can just edit 
 the sample file already installed on your system.
 </p>
+
+<note>
+You may need to edit the yaboot.conf file if using genkernel.  The arguments
+provided by the genkernel ebuild need to be added as an option to the kernel
+image section.  The relevant section of yaboot.conf is given below:
+</note>
+
+<pre caption="Adding boot arguments to yaboot.conf">
+<comment>#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options - replace 2.6.9 with your kernel-version
+#################</comment>
+image=/boot/kernel-2.6.9
+  label=Linux
+  root=/dev/ram0		<comment># If using genkernel this is /dev/ram0</comment>
+  partition=3
+  sysmap=/boot/System.map-2.6.9
+  append="real_root=/dev/hda3 init=/linuxrc"	<comment># Add arguments to this line</comment>
+  read-only
+<comment>##################</comment>
+</pre>
 
 <ul>
   <li><uri link="#yabootconfig">Default: Using yabootconfig</uri></li>
@@ -230,15 +251,14 @@ BootX can only be used on OldWorld Apple systems!
 </impo>
 
 <p>
-Since BootX boots Linux from within MacOS, you'll need to copy the kernel you've
-just compiled from your Linux partition.  To do this, you'll need to first mount
-your MacOS partition from outside of the chroot.  You can use mac-fdisk to find
-your MacOS partition number, but we'll use sda6 as an example here.  Once the
-partition is mounted, we'll copy the kernel to the system folder so BootX can
-find it.
+Since BootX boots Linux from within MacOS, the kernel will need to be copied
+from the Linux Partition to the MacOS partition.  First, mount the MacOS 
+partition from outside of the chroot.  Use <c>mac-fdisk -l</c> to find the 
+MacOS partition number, sda6 is used as an example here.  Once the partition is
+mounted, we'll copy the kernel to the system folder so BootX can find it.
 </p>
 
-<pre caption="Mounting your MacOS partition">
+<pre caption="Copying the kernel to the MacOS partition">
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
@@ -246,8 +266,21 @@ cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux
 </pre>
 
 <p>
-Now that the kernel is copied over, we can unmount all mounted filesystems and
-enter that one magical command that you have been waiting for: <c>reboot</c>.
+If genkernel is used, the kernel is located in a different place and the initrd
+will need to be copied as well.
+</p>
+
+<pre caption="Copying the Genkernel kernel and initrd to the MacOS partition">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initrd-* "/mnt/mac/System Folder"</i>
+</pre>
+
+<p>
+Now that the kernel is copied over, unmount all mounted filesystems and enter 
+that one magical command that you have been waiting for: <c>reboot</c>.
 </p>
 
 <pre caption="Unmounting all partitions and rebooting">
@@ -257,17 +290,18 @@ cdimage ~# <i>reboot</i>
 </pre>
 
 <p>
-Of course, don't forget to remove all bootable media, we need to boot into MacOS
-this time.
+Of course, don't forget to remove all bootable media, MacOS needs to boot this
+time.
 </p>
 
 <p>
-Now that your machine has booted into MacOS, open the BootX control panel and 
-Select <c>Options</c> and uncheck <c>Used specified RAM disk</c>. When you 
-return to the BootX main screen, you will now find an option to specify your
-machine's root disk and partition. Fill these in with the appropriate values.
-Depending upon your kernel configuration, you may need to append some of the
-settings used to boot the LiveCD such as the video option.
+Now that the machine has booted into MacOS, open the BootX control panel and 
+Select <c>Options</c> and uncheck <c>Used specified RAM disk</c> if not using
+genkernel.  If using genkernel, ensure that the genkernel initrd is selected
+instead of the LiveCD initrd.  If not using genkernel, there is now an option 
+to specify the machine's Linux root disk and partition. Fill these in with the 
+appropriate values.  Depending upon the kernel configuration, some boot 
+arguments may need to be applied.
 </p>
 
 <p>
