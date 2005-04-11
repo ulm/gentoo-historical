@@ -3,6 +3,12 @@ from decimal import Decimal
 
 MEGABYTE = 1024 * 1024
 
+archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
+             'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "boot" } ], 'disklabel': 'msdos', 'extended': False },
+             'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
+             'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
+           }
+
 class Device:
 	"Class representing a partitionable device."
 	
@@ -19,12 +25,6 @@ class Device:
 	_total_mb = 0
 	_arch = None
 
-	archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
-                     'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "boot" } ], 'disklabel': 'msdos', 'extended': False },
-                     'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
-                     'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
-                   }
-	
 	def __init__(self, device, arch="x86"):
 		self._device = device
 		self._partitions = {}
@@ -93,7 +93,7 @@ class Device:
 		parts = self._partitions.keys()
 		parts.sort()
 		for part in parts:
-			if self.archinfo[self._arch]['extended'] and part > 4: break
+			if archinfo[self._arch]['extended'] and part > 4: break
 			tmppart = self._partitions[part]
 			if tmppart.get_type() == "extended":
 				for part_log in parts:
@@ -165,7 +165,7 @@ class Device:
 		if mb != self._partitions[free_minor].get_mb():
 			old_free_mb = self._partitions[free_minor].get_mb()
 			del self._partitions[free_minor]
-			if self.archinfo[self._arch]['extended'] and new_minor >= 5:
+			if archinfo[self._arch]['extended'] and new_minor >= 5:
 				free_minor = Decimal(str(new_minor + 0.9))
 			else:
 				free_minor = Decimal(str(new_minor + 0.1))
@@ -271,7 +271,7 @@ class Device:
 		tmppart = None
 		tmppart_log = None
 		for part in parts:
-			if self.archinfo[self._arch]['extended'] and part > Decimal("4.1"): break
+			if archinfo[self._arch]['extended'] and part > Decimal("4.1"): break
 			tmppart = self._partitions[part]
 			partlist.append(part)
 			if tmppart.is_extended():
@@ -422,7 +422,7 @@ class Partition:
 				return True
 			else:
 				return False
-		elif self._device.archinfo[self._device._arch]['extended'] and self._minor > 4:
+		elif archinfo[self._device._arch]['extended'] and self._minor > 4:
 			return True
 		else:
 			return False

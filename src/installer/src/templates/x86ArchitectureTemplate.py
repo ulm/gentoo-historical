@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.27 2005/03/30 05:33:48 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.28 2005/04/11 19:59:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -12,9 +12,11 @@ import GLIUtility, string
 from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
 import parted
+from decimal import Decimal
+import GLIStorageDevice
 
 class x86ArchitectureTemplate(ArchitectureTemplate):
-        def __init__(self,configuration=None, install_profile=None, client_controller=None):
+	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'x86'
 		self._kernel_bzimage = "arch/i386/boot/bzImage"
@@ -56,252 +58,249 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		disk.add_partition(newpart, constraint)
 
 	def partition(self):
-		import GLIStorageDevice
-		import pprint
-
 		MEGABYTE = 1024 * 1024
-		devices_old = {}
 		parts_old = {}
 		parts_new = self._install_profile.get_partition_tables()
-		drives = GLIStorageDevice.detect_devices()
-		drives.sort()
-		for drive in drives:
-			devices_old[drive] = GLIStorageDevice.Device(drive)
-			devices_old[drive].set_partitions_from_disk()
-		for part in devices_old.keys(): parts_old[part] = devices_old[part].get_install_profile_structure()
+		detected_devices = GLIStorageDevice.detect_devices()
+		for device in detected_devices:
+			tmpdevice = GLIStorageDevice.Device(device)
+			tmpdevice.set_partitions_from_disk()
+			parts_old[device] = tmpdevice.get_install_profile_structure()
 
-#		pp = pprint.PrettyPrinter(indent=4)
-#		pp.pprint(parts_old)
-#		pp.pprint(parts_new)
-
-		for dev in parts_old.keys():
-			parted_dev = parted.PedDevice.get(dev)
-			parted_disk = parted.PedDisk.new(parted_dev)
-			if not parts_new.has_key(dev) or not parts_new[dev]:
-				self._logger.log("Partition table for " + dev + " does not exist in install profile")
-				#print "Partition table for " + dev + " does not exist in install profile"
+		for device in parts_new.keys():
+			# Skip this device in parts_new if device isn't detected on current system
+			if not device in detected_devices:
+				self._logger.log("There is no physical device " + device + " detected to match the entry in the install profile...skipping")
 				continue
-			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
-				# Change MB/%/* into sectors
-				total_sectors = parted_dev.length
-				sector_size = parted_dev.sector_size
-				total_mb = float(total_sectors * sector_size) / MEGABYTE
-				start_sector = 63
-				mb_left = total_mb
-				for part in parts_new[dev]:
-					tmppart = parts_new[dev][part]
-					if tmppart['type'] == "extended": continue
-					if tmppart['mb'][-1] == "%":
-						tmppart['mb'] = float(tmppart['mb'][:-1]) / 100 * total_mb
-					mb_left = mb_left - float(tmppart['mb'])
-				partlist = parts_new.keys()
-				partlist.sort()
-				for part in partlist:
-					if part > 4: continue
-					tmppart = parts_new[dev][part]
-					if tmppart['type'] == "extended":
-						for part_log in partlist:
-							if part < 5: continue
-							tmppart_log = parts_new[dev][part_log]
-							if not tmppart['start']:
-								tmppart['start'] = start_sector
-							if tmppart_log['mb'] == "*":
-								tmppart_log['mb'] = mb_left
-							part_bytes = int(tmppart_log['mb'] * MEGABYTE)
-							part_sectors = round(part_bytes / sector_size)
-							tmppart_log['start'] = start_sector
-							tmppart_log['end'] = start_sector + part_sectors - 1
-							tmppart['end'] = tmppart_log['end']
-							start_sector = start_sector + part_sectors
-						continue
-					if tmppart['mb'] == "*":
-						tmppart['mb'] = mb_left
-					part_bytes = int(tmppart['mb'] * MEGABYTE)
-					part_sectors = round(part_bytes / sector_size)
-					tmppart['start'] = start_sector
-					tmppart['end'] = start_sector + part_sectors - 1
-					start_sector = start_sector + part_sectors
-			else:
-				table_changed = 1
-				for part in parts_old[dev]:
-					oldpart = parts_old[dev][part]
-					newpart = parts_new[dev][part]
-					if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
-						table_changed = 0
-					else:
-						table_changed = 1
-						break
-				if not table_changed:
-					self._logger.log("Partition table for " + dev + " is unchanged")
-					#print "Partition table for " + dev + " is unchanged"
+
+			# Check to see if the old and new partition table structures are the same
+			table_changed = 0
+			for part in parts_new[device]:
+				oldpart = parts_old[device][part]
+				newpart = parts_new[device][part]
+				if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
 					continue
-			parts_active = []
-			parts_lba = []
-			self._logger.log("Processing "+dev+"...")
-			#print "\nProcessing " + dev + "..."
+				else:
+					table_changed = 1
+					break
+			# Skip this device if they are they same
+			if not table_changed:
+				self._logger.log("Partition table for " + device + " is unchanged...skipping")
+				continue
+
+			# Create pyparted objects for this device
+			parted_dev = parted.PedDevice.get(device)
+			parted_disk = parted.PedDisk.new(parted_dev)
+			new_part_list = parts_new[device].keys()
+			new_part_list.sort()
+			device_sectors = parted_dev.length
+
+			# Iterate through new partitions and check for 'origminor' and 'format' == False
+			for part in parts_new[device].keys():
+				tmppart_new = parts_new[device][part]
+				if not tmppart_new['origminor'] or tmppart_new['format']: continue
+				tmppart_old = parts_existing[device][tmppart_new['origminor']]
+				# This partition in parts_new corresponds with an existing partitions, so we save the start/end sector and flags
+				for flag in range(0, 10):
+					# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
+					parted_part = parted_disk.get_partition(part)
+					if not parted_part: break
+					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
+						if not "flags" in tmppart_new: tmppart_new['flags'] = []
+						tmppart_new['flags'].append(flag)
+				if tmppart_old['mb'] == tmppart_new['mb']:
+					tmppart_new['start'] = tmppart_old['start']
+					tmppart_new['end'] = tmppart_old['end']
+				else:
+					tmppart_new['start'] = tmppart_old['start']
+					tmppart_new['end'] = 0
+
+#			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
+#				# Change MB/%/* into sectors
+#				total_sectors = parted_dev.length
+#				sector_size = parted_dev.sector_size
+#				total_mb = float(total_sectors * sector_size) / MEGABYTE
+#				start_sector = 0
+#				mb_left = total_mb
+#				for part in parts_new[dev]:
+#					tmppart = parts_new[dev][part]
+#					if tmppart['type'] == "extended": continue
+#					if tmppart['mb'][-1] == "%":
+#						tmppart['mb'] = float(tmppart['mb'][:-1]) / 100 * total_mb
+#					mb_left = mb_left - float(tmppart['mb'])
+#				partlist = parts_new.keys()
+#				partlist.sort()
+#				for part in partlist:
+#					if part > 4: continue
+#					tmppart = parts_new[dev][part]
+#					if tmppart['type'] == "extended":
+#						for part_log in partlist:
+#							if part < 5: continue
+#							tmppart_log = parts_new[dev][part_log]
+#							if not tmppart['start']:
+#								tmppart['start'] = start_sector
+#							if tmppart_log['mb'] == "*":
+#								tmppart_log['mb'] = mb_left
+#							part_bytes = int(tmppart_log['mb'] * MEGABYTE)
+#							part_sectors = round(part_bytes / sector_size)
+#							tmppart_log['start'] = start_sector
+#							tmppart_log['end'] = start_sector + part_sectors - 1
+#							tmppart['end'] = tmppart_log['end']
+#							start_sector = start_sector + part_sectors
+#						continue
+#					if tmppart['mb'] == "*":
+#						tmppart['mb'] = mb_left
+#					part_bytes = int(tmppart['mb'] * MEGABYTE)
+#					part_sectors = round(part_bytes / sector_size)
+#					tmppart['start'] = start_sector
+#					tmppart['end'] = start_sector + part_sectors - 1
+#					start_sector = start_sector + part_sectors
+#			else:
+
 			# First pass to delete old partitions that aren't resized
-			for part in parts_old[dev]:
-				if part > 4: continue
-				oldpart = parts_old[dev][part]
-				matchingminor = 0
+			self._logger.log("partitioning: Processing " + device + "...")
+			for part in parts_old[device]:
+				oldpart = parts_old[device][part]
+				# Replace 'x86' with call function to get arch from CC
+				if (GLIStorageDevice.archinfo['x86']['extended'] and part > 4) or oldpart['type'] == "free": continue
 				delete = 0
 				if oldpart['type'] == "extended":
 					logical_to_resize = 0
-					for part_log in parts_old[dev]:
-						if part_log < 5: continue
-						matchingminor = 0
+					for part_log in parts_old[device]:
+						if part_log < 5 or parts_old[device][part_log]['type'] == "free": continue
 						delete_log = 0
-						for new_part in parts_new[dev]:
+						for new_part in parts_new[device]:
 							if new_part < 5: continue
-							tmppart = parts_new[dev][new_part]
-							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
-								matchingminor = new_part
+							tmppart = parts_new[device][new_part]
+							# This partition is unchanged in the new layout
+							if tmppart['origminor'] == part_log and tmppart['start'] and tmppart['end']:
 								self._logger.log("  Deleting old minor " + str(part_log) + " to be recreated later")
-								#print "  Deleting old minor " + str(part_log) + " to be recreated later"
 								delete_log = 1
 								break
-							if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
-								matchingminor = new_part
+							# This partition is resized with the data preserved in the new layout
+							if tmppart['origminor'] == part_log and tmppart['start'] and not tmppart['end']:
 								self._logger.log("  Ignoring old minor " + str(part_log) + " to resize later")
-								#print "  Ignoring old minor " + str(part_log) + " to resize later"
 								logical_to_resize = 1
 								break
-						if not matchingminor:
+						if delete_log:
 							self._logger.log("  No match found...deleting partition " + str(part_log))
-							#print "  No match found...deleting partition " + str(part_log)
 							parted_disk.delete_partition(parted_disk.get_partition(part_log))
-						else:
-							if parted_disk.get_partition(part_log).get_flag(1): # Active/boot
-								self._logger.log("  Partition " + str(part_log) + " was active...noted")
-								#print "  Partition " + str(part_log) + " was active...noted"
-								parts_active.append(int(matchingminor))
-							if parted_disk.get_partition(part_log).get_flag(7): # LBA
-								self._logger.log("  Partition " + str(part_log) + " was LBA...noted")
-								#print "  Partition " + str(part_log) + " was LBA...noted"
-								parts_lba.append(int(matchingminor))
-							if delete_log:
-								parted_disk.delete_partition(parted_disk.get_partition(part_log))
 					if not logical_to_resize:
-						self._logger.log("  Deleting old minor " + str(part))
-						#print "  Deleting old minor " + str(part)
+						self._logger.log("  Deleting extended partition with minor " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 					continue
-				for new_part in parts_new[dev]:
-					tmppart = parts_new[dev][new_part]
-					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) == int(oldpart['end']):
-						matchingminor = new_part
+				for new_part in parts_new[device]:
+					tmppart = parts_new[device][new_part]
+					if tmppart['origminor'] == part and tmppart['start'] and tmppart['end']:
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
-						#print "  Deleting old minor " + str(part) + " to be recreated later"
 						delete = 1
 						break
-					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
-						matchingminor = new_part
+					if tmppart['origminor'] == part and tmppart['start'] and not tmppart['end']:
 						self._logger.log("  Ignoring old minor " + str(part) + " to resize later")
-						#print "  Ignoring old minor " + str(part) + " to resize later"
 						break
-				if not matchingminor:
+				if delete:
 					self._logger.log("  No match found...deleting partition " + str(part))
-					#print "  No match found...deleting partition " + str(part)
 					parted_disk.delete_partition(parted_disk.get_partition(part))
-				else:
-					if parted_disk.get_partition(part).get_flag(1): # Active/boot
-						self._logger.log("  Partition " + str(part) + " was active...noted")
-						#print "  Partition " + str(part) + " was active...noted"
-						parts_active.append(int(matchingminor))
-					if parted_disk.get_partition(part).get_flag(7): # LBA
-						self._logger.log("  Partition " + str(part) + " was LBA...noted")
-						#print "  Partition " + str(part) + " was LBA...noted"
-						parts_lba.append(int(matchingminor))
-					if delete:
-						parted_disk.delete_partition(parted_disk.get_partition(part))
 			parted_disk.commit()
+
 			# Second pass to resize old partitions that need to be resized
 			self._logger.log("Partitioning: Second pass...")
-			#print " Second pass..."
-			for part in parts_old[dev]:
-				oldpart = parts_old[dev][part]
-				for new_part in parts_new[dev]:
-					tmppart = parts_new[dev][new_part]
-					if int(tmppart['start']) == int(oldpart['start']) and tmppart['format'] == False and tmppart['type'] == oldpart['type'] and int(tmppart['end']) != int(oldpart['end']):
+			for part in parts_old[device]:
+				oldpart = parts_old[device][part]
+				for new_part in parts_new[device]:
+					tmppart = parts_new[device][new_part]
+					if tmppart['origminor'] == part and tmppart['start'] and not tmppart['end']:
 						self._logger.log("  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end']))
-						#print "  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end'])
 						type = tmppart['type']
-						device = dev
 						minor = part
 						start = tmppart['start']
-						end = tmppart['end']
+						# Replace 512 with code to retrieve bytes per sector for device
+						end = start + (int(tmppart['mb']) * MEGABYTE / 512)
+						for i in new_part_list:
+							if i <= new_part: continue
+							if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
+								end = parts_new[device][i]['start'] - 1
+							elif end >= device_sectors:
+								end = device_sectors - 1
+							break
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
 							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
 							if ret: # Resize error
-								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "ntfs":
 							total_sectors = end - start + 1
 							total_bytes = int(total_sectors) * 512
 							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
 							if ret: # Resize error
-								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
-						else:
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
+						elif type == "linux-swap" or type == "fat32":
 							parted_fs = parted_disk.get_partition(part).geom.file_system_open()
 							resize_constraint = parted_fs.get_resize_constraint()
 							if end < (start + resize_constraint.min_size) or start != resize_constraint.start_range.start:
-								raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + dev + str(minor) + " is not within allowed boundaries")
+								raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + device + str(minor) + " is not within allowed boundaries")
 							new_geom = resize_constraint.start_range.duplicate()
 							new_geom.set_start(start)
 							new_geom.set_end(end)
 							try:
 								parted_fs.resize(new_geom)
 							except:
-								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + dev + str(minor))
+								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated in 3rd pass")
-						#print "  Deleting old minor " + str(part) + " to be recreated in 3rd pass"
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 						break
 			parted_disk.delete_all()
 			parted_disk.commit()
+
 			# Third pass to create new partition table
-			self._logger.log("Partitioning: Third pass.")
-			#print " Third pass..."
-			for part in parts_new[dev]:
-				newpart = parts_new[dev][part]
-				new_start, new_end = newpart['start'], newpart['end']
-				if newpart['type'] == "extended":
+			self._logger.log("Partitioning: Third pass....creating partitions")
+			start = 0
+			extended_end = 0
+			for part in parts_new[device]:
+				newpart = parts_new[device][part]
+#				new_start, new_end = newpart['start'], newpart['end']
+				end = start + (int(tmppart['mb']) * MEGABYTE / 512)
+				for i in new_part_list:
+					if i <= part: continue
+					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
+						end = parts_new[device][i]['start'] - 1
+					elif end >= device_sectors:
+						end = device_sectors - 1
+					break
+				if newpart['type'] == "free":
+					# Nothing to be done for this type
+					pass
+				elif newpart['type'] == "extended":
 					self._logger.log("  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end']))
-					#print "  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end'])
 					self._add_partition(parted_disk, new_start, new_end, "extended", "")
-				elif int(part) < 5:
+				elif part < 5:
 					self._logger.log("  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end']))
-					#print "  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end'])
 					self._add_partition(parted_disk, new_start, new_end, "primary", newpart['type'])
-				elif int(part) > 4:
+				elif GLIStorageDevice.archinfo['x86']['extended'] and part > 4:
 					self._logger.log("  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end']))
-					#print "  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end'])
+					if part == new_part_list[-1] and end > extended_end:
+						end = extended_end
 					self._add_partition(parted_disk, new_start, new_end, "logical", newpart['type'])
-				if int(part) in parts_active and not newpart['format']:
-					self._logger.log("   Partition was previously active...setting")
-					#print "   Partition was previously active...setting"
-					parted_disk.get_partition(part).set_flag(1)
-				if int(part) in parts_lba and not newpart['format']:
-					self._logger.log("   Partition was previously LBA...setting")
-					#print "   Partition was previously LBA...setting"
-					parted_disk.get_partition(part).set_flag(7)
+				if "flags" in newpart:
+					for flag in newpart['flags'] and parted_disk.get_partition(part).is_flag_available(flag):
+						parted_disk.get_partition(part).set_flag(flag)
 				parted_disk.commit()
 				if newpart['format']:
 					if newpart['type'] == "ext2":
-						if GLIUtility.spawn("mke2fs " + dev + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext2 filesystem on " + dev + str(part))
+						if GLIUtility.spawn("mke2fs " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext2 filesystem on " + device + str(part))
 					elif newpart['type'] == "ext3":
-						if GLIUtility.spawn("mke2fs -j " + dev + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext3 filesystem on " + dev + str(part))
+						if GLIUtility.spawn("mke2fs -j " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext3 filesystem on " + device + str(part))
 					elif newpart['type'] == "linux-swap":
-						if GLIUtility.spawn("mkswap " + dev + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create swap on " + dev + str(part))
+						if GLIUtility.spawn("mkswap " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create swap on " + device + str(part))
 					elif newpart['type'] == "fat32":
-						if GLIUtility.spawn("mkfs.vfat -F 32 " + dev + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create fat32 filesystem on " + dev + str(part))
+						if GLIUtility.spawn("mkfs.vfat -F 32 " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create fat32 filesystem on " + device + str(part))
 					elif newpart['type'] == "ntfs":
-						if GLIUtility.spawn("mkntfs " + dev + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + dev + str(part))
+						if GLIUtility.spawn("mkntfs " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + device + str(part))
 
 	def _install_grub(self):
 		boot_device = ""
