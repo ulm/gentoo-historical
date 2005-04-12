@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/handbook/hb-install-ppc-bootloader.xml,v 1.6 2005/04/03 20:21:21 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/handbook/hb-install-ppc-bootloader.xml,v 1.7 2005/04/12 17:30:55 alin Exp $ -->
 
 <sections>
 
-<version>2.00</version>
-<date>2005-03-28</date>
+<version>2.3</version>
+<date>2005-04-11</date>
 
 <section>
 <title>Alegerea</title>
@@ -27,13 +27,12 @@ opţiunile...
 
 <p>
 Există mai multe aplicaţii bootloader pentru Linux/PPC. Avem <uri
-link="#yaboot">yaboot</uri> (pentru noua generaţie NewWorld Apple şi
-maşinile IBM) şi <uri link="#bootx">BootX</uri> (pentru generaţia
-anterioară OldWorld Apple şi maşinile IBM). Pegasos nu necesită
-bootloader. Nu puteţi utiliza Yaboot sau BootX în acest moment. Utilizatorii
-Pegasos nu necesită o aplicaţie bootloader, dar am inclus secţiunea <uri
-link="#bootcreator">BootCreator</uri> pentru a vă putea crea un meniu de boot
-SmartFirmware
+link="#yaboot">yaboot</uri> (pentru noua generaţie NewWorld Apple şi maşinile
+IBM) şi <uri link="#bootx">BootX</uri> (pentru generaţia anterioară OldWorld
+Apple). Pegasos nu necesită bootloader. Nu puteţi utiliza Yaboot sau BootX în
+acest moment. Utilizatorii Pegasos nu necesită o aplicaţie bootloader, dar am
+inclus secţiunea <uri link="#bootcreator">BootCreator</uri> pentru a vă putea
+crea un meniu de boot SmartFirmware.
 </p>
 
 </body>
@@ -72,6 +71,28 @@ a seta automat <path>/etc/yaboot.conf</path> sau instalaţi Gentoo pe un G5 (pe
 care <c>yabootconfig</c> nu funcţionează întotdeauna), puteţi să
 editaţi exemplul de fişier deja instalat pe sistemul dvs.
 </p>
+
+<note>
+Este posibil să fie nevoie să editaţi fişierul yaboot.conf în cazul în care
+utilizaţi genkernel. Argumentele oferite de fişierul ebuild al pachetului
+genkernel trebuie adăugate ca opţiuni pentru secţiunea relativă la imaginea de
+kernel. Secţiunea relevantă din yaboot.conf este exemplificată mai jos:
+</note>
+
+<pre caption="Adăugarea de argumente de boot în yaboot.conf">
+<comment>#################
+## Această secţiune poate fi duplicată dacă aveţi mai mult de o imagine de kernel sau
+## opţiuni de boot - înlocuiţi 2.6.9 cu versiunea dvs. de kernel
+#################</comment>
+image=/boot/kernel-2.6.9
+  label=Linux
+  root=/dev/ram0		<comment># Dacă utilizaţi genkernel, aceasta este /dev/ram0</comment>
+  partition=3
+  sysmap=/boot/System.map-2.6.9
+  append="real_root=/dev/hda3 init=/linuxrc"	<comment># Adăugaţi argumente acestei linii</comment>
+  read-only
+<comment>##################</comment>
+</pre>
 
 <ul>
   <li><uri link="#yabootconfig">Implicit: Utilizarea yabootconfig</uri></li>
@@ -238,44 +259,71 @@ Sistemului</uri>.
 <body>
 
 <impo>
-BootX poate fi utilizat doar pe generaţia veche OldWorld Apple şi pe
-sistemele IBM!
+BootX poate fi utilizat doar pe generaţia veche OldWorld Apple!
 </impo>
 
 <p>
-BootX necesită mai întâi, reponirea. Deci, sa repornim, da? :-)
+Deoarece BootX boot-ează în Linux din MacOS, imaginea de kernel va trebui
+copiată de pe partiţia Linux, pe partiţia MacOS. Mai întâi mount-aţi partiţia
+MacOS din afara mediului chroot. Utilizaţi <c>mac-fdisk -l</c> pentru a găsi
+numărul partiţiei, sda6 fiind folosit în următorul exemplu. Odată partiţia
+mount-ată, vom copia imaginea de kernel în directorul sistem pentru ca BootX să
+o poată găsi.
 </p>
+
+<pre caption="Copierea imaginii de kernel pe partiţia MacOS">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels"</i>
+</pre>
 
 <p>
-Ieşiţi din mediul chroot şi demount-aţi toate partiţiile mount-ate. Apoi
-tastaţi comanda magică pe care aţi aşteptat-o: <c>reboot</c>.
+Dacă utilizaţi genkernel, imaginea de kernel este localizată în alt loc şi
+imaginea initrd trebuie copiată, de asemenea.
 </p>
 
-<pre caption="Ieşirea din chroot, demount-area tuturor partiţiilor şi repornirea">
+<pre caption="Copierea imaginii de kernel generate de Genkernel şi a imaginii initrd pe partiţia MacOS">
 # <i>exit</i>
-cdimage ~# <i>cd</i>
-cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initrd-* "/mnt/mac/System Folder"</i>
+</pre>
+
+<p>
+Acum, că imaginea de kernel este copiată, efectuaţi umount pentru toate
+partiţiile mount-ate şi introduceţi comanda magică pe care aţi aşteptat-o:
+<c>reboot</c>.
+</p>
+
+<pre caption="Demount-area tuturor partiţiilor şi repornirea">
+cdimage ~# <i>cd /</i>
+cdimage ~# <i>umount /mnt/gentoo/proc /mnt/gentoo /mnt/mac</i>
 cdimage ~# <i>reboot</i>
 </pre>
 
 <p>
-Desigur, nu uitaţi să îndepărtaţi CD-ul boot-abil, altfel CD-ul va
-boot-a din nou în loc de MacOS.
+Bineînţeles, nu uitaţi să îndepărtaţi toate mediile boot-abile, pentru că MacOS
+trebuie să boot-eze de data aceasta.
 </p>
 
 <p>
-Acum, maşina dvs. este boot-ată în MacOS şi trebuie să porniţi
-interfaţa de control BootX. Selectaţi <c>Options</c> şi debifaţi <c>Used
-specified RAM disk</c>. Când reveniţi în interfaţa principală BootX,
-veţi regăsi o opţiune pentru specificarea partiţiei şi discului
-rădăcină pentru maşina dvs. Completaţi cu valorile corespunzătoare.
+Acum, maşina dvs. este boot-ată în MacOS şi trebuie să porniţi interfaţa de
+control BootX. Selectaţi <c>Options</c> şi debifaţi <c>Used specified RAM
+disk</c> dacă nu utilizaţi genkernel. Dacă utilizaţi genkernel, asiguraţi-vă că
+imaginea initrd generată de genkernel este selectată, în locul imaginii initrd
+a mediului LiveCD. Dacă nu utilizaţi genkernel, există, acum, o opţiune pentru
+a specifica discul şi partitia rădăcină pentru Linux. Completaţi cu valorile
+corespunzătoare. În funcţie de configuraţia kernel-ului, este posibil ca unii
+parametri de boot să trebuiască specificaţi.
 </p>
 
 <p>
-BootX poate fi configurat să încarce Linux după boot. Dacă efectuaţi
-această operaţie, veţi observa maşina pornind în MacOS, apoi, în timpul
-procesului de startup, BootX va încărca şi va rula Linux. Pentru mai multe
-informaţii, consultaţi <uri
+BootX poate fi configurat să încarce Linux după boot. Dacă efectuaţi această
+operaţie, sistemul va efectua boot în MacOS şi apoi, în timpul procesului de
+pornire, va încărca BootX care va încărca Linux, în cele din urmă. Pentru mai
+multe informaţii, consultaţi <uri
 link="http://penguinppc.org/bootloaders/bootx/">Pagina oficială BootX</uri>.
 </p>
 
