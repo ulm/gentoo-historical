@@ -62,7 +62,7 @@ class Device:
 					self._partitions[Decimal(str(float(last_log_part+0.9)))] = Partition(self, Decimal(str(float(last_log_part+0.9))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_log_part += 1
 				else:
-					self._partitions[Decimal(str(float(last_log_part+0.1)))] = Partition(self, Decimal(str(float(last_log_part+0.1))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					self._partitions[Decimal(str(float(last_part+0.1)))] = Partition(self, Decimal(str(float(last_part+0.1))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_part += 1
 			parted_part = self._parted_disk.next_partition(parted_part)
 
