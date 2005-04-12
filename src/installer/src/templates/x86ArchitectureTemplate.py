@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.28 2005/04/11 19:59:20 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.29 2005/04/12 02:36:49 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -99,7 +99,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for part in parts_new[device].keys():
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
-				tmppart_old = parts_existing[device][tmppart_new['origminor']]
+				tmppart_old = parts_old[device][tmppart_new['origminor']]
 				# This partition in parts_new corresponds with an existing partitions, so we save the start/end sector and flags
 				for flag in range(0, 10):
 					# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
