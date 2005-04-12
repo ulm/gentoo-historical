@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.31 2005/04/12 04:07:39 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.32 2005/04/12 04:27:42 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -330,12 +330,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if (mountpoint == "/boot"):
 					foundboot = True
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-					boot_minor = str(parts[device][partition]['minor'])
-					grub_boot_minor = str(parts[device][partition]['minor'] - 1)
+					boot_minor = str(int(parts[device][partition]['minor']))
+					grub_boot_minor = str(int(parts[device][partition]['minor']) - 1)
 					boot_device = device
 				if mountpoint == "/":
-					root_minor = str(parts[device][partition]['minor'])
-					grub_root_minor = str(parts[device][partition]['minor'] - 1)
+					root_minor = str(int(parts[device][partition]['minor']))
+					grub_root_minor = str(int(parts[device][partition]['minor']) - 1)
 					root_device = device
 		if GLIUtility.is_file(root+file_name2):
 			exitstatus = GLIUtility.spawn("rm "+root+file_name2)		
@@ -452,10 +452,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if (mountpoint == "/boot"):
 					foundboot = True
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-					boot_minor = str(parts[device][partition]['minor'])
+					boot_minor = str(int(parts[device][partition]['minor']))
 					boot_device = device
 				if mountpoint == "/":
-					root_minor = str(parts[device][partition]['minor'])
+					root_minor = str(int(parts[device][partition]['minor']))
 					root_device = device
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
 		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
@@ -511,6 +511,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		for device in parts:
 			for partition in parts[device]:
 				if (parts[device][partition]['type'] == "vfat") or (parts[device][partition]['type'] == "ntfs"):
-					newliloconf += "other="+device+str(parts[device][partition]['minor'])+"\n"
-					newliloconf += "label=Windows_P"+str(parts[device][partition]['minor'])+"\n\n"
+					newliloconf += "other="+device+str(int(parts[device][partition]['minor']))+"\n"
+					newliloconf += "label=Windows_P"+str(int(parts[device][partition]['minor']))+"\n\n"
 		return newliloconf
