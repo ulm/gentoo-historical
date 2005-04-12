@@ -55,6 +55,10 @@ class Device:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
+				if archinfo[self._arch]['extended'] and parted_part.num > 4:
+					last_log_part = parted_part.num
+				else:
+					last_part = parted_part.num
 				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
 			elif parted_part.type_name == "free":
 				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)

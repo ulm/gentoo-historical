@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.30 2005/04/12 02:40:37 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.31 2005/04/12 04:07:39 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -76,6 +76,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# Check to see if the old and new partition table structures are the same
 			table_changed = 0
 			for part in parts_new[device]:
+				if not part in parts_old[device]:
+					table_changed = 1
+					break
 				oldpart = parts_old[device][part]
 				newpart = parts_new[device][part]
 				if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
@@ -256,30 +259,32 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			self._logger.log("Partitioning: Third pass....creating partitions")
 			start = 0
 			extended_end = 0
+			self._logger.log("  Drive has " + str(device_sectors) + " sectors")
 			for part in parts_new[device]:
 				newpart = parts_new[device][part]
-				end = start + (int(tmppart['mb']) * MEGABYTE / 512)
+				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
+				end = start + (int(newpart['mb']) * MEGABYTE / 512)
 				for i in new_part_list:
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
 						end = parts_new[device][i]['start'] - 1
-					elif end >= device_sectors:
+					if end >= device_sectors:
 						end = device_sectors - 1
 					break
 				if newpart['type'] == "free":
 					# Nothing to be done for this type
 					pass
 				elif newpart['type'] == "extended":
-					self._logger.log("  Adding extended partition from " + str(newpart['start']) + " to " + str(newpart['end']))
-					self._add_partition(parted_disk, new, end, "extended", "")
+					self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
+					self._add_partition(parted_disk, start, end, "extended", "")
 				elif part < 5:
-					self._logger.log("  Adding primary partition from " + str(newpart['start']) + " to " + str(newpart['end']))
-					self._add_partition(parted_disk, new, end, "primary", newpart['type'])
+					self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
+					self._add_partition(parted_disk, start, end, "primary", newpart['type'])
 				elif GLIStorageDevice.archinfo['x86']['extended'] and part > 4:
-					self._logger.log("  Adding logical partition from " + str(newpart['start']) + " to " + str(newpart['end']))
+					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
 					if part == new_part_list[-1] and end > extended_end:
 						end = extended_end
-					self._add_partition(parted_disk, new, end, "logical", newpart['type'])
+					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
 				if "flags" in newpart:
 					for flag in newpart['flags'] and parted_disk.get_partition(part).is_flag_available(flag):
 						parted_disk.get_partition(part).set_flag(flag)
@@ -300,6 +305,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					elif newpart['type'] == "ntfs":
 						if GLIUtility.spawn("mkntfs " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + device + str(part))
+				start = end + 1
 
 	def _install_grub(self):
 		boot_device = ""
