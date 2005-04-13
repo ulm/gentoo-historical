@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.34 2005/04/13 16:31:23 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.35 2005/04/13 18:37:44 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -258,9 +258,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# Third pass to create new partition table
 			self._logger.log("Partitioning: Third pass....creating partitions")
 			start = 0
+			extended_start = 0
 			extended_end = 0
 			self._logger.log("  Drive has " + str(device_sectors) + " sectors")
-			for part in parts_new[device]:
+#			for part in parts_new[device]:
+			for part in new_part_list:
 				newpart = parts_new[device][part]
 				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
 				end = start + (int(newpart['mb']) * MEGABYTE / 512)
@@ -277,11 +279,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				elif newpart['type'] == "extended":
 					self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "extended", "")
+					extended_start = start
+					extended_end = end
 				elif part < 5 or not GLIStorageDevice.archinfo['x86']['extended']:
 					self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "primary", newpart['type'])
 				elif GLIStorageDevice.archinfo['x86']['extended'] and part > 4:
 					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
+					if start >= extended_end:
+						start = extended_start + 1
 					if part == new_part_list[-1] and end > extended_end:
 						end = extended_end
 					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
