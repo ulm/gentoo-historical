@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.32 2005/04/12 04:27:42 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.33 2005/04/13 14:38:10 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -268,9 +268,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
 						end = parts_new[device][i]['start'] - 1
-					if end >= device_sectors:
-						end = device_sectors - 1
 					break
+				if end >= device_sectors:
+					end = device_sectors - 1
 				if newpart['type'] == "free":
 					# Nothing to be done for this type
 					pass
