@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.35 2005/04/13 18:37:44 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.36 2005/04/13 19:00:23 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -258,6 +258,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# Third pass to create new partition table
 			self._logger.log("Partitioning: Third pass....creating partitions")
 			start = 0
+			end = 0
 			extended_start = 0
 			extended_end = 0
 			self._logger.log("  Drive has " + str(device_sectors) + " sectors")
@@ -265,7 +266,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for part in new_part_list:
 				newpart = parts_new[device][part]
 				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
-				end = start + (int(newpart['mb']) * MEGABYTE / 512)
+				part_sectors = int(newpart['mb']) * MEGABYTE / 512
+				end = start + part_sectors
 				for i in new_part_list:
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
@@ -288,6 +290,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
 					if start >= extended_end:
 						start = extended_start + 1
+						end = start + part_sectors
 					if part == new_part_list[-1] and end > extended_end:
 						end = extended_end
 					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
