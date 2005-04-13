@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.33 2005/04/13 14:38:10 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.34 2005/04/13 16:31:23 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -277,7 +277,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				elif newpart['type'] == "extended":
 					self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "extended", "")
-				elif part < 5:
+				elif part < 5 or not GLIStorageDevice.archinfo['x86']['extended']:
 					self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "primary", newpart['type'])
 				elif GLIStorageDevice.archinfo['x86']['extended'] and part > 4:
