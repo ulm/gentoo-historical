@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.42 2005/04/14 18:23:52 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.43 2005/04/14 18:35:38 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -26,7 +26,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def __init__(self):
 		parser = SimpleXMLParser.SimpleXMLParser()
 
@@ -108,21 +107,18 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param filename Parameter description
 	def parse(self, filename):
 		self._parser.parse(filename)
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_cron_daemon_pkg(self):
 		"returns cron_daemon_pkg"
 		return self._cron_daemon_pkg
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param cron_daemon_pkg Parameter description
 	# @param xml_attr Parameter description
@@ -137,14 +133,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_logging_daemon_pkg(self):
 		"returns logging_daemon_pkg"
 		return self._logging_daemon_pkg
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param logging_daemon_pkg Parameter description
 	# @param xml_attr Parameter description
@@ -159,14 +153,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_boot_loader_mbr(self):
 		"returns boot_loader_mbr"
 		return self._boot_loader_mbr
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param boot_loader_mbr Parameter description
 	# @param xml_attr Parameter description
@@ -184,14 +176,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_boot_loader_pkg(self):
 		"returns boot_loader_pkg"
 		return self._boot_loader_pkg
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param boot_loader_pkg Parameter description
 	# @param xml_attr Parameter description
@@ -206,14 +196,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_kernel_modules(self):
 		"returns kernel_modules"
 		return self._kernel_modules
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param kernel_module Parameter description
 	# @param xml_attr Parameter description
@@ -227,7 +215,6 @@ class InstallProfile:
 		
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param kernel_modules Parameter description
 	def set_kernel_modules(self, kernel_modules):
 		"kernel_modules is a tuple of strings containing names of modules to automatically load at boot time. (ie. '( 'ide-scsi', )')"
@@ -244,14 +231,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_kernel_config_uri(self):
 		"returns kernel_config_uri"
 		return self._kernel_config_uri
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param kernel_config_uri Parameter description
 	# @param xml_attr Parameter description
@@ -270,14 +255,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_bootloader_kernel_args(self):
 		"returns kernel arguments"
 		return self._bootloader_kernel_args
 	
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param bootloader_kernel_args Parameter description
 	# @param xml_attr Parameter description
@@ -287,14 +270,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_kernel_initrd(self):
 		"returns kernel_initrd"
 		return self._kernel_initrd
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param kernel_initrd Parameter description
 	# @param xml_attr Parameter description
@@ -312,14 +293,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_kernel_bootsplash(self):
 		"returns kernel_bootsplash"
 		return self._kernel_bootsplash
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param kernel_bootsplash Parameter description
 	# @param xml_attr Parameter description
@@ -337,14 +316,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_kernel_source_pkg(self):
 		"returns kernel_source_pkg"
 		return self._kernel_source_pkg
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param kernel_source_pkg Parameter description
 	# @param xml_attr Parameter description
@@ -359,14 +336,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_users(self):
 		"returns users"
 		return self._users
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param username Parameter description
 	# @param attr=None Parameter description
@@ -445,7 +420,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param username Parameter description
 	def remove_user(self, username):
 		"""
@@ -458,7 +432,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param users Parameter description
 	def set_users(self, users):
 		"""
@@ -473,14 +446,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_root_pass_hash(self):
 		"returns root_pass_hash"
 		return self._root_pass_hash
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param root_pass_hash Parameter description
 	# @param xml_attr Parameter description
@@ -495,14 +466,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_time_zone(self):
 		"returns time_zone"
 		return self._time_zone
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param time_zone Parameter description
 	# @param xml_attr Parameter description
@@ -517,14 +486,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_stage_tarball_uri(self):
 		"returns stage_tarball_uri"
 		return self._stage_tarball_uri
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param stage_tarball_uri Parameter description
 	# @param xml_attr Parameter description
@@ -543,14 +510,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_install_stage(self):
 		"returns install_stage"
 		return self._install_stage
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param install_stage Parameter description
 	# @param xml_attr Parameter description
@@ -572,14 +537,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_portage_tree_sync_type(self):
 		"returns portage_tree_sync"
 		return self._portage_tree_sync_type
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param portage_tree_sync Parameter description
 	# @param xml_attr Parameter description
@@ -597,14 +560,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_portage_tree_snapshot_uri(self):
 		"returns portage_tree_snapshot_uri"
 		return self._portage_tree_snapshot_uri
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param portage_tree_snapshot_uri Parameter description
 	# @param xml_attr Parameter description
@@ -623,14 +584,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_domainname(self):
 		"returns domainname"
 		return self._domainname
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param domainname Parameter description
 	# @param xml_attr Parameter description
@@ -645,14 +604,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_hostname(self):
 		"returns hostname"
 		return self._hostname
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param hostname Parameter description
 	# @param xml_attr Parameter description
@@ -667,14 +624,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_nisdomainname(self):
 		"returns nisdomainname"
 		return self._nisdomainname
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param nisdomainname Parameter description
 	# @param xml_attr Parameter description
@@ -689,14 +644,12 @@ class InstallProfile:
 		
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_partition_tables(self):
 		"returns partition_tables"
 		return self._partition_tables
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param partition_tables Parameter description
 	def set_partition_tables(self, partition_tables):
 		"""
@@ -779,14 +732,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_network_interfaces(self):
 		"Returns network_interfaces"
 		return self._network_interfaces
 		
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param device Parameter description
 	# @param attr Parameter description
@@ -858,7 +809,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param network_interfaces Parameter description
 	def set_network_interfaces(self, network_interfaces):
 		"""
@@ -877,7 +827,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def serialize(self):
 		"""
 		This method serializes the configuration data and output a nice XML document.
@@ -1033,7 +982,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param data Parameter description
 	# @param attr Parameter description
@@ -1054,7 +1002,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param make_conf Parameter description
 	def set_make_conf(self, make_conf):
 		"""
@@ -1068,14 +1015,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_make_conf(self):
 		""" Return a dictionary of the make.conf """
 		return self._make_conf
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param data Parameter description
 	# @param attr Parameter description
@@ -1092,7 +1037,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param rc_conf Parameter description
 	def set_rc_conf(self, rc_conf):
 		"""
@@ -1106,14 +1050,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_rc_conf(self):
 		""" Return a dictionary of the make.conf """
 		return self._rc_conf
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param install_rp_pppoe Parameter description
 	# @param xml_attr Parameter description
@@ -1132,14 +1074,12 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_install_rp_pppoe(self):
 		""" Return the boolean value of _install_rp_pppoe """
 		return self._install_rp_pppoe
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param install_pcmcia Parameter description
 	# @param xml_attr Parameter description
@@ -1155,7 +1095,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_install_pcmcia_cs(self):
 		""" Returns the boolean _install_pcmcia_cs """
 
@@ -1163,7 +1102,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param dns_servers Parameter description
 	# @param xml_attr Parameter description
@@ -1187,7 +1125,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_dns_servers(self):
 		""" This returns a tuple of the form:
 			(<nameserver 1>, <nameserver 2>, <nameserver 3>)
@@ -1196,7 +1133,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param gateway Parameter description
 	# @param xml_attr Parameter description
@@ -1225,7 +1161,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_default_gateway(self):
 		"""
 		Returns the default gateway
@@ -1235,7 +1170,6 @@ class InstallProfile:
  
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param mountpoint Parameter description
 	# @param attr Parameter description
@@ -1271,7 +1205,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_fstab(self):
 		"""
 		Returns the fstab info.
@@ -1280,7 +1213,6 @@ class InstallProfile:
 		
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param install_packages Parameter description
 	# @param xml_attr Parameter description
@@ -1302,7 +1234,6 @@ class InstallProfile:
  
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_install_packages(self):
 		""" 
 		This returns a list of the packages:
@@ -1311,7 +1242,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param unused Parameter description
 	# @param attr Parameter description
@@ -1328,7 +1258,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param unused Parameter description
 	# @param attr Parameter description
@@ -1358,7 +1287,6 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param mta Parameter description
 	# @param xml_attr Parameter description
@@ -1370,13 +1298,11 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_mta(self):
 		return self._mta
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param unused Parameter description
 	# @param attr Parameter description
@@ -1396,19 +1322,16 @@ class InstallProfile:
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param netmounts Parameter description
 	def set_network_mounts(self, netmounts):
 		self._network_mounts = netmounts
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_network_mounts(self):
 		return self._network_mounts
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param services Parameter description
 	# @param xml_attr Parameter description
@@ -1430,7 +1353,6 @@ class InstallProfile:
  
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_services(self):
 		""" 
 		This returns a list of the packages:
@@ -1439,14 +1361,12 @@ class InstallProfile:
 		
 	##
 	# Brief description of function
-	# @param self Parameter description
 	def get_grp_install(self):
 		"returns grp_install"
 		return self._grp_install
 
 	##
 	# Brief description of function
-	# @param self Parameter description
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param grp_install Parameter description
 	# @param xml_attr Parameter description
