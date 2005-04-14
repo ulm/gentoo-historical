@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.92 2005/04/12 04:07:39 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.93 2005/04/14 15:44:03 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -15,6 +15,11 @@ import GLIUtility, GLILogger, os, string, sys, shutil, re
 from GLIException import *
 
 class ArchitectureTemplate:
+	##
+	# Brief description of function
+	# @param selfconfiguration=None Parameter description
+	# @param install_profile=None Parameter description
+	# @param client_controller=None Parameter description
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		self._client_configuration = configuration
 		self._install_profile = install_profile
@@ -64,15 +69,28 @@ class ArchitectureTemplate:
                                 ]
 
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_steps(self):
 		return self._install_steps
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param type Parameter description
+	# @param data Parameter description
 	def notify_frontend(self, type, data):
 		self._cc.addNotification(type, data)
 
 	# It is possible to override these methods in each Arch Template.
 	# It might be necessary to do so, if the arch needs something 'weird'.
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param script_name Parameter description
+	# @param runlevel="default" Parameter description
 	def _add_to_runlevel(self, script_name, runlevel="default"):
 		"Adds the script named 'script_name' to the runlevel 'runlevel' in the chroot environement"
 		
@@ -82,6 +100,10 @@ class ArchitectureTemplate:
 			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param package Parameter description
 	def _quickpkg_deps(self, package):
 		# These need to be changed to pull values from the make.conf stuff
 		PKGDIR = "/usr/portage/packages"
@@ -99,10 +121,20 @@ class ArchitectureTemplate:
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					pass
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param cmd Parameter description
 	def _get_packages_to_emerge(self, cmd):
 		# cmd = full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True).split("\n")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param package Parameter description
+	# @param binary=False Parameter description
+	# @param binary_only=False Parameter description
 	def _emerge(self, package, binary=False, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
 		if self._install_profile.get_grp_install():
@@ -116,6 +148,13 @@ class ArchitectureTemplate:
 			else:
 				return GLIUtility.spawn("emerge " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param filename Parameter description
+	# @param newvalues Parameter description
+	# @param delimeter='=' Parameter description
+	# @param quotes_around_value=True Parameter description
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True):
 		"""
 		filename = file to be editted
@@ -149,6 +188,9 @@ class ArchitectureTemplate:
 		f.close()
 		self._logger.log("Edited Config file "+filename)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def stage1(self):
 		"Stage 1 install -- bootstraping"
 
@@ -162,6 +204,9 @@ class ArchitectureTemplate:
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
 			self._logger.log("Bootstrap complete.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def stage2(self):
 		# If we are doing a stage 1 or 2 install, then emerge system
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
@@ -173,12 +218,18 @@ class ArchitectureTemplate:
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
 			self._logger.log("Emerge system complete.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
 		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
 		self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def prepare_chroot(self):
 		# Copy resolv.conf to new env
 		try:
@@ -197,6 +248,9 @@ class ArchitectureTemplate:
 		# might want to rewrite/use _edit_config from the GLIInstallTemplate
 		# Then you should be done... at least with the preinstall.
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_packages(self):
 		"Will install any extra software!"
 
@@ -209,6 +263,9 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("Emerged package: "+package)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_services(self):
 		"Will set the list of services to runlevel default.  This is a temporary solution!"
 
@@ -216,6 +273,9 @@ class ArchitectureTemplate:
 		for service in services:
 			status = self._add_to_runlevel(service)
 			
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def mount_local_partitions(self):
 		"Mounts all partitions that are on the local machine"
 		#{   1: {   'end': 1999871,          'format': False,            'mb': 0,
@@ -261,6 +321,9 @@ class ArchitectureTemplate:
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
 			self._logger.log("Mounted mountpoint:"+mountpoint)
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def mount_network_shares(self):
 		"Mounts all network shares to the local machine"
 		"""
@@ -286,6 +349,9 @@ class ArchitectureTemplate:
 					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
 				self._logger.log("Mounted netmount at mountpoint:"+mountpoint)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def fetch_sources_from_cd(self):
 		"Gets sources from CD (required for non-network installation)"
 		#WARNING: There will no longer be sources on the future livecds.  this will have to change!
@@ -298,11 +364,17 @@ class ArchitectureTemplate:
 			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
 		self._logger.log("Distfiles copied from cd.")
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def fetch_grp_from_cd(self):
 		"Gets grp binary packages from CD (required for non-network binary installation)"
 		# This will not work until we find out how the new GRP format will function.
 		pass
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def configure_make_conf(self):
 		"Configures make.conf"
 				
@@ -316,6 +388,9 @@ class ArchitectureTemplate:
 			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: options[key]})
 		self._logger.log("Make.conf configured")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_portage_tree(self):
 		"Get/update the portage tree"
 		
@@ -344,6 +419,9 @@ class ArchitectureTemplate:
 				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd")
 			
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_timezone(self):
 		"Sets the timezone for the new environment"
 		# Set symlink
@@ -354,6 +432,9 @@ class ArchitectureTemplate:
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
 		self._logger.log("Timezone set.")
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def configure_fstab(self):
 		"Configures fstab"
 		newfstab = ""
@@ -401,6 +482,9 @@ class ArchitectureTemplate:
 		f.close()
 		self._logger.log("fstab configured.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def emerge_kernel_sources(self):
 		"Fetches desired kernel sources"
 		kernel_pkg = self._install_profile.get_kernel_source_pkg()
@@ -448,6 +532,9 @@ class ArchitectureTemplate:
 						counter = counter + 1
 			self._logger.log("Kernel sources:"+kernel_pkg+" emerged and /usr/src/linux symlinked.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def build_kernel(self):
 		"Builds kernel"
 		self._logger.mark()
@@ -523,6 +610,9 @@ class ArchitectureTemplate:
 			#it's not important if this fails.
 			self._logger.log("Custom kernel complete")
 			
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_logging_daemon(self):
 		"Installs and sets up logger"
 		# Get loggin daemon info
@@ -536,6 +626,9 @@ class ArchitectureTemplate:
 			# Add Logging Daemon to default runlevel
 			self._add_to_runlevel(logging_daemon_pkg)
 			self._logger.log("Logging daemon installed: "+logging_daemon_pkg)
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_cron_daemon(self):
 		"Installs and sets up cron"
 		# Get cron daemon info
@@ -555,6 +648,9 @@ class ArchitectureTemplate:
 				if exitstatus != 0:
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
 			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
 		# Get the list of file system tools to be installed
@@ -587,6 +683,9 @@ class ArchitectureTemplate:
 				else:
 					self._logger.log("FileSystemTool jfsutils was emerged successfully.")
 					
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_rp_pppoe(self):
 		"Installs rp-pppoe"
 		# If user wants us to install rp-pppoe, then do so
@@ -601,6 +700,9 @@ class ArchitectureTemplate:
 		# I think it should go into the setup_network_post section
 		# What do you guys think?
 				
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_pcmcia_cs(self):
 		"Installs and sets up pcmcia-cs"
 		# If user wants us to install pcmcia-cs, then do so
@@ -615,6 +717,9 @@ class ArchitectureTemplate:
 				self._add_to_runlevel(pcmcia)
 				self._logger.log("PCMCIA_CS emerged and configured.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
@@ -628,6 +733,9 @@ class ArchitectureTemplate:
 			self.configure_rc_conf()
 			self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def configure_rc_conf(self):
 		"Configures rc.conf"
 		# Get make.conf options
@@ -640,6 +748,9 @@ class ArchitectureTemplate:
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {key: options[key]})
 		self._logger.log("rc.conf configured.")
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def setup_network_post(self):
 		"Sets up the network for the first boot"
 		# Get hostname, domainname and nisdomainname
@@ -801,6 +912,9 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("dhcpcd emerged.")		
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_root_password(self):
 		"Sets the root password"
 		status = GLIUtility.spawn('echo \'root:' + self._install_profile.get_root_pass_hash() + '\' | chroot '+self._chroot_dir+' chpasswd -e', quiet=True)
@@ -808,6 +922,9 @@ class ArchitectureTemplate:
 			raise GLIException("SetRootPasswordError", 'fatal', 'set_root_password', "Failure to set root password!")
 		self._logger.log("Root Password set on the new system.")
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_users(self):
 		"Sets up the new users for the system"
 		# Loop for each user
@@ -863,6 +980,9 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("User "+username+"was added.")
 			
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def finishing_cleanup(self):
 		"This function will handle the various cleanup tasks as well as unmounting the filesystems for reboot."
 		#These are temporary until I come up with a nicer idea.
@@ -887,6 +1007,9 @@ class ArchitectureTemplate:
 
 		GLIUtility.spawn("rm /tmp/compile_output.log && rm " + install_logfile)
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
 		pass

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.40 2005/04/08 20:09:07 samyron Exp $
+$Id: GLIInstallProfile.py,v 1.41 2005/04/14 15:44:03 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -22,6 +22,9 @@ class InstallProfile:
 	profile file.
 	"""
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def __init__(self):
 		parser = SimpleXMLParser.SimpleXMLParser()
 
@@ -101,13 +104,26 @@ class InstallProfile:
 		self._mta = ""
 		self._grp_install = False
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param filename Parameter description
 	def parse(self, filename):
 		self._parser.parse(filename)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_cron_daemon_pkg(self):
 		"returns cron_daemon_pkg"
 		return self._cron_daemon_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param cron_daemon_pkg Parameter description
+	# @param xml_attr Parameter description
 	def set_cron_daemon_pkg(self, xml_path, cron_daemon_pkg, xml_attr):
 		"cron_daemon_pkg is a string to determine which cron daemon to install and configure (ie. 'vixie-cron')"
 		
@@ -117,10 +133,19 @@ class InstallProfile:
 		
 		self._cron_daemon_pkg = cron_daemon_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_logging_daemon_pkg(self):
 		"returns logging_daemon_pkg"
 		return self._logging_daemon_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param logging_daemon_pkg Parameter description
+	# @param xml_attr Parameter description
 	def set_logging_daemon_pkg(self, xml_path, logging_daemon_pkg, xml_attr):
 		"logging_daemon_pkg is a string to determine which logging daemon to install and configure (ie. 'sysklogd')"
 		
@@ -130,10 +155,19 @@ class InstallProfile:
 
 		self._logging_daemon_pkg = logging_daemon_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_boot_loader_mbr(self):
 		"returns boot_loader_mbr"
 		return self._boot_loader_mbr
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param boot_loader_mbr Parameter description
+	# @param xml_attr Parameter description
 	def set_boot_loader_mbr(self, xml_path, boot_loader_mbr, xml_attr):
 		"boot_loader_mbr is a bool. True installs boot loader to MBR.  False installs boot loader to the boot or root partition."
 		
@@ -146,10 +180,19 @@ class InstallProfile:
 		
 		self._boot_loader_mbr = boot_loader_mbr
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_boot_loader_pkg(self):
 		"returns boot_loader_pkg"
 		return self._boot_loader_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param boot_loader_pkg Parameter description
+	# @param xml_attr Parameter description
 	def set_boot_loader_pkg(self, xml_path, boot_loader_pkg, xml_attr):
 		"boot_loader_pkg is a string to decide which boot loader to install. (ie. 'grub')"
 		
@@ -159,10 +202,19 @@ class InstallProfile:
 
 		self._boot_loader_pkg = boot_loader_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_kernel_modules(self):
 		"returns kernel_modules"
 		return self._kernel_modules
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param kernel_module Parameter description
+	# @param xml_attr Parameter description
 	def add_kernel_module(self, xml_path, kernel_module, xml_attr):
 		"Add a kernel module to the list of kernel modules"
 
@@ -171,6 +223,10 @@ class InstallProfile:
 
 		self._kernel_modules.append(kernel_module)
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param kernel_modules Parameter description
 	def set_kernel_modules(self, kernel_modules):
 		"kernel_modules is a tuple of strings containing names of modules to automatically load at boot time. (ie. '( 'ide-scsi', )')"
 		
@@ -184,10 +240,19 @@ class InstallProfile:
 		for module in kernel_modules:
 			self._add_kernel_module(module)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_kernel_config_uri(self):
 		"returns kernel_config_uri"
 		return self._kernel_config_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param kernel_config_uri Parameter description
+	# @param xml_attr Parameter description
 	def set_kernel_config_uri(self, xml_path, kernel_config_uri, xml_attr):
 		"kernel_config_uri is a string that is the path to the kernel config file you wish to use.  Can also be a http:// or ftp:// path."
 		
@@ -201,18 +266,36 @@ class InstallProfile:
 
 		self._kernel_config_uri = kernel_config_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_bootloader_kernel_args(self):
 		"returns kernel arguments"
 		return self._bootloader_kernel_args
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param bootloader_kernel_args Parameter description
+	# @param xml_attr Parameter description
 	def set_bootloader_kernel_args(self, xml_path, bootloader_kernel_args, xml_attr):
 		"kernel_args are the arguments to pass the kernel at boot from the bootloader."
 		self._bootloader_kernel_args = bootloader_kernel_args
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_kernel_initrd(self):
 		"returns kernel_initrd"
 		return self._kernel_initrd
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param kernel_initrd Parameter description
+	# @param xml_attr Parameter description
 	def set_kernel_initrd(self, xml_path, kernel_initrd, xml_attr):
 		"kernel_initrd is a bool to determine whether or not to build an initrd kernel.  False builds a non-initrd kernel. (overwritten by kernel_bootsplash; needs genkernel non-initrd support not yet present)"
 
@@ -225,10 +308,19 @@ class InstallProfile:
 		
 		self._kernel_initrd = kernel_initrd
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_kernel_bootsplash(self):
 		"returns kernel_bootsplash"
 		return self._kernel_bootsplash
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param kernel_bootsplash Parameter description
+	# @param xml_attr Parameter description
 	def set_kernel_bootsplash(self, xml_path, kernel_bootsplash, xml_attr):
 		"kernel_bootsplash is a bool to determine whether or not to install bootsplash into the kernel.  True builds in bootsplash support to the initrd.  WARNING: kernel_source_pkg must contain a kernel with bootsplash support or the bootsplash will not appear.  If you set this to true, it will build an initrd kernel even if you chose false for kernel_initrd!"
 		
@@ -241,10 +333,19 @@ class InstallProfile:
 		
 		self._kernel_bootsplash = kernel_bootsplash
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_kernel_source_pkg(self):
 		"returns kernel_source_pkg"
 		return self._kernel_source_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param kernel_source_pkg Parameter description
+	# @param xml_attr Parameter description
 	def set_kernel_source_pkg(self, xml_path, kernel_source_pkg, xml_attr):
 		"kernel_source_pkg is a string to define which kernel source to use.  (ie. 'gentoo-sources')"
 		
@@ -254,10 +355,19 @@ class InstallProfile:
 		
 		self._kernel_source_pkg = kernel_source_pkg
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_users(self):
 		"returns users"
 		return self._users
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param username Parameter description
+	# @param attr=None Parameter description
 	def add_user(self, xml_path, username, attr=None):
 		"""
 		This will take a username (that is a string) and a set of attributes and it will verify everything is valid
@@ -331,6 +441,10 @@ class InstallProfile:
 
 		self._users.append((username,hash,groups,shell,homedir,uid,comment))
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param username Parameter description
 	def remove_user(self, username):
 		"""
 		Remove "username" from the _users list.
@@ -340,6 +454,10 @@ class InstallProfile:
 				self._users.remove(user)
 				break
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param users Parameter description
 	def set_users(self, users):
 		"""
 		users is a tuple(user) of tuple's. This sets _users to this set of tuples.
@@ -351,10 +469,19 @@ class InstallProfile:
 				#self.add_user(user)  not sure what someone was doing here.  remove later if not needed
 				self._users.append(user)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_root_pass_hash(self):
 		"returns root_pass_hash"
 		return self._root_pass_hash
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param root_pass_hash Parameter description
+	# @param xml_attr Parameter description
 	def set_root_pass_hash(self, xml_path, root_pass_hash, xml_attr):
 		"root_pass_hash is a string containing an md5 password hash to be assinged as the password for the root user."
 		
@@ -364,10 +491,19 @@ class InstallProfile:
 		
 		self._root_pass_hash = root_pass_hash
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_time_zone(self):
 		"returns time_zone"
 		return self._time_zone
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param time_zone Parameter description
+	# @param xml_attr Parameter description
 	def set_time_zone(self, xml_path, time_zone, xml_attr):
 		"time_zone is a string defining the time zone to use.  Time zones are found in /usr/share/zoneinfo/.  Syntax is 'UTC' or 'US/Eastern'."
 		
@@ -377,10 +513,19 @@ class InstallProfile:
 			
 		self._time_zone = time_zone
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_stage_tarball_uri(self):
 		"returns stage_tarball_uri"
 		return self._stage_tarball_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param stage_tarball_uri Parameter description
+	# @param xml_attr Parameter description
 	def set_stage_tarball_uri(self, xml_path, stage_tarball_uri, xml_attr):
 		"stage_tarball_uri is a string that is the full path to the tarball you wish to use. (ie. 'file:///path/to/mytarball.tar.bz2')"
 
@@ -394,10 +539,19 @@ class InstallProfile:
 		
 		self._stage_tarball_uri = stage_tarball_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_stage(self):
 		"returns install_stage"
 		return self._install_stage
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param install_stage Parameter description
+	# @param xml_attr Parameter description
 	def set_install_stage(self, xml_path, install_stage, xml_attr):
 		"install_stage is a integer to define which stage install to use.  Appropriate stages are 1-3."
 		
@@ -414,10 +568,19 @@ class InstallProfile:
 		else:
 			raise GLIException("InstallStageError", 'fatal', 'set_install_stage',  "install_stage must be 1-3!")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_portage_tree_sync_type(self):
 		"returns portage_tree_sync"
 		return self._portage_tree_sync_type
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param portage_tree_sync Parameter description
+	# @param xml_attr Parameter description
 	def set_portage_tree_sync_type(self, xml_path, portage_tree_sync, xml_attr):
 		"portage_tree_sync is a bool to determine whether or not to run 'emerge sync' to get the latest portage tree."
 		
@@ -430,10 +593,19 @@ class InstallProfile:
 
 		self._portage_tree_sync_type = string.lower(portage_tree_sync)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_portage_tree_snapshot_uri(self):
 		"returns portage_tree_snapshot_uri"
 		return self._portage_tree_snapshot_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param portage_tree_snapshot_uri Parameter description
+	# @param xml_attr Parameter description
 	def set_portage_tree_snapshot_uri(self, xml_path, portage_tree_snapshot_uri, xml_attr):
 		"portage_tree_snapshot_uri is a string defining the path to a portage tree snapshot. (ie. 'file:///mnt/cdrom/snapshots/portage-*.tar.bz2')"
 		
@@ -447,10 +619,19 @@ class InstallProfile:
 		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_domainname(self):
 		"returns domainname"
 		return self._domainname
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param domainname Parameter description
+	# @param xml_attr Parameter description
 	def set_domainname(self, xml_path, domainname, xml_attr):
 		"domainname is a string containing the domainname for the new system. (ie. 'mydomain.com'; NOT FQDN)"
 		
@@ -460,10 +641,19 @@ class InstallProfile:
 		
 		self._domainname = domainname
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_hostname(self):
 		"returns hostname"
 		return self._hostname
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param hostname Parameter description
+	# @param xml_attr Parameter description
 	def set_hostname(self, xml_path, hostname, xml_attr):
 		"hostname is a string containing the hostname for the new system. (ie. 'myhost'; NOT 'myhost.mydomain.com')"
 
@@ -473,10 +663,19 @@ class InstallProfile:
 
 		self._hostname = hostname
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_nisdomainname(self):
 		"returns nisdomainname"
 		return self._nisdomainname
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param nisdomainname Parameter description
+	# @param xml_attr Parameter description
 	def set_nisdomainname(self, xml_path, nisdomainname, xml_attr):
 		"nisdomainname is a string containing the NIS domainname for the new system."
 		
@@ -486,10 +685,17 @@ class InstallProfile:
 			
 		self._nisdomainname = nisdomainname
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_partition_tables(self):
 		"returns partition_tables"
 		return self._partition_tables
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param partition_tables Parameter description
 	def set_partition_tables(self, partition_tables):
 		"""
 		Sets the partition tables.  A partition is a multi level dictionary in the following format:
@@ -569,10 +775,19 @@ class InstallProfile:
 		self._partition_tables = partition_tables
 
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_network_interfaces(self):
 		"Returns network_interfaces"
 		return self._network_interfaces
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param device Parameter description
+	# @param attr Parameter description
 	def add_network_interface(self, xml_path, device, attr):
 		"""
 		This adds an ethernet device to the _network_interfaces dictionary.
@@ -639,6 +854,10 @@ class InstallProfile:
 
 		self._network_interfaces[device] = options
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param network_interfaces Parameter description
 	def set_network_interfaces(self, network_interfaces):
 		"""
 		This method sets the network interfaces diction to network_interfaces.
@@ -654,6 +873,9 @@ class InstallProfile:
 		for device in network_interfaces:
 			self.add_network_interface(None, device, network_interfaces[device])
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def serialize(self):
 		"""
 		This method serializes the configuration data and output a nice XML document.
@@ -807,6 +1029,12 @@ class InstallProfile:
 		dom = xml.dom.minidom.parseString(xmldoc)
 		return dom.toprettyxml()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param data Parameter description
+	# @param attr Parameter description
 	def make_conf_add_var(self, xml_path, data, attr):
 		"""
 		data is a string that is the value of the variable name.
@@ -822,6 +1050,10 @@ class InstallProfile:
 			varName = attr['name']
 			self._make_conf[str(varName)] = str(data)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param make_conf Parameter description
 	def set_make_conf(self, make_conf):
 		"""
 		make_conf is a dictionary that will be set to _make_conf
@@ -832,10 +1064,19 @@ class InstallProfile:
 
 		self._make_conf = make_conf
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_make_conf(self):
 		""" Return a dictionary of the make.conf """
 		return self._make_conf
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param data Parameter description
+	# @param attr Parameter description
 	def rc_conf_add_var(self, xml_path, data, attr):
 		"""
 		data is a string that is the value of the variable name.
@@ -847,6 +1088,10 @@ class InstallProfile:
 		varName = attr['name']
 		self._rc_conf[str(varName)] = str(data)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param rc_conf Parameter description
 	def set_rc_conf(self, rc_conf):
 		"""
 		rc_conf is a dictionary that will be set to _rc_conf
@@ -857,10 +1102,19 @@ class InstallProfile:
 
 		self._rc_conf = rc_conf
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_rc_conf(self):
 		""" Return a dictionary of the make.conf """
 		return self._rc_conf
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param install_rp_pppoe Parameter description
+	# @param xml_attr Parameter description
 	def set_install_rp_pppoe(self, xml_path, install_rp_pppoe, xml_attr):
 		"""
 		Tell the installer whether or not to install the rp-pppoe package
@@ -874,10 +1128,19 @@ class InstallProfile:
 
 		self._install_rp_pppoe = install_rp_pppoe
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_rp_pppoe(self):
 		""" Return the boolean value of _install_rp_pppoe """
 		return self._install_rp_pppoe
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param install_pcmcia Parameter description
+	# @param xml_attr Parameter description
 	def set_install_pcmcia_cs(self, xml_path, install_pcmcia, xml_attr):
 		""" This tells the installer whether or not to install the pcmcia_cs package """
 		if type(install_pcmcia) != bool:
@@ -888,11 +1151,20 @@ class InstallProfile:
 
 		self._install_pcmcia_cs = install_pcmcia
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_pcmcia_cs(self):
 		""" Returns the boolean _install_pcmcia_cs """
 
 		return self._install_pcmcia_cs
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param dns_servers Parameter description
+	# @param xml_attr Parameter description
 	def set_dns_servers(self, xml_path, dns_servers, xml_attr):
 		"""
 		Set the DNS servers for the post-installed system.
@@ -911,12 +1183,21 @@ class InstallProfile:
 
 		self._dns_servers = dns_servers
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_dns_servers(self):
 		""" This returns a tuple of the form:
 			(<nameserver 1>, <nameserver 2>, <nameserver 3>)
 		"""
 		return self._dns_servers
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param gateway Parameter description
+	# @param xml_attr Parameter description
 	def set_default_gateway(self, xml_path, gateway, xml_attr):
 		""" 
 		Set the default gateway for the post-installed system.
@@ -940,6 +1221,9 @@ class InstallProfile:
 
 		self._default_gateway = (interface, gateway)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_default_gateway(self):
 		"""
 		Returns the default gateway
@@ -947,6 +1231,12 @@ class InstallProfile:
 		return self._default_gateway
 
  
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param mountpoint Parameter description
+	# @param attr Parameter description
 	def add_fstab_partition(self, xml_path, mountpoint, attr):
 		"""
 		This adds a partition to the list of partitions to be mounted in fstab.
@@ -977,12 +1267,21 @@ class InstallProfile:
 		info = (dev,fstype,options)
 		self._fstab[mountpoint] = info
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_fstab(self):
 		"""
 		Returns the fstab info.
 		"""
 		return self._fstab			
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param install_packages Parameter description
+	# @param xml_attr Parameter description
 	def set_install_packages(self, xml_path, install_packages, xml_attr):
 		"""
 		Set the packages to be installed for the post-installed system.
@@ -999,12 +1298,21 @@ class InstallProfile:
 
 		self._install_packages = install_packages
  
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_packages(self):
 		""" 
 		This returns a list of the packages:
 		"""
 		return self._install_packages
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param unused Parameter description
+	# @param attr Parameter description
 	def add_partitions_device(self, xml_path, unused, attr):
 		devnode = None
 		if type(attr) == tuple:
@@ -1016,6 +1324,12 @@ class InstallProfile:
 		self._partition_tables[devnode] = self._temp_partition_table
 		self._temp_partition_table = {}
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param unused Parameter description
+	# @param attr Parameter description
 	def add_partitions_device_partition(self, xml_path, unused, attr):
 		part_entry = {'end': 0, 'format': None, 'mb': 0, 'minor': 0, 'mountopts': '', 'mountpoint': '', 'origminor': '', 'start': 0, 'type': ''}
 		if type(attr) == tuple:
@@ -1040,15 +1354,30 @@ class InstallProfile:
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
 		self._temp_partition_table[part_entry['minor']] = part_entry
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param mta Parameter description
+	# @param xml_attr Parameter description
 	def set_mta(self, xml_path, mta, xml_attr):
 		if type(mta) != str:
 			raise GLIException("MTAError", 'fatal', 'set_mta',  "The MTA must be a string!")
 
 		self._mta = mta
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_mta(self):
 		return self._mta
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param unused Parameter description
+	# @param attr Parameter description
 	def add_netmount(self, xml_path, unused, attr):
 		netmount_entry = {'export': '', 'host': '', 'mountopts': '', 'mountpoint': '', 'type': ''}
 		if type(attr) == tuple:
@@ -1063,11 +1392,24 @@ class InstallProfile:
 					netmount_entry[attrName] = str(attr.getValue(attrName))
 		self._network_mounts.append(netmount_entry)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param netmounts Parameter description
 	def set_network_mounts(self, netmounts):
 		self._network_mounts = netmounts
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_network_mounts(self):
 		return self._network_mounts
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param services Parameter description
+	# @param xml_attr Parameter description
 	def set_services(self, xml_path, services, xml_attr):
 		"""
 		Set the services to be started on bootup.
@@ -1084,16 +1426,28 @@ class InstallProfile:
 
 		self._services = services
  
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_services(self):
 		""" 
 		This returns a list of the packages:
 		"""
 		return self._services
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_grp_install(self):
 		"returns grp_install"
 		return self._grp_install
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param xml_path Parameter description
+	# @param grp_install Parameter description
+	# @param xml_attr Parameter description
 	def set_grp_install(self, xml_path, grp_install, xml_attr):
 		"grp_install is a bool. True installs GRP.  False doesn't."
 		

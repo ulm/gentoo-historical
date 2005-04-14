@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.49 2005/03/31 18:12:15 codeman Exp $
+$Id: GLIClientController.py,v 1.50 2005/04/14 15:44:03 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -26,6 +26,9 @@ TEMPLATE_DIR = 'templates'
 
 class GLIClientController(Thread):
 
+	##
+	# Brief description of function
+	# @param selfconfiguration=Noneinstall_profile=Nonepretend=False Parameter description
 	def __init__(self,configuration=None,install_profile=None,pretend=False):
 		Thread.__init__(self)
 
@@ -45,21 +48,38 @@ class GLIClientController(Thread):
 		self._pretend = pretend
 		self.setDaemon(True)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param install_profile Parameter description
 	def set_install_profile(self, install_profile):
 		self._install_profile = install_profile
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_profile(self):
 		return self._install_profile
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param configuration Parameter description
 	def set_configuration(self, configuration):
 		self._configuration = configuration
 		if self._configuration != None:
 			self._verbose = self._configuration.get_verbose()
 			self._logger = GLILogger.Logger(self._configuration.get_log_file())
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_configuration(self):
 		return self._configuration
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def run(self):
 		interactive = self._configuration.get_interactive()
 
@@ -138,22 +158,40 @@ class GLIClientController(Thread):
 		self._install_event.clear()
 		self._install_event.wait()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_num_steps(self):
 		return len(self._install_steps)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_next_step_info(self):
 		return self._install_steps[(self._install_step + 1)][1]
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def next_step(self):
 		self._install_step = self._install_step + 1
 		self._install_event.set()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def retry_step(self):
 		self._install_event.set()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def has_more_steps(self):
 		return (self._install_step < (len(self._install_steps) - 1))
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_proxys(self):
 		if self._configuration.get_ftp_proxy() != "":
 			os.environ['FTP_PROXY'] = self._configuration.get_ftp_proxy()
@@ -164,6 +202,9 @@ class GLIClientController(Thread):
 		if self._configuration.get_rsync_proxy() != "":
 			os.environ['RSYNC_PROXY'] = self._configuration.get_rsync_proxy()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def load_kernel_modules(self):
 		modules = self._configuration.get_kernel_modules()
 		for module in modules:
@@ -178,6 +219,9 @@ class GLIClientController(Thread):
 				self.output(error)
 				self._logger.log(error.get_error_level() + '! ' + error.get_error_msg())
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_root_passwd(self):
 		self._logger.log("Setting root password.")
 		if self._configuration.get_root_passwd() != "":
@@ -190,6 +234,9 @@ class GLIClientController(Thread):
 			else:
 				self._logger.log("Livecd root password set.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def start_portmap(self):
 		status = GLIUtility.spawn('/etc/init.d/portmap start') #, display_on_tty8=True)
 		if not GLIUtility.exitsuccess(status):
@@ -198,6 +245,9 @@ class GLIClientController(Thread):
 		else:
 			self._logger.log("Portmap started.")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def configure_networking(self):
 		# Do networking setup right here.
 		if self._configuration.get_network_type() != None:
@@ -237,6 +287,9 @@ class GLIClientController(Thread):
 				if not GLIUtility.set_default_route(route):
 					raise GLIException("DefaultRouteError", 'fatal','configure_networking', "Could not set the default route!")
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def enable_ssh(self):
 		if self._configuration.get_enable_ssh():
 			status = GLIUtility.spawn("/etc/init.d/sshd start", quiet=True)
@@ -248,6 +301,9 @@ class GLIClientController(Thread):
 
 
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def load_install_profile(self):
 		install_profile=None
 		if self._install_profile == None:
@@ -263,16 +319,29 @@ class GLIClientController(Thread):
 
 		self._install_profile = install_profile
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def start_install(self):
 		self._install_event.set()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def start_pre_install(self):
 		self.start()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param str Parameter description
 	def output(self, str):
 		if self._verbose:
 			print str
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def getNotification(self):
 		notification = None
 		try:
@@ -281,6 +350,11 @@ class GLIClientController(Thread):
 			pass
 		return notification
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param type Parameter description
+	# @param data Parameter description
 	def addNotification(self, type, data):
 		notification = GLINotification.GLINotification(type, data)
 		try:

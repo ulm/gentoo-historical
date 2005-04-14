@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.2 2004/10/28 18:51:52 samyron Exp $
+$Id: SimpleXMLParser.py,v 1.3 2005/04/14 15:44:03 agaffney Exp $
 Copyright 2004 Gentoo
 
 """
@@ -10,6 +10,10 @@ import xml.sax, string
 
 class SimpleXMLParser(xml.sax.ContentHandler):
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param file=None Parameter description
 	def __init__(self, file=None):
 		self._xml_elements = []
 		self._xml_attrs = []
@@ -17,12 +21,23 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		self._fntable = {}
 		self._path = file
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param path Parameter description
+	# @param fn Parameter description
+	# @param call_on_null=False Parameter description
 	def addHandler(self, path, fn, call_on_null=False):
 		try:
 			self._fntable[path].append((fn,call_on_null))
 		except KeyError:
 			self._fntable[path] = [(fn, call_on_null)]
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param path Parameter description
+	# @param fn Parameter description
 	def delHandler(self, path, fn):
 		try:
 			for function in self._fntable[path]:
@@ -44,6 +59,10 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		self._xml_attrs.append(attr)
 		self._xml_current_data = ""
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param name Parameter description
 	def endElement(self, name):
 		path = self._xml_element_path()
 		if path in self._fntable.keys():
@@ -56,6 +75,10 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		self._xml_attrs.pop()
 		self._xml_elements.pop()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param data Parameter description
 	def characters(self, data):
 		"""
 		XML SAX character data handler
@@ -67,12 +90,19 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		# Maybe we should use Unicode strings instead of normal strings?
 		self._xml_current_data += string.strip(str(data))
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def _xml_element_path(self):
 		"""
 		Return path to current XML node
 		"""                
 		return string.join(self._xml_elements, '/')
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param path=None Parameter description
 	def parse(self, path=None):
 		"""
 		Parse serialized configuration file.

@@ -25,6 +25,11 @@ class Device:
 	_total_mb = 0
 	_arch = None
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param device Parameter description
+	# @param arch="x86" Parameter description
 	def __init__(self, device, arch="x86"):
 		self._device = device
 		self._partitions = {}
@@ -36,6 +41,9 @@ class Device:
 		self._parted_disk = parted.PedDisk.new(self._parted_dev)
 		self.set_disk_geometry_from_disk()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
 		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
@@ -45,6 +53,9 @@ class Device:
 		self._sectors_in_cylinder = self._geometry['heads'] * self._geometry['sectors']
 		self._total_mb = int(self._total_bytes / MEGABYTE)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def set_partitions_from_disk(self):
 		last_part = 0
 		last_log_part = 4
@@ -70,6 +81,10 @@ class Device:
 					last_part += 1
 			parted_part = self._parted_disk.next_partition(parted_part)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param ips Parameter description
 	def set_partitions_from_install_profile_structure(self, ips):
 		pass
 #		for part in ips:
@@ -86,9 +101,15 @@ class Device:
 #					existing = True
 #			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def tidy_partitions(self):
 		last_minor = 0
 		last_log_minor = 4
@@ -144,6 +165,16 @@ class Device:
 					continue
 				last_minor = part
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param free_minor Parameter description
+	# @param mb Parameter description
+	# @param start Parameter description
+	# @param end Parameter description
+	# @param type Parameter description
+	# @param mountpoint='' Parameter description
+	# @param mountopts='' Parameter description
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
 		free_minor = Decimal(str(free_minor))
 		new_minor = int(free_minor) + 1
@@ -182,6 +213,10 @@ class Device:
 			self._partitions[Decimal("4.9")] = Partition(self, Decimal("4.9"), mb, 0, 0, "free")
 		self.tidy_partitions()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param minor Parameter description
 	def remove_partition(self, minor):
 		tmppart = self._partitions[int(minor)]
 		free_minor = 0
@@ -193,6 +228,10 @@ class Device:
 		del self._partitions[int(minor)]
 		self.tidy_partitions()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param start Parameter description
 	def get_free_space(self, start):
 		GAP_SIZE = 100
 		parts = self._partitions.keys()
@@ -229,6 +268,11 @@ class Device:
 			free_end = self._total_sectors
 		return (free_start, free_end)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param sector Parameter description
+	# @param ignore_extended=1 Parameter description
 	def get_partition_at(self, sector, ignore_extended=1):
 		parts = self._partitions.keys()
 		parts.sort()
@@ -239,6 +283,11 @@ class Device:
 				return part
 		return 0
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param start Parameter description
+	# @param end Parameter description
 	def get_free_minor_at(self, start, end):
                 parts = self._partitions.keys()
                 parts.sort()
@@ -268,6 +317,9 @@ class Device:
 			lastpart = part
                 return minor
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_ordered_partition_list(self):
                 parts = self._partitions.keys()
                 parts.sort()
@@ -285,6 +337,9 @@ class Device:
 					partlist.append(part_log)
 		return partlist
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_install_profile_structure(self):
 		devdic = {}
 		for part in self._partitions:
@@ -292,6 +347,9 @@ class Device:
 			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
 		return devdic
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_extended_partition(self):
 		for part in self._partitions:
 			tmppart = self._partitions[part]
@@ -299,24 +357,45 @@ class Device:
 				return part
 		return 0
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_num_sectors(self):
 		return int(self._total_sectors)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_cylinder_size(self):
 		return int(self._cylinder_bytes)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_sector_size(self):
 		return int(self._sector_bytes)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_num_cylinders(self):
 		return int(self._geometry['cylinders'])
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_drive_bytes(self):
 		return int(self._total_bytes)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_total_mb(self):
 		return self._total_mb
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_partitions(self):
 		return self._partitions
 
@@ -324,13 +403,24 @@ class Device:
 #		for part in self._partitions.keys():
 #			print self._partitions[part].return_info()
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def print_geometry(self):
 		print self._total_bytes, self._geometry
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param message Parameter description
 	def _error(self, message):
 		"Raises an exception"
 		raise "DeviceObjectError", message
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param cmd Parameter description
 	def _run(self, cmd):
 		"Runs a command and returns the output"
 		
@@ -371,6 +461,19 @@ class Partition:
 	_min_sectors_for_resize = 0
 	_mb = 0
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param device Parameter description
+	# @param minor Parameter description
+	# @param mb Parameter description
+	# @param start Parameter description
+	# @param end Parameter description
+	# @param type Parameter description
+	# @param mountpoint='' Parameter description
+	# @param mountopts='' Parameter description
+	# @param format=True Parameter description
+	# @param existing=False Parameter description
 	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False):
 		self._device = device
 		self._minor = float(minor)
@@ -414,12 +517,18 @@ class Partition:
 				self._min_sectors_for_resize = min_size
 				self._resizeable = True
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def is_extended(self):
 		if self._type == "extended":
 			return True
 		else:
 			return False
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def is_logical(self):
 		if self._type == "free":
 			if int(self._minor) + Decimal("0.9") == Decimal(str(self._minor)):
@@ -431,6 +540,9 @@ class Partition:
 		else:
 			return False
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_logicals(self):
 		if not self.is_extended():
 			return None
@@ -444,74 +556,149 @@ class Partition:
 		logicals.sort()
 		return logicals
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_extended_parent(self):
 		if not self.is_logical():
 			return None
 		else:
 			return self._device.get_partition_at(self._start, ignore_extended=0)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param start Parameter description
 	def set_start(self, start):
 		self._start = int(start)
 		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_start(self):
 		return int(self._start)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param end Parameter description
 	def set_end(self, end):
 		self._end = int(end)
 		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_end(self):
 		return int(self._end)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_mb(self):
 		return int(self._mb)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param mb Parameter description
 	def set_mb(self, mb):
 		self._mb = int(mb)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param type Parameter description
 	def set_type(self, type):
 		self._type = type
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_type(self):
 		return self._type
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param minor Parameter description
 	def set_minor(self, minor):
 		self._minor = float(minor)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_minor(self):
 		return float(self._minor)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param orig_minor Parameter description
 	def set_orig_minor(self, orig_minor):
 		self._orig_minor = int(orig_minor)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_orig_minor(self):
 		return self._orig_minor
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param mountpoint Parameter description
 	def set_mountpoint(self, mountpoint):
 		self._mountpoint = mountpoint
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_mountpoint(self):
 		return self._mountpoint
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param mountopts Parameter description
 	def set_mountopts(self, mountopts):
 		self._mountopts = mountopts
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_mountopts(self):
 		return self._mountopts
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param format Parameter description
 	def set_format(self, format):
 		self._format = format
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_format(self):
 		return self._format
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_blocks(self):
 		return int(self._blocks)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_min_sectors_for_resize(self):
 		if self.is_extended():
 			min_size = self._start
@@ -522,6 +709,9 @@ class Partition:
 		else:
 			return self._min_sectors_for_resize
 
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_max_sectors_for_resize(self):
 		free_start, free_end = self._device.get_free_space(self._end)
 		if free_end == -1: return self._end
@@ -534,6 +724,11 @@ class Partition:
 			else:
 				return free_end - self._start
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param start Parameter description
+	# @param end Parameter description
 	def resize(self, start, end):
 		part_at_start = self._device.get_partition_at(int(start))
 		part_at_end = self._device.get_partition_at(int(end))
@@ -557,6 +752,10 @@ class Partition:
 		self.set_end(end)
 		return 1
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param message Parameter description
 	def _error(self, message):
 		"Raises an exception"
 		raise "PartitionObjectError", message

@@ -31,6 +31,11 @@ try:
 		_FLAGS_BY_NUM = { 1: "boot", 2: "root",  3: "swap", 
 				4: "hidden", 5: "raid", 6: "lvm", 7: "lba" }
 
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param device Parameter description
+		# @param logger=None Parameter description
 		def __init__(self, device, logger=None):
 
 			# Set the logfile
@@ -45,6 +50,10 @@ try:
 			# Do a test to make sure we can get the device
 			self._start_pyparted()
 
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param ped_exception Parameter description
 		def _exceptions(self, ped_exception):
 			"Handles pyparted exceptions"
 
@@ -62,6 +71,9 @@ try:
 			# Don't actually handle the exception		
 			return parted.EXCEPTION_UNHANDLED
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def _start_pyparted(self):
 			"Initializes pyparted, returning a device object"
 
@@ -79,6 +91,9 @@ try:
 			# Return the device object
 			return device
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_partition_minors(self):
 			"Returns a tuple of the minors of all the partitions on the drive"
 			
@@ -103,11 +118,17 @@ try:
 					
 			return tuple(partitions)
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_device_sector_size(self):
 			"Returns the size of sectors on the device in bytes"
 			
 			return self._start_pyparted().sector_size
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_partition_naming_support(self):
 			"Returns whether or not the current partition label supports naming (bool)"
 			
@@ -121,22 +142,35 @@ try:
 			else:
 				return False
 				
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_device_size(self):
 			"Returns the size of a disk in sectors"
 			
 			return self._start_pyparted().length
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_device_model(self):
 			"Returns the model of the device (an embeded string in the device)"
 			
 			return self._start_pyparted().model
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
 		def get_partition_label_type(self):
 			"Returns a string representing the partition label type"
 			
 			# Get the disk object
 			return parted.PedDisk.new(self._start_pyparted()).type.name
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
 		def get_partition_info(self, minor):
 			"""
 			Returns partition table info from partition 'minor'.  
@@ -197,6 +231,11 @@ try:
 			return ( part_start, part_end, part_fs, 
 					tuple(part_flags), part_min_resize )
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
+		# @param new_end=None Parameter description
 		def grow_partition(self, minor, new_end=None):
 			"""Grows partition to specified new end point.
 			If new_end is not specified, it will maximize the partition."""
@@ -255,6 +294,11 @@ try:
 			if not disk.commit():
 				raise "PyPartedDevice", "Resizing partition failed!"
 			
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
+		# @param new_end=None Parameter description
 		def shrink_partition(self, minor, new_end=None):
 			"""
 			Shrinks partition to the specified new endpoint.  
@@ -301,6 +345,10 @@ try:
 				raise "PyPartedDevice", "Resizing partition failed!"
 
 
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
 		def grow_filesystem(self, minor):
 			"Expands filesystem on 'minor' to the size of the partition."
 		
@@ -331,6 +379,11 @@ try:
 				while resizing the filesystem on partition minor"\
 				+ str(minor)
 		
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
+		# @param new_end=None Parameter description
 		def shrink_filesystem(self, minor, new_end=None):
 			"""
 			Shrinks filesystem on 'minor' to specifiec new end.  
@@ -389,6 +442,10 @@ try:
 				while resizing the filesystem on partition minor"\
 				+ str(minor)
 
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param minor Parameter description
 		def remove_partition(self, minor):
 		
 			# Get the disk object
@@ -407,6 +464,13 @@ try:
 			if not disk.delete_partition(partition):
 				raise "PyPartedDeviceError", "Failure while removing the partition!"
 				
+		##
+		# Brief description of function
+		# @param self Parameter description
+		# @param start Parameter description
+		# @param end Parameter description
+		# @param part_type Parameter description
+		# @param fs_type Parameter description
 		def add_partition(self, start, end, part_type, fs_type):
 			"""
 			Adds a partition to the partition table.  
@@ -467,16 +531,31 @@ class NTFSFilesystem:
 	_logger = None
 	_sector_size = 512
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param device Parameter description
+	# @param minor Parameter description
+	# @param sector_size=512 Parameter description
+	# @param logger=None Parameter description
 	def __init__(self, device, minor, sector_size=512, logger=None):
 		self._device = device
 		self._minor = minor
 		self._logger = logger
 		self._sector_size = sector_size
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param message Parameter description
 	def _error(self, message):
 		"Raises an exception"
 		raise "NTFSFilesystemError", message
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param cmd Parameter description
 	def _run(self, cmd):
 		"Runs a command and returns the output"
 		
@@ -512,6 +591,11 @@ class NTFSFilesystem:
 		# return output
 		return output_list
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param size=None Parameter description
+	# @param dry_run=True Parameter description
 	def _run_ntfsresize(self, size=None, dry_run=True):
 		"""Runs ntfsresize.  If size is not set, it will just get info.  
 		If size is set, it will resize."""
@@ -542,6 +626,9 @@ class NTFSFilesystem:
 		return self._run(cmd)
 
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_min_resize(self):
 		"Returns the minimum size of the partition in sectors"
 		
@@ -557,6 +644,10 @@ class NTFSFilesystem:
 				
 		return min_resize
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param size Parameter description
 	def resize(self, size):
 		"Resizes minor to the specified size in sectors"
 		
@@ -571,6 +662,9 @@ class NTFSFilesystem:
 		# Run the command
 		output = self._run_ntfsresize(size)
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def format(self):
 		"Creates a NTFS filesystem on the minor specified"
 
@@ -583,16 +677,31 @@ class NTFSFilesystem:
 class Ext2Filesystem:
 	"Class defining an object representing an Ext2/3 Filesystem"
 	
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param device Parameter description
+	# @param minor Parameter description
+	# @param sector_size=512 Parameter description
+	# @param logger=None Parameter description
 	def __init__(self, device, minor, sector_size=512, logger=None):
 		self._device = device
 		self._minor = minor
 		self._logger = logger
 		self._sector_size = sector_size	
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param message Parameter description
 	def _error(self, message):
 		"Raises an exception"
 		raise "Ext2FilesystemError", message
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param cmd Parameter description
 	def _run(self, cmd):
 		"Runs a command and returns the output"
 		
@@ -628,12 +737,19 @@ class Ext2Filesystem:
 		# return output
 		return output_list
 		
+	##
+	# Brief description of function
+	# @param self Parameter description
 	def get_min_resize(self):
 		"Returns the minimum size of the partition in sectors"
 		
 		# We don't know the actual resize size
 		return long(10)
 				
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param size Parameter description
 	def resize(self, size):
 		"Resizes minor to the specified size in sectors"
 		
@@ -652,6 +768,10 @@ class Ext2Filesystem:
 		
 		output = self._run(cmd)
 
+	##
+	# Brief description of function
+	# @param self Parameter description
+	# @param journel=True Parameter description
 	def format(self, journel=True):
 		"Creates a Ext2/3 filesystem on the minor specified"
 

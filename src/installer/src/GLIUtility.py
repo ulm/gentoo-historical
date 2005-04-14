@@ -9,6 +9,9 @@ The GLIUtility module contians all utility functions used throughout GLI.
 import string, os, re, signal, time, shutil, sys, random, commands, crypt
 from GLIException import *
 
+##
+# Brief description of function
+# @param string_a Parameter description
 def is_realstring(string_a):
 	"Check to see if a string is actually a string, and if it is not null. Returns bool."
 	# Make sure it is a string
@@ -21,6 +24,9 @@ def is_realstring(string_a):
 	
 	return True
 
+##
+# Brief description of function
+# @param x Parameter description
 def is_numeric(x):
 	try:
 		float(x)
@@ -29,6 +35,9 @@ def is_numeric(x):
 	else:
 		return True
 
+##
+# Brief description of function
+# @param ip Parameter description
 def is_ip(ip):
 	"Check to see if a string is a valid ip. Returns bool."
 	
@@ -45,6 +54,9 @@ def is_ip(ip):
 	# Return True only if there are results.
 	return(res != None)
 
+##
+# Brief description of function
+# @param mac Parameter description
 def is_mac(mac):
         """
         Check to see if mac is a valid MAC address. Make sure use format_mac
@@ -55,6 +67,9 @@ def is_mac(mac):
         res = expr.match(mac)
         return(res != None)
 
+##
+# Brief description of function
+# @param mac Parameter description
 def format_mac(mac):
 	"Format's a mac address properly. Returns the correctly formatted MAC. (a string)"
 
@@ -67,6 +82,9 @@ def format_mac(mac):
                         mac[i] = "0" + mac[i]
         return string.join(mac, ":")
 		
+##
+# Brief description of function
+# @param ip Parameter description
 def trim_ip(ip):
         # Remove leading zero's on the first octet
 	ip = re.sub('^0{1,2}','',ip)
@@ -76,6 +94,9 @@ def trim_ip(ip):
 
 	return(res)
 
+##
+# Brief description of function
+# @param device Parameter description
 def is_device(device):
 	"Check to see if the string passed is a valid device. Returns bool."
 
@@ -90,6 +111,9 @@ def is_device(device):
 	# Check to make sure the device exists
 	return os.access(device, os.F_OK)
 		
+##
+# Brief description of function
+# @param hostname Parameter description
 def is_hostname(hostname):
 	"Check to see if the string is a valid hostname. Returns bool."
 
@@ -102,6 +126,9 @@ def is_hostname(hostname):
 
 	return(res != None)
 		
+##
+# Brief description of function
+# @param path Parameter description
 def is_path(path):
 	"Check to see if the string is a valid path. Returns bool."
 	
@@ -118,6 +145,9 @@ def is_path(path):
 	# Return True only if there are results
 	return(res != None)
 		
+##
+# Brief description of function
+# @param file Parameter description
 def is_file(file):
 	"Check to see if the string is a valid file. Returns bool."
 
@@ -128,6 +158,10 @@ def is_file(file):
 	# Check to make sure the device exists
 	return os.access(file, os.F_OK)
 		
+##
+# Brief description of function
+# @param uri Parameter description
+# @param checklocal=True Parameter description
 def is_uri(uri, checklocal=True):
 	"Check to see if the string is a valid URI. Returns bool."
 	
@@ -170,6 +204,9 @@ def is_uri(uri, checklocal=True):
 		
 	return True
 
+##
+# Brief description of function
+# @param input Parameter description
 def strtobool(input):
 	if type(input) != str:
 		raise GLIException("InputError", 'fatal','strtobool',"The input must be a string!")
@@ -179,6 +216,9 @@ def strtobool(input):
 	else:
 		return False
 
+##
+# Brief description of function
+# @param device Parameter description
 def is_eth_device(device):
 	"Check to see if device is a valid ethernet device. Returns bool."
 	
@@ -195,6 +235,9 @@ def is_eth_device(device):
 	# Return True only if there are results
 	return(res != None)
 
+##
+# Brief description of function
+# @param device Parameter description
 def is_nfs(device):
 	" Checks to see if device is a valid NFS device "
 
@@ -211,6 +254,12 @@ def is_nfs(device):
 
 	return((is_ip(host) or is_hostname(host)) and is_path(path))
 
+##
+# Brief description of function
+# @param dev Parameter description
+# @param ip Parameter description
+# @param broadcast Parameter description
+# @param netmask Parameter description
 def set_ip(dev, ip, broadcast, netmask):
 	if not is_ip(ip) or not is_ip(netmask) or not is_ip(broadcast):
 		raise GLIException("IPAddressError", 'fatal','set_ip', "ip, netmask and broadcast must be a valid IP's!")
@@ -227,6 +276,9 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	return True
 
+##
+# Brief description of function
+# @param route Parameter description
 def set_default_route(route):
 	if not is_ip(route):
 		raise GLIException("IPAddressError", 'fatal', 'set_default_route', "The default route must be an IP address!")
@@ -238,6 +290,15 @@ def set_default_route(route):
 
 	return True
 
+##
+# Brief description of function
+# @param cmd Parameter description
+# @param quiet=False Parameter description
+# @param logfile=None Parameter description
+# @param display_on_tty8=False Parameter description
+# @param chroot=None Parameter description
+# @param append_log=False Parameter description
+# @param return_output=False Parameter description
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
@@ -264,6 +325,9 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	else:
 		return ret
 
+##
+# Brief description of function
+# @param status Parameter description
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
 		return True
@@ -275,6 +339,10 @@ def spawn_bash():
 	os.putenv("PROMPT_COMMAND","echo \"Type 'exit' to return to the installer.\"")
 	return spawn("bash")
 
+##
+# Brief description of function
+# @param uri Parameter description
+# @param path Parameter description
 def get_uri(uri, path):
 	uri = uri.strip()
 	status = 1
@@ -309,6 +377,9 @@ def get_uri(uri, path):
 	
 	return False
 
+##
+# Brief description of function
+# @param host Parameter description
 def ping(host):
 	host = str(host)
 	status = spawn("ping -n -c 3 " + host,quiet=True)
@@ -316,6 +387,9 @@ def ping(host):
 		return False
 	return True
 
+##
+# Brief description of function
+# @param device Parameter description
 def get_eth_info(device):
 	"""Pass in the eth device's number (0, 1, 2, etc).
 	Returns network information in a tuple.
@@ -354,6 +428,12 @@ def get_eth_info(device):
 		return (hw_addr, ip_addr, mask, bcast, gw, up)
 	else: return False
 
+##
+# Brief description of function
+# @param tarball_uri Parameter description
+# @param target_directory Parameter description
+# @param temp_directory="/tmp" Parameter description
+# @param keep_permissions=False Parameter description
 def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
 	"Fetches a tarball from tarball_uri and extracts it into target_directory"
 
@@ -402,9 +482,16 @@ def generate_random_password():
 
 	return passwd
 
+##
+# Brief description of function
+# @param filename Parameter description
+# @param value Parameter description
 def get_value_from_config(filename, value):
 	return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
 
+##
+# Brief description of function
+# @param password Parameter description
 def hash_password(password):
 	salt = "$1$"
         chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
