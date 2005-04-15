@@ -9,6 +9,8 @@ archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], '
              'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
            }
 
+##
+# This class provides a partitioning abstraction for the frontends
 class Device:
 	"Class representing a partitionable device."
 	
@@ -26,10 +28,10 @@ class Device:
 	_arch = None
 
 	##
-	# Brief description of function
+	# Initialization function for GLIStorageDevice class
 	# @param self Parameter description
-	# @param device Parameter description
-	# @param arch="x86" Parameter description
+	# @param device Device node (e.g. /dev/hda) of device being represented
+	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
 	def __init__(self, device, arch="x86"):
 		self._device = device
 		self._partitions = {}
@@ -42,7 +44,7 @@ class Device:
 		self.set_disk_geometry_from_disk()
 
 	##
-	# Brief description of function
+	# Sets disk geometry info from disk. This function is used internally by __init__()
 	# @param self Parameter description
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
@@ -54,7 +56,7 @@ class Device:
 		self._total_mb = int(self._total_bytes / MEGABYTE)
 
 	##
-	# Brief description of function
+	# Sets partition info from disk.
 	# @param self Parameter description
 	def set_partitions_from_disk(self):
 		last_part = 0
@@ -82,9 +84,9 @@ class Device:
 			parted_part = self._parted_disk.next_partition(parted_part)
 
 	##
-	# Brief description of function
+	# Imports partition info from the install profile partition structure (currently does nothing)
 	# @param self Parameter description
-	# @param ips Parameter description
+	# @param ips Parameter structure returned from install_profile.get_partition_tables()
 	def set_partitions_from_install_profile_structure(self, ips):
 		pass
 #		for part in ips:
@@ -102,13 +104,13 @@ class Device:
 #			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
 
 	##
-	# Brief description of function
+	# Returns name of device (e.g. /dev/hda) being represented
 	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
 	##
-	# Brief description of function
+	# Combines free space and closes gaps in minor numbers. This is used internally
 	# @param self Parameter description
 	def tidy_partitions(self):
 		last_minor = 0
@@ -166,15 +168,15 @@ class Device:
 				last_minor = part
 
 	##
-	# Brief description of function
+	# Adds a new partition to the partition info
 	# @param self Parameter description
-	# @param free_minor Parameter description
-	# @param mb Parameter description
-	# @param start Parameter description
-	# @param end Parameter description
-	# @param type Parameter description
-	# @param mountpoint='' Parameter description
-	# @param mountopts='' Parameter description
+	# @param free_minor minor of unallocated space partition is being created in
+	# @param mb size of partition in MB
+	# @param start Start sector (only used for existing partitions)
+	# @param end End sector (only used for existing partitions)
+	# @param type Partition type (ext2, ext3, fat32, linux-swap, free, extended, etc.)
+	# @param mountpoint='' Partition mountpoint
+	# @param mountopts='' Partition mount options
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
 		free_minor = Decimal(str(free_minor))
 		new_minor = int(free_minor) + 1
@@ -214,9 +216,9 @@ class Device:
 		self.tidy_partitions()
 
 	##
-	# Brief description of function
+	# Removes partition from partition info
 	# @param self Parameter description
-	# @param minor Parameter description
+	# @param minor Minor of partition to remove
 	def remove_partition(self, minor):
 		tmppart = self._partitions[int(minor)]
 		free_minor = 0
@@ -229,9 +231,9 @@ class Device:
 		self.tidy_partitions()
 
 	##
-	# Brief description of function
+	# Returns free space (no longer used)
 	# @param self Parameter description
-	# @param start Parameter description
+	# @param start Start sector for search
 	def get_free_space(self, start):
 		GAP_SIZE = 100
 		parts = self._partitions.keys()
@@ -269,10 +271,10 @@ class Device:
 		return (free_start, free_end)
 
 	##
-	# Brief description of function
+	# Gets partition containing a certain sector (no longer used)
 	# @param self Parameter description
-	# @param sector Parameter description
-	# @param ignore_extended=1 Parameter description
+	# @param sector Sector to look at
+	# @param ignore_extended=1 Ignore extended partitions
 	def get_partition_at(self, sector, ignore_extended=1):
 		parts = self._partitions.keys()
 		parts.sort()
@@ -284,7 +286,7 @@ class Device:
 		return 0
 
 	##
-	# Brief description of function
+	# Returns free minor (no longer used)
 	# @param self Parameter description
 	# @param start Parameter description
 	# @param end Parameter description
@@ -318,7 +320,7 @@ class Device:
                 return minor
 
 	##
-	# Brief description of function
+	# Returns an ordered list (disk order) of partition minors
 	# @param self Parameter description
 	def get_ordered_partition_list(self):
                 parts = self._partitions.keys()
@@ -338,7 +340,7 @@ class Device:
 		return partlist
 
 	##
-	# Brief description of function
+	# Returns partition info in a format suitable for passing to install_profile.set_partition_tables()
 	# @param self Parameter description
 	def get_install_profile_structure(self):
 		devdic = {}
@@ -348,7 +350,7 @@ class Device:
 		return devdic
 
 	##
-	# Brief description of function
+	# Returns the minor of the extended partition, if any
 	# @param self Parameter description
 	def get_extended_partition(self):
 		for part in self._partitions:
@@ -358,69 +360,65 @@ class Device:
 		return 0
 
 	##
-	# Brief description of function
+	# Returns the number of sectors on the device
 	# @param self Parameter description
 	def get_num_sectors(self):
 		return int(self._total_sectors)
 
 	##
-	# Brief description of function
+	# Returns the size of a cylinder in bytes
 	# @param self Parameter description
 	def get_cylinder_size(self):
 		return int(self._cylinder_bytes)
 
 	##
-	# Brief description of function
+	# Returns the size of a sector in bytes
 	# @param self Parameter description
 	def get_sector_size(self):
 		return int(self._sector_bytes)
 
 	##
-	# Brief description of function
+	# Returns the number of cylinders
 	# @param self Parameter description
 	def get_num_cylinders(self):
 		return int(self._geometry['cylinders'])
 
 	##
-	# Brief description of function
+	# Returns the total number of bytes on the device
 	# @param self Parameter description
 	def get_drive_bytes(self):
 		return int(self._total_bytes)
 
 	##
-	# Brief description of function
+	# Returns the total number of MB on the device
 	# @param self Parameter description
 	def get_total_mb(self):
 		return self._total_mb
 
 	##
-	# Brief description of function
+	# Returns partition info dictionary
 	# @param self Parameter description
 	def get_partitions(self):
 		return self._partitions
 
-#	def print_partitions(self):
-#		for part in self._partitions.keys():
-#			print self._partitions[part].return_info()
-
 	##
-	# Brief description of function
+	# Prints disk geometry to STDOUT (no longer used)
 	# @param self Parameter description
 	def print_geometry(self):
 		print self._total_bytes, self._geometry
 
 	##
-	# Brief description of function
+	# Utility function for raising an exception
 	# @param self Parameter description
-	# @param message Parameter description
+	# @param message Error message
 	def _error(self, message):
 		"Raises an exception"
 		raise "DeviceObjectError", message
 		
 	##
-	# Brief description of function
+	# Utility function for running a command and returning it's output as a list
 	# @param self Parameter description
-	# @param cmd Parameter description
+	# @param cmd Command to run
 	def _run(self, cmd):
 		"Runs a command and returns the output"
 		
@@ -444,7 +442,8 @@ class Device:
 		# return output
 		return output_list
 
-
+##
+# This class represents a partition within a GLIStorageDevice object
 class Partition:
 	"Class representing a single partition within a Device object"
 
