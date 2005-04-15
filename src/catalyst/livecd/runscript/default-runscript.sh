@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.1 2005/04/06 11:41:38 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.2 2005/04/15 01:55:41 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -129,7 +129,7 @@ case $1 in
 			cp -a ${clst_sharedir}/livecd/files/generic.motd.txt \
 				${clst_sharedir}/livecd/files/universal.motd.txt \
 				${clst_sharedir}/livecd/files/minimal.motd.txt \
-				${clst_sharedir}/livecd/files/environmental.motd.txt \
+				${clst_sharedir}/livecd/files/livecd.motd.txt \
 				${clst_sharedir}/livecd/files/gamecd.motd.txt \
 				${clst_chroot_path}/etc
 		fi
@@ -152,8 +152,9 @@ case $1 in
 			${clst_chroot_path}/usr/share/faces
 
 		# touch /etc/startx if our livecd/type requires it
-		if [ "${clst_livecd_type}" = "gentoo-gamecd" ] #\
-		#|| [ "${clst_livecd_type}" = "gentoo-release-environmental" ]
+		if [ "${clst_livecd_type}" = "gentoo-gamecd" ] \
+		|| [ "${clst_livecd_type}" = "generic-livecd" ] #\
+		#|| [ "${clst_livecd_type}" = "gentoo-release-livecd" ]
 		then
 			touch ${clst_chroot_path}/etc/startx
 		fi
