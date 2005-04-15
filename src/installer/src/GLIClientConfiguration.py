@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.22 2005/04/14 15:44:03 agaffney Exp $
+$Id: GLIClientConfiguration.py,v 1.23 2005/04/15 06:26:43 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -29,7 +29,7 @@ class ClientConfiguration:
 	SHARED_CLIENT_CONFIGURATION = None
 
 	##
-	# Brief description of function
+	# FIXME: what does this do?
 	# @param cls Parameter description
 	def shared_client_configuration(cls):
 		if GLIClientConfiguration.SHARED_CLIENT_CONFIGURATION == None:
@@ -38,8 +38,7 @@ class ClientConfiguration:
 		return GLIClientConfiguration.SHARED_CLIENT_CONFIGURATION
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Initializes the ClientConfiguration.
 	def __init__(self):
 		self._architecture_template = None
 		self._profile_uri = ""
@@ -58,9 +57,6 @@ class ClientConfiguration:
 		# This is the full path to the logfile
 		self._log_file = "/var/log/installer.log"
 		
-		# Current process temporary log (for parsing)
-		self._proc_temp_log = "/tmp/proc.tmp.log"
-
 		# This is the root mount point
 		self._root_mount_point = "/mnt/gentoo"
 
@@ -97,39 +93,34 @@ class ClientConfiguration:
 		self._parser = parser
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param filename Parameter description
+	# Parses the given filename populating the client_configuration.
+	# @param filename the file to be parsed.  This should be a URI actually.
 	def parse(self, filename):
 		self._parser.parse(filename)
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the architecture_template
 	def get_architecture_template(self):
 		return self._architecture_template
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param architecture_template Parameter description
-	# @param xml_attr Parameter description
+	# Sets the architecture_template
+	# @param xml_path not used here.
+	# @param architecture_template the architecture to be installed
+	# @param xml_attr not used here.
 	def set_architecture_template(self, xml_path, architecture_template, xml_attr):
 		self._architecture_template = architecture_template
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the profile_uri
 	def get_profile_uri(self):
 		return self._profile_uri
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param profile_uri Parameter description
-	# @param xml_attr Parameter description
+	# Sets the profile_uri for use in non-interactive installs
+	# @param xml_path not used here.
+	# @param profile_uri location of the profile
+	# @param xml_attr not used here.
 	def set_profile_uri(self, xml_path, profile_uri, xml_attr):
 		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
 			raise GLIException("URIError", 'fatal', 'set_profile_uri',"The URI specified is not valid!")
@@ -137,112 +128,90 @@ class ClientConfiguration:
 		self._profile_uri = profile_uri
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the number of steps completed.  This is not used because the CC does it now.
 	def get_install_steps_completed(self):
 		return self._install_steps_completed
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param install_steps_completed Parameter description
-	# @param xml_attr Parameter description
+	# Sets the install_steps_completed to some new value? again not used.  CC does this.
+	# @param xml_path not used here.
+	# @param install_steps_completed some new install_steps_completed value
+	# @param xml_attr not used here.
 	def set_install_steps_completed(self, xml_path, install_steps_completed, xml_attr):
 		self._install_steps_completed = install_steps_completed
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param install_step Parameter description
-	# @param xml_attr Parameter description
+	# Adds to the list of completed steps a new step.  again not used. CC does this.
+	# @param xml_path not used here.
+	# @param install_step the step that has been completed
+	# @param xml_attr not used here.
 	def add_install_steps_completed(self, xml_path, install_step, xml_attr):
 		self._install_steps_completed.append(install_step)
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the current step percent?  totally unused and probably not functional.
+	# FIXME: get rid of this!
 	def get_current_step_percent(self):
 		return self._current_step_percent
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param current_step_percent Parameter description
-	# @param xml_attr Parameter description
+	# Sets the current step percent?  totally unused and probably not functional.
+	# FIXME: get rid of this!
+	# @param xml_path not used here.
+	# @param current_step_percent set a new percentage
+	# @param xml_attr not used here.
 	def set_current_step_percent(self, xml_path, current_step_percent, xml_attr):
 		self._current_step_percent = current_step_percent
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the description of the current step.  unused i think.
 	def get_current_step_process_desc(self):
 		return self._current_step_process_desc
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param current_step_process_desc Parameter description
-	# @param xml_attr Parameter description
+	# Sets the description of the current step.  unused.
+	# @param xml_path not used here.
+	# @param current_step_process_desc a description
+	# @param xml_attr not used here.
 	def set_current_step_process_desc(self, xml_path, current_step_process_desc, xml_attr):
 		self._current_step_process_desc = current_step_process_desc
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the log filename
 	def get_log_file(self):
 		return self._log_file
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param log_file Parameter description
-	# @param xml_attr Parameter description
+	# Sets the log filename.
+	# @param xml_path not used here.
+	# @param log_file the name of the logfile for the CC to use.
+	# @param xml_attr not used here.
 	def set_log_file(self, xml_path, log_file, xml_attr):
 		self._log_file = log_file
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	def get_proc_temp_log(self):
-		return self._proc_temp_log
-	
-	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param proc_temp_log Parameter description
-	# @param xml_attr Parameter description
-	def set_proc_temp_log(self, xml_path, proc_temp_log, xml_attr):
-		self._proc_temp_log = proc_temp_log
-
-	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the root_mount_point
 	def get_root_mount_point(self):
 		return self._root_mount_point
 	
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param root_mount_point Parameter description
-	# @param xml_attr Parameter description
+	# Sets the root_mount_point for the new system to be installed to
+	# @param xml_path not used here.
+	# @param root_mount_point new location for the root mount point
+	# @param xml_attr not used here.
 	def set_root_mount_point(self, xml_path, root_mount_point, xml_attr):
 		self._root_mount_point = root_mount_point
 
+	###############################################################
+	#####################WHAT IS THIS DOING HERE????###############
 	shared_client_configuration = classmethod(shared_client_configuration)
+	###############################################################
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param network_type Parameter description
-	# @param xml_attr=None Parameter description
+	# Sets the network configuration info for the livecd environment
+	# @param xml_path not used here.
+	# @param network_type the network type, either static or dhcp
+	# @param xml_attr=None a tuple or set of attr of interface, ip, broadcast, netmask, and gateway.
 	def set_network_type(self, xml_path, network_type, xml_attr=None):
 
 		interface = ip = broadcast = netmask = gateway = None
@@ -278,21 +247,18 @@ class ClientConfiguration:
 		self._network_type = network_type
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the network type
 	def get_network_type(self):
 		return self._network_type
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the network data (ip's and such)
 	def get_network_data(self):
 		return self._network_data
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param network_info Parameter description
+	# Sets the network data using a dictionary.  Called from set_network_type.
+	# @param network_info tuple with livecd network info.
 	def set_network_data(self, network_info):
 		interface = network_info[0]
 		ip = network_info[1]
@@ -328,11 +294,10 @@ class ClientConfiguration:
 		self._network_data = network_info
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param nameservers Parameter description
-	# @param xml_attr Parameter description
+	# Sets the dns servers
+	# @param xml_path not used here.
+	# @param nameservers space-separated list of nameservers
+	# @param xml_attr not used here.
 	def set_dns_servers(self, xml_path, nameservers, xml_attr):
 		if type(nameservers) == str:
 			nameservers = nameservers.split(" ")
@@ -343,126 +308,114 @@ class ClientConfiguration:
 		self._dns_servers = tuple(dns)
 
 	##
-	# Brief description of function
+	# Returns the list of dns servers
 	# @param self Parameter description
 	def get_dns_servers(self):
 		return self._dns_servers
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param enable_ssh Parameter description
-	# @param xml_attr Parameter description
+	# Choosed whether or not to enable SSH.
+	# @param xml_path not used here.
+	# @param enable_ssh a True/False bool value here or a string
+	# @param xml_attr not used here.
 	def set_enable_ssh(self, xml_path, enable_ssh, xml_attr):
 		if type(enable_ssh) == str:
 			enable_ssh = GLIUtility.strtobool(enable_ssh)
 		self._enable_ssh = enable_ssh
 
 	##
-	# Brief description of function
+	# Returns the choice of whether or not to enable SSH (True/False)
 	# @param self Parameter description
 	def get_enable_ssh(self):
 		return self._enable_ssh
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param passwd Parameter description
-	# @param xml_attr Parameter description
+	# Sets the root password on the livecd.  This is supposed to be given a hash.
+	# @param xml_path not used here.
+	# @param passwd a hashed password to be set on the livecd environment.
+	# @param xml_attr not used here.
 	def set_root_passwd(self, xml_path, passwd, xml_attr):
 		self._root_passwd = passwd
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the hash of the root password for the livecd environment
 	def get_root_passwd(self):
 		return self._root_passwd
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param interactive Parameter description
-	# @param xml_attr Parameter description
+	# Sets whether or not to be an interactive install. (boolean)
+	# @param xml_path not used here.
+	# @param interactive True/False bool value or a string.
+	# @param xml_attr not used here.
 	def set_interactive(self, xml_path, interactive, xml_attr):
 		if type(interactive) != bool:
 			interactive = GLIUtility.strtobool(interactive)
 		self._interactive = interactive
 
 	##
-	# Brief description of function
+	# Returns bool value on interactive install choice.
 	# @param self Parameter description
 	def get_interactive(self):
 		return self._interactive
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param modules Parameter description
-	# @param xml_attr Parameter description
+	# Sets a list of modules to load on the livecd environment.
+	# @param xml_path not used here.
+	# @param modules string of modules
+	# @param xml_attr not used here.
 	def set_kernel_modules(self, xml_path, modules, xml_attr):
 		self._kernel_modules = tuple(string.split(modules))
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the list of kernel modules to load on the livecd environment.
 	def get_kernel_modules(self):
 		return self._kernel_modules
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param proxy Parameter description
-	# @param xml_attr Parameter description
+	# Sets the FTP proxy URI
+	# @param xml_path not used here.
+	# @param proxy a URI
+	# @param xml_attr not used here.
 	def set_ftp_proxy(self, xml_path, proxy, xml_attr):
 		self._ftp_proxy = proxy
 
 	##
-	# Brief description of function
+	# Returns the FTP proxy.
 	# @param self Parameter description
 	def get_ftp_proxy(self):
 		return self._ftp_proxy
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param proxy Parameter description
-	# @param xml_attr Parameter description
+	# Sets the HTTP proxy URI
+	# @param xml_path not used here.
+	# @param proxy a URI
+	# @param xml_attr not used here.
 	def set_http_proxy(self, xml_path, proxy, xml_attr):
 		self._http_proxy = proxy
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the HTTP proxy
 	def get_http_proxy(self):
 		return self._http_proxy
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param proxy Parameter description
-	# @param xml_attr Parameter description
+	# Sets the RSYNC proxy URI
+	# @param xml_path not used here.
+	# @param proxy a URI
+	# @param xml_attr not used here.
 	def set_rsync_proxy(self, xml_path, proxy, xml_attr):
 		self._rsync_proxy = proxy
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns the RSYNC proxy
 	def get_rsync_proxy(self):
 		return self._rsync_proxy
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	# @param xml_path Parameter description
-	# @param verbose Parameter description
-	# @param xml_attr Parameter description
+	# Sets verbose mode or not.  currently not implemented.
+	# @param xml_path not used here.
+	# @param verbose bool or string
+	# @param xml_attr not used here.
 	def set_verbose(self, xml_path, verbose, xml_attr):
 		if type(verbose) == str:
 			verbose = GLIUtility.strtobool(verbose)
@@ -470,14 +423,12 @@ class ClientConfiguration:
 		self._verbose = verbose
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Returns verbose bool value
 	def get_verbose(self):
 		return self._verbose
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Serializes the Client Configuration into an XML format that is returned.
 	def serialize(self):
 		fntable =	{	'architecture-template': self.get_architecture_template,
 					'mount-point': self.get_root_mount_point,
