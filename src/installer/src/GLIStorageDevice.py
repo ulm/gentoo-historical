@@ -461,18 +461,18 @@ class Partition:
 	_mb = 0
 	
 	##
-	# Brief description of function
+	# Initialization function for the Partition class
 	# @param self Parameter description
-	# @param device Parameter description
-	# @param minor Parameter description
-	# @param mb Parameter description
-	# @param start Parameter description
-	# @param end Parameter description
-	# @param type Parameter description
-	# @param mountpoint='' Parameter description
-	# @param mountopts='' Parameter description
-	# @param format=True Parameter description
-	# @param existing=False Parameter description
+	# @param device Parent GLIStorageDevice object
+	# @param minor Minor of partition
+	# @param mb Parameter Size of partition in MB
+	# @param start Parameter Start sector of partition
+	# @param end Parameter Start sector of partition
+	# @param type Parameter Type of partition (ext2, ext3, fat32, linux-swap, free, extended, etc.)
+	# @param mountpoint='' Mountpoint of partition
+	# @param mountopts='' Mount options of partition
+	# @param format=True Format partition
+	# @param existing=False This partition exists on disk
 	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False):
 		self._device = device
 		self._minor = float(minor)
@@ -517,7 +517,7 @@ class Partition:
 				self._resizeable = True
 
 	##
-	# Brief description of function
+	# Returns whether or not the partition is extended
 	# @param self Parameter description
 	def is_extended(self):
 		if self._type == "extended":
@@ -526,7 +526,7 @@ class Partition:
 			return False
 
 	##
-	# Brief description of function
+	# Returns whether or not the partition is logical
 	# @param self Parameter description
 	def is_logical(self):
 		if self._type == "free":
@@ -540,7 +540,7 @@ class Partition:
 			return False
 
 	##
-	# Brief description of function
+	# Returns a list of logical partitions if this is an extended partition
 	# @param self Parameter description
 	def get_logicals(self):
 		if not self.is_extended():
@@ -556,7 +556,7 @@ class Partition:
 		return logicals
 
 	##
-	# Brief description of function
+	# Returns the extened parent partition if this is a logical partition (no longer used)
 	# @param self Parameter description
 	def get_extended_parent(self):
 		if not self.is_logical():
@@ -565,138 +565,132 @@ class Partition:
 			return self._device.get_partition_at(self._start, ignore_extended=0)
 
 	##
-	# Brief description of function
+	# Sets the start sector for the partition
 	# @param self Parameter description
-	# @param start Parameter description
+	# @param start Start sector
 	def set_start(self, start):
 		self._start = int(start)
 		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
 	##
-	# Brief description of function
+	# Returns the start sector for the partition
 	# @param self Parameter description
 	def get_start(self):
 		return int(self._start)
 
 	##
-	# Brief description of function
+	# Sets the end sector of the partition
 	# @param self Parameter description
-	# @param end Parameter description
+	# @param end End sector
 	def set_end(self, end):
 		self._end = int(end)
 		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
 	##
-	# Brief description of function
+	# Returns end sector for the partition
 	# @param self Parameter description
 	def get_end(self):
 		return int(self._end)
 
 	##
-	# Brief description of function
+	# Returns size of partition in MB
 	# @param self Parameter description
 	def get_mb(self):
 		return int(self._mb)
 
 	##
-	# Brief description of function
+	# Sets size of partition in MB
 	# @param self Parameter description
 	# @param mb Parameter description
 	def set_mb(self, mb):
 		self._mb = int(mb)
 
 	##
-	# Brief description of function
+	# Sets type of partition
 	# @param self Parameter description
 	# @param type Parameter description
 	def set_type(self, type):
 		self._type = type
 
 	##
-	# Brief description of function
+	# Returns type of partition
 	# @param self Parameter description
 	def get_type(self):
 		return self._type
 
 	##
-	# Brief description of function
+	# Returns parent GLIStorageDevice object
 	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
 	##
-	# Brief description of function
+	# Sets minor of partition
 	# @param self Parameter description
-	# @param minor Parameter description
+	# @param minor New minor
 	def set_minor(self, minor):
 		self._minor = float(minor)
 
 	##
-	# Brief description of function
+	# Returns minor of partition
 	# @param self Parameter description
 	def get_minor(self):
 		return float(self._minor)
 
 	##
-	# Brief description of function
+	# Sets the original minor of the partition
 	# @param self Parameter description
 	# @param orig_minor Parameter description
 	def set_orig_minor(self, orig_minor):
 		self._orig_minor = int(orig_minor)
 
 	##
-	# Brief description of function
+	# Returns the original minor of the partition
 	# @param self Parameter description
 	def get_orig_minor(self):
 		return self._orig_minor
 
 	##
-	# Brief description of function
+	# Sets the mountpoint for the partition
 	# @param self Parameter description
-	# @param mountpoint Parameter description
+	# @param mountpoint Mountpoint
 	def set_mountpoint(self, mountpoint):
 		self._mountpoint = mountpoint
 
 	##
-	# Brief description of function
+	# Returns the mountpoint for the partition
 	# @param self Parameter description
 	def get_mountpoint(self):
 		return self._mountpoint
 
 	##
-	# Brief description of function
+	# Sets the mount options for the partition
 	# @param self Parameter description
-	# @param mountopts Parameter description
+	# @param mountopts Mount options
 	def set_mountopts(self, mountopts):
 		self._mountopts = mountopts
 
 	##
-	# Brief description of function
+	# Returns the mount options for the partition
 	# @param self Parameter description
 	def get_mountopts(self):
 		return self._mountopts
 
 	##
-	# Brief description of function
+	# Set whether to format the partition
 	# @param self Parameter description
 	# @param format Parameter description
 	def set_format(self, format):
 		self._format = format
 
 	##
-	# Brief description of function
+	# Returns whether to format the partition
 	# @param self Parameter description
 	def get_format(self):
 		return self._format
 
 	##
-	# Brief description of function
-	# @param self Parameter description
-	def get_blocks(self):
-		return int(self._blocks)
-
-	##
-	# Brief description of function
+	# Returns minimum sectors for resize
 	# @param self Parameter description
 	def get_min_sectors_for_resize(self):
 		if self.is_extended():
@@ -709,7 +703,7 @@ class Partition:
 			return self._min_sectors_for_resize
 
 	##
-	# Brief description of function
+	# Returns maximum sectors for resize
 	# @param self Parameter description
 	def get_max_sectors_for_resize(self):
 		free_start, free_end = self._device.get_free_space(self._end)
@@ -724,10 +718,10 @@ class Partition:
 				return free_end - self._start
 
 	##
-	# Brief description of function
+	# Resizes the partition
 	# @param self Parameter description
-	# @param start Parameter description
-	# @param end Parameter description
+	# @param start New start sector
+	# @param end New end sector
 	def resize(self, start, end):
 		part_at_start = self._device.get_partition_at(int(start))
 		part_at_end = self._device.get_partition_at(int(end))
@@ -752,14 +746,15 @@ class Partition:
 		return 1
 
 	##
-	# Brief description of function
+	# Utility function to raise an exception
 	# @param self Parameter description
-	# @param message Parameter description
+	# @param message Error message
 	def _error(self, message):
 		"Raises an exception"
 		raise "PartitionObjectError", message
-		
 
+##
+# Returns a list of detected partitionable devices
 def detect_devices():
 	"Returns a list of partitionable devices on the system"
 	
