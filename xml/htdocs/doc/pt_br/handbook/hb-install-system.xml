@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-system.xml,v 1.7 2005/03/24 22:15:46 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-system.xml,v 1.8 2005/04/16 21:03:32 vanquirius Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
 <sections>
 
-<version>1.66</version>
-<date>2005-02-25</date>
+<version>2.4</version>
+<date>2005-04-09</date>
 
 <section>
 <title>Fazendo o chroot</title>
@@ -96,7 +96,7 @@ ambiente de chroot.
 Agora que todas partições foram iniciadas e o ambiente de base está 
 instalado, está na hora de entrar no nosso novo ambiente de instalação 
 fazendo <e>chroot</e> nele. Isto quer dizer que mudamos o nosso ambiente 
-de instalação atual (LiveCD ou outro método de instalação) para seu sistema
+de instalação atual (CD de instalação ou outro método de instalação) para seu sistema
 instalado (as partições iniciadas).
 </p>
 
@@ -137,10 +137,71 @@ Você agora deve atualizar sua árvore do Portage para a última versão. <c>eme
 </pre>
 
 <p>
+Se você estiver atrás de uma firewall que bloqueia tráfego de rsync, você pode usar
+<c>emerge-webrsync</c> que irá baixar e instalar um snapshot do portage para
+você.
+</p>
+
+<p>
 Se você for avisado de que uma nova versão do Portage está disponível e que você deve
 atualizar o Portage, ignore-a. O Portage será atualizado mais tarde 
 durante a instalação.
 </p>
+
+</body>
+</subsection>
+<subsection>
+<title>Escolhendo o profile correto</title>
+<body>
+
+<p>
+Primeiro, uma pequena definição é feita.
+</p>
+
+<p>
+Um profile (perfil) é um bloco de construção para qualquer sistema Gentoo. Não só ele especifica
+os valores padrão para CHOST, CFLAGS e outras variáveis importantes, ele também trava
+o sistema em um certo alcance de versões de pacotes. Tudo isto é mantido pelos
+desenvolvedores do Gentoo.
+</p>
+
+<p>
+Antigamente, o profile mal era tocado pelo usuário. Todavia, recentemente,
+usuários de x86, hppa e alpha podem escolher entre dois profiles, um para um kernel 2.4
+e outro para um kernel 2.6. Este requisito foi imposto para melhorar a
+integração de kernéis 2.6.
+</p>
+
+<p>
+Você pode ver que profile você está usando atualmente rodando o seguinte
+comando:
+</p>
+
+<pre caption="Verificando o profile de sistema">
+# <i>ls -l /etc/make.profile</i>
+lrwxrwxrwx  1 root root 48 Mar  7 11:55 /etc/make.profile ->
+      ../usr/portage/profiles/default-linux/x86/2005.0
+</pre>
+
+<p>
+Se você estiver usando uma das três arquiteturas mencionadas acima, você verá um
+profile adicional no listado pelo link simbólico <path>make.profile</path>:
+</p>
+
+<pre caption="Verificando se um profile adicional existe">
+# <i>ls -F /etc/make.profile/</i>
+2.4/  packages  parent  virtuals
+</pre>
+
+<p>
+Como você pode ver, no exemplo acima existe um subdiretório 2.4. Isto significa
+que o profile atual usa o kernel 2.6; se você quiser um sistema baseado em 2.4,
+você precisa re-ligar o seu link simbólico <path>make.profile</path>:
+</p>
+
+<pre caption="Re-ligando o profile">
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+</pre>
 
 </body>
 </subsection>
@@ -223,7 +284,8 @@ Você provavelmente só usa um ou dois locales em seu sistema. Até agora
 depois de compilar o <c>glibc</c> uma lista completa de locales é 
 criada. A partir de agora você pode ativar a opção de USE <c>userlocales</c> e especificar
 só os locales que você irá precisar em <path>/etc/locales.build</path>. Só faça isso
-se você sabe que locales escolher..
+se você sabe que locales escolher. Isto não irá funcionar durante o bootstrap,
+mas irá quando você re-compilar o glibc depois.
 </p>
 
 <pre caption="Ativando a opção de USE userlocales especialmente para o glibc">
@@ -352,18 +414,6 @@ este passo leva bastante tempo para terminar.
 </pre>
 
 <p>
-Se você tiver configurado a opção de USE <c>nptl</c>, ao rodar o <c>bootstrap.sh</c> novamente 
-pode haver uma mensagem de erro que o <c>linux-headers</c> bloqueia o <c>linux26-headers</c>.
-Se você tiver este erro, remova o <c>linux-headers</c> e tente novamente:
-</p>
-
-<pre caption="Removendo linux-headers de seu sistema">
-# <i>emerge -C linux-headers</i>
-# <i>emerge --oneshot --nodeps linux26-headers</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
 Agora continue com o próximo passo, <uri link="#doc_chap4">Progredindo de um stage2 
 para um stage3</uri>.
 </p>
@@ -398,14 +448,22 @@ revolve em torno de escolhas, não forçamos nada a você.
 
 <p>
 Se você quiser saber que pacotes serão instalados, execute <c>emerge
---pretend system</c>. Isto irá listar todos pacotes que serão construídos. Como
-esta lista é muito grande, você deve usar um programa de pager como o <c>less</c> ou
-o <c>more</c> para subir e descer na lista.
+--pretend --emptytree system</c>. Isto irá listar todos pacotes que serão 
+construídos. Como esta lista é muito grande, você também deve usar um pager como
+<c>less</c> ou <c>more</c> para subir e descer na lista.
 </p>
 
 <pre caption = "Vendo o que 'emerge system' irá fazer">
-# <i>emerge --pretend system | less</i>
+# <i>emerge --pretend --emptytree system | less</i>
 </pre>
+
+<p>
+Note que, se você não tocou o ajuste padrão de CFLAGS/CXXFLAGS, fazer
+<c>emerge --pretend --newuse system</c> é o suficiente: isto irá reconstruir as
+aplicações que são afetadas por uma mudança nas opções de USE (comparado com a opção de
+USE que nós usamos quando construindo o stage2.) Se você não tocou
+a opção de USE, então por que está fazendo uma instalação de stage2?
+</p>
 
 </body>
 </subsection>
@@ -421,7 +479,7 @@ do <c>emerge</c> que irá baixar todas fontes para você.
 </p>
 
 <pre caption = "Baixando as fontes">
-# <i>emerge --fetchonly system</i>
+# <i>emerge --fetchonly --emptytree system</i>
 </pre>
 
 </body>
@@ -431,14 +489,19 @@ do <c>emerge</c> que irá baixar todas fontes para você.
 <body>
 
 <p>
-Para começar a construir o sistema, execute <c>emerge system</c>. Então vá
+Para começar a construir o sistema, execute <c>emerge --emptytree system</c>. Então vá
 fazer algo para manter sua mente ocupada, porque este passo leva bastante 
 tempo para terminar.
 </p>
 
 <pre caption = "Construindo o sistema">
-# <i>emerge system</i>
+# <i>emerge --emptytree system</i>
 </pre>
+
+<p>
+Novamente, se você não tocou no ajuste de CFLAGS e CXXFLAGS, usar
+<c>--newuse</c> é o suficiente.
+</p>
 
 <p>
 Você pode agora ignorar com segurança qualquer aviso sobre arquivos de configuração atualizados
