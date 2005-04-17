@@ -11,7 +11,8 @@ class Panel(GLIScreen.GLIScreen):
 	@license:   GPL
 	"""
 	# Attributes:
-	title="rc.conf Settings" 
+	title="rc.conf Settings"
+	
 	# Operations
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -31,6 +32,7 @@ This is where you setup rc.conf."""
 		#label.set_justify(gtk.JUSTIFY_LEFT)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.keymap = gtk.combo_box_new_text()
+		self.keymap.set_name("KEYMAP")
 		self.keymap.set_size_request(150, -1)
 		hbox.pack_start(self.keymap, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -41,6 +43,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.windowkeys = gtk.combo_box_new_text()
+		self.windowkeys.set_name("SET_WINDOWKEYS")
 		self.windowkeys.set_size_request(150, -1)
 		hbox.pack_start(self.windowkeys, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -51,6 +54,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.extended_keymaps = gtk.Entry()
+		self.extended_keymaps.set_name("EXTENDED_KEYMAPS")
 		self.extended_keymaps.set_size_request(150, -1)
 		hbox.pack_start(self.extended_keymaps, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -61,6 +65,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.consolefont = gtk.combo_box_new_text()
+		self.consolefont.set_name("CONSOLEFONT")
 		self.consolefont.set_size_request(150, -1)
 		hbox.pack_start(self.consolefont, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -71,6 +76,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.consoletranslation = gtk.combo_box_new_text()
+		self.consoletranslation.set_name("CONSOLETRANSLATION")
 		self.consoletranslation.set_size_request(150, -1)
 		hbox.pack_start(self.consoletranslation, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -81,6 +87,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.clock = gtk.combo_box_new_text()
+		self.clock.set_name("CLOCK")
 		self.clock.set_size_request(150, -1)
 		hbox.pack_start(self.clock, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -91,6 +98,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.editor = gtk.combo_box_entry_new_text()
+		self.editor.set_name("EDITOR")
 		self.editor.set_size_request(150, -1)
 		hbox.pack_start(self.editor, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -101,6 +109,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.protocols = gtk.Entry()
+		self.protocols.set_name("PROTOCOLS")
 		self.protocols.set_size_request(150, -1)
 		hbox.pack_start(self.protocols, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -111,6 +120,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.displaymanager = gtk.combo_box_new_text()
+		self.displaymanager.set_name("DISPLAYMANAGER")
 		self.displaymanager.set_size_request(150, -1)
 		hbox.pack_start(self.displaymanager, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -121,6 +131,7 @@ This is where you setup rc.conf."""
 		label.set_size_request(150, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=25)
 		self.xsession = gtk.combo_box_entry_new_text()
+		self.xsession.set_name("XSESSION")
 		self.xsession.set_size_request(150, -1)
 		hbox.pack_start(self.xsession, expand=False, fill=False, padding=5)
 		vert.pack_start(hbox,expand=False,fill=False,padding=0)
@@ -137,6 +148,20 @@ This is where you setup rc.conf."""
 		self.populate_xsession_combo()
 		
 		self.add_content(vert)
+		
+		# setup the types of gui elements for access later
+		self.data = {self.keymap:"combo",
+			     self.windowkeys:"combo",
+			     self.extended_keymaps:"entry",
+			     self.consolefont:"combo",
+			     self.consoletranslation:"combo",
+			     self.clock:"combo",
+			     self.editor:"comboentry",
+			     self.protocols:"entry",
+			     self.displaymanager:"combo",
+			     self.xsession:"comboentry"
+			     }
+		
 	
 	def populate_keymap_combo(self, default="us"):
 		# Adds all the keymaps to the dropdown
@@ -261,11 +286,92 @@ This is where you setup rc.conf."""
 		
 		return consoletranslation_list
 	
+	def get_combo_current_text(self, widget):
+		model = widget.get_model()
+		active = widget.get_active()
+		
+		return model[active][0]
+	
+	def set_combo_current_text(self, widget , text):
+		if text=="##commented##": text = "commented out"
+		# need to find the element in the combo box
+		# that they selected in the file, and activate it.
+		#iter = widget.get_active_iter()
+		model = widget.get_model()
+		iter = model.get_iter_first()
+		
+		i=0 # keep track of what to set active.
+		while iter != None:
+			# retrieve the text and test.
+			#print model.get_value(iter,0)
+			# if the value in the combobox equals whats in the xmlfile,
+			# select it!
+			if model.get_value(iter,0) == text:
+				widget.set_active(i)
+				
+			iter = model.iter_next(iter)
+			i+=1
+		
+	def generate_rc_conf_dictionary(self):
+		rc_conf = {}
+
+		for item in self.data.keys():
+			# depending on what kind of gui element it is,
+			# we need to get the data out of it differently.
+			# equivalent of a switch statement in python...
+			result = {
+				'combo': lambda item: self.get_combo_current_text(item),
+				'entry': lambda item: item.get_text(),
+				'comboentry': lambda item: item.get_child().get_text()
+				}[self.data[item]](item)
+			
+			# put it into the dictionary to be returned
+			# consoletransation / displaymanager can be commented out
+			# if result is commented out, set it to the 'special' string
+			# so _edit_config can know to comment it out.
+			if result == "commented out":
+				result = "##commented##"
+			
+			rc_conf[item.get_name()] = result
+				
+				
+		return rc_conf
+	
+	def load_rc_conf_dictionary(self, rc_conf):
+		for item in self.data.keys():
+			# depending on what kind of gui element it is,
+			# we need to get the data out of it differently.
+			# equivalent of a switch statement in python...
+			try:
+				result = {
+					'combo': lambda item: self.set_combo_current_text(item,rc_conf[item.get_name()]),
+					'entry': lambda item: item.set_text(rc_conf[item.get_name()]),
+					'comboentry': lambda item: item.get_child().set_text(rc_conf[item.get_name()])
+					}[self.data[item]](item)
+			except KeyError:
+				# that value didn't exist in the stored profile
+				print "KeyError"
+		
 	def activate(self):
 		rc_conf = self.controller.install_profile.get_rc_conf()
-				
+		self.load_rc_conf_dictionary(rc_conf)
+		#print "loaded: "+str(rc_conf)
+		
 		self.controller.SHOW_BUTTON_EXIT    = True
 		self.controller.SHOW_BUTTON_HELP    = True
 		self.controller.SHOW_BUTTON_BACK    = True
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
+		
+	def deactivate(self):
+		value = True
+		rc_conf = self.generate_rc_conf_dictionary()
+		#print "saving:"+str(rc_conf)
+		
+		try:
+			self.controller.install_profile.set_rc_conf(rc_conf)
+		except:
+			msgbox=Widgets().error_Box("Error","An internal error occurred!")
+			msgbox.run()
+			msgbox.destroy()
+		return value
