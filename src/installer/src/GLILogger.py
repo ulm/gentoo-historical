@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLILogger.py,v 1.6 2005/04/14 15:44:03 agaffney Exp $
+$Id: GLILogger.py,v 1.7 2005/04/17 07:13:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Logger is a singleton style generic logger object.
@@ -15,8 +15,8 @@ class Logger(object):
 	_SHARED_LOGGER = None
 
 	##
-	# Brief description of function
-	# @param cls Parameter description
+	# Creates a shared logger like in GLIClientConfiguration
+	# @param cls It's just done like that.
 	def shared_logger(cls):
 		if Logger._SHARED_LOGGER == None:
 			Logger._SHARED_LOGGER = Logger()
@@ -24,8 +24,8 @@ class Logger(object):
 		return Logger._SHARED_LOGGER
 
 	##
-	# Brief description of function
-	# @param selflogfile=None Parameter description
+	# Basic Initialization function.  Appends to the given logfile
+	# @param logfile=None file to log stuff to.
 	def __init__(self,logfile=None):
 		if logfile == None:
 			self._file = file(Logger._LOG_FILE_PATH, 'a')
@@ -33,16 +33,14 @@ class Logger(object):
 			self._file = file(logfile,'a')
 
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Logs the given message to the logfile
 	# @param message Parameter description
 	def log(self, message):
 		self._file.write("GLI: " + time.strftime("%h %m %Y %H:%M:%S") + " - " + message + "\n")
 		self._file.flush()
 		
 	##
-	# Brief description of function
-	# @param self Parameter description
+	# Inserts a mark into the logfile.
 	def mark(self):
 		self.log(" -- MARK -- ")
 
