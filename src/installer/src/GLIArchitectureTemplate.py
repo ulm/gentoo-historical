@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.95 2005/04/17 00:01:33 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.96 2005/04/17 05:54:25 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -158,23 +158,16 @@ class ArchitectureTemplate:
 			regexpr = '^\s*#?\s*' + key + '\s*' + delimeter + '.*$'
 			regexpr = re.compile(regexpr)
 	
-			oldline = -1
 			for i in range(0, len(file)):
 				if regexpr.match(file[i]):
-					oldline = i
+					if not file[i][0] == '#':
+						file[i] = '#' + file[i]
 	
-			if oldline == -1:
-				oldline = len(file)
-				file.insert(oldline, "# The following line was modified by GLI\n")
-			else:
-				file[oldline] = "# The following line was modified by GLI\n"
-			commentprefix = ""
-			if newvalues[key] == "##commented##":
-				commentprefix = "#"
+			file.append('\n# Added by GLI\n')
 			if quotes_around_value:
-				file.insert(oldline+1, commentprefix + key + delimeter + '"' + newvalues[key] + '"\n')
+				file.append(key + delimeter + '"' + newvalues[key] + '"\n')
 			else:
-				file.insert(oldline+1, commentprefix + key + delimeter + newvalues[key]+'\n')
+				file.append(key + delimeter + newvalues[key]+'\n')
 	
 		f = open(filename,'w')
 		f.writelines(file)
