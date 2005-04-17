@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.96 2005/04/17 05:54:25 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.97 2005/04/17 05:57:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -164,10 +164,13 @@ class ArchitectureTemplate:
 						file[i] = '#' + file[i]
 	
 			file.append('\n# Added by GLI\n')
+			commentprefix = ""
+			if newvalues[key] == "COMMENT" or newvalues[key] == "##comment##":
+				commentprefix = "#"
 			if quotes_around_value:
-				file.append(key + delimeter + '"' + newvalues[key] + '"\n')
+				file.append(commentprefix + key + delimeter + '"' + newvalues[key] + '"\n')
 			else:
-				file.append(key + delimeter + newvalues[key]+'\n')
+				file.append(commentprefix + key + delimeter + newvalues[key]+'\n')
 	
 		f = open(filename,'w')
 		f.writelines(file)
