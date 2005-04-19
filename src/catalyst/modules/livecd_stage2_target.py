@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30 2005/03/09 00:22:05 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30.2.1 2005/04/19 21:18:35 wolf31o2 Exp $
 
 """
 Builder class for a LiveCD stage2 build.
@@ -40,7 +40,7 @@ class livecd_stage2_target(generic_stage_target):
 			"livecd/motd","livecd/overlay","livecd/modblacklist","livecd/splash_theme",\
 			"livecd/rcadd","livecd/rcdel","livecd/fsscript","livecd/xinitrc",\
 			"livecd/root_overlay","livecd/devmanager","livecd/splash_type",\
-			"gamecd/conf"])
+			"gamecd/conf","livecd/users"])
 		
 		generic_stage_target.__init__(self,spec,addlargs)
 		self.set_cdroot_path()
