@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ppc-bootloader.xml,v 1.15 2005/03/28 19:44:00 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ppc-bootloader.xml,v 1.16 2005/04/19 09:21:24 neysx Exp $ -->
 
 <sections>
 
-<version>2.00</version>
-<date>2005-03-28</date>
+<version>2.3</version>
+<date>2005-04-11</date>
 
 <section>
 <title>Faites votre choix</title>
@@ -29,7 +29,7 @@ Avant de commencer, évaluez les options disponibles.
 Plusieurs chargeurs de démarrage sont disponibles pour Linux/PPC. Vous avez le
 choix entre <uri link="#yaboot">yaboot</uri> pour les machines de type NewWorld
 Apple ou IBM et <uri link="#bootx">BootX</uri> pour les machines de type
-OldWorld Apple ou IBM. Les machines Pegasos n'ont pas besoin de chargeur de
+OldWorld Apple. Les machines Pegasos n'ont pas besoin de chargeur de
 démarrage, mais vous pouvez utiliser <uri link="#bootcreator">BootCreator</uri>
 pour créer un menu de démarrage «&nbsp;SmartFirmware&nbsp;».
 </p>
@@ -71,6 +71,28 @@ pour une raison quelconque ou si vous installez sur une machine G5
 le fichier de configuration <path>/etc/yaboot.conf</path> déjà installé sur
 votre machine.
 </p>
+
+<note>
+Vous devrez sans doute éditer le fichier yaboot.conf si vous utilisez genkernel.
+Les arguments proposés par l'ebuild genkernel doivent être ajoutés comme des
+options passés au noyau dans la partie de l'image noyau. La partie du fichier en
+question est la suivante&nbsp;:
+</note>
+
+<pre caption="Ajouter les arguments de démarrage à yaboot.conf">
+<comment>#################
+## Cette section peut être dupliquée si vous avez plusieurs noyaux ou
+## jeux d'options du noyau (remplacez 2.6.9 par votre version de noyau).
+#################</comment>
+image=/boot/kernel-2.6.9
+  label=Linux
+  root=/dev/ram0                <comment># /dev/ram0 si vous utilisez genkernel</comment>
+  partition=3
+  sysmap=/boot/System.map-2.6.9
+  append="real_root=/dev/hda3 init=/linuxrc"    <comment># Ajoutez des arguments ici</comment>
+  read-only
+<comment>##################</comment>
+</pre>
 
 <ul>
   <li>
@@ -242,38 +264,72 @@ système</uri>.
 <body>
 
 <impo>
-BootX n'est disponible que pour les systèmes OldWorld Apple ou IBM.
+BootX n'est disponible que pour les systèmes OldWorld Apple.
 </impo>
 
 <p>
-BootX a besoin que vous redémarriez le système. Allons-y.
+Puisque BootX démarre Linux depuis MacOS, le noyau devra être copié
+depuis une partition Linux sur la partition MacOS. Montez tout d'abord la
+partition MacOS depuis l'extérieur du chroot. Utilisez <c>mac-fdisk -l</c> pour
+trouver le numéro de la partition de MacOS, sda6 dans l'exemple. Une fois que
+la partition est montée, nous allons copier le noyau sur le répertoire système
+afin que BootX puisse le trouver.
 </p>
 
-<pre caption="Sortie du chroot, démontage des partitions et redémarrage">
+<pre caption="Copier le noyau sur la partition MacOS">
 # <i>exit</i>
-~# <i>umount /mnt/gentoo/proc /mnt/gentoo/dev /mnt/gentoo</i>
-~# <i>reboot</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels"</i>
 </pre>
 
 <p>
-Bien entendu, n'oubliez pas de retirer le CD du lecteur car sinon le système
-amorcera le CD au lieu de démarrer sur Mac OS.
+Si vous avez utilisé genkernel, le noyau est placé ailleurs et le fichier initrd
+devra également être copié.
+</p>
+
+<pre caption="Copier le noyau et l'initrd de genkernel sur la partition MacOS">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initrd-* "/mnt/mac/System Folder"</i>
+</pre>
+
+<p>
+Maintenant que le noyau est copié, démontez tous les systèmes de fichiers et
+entrez la commande magique que vous attendiez avec impatience&nbsp;:
+<c>reboot</c>.
+</p>
+
+<pre caption="Démonter les partitions et redémarrer la machine">
+cdimage ~# <i>cd /</i>
+cdimage ~# <i>umount /mnt/gentoo/proc /mnt/gentoo /mnt/mac</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+Bien sûr n'oubliez pas d'enlever tous les dispositifs de démarrage pour que
+MacOS puisse cette fois démarrer.
 </p>
 
 <p>
-Maintenant que votre système a redémarré dans Mac OS, ouvrez le panneau de
-contrôle de BootX. Sélectionnez <c>Options</c> et décochez <c>Used specified RAM
-disk</c>. Lorsque vous retournerez à l'écran principal de BootX, vous trouverez
-une option pour spécifier le disque et la partition racine. Remplissez ces
-valeurs correctement.
+Maintenant que la machine a démarré MacOS, ouvrez le panneau de contrôle
+de BootX et sélectionnez <c>Options</c> puis désactivez <c>Used specified
+RAM disk</c> si vous n'utilisez pas genkernel. Dans le cas contraire, vérifiez
+que l'initrd de genkernel est sélectionné à la place de celui du LiveCD. Si
+vous n'utilisez pas genkernel vous devez maintenant spécifier dans une option le
+disque et la partition racine de Linux. Remplissez les champs voulus par la
+valeur appropriée. Selon la configuration du noyau vous devrez probablement
+appliquer quelques arguments de démarrage au noyau.
 </p>
 
 <p>
-BootX peut être configuré pour lancer Linux au démarrage. Si vous le faites,
-vous verrez votre machine démarrer sur Mac OS puis, pendant la phase de
-démarrage, BootX chargera et démarrera Linux. Allez voir le <uri
-link="http://penguinppc.org/bootloaders/bootx/">site de BootX</uri> pour plus
-d'information.
+BootX peut être configuré pour démarrer Linux au démarrage. Si vous choisissez
+cette option la machine démarrera sur MacOS et lors du démarrage, elle chargera
+BootX qui à son tour démarrera Linux. Lisez la page Internet de
+<uri link="http://penguinppc.org/bootloaders/bootx/">BootX</uri> pour plus
+d'informations.
 </p>
 
 <p>
