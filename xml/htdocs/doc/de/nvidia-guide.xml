@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- English CVS Version: 1.11 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/nvidia-guide.xml,v 1.1 2005/04/20 04:42:41 dertobi123 Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/doc/de/nvidia-guide.xml">
+<title>Gentoo Linux nVidia Guide</title>
+
+<author title="Autor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Übersetzer">
+  <mail link="tevers@onlinehome.de">Torsten Evers</mail>
+</author>
+
+<abstract>
+Viele Gentoo-Nutzer haben einen nVidia-Chipsatz in ihrem System. NVidia bietet
+spezielle Linux-Treiber um eine ordentliche Geschwindigkeit Ihrer Karte Karte
+zu gewährleisten. Dieser Text informiert Sie, wie die Treiber zu installieren
+und zu konfigurieren sind.
+</abstract>
+
+<license/>
+
+<version>1.8</version>
+<date>2005-02-25</date>
+
+<chapter>
+<title>Konfigurieren Ihrer Karte</title>
+<section>
+<title>Installation der richtigen Treiber</title>
+<body>
+
+<p>
+Die nVidia-Treiber beinhalten Kernel-Module, die Sie in ihren aktuellen Kernel
+integrieren müssen. Hierzu muss Ihr Kernel das Laden von Kernel-Modulen
+unterstützen. Wenn Sie <c>genkernel</c> verwendet haben, um Ihren Kernel zu
+konfigurieren, ist dies bereits geschehen. Wenn nicht, überprüfen Sie die 
+Konfiguration Ihres Kernels noch einmal um die Unterstützung dafür sicherzustellen:
+</p>
+
+<pre caption="Laden von Kernel-Modulen erlauben">
+Loadable module support ---&gt;
+  [*] Enable loadable module support
+</pre>
+
+<p>
+Sie müssen ausserdem <e>Memory Type Range Register</e> in Ihrem Kernel einschalten:
+</p>
+
+<pre caption="MTRR einschalten">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+
+<p>
+NVidias Module und Bibliotheken sind in zwei Paketen zusammengefasst:
+<c>nvidia-glx</c> 
+und <c>nvidia-kernel</c>. Ersteres sind die X11 GLX Bibliotheken, während
+zweitere die Kernel-Module enthalten. Da <c>nvidia-glx</c> von <c>nvidia-kernel</c>,
+abhängt, ist die Installation von <c>nvidia-glx</c> ausreichend:
+</p>
+
+<pre caption="Installieren der nVidia-Module">
+# <i>emerge nvidia-glx</i>
+</pre>
+
+<p>
+Wenn die Installion beendet ist, führen Sie <c>modprobe nvidia</c> aus, um das
+Kernel-Modul zu laden.
+</p>
+
+<pre caption="Laden des Kernel-Moduls">
+# <i>modprobe nvidia</i>
+</pre>
+
+<p>
+Sie möchten vielleicht, dass dies automatisch beim Booten Ihres Systems
+geschieht. Editieren sie dazu
+<path>/etc/modules.autoload.d/kernel-2.6</path> (oder <path>kernel-2.4</path>) und
+fügen Sie <c>nvidia</c> hinzu. Vergessen Sie nicht, danach 
+<c>modules-update</c> auszuführen!
+</p>
+
+<pre caption="Ausführen von modules-update">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Den X-Server konfigurieren</title>
+<body>
+
+<p>
+Wenn die Treiber einmal installiert sind, müssen Sie Ihren X-Server (XFree86 oder 
+Xorg) konfigurieren, damit er den <c>nvidia</c> Treiber verwendet, anstatt den 
+<c>nv</c> Treiber.
+</p>
+
+<p>
+Öffnen Sie <path>/etc/X11/XF86Config</path> (oder <path>/etc/X11/xorg.conf</path>)
+mit Ihrem Lieblingseditor (wie z.B. <c>nano</c> oder <c>vim</c> und gehen Sie
+zur <c>Device</c> Sektion. In dieser ändern Sie die <c>Driver</c> Zeile:
+</p>
+
+<pre caption="Wechseln von nv zu nvidia in der X-Server Konfiguration">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  <i>Driver     "nvidia"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+<p>
+Dann gehen Sie zur <c>Module</c> Sektion und stellen Sie sicher, dass das 
+<c>glx</c> module geladen wird, während das <c>dri</c> Modul nicht geladen
+werden darf:
+</p>
+
+<pre caption="Ändern der Modul-Sektion">
+Section "Module"
+  <comment>(...)</comment>
+  <i># Load  "dri"
+  Load  "glx"</i>
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+Führen Sie <c>opengl-update</c> aus, damit der X-Server die GLX-Bibliotheken 
+von nVidia verwendet:
+</p>
+
+<pre caption="Ausführen von opengl-update">
+# <i>opengl-update nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Hinzufügen von Benutzern zur Gruppe video</title>
+<body>
+
+<p>
+Sie müssen Ihren User zur <c>video</c> Gruppe hinzufügen, damit er Zugriff
+auf die nVidia-Gerätedateien hat:
+</p>
+
+<pre caption="Hinzufügen Ihres Benutzers zur video Gruppe">
+# <i>gpasswd -a Ihr_User video</i>
+</pre>
+
+<p>
+Es mag nicht absolut notwendig sein, wenn Sie kein <c>udev</c> verwenden aber
+es kann auch nicht schaden und macht Ihr System zukunftssicher :)
+</p>
+
+</body>
+</section>
+<section>
+<title>Testen Ihrer Karte</title>
+<body>
+
+<p>
+Um Ihre nvidia Karte zu testen, starten Sie X und führen Sie das <c>glxinfo</c>
+Kommando aus. Es sollte ausgeben, dass direct rendering aktiviert ist:
+</p>
+
+<pre caption="Testen des Status von direct rendering">
+$ <i>glxinfo | grep direct</i>
+direct rendering: Yes
+</pre>
+
+<p>
+Um Ihre FPS anzuzeigen, führen Sie <c>glxgears</c> aus.
+</p>
+
+</body>
+</section>
+<section>
+<title>NVidia-Unterstützung aktivieren</title>
+<body>
+
+<p>
+Einige Tools, wie <c>mplayer</c> und <c>xine-lib</c>, verwenden ein lokales
+USE Flag, das "nvidia" heisst. Es aktiviert die Unterstützung für XvMCNVIDIA,
+hilfreich beim Abspielen von hochaufgelösten Videos. Fügen Sie "nvidia" zu Ihrer
+USE Variable in <path>/etc/make.conf</path> hinzu oder als USE Flag zu 
+<c>media-video/mplayer</c>.
+</p>
+
+<p>
+Dann führen Sie <c>emerge -uD --newuse world</c> aus, um die Anwendungen
+neu zu bauen, die von der Änderung des USE Flags profitieren würden.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Fehlerbehebung</title>
+<section>
+<title>2D auf Maschinen mit 4GB Speicher oder mehr zum Laufen bekommen</title>
+<body>
+
+<p>
+Wenn Sie Probleme mit der nVidia Beschleunigung von 2D-Anwendungen haben, ist es
+wahrscheinlich, das Sie nicht in der Lage sind, einen Bereich für write-combining
+mittels MTRR zu setzen. Um das zu überprüfen, sehen Sie sich den Inhalt von 
+<path>/proc/mtrr</path> an:
+</p>
+
+<pre caption="Überprüfen, ob write-combining aktiviert ist">
+# <i>cat /proc/mtrr</i>
+</pre>
+
+<p>
+Jede Zeile sollte "write-back" oder "write-combining" enthalten. Wenn Sie eine
+Zeile  mit "unreachable" darin sehen, müssen Sie eine Einstellung im BIOS ändern,
+um das zu beheben.
+</p>
+
+<p>
+Booten Sie neu und gehen Sie in Ihr BIOS. Suchen Sie dann die MTRR-Einstellungen
+(evtl. unter "CPU Settings"). Ändern Sie diese Einstellung von "continuous" zu
+"discrete" und booten Sie wieder Linux. Sie werden nun keine "uncachable" Einträge
+in der Datei mehr finden und die 2D Beschleunigung sollte ohne Probleme 
+funktionieren.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ich erhalte Warnmeldungen ber "unsupported 4K stack sizes"</title>
+<body>
+
+<p>
+<c>nvidia-kernel</c> Pakete älter als 1.0.6106 unterstützen nur Kernel, die 
+Stack-Größen von 8K verwenden. Neuere Kernel (2.6.6 und höher) unterstützen
+auch 4K Stack-Größen Wählen Sie keine Stack-Größe von 4K aus, wenn Sie eines
+dieser <c>nvidia-kernel</c> Pakete verwenden- Sie können diese Option in der
+Sektion <c>Kernel Hacking</c> finden. 
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
