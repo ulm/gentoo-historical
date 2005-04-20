@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS Version: 1.35 -->
+<!-- English CVS Version: 1.40 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/printing-howto.xml,v 1.17 2005/04/04 19:03:21 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/printing-howto.xml,v 1.18 2005/04/20 04:43:11 dertobi123 Exp $ -->
 
 <guide link = "/doc/de/printing-howto.xml">
 <title>Gentoo Druckereinrichtung</title> 
@@ -44,8 +44,8 @@ ein Netzwerk.
 
 <license/>
 
-<version>1.12</version>
-<date>8. Mai 2004</date>
+<version>1.17</version>
+<date>1. August 2004</date>
 
 <chapter>
 <title>Die Installation von CUPS und foomatic</title>
@@ -151,22 +151,18 @@ nun an der Zeit, die notwendigen Module zu laden:
 
 <p>
 Nachdem die Module erfolgreich geladen wurden, verbinden Sie Ihren Drucker und
-überprüfen <path>/var/log/messages</path>, um zu sehen, ob er gefunden wurde.
+überprüfen <c>dmesg</c>, um zu sehen, ob er gefunden wurde.
 </p>
 
-<note>
-Wenn Sie nicht sysklogd benutzen, sieht Ihre Log-Datei anders aus.
-</note>
-
 <pre caption = "Überprüfen der Kernel-Meldungen">
-# <i>tail /var/log/messages</i>
+# <i>dmesg | tail</i>
 </pre>
 
 <p>
 Sie sollten etwas ähnliches zu sehen bekommen:
 </p>
 
-<pre caption = "Ausgabe von /var/log/messages">
+<pre caption = "Ausgabe von dmesg">
 hub.c: USB new device connect on bus2/2, assigned device number 2
 printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104
 </pre>
@@ -234,6 +230,22 @@ Bevor wir den Drucker mit CUPS installieren, können wir ihn mit einfachen
 low-level Befehlen testen.
 </p>
 
+<note>
+Einige Drucker (besonders die <uri
+link="http://pnm2ppa.sourceforge.net">PPA-basierenden</uri> wie die HP Serien 
+720, 820 und 1000) akzeptieren keine ASCII-Eingabe. Wenn Sie solch einen 
+Drucker besitzen denken Sie bitte daran, dass Sie einen <e>PPA-basierenden</e> 
+Drucker haben und dieser Test wird auch wenn der Drucker funktioniert 
+fehlschlagen.
+</note>
+
+<note>
+  Einige Drucker (z.B. einige HP LaserJets) brauchen ein ^L
+  (Control-L) am Zeilenende, um das Drucken auszulösen.
+  Ohne das ^L ist das cat zwar erfolgreich, der Drucker empfängt
+  die Daten, macht dann aber nichts.
+</note>
+
 <pre caption = "Druckertest mit cat">
 # <i>touch test.txt</i>
 # <i>echo "Hello World" > test.txt</i>
@@ -242,13 +254,6 @@ low-level Befehlen testen.
 <comment>Für Parallel-Port Drucker:</comment>
 # <i>cat test.txt > /dev/lp0 </i>
 </pre>
-
-<note>
-Einige Drucker (z.B. einige HP LaserJets) brauchen ein ^L
-(Control-L) am Zeilenende, um das Drucken auszulösen.
-Ohne das ^L ist das cat zwar erfolgreich, der Drucker empfängt
-die Daten, macht dann aber nichts.
-</note>
 
 </body>
 </section>
@@ -282,7 +287,7 @@ Treiber den Sie herunterladen, auch die dazugehörige Dokumentation und
 Lizenzinformation.
 </p>
 
-<impo>
+<p>
 Falls Sie einen HP Inkjet Drucker nutzen wollen, ist es notwendig, den
 <c>hpijs</c> Druckertreiber zu emergen. Dieser Treiber handhabt die notwendige
 Postscript-Interpretation, um den HP Drucker zum Arbeiten zu bewegen. Zu aller
@@ -290,9 +295,14 @@ Zufriedenheit sind die eigentlich nur für HP Inkjet Drucker gedachten
 <c>hpijs</c> Treiber auch im Portage Tree enthalten. Die Dokumentation der 
 <c>hpijs</c> Treiber von HP wird in <path>/usr/share/doc/hpijs-&lt;version&gt;</path>
 abgelegt. Der Author empfiehlt <e>ausdrücklich</e> diese zu lesen.
-</impo>
+</p>
 
-<pre caption = "Das emergen von hpijs">
+<p>
+Wenn Sie einen PPA-basierenden Drucker verwenden ist es notwendig mit emerge 
+die <c>pnm2ppa</c> Druckertreiber zu installieren.
+</p>
+
+      <pre caption = "Das emergen von hpijs">
 # <i>emerge hpijs</i>
 </pre>
 
@@ -402,15 +412,22 @@ Homepage nach weiteren Informationen.
 <body>
 
 <p>
-Nun, da der Drucker selbst eingerichtet ist, muss CUPS zur Bearbeitung der Drucker-Warteschlange konfiguriert werden.
-CUPS kann über den Web-Browser auf Port 631 Ihres Druck-Servers erreicht werden.
+Nun, da der Drucker selbst eingerichtet ist, muss CUPS zur Bearbeitung der 
+Drucker-Warteschlange konfiguriert werden. CUPS kann über den Web-Browser auf 
+Port 631 Ihres Druck-Servers erreicht werden.
 </p>
 
 <p>
-CUPS hat eine vorgegebene Konfigurations-Datei für den Daemon, die (nicht 
-unbedingt) modifiziert werden sollte. Unter <path>/etc/cups/cupsd.conf</path> 
-können Sie sie, wenn Sie wollen, anschauen.
+CUPS hat eine vorgegebene Konfigurations-Datei für den Daemon, die zumindest 
+so verändert werden sollte, dass sie URI-ähnliche Gerätebenennung erlaubt, 
+Öffnen Sie <path>/etc/cups/cupsd.conf</path> mit Ihrem bevorzugten Editor 
+und setzen Sie <c>FileDevice</c> auf <c>Yes</c>:
 </p>
+
+<pre caption="Ändern von FileDevice auf Yes">
+# <i>nano -w /etc/cups/cupsd.conf</i>
+<comment>(Setzen Sie FileDevice auf Yes)</comment>
+</pre>
 
 <p>
 Für diejenigen, welche Clients einrichten wollen, die den neuen Druckserver 
@@ -428,7 +445,9 @@ des Druckservers.
 Der CUPS Daemon sollte nun laufen, also öffnen Sie Ihren Lieblings-Browser,
 geben <uri link="http://127.0.0.1:631">http://127.0.0.1:631</uri> ein und klicken auf
 <c>Manage Printer</c>. Hier finden Sie den neuinstallierten Drucker,
-konfigurieren Sie ihn oder drucken eine Testseite.
+konfigurieren Sie ihn oder drucken eine Testseite. Stellen Sie sicher, dass 
+Ihre Standard-Seitengröße auch der Seitengröße entspricht die Sie verwenden 
+(z.B. A4 statt Letter).
 </p>
 
 <note>
@@ -532,8 +551,11 @@ browseable = no
 </pre>
 
 <p>
-Wenn Sie CUPS verwenden, dann öffen Sie <path>/etc/cups/mime.types</path> und 
-entkommentieren Sie die folgende Zeile:
+Die meisten Windows Treiber sind PCL Treiber. Aufträge welche von Windows aus 
+gesendet werden sollten von CUPS als <c>application/octet-stream</c> 
+interpretiert und als Raw File gedruckt werden. Also öffen Sie, wenn Sie CUPS 
+verwenden,  <path>/etc/cups/mime.types</path> und entkommentieren Sie die 
+folgende Zeile:
 </p>
 
 <pre caption="Entkommentieren einer Zeile in /etc/cups/mime.types">
