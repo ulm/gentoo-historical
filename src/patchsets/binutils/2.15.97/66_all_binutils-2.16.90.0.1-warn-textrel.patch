@@ -1,0 +1,80 @@
+2005-03-20 Ned Ludd <solar@gentoo.org>
+	* textrels are bad for forcing copy-on-write (this affects everyone),
+	and for security/runtime code generation, this affects security ppl.
+	But in either case, it doesn't matter who needs textrels, it's
+	the very fact that they're needed at all
+	so we would rather see warn-textrel go in, or at least in gentoo.
+	* Removed shared limitation and renamed --warn-shared-textrel
+	to --warn-textrel
+
+--- bfd/elflink.c
++++ bfd/elflink.c
+@@ -2773,9 +2773,9 @@ _bfd_elf_add_dynamic_entry (struct bfd_l
+   if (! is_elf_hash_table (hash_table))
+     return FALSE;
+ 
+-  if (info->warn_shared_textrel && info->shared && tag == DT_TEXTREL)
++  if (info->warn_textrel && tag == DT_TEXTREL)
+     _bfd_error_handler
+-      (_("warning: creating a DT_TEXTREL in a shared object."));
++      (_("warning: creating a DT_TEXTREL in object."));
+ 
+   bed = get_elf_backend_data (hash_table->dynobj);
+   s = bfd_get_section_by_name (hash_table->dynobj, ".dynamic");
+--- include/bfdlink.h
++++ include/bfdlink.h
+@@ -321,8 +321,8 @@ struct bfd_link_info
+   /* TRUE if PT_GNU_RELRO segment should be created.  */
+   unsigned int relro: 1;
+ 
+-  /* TRUE if we should warn when adding a DT_TEXTREL to a shared object.  */
+-  unsigned int warn_shared_textrel: 1;
++  /* TRUE if we should warn when adding a DT_TEXTREL to an object.  */
++  unsigned int warn_textrel: 1;
+ 
+   /* TRUE if unreferenced sections should be removed.  */
+   unsigned int gc_sections: 1;
+--- ld/lexsup.c
++++ ld/lexsup.c
+@@ -153,7 +153,7 @@ enum option_values
+   OPTION_UNRESOLVED_SYMBOLS,
+   OPTION_WARN_UNRESOLVED_SYMBOLS,
+   OPTION_ERROR_UNRESOLVED_SYMBOLS,
+-  OPTION_WARN_SHARED_TEXTREL,
++  OPTION_WARN_TEXTREL,
+   OPTION_REDUCE_MEMORY_OVERHEADS
+ };
+ 
+@@ -509,8 +509,8 @@ static const struct ld_option ld_options
+   { {"warn-section-align", no_argument, NULL, OPTION_WARN_SECTION_ALIGN},
+     '\0', NULL, N_("Warn if start of section changes due to alignment"),
+     TWO_DASHES },
+-  { {"warn-shared-textrel", no_argument, NULL, OPTION_WARN_SHARED_TEXTREL},
+-    '\0', NULL, N_("Warn if shared object has DT_TEXTREL"),
++  { {"warn-textrel", no_argument, NULL, OPTION_WARN_TEXTREL},
++    '\0', NULL, N_("Warn if object has DT_TEXTREL"),
+     TWO_DASHES },
+   { {"warn-unresolved-symbols", no_argument, NULL,
+      OPTION_WARN_UNRESOLVED_SYMBOLS},
+@@ -1240,8 +1240,8 @@ parse_args (unsigned argc, char **argv)
+ 	case OPTION_WARN_SECTION_ALIGN:
+ 	  config.warn_section_align = TRUE;
+ 	  break;
+-	case OPTION_WARN_SHARED_TEXTREL:
+-	  link_info.warn_shared_textrel = TRUE;
++	case OPTION_WARN_TEXTREL:
++	  link_info.warn_textrel = TRUE;
+ 	  break;
+ 	case OPTION_WHOLE_ARCHIVE:
+ 	  whole_archive = TRUE;
+--- ld/ldmain.c
++++ ld/ldmain.c
+@@ -311,7 +311,7 @@ main (int argc, char **argv)
+   link_info.flags = 0;
+   link_info.flags_1 = 0;
+   link_info.need_relax_finalize = FALSE;
+-  link_info.warn_shared_textrel = FALSE;
++  link_info.warn_textrel = FALSE;
+ 
+   ldfile_add_arch ("");
+ 
