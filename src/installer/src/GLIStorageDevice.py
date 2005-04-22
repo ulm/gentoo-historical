@@ -29,7 +29,6 @@ class Device:
 
 	##
 	# Initialization function for GLIStorageDevice class
-	# @param self Parameter description
 	# @param device Device node (e.g. /dev/hda) of device being represented
 	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
 	def __init__(self, device, arch="x86"):
@@ -45,7 +44,6 @@ class Device:
 
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()
-	# @param self Parameter description
 	def set_disk_geometry_from_disk(self):
 		self._total_bytes = self._parted_dev.length * self._parted_dev.sector_size
 		self._geometry['heads'], self._geometry['sectors'], self._geometry['cylinders'] = self._parted_dev.heads, self._parted_dev.sectors, self._parted_dev.cylinders
@@ -57,7 +55,6 @@ class Device:
 
 	##
 	# Sets partition info from disk.
-	# @param self Parameter description
 	def set_partitions_from_disk(self):
 		last_part = 0
 		last_log_part = 4
@@ -85,7 +82,6 @@ class Device:
 
 	##
 	# Imports partition info from the install profile partition structure (currently does nothing)
-	# @param self Parameter description
 	# @param ips Parameter structure returned from install_profile.get_partition_tables()
 	def set_partitions_from_install_profile_structure(self, ips):
 		pass
@@ -105,13 +101,11 @@ class Device:
 
 	##
 	# Returns name of device (e.g. /dev/hda) being represented
-	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
 	##
 	# Combines free space and closes gaps in minor numbers. This is used internally
-	# @param self Parameter description
 	def tidy_partitions(self):
 		last_minor = 0
 		last_log_minor = 4
@@ -169,7 +163,6 @@ class Device:
 
 	##
 	# Adds a new partition to the partition info
-	# @param self Parameter description
 	# @param free_minor minor of unallocated space partition is being created in
 	# @param mb size of partition in MB
 	# @param start Start sector (only used for existing partitions)
@@ -217,7 +210,6 @@ class Device:
 
 	##
 	# Removes partition from partition info
-	# @param self Parameter description
 	# @param minor Minor of partition to remove
 	def remove_partition(self, minor):
 		tmppart = self._partitions[int(minor)]
@@ -232,7 +224,6 @@ class Device:
 
 	##
 	# Returns free space (no longer used)
-	# @param self Parameter description
 	# @param start Start sector for search
 	def get_free_space(self, start):
 		GAP_SIZE = 100
@@ -272,7 +263,6 @@ class Device:
 
 	##
 	# Gets partition containing a certain sector (no longer used)
-	# @param self Parameter description
 	# @param sector Sector to look at
 	# @param ignore_extended=1 Ignore extended partitions
 	def get_partition_at(self, sector, ignore_extended=1):
@@ -287,7 +277,6 @@ class Device:
 
 	##
 	# Returns free minor (no longer used)
-	# @param self Parameter description
 	# @param start Parameter description
 	# @param end Parameter description
 	def get_free_minor_at(self, start, end):
@@ -321,7 +310,6 @@ class Device:
 
 	##
 	# Returns an ordered list (disk order) of partition minors
-	# @param self Parameter description
 	def get_ordered_partition_list(self):
                 parts = self._partitions.keys()
                 parts.sort()
@@ -341,7 +329,6 @@ class Device:
 
 	##
 	# Returns partition info in a format suitable for passing to install_profile.set_partition_tables()
-	# @param self Parameter description
 	def get_install_profile_structure(self):
 		devdic = {}
 		for part in self._partitions:
@@ -351,7 +338,6 @@ class Device:
 
 	##
 	# Returns the minor of the extended partition, if any
-	# @param self Parameter description
 	def get_extended_partition(self):
 		for part in self._partitions:
 			tmppart = self._partitions[part]
@@ -361,55 +347,46 @@ class Device:
 
 	##
 	# Returns the number of sectors on the device
-	# @param self Parameter description
 	def get_num_sectors(self):
 		return int(self._total_sectors)
 
 	##
 	# Returns the size of a cylinder in bytes
-	# @param self Parameter description
 	def get_cylinder_size(self):
 		return int(self._cylinder_bytes)
 
 	##
 	# Returns the size of a sector in bytes
-	# @param self Parameter description
 	def get_sector_size(self):
 		return int(self._sector_bytes)
 
 	##
 	# Returns the number of cylinders
-	# @param self Parameter description
 	def get_num_cylinders(self):
 		return int(self._geometry['cylinders'])
 
 	##
 	# Returns the total number of bytes on the device
-	# @param self Parameter description
 	def get_drive_bytes(self):
 		return int(self._total_bytes)
 
 	##
 	# Returns the total number of MB on the device
-	# @param self Parameter description
 	def get_total_mb(self):
 		return self._total_mb
 
 	##
 	# Returns partition info dictionary
-	# @param self Parameter description
 	def get_partitions(self):
 		return self._partitions
 
 	##
 	# Prints disk geometry to STDOUT (no longer used)
-	# @param self Parameter description
 	def print_geometry(self):
 		print self._total_bytes, self._geometry
 
 	##
 	# Utility function for raising an exception
-	# @param self Parameter description
 	# @param message Error message
 	def _error(self, message):
 		"Raises an exception"
@@ -417,7 +394,6 @@ class Device:
 		
 	##
 	# Utility function for running a command and returning it's output as a list
-	# @param self Parameter description
 	# @param cmd Command to run
 	def _run(self, cmd):
 		"Runs a command and returns the output"
@@ -457,12 +433,11 @@ class Partition:
 	_mountopts = None
 	_format = None
 	_resizeable = None
-	_min_sectors_for_resize = 0
+	_min_mb_for_resize = 0
 	_mb = 0
 	
 	##
 	# Initialization function for the Partition class
-	# @param self Parameter description
 	# @param device Parent GLIStorageDevice object
 	# @param minor Minor of partition
 	# @param mb Parameter Size of partition in MB
@@ -494,14 +469,14 @@ class Partition:
 				dev_node = device._device + str(minor)
 			if type == "ntfs":
 				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-				self._min_cylinders_for_resize = int(min_bytes / self._device._cylinder_bytes) + 1
+				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
 				self._resizeable == True
 			elif type == "ext2" or type == "ext3":
 				block_size = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
 				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
-				free_sec = int(int(block_size) * int(free_blocks) / self._device._sector_bytes)
-				free_sec = free_sec - 2000 # just to be safe
-				self._min_sectors_for_resize = (self._end - self._start + 1) - free_sec
+				free_bytes = int(block_size * free_blocks)
+				# can't hurt to pad (the +50) it a bit since this is really just a guess
+				self._min_mb_for_resize = self._mb - int(free_bytes / MEGABYTE) + 50
 				self._resizeable == True
 			else:
 				parted_part = self._device._parted_disk.get_partition(int(self._minor))
@@ -511,14 +486,12 @@ class Partition:
 					self._resizeable = False
 					return
 				resize_constraint = parted_fs.get_resize_constraint()
-				min_size = resize_constraint.min_size
-				if int(min_size) != min_size: min_size = int(min_size) + 1
-				self._min_sectors_for_resize = min_size
+				min_bytes = resize_constraint.min_size * self._device._sector_bytes
+				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
 				self._resizeable = True
 
 	##
 	# Returns whether or not the partition is extended
-	# @param self Parameter description
 	def is_extended(self):
 		if self._type == "extended":
 			return True
@@ -527,7 +500,6 @@ class Partition:
 
 	##
 	# Returns whether or not the partition is logical
-	# @param self Parameter description
 	def is_logical(self):
 		if self._type == "free":
 			if int(self._minor) + Decimal("0.9") == Decimal(str(self._minor)):
@@ -541,7 +513,6 @@ class Partition:
 
 	##
 	# Returns a list of logical partitions if this is an extended partition
-	# @param self Parameter description
 	def get_logicals(self):
 		if not self.is_extended():
 			return None
@@ -557,7 +528,6 @@ class Partition:
 
 	##
 	# Returns the extened parent partition if this is a logical partition (no longer used)
-	# @param self Parameter description
 	def get_extended_parent(self):
 		if not self.is_logical():
 			return None
@@ -566,160 +536,143 @@ class Partition:
 
 	##
 	# Sets the start sector for the partition
-	# @param self Parameter description
 	# @param start Start sector
 	def set_start(self, start):
 		self._start = int(start)
-		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
 	##
 	# Returns the start sector for the partition
-	# @param self Parameter description
 	def get_start(self):
 		return int(self._start)
 
 	##
 	# Sets the end sector of the partition
-	# @param self Parameter description
 	# @param end End sector
 	def set_end(self, end):
 		self._end = int(end)
-		self._blocks = ((self._end - self._start) * self._device.get_cylinder_size()) / 512
 
 	##
 	# Returns end sector for the partition
-	# @param self Parameter description
 	def get_end(self):
 		return int(self._end)
 
 	##
 	# Returns size of partition in MB
-	# @param self Parameter description
 	def get_mb(self):
 		return int(self._mb)
 
 	##
 	# Sets size of partition in MB
-	# @param self Parameter description
 	# @param mb Parameter description
 	def set_mb(self, mb):
 		self._mb = int(mb)
 
 	##
 	# Sets type of partition
-	# @param self Parameter description
 	# @param type Parameter description
 	def set_type(self, type):
 		self._type = type
 
 	##
 	# Returns type of partition
-	# @param self Parameter description
 	def get_type(self):
 		return self._type
 
 	##
 	# Returns parent GLIStorageDevice object
-	# @param self Parameter description
 	def get_device(self):
 		return self._device
 
 	##
 	# Sets minor of partition
-	# @param self Parameter description
 	# @param minor New minor
 	def set_minor(self, minor):
 		self._minor = float(minor)
 
 	##
 	# Returns minor of partition
-	# @param self Parameter description
 	def get_minor(self):
 		return float(self._minor)
 
 	##
 	# Sets the original minor of the partition
-	# @param self Parameter description
 	# @param orig_minor Parameter description
 	def set_orig_minor(self, orig_minor):
 		self._orig_minor = int(orig_minor)
 
 	##
 	# Returns the original minor of the partition
-	# @param self Parameter description
 	def get_orig_minor(self):
 		return self._orig_minor
 
 	##
 	# Sets the mountpoint for the partition
-	# @param self Parameter description
 	# @param mountpoint Mountpoint
 	def set_mountpoint(self, mountpoint):
 		self._mountpoint = mountpoint
 
 	##
 	# Returns the mountpoint for the partition
-	# @param self Parameter description
 	def get_mountpoint(self):
 		return self._mountpoint
 
 	##
 	# Sets the mount options for the partition
-	# @param self Parameter description
 	# @param mountopts Mount options
 	def set_mountopts(self, mountopts):
 		self._mountopts = mountopts
 
 	##
 	# Returns the mount options for the partition
-	# @param self Parameter description
 	def get_mountopts(self):
 		return self._mountopts
 
 	##
 	# Set whether to format the partition
-	# @param self Parameter description
-	# @param format Parameter description
+	# @param format Format this partition (True/False)
 	def set_format(self, format):
 		self._format = format
 
 	##
 	# Returns whether to format the partition
-	# @param self Parameter description
 	def get_format(self):
 		return self._format
 
 	##
-	# Returns minimum sectors for resize
-	# @param self Parameter description
-	def get_min_sectors_for_resize(self):
-		if self.is_extended():
-			min_size = self._start
-			for part in self._device._partitions:
-				if part < 5: continue
-				if part.get_end > min_size: min_size = part.get_end()
-			return min_size
+	# Returns whether the partition is resizeable
+	def is_resizeable(self):
+		return self._resizeable
+
+	##
+	# Returns minimum MB for resize
+	def get_min_mb_for_resize(self):
+#		if self.is_extended():
+#			min_size = self._start
+#			for part in self._device._partitions:
+#				if part < 5: continue
+#				if part.get_end > min_size: min_size = part.get_end()
+#			return min_size
+#		else:
+		if self._resizeable:
+			return self._min_mb_for_resize
 		else:
-			return self._min_sectors_for_resize
+			return -1
 
 	##
-	# Returns maximum sectors for resize
-	# @param self Parameter description
-	def get_max_sectors_for_resize(self):
-		free_start, free_end = self._device.get_free_space(self._end)
-		if free_end == -1: return self._end
-		if free_start - 1 == self._end:
-			if self.is_logical():
-				if free_end <= self._device._partitions[self.get_extended_parent()]._end:
-					return free_end - self._start
-				else:
-					return self._end - self._start
-			else:
-				return free_end - self._start
+	# Returns maximum MB for resize
+	def get_max_mb_for_resize(self):
+		free_minor = 0
+		if self.is_logical():
+			free_minor = Decimal(str(self._minor + 0.9))
+		else:
+			free_minor = Decimal(str(self._minor + 0.1))
+		if free_minor in self._device._partitions:
+			return self._mb + self._device._partitions[free_minor]._mb
+		else:
+			return self._mb
 
 	##
-	# Resizes the partition
-	# @param self Parameter description
+	# Resizes the partition (ignore)
 	# @param start New start sector
 	# @param end New end sector
 	def resize(self, start, end):
@@ -747,17 +700,13 @@ class Partition:
 
 	##
 	# Utility function to raise an exception
-	# @param self Parameter description
 	# @param message Error message
 	def _error(self, message):
-		"Raises an exception"
 		raise "PartitionObjectError", message
 
 ##
 # Returns a list of detected partitionable devices
 def detect_devices():
-	"Returns a list of partitionable devices on the system"
-	
 	devices = []
 	
 	# Make sure sysfs exists
