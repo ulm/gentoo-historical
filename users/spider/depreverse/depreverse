@@ -18,7 +18,7 @@
 
 
 # set this to 1 for showing lists, 2 to show lists -and- files as they are matched
-DEBUG=0
+DEBUG=3
 
 ulimit -c 0
 
@@ -28,6 +28,7 @@ LIST=`sed "s:[]['\"*?{}]:\\\\\&:g"`
 
 if [ $DEBUG -gt 0 ]; then
 	echo List :: $LIST > /dev/stderr
+	echo "" > /dev/stderr
 fi
 
 # Lets multiplex this out with a for loop.
@@ -46,7 +47,7 @@ for FILE in $LIST; do
 	# only do this for readable objects. We don't care if we can't read it.
 	if [ -r "$FILE" -a -f "$FILE" ]; then
 		# store "file" output
-		FILEOUT=`file $FILE`
+		FILEOUT=`file "$FILE"`
 		
 		
 		# test for normal binary executable.
@@ -74,19 +75,34 @@ for FILE in $LIST; do
 			SCRIPTLIST="$SCRIPTLIST $FILE"
 			[ $DEBUG -gt 1 ] && echo script: $FILE > /dev/stderr
 		fi
-
+	
+		# test for bash script
+		if [ "${FILE%.sh}" != "${FILE}" ]; then
+			# same test as the one above, this avoids duplicates
+			TEST=`echo $FILEOUT | egrep ":.* (commands|script) " `
+			if [ ! -n "$TEST" ]; then
+				SCRIPTLIST="$SCRIPTLIST $FILE"
+				[ $DEBUG -gt 1 ] && echo "script(.sh)": $FILE > /dev/stderr 
+			fi
+		fi
+	
+		# test for perl script
+		if [ "${FILE%.pl}" != "${FILE}" ]; then
+			PERLLIST="$PERLLIST $FILE"
+			[ $DEBUG -gt 1 ] && echo perl .pl: $FILE > /dev/stderr 
+		fi
 
 		# test for perl module
 		if [ "${FILE%.pm}" != "${FILE}" ]; then
 			PERLLIST="$PERLLIST $FILE"
-			[ $DEBUG -gt 1 ] && echo perl: $FILE > /dev/stderr 
+			[ $DEBUG -gt 1 ] && echo "perl(.pm)": $FILE > /dev/stderr 
 		fi
 
 
 		# test for python module
 		if [ "${FILE%.py}" != "${FILE}" ]; then
 			PYTHONLIST="$PYTHONLIST $FILE"
-			[ $DEBUG -gt 1 ] && echo python: $FILE > /dev/stderr
+			[ $DEBUG -gt 1 ] && echo "python(.py)": $FILE > /dev/stderr
 		fi
 	fi
 done
@@ -97,8 +113,9 @@ if [ $DEBUG -gt 0 ]; then
 	echo Exelist: $EXELIST > /dev/stderr
 	echo Scriptlist:  $SCRIPTLIST > /dev/stderr
 	echo Liblist: $LIBLIST >/dev/stderr
-	echo Perl: $PERLLIST >/dev/stderr
-	echo Python: $PYTHONLIST >/dev/stderr
+	echo Perllist: $PERLLIST >/dev/stderr
+	echo Pythonlist: $PYTHONLIST >/dev/stderr
+	echo "" > /dev/stderr
 fi
 
 PYTHONREQ=""
@@ -109,14 +126,15 @@ PYTHONPATH=`./python.path | sed -e s:,:\\\n:g -e s:'\['::g -e s:'\]'::g -e s:\':
 
 # Test for loadable libraries
 # since we already tested if executables are executable, we only need one pass to test both theese lists.
+# we don't need to test if the file is readable either. Wee hee.
 for FILE in $EXELIST $LIBLIST ; do
-	if [ -r $FILE ]; then
-		ldd $FILE |grep -v 'libNoVersion.so' | grep -v 'linux-gate.so' | awk '/=>/ { print $3 }'
-	fi
+	# needed_libs supplied by Thomas de Grenier de Latour <degrenier@easyconnect.fr>
+	needed_libs_regexp="$(objdump -p $FILE | awk '/NEEDED/ { rex=rex "\\|\\<"$2"\\>"} ; END {print substr(rex,3)}')"
+	ldd "$FILE" | grep "${needed_libs_regexp}" | awk '/=>/ { print $3 }'
 done | sort -u | sed "s/['\"]/\\\&/g" | sort -u
 
 for FILE in $SCRIPTLIST; do
-	if [ -x $FILE -a -r $FILE ]; then
+	if [ -x $FILE ]; then
 		LINE=`head -n 1 $FILE | sed -e 's/^\#\![   ]*//' `
 		 # this traps the "real" dependency in case something uses "/usr/bin/env python" or "/bin/env perl"
 		case $LINE in
@@ -137,21 +155,23 @@ for FILE in $SCRIPTLIST; do
 		# the following appends extra python/perl/other languages in the future.
 		case $LINE in
 			*perl*) PERLLIST="$PERLLIST $FILE"
-				[ $DEBUG -gt 1 ] && echo perl: $FILE > /dev/stderr
+				[ $DEBUG -gt 1 ] && echo "perl(#!/...)": $FILE > /dev/stderr
 				;;
 			*python*) PYTHONLIST="$PYTHONLIST $FILE" 
-				[ $DEBUG -gt 1 ] && echo python: $FILE > /dev/stderr
+				[ $DEBUG -gt 1 ] && echo "python(#!/...)": $FILE > /dev/stderr
 				;;
 		esac
 		
 	fi
 done 
 
-if [ $DEBUG == 1 ]; then
+if [ $DEBUG -gt 0 ]; then
+	echo "" >/dev/stderr
 	echo "Stage 2 scanning gives: "  > /dev/stderr
-	echo Perl: $PERLLIST > /dev/stderr 
-	echo Python: $PYTHONLIST >/dev/stderr
+	echo Perllist: $PERLLIST > /dev/stderr 
+	echo Pythonlist: $PYTHONLIST >/dev/stderr
 	echo Engines: $ENGINES >/dev/stderr
+	echo "" > /dev/stderr
 fi
 
 
