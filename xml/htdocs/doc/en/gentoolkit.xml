@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoolkit.xml,v 1.19 2005/04/07 17:58:39 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoolkit.xml,v 1.20 2005/04/23 10:09:15 yoswink Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/gentoolkit.xml">
@@ -20,16 +20,22 @@
 <author title="Editor">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
-
-<!-- Licensed under GFDL -->
+<author title="Editor">
+  <mail link="karltk@gentoo.org">Karl Trygve</mail>
+</author>
+<author title="Editor">
+  <mail link="yoswink@gentoo.org">José Luis Rivero</mail>
+</author>
 
 <abstract>
 Gentoolkit is a suite of tools to ease the administration of a Gentoo system.
 This document covers the basics of some of the tools present in Gentoolkit.
 </abstract>
 
-<version>1.6</version>
-<date>2005-04-07</date>
+<!-- Licensed under GFDL -->
+
+<version>1.7</version>
+<date>2005-04-23</date>
 
 <chapter>
 <title>Introduction</title>
@@ -50,7 +56,9 @@ the Gentoo project and are included in the package
 As of now, there are two versions of gentoolkit: <c>app-portage/gentoolkit</c>
 and <c>app-portage/gentoolkit-dev</c>. While the former contains administration
 scripts, the latter contains scripts specific to help development on Gentoo.
-This document discusses gentoolkit only.
+If you are a developer, you can have your scripts included into 
+<c>gentoolkit-dev</c> by contacting the Gentoolkit maintainer. This document 
+discusses gentoolkit only. 
 </note>
 
 <p>
@@ -102,21 +110,253 @@ Any documentation that a program might have (other than man pages) is stored in
 <body>
 
 <p>
-<c>equery</c> is a tool that supports features that <c>epm</c> (and the
-deprecated <c>qpkg</c>) has but has its own set of features that make it
+<c>equery</c> is a tool that supports some features of <c>epm</c> (and the
+deprecated <c>qpkg</c>) together with its own set of features that make it
 really useful. <c>equery --help</c> gives you the full set of options. 
-<c>equery</c> will eventually replace <c>etcat</c> at some point of time.
+<c>equery</c> will eventually replace <c>etcat</c> in a future release of
+Gentoolkit.
 </p>
 
 <note>
 Not all features listed by <c>equery --help</c> have been implemented yet.
-Those that have not been, are mentioned clearly.
+Those that have not been, are mentioned clearly. You will also see that
+every command has a short option, e.g. <c>b</c> instead of <c>belongs</c>.
+</note>
+
+<note>
+Be aware that equery currently changes the format of the output if it is 
+sent through a pipe. The piped format is intended to be easier to parse by
+tools, but has turned out to be less popular and will probably change in 
+the future. If you write scripts that employ equery, you should be aware 
+of this.
 </note>
 
 </body>
 </section>
 <section>
-<title>Finding out Package Sizes</title>
+<title>Finding the Package That a File Came From</title>
+<body>
+
+<p>
+<c>equery</c> also provides the functionality of finding the package that a 
+file came from, using <c>belongs</c> command (or just <c>b</c>).
+</p>
+
+<pre caption="Finding the ebuild that installed a given file">
+# <i>equery belongs /usr/bin/xmms</i>
+[ Searching for file(s) /usr/bin/xmms in *... ]
+media-sound/xmms-1.2.10-r9 (/usr/bin/xmms)
+</pre>
+
+<p>
+By using the <c>-f</c> option, you may search for packages with files 
+matching any regular expression. The <c>-e</c> option is useful for 
+terminating your search immediately when a match is found.
+</p>
+
+</body>
+</section>
+<section>
+<title>Verifying Package Integrity</title>
+<body>
+
+<p>
+Sometimes it is useful to check a package's integrity. <c>equery</c> can 
+verify md5 sums as well as timestamps to indicate when a package might 
+have been corrupted, replaced, or removed.
+</p>
+
+<pre caption="OK package integrity">
+# <i>equery check gentoolkit</i>
+[ Checking app-portage/gentoolkit-0.2.0 ]
+ * 54 out of 54 files good
+</pre>
+
+<p>
+Please note that if you change configuration files after installation,
+these may be reported as "not good".
+</p>
+
+</body>
+</section>
+<section>
+<title>List of all packages depending on ...</title>
+<body>
+
+<p>
+<c>equery</c> is able to list all direct dependencies matching a package.
+The function we should use to do this is <c>depends</c> and it's as easy as: 
+</p>
+
+<pre caption="Looking for packages depending on pygtk">
+# <i>equery depends pygtk</i>
+[ Searching for packages depending on pygtk... ]
+app-office/dia-0.93
+dev-python/gnome-python-2.0.0-r1
+gnome-extra/gdesklets-core-0.26.2
+media-gfx/gimp-2.0.4
+x11-libs/vte-0.11.11-r1
+</pre>
+
+</body>
+</section>
+<section>
+<title>Dependency Graphs</title>
+<body>
+
+<p>
+<c>equery</c> is capable of giving us a dependency graph for a specified 
+package. The dependency graph gives a listing of all the packages that have 
+direct and indirect dependencies on the package in question.
+</p>
+
+<pre caption="Dependency Graph for cdrtools">
+# <i>equery depgraph cdrtools</i>
+Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
+`-- app-cdr/cdrtools-2.01_alpha37
+ `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
+  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
+   `-- sys-apps/baselayout-1.10.4
+    `-- sys-apps/sysvinit-2.85-r1
+     `-- sys-apps/gawk-3.1.3-r1
+      `-- sys-apps/util-linux-2.12-r4
+          `-- sys-apps/sed-4.0.9
+	      `-- sys-libs/ncurses-5.4-r4
+	          `-- sys-apps/pam-login-3.14
+	          `-- sys-libs/pam-0.77-r1
+                 `-- sys-libs/cracklib-2.7-r10
+               `-- sys-apps/miscfiles-1.3-r1
+              `-- app-arch/gzip-1.3.5-r1
+              `-- sys-apps/portage-2.0.50-r10
+</pre>
+
+<p>
+For example, while glibc is a direct dependency for cdrtools,linux-headers 
+are an indirect dependency. Note that the output also includes information 
+about virtual packages. In the example above, <c>cdrtools</c> is actually 
+written to require virtual/libc, not sys-libs/glibc, but on the given 
+system in the example sys-libs/glibc provides virtual/libc. 
+</p>
+
+</body>
+</section>
+<section>
+<title>Listing Files Belonging to an Ebuild</title>
+<body>
+
+<p>
+<c>equery</c> can list the files that belong to an installed ebuild. If I 
+don't know the files that Gentoolkit has installed on the system, I will
+use <c>equery</c> to show them.
+</p>
+
+<pre caption="Listing files">
+#<i> equery files gentoolkit</i>
+[ Searching for packages matching gentoolkit... ]
+app-portage/gentoolkit-0.2.0
+* Contents of app-portage/gentoolkit-0.2.0:
+/usr
+/usr/bin
+/usr/bin/equery
+/usr/bin/etcat
+/usr/bin/euse
+/usr/bin/glsa-check
+/usr/bin/qpkg
+/usr/bin/revdep-rebuild
+/usr/lib
+/usr/lib/gentoolkit
+/usr/lib/gentoolkit/pym
+/usr/lib/gentoolkit/pym/gentoolkit
+/usr/lib/gentoolkit/pym/gentoolkit/__init__.py
+/usr/lib/gentoolkit/pym/gentoolkit/gentoolkit.py
+/usr/lib/gentoolkit/pym/gentoolkit/pprinter.py
+/usr/lib/gentoolkit/pym/glsa.py
+/usr/sbin
+/usr/share
+/usr/share/doc
+/usr/share/doc/gentoolkit-0.2.0_pre10
+
+[...]
+</pre>
+
+<p>
+The command <c>files</c> of <c>equery</c> provide some options to modify 
+the output. You can look them all up in the <c>equery</c> man page.
+</p>
+
+</body>
+</section>
+<section>
+<title>Looking for packages that use a specific USE flag</title>
+<body>
+
+<p>
+If you want to find which packages on your system that make use of a specific 
+USE flag, <c>equery</c> has the function <c>hasuse</c>:
+</p>
+
+<pre caption="Searching packages which use mozilla USE flag">
+# <i>equery hasuse mozilla</i>
+[ Searching for USE flag mozilla in all categories among: ]
+ * installed packages
+[I--] [  ] dev-java/blackdown-jre-1.4.2.01 (1.4.2)
+[I--] [  ] mail-client/evolution-2.0.2 (2.0)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Listing Packages</title>
+<body>
+
+<p>
+<c>equery</c> has a power feature to list packages belonging to our system, 
+portage or even an overlay. Let's try this:
+</p>
+
+<pre caption="Listing packages with equery">
+# <i>equery list gentoolkit</i>
+[ Searching for package 'gentoolkit' in all categories among: ]
+ * installed packages
+[I--] [  ] app-portage/gentoolkit-0.2.0 (0)
+</pre>
+
+<p>
+The standard query will search our installed packages for the name given. 
+If found, the following info will be displayed: the package location between 
+the first square brackets (I for Installed packages, P for Portage, O for 
+Overlay), the possibles masks between the second (~ by keyword, -  by arch or 
+M hard masked), then the category and complete name and last of all, the slot 
+in which the package is stored.
+</p>
+
+<p>
+Another example, this time we are going to use the local options in order
+to look for packages in our portage tree and overlay.
+</p>
+
+<pre caption="Using local options with equery">
+# <i>equery list -p -o vim</i>
+[ Searching for package 'vim' in all categories among: ]
+ * installed packages
+[I--] [  ] app-editors/vim-6.3-r4 (0)
+ * Portage tree (/usr/portage)
+[-P-] [M~] app-editors/vim-7.0_alpha20050126 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-6.3-r2 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050126 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r3 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r4 (0)
+ * overlay tree (/opt/ebuilds)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding Package Sizes</title>
 <body>
 
 <p>
@@ -134,8 +374,8 @@ Since a package could have its files over a number of directories, the usual
 </pre>
 
 <p>
-As you can see, <c>equery</c> prints the total space used in kilobytes and also
-lists the total number of files the package has.
+As you can see, <c>equery</c> prints the total space used in kilobytes and 
+also lists the total number of files the package has.
 </p>
 
 </body>
@@ -145,9 +385,9 @@ lists the total number of files the package has.
 <body>
 
 <p>
-<c>equery</c> can be used to give us information about what USE flags are being
-used by a specific package. It tells us what our current USE flags are for a
-package and what USE flags are available for the package.
+<c>equery</c> can be used to give us information about what USE flags 
+are being used by a specific package. It also tells us what our current USE 
+flags are for a package and also what USE flags are available for the package.
 </p>
 
 <pre caption="Set and Unset USE Flags">
@@ -191,43 +431,6 @@ displays the full path to the ebuild.
 # <i>equery which cdrtools</i>
 /usr/portage/app-cdr/cdrtools/cdrtools-2.01_alpha37.ebuild
 </pre>
-
-</body>
-</section>
-<section>
-<title>Dependency Graphs</title>
-<body>
-
-<p>
-<c>equery</c> is capable of giving us a dependency graph for a specified package.
-The dependency graph gives a listing of all the packages that have direct and
-indirect dependencies on the package in question.
-</p>
-
-<pre caption="Dependency Graph for cdrtools">
-# <i>equery depgraph cdrtools</i>
-Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
-`-- app-cdr/cdrtools-2.01_alpha37
- `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
-  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
-   `-- sys-apps/baselayout-1.10.4
-    `-- sys-apps/sysvinit-2.85-r1
-     `-- sys-apps/gawk-3.1.3-r1
-      `-- sys-apps/util-linux-2.12-r4
-          `-- sys-apps/sed-4.0.9
-	      `-- sys-libs/ncurses-5.4-r4
-	          `-- sys-apps/pam-login-3.14
-	          `-- sys-libs/pam-0.77-r1
-                 `-- sys-libs/cracklib-2.7-r10
-               `-- sys-apps/miscfiles-1.3-r1
-              `-- app-arch/gzip-1.3.5-r1
-              `-- sys-apps/portage-2.0.50-r10
-</pre>
-
-<p>
-For example, while glibc may be a direct dependency for cdrtools, the linux-headers
-are an indirect dependency for cdrtools.
-</p>
 
 </body>
 </section>
