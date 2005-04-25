@@ -15,8 +15,8 @@ to use it.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.5</version>
-<date>April 6, 2005</date>
+<version>1.5.1</version>
+<date>April 21, 2005</date>
 
 <chapter>
 <title>Why GNAP ?</title>
@@ -73,16 +73,27 @@ to go through the whole Catalyst process to customize a specific LiveCD.
 <chapter>
 <title>How to use GNAP to build a custom network appliance LiveCD</title>
 <section>
-<title>Requirements</title>
+<title>Installation</title>
 <body>
 
 <p>
-You'll just need the
-<uri link="http://dev.gentoo.org/~koon/gnap/gnap-tools-current.tar.bz2">GNAP Tools</uri>, a 
-<uri link="http://dev.gentoo.org/~koon/gnap/gnap-core-current.tar">GNAP Core tarball</uri>
-and the app-cdr/cdrtools package installed.
-You don't need to be root to build a custom GNAP LiveCD.
+GNAP is now available through Portage. Simply emerge it using:
 </p>
+
+<pre caption="GNAP installation">
+# emerge gnap
+</pre>
+
+<warn>
+GNAP might only be available in "~x86". Adjust your
+<path>/etc/portage/package.keywords</path> file if needed.
+</warn>
+
+<note>
+This will fetch the GNAP core file, which is usually quite large (~14Mb). You
+can set the "minimal" USE flag if you don't want to download the GNAP core,
+but only install the GNAP tools.
+</note>
 
 </body>
 </section>
@@ -217,7 +228,7 @@ options and which features should be enabled on your customized LiveCD:
 <body>
 
 <p>
-Starting with version 1.3, it's possible to specify multiple overlay sources
+Starting with version 1.5, it's possible to specify multiple overlay sources
 (<c>-o</c> options). An overlay source can either be a directory or a tar.bz2 
 file containing a directory (called a conflet). Overlay directories and
 conflets contain files that will be used to replace default files on the
@@ -228,12 +239,9 @@ LiveCD root filesystem just after startup.
 Files commonly replaced include <path>etc/conf.d/hostname</path> (to set a
 host name), <path>etc/shadow</path> (to set a root password) or
 <path>etc/conf.d/net</path> (to set network configuration).
-</p>
-
-<note>
-In the <path>examples/</path> subdirectory of the GNAP tools, you will find
+In the <path>/usr/lib/gnap/examples/</path> directory, you will find
 typical overlay directories for various roles and example conflets.
-</note>
+</p>
 
 <note>
 The GNAP overlay script will ignore CVS/ subdirectories so you can easily
@@ -248,21 +256,26 @@ fat into tour GNAP system.
 <body>
 
 <p>
-You should use the <c>gnap_overlay</c> script from the gnap-tools package.
+When your overlay is ready, you should use <c>gnap_overlay</c> to produce
+a bootable ISO file (no need to be root).
 For example, to build an <path>myfirewall.iso</path> LiveCD using the
-<path>gnap-core-1.3.tar</path> GNAP Core and the 
 <path>overlays/myfirewall</path> overlay directory:
 </p>
 
 <pre caption="Example of gnap_overlay use">
-$ ./gnap_overlay -i myfirewall.iso -g gnap-core-1.3.tar -o overlays/myfirewall
+$ gnap_overlay -i myfirewall.iso -o overlays/myfirewall
 </pre>
 
-<note>
+<warn>
 In this example, the <path>overlays/myfirewall</path> directory should contain
 an <path>etc/overlay.conf</path> file, otherwise you should specify one using
 the <c>-c</c> option.
-</note>
+</warn>
+
+<p>
+You should read the <c>gnap_overlay</c> man page for information on other
+options.
+</p>
 
 <p>
 Then you should burn this ISO file and test. CD-RW is recommended :)
@@ -274,20 +287,26 @@ Then you should burn this ISO file and test. CD-RW is recommended :)
 <title>Generating and writing to hard disk, CF...</title>
 <body>
 
+<impo>
+Using <c>gnap_overlay</c> in disk mode requires root rights and that your
+current Linux kernel supports loopback (CONFIG_BLK_DEV_LOOP) and MSDOS
+filesystems (CONFIG_MSDOS_FS) compiled-in or as modules.
+</impo>
+
 <p>
-The <c>gnap_overlay</c> script from the gnap-tools package can also be used
+<c>gnap_overlay</c> can also be used
 to create a bootable hard drive (hard disk, DiskOnModule, CF card...) with
 the GNAP configuration on it. First the target must be properly set up. You
 will need to install a Master Boot Record on it :
 </p>
 
 <pre caption="Creation a MBR on device /dev/sda">
-# dd if=mbr/mbr.bin of=/dev/sda bs=512 count=1
+# dd if=/usr/lib/gnap/mbr/mbr.bin of=/dev/sda bs=512 count=1
 </pre>
 
 <p>
 You must also create an active partition on the device, using fdisk. Then
-you can call (as root) gnap_overlay to write to the disk (<c>-d</c> option).
+you should call (as root) gnap_overlay to write to the disk (<c>-d</c> option).
 You'll need to know the name of the partition to write to, as seen by the
 host you use to write to the device. You'll also need to know the name of
 the partition as it will be seen in the GNAP system as it boots on the device
@@ -296,7 +315,7 @@ and by a Soekris system as /dev/hda1:
 </p>
 
 <pre caption="Writing GNAP to the disk">
-# ./gnap_overlay -d /dev/sda1 -g gnap-core-1.3.tar -o overlays/myfirewall -r hda1 -m
+# gnap_overlay -d /dev/sda1 -r hda1 -o overlays/myfirewall -m
 </pre>
 
 <note>
@@ -314,35 +333,41 @@ can wear the device.
 <section>
 <body>
 
-<warn>
+<impo>
 Only advanced users that want to change the GNAP core contents (or rebuild
 the standard core with a recent portage snapshot) should read this chapter.
 Rebuilding a core takes a lot of time and you may run into problems brought
 by recently added package versions.
-</warn>
+You'll need root rights (needed by Catalyst) to build a GNAP Core.
+The kernel on the building host must support loopback devices
+(CONFIG_BLK_DEV_LOOP) and ISO9660 filesystems (CONFIG_ISO9660_FS)
+compiled-in or as modules.
+</impo>
 
 </body>
 </section>
 <section>
-<title>Prerequisites</title>
+<title>Installation</title>
 <body>
 
 <p>
-You'll need root rights (needed by Catalyst) to build a GNAP Core. You'll also
-need to have the following packages installed:
+The GNAP development package is now available through Portage:
 </p>
 
-<ul>
-<li>dev-util/catalyst (tested with version 1.1.8)</li>
-<li>sys-fs/squashfs-tools (tested with version 2.0)</li>
-</ul>
+<pre caption="GNAP development package installation">
+# emerge gnap-dev
+</pre>
 
-<p>
-Finally you'll need an uclibc/hardened stage2 tarball as seed stage.
-The current one is named <path>stage2-x86-uclibc-hardened-2004.3.tar.bz2</path>
-and it is available for download
-<uri link="http://gentoo.osuosl.org/experimental/x86/embedded/stages/">here</uri>.
-</p>
+<warn>
+gnap-dev might only be available in "~x86". Adjust your
+<path>/etc/portage/package.keywords</path> file if needed.
+</warn>
+
+<note>
+This will fetch a seed stage2 file, which is usually quite large (~18Mb). You
+can set the "minimal" USE flag if you don't want to download the seed stage,
+but only install the GNAP development environment.
+</note>
 
 </body>
 </section>
@@ -351,22 +376,19 @@ and it is available for download
 <body>
 
 <p>
-The <uri link="http://dev.gentoo.org/~koon/gnap/gnap-sources-current.tar.bz2">GNAP Sources</uri>
-contains the <c>gnap_make</c> build script, Catalyst configuration
-files, the portage configuration and the kernel configuration used for
-the current version of GNAP. 
-</p>
-
-<p>
-You should use <c>gnap_make</c> to call all
-Catalyst stages and the tarball creation (<c>-t all</c>), with the
-<c>-s</c> parameter to designate the stage2 tarball seed, and the <c>-e</c>
-parameter designating the full path to the specs directory:
+You should use <c>gnap_make</c> to call all Catalyst stages and the tarball
+creation, using the standard specs directory:
 </p>
 
 <pre caption="Building a new GNAP Core tarball in one step">
-# ./gnap_make -t all -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 -e /root/gnap-1.5/specs
+# gnap_make -t all
 </pre>
+
+<note>
+By default, it will use the seed stage at
+<path>/usr/lib/gnap/stage2seed.tar.bz2</path>, as installed by the ebuild.
+You can use the <c>-s</c> option to change that default location.
+</note>
 
 <p>
 This will take a <e>very</e> long time to complete, and should produce
@@ -381,8 +403,9 @@ snapshot, you should copy the portage-YYYYMMDD.tar.bz2 file to the
 </p>
 
 <pre caption="Building from a 20040401 snapshot">
-# ./gnap_make -t all -s ../stage2-x86-uclibc-hardened-2004.3.tar.bz2 -p 20040401 -e /root/gnap-1.5/specs
+# gnap_make -t all -p 20040401
 </pre>
+
 <p>
 In case of failure, or if you just want to re-run some final stages, you might
 want to specify which Catalyst stages gnap_make should call. You can do this
@@ -393,8 +416,13 @@ names (<c>snapshot</c>, <c>stage3</c>, <c>livecd-stage1</c>,
 </p>
 
 <pre caption="Calling only the two final stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
-# ./gnap_make -p 20041008 -v 20041012 -t livecd-stage2 -t tarball -e /root/gnap-1.5/specs
+# gnap_make -p 20041008 -v 20041012 -t livecd-stage2 -t tarball
 </pre>
+
+<p>
+You should read the <c>gnap_make</c> man page for information on other
+options.
+</p>
 
 </body>
 </section>
@@ -403,9 +431,15 @@ names (<c>snapshot</c>, <c>stage3</c>, <c>livecd-stage1</c>,
 <body>
 
 <p>
+To customize your GNAP core, you should use your own specs directory.
+To do that, make a copy of the specs directory from
+<path>/usr/lib/gnap/specs</path> and modify the files in it.
+</p>
+
+<p>
 You may want to change the kernel sources used in the GNAP Core (you may even
-have to, if the configured sources are no longer in portage). To do that, you
-should edit the <path>specs/common.conf</path> file to point to the right
+have to, if the configured sources are no longer in portage). You
+should modify the <path>specs/common.conf</path> file to point to the right
 sources name and change the <path>specs/kernel.config</path> kernel
 configuration file to use.
 </p>
@@ -422,6 +456,15 @@ To add new software packages, you should add them to the
 you should add them to the <c>livecd/rcadd</c> option of the
 <path>specs/livecd.conf</path> file.
 </p>
+
+<p>
+Finally, you call <c>gnap_make</c> with the <c>-e</c> option to specify the
+full path to the alternative specs directory:
+</p>
+
+<pre caption="Building from a /home/foo/myspecs specs directory">
+# gnap_make -t all -e /home/foo/myspecs
+</pre>
 
 </body>
 </section>
