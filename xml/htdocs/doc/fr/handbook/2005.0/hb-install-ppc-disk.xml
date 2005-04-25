@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/2005.0/hb-install-ppc-disk.xml,v 1.1 2005/03/28 14:14:24 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/2005.0/hb-install-ppc-disk.xml,v 1.2 2005/04/25 11:53:13 neysx Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2004-12-12</date>
+<version>4.00</version>
+<date>2005-03-19</date>
 
 <section>
 <title>Introduction aux périphériques de bloc</title>
@@ -30,7 +30,7 @@ systèmes de fichiers pour votre installation de Gentoo Linux.
 Pour commencer, nous allons présenter les <e>périphériques de bloc</e>.  Le
 plus célèbre étant certainement celui qui représente le premier disque IDE dans
 un système Linux, <path>/dev/hda</path>.  Si votre système utilise des disques
-SCSI, alors votre premier disque dur devrait être <path>/dev/sda</path>.
+SCSI ou SATA, alors votre premier disque dur devrait être <path>/dev/sda</path>.
 </p>
 
 <p>
@@ -81,13 +81,15 @@ Pour ppc&nbsp;:
   <th>Partition NewWorld</th>
   <th>Partition OldWorld</th>
   <th>Partition Pegasos</th>
+  <th>Partition RS/6000</th>
   <th>Système de fichiers</th>
   <th>Taille</th>
   <th>Description</th>
 </tr>
 <tr>
   <ti><path>/dev/hda1</path></ti>
-  <ti>/dev/hda1</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Pas utilisable)</ti>
   <ti>(Pas utilisable)</ti>
   <ti>(Table des partitions)</ti>
   <ti>32k</ti>
@@ -97,25 +99,46 @@ Pour ppc&nbsp;:
   <ti><path>/dev/hda2</path></ti>
   <ti>(Pas nécessaire)</ti>
   <ti>(Pas utilisable)</ti>
+  <ti>(Pas utilisable)</ti>
   <ti>(bootstrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
 </tr>
 <tr>
+  <ti>(Pas utilisable)</ti>
+  <ti>(Pas utilisable)</ti>
+  <ti>(Pas utilisable)</ti>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>(PReP Boot)</ti>
+  <ti>800k</ti>
+  <ti>Type 0x41</ti>
+</tr>
+<tr>
+  <ti>(Pas nécessaire)</ti>
+  <ti>(Pas nécessaire)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Pas nécessaire)</ti>
+  <ti>ext2</ti>
+  <ti>32MB</ti>
+  <ti>Partition de démarrage</ti>
+</tr>
+<tr>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/hda2</path></ti>
-  <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/sda2</path></ti>
   <ti>(swap)</ti>
   <ti>512M</ti>
-  <ti>Partition de mémoire virtuelle</ti>
+  <ti>Partition de mémoire virtuelle, type 0x82</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
-  <ti>ext3</ti>
+  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3, xfs</ti>
   <ti>Reste du disque</ti>
-  <ti>Partition principale</ti>
+  <ti>Partition principale, type 0x83</ti>
 </tr>
 </table>
 
@@ -127,6 +150,17 @@ ni MacOS X ni Linux ne les utilisent. Vous aurez sans doute besoin d'utiliser
 <c>parted</c>, car <c>mac-fdisk</c> ne sait pas encore supprimer de telles
 partitions.
 </note>
+
+<warn>
+<c>parted</c> est capable de redimensionner des partitions. le CD
+d'installation contient des correctifs qui permettent de redimensionner les
+systèmes de fichiers HFS+. Malheureusement, il n'est pas possible de
+redimensionner les systèmes de fichiers HFS+ journalisés même si la
+journalisation a été désactivée sous Mac OS X. Ce que vous ferez en
+redimensionnant ces partitions avec parted sera fait à vos propres
+risques&nbsp;! Assurez-vous d'avoir une sauvegarde de vos données quelque
+part&nbsp;!
+</warn>
 
 <p>
 Si vous êtes intéressé de savoir la taille qu'une partition doit avoir, ou même
@@ -163,18 +197,18 @@ Séparer les partitions ou volumes procure les avantages suivants&nbsp;:
 
 <ul>
 <li>
-  Vous pouvez choisir le système de fichiers le plus performant pour chaque partition
-  ou volume.
+  Vous pouvez choisir le système de fichiers le plus performant pour chaque
+  partition ou volume.
 </li>
 <li>
   Votre système entier ne risque pas d'arriver à court d'espace disque libre si
   un outil défectueux sature l'espace disque d'une partition ou d'un volume.
 </li>
 <li>
-  Si nécessaire, les vérifications des systèmes de fichiers durent moins longtemps,
-  vu que de multiples vérifications peuvent être faites en parallèle (quoique cet
-  avantage est plus important avec plusieurs disques qu'avec plusieurs
-  partitions).
+  Si nécessaire, les vérifications des systèmes de fichiers durent moins
+  longtemps, vu que de multiples vérifications peuvent être faites en parallèle
+  (quoique cet avantage est plus important avec plusieurs disques qu'avec
+  plusieurs partitions).
 </li>
 <li>
   La sécurité peut être améliorée en montant certaines partitions ou volumes
@@ -194,7 +228,7 @@ beaucoup d'espace libre sur une partition et plus du tout sur une autre.  Notez
 </subsection>
 </section>
 <section id="fdisk">
-<title>Partitionner votre disque avec mac-fdisk (Apple/IBM)</title>
+<title>Partitionner votre disque avec mac-fdisk (Apple)</title>
 <body>
 
 <p>
@@ -221,9 +255,9 @@ numéro de votre première partition libre suivi de <c>p</c>, par exemple,
 </p>
 
 <note>
-Cette partition <e>n'est pas</e> une partition de démarrage. Elle n'est
+Cette partition <e>n'est pas</e> une partition <path>/boot</path>. Elle n'est
 absolument pas utilisée par Linux. N'y placez aucun système de fichiers et ne
-la montez jamais. Une machine PPC n'a pas besoin de partition séparée pour
+la montez jamais. Une machine Apple n'a pas besoin de partition séparée pour
 <path>/boot</path>.
 </note>
 
@@ -269,11 +303,11 @@ Maintenant que vos partitions sont créées, vous pouvez continuer avec
 <body>
 
 <p>
-<c>parted</c>, pour «&nbsp;Partition Editor&nbsp;», peut à présent manipuler les
-partitions HFS+ utilisées par Mac OS et Mac OS X. Avec cet outil, vous pouvez
-diminuer la taille de vos partitions Mac et créer de l'espace pour vos
-partitions Linux. Néanmoins, l'exemple ci-dessous décrit le partitionnement pour
-les machines Pegasos seulement.
+<c>parted</c>, pour «&nbsp;Partition Editor&nbsp;», peut à présent manipuler
+les partitions HFS+ utilisées par Mac OS et Mac OS X. Avec cet outil, vous
+pouvez redimensionner vos partitions Mac et créer de l'espace pour vos
+partitions Linux. Néanmoins, l'exemple ci-dessous décrit uniquement le
+partitionnement pour les machines Pegasos.
 </p>
 
 <p>
@@ -291,21 +325,21 @@ créer un nouveau «&nbsp;disklabel&nbsp;».
 
 <p>
 Vous pouvez utiliser <c>print</c> à tout moment pour afficher la table des
-partitions qui est en mémoire. Vos modifications ne sont enregistrées que quand
-vous quittez l'application. Pour ne rien modifier sur votre disque, faites
-<c>Ctrl-c</c> pour quitter sans sauver.
+partitions qui est en mémoire. Si à un moment ou à un autre vous vous rendez
+compte que vous avez fait une erreur ou que vous voulez faire autrement vous
+pouvez taper <c>Ctrl-c</c> pour quitter sans sauver.
 </p>
 
 <p>
 Si avez l'intention d'installer aussi MorphOS sur votre Pegasos, créez un
 système de fichiers affs1 nommé «&nbsp;BI0&nbsp;» (BI zéro) au début du disque.
-50&nbsp;Mo devraient suffire pour votre noyau MorphOS. Sur une machine Pegasos I
+32&nbsp;Mo devraient suffire pour votre noyau MorphOS. Sur une machine Pegasos I
 ou si vous voulez utiliser reiserfs, xfs ou jsf, vous devrez aussi installer votre
 noyau Linux sur cette partition. Les machines Pegasos II savent démarrer depuis
-des partitions ext2/ext3. Pour créer une partition, faites <c>mkpart primary
-affs1 START END</c> et remplacez <c>START</c> et <c>END</c> par un intervalle
-en méga-octets. Par exemple, <c>5 55</c> crée une partition de 50&nbsp;Mo qui
-commence au cinquième Mo.
+des partitions ext2/ext3 ou affs1. Pour créer une partition, faites <c>mkpart
+primary affs1 START END</c> et remplacez <c>START</c> et <c>END</c> par un
+intervalle en méga-octets. Par exemple, <c>0 32</c> crée une partition de
+32&nbsp;Mo qui commence à 0Mo et finit à 32Mo.
 </p>
 
 <p>
@@ -431,15 +465,15 @@ système de fichiers fournit ses propres outils&nbsp;:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
-  <ti><c>mkreiserfs</c></ti>
+  <ti><c>mkfs.reiserfs</c></ti>
 </tr>
 <tr>
   <ti>xfs</ti>
@@ -453,7 +487,7 @@ dans notre exemple) en ext3, nous utiliserons&nbsp;:
 </p>
 
 <pre caption="Application d'un système de fichiers sur une partition">
-# <i>mke2fs -j /dev/hda4</i>
+# <i>mkfs.ext3 /dev/hda4</i>
 </pre>
 
 <p>
@@ -509,9 +543,17 @@ vous avez créées. Par exemple, pour créer le point de montage et monter la
 partition racine&nbsp;:
 </p>
 
+<warn>
+À cause d'un bogue dans le paquet e2fsprogs, vous devez utiliser de manière
+explicite l'option <c>mount -t ext3</c> si vous utilisez un système de fichiers
+ext3.
+</warn>
+
 <pre caption="Monter la future partition racine">
 # <i>mkdir /mnt/gentoo</i>
 # <i>mount /dev/hda4 /mnt/gentoo</i>
+<comment>(Pour les partitions ext3 :)</comment>
+# <i>mount -t ext3 /dev/hda4 /mnt/gentoo</i>
 </pre>
 
 <note>
