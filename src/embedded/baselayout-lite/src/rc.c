@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 	/* FIXME there's got to be a better way */
 	system("mount -o remount /");
 	system("rm -rf /var/lib/init.d/started/*");
+	system("mount -o remount,ro /");
 	
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		FILE *f1;
