@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.97 2005/04/17 05:57:11 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.98 2005/04/28 03:56:08 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -65,6 +65,7 @@ class ArchitectureTemplate:
                                  (self.set_services, "Setting up services for startup"),
                                  (self.set_users, "Add additional users."),
                                  (self.install_packages, "Installing additional packages."),
+                                 (self.run_post_install_script, "Running custom post-install script").
                                  (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
                                 ]
 
@@ -360,7 +361,6 @@ class ArchitectureTemplate:
 	##
 	# This will get/update the portage tree.  If you want to snapshot or mount /usr/portage use "custom".
 	def install_portage_tree(self):
-				
 		# Check the type of portage tree fetching we'll do
 		# If it is custom, follow the path to the custom tarball and unpack it
 		if self._install_profile.get_portage_tree_sync_type() == "custom":
@@ -955,3 +955,12 @@ class ArchitectureTemplate:
 	def install_bootloader(self):
 		"THIS FUNCTION MUST BE DONE BY THE INDIVIDUAL ARCH"
 		pass
+
+	def run_post_install_script(self):
+		if self._install_profile.get_post_install_script_uri():
+			try:
+				GLIUtility.get_uri(self._install_profile.get_post_install_script_uri(), self._chroot_dir + "/tmp/post-install")
+				GLIUtility.spawn("chmod a+x /tmp/post-install && /tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			except:
+				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
+			

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.43 2005/04/14 18:35:38 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.44 2005/04/28 03:56:08 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -64,6 +64,7 @@ class InstallProfile:
 		parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
 		parser.addHandler('gli-profile/services', self.set_services)
 		parser.addHandler('gli-profile/grp-install', self.set_grp_install)
+		parser.addHandler('gli-profile/post-install-script-uri', self.set_post_install_script_uri)
 		
 		self._parser = parser
 
@@ -104,6 +105,7 @@ class InstallProfile:
 		self._services = ()
 		self._mta = ""
 		self._grp_install = False
+		self._post_install_script_uri = ""
 
 	##
 	# Brief description of function
@@ -836,28 +838,29 @@ class InstallProfile:
 		"""
 		import xml.dom.minidom
 		xmldoc = ""
-		xmltab = {	'cron-daemon':		self.get_cron_daemon_pkg,
-				'logging-daemon':	self.get_logging_daemon_pkg,
-				'boot-loader_mbr':	self.get_boot_loader_mbr,
-				'boot-loader':		self.get_boot_loader_pkg,
-				'kernel-config':	self.get_kernel_config_uri,
-				'kernel-initrd':	self.get_kernel_initrd,
+		xmltab = {	'cron-daemon':			self.get_cron_daemon_pkg,
+				'logging-daemon':		self.get_logging_daemon_pkg,
+				'boot-loader_mbr':		self.get_boot_loader_mbr,
+				'boot-loader':			self.get_boot_loader_pkg,
+				'kernel-config':		self.get_kernel_config_uri,
+				'kernel-initrd':		self.get_kernel_initrd,
 				'bootloader-kernel-args':	self.get_bootloader_kernel_args,
-				'kernel-bootsplash':	self.get_kernel_bootsplash,
-				'kernel-source':	self.get_kernel_source_pkg,
-				'root-pass-hash':	self.get_root_pass_hash,
-				'time-zone':		self.get_time_zone,
-				'stage-tarball':	self.get_stage_tarball_uri,
-				'install-stage':	self.get_install_stage,
-				'portage-tree-sync':	self.get_portage_tree_sync_type,
-				'portage-snapshot':	self.get_portage_tree_snapshot_uri,
-				'domainname':		self.get_domainname,
-				'hostname':		self.get_hostname,
-				'nisdomainname':	self.get_nisdomainname,
-				'install-rp-pppoe':	self.get_install_rp_pppoe,
-				'install-pcmcia-cs':	self.get_install_pcmcia_cs,
-				'mta':			self.get_mta,
-				'grp-install':	self.get_grp_install,
+				'kernel-bootsplash':		self.get_kernel_bootsplash,
+				'kernel-source':		self.get_kernel_source_pkg,
+				'root-pass-hash':		self.get_root_pass_hash,
+				'time-zone':			self.get_time_zone,
+				'stage-tarball':		self.get_stage_tarball_uri,
+				'install-stage':		self.get_install_stage,
+				'portage-tree-sync':		self.get_portage_tree_sync_type,
+				'portage-snapshot':		self.get_portage_tree_snapshot_uri,
+				'domainname':			self.get_domainname,
+				'hostname':			self.get_hostname,
+				'nisdomainname':		self.get_nisdomainname,
+				'install-rp-pppoe':		self.get_install_rp_pppoe,
+				'install-pcmcia-cs':		self.get_install_pcmcia_cs,
+				'mta':				self.get_mta,
+				'grp-install':			self.get_grp_install,
+				'post-install-script-uri':	self.get_post_install_script_uri,
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
@@ -1381,3 +1384,16 @@ class InstallProfile:
 				raise GLIException("GRPInstall", 'fatal', 'set_grp_install',  "Input must be type 'bool'!")
 		
 		self._grp_install = grp_install
+
+	##
+	# Returns the URI for the post install script
+	def get_post_install_script_uri(self):
+		return self._post_install_script_uri
+
+	##
+	# Sets the URI for the post install script
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param post_install_script_uri Parameter description
+	# @param xml_attr Parameter description
+	def set_post_install_script_uri(self, xml_path, post_install_script_uri, xml_attr):
+		self._post_install_script_uri = post_install_script_uri
