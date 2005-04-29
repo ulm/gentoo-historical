@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.101 2005/04/29 06:25:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.102 2005/04/29 15:59:17 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -120,7 +120,7 @@ class ArchitectureTemplate:
 	# Private Function.  Will return a list of packages to be emerged for a given command.  Not yet used.
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
-		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True).split("\n")
+		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 
 	##
 	# Private Function.  Will emerge a given package in the chroot environment.

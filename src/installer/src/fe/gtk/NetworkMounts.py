@@ -45,7 +45,7 @@ only NFS is supported.
 			self.treeview.append_column(column)
 			col_num += 1
 		self.treewindow = gtk.ScrolledWindow()
-		self.treewindow.set_size_request(-1, 170)
+		self.treewindow.set_size_request(-1, 130)
 		self.treewindow.set_shadow_type(gtk.SHADOW_IN)
 		self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		self.treewindow.add(self.treeview)
