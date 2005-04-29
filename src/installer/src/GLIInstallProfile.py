@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.45 2005/04/29 05:22:36 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.46 2005/04/29 06:25:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -561,7 +561,7 @@ class InstallProfile:
 		if type(portage_tree_sync) != str:
 			raise GLIException("PortageTreeSyncError", 'fatal', 'set_portage_tree_sync_type',  "Must be a string!")
 
-		if string.lower(portage_tree_sync) not in ('sync', 'webrsync', 'custom'):
+		if string.lower(portage_tree_sync) not in ('sync', 'webrsync', 'custom', 'snapshot', 'none'):
 			raise GLIException("PortageTreeSyncError", 'fatal', 'set_portage_tree_sync_type',  "Invalid Input!")
 
 		self._portage_tree_sync_type = string.lower(portage_tree_sync)

@@ -34,18 +34,27 @@ a brief description beside it.
 		hbox.pack_start(self.radio_syncs['webrsync'], expand=False, fill=False, padding=5)
 		hbox.pack_start(gtk.Label("This will download a portage snapshot from a Gentoo mirror and sync it locally. Use\nthis option if you are behind a nazi-ish firewall that blocks outgoing rsync traffic"), expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=20)
-		self.radio_syncs['custom'] = gtk.RadioButton(self.radio_syncs['sync'], "None")
-		self.radio_syncs['custom'].set_name("custom")
-		self.radio_syncs['custom'].connect("toggled", self.stage_selected, "custom")
-		self.radio_syncs['custom'].set_size_request(100, -1)
+		self.radio_syncs['snapshot'] = gtk.RadioButton(self.radio_syncs['sync'], "Snapshot")
+		self.radio_syncs['snapshot'].set_name("snapshot")
+		self.radio_syncs['snapshot'].connect("toggled", self.stage_selected, "snapshot")
+		self.radio_syncs['snapshot'].set_size_request(100, -1)
 		hbox = gtk.HBox(False, 0)
-		hbox.pack_start(self.radio_syncs['custom'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("Use this option to bypass syncing the tree. If you want to NFS mount the portage tree,\nuse this option"), expand=False, fill=False, padding=20)
+		hbox.pack_start(self.radio_syncs['snapshot'], expand=False, fill=False, padding=5)
+		hbox.pack_start(gtk.Label("Use this option to if you have a portage snapshot."), expand=False, fill=False, padding=20)
+		vert.pack_start(hbox, expand=False, fill=False, padding=20)
+		self.radio_syncs['none'] = gtk.RadioButton(self.radio_syncs['sync'], "None")
+		self.radio_syncs['none'].set_name("none")
+		self.radio_syncs['none'].connect("toggled", self.stage_selected, "none")
+		self.radio_syncs['none'].set_size_request(100, -1)
+		hbox = gtk.HBox(False, 0)
+		hbox.pack_start(self.radio_syncs['none'], expand=False, fill=False, padding=5)
+		hbox.pack_start(gtk.Label("This option leaves /usr/portage untouched. Use this if\nyou are NFS mounting the tree."), expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=20)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Portage snapshot URI:"), expand=False, fill=False, padding=5)
 		self.entry_portage_snapshot_uri = gtk.Entry()
 		self.entry_portage_snapshot_uri.set_width_chars(50)
+		self.entry_portage_snapshot_uri.set_sensitive(False)
 		hbox.pack_start(self.entry_portage_snapshot_uri, expand=False, fill=False, padding=10)
 		vert.pack_start(hbox, expand=False, fill=False, padding=40)
 
@@ -53,6 +62,10 @@ a brief description beside it.
 
 	def stage_selected(self, widget, data=None):
 		self.active_selection = data
+		if data == "snapshot":
+			self.entry_portage_snapshot_uri.set_sensitive(True)
+		else:
+			self.entry_portage_snapshot_uri.set_sensitive(False)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.100 2005/04/29 03:14:27 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.101 2005/04/29 06:25:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -363,7 +363,11 @@ class ArchitectureTemplate:
 	def install_portage_tree(self):
 		# Check the type of portage tree fetching we'll do
 		# If it is custom, follow the path to the custom tarball and unpack it
-		if self._install_profile.get_portage_tree_sync_type() == "custom":
+
+		# This is a hack to copy the LiveCD's rsync into the chroot since it has the sigmask patch
+		GLIUtility.spawn("cp /usr/bin/rsync " + self._chroot_dir + "/usr/bin/rsync")
+
+		if self._install_profile.get_portage_tree_sync_type() == "snapshot" or self._install_profile.get_portage_tree_sync_type() == "custom": # Until this is finalized
 		
 			# Get portage tree info
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
