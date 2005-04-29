@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.99 2005/04/29 02:20:05 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.100 2005/04/29 03:14:27 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -65,7 +65,7 @@ class ArchitectureTemplate:
                                  (self.set_services, "Setting up services for startup"),
                                  (self.set_users, "Add additional users."),
                                  (self.install_packages, "Installing additional packages."),
-                                 (self.run_post_install_script, "Running custom post-install script").
+                                 (self.run_post_install_script, "Running custom post-install script"),
                                  (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
                                 ]
 
