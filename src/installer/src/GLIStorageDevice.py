@@ -1,5 +1,4 @@
-import commands, string, re, os, parted
-#from decimal import Decimal
+import commands, string, os, parted
 
 MEGABYTE = 1024 * 1024
 
@@ -322,7 +321,6 @@ class Device:
 			if tmppart.is_extended():
 				for part_log in parts:
 					if part_log < 4.9: continue
-					tmppart_log = self._partitions[part_log]
 					partlist.append(part_log)
 		return partlist
 
@@ -389,7 +387,7 @@ class Device:
 	# @param message Error message
 	def _error(self, message):
 		"Raises an exception"
-		raise "DeviceObjectError", message
+		raise GLIException("DeviceObjectError", 'fatal', 'Device', message)
 		
 	##
 	# Utility function for running a command and returning it's output as a list
@@ -516,7 +514,6 @@ class Partition:
 		if not self.is_extended():
 			return None
 		logicals = []
-		start = self._start
 		parts = self._device._partitions.keys()
 		parts.sort()
 		for part in parts:
@@ -701,7 +698,7 @@ class Partition:
 	# Utility function to raise an exception
 	# @param message Error message
 	def _error(self, message):
-		raise "PartitionObjectError", message
+		raise GLIException("PartitionObjectError", 'fatal', 'Partition', message)
 
 ##
 # Returns a list of detected partitionable devices
@@ -739,8 +736,8 @@ def detect_devices():
 		if not os.path.exists(device):
 			device = None
 			for path, dirs, files in os.walk("/dev"):
-				for file in files:
-					full_file = os.path.join(path, file)
+				for d_file in files:
+					full_file = os.path.join(path, d_file)
 					if not os.path.exists(full_file):
 						continue
 					statres = os.stat(full_file)
