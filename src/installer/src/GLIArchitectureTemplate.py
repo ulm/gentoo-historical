@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.98 2005/04/28 03:56:08 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.99 2005/04/29 02:20:05 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -900,6 +900,14 @@ class ArchitectureTemplate:
 				# If there is more than one group
 				elif len(groups) > 1:
 					options.append('-G "' + string.join(groups, ",") + '"')
+					
+				# Attempt to add the group (will return success when group exists)
+				for group in groups:
+					# Add the user
+					exitstatus = GLIUtility.spawn('groupadd -f ' + group, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True, display_on_tty8=True)
+					if not GLIUtility.exitsuccess(exitstatus):
+						self._logger.log("ERROR! : Failure to add group " + group+" and it wasn't that the group already exists!")
+					
 			
 			# If a shell is specified
 			if shell:
@@ -963,4 +971,3 @@ class ArchitectureTemplate:
 				GLIUtility.spawn("chmod a+x /tmp/post-install && /tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
-			
