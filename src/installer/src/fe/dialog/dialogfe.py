@@ -4,6 +4,7 @@ import sys
 sys.path.append("../..")
 
 import dialog
+import GLIException
 import GLIInstallProfile
 import GLIClientConfiguration
 import GLIClientController
@@ -600,8 +601,12 @@ def set_root_mount_point():
 	if code == DLG_OK: client_profile.set_root_mount_point(None, rootmountpoint, None)
 
 def set_client_networking():
-	network_data = None
-
+	network_type = ""
+	interface = ""
+	ip_address = ""
+	broadcast = ""
+	netmask = ""
+	gateway = ""
 	code, interface = d.inputbox("Enter the interface (NIC) you would like to use for installation (e.g. eth0):")
 	if code != DLG_OK: return
 
@@ -621,14 +626,18 @@ def set_client_networking():
 		if code != DLG_OK: return
 		code, gateway = d.inputbox("Enter your default gateway:")
 		if code != DLG_OK: return
-		network_data = (interface, ip_address, broadcast, netmask, gateway)
 		network_type = 'static'
 	else:
-		network_data = (interface, None, None, None, None)
 		network_type = 'dhcp'
 
 	try:
-		client_profile.set_network_type(None, network_type, network_data)
+		client_profile.set_network_type(None, network_type, None)
+		client_profile.set_network_interface(None, interface, None)
+		if not network_type == 'dhcp':
+			client_profile.set_network_ip(None, ip_address, None)
+			client_profile.set_network_broadcast(None, broadcast, None)
+			client_profile.set_network_netmask(None, netmask, None)
+			client_profile.set_network_gateway(None, gateway, None)
 	except GLIException, e:
 		d.msgbox(e)
 

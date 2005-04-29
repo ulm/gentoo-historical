@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.23 2005/04/15 06:26:43 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.24 2005/04/29 06:23:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -63,7 +63,11 @@ class ClientConfiguration:
 		# Initialize some variables so we never reference a variable that never exists.
 		self._dns_servers = ()
 		self._network_type = None
-		self._network_data = ()
+		self._network_interface = ""
+		self._network_ip = ""
+		self._network_broadcast = ""
+		self._network_netmask = ""
+		self._network_gateway = ""
 		self._enable_ssh = True
 		self._root_passwd = ""
 		self._interactive = True
@@ -79,7 +83,12 @@ class ClientConfiguration:
 		parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
 		parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
 		parser.addHandler('client-configuration/log-file', self.set_log_file)
-		parser.addHandler('client-configuration/network', self.set_network_type)
+		parser.addHandler('client-configuration/network-interface', self.set_network_interface)
+		parser.addHandler('client-configuration/network-ip', self.set_network_ip)
+		parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
+		parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
+		parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
+		parser.addHandler('client-configuration/network-type', self.set_network_type)
 		parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
 		parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
 		parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
@@ -208,90 +217,105 @@ class ClientConfiguration:
 	###############################################################
 
 	##
+	# Sets the network interface configuration info for the livecd environment
+	# @param xml_path not used here.
+	# @param interface the interface to talk over
+	# @param xml_attr= None
+	def set_network_interface(self, xml_path, interface, xml_attr=None):
+		if not GLIUtility.is_eth_device(interface):
+			raise GLIException("InterfaceError", 'fatal', 'set_network_interface', "Interface " + interface + " must be a valid device!")
+		self._network_interface = interface
+	
+	##
+	# Returns the network interface
+	def get_network_interface(self):
+		return self._network_interface
+		
+	##
+	# Sets the network ip address for the livecd environment
+	# @param xml_path not used here.
+	# @param ip the ip address
+	# @param xml_attr= None
+	def set_network_ip(self, xml_path, ip, xml_attr=None):
+		if not GLIUtility.is_ip(ip):
+			raise GLIException("IPAddressError", 'fatal', 'set_network_ip', 'The specified IP ' + ip + ' is not a valid IP Address!')
+		self._network_ip = ip
+	
+	##
+	# Returns the network ip address
+	def get_network_ip(self):
+		return self._network_ip
+		
+	##
+	# Sets the network broadcast address for the livecd environment
+	# @param xml_path not used here.
+	# @param broadcast the network broadcast address
+	# @param xml_attr= None
+	def set_network_broadcast(self, xml_path, broadcast, xml_attr=None):
+		if not GLIUtility.is_ip(broadcast):
+			raise GLIException("IPAddressError", 'fatal','set_network_broadcast', 'The specified broadcast is not a valid IP Address!')
+		else:
+			# Need to guess the broadcast... just in case (probably need the gateway..)
+			pass
+		self._network_broadcast = broadcast
+	
+	##
+	# Returns the network broadcast address
+	def get_network_broadcast(self):
+		return self._network_broadcast
+		
+	##
+	# Sets the network netmask for the livecd environment
+	# @param xml_path not used here.
+	# @param netmask the network netmask
+	# @param xml_attr= None
+	def set_network_netmask(self, xml_path, netmask, xml_attr=None):
+		if not GLIUtility.is_ip(netmask):
+			raise GLIException("IPAddressError", 'fatal','set_network_netmask', 'The specified netmask is not a valid IP Address!')
+		else:
+			# Need to guess the netmask... just in case (probably need the gateway..)
+			pass
+			
+		self._network_netmask = netmask
+	
+	##
+	# Returns the network netmask
+	def get_network_netmask(self):
+		return self._network_netmask
+		
+	##
+	# Sets the network gateway for the livecd environment
+	# @param xml_path not used here.
+	# @param gateway the network gateway
+	# @param xml_attr= None
+	def set_network_gateway(self, xml_path, gateway, xml_attr=None):
+		if not GLIUtility.is_ip(gateway):
+			raise GLIException("IPAddressError", 'fatal', 'set_network_gateway', "The gateway IP provided is not a valid gateway!!")
+		self._network_gateway = gateway
+	
+	##
+	# Returns the network gateway
+	def get_network_gateway(self):
+		return self._network_gateway
+		
+	##
+	##
+	##
 	# Sets the network configuration info for the livecd environment
 	# @param xml_path not used here.
 	# @param network_type the network type, either static or dhcp
-	# @param xml_attr=None a tuple or set of attr of interface, ip, broadcast, netmask, and gateway.
-	def set_network_type(self, xml_path, network_type, xml_attr=None):
+	# @param xml_attr=None
+	def set_network_type(self, xml_path, network_type, xml_attr):
 
-		interface = ip = broadcast = netmask = gateway = None
+		if not (network_type == 'static' or network_type == 'dhcp'):
+			raise GLIException("NoSuchTypeError", 'fatal','set_network_type',"You can only have a static or dhcp network!")
 
-		if type(xml_attr) == tuple:
-			interface = xml_attr[0]
-			ip = xml_attr[1]
-			broadcast = xml_attr[2]
-			netmask = xml_attr[3]
-			gateway = xml_attr[4]
-		else:
-			for key in xml_attr.keys():
-				if key == 'interface':
-					interface = str(xml_attr.get('interface'))
-				elif key == 'ip':
-					ip = str(xml_attr.get('ip'))
-				elif key == 'broadcast':
-					broadcast = str(xml_attr.get('broadcast'))
-				elif key == 'netmask':
-					netmask = str(xml_attr.get('netmask'))
-				elif key == 'gateway':
-					gateway = str(xml_attr.get('gateway'))
-
-		if not GLIUtility.is_eth_device(interface):
-			raise GLIException("InterfaceError", 'fatal', 'set_network_type', "Interface " + interface + " must be a valid device!")
-
-		network_data = (interface, ip, broadcast, netmask, gateway)
-
-		if network_type == 'static' and xml_attr == None:
-			raise GLIException("NoInterfaceError", 'fatal','set_network_type',"No interface information specified!")
-
-		self.set_network_data(network_data)
 		self._network_type = network_type
 
 	##
 	# Returns the network type
 	def get_network_type(self):
 		return self._network_type
-
-	##
-	# Returns the network data (ip's and such)
-	def get_network_data(self):
-		return self._network_data
-
-	##
-	# Sets the network data using a dictionary.  Called from set_network_type.
-	# @param network_info tuple with livecd network info.
-	def set_network_data(self, network_info):
-		interface = network_info[0]
-		ip = network_info[1]
-		broadcast = network_info[2]
-		netmask = network_info[3]
-		gateway = network_info[4]
-
-		if not GLIUtility.is_eth_device(interface):
-			raise GLIException("InterfaceError", 'fatal','set_network_data', "Interface " + interface + " must be a valid device!")
-	
-		if ip != None:
-			if not GLIUtility.is_ip(ip):
-				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified IP ' + ip + ' is not a valid IP Address!')
-
-		if gateway != None:
-			if not GLIUtility.is_ip(gateway):
-				raise GLIException("IPAddressError", 'fatal', 'set_network_data', "The gateway IP provided is not a valid gateway!!")
-
-		if broadcast != None:
-			if not GLIUtility.is_ip(broadcast):
-				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified broadcast is not a valid IP Address!')
-		else:
-			# Guess the broadcast... just in case (probably need the gateway..)
-			pass
-
-		if netmask != None:
-			if not GLIUtility.is_ip(netmask):
-				raise GLIException("IPAddressError", 'fatal','set_network_data', 'The specified netmask is not a valid IP Address!')
-		else:
-			# Guess the netmask... just in case (probably need the gateway..)
-			pass
-
-		self._network_data = network_info
 
 	##
 	# Sets the dns servers
@@ -434,6 +458,13 @@ class ClientConfiguration:
 					'mount-point': self.get_root_mount_point,
 					'profile-uri': self.get_profile_uri,
 					'log-file': self.get_log_file,
+					'network-interface': self.get_network_interface,
+					'network-ip': self.get_network_ip,
+					'network-broadcast': self.get_network_broadcast,
+					'network-netmask': self.get_network_netmask,
+					'network-gateway': self.get_network_gateway,
+					'network-type':	self.get_network_type,
+					'dns-servers': self.get_dns_servers,
 					'enable-ssh': self.get_enable_ssh,
 					'root-passwd': self.get_root_passwd,
 					'interactive': self.get_interactive,
@@ -447,26 +478,7 @@ class ClientConfiguration:
 		for key in fntable.keys():
 			data += "<%s>%s</%s>" % (key, fntable[key](), key)
 
-		# Special Cases
-		net_type = self.get_network_type()
-		if net_type == "static":
-			net_info = self.get_network_data()
-			data +=  "<network interface=\"%s\" ip=\"%s\" broadcast=\"%s\" netmask=\"%s\" gateway=\"%s\">%s</network>" % (net_info[0], net_info[1], net_info[2], net_info[3], net_info[4], net_type)
-			data += "<dns-servers>%s</dns-servers>" % string.join(self.get_dns_servers())
-		elif net_type == "dhcp":
-			net_info = self.get_network_data()
-			interface = None
-
-			if len(net_info) > 0:
-				interface = net_info[0]
-
-			if interface != None:
-				data += "<network interface=\"%s\">dhcp</network>" % interface
-			else:
-				data += "<network>dhcp</network>"
-		else:
-			data += "<network>%s</network>" % net_type
-	
+		# Special Case the kernel modules
 		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
 
 		data += "</client-configuration>"

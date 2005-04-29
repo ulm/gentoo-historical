@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.52 2005/04/23 17:09:43 agaffney Exp $
+$Id: GLIClientController.py,v 1.53 2005/04/29 06:23:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -243,9 +243,8 @@ class GLIClientController(Thread):
 			type = self._configuration.get_network_type()
 			if type == "dhcp":
 				# Run dhcpcd.
-				net_data = self._configuration.get_network_data()
 				try:
-					interface = net_data[0]
+					interface = self._configuration.get_network_interface()
 				except:
 					self._logger.log("No interface found.. defaulting to eth0.")
 					interface = "eth0"
@@ -268,11 +267,14 @@ class GLIClientController(Thread):
 				sys.exit(1)
 			elif type == "static":
 				# Configure the network from the settings they gave.
-				net_data = self._configuration.get_network_data()
-				if not GLIUtility.set_ip(net_data[0], net_data[1], net_data[2], net_data[3]):
+				net_interface = self._configuration.get_network_interface()
+				net_ip        = self._configuration.get_network_ip()
+				net_broadcast = self._configuration.get_network_broadcast()
+				net_netmask   = self._configuration.get_network_netmask()
+				if not GLIUtility.set_ip(net_interface, net_ip, net_broadcast, net_netmask):
 					raise GLIException("SetIPError", 'fatal', 'configure_networking', "Could not set the IP address!")
 
-				route = self._configuration.get_default_gateway()[1]
+				route = self._configuration.get_network_gateway()
 				if not GLIUtility.set_default_route(route):
 					raise GLIException("DefaultRouteError", 'fatal','configure_networking', "Could not set the default route!")
 
