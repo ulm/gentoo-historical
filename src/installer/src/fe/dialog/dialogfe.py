@@ -344,7 +344,7 @@ def set_timezone():
 def set_networking():
 # This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
 	while 1:
-		menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "NIS Domain Name"]
+		menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "HTTP Proxy", "FTP Proxy", "RSYNC Proxy", "NIS Domain Name"]
 		code, menuitem = d.menu("Choose an option", choices=dmenu_list_to_choices(menulist), cancel="Done")
 		if code != DLG_OK: break
 		menuitem = menulist[int(menuitem)-1]
@@ -421,6 +421,21 @@ def set_networking():
 			if type(domain) != str:
 				d.msgbox("Incorrect domain name!  It must be a string.  Not saved.")
 			if code == DLG_OK: install_profile.set_domainname(None, domain, None)
+		elif menuitem == "HTTP Proxy":
+			code, http_proxy = d.inputbox("Enter a HTTP Proxy if you have one.")
+			if not GLIUtility.is_uri(http_proxy)
+				d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
+			if code == DLG_OK: install_profile.set_http_proxy(None, http_proxy, None)
+		elif menuitem == "FTP Proxy":
+			code, ftp_proxy = d.inputbox("Enter a FTP Proxy if you have one.")
+			if not GLIUtility.is_uri(ftp_proxy)
+				d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
+			if code == DLG_OK: install_profile.set_ftp_proxy(None, ftp_proxy, None)
+		elif menuitem == "RSYNC Proxy":
+			code, rsync_proxy = d.inputbox("Enter a RSYNC Proxy if you have one.")
+			if not GLIUtility.is_uri(rsync_proxy)
+				d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
+			if code == DLG_OK: install_profile.set_rsync_proxy(None, rsync_proxy, None)
 		elif menuitem == "NIS Domain Name":
 			code, nisdomain = d.inputbox("Enter the desired NIS domain name (if you don't know what this is, don't enter one.)")
 			if type(nisdomain) != str:

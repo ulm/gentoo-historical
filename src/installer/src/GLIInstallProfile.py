@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.44 2005/04/28 03:56:08 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.45 2005/04/29 05:22:36 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -44,6 +44,9 @@ class InstallProfile:
 		parser.addHandler('gli-profile/portage-snapshot', self.set_portage_tree_snapshot_uri)
 		parser.addHandler('gli-profile/time-zone', self.set_time_zone)
 		parser.addHandler('gli-profile/boot-loader_mbr', self.set_boot_loader_mbr)
+		parser.addHandler('gli-profile/http-proxy', self.set_http_proxy)
+		parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
+		parser.addHandler('gli-profile/rsync-proxy', self.set_rsync_proxy)
 		parser.addHandler('gli-profile/nisdomainname', self.set_nisdomainname)
 		parser.addHandler('gli-profile/install-stage', self.set_install_stage)
 		parser.addHandler('gli-profile/boot-loader', self.set_boot_loader_pkg)
@@ -88,6 +91,9 @@ class InstallProfile:
 		self._portage_tree_snapshot_uri = ""
 		self._domainname = "localdomain"
 		self._hostname = "localhost"
+		self._http_proxy = ""
+		self._ftp_proxy = ""
+		self._rsync_proxy = ""
 		self._nisdomainname = ""
 		self._partition_tables = {}
 		self._network_mounts = []
@@ -626,6 +632,67 @@ class InstallProfile:
 
 	##
 	# Brief description of function
+	def get_http_proxy(self):
+		"returns http proxy"
+		return self._http_proxy
+
+	##
+	# Brief description of function
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param http_proxy Parameter description
+	# @param xml_attr Parameter description
+	def set_http_proxy(self, xml_path, http_proxy, xml_attr):
+		"http_proxy is a uri containing a proxy if needed for http traffic. (ie. 'http://myhost.mydomain:myport')"
+
+		# Check type
+		if not GLIUtility.is_uri(http_proxy):
+			raise GLIException("HTTPProxyError", 'fatal', 'set_http_proxy',  "Must be a uri!")
+
+		self._http_proxy = http_proxy
+
+
+	##
+	# Brief description of function
+	def get_ftp_proxy(self):
+		"returns ftp proxy"
+		return self._ftp_proxy
+
+	##
+	# Brief description of function
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param ftp_proxy Parameter description
+	# @param xml_attr Parameter description
+	def set_ftp_proxy(self, xml_path, ftp_proxy, xml_attr):
+		"ftp_proxy is a uri containing a proxy if needed for ftp traffic. (ie. 'ftp://myhost.mydomain:myport')"
+
+		# Check type
+		if not GLIUtility.is_uri(ftp_proxy):
+			raise GLIException("FTPProxyError", 'fatal', 'set_ftp_proxy',  "Must be a uri!")
+
+		self._ftp_proxy = ftp_proxy
+
+	##
+	# Brief description of function
+	def get_rsync_proxy(self):
+		"returns rsync proxy"
+		return self._rsync_proxy
+
+	##
+	# Brief description of function
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param rsync_proxy Parameter description
+	# @param xml_attr Parameter description
+	def set_rsync_proxy(self, xml_path, rsync_proxy, xml_attr):
+		"rsync_proxy is a uri containing a proxy if needed for rsync traffic. (ie. 'rsync://myhost.mydomain:myport')"
+
+		# Check type
+		if not GLIUtility.is_uri(rsync_proxy):
+			raise GLIException("RSYNCProxyError", 'fatal', 'set_rsync_proxy',  "Must be a uri!")
+
+		self._rsync_proxy = rsync_proxy
+
+	##
+	# Brief description of function
 	def get_nisdomainname(self):
 		"returns nisdomainname"
 		return self._nisdomainname
@@ -855,6 +922,9 @@ class InstallProfile:
 				'portage-snapshot':		self.get_portage_tree_snapshot_uri,
 				'domainname':			self.get_domainname,
 				'hostname':			self.get_hostname,
+				'http-proxy':			self.get_http_proxy,
+				'ftp-proxy':			self.get_ftp_proxy,
+				'rsync-proxy':			self.get_rsync_proxy,
 				'nisdomainname':		self.get_nisdomainname,
 				'install-rp-pppoe':		self.get_install_rp_pppoe,
 				'install-pcmcia-cs':		self.get_install_pcmcia_cs,
