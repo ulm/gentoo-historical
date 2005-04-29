@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.102 2005/04/29 15:59:17 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.103 2005/04/29 16:27:19 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -108,7 +108,7 @@ class ArchitectureTemplate:
 		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
-		packages = [word for word in GLIUtility.spawn("emerge -p " + package + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n") if "/" in word]
+		packages = GLIUtility.spawn("emerge -p " + package + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 		for pkg in packages:
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
