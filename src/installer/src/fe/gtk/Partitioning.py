@@ -303,15 +303,15 @@ resize partitions.
 			tmp_drives = GLIStorageDevice.detect_devices()
 			tmp_drives.sort()
 			for drive in tmp_drives:
-#				try:
+				try:
 					self.devices[drive] = GLIStorageDevice.Device(drive)
 					self.devices[drive].set_partitions_from_disk()
 					self.detected_dev_combo.append_text(drive)
 					self.drives.append(drive)
-#				except:
-#					print "Exception received while loading partitions"
-#					if self.devices.has_key(drive): del self.devices[drive]
-#					part_load_error = 1
+				except:
+					print "Exception received while loading partitions"
+					if self.devices.has_key(drive): del self.devices[drive]
+					part_load_error = 1
 			if part_load_error:
 				if len(self.drives):
 					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
