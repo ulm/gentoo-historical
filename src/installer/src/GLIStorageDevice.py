@@ -1,5 +1,5 @@
 import commands, string, re, os, parted
-from decimal import Decimal
+#from decimal import Decimal
 
 MEGABYTE = 1024 * 1024
 
@@ -73,10 +73,10 @@ class Device:
 			elif parted_part.type_name == "free":
 				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)
 				if parent_part:
-					self._partitions[Decimal(str(float(last_log_part+0.9)))] = Partition(self, Decimal(str(float(last_log_part+0.9))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					self._partitions[last_log_part+0.9] = Partition(self, last_log_part+0.9, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_log_part += 1
 				else:
-					self._partitions[Decimal(str(float(last_part+0.1)))] = Partition(self, Decimal(str(float(last_part+0.1))), part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
+					self._partitions[last_part+0.1] = Partition(self, last_part+0.1, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_part += 1
 			parted_part = self._parted_disk.next_partition(parted_part)
 
@@ -118,7 +118,7 @@ class Device:
 			tmppart = self._partitions[part]
 			if tmppart.get_type() == "extended":
 				for part_log in parts:
-					if part_log < Decimal("4.9"): continue
+					if part_log < 4.9: continue
 					tmppart_log = self._partitions[part_log]
 					if tmppart_log.get_type() == "free":
 						if last_log_minor < last_log_free:
@@ -126,7 +126,7 @@ class Device:
 							del self._partitions[part_log]
 						else:
 							if not last_log_free:
-								last_log_free = Decimal(str(last_log_minor + 0.9))
+								last_log_free = last_log_minor + 0.9
 							tmppart_log.set_minor(last_log_free)
 							self._partitions[last_log_free] = tmppart_log
 							if part_log != last_log_free: del self._partitions[part_log]
@@ -146,7 +146,7 @@ class Device:
 					del self._partitions[part]
 				else:
 					if not last_free:
-						last_free = Decimal(str(last_minor + 0.1))
+						last_free = last_minor + 0.1
 					tmppart.set_minor(last_free)
 					self._partitions[last_free] = tmppart
 					if part != last_free: del self._partitions[part]
@@ -171,7 +171,7 @@ class Device:
 	# @param mountpoint='' Partition mountpoint
 	# @param mountopts='' Partition mount options
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
-		free_minor = Decimal(str(free_minor))
+		free_minor = free_minor
 		new_minor = int(free_minor) + 1
 #		print "add_partition(): free_minor=" + str(free_minor) + ", new_minor=" + str(new_minor)
 		if self._partitions.has_key(new_minor):
@@ -196,16 +196,16 @@ class Device:
 			old_free_mb = self._partitions[free_minor].get_mb()
 			del self._partitions[free_minor]
 			if archinfo[self._arch]['extended'] and new_minor >= 5:
-				free_minor = Decimal(str(new_minor + 0.9))
+				free_minor = new_minor + 0.9
 			else:
-				free_minor = Decimal(str(new_minor + 0.1))
+				free_minor = new_minor + 0.1
 			self._partitions[free_minor] = Partition(self, free_minor, old_free_mb-mb, 0, 0, "free")
 #			print "add_partition(): new part doesn't use all freespace. new free part is: minor=" + str(free_minor)
 		else:
 			del self._partitions[free_minor]
 		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts)
 		if type == "extended":
-			self._partitions[Decimal("4.9")] = Partition(self, Decimal("4.9"), mb, 0, 0, "free")
+			self._partitions[4.9] = Partition(self, 4.9, mb, 0, 0, "free")
 		self.tidy_partitions()
 
 	##
@@ -215,9 +215,9 @@ class Device:
 		tmppart = self._partitions[int(minor)]
 		free_minor = 0
 		if tmppart.is_logical():
-			free_minor = Decimal(str(float(minor)-0.1))
+			free_minor = minor-0.1
 		else:
-			free_minor = Decimal(str(float(minor)-0.9))
+			free_minor = minor-0.9
 		self._partitions[free_minor] = Partition(self, free_minor, tmppart.get_mb(), 0, 0, "free", format=False, existing=False)
 		del self._partitions[int(minor)]
 		self.tidy_partitions()
@@ -315,14 +315,13 @@ class Device:
                 parts.sort()
                 partlist = []
 		tmppart = None
-		tmppart_log = None
 		for part in parts:
-			if archinfo[self._arch]['extended'] and part > Decimal("4.1"): break
+			if archinfo[self._arch]['extended'] and part > 4.1: break
 			tmppart = self._partitions[part]
 			partlist.append(part)
 			if tmppart.is_extended():
 				for part_log in parts:
-					if part_log < Decimal("4.9"): continue
+					if part_log < 4.9: continue
 					tmppart_log = self._partitions[part_log]
 					partlist.append(part_log)
 		return partlist
@@ -472,8 +471,8 @@ class Partition:
 				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
 				self._resizeable = True
 			elif type == "ext2" or type == "ext3":
-				block_size = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'"))
-				free_blocks = string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'"))
+				block_size = int(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
+				free_blocks = int(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
 				free_bytes = int(block_size * free_blocks)
 				# can't hurt to pad (the +50) it a bit since this is really just a guess
 				self._min_mb_for_resize = self._mb - int(free_bytes / MEGABYTE) + 50
@@ -502,7 +501,7 @@ class Partition:
 	# Returns whether or not the partition is logical
 	def is_logical(self):
 		if self._type == "free":
-			if int(self._minor) + Decimal("0.9") == Decimal(str(self._minor)):
+			if int(self._minor) + 0.9 == self._minor:
 				return True
 			else:
 				return False
@@ -663,9 +662,9 @@ class Partition:
 	def get_max_mb_for_resize(self):
 		free_minor = 0
 		if self.is_logical():
-			free_minor = Decimal(str(self._minor + 0.9))
+			free_minor = self._minor + 0.9
 		else:
-			free_minor = Decimal(str(self._minor + 0.1))
+			free_minor = self._minor + 0.1
 		if free_minor in self._device._partitions:
 			return self._mb + self._device._partitions[free_minor]._mb
 		else:
