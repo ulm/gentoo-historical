@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.104 2005/04/29 16:35:37 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.105 2005/04/30 05:41:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -365,7 +365,8 @@ class ArchitectureTemplate:
 		# If it is custom, follow the path to the custom tarball and unpack it
 
 		# This is a hack to copy the LiveCD's rsync into the chroot since it has the sigmask patch
-		GLIUtility.spawn("cp /usr/bin/rsync " + self._chroot_dir + "/usr/bin/rsync")
+		GLIUtility.spawn("cp -a /usr/bin/rsync " + self._chroot_dir + "/usr/bin/rsync")
+		GLIUtility.spawn("cp -a /usr/lib/libpopt* " + self._chroot_dir + "/usr/lib")
 
 		if self._install_profile.get_portage_tree_sync_type() == "snapshot" or self._install_profile.get_portage_tree_sync_type() == "custom": # Until this is finalized
 		
