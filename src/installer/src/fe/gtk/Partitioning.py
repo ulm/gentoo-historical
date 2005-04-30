@@ -288,7 +288,7 @@ resize partitions.
 	def part_button_properties_clicked(self, widget, data=None):
 		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
 #		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_min_sectors_for_resize(), tmppart.get_max_sectors_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector)
-		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, tmppart.get_mb(), tmppart.get_type(), self.active_device_bytes_in_sector)
+		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, tmppart.get_mb(), tmppart.get_type(), self.active_device_bytes_in_sector, format=tmppart.get_format())
 		props.run()
 
 	def activate(self):

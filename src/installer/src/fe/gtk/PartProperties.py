@@ -3,7 +3,7 @@ import PartitionButton
 
 class PartProperties(gtk.Window):
 
-	def __init__(self, controller, device, minor, min_size, max_size, fstype, bytes_in_sector=512):
+	def __init__(self, controller, device, minor, min_size, max_size, fstype, bytes_in_sector=512, format=True):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
 		self.controller = controller
@@ -13,6 +13,7 @@ class PartProperties(gtk.Window):
 		self.max_size = max_size
 		self.fstype = fstype
 		self.bytes_in_sector = bytes_in_sector
+		self.format = format
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
@@ -74,36 +75,54 @@ class PartProperties(gtk.Window):
 		self.info_partition.set_alignment(0.0, 0.5)
 		part_info_table.attach(self.info_partition, 1, 2, 0, 1)
 
+		info_partition_format = gtk.Label("(Re)format:")
+		info_partition_format.set_alignment(0.0, 0.5)
+		part_info_table.attach(info_partition_format, 0, 1, 1, 2)
+		resize_info_part_format_box = gtk.HBox(False, 0)
+		self.resize_info_part_format_yes = gtk.RadioButton(label="Yes")
+		self.resize_info_part_format_no = gtk.RadioButton(label="No", group=self.resize_info_part_format_yes)
+		if self.fstype == "free":
+			self.resize_info_part_format_yes.set_sensitive(False)
+			self.resize_info_part_format_no.set_sensitive(False)
+		else:
+			if self.format:
+				self.resize_info_part_format_yes.set_active(True)
+			else:
+				self.resize_info_part_format_no.set_active(True)
+		resize_info_part_format_box.pack_start(self.resize_info_part_format_yes, expand=False, fill=False)
+		resize_info_part_format_box.pack_start(self.resize_info_part_format_no, expand=False, fill=False, padding=10)
+		part_info_table.attach(resize_info_part_format_box, 1, 2, 1, 2)
+
 		info_partition_type = gtk.Label("Type:")
 		info_partition_type.set_alignment(0.0, 0.5)
-		part_info_table.attach(info_partition_type, 0, 1, 1, 2)
+		part_info_table.attach(info_partition_type, 0, 1, 2, 3)
 		self.resize_info_part_type = gtk.combo_box_new_text()
 		self.resize_info_part_type.append_text("Primary")
 		self.resize_info_part_type.append_text("Logical")
 		self.resize_info_part_type.set_active(0)
-		part_info_table.attach(self.resize_info_part_type, 1, 2, 1, 2)
+		part_info_table.attach(self.resize_info_part_type, 1, 2, 2, 3)
 
 		info_partition_fs = gtk.Label("Filesystem:")
 		info_partition_fs.set_alignment(0.0, 0.5)
-		part_info_table.attach(info_partition_fs, 0, 1, 2, 3)
+		part_info_table.attach(info_partition_fs, 0, 1, 3, 4)
 		self.resize_info_part_filesystem = gtk.combo_box_new_text()
 		for fs in self.controller.supported_filesystems:
 			self.resize_info_part_filesystem.append_text(fs)
 		self.resize_info_part_filesystem.set_active(0)
 		self.resize_info_part_filesystem.connect("changed", self.filesystem_changed)
-		part_info_table.attach(self.resize_info_part_filesystem, 1, 2, 2, 3)
+		part_info_table.attach(self.resize_info_part_filesystem, 1, 2, 3, 4)
 
 		info_partition_mountpoint = gtk.Label("Mount point:")
 		info_partition_mountpoint.set_alignment(0.0, 0.5)
-		part_info_table.attach(info_partition_mountpoint, 0, 1, 3, 4)
+		part_info_table.attach(info_partition_mountpoint, 0, 1, 4, 5)
 		self.part_mount_point_entry = gtk.Entry()
-		part_info_table.attach(self.part_mount_point_entry, 1, 2, 3, 4)
+		part_info_table.attach(self.part_mount_point_entry, 1, 2, 4, 5)
 
 		info_partition_mountopts = gtk.Label("Mount options:")
 		info_partition_mountopts.set_alignment(0.0, 0.5)
-		part_info_table.attach(info_partition_mountopts, 0, 1, 4, 5)
+		part_info_table.attach(info_partition_mountopts, 0, 1, 5, 6)
 		self.part_mount_opts_entry = gtk.Entry()
-		part_info_table.attach(self.part_mount_opts_entry, 1, 2, 4, 5)
+		part_info_table.attach(self.part_mount_opts_entry, 1, 2, 5, 6)
 
 		self.part_info_box.pack_start(part_info_table, expand=False, fill=False, padding=0)
 		self.globalbox.pack_start(self.part_info_box, expand=False, fill=False, padding=10)
@@ -200,6 +219,7 @@ class PartProperties(gtk.Window):
 			tmppart = self.controller.devices[self.device].get_partitions()[self.minor]
 			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
 			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
+			tmppart.set_format(self.resize_info_part_format_yes.get_active())
 
 		self.destroy()
 
@@ -239,7 +259,7 @@ class PartProperties(gtk.Window):
 			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
 			hpaned_pos = hpaned_width - round((float(part_unalloc_mb) / self.max_size) * hpaned_width)
 		if hpaned_pos <= hpaned_width:
-			self.resize_hpaned.set_position(hpaned_pos)
+			self.resize_hpaned.set_position(int(hpaned_pos))
 		else:
 			self.resize_hpaned.set_position(self.resize_hpaned.get_position())
 
