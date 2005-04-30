@@ -23,9 +23,8 @@ class Panel(GLIScreen.GLIScreen):
 	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#e9f704', 'linux-swap': '#12ff09' }
 	supported_filesystems = ['ext2', 'ext3', 'linux-swap', 'fat32', 'ntfs']
 
-	def __init__(self, controller, parent):
+	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
-		self._parent = parent
 
 		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
@@ -292,11 +291,11 @@ resize partitions.
 		props.run()
 
 	def activate(self):
-#		self.controller.SHOW_BUTTON_EXIT    = True
-#		self.controller.SHOW_BUTTON_HELP    = True
-#		self.controller.SHOW_BUTTON_BACK    = True
-#		self.controller.SHOW_BUTTON_FORWARD = True
-#		self.controller.SHOW_BUTTON_FINISH  = False
+		self.controller.SHOW_BUTTON_EXIT    = True
+		self.controller.SHOW_BUTTON_HELP    = True
+		self.controller.SHOW_BUTTON_BACK    = True
+		self.controller.SHOW_BUTTON_FORWARD = True
+		self.controller.SHOW_BUTTON_FINISH  = False
 
 		if not len(self.drives):
 			part_load_error = 0
@@ -313,19 +312,10 @@ resize partitions.
 					if self.devices.has_key(drive): del self.devices[drive]
 					part_load_error = 1
 			if part_load_error:
-				if len(self.drives):
-					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
-					msgdlg.run()
-					msgdlg.destroy()
-				else:
-					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="The installer could not read the partition table on any detected drives. You will be forced to use the ugly mode.")
-					msgdlg.run()
-					msgdlg.destroy()
-#					self._parent.switch_screen(None, 1) # Switch to ugly screen
-					self._parent.radio_ugly.set_active(True)
-					self._parent.radio_pretty.set_sensitive(False)
-					self._parent.radio_ugly.set_sensitive(False)
-					return
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
+				msgdlg.run()
+				msgdlg.destroy()
+				return
 					
 		if len(self.drives):
 			self.active_device = self.drives[0]
