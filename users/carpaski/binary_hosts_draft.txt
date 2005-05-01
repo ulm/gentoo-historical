@@ -1,7 +1,7 @@
 
 Binary Host Servers for Gentoo GRP
 ==================================
-Draft #1 - Sat Apr 30 22:55:03 UTC 2005
+$Id: binary_hosts_draft.txt,v 1.2 2005/05/01 00:02:34 carpaski Exp $
 ---------------------------------------
 
 BINHOST support enables a machine to utilize standard FTP or HTTP
@@ -43,14 +43,8 @@ reports should simply be 'INVALID'. The documentation would
 make pointed statements on the applicibility of GRP BINHOSTS
 and indicate the one-time-use system (in the basic scenario).
 
-The ability to prevent downgrading through GRP should be possible
-with minimal side effects for end users of the explicit intent of
-the basic GRP scenario. The process would require forging RDEPEND
-statements of binary packages to require a specific version of a
-package that is not generally available and blocking all others.
-The package selected would be a base system package and should be
-created with a unique full version and then inserted forged into
-every package.
+The feasability of disabling GRP and source installations
+is discussed in problem discussion 1.
 
 Advanced scenarios of this BINHOST system would be the availability
 of slow-changing systems, such as Server, or Stable/Security GRP.
@@ -80,11 +74,63 @@ do not require the entirity of the package to extract the needed
 dependency information, thus the entire LiveCD is an excessive
 download in comparison.
 
+=====================================================================
 
+Operating with BINHOST:
+-----------------------
 
+The normal packages directory created and filled in normal
+portage operation provides binaries suitable for distribution
+via BINHOST systems. The actual files in the 'All/' subdirectory
+of the packages directory matches the format expected of a binhost
+mirror. Catalyst or standard 'emerge -b' operations will fill the
+directory as needed.
 
+Portage binhost support uses a short term (1 day) cache. At the
+initial connection to a remote binhost, portage lists and fetches
+all the metadata from packages is an intelligent manner by skimming
+the data from the hosted package using FTP or HTTP range support.
+This data can be fouled as updates occur to packages on the host.
+The solution to this problem is the use of 'metadata.idx' files on
+the mirrors along side the package tarballs.
 
+When connecting to a mirror the first time, portage creates two
+copies of the metadata. One is a permanent record that is maintained
+in a general "pickle" for all hosts you connect to. The other file
+is located at /var/cache/edb/metadata.idx.most_recent and is created
+when portage first connects and fetches the metadata from the host.
 
+This "most_recent" file can be exploited to speedup and remove the
+data corruption as it's always downloaded at least once. Given that
+every update to the files is accompanied by a newly generated index,
+you prevent users from having bad metadata when a package is updated.
 
+Metadata indexes can be stamped (HIGHLY RECOMMENDED) and compressed
+with gzip. These two in combination makes binhosts extremely fast
+and mostly immune to race/time-based metadata corruption.
+
+Process:
+  1. Update binaries.
+  2. rm /var/cache/edb/*metadata*
+  3. PORTAGE_BINHOST="http://localhost/path" emerge -egp world
+  4. cp /var/cache/edb/metadata.idx.most_recent ./metadata.idx
+  5. mv metadata.idx metadata.idx-`date +%s`
+  6. gzip -9 metadata.idx-`date +%s`
+  7. mv metadata.idx-`date +%s`.gz /path/to/All/
+  8. Sync mirrors. Perferably atomically.
+
+=====================================================================
+
+Problem Discussion 1:
+---------------------
+
+The ability to prevent downgrading through GRP should be possible
+with minimal side effects for end users of the explicit intent of
+the basic GRP scenario. The process would require forging RDEPEND
+statements of binary packages to require a specific version of a
+package that is not generally available and blocking all others.
+The package selected would be a base system package and should be
+created with a unique full version and then inserted forged into
+every package.
 
 
