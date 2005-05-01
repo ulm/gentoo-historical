@@ -162,7 +162,7 @@
 		</chapter>
 		</xsl:if>		
 	
-		<xsl:apply-templates select='extrachapter[@position="" or @position="bottom"]'/>
+		<xsl:apply-templates select='extrachapter[@position="bottom" or (not(@position) or @position="")]'/>
 	</guide>
 </xsl:template>
 <xsl:template match="name|description">
