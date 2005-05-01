@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/gentoolkit.xml,v 1.3 2005/04/18 19:04:12 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/gentoolkit.xml,v 1.4 2005/05/01 02:52:29 vanquirius Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/pt_br/gentoolkit.xml">
@@ -20,19 +20,25 @@
 <author title="Editor">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
+<author title="Editor">
+  <mail link="karltk@gentoo.org">Karl Trygve</mail>
+</author>
+<author title="Editor">
+  <mail link="yoswink@gentoo.org">José Luis Rivero</mail>
+</author>
 <author title="Tradutor">
   <mail link="vanquirius@gentoo.org">Marcelo Góes</mail>
 </author>
-
-<!-- Licensed under GFDL -->
 
 <abstract>
 O Gentoolkit é um conjunto de ferramentas para facilitar a administração de um sistema Gentoo.
 Este documento cobre o básico de algumas ferramentas presentes no Gentoolkit.
 </abstract>
 
-<version>1.6</version>
-<date>2005-04-07</date>
+<!-- Licensed under GFDL -->
+
+<version>1.7</version>
+<date>2005-04-23</date>
 
 <chapter>
 <title>Introdução</title>
@@ -53,7 +59,9 @@ o projeto do Gentoo e são incluídas no pacote
 No momento existem duas versões do gentoolkit: <c>app-portage/gentoolkit</c>
 e <c>app-portage/gentoolkit-dev</c>. Enquanto o primeiro contém scripts de
 administração, o segundo contém scripts específicos para ajudar no desenvolvimento do Gentoo.
-Este documento discute somente o gentoolkit.
+Se você for um desenvolvedor, você pode ter seus scripts incluídos no
+<c>gentoolkit-dev</c> contactando o mantenedor do Gentoolkit. Este documento
+discute só o gentoolkit.
 </note>
 
 <p>
@@ -105,21 +113,252 @@ Qualquer documentação que um programa pode ter (fora as man pages) está grava
 <body>
 
 <p>
-<c>equery</c> é uma ferramenta que suporta funções que o <c>epm</c> (e o
-antigo <c>qpkg</c>) tem, mas também tem seu próprio conjunto de funções que fazem dele
+<c>equery</c> é uma ferramenta que suporta algumas funções do <c>epm</c> (e do
+antigo <c>qpkg</c>) junto com seu próprio conjunto de funções que fazem dele
 realmente útil. <c>equery --help</c> dará a você todas as opções.
-<c>equery</c> irá acabar substituindo o <c>etcat</c> em algum ponto do futuro.
+<c>equery</c> irá acabar substituindo o <c>etcat</c> em um futuro lançamento do
+Gentoolkit.
 </p>
 
 <note>
 Nem todas funções listadas por <c>equery --help</c> já foram implementadas.
-Aquelas que não foram são mencionadas claramente.
+Aquelas que não foram são mencionadas claramente. Você também verá que
+cada comando tem uma opção curta, como <c>b</c> ao invés de <c>belongs</c>.
+</note>
+
+<note>
+Esteja ciente de que o equery atualmente muda o formato da saída se for
+mandado através de um pipe. O formato com pipe é feito para ser mais fácil de interpretar por
+ferramentas, mas acabou sendo menos popular e provavelmente mudará no
+futuro. Se você escrever scripts que usam equery, você deve estar ciente
+disto.
 </note>
 
 </body>
 </section>
 <section>
-<title>Descobrindo tamanhos de pacotes</title>
+<title>Encontrando o pacote a que um arquivo pertence</title>
+<body>
+
+<p>
+<c>equery</c> também oferece a funcionalidade encontrar de que pacote
+um arquivo veio, usando o comando <c>belongs</c> (ou só <c>b</c>).
+</p>
+
+<pre caption="Encontrando a ebuild que instalou um dado arquivo">
+# <i>equery belongs /usr/bin/xmms</i>
+[ Searching for file(s) /usr/bin/xmms in *... ]
+media-sound/xmms-1.2.10-r9 (/usr/bin/xmms)
+</pre>
+
+<p>
+Ao usar a opção <c>-f</c>, você pode procuar pacotes com arquivos
+correspondendo a qualquer expressão regular. A opção <c>-e</c> é útil para
+terminar sua procura imediatamente após um resultado ser encontrado.
+</p>
+
+</body>
+</section>
+<section>
+<title>Verificando integridade de pacotes</title>
+<body>
+
+<p>
+Às vezes é útil verificar a integridade de um pacote. <c>equery</c> pode
+verificar md5 sums bem como timestamps para indicar quando um pacote pode ter
+sido corrompido, substituído ou removido.
+</p>
+
+<pre caption="integridade de pacote OK">
+# <i>equery check gentoolkit</i>
+[ Checking app-portage/gentoolkit-0.2.0 ]
+ * 54 out of 54 files good
+</pre>
+
+<p>
+Por favor note que se você mudar arquivos de configuração após a instalação,
+eles podem ser relatados como "não bons".
+</p>
+
+</body>
+</section>
+<section>
+<title>Lista de pacotes que dependem de ...</title>
+<body>
+
+<p>
+<c>equery</c> é capaz de listar todas dependências diretas de um pacote.
+A função que usamos para tanto chama-se <c>depends</c> e é fácil como:
+</p>
+
+<pre caption="Procurando pacotes que dependem de pygtk">
+# <i>equery depends pygtk</i>
+[ Searching for packages depending on pygtk... ]
+app-office/dia-0.93
+dev-python/gnome-python-2.0.0-r1
+gnome-extra/gdesklets-core-0.26.2
+media-gfx/gimp-2.0.4
+x11-libs/vte-0.11.11-r1
+</pre>
+
+</body>
+</section>
+<section>
+<title>Gráficos de dependência</title>
+<body>
+
+<p>
+<c>equery</c> é capaz de dar-nos um gráfico de dependência para um pacote
+especificado. O gráfico de dependência dá uma listagem de todos pacotes que tem
+dependências diretas e indiretas do pacote em questão.
+</p>
+
+<pre caption="Gráfico de dependência para cdrtools">
+# <i>equery depgraph cdrtools</i>
+Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
+`-- app-cdr/cdrtools-2.01_alpha37
+ `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
+  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
+   `-- sys-apps/baselayout-1.10.4
+    `-- sys-apps/sysvinit-2.85-r1
+     `-- sys-apps/gawk-3.1.3-r1
+      `-- sys-apps/util-linux-2.12-r4
+          `-- sys-apps/sed-4.0.9
+	      `-- sys-libs/ncurses-5.4-r4
+	          `-- sys-apps/pam-login-3.14
+	          `-- sys-libs/pam-0.77-r1
+                 `-- sys-libs/cracklib-2.7-r10
+               `-- sys-apps/miscfiles-1.3-r1
+              `-- app-arch/gzip-1.3.5-r1
+              `-- sys-apps/portage-2.0.50-r10
+</pre>
+
+<p>
+Por exemplo, embora o glibc seja uma dependência direta para cdrtools, linux-headers
+são uma dependência indireta. Note que a saída também inclui informação
+sobre pacotes virtuais. No exemplo acima, <c>cdrtools</c> é na verdade
+escrito para precisar de virtual/libc, não sys-libs/glibc, mas no dado
+sistema do exemplo sys-libs/glibc fornece virtual/libc. 
+</p>
+
+</body>
+</section>
+<section>
+<title>Listando arquivos pertencentes a uma ebuild</title>
+<body>
+
+<p>
+<c>equery</c> pode listar os arquivos que pertencem a uma ebuild instalada. Se eu
+não souber que arquivos o Gentoolkit tem instalado no sistema, eu irei
+usar <c>equery</c> para mostrá-los.
+</p>
+
+<pre caption="Listando arquivos">
+#<i> equery files gentoolkit</i>
+[ Searching for packages matching gentoolkit... ]
+app-portage/gentoolkit-0.2.0
+* Contents of app-portage/gentoolkit-0.2.0:
+/usr
+/usr/bin
+/usr/bin/equery
+/usr/bin/etcat
+/usr/bin/euse
+/usr/bin/glsa-check
+/usr/bin/qpkg
+/usr/bin/revdep-rebuild
+/usr/lib
+/usr/lib/gentoolkit
+/usr/lib/gentoolkit/pym
+/usr/lib/gentoolkit/pym/gentoolkit
+/usr/lib/gentoolkit/pym/gentoolkit/__init__.py
+/usr/lib/gentoolkit/pym/gentoolkit/gentoolkit.py
+/usr/lib/gentoolkit/pym/gentoolkit/pprinter.py
+/usr/lib/gentoolkit/pym/glsa.py
+/usr/sbin
+/usr/share
+/usr/share/doc
+/usr/share/doc/gentoolkit-0.2.0_pre10
+
+[...]
+</pre>
+
+<p>
+O comando <c>files</c> do <c>equery</c> oferece algumas opções para modificar
+a saída. Você pode vê-las todas na página de man <c>equery</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Procurando por pacotes que usam uma opção de USE específica</title>
+<body>
+
+<p>
+Se você quiser descobrir que pacotes em seu sistema fazem uso de uma opção de
+USE específica, <c>equery</c> tem a função <c>hasuse</c>:
+</p>
+
+<pre caption="Procurando pacotes com a variável de USE mozilla">
+# <i>equery hasuse mozilla</i>
+[ Searching for USE flag mozilla in all categories among: ]
+ * installed packages
+[I--] [  ] dev-java/blackdown-jre-1.4.2.01 (1.4.2)
+[I--] [  ] mail-client/evolution-2.0.2 (2.0)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Listando pacotes</title>
+<body>
+
+<p>
+<c>equery</c> tem uma função para listar pacotes pertencentes a nosso sistema,
+ao portage ou mesmo um overlay. Vamos tentar o seguinte:
+</p>
+
+<pre caption="Listando pacotes com equery">
+# <i>equery list gentoolkit</i>
+[ Searching for package 'gentoolkit' in all categories among: ]
+ * installed packages
+[I--] [  ] app-portage/gentoolkit-0.2.0 (0)
+</pre>
+
+<p>
+A busca padrão irá procurar nossos pacotes instalados com o nome dado.
+Se encontrado, a seguinte informação será mostrada: a localização do pacote
+nas primeiras chaves (I para pacotes Instalados, P para Portage, O para
+Overlay), as máscaras possíveis nas segundas (~ por palavra-chave, - por arquitetura ou
+M mascarado), então a categoria e o nome e completo e por último, o slot
+em que o pacote está guardado.
+</p>
+
+<p>
+Outro exemplo, desta vez vamos usar as opções locais para
+procurar por pacotes em nossa árvore do portage e overaly.</p>
+
+<pre caption="Usando opções locais com equery">
+# <i>equery list -p -o vim</i>
+[ Searching for package 'vim' in all categories among: ]
+ * installed packages
+[I--] [  ] app-editors/vim-6.3-r4 (0)
+ * Portage tree (/usr/portage)
+[-P-] [M~] app-editors/vim-7.0_alpha20050126 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-6.3-r2 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050126 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r3 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r4 (0)
+ * overlay tree (/opt/ebuilds)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Encontrando tamanhos de pacote</title>
 <body>
 
 <p>
@@ -137,8 +376,8 @@ Já que o pacote pode ter seus arquivos em vários diretórios, o comum
 </pre>
 
 <p>
-Como você pode ver, o <c>equery</c> mostra o espaço total usado em kilobytes e também
-lista o número total de arquivos que pacote tem.
+Como você pode ver, o <c>equery</c> mostra o espaço total usado em kilobytes e
+também lista o número total de arquivos que pacote tem.
 </p>
 
 </body>
@@ -194,43 +433,6 @@ mostra o caminho completo para a ebuild.
 # <i>equery which cdrtools</i>
 /usr/portage/app-cdr/cdrtools/cdrtools-2.01_alpha37.ebuild
 </pre>
-
-</body>
-</section>
-<section>
-<title>Gráficos de dependência</title>
-<body>
-
-<p>
-<c>equery</c> é capaz de traçar um gráfico de dependências para um pacote específico.
-O gráfico de dependência dá uma lista de todos pacotes que tem dependências diretas e
-indiretas do pacote em questão.
-</p>
-
-<pre caption="Gráfico de dependências do cdrtools">
-# <i>equery depgraph cdrtools</i>
-Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
-`-- app-cdr/cdrtools-2.01_alpha37
- `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
-  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
-   `-- sys-apps/baselayout-1.10.4
-    `-- sys-apps/sysvinit-2.85-r1
-     `-- sys-apps/gawk-3.1.3-r1
-      `-- sys-apps/util-linux-2.12-r4
-          `-- sys-apps/sed-4.0.9
-	      `-- sys-libs/ncurses-5.4-r4
-	          `-- sys-apps/pam-login-3.14
-	          `-- sys-libs/pam-0.77-r1
-                 `-- sys-libs/cracklib-2.7-r10
-               `-- sys-apps/miscfiles-1.3-r1
-              `-- app-arch/gzip-1.3.5-r1
-              `-- sys-apps/portage-2.0.50-r10
-</pre>
-
-<p>
-Por exemplo, enquanto o glibc pode ser uma dependência direta para o cdrtools, o linux-headers
-é uma dependência indireta para o cdrtools.
-</p>
 
 </body>
 </section>
