@@ -69,14 +69,6 @@ resize partitions.
 		info_filesystem_label.set_alignment(0.0, 0.5)
 		self.info_filesystem = gtk.Label()
 		self.info_filesystem.set_alignment(0.0, 0.5)
-#		info_start_label = gtk.Label("Start sector:")
-#		info_start_label.set_alignment(0.0, 0.5)
-#		self.info_start = gtk.Label()
-#		self.info_start.set_alignment(0.0, 0.5)
-#		info_end_label = gtk.Label("End sector:")
-#		info_end_label.set_alignment(0.0, 0.5)
-#		self.info_end = gtk.Label()
-#		self.info_end.set_alignment(0.0, 0.5)
 		info_size_label = gtk.Label("Size:")
 		info_size_label.set_alignment(0.0, 0.5)
 		self.info_size = gtk.Label()
@@ -87,10 +79,6 @@ resize partitions.
 		part_info_table.attach(self.info_type, 1, 2, 1, 2)
 		part_info_table.attach(info_filesystem_label, 0, 1, 2, 3)
 		part_info_table.attach(self.info_filesystem, 1, 2, 2, 3)
-#		part_info_table.attach(info_start_label, 0, 1, 3, 4)
-#		part_info_table.attach(self.info_start, 1, 2, 3, 4)
-#		part_info_table.attach(info_end_label, 0, 1, 4, 5)
-#		part_info_table.attach(self.info_end, 1, 2, 4, 5)
 		part_info_table.attach(info_size_label, 0, 1, 5, 6)
 		part_info_table.attach(self.info_size, 1, 2, 5, 6)
 		self.part_info_box.pack_start(part_info_table, expand=False, fill=False)
@@ -193,7 +181,7 @@ resize partitions.
 		self.part_button_box.show_all()
 
 	def unalloc_selected(self, button, dev=None, extended=False, mb=0, minor=0):
-		props = PartProperties.PartProperties(self, self.active_device, minor, 0, mb, "free", self.active_device_bytes_in_sector)
+		props = PartProperties.PartProperties(self, self.active_device, minor, 0, 0, mb, "free", self.active_device_bytes_in_sector)
 		props.run()
 
 	def part_button_delete_clicked(self, button, data=None):
@@ -286,8 +274,7 @@ resize partitions.
 
 	def part_button_properties_clicked(self, widget, data=None):
 		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
-#		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_min_sectors_for_resize(), tmppart.get_max_sectors_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector)
-		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, 0, tmppart.get_mb(), tmppart.get_type(), self.active_device_bytes_in_sector, format=tmppart.get_format())
+		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_mb(), tmppart.get_min_mb_for_resize(), tmppart.get_max_mb_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector, format=tmppart.get_format())
 		props.run()
 
 	def activate(self):

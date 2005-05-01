@@ -3,7 +3,7 @@ import PartitionButton
 
 class PartProperties(gtk.Window):
 
-	def __init__(self, controller, device, minor, min_size, max_size, fstype, bytes_in_sector=512, format=True):
+	def __init__(self, controller, device, minor, cur_size, min_size, max_size, fstype, bytes_in_sector=512, format=True):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
 		self.controller = controller
@@ -11,9 +11,13 @@ class PartProperties(gtk.Window):
 		self.minor = minor
 		self.min_size = min_size
 		self.max_size = max_size
+		self.cur_size = cur_size
 		self.fstype = fstype
 		self.bytes_in_sector = bytes_in_sector
 		self.format = format
+		if self.min_size == -1 or self.max_size == -1:
+			self.min_size = self.cur_size
+			self.max_size = self.cur_size
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
@@ -35,7 +39,10 @@ class PartProperties(gtk.Window):
 		self.resize_part_space = PartitionButton.Partition(color1=self.controller.colors['linux-swap'], color2=self.controller.colors['free'], division=0, label="")
 		self.resize_part_space.set_sensitive(False)
 		self.resize_part_space_frame.add(self.resize_part_space)
-		self.resize_hpaned.pack1(self.resize_part_space_frame, resize=True, shrink=True)
+		if self.type == "free" or self.min_size <= 1:
+			self.resize_hpaned.pack1(self.resize_part_space_frame, resize=True, shrink=True)
+		else:
+			self.resize_hpaned.pack1(self.resize_part_space_frame, resize=True, shrink=False)
 		self.resize_unalloc_space_frame = gtk.Frame()
 		self.resize_unalloc_space_frame.set_shadow_type(gtk.SHADOW_IN)
 		self.resize_unalloc_space = PartitionButton.Partition(color1=self.controller.colors['unalloc'], color2=self.controller.colors['unalloc'], label="")
@@ -75,7 +82,7 @@ class PartProperties(gtk.Window):
 		self.info_partition.set_alignment(0.0, 0.5)
 		part_info_table.attach(self.info_partition, 1, 2, 0, 1)
 
-		info_partition_format = gtk.Label("(Re)format:")
+		info_partition_format = gtk.Label("Format:")
 		info_partition_format.set_alignment(0.0, 0.5)
 		part_info_table.attach(info_partition_format, 0, 1, 1, 2)
 		resize_info_part_format_box = gtk.HBox(False, 0)
@@ -144,9 +151,9 @@ class PartProperties(gtk.Window):
 		self.make_visible()
 
 	def run(self):
+		hpaned_width = self.resize_hpaned.get_allocation().width - 5
 		if self.fstype == "free":
-			hpaned_width = self.resize_hpaned.get_allocation().width
-			hpaned_pos = hpaned_width - 5
+			hpaned_pos = hpaned_width
 #			if self.max_size > self.end:
 #				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
@@ -178,15 +185,23 @@ class PartProperties(gtk.Window):
 				if fs == self.fstype:
 					self.resize_info_part_filesystem.set_active(i)
 					break
-			hpaned_width = self.resize_hpaned.get_allocation().width
-			hpaned_pos = hpaned_width - 5
-#			if self.max_size > self.end:
-#				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
+			hpaned_pos = int(hpaned_width * (float(self.cur_size) / self.max_size))
 			self.resize_hpaned.set_position(hpaned_pos)
 			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
-			self.resize_part_space.set_division(0)
-			self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors[self.fstype])
-			self.resize_hpaned.set_sensitive(False)
+			if self.max_size == self.cur_size and self.min_size == self.cur_size:
+				# Non-resizeable
+				self.resize_part_space.set_division(0)
+				self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors[self.fstype])
+				self.resize_hpaned.set_sensitive(False)
+			else:
+				# Resizeable
+				division = int(hpaned_pos * (float(self.min_size) / self.cur_size)) - 13
+				self.resize_part_space.set_division(division)
+				if self.min_size <= 1:
+					self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors[self.fstype])
+				else:
+					self.resize_part_space.set_colors(self.controller.colors[self.fstype], self.controller.colors["free"])
+				self.resize_hpaned.set_sensitive(True)
 			self.part_mount_point_entry.set_text(tmppart.get_mountpoint())
 			self.part_mount_opts_entry.set_text(tmppart.get_mountopts())
 
