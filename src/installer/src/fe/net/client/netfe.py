@@ -9,7 +9,7 @@ Script steps:
 	5. Next the client will start the install, logging all events to the server
 """
 import sys, time, socket
-sys.path.append("../..")
+sys.path.append("../../..")
 import GLIException
 import GLIInstallProfile
 import GLIClientConfiguration

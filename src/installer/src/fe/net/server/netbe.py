@@ -19,7 +19,7 @@ be able to start the install.
 Ex. 01:23:45:67:89:ab.cc.xml -> 192.168.0.3.cc.xml
 """
 import sys,os,socket,shelve
-sys.path.append("../..")
+sys.path.append("../../..")
 import SimpleXMLRPCServer
 import xmlrpclib
 import GLIUtility
