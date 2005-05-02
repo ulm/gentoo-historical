@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoolkit.xml,v 1.5 2005/04/20 09:32:59 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoolkit.xml,v 1.6 2005/05/02 22:05:40 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/gentoolkit.xml" lang="fr">
@@ -20,11 +20,18 @@
 <author title="Correcteur">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
+<author title="Correcteur">
+  <mail link="karltk@gentoo.org">Karl Trygve</mail>
+</author>
+<author title="Correcteur">
+  <mail link="yoswink@gentoo.org">José Luis Rivero</mail>
+</author>
 <author title="Traducteur">
   <mail link="ribosome@gentoo.org">Olivier Fisette</mail>
 </author>
-
-<!-- Licensed under GFDL -->
+<author title="Traducteur">
+  <mail link="Clement@varaldi.org">Clément Varaldi</mail>
+</author>
 
 <abstract>
 Gentoolkit est un ensemble d'outils qui facilitent l'administration d'un
@@ -32,8 +39,10 @@ système Gentoo. La lecture de ce document vous fournira les bases nécessaires
 à l'utilisation de quelques-uns de ces outils.
 </abstract>
 
-<version>1.6</version>
-<date>2005-04-07</date>
+<!-- Licensed under GFDL -->
+
+<version>1.7</version>
+<date>2005-04-23</date>
 
 <chapter>
 <title>Introduction</title>
@@ -54,8 +63,10 @@ intégrés au projet Gentoo et font partie du paquet
 Il existe à l'heure actuelle deux versions de gentoolkit&nbsp;:
 <c>app-portage/gentoolkit</c> et <c>app-portage/gentoolkit-dev</c>. La première
 contient des scripts servant à l'administration système alors que la seconde
-rassemble des scripts facilitant le développement de Gentoo. Le présent
-document ne discutera que de gentoolkit.
+rassemble des scripts facilitant le développement de Gentoo. Si vous êtes
+développeur, vous pouvez inclure votre script à <c>gentoolkit-dev</c> en
+contactant le mainteneur de Gentoolkit. Ce document ne traitera que de
+Gentoolkit.
 </note>
 
 <p>
@@ -115,19 +126,256 @@ L'outil <c>equery</c> offre plusieurs des fonctionnalités fournies par
 <c>epm</c> (et par l'outil <c>qpkg</c> maintenant obsolète) tout en ajoutant
 ses propres fonctions qui le rendent particulièrement utile. <c>equery
 --help</c> vous donnera la liste complète des options. À terme, <c>equery</c>
-remplacera complètement <c>etcat</c>.
+pourrait remplacer complètement <c>etcat</c>.
 </p>
 
 <note>
 Les fonctionnalités listées par <c>equery --help</c> ne sont pas toutes
 implémentées pour l'instant. Celles qui ne le sont pas sont clairement
-indiquées comme telles.
+indiquées comme telles. Vous remarquerez également que toutes les commandes
+disposent d'une option courte, comme par exemple <c>b</c> à la place de
+<c>belongs</c>.
+</note>
+
+<note>
+Vous devez savoir de plus qu'actuellement le format de sortie n'est pas le même
+si vous envoyez les données à travers un pipe ou non. Le format en pipe a été
+simplifié pour être plus facile à manipuler avec des outils classiques mais
+est peu populaire et sera probablement modifié dans le futur. Si vous écrivez
+des scripts utilisant equery, vous devrez vous tenir au courant des changements.
 </note>
 
 </body>
 </section>
 <section>
-<title>Obtenir la taille d'un paquet</title>
+<title>Trouver de quel paquet provient un fichier</title>
+<body>
+
+<p>
+<c>equery</c> permet également de trouver le paquet auquel un fichier appartient
+en utilisant la commande <c>belongs</c> (ou plus simplement <c>b</c>).
+</p>
+
+<pre caption="Trouver l'ebuild ayant installé un certain fichier">
+# <i>equery belongs /usr/bin/xmms</i>
+[ Searching for file(s) /usr/bin/xmms in *... ]
+media-sound/xmms-1.2.10-r9 (/usr/bin/xmms)
+</pre>
+
+<p>
+En utilisant l'option <c>-f</c> vous pouvez chercher les paquets installant des
+fichiers correspondant à une expression régulière. L'option <c>-e</c> est utile
+pour terminer la recherche immédiatement après avoir trouvé une réponse.
+</p>
+
+</body>
+</section>
+<section>
+<title>Vérifier l'intégrité d'un paquet</title>
+<body>
+
+<p>
+Il est parfois utile de vérifier l'intégrité d'un paquet. <c>equery</c> peut
+vérifier la somme md5 ainsi que la marque horaire d'un paquet pour indiquer s'il
+a été corrompu, remplacé ou enlevé.
+</p>
+
+<pre caption="Intégrité correcte d'un paquet">
+# <i>equery check gentoolkit</i>
+[ Checking app-portage/gentoolkit-0.2.0 ]
+ * 54 out of 54 files good
+</pre>
+
+<p>
+Vous remarquerez que si vous changez des fichiers de configuration après
+l'installation, ils seront probablement rapportés comme «&nbsp;not good&nbsp;»,
+soit incorrects.
+</p>
+
+</body>
+</section>
+<section>
+<title>Lister tous les paquets dépendant de...</title>
+<body>
+
+<p>
+<c>equery</c> est capable de lister toutes les dépendances directes d'un paquet.
+Nous utiliserons pour cela la fonction <c>depends</c> et son utilisation est
+simple&nbsp;:
+</p>
+
+<pre caption="Chercher les paquets dépendant de pygtk">
+# <i>equery depends pygtk</i>
+[ Searching for packages depending on pygtk... ]
+app-office/dia-0.93
+dev-python/gnome-python-2.0.0-r1
+gnome-extra/gdesklets-core-0.26.2
+media-gfx/gimp-2.0.4
+x11-libs/vte-0.11.11-r1
+</pre>
+
+</body>
+</section>
+<section>
+<title>Graphes de dépendances</title>
+<body>
+
+<p>
+<c>equery</c> est capable de vous donner un graphe des dépendances pour un
+paquet donné. Le graphe de dépendances liste tous les paquets qui ont une
+dépendance directe ou indirecte pour le paquet en question.
+</p>
+
+<pre caption="Graphe de dépendances pour cdrtools">
+# <i>equery depgraph cdrtools</i>
+Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
+`-- app-cdr/cdrtools-2.01_alpha37
+ `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
+  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
+   `-- sys-apps/baselayout-1.10.4
+    `-- sys-apps/sysvinit-2.85-r1
+     `-- sys-apps/gawk-3.1.3-r1
+      `-- sys-apps/util-linux-2.12-r4
+          `-- sys-apps/sed-4.0.9
+              `-- sys-libs/ncurses-5.4-r4
+                  `-- sys-apps/pam-login-3.14
+                  `-- sys-libs/pam-0.77-r1
+                 `-- sys-libs/cracklib-2.7-r10
+               `-- sys-apps/miscfiles-1.3-r1
+              `-- app-arch/gzip-1.3.5-r1
+              `-- sys-apps/portage-2.0.50-r10
+</pre>
+
+<p>
+Par exemple, si glibc est une dépendance directe pour cdrtools, linux-headers
+n'est qu'une dépendance indirecte. Remarquez que la sortie donne également
+des informations sur les paquets virtuels. Dans l'exemple ci-dessus,
+<c>cdrtools</c> est en fait écrit comme nécessitant virtual/libc et non
+sys-libs/glibc. Mais dans l'exemple donné, le paquet virtuel virtual/libc
+sera satisfait grâce à l'installation de sys-libs/glibc.
+</p>
+
+</body>
+</section>
+<section>
+<title>Lister les fichiers appartenant à un ebuild</title>
+<body>
+
+<p>
+<c>equery</c> peut lister les fichiers qui appartiennent à un ebuild installé.
+Si vous ne savez pas quels fichiers ont été installés par Gentoolkit sur le
+système, vous pourrez utiliser <c>equery</c> pour les obtenir.
+</p>
+
+<pre caption="Lister les fichiers de Gentoolkit">
+# <i>equery files gentoolkit</i>
+[ Searching for packages matching gentoolkit... ]
+app-portage/gentoolkit-0.2.0
+* Contents of app-portage/gentoolkit-0.2.0:
+/usr
+/usr/bin
+/usr/bin/equery
+/usr/bin/etcat
+/usr/bin/euse
+/usr/bin/glsa-check
+/usr/bin/qpkg
+/usr/bin/revdep-rebuild
+/usr/lib
+/usr/lib/gentoolkit
+/usr/lib/gentoolkit/pym
+/usr/lib/gentoolkit/pym/gentoolkit
+/usr/lib/gentoolkit/pym/gentoolkit/__init__.py
+/usr/lib/gentoolkit/pym/gentoolkit/gentoolkit.py
+/usr/lib/gentoolkit/pym/gentoolkit/pprinter.py
+/usr/lib/gentoolkit/pym/glsa.py
+/usr/sbin
+/usr/share
+/usr/share/doc
+/usr/share/doc/gentoolkit-0.2.0_pre10
+
+[...]
+</pre>
+
+<p>
+La commande <c>files</c> de <c>equery</c> propose quelques options pour modifier
+la sortie. Vous pouvez y jeter un œil en lisant la page de manuel de
+<c>equery</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Chercher les paquets utilisant une option USE spécifique</title>
+<body>
+
+<p>
+Si vous souhaitez trouver quels paquets sur votre système peuvent utiliser une
+option USE bien précise, <c>equery</c> dispose de la fonction <c>hasuse</c>.
+</p>
+
+<pre caption="Chercher les paquets utilisant l'option USE mozilla">
+# <i>equery hasuse mozilla</i>
+[ Searching for USE flag mozilla in all categories among: ]
+ * installed packages
+[I--] [  ] dev-java/blackdown-jre-1.4.2.01 (1.4.2)
+[I--] [  ] mail-client/evolution-2.0.2 (2.0)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Lister les paquets</title>
+<body>
+
+<p>
+<c>equery</c> dispose d'un outil puissant permettant de lister les paquets
+appartenant à notre système, à Portage ou même à un «&nbsp;overlay&nbsp;». Nous
+allons l'essayer&nbsp;:
+</p>
+
+<pre caption="Lister les paquets avec equery">
+# <i>equery list gentoolkit</i>
+[ Searching for package 'gentoolkit' in all categories among: ]
+ * installed packages
+[I--] [  ] app-portage/gentoolkit-0.2.0 (0)
+</pre>
+
+<p>
+La recherche standard cherchera parmi les paquets installés un nom donné. S'il
+est trouvé, les informations suivantes seront retournées&nbsp;: l'état du
+paquet sur le système dans les premiers crochets (I pour les paquets Installés,
+P pour Portage et O pour Overlay), les masques possibles dans les seconds (~ par
+mot-clef, - par architecture ou M pour Masqué en dur), puis la catégorie,
+le nom complet et enfin le SLOT dans lequel le paquet est mis.
+</p>
+
+<p>
+Dans cet autre exemple, nous allons utiliser des options locales pour chercher
+des paquets dans notre arbre de Portage et dans l'overlay.
+</p>
+
+<pre caption="Utilisation d'options locales avec equery">
+# <i>equery list -p -o vim</i>
+[ Searching for package 'vim' in all categories among: ]
+ * installed packages
+[I--] [  ] app-editors/vim-6.3-r4 (0)
+ * Portage tree (/usr/portage)
+[-P-] [M~] app-editors/vim-7.0_alpha20050126 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-6.3-r2 (0)
+[-P-] [M~] app-editors/vim-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050126 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r3 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050122 (0)
+[-P-] [M~] app-editors/vim-core-7.0_alpha20050201 (0)
+[-P-] [  ] app-editors/vim-core-6.3-r4 (0)
+ * overlay tree (/opt/ebuilds)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Trouver la taille d'un paquet</title>
 <body>
 
 <p>
@@ -140,8 +388,8 @@ d'inquiétude, <c>equery</c> est là pour vous aider&nbsp;!
 <pre caption="Obtenir la taille d'un paquet">
 # <i>equery size openoffice-bin</i>
 * app-office/openoffice-bin-1.1.2
-	   Total Files : 2908
-	   Total Size  : 223353.31 KiB
+       Total Files : 2908
+       Total Size  : 223353.31 KiB
 </pre>
 
 <p>
@@ -204,43 +452,6 @@ le chemin d'accès complet de l'ebuild en question.
 # <i>equery which cdrtools</i>
 /usr/portage/app-cdr/cdrtools/cdrtools-2.01_alpha37.ebuild
 </pre>
-
-</body>
-</section>
-<section>
-<title>Graphe des dépendances</title>
-<body>
-
-<p>
-Grâce à <c>equery</c>, vous pouvez afficher un graphe des dépendances d'un
-paquet. Ce graphe contient tous les paquets qui sont des dépendances directes
-ou indirectes du paquet donné.
-</p>
-
-<pre caption="Graphe des dépendances de cdrtools">
-# <i>equery depgraph cdrtools</i>
-Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
-`-- app-cdr/cdrtools-2.01_alpha37
- `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
-  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
-   `-- sys-apps/baselayout-1.10.4
-    `-- sys-apps/sysvinit-2.85-r1
-     `-- sys-apps/gawk-3.1.3-r1
-      `-- sys-apps/util-linux-2.12-r4
-          `-- sys-apps/sed-4.0.9
-	      `-- sys-libs/ncurses-5.4-r4
-	          `-- sys-apps/pam-login-3.14
-	          `-- sys-libs/pam-0.77-r1
-                 `-- sys-libs/cracklib-2.7-r10
-               `-- sys-apps/miscfiles-1.3-r1
-              `-- app-arch/gzip-1.3.5-r1
-              `-- sys-apps/portage-2.0.50-r10
-</pre>
-
-<p>
-Dans l'exemple précédent, on voit que glic est une dépendance directe de
-cdrtools alors que linux-headers est une dépendance indirecte.
-</p>
 
 </body>
 </section>
@@ -567,5 +778,4 @@ anglais).
 </body>
 </section>
 </chapter>
-
 </guide>
