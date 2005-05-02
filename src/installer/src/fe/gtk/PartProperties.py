@@ -235,6 +235,11 @@ class PartProperties(gtk.Window):
 			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
 			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
 			tmppart.set_format(self.resize_info_part_format_yes.get_active())
+			new_size = int(self.resize_info_part_size.get_text())
+			if new_size != self.cur_size:
+				tmppart.resize(new_size)
+			self.controller.draw_part_box()
+			self.controller.part_selected(None, self.device, int(self.minor))
 
 		self.destroy()
 
@@ -265,6 +270,7 @@ class PartProperties(gtk.Window):
 	def update_slider_and_entries(self, widget, event, which_one):
 		print "Entry " + which_one + " has been updated"
 		hpaned_width = self.resize_hpaned.get_allocation().width - 5
+		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
 #			part_size_sec = round(long(self.resize_info_part_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
 			part_size_mb = round(long(self.resize_info_part_size.get_text()))

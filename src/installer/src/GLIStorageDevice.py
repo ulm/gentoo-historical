@@ -126,11 +126,12 @@ class Device:
 						else:
 							if not last_log_free:
 								last_log_free = last_log_minor + 0.9
+							else:
+								lost_log_free = part_log
 							tmppart_log.set_minor(last_log_free)
 							self._partitions[last_log_free] = tmppart_log
 							if part_log != last_log_free: del self._partitions[part_log]
 							continue
-						last_log_free = part_log
 					else:
 						if part_log > (last_log_minor + 1):
 							tmppart_log.set_minor(last_log_minor + 1)
@@ -138,7 +139,8 @@ class Device:
 							self._partitions[last_log_minor] = tmppart_log
 							del self._partitions[part_log]
 							continue
-						last_log_minor = part_log
+						else:
+							last_log_minor = part_log
 			if tmppart.get_type() == "free":
 				if last_minor < last_free:
 					self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
@@ -146,11 +148,12 @@ class Device:
 				else:
 					if not last_free:
 						last_free = last_minor + 0.1
+					else:
+						last_free = part
 					tmppart.set_minor(last_free)
 					self._partitions[last_free] = tmppart
 					if part != last_free: del self._partitions[part]
 					continue
-				last_free = part
 			else:
 				if part > (last_minor + 1):
 					tmppart.set_minor(last_minor + 1)
@@ -158,7 +161,8 @@ class Device:
 					self._partitions[last_minor] = tmppart
 					del self._partitions[part]
 					continue
-				last_minor = part
+				else:
+					last_minor = part
 
 	##
 	# Adds a new partition to the partition info
@@ -657,42 +661,42 @@ class Partition:
 	##
 	# Returns maximum MB for resize
 	def get_max_mb_for_resize(self):
-		free_minor = 0
-		if self.is_logical():
-			free_minor = self._minor + 0.9
+		if self._resizeable:
+			free_minor = 0
+			if self.is_logical():
+				free_minor = self._minor + 0.9
+			else:
+				free_minor = self._minor + 0.1
+			if free_minor in self._device._partitions:
+				return self._mb + self._device._partitions[free_minor]._mb
+			else:
+				return self._mb
 		else:
-			free_minor = self._minor + 0.1
-		if free_minor in self._device._partitions:
-			return self._mb + self._device._partitions[free_minor]._mb
-		else:
-			return self._mb
+			return -1
 
 	##
-	# Resizes the partition (ignore)
-	# @param start New start sector
-	# @param end New end sector
-	def resize(self, start, end):
-		part_at_start = self._device.get_partition_at(int(start))
-		part_at_end = self._device.get_partition_at(int(end))
-		logicals = None
+	# Resizes the partition
+	# @param mb New size in MB
+	def resize(self, mb):
+		free_minor = self._minor
 		if self.is_logical():
-			parent = self.get_extended_parent()
-			parentstart = int(self._device._partitions[parent].get_start())
-			parentend = int(self._device._partitions[parent].get_end())
-			if (start < parentstart) or (end > parentend): return 0
-		if self.is_extended():
-			logicals = self.get_logicals()
-			if len(logicals):
-				logicals_start = self._device._partitions[logicals[0]].get_start()
-				logicals_end = self._device._partitions[logicals[len(logicals)-1]].get_end()
-				if (start > logicals_start) or (end < logicals_end): return 0
-			if part_at_start in logicals: part_at_start = 0
-			if part_at_end in logicals: part_at_end = 0
-		if ((not part_at_start == 0) and (part_at_start != self._minor)) or ((not part_at_end == 0) and (part_at_end != self._minor)):
-			return 0
-		self.set_start(start)
-		self.set_end(end)
-		return 1
+			free_minor += 0.9
+		else:
+			free_minor += 0.1
+		if mb < self._mb:
+			# Shrinking
+			if not free_minor in self._device._partitions:
+				self._device._partitions[free_minor] = Partition(self._device, free_minor, 0, 0, 0, "free", format=False, existing=False)
+			self._device._partitions[free_minor]._mb += self._mb - mb
+			self._mb = mb
+		elif mb == self._mb + self._device._partitions[free_minor]._mb:
+			# Using all available unallocated space
+			del self._device._partitions[free_minor]
+			self._mb = mb
+		elif mb > self._mb:
+			# Growing
+			self._device._partitions[free_minor]._mb = mb - self._mb
+			self._mb = mb
 
 	##
 	# Utility function to raise an exception
