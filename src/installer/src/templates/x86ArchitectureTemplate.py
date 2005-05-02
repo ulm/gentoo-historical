@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.37 2005/04/13 19:03:18 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.38 2005/05/02 14:45:32 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -12,7 +12,6 @@ import GLIUtility, string
 from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
 import parted
-from decimal import Decimal
 import GLIStorageDevice
 
 class x86ArchitectureTemplate(ArchitectureTemplate):
