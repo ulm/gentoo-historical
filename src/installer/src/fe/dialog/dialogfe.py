@@ -425,17 +425,17 @@ def set_networking():
 			if code == DLG_OK: install_profile.set_domainname(None, domain, None)
 		elif menuitem == "HTTP Proxy":
 			code, http_proxy = d.inputbox("Enter a HTTP Proxy if you have one.")
-			if not GLIUtility.is_uri(http_proxy)
+			if not GLIUtility.is_uri(http_proxy):
 				d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
 			if code == DLG_OK: install_profile.set_http_proxy(None, http_proxy, None)
 		elif menuitem == "FTP Proxy":
 			code, ftp_proxy = d.inputbox("Enter a FTP Proxy if you have one.")
-			if not GLIUtility.is_uri(ftp_proxy)
+			if not GLIUtility.is_uri(ftp_proxy):
 				d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
 			if code == DLG_OK: install_profile.set_ftp_proxy(None, ftp_proxy, None)
 		elif menuitem == "RSYNC Proxy":
 			code, rsync_proxy = d.inputbox("Enter a RSYNC Proxy if you have one.")
-			if not GLIUtility.is_uri(rsync_proxy)
+			if not GLIUtility.is_uri(rsync_proxy):
 				d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
 			if code == DLG_OK: install_profile.set_rsync_proxy(None, rsync_proxy, None)
 		elif menuitem == "NIS Domain Name":
