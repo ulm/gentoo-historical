@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.105 2005/04/30 05:41:24 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.106 2005/05/03 17:12:37 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -166,7 +166,7 @@ class ArchitectureTemplate:
 	
 			file.append('\n# Added by GLI\n')
 			commentprefix = ""
-			if newvalues[key] == "COMMENT" or newvalues[key] == "##comment##":
+			if newvalues[key] == "COMMENT" or newvalues[key] == "##comment##" or newvalues[key] == "##commented##":
 				commentprefix = "#"
 			if quotes_around_value:
 				file.append(commentprefix + key + delimeter + '"' + newvalues[key] + '"\n')
@@ -395,8 +395,8 @@ class ArchitectureTemplate:
 		
 		# Set symlink
 		if os.access(self._chroot_dir + "/etc/localtime", os.W_OK):
-			GLIUtility.spawn("rm "+self._chroot_dir + "/etc/localtime", quiet=True)
-		os.symlink(self._chroot_dir + "/usr/share/zoneinfo/" + self._install_profile.get_time_zone(), self._chroot_dir + "/etc/localtime")
+			GLIUtility.spawn("rm "+self._chroot_dir + "/etc/localtime")
+		GLIUtility.spawn("ln -s ../usr/share/zoneinfo/" + self._install_profile.get_time_zone() + " /etc/localtime", chroot=self._chroot_dir)
 		if not (self._install_profile.get_time_zone() == "UTC"):
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
 		self._logger.log("Timezone set.")
