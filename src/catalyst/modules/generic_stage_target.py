@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24 2005/03/24 15:37:55 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24.2.1 2005/05/03 15:40:51 rocket Exp $
 
 """
 This class does all of the chroot setup, copying of files, etc. It is
@@ -177,6 +177,14 @@ class generic_stage_target(generic_target):
 	def set_mounts(self):
 		pass
 	
+        def kill_chroot_pids(self):
+		# Force environment variables to be exported so script can see them
+		self.setup_environment()
+
+		if os.path.exists(self.settings["sharedir"]+"/targets/support/kill-chroot-pids.sh"):
+		    cmd("/bin/bash "+self.settings["sharedir"]+"/targets/support/kill-chroot-pids.sh","kill-chroot-pids script failed.")
+
+
 	def mount_safety_check(self):
 		mypath=self.settings["chroot_path"]
 		
@@ -283,9 +291,17 @@ class generic_stage_target(generic_target):
 			
 			if retval!=0:
 				ouch=1
-				warn("Couldn't umount bind mount: "+mypath+x)
-				# keep trying to umount the others, to minimize damage if developer makes a mistake
-		
+				warn("First attempt to unmount: "+mypath+x+" failed.")
+				warn("Killing any pids still running in the chroot")
+
+				self.kill_chroot_pids()
+
+				retval2=os.system("umount "+mypath+x)
+				if retval2!=0:
+				    ouch=1
+				    warn("Couldn't umount bind mount: "+mypath+x)
+				    # keep trying to umount the others, to minimize damage if developer makes a mistake
+
 		if ouch:
 			"""
 			if any bind mounts really failed, then we need to raise
