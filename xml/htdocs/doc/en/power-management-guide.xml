@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.11 2005/04/18 19:19:27 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.12 2005/05/04 16:54:18 neysx Exp $ -->
 <guide link="power-management-guide.xml">
 <title>Power Management Guide</title>
 
@@ -17,15 +17,13 @@ laptops. This guide assists you setting it up on your laptop.
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>1.21</version>
-<date>2005-04-18</date>
+<version>1.22</version>
+<date>2005-05-04</date>
 
 <chapter>
 <title>Introduction</title>
-
 <section>
 <title>Why Power Management?</title>
-
 <body>
 
 <p>
@@ -149,8 +147,8 @@ Power Management Options ---&gt;
   ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
     [*] ACPI Support
     [ ]   Sleep States
-    &lt;M&gt;   AC Adapter
-    &lt;M&gt;   Battery
+    [*]   AC Adapter
+    [*]   Battery
     &lt;M&gt;   Button
     &lt;M&gt;   Fan
     &lt;M&gt;   Processor
@@ -173,9 +171,7 @@ Power Management Options ---&gt;
 <p>
 Decide yourself whether you want to enable Software Suspend, Suspend-to-Disk and
 Sleep States (see below). If you own an ASUS, Medion or Toshiba laptop, enable
-the appropriate section. Recent kernel versions (2.6.9 and later) include an
-<e>'ondemand' governor</e> for CPU Frequency Scaling, activate it as well when
-using such a kernel.
+the appropriate section.
 </p>
 
 <p>
@@ -190,15 +186,14 @@ Consult the kernel documentation if you're unsure which one to take.
 Compile your kernel, make sure the right modules get loaded at startup and boot
 into your new ACPI-enabled kernel. Next run <c>emerge sys-power/acpid</c> to get
 the acpi daemon. This one informs you about events like switching from AC to
-battery or closing the lid. Make sure the module <e>button</e> is loaded if you
-didn't compile it into the kernel and start acpid with <c>/etc/init.d/acpid
-start</c>. Run <c>rc-update add acpid default</c> to load it on startup. You'll
-soon see how to use it.
+battery or closing the lid. Make sure the modules are loaded if you didn't
+compile them into the kernel and start acpid by executing
+<c>/etc/init.d/acpid start</c>. Run <c>rc-update add acpid default</c> to load
+it on startup. You'll soon see how to use it.
 </p>
 
 <pre caption="Installing acpid">
 # <i>emerge sys-power/acpid</i>
-# <i>modprobe button</i>
 # <i>/etc/init.d/acpid start</i>
 # <i>rc-update add acpid default</i>
 </pre>
@@ -246,83 +241,64 @@ cause a runlevel switch. Create the following files to switch between
 <e>default</e> and <e>battery</e> runlevel depending on the power source:
 </p>
 
-<pre caption="/etc/acpi/switch_runlevel.sh">
+<pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
 #!/bin/bash
 
+<comment># BEGIN configuration</comment>
 RUNLEVEL_AC="default"
 RUNLEVEL_BATTERY="battery"
+<comment># END configuration</comment>
 
-function on_ac () {
-    if which on_ac_power &amp;> /dev/null
-    then
-        on_ac_power
-    else
-        grep --quiet on-line /proc/acpi/ac_adapter/*/state
-    fi
-}
 
-function SwitchRunlevel () {
-
-    if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
-    then
+if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
+then
         logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
         exit 1
-    fi
+fi
 
-
-    if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
-    then
+if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
+then
         logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
         exit 1
-    fi
+fi
 
-    if on_ac
-    then if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
+if on_ac_power
+then
+    if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
   then
             logger "Switching to ${RUNLEVEL_AC} runlevel"
             /sbin/rc ${RUNLEVEL_AC}
         fi
-    elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
-  then
+elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
+then
         logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
         /sbin/rc ${RUNLEVEL_BATTERY}
-  fi
-}
+fi
 </pre>
 
 <pre caption="/etc/acpi/events/pmg_ac_adapter">
+<comment># replace "ac_adapter" below with the event generated on your laptop</comment>
+<comment># See /var/log/acpid</comment>
 event=ac_adapter.*
-action=/etc/acpi/actions/pmg_ac_adapter.sh %e
+action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <pre caption="/etc/acpi/events/pmg_battery">
+<comment># replace "battery" below with the event generated on your laptop</comment>
+<comment># See /var/log/acpid</comment>
 event=battery.*
-action=/etc/acpi/actions/pmg_battery.sh %e
-</pre>
-
-<pre caption="/etc/acpi/actions/pmg_ac_adapter.sh">
-#!/bin/bash
-
-source /etc/acpi/switch_runlevel.sh
-SwitchRunlevel
-</pre>
-
-<pre caption="/etc/acpi/actions/pmg_battery.sh">
-#!/bin/bash
-
-source /etc/acpi/switch_runlevel.sh
-SwitchRunlevel
+action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <p>
-Some of these files must be executable. Last not least restart acpid to have
-it recognize the changes.
+Additionally you need the package sys-power/powermgmt-base which contains
+the <c>on_ac_power</c> utility. The file <path>pmg_switch_runlevel.sh</path>
+must be executable.
 </p>
 
 <pre caption="Finishing runlevel switching with acpid">
 <i># emerge powermgmt-base</i>
-<i># chmod +x /etc/acpi/switch_runlevel.sh</i>
-<i># chmod +x /etc/acpi/actions/pmg_*</i>
+<i># chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</i>
 <i># /etc/init.d/acpid restart</i>
 </pre>
 
@@ -344,7 +320,7 @@ favourite editor and add these lines:
 
 <pre caption="Runlevel switch at boot time by editing local.start">
 <comment># Fake acpi event to switch runlevel if running on batteries</comment>
-/etc/acpi/actions/pmg_battery.sh "battery/battery"
+/etc/acpi/actions/pmg_switch_runlevel.sh "battery/battery"
 </pre>
 
 <p>
@@ -373,7 +349,7 @@ First of all, the kernel has to be able to change the processor's frequency. The
 it's important to choose the right one in your kernel. You should already have
 done it above. Once the kernel knows how to change frequencies, it has to know
 which frequency it should set. This is done according to the <e>policy</e> which
-consists of <e>CPUfreq policy</e> and a <e>governor</e>. A CPUfreq policy are
+consists of a <e>CPUfreq policy</e> and a <e>governor</e>. A CPUfreq policy are
 just two numbers which define a range the frequency has to stay between -
 minimal and maximal frequency. The governor now decides which of the available
 frequencies in between minimal and maximal frequency to choose. For example, the
@@ -389,7 +365,7 @@ This doesn't sound like dynamic frequency changes yet and in fact it isn't.
 Dynamics however can be accomplished with various approaches. For example,
 the <e>ondemand governor</e> makes its decisions depending on the current CPU
 load. The same is done by various userland tools like <c>cpudyn</c>,
-<c>speedfreq</c>, <c>powernowd</c> and many more. ACPI events can be used to
+<c>cpufreqd</c>, <c>powernowd</c> and many more. ACPI events can be used to
 enable or disable dynamic frequency changes depending on power source.
 </p>
 
@@ -414,45 +390,41 @@ is supported.
 </note>
 
 <p>
-It's time to test whether CPU frequency changing works. To get comfortable with
-the interface to the kernel, first do some manual speed modifications. To set
-another CPU speed, use:
+It's time to test whether CPU frequency changing works. Let's install another
+tool which is very handy for debugging purposes: <c>sys-power/cpufrequtils</c>
 </p>
 
-<pre caption="Manual CPU speed modifications">
-<comment>(Get current frequency)</comment>
-# <i>grep "cpu MHz" /proc/cpuinfo</i>
-
-<comment>(Lists supported frequencies. This might fail.)</comment>
-# <i>cd /sys/devices/system/cpu/cpu0/cpufreq/</i>
-# <i>cat scaling_available_frequencies</i>
-
-<comment>(Change frequency to 1 GHz (1000000 KHz)
-Replace with a frequency your laptop supports.)</comment>
-# <i>echo -n userspace > scaling_governor</i>
-# <i>echo -n 1000000 > scaling_setspeed</i>
-
-<comment>(Verify frequency was changed)</comment>
-# <i>grep "cpu MHz" /proc/cpuinfo</i>
+<pre caption="Checking CPU frequency">
+# <i>emerge cpufrequtils</i>
+# <i>cpufreq-info</i>
 </pre>
 
 <p>
-If you are getting error messages, please refer to the <e>Troubleshooting</e>
-chapter in the end of this guide.
+Here is an example output:
 </p>
+
+<pre caption="Sample output from cpufreq-info">
+cpufrequtils 0.2: cpufreq-info (C) Dominik Brodowski 2004
+Report errors and bugs to linux@brodo.de, please.
+analyzing CPU 0:
+  driver: centrino
+  CPUs which need to switch frequency at the same time: 0
+  hardware limits: 600 MHz - 1.40 GHz
+  available frequency steps: 600 MHz, 800 MHz, 1000 MHz, 1.20 GHz, 1.40 GHz
+  available cpufreq governors: ondemand, powersave, userspace, performance
+  current policy: frequency should be within 924 MHz and 1.40 GHz.
+    The governor "performance" may decide which speed to use
+    within this range.
+  current CPU frequency is 1.40 GHz (asserted by call to hardware).
+</pre>
 
 <p>
-You can also write to <path>scaling_max_freq</path> and
-<path>scaling_min_freq</path> to set boundaries the frequency should stay in
-between.
+Now play around with <c>cpufreq-set</c> to make sure frequency switching works.
+Run <c>cpufreq-set -g ondemand</c> for example to activate the ondemand
+governor and verify the change with <c>cpufreq-info</c>. If it doesn't work as
+expected, you might find help in the Troubleshooting section in the end of this
+guide.
 </p>
-
-<note>
-Some kernel seem to be buggy about updating <path>/proc/cpuinfo</path>. If you
-don't see any change there, this doesn't neccessarily mean the CPU frequency
-wasn't changed. If this happens to you, run <c>emerge x86info</c>, update your
-kernel as asked and check the current frequency with <c>x86info -mhz</c>.
-</note>
 
 </body>
 </section>
@@ -496,7 +468,7 @@ configuration and changes.
   <ti><uri link="http://mnm.uib.es/~gallir/cpudyn/">cpudyn</uri></ti>
   <ti>Daemon</ti>
   <ti>CPU load</ti>
-  <ti>None</ti>
+  <ti>Performance, powersave</ti>
   <ti>Dynamic</ti>
   <ti>
     Also supports disk standby - notice however that <e>laptop mode</e> in most
@@ -510,8 +482,7 @@ configuration and changes.
   <ti>All available</ti>
   <ti>None</ti>
   <ti>
-    Sophisticated (but also complicated) setup. An optimal configuration
-    requires detailed knowledge of your system.
+    Sophisticated (but also complicated) setup.
   </ti>
 </tr>
 <tr>
@@ -534,7 +505,8 @@ configuration and changes.
   <ti>Dynamic, powersave, performance, fixed speed</ti>
   <ti>
     Small yet powerful with an useful client/server interface. Requires a 2.6
-    kernel.
+    kernel. Doesn't seem to be maintained anymore and will be removed from
+    Portage in the near future.
   </ti>
 </tr>
 <tr>
@@ -545,7 +517,7 @@ configuration and changes.
   <ti>None</ti>
   <ti>
     Gnome application, a graphical tool to set CPU frequency manually. It does
-    not offer any automation and is mainly listed for the sake of completeness.
+    not offer any automation.
   </ti>
 </tr>
 <tr>
@@ -568,115 +540,87 @@ unnecessary high level.
 </p>
 
 <p>
-Which one to choose? If you have no idea about it, first try <c>speedfreq</c>:
+Which one to choose? If you have no idea about it, try <c>cpufreqd</c>:
 </p>
-
-<pre caption="Installing speedfreq">
-# <i>emerge speedfreq</i>
-# <i>rc-update add speedfreq battery</i>
-</pre>
-
-<p>
-<c>speedfreq</c> can be configured by editing
-<path>/etc/conf.d/speedfreq</path>. For example, if you like users to be able
-to change the policy, modify <c>SPEEDFREQ_OPTS=""</c> to
-<c>SPEEDFREQ_OPTS="-u"</c>. Having done your changes, start the daemon.
-</p>
-
-<pre caption="Starting speedfreq">
-# <i>/etc/init.d/speedfreq start</i>
-</pre>
-
-<p>
-Setting up cpufreqd is a little bit more complicated.
-</p>
-
-<warn>
-Do not run more than one of the above programs at the same time. It may cause
-confusion like switching between two frequencies all the time. If you just
-installed speedfreq, skip cpufreqd now.
-</warn>
 
 <pre caption="Installing cpufreqd">
 # <i>emerge cpufreqd</i>
-# <i>rc-update add cpufreqd battery</i>
 </pre>
 
 <p>
-<c>cpufreqd</c> comes with a default configuration in
-<path>/etc/cpufreqd.conf</path>.
-Change the config file to fit your needs. The following will save more energy
-than the default one - at the cost of less performance, of course.
+<c>cpufreqd</c> can be configured by editing <path>/etc/cpufreqd.conf</path>.
+The default one that ships with cpufreqd may look a bit confusing. I recommend
+replacing it with the one from Gentoo developer Henrik Brix Andersen (see
+below).
 </p>
 
-<pre caption="A sample cpufreqd config file">
+<pre caption="/etc/cpufreqd.conf">
 [General]
 pidfile=/var/run/cpufreqd.pid
 poll_interval=2
 pm_type=acpi
-<comment># Uncomment the following line to enable ACPI workaround (see cpufreqd.conf(5))
-# acpi_workaround=1</comment>
-verbosity=4 <comment>#(if you want a minimal logging set to 5)</comment>
+verbosity=5
 
-<comment># Full performance</comment>
 [Profile]
-name=ac
-minfreq=600000
-maxfreq=1400000
+name=ondemand
+minfreq=0%
+maxfreq=100%
+policy=ondemand
+
+[Profile]
+name=powersave
+minfreq=0%
+maxfreq=100%
+policy=powersave
+
+[Profile]
+name=performance
+minfreq=0%
+maxfreq=100%
 policy=performance
 
-<comment># Maximum power saving</comment>
-[Profile]
+[Rule]
 name=battery
-minfreq=600000
-maxfreq=900000
-policy=powersave
+ac=off
+profile=ondemand
 
-<comment># Constant frequency</comment>
-[Profile]
-name=dvd
-minfreq=900000
-maxfreq=1100000
-policy=powersave
-
-<comment># Full performance when running on AC</comment>
 [Rule]
-name=ac_on
+name=battery_low
+ac=off
+battery_interval=0-10
+profile=powersave
+
+[Rule]
+name=ac
 ac=on
-profile=ac
-
-<comment># Compiling should be fast if battery state is ok</comment>
-[Rule]
-name=compiling
-ac=off
-battery_interval=30-100
-programs=emerge,make,gcc,cpp
-cpu_interval=0-100
-profile=ac
-
-<comment># watching DVD's gets sluggish with slow CPU frequency
-# Can also be used for games etc.</comment>
-[Rule]
-name=dvd_watching
-ac=off
-battery_interval=15-100
-programs=xine,mplayer,avidemux,kaffeine,kmplayer
-cpu_interval=0-100
-profile=dvd
-
-<comment># If above doesn't apply, maximise power saving</comment>
-[Rule]
-name=battery_on
-ac=off
-battery_interval=0-100
-cpu_interval=0-100
-profile=battery
+profile=performance
 </pre>
 
 <p>
-<c>cpudyn</c> and <c>powernowd</c> are installed in the same way as
-<c>speedfreq</c>.
+You can't use a percentage value like above for min_freq and max_freq if you
+are using kernel 2.6 with the sysfs interface (you probably do). Replace it
+with the lowest and highest frequency as reported by <c>cpufreq-info
+--hwlimits</c>. For example, on my 1.4 GHz Pentium M I put in
 </p>
+
+<pre caption="Sample values for minfreq and maxfreq">
+minfreq=600000
+maxfreq=1400000
+</pre>
+
+<p>
+Last not least start the daemon.
+</p>
+
+<pre caption="Starting cpufreqd">
+# <i>rc-update add cpufreqd default battery</i>
+# <i>rc</i>
+</pre>
+
+<warn>
+Do not run more than one of the above programs at the same time. It may cause
+confusion like switching between two frequencies all the time.
+</warn>
 
 </body>
 </section>
@@ -692,21 +636,23 @@ do so is monitoring CPU speed while working with your laptop:
 </p>
 
 <pre caption="Monitoring CPU speed">
-# <i>watch -n 1 'grep "cpu MHz" /proc/cpuinfo'</i>
+# <i>watch grep "cpu MHz" /proc/cpuinfo</i>
 </pre>
 
 <p>
-If <path>/proc/cpuinfo</path> doesn't get updated (see above), monitor the CPU
-frequency with:
+If <path>/proc/cpuinfo</path> doesn't get updated (see Troubleshooting),
+monitor the CPU frequency with:
 </p>
 
 <pre caption="Alternative CPU speed monitoring">
-# <i>watch -n 1 x86info -mhz</i>
+# <i>watch x86info -mhz</i>
 </pre>
 
 <p>
 Depending on your setup, CPU speed should increase on heavy load, decrease on
-no activity or just stay at the same level.
+no activity or just stay at the same level. When using cpufreqd and verbosity
+set to 5 or higher in <path>cpufreqd.conf</path> you'll get additional
+information about what's happening reported to syslog.
 </p>
 
 </body>
@@ -763,8 +709,90 @@ This is the same for XFree86 and <path>/etc/X11/XF86Config</path>.
 <p>
 Probably more important is the backlight dimming. If you have access to the
 dimming settings via a tool, write a small script that dims the backlight in
-battery mode and place it in your <e>battery</e> runlevel.
+battery mode and place it in your <e>battery</e> runlevel. The following script
+should work on most IBM Thinkpads. It needs the <c>app-laptop/ibm-acpi</c>
+package or the appropriate option in your kernel has to be enabled.
 </p>
+
+<warn>
+Support for setting brightness is marked experimental in ibm-acpi. It accesses
+hardware directly and may cause severe harm to your system. Please read the
+<uri link="http://ibm-acpi.sourceforge.net/">ibm-acpi website</uri>
+</warn>
+
+<p>
+To be able to set the brightness level, the ibm_acpi module has to be loaded
+with the experimental parameter.
+</p>
+
+<pre caption="automatically loading the ibm_acpi module">
+<comment>(Please read the warnings above before doing this!)</comment>
+<i># emerge ibm-acpi</i>
+<i># echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
+<i># /sbin/modules-update</i>
+<i># echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
+<i># modprobe ibm_acpi</i>
+</pre>
+
+<p>
+This should work without error messages and a file
+<path>/proc/acpi/ibm/brightness</path> should be created after loading the
+module. An init script will take care of choosing the brightness according
+to the power source.
+</p>
+
+<pre caption="/etc/conf.d/lcd-brightness">
+<comment># See /proc/acpi/ibm/brightness for available values</comment>
+<comment># Please read /usr/share/doc/ibm-acpi-*/README.gz</comment>
+
+<comment># brigthness level in ac mode. Default is 7.</comment>
+BRIGHTNESS_AC=7
+
+<comment># brightness level in battery mode. Default is 4.</comment>
+BRIGHTNESS_BATTERY=4
+</pre>
+
+<pre caption="/etc/init.d/lcd-brightness">
+#!/sbin/runscript
+
+set_brightness() {
+    if on_ac_power
+    then
+        LEVEL=${BRIGHTNESS_AC:-7}
+    else
+        LEVEL=${BRIGHTNESS_BATTERY:-4}
+    fi
+
+    if [ -f /proc/acpi/ibm/brightness ]
+    then
+        ebegin "Setting LCD brightness"
+        echo "level ${LEVEL}" > /proc/acpi/ibm/brightness
+        eend $?
+    else
+        ewarn "Setting LCD brightness is not supported."
+        ewarn "Check that ibm_acpi is loaded into the kernel"
+    fi
+}
+
+start() {
+    set_brightness
+}
+
+stop () {
+    set_brightness
+}
+</pre>
+
+<p>
+When done, make sure brightness is adjusted automatically by adding it to the
+battery runlevel.
+</p>
+
+<pre caption="Enabling automatic brightness adjustment">
+<i># chmod +x /etc/init.d/lcd-brightness</i>
+<i># rc-update add lcd-brightness battery</i>
+<i># rc</i>
+</pre>
 
 </body>
 </section>
@@ -811,6 +839,11 @@ The second possibility is using a small script and hdparm. Create
 
 <pre caption="Using hdparm for disk standby">
 #!/sbin/runscript
+
+depend() {
+  after hdparm
+}
+
 start() {
   ebegin "Activating Power Management for Hard Drives"
   hdparm -q -S12 /dev/hda
@@ -853,31 +886,6 @@ written to disk on read calls or after 10 minutes (instead of 30 seconds). This
 minimizes the time the hard disk needs to be spun up.
 </p>
 
-<p>
-<!-- TODO: bug #45593 -->
-Besides kernel support you also need a script that controls starting and
-stopping of laptop-mode. You kernel documentation in
-<path>/usr/src/linux/Documentation/laptop-mode.txt</path> contains one as well
-as the package <c>laptop-mode-tools</c>. None of them is easy to install
-though.
-</p>
-
-<p>
-Ebuilds for laptop-mode-tools are not in Portage, because Gentoo developers
-don't think they are production ready yet. Take that into consideration
-before using the ebuilds which can be found in <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=45593">Bugzilla</uri>. The Gentoo
-Handbook tells you how to use external ebuilds if you don't know where to put
-them. Once your PORTDIR_OVERLAY contains the ebuilds, install the
-script:
-</p>
-
-<warn>
-This package is not seen as production ready and installing custom ebuilds from
-Bugzilla is not recommended. Please don't use laptop-mode-tools if you're
-unsure.
-</warn>
-
 <pre caption="Automated start of laptop-mode">
 # <i>emerge laptop-mode-tools</i>
 </pre>
@@ -885,9 +893,8 @@ unsure.
 <p>
 <c>laptop-mode-tools</c> has it's configuration file in
 <path>/etc/laptop-mode/laptop-mode.conf</path>. Adjust it the way you like it,
-it's well commented. If you have <e>apm</e> or <e>acpi</e> in your USE flags,
-laptop-mode will be started automatically in battery mode. Otherwise you can
-automate it by running <c>rc-update add laptop-mode battery</c>.
+it's well commented. Run <c>rc-update add laptop_mode battery</c> to start it
+automatically.
 </p>
 
 </body>
