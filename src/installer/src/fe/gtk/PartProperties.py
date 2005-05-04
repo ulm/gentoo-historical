@@ -213,19 +213,21 @@ class PartProperties(gtk.Window):
 		self.hide_all()
 
 	def ok_clicked(self, button):
-		print "OK"
-
+		if self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()] == "linux-swap":
+			self.part_mount_point_entry.set_text("")
+			self.part_mount_opts_entry.set_text("")
+		else:
+			if self.part_mount_point_entry.get_text() and not self.part_mount_opts_entry.get_text():
+				# Mount point but no mount options
+				self.part_mount_opts_entry.set_text("defaults")
 		if self.fstype == "free":
 			hpaned_width = self.resize_hpaned.get_allocation().width - 5
 			hpaned_pos = self.resize_hpaned.get_position()
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
-#			start = self.active_part_start_cyl
-#			end = int(self.start + part_size) - 1
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4.9
-#			minor = self.controller.devices[self.device].get_free_minor_at(self.start, end)
 			type = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, type, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
@@ -290,6 +292,12 @@ class PartProperties(gtk.Window):
 		fs = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.resize_part_space.set_colors(self.controller.colors[fs], self.controller.colors[fs])
 		if self.fstype == "free": self.resize_part_space.get_child().expose_event(None, None)
+		if fs == "linux-swap":
+			self.part_mount_point_entry.set_sensitive(False)
+			self.part_mount_opts_entry.set_sensitive(False)
+		else:
+			self.part_mount_point_entry.set_sensitive(True)
+			self.part_mount_opts_entry.set_sensitive(True)
 
 	def delete_event(self, widget, event, data=None):
 		return False
