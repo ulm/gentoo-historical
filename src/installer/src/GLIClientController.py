@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.55 2005/05/03 02:17:46 agaffney Exp $
+$Id: GLIClientController.py,v 1.56 2005/05/04 03:48:38 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -148,12 +148,12 @@ class GLIClientController(Thread):
 					else:
 						self.addNotification("int", INSTALL_DONE)
 				except GLIException, error:
-					self._logger.log("Exception received during '" + self._install_steps[self._install_step][1] + "': " + error)
+					self._logger.log("Exception received during '" + self._install_steps[self._install_step][1] + "': " + str(error))
 					self.addNotification("exception", error)
 					self._install_event.clear()
 				except Exception, error:
 					# Something very bad happened
-					self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + error + "'")
+					self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + str(error) + "'")
 					self.addNotification("exception", error)
 					self._install_event.clear()
 			else:
