@@ -1,0 +1,31 @@
+Fix some heap overflows triggered by invalid binaries.
+
+Patch by Sebastian Krahmer of SuSe.
+
+http://bugs.gentoo.org/91398
+
+diff -ruN binutils-2.15.91.0.2/bfd/elfcode.h binutils-2.15.91.0.2.fixed/bfd/elfcode.h
+--- binutils-2.15.91.0.2/bfd/elfcode.h  2004-07-27 21:36:08.000000000 -0700
++++ binutils-2.15.91.0.2.fixed/bfd/elfcode.h    2005-04-30 06:31:12.236081008 -0700
+@@ -640,6 +640,9 @@
+       Elf_Internal_Shdr *shdrp;
+       unsigned int num_sec;
+ 
++      if (sizeof(*i_shdrp)*i_ehdrp->e_shnum/sizeof(*i_shdrp)!=i_ehdrp->e_shnum) 
++        goto got_no_match;
++
+       amt = sizeof (*i_shdrp) * i_ehdrp->e_shnum;
+       i_shdrp = bfd_alloc (abfd, amt);
+       if (!i_shdrp)
+@@ -647,6 +650,10 @@
+       num_sec = i_ehdrp->e_shnum;
+       if (num_sec > SHN_LORESERVE)
+ 	num_sec += SHN_HIRESERVE + 1 - SHN_LORESERVE;
++
++      if (sizeof (i_shdrp) * num_sec/sizeof (i_shdrp) != num_sec)
++        goto got_no_match;
++
+       elf_numsections (abfd) = num_sec;
+       amt = sizeof (i_shdrp) * num_sec;
+       elf_elfsections (abfd) = bfd_alloc (abfd, amt);
+
