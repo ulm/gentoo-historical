@@ -1,4 +1,5 @@
 import commands, string, os, parted
+from GLIException import *
 
 MEGABYTE = 1024 * 1024
 
@@ -387,13 +388,6 @@ class Device:
 		print self._total_bytes, self._geometry
 
 	##
-	# Utility function for raising an exception
-	# @param message Error message
-	def _error(self, message):
-		"Raises an exception"
-		raise GLIException("DeviceObjectError", 'fatal', 'Device', message)
-		
-	##
 	# Utility function for running a command and returning it's output as a list
 	# @param cmd Command to run
 	def _run(self, cmd):
@@ -698,12 +692,6 @@ class Partition:
 			self._device._partitions[free_minor]._mb = mb - self._mb
 			self._mb = mb
 
-	##
-	# Utility function to raise an exception
-	# @param message Error message
-	def _error(self, message):
-		raise GLIException("PartitionObjectError", 'fatal', 'Partition', message)
-
 ##
 # Returns a list of detected partitionable devices
 def detect_devices():
@@ -711,16 +699,15 @@ def detect_devices():
 	
 	# Make sure sysfs exists
 	if not os.path.exists("/sys/bus"):
-		raise Exception, "no sysfs found (you MUST use a kernel >2.6)"
+		raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "no sysfs found (you MUST use a kernel >2.6)")
 	# Make sure /proc/partitions exists
 	if not os.path.exists("/proc/partitions"):
-		raise Exception, "/proc/partitions does not exist!"
+		raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "/proc/partitions does not exist! Please make sure procfs is in your kernel and mounted!")
 	
 	# Load /proc/partitions into the variable 'partitions'
 	partitions = []
 	for line in open("/proc/partitions"):
-		if len(line.split()) < 4 or not line.split()[0].isdigit() or \
-						not line.split()[1].isdigit():
+		if len(line.split()) < 4 or not line.split()[0].isdigit() or not line.split()[1].isdigit():
 			continue
 		
 		# Get the major, minor and device name
@@ -763,8 +750,7 @@ def detect_devices():
 			
 			# For each device in the devices on that bus
 			for sysfs_device in sysfs_devices:
-				dev_file = "/sys/bus/" + dev_type + "/devices/"\
-						+ sysfs_device + "/block/dev"
+				dev_file = "/sys/bus/" + dev_type + "/devices/" + sysfs_device + "/block/dev"
 						
 				# If the file is not a block device, loop
 				if not os.path.exists(dev_file):
@@ -776,8 +762,7 @@ def detect_devices():
 					major = int(major)
 					minor = int(minor)
 				except:
-					raise Exception, "invalid major minor in "\
-								+ dev_file
+					raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "invalid major minor in " + dev_file)
 			
 				# Find a device listed in /proc/partitions
 				# that has the same minor and major as our
