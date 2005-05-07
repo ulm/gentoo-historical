@@ -60,7 +60,7 @@ The currently supported operators include:
 
 """
 
-__revision__ = '$Id: template.py,v 1.1 2005/03/27 04:02:34 hadfield Exp $'
+__revision__ = '$Id: template.py,v 1.2 2005/05/07 02:28:35 hadfield Exp $'
 __modulename__ = 'template'
 
 import md5
@@ -188,7 +188,7 @@ class Template:
                 for name, loop in loops.iteritems():
                     self.param(name, loop, "loop")
 
-            full_file = string.join(self._contents);
+            full_file = "".join(self._contents);
 
             # Strip out all comments
             full_file = re.sub(r'(?s)\{\*.*?\*\}', '', full_file)
@@ -270,11 +270,11 @@ class Template:
             start_pos = loop["char_pos"]
             end_pos = content.find("{!LOOP}", start_pos)
             if end_pos == -1:
-                raise TemplateModuleError("Unable to find end of loop '%'." %
+                raise TemplateModuleError("Unable to find end of loop '%s'." %
                                           loop)
             
             loop_text = content[start_pos + len("{LOOP %s}" % loop["expr"]):
-                                  end_pos]
+                                end_pos]
             
             # Cut out the loop text from the full file text
             content = content[:start_pos] + content[end_pos + 7:]
@@ -334,7 +334,7 @@ class Template:
             start_pos = cur_if["char_pos"]
             end_pos = content.find("{!IF}", start_pos)
             if end_pos == -1:
-                raise TemplateModuleError("Unable to find end of loop '%'." %
+                raise TemplateModuleError("Unable to find end of loop '%s'." %
                                           cur_if)
             
             if_text = content[start_pos + len("{IF %s}" % cur_if["expr"]):
