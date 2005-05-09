@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = '$Id: config.py,v 1.1 2005/03/27 04:02:34 hadfield Exp $'
+__revision__ = '$Id: config.py,v 1.2 2005/05/09 20:21:31 hadfield Exp $'
 __version__ = "0.3"
 __modulename__ = "config"
 
@@ -20,8 +20,8 @@ db = {
 theme = "gentoo"
 contact = "port001@gentoo.org"
 
-root = "/var/www/localhost/htdocs/glsr/"
-url = "http://scriptstest.gentoo.org/"
+root = "/var/www/localhost/htdocs/gentoo/src/glsr/src-whoa/"
+url = "http://localhost/glsr/"
 
 # FIXME: The next three settings should be set in the web UI.
 who_is_online_offset = 300
@@ -33,7 +33,7 @@ require_approval = False
 error_report_list_length = 5
 
 
-template_loc = root + "template/" + theme + "/templates/"
+template_loc = root + "template/" + theme
 template_cache = root + "template/tmpl_cache/" 
 
 debug = True
