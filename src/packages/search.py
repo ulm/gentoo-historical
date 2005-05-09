@@ -80,13 +80,11 @@ if not results:
 	' cellspacing="0"><tr><td colspan="3" class="fields">'
 	'Nothing found.<br></td></tr>\n'
 	'<tr><td class="item" colspan="3">'
-	'<img '
-	'src="%s/?category=generic"'
-	'align="right" alt=""> <p>I could not find any ebuild that match'
+	'<p>I could not find any ebuild that match'
 	' your query.  Try a different query or check the'
 	' <a HREF="%s">'
 	'packages.gentoo.org main page</a>.</p></td></tr></table>\n'
-	'</div>\n' % (config.ICONS,config.FEHOME))
+	'</div>\n' % config.FEHOME)
 	sys.stdout.write(s)
 	write_to_cache(s)
 	sys.exit(0)
@@ -94,11 +92,11 @@ if not results:
 pkgs = [ query_to_dict(i) for i in results ]
 pkgs.sort(sort_by_weight)
 
-s = ''
-for pkg in pkgs:
-	#print pkg
-	html = gentoo.package_to_html(pkg,db)
-	s = '%s\n%s' % (s,gentoo.package_to_html(pkg,db))
+s = '\n'.join([gentoo.package_to_html(pkg,db) for pkg in pkgs])
+#for pkg in pkgs:
+#	#print pkg
+#	html = gentoo.package_to_html(pkg,db)
+#	s = '%s\n%s' % (s,gentoo.package_to_html(pkg,db))
 
 if offset != "0":
 	s = '%s<a href="?sstring=%s;offset=%s">[Previous]</a> ' % (s,sstring,int(offset) - config.MAXPERPAGE)
