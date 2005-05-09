@@ -24,7 +24,8 @@ def get_days_ebuilds(day):
         'changelog, '
         'arch, '
         'homepage, '
-        'license '
+        'license, '
+        'is_masked '
         'FROM ebuild,package '
         'WHERE SUBSTRING(when_found FROM 1 FOR 8) = "%s%02d%02d" '
         'AND ebuild.name = package.name '
@@ -36,7 +37,7 @@ def get_days_ebuilds(day):
     results = c.fetchall()
     return results
 
-today = time.time()
+today = int(time.time())
 db = ebuilddb.db_connect()
 for day in range(today,today - (7*SECS_PER_DAY),-SECS_PER_DAY):
     #print day
@@ -50,7 +51,7 @@ for day in range(today,today - (7*SECS_PER_DAY),-SECS_PER_DAY):
     #ebuilds.sort(ebuild_sort)
     if day < (today - NUM_EXPANDED_DAYS*SECS_PER_DAY):
         continue
-    for ebuild in ebuilds:
+    for ebuild in ebuilds[:100]:
         print ('. <a class="altlink" title="%s" href="%sebuilds/?%s-%s">%s %s</a><br>' % 
         (escape(ebuild['description']),
         config.FEHOME,
