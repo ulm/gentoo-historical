@@ -59,7 +59,7 @@ The currently supported operators include:
 
 """
 
-__revision__ = '$Id: template.py,v 1.3 2005/05/09 19:19:29 hadfield Exp $'
+__revision__ = '$Id: template.py,v 1.4 2005/05/09 20:19:31 hadfield Exp $'
 __authors__ = ["Scott Hadfield <hadfield@gentoo.org>",
                "Ian Leitch <port001@gentoo.org>"]
 __modulename__ = 'template'
@@ -92,7 +92,7 @@ class Template:
         
         # These are the template languages keywords. You can't have a parameter
         # with the same name as a keyword.
-        self._keywords = ("ELSE",)
+        self._keywords = ("ELSE", "INCLUDE")
 
         # The standard regex to match template variables. This should match
         # all alphanumeric strings with potentially embedded .'s (dot's).
@@ -110,8 +110,21 @@ class Template:
         except IOError, errmsg:
             raise TemplateError("Caught an IOError exception: '%s'" % errmsg)
 
-        return self._contents
-	
+    def _read_include(self, include = ""):
+
+        import os.path
+        
+        assert(len(include) > 0)
+
+        if include[0] == "/":
+            path = ""
+        else:
+            # Path is relative. So use this templates path as the basedir.
+            path = os.path.dirname(self._template_loc) + "/"
+        
+        contents = open(path + include, "r").read()
+        return contents
+    
     def _sub(self, variable, repl_text, values, index = -1):
         """Substitute all occurences of 'variable' in repl_text with the value.
 
@@ -193,6 +206,14 @@ class Template:
                     self.param(name, loop, "loop")
 
             full_file = "".join(self._contents);
+
+            # Load any INCLUDES
+            while re.search(r'\{INCLUDE ([^\}]+)\}', full_file) is not None:
+                includes = re.findall(r'\{INCLUDE ([^\}]+)\}', full_file)
+                for include in includes:
+                    include_content = self._read_include(include)
+                    full_file = full_file.replace("{INCLUDE %s}" % include,
+                                                  include_content)
 
             # Strip out all comments
             full_file = re.sub(r'(?s)\{\*.*?\*\}', '', full_file)
