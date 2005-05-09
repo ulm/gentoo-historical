@@ -1,4 +1,7 @@
-#!/usr/bin/python -OO
+#!/usr/bin/python -O
+
+__revision__ = '$Revision: 1.4 $'
+# $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
 import sys
@@ -7,16 +10,6 @@ import time
 import re
 import changelogs
 import MySQLdb
-
-# import portage, but temporarily redirect stderr
-if 'portage' not in dir():
-    null = open('/dev/null', 'w')
-    tmp = sys.stderr
-    sys.stderr = null
-    sys.path = ["/usr/lib/portage/pym"]+sys.path
-    import portage
-    sys.stderr = tmp
-    sys.path = sys.path[1:]
 
 def db_connect():
     return MySQLdb.connect(host = config.HOST,
@@ -33,13 +26,13 @@ def find_ebuilds():
     pipe.close()
     return s.split()
     
-def parse_ebuild(s):
+def parse_ebuild(s, pkgsplit):
     """Parse ebuild info based on path name"""
     parsed = {}
     s=s.split('/')
     parsed['category'] = s[-3]
     package = s[-1].split('.ebuild')[0]
-    pieces = portage.pkgsplit(package)
+    pieces = pkgsplit(package)
     if not pieces:
         return None
     parsed['name'] = pieces[0]
@@ -65,29 +58,49 @@ def create_ebuild_record(db,ebinfo):
     # update the package table
 
     # this is a really ugly dict comprehension
-    escaped = dict([(x,MySQLdb.escape_string(y)) for (x,y) in ebinfo.items()])
-    query="""REPLACE INTO package VALUES ("%(category)s","%(name)s",\
-        "%(homepage)s","%(description)s","%(license)s");""" % escaped
-    c.execute(query)
+    escaped = {}
+    for item in ebinfo.items():
+        x, y = item
+        if type(y) is str:
+            y = MySQLdb.escape_string(y)
+        escaped[x] = y
+    
+    query=('INSERT INTO package SET category="%(category)s",name="%(name)s",'
+        'homepage="%(homepage)s",description="%(description)s",'
+        'license="%(license)s"' % escaped)
+    try:
+        c.execute(query)
+    except MySQLdb.cursors.IntegrityError:
+        # duplicate key (we hope)
+        query = ('REPLACE INTO package VALUES ("%(category)s","%(name)s",'
+            '"%(homepage)s","%(description)s","%(license)s",0)' % escaped)
+        c.execute(query)
 
     # then add particular ebuild
     query = ('INSERT INTO ebuild VALUES ("%(category)s","%(name)s",'
-        '"%(version)s",%(time)s,"%(archs)s","%(changelog)s","")' 
+        '"%(version)s",%(time)s,"%(archs)s","%(changelog)s","",%(masked)d)' 
         % escaped)
     d.execute(query)
     
 def update_ebuild_record(db,ebinfo):
     c = db.cursor()
-    escaped = dict([(x,MySQLdb.escape_string(y)) for (x,y) in ebinfo.items()])
+    escaped = {}
+    for item in ebinfo.items():
+        x, y = item
+        if type(y) is str:
+            y = MySQLdb.escape_string(y)
+        escaped[x] = y
+    
     query="""REPLACE INTO package VALUES ("%(category)s","%(name)s",\
-        "%(homepage)s","%(description)s","%(license)s");""" % escaped
+        "%(homepage)s","%(description)s","%(license)s",0);""" % escaped
     c.execute(query)
     
     query = ('UPDATE ebuild '
         'SET when_found="%(time)s",'
         'arch="%(archs)s",'
         'changelog="%(changelog)s",'
-        'prevarch="%(prevarch)s" '
+        'prevarch="%(prevarch)s", '
+        'is_masked=%(masked)d '
         'WHERE category="%(category)s" '
         'AND name="%(name)s" '
         'AND version="%(version)s" ' % escaped)
@@ -105,6 +118,7 @@ def get_extended_info(ebuild):
     try:
         lines = open(filename,'r').readlines()
     except IOError:
+    	print 'Error opening %s' % filename
         lines = []
     lines = [ s.strip() for s in lines ]
     try:
@@ -134,12 +148,26 @@ def get_mtime(s):
     str = time.strftime("%Y%m%d%H%M%S",time.localtime(t))
     return str
 
+def is_masked(tree, ebuild):
+    """Return true if packages is masked in tree"""
+    return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
+
 def main(): 
     ebuilds = find_ebuilds()
     db = db_connect()
     
+    sys.path = ["/usr/lib/portage/pym"]+sys.path
+    import portage
+    # ... and then wait like a f**king hour
+    sys.path = sys.path[1:]
+
+    # We want to use the base profile, not any system-specific one
+    config = portage.config(config_profile_path = '/usr/portage/profiles/base')
+    
+    tree = portage.portdbapi('/usr/portage', config)
+    
     for s in ebuilds:
-        fields = parse_ebuild(s)
+        fields = parse_ebuild(s, portage.pkgsplit)
         if not fields:
             continue
         result = get_ebuild_record(db,fields)
@@ -147,6 +175,8 @@ def main():
         fields['changelog'] = changelogs.changelog('%s/ChangeLog' 
             % os.path.dirname(s))
         fields['time'] = get_mtime(s)
+        fields['masked'] = int(is_masked(tree, fields))
+        
         if not result:
             create_ebuild_record(db,fields)
         elif result[4] != fields['archs']:
@@ -156,6 +186,12 @@ def main():
             # keywords change, update db
             fields['prevarch'] = result[4]
             update_ebuild_record(db,fields)
+        elif result[7] != fields['masked']:
+            #print 'mask changed for %s-%s' % (fields['name'], fields['version'])
+            #print fields['masked']
+            fields['prevarch'] = result[4]
+            update_ebuild_record(db,fields)
         
+	db.commit()
 if __name__ == '__main__':
     main()
