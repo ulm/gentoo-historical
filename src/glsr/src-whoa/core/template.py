@@ -1,4 +1,3 @@
-# Copyright 2004-2005 Ian Leitch
 # Copyright 2004-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
@@ -60,7 +59,9 @@ The currently supported operators include:
 
 """
 
-__revision__ = '$Id: template.py,v 1.2 2005/05/07 02:28:35 hadfield Exp $'
+__revision__ = '$Id: template.py,v 1.3 2005/05/09 19:19:29 hadfield Exp $'
+__authors__ = ["Scott Hadfield <hadfield@gentoo.org>",
+               "Ian Leitch <port001@gentoo.org>"]
 __modulename__ = 'template'
 
 import md5
@@ -69,14 +70,10 @@ import re
 import string
 import thread
 
-import config
-#from GLSRException import TemplateModuleError
-#from Logging import logwrite
-
 class Template:
     """Template handler class."""
 
-    def __init__(self):
+    def __init__(self, template_cache = "tmpl_cache/"):
         
         self._template_loc = ""
         self._contents = []
@@ -84,8 +81,11 @@ class Template:
         self._loops = {}
         self._terms = {}
 
+        # Where is the cache located?
+        self._template_cache = template_cache
+
         # Do you want to use template caching?
-        self._use_cache = True
+        self._use_cache = False
 
         # Do you want the compile() cache parameter to override _use_cache?
         self._cache_override = True
@@ -108,7 +108,7 @@ class Template:
             self._contents = open(self._template_loc, "r").readlines()
             
         except IOError, errmsg:
-            raise TemplateModuleError('Caught an IOError exception', errmsg)
+            raise TemplateError("Caught an IOError exception: '%s'" % errmsg)
 
         return self._contents
 	
@@ -135,8 +135,12 @@ class Template:
             try:
                 value = eval("values[param_name]%s" % rest)
             except KeyError, errmsg:
-                raise TemplateModuleError('Caught an KeyError exception',
-                                          errmsg)
+                raise TemplateError('Caught a KeyError exception: ' +
+                                    "%s not a member of '%s'" %
+                                    (errmsg, param_name))
+            except IndexError, errmsg:
+                raise TemplateError('Caught an IndexError exception: ' +
+                                    '%s' % (errmsg))
             
             # Convert value to a string and then do the replace.
             repl_text = repl_text.replace("{%s}" % variable, "%s" % value)
@@ -149,7 +153,7 @@ class Template:
             else:
                 repl_text = repl_text.replace("{%s}" % variable,
                                               "%s" % values[variable][index])
-
+        
         return repl_text
         
     def clear(self):
@@ -173,7 +177,7 @@ class Template:
         digest_str = str(template_loc) + str(terms) + str(loops)
         digest = md5.new(digest_str).hexdigest()
 
-        if self._check_cache(digest) and self._use_cache:
+        if self._use_cache and self._check_cache(digest):
             self._read_cache(digest)
         
         else:
@@ -270,8 +274,7 @@ class Template:
             start_pos = loop["char_pos"]
             end_pos = content.find("{!LOOP}", start_pos)
             if end_pos == -1:
-                raise TemplateModuleError("Unable to find end of loop '%s'." %
-                                          loop)
+                raise TemplateError("Unable to find end of loop '%s'." % loop)
             
             loop_text = content[start_pos + len("{LOOP %s}" % loop["expr"]):
                                 end_pos]
@@ -283,15 +286,19 @@ class Template:
             if dot_loc == -1 and self._loops.has_key(loop["expr"]):
                 var_name = loop["expr"]
             else:
-                continue
+                raise TemplateError("Loop '%s' is not defined." % loop["expr"])
 
             evaluated_text = ""
             for j in range(0, len(self._loops[var_name])):
-
+                
                 variables = re.findall(r'\{((?:%s)+)\}' % self._var_regex,
                                        loop_text)
                 variables = filter(lambda x: x not in self._keywords,
                                    variables)
+                # Remove all loop variables that aren't relating to this loop.
+                variables = filter(
+                    lambda x: re.search(r'^%s\b' % var_name, x),
+                    variables)
                 
                 repl_text = loop_text
 
@@ -334,8 +341,8 @@ class Template:
             start_pos = cur_if["char_pos"]
             end_pos = content.find("{!IF}", start_pos)
             if end_pos == -1:
-                raise TemplateModuleError("Unable to find end of loop '%s'." %
-                                          cur_if)
+                raise TemplateError("Unable to find end of loop '%s'." %
+                                    cur_if)
             
             if_text = content[start_pos + len("{IF %s}" % cur_if["expr"]):
                               end_pos]
@@ -449,7 +456,7 @@ class Template:
         match = re.search(expr_regex, expr)
 
         if match is None:
-            raise TemplateModuleError("Error parsing IF expression.")
+            raise TemplateError("Error parsing IF expression.")
 
         lhs = self._value_of(match.group(1), index)
         rhs = self._value_of(match.group(3), index)
@@ -477,10 +484,10 @@ class Template:
     def _check_cache(self, digest):
         """Verify the existence of the cache with digest 'digest'."""
         
-        if not os.path.exists(config.template_cache):
-            raise TemplateModuleError('Template cache directory missing')
+        if not os.path.exists(self._template_cache):
+            raise TemplateError('Template cache directory missing')
             
-        for filename in os.listdir(config.template_cache):
+        for filename in os.listdir(self._template_cache):
             if filename.endswith('.cache'):
                 if digest == filename.split('.')[0]:
                     return True
@@ -492,12 +499,12 @@ class Template:
         
         try:
             readfd = open(
-                os.path.join(config.template_cache, digest + '.cache'), 'r')
+                os.path.join(self._template_cache, digest + '.cache'), 'r')
             self._output = readfd.readlines()
             readfd.close()
         
         except IOError, errmsg:
-            raise TemplateModuleError('Failed to open template cache file',
+            raise TemplateError('Failed to open template cache file',
                                       errmsg)
             
     def _write_cache(self, digest):
@@ -505,14 +512,14 @@ class Template:
 
         try:
             writefd = open(
-                os.path.join(config.template_cache, digest + '.cache'), 'w')
+                os.path.join(self._template_cache, digest + '.cache'), 'w')
             writefd.write('\n'.join(self._output))
             writefd.close()
         
         except IOError, err:
             #logwrite("Cache write failed: '%s'" % err, __modulename__,
             #         'Error')
-            raise TemplateModuleError('Template cache write failed', err)
+            raise TemplateError('Template cache write failed', err)
 
     def param(self, key, value, param_type = "term"):
         """Add a new parameter, either a 'loop' or a 'term'."""
@@ -527,10 +534,10 @@ class Template:
         """Returns the resulting template."""
 
         if len(self._output) == 0:
-            raise TemplateModuleError('No compiled template data found')
+            raise TemplateError('No compiled template data found')
 
         return "\n".join(self._output)
 
 
 # FIXME: This exception is only here until exception handling is properly setup
-class TemplateModuleError(Exception): pass
+class TemplateError(Exception): pass
