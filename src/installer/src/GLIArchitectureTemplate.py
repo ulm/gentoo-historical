@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.107 2005/05/10 04:11:28 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.108 2005/05/10 20:33:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -877,7 +877,7 @@ class ArchitectureTemplate:
 	##
 	# Sets the root password
 	def set_root_password(self):
-		status = GLIUtility.spawn('echo \'root:' + self._install_profile.get_root_pass_hash() + '\' | chroot '+self._chroot_dir+' chpasswd -e', quiet=True)
+		status = GLIUtility.spawn('echo \'root:' + self._install_profile.get_root_pass_hash() + '\' | chroot '+self._chroot_dir+' chpasswd -e')
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("SetRootPasswordError", 'fatal', 'set_root_password', "Failure to set root password!")
 		self._logger.log("Root Password set on the new system.")

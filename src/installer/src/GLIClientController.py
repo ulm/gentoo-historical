@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.56 2005/05/04 03:48:38 agaffney Exp $
+$Id: GLIClientController.py,v 1.57 2005/05/10 20:33:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -207,7 +207,7 @@ class GLIClientController(Thread):
 		modules = self._configuration.get_kernel_modules()
 		for module in modules:
 			try:
-				ret = GLIUtility.spawn('modprobe ' + module, quiet=True)
+				ret = GLIUtility.spawn('modprobe ' + module)
 				if not GLIUtility.exitsuccess(ret):
 					self._logger.log("ERROR! : Could not load module: "+module)
 				#	raise GLIException("KernelModuleError", 'warning', 'load_kernel_modules', 'Could not load module: ' + module)
@@ -223,7 +223,7 @@ class GLIClientController(Thread):
 		self._logger.log("Setting root password.")
 		if self._configuration.get_root_passwd() != "":
 			# The password specified in the configuration is encrypted.
-			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e',quiet=True)
+			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e')
 	
 			if not GLIUtility.exitsuccess(status):
 				self._logger.log("ERROR! : Could not set the root password on the livecd environment!")
@@ -256,9 +256,9 @@ class GLIClientController(Thread):
 					interface = "eth0"
 
 				if interface:
-					status = GLIUtility.spawn("dhcpcd -n " + interface, quiet=True)
+					status = GLIUtility.spawn("dhcpcd -n " + interface)
 				else:
-					status = GLIUtility.spawn("dhcpcd -n", quiet=True)
+					status = GLIUtility.spawn("dhcpcd -n")
 
 				if not GLIUtility.exitsuccess(status):
 					raise GLIException("DHCPError", 'fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
@@ -288,7 +288,7 @@ class GLIClientController(Thread):
 	# Enables SSH if specified in the GLIClientConfiguration object
 	def enable_ssh(self):
 		if self._configuration.get_enable_ssh():
-			status = GLIUtility.spawn("/etc/init.d/sshd start", quiet=True)
+			status = GLIUtility.spawn("/etc/init.d/sshd start")
 			if not GLIUtility.exitsuccess(status):
 				self._logger.log("ERROR! : Could not start the SSH daemon!")
 			#	raise GLIException("SSHError", 'warning','enable_ssh',"Could not start SSH daemon!")

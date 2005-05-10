@@ -251,7 +251,7 @@ def set_ip(dev, ip, broadcast, netmask):
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
-	status = spawn("ifconfig " + options, quiet=True)
+	status = spawn("ifconfig " + options)
 
 	if not exitsuccess(status):
 		return False
@@ -264,7 +264,7 @@ def set_ip(dev, ip, broadcast, netmask):
 def set_default_route(route):
 	if not is_ip(route):
 		raise GLIException("GLIUtilityError", 'fatal', 'set_default_route', route + " is not an ip address!")
-	status = spawn("route add default gw " + route, quiet=True)
+	status = spawn("route add default gw " + route)
 
 	if not exitsuccess(status):
 		return False
@@ -365,7 +365,7 @@ def ping(host):
 	host = str(host)
 	if not (is_hostname(host) or is_ip(host)):
 		return False    #invalid IP or hostname
-	status = spawn("ping -n -c 3 " + host,quiet=True)
+	status = spawn("ping -n -c 3 " + host)
 	if not exitsuccess(status):
 		return False
 	return True
