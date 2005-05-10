@@ -1,8 +1,8 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.6 2005/05/10 05:19:50 agaffney Exp $
-Copyright 2004 Gentoo
+$Id: SimpleXMLParser.py,v 1.7 2005/05/10 21:41:03 codeman Exp $
+Copyright 2005 Gentoo
 
 """
 

@@ -10,7 +10,7 @@ import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
 import GLIStorageDevice
-from GLIGen import GLIGenCF,GLIGenIP
+from GLIGenDialog import GLIGenCF,GLIGenIP
 import string
 import copy
 import time

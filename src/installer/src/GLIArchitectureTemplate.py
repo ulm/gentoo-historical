@@ -1,8 +1,8 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.108 2005/05/10 20:33:14 agaffney Exp $
-Copyright 2004 Gentoo Technologies Inc.
+$Id: GLIArchitectureTemplate.py,v 1.109 2005/05/10 21:41:03 codeman Exp $
+Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 

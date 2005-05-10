@@ -19,7 +19,7 @@ import GLIClientController
 import GLIUtility
 import xmlrpclib
 import dialog
-from GLIGen import GLIGenCF,GLIGenIP
+from GLIGenDialog import GLIGenCF,GLIGenIP
 
 DLG_OK = 0
 DLG_YES = 0

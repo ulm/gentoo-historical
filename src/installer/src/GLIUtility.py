@@ -1,14 +1,11 @@
 """
 Gentoo Linux Installer
-
-$Id:
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLIUtility module contians all utility functions used throughout GLI.
-
 """
 
-import string, os, re, signal, time, shutil, sys, random, commands, crypt
+import string, os, re, shutil, sys, random, commands, crypt
 from GLIException import *
 
 ##

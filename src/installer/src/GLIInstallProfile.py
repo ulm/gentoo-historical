@@ -1,8 +1,8 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.47 2005/05/10 04:11:28 codeman Exp $
-Copyright 2004 Gentoo Technologies Inc.
+$Id: GLIInstallProfile.py,v 1.48 2005/05/10 21:41:03 codeman Exp $
+Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 """
