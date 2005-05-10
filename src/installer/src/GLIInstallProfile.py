@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.46 2005/04/29 06:25:14 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.47 2005/05/10 04:11:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -59,6 +59,7 @@ class InstallProfile:
 		parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
 		parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
 		parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
+		parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage)
 		parser.addHandler('gli-profile/install-packages', self.set_install_packages)
 		parser.addHandler('gli-profile/fstab/partition', self.add_fstab_partition)
 		parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
@@ -107,6 +108,7 @@ class InstallProfile:
 		self._dns_servers = ()
 		self._default_gateway = ()
 		self._fstab = {}
+		self._etc_portage = {}
 		self._install_packages = ()
 		self._services = ()
 		self._mta = ""
@@ -1284,10 +1286,34 @@ class InstallProfile:
 		"""
 		return self._fstab			
 		
+	# Sets a list of files in /etc/portage to configure.
+	# @param xml_path         Used internally by the XML parser. Should be
+	#                         None when calling directly
+	# @param install_packages The packages to install.
+	# @param xml_attr         Parameter description
+	def set_etc_portage(self, xml_path, file_entries, xml_attr):
+
+		if type(file_entries) == str:
+			file_entries = string.split(file_entries, "\n")
+		else:
+			raise GLIException("EtcPortageError", 'fatal', 'set_etc_portage',  "Invalid input!")
+
+		for entry in file_entries:
+			if not GLIUtility.is_realstring(entry):
+				raise GLIException("EtcPortageError", 'fatal', 'set_etc_packages',  entry + " must be a valid string!")
+
+		self._etc_portage[xml_attr['name']] = file_entries
+
 	##
-	# Brief description of function
+	# Returns a hash/array of /etc/portage files to configure.
+	def get_etc_portage(self):
+		return self._etc_portage
+
+
+	##
+	# Sets up the list of packages to be installed.
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
-	# @param install_packages Parameter description
+	# @param install_packages The space-separated list of packages to install.
 	# @param xml_attr Parameter description
 	def set_install_packages(self, xml_path, install_packages, xml_attr):
 		"""
@@ -1306,11 +1332,8 @@ class InstallProfile:
 		self._install_packages = install_packages
  
 	##
-	# Brief description of function
+	# This returns a list of the packages
 	def get_install_packages(self):
-		""" 
-		This returns a list of the packages:
-		"""
 		return self._install_packages
 
 	##

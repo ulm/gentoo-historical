@@ -441,7 +441,8 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	tarball_filename = tarball_uri.split("/")[-1]
 
 	# Get the tarball
-	get_uri(tarball_uri, temp_directory + "/" + tarball_filename)
+	if not get_uri(tarball_uri, temp_directory + "/" + tarball_filename):
+		return False
 
 	# Reset tar options
 	tar_options = "xv"

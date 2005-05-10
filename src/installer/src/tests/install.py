@@ -28,6 +28,9 @@ def usage():
 	print "\tbootloader             install and configure bootloader"
 	print "\tconfig_files           update config files"
 	print "\tupdate_rc_conf         update rc.conf"
+	print "\tset_users              set up the users"
+	print "\tetc_portage            set up the files in /etc/portage"
+	print "\tinstall_packages       install required packages"
 	print "\tunmount                unmount all filesystems"
 
 def not_working():
@@ -75,8 +78,11 @@ operations = {
               'bootloader': archtemplate.install_bootloader,
               'config_files': archtemplate.update_config_files,
               'update_rc_conf': archtemplate.configure_rc_conf,
-              'unmount': not_working
-             }
+			  'set_users': archtemplate.set_users,
+			  'etc_portage': archtemplate.set_etc_portage,
+			  'install_packages': archtemplate.install_packages,
+			  'unmount': not_working
+			}
 
 for action in sys.argv:
 	if operations.has_key(action):

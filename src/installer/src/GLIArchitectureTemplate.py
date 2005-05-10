@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.106 2005/05/03 17:12:37 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.107 2005/05/10 04:11:28 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -143,11 +143,12 @@ class ArchitectureTemplate:
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
 	# (actually it only just comments out the old one)
-	# @param filename file to be edited
-	# @param newvalues a dictionary of VARIABLE:VALUE pairs
-	# @param delimeter='=' what is between the key and the value
-	# @param quotes_around_value=True whether there are quotes around the value or not (ex. "local" vs. localhost)
-	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True):
+	# @param filename 					file to be edited
+	# @param newvalues 					a dictionary of VARIABLE:VALUE pairs
+	# @param delimeter='=' 				what is between the key and the value
+	# @param quotes_around_value=True 	whether there are quotes around the value or not (ex. "local" vs. localhost)
+	# @param only_value=False			Ignore the keys and output only a value.
+	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False):
 		if not GLIUtility.is_file(filename):
 			raise GLIException("NoSuchFileError", 'notice','_edit_config',filename + ' does not exist!')
 	
@@ -166,12 +167,18 @@ class ArchitectureTemplate:
 	
 			file.append('\n# Added by GLI\n')
 			commentprefix = ""
-			if newvalues[key] == "COMMENT" or newvalues[key] == "##comment##" or newvalues[key] == "##commented##":
-				commentprefix = "#"
-			if quotes_around_value:
-				file.append(commentprefix + key + delimeter + '"' + newvalues[key] + '"\n')
+			if key == "SPACER":
+				file.append('\n')
+			elif key == "COMMENT" or key == "##comment##" or key == "##commented##":
+				file.append('# ' + newvalues[key] + '\n')
 			else:
-				file.append(commentprefix + key + delimeter + newvalues[key]+'\n')
+				if quotes_around_value:
+					newvalues[key] = '"' + newvalues[key] + '"'
+				#Only the printing of values is required.
+				if only_value:
+					file.append(newvalues[key] + '\n')
+				else:
+					file.append(key + delimeter + newvalues[key]+'\n')
 	
 		f = open(filename,'w')
 		f.writelines(file)
@@ -237,12 +244,13 @@ class ArchitectureTemplate:
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
 		for package in installpackages:
+			self._logger.log("Starting emerge " + package)
 			status = self._emerge(package)
 			if not GLIUtility.exitsuccess(status):
 				self._logger.log("Could not emerge " + package + "!")
 			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
 			else:
-				self._logger.log("Emerged package: "+package)
+				self._logger.log("Emerged package: " + package)
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
@@ -451,7 +459,7 @@ class ArchitectureTemplate:
 	##
 	# Fetches desired kernel sources, unless you're using a livecd-kernel in which case it does freaky stuff.
 	def emerge_kernel_sources(self):
-		
+		self._logger.log("Starting emerge_kernel")
 		kernel_pkg = self._install_profile.get_kernel_source_pkg()
 #		if kernel_pkg:
 		if kernel_pkg == "livecd-kernel":
@@ -976,3 +984,26 @@ class ArchitectureTemplate:
 				GLIUtility.spawn("chmod a+x /tmp/post-install && /tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
+
+	# FIXME: UNKNOWN PURPOSE 
+	# 
+	##
+	def set_etc_portage(self):
+		etc_portage = self._install_profile.get_etc_portage()
+
+		# Loop through the required files.
+		for file in etc_portage:
+			contents = enumerate(etc_portage[file])
+			self._logger.log("Configuring /etc/portage/" + file)
+			self._edit_config(self._chroot_dir + "/etc/portage/" + file, {"COMMENT": "GLI additions ===>"})
+
+			# Set up the contents hash to pass to the config writer.
+			contents = {}
+			for key,value in enumerate(etc_portage[file]):
+				contents[str(key)] = string.strip(value)
+
+			# Write out the contents in one go.
+			self._edit_config(self._chroot_dir + "/etc/portage/" + file, contents, "", False, True)
+
+			self._edit_config(self._chroot_dir + "/etc/make.conf", {"COMMENT": "<=== End GLI additions"})
+			self._logger.log("Finished configuring /etc/portage/" + file)

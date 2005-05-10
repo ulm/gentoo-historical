@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.3 2005/04/14 15:44:03 agaffney Exp $
+$Id: SimpleXMLParser.py,v 1.4 2005/05/10 04:11:28 codeman Exp $
 Copyright 2004 Gentoo
 
 """
@@ -68,8 +68,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		if path in self._fntable.keys():
 			for fn in self._fntable[path]:
 				if self._xml_current_data != "" or fn[1]:
-					fn[0](path, self._xml_current_data, self._xml_attrs[-1])
-
+					fn[0](path, string.strip(self._xml_current_data), self._xml_attrs[-1])
 		# Keep the XML state
 		self._xml_current_data = ""
 		self._xml_attrs.pop()
@@ -88,7 +87,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
                                         
 		# This converts data to a string instead of being Unicode
 		# Maybe we should use Unicode strings instead of normal strings?
-		self._xml_current_data += string.strip(str(data))
+		self._xml_current_data += str(data)
 
 	##
 	# Brief description of function
