@@ -30,25 +30,36 @@ class GLINetBe:
 	def __init__(self, loc):
 		self._path = loc
 		
-	def get_client_config(self, ip):
-		if not GLIUtility.is_file(self._path + ip + ".cc.xml"):
+	def get_client_config(self, mac):
+		if not GLIUtility.is_file(self._path + mac + ".cc.xml"):
 			return xmlrpclib.Fault("GLIMissingConfig","The server does not have a GLICLientConfiguration for you. Check with the server admin.")
-		file = open(self._path + ip + ".cc.xml", "r")
+		file = open(self._path + mac + ".cc.xml", "r")
 		data = file.read()
 		file.close()
 		return data
-		
-	def get_install_profile(self, ip):
-		if not GLIUtility.is_file(self._path + ip + ".ip.xml"):
+	
+	def set_client_config(self, mac, cc):
+		file = open(self._path + mac + '.cc.xml', 'w')
+		file.write(cc)
+		file.close()
+		return True		
+	
+	def get_install_profile(self, mac):
+		if not GLIUtility.is_file(self._path + mac + ".ip.xml"):
 			return xmlrpclib.Fault("GLIMissingConfig","The server does not have a InstallProfile for you. Check with the server admin.")
-		file = open(self._path + ip + ".ip.xml", "r")
+		file = open(self._path + mac + ".ip.xml", "r")
 		data = file.read()
 		file.close()
 		return data
+	
+	def set_install_profile(self, mac, ip):
+		file = open(self._path + mac + '.ip.xml', 'w')
+		file.write(ip)
+		file.close()
+		return True
 		
-	def log_event(self, ip, data):
-
-		file = open(self._path + ip + ".log", "a")
+	def log_event(self, mac, data):
+		file = open(self._path + mac + ".log", "a")
 		file.write(data)
 		file.close()
 		file = open(self._path + "main.log", "a")
@@ -77,14 +88,10 @@ def register(local_port, cc_path):
 			else:
 				print "\nReceived message '" + data + "' from " + fromaddr[0] + ":" + str(fromaddr[1])
 				
-				if data == "GLIInstallAuto":	
-					file = open(cc_path + fromaddr[0] + "cc.xml", "r")
-					data = file.read()
-					file.close()
-				elif data == "PING":
-					data = "PONG"
+				if data == "GLIAutoInstall":	
+					data = "GLIAutoInstall version 1.0"
 				else:
-					data = "GLIClientConfiguration not found!"
+					data = "This is the GLIAutoInstall Service. Please make you application aware of this."
 				UDPSock.sendto(data, (fromaddr[0], fromaddr[1]))
 
 		# Close socket
