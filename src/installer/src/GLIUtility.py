@@ -1,19 +1,20 @@
 """
 Gentoo Linux Installer
 
-Copyright 2004 Gentoo Technologies Inc.
+$Id:
+Copyright 2005 Gentoo Technologies Inc.
 
 The GLIUtility module contians all utility functions used throughout GLI.
+
 """
 
 import string, os, re, signal, time, shutil, sys, random, commands, crypt
 from GLIException import *
 
 ##
-# Brief description of function
-# @param string_a Parameter description
+# Check to see if a string is actually a string, and if it is not null. Returns bool.
+# @param string_a    string to be checked.
 def is_realstring(string_a):
-	"Check to see if a string is actually a string, and if it is not null. Returns bool."
 	# Make sure it is a string
 	if type(string_a) != str:
 		return False
@@ -25,8 +26,8 @@ def is_realstring(string_a):
 	return True
 
 ##
-# Brief description of function
-# @param x Parameter description
+# Checks to see if x is a numeral by doing a type conversion.
+# @param x   value to be checked
 def is_numeric(x):
 	try:
 		float(x)
@@ -36,11 +37,9 @@ def is_numeric(x):
 		return True
 
 ##
-# Brief description of function
-# @param ip Parameter description
+# Check to see if a string is a valid ip. Returns bool.
+# @param ip 	ip to be checked.
 def is_ip(ip):
-	"Check to see if a string is a valid ip. Returns bool."
-	
 	# Make sure it is a string
 	if not is_realstring(ip):
 		return False
@@ -55,25 +54,19 @@ def is_ip(ip):
 	return(res != None)
 
 ##
-# Brief description of function
-# @param mac Parameter description
+# Check to see if mac is a valid MAC address. Make sure use format_mac
+# before using this function. Returns bool.
+# @param mac   mac address to be checked.
 def is_mac(mac):
-        """
-        Check to see if mac is a valid MAC address. Make sure use format_mac
-        before using this function.
-        Returns bool.
-        """
         expr = re.compile('([0-9A-F]{2}:){5}[0-9A-F]{2}')
         res = expr.match(mac)
         return(res != None)
 
 ##
-# Brief description of function
-# @param mac Parameter description
+# Format's a mac address properly. Returns the correctly formatted MAC. (a string)
+# @param mac   mac address to be formatted
 def format_mac(mac):
-	"Format's a mac address properly. Returns the correctly formatted MAC. (a string)"
-
-        mac = string.replace(mac, '-', ':')
+	    mac = string.replace(mac, '-', ':')
         mac = string.upper(mac)
 
         mac = string.split(mac, ':')
@@ -81,12 +74,12 @@ def format_mac(mac):
                 if len(mac[i]) < 2:
                         mac[i] = "0" + mac[i]
         return string.join(mac, ":")
-		
+
 ##
-# Brief description of function
+# FIXME: UNKNOWN
 # @param ip Parameter description
 def trim_ip(ip):
-        # Remove leading zero's on the first octet
+    # Remove leading zero's on the first octet
 	ip = re.sub('^0{1,2}','',ip)
 
 	# Remove leading zero's from the other octets
@@ -95,11 +88,9 @@ def trim_ip(ip):
 	return(res)
 
 ##
-# Brief description of function
-# @param device Parameter description
+# Check to see if the string passed is a valid device. Returns bool.
+# @param device    device to be checked
 def is_device(device):
-	"Check to see if the string passed is a valid device. Returns bool."
-
 	# Make sure it is a string
 	if not is_realstring(device):
 		return False
@@ -112,11 +103,9 @@ def is_device(device):
 	return os.access(device, os.F_OK)
 		
 ##
-# Brief description of function
-# @param hostname Parameter description
+# Check to see if the string is a valid hostname. Returns bool.
+# @param hostname   host to be checked
 def is_hostname(hostname):
-	"Check to see if the string is a valid hostname. Returns bool."
-
 	# Make sure it is a string
 	if not is_realstring(hostname):
 		return False
@@ -127,11 +116,9 @@ def is_hostname(hostname):
 	return(res != None)
 		
 ##
-# Brief description of function
-# @param path Parameter description
+# Check to see if the string is a valid path. Returns bool.
+# @param path 	Path to be checked.
 def is_path(path):
-	"Check to see if the string is a valid path. Returns bool."
-	
 	# Make sure it is a string
 	if not is_realstring(path):
 		return False
@@ -146,11 +133,9 @@ def is_path(path):
 	return(res != None)
 		
 ##
-# Brief description of function
-# @param file Parameter description
+# Check to see if the string is a valid file. Returns bool.
+# @param file  file to be checked for validity.
 def is_file(file):
-	"Check to see if the string is a valid file. Returns bool."
-
 	# Make sure it is a string
 	if not is_realstring(file):
 		return False
@@ -159,12 +144,10 @@ def is_file(file):
 	return os.access(file, os.F_OK)
 		
 ##
-# Brief description of function
-# @param uri Parameter description
-# @param checklocal=True Parameter description
+# Check to see if the string is a valid URI. Returns bool.
+# @param uri 				URI to be validated
+# @param checklocal=True	Whether to look for a local uri.
 def is_uri(uri, checklocal=True):
-	"Check to see if the string is a valid URI. Returns bool."
-	
 	# Make sure it is a string
 	if not is_realstring(uri):
 		return False
@@ -205,11 +188,11 @@ def is_uri(uri, checklocal=True):
 	return True
 
 ##
-# Brief description of function
-# @param input Parameter description
+# Converts a string to a boolean value. anything not "True" is deemed false.
+# @param input  must be a string so it can be converted to boolean.
 def strtobool(input):
 	if type(input) != str:
-		raise GLIException("InputError", 'fatal','strtobool',"The input must be a string!")
+		raise GLIException("GLIUtilityError", 'fatal','strtobool',"The input must be a string!")
 
 	if string.lower(input) == 'true':
 		return True
@@ -217,30 +200,30 @@ def strtobool(input):
 		return False
 
 ##
-# Brief description of function
-# @param device Parameter description
+# Check to see if device is a valid ethernet device. Returns bool.
+# @param device  device to be checked
 def is_eth_device(device):
-	"Check to see if device is a valid ethernet device. Returns bool."
-	
 	# Make sure it is a string
 	if not is_realstring(device):
 		return False
 
+	# Old way w/ reg ex here:
 	# Create a regular expression to test the specified device.
-	expr = re.compile('^(eth|wlan|ppp)([0-9]{1,2})(:[0-9]{1,2})?$')
-
+	#expr = re.compile('^(eth|wlan|ppp)([0-9]{1,2})(:[0-9]{1,2})?$')
 	# Run the match
-	res = expr.match(device)
-
+	#res = expr.match(device)
 	# Return True only if there are results
-	return(res != None)
+	#return(res != None)
 
+	status, output = spawn("/sbin/ifconfig -a | grep -e '^[A-Za-z]'| cut -d ' ' -f 1 | grep '"+ device + "'", return_output=True)
+	if output and status:
+		return True
+	return False
+	
 ##
-# Brief description of function
-# @param device Parameter description
+# Checks to see if device is a valid NFS device
+# @param device 	device to be checked
 def is_nfs(device):
-	" Checks to see if device is a valid NFS device "
-
 	if not is_realstring(device):
 		return False
 
@@ -255,17 +238,16 @@ def is_nfs(device):
 	return((is_ip(host) or is_hostname(host)) and is_path(path))
 
 ##
-# Brief description of function
-# @param dev Parameter description
-# @param ip Parameter description
-# @param broadcast Parameter description
-# @param netmask Parameter description
+# Sets the network ip (used for the livecd environment)
+# @param dev 		device to be configured
+# @param ip 		ip address of device
+# @param broadcast 	broadcast address of device
+# @param netmask 	netmask address of device
 def set_ip(dev, ip, broadcast, netmask):
 	if not is_ip(ip) or not is_ip(netmask) or not is_ip(broadcast):
-		raise GLIException("IPAddressError", 'fatal','set_ip', "ip, netmask and broadcast must be a valid IP's!")
-
+		raise GLIException("GLIUtilityError", 'fatal','set_ip', ip + ", " + netmask + "and, " + broadcast + "must be a valid IP's!")
 	if not is_eth_device(dev):
-		raise GLIException("EthDeviceError", 'fatal','set_ip',"dev must be a valid ethernet device!")
+		raise GLIException("GLIUtilityError", 'fatal','set_ip', dev + "is not a valid ethernet device!")
 
 	options = "%s inet %s broadcast %s netmask %s" % (dev, ip, broadcast, netmask)
 
@@ -277,12 +259,11 @@ def set_ip(dev, ip, broadcast, netmask):
 	return True
 
 ##
-# Brief description of function
-# @param route Parameter description
+# Sets the default route (used for the livecd environment)
+# @param route  	ip addresss of gateway.
 def set_default_route(route):
 	if not is_ip(route):
-		raise GLIException("IPAddressError", 'fatal', 'set_default_route', "The default route must be an IP address!")
-
+		raise GLIException("GLIUtilityError", 'fatal', 'set_default_route', route + " is not an ip address!")
 	status = spawn("route add default gw " + route, quiet=True)
 
 	if not exitsuccess(status):
@@ -291,14 +272,15 @@ def set_default_route(route):
 	return True
 
 ##
-# Brief description of function
-# @param cmd Parameter description
-# @param quiet=False Parameter description
-# @param logfile=None Parameter description
-# @param display_on_tty8=False Parameter description
-# @param chroot=None Parameter description
-# @param append_log=False Parameter description
-# @param return_output=False Parameter description
+# Will run a command with various flags for the style of output and logging.
+# 
+# @param cmd 					The command to be run
+# @param quiet=False 			Whether or not to filter output to /dev/null
+# @param logfile=None 			if provied will log output to the given filename
+# @param display_on_tty8=False 	will output to tty8 instead of the screen.
+# @param chroot=None 			will run the command inside the new chroot env.
+# @param append_log=False 		whether to start over on the logfile or append.
+# @param return_output=False 	Returns the output along with the exit status
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
@@ -320,36 +302,39 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 
 #	print "Running command: " + cmd
 	ret, output = commands.getstatusoutput(cmd)
+	
 	if return_output:
 		return ret, output
 	else:
 		return ret
 
 ##
-# Brief description of function
+# Will check the status of a spawn result to see if it did indeed return successfully.
 # @param status Parameter description
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
 		return True
-	print "WIFEXITED = " + str(os.WIFEXITED(status)) + ", WEXITSTATUS = " + str(os.WEXITSTATUS(status))
-
+	#print "WIFEXITED = " + str(os.WIFEXITED(status)) + ", WEXITSTATUS = " + str(os.WEXITSTATUS(status))
 	return False
 
+##
+# Will produce a bash shell with a special prompt for the installer.
 def spawn_bash():
 	os.putenv("PROMPT_COMMAND","echo \"Type 'exit' to return to the installer.\"")
-	return spawn("bash")
+	status = spawn("bash")
+	return status
 
 ##
-# Brief description of function
-# @param uri Parameter description
-# @param path Parameter description
+# Will download or copy a file/uri to a location
+# @param uri 	uri to be fetched.
+# @param path 	destination for the file.
 def get_uri(uri, path):
 	uri = uri.strip()
-	status = 1
+	status = 0
 
 	if re.match('^(ftp|http(s)?)://',uri):
 		status = spawn("wget --quiet " + uri + " -O " + path)
-
+		
 	elif re.match('^rsync://', uri):
 		status = spawn("rsync --quiet " + uri + " " + path)
 
@@ -357,20 +342,16 @@ def get_uri(uri, path):
 		r_file = uri[7:]
 		if os.path.isfile(r_file):
 			shutil.copy(r_file, path)
-			if os.path.isfile(path):
-				status = 0
-			else:
-				status = 1
+			if not os.path.isfile(path):
+				raise GLIException("GLIUtilityError", 'fatal', 'get_uri', "Cannot copy " + r_file + " to " + path)
 	else:
 		# Just in case a person forgets file://
 		if os.path.isfile(uri):
 			shutil.copy(uri, path)
-			if os.path.isfile(path):
-				status = 0
-			else:
-				status = 1
+			if not os.path.isfile(path):
+				raise GLIException("GLIUtilityError", 'fatal', 'get_uri', "Cannot copy " + r_file + " to " + path)
 		else:
-			print "I don't know how to download/copy that profile!"
+			raise GLIException("GLIUtilityError", 'fatal', 'get_uri', "File does not exist or URI is invalid!")
 
 	if exitsuccess(status):
 		return True
@@ -378,62 +359,70 @@ def get_uri(uri, path):
 	return False
 
 ##
-# Brief description of function
-# @param host Parameter description
+# Pings a host.  Used to test network connectivity.
+# @param host 	host to be pinged.
 def ping(host):
 	host = str(host)
+	if not (is_hostname(host) or is_ip(host)):
+		return False    #invalid IP or hostname
 	status = spawn("ping -n -c 3 " + host,quiet=True)
 	if not exitsuccess(status):
 		return False
 	return True
 
 ##
-# Brief description of function
-# @param device Parameter description
+# Pass in the eth device's number (0, 1, 2, etc).
+# Returns network information in a tuple.
+# Order is hw_addr, ip_addr, mask, bcast, route, and
+# whether it's up (True or False).
+# @param device 	device to gather info from.
 def get_eth_info(device):
 	"""Pass in the eth device's number (0, 1, 2, etc).
 	Returns network information in a tuple.
 	Order is hw_addr, ip_addr, mask, bcast, route, and
 	whether it's up (True or False).
 	"""
-	device = str(device)
-	if device:
-		hw_addr = 'None'
-		ip_addr = 'None'
-		mask    = 'None'
-		bcast	= 'None'
-		gw      = 'None'
-		up      =  False
-		device_info = commands.getstatusoutput("ifconfig eth" + device)
-		if device_info[0] == 0:
-			for line in device_info[1].splitlines():
-				line = line.strip()
-				if 'HWaddr' in line: 
-					hw_addr = line.split('HWaddr',1)[1].strip()
-				if 'inet addr' in line:
-					ip_addr = line.split('  ')[0].split(':')[1]
-				if 'Bcast' in line:
-					bcast = line.split('  ')[1].split(':')[1]
-				if 'Mask' in line:
-					mask = line.split('  ')[2].split(':')[1]
-				if line.startswith('UP'):
-					up = True
-		else: return (device_info[0], device_info[1])
-		route_info = commands.getstatusoutput("netstat -nr")
-		if route_info[0] == 0:
-			for line in route_info[1].splitlines():
-				if line.startswith('0.0.0.0'):
-					gw = line.split('0.0.0.0')[1].strip()
-		else: return (route_info[0], route_info[1])
-		return (hw_addr, ip_addr, mask, bcast, gw, up)
-	else: return False
-
+	
+	hw_addr = 'None'
+	ip_addr = 'None'
+	mask    = 'None'
+	bcast	= 'None'
+	gw      = 'None'
+	up      =  False
+	
+	if not is_eth_device("eth" + str(device)):
+		raise GLIException("GLIUtilityError", 'fatal', "get_eth_info", "eth" + str(device) +" is not a valid ethernet device!")
+		
+	status, device_info = spawn("/sbin/ifconfig eth" + str(device), return_output=True)
+	if exitsuccess(status):
+		for line in device_info.splitlines():
+			line = line.strip()
+			if 'HWaddr' in line: 
+				hw_addr = line.split('HWaddr',1)[1].strip()
+			if 'inet addr' in line:
+				ip_addr = line.split('  ')[0].split(':')[1]
+			if 'Bcast' in line:
+				bcast = line.split('  ')[1].split(':')[1]
+			if 'Mask' in line:
+				mask = line.split('  ')[2].split(':')[1]
+			if line.startswith('UP'):
+				up = True
+	else:
+		raise GLIException("GLIUtilityError", 'fatal', "get_eth_info", device_info)
+	status, route_info = spawn("netstat -nr", return_output=True)
+	for line in route_info[1].splitlines():
+		if line.startswith('0.0.0.0'):
+			gw = line.split('0.0.0.0')[1].strip()
+	
+	return (hw_addr, ip_addr, mask, bcast, gw, up)
+	
 ##
-# Brief description of function
-# @param tarball_uri Parameter description
-# @param target_directory Parameter description
-# @param temp_directory="/tmp" Parameter description
-# @param keep_permissions=False Parameter description
+# Will take a uri and get and unpack a tarball into the destination.
+# @param tarball_uri 			URI of tarball
+# @param target_directory 		destination
+# @param temp_directory="/tmp" 	a temporary location (used for dealing with the 
+#								ramdisk size limitations of the livecd env.
+# @param keep_permissions=False Whether or not to keep permissions (-p)
 def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
 	"Fetches a tarball from tarball_uri and extracts it into target_directory"
 
@@ -463,9 +452,11 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log", append_log=True) # change this to the logfile variable
 
 	if not exitsuccess(exitstatus):
-		raise GLIException("UnpackTarballError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack tarball!")
+		raise GLIException("GLIUtilityError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack " + tarball_uri + " to " + target_directory)
 
-
+##
+# OLD Will generate a random password.  Used when the livecd didn't auto-scramble the root password.
+# can probably be removed but is good to keep around.
 def generate_random_password():
 	s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890$%^&*[]{}-=+_,|'\"<>:/"
 	s = list(s)
@@ -484,15 +475,18 @@ def generate_random_password():
 	return passwd
 
 ##
-# Brief description of function
-# @param filename Parameter description
-# @param value Parameter description
+# Will grab a value from a specified file after sourcing it
+# @param filename 		file to get the value from
+# @param value			value to look for
 def get_value_from_config(filename, value):
-	return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
+	#OLD WAY: return string.strip(commands.getoutput("source " + filename + " && echo $" + value))
+	status, output = spawn("source " + filename + " && echo $" + value, return_output=True)
+	return string.strip(output)
+
 
 ##
-# Brief description of function
-# @param password Parameter description
+# Will take a password and return it hashed in md5 format
+# @param password 		the password to be hashed
 def hash_password(password):
 	salt = "$1$"
         chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
