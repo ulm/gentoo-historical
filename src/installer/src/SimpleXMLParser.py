@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.4 2005/05/10 04:11:28 codeman Exp $
+$Id: SimpleXMLParser.py,v 1.5 2005/05/10 04:28:29 agaffney Exp $
 Copyright 2004 Gentoo
 
 """
@@ -15,6 +15,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 	# @param self Parameter description
 	# @param file=None Parameter description
 	def __init__(self, file=None):
+		xml.sax.handler.ContentHandler.__init__()
 		self._xml_elements = []
 		self._xml_attrs = []
 		self._xml_current_data = ""
@@ -107,7 +108,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		Parse serialized configuration file.
 		"""
 		if path == None and self._path == None:
-			raise "NoFileGiven","You must specify a file to parse!"
+			raise GLIException("NoFileGiven",'fatal', 'parse', "You must specify a file to parse!")
 		elif path == None:       
 			xml.sax.parse(self._path, self)
 		else:

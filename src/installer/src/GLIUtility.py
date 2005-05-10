@@ -354,9 +354,9 @@ def get_uri(uri, path):
 		status = spawn("rsync --quiet " + uri + " " + path)
 
 	elif re.match('^file://', uri):
-		file = uri[7:]
-		if os.path.isfile(file):
-			shutil.copy(file, path)
+		r_file = uri[7:]
+		if os.path.isfile(r_file):
+			shutil.copy(r_file, path)
 			if os.path.isfile(path):
 				status = 0
 			else:
