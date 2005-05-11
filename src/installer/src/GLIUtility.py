@@ -63,14 +63,14 @@ def is_mac(mac):
 # Format's a mac address properly. Returns the correctly formatted MAC. (a string)
 # @param mac   mac address to be formatted
 def format_mac(mac):
-	    mac = string.replace(mac, '-', ':')
-        mac = string.upper(mac)
+	mac = string.replace(mac, '-', ':')
+	mac = string.upper(mac)
 
-        mac = string.split(mac, ':')
-        for i in range(0, len(mac)):
-                if len(mac[i]) < 2:
-                        mac[i] = "0" + mac[i]
-        return string.join(mac, ":")
+	mac = string.split(mac, ':')
+	for i in range(0, len(mac)):
+		if len(mac[i]) < 2:
+			mac[i] = "0" + mac[i]
+	return string.join(mac, ":")
 
 ##
 # FIXME: UNKNOWN
