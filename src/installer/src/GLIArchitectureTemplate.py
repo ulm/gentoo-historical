@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.109 2005/05/10 21:41:03 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.110 2005/05/11 17:42:14 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -131,14 +131,14 @@ class ArchitectureTemplate:
 		#Error checking of this function is to be handled by the parent function.
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
-			return GLIUtility.spawn("emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+			return GLIUtility.spawn("emerge --nocolor -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		else:
 			if binary_only:
-				return GLIUtility.spawn("emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				return GLIUtility.spawn("emerge --nocolor -K " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 			elif binary:
-				return GLIUtility.spawn("emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				return GLIUtility.spawn("emerge --nocolor -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 			else:
-				return GLIUtility.spawn("emerge " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				return GLIUtility.spawn("emerge --nocolor " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
