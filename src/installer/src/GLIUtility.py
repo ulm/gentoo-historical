@@ -213,7 +213,7 @@ def is_eth_device(device):
 	#return(res != None)
 
 	status, output = spawn("/sbin/ifconfig -a | grep -e '^[A-Za-z]'| cut -d ' ' -f 1 | grep '"+ device + "'", return_output=True)
-	if output and status:
+	if output:
 		return True
 	return False
 	
