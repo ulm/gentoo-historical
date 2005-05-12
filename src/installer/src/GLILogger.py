@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLILogger.py,v 1.7 2005/04/17 07:13:28 codeman Exp $
+$Id: GLILogger.py,v 1.8 2005/05/12 15:18:08 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Logger is a singleton style generic logger object.
@@ -36,7 +36,7 @@ class Logger(object):
 	# Logs the given message to the logfile
 	# @param message Parameter description
 	def log(self, message):
-		self._file.write("GLI: " + time.strftime("%h %m %Y %H:%M:%S") + " - " + message + "\n")
+		self._file.write("GLI: " + time.strftime("%B %d %Y %H:%M:%S") + " - " + message + "\n")
 		self._file.flush()
 		
 	##
