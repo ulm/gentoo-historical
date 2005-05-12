@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.113 2005/05/12 19:08:56 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.114 2005/05/12 20:22:49 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -963,7 +963,7 @@ class ArchitectureTemplate:
 		#Now we're done logging as far as the new system is concerned.
 		
 		#Unmount mounted fileystems in preparation for reboot
-		status, output = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^/mnt/gentoo' | sort -r", return_output=True).split("\n")
+		status, output = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^/mnt/gentoo' | sort -r", return_output=True)[1].split("\n")
 		for mount in output:
 			GLIUtility.spawn("umount -l " + mount)
 		
