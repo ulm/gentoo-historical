@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.57 2005/05/10 20:33:14 agaffney Exp $
+$Id: GLIClientController.py,v 1.58 2005/05/12 02:37:45 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -14,7 +14,7 @@ Steps (based on the ClientConfiguration):
 
 """
 
-import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue, GLIArchitectureTemplate, GLINotification
+import os, GLIClientConfiguration, GLIInstallProfile, GLIUtility, GLILogger, sys, signal, Queue, GLIArchitectureTemplate, GLINotification, traceback
 from GLIException import *
 from threading import Thread, Event
 
@@ -148,12 +148,22 @@ class GLIClientController(Thread):
 					else:
 						self.addNotification("int", INSTALL_DONE)
 				except GLIException, error:
+					etype, value, tb = sys.exc_info()
+					s = traceback.format_exception(etype, value, tb)
 					self._logger.log("Exception received during '" + self._install_steps[self._install_step][1] + "': " + str(error))
+					for line in s:
+						line = line.strip()
+						self._logger.log(line)
 					self.addNotification("exception", error)
 					self._install_event.clear()
 				except Exception, error:
 					# Something very bad happened
+					etype, value, tb = sys.exc_info()
+					s = traceback.format_exception(etype, value, tb)
 					self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + str(error) + "'")
+					for line in s:
+						line = line.strip()
+						self._logger.log(line)
 					self.addNotification("exception", error)
 					self._install_event.clear()
 			else:
