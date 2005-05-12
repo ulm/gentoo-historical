@@ -384,7 +384,7 @@ This is where you setup Networking.
 				if self.networking[count]['ip']!="dhcp":
 					self.controller.install_profile.set_default_gateway(None,self.gateway_info[1],{'interface':self.gateway_info[0]})
 			return_value = True
-		except:
+		except GLIException:
 			widgets=Widgets()
 			msgdialog=widgets.error_Box("Malformed IP","Malformed IP address, please fix it!")
 			result = msgdialog.run()
@@ -393,8 +393,7 @@ This is where you setup Networking.
 			return_value = False
 		#for item in self.networking:
 		#    print item
-#		return return_value
-		return True
+		return return_value
 	
 	def get_ethernet_devices(self):
 			put, get = os.popen4("ifconfig -a | egrep -e '^[^ ]'|sed -e 's/ .\+$//'")
