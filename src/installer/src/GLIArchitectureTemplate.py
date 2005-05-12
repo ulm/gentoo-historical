@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.112 2005/05/12 18:43:00 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.113 2005/05/12 19:08:56 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -19,7 +19,7 @@ class ArchitectureTemplate:
 	# Initialization of the ArchitectureTemplate.  Called from some other arch template.
 	# @param selfconfiguration=None    A Client Configuration
 	# @param install_profile=None      An Install Profile
-	# @param client_controller=None    Client Controller.  not same as configuration.
+	# @param client_controller=None    Client Controfor mount in GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^/mnt/gentoo' | sort -r", return_output=True).split("\n"):ller.  not same as configuration.
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		self._client_configuration = configuration
 		self._install_profile = install_profile
@@ -962,12 +962,17 @@ class ArchitectureTemplate:
 			pass
 		#Now we're done logging as far as the new system is concerned.
 		
-		#Unmount the /proc and /dev that we mounted in prepare_chroot
+		#Unmount mounted fileystems in preparation for reboot
+		status, output = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^/mnt/gentoo' | sort -r", return_output=True).split("\n")
+		for mount in output:
+			GLIUtility.spawn("umount -l " + mount)
+		
+		#OLD WAY: Unmount the /proc and /dev that we mounted in prepare_chroot
 		#There really isn't a reason to log errors here.
-		ret = GLIUtility.spawn("umount "+self._chroot_dir+"/proc", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-		ret = GLIUtility.spawn("umount "+self._chroot_dir+"/dev", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+		#ret = GLIUtility.spawn("umount "+self._chroot_dir+"/proc", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+		#ret = GLIUtility.spawn("umount "+self._chroot_dir+"/dev", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 		#temp hack to unmount the new root.
-		ret = GLIUtility.spawn("umount "+self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+		#ret = GLIUtility.spawn("umount "+self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 		#insert code here to unmount the swap partition, if there is one.
 
 		GLIUtility.spawn("rm /tmp/compile_output.log && rm " + install_logfile)
@@ -987,9 +992,9 @@ class ArchitectureTemplate:
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
 
-	# FIXME: UNKNOWN PURPOSE 
-	# 
-	##
+	## 
+	# This function adds user-defined entries to the files in /etc/portage
+	#
 	def set_etc_portage(self):
 		etc_portage = self._install_profile.get_etc_portage()
 
