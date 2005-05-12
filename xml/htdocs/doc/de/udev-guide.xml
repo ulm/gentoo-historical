@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/udev-guide.xml,v 1.4 2005/04/10 15:24:29 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/udev-guide.xml,v 1.5 2005/05/12 21:50:50 dertobi123 Exp $ -->
 
-<!-- English CVS Version: 1.16 -->
+<!-- English CVS Version: 1.25 -->
 
 <guide link="/doc/en/udev-guide.xml">
 <title>Gentoo udev Guide</title>
@@ -12,7 +12,7 @@
     <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
 <author title="Mitarbeiter">
-    <mail link="g.guidi@sns.it">Gregorio Guidi</mail>
+  <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
  </author>
 <author title="Übersetzer">
     <mail link="jhgz1@ufl.edu">Jan Hendrik Grahl</mail>
@@ -25,8 +25,8 @@ Bedürfnissen zu entsprechen
 
 <license/>
 
-<version>0.12</version>
-<date>29. August 2004</date>
+<version>0.19</version>
+<date>2005-04-07</date>
 
 <chapter>
 <title>Was ist udev?</title>
@@ -58,7 +58,7 @@ das erste Gerät? Und für wie lange? Wie werden die anderen Geräte benannt,
 wenn das erste verschwindet? Wie wird das laufende Transaktionen beeinflussen? 
 Wäre es nicht lustig, wenn der Druckauftrag plötzlich von Ihrem superneuen 
 Laserdrucker auf Ihren fast toten Matrix Drucker verschoben würde, weil Ihre 
-Mutter beschlossen hat den Stecker des Tintenstrahldruckers herauszuziehen, 
+Mutter beschlossen hat den Stecker des Laserdruckers herauszuziehen, 
 welcher leider der erste Drucker war? 
 </p>
 
@@ -193,10 +193,10 @@ von Gerätedateien).
 
 <p>
 udev sollte in Verbindung mit einem 2.6 Kernel verwendet werden (wie 
-<c>development-sources</c> oder <c>gentoo-dev-sources</c>). Wenn Sie einen 
-solchen Kernel verwenden dann müssen Sie nur sicherstellen, dass Sie eine 
-aktuelle  <c>sys-apps/baselayout</c> Version haben. Das ist alles was Sie 
-benötigen. 
+<c>vanilla-sources</c> oder <c>gentoo-sources</c> mit dem Standard 2005.0 
+Profil). Wenn Sie einen solchen Kernel verwenden dann müssen Sie nur 
+sicherstellen, dass Sie eine aktuelle  <c>sys-apps/baselayout</c> Version 
+haben. Das ist alles was Sie benötigen. 
 </p>
 
 <pre caption="Installieren von udev">
@@ -204,8 +204,11 @@ benötigen.
 </pre>
 
 <p>
-Wenn es noch nicht geschehen ist, installieren Sie auch 
-<c>sys-apps/hotplug</c>.
+udev wird <c>hotplug-base</c> als eines seiner Abhängigkeiten installieren. 
+Sie müssen <c>hotplug</c> nicht installieren, nur wenn Sie wünschen, dass 
+Ihre Module automatisch geladen werden sobald Sie Geräte anschliessen.
+<c>sys-apps/hotplug</c>.erledigt auch das automatische Hochfahren von 
+Netzwerkgeräten, sowie den Firmware Download.
 </p>
 
 <pre caption="Installieren optionaler Hotplug Skripte">
@@ -213,9 +216,16 @@ Wenn es noch nicht geschehen ist, installieren Sie auch
 </pre>
 
 <p>
-Wenn Sie beim Kernel den Standard von <c>genkernel</c> verwenden, 
-dann ist alles bereit. Ansonsten stellen Sie sicher, dass folgende Optionen 
-aktiviert sind:
+Für das Laden von Modulen für Geräte, die eingesteckt worden sind bevor Sie 
+hochgefahren haben, verwenden Sie das coldplug Paket:
+</p>
+
+<pre caption="Installieren des coldplug Pakets">
+  # <i>emerge coldplug</i>
+</pre>
+
+<p>
+Stellen Sie sicher, dass folgende Optionen im Kernel aktiviert sind:
 </p>
 
 <pre caption="Benötigte Kerneloptionen">
@@ -240,6 +250,13 @@ File systems ---&gt;
      [*] /dev file system support (OBSOLETE)
        [ ]   Automatically mount at boot
 </pre>
+
+<p>
+Wenn Sie <c>genkernel</c> verwenden, dann sollten Sie nicht vergessen es mit 
+der <c>--udev</c> Option auszuführen um alle benötigten Einstellungen zur 
+Kernelkonfigurationen zu aktivieren. Die Standardkonfiguration gegeben durch 
+diesen <c>genkernel</c> Aufruf ist ausreichend.
+</p>
 
 </body>
 </section>
@@ -368,6 +385,61 @@ sicher, dass Sie folgendes besitzen:
     oder neuer
   </li>
 </ul>
+
+</body>
+</section>
+<section>
+<title>LVM2 Namen verschwinden</title>
+<body>
+
+<p>
+Wenn Sie <c>udev</c> und LVM2 zusammen verwenden ist Ihnen vielleicht 
+aufgefallen, dass die von Ihnen erstellten Volumen verschwunden sind. Nun, sie 
+sind es nicht, aber unglücklicherweise sind sie als <path>/dev/dm-#</path> 
+benannt; wobei # 0,1,usw ist.
+</p>
+
+<p>
+Um dies zu korrigieren editieren Sie <path>/etc/udev/rules.d/50-udev.rules</path> 
+und entkommentieren Sie die folgende Zeile:
+</p>
+
+<pre caption="Entkommentieren Sie diese Zeile in /etc/udev/rules.d/50-udev.rules">
+KERNEL="dm-[0-9]*",     PROGRAM="/sbin/devmap_name %M %m", NAME="%k", SYMLINK="%c"
+</pre>
+
+</body>
+</section>
+<section>
+<title>Keine einheitliche Namensgebung zwischen DevFS und udev</title>
+<body>
+
+<p>
+Obwohl es unsere Absicht ist ein einheitliches Namensschema für beide 
+dynamischen Gerätemanagementlösungen zu haben, gibt es jedoch manchmal 
+Unterschiede in der Benennung.
+</p> 
+
+<p>
+Ein gemeldeter Konflikt existiert mit dem HP Smart Array 5i RAID Controller 
+(genauer gesagt mit dem <c>cciss</c> Kernelmodul). Mit udev werden die 
+Geräte als <path>/dev/cciss/cXdYpZ</path> benannt; wobei X,Y und Z reguläre 
+Nummern sind. Mit devfs sind die Geräte <path>/dev/hostX/targetY/partZ</path> 
+oder symbolisch verlinkt von <path>/dev/cciss/cXdY</path>. 
+</p>
+
+<p>
+Wenn dies der Fall ist, dann vergessen Sie bitte nicht <path>/etc/fstab</path> 
+und die Bootloader Konfigurationsdateien entsprechend zu aktualisieren. 
+</p>
+
+<p>
+Dasselbe geschieht mit universellen symbolischen Links die in 
+<path>/dev</path> existierten, wie <path>/dev/mouse</path>, welches 
+<c>udev</c> nicht länger erstellt. Überprüfen Sie Ihre X Konfigurationsdatei 
+und stellen Sie sicher, dass die Geräteregel für Ihre Maus auf ein existierendes 
+Gerät verweist.
+</p>
 
 </body>
 </section>
