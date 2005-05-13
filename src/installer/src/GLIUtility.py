@@ -149,7 +149,7 @@ def is_uri(uri, checklocal=True):
 	valid_uri_types = ('ftp', 'rsync', 'http', 'file', 'https')
 		
 	# Compile the regex
-	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([\w.]+)(?::(\d+))?)?(/.+)')
+	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.+)')
 
 	# Run it against the URI
 	res = expr.match(uri)
