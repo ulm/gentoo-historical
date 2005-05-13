@@ -11,15 +11,11 @@ from GLIException import *
 ##
 # Check to see if a string is actually a string, and if it is not null. Returns bool.
 # @param string_a    string to be checked.
-def is_realstring(string_a):
+def is_realstring(str):
 	# Make sure it is a string
-	if type(string_a) != str:
+	if isinstance(str, (string, unicode)):
 		return False
 		
-	# Make sure it isn't null
-	if type(string_a) == '':
-		return False
-	
 	return True
 
 ##
