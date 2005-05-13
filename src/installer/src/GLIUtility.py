@@ -11,9 +11,9 @@ from GLIException import *
 ##
 # Check to see if a string is actually a string, and if it is not null. Returns bool.
 # @param string_a    string to be checked.
-def is_realstring(str):
+def is_realstring(string):
 	# Make sure it is a string
-	if isinstance(str, (string, unicode)):
+	if not isinstance(string, (str, unicode)):
 		return False
 		
 	return True
@@ -146,37 +146,35 @@ def is_uri(uri, checklocal=True):
 		return False
 			
 	# Set the valid uri types
-	valid_uri_types = ( 'ftp:', 'rsync:', 'http:', 'file:', 'https:')
+	valid_uri_types = ('ftp', 'rsync', 'http', 'file', 'https')
 		
-	# Check colon and double slash location
-	colon_location = uri.find(':')
-	if not ( 6 > colon_location > 2):
-		return False
-	if uri[colon_location + 1:colon_location + 3] != "//":
-		return False
-		
-	# Check for valid uri type
-	if not uri.split('/')[0] in valid_uri_types:
-		return False
-		
-	# If we are dealing with a network uri...
-	if uri.split('/')[0] in ('ftp:', 'rsync:', 'http:', 'https:' ):
-		
-		# Check for hostname or ip address
-		if (not is_hostname(uri.split('/')[2])) and (not is_ip(uri.split('/')[2])):
-			return False
-		
-		# Check to make sure the rest is a propper path
-		if not is_path(string.join(uri.split('/')[3:], '/')):
-			return False
+	# Compile the regex
+	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([\w.]+)(?::(\d+))?)?(/.+)')
 
-	# If we are dealing with a local uri
-	else:
-		if checklocal:
-		# Check for file validity
-			if not is_file(uri[colon_location + 3:]):
-				return False
-				
+	# Run it against the URI
+	res = expr.match(uri)
+
+	if not res:
+		# URI doesn't match regex and therefore is invalid
+		return False
+
+	# Get tuple of matches
+	# 0 - Protocol
+	# 1 - Username
+	# 2 - Password
+	# 3 - Host
+	# 4 - Port
+	# 5 - Path
+	uriparts = res.groups()
+    
+	# Check for valid uri type
+	if not uriparts[0] in valid_uri_types:
+		return False
+		
+	# If checklocal and the URI is a local file, check to see if the file exists
+	if uriparts[0] == "file" and checklocal:
+		if not is_file(uriparts[5]):
+			return False
 		
 	return True
 
