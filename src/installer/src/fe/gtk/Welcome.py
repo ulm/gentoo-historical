@@ -11,25 +11,18 @@ class Panel(GLIScreen.GLIScreen):
 		vert.set_border_width(10)
 
 		content_str = """
-Welcome to The Gentoo Linux Installer. This is a TESTING release.
-If your system dies a horrible, horrible death, don't come crying
-to us (okay, you can cry to klieber).
+Welcome to the GTK+ frontend for the Gentoo Linux Installer. This is a TESTING
+release. If your system dies a horrible, horrible death, don't come crying to us.
+No, really, don't. We'll all just point and laugh and tell you that we told you so.
 
-In this part of the installer, you will make all of your decisions
-for how you want your system setup. No changes will be made to your
-system until you click the "Install" button. At any point before you
-click "Install", you can click "Save" to save your install profile
-and come back at a later time to finish.
+In this part of the installer, you will make all of your decisions for how you want
+your system setup. No changes will be made to your system until you click the
+"Install" button. At any point before you click "Install", you can click "Save" to
+save your install profile and come back at a later time to finish.
 
-If you have installed Gentoo Linux previously using this installer
-and you saved your configuration settings, you can click the "Load"
-button to load your previous settings as defaults.
-
-NOTE: I was feeling lazy when I "fixed" this program to actually run
-the install, so for now, your arch is x86, the logfile is
-/var/log/install.log, the root mountpoint is /mnt/gentoo, the LiveCD
-root password is 'blah' and you get no SSH. Go whine to someone who
-has had more sleep :P
+If you have installed Gentoo Linux previously using this installer and you saved
+your configuration settings (install profile), you can click the "Load" button to
+load your previous settings as defaults.
 """
 
 		content_label = gtk.Label(content_str)

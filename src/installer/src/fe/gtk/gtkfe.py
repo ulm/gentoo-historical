@@ -40,21 +40,21 @@ class Installer:
 	install_window = None
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
-                      { 'text': 'Partitioning', 'module': Partitioning },
-                      { 'text': 'Network Mounts', 'module': NetworkMounts },
-                      { 'text': 'Stage', 'module': Stage },
-                      { 'text': 'Portage tree', 'module': PortageTree },
-                      { 'text': 'make.conf', 'module': MakeDotConf },
-                      { 'text': 'Kernel', 'module': Kernel },
-                      { 'text': 'Bootloader', 'module': Bootloader },
-                      { 'text': 'Timezone', 'module': Timezone },
-                      { 'text': 'Networking', 'module': Networking },
-                      { 'text': 'Daemons', 'module': Daemons },
-                      { 'text': 'Extra Packages', 'module': ExtraPackages },
-                      { 'text': 'rc.conf', 'module': RcDotConf },
-                      { 'text': 'Users', 'module': Users },
-                      { 'text': 'Review', 'module': InstallSummary }
-                    ]
+                  { 'text': 'Partitioning', 'module': Partitioning },
+                  { 'text': 'Network Mounts', 'module': NetworkMounts },
+                  { 'text': 'Stage', 'module': Stage },
+                  { 'text': 'Portage tree', 'module': PortageTree },
+                  { 'text': 'make.conf', 'module': MakeDotConf },
+                  { 'text': 'Kernel', 'module': Kernel },
+                  { 'text': 'Bootloader', 'module': Bootloader },
+                  { 'text': 'Timezone', 'module': Timezone },
+                  { 'text': 'Networking', 'module': Networking },
+                  { 'text': 'Daemons', 'module': Daemons },
+                  { 'text': 'Extra Packages', 'module': ExtraPackages },
+                  { 'text': 'rc.conf', 'module': RcDotConf },
+                  { 'text': 'Users', 'module': Users },
+                  { 'text': 'Review', 'module': InstallSummary }
+                ]
 
 	def __init__(self):
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -69,7 +69,7 @@ class Installer:
 		self.client_profile.set_architecture_template(None, "x86", None)
 		self.client_profile.set_log_file(None, "/var/log/install.log", None)
 		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
-		self.client_profile.set_root_passwd(None, GLIUtility.hash_password("blah"), None)
+#		self.client_profile.set_root_passwd(None, GLIUtility.hash_password("blah"), None)
 		self.client_profile.set_enable_ssh(None, False, None)
 		self.cc.set_configuration(self.client_profile)
 		self.cc.start_pre_install()
