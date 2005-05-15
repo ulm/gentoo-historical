@@ -14,24 +14,16 @@
 #Brent Fox <bfox@redhat.com>
 #Nils Philippsen <nphilipp@redhat.com>
 
+# heavy modifications to remove dependency on gnomecanvas
+# by John N. Laliberte <allanonjl@gentoo.org>
+
 import gobject
 import pango
 import gtk
-try:
-    import gnomecanvas
-except ImportError:
-    import gnome.canvas as gnomecanvas
 import string
 import re
 import math
 import zonetab
-
-##
-## I18N
-## 
-#from rhpl.translate import _, N_
-#import rhpl.translate as translate
-#translate.textdomain ("system-config-date")
 
 class Enum:
     def __init__(self, *args):
@@ -43,48 +35,52 @@ class Enum:
 class TimezoneMap(gtk.VBox):
     #force order of destruction for a few items.
     def __del__(self):
-        del self.arrow
         del self.markers
         del self.current
 
-    def __init__(self, zonetab, default="America/New_York",
-                 map='./map480.png'):
+    def __init__(self, zonetab, default="America/New_York", map='./map480.png'):
         gtk.VBox.__init__(self, False, 5)
 
         # set up class member objects
         self.zonetab = zonetab
         self.markers = {}
         self.highlightedEntry = None
+        self.filename = map
 
         # set up the map canvas
-        self.canvas = gnomecanvas.Canvas()
-        root = self.canvas.root()
-        pixbuf = gtk.gdk.pixbuf_new_from_file(map)
-        self.mapWidth = pixbuf.get_width()
-        self.mapHeight = pixbuf.get_height()
-        root.add(gnomecanvas.CanvasPixbuf, x=0, y=0, pixbuf=pixbuf)
-        x1, y1, x2, y2 = root.get_bounds()
-        self.canvas.set_scroll_region(x1, y1, x2, y2)
-        self.canvas.set_size_request(int(x2), int(y2))
-        self.pack_start(self.canvas, False, False)
-
-        self.current = root.add(gnomecanvas.CanvasText, text='x',
-                                fill_color='red', anchor=gtk.ANCHOR_CENTER,
-                                weight=pango.WEIGHT_BOLD)
+        self.default = default
+        self.already_shown = False
+        self.mapWidth = 480; self.mapHeight = 240 # size of the map
+        self.boxWidth = 2; self.boxHeight = 2; # size of yellow filled rectangles
         
-        root.connect("event", self.mapEvent)
-        self.canvas.connect("event", self.canvasEvent)
+        self.canvas = gtk.Layout()
+        self.canvas.set_size(self.mapWidth, self.mapHeight)
+        # this next line is very important! ( or it won't show anything! )
+        self.canvas.set_size_request(self.mapWidth, self.mapHeight)
+        
+        self.drawing_area = gtk.DrawingArea()
+        self.drawing_area.set_size_request(self.mapWidth, self.mapHeight)
+        self.drawing_area.connect("expose-event", self.area_expose_cb)
+        
+        self.pangolayout = self.drawing_area.create_pango_layout("")
+        
+        self.drawing_area.add_events(gtk.gdk.BUTTON_PRESS_MASK |
+                                     gtk.gdk.POINTER_MOTION_MASK |
+                                     gtk.gdk.LEAVE_NOTIFY_MASK )
 
-        self.arrow = root.add(gnomecanvas.CanvasLine,
-                              fill_color='limegreen',
-                              width_pixels=2,
-                              first_arrowhead=False,
-                              last_arrowhead=True,
-                              arrow_shape_a=4.0,
-                              arrow_shape_b=8.0,
-                              arrow_shape_c=4.0,
-                              points=(0.0, 0.0, 0.0, 0.0))
-        self.arrow.hide()
+        self.drawing_area.connect("event", self.mapEvent)
+        
+        self.canvas.add(self.drawing_area)
+        
+        self.canvas.show()
+        self.drawing_area.show()
+        
+        x1,y1,x2,y2 = (0,0,self.mapWidth,self.mapHeight)
+        hbox = gtk.HBox(True,0)
+        hbox.pack_start(self.canvas, False, False, 5)
+        self.pack_start(hbox, False, False)
+
+        self.canvas.connect("event", self.canvasEvent)
 
         # set up status bar
         self.status = gtk.Statusbar()
@@ -98,32 +94,6 @@ class TimezoneMap(gtk.VBox):
         self.listStore = gtk.ListStore(gobject.TYPE_STRING,
                                        gobject.TYPE_STRING,
                                        gobject.TYPE_PYOBJECT)
-
-        self.currentEntry = None
-        self.fallbackEntry = None
-        
-        for entry in zonetab.getEntries():
-            iter = self.listStore.append()
-            self.listStore.set_value(iter, self.columns.TZ, entry.tz)
-            if entry.comments:
-                self.listStore.set_value(iter, self.columns.COMMENTS,
-                                         entry.comments)
-            else:
-                self.listStore.set_value(iter, self.columns.COMMENTS, "")
-            self.listStore.set_value(iter, self.columns.ENTRY, entry)
-            
-            x, y = self.map2canvas(entry.lat, entry.long)
-            marker = root.add(gnomecanvas.CanvasText, x=x, y=y,
-                              text=u'\u00B7', fill_color='yellow',
-                              anchor=gtk.ANCHOR_CENTER,
-                              weight=pango.WEIGHT_BOLD)
-            self.markers[entry.tz] = marker
-            if entry.tz == default:
-                self.currentEntry = entry
-
-            if entry.tz == "America/New_York":
-                #In case the /etc/sysconfig/clock is messed up, use New York as default
-                self.fallbackEntry = entry
 
         self.listStore.set_sort_column_id(self.columns.TZ, gtk.SORT_ASCENDING)
 
@@ -140,8 +110,8 @@ class TimezoneMap(gtk.VBox):
         sw.add(self.listView)
         sw.set_shadow_type(gtk.SHADOW_IN)
         self.pack_start(sw, True, True)
-
-        self.setCurrent(self.currentEntry)
+        
+        self.line_status = True
 
     def getCurrent(self):
         return self.currentEntry
@@ -155,7 +125,10 @@ class TimezoneMap(gtk.VBox):
 
     def mapEvent(self, widget, event=None):
         if event.type == gtk.gdk.MOTION_NOTIFY:
-            x1, y1 = self.canvas.root().w2i(event.x, event.y)
+            self.repaint_background()
+            
+            x1, y1 = (event.x, event.y)
+            
             lat, long = self.canvas2map(x1, y1)
             last = self.highlightedEntry
             self.highlightedEntry = self.zonetab.findNearest(lat, long)
@@ -169,24 +142,42 @@ class TimezoneMap(gtk.VBox):
 
             x2, y2 = self.map2canvas(self.highlightedEntry.lat,
                                        self.highlightedEntry.long)
-            self.arrow.set(points=(x1, y1, x2, y2))
-            self.arrow.show()
+            gc2 = self.drawing_area.window.new_gc()
+            colormap = self.drawing_area.get_colormap()
+            gc2.foreground = colormap.alloc_color('green')
+            
+            if self.line_status == True:
+                self.drawing_area.window.draw_line(gc2,int(x1),int(y1),int(x2),int(y2))
+            
         elif event.type == gtk.gdk.BUTTON_PRESS:
             if event.button == 1:
                 self.setCurrent(self.highlightedEntry)
                 
-    def setCurrent(self, entry, skipList=0):
+        elif event.type == gtk.gdk.LEAVE_NOTIFY:
+            self.repaint_background()
+        #else:
+        #    print "map event triggered: "+str(event.type)
+            
+    def setCurrent(self, entry, skipList=0, default=True):
+        # redraw the background to get rid of the green line
+        self.repaint_background(original=True)
+        
         if not entry:
             # If the value in /etc/sysconfig/clock is invalid, default to New York
             self.currentEntry = self.fallbackEntry
         else:
             self.currentEntry = entry
-
-        self.markers[self.currentEntry.tz].show()
-        self.markers[self.currentEntry.tz].hide()
-        x, y = self.map2canvas(self.currentEntry.lat, self.currentEntry.long)
-        self.current.set(x=x, y=y)
-
+        
+        # set the new one
+        self.show_mark(self.markers[self.currentEntry.tz])
+        
+        # now create a pixbuf that holds that information from the drawing area
+        # this will be used to repaint the screen each time
+        pixbuf=gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,0,8,1000,1000)
+        self.pixbuf_plus=pixbuf.get_from_drawable(self.drawing_area.window,
+                                                  self.drawing_area.get_colormap(),0,0,0,0,
+                                                  self.mapWidth,self.mapHeight)
+        
         if skipList:
             return
 
@@ -205,7 +196,7 @@ class TimezoneMap(gtk.VBox):
         
     def canvasEvent(self, widget, event=None):
         if event.type == gtk.gdk.LEAVE_NOTIFY:
-            self.arrow.hide()
+            print "canvas event triggered"
         
     def map2canvas(self, lat, long):
         x2 = self.mapWidth
@@ -221,6 +212,87 @@ class TimezoneMap(gtk.VBox):
         lat = (y2 / 2.0 - y) / (y2 / 2.0) * 90.0
         return (lat, long)
 
+    def area_expose_cb(self, area, event):
+        # need to only do this ONCE! or if it gets behind a window to
+        # refresh, it'll keep on calling this event.
+        if self.already_shown == False:
+            self.style2 = self.drawing_area.get_style()
+            self.gc = self.style2.fg_gc[gtk.STATE_NORMAL]
+            self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.filename)
+            
+            # first draw the map background
+            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf, 0, 0, 0, 0, self.mapWidth, 
+                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
+            # now generate the yellow cities
+            self.generate_timezone_map_stuff()
+            self.already_shown = True
+
+        return True
+    
+    def repaint_background(self, original = False):
+        if original == False:
+            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_plus, 0, 0, 0, 0, self.mapWidth, 
+                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
+        else:
+            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_original, 0, 0, 0, 0, self.mapWidth, 
+                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
+        return
+    
+    def generate_timezone_map_stuff(self):
+        self.currentEntry = None
+        self.fallbackEntry = None
+        self.gc_yellow = self.drawing_area.window.new_gc()
+        colormap = self.drawing_area.get_colormap()
+        self.gc_yellow.foreground = colormap.alloc_color('yellow')
+        
+        gc2 = self.drawing_area.window.new_gc()
+        colormap = self.drawing_area.get_colormap()
+        gc2.foreground = colormap.alloc_color(0, 65535, 65535)
+        
+        self.zoneEntries = self.zonetab.getEntries()
+        for entry in self.zoneEntries:
+            iter = self.listStore.append()
+            self.listStore.set_value(iter, self.columns.TZ, entry.tz)
+            if entry.comments:
+                self.listStore.set_value(iter, self.columns.COMMENTS,
+                                         entry.comments)
+            else:
+                self.listStore.set_value(iter, self.columns.COMMENTS, "")
+            self.listStore.set_value(iter, self.columns.ENTRY, entry)
+            
+            x, y = self.map2canvas(entry.lat, entry.long)
+            
+            # adds the yellow square at each city.
+            self.drawing_area.window.draw_rectangle(self.gc_yellow, True, int(x), int(y), 2, 2)
+            
+            marker = { "long":x, "lat":y }
+
+            self.markers[entry.tz] = marker
+            if entry.tz == self.default:
+                self.currentEntry = entry
+
+            if entry.tz == "America/New_York":
+                #In case the /etc/sysconfig/clock is messed up, use New York as default
+                self.fallbackEntry = entry
+
+        pixbuf=gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,0,8,1000,1000)
+        self.pixbuf_original=pixbuf.get_from_drawable(self.drawing_area.window,
+                                                  self.drawing_area.get_colormap(),0,0,0,0,
+                                                  self.mapWidth,self.mapHeight)
+        
+        self.setCurrent(self.currentEntry)
+        return
+    
+    def show_mark(self, location):
+        gc = self.drawing_area.window.new_gc()
+        colormap = self.drawing_area.get_colormap()
+        gc.foreground = colormap.alloc_color('red')
+        
+        x=location["long"]; y=location["lat"]
+        self.pangolayout.set_markup("<span foreground=\"red\" weight=\"bold\">x</span>")
+        self.drawing_area.window.draw_layout(gc, int(x-2), int(y-8), self.pangolayout)
+        return
+    
 if __name__ == "__main__":
     zonetab = zonetab.ZoneTab()
     win = gtk.Window()
