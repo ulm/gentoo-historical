@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.1 2005/04/12 21:25:21 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.2 2005/05/16 19:26:39 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -14,7 +14,158 @@
 livecd_parse_opt() {
 	case "$1" in
 		*\=*)
-			echo "$1" | cut -f2 -d=;;
+			echo "$1" | cut -f2 -d=
+		;;
+	esac
+}
+
+livecd_check_root() {
+	if [ "$(whoami)" != "root" ]
+	then
+		echo "ERROR: must be root to continue"
+		return 1
+	fi
+}
+
+livecd_get_cmdline() {
+	echo "0" > /proc/sys/kernel/printk
+	CMDLINE="$(cat /proc/cmdline)"
+	export CMDLINE
+}
+
+no_gl() {
+	echo "No OpenGL-capable card found."
+	GLTYPE=xorg-x11
+}
+
+ati_gl() {
+	echo "ATI card detected."
+	GLTYPE=ati
+}
+
+nv_gl() {
+	echo "NVIDIA card detected."
+	GLTYPE=nvidia
+}
+
+get_video_cards() {
+	VIDEO_CARDS=`/sbin/lspci | grep VGA`
+	NUM_CARDS=`echo ${VIDEO_CARDS} | wc -l`
+	if [ ${NUM_CARDS} -eq 1 ]; then
+		NVIDIA=`echo ${VIDEO_CARDS} | grep "nVidia Corporation"`
+		ATI=`echo ${VIDEO_CARDS} | grep "ATI Technologies"`
+		if [ -n "${NVIDIA}" ]; then
+			NVIDIA_CARD=`echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}'`
+			if [ -n "${NVIDIA_CARD}" ]; then
+				if [ `echo ${NVIDIA_CARD} | cut -dV -f2` -ge 4 ]; then
+					nv_gl
+				else
+					no_gl
+				fi
+			else
+				no_gl
+			fi
+		elif [ -n "${ATI}" ]; then
+			ATI_CARD=`echo ${ATI} | awk 'BEGIN {RS=" "} /(R|RV|RS)[0-9]+/ {print $1}'`
+			if [ `echo ${ATI_CARD} | grep S` ]; then
+				ATI_CARD_S=`echo ${ATI_CARD} | cut -dS -f2`
+			elif [ `echo ${ATI_CARD} | grep V` ]; then
+				ATI_CARD_V=`echo ${ATI_CARD} | cut -dV -f2`
+			else
+				ATI_CARD=`echo ${ATI_CARD} | cut -dR -f2`
+			fi
+			if [ -n "${ATI_CARD_S}" ] && [ ${ATI_CARD_S} -ge 350 ]; then
+				ati_gl
+			elif [ -n "${ATI_CARD_V}" ] && [ ${ATI_CARD_V} -ge 250 ]; then
+				ati_gl
+			elif [ -n "${ATI_CARD}" ] && [ ${ATI_CARD} -ge 200 ]; then
+				ati_gl
+			else
+				no_gl
+			fi
+		else
+			no_gl
+		fi
+	fi
+}
+
+livecd_config_wireless() {
+	cd /tmp/setup.opts
+	dialog --title "SSID" --inputbox "Please enter your SSID, or leave blank for selecting the nearest open network" 20 50 2> ${iface}.SSID
+	SSID="$(cat ${iface}.SSID)"
+	if [ -n "${SSID}" ]
+	then
+		dialog --title "WEP (Part 1)" --menu "Does your network use encryption?" 20 60 7 1 "Yes" 2 "No" 2> ${iface}.WEP
+		WEP="$(cat ${iface}.WEP)"
+		case ${WEP} in
+			1)
+				dialog --title "WEP (Part 2)" --menu "Are you entering your WEP key in HEX or ASCII?" 20 60 7 1 "HEX" 2 "ASCII" 2> ${iface}.WEPTYPE
+				WEP_TYPE="$(cat ${iface}.WEPTYPE)"
+				case ${WEP_TYPE} in
+					1)
+						dialog --title "WEP (Part 3)" --inputbox "Please enter your WEP key in the form of XXXX-XXXX-XX for 64-bit or XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XX for 128-bit" 20 50 2> ${iface}.WEPKEY
+						WEP_KEY="$(cat ${iface}.WEPKEY)"
+						if [ -n "${WEP_KEY}" -a -x /usr/sbin/iwconfig ]
+						then
+							/usr/sbin/iwconfig ${iface} essid "${SSID}"
+							/usr/sbin/iwconfig ${iface} key "${WEP_KEY}"
+						fi
+					;;
+					2)
+						dialog --title "WEP (Part 3)" --inputbox "Please enter your WEP key in ASCII form.  This should be 5 or 13 characters for either 64-bit or 128-bit encryption, repectively" 20 50 2> ${iface}.WEPKEY
+						WEP_KEY="$(cat ${iface}.WEPKEY)"
+						if [ -n "${WEP_KEY}" -a -x /usr/sbin/iwconfig ]
+						then
+							/usr/sbin/iwconfig ${iface} essid "${SSID}"
+							/usr/sbin/iwconfig ${iface} key "s:${WEP_KEY}"
+						fi
+					;;
+				esac
+			;;
+			2)
+				/usr/sbin/iwconfig ${iface} essid "${SSID}"
+				/usr/sbin/iwconfig ${iface} key off
+			;;
+		esac
+	fi
+}
+
+livecd_config_ip() {
+	cd /tmp/setup.opts
+	dialog --title "TCP/IP setup" --menu "You can use DHCP to automatically configure a network interface or you can specify an IP and related settings manually. Choose one option:" 20 60 7 1 "Use DHCP to auto-detect my network settings" 2 "Specify an IP address manually" 2> ${iface}.DHCP
+	DHCP="$(cat ${iface}.DHCP)"
+	case ${DHCP} in
+		1)
+			/sbin/dhcpcd -t 10 -h $(hostname) ${iface} &
+		;;
+		2)
+			dialog --title "IP address" --inputbox "Please enter an IP address for ${iface}:" 20 50 "192.168.1.1" 2> ${iface}.IP
+			IP="$(cat ${iface}.IP)"
+			BC_TEMP="$(echo $IP|cut -d . -f 1).$(echo $IP|cut -d . -f 2).$(echo $IP|cut -d . -f 3).255"
+			dialog --title "Broadcast address" --inputbox "Please enter a Broadcast address for ${iface}:" 20 50 "${BC_TEMP}" 2> ${iface}.BC
+			BROADCAST="$(cat ${iface}.BC)"
+			dialog --title "Network mask" --inputbox "Please enter a Network Mask for ${iface}:" 20 50 "255.255.255.0" 2> ${iface}.NM
+			NETMASK="$(cat ${iface}.NM)"
+			dialog --title "Gateway" --inputbox "Please enter a Gateway for ${iface} (hit enter for none:)" 20 50 2> ${iface}.GW
+			GATEWAY="$(cat ${iface}.GW)"
+			dialog --title "DNS server" --inputbox "Please enter a name server to use (hit enter for none:)" 20 50 2> ${iface}.DNS
+			DNS="$(cat ${iface}.DNS)"
+			/sbin/ifconfig ${iface} ${IP} broadcast ${BROADCAST} netmask ${NETMASK}
+			if [ -n "${GATEWAY}" ]
+			then
+				/sbin/route add default gw ${GATEWAY} dev ${iface} netmask 0.0.0.0 metric 1
+			fi
+			if [ -n "${DNS}" ]
+			then
+				dialog --title "DNS Search Suffix" --inputbox "Please enter any domains which you would like to search on DNS queries (hit enter for none:)" 20 50 2> ${iface}.SUFFIX
+				SUFFIX="$(cat ${iface}.SUFFIX)"
+				echo "nameserver ${DNS}" > /etc/resolv.conf
+				if [ -n "${SUFFIX}" ]
+				then
+					echo "search ${SUFFIX}" >> /etc/resolv.conf
+				fi
+			fi
+		;;
 	esac
 }
 
@@ -94,15 +245,8 @@ livecd_console_settings() {
 	return 0
 }
 
-
 livecd_read_commandline() {
-        local CMDLINE
-
-# Line to be used for testing only. The formatting of the console=
-# prompt can be found in /usr/src/linux/Documentation/serial-console.txt
-# possible cmdline could look like this: CMDLINE="cdroot console=ttyS0,9600n8"
-
-	CMDLINE=`cat /proc/cmdline`
+	livecd_get_cmdline || return 1
 
 	for x in ${CMDLINE}
 	do
@@ -138,7 +282,6 @@ livecd_read_commandline() {
 	done
 	return 0
 }
-
 
 livecd_fix_inittab() {
 	if [ "${CDBOOT}" = "" ]
@@ -188,18 +331,9 @@ livecd_fix_inittab() {
 	else
 		if [ "${LIVECD_CONSOLE}" = "tty0" -o "${LIVECD_CONSOLE}" = "" ]
 		then
-			for x in 1 2 3 4 5 6
-			do
-				echo "c${x}:12345:respawn:/sbin/agetty -nl /bin/bashlogin 38400 tty${x} linux" >> /etc/inittab
-			done	
+			:
 		else
-			if [ -c "/dev/hvc/0" ]
-			then
-				ln -s /dev/hvc/0 /dev/hvc0
-				echo "c0:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 hvc0 vt320" >> /etc/inittab
-			else
-				echo "c0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ${LIVECD_CONSOLE} vt100" >> /etc/inittab
-			fi
+			echo "c0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ${LIVECD_CONSOLE} vt100" >> /etc/inittab
 		fi
 	fi
 	return 0
