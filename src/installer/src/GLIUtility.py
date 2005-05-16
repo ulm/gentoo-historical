@@ -135,7 +135,32 @@ def is_file(file):
 			
 	# Check to make sure the device exists
 	return os.access(file, os.F_OK)
-		
+
+##
+# Parse a URI. Returns a tuple (protocol, username, password, host, port, path)
+# Returns None if URI is invalid.
+# @param uri URI to be parsed
+def parse_uri(uri):
+	# Compile the regex
+	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.+)')
+
+	# Run it against the URI
+	res = expr.match(uri)
+
+	if not res:
+		# URI doesn't match regex and therefore is invalid
+		return None
+
+	# Get tuple of matches
+	# 0 - Protocol
+	# 1 - Username
+	# 2 - Password
+	# 3 - Host
+	# 4 - Port
+	# 5 - Path
+	uriparts = res.groups()
+	return uriparts
+
 ##
 # Check to see if the string is a valid URI. Returns bool.
 # @param uri 				URI to be validated
@@ -148,25 +173,12 @@ def is_uri(uri, checklocal=True):
 	# Set the valid uri types
 	valid_uri_types = ('ftp', 'rsync', 'http', 'file', 'https')
 		
-	# Compile the regex
-	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.+)')
-
-	# Run it against the URI
-	res = expr.match(uri)
-
-	if not res:
-		# URI doesn't match regex and therefore is invalid
+	# Parse the URI
+	uriparts = parse_uri(uri)
+	if not uriparts:
+		# Invalid URI
 		return False
 
-	# Get tuple of matches
-	# 0 - Protocol
-	# 1 - Username
-	# 2 - Password
-	# 3 - Host
-	# 4 - Port
-	# 5 - Path
-	uriparts = res.groups()
-    
 	# Check for valid uri type
 	if not uriparts[0] in valid_uri_types:
 		return False
