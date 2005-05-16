@@ -2,18 +2,16 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = "$Id: main.py,v 1.1 2005/05/09 20:21:31 hadfield Exp $"
+__revision__ = "$Id: main.py,v 1.2 2005/05/16 22:30:37 hadfield Exp $"
 __modulename__ = "main"
 
-from core.template import Template
+from domains._parent.basepage import BasePage
 from setup import config
 
-def output(page, request):
-    tmpl = Template()
-    tmpl.compile(config.template_loc + "/main.tpl",
-                 {"GLSR_URL":          config.url,
-                  "THEME":             config.theme,
-                  "GLSR_VERSION":      config.__version__,
-                  "USER_ALIAS":        "",
-                  "USER_ID":           ""})
-    return tmpl
+class Page(BasePage):
+
+    def setup(self, page, request):
+
+        BasePage.set_page(self, "main.tpl")
+        self.tmpl.param("USER_ALIAS", "")
+        self.tmpl.param("USER_ID", "")
