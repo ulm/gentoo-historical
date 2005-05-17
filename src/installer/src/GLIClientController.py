@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.58 2005/05/12 02:37:45 agaffney Exp $
+$Id: GLIClientController.py,v 1.59 2005/05/17 19:37:21 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -135,6 +135,11 @@ class GLIClientController(Thread):
 		self._install_steps = self._arch_template.get_install_steps()
 		self.addNotification("int", NEXT_STEP_READY)
 #		self._install_event.wait()
+
+		# Write install profile to disk for debugging purposes
+		configuration = open("/tmp/installprofile.xml", "w")
+		configuration.write(self._install_profile.serialize())
+		configuration.close()
 
 		while 1:
 			self._install_event.wait()

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.116 2005/05/17 17:27:01 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.117 2005/05/17 19:37:20 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -238,6 +238,7 @@ class ArchitectureTemplate:
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
+		GLIUtility.spawn("cp /tmp/installprofile.xml " + self._chroot_dir + "/root/installprofile.xml")
 		self._logger.log("Chroot environment ready.")
 
 	##
