@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 #
 
-__revision__ = "$Id: basepage.py,v 1.1 2005/05/16 19:44:42 hadfield Exp $"
+__revision__ = "$Id: basepage.py,v 1.2 2005/05/17 16:30:40 hadfield Exp $"
 __modulename__ = "basepage"
 
 from core.template import Template
@@ -17,13 +17,13 @@ class BasePage:
         self.tmpl.param("THEME", config.theme)
         self.tmpl.param("GLSR_VERSION", config.__version__)
 
-        self.page = ""
+        self.template = ""
     
-    def set_page(self, page_name):
+    def set_template(self, template_name):
         
-        self.page = page_name
+        self.template = template_name
     
     def output(self):
 
-        self.tmpl.compile(config.template_loc + "/" + self.page)
+        self.tmpl.compile(config.template_loc + "/" + self.template)
         return self.tmpl.output()
