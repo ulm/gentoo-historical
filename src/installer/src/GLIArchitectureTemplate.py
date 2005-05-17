@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.114 2005/05/12 20:22:49 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.115 2005/05/17 03:09:35 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -19,7 +19,7 @@ class ArchitectureTemplate:
 	# Initialization of the ArchitectureTemplate.  Called from some other arch template.
 	# @param selfconfiguration=None    A Client Configuration
 	# @param install_profile=None      An Install Profile
-	# @param client_controller=None    Client Controfor mount in GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^/mnt/gentoo' | sort -r", return_output=True).split("\n"):ller.  not same as configuration.
+	# @param client_controller=None    Client Controller.  not same as configuration.
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		self._client_configuration = configuration
 		self._install_profile = install_profile
