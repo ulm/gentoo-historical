@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.38 2005/05/02 14:45:32 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.39 2005/05/17 18:54:13 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -294,8 +294,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
 				if "flags" in newpart:
-					for flag in newpart['flags'] and parted_disk.get_partition(part).is_flag_available(flag):
-						parted_disk.get_partition(part).set_flag(flag)
+					for flag in newpart['flags']:
+						if parted_disk.get_partition(part).is_flag_available(flag):
+							parted_disk.get_partition(part).set_flag(flag)
 				parted_disk.commit()
 				if newpart['format']:
 					if newpart['type'] == "ext2":
