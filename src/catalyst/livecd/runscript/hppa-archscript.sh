@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9 2005/03/09 00:22:05 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9.2.1 2005/05/18 19:17:45 rocket Exp $
 
 case $1 in
 	kernel)
@@ -39,6 +39,20 @@ case $1 in
 			fi
 			[ ! -e "${kbinary}" ] && die "Can't find kernel tarball at ${kbinary}"
 			tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
+			
+			# change kernel name from "kernel" to "gentoo", for example
+			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/${x}
+
+			# change initrd name from "initrd" to "gentoo.igz", for example
+			if [ -e ${clst_cdroot_path}/isolinux/initrd* ]
+			then
+			    mv "${clst_cdroot_path}"/isolinux/initrd* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			fi
+			
+			if [ -e ${clst_cdroot_path}/isolinux/initramfs* ]
+			then
+			    mv "${clst_cdroot_path}"/isolinux/initramfs* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			fi
 		done
 
 		# figure out what device manager we are using and handle it accordingly
@@ -50,14 +64,14 @@ case $1 in
 		fi
 		
 		# THIS SHOULD BE IMPROVED !
-		mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/vmlinux
-		mv ${clst_cdroot_path}/boot/initrd* ${clst_cdroot_path}/initrd
+		#mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/vmlinux
+		#mv ${clst_cdroot_path}/boot/initrd* ${clst_cdroot_path}/initrd
 		icfg=${clst_cdroot_path}/boot/palo.conf
 		kmsg=${clst_cdroot_path}/boot/kernels.msg
 		hmsg=${clst_cdroot_path}/boot/help.msg
-		echo "--commandline=0/${first} initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts}" >> ${icfg}
+		echo "--commandline=0/${first} initrd=${first}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts}" >> ${icfg}
 		echo "--bootloader=boot/iplboot" >> ${icfg}
-		echo "--ramdisk=boot/${x}.igz" >> ${icfg}
+		echo "--ramdisk=boot/${first}.igz" >> ${icfg}
 
 #		for x in $clst_boot_kernel
 #		do

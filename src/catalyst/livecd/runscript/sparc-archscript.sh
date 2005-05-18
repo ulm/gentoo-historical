@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11 2005/03/09 00:22:05 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11.2.1 2005/05/18 19:17:45 rocket Exp $
 
 case $1 in
 	kernel)
@@ -44,7 +44,15 @@ case $1 in
 			mv ${clst_cdroot_path}/boot/kernel-* ${clst_cdroot_path}/boot/${x}
 			
 			# change initrd name from "initrd" to "gentoo.igz", for example
-			mv ${clst_cdroot_path}/boot/initrd* ${clst_cdroot_path}/boot/${x}.igz
+			if [ -e ${clst_cdroot_path}/isolinux/initrd* ]
+			then
+			    mv "${clst_cdroot_path}"/isolinux/initrd* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			fi
+			
+			if [ -e ${clst_cdroot_path}/isolinux/initramfs* ]
+			then
+			    mv "${clst_cdroot_path}"/isolinux/initramfs* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			fi
 		done
 
 		# figure out what device manager we are using and handle it accordingly
