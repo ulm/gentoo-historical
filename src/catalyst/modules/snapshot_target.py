@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/snapshot_target.py,v 1.7 2005/02/28 23:21:09 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/snapshot_target.py,v 1.7.2.1 2005/05/18 18:27:00 wolf31o2 Exp $
 
 """
 Builder class for snapshots.
@@ -53,6 +53,12 @@ class snapshot_target(generic_target):
 
 	def cleanup(self):
 		print "Cleaning up..."
+
+	def kill_chroot_pids(self):
+		pass
+
+	def mount_safety_check(self):
+		pass
 			
 def register(foo):
 	foo.update({"snapshot":snapshot_target})

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/gamecdfs-update.sh,v 1.6.2.3 2005/04/14 00:32:14 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/gamecdfs-update.sh,v 1.6.2.4 2005/05/18 18:27:00 wolf31o2 Exp $
 
 # we grab our configuration
 source /tmp/gamecd.conf || exit 1
@@ -24,7 +24,3 @@ rm -rf /var/db
 
 # This should help setup our PORTAGE_TMPDIR
 echo 'PORTAGE_TMPDIR="/tmp"' >> /etc/make.conf
-
-# This removes an error module from alsa
-rm -f /lib/modules/2.6.11-gentoo-r5/alsa-driver/pci/snd-hdspm.ko
-depmod -e 2.6.11-gentoo-r5

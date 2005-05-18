@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24.2.1 2005/05/03 15:40:51 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24.2.2 2005/05/18 18:27:00 wolf31o2 Exp $
 
 """
 This class does all of the chroot setup, copying of files, etc. It is
@@ -178,6 +178,7 @@ class generic_stage_target(generic_target):
 		pass
 	
         def kill_chroot_pids(self):
+		print "Checking for processes running in chroot and killing them."
 		# Force environment variables to be exported so script can see them
 		self.setup_environment()
 
