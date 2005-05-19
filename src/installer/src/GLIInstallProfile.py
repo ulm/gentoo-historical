@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.48 2005/05/10 21:41:03 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.49 2005/05/19 19:11:58 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -12,6 +12,7 @@ import xml.sax
 import os
 import GLIUtility
 import SimpleXMLParser
+import xml.dom.minidom
 from GLIException import *
 
 ##
@@ -121,30 +122,32 @@ class InstallProfile:
 	def parse(self, filename):
 		self._parser.parse(filename)
 
+	#####################################################################
+	######Cron Daemon Package
 	##
-	# Brief description of function
+	# Returns the cron daemon pkg name
 	def get_cron_daemon_pkg(self):
-		"returns cron_daemon_pkg"
 		return self._cron_daemon_pkg
 
 	##
-	# Brief description of function
+	# cron_daemon_pkg is a string to determine which cron daemon to install and configure (ie. 'vixie-cron')
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
-	# @param cron_daemon_pkg Parameter description
-	# @param xml_attr Parameter description
+	# @param cron_daemon_pkg package name
+	# @param xml_attr Not used here.
 	def set_cron_daemon_pkg(self, xml_path, cron_daemon_pkg, xml_attr):
-		"cron_daemon_pkg is a string to determine which cron daemon to install and configure (ie. 'vixie-cron')"
-		
 		# Check data type
 		if type(cron_daemon_pkg) != str:
 			raise GLIException("CronDaemonPKGError", 'fatal', 'set_cron_daemon_pkg',  "Input must be type 'string'!")
 		
 		self._cron_daemon_pkg = cron_daemon_pkg
 
+
+
+
+
 	##
-	# Brief description of function
+	# Returns logging daemon pkg name
 	def get_logging_daemon_pkg(self):
-		"returns logging_daemon_pkg"
 		return self._logging_daemon_pkg
 
 	##
@@ -897,15 +900,9 @@ class InstallProfile:
 			self.add_network_interface(None, device, network_interfaces[device])
 
 	##
-	# Brief description of function
+	# This method serializes the configuration data and output a nice XML document.
+	# NOTE: this method currently does not serialize: _partition_tables or _kernel_modules
 	def serialize(self):
-		"""
-		This method serializes the configuration data and output a nice XML document.
-
-		NOTE: this method currently does not serialize: _partition_tables or _kernel_modules
-
-		"""
-		import xml.dom.minidom
 		xmldoc = ""
 		xmltab = {	'cron-daemon':			self.get_cron_daemon_pkg,
 				'logging-daemon':		self.get_logging_daemon_pkg,
@@ -936,7 +933,6 @@ class InstallProfile:
 		}
 
 		xmldoc += "<?xml version=\"1.0\"?>"
-
 		xmldoc += "<gli-profile>"
 
 		# Normal cases
