@@ -69,7 +69,7 @@ int start_script(char *script) {
 	int ret;
 	char *command = NULL;
 	
-	printf("Starting %s\n", script);
+	//printf("Starting %s\n", script);
 	asprintf(&command, "%s%s start", INIT_DIR, script);
 	if((ret=system(command)) == 0) {
 		//printf("%s: Succesfully started %s\n", __func__, script);
