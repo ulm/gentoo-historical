@@ -397,13 +397,12 @@
   <xsl:variable name="fileid"     select="@id"/>
   <xsl:variable name="parentfile" select="exslt:node-set($pmetadoc)/metadoc/files/file[@id = $fileid]"/>
   <tr>
-  <!-- Add ?passthru=1 to handbook files, i.e. those with <sections> as a root element
-       because they can't be rendered as-is; at the moment, they give an Err 500.
-       Of course, we could update guide.xsl to make them "renderable" -->
   <ti>
   <xsl:choose>
+  <!-- Add ?glang={$lang} to handbook files, i.e. those with <sections> as a root element
+       because it's the only way they can know what language to use. -->
     <xsl:when test="exslt:node-set($dfile)/sections">
-      <uri link="{$fileurl}?passthru=1"><xsl:value-of select="$fileurl"/></uri>
+      <uri link="{$fileurl}?glang={$lang}"><xsl:value-of select="$fileurl"/></uri>
     </xsl:when>
     <xsl:when test="exslt:node-set($dfile)/metadoc">
       <b><xsl:value-of select="$fileurl"/></b>

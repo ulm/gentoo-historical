@@ -23,6 +23,8 @@
 
 <!-- <sections>, i.e. when user tries to access a book file directly -->
 <xsl:template match="/sections">
+  <xsl:call-template name="doclayout"/>
+  <!--
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html"/>
@@ -33,6 +35,7 @@
   Please use the <a href="/doc/en/">main index</a> to access handbook parts.
 </body>
 </html>
+  -->
 </xsl:template>
 
 <!-- Content of /book -->

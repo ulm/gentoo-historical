@@ -56,7 +56,14 @@
     </xsl:otherwise>
   </xsl:choose>
 
-  <xsl:apply-templates select="chapter"/>
+  <xsl:choose>
+    <xsl:when test="/guide">
+      <xsl:apply-templates select="chapter"/>
+    </xsl:when>
+    <xsl:when test="/sections">
+      <xsl:apply-templates select="/sections/section"/>
+    </xsl:when>
+  </xsl:choose>
   <br/>
   <xsl:if test="/guide/license">
     <xsl:apply-templates select="license" />
@@ -74,6 +81,7 @@
   <xsl:choose>
     <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
     <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
+    <xsl:when test="/sections">Gentoo Linux Handbook Page</xsl:when>
     <xsl:otherwise><xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
 --
@@ -906,6 +914,13 @@
 <xsl:choose>
   <xsl:when test="@link">
     <xsl:choose>
+      <xsl:when test="($TTOP = 'sections') and (starts-with(@link, '?'))">
+        <!-- Handbook link pointing to another part/chapter when viewing a single page,
+             cannot be a link because we have no idea where to link to
+             Besides, we have no way of knowing the language unless told via a param -->
+          <xsl:variable name="nolink"><xsl:value-of select="func:gettext('hb_file', $glang)"/></xsl:variable>
+          <span title="{$nolink}"><font color="#404080">(<xsl:apply-templates/>)</font></span>
+      </xsl:when>
       <xsl:when test="($TTOP = 'book') and ($full = 0) and (starts-with(@link, '?'))">
         <!-- Handbook link pointing to another part/chapter, normal case -->
         <xsl:choose>
@@ -921,16 +936,23 @@
         <!-- Handbook link pointing to another part/chapter
              Handbook is being rendered in a single page (full=1)
              Hence link needs to be rewritten as a local one
-             i.e. ?part=1&chap=3#doc_chap1 must become #book_part1_chap3__chap1   Case 1
+             i.e. ?part=1&chap=3#doc_chap1 must become #book_part1_chap3__chap1   Case 1a
+             i.e. ?part=1&chap=3#anID      must become #anID                      Case 1b
              or   ?part=1&chap=3           must become #book_part1_chap3          Case 2
              or   ?part=2                  must become #book_part2                Case 3-->
         <xsl:choose>
           <xsl:when test="contains(@link, 'chap=') and contains(@link, '#doc_')">
-            <!-- Link points inside a chapter  (Case 1)-->
+            <!-- Link points inside a chapter  (Case 1a)-->
             <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
             <xsl:param name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
             <xsl:param name="linkanch" select="substring-after(@link, '#doc_')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}__{$linkanch}"><xsl:apply-templates /></a>
+          </xsl:when>
+          <xsl:when test="contains(@link, 'chap=') and contains(@link, '#')">
+            <!-- Link points inside a chapter via an ID (Case 1b)
+                 (IDs are expected to be unique throughout a handbook) -->
+            <xsl:param name="linkanch" select="substring-after(@link, '#')" />
+            <a href="#{$linkanch}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:when test="contains(@link, 'chap=')">
             <!-- Link points to a chapter  (Case 2)-->
@@ -946,12 +968,12 @@
         </xsl:choose>
       </xsl:when>
       <xsl:when test="($TTOP = 'book') and ($full = 1) and (starts-with(@link, '#'))">
-        <!-- Handbook link pointing to another same part/chapter
+        <!-- Handbook link pointing to another place in same part/chapter
              Handbook is being rendered in a single page (full=1)
              Hence link needs to be rewritten as an internal one that is unique
              for the whole handbook, i.e.
              #doc_part1_chap3 becomes #book_{UNIQUEID}_part1_chap3, but
-             #anything_else_like_an_ID is left unchanged -->
+             #anything_else_like_an_ID is left unchanged (IDs are expected to be unique throughout a handbook)-->
         <xsl:choose>
           <xsl:when test="starts-with(@link, '#doc_')">
             <xsl:param name="locallink" select="substring-after(@link, 'doc_')" />
@@ -1165,9 +1187,9 @@
         </xsl:if>
       </xsl:for-each>
     </xsl:when>
-    <xsl:otherwise>
-      <xsl:value-of select="func:format-date(/guide/date)"/>
-    </xsl:otherwise>
+    <xsl:when test="/guide or /sections">
+      <xsl:value-of select="func:format-date(//date[1])"/>
+    </xsl:when>
   </xsl:choose>
 </xsl:template>
 
@@ -1196,7 +1218,7 @@
      </tr>
     </xsl:if>
     <xsl:choose>
-      <xsl:when test="/book/date or /guide/date">
+      <xsl:when test="/book/date or /guide/date or /sections/date">
         <tr>
           <td align="center" class="topsep">
             <p class="alttext">

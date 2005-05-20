@@ -9,7 +9,7 @@
   <xsl:param name="PLANG"/>
   
 <!-- For Debugging:
-<xsl:message>PLANG=<xsl:value-of select="$PLANG"/> || str=<xsl:value-of select="$str"/> || gLang=<xsl:value-of select="$GLANG"/></xsl:message>
+<xsl:message>PLANG=<xsl:value-of select="$PLANG"/> || str=<xsl:value-of select="$str"/> || gLang=<xsl:value-of select="$glang"/></xsl:message>
 -->
 
   <!-- Default to English version when $LANG is undefined, the lang does not
@@ -17,12 +17,12 @@
        requested text is unavailable.
 
        Used either the passed parameter (e.g. from metadoc.xsl)
-       or the Global $GLANG that was initialized when loading a guide or a book
+       or the Global $glang that was initialized when loading a guide or a book or part of uri for book parts
   -->
   <xsl:variable name="LANG">
     <xsl:choose>
       <xsl:when test="$PLANG"><xsl:value-of select="$PLANG"/></xsl:when>
-      <xsl:when test="$GLANG"><xsl:value-of select="$GLANG"/></xsl:when>
+      <xsl:when test="$glang"><xsl:value-of select="$glang"/></xsl:when>
     </xsl:choose>
   </xsl:variable>
 
@@ -210,7 +210,7 @@
 <xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param>
 
 <!-- Value of top element's lang attribute e.g. "handbook.xml" -->
-<xsl:param name="GLANG"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
+<xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
 
 <xsl:template match="/">

@@ -10,6 +10,13 @@
     <!-- Inside /book -->
     <xsl:call-template name="bookcontent" />
   </xsl:if>
+  <xsl:if test="local-name() = 'sections'">
+    <!-- Inside /sections -->
+      <xsl:apply-templates select="/sections/section">    
+        <xsl:with-param name="chapnum" select="1"/>
+        <xsl:with-param name="partnum" select="1"/>
+      </xsl:apply-templates>
+  </xsl:if>
   <xsl:if test="local-name() = 'part'">
     <!-- Inside /book/part -->
     <xsl:call-template name="bookpartcontent" />
