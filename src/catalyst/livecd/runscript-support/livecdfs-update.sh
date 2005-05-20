@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.5 2005/04/20 20:47:17 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.6 2005/05/20 17:10:46 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -149,8 +149,7 @@ then
 fi
 
 # setup opengl in /etc (if configured)
-#[ -x /usr/sbin/openglify ] && /usr/sbin/openglify
-mkdir -p /etc/opengl
+[ -x /usr/sbin/openglify ] && /usr/sbin/openglify
 
 # touch /etc/asound.state
 touch /etc/asound.state

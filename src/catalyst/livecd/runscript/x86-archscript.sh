@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.1 2005/05/18 19:17:45 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.2 2005/05/20 17:10:46 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -17,8 +17,8 @@ case $1 in
 		# runscript
 
 		# Time to create a filesystem tree for the ISO at $clst_cdroot_path.
-		# We extract the "cdtar" to this directory, which will normally contains a pre-built
-		# binary boot-loader/filesystem skeleton for the ISO. 
+		# We extract the "cdtar" to this directory, which will normally contains
+		# a pre-built binary boot-loader/filesystem skeleton for the ISO. 
 		
 		cdtar=${clst_livecd_cdtar}
 		[ -z "${cdtar}" ] && die "Required key livecd/cdtar not defined, exiting"
