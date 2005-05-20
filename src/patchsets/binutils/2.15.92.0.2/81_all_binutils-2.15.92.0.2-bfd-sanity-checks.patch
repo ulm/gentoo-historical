@@ -5,6 +5,17 @@ Gentoo.
 
 http://bugs.gentoo.org/91398
 
+2005-05-18  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* elf.c (group_signature): Undo the last change. Check if the
+	symbol table section is correct.
+
+2005-05-17  Nick Clifton  <nickc@redhat.com>
+
+	* elf.c (group_signature): Check for a group section which is
+	actually a (corrupt) symbol table section in disguise and prevent
+	an infinite loop from occurring.
+
 --- bfd/elfcode.h
 +++ bfd/elfcode.h
 @@ -613,8 +613,13 @@
@@ -77,6 +88,20 @@ http://bugs.gentoo.org/91398
    if (i_ehdrp->e_shnum != 0)
 --- bfd/elf.c
 +++ bfd/elf.c
+@@ -443,8 +443,11 @@ group_signature (bfd *abfd, Elf_Internal
+   Elf_External_Sym_Shndx eshndx;
+   Elf_Internal_Sym isym;
+ 
+-  /* First we need to ensure the symbol table is available.  */
+-  if (! bfd_section_from_shdr (abfd, ghdr->sh_link))
++  /* First we need to ensure the symbol table is available.  Make sure
++     that it is a symbol table section.  */
++  hdr = elf_elfsections (abfd) [ghdr->sh_link];
++  if (hdr->sh_type != SHT_SYMTAB
++      || ! bfd_section_from_shdr (abfd, ghdr->sh_link))
+     return NULL;
+ 
+   /* Go read the symbol.  */
 @@ -1744,6 +1744,9 @@
      case SHT_DYNAMIC:	/* Dynamic linking information.  */
        if (! _bfd_elf_make_section_from_shdr (abfd, hdr, name))
