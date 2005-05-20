@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.25 2005/05/19 19:11:58 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.26 2005/05/20 08:18:33 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -10,13 +10,7 @@ used by the installer client during installation. Data that is part of
 the actual install is contained in GLIInstallProfile.
 
 Usage:
-
 	from GLIClientConfiguration import ClientConfiguration
-
-	conf = ClientConfiguration.shared_client_configuration()
-
-	conf.root_mount_point('/mnt/gentoo/')
-	conf.architecture_template('x86')
 
 	PROCEDURE TO ADD NEW VARIABLES:
 	1. Add a handler to the list.  If the variable has children make sure you do it right.
@@ -91,48 +85,52 @@ class ClientConfiguration:
 		self._verbose = True
 		self.data = ""  # used for serialization
 
-		parser = SimpleXMLParser.SimpleXMLParser()
+		_parser = SimpleXMLParser.SimpleXMLParser()
 
-		parser.addHandler('client-configuration/architecture-template', self.set_architecture_template)
-		parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
-		parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
-		parser.addHandler('client-configuration/log-file', self.set_log_file)
-		parser.addHandler('client-configuration/network-interface', self.set_network_interface)
-		parser.addHandler('client-configuration/network-ip', self.set_network_ip)
-		parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
-		parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
-		parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
-		parser.addHandler('client-configuration/network-type', self.set_network_type)
-		parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
-		parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
-		parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
-		parser.addHandler('client-configuration/interactive', self.set_interactive)
-		parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
-		parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
-		parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
-		parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
-
-		self._parser = parser
+		_parser.addHandler('client-configuration/architecture-template', self.set_architecture_template)
+		_parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
+		_parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
+		_parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
+		_parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
+		_parser.addHandler('client-configuration/interactive', self.set_interactive)
+		_parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
+		_parser.addHandler('client-configuration/log-file', self.set_log_file)
+		_parser.addHandler('client-configuration/network-interface', self.set_network_interface)
+		_parser.addHandler('client-configuration/network-ip', self.set_network_ip)
+		_parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
+		_parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
+		_parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
+		_parser.addHandler('client-configuration/network-type', self.set_network_type)
+		_parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
+		_parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
+		_parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
+		_parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
+		
+	##
+	# Parses the given filename populating the client_configuration.
+	# @param filename the file to be parsed.  This should be a URI actually.
+	def parse(self, filename):
+		self._parser.parse(filename)
 
 	##
 	# Serializes the Client Configuration into an XML format that is returned.
 	def serialize(self):
 		fntable ={	'architecture-template': self.get_architecture_template,
-					'mount-point': self.get_root_mount_point,
-					'profile-uri': self.get_profile_uri,
-					'log-file': self.get_log_file,
-					'network-interface': self.get_network_interface,
-					'network-ip': self.get_network_ip,
-					'network-broadcast': self.get_network_broadcast,
-					'network-netmask': self.get_network_netmask,
-					'network-gateway': self.get_network_gateway,
-					'network-type':	self.get_network_type,
 					'dns-servers': self.get_dns_servers,
 					'enable-ssh': self.get_enable_ssh,
-					'root-passwd': self.get_root_passwd,
-					'interactive': self.get_interactive,
 					'ftp-proxy': self.get_ftp_proxy,
 					'http-proxy': self.get_http_proxy,
+					'interactive': self.get_interactive,
+					'log-file': self.get_log_file,
+					'network-broadcast': self.get_network_broadcast,
+					'network-gateway': self.get_network_gateway,
+					'network-interface': self.get_network_interface,
+					'network-ip': self.get_network_ip,
+					'network-netmask': self.get_network_netmask,
+					'network-type':	self.get_network_type,
+					'profile-uri': self.get_profile_uri,
+					'root-mount-point': self.get_root_mount_point,
+					'root-passwd': self.get_root_passwd,
 					'rsync-proxy': self.get_rsync_proxy,
 				}
 		data = "<client-configuration>"
@@ -147,12 +145,6 @@ class ClientConfiguration:
 		dom = xml.dom.minidom.parseString(data)
 		return dom.toprettyxml()
 		
-	##
-	# Parses the given filename populating the client_configuration.
-	# @param filename the file to be parsed.  This should be a URI actually.
-	def parse(self, filename):
-		self._parser.parse(filename)
-
 	############################################################################
 	#### Architecture Template
 	
@@ -170,191 +162,6 @@ class ClientConfiguration:
 	def get_architecture_template(self):
 		return self._architecture_template
 	
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Install Profile URI
-	
-	##
-	# Sets the profile_uri for use in non-interactive installs
-	# @param xml_path not used here.
-	# @param profile_uri location of the profile
-	# @param xml_attr not used here.
-	def set_profile_uri(self, xml_path, profile_uri, xml_attr):
-		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
-			raise GLIException("URIError", 'fatal', 'set_profile_uri',"The URI specified is not valid!")
-		self._profile_uri = profile_uri
-	
-	##
-	# Returns the profile_uri
-	def get_profile_uri(self):
-		return self._profile_uri
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Log File Location
-
-	##
-	# Sets the log filename.
-	# @param xml_path not used here.
-	# @param log_file the name of the logfile for the CC to use.
-	# @param xml_attr not used here.
-	def set_log_file(self, xml_path, log_file, xml_attr):
-		self._log_file = log_file
-
-	##
-	# Returns the log filename
-	def get_log_file(self):
-		return self._log_file
-	
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Root Mount Point For New System
-
-	##
-	# Sets the root_mount_point for the new system to be installed to
-	# @param xml_path not used here.
-	# @param root_mount_point new location for the root mount point
-	# @param xml_attr not used here.
-	def set_root_mount_point(self, xml_path, root_mount_point, xml_attr):
-		self._root_mount_point = root_mount_point
-
-	##
-	# Returns the root_mount_point
-	def get_root_mount_point(self):
-		return self._root_mount_point
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network Interface Information for livecd environment
-
-	##
-	# Sets the network interface configuration info for the livecd environment
-	# @param xml_path not used here.
-	# @param interface the interface to talk over
-	# @param xml_attr= None
-	def set_network_interface(self, xml_path, interface, xml_attr=None):
-		if not GLIUtility.is_eth_device(interface):
-			raise GLIException("InterfaceError", 'fatal', 'set_network_interface', "Interface " + interface + " must be a valid device!")
-		self._network_interface = interface
-	
-	##
-	# Returns the network interface
-	def get_network_interface(self):
-		return self._network_interface
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network IP Address for livecd environment
-
-	##
-	# Sets the network ip address for the livecd environment
-	# @param xml_path not used here.
-	# @param ip the ip address
-	# @param xml_attr= None
-	def set_network_ip(self, xml_path, ip, xml_attr=None):
-		if not GLIUtility.is_ip(ip):
-			raise GLIException("IPAddressError", 'fatal', 'set_network_ip', 'The specified IP ' + ip + ' is not a valid IP Address!')
-		self._network_ip = ip
-	
-	##
-	# Returns the network ip address
-	def get_network_ip(self):
-		return self._network_ip
-		
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network Broadcast Address for livecd environment
-
-	##
-	# Sets the network broadcast address for the livecd environment
-	# @param xml_path not used here.
-	# @param broadcast the network broadcast address
-	# @param xml_attr= None
-	def set_network_broadcast(self, xml_path, broadcast, xml_attr=None):
-		if not GLIUtility.is_ip(broadcast):
-			raise GLIException("IPAddressError", 'fatal','set_network_broadcast', 'The specified broadcast is not a valid IP Address!')
-		else:
-			# FIXME: Need to guess the broadcast... just in case (probably need the gateway..)
-			pass
-		self._network_broadcast = broadcast
-	
-	##
-	# Returns the network broadcast address
-	def get_network_broadcast(self):
-		return self._network_broadcast
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network Netmask Address for livecd environment
-
-	##
-	# Sets the network netmask for the livecd environment
-	# @param xml_path not used here.
-	# @param netmask the network netmask
-	# @param xml_attr= None
-	def set_network_netmask(self, xml_path, netmask, xml_attr=None):
-		if not GLIUtility.is_ip(netmask):
-			raise GLIException("IPAddressError", 'fatal','set_network_netmask', 'The specified netmask is not a valid IP Address!')
-		else:
-			# Need to guess the netmask... just in case (probably need the gateway..)
-			pass
-			
-		self._network_netmask = netmask
-	
-	##
-	# Returns the network netmask
-	def get_network_netmask(self):
-		return self._network_netmask
-		
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network Gateway Address for livecd environment
-	
-	##
-	# Sets the network gateway for the livecd environment
-	# @param xml_path not used here.
-	# @param gateway the network gateway
-	# @param xml_attr= None
-	def set_network_gateway(self, xml_path, gateway, xml_attr=None):
-		if not GLIUtility.is_ip(gateway):
-			raise GLIException("IPAddressError", 'fatal', 'set_network_gateway', "The gateway IP provided is not a valid gateway!!")
-		self._network_gateway = gateway
-	
-	##
-	# Returns the network gateway
-	def get_network_gateway(self):
-		return self._network_gateway
-		
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Network Type Information for livecd environment (static or dhcp)
-
-	##
-	# Sets the network configuration info for the livecd environment
-	# @param xml_path not used here.
-	# @param network_type the network type, either static or dhcp
-	# @param xml_attr=None
-	def set_network_type(self, xml_path, network_type, xml_attr):
-
-		if not (network_type == 'static' or network_type == 'dhcp'):
-			raise GLIException("NoSuchTypeError", 'fatal','set_network_type',"You can only have a static or dhcp network!")
-
-		self._network_type = network_type
-
-	##
-	# Returns the network type
-	def get_network_type(self):
-		return self._network_type
-
 	# This variable has a simple serialize function.
 	
 	############################################################################
@@ -403,68 +210,6 @@ class ClientConfiguration:
 	# This variable has a simple serialize function.
 	
 	############################################################################
-	#### Root Password Selection for livecd environment
-
-	##
-	# Sets the root password on the livecd.  This is supposed to be given a hash.
-	# @param xml_path not used here.
-	# @param passwd a hashed password to be set on the livecd environment.
-	# @param xml_attr not used here.
-	def set_root_passwd(self, xml_path, passwd, xml_attr):
-		self._root_passwd = passwd
-
-	##
-	# Returns the hash of the root password for the livecd environment
-	def get_root_passwd(self):
-		return self._root_passwd
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
-	#### Interactive Install
-
-	##
-	# Sets whether or not to be an interactive install. (boolean)
-	# @param xml_path not used here.
-	# @param interactive True/False bool value or a string.
-	# @param xml_attr not used here.
-	def set_interactive(self, xml_path, interactive, xml_attr):
-		if type(interactive) != bool:
-			interactive = GLIUtility.strtobool(interactive)
-		self._interactive = interactive
-
-	##
-	# Returns bool value on interactive install choice.
-	# @param self Parameter description
-	def get_interactive(self):
-		return self._interactive
-
-	######################################################################
-	########### Set Kernel Modules to be loaded for the livecd environment
-
-	##
-	# Sets a list of modules to load on the livecd environment.
-	# @param xml_path not used here.
-	# @param modules string of modules
-	# @param xml_attr not used here.
-	def set_kernel_modules(self, xml_path, modules, xml_attr):
-		self._kernel_modules = tuple(string.split(modules))
-
-	##
-	# Returns the list of kernel modules to load on the livecd environment.
-	def get_kernel_modules(self):
-		return self._kernel_modules
-
-	##
-	# Serialization for the kernel module list.  joins together the modules.
-	def serialize_kernel_modules(self)
-		# Special Case the kernel modules
-		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
-		data += "</client-configuration>"
-
-	# This variable has a simple serialize function.
-	
-	############################################################################
 	#### FTP Proxy Address Information for livecd environment
 
 	##
@@ -498,6 +243,254 @@ class ClientConfiguration:
 	# Returns the HTTP proxy
 	def get_http_proxy(self):
 		return self._http_proxy
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Interactive Install
+
+	##
+	# Sets whether or not to be an interactive install. (boolean)
+	# @param xml_path not used here.
+	# @param interactive True/False bool value or a string.
+	# @param xml_attr not used here.
+	def set_interactive(self, xml_path, interactive, xml_attr):
+		if type(interactive) != bool:
+			interactive = GLIUtility.strtobool(interactive)
+		self._interactive = interactive
+
+	##
+	# Returns bool value on interactive install choice.
+	# @param self Parameter description
+	def get_interactive(self):
+		return self._interactive
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Set Kernel Modules to be loaded for the livecd environment
+
+	##
+	# Sets a list of modules to load on the livecd environment.
+	# @param xml_path not used here.
+	# @param modules string of modules
+	# @param xml_attr not used here.
+	def set_kernel_modules(self, xml_path, modules, xml_attr):
+		self._kernel_modules = tuple(string.split(modules))
+
+	##
+	# Returns the list of kernel modules to load on the livecd environment.
+	def get_kernel_modules(self):
+		return self._kernel_modules
+
+	##
+	# Serialization for the kernel module list.  joins together the modules.
+	def serialize_kernel_modules(self)
+		# Special Case the kernel modules
+		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
+		data += "</client-configuration>"
+	
+	############################################################################
+	#### Log File Location
+
+	##
+	# Sets the log filename.
+	# @param xml_path not used here.
+	# @param log_file the name of the logfile for the CC to use.
+	# @param xml_attr not used here.
+	def set_log_file(self, xml_path, log_file, xml_attr):
+		self._log_file = log_file
+
+	##
+	# Returns the log filename
+	def get_log_file(self):
+		return self._log_file
+	
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Network Broadcast Address for livecd environment
+
+	##
+	# Sets the network broadcast address for the livecd environment
+	# @param xml_path not used here.
+	# @param broadcast the network broadcast address
+	# @param xml_attr= None
+	def set_network_broadcast(self, xml_path, broadcast, xml_attr=None):
+		if not GLIUtility.is_ip(broadcast):
+			raise GLIException("IPAddressError", 'fatal','set_network_broadcast', 'The specified broadcast is not a valid IP Address!')
+		else:
+			# FIXME: Need to guess the broadcast... just in case (probably need the gateway..)
+			pass
+		self._network_broadcast = broadcast
+	
+	##
+	# Returns the network broadcast address
+	def get_network_broadcast(self):
+		return self._network_broadcast
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Network Gateway Address for livecd environment
+	
+	##
+	# Sets the network gateway for the livecd environment
+	# @param xml_path not used here.
+	# @param gateway the network gateway
+	# @param xml_attr= None
+	def set_network_gateway(self, xml_path, gateway, xml_attr=None):
+		if not GLIUtility.is_ip(gateway):
+			raise GLIException("IPAddressError", 'fatal', 'set_network_gateway', "The gateway IP provided is not a valid gateway!!")
+		self._network_gateway = gateway
+	
+	##
+	# Returns the network gateway
+	def get_network_gateway(self):
+		return self._network_gateway
+		
+	# This variable has a simple serialize function.
+		
+	############################################################################
+	#### Network Interface Information for livecd environment
+
+	##
+	# Sets the network interface configuration info for the livecd environment
+	# @param xml_path not used here.
+	# @param interface the interface to talk over
+	# @param xml_attr= None
+	def set_network_interface(self, xml_path, interface, xml_attr=None):
+		if not GLIUtility.is_eth_device(interface):
+			raise GLIException("InterfaceError", 'fatal', 'set_network_interface', "Interface " + interface + " must be a valid device!")
+		self._network_interface = interface
+	
+	##
+	# Returns the network interface
+	def get_network_interface(self):
+		return self._network_interface
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Network IP Address for livecd environment
+
+	##
+	# Sets the network ip address for the livecd environment
+	# @param xml_path not used here.
+	# @param ip the ip address
+	# @param xml_attr= None
+	def set_network_ip(self, xml_path, ip, xml_attr=None):
+		if not GLIUtility.is_ip(ip):
+			raise GLIException("IPAddressError", 'fatal', 'set_network_ip', 'The specified IP ' + ip + ' is not a valid IP Address!')
+		self._network_ip = ip
+	
+	##
+	# Returns the network ip address
+	def get_network_ip(self):
+		return self._network_ip
+		
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Network Netmask Address for livecd environment
+
+	##
+	# Sets the network netmask for the livecd environment
+	# @param xml_path not used here.
+	# @param netmask the network netmask
+	# @param xml_attr= None
+	def set_network_netmask(self, xml_path, netmask, xml_attr=None):
+		if not GLIUtility.is_ip(netmask):
+			raise GLIException("IPAddressError", 'fatal','set_network_netmask', 'The specified netmask is not a valid IP Address!')
+		else:
+			# Need to guess the netmask... just in case (probably need the gateway..)
+			pass
+			
+		self._network_netmask = netmask
+	
+	##
+	# Returns the network netmask
+	def get_network_netmask(self):
+		return self._network_netmask
+		
+	# This variable has a simple serialize function.
+	
+	
+	############################################################################
+	#### Network Type Information for livecd environment (static or dhcp)
+
+	##
+	# Sets the network configuration info for the livecd environment
+	# @param xml_path not used here.
+	# @param network_type the network type, either static or dhcp
+	# @param xml_attr=None
+	def set_network_type(self, xml_path, network_type, xml_attr):
+
+		if not (network_type == 'static' or network_type == 'dhcp'):
+			raise GLIException("NoSuchTypeError", 'fatal','set_network_type',"You can only have a static or dhcp network!")
+
+		self._network_type = network_type
+
+	##
+	# Returns the network type
+	def get_network_type(self):
+		return self._network_type
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Install Profile URI
+	
+	##
+	# Sets the profile_uri for use in non-interactive installs
+	# @param xml_path not used here.
+	# @param profile_uri location of the profile
+	# @param xml_attr not used here.
+	def set_profile_uri(self, xml_path, profile_uri, xml_attr):
+		if profile_uri != None and not GLIUtility.is_uri(profile_uri):
+			raise GLIException("URIError", 'fatal', 'set_profile_uri',"The URI specified is not valid!")
+		self._profile_uri = profile_uri
+	
+	##
+	# Returns the profile_uri
+	def get_profile_uri(self):
+		return self._profile_uri
+
+	# This variable has a simple serialize function.
+
+	############################################################################
+	#### Root Mount Point For New System
+
+	##
+	# Sets the root_mount_point for the new system to be installed to
+	# @param xml_path not used here.
+	# @param root_mount_point new location for the root mount point
+	# @param xml_attr not used here.
+	def set_root_mount_point(self, xml_path, root_mount_point, xml_attr):
+		self._root_mount_point = root_mount_point
+
+	##
+	# Returns the root_mount_point
+	def get_root_mount_point(self):
+		return self._root_mount_point
+
+	# This variable has a simple serialize function.
+
+	############################################################################
+	#### Root Password Selection for livecd environment
+
+	##
+	# Sets the root password on the livecd.  This is supposed to be given a hash.
+	# @param xml_path not used here.
+	# @param passwd a hashed password to be set on the livecd environment.
+	# @param xml_attr not used here.
+	def set_root_passwd(self, xml_path, passwd, xml_attr):
+		self._root_passwd = passwd
+
+	##
+	# Returns the hash of the root password for the livecd environment
+	def get_root_passwd(self):
+		return self._root_passwd
 
 	# This variable has a simple serialize function.
 	
