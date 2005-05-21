@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.8 $"
+__revision__ = "$Revision: 1.9 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -665,7 +665,7 @@ def pkgcmp(pkg1,pkg2):
 
 def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
     """write out ebuild info to RSS file (fp)"""
-    fp.write("""<?xml version="1.0" encoding="iso-8859-1"?>
+    fp.write("""<?xml version="1.0" encoding="UTF-8"?>
         <rss version="0.92">
         <channel>
         <title>packages.gentoo.org [ %s ]</title>
