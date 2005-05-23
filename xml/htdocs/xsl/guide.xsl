@@ -226,10 +226,10 @@
           <xsl:otherwise>
             <a class="menulink" href="/main/en/lists.xml">Lists</a>
           </xsl:otherwise>
-        </xsl:choose>
-        | <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
-        | <a class="menulink" href="http://store.gentoo.org">Store</a>
-        |
+	</xsl:choose>
+	| <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
+	| <a class="menulink" href="http://www.cafepress.com/officialgentoo/">Store</a>
+	|
         <xsl:choose>
           <xsl:when test="/mainpage/@id='newsletter'">
             <a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a>
@@ -342,9 +342,9 @@
                     <a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
                     <br/><br/>
                     Miscellaneous Resources:
-                    <br/>
-                    <a class="altlink" href="http://store.gentoo.org">Gentoo Linux Store</a>
-                    <br/>
+		    <br/>
+		    <a class="altlink" href="http://www.cafepress.com/officialgentoo/">Gentoo Linux Store</a>
+		    <br/>
                     <a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
                     <br/>
                     <a class="altlink" href="/main/en/articles.xml">IBM dW/Intel article archive</a>
@@ -1291,30 +1291,23 @@
       </td>
     </tr>
     <tr>
+      <td align="center" class="topsep">
+        <a href="http://www.vr.org">
+	    <img src="/images/vr-ad.png" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
+        </a>
+	<p class="alttext">
+	    <a href="http://www.vr.org/">VR Hosted</a>
+	</p>
+      </td>
+    </tr>
+    <tr>
     <td align="center" class="topsep">
       <a href="http://www.tek.net" target="_top">
         <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
       </a>
       <p class="alttext">
-        Tek Alchemy offers dedicated servers and other hosting solutions running Gentoo Linux.
+	  <a href="http://www.tek.net/">Tek Alchemy</a>
       </p>
-    </td>
-    </tr>
-    <tr>
-      <td align="center" class="topsep">
-        <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
-          <img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/>
-        </a>
-        <p class="alttext">
-    php|architect is the monthly magazine for PHP professionals, available worldwide in print and electronic format. A percentage of all the sales will be donated back into the Gentoo project.
-        </p>
-      </td>
-    </tr>
-    <tr>
-    <td align="center" class="topsep">
-      <a href="http://store.gentoo.org">
-        <img src="/images/store.gif" alt="The Gentoo Linux Store" border="0"/>
-      </a>
     </td>
     </tr>
     <tr>
@@ -1323,20 +1316,20 @@
         <img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/>
       </a>
       <p class="alttext">
-Seven L Networks provides customizable Dedicated Servers for your customized Gentoo install.  Colocation and other hosting services are also provided.
+	  <a href="http://www.sevenl.net/">SevenL.net</a>
       </p>
     </td>
     </tr>
     <tr>
       <td align="center" class="topsep">
-        <a href="http://www.vr.org">
-          <img src="/images/vr-ad.png" alt="$99/mo dedicated servers" border="0"/>
-        </a>
-        <p class="alttext">
-No BS Dedicated Gentoo Linux Servers from <a href="http://www.vr.org">vr.org</a>.
-        </p>
+        <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
+          <img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/>
+      </a>
+      <p class="alttext">
+	  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929">php|architect</a>
+      </p>
       </td>
-    </tr>
+    </tr> 
     <tr>
     <td align="center" class="topsep"/>
     </tr>
