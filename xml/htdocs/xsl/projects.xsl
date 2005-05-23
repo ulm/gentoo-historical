@@ -9,7 +9,7 @@
 		<author title="script generated">Gentoo Project</author>
 		<abstract>This is an overview of all current gentoo projects</abstract>
 		<version>1.1</version>
-		<date>30 Dec 2003</date>
+		<date>2005-05-23</date>
 		<chapter>
 			<title>Gentoo Projects</title>
 			<section><body>
@@ -98,9 +98,9 @@
         </xsl:if>
         <xsl:if test="$showlevel>2">
           <ti>
-      	    <xsl:if test="$level=3">
-       	      <uri>
-       	        <xsl:attribute name="link">
+            <xsl:if test="$level=3">
+              <uri>
+                <xsl:attribute name="link">
                   <xsl:value-of select="$ref"/>
                 </xsl:attribute>
                 <xsl:value-of select="project/name/text()"/>
@@ -109,21 +109,19 @@
           </ti>
         </xsl:if>
         <ti>
-          <xsl:for-each select='project/dev[@role="lead"]'>
-            <xsl:value-of select="text()"/>
-            <xsl:if test="not(position() = last())">, </xsl:if>
+          <xsl:for-each select='project/dev[translate(@role,"DEAL","deal")="lead"]'>
+            <xsl:variable name="lead" select="text()"/>
+            <xsl:if test="count(following-sibling::dev[text()=$lead])=0">
+              <xsl:value-of select="text()"/>
+              <xsl:if test="not(position() = last())">, </xsl:if>
+            </xsl:if>
           </xsl:for-each>
         </ti>
         <ti>
-          <xsl:for-each select="project/dev[not(@role='lead')]">
+          <xsl:for-each select='project/dev[not(translate(@role,"DEAL","deal")="lead" or text()=preceding-sibling::dev/text())]'>
             <xsl:sort select="text()"/>
-	    <xsl:variable name="nick" select="text()"/>
-            <xsl:if test="count(following-sibling::dev[text()=$nick])=0">
-              <xsl:value-of select="text()"/>
-              <xsl:if test="not(position()=last())">
-              <xsl:text>, </xsl:text>
-              </xsl:if>
-	    </xsl:if>
+            <xsl:value-of select="text()"/>
+            <xsl:if test="not(position() = last())">, </xsl:if>
           </xsl:for-each>
         </ti>
         <ti>

@@ -59,8 +59,8 @@
 				 <th>Nickname</th>
 				 <th>Role</th>
 			       </tr>
-			       <xsl:apply-templates select='dev[@role="lead"]'/>
-			       <xsl:apply-templates select='dev[@role and not(@role="lead")]'>
+			       <xsl:apply-templates select='dev[translate(@role,"DEAL","deal")="lead"]'/>
+			       <xsl:apply-templates select='dev[@role and not(translate(@role,"DEAL","deal")="lead")]'>
 			       	<xsl:sort select="@role"/>
 			       	<xsl:sort select="text()"/>
 			       </xsl:apply-templates>
@@ -234,9 +234,9 @@
 		</uri>
 		</ti>
 		<ti>
-		<xsl:if test='/project/dev[@role="lead"]'>
+		<xsl:if test='/project/dev[translate(@role,"DEAL","deal")="lead"]'>
 			<xsl:call-template name="fullname">
-				<xsl:with-param name="nick"><xsl:value-of select='/project/dev[@role="lead"]'/></xsl:with-param>
+				<xsl:with-param name="nick"><xsl:value-of select='/project/dev[translate(@role,"DEAL","deal")="lead"]'/></xsl:with-param>
 				<xsl:with-param name="fallback">true</xsl:with-param>
         <xsl:with-param name="rollcall"><xsl:copy-of select="$rollcall"/></xsl:with-param>
 			</xsl:call-template>
