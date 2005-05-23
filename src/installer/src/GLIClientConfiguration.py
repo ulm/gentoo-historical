@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.26 2005/05/20 08:18:33 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.27 2005/05/23 00:38:55 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -285,7 +285,7 @@ class ClientConfiguration:
 
 	##
 	# Serialization for the kernel module list.  joins together the modules.
-	def serialize_kernel_modules(self)
+	def serialize_kernel_modules(self):
 		# Special Case the kernel modules
 		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
 		data += "</client-configuration>"

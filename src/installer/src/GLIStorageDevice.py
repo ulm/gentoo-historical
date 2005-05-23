@@ -1,11 +1,13 @@
 import commands, string, os, parted
 from GLIException import *
+import GLIUtility
 
 MEGABYTE = 1024 * 1024
 
 archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
              'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "boot" } ], 'disklabel': 'msdos', 'extended': False },
              'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
+             'amd64': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
              'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
            }
 
@@ -26,6 +28,7 @@ class Device:
 	_sector_bytes = 0
 	_total_mb = 0
 	_arch = None
+	_disklabel = None
 
 	##
 	# Initialization function for GLIStorageDevice class
@@ -39,7 +42,11 @@ class Device:
 		self._cylinder_bytes = 0
 		self._arch = arch
 		self._parted_dev = parted.PedDevice.get(self._device)
-		self._parted_disk = parted.PedDisk.new(self._parted_dev)
+		try:
+			self._parted_disk = parted.PedDisk.new(self._parted_dev)
+		except:
+			self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
+		self._disklabel = self._parted_disk.type.name
 		self.set_disk_geometry_from_disk()
 
 	##
@@ -770,6 +777,10 @@ def detect_devices():
 				for record in partitions:
 					if major == record[0] and minor == record[1]:
 						devices.append(record[2])
-	
+
+	# For testing the partitioning code
+	if GLIUtility.is_file("/tmp/disk.img"):
+		devices.append("/tmp/disk.img")
+
 	# We have assembled the list of devices, so return it
 	return devices
