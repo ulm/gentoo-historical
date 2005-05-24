@@ -29,7 +29,8 @@ eread() {
 		shift
 	done
 }
-eread PATCH_VER UCLIBC_VER PIE_VER PP_FVER HTB_VER MAN_VER
+eread PATCH_VER UCLIBC_VER PIE_VER PP_FVER HTB_VER HTB_GCC_VER MAN_VER
+[[ -n ${HTB_VER} && -z ${HTB_GCC_VER} ]] && HTB_GCC_VER=${gver}
 
 if [[ ! -d ./${gver} ]] ; then
 	echo "Error: ${gver} is not a valid gcc ver"
@@ -41,7 +42,7 @@ echo " - PATCH:    ${PATCH_VER}"
 echo " - UCLIBC:   ${UCLIBC_VER}"
 echo " - PIE:      ${PIE_VER}"
 echo " - SSP:      ${PP_FVER}"
-echo " - BOUNDS:   ${HTB_VER}"
+echo " - BOUNDS:   ${HTB_GCC_VER}-${HTB_VER}"
 echo " - MAN:      ${MAN_VER}"
 
 rm -rf tmp
@@ -56,8 +57,8 @@ cp ${gver}/gentoo/*.patch ../README* tmp/patch/
 [[ -n ${PP_FVER}    ]] && cp -r ${gver}/ssp tmp/
 # extra cruft
 [[ -n ${HTB_VER} ]] && \
-cp -r ${gver}/misc/bounds-checking-gcc*.patch \
-      tmp/bounds-checking-${gver}-${HTB_VER}.patch
+cp ${gver}/misc/bounds-checking-gcc*.patch \
+   tmp/bounds-checking-gcc-${HTB_GCC_VER}-${HTB_VER}.patch
 find tmp/ -name CVS -type d | xargs rm -rf
 bzip2 tmp/patch/*.patch || exit 1
 [[ -n ${UCLIBC_VER} ]] && { bzip2 tmp/uclibc/*.patch || exit 1 ; }
@@ -70,7 +71,7 @@ tar -jcf gcc-${sgver}-patches-${PATCH_VER}.tar.bz2 \
 tar -jcf gcc-${sgver}-uclibc-patches-${UCLIBC_VER}.tar.bz2 \
 	-C tmp uclibc || exit 1 ; }
 [[ -n ${PIE_VER}    ]] && {
-tar -jcf gcc-${sgver}-pie-patches-${PIE_VER}.tar.bz2 \
+tar -jcf gcc-${sgver}-piepatches-v${PIE_VER}.tar.bz2 \
 	-C tmp piepatch || exit 1 ; }
 [[ -n ${PP_FVER}    ]] && {
 tar -jcf protector-${PP_FVER}.tar.bz2 \
@@ -80,8 +81,8 @@ tar -jcf gcc-${MAN_VER}-manpages.tar.bz2 \
 	-C tmp/man . || exit 1 ; }
 # extra cruft
 [[ -n ${HTB_VER}    ]] && {
-bzip2 tmp/bounds-checking-${gver}-${HTB_VER}.patch \
-	&& cp tmp/bounds-checking-${gver}-${HTB_VER}.patch.bz2 . || exit 1 ; }
+bzip2 tmp/bounds-checking-*.patch \
+	&& cp tmp/bounds-checking-*.patch.bz2 . || exit 1 ; }
 rm -rf tmp
 
 du -b *.bz2
