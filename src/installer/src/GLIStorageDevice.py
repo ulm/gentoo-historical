@@ -34,7 +34,7 @@ class Device:
 	# Initialization function for GLIStorageDevice class
 	# @param device Device node (e.g. /dev/hda) of device being represented
 	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
-	def __init__(self, device, arch="x86"):
+	def __init__(self, device, arch="x86", set_geometry=True):
 		self._device = device
 		self._partitions = {}
 		self._geometry = {'cylinders': 0, 'heads': 0, 'sectors': 0, 'sectorsize': 512}
@@ -47,7 +47,8 @@ class Device:
 		except:
 			self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
 		self._disklabel = self._parted_disk.type.name
-		self.set_disk_geometry_from_disk()
+		if set_geometry:
+			self.set_disk_geometry_from_disk()
 
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()
@@ -91,20 +92,12 @@ class Device:
 	# Imports partition info from the install profile partition structure (currently does nothing)
 	# @param ips Parameter structure returned from install_profile.get_partition_tables()
 	def set_partitions_from_install_profile_structure(self, ips):
-		pass
-#		for part in ips:
-#			tmppart = ips[part]
-#			existing = False
-#			parted_part = self._parted_disk.get_partition(part)
-#			if parted_part != None:
-#				start = parted_part.geom.start / self._sectors_in_cylinder
-#				end = parted_part.geom.end / self._sectors_in_cylinder
-#				fs_type = ""
-#				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
-#				if parted_part.type == 2: fs_type = "extended"
-#				if int(tmppart['start']) == int(start) and int(tmppart['end']) == int(end) and tmppart['type'] == fs_type and tmppart['format'] == False:
-#					existing = True
-#			self._partitions[int(part)] = Partition(self, part, '', tmppart['start'], tmppart['end'], 0, tmppart['type'], mountopts=tmppart['mountopts'], mountpoint=tmppart['mountpoint'], format=tmppart['format'], existing=(not tmppart['format']))
+		for part in ips:
+			tmppart = ips[part]
+			existing = False
+			if tmppart['origminor'] and not tmppart['format']:
+				existing = True
+			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=['mountopts'])
 
 	##
 	# Returns name of device (e.g. /dev/hda) being represented
@@ -355,6 +348,16 @@ class Device:
 		return 0
 
 	##
+	# Sets the disklabel type
+	def set_disklabel(self, disklabel):
+		self._disklabel = disklabel
+
+	##
+	# Returns the disklabel type
+	def get_disklabel(self):
+		return self._disklabel
+
+	##
 	# Returns the number of sectors on the device
 	def get_num_sectors(self):
 		return int(self._total_sectors)
@@ -450,10 +453,9 @@ class Partition:
 	# @param mountopts='' Mount options of partition
 	# @param format=True Format partition
 	# @param existing=False This partition exists on disk
-	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False):
+	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0):
 		self._device = device
 		self._minor = float(minor)
-		if existing: self._orig_minor = int(minor)
 		self._start = int(start)
 		self._end = int(end)
 		self._type = type or "unknown"
@@ -461,14 +463,20 @@ class Partition:
 		self._mountopts = mountopts
 		self._format = format
 		self._mb = mb
+		self._orig_minor = origminor
+		if type != "free":
+			if existing and not origminor:
+				self._orig_minor = self._minor
+			self._minor = int(self._minor)
+			self._orig_minor = int(self._orig_minor)
 		if existing:
-			self._orig_minor = self._minor
-			parted_part = device._parted_disk.get_partition(minor)
+			parted_part = device._parted_disk.get_partition(self._orig_minor)
 			label_type = device._parted_disk.type.name
 			if label_type == "loop":
 				dev_node = device._device
 			else:
-				dev_node = device._device + str(minor)
+				dev_node = device._device + str(self._orig_minor)
+			print "dev_node = " + dev_node
 			if type == "ntfs":
 				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
 				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
@@ -481,7 +489,7 @@ class Partition:
 				self._min_mb_for_resize = self._mb - int(free_bytes / MEGABYTE) + 50
 				self._resizeable = True
 			else:
-				parted_part = self._device._parted_disk.get_partition(int(self._minor))
+				parted_part = self._device._parted_disk.get_partition(int(self._orig_minor))
 				try:
 					parted_fs = parted_part.geom.file_system_open()
 				except:

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.39 2005/05/17 18:54:13 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.40 2005/05/24 06:15:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -59,7 +59,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def partition(self):
 		MEGABYTE = 1024 * 1024
 		parts_old = {}
-		parts_new = self._install_profile.get_partition_tables()
+		tmp_parts_new = self._install_profile.get_partition_tables()
+		parts_new = {}
+		for device in tmp_parts_new:
+			parts_new[device] = tmp_parts_new[device].get_install_profile_structure()
 		detected_devices = GLIStorageDevice.detect_devices()
 		for device in detected_devices:
 			tmpdevice = GLIStorageDevice.Device(device)

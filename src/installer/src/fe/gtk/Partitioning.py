@@ -284,27 +284,35 @@ resize partitions.
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
 
-		if not len(self.drives):
+		self.devices = self.controller.install_profile.get_partition_tables()
+		if not self.devices:
 			part_load_error = 0
 			tmp_drives = GLIStorageDevice.detect_devices()
 			tmp_drives.sort()
 			for drive in tmp_drives:
-				try:
-					self.devices[drive] = GLIStorageDevice.Device(drive)
-					self.devices[drive].set_partitions_from_disk()
-					self.detected_dev_combo.append_text(drive)
-					self.drives.append(drive)
-				except:
-					print "Exception received while loading partitions"
-					if self.devices.has_key(drive): del self.devices[drive]
-					part_load_error = 1
+#				try:
+				self.devices[drive] = GLIStorageDevice.Device(drive)
+				self.devices[drive].set_partitions_from_disk()
+				self.detected_dev_combo.append_text(drive)
+				self.drives.append(drive)
+#				except:
+#					print "Exception received while loading partitions"
+#					if self.devices.has_key(drive): del self.devices[drive]
+#					part_load_error = 1
 			if part_load_error:
 				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
 				msgdlg.run()
 				msgdlg.destroy()
 				return
+
+		if not self.drives:
+			tmp_drives = self.devices.keys()
+			tmp_drives.sort()
+			self.drives = tmp_drives
+			for drive in self.drives:
+				self.detected_dev_combo.append_text(drive)
 					
-		if len(self.drives):
+		if self.devices:
 			self.active_device = self.drives[0]
 			self.detected_dev_combo.set_active(0)
 			self.drive_changed(None)
@@ -316,13 +324,13 @@ resize partitions.
 		for device in parts_tmp:
 			for part in parts_tmp[device]:
 				if parts_tmp[device][part]['mountpoint'] == "/":
-					self.controller.install_profile.set_partition_tables(parts_tmp)
+					self.controller.install_profile.set_partition_tables(self.devices)
 					return True
 		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You have not specified a partition to mount as /. Do you want to continue?")
 		resp = msgdlg.run()
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
-			self.controller.install_profile.set_partition_tables(parts_tmp)
+			self.controller.install_profile.set_partition_tables(self.devices)
 			return True
 		else:
 			return False

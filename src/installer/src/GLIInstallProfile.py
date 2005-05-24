@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.50 2005/05/20 08:18:33 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.51 2005/05/24 06:15:23 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -25,6 +25,7 @@ import os
 import GLIUtility
 import SimpleXMLParser
 import xml.dom.minidom
+import GLIStorageDevice
 from GLIException import *
 
 ##
@@ -86,46 +87,46 @@ class InstallProfile:
 		self.xmldoc = ""
 
 		# Parser handler calls.  For each XML attribute and children of that attribute, a handler is needed.
-		_parser = SimpleXMLParser.SimpleXMLParser()
-		_parser.addHandler('gli-profile/bootloader', self.set_boot_loader_pkg)
-		_parser.addHandler('gli-profile/bootloader-kernel-args', self.set_bootloader_kernel_args)
-		_parser.addHandler('gli-profile/bootloader-mbr', self.set_boot_loader_mbr)
-		_parser.addHandler('gli-profile/cron-daemon', self.set_cron_daemon_pkg)
-		_parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
-		_parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
-		_parser.addHandler('gli-profile/domainname', self.set_domainname)
-		_parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage)
-		_parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
-		_parser.addHandler('gli-profile/grp-install', self.set_grp_install)
-		_parser.addHandler('gli-profile/hostname', self.set_hostname)
-		_parser.addHandler('gli-profile/http-proxy', self.set_http_proxy)
-		_parser.addHandler('gli-profile/install-packages', self.set_install_packages)
-		_parser.addHandler('gli-profile/install-pcmcia-cs', self.set_install_pcmcia_cs)
-		_parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
-		_parser.addHandler('gli-profile/install-stage', self.set_install_stage)
-		_parser.addHandler('gli-profile/kernel-bootsplash', self.set_kernel_bootsplash)
-		_parser.addHandler('gli-profile/kernel-config', self.set_kernel_config_uri)
-		_parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
-		_parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
-		_parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
-		_parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
-		_parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
-		_parser.addHandler('gli-profile/mta', self.set_mta)
-		_parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
-		_parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
-		_parser.addHandler('gli-profile/nisdomainname', self.set_nisdomainname)
-		_parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
-		_parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
-		_parser.addHandler('gli-profile/portage-snapshot', self.set_portage_tree_snapshot_uri)
-		_parser.addHandler('gli-profile/portage-tree-sync', self.set_portage_tree_sync_type)
-		_parser.addHandler('gli-profile/post-install-script-uri', self.set_post_install_script_uri)
-		_parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
-		_parser.addHandler('gli-profile/root-pass-hash', self.set_root_pass_hash)
-		_parser.addHandler('gli-profile/rsync-proxy', self.set_rsync_proxy)
-		_parser.addHandler('gli-profile/services', self.set_services)
-		_parser.addHandler('gli-profile/stage-tarball', self.set_stage_tarball_uri)
-		_parser.addHandler('gli-profile/time-zone', self.set_time_zone)
-		_parser.addHandler('gli-profile/users/user', self.add_user)
+		self._parser = SimpleXMLParser.SimpleXMLParser()
+		self._parser.addHandler('gli-profile/bootloader', self.set_boot_loader_pkg)
+		self._parser.addHandler('gli-profile/bootloader-kernel-args', self.set_bootloader_kernel_args)
+		self._parser.addHandler('gli-profile/bootloader-mbr', self.set_boot_loader_mbr)
+		self._parser.addHandler('gli-profile/cron-daemon', self.set_cron_daemon_pkg)
+		self._parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
+		self._parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
+		self._parser.addHandler('gli-profile/domainname', self.set_domainname)
+		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage)
+		self._parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
+		self._parser.addHandler('gli-profile/grp-install', self.set_grp_install)
+		self._parser.addHandler('gli-profile/hostname', self.set_hostname)
+		self._parser.addHandler('gli-profile/http-proxy', self.set_http_proxy)
+		self._parser.addHandler('gli-profile/install-packages', self.set_install_packages)
+		self._parser.addHandler('gli-profile/install-pcmcia-cs', self.set_install_pcmcia_cs)
+		self._parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
+		self._parser.addHandler('gli-profile/install-stage', self.set_install_stage)
+		self._parser.addHandler('gli-profile/kernel-bootsplash', self.set_kernel_bootsplash)
+		self._parser.addHandler('gli-profile/kernel-config', self.set_kernel_config_uri)
+		self._parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
+		self._parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
+		self._parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
+		self._parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
+		self._parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
+		self._parser.addHandler('gli-profile/mta', self.set_mta)
+		self._parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
+		self._parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
+		self._parser.addHandler('gli-profile/nisdomainname', self.set_nisdomainname)
+		self._parser.addHandler('gli-profile/partitions/device', self.add_partitions_device, call_on_null=True)
+		self._parser.addHandler('gli-profile/partitions/device/partition', self.add_partitions_device_partition, call_on_null=True)
+		self._parser.addHandler('gli-profile/portage-snapshot', self.set_portage_tree_snapshot_uri)
+		self._parser.addHandler('gli-profile/portage-tree-sync', self.set_portage_tree_sync_type)
+		self._parser.addHandler('gli-profile/post-install-script-uri', self.set_post_install_script_uri)
+		self._parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
+		self._parser.addHandler('gli-profile/root-pass-hash', self.set_root_pass_hash)
+		self._parser.addHandler('gli-profile/rsync-proxy', self.set_rsync_proxy)
+		self._parser.addHandler('gli-profile/services', self.set_services)
+		self._parser.addHandler('gli-profile/stage-tarball', self.set_stage_tarball_uri)
+		self._parser.addHandler('gli-profile/time-zone', self.set_time_zone)
+		self._parser.addHandler('gli-profile/users/user', self.add_user)
 		
 	##
 	# Parses the given filename populating the client_configuration.
@@ -164,12 +165,12 @@ class InstallProfile:
 					'stage-tarball':			self.get_stage_tarball_uri,
 					'time-zone':				self.get_time_zone,
 		}
-		xmldoc = "<?xml version=\"1.0\"?>"
-		xmldoc += "<gli-profile>"
+		self.xmldoc = "<?xml version=\"1.0\"?>"
+		self.xmldoc += "<gli-profile>"
 
 		# Normal cases
 		for key in xmltab.keys():
-			xmldoc += "<%s>%s</%s>" % (key, xmltab[key](), key)
+			self.xmldoc += "<%s>%s</%s>" % (key, xmltab[key](), key)
 
 		# Special cases
 		self.serialize_default_gateway()
@@ -184,9 +185,9 @@ class InstallProfile:
 		self.serialize_services()
 		self.serialize_users()
 
-		xmldoc += "</gli-profile>"
+		self.xmldoc += "</gli-profile>"
 
-		dom = xml.dom.minidom.parseString(xmldoc)
+		dom = xml.dom.minidom.parseString(self.xmldoc)
 		return dom.toprettyxml()
 	
 	############################################################################
@@ -302,7 +303,7 @@ class InstallProfile:
 	def serialize_default_gateway(self):
 		if self.get_default_gateway() != ():
 			gw = self.get_default_gateway()
-			xmldoc += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gw[0], gw[1])
+			self.xmldoc += "<default-gateway interface=\"%s\">%s</default-gateway>" % (gw[0], gw[1])
 
 
 	############################################################################
@@ -336,9 +337,9 @@ class InstallProfile:
 	# Serializes DNS Servers
 	def serialize_dns_servers(self):
 		if self.get_dns_servers() != ():
-			xmldoc += "<dns-servers>"
-			xmldoc += string.join(self.get_dns_servers(), ' ')
-			xmldoc += "</dns-servers>"
+			self.xmldoc += "<dns-servers>"
+			self.xmldoc += string.join(self.get_dns_servers(), ' ')
+			self.xmldoc += "</dns-servers>"
 
 ############################################################################
 	#### Domainname
@@ -491,9 +492,9 @@ class InstallProfile:
 	# Serializes install_packages
 	def serialize_install_packages(self):
 		if self.get_install_packages() != ():
-			xmldoc += "<install-packages>"
-			xmldoc += string.join(self.get_install_packages(), ' ')
-			xmldoc += "</install-packages>"
+			self.xmldoc += "<install-packages>"
+			self.xmldoc += string.join(self.get_install_packages(), ' ')
+			self.xmldoc += "</install-packages>"
 
 	############################################################################
 	#### PCMCIA-CS 
@@ -678,10 +679,10 @@ class InstallProfile:
 	def serialize_kernel_modules(self):
 		if self.get_kernel_modules() != []:
 			kernel_modules = self.get_kernel_modules()
-			xmldoc += "<kernel-modules>";
+			self.xmldoc += "<kernel-modules>";
 			for module in kernel_modules:
-				xmldoc += "<module>%s</module>" % module
-			xmldoc += "</kernel-modules>";
+				self.xmldoc += "<module>%s</module>" % module
+			self.xmldoc += "</kernel-modules>";
 
 	############################################################################
 	#### Kernel Sources
@@ -757,13 +758,13 @@ class InstallProfile:
 	# Serializes make.conf
 	def serialize_make_conf(self):
 		if self.get_make_conf() != {}:
-			xmldoc += "<make-conf>"
+			self.xmldoc += "<make-conf>"
 
 			make_conf = self.get_make_conf()
 			for var in make_conf:
-				xmldoc += "<variable name=\"%s\">%s</variable>" % (var, make_conf[var])
+				self.xmldoc += "<variable name=\"%s\">%s</variable>" % (var, make_conf[var])
 
-			xmldoc += "</make-conf>"
+			self.xmldoc += "</make-conf>"
 
 	############################################################################
 	#### MTA Selection
@@ -876,7 +877,7 @@ class InstallProfile:
 	# Serialize Network Interfaces
 	def serialize_network_interfaces(self):
 		if self.get_network_interfaces() != {}:
-			xmldoc += "<network-interfaces>"
+			self.xmldoc += "<network-interfaces>"
 			interfaces = self.get_network_interfaces()
 			for iface in interfaces:
 				if interfaces[iface][0] == 'dhcp':
@@ -884,10 +885,10 @@ class InstallProfile:
 					if interfaces[iface][1] != None:
 						dhcp_options = "options=\"%s\"" % interfaces[iface][1]
 						attrs = attrs + " " + dhcp_options
-					xmldoc += "<device %s>%s</device>" % (attrs, iface)
+					self.xmldoc += "<device %s>%s</device>" % (attrs, iface)
 				else:
-					xmldoc += "<device ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</device>" % (interfaces[iface][0], interfaces[iface][1], interfaces[iface][2], iface)
-			xmldoc += "</network-interfaces>"
+					self.xmldoc += "<device ip=\"%s\" broadcast=\"%s\" netmask=\"%s\">%s</device>" % (interfaces[iface][0], interfaces[iface][1], interfaces[iface][2], iface)
+			self.xmldoc += "</network-interfaces>"
 
 	############################################################################
 	#### Network Mounts
@@ -927,10 +928,10 @@ class InstallProfile:
 	def serialize_network_mounts(self):
 		if self.get_network_mounts() != {}:
 			netmounts = self.get_network_mounts()
-			xmldoc += "<network-mounts>"
+			self.xmldoc += "<network-mounts>"
 			for mount in netmounts:
-				xmldoc += "<netmount host=\"%s\" export=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" />" % (mount['host'], mount['export'], mount['type'], mount['mountpoint'], mount['mountopts'])
-			xmldoc += "</network-mounts>"
+				self.xmldoc += "<netmount host=\"%s\" export=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" />" % (mount['host'], mount['export'], mount['type'], mount['mountpoint'], mount['mountopts'])
+			self.xmldoc += "</network-mounts>"
 		
 	############################################################################
 	#### NIS Domain Name
@@ -964,11 +965,19 @@ class InstallProfile:
 		devnode = None
 		if type(attr) == tuple:
 			devnode = attr[0]
+			disklabel = attr[1]
 		else:
 			if "devnode" in attr.getNames():
 				devnode = str(attr.getValue("devnode"))
+				if "disklabel" in attr.getNames():
+					disklabel = str(attr.getValue("disklabel"))
+				else:
+					disklabel = "msdos"
 		self._partition_current_device = devnode
-		self._partition_tables[devnode] = self._temp_partition_table
+		self._partition_tables[devnode] = GLIStorageDevice.Device(devnode)
+		self._partition_tables[devnode].set_disklabel(disklabel)
+		# Add code to import self._temp_partition_table into the Device object
+		self._partition_tables[devnode].set_partitions_from_install_profile_structure(self._temp_partition_table)
 		self._temp_partition_table = {}
 
 	##
@@ -1035,6 +1044,8 @@ class InstallProfile:
 		Are all filesystems supported by all arches?
 		"""
 		
+		# All the sanity checks are being commented out until I can fix them for the GLIStorageDevice stuff
+		"""
 		if type(partition_tables) != dict:
 			raise GLIException("PartitionTableError", 'fatal', 'set_partition_tables',  "Invalid data type! partition_tables is a dict...")
 		
@@ -1080,6 +1091,7 @@ class InstallProfile:
 			# If the device is not a local or remote device, then it is invalid
 			else:
 				raise GLIException("PartitionTableError", 'fatal', 'set_partition_tables',  "The device you specified (" + device + ") is not valid!")
+		"""
 
 		# If all the tests clear, then set the variable
 		self._partition_tables = partition_tables
@@ -1094,14 +1106,15 @@ class InstallProfile:
 	def serialize_partition_tables(self):
 		if self.get_partition_tables() != {}:
 			partitions = self.get_partition_tables()
-			xmldoc += "<partitions>";
+			self.xmldoc += "<partitions>";
 			for device in partitions.keys():
-				xmldoc += "<device devnode=\"%s\">" % device
-				for minor in partitions[device]:
-					part = partitions[device][minor]
-					xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
-				xmldoc += "</device>"
-			xmldoc += "</partitions>"
+				self.xmldoc += "<device devnode=\"%s\" disklabel=\"%s\">" % (device, partitions[device].get_disklabel())
+				ips = partitions[device].get_install_profile_structure()
+				for minor in ips:
+					part = ips[minor]
+					self.xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
+				self.xmldoc += "</device>"
+			self.xmldoc += "</partitions>"
 
 	############################################################################
 	#### Portage Snapshot URI
@@ -1199,13 +1212,13 @@ class InstallProfile:
 	# Serializes rc.conf
 	def serialize_rc_conf(self):
 		if self.get_rc_conf() != {}:
-			xmldoc += "<rc-conf>"
+			self.xmldoc += "<rc-conf>"
 
 			rc_conf = self.get_rc_conf()
 			for var in rc_conf:
-				xmldoc += "<variable name=\"%s\">%s</variable>" % (var, rc_conf[var])
+				self.xmldoc += "<variable name=\"%s\">%s</variable>" % (var, rc_conf[var])
 
-			xmldoc += "</rc-conf>"
+			self.xmldoc += "</rc-conf>"
 
 	############################################################################
 	#### Root Password Hash
@@ -1273,9 +1286,9 @@ class InstallProfile:
 	# Serializes services
 	def serialize_services(self):
 		if self.get_services() != ():
-			xmldoc += "<services>"
-			xmldoc += string.join(self.get_services(), ' ')
-			xmldoc += "</services>"
+			self.xmldoc += "<services>"
+			self.xmldoc += string.join(self.get_services(), ' ')
+			self.xmldoc += "</services>"
 
 	############################################################################
 	#### Stage Tarball URI
@@ -1430,7 +1443,7 @@ class InstallProfile:
 	# Serializes users
 	def serialize_users(self):
 		if self.get_users() != []:
-			xmldoc += "<users>"
+			self.xmldoc += "<users>"
 			users = self.get_users()
 			for user in users:
 				attrstr = ""
@@ -1449,5 +1462,5 @@ class InstallProfile:
 				if user[6] != None:
 					attrstr += "comment=\"%s\" " % user[6]
 
-				xmldoc += "<user %s>%s</user>" % (string.strip(attrstr), username)
-			xmldoc += "</users>"
+				self.xmldoc += "<user %s>%s</user>" % (string.strip(attrstr), username)
+			self.xmldoc += "</users>"
