@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25 2005/03/07 21:14:42 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.1 2005/05/25 19:17:09 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -33,7 +33,7 @@ build_kernel() {
 		GK_ARGS="${GK_ARGS} --kernel-cc=/usr/lib/ccache/bin/gcc --utils-cc=/usr/lib/ccache/bin/gcc"
 	fi
 	
-	if [  -e "/var/tmp/${clst_kname}.postconf" ]
+	if [ -e "/var/tmp/${clst_kname}.postconf" ]
 	then
 		for x in $( cat /var/tmp/${clst_kname}.postconf )
 		do
@@ -54,6 +54,11 @@ build_kernel() {
 		GK_ARGS="${GK_ARGS} --udev"
 	else
 		GK_ARGS="${GK_ARGS} --no-udev"
+	fi
+
+	if [ -n "${clst_livecd_linuxrc}" ]
+	then
+		GK_ARGS="${GK_ARGS} --linuxrc=/tmp/linuxrc"
 	fi
 	
 	# build with genkernel using the set options

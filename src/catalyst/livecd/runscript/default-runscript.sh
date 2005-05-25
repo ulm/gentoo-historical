@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.2 2005/04/15 01:55:41 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.3 2005/05/25 19:17:09 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -92,7 +92,13 @@ case $1 in
 		shift
 		numkernels="$1"
 		shift
-		
+
+		# if we have our own linuxrc, copy it in
+		if [ -n "${clst_livecd_linuxrc}" ]
+		then
+			cp -a ${clst_livecd_linuxrc} ${clst_chroot_path}/tmp/linuxrc
+		fi
+
 		# setup genkernel and do any pre-kernel merge opts
 		cp -a ${clst_sharedir}/livecd/runscript-support/pre-kmerge.sh ${clst_chroot_path}/tmp
 		${clst_CHROOT} ${clst_chroot_path} /tmp/pre-kmerge.sh || exit 1
@@ -113,6 +119,7 @@ case $1 in
 		count=$(( ${count} + 1 ))
 		done
 		rm -f ${clst_chroot_path}/tmp/kmerge.sh
+		rm -f ${clst_chroot_path}/tmp/linuxrc
 	
 		# clean up genkernel and do any post-kernel merge opts
 		cp -a ${clst_sharedir}/livecd/runscript-support/post-kmerge.sh ${clst_chroot_path}/tmp
