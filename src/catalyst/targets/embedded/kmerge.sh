@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/kmerge.sh,v 1.1 2005/01/10 01:16:07 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/kmerge.sh,v 1.1.2.1 2005/05/25 19:28:05 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -61,6 +61,11 @@ fi
 
 echo "genkernel action is set to: ${clst_gk_action}"
 
+if [ -n "${clst_livecd_linuxrc}" ]
+then
+	GK_ARGS="${GK_ARGS} --linuxrc=/tmp/linuxrc"
+fi
+
 if [ -n "${clst_livecd_bootsplash}" ]
 then
 	genkernel --debuglevel=4 --bootsplash=${clst_livecd_bootsplash} \
@@ -68,13 +73,13 @@ then
 		${clst_embedded_gk_kernargs} --kerneldir=/usr/src/linux \
 		--kernel-config=/var/tmp/${clst_kname}.config \
 		--minkernpackage=/tmp/binaries/${clst_kname}.tar.bz2 \
-		${clst_gk_action} || exit 1
+		${GK_ARGS} ${clst_gk_action} || exit 1
 else
 	genkernel --debuglevel=4 --callback="emerge ${clst_kernel_merge}" \
 		${clst_embedded_gk_mainargs} ${clst_embedded_gk_kernargs} \
 		--kerneldir=/usr/src/linux --kernel-config=/var/tmp/${clst_kname}.config \
 		--minkernpackage=/tmp/binaries/${clst_kname}.tar.bz2 \
-		${clst_gk_action} || exit 1
+		${GK_ARGS} ${clst_gk_action} || exit 1
 fi
 
 /sbin/modules-update --assume-kernel=${clst_fudgeuname}

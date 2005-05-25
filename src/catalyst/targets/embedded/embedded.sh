@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2003 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/embedded.sh,v 1.7 2005/01/10 01:16:07 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/embedded.sh,v 1.7.2.1 2005/05/25 19:28:05 wolf31o2 Exp $
 
 case $1 in
 	enter)
@@ -33,6 +33,11 @@ case $1 in
 	kernel)
 		shift
 		numkernels="$1"
+		# if we have our own linuxrc, copy it in
+		if [ -n "${clst_livecd_linuxrc}" ]
+		then
+			cp -a ${clst_livecd_linuxrc} ${clst_chroot_path}/tmp/linuxrc
+		fi
 		cp -a ${clst_sharedir}/livecd/runscript-support/pre-kmerge.sh ${clst_chroot_path}/tmp
 		${clst_CHROOT} ${clst_chroot_path} /tmp/pre-kmerge.sh || exit 1
 		rm -f ${clst_chroot_path}/tmp/pre-kmerge.sh
@@ -55,7 +60,8 @@ case $1 in
 			${clst_CHROOT} ${clst_chroot_path} /tmp/kmerge.sh || exit 1
 			count=$(( ${count} + 1 ))
 		done
-		rm -f ${clst_chroot_path}/tmp/pre-kmerge.sh
+		rm -f ${clst_chroot_path}/tmp/kmerge.sh
+		rm -f ${clst_chroot_path}/tmp/linuxrc
 		cp -a ${clst_sharedir}/livecd/runscript-support/post-kmerge.sh ${clst_chroot_path}/tmp
 		${clst_CHROOT} ${clst_chroot_path} /tmp/post-kmerge.sh || exit 1
 		;;
