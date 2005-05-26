@@ -50,7 +50,7 @@ rm -f gcc-${gver}-*.tar.bz2
 
 # standard jobbies
 mkdir -p tmp/patch/exclude tmp/uclibc tmp/piepatch
-cp ${gver}/gentoo/*.patch ../README* tmp/patch/
+[[ -n ${PATCH_VER}  ]] && cp ${gver}/gentoo/*.patch ../README* tmp/patch/
 [[ -d ${gver}/man   ]] && cp -r ${gver}/man tmp/
 [[ -n ${UCLIBC_VER} ]] && cp -r ${gver}/uclibc/* ../README* tmp/uclibc/
 [[ -n ${PIE_VER}    ]] && cp -r ${gver}/pie/* ../README* tmp/piepatch
@@ -60,13 +60,14 @@ cp ${gver}/gentoo/*.patch ../README* tmp/patch/
 cp ${gver}/misc/bounds-checking-gcc*.patch \
    tmp/bounds-checking-gcc-${HTB_GCC_VER}-${HTB_VER}.patch
 find tmp/ -name CVS -type d | xargs rm -rf
-bzip2 tmp/patch/*.patch || exit 1
+[[ -n ${PATCH_VER}  ]] && { bzip2 tmp/patch/*.patch || exit 1 ; }
 [[ -n ${UCLIBC_VER} ]] && { bzip2 tmp/uclibc/*.patch || exit 1 ; }
 [[ -n ${PIE_VER}    ]] && { bzip2 tmp/piepatch/*/*.patch || exit 1 ; }
 
 # standard jobbies
+[[ -n ${PATCH_VER}  ]] && {
 tar -jcf gcc-${sgver}-patches-${PATCH_VER}.tar.bz2 \
-	-C tmp patch || exit 1
+	-C tmp patch || exit 1 ; }
 [[ -n ${UCLIBC_VER} ]] && {
 tar -jcf gcc-${sgver}-uclibc-patches-${UCLIBC_VER}.tar.bz2 \
 	-C tmp uclibc || exit 1 ; }
