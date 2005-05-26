@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.2 2005/05/16 19:26:39 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.3 2005/05/26 15:27:01 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -49,15 +49,15 @@ nv_gl() {
 }
 
 get_video_cards() {
-	VIDEO_CARDS=`/sbin/lspci | grep VGA`
-	NUM_CARDS=`echo ${VIDEO_CARDS} | wc -l`
+	VIDEO_CARDS=$(/sbin/lspci | grep VGA)
+	NUM_CARDS=$(echo ${VIDEO_CARDS} | wc -l)
 	if [ ${NUM_CARDS} -eq 1 ]; then
-		NVIDIA=`echo ${VIDEO_CARDS} | grep "nVidia Corporation"`
-		ATI=`echo ${VIDEO_CARDS} | grep "ATI Technologies"`
+		NVIDIA=$(echo ${VIDEO_CARDS} | grep "nVidia Corporation")
+		ATI=$(echo ${VIDEO_CARDS} | grep "ATI Technologies")
 		if [ -n "${NVIDIA}" ]; then
-			NVIDIA_CARD=`echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}'`
+			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}')
 			if [ -n "${NVIDIA_CARD}" ]; then
-				if [ `echo ${NVIDIA_CARD} | cut -dV -f2` -ge 4 ]; then
+				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 4 ]; then
 					nv_gl
 				else
 					no_gl
@@ -66,13 +66,13 @@ get_video_cards() {
 				no_gl
 			fi
 		elif [ -n "${ATI}" ]; then
-			ATI_CARD=`echo ${ATI} | awk 'BEGIN {RS=" "} /(R|RV|RS)[0-9]+/ {print $1}'`
-			if [ `echo ${ATI_CARD} | grep S` ]; then
-				ATI_CARD_S=`echo ${ATI_CARD} | cut -dS -f2`
-			elif [ `echo ${ATI_CARD} | grep V` ]; then
-				ATI_CARD_V=`echo ${ATI_CARD} | cut -dV -f2`
+			ATI_CARD=$(echo ${ATI} | awk 'BEGIN {RS=" "} /(R|RV|RS)[0-9]+/ {print $1}')
+			if [ $(echo ${ATI_CARD} | grep S) ]; then
+				ATI_CARD_S=$(echo ${ATI_CARD} | cut -dS -f2)
+			elif [ $(echo ${ATI_CARD} | grep V) ]; then
+				ATI_CARD_V=$(echo ${ATI_CARD} | cut -dV -f2)
 			else
-				ATI_CARD=`echo ${ATI_CARD} | cut -dR -f2`
+				ATI_CARD=$(echo ${ATI_CARD} | cut -dR -f2)
 			fi
 			if [ -n "${ATI_CARD_S}" ] && [ ${ATI_CARD_S} -ge 350 ]; then
 				ati_gl
@@ -227,7 +227,7 @@ livecd_console_settings() {
 	# scan for a valid parity
 	# If the second to last byte is a [n,e,o] set parity
 	local parity
-	parity=`echo $1 | rev | cut -b 2-2`
+	parity=$(echo $1 | rev | cut -b 2-2)
 	case "$parity" in
 		[neo])
 			LIVECD_CONSOLE_PARITY=$parity
@@ -239,7 +239,7 @@ livecd_console_settings() {
 	# Only set databits if second to last character is parity
 	if [ "${LIVECD_CONSOLE_PARITY}" != "" ]
 	then
-		LIVECD_CONSOLE_DATABITS=`echo $1 | rev | cut -b 1`
+		LIVECD_CONSOLE_DATABITS=$(echo $1 | rev | cut -b 1)
 	fi
 	export LIVECD_CONSOLE_DATABITS
 	return 0
@@ -261,11 +261,11 @@ livecd_read_commandline() {
 			;;
 			console\=*)
 				local live_console
-				live_console=`livecd_parse_opt "${x}"`
+				live_console=$(livecd_parse_opt "${x}")
 
 				# Parse the console line. No options specified if
 				# no comma
-				LIVECD_CONSOLE=`echo ${live_console} | cut -f1 -d,`
+				LIVECD_CONSOLE=$(echo ${live_console} | cut -f1 -d,)
 				if [ "${LIVECD_CONSOLE}" = "" ]
 				then
 					# no options specified
@@ -273,7 +273,7 @@ livecd_read_commandline() {
 				else
 					# there are options, we need to parse them
 					local livecd_console_opts
-					livecd_console_opts=`echo ${live_console} | cut -f2 -d,`
+					livecd_console_opts=$(echo ${live_console} | cut -f2 -d,)
 					livecd_console_settings  ${livecd_console_opts}
 				fi
 				export LIVECD_CONSOLE
@@ -304,14 +304,14 @@ livecd_fix_inittab() {
 		# SPARC serial port A, HPPA mux / serial
 		if [ -c "/dev/tts/0" ]
 		then
-			LIVECD_CONSOLE_BAUD=`stty -F /dev/tts/0 speed`
+			LIVECD_CONSOLE_BAUD=$(stty -F /dev/tts/0 speed)
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} tts/0 vt100" >> /etc/inittab
 		fi
 		# HPPA software PDC console (K-models)
 		if [ "${LIVECD_CONSOLE}" = "ttyB0" ]
 		then
 			mknod /dev/ttyB0 c 11 0
-			LIVECD_CONSOLE_BAUD=`stty -F /dev/ttyB0 speed`
+			LIVECD_CONSOLE_BAUD=$(stty -F /dev/ttyB0 speed)
 			echo "b0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ttyB0 vt100" >> /etc/inittab
 		fi
 		# FB / STI console
