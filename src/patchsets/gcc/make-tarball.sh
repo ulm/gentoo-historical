@@ -29,7 +29,7 @@ eread() {
 		shift
 	done
 }
-eread PATCH_VER UCLIBC_VER PIE_VER PP_FVER HTB_VER HTB_GCC_VER MAN_VER
+eread PATCH_VER UCLIBC_VER PIE_VER PP_VER HTB_VER HTB_GCC_VER MAN_VER
 [[ -n ${HTB_VER} && -z ${HTB_GCC_VER} ]] && HTB_GCC_VER=${gver}
 
 if [[ ! -d ./${gver} ]] ; then
@@ -41,7 +41,7 @@ echo "Building patches for gcc version ${gver}"
 echo " - PATCH:    ${PATCH_VER}"
 echo " - UCLIBC:   ${UCLIBC_VER}"
 echo " - PIE:      ${PIE_VER}"
-echo " - SSP:      ${PP_FVER}"
+echo " - SSP:      ${PP_VER}"
 echo " - BOUNDS:   ${HTB_GCC_VER}-${HTB_VER}"
 echo " - MAN:      ${MAN_VER}"
 
@@ -54,7 +54,7 @@ cp ${gver}/gentoo/*.patch ../README* tmp/patch/
 [[ -d ${gver}/man   ]] && cp -r ${gver}/man tmp/
 [[ -n ${UCLIBC_VER} ]] && cp -r ${gver}/uclibc/* ../README* tmp/uclibc/
 [[ -n ${PIE_VER}    ]] && cp -r ${gver}/pie/* ../README* tmp/piepatch
-[[ -n ${PP_FVER}    ]] && cp -r ${gver}/ssp tmp/
+[[ -n ${PP_VER}     ]] && cp -r ${gver}/ssp tmp/
 # extra cruft
 [[ -n ${HTB_VER} ]] && \
 cp ${gver}/misc/bounds-checking-gcc*.patch \
@@ -73,9 +73,10 @@ tar -jcf gcc-${sgver}-uclibc-patches-${UCLIBC_VER}.tar.bz2 \
 [[ -n ${PIE_VER}    ]] && {
 tar -jcf gcc-${sgver}-piepatches-v${PIE_VER}.tar.bz2 \
 	-C tmp piepatch || exit 1 ; }
-[[ -n ${PP_FVER}    ]] && {
-tar -jcf protector-${PP_FVER}.tar.bz2 \
-	-C tmp/ssp . || exit 1 ; }
+[[ -n ${PP_VER}     ]] && {
+mv tmp/ssp/protector.patch tmp/ssp/gcc-${gver}-ssp.patch
+tar -jcf gcc-${gver}-ssp-${PP_VER}.tar.bz2 \
+	-C tmp ssp || exit 1 ; }
 [[ -d ${gver}/man   ]] && {
 tar -jcf gcc-${MAN_VER}-manpages.tar.bz2 \
 	-C tmp/man . || exit 1 ; }
