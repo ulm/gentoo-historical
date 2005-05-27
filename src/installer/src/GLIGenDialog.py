@@ -38,38 +38,61 @@ class GLIGen(object):
 
 #This class will generate a client config and return it as a xml string
 class GLIGenCF(GLIGen):
-	def __init__(self):
+	def __init__(self, local_install=True, advanced_mode=True):
 		GLIGen.__init__(self)
+		self.local_install = local_install
+		self.advanced_mode = advanced_mode
 		
 	def serialize(self):
 		return self._client_profile.serialize()
 	#-----------------------------------------------
 	#Functions for generating a client configuration
 	#-----------------------------------------------	
-	def _set_arch_template(self):
+	def set_arch_template(self):
 		subarches = { 'i386': 'x86', 'i486': 'x86', 'i586': 'x86', 'i686': 'x86', 'x86_64': 'amd64', 'parisc': 'hppa' }
 		arch = platform.machine()
 		if arch in subarches: 
 			arch = subarches[arch]
-		template_choices = ["x86", "amd64", "sparc", "alpha", "hppa", "ppc"]
-		code, menuitem = self._d.menu("Please Select Architecture Template:", choices=self._dmenu_list_to_choices(template_choices), default_item=str(template_choices.index(arch)+1))
-		if code == self._DLG_OK:
-			menuitem = template_choices[int(menuitem)-1]
-			self._client_profile.set_architecture_template(None, menuitem, None)
+		if self.local_install:
+			try:
+				self._client_profile.set_architecture_template(None, arch, None)
+			except:
+				self._d.msgbox(_(u"Error!  Undefined architecture template specified or found on the current machine"))
 		else:
-			raise GLIException('NetFeError', 'fatal', 'UserGen._set_arch_template', "Undefined arch template passed")
+			template_choices = ["x86", "amd64", "sparc", "alpha", "hppa", "ppc"]
+			string = _(u"Please select the architecture of the computer that gentoo will be installed on.  For pentium and AMD 32-bit processors, choose x86.  If you don't know your architecture, you should consider another Linux distribution.")
+			code, menuitem = self._d.menu(string, choices=self._dmenu_list_to_choices(template_choices), default_item=str(template_choices.index(arch)+1))
+			if code == self._DLG_OK:
+				menuitem = template_choices[int(menuitem)-1]
+				try:
+					self._client_profile.set_architecture_template(None, menuitem, None)
+				except: 
+					self._d.msgbox(_(u"Error!  Undefined architecture template specified or found on the current machine"))
 		
-	def _set_logfile(self):
-		code, logfile = self._d.inputbox("Enter the desired path for the install log:", init="/var/log/install.log")
-		if code == self._DLG_OK: 
-			self._client_profile.set_log_file(None, logfile, None)
+	def set_logfile(self):
+		#If not advanced, the default will suffice.
+		if advanced_mode:
+			string = _(u"""
+			The installer logs all important events during the install process to a logfile for debugging purposes.
+			The file gets copied to the new system once the install is complete.
+			Enter the desired filename and path for the install log (the default is recommended.):
+			""")
+			initval = self._client_profile.get_log_file()
+			code, logfile = self._d.inputbox(string, init=initval)
+			if code == self._DLG_OK:
+			
+				self._client_profile.set_log_file(None, logfile, None)
 
-	def _set_root_mount_point(self):
-		code, rootmountpoint = self._d.inputbox("Enter the mount point for the chroot enviornment:", init="/mnt/gentoo")
-		if code == self._DLG_OK: 
-			self._client_profile.set_root_mount_point(None, rootmountpoint, None)
+	def set_root_mount_point(self):
+		#If not advanced, the default will suffice.
+		if advanced_mode:
+			string = _(u"Enter the mount point to be used to mount the partition(s) where the new system will be installed.  The default is /mnt/gentoo and is greatly recommended, but any mount point will do.")	
+			initval = self._client_profile.get_root_mount_point()
+			code, rootmountpoint = self._d.inputbox(string, init=initval)
+			if code == self._DLG_OK: 
+				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
-	def _set_client_networking(self):
+	def set_client_networking(self):
 		network_type = ""
 		interface = ""
 		ip_address = ""
@@ -116,7 +139,7 @@ class GLIGenCF(GLIGen):
 			self._d.msgbox(e)
 
 
-	def _set_livecd_password(self):
+	def set_livecd_password(self):
 	# The root password will be set here
 		code, passwd1 = self._d.passwordbox("Enter the new LIVECD root password")
 		if code != self._DLG_OK: 
@@ -129,18 +152,18 @@ class GLIGenCF(GLIGen):
 			return
 		self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
 
-	def _set_enable_ssh(self):
+	def set_enable_ssh(self):
 		if self._d.yesno("Do you want SSH enabled during the install?") == self._DLG_YES:
 			self._client_profile.set_enable_ssh(None, True, None)
 		else:
 			self._client_profile.set_enable_ssh(None, False, None)
 
-	def _set_client_kernel_modules(self):
+	def set_client_kernel_modules(self):
 		code, kernel_modules_list = self._d.inputbox("Enter a list of kernel modules you want loaded before installation:", init="")
 		if code == self._DLG_OK: 
 			self._client_profile.set_kernel_modules(None, kernel_modules_list, None)
 
-	def _save_client_profile(self, xmlfilename="", askforfilename=True):
+	def save_client_profile(self, xmlfilename="", askforfilename=True):
 		code = 0
 		filename = xmlfilename
 		if askforfilename:

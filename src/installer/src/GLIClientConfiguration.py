@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.27 2005/05/23 00:38:55 agaffney Exp $
+$Id: GLIClientConfiguration.py,v 1.28 2005/05/27 05:47:13 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -50,17 +50,6 @@ class ClientConfiguration:
 		self._architecture_template = None
 		self._profile_uri = ""
 	
-		# This contains a list of all the install steps completed
-		# It is used for dependency checking
-		self._install_steps_completed = []
-	
-		# This allows InstallTemplate to communicate back to the controller
-		# The controller can poll this information to inform the user
-		# This gives a percentange of the step that is completed
-		self._current_step_percent = 0
-		# This is a string describing what the step is currently doing
-		self._current_step_process_desc = ""
-
 		# This is the full path to the logfile
 		self._log_file = "/var/log/installer.log"
 		
