@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.118 2005/05/18 04:47:58 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.119 2005/05/27 18:58:58 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -273,9 +273,8 @@ class ArchitectureTemplate:
 		parts = self._install_profile.get_partition_tables()
 		parts_to_mount = {}
 		for device in parts:
-		#in parts['/dev/hda']
-			for partition in parts[device]:
-				#print parts[device][partition]
+			tmp_partitions = parts[device].get_install_profile_structure()
+			for partition in tmp_partitions:
 				mountpoint = parts[device][partition]['mountpoint']
 				mountopts = parts[device][partition]['mountopts']
 				minor = str(int(parts[device][partition]['minor']))
@@ -418,9 +417,8 @@ class ArchitectureTemplate:
 		newfstab = ""
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-		#in parts['/dev/hda']
-			for partition in parts[device]:
-				#print parts[device][partition]
+			tmp_partitions = parts[device].get_install_profile_structure()
+			for partition in tmp_partitions:
 				mountpoint = parts[device][partition]['mountpoint']
 				minor = str(int(parts[device][partition]['minor']))
 				partition_type = parts[device][partition]['type']
@@ -628,9 +626,8 @@ class ArchitectureTemplate:
 		parts = self._install_profile.get_partition_tables()
 		filesystem_tools = []
 		for device in parts:
-		#in parts['/dev/hda']
-			for partition in parts[device]:
-				#print parts[device][partition]
+			tmp_partitions = parts[device].get_install_profile_structure()
+			for partition in tmp_partitions:
 				partition_type = parts[device][partition]['type']
 				if partition_type not in filesystem_tools:
 					filesystem_tools.append(partition_type)
