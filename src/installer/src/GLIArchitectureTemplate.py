@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.119 2005/05/27 18:58:58 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.120 2005/05/27 19:07:40 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -275,10 +275,10 @@ class ArchitectureTemplate:
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				mountpoint = parts[device][partition]['mountpoint']
-				mountopts = parts[device][partition]['mountopts']
-				minor = str(int(parts[device][partition]['minor']))
-				partition_type = parts[device][partition]['type']
+				mountpoint = tmp_partitions[partition]['mountpoint']
+				mountopts = tmp_partitions[partition]['mountopts']
+				minor = str(int(tmp_partitions[partition]['minor']))
+				partition_type = tmp_partitions[partition]['type']
 				if mountpoint:
 					if mountopts:
 						mountopts = "-o "+mountopts+" "
@@ -419,10 +419,10 @@ class ArchitectureTemplate:
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				mountpoint = parts[device][partition]['mountpoint']
-				minor = str(int(parts[device][partition]['minor']))
-				partition_type = parts[device][partition]['type']
-				mountopts = parts[device][partition]['mountopts']
+				mountpoint = tmp_partitions[partition]['mountpoint']
+				minor = str(int(tmp_partitions[partition]['minor']))
+				partition_type = tmp_partitions[partition]['type']
+				mountopts = tmp_partitions[partition]['mountopts']
 				if not mountopts.strip(): mountopts = "defaults"
 				if mountpoint:
 					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
@@ -628,7 +628,7 @@ class ArchitectureTemplate:
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				partition_type = parts[device][partition]['type']
+				partition_type = tmp_partitions[partition]['type']
 				if partition_type not in filesystem_tools:
 					filesystem_tools.append(partition_type)
 		for filesystem in filesystem_tools:
