@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.40 2005/05/24 06:15:24 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.41 2005/05/27 20:08:10 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -337,17 +337,18 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			for partition in parts[device]:
-				mountpoint = parts[device][partition]['mountpoint']
+			tmp_partitions = parts[device].get_install_profile_structure()
+			for partition in tmp_partitions:
+				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
 					foundboot = True
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-					boot_minor = str(int(parts[device][partition]['minor']))
-					grub_boot_minor = str(int(parts[device][partition]['minor']) - 1)
+					boot_minor = str(int(tmp_partitions[partition]['minor']))
+					grub_boot_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					boot_device = device
 				if mountpoint == "/":
-					root_minor = str(int(parts[device][partition]['minor']))
-					grub_root_minor = str(int(parts[device][partition]['minor']) - 1)
+					root_minor = str(int(tmp_partitions[partition]['minor']))
+					grub_root_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					root_device = device
 		if GLIUtility.is_file(root+file_name2):
 			exitstatus = GLIUtility.spawn("rm "+root+file_name2)		
@@ -459,15 +460,16 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			for partition in parts[device]:
-				mountpoint = parts[device][partition]['mountpoint']
+			tmp_partitions = parts[device]
+			for partition in tmp_partitions:
+				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
 					foundboot = True
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-					boot_minor = str(int(parts[device][partition]['minor']))
+					boot_minor = str(int(tmp_partitions[partition]['minor']))
 					boot_device = device
 				if mountpoint == "/":
-					root_minor = str(int(parts[device][partition]['minor']))
+					root_minor = str(int(tmp_partitions[partition]['minor']))
 					root_device = device
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
 		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
@@ -521,8 +523,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _lilo_add_windows(self, newliloconf):
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			for partition in parts[device]:
-				if (parts[device][partition]['type'] == "vfat") or (parts[device][partition]['type'] == "ntfs"):
-					newliloconf += "other="+device+str(int(parts[device][partition]['minor']))+"\n"
-					newliloconf += "label=Windows_P"+str(int(parts[device][partition]['minor']))+"\n\n"
+			tmp_partitions = parts[device]
+			for partition in tmp_partitions:
+				if (tmp_partitions[partition]['type'] == "vfat") or (tmp_partitions[partition]['type'] == "ntfs"):
+					newliloconf += "other="+device+str(int(tmp_partitions[partition]['minor']))+"\n"
+					newliloconf += "label=Windows_P"+str(int(tmp_partitions[partition]['minor']))+"\n\n"
 		return newliloconf
