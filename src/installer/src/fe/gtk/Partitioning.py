@@ -300,7 +300,7 @@ resize partitions.
 #					if self.devices.has_key(drive): del self.devices[drive]
 #					part_load_error = 1
 			if part_load_error:
-				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARN, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format="One or more drives' partition tables could not be read")
 				msgdlg.run()
 				msgdlg.destroy()
 				return
