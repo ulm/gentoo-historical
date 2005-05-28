@@ -138,25 +138,38 @@ class GLIGenCF(GLIGen):
 		except GLIException, e:
 			self._d.msgbox(e)
 
+	def set_enable_ssh(self):
+		if advanced_mode:
+			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LIVECD root password!")) == self._DLG_YES:
+				self._client_profile.set_enable_ssh(None, True, None)
+			else:
+				self._client_profile.set_enable_ssh(None, False, None)
 
 	def set_livecd_password(self):
-	# The root password will be set here
-		code, passwd1 = self._d.passwordbox("Enter the new LIVECD root password")
-		if code != self._DLG_OK: 
-			return
-		code, passwd2 = self._d.passwordbox("Enter the new LIVECD root password again")
-		if code != self._DLG_OK: 
-			return
-		if passwd1 != passwd2:
-			self._d.msgbox("The passwords do not match")
-			return
-		self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
-
-	def set_enable_ssh(self):
-		if self._d.yesno("Do you want SSH enabled during the install?") == self._DLG_YES:
-			self._client_profile.set_enable_ssh(None, True, None)
-		else:
-			self._client_profile.set_enable_ssh(None, False, None)
+		# The root password will be set here only if in advanced mode.  Otherwise it is auto-scrambled.
+		if advanced_mode:
+			match = False;
+			while not match:
+				string = _(u"""
+				If you want to be able to login to your machine from another console during the installation,
+				you will want to enter a new root password for the LIVECD.
+				Note that this can be different from your new system's root password.
+				Presss Enter twice to skip this step.
+				Enter the new LIVECD root password:"			
+				""")
+				code, passwd1 = self._d.passwordbox(string)
+				if code != self._DLG_OK: 
+					return
+				code, passwd2 = self._d.passwordbox(_(u"Enter the new LIVECD root password again to verify:"))
+				if code != self._DLG_OK: 
+					return
+				if passwd1 != passwd2:
+					self._d.msgbox(_(u"The passwords do not match.  Please try again."))
+					return
+				else:
+					match = True;
+					if passwd1 != "":  #don't want to hash an empty password.
+						self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
 
 	def set_client_kernel_modules(self):
 		code, kernel_modules_list = self._d.inputbox("Enter a list of kernel modules you want loaded before installation:", init="")
