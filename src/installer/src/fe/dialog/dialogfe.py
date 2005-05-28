@@ -60,86 +60,103 @@ def run(cmd):
 	return output_list
 
 def set_partitions():
-	if not d.yesno("This will reset any changes you have made. Continue?") == DLG_YES: return
-#	devices = copy.deepcopy(install_profile.get_partition_tables())
-	devices = {}
-	drives = GLIStorageDevice.detect_devices()
+	devices = install_profile.get_partition_tables()
+	drives = devices.keys()
 	drives.sort()
-#	use_existing = False
-#	if not devices:
-	use_existing = local_install #(d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
-	for drive in drives:
-		devices[drive] = GLIStorageDevice.Device(drive)
-		if use_existing: devices[drive].set_partitions_from_disk()
+	if not devices:
+		tmp_drives = GLIStorageDevice.detect_devices()
+		tmp_drives.sort()
+		for drive in tmp_drives:
+			devices[drive] = GLIStorageDevice.Device(drive)
+			if local_install:
+				devices[drive].set_partitions_from_disk()
+			drives.append(drive)
 	while 1:
 		code, drive_to_partition = d.menu("Which drive would you like to partition?", choices=dmenu_list_to_choices(drives), cancel="Done")
 		if code != DLG_OK: break
 		drive_to_partition = drives[int(drive_to_partition)-1]
 		while 1:
 			partitions = devices[drive_to_partition].get_partitions()
-			partsmenu = devices[drive_to_partition].get_ordered_partition_list()
-			code, part_to_edit = d.menu("Which partition would you like to edit?", width=70, choices=dmenu_list_to_choices(partsmenu), cancel="Back")
+			partlist = devices[drive_to_partition].get_ordered_partition_list()
+			tmpparts = devices[drive_to_partition].get_partitions()
+			partsmenu = []
+			for part in partlist:
+				tmppart = tmpparts[part]
+				entry = ""
+				if tmppart.get_type() == "free":
+					entry = "Unallocated space ("
+					if tmppart.is_logical():
+						entry += "logical, "
+					entry += str(tmppart.get_mb()) + "MB)"
+				elif tmppart.get_type() == "extended":
+					entry = str(int(tmppart.get_minor())) + " - Extended (" + str(tmppart.get_mb()) + "MB)"
+				else:
+					entry = str(int(tmppart.get_minor())) + " - "
+					# Type: " + tmppart.get_type() + ", Mountpoint: " + tmppart.get_mountpoint() + ", Mountopts: " + tmppart.get_mountopts() + "("
+					if tmppart.is_logical():
+						entry += "Logical ("
+					else:
+						entry += "Primary ("
+					entry += tmppart.get_type() + ", "
+					entry += (tmppart.get_mountpoint() or "none") + ", "
+					entry += (tmppart.get_mountopts() or "none") + ", "
+					entry += str(tmppart.get_mb()) + "MB)"
+				partsmenu.append(entry)
+			code, part_to_edit = d.menu("Select a partition or unallocated space to edit", width=70, choices=dmenu_list_to_choices(partsmenu), cancel="Back")
 			if code != DLG_OK: break
-			part_to_edit = partsmenu[int(part_to_edit)-1]
-			if re.compile("^Free Space").match(part_to_edit) != None:
-				new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part_to_edit).groups()
-				code, new_start2 = d.inputbox("New partition start (minimum " + new_start + ")?", init=new_start)
+			part_to_edit = partlist[int(part_to_edit)-1]
+			tmppart = tmpparts[part_to_edit]
+			if tmppart.get_type() == "free":
+				free_mb = tmppart.get_mb()
+				code, new_mb = d.inputbox("Size of new partition in MB (max " + str(free_mb) + "MB):", init=str(free_mb))
 				if code != DLG_OK: continue
-				code, new_end2 = d.inputbox("New partition end (maximum " + new_end + ")?", init=new_end)
-				if code != DLG_OK: continue
-				minor = devices[drive_to_partition].get_partition_at(int(new_start) - 1) + 1
+				if int(new_mb) > free_mb:
+					d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
+					continue
 				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
 				code, type = d.menu("Type for new partition (reiserfs not yet supported!)", choices=dmenu_list_to_choices(part_types))
 				if code != DLG_OK: continue
 				type = part_types[int(type)-1]
 				if type == "other":
-					code, type = d.inputbox("New partition's type?")
+					code, type = d.inputbox("New partition's type:")
 				if code != DLG_OK: continue
-				if (int(new_start2) < int(new_start)) or (int(new_end2) > int(new_end)):
-					d.msgbox("Cannot create new partition because it is not within the bounds of the selected free space.")
-					continue
-				devices[drive_to_partition].add_partition(devices[drive_to_partition].get_free_minor_at(int(new_start2), int(new_end2)), int(new_start2), int(new_end2), type)
+				devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
 			else:
 				while 1:
-					tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part_to_edit).groups()
-					tmppart = partitions[int(tmpminor)]
-					tmptitle = tmpdevice + tmpminor + ": " + str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-					menulist = ["Delete", "Mount Point", "Mount Options", "Type", "Format"]
+					tmppart = tmpparts[part_to_edit]
+					tmptitle = drive_to_partition + str(part_to_edit) + " - "
+					if tmppart.is_logical():
+						tmptitle += "Logical ("
+					else:
+						tmptitle += "Primary ("
+					tmptitle += tmppart.get_type() + ", "
+					tmptitle += (tmppart.get_mountpoint() or "none") + ", "
+					tmptitle += (tmppart.get_mountopts() or "none") + ", "
+					tmptitle += str(tmppart.get_mb()) + "MB)"
+					menulist = ["Delete", "Mount Point", "Mount Options", "Format"]
 					code, part_action = d.menu(tmptitle, choices=dmenu_list_to_choices(menulist), cancel="Back")
 					if code != DLG_OK: break
 					part_action = menulist[int(part_action)-1]
 					if part_action == "Delete":
-						answer = (d.yesno("Are you sure you want to delete the partition " + tmpdevice + tmpminor + "?") == DLG_YES)
+						answer = (d.yesno("Are you sure you want to delete the partition " + drive_to_partition + str(part_to_edit) + "?") == DLG_YES)
 						if answer == True:
 							tmpdev = tmppart.get_device()
-							tmpdev.remove_partition(int(tmpminor))
+							tmpdev.remove_partition(part_to_edit)
 							break
 					elif part_action == "Mount Point":
-						code, answer = d.inputbox("Enter a mountpoint for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						code, answer = d.inputbox("Enter a mountpoint for partition " + str(part_to_edit), init=tmppart.get_mountpoint())
 						if code == DLG_OK: tmppart.set_mountpoint(answer)
 					elif part_action == "Mount Options":
-						code, answer = d.inputbox("Enter your options for partition" + str(tmpminor), init=tmppart.get_mountopts())
+						code, answer = d.inputbox("Enter your mount options for partition " + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
 						if code == DLG_OK: tmppart.set_mountopts(answer)
-					elif part_action == "Type":
-						part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-						code, type = d.menu("Type for partition (reiserfs not supported!)", choices=dmenu_list_to_choices(part_types))
-						if code != DLG_OK: continue
-						type = part_types[int(type)-1]
-						if type == "other":
-							code, type = d.inputbox("Partition's type?")
-						tmppart.set_type(type)
 					elif part_action == "Format":
-						answer = d.yesno("Do you want to format this partition?")
+						code = d.yesno("Do you want to format this partition?")
 						if code == DLG_YES: 
 							tmppart.set_format(True)
 						else:
 							tmppart.set_format(False)						
 												
-	if d.yesno("Would you like to save changes?") == DLG_YES:
-		parts_tmp = {}
-		for part in devices.keys():
-			parts_tmp[part] = devices[part].get_install_profile_structure()
-		install_profile.set_partition_tables(parts_tmp)
+	install_profile.set_partition_tables(devices)
 
 def set_network_mounts():
 # This is where any NFS mounts will be specified
