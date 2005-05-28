@@ -27,7 +27,7 @@ if [[ -n ${uver} ]] ; then
 	cp -r ../README* ${bver}/uclibc/*.patch tmp/uclibc-patches/ || exit 1
 fi
 
-find tmp -type f -a ! -name 'README*' | xargs bzip2
+#find tmp -type f -a ! -name 'README*' | xargs bzip2
 
 tar -jcf binutils-${bver}-patches-${pver}.tar.bz2 \
 	-C tmp patch || exit 1
