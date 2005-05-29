@@ -45,6 +45,7 @@ class TimezoneMap(gtk.VBox):
         self.zonetab = zonetab
         self.markers = {}
         self.highlightedEntry = None
+        self.currentEntry = None
         self.filename = map
 
         # set up the map canvas
@@ -226,6 +227,8 @@ class TimezoneMap(gtk.VBox):
             # now generate the yellow cities
             self.generate_timezone_map_stuff()
             self.already_shown = True
+        else:
+            self.repaint_background()
 
         return True
     
