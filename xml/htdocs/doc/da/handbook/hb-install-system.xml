@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-system.xml,v 1.22 2005/05/19 16:20:15 aaby Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-system.xml,v 1.23 2005/05/29 19:39:57 broeman Exp $ -->
 
 <sections>
 
-<version>1.66</version>
-<date>2005-02-25</date>
+<version>2.5</version>
+<date>2005-05-17</date>
 
 <section>
 <title>At skifte rod-mappe (Chrooting)</title>
@@ -94,7 +94,7 @@ Mount <path>/proc</path>-filsystemet til <path>/mnt/gentoo/proc</path> for at ti
 Nu, hvor alle partitionerne er initialiseret og basismiljøet
 installeret, er det tid til at skifte til vores nye installationsmiljø,
 ved at lave et <c>rod skifte</c>. Det betyder at vi skifter fra
-det nuværende installationsmiljø (LiveCD eller andet installationsmedie)
+det nuværende installationsmiljø (installationsCD eller andet installationsmedie)
 til dit installationssystem (nemlig de initialiserede partitioner).
 </p>
 
@@ -133,13 +133,77 @@ gør dette for dig.
 
 <pre caption="Opdatering af Portage-træet">
 # <i>emerge --sync</i>
+<comment>(Hvis du bruger en langsom terminal, som f.eks. framebuffer eller en seriel
+konsol, kan du tilføje --quiet-valgmuligheden for at sætte lidt fart på :)</comment>
+# <i>emerge --sync --quiet</i>
 </pre>
+
+<p>
+Hvis du er bag en firewall, som blokerer rsync-trafik, kan du bruge
+<c>emerge-webrsync</c>, som vil hente og installere en portage-snapshot til
+dig.
+</p>
 
 <p>
 Hvis du bliver advaret om, at der eksisterer en ny version af Portage og
 at du skal opdatere Portage, bør du ignorere det. Portage
 bliver opdateret for dig senere under installationen.
 </p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valg af den rigtige profil</title>
+<body>
+
+<p>
+Først introducerer vi lige en definition.
+</p>
+
+<p>
+En profil er en byggeklods til alle Gentoo-systemer. Den specificere ikke kun 
+standardværdier til CHOST, CFLAGS og andre vigtige variabler, den låser også
+systemet til et specifikt område af pakkeversioner. Disse er alle håndteret af
+Gentoo-udviklere.
+</p>
+  	 
+<p>
+Tidligere var sådan en profil næsten aldrig rørt af en bruger. Dog fornyeligt kan
+x86-, hppa- og alpha-brugere vælge to profiler, en til 2.4-kernen og
+en til 2.6-kernen. Dette krav er blevet fremsat for at forbedre
+integrationen af 2.6-kerner.
+</p>
+  	 
+<p>
+Du kan se hvilke profiler, som du bruger på nuværende tidspunkt, med følgende
+kommando:
+</p>
+  	 
+<pre caption="Verifikation af systemprofil">
+# <i>ls -l /etc/make.profile</i>
+lrwxrwxrwx  1 root root 48 Mar  7 11:55 /etc/make.profile ->
+      ../usr/portage/profiles/default-linux/x86/2005.0
+</pre>
+  	 
+<p>
+Hvis du bruger en af de tidligere nævnte tre arkitekturer, vil du se
+yderligere profiler, under den en vist af <path>make.profile</path>-symlinket:
+</p>
+  	 
+<pre caption="Finding af at yderligere profil eksisterer">
+# <i>ls -F /etc/make.profile/</i>
+2.4/  packages  parent  virtuals
+</pre>
+  	 
+<p>
+Som du ser ovenover, er det et 2.4-underbibliotek. Dette betyder
+at den nuværende profil bruger 2.6-kernen; Hvis du øsnker et 2.4-baseret system,
+skal du omlinke din <path>make.profile</path>-symlink:
+</p>
+ 	 
+<pre caption="Omlinke profilen">
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+</pre>
 
 </body>
 </subsection>
@@ -225,7 +289,8 @@ Du vil sikkert bruge en eller måske to locales på dit system. Indtil nu
 efter samlingen af <c>glibc</c>, var et fuld sæt af locales være tilgængelige og
 oprettet. Fra nu af kan du aktivere <c>userlocales</c> USE-flaget og specifere
 kun de locales, du har brug for i <path>/etc/locales.build</path>. Gør kun dette,
-hvis du ved hvilke locales, som du kan vælge.
+hvis du ved hvilke locales, som du kan vælge. Dette vil ikke virke til bootstrapping,
+men når du gensamler glibc bagefter vil den.
 </p>
   	 
 <pre caption="Aktivering af userlocales USE-flag, specielt til glibc">
@@ -352,19 +417,7 @@ dig selv fordi det her kommer til at tage en god del tid, at blive færdig med.
 # <i>cd /usr/portage</i>
 # <i>scripts/bootstrap.sh</i>
 </pre>
-
-<p>
-Når du har indstillet <c>nptl</c>-USE-flaget, genkørsel af <c>bootstrap.sh</c> vil måske
-fejle med beskeden, at <c>linux-headers</c> blokerer <c>linux26-headers</c>.
-Når du modtager sådan en fejl, fjern <c>linux-headers</c> og prøv igen:
-</p>
-  	 
-<pre caption="Fjerne linux-headers fra dit system">
-# <i>emerge -C linux-headers</i>
-# <i>emerge --oneshot --nodeps linux26-headers</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
- 	 
+	 
 <p>
 Forsæt nu med det næste trin, <uri link="#doc_chap4">Fra Stage2 til Stage3</uri>.
 </p>
@@ -400,15 +453,23 @@ valg, så vil vi ikke tvinge en type ned over hovedet på dig.
 
 <p>
 Hvis du vil vide hvilke pakker, der vil blive installeret, så kan du køre
-<c>emerge --pretend system</c>. 
+<c>emerge --pretend --emptytree system</c>. 
 Dette vil vise en liste med alle pakker der vil blive kompileret.
 Eftersom den liste er rimelig stor skal du nok bruge en pager som
 f.eks. <c>less</c> eller <c>more</c> til at gå op og ned gennem listen.
 </p>
 
 <pre caption = "Vis hvad 'emerge system' vil gøre">
-# <i>emerge --pretend system | less</i>
+# <i>emerge --pretend --emptytree system | less</i>
 </pre>
+
+<p>
+Noter at hvis du ikke har rørt ved standard CFLAGS/CXXFLAGS-indstillinger, er brug af
+<c>emerge --pretend --newuse system</c> nok: det vil genbygge
+programmer, som er berørte af ændringer i USE-flags (i sammenligning med de USE-flag,
+som vi brugte, da vi byggede stage2). Hvis du heller ikke rørte
+ved USE-flag heller, hvorfor kører du så en stage2-installation?
+</p>
 
 </body>
 </subsection>
@@ -424,7 +485,7 @@ parametren til <c>emerge</c>, som vil hente alt kildekode for dig.
 </p>
 
 <pre caption = "Hentning af kildekoder">
-# <i>emerge --fetchonly system</i>
+# <i>emerge --fetchonly --emptytree system</i>
 </pre>
 
 </body>
@@ -435,13 +496,18 @@ parametren til <c>emerge</c>, som vil hente alt kildekode for dig.
 
 <p>
 For at starte opbygningsprocessen af system, skal du køre <c>emerge
-system</c>. Dette trin tager forholdsvis lang tid at færdiggøre så find
+--emptytree system</c>. Dette trin tager forholdsvis lang tid at færdiggøre så find
 på noget andet at lave end at stirre ind i skærmen.
 </p>
 
 <pre caption = "Opbygning af systemet">
-# <i>emerge system</i>
+# <i>emerge --emptytree system</i>
 </pre>
+
+<p>
+Igen, hvis du ikke har rørt ved standard CFLAGS- og CXXFLAGS-indstillinger, er brug
+af <c>--newuse</c> nok.
+</p>
 
 <p>
 Du kan nu med sikkerhed ignorere alle advarsler omkring de opdaterede
