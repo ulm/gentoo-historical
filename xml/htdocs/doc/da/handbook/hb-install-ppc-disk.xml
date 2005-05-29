@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-ppc-disk.xml,v 1.10 2005/03/27 10:28:31 broeman Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-ppc-disk.xml,v 1.11 2005/05/29 14:04:20 broeman Exp $ -->
 
 <sections>
 
-<version>1.22</version>
-<date>2005-02-20</date>
+<version>2.00</version>
+<date>2005-03-28</date>
 
 <section>
 <title>Introduktion til blok-enheder</title>
@@ -29,7 +29,7 @@ til din Gentoo Linux installation.
 For at begynde, vil vi introducere begrebet <e>blok-enheder</e>. Den
 mest kendte blok-enhed er sikkert den, som repræsenterer den første
 IDE-harddisk på et Linux system, med navnet
-<path>/dev/hda</path>. Hvis dit system bruger SCSI-drev, så vil din
+<path>/dev/hda</path>. Hvis dit system bruger SCSI- eller SATA-drev, så vil din
 første harddisk være <path>/dev/sda</path>.
 </p>
 
@@ -77,13 +77,15 @@ bruger igennem denne bog:
   <th>Partition NewWorld</th>
   <th>Partition OldWorld</th>
   <th>Partition Pegasos</th>
+  <th>Partition RS/6000</th>
   <th>Filsystem</th>
   <th>Størrelse</th>
   <th>Beskrivelse</th>
 </tr>
 <tr>
   <ti><path>/dev/hda1</path></ti>
-   <ti>/dev/hda1</ti>
+   <ti><path>/dev/hda1</path></ti>
+   <ti>(ikke muligt)</ti>
    <ti>(ikke muligt)</ti>
    <ti>(partitionsoversigt)</ti>
    <ti>32k</ti>
@@ -93,24 +95,46 @@ bruger igennem denne bog:
   <ti><path>/dev/hda2</path></ti>
   <ti>(ikke nødvendigt)</ti>
   <ti>(ikke muligt)</ti>
+  <ti>(ikke muligt)</ti>
   <ti>(bootsrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
 </tr>
 <tr>
+  <ti>(ikke muligt)</ti>
+  <ti>(ikke muligt)</ti>
+  <ti>(ikke muligt)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(PReP Boot)</ti>
+  <ti>800k</ti>
+  <ti>Type 0x41</ti>
+</tr>
+<tr>
+  <ti>(ikke nødvendigt)</ti>
+  <ti>(ikke nødvendigt)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(ikke nødvendigt)</ti>
+  <ti>ext2</ti>
+  <ti>32M</ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/hda2</path></ti>
-  <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/sda2</path></ti>
+  <ti><path>(swap)</path></ti>
   <ti>512M</ti>
-  <ti>Swap partition</ti>
+  <ti>Swap partition, Type 0x82</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
-  <ti>ext3</ti>
+  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3, xfs</ti>
   <ti>Resten af harddisken</ti>
-  <ti>Root partition</ti>
+  <ti>Root partition, Type 0x83</ti>
 </tr>
 </table>
 
@@ -119,8 +143,16 @@ Der er nogle partitioner som er navngivet sådan her: <path>Apple_Driver43,
 Apple_Driver_ATA, Apple_FWDriver, Apple_Driver_IOKit,
 Apple_Patches</path>. Hvis du ikek planlægger at bruge MacOS 9, kan du
 slette dem, idet MacOS X og Linux ikke behøver dem.
-Du skal måske bruge parted for at slette dem, idet mac-fdisk ikke kan slette dem endnu.
+Du skal måske bruge <c>parted</c> for at slette dem, idet mac-fdisk ikke kan slette dem endnu.
 </note>
+
+<warn>
+<c>parted</c> har mulighed for at ændre størrelsen på partitioner.  På installationsCDen er
+der patches med for at ændre størrelsen på et HFS+ filsystem.  Desværre er det ikke muligt
+at ændre størrelsen på et HFS+ journaliseret filsystem, selvom journaliseringen er blevet
+slået fra i Mac OS X.  Alt hvad du gør i ved at ændre størrelsen i parted er
+på din egen risiko!  Vær sikker at tage backup af dine data!
+</warn>
 
 <p>
 Hvis du er interesseret i at vide hvor stor en partition burde være, eller
@@ -174,7 +206,7 @@ partitioner eller volumes har følgende fordele:
 </ul>
 
 <p>
-Dog har flere partitioner en stor ulempe: hvis det ikke er opsat
+Dog har flere partitioner en stor ulempe: hvis de ikke er opsat
 ordentligt, kan det betyde at have et system med masser
 af fri plads på én partition og intet på en anden. Der er også en
 begrænsning på 15 partitioner på SCSI og SATA.
@@ -184,7 +216,7 @@ begrænsning på 15 partitioner på SCSI og SATA.
 </subsection>
 </section>
 <section id="fdisk">
-<title>Standard: Brug af mac-fdisk (Apple/IBM) for at partitionere din disk</title>
+<title>Standard: Brug af mac-fdisk (Apple) for at partitionere din disk</title>
 <body>
 
 <p>
@@ -210,7 +242,7 @@ F.eks. er det her <c>2p</c>.
 </p>
 
 <note>
-Denne partition er <e>ikke</e> en "boot" partition. Den bruges ikke af
+Denne partition er <e>ikke</e> en <path>/boot</path>-partition. Den bruges ikke af
 Linux overhovedet; du behøves ikke placere noget filsystem på den og
 du bør aldrig mounte din. PPC-brugere har ikke brug for en ekstra <c>/boot</c>-partition.  
 </note>
@@ -257,7 +289,9 @@ link="#filesystems">Oprettelse af filsystemer</uri>.
 <body>
 
 <p>
-<c>parted</c>, partitionsredigeringsprogrammet, kan nu håndtere HFS+ partitioner brugt af Mac OS og Mac OS X. Med dette værktøj kan du formindske dine Mac-partitioner og oprette plads til dine Linux partitioner. Dog viser eksemplet forneden kun Pegasos maskiner.
+<c>parted</c>, partitionsredigeringsprogrammet, kan nu håndtere HFS+ partitioner brugt af Mac OS og Mac OS X. 
+Med dette værktøj kan du ændre størrelsen på dine Mac-partitioner og oprette plads til dine Linux partitioner.
+Dog viser eksemplet forneden kun Pegasos maskiner.
 </p>
 
 <p>
@@ -273,11 +307,18 @@ Hvis drevet er upartioneret, kør <c>mklabel amiga</c> for at oprette en ny disk
 </p>
 
 <p>
-Du kan indtaste <c>print</c> på hvilket som helst tidspunkt i parted for at vise den nuværende partitionstabel. Dine ændringer er ikke gemt indtil du afslutter programmet; hvis du på noget tidspunkt ændrer din mening eller har lavet en fejl, kan du taste <c>CTRL+C</c> for at afbryde parted.
+Du kan indtaste <c>print</c> på hvilket som helst tidspunkt i parted for at vise den nuværende partitionstabel.
+Hhvis du på noget tidspunkt ændrer din mening eller har lavet en fejl, 
+kan du taste <c>CTRL+C</c> for at afbryde parted.
 </p>
 
 <p>
-Hvis du også tænker på at installere MorphOS på din Pegasos, opret et affs1-filsystem kaldet "BI0" (BI nul) i starten af drevet. 50MB burde være mere end nok til at gemme MorphOSs kerne. Hvis du har en Pegasos I eller tænker på at bruge reiserfs eller xfs, bliver du også nødt til at gemme din Linux-kerne på denne partition (Pegasos II kan starte fra ext2/ext3 drev). For at oprette partitionen, kør <c>mkpart primary affs1 START END</c> hvor <c>START</c> og <c>END</c> bør erstattes med megabyte-område (f.eks. <c>5 55</c> opretter en 50 MB partition, som starter ved 5MB og slutter ved 55MB.
+Hvis du også tænker på at installere MorphOS på din Pegasos, opret et affs1-filsystem kaldet "BI0" (BI nul)
+i starten af drevet. 32 MB burde være mere end nok til at gemme MorphOSs kerne. Hvis du har en Pegasos I eller
+tænker på at bruge reiserfs eller xfs, bliver du også nødt til at gemme din Linux-kerne på denne partition
+(Pegasos II kan starte fra ext2/ext3- eller affs1-partitioner). For at oprette partitionen, kør 
+<c>mkpart primary affs1 START END</c> hvor <c>START</c> og <c>END</c> bør erstattes med megabyte-område 
+(f.eks. <c>0 32</c> opretter en 32 MB partition, som starter ved 0MB og slutter ved 32MB.
 </p>
 
 <p>
@@ -322,7 +363,7 @@ tilgængelige filsystemer...
 
 <p>
 Der er adskillige filsystemer til rådighed. Ext2, ext3 og XFS
-er fundet stabil til PPC-arkitekturen. jfs er ikke understøttet, ReiserFS har stadigvæk
+er fundet stabile til PPC-arkitekturen. jfs er ikke understøttet, ReiserFS har stadigvæk
 nogle problemer på ppc og er derfor ikke understøttet.
 </p>
 
@@ -389,15 +430,15 @@ værktøjer til rådighed for hvert filsystem:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
-  <ti><c>mkreiserfs</c></ti>
+  <ti><c>mkfs.reiserfs</c></ti>
 </tr>
 <tr>
   <ti>xfs</ti>
@@ -411,7 +452,7 @@ tilfælde) i ext3 (som i vores tilfælde), ville vi bruge:
 </p>
 
 <pre caption="At anvende et filsystem på en partition">
-# <i>mke2fs -j /dev/hda4</i>
+# <i>mkfs.ext3 /dev/hda4</i>
 </pre>
 
 <p>
@@ -448,7 +489,7 @@ For at aktivere swap-partitionen, brug <c>swapon</c>:
 </pre>
 
 <p>
-Lav og aktiver swap ved at bruge ovenstående kommandoer.
+Lav og aktiver swap nu.
 </p>
 
 </body>
@@ -464,9 +505,16 @@ det tid til at mounte disse partitioner. Brug <c>mount</c>
 kommandoen. Glem ikke at lave de nødvendige mount-biblioteker til hver partition, som du har oprettet. Som et eksempel vil vi oprette et mount-punkt og mounte root-partionerne:
 </p>
 
+<warn>
+På grund af en fejl i e2fsprogs-pakken, skal du specifikt bruge
+<c>mount -t ext3</c>-valgmulighen, hvis du bruger et ext3-filsystem.
+</warn>
+
 <pre caption="At mounte partitioner">
 # <i>mkdir /mnt/gentoo</i>
 # <i>mount /dev/hda4 /mnt/gentoo</i>
+<comment>(Til ext3-partitioner:)</comment>
+# <i>mount -t ext3 /dev/hda4 /mnt/gentoo</i>
 </pre>
 
 <note>
