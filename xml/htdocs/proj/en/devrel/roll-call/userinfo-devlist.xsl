@@ -25,17 +25,13 @@
 	  <p>
 	    <xsl:choose>
 	      <xsl:when test="$statusFilter = ''">
-	        The following table contains a list of active Gentoo developers. Inactive
-	        developers are listed at the <uri link="/proj/en/devrel/roll-call/inactive-devs.xml">Gentoo
-                Developer Relations Inactive Developers</uri> page and retired developers are listed on the <uri 
+	        The following table contains a list of active Gentoo developers. Retired developers are listed on the <uri 
                 link="/proj/en/devrel/roll-call/userinfo.xml?statusFilter=Retired">Gentoo Developer Relations Former
 		Developers</uri> page.
 	      </xsl:when>
 	      <xsl:when test="$statusFilter = 'Retired'">
 		The following table contains a list of former Gentoo developers. Active developers are listed
-		on the <uri link="/proj/en/devrel/roll-call/userinfo.xml">Gentoo Linux Developer List</uri> and
-		inactive developers are listed at the <uri link="/proj/en/devrel/roll-call/inactive-devs.xml">Gentoo
-		Developer Relations Inactive Developers</uri> page.
+		on the <uri link="/proj/en/devrel/roll-call/userinfo.xml">Gentoo Linux Developer List</uri>.
 	      </xsl:when>
 	    </xsl:choose>
 	  </p>
