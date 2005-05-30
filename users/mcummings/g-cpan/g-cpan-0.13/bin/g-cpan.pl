@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/mcummings/g-cpan/g-cpan-0.13/bin/g-cpan.pl,v 1.1 2005/05/23 15:29:48 mcummings Exp $
+# $Header: /var/cvsroot/gentoo/users/mcummings/g-cpan/g-cpan-0.13/bin/g-cpan.pl,v 1.2 2005/05/30 14:07:03 mcummings Exp $
 #
 
 # modules to use - these will need to be marked as
@@ -437,8 +437,8 @@ HERE
                 $dir =~ s/Module-Build/module-build/;
             }
             if ( $dir =~ m/PathTools/i ) {
-                $dir = ">=dev-perl/File-Spec-3.01";
-            } # Will need to fix once File-Spec is moved to perl-core - mcummings
+                $dir = ">=perl-core/File-Spec-3.01";
+            } 
             next if $dir eq "perl";
             if ( ( !$dup_check{$dir} ) && ( !module_check($dir) ) ) {
                 $dup_check{$dir} = 1;
@@ -883,8 +883,10 @@ sub clean_up {
         rmtree( ["$tmp_overlay_dir"] );
     }
     #if ($tmp_overlay_dir =~ m/^$ENV{TMPDIR}/) { rmtree( ["$tmp_overlay_dir"] ) }
-    print_info("Removing cpan build dir") if $verbose;
-    rmtree( ["$ENV{HOME}/.cpan/build"]) if ( -d "$ENV{HOME}/.cpan/build" );
+    #print_info("Removing cpan build dir") if $verbose;
+    # Removing this block for now - it's causing weird errors, and the default config we setup for CPAN allows CPAN
+    # to remove contents from this directory as needed anyway. We never manually do anything in .cpan/build - its strictly CPAN's domain
+    #if ( -d "$ENV{HOME}/.cpan/build" ) { rmtree( ["$ENV{HOME}/.cpan/build"]) }
 }
 
 # cab - nice help message ! ;)
