@@ -60,9 +60,6 @@ mkdir -p tmp/patch/exclude tmp/uclibc tmp/piepatch
 cp ${gver}/misc/bounds-checking-gcc*.patch \
    tmp/bounds-checking-gcc-${HTB_GCC_VER}-${HTB_VER}.patch
 find tmp/ -name CVS -type d | xargs rm -rf
-[[ -n ${PATCH_VER}  ]] && { bzip2 tmp/patch/*.patch || exit 1 ; }
-[[ -n ${UCLIBC_VER} ]] && { bzip2 tmp/uclibc/*.patch || exit 1 ; }
-[[ -n ${PIE_VER}    ]] && { bzip2 tmp/piepatch/*/*.patch || exit 1 ; }
 
 # standard jobbies
 [[ -n ${PATCH_VER}  ]] && {
