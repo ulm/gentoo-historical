@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.6 2005/05/20 17:10:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.7 2005/05/31 17:39:48 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -63,9 +63,9 @@ then
 	fi
 fi
 
-# clean up the time and set to GMT
+# clean up the time and set to UTC
 rm -rf /etc/localtime
-cp /usr/share/zoneinfo/GMT /etc/localtime
+cp /usr/share/zoneinfo/UTC /etc/localtime
 
 # setup the hostname
 echo "livecd" > /etc/hostname
