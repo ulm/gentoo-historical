@@ -15,8 +15,8 @@ to use it.
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.6</version>
-<date>May 17, 2005</date>
+<version>1.7</version>
+<date>May 31, 2005</date>
 
 <chapter>
 <title>Why GNAP ?</title>
@@ -158,6 +158,13 @@ options and which features should be enabled on your customized LiveCD:
  <ti><c>no</c></ti>
 </tr>
 <tr>
+ <ti>RW_OVERLAY</ti>
+ <ti>Location of a partition to overlay files from at boot (typically a
+     floppy disk or a second CF partition). This partition can be later
+     remounted in order to backup modified configuration files.</ti>
+ <ti><c>empty (do not use r/w overlay)</c></ti>
+</tr>
+<tr>
  <ti>USE_PPPOE</ti>
  <ti>Set to <c>yes</c> to have the rp-pppoe daemon run at startup.</ti>
  <ti><c>no</c> (do not run)</ti>
@@ -211,11 +218,10 @@ options and which features should be enabled on your customized LiveCD:
  <ti><c>no</c> (do not run)</ti>
 </tr>
 <tr>
- <ti>USE_HTTP</ti>
- <ti>Set to <c>yes</c> to have the Boa daemon run at startup. Note that
-     you should overlay a <path>etc/boa</path> directory with
-     the Boa configuration files to use.</ti>
- <ti><c>no</c> (do not run)</ti>
+ <ti>START_SERVICES</ti>
+ <ti>List of the extra services you want to run as startup. This is
+     useful to start services from extensions (like boa).</ti>
+ <ti>empty (no extra service)</ti>
 </tr>
 <tr>
  <ti>NTPSERVER</ti>
@@ -336,24 +342,90 @@ can wear the device.
 </section>
 </chapter>
 <chapter>
-<title>How to rebuild a GNAP Core</title>
+<title>How to add extensions to a GNAP Core</title>
 
+<section>
+<title>Installation</title>
+<body>
+
+<p>
+The GNAP extension package is available through Portage:
+</p>
+
+<pre caption="GNAP extension package installation">
+# emerge gnap-ext
+</pre>
+
+<warn>
+gnap-ext might only be available in "~x86". Adjust your
+<path>/etc/portage/package.keywords</path> file if needed.
+</warn>
+
+<note>
+This will fetch a GNAP basefs file, which is usually quite large (~9Mb). You
+can set the "minimal" USE flag if you don't want to download the basefs and
+the standard extension pack, but only install the <c>gnap_remaster</c> tool.
+</note>
+
+</body>
+</section>
+<section>
+<title>How it works</title>
+<body>
+
+<p>
+The gnap_remaster script takes a GNAP core tarball, a GNAP basefs tbz2 and one
+or more extensions names (found in an extension directory as
+<path>gnapext_[name].tbz2</path> files) and produces a new, extended, GNAP core
+file:
+</p>
+
+<figure link="gnap_remaster.png" short="gnap_remaster principle"
+        caption="How gnap_remaster works"/>
+
+</body>
+</section>
+<section>
+<title>Remastering a GNAP core with extensions</title>
+<body>
+
+<p>
+You should use <c>gnap_remaster</c> with the needed extensions names, as root:
+</p>
+
+<pre caption="Remastering the current GNAP core, adding the boa extension">
+# gnap_remaster -e boa
+</pre>
+
+<note>
+By default, it will use the current GNAP core, basefs and standard extensions.
+You can change this behaviour using the <c>-g</c>, <c>-b</c> and
+<c>-d</c> options.
+</note>
+
+<p>
+This will build a mygnap.tar remastered core file with the requested
+extensions added. You can then use this newly-built GNAP core file with
+<c>gnap_overlay</c>, using the <c>-g</c> parameter to point to the right file.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>How to build your own extensions</title>
 <section>
 <body>
 
 <impo>
-Only advanced users that want to change the GNAP core contents (or rebuild
-the standard core with a recent portage snapshot) should read this chapter.
-Rebuilding a core takes a lot of time and you may run into problems brought
-by recently added package versions.
-You'll need root rights (needed by Catalyst) to build a GNAP Core.
-The kernel on the building host must support loopback devices
-(CONFIG_BLK_DEV_LOOP) and ISO9660 filesystems (CONFIG_ISO9660_FS)
-compiled-in or as modules.
+Only advanced users that want to change the GNAP core contents 
+should read this chapter. You'll need root rights (needed by Catalyst)
+to build extensions.
 </impo>
 
 </body>
 </section>
+
 <section>
 <title>Installation</title>
 <body>
@@ -372,13 +444,138 @@ gnap-dev might only be available in "~x86". Adjust your
 </warn>
 
 <note>
-This will fetch a seed stage2 file, which is usually quite large (~18Mb). You
+This will fetch a GNAP seed stage3 file, which is very large (~41Mb). You
 can set the "minimal" USE flag if you don't want to download the seed stage,
 but only install the GNAP development environment.
 </note>
 
 </body>
 </section>
+<section>
+<title>How it works</title>
+<body>
+
+<p>
+The gnap_make script takes a GNAP seed stage3 tarball and a specs directory
+(containing configuration files), and can produce new GNAP core files, GNAP
+basefs files and extensions:
+</p>
+
+<figure link="gnap_make.png" short="gnap_make principle"
+        caption="How gnap_make works"/>
+
+<p>
+In this chapter, we'll just use the extensions building feature of gnap_make.
+In the next chapter we'll see how to use gnap_make to rebuild all the other
+GNAP elements.
+</p>
+
+</body>
+</section>
+<section>
+<title>Writing your own extension specfile</title>
+<body>
+
+<p>
+To create your own extensions, you should use your own specs directory.
+To do that, make a copy of the specs directory from
+<path>/usr/lib/gnap/specs</path>. You can then edit the extensions.conf file
+to specify your own extensions:
+</p>
+
+<table>
+<tr>
+ <th>Parameter</th>
+ <th>Value</th>
+ <th>Example</th>
+</tr>
+<tr>
+ <ti>extensions</ti>
+ <ti>List of the extensions names to build.</ti> 
+ <ti>extensions: boa myext</ti>
+</tr>
+<tr>
+ <ti>[name]/packlist</ti>
+ <ti>List of the Gentoo packages to build in the extension. This will also
+     pull any needed dependency.</ti> 
+ <ti>myext/packlist: squid</ti>
+</tr>
+<tr>
+ <ti>[name]/useflags</ti>
+ <ti>Specific USE flags to enable while building the extension. This is an
+     optional parameter.</ti>
+ <ti>myext/useflags: ipv6</ti>
+</tr>
+<tr>
+ <ti>[name]/cleanup</ti>
+ <ti>List of the directories or files to remove from built extension. Keep
+     GNAP small, remove all unnecessary stuff !</ti> 
+ <ti>myext/cleanup: /usr/share</ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>Building your extensions</title>
+<body>
+
+<p>
+You should use <c>gnap_make</c> to call the <c>extensions</c> build stage on
+your modified specs directory:
+</p>
+
+<pre caption="Building specified GNAP extensions">
+# gnap_make -t extensions -e /home/foo/myspecs
+</pre>
+
+<p>
+This should build gnapext_[extensionname].tbz2 files containing your
+extension.
+</p>
+
+<warn>
+Multiple extensions may conflict with each other. Testing of the resulting
+GNAP Core file is necessary to ensure everything is working properly.
+</warn>
+
+<p>
+Using the same portage snapshot to build extensions as the one used to build
+the original GNAP core helps reducing the conflicts. You can download a
+Portage snapshot, copy the portage-YYYYMMDD.tar.bz2 file to the
+<path>/var/tmp/catalyst/snapshots</path> subdirectory, then use the
+<c>-p</c> option:
+</p>
+
+<pre caption="Building GNAP extensions using a 20050529 Portage snapshot">
+# gnap_make -t extensions -e /home/myself/myspecs -p 20050529
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>How to rebuild a GNAP Core</title>
+
+<section>
+<body>
+
+<impo>
+Only advanced users that want to drastically change the GNAP core contents
+(or rebuild the standard core with a recent portage snapshot) should read
+this chapter.
+Rebuilding a core takes a lot of time and you may run into problems brought
+by recently added package versions.
+You'll need root rights (needed by Catalyst) to build a GNAP Core.
+The kernel on the building host must support loopback devices
+(CONFIG_BLK_DEV_LOOP) and ISO9660 filesystems (CONFIG_ISO9660_FS)
+compiled-in or as modules. You'll also need the gnap-dev package, see the
+previous chapter for installation procedure.
+</impo>
+
+</body>
+</section>
+
 <section>
 <title>Building a GNAP Core from scratch</title>
 <body>
@@ -394,7 +591,7 @@ creation, using the standard specs directory:
 
 <note>
 By default, it will use the seed stage at
-<path>/usr/lib/gnap/stage2seed.tar.bz2</path>, as installed by the ebuild.
+<path>/usr/lib/gnap/gnap-stage3seed.tar.bz2</path>, as installed by the ebuild.
 You can use the <c>-s</c> option to change that default location.
 </note>
 
@@ -419,11 +616,12 @@ In case of failure, or if you just want to re-run some final stages, you might
 want to specify which Catalyst stages gnap_make should call. You can do this
 by providing the GNAP version timestamp to reuse (<c>-v</c>) and the stage
 names (<c>snapshot</c>, <c>stage3</c>, <c>livecd-stage1</c>,
-<c>livecd-stage2</c>) and/or the special <c>tarball</c> target
-(which builds the final GNAP Core tarball) as <c>-t</c> parameters:
+<c>livecd-stage2</c>, <c>extensions</c>) and/or the special <c>tarball</c>
+target (which builds the final GNAP Core tarball and basefs) as
+<c>-t</c> parameters:
 </p>
 
-<pre caption="Calling only the two final stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
+<pre caption="Calling only two stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
 # gnap_make -p 20041008 -v 20041012 -t livecd-stage2 -t tarball
 </pre>
 
