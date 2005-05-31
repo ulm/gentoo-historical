@@ -237,12 +237,15 @@ class TimezoneMap(gtk.VBox):
         return True
     
     def repaint_background(self, original = False):
-        if original == False:
-            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_plus, 0, 0, 0, 0, self.mapWidth, 
-                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
-        else:
-            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_original, 0, 0, 0, 0, self.mapWidth, 
-                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
+    	# only repaint if the area has already been exposed
+	# at least 1 time.
+	if self.already_shown == True:
+	        if original == False:
+	            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_plus, 0, 0, 0, 0, self.mapWidth, 
+	                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
+	        else:
+	            self.drawing_area.window.draw_pixbuf(self.gc, self.pixbuf_original, 0, 0, 0, 0, self.mapWidth, 
+	                                                 self.mapHeight, gtk.gdk.RGB_DITHER_NORMAL, 0, 0)
         return
     
     def generate_timezone_map_stuff(self):
