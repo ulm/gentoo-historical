@@ -434,7 +434,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 
 	# Get the tarball
 	if not get_uri(tarball_uri, temp_directory + "/" + tarball_filename):
-		return False
+		raise GLIException("GLIUtilityError", 'fatal', 'fetch_and_unpack_tarball',"Could not fetch " + tarball_uri)
 
 	# Reset tar options
 	tar_options = "xv"
