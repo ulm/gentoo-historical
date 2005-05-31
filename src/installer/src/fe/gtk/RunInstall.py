@@ -35,7 +35,7 @@ class RunInstall(gtk.Window):
 
 		self.tailpage = gtk.VBox(False, 0)
 		self.textbuffer = gtk.TextBuffer()
-		self.textbuffer.set_text("testing\ntesting again..\n\ntesting testing")
+		self.textbuffer.set_text("")
 		self.textview = gtk.TextView(self.textbuffer)
 		self.textview.set_editable(False)
 		self.tailpage.pack_start(self.textview, expand=True, fill=True)
