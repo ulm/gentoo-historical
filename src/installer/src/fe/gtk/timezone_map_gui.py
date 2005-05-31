@@ -112,6 +112,10 @@ class TimezoneMap(gtk.VBox):
         sw.set_shadow_type(gtk.SHADOW_IN)
         self.pack_start(sw, True, True)
         
+	# setup the gc
+	self.style2 = self.drawing_area.get_style()
+	self.gc = self.style2.fg_gc[gtk.STATE_NORMAL]
+	
         self.line_status = True
 
     def getCurrent(self):
