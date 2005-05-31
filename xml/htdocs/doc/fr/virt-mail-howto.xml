@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/virt-mail-howto.xml,v 1.27 2005/05/25 10:56:18 neysx Exp $-->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/virt-mail-howto.xml,v 1.28 2005/05/31 15:24:48 neysx Exp $-->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -12,6 +12,9 @@
 <author title="Auteur">
  <mail link="ezra@revoltltd.org">Ezra Gorman</mail>
 </author>
+<author title="Correcteur">
+ <mail link="seather@scygro.za.net">Scygro</mail>
+</author>
 <author title="Traducteur">
  <mail link="cam@cameuh.net">Camille Huot</mail>
 </author>
@@ -23,8 +26,8 @@ basant sur postfix, mysql, courier-imap et cyrus-sasl.
 
 <license/>
 
-<version>1.0.21</version>
-<date>2005-05-23</date>
+<version>1.0.22</version>
+<date>2005-05-29</date>
 
 <chapter>
 <title>Introduction</title>
@@ -62,17 +65,17 @@ des solutions alternatives.
 
 <p>
 Dans notre configuration, nous utiliserons les paquets suivants&nbsp;: apache,
-courier-imap, pam_mysql, postfix, mod_php, phpmyadmin, squirrelmail, cyrus-sasl,
-mysql, php et mailman.
+courier-imap, courier-authlib, postfix, mod_php, phpmyadmin, squirrelmail,
+cyrus-sasl, mysql, php et mailman.
 </p>
 
 <p>
 Avant d'installer ces paquets, assurez-vous que les options suivantes de USE se
 trouvent dans votre fichier <path>/etc/make.conf</path>&nbsp;: <c>USE="mysql
-pam-mysql imap libwww maildir sasl ssl"</c>. Sinon, vous risquez de devoir
-recompiler certains paquets pour activer le support de ces protocoles. Il est
-également recommandé de désactiver les autres options liées au courrier et au
-réseau, comme ipv6.
+imap libwww maildir sasl ssl"</c>. Sinon, vous risquez de devoir recompiler
+certains paquets pour activer le support de ces protocoles. Il est également
+recommandé de désactiver les autres options liées au courrier et au réseau,
+comme ipv6.
 </p>
 
 <impo>
@@ -199,8 +202,8 @@ fonctionne correctement avant de continuer.
 <section>
 <body>
 
-<pre caption="Installation de courier-imap">
-# <i>emerge courier-imap</i>
+<pre caption="Installation de courier-imap et de courier-authlib">
+# <i>emerge courier-imap courier-authlib</i>
 </pre>
 
 <pre caption="Configuration de courier-imap">
@@ -245,11 +248,11 @@ avant de continuer.
 
 <p>
 Installons à présent cyrus-sasl. Sasl sert à passer vos variables
-d'authentification à pam qui va à son tour les passer à mysql pour vérifier
-l'authentification des utilisateurs smtp. Dans ce guide, nous ne testerons pas
-sasl tant que mysql ne sera pas installé et ne contiendra pas un utilisateur
-pour fins de tests. Ce n'est pas grave car, de toute façon, nous utiliserons
-mysql pour l'authentification à la fin.
+d'authentification à courier-auth qui va à son tour les passer à mysql pour
+vérifier l'authentification des utilisateurs smtp. Dans ce guide, nous ne
+testerons pas sasl tant que mysql ne sera pas installé et ne contiendra pas un
+utilisateur pour fins de tests. Ce n'est pas grave car, de toute façon, nous
+utiliserons mysql pour l'authentification à la fin.
 </p>
 
 <pre caption="Installer et configurer cyrus-sasl">
@@ -267,7 +270,8 @@ Ensuite, éditez <path>/etc/sasl2/smtpd.conf</path>.
 mech_list: PLAIN LOGIN
 pwcheck_method: saslauthd
 # <i>nano -w /etc/conf.d/saslauthd</i>
-SASLAUTHD_OPTS="${SASLAUTH_MECH} -a pam -r"
+SASLAUTHD_OPTS="${SASLAUTH_MECH} -a rimap -r"
+SASLAUTHD_OPTS="${SASLAUTHD_OPTS} -O localhost"
 
 # <i>/etc/init.d/saslauthd start</i>
 </pre>
@@ -641,32 +645,11 @@ ci-dessous, remplacez $password par le mot de passe que vous avez assigné à
 l'utilisateur mysql «&nbsp;mailsql&nbsp;».
 </p>
 
-<pre>
-# <i>emerge pam_mysql</i>
-# <i>nano -w /etc/pam.d/smtp</i>
-<comment>Commentez les lignes existantes et ajoutez les nouvelles comme indiqué.</comment>
-
-#auth    required        /lib/security/pam_stack.so service=system-auth
-#account required        /lib/security/pam_stack.so service=system-auth
-
-auth     optional       pam_mysql.so host=localhost db=mailsql user=mailsql \
-  passwd=$password table=users usercolumn=email passwdcolumn=clear crypt=0
-account  required       pam_mysql.so host=localhost db=mailsql user=mailsql \
-  passwd=$password table=users usercolumn=email passwdcolumn=clear crypt=0
-</pre>
-
-<p>
-Ensuite, nous devons éditer la configuration d'authentification de courier-imap.
-</p>
-
-<pre>
-# <i>nano -w /etc/courier-imap/authdaemonrc</i>
+<pre caption="Configurer l'authentification">
+# <i>nano -w /etc/courier/authlib/authdaemonrc</i>
 authmodulelist="authmysql authpam"
 
-# <i>nano -w /etc/courier-imap/authdaemond.conf</i>
-AUTHDAEMOND="authdaemond.mysql"
-
-# <i>nano -w /etc/courier-imap/authmysqlrc</i>
+# <i>nano -w /etc/courier/authlib/authmysqlrc</i>
 MYSQL_SERVER            localhost
 MYSQL_USERNAME       mailsql
 MYSQL_PASSWORD      $password
