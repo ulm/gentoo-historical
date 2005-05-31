@@ -15,6 +15,7 @@ class RunInstall(gtk.Window):
 
 	which_step = 0
 	install_done = False
+	install_fail = False
 	output_log_is_link = False
 
 	def __init__(self, controller):
@@ -58,7 +59,6 @@ class RunInstall(gtk.Window):
 		self.controller.cc.start_install()
 
 		self.output_log = None
-#os.popen("tail -F /tmp/compile_output.log 2>&1")
 		gobject.timeout_add(1000, self.poll_notifications)
 		gobject.timeout_add(1000, self.tail_logfile)
 
@@ -73,9 +73,16 @@ class RunInstall(gtk.Window):
 #			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured during the install. Consult the output display for more information.")
 #			msgdlg.run()
 #			msgdlg.destroy()
-			print "Exception received:"
-			print ndata
-		elif ntype == "int":
+			error_msg = "Exception received:\n" + str(ndata) + "\nPlease submit a bug report (after searching to make sure it's not a known issue) with the contents of /var/log/install.log and /tmp/installprofile.xml\n"
+			iter_end = self.textbuffer.get_iter_at_offset(-1)
+			self.textbuffer.insert(iter_end, error_msg, -1)
+			self.textview.scroll_to_iter(iter_end, 0.0)
+			self.progress.set_fraction(1)
+			self.progress.set_text("Install failed!")
+			self.install_fail = True
+#			print "Exception received:"
+#			print ndata
+		elif ntype == "int" and not self.install_fail:
 			if ndata == GLIClientController.NEXT_STEP_READY:
 				num_steps = self.controller.cc.get_num_steps()
 				if self.controller.cc.has_more_steps():
