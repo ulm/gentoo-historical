@@ -127,7 +127,8 @@ livecd/splash_theme:
 livecd/gk_mainargs:
 
 # This option allows you to specify your own linuxrc script for genkernel to use# when building your CD.  This is not checked for functionality, so it is up to
-# you to debug your own script.  We do not use one for the official release # media, so there will not be one listed below.
+# you to debug your own script.  We do not use one for the official release
+# media, so there will not be one listed below.
 # example:
 # livecd/linuxrc:
 livecd/linuxrc:
