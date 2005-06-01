@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.1 2005/04/29 21:25:50 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.2 2005/06/01 21:06:10 wolf31o2 Exp $
 		
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -18,6 +18,10 @@ source /etc/profile
 #if [ -x /usr/bin/gcc-config ]
 #then
 #	gcc_current=`gcc-config -c`
+#	if [ -z "${gcc_current}" ]
+#	then
+#		gcc_current=1
+#	fi
 #	gcc-config 3 && source /etc/profile
 #	gcc-config ${gcc_current} && source /etc/profile
 #fi
