@@ -111,7 +111,7 @@
         <ti>
           <xsl:for-each select='project/dev[translate(@role,"DEAL","deal")="lead"]'>
             <xsl:variable name="lead" select="text()"/>
-            <xsl:if test="count(following-sibling::dev[text()=$lead])=0">
+            <xsl:if test='count(following-sibling::dev[text()=$lead and translate(@role,"DEAL","deal")="lead"])=0'>
               <xsl:value-of select="text()"/>
               <xsl:if test="not(position() = last())">, </xsl:if>
             </xsl:if>
