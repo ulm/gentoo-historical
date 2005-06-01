@@ -169,12 +169,22 @@ class GLIGenCF(GLIGen):
 				else:
 					match = True;
 					if passwd1 != "":  #don't want to hash an empty password.
-						self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
+						try:
+							self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
+						except:
+							d.msgbox("ERROR! Could not set the root password on the LiveCD!")
 
 	def set_client_kernel_modules(self):
-		code, kernel_modules_list = self._d.inputbox("Enter a list of kernel modules you want loaded before installation:", init="")
-		if code == self._DLG_OK: 
-			self._client_profile.set_kernel_modules(None, kernel_modules_list, None)
+		if advanced_mode:
+			status, output = GLIUtility.spawn("lsmod", return_output=True)
+			string1 = _(u"Here is a list of modules currently loaded on your machine.\n")
+			string2 = _(u"\nIf you have additional modules you would like loaded before the installation begins (ex. a network driver), enter them in a space-separated list.")
+			code, kernel_modules_list = self._d.inputbox(string1+output+string2, init="")
+			if code == self._DLG_OK:
+				try:
+					self._client_profile.set_kernel_modules(None, kernel_modules_list, None)
+				except:
+					d.msgbox("ERROR! Could not set the list of kernel modules!")
 
 	def save_client_profile(self, xmlfilename="", askforfilename=True):
 		code = 0

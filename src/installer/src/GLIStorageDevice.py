@@ -476,7 +476,7 @@ class Partition:
 				dev_node = device._device
 			else:
 				dev_node = device._device + str(self._orig_minor)
-			print "dev_node = " + dev_node
+#			print "dev_node = " + dev_node
 			if type == "ntfs":
 				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
 				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
