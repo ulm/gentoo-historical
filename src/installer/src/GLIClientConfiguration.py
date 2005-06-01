@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.29 2005/05/28 01:57:43 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.30 2005/06/01 00:17:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -122,16 +122,16 @@ class ClientConfiguration:
 					'root-passwd': self.get_root_passwd,
 					'rsync-proxy': self.get_rsync_proxy,
 				}
-		data = "<client-configuration>"
+		self.data = "<client-configuration>"
 
 		for key in fntable.keys():
-			data += "<%s>%s</%s>" % (key, fntable[key](), key)
+			self.data += "<%s>%s</%s>" % (key, fntable[key](), key)
 
 		# Serialize the special cases.
 		self.serialize_kernel_modules()
 		
 		#Finish by putting it all in nice XML.
-		dom = xml.dom.minidom.parseString(data)
+		dom = xml.dom.minidom.parseString(self.data)
 		return dom.toprettyxml()
 		
 	############################################################################
@@ -276,8 +276,8 @@ class ClientConfiguration:
 	# Serialization for the kernel module list.  joins together the modules.
 	def serialize_kernel_modules(self):
 		# Special Case the kernel modules
-		data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
-		data += "</client-configuration>"
+		self.data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
+		self.data += "</client-configuration>"
 	
 	############################################################################
 	#### Log File Location
