@@ -3,6 +3,8 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIStorageDevice
 import GLIUtility
+import gettext
+_ = gettext.gettext
 #This is a parent class to centralize the code between UserGenCC and UserGenIP
 
 class GLIGen(object):
@@ -58,7 +60,7 @@ class GLIGenCF(GLIGen):
 		else:
 			template_choices = ["x86", "amd64", "sparc", "alpha", "hppa", "ppc"]
 			string = _(u"Please select the architecture of the computer that gentoo will be installed on.  For pentium and AMD 32-bit processors, choose x86.  If you don't know your architecture, you should consider another Linux distribution.")
-			code, menuitem = self._d.menu(string, choices=self._dmenu_list_to_choices(template_choices), default_item=str(template_choices.index(arch)+1))
+			code, menuitem = self._d.menu(string, choices=self._dmenu_list_to_choices(template_choices), default_item=str(template_choices.index(arch)+1), height=20)
 			if code == self._DLG_OK:
 				menuitem = template_choices[int(menuitem)-1]
 				try:
@@ -68,24 +70,23 @@ class GLIGenCF(GLIGen):
 		
 	def set_logfile(self):
 		#If not advanced, the default will suffice.
-		if advanced_mode:
+		if self.advanced_mode:
 			string = _(u"""
-			The installer logs all important events during the install process to a logfile for debugging purposes.
-			The file gets copied to the new system once the install is complete.
-			Enter the desired filename and path for the install log (the default is recommended.):
-			""")
+The installer logs all important events during the install process to a logfile for debugging purposes.
+The file gets copied to the new system once the install is complete.
+Enter the desired filename and path for the install log (the default is recommended):""")
 			initval = self._client_profile.get_log_file()
-			code, logfile = self._d.inputbox(string, init=initval)
+			code, logfile = self._d.inputbox(string, init=initval, width=60, height=15)
 			if code == self._DLG_OK:
 			
 				self._client_profile.set_log_file(None, logfile, None)
 
 	def set_root_mount_point(self):
 		#If not advanced, the default will suffice.
-		if advanced_mode:
+		if self.advanced_mode:
 			string = _(u"Enter the mount point to be used to mount the partition(s) where the new system will be installed.  The default is /mnt/gentoo and is greatly recommended, but any mount point will do.")	
 			initval = self._client_profile.get_root_mount_point()
-			code, rootmountpoint = self._d.inputbox(string, init=initval)
+			code, rootmountpoint = self._d.inputbox(string, init=initval, width=60, height=11)
 			if code == self._DLG_OK: 
 				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
@@ -136,25 +137,24 @@ class GLIGenCF(GLIGen):
 			self._d.msgbox(e)
 
 	def set_enable_ssh(self):
-		if advanced_mode:
-			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LIVECD root password!")) == self._DLG_YES:
+		if self.advanced_mode:
+			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LIVECD root password!"), width=60) == self._DLG_YES:
 				self._client_profile.set_enable_ssh(None, True, None)
 			else:
 				self._client_profile.set_enable_ssh(None, False, None)
 
 	def set_livecd_password(self):
 		# The root password will be set here only if in advanced mode.  Otherwise it is auto-scrambled.
-		if advanced_mode:
+		if self.advanced_mode:
 			match = False;
 			while not match:
 				string = _(u"""
-				If you want to be able to login to your machine from another console during the installation,
-				you will want to enter a new root password for the LIVECD.
-				Note that this can be different from your new system's root password.
-				Presss Enter twice to skip this step.
-				Enter the new LIVECD root password:"			
-				""")
-				code, passwd1 = self._d.passwordbox(string)
+If you want to be able to login to your machine from another console during the installation,
+you will want to enter a new root password for the LIVECD.
+Note that this can be different from your new system's root password.
+Presss Enter twice to skip this step.
+Enter the new LIVECD root password:	""")
+				code, passwd1 = self._d.passwordbox(string, width=60, height=16)
 				if code != self._DLG_OK: 
 					return
 				code, passwd2 = self._d.passwordbox(_(u"Enter the new LIVECD root password again to verify:"))
@@ -172,11 +172,13 @@ class GLIGenCF(GLIGen):
 							d.msgbox("ERROR! Could not set the root password on the LiveCD!")
 
 	def set_client_kernel_modules(self):
-		if advanced_mode:
+		if self.advanced_mode:
 			status, output = GLIUtility.spawn("lsmod", return_output=True)
-			string1 = _(u"Here is a list of modules currently loaded on your machine.\n")
+			string1 = _(u"Here is a list of modules currently loaded on your machine.\n  Please look through and see if any modules are missing\n that you would like loaded.\n\n")
+			self._d.add_persistent_args(["--exit-label", "Continue"])
+			self._d.scrollbox(string1+output, height=20, width=70, title="Loaded Modules")
 			string2 = _(u"\nIf you have additional modules you would like loaded before the installation begins (ex. a network driver), enter them in a space-separated list.")
-			code, kernel_modules_list = self._d.inputbox(string1+output+string2, init="")
+			code, kernel_modules_list = self._d.inputbox(string2, init="", width=60, height=12)
 			if code == self._DLG_OK:
 				try:
 					self._client_profile.set_kernel_modules(None, kernel_modules_list, None)

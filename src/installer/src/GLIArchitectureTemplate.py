@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.120 2005/05/27 19:07:40 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.121 2005/06/02 18:24:09 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -238,7 +238,6 @@ class ArchitectureTemplate:
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
-		GLIUtility.spawn("cp /tmp/installprofile.xml " + self._chroot_dir + "/root/installprofile.xml")
 		self._logger.log("Chroot environment ready.")
 
 	##
@@ -349,12 +348,6 @@ class ArchitectureTemplate:
 		"""
 		self._logger.log("Distfiles copied from cd. NOT!")
 		
-	##
-	# Gets grp binary packages from CD (required for non-network binary installation)
-	# This will not work anymore at all.  I don't know why it's even still here.
-	def fetch_grp_from_cd(self):
-		pass
-	
 	##
 	# Configures the new /etc/make.conf
 	def configure_make_conf(self):
@@ -959,6 +952,8 @@ class ArchitectureTemplate:
 		except:
 			pass
 		#Now we're done logging as far as the new system is concerned.
+		GLIUtility.spawn("cp /tmp/installprofile.xml " + self._chroot_dir + "/root/installprofile.xml")
+		GLIUtility.spawn("cp /tmp/clientconfiguration.xml " + self._chroot_dir + "/root/clientconfiguration.xml")
 		
 		#Unmount mounted fileystems in preparation for reboot
 		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
