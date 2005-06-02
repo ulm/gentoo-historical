@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.7 2005/05/31 17:39:48 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.8 2005/06/02 15:43:46 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -184,7 +184,7 @@ fi
 rm -f /etc/generic.motd.txt /etc/universal.motd.txt /etc/minimal.motd.txt /etc/livecd.motd.txt /etc/gamecd.motd.txt
 
 # setup splash/bootsplash (if called for)
-if [ "${clst_livecd_splash_type}" == "bootsplash" -a -n "${clst_livecd_splash_theme}" ]
+if [ "${clst_livecd_splash_type}" = "bootsplash" -a -n "${clst_livecd_splash_theme}" ]
 then
 	if [ -d /etc/bootsplash/${clst_livecd_splash_theme} ]
 	then
@@ -196,7 +196,7 @@ then
 		exit 1
 	fi
 
-elif [ "${clst_livecd_splash_type}" == "gensplash" -a -n "${clst_livecd_splash_theme}" ]
+elif [ "${clst_livecd_splash_type}" = "gensplash" -a -n "${clst_livecd_splash_theme}" ]
 then
 	if [ -d /etc/splash/${clst_livecd_splash_theme} ]
 	then
