@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/alsa-guide.xml,v 1.1 2005/06/02 03:45:19 flammie Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/fi/alsa-guide.xml">
+<title>Gentoon ALSA-opas</title>
+<author title="Tekijä">
+  <mail link="zu@pandora.be">Vincent Verleye</mail>
+</author>
+<author title="Tekijä">
+  <mail link="g2boojum@gentoo.org">Grant Goodyear</mail>
+</author>
+<author title="Tekijä">
+  <mail link="agenkin@gentoo.org">Arcady Genkin</mail>
+</author>
+<author title="Tekijä">
+  <mail link="eradicator@gentoo.org">Jeremy Huddleston</mail>
+</author>
+<author title="Toimittaja"><!-- zhen@gentoo.org -->
+  John P. Davis
+</author>
+<author title="Toimittaja">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Toimittaja">
+  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+<author title="Toimittaja">
+  <mail link="blubber@gentoo.org">Tiemo Kieft</mail>
+</author>
+<author title="Toimittaja">
+  <mail link="erwin@gentoo.org">Erwin</mail>
+</author>
+<author title="Vastuullinen kääntäjä">
+  <mail link="flammie@gentoo.org">Flammie Pirinen</mail>
+</author>
+
+<abstract>
+Tässä oppaassa kerrotaan kuinka asetetaan Advanced Linux Sound Architecture
+eli ALSA Gentoolle. Tämä opas laajentaa työpöytäoppaan kuvausta aiheesta.
+</abstract>
+
+<license/>
+
+<version>1.5.12</version>
+<date>2005-04-24</date>
+
+<chapter>
+<title>Advanced Linux Sound Architecture</title>
+<section>
+<title>Mikä ALSA on?</title>
+<body>
+
+<p>
+ALSA, <e>Advanced Linux Sound Architecture</e> (eli vapaasti, Linuxin edistynyt
+äänirajapinta), on projekti, joka kehittää Linuxiin korkealaatuista
+äänijärjestelmää. Se korvasi OSSin, Open Sound Systemin, kernelin
+äänijärjestelmän 2.6-sarjan myötä.
+</p>
+
+<p>
+ALSAssa on tehokas tuki kaikennäköisille äänirajapinnoille, se on tehokkaasti
+modularisoitu ja rinnakkaissuoritusturvallinen. Sen mukana tulee
+korkeatasoinen käyttäjäsuoritustason kirjasta, <e>alsa-lib</e>, joka helpottaa
+sovellusten tekoa. Lisäksi siitä löytyy yhteensopivuusrajapinta
+OSS-järjestelmälle.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>ALSAn asennus</title>
+<section>
+<title>USE-asetukset</title>
+<body>
+
+<p>
+Gentoossa on <c>alsa</c> USE-flägi, jonka voi panna
+<path>/etc/make.conf</path>iin, jotta ohjelmat, joissa on valinnainen
+ALSA-tuki, sen sisällyttävät mukaan käännösvaiheessa. Jos USE-asetuksiin
+lisää <c>oss</c>in, saa ALSAan mukaan myös OSS-yhteensopivuustuen.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ytimen moduulit</title>
+<body>
+
+<p>
+Ennen aloittamista, varmista, että kernelissä on <e>Sound Card
+Support</e> asetettu. Jos ydin on tehty <c>genkernel</c>illä, sen pitäisi olla.
+Jollei ole, säädä se kohdalleen. Lisäksi kannattaa ottaa pois käytöstä
+<e>Open Sound System</e>, sillä jos niitä ei oteta, järjestelmä saattaa yrittää
+käyttää sitä ennen ALSAa. Tämän huomaa useimmiten siitä, jos käynnistyksessä
+vastaan tulee viesti ”sound card not detected” ja tiedät käyttäneesi oikeaa
+ajuria.
+</p>
+
+<warn>
+Jos käytössä on 2.6-sarjan ydin, voit käyttää siinä olevia ajureita, mutta
+on myös mahdollista käyttää media-sound/alsa-driver -paketin ajureita, jotka
+saattavat olla tuoreempia. Jos aiot käyttää ytimen ALSA-ajaurteita, voit ohittaa
+tämän osion ja jatkaa <uri link="#alsa-utils">asentamalla ALSAn
+työkaluja</uri>.
+</warn>
+
+<p>
+Ensimmäiseksi pitää ottaa selville mikä äänikortti nyt ollaan asentamassa.
+Jollet tiedä sitä, helpoin tapa selvitellä on etsiä audiota komennon
+<c>lspci</c> tulosteesta. Lspci:n saa asentamalla <c>pciutils</c>in.
+</p>
+
+<pre caption="Äänikorttityypin selvittely">
+# <i>lspci | grep -i audio</i>
+Multimedia audio controller: VIA Technologies, Inc. VT82C686 AC97 Audio Controller (rev 64).
+</pre>
+
+<p>
+Tämän jälkeen pitää avata
+<uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard Matrix</uri> ja
+etsiä tämä kortti. Ylläolevan esimerkin pitäisi löytyä valmistajan VIA alta.
+Siellä on taulukoituna valmistajan kaikki tunnetut piirit, esimerkin piiri
+löytyy riviltä via82c686, linki Details takaa löytyy tieto siitä, että
+sopiva ajuri on nimeltään <path>via82xx</path>. Tämä on kaikki mitä tarvitsee
+tietää joten muut tiedot voi ohittaa.
+</p>
+
+<p>
+Tämän tiedon perusteella voidaan asentaa <c>alsa-driver</c>-paketti.
+Ensin pitää lisätä <path>/etc/make.conf</path>iin muuttuja ALSA_CARDS. Tähän
+muuttujaan luetellaan äänikorttiajurit, joita halutaan käyttää:
+</p>
+
+<pre caption="/etc/make.confin muokkaaminen">
+ALSA_CARDS="via82xx"
+</pre>
+
+<warn>
+Jos käytössä on useita äänikortteja, ne erotellaan pilkuin, esim:
+ALSA_CARDS="via82xx,emu10k1".
+</warn>
+
+<p>
+Jos halutaan asentaa OSS-yhteensopivuuden, oss pitää olla määritelty
+USE-asetuksissa. Sen jälkeen voidaan asentaa <c>alsa-driver</c>:
+</p>
+
+<pre caption="ALSA-ajurien asennus">
+# <i>emerge alsa-driver</i>
+</pre>
+
+<impo>
+Aina kun asennat uuden ytimen, ALSA-ajurit poistetaan. Siksi kannattaakin
+suorittaa uudelleen <c>emerge alsa-driver</c> joka kerta kun ydin asennetaan.
+Huomaa myös, että ajurit käännetään aina sitä ydintä vastaan, joka on
+hakemistossa /usr/src/linux riippumatta siitä mikä ydin tällä hetkellä on
+käytössä.
+</impo>
+
+</body>
+</section>
+<section id="alsa-utils">
+<title>ALSAn työkalut</title>
+<body>
+
+<p>
+Jos ytimessä oleva OSS-yhteensopivuus ei riitä, kannattaa asentaa paketti
+<c>alsa-oss</c>. Tämä sisältää aoss-ohjelman, jota voi käyttää vaikkapa näin:
+</p>
+
+<pre caption="Lisää OSS-yhteensopivuusratkaisujen käyttöä">
+# <i>emerge alsa-oss</i>
+# <i>aoss mpg123 music.mp3</i>
+</pre>
+
+<p>
+Seuraavaksi asennetaan ALSAn työkalusovellukset, jotka ovat välttämättömiä:
+</p>
+
+<pre caption="ALSA-utilsin asentaminen">
+# <i>emerge alsa-utils</i>
+</pre>
+
+<p>
+Nyt kun työkalut on asennettu, ALSAn asetukset voidaan tehdä.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>ALSAn asetukset</title>
+<section>
+<title>Ydinmoduulien automaattinen käynnistäminen</title>
+<body>
+
+<p>
+Jos käytössä on moduuleista kasattu ydin (kuten <c>genkernel</c>in tekemä),
+sitä varten pitää lisätä sopivat moduulit tiedostoon
+<path>/etc/modules.d/alsa</path>, jotta ne latautuisivat käynnistyksen
+yhteydessä. Esimerkiksi:
+</p>
+
+<pre caption="/etc/modules.d/alsan muokkaus">
+alias snd-card-0 snd-via82xx
+<comment># OSS-yhteensopivuutta varten ainoastaan:</comment>
+alias sound-slot-0 snd-via82xx
+alias /dev/mixer snd-mixer-oss
+alias /dev/dsp snd-pcm-oss
+alias /dev/midi snd-seq-oss
+</pre>
+
+<p>
+Sitten ajetaan <c>modules-update</c>, jotta tehdyt muutokset menevät tiedostoon
+<path>/etc/modules.conf</path>:
+</p>
+
+<pre caption="Modules-updaten suoritus">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Laitetiedostojen säätäminen</title>
+<body>
+
+<p>
+Tämän pitäisi tuoreissa järjestelmissä toimia itsestään, mutta jos jotain
+ongelmia esiintyy, kannatta tarksistaa että ALSAn laitetiedosto ovat olemassa,
+ja että laitehallitsin asettaa niiden käyttöoikeudet oikein.
+Jos laitehallitsin on DevFS, tarkista <path>/etc/devfsd.conf</path>
+</p>
+
+<pre caption="/etc/devfsd.confin muokkaus">
+# ALSA/OSS
+LOOKUP          snd          MODLOAD ACTION snd
+LOOKUP          dsp          MODLOAD
+LOOKUP          mixer        MODLOAD
+LOOKUP          midi         MODLOAD
+REGISTER        sound/.*     PERMISSIONS root.audio 660
+REGISTER        snd/.*       PERMISSIONS root.audio 660
+</pre>
+
+</body>
+</section>
+<section>
+<title>ALSAn käynnistäminen koneen käynnistyksen yhteydessä</title>
+<body>
+
+<p>
+ALSAn saa käynnistymään käynnistyksen yhteydessä lisäämällä
+<c>alsasound</c>in runlevelille boot:
+</p>
+
+<pre caption="Alsasoundin lisäys bootiin">
+# <i>rc-update add alsasound boot</i>
+# <i>/etc/init.d/alsasound start</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Kanavien vaimennuksen poistaminen</title>
+<body>
+
+<p>
+Oletusasetuksilla kaikki kanavat ovat aluksi vaimennettuja (engl. muted).
+Tämän voi korjata vaikkapa <c>amixer</c>illä:
+</p>
+
+<pre caption="Amixerin käynnistäminen">
+# <i>amixer</i>
+</pre>
+
+<p>
+Jos <c>amixer</c> tulostaa ruudulle paljon dadaa, laitteet ovat kunnossa ja
+vaimennuksen voi poistaa. Jos kuitenkin tulee virheilmoitus, kannattaa
+tarkistaa, että oikean äänikortin ajurimoduuli on tosiaan käynnistetty.
+</p>
+
+<p>
+Vaimennukset  kannattaa ensinnä poistaa <e>Master</e>- ja <e>PCM</e>-kanavilta.
+Jos tämä ei vielä riitä, kannattaa etsiä vaimennuksen poistoa varten myös
+<e>Center</e>- ja <e>Surround</e>-kanavat. Älä poista vaimennusta sellaisilta
+kanavilta, joissa ei ole äänisäätöä, sillä jotkut näistä kanavista saattavat
+itse asiassa estää äänen kuulumisen pääkanavilta.
+</p>
+
+<pre caption="Kanavien vaimennusten poisto">
+<comment>(Ncurses-pohjaisella tekstikäyttöliittymällä:)</comment>
+
+# <i>alsamixer</i>
+
+<comment>(tai komentoriviltä)</comment>
+
+# <i>amixer set Master 100% unmute</i>
+# <i>amixer set PCM 100% unmute</i>
+<comment>(Ja jos tuo ei riittänyt:)</comment>
+# <i>amixer set Center 100% unmute</i>
+# <i>amixer set Surround 100% unmute</i>
+# <i>amixer set Headphone 100% unmute</i>
+</pre>
+
+
+<p>
+Äänten toimimista voi tarkistaa soittamalla aaltoäänitiedosta (eli wavia,
+komennolla <c>aplay</c>), mp3:a (komennolla <c>mpg123</c> tahi vaikka
+<c>mplayer</c>) tai mitä tahansa muutakaan äänitiedostoja jonka vain pystyy
+soittamaan.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>MIDI-tuen aktivointi</title>
+<section>
+<title>Tarvittavien pakettien asennus</title>
+<body>
+
+<p>
+Joissakin äänikorteissa on MIDI-syntikat sisäänrakennettuina. Niitä voi käyttää
+<c>awesfx</c>-paketin avulla:
+</p>
+
+<pre caption="Awesfx:n asennus">
+# <i>emerge awesfx</i>
+</pre>
+
+<p>
+Jos käytettävissä on jossain kokoelma sound fontteja, ne pitää asentaa
+hakemistoon <path>/usr/share/sfbank</path>.
+Esimerkiksi SBLivessä sound fontit <path>8MBGMSFX.SF2</path> ja
+<path>CT4GMSFX.SF2</path>.
+</p>
+
+<p>
+Kopioinnin jälkeen ne otetaan käyttöön komennolla <c>asfxload</c>:
+</p>
+
+<pre caption="Sound fontin lataus">
+# <i>asfxload /usr/share/sfbank/8MBGMSFX.SF2</i>
+</pre>
+
+<p>
+Tämä komento pitää suorittaa aina käynnistysten jälkeen, joten se kannattanee
+lisätä <path>/etc/conf.d/local.start</path>iin.
+</p>
+
+<p>
+Jollet löydä sound fontteja äänikorttisi ajuri-CD:ltä, voit ladata joitakin
+vaikkapa sivulta
+<uri>http://www.parabola.demon.co.uk/alsa/awe64.html</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Timidity++-näennäissyntikka</title>
+<body>
+
+<p>
+Jos äänikorttissa ei ole rautasyntikkaa (tai sitä ei haluta käyttää), voi myös
+käyttää <c>timidity++</c>:aa näennäissyntikkana. Timidity asennetaan emergellä:
+</p>
+
+<pre caption="Timidity++:n asennus">
+# <i>emerge timidity++</i>
+</pre>
+
+<p>
+Timidity tarvitsee sound fontin äänten soittamiseen. Jos yhtään ei ole
+saatavilla, paketeista <c>timidity-eawpatches</c> ja <c>timidity-shompatches</c>
+löytyy joitakin. Asennettuina voi olla useita sound fontteja, ja omia voi
+lisätä hakemistoon <path>/usr/share/timidity/</path>.
+Timidityn asetuksia voi muuttaa <e>timidity-update</e>-työkalulla.
+</p>
+
+<pre caption="Sound fonttien asennus">
+# <i>emerge timidity-eawpatches</i>
+# <i>timidity-update -g -s eawpatches</i>
+
+<comment>(tai)</comment>
+
+# <i>emerge timidity-shompatches</i>
+# <i>timidity-update -g -s shompatches</i>
+</pre>
+
+<p>
+Muista lisätä <c>timidity</c> runlevelille default.
+</p>
+
+<pre caption="Timidityn lisääminen default-runlevelille">
+# <i>rc-update add timidity default</i>
+# <i>/etc/init.d/timidity start</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>MIDI-tuen testaus</title>
+<body>
+
+<p>
+Komennolla <c>aplaymidi</c> voi testata MIDI-asetuksia.
+</p>
+
+<p>
+Käytössä olevat MIDI-portit voi listata <c>-l</c>-valitsimella:
+</p>
+
+<pre caption="MIDI-porttien tarkastelu">
+# <i>aplaymidi -l</i>
+</pre>
+
+<p>
+Jos kaikki näyttää oikealta, pitäisi MIDI-tiedoston soittamisen onnistua.
+Valitsimella <c>-p</c> voi valita käytettävän portin.
+</p>
+
+<pre caption="MIDI-tiedoston soittaminen">
+# <i>aplaymidi -p 65:0 "Final Fantasy 7 - Aerith' Theme.mid"</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Loppusanat</title>
+<section>
+<title>Työkalut ja firmwaret</title>
+<body>
+
+<p>
+Joidenkin äänikorttien kanssa on hyvä käyttää erityisiä työkaluja, joita
+löytyy <c>alsa-tools</c>- ja <c>alsa-firmware</c>-paketeista. Alsa-toolsia
+varten kannattaa lisätä tarvitut ohjelmat muuttujaan ALSA_TOOLS tiedostossa
+</p>
+
+<pre caption="ALSA-työkalujen valinta /etc/make.confissa">
+ALSA_TOOLS="as10k1 ac3dec"
+</pre>
+
+<p>
+Seuraavaksi asennetaan <c>alsa-tools</c> tai <c>alsa-firmware</c>:
+</p>
+
+<pre caption="ALSA-toolsin asennus">
+# <i>emerge alsa-tools</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Joystick-tuen aktivointi</title>
+<body>
+
+<p>
+Jos äänikortissa on joystick-liitäntä, se kannattaa lisätä äänikortin ajuriin.
+Ensimmäisenä kannattaa tarkistaa, voiko sen lisätä parametrina äänikortin
+ajurille. Tämä hoituu helpoiten <c>modinfo</c>-komennolla. Esimerkiksi
+moduulille <c>snd-via82xx</c>:
+</p>
+
+<pre caption="Modinfon käyttäminen">
+# <i>modinfo snd-via82xx</i>
+filename:    /lib/modules/2.4.22-ck2/snd-via82xx.o
+description: "VIA VT82xx audio"
+author:      "Jaroslav Kysela &lt;perex@suse.cz&gt;"
+license:     "GPL"
+parm:        index int array (min = 1, max = 8), description "Index value for
+             VIA 82xx bridge."
+parm:        id string array (min = 1, max = 8), description "ID string for VIA
+             82xx bridge."
+parm:        enable int array (min = 1, max = 8), description "Enable audio part
+             of VIA 82xx bridge."
+parm:        mpu_port long array (min = 1, max = 8), description "MPU-401 port.
+             (VT82C686x only)"
+<i>parm:        joystick int array (min = 1, max = 8), description "Enable
+             joystick. (VT82C686x only)"</i>
+parm:        ac97_clock int array (min = 1, max = 8), description "AC'97 codec
+             clock (default 48000Hz)."
+parm:        dxs_support int array (min = 1, max = 8), description "Support for
+             DXS channels (0 = auto, 1 = enable, 2 = disable, 3 = 48k only, 4 =
+             no VRA)
+</pre>
+
+<p>
+Jos <c>joystick</c>-asetus löytyy, voidaan lisätä <c>joystick=1</c> tiedoston
+<path>/etc/modules.d/alsa</path> riville <c>options</c>:
+</p>
+
+<pre caption="Joystick-parametrin lisäys">
+alias snd-card-0 snd-via82xx
+options snd-via82xx joystick=1
+</pre>
+
+</body>
+</section>
+<section>
+<title>Resurssit</title>
+<body>
+
+<ul>
+  <li><uri link="http://www.alsa-project.org">The ALSA Project</uri></li>
+  <li><uri link="http://www.djcj.org">ALSA Howto's and FAQs</uri></li>
+  <li><uri link="http://linux-sound.org">Linux Sound/MIDI Software</uri></li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
