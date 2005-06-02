@@ -79,7 +79,7 @@ class Panel(GLIScreen.GLIScreen):
                         column.set_resizable(True)
                         self.treeview.append_column(column)
                 self.treewindow = gtk.ScrolledWindow()
-                self.treewindow.set_size_request(-1, 140)
+                self.treewindow.set_size_request(-1, 180)
                 self.treewindow.set_shadow_type(gtk.SHADOW_IN)
                 self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
                 self.treewindow.add(self.treeview)
@@ -92,7 +92,7 @@ class Panel(GLIScreen.GLIScreen):
 		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
 		hbox = gtk.HBox(False, 0)
-		hbox.pack_start(gtk.Label("Processor:"), expand=False, fill=False, padding=0)
+		hbox.pack_start(gtk.Label("Proc:"), expand=False, fill=False, padding=0)
 		self.proc_combo = gtk.combo_box_new_text()
 		for proc in self.arch_procs['x86']:
 			self.proc_combo.append_text(proc)
@@ -118,13 +118,13 @@ class Panel(GLIScreen.GLIScreen):
 		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 
 		hbox = gtk.HBox(False, 0)
-		self.unstable_packages_check = gtk.CheckButton("Use unstable (~arch) packages")
+		self.unstable_packages_check = gtk.CheckButton("Use unstable (~arch)")
 		hbox.pack_start(self.unstable_packages_check, expand=False, fill=False, padding=0)
 		self.build_binary_check = gtk.CheckButton("Build binary packages")
 		hbox.pack_start(self.build_binary_check, expand=False, fill=False, padding=20)
-		self.use_distcc_check = gtk.CheckButton("Use DistCC")
+		self.use_distcc_check = gtk.CheckButton("DistCC")
 		hbox.pack_start(self.use_distcc_check, expand=False, fill=False, padding=0)
-		self.use_ccache_check = gtk.CheckButton("Use ccache")
+		self.use_ccache_check = gtk.CheckButton("ccache")
 		hbox.pack_start(self.use_ccache_check, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=5)
 

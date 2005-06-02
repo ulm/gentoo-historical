@@ -32,7 +32,9 @@ a brief description beside it.
 		self.cron_daemons['vixie-cron'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.cron_daemons['vixie-cron'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("Paul Vixie's cron daemon, a fully featured crond implementation"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("Paul Vixie's cron daemon, a fully featured crond implementation")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.cron_daemons['fcron'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "fcron")
@@ -41,7 +43,9 @@ a brief description beside it.
 		self.cron_daemons['fcron'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.cron_daemons['fcron'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("A command scheduler with extended capabilities over cron and anacron"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("A command scheduler with extended capabilities over cron and anacron")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.cron_daemons['dcron'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "dcron")
@@ -50,7 +54,9 @@ a brief description beside it.
 		self.cron_daemons['dcron'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.cron_daemons['dcron'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("A cute little cron from Matt Dillon"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("A cute little cron from Matt Dillon")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.cron_daemons['none'] = gtk.RadioButton(self.cron_daemons['vixie-cron'], "None")
@@ -59,7 +65,9 @@ a brief description beside it.
 		self.cron_daemons['none'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.cron_daemons['none'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("Choose this if you don't want a cron daemon"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("Choose this if you don't want a cron daemon")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 
@@ -75,7 +83,9 @@ a brief description beside it.
 		self.log_daemons['syslog-ng'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.log_daemons['syslog-ng'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("syslog replacement with advanced filtering features"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("syslog replacement with advanced filtering features")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.log_daemons['metalog'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "metalog")
@@ -84,7 +94,9 @@ a brief description beside it.
 		self.log_daemons['metalog'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.log_daemons['metalog'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("A highly configurable replacement for syslogd/klogd"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("A highly configurable replacement for syslogd/klogd")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.log_daemons['sysklogd'] = gtk.RadioButton(self.log_daemons['syslog-ng'], "sysklogd")
@@ -93,7 +105,9 @@ a brief description beside it.
 		self.log_daemons['sysklogd'].set_size_request(150, -1)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.log_daemons['sysklogd'], expand=False, fill=False, padding=5)
-		hbox.pack_start(gtk.Label("Standard log daemons"), expand=False, fill=False, padding=20)
+		tmplabel = gtk.Label("Standard log daemon")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.add_content(vert)
