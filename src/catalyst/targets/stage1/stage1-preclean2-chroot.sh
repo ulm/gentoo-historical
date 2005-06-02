@@ -1,16 +1,33 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-preclean2-chroot.sh,v 1.10.2.1 2005/04/29 21:25:50 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-preclean2-chroot.sh,v 1.10.2.2 2005/06/02 20:26:17 wolf31o2 Exp $
 		
 # now, some finishing touches to initialize gcc-config....
 unset ROOT
 
-#if [ -x /usr/bin/gcc-config ]
-#then
-#	mythang=$( cd /etc/env.d/gcc; ls ${clst_CHOST}-* | head -n 1 )
-#	gcc-config ${mythang}; /usr/sbin/env-update; source /etc/profile
-#fi
+if [ -x /usr/bin/gcc-config ]
+then
+	mythang=$( cd /etc/env.d/gcc; ls ${clst_CHOST}-* | head -n 1 )
+	if [ -z "${mythang}" ]
+	then
+		mythang=1
+	fi
+	gcc-config ${mythang}
+fi
+
+if [ -x /usr/bin/binutils-config ]
+then
+	mythang=$( cd /etc/env.d/binutils; ls ${clst_CHOST}-* | head -n 1 )
+	if [ -z "${mythang}" ]
+	then
+		mythang=1
+	fi
+	binutils-config ${mythang}
+fi
+
+/usr/sbin/env-update
+source /etc/profile
 
 # stage1 is not going to have anything in zoneinfo, so save our Factory timezone
 if [ -d /usr/share/zoneinfo ] ; then
