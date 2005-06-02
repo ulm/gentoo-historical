@@ -1,12 +1,9 @@
-#!/usr/bin/python
 import dialog, platform, string, os, glob, copy, re
 import GLIInstallProfile
 import GLIClientConfiguration
 import GLIStorageDevice
 import GLIUtility
 #This is a parent class to centralize the code between UserGenCC and UserGenIP
-
-###Clean up the __init__ function so that it doesn't auto call the sub functions
 
 class GLIGen(object):
 	def __init__(self):

@@ -644,6 +644,8 @@ def set_client_networking():
 		if code != DLG_OK: return
 		code, gateway = d.inputbox("Enter your default gateway:")
 		if code != DLG_OK: return
+		code, dnsservers = d.inputbox("Enter a dns server ip:")
+		if code != DLG_OK: return
 		network_type = 'static'
 	else:
 		network_type = 'dhcp'
@@ -656,6 +658,7 @@ def set_client_networking():
 			client_profile.set_network_broadcast(None, broadcast, None)
 			client_profile.set_network_netmask(None, netmask, None)
 			client_profile.set_network_gateway(None, gateway, None)
+			client_profile.set_dns_servers(None,dnsservers,None)
 	except GLIException, e:
 		d.msgbox(e)
 
