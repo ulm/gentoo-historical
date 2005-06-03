@@ -499,3 +499,12 @@ def hash_password(password):
 	passwd_hash = crypt.crypt(password, salt)
 
 	return passwd_hash
+
+##
+# Returns the real name (manufacturer and model) of a network interface
+# @param interface Name of interface (like in ifconfig)
+def get_interface_realname(interface):
+	if is_file("/sys/class/net/" + interface + "/device"):
+		return spawn("/sbin/lspci | grep $(basename $(readlink /sys/class/net/" + interface + r"/device)) | sed -e 's|^.\+ Ethernet controller: ||'", return_output=True)[1].strip()
+	else:
+		return None
