@@ -6,7 +6,7 @@
 <xsl:preserve-space elements="*"/>
 <xsl:param name="statusFilter"/>
 
-<xsl:variable name="devaway" select='document("http://dev.gentoo.org/~neysx/devaway/")'/>
+<xsl:variable name="devaway" select='document("http://dev.gentoo.org/~neysx/devaway/xml/")'/>
 
 <xsl:template match="/userlist">
   <mainpage id="about">

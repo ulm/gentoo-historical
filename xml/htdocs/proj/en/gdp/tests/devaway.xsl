@@ -7,7 +7,7 @@
 <xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
 <xsl:include href="/xsl/inserts.xsl" />
 
-<xsl:variable name="devaway" select="document('http://dev.gentoo.org/~neysx/devaway/')"/>
+<xsl:variable name="devaway" select="document('http://dev.gentoo.org/~neysx/devaway/xml/')"/>
 
 <xsl:template match="today">
   <!--<date><xsl:value-of select="exslt:node-set($devaway)/devaway/@date"/></date>-->
