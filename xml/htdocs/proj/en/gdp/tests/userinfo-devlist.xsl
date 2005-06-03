@@ -47,6 +47,12 @@
               (requires voicing to speak) using their user name as their
               IRC nick.
             </p>
+            <p>
+              You might want to check the list of <uri
+              link="devaway.xml">unavailable developers</uri> before trying to
+              contact anyone. Unavailable Developers are marked
+              with&#160;&#8317;¹&#8318;&#160; in the following table.
+            </p>
 	  </xsl:if>
 	  <table>
 	    <tr>
@@ -116,9 +122,6 @@
 	      </tr>
 	    </xsl:for-each>
 	  </table>
-    <xsl:if test="$statusFilter != 'Retired'">
-      <p>&#160;&#8317;¹&#8318;&#160;&#160;<uri link="devaway.xml">Unavailable Developers</uri>.</p>
-    </xsl:if>
 	</body>
       </section>
     </chapter>
