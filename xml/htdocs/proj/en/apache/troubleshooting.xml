@@ -22,30 +22,15 @@ installation when things are working correctly.
 <date>2005-05-30</date>
 
 <chapter>
-<title>Common Problems and Questions</title>
-<section>
-<body>
-
-
-<p>
-We hope to cover some of the most common problems with Apache and it's modules,
- and how to fix them here. If you have an issue that isn't covered here, see 
-the  <uri link="#getting-help">Getting help</uri> section.
-</p>
-
-</body>
-</section>
-<section>
 <title>Apache is returning zero-length pages or segfaulting</title>
+<section>
 <body>
-
 
 <p>
 This usually happens after an upgrade, usually because binary compatibility 
 broke in APR (which may happen for a number for reasons). To fix this, you need
- to rebuild the Apache tool stack:
+to rebuild the Apache tool stack:
 </p>
-
 
 <pre caption="Rebuilding the Apache tool stack">
 <comment>(make sure you do these in order, it's very important!)</comment>
@@ -72,7 +57,6 @@ www-servers/gorg-0.5
 # <i>emerge -av '=dev-php/mod_php-4.3.11-r2' '=net-www/mod_layout-4.0.1.a-r1'</i>
 </pre>
 
-
 <p>
 You should now have a working Apache installation. If you don't see the <uri 
 link="#getting-help">Getting Help</uri> section.
@@ -83,11 +67,63 @@ link="#getting-help">Getting Help</uri> section.
 </chapter>
 
 
+<chapter>
+<title>configure: error: changes in the environment can compromise the build</title>
+<section>
+<body>
+
+<p>
+If you get this error, then you probably have unneeded spaces in your CFLAGS in <path>/etc/make.conf</path>. The fix is simple, remove the extra spaces:
+</p>
+
+<pre caption="Example of changes to /etc/make.conf">
+<comment>(before the change)</comment>
+CFLAGS="-O2 -mcpu=pentium3 -march=pentium3  -pipe"
+
+<comment>(after the change - notice the removal of the space)</comment>
+CFLAGS="-O2 -mcpu=pentium3 -march=pentium3 -pipe"
+</pre>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Address already in use: make_sock: could not bind to address 0.0.0.0:443</title>
+<section>
+<body>
+
+<p>
+This error occurs when starting up, and is caused by having multiple Listen directives in your configuration that are incompatible. To solve this problem, you should grep your configuration for Listen and fix each occurance.
+</p>
+
+<pre caption="Finding all Listen directives">
+<comment>(Make sure you are in the configuration directory)</comment>
+# <i>cd /etc/apache2/</i>
+
+<comment>(List all listen directives)</comment>
+# <i>grep Listen httpd.conf vhosts.d/*.conf modules.d/*.conf</i>
+</pre>
+
+<p>
+What you are looking for is conflicts in what Apache is trying to bind to. For example, if there is a <c>Listen 80</c> in httpd.conf and then there is a <c>Listen 10.0.0.15:80</c> in another file, then Apache will not be able to start. This is because Apache first binds to port 80 on all IP addresses for the machine, and then tries to bind to port 80 on IP address 10.0.0.15 and fails because port 80 is already in use.
+</p>
+
+<p>
+The recommended configuration is that you should have a single <c>Listen 80</c> (this is in the default httpd.conf) so that you bind to all addresses by default for the standard http port, and then for every SSL VirtualHost you run, create a seperate absolute Listen directive (such as <c>Listen 10.0.0.15:443</c>.
+</p>
+
+
+</body>
+</section>
+</chapter>
+
+
 <chapter id="getting-help">
 <title>Getting Help</title>
 <section>
 <body>
-
 
 <p>
 If none of the above was any use to you, or if you have other questions, feel 
