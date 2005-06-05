@@ -98,17 +98,19 @@ Enter the desired filename and path for the install log (the default is recommen
 		choice_list.append(("Other","Type your own."))
 		string1 = _(u"In order to complete most installs, an active Internet connection is required.  Listed are the network devices already detected.  In this step you will need to setup one network connection for GLI to use to connect to the Internet.  If your desired device does not show up in the list, you can select Other and input the device name manually.")
 		code, interface = self._d.menu(string1, width=75, height=20, choices=choice_list)
-		
+		if code != self._DLG_OK: 
+			return
+		if interface == "Other":
+			code, interface = self._d.inputbox("Enter the interface (NIC) you would like to use for installation (e.g. eth0):")
+			if code != self._DLG_OK: 
+				return
 		
 		network_type = ""
-		interface = ""
 		ip_address = ""
 		broadcast = ""
 		netmask = ""
 		gateway = ""
-		code, interface = self._d.inputbox("Enter the interface (NIC) you would like to use for installation (e.g. eth0):")
-		if code != self._DLG_OK: 
-			return
+		
 	
 		network_choices = ('DHCP', 'Static IP');
 		code, menuitem = self._d.menu("Please select networking configuration:", choices=self._dmenu_list_to_choices(network_choices))
@@ -209,9 +211,10 @@ Enter the new LIVECD root password:	""")
 		configuration.close()
 
 class GLIGenIP(GLIGen):
-	def __init__(self, local_install=True):
+	def __init__(self, local_install=True, advanced_mode=True):
 		GLIGen.__init__(self)
 		self.local_install = local_install
+		self.advanced_mode = advanced_mode
 		self._fn = (
 			{ 'text': "Partitioning", 'fn': self._set_partitions },
 			{ 'text': "Network mounts", 'fn': self._set_network_mounts },
@@ -234,7 +237,7 @@ class GLIGenIP(GLIGen):
 			self._menu_list.append(item['text'])
 		current_item = 0
 		while 1:
-			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), cancel="Done")
+			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=15, cancel="Done")
 			if code != self._DLG_OK:
 				break
 			current_item = int(menuitem)
@@ -260,7 +263,8 @@ class GLIGenIP(GLIGen):
 					if os.path.isdir(zonepath + "/" + entry): entry += "/"
 					tzlist.append(entry)
 			tzlist.sort()
-			code, tznum = self._d.menu("Select a timezone", choices=self._dmenu_list_to_choices(tzlist), cancel="Back")
+			string = _(u"Please select the timezone for the new installation.  Entries ending with a / can be selected to reveal a sub-list of more specific locations. For example, you can select America/ and then Chicago.")
+			code, tznum = self._d.menu(string, choices=self._dmenu_list_to_choices(tzlist), height=20, cancel="Back")
 			if code == self._DLG_OK:
 				zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
 				if tzlist[int(tznum)-1][-1:] != "/": 
@@ -270,31 +274,33 @@ class GLIGenIP(GLIGen):
 					return
 				slashloc = zonepath[:-1].rfind("/")
 				zonepath = zonepath[:slashloc]
-		self._install_profile.set_time_zone(None, zonepath[20:], None)
+		try:
+			self._install_profile.set_time_zone(None, zonepath[20:], None)
+		except:
+			self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
 	
 	def _set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
 		menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "Snapshot (using a portage snapshot)", "None (NFS mount)"]
-		code, portage_tree_sync = self._d.menu("How do you want to sync the portage tree?", choices=self._dmenu_list_to_choices(menulist))
+		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."), choices=self._dmenu_list_to_choices(menulist))
 		if code != self._DLG_OK: 
 			return
 		portage_tree_sync = menulist[int(portage_tree_sync)-1]
 		#FIX ME when python 2.4 comes out.
-		if portage_tree_sync == "Normal 'emerge sync'": 
+		if portage_tree_sync == "Normal  'emerge sync'": 
 			self._install_profile.set_portage_tree_sync_type(None, "sync", None)
-		if portage_tree_sync == "Webrsync (rsync is firewalled)": 
+		if portage_tree_sync == "Webrsync  (rsync is firewalled)": 
 			self._install_profile.set_portage_tree_sync_type(None, "webrsync", None)
-		if portage_tree_sync == "None (NFS mount)": 
+		if portage_tree_sync == "None  (NFS mount)": 
 			self._install_profile.set_portage_tree_sync_type(None, "none", None)
-		if portage_tree_sync == "Snapshot (using a portage snapshot)":
+		if portage_tree_sync == "Snapshot  (using a portage snapshot)":
 			self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
 			snapshot_options = ("Use Local", "Specify URI")
 			code, snapshot_option = self._d.menu("Select a local portage snapshot or manually specify a location:", choices=self._dmenu_list_to_choices(snapshot_options))
 			snapshot_option = snapshot_options[int(snapshot_option)-1]
 			if snapshot_option == "Use Local":
 				snapshot_dir = "/mnt/cdrom/snapshots"
-				stages_dir = "/mnt/cdrom/stages"
-				if os.path.isdir(snapshot_dir) and os.listdir(stages_dir):
+				if os.path.isdir(snapshot_dir) and os.listdir(snapshot_dir):
 					local_snapshots = glob.glob(snapshot_dir + "/portage*.bz2")
 					if len(local_snapshots) == 1:
 						snapshot = local_snapshots[0]
@@ -304,37 +310,155 @@ class GLIGenIP(GLIGen):
 						if code != self._DLG_OK: return
 						snapshot = local_snapshots[int(snapshot)-1]
 				else:
-					self._d.msgbox("There don't seem to be any local portage snapshots available.  Hit OK to manually specify a URI.")
+					self._d.msgbox(_(u"There don't seem to be any local portage snapshots available.  Hit OK to manually specify a URI."))
 					snapshot_option = "Specify URI"
 			if snapshot_option != "Use Local":
-				code, snapshot = self._d.inputbox("Enter portage tree snapshot URI", init=self._install_profile.get_portage_tree_snapshot_uri())
+				code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
 			if code == self._DLG_OK:
 				if snapshot: 
 					if not GLIUtility.is_uri(snapshot, checklocal=self.local_install):
-						self._d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+						self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
 					else: 
 						self._install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
 			
 				else: 
-					self._d.msgbox("No URI was specified!")
+					self._d.msgbox(_(u"No URI was specified! Returning to default emerge sync."))
 			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 	def _set_partitions(self):
-		if not self._d.yesno("This will reset any changes you have made. Continue?") == self._DLG_YES: 
-			return
+		string1 = _("""The first thing on the new system to setup is the partitoning on the new system.
+You will first select a drive and then edit its partitionss.
+No changes will be saved until the end of the step.
+No changes to your disk will be made until the installation.
+NOTE: YOU MUST AT LEAST SELECT ONE PARTITION AS YOUR ROOT PARTITION "/"
+If your drive is pre-partitioned, just select the mountpoints and make 
+sure that the format option is set to FALSE or it will erase your data.
+Please refer to the Gentoo Installation Handbook for more information
+on partitioning and the various filesystem types available in Linux.""")
+		self._d.msgbox(string1, height=16, width=77)
+		devices = self._install_profile.get_partition_tables()
+		drives = devices.keys()
+		drives.sort()
+		choice_list = []
+		if not devices:
+			tmp_drives = GLIStorageDevice.detect_devices()
+			tmp_drives.sort()
+			for drive in tmp_drives:
+				devices[drive] = GLIStorageDevice.Device(drive)
+				if self.local_install:
+					devices[drive].set_partitions_from_disk()
+				drives.append(drive)
+				choice_list.append((drive, devices[drive].get_model()))
+		#choice_list.append(("Other", "Type your own drive name))  # I DONT THINK GLISD CAN DO NONEXISTANT DRIVES
+		while 1:
+			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?"), choices=choice_list, cancel="Save and Continue")
+			if code != self._DLG_OK: break
+			while 1:
+				partitions = devices[drive_to_partition].get_partitions()
+				partlist = devices[drive_to_partition].get_ordered_partition_list()
+				tmpparts = devices[drive_to_partition].get_partitions()
+				partsmenu = []
+				for part in partlist:
+					tmppart = tmpparts[part]
+					entry = ""
+					if tmppart.get_type() == "free":
+						partschoice = "New"
+						entry = "Unallocated space ("
+						if tmppart.is_logical():
+							entry += "logical, "
+						entry += str(tmppart.get_mb()) + "MB)"
+					elif tmppart.get_type() == "extended":
+						partschoice = str(int(tmppart.get_minor()))
+						entry = "Extended Partition (" + str(tmppart.get_mb()) + "MB)"
+					else:
+						partschoice = str(int(tmppart.get_minor()))
+						# Type: " + tmppart.get_type() + ", Mountpoint: " + tmppart.get_mountpoint() + ", Mountopts: " + tmppart.get_mountopts() + "("
+						if tmppart.is_logical():
+							entry = "Logical ("
+						else:
+							entry = "Primary ("
+						entry += tmppart.get_type() + ", "
+						entry += (tmppart.get_mountpoint() or "none") + ", "
+						entry += (tmppart.get_mountopts() or "none") + ", "
+						entry += str(tmppart.get_mb()) + "MB)"
+					partsmenu.append((partschoice,entry))
+				code, part_to_edit = self._d.menu("Select a partition or unallocated space to edit", width=70, choices=partsmenu, cancel="Back")
+				if code != self._DLG_OK: break
+				#part_to_edit = partlist[int(part_to_edit)-1]
+				tmppart = tmpparts[part_to_edit]
+				if tmppart.get_type() == "free":
+					free_mb = tmppart.get_mb()
+					code, new_mb = self._d.inputbox("Size of new partition in MB (max " + str(free_mb) + "MB):", init=str(free_mb))
+					if code != self._DLG_OK: continue
+					if int(new_mb) > free_mb:
+						self._d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
+						continue
+					part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
+					code, type = self._d.menu("Type for new partition (reiserfs not yet supported!)", choices=self._dmenu_list_to_choices(part_types))
+					if code != self._DLG_OK: continue
+					type = part_types[int(type)-1]
+					if type == "other":
+						code, type = self._d.inputbox("New partition's type:")
+					if code != self._DLG_OK: continue
+					devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
+				else:
+					while 1:
+						tmppart = tmpparts[part_to_edit]
+						tmptitle = drive_to_partition + str(part_to_edit) + " - "
+						if tmppart.is_logical():
+							tmptitle += "Logical ("
+						else:
+							tmptitle += "Primary ("
+						tmptitle += tmppart.get_type() + ", "
+						tmptitle += (tmppart.get_mountpoint() or "none") + ", "
+						tmptitle += (tmppart.get_mountopts() or "none") + ", "
+						tmptitle += str(tmppart.get_mb()) + "MB)"
+						menulist = ["Delete", "Mount Point", "Mount Options", "Format"]
+						code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel="Back")
+						if code != self._DLG_OK: break
+						part_action = menulist[int(part_action)-1]
+						if part_action == "Delete":
+							answer = (self._d.yesno("Are you sure you want to delete the partition " + drive_to_partition + str(part_to_edit) + "?") == self._DLG_YES)
+							if answer == True:
+								tmpdev = tmppart.get_device()
+								tmpdev.remove_partition(part_to_edit)
+								break
+						elif part_action == "Mount Point":
+							code, answer = self._d.inputbox("Enter a mountpoint for partition " + str(part_to_edit), init=tmppart.get_mountpoint())
+							if code == self._DLG_OK: tmppart.set_mountpoint(answer)
+						elif part_action == "Mount Options":
+							code, answer = self._d.inputbox("Enter your mount options for partition " + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
+							if code == self._DLG_OK: tmppart.set_mountopts(answer)
+						elif part_action == "Format":
+							code = d.yesno("Do you want to format this partition?")
+							if code == self._DLG_YES: 
+								tmppart.set_format(True)
+							else:
+								tmppart.set_format(False)						
+												
+		self._install_profile.set_partition_tables(devices)
+
+		stringxxx = """
+#		Is this first question really necessary anymore?
+#		if self._d.yesno(_(u"This will reset any changes you have made. Continue?")) == self._DLG_NO: 
+#			return
 #		devices = copy.deepcopy(install_profile.get_partition_tables())
 		devices = {}
 		drives = GLIStorageDevice.detect_devices()
 		drives.sort()
 #		use_existing = False
 #		if not devices:
-		use_existing = self.local_install #(d.yesno("Do you want to use the existing disk partitions?") == DLG_YES)
+		use_existing = self.local_install
+		choice_list = []
 		for drive in drives:
 			devices[drive] = GLIStorageDevice.Device(drive)
 			if use_existing: 
 				devices[drive].set_partitions_from_disk()
+			choice_list.append((drive, devices[drive].get_model()))
+		
 		while 1:
-			code, drive_to_partition = self._d.menu("Which drive would you like to partition?", choices=self._dmenu_list_to_choices(drives), cancel="Done")
+			
+			code, drive_to_partition = self._d.menu("Which drive would you like to partition?", choices=choice_list, cancel="Done")
 			if code != self._DLG_OK: 
 				break
 			drive_to_partition = drives[int(drive_to_partition)-1]
@@ -410,7 +534,7 @@ class GLIGenIP(GLIGen):
 			for part in devices.keys():
 				parts_tmp[part] = devices[part].get_install_profile_structure()
 			self._install_profile.set_partition_tables(parts_tmp)
-
+"""
 	def _set_network_mounts(self):
 	# This is where any NFS mounts will be specified
 		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())

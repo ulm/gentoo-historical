@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.51 2005/05/24 06:15:23 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.52 2005/06/05 21:49:39 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -56,7 +56,7 @@ class InstallProfile:
 		self._kernel_source_pkg = ""
 		self._users = []
 		self._root_pass_hash = ""
-		self._time_zone = ""
+		self._time_zone = "UTC"
 		self._stage_tarball_uri = ""
 		self._install_stage = 1
 		self._portage_tree_sync_type = "sync"
@@ -1130,10 +1130,6 @@ class InstallProfile:
 		if type(portage_tree_snapshot_uri) != str:
 			raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Must be a string!")
 
-		# Check validity  (now done in the FE)
-		#if not portage_tree_snapshot_uri:
-		#	raise GLIException("PortageTreeSnapshotURIError", 'fatal', 'set_portage_tree_snapshot_uri',  "Invalid URI!")
-		
 		self._portage_tree_snapshot_uri = portage_tree_snapshot_uri
 
 	##

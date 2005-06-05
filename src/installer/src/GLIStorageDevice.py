@@ -315,9 +315,9 @@ class Device:
 	##
 	# Returns an ordered list (disk order) of partition minors
 	def get_ordered_partition_list(self):
-                parts = self._partitions.keys()
-                parts.sort()
-                partlist = []
+		parts = self._partitions.keys()
+		parts.sort()
+		partlist = []
 		tmppart = None
 		for part in parts:
 			if archinfo[self._arch]['extended'] and part > 4.1: break
