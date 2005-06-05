@@ -348,6 +348,11 @@ class Device:
 		return 0
 
 	##
+	# Returns the drive model
+	def get_model(self):
+		return self._parted_dev.model
+
+	##
 	# Sets the disklabel type
 	def set_disklabel(self, disklabel):
 		self._disklabel = disklabel
