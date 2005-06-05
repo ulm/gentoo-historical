@@ -91,6 +91,15 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
 	def set_client_networking(self):
+		device_list = GLIUtility.get_eth_devices()
+		choice_list = []
+		for device in device_list:
+			choice_list.append((device, GLIUtility.get_interface_realname(device)))
+		choice_list.append(("Other","Type your own."))
+		string1 = _(u"In order to complete most installs, an active Internet connection is required.  Listed are the network devices already detected.  In this step you will need to setup one network connection for GLI to use to connect to the Internet.  If your desired device does not show up in the list, you can select Other and input the device name manually.")
+		code, interface = self._d.menu(string1, width=75, height=20, choices=choice_list)
+		
+		
 		network_type = ""
 		interface = ""
 		ip_address = ""
@@ -189,16 +198,15 @@ Enter the new LIVECD root password:	""")
 		code = 0
 		filename = xmlfilename
 		if askforfilename:
-			code, filename = self._d.inputbox("Enter a filename for the XML file", init=xmlfilename)
+			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
 			if code != self._DLG_OK: 
-				return None
+				return
 		if GLIUtility.is_file(filename):
 			if not self._d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == self._DLG_YES:
-				return None
+				return
 		configuration = open(filename ,"w")
 		configuration.write(self._client_profile.serialize())
 		configuration.close()
-		return filename
 
 class GLIGenIP(GLIGen):
 	def __init__(self, local_install=True):

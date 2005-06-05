@@ -222,7 +222,13 @@ def is_eth_device(device):
 	if output:
 		return True
 	return False
-	
+
+##
+# Will return a list of devices found in ifconfig.
+def get_eth_devices():
+	status, output = spawn("/sbin/ifconfig -a | grep -e '^[A-Za-z]'| cut -d ' ' -f 1", return_output=True)
+	return output.split()
+
 ##
 # Checks to see if device is a valid NFS device
 # @param device 	device to be checked
@@ -507,4 +513,4 @@ def get_interface_realname(interface):
 	if is_file("/sys/class/net/" + interface + "/device"):
 		return spawn("/sbin/lspci | grep $(basename $(readlink /sys/class/net/" + interface + r"/device)) | sed -e 's|^.\+ Ethernet controller: ||'", return_output=True)[1].strip()
 	else:
-		return None
+		return "No Information Found"
