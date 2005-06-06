@@ -1,379 +1,734 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.50 2005/04/24 09:14:23 swift Exp $ -->
+<?xml version='1.0' encoding="UTF-8"?>
+
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/alsa-guide.xml">
 <title>Gentoo Linux ALSA Guide</title>
+
 <author title="Author">
-  <mail link="zu@pandora.be">Vincent Verleye</mail>
-</author>
-<author title="Author">
-  <mail link="g2boojum@gentoo.org">Grant Goodyear</mail>
-</author>
-<author title="Author">
-  <mail link="agenkin@gentoo.org">Arcady Genkin</mail>
-</author>
-<author title="Author">
-  <mail link="eradicator@gentoo.org">Jeremy Huddleston</mail>
-</author>
-<author title="Editor"><!-- zhen@gentoo.org -->
-  John P. Davis
-</author>
-<author title="Editor">
-  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
-</author>
-<author title="Editor">
-  <mail link="bennyc@gentoo.org">Benny Chuang</mail>
-</author>
-<author title="Editor">
-  <mail link="blubber@gentoo.org">Tiemo Kieft</mail>
-</author>
-<author title="Editor">
-  <mail link="erwin@gentoo.org">Erwin</mail>
+  <mail link="fox2mike@gmail.com">Shyam Mani</mail>
 </author>
 
 <abstract>
-This guide will show you how to set up the Advanced Linux Sound Architecture
-(ALSA) on Gentoo Linux. In addition to the Gentoo Linux Desktop Configuration
-Guide, this guide is supposed to give you more information on this subject.
+This document helps a user setup ALSA on Gentoo Linux.
 </abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>1.5.12</version>
-<date>2005-04-24</date>
+<version>2.0</version>
+<date>2005-06-07</date>
 
 <chapter>
-<title>The Advanced Linux Sound Architecture</title>
+<title>Introduction</title>
 <section>
 <title>What is ALSA?</title>
 <body>
 
 <p>
-ALSA is the <e>Advanced Linux Sound Architecture</e>, a project dedicated to the
-development of a high-quality Linux sound subsystem. It has replaced OSS
-(<e>Open Sound System</e>) as default sound subsystem in the 2.6 kernel series.
+ALSA, which stands for <e>Advanced Linux Sound Architecture</e>, provides 
+audio and MIDI (<e>Musical Instrument Digital Interface</e>) functionality to 
+the Linux operating system. ALSA is the default sound subsystem in the 2.6 
+kernel thereby replacing OSS (<e>Open Sound System</e>), which was used in the 
+2.4 kernels.
 </p>
 
 <p>
-ALSA provides efficient support for all types of audio interfaces, is fully
-modularized, is SMP and thread-safe and provides a high-quality user space
-library called <e>alsa-lib</e> to simplify application programming. It also
-provides a backwards compatibility layer with OSS.
+ALSA's main features include efficient support for all types of audio 
+interfaces ranging from consumer sound cards to professional sound 
+equipment, fully modularized drivers, SMP and thread safety, backward 
+compatibility with OSS and a user-space library <c>alsa-lib</c> to make 
+application development a breeze.
+</p>
+
+</body>
+</section>
+<section>
+<title>ALSA on Gentoo</title>
+<body>
+
+<p>
+One of Gentoo's main strengths lies in giving the user maximum control over 
+how a system is installed/configured. ALSA on Gentoo follows the same 
+principle. There are two ways you can get ALSA support up and running on your 
+system. We shall look at them in detail in the next chapter.
 </p>
 
 </body>
 </section>
 </chapter>
+
 <chapter>
 <title>Installing ALSA</title>
 <section>
-<title>USE Flags</title>
+<title>Options</title>
 <body>
 
+<warn>
+The methods shown below are mutually exclusive. You cannot have ALSA compiled 
+in your kernel and use <c>media-sound/alsa-driver</c>. It <e>will</e> fail.
+</warn>
+
+<impo>
+<c>genkernel</c> users have their config built such a way that the ALSA 
+sub-system in the kernel is active. Therefore <c>genkernel</c> users can 
+proceed to the <uri link="#alsa-utilities">ALSA Utilities</uri> section 
+directly.
+</impo>
+
 <p>
-Gentoo provides an <c>alsa</c> USE flag which you should set in
-<path>/etc/make.conf</path> to allow our available packages to compile with
-ALSA support. If you have <c>oss</c> in your USE variable as well, ALSA will
-compile with OSS backward compatibility.
+The two options are :
 </p>
+
+<ol>
+	<li>
+	Use ALSA provided by your kernel. This is the preferred/recommended
+	method.
+	</li>
+	<li>
+	Use Gentoo's <c>media-sound/alsa-driver</c> package.
+	</li>
+</ol>
+
+<p>	
+We shall take a peek into both before finally deciding on one.
+</p>
+
+<p>
+If you were to use ALSA provided by the kernel, the following are the pros and 
+cons :
+</p>
+
+<table>
+<tr>
+  <th>Kernel ALSA</th>
+  <th>Pros and Cons</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>Pretty stable as drivers are integrated into kernel.</ti>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>One shot solution, no repeating emerges.</ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>Might be a slightly older version than <c>alsa-driver</c>.</ti>
+</tr>
+</table>
+
+<p>
+And, if you were to use alsa-driver,
+</p>
+
+<table>
+<tr>
+  <th>alsa-driver</th>
+  <th>Pros and Cons</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>Latest drivers from the ALSA Project.</ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>Every kernel recompile requires a re-emerge of <c>alsa-driver</c>.</ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>Needs certain kernel config options disabled to work correctly.</ti>
+</tr>
+</table>
 
 </body>
 </section>
 <section>
-<title>Kernel Modules</title>
+<title>So...</title>
 <body>
 
 <p>
-First of all, before continuing, make sure your kernel has <e>Sound Card
-Support</e> enabled. If you used <c>genkernel</c> to build your kernel, then
-this is automatically true. Otherwise reconfigure your kernel.  Additionally,
-make sure you disable <e>Open Sound System</e> in your kernel configuration.
-If you don't, your system may try to use these drivers rather than the alsa
-ones.  If you see a message about 'sound card not detected' and you are sure
-you have the correct driver, this is probably the reason.
+The main difference between using <c>alsa-driver</c> and ALSA that comes with 
+the kernel is that <c>alsa-driver</c> is generally more up to date than the 
+version in the kernel. Since this does not make any huge difference as 
+such, you are encouraged to use the ALSA provided by the kernel.
 </p>
 
-<warn>
-If you use a 2.6 kernel, you may use the drivers provided in the kernel, but
-we still recommend that you use media-sound/alsa-driver as they are more up
-to date than what is provided in the kernel tree.  If you still wish to use
-the drivers provided with your kernel, you can skip the rest of this section
-and continue with <uri link="#alsa-utils">Installing the ALSA Utils</uri>.
-</warn>
+</body>
+</section>
+<section id="lspci">
+<title>Before you proceed</title>
+<body>
 
 <p>
-The first step in installing your sound drivers is figuring out what sound
-card you have.  If you don't already know, an easy trick is to search
-for "audio" in the output of the <c>lspci</c> command. You can install
-this tool with <c>emerge pciutils</c>.
+Whichever method of install you choose, you need to know what drivers your 
+sound card uses. <c>lspci</c> will help you in digging out the required 
+information. Please <c>emerge sys-apps/pciutils</c> to get <c>lspci</c>, if 
+you don't have it installed already. We now proceed to find out details about 
+the sound card.
 </p>
 
-<pre caption="Finding out the soundcard type">
-# <i>lspci | grep -i audio</i>
-Multimedia audio controller: VIA Technologies, Inc. VT82C686 AC97 Audio Controller (rev 64).
+<pre caption="Soundcard Details">
+# <i>lspci -v | grep -i audio</i>
+0000:00:0a.0 Multimedia audio controller: Creative Labs SB Live! EMU10k1 (rev 06)
 </pre>
 
 <p>
-Now go to the <uri link="http://www.alsa-project.org/alsa-doc">ALSA Soundcard
-Matrix</uri> and search for your soundcard. In the above example you should go
-to the "VIA" manufacturer. You will receive a table with the known chipsets of
-that vendor. The chipset in the above example is "via82c686"; the "Details" link
-then informs me that the driver is called <path>via82xx</path>. This is all the
-information you need, so you can safely discard the rest of that document.
+We now know that the sound card on the machine is a Sound Blaster Live! and 
+the card manufacturer is Creative Labs. Head over to the 
+<uri link="http://www.alsa-project.org/alsa-doc/"> ALSA Soundcard Matrix</uri> 
+page and select Creative Labs from the drop down menu. You will be taken to 
+the Creative Labs matrix page where you can see that the SB Live! uses the 
+<c>emu10k1</c> module. That is the information we need for now. If you are 
+interested in detailed information, you can click on the link next to the 
+"Details" and that will take you to the <c>emu10k1</c> specific page.
 </p>
+
+</body>
+</section>
+<section id="kernel">
+<title>Using ALSA provided by your Kernel</title>
+<body>
 
 <p>
-Based on this information we can now install the <c>alsa-driver</c> for our
-soundcard. First edit <path>/etc/make.conf</path> and <e>add</e> a new option
-called ALSA_CARDS to it. Inside this variable you declare the soundcard driver
-you want to use:
+If you're a person who likes to keep things simple like I do, then this is 
+the way to go.
 </p>
 
-<pre caption="Editing /etc/make.conf for ALSA_CARDS">
-ALSA_CARDS="via82xx"
+<note>
+Since the 2005.0 release, Gentoo Linux uses 2.6 as the default kernel. Unless
+you are specifically using the 2.4 profile, <c>gentoo-sources</c> will be a
+2.6 kernel on <e>most</e> architectures. Please check that your kernel is a 
+2.6 series kernel. This method will <e>not</e> work on a 2.4 kernel.
+</note>
+
+<p>
+Let us now configure the kernel to enable ALSA.
+</p>
+
+<pre caption="Heading over to the source">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
 </pre>
 
-<warn>
-If you have multiple sound cards in your system, separate them with a comma
-in the ALSA_CARDS variable.  Ex: ALSA_CARDS="via82xx,emu10k1"
-</warn>
+<note>
+The above example assumes that <path>/usr/src/linux</path> symlink points to
+the kernel sources you want to use. Please ensure the same before proceeding.
+</note>
 
 <p>
-If you want OSS compatibility (highly recommended), you should add 'oss' to
-your USE flags in <path>/etc/make.conf</path>.  After that, you are ready to
-install <c>alsa-driver</c>:
+Now we will look at some of the options we will have to enable in the 2.6
+kernel to ensure proper ALSA support for our sound card.
 </p>
 
-<pre caption="Installing ALSA Drivers">
+<note>
+Please note that for the sake of ease, all examples show a modular kernel. It 
+is advisable to follow the same. Please do <e>not</e> skip the 
+<uri link="#alsa-config">Configuration</uri> section of this document. If 
+you still like to have options built-in, ensure that you make changes to your 
+config accordingly.
+</note>
+
+<pre caption="Kernel Options for ALSA">
+Device Drivers  ---&gt;
+   Sound  ---&gt;
+   
+<comment>(This needs to be enabled)</comment>
+&lt;M&gt; Sound card support
+
+<comment>(Make sure OSS is disabled)</comment>
+Open Sound System   ---&gt;
+   &lt; &gt; Open Sound System (DEPRECATED)
+
+<comment>(Move one step back and enter ALSA)</comment>
+Advanced Linux Sound Architecture  ---&gt;
+   &lt;M&gt; Advanced Linux Sound Architecture
+   <comment>(Select this if you want MIDI sequencing and routing)</comment>
+   &lt;M&gt; Sequencer support
+   <comment>(Old style /dev/mixer* and /dev/dsp* support. Recommended.)</comment>
+   &lt;M&gt; OSS Mixer API
+   &lt;M&gt; OSS PCM (digital audio) API 
+
+<comment>(You now have a choice of devices to enable support for. Generally,
+you will have one type of device and not more. If you have more than one 
+sound card, please enable them all here.)</comment>
+
+<comment>(Mostly for testing and development purposes, not needed for normal 
+users unless you know what you are doing.)</comment>
+Generic devices  ---&gt;
+   
+<comment>(For ISA Sound cards)</comment>
+ISA devices   ---&gt;
+<comment>(IF you had the Gravis, you would select this option)</comment>
+   &lt;M&gt; Gravis UltraSound Extreme
+
+<comment>(Move one level back and into PCI devices. Most sound cards today are 
+PCI devices)</comment>
+PCI devices   ---&gt;
+   <comment>(We now select the emu10k1 driver for our card)</comment>
+   &lt;M&gt; Emu10k1 (SB Live!, Audigy, E-mu APS)
+   <comment>(Or an Intel card would be)</comment>
+   &lt;M&gt; Intel/SiS/nVidia/AMD/ALi AC97 Controller
+   <comment>(Or if you have a VIA Card)</comment>
+   &lt;M&gt; VIA 82C686A/B, 8233/8235 AC97 Controller
+
+<comment>(Move one level back and select in case you have an USB sound card)</comment>
+USB Devices   ---&gt;
+</pre>
+
+<p>
+Now that your options are set, you can (re)compile the kernel and ALSA support
+for your card should be functional once you reboot into the new kernel. 
+You can now proceed to <uri link="#alsa-utilities">ALSA Utilities</uri> and 
+see if everything is working as it should.
+</p>
+
+</body>
+</section>
+<section id="alsa-driver">
+<title>Using the ALSA Driver package</title>
+<body>
+
+<p>
+So you've decided to go the <c>alsa-driver</c> way. Let's get started then. 
+There are a few minor things to be done to ensure only the drivers for your 
+sound card are compiled. Although this is not really necessary, it cuts down 
+on the unnecessary drivers that will be compiled otherwise.
+</p>
+
+<p>
+If you don't have an idea of what drivers your sound card might need, please 
+take a look at the <uri link="#lspci">lspci</uri> section of this guide. Once 
+you have your driver name (<c>emu10k1</c> in our example), edit 
+<path>/etc/make.conf</path> and add a variable, <c>ALSA_CARDS</c>.
+</p>
+
+<pre caption="Adding ALSA_CARDS to make.conf">
+<comment>(For one sound card)</comment>
+ALSA_CARDS="emu10k1"
+<comment>(For more than one, seperate names with spaces)</comment>
+ALSA_CARDS="emu10k1 via82xx"
+</pre>
+
+<p>
+If you have compiled your kernel and want to use <c>alsa-driver</c>, please 
+ensure the following before proceeding, else <c>alsa-driver</c> is likely to 
+fail. The next code listing gives you one way of performing the checks.
+</p>
+
+<ol>
+  <li>
+  <c>CONFIG_SOUND</c> is set. (Basic Sound support enabled)
+  </li>
+  <li>
+  <c>CONFIG_SOUND_PRIME</c> is not set. (In-built OSS support disabled)
+  </li>
+  <li>
+  <c>CONFIG_SND</c> is not set. (In-built ALSA support disabled)
+  </li>
+  <li>
+  <path>/usr/src/linux</path> points to the kernel you want ALSA working on.
+  </li>
+</ol>
+
+<pre caption=".config checks">
+<comment>(Assuming the linux symlink points to the correct kernel)</comment>
+# <i>cd /usr/src/linux</i>
+# <i>grep SOUND .config</i>
+<comment>(1. is true)</comment>
+CONFIG_SOUND=y
+<comment>(2. is true)</comment>
+CONFIG_SOUND_PRIME is not set
+# <i>grep SND .config</i>
+<comment>(and 3. is true)</comment>
+CONFIG_SND is not set
+</pre>
+
+<p>
+Now all you have to do is type the magic words...and no, its not abracadabra.
+</p>
+
+<pre caption="Installing alsa-driver">
 # <i>emerge alsa-driver</i>
 </pre>
 
 <impo>
-Whenever you (re)compile your kernel sources, chances are that the ALSA drivers
-will be deleted. It is therefore adviseable to rerun <c>emerge alsa-driver</c>
-every time you (re)compile your kernel.  Note that this will compile the
-drivers for the kernel in /usr/src/linux, NOT the running kernel.
+Please note that you will have to run <c>emerge alsa-driver</c> after every 
+kernel (re)compile, as the earlier drivers are deleted.
 </impo>
 
 </body>
 </section>
-<section id="alsa-utils">
-<title>Installing the ALSA Utils</title>
+</chapter>
+
+<chapter>
+<title>Configuring/Testing ALSA</title>
+<section id="alsa-utilities">
+<title>ALSA Utilities</title>
 <body>
 
 <p>
-If the in-kernel OSS compatibility is not sufficient for your needs, you will
-want to install <c>alsa-oss</c>.  This will provide you with the 'aoss'
-executable which can be used as demonstrated:
+<c>alsa-utils</c> forms an integral part of ALSA as it has a truckload of 
+programs that are highly useful, including the ALSA Initscripts. Hence we 
+strongly recommend that you install <c>alsa-utils</c>
 </p>
 
-<pre caption="More OSS compatibility layer">
-# <i>emerge alsa-oss</i>
-# <i>aoss mpg123 music.mp3</i>
-</pre>
-
-<p>
-Now install the ALSA Utils on your system (this is mandatory):
-</p>
-
-<pre caption="Installing ALSA Utils">
+<pre caption="Install alsa-utils">
 # <i>emerge alsa-utils</i>
 </pre>
 
+<note>
+If you activated ALSA in your <uri link="#kernel">kernel</uri> <e>and</e> did 
+not compile ALSA as modules, please proceed to the 
+<uri link="#initscript">ALSA Initscript</uri> section. The rest of you need 
+to configure ALSA. This is made very easy by the existence of the 
+<c>alsaconf</c> tool provided by <c>alsa-utils</c>.
+</note>
+
+</body>
+</section>
+<section id="alsa-config">
+<title>Configuration</title>
+<body>
+
+<note>
+Please shut down any programs that <e>might</e> access the sound card while 
+running <c>alsaconf</c>.
+</note>
+
 <p>
-Now that the utils are installed, it is time to configure ALSA...
+The easiest way to configure your sound card is to run <c>alsaconf</c>. Just 
+type <c>alsaconf</c> in a shell as root.
+</p>
+
+<pre caption="Invoking alsaconf">
+# <i>alsaconf</i>
+</pre>
+
+<p>
+You will now see a neat menu guided interface that will automatically probe 
+your devices and try to find out your sound card. You will be asked to pick 
+your sound card from a list. Once that's done, it will ask you permission to 
+automatically make required changes to <path>/etc/modules.d/alsa</path>. 
+It will then adjust your volume settings to optimum levels and run 
+<c>modules-update</c> and starts the <path>/etc/init.d/alsasound</path> 
+service. Once <c>alsaconf</c> exits, you can proceed with setting up the ALSA
+initscript. 
 </p>
 
 </body>
 </section>
-</chapter>
-<chapter>
-<title>Configuring ALSA</title>
-<section>
-<title>Automatically Loading the Kernel Modules</title>
+<section id="initscript">
+<title>ALSA Initscript</title>
 <body>
 
 <p>
-If you use a modular kernel (such as when using <c>genkernel</c>) you have to
-edit <path>/etc/modules.d/alsa</path> so that it activates the necessary
-modules at boot time. For the soundcard in our example:
+We're now almost all setup. Whichever method you chose to install ALSA, you'll 
+need to have something load your modules or initialize ALSA and restore your 
+volume settings when your system comes up. The ALSA Initscript handles all of 
+this for you and is called <c>alsasound</c>. Add it to the default run-level.
 </p>
 
-<pre caption="/etc/modules.d/alsa">
-alias snd-card-0 snd-via82xx
-<comment># The following is only needed when you want OSS compatibility</comment>
-alias sound-slot-0 snd-via82xx
-alias /dev/mixer snd-mixer-oss
-alias /dev/dsp snd-pcm-oss
-alias /dev/midi snd-seq-oss
+<pre caption="Adding ALSA to default">
+# <i>rc-update add alsasound default</i>
+ * alsasound added to runlevel default
+ * rc-update complete.
 </pre>
 
 <p>
-Now run <c>modules-update</c> to save the changes you made to the
-<path>alsa</path> file into <path>/etc/modules.conf</path>:
+Next, just check the <path>/etc/conf.d/alsasound</path> file and ensure that  
+SAVE_ON_STOP variable is set to yes. This saves your sound settings when you 
+shutdown your system.
 </p>
-
-<pre caption="Running modules-update">
-# <i>modules-update</i>
-</pre>
 
 </body>
 </section>
 <section>
-<title>Verifying the Device Files</title>
+<title>Volume Check!</title>
 <body>
 
 <p>
-This should be done automatically for you on recent installs, but if you run
-into problems, check that your ALSA devices and permissions are set correctly
-by your /dev manager.  If you use DevFS, check <path>/etc/devfsd.conf</path>
+We've completed all the setups and pre-requisites, so let's fire up ALSA. If 
+you ran <c>alsaconf</c>, you can skip this step, since <c>alsaconf</c> already 
+does this for you.
 </p>
 
-<pre caption="/etc/devfsd.conf">
-# ALSA/OSS stuff
-# Comment/change these if you want to change the permissions on
-# the audio devices
-LOOKUP          snd          MODLOAD ACTION snd
-LOOKUP          dsp          MODLOAD
-LOOKUP          mixer        MODLOAD
-LOOKUP          midi         MODLOAD
-REGISTER        sound/.*     PERMISSIONS root.audio 660
-REGISTER        snd/.*       PERMISSIONS root.audio 660
-</pre>
-
-</body>
-</section>
-<section>
-<title>Having ALSA Activated at Boot</title>
-<body>
-
-<p>
-To activate ALSA support at boot, add the <c>alsasound</c> init script to the
-boot runlevel:
-</p>
-
-<pre caption="Adding alsasound to the boot runlevel">
-# <i>rc-update add alsasound boot</i>
+<pre caption="Start the service">
+<comment>(Modular Kernels)</comment>
 # <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ * Loading: snd-card-0 ...        [ ok ]
+ * Loading: snd-pcm-oss ...       [ ok ]
+ * Loading: snd-seq ...           [ ok ]	
+ * Loading: snd-emu10k1-synth ... [ ok ]	
+ * Loading: snd-seq-midi ...      [ ok ]	
+ * Restoring Mixer Levels ...     [ ok ]
+<comment>(ALSA compiled in)</comment>
+# <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ * Restoring Mixer Levels ...     [ ok ]
+</pre>
+
+<p>
+Now that the required things have been take care of, we need to check up on 
+the volume as in certain cases, it is muted. We use <c>alsamixer</c> for this purpose.
+</p>
+
+<pre caption="Starting alsamixer">
+<comment>(Opens up a console program. Only required settings are shown)</comment>
+# <i>alsamixer</i>
+</pre>
+
+<p>
+This is how the ALSA Mixer <e>might</e> look the first time you open it. Pay 
+attention to the Master and PCM channels which both have an MM below them. 
+That means they are muted. If you try to play anything with <c>alsamixer</c> 
+in this state, you will not hear anything on your speakers.
+</p>
+
+<figure link="/images/docs/alsa-mixermuted.png" short="AlsaMixer Muted" caption="The Alsa Mixer Main Window, Muted"/>
+
+<p>
+Now, we shall unmute the channels, and set volume levels as needed.
+</p>
+
+<warn>
+Both Master <e>and</e> PCM need to be unmuted and set to audible volume levels if 
+you want to hear some output on your speakers.
+</warn>
+
+<ul>
+  <li>
+  To move between channels, use your left and right arrow keys. (&lt;- 
+  &amp; -&gt;)
+  </li>
+  <li>
+  To toggle mute, move to the specific channel, for example Master and press 
+  the <e>m</e> key on the keyboard. 
+  </li>
+  <li>
+  To increase and decrease the volume levels, use the up and down arrow keys 
+  respectively.
+  </li>
+</ul>
+
+<note>
+Be careful when setting your Bass and Treble values. 50 is usually a good 
+number for both. Extremely high values of Bass may cause <e>jarring</e> 
+on speakers that are not designed to handle them.
+</note>
+
+<p>
+After you're all done, your ALSA Mixer should look similar to the one below. 
+Note the 00 instead of the MM and also the volume levels for some optimum 
+settings.
+</p>
+
+<figure link="/images/docs/alsa-mixerunmuted.png" short="AlsaMixer Unmuted" caption="Alsa Mixer ready to roll"/>
+
+</body>
+</section>
+<section>
+<title>Sound Check!</title>
+<body>
+
+<p>
+Finally. Some music. If everything above is perfect, you should be able to now 
+listen to some good music. A quick way to test is to use a command line tool 
+like <c>media-sound/madplay</c>. You could also use something more well known 
+like <c>mpg123</c> or <c>xmms</c>. If you are an ogg fan, you could use
+<c>ogg123</c> provided by <c>media-sound/vorbis-tools</c>. Use any player you
+are comfortable with. As always, <c>emerge</c> what you need.
+</p>
+
+<pre caption="Getting the software">
+<comment>(Install the applications you want)</comment>
+# <i>emerge madplay mpg123 xmms</i>
+<comment>(To play .ogg files)</comment>
+# <i>emerge vorbis-tools</i>
+</pre>
+
+<p>
+And then play your favorite sound track...
+</p>
+
+<pre caption="Playing Music">
+# <i>madplay -v /mnt/shyam/Music/Paul\ Oakenfold\ -\ Dread\ Rock.mp3</i>
+MPEG Audio Decoder 0.15.2 (beta) - Copyright (C) 2000-2004 Robert Leslie et al.
+          Title: Dread Rock
+         Artist: Paul Oakenfold
+          Album: Matrix Reloaded
+           Year: 2003
+          Genre: Soundtrack
+                 Soundtrack
+ 00:04:19 Layer III, 160 kbps, 44100 Hz, joint stereo (MS), no CRC
+
+# <i>ogg123 Paul\ Oakenfold\ -\ Dread\ Rock.ogg</i>
+Audio Device:   Advanced Linux Sound Architecture (ALSA) output
+
+Playing: Paul Oakenfold - Dread Rock.ogg
+Ogg Vorbis stream: 2 channel, 44100 Hz
+Genre: Soundtrack
+Transcoded: mp3;160
+Title: Dread Rock
+Artist: Paul Oakenfold
+Date: 2003
+Album: Matrix Reloaded
+Time: 00:11.31 [04:28.75] of 04:40.06  (200.6 kbps)  Output Buffer  96.9%
 </pre>
 
 </body>
 </section>
 <section>
-<title>Unmute the Channels</title>
+<title>Issues?</title>
 <body>
 
 <p>
-By default, all sound channels are muted. To fix this, run <c>amixer</c>:
+If for some reason you're unable to hear sound, the first thing to do would 
+be to check your <uri link="#doc_chap3_pre5">alsamixer</uri> settings. 80% of 
+the issues lie with muted channels or low volume. Also check your Window 
+Manager's sound applet and verify that volumes are set to audible levels.
 </p>
 
-<pre caption="Running amixer">
-# <i>amixer</i>
+<p>
+<path>/proc</path> is your friend. And in this case, <path>/proc/asound</path> 
+is your best friend. We shall just take a short look at how much info is made 
+available to us there.
+</p>
+
+<pre caption="Fun with /proc/asound">
+<comment>(First and foremost, if /proc/asound/cards shows your card, ALSA has 
+picked up your sound card fine.)</comment>
+# <i>cat /proc/asound/cards</i>
+0 [Live           ]: EMU10K1 - Sound Blaster Live!
+                     Sound Blaster Live! (rev.6, serial:0x80271102) at 0xb800, irq 11
+
+<comment>(If you run ALSA off the kernel like I do and wonder how far behind 
+you are from alsa-driver, this displays current running ALSA version)</comment>
+# <i>cat /proc/asound/version</i>
+Advanced Linux Sound Architecture Driver Version 1.0.8 (Thu Jan 13 09:39:32 2005 UTC).
+
+<comment>(ALSA OSS emulation details)</comment>
+# <i>cat /proc/asound/oss/sndstat</i>
+Sound Driver:3.8.1a-980706 (ALSA v1.0.8 emulation code)
+Kernel: Linux airwolf.zion 2.6.11ac1 #2 Wed May 4 00:35:08 IST 2005 i686
+Config options: 0
+
+Installed drivers:
+Type 10: ALSA emulation
+
+Card config:
+Sound Blaster Live! (rev.6, serial:0x80271102) at 0xb800, irq 11
+
+Audio devices:
+0: EMU10K1 (DUPLEX)
+
+Synth devices: NOT ENABLED IN CONFIG
+
+Midi devices:
+0: EMU10K1 MPU-401 (UART)
+
+Timers:
+7: system timer
+
+Mixers:
+0: SigmaTel STAC9721/23
 </pre>
-
-<p>
-If <c>amixer</c> produces lots of output then you're ready to unmute the
-channels. If you receive an error, doublecheck that your soundcard module is
-started.
-</p>
-
-<p>
-Now unmute the <e>Master</e> and <e>PCM</e> channels. If this isn't sufficient,
-also unmute the <e>Center</e> and <e>Surround</e> channels. Do not unmute the
-channels of which you can not change the volume; this might actually result in
-ALSA producing no sound at all...
-</p>
-
-<pre caption="Unmuting the sound channels">
-<comment>(If you prefer an ncurses method:)</comment>
-
-# <i>alsamixer</i>
-
-<comment>(or)</comment>
-
-# <i>amixer set Master 100% unmute</i>
-# <i>amixer set PCM 100% unmute</i>
-<comment>(Only if the above isn't sufficient:)</comment>
-# <i>amixer set Center 100% unmute</i>
-# <i>amixer set Surround 100% unmute</i>
-# <i>amixer set Headphone 100% unmute</i>
-</pre>
-
-
-<p>
-To check if your sound works, play a wave file (using <c>aplay</c>), mp3 (using
-<c>mpg123</c> or even <c>mplayer</c>) or any other sound file for that matter.
-</p>
 
 </body>
 </section>
 </chapter>
+
 <chapter>
-<title>Activating MIDI Support</title>
+<title>Other things ALSA</title>
 <section>
-<title>Installing the Necessary Packages</title>
+<title>Setting up MIDI support</title>
 <body>
 
 <p>
-Some soundcards come with onboard MIDI synthesizers. To use them, you must first
-install the <c>awesfx</c> package:
+If your sound card is one of those that come with on-board MIDI synthesizers 
+and you would like to listen to some .mid files, you have to install 
+<c>awesfx</c> which is basically a set of utilities for controlling the AWE32 
+driver. We need to install it first. If you don't have a hardware synthesizer, 
+you can use a virtual one. Please see the section on 
+<uri link="#vsynth">Virtual Synthesizers</uri> for more information.
 </p>
 
-<pre caption="Installing the awesfx package">
+<pre caption="Installing awesfx">
 # <i>emerge awesfx</i>
 </pre>
 
-<p>
-If you have a collection of sound fonts somewhere, place them in
-<path>/usr/share/sfbank</path>. For instance, the SBLive has a sound font file
-called <path>8MBGMSFX.SF2</path> or <path>CT4GMSFX.SF2</path>.
-</p>
+<note>
+You will need to copy over SoundFont (SF2) files from your sound card's driver 
+CD or a Windows installation into <path>/usr/share/sounds/sf2/</path>. For 
+example a sound font file for the Creative SBLive! card would be 8MBGMSFX.SF2.
+</note>
 
 <p>
-After copying over the sound font, select them using <c>asfxload</c>:
+After copying over the Soundfont files, we can then play a midi file as shown.
+You can also add the <c>asfxload</c> command to 
+<path>/etc/conf.d/local.start</path>, so that the sound font is loaded 
+every time the system starts up.
 </p>
 
-<pre caption="Loading the sound font">
-# <i>asfxload /usr/share/sfbank/8MBGMSFX.SF2</i>
+<note>
+<path>/mnt</path> paths mentioned in the code listing(s) below will <e>not</e> 
+be the same in your machine. They are just an example. Please be careful to 
+change the path to suit your machine.
+</note>
+
+<pre caption="Loading Soundfonts">
+<comment>(First, copy the Soundfont)</comment>
+# <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
+<comment>(We load the specific Soundfont)</comment>
+# <i>asfxload /usr/share/sounds/sf2/8MBGMSFX.SF2</i>
 </pre>
 
 <p>
-You must have this command run every time you boot, so it is adviseable to add
-it to <path>/etc/conf.d/local.start</path> as well.
+You can now play midi files using a program like <c>aplaymidi</c>. Run 
+<c>aplaymidi -l</c> to get a list of available ports and then pick one 
+to play the file on.
 </p>
 
-<p>
-If you can't find soundfonts on your driver CD you can download some online from
-<uri>http://www.parabola.demon.co.uk/alsa/awe64.html</uri>.
-</p>
+<pre caption="Playing MIDI">
+<comment>(Check open ports)</comment>
+# <i>aplaymidi -l</i>
+ Port    Client name                      Port name
+ 64:0    EMU10K1 MPU-401 (UART)           EMU10K1 MPU-401 (UART)
+ 65:0    Emu10k1 WaveTable                Emu10k1 Port 0
+ 65:1    Emu10k1 WaveTable                Emu10k1 Port 1
+ 65:2    Emu10k1 WaveTable                Emu10k1 Port 2
+ 65:3    Emu10k1 WaveTable                Emu10k1 Port 3
+<comment>(Pick a port, and play a mid file)</comment>
+# <i> aplaymidi --port=65:0 /mnt/shyam/music/midi/mi2.mid</i>
+</pre>
 
 </body>
 </section>
-<section>
-<title>Timidity++ Virtual Synthesizer</title>
+<section id="vsynth">
+<title>Virtual Synthesizers</title>
 <body>
 
 <p>
-If your sound card does not come with a hardware synthesizer (or you don't want
-to use it), you can use <c>timidity++</c> to provide you with a virtual
-synthesizer. Start by emerging this package:
+If your sound card lacks a hardware synthesizer, you could use a virtual one
+like <c>timidity++</c>. Installation is a breeze.
 </p>
 
-<pre caption="Installing Timidity++">
+<pre caption="Installing timidity++">
 # <i>emerge timidity++</i>
 </pre>
 
 <p>
-For timidity to play sounds, it needs a soundfont. If you do not have any,
+For timidity to play sounds, it needs a sound font. If you do not have any,
 install <c>timidity-eawpatches</c> or <c>timidity-shompatches</c> which will
-give you some soundfonts.  You can have multiple soundfont configurations
+give you some sound fonts.  You can have multiple sound font configurations
 installed, and you can place your own in <path>/usr/share/timidity/</path>.
 To switch between different timidity configurations, you should use the
 <e>timidity-update</e> tool provided in the timidity++ package.
 </p>
 
-<pre caption="Installing soundfonts">
+<pre caption="Installing sound fonts">
 # <i>emerge timidity-eawpatches</i>
 # <i>timidity-update -g -s eawpatches</i>
 
@@ -392,40 +747,12 @@ Don't forget to add <c>timidity</c> to the default runlevel.
 # <i>/etc/init.d/timidity start</i>
 </pre>
 
-</body>
-</section>
-<section>
-<title>Testing MIDI Support</title>
-<body>
-
 <p>
-You can use <c>aplaymidi</c> from the ALSA Utils to test your MIDI
-configuration.
+You can now try out <uri link="#doc_chap4_pre3">Playing MIDI</uri> files.
 </p>
-
-<p>
-To see what MIDI output ports are available on your system, use the <c>-l</c>
-option:
-</p>
-
-<pre caption="Viewing the MIDI output ports">
-# <i>aplaymidi -l</i>
-</pre>
-
-<p>
-If all looks fine, try playing a MIDI file to make sure everything works. With
-the <c>-p</c> option you define what MIDI port you want to use.
-</p>
-
-<pre caption="Playing a MIDI file">
-# <i>aplaymidi -p 65:0 "Final Fantasy 7 - Aerith' Theme.mid"</i>
-</pre>
 
 </body>
 </section>
-</chapter>
-<chapter>
-<title>Final Remarks</title>
 <section>
 <title>Tools and Firmware</title>
 <body>
@@ -442,7 +769,8 @@ ALSA_TOOLS="as10k1 ac3dec"
 </pre>
 
 <p>
-Then install the <c>alsa-tools</c> (and/or <c>alsa-firmware</c>) package(s):
+If the ALSA_TOOLS variable is not set, all available tools will be built. 
+Now, install the <c>alsa-tools</c> (and/or <c>alsa-firmware</c>) package(s):
 </p>
 
 <pre caption="Installing ALSA Tools">
@@ -452,58 +780,23 @@ Then install the <c>alsa-tools</c> (and/or <c>alsa-firmware</c>) package(s):
 </body>
 </section>
 <section>
-<title>Activating Joystick Support</title>
+<title>A Big thank you to...</title>
 <body>
 
 <p>
-If your soundcard has a joystick plug, you might be interested in activating
-joystick support for your soundcard. If so, start by verifying if your soundcard
-driver has a joystick parameter. You can verify this by running <c>modinfo</c>
-against your kernel module. For instance, for the <c>snd-via82xx</c>:
+Everyone who contributed to the earlier version of the Gentoo ALSA Guide:
+Vincent Verleye, Grant Goodyear, Arcady Genkin, Jeremy Huddleston, 
+John P. Davis, Sven Vermeulen, Benny Chuang, Tiemo Kieft and Erwin.
 </p>
-
-<pre caption="Running modinfo">
-# <i>modinfo snd-via82xx</i>
-filename:    /lib/modules/2.4.22-ck2/snd-via82xx.o
-description: "VIA VT82xx audio"
-author:      "Jaroslav Kysela &lt;perex@suse.cz&gt;"
-license:     "GPL"
-parm:        index int array (min = 1, max = 8), description "Index value for
-             VIA 82xx bridge."
-parm:        id string array (min = 1, max = 8), description "ID string for VIA
-             82xx bridge."
-parm:        enable int array (min = 1, max = 8), description "Enable audio part
-             of VIA 82xx bridge."
-parm:        mpu_port long array (min = 1, max = 8), description "MPU-401 port.
-             (VT82C686x only)"
-<i>parm:        joystick int array (min = 1, max = 8), description "Enable
-             joystick. (VT82C686x only)"</i>
-parm:        ac97_clock int array (min = 1, max = 8), description "AC'97 codec
-             clock (default 48000Hz)."
-parm:        dxs_support int array (min = 1, max = 8), description "Support for
-             DXS channels (0 = auto, 1 = enable, 2 = disable, 3 = 48k only, 4 =
-             no VRA)
-</pre>
-
-<p>
-If it has the <c>joystick</c> parameter, append <c>joystick=1</c> to your
-<c>options</c> line in <path>/etc/modules.d/alsa</path>. For instance:
-</p>
-
-<pre caption="Adding the joystick parameter">
-alias snd-card-0 snd-via82xx
-options snd-via82xx joystick=1
-</pre>
 
 </body>
 </section>
 <section>
-<title>Resources</title>
+<title>References</title>
 <body>
 
 <ul>
-  <li><uri link="http://www.alsa-project.org">The ALSA Project</uri></li>
-  <li><uri link="http://www.djcj.org">ALSA Howto's and FAQs</uri></li>
+  <li><uri link="http://www.alsa-project.org/">The ALSA Project</uri></li>
   <li><uri link="http://linux-sound.org">Linux Sound/MIDI Software</uri></li>
 </ul>
 
