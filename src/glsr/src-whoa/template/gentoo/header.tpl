@@ -4,7 +4,7 @@
 <title>Gentoo Linux Script Repository</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <link title="new" rel="stylesheet" href="{GLSR_URL}_template/{THEME}/css/styles.css" type="text/css">
-<link REL="shortcut icon" HREF="{GLSR_URL}images/favicon.ico" TYPE="image/x-icon">
+<link REL="shortcut icon" HREF="{GLSR_URL}_template/{THEME}/images/favicon.ico" TYPE="image/x-icon">
 </head>
 <body>
 <table width="100%" height="100%" border="0" cellspacing="0" cellpadding="0">
