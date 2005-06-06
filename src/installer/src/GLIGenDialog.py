@@ -281,20 +281,21 @@ class GLIGenIP(GLIGen):
 	
 	def _set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
-		menulist = ["Normal 'emerge sync'", "Webrsync (rsync is firewalled)", "Snapshot (using a portage snapshot)", "None (NFS mount)"]
-		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."), choices=self._dmenu_list_to_choices(menulist))
+		menulist = [("Sync", "Normal. Use emerge sync RECOMMENDED!"), ("Webrsync", "HTTP daily snapshot. Use when rsync is firewalled."), ("Snapshot", " Use a portage snapshot, either a local file or a URL"), ("None", "Extra cases such as if /usr/portage is an NFS mount")]
+		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."), choices=menulist)
 		if code != self._DLG_OK: 
 			return
-		portage_tree_sync = menulist[int(portage_tree_sync)-1]
+		#portage_tree_sync = menulist[int(portage_tree_sync)-1]
 		#FIX ME when python 2.4 comes out.
-		if portage_tree_sync == "Normal  'emerge sync'": 
-			self._install_profile.set_portage_tree_sync_type(None, "sync", None)
-		if portage_tree_sync == "Webrsync  (rsync is firewalled)": 
-			self._install_profile.set_portage_tree_sync_type(None, "webrsync", None)
-		if portage_tree_sync == "None  (NFS mount)": 
-			self._install_profile.set_portage_tree_sync_type(None, "none", None)
-		if portage_tree_sync == "Snapshot  (using a portage snapshot)":
-			self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
+		#if portage_tree_sync == "Normal  'emerge sync'": 
+		#	self._install_profile.set_portage_tree_sync_type(None, "sync", None)
+		#if portage_tree_sync == "Webrsync  (rsync is firewalled)": 
+		#	self._install_profile.set_portage_tree_sync_type(None, "webrsync", None)
+		#if portage_tree_sync == "None  (NFS mount)": 
+		#	self._install_profile.set_portage_tree_sync_type(None, "none", None)
+		#if portage_tree_sync == "Snapshot  (using a portage snapshot)":
+		#	self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
+			self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
 			snapshot_options = ("Use Local", "Specify URI")
 			code, snapshot_option = self._d.menu("Select a local portage snapshot or manually specify a location:", choices=self._dmenu_list_to_choices(snapshot_options))
 			snapshot_option = snapshot_options[int(snapshot_option)-1]
@@ -327,15 +328,16 @@ class GLIGenIP(GLIGen):
 
 	def _set_partitions(self):
 		string1 = _("""The first thing on the new system to setup is the partitoning on the new system.
-You will first select a drive and then edit its partitionss.
+You will first select a drive and then edit its partitions.
 No changes will be saved until the end of the step.
 No changes to your disk will be made until the installation.
 NOTE: YOU MUST AT LEAST SELECT ONE PARTITION AS YOUR ROOT PARTITION "/"
 If your drive is pre-partitioned, just select the mountpoints and make 
 sure that the format option is set to FALSE or it will erase your data.
+The installer does not yet support resizing of partitions (its not safe).
 Please refer to the Gentoo Installation Handbook for more information
 on partitioning and the various filesystem types available in Linux.""")
-		self._d.msgbox(string1, height=16, width=77)
+		self._d.msgbox(string1, height=17, width=78)
 		devices = self._install_profile.get_partition_tables()
 		drives = devices.keys()
 		drives.sort()
@@ -362,41 +364,41 @@ on partitioning and the various filesystem types available in Linux.""")
 					tmppart = tmpparts[part]
 					entry = ""
 					if tmppart.get_type() == "free":
-						partschoice = "New"
-						entry = "Unallocated space ("
+						#partschoice = "New"
+						entry = _(u" - Unallocated space (")
 						if tmppart.is_logical():
-							entry += "logical, "
+							entry += _(u"logical, ")
 						entry += str(tmppart.get_mb()) + "MB)"
 					elif tmppart.get_type() == "extended":
-						partschoice = str(int(tmppart.get_minor()))
-						entry = "Extended Partition (" + str(tmppart.get_mb()) + "MB)"
+						entry = str(int(tmppart.get_minor()))
+						entry += _(u" - Extended Partition (") + str(tmppart.get_mb()) + "MB)"
 					else:
-						partschoice = str(int(tmppart.get_minor()))
+						entry = str(int(tmppart.get_minor())) + " - "
 						# Type: " + tmppart.get_type() + ", Mountpoint: " + tmppart.get_mountpoint() + ", Mountopts: " + tmppart.get_mountopts() + "("
 						if tmppart.is_logical():
-							entry = "Logical ("
+							entry += _(u"Logical (")
 						else:
-							entry = "Primary ("
+							entry += _(u"Primary (")
 						entry += tmppart.get_type() + ", "
 						entry += (tmppart.get_mountpoint() or "none") + ", "
 						entry += (tmppart.get_mountopts() or "none") + ", "
 						entry += str(tmppart.get_mb()) + "MB)"
-					partsmenu.append((partschoice,entry))
-				code, part_to_edit = self._d.menu("Select a partition or unallocated space to edit", width=70, choices=partsmenu, cancel="Back")
+					partsmenu.append(entry)
+				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit"), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel="Back")
 				if code != self._DLG_OK: break
-				#part_to_edit = partlist[int(part_to_edit)-1]
+				part_to_edit = partlist[int(part_to_edit)-1]
 				tmppart = tmpparts[part_to_edit]
 				if tmppart.get_type() == "free":
 					free_mb = tmppart.get_mb()
-					code, new_mb = self._d.inputbox("Size of new partition in MB (max " + str(free_mb) + "MB):", init=str(free_mb))
+					code, new_mb = self._d.inputbox("Enter the size of the new partition in MB (max " + str(free_mb) + "MB).  If creating an extended partition input its entire size (not just the first logical size):", init=str(free_mb))
 					if code != self._DLG_OK: continue
 					if int(new_mb) > free_mb:
 						self._d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
 						continue
-					part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-					code, type = self._d.menu("Type for new partition (reiserfs not yet supported!)", choices=self._dmenu_list_to_choices(part_types))
+					part_types = [("ext2", "Old, stable, but no journaling"), ("ext3", "ext2 with journaling and b-tree indexing (RECOMMENDED)"), ("linux-swap", "Swap partition for memory overhead"), ("fat32", "Windows filesystem format used in Win9X and XP"), ("ntfs", "Windows filesystem format used in Win2K and NT"), ("extended", "Create an extended partition containing other logical partitions"), ("other", "Something else we probably don't support.")]
+					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition. CREATION of Reiserfs partitions is not yet supported by the installer!  If you want reiserfs please exit and follow chapter 4 of the Gentoo Installation Handbook."), choices=part_types)
 					if code != self._DLG_OK: continue
-					type = part_types[int(type)-1]
+					#type = part_types[int(type)-1]
 					if type == "other":
 						code, type = self._d.inputbox("New partition's type:")
 					if code != self._DLG_OK: continue
@@ -438,96 +440,7 @@ on partitioning and the various filesystem types available in Linux.""")
 												
 		self._install_profile.set_partition_tables(devices)
 
-		stringxxx = """
-#		Is this first question really necessary anymore?
-#		if self._d.yesno(_(u"This will reset any changes you have made. Continue?")) == self._DLG_NO: 
-#			return
-#		devices = copy.deepcopy(install_profile.get_partition_tables())
-		devices = {}
-		drives = GLIStorageDevice.detect_devices()
-		drives.sort()
-#		use_existing = False
-#		if not devices:
-		use_existing = self.local_install
-		choice_list = []
-		for drive in drives:
-			devices[drive] = GLIStorageDevice.Device(drive)
-			if use_existing: 
-				devices[drive].set_partitions_from_disk()
-			choice_list.append((drive, devices[drive].get_model()))
-		
-		while 1:
 			
-			code, drive_to_partition = self._d.menu("Which drive would you like to partition?", choices=choice_list, cancel="Done")
-			if code != self._DLG_OK: 
-				break
-			drive_to_partition = drives[int(drive_to_partition)-1]
-			while 1:
-				partitions = devices[drive_to_partition].get_partitions()
-				partsmenu = devices[drive_to_partition].get_ordered_partition_list()
-				code, part_to_edit = self._d.menu("Which partition would you like to edit?", width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel="Back")
-				if code != self._DLG_OK: 
-					break
-				part_to_edit = partsmenu[int(part_to_edit)-1]
-				if re.compile("^Free Space").match(part_to_edit) != None:
-					new_start, new_end = re.compile("^Free Space \((\d+)\s*-\s*(\d+)\)").match(part_to_edit).groups()
-					code, new_start2 = self._d.inputbox("New partition start (minimum " + new_start + ")?", init=new_start)
-					if code != self._DLG_OK: 
-						continue
-					code, new_end2 = self._d.inputbox("New partition end (maximum " + new_end + ")?", init=new_end)
-					if code != self._DLG_OK: 
-						continue
-					part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-					code, r_type = self._d.menu("Type for new partition (reiserfs not yet supported!)", choices=self._dmenu_list_to_choices(part_types))
-					if code != self._DLG_OK: 
-						continue
-					r_type = part_types[int(r_type)-1]
-					if r_type == "other":
-						code, r_type = self._d.inputbox("New partition's type?")
-					if code != self._DLG_OK: 
-						continue
-					if (int(new_start2) < int(new_start)) or (int(new_end2) > int(new_end)):
-						self._d.msgbox("Cannot create new partition because it is not within the bounds of the selected free space.")
-						continue
-					devices[drive_to_partition].add_partition(devices[drive_to_partition].get_free_minor_at(int(new_start2), int(new_end2)), int(new_start2), int(new_end2), r_type)
-				else:
-					while 1:
-						tmpdevice, tmpminor = re.compile("^(/dev/[a-zA-Z]+)(\d+):").search(part_to_edit).groups()
-						tmppart = partitions[int(tmpminor)]
-						tmptitle = tmpdevice + tmpminor + ": " + str(tmppart.get_start()) + "-" + str(tmppart.get_end())
-						menulist = ["Delete", "Mount Point", "Mount Options", "Type", "Format"]
-						code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel="Back")
-						if code != self._DLG_OK: break
-						part_action = menulist[int(part_action)-1]
-						if part_action == "Delete":
-							answer = (self._d.yesno("Are you sure you want to delete the partition " + tmpdevice + tmpminor + "?") == self._DLG_YES)
-							if answer:
-								tmpdev = tmppart.get_device()
-								tmpdev.remove_partition(int(tmpminor))
-								break
-						elif part_action == "Mount Point":
-							code, answer = self._d.inputbox("Enter a mountpoint for partition" + str(tmpminor), init=tmppart.get_mountopts())
-							if code == DLG_OK: 
-								tmppart.set_mountpoint(answer)
-						elif part_action == "Mount Options":
-							code, answer = self._d.inputbox("Enter your options for partition" + str(tmpminor), init=tmppart.get_mountopts())
-							if code == self._DLG_OK: 
-								tmppart.set_mountopts(answer)
-						elif part_action == "Type":
-							part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
-							code, r_type = self._d.menu("Type for partition (reiserfs not supported!)", choices=self._dmenu_list_to_choices(part_types))
-							if code != self._DLG_OK: 
-								continue
-							r_type = part_types[int(type)-1]
-							if r_type == "other":
-								code, r_type = self._d.inputbox("Partition's type?")
-							tmppart.set_type(type)
-						elif part_action == "Format":
-							answer = self._d.yesno("Do you want to format this partition?")
-							if code == self._DLG_YES: 
-								tmppart.set_format(True)
-							else:
-								tmppart.set_format(False)						
 												
 		if self._d.yesno("Would you like to save changes?") == self._DLG_YES:
 			parts_tmp = {}
