@@ -128,21 +128,19 @@ class Device:
 							if not last_log_free:
 								last_log_free = last_log_minor + 0.9
 							else:
-								lost_log_free = part_log
+								last_log_free = part_log
 							tmppart_log.set_minor(last_log_free)
 							self._partitions[last_log_free] = tmppart_log
 							if part_log != last_log_free: del self._partitions[part_log]
-							continue
 					else:
 						if part_log > (last_log_minor + 1):
 							tmppart_log.set_minor(last_log_minor + 1)
 							last_log_minor = last_log_minor + 1
 							self._partitions[last_log_minor] = tmppart_log
 							del self._partitions[part_log]
-							continue
 						else:
 							last_log_minor = part_log
-			if tmppart.get_type() == "free":
+			elif tmppart.get_type() == "free":
 				if last_minor < last_free:
 					self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
 					del self._partitions[part]
@@ -154,14 +152,12 @@ class Device:
 					tmppart.set_minor(last_free)
 					self._partitions[last_free] = tmppart
 					if part != last_free: del self._partitions[part]
-					continue
 			else:
 				if part > (last_minor + 1):
 					tmppart.set_minor(last_minor + 1)
 					last_minor = last_minor + 1
 					self._partitions[last_minor] = tmppart
 					del self._partitions[part]
-					continue
 				else:
 					last_minor = part
 
@@ -177,7 +173,6 @@ class Device:
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
 		free_minor = free_minor
 		new_minor = int(free_minor) + 1
-#		print "add_partition(): free_minor=" + str(free_minor) + ", new_minor=" + str(new_minor)
 		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
 			parts.sort()
