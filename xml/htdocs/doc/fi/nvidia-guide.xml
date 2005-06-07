@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/nvidia-guide.xml,v 1.2 2005/04/14 16:57:18 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/nvidia-guide.xml,v 1.3 2005/06/07 07:45:27 flammie Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/nvidia-guide.xml" lang="fi">
@@ -20,8 +20,33 @@ Tässä oppaasse kerrotaan kuinka ajurit asennetaan ja säädetään kuntoon.
 
 <license/>
 
-<version>1.9</version>
-<date>2005-04-09</date>
+<version>1.11</version>
+<date>2005-06-04</date>
+
+<chapter>
+<title>Johdanto</title>
+<section>
+<body>
+
+<p>
+Nvidia julkaisee itse omat laadukkaat ja kiihdytetyt ajurinsa linuxille. Ajurit
+on jaettu kahteen pakettiin: <c>nvidia-kernel</c>iin ja <c>nvidia-glx</c>:ään.
+</p>
+
+<p>
+<c>Nvidia-kernel</c> on ytimen ajuri, joka hoitaa kommunikoinnin
+laitteistotasolla. Tämä on tavan ydinmoduuli, <c>nvidia</c>, ja asentuu
+olemassaolevia ytimen sorsia käyttämään. Se pitää ladata, että se toimii.
+</p>
+
+<p>
+Ajurin lisäksi pitä asentaa X11:n GLX-rajapinta (eli <c>nvidia-glx</c>), jota
+käytetään X:n grafiikan piirtoon. Se käyttää <c>nvidia-kernel</c>iä
+kommunikoidakseen laitteiston kanssa.</p>
+
+</body>
+</section>
+</chapter>
 
 <chapter>
 <title>Kortin asetusten tekeminen</title>
@@ -30,10 +55,10 @@ Tässä oppaasse kerrotaan kuinka ajurit asennetaan ja säädetään kuntoon.
 <body>
 
 <p>
-nVidian ajureihin kuuluu ydinmoduuli joka pitää liittää nykyiseen ytimeen. Jotta
-tämä toimisi on ytimessä oltava ladattavien moduulien tuki. Jos teit ytimen
-<c>genkernel</c>illä, kaikki on jo kunnossa, muutoin tarkista että ytimen
-asetuksissa on tämä asetus asetettuna:
+Kuten aiemmin mainittiin, nVidian ajurit käyttävät olemassaolevaa ydintä. Ne
+ovat ydinmoduuleja, joten ytimeen pitää tietenkin lisätä tuki ladattaville
+moduuleille. Jos ydin on tehty <c>genkernel</c>illä, tämä tuki on valmiina;
+jollei, tarkista ytimen asetuksista, että tuki on päällä:
 </p>
 
 <pre caption="Ladattavien ydinmoduulien tuen asettaminen">
@@ -51,15 +76,60 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-nVidian moduulit ja kirjastot ovat kahdessa paketissa: <c>nvidia-glx</c> ja
+Nvidian moduulit ja kirjastot ovat kahdessa paketissa: <c>nvidia-glx</c> ja
 <c>nvidia-kernel</c>. Ensimmäisessä on X11:n GLX-kirjastot ja jälkimmäisessä
-ydinmoduulit. Koska nvidia-glx kuitenkin riippuu -kernelistä, riittää sen
-asentaminen valitsemaan molemmat.
+ydinmoduulit.
+</p>
+
+<p>
+Nvidia-kernelin ebuild osaa hakea ytimen version
+<path>/usr/src/linux</path>-linkin perusteella. Varmista siis, että tämä
+linkki osoittaa oikeaan ytimeen ja se ydin on asetettu. <uri
+link="/doc/fi/handbook/">Asennuskäsikirjassa</uri> on ohjeita ytimen
+asettamiseen.
+</p>
+
+<p>
+Jos käytössä on vaikkapa gentoo-sources-2.6.11-r6, pitäisi hakemiston
+<path>/usr/src/</path> näyttää seuraavalta:
+</p>
+
+<pre caption="/usr/src/linux-linkin tarkastelu">
+# <i>cd /usr/src</i>
+# <i>ls -l</i>
+<comment>(Varmista että linkki osoittaa oikeaan)</comment>
+lrwxrwxrwx   1 root root   12  1. helmi  12:40 linux -&gt; linux-2.6.11-gentoo-r6
+drwxr-xr-x  19 root root 4096  7. huhti  21:11 linux-2.6.11-gentoo-r6
+drwxr-xr-x  18 root root 4096 20. huhti  21:11 linux-2.6.10
+drwxr-xr-x  19 root root 4096 29. touko  21:11 linux-2.6.11.4
+</pre>
+
+<p>
+Jollei linkki osoita oikeaan, sen voi korjata:
+</p>
+
+<pre caption="/usr/src/linux-linkin luonti">
+# <i>cd /usr/src</i>
+# <i>ln -snf linux-2.6.11-gentoo-r6 linux</i>
+</pre>
+
+<p>
+Nyt asennetaan <c>nvidia-kernel</c> ja <c>nvidia-glx</c>. Koska
+<c>nvidia-glx</c> riippuu <c>nvidia-kernel</c>istä, on sen asentaminen
+riittävää:
 </p>
 
 <pre caption="nVidian pakettien asennus">
 # <i>emerge nvidia-glx</i>
 </pre>
+
+<impo>
+Joka kerta kun <uri link="/doc/en/kernel-upgrade.xml">asennat uuden ytimen</uri>
+(engl. ohje) tai käännät nykyisen uusiksi, <c>emerge nvidia-kernel</c> pitää
+toistaa, jotta nVidian ajurit asentuisivat oikein. Nvidia-glx:ään tämä ei
+kuitenkaan vaikuta. Nvidia-glx:ää ei itse asiassa tarvitse päivittää edes X:n
+päivitysten mukana.
+</impo>
 
 <p>
 Kun asennus on ohi, aja <c>modprobe nvidia</c> ladataksesi ytimen moduulit
@@ -228,6 +298,66 @@ Tuoreimmissa kerneleissä (2.6.6:a uudemmissa) on tuki myös 4 kilon pinoille,
 älä valitse tätä asetusta, jos käytät vanhempaa <c>nvidia-kernel</c>iä. Asetus
 on osiossa <c>Kernel Hacking</c>.
 </p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Lisäasetukset</title>
+<section>
+<title>Ohjeita</title>
+<body>
+
+<p>
+Nvidian ajuripaktein mukana tulee myös tarkat ohjeet. Nämä asennetaan
+hakemistoon <path>/usr/share/doc</path> ja niitä voi tarkastella vaikkapa
+seuraavalla komennolla:
+</p>
+
+<pre caption="Nvidian ohjeiden tarkastelu">
+# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Ytimen moduulin parametrejä</title>
+<body>
+
+<p>
+<c>Nvidia</c>-moduuli hyväksyy joitakin parametrejä, joilla voi säätää ajurien
+toimintaa. Valtaosa näistä löytyy myös ohjeista. Parametrit asetetaan
+tiedostossa <path>/etc/modules.d/nvidia</path>. Muista suorittaa
+<c>modules-update</c> asetusten muokkaamisen jälkeen. Myös moduuli pitää
+ladata uudelleen, jotta muutokset tulevat voimaan.
+</p>
+
+</body>
+</section>
+<section>
+<title>X:n lisäasetukset</title>
+<body>
+
+<p>
+GLX-rajapinnassa on myös joukko asetuksia säädettäväksi. Näillä muutetaan
+TV-outin asetuksia, useamman näytön asetuksia, näytön virkistystaajuusasetuksia
+ja niin edelleen. Nämäkin kaikki asetukset löytyvät myös ohjeista.
+</p>
+
+<p>
+Nämä asetukset pitää merkitä X:n asetustiedoston (todennäköisesti
+<path>/etc/X11/xorg.conf</path>) sopivalle Device-osiolle. Esimerkiksi
+nVidian X:n käynnistyskuva poistetaan seuraavalla tavalla:
+</p>
+
+<pre caption="Nvidian lisäasetukset X:lle">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  Driver     "nvidia"
+  <i>Option     "NoLogo" "true"</i>
+  VideoRam   65536
+EndSection
+</pre>
 
 </body>
 </section>
