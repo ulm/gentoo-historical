@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.4 2005/06/07 15:12:45 wolf31o2 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.5 2005/06/07 17:47:36 wolf31o2 Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -26,7 +26,7 @@
 <chapter>
 	<title>Introduction</title>
 	<section>
-		<body><p>This guide is intended to give an overview of how to write good games ebuilds.  Writing games ebulds using the best possible style allows for your submission to be added to Gentoo quickly and with no issues.  There are several simple steps that you can follow to acheive this goal, starting from games ebuilds basics to some really nice tricks to work around the broken state of some upstream packages.  This guide also tries to point out common mistakes made when contributing an ebuild.</p>
+		<body><p>This guide is intended to give an overview of how to write good games ebuilds.  Writing games ebulds using the best possible style allows for your submission to be added to Gentoo quickly and with no issues.  There are several simple steps that you can follow to achieve this goal, starting from games ebuilds basics to some really nice tricks to work around the broken state of some upstream packages.  This guide also tries to point out common mistakes made when contributing an ebuild.</p>
 		</body>
 	</section>
 </chapter>
@@ -70,7 +70,7 @@
 			<pre caption="Creating your overlay direcory">
 # mkdir -p /usr/local/portage/games-sports/kickball
 			</pre>
-			<p>If the package is a binary package, and does not support compilation, then append a "-bin" to the end of the package name to make up the portage package name.  This is not a requirement, but in most cases is a good idea.  Next, you will need to know the version number of the package.  It might be needed to convert this number into a format suitable to portage.  The ebuild naming policy can be found at <uri link="http://www.gentoo.org/proj/en/devrel/handbook/handbook.xml?part=2"></uri> online.  After deciding on the category and naming of your new ebuild, we will want to start editing on it.</p>
+			<p>If the package is a binary package, and does not support compilation, then append a "-bin" to the end of the package name to make up the portage package name.  If the package is a demo version of a commercial, or otherwise full-version game, please name the package with "-demo" appended to the end of the package name.  This is not a requirement, but in most cases is a good idea.  Next, you will need to know the version number of the package.  It might be needed to convert this number into a format suitable to portage.  The ebuild naming policy can be found in the <uri link="http://www.gentoo.org/proj/en/devrel/handbook/handbook.xml?part=2">developer handbook</uri> online.  After deciding on the category and naming of your new ebuild, we will want to start editing on it.</p>
 			<pre caption="Using vi to edit your ebuild">
 # cd /usr/local/portage/games-sports/kickball
 # vi kickball-1.0.ebuild
@@ -205,16 +205,15 @@ src_unpack() {
 			<p>By default, both unpack and unpack_makeself use ${A} as the target to unpack.  You can also specify the target, if you need to only unpack a single download, rather than them all.  A good example of this comes from the ut2003 ebuild.</p>
 			<pre caption="unpack and unpack_makeself example">
 src_unpack() {
-	unpack_makeself ${DISTDIR}/${PN}lnx_2107to${PV}.sh.bin \
+	unpack_makeself ${PN}lnx_2107to${PV}.sh.bin \
 		|| die "unpacking patch"
-	unpack ${DISTDIR}/UT2003CrashFix.zip \
-		|| die "unpacking crash-fix"
+	unpack UT2003CrashFix.zip
 }
 			</pre>
 			<p>As you can see, each function specifically calls a certain file to be unpacked.  If you need additional steps before compilation, such as making changes to a Makefile, then you will need add it into a src_unpack function.  Now, in this final example, let's pretend that our fictional package, kickball, has both a broken Makefile, and also a binary that must be removed for compilation to complete.</p>
 			<pre caption="kickball example src_unpack">
 src_unpack() {
-	unpack ${A} || die "unpacking files"
+	unpack ${A}
 	cd "${S}"
 	sed -i \
 		-e "/TARGET/s:/usr/bin/:${GAMES_BINDIR}:" Makefile \
@@ -224,7 +223,7 @@ src_unpack() {
 			</pre>
 			<p>This function shows us several important things that we need to know about games ebuilds.  First, when making your own src_unpack, you must always include your own unpacking methods, or use the built-in functions.  Next, you see that we cd to our unpacked location, ${S}, which must be quoted.</p>
 			<p>Now, imagine a line like "TARGET=/usr/bin/" in the game's Makefile.  This is wrong for Gentoo, since by default games binaries go into "/usr/games/bin", which is defined by "${GAMES_BINDIR}" in games.eclass.  Always use the variable to refer to the games binary location, as this allows users to specify for themselves where they want the games to install their binaries by overriding this variable.  There are several other games-specific variables available for you to use, which will be explained further in the document.</p>
-			<p>You will also notice that we have added "|| die" after each required external command.  This is necessary, since it stops the emerge process if that command failed.  Never omit these as all important external commands need it.  All die messages should be short and to the point.  Good examples are above.</p>
+			<p>You will also notice that we have added "|| die" after each required external command.  This is necessary, since it stops the emerge process if that command failed.  Never omit these as all important external commands need it.  All die messages should be short and to the point.  Good examples are above.  There is no die after unpack, as it does its own checking and aborts the emerge process on its own.</p>
 			<p>We did not add a die after the rm above.  The reason for this is the presence of kickball will cause the build to fail, but the lack of the file will not hurt us in any way.  Remove only items that stop the ebuild from working when present.  If there are, for example, Makefiles for 25 different systems,  plus a bunch of crap for MSVC, just ignore them.  They will not be installed unless we specifically ask for them to be during src_install, and they will be deleted by portage at the end of the completed emerge.</p>
 		</body>
 	</section>
