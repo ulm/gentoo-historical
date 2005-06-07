@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.2 2005/06/07 13:55:09 wolf31o2 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.3 2005/06/07 14:46:20 wolf31o2 Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -79,7 +79,7 @@
 			<pre caption="Skeleton ebuild example">
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.2 2005/06/07 13:55:09 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.3 2005/06/07 14:46:20 wolf31o2 Exp $
 
 DESCRIPTION=""
 HOMEPAGE=""
@@ -152,6 +152,80 @@ SRC_URI="mirror://sourceforge/${P}/${P}.tar.bz2"
 	<section>
 		<title>IUSE</title>
 		<body><p>Does this package have additional features that can be toggled on and off?  IUSE lists all the USE flags that this package is capable of using.  Do not list any USE flags here which are not used by the package, and also, do not forget to list any USE flags here that you use within the package ebuild.  For the meaning of each global USE flag, please check /usr/portage/profiles/use.desc and /usr/portage/profiles/use.local.desc for more information.  A local USE flag is used for any additional feature that does not fall under the scope of the already-defined global USE flags.</p>
+		</body>
+	</section>
+	<section>
+		<title>DEPEND</title>
+		<body><p>This variable is used to build the dependency tree for packages that are required to build this package.  You should list all packages that are used not only by the game build itself, but also in the ebuild, so if you use "sed" in your ebuild, you must also add it to DEPEND.  These packages are only used at build time.</p>
+		</body>
+	</section>
+	<section>
+		<title>RDEPEND</title>
+		<body><p>This variable is used fro run-time dependencies.  If left blank, portage assumes RDEPEND to be equal to DEPEND.  These are dependencies required by the package to run.  If you have packages listed here, you should also refer to this in DEPEND as follows, otherwise, remove RDEPEND completely.</p>
+			<pre caption="DEPEND with RDEPEND example">
+RDEPEND="virtual/opengl"
+DEPEND=">=sys-apps/sed-4
+	${RDEPEND}"
+			</pre>
+		</body>
+	</section>
+	<section>
+		<title>S and upstream packaging</title>
+		<body><p>The S variable is used to store the starting location that the ebuild should use for performing work.  By default, this is S="${WORKDIR}/${P}".  If the upstream packager did not use a subfolder when packing their package, which is common with zip file distribution, then you would set S as follows.</p>
+			<pre caption="S with no folder example">
+S="${WORKDIR}"
+			</pre>
+			<p>If the upstream packager did not include a version number, but did use the package name, then S would be set as follows.</p>
+			<pre caption="S with no version example">
+S="${WORKDIR}/${PN}"
+			</pre>
+			<p>If you do not need special handling, leave S out of the ebuild.  Also, be sure to always quote the variables on the right hand side, as they could potentially contain spaces.</p>
+		</body>
+	</section>
+	<section>
+		<title>pkg_setup</title>
+		<body><p>In most cases, you will not need to edit pkg_setup.  One common reason for needing to create a pkg_setup in your ebuild would be for using the check_license function in eutils.eclass, such as in the quake3 ebuilds.</p>
+			<pre caption="Example pkg_setup">
+pkg_setup() {
+	check_license || die "license check failed"
+	games_pkg_setup
+}
+			</pre>
+			<p>As you can see, you must always call games_pkg_setup if you specify your own pkg_setup function.  This is to ensure that the system is properly configured for games under Gentoo.</p>
+		</body>
+	</section>
+	<section>
+		<title>src_unpack</title>
+		<body><p>The default src_unpack from portage tends to be all you need for most ebuilds.  This function is used to unpack the sources for a particular package.  A few examples of when you would want a src_unpack function are below.</p>
+			<pre caption="Makeself archive example">
+src_unpack() {
+	unpack_makeself || die "unpacking files"
+}
+			</pre>
+			<p>By default, both unpack and unpack_makeself use ${A} as the target to unpack.  You can also specify the target, if you need to only unpack a single download, rather than them all.  A good example of this comes from the ut2003 ebuild.</p>
+			<pre caption="unpack and unpack_makeself example">
+src_unpack() {
+	unpack_makeself ${DISTDIR}/${PN}lnx_2107to${PV}.sh.bin \
+		|| die "unpacking patch"
+	unpack ${DISTDIR}/UT2003CrashFix.zip \
+		|| die "unpacking crash-fix"
+}
+			</pre>
+			<p>As you can see, each function specifically calls a certain file to be unpacked.  If you need additional steps before compilation, such as making changes to a Makefile, then you will need add it into a src_unpack function.  Now, in this final example, let's pretend that our fictional package, kickball, has both a broken Makefile, and also a binary that must be removed for compilation to complete.</p>
+			<pre caption="kickball example src_unpack">
+src_unpack() {
+	unpack ${A} || die "unpacking files"
+	cd "${S}"
+	sed -i \
+		-e "/TARGET/s:/usr/bin/:${GAMES_BINDIR}:" Makefile \
+		|| die "sed Makefile failed"
+	rm -f kickball
+}
+			</pre>
+			<p>This function shows us several important things that we need to know about games ebuilds.  First, when making your own src_unpack, you must always include your own unpacking methods, or use the built-in functions.  Next, you see that we cd to our unpacked location, ${S}, which must be quoted.</p>
+			<p>Now, imagine a line like "TARGET=/usr/bin/" in the game's Makefile.  This is wrong for Gentoo, since by default games binaries go into "/usr/games/bin", which is defined by "${GAMES_BINDIR}" in games.eclass.  Always use the variable to refer to the games binary location, as this allows users to specify for themselves where they want the games to install their binaries by overriding this variable.  There are several other games-specific variables available for you to use, which will be explained further in the document.</p>
+			<p>You will also notice that we have added "|| die" after each required external command.  This is necessary, since it stops the emerge process if that command failed.  Never omit these as all important external commands need it.  All die messages should be short and to the point.  Good examples are above.</p>
+			<p>We did not add a die after the rm above.  The reason for this is the presence of kickball will cause the build to fail, but the lack of the file will not hurt us in any way.  Remove only items that stop the ebuild from working when present.  If there are, for example, Makefiles for 25 different systems,  plus a bunch of crap for MSVC, just ignore them.  They will not be installed unless we specifically ask for them to be during src_install, and they will be deleted by portage at the end of the completed emerge.</p>
 		</body>
 	</section>
 
