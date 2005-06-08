@@ -171,7 +171,6 @@ class Device:
 	# @param mountpoint='' Partition mountpoint
 	# @param mountopts='' Partition mount options
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
-		free_minor = free_minor
 		new_minor = int(free_minor) + 1
 		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
