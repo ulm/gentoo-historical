@@ -16,7 +16,7 @@
        exist, or is improperly set.  Default to 'UNDEFINED STRING' when the
        requested text is unavailable.
 
-       Used either the passed parameter (e.g. from metadoc.xsl)
+       Use either the passed parameter (e.g. from metadoc.xsl)
        or the Global $glang that was initialized when loading a guide or a book or part of uri for book parts
   -->
   <xsl:variable name="LANG">
@@ -209,14 +209,14 @@
 <!-- Value of top element's link attribute e.g. "handbook.xml" -->
 <xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param>
 
-<!-- Value of top element's lang attribute e.g. "handbook.xml" -->
+<!-- Value of top element's lang attribute e.g. "pt_br" -->
 <xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
 
 <xsl:template match="/">
   <!-- For Debugging:
    <xsl:message>TTOP: <xsl:value-of select="$TTOP" /> </xsl:message>
-   <xsl:message>LANG: <xsl:value-of select="$LANG" /> </xsl:message>
+   <xsl:message>LANG: <xsl:value-of select="$glang" /> </xsl:message>
    <xsl:message>LINK: <xsl:value-of select="$LINK" /> </xsl:message>
   -->
   <xsl:apply-templates/>
