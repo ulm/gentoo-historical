@@ -5,9 +5,6 @@
                 extension-element-prefixes="exslt func" >
 
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
-<!--
-<xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"/>
--->
 
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
@@ -45,6 +42,7 @@
       <i><xsl:call-template name="contentdate"/></i>
     </xsl:when>
     <xsl:otherwise>
+     <xsl:if test="count(/guide/chapter)&gt;1">
       <form name="contents" action="http://www.gentoo.org">
         <b><xsl:value-of select="func:gettext('Content')"/></b>:
         <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:sans-serif,Arial,Helvetica">
@@ -53,6 +51,7 @@
           </xsl:for-each>
         </select>
       </form>
+     </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
 
@@ -73,10 +72,7 @@
 
 <!-- Layout for documentation -->
 <xsl:template name="doclayout">
-<html>
-<head>
-<link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
-<link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+<xsl:call-template name="commonHTMLheader" />
 <title>
   <xsl:choose>
     <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
@@ -91,7 +87,7 @@
   </xsl:choose>
 </title>
 
-</head>
+<xsl:text disable-output-escaping="yes">&lt;/head&gt;</xsl:text>
 <xsl:choose>
   <xsl:when test="$style = 'printable'">
     <!-- Insert the node-specific content -->
@@ -146,7 +142,7 @@
 </body>
   </xsl:otherwise>
   </xsl:choose>
-</html>
+<xsl:text disable-output-escaping="yes">&lt;/html&gt;</xsl:text>
 </xsl:template>
 
 <!-- Guide template -->
@@ -156,10 +152,7 @@
 
 <!-- {Mainpage, News, Email} template -->
 <xsl:template match="/mainpage | /news | /email">
-<html>
-<head>
-  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
-  <link REL="shortcut icon" HREF="/favicon.ico" TYPE="image/x-icon"/>
+<xsl:call-template name="commonHTMLheader" />
   <xsl:if test="/mainpage/@id='news'">
     <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
   </xsl:if>
@@ -171,7 +164,7 @@
       <title><xsl:value-of select="subject"/></title>
     </xsl:when>
   </xsl:choose>
-</head>
+<xsl:text disable-output-escaping="yes">&lt;/head&gt;</xsl:text>
 <body style="margin:0px;" bgcolor="#000000">
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
@@ -180,7 +173,7 @@
     <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
     </td>
 
-    <td valign="bottom" align="left" bgcolor="#000000" colspan="2">
+    <td valign="bottom" align="left" bgcolor="#000000" colspan="2" lang="en">
       <p class="menu">
         <xsl:choose>
           <xsl:when test="/mainpage/@id='about'">
@@ -199,6 +192,7 @@
             <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a>
           </xsl:otherwise>
         </xsl:choose>
+        <!--
         |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='contract'">
@@ -208,6 +202,7 @@
             <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a>
           </xsl:otherwise>
         </xsl:choose>
+        -->
         |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='docs'">
@@ -226,10 +221,10 @@
           <xsl:otherwise>
             <a class="menulink" href="/main/en/lists.xml">Lists</a>
           </xsl:otherwise>
-	</xsl:choose>
-	| <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
-	| <a class="menulink" href="http://www.cafepress.com/officialgentoo/">Store</a>
-	|
+        </xsl:choose>
+        | <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
+        | <a class="menulink" href="http://www.cafepress.com/officialgentoo/">Store</a>
+        |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='newsletter'">
             <a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a>
@@ -278,55 +273,58 @@
           </td>
         </tr>
         <tr>
-          <td height="99%" valign="top" align="right">
+          <td height="99%" valign="top" align="left">
             <!--info goes here-->
             <table cellspacing="0" cellpadding="5" border="0">
               <tr>
-                <td valign="top">
+                <td valign="top" class="leftmenu" lang="en">
                   <p class="altmenu">
-                    Documentation:
-                    <br/>
-                    <a class="altlink" href="/main/en/about.xml">About Gentoo Linux</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/index.xml">User Docs</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/index.xml?catid=gentoodev">Developer Docs</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
-                    <br/><br/>
                     Installation:
                     <br/>
                     <a class="altlink" href="/doc/en/handbook/index.xml">Gentoo Handbook</a>
+                    <br/>
+                    <a class="altlink" href="/doc/en/index.xml?catid=install#doc_chap2">Installation Docs</a>
                    <br/><br/>
+                    Documentation:
+                    <br/>
+                    <a class="altlink" href="/doc/en/">Main Index</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/about.xml">About Gentoo</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/contract.xml">Social Contract</a>
+                    <br/><br/>
                     Resources:
                     <br/>
-                    <a class="altlink" href="/main/en/lists.xml">Mailing lists</a>
+                    <a class="altlink" href="http://bugs.gentoo.org">Bug Tracker</a>
                     <br/>
-                    <a class="altlink" href="http://forums.gentoo.org">Discussion forums</a>
+                    <a class="altlink" href="http://forums.gentoo.org">Discussion Forums</a>
                     <br/>
-                    <a class="altlink" href="/main/en/irc.xml">Official Gentoo IRC channels</a>
+                    <a class="altlink" href="/main/en/lists.xml">Mailing Lists</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/irc.xml">IRC Channels</a>
                     <br/>
                     <a class="altlink" href="/security/en/index.xml">Security Announcements</a>
                     <br/>
-                    <a class="altlink" href="http://packages.gentoo.org/">Online package database</a>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
                     <br/>
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
                     <br/>
-                    <a class="altlink" href="http://bugs.gentoo.org">Bugzilla bug tracker</a>
+                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS</a>
                     <br/>
-                    <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
+                    <a class="altlink" href="/proj/en/devrel/staffing-needs/">Staffing Needs</a>
                     <br/>
-                    <a class="altlink" href="/main/en/mirrors.xml">Download Mirrors</a>
+                    <a class="altlink" href="/main/en/mirrors.xml">Mirrors</a>
                     <br/>
-                    <!--
-                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
-                    -->
-                    <br/>
-                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS via the web</a>
+                    <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrents</a>
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
-                    <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrent Tracker</a>
+                    <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
+                    <!--
+                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
+                    -->
                     <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
                     <br/>
                     <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
@@ -342,14 +340,14 @@
                     <a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
                     <br/><br/>
                     Miscellaneous Resources:
-		    <br/>
-		    <a class="altlink" href="http://www.cafepress.com/officialgentoo/">Gentoo Linux Store</a>
-		    <br/>
+                    <br/>
+                    <a class="altlink" href="http://www.cafepress.com/officialgentoo/">Gentoo Linux Store</a>
+                    <br/>
                     <a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
                     <br/>
                     <a class="altlink" href="/main/en/articles.xml">IBM dW/Intel article archive</a>
                     <xsl:if test="/mainpage/@id='news'">
-                      <br/>
+                    <br/><br/>
                       Older News:<br/>
                       <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;$newsitemcount][position()&lt;20]/text()">
                         <xsl:variable name="newsuri" select="."/>
@@ -372,7 +370,7 @@
               <xsl:when test="/mainpage/@id='news'">
               <p class="news">
                 <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo-"/>
-                <span class="newsitem">We produce Gentoo Linux, a special flavor of Linux that
+                <span class="newsitem" lang="en">We produce Gentoo Linux, a special flavor of Linux that
                 can be automatically optimized and customized for just
                 about any application or need. Extreme performance,
                 configurability and a top-notch user and developer
@@ -383,7 +381,7 @@
 
               <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;=$newsitemcount]/text()">
                 <div class="news">
-                  <p class="newshead">
+                  <p class="newshead" lang="en">
                     <b><xsl:value-of select="document(.)/news/title"/></b>
                     <br/>
                     <font size="0.90em">
@@ -516,7 +514,7 @@
       <xsl:call-template name="rhcol"/>
     </td>
   </tr>
-  <tr>
+  <tr lang="en">
     <td align="right" class="infohead" colspan="3">
       Copyright 2001-2005 Gentoo Foundation, Inc.  Questions, Comments, Corrections?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
@@ -524,7 +522,7 @@
 </table>
 
 </body>
-</html>
+<xsl:text disable-output-escaping="yes">&lt;/html&gt;</xsl:text>
 </xsl:template>
 
 <!-- News items -->
@@ -550,14 +548,14 @@
         <td rowspan="2" valign="top" width="1">
           <img src="{@graphic}"/>
         </td>
-        <td class="alttext">
+        <td class="alttext" lang="en">
           <font color="#808080">
             Posted by <xsl:value-of select="poster"/> on <xsl:value-of select="date"/>
           </font>
         </td>
       </xsl:when>
       <xsl:otherwise>
-        <td class="alttext">
+        <td class="alttext" lang="en">
           <font color="#808080">
             Posted by <xsl:value-of select="poster"/> on <xsl:value-of select="date"/>
           </font>
@@ -1270,7 +1268,7 @@
     </tr>
     </xsl:if>
 
-      <tr>
+      <tr lang="en">
       <td align="center" class="topsep">
         <p class="alttext">
           <b>Donate</b> to support our development efforts.
@@ -1290,27 +1288,27 @@
         </form>
       </td>
     </tr>
-    <tr>
-      <td align="center" class="topsep">
-        <a href="http://www.vr.org">
+    <tr lang="en">
+    <td align="center" class="topsep">
+            <a href="http://www.vr.org">
 	    <img src="/images/vr-ad.png" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
         </a>
-	<p class="alttext">
-	    <a href="http://www.vr.org/">VR Hosted</a>
-	</p>
-      </td>
+	    <p class="alttext">
+	      <a href="http://www.vr.org/">VR Hosted</a>
+	    </p>
+    </td>
     </tr>
-    <tr>
-    <td align="center" class="topsep">
+    <tr lang="en">
+      <td align="center" class="topsep">
       <a href="http://www.tek.net" target="_top">
         <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.tek.net/">Tek Alchemy</a>
       </p>
-    </td>
+      </td>
     </tr>
-    <tr>
+    <tr lang="en">
     <td align="center" class="topsep">
       <a href="http://www.sevenl.net" target="_top">
         <img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/>
@@ -1320,20 +1318,45 @@
       </p>
     </td>
     </tr>
-    <tr>
-      <td align="center" class="topsep">
+    <tr lang="en">
+    <td align="center" class="topsep">
         <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
           <img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929">php|architect</a>
       </p>
-      </td>
-    </tr> 
+    </td>
+    </tr>
     <tr>
     <td align="center" class="topsep"/>
     </tr>
   </table>
+</xsl:template>
+
+<xsl:template name="commonHTMLheader">
+  <xsl:choose>
+    <xsl:when test="string-length($glang)>1">
+      <!-- Output html="$LANG" if possible -->
+      <!-- Do not output default "en" because many non-English pages have no lang attribute
+           and I'd rather not output any lang at all than send "en" for German pages e.g. -->
+      <!-- Language code and sub-code are case-insensitive and should be separated by a hyphen -->
+      <xsl:text disable-output-escaping="yes">
+        &lt;HTML lang="</xsl:text><xsl:value-of select="translate($glang,'_','-')"/><xsl:text disable-output-escaping="yes">"&gt;
+      </xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text disable-output-escaping="yes">
+        &lt;HTML&gt;
+      </xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text disable-output-escaping="yes">
+    &lt;head&gt;
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=UTF-8"&gt;
+    &lt;link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"&gt;
+    &lt;link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"&gt;
+ </xsl:text>
 </xsl:template>
 
 </xsl:stylesheet>
