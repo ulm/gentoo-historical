@@ -228,8 +228,8 @@ class PartProperties(gtk.Window):
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4.9
-			type = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, type, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
+			fstype = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
+			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, fstype, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
 			self.controller.part_selected(None, self.device, int(self.minor)+1)
 		else:

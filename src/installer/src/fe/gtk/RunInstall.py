@@ -80,6 +80,7 @@ class RunInstall(gtk.Window):
 			self.progress.set_fraction(1)
 			self.progress.set_text("Install failed!")
 			self.install_fail = True
+			return False
 #			print "Exception received:"
 #			print ndata
 		elif ntype == "int" and not self.install_fail:

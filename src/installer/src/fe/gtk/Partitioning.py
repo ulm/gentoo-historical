@@ -163,11 +163,11 @@ resize partitions.
 				self.info_type.set_text("Primary")
 		else:
 			self.info_type.set_text("Logical")
-		type = tmppart.get_type()
-		if type == "extended":
+		fstype = tmppart.get_type()
+		if fstype == "extended":
 			self.info_filesystem.set_text("N/A")
 		else:
-			self.info_filesystem.set_text(type)
+			self.info_filesystem.set_text(fstype)
 		start = tmppart.get_start()
 		end = tmppart.get_end()
 #		self.info_start.set_text(str(start))

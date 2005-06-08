@@ -329,5 +329,6 @@ class Installer:
 		gtk.main_quit()
 		sys.exit(0)
 
-install = Installer()
-install.run()
+if __name__ == "__main__":
+	install = Installer()
+	install.run()

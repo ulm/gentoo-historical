@@ -162,8 +162,8 @@ only NFS is supported.
 		self.mount_info_export.set_model(gtk.ListStore(gobject.TYPE_STRING))
 		self.mount_info_export.get_child().set_text(mount['export'])
 		i = 0
-		for type in self.mount_types:
-			if type == mount['type']:
+		for mounttype in self.mount_types:
+			if mounttype == mount['type']:
 				self.mount_info_type.set_active(i)
 			else:
 				i = i + 1
