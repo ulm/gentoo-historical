@@ -189,6 +189,7 @@ def set_network_mounts():
 					nfsmount2 = remotemounts[int(nfsmount2)-1]
 				else:
 					d.msgbox("Enter '" + nfsmount + "' is not a valid IP or hostname")
+					continue
 			else:
 				colon_location = nfsmount.find(':')
 				menuitem = nfsmount

@@ -437,17 +437,11 @@ on partitioning and the various filesystem types available in Linux.""")
 								tmppart.set_format(True)
 							else:
 								tmppart.set_format(False)						
-												
-		self._install_profile.set_partition_tables(devices)
+		try:										
+			self._install_profile.set_partition_tables(devices)
+		except:
+			self._d.msgbox(_(u"ERROR:  The partition tables could not be set correctly!"))
 
-			
-												
-		if self._d.yesno("Would you like to save changes?") == self._DLG_YES:
-			parts_tmp = {}
-			for part in devices.keys():
-				parts_tmp[part] = devices[part].get_install_profile_structure()
-			self._install_profile.set_partition_tables(parts_tmp)
-"""
 	def _set_network_mounts(self):
 	# This is where any NFS mounts will be specified
 		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())
@@ -455,15 +449,17 @@ on partitioning and the various filesystem types available in Linux.""")
 			menulist = []
 			for mount in network_mounts:
 				menulist.append(mount['host'] + ":" + mount['export'])
-			menulist.append("Add new network mount")
+			menulist.append("Add a new network mount")
 			choices = self._dmenu_list_to_choices(menulist)
-			code, menuitemidx = self._d.menu("Select a network mount", choices=choices, cancel="Done")
-			if code:
-				if self._d.yesno("Do you want to save changes?") == self._DLG_YES:
+			code, menuitemidx = self._d.menu("If you have any network shares you would like to mount during the install and for your new systemSelect a network mount", choices=choices, cancel="Save and Continue")
+			if code == self._DLG_CANCEL:
+				try:
 					self._install_profile.set_network_mounts(network_mounts)
+				except:
+					self._d.msgbox(_(u"ERROR: Could net set network mounts!"))
 				break
 			menuitem = menulist[int(menuitemidx)-1]
-			if menuitem == "Add new network mount":
+			if menuitem == "Add a new network mount":
 				code, nfsmount = self._d.inputbox("Enter NFS mount or just enter the IP/hostname to search for available mounts")
 				if code != self._DLG_OK: 
 					continue
@@ -481,6 +477,7 @@ on partitioning and the various filesystem types available in Linux.""")
 						nfsmount2 = remotemounts[int(nfsmount2)-1]
 					else:
 						self._d.msgbox("Enter '" + nfsmount + "' is not a valid IP or hostname")
+						continue
 				else:
 					colon_location = nfsmount.find(':')
 					menuitem = nfsmount
