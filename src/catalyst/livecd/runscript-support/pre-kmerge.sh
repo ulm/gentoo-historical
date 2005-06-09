@@ -1,12 +1,12 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/pre-kmerge.sh,v 1.12.2.1 2005/04/09 12:50:11 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/pre-kmerge.sh,v 1.12.2.2 2005/06/09 21:08:52 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
 
-CONFIG_PROTECT="-*" USE="livecd" emerge --oneshot --nodeps genkernel
+# CONFIG_PROTECT="-*" USE="livecd" emerge --oneshot --nodeps genkernel
 
 install -d /usr/portage/packages/gk_binaries
 rm -f /usr/src/linux
