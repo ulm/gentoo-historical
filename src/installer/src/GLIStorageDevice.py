@@ -97,7 +97,7 @@ class Device:
 			existing = False
 			if tmppart['origminor'] and not tmppart['format']:
 				existing = True
-			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'])
+			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'])
 
 	##
 	# Returns name of device (e.g. /dev/hda) being represented
