@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.3 2005/05/26 15:27:01 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.4 2005/06/09 15:31:23 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -89,6 +89,13 @@ get_video_cards() {
 	fi
 }
 
+get_baselayout_ver() {
+	BL_VER="$(cat /etc/gentoo-release | grep [0-9.])"
+	BL_MAJ_VER="$(echo ${BL_VER} | cut -d. -f1)"
+	BL_MIN_VER="$(echo ${BL_VER} | cut -d. -f2)"
+	BL_REV_VER="$(echo ${BL_VER} | cut -d. -f3)"
+}
+
 livecd_config_wireless() {
 	cd /tmp/setup.opts
 	dialog --title "SSID" --inputbox "Please enter your SSID, or leave blank for selecting the nearest open network" 20 50 2> ${iface}.SSID
@@ -130,6 +137,34 @@ livecd_config_wireless() {
 	fi
 }
 
+livecd_write_wireless_conf() {
+	cd /tmp/setup.opts
+	SSID="$(cat ${iface}.SSID)"
+	if [ -n "${SSID}" ]
+	then
+		WEP_TYPE="$(cat ${iface}.WEPTYPE)"
+		if [ -n "${WEP_TYPE}" ]
+		then
+			WEP_KEY="$(cat ${iface}.WEPKEY)"
+			if [ -n "${WEP_KEY}" ]
+			then
+				SSID_TRANS="$(echo ${SSID//[![:word:]]/_})"
+				echo "# This wireless configuration file was built by net-setup" > /etc/conf.d/wireless
+				case ${WEP_TYPE} in
+					1)
+						echo "key_${SSID_TRANS}=\"${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
+					;;
+					2)
+						echo "key_${SSID_TRANS}=\"s:${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
+					;;
+				esac
+				echo "preferred_aps=( \"${SSID}\" )" >> /etc/conf.d/wireless
+				echo "associate_order=\"forcepreferredonly\"" >> /etc/conf.d/wireless
+			fi
+		fi
+	fi
+}
+
 livecd_config_ip() {
 	cd /tmp/setup.opts
 	dialog --title "TCP/IP setup" --menu "You can use DHCP to automatically configure a network interface or you can specify an IP and related settings manually. Choose one option:" 20 60 7 1 "Use DHCP to auto-detect my network settings" 2 "Specify an IP address manually" 2> ${iface}.DHCP
@@ -163,6 +198,31 @@ livecd_config_ip() {
 				if [ -n "${SUFFIX}" ]
 				then
 					echo "search ${SUFFIX}" >> /etc/resolv.conf
+				fi
+			fi
+		;;
+	esac
+}
+
+livecd_write_net_conf() {
+	cd /tmp/setup.opts
+	echo "# This network configuration was written by net-setup" > /etc/conf.d/net
+	DHCP="$(cat ${iface}.DHCP)"
+	case ${DHCP} in
+		1)
+			echo "iface_${iface}=\"dhcp\"" >> /etc/conf.d/net
+		;;
+		2)
+			IP="$(cat ${iface}.IP)"
+			BROADCAST="$(cat ${iface}.BC)"
+			NETMASK="$(cat ${iface}.NM)"
+			GATEWAY="$(cat ${iface}.GW)"
+			if [ -n "${IP}" -a -n "${BROADCAST}" -a -n "${NETMASK}" ]
+			then
+				echo "iface_eth0=\"${IP} broadcast ${BROADCAST} netmask ${NETMASK}\"" >> /etc/conf.d/net
+				if [ -n "${GATEWAY}" ]
+				then
+					echo "gateway=\"${iface}/${GATEWAY}\"" >> /etc/conf.d/net
 				fi
 			fi
 		;;
