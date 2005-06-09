@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.53 2005/06/09 05:57:56 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.54 2005/06/09 23:13:57 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1002,9 +1002,9 @@ class InstallProfile:
 			for attrName in attr.getNames():
 				part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
-#		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = int(part_entry['end'])
-#		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = int(part_entry['start'])
-		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = int(part_entry['mb'])
+#		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = long(part_entry['end'])
+#		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = long(part_entry['start'])
+		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = long(part_entry['mb'])
 		if GLIUtility.is_numeric(part_entry['minor']): part_entry['minor'] = int(part_entry['minor'])
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
 		self._temp_partition_table[part_entry['minor']] = part_entry

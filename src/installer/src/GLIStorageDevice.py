@@ -59,7 +59,7 @@ class Device:
 		self._cylinder_bytes = self._geometry['heads'] * self._geometry['sectors'] * self._sector_bytes
 		self._total_sectors = self._parted_dev.length
 		self._sectors_in_cylinder = self._geometry['heads'] * self._geometry['sectors']
-		self._total_mb = int(self._total_bytes / MEGABYTE)
+		self._total_mb = long(self._total_bytes / MEGABYTE)
 
 	##
 	# Sets partition info from disk.
@@ -68,7 +68,7 @@ class Device:
 		last_log_part = 4
 		parted_part = self._parted_disk.next_partition()
 		while parted_part:
-			part_mb = int((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
+			part_mb = long((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
 			if parted_part.num >= 1:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
@@ -170,7 +170,8 @@ class Device:
 	# @param type Partition type (ext2, ext3, fat32, linux-swap, free, extended, etc.)
 	# @param mountpoint='' Partition mountpoint
 	# @param mountopts='' Partition mount options
-	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts=''):
+	# @param mkfsopts='' Additional mkfs options
+	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts='',mkfsopts=''):
 		new_minor = int(free_minor) + 1
 		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
@@ -201,7 +202,7 @@ class Device:
 #			print "add_partition(): new part doesn't use all freespace. new free part is: minor=" + str(free_minor)
 		else:
 			del self._partitions[free_minor]
-		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts)
+		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts,mkfsopts=mkfsopts)
 		if type == "extended":
 			self._partitions[4.9] = Partition(self, 4.9, mb, 0, 0, "free")
 		self.tidy_partitions()
@@ -329,7 +330,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts() }
+			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': 0, 'end': 0 }
 		return devdic
 
 	##
@@ -359,27 +360,27 @@ class Device:
 	##
 	# Returns the number of sectors on the device
 	def get_num_sectors(self):
-		return int(self._total_sectors)
+		return long(self._total_sectors)
 
 	##
 	# Returns the size of a cylinder in bytes
 	def get_cylinder_size(self):
-		return int(self._cylinder_bytes)
+		return long(self._cylinder_bytes)
 
 	##
 	# Returns the size of a sector in bytes
 	def get_sector_size(self):
-		return int(self._sector_bytes)
+		return long(self._sector_bytes)
 
 	##
 	# Returns the number of cylinders
 	def get_num_cylinders(self):
-		return int(self._geometry['cylinders'])
+		return long(self._geometry['cylinders'])
 
 	##
 	# Returns the total number of bytes on the device
 	def get_drive_bytes(self):
-		return int(self._total_bytes)
+		return long(self._total_bytes)
 
 	##
 	# Returns the total number of MB on the device
@@ -451,13 +452,14 @@ class Partition:
 	# @param type Parameter Type of partition (ext2, ext3, fat32, linux-swap, free, extended, etc.)
 	# @param mountpoint='' Mountpoint of partition
 	# @param mountopts='' Mount options of partition
+	# @param mkfsopts='' Additional mkfs options
 	# @param format=True Format partition
 	# @param existing=False This partition exists on disk
 	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts=''):
 		self._device = device
 		self._minor = float(minor)
-		self._start = int(start)
-		self._end = int(end)
+		self._start = long(start)
+		self._end = long(end)
 		self._type = type or "unknown"
 		self._mountpoint = mountpoint
 		self._mountopts = mountopts
@@ -479,15 +481,15 @@ class Partition:
 				dev_node = device._device + str(self._orig_minor)
 #			print "dev_node = " + dev_node
 			if type == "ntfs":
-				min_bytes = int(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
+				min_bytes = long(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+				self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
 				self._resizeable = True
 			elif type == "ext2" or type == "ext3":
-				block_size = int(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
-				free_blocks = int(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
-				free_bytes = int(block_size * free_blocks)
+				block_size = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
+				free_blocks = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
+				free_bytes = long(block_size * free_blocks)
 				# can't hurt to pad (the +50) it a bit since this is really just a guess
-				self._min_mb_for_resize = self._mb - int(free_bytes / MEGABYTE) + 50
+				self._min_mb_for_resize = self._mb - long(free_bytes / MEGABYTE) + 50
 				self._resizeable = True
 			else:
 				parted_part = self._device._parted_disk.get_partition(int(self._orig_minor))
@@ -498,7 +500,7 @@ class Partition:
 					return
 				resize_constraint = parted_fs.get_resize_constraint()
 				min_bytes = resize_constraint.min_size * self._device._sector_bytes
-				self._min_mb_for_resize = int(min_bytes / MEGABYTE) + 1
+				self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
 				self._resizeable = True
 
 	##
@@ -559,34 +561,34 @@ class Partition:
 	# Sets the start sector for the partition
 	# @param start Start sector
 	def set_start(self, start):
-		self._start = int(start)
+		self._start = long(start)
 
 	##
 	# Returns the start sector for the partition
 	def get_start(self):
-		return int(self._start)
+		return long(self._start)
 
 	##
 	# Sets the end sector of the partition
 	# @param end End sector
 	def set_end(self, end):
-		self._end = int(end)
+		self._end = long(end)
 
 	##
 	# Returns end sector for the partition
 	def get_end(self):
-		return int(self._end)
+		return long(self._end)
 
 	##
 	# Returns size of partition in MB
 	def get_mb(self):
-		return int(self._mb)
+		return long(self._mb)
 
 	##
 	# Sets size of partition in MB
 	# @param mb Parameter description
 	def set_mb(self, mb):
-		self._mb = int(mb)
+		self._mb = long(mb)
 
 	##
 	# Sets type of partition
