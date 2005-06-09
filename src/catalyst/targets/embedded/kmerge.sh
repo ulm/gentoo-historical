@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Technologies, Inc.
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/kmerge.sh,v 1.1.2.1 2005/05/25 19:28:05 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/kmerge.sh,v 1.1.2.2 2005/06/09 21:23:15 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -17,7 +17,7 @@ export CONFIG_PROTECT="-*"
 rm -f /usr/src/linux
 
 #set the timezone for the kernel build
-rm /etc/localtime
+rm -f /etc/localtime
 ln -s /usr/share/zoneinfo/UTC /etc/localtime
 
 [ -e "/var/tmp/${clst_kname}.use" ] && export USE="$( cat /var/tmp/${clst_kname}.use )" || unset USE

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.8 2005/06/02 15:43:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.9 2005/06/09 21:23:14 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -64,7 +64,7 @@ then
 fi
 
 # clean up the time and set to UTC
-rm -rf /etc/localtime
+rm -f /etc/localtime
 cp /usr/share/zoneinfo/UTC /etc/localtime
 
 # setup the hostname
