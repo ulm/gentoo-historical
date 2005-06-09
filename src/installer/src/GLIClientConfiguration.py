@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.30 2005/06/01 00:17:24 agaffney Exp $
+$Id: GLIClientConfiguration.py,v 1.31 2005/06/09 06:54:40 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -74,26 +74,26 @@ class ClientConfiguration:
 		self._verbose = True
 		self.data = ""  # used for serialization
 
-		_parser = SimpleXMLParser.SimpleXMLParser()
+		self._parser = SimpleXMLParser.SimpleXMLParser()
 
-		_parser.addHandler('client-configuration/architecture-template', self.set_architecture_template)
-		_parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
-		_parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
-		_parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
-		_parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
-		_parser.addHandler('client-configuration/interactive', self.set_interactive)
-		_parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
-		_parser.addHandler('client-configuration/log-file', self.set_log_file)
-		_parser.addHandler('client-configuration/network-interface', self.set_network_interface)
-		_parser.addHandler('client-configuration/network-ip', self.set_network_ip)
-		_parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
-		_parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
-		_parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
-		_parser.addHandler('client-configuration/network-type', self.set_network_type)
-		_parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
-		_parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
-		_parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
-		_parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
+		self._parser.addHandler('client-configuration/architecture-template', self.set_architecture_template)
+		self._parser.addHandler('client-configuration/dns-servers', self.set_dns_servers)
+		self._parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
+		self._parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
+		self._parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
+		self._parser.addHandler('client-configuration/interactive', self.set_interactive)
+		self._parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
+		self._parser.addHandler('client-configuration/log-file', self.set_log_file)
+		self._parser.addHandler('client-configuration/network-interface', self.set_network_interface)
+		self._parser.addHandler('client-configuration/network-ip', self.set_network_ip)
+		self._parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
+		self._parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
+		self._parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
+		self._parser.addHandler('client-configuration/network-type', self.set_network_type)
+		self._parser.addHandler('client-configuration/profile-uri', self.set_profile_uri)
+		self._parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
+		self._parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
+		self._parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
 		
 	##
 	# Parses the given filename populating the client_configuration.
