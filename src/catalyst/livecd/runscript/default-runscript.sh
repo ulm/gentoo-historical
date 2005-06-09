@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.3 2005/05/25 19:17:09 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.4 2005/06/09 15:40:19 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -154,9 +154,6 @@ case $1 in
 			${clst_chroot_path}/root/.bash_profile
 		cp ${clst_sharedir}/livecd/files/livecd-local.start \
 			${clst_chroot_path}/etc/conf.d/local.start
-		mkdir -p /usr/share/faces
-		cp ${clst_sharedir}/livecd/files/gentoo.png \
-			${clst_chroot_path}/usr/share/faces
 
 		# touch /etc/startx if our livecd/type requires it
 		if [ "${clst_livecd_type}" = "gentoo-gamecd" ] \
