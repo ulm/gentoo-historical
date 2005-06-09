@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.41 2005/05/27 20:08:10 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.42 2005/06/09 06:24:37 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -303,19 +303,28 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				parted_disk.commit()
 				if newpart['format']:
 					if newpart['type'] == "ext2":
-						if GLIUtility.spawn("mke2fs " + device + str(part)):
+						if GLIUtility.spawn("mkfs.ext2 " + newpart['mkfsopts'] + " " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext2 filesystem on " + device + str(part))
 					elif newpart['type'] == "ext3":
-						if GLIUtility.spawn("mke2fs -j " + device + str(part)):
+						if GLIUtility.spawn("mkfs.ext3 " + newpart['mkfsopts'] + " " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext3 filesystem on " + device + str(part))
+					elif newpart['type'] == "jfs":
+						if GLIUtility.spawn("mkfs.jfs " + newpart['mkfsopts'] + " " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create jfs filesystem on " + device + str(part))
+					elif newpart['type'] == "xfs":
+						if GLIUtility.spawn("mkfs.xfs " + newpart['mkfsopts'] + " " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create xfs filesystem on " + device + str(part))
+					elif newpart['type'] == "reiserfs":
+						if GLIUtility.spawn("mkfs.reiserfs " + newpart['mkfsopts'] + " " + device + str(part)):
+							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create reiserfs filesystem on " + device + str(part))
 					elif newpart['type'] == "linux-swap":
-						if GLIUtility.spawn("mkswap " + device + str(part)):
+						if GLIUtility.spawn("mkswap " + newpart['mkfsopts'] + " " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create swap on " + device + str(part))
 					elif newpart['type'] == "fat32":
-						if GLIUtility.spawn("mkfs.vfat -F 32 " + device + str(part)):
+						if GLIUtility.spawn("mkfs.vfat -F 32 " + newpart['mkfsopts'] + " " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create fat32 filesystem on " + device + str(part))
 					elif newpart['type'] == "ntfs":
-						if GLIUtility.spawn("mkntfs " + device + str(part)):
+						if GLIUtility.spawn("mkntfs " + newpart['mkfsopts'] + " " + device + str(part)):
 							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + device + str(part))
 				start = end + 1
 
