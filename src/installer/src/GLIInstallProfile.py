@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.52 2005/06/05 21:49:39 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.53 2005/06/09 05:57:56 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -987,23 +987,23 @@ class InstallProfile:
 	# @param attr Parameter description
 	def add_partitions_device_partition(self, xml_path, unused, attr):
 		part_entry = {'end': 0, 'format': None, 'mb': 0, 'minor': 0, 'mountopts': '', 'mountpoint': '', 'origminor': '', 'start': 0, 'type': ''}
-		if type(attr) == tuple:
-			part_entry['end'] = attr[0]
-			part_entry['format'] = attr[1]
-			part_entry['mb'] = attr[2]
-			part_entry['minor'] = attr[3]
-			part_entry['mountopts'] = attr[4]
-			part_entry['mountpoint'] = attr[5]
-			part_entry['origminor'] = attr[6]
-			part_entry['start'] = attr[7]
-			part_entry['type'] = attr[8]
-		else:
-			if "minor" in attr.getNames():
-				for attrName in attr.getNames():
-					part_entry[attrName] = str(attr.getValue(attrName))
+#		if type(attr) == tuple:
+#			part_entry['end'] = attr[0]
+#			part_entry['format'] = attr[1]
+#			part_entry['mb'] = attr[2]
+#			part_entry['minor'] = attr[3]
+#			part_entry['mountopts'] = attr[4]
+#			part_entry['mountpoint'] = attr[5]
+#			part_entry['origminor'] = attr[6]
+#			part_entry['start'] = attr[7]
+#			part_entry['type'] = attr[8]
+#		else:
+		if "minor" in attr.getNames():
+			for attrName in attr.getNames():
+				part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
-		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = int(part_entry['end'])
-		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = int(part_entry['start'])
+#		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = int(part_entry['end'])
+#		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = int(part_entry['start'])
 		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = int(part_entry['mb'])
 		if GLIUtility.is_numeric(part_entry['minor']): part_entry['minor'] = int(part_entry['minor'])
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
@@ -1112,7 +1112,7 @@ class InstallProfile:
 				ips = partitions[device].get_install_profile_structure()
 				for minor in ips:
 					part = ips[minor]
-					self.xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" start=\"%s\" end=\"%s\" mountopts=\"%s\" format=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['start']), str(part['end']), str(part['mountopts']), str(part['format']))
+					self.xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" format=\"%s\" mkfsopts=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['mountopts']), str(part['format']), str(part['mkfsopts']))
 				self.xmldoc += "</device>"
 			self.xmldoc += "</partitions>"
 

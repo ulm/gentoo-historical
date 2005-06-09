@@ -329,7 +329,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'start': tmppart.get_start(), 'end': tmppart.get_end(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format() }
+			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts() }
 		return devdic
 
 	##
@@ -439,6 +439,7 @@ class Partition:
 	_resizeable = None
 	_min_mb_for_resize = 0
 	_mb = 0
+	_mkfsopts = None
 	
 	##
 	# Initialization function for the Partition class
@@ -452,7 +453,7 @@ class Partition:
 	# @param mountopts='' Mount options of partition
 	# @param format=True Format partition
 	# @param existing=False This partition exists on disk
-	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0):
+	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts=''):
 		self._device = device
 		self._minor = float(minor)
 		self._start = int(start)
@@ -463,6 +464,7 @@ class Partition:
 		self._format = format
 		self._mb = mb
 		self._orig_minor = origminor
+		self._mkfsopts = mkfsopts
 		if type != "free":
 			if existing and not origminor:
 				self._orig_minor = self._minor
@@ -541,6 +543,17 @@ class Partition:
 			return None
 		else:
 			return self._device.get_partition_at(self._start, ignore_extended=0)
+
+	##
+	# Sets the options passed to mkfs
+	# @param mkfsopts Options passed to mkfs
+	def set_mkfsopts(self, mkfsopts):
+		self._mkfsopts = mkfsopts
+
+	##
+	# Returns the options passes to mkfs
+	def get_mkfsopts(self):
+		return self._mkfsopts
 
 	##
 	# Sets the start sector for the partition
