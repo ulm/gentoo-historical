@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.9 2005/06/09 21:23:14 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.10 2005/06/10 14:40:58 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -33,15 +33,6 @@ rc-update add pwgen default
 [ -e /etc/init.d/metalog ] && rc-update add metalog default
 [ -e /etc/init.d/syslog-ng ] && rc-update add syslog-ng default
 [ -e /etc/init.d/alsasound ] && rc-update add alsasound default
-
-# Comment out current getty settings
-sed -i -e '/^c[0-9]/ s/^/#/' /etc/inittab
-
-# Add our own getty settings
-for x in 1 2 3 4 5 6
-do
-	echo "c${x}:12345:respawn:/sbin/agetty -nl /bin/bashlogin 38400 tty${x} linux" >> /etc/inittab
-done
 
 # perform any rcadd then any rcdel
 if [ -n "${clst_livecd_rcadd}" ] || [ -n "${clst_livecd_rcdel}" ]
