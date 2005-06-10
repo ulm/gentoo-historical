@@ -144,6 +144,7 @@ def set_partitions():
 					else:
 						tmptitle += "Primary ("
 					tmptitle += tmppart.get_type() + ", "
+					tmptitle += (tmppart.get_mkfsopts() or "none") + ", "
 					tmptitle += (tmppart.get_mountpoint() or "none") + ", "
 					tmptitle += (tmppart.get_mountopts() or "none") + ", "
 					tmptitle += str(tmppart.get_mb()) + "MB)"
