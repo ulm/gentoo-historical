@@ -98,6 +98,7 @@ def set_partitions():
 					else:
 						entry += "Primary ("
 					entry += tmppart.get_type() + ", "
+					entry += (tmppart.get_mkfsopts() or "none") + ", "
 					entry += (tmppart.get_mountpoint() or "none") + ", "
 					entry += (tmppart.get_mountopts() or "none") + ", "
 					entry += str(tmppart.get_mb()) + "MB)"
@@ -107,20 +108,33 @@ def set_partitions():
 			part_to_edit = partlist[int(part_to_edit)-1]
 			tmppart = tmpparts[part_to_edit]
 			if tmppart.get_type() == "free":
+				# partition size first
 				free_mb = tmppart.get_mb()
 				code, new_mb = d.inputbox("Size of new partition in MB (max " + str(free_mb) + "MB):", init=str(free_mb))
 				if code != DLG_OK: continue
 				if int(new_mb) > free_mb:
 					d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
 					continue
-				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "extended", "other"]
+				# partition type
+				part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "jfs", "xfs", "reiserfs", "extended", "other"]
 				code, type = d.menu("Type for new partition (reiserfs not yet supported!)", choices=dmenu_list_to_choices(part_types))
 				if code != DLG_OK: continue
 				type = part_types[int(type)-1]
+				
+				# 'other' partition type
 				if type == "other":
 					code, type = d.inputbox("New partition's type:")
 				if code != DLG_OK: continue
-				devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
+				
+				new_mkfsopts = tmppart.get_mkfsopts()
+				# extra mkfs options
+				if type != "extended":
+					code, new_mkfsopts = d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
+					if code != DLG_OK: continue
+		
+				# now add it to the data structure
+				devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type,mkfsopts=new_mkfsopts)
+
 			else:
 				while 1:
 					tmppart = tmpparts[part_to_edit]

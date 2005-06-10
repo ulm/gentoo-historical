@@ -380,6 +380,7 @@ on partitioning and the various filesystem types available in Linux.""")
 						else:
 							entry += _(u"Primary (")
 						entry += tmppart.get_type() + ", "
+						entry += (tmppart.get_mkfsopts() or "none") + ", "
 						entry += (tmppart.get_mountpoint() or "none") + ", "
 						entry += (tmppart.get_mountopts() or "none") + ", "
 						entry += str(tmppart.get_mb()) + "MB)"
@@ -389,20 +390,33 @@ on partitioning and the various filesystem types available in Linux.""")
 				part_to_edit = partlist[int(part_to_edit)-1]
 				tmppart = tmpparts[part_to_edit]
 				if tmppart.get_type() == "free":
+					# partition size first
 					free_mb = tmppart.get_mb()
 					code, new_mb = self._d.inputbox("Enter the size of the new partition in MB (max " + str(free_mb) + "MB).  If creating an extended partition input its entire size (not just the first logical size):", init=str(free_mb))
 					if code != self._DLG_OK: continue
 					if int(new_mb) > free_mb:
 						self._d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
 						continue
+					# partition type
+					# part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "jfs", "xfs", "reiserfs", "extended", "other"]
 					part_types = [("ext2", "Old, stable, but no journaling"), ("ext3", "ext2 with journaling and b-tree indexing (RECOMMENDED)"), ("linux-swap", "Swap partition for memory overhead"), ("fat32", "Windows filesystem format used in Win9X and XP"), ("ntfs", "Windows filesystem format used in Win2K and NT"), ("extended", "Create an extended partition containing other logical partitions"), ("other", "Something else we probably don't support.")]
 					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition. CREATION of Reiserfs partitions is not yet supported by the installer!  If you want reiserfs please exit and follow chapter 4 of the Gentoo Installation Handbook."), choices=part_types)
 					if code != self._DLG_OK: continue
 					#type = part_types[int(type)-1]
+					
+					# 'other' partition type
 					if type == "other":
 						code, type = self._d.inputbox("New partition's type:")
 					if code != self._DLG_OK: continue
-					devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
+					
+					new_mkfsopts = tmppart.get_mkfsopts()
+					# extra mkfs options
+					if type != "extended":
+						code, new_mkfsopts = d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
+						if code != DLG_OK: continue
+			
+					# now add it to the data structure
+					devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type,mkfsopts=new_mkfsopts)
 				else:
 					while 1:
 						tmppart = tmpparts[part_to_edit]
@@ -451,7 +465,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				menulist.append(mount['host'] + ":" + mount['export'])
 			menulist.append("Add a new network mount")
 			choices = self._dmenu_list_to_choices(menulist)
-			code, menuitemidx = self._d.menu("If you have any network shares you would like to mount during the install and for your new systemSelect a network mount", choices=choices, cancel="Save and Continue")
+			code, menuitemidx = self._d.menu(_(u"If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."), choices=choices, cancel="Save and Continue")
 			if code == self._DLG_CANCEL:
 				try:
 					self._install_profile.set_network_mounts(network_mounts)
@@ -460,14 +474,14 @@ on partitioning and the various filesystem types available in Linux.""")
 				break
 			menuitem = menulist[int(menuitemidx)-1]
 			if menuitem == "Add a new network mount":
-				code, nfsmount = self._d.inputbox("Enter NFS mount or just enter the IP/hostname to search for available mounts")
+				code, nfsmount = self._d.inputbox(_(u"Enter NFS mount or just enter the IP/hostname to search for available mounts"))
 				if code != self._DLG_OK: 
 					continue
 				if not GLIUtility.is_nfs(nfsmount):
 					if GLIUtility.is_ip(nfsmount) or GLIUtility.is_hostname(nfsmount):
 						status, remotemounts = GLIUtility.spawn("/usr/sbin/showmount -e " + nfsmount + " 2>&1 | egrep '^/' | cut -d ' ' -f 1 && echo", return_output=True)
 						if not len(remotemounts):
-							self._d.msgbox("No NFS exports detected on " + nfsmount)
+							self._d.msgbox(_(u"No NFS exports were detected on ") + nfsmount)
 							continue
 						for i in range(0, len(remotemounts)):
 							remotemounts[i] = string.strip(remotemounts[i])
@@ -476,7 +490,7 @@ on partitioning and the various filesystem types available in Linux.""")
 							continue
 						nfsmount2 = remotemounts[int(nfsmount2)-1]
 					else:
-						self._d.msgbox("Enter '" + nfsmount + "' is not a valid IP or hostname")
+						self._d.msgbox("The address you entered, '" + nfsmount + "', is not a valid IP or hostname.  Please try again.")
 						continue
 				else:
 					colon_location = nfsmount.find(':')
@@ -508,6 +522,7 @@ on partitioning and the various filesystem types available in Linux.""")
 	def _set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		make_conf = self._install_profile.get_make_conf()
+		self._d.msgbox(_(u"The installer will now ask a series of questions regarding the contents of /etc/make.conf"))
 		while 1:
 			menulist = ["ACCEPT_KEYWORDS", "CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "USE", "GENTOO_MIRRORS", "SYNC"]
 			code, menuitem = self._d.menu("Choose a variable to edit", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
