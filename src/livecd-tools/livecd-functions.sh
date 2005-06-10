@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.5 2005/06/10 00:18:30 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.6 2005/06/10 13:12:00 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -87,13 +87,6 @@ get_video_cards() {
 			no_gl
 		fi
 	fi
-}
-
-get_baselayout_ver() {
-	BL_VER="$(cat /etc/gentoo-release | grep [0-9.])"
-	BL_MAJ_VER="$(echo ${BL_VER} | cut -d. -f1)"
-	BL_MIN_VER="$(echo ${BL_VER} | cut -d. -f2)"
-	BL_REV_VER="$(echo ${BL_VER} | cut -d. -f3)"
 }
 
 livecd_config_wireless() {
