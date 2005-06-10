@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.42 2005/06/09 06:24:37 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.43 2005/06/10 02:31:57 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -146,7 +146,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #								tmppart['start'] = start_sector
 #							if tmppart_log['mb'] == "*":
 #								tmppart_log['mb'] = mb_left
-#							part_bytes = int(tmppart_log['mb'] * MEGABYTE)
+#							part_bytes = long(tmppart_log['mb'] * MEGABYTE)
 #							part_sectors = round(part_bytes / sector_size)
 #							tmppart_log['start'] = start_sector
 #							tmppart_log['end'] = start_sector + part_sectors - 1
@@ -155,7 +155,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #						continue
 #					if tmppart['mb'] == "*":
 #						tmppart['mb'] = mb_left
-#					part_bytes = int(tmppart['mb'] * MEGABYTE)
+#					part_bytes = long(tmppart['mb'] * MEGABYTE)
 #					part_sectors = round(part_bytes / sector_size)
 #					tmppart['start'] = start_sector
 #					tmppart['end'] = start_sector + part_sectors - 1
@@ -220,7 +220,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						minor = part
 						start = tmppart['start']
 						# Replace 512 with code to retrieve bytes per sector for device
-						end = start + (int(tmppart['mb']) * MEGABYTE / 512)
+						end = start + (long(tmppart['mb']) * MEGABYTE / 512)
 						for i in new_part_list:
 							if i <= new_part: continue
 							if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
@@ -235,7 +235,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "ntfs":
 							total_sectors = end - start + 1
-							total_bytes = int(total_sectors) * 512
+							total_bytes = long(total_sectors) * 512
 							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
 							if ret: # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
@@ -268,15 +268,17 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for part in new_part_list:
 				newpart = parts_new[device][part]
 				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
-				part_sectors = int(newpart['mb']) * MEGABYTE / 512
+				part_sectors = long(newpart['mb']) * MEGABYTE / 512
 				end = start + part_sectors
 				for i in new_part_list:
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
 						end = parts_new[device][i]['start'] - 1
 					break
+				# cap to end of device
 				if end >= device_sectors:
 					end = device_sectors - 1
+				# now the actual creation
 				if newpart['type'] == "free":
 					# Nothing to be done for this type
 					pass
@@ -300,7 +302,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					for flag in newpart['flags']:
 						if parted_disk.get_partition(part).is_flag_available(flag):
 							parted_disk.get_partition(part).set_flag(flag)
+				# write to disk
 				parted_disk.commit()
+				# now format the partition
 				if newpart['format']:
 					if newpart['type'] == "ext2":
 						if GLIUtility.spawn("mkfs.ext2 " + newpart['mkfsopts'] + " " + device + str(part)):

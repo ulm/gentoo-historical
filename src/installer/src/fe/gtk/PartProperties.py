@@ -1,6 +1,12 @@
 import gtk
 import PartitionButton
 
+# keep these in sync with GLIStorageDevice!
+# these are here so that we can change them easily in future
+# the values were chosen to represent perfect floating point representations
+FREE_MINOR_FRAC_PRI = 1.0/32.0
+FREE_MINOR_FRAC_LOG = 1.0/8.0
+
 class PartProperties(gtk.Window):
 
 	def __init__(self, controller, device, minor, cur_size, min_size, max_size, fstype, bytes_in_sector=512, format=True):
@@ -227,7 +233,7 @@ class PartProperties(gtk.Window):
 			part_size = round(self.max_size * part_space)
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
-				self.minor = 4.9
+				self.minor = 4 + FREE_MINOR_FRAC_LOG
 			fstype = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, fstype, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
