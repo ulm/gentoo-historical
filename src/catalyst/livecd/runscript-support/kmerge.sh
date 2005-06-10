@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.2 2005/06/09 21:23:14 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.3 2005/06/10 19:26:04 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -52,7 +52,8 @@ build_kernel() {
 	if [ "${clst_livecd_devmanager}" == "udev" ]
 	then
 		GK_ARGS="${GK_ARGS} --udev"
-	else
+	elif [ "${clst_livecd_devmanager}" == "devfs" ]
+	then
 		GK_ARGS="${GK_ARGS} --no-udev"
 	fi
 

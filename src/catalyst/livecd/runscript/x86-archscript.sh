@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.2 2005/05/20 17:10:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.3 2005/06/10 19:26:04 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -73,7 +73,8 @@ case $1 in
 		if [ "${clst_livecd_devmanager}" == "udev" ]
 		then
 			cmdline_opts="${cmdline_opts} udev nodevfs"
-		else
+		elif [ "${clst_livecd_devmanager}" == "devfs" ]
+		then
 			cmdline_opts="${cmdline_opts} noudev devfs"
 		fi	
 
