@@ -126,14 +126,8 @@ def set_partitions():
 					code, type = d.inputbox("New partition's type:")
 				if code != DLG_OK: continue
 				
-				new_mkfsopts = tmppart.get_mkfsopts()
-				# extra mkfs options
-				if type != "extended":
-					code, new_mkfsopts = d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
-					if code != DLG_OK: continue
-		
 				# now add it to the data structure
-				devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type,mkfsopts=new_mkfsopts)
+				devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
 
 			else:
 				while 1:
@@ -148,7 +142,7 @@ def set_partitions():
 					tmptitle += (tmppart.get_mountpoint() or "none") + ", "
 					tmptitle += (tmppart.get_mountopts() or "none") + ", "
 					tmptitle += str(tmppart.get_mb()) + "MB)"
-					menulist = ["Delete", "Mount Point", "Mount Options", "Format"]
+					menulist = ["Delete", "Mount Point", "Mount Options", "Format", "Extra mkfs.* Parameters"]
 					code, part_action = d.menu(tmptitle, choices=dmenu_list_to_choices(menulist), cancel="Back")
 					if code != DLG_OK: break
 					part_action = menulist[int(part_action)-1]
@@ -169,7 +163,13 @@ def set_partitions():
 						if code == DLG_YES: 
 							tmppart.set_format(True)
 						else:
-							tmppart.set_format(False)						
+							tmppart.set_format(False)
+					elif part_action == "Extra mkfs.* Parameters":
+						new_mkfsopts = tmppart.get_mkfsopts()
+						# extra mkfs options
+						if tmppart.get_type() != "extended":
+							code, new_mkfsopts = self._d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
+							if code == self._DLG_OK: tmppart.set_mkfsopts(new_mkfsopts)							
 												
 	install_profile.set_partition_tables(devices)
 

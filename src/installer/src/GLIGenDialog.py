@@ -398,25 +398,17 @@ on partitioning and the various filesystem types available in Linux.""")
 						self._d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
 						continue
 					# partition type
-					# part_types = ["ext2", "ext3", "linux-swap", "fat32", "ntfs", "jfs", "xfs", "reiserfs", "extended", "other"]
-					part_types = [("ext2", "Old, stable, but no journaling"), ("ext3", "ext2 with journaling and b-tree indexing (RECOMMENDED)"), ("linux-swap", "Swap partition for memory overhead"), ("fat32", "Windows filesystem format used in Win9X and XP"), ("ntfs", "Windows filesystem format used in Win2K and NT"), ("extended", "Create an extended partition containing other logical partitions"), ("other", "Something else we probably don't support.")]
-					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition. CREATION of Reiserfs partitions is not yet supported by the installer!  If you want reiserfs please exit and follow chapter 4 of the Gentoo Installation Handbook."), choices=part_types)
+					part_types = [("ext2", "Old, stable, but no journaling"), ("ext3", "ext2 with journaling and b-tree indexing (RECOMMENDED)"), ("linux-swap", "Swap partition for memory overhead"), ("fat32", "Windows filesystem format used in Win9X and XP"), ("ntfs", "Windows filesystem format used in Win2K and NT"),("jfs", "IBM's journaling filesystem.  stability unknown."), ("xfs", "Don't use this unless you know you need it."), ("reiserfs", "B*-tree based filesystem. great performance. Only V3 supported."), ("extended", "Create an extended partition containing other logical partitions"), ("other", "Something else we probably don't support.")]
+					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 					if code != self._DLG_OK: continue
-					#type = part_types[int(type)-1]
-					
+										
 					# 'other' partition type
 					if type == "other":
-						code, type = self._d.inputbox("New partition's type:")
+						code, type = self._d.inputbox(_(u"Please enter the new partition's type:"))
 					if code != self._DLG_OK: continue
 					
-					new_mkfsopts = tmppart.get_mkfsopts()
-					# extra mkfs options
-					if type != "extended":
-						code, new_mkfsopts = d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
-						if code != DLG_OK: continue
-			
 					# now add it to the data structure
-					devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type,mkfsopts=new_mkfsopts)
+					devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
 				else:
 					while 1:
 						tmppart = tmpparts[part_to_edit]
@@ -430,7 +422,7 @@ on partitioning and the various filesystem types available in Linux.""")
 						tmptitle += (tmppart.get_mountpoint() or "none") + ", "
 						tmptitle += (tmppart.get_mountopts() or "none") + ", "
 						tmptitle += str(tmppart.get_mb()) + "MB)"
-						menulist = ["Delete", "Mount Point", "Mount Options", "Format"]
+						menulist = ["Delete", "Mount Point", "Mount Options", "Format", "Extra mkfs.* Parameters"]
 						code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel="Back")
 						if code != self._DLG_OK: break
 						part_action = menulist[int(part_action)-1]
@@ -451,7 +443,13 @@ on partitioning and the various filesystem types available in Linux.""")
 							if code == self._DLG_YES: 
 								tmppart.set_format(True)
 							else:
-								tmppart.set_format(False)						
+								tmppart.set_format(False)
+						elif part_action == "Extra mkfs.* Parameters":
+							new_mkfsopts = tmppart.get_mkfsopts()
+							# extra mkfs options
+							if tmppart.get_type() != "extended":
+								code, new_mkfsopts = self._d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
+								if code == self._DLG_OK: tmppart.set_mkfsopts(new_mkfsopts)							
 		try:										
 			self._install_profile.set_partition_tables(devices)
 		except:
