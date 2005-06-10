@@ -69,8 +69,9 @@ def format_mac(mac):
 	return string.join(mac, ":")
 
 ##
-# FIXME: UNKNOWN
-# @param ip Parameter description
+# Removes leading zero's from an IP address. For example
+# trim_ip('192.168.01.002') => '192.168.1.2'
+# @param ip  IP address to be trimmed
 def trim_ip(ip):
     # Remove leading zero's on the first octet
 	ip = re.sub('^0{1,2}','',ip)
