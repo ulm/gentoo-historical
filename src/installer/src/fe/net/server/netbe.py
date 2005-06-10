@@ -5,18 +5,26 @@ The first is a udp discovery server. Its job it to tell any clients where
 the other server is. Also it can send out a client config file to allow static
 ip address boxes to use the service as well.
 The second server is a XMLRPC server that will serve config files and allow network
-based logging. Naming conventions are as follows:
+based logging. 
+
+Files are searched for via the pxe naming standard.
+Example:
+005070E808D0
+  005070E808
+  005070E8
+  005070
+  0050
+  00
+  default
+  
+Naming conventions of the config directory are as follows:
 
 config_dir
 	|
-	192.168.0.3.cc.xml	#Client Config File
-	192.168.0.3.ip.xml	#Install Profile File
-	192.168.0.3.log		#Log for that ip
-	main.log		#Main log
-It is also recommended that if you don't use dhcp that you make a symbolic link of the
-computer's mac address to the ip version of the cc.xml file. Otherwise the box will not
-be able to start the install.
-Ex. 01:23:45:67:89:ab.cc.xml -> 192.168.0.3.cc.xml
+	005070E808D0.cc.xml	#Client Config File
+	005070E808D0.ip.xml	#Install Profile File
+	005070E808D0.log	#Log for that mac
+	main.log			#Main log
 """
 import sys,os,socket,shelve
 sys.path.append("../../..")
@@ -24,17 +32,33 @@ import SimpleXMLRPCServer
 import xmlrpclib
 import GLIUtility
 import GLIClientController
+from GLIException import *
 
 #The XMLRPC class
 class GLINetBe:
 	def __init__(self, loc):
 		self._path = loc
 		
+	def _find_config(self, mac, extension):
+		mac.replace(':','')
+		while not GLIUtility.is_file(mac + extension):
+				if mac != mac[:2]:
+					mac = mac[:2]
+				else:
+					mac = 'default'
+					break
+		try:
+			f = open(mac + extension)
+		except:
+			raise GLIException('NetBeError', 'fatal', 'GLINetBe._find_config', 'We are unable to find a config file.')
+		return f
+		
 	def get_client_config(self, mac):
-		if not GLIUtility.is_file(self._path + mac + ".cc.xml"):
+		try:
+			f = self._find_config(mac, '.cc.xml')
+			data = file.read()
+		except:
 			return xmlrpclib.Fault("GLIMissingConfig","The server does not have a GLICLientConfiguration for you. Check with the server admin.")
-		file = open(self._path + mac + ".cc.xml", "r")
-		data = file.read()
 		file.close()
 		return data
 	
@@ -45,10 +69,11 @@ class GLINetBe:
 		return True		
 	
 	def get_install_profile(self, mac):
-		if not GLIUtility.is_file(self._path + mac + ".ip.xml"):
+		try:
+			f = self._find_config(mac, '.cc.xml')
+			data = file.read()
+		except:
 			return xmlrpclib.Fault("GLIMissingConfig","The server does not have a InstallProfile for you. Check with the server admin.")
-		file = open(self._path + mac + ".ip.xml", "r")
-		data = file.read()
 		file.close()
 		return data
 	
