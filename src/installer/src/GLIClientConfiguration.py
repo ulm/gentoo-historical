@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.32 2005/06/10 15:54:44 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.33 2005/06/10 17:47:43 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -23,7 +23,7 @@ Usage:
 	   Then add the serialize_variable_name function to the section for the variable.
 """
 
-import string, re, GLIUtility, SimpleXMLParser
+import string, re, GLIUtility, SimpleXMLParser, os.path
 import xml.dom.minidom
 from GLIException import *
 
@@ -143,29 +143,10 @@ class ClientConfiguration:
 	# @param architecture_template the architecture to be installed
 	# @param xml_attr not used here.
 	def set_architecture_template(self, xml_path, architecture_template, xml_attr):
-		# Key = Machine Type (uname -m)
-		# Value = Arch Template
-		# Ciaran told me to leave out mips (due to
-		# lack of netbooting), so it's not here.
-		machine_mapping = {
-			'i386':         'x86ArchitectureTemplate',
-			'i486':         'x86ArchitectureTemplate',
-			'i586':         'x86ArchitectureTemplate',
-			'i686':         'x86ArchitectureTemplate',
-			'x86_64':       'amd64ArchitectureTemplate',
-			'sparc64':      'sparcArchitectureTemplate',
-			'sparc':        'sparcArchitectureTemplate',
-			'ppc':          'ppcArchitectureTemplate',
-			'ppc64':        'ppcArchitectureTemplate',
-			'parisc':       'hppaArchitectureTemplate',
-			'alpha':        'alphaArchitectureTemplate',
-			}
-
-		ret, machine = GLIUtility.spawn('uname -m', return_output=True)
-		if architecture_template == machine_mapping[machine]:
+		if os.path.isfile('templates/' + architecture_template + ".py"):
 			self._architecture_template = architecture_template
 		else:
-			raise GLIException("WrongTemplateError", 'fatal','set_architecture_template', 'Architecture Template specified is not correct!')
+			raise GLIException("UnsupportedArchitectureTemplateError", 'fatal','set_architecture_template', 'Architecture Template specified is not supported!')
 
 	##
 	# Returns the architecture_template
