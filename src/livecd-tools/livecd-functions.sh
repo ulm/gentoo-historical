@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.4 2005/06/09 15:31:23 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.5 2005/06/10 00:18:30 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -49,8 +49,8 @@ nv_gl() {
 }
 
 get_video_cards() {
-	VIDEO_CARDS=$(/sbin/lspci | grep VGA)
-	NUM_CARDS=$(echo ${VIDEO_CARDS} | wc -l)
+	VIDEO_CARDS="$(/sbin/lspci | grep VGA)"
+	NUM_CARDS="$(echo ${VIDEO_CARDS} | wc -l)"
 	if [ ${NUM_CARDS} -eq 1 ]; then
 		NVIDIA=$(echo ${VIDEO_CARDS} | grep "nVidia Corporation")
 		ATI=$(echo ${VIDEO_CARDS} | grep "ATI Technologies")
