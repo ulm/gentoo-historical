@@ -1,15 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
+<!-- Orig revision: 1.23 -->
+<!-- Translator: rane <rane@gentoo.pl> -->
+<!-- Title: Konfiguracja jądra dla Alpha -->
+<!-- Status: Release -->
+
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-alpha-kernel.xml,v 1.2 2004/12/31 17:14:15 swift Exp $ -->
+<!-- $Id: hb-install-alpha-kernel.xml,v 1.3 2005/06/10 08:12:40 fox2mike Exp $ -->
 
 <sections>
 
-<version>1.12</version>
-<date>2004-12-26</date>
+<version>2.2</version>
+<date>2005-04-16</date>
 
 <section>
 <title>Strefa czasowa.</title>
@@ -43,10 +48,8 @@ różne źródła kerneli. Pełna lista wraz z opisami znajduje się w
 </p>
 
 <p>
-Dla systemów Alpha udostępniamy następujące źródła: <c>vanilla-sources</c> (domyślny
-kernel dla tej architektury rozwijany przez developerów Linuksa),
-<c>alpha-sources</c> (źródła zoptymalizowane specjalnie dla użytkowników alpha) oraz
-<c>compaq-sources</c> (rozwijany przez Compaq kernel, używany przez RedHat).
+Dla systemów Alpha udostępniamy następujące źródła: <c>vanilla-sources</c> 
+(domyślne jądro serii 2.6)
 </p>
 
 <p>
@@ -71,7 +74,7 @@ nazwie
 
 <pre caption="Podgląd symlinka do źródeł kernela">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.24
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux-&gt; linux-2.6.11.2
 </pre>
 
 <p>
@@ -83,13 +86,13 @@ do dalszych części tego dokumentu.
 <pre caption="Zmiana dowiązania symbolicznego do źródeł jądra">
 # <i>rm /usr/src/linux</i>
 # <i>cd /usr/src</i>
-# <i>ln -s linux-2.4.24 linux</i>
+# <i>ln -s linux-2.6.11.2 linux</i>
 </pre>
 
 <p>
 Pora na skonfigurowanie i skompilowanie źródeł jądra. Możesz użyć do tego
 programu <c>genkernel</c>, który zbuduje uniwersalne jądro, takie jak np.
-to używane przez LiveCD. Możesz też przeprowadzić cały proces ręcznie i lepiej
+to używane przez płytę instalacyjną. Możesz też przeprowadzić cały proces ręcznie i lepiej
 dostostosować kernel do swoich potrzeb. Zaczniemy od omówienia tej drugiej,
 znacznie lepszej metody.
 </p>
@@ -122,7 +125,7 @@ prawidłowo skonfigurować kernel. Większość informacji o maszynie znajdziemy
 przeglądając zawartość <path>/proc/pci</path> (lub przy użyciu polecenia
 <c>lspci</c> - jeśli działa). Dodatkowe informacje o tym co warto włączyć w swój
 kernel można uzyskać dzięki poleceniu <c>lsmod</c>, które pokaże listę
-modułów jakie załadowało LiveCD.
+modułów jakie załadowała płyta instalacyjna.
 </p>
 
 <p>
@@ -164,8 +167,10 @@ Następnie przejdź do <c>File Systems</c> i wybierz wsparcie dla systemów plik
 których zamierzasz używać. Jeśli tego zaniedbasz Gentoo nie będzie w stanie
 zamontować partycji, a czasem nawet się nie uruchomi. Pamiętaj również, aby
 włączać te sterowniki na stałe do jądra, broń Boże nie kompiluj ich jako
-modułów. Przy okazji zaznacz też <c>Virtual memory</c>, <c>/proc file system</c> i
-<c>/dev file system</c> + <c>Automatically mount at boot</c>:
+modułów. Przy okazji zaznacz też <c>Virtual memory</c> i <c>/proc file
+system</c>. Użytkownicy jąder 2.4 muszą skorzystać z opcji <c>/dev file
+system</c> oraz wybrać <c>Automatically mount at boot</c>, a następnie
+zemergować <c>devfsd</c>.
 </p>
 
 <pre caption="Wybór potrzebnych systemów plików">
@@ -173,16 +178,15 @@ modułów. Przy okazji zaznacz też <c>Virtual memory</c>, <c>/proc file system<
 File systems ---&gt;
   [*] Virtual memory file system support (former shm fs)
   [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
   [*]   Automatically mount at boot
+  [*] /dev file system support (EXPERIMENTAL)
   [ ] /dev/pts file system for Unix98 PTYs
 
 <comment>(dla kernela 2.6.x)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
-    [*] /dev file system support (OBSOLETE)
-    [*]   Automatically mount at boot
+    [ ] /dev file system support (OBSOLETE)
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Wybierz jedną lub kilka z tych opcji zależnie od używanych systemów
@@ -296,8 +300,7 @@ Kiedy skończysz konfigurować swój kernel przejdź do paragrafu
 
 <p>
 Po skonfigurowaniu kernela przyszła pora na jego skompilowanie i
-instalację. Opuść program konfiguracyjny i wpisz <c>make dep &amp;&amp; make
-vmlinux modules modules_install</c>:
+instalację. Opuść program konfiguracyjny i rozpocznij proces kompilacji:
 </p>
 
 <pre caption="Kompilowanie kernela">
@@ -314,13 +317,13 @@ vmlinux modules modules_install</c>:
 <p>
 Kiedy jądro skończy się kompilować przekopiuj jego obraz do katalogu
 <path>/boot</path>. W przykładzie zakładamy, że właśnie zostały skompilowane
-źródła <c>vanilla-sources-2.4.24</c>; w nowszych kernelach obraz nazywa się
+źródła <c>vanilla-sources-2.6.11.2</c>; w nowszych kernelach obraz nazywa się
 <path>vmlinux</path> zamiast <path>vmlinux.gz</path>.
 </p>
 
 <pre caption="Instalowanie kernela">
 # <i>cp arch/alpha/boot/vmlinux.gz /boot/</i>
-# <i>cp System.map /boot/System.map-2.4.24</i>
+# <i>cp System.map /boot/System.map-2.6.11.2</i>
 </pre>
 
 <p>
@@ -329,7 +332,7 @@ posłużył do zbudowania jądra.
 </p>
 
 <pre caption="Tworzenie kopii zapasowej konfiguracji jądra">
-# <i>cp .config /boot/config-2.4.24</i>
+# <i>cp .config /boot/config-2.6.11.2</i>
 </pre>
 
 <p>
@@ -352,9 +355,9 @@ programu <c>genkernel</c> do skonfigurowania jądra.
 <p>
 Po zainstalowaniu źródeł wypada je skonfigurować. Zrobimy to automatycznie przy pomocy
 programu <c>genkernel</c>. <c>genkernel</c> robi to dokładnie w ten sam sposób w
-jaki jest konfigurowany kernel LiveCD. Oznacza to, że kiedy użyjesz
+jaki jest konfigurowany kernel płyty instalacyjnej. Oznacza to, że kiedy użyjesz
 <c>genkernel</c> do budowy jądra Twój system będzie musiał wykrywać dostępny
-sprzęt przy każdym uruchomieniu komputera, tak jak na LiveCD. Ponieważ genkernel
+sprzęt przy każdym uruchomieniu komputera, tak jak na płycie instalacyjnej. Ponieważ genkernel
 nie wymaga od użytkownika żadnych ręcznych poprawek w konfiguracji jest
 doskonałym rozwiązaniem dla tych wszystkich, którzy nie są najmocniejsi w
 samodzielnym kompilowaniu jądra.
@@ -387,7 +390,7 @@ jako moduły).
 # <i>genkernel all</i>
 GenKernel v3.0.1_beta10
 * ARCH: Alpha 
-* KERNEL VER: 2.4.24
+* KERNEL VER: 2.6.11.2
 * kernel: configuring source
 * kernel: running mrproper
 <comment>(Output removed to increase readability)</comment>
@@ -423,7 +426,7 @@ sprzęt i wczyta odpowiednie moduły, a następnie uruchomi się właściwy syst
 
 <p>
 Następna czynność jeszcze bardziej upodobni nasz system do tego dostępnego na
-LiveCD, zemergujemy sobie <c>coldplug</c>. Podczas gdy initrd automatycznie
+płycie instalacyjnej, zemergujemy sobie <c>coldplug</c>. Podczas gdy initrd automatycznie
 wykrywa sprzęt, co jest niezbędne do uruchomienia systemu, <c>coldplug</c>
 będzie wykrywał wszystko inne. Aby zemergować i uaktywnić <c>coldplug</c> wpisz:
 </p>
@@ -431,6 +434,16 @@ będzie wykrywał wszystko inne. Aby zemergować i uaktywnić <c>coldplug</c> wp
 <pre caption="Emergowanie i uruchamianie coldplug">
 # <i>emerge coldplug</i>
 # <i>rc-update add coldplug default</i>
+</pre>
+
+<p>
+Jeżeli chcesz, aby twój system reagował na zdarzenia hotplug musisz zainstalować
+i ustawić program hotplug:
+</p>
+
+<pre caption="Emergowanie i uruchamianie hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
 </pre>
 
 </body>
@@ -456,15 +469,15 @@ ebuildy. Oto lista wszystkich dostępnych modułów:
   <th>Polecenie</th>
 </tr>
 <tr>
-  <ti>xfree-drm (lub x11-drm)</ti>
+  <ti>x11-drm</ti>
   <ti>
     Zestaw sterowników dla kart ATI Radeon 9200, Rage128, Matrox, Voodoo i wielu innych
-    dla XFree86 i xorg-x11. Aby dowiedzieć się co należy wpisać w pole "moja_karta"
+    dla xorg-x11. Aby dowiedzieć się co należy wpisać w pole "moja_karta"
     sprawdzamy zmienną <c>IUSE_VIDEO_CARDS</c> w jednym z plików ebuild z katalogu
      <path>/usr/portage/x11-base/x11-drm</path>. W wydaniu 2004.3 zmieniono nazwę ebuildu
      xfree-drm na x11-drm.
   </ti>
-  <ti><c>VIDEO_CARDS="moja_karta" emerge xfree-drm</c></ti>
+  <ti><c>VIDEO_CARDS="moja_karta" emerge x11-drm</c></ti>
 </tr>
 </table>
 
@@ -515,15 +528,6 @@ nazwę tego modułu.
 
 <pre caption="/etc/modules.autoload.d/kernel-2.4 lub kernel-2.6">
 3c59x
-</pre>
-
-<p>
-Następnie uruchom <c>modules-update</c>, aby potwierdzić wprowadzone do pliku
-<path>/etc/modules.conf</path> zmiany:
-</p>
-
-<pre caption="Uruchamianie modules-update">
-# <i>modules-update</i>
 </pre>
 
 <p>

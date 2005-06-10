@@ -3,13 +3,16 @@
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
-
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.2 2004/12/31 17:14:15 swift Exp $ -->
+<!-- Orig revision: 1.29 -->
+<!-- Translator: sekretarz <sekretarz@gentoo.org> -->
+<!-- Title: O instalacji Gentoo Linux -->
+<!-- Status: Release  -->
+<!-- $Id: hb-install-amd64-bootloader.xml,v 1.3 2005/06/10 08:12:40 fox2mike Exp $ -->
 
 <sections>
 
-<version>1.10</version>
-<date>2004-10-20</date>
+<version>2.3</version>
+<date>2005-04-16</date>
 
 <section>
 <title>Podejmowanie decyzji.</title>
@@ -29,24 +32,127 @@ w momencie startu systemu. Taki program nazywa się <e>bootloader</e>.
 <title>Opcjonalnie: Obsługa framebuffera.</title>
 <body>
 
+<!-- Verbatim copy from x86 bootloader framebuffer explanation -->
+
 <p>
-<e>Gdy</e> skonfigurowałeś jądro z obsługą framebuffera i chcesz to wykorzystać,
-musisz dodać parametr <c>video</c> do konfiguracji bootloadera.
+<e>Gdy</e> skonfigurowałeś jądro z obsługą framebuffera (lub do kompilacji jądra
+użyłeś domyślnej konfiguracji genkernel'a) i chcesz go wykorzystać,
+musisz dodać parametr <c>vga</c> lub/i <c>video</c> do konfiguracji bootloadera.
 </p>
 
 <p>
-Więcej informacji na temat framebuffera znajdziesz w dokumencie
-<path>/usr/src/linux/Documentation/fb/vesafb.txt</path>.
+Na początek musisz się dowiedzieć jakiego typu urządzenia framebuffera aktualnie
+używasz. Jeżeli używasz jądra dostarczonego przez Gentoo (jak np. 
+<c>gentoo-sources</c>) będziesz miał możliwość wyboru <c>vesafb-tng</c> jako 
+<e>sterownika VESA</e> (który jest domyślną opcją w tych źródłach jądra).
+W przypadku użycia <c>vesafb-tng</c> nie będziesz potrzebował ustawiać opcji
+<c>vga</c> w konfiguracji bootloadera. Gdy chcesz używać sterownika <c>vesafb</c>
+ta opcja będzie musiała byc dopisana.
 </p>
 
 <p>
+Opcja <c>vga</c> kontroluje rozdzielczość oraz głębię kolorów ekranu framebuffera
+dla sterownika <c>vesafb</c>. Jak zaznaczono w pliku 
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> (który instaluje się
+wraz z pakietem, który zawiera źródła jądra), musisz wybrać numer VESA 
+odpowiadający żądanej rozdzielczości oraz głębi kolorów.
+</p>
+
+<p>
+Następująca tabela pokazuje dostępne rozdzielczości i głębie kolorów i dopasowuje
+je do wartości jaką musisz przekazać do opcji <c>vga</c>.
+</p>
+
+<table>
+  	 <tr>
+  	   <ti></ti>
+  	   <th>640x480</th>
+  	   <th>800x600</th>
+  	   <th>1024x768</th>
+  	   <th>1280x1024</th>
+  	 </tr>
+  	 <tr>
+  	   <th>256</th>
+  	   <ti>0x301</ti>
+  	   <ti>0x303</ti>
+  	   <ti>0x305</ti>
+  	   <ti>0x307</ti>
+  	 </tr>
+  	 <tr>
+  	   <th>32k</th>
+  	   <ti>0x310</ti>
+  	   <ti>0x313</ti>
+  	   <ti>0x316</ti>
+  	   <ti>0x319</ti>
+  	 </tr>
+  	 <tr>
+  	   <th>64k</th>
+  	   <ti>0x311</ti>
+  	   <ti>0x314</ti>
+  	   <ti>0x317</ti>
+  	   <ti>0x31A</ti>
+  	 </tr>
+  	 <tr>
+  	   <th>16M</th>
+  	   <ti>0x312</ti>
+  	   <ti>0x315</ti>
+  	   <ti>0x318</ti>
+  	   <ti>0x31B</ti>
+  	 </tr>
+</table>
+
+<p>
+Opcja <c>video</c> kontroluje opcje wyświetlania framebuffera. Musi zawierać
+rodzaj sterownika (<c>vesafb</c> dla jąder z serii 2.6 lub <c>vesa</c> dla serii
+2.4) wraz ze zmiennymi, które chcesz mieć włączone. Wszystkie zmienne są
+przedstawione w pliku <path>/usr/src/linux/Documentation/fb/vesafb.txt</path>.
+My przedstawimy trzy najcześciej używane opcje:
+</p>
+
+<table>
+  <tr>
+     <th>Opcja</th>
+     <th>Opis</th>
+  </tr>
+  <tr>
+     <ti>ywrap</ti>
+     <ti>
+     Przyjmuje, że karta graficzna może dzielić bloki swojej pamięci (na 
+     przyklad kiedy zbliża się do końca pamięci może kontynuować zapis na 
+     poczatku).
+     </ti>
+  </tr>
+  <tr>
+     <ti>mtrr</ti>
+     <ti>
+     Ustawia rejestry MTRR
+     </ti>
+  </tr>
+  <tr>
+     <ti>mode</ti>
+     <ti>
+     (Tylko <c>vesafb-tng</c>)<br/>
+     Ustawia rozdzielność, głębie koloru oraz odświeżanie. Na przykład,
+     <c>1024x768-32@85</c> to rozdzielczość 1024-768 z 32 bitową głębią kolorów
+     i częstotliwość odświeżania na poziomie 85 Hz. 
+     </ti>
+  </tr>
+</table>
+
+<p>
+Rezultatem tych dwóch opcji może być coś podobnego do <c>vga=0x318
+video=vesafb:mtrr,ywrap</c> lub <c>video=vesafb:mtrr,ywrap,1024x768-32@85</c>.
 Zapamiętaj (albo zapisz) wybraną wartość; niedługo Ci się ona przyda.
+</p>
+
+<p>
+Kontynuuj instalując <uri link="#grub">GRUBa</uri>.
 </p>
 
 </body>
 </subsection>
 </section>
-<section>
+<section id="grub">
 <title>Użycie programu GRUB.</title>
 <subsection>
 <title>Wyjaśnienie terminologii GRUB'a.</title>
@@ -68,6 +174,8 @@ natomiast miejsca w przypadku napędów ATAPI-IDE takich jak cdromy
 i nagrywarki. Ta sama sytuacja ma miejsce w przypadku dysków SCSI.
 (Normalnie otrzymują one wyższe numery niż dyski IDE za wyjątkiem
 sytuacji, gdy BIOS jest ustawiony na start systemu z urządzenia SCSI.)
+Kiedy ustawisz BIOS, aby startował system z innego dysku twardego (na przykład
+z dysku primary slave), wtedy ten dysk jest widziany jako <path>hd0</path>.
 </p>
 
 <p>
@@ -97,8 +205,7 @@ Do zainstalowania programu GRUB użyj komendy emerge:
 </p>
 
 <pre caption = "Instalowanie GRUBa">
-# <i>emerge --usepkg grub</i>
-# <i>cp -Rpv /usr/share/grub/i386-pc/* /boot/grub</i>
+# <i>emerge grub</i>
 </pre>
 
 <p>
@@ -116,7 +223,7 @@ pomocy nano, lub dowolnego innego edytora utwórz plik
 Następnie zredagujmy plik <path>grub.conf</path>. Poniżej
 znajdziesz trzy przykłady pliku <path>grub.conf</path>, odpowiadające
 schematowi partycjonowania użytemu w tym przewodniku, z obrazem jądra
-o nazwie <path>kernel-2.6.5-gentoo</path>. Wyczerpująco opatrzymy komentarzami
+o nazwie <path>kernel-2.6.11-gentoo-r3</path>. Wyczerpująco opatrzymy komentarzami
 tylko pierwszy <path>grub.conf</path>.
 </p>
 
@@ -131,6 +238,12 @@ tylko pierwszy <path>grub.conf</path>.
   </li>
 </ul>
 
+<note>
+Użytkownicy systemu plików JFS muszą dodać <c>ro</c> jako parametr dla jądra.
+JFS musi mieć możliwość odtwarzania logów w trybie tylko do odczytu zanim
+zostanie zamontowane w trybie zarówno odczytu i zapisu.
+</note>
+
 <pre caption = "grub.conf dla nie używających genkernela">
 <comment># Która pozycja ma być uruchamiana domyślnie. 0 oznacza pierwszą, 1 drugą itd</comment>
 default 0
@@ -140,10 +253,10 @@ timeout 30
 # Zakomentuj jeśli nie masz zainstalowanej karty graficznej</comment>
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.5
+title=Gentoo Linux 2.6.11
 <comment># Partycja na której znajduje się obraz jądra (lub system operacyjny) </comment>
 root (hd0,0)
-kernel /kernel-2.6.5-gentoo root=/dev/hda3
+kernel /kernel-2.6.11-gentoo-r3 root=/dev/hda3
 
 <comment># Następne cztery linie potrzebne są tylko gdy chcesz uruchamiać także Windows.</comment>
 <comment># W tym przypadku, Windows mieści się na /dev/hda6.</comment>
@@ -158,10 +271,10 @@ default 0
 timeout 30
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.5
+title=Gentoo Linux 2.6.11
 root (hd0,0)
-kernel /kernel-2.6.5-gentoo root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
-initrd /initrd-2.6.5-gentoo
+kernel /kernel-2.6.11-gentoo-r3 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initrd-2.6.11-gentoo
 
 <comment># Tylko, gdy chcesz uruchamiać dwa systemy</comment>
 title=Windows XP
@@ -170,6 +283,11 @@ makeactive
 chainloader +1
 </pre>
 
+<note>	
+Wpis <c>udev</c> na końcu linii kernel jest potrzebny do ominięcia błędu w
+niektórych wersjach genkernel, występującego gdy korzysta się z udev na
+pierwszym miejscu.
+</note>
 
 <note>
 Jeśli partycjonowanie wykonałeś w inny sposób i/lub używasz innego obrazu jądra,
@@ -188,18 +306,12 @@ dopisz je na końcu polecenia kernel. W tym momencie już dodaliśmy jeden
 parametr (<c>root=/dev/hda3</c> lub <c>real_root=/dev/hda3</c>), a Ty
 bez problemu możesz wzbogacić polecenie o kolejne. Przykładowo
 posłużymy się opcją <c>vga</c>, dotyczącą bufora ramki, którą
-przedyskutowaliśmy kilka paragrafów wcześniej:
+przedyskutowaliśmy kilka paragrafów wcześniej.
 </p>
-
-<pre caption = "Dodawanie vga jako parametru startowego dla jądra">
-title=Gentoo Linux
-  root (hd0,0)
-  kernel /kernel-2.6.5 root=/dev/hda3 video=vesafb
-</pre>
 
 <p>
 Użytkownicy programu <c>genkernel</c> powinni wiedzieć, że jądra, które zbudowali
-używają tych samych opcji bootowania co LiveCD. Na przykład jeśli masz urządzenia
+używają tych samych opcji bootowania co płyta instalacyjna. Na przykład jeśli masz urządzenia
 SCSI, powinieneś dodać parametr <c>doscsi</c>.
 </p>
 
@@ -244,7 +356,7 @@ Teraz możemy zainstalować GRUB'a poleceniem <c>grub-install</c>:
 </p>
 
 <pre caption="Uruchamianie grub-install">
-# <i>grub-install --root-directory=/boot /dev/hda</i>
+# <i>grub-install /dev/hda</i>
 </pre>
 
 <p>
