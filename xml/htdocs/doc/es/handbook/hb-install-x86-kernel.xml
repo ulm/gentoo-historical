@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/Attic/hb-install-x86-kernel.xml,v 1.13 2005/05/16 00:34:49 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/Attic/hb-install-x86-kernel.xml,v 1.14 2005/06/10 00:16:04 yoswink Exp $ -->
 
 <sections>
 
-<version>2.6</version>
-<date>2005-04-21</date>
+<version>3.0</version>
+<date>2005-06-09</date>
 
 <section>
 <title>Zona Horaria</title>
@@ -117,8 +117,13 @@ kernels no recordará si fue difícil ;)
 <p>
 Sin embargo, una cosa <e>es</e> cierta: debe conocer su sistema cuando
 empiece a configurar su kernel manualmente. Mucha información se puede
-recolectar viendo el contenido de <path>/proc/pci</path> (o usando
-<c>lspci</c> si está disponible). También puede ejecutar <c>lsmod</c>
+recolectar instalando pciutils (<c>emerge pciutils</c>) el cual contiene
+<c>lspci</c>. Ahora será capaz de utilizar <c>lspci</c> en el entorno
+chroot. Puede ignorar tranquilamente los avisos sobre <e>pcilib</e> 
+(como pcilib: cannot open /sys/bus/pci/devices) que <c>lspci</c> le 
+muestre. Alternativamente, puede ejecutar <c>lspci</c> desde un 
+entorno <e>no-chroot</e>. Los resultados son los mismos. 
+<c>lspci</c> si está disponible). Tambien puede ejecutar <c>lsmod</c>
 para ver que módulos del kernel usa el CD de instalación (puede 
 proporcionarle buenos consejos sobre qué habilitar).
 </p>
@@ -196,6 +201,8 @@ File systems ---&gt;
   [ ] /dev/pts file system for Unix98 PTYs
 
 <comment>(Con un kernel 2.6.x)</comment>
+General setup  ---&gt;
+    [*] Support for hot-pluggable devices
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
@@ -363,14 +370,12 @@ kernel a <path>/boot</path>, por si acaso :)
 </pre>
 
 <p>
-Ahora continue con <uri link="#kernel_modules">Instalar Módulos del
-Kernel Separadamente</uri>.
+Ahora continué con <uri link="#kernel_modules">Módulos del Kernel</uri>.
 </p>
 
 </body>
 </subsection>
 </section>
-
 <section id="genkernel">
 <title>Alternativa: Usar genkernel</title>
 <body>
@@ -477,104 +482,7 @@ caliente), también necesita instalar y configurar hotplug:
 </section>
 
 <section id="kernel_modules">
-<title>Instalar Módulos del Kernel Separadamente</title>
-<subsection>
-<title>Instalar Módulos Adicionales</title>
-<body>
-
-<p>
-Sí es apropiado, debe instalar ebuilds para el hardware
-adicional en su sistema. A continuación se muestra una
-lista de ebuilds relacionados con el kernel que podría instalar:
-</p>
-
-<table>
-<tcolumn width="1in"/>
-<tcolumn width="4in"/>
-<tcolumn width="2in"/>
-<tr>
-  <th>Ebuild</th>
-  <th>Propósito</th>
-  <th>Comando</th>
-</tr>
-<tr>
-  <ti>nvidia-kernel</ti>
-  <ti>Aceleración de gráficos NVIDIA para xorg-x11</ti>
-  <ti><c>emerge nvidia-kernel</c></ti>
-</tr>
-<tr>
-  <ti>nforce-audio</ti>
-  <ti>Placas madre con audio NVIDIA NForce(2)</ti>
-  <ti><c>emerge nforce-audio</c></ti>
-</tr>
-<tr>
-  <ti>e100</ti>
-  <ti>Adaptadores Intel e100 Fast Ethernet (para kernels 2.4 solamente)</ti>
-  <ti><c>emerge e100</c></ti>
-</tr>
-<tr>
-  <ti>e1000</ti>
-  <ti>Adptadores Intel e1000 Gigabit Ethernet (para kernels 2.4 solamente)</ti>
-  <ti><c>emerge e1000</c></ti>
-</tr>
-<tr>
-  <ti>emu10k1</ti>
-  <ti>Soporte para Creative Sound Blaster Live!/Audigy support (solo kernels 2.4)</ti>
-  <ti><c>emerge emu10k1</c></ti>
-</tr>
-<tr>
-  <ti>ati-drivers</ti>
-  <ti>Aceleración de gráficos ATI Radeon 8500+/FireGL para xorg-x11</ti>
-  <ti><c>emerge ati-drivers</c></ti>
-</tr>
-</table>
-
-<p>
-Tenga cuidado, algunos de esos ebuild pueden tener grandes
-dependencias. Para verificar que paquetes serán instalador al instalar
-un ebuild, use <c>emerge --pretend</c>. Por ejemplo, para el paquete
-<c>emu10k1</c>:
-</p>
-
-<pre caption="Ver el listado completo de paquetes a instalar">
-# <i>emerge --pretend emu10k1</i>
-</pre>
-
-<p>
-Si no le gustan los paquetes que se instalarán, use <c>emerge
---pretend --verbose</c> para ver que parámetros USE están activados
-cuando decide las dependencias:
-</p>
-
-<pre caption="Ver el uso de parámetros USE">
-# <i>emerge --pretend --verbose emu10k1</i>
-<comment>...</comment>
-[ebuild  N    ] media-sound/aumix-2.8  +gpm +nls +gtk +gnome +alsa -gtk2
-</pre>
-
-<p>
-En el ejemplo anterior puede ver que una de las dependencias de
-<c>emu10k1</c> (<c>aumix</c>) tiene los parámetros USE <c>gtk</c> y
-<c>gnome</c>, lo que hace que gtk (que depende de xorg-x11) también se
-compile.
-</p>
-
-<p>
-Si no quiere que todo esto se compile, desmarque las parámetros USE, por
-ejemplo:
-</p>
-
-<pre caption="Instalar emu10k1 con todas los parámetros USE desmarcados">
-# <i>USE="-gpm -nls -gtk -gnome -alsa" emerge --pretend emu10k1</i>
-</pre>
-
-<p>
-Cuando esté contento con los resultados, remueva el <c>--pretend</c>
-para empezar a instalar <c>emu10k1</c>.
-</p>
-</body>
-</subsection>
-
+<title>Módulos del Kernel</title>
 <subsection>
 <title>Configurar los Módulos</title>
 <body>
