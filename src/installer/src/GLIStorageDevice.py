@@ -84,8 +84,9 @@ class Device:
 					last_part = parted_part.num
 				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
 			elif parted_part.type_name == "free":
-				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)
-				if parent_part:
+#				parent_part = self.get_partition_at(parted_part.geom.start, ignore_extended=0)
+#				if parent_part:
+				if self.get_extended_partition() and parted_part.geom.start >= self._partitions[self.get_extended()].get_start() and parted_part.geom.end <= self._partitions[self.get_extended()].get_end():
 					self._partitions[last_log_part+FREE_MINOR_FRAC_LOG] = Partition(self, last_log_part+FREE_MINOR_FRAC_LOG, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
 					last_log_part += 1
 				else:
