@@ -144,8 +144,8 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_network_broadcast(None, broadcast, None)
 				self._client_profile.set_network_netmask(None, netmask, None)
 				self._client_profile.set_network_gateway(None, gateway, None)
-		except GLIException, e:
-			self._d.msgbox(e)
+		except: 
+			self._d.msgbox("ERROR SOMETHIGN WENT WRONG D00D!")
 
 	def set_enable_ssh(self):
 		if self.advanced_mode:
@@ -237,7 +237,7 @@ class GLIGenIP(GLIGen):
 			self._menu_list.append(item['text'])
 		current_item = 0
 		while 1:
-			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=15, cancel="Done")
+			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
 			if code != self._DLG_OK:
 				break
 			current_item = int(menuitem)
@@ -281,8 +281,8 @@ class GLIGenIP(GLIGen):
 	
 	def _set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
-		menulist = [("Sync", "Normal. Use emerge sync RECOMMENDED!"), ("Webrsync", "HTTP daily snapshot. Use when rsync is firewalled."), ("Snapshot", " Use a portage snapshot, either a local file or a URL"), ("None", "Extra cases such as if /usr/portage is an NFS mount")]
-		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."), choices=menulist)
+		menulist = [("Sync", "Normal. Use emerge sync RECOMMENDED!"), ("Webrsync", "HTTP daily snapshot. Use when rsync is firewalled."), ("Snapshot", "Use a portage snapshot, either a local file or a URL"), ("None", "Extra cases such as if /usr/portage is an NFS mount")]
+		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=60, height=15, choices=menulist)
 		if code != self._DLG_OK: 
 			return
 		#portage_tree_sync = menulist[int(portage_tree_sync)-1]
@@ -353,7 +353,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				choice_list.append((drive, devices[drive].get_model()))
 		#choice_list.append(("Other", "Type your own drive name))  # I DONT THINK GLISD CAN DO NONEXISTANT DRIVES
 		while 1:
-			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?"), choices=choice_list, cancel="Save and Continue")
+			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?\n Info provided: Type, mkfs Options, Mountpoint, Mountopts, Size in MB"), choices=choice_list, cancel="Save and Continue")
 			if code != self._DLG_OK: break
 			while 1:
 				partitions = devices[drive_to_partition].get_partitions()
@@ -521,9 +521,86 @@ on partitioning and the various filesystem types available in Linux.""")
 	def _set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		make_conf = self._install_profile.get_make_conf()
-		self._d.msgbox(_(u"The installer will now ask a series of questions regarding the contents of /etc/make.conf"))
+		
+		self._d.msgbox(_(u"""The installer will now gather information regarding the contents of /etc/make.conf
+One of the unique (and best) features of Gentoo is the ability to
+define flags (called USE flags) that define what components are 
+compiled into applications.  For example, you can enable the alsa
+flag and programs that have alsa capability will use it.  
+The result is a finely tuned OS with no unnecessary components to
+slow you down.
+The installer divides USE flag selection into two screens, one for
+global USE flags and one for local flags specific to each program.
+		"""), width=73, height=16)
+					
+		#Second set the USE flags, this is a biggie.
+		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
+		system_cflags = GLIUtility.spawn("portageq envvar CFLAGS", return_output=True)[1].strip()
+		system_chost = GLIUtility.spawn("portageq envvar CHOST", return_output=True)[1].strip()
+		system_makeopts = GLIUtility.spawn("portageq envvar MAKEOPTS", return_output=True)[1].strip()
+		system_features = GLIUtility.spawn("portageq envvar FEATURES", return_output=True)[1].strip()
+		use_flags = []
+		use_local_flags = []
+		use_desc = {}
+		use_local_desc = {}
+		f = open("/usr/portage/profiles/use.desc", "r")
+		for line in f:
+			line = line.strip()
+			if not line or line.startswith("#"): continue
+			dash_pos = line.find(" - ")
+			if dash_pos == -1: continue
+			flagname = line[:dash_pos] or line[dash_pos-1]
+			desc = line[dash_pos+3:]
+			use_desc[flagname] = desc
+		f.close()
+
+		f = open("/usr/portage/profiles/use.local.desc", "r")
+		for line in f:
+			line = line.strip()
+			if not line or line.startswith("#"): continue
+			dash_pos = line.find(" - ")
+			if dash_pos == -1: continue
+			colon_pos = line.find(":", 0, dash_pos)
+			pkg = line[:colon_pos]
+			flagname = line[colon_pos+1:dash_pos] or line[colon_pos+1]
+			desc = "(" + pkg + ") " + line[dash_pos+3:]
+			use_local_desc[flagname] = desc
+		f.close()
+		
+		#populate the choices list
+		sorted_use = use_desc.keys()
+		sorted_use.sort()
+		for flagname in sorted_use:
+			use_flags.append((flagname, use_desc[flagname], int(flagname in system_use_flags)))
+		#present the menu
+		code, use_flags = self._d.checklist(_(u"Choose which *global* USE flags you want on the new system"), height=25, width=80,list_height=19, choices=use_flags)	
+		
+		#populate the chocies list
+		sorted_use = use_local_desc.keys()
+		sorted_use.sort()
+		for flagname in sorted_use:
+			use_local_flags.append((flagname, use_local_desc[flagname], int(flagname in system_use_flags)))
+		#present the menu
+		code, use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=19, choices=use_local_flags)	
+		temp_use = "-* "
+		for flag in use_flags:
+			temp_use += flag + " "
+		for flag in use_local_flags:
+			temp_use += flag + " "
+		make_conf["USE"] = temp_use
+		
+		#Second, set the ACCEPT_KEYWORDS
+		#Change the Yes/No buttons to new labels for this question.
+		self._d.add_persistent_args(["--yes-label", _(u"Stable")])
+		self._d.add_persistent_args(["--no-label", _(u"Unstable")])
+		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.")) == self._DLG_YES:
+			#Stable
+			make_conf["ACCEPT_KEYWORDS"] = ""
+		else:  #Unstable
+			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
+		#Third, misc. stuff.
 		while 1:
-			menulist = ["ACCEPT_KEYWORDS", "CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "USE", "GENTOO_MIRRORS", "SYNC"]
+			menulist = ["CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "GENTOO_MIRRORS", "SYNC"]
 			code, menuitem = self._d.menu("Choose a variable to edit", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
 			if code != self._DLG_OK: 
 				break
@@ -538,55 +615,84 @@ on partitioning and the various filesystem types available in Linux.""")
 
 	def _set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
-		kernel_sources = ("vanilla-sources", "gentoo-sources", "development-sources", "gentoo-dev-sources", "hardened-sources", "livecd-kernel")
-		code, menuitem = self._d.menu("Choose a kernel sources package", choices=self._dmenu_list_to_choices(kernel_sources))
+		kernel_sources = [("vanilla-sources", "The Unaltered Linux Kernel ver 2.6+ (safest)"), ("gentoo-sources", "Gentoo's optimized 2.6+ kernel. (less safe)"), ("hardened-sources", "Hardened sources for the 2.6 kernel tree"), ("grsec-sources","Vanilla sources with grsecurity patches"), ("livecd-kernel", "Use the current running kernel for the new system (fastest)"), ("Other", "Choose one of the other sources available.")]
+		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources)
 		if code != self._DLG_OK: 
 			return
-		menuitem = kernel_sources[int(menuitem)-1]
-		self._install_profile.set_kernel_source_pkg(None, menuitem, None)
+		if menuitem == "Other":
+			code, menuitem = self._d.inputbox(_(u"Please enter the desired kernel sources package name:"))
+			if code != self._DLG_OK: return
+		try:
+			self._install_profile.set_kernel_source_pkg(None, menuitem, None)
+		except:
+			self._d.msgbox("ERROR! Could not set the kernel source package!")
 		if not menuitem == "livecd-kernel":
-			if self._d.yesno("Do you want to use genkernel to automatically generate your kernel?") == self._DLG_NO:
-				code, custom_kernel_uri = self._d.inputbox("Enter the custom kernel uri")
+			#Change the Yes/No buttons to new labels for this question.
+			self._d.add_persistent_args(["--yes-label", _(u"Genkernel")])
+			self._d.add_persistent_args(["--no-label", _(u"Custom Config")])
+			if self._d.yesno("Do you want to use genkernel to automatically generate your kernel or do you have a previously-made kernel configuration?)") == self._DLG_NO:
+				#Change the Yes/No buttons back.
+				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+				self._d.add_persistent_args(["--no-label", _(u"No")])
+				code, custom_kernel_uri = self._d.inputbox(_(u"Enter the custom kernel's location:"))
 				if code == self._DLG_OK: 
 					if custom_kernel_uri: 
 						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
-							self._d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-						else: self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
-					else: self._d.msgbox("No URI was specified!")
-			else: 
-				if self._d.yesno("Do you want the bootsplash?") == self._DLG_YES:
+							self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."));
+						else: 
+							try:
+								self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+							except:
+								self._d.msgbox(_("ERROR! Could not set the kernel config URI!"))
+					else: self._d.msgbox("No URI was specified!  Reverting to using genkernel")
+			else:
+				#Change the Yes/No buttons back.
+				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+				self._d.add_persistent_args(["--no-label", _(u"No")])
+				if self._d.yesno("Do you want the bootsplash screen to show up on bootup?") == self._DLG_YES:
 					self._install_profile.set_kernel_bootsplash(None, True, None)
 				else:
 					self._install_profile.set_kernel_bootsplash(None, False, None)
 
 	def _set_install_stage(self):
 	# The install stage and stage tarball will be selected here
-		install_stages = ("1","2","3","3 + GRP (use binary packages)")
-		code, install_stage = self._d.menu("Which stage do you want to start at?", choices=self._dmenu_list_to_choices(install_stages), cancel="Back")
+		install_stages = (("1","Stage1 is used when you want to bootstrap and build the entire system from scratch."), ("2","Stage2 is used for building the entire system from a bootstrapped semi-compiled state."), ("3","Stage3 installation is a basic Gentoo Linux system that has been built for you (no compiling)."), ("3 + GRP", "A Stage3 install but using binary packages from the LiveCD whenever possible"))
+		code, install_stage = self._d.menu("Which stage do you want to start at?", choices=install_stages, cancel="Back")
 		if code == self._DLG_OK:
-			install_stage = install_stages[int(install_stage)-1]
-			if install_stage == "3 + GRP (use binary packages)":
+			if install_stage == "3 + GRP":
 				install_stage = "3"
 				self._install_profile.set_grp_install(None, True, None)
-			self._install_profile.set_install_stage(None, install_stage, None)
-		tarball_options = ("Use Local", "Specify URI")
-		code, tarball_option = self._d.menu("Select a local stage " + install_stage + " tarball or manually specify a URI:", choices=self._dmenu_list_to_choices(tarball_options))
-		if code == self._DLG_OK:
-			tarball_option = tarball_options[int(tarball_option)-1]
-			if tarball_option == "Use Local":
-				stages_dir = "/mnt/cdrom/stages"
-				if os.path.isdir(stages_dir) and os.listdir(stages_dir):
-					local_tarballs = glob.glob(stages_dir + "/stage" + install_stage + "*.bz2")
-					local_tarballs.sort()
-					code, stage_tarball = self._d.menu("Select a local tarball:", choices=self._dmenu_list_to_choices(local_tarballs))
-					if code != self._DLG_OK: 
-						return
-					stage_tarball = local_tarballs[int(stage_tarball)-1]
-				else:
-					self._d.msgbox("There don't seem to be any local tarballs available.  Hit OK to manually specify a URI.")
-					tarball_option = "Specify URI"
-			if tarball_option != "Use Local": 
-				code, stage_tarball = self._d.inputbox("Specify the stage tarball URI or local file:", init=self._install_profile.get_stage_tarball_uri())
+			try:
+				self._install_profile.set_install_stage(None, install_stage, None)
+			except:
+				self._d.msgbox("ERROR! Could not set install stage!")
+		#Change the Yes/No buttons to new labels for this question.
+		self._d.add_persistent_args(["--yes-label", _(u"Use Local")])
+		self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
+		if self._d.yesno(_(u"Do you want to use a local tarball on the LiveCD (or other local location) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
+			#Use Local				
+			stages_dir = "/mnt/cdrom/stages"
+			if os.path.isdir(stages_dir) and os.listdir(stages_dir):
+				local_tarballs = glob.glob(stages_dir + "/stage" + install_stage + "*.bz2")
+				local_tarballs.sort()
+				code, stage_tarball = self._d.menu("Select a local tarball:", choices=self._dmenu_list_to_choices(local_tarballs))
+				if code != self._DLG_OK: 
+					return
+				stage_tarball = local_tarballs[int(stage_tarball)-1]
+				try:
+					self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+				except:
+					self._d.msgbox("ERROR: Could not set the stage tarball URI!")
+				return
+			else:
+				self._d.msgbox("There don't seem to be any local tarballs available.  Hit OK to manually specify a URI.")
+		
+		#Specify URI
+		subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
+		#get portageq envvar value of cflags and look for x86, i686,etc.
+			#URL SYNTAX
+			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
+		code, stage_tarball = self._d.inputbox("Specify the stage tarball URI or local file:", init=self._install_profile.get_stage_tarball_uri())
 		#If Doing a local install, check for valid file:/// uri
 		if code == self._DLG_OK:
 			if stage_tarball:

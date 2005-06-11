@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.33 2005/06/10 17:47:43 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.34 2005/06/11 07:46:47 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -143,11 +143,9 @@ class ClientConfiguration:
 	# @param architecture_template the architecture to be installed
 	# @param xml_attr not used here.
 	def set_architecture_template(self, xml_path, architecture_template, xml_attr):
-		if os.path.isfile('templates/' + architecture_template + ".py"):
-			self._architecture_template = architecture_template
-		else:
+		if not architecture_template in ["x86", "amd64", "ppc", "sparc", "hppa", "alpha"]:
 			raise GLIException("UnsupportedArchitectureTemplateError", 'fatal','set_architecture_template', 'Architecture Template specified is not supported!')
-
+		self._architecture_template = architecture_template
 	##
 	# Returns the architecture_template
 	def get_architecture_template(self):
