@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.121 2005/06/02 18:24:09 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.122 2005/06/11 07:23:41 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -980,8 +980,8 @@ class ArchitectureTemplate:
 	def run_post_install_script(self):
 		if self._install_profile.get_post_install_script_uri():
 			try:
-				GLIUtility.get_uri(self._install_profile.get_post_install_script_uri(), self._chroot_dir + "/tmp/post-install")
-				GLIUtility.spawn("chmod a+x /tmp/post-install && /tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+				GLIUtility.get_uri(self._install_profile.get_post_install_script_uri(), self._chroot_dir + "/var/tmp/post-install")
+				GLIUtility.spawn("chmod a+x /var/tmp/post-install && /var/tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
 
