@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.44 2005/06/11 07:51:55 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.45 2005/06/11 08:48:04 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -33,7 +33,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			self._logger.log("Emerged the selected bootloader.")
 		
-		if self._install_profile.get_boot_loader_pkg() == "grub":
+		if self._install_profile.get_boot_loader_pkg() == "none":
+			pass
+		elif self._install_profile.get_boot_loader_pkg() == "grub":
 			self._install_grub()
 		elif self._install_profile.get_boot_loader_pkg() == "lilo":
 			self._install_lilo()
@@ -306,27 +308,26 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				parted_disk.commit()
 				# now format the partition
 				# extended partitions should never be formatted
-				if newpart['format'] and newpart['type'] != 'extended':
+				if newpart['format'] and newpart['type'] not in ('extended'):
 					devnode = device + str(part)
 					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
 					# if you need a special command and
-					# some base options, place it here. -f
-					# is here for filesystems that asks for
-					# confirmation.
-					if newpart['type'] == "linux-swap":
-						cmdname = "mkswap"
-					elif newpart['type'] == "fat32":
-						cmdname = "mkfs.vfat -F 32"
-					elif newpart['type'] == "ntfs":
-						cmdname = "mkntfs"
-					elif newpart['type'] == "reiserfs":
-						cmdname = "mkfs.reiserfs -f"
-					elif newpart['type'] == "jfs":
-						cmdname = "mkfs.jfs -f"
-					elif newpart['type'] == "xfs":
-						cmdname = "mkfs.xfs -f"
+					# some base options, place it here.
+					if newpart['type'] == 'linux-swap':
+						cmdname = 'mkswap'
+					elif newpart['type'] == 'fat32':
+						cmdname = 'mkfs.vfat -F 32'
+					elif newpart['type'] == 'ntfs':
+						cmdname = 'mkntfs'
+					# All of these types need a -f as they
+					# ask for confirmation of format
+					elif newpart['type'] in ('xfs','jfs','reiserfs'):
+						cmdname = 'mkfs.%s -f' % (newpart['type'])
+					# add common partition stuff here
+					elif newpart['type'] in ('ext2','ext3'):
+						cmdname = 'mkfs.%s' % (newpart['type'])
 					else: # this should catch everything else
-						cmdname = "mkfs."+newpart['type']
+						raise GLIException("PartitionFormatError", 'fatal', 'partition',"Unknown partition type "+newpart['type'])
 					# now the actual command
 					cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
 					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))

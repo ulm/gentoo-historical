@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.123 2005/06/11 07:51:55 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.124 2005/06/11 08:48:04 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -459,7 +459,11 @@ class ArchitectureTemplate:
 		self._logger.log("Starting emerge_kernel")
 		kernel_pkg = self._install_profile.get_kernel_source_pkg()
 #		if kernel_pkg:
-		if kernel_pkg == "livecd-kernel":
+		# Special case, no kernel installed
+		if kernel_pkg == "none":
+			return
+		# Special case, livecd kernel
+		elif kernel_pkg == "livecd-kernel":
 			PKGDIR = "/usr/portage/packages"
 			PORTAGE_TMPDIR = "/var/tmp"
 			make_conf = self._install_profile.get_make_conf()
@@ -482,6 +486,7 @@ class ArchitectureTemplate:
 			
 			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
+		# normal case
 		else:
 			exitstatus = self._emerge(kernel_pkg)
 			if exitstatus != 0:
@@ -508,7 +513,9 @@ class ArchitectureTemplate:
 		self._logger.mark()
 		self._logger.log("Starting build_kernel")
 		# No building necessary if using the LiveCD's kernel/initrd
-		if self._install_profile.get_kernel_source_pkg() == "livecd-kernel": return
+		# or using the 'none' kernel bypass
+		if self._install_profile.get_kernel_source_pkg() in ["livecd-kernel","none"]: 
+			return
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 		if kernel_config_uri == "":  #use genkernel if no specific config
