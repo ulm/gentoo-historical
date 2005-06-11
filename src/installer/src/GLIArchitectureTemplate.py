@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.122 2005/06/11 07:23:41 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.123 2005/06/11 07:51:55 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -131,14 +131,17 @@ class ArchitectureTemplate:
 		#Error checking of this function is to be handled by the parent function.
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
-			return GLIUtility.spawn("NOCOLOR=yes emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+			cmd="NOCOLOR=yes emerge -k " + package
 		else:
 			if binary_only:
-				return GLIUtility.spawn("NOCOLOR=yes emerge -K " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				cmd="NOCOLOR=yes emerge -K " + package
 			elif binary:
-				return GLIUtility.spawn("NOCOLOR=yes emerge -k " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				cmd="NOCOLOR=yes emerge -k " + package
 			else:
-				return GLIUtility.spawn("NOCOLOR=yes emerge " + package, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+				cmd="NOCOLOR=yes emerge " + package
+
+		self._logger.log("Calling emerge: "+cmd)
+		return GLIUtility.spawn(cmd, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value

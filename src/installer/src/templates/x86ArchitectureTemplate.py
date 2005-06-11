@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.43 2005/06/10 02:31:57 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.44 2005/06/11 07:51:55 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -305,31 +305,37 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				# write to disk
 				parted_disk.commit()
 				# now format the partition
-				if newpart['format']:
-					if newpart['type'] == "ext2":
-						if GLIUtility.spawn("mkfs.ext2 " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext2 filesystem on " + device + str(part))
-					elif newpart['type'] == "ext3":
-						if GLIUtility.spawn("mkfs.ext3 " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ext3 filesystem on " + device + str(part))
-					elif newpart['type'] == "jfs":
-						if GLIUtility.spawn("mkfs.jfs " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create jfs filesystem on " + device + str(part))
-					elif newpart['type'] == "xfs":
-						if GLIUtility.spawn("mkfs.xfs " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create xfs filesystem on " + device + str(part))
-					elif newpart['type'] == "reiserfs":
-						if GLIUtility.spawn("mkfs.reiserfs " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create reiserfs filesystem on " + device + str(part))
-					elif newpart['type'] == "linux-swap":
-						if GLIUtility.spawn("mkswap " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create swap on " + device + str(part))
+				# extended partitions should never be formatted
+				if newpart['format'] and newpart['type'] != 'extended':
+					devnode = device + str(part)
+					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
+					# if you need a special command and
+					# some base options, place it here. -f
+					# is here for filesystems that asks for
+					# confirmation.
+					if newpart['type'] == "linux-swap":
+						cmdname = "mkswap"
 					elif newpart['type'] == "fat32":
-						if GLIUtility.spawn("mkfs.vfat -F 32 " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create fat32 filesystem on " + device + str(part))
+						cmdname = "mkfs.vfat -F 32"
 					elif newpart['type'] == "ntfs":
-						if GLIUtility.spawn("mkntfs " + newpart['mkfsopts'] + " " + device + str(part)):
-							raise GLIException("PartitionFormatError", 'fatal', 'partition', "could't create ntfs filesystem on " + device + str(part))
+						cmdname = "mkntfs"
+					elif newpart['type'] == "reiserfs":
+						cmdname = "mkfs.reiserfs -f"
+					elif newpart['type'] == "jfs":
+						cmdname = "mkfs.jfs -f"
+					elif newpart['type'] == "xfs":
+						cmdname = "mkfs.xfs -f"
+					else: # this should catch everything else
+						cmdname = "mkfs."+newpart['type']
+					# now the actual command
+					cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
+					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
+					# If logging is not done, then you get errors:
+					# PartitionFormatError :FATAL: partition: could't create ext2 filesystem on /dev/hda1
+					#if GLIUtility.spawn(cmd):
+					#if GLIUtility.spawn(cmd,append_log=True,logfile='/var/log/install-mkfs.log'):
+					if GLIUtility.spawn(cmd,logfile='/dev/null'):
+						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
 				start = end + 1
 
 	def _install_grub(self):
