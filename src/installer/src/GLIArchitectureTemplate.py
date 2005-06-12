@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.126 2005/06/12 03:54:32 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.127 2005/06/12 05:47:04 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -47,7 +47,7 @@ class ArchitectureTemplate:
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
-#                                 (self.set_etc_portage, "Setting /etc/portage/"),
+                                 (self.set_etc_portage, "Setting /etc/portage/"),
                                  (self.prepare_chroot, "Preparing chroot"),
                                  (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.stage1, "Performing bootstrap"),
@@ -158,47 +158,51 @@ class ArchitectureTemplate:
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
 	# (actually it only just comments out the old one)
-	# @param filename 					file to be edited
-	# @param newvalues 					a dictionary of VARIABLE:VALUE pairs
-	# @param delimeter='=' 				what is between the key and the value
+	# @param filename 			file to be edited
+	# @param newvalues 			a dictionary of VARIABLE:VALUE pairs
+	# @param delimeter='=' 			what is between the key and the value
 	# @param quotes_around_value=True 	whether there are quotes around the value or not (ex. "local" vs. localhost)
-	# @param only_value=False			Ignore the keys and output only a value.
-	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False):
-		if not GLIUtility.is_file(filename):
+	# @param only_value=False		Ignore the keys and output only a value.
+	# @param create_file=True		Create the file if it does not exist.
+	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False,create_file=True):
+		# don't use 'file' as a normal variable as it conflicts with the __builtin__.file
+		if GLIUtility.is_file(filename):
+			f = open(filename)
+			contents = f.readlines()
+			f.close()
+		elif create_file:
+			contents = []
+		else:
 			raise GLIException("NoSuchFileError", 'notice','_edit_config',filename + ' does not exist!')
-	
-		f = open(filename)
-		file = f.readlines()
-		f.close()
 	
 		for key in newvalues.keys():
 			regexpr = '^\s*#?\s*' + key + '\s*' + delimeter + '.*$'
 			regexpr = re.compile(regexpr)
 	
-			for i in range(0, len(file)):
-				if regexpr.match(file[i]):
-					if not file[i][0] == '#':
-						file[i] = '#' + file[i]
+			for i in range(0, len(contents)):
+				if regexpr.match(contents[i]):
+					if not contents[i][0] == '#':
+						contents[i] = '#' + contents[i]
 	
-			file.append('\n# Added by GLI\n')
+			contents.append('\n# Added by GLI\n')
 			commentprefix = ""
 			if key == "SPACER":
-				file.append('\n')
+				contents.append('\n')
 			elif key == "COMMENT":
-				file.append('# ' + newvalues[key] + '\n')
+				contents.append('# ' + newvalues[key] + '\n')
 			elif newvalues[key] == "##comment##" or newvalues[key] == "##commented##":
-				file.append('#' + key + delimeter + '""' + "\n")
+				contents.append('#' + key + delimeter + '""' + "\n")
 			else:
 				if quotes_around_value:
 					newvalues[key] = '"' + newvalues[key] + '"'
 				#Only the printing of values is required.
 				if only_value:
-					file.append(newvalues[key] + '\n')
+					contents.append(newvalues[key] + '\n')
 				else:
-					file.append(key + delimeter + newvalues[key]+'\n')
+					contents.append(key + delimeter + newvalues[key]+'\n')
 	
 		f = open(filename,'w')
-		f.writelines(file)
+		f.writelines(contents)
 		f.flush()
 		f.close()
 		self._logger.log("Edited Config file "+filename)
@@ -1035,6 +1039,7 @@ class ArchitectureTemplate:
 			# Set up the contents hash to pass to the config writer.
 			contents = {}
 			for key,value in enumerate(etc_portage[file]):
+				print "K:'%s' V:'%s'" % (str(key),string.strip(value))
 				contents[str(key)] = string.strip(value)
 
 			# Write out the contents in one go.
