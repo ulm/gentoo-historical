@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.125 2005/06/12 03:38:55 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.126 2005/06/12 03:54:32 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -47,6 +47,7 @@ class ArchitectureTemplate:
                                  (self.mount_network_shares, "Mount network (NFS) shares"),
                                  (self.unpack_stage_tarball, "Unpack stage tarball"),
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
+#                                 (self.set_etc_portage, "Setting /etc/portage/"),
                                  (self.prepare_chroot, "Preparing chroot"),
                                  (self.install_portage_tree, "Portage tree voodoo"),
                                  (self.stage1, "Performing bootstrap"),
@@ -131,6 +132,7 @@ class ArchitectureTemplate:
 	def _emerge(self, package, binary=False, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
 		# Portage complains if these are specified and don't exist
+		make_conf = self._install_profile.get_make_conf()
 		if "PORT_LOGDIR" in make_conf and make_conf['PORT_LOGDIR'] and not os.path.isdir(self._chroot_dir + make_conf['PORT_LOGDIR']): 
 			PORT_LOGDIR = make_conf['PORT_LOGDIR']
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORT_LOGDIR, logfile=self._compile_logfile, append_log=True)
