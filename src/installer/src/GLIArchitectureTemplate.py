@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.130 2005/06/12 06:35:18 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.131 2005/06/12 07:04:36 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -132,7 +132,7 @@ class ArchitectureTemplate:
 	# @param package package to be emerged
 	# @param binary=False defines whether to try a binary emerge (if GRP this gets ignored either way)
 	# @param binary_only=False defines whether to only allow binary emerges.
-	def _emerge(self, package, binary=False, binary_only=False):
+	def _emerge(self, package, binary=True, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
 		# Portage complains if these are specified and don't exist
 		make_conf = self._install_profile.get_make_conf()
