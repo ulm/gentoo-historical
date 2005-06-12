@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.54 2005/06/09 23:13:57 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.55 2005/06/12 03:32:48 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -81,7 +81,7 @@ class InstallProfile:
 		self._etc_portage = {}
 		self._install_packages = ()
 		self._services = ()
-		self._mta = ""
+		self._mta_pkg = ""
 		self._grp_install = False
 		self._post_install_script_uri = ""
 		self.xmldoc = ""
@@ -111,7 +111,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
 		self._parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
 		self._parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
-		self._parser.addHandler('gli-profile/mta', self.set_mta)
+		self._parser.addHandler('gli-profile/mta', self.set_mta_pkg)
 		self._parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
 		self._parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
 		self._parser.addHandler('gli-profile/nisdomainname', self.set_nisdomainname)
@@ -774,15 +774,15 @@ class InstallProfile:
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param mta 	package name of mta
 	# @param xml_attr Parameter description
-	def set_mta(self, xml_path, mta, xml_attr):
-		if type(mta) != str:
-			raise GLIException("MTAError", 'fatal', 'set_mta',  "The MTA must be a string!")
-		self._mta = mta
+	def set_mta_pkg(self, xml_path, mta_pkg, xml_attr):
+		if type(mta_pkg) != str:
+			raise GLIException("MTAError", 'fatal', 'set_mta_pkg',  "The MTA must be a string!")
+		self._mta_pkg = mta_pkg
 
 	##
 	# returns the MTA
-	def get_mta(self):
-		return self._mta
+	def get_mta_pkg(self):
+		return self._mta_pkg
 	
 	############################################################################
 	#### Network Interface Selection
