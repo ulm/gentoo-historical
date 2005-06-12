@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.129 2005/06/12 06:25:37 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.130 2005/06/12 06:35:18 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -720,7 +720,7 @@ class ArchitectureTemplate:
 				
 			# Add pcmcia-cs to the default runlevel
 			else:
-				self._add_to_runlevel(pcmcia)
+				self._add_to_runlevel('pcmcia')
 				self._logger.log("PCMCIA_CS emerged and configured.")
 
 	##
