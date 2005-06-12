@@ -35,8 +35,9 @@ int in_runlevel(char *script);
 int find_alias(char *alias, char *script);
 
 /*
- *
- *
+ *	argv[0]: /sbin/runscript
+ *	argv[1]: /etc/init.d/foo
+ *	argv[2]: start|stop
  */
 int main(int argc, char **argv) {
 	char *line = NULL;
@@ -48,6 +49,14 @@ int main(int argc, char **argv) {
 		printf("Invalid number of arguments (%d: %s %s %s)\n",
 			argc, argv[0], argv[1], argv[2]);
 		exit(EXIT_FAILURE);
+	}
+
+	/* if we are stopping, just short circuit and stop the service. No need to
+		worry about deps here, everything will get it's turn */
+	/* FIXME: this may be a dep of another script, if we stop it now, the other
+		one may get pissed off */
+	if(strncmp(argv[2], "stop", 4)==0) {
+		runscript(argv[1], argv[2]);
 	}
 
 	/* find the deps, and make sure all the right stuff is started first */
@@ -86,9 +95,7 @@ int main(int argc, char **argv) {
 				/* if we can't find a dep, it's likely because it's known as some
 				 * other name, and it uses an alias... need to track it down
 				 */
-				find_alias(alias, word);
-				//printf("%s\n", alias);
-				free(alias);
+				/* FIXME: none of baselayout-lite uses alias'es, so fuck it for now */
 			}
 		} else if(strstr(line, "\tuse")) {
 			/* optional deps that have to be started before if they are in RUNLEVEL_DIR */
@@ -111,12 +118,15 @@ int main(int argc, char **argv) {
 				/* if we can't find a dep, it's likely because it's known as some
 				 * other name, and it uses an alias... need to track it down
 				 */
+				/* FIXME: none of baselayout-lite uses alias'es, so fuck it for now */
 			}
 		}
 	}
 	fclose(init_script_FILE);
 	free(line);
 	free(word);
+	
+	/* now actually run what we are here for */
 	runscript(argv[1], argv[2]);
 
 	exit(EXIT_SUCCESS);
@@ -125,9 +135,16 @@ int main(int argc, char **argv) {
 int runscript(char *init_script, char *func_to_run) {
 	char *command = NULL;
 	
-	if(is_started(init_script)==TRUE) {
-		//printf("%s is already running\n", init_script);
-		return 0;
+	if(strncmp(func_to_run, "start", 5)==0) {
+		if(is_started(init_script)==TRUE) {
+			//printf("%s is already running\n", init_script);
+			return 0;
+		}
+	} else if(strncmp(func_to_run, "stop", 4)==0) {
+		if(is_started(init_script)==FALSE) {
+			//printf("%s is already running\n", init_script);
+			return 0;
+		}
 	}
 	
 	/* here we glue all the bits together
@@ -144,6 +161,7 @@ int runscript(char *init_script, char *func_to_run) {
 		init_script, func_to_run);
 	//printf("%s\n", command);
 
+	printf("Starting %s\n", init_script);
 	system(command);
 	mark_started(basename(init_script));
 

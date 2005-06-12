@@ -42,18 +42,42 @@
  *
  */
 int main(int argc, char **argv) {
-	int ret;
+	int ret, init;
+	char *searchstr;
 	DIR *rlvldir;
 	struct dirent *svc_script;
 	
 	if(argc != 2) {
-		fprintf(stderr, "Wrong number of args\nIt's best to let init handle this\n");
+		fprintf(stderr, "Wrong number of args\nIt's best to let init call this\n");
 		exit(1);
 	}
+	
+	/* we will set init to TRUE if this is sysinit, and then break the work up
+	 *	using that flag. This might get messy, so we may have to go back and
+	 *	rethink this 
+	 *
+	 *	init: flag that we key off of later
+	 *	searchstr: what we look for in the init script to figure out which script to start with
+	 */
+	if(strncmp(argv[1], "sysinit", 7) == 0) {
+		init=TRUE;
+		asprintf(&searchstr, "before *");
 
-	//printf("Entering runlevel %s\n", argv[1]);
-	
-	
+		/* we could possibly have a mess left over from last boot */
+		/* FIXME there's got to be a better way */
+		system("mount -n -o remount /");
+		system("rm -rf /var/lib/init.d/started/*");
+		system("mount -n remount,ro /");
+	} else if(strncmp(argv[1], "halt", 4) == 0) {
+		init=FALSE;
+		asprintf(&searchstr, "after *");
+	} else {
+		fprintf(stderr,
+			"Wrong type of arg. Expecting sysinit or halt. Got \"%s\"\n",
+			argv[1]);
+		exit(EXIT_FAILURE);
+	}
+
 	/* we only support 1 runlevel dir for boot+shutdown, so resolve deps for that
 	   dir then do stuff */
 	if ((rlvldir=opendir(RUNLEVEL_DIR)) == NULL) {
@@ -61,19 +85,17 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 	
-	/* we could possibly have a mess left over from last boot */
-	/* FIXME there's got to be a better way */
-	system("mount -n -o remount /");
-	system("rm -rf /var/lib/init.d/started/*");
-	system("mount -n remount,ro /");
-	
+	/* we need to find the init script(s) that contain the line "before *"
+		that's the special case for the first script that should be started */
 	while((svc_script=readdir(rlvldir)) != NULL) {
 		FILE *f1;
 		char path[500];
 		char line[500];
 		
+		/* ignore . and .. */
 		if((ret=strncmp(".", svc_script->d_name, 1)) == 0)
 			continue;
+		/* combine the path to RUNLEVEL_DIR and the name of the svc_script */
 		snprintf(path, sizeof(path)-1, "%s/%s", RUNLEVEL_DIR, svc_script->d_name);
 		if ((f1=fopen(path, "r")) == NULL) {
 			perror(path);
@@ -82,8 +104,11 @@ int main(int argc, char **argv) {
 		}
 		
 		while(fgets(line, sizeof(line)-1, f1)) {
-			if(strstr(line, "before *")) {
-				start_script(svc_script->d_name);
+			if(strstr(line, searchstr)) {
+				if(init==TRUE)
+					start_script(svc_script->d_name);
+				if(init==FALSE)
+					stop_script(svc_script->d_name);
 			}
 		}
 		fclose(f1);

@@ -69,15 +69,26 @@ int start_script(char *script) {
 	int ret;
 	char *command = NULL;
 	
-	//printf("Starting %s\n", script);
 	asprintf(&command, "%s%s start", INIT_DIR, script);
 	if((ret=system(command)) == 0) {
-		//printf("%s: Succesfully started %s\n", __func__, script);
 		free(command);
 		return TRUE;
 	}
 	printf("Failed to start %s (%s)(return value=%d)\n", script, strerror(errno), ret);
 	free(command);
 	return FALSE;
+}
 
+int stop_script(char *script) {
+	int ret;
+	char *command = NULL;
+	
+	asprintf(&command, "%s%s stop", INIT_DIR, script);
+	if((ret=system(command)) == 0) {
+		free(command);
+		return TRUE;
+	}
+	printf("Failed to stop %s (%s)(return value=%d)\n", script, strerror(errno), ret);
+	free(command);
+	return FALSE;
 }

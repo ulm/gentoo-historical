@@ -1,9 +1,10 @@
 CC=gcc
-CFLAGS=-Wall -Os -fomit-frame-pointer
+CFLAGS=-Wall -Os -fomit-frame-pointer -static
+LDFLAGS=-static
 OBJS=rc runscript
 
 
-all: rc runscript
+all: $(OBJS) baselayout-lite.h
 
 rc: rc.o common.o
 runscript: runscript.o common.o
