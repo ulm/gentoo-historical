@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.128 2005/06/12 06:12:57 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.129 2005/06/12 06:25:37 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -1048,7 +1048,6 @@ class ArchitectureTemplate:
 			# Set up the contents hash to pass to the config writer.
 			contents = {}
 			for key,value in enumerate(etc_portage[file]):
-				print "K:'%s' V:'%s'" % (str(key),string.strip(value))
 				contents[str(key)] = string.strip(value)
 
 			# Write out the contents in one go.
