@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.45 2005/06/11 08:48:04 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.46 2005/06/12 03:36:02 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -13,6 +13,8 @@ from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
 import parted
 import GLIStorageDevice
+		
+MEGABYTE = 1024 * 1024
 
 class x86ArchitectureTemplate(ArchitectureTemplate):
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
@@ -25,7 +27,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#
 		# THIS IS ARCHITECTURE DEPENDANT!!!
 		# This is the x86 way.. it uses grub
-		
 		if self._install_profile.get_boot_loader_pkg():
 			exitstatus = self._emerge(self._install_profile.get_boot_loader_pkg())
 			if exitstatus != 0:
@@ -34,7 +35,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			self._logger.log("Emerged the selected bootloader.")
 		
 		if self._install_profile.get_boot_loader_pkg() == "none":
-			pass
+			return	
 		elif self._install_profile.get_boot_loader_pkg() == "grub":
 			self._install_grub()
 		elif self._install_profile.get_boot_loader_pkg() == "lilo":
@@ -43,7 +44,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			raise GLIException("BootLoaderError",'fatal','install_bootloader',"Invalid bootloader selected:"+self._install_profile.get_boot_loader_pkg())
 		
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
-		return float((float(sectors) * sector_bytes)/ float(1024*1024))
+		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
 
 	def _add_partition(self, disk, start, end, type, fs):
 		types = { 'primary': parted.PARTITION_PRIMARY, 'extended': parted.PARTITION_EXTENDED, 'logical': parted.PARTITION_LOGICAL }
@@ -59,7 +60,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		disk.add_partition(newpart, constraint)
 
 	def partition(self):
-		MEGABYTE = 1024 * 1024
 		parts_old = {}
 		tmp_parts_new = self._install_profile.get_partition_tables()
 		parts_new = {}
