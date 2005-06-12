@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.127 2005/06/12 05:47:04 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.128 2005/06/12 06:12:57 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -64,9 +64,11 @@ class ArchitectureTemplate:
                                  (self.install_bootloader, "Configuring and installing bootloader"),
                                  (self.update_config_files, "Updating config files"),
                                  (self.configure_rc_conf, "Updating /etc/rc.conf"),
-                                 (self.set_services, "Setting up services for startup"),
                                  (self.set_users, "Add additional users."),
                                  (self.install_packages, "Installing additional packages."),
+				 # services for startup need to come after installing extra packages
+				 # otherwise some of the scripts will not exist.
+                                 (self.set_services, "Setting up services for startup"),
                                  (self.run_post_install_script, "Running custom post-install script"),
                                  (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
                                 ]
@@ -92,7 +94,8 @@ class ArchitectureTemplate:
 	# @param script_name the script to be added
 	# @param runlevel="default" the runlevel to add to
 	def _add_to_runlevel(self, script_name, runlevel="default"):
-
+		if not GLIUtility.is_file(self._chroot_dir + '/etc/init.d/' + script_name):
+			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
@@ -627,7 +630,10 @@ class ArchitectureTemplate:
 				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
 
 			# Add Logging Daemon to default runlevel
-			self._add_to_runlevel(logging_daemon_pkg)
+			# After we find the name of it's initscript
+			# This current code is a hack, and should be better.
+			initscript = logging_daemon_pkg[(logging_daemon_pkg.find('/')+1):]
+			self._add_to_runlevel(initscript)
 			self._logger.log("Logging daemon installed: "+logging_daemon_pkg)
 	##
 	# Installs and sets up cron package.
@@ -642,7 +648,10 @@ class ArchitectureTemplate:
 				raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
 
 			# Add Cron Daemon to default runlevel
-			self._add_to_runlevel(cron_daemon_pkg)
+			# After we find the name of it's initscript
+			# This current code is a hack, and should be better.
+			initscript = cron_daemon_pkg[(cron_daemon_pkg.find('/')+1):]
+			self._add_to_runlevel(initscript)
 		
 			# If the Cron Daemon is not vixie-cron, run crontab			
 			if cron_daemon_pkg != "vixie-cron":
