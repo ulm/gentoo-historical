@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.124 2005/06/11 08:48:04 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.125 2005/06/12 03:38:55 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -55,8 +55,9 @@ class ArchitectureTemplate:
                                  (self.set_timezone, "Setting timezone"),
                                  (self.emerge_kernel_sources, "Emerge kernel sources"),
                                  (self.build_kernel, "Building kernel"),
-                                 (self.install_logging_daemon, "Logger"),
-                                 (self.install_cron_daemon, "Cron daemon"),
+                                 (self.install_mta, "Installing MTA"),
+                                 (self.install_logging_daemon, "Installing system logger"),
+                                 (self.install_cron_daemon, "Installing Cron daemon"),
                                  (self.install_filesystem_tools, "Installing filesystem tools"),
                                  (self.setup_network_post, "Configuring post-install networking"),
                                  (self.install_bootloader, "Configuring and installing bootloader"),
@@ -129,9 +130,18 @@ class ArchitectureTemplate:
 	# @param binary_only=False defines whether to only allow binary emerges.
 	def _emerge(self, package, binary=False, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
+		# Portage complains if these are specified and don't exist
+		if "PORT_LOGDIR" in make_conf and make_conf['PORT_LOGDIR'] and not os.path.isdir(self._chroot_dir + make_conf['PORT_LOGDIR']): 
+			PORT_LOGDIR = make_conf['PORT_LOGDIR']
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORT_LOGDIR, logfile=self._compile_logfile, append_log=True)
+		if "PORTDIR_OVERLAY" in make_conf and make_conf['PORTDIR_OVERLAY'] and not os.path.isdir(self._chroot_dir + make_conf['PORTDIR_OVERLAY']): 
+			PORTDIR_OVERLAY = make_conf['PORTDIR_OVERLAY']
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTDIR_OVERLAY, logfile=self._compile_logfile, append_log=True)
+		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
 			cmd="NOCOLOR=yes emerge -k " + package
+		# now normal installs
 		else:
 			if binary_only:
 				cmd="NOCOLOR=yes emerge -K " + package
@@ -518,7 +528,9 @@ class ArchitectureTemplate:
 			return
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
-		if kernel_config_uri == "":  #use genkernel if no specific config
+		if kernel_config_uri == "none":  # bypass to install a kernel, but not compile it
+			return
+		elif kernel_config_uri == "":  #use genkernel if no specific config
 		
 			exitstatus = self._emerge("genkernel")
 			if exitstatus != 0:
@@ -570,21 +582,32 @@ class ArchitectureTemplate:
 			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
 			if self._client_configuration.get_architecture_template() == "x86":
 				kernel_compile_script += "cp /usr/src/linux/arch/i386/boot/bzImage /boot/kernel-custom\n"
-			f = open(self._chroot_dir+"/root/kernel_script", 'w')
+			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
 			f.writelines(kernel_compile_script)
 			f.close()
 			#Build the kernel
-			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/root/kernel_script")
-			exitstatus2 = GLIUtility.spawn("/root/kernel_script", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
+			exitstatus2 = GLIUtility.spawn("/var/tmp/kernel_script", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if (exitstatus1 != 0) or (exitstatus2 != 0):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
 						
 			#i'm sure i'm forgetting something here.
 			#cleanup
-			exitstatus = GLIUtility.spawn("rm "+self._chroot_dir+"/root/kernel_script")
+			exitstatus = GLIUtility.spawn("rm "+self._chroot_dir+"/var/tmp/kernel_script")
 			#it's not important if this fails.
 			self._logger.log("Custom kernel complete")
 			
+	##
+	# Installs mail MTA. Does not put into runlevel, as this is not simple with MTAs.
+	def install_mta(self):
+		# Get loggin daemon info
+		mta_pkg = self._install_profile.get_mta_pkg()
+		if mta_pkg:
+			# Emerge Logging Daemon
+			exitstatus = self._emerge(mta_pkg)
+			if exitstatus != 0:
+				raise GLIException("LoggingDaemonError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
+			self._logger.log("MTA installed: "+mta_pkg)
 	##
 	# Installs and sets up logging daemon on the new system.  adds to runlevel too.
 	def install_logging_daemon(self):
