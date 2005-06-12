@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.61 2005/06/02 18:24:09 codeman Exp $
+$Id: GLIClientController.py,v 1.62 2005/06/12 09:54:26 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -264,6 +264,9 @@ class GLIClientController(Thread):
 		# Do networking setup right here.
 		if self._configuration.get_network_type() != None:
 			type = self._configuration.get_network_type()
+			if type == "null":
+				# don't do anything, it's not our problem if the user specifies this.
+				return
 			if type == "dhcp":
 				# Run dhcpcd.
 				try:
