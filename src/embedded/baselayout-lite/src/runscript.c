@@ -163,7 +163,11 @@ int runscript(char *init_script, char *func_to_run) {
 
 	printf("Starting %s\n", init_script);
 	system(command);
-	mark_started(basename(init_script));
+	if(strncmp(func_to_run, "start", 5)==0) {
+		mark_started(basename(init_script));
+	} else if(strncmp(func_to_run, "stop", 4)==0) {
+		mark_stopped(basename(init_script));
+	}
 
 	free(command);
 	return 0;

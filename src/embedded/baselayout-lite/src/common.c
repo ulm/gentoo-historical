@@ -65,6 +65,15 @@ int mark_started(char *script) {
 	return TRUE;
 }
 
+int mark_stopped(char *script) {
+	char *init_script = NULL;
+	asprintf(&init_script, "%s%s", INIT_DIR, script);
+	chdir("/var/lib/init.d/started/");
+	unlink(init_script, basename(script));
+	free(init_script);
+	return TRUE;
+}
+
 int start_script(char *script) {
 	int ret;
 	char *command = NULL;
