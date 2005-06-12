@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.55 2005/06/12 03:32:48 robbat2 Exp $
+$Id: GLIInstallProfile.py,v 1.56 2005/06/12 03:42:28 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -155,7 +155,7 @@ class InstallProfile:
 					'kernel-initrd':			self.get_kernel_initrd,
 					'kernel-source':			self.get_kernel_source_pkg,
 					'logging-daemon':			self.get_logging_daemon_pkg,
-					'mta':						self.get_mta,
+					'mta':						self.get_mta_pkg,
 					'nisdomainname':			self.get_nisdomainname,
 					'portage-snapshot':			self.get_portage_tree_snapshot_uri,
 					'portage-tree-sync':		self.get_portage_tree_sync_type,
