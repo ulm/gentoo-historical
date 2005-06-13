@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.133 2005/06/13 00:34:36 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.134 2005/06/13 16:37:14 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -420,7 +420,7 @@ class ArchitectureTemplate:
 			self._logger.log("Portage tree sync'd using webrsync")
 		# Otherwise, just run emerge sync
 		else:
-			exitstatus = self._emerge("sync")
+			exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if exitstatus != 0:
 				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd")
