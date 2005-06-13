@@ -52,8 +52,9 @@ class Panel(GLIScreen.GLIScreen):
 	def deactivate(self):
 		try:
 			# retrieve the current selected timezone
-			final_path = "/usr/share/zoneinfo/" + self.map.getCurrent().tz
-			self.controller.install_profile.set_time_zone(None, final_path, None)
+#			final_path = "/usr/share/zoneinfo/" + self.map.getCurrent().tz
+#			self.controller.install_profile.set_time_zone(None, final_path, None)
+			self.controller.install_profile.set_time_zone(None, self.map.getCurrent().tz, None)
 		except:
 			# page loading for the first time, no timezone is selected for
 			# NoneType
