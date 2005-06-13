@@ -515,3 +515,9 @@ def get_interface_realname(interface):
 		return spawn("/sbin/lspci | grep $(basename $(readlink /sys/class/net/" + interface + r"/device)) | sed -e 's|^.\+ Ethernet controller: ||'", return_output=True)[1].strip()
 	else:
 		return "No Information Found"
+
+def list_stage_tarballs_from_mirror(mirror, arch, subarch):
+	return spawn("wget -O - " + mirror + "/releases/" + arch + "/current/stages/" + subarch + r"/ 2> /dev/null | grep 'bz2\"' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].split("\n")
+
+def list_mirrors():
+	return spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]\+<uri link=\"\(http\|ftp\|rsync\):\/\/[^\"]\+\">/{s/^[[:space:]]\+<uri link=\"\([^\"]\+\)\">.*$/\1/;p}'", return_output=True)[1].split("\n")
