@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.132 2005/06/13 00:30:12 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.133 2005/06/13 00:34:36 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -248,12 +248,11 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
-		ret = GLIUtility.spawn("mount -o bind /dev " + self._chroot_dir + "/dev")
-		if not GLIUtility.exitsuccess(ret):
-			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
-		ret = GLIUtility.spawn("mount -o bind /sys " + self._chroot_dir + "/sys")
-		if not GLIUtility.exitsuccess(ret):
-			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /sys')
+		bind_mounts = [ '/dev', '/dev/shm', '/dev/pts', '/sys' ]
+		for mount in bind_mounts:
+			ret = GLIUtility.spawn('mount -o bind %s %s%s' % (mount,self._chroot_dir,mount))
+			if not GLIUtility.exitsuccess(ret):
+				raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount '+mount)
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
 		self._logger.log("Chroot environment ready.")
 
