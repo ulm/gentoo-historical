@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.56 2005/06/12 03:42:28 robbat2 Exp $
+$Id: GLIInstallProfile.py,v 1.57 2005/06/13 00:39:17 allanonjl Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -824,7 +824,7 @@ class InstallProfile:
 
 		if type(attr) == tuple:
 			ip = attr[0]
-			broadcast = attr[1]
+			dhcp_options = broadcast = attr[1]
 			netmask = attr[2]
 			if ip != 'dhcp':
 				dhcp = False
