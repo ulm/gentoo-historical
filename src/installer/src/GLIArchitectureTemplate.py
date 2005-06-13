@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.131 2005/06/12 07:04:36 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.132 2005/06/13 00:30:12 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -134,14 +134,6 @@ class ArchitectureTemplate:
 	# @param binary_only=False defines whether to only allow binary emerges.
 	def _emerge(self, package, binary=True, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
-		# Portage complains if these are specified and don't exist
-		make_conf = self._install_profile.get_make_conf()
-		if "PORT_LOGDIR" in make_conf and make_conf['PORT_LOGDIR'] and not os.path.isdir(self._chroot_dir + make_conf['PORT_LOGDIR']): 
-			PORT_LOGDIR = make_conf['PORT_LOGDIR']
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORT_LOGDIR, logfile=self._compile_logfile, append_log=True)
-		if "PORTDIR_OVERLAY" in make_conf and make_conf['PORTDIR_OVERLAY'] and not os.path.isdir(self._chroot_dir + make_conf['PORTDIR_OVERLAY']): 
-			PORTDIR_OVERLAY = make_conf['PORTDIR_OVERLAY']
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTDIR_OVERLAY, logfile=self._compile_logfile, append_log=True)
 		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
@@ -259,6 +251,9 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -o bind /dev " + self._chroot_dir + "/dev")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /dev')
+		ret = GLIUtility.spawn("mount -o bind /sys " + self._chroot_dir + "/sys")
+		if not GLIUtility.exitsuccess(ret):
+			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /sys')
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
 		self._logger.log("Chroot environment ready.")
 
@@ -378,10 +373,27 @@ class ArchitectureTemplate:
 		
 		# For each configuration option...
 		for key in options.keys():
-		
 			# Add/Edit it into make.conf
 			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: options[key]})
 		self._logger.log("Make.conf configured")
+		# now make any directories that emerge needs, otherwise it will fail
+		# this must take place before ANY calls to emerge.
+		# otherwise emerge will fail (for PORTAGE_TMPDIR anyway)
+		PKGDIR = '/usr/portage/packages'
+		PORTAGE_TMPDIR = '/var/tmp'
+		PORT_LOGDIR = None
+		PORTDIR_OVERLAY = None
+		make_conf = self._install_profile.get_make_conf()
+		if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
+		if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+		if 'PORT_LOGDIR' in make_conf: PORT_LOGDIR = make_conf['PORT_LOGDIR']
+		if 'PORTDIR_OVERLAY' in make_conf: PORTDIR_OVERLAY = make_conf['PORTDIR_OVERLAY']
+		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
+		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
+		if PORT_LOGDIR != None: 
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORT_LOGDIR, logfile=self._compile_logfile, append_log=True)
+		if PORTDIR_OVERLAY != None: 
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTDIR_OVERLAY, logfile=self._compile_logfile, append_log=True)
 
 	##
 	# This will get/update the portage tree.  If you want to snapshot or mount /usr/portage use "custom".
@@ -405,7 +417,7 @@ class ArchitectureTemplate:
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
 			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if exitstatus != 0:
-				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tre', "Failed to retrieve portage tree!")
+				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd using webrsync")
 		# Otherwise, just run emerge sync
 		else:
@@ -488,8 +500,7 @@ class ArchitectureTemplate:
 			make_conf = self._install_profile.get_make_conf()
 			if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
 			if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
+			# directories are created previously
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 			
@@ -1007,6 +1018,9 @@ class ArchitectureTemplate:
 		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
 		for mount in mounts:
 			GLIUtility.spawn("umount -l " + mount)
+			
+		# we really should only swapoff on the correct device, but that can be for future use.
+		GLIUtility.spawn('swapoff -a')
 		
 		#OLD WAY: Unmount the /proc and /dev that we mounted in prepare_chroot
 		#There really isn't a reason to log errors here.
