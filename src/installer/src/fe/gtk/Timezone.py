@@ -41,7 +41,7 @@ class Panel(GLIScreen.GLIScreen):
 				self.map.setCurrent(zonetab_entry)
 		except:
 			# this isn't a valid timezone entry, or its not set!
-			print "Invalid timezone:"+zonetab_entry.tz
+			print "Invalid timezone or timezone not set."
 			
 		self.controller.SHOW_BUTTON_EXIT    = True
 		self.controller.SHOW_BUTTON_HELP    = True

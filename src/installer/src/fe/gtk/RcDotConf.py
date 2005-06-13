@@ -350,7 +350,9 @@ This is where you setup rc.conf."""
 					}[self.data[item]](item)
 			except KeyError:
 				# that value didn't exist in the stored profile
-				print "KeyError"
+				# debugging only here
+				#print "KeyError"
+				pass
 		
 	def activate(self):
 		rc_conf = self.controller.install_profile.get_rc_conf()
