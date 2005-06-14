@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.57 2005/06/13 00:39:17 allanonjl Exp $
+$Id: GLIInstallProfile.py,v 1.58 2005/06/14 08:17:05 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -50,6 +50,7 @@ class InstallProfile:
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []
 		self._kernel_config_uri = ""
+		self._kernel_build_method = ""
 		self._bootloader_kernel_args = ""
 		self._kernel_initrd = True
 		self._kernel_bootsplash = False
@@ -105,6 +106,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
 		self._parser.addHandler('gli-profile/install-stage', self.set_install_stage)
 		self._parser.addHandler('gli-profile/kernel-bootsplash', self.set_kernel_bootsplash)
+		self._parser.addHandler('gli-profile/kernel-build-method', self.set_kernel_build_method)
 		self._parser.addHandler('gli-profile/kernel-config', self.set_kernel_config_uri)
 		self._parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
 		self._parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
@@ -151,6 +153,7 @@ class InstallProfile:
 					'install-rp-pppoe':			self.get_install_rp_pppoe,
 					'install-stage':			self.get_install_stage,
 					'kernel-bootsplash':		self.get_kernel_bootsplash,
+					'kernel-build-method':			self.get_kernel_build_method,
 					'kernel-config':			self.get_kernel_config_uri,
 					'kernel-initrd':			self.get_kernel_initrd,
 					'kernel-source':			self.get_kernel_source_pkg,
@@ -184,6 +187,7 @@ class InstallProfile:
 		self.serialize_rc_conf()
 		self.serialize_services()
 		self.serialize_users()
+		self.serialize_etc_portage()
 
 		self.xmldoc += "</gli-profile>"
 
@@ -366,7 +370,7 @@ class InstallProfile:
 	# Sets a list of files in /etc/portage to configure.
 	# @param xml_path         Used internally by the XML parser. Should be
 	#                         None when calling directly
-	# @param install_packages The packages to install.
+	# @param file_entries	  Entries for file.
 	# @param xml_attr         Parameter description
 	def set_etc_portage(self, xml_path, file_entries, xml_attr):
 
@@ -375,15 +379,37 @@ class InstallProfile:
 		else:
 			raise GLIException("EtcPortageError", 'fatal', 'set_etc_portage',  "Invalid input!")
 
-		for entry in file_entries:
+		# clean up the whitespace
+		for counter in range(0,len(file_entries)):
+			entry = file_entries[counter].strip()
 			if not GLIUtility.is_realstring(entry):
 				raise GLIException("EtcPortageError", 'fatal', 'set_etc_packages',  entry + " must be a valid string!")
+			else:
+				file_entries[counter] = entry
+		
+		# done now, store things
 		self._etc_portage[xml_attr['name']] = file_entries
 
 	##
 	# Returns a hash/array of /etc/portage files to configure.
 	def get_etc_portage(self):
 		return self._etc_portage
+
+	##
+	# Serializes /etc/portage stuff
+	def serialize_etc_portage(self):
+		etc_portage = self.get_etc_portage()
+		filenames = etc_portage.keys()
+		# order is important!
+		filenames.sort()
+
+		self.xmldoc += '<etc-portage>'
+		for entry in filenames:
+			self.xmldoc += '<file name="'+entry+'">'
+			for line in self._etc_portage[entry]:
+				self.xmldoc += line.strip() + '\n'
+			self.xmldoc += '</file>'
+		self.xmldoc += '</etc-portage>'
 		
 	############################################################################
 	#### FTP Proxy
@@ -592,6 +618,27 @@ class InstallProfile:
 	# Returns kernel_bootsplash
 	def get_kernel_bootsplash(self):
 		return self._kernel_bootsplash		
+	
+	############################################################################
+	#### Kernel Build Method
+
+	##
+	# kernel_build_method is a string specifying what build method you wish to use for the kernel.
+	# Can also be a http:// or ftp:// path.
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param kernel_build_method   URI of kernel .config file
+	# @param xml_attr  	not used here.
+	def set_kernel_build_method(self, xml_path, kernel_build_method, xml_attr):
+		# Check type
+		if type(kernel_build_method) != str:
+			raise GLIException("KernelBuildMethodError", 'fatal', 'set_kernel_build_method',  "Must be a string!")
+
+		self._kernel_build_method = kernel_build_method
+
+	##
+	# Returns kernel_build_method
+	def get_kernel_build_method(self):
+		return self._kernel_build_method
 		
 	############################################################################
 	#### Kernel Configuration URI
@@ -760,8 +807,12 @@ class InstallProfile:
 		if self.get_make_conf() != {}:
 			self.xmldoc += "<make-conf>"
 
+			# keys should always be in the same order!
 			make_conf = self.get_make_conf()
-			for var in make_conf:
+			make_conf_keys = make_conf.keys()
+			make_conf_keys.sort()
+
+			for var in make_conf_keys:
 				self.xmldoc += "<variable name=\"%s\">%s</variable>" % (var, make_conf[var])
 
 			self.xmldoc += "</make-conf>"
