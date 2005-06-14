@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.59 2005/06/14 09:18:48 robbat2 Exp $
+$Id: GLIInstallProfile.py,v 1.60 2005/06/14 09:23:46 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -376,7 +376,6 @@ class InstallProfile:
 	# @param unused 	  Not used here.
 	# @param xml_attr         Parameter description
 	def set_etc_portage_add_file(self, xml_path, unused, attr):
-		print attr.getNames()
 		if 'name' not in attr.getNames():
 			raise GLIException("SetEtcPortageError", 'fatal', 'set_etc_portage_add_file',  "Filename must be specified.")
 		filename = str(attr['name']).strip()
