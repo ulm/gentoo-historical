@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.134 2005/06/13 16:37:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.135 2005/06/14 05:21:03 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -31,6 +31,9 @@ class ArchitectureTemplate:
 		self._chroot_dir = self._client_configuration.get_root_mount_point()
 		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
 		self._compile_logfile = "/tmp/compile_output.log"
+
+		# cache the list of successfully mounted swap devices here
+		self._swap_devices = []
 
 		# These must be filled in by the subclass. _steps is a list of
 		# functions, that will carry out the installation. They must be
@@ -180,7 +183,7 @@ class ArchitectureTemplate:
 						contents[i] = '#' + contents[i]
 	
 			contents.append('\n# Added by GLI\n')
-			commentprefix = ""
+			##commentprefix = "" ##unused
 			if key == "SPACER":
 				contents.append('\n')
 			elif key == "COMMENT":
@@ -219,7 +222,6 @@ class ArchitectureTemplate:
 	# Stage 2 install -- emerge -e system
 	# If we are doing a stage 1 or 2 install, then emerge system
 	def stage2(self):
-	
 		if self._install_profile.get_install_stage() in [ 1, 2 ]:
 			self._logger.mark()
 			self._logger.log("Starting emerge system.")
@@ -248,7 +250,10 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
-		bind_mounts = [ '/dev', '/dev/shm', '/dev/pts', '/sys' ]
+		bind_mounts = [ '/dev', '/dev/shm', '/dev/pts' ]
+		uname = os.uname()
+		if uname[0] == 'Linux' and uname[2].split('.')[1] == '6':
+			bind_mounts.append('/sys')
 		for mount in bind_mounts:
 			ret = GLIUtility.spawn('mount -o bind %s %s%s' % (mount,self._chroot_dir,mount))
 			if not GLIUtility.exitsuccess(ret):
@@ -261,22 +266,26 @@ class ArchitectureTemplate:
 	# In the future this function will lead to better things.  It may even wipe your ass for you.
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
+		failed_list = []
 		for package in installpackages:
 			self._logger.log("Starting emerge " + package)
 			status = self._emerge(package)
 			if not GLIUtility.exitsuccess(status):
 				self._logger.log("Could not emerge " + package + "!")
-			#	raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + package + "!")
+				failed_list.append(package)
 			else:
 				self._logger.log("Emerged package: " + package)
+		# error checking is important!
+		if len(failed_list) > 0:
+			raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + failed_list + "!")
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
 	def set_services(self):
 		services = self._install_profile.get_services()
 		for service in services:
-			status = self._add_to_runlevel(service)
-			
+			self._add_to_runlevel(service)
+				
 	##
 	# Will grab partition info from the profile and mount all partitions with a specified mountpoint (and swap too)
 	def mount_local_partitions(self):
@@ -304,8 +313,10 @@ class ArchitectureTemplate:
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
 					if not GLIUtility.exitsuccess(ret):
-						self._logger.log("ERROR! : Could not activate swap!")
+						self._logger.log("ERROR! : Could not activate swap ("+device+minor+")!")
 					#	raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
+					else:
+						self._swap_devices.append((device+minor))
 		sorted_list = []
 		for key in parts_to_mount.keys(): sorted_list.append(key)
 		sorted_list.sort()
@@ -368,21 +379,23 @@ class ArchitectureTemplate:
 	# Configures the new /etc/make.conf
 	def configure_make_conf(self):
 		# Get make.conf options
-		options = self._install_profile.get_make_conf()
+		make_conf = self._install_profile.get_make_conf()
 		
 		# For each configuration option...
-		for key in options.keys():
+		for key in make_conf.keys():
 			# Add/Edit it into make.conf
-			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: options[key]})
+			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: make_conf[key]})
 		self._logger.log("Make.conf configured")
 		# now make any directories that emerge needs, otherwise it will fail
 		# this must take place before ANY calls to emerge.
 		# otherwise emerge will fail (for PORTAGE_TMPDIR anyway)
+		# defaults first
+		# this really should use portageq or something.
 		PKGDIR = '/usr/portage/packages'
 		PORTAGE_TMPDIR = '/var/tmp'
 		PORT_LOGDIR = None
 		PORTDIR_OVERLAY = None
-		make_conf = self._install_profile.get_make_conf()
+		# now other stuff
 		if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
 		if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 		if 'PORT_LOGDIR' in make_conf: PORT_LOGDIR = make_conf['PORT_LOGDIR']
@@ -502,6 +515,7 @@ class ArchitectureTemplate:
 			# directories are created previously
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
+			# these should really be error-checked...
 			
 			#these are the hotplug/coldplug steps from build_kernel copied over here.  they will NOT be run there.
 			exitstatus = self._emerge("hotplug")
@@ -648,7 +662,6 @@ class ArchitectureTemplate:
 	##
 	# Installs and sets up cron package.
 	def install_cron_daemon(self):
-		
 		# Get cron daemon info
 		cron_daemon_pkg = self._install_profile.get_cron_daemon_pkg()
 		if cron_daemon_pkg:
@@ -669,38 +682,52 @@ class ArchitectureTemplate:
 				if exitstatus != 0:
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
 			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
+	
 	##
 	# This will parse the partitions looking for types that require fstools and emerge them if found.
 	def install_filesystem_tools(self):
 		"Installs and sets up fstools"
 		# Get the list of file system tools to be installed
 		parts = self._install_profile.get_partition_tables()
-		filesystem_tools = []
+		# don't use an array, use a set instead
+		filesystem_types = {}
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				partition_type = tmp_partitions[partition]['type']
-				if partition_type not in filesystem_tools:
-					filesystem_tools.append(partition_type)
-		for filesystem in filesystem_tools:
-			if filesystem.lower() == "xfs":
-				exitstatus = self._emerge("xfsprogs")
-				if exitstatus != 0:
-					self._logger.log("ERROR! : Could not emerge xfsprogs!")
-				else:
-					self._logger.log("FileSystemTool xfsprogs was emerged successfully.")
-			if filesystem.lower() == "reiserfs":
-				exitstatus = self._emerge("reiserfsprogs")
-				if exitstatus != 0:
-					self._logger.log("ERROR! : Could not emerge reiserfsprogs!")
-				else:
-					self._logger.log("FileSystemTool reiserfsprogs was emerged successfully.")
-			if filesystem.lower() == "jfs":
-				exitstatus = self._emerge("jfsutils")
-				if exitstatus != 0:
-					self._logger.log("ERROR! : Could not emerge jfsutils!")
-				else:
-					self._logger.log("FileSystemTool jfsutils was emerged successfully.")
+				partition_type = tmp_partitions[partition]['type'].lower()
+				if partition_type not in filesystem_types:
+					filesystem_types[partition_type] = None
+
+		package_list = []
+		for filesystem in filesystem_types.keys():
+			if filesystem == 'xfs':
+				package_list.append('sys-fs/xfsprogs')
+			elif filesystem == 'reiserfs':
+				package_list.append('sys-fs/reiserfsprogs')
+			elif filesystem == 'jfs':
+				package_list.append('sys-fs/jfsutils')
+			elif filesystem == 'ntfs':
+				package_list.append('sys-fs/ntfsprogs')
+			elif filesystem in ['fat','vfat', 'msdos', 'umsdos']:
+				package_list.append('sys-fs/dosfstools')
+			elif filesystem == 'hfs':
+				# should check with the PPC guys on this
+				package_list.append('sys-fs/hfsutils')
+				package_list.append('sys-fs/hfsplusutils')
+			#else:
+			# should be code here for every FS type!
+
+		failed_list = []
+		for package in package_list:
+			exitstatus = self._emerge(package)
+			if exitstatus != 0:
+				self._logger.log("ERROR! : Could not emerge "+package+"!")
+				failed_list.append(package)
+			else:
+				self._logger.log("FileSystemTool "+package+" was emerged successfully.")
+		# error checking is important!
+		if len(failed_list) > 0:
+			raise GLIException("InstallFileSystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + failed_list + "!")
 					
 	##
 	# Installs rp-pppoe but does not configure it.  This function is quite the unknown.
@@ -1018,8 +1045,12 @@ class ArchitectureTemplate:
 		for mount in mounts:
 			GLIUtility.spawn("umount -l " + mount)
 			
-		# we really should only swapoff on the correct device, but that can be for future use.
-		GLIUtility.spawn('swapoff -a')
+		# now turn off all swap as well.
+		# we need to find the swap devices
+		for swap_device in self._swap_devices:
+			ret = GLIUtility.spawn("swapoff "+swap_device)
+			if not GLIUtility.exitsuccess(ret):
+				self._logger.log("ERROR! : Could not deactivate swap ("+swap_device+")!")
 		
 		#OLD WAY: Unmount the /proc and /dev that we mounted in prepare_chroot
 		#There really isn't a reason to log errors here.
@@ -1053,18 +1084,18 @@ class ArchitectureTemplate:
 		etc_portage = self._install_profile.get_etc_portage()
 
 		# Loop through the required files.
-		for file in etc_portage:
-			contents = enumerate(etc_portage[file])
-			self._logger.log("Configuring /etc/portage/" + file)
-			self._edit_config(self._chroot_dir + "/etc/portage/" + file, {"COMMENT": "GLI additions ===>"})
+		for conf_file in etc_portage:
+			contents = enumerate(etc_portage[conf_file])
+			self._logger.log("Configuring /etc/portage/" + conf_file)
+			self._edit_config(self._chroot_dir + "/etc/portage/" + conf_file, {"COMMENT": "GLI additions ===>"})
 
 			# Set up the contents hash to pass to the config writer.
 			contents = {}
-			for key,value in enumerate(etc_portage[file]):
+			for key,value in enumerate(etc_portage[conf_file]):
 				contents[str(key)] = string.strip(value)
 
 			# Write out the contents in one go.
-			self._edit_config(self._chroot_dir + "/etc/portage/" + file, contents, "", False, True)
+			self._edit_config(self._chroot_dir + "/etc/portage/" + conf_file, contents, "", False, True)
 
 			self._edit_config(self._chroot_dir + "/etc/make.conf", {"COMMENT": "<=== End GLI additions"})
-			self._logger.log("Finished configuring /etc/portage/" + file)
+			self._logger.log("Finished configuring /etc/portage/" + conf_file)
