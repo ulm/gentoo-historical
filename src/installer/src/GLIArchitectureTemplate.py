@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.137 2005/06/14 05:59:23 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.138 2005/06/14 09:21:57 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -559,6 +559,12 @@ class ArchitectureTemplate:
 	def build_kernel(self):
 		self._logger.mark()
 		self._logger.log("Starting build_kernel")
+
+		build_mode = self._install_profile.get_kernel_build_method()
+		# TODO (robbat2, 20050613): Change this entire function to work
+		# based on build_mode instead of kernel-source-pkg or
+		# kernel-config.
+
 		# No building necessary if using the LiveCD's kernel/initrd
 		# or using the 'none' kernel bypass
 		if self._install_profile.get_kernel_source_pkg() in ["livecd-kernel","none"]: 
