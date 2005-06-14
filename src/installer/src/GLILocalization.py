@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLILocalization.py,v 1.4 2005/04/14 15:44:03 agaffney Exp $
+$Id: GLILocalization.py,v 1.5 2005/06/14 05:17:07 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -26,8 +26,8 @@ class Localization:
 	def __init__(self, filename, lang=None):
 		self.messages = {}
 		self.lang = lang or os.getenv("LANG") # maybe LC_ALL
-		file = codecs.open(filename, "r", "utf-8")
-		for line in file.readlines():
+		message_file = codecs.open(filename, "r", "utf-8")
+		for line in message_file.readlines():
 			line = line.strip()
 			parts = line.split('\t')
 			if not parts[0] in self.messages: self.messages[parts[0]] = {}
