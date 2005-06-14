@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17 2005/01/28 18:37:23 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.1 2005/06/14 19:47:46 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -51,7 +51,7 @@ export CONFIG_PROTECT="-*"
 ## START BUILD
 # portage needs to be merged manually with USE="build" set to avoid frying our
 # make.conf. emerge system could merge it otherwise.
-USE="build" emerge portage
+USE="build" emerge --oneshot --nodeps portage
 
 if [ -n "${clst_VERBOSE}" ]
 then
