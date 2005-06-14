@@ -43,6 +43,15 @@
         <xsl:with-param name="unfold">yes</xsl:with-param>
       </xsl:apply-templates>
     </xsl:when>
+    <xsl:when test="count(catid) = 1">
+      <!-- Automatically select ID -->
+      <xsl:variable name="catid"><xsl:value-of select="catid"/></xsl:variable>
+      <xsl:apply-templates select="catid[text() = $catid]">
+        <xsl:with-param name="metadoc" select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="unfold">yes</xsl:with-param>
+      </xsl:apply-templates>
+    </xsl:when>
     <xsl:when test="catid">
       <!-- No ID selected, but we're still checking for catid -->
       <chapter>
