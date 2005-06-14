@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.136 2005/06/14 05:34:09 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.137 2005/06/14 05:59:23 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -578,8 +578,8 @@ class ArchitectureTemplate:
 	
 			# If the uri for the kernel config is not null, then
 			if kernel_config_uri != "":
-				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/root/kernel_config")
-				genkernel_options = genkernel_options + " --kernel-config=/root/kernel_config"
+				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
+				genkernel_options = genkernel_options + " --kernel-config=/var/tmp/kernel_config"
 				
 			# Decide whether to use bootsplash or not
 			if self._install_profile.get_kernel_bootsplash():
@@ -607,12 +607,12 @@ class ArchitectureTemplate:
 		else:  #CUSTOM CONFIG
 			#Copy the kernel .config to the proper location in /usr/src/linux
 			try:
-				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/root/kernel_config")
+				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
 			except:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
 			
 			kernel_compile_script =  "#!/bin/bash\n"
-			kernel_compile_script += "cp /root/kernel_config /usr/src/linux/.config\n"
+			kernel_compile_script += "cp /var/tmp/kernel_config /usr/src/linux/.config\n"
 			kernel_compile_script += "cd /usr/src/linux\n"
 			kernel_compile_script += "make \nmake modules_install \n"
 
@@ -630,7 +630,7 @@ class ArchitectureTemplate:
 						
 			#i'm sure i'm forgetting something here.
 			#cleanup
-			exitstatus = GLIUtility.spawn("rm "+self._chroot_dir+"/var/tmp/kernel_script")
+			exitstatus = GLIUtility.spawn("rm -f "+self._chroot_dir+"/var/tmp/kernel_script "+self._chroot_dir+"/var/tmp/kernel_config")
 			#it's not important if this fails.
 			self._logger.log("Custom kernel complete")
 			
