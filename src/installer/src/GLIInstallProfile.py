@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.58 2005/06/14 08:17:05 robbat2 Exp $
+$Id: GLIInstallProfile.py,v 1.59 2005/06/14 09:18:48 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -70,7 +70,7 @@ class InstallProfile:
 		self._nisdomainname = ""
 		self._partition_tables = {}
 		self._network_mounts = []
-		self._temp_partition_table = {}
+		self._temp_partition_table = {} # temp
 		self._network_interfaces = {}
 		self._make_conf = {}
 		self._rc_conf = {}
@@ -80,6 +80,8 @@ class InstallProfile:
 		self._dns_servers = ()
 		self._default_gateway = ()
 		self._etc_portage = {}
+		self._etc_portage_current_file = None # temp
+		self._etc_portage_temp_contents = {} # temp
 		self._install_packages = ()
 		self._services = ()
 		self._mta_pkg = ""
@@ -96,7 +98,8 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
 		self._parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
 		self._parser.addHandler('gli-profile/domainname', self.set_domainname)
-		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage)
+		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage_add_file, call_on_null=True)
+		self._parser.addHandler('gli-profile/etc-portage/file/entry', self.set_etc_portage_add_file_entry, call_on_null=True)
 		self._parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
 		self._parser.addHandler('gli-profile/grp-install', self.set_grp_install)
 		self._parser.addHandler('gli-profile/hostname', self.set_hostname)
@@ -370,44 +373,51 @@ class InstallProfile:
 	# Sets a list of files in /etc/portage to configure.
 	# @param xml_path         Used internally by the XML parser. Should be
 	#                         None when calling directly
-	# @param file_entries	  Entries for file.
+	# @param unused 	  Not used here.
 	# @param xml_attr         Parameter description
-	def set_etc_portage(self, xml_path, file_entries, xml_attr):
-
-		if type(file_entries) == str:
-			file_entries = string.split(file_entries, "\n")
+	def set_etc_portage_add_file(self, xml_path, unused, attr):
+		print attr.getNames()
+		if 'name' not in attr.getNames():
+			raise GLIException("SetEtcPortageError", 'fatal', 'set_etc_portage_add_file',  "Filename must be specified.")
+		filename = str(attr['name']).strip()
+		self._etc_portage_current_file = filename
+		# might already exist...
+		if filename in self._etc_portage.keys():
+			self._etc_portage[filename].update(self._etc_portage_temp_contents)
 		else:
-			raise GLIException("EtcPortageError", 'fatal', 'set_etc_portage',  "Invalid input!")
+			self._etc_portage[filename] = self._etc_portage_temp_contents
+		self._etc_portage_temp_contents = {}
 
-		# clean up the whitespace
-		for counter in range(0,len(file_entries)):
-			entry = file_entries[counter].strip()
-			if not GLIUtility.is_realstring(entry):
-				raise GLIException("EtcPortageError", 'fatal', 'set_etc_packages',  entry + " must be a valid string!")
-			else:
-				file_entries[counter] = entry
-		
-		# done now, store things
-		self._etc_portage[xml_attr['name']] = file_entries
+	# Sets atoms for a files in /etc/portage to configure.
+	# @param xml_path         Used internally by the XML parser. Should be
+	#                         None when calling directly
+	# @param atom_content	  As per variabale name.
+	# @param xml_attr         Parameter description
+	def set_etc_portage_add_file_entry(self, xml_path, atom_content, attr):
+		if 'atom' not in attr.getNames():
+			raise GLIException("SetEtcPortageError", 'fatal', 'set_etc_portage_add_file_entry',  "Atom must be specified.")
+		atom = str(attr['atom']).strip()
+		self._etc_portage_temp_contents[atom] = str(atom_content).strip()
 
 	##
 	# Returns a hash/array of /etc/portage files to configure.
 	def get_etc_portage(self):
 		return self._etc_portage
-
+	
 	##
 	# Serializes /etc/portage stuff
 	def serialize_etc_portage(self):
 		etc_portage = self.get_etc_portage()
-		filenames = etc_portage.keys()
+		all_filenames = etc_portage.keys()
 		# order is important!
-		filenames.sort()
+		all_filenames.sort()
 
 		self.xmldoc += '<etc-portage>'
-		for entry in filenames:
-			self.xmldoc += '<file name="'+entry+'">'
-			for line in self._etc_portage[entry]:
-				self.xmldoc += line.strip() + '\n'
+		for filename in all_filenames:
+			self.xmldoc += '<file name="'+filename+'">'
+			for atom in self._etc_portage[filename]:
+				atom_content = self._etc_portage[filename][atom]
+				self.xmldoc += '<entry atom="%s">%s</entry>' % (atom,atom_content)
 			self.xmldoc += '</file>'
 		self.xmldoc += '</etc-portage>'
 		
@@ -1030,6 +1040,7 @@ class InstallProfile:
 		# Add code to import self._temp_partition_table into the Device object
 		self._partition_tables[devnode].set_partitions_from_install_profile_structure(self._temp_partition_table)
 		self._temp_partition_table = {}
+			
 
 	##
 	# FIXME: agaffney
