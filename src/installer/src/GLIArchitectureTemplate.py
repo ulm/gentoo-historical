@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.135 2005/06/14 05:21:03 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.136 2005/06/14 05:34:09 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -182,7 +182,7 @@ class ArchitectureTemplate:
 					if not contents[i][0] == '#':
 						contents[i] = '#' + contents[i]
 	
-			contents.append('\n# Added by GLI\n')
+			##contents.append('\n# Added by GLI\n')
 			##commentprefix = "" ##unused
 			if key == "SPACER":
 				contents.append('\n')
@@ -382,9 +382,13 @@ class ArchitectureTemplate:
 		make_conf = self._install_profile.get_make_conf()
 		
 		# For each configuration option...
+		filename = self._chroot_dir + "/etc/make.conf"
+		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
 		for key in make_conf.keys():
 			# Add/Edit it into make.conf
-			self._edit_config(self._chroot_dir + "/etc/make.conf", {key: make_conf[key]})
+			self._edit_config(filename, {key: make_conf[key]})
+		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
+
 		self._logger.log("Make.conf configured")
 		# now make any directories that emerge needs, otherwise it will fail
 		# this must take place before ANY calls to emerge.
@@ -783,10 +787,12 @@ class ArchitectureTemplate:
 		options = self._install_profile.get_rc_conf()
 		
 		# For each configuration option...
+		filename = self._chroot_dir + "/etc/rc.conf"
+		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
 		for key in options.keys():
-		
 			# Add/Edit it into rc.conf
-			self._edit_config(self._chroot_dir + "/etc/rc.conf", {key: options[key]})
+			self._edit_config(filename, {key: options[key]})
+		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
 		self._logger.log("rc.conf configured.")
 		
 	##
@@ -1086,8 +1092,9 @@ class ArchitectureTemplate:
 		# Loop through the required files.
 		for conf_file in etc_portage:
 			contents = enumerate(etc_portage[conf_file])
+			filename = self._chroot_dir + "/etc/portage/" + conf_file
 			self._logger.log("Configuring /etc/portage/" + conf_file)
-			self._edit_config(self._chroot_dir + "/etc/portage/" + conf_file, {"COMMENT": "GLI additions ===>"})
+			self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
 
 			# Set up the contents hash to pass to the config writer.
 			contents = {}
@@ -1095,7 +1102,7 @@ class ArchitectureTemplate:
 				contents[str(key)] = string.strip(value)
 
 			# Write out the contents in one go.
-			self._edit_config(self._chroot_dir + "/etc/portage/" + conf_file, contents, "", False, True)
+			self._edit_config(filename, contents, "", False, True)
 
-			self._edit_config(self._chroot_dir + "/etc/make.conf", {"COMMENT": "<=== End GLI additions"})
+			self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
 			self._logger.log("Finished configuring /etc/portage/" + conf_file)
