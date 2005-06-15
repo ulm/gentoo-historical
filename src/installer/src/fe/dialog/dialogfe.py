@@ -328,19 +328,25 @@ def set_kernel():
 	menuitem = kernel_sources[int(menuitem)-1]
 	install_profile.set_kernel_source_pkg(None, menuitem, None)
 	if not menuitem == "livecd-kernel":
-		if d.yesno("Do you want to use genkernel to automatically generate your kernel?") == DLG_NO:
-			code, custom_kernel_uri = d.inputbox("Enter the custom kernel uri")
-			if code == DLG_OK: 
-				if custom_kernel_uri: 
-						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=local_install):
-							d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-						else: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
-				else: d.msgbox("No URI was specified!")
-		else: 
+		if d.yesno("There are currently two ways the installer can compile a kernel for your new system.  You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).  \n\n If you do not have a previously-made kernel configuration, YOU MUST CHOOSE genkernel.  Do you want to use genkernel to automatically generate your kernel?") == DLG_YES:
+			#Genkernel
+			self._install_profile.set_kernel_build_method(None,"genkernel", None)
 			if d.yesno("Do you want the bootsplash?") == DLG_YES:
 				install_profile.set_kernel_bootsplash(None, True, None)
 			else:
 				install_profile.set_kernel_bootsplash(None, False, None)
+		else:
+			self._install_profile.set_kernel_build_method(None,"custom", None)
+			
+		code, custom_kernel_uri = d.inputbox("If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):")
+		if code == DLG_OK: 
+			if custom_kernel_uri: 
+					if not GLIUtility.is_uri(custom_kernel_uri, checklocal=local_install):
+						d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.")
+					else: install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+			else: d.msgbox("No URI was specified!")
+		
+		
 
 def set_boot_loader():
 	boot_loaders = ("grub", "lilo")

@@ -535,10 +535,6 @@ global USE flags and one for local flags specific to each program.
 					
 		#Second set the USE flags, this is a biggie.
 		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
-		system_cflags = GLIUtility.spawn("portageq envvar CFLAGS", return_output=True)[1].strip()
-		system_chost = GLIUtility.spawn("portageq envvar CHOST", return_output=True)[1].strip()
-		system_makeopts = GLIUtility.spawn("portageq envvar MAKEOPTS", return_output=True)[1].strip()
-		system_features = GLIUtility.spawn("portageq envvar FEATURES", return_output=True)[1].strip()
 		use_flags = []
 		use_local_flags = []
 		use_desc = {}
@@ -593,16 +589,17 @@ global USE flags and one for local flags specific to each program.
 		#Change the Yes/No buttons to new labels for this question.
 		self._d.add_persistent_args(["--yes-label", _(u"Stable")])
 		self._d.add_persistent_args(["--no-label", _(u"Unstable")])
-		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.")) == self._DLG_YES:
+		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs.")) == self._DLG_YES:
 			#Stable
 			make_conf["ACCEPT_KEYWORDS"] = ""
 		else:  #Unstable
 			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
 		while 1:
-			menulist = ["CFLAGS", "CHOST", "MAKEOPTS", "FEATURES", "GENTOO_MIRRORS", "SYNC"]
-			code, menuitem = self._d.menu("Choose a variable to edit", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
+			menulist = [("CFLAGS","Edit your C Flags and Optimization level"), ("CHOST", "Change the Host Setting"), ("MAKEOPTS", "Specify number of parallel makes (-j) to perform. (ex. CPUs+1)"), ("FEATURES", "Change portage functionality settings."), ("GENTOO_MIRRORS", "Specify mirrors to use for source retrieval."), ("SYNC", "Specify server used by rsync to sync the portage tree.")]
+			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=self._dmenu_list_to_choices(menulist), cancel="Done")
 			if code != self._DLG_OK: 
+				self._install_profile.set_make_conf(make_conf)
 				break
 			menuitem = menulist[int(menuitem)-1]
 			oldval = ""
@@ -611,7 +608,7 @@ global USE flags and one for local flags specific to each program.
 			code, newval = self._d.inputbox("Enter new value for " + menuitem, init=oldval)
 			if code == self._DLG_OK:
 				make_conf[menuitem] = newval
-				self._install_profile.set_make_conf(make_conf)
+				
 
 	def _set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
@@ -629,23 +626,10 @@ global USE flags and one for local flags specific to each program.
 		if not menuitem == "livecd-kernel":
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Genkernel")])
-			self._d.add_persistent_args(["--no-label", _(u"Custom Config")])
-			if self._d.yesno("Do you want to use genkernel to automatically generate your kernel or do you have a previously-made kernel configuration?)") == self._DLG_NO:
-				#Change the Yes/No buttons back.
-				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
-				self._d.add_persistent_args(["--no-label", _(u"No")])
-				code, custom_kernel_uri = self._d.inputbox(_(u"Enter the custom kernel's location:"))
-				if code == self._DLG_OK: 
-					if custom_kernel_uri: 
-						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
-							self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."));
-						else: 
-							try:
-								self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
-							except:
-								self._d.msgbox(_("ERROR! Could not set the kernel config URI!"))
-					else: self._d.msgbox("No URI was specified!  Reverting to using genkernel")
-			else:
+			self._d.add_persistent_args(["--no-label", _(u"Traditional (requires config file!)")])
+			string1 = _(u"There are currently two ways the installer can compile a kernel for your new system.  You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).  \n\n If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel.  Choose which method you want to use.")
+			if self._d.yesno(string1, width=70, height=13) == self._DLG_YES:   #Genkernel
+				self._install_profile.set_kernel_build_method(None,"genkernel", None)
 				#Change the Yes/No buttons back.
 				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 				self._d.add_persistent_args(["--no-label", _(u"No")])
@@ -653,6 +637,22 @@ global USE flags and one for local flags specific to each program.
 					self._install_profile.set_kernel_bootsplash(None, True, None)
 				else:
 					self._install_profile.set_kernel_bootsplash(None, False, None)
+			else: 	#Custom
+				self._install_profile.set_kernel_build_method(None,"custom", None)
+				
+			code, custom_kernel_uri = self._d.inputbox(_(u"If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):"))
+			if code == self._DLG_OK: 
+				if custom_kernel_uri: 
+					if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
+						self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
+					else: 
+						try:
+							self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+						except:
+							self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
+				else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
+				
+				
 
 	def _set_install_stage(self):
 	# The install stage and stage tarball will be selected here
