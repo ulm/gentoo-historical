@@ -352,15 +352,18 @@ class Panel(GLIScreen.GLIScreen):
 		return_val = False
 		
 		# test to make sure uid is an INT!!!
-		test = False
-		try:
-			uid_test = int(data["userid"])
+		if data["userid"] != "":
+			test = False
+			try:
+				uid_test = int(data["userid"])
+				test = True
+			except:
+				# its not an integer, raise the exception.
+				msgbox=Widgets().error_Box("Error","UID must be an integer, and you entered a string!")
+				msgbox.run()
+				msgbox.destroy()
+		else:
 			test = True
-		except:
-			# its not an integer, raise the exception.
-			msgbox=Widgets().error_Box("Error","UID must be an integer, and you entered a string!")
-			msgbox.run()
-			msgbox.destroy()
 			
 		if self.is_data_empty(data) and test==True:
 			# now add it to the box
