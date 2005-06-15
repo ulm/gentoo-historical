@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24.2.2 2005/05/18 18:27:00 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/generic_stage_target.py,v 1.24.2.3 2005/06/15 17:21:22 wolf31o2 Exp $
 
 """
 This class does all of the chroot setup, copying of files, etc. It is
@@ -237,7 +237,7 @@ class generic_stage_target(generic_target):
 		
 	def unpack_and_bind(self):
 		print "Unpacking stage tarball..."
-		cmd("tar xjpf "+self.settings["source_path"]+" -C "+self.settings["chroot_path"],\
+		cmd("/bin/tar xjpf "+self.settings["source_path"]+" -C "+self.settings["chroot_path"],\
 			"Error unpacking tarball")
 				
 		if os.path.exists(self.settings["chroot_path"]+"/usr/portage"):
@@ -246,7 +246,7 @@ class generic_stage_target(generic_target):
 				"Error removing existing snapshot directory.")
 			
 		print "Unpacking portage tree snapshot..."
-		cmd("tar xjpf "+self.settings["snapshot_path"]+" -C "+\
+		cmd("/bin/tar xjpf "+self.settings["snapshot_path"]+" -C "+\
 			self.settings["chroot_path"]+"/usr","Error unpacking snapshot")
 			
 		print "Configuring profile link..."
@@ -402,7 +402,7 @@ class generic_stage_target(generic_target):
 			
 		print "Creating stage tarball..."
 		
-		cmd("tar cjf "+self.settings["target_path"]+" -C "+self.settings["stage_path"]+\
+		cmd("/bin/tar cjf "+self.settings["target_path"]+" -C "+self.settings["stage_path"]+\
 			" .","Couldn't create stage tarball")
 
 	def run_local(self):

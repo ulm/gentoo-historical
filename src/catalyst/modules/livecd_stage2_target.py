@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30.2.2 2005/05/25 19:17:09 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30.2.3 2005/06/15 17:21:22 wolf31o2 Exp $
 
 """
 Builder class for a LiveCD stage2 build.
@@ -68,7 +68,7 @@ class livecd_stage2_target(generic_stage_target):
 				"Error removing existing snapshot directory.")
 
  		print "Unpacking portage tree snapshot..."
- 		cmd("tar xjpf "+self.settings["snapshot_path"]+" -C "+\
+ 		cmd("/bin/tar xjpf "+self.settings["snapshot_path"]+" -C "+\
 			self.settings["chroot_path"]+"/usr","Error unpacking snapshot")
 
 		print "Configuring profile link..."

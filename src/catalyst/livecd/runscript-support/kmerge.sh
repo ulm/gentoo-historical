@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.3 2005/06/10 19:26:04 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.4 2005/06/15 17:21:22 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -85,7 +85,7 @@ build_kernel() {
 	# pack up the modules for resuming
 	if [ -n "${clst_KERNCACHE}" ]
 	then
-		tar cjpf /usr/portage/packages/gk_binaries/${1}-modules-${clst_version_stamp}.tar.bz2 \
+		/bin/tar cjpf /usr/portage/packages/gk_binaries/${1}-modules-${clst_version_stamp}.tar.bz2 \
 			/lib/modules/${1} || die "Could not package kernel modules, exiting"
 	fi
 }
@@ -149,7 +149,7 @@ then
 		echo "Unpacking kernel modules from the previous build..."
 		echo
 		[ ! -d /lib/modules ] && mkdir /lib/modules
-		tar xjpf /usr/portage/packages/gk_binaries/${clst_fudgeuname}-modules-${clst_version_stamp}.tar.bz2 \
+		/bin/tar xjpf /usr/portage/packages/gk_binaries/${clst_fudgeuname}-modules-${clst_version_stamp}.tar.bz2 \
 			-C / || die "Could not unpack kernel modules"
 	else
 		build_kernel ${clst_fudgeuname}

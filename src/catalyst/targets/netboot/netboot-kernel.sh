@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-kernel.sh,v 1.6 2005/01/26 21:59:40 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-kernel.sh,v 1.6.2.1 2005/06/15 17:21:22 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -55,8 +55,8 @@ then
 	# DO NOT STRIP MODULES !!! It makes them unloadable !
 
 
-	kernname="$(tar -tjf ${GK_BINARIES}/kernel.tar.bz2)"
-	tar -jxf ${GK_BINARIES}/kernel.tar.bz2 -C ${GK_BINARIES}
+	kernname="$(/bin/tar -tjf ${GK_BINARIES}/kernel.tar.bz2)"
+	/bin/tar -jxf ${GK_BINARIES}/kernel.tar.bz2 -C ${GK_BINARIES}
 	mv ${GK_BINARIES}/{${kernname},kernel} || exit 1 
 
 	if [ -n "${clst_KERNCACHE}" ]

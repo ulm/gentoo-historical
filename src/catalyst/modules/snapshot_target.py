@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/snapshot_target.py,v 1.7.2.1 2005/05/18 18:27:00 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/snapshot_target.py,v 1.7.2.2 2005/06/15 17:21:22 wolf31o2 Exp $
 
 """
 Builder class for snapshots.
@@ -46,7 +46,7 @@ class snapshot_target(generic_target):
 				self.settings["portdir_overlay"]+"/ "+mytmp+"/portage/","Snapshot/ overlay addition failure")
 			
 		print "Compressing Portage snapshot tarball..."
-		cmd("tar cjf "+self.settings["snapshot_path"]+" -C "+mytmp+" portage",\
+		cmd("/bin/tar cjf "+self.settings["snapshot_path"]+" -C "+mytmp+" portage",\
 			"Snapshot creation failure")
 		self.cleanup()
 		print "snapshot: complete!"

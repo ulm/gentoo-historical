@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/alpha-archscript.sh,v 1.10.2.1 2005/05/18 19:17:45 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/alpha-archscript.sh,v 1.10.2.2 2005/06/15 17:21:22 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -23,7 +23,7 @@ case $1 in
 		
 		cdtar=${clst_livecd_cdtar}
 		[ -z "$cdtar" ] && die "Required key livecd/cdtar not specified, exiting"
-		tar xjpvf ${cdtar} -C ${clst_cdroot_path} || die "Couldn't extract cdtar ${cdtar}"
+		/bin/tar xjpvf ${cdtar} -C ${clst_cdroot_path} || die "Couldn't extract cdtar ${cdtar}"
 		# Here is where we poke in our identifier
 		touch ${clst_cdroot_path}/livecd
 		[ -z "${clst_boot_kernel}" ] && die "Required key boot/kernel not specified, exiting"
@@ -35,7 +35,7 @@ case $1 in
 			kbinary="${clst_chroot_path}/usr/portage/packages/gk_binaries/${x}-${clst_version_stamp}.tar.bz2"
 			[ ! -e "${kbinary}" ] && die "Can't find kernel tarball at ${kbinary}"
 			
-			tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
+			/bin/tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
 			
 			# change kernel name from "kernel" to "gentoo", for example
 			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/${x}
