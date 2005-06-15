@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.139 2005/06/15 06:51:16 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.140 2005/06/15 09:15:03 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -561,9 +561,6 @@ class ArchitectureTemplate:
 		self._logger.log("Starting build_kernel")
 
 		build_mode = self._install_profile.get_kernel_build_method()
-		# TODO (robbat2, 20050613): Change this entire function to work
-		# based on build_mode instead of kernel-source-pkg or
-		# kernel-config.
 
 		# No building necessary if using the LiveCD's kernel/initrd
 		# or using the 'none' kernel bypass
@@ -571,10 +568,29 @@ class ArchitectureTemplate:
 			return
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
-		if kernel_config_uri == "none":  # bypass to install a kernel, but not compile it
-			return
+
+		# is there an easier way to do this?
+		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/Makefile",chroot=self._chroot_dir,return_output=True)
+		# 6 == 2.6 kernel, 4 == 2.4 kernel
+		kernel_major = int(kernel_major)
 		
-		if build_mode == "genkernel":  #use genkernel 
+		# bypass to install a kernel, but not compile it
+		if build_mode == "none":  
+			return
+		# this mode is used to install kernel sources, and have then configured
+		# but not actually build the kernel. This is needed for netboot
+		# situations when you have packages that require kernel sources
+		# to build.
+		elif build_mode == "prepare-only":
+			if kernel_major in [0,1,2,3,4]:
+				exitstatus = GLIUtility.spawn("make dep",chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			else: #elif kernel_major in [5,6]:
+				exitstatus = GLIUtility.spawn("make prepare",chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+
+			if exitstatus != 0:
+				raise GLIException("PrepareKernelError", 'fatal','build_kernel', "Could not prepare kernel!")
+		# Genkernel mode, including custom kernel_config. Initrd always on.
+		elif build_mode == "genkernel":  
 			exitstatus = self._emerge("genkernel")
 			if exitstatus != 0:
 				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
@@ -617,14 +633,21 @@ class ArchitectureTemplate:
 			except:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
 			
+			# the && stuff is important so that we can catch any errors.
 			kernel_compile_script =  "#!/bin/bash\n"
-			kernel_compile_script += "cp /var/tmp/kernel_config /usr/src/linux/.config\n"
-			kernel_compile_script += "cd /usr/src/linux\n"
-			kernel_compile_script += "make \nmake modules_install \n"
+			kernel_compile_script += "cp /var/tmp/kernel_config /usr/src/linux/.config && "
+			kernel_compile_script += "cd /usr/src/linux && "
+			# required for 2.[01234] etc kernels
+			if kernel_major in [0,1,2,3,4]:
+				kernel_compile_script += "make dep"
+			# not strictly needed, but recommended by upstream
+			else: #elif kernel_major in [5,6]:
+				kernel_compile_script += "make prepare"
+			kernel_compile_script += " && make && make modules && make modules_install"
 
 			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
 			if self._client_configuration.get_architecture_template() == "x86":
-				kernel_compile_script += "cp /usr/src/linux/arch/i386/boot/bzImage /boot/kernel-custom\n"
+				kernel_compile_script += " && cp /usr/src/linux/arch/i386/boot/bzImage /boot/kernel-custom\n"
 			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
 			f.writelines(kernel_compile_script)
 			f.close()
