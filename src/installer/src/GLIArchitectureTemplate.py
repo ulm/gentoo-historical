@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.138 2005/06/14 09:21:57 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.139 2005/06/15 06:51:16 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -573,8 +573,8 @@ class ArchitectureTemplate:
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 		if kernel_config_uri == "none":  # bypass to install a kernel, but not compile it
 			return
-		elif kernel_config_uri == "":  #use genkernel if no specific config
 		
+		if build_mode == "genkernel":  #use genkernel 
 			exitstatus = self._emerge("genkernel")
 			if exitstatus != 0:
 				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
@@ -610,7 +610,7 @@ class ArchitectureTemplate:
 			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 			self._logger.log("Genkernel complete.")
-		else:  #CUSTOM CONFIG
+		elif build_mode == "custom":  #CUSTOM CONFIG
 			#Copy the kernel .config to the proper location in /usr/src/linux
 			try:
 				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
