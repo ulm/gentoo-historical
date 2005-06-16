@@ -623,6 +623,7 @@ def detect_devices():
 	devices = []
 	
 	# Make sure sysfs exists
+	# TODO: rewrite for 2.4 support
 	if not os.path.exists("/sys/bus"):
 		raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "no sysfs found (you MUST use a kernel >2.6)")
 	# Make sure /proc/partitions exists
@@ -669,6 +670,7 @@ def detect_devices():
 	
 	# Scan sysfs for the devices of type 'x'
 	# 'x' being a member of the list below:
+	# TODO: rewrite for 2.4 support
 	for dev_type in [ "ide", "scsi" ]:	# Other device types? usb? fw?
 		if os.path.exists("/sys/bus/" + dev_type):
 			sysfs_devices = os.listdir("/sys/bus/"+dev_type+"/devices")
