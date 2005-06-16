@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.141 2005/06/16 04:22:20 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.142 2005/06/16 23:40:52 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -308,7 +308,7 @@ class ArchitectureTemplate:
 						mountopts = "-o "+mountopts+" "
 					if partition_type:
 						partition_type = "-t "+partition_type+" "
-					parts_to_mount[mountpoint]= {0: mountopts, 1: partition_type, 2: minor}
+					parts_to_mount[mountpoint]= {0: mountopts, 1: partition_type, 2: device+minor}
 					
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon "+device+minor)
@@ -324,12 +324,12 @@ class ArchitectureTemplate:
 		for mountpoint in sorted_list:
 			mountopts = parts_to_mount[mountpoint][0]
 			partition_type = parts_to_mount[mountpoint][1]
-			minor = parts_to_mount[mountpoint][2]
+			partition = parts_to_mount[mountpoint][2]
 			if not GLIUtility.is_file(self._chroot_dir+mountpoint):
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if exitstatus != 0:
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
-			ret = GLIUtility.spawn("mount "+partition_type+mountopts+device+minor+" "+self._chroot_dir+mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			ret = GLIUtility.spawn("mount "+partition_type+mountopts+partition+" "+self._chroot_dir+mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
 			self._logger.log("Mounted mountpoint:"+mountpoint)
