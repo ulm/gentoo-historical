@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.60 2005/06/14 09:23:46 robbat2 Exp $
+$Id: GLIInstallProfile.py,v 1.61 2005/06/16 15:51:47 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1032,7 +1032,7 @@ class InstallProfile:
 				if "disklabel" in attr.getNames():
 					disklabel = str(attr.getValue("disklabel"))
 				else:
-					disklabel = "msdos"
+					disklabel = ""
 		self._partition_current_device = devnode
 		self._partition_tables[devnode] = GLIStorageDevice.Device(devnode)
 		self._partition_tables[devnode].set_disklabel(disklabel)

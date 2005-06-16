@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.46 2005/06/12 03:36:02 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.47 2005/06/16 15:51:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -97,7 +97,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Create pyparted objects for this device
 			parted_dev = parted.PedDevice.get(device)
-			parted_disk = parted.PedDisk.new(parted_dev)
+			try:
+				parted_disk = parted.PedDisk.new(parted_dev)
+			except:
+				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((tmp_parts_new[device].get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name]['disklabel'])))
 			new_part_list = parts_new[device].keys()
 			new_part_list.sort()
 			device_sectors = parted_dev.length
@@ -307,8 +310,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				# write to disk
 				parted_disk.commit()
 				# now format the partition
-				# extended partitions should never be formatted
-				if newpart['format'] and newpart['type'] not in ('extended'):
+				# extended and 'free' partitions should never be formatted
+				if newpart['format'] and newpart['type'] not in ('extended', 'free'):
 					devnode = device + str(part)
 					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
 					# if you need a special command and
