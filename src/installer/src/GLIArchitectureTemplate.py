@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.140 2005/06/15 09:15:03 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.141 2005/06/16 04:22:20 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -570,25 +570,50 @@ class ArchitectureTemplate:
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 
 		# is there an easier way to do this?
-		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/Makefile",chroot=self._chroot_dir,return_output=True)
+		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile",chroot=self._chroot_dir,return_output=True)
 		# 6 == 2.6 kernel, 4 == 2.4 kernel
 		kernel_major = int(kernel_major)
+			
+		#Copy the kernel .config to the proper location in /usr/src/linux
+		if kernel_config_uri != '':
+			try:
+				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
+			except:
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
+			
+		# the && stuff is important so that we can catch any errors.
+		kernel_compile_script =  "#!/bin/bash\n"
+		kernel_compile_script += "cp /var/tmp/kernel_config /usr/src/linux/.config && "
+		kernel_compile_script += "cd /usr/src/linux && "
+		# required for 2.[01234] etc kernels
+		if kernel_major in [0,1,2,3,4]:
+			kernel_compile_script += " yes 'n' | make oldconfig && make symlinks && make dep"
+		# not strictly needed, but recommended by upstream
+		else: #elif kernel_major in [5,6]:
+			kernel_compile_script += "make prepare"
 		
 		# bypass to install a kernel, but not compile it
-		if build_mode == "none":  
+		if build_mode == "none":
 			return
 		# this mode is used to install kernel sources, and have then configured
 		# but not actually build the kernel. This is needed for netboot
 		# situations when you have packages that require kernel sources
 		# to build.
 		elif build_mode == "prepare-only":
-			if kernel_major in [0,1,2,3,4]:
-				exitstatus = GLIUtility.spawn("make dep",chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			else: #elif kernel_major in [5,6]:
-				exitstatus = GLIUtility.spawn("make prepare",chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-
-			if exitstatus != 0:
-				raise GLIException("PrepareKernelError", 'fatal','build_kernel', "Could not prepare kernel!")
+			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
+			f.writelines(kernel_compile_script)
+			f.close()
+			#Build the kernel
+			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
+			exitstatus2 = GLIUtility.spawn("/var/tmp/kernel_script", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			if (exitstatus1 != 0) or (exitstatus2 != 0):
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not handle prepare-only build!")
+						
+			#i'm sure i'm forgetting something here.
+			#cleanup
+			exitstatus = GLIUtility.spawn("rm -f "+self._chroot_dir+"/var/tmp/kernel_script "+self._chroot_dir+"/var/tmp/kernel_config")
+			#it's not important if this fails.
+			self._logger.log("prepare-only build complete")
 		# Genkernel mode, including custom kernel_config. Initrd always on.
 		elif build_mode == "genkernel":  
 			exitstatus = self._emerge("genkernel")
@@ -627,22 +652,7 @@ class ArchitectureTemplate:
 			self._add_to_runlevel("coldplug", runlevel="boot")
 			self._logger.log("Genkernel complete.")
 		elif build_mode == "custom":  #CUSTOM CONFIG
-			#Copy the kernel .config to the proper location in /usr/src/linux
-			try:
-				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
-			except:
-				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
 			
-			# the && stuff is important so that we can catch any errors.
-			kernel_compile_script =  "#!/bin/bash\n"
-			kernel_compile_script += "cp /var/tmp/kernel_config /usr/src/linux/.config && "
-			kernel_compile_script += "cd /usr/src/linux && "
-			# required for 2.[01234] etc kernels
-			if kernel_major in [0,1,2,3,4]:
-				kernel_compile_script += "make dep"
-			# not strictly needed, but recommended by upstream
-			else: #elif kernel_major in [5,6]:
-				kernel_compile_script += "make prepare"
 			kernel_compile_script += " && make && make modules && make modules_install"
 
 			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
