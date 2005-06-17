@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.142 2005/06/16 23:40:52 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.143 2005/06/17 01:22:52 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -305,34 +305,34 @@ class ArchitectureTemplate:
 				partition_type = tmp_partitions[partition]['type']
 				if mountpoint:
 					if mountopts:
-						mountopts = "-o "+mountopts+" "
+						mountopts = "-o " + mountopts + " "
 					if partition_type:
-						partition_type = "-t "+partition_type+" "
-					parts_to_mount[mountpoint]= {0: mountopts, 1: partition_type, 2: device+minor}
+						partition_type = "-t " + partition_type + " "
+					parts_to_mount[mountpoint]= (mountopts, partition_type, device + minor)
 					
 				if partition_type == "linux-swap":
-					ret = GLIUtility.spawn("swapon "+device+minor)
+					ret = GLIUtility.spawn("swapon " + device + minor)
 					if not GLIUtility.exitsuccess(ret):
-						self._logger.log("ERROR! : Could not activate swap ("+device+minor+")!")
+						self._logger.log("ERROR! : Could not activate swap (" + device + minor + ")!")
 					#	raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 					else:
-						self._swap_devices.append((device+minor))
-		sorted_list = []
-		for key in parts_to_mount.keys(): sorted_list.append(key)
+						self._swap_devices.append(device + minor)
+		sorted_list = parts_to_mount.keys()
 		sorted_list.sort()
 		
 		for mountpoint in sorted_list:
 			mountopts = parts_to_mount[mountpoint][0]
 			partition_type = parts_to_mount[mountpoint][1]
 			partition = parts_to_mount[mountpoint][2]
-			if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+			if not GLIUtility.is_file(self._chroot_dir + mountpoint):
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if exitstatus != 0:
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
-			ret = GLIUtility.spawn("mount "+partition_type+mountopts+partition+" "+self._chroot_dir+mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
-			self._logger.log("Mounted mountpoint:"+mountpoint)
+			self._logger.log("Mounted mountpoint: " + mountpoint)
+
 	##
 	# Mounts all network shares to the local machine
 	def mount_network_shares(self):
@@ -346,18 +346,20 @@ class ArchitectureTemplate:
 			if netmount['type'] == "NFS" or netmount['type'] == "nfs":
 				mountopts = netmount['mountopts']
 				if mountopts:
-					mountopts = "-o "+mountopts
+					mountopts = "-o " + mountopts
 				host = netmount['host']
 				export = netmount['export']
 				mountpoint = netmount['mountpoint']
-				if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+				if not GLIUtility.is_file(self._chroot_dir + mountpoint):
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 					if exitstatus != 0:
 						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
-				ret = GLIUtility.spawn("mount -t nfs "+mountopts+" "+host+":"+export+" "+self._chroot_dir+mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+				ret = GLIUtility.spawn("mount -t nfs " + mountopts + " " + host + ":" + export + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
-				self._logger.log("Mounted netmount at mountpoint:"+mountpoint)
+				self._logger.log("Mounted netmount at mountpoint: " + mountpoint)
+			else:
+				self._logger.log("Netmount type " + netmount['type'] + " not supported...skipping " + netmount['mountpoint'])
 
 	##
 	# Gets sources from CD (required for non-network installation)
