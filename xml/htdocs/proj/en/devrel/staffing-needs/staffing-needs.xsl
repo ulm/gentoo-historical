@@ -13,20 +13,32 @@
     This page lists requests for Gentoo Developers the Gentoo Recruiters have received.
   </description>
   <longdescription>
-    This page aims to list current open vacancies for both existing
-    Gentoo developers and those wishing to become a Gentoo developer.
-    The priorities shown are sorted from highest to lowest.
+    This page aims to list the areas in which Gentoo actively seeks to
+    expand development efforts. Positions are open to both existing
+    Gentoo developers and also those wishing to become a Gentoo
+    developer. The priorities shown are sorted from highest to lowest.
   </longdescription>
   <extrachapter position="bottom">
     <title>Gentoo Linux Staffing Needs</title>
     <section>
     <body>
       <p>
-        If you are interested in helping out with any of the
-        following tasks, then please contact the
-        <mail link="recruiters@gentoo.org">Gentoo
-        Recruiters</mail>, CCing the displayed "Contact" on your
-        application.
+        This page does not list the only areas where contributions are
+        welcome, but is only a reflection of where developers are
+        needed the most. If you are interested in helping out in
+        another area, then do not hesitate to contact the relevant
+        development group anyway.
+      </p>
+      <p>
+        If you are interested in helping the Gentoo Documentation
+        Project, then please see
+        the <uri link="/proj/en/gdp/roadmap.xml">GDP Roadmap</uri> for
+        bugs that require attention.
+      </p>
+      <p>
+        If you are interested in helping out with any of the following tasks,
+        please contact the <mail link="recruiters@gentoo.org">Gentoo Recruiters</mail>,
+        CCing the displayed "Contact" on your application.
       </p>
       <table>
         <tr>
