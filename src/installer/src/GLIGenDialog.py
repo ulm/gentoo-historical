@@ -91,6 +91,8 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
 	def set_client_networking(self):
+		if GLIUtility.ping("www.gentoo.org") and not self.advanced_mode:	#If an active connection exists, ignore this step if standard mode
+			return
 		device_list = GLIUtility.get_eth_devices()
 		choice_list = []
 		for device in device_list:
@@ -105,37 +107,26 @@ Enter the desired filename and path for the install log (the default is recommen
 			if code != self._DLG_OK: 
 				return
 		
-		network_type = ""
-		ip_address = ""
-		broadcast = ""
-		netmask = ""
-		gateway = ""
+		#Not sure if I can get rid of these yet.
+		#network_type = ""
+		#ip_address = ""
+		#broadcast = ""
+		#netmask = ""
+		#gateway = ""
 		
-	
-		network_choices = ('DHCP', 'Static IP');
-		code, menuitem = self._d.menu("Please select networking configuration:", choices=self._dmenu_list_to_choices(network_choices))
-		
-		if code != self._DLG_OK:
-			return
-
-		menuitem = network_choices[int(menuitem)-1]
-		if menuitem == 'Static IP':
-			code, ip_address = self._d.inputbox("Enter your IP address:")
-			if code != self._DLG_OK: 
-				return
-			code, broadcast = self._d.inputbox("Enter your Broadcast address:")
-			if code != self._DLG_OK: 
-				return
-			code, netmask = self._d.inputbox("Enter your Netmask:")
-			if code != self._DLG_OK: 
-				return
-			code, gateway = self._d.inputbox("Enter your default gateway:")
-			if code != self._DLG_OK: 
-				return
-			network_type = 'static'
-		else:
+		#Change the Yes/No buttons to new labels for this question.
+		d.add_persistent_args(["--yes-label", _(u"DHCP")])
+		d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
+		string2 = _(u"To setup your network interface, you can either use DHCP if enabled, or manually enter your network information.\n  DHCP (Dynamic Host Configuration Protocol) makes it possible to automatically receive networking information (IP address, netmask, broadcast address, gateway, nameservers etc.). This only works if you have a DHCP server in your network (or if your provider provides a DHCP service).  If you do not, you must enter the information manually.  Please select your networking configuration method:")
+		if d.yesno(string2) == self._DLG_YES: #DHCP
 			network_type = 'dhcp'
-
+		else:
+			network_type = 'static'
+			code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0'),('Enter your default gateway:',15), ('Enter a DNS server:',15,'128.118.25.3')))
+			(ip_address, broadcast, netmask, gateway, dnsservers) = data.split()
+			if code != self._DLG_OK: 
+				return
+		#Set the info now that it's all gathered.
 		try:
 			self._client_profile.set_network_type(None, network_type, None)
 			self._client_profile.set_network_interface(None, interface, None)
@@ -144,8 +135,9 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_network_broadcast(None, broadcast, None)
 				self._client_profile.set_network_netmask(None, netmask, None)
 				self._client_profile.set_network_gateway(None, gateway, None)
+				self._client_profile.set_dns_servers(None, dnsservers, None)
 		except: 
-			self._d.msgbox("ERROR SOMETHIGN WENT WRONG D00D!")
+			self._d.msgbox("ERROR! Could not set networking information!")
 
 	def set_enable_ssh(self):
 		if self.advanced_mode:
@@ -597,11 +589,10 @@ global USE flags and one for local flags specific to each program.
 		#Third, misc. stuff.
 		while 1:
 			menulist = [("CFLAGS","Edit your C Flags and Optimization level"), ("CHOST", "Change the Host Setting"), ("MAKEOPTS", "Specify number of parallel makes (-j) to perform. (ex. CPUs+1)"), ("FEATURES", "Change portage functionality settings."), ("GENTOO_MIRRORS", "Specify mirrors to use for source retrieval."), ("SYNC", "Specify server used by rsync to sync the portage tree.")]
-			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=self._dmenu_list_to_choices(menulist), cancel="Done")
+			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel="Done")
 			if code != self._DLG_OK: 
 				self._install_profile.set_make_conf(make_conf)
 				break
-			menuitem = menulist[int(menuitem)-1]
 			oldval = ""
 			if make_conf.has_key(menuitem): 
 				oldval = make_conf[menuitem]
@@ -661,8 +652,8 @@ global USE flags and one for local flags specific to each program.
 		if code == self._DLG_OK:
 			if install_stage == "3 + GRP":
 				install_stage = "3"
+			try:			
 				self._install_profile.set_grp_install(None, True, None)
-			try:
 				self._install_profile.set_install_stage(None, install_stage, None)
 			except:
 				self._d.msgbox("ERROR! Could not set install stage!")
@@ -689,17 +680,38 @@ global USE flags and one for local flags specific to each program.
 		
 		#Specify URI
 		subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
+		type_it_in = False
+		stage_tarball = ""
+		if GLIUtility.ping("www.gentoo.org"):  #Test for network connectivity
+			mirrors = GLIUtility.list_mirrors()
+			code, mirror = self._d.menu("Select a mirror to grab the tarball from or select Cancel to enter an URI manually.", choices=self._dmenu_list_to_choices(mirrors), width=77, height=20)
+			if code != self._DLG_OK:
+				type_it_in = True
+			arch = self._client_profile.get_architecture_template()
+			subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
+			code, subarch = self._d.menu("Select the sub-architecture that most closely matches your system (this changes the amount of optimization):", choices=self._dmenu_list_to_choices(subarches))
+			if code != self._DLG_OK:
+				type_it_in = True
+			tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
+			code, tarball = self._d.menu("Select your desired stage tarball:", choices=self._dmenu_list_to_choices(tarballs))
+			if (code != self._DLG_OK) or not stage_tarball:
+				type_it_in = True
+			stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + stage_tarball
 		#get portageq envvar value of cflags and look for x86, i686,etc.
 			#URL SYNTAX
 			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
-		code, stage_tarball = self._d.inputbox("Specify the stage tarball URI or local file:", init=self._install_profile.get_stage_tarball_uri())
+		else:
+			type_it_in = True
+		if type_it_in:
+			code, stage_tarball = self._d.inputbox("Specify the stage tarball URI or local file:", init=self._install_profile.get_stage_tarball_uri())
+			if code != self._DLG_OK:
+				return
 		#If Doing a local install, check for valid file:/// uri
-		if code == self._DLG_OK:
-			if stage_tarball:
-				if not GLIUtility.is_uri(stage_tarball, checklocal=self.local_install):
-					self._d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
-				else: self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-			else: self._d.msgbox("No URI was specified!")
+		if stage_tarball:
+			if not GLIUtility.is_uri(stage_tarball, checklocal=self.local_install):
+				self._d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+			else: self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+		else: self._d.msgbox("No URI was specified!")
 			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 	def _set_boot_loader(self):
