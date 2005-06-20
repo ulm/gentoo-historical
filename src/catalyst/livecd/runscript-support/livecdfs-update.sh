@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.11 2005/06/15 17:21:22 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.12 2005/06/20 19:07:47 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -61,7 +61,6 @@ cp /usr/share/zoneinfo/UTC /etc/localtime
 # setup the hostname
 echo "livecd" > /etc/hostname
 echo "gentoo" > /etc/dnsdomainname
-#sed -i 's:localhost:livecd.gentoo localhost:' /etc/hosts
 echo "127.0.0.1	livecd.gentoo livecd localhost" > /etc/hosts
 
 # Add any users
