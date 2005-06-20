@@ -11,8 +11,8 @@ import gettext
 _ = gettext.gettext
 
 class Setup_CConfig(GLIGenCF):
-	def __init__(self, local_install, advanced_mode):
-		GLIGenCF.__init__(self, local_install, advanced_mode)
+	def __init__(self, client_profile, local_install, advanced_mode):
+		GLIGenCF.__init__(self, client_profile, local_install, advanced_mode)
 		self.set_arch_template()
 		self.set_logfile()
 		self.set_root_mount_point()
@@ -26,8 +26,8 @@ class Setup_CConfig(GLIGenCF):
 				self.client_config_xml_file = self.save_client_profile()
 
 class Setup_InstallProfile(GLIGenIP):
-	def __init__(self, local_install, advanced_mode):
-		GLIGenIP.__init__(self, local_install, advanced_mode)
+	def __init__(self, client_profile, install_profile, local_install, advanced_mode):
+		GLIGenIP.__init__(self, client_profile, install_profile, local_install, advanced_mode)
 		self.install_profile_xml_file = None
 		if d.yesno(_(u"Do you want to save the InstallProfile XML file?")) == DLG_YES:
 			self.install_profile_xml_file = self._save_install_profile()
@@ -122,7 +122,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	# code to actually run the client_controller functions
 	else:
 		#This line does all the work.
-		gen_client_conf = Setup_CConfig(local_install, advanced_mode)
+		gen_client_conf = Setup_CConfig(client_profile, local_install, advanced_mode)
 		client_profile = gen_client_conf.client_profile()
 			
 	client_profile.set_interactive(None, True, None)
@@ -145,7 +145,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	if install_profile_xml_file != None:
 		install_profile.parse(install_profile_xml_file)
 	else:
-		gen_install_profile = Setup_InstallProfile(local_install, advanced_mode)
+		gen_install_profile = Setup_InstallProfile(client_profile, install_profile, local_install, advanced_mode)
 		install_profile = gen_install_profile.install_profile()
 	
 

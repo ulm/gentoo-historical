@@ -10,9 +10,6 @@ _ = gettext.gettext
 class GLIGen(object):
 	def __init__(self):
 		self._d = dialog.Dialog()
-		self._client_profile = GLIClientConfiguration.ClientConfiguration()
-		self._install_profile = GLIInstallProfile.InstallProfile()
-		
 		self._DLG_OK = 0
 		self._DLG_YES = 0
 		self._DLG_CANCEL = 1
@@ -37,8 +34,9 @@ class GLIGen(object):
 
 #This class will generate a client config and return it as a xml string
 class GLIGenCF(GLIGen):
-	def __init__(self, local_install=True, advanced_mode=True):
+	def __init__(self, client_profile, local_install=True, advanced_mode=True):
 		GLIGen.__init__(self)
+		self._client_profile = client_profile
 		self.local_install = local_install
 		self.advanced_mode = advanced_mode
 		
@@ -93,7 +91,10 @@ Enter the desired filename and path for the install log (the default is recommen
 	def set_client_networking(self):
 		if GLIUtility.ping("www.gentoo.org") and not self.advanced_mode:	#If an active connection exists, ignore this step if standard mode
 			return
-		device_list = GLIUtility.get_eth_devices()
+		if self.local_install:
+			device_list = GLIUtility.get_eth_devices()
+		else:
+			device_list = []
 		choice_list = []
 		for device in device_list:
 			choice_list.append((device, GLIUtility.get_interface_realname(device)))
@@ -203,8 +204,10 @@ Enter the new LIVECD root password:	""")
 		configuration.close()
 
 class GLIGenIP(GLIGen):
-	def __init__(self, local_install=True, advanced_mode=True):
+	def __init__(self, client_profile, install_profile, local_install=True, advanced_mode=True):
 		GLIGen.__init__(self)
+		self._client_profile = client_profile
+		self._install_profile = install_profile
 		self.local_install = local_install
 		self.advanced_mode = advanced_mode
 		self._fn = (
@@ -684,19 +687,29 @@ global USE flags and one for local flags specific to each program.
 		stage_tarball = ""
 		if GLIUtility.ping("www.gentoo.org"):  #Test for network connectivity
 			mirrors = GLIUtility.list_mirrors()
-			code, mirror = self._d.menu("Select a mirror to grab the tarball from or select Cancel to enter an URI manually.", choices=self._dmenu_list_to_choices(mirrors), width=77, height=20)
+			mirrornames = []
+			mirrorurls = []
+			for item in mirrors:
+				mirrornames.append(item[1])
+				mirrorurls.append(item[0])
+			code, mirror = self._d.menu("Select a mirror to grab the tarball from or select Cancel to enter an URI manually.", choices=self._dmenu_list_to_choices(mirrornames), width=77, height=20)
 			if code != self._DLG_OK:
 				type_it_in = True
-			arch = self._client_profile.get_architecture_template()
-			subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
-			code, subarch = self._d.menu("Select the sub-architecture that most closely matches your system (this changes the amount of optimization):", choices=self._dmenu_list_to_choices(subarches))
-			if code != self._DLG_OK:
-				type_it_in = True
-			tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
-			code, tarball = self._d.menu("Select your desired stage tarball:", choices=self._dmenu_list_to_choices(tarballs))
-			if (code != self._DLG_OK) or not stage_tarball:
-				type_it_in = True
-			stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + stage_tarball
+			else:
+				mirror = mirrorurls[int(mirror)-1]
+				arch = self._client_profile.get_architecture_template()
+				subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
+				code, subarch = self._d.menu("Select the sub-architecture that most closely matches your system (this changes the amount of optimization):", choices=self._dmenu_list_to_choices(subarches))
+				if code != self._DLG_OK:
+					type_it_in = True
+				else:
+					subarch = subarches[int(subarch)-1]	
+					tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
+					code, stage_tarball = self._d.menu("Select your desired stage tarball:", choices=self._dmenu_list_to_choices(tarballs))
+					if (code != self._DLG_OK):
+						type_it_in = True
+					else:
+						stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + tarballs[int(stage_tarball)-1]
 		#get portageq envvar value of cflags and look for x86, i686,etc.
 			#URL SYNTAX
 			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
@@ -715,24 +728,45 @@ global USE flags and one for local flags specific to each program.
 			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 	def _set_boot_loader(self):
-		boot_loaders = ("grub", "lilo")
-		code, menuitem = self._d.menu("Choose a boot loader", choices=self._dmenu_list_to_choices(boot_loaders))
+		arch = self._client_profile.get_architecture_template()
+		arch_loaders = { 'x86': (("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")} #FIXME ADD OTHER ARCHS
+		boot_loaders = arch_loaders[arch]
+		boot_loaders.append(("none", "Do not install a bootloader.  (System may be unbootable!)"))
+		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
+		code, menuitem = self._d.menu(string1, choices=boot_loaders)
 		if code != self._DLG_OK: 
 			return
-		menuitem = boot_loaders[int(menuitem)-1]
-		self._install_profile.set_boot_loader_pkg(None, menuitem, None)
-		if self._d.yesno("Do you want the boot loader installed in the MBR?") == self._DLG_YES:
-			self._install_profile.set_boot_loader_mbr(None, True, None)
-		else:
-			self._install_profile.set_boot_loader_mbr(None, False, None)
-		code, bootloader_kernel_args = self._d.inputbox("Add any optional arguments to pass to the kernel at boot here:")
-		if code == self._DLG_OK: 
-			self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
+		try:
+			self._install_profile.set_boot_loader_pkg(None, menuitem, None)
+		except:
+			self._d.msgbox(_(u"ERROR! Could not set boot loader pkg! ")+menuitem)
+		if menuitem != "none":
+			#Reset the Yes/No labels.
+			d.add_persistent_args(["--yes-label", "Yes"])
+			d.add_persistent_args(["--no-label","No"])
+			if self._d.yesno(_(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)")) == self._DLG_YES:
+				self._install_profile.set_boot_loader_mbr(None, True, None)
+			else:
+				self._install_profile.set_boot_loader_mbr(None, False, None)
+		code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"))
+		if code == self._DLG_OK:
+			try:
+				self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
 	
 	def _set_networking(self):
 	# This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
+		if self._client_profile.
 		while 1:
 			menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "HTTP Proxy", "FTP Proxy", "RSYNC Proxy", "NIS Domain Name"]
+			string = _(u"Here you will enter all of your networking information for the new system.  You can either choose a network interface to edit, add a network interface, delete an interface, or edit the miscellaneous options such as hostname and proxy servers.")
+			if self.local_install:
+				device_list = GLIUtility.get_eth_devices()
+			else:
+				device_list = []
+			code, menuitem = self._d.menu(
+			
 			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
 			if code != self._DLG_OK: 
 				break
