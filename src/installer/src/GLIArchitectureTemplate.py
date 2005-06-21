@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.143 2005/06/17 01:22:52 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.144 2005/06/21 03:11:43 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -126,7 +126,7 @@ class ArchitectureTemplate:
 		for pkg in packages:
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
-				if ret:
+				if not GLIUtility.exitsuccess(ret):
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					pass
 
@@ -326,7 +326,7 @@ class ArchitectureTemplate:
 			partition = parts_to_mount[mountpoint][2]
 			if not GLIUtility.is_file(self._chroot_dir + mountpoint):
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
-				if exitstatus != 0:
+				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
 			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
@@ -352,7 +352,7 @@ class ArchitectureTemplate:
 				mountpoint = netmount['mountpoint']
 				if not GLIUtility.is_file(self._chroot_dir + mountpoint):
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
-					if exitstatus != 0:
+					if not GLIUtility.exitsuccess(exitstatus):
 						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
 				ret = GLIUtility.spawn("mount -t nfs " + mountopts + " " + host + ":" + export + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 				if not GLIUtility.exitsuccess(ret):
@@ -369,10 +369,10 @@ class ArchitectureTemplate:
 		THIS FUNCTION IS NO LONGER VALID
 		if not GLIUtility.is_file(self._chroot_dir+"/usr/portage/distfiles"):
 			exitstatus = GLIUtility.spawn("mkdir -p /usr/portage/distfiles",chroot=self._chroot_dir)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
 		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-		if exitstatus != 0:
+		if not GLIUtility.exitsuccess(exitstatus):
 			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
 		"""
 		self._logger.log("Distfiles copied from cd. NOT!")
@@ -434,13 +434,13 @@ class ArchitectureTemplate:
 		# If the type is webrsync, then run emerge-webrsync
 		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
 			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd using webrsync")
 		# Otherwise, just run emerge sync
 		else:
 			exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
 			self._logger.log("Portage tree sync'd")
 			
@@ -472,7 +472,7 @@ class ArchitectureTemplate:
 				if mountpoint:
 					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
 						exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
-						if exitstatus != 0:
+						if not GLIUtility.exitsuccess(exitstatus):
 							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
 					newfstab += device+minor+"\t "+mountpoint+"\t "+partition_type+"\t "+mountopts+"\t\t "
 					if mountpoint == "/boot":
@@ -525,11 +525,11 @@ class ArchitectureTemplate:
 			
 			#these are the hotplug/coldplug steps from build_kernel copied over here.  they will NOT be run there.
 			exitstatus = self._emerge("hotplug")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
 			self._logger.log("Hotplug emerged.")
 			exitstatus = self._emerge("coldplug")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
 			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
 			
@@ -538,7 +538,7 @@ class ArchitectureTemplate:
 		# normal case
 		else:
 			exitstatus = self._emerge(kernel_pkg)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
 			try:
 				os.stat(self._chroot_dir + "/usr/src/linux")
@@ -549,7 +549,7 @@ class ArchitectureTemplate:
 				while not found_a_kernel:
 					if kernels[counter][0:6]=="linux-":
 						exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",chroot=self._chroot_dir)
-						if exitstatus != 0:
+						if not GLIUtility.exitsuccess(exitstatus):
 							raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not make a /usr/src/linux symlink")
 						found_a_kernel = True
 					else:
@@ -619,7 +619,7 @@ class ArchitectureTemplate:
 		# Genkernel mode, including custom kernel_config. Initrd always on.
 		elif build_mode == "genkernel":  
 			exitstatus = self._emerge("genkernel")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
 			self._logger.log("Genkernel emerged.  Beginning kernel compile.")
 			# Null the genkernel_options
@@ -638,15 +638,15 @@ class ArchitectureTemplate:
 			# Run genkernel in chroot
 			#print "genkernel all " + genkernel_options
 			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
 			
 			exitstatus = self._emerge("hotplug")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
 			self._logger.log("Hotplug emerged.")
 			exitstatus = self._emerge("coldplug")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
 			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
 			
@@ -683,7 +683,7 @@ class ArchitectureTemplate:
 		if mta_pkg:
 			# Emerge Logging Daemon
 			exitstatus = self._emerge(mta_pkg)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("LoggingDaemonError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
 			self._logger.log("MTA installed: "+mta_pkg)
 	##
@@ -695,7 +695,7 @@ class ArchitectureTemplate:
 		if logging_daemon_pkg:
 			# Emerge Logging Daemon
 			exitstatus = self._emerge(logging_daemon_pkg)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
 
 			# Add Logging Daemon to default runlevel
@@ -712,7 +712,7 @@ class ArchitectureTemplate:
 		if cron_daemon_pkg:
 			# Emerge Cron Daemon
 			exitstatus = self._emerge(cron_daemon_pkg)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
 
 			# Add Cron Daemon to default runlevel
@@ -724,7 +724,7 @@ class ArchitectureTemplate:
 			# If the Cron Daemon is not vixie-cron, run crontab			
 			if cron_daemon_pkg != "vixie-cron":
 				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
-				if exitstatus != 0:
+				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
 			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
 	
@@ -765,7 +765,7 @@ class ArchitectureTemplate:
 		failed_list = []
 		for package in package_list:
 			exitstatus = self._emerge(package)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge "+package+"!")
 				failed_list.append(package)
 			else:
@@ -781,7 +781,7 @@ class ArchitectureTemplate:
 		# If user wants us to install rp-pppoe, then do so
 		if self._install_profile.get_install_rp_pppoe():
 			exitstatus = self._emerge("rp-pppoe")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge rp-pppoe!")
 			#	raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
 			else:
@@ -796,7 +796,7 @@ class ArchitectureTemplate:
 		# If user wants us to install pcmcia-cs, then do so
 		if self._install_profile.get_install_pcmcia_cs():
 			exitstatus = self._emerge("pcmcia-cs")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
 			#	raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not emerge pcmcia-cs!")
 				
@@ -994,7 +994,7 @@ class ArchitectureTemplate:
 					emerge_dhcp = True
 		if emerge_dhcp:
 			exitstatus = self._emerge("dhcpcd")
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge dhcpcd!")
 			else:
 				self._logger.log("dhcpcd emerged.")		
