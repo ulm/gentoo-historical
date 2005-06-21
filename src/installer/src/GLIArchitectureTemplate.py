@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.144 2005/06/21 03:11:43 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.145 2005/06/21 17:19:39 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -945,7 +945,7 @@ class ArchitectureTemplate:
 			# If we are going to load the network at boot...
 			#if interfaces[interface][2]:  #THIS FEATURE NO LONGER EXISTS
 				
-				# Add it to the default runlevel
+			# Add it to the default runlevel
 			self._add_to_runlevel("net."+interface)	# moved a bit <-- for indentation
 
 			#
@@ -957,7 +957,7 @@ class ArchitectureTemplate:
 				# STATIC IP
 				#
 				# If the post-install device info is not None, then it is a static ip addy
-				if interfaces[interface][1]:
+				if interfaces[interface][0] != "dhcp":
 					ip = interfaces[interface][0]
 					broadcast = interfaces[interface][1]
 					netmask = interfaces[interface][2]
