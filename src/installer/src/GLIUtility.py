@@ -336,7 +336,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	if display_on_tty8: fd_tty.close()
 
 	# close the pipe and save return value
-	ret = ro_pipe.close()
+	ret = ro_pipe.close() or 0
 
 	if return_output:
 		return ret, output
@@ -387,7 +387,7 @@ def get_uri(uri, path):
 		else:
 			raise GLIException("GLIUtilityError", 'fatal', 'get_uri', "File does not exist or URI is invalid!")
 
-	if exitsuccess(status):
+	if exitsuccess(status) and is_file(path):
 		return True
 	
 	return False
