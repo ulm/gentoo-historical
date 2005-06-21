@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9.2.3 2005/06/15 17:21:22 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9.2.4 2005/06/21 13:26:04 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -44,14 +44,14 @@ case $1 in
 			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/${x}
 
 			# change initrd name from "initrd" to "gentoo.igz", for example
-			if [ -e ${clst_cdroot_path}/isolinux/initrd* ]
+			if [ -e ${clst_cdroot_path}/boot/initrd* ]
 			then
-			    mv "${clst_cdroot_path}"/isolinux/initrd* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			    mv "${clst_cdroot_path}"/boot/initrd* "${clst_cdroot_path}"/boot/"${x}".igz
 			fi
 			
-			if [ -e ${clst_cdroot_path}/isolinux/initramfs* ]
+			if [ -e ${clst_cdroot_path}/boot/initramfs* ]
 			then
-			    mv "${clst_cdroot_path}"/isolinux/initramfs* "${clst_cdroot_path}"/isolinux/"${x}".igz
+			    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/"${x}".igz
 			fi
 		done
 
