@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.145 2005/06/21 17:19:39 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.146 2005/06/21 18:53:53 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -990,7 +990,7 @@ class ArchitectureTemplate:
 				# DHCP IP
 				#
 				else:
-					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp"})
+					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp", "dhcpcd_" + interface: interfaces[interface][1]})
 					emerge_dhcp = True
 		if emerge_dhcp:
 			exitstatus = self._emerge("dhcpcd")
