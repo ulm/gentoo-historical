@@ -301,6 +301,8 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	else:
 		cmd += " 2>&1 "
 
+	output = ""
+
 	if logfile:
 		if append_log:
 			fd_logfile = open(logfile,'a')
