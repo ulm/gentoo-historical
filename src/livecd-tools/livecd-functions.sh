@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.7 2005/06/10 14:37:01 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.8 2005/06/21 14:31:14 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -370,10 +370,19 @@ livecd_fix_inittab() {
 		# FB / STI console
 		if [ -c "/dev/vc/1" ]
 		then
-			for x in 0 1 2 3 4 5
-			do
-				echo "c${x}:12345:respawn:/sbin/mingetty --noclear --autologin root tty${x}" >> /etc/inittab
-			done
+			MODEL_NAME=$(cat /proc/cpuinfo |grep "model name"|sed 's/.*: //')
+			if [ "${MODEL_NAME}" = "UML" ]
+			then
+			    for x in 0 1 2 3 4 5 6
+			    do
+				    echo "c${x}:12345:respawn:/sbin/mingetty --noclear --autologin root tty${x}" >> /etc/inittab
+			    done
+			else
+			    for x in 1 2 3 4 5 6
+			    do
+				    echo "c${x}:12345:respawn:/sbin/mingetty --noclear --autologin root tty${x}" >> /etc/inittab
+			    done
+			fi
 		fi
 		if [ -c "/dev/hvc/0" ]
 		then
