@@ -12,6 +12,7 @@ import crypt
 import random
 
 import Welcome
+import ClientConfig
 import Partitioning
 import Stage
 import PortageTree
@@ -40,6 +41,7 @@ class Installer:
 	install_window = None
 
 	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
+                  { 'text': 'Client Config', 'module': ClientConfig },
                   { 'text': 'Partitioning', 'module': Partitioning },
                   { 'text': 'Network Mounts', 'module': NetworkMounts },
                   { 'text': 'Stage', 'module': Stage },

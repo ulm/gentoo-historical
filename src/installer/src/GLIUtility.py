@@ -297,22 +297,47 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash\n\nsource /etc/profile\n" + cmd + "\nexit $?\n")
 		wrapper.close()
-#		print "running '" + cmd + "' in chroot " + chroot
 		cmd = "chmod a+x " + chroot + "/var/tmp/spawn.sh && chroot " + chroot + " /var/tmp/spawn.sh 2>&1"
 	else:
 		cmd += " 2>&1 "
-	if logfile != None:
+
+	if logfile:
 		if append_log:
-			cmd += " | tee -a " + logfile
+			fd_logfile = open(logfile,'a')
 		else:
-			cmd += " | tee " + logfile
+			fd_logfile = open(logfile,'w')
 
 	if display_on_tty8:
-		cmd += " | tee /dev/tty8"
+		fd_tty = open('/dev/tty8','w')
 
-#	print "Running command: " + cmd
-	ret, output = commands.getstatusoutput(cmd)
-	
+	# open a read only pipe
+	ro_pipe = os.popen(cmd, 'r')
+
+	# read a line from the pipe and loop until
+	# pipe is empty
+	data = ro_pipe.readline()
+
+	while data:
+		if logfile:
+			fd_logfile.write(data)
+#			fd_logfile.flush()
+
+		if display_on_tty8:
+			fd_tty.write(data)
+#			fd_tty.flush()
+
+	if return_output:
+		output = output + data
+
+   	data = ro_pipe.readline()
+
+	# close the file descriptors
+	if logfile: fd_logfile.close()
+	if display_on_tty8: fd_tty.close()
+
+	# close the pipe and save return value
+	ret = ro_pipe.close()
+
 	if return_output:
 		return ret, output
 	else:
@@ -324,7 +349,6 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
 		return True
-	#print "WIFEXITED = " + str(os.WIFEXITED(status)) + ", WEXITSTATUS = " + str(os.WEXITSTATUS(status))
 	return False
 
 ##

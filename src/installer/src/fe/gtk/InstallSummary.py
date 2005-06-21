@@ -56,5 +56,5 @@ If you click finish here, the installer will generate the xml profile.
 	self.controller.SHOW_BUTTON_EXIT    = True
 	self.controller.SHOW_BUTTON_HELP    = True
 	self.controller.SHOW_BUTTON_BACK    = True
-	self.controller.SHOW_BUTTON_FORWARD = True
+	self.controller.SHOW_BUTTON_FORWARD = False
 	self.controller.SHOW_BUTTON_FINISH  = True

@@ -280,7 +280,7 @@ resize partitions.
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
 		self.controller.SHOW_BUTTON_HELP    = True
-		self.controller.SHOW_BUTTON_BACK    = True
+		self.controller.SHOW_BUTTON_BACK    = False
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
 
