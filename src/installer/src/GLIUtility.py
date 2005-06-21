@@ -326,10 +326,10 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			fd_tty.write(data)
 #			fd_tty.flush()
 
-	if return_output:
-		output = output + data
+		if return_output:
+			output = output + data
 
-   	data = ro_pipe.readline()
+		data = ro_pipe.readline()
 
 	# close the file descriptors
 	if logfile: fd_logfile.close()
