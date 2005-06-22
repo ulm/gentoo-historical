@@ -426,10 +426,13 @@ def get_eth_info(device):
 	gw      = 'None'
 	up      =  False
 	
-	if not is_eth_device("eth" + str(device)):
-		raise GLIException("GLIUtilityError", 'fatal', "get_eth_info", "eth" + str(device) +" is not a valid ethernet device!")
+	if len(str(device)) == 1:
+		device = "eth" + str(device)
+
+	if not is_eth_device(device):
+		raise GLIException("GLIUtilityError", 'fatal', "get_eth_info", device + " is not a valid ethernet device!")
 		
-	status, device_info = spawn("/sbin/ifconfig eth" + str(device), return_output=True)
+	status, device_info = spawn("/sbin/ifconfig " + device, return_output=True)
 	if exitsuccess(status):
 		for line in device_info.splitlines():
 			line = line.strip()
