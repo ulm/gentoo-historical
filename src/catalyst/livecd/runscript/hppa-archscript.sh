@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9.2.4 2005/06/21 13:26:04 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/hppa-archscript.sh,v 1.9.2.5 2005/06/22 22:10:58 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -31,6 +31,7 @@ case $1 in
 		first=""
 		for x in ${clst_boot_kernel}
 		do
+			eval custom_kopts=\$${x}_kernelopts
 			kbinary="${clst_chroot_path}/usr/portage/packages/gk_binaries/${x}-${clst_version_stamp}.tar.bz2"	
 			if [ -z "$first" ]
 			then
@@ -73,23 +74,6 @@ case $1 in
 		echo "--bootloader=boot/iplboot" >> ${icfg}
 		echo "--ramdisk=boot/${first}.igz" >> ${icfg}
 
-#		for x in $clst_boot_kernel
-#		do
-#
-#			eval custom_kopts=\$${x}_kernelopts
-#			echo "APPENDING CUSTOM KERNEL ARGS: ${custom_kopts}"
-#			echo >> $icfg
-#			echo "label $x" >> $icfg
-#			echo "	kernel $x" >> $icfg
-#			echo "	append initrd=$x.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot vga=0x317 splash=silent" >> $icfg
-#			echo >> $icfg
-#			echo "   $x" >> $kmsg
-#			echo "label $x-nofb" >> $icfg
-#			echo "	kernel $x" >> $icfg
-#			echo "	append initrd=$x.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot" >> $icfg
-#			echo >> $icfg
-#			echo "   ${x}-nofb" >> $kmsg
-#		done
 	;;
 
 	cdfs)
