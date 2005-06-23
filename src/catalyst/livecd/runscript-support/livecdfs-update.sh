@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.14 2005/06/22 13:28:41 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.15 2005/06/23 19:10:28 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -131,6 +131,7 @@ echo "alias ls='ls --color=auto'" >> /etc/profile
 echo "alias grep='grep --color=auto'" >> /etc/profile
 
 # make sure we have the latest pci and hotplug ids
+[ -x /sbin/update-pciids ] && /sbin/update-pciids
 if [ -d /usr/share/hwdata ]
 then
 	[ -f /usr/share/hwdata/pci.ids ] && rm -f /usr/share/hwdata/pci.ids
