@@ -61,11 +61,17 @@ class Installer:
 	def __init__(self):
 		self.client_profile = GLIClientConfiguration.ClientConfiguration()
 		self.install_profile = GLIInstallProfile.InstallProfile()
-		# Removed the training wheels!
-		if len(sys.argv) > 1 and (sys.argv[1] == "-p" or sys.argv[1] == "--pretend"):
-			self.cc = GLIClientController.GLIClientController(pretend=True)
-		else:
-			self.cc = GLIClientController.GLIClientController()
+		self._pretend = False
+		self._debug = False
+
+		for arg in sys.argv:
+			if arg == "-p" or arg == "--pretend":
+				self._pretend = True
+			elif arg == "-d" or arg == "--debug":
+				self._debug = True
+
+		self.cc = GLIClientController.GLIClientController(pretend=self._pretend)
+
 		# I'm feeling lazy
 		self.client_profile.set_interactive(None, True, None)
 		self.client_profile.set_architecture_template(None, "x86", None)
@@ -115,7 +121,11 @@ class Installer:
 		self.right_pane_box = gtk.Notebook()
 		for item in self.menuItems:
 			if item['module'] == None: break
+			if self._debug:
+				print "Instantiating " + item['text'] + " screen...",
 			panel = item['module'].Panel(self)
+			if self._debug:
+				print "done"
 			self.panels.append(panel)
 			self.right_pane_box.append_page(panel)
 		self.right_pane_box.set_show_tabs(False)
