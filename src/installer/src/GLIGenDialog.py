@@ -114,6 +114,7 @@ Enter the desired filename and path for the install log (the default is recommen
 		#broadcast = ""
 		#netmask = ""
 		#gateway = ""
+		dhcp_options = ""
 		
 		#Change the Yes/No buttons to new labels for this question.
 		d.add_persistent_args(["--yes-label", _(u"DHCP")])
@@ -121,6 +122,7 @@ Enter the desired filename and path for the install log (the default is recommen
 		string2 = _(u"To setup your network interface, you can either use DHCP if enabled, or manually enter your network information.\n  DHCP (Dynamic Host Configuration Protocol) makes it possible to automatically receive networking information (IP address, netmask, broadcast address, gateway, nameservers etc.). This only works if you have a DHCP server in your network (or if your provider provides a DHCP service).  If you do not, you must enter the information manually.  Please select your networking configuration method:")
 		if d.yesno(string2) == self._DLG_YES: #DHCP
 			network_type = 'dhcp'
+			code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."))
 		else:
 			network_type = 'static'
 			code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0'),('Enter your default gateway:',15), ('Enter a DNS server:',15,'128.118.25.3')))
@@ -137,6 +139,9 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_network_netmask(None, netmask, None)
 				self._client_profile.set_network_gateway(None, gateway, None)
 				self._client_profile.set_dns_servers(None, dnsservers, None)
+			else:
+				if dhcp_options:
+					self._client_profile.set_network_dhcp_options(None, dhcp_options, None)
 		except: 
 			self._d.msgbox("ERROR! Could not set networking information!")
 
@@ -729,7 +734,7 @@ global USE flags and one for local flags specific to each program.
 
 	def _set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
-		arch_loaders = { 'x86': (("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")} #FIXME ADD OTHER ARCHS
+		arch_loaders = { 'x86': ("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")} #FIXME ADD OTHER ARCHS
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", "Do not install a bootloader.  (System may be unbootable!)"))
 		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
@@ -757,7 +762,13 @@ global USE flags and one for local flags specific to each program.
 	
 	def _set_networking(self):
 	# This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
-		if self._client_profile.
+		interfaces = self._install_profile.get_network_interfaces()
+		CC_iface = self._client_profile.get_network_interface()
+		if CC_iface and (CC_iface not in interfaces):
+			#The CC has a network config that's not already there.  Preload it.
+			CC_net_type = self._client_profile.get_network_type()
+			if CC_net_type == 'dhcp':
+				interfaces[CC_iface] = ('dhcp', self._client_profile.get_network_dhcp_options()
 		while 1:
 			menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "HTTP Proxy", "FTP Proxy", "RSYNC Proxy", "NIS Domain Name"]
 			string = _(u"Here you will enter all of your networking information for the new system.  You can either choose a network interface to edit, add a network interface, delete an interface, or edit the miscellaneous options such as hostname and proxy servers.")

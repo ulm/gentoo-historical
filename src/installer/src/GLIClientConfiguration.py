@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.34 2005/06/11 07:46:47 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.35 2005/06/24 21:51:26 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -12,7 +12,7 @@ the actual install is contained in GLIInstallProfile.
 Usage:
 	from GLIClientConfiguration import ClientConfiguration
 
-	PROCEDURE TO ADD NEW VARIABLES:
+	PROCEDURE TO ADD NEW VARIABLES:  (PLEASE KEEP IN ALPHABETICAL ORDER)
 	1. Add a handler to the list.  If the variable has children make sure you do it right.
 	   Look at the existing structure to get an idea.
 	2. Create a section for the two or three functions.
@@ -28,21 +28,6 @@ import xml.dom.minidom
 from GLIException import *
 
 class ClientConfiguration:
-
-#	SHARED_CLIENT_CONFIGURATION = None
-
-#	##
-#	# FIXME: what does this do?
-#	# @param cls Parameter description
-#	def shared_client_configuration(cls):
-#		if GLIClientConfiguration.SHARED_CLIENT_CONFIGURATION == None:
-#			GLIClientConfiguration.SHARED_CLIENT_CONFIGURATION = cls()
-#
-#		return GLIClientConfiguration.SHARED_CLIENT_CONFIGURATION
-#	###############################################################
-#	#####################WHAT IS THIS DOING HERE????###############
-#	shared_client_configuration = classmethod(shared_client_configuration)
-#	###############################################################
 
 	##
 	# Initializes the ClientConfiguration.
@@ -62,6 +47,7 @@ class ClientConfiguration:
 		self._network_interface = ""
 		self._network_ip = ""
 		self._network_broadcast = ""
+		self._network_dhcp_options = ""
 		self._network_netmask = ""
 		self._network_gateway = ""
 		self._enable_ssh = False
@@ -87,6 +73,7 @@ class ClientConfiguration:
 		self._parser.addHandler('client-configuration/network-interface', self.set_network_interface)
 		self._parser.addHandler('client-configuration/network-ip', self.set_network_ip)
 		self._parser.addHandler('client-configuration/network-broadcast', self.set_network_broadcast)
+		self._parser.addHandler('client_configuration/network-dhcp-options', self.set_network_dhcp_options)
 		self._parser.addHandler('client-configuration/network-netmask', self.set_network_netmask)
 		self._parser.addHandler('client-configuration/network-gateway', self.set_network_gateway)
 		self._parser.addHandler('client-configuration/network-type', self.set_network_type)
@@ -112,6 +99,7 @@ class ClientConfiguration:
 					'interactive': self.get_interactive,
 					'log-file': self.get_log_file,
 					'network-broadcast': self.get_network_broadcast,
+					'network-dhcp-options': self.get_network_dhcp_options,
 					'network-gateway': self.get_network_gateway,
 					'network-interface': self.get_network_interface,
 					'network-ip': self.get_network_ip,
@@ -317,6 +305,26 @@ class ClientConfiguration:
 	# Returns the network broadcast address
 	def get_network_broadcast(self):
 		return self._network_broadcast
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Network DHCP Options for livecd environment
+
+	##
+	# Sets the network dhcp options for the livecd environment
+	# @param xml_path not used here.
+	# @param broadcast the dhcp options
+	# @param xml_attr= None
+	def set_network_dhcp_options(self, xml_path, options, xml_attr=None):
+		if not GLIUtility.is_realstring(options):
+			raise GLIException("BadDHCPOptionsError", 'fatal','set_network_dhcp_options', 'The specified dhcp_optioons is not a valid string!')
+		self._network_dhcp_options = options
+	
+	##
+	# Returns the network dhcp options
+	def get_network_dhcp_options(self):
+		return self._network_dhcp_options
 
 	# This variable has a simple serialize function.
 	

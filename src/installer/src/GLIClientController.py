@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.62 2005/06/12 09:54:26 robbat2 Exp $
+$Id: GLIClientController.py,v 1.63 2005/06/24 21:51:26 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -271,12 +271,16 @@ class GLIClientController(Thread):
 				# Run dhcpcd.
 				try:
 					interface = self._configuration.get_network_interface()
+					dhcp_options = self._configuration.get_network_dhcp_options()
 				except:
 					self._logger.log("No interface found.. defaulting to eth0.")
 					interface = "eth0"
+					dhcp_options = ""
 
-				if interface:
+				if interface and not dhcp_options:
 					status = GLIUtility.spawn("dhcpcd -n " + interface)
+				elif interface and dhcp_options:
+					status = GLIUtility.spawn("dhcpcd " + dhcp_options + " " + interface)
 				else:
 					status = GLIUtility.spawn("dhcpcd -n")
 
