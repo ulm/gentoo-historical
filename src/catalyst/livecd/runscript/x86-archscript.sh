@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.4 2005/06/15 17:21:22 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.5 2005/06/24 22:09:20 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -81,6 +81,12 @@ case $1 in
 		echo "Available kernels:" > ${kmsg}
 		cp ${clst_sharedir}/livecd/files/x86-help.msg ${hmsg}
 
+		case ${clst_livecd_type} in
+		gentoo-*)
+			keymap="dokeymap"
+			;;
+		esac
+
 		for x in ${clst_boot_kernel}
 		do
 
@@ -92,16 +98,16 @@ case $1 in
 			
 			if [ "${clst_livecd_splash_type}" == "gensplash" -a -n "${clst_livecd_splash_theme}" ]
 			then
-				echo "  append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot vga=791 dokeymap splash=silent,theme:${clst_livecd_splash_theme}" >> ${icfg}
+				echo "  append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot vga=791 splash=silent,theme:${clst_livecd_splash_theme}" ${keymap} >> ${icfg}
 			else
-				echo "  append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot vga=791 dokeymap splash=silent" >> ${icfg}
+				echo "  append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot vga=791 splash=silent" ${keymap} >> ${icfg}
 			fi
 			
 			echo >> ${icfg}
 			echo "   ${x}" >> ${kmsg}
 			echo "label ${x}-nofb" >> ${icfg}
 			echo "	kernel ${x}" >> ${icfg}
-			echo "	append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot" >> ${icfg}
+			echo "	append initrd=${x}.igz root=/dev/ram0 init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot ${keymap}" >> ${icfg}
 			echo >> ${icfg}
 			echo "   ${x}-nofb" >> ${kmsg}
 		done
