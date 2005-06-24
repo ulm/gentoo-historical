@@ -768,7 +768,16 @@ global USE flags and one for local flags specific to each program.
 			#The CC has a network config that's not already there.  Preload it.
 			CC_net_type = self._client_profile.get_network_type()
 			if CC_net_type == 'dhcp':
-				interfaces[CC_iface] = ('dhcp', self._client_profile.get_network_dhcp_options()
+				try:
+					interfaces[CC_iface] = ('dhcp', self._client_profile.get_network_dhcp_options(), None)
+				except:
+					pass
+			else:
+				try:
+					interfaces[CC_iface] = (self._client_profile.get_network_ip(), self._client_profile.get_network_broadcast(), self._client_profile.get_network_netmask())
+				except:
+					pass
+			
 		while 1:
 			menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "HTTP Proxy", "FTP Proxy", "RSYNC Proxy", "NIS Domain Name"]
 			string = _(u"Here you will enter all of your networking information for the new system.  You can either choose a network interface to edit, add a network interface, delete an interface, or edit the miscellaneous options such as hostname and proxy servers.")
@@ -891,23 +900,25 @@ global USE flags and one for local flags specific to each program.
 					self._install_profile.set_nisdomainname(None, nisdomain, None)
 
 	def _set_cron_daemon(self):
-		cron_daemons = ("vixie-cron", "fcron", "dcron", "None")
-		code, menuitem = d.menu("Choose a cron daemon", choices=self._dmenu_list_to_choices(cron_daemons))
+		cron_daemons = (("vixie-cron", "Paul Vixie's cron daemon, fully featured, RECOMMENDED."), ("dcron","A cute little cron from Matt Dillon."), ("fcron", "A command scheduler with extended capabilities over cron and anacron"), ("None", "Don't use a cron daemon. (NOT Recommended!)"))
+		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
+		code, menuitem = d.menu(string, choices=cron_daemons)
 		if code == self._DLG_OK:
-			menuitem = cron_daemons[int(menuitem)-1]
 			if menuitem == "None": 
 				menuitem = ""
 			self._install_profile.set_cron_daemon_pkg(None, menuitem, None)
 
 	def _set_logger(self):
-		loggers = ("syslog-ng", "metalog", "syslogkd")
-		code, menuitem = self._d.menu("Choose a system logger", choices=self._dmenu_list_to_choices(loggers))
+		loggers = (("syslog-ng", "An advanced system logger."), ("metalog", "A Highly-configurable system logger."), ("syslogkd", "The traditional set of system logging daemons."))
+		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  Choose a system logger:")
+		code, menuitem = self._d.menu("Choose a system logger", choices=loggers)
 		if code == self._DLG_OK:
-			menuitem = loggers[int(menuitem)-1]
 			self._install_profile.set_logging_daemon_pkg(None, menuitem, None)
 
 	def _set_extra_packages(self):
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
+		#file indexing (slocate)
+		#logrotate
 		code, install_packages = self._d.inputbox("Enter a space-separated list of extra packages to install on the system")
 		if code == self._DLG_OK: 
 			self._install_profile.set_install_packages(None, install_packages, None)
