@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.62 2005/06/22 21:21:52 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.63 2005/06/25 21:30:16 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1325,7 +1325,7 @@ class InstallProfile:
 	# @param xml_attr Parameter description
 	def set_services(self, xml_path, services, xml_attr):
 		if type(services) == str:
-			services = string.split(services)
+			services = services.split(',')
 		else:
 			raise GLIException("ServicesError", 'fatal', 'set_services',  "Invalid input!")
 

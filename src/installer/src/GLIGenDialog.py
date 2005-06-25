@@ -650,7 +650,7 @@ global USE flags and one for local flags specific to each program.
 							self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
 						except:
 							self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
-				else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
+				#else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
 				
 				
 
@@ -735,7 +735,7 @@ global USE flags and one for local flags specific to each program.
 
 	def _set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
-		arch_loaders = { 'x86': ("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")} #FIXME ADD OTHER ARCHS
+		arch_loaders = { 'x86': [("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")],} #FIXME ADD OTHER ARCHS
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", "Do not install a bootloader.  (System may be unbootable!)"))
 		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
@@ -748,8 +748,8 @@ global USE flags and one for local flags specific to each program.
 			self._d.msgbox(_(u"ERROR! Could not set boot loader pkg! ")+menuitem)
 		if menuitem != "none":
 			#Reset the Yes/No labels.
-			d.add_persistent_args(["--yes-label", "Yes"])
-			d.add_persistent_args(["--no-label","No"])
+			self._d.add_persistent_args(["--yes-label", "Yes"])
+			self._d.add_persistent_args(["--no-label","No"])
 			if self._d.yesno(_(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)")) == self._DLG_YES:
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
@@ -786,7 +786,7 @@ global USE flags and one for local flags specific to each program.
 				device_list = GLIUtility.get_eth_devices()
 			else:
 				device_list = []
-			code, menuitem = self._d.menu(
+			#code, menuitem = self._d.menu(
 			
 			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
 			if code != self._DLG_OK: 
@@ -903,7 +903,7 @@ global USE flags and one for local flags specific to each program.
 	def _set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", "Paul Vixie's cron daemon, fully featured, RECOMMENDED."), ("dcron","A cute little cron from Matt Dillon."), ("fcron", "A command scheduler with extended capabilities over cron and anacron"), ("None", "Don't use a cron daemon. (NOT Recommended!)"))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
-		code, menuitem = d.menu(string, choices=cron_daemons)
+		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=68)
 		if code == self._DLG_OK:
 			if menuitem == "None": 
 				menuitem = ""
@@ -912,7 +912,7 @@ global USE flags and one for local flags specific to each program.
 	def _set_logger(self):
 		loggers = (("syslog-ng", "An advanced system logger."), ("metalog", "A Highly-configurable system logger."), ("syslogkd", "The traditional set of system logging daemons."))
 		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  Choose a system logger:")
-		code, menuitem = self._d.menu("Choose a system logger", choices=loggers)
+		code, menuitem = self._d.menu(string, choices=loggers, height=21, width=68)
 		if code == self._DLG_OK:
 			self._install_profile.set_logging_daemon_pkg(None, menuitem, None)
 
@@ -978,7 +978,10 @@ global USE flags and one for local flags specific to each program.
 				tmpusers = []
 				for user in users:
 					tmpusers.append(users[user])
-				self._install_profile.set_users(tmpusers)
+				try:
+					self._install_profile.set_users(tmpusers)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the additional users!"))
 				break
 			menuitem = menu_list[int(menuitem)-1]
 			if menuitem == "Add user":
@@ -1018,10 +1021,11 @@ global USE flags and one for local flags specific to each program.
 				elif menuitem2 == "Group Membership":
 					choice_list = [("users", "The usual group for normal users.", 1), ("wheel", "Allows users to attempt to su to root.", 0), ("audio", "Allows access to audio devices.", 0), ("games", "Allows access to games.", 0), ("apache", "For users who know what they're doing only.", 0), ("cdrom", "For users who know what they're doing only.", 0), ("ftp", "For users who know what they're doing only.", 0), ("video", "For users who know what they're doing only.", 0), ("Other", "Manually specify your groups in a comma-separated list.", 0)]
 					string2 = _(u"Select which groups you would like the user %s to be in." % menuitem)
-					code, group_list = self._d.checklist(string2, choices=choice_list, height=15, list_height=7, width=60)
+					code, group_list = self._d.checklist(string2, choices=choice_list, height=19, list_height=10, width=68)
 					groups = ""
 					for group in group_list:
 						groups += group + ","
+					groups = groups[:-1]
 					if "Other" in group_list:
 						code, groups = self._d.inputbox("Enter a comma-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
 						if code != self._DLG_OK: continue
@@ -1054,11 +1058,23 @@ global USE flags and one for local flags specific to each program.
 						break
 
 	def _set_services(self):
-		choice_list = [("alsasound", "ALSA Sound Daemon"), ("sshd", "SSH Daemon (allows remote logins)"), ("","")]
+		choice_list = [("alsasound", "ALSA Sound Daemon"), ("apache", "Common web server (version 1.x)"), ("apache2", "Common web server (version 2.x)"), ("distccd", "Distributed Compiling System"), ("esound", "ESD Sound Daemon"), ("hdparm", "Hard Drive Tweaking Utility"), ("local", "Run scripts found in /etc/conf.d/local.start"), ("portmap", "Port Mapping Service"), ("proftpd", "Common FTP server"), ("sshd", "SSH Daemon (allows remote logins)"), ("Other","Manually specify your services in a comma-separated list.")]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
-		code, services = self._d.inputbox("Enter a space-separated list of services to start on boot")
-		if code == self._DLG_OK: 
+		code, services_list = self._d.checklist(string, choices=choice_list, height=19, list_height=10, width=68)
+		if code != self._DLG_OK:
+			return
+		services = ""
+		for service in services_list:
+			services += service + ","
+		services = services[:-1]
+		if "Other" in services_list:
+			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
+		if code != self._DLG_OK: 
+			return
+		try:
 			self._install_profile.set_services(None, services, None)
+		except:
+			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
 			
 	def _save_install_profile(self, xmlfilename="", askforfilename=True):
 		code = 0
