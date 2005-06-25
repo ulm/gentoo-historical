@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.146 2005/06/21 18:53:53 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.147 2005/06/25 07:44:25 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -98,11 +98,16 @@ class ArchitectureTemplate:
 	# @param runlevel="default" the runlevel to add to
 	def _add_to_runlevel(self, script_name, runlevel="default"):
 		if not GLIUtility.is_file(self._chroot_dir + '/etc/init.d/' + script_name):
-			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
+			#raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
+			#This is not a fatal error.  If the init script is important it will exist.
+			self._logger.log("ERROR! Failure adding" + script_name + " to runlevel " + runlevel + " because it was not found!")
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(status):
-			raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
-		self._logger.log("Added "+script_name+" to runlevel "+runlevel)
+			#raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
+			#Again, an error here will not prevent a new system from booting.  But it is important to log the error.
+			self._logger.log("ERROR! Could not add " + script_name + " to runlevel " + runlevel + ". returned a bad status code.")
+		else:
+			self._logger.log("Added "+script_name+" to runlevel "+runlevel)
 
 	##
 	# Private Function.  Will return a list of packages to be emerged for a given command.  Not yet used.
@@ -777,7 +782,6 @@ class ArchitectureTemplate:
 	##
 	# Installs rp-pppoe but does not configure it.  This function is quite the unknown.
 	def install_rp_pppoe(self):
-		
 		# If user wants us to install rp-pppoe, then do so
 		if self._install_profile.get_install_rp_pppoe():
 			exitstatus = self._emerge("rp-pppoe")
@@ -846,16 +850,19 @@ class ArchitectureTemplate:
 		nisdomainname = self._install_profile.get_nisdomainname()
 		
 		# Write the hostname to the hostname file		
-		open(self._chroot_dir + "/etc/hostname", "w").write(hostname + "\n")
+		#open(self._chroot_dir + "/etc/hostname", "w").write(hostname + "\n")
+		self._edit_config(self._chroot_dir + "/etc/conf.d/hostname", {"HOSTNAME": hostname})
 		
 		# Write the domainname to the nisdomainname file
 		if domainname:
-			open(self._chroot_dir + "/etc/dnsdomainname", "w").write(domainname + "\n")
+			#open(self._chroot_dir + "/etc/dnsdomainname", "w").write(domainname + "\n")
+			self._edit_config(self._chroot_dir + "/etc/conf.d/domainname", {"DNSDOMAIN": domainname})
 			self._add_to_runlevel("domainname")
 		
 		# Write the nisdomainname to the nisdomainname file
 		if nisdomainname:
-			open(self._chroot_dir + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
+			#open(self._chroot_dir + "/etc/nisdomainname", "w").write(nisdomainname + "\n")
+			self._edit_config(self._chroot_dir + "/etc/conf.d/domainname", {"NISDOMAIN": nisdomainname})
 			self._add_to_runlevel("domainname")
 			
 		#

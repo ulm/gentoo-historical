@@ -179,7 +179,8 @@ Enter the new LIVECD root password:	""")
 							self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
 						except:
 							d.msgbox("ERROR! Could not set the root password on the LiveCD!")
-
+						self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
+						
 	def set_client_kernel_modules(self):
 		if self.advanced_mode:
 			status, output = GLIUtility.spawn("lsmod", return_output=True)
@@ -942,16 +943,22 @@ global USE flags and one for local flags specific to each program.
 
 	def _set_root_password(self):
 	# The root password will be set here
-		code, passwd1 = self._d.passwordbox("Enter the new root password")
-		if code != self._DLG_OK: 
-			return
-		code, passwd2 = self._d.passwordbox("Enter the new root password again")
-		if code != self._DLG_OK: 
-			return
-		if passwd1 != passwd2:
-			self._d.msgbox("The passwords do not match")
-			return
-		self._install_profile.set_root_pass_hash(None, GLIUtility.hash_password(passwd1), None)
+		while 1:
+			code, passwd1 = self._d.passwordbox(_(u"Please enter your desired password for the root account.  (note it will not show the password.  Also do not try to use backspace.):"))
+			if code != self._DLG_OK: 
+				return
+			code, passwd2 = self._d.passwordbox("Enter the new root password again for confirmation")
+			if code != self._DLG_OK: 
+				return
+			if passwd1 != passwd2:
+				self._d.msgbox("The passwords do not match.  Please try again or cancel.")
+			else:
+				try:
+					self._install_profile.set_root_pass_hash(None, GLIUtility.hash_password(passwd1), None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the new system root password!"))
+				self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
+				return
 
 	def _set_additional_users(self):
 	# This section will be for adding non-root users
@@ -964,13 +971,14 @@ global USE flags and one for local flags specific to each program.
 				menu_list.append(user)
 			menu_list.sort()
 			menu_list.append("Add user")
-			code, menuitem = self._d.menu("Choose a user to edit", choices=self._dmenu_list_to_choices(menu_list), cancel="Done")
+			string1 = _(u"Working as root on a Unix/Linux system is dangerous and should be avoided as much as possible. Therefore it is strongly recommended to add a user for day-to-day use.  Choose a user to edit:")
+			code, menuitem = self._d.menu(string1, choices=self._dmenu_list_to_choices(menu_list), cancel="Save and Continue")
 			if code != self._DLG_OK:
-				if self._d.yesno("Do you want to save changes?") == self._DLG_YES:
-					tmpusers = []
-					for user in users:
-						tmpusers.append(users[user])
-					self._install_profile.set_users(tmpusers)
+				#if self._d.yesno("Do you want to save changes?") == self._DLG_YES:
+				tmpusers = []
+				for user in users:
+					tmpusers.append(users[user])
+				self._install_profile.set_users(tmpusers)
 				break
 			menuitem = menu_list[int(menuitem)-1]
 			if menuitem == "Add user":
@@ -980,7 +988,13 @@ global USE flags and one for local flags specific to each program.
 				if newuser in users:
 					self._d.msgbox("A user with that name already exists")
 					continue
-				new_user = [newuser, '', ('users',), '/bin/bash', '/home/' + newuser, '', '']
+				code, passwd1 = self._d.passwordbox("Enter the new password for user "+ newuser)
+				code, passwd2 = self._d.passwordbox("Enter the new password again for confirmation")
+				if code == self._DLG_OK: 
+					if passwd1 != passwd2:
+						self._d.msgbox("The passwords do not match! Go to the menu and try again.")
+				#Create the entry for the new user
+				new_user = [newuser, GLIUtility.hash_password(passwd1), ('users',), '/bin/bash', '/home/' + newuser, '', '']
 				users[newuser] = new_user
 				menuitem = newuser
 			while 1:
@@ -997,36 +1011,40 @@ global USE flags and one for local flags specific to each program.
 					if code != self._DLG_OK: 
 						continue
 					if passwd1 != passwd2:
-						self._d.msgbox("The passwords do not match")
+						self._d.msgbox("The passwords do not match! Try again.")
 						continue
+					self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
 					users[menuitem][1] = GLIUtility.hash_password(passwd1)
 				elif menuitem2 == "Group Membership":
-					code, groups = self._d.inputbox("Enter a space-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
-					if code != self._DLG_OK: continue
-#					new_groups = []
-#					groups = string.split(groups)
-#					for group in groups:
-#						new_groups.append(group)
+					choice_list = [("users", "The usual group for normal users.", 1), ("wheel", "Allows users to attempt to su to root.", 0), ("audio", "Allows access to audio devices.", 0), ("games", "Allows access to games.", 0), ("apache", "For users who know what they're doing only.", 0), ("cdrom", "For users who know what they're doing only.", 0), ("ftp", "For users who know what they're doing only.", 0), ("video", "For users who know what they're doing only.", 0), ("Other", "Manually specify your groups in a comma-separated list.", 0)]
+					string2 = _(u"Select which groups you would like the user %s to be in." % menuitem)
+					code, group_list = self._d.checklist(string2, choices=choice_list, height=15, list_height=7, width=60)
+					groups = ""
+					for group in group_list:
+						groups += group + ","
+					if "Other" in group_list:
+						code, groups = self._d.inputbox("Enter a comma-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
+						if code != self._DLG_OK: continue
 					users[menuitem][2] = string.split(groups, ",")
 				elif menuitem2 == "Shell":
-					code, shell = self._d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  Get it right b/c there's no error checking!", init=users[menuitem][3])
+					code, shell = self._d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  ", init=users[menuitem][3])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][3] = shell
 				elif menuitem2 == "Home Directory":
-					code, homedir = self._d.inputbox("Enter the user's home directory. default is /home/username.  Get it right b/c there's no error checking!", init=users[menuitem][4])
+					code, homedir = self._d.inputbox("Enter the user's home directory. default is /home/username.  ", init=users[menuitem][4])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][4] = homedir
 				elif menuitem2 == "UID":
-					code, uid = self._d.inputbox("Enter the user's UID. ", init=users[menuitem][5])
+					code, uid = self._d.inputbox("Enter the user's UID. If left blank the system will choose a default value (this is recommended).", init=users[menuitem][5])
 					if code != self._DLG_OK: 
 						continue
 					if type(uid) != int: 
 						continue
 					users[menuitem][5] = uid
 				elif menuitem2 == "Comment":
-					code, comment = self._d.inputbox("Enter the user's comment.", init=users[menuitem][6])
+					code, comment = self._d.inputbox("Enter the user's comment.  This is completely optional.", init=users[menuitem][6])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][6] = comment
@@ -1036,6 +1054,8 @@ global USE flags and one for local flags specific to each program.
 						break
 
 	def _set_services(self):
+		choice_list = [("alsasound", "ALSA Sound Daemon"), ("sshd", "SSH Daemon (allows remote logins)"), ("","")]
+		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
 		code, services = self._d.inputbox("Enter a space-separated list of services to start on boot")
 		if code == self._DLG_OK: 
 			self._install_profile.set_services(None, services, None)
