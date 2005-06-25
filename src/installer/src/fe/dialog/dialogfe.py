@@ -520,13 +520,20 @@ def set_rc_conf():
 
 def set_root_password():
 # The root password will be set here
-	code, passwd1 = d.passwordbox("Enter the new root password")
-	if code != DLG_OK: return
-	code, passwd2 = d.passwordbox("Enter the new root password again")
-	if code != DLG_OK: return
-	if passwd1 != passwd2:
-		d.msgbox("The passwords do not match")
-		return
+	passwd1 = ''
+	passwd2 = ' '
+	while (passwd1 != passwd2):
+		while (code != DLG_OK):
+			code, passwd1 = d.passwordbox("Enter the new root password")
+			if code != DLG_OK: 
+				d.msgbox("You must input a password!")
+		while (code != DLG_OK):
+			code, passwd2 = d.passwordbox("Enter the new root password again")
+			if code != DLG_OK: 
+				d.msgbox("You must input a password!")
+				
+		if passwd1 != passwd2:
+			d.msgbox("The passwords do not match")
 	install_profile.set_root_pass_hash(None, GLIUtility.hash_password(passwd1), None)
 
 def set_additional_users():
@@ -687,13 +694,19 @@ def set_client_networking():
 
 def set_livecd_password():
 # The root password will be set here
-	code, passwd1 = d.passwordbox("Enter the new LIVECD root password")
-	if code != DLG_OK: return
-	code, passwd2 = d.passwordbox("Enter the new LIVECD root password again")
-	if code != DLG_OK: return
-	if passwd1 != passwd2:
-		d.msgbox("The passwords do not match")
-		return
+        passwd1 = ''
+	passwd2 = ' '
+	while (passwd1 != passwd2):
+		while (code != DLG_OK):
+			code, passwd1 = d.passwordbox("Enter the new root password")
+			if code != DLG_OK:
+				d.msgbox("You must input a password!")
+		while (code != DLG_OK):
+			code, passwd2 = d.passwordbox("Enter the new root password again")
+			if code != DLG_OK:
+				d.msgbox("You must input a password!")
+		if passwd1 != passwd2:
+			d.msgbox("The passwords do not match")
 	client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
 
 def set_enable_ssh():
