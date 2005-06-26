@@ -852,7 +852,7 @@ global USE flags and one for local flags specific to each program.
 						interfaces[iface_choice] = ('dhcp', dhcp_options, None)
 					else:
 						network_type = 'static'
-						code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15, interfaces[iface_choice[0]),('Enter your Broadcast address:', 15, interfaces[iface_choice][1]),('Enter your Netmask:',15,interfaces[iface_choice][2])))
+						code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15, interfaces[iface_choice][0]),('Enter your Broadcast address:', 15, interfaces[iface_choice][1]),('Enter your Netmask:',15,interfaces[iface_choice][2])))
 						(ip_address, broadcast, netmask) = data.split()
 						if code != self._DLG_OK: 
 							continue
@@ -893,88 +893,88 @@ global USE flags and one for local flags specific to each program.
 		#Now ask for the other info in a large form.
 		error = True
 		while error:
-		error = False
-		code, data = self._d.form('Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!', (('Enter your Hostname:', 25, self._install_profile.get_hostname()),('Enter your Domain Name:', 25, self._install_profile.get_domainname()),('Enter your NIS Domain Name:',25,self._install_profile.get_nisdomainname()),('Enter a primary DNS server:',15),('Enter a backup DNS server:',15), ('Enter a HTTP Proxy IP:', 15,self._install_profile.get_http_proxy()),('Enter a FTP Proxy IP:', 15, self._install_profile.get_ftp_proxy()), ('Enter a RSYNC Proxy:',15,self._install_profile.get_rsync_proxy())))
-		if code != self._DLG_OK:
-			return
-		(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data.split()
-		#Check the data before entering it.				
-		if hostname:
-			if type(hostname) != str:
-				self._d.msgbox(_(u"Incorrect hostname!  It must be a string.  Not saved."))
-				error = True	
-			else:
-				try:			
-					self._install_profile.set_hostname(None, hostname, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the hostname:")+hostname)
-					error = True
-		if domainname:
-			if type(domainname) != str:
-				self._d.msgbox(_(u"Incorrect domainname!  It must be a string.  Not saved."))
-				error = True	
-			else:
-				try:			
-					self._install_profile.set_domainname(None, domainname, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the domainname:")+domainname)
-					error = True
-		if nisdomainname:
-			if type(nisdomainname) != str:
-				self._d.msgbox(_(u"Incorrect nisdomainname!  It must be a string.  Not saved."))
-				error = True	
-			else:
-				try:			
-					self._install_profile.set_nisdomainname(None, nisdomainname, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the nisdomainname:")+nisdomainname)
-					error = True					
-		if primary_dns:
-			if not GLIUtility.is_ip(primary_dns):
-				self._d.msgbox(_(u"Incorrect Primary DNS Server! Not saved."))
-				error = True
-			else:
-				if backup_dns:
-					if not GLIUtility.is_ip(backup_dns):
-						self._d.msgbox(_(u"Incorrect Backup DNS Server! Not saved."))
+			error = False
+			code, data = self._d.form('Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!', (('Enter your Hostname:', 25, self._install_profile.get_hostname()),('Enter your Domain Name:', 25, self._install_profile.get_domainname()),('Enter your NIS Domain Name:',25,self._install_profile.get_nisdomainname()),('Enter a primary DNS server:',15),('Enter a backup DNS server:',15), ('Enter a HTTP Proxy IP:', 15,self._install_profile.get_http_proxy()),('Enter a FTP Proxy IP:', 15, self._install_profile.get_ftp_proxy()), ('Enter a RSYNC Proxy:',15,self._install_profile.get_rsync_proxy())))
+			if code != self._DLG_OK:
+				return
+			(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data.split()
+			#Check the data before entering it.				
+			if hostname:
+				if type(hostname) != str:
+					self._d.msgbox(_(u"Incorrect hostname!  It must be a string.  Not saved."))
+					error = True	
+				else:
+					try:			
+						self._install_profile.set_hostname(None, hostname, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the hostname:")+hostname)
 						error = True
-					else:
-						primary_dns = primary_dns + " " + backup_dns
-				try:			
-					self._install_profile.set_dns_servers(None, primary_dns, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the DNS Servers:")+primary_dns)
+			if domainname:
+				if type(domainname) != str:
+					self._d.msgbox(_(u"Incorrect domainname!  It must be a string.  Not saved."))
+					error = True	
+				else:
+					try:			
+						self._install_profile.set_domainname(None, domainname, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the domainname:")+domainname)
+						error = True
+			if nisdomainname:
+				if type(nisdomainname) != str:
+					self._d.msgbox(_(u"Incorrect nisdomainname!  It must be a string.  Not saved."))
+					error = True	
+				else:
+					try:			
+						self._install_profile.set_nisdomainname(None, nisdomainname, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the nisdomainname:")+nisdomainname)
+						error = True					
+			if primary_dns:
+				if not GLIUtility.is_ip(primary_dns):
+					self._d.msgbox(_(u"Incorrect Primary DNS Server! Not saved."))
 					error = True
-		if http_proxy:
-			if not GLIUtility.is_uri(http_proxy):
-				self._d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
-				error = True
-			else:
-				try:
-					self._install_profile.set_http_proxy(None, http_proxy, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the HTTP Proxy:")+http_proxy)
-					error = True					
-		if ftp_proxy:
-			if not GLIUtility.is_uri(ftp_proxy):
-				self._d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
-				error = True
-			else:
-				try:
-					self._install_profile.set_ftp_proxy(None, ftp_proxy, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the FTP Proxy:")+ftp_proxy)
+				else:
+					if backup_dns:
+						if not GLIUtility.is_ip(backup_dns):
+							self._d.msgbox(_(u"Incorrect Backup DNS Server! Not saved."))
+							error = True
+						else:
+							primary_dns = primary_dns + " " + backup_dns
+					try:			
+						self._install_profile.set_dns_servers(None, primary_dns, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the DNS Servers:")+primary_dns)
+						error = True
+			if http_proxy:
+				if not GLIUtility.is_uri(http_proxy):
+					self._d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
 					error = True
-		if rsync_proxy:
-			if not GLIUtility.is_uri(rsync_proxy):
-				self._d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
-				error = True
-			else:
-				try:
-					self._install_profile.set_rsync_proxy(None, rsync_proxy, None)
-				except:
-					self._d.msgbox(_(u"ERROR! Could not set the RSYNC Proxy:")+rsync_proxy)
+				else:
+					try:
+						self._install_profile.set_http_proxy(None, http_proxy, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the HTTP Proxy:")+http_proxy)
+						error = True					
+			if ftp_proxy:
+				if not GLIUtility.is_uri(ftp_proxy):
+					self._d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
 					error = True
+				else:
+					try:
+						self._install_profile.set_ftp_proxy(None, ftp_proxy, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the FTP Proxy:")+ftp_proxy)
+						error = True
+			if rsync_proxy:
+				if not GLIUtility.is_uri(rsync_proxy):
+					self._d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
+					error = True
+				else:
+					try:
+						self._install_profile.set_rsync_proxy(None, rsync_proxy, None)
+					except:
+						self._d.msgbox(_(u"ERROR! Could not set the RSYNC Proxy:")+rsync_proxy)
+						error = True
 
 	def _set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", "Paul Vixie's cron daemon, fully featured, RECOMMENDED."), ("dcron","A cute little cron from Matt Dillon."), ("fcron", "A command scheduler with extended capabilities over cron and anacron"), ("None", "Don't use a cron daemon. (NOT Recommended!)"))
