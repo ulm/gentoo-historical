@@ -1,0 +1,323 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Id: keychain-guide.xml,v 1.1 2005/06/26 15:11:23 neysx Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<!-- Orig revision: 1.1 -->
+<!-- Translator: tomcio <tomek@paradox.pl> -->
+<!-- Title: Gentoo Linux Keychain - przewodnik -->
+<!-- Status: Release -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/keychain-guide.xml,v 1.1 2005/06/26 15:11:23 neysx Exp $ -->
+
+<guide link="/doc/pl/keychain-guide.xml" lang="pl">
+<title>Gentoo Linux Keychain - przewodnik</title>
+
+<author title="Autor">
+  <mail link="airuike@gmail.com">Eric Brown</mail>
+</author>
+
+<author title="Tłumacz">
+  Tomasz Jankowski
+</author>
+
+<abstract>
+Ten dokument opisuje jak używać współdzielonych kluczy ssh z wykorzystaniem 
+programu keychain; zawiera również podstawową wiedzę na temat kryptografii.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<license/>
+
+<version>1.1</version>
+<date>2004-12-02</date>
+
+<chapter>
+<title>Podstawy</title>
+<section>
+<title>Przedstawienie problemu</title>
+<body>
+
+<p>
+Więc wszystkie twoje maszyny działają pod kontrolą Gentoo, a każda z nich
+ma uruchomionego demona ssh. Jednak trochę kłopotliwe wydaje się
+bieganie między każdą z nich i podawanie hasła nieprawda? Możliwe, że masz jakiś
+skrypt albo, że ustawiłeś zadanie na cron'ie, które ładnie łączy się przez ssh.
+Jest też inne rozwiązanie tego problemu, polegające na na uwierzytelnianiu 
+za pomocą kluczy publicznych.
+</p>
+
+</body>
+</section>
+<section>
+<title>Jak działa uwierzytelnianie za pomocą kluczy publicznych ?</title>
+<body>
+
+<p>
+Załóżmy, że mamy klienta próbującego połączyć się z serwerem. Klient generuje
+parę kluczy i wysyła jeden z nich (klucz publiczny) serwerowi. Następnie serwer
+odsyła wezwanie zaszyfrowane za pomocą owego klucza publicznego klientowi, który
+próbuje sie połączyć. Jak pewnie się domyślasz, jedynie posiadać prywatnego 
+klucza (klient) jest wstanie odszyfrować wezwanie, poprawna odpowiedź prowadzi do
+udanego uwierzytelnienia.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>W jaki sposób używać uwierzytelniania za pomocą klucza publicznego?</title>
+<section>
+<title>Generowanie pary kluczy</title>
+<body>
+
+<p>
+Pierwszym krokiem jest wygenerowanie pary kluczy, wykorzystamy do tego
+komendę <c>ssh-keygen</c>, jak te poniżej:
+</p>
+
+<pre caption="Generowanie pary kluczy">
+$ <i>ssh-keygen -t dsa</i>
+<comment>(Po prostu zaakceptuj domyślne wartości i podaj długie hasło)</comment>
+</pre>
+
+<warn>
+Pamiętaj by wybierać złożone hasła, szczególnie, gdy logujesz się jako root!
+</warn>
+
+<p>
+Nowo utworzony klucz prywatny powinien być w pliku <path>~/.ssh/id_dsa</path>, a publiczny
+w <path>~/.ssh/id_dsa.pub</path>. Teraz jesteśmy gotowi skopiować klucz publiczny
+na serwer.
+</p>
+
+</body>
+</section>
+<section>
+<title>Operacje na serwerze</title>
+<body>
+
+<p>
+Skopiujemy nas plik <path>~/.ssh/id_dsa.pub</path> na serwer na, którym działa
+sshd. Ponadto dodamy go do pliku <path>~/.ssh/authorized_keys</path>
+zawierającego użytkowników łączących się z serwerem. Oto mały przykład jak to
+zrobić (musisz mieć dostęp do tego serwera poprzez ssh!).
+</p>
+
+<pre caption="Koipiowanie klucza piblicznego na serwer">
+$ <i>scp ~/.ssh/id_dsa.pub uzytkownik_serwera@serwer:~/moj_komputer.pub</i>
+$ <i>ssh uzytkownik_serwera@serwer "cat ~/moj_komputer.pub >> ~/.ssh/authorized_keys"</i>
+$ <i>ssh uzytkownik_serwera@serwer "cat ~/.ssh/authorized_keys"</i>
+</pre>
+
+<p>
+Wynik ostatniego polecenia powinien być zawarty w pliku 
+<path>~/.ssh/authorized_keys</path>. Upewnij się, czy wpis jest prawidłowy.
+</p>
+
+</body>
+</section>
+<section>
+<title>Testowanie ustawień</title>
+<body>
+
+<p>
+Teoretycznie, jeżeli wszystko poszło jak należy, a serwerowy demon ssh pozwoli
+na to, łączenie z serwerem powinno odbywać się już bez podawania hasła. Nadal
+będziemy musieli odszyfrowywać klucz prywatny z hasłem, ale nie powinno się to
+mieszać z hasłem użytkownika na serwerze.
+</p>
+
+<pre caption="Sprawdzanie kluczy">
+$ <i>ssh uzytkownik_serwera@serwer</i>
+</pre>
+
+<p>
+Zostaniesz zapytany o hasło do swojego id_dsa i zalogowany (o ile zostanie podane
+poprawne hasło na serwer) jako uzytkownik_serwera@serwer. Jeżeli tak się nie stanie,
+zaloguj sie na konto użytkownik_serwera@serwer i jeszcze raz sprawdź poprawność danych w
+<path>~/.ssh/authorized_keys</path> (upewnij się, że każdy wpis znajduje się w osobnej
+linii). Warto też zerknąć, czy demon ssh może dokonywać uwierzytelniania za
+pomocą kluczy publicznych.
+</p>
+
+<p>
+Pewnie teraz myślisz: "Bez sensu, po prostu zastąpiłem jedno hasło drugim?!". 
+Spokojnie, dalsza część pokazuje kolejny sposób na zaoszczędzenie cennego czasu.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Upraszczanie autoryzacji za pomocą kluczy publicznych</title>
+<section>
+<title>Typowe zarządzanie kluczami za pomocą ssh-agent</title>
+<body>
+
+<p>
+Jeżeli myślisz, że fajnie by było raz odszyfrować klucz(e) i uzyskać wolny dostęp
+do ssh, bez żadnych haseł. Masz szczęście, bo właśnie do tego służy program
+<c>ssh-agent</c>.
+</p>
+
+<p>
+Program <c>ssh-agent</c> zwykle uruchamia się wraz z twoją sesią X'ów
+albo podczas wywołania skryptu powłoki, takiego jak  <path>~/.bash_profile</path>.
+<c>ssh-agent</c> tworzy gniazdo unix'owe oraz rejestruje kilka zmiennych środowiskowych,
+dlatego wszystkie późniejsze aplikacje mogą korzystać z tej usługi łącząc się z
+gniazdem. Dlatego sensowne jest jego uruchamianie jako nadrzędnego procesu dla
+sesji X'ów jeżeli chcesz pominąć deszyfrowanie kluczy publicznych podczas uruchamiania
+programów z graficznym GUI.
+</p>
+
+<pre caption="Przygotowywanie programu ssh-agent">
+$ <i>ssh-agent</i>
+</pre>
+
+<note>
+To sprawi, że ssh-agent będzie trzymał odszyfrowane klucze, aż do zakończenia działania
+ssh-agent'a. Jeżeli zajdzie taka potrzeba można ustawić długość życia kluczy za pomocą opcji -t
+opisanej w <c>man ssh-agent</c>.
+</note>
+
+<p>
+Podczas uruchamiania ssh-agent'a powinieneś zostać powiadomiony o jego PID'zie.
+Ponadto ssh-agent ustawia takie zmienne środowiskowe jak <c>SSH_AUTH_SOCK</c> i
+<c>SSH_AGENT_PID</c>. Jeżeli plik <path>~/.ssh/id_dsa</path> jeszcze nie istnieje,
+zostanie on utworzony podczas pierwszego uruchomienia; pojawi się prośba o hasło.
+Jeśli masz inne klucze prywatne możesz je dodać do działającego ssh-agent'a
+za pomocą polecenia <c>ssh-add</c>, tak, jak pokazano poniżej:
+</p>
+
+<pre caption="Dodawanie dodatkowych kluczy do ssh-agent">
+$ <i>ssh-add jakis_klucz</i>
+</pre>
+
+<p>
+Czary-mary. Od kiedy twoje prywatne klucze są odszyfrowane powinieneś być wstanie
+zalogować się do serwera bez podawania hasła. 
+</p>
+
+<pre caption="SSH bez haseł">
+$ <i>ssh serwer</i>
+</pre>
+
+<p>
+Było by miło wiedzieć w jaki sposób wyłączyć ssh-agenta'a gdyby była taka potrzeba,
+nieprawda?
+</p>
+
+<pre caption="Zatrzymywanie ssh-agent'a">
+$ <i>ssh-agent -k</i>
+</pre>
+
+<note>
+Jeżeli były jakieś kłopoty z odpaleniem ssh-agent'a, możliwe, że będzie on ciągle działać.
+Można go zabić ta samo, jak inne procesy: <c>killall ssh-agent</c>.
+</note>
+
+<p>
+Można jeszcze bardziej uprościć korzystanie z ssh-agent'a, przejdź do następnej
+sekcji by dowiedzieć się więcej na temat programu keychain. Przechodząc do następnego rozdziału
+upewnij się, że twój ssh-agent jest na pewno wyłączony, tak jak w przykładzie powyżej.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ostatni poziom uproszczenia obsługi ssh-agent'a</title>
+<body>
+
+<p>
+Keychain pozwola wielokrotnie używać ssh-agent'a pomiędzy logowaniami.
+Opcjonalnie może prosić o hasło podczas każdego logowania użytkownika.
+Zanim jednak przejdziemy dalej, zainstalujemy keychain'a
+</p>
+
+<pre caption="Emergowanie keychain'a">
+# <i>emerge keychain</i>
+</pre>
+
+<p>
+Możemy już uruchomić keychain'a, zakładając, że wszystko poszło pomyślnie.
+Poniższą linijkę dodaj do swojego <path>~/.bash_profile</path> by go
+uruchomić:
+</p>
+
+<pre caption="Właczanie keychain'a w bash_profile">
+keychain ~/.ssh/id_dsa
+. ~/.keychain/$HOSTNAME-sh
+</pre>
+
+<note>
+Jeśli chcesz możesz dodać więcej prywatnych kluczy do trybu linii poleceń. 
+Ponadto jeżeli chcesz za każdym razem być pytany o hasło, dodaj opcję --clear. 
+</note>
+
+<note>
+W przypadku, gdy nie korzystasz z bash'a przejrzyj sekcję <b>EXAMPLES</b> w
+manualu keychain'a (<c>man keychain</c>) by dowiedzieć jak go używać w innych
+powłokach. Założeniem jest wydawanie tych poleceń za każdym razem gdy używasz
+powłoki.
+</note>
+
+<p>
+Sprawdźmy jak to działa. Na początku upewnij się, że ssh-agent opisany w
+poprzedniej sekcji na pewno jest wyłączony, potem zaloguj się do nowej powłoki
+lub po prostu odpal nowy terminal. Powinieneś zostać poproszony o podanie hasła
+do każdego klucza określonego w linii komend. Powłoki uruchomione po tej
+będą używać ssh-agent'a, pozwalając ci nawiązywać połączenia bez podawania haseł
+ssh.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Podsumowujące uwagi</title>
+<section>
+<title>Wątek bezpieczeństwa</title>
+<body>
+
+<p>
+Oczywiście użycie ssh-agenta niesie ze sobą pewne niebezpieczeństwo. Przypadkowy
+użytkownik może zalogować się do wszystkich twoich serwerów za pomocą twojej
+powłoki, podczas gdy ty np. jesteś w łazience. Niesie to również pewne niebezpieczeństwo
+dla serwerów z którymi się łączysz, więc powinieneś zachować jakąś politykę
+bezpieczeństwa wokół swojej maszyny. Jeżeli jednak zdecydujesz się go użyć pamiętaj,
+by zapewnić odpowiedni poziom bezpieczeństwa swoim sesją.
+</p>
+
+</body>
+</section>
+<section>
+<title>Rozwiązywanie problemów</title>
+<body>
+
+<p>
+Większość z tego co opisuje ten dokument powinna działać całkiem nieźle,
+jeżeli jednak będziesz miał jakieś kłopoty powinieneś poznać kilka przydatnych
+informacji.
+</p>
+
+<ul>
+  <li>
+    Jeśli nie możesz nawiązać połączenia bez ssh-agent'a, spróbuj połączyć sie
+    przez ssh z opcją -vvv by znaleźć problem. Niektóre serwery są tak skonfigurowane,
+    że nie mogą używać kluczy publicznych, a inne zawsze muszą pytać o lokalne hasło
+    dostępu! W tym wypadku możesz użyć opcji ssh wraz z opcją -o lub zmienić
+    ustawienia serwerowego demona ssh.
+  </li>
+  <li>
+    Kłopoty związane z ssh-agent'em i keychain'em moga wynikać z tego, że
+    używasz powłoki, która nie rozumie poleceń jakie one wywołują. Więcej
+    informacji na ten temat współpracy z innymi powłokami szukaj w manualach
+    ssh-agent'a i keychain'a.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
