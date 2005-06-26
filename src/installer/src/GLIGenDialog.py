@@ -117,12 +117,12 @@ Enter the desired filename and path for the install log (the default is recommen
 		dhcp_options = ""
 		
 		#Change the Yes/No buttons to new labels for this question.
-		d.add_persistent_args(["--yes-label", _(u"DHCP")])
-		d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
+		self._d.add_persistent_args(["--yes-label", _(u"DHCP")])
+		self._d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
 		string2 = _(u"To setup your network interface, you can either use DHCP if enabled, or manually enter your network information.\n  DHCP (Dynamic Host Configuration Protocol) makes it possible to automatically receive networking information (IP address, netmask, broadcast address, gateway, nameservers etc.). This only works if you have a DHCP server in your network (or if your provider provides a DHCP service).  If you do not, you must enter the information manually.  Please select your networking configuration method:")
-		if d.yesno(string2) == self._DLG_YES: #DHCP
+		if self._d.yesno(string2, height=15, width=60) == self._DLG_YES: #DHCP
 			network_type = 'dhcp'
-			code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."))
+			code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
 		else:
 			network_type = 'static'
 			code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0'),('Enter your default gateway:',15), ('Enter a DNS server:',15,'128.118.25.3')))
@@ -146,6 +146,9 @@ Enter the desired filename and path for the install log (the default is recommen
 			self._d.msgbox("ERROR! Could not set networking information!")
 
 	def set_enable_ssh(self):
+		#Change the Yes/No buttons back.
+		self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+		self._d.add_persistent_args(["--no-label", _(u"No")])
 		if self.advanced_mode:
 			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LIVECD root password!"), width=60) == self._DLG_YES:
 				self._client_profile.set_enable_ssh(None, True, None)
@@ -203,6 +206,9 @@ Enter the new LIVECD root password:	""")
 			if code != self._DLG_OK: 
 				return
 		if GLIUtility.is_file(filename):
+			#Change the Yes/No buttons back.
+			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+			self._d.add_persistent_args(["--no-label", _(u"No")])
 			if not self._d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == self._DLG_YES:
 				return
 		configuration = open(filename ,"w")
@@ -735,7 +741,7 @@ global USE flags and one for local flags specific to each program.
 
 	def _set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
-		arch_loaders = { 'x86': [("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")],} #FIXME ADD OTHER ARCHS
+		arch_loaders = { 'x86': [("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")], 'amd64': [("grub","GRand Unified Bootloader, newer, RECOMMENDED")]} #FIXME ADD OTHER ARCHS
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", "Do not install a bootloader.  (System may be unbootable!)"))
 		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
@@ -762,7 +768,7 @@ global USE flags and one for local flags specific to each program.
 				self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
 	
 	def _set_networking(self):
-	# This section will be for setting up network interfaces, defining DNS servers, default routes/gateways, etc.
+	# This section will be for setting up network interfaces
 		interfaces = self._install_profile.get_network_interfaces()
 		CC_iface = self._client_profile.get_network_interface()
 		if CC_iface and (CC_iface not in interfaces):
@@ -780,125 +786,195 @@ global USE flags and one for local flags specific to each program.
 					pass
 			
 		while 1:
-			menulist = ["Edit Interfaces", "DNS Servers", "Default Gateway", "Hostname", "Domain Name", "HTTP Proxy", "FTP Proxy", "RSYNC Proxy", "NIS Domain Name"]
-			string = _(u"Here you will enter all of your networking information for the new system.  You can either choose a network interface to edit, add a network interface, delete an interface, or edit the miscellaneous options such as hostname and proxy servers.")
-			if self.local_install:
-				device_list = GLIUtility.get_eth_devices()
-			else:
-				device_list = []
-			#code, menuitem = self._d.menu(
-			
-			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
-			if code != self._DLG_OK: 
-				break
-			menuitem = menulist[int(menuitem)-1]
-			if menuitem == "Edit Interfaces":
-				while 1:
-					interfaces = self._install_profile.get_network_interfaces()
-					menu_list = interfaces.keys()
-					menu_list.sort()
-					menu_list.append("Add new interface")
-					code, menuitem = self._d.menu("Select an interface", choices=self._dmenu_list_to_choices(menu_list), cancel="Back")
-					if code != self._DLG_OK: 
-						break
-					menuitem = menu_list[int(menuitem)-1]
-					newnic = None
-					if menuitem == "Add new interface":
-						code, newnic = self._d.inputbox("Enter name for new interface (eth0, ppp0, etc.)")
-						if code != self._DLG_OK: 
-							continue
-						if newnic in interfaces:
-							self._d.msgbox("An interface with the name is already defined.")
-							continue
-						interfaces[newnic] = ("", "", "")
-						menuitem = newnic
-					menuitem2 = ""
-					menulist = ["Edit", "Rename", "Delete"]
-					if newnic == None:
-						menuitem2 = self._d.menu("What do you want to do with interface " + menuitem + "?", choices=self._dmenu_list_to_choices(menulist), cancel="Back")
-						if code != self._DLG_OK: 
-							continue
-					else:
-						menuitem2 = "1"
-					menuitem2 = menulist[int(menuitem2)-1]
-					if menuitem2 == "Edit":
-						tmpnic = [interfaces[menuitem][0], interfaces[menuitem][1], interfaces[menuitem][2]]
-						code, ip = self._d.inputbox("Enter an IP address for " + menuitem + " or 'dhcp' for DHCP", init=tmpnic[0])
-						if code != self._DLG_OK: 
-							continue
-						tmpnic[0] = ip
-						if ip == "dhcp" or ip == "DHCP":
-							tmpnic[1] = ""
-							tmpnic[2] = ""
-						else:
-							code, netmask = self._d.inputbox("Enter the netmask", init=tmpnic[2])
-							if code == self._DLG_OK: tmpnic[2] = netmask
-							code, broadcast = self._d.inputbox("Enter a broadcast", init=tmpnic[1])
-							if code == self._DLG_OK: tmpnic[1] = broadcast
-						interfaces[menuitem] = (tmpnic[0], tmpnic[1], tmpnic[2])
-					elif menuitem2 == "Rename":
-						self._d.msgbox("Not implimented yet")
-					elif menuitem2 == "Delete":
-						if self._d.yesno("Are you sure you want to remove the interface " + menuitem + "?") == self._DLG_YES:
-							del interfaces[menuitem]
+			string1 = _(u"Here you will enter all of your network interface information for the new system.  You can either choose a network interface to edit, add a network interface, delete an interface, or edit the miscellaneous options such as hostname and proxy servers.")
+			string2 = _(u"To setup your network interface, you can either use DHCP if enabled, or manually enter your network information.\n  DHCP (Dynamic Host Configuration Protocol) makes it possible to automatically receive networking information (IP address, netmask, broadcast address, gateway, nameservers etc.). This only works if you have a DHCP server in your network (or if your provider provides a DHCP service).  If you do not, you must enter the information manually.  Please select your networking configuration method:")
+			choice_list = []
+			for iface in interfaces:
+				if interfaces[iface][0] == 'dhcp':
+					choice_list.append((iface, "Settings: DHCP. Options: "+ interfaces[iface][1]))
+				else:
+					choice_list.append((iface, "Settings: IP: "+interfaces[iface][0]+" Broadcast: "+interfaces[iface][1]+" Netmask: "+interfaces[iface][2]))
+			choice_list.append(("Add","Add a new network interface"))
+			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel="Save and Continue", height=18, width=67)
+			if code != self._DLG_OK:
+				try:
 					self._install_profile.set_network_interfaces(interfaces)
-			elif menuitem == "DNS Servers":
-				code, dnsservers = self._d.inputbox("Enter a space-separated list of DNS servers")
-				if code == self._DLG_OK: 
-					install_profile.set_dns_servers(None, dnsservers, None)
-				
-			elif menuitem == "Default Gateway":
-				while 1:
-					interfaces = self._install_profile.get_network_interfaces()
-					if not interfaces: 
-						break
-					menu_list = interfaces.keys()
-					menu_list.sort()
-					code, menuitem = self._d.menu("Which interface is the default gateway?", choices=self._dmenu_list_to_choices(menu_list), cancel="Back")
-					if code != self._DLG_OK: 
-						break
-					menuitem = menu_list[int(menuitem)-1]
-					code, ip = self._d.inputbox("Enter an IP address for " + menuitem , init=interfaces[menuitem][0])
+				except:
+					self_d.msgbox(_(u"ERROR! Could not set the network interfaces!"))
+				break  #This should hopefully move the user down to part two of set_networking
+			if iface_choice == "Add":
+				if self.local_install:
+					device_list = GLIUtility.get_eth_devices()
+					newchoice_list = []
+					for device in device_list:
+						if device not in interfaces:
+							newchoice_list.append((device, GLIUtility.get_interface_realname(device)))
+					newchoice_list.append(("Other","Type your own."))
+					code, newnic = self._d.menu(_("Choose an interface from the list or Other to type your own if it was not detected."), choices=newchoice_list, width=75)
+				else:
+					newnic == "Other"
+				if newnic == "Other":
+					code, newnic = self._d.inputbox("Enter name for new interface (eth0, ppp0, etc.)")
 					if code != self._DLG_OK: 
 						continue
-					self._install_profile.set_default_gateway(None, ip,{'interface': menuitem})
-					break		
-			elif menuitem == "Hostname":
-				code, hostname = self._d.inputbox("Enter the desired hostname")
-				if type(hostname) != str:
-					self._d.msgbox("Incorrect hostname!  It must be a string.  Not saved.")
-				if code == self._DLG_OK: 
+					if newnic in interfaces:
+						self._d.msgbox("An interface with the name is already defined.")
+						continue
+				#create the interface in the data structure.
+				#interfaces[newnic] = ("", "", "")
+				#Change the Yes/No buttons to new labels for this question.
+				self._d.add_persistent_args(["--yes-label", _(u"DHCP")])
+				self._d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
+				if self._d.yesno(string2, height=15, width=60) == self._DLG_YES: #DHCP
+					dhcp_options = ""
+					code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
+					interfaces[newnic] = ('dhcp', dhcp_options, None)
+				else:
+					network_type = 'static'
+					code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0')))
+					(ip_address, broadcast, netmask) = data.split()
+					if code != self._DLG_OK: 
+						continue
+					#Set the info now that it's all gathered.
+					interfaces[newnic] = (ip_address, broadcast, netmask)
+			else:  #they have chosen an interface, present them with edit/delete
+				#Change the Yes/No buttons to new labels for this question.
+				self._d.add_persistent_args(["--yes-label", _(u"Edit")])
+				self._d.add_persistent_args(["--no-label", _(u"Delete")])
+				if self._d.yesno(_(u"For interface %s, you can either edit the interface information (IP Address, Broadcast, Netmask) or Delete the interface.") % iface_choice) == self._DLG_YES:
+					#Edit
+					#Change the Yes/No buttons to new labels for this question.
+					self._d.add_persistent_args(["--yes-label", _(u"DHCP")])
+					self._d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
+					if self._d.yesno(string2, height=15, width=60) == self._DLG_YES: #DHCP
+						dhcp_options = ""
+						code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
+						interfaces[iface_choice] = ('dhcp', dhcp_options, None)
+					else:
+						network_type = 'static'
+						code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15, interfaces[iface_choice[0]),('Enter your Broadcast address:', 15, interfaces[iface_choice][1]),('Enter your Netmask:',15,interfaces[iface_choice][2])))
+						(ip_address, broadcast, netmask) = data.split()
+						if code != self._DLG_OK: 
+							continue
+						#Set the info now that it's all gathered.
+						interfaces[iface_choice] = (ip_address, broadcast, netmask)
+				else:
+					#Delete
+					#Reset the Yes/No buttons
+					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+					self._d.add_persistent_args(["--no-label", _(u"No")])
+					if self._d.yesno("Are you sure you want to remove the interface " + iface_choice + "?") == self._DLG_YES:
+						del interfaces[iface_choice]
+			
+		#This section is for defining DNS servers, default routes/gateways, hostname, etc.
+		#First ask for the default gateway device and IP
+		interfaces = self._install_profile.get_network_interfaces()
+		choice_list = []
+		for iface in interfaces:
+			if interfaces[iface][0] == 'dhcp':
+				choice_list.append((iface, "Settings: DHCP. Options: "+ interfaces[iface][1],0))
+			else:
+				choice_list.append((iface, "Settings: IP: "+interfaces[iface][0]+" Broadcast: "+interfaces[iface][1]+" Netmask: "+interfaces[iface][2],0))
+		string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
+		code, gateway_iface = self._d.radiolist(string3, choices=choice_list, height=18, width=67)
+		if code == self._DLG_OK:  #They made a choice.  Ask the IP if not DHCP.
+			while interfaces[gateway_iface][0] != 'dhcp':
+				code, ip = self._d.inputbox("Enter an IP address for " + gateway_iface, init=interfaces[gateway_iface][0])
+				if code != self._DLG_OK:
+					break
+				if not GLIUtility.is_ip(ip):
+					self._d.msgbox(_(u"Invalid IP Entered!  Please try again."))
+					continue
+				try:
+					self._install_profile.set_default_gateway(None, ip,{'interface': gateway_iface})
+				except:
+					self._d.msgbox(_(u"ERROR! Coult not set the default gateway with IP %s for interface %s") % (ip, gateway_iface))
+				break
+		#Now ask for the other info in a large form.
+		error = True
+		while error:
+		error = False
+		code, data = self._d.form('Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!', (('Enter your Hostname:', 25, self._install_profile.get_hostname()),('Enter your Domain Name:', 25, self._install_profile.get_domainname()),('Enter your NIS Domain Name:',25,self._install_profile.get_nisdomainname()),('Enter a primary DNS server:',15),('Enter a backup DNS server:',15), ('Enter a HTTP Proxy IP:', 15,self._install_profile.get_http_proxy()),('Enter a FTP Proxy IP:', 15, self._install_profile.get_ftp_proxy()), ('Enter a RSYNC Proxy:',15,self._install_profile.get_rsync_proxy())))
+		if code != self._DLG_OK:
+			return
+		(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data.split()
+		#Check the data before entering it.				
+		if hostname:
+			if type(hostname) != str:
+				self._d.msgbox(_(u"Incorrect hostname!  It must be a string.  Not saved."))
+				error = True	
+			else:
+				try:			
 					self._install_profile.set_hostname(None, hostname, None)
-			elif menuitem == "Domain Name":
-				code, domain = self._d.inputbox("Enter the desired domain name")
-				if type(domain) != str:
-					self._d.msgbox("Incorrect domain name!  It must be a string.  Not saved.")
-				if code == self._DLG_OK: 
-					self._install_profile.set_domainname(None, domain, None)
-			elif menuitem == "HTTP Proxy":
-				code, http_proxy = self._d.inputbox("Enter a HTTP Proxy if you have one.")
-				if not GLIUtility.is_uri(http_proxy):
-					self._d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
-				if code == self._DLG_OK: 
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the hostname:")+hostname)
+					error = True
+		if domainname:
+			if type(domainname) != str:
+				self._d.msgbox(_(u"Incorrect domainname!  It must be a string.  Not saved."))
+				error = True	
+			else:
+				try:			
+					self._install_profile.set_domainname(None, domainname, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the domainname:")+domainname)
+					error = True
+		if nisdomainname:
+			if type(nisdomainname) != str:
+				self._d.msgbox(_(u"Incorrect nisdomainname!  It must be a string.  Not saved."))
+				error = True	
+			else:
+				try:			
+					self._install_profile.set_nisdomainname(None, nisdomainname, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the nisdomainname:")+nisdomainname)
+					error = True					
+		if primary_dns:
+			if not GLIUtility.is_ip(primary_dns):
+				self._d.msgbox(_(u"Incorrect Primary DNS Server! Not saved."))
+				error = True
+			else:
+				if backup_dns:
+					if not GLIUtility.is_ip(backup_dns):
+						self._d.msgbox(_(u"Incorrect Backup DNS Server! Not saved."))
+						error = True
+					else:
+						primary_dns = primary_dns + " " + backup_dns
+				try:			
+					self._install_profile.set_dns_servers(None, primary_dns, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the DNS Servers:")+primary_dns)
+					error = True
+		if http_proxy:
+			if not GLIUtility.is_uri(http_proxy):
+				self._d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
+				error = True
+			else:
+				try:
 					self._install_profile.set_http_proxy(None, http_proxy, None)
-			elif menuitem == "FTP Proxy":
-				code, ftp_proxy = self._d.inputbox("Enter a FTP Proxy if you have one.")
-				if not GLIUtility.is_uri(ftp_proxy):
-					self._d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
-				if code == self._DLG_OK: 
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the HTTP Proxy:")+http_proxy)
+					error = True					
+		if ftp_proxy:
+			if not GLIUtility.is_uri(ftp_proxy):
+				self._d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
+				error = True
+			else:
+				try:
 					self._install_profile.set_ftp_proxy(None, ftp_proxy, None)
-			elif menuitem == "RSYNC Proxy":
-				code, rsync_proxy = self._d.inputbox("Enter a RSYNC Proxy if you have one.")
-				if not GLIUtility.is_uri(rsync_proxy):
-					self._d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
-				if code == self._DLG_OK: 
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the FTP Proxy:")+ftp_proxy)
+					error = True
+		if rsync_proxy:
+			if not GLIUtility.is_uri(rsync_proxy):
+				self._d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
+				error = True
+			else:
+				try:
 					self._install_profile.set_rsync_proxy(None, rsync_proxy, None)
-			elif menuitem == "NIS Domain Name":
-				code, nisdomain = self._d.inputbox("Enter the desired NIS domain name (if you don't know what this is, don't enter one.)")
-				if type(nisdomain) != str:
-					self._d.msgbox("Incorrect NIS domain name!  It must be a string.  Not saved.")
-				if code == self._DLG_OK: 
-					self._install_profile.set_nisdomainname(None, nisdomain, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the RSYNC Proxy:")+rsync_proxy)
+					error = True
 
 	def _set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", "Paul Vixie's cron daemon, fully featured, RECOMMENDED."), ("dcron","A cute little cron from Matt Dillon."), ("fcron", "A command scheduler with extended capabilities over cron and anacron"), ("None", "Don't use a cron daemon. (NOT Recommended!)"))
@@ -918,12 +994,43 @@ global USE flags and one for local flags specific to each program.
 
 	def _set_extra_packages(self):
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
-		#file indexing (slocate)
-		#logrotate
-		code, install_packages = self._d.inputbox("Enter a space-separated list of extra packages to install on the system")
-		if code == self._DLG_OK: 
-			self._install_profile.set_install_packages(None, install_packages, None)
-	
+		install_packages = ""
+		while 1:
+			highlevel_menu = [("Desktop", "Popular Desktop Applications"), ("Servers", "Applications often found on servers."), ("X11", "Window managers and X selection."), ("Misc", "Miscellaneous Applications you may want."), ("Recommended", "Applications recommended by the Gentoo Linux Installer Team."), ("Manual", "Type your own space-separated list of packages to install.")]
+			string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
+			code, submenu = self._d.menu(string1+ "\nYour current package list is: "+install_packages, choices=highlevel_menu, cancel="Save and Continue", width=70, height=23)
+			if code != self._DLG_OK:  #Save and move on.
+				try:
+					if install_packages[-1] == " ":
+						install_packages = install_packages[:-1]
+					self._install_profile.set_install_packages(None, install_packages, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the install packages! List of packages:")+install_packages)
+				return
+			#Popular Desktop Applications
+			choices_list = []
+			if submenu == "Desktop":
+				choices_list = [("gaim","GTK Instant Messenger client",0), ("gftp","Gnome based FTP Client",0), ("evolution","A GNOME groupware application, a Microsoft Outlook workalike",0), ("mozilla-firefox","The Mozilla Firefox Web Browser",0), ("mplayer","Media Player for Linux",0), ("openoffice","OpenOffice.org, a full office productivity suite.",0), ("openoffice-bin","Same as OpenOffice but a binary package (no compiling!)",0), ("realplayer","Real Media Player",0), ("xchat","Graphical IRC Client",0), ("xmms", "X MultiMedia System",0)]
+			#Applications often found on servers.
+			elif submenu == "Servers":
+				choices_list = [("apache","Apache Web Server",0), ("iptables","Linux kernel (2.4+) firewall, NAT and packet mangling tools",0), ("proftpd","ProFTP Server",0), ("samba","SAMBA client/server programs for UNIX",0), ("traceroute","Utility to trace the route of IP packets",0)]
+			#Window managers and X selection.
+			elif submenu == "X11":
+				choices_list = [("xorg-x11","An X11 implementation maintained by the X.Org Foundation.",0), ("gnome","The Gnome Desktop Environment",0), ("kde","The K Desktop Environment",0), ("blackbox","A small, fast, full-featured window manager for X",0), ("enlightenment","Enlightenment Window Manager",0), ("fluxbox","Fluxbox is an X11 window manager featuring tabs and an iconbar",0), ("xfce4","XFCE Desktop Environment",0)]
+			#Miscellaneous Applications you may want.
+			elif submenu == "Misc":
+				choices_list = [("gkrellm","Single process stack of various system monitors",0), ("logrotate","Rotates, compresses, and mails system logs",0), ("slocate","Secure way to index and quickly search for files on your system",0), ("ufed","Gentoo Linux USE flags editor",0)]
+			#Recommended by the Gentoo Linux Installer Team
+			elif submenu == "Recommended":
+				choices_list = [("anjuta","A versatile IDE for GNOME",0), ("chkrootkit","a tool to locally check for signs of a rootkit",0), ("crack-attack","Addictive OpenGL-based block game",0), ("enemy-territory","Return to Castle Wolfenstein: Enemy Territory",0), ("netcat","the network swiss army knife",0), ("nmap","A utility for network exploration or security auditing",0), ("screen","full-screen window manager that multiplexes between several processes",0)]
+			elif submenu == "Manual":
+				code, install_packages = self._d.inputbox("Enter a space-separated list of extra packages to install on the system", init=install_packages, width=70) 
+				continue
+			code, choices = self._d.checklist("Choose from the listed packages", choices=choices_list, height=19, list_height=10, width=77)
+			if code != self._DLG_OK: 
+				continue
+			for package in choices:
+				install_packages += package + " "	
 	def _set_rc_conf(self):
 	# This section is for editing /etc/rc.conf
 		rc_conf = self._install_profile.get_rc_conf()
@@ -1058,7 +1165,7 @@ global USE flags and one for local flags specific to each program.
 						break
 
 	def _set_services(self):
-		choice_list = [("alsasound", "ALSA Sound Daemon"), ("apache", "Common web server (version 1.x)"), ("apache2", "Common web server (version 2.x)"), ("distccd", "Distributed Compiling System"), ("esound", "ESD Sound Daemon"), ("hdparm", "Hard Drive Tweaking Utility"), ("local", "Run scripts found in /etc/conf.d/local.start"), ("portmap", "Port Mapping Service"), ("proftpd", "Common FTP server"), ("sshd", "SSH Daemon (allows remote logins)"), ("Other","Manually specify your services in a comma-separated list.")]
+		choice_list = [("alsasound", "ALSA Sound Daemon",0), ("apache", "Common web server (version 1.x)",0), ("apache2", "Common web server (version 2.x)",0), ("distccd", "Distributed Compiling System",0), ("esound", "ESD Sound Daemon",0), ("hdparm", "Hard Drive Tweaking Utility",0), ("local", "Run scripts found in /etc/conf.d/local.start",0), ("portmap", "Port Mapping Service",0), ("proftpd", "Common FTP server",0), ("sshd", "SSH Daemon (allows remote logins)",0), ("Other","Manually specify your services in a comma-separated list.",0)]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
 		code, services_list = self._d.checklist(string, choices=choice_list, height=19, list_height=10, width=68)
 		if code != self._DLG_OK:

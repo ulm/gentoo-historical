@@ -105,7 +105,7 @@ logfile and new root mount point are to be located, etc.
 We call this the ClientConfiguration profile.
 Do you have a previously generated XML file for the ClientConfiguration?
 """)
-			if d.yesno(string, width=70, height=15) == DLG_YES:
+			if d.yesno(string, width=70, height=15, defaultno=1) == DLG_YES:
 				code, client_config_xml_file = d.inputbox(_(u"Enter the filename of the XML file"))
 				if code != DLG_OK: 
 					break
