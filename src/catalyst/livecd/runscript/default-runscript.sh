@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.4 2005/06/09 15:40:19 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.5 2005/06/27 21:08:32 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -27,6 +27,10 @@ case ${clst_livecd_cdfstype} in
 esac
 
 source ${clst_livecd_archscript}
+# Here is where we poke in our identifier
+touch ${clst_cdroot_path}/livecd
+# Here we copy our nifty README.txt
+cp ${clst_sharedir}/livecd/files/README.txt ${clst_cdroot_path}
 
 create_normal_loop() {
 

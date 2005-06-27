@@ -1,4 +1,3 @@
-##GREETING
 
 This file lists the possible command line options that can be used to tweak
 the boot process of this CD.  This lists the Gentoo-specific options, along
