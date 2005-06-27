@@ -423,7 +423,19 @@
   <!-- Untranslated file -->
   <xsl:if test="$parentfile and $parentfile = $fileurl">&#160;¹</xsl:if>
   </ti>
-    <xsl:variable name="version"><xsl:value-of select="translate(exslt:node-set($dfile)//version[1],'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/></xsl:variable>
+    <xsl:variable name="v"><xsl:value-of select="exslt:node-set($dfile)//version[1]"/></xsl:variable>
+    <xsl:variable name="version">
+      <xsl:choose>
+        <xsl:when test="starts-with($v, '$Id:')">
+          <!-- Extract version from $Id: metadoc.xsl,v 1.22 2005/06/27 15:10:30 neysx Exp $ tag -->
+          <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="translate($v,'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    
     <ti><xsl:value-of select="$version"/></ti>
     <!-- Original version column:
          display only when current metadoc has a master metadoc (parent attribute)
@@ -433,7 +445,19 @@
         <xsl:choose>
           <xsl:when test="$parentfile and $parentfile != $fileurl">
             <!-- 2 different filenames, it is a translation -->
-            <xsl:variable name="parentversion"><xsl:value-of select="document($parentfile)//version[1]"/></xsl:variable>
+            <xsl:variable name="pv"><xsl:value-of select="document($parentfile)//version[1]"/></xsl:variable>
+            <xsl:variable name="parentversion">
+              <xsl:choose>
+                <xsl:when test="starts-with($pv, '$Id:')">
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.22 2005/06/27 15:10:30 neysx Exp $ tag -->
+                  <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="translate($pv,'$-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,', '')"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:variable>
+
             <xsl:choose>
               <xsl:when test="$parentversion=$version">
                 <xsl:value-of select="$parentversion"/>
