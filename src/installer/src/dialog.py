@@ -911,7 +911,7 @@ class Dialog:
 		else:						   # empty selection
 			return (code, [])
 	
-	def form(self, formtitle, fields, height=25, formheight=35, **kwargs):
+	def form(self, formtitle, fields, height=25, formheight=10, **kwargs):
 		"""Display a set of form fields.
 	
 		formtitle -- Title of the form
@@ -953,7 +953,7 @@ class Dialog:
 			if len(field) > 2:
 				formargs.append(field[2])
 			else:
-				formargs.append(' ')
+				formargs.append('')
 			
 			formargs.append(counter)
 			formargs.append(maxoptlen+5)

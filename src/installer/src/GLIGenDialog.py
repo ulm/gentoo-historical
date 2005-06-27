@@ -126,7 +126,7 @@ Enter the desired filename and path for the install log (the default is recommen
 		else:
 			network_type = 'static'
 			code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0'),('Enter your default gateway:',15), ('Enter a DNS server:',15,'128.118.25.3')))
-			(ip_address, broadcast, netmask, gateway, dnsservers) = data.split()
+			(ip_address, broadcast, netmask, gateway, dnsservers) = data[:-1].split('\n')
 			if code != self._DLG_OK: 
 				return
 		#Set the info now that it's all gathered.
@@ -538,7 +538,7 @@ The result is a finely tuned OS with no unnecessary components to
 slow you down.
 The installer divides USE flag selection into two screens, one for
 global USE flags and one for local flags specific to each program.
-		"""), width=73, height=16)
+Please be patient while the screens load. It may take awhile."""), width=73, height=16)
 					
 		#Second set the USE flags, this is a biggie.
 		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
@@ -832,7 +832,7 @@ global USE flags and one for local flags specific to each program.
 				else:
 					network_type = 'static'
 					code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0')))
-					(ip_address, broadcast, netmask) = data.split()
+					(ip_address, broadcast, netmask) = data[:-1].split('\n')
 					if code != self._DLG_OK: 
 						continue
 					#Set the info now that it's all gathered.
@@ -853,7 +853,7 @@ global USE flags and one for local flags specific to each program.
 					else:
 						network_type = 'static'
 						code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15, interfaces[iface_choice][0]),('Enter your Broadcast address:', 15, interfaces[iface_choice][1]),('Enter your Netmask:',15,interfaces[iface_choice][2])))
-						(ip_address, broadcast, netmask) = data.split()
+						(ip_address, broadcast, netmask) = data[:-1].split('\n')
 						if code != self._DLG_OK: 
 							continue
 						#Set the info now that it's all gathered.
@@ -897,7 +897,7 @@ global USE flags and one for local flags specific to each program.
 			code, data = self._d.form('Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!', (('Enter your Hostname:', 25, self._install_profile.get_hostname()),('Enter your Domain Name:', 25, self._install_profile.get_domainname()),('Enter your NIS Domain Name:',25,self._install_profile.get_nisdomainname()),('Enter a primary DNS server:',15),('Enter a backup DNS server:',15), ('Enter a HTTP Proxy IP:', 15,self._install_profile.get_http_proxy()),('Enter a FTP Proxy IP:', 15, self._install_profile.get_ftp_proxy()), ('Enter a RSYNC Proxy:',15,self._install_profile.get_rsync_proxy())))
 			if code != self._DLG_OK:
 				return
-			(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data.split()
+			(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data[:-1].split('\n')
 			#Check the data before entering it.				
 			if hostname:
 				if type(hostname) != str:
