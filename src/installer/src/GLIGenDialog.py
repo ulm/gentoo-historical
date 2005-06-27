@@ -98,13 +98,13 @@ Enter the desired filename and path for the install log (the default is recommen
 		choice_list = []
 		for device in device_list:
 			choice_list.append((device, GLIUtility.get_interface_realname(device)))
-		choice_list.append(("Other","Type your own."))
+		choice_list.append(("Other",_(u"Type your own.")))
 		string1 = _(u"In order to complete most installs, an active Internet connection is required.  Listed are the network devices already detected.  In this step you will need to setup one network connection for GLI to use to connect to the Internet.  If your desired device does not show up in the list, you can select Other and input the device name manually.")
 		code, interface = self._d.menu(string1, width=75, height=20, choices=choice_list)
 		if code != self._DLG_OK: 
 			return
 		if interface == "Other":
-			code, interface = self._d.inputbox("Enter the interface (NIC) you would like to use for installation (e.g. eth0):")
+			code, interface = self._d.inputbox(_(u"Enter the interface (NIC) you would like to use for installation (e.g. eth0):"))
 			if code != self._DLG_OK: 
 				return
 		
@@ -125,7 +125,7 @@ Enter the desired filename and path for the install log (the default is recommen
 			code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
 		else:
 			network_type = 'static'
-			code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0'),('Enter your default gateway:',15), ('Enter a DNS server:',15,'128.118.25.3')))
+			code, data = self._d.form(_(u'Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!'), ((_(u'Enter your IP address:'), 15),(_(u'Enter your Broadcast address:'), 15),(_(u'Enter your Netmask:'),15,'255.255.255.0'),(_(u'Enter your default gateway:'),15), (_(u'Enter a DNS server:'),15,'128.118.25.3')))
 			(ip_address, broadcast, netmask, gateway, dnsservers) = data[:-1].split('\n')
 			if code != self._DLG_OK: 
 				return
@@ -143,14 +143,14 @@ Enter the desired filename and path for the install log (the default is recommen
 				if dhcp_options:
 					self._client_profile.set_network_dhcp_options(None, dhcp_options, None)
 		except: 
-			self._d.msgbox("ERROR! Could not set networking information!")
+			self._d.msgbox(_(u"ERROR! Could not set networking information!"))
 
 	def set_enable_ssh(self):
 		#Change the Yes/No buttons back.
 		self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 		self._d.add_persistent_args(["--no-label", _(u"No")])
 		if self.advanced_mode:
-			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LIVECD root password!"), width=60) == self._DLG_YES:
+			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LiveCD root password!"), width=60) == self._DLG_YES:
 				self._client_profile.set_enable_ssh(None, True, None)
 			else:
 				self._client_profile.set_enable_ssh(None, False, None)
@@ -160,8 +160,7 @@ Enter the desired filename and path for the install log (the default is recommen
 		if self.advanced_mode:
 			match = False;
 			while not match:
-				string = _(u"""
-If you want to be able to login to your machine from another console during the installation,
+				string = _(u"""If you want to be able to login to your machine from another console during the installation,
 you will want to enter a new root password for the LIVECD.
 Note that this can be different from your new system's root password.
 Presss Enter twice to skip this step.
@@ -181,22 +180,22 @@ Enter the new LIVECD root password:	""")
 						try:
 							self._client_profile.set_root_passwd(None, GLIUtility.hash_password(passwd1), None)
 						except:
-							d.msgbox("ERROR! Could not set the root password on the LiveCD!")
+							d.msgbox(_(u"ERROR! Could not set the root password on the LiveCD!"))
 						self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
 						
 	def set_client_kernel_modules(self):
 		if self.advanced_mode:
 			status, output = GLIUtility.spawn("lsmod", return_output=True)
 			string1 = _(u"Here is a list of modules currently loaded on your machine.\n  Please look through and see if any modules are missing\n that you would like loaded.\n\n")
-			self._d.add_persistent_args(["--exit-label", "Continue"])
-			self._d.scrollbox(string1+output, height=20, width=70, title="Loaded Modules")
+			self._d.add_persistent_args(["--exit-label", _(u"Continue")])
+			self._d.scrollbox(string1+output, height=20, width=70, title=_(u"Loaded Modules"))
 			string2 = _(u"\nIf you have additional modules you would like loaded before the installation begins (ex. a network driver), enter them in a space-separated list.")
 			code, kernel_modules_list = self._d.inputbox(string2, init="", width=60, height=12)
 			if code == self._DLG_OK:
 				try:
 					self._client_profile.set_kernel_modules(None, kernel_modules_list, None)
 				except:
-					d.msgbox("ERROR! Could not set the list of kernel modules!")
+					d.msgbox(_(u"ERROR! Could not set the list of kernel modules!"))
 
 	def save_client_profile(self, xmlfilename="", askforfilename=True):
 		code = 0
@@ -209,7 +208,7 @@ Enter the new LIVECD root password:	""")
 			#Change the Yes/No buttons back.
 			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 			self._d.add_persistent_args(["--no-label", _(u"No")])
-			if not self._d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == self._DLG_YES:
+			if not self._d.yesno(_(u"The file %s already exists. Do you want to overwrite it?") % filename) == self._DLG_YES:
 				return
 		configuration = open(filename ,"w")
 		configuration.write(self._client_profile.serialize())

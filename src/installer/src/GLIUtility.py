@@ -558,4 +558,5 @@ def list_mirrors():
 	for mirror in mirrorlist:
 		mirror = mirror.strip()
 		mirrors.append(mirror.split("|"))
+	mirrors = mirrors[:-1]  #chop off an empty one at the end.
 	return mirrors

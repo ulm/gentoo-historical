@@ -131,8 +131,8 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	cc.start_pre_install()
 
 	while 1:
-		if d.yesno("Do you have a previously generated InstallProfile XML file?") == DLG_YES:
-			code, install_profile_xml_file = d.inputbox("Enter the filename of the XML file")
+		if d.yesno(_(u"Do you have a previously generated InstallProfile XML file?")) == DLG_YES:
+			code, install_profile_xml_file = d.inputbox(_(u"Enter the filename of the XML file"))
 			if code != DLG_OK: 
 				break
 			if GLIUtility.is_file(install_profile_xml_file): 
