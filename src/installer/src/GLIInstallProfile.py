@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.64 2005/06/28 03:27:43 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.65 2005/06/28 04:02:31 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -372,6 +372,11 @@ class InstallProfile:
 	def get_domainname(self):
 		return self._domainname
 
+	##
+	# Used internally for XML parsing...adds an entry to a file
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param value uhh...the value
+	# @param attr used for XML parsing
 	def add_etc_files_file_entry(self, xml_path, value, attr):
 		if 'name' in attr.getNames():
 			if not self._temp_etc_file:
@@ -382,16 +387,28 @@ class InstallProfile:
 				self._temp_etc_file = []
 			self._temp_etc_file.append(value)
 
+	##
+	# Used internally for XML parsing...adds a file
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param unused this should be obvious
+	# @param attr used for XML parsing
 	def add_etc_files_file(self, xml_path, unused, attr):
 		self._etc_files[attr['name']] = self._temp_etc_file
 		self._temp_etc_file = None
 
+	##
+	# Returns etc_files structure
 	def get_etc_files(self):
 		return self._etc_files
 
+	##
+	# Replaces etc_files structure with one passed in
+	# @param etc_files new etc_files structure
 	def set_etc_files(self, etc_files):
 		self._etc_files = etc_files
 
+	##
+	# Serializes the etc_files structure
 	def serialize_etc_files(self):
 		self.xmldoc += "<etc-files>"
 		for etc_file in self._etc_files:
@@ -849,7 +866,7 @@ class InstallProfile:
 		return self._etc_files['make.conf']
 		
 	##
-	# Serializes make.conf
+	# Serializes make.conf (no longer used)
 	def serialize_make_conf(self):
 		if self.get_make_conf() != {}:
 			self.xmldoc += "<make-conf>"
@@ -1309,7 +1326,7 @@ class InstallProfile:
 			return {}
 		
 	##
-	# Serializes rc.conf
+	# Serializes rc.conf (no longer used)
 	def serialize_rc_conf(self):
 		if self.get_rc_conf() != {}:
 			self.xmldoc += "<rc-conf>"
