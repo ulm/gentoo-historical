@@ -561,7 +561,7 @@ def list_mirrors():
 	mirrors = mirrors[:-1]  #chop off an empty one at the end.
 	return mirrors
 	
-def generate_keymap_list(self):
+def generate_keymap_list():
 	keymap_list = []
 	path = "/usr/share/keymaps"
 	
@@ -578,7 +578,7 @@ def generate_keymap_list(self):
 	
 	return keymap_list
 
-def generate_consolefont_list(self):
+def generate_consolefont_list():
 	consolefont_list=[]
 	path = "/usr/share/consolefonts"
 	
@@ -605,7 +605,7 @@ def generate_consolefont_list(self):
 	
 	return consolefont_list
 
-def generate_consoletranslation_list(self):
+def generate_consoletranslation_list():
 	consoletranslation_list=[]
 	path = "/usr/share/consoletrans"
 	
