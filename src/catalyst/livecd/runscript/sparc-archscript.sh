@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11.2.4 2005/06/27 21:08:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11.2.5 2005/06/28 17:28:15 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -57,8 +57,18 @@ case $1 in
 		if [ "${clst_livecd_devmanager}" == "udev" ]
 		then
 			cmdline_opts="${cmdline_opts} udev nodevfs"
-		else
+		elif [ "${clst_livecd_devmanager}" == "devfs" ]
+		then
 			cmdline_opts="${cmdline_opts} noudev devfs"
+		fi
+
+		# Add any additional options
+		if [ -z "${clst_livecd_bootargs}" ]
+		then
+			for x in ${clst_livecd_bootargs}
+			do
+				cmdline_opts="${cmdline_opts} ${x}"
+			done
 		fi
 		
 		scfg=${clst_cdroot_path}/boot/silo.conf
