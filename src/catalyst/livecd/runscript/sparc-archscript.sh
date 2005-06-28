@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11.2.5 2005/06/28 17:28:15 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/sparc-archscript.sh,v 1.11.2.6 2005/06/28 22:28:14 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -96,12 +96,31 @@ case $1 in
 	;;
 
 	iso)
+		# Set sensible default volume ID
+		if [ -z "${iso_volume_id}" ]
+		then
+			case ${clst_livecd_type} in
+				gentoo-*)
+					iso_volume_id="Gentoo Linux - SPARC"
+				;;
+				*)
+					iso_volume_id="Catalyst LiveCD"
+				;;
+			esac
+		fi
 		# Old silo + patched mkisofs fubar magic
 		# Only silo 1.2.x seems to work for most hardware
 		# Seems silo 1.3.x+ breaks on newer machines
 		# when booting from CD (current as of silo 1.4.8)
 		mv ${clst_cdroot_path}/boot/mkisofs.sparc.fu /tmp
-		/tmp/mkisofs.sparc.fu -o ${2} -D -r -pad -quiet -S 'boot/cd.b' -B '/boot/second.b' -s '/boot/silo.conf' -V "${iso_volume_id}" ${clst_cdroot_path}  || die "Cannot make ISO image"
+		case ${clst_livecd_cdfstype} in
+			zisofs)
+				/tmp/mkisofs.sparc.fu -z -o ${2} -D -r -pad -quiet -S 'boot/cd.b' -B '/boot/second.b' -s '/boot/silo.conf' -V "${iso_volume_id}" ${clst_cdroot_path}  || die "Cannot make ISO image"
+			;;
+			*)
+				/tmp/mkisofs.sparc.fu -o ${2} -D -r -pad -quiet -S 'boot/cd.b' -B '/boot/second.b' -s '/boot/silo.conf' -V "${iso_volume_id}" ${clst_cdroot_path}  || die "Cannot make ISO image"
+			;;
+		esac
 		rm /tmp/mkisofs.sparc.fu
 	;;
 esac

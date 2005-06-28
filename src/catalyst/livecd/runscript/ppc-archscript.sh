@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.4 2005/06/27 21:08:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.5 2005/06/28 22:28:14 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -57,13 +57,86 @@ case $1 in
 			    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/"${x}".igz
 			fi
 		done
+
+		# the rest of this function sets up the config file for yaboot
+		icfg=${clst_cdroot_path}/boot/yaboot.conf
+		kmsg=${clst_cdroot_path}/boot/boot.msg
+		echo "default ${first}" > ${icfg}
+		echo "timeout 150" >> ${icfg}
+		echo "device=cd:" >> ${icfg}
+		echo "root=/dev/ram" >> ${icfg}
+		echo "fgcolor=white" >> ${icfg}
+		echo "bgcolor=black" >> ${icfg}
+		echo "message=/boot/boot.msg" >> ${icfg}
+
+		# figure out what device manager we are using and handle it accordingly
+		if [ "${clst_livecd_devmanager}" == "udev" ]
+		then
+			cmdline_opts="${cmdline_opts} udev nodevfs"
+		elif [ "${clst_livecd_devmanager}" == "devfs" ]
+		then
+			cmdline_opts="${cmdline_opts} noudev devfs"
+		fi
+
+		# Add any additional options
+		if [ -z "${clst_livecd_bootargs}" ]
+		then
+			for x in ${clst_livecd_bootargs}
+			do
+				cmdline_opts="${cmdline_opts} ${x}"
+			done
+		fi
+
+		for x in ${clst_boot_kernel}
+		do
+			eval custom_kopts=\$${x}_kernelopts
+			echo "APPENDING CUSTOM KERNEL ARGS: ${custom_kopts}"
+			echo >> ${icfg}
+			echo "image=/boot/${x}" >> ${icfg}
+			echo "initrd=/boot/${x}.igz" >> ${icfg}
+			echo "label=${x}" >> ${icfg}
+			echo "read-write" >> ${icfg}
+
+			if [ "${clst_livecd_splash_type}" == "gensplash" -a -n "${clst_livecd_splash_theme}" ]
+			then
+				echo "append=\"init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent,theme:${clst_livecd_splash_theme}\"" >> ${icfg}
+			else
+				echo "append=\"initrd=${x}.igz init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent\"" >> ${icfg}
+			fi
+		done
 	;;
 
 	cdfs)
 	;;
 
 	iso)
+		# Set sensible default volume ID
+		if [ -z "${iso_volume_id}" ]
+		then
+			case ${clst_livecd_type} in
+				gentoo-*)
+					case ${clst_mainarch} in
+						ppc)
+							iso_volume_id="Gentoo Linux - PPC"
+						;;
+						ppc64)
+							iso_volume_id="Gentoo Linux - PPC64"
+						;;
+					esac
+				;;
+				*)
+					iso_volume_id="Catalyst LiveCD"
+				;;
+			esac
+		fi
 		# The name of the iso should be retrieved from the specs.
-		mkisofs -J -r -l -netatalk -hfs -probe -map ${clst_cdroot_path}/boot/map.hfs -part -no-desktop -hfs-volid "${iso_volume_id}" -hfs-bless ${clst_cdroot_path}/boot -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path}
+		case ${clst_livecd_cdfstype} in
+			zisofs)
+				mkisofs -J -r -l -z -chrp-boot -netatalk -hfs -probe -map ${clst_cdroot_path}/boot/map.hfs -part -no-desktop -hfs-volid "${iso_volume_id}" -hfs-bless ${clst_cdroot_path}/boot -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path}
+			;;
+			*)
+				mkisofs -J -r -l -chrp-boot -netatalk -hfs -probe -map ${clst_cdroot_path}/boot/map.hfs -part -no-desktop -hfs-volid "${iso_volume_id}" -hfs-bless ${clst_cdroot_path}/boot -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path}
+			;;
+		esac
 	;;
 esac

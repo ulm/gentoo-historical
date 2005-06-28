@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/alpha-archscript.sh,v 1.10.2.5 2005/06/28 17:28:15 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/alpha-archscript.sh,v 1.10.2.6 2005/06/28 22:28:14 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -83,6 +83,18 @@ case $1 in
 	;;
 
 	iso)
+		# Set sensible default volume ID
+		if [ -z "${iso_volume_id}" ]
+		then
+			case ${clst_livecd_type} in
+				gentoo-*)
+					iso_volume_id="Gentoo Linux - Alpha"
+				;;
+				*)
+					iso_volume_id="Catalyst LiveCD"
+				;;
+			esac
+		fi
 		# this is for the livecd-final target, and calls the proper
 		# command to build the iso file
 		case ${clst_livecd_cdfstype} in
@@ -90,7 +102,7 @@ case $1 in
 				mkisofs -J -R -l -z -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path}  || die "Cannot make ISO image"
 			;;
 			*)
-				mkisofs -J -R -l -o ${2} ${clst_cdroot_path} || die "Cannot make ISO image"
+				mkisofs -J -R -l -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path} || die "Cannot make ISO image"
 			;;
 		esac
 		isomarkboot ${2} /boot/bootlx

@@ -1,6 +1,7 @@
-# Copyright 1999-2004 Gentoo Foundation
+#!/bin/bash
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.5 2005/06/27 21:08:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.6 2005/06/28 22:28:14 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {

@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.7 2005/06/28 17:28:15 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.8 2005/06/28 22:28:14 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -126,6 +126,25 @@ case $1 in
 		;;
 
 	iso)
+		# Set sensible default volume ID 
+		if [ -z "${iso_volume_id}" ]
+		then
+			case ${clst_livecd_type} in
+				gentoo-*)
+					case ${clst_mainarch} in
+						amd64)
+							iso_volume_id="Gentoo Linux - AMD64"
+						;;
+						x86)
+							iso_volume_id="Gentoo Linux - X86"
+						;;
+					esac
+				;;
+				*)
+					iso_volume_id="Catalyst LiveCD"
+				;;
+			esac
+		fi
 		#this is for the livecd-stage2 target, and calls the proper command
 		# to build the iso file
 		case ${clst_livecd_cdfstype} in
