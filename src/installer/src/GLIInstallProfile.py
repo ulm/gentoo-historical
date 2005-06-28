@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.63 2005/06/25 21:30:16 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.64 2005/06/28 03:27:43 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -73,7 +73,7 @@ class InstallProfile:
 		self._temp_partition_table = {} # temp
 		self._network_interfaces = {}
 		self._make_conf = {}
-		self._rc_conf = {}
+#		self._rc_conf = {}
 		self._install_rp_pppoe = False
 		self._filesystem_tools = ()
 		self._install_pcmcia_cs = False
@@ -87,6 +87,8 @@ class InstallProfile:
 		self._mta_pkg = ""
 		self._grp_install = False
 		self._post_install_script_uri = ""
+		self._etc_files = {}
+		self._temp_etc_file = {}
 		self.xmldoc = ""
 
 		# Parser handler calls.  For each XML attribute and children of that attribute, a handler is needed.
@@ -98,6 +100,8 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
 		self._parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
 		self._parser.addHandler('gli-profile/domainname', self.set_domainname)
+		self._parser.addHandler('gli-profile/etc-files/file', self.add_etc_files_file, call_on_null=True)
+		self._parser.addHandler('gli-profile/etc-files/file/entry', self.add_etc_files_file_entry, call_on_null=True)
 		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage_add_file, call_on_null=True)
 		self._parser.addHandler('gli-profile/etc-portage/file/entry', self.set_etc_portage_add_file_entry, call_on_null=True)
 		self._parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
@@ -115,7 +119,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
 		self._parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
 		self._parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
-		self._parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
+#		self._parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
 		self._parser.addHandler('gli-profile/mta', self.set_mta_pkg)
 		self._parser.addHandler('gli-profile/network-interfaces/device', self.add_network_interface)
 		self._parser.addHandler('gli-profile/network-mounts/netmount', self.add_netmount, call_on_null=True)
@@ -125,7 +129,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/portage-snapshot', self.set_portage_tree_snapshot_uri)
 		self._parser.addHandler('gli-profile/portage-tree-sync', self.set_portage_tree_sync_type)
 		self._parser.addHandler('gli-profile/post-install-script-uri', self.set_post_install_script_uri)
-		self._parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
+#		self._parser.addHandler('gli-profile/rc-conf/variable', self.rc_conf_add_var)
 		self._parser.addHandler('gli-profile/root-pass-hash', self.set_root_pass_hash)
 		self._parser.addHandler('gli-profile/rsync-proxy', self.set_rsync_proxy)
 		self._parser.addHandler('gli-profile/services', self.set_services)
@@ -183,14 +187,15 @@ class InstallProfile:
 		self.serialize_dns_servers()
 		self.serialize_install_packages()
 		self.serialize_kernel_modules()
-		self.serialize_make_conf()
+#		self.serialize_make_conf()
 		self.serialize_network_interfaces()
 		self.serialize_network_mounts()
 		self.serialize_partition_tables()
-		self.serialize_rc_conf()
+#		self.serialize_rc_conf()
 		self.serialize_services()
 		self.serialize_users()
 		self.serialize_etc_portage()
+		self.serialize_etc_files()
 
 		self.xmldoc += "</gli-profile>"
 
@@ -366,6 +371,40 @@ class InstallProfile:
 	# Returns domainname
 	def get_domainname(self):
 		return self._domainname
+
+	def add_etc_files_file_entry(self, xml_path, value, attr):
+		if 'name' in attr.getNames():
+			if not self._temp_etc_file:
+				self._temp_etc_file = {}
+			self._temp_etc_file[attr['name']] = value
+		else:
+			if not self._temp_etc_file:
+				self._temp_etc_file = []
+			self._temp_etc_file.append(value)
+
+	def add_etc_files_file(self, xml_path, unused, attr):
+		self._etc_files[attr['name']] = self._temp_etc_file
+		self._temp_etc_file = None
+
+	def get_etc_files(self):
+		return self._etc_files
+
+	def set_etc_files(self, etc_files):
+		self._etc_files = etc_files
+
+	def serialize_etc_files(self):
+		self.xmldoc += "<etc-files>"
+		for etc_file in self._etc_files:
+			self.xmldoc += "<file name=\"%s\">" % etc_file
+			for entry in self._etc_files[etc_file]:
+				self.xmldoc += "<entry"
+				if isinstance(self._etc_files[etc_file], dict):
+					self.xmldoc += " name=\"%s\">%s" % (entry, self._etc_files[etc_file][entry])
+				else:
+					self.xmldoc += ">%s" % entry
+				self.xmldoc += "</entry>"
+			self.xmldoc += "</file>"
+		self.xmldoc += "</etc-files>"
 
 	############################################################################
 	#### Etc/portage Setup
@@ -788,14 +827,13 @@ class InstallProfile:
 	# @param attr 		an xml attribute that contains the name of the variable
 	# 		OR attr is a variable name, like 'USE'. This makes it easier for front-end designers.
 	def make_conf_add_var(self, xml_path, data, attr):
-		if type(attr) == 'str':
-			self._make_conf[attr] = str(data)
-		else:
-			if 'name' not in attr.keys():
-				raise GLIException("MakeConfError", 'fatal', 'make_conf_add_var',  "Every value needs to have a variable name!")
+		if 'name' not in attr.keys():
+			raise GLIException("MakeConfError", 'fatal', 'make_conf_add_var',  "Every value needs to have a variable name!")
 
-			varName = attr['name']
-			self._make_conf[str(varName)] = str(data)
+		varName = attr['name']
+		if not "make.conf" in self._etc_files:
+			self._etc_files['make.conf'] = {}
+		self._make_conf[str(varName)] = str(data)
 
 	##
 	# make_conf is a dictionary that will be set to _make_conf
@@ -803,12 +841,12 @@ class InstallProfile:
 	# that is passed in is valid.
 	# @param make_conf 		a dictionary that will be set to _make_conf
 	def set_make_conf(self, make_conf):
-		self._make_conf = make_conf
+		self._etc_files['make.conf'] = make_conf
 
 	##
 	# Return a dictionary of the make.conf
 	def get_make_conf(self):
-		return self._make_conf
+		return self._etc_files['make.conf']
 		
 	##
 	# Serializes make.conf
@@ -1250,7 +1288,9 @@ class InstallProfile:
 			raise GLIException("RCConfError", 'fatal', 'rc_conf_add_var',  "Every value needs to have a variable name!")
 
 		varName = attr['name']
-		self._rc_conf[str(varName)] = str(data)
+		if not "rc.conf" in self._etc_files:
+			self._etc_files['rc.conf'] = {}
+		self._etc_files[str(varName)] = str(data)
 
 	##
 	# rc_conf is a dictionary that will be set to _rc_conf
@@ -1258,12 +1298,15 @@ class InstallProfile:
 	# that is passed in is valid.Brief description of function
 	# @param rc_conf 	dictionary in the format specified above.
 	def set_rc_conf(self, rc_conf):
-		self._rc_conf = rc_conf
+		self._etc_files['rc.conf'] = rc_conf
 
 	##
 	# Return a dictionary of the make.conf
 	def get_rc_conf(self):
-		return self._rc_conf
+		if "rc.conf" in self._etc_files:
+			return self._etc_files['rc.conf']
+		else:
+			return {}
 		
 	##
 	# Serializes rc.conf
