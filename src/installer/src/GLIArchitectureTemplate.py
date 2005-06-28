@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.147 2005/06/25 07:44:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.148 2005/06/28 07:43:30 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -819,13 +819,20 @@ class ArchitectureTemplate:
 			self._logger.log("ERROR! : Could not update the config files!")
 		#	raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 		else:	
-			self.configure_make_conf()
+#			self.configure_make_conf()
 			self.configure_fstab()
-			self.configure_rc_conf()
+#			self.configure_rc_conf()
+			etc_files = self._install_profile.get_etc_files()
+			for etc_file in etc_files:
+				if isinstance(etc_files[etc_file], dict):
+					self._edit_config("/etc/" + etc_file, etc_files[etc_file])
+				else:
+					for entry in etc_files[etc_file]:
+						self._edit_config("/etc/" + etc_file, { 0: entry }, value_only=True)
 			self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
 	##
-	# Configures /etc/rc.conf
+	# Configures /etc/rc.conf (deprecated by above code)
 	def configure_rc_conf(self):
 		
 		# Get make.conf options
