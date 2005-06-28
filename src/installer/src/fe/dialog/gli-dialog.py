@@ -137,7 +137,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 				break
 			if GLIUtility.is_file(install_profile_xml_file): 
 				break
-			d.msgbox("Cannot open file " + install_profile_xml_file, height=7, width=50)
+			d.msgbox(_(u"Cannot open file ") + install_profile_xml_file, height=7, width=50)
 			install_profile_xml_file = None
 		else:
 			break

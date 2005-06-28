@@ -287,7 +287,7 @@ class GLIGenIP(GLIGen):
 	
 	def _set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
-		menulist = [("Sync", "Normal. Use emerge sync RECOMMENDED!"), ("Webrsync", "HTTP daily snapshot. Use when rsync is firewalled."), ("Snapshot", "Use a portage snapshot, either a local file or a URL"), ("None", "Extra cases such as if /usr/portage is an NFS mount")]
+		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")), ("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")), ("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")), ("None", _(u"Extra cases such as if /usr/portage is an NFS mount"))]
 		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=60, height=15, choices=menulist)
 		if code != self._DLG_OK: 
 			return
@@ -302,10 +302,10 @@ class GLIGenIP(GLIGen):
 		#if portage_tree_sync == "Snapshot  (using a portage snapshot)":
 		#	self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
 			self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
-			snapshot_options = ("Use Local", "Specify URI")
-			code, snapshot_option = self._d.menu("Select a local portage snapshot or manually specify a location:", choices=self._dmenu_list_to_choices(snapshot_options))
+			snapshot_options = (_(u"Use Local"), _(u"Specify URI"))
+			code, snapshot_option = self._d.menu(_(u"Select a local portage snapshot or manually specify a location:"), choices=self._dmenu_list_to_choices(snapshot_options))
 			snapshot_option = snapshot_options[int(snapshot_option)-1]
-			if snapshot_option == "Use Local":
+			if snapshot_option == _(u"Use Local"):
 				snapshot_dir = "/mnt/cdrom/snapshots"
 				if os.path.isdir(snapshot_dir) and os.listdir(snapshot_dir):
 					local_snapshots = glob.glob(snapshot_dir + "/portage*.bz2")
@@ -313,13 +313,13 @@ class GLIGenIP(GLIGen):
 						snapshot = local_snapshots[0]
 					else:
 						local_snapshots.sort()
-						code, snapshot = self._d.menu("Select a local portage snapshot:", choices=self._dmenu_list_to_choices(local_snapshots))
+						code, snapshot = self._d.menu(_(u"Select a local portage snapshot:"), choices=self._dmenu_list_to_choices(local_snapshots))
 						if code != self._DLG_OK: return
 						snapshot = local_snapshots[int(snapshot)-1]
 				else:
 					self._d.msgbox(_(u"There don't seem to be any local portage snapshots available.  Hit OK to manually specify a URI."))
-					snapshot_option = "Specify URI"
-			if snapshot_option != "Use Local":
+					snapshot_option = _(u"Specify URI")
+			if snapshot_option != _(u"Use Local"):
 				code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
 			if code == self._DLG_OK:
 				if snapshot: 
@@ -359,7 +359,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				choice_list.append((drive, devices[drive].get_model()))
 		#choice_list.append(("Other", "Type your own drive name))  # I DONT THINK GLISD CAN DO NONEXISTANT DRIVES
 		while 1:
-			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?\n Info provided: Type, mkfs Options, Mountpoint, Mountopts, Size in MB"), choices=choice_list, cancel="Save and Continue")
+			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?\n Info provided: Type, mkfs Options, Mountpoint, Mountopts, Size in MB"), choices=choice_list, cancel=_(u"Save and Continue"))
 			if code != self._DLG_OK: break
 			while 1:
 				partitions = devices[drive_to_partition].get_partitions()
@@ -391,20 +391,20 @@ on partitioning and the various filesystem types available in Linux.""")
 						entry += (tmppart.get_mountopts() or "none") + ", "
 						entry += str(tmppart.get_mb()) + "MB)"
 					partsmenu.append(entry)
-				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit"), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel="Back")
+				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit"), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel=_(u"Back"))
 				if code != self._DLG_OK: break
 				part_to_edit = partlist[int(part_to_edit)-1]
 				tmppart = tmpparts[part_to_edit]
 				if tmppart.get_type() == "free":
 					# partition size first
 					free_mb = tmppart.get_mb()
-					code, new_mb = self._d.inputbox("Enter the size of the new partition in MB (max " + str(free_mb) + "MB).  If creating an extended partition input its entire size (not just the first logical size):", init=str(free_mb))
+					code, new_mb = self._d.inputbox(_(u"Enter the size of the new partition in MB (max %s MB).  If creating an extended partition input its entire size (not just the first logical size):") % str(free_mb), init=str(free_mb))
 					if code != self._DLG_OK: continue
 					if int(new_mb) > free_mb:
-						self._d.msgbox("The size you entered (" + new_mb + "MB) is larger than the maximum of " + str(free_mb) + "MB")
+						self._d.msgbox(_(u"The size you entered (%s MB) is larger than the maximum of %s MB") % (new_mb, str(free_mb)))
 						continue
 					# partition type
-					part_types = [("ext2", "Old, stable, but no journaling"), ("ext3", "ext2 with journaling and b-tree indexing (RECOMMENDED)"), ("linux-swap", "Swap partition for memory overhead"), ("fat32", "Windows filesystem format used in Win9X and XP"), ("ntfs", "Windows filesystem format used in Win2K and NT"),("jfs", "IBM's journaling filesystem.  stability unknown."), ("xfs", "Don't use this unless you know you need it."), ("reiserfs", "B*-tree based filesystem. great performance. Only V3 supported."), ("extended", "Create an extended partition containing other logical partitions"), ("other", "Something else we probably don't support.")]
+					part_types = [("ext2", _(u"Old, stable, but no journaling")), ("ext3", _(u"ext2 with journaling and b-tree indexing (RECOMMENDED)")), ("linux-swap", _(u"Swap partition for memory overhead")), ("fat32", _(u"Windows filesystem format used in Win9X and XP")), ("ntfs", _(u"Windows filesystem format used in Win2K and NT")),("jfs", _(u"IBM's journaling filesystem.  stability unknown.")), ("xfs", _(u"Don't use this unless you know you need it.")), ("reiserfs", _(u"B*-tree based filesystem. great performance. Only V3 supported.")), ("extended", _(u"Create an extended partition containing other logical partitions")), ("other", _(u"Something else we probably don't support."))]
 					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 					if code != self._DLG_OK: continue
 										
@@ -420,41 +420,41 @@ on partitioning and the various filesystem types available in Linux.""")
 						tmppart = tmpparts[part_to_edit]
 						tmptitle = drive_to_partition + str(part_to_edit) + " - "
 						if tmppart.is_logical():
-							tmptitle += "Logical ("
+							tmptitle += _(u"Logical (")
 						else:
-							tmptitle += "Primary ("
+							tmptitle += _(u"Primary (")
 						tmptitle += tmppart.get_type() + ", "
 						tmptitle += (tmppart.get_mkfsopts() or "none") + ", "
 						tmptitle += (tmppart.get_mountpoint() or "none") + ", "
 						tmptitle += (tmppart.get_mountopts() or "none") + ", "
 						tmptitle += str(tmppart.get_mb()) + "MB)"
-						menulist = ["Delete", "Mount Point", "Mount Options", "Format", "Extra mkfs.* Parameters"]
-						code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel="Back")
+						menulist = [_(u"Delete"), _(u"Mount Point"), _(u"Mount Options"), _(u"Format"), _(u"Extra mkfs.* Parameters")]
+						code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel=_(u"Back"))
 						if code != self._DLG_OK: break
 						part_action = menulist[int(part_action)-1]
-						if part_action == "Delete":
-							answer = (self._d.yesno("Are you sure you want to delete the partition " + drive_to_partition + str(part_to_edit) + "?") == self._DLG_YES)
+						if part_action == _(u"Delete"):
+							answer = (self._d.yesno(_(u"Are you sure you want to delete the partition ") + drive_to_partition + str(part_to_edit) + "?") == self._DLG_YES)
 							if answer == True:
 								tmpdev = tmppart.get_device()
 								tmpdev.remove_partition(part_to_edit)
 								break
-						elif part_action == "Mount Point":
-							code, answer = self._d.inputbox("Enter a mountpoint for partition " + str(part_to_edit), init=tmppart.get_mountpoint())
+						elif part_action == _(u"Mount Point"):
+							code, answer = self._d.inputbox(_(u"Enter a mountpoint for partition ") + str(part_to_edit), init=tmppart.get_mountpoint())
 							if code == self._DLG_OK: tmppart.set_mountpoint(answer)
-						elif part_action == "Mount Options":
-							code, answer = self._d.inputbox("Enter your mount options for partition " + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
+						elif part_action == _(u"Mount Options"):
+							code, answer = self._d.inputbox(_(u"Enter your mount options for partition ") + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
 							if code == self._DLG_OK: tmppart.set_mountopts(answer)
-						elif part_action == "Format":
-							code = d.yesno("Do you want to format this partition?")
+						elif part_action == _(u"Format"):
+							code = d.yesno(_(u"Do you want to format this partition?"))
 							if code == self._DLG_YES: 
 								tmppart.set_format(True)
 							else:
 								tmppart.set_format(False)
-						elif part_action == "Extra mkfs.* Parameters":
+						elif part_action == _(u"Extra mkfs.* Parameters"):
 							new_mkfsopts = tmppart.get_mkfsopts()
 							# extra mkfs options
 							if tmppart.get_type() != "extended":
-								code, new_mkfsopts = self._d.inputbox("Extra mkfs parameters", init=new_mkfsopts)
+								code, new_mkfsopts = self._d.inputbox(_(u"Extra mkfs.* Parameters"), init=new_mkfsopts)
 								if code == self._DLG_OK: tmppart.set_mkfsopts(new_mkfsopts)							
 		try:										
 			self._install_profile.set_partition_tables(devices)
@@ -468,9 +468,9 @@ on partitioning and the various filesystem types available in Linux.""")
 			menulist = []
 			for mount in network_mounts:
 				menulist.append(mount['host'] + ":" + mount['export'])
-			menulist.append("Add a new network mount")
+			menulist.append(_(u"Add a new network mount"))
 			choices = self._dmenu_list_to_choices(menulist)
-			code, menuitemidx = self._d.menu(_(u"If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."), choices=choices, cancel="Save and Continue")
+			code, menuitemidx = self._d.menu(_(u"If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."), choices=choices, cancel=_(u"Save and Continue"))
 			if code == self._DLG_CANCEL:
 				try:
 					self._install_profile.set_network_mounts(network_mounts)
@@ -478,7 +478,7 @@ on partitioning and the various filesystem types available in Linux.""")
 					self._d.msgbox(_(u"ERROR: Could net set network mounts!"))
 				break
 			menuitem = menulist[int(menuitemidx)-1]
-			if menuitem == "Add a new network mount":
+			if menuitem == _(u"Add a new network mount"):
 				code, nfsmount = self._d.inputbox(_(u"Enter NFS mount or just enter the IP/hostname to search for available mounts"))
 				if code != self._DLG_OK: 
 					continue
@@ -490,12 +490,12 @@ on partitioning and the various filesystem types available in Linux.""")
 							continue
 						for i in range(0, len(remotemounts)):
 							remotemounts[i] = string.strip(remotemounts[i])
-						code, nfsmount2 = self._d.menu("Select a NFS export", choices=self._dmenu_list_to_choices(remotemounts), cancel="Back")
+						code, nfsmount2 = self._d.menu(_(u"Select a NFS export"), choices=self._dmenu_list_to_choices(remotemounts), cancel=_(u"Back"))
 						if code != self._DLG_OK: 
 							continue
 						nfsmount2 = remotemounts[int(nfsmount2)-1]
 					else:
-						self._d.msgbox("The address you entered, '" + nfsmount + "', is not a valid IP or hostname.  Please try again.")
+						self._d.msgbox(_(u"The address you entered, %s, is not a valid IP or hostname.  Please try again.") % nfsmount)
 						continue
 				else:
 					colon_location = nfsmount.find(':')
@@ -504,7 +504,7 @@ on partitioning and the various filesystem types available in Linux.""")
 					nfsmount2 = menuitem[colon_location+1:]
 				for mount in network_mounts:
 					if nfsmount == mount['host'] and nfsmount2 == mount['export']:
-						self._d.msgbox("There is already an entry for " + nfsmount + ":" + nfsmount2 + ".")
+						self._d.msgbox(_(u"There is already an entry for ") + nfsmount + ":" + nfsmount2 + ".")
 						nfsmount = None
 						break
 				if nfsmount == None: 
@@ -516,10 +516,10 @@ on partitioning and the various filesystem types available in Linux.""")
 			if menuitem.find(':') != -1:
 				colon_location = menuitem.find(':')
 				tmpmount = network_mounts[int(menuitemidx)-1]
-				code, mountpoint = self._d.inputbox("Enter a mountpoint", init=tmpmount['mountpoint'])
+				code, mountpoint = self._d.inputbox(_(u"Enter a mountpoint"), init=tmpmount['mountpoint'])
 				if code == self._DLG_OK: 
 					tmpmount['mountpoint'] = mountpoint
-				code, mountopts = self._d.inputbox("Enter mount options", init=tmpmount['mountopts'])
+				code, mountopts = self._d.inputbox(_(u"Enter mount options"), init=tmpmount['mountopts'])
 				if code == self._DLG_OK: 
 					tmpmount['mountopts'] = mountopts
 				network_mounts[int(menuitemidx)-1] = tmpmount
@@ -602,32 +602,32 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
 		while 1:
-			menulist = [("CFLAGS","Edit your C Flags and Optimization level"), ("CHOST", "Change the Host Setting"), ("MAKEOPTS", "Specify number of parallel makes (-j) to perform. (ex. CPUs+1)"), ("FEATURES", "Change portage functionality settings."), ("GENTOO_MIRRORS", "Specify mirrors to use for source retrieval."), ("SYNC", "Specify server used by rsync to sync the portage tree.")]
-			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel="Done")
+			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform. (ex. CPUs+1)")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
+			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"))
 			if code != self._DLG_OK: 
 				self._install_profile.set_make_conf(make_conf)
 				break
 			oldval = ""
 			if make_conf.has_key(menuitem): 
 				oldval = make_conf[menuitem]
-			code, newval = self._d.inputbox("Enter new value for " + menuitem, init=oldval)
+			code, newval = self._d.inputbox(_(u"Enter new value for ") + menuitem, init=oldval)
 			if code == self._DLG_OK:
 				make_conf[menuitem] = newval
 				
 
 	def _set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
-		kernel_sources = [("vanilla-sources", "The Unaltered Linux Kernel ver 2.6+ (safest)"), ("gentoo-sources", "Gentoo's optimized 2.6+ kernel. (less safe)"), ("hardened-sources", "Hardened sources for the 2.6 kernel tree"), ("grsec-sources","Vanilla sources with grsecurity patches"), ("livecd-kernel", "Use the current running kernel for the new system (fastest)"), ("Other", "Choose one of the other sources available.")]
+		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")), ("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")), ("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")), ("grsec-sources",_(u"Vanilla sources with grsecurity patches")), ("livecd-kernel", _(u"Use the current running kernel for the new system (fastest)")), (_(u"Other"), _(u"Choose one of the other sources available."))]
 		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources)
 		if code != self._DLG_OK: 
 			return
-		if menuitem == "Other":
+		if menuitem == _(u"Other"):
 			code, menuitem = self._d.inputbox(_(u"Please enter the desired kernel sources package name:"))
 			if code != self._DLG_OK: return
 		try:
 			self._install_profile.set_kernel_source_pkg(None, menuitem, None)
 		except:
-			self._d.msgbox("ERROR! Could not set the kernel source package!")
+			self._d.msgbox(_(u"ERROR! Could not set the kernel source package!"))
 		if not menuitem == "livecd-kernel":
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Genkernel")])
@@ -638,7 +638,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				#Change the Yes/No buttons back.
 				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 				self._d.add_persistent_args(["--no-label", _(u"No")])
-				if self._d.yesno("Do you want the bootsplash screen to show up on bootup?") == self._DLG_YES:
+				if self._d.yesno(_(u"Do you want the bootsplash screen to show up on bootup?")) == self._DLG_YES:
 					self._install_profile.set_kernel_bootsplash(None, True, None)
 				else:
 					self._install_profile.set_kernel_bootsplash(None, False, None)
@@ -661,8 +661,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_install_stage(self):
 	# The install stage and stage tarball will be selected here
-		install_stages = (("1","Stage1 is used when you want to bootstrap and build the entire system from scratch."), ("2","Stage2 is used for building the entire system from a bootstrapped semi-compiled state."), ("3","Stage3 installation is a basic Gentoo Linux system that has been built for you (no compiling)."), ("3 + GRP", "A Stage3 install but using binary packages from the LiveCD whenever possible"))
-		code, install_stage = self._d.menu("Which stage do you want to start at?", choices=install_stages, cancel="Back")
+		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap and build the entire system from scratch.")), ("2",_(u"Stage2 is used for building the entire system from a bootstrapped semi-compiled state.")), ("3",_(u"Stage3 installation is a basic Gentoo Linux system that has been built for you (no compiling).")), ("3 + GRP", _(u"A Stage3 install but using binary packages from the LiveCD whenever possible")))
+		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=77)
 		if code == self._DLG_OK:
 			if install_stage == "3 + GRP":
 				install_stage = "3"
@@ -670,7 +670,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._install_profile.set_grp_install(None, True, None)
 				self._install_profile.set_install_stage(None, install_stage, None)
 			except:
-				self._d.msgbox("ERROR! Could not set install stage!")
+				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
 		#Change the Yes/No buttons to new labels for this question.
 		self._d.add_persistent_args(["--yes-label", _(u"Use Local")])
 		self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
@@ -680,20 +680,20 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			if os.path.isdir(stages_dir) and os.listdir(stages_dir):
 				local_tarballs = glob.glob(stages_dir + "/stage" + install_stage + "*.bz2")
 				local_tarballs.sort()
-				code, stage_tarball = self._d.menu("Select a local tarball:", choices=self._dmenu_list_to_choices(local_tarballs))
+				code, stage_tarball = self._d.menu(_(u"Select a local tarball:"), choices=self._dmenu_list_to_choices(local_tarballs))
 				if code != self._DLG_OK: 
 					return
 				stage_tarball = local_tarballs[int(stage_tarball)-1]
 				try:
 					self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 				except:
-					self._d.msgbox("ERROR: Could not set the stage tarball URI!")
+					self._d.msgbox(_(u"ERROR: Could not set the stage tarball URI!"))
 				return
 			else:
-				self._d.msgbox("There don't seem to be any local tarballs available.  Hit OK to manually specify a URI.")
+				self._d.msgbox(_(u"There don't seem to be any local tarballs available.  Hit OK to manually specify a URI."))
 		
 		#Specify URI
-		subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
+		#subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
 		type_it_in = False
 		stage_tarball = ""
 		if GLIUtility.ping("www.gentoo.org"):  #Test for network connectivity
@@ -703,20 +703,20 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			for item in mirrors:
 				mirrornames.append(item[1])
 				mirrorurls.append(item[0])
-			code, mirror = self._d.menu("Select a mirror to grab the tarball from or select Cancel to enter an URI manually.", choices=self._dmenu_list_to_choices(mirrornames), width=77, height=20)
+			code, mirror = self._d.menu(_(u"Select a mirror to grab the tarball from or select Cancel to enter an URI manually."), choices=self._dmenu_list_to_choices(mirrornames), width=77, height=20)
 			if code != self._DLG_OK:
 				type_it_in = True
 			else:
 				mirror = mirrorurls[int(mirror)-1]
 				arch = self._client_profile.get_architecture_template()
 				subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
-				code, subarch = self._d.menu("Select the sub-architecture that most closely matches your system (this changes the amount of optimization):", choices=self._dmenu_list_to_choices(subarches))
+				code, subarch = self._d.menu(_(u"Select the sub-architecture that most closely matches your system (this changes the amount of optimization):"), choices=self._dmenu_list_to_choices(subarches))
 				if code != self._DLG_OK:
 					type_it_in = True
 				else:
 					subarch = subarches[int(subarch)-1]	
 					tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
-					code, stage_tarball = self._d.menu("Select your desired stage tarball:", choices=self._dmenu_list_to_choices(tarballs))
+					code, stage_tarball = self._d.menu(_(u"Select your desired stage tarball:"), choices=self._dmenu_list_to_choices(tarballs))
 					if (code != self._DLG_OK):
 						type_it_in = True
 					else:
@@ -727,22 +727,22 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		else:
 			type_it_in = True
 		if type_it_in:
-			code, stage_tarball = self._d.inputbox("Specify the stage tarball URI or local file:", init=self._install_profile.get_stage_tarball_uri())
+			code, stage_tarball = self._d.inputbox(_(u"Specify the stage tarball URI or local file:"), init=self._install_profile.get_stage_tarball_uri())
 			if code != self._DLG_OK:
 				return
 		#If Doing a local install, check for valid file:/// uri
 		if stage_tarball:
 			if not GLIUtility.is_uri(stage_tarball, checklocal=self.local_install):
-				self._d.msgbox("The specified URI is invalid.  It was not saved.  Please go back and try again.");
+				self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."));
 			else: self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-		else: self._d.msgbox("No URI was specified!")
+		else: self._d.msgbox(_(u"No URI was specified!"))
 			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 
 	def _set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
-		arch_loaders = { 'x86': [("grub","GRand Unified Bootloader, newer, RECOMMENDED"),("lilo","LInux LOader, older, traditional.(detects windows partitions)")], 'amd64': [("grub","GRand Unified Bootloader, newer, RECOMMENDED")]} #FIXME ADD OTHER ARCHS
+		arch_loaders = { 'x86': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))], 'amd64': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
 		boot_loaders = arch_loaders[arch]
-		boot_loaders.append(("none", "Do not install a bootloader.  (System may be unbootable!)"))
+		boot_loaders.append(("none", _(u"Do not install a bootloader.  (System may be unbootable!)")))
 		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
 		code, menuitem = self._d.menu(string1, choices=boot_loaders)
 		if code != self._DLG_OK: 
@@ -753,8 +753,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._d.msgbox(_(u"ERROR! Could not set boot loader pkg! ")+menuitem)
 		if menuitem != "none":
 			#Reset the Yes/No labels.
-			self._d.add_persistent_args(["--yes-label", "Yes"])
-			self._d.add_persistent_args(["--no-label","No"])
+			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+			self._d.add_persistent_args(["--no-label",_(u"No")])
 			if self._d.yesno(_(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)")) == self._DLG_YES:
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
@@ -790,11 +790,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			choice_list = []
 			for iface in interfaces:
 				if interfaces[iface][0] == 'dhcp':
-					choice_list.append((iface, "Settings: DHCP. Options: "+ interfaces[iface][1]))
+					choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1]))
 				else:
-					choice_list.append((iface, "Settings: IP: "+interfaces[iface][0]+" Broadcast: "+interfaces[iface][1]+" Netmask: "+interfaces[iface][2]))
-			choice_list.append(("Add","Add a new network interface"))
-			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel="Save and Continue", height=18, width=67)
+					choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2]))
+			choice_list.append(("Add",_(u"Add a new network interface")))
+			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel=_(u"Save and Continue"), height=18, width=67)
 			if code != self._DLG_OK:
 				try:
 					self._install_profile.set_network_interfaces(interfaces)
@@ -808,16 +808,16 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					for device in device_list:
 						if device not in interfaces:
 							newchoice_list.append((device, GLIUtility.get_interface_realname(device)))
-					newchoice_list.append(("Other","Type your own."))
+					newchoice_list.append((_(u"Other"),_(u"Type your own.")))
 					code, newnic = self._d.menu(_("Choose an interface from the list or Other to type your own if it was not detected."), choices=newchoice_list, width=75)
 				else:
-					newnic == "Other"
-				if newnic == "Other":
-					code, newnic = self._d.inputbox("Enter name for new interface (eth0, ppp0, etc.)")
+					newnic == _(u"Other")
+				if newnic == _(u"Other"):
+					code, newnic = self._d.inputbox(_(u"Enter name for new interface (eth0, ppp0, etc.)"))
 					if code != self._DLG_OK: 
 						continue
 					if newnic in interfaces:
-						self._d.msgbox("An interface with the name is already defined.")
+						self._d.msgbox(_(u"An interface with the name is already defined."))
 						continue
 				#create the interface in the data structure.
 				#interfaces[newnic] = ("", "", "")
@@ -830,7 +830,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					interfaces[newnic] = ('dhcp', dhcp_options, None)
 				else:
 					network_type = 'static'
-					code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15),('Enter your Broadcast address:', 15),('Enter your Netmask:',15,'255.255.255.0')))
+					code, data = self._d.form(_(u'Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!'), ((_(u'Enter your IP address:'), 15),(_(u'Enter your Broadcast address:'), 15),(_(u'Enter your Netmask:'),15,'255.255.255.0')))
 					(ip_address, broadcast, netmask) = data[:-1].split('\n')
 					if code != self._DLG_OK: 
 						continue
@@ -851,7 +851,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						interfaces[iface_choice] = ('dhcp', dhcp_options, None)
 					else:
 						network_type = 'static'
-						code, data = self._d.form('Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!', (('Enter your IP address:', 15, interfaces[iface_choice][0]),('Enter your Broadcast address:', 15, interfaces[iface_choice][1]),('Enter your Netmask:',15,interfaces[iface_choice][2])))
+						code, data = self._d.form(_(u'Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!'), ((_(u'Enter your IP address:'), 15, interfaces[iface_choice][0]),(_(u'Enter your Broadcast address:'), 15, interfaces[iface_choice][1]),(_(u'Enter your Netmask:'),15,interfaces[iface_choice][2])))
 						(ip_address, broadcast, netmask) = data[:-1].split('\n')
 						if code != self._DLG_OK: 
 							continue
@@ -862,7 +862,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					#Reset the Yes/No buttons
 					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 					self._d.add_persistent_args(["--no-label", _(u"No")])
-					if self._d.yesno("Are you sure you want to remove the interface " + iface_choice + "?") == self._DLG_YES:
+					if self._d.yesno(_(u"Are you sure you want to remove the interface ") + iface_choice + "?") == self._DLG_YES:
 						del interfaces[iface_choice]
 			
 		#This section is for defining DNS servers, default routes/gateways, hostname, etc.
@@ -871,14 +871,14 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		choice_list = []
 		for iface in interfaces:
 			if interfaces[iface][0] == 'dhcp':
-				choice_list.append((iface, "Settings: DHCP. Options: "+ interfaces[iface][1],0))
+				choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1],0))
 			else:
-				choice_list.append((iface, "Settings: IP: "+interfaces[iface][0]+" Broadcast: "+interfaces[iface][1]+" Netmask: "+interfaces[iface][2],0))
+				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2],0))
 		string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
 		code, gateway_iface = self._d.radiolist(string3, choices=choice_list, height=18, width=67)
 		if code == self._DLG_OK:  #They made a choice.  Ask the IP if not DHCP.
 			while interfaces[gateway_iface][0] != 'dhcp':
-				code, ip = self._d.inputbox("Enter an IP address for " + gateway_iface, init=interfaces[gateway_iface][0])
+				code, ip = self._d.inputbox(_(u"Enter the gateway IP address for ") + gateway_iface, init=interfaces[gateway_iface][0])
 				if code != self._DLG_OK:
 					break
 				if not GLIUtility.is_ip(ip):
@@ -893,7 +893,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		error = True
 		while error:
 			error = False
-			code, data = self._d.form('Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!', (('Enter your Hostname:', 25, self._install_profile.get_hostname()),('Enter your Domain Name:', 25, self._install_profile.get_domainname()),('Enter your NIS Domain Name:',25,self._install_profile.get_nisdomainname()),('Enter a primary DNS server:',15),('Enter a backup DNS server:',15), ('Enter a HTTP Proxy IP:', 15,self._install_profile.get_http_proxy()),('Enter a FTP Proxy IP:', 15, self._install_profile.get_ftp_proxy()), ('Enter a RSYNC Proxy:',15,self._install_profile.get_rsync_proxy())))
+			code, data = self._d.form(_(u'Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!'), ((_(u'Enter your Hostname:'), 25, self._install_profile.get_hostname()),(_(u'Enter your Domain Name:'), 25, self._install_profile.get_domainname()),(_(u'Enter your NIS Domain Name:'),25,self._install_profile.get_nisdomainname()),(_(u'Enter a primary DNS server:'),15),(_(u'Enter a backup DNS server:'),15), (_(u'Enter a HTTP Proxy IP:'), 15,self._install_profile.get_http_proxy()),(_(u'Enter a FTP Proxy IP:'), 15, self._install_profile.get_ftp_proxy()), (_(u'Enter a RSYNC Proxy:'),15,self._install_profile.get_rsync_proxy())))
 			if code != self._DLG_OK:
 				return
 			(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data[:-1].split('\n')
@@ -946,7 +946,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True
 			if http_proxy:
 				if not GLIUtility.is_uri(http_proxy):
-					self._d.msgbox("Incorrect HTTP Proxy! It must be a uri. Not saved.")
+					self._d.msgbox(_(u"Incorrect HTTP Proxy! It must be a uri. Not saved."))
 					error = True
 				else:
 					try:
@@ -956,7 +956,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True					
 			if ftp_proxy:
 				if not GLIUtility.is_uri(ftp_proxy):
-					self._d.msgbox("Incorrect FTP Proxy! It must be a uri. Not saved.")
+					self._d.msgbox(_(u"Incorrect FTP Proxy! It must be a uri. Not saved."))
 					error = True
 				else:
 					try:
@@ -966,7 +966,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True
 			if rsync_proxy:
 				if not GLIUtility.is_uri(rsync_proxy):
-					self._d.msgbox("Incorrect RSYNC Proxy! It must be a uri. Not saved.")
+					self._d.msgbox(_(u"Incorrect RSYNC Proxy! It must be a uri. Not saved."))
 					error = True
 				else:
 					try:
@@ -976,7 +976,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True
 
 	def _set_cron_daemon(self):
-		cron_daemons = (("vixie-cron", "Paul Vixie's cron daemon, fully featured, RECOMMENDED."), ("dcron","A cute little cron from Matt Dillon."), ("fcron", "A command scheduler with extended capabilities over cron and anacron"), ("None", "Don't use a cron daemon. (NOT Recommended!)"))
+		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A command scheduler with extended capabilities over cron and anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
 		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=68)
 		if code == self._DLG_OK:
@@ -985,7 +985,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._install_profile.set_cron_daemon_pkg(None, menuitem, None)
 
 	def _set_logger(self):
-		loggers = (("syslog-ng", "An advanced system logger."), ("metalog", "A Highly-configurable system logger."), ("syslogkd", "The traditional set of system logging daemons."))
+		loggers = (("syslog-ng", _(u"An advanced system logger.")), ("metalog", _(u"A Highly-configurable system logger.")), ("syslogkd", _(u"The traditional set of system logging daemons.")))
 		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  Choose a system logger:")
 		code, menuitem = self._d.menu(string, choices=loggers, height=21, width=68)
 		if code == self._DLG_OK:
@@ -995,9 +995,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
 		install_packages = ""
 		while 1:
-			highlevel_menu = [("Desktop", "Popular Desktop Applications"), ("Servers", "Applications often found on servers."), ("X11", "Window managers and X selection."), ("Misc", "Miscellaneous Applications you may want."), ("Recommended", "Applications recommended by the Gentoo Linux Installer Team."), ("Manual", "Type your own space-separated list of packages to install.")]
+			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")), (_(u"Servers"), _(u"Applications often found on servers.")), (_(u"X11"), _(u"Window managers and X selection.")), (_(u"Misc"), _(u"Miscellaneous Applications you may want.")), (_(u"Recommended"), _(u"Applications recommended by the Gentoo Linux Installer Team.")), (_(u"Manual"), _(u"Type your own space-separated list of packages to install."))]
 			string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
-			code, submenu = self._d.menu(string1+ "\nYour current package list is: "+install_packages, choices=highlevel_menu, cancel="Save and Continue", width=70, height=23)
+			code, submenu = self._d.menu(string1+ _(u"\nYour current package list is: ")+install_packages, choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
 			if code != self._DLG_OK:  #Save and move on.
 				try:
 					if install_packages[-1] == " ":
@@ -1008,24 +1008,24 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				return
 			#Popular Desktop Applications
 			choices_list = []
-			if submenu == "Desktop":
+			if submenu == _(u"Desktop"):
 				choices_list = [("gaim","GTK Instant Messenger client",0), ("gftp","Gnome based FTP Client",0), ("evolution","A GNOME groupware application, a Microsoft Outlook workalike",0), ("mozilla-firefox","The Mozilla Firefox Web Browser",0), ("mplayer","Media Player for Linux",0), ("openoffice","OpenOffice.org, a full office productivity suite.",0), ("openoffice-bin","Same as OpenOffice but a binary package (no compiling!)",0), ("realplayer","Real Media Player",0), ("xchat","Graphical IRC Client",0), ("xmms", "X MultiMedia System",0)]
 			#Applications often found on servers.
-			elif submenu == "Servers":
+			elif submenu == _(u"Servers"):
 				choices_list = [("apache","Apache Web Server",0), ("iptables","Linux kernel (2.4+) firewall, NAT and packet mangling tools",0), ("proftpd","ProFTP Server",0), ("samba","SAMBA client/server programs for UNIX",0), ("traceroute","Utility to trace the route of IP packets",0)]
 			#Window managers and X selection.
-			elif submenu == "X11":
+			elif submenu == _(u"X11"):
 				choices_list = [("xorg-x11","An X11 implementation maintained by the X.Org Foundation.",0), ("gnome","The Gnome Desktop Environment",0), ("kde","The K Desktop Environment",0), ("blackbox","A small, fast, full-featured window manager for X",0), ("enlightenment","Enlightenment Window Manager",0), ("fluxbox","Fluxbox is an X11 window manager featuring tabs and an iconbar",0), ("xfce4","XFCE Desktop Environment",0)]
 			#Miscellaneous Applications you may want.
-			elif submenu == "Misc":
+			elif submenu == _(u"Misc"):
 				choices_list = [("gkrellm","Single process stack of various system monitors",0), ("logrotate","Rotates, compresses, and mails system logs",0), ("slocate","Secure way to index and quickly search for files on your system",0), ("ufed","Gentoo Linux USE flags editor",0)]
 			#Recommended by the Gentoo Linux Installer Team
-			elif submenu == "Recommended":
+			elif submenu == _(u"Recommended"):
 				choices_list = [("anjuta","A versatile IDE for GNOME",0), ("chkrootkit","a tool to locally check for signs of a rootkit",0), ("crack-attack","Addictive OpenGL-based block game",0), ("enemy-territory","Return to Castle Wolfenstein: Enemy Territory",0), ("netcat","the network swiss army knife",0), ("nmap","A utility for network exploration or security auditing",0), ("screen","full-screen window manager that multiplexes between several processes",0)]
-			elif submenu == "Manual":
-				code, install_packages = self._d.inputbox("Enter a space-separated list of extra packages to install on the system", init=install_packages, width=70) 
+			elif submenu == _(u"Manual"):
+				code, install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=install_packages, width=70) 
 				continue
-			code, choices = self._d.checklist("Choose from the listed packages", choices=choices_list, height=19, list_height=10, width=77)
+			code, choices = self._d.checklist(_(u"Choose from the listed packages"), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
 			for package in choices:
@@ -1053,11 +1053,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			code, passwd1 = self._d.passwordbox(_(u"Please enter your desired password for the root account.  (note it will not show the password.  Also do not try to use backspace.):"))
 			if code != self._DLG_OK: 
 				return
-			code, passwd2 = self._d.passwordbox("Enter the new root password again for confirmation")
+			code, passwd2 = self._d.passwordbox(_(u"Enter the new root password again for confirmation"))
 			if code != self._DLG_OK: 
 				return
 			if passwd1 != passwd2:
-				self._d.msgbox("The passwords do not match.  Please try again or cancel.")
+				self._d.msgbox(_(u"The passwords do not match.  Please try again or cancel."))
 			else:
 				try:
 					self._install_profile.set_root_pass_hash(None, GLIUtility.hash_password(passwd1), None)
@@ -1076,7 +1076,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			for user in users:
 				menu_list.append(user)
 			menu_list.sort()
-			menu_list.append("Add user")
+			menu_list.append(_(u"Add user"))
 			string1 = _(u"Working as root on a Unix/Linux system is dangerous and should be avoided as much as possible. Therefore it is strongly recommended to add a user for day-to-day use.  Choose a user to edit:")
 			code, menuitem = self._d.menu(string1, choices=self._dmenu_list_to_choices(menu_list), cancel="Save and Continue")
 			if code != self._DLG_OK:
@@ -1090,81 +1090,81 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					self._d.msgbox(_(u"ERROR! Could not set the additional users!"))
 				break
 			menuitem = menu_list[int(menuitem)-1]
-			if menuitem == "Add user":
-				code, newuser = self._d.inputbox("Enter the username for the new user")
+			if menuitem == _(u"Add user"):
+				code, newuser = self._d.inputbox(_(u"Enter the username for the new user"))
 				if code != self._DLG_OK: 
 					continue
 				if newuser in users:
-					self._d.msgbox("A user with that name already exists")
+					self._d.msgbox(_(u"A user with that name already exists"))
 					continue
-				code, passwd1 = self._d.passwordbox("Enter the new password for user "+ newuser)
-				code, passwd2 = self._d.passwordbox("Enter the new password again for confirmation")
+				code, passwd1 = self._d.passwordbox(_(u"Enter the new password for user ")+ newuser)
+				code, passwd2 = self._d.passwordbox(_(u"Enter the new password again for confirmation"))
 				if code == self._DLG_OK: 
 					if passwd1 != passwd2:
-						self._d.msgbox("The passwords do not match! Go to the menu and try again.")
+						self._d.msgbox(_(u"The passwords do not match! Go to the menu and try again."))
 				#Create the entry for the new user
 				new_user = [newuser, GLIUtility.hash_password(passwd1), ('users',), '/bin/bash', '/home/' + newuser, '', '']
 				users[newuser] = new_user
 				menuitem = newuser
 			while 1:
-				menulist = ["Password", "Group Membership", "Shell", "Home Directory", "UID", "Comment", "Delete"]
-				code, menuitem2 = self._d.menu("Choose an option for user " + menuitem, choices=self._dmenu_list_to_choices(menulist), cancel="Back")
+				menulist = [_(u"Password"), _(u"Group Membership"), _(u"Shell"), _(u"Home Directory"), _(u"UID"), _(u"Comment"), _(u"Delete")]
+				code, menuitem2 = self._d.menu(_(u"Choose an option for user ") + menuitem, choices=self._dmenu_list_to_choices(menulist), cancel=_(u"Back"))
 				if code != self._DLG_OK: 
 					break
 				menuitem2 = menulist[int(menuitem2)-1]
-				if menuitem2 == "Password":
-					code, passwd1 = self._d.passwordbox("Enter the new password")
+				if menuitem2 == _(u"Password"):
+					code, passwd1 = self._d.passwordbox(_(u"Enter the new password"))
 					if code != self._DLG_OK: 
 						continue
-					code, passwd2 = self._d.passwordbox("Enter the new password again")
+					code, passwd2 = self._d.passwordbox(_(u"Enter the new password again"))
 					if code != self._DLG_OK: 
 						continue
 					if passwd1 != passwd2:
-						self._d.msgbox("The passwords do not match! Try again.")
+						self._d.msgbox(_(u"The passwords do not match! Try again."))
 						continue
 					self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
 					users[menuitem][1] = GLIUtility.hash_password(passwd1)
-				elif menuitem2 == "Group Membership":
-					choice_list = [("users", "The usual group for normal users.", 1), ("wheel", "Allows users to attempt to su to root.", 0), ("audio", "Allows access to audio devices.", 0), ("games", "Allows access to games.", 0), ("apache", "For users who know what they're doing only.", 0), ("cdrom", "For users who know what they're doing only.", 0), ("ftp", "For users who know what they're doing only.", 0), ("video", "For users who know what they're doing only.", 0), ("Other", "Manually specify your groups in a comma-separated list.", 0)]
+				elif menuitem2 == _(u"Group Membership"):
+					choice_list = [("users", _(u"The usual group for normal users."), 1), ("wheel", _(u"Allows users to attempt to su to root."), 0), ("audio", _(u"Allows access to audio devices."), 0), ("games", _(u"Allows access to games."), 0), ("apache", _(u"For users who know what they're doing only."), 0), ("cdrom", _(u"For users who know what they're doing only."), 0), ("ftp", _(u"For users who know what they're doing only."), 0), ("video", _(u"For users who know what they're doing only."), 0), (_(u"Other"), _(u"Manually specify your groups in a comma-separated list."), 0)]
 					string2 = _(u"Select which groups you would like the user %s to be in." % menuitem)
 					code, group_list = self._d.checklist(string2, choices=choice_list, height=19, list_height=10, width=68)
 					groups = ""
 					for group in group_list:
 						groups += group + ","
 					groups = groups[:-1]
-					if "Other" in group_list:
-						code, groups = self._d.inputbox("Enter a comma-separated list of groups the user is to be in", init=",".join(users[menuitem][2]))
+					if _(u"Other") in group_list:
+						code, groups = self._d.inputbox(_(u"Enter a comma-separated list of groups the user is to be in"), init=",".join(users[menuitem][2]))
 						if code != self._DLG_OK: continue
 					users[menuitem][2] = string.split(groups, ",")
-				elif menuitem2 == "Shell":
-					code, shell = self._d.inputbox("Enter the shell you want the user to use.  default is /bin/bash.  ", init=users[menuitem][3])
+				elif menuitem2 == _(u"Shell"):
+					code, shell = self._d.inputbox(_(u"Enter the shell you want the user to use.  default is /bin/bash.  "), init=users[menuitem][3])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][3] = shell
-				elif menuitem2 == "Home Directory":
-					code, homedir = self._d.inputbox("Enter the user's home directory. default is /home/username.  ", init=users[menuitem][4])
+				elif menuitem2 == _(u"Home Directory"):
+					code, homedir = self._d.inputbox(_(u"Enter the user's home directory. default is /home/username.  "), init=users[menuitem][4])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][4] = homedir
-				elif menuitem2 == "UID":
-					code, uid = self._d.inputbox("Enter the user's UID. If left blank the system will choose a default value (this is recommended).", init=users[menuitem][5])
+				elif menuitem2 == _(u"UID"):
+					code, uid = self._d.inputbox(_(u"Enter the user's UID. If left blank the system will choose a default value (this is recommended)."), init=users[menuitem][5])
 					if code != self._DLG_OK: 
 						continue
 					if type(uid) != int: 
 						continue
 					users[menuitem][5] = uid
-				elif menuitem2 == "Comment":
-					code, comment = self._d.inputbox("Enter the user's comment.  This is completely optional.", init=users[menuitem][6])
+				elif menuitem2 == _(u"Comment"):
+					code, comment = self._d.inputbox(_(u"Enter the user's comment.  This is completely optional."), init=users[menuitem][6])
 					if code != self._DLG_OK: 
 						continue
 					users[menuitem][6] = comment
-				elif menuitem2 == "Delete":
-					if self._d.yesno("Are you sure you want to delete the user " + menuitem + "?") == self._DLG_YES:
+				elif menuitem2 == _(u"Delete"):
+					if self._d.yesno(_(u"Are you sure you want to delete the user ") + menuitem + "?") == self._DLG_YES:
 						del users[menuitem]
 						break
 
 	def _set_services(self):
-		choice_list = [("alsasound", "ALSA Sound Daemon",0), ("apache", "Common web server (version 1.x)",0), ("apache2", "Common web server (version 2.x)",0), ("distccd", "Distributed Compiling System",0), ("esound", "ESD Sound Daemon",0), ("hdparm", "Hard Drive Tweaking Utility",0), ("local", "Run scripts found in /etc/conf.d/local.start",0), ("portmap", "Port Mapping Service",0), ("proftpd", "Common FTP server",0), ("sshd", "SSH Daemon (allows remote logins)",0), ("Other","Manually specify your services in a comma-separated list.",0)]
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),0), ("apache", _(u"Common web server (version 1.x)"),0), ("apache2", _(u"Common web server (version 2.x)"),0), ("distccd", _(u"Distributed Compiling System"),0), ("esound", _(u"ESD Sound Daemon"),0), ("hdparm", _(u"Hard Drive Tweaking Utility"),0), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),0), ("portmap", _(u"Port Mapping Service"),0), ("proftpd", _(u"Common FTP server"),0), ("sshd", _(u"SSH Daemon (allows remote logins)"),0), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
 		code, services_list = self._d.checklist(string, choices=choice_list, height=19, list_height=10, width=68)
 		if code != self._DLG_OK:
@@ -1173,7 +1173,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		for service in services_list:
 			services += service + ","
 		services = services[:-1]
-		if "Other" in services_list:
+		if _(u"Other") in services_list:
 			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
 		if code != self._DLG_OK: 
 			return
@@ -1186,11 +1186,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		code = 0
 		filename = xmlfilename
 		if askforfilename:
-			code, filename = self._d.inputbox("Enter a filename for the XML file", init=xmlfilename)
+			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
 			if code != self._DLG_OK: 
 				return None
 		if GLIUtility.is_file(filename):
-			if not self._d.yesno("The file " + filename + " already exists. Do you want to overwrite it?") == self._DLG_YES:
+			if not self._d.yesno(_(u"The file %s already exists. Do you want to overwrite it?") % filename) == self._DLG_YES:
 				return None
 		configuration = open(filename ,"w")
 		configuration.write(self._install_profile.serialize())
