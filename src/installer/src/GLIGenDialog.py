@@ -301,7 +301,8 @@ class GLIGenIP(GLIGen):
 		#	self._install_profile.set_portage_tree_sync_type(None, "none", None)
 		#if portage_tree_sync == "Snapshot  (using a portage snapshot)":
 		#	self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
-			self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
+		self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
+		if portage_tree_sync.lower() == "Snapshot":
 			snapshot_options = (_(u"Use Local"), _(u"Specify URI"))
 			code, snapshot_option = self._d.menu(_(u"Select a local portage snapshot or manually specify a location:"), choices=self._dmenu_list_to_choices(snapshot_options))
 			snapshot_option = snapshot_options[int(snapshot_option)-1]
@@ -601,7 +602,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		else:  #Unstable
 			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
-		while 1:
+		while not self.advanced_mode:
 			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform. (ex. CPUs+1)")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
 			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"))
 			if code != self._DLG_OK: 
@@ -635,26 +636,27 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			string1 = _(u"There are currently two ways the installer can compile a kernel for your new system.  You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).  \n\n If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel.  Choose which method you want to use.")
 			if self._d.yesno(string1, width=70, height=13) == self._DLG_YES:   #Genkernel
 				self._install_profile.set_kernel_build_method(None,"genkernel", None)
-				#Change the Yes/No buttons back.
-				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
-				self._d.add_persistent_args(["--no-label", _(u"No")])
-				if self._d.yesno(_(u"Do you want the bootsplash screen to show up on bootup?")) == self._DLG_YES:
-					self._install_profile.set_kernel_bootsplash(None, True, None)
-				else:
-					self._install_profile.set_kernel_bootsplash(None, False, None)
+				if self.advanced_mode:
+					#Change the Yes/No buttons back.
+					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+					self._d.add_persistent_args(["--no-label", _(u"No")])
+					if self._d.yesno(_(u"Do you want the bootsplash screen to show up on bootup?")) == self._DLG_YES:
+						self._install_profile.set_kernel_bootsplash(None, True, None)
+					else:
+						self._install_profile.set_kernel_bootsplash(None, False, None)
 			else: 	#Custom
 				self._install_profile.set_kernel_build_method(None,"custom", None)
-				
-			code, custom_kernel_uri = self._d.inputbox(_(u"If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):"))
-			if code == self._DLG_OK: 
-				if custom_kernel_uri: 
-					if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
-						self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
-					else: 
-						try:
-							self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
-						except:
-							self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
+			if self.advanced_mode:
+				code, custom_kernel_uri = self._d.inputbox(_(u"If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):"))
+				if code == self._DLG_OK: 
+					if custom_kernel_uri: 
+						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
+							self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
+						else: 
+							try:
+								self._install_profile.set_kernel_config_uri(None, custom_kernel_uri, None)
+							except:
+								self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
 				#else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
 				
 				
@@ -751,7 +753,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._install_profile.set_boot_loader_pkg(None, menuitem, None)
 		except:
 			self._d.msgbox(_(u"ERROR! Could not set boot loader pkg! ")+menuitem)
-		if menuitem != "none":
+		if menuitem != "none" and self.advanced_mode:
 			#Reset the Yes/No labels.
 			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 			self._d.add_persistent_args(["--no-label",_(u"No")])
@@ -759,12 +761,13 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
 				self._install_profile.set_boot_loader_mbr(None, False, None)
-		code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"))
-		if code == self._DLG_OK:
-			try:
-				self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
-			except:
-				self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
+		if self.advanced_mode:
+			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"))
+			if code == self._DLG_OK:
+				try:
+					self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
 	
 	def _set_networking(self):
 	# This section will be for setting up network interfaces
@@ -826,7 +829,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
 				if self._d.yesno(string2, height=15, width=60) == self._DLG_YES: #DHCP
 					dhcp_options = ""
-					code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
+					if self.advanced_mode:
+						code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
 					interfaces[newnic] = ('dhcp', dhcp_options, None)
 				else:
 					network_type = 'static'
@@ -847,7 +851,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					self._d.add_persistent_args(["--no-label", _(u"Static IP/Manual")])
 					if self._d.yesno(string2, height=15, width=60) == self._DLG_YES: #DHCP
 						dhcp_options = ""
-						code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
+						if self.advanced_mode:
+							code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
 						interfaces[iface_choice] = ('dhcp', dhcp_options, None)
 					else:
 						network_type = 'static'
@@ -891,12 +896,26 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				break
 		#Now ask for the other info in a large form.
 		error = True
+		hostname = ""
+		domainname = ""
+		nisdomainname = ""
+		primary_dns = ""
+		backup_dns = ""
+		http_proxy = ""
+		ftp_proxy = ""
+		rsync_proxy = ""
 		while error:
 			error = False
-			code, data = self._d.form(_(u'Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!'), ((_(u'Enter your Hostname:'), 25, self._install_profile.get_hostname()),(_(u'Enter your Domain Name:'), 25, self._install_profile.get_domainname()),(_(u'Enter your NIS Domain Name:'),25,self._install_profile.get_nisdomainname()),(_(u'Enter a primary DNS server:'),15),(_(u'Enter a backup DNS server:'),15), (_(u'Enter a HTTP Proxy IP:'), 15,self._install_profile.get_http_proxy()),(_(u'Enter a FTP Proxy IP:'), 15, self._install_profile.get_ftp_proxy()), (_(u'Enter a RSYNC Proxy:'),15,self._install_profile.get_rsync_proxy())))
-			if code != self._DLG_OK:
-				return
-			(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data[:-1].split('\n')
+			if self.advanced_mode:
+				code, data = self._d.form(_(u'Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!'), ((_(u'Enter your Hostname:'), 25, self._install_profile.get_hostname()),(_(u'Enter your Domain Name:'), 25, self._install_profile.get_domainname()),(_(u'Enter your NIS Domain Name:'),25,self._install_profile.get_nisdomainname()),(_(u'Enter a primary DNS server:'),15),(_(u'Enter a backup DNS server:'),15), (_(u'Enter a HTTP Proxy IP:'), 15,self._install_profile.get_http_proxy()),(_(u'Enter a FTP Proxy IP:'), 15, self._install_profile.get_ftp_proxy()), (_(u'Enter a RSYNC Proxy:'),15,self._install_profile.get_rsync_proxy())))
+				if code != self._DLG_OK:
+					return
+				(hostname, domainname, nisdomainname, primary_dns, backup_dns, http_proxy, ftp_proxy, rsync_proxy) = data[:-1].split('\n')
+			else: #standard mode
+				code, data = self._d.form(_(u'Fill out the remaining networking settings.  The hostname is manditory as that is the name of your computer.  Leave the other fields blank if you are not using them.  If using DHCP you do not need to enter DNS servers.  Do not press Enter until all fields are complete!'), ((_(u'Enter your Hostname:'), 25, self._install_profile.get_hostname()),(_(u'Enter your Domain Name:'), 25, self._install_profile.get_domainname()),(_(u'Enter a primary DNS server:'),15),(_(u'Enter a backup DNS server:'),15)))
+				if code != self._DLG_OK:
+					return
+				(hostname, domainname, primary_dns, backup_dns) = data[:-1].split('\n')
 			#Check the data before entering it.				
 			if hostname:
 				if type(hostname) != str:
@@ -1032,21 +1051,102 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				install_packages += package + " "	
 	def _set_rc_conf(self):
 	# This section is for editing /etc/rc.conf
-		rc_conf = self._install_profile.get_rc_conf()
-		menulist = ["KEYMAP", "SET_WINDOWSKEYS", "EXTENDED_KEYMAPS", "CONSOLEFONT", "CONSOLETRANSLATION", "CLOCK", "EDITOR", "PROTOCOLS", "DISPLAYMANAGER", "XSESSION"]
+		if not self.advanced_mode:
+			return
+		etc_files = self._install_profile.get_etc_files()
+		keymap = ""
+		windowkeys = ""
+		ext_keymap = ""
+		font = ""
+		trans = ""
+		clock = ""
+		editor = ""
+		prots = ""
+		xsession = ""
+		string1 = _(u"Additional configuration settings for Advanced users (rc.conf)\nHere are some other variables you can set in various configuration files on the new system.  If you don't know what a variable does, don't change it!")
+		menulist = [("KEYMAP",_(u"Use KEYMAP to specify the default console keymap.")), ("SET_WINDOWSKEYS", _(u"Decision to first load the 'windowkeys' console keymap")), ("EXTENDED_KEYMAPS", _(u"maps to load for extended keyboards.  Most users will leave this as is.")), ("CONSOLEFONT", _(u"Specifies the default font that you'd like Linux to use on the console.")), ("CONSOLETRANSLATION", _(u"The charset map file to use.")), ("CLOCK", _(u"Set the clock to either UTC or local")), ("EDITOR", _(u"Set EDITOR to your preferred editor.")), ("PROTOCOLS", _(u"Gentoo Linux will only enable module auto-loading for these protocols")), ("DISPLAYMANAGER", _(u"What display manager do you use ?  [ xdm | gdm | kdm | entrance ]")), ("XSESSION", _(u"a new variable to control what window manager to start default with X"))]
 		while 1:
-			code, menuitem = self._d.menu("Choose a variable to edit", choices=self._dmenu_list_to_choices(menulist), cancel="Done")
+			code, variable = self._d.menu(string1, choices=menulist, cancel=_(u"Save and Continue"))
 			if code != self._DLG_OK: 
 				break
-			menuitem = menulist[int(menuitem)-1]
-			oldval = ""
-			if rc_conf.has_key(menuitem): 
-				oldval = rc_conf[menuitem]
-			code, newval = self._d.inputbox("Enter new value for " + menuitem, init=oldval)
-			if code == self._DLG_OK:
-				rc_conf[menuitem] = newval
-				self._install_profile.set_rc_conf(rc_conf)
+			if variable == "KEYMAP":
+				keymap_list = GLIUtility.generate_keymap_list()
+				code, keymap = self._d.menu(_(u"Choose your desired keymap:"), choices=self._dmenu_list_to_choices(keymap_list), height=23)
+				if code != self._DLG_OK:
+					continue
+				keymap = keymap_list[int(keymap)-1]
+				
+			elif variable == "SET_WINDOWSKEYS":
+				#Reset the Yes/No buttons
+				self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+				self._d.add_persistent_args(["--no-label", _(u"No")])
+				if self._d.yesno(_(u"Should we first load the 'windowkeys' console keymap?  Most x86 users will say 'yes' here.  Note that non-x86 users should leave it as 'no'.")) == self._DLG_YES:
+					windowkeys = "yes"
+				else:
+					windowkeys = "no"
+			elif variable == "EXTENDED_KEYMAPS":
+				code, ext_keymap = self._d.inputbox(_(u"This sets the maps to load for extended keyboards.  Most users will leave this as is.  Enter new value for EXTENDED_KEYMAPS"))
+			elif variable == "CONSOLEFONT":
+				font_list = GLIUtility.generate_consolefont_list()
+				code, font = self._d.menu(_(u"Choose your desired console font:"), choices=self._dmenu_list_to_choices(font_list), height=23)
+				if code != self._DLG_OK:
+					continue
+				font = font_list[int(font)-1]
+			elif variable == "CONSOLETRANSLATION":
+				trans_list = GLIUtility.generate_consoletranslation_list()
+				code, trans = self._d.menu(_(u"Choose your desired console translation:"), choices=self._dmenu_list_to_choices(trans_list))
+				if code != self._DLG_OK:
+					continue
+				trans = trans_list[int(trans)-1]
+			elif variable == "CLOCK":
+				#Change the Yes/No buttons to new labels for this question.
+				self._d.add_persistent_args(["--yes-label", "UTC"])
+				self._d.add_persistent_args(["--no-label", "local"])
+				if self._d.yesno(_(u"Should CLOCK be set to UTC or local?  Unless you set your timezone to UTC you will want to choose local.")) == self._DLG_YES:
+					clock = "UTC"
+				else:
+					clock = "local"
+			elif variable == "EDITOR":
+				choice_list = [("/bin/nano", _(u"Default editor.")), ("/usr/bin/vim", _(u"vi improved editor.")), ("/usr/bin/emacs", _(u"The emacs editor."))]
+				code, editor = self._d.menu(_(u"Choose your default editor: "), choices=choice_list)
 
+			elif variable == "PROTOCOLS":
+				choice_list = [("1", "Unix",1),("2","IPv4",1), ("3","Amateur Radio AX.25",0), ("4","IPX",0), ("5","DDP / appletalk",0), ("6","Amateur Radio NET/ROM",0), ("9","X.25",0), ("10","IPv6",0), ("11","ROSE / Amateur Radio X.25 PLP",0), ("19","Acorn Econet",0)]
+				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list)
+				if code != self._DLG_OK:
+					continue
+				prots = ""
+				for prot in protocols:
+					prots += prot + " "
+			elif variable == "DISPLAYMANAGER":
+				choice_list = [("xdm", _(u"X Display Manager")), ("gdm", _(u"Gnome Display Manager")), ("kdm", _(u"KDE Display Manager")), ("entrance", _(u"Login Manager for Enlightenment"))]
+			elif variable == "XSESSION":
+				code, xsession = self._d.inputbox(_(u"Choose what window manager you want to start default with X if run with xdm, startx, or xinit. (common options are Gnome or Xsession:"))
+			
+		if not "conf.d/keymaps" in etc_files: etc_files['conf.d/keymaps'] = {}
+		if not "conf.d/consolefont" in etc_files: etc_files['conf.d/consolefont'] = {}
+		if not "conf.d/clock" in etc_files: etc_files['conf.d/clock'] = {}
+		if not "rc.conf" in etc_files: etc_files['rc.conf'] = {}
+		if keymap:
+			etc_files['conf.d/keymaps']['KEYMAP'] = keymap
+		if windowkeys:
+			etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] = windowkeys
+		if ext_keymap:
+			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = ext_keymap
+		if font:	
+			etc_files['conf.d/consolefont']['CONSOLEFONT'] = font
+		if trans:
+			etc_files['conf.d/consolefont']['CONSOLETRANSLATION'] = trans
+		if clock:
+			etc_files['conf.d/clock']['CLOCK'] = clock
+		if editor:
+			etc_files['rc.conf']['EDITOR'] = editor
+		if prots:
+			etc_files['rc.conf']['PROTOCOLS'] = prots
+		if xsession:
+			etc_files['rc.conf']['XSESSION'] = xsession
+		self._install_profile.set_etc_files(etc_files)
+	
 	def _set_root_password(self):
 	# The root password will be set here
 		while 1:

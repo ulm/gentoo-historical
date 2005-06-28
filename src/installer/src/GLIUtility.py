@@ -560,3 +560,63 @@ def list_mirrors():
 		mirrors.append(mirror.split("|"))
 	mirrors = mirrors[:-1]  #chop off an empty one at the end.
 	return mirrors
+	
+def generate_keymap_list(self):
+	keymap_list = []
+	path = "/usr/share/keymaps"
+	
+	# find /usr/share/keymaps -iname *.map.gz -printf "%f \n"
+	put, get = os.popen4("find "+path+" -iname *.map.gz -printf \"%f \n\"")
+	for keymap in get.readlines():
+		# strip the last 9 chars ( .map.gz\n )
+		keymap.strip()
+		keymap = keymap[:-9]
+		keymap_list.append(keymap)
+	
+	# sort the keymap list
+	keymap_list.sort()
+	
+	return keymap_list
+
+def generate_consolefont_list(self):
+	consolefont_list=[]
+	path = "/usr/share/consolefonts"
+	
+	# find /usr/share/consolefonts -iname *.gz -printf "%f \n"
+	put, get = os.popen4("find "+path+" -iname *.gz -printf \"%f \n\"")
+	for consolefont in get.readlines():
+		# strip the last 5 chars ( .gz\n )
+		consolefont.strip()
+		consolefont = consolefont[:-5]
+		
+		# test if its psfu or psf or fnt
+		# and remove it if necessary
+		if consolefont[-4:]== "psfu":
+			consolefont = consolefont[:-5]
+		if consolefont[-3:]== "psf":
+			consolefont = consolefont[:-4]
+		if consolefont[-3:]=="fnt":
+			consolefont = consolefont[:-4]
+			
+		consolefont_list.append(consolefont)
+			
+	# sort the keymap list
+	consolefont_list.sort()
+	
+	return consolefont_list
+
+def generate_consoletranslation_list(self):
+	consoletranslation_list=[]
+	path = "/usr/share/consoletrans"
+	
+	# find /usr/share/keymaps -iname *.trans -printf "%f \n"
+	put, get = os.popen4("find "+path+" -iname *.trans -printf \"%f \n\"")
+	for consoletran in get.readlines():
+		# strip the last 8 chars ( .trans\n )
+		consoletran.strip()
+		consoletran = consoletran[:-8]
+		consoletranslation_list.append(consoletran)
+		
+	consoletranslation_list.sort()
+	
+	return consoletranslation_list

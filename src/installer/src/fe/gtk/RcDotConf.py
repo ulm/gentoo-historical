@@ -1,6 +1,7 @@
 import gtk
 import os
 import GLIScreen
+import GLIUtility
 from Widgets import Widgets
 
 class Panel(GLIScreen.GLIScreen):
@@ -165,7 +166,7 @@ This is where you setup rc.conf."""
 	
 	def populate_keymap_combo(self, default="us"):
 		# Adds all the keymaps to the dropdown
-		keymaps = self.generate_keymap_list()
+		keymaps = GLIUtility.generate_keymap_list()
 		
 		for i in range(len(keymaps)):
 			keymap = keymaps[i]
@@ -182,7 +183,7 @@ This is where you setup rc.conf."""
 	
 	def populate_consolefont_combo(self, default="default8x16"):
 		# Adds all the consolefonts
-		consolefonts = self.generate_consolefont_list()
+		consolefonts = GLIUtility.generate_consolefont_list()
 		for i in range(len(consolefonts)):
 			consolefont = consolefonts[i]
 			self.consolefont.append_text(consolefont)
@@ -194,7 +195,7 @@ This is where you setup rc.conf."""
 	def populate_consoletranslation_combo(self, default=0):
 		self.consoletranslation.append_text("commented out")
 		
-		consoletranslations = self.generate_consoletranslation_list()
+		consoletranslations = GLIUtility.generate_consoletranslation_list()
 		
 		for i in range(len(consoletranslations)):
 			consoletran = consoletranslations[i]
@@ -226,66 +227,6 @@ This is where you setup rc.conf."""
 		self.xsession.append_text("Xsession")
 		self.xsession.set_active(-1)
 		
-	def generate_keymap_list(self):
-		keymap_list = []
-		path = "/usr/share/keymaps"
-		
-		# find /usr/share/keymaps -iname *.map.gz -printf "%f \n"
-		put, get = os.popen4("find "+path+" -iname *.map.gz -printf \"%f \n\"")
-		for keymap in get.readlines():
-			# strip the last 9 chars ( .map.gz\n )
-			keymap.strip()
-			keymap = keymap[:-9]
-			keymap_list.append(keymap)
-		
-		# sort the keymap list
-		keymap_list.sort()
-		
-		return keymap_list
-	
-	def generate_consolefont_list(self):
-		consolefont_list=[]
-		path = "/usr/share/consolefonts"
-		
-		# find /usr/share/consolefonts -iname *.gz -printf "%f \n"
-		put, get = os.popen4("find "+path+" -iname *.gz -printf \"%f \n\"")
-		for consolefont in get.readlines():
-			# strip the last 5 chars ( .gz\n )
-			consolefont.strip()
-			consolefont = consolefont[:-5]
-			
-			# test if its psfu or psf or fnt
-			# and remove it if necessary
-			if consolefont[-4:]== "psfu":
-				consolefont = consolefont[:-5]
-			if consolefont[-3:]== "psf":
-				consolefont = consolefont[:-4]
-			if consolefont[-3:]=="fnt":
-				consolefont = consolefont[:-4]
-				
-			consolefont_list.append(consolefont)
-				
-		# sort the keymap list
-		consolefont_list.sort()
-		
-		return consolefont_list
-	
-	def generate_consoletranslation_list(self):
-		consoletranslation_list=[]
-		path = "/usr/share/consoletrans"
-		
-		# find /usr/share/keymaps -iname *.trans -printf "%f \n"
-		put, get = os.popen4("find "+path+" -iname *.trans -printf \"%f \n\"")
-		for consoletran in get.readlines():
-			# strip the last 8 chars ( .trans\n )
-			consoletran.strip()
-			consoletran = consoletran[:-8]
-			consoletranslation_list.append(consoletran)
-			
-		consoletranslation_list.sort()
-		
-		return consoletranslation_list
-	
 	def get_combo_current_text(self, widget):
 		model = widget.get_model()
 		active = widget.get_active()
