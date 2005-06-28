@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.65 2005/06/28 04:02:31 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.66 2005/06/28 16:38:55 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -863,7 +863,10 @@ class InstallProfile:
 	##
 	# Return a dictionary of the make.conf
 	def get_make_conf(self):
-		return self._etc_files['make.conf']
+		if "make.conf" in self._etc_files:
+			return self._etc_files['make.conf']
+		else:
+			return {}
 		
 	##
 	# Serializes make.conf (no longer used)
