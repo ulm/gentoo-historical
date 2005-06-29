@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.47 2005/06/16 15:51:47 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.48 2005/06/29 01:08:02 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -312,7 +312,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				# now format the partition
 				# extended and 'free' partitions should never be formatted
 				if newpart['format'] and newpart['type'] not in ('extended', 'free'):
-					devnode = device + str(part)
+					devnode = device + str(int(part))
 					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
 					# if you need a special command and
 					# some base options, place it here.
@@ -338,7 +338,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					# PartitionFormatError :FATAL: partition: could't create ext2 filesystem on /dev/hda1
 					#if GLIUtility.spawn(cmd):
 					#if GLIUtility.spawn(cmd,append_log=True,logfile='/var/log/install-mkfs.log'):
-					if GLIUtility.spawn(cmd,logfile='/dev/null'):
+					ret  GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True):
+					if not GLIUtility.exitsuccess(ret):
 						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
 				start = end + 1
 

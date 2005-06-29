@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.66 2005/06/28 16:38:55 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.67 2005/06/29 01:08:02 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1124,7 +1124,11 @@ class InstallProfile:
 #		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = long(part_entry['end'])
 #		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = long(part_entry['start'])
 		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = long(part_entry['mb'])
-		if GLIUtility.is_numeric(part_entry['minor']): part_entry['minor'] = float(part_entry['minor'])
+		if GLIUtility.is_numeric(part_entry['minor']):
+			if part_entry['type'] == "free":
+				part_entry['minor'] = float(part_entry['minor'])
+			else:
+				part_entry['minor'] = int(part_entry['minor'])
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
 		self._temp_partition_table[part_entry['minor']] = part_entry
 
