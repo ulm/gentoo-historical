@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.148 2005/06/28 07:43:30 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.149 2005/06/29 19:25:11 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -113,7 +113,7 @@ class ArchitectureTemplate:
 	# Private Function.  Will return a list of packages to be emerged for a given command.  Not yet used.
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
-		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: +$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
+		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 
 	##
 	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
@@ -129,6 +129,10 @@ class ArchitectureTemplate:
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
 		packages = self._get_packages_to_emerge("emerge -p " + package)
 		for pkg in packages:
+#			try:
+#				pkgname = pkg.split('/')[1]
+#			except IndexError:
+#				pkgname = pkg
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
 				if not GLIUtility.exitsuccess(ret):
