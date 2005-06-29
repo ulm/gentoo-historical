@@ -202,7 +202,7 @@ Enter the new LIVECD root password:	""")
 		filename = xmlfilename
 		if askforfilename:
 			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
-			if code != self._DLG_OK: 
+			if code != self._DLG_OK or not filename: 
 				return
 		if GLIUtility.is_file(filename):
 			#Change the Yes/No buttons back.

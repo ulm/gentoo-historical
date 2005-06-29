@@ -1095,7 +1095,7 @@ class Dialog:
 			raise PythonDialogIOError(v)
 	
 		# For "compatibility" with the old dialog.py...
-		gauge_iterate = gauge_update
+		# gauge_iterate = gauge_update
 
 	def gauge_stop(self):
 		"""Terminate a running gauge.
