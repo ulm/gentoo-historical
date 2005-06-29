@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.149 2005/06/29 19:25:11 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.150 2005/06/29 19:34:14 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -533,16 +533,16 @@ class ArchitectureTemplate:
 			# these should really be error-checked...
 			
 			#these are the hotplug/coldplug steps from build_kernel copied over here.  they will NOT be run there.
-			exitstatus = self._emerge("hotplug")
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
-			self._logger.log("Hotplug emerged.")
+#			exitstatus = self._emerge("hotplug")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
+#			self._logger.log("Hotplug emerged.")
 			exitstatus = self._emerge("coldplug")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
 			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
 			
-			self._add_to_runlevel("hotplug")
+#			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 		# normal case
 		else:
@@ -650,16 +650,16 @@ class ArchitectureTemplate:
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
 			
-			exitstatus = self._emerge("hotplug")
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
-			self._logger.log("Hotplug emerged.")
+#			exitstatus = self._emerge("hotplug")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
+#			self._logger.log("Hotplug emerged.")
 			exitstatus = self._emerge("coldplug")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
 			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
 			
-			self._add_to_runlevel("hotplug")
+#			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 			self._logger.log("Genkernel complete.")
 		elif build_mode == "custom":  #CUSTOM CONFIG
