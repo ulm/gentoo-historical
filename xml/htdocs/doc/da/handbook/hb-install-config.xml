@@ -2,14 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-config.xml,v 1.19 2005/05/29 20:58:42 broeman Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/da/handbook/hb-install-config.xml,v 1.20 2005/06/29 03:23:59 broeman Exp $ -->
 
 <sections>
 
-<version>2.3</version>
-<date>2005-05-23</date>
+<version>2.10</version>
+<date>2005-06-28</date>
 
 <section>
 <title>Informationer om filsystemet</title>
@@ -173,7 +173,9 @@ Vi bruger disse værdier i de næste eksempler. Først angiver vi værtsnavnet:
 </p>
 
 <pre caption="Angivelse af værtsnavn">
-# <i>echo tux &gt; /etc/hostname</i>
+# <i>nano -w /etc/conf.d/hostname</i>
+<comment>(Indsæt dit værtsnavn i HOSTNAME-variablen)</comment>
+HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
@@ -181,7 +183,9 @@ Herefter angiver vi domænenavn:
 </p>
 
 <pre caption="Angivelse af domænenavn">
-# <i>echo homenetwork &gt; /etc/dnsdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+<comment>(Indsæt domænenavnet i DNSDOMAIN-variablen)</comment>
+DNSDOMAIN="<i>hjemmenetvaerk</i>"
 </pre>
 
 <p>
@@ -190,7 +194,9 @@ du også angive det:
 </p>
 
 <pre caption="Angivelse af NIS-domænenavn">
-# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+<comment>(Indsæt NIS-domænenavnet i NISDOMAIN-variablen)</comment>
+NISDOMAIN="<i>mit-nisdomaene</i>"
 </pre>
 
 <p>
@@ -208,112 +214,83 @@ Tilføj nu scriptet <c>domainname</c> til standard runlevel:
 <body>
 
 <p>
-Før du får den "Hey, vi har været igennem det før"-følelse, skal du huske på at
+Før du får den "Hallo, vi har været igennem det før"-følelse, skal du huske på at
  den opsætning af netværket du lavede i starten af Gentoo installationen, kun 
 var for installationen. Nu skal du lave den permanente opsætning af dit netværk
  til dit Gentoo system.
 </p>
 
+<!-- mangler kapitel 4
+<note>
+Flere detaljerede informationer omkring netværk, inklusiv advancerede overskrifter som
+bonding, bridging, 802.11q VLAN eller trådløs netværk er dækket i <uri
+link="?part=4">Gentoo netværksopsætning</uri> kapitlet.
+</note> -->
+
 <p>
 Al netværksinformation er samlet i <path>/etc/conf.d/net</path>. Den benytter 
 en meget ligefrem, men ikke særlig intuitiv, syntaks, hvis du ikke kender til 
-manuel netværksopsætning. Men frygt ikke, vi vil forklare det hele :)
+manuel netværksopsætning. Men frygt ikke, vi vil forklare det hele. Et fuldt
+kommenteret eksempel, som dækker mange forskellige opsætninger, er tilgængeligt
+i <path>/etc/conf.d/net.example</path>.
 </p>
 
 <p>
-Åbn først <path>/etc/conf.d/net</path> med din foretrukne editor (<c>nano</c>
-er brugt i dette eksempel):
+DHCP er brugt som standard, og kræver derfor ingen yderligere opsætning.
 </p>
 
-<pre caption="Åbning af /etc/conf.d/net til redigering">
+<p>
+Hvis du skal opsætte din netværksforbindelse, enten fordi du skal bruge
+specifikke DHCP-valgmuligheder eller fordu du ikke bruger DHCP overhovedet,
+åben <path>/etc/conf.d/net</path> med dit favorit redigeringsprogram (<c>nano</c> er brugt
+i dette eksempel):
+</p>
+
+<pre caption="Åbning af /etc/conf.d til redigering">
 # <i>nano -w /etc/conf.d/net</i>
 </pre>
 
-<!-- Old baselayout - current stable -->
-
 <p>
-Den første variabel, du finder er <c>iface_eth0</c>. Det benytter følgende 
-syntaks:
+Du vil se følgende fil:
 </p>
 
-<pre caption="Syntaks for iface_eth0">
-iface_eth0="<i>&lt;din IP-adresse&gt;</i> broadcast <i>&lt;din 
-broadcast-adresse&gt;</i> netmask <i>&lt;din netmaske&gt;</i>"
+<pre caption="Standard /etc/conf.d/net">
+# This blank configuration will automatically use DHCP for any net.*
+# scripts in /etc/init.d.  To create a more complete configuration,
+# please review /etc/conf.d/net.example and save your configuration
+# in /etc/conf.d/net (this file :]!).
 </pre>
 
 <p>
-Hvis du bruger DHCP (automatisk modtagelse af IP), skal du blot sætte 
-<c>iface_eth0</c> til <c>dhcp</c>. Hvis du bruger rp-pppoe (f.eks. til
-ADSL), sæt den til <c>up</c>. Hvis du bliver nødt til at opsætte dit
-netværk manuelt og du ikke er bekendt med de ovenstående udtryk, så
-læs venligst sektionen i <uri
-link="?part=1&amp;chap=3#network_term">Forståelse af
-netværksterminologi</uri> hvis du ikke allerede har gjort det.
+For at indtaste din egen IP-adresse, netmaske og gateway, skal du indstille både
+<c>config_eth0</c> og <c>routes_eth0</c>:
 </p>
 
-<p>
-Lad os give to eksempler; det første bruger DHCP, det andet bruger en statisk 
-IP-adresse (192.168.0.2) med netmasken 255.255.255.0, broadcast-adresse 
-192.168.0.255 og gateway 192.168.0.1 mens den tredje blot aktiverer
-grænsefladen til pr-pppoe brug:
-</p>
-
-<pre caption="Eksempler til /etc/conf.d/net">
-<comment>(Ved DHCP)</comment>
-iface_eth0="dhcp"
-<comment># Nogle netværksadministratorer kræver at du bruger</comment>
-<comment># værtsnavnet og domænenavnet leveret af DHCP-serveren.</comment>
-<comment># I dette tilfælde, tilføj følgende for at lade dhcpcd</comment>
-<comment># bruge dem. Dette vil overskrive din egen værtsnavn og</comment>
-<comment># domænenavnsdefinitioner.</comment>
-dhcpcd_eth0="-HD"
-<comment># Hvis du har tænkt dig at bruge NTP for at holde din</comment>
-<comment># maskines ur opdateret, brug -N valgmuligheden for at</comment>
-<comment># forhindre dhcpcd fra at overskrive din /etc/ntp.conf</comment>
-dhcpcd_eth0="-N"
-
-<comment>(Ved statisk IP)</comment>
-iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
-gateway="eth0/192.168.0.1"
-<comment>(Til rp-pppoe)</comment>
-iface_eth0="up"
-</pre>
-
-<p>
-Hvis du har flere netværksenheder, så opret en ekstra <c>iface_eth</c> variabel
- som f.eks. <c>iface_eth1</c>, <c>iface_eth2</c>. Variablen med <c>gateway</c> bør 
-ikke duplikeres, da du kun kan angive en gateway per computer.
-</p>
-
-<!-- New baselayout - current testing
-  	 
-<p>
-The first variable you'll find is called <c>config_eth0</c>. As you can probably
-imagine, this variable configured the eth0 network interface. If the interface
-needs to automatically obtain an IP through DHCP, you should set it like so:
-</p>
-	 
-<pre caption="Automatically obtaining an IP for eth0">
-config_eth0=( "dhcp" )
-</pre>
-  	 
-<p>
-However, if you have to enter your own IP address, netmask and gateway, you need
-to set both <c>config_eth0</c> and <c>routes_eth0</c>:
-</p>
-  	 
-<pre caption="Manually setting IP information for eth0">
+<pre caption="Manuel indstilling af IP-informationer til eth0">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
 routes_eth0=( "default gw 192.168.0.1" )
 </pre>
+	 
+<p>
+For at bruge DHCP og tilføje specifikke DHCP-valgmuligheder, definer <c>config_eth0</c> og
+<c>dhcp_eth0</c>:
+</p>
+
+<pre caption="Automatisk optagning af IP-adresse til eth0">
+config_eth0=( "dhcp" )
+dhcp_eth0="nodns nontp nonis"
+</pre>
   	 
 <p>
-If you have several network interfaces repeat the above steps for
-<c>config_eth1</c>, <c>config_eth2</c>, etc.
+Læs venligst <path>/etc/conf.d/net.example</path> for en liste af alle
+mulighederne.
 </p>
   	 
--->
-
+<p>
+Hvis du har forskellige netværksgrænseflader, gentag ovenstående trin til
+<c>config_eth1</c>, <c>config_eth2</c> osv.
+</p>
+  	 
 <p>
 Gem nu indstillingerne og afslut for at fortsætte.
 </p>
@@ -458,10 +435,27 @@ Gentoo bruger <path>/etc/rc.conf</path> til generel system opsætning. Åbn
 </pre>
 
 <p>
-Som du kan se, er denne fil kommenteret fint til at hjælpe dig med opsætningen 
-af de nødvendige variabler. Vær særlig opmærksom på indstillingen <c>KEYMAP</c>:
-hvis du vælger et forkert <c>KEYMAP</c>, vil du få mærkelige resultater, når du 
-skriver på tastaturet.
+Når du har er færdig med at opsætte <path>/etc/rc.conf</path>, gem og afslut.
+</p>
+
+<p>
+Som du kan se, er denne fil kommenteret en del, for at hjælpe dig med opsætningen 
+af de nødvendige variabler. Du kan opsætte dit system til at bruge unicode og
+definere dit standard-redigeringsprogram og din grafiske loginhåndtering (som f.eks. gdm eller kdm).
+</p>
+
+<p>
+Gentoo bruger <path>/etc/conf.d/keymaps</path> for at håndtere tastaturopsætningen.
+Rediger den til at opsætte dit tastatur.
+</p>
+
+<pre caption="Åbning af /etc/conf.d/keymaps">
+# <i>nano -w /etc/conf.d/keymaps</i>
+</pre>
+  	 
+<p>
+Vær særlig opmærksom på indstillingen af <c>KEYMAP</c>. Hvis du vælger et forkert <c>KEYMAP</c>, 
+vil du få mærkelige resultater, når du skriver på tastaturet.
 </p>
 
 <note>
@@ -473,8 +467,21 @@ vælge en i386 keymap (som f.eks. "us") i stedet for "sunkeymap".
 <b>PPC</b> bruger x86-keymaps til de fleste systemer. Brugere som gerne vil
 bruge ADB-keymaps ved opstart, bliver nødt til at aktivere ADB-keycode
 indstillinger i deres kerne og skal sætte en mac/ppc-keymap i
-<path>rc.conf</path>.
+<path>/etc/conf.d/keymaps</path>.
 </p>
+
+<p>
+Når du er færdig med at opsætte <path>/etc/conf.d/keymaps</path>, gem og afslut.
+</p>
+
+<p>
+Gentoo bruger <path>/etc/conf.d/clock</path> til at indstille klokken. Rediger den
+så den passer til dine behov.
+</p>
+
+<pre caption="Åbning af /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+</pre>
 
 <p>
 Hvis din hardware-ur ikke bruger UTC, skal du tilføje <c>CLOCK="local"</c> i filen.
@@ -482,7 +489,7 @@ Ellers vil du notere tidsforskydelser.
 </p>
 
 <p>
-Når du er færdig med opsætningen af <path>/etc/rc.conf</path>, så gem og afslut.
+Når du er færdig med opsætningen af <path>/etc/conf.d/clock</path>, så gem og afslut.
 </p>
 
 <p>
@@ -502,7 +509,7 @@ Den følgende sektion er lavet til IBM POWER5 og JS20 hardware-platformene.
   	 
 <p>
 Hvis du kører Gentoo i en LPAR eller på en JS20 blade, skal du afkommentere
-hvc linien i /etc/inittab for at få den virtuelle konsol til at dukke op ved login-prompt.
+hvc linien i <path>/etc/inittab</path> for at få den virtuelle konsol til at dukke op ved login-prompt.
 </p>
   	 
 <pre caption="Aktivering af hvc-understøttelse i /etc/inittab">
