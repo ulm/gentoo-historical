@@ -2,14 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/handbook/hb-install-config.xml,v 1.7 2005/06/20 17:34:10 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/handbook/hb-install-config.xml,v 1.8 2005/06/30 09:03:05 fox2mike Exp $ -->
 
 <sections>
 
-<version>2.8</version>
-<date>2005-06-19</date>
+<version>2.10</version>
+<date>2005-06-28</date>
 
 <section>
 <title>Informace o souborových systémech</title>
@@ -234,12 +234,20 @@ link="?part=4">Konfigurace sítě v&nbsp;Gentoo</uri>.
 Všechny potřebné informace jsou shromážděny v&nbsp;souboru
 <path>/etc/conf.d/net</path>. Jeho formát je vcelku přímočarý, avšak nevíte-li,
 jak nastavit síť ručně, nemusí Vám připadat zrovna intuitivní. Ale nebojte se,
-všechno si vysvětlíme :-)
+všechno si vysvětlíme :-). Ukázkovou konfiguraci doplněnou mnoha komentáři
+naleznete v&nbsp;souboru <path>/etc/conf.d/net.example</path>.
 </p>
 
 <p>
-Nejprve otevřete soubor <path>/etc/conf.d/net</path> ve svém oblíbeném editoru
-(v&nbsp;našem příkladu použijeme <c>nano</c>):
+Výchozí volba je nastavení přes DHCP, pokud jej tedy používáte, nemusíte nic
+konfigurovat.
+</p>
+
+<p>
+Potřebujete-li nakonfigurovat Vaše síťové připojení (například kvůli dalšímu
+nastavení DHCP nebo pro ruční konfiguraci), otevřete
+<path>/etc/conf.d/net</path> ve&nbsp;svém oblíbeném editoru (v&nbsp;tomto
+příkladu použijeme <c>nano</c>):
 </p>
 
 <pre caption="Editace /etc/conf.d/net">
@@ -247,17 +255,18 @@ Nejprve otevřete soubor <path>/etc/conf.d/net</path> ve svém oblíbeném edito
 </pre>
 
 <p>
-První proměnná, kterou naleznete, se jmenuje <c>config_eth0</c>. Jak Vás asi
-napadlo, řídí nastavení síťového rozhraní eth0. Chcete-li, aby toto rozhraní
-požádalo o přidělení IP adresy přes DHCP, nastavte ji takto:
+Uvidíte toto:
 </p>
 
-<pre caption="Automatické nastavení IP adresy pro eth0">
-config_eth0=( "dhcp" )
+<pre caption="Výchozí /etc/conf.d/net">
+# This blank configuration will automatically use DHCP for any net.*
+# scripts in /etc/init.d.  To create a more complete configuration,
+# please review /etc/conf.d/net.example and save your configuration
+# in /etc/conf.d/net (this file :]!).
 </pre>
 
 <p>
-Avšak potřebujete-li zadat IP adresu, masku sítě i gateway, použijte proměnné
+Pro zadání vlastní IP adresy, masky sítě a brány potřebujete nastavit
 <c>config_eth0</c> a <c>routes_eth0</c>:
 </p>
 
@@ -265,6 +274,21 @@ Avšak potřebujete-li zadat IP adresu, masku sítě i gateway, použijte promě
 config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
 routes_eth0=( "default gw 192.168.0.1" )
 </pre>
+
+<p>
+Chcete-li použít DHCP a ovlivnit jeho chování, definujte proměnné
+<c>config_eth0</c> a <c>dhcp_eth0</c>:
+</p>
+
+<pre caption="Automatické získání IP adresy pro eth0">
+config_eth0=( "dhcp" )
+dhcp_eth0="nodns nontp nonis"
+</pre>
+
+<p>
+Pro přehled všech dostupných voleb se prosím podívejte do souboru
+<path>/etc/conf.d/net.example</path>.
+</p>
 
 <p>
 Máte-li více síťových rozhraní, aplikujte výše uvedený postup na
@@ -421,9 +445,29 @@ v&nbsp;podobě komentářů :-)
 </pre>
 
 <p>
+Až provedete potřebné změny, soubor <path>/etc/rc.conf</path> uložte a ukončete
+editor.
+</p>
+
+<p>
 Jak vidíte, soubor je velmi dobře okomentován, což by Vám mělo pomoci
-s&nbsp;nastavením nezbytných proměnných. Dejte pozor na správnou hodnotu
-<c>KEYMAP</c>, jinak může psaní na klávesnici dopadnout podivně.
+s&nbsp;nastavením nezbytných proměnných. Určíte, zda má systém používat
+Unicode a nastavíte výchozí editor a display manager (grafické přihlašování,
+například gdm nebo kdm).
+</p>
+
+<p>
+Klávesové mapy se v&nbsp;Gentoo nastavují pomocí souboru
+<path>/etc/conf.d/keymaps</path>.
+</p>
+
+<pre caption="Editace /etc/conf.d/keymaps">
+# <i>nano -w /etc/conf.d/keymaps</i>
+</pre>
+
+<p>
+Dejte pozor na správnou hodnotu <c>KEYMAP</c>, jinak může psaní na klávesnici
+dopadnout podivně.
 </p>
 
 <note>
@@ -434,9 +478,23 @@ muset vybrat klávesovou mapu i386 (například "us") místo "sunkeymap".
 <p>
 <b>PPC</b> používá na většině systémů klávesové mapy x86. Uživatelé, kteří
 chtějí být schopni používat klávesové mapy ADB, musí povolit ADB posílání
-klávesových kódů v&nbsp;jádře a v&nbsp;souboru <path>rc.conf</path> nastavit
-klávesovou mapu mac/ppc.
+klávesových kódů v&nbsp;jádře a v&nbsp;souboru <path>/etc/conf.d/keymaps</path>
+nastavit klávesovou mapu mac/ppc.
 </p>
+
+<p>
+Až dokončíte konfiguraci souboru <path>/etc/conf.d/keymaps</path>, uložte
+jej a ukončete editor.
+</p>
+
+<p>
+Nastavení voleb ovlivňujících hodiny je v&nbsp;souboru
+<path>/etc/conf.d/clock</path>; změňte jej podle Vašich potřeb.
+</p>
+
+<pre caption="Editace /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+</pre>
 
 <p>
 Neběží-li Vaše hardwarové hodiny v&nbsp;UTC, je potřeba navíc přidat řádek
@@ -444,7 +502,7 @@ Neběží-li Vaše hardwarové hodiny v&nbsp;UTC, je potřeba navíc přidat ř�
 </p>
 
 <p>
-Až budete hotovi s&nbsp;konfigurací souboru <path>/etc/rc.conf</path>, uložte
+Až budete hotovi s&nbsp;konfigurací souboru <path>/etc/conf.d/clock</path>, uložte
 jej a ukončete editor.
 </p>
 
@@ -465,8 +523,8 @@ Tato sekce se vztahuje k&nbsp;platformám IBM POWER5 a JS20.
 
 <p>
 Provozujete-li Gentoo na LPAR nebo na bladu JS20, musíte odkomentovat řádek
-"hvc" v&nbsp;souboru /etc/inittab, aby se na virtuální konzoli zobrazil dialog
-pro přihlášení.
+"hvc" v&nbsp;souboru <path>/etc/inittab</path>, aby se na virtuální konzoli
+zobrazil dialog pro přihlášení.
 </p>
 
 <pre caption="Podpora hvc v&nbsp;/etc/inittab">
