@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.151 2005/06/30 04:47:10 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.152 2005/06/30 22:37:30 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -66,7 +66,7 @@ class ArchitectureTemplate:
                                  (self.setup_network_post, "Configuring post-install networking"),
                                  (self.install_bootloader, "Configuring and installing bootloader"),
                                  (self.update_config_files, "Updating config files"),
-                                 (self.configure_rc_conf, "Updating /etc/rc.conf"),
+#                                 (self.configure_rc_conf, "Updating /etc/rc.conf"),
                                  (self.set_users, "Add additional users."),
                                  (self.install_packages, "Installing additional packages."),
 				 # services for startup need to come after installing extra packages
@@ -173,6 +173,8 @@ class ArchitectureTemplate:
 	# @param create_file=True		Create the file if it does not exist.
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False,create_file=True):
 		# don't use 'file' as a normal variable as it conflicts with the __builtin__.file
+		newvalues = newvalues.copy()
+		self._logger.log("_edit_config() called with " + str(newvalues))
 		if GLIUtility.is_file(filename):
 			f = open(filename)
 			contents = f.readlines()
@@ -829,10 +831,10 @@ class ArchitectureTemplate:
 			etc_files = self._install_profile.get_etc_files()
 			for etc_file in etc_files:
 				if isinstance(etc_files[etc_file], dict):
-					self._edit_config("/etc/" + etc_file, etc_files[etc_file])
+					self._edit_config(self._chroot_dir + "/etc/" + etc_file, etc_files[etc_file])
 				else:
 					for entry in etc_files[etc_file]:
-						self._edit_config("/etc/" + etc_file, { 0: entry }, value_only=True)
+						self._edit_config(self._chroot_dir + "/etc/" + etc_file, { 0: entry }, value_only=True)
 			self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
 	##
