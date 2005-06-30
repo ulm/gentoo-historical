@@ -1,620 +1,916 @@
 <?xml version='1.0' encoding="UTF-8"?>
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/printing-howto.xml,v 1.4 2005/06/30 03:29:20 smithj Exp $ -->
+
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- Orig revision: 1.48 -->
-<!-- Translator: rofro <rofro@none.none> -->
+<!-- Orig revision 1.40 -->
+<!-- Translator: rane <rane@gentoo.pl> -->
+<!-- Title: Drukowanie w Gentoo -->
+<!-- Status: Release -->
+<!-- $Id: printing-howto.xml,v 1.4 2005/06/30 03:29:20 smithj Exp $ -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/printing-howto.xml,v 1.3 2005/06/26 15:35:00 neysx Exp $ -->
+<guide link="/doc/pl/printing-howto.xml" lang="pl">
+<title>Drukowanie w Gentoo</title>
 
-<guide link="/doc/pl/printing-howto.xml" lang="pl"> 
-
-<title>Przewodnik drukowania w Gentoo</title> 
-
-<author title="Autor"><!-- zhen@gentoo.org -->
-  John P. Davis
-</author>
-<author title="Redaktor">
-  <mail link="wleggette@gate.net">Wesley Leggette</mail>
-</author>
-<author title="Redaktor">
-  <mail link="carl@gentoo.org">Carl Anderson</mail>
-</author>
-<author title="Redaktor">
-  <mail link="lanius@gentoo.org">Heinrich Wendel</mail>
-</author>
-<author title="Redaktor">
+<author title="Autor">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-<author title="Redaktor">
-  <mail link="phil@thenexusproject.org">Phil Bordelon</mail>
-</author>
 <author title="Tłumacz">
-  Roman Frołow
+  <mail link="rane@gentoo.pl">Łukasz Damentko</mail>
 </author>
 
 <abstract>
-Pełny przewodnik po drukowaniu w Gentoo Linux. Dokument ten opisuje zarówno
-drukowanie na drukarce lokalnej jak i sieciowej.
-</abstract> 
+Jest to omówienie procesu konfiguracji i zarządzania drukarkami za pomocą CUPS i
+Samby zarówno w zastosowaniach domowych jak i sieciowych oraz o współdzieleniu
+drukarek z innymi systemami operacyjnymi.
+</abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.23</version>
-<date>2005-05-23</date>
+<version>2.0</version>
+<date>2005-06-29</date>
 
-<chapter> 
-<title>Instalacja CUPS i foomatic.</title> 
+<chapter>
+<title>Gentoo i drukarki</title>
 <section>
-<body> 
+<title>Wybór właściwych narzędzi</title>
+<body>
 
 <p>
-Ustawianie drukowania w Gentoo Linux jest zadaniem względnie bezproblemowym
-dzięki wspaniałym programom: CUPS (the Common Unix Printing System) i
-foomatic. Obydwa są aktualnie w drzewie Portage i są bardzo łatwe do
-ustawienia dla przeciętnego użytkownika.
-</p> 
-
-
-<p>
-Należy być świadomym, że cups jest niezależny od używanego systemu okienek.
-Kierując się tymi wskazówkami można ustawić drukowanie zarówno w GNOME jak i
-KDE. Istnieją również inne metody, jak np. drukowanie KDE, ale wierzymy, że
-CUPS jest rozwiązaniem najłatwiejszym i najlepiej skalowalnym.
+Linux doskonale radzi sobie z drukarkami dzięki narzędziu o
+nazwie CUPS (<uri link="http://www.cups.org">Common Unix Printing
+System</uri>), zajmującemu się ich obsługą. Od czasu powstania w 1999 projekt
+ten znacznie się rozwinął i teraz pozwala na znacznie łatwiejszą instalację i
+konfigurację niż kiedyś.
 </p>
 
 <p>
-Przed emergowaniem CUPS, dobrze jest dodać kilka niezbędnych flag USE do
-<path>/etc/make.conf</path>.
+W tym tekście omówimy konfigurację drukarek sieciowych i lokalnych wyłącznie za
+pomocą systemu CUPS. W związku z tym, że projekt ten posiada
+<uri link="http://www.cups.org/documentation.php">doskonałą dokumentację</uri>
+nie będziemy zbytnio wdawać się w techniczne szczegóły jego pracy, ani omawiać
+bardzo zaawansowanych rozwiązań.
 </p>
 
+</body>
+</section>
+</chapter>
 
-<pre caption="Edycja /etc/make.conf">
-<comment>dodaj cups, foomaticdb, ppds i usb (jeśli używasz drukarki USB) do
-swojej listy zmiennych USE. </comment>
-USE="cups foomaticdb ppds usb inna_zmienna1 inna_zmienna2"
+<chapter>
+<title>Konfigurowanie jądra</title>
+<section>
+<title>Wprowadzenie</title>
+<body>
+
+<p>
+Pierwsza informacja jaka jest potrzebna to sposób podłączenia drukarki do
+komputera. Są trzy możliwości: drukarka podłączona poprzez port LPT, przez port
+USB lub drukarka sieciowa. Jeśli jest to drukarka sieciowa ważna jest także
+informacja o tym z jakiego protokołu ona korzysta, czyli czy używa IPP
+(Internet Printing Protocol) czy Microsoft Windows SMB-CIFS (MS Windows
+Sharing).
+</p>
+
+<p>
+W kilku kolejnych akapitach omówimy konfigurację jądra jaka jest wymagana dla
+nowo tworzonego systemu drukowania. Sposób konfiguracji jest zależny od typu
+połączenia drukarki z komputerem, instrukcje dla każdego z nich znajdują się w
+osobnym akapicie:
+</p>
+
+<ul>
+  <li><uri link="#lpt">Drukarka lokalna (LPT)</uri></li>
+  <li><uri link="#usb">Drukarka lokalna (USB)</uri></li>
+  <li><uri link="#ipp">Drukarka sieciowa (IPP)</uri></li>
+  <li><uri link="#smb-cifs">Drukarka sieciowa (SMB-CIFS)</uri></li>
+</ul>
+
+<p>
+Przechodzimy do katalogu <path>/usr/src/linux</path> i wpisujemy polecenie
+<c>make menuconfig</c>, aby rozpocząć konfigurowanie jądra. Jeśli do budowy
+kernela był używany program <c>genkernel</c> również należy wykonać kilka
+kolejnych czynności tak, aby upewnić się, że wybrane ustawienia są prawidłowe. 
+</p>
+
+<p>
+W kolejnych przykładowych konfiguracjach wbudowujemy  obsługę
+wymaganych sterowników na stałe, rezygnując z tworzenia ich w postaci modułów.
+Nie jest to obowiązkowe, można również z łatwością korzystać ze sterowników w
+modułach, należy się jednak wtedy upewnić, że wszystkie konieczne sterowniki są
+ładowane. W przykładach korzystamy również tylko i wyłącznie z jądra serii 2.6.
+Użytkownicy 2.4 mogą uznać za konieczne poszukanie innego opisu konfiguracji.
+</p>
+
+<p>
+Pora przejść do odpowiedniego akapitu i skonfigurować (lub tylko sprawdzić)
+jądro.
+</p>
+
+</body>
+</section>
+<section id="lpt">
+<title>Drukarka sieciowa (LPT)</title>
+<body>
+
+<p>
+Port LPT jest używany do identyfikacji portu szeregowego drukarki. Po
+pierwsze trzeba zatem włączyć obsługę portu szeregowego, a następnie
+wybrać opcję dla portu w stylu PC (no chyba, że jest się użytkownikiem SPARC).
+</p>
+
+<pre caption="Konfigurowanie portu szeregowego">
+Device Drivers --&gt;
+  &lt;*&gt; Parallel port support
+  &lt;*&gt;   PC-style hardware
+
+Device Drivers --&gt;
+  Character Devices --&gt;
+    &lt;*&gt; Parallel printer support
 </pre>
 
 <p>
-Więcej informacji o zmiennych USE można znaleźć w rozdziale <uri
-link="/doc/pl/handbook/handbook-x86.xml?part=2&amp;chap=2">USE flags</uri>
-Podręcznika Gentoo.
+Część użytkowników może również potrzebować innych opcji z zakładki <c>Parallel
+port support</c>. Więcej informacji o poszczególnych opcjach znajduje się w
+pomocy dostępnej po wybraniu opcji <c>Help</c>.
 </p>
 
-<pre caption="Emergowanie niezbędnych pakietów">
+<p>
+I to wszystko. Należy zakończyć konfigurację jądra i je przebudować. Warto
+pamiętać o przekopiowaniu obrazu jądra do katalogu <path>/boot</path> (i nie
+zapomnieć o podmontowaniu przedtem partycji <path>/boot</path>, jeśli to
+konieczne), a następnie uaktualnić konfigurację programu ładującego. Na koniec
+należy ponownie uruchomić komputer i uruchomić Gentoo przy pomocy nowego jądra.
+</p>
+
+<p>
+Kolejny etap to <uri link="#cups">instalowanie i konfigurowanie CUPS</uri>.
+</p>
+
+</body>
+</section>
+<section id="usb">
+<title>Drukarka lokalna (USB)</title>
+<body>
+
+<p>
+Do uruchomienia drukowania przez port USB potrzebna jest obsługa dwóch rzeczy:
+odpowiedniej magistrali USB oraz drukarek USB.
+</p>
+
+<pre caption="Konfiguracja portu USB dla drukarki">
+Device Drivers --&gt;
+  USB Support --&gt;
+    &lt;*&gt; Support for Host-side USB
+    <comment>(...)</comment>
+    --- USB Host Controller Drivers
+    <comment>(Należy wybrać HCD, z którego korzysta komputer, z pomocą w
+    wybraniu właściwego może przyjść polecenie "lspci -v | grep HCI")</comment>
+    &lt;*&gt; EHCI HCD (USB 2.0) support <comment>( lub )</comment>
+    &lt;*&gt; OHCI HCD support           <comment>( lub)</comment>
+    &lt;*&gt; UHCI HCD (most Intel and VIA) support
+    <comment>(...)</comment>
+    &lt;*&gt; USB Printer support
+</pre>
+
+<p>
+To wszystko. Należy zakończyć konfigurację jądra i je przebudować. Warto
+pamiętać o przekopiowaniu obrazu jądra do katalogu <path>/boot</path> (i nie
+zapomnieć o podmontowaniu przedtem partycji <path>/boot</path>, jeśli to
+konieczne), a następnie uaktualnić konfigurację programu ładującego. Na koniec
+należy ponownie uruchomić komputer i uruchomić Gentoo przy pomocy nowego jądra.
+</p>
+
+<p>
+Kolejny etap to <uri link="#cups">instalowanie i konfigurowanie CUPS</uri>.
+</p>
+
+</body>
+</section>
+<section id="ipp">
+<title>Drukarka sieciowa (IPP)</title>
+<body>
+
+<p>
+W celu połączenia się z drukarką sieciową poprzez IPP potrzebna jest prawidłowa
+konfiguracja urządzeń sieciowych. Zakładając, że jądro już je posiada możemy
+spokojnie przejść do akapitu dotyczącego <uri link="#cups">instalowania i
+konfigurowania CUPS</uri>.
+</p>
+
+</body>
+</section>
+<section id="smb-cifs">
+<title>Drukarka sieciowa (SMB-CIFS)</title>
+<body>
+
+<p>
+Jądro musi posiadać obsługę SMB CIFS:
+</p>
+
+<pre caption="Konfiguracja drukarki SMB-CIFS">
+File systems --&gt;
+  Network File Systems --&gt;
+    &lt;*&gt; SMB file system support (to mount Windows shares etc.)
+    &lt;*&gt; CIFS support (advanced network file system for Samba, Windows and other CIFS compliant servers)
+</pre>
+
+<p>
+To wszystko. Należy zakończyć konfigurację jądra i je przebudować. Warto
+pamiętać o przekopiowaniu obrazu jądra do katalogu <path>/boot</path> (i nie
+zapomnieć o podmontowaniu przedtem partycji <path>/boot</path>, jeśli to
+konieczne), a następnie uaktualnić konfigurację programu ładującego. Na koniec
+należy ponownie uruchomić komputer i uruchomić Gentoo przy pomocy nowego jądra.
+</p>
+
+<p>
+Kolejny etap to <uri link="#cups">instalowanie i konfigurowanie CUPS</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="cups">
+<title>Instalowanie i konfigurowanie CUPS</title>
+<section>
+<title>Instalacja</title>
+<body>
+
+<p>
+Instalowanie CUPS w Gentoo jest dość proste, a CUPS posiada kilka opcji, które
+na pewno zainteresują sporą część użytkowników. Żeby je włączyć należy
+skorzystać z flag USE z nimi powiązanych.
+</p>
+
+<table>
+<tr>
+  <th>Flaga USE</th>
+  <th>Wpływ na CUPS</th>
+</tr>
+<tr>
+  <ti>nls</ti>
+  <ti>
+    Włącza obsługę języków narodowych. Dzięki tej fladze CUPS jest w stanie
+    zapewnić zlokalizowany interfejs pozwalający na obsługę systemu w języku
+    ojczystym. 
+  </ti>
+</tr>
+<tr>
+  <ti>pam</ti>
+  <ti>
+     Pozwala na uwierzytelnianie zadań dla drukarki poprzez moduły PAM.
+  </ti>
+</tr>
+<tr>
+  <ti>samba</ti>
+  <ti>
+    Do współdzielenia drukarki z komputerami pracującymi w sieci pod kontrolą
+    Windows za pomocą protokołu SMB-CIFS
+  </ti>
+</tr>
+<tr>
+  <ti>slp</ti>
+  <ti>
+    W zarządzanym środowisku może zaistnieć potrzeba udostępnienia usługi innym
+    podmiotom. Dzięki protokołowi SLP można w łatwy sposób odnaleźć i
+    skonfigurować taką usługę w swoim systemie. Jeśli drukarka jest dostępna
+    jako usługa lub też będzie w ten sposób udostępniana należy włączyć tę flagę
+    USE. 
+  </ti>
+</tr>
+<tr>
+  <ti>ssl</ti>
+  <ti>
+   Jeśli chcemy zapewnić bezpieczeństwo zdalnego uwierzytelniania i
+   drukowania musimy na wszystkich komputerach w sieci posiadać obsługę SSL,
+   pozwalającą na tworzenie szyfrowanych sesji wydruku.
+  </ti>
+</tr>
+</table>
+
+<p>
+Należy sprawdzić obecne ustawienia USE. Zmiany ich ustawień dokonujemy w pliku
+<path>/etc/portage/package.use</path>, tak by dotyczyły tylko CUPS, a nie
+całego systemu.
+</p>
+
+<pre caption="Ustawienia flag USE dla CUPS">
+# <i>emerge -pv cups</i>
+[ebuild N     ] net-print/cups-1.1.23-r1  +nls +pam -samba -slp +ssl 0 kB
+
+<comment>(Na przykład by włączyć obsługę SAMBA)</comment>
+# <i>vim /etc/portage/package.use</i>
+net-print/cups samba
+</pre>
+
+<p>
+Kiedy wszystko będzie gotowe można przystąpić do instalacji CUPS.
+</p>
+
+<pre caption="Instalowanie CUPS">
 # <i>emerge cups</i>
-# <i>emerge foomatic </i>
 </pre>
 
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Ustawianie modułów jądra.</title> 
-<section>
-<title>Ogólne.</title>
-<body>
-
 <p>
-Aktualnie zostały już zainstalowane wszystkie niezbędne pakiety, zatem można
-przystąpić do instalacji drukarki.
+Po instalacji Portage poprosi o wykonanie polecenia <c>rc-update add coldplug
+default</c> co umożliwi drukarkom USB korzystanie z niezbędnych modułów jądra.
 </p>
 
 <p>
-Niezbędne jest włączenie obsługi portu równoległego lub portu USB w jądrze,
-w zależności od typu połączenia drukarki z komputerem, 
+Jeśli jest to drukarka lokalna to CUPS musi być uruchamiany automatycznie przy
+starcie systemu. Należy się upewnić, że jest włączona zanim zacznie się
+uruchamianie CUPS.
 </p>
 
-<note>
-Informacje te odnoszą się tylko do drukowania na drukarce lokalnej. W
-przypadku konfiguracji drukarki sieciowej (z wykorzystaniem samby) można tą
-sekcję pominąć. 
-</note>
-
-<note>
-Użytkownicy nie zaznajomieni z kompilacją jądra szczegółowe instrukcje mogą
-znaleźć w <uri link="http://www.tldp.org/HOWTO/Kernel-HOWTO.html">Kernel
-Howto</uri> (obecnie niedostępne z powodu przeglądu). Szczególnie wiedza o
-kompilacji i instalacji nowych modułów bez rekompilacji całego jądra i
-restartu komputera może bardzo oszczędzić czas.
-</note>
-
-</body>
-</section>
-<section>
-<title>Moduły USB.</title>
-<body>
-
-<p>
-Wsparcie dla drukarek USB włączane jest w sekcji <c>USB support</c>. Należy
-włączyć <c>Support for USB</c> i <c>USB Printer support</c>. Uaktywnienie
-tych opcji jako modułów spowoduje zainstalowanie usbcore.o i printer.o w
-katalogu modułów. Sugerowane jest użycie modułów ponieważ nie będzie
-konieczne ponowne uruchamianie komputera. Użytkownicy jądra serii 2.6 opcje
-te odnajdą w sekcji <c>Device Drivers</c>.
-</p>
-
-<p>
-Po zbudowaniu jądra i restarcie komputera, nadszedł czas na załadowanie
-niezbędnych modułów:
-</p>
-
-<pre caption="Ładowania modułów USB">
-# <i>modprobe usbcore</i> 
-
-<comment>(Dla użytkowników jądra serii 2.4:)</comment>
-# <i>modprobe printer</i>
-<comment>(Dla użytkowników jądra serii  2.6:)</comment>
-# <i>modprobe usblp</i>
-</pre> 
-
-<p>
-Po pomyślnym załadowaniu modułów, należy podłączyć drukarkę. Następnie
-komendą <c>dmesg</c> można sprawdzić czy została ona poprawnie wykryta.
-</p> 
-
-<pre caption="Sprawdzanie Komunikatów Jądra">
-# <i>dmesg | tail</i>
-</pre> 
-
-<p>
-Dane wyjściowe powinny być podobne do poniższych:
-</p>
-
-<pre caption="Dane wyjściowe dmesg">
-hub.c: USB new device connect on bus2/2, assigned device number 2 
-printer.c: usblp0: USB bidirectional printer dev 2 if 0 alt 1 proto 2 vid 0x03F0 pid 0x1104
-</pre>
-
-</body>
-</section> 
-<section>
-<title>Moduły portu równoległego.</title>
-<body>
-
-<p>
-Aby włączyć wsparcie dla portu równoległego, należy w <c>Parallel port
-support</c> włączyć <c>Parallel port support</c> oraz <c>PC-style
-hardware</c>. W zależności od drukarki należy aktywować <c>Multi-IO cards
-(parallel and serial)</c>, <c>Support for foreign hardware</c> oraz
-<c>IEEE 1284 transfer mode</c>. W sekcji <c>Character devices</c> należy
-włączyć <c>Parallel Printer Support</c>. Użytkownicy jądra serii 2.6 opcje
-te odnajdą w sekcji <c>Device Drivers</c>.
-</p>
-
-<p>
-Po zbudowaniu jądra i upewnieniu się, że drukarka jest podłączona należy
-uruchomić ponownie komputer. Kolejną czynnością jest załadowanie niezbędnych
-modułów:
-</p>
-
-<pre caption="Ładowanie modułów portu równoległego">
-# <i>modprobe lp</i> <comment>(Tylko dla użytkowników jądra serii 2.6)</comment>
-# <i>modprobe parport</i> 
-# <i>modprobe parport_pc</i>
-</pre> 
-
-<p>
-Po pomyślnym załadowaniu modułów należy sprawdzić,
-<path>/var/log/messages</path> czy drukarka została pomyślnie wykryta.
-</p> 
-
-<note>
-Jeżeli używanym demonem logowania nie jest sysklogd plik zdarzeń może mieć
-inną nazwę.
-</note>
-
-<pre caption="Sprawdzanie komunikatów jądra">
-# <i>tail /var/log/messages</i>
-</pre> 
-
-<p>
-Dane wyjściowe powinny być podobne do poniższych:
-</p>
-
-<pre caption="Dane wyjściowe /var/log/messages">
-lp0: using parport0 (polling).
-</pre>
-
-</body>
-</section>
-<section>
-<title>Testowanie niskopoziomowe.</title>
-<body>
-
-<p>
-Przed ustawieniem drukarki w CUPS można ją przetestować za pomocą kilku
-niskopoziomowych poleceń.
-</p>
-
-<note>
-Niektóre drukarki (szczególnie te <uri
-link="http://pnm2ppa.sourceforge.net">oparte na PPA</uri> jak serie 720,
-820 i 1000  firmy HP) nie akceptują bezpośrednio ASCII. Jeżeli konfigurowana
-jest właśnie taka drukarka należy pamiętać, że test ten się nie powiedzie,
-nawet jeśli drukarka działa. 
-</note> 
-
-<note>
-Niektóre drukarki (np. kilka HP LaserJets) potrzebują ^L (Control-L) na
-końcu pliku, aby rozpocząć drukowanie. Bez ^L polecenie cat się powiedzie, 
-ale drukarka po pobraniu danych nic nie będzie robić.
-</note>
-
-<pre caption="Testowanie drukarki używając cat">
-# <i>touch test.txt</i>
-# <i>echo "Witaj świecie!" > test.txt</i>
-# <i>cat test.txt > /dev/usb/lp0 </i>
-
-<comment> Dla drukarek na porcie równoległym: </comment>
-# <i>cat test.txt > /dev/lp0 </i>
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Specjalne sterowniki drukarek.</title> 
-<section>
-<body> 
-
-<p>
-Przed użyciem foomatic do wygenerowania pliku PPD, niezbędnym może się
-okazać znalezienie sterowników dla drukarki.  Na przykład, Epson udostępnia
-<uri link="http://www.epkowa.co.jp/english/linux_e/linux.html">kilka
-sterowników drukarek</uri> dla systemów operacyjnych open source.
-Jakkolwiek wiele tych specjalnych sterowników tak jak sterowniki Epsona nie
-są open source.
-</p>
-
-<p>
-Następujące sterowniki są dostępne jako ebuilds w Portage: gimp-print, omni,
-hpijs, pnm2ppa.
-</p>
-
-<p>
-Dla większości drukarek, poza HP Inkjet, można użyć standardowych
-sterowników drukarek Linuksa. Na stronie <uri
-link="http://www.linuxprinting.org/printer_list.cgi">linuxprinting.org</uri>
-znajduje się baza danych wsparcia dla drukarek. Można tam znaleźć informacje
-o konkretnej drukarce. Nie można zapomnieć o zapoznaniu się z dokumentacją
-udostępnianą z każdym pobranym sterownikiem oraz z informacją licencyjną.
-</p>
-
-<p>
-Jeżeli używaną drukarką jest HP Inkjet, niezbędne będzie emergowanie
-sterownika drukarki <c>hpijs</c>. Sterownik ten obsługuje wszystkie wersje
-Postscriptu niezbędne, aby drukarka HP działała. Sterownik <c>hpijs</c> jest
-wyłącznie dla drukarek HP Inkjet. Jest dostępny w Portage dla wygody
-użytkowników. Dokumentacja sterownika <c>hpijs</c> będzie umieszczona w
-<path>/usr/share/doc/hpijs-&lt;wersja&gt;</path>. Autor <e>bardzo</e> zaleca
-przeczytanie jej.
-</p>
-
-<p>
-W przypadku używania drukarki opartej na PPA, niezbędne jest emergowanie
-sterownika drukarki <c>pnm2ppa</c>.
-</p>
-
-<pre caption="Emergowanie hpijs">
-# <i>emerge hpijs</i>
-</pre>
-
-<note>
-Jeżeli używaną drukarką jest HP Laserjet, może być już dostępne wsparcie dla
-niej poprzez system wydruku GNOME. W takim przypadku nie trzeba instalować
-tego specyficznego sterownika.
-</note>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Konfiguracja pliku PPD.</title>
-<section>
-<body>
-
-<p>
-Nadszedł czas konfiguracji drukarki i CUPS. Aby drukarka właściwie rozumiała
-Postscript, CUPS potrzebuje plik PPD (Printer Postscript Definition -
-Definicja Postscriptu Drukarki). Najprostszy sposób wygenerowania PPD to
-użycie foomatic.
-</p>
-
-<note>
-Inny sposób to ściągnięcie pliku PPD z <uri
-link="http://www.linuxprinting.org">LinuxPrinting.org</uri> i umieszczenie
-go w <path>/usr/share/cups/model</path>. W przypadku wybrania tej metody
-można ominąć tą sekcję i kontynuować w <uri link="#doc_chap5">Konfiguracji
-CUPS</uri>.
-</note>
-
-<p>
-Niezbędne są trzy informacje, aby  poniższe polecenia zadziałały; potrzebny
-jest numer identyfikacyjny drukarki, urządzenie drukujące i sterownik do
-drukarki (hpijs, jeśli zainstalowano specyficzny sterownik powyżej).  Numer
-identyfikacyjny drukarki i sterownik może być <c>zgrepowany</c> z bazy
-danych programu foomatic, a urządzenie drukujące to plik urządzenia, do
-którego podłączona jest drukarka (np.  <path>file:/dev/lp0</path>,
-<path>file:/dev/usb/lp0</path> lub dla drukarek samba
-<path>smb://user:password@server/share</path>).
-</p>
-
-<p>
-Przed użyciem <c>foomatic-configure</c>, należy uruchomić <c>cupsd</c>.
-</p>
-
-<pre caption="Uruchomienie cupsd">
+<pre caption="Automatyczne uruchamianie CUPS">
 # <i>/etc/init.d/cupsd start</i>
-</pre>
-
-<pre caption="Ogólne użycie foomatic">
-<comment>(Za $printer_model należy podstawić model
-drukarki, a za $printer_ID numer identyfikacyjny)</comment>
-<comment>(Dwie pierwsze dane wyjściowe z grep, należy wstawić w ostatnim poleceniu foomatic-configure)</comment>
-# <i>grep $printer_model /usr/share/foomatic/db/source/printer/* </i>
-# <i>grep $printer_ID /usr/share/foomatic/db/source/driver/* </i>
-# <i>foomatic-configure -s cups -p $printer_model_number -c file:$print_device_path -n queue name -d driver </i>
-</pre>
-
-<p>
-Jeśli grepowanie sterownika nie działa, można znaleźć drukarkę na <uri
-link="http://www.linuxprinting.org">LinuxPrinting.org</uri> i sprawdzić, z
-którym sterownikiem wiadomo że działa. Należy wtedy pobrać jeden z tych
-sterowników i zainstalować go:
-</p>
-
-<pre caption="Instalacja sterownika PPD">
-<comment>(W przypadku posiadania więcej niż jedną drukarkę należy użyć dla
-każdej z nich osobnych jedno liniowych nazw. Można również użyć łatwą do
-zapamiętania nazwę typu "domyslna".) </comment>
-# <i>foomatic-configure -s cups -p &lt;printer model&gt; -c file:&lt;printer device&gt; -n &lt;queue name&gt; -d &lt;driver&gt;</i>
-</pre>
-
-<p>
-Teraz bardziej specyficzny przykład. Następujący kod zakłada, iż instalowaną
-drukarką jest Epson Stylus Color 980. Oczywiście w należy to zmienić na
-model instalowanej drukarki.
-</p>
-
-<pre caption="Użycie foomatic dla drukarki Stylus Color 980">
-# <i>grep "Stylus Color 980" /usr/share/foomatic/db/source/printer/* </i>
-<comment> Należy szukać linii wyglądającej jak poniższa:</comment>
-/usr/share/foomatic/db/source/printer/Epson-Stylus_Color_980.xml:   &lt;model&gt;Stylus Color 980&lt;/model&gt;
-<comment> Epson-Stylus_Color_980 jest numerem identyfikacyjnym drukarki. </comment>
-
-# <i>grep Epson-Stylus_Color_980 /usr/share/foomatic/db/source/driver/* </i>
-/usr/share/foomatic/db/source/driver/gimp-print-ijs.xml:  &lt;printer&gt;&lt;id&gt;printer/Epson-Stylus_Color_980&lt;/id&gt;&lt;/printer&gt;
-<comment> W tym przypadku sterownikiem drukarki jest gimp-print-ijs.</comment>
-
-# <i>foomatic-configure -s cups -p Epson-Stylus_Color_980 -c file:/dev/lp0 -n Epson -d gimp-print-ijs </i>
-</pre>
-
-</body> 
-</section>
-</chapter> 
-
-<chapter> 
-<title>Konfiguracja CUPS.</title> 
-<section>
-<body> 
-
-<p>
-Gdy drukarka została skonfigurowana, należy ustawić CUPS, aby obsługiwał
-kolejkowanie wydruków. Dostęp do konfiguracji CUPS można uzyskać poprzez
-przeglądarkę internetową na porcie 631 serwera wydruku.
-</p>
-
-<p>
-CUPS ma wbudowany plik konfiguracyjny dla demona, który powinien być
-zmieniony, aby umożliwić przynajmniej nazewnictwo urządzeń typu URI. Za
-pomocą swojego ulubionego edytora należy edytować plik
-<path>/etc/cups/cupsd.conf</path> i ustawić <c>FileDevice</c> na <c>Yes</c>:
-</p>
-
-<pre caption="Zmiana FileDevice na Yes">
-# <i>nano -w /etc/cups/cupsd.conf</i>
-<comment>(Ustawienie FileDevice na Yes)</comment>
-</pre>
-
-<p>
-Następnie, jeżeli chce się ograniczyć dostęp do drukarki komputerom w sieci
-(na przykład gdy system jest bezpośrednio połączony z internetem), należy
-poszukać wpisu <c>Port 631</c> i zastąpić go wpisem <c>Listen
-127.0.0.1:631</c>.
-</p>
-
-<p>
-Użytkownicy chcący ustawić klientów nowego serwera wydruku, proszeni są o
-zajrzenie do <path>/etc/cupsd/client.conf</path> na komputerze klienta i
-ustawienie parametru <c>ServerName</c> na nazwę sieciową serwera wydruku.
-</p>
-
-<pre caption="Dodawanie CUPS do domyślnego poziomu startowego i restartowanie CUPS">
 # <i>rc-update add cupsd default</i>
-# <i>/etc/init.d/cupsd restart</i>
 </pre>
-
-<p>
-Demon CUPS powinien już działać.  W ulubionej przeglądarce należy podać
-adres <uri>http://localhost:631</uri> i kliknąć na <c>Manage Printer</c>.
-Tutaj można znaleźć nowo zainstalowaną drukarkę, skonfigurować ją lub
-wydrukować stronę testową.  Upewnij się, że domyślny rozmiar strony został
-ustawiony na aktualnie używany (np. A4 zamiast letter).
-</p> 
-
-<note>
-Jeżeli drukarka z jakiegoś powodu nie działa, należy przejść do katalogu o
-którym informowano, że będą w nim zbierane dzienniki zdarzeń CUPS i przejrzeć
-<c>error_log</c>.
-</note>
-
-</body> 
-</section>
-</chapter>
-
-<chapter>
-<title>Konfigurowanie programów, aby używały CUPS do druku.</title>
-<section>
-<title>Ogólne.</title>
-<body>
-
-<p>
-Większość programów posiada dzisiaj rdzenny interfejs cups, więc nie trzeba
-czegokolwiek zmieniać. Po prostu należy spróbować wydrukować coś w jakimś
-programie.
-</p>
 
 </body>
 </section>
 <section>
-<title>GIMP</title>
+<title>Konfiguracja</title>
 <body>
 
 <p>
-Aby móc drukować dokumenty używając Gimpa, należy
-zainstalować/przeinstalować pakiet <c>gimp</c> z włączoną flagą USE
-"gimpprint". Dzięki temu zostanie zainstalowany <c>gimp-print</c>, jeżeli
-jeszcze nie ma go w systemie.
+Domyślna konfiguracja serwera CUPS znajduje się w pliku
+<path>/etc/cups/cupsd.conf</path> i jest odpowiednia dla większości
+użytkowników. Część z nich może jednak chcieć tę konfigurację dostosować do
+własnych potrzeb.
 </p>
 
-<pre caption="Emergowanie Gimpa z możliwościami druku">
-<comment>(Należy upewnić się, że flaga USE="gimpprint" jest ustawiona.)</comment>
-# <i>emerge gimp</i>
+<p>
+W następnym akapicie omówimy kilka najczęściej wprowadzanych zmian.
+</p>
+
+<ul>
+  <li>
+    <uri link="#remote_usage">Zdalny dostęp do drukarki</uri>: Pozwalamy innym
+    użytkownikom na korzystanie z naszej drukarki. 
+  </li>
+  <li>
+    <uri link="#remote_admin">Zdalna administracja CUPS</uri>: Uzyskujemy
+    dostęp do narzędzi administracyjnych CUPS z innych komputerów.
+  </li>
+  <li>
+    <uri link="#windows_pcl">Obsługa sterowników Windows PCL</uri>:
+    Konfigurujemy CUPS do pracy ze sterownikami Windows PCL, co pozwala na
+    współdzielenie drukarki poprzez Sambę.
+  </li>
+  <li>
+    In <uri link="#setup_remote">Konfiguracja drukarki sieciowej</uri>:
+    Konfigurujemy system tak, aby używał drukarki podłączonej do innego
+    komputera, nie pracującego pod kontrolą Windows.
+  </li>
+</ul>
+
+</body>
+</section>
+<section id="remote_usage">
+<title>Zdalny dostęp do drukarki</title>
+<body>
+
+<p>
+Jeśli chcemy mieć dostęp do drukarki z innych komputerów poprzez protokół IPP
+to musimy nadać im do niej prawa dostępu, czego dokonuje się w
+pliku <path>/etc/cups/cupsd.conf</path>. Jeśli drukarka ma być współdzielona
+poprzez Sambę to zmiana ta nie jest konieczna.
+</p>
+
+<p>
+Ulubionym edytorem otwieramy plik <path>/etc/cups/cupsd.conf</path> i dodajemy
+tam linię <c>Allow</c> dla każdego komputera, który ma posiadać możliwość
+łączenia się z drukarką. W poniższym przykładzie damy dostęp do drukarki
+komputerom z sieci lokalnej, czyli takim, których adresy IP rozpoczynają się od
+ciągu znaków <c>192.168.0</c>.
+</p>
+
+<pre caption="Umożliwianie zdalnego dostępu do drukarki">
+&lt;Location /&gt;
+Order Deny,Allow
+Deny From All
+Allow From 127.0.0.1
+<i>Allow From 192.168.0.*</i>
+&lt;/Location&gt;
+</pre>
+
+</body>
+</section>
+<section id="remote_admin">
+<title>Zdalne administrowanie CUPS</title>
+<body>
+
+<p>
+Użytkownicy zainteresowani zdalnym administrowaniem systemem drukowania muszą
+zapewnić dostęp do interfejsu administratora z komputerów innych niż localhost.
+W tym celu należy edytować plik <path>/etc/cups/cupsd.conf</path> i
+wyszczególnić wszystkie adresy, z których zamierzamy dokonywać zmian
+administracyjnych. Na przykład, aby zapewnić taki dostęp komputerowi o adresie
+IP 192.168.0.3 musimy dokonać następującego wpisu:
+</p>
+
+<pre caption="Zapewnianie zdalnego dostępu w /etc/cups/cupsd.conf">
+&lt;Location /admin&gt;
+<comment>(...)</comment>
+Order Deny,Allow
+Deny From All
+Allow From 127.0.0.1
+<i>Allow From 192.168.0.3</i>
+&lt;/Location&gt;
 </pre>
 
 <p>
-Należy otworzyć Gimpa i otworzyć jakiś obraz lub wybrać nowy. Nie jest
-istotne co dokładnie zostanie wybrane, ponieważ jedynie potrzebny jest
-dostęp do menu <c>Plik</c>. Po kliknięciu prawym przyciskiem myszy na
-obrazie należy przejść do menu <c>Plik/Drukuj</c>. Powinno pojawić się okno
-dialogowe wydruku. Należy kliknąć na nową drukarkę. Jeżeli instalowana
-drukarka nie znajduje się na liście należy ją wpisać i następnie wybrać typ
-drukarki. Teraz powinno być wszystko ustawione, aby drukować z Gimpa. Można
-popróbować różne ustawienia aby sprawdzić uzyskiwane efekty.
+Po dokonaniu zmian w pliku <path>/etc/cups/cupsd.conf</path> należy ponownie
+uruchomić CUPS za pomocą polecenia <c>/etc/init.d/cupsd restart</c>.
 </p>
 
 </body>
 </section>
-</chapter>
-<chapter>
-<title>Konfiguracja systemu Windows do używania drukarki CUPS.</title>
-<section>
-<title>Instalacja wymaganego wsparcia.</title>
+<section id="windows_pcl">
+<title>Obsługa sterowników Windows PCL</title>
 <body>
 
 <p>
-Aby Windows był w stanie używać CUPS należy zainstalować wsparcie dla IPP.
-Windows 2000 i XP powinny mieć to wsparcie zainstalowane standardowo,
-użytkownicy Windows 98 i ME muszą posłużyć się  <uri
-link="http://support.microsoft.com/default.aspx?scid=kb;en-us;294439">tym
-adresem</uri>.
+Sterowniki PCL wysyłają do serwera druku dane w postaci pierwotnej. Aby
+umożliwić drukowanie takich danych w CUPS należy wyedytować pliki
+<path>/etc/cups/mime.types</path> oraz <path>/etc/cups/mime.convs</path> i
+odkomentować w nich linię <c>application/octet-stream</c>.
 </p>
 
-</body>
-</section>
-<section>
-<title>Instalacja drukarki CUPS.
-</title>
-<body>
-
-<p>
-Należy uruchomić kreatora <c>Dodaj nową drukarkę</c> i wybrać 
-<c>Drukarkę sieciową</c>. Gdy będzie trzeba podać URL drukarki
-należy podać dokładny URL tak jak był ustawiony wcześniej.
-</p>
-
-<pre caption="Przykładowy URL drukarki.">
-<comment>(To jest tylko przykład.)</comment>
-http://192.168.1.1:631/printers/Epson
-</pre>
-
-<p>
-To wszystko!
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Używanie Linuksa jako serwera wydruku kompatybilnego z Windowsem.</title>
-<section>
-<body>
-
-<p>
-Linux może być wspaniałym serwerem wydruku, właściwie może być wspaniałym
-serwerem do wszystkiego. Jeżeli chcemy, aby drukarka była widoczna jako
-drukarka udostępniana w sieci Windows, należy edytować plik
-<path>/etc/samba/smb.conf</path> aby dopasować ustawienia do własnych
-potrzeb.  Plik <path>smb.conf</path> zawiera wszystkie informacje które
-sprawią, że Linux będzie wyglądał jak serwer Windows NT dla każdego
-komputera z Windowsem.  Poniżej został załączony przykładowy
-<path>smb.conf</path>. W razie potrzeby należy edytować ten plik aby
-dopasować go do środowiska sieciowego.
-</p>
-
-<pre caption="Przykładowy smb.conf">
-[global]
-
-workgroup = YOUR_WORKGROUP
-server string = Gentoo Linux Server
-encrypt passwords = True
-security = user
-smb passwd file = /etc/samba/private/smbpasswd
-log file = /var/log/samba/log.%m
-socket options = IPTOS_LOWDELAY TCP_NODELAY
-domain master = Yes
-local master = Yes
-preferred master = Yes
-os level = 65
-dns proxy = No
-name resolve order = lmhosts host bcast
-bind interfaces only = True
-interfaces = eth0
-hosts deny = ALL
-hosts allow = 192.168.1.4 127.0.0.1 (list of allow hosts here) 
-debug level = 1
-create mask = 0644
-directory mask = 0755
-level2 oplocks = True
-read raw = no
-write cache size = 262144
-
-[printers]
-comment = All Printer
-path = /var/spool/samba
-browseable = no
-</pre>
-
-<p>
-Większość sterowników windowsowych to sterowniki PCL. Zadania przesłane z
-Windowsa powinny być interpretowane przez CUPS jako
-<c>application/octet-stream</c> i wydrukowane jako surowy plik. Jeżeli
-używane jest CUPS należy otworzyć <path>/etc/cups/mime.types</path> i
-odkomentować następującą linię:
-</p>
-
-<pre caption="Odkomentowanie linii w /etc/cups/mime.types">
+<pre caption="Włączanie obsługi drukowania pierwotnego">
+# <i>vim /etc/cups/mime.types</i>
+<comment>(Odkomentowujemy poniższą linię)</comment>
 application/octet-stream
+
+# <i>vim /etc/cups/mime.convs</i>
+<comment>(Również odkomentowujemy linię z poniższym wpisem)</comment>
+application/octet-stream     application/vnd.cups-raw    0    -
 </pre>
 
 <p>
-To samo należy powtórzyć dla pliku <path>/etc/cups/mime.convs</path>:
+Po dokonaniu zmian w pliku <path>/etc/cups/cupsd.conf</path> należy ponownie
+uruchomić komputer przy pomocy polecenia <c>/etc/init.d/cupsd restart</c>.
 </p>
 
-<pre caption="Odkomentowanie linii w /etc/cups/mime.convs">
-application/octet-stream application/vnd.cups-raw   0 -
+</body>
+</section>
+<section id="setup_remote">
+<title>Konfigurowanie drukarki sieciowej</title>
+<body>
+
+<p>
+Jeśli system ma korzystać z drukarki sieciowej wystarczy dopisać mu odpowiednie
+urządzenie w pliku <path>/etc/cups/client.conf</path>.
+</p>
+
+<p>
+Zakładając, że drukarka jest podłączona do komputera o nazwie
+<c>printserver.mydomain</c>, należy dokonać następującego wpisu do pliku
+<path>/etc/cups/client.conf</path>:
+</p>
+
+<pre caption="Edytowanie pliku client.conf">
+# <i>vim /etc/cups/client.conf</i>
+
+<comment>(Oczywiście wpis printserver.mydomain należy zastąpić nazwą
+odpowiedniego serwera wydruku)</comment>
+ServerName <i>printserver.mydomain</i>
 </pre>
 
 <p>
-Teraz SAMBA jest skonfigurowana. Należy ją zrestartować. Przejdź do
-komputera z Windowsem i zainstaluj drukarkę sieciową. Proste, nieprawdaż?
+Serwer wydruku będzie przekierowywał nasze zadania do swojej domyślnej
+drukarki. Aby zmienić domyślną drukarkę należy skorzystać z polecenia
+<c>lpoptions</c>:
+</p>
+
+<pre caption="Zmiana domyślnej drukarki">
+<comment>(Lista dostępnych urządzeń)</comment>
+# <i>lpstat -a</i>
+hpljet5p accepting requests since Jan 01 00:00
+hpdjet510 accepting requests since Jan 01 00:00
+
+<comment>(Ustawienie HP LaserJet 5P jako drukarki domyślnej)</comment>
+# <i>lpoptions -d hpljet5p</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="configure_printer">
+<title>Konfigurowanie drukarki</title>
+<section>
+<title>Wprowadzenie</title>
+<body>
+
+<p>
+Jeśli drukarka, którą chcemy skonfigurować jest dostępna zdalnie, przez serwer
+działający pod kontrolą CUPS to wystarczy zastosować się do wskazówek
+znajdujących się  w akapicie zatytułowanym <uri
+link="#setup_remote">Konfigurowanie drukarki sieciowej</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Wykrywanie drukarki</title>
+<body>
+
+<p>
+Jeśli drukarka, obojętnie czy podłączona przez USB, czy przez port szeregowy,
+jest włączona podczas uruchamiania Gentoo będzie można uzyskać od jądra
+informację, że została ona poprawnie wykryta. Nie ma to jednak miejsca zawsze,
+jest to tylko dodatkowa informacja.
+</p>
+
+<pre caption="Pozyskiwanie informacji od jądra">
+<comment>(Dla drukarek na porcie szeregowym)</comment>
+$ <i>dmesg | grep -i print</i>
+parport0: Printer, Hewlett-Packard HP LaserJet 2100 Series
+
+<comment>(Dla drukarek USB)</comment>
+$ <i>lsusb</i>
+<comment>(...)</comment>
+Bus 001 Device 007: ID 03f0:1004 Hewlett-Packard DeskJet 970c/970cse
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalowanie drukarki</title>
+<body>
+
+<p>
+W celu zainstalowania drukarki należy uruchomić przeglądarkę i udać się pod
+adres <uri link="http://localhost:631">http://localhost:631</uri>. Pojawi się
+strona służąca do zarządzania systemem CUPS.
+</p>
+
+<p>
+Kolejny krok to przejście do zakładki <e>Administration</e> i wpisanie 
+loginu "root" oraz odpowiedniego hasła . Potem zostaniemy przeniesieni w tryb
+zarządzania serwerem wydruku. Następnym naszym krokiem będzie przejście do
+zakładki <e>Add Printer</e>, gdzie pojawi się nowy ekran pozwalający na podanie
+następujących parametrów:
+</p>
+
+<ul>
+  <li>
+     <e>spooler name</e> - krótka nazwa pod jaką drukarka będzie
+    rozpoznawana w systemie. Nie powinna zawierać spacji ani znaków
+    specjalnych. Na przykład, dla drukarki HP LaserJet 5P, można wybrać nazwę
+    <c>hpljet5p</c>.
+  </li>
+  <li>
+    <e>location</e>, opis miejsca, w którym faktycznie znajduje się drukarka
+    (np. w pomieszczeniu o podanym numerze). Ułatwia to zarządzanie kilkoma
+    drukarkami.
+  </li>
+  <li>
+    <e>description</e>, krótki opis urządzenia, zwykle używa się tego pola do
+    podania pełnej nazwy używanego sprzętu, np. "HP LaserJet 5P".
+   </li>
+</ul>
+
+<p>
+Następny ekran służy do wyboru punktu, w którym drukarka nasłuchuje.
+Będzie można je wybrać spośród listy. W poniższej tabeli wypisujemy tylko kilka
+urządzeń, nie jest to ich kompletna lista.
+</p>
+
+<table>
+<tr>
+  <th>Urządzenie</th>
+  <th>Opis</th>
+</tr>
+<tr>
+  <ti>AppSocket/HP JetDirect</ti>
+  <ti>
+      Umożliwia komunikację poprzez gniazdo HP JetDirect. Bardzo niewiele
+      drukarek z tego korzysta.
+  </ti>
+</tr>
+<tr>
+  <ti>Internet Printing Protocol (IPP or HTTP)</ti>
+  <ti>
+    Służy do lokalizowania zdalnych drukarek poprzez protokół IPP, zarówno
+    bezpośrednio (IPP) jak i za pośrednictwem HTTP.
+  </ti>
+</tr>
+<tr>
+  <ti>LPD/LPR Host or Printer</ti>
+  <ti>
+    Dla drukarek sieciowych podłączonych do serwerów LPD/LPR.
+  </ti>
+</tr>
+<tr>
+  <ti>Parallel Port #1</ti>
+  <ti>
+    Wybieramy, gdy drukarka jest podłączona do lokalnego portu szeregowego
+    (LPT).
+  </ti>
+</tr>
+<tr>
+  <ti>USB Printer #1</ti>
+  <ti>
+    Wybieramy, gdy drukarka jest podłączona do lokalnego portu USB.
+  </ti>
+</tr>
+</table>
+
+<p>
+Jeśli instalujemy zdalną drukarkę zostaniemy zapytani o jej adres URI.
+</p>
+
+<ul>
+  <li>
+    Nazwy drukarek serwera LPD mają składnię <c>lpd://hostname/queue</c>.
+  </li>
+  <li>
+    Nazwy dla HP JetDirect składnię <c>socket://hostname</c>
+  </li>
+  <li>
+    A nazwy drukarek IP składnię <c>http://hostname:631/ipp/queue</c> lub
+    <c>ipp://hostname/ipp/queue</c>.
+  </li>
+</ul>
+
+<p>
+Następnie musimy wybrać producenta, model oraz konkretny numer naszej drukarki.
+Wiele drukarek może korzystać z tych samych sterowników. Można albo wybrać
+jeden z domyślnych albo poszukać na stronie <uri
+link="http://www.linuxprinting.org/printer_list.cgi">LinuxPrinting.org</uri>
+bardziej odpowiedniego sterownika. Sterownik można zresztą z łatwością później
+zmienić.
+</p>
+
+<p>
+Po wybraniu sterownika CUPS poinformuje o udanym dodaniu drukarki do systemu.
+Można teraz przejść do strony zarządzania drukarkami i wybrać opcję <c>Configure
+Printer</c> w celu zmiany jej ustawień·
+</p>
+
+</body>
+</section>
+<section>
+<title>Testowanie i rekonfigurowanie drukarki</title>
+<body>
+
+<p>
+W celu sprawdzenia czy drukarka działa prawidłowo należy przejść do strony
+administracji i wybrać tam opcję <c>Print Test Page</c>, która wydrukuje
+stronę testową. 
+</p>
+
+<p>
+Jeśli drukarka nie działa prawidłowo należy wybrać opcję <c>Modify
+Printer</c> i poprawić jej konfigurację. Pojawi się ta sama seria pól
+konfiguracyjnych do wypełnienia co wcześniej, z tym, że tym razem jako domyślna
+będzie wyświetlana obecna konfiguracja.
+</p>
+
+<p>
+Jeśli naprawdę nie wiadomo czemu drukarka nie działa, cennych wskazówek może
+dostarczyć przeglądanie pliku <path>/var/log/cups/error_log</path>. W kolejnym
+przykładzie zaistnieje błąd związany z prawami dostępu spowodowany złym wpisem
+w polu <c>Allow</c> pliku <path>/etc/cups/cupsd.conf</path>.
+</p>
+
+<pre caption="Przeglądanie błędów CUPS">
+# <i>tail /var/log/cups/error_log</i>
+<comment>(...)</comment>
+E [11/Jun/2005:10:23:28 +0200] [Job 102] Unable to get printer status (client-error-forbidden)!
+</pre>
+
+</body>
+</section>
+<section>
+<title>Wybór najlepszego sterownika</title>
+<body>
+
+<p>
+Istnieje wiele różnych sterowników. Aby odnaleźć ten, który zapewni najlepszą
+wydajność dla danej drukarki należy udać się na stronę <uri
+link="http://www.linuxprinting.org/printer_list.cgi">LinuxPrinting
+Printer List</uri> i wybrać tam z listy odpowiedniego producenta i model
+sprzętu. Na przykład dla drukarki HP LaserJet 5P autorzy strony zalecają użycie
+sterownika <c>ljet4</c>.
+ </p>
+
+<p>
+Pobrany ze strony plik PPD należy umieścić w katalogu
+<path>/usr/share/cups/model</path>, co umożliwi korzystanie z niego poprzez
+stronę administracyjną, a następnie skonfigurować sprzęt do pracy z nim podobnie
+jak to opisujemy powyżej.
 </p>
 
 </body>
 </section>
 </chapter>
+
+<chapter>
+<title>Używanie specjalnych sterowników</title>
+<section>
+<title>Wprowadzenie</title>
+<body>
+
+<p>
+Niektóre drukarki wymagają specjalnych sterowników w celu uaktywnienia
+specjalnych właściwości jakie posiadają, a które po przeprowadzeniu konfiguracji
+tak jak opisano to powyżej nie będą działać. W tym rozdziale opiszemy kilka
+konkretnych drukarek oraz sposoby ich konfigurowania tak, aby mogły korzystać z
+pełni swoich możliwości.
+</p>
+
+<p>
+Omówimy następujące sterowniki:
+</p>
+
+<ul>
+  <li><uri link="#gimp-print">Sterownik Gimp-Print</uri></li>
+  <li><uri link="#hplip">Sterownik HPLIP</uri> (zastępujący HPOJ i HPIJS)</li>
+  <li><uri link="#pnm2ppa">Sterownik PNM2PPA</uri></li>
+</ul>
+
+</body>
+</section>
+<section id="gimp-print">
+<title>Gimp-Print Driver</title>
+<body>
+
+<p>
+Otwarte sterowniki <uri link="http://gimp-print.sf.net">gimp-print</uri>
+zapewniają wysoką jakość wydruku w wielu drukarkach firm Canon, Epson, HP,
+Lexmark, Sony, Olympus i drukarkach PCL współpracujących z CUPS, ghostscript,
+GIPM-em i wieloma innymi aplikacjami.
+</p>
+
+<p>
+Drzewo Portage zawiera ebuild instalujący sterowniki gimp-print. Do ich
+zemergowania wystarczy zatem użycie polecenia <c>emerge</c>. Warto zauważyć, że
+ebuild ten posiada kilka wartościowych flag USE (jak np. <c>cups</c> i
+<c>ppds</c>). Co najmniej te dwie flagi muszą być włączone!
+</p>
+
+<pre caption="Instalowanie sterownika gimp-print">
+# <i>emerge gimp-print</i>
+</pre>
+
+<p>
+Kiedy proces instalacji się zakończy sterowniki gimp-print będą gotowe do
+wybrania ze strony administracyjnej CUPS. 
+</p>
+
+</body>
+</section>
+<section id="hplip">
+<title>HPLIP Driver</title>
+<body>
+
+<p>
+<uri link="http://hpinkjet.sf.net">Projekt HPLIP</uri> to całkowicie nowe
+podejście do sterownika hpijs. Sterownik ten posiadaja również obsługę wielu
+skanerów oraz innych urządzeń. Aby można było drukować za jego pomocą
+<e>musi</e> on mieć włączoną flagę USE <c>ppds</c>.
+</p>
+
+<pre caption="Instalowanie sterowników hplip">
+# <i>emerge hplip</i>
+</pre>
+
+<p>
+Po zakończeniu procesu instalacji sterowniki będą dostępne do wyboru z poziomu
+interfesu www CUPS.
+</p>
+
+</body>
+</section>
+<section id="pnm2ppa">
+<title>Sterownik PNM2PPA</title>
+<body>
+
+<p>
+PPA to technologia firmy HP, która skupia się na przesyłaniu niskopoziomowych
+sygnałów do systemu zamiast do drukarki, co powoduje, że drukarka staje się
+tańsza, ale również konsumuje więcej zasoobów.
+ </p>
+
+<p>
+Jeśli na stronie
+<uri link="http://www.linuxprinting.org/printer_list.cgi">LinuxPrinting</uri>
+znajduje się informacja, że sterownik <uri
+link="http://pnm2ppa.sourceforge.net/">pnm2ppa</uri> jest najlepszym możliwym
+wyborem to należy zainstalować filtry <c>pnm2ppa</c>.
+</p>
+
+<pre caption="Instalowanie filtra pnm2ppa">
+# <i>emerge pnm2ppa</i>
+</pre>
+
+<p>
+Po zainstalowaniu konfigurujemy drukarkę tak jak opisano to powyżej.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="windows">
+<title>Drukowanie przy współpracy z systemami Microsoft Windows</title>
+<section>
+<title>Konfigurowanie klienta IPP w systemie Windows</title>
+<body>
+
+<p>
+Microsoft Windows posiada obsługę IPP (użytkownicy Windows 9x oraz ME muszą <uri
+link="http://support.microsoft.com/default.aspx?scid=kb;en-us;294439">
+zainstalować</uri> ją osobno). Aby zainstalować drukarkę podłączoną do komputera
+z Linuksem należy uruchomić program konfiguracyjny służący do dodawania drukarek
+i wybrać w nim opcję <c>drukarka sieciowa</c>. Przy pytaniu o URI należy podać
+odpowiedni adres o składni <c>http://hostname:631/printers/queue</c>.
+</p>
+
+<p>
+Należy się upewnić, że komputer jest w stanie <uri link="#remote_usage">połączyć
+się</uri> z drukarką!
+</p>
+
+</body>
+</section>
+<section>
+<title>Konfiguracja klienta Windows do pracy z drukarką współdzieloną za pomocą
+Samby</title>
+<body>
+
+<p>
+W celu korzystania ze współdzielonej drukarki w sieci SMB-CIFS należy
+zainstalować i skonfigurować system SAMBA. Czynności na to się składające nie są
+tematem tego dokumentu, ale postaramy się pokrótce omówić proces konfiguracji
+Samby dla współdzielonych drukarek.
+</p>
+
+<p>
+Otwieramy plik <path>/etc/samba/smb.conf</path> naszym ulubionym edytorem i
+dodajemy do niego odpowiedni akapit:
+</p>
+
+<pre caption="Dodawanie akapitu [printers]">
+[printers]
+  comment      = All printers
+  path         = /var/spool/samba
+  browseable   = no
+  guest ok     = no
+  writable     = no
+  printable    = yes
+  public       = yes
+  printer name = hpljet5p
+</pre>
+
+<p>
+Następnie przewijamy plik <path>smb.conf</path> aż do znalezienia akapitu
+<c>[global]</c>. Wewnątrz niego znajdujemy wpisy <c>printcap name</c> i
+<c>printing</c> i ustawiamy każdy z nich na <c>cups</c>:
+</p>
+
+<pre caption="Zmiana akapitu [globals]">
+[globals]
+  <comment>(...)</comment>
+  printcap name = <i>cups</i>
+  printing      = <i>cups</i>
+</pre>
+
+<p>
+Należy się upewnić, że komputer obsługuje <uri link="#windows_pcl">sterowniki
+PCL</uri>, a następnie ponownie uruchomić usługę <c>smb</c> z nowymi
+ustawieniami.
+</p>
+
+</body>
+</section>
+<section>
+<title>Konfigurowanie klienta Linuksowego do pracy z windowsowym serwerem
+druku</title>
+<body>
+
+<p>
+Po pierwsze należy się upewnić, że Windows udostępnia drukarkę.
+</p>
+
+<p>
+Następnie na stronie będącej interfejsem administracyjnym dla CUPS należy
+skonfigurować drukarkę tak jak opisano to wcześniej. Powinna pojawić się
+informacja o tym, że CUPS dodał nową drukarkę o nazwie <c>Windows Printer via
+SAMBA</c>. Należy ją wybrać i użyć składni
+<c>smb://username:password@workgroup/server/printername</c> lub
+<c>smb://server/printername</c> jako jej URI.
+</p>
+
+</body>
+</section>
+</chapter>
+
 </guide>
