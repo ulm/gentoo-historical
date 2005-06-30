@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/pre-kmerge.sh,v 1.12.2.3 2005/06/09 22:48:40 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/pre-kmerge.sh,v 1.12.2.4 2005/06/30 15:42:20 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -14,6 +14,9 @@ rm -f /usr/src/linux
 if [ "${clst_livecd_type}" = "gentoo-release-minimal" ] \
 || [ "${clst_livecd_type}" = "gentoo-release-universal" ]
 then
-	sed -i 's/initramfs_data.cpio.gz /initramfs_data.cpio.gz -r 1024x768 /'\
-	/usr/share/genkernel/genkernel
+	case ${clst_mainarch} in
+		amd64|x86)
+			sed -i 's/initramfs_data.cpio.gz /initramfs_data.cpio.gz -r 1024x768 /'	/usr/share/genkernel/genkernel
+		;;
+	esac
 fi
