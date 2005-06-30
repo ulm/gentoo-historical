@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.150 2005/06/29 19:34:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.151 2005/06/30 04:47:10 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -113,13 +113,14 @@ class ArchitectureTemplate:
 	# Private Function.  Will return a list of packages to be emerged for a given command.  Not yet used.
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
+#		self._logger.log("_get_packages_to_emerge() called with '%s'" % cmd)
 		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 
 	##
 	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
 	# @param package package to be quickpkg'd.
 	def _quickpkg_deps(self, package):
-		# These need to be changed to pull values from the make.conf stuff
+#		self._logger.log("_quickpkg_deps() called with '%s'" % package)
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
 		make_conf = self._install_profile.get_make_conf()
@@ -128,11 +129,9 @@ class ArchitectureTemplate:
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
 		packages = self._get_packages_to_emerge("emerge -p " + package)
+#		self._logger.log("packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
-#			try:
-#				pkgname = pkg.split('/')[1]
-#			except IndexError:
-#				pkgname = pkg
+			if not pkg: continue
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
 				if not GLIUtility.exitsuccess(ret):
@@ -146,6 +145,7 @@ class ArchitectureTemplate:
 	# @param binary_only=False defines whether to only allow binary emerges.
 	def _emerge(self, package, binary=True, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
+#		self._logger.log("_emerge() called with: package='%s', binary='%s', binary_only='%s', grp_install='%s'" % (package, str(binary), str(binary_only), str(self._install_profile.get_grp_install())))
 		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
