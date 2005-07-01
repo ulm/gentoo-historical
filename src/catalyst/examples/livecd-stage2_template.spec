@@ -119,6 +119,12 @@ livecd/splash_type:
 # livecd/splash_theme: livecd-2005.0
 livecd/splash_theme:
 
+# This is a set of arguments that get passed to the bootloader for your CD.  It
+# is used on the x86/amd64 release media to enable keymap selection.
+# example:
+# livecd/bootargs: dokeymap
+livecd/bootargs:
+
 # This is a set of arguments that will be passed to genkernel for all kernels
 # defined in this target.  It is useful for passing arguments to genkernel that
 # are not otherwise available via the livecd-stage2 spec file.
