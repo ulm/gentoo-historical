@@ -1,6 +1,6 @@
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.9 2005/06/30 16:07:15 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/x86-archscript.sh,v 1.24.2.10 2005/07/01 19:14:48 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -77,7 +77,7 @@ case $1 in
 		fi
 
 		# Add any additional options
-		if [ -z "${clst_livecd_bootargs}" ]
+		if [ -n "${clst_livecd_bootargs}" ]
 		then
 			for x in ${clst_livecd_bootargs}
 			do
