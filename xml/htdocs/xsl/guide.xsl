@@ -1144,7 +1144,7 @@
 <xsl:comment>
   &lt;rdf:RDF xmlns="http://web.resource.org/cc/"
       xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"&gt;
-  &lt;License rdf:about="http://creativecommons.org/licenses/by-sa/2.0/"&gt;
+  &lt;License rdf:about="http://creativecommons.org/licenses/by-sa/2.5/"&gt;
      &lt;permits rdf:resource="http://web.resource.org/cc/Reproduction" /&gt;
      &lt;permits rdf:resource="http://web.resource.org/cc/Distribution" /&gt;
      &lt;requires rdf:resource="http://web.resource.org/cc/Notice" /&gt;
