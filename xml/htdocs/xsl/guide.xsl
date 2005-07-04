@@ -368,12 +368,6 @@
     <td valign="top" bgcolor="#ffffff">
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
-              <!-- show the anti-swpat banner -->
-              <p align="center">
-                <a href="http://www.nosoftwarepatents.com/">
-                  <img src="/images/swpatbanner.en.png" alt ="No Software Patents!" border="0"/>
-                </a>
-              </p>
               <p class="news">
                 <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo"/>
                 <span class="newsitem" lang="en">We produce Gentoo Linux, a special flavor of Linux that
