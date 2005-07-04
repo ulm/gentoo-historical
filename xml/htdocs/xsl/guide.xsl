@@ -366,6 +366,13 @@
     </td>
     <!-- Content below top menu and between left menu and ads -->
     <td valign="top" bgcolor="#ffffff">
+            <!-- show the anti-swpat banner -->
+            <p class="news" align="center">
+              <a href="http://www.nosoftwarepatents.com/">
+                <img class="newsicon" src="/images/swpatbanner.en.png" alt ="No
+                  Software Patents!" border="0"/>
+              </a>
+            </p>
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
               <p class="news">
