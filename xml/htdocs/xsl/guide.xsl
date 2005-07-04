@@ -366,17 +366,16 @@
     </td>
     <!-- Content below top menu and between left menu and ads -->
     <td valign="top" bgcolor="#ffffff">
-            <!-- show the anti-swpat banner -->
-            <p class="news" align="center">
-              <a href="http://www.nosoftwarepatents.com/">
-                <img class="newsicon" src="/images/swpatbanner.en.png" alt ="No
-                  Software Patents!" border="0"/>
-              </a>
-            </p>
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
+              <!-- show the anti-swpat banner -->
+              <p align="center">
+                <a href="http://www.nosoftwarepatents.com/">
+                  <img src="/images/swpatbanner.en.png" alt ="No Software Patents!" border="0"/>
+                </a>
+              </p>
               <p class="news">
-                <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo-"/>
+                <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo"/>
                 <span class="newsitem" lang="en">We produce Gentoo Linux, a special flavor of Linux that
                 can be automatically optimized and customized for just
                 about any application or need. Extreme performance,
@@ -1142,6 +1141,19 @@
 <p class="copyright">
   <xsl:apply-templates select="func:gettext('License')"/>
 </p>
+<xsl:comment>
+  &lt;rdf:RDF xmlns="http://web.resource.org/cc/"
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"&gt;
+  &lt;License rdf:about="http://creativecommons.org/licenses/by-sa/2.0/"&gt;
+     &lt;permits rdf:resource="http://web.resource.org/cc/Reproduction" /&gt;
+     &lt;permits rdf:resource="http://web.resource.org/cc/Distribution" /&gt;
+     &lt;requires rdf:resource="http://web.resource.org/cc/Notice" /&gt;
+     &lt;requires rdf:resource="http://web.resource.org/cc/Attribution" /&gt;
+     &lt;permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" /&gt;
+     &lt;requires rdf:resource="http://web.resource.org/cc/ShareAlike" /&gt;
+  &lt;/License&gt;
+  &lt;/rdf:RDF&gt;
+</xsl:comment>
 </xsl:template>
 
 <!-- GLSA Index -->
