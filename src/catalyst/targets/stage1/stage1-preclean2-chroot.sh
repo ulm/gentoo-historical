@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-preclean2-chroot.sh,v 1.10.2.2 2005/06/02 20:26:17 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-preclean2-chroot.sh,v 1.10.2.3 2005/07/05 21:47:46 wolf31o2 Exp $
 		
 # now, some finishing touches to initialize gcc-config....
 unset ROOT

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/gamecdfs-update.sh,v 1.6.2.4 2005/05/18 18:27:00 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/gamecdfs-update.sh,v 1.6.2.5 2005/07/05 21:47:46 wolf31o2 Exp $
 
 # we grab our configuration
 source /tmp/gamecd.conf || exit 1

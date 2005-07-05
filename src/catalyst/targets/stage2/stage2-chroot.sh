@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.2 2005/06/30 21:36:28 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.3 2005/07/05 21:47:46 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile

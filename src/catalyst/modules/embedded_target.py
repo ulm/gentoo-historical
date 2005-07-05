@@ -1,6 +1,6 @@
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/embedded_target.py,v 1.8 2005/01/13 00:04:49 zhen Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/embedded_target.py,v 1.8.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
 
 """
 This class works like a 'stage3'.  A stage2 tarball is unpacked, but instead

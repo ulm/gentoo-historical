@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-packages.sh,v 1.6 2005/01/28 18:37:23 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-packages.sh,v 1.6.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`

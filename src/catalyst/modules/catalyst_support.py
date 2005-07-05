@@ -1,6 +1,6 @@
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.1 2005/05/16 13:24:39 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.2 2005/07/05 21:47:46 wolf31o2 Exp $
 
 import sys,string,os,types,re,traceback
 

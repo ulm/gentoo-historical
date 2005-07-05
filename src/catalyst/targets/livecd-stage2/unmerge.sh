@@ -1,6 +1,6 @@
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/livecd-stage2/Attic/unmerge.sh,v 1.7 2005/03/02 02:14:34 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/livecd-stage2/Attic/unmerge.sh,v 1.7.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
 
 ${clst_CHROOT} ${clst_chroot_path} /bin/bash << EOF
 	EMERGE_WARNING_DELAY=0 emerge -C $*

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.3 2005/07/05 21:31:41 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.4 2005/07/05 21:47:46 wolf31o2 Exp $
 
 case $1 in
 	kernel)
