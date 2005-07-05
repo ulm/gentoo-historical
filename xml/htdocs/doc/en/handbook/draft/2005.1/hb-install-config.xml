@@ -2,14 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2005.1/Attic/hb-install-config.xml,v 1.1 2005/07/05 08:02:04 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2005.1/Attic/hb-install-config.xml,v 1.2 2005/07/05 09:29:10 swift Exp $ -->
 
 <sections>
 
 <version>4.2</version>
-<date>2005-05-23</date>
+<date>2005-06-28</date>
 
 <section>
 <title>Filesystem Information</title>
@@ -181,7 +181,10 @@ We use these values in the next examples. First we set the hostname:
 </p>
 
 <pre caption="Setting the hostname">
-# <i>echo tux &gt; /etc/hostname</i>
+# <i>nano -w /etc/conf.d/hostname</i>
+
+<comment>(Set the HOSTNAME variable to your hostname)</comment>
+HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
@@ -189,7 +192,10 @@ Second we set the domainname:
 </p>
 
 <pre caption="Setting the domainname">
-# <i>echo homenetwork &gt; /etc/dnsdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+
+<comment>(Set the DNSDOMAIN variable to your domain name)</comment>
+DNSDOMAIN="<i>homenetwork</i>"
 </pre>
 
 <p>
@@ -198,7 +204,10 @@ one), you need to define that one too:
 </p>
 
 <pre caption="Setting the NIS domainname">
-# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+
+<comment>(Set the NISDOMAIN variable to your NIS domain name)</comment>
+NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
 
 <p>
@@ -217,20 +226,34 @@ Now add the <c>domainname</c> script to the default runlevel:
 
 <p>
 Before you get that "Hey, we've had that already"-feeling, you should remember
-that the networking you set up in the beginning of the gentoo installation was 
+that the networking you set up in the beginning of the Gentoo installation was 
 just for the installation. Right now you are going to configure networking for 
 your Gentoo system permanently.
 </p>
 
+<note>
+More detailed information about networking, including advanced topics like
+bonding, bridging, 802.11q VLANs or wireless networking is covered in the <uri
+link="?part=4">Gentoo Network Configuration</uri> section.
+</note>
+
 <p>
 All networking information is gathered in <path>/etc/conf.d/net</path>. It uses
 a straightforward yet not intuitive syntax if you don't know how to set up
-networking manually. But don't fear, we'll explain everything :)
+networking manually. But don't fear, we'll explain everything. A fully
+commented example that covers many different configurations is available in
+<path>/etc/conf.d/net.example</path>.
 </p>
 
 <p>
-First open <path>/etc/conf.d/net</path> with your favorite editor (<c>nano</c>
-is used in this example):
+DHCP is used by default and does not require any further configuration.
+</p>
+
+<p>
+If you need to configure your network connection either because you need
+specific DHCP options or because you do not use DHCP at all, open
+<path>/etc/conf.d/net</path> with your favorite editor (<c>nano</c> is used in
+this example):
 </p>
 
 <pre caption="Opening /etc/conf.d/net for editing">
@@ -238,54 +261,44 @@ is used in this example):
 </pre>
 
 <p>
-The first variable you'll find is <c>iface_eth0</c>. It uses the following
-syntax:
+You will see the following file:
 </p>
 
-<pre caption="iface_eth0 syntaxis">
-iface_eth0="<i>&lt;your ip address&gt;</i> broadcast <i>&lt;your broadcast address&gt;</i> netmask <i>&lt;your netmask&gt;</i>"
+<pre caption="Default /etc/conf.d/net">
+# This blank configuration will automatically use DHCP for any net.*
+# scripts in /etc/init.d.  To create a more complete configuration,
+# please review /etc/conf.d/net.example and save your configuration
+# in /etc/conf.d/net (this file :]!).
 </pre>
 
 <p>
-If you use DHCP (automatic IP retrieval), you should just set <c>iface_eth0</c>
-to <c>dhcp</c>. If you use rp-pppoe (e.g. for ADSL), set it to <c>up</c>. 
-If you need to set up your network manually and you're 
-not familiar with all the above terms, please read the section on <uri
-link="?part=1&amp;chap=3#network_term">Understanding Network
-Terminology</uri> if you haven't done so already.
+To enter your own IP address, netmask and gateway, you need
+to set both <c>config_eth0</c> and <c>routes_eth0</c>:
 </p>
 
-<p>
-So let us give three examples; the first one uses DHCP, the second one a static 
-IP (192.168.0.2) with netmask 255.255.255.0, broadcast 192.168.0.255 and 
-gateway 192.168.0.1 while the third one just activates the interface for
-rp-pppoe usage:
-</p>
-
-<pre caption="Examples for /etc/conf.d/net">
-<comment>(For DHCP)</comment>
-iface_eth0="dhcp"
-<comment># Some network admins require that you use the</comment>
-<comment># hostname and domainname provided by the DHCP server.</comment>
-<comment># In that case, add the following to let dhcpcd use them.</comment>
-<comment># That will override your own hostname and domainname definitions.</comment>
-dhcpcd_eth0="-HD"
-<comment># If you intend on using NTP to keep your machine clock synchronized, use</comment>
-<comment># the -N option to prevent dhcpcd from overwriting your /etc/ntp.conf file</comment>
-dhcpcd_eth0="-N"
-
-<comment>(For static IP)</comment>
-iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
-gateway="eth0/192.168.0.1"
-
-<comment>(For rp-pppoe)</comment>
-iface_eth0="up"
+<pre caption="Manually setting IP information for eth0">
+config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
+routes_eth0=( "default gw 192.168.0.1" )
 </pre>
 
 <p>
-If you have several network interfaces, create extra <c>iface_eth</c> variables,
-like <c>iface_eth1</c>, <c>iface_eth2</c> etc. The <c>gateway</c> variable
-shouldn't be reproduced as you can only set one gateway per computer.
+To use DHCP and add specific DHCP options, define <c>config_eth0</c> and
+<c>dhcp_eth0</c>:
+</p>
+
+<pre caption="Automatically obtaining an IP address for eth0">
+config_eth0=( "dhcp" )
+dhcp_eth0="nodns nontp nonis"
+</pre>
+
+<p>
+Please read <path>/etc/conf.d/net.example</path> for a list of all available
+options.
+</p>
+
+<p>
+If you have several network interfaces repeat the above steps for 
+<c>config_eth1</c>, <c>config_eth2</c>, etc.
 </p>
 
 <p>
@@ -379,11 +392,12 @@ pcmcia-cs is only available for x86, amd64 and ppc platforms.
 <p>
 PCMCIA-users should first install the <c>pcmcia-cs</c> package. This also
 includes users who will be working with a 2.6 kernel (even though they won't be
-using the PCMCIA drivers from this package). 
+using the PCMCIA drivers from this package). The <c>USE="-X"</c> is necessary 
+to avoid installing xorg-x11 at this moment:
 </p>
 
 <pre caption="Installing pcmcia-cs">
-# <i>emerge pcmcia-cs</i>
+# <i>USE="-X" emerge pcmcia-cs</i>
 </pre>
 
 <p>
@@ -437,10 +451,27 @@ Open up <path>/etc/rc.conf</path> and enjoy all the comments in that file :)
 </pre>
 
 <p>
+When you're finished configuring <path>/etc/rc.conf</path>, save and exit. 
+</p>
+
+<p>
 As you can see, this file is well commented to help you set up the necessary
-configuration variables. Take special care with the <c>KEYMAP</c> setting: if
-you select the wrong <c>KEYMAP</c> you will get weird results when typing on
-your keyboard.
+configuration variables. You can configure your system to use unicode and
+define your default editor and your display manager (like gdm or kdm).
+</p>
+
+<p>
+Gentoo uses <path>/etc/conf.d/keymaps</path> to handle keyboard configuration.
+Edit it to configure your keyboard.
+</p>
+
+<pre caption="Opening /etc/conf.d/keymaps">
+# <i>nano -w /etc/conf.d/keymaps</i>
+</pre>
+
+<p>
+Take special care with the <c>KEYMAP</c> variable. If you select the wrong
+<c>KEYMAP</c>, you will get weird results when typing on your keyboard.
 </p>
 
 <note>
@@ -451,8 +482,22 @@ select an i386 keymap (such as "us") instead of "sunkeymap".
 <p>
 <b>PPC</b> uses x86 keymaps on most systems. Users who want to be able to use 
 ADB keymaps on boot have to enable ADB keycode sendings in their kernel and have
-to set a mac/ppc keymap in <path>rc.conf</path>.
+to set a mac/ppc keymap in <path>/etc/conf.d/keymaps</path>.
 </p>
+
+<p>
+When you're finished configuring <path>/etc/conf.d/keymaps</path>, save and
+exit. 
+</p>
+
+<p>
+Gentoo uses <path>/etc/conf.d/clock</path> to set clock options. Edit it
+according to your needs.
+</p>
+
+<pre caption="Opening /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+</pre>
 
 <p>
 If your hardware clock is not using UTC, you need to add <c>CLOCK="local"</c> to
@@ -460,9 +505,38 @@ the file. Otherwise you will notice some clock skew.
 </p>
 
 <p>
-When you're finished configuring <path>/etc/rc.conf</path>, save and exit, then 
-continue with <uri link="?part=1&amp;chap=9">Installing Necessary System 
-Tools</uri>.
+When you're finished configuring <path>/etc/conf.d/clock</path>, save and
+exit. 
+</p>
+
+<p>
+If you are not installing Gentoo on an IBM POWER5 or JS20 system, continue with
+<uri link="?part=1&amp;chap=9">Installing Necessary System Tools</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configuring the Console</title>
+<body>
+
+<note>
+The following section applies to the IBM POWER5 and JS20 hardware platforms.
+</note>
+
+<p>
+If you are running Gentoo in an LPAR or on a JS20 blade, you must uncomment the
+hvc line in <path>/etc/inittab</path> for the virtual console to spawn a login
+prompt.
+</p>
+
+<pre caption="Enabling hvc support in /etc/inittab">
+hvc:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 hvc0 vt220
+</pre>
+
+<p>
+You may now continue with <uri link="?part=1&amp;chap=9">Installing Necessary 
+System Tools</uri>.
 </p>
 
 </body>
