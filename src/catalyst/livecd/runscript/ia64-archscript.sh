@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.2 2005/07/05 21:19:33 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.3 2005/07/05 21:31:41 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -85,6 +85,8 @@ case $1 in
 			echo "  initrd=/efi/boot/${x}.igz" >> ${iacfg}
 			echo >> ${iacfg}
 		done
+		cp ${iacfg} ${clst_cdroot_path}/boot/efi/boot
+		mv ${clst_cdroot_path}/boot/${x}{,.igz} $1/boot/efi/boot
 	;;
 
 	cdfs)
