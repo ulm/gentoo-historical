@@ -1,6 +1,7 @@
+#!/bin/bash
 # Copyright 1999-2004 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.1 2005/07/05 17:52:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.2 2005/07/05 21:19:33 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -95,21 +96,46 @@ case $1 in
 		then
 			case ${clst_livecd_type} in
 				gentoo-*)
-					iso_volume_id="Gentoo Linux - Alpha"
+					iso_volume_id="Gentoo Linux - IA64"
 				;;
 				*)
 					iso_volume_id="Catalyst LiveCD"
 				;;
 			esac
 		fi
+		if [ ! -e ${clst_cdroot_path}/gentoo.efimg ]
+		then
+			iaSizeTemp=$(du -sk ${clst_cdroot_path}/boot 2>/dev/null)
+			iaSizeB=$(echo ${iaSizeTemp} | cut '-d ' -f1)
+			iaSize=$((${iaSizeB}+32)) # Add slack
+
+			dd if=/dev/zero of=${clst_cdroot_path}/gentoo.efimg bs=1k count=${iaSize}
+			mkdosfs -F 16 -n GENTOO ${clst_cdroot_path}/gentoo.efimg
+
+			mkdir ${clst_cdroot_path}/gentoo.efimg.mountPoint
+			mount -t vfat -o loop ${clst_cdroot_path}/gentoo.efimg ${clst_cdroot_path}/gentoo.efimg.mountPoint
+
+			echo '>> Populating EFI image...'
+			cp -av ${clst_cdroot_path}/boot/* ${clst_cdroot_path}/gentoo.efimg.mountPoint
+			umount ${clst_cdroot_path}/gentoo.efimg.mountPoint
+			rmdir ${clst_cdroot_path}/gentoo.efimg.mountPoint
+		else
+			echo ">> Found populated EFI image at ${clst_cdroot_path}/gentoo.efimg"
+		fi
+
+		echo '>> Removing /boot...'
+		rm -rf ${clst_cdroot_path}/boot
+
+		echo '>> Generating ISO...'
+
 		# this is for the livecd-final target, and calls the proper
 		# command to build the iso file
 		case ${clst_livecd_cdfstype} in
 			zisofs)
-				mkisofs -J -R -l -z -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path}  || die "Cannot make ISO image"
+				mkisofs -J -R -l -z -V "${iso_volume_id}" -o ${2} -b gentoo.efimg -c boot.cat -no-emul-boot ${clst_cdroot_path}  || die "Cannot make ISO image"
 			;;
 			*)
-				mkisofs -J -R -l -V "${iso_volume_id}" -o ${2} ${clst_cdroot_path} || die "Cannot make ISO image"
+				mkisofs -J -R -l -V "${iso_volume_id}" -o ${2} -b gentoo.efimg -c boot.cat -no-emul-boot ${clst_cdroot_path} || die "Cannot make ISO image"
 			;;
 		esac
 		isomarkboot ${2} /boot/bootlx
