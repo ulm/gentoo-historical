@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.152 2005/06/30 22:37:30 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.153 2005/07/05 04:31:33 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -149,15 +149,15 @@ class ArchitectureTemplate:
 		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
 			self._quickpkg_deps(package)
-			cmd="NOCOLOR=yes emerge -k " + package
+			cmd="emerge -k " + package
 		# now normal installs
 		else:
 			if binary_only:
-				cmd="NOCOLOR=yes emerge -K " + package
+				cmd="emerge -K " + package
 			elif binary:
-				cmd="NOCOLOR=yes emerge -k " + package
+				cmd="emerge -k " + package
 			else:
-				cmd="NOCOLOR=yes emerge " + package
+				cmd="emerge " + package
 
 		self._logger.log("Calling emerge: "+cmd)
 		return GLIUtility.spawn(cmd, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)

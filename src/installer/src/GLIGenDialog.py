@@ -288,7 +288,7 @@ class GLIGenIP(GLIGen):
 	def _set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
 		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")), ("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")), ("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")), ("None", _(u"Extra cases such as if /usr/portage is an NFS mount"))]
-		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=60, height=15, choices=menulist)
+		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=75, height=17, choices=menulist)
 		if code != self._DLG_OK: 
 			return
 		#portage_tree_sync = menulist[int(portage_tree_sync)-1]
@@ -354,8 +354,8 @@ on partitioning and the various filesystem types available in Linux.""")
 			tmp_drives.sort()
 			for drive in tmp_drives:
 				devices[drive] = GLIStorageDevice.Device(drive)
-				if self.local_install:
-					devices[drive].set_partitions_from_disk()
+				#if self.local_install:  #when uncommenting please indent the next line.
+				devices[drive].set_partitions_from_disk()
 				drives.append(drive)
 				choice_list.append((drive, devices[drive].get_model()))
 		#choice_list.append(("Other", "Type your own drive name))  # I DONT THINK GLISD CAN DO NONEXISTANT DRIVES
@@ -392,7 +392,7 @@ on partitioning and the various filesystem types available in Linux.""")
 						entry += (tmppart.get_mountopts() or "none") + ", "
 						entry += str(tmppart.get_mb()) + "MB)"
 					partsmenu.append(entry)
-				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit"), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel=_(u"Back"))
+				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit\nKey: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size."), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel=_(u"Back"))
 				if code != self._DLG_OK: break
 				part_to_edit = partlist[int(part_to_edit)-1]
 				tmppart = tmpparts[part_to_edit]
@@ -446,7 +446,10 @@ on partitioning and the various filesystem types available in Linux.""")
 							code, answer = self._d.inputbox(_(u"Enter your mount options for partition ") + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
 							if code == self._DLG_OK: tmppart.set_mountopts(answer)
 						elif part_action == _(u"Format"):
-							code = d.yesno(_(u"Do you want to format this partition?"))
+							#Change the Yes/No buttons back.
+							self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+							self._d.add_persistent_args(["--no-label", _(u"No")])
+							code = self._d.yesno(_(u"Do you want to format this partition?"))
 							if code == self._DLG_YES: 
 								tmppart.set_format(True)
 							else:
@@ -544,31 +547,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
 		use_flags = []
 		use_local_flags = []
-		use_desc = {}
-		use_local_desc = {}
-		f = open("/usr/portage/profiles/use.desc", "r")
-		for line in f:
-			line = line.strip()
-			if not line or line.startswith("#"): continue
-			dash_pos = line.find(" - ")
-			if dash_pos == -1: continue
-			flagname = line[:dash_pos] or line[dash_pos-1]
-			desc = line[dash_pos+3:]
-			use_desc[flagname] = desc
-		f.close()
+		use_desc = GLIUtility.get_global_use_flags()
 
-		f = open("/usr/portage/profiles/use.local.desc", "r")
-		for line in f:
-			line = line.strip()
-			if not line or line.startswith("#"): continue
-			dash_pos = line.find(" - ")
-			if dash_pos == -1: continue
-			colon_pos = line.find(":", 0, dash_pos)
-			pkg = line[:colon_pos]
-			flagname = line[colon_pos+1:dash_pos] or line[colon_pos+1]
-			desc = "(" + pkg + ") " + line[dash_pos+3:]
-			use_local_desc[flagname] = desc
-		f.close()
 		
 		#populate the choices list
 		sorted_use = use_desc.keys()

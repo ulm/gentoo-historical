@@ -1,14 +1,14 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.49 2005/06/29 01:41:04 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.50 2005/07/05 04:31:33 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
 This fills in x86 specific functions.
 """
 
-import GLIUtility, string
+import GLIUtility, string, time
 from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
 import parted
@@ -331,6 +331,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						cmdname = 'mkfs.%s' % (newpart['type'])
 					else: # this should catch everything else
 						raise GLIException("PartitionFormatError", 'fatal', 'partition',"Unknown partition type "+newpart['type'])
+					#TEMP UGLY HACK!!!  Command executes before the filesystem has time to update to show the new device.  Must sleep
+					time.sleep(5)
 					# now the actual command
 					cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
 					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))

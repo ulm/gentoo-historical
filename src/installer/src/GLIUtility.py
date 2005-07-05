@@ -620,3 +620,33 @@ def generate_consoletranslation_list():
 	consoletranslation_list.sort()
 	
 	return consoletranslation_list
+
+def get_global_use_flags():
+	use_desc = {}
+	f = open("/usr/portage/profiles/use.desc", "r")
+	for line in f:
+		line = line.strip()
+		if not line or line.startswith("#"): continue
+		dash_pos = line.find(" - ")
+		if dash_pos == -1: continue
+		flagname = line[:dash_pos] or line[dash_pos-1]
+		desc = line[dash_pos+3:]
+		use_desc[flagname] = desc
+	f.close()
+	return use_desc
+	
+def get_local_use_flags():
+	use_local_desc = {}
+	f = open("/usr/portage/profiles/use.local.desc", "r")
+	for line in f:
+		line = line.strip()
+		if not line or line.startswith("#"): continue
+		dash_pos = line.find(" - ")
+		if dash_pos == -1: continue
+		colon_pos = line.find(":", 0, dash_pos)
+		pkg = line[:colon_pos]
+		flagname = line[colon_pos+1:dash_pos] or line[colon_pos+1]
+		desc = "(" + pkg + ") " + line[dash_pos+3:]
+		use_local_desc[flagname] = desc
+	f.close()
+	return use_local_desc
