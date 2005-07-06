@@ -1,6 +1,6 @@
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.2 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.3 2005/07/06 18:49:56 wolf31o2 Exp $
 
 import sys,string,os,types,re,traceback
 
@@ -39,13 +39,16 @@ def list_bashify(mylist):
 	return mypack
 
 class CatalystError(Exception):
-	def __init__(self, message):
-		if message:
-			print
-			print traceback.print_exc(file=sys.stdout)
-			print
-			print "!!! catalyst: "+message
-			print
+        def __init__(self, message):
+                if message:
+                        (type,value)=sys.exc_info()[:2]
+                        if value!=None:
+                            print
+                            print traceback.print_exc(file=sys.stdout)
+                        print
+                        print "!!! catalyst: "+message
+                        print
+
 			
 def die(msg=None):
 	warn(msg)
