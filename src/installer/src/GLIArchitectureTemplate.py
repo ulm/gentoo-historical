@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.154 2005/07/06 04:51:47 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.155 2005/07/06 19:34:23 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -737,14 +737,15 @@ class ArchitectureTemplate:
 	##
 	# Installs mail MTA. Does not put into runlevel, as this is not simple with MTAs.
 	def install_mta(self):
-		# Get loggin daemon info
+		# Get MTA info
 		mta_pkg = self._install_profile.get_mta_pkg()
 		if mta_pkg:
-			# Emerge Logging Daemon
+			# Emerge MTA
 			exitstatus = self._emerge(mta_pkg)
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("LoggingDaemonError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
+				raise GLIException("MTAError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
 			self._logger.log("MTA installed: "+mta_pkg)
+
 	##
 	# Installs and sets up logging daemon on the new system.  adds to runlevel too.
 	def install_logging_daemon(self):
