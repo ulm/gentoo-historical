@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.50 2005/07/05 04:31:33 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.51 2005/07/06 19:51:58 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -346,6 +346,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				start = end + 1
 
 	def _install_grub(self):
+		build_mode = self._install_profile.get_kernel_build_method()
 		boot_device = ""
 		boot_minor = ""
 		root_device = ""
@@ -380,7 +381,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			exitstatus = GLIUtility.spawn("rm "+root+file_name2)		
 		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
 		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
-		exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/initrd-* > "+file_name4)
+		if build_mode == "genkernel":
+			exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/initramfs-* > "+file_name4)
+		else:
+			exitstatus3 = GLIUtility.spawn("touch "+file_name4)
 		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):
 			raise GLIException("BootloaderError", 'fatal', '_install_grub', "Error in one of THE THREE run commands")
 		self._logger.log("Bootloader: the three information gathering commands have been run")
@@ -432,12 +436,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			
 		newgrubconf += "title=Gentoo Linux\n"
 		newgrubconf += "root (" + grub_boot_drive + "," + grub_boot_minor + ")\n"
-		if self._install_profile.get_kernel_config_uri() != "":  #using CUSTOM kernel
+		if build_mode != "genkernel":  #using CUSTOM kernel
 			if foundboot:
 				newgrubconf += "kernel " + grub_kernel_name[5:] + " root="+root_device+root_minor+"\n"
 			else:
 				newgrubconf += "kernel /boot"+ grub_kernel_name[5:] + " root="+root_device+root_minor+"\n"
-		else:
+		else: #using genkernel so it has an initrd.
 			if foundboot:
 				newgrubconf += "kernel " + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
 				newgrubconf += root_device + root_minor + " " + bootloader_kernel_args + "\n"
