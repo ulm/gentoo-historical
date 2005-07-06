@@ -39,7 +39,7 @@ class Device:
 	# Initialization function for GLIStorageDevice class
 	# @param device Device node (e.g. /dev/hda) of device being represented
 	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
-	def __init__(self, device, arch="x86", set_geometry=True):
+	def __init__(self, device, arch="x86", set_geometry=True, virtual=False, size_known=False):
 		self._device = device
 		self._partitions = {}
 		self._geometry = {'cylinders': 0, 'heads': 0, 'sectors': 0, 'sectorsize': 512}

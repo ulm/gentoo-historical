@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.153 2005/07/05 04:31:33 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.154 2005/07/06 04:51:47 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -247,8 +247,56 @@ class ArchitectureTemplate:
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
-		GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
-		self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
+		if self._install_profile.get_install_stage() == 3 and self._install_profile.get_stage_tarball_uri() == "networkless":
+			# stage3 generation code here
+			if not GLIUtility.is_file("/usr/livecd/systempkgs.txt"):
+				raise("CreateStage3Error", "fatal", "unpack_stage_tarball", "Required file /usr/livecd/systempkgs.txt does not exist")
+			make_conf = self._install_profile.get_make_conf()
+			PKGDIR = '/usr/portage/packages'
+			PORTAGE_TMPDIR = '/var/tmp'
+			if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
+			if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR)
+			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR)
+			os.environ["PKGDIR"] = self._chroot_dir + PKGDIR
+			os.environ["PORTAGE_TMPDIR"] = self._chroot_dir + PORTAGE_TMPDIR
+			ret = GLIUtility.spawn("quickpkg $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			if not GLIUtility.exitsuccess(ret):
+				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not quickpkg necessary packages for generating stage3")
+			ret = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " emerge -KO $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			if not GLIUtility.exitsuccess(ret):
+				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not emerge necessary packages in chroot for generating stage3")
+			del os.environ["PKGDIR"]
+			del os.environ["PORTAGE_TMPDIR"]
+			GLIUtility.spawn("cp /etc/make.conf " + self._chroot_dir + "/etc/make.conf")
+			GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + self._chroot_dir + "/etc/make.profile")
+			chrootscript = r"""
+			#!/bin/bash
+
+			source /etc/make.conf
+			export LDPATH="/usr/lib/gcc-lib/${CHOST}/$(cd /usr/lib/gcc-lib/${CHOST} && ls -1 | head -n 1)"
+
+			ldconfig $LDPATH
+			gcc-config 1
+			env-update
+			source /etc/profile
+			modules-update
+			[ -f /usr/bin/binutils-config ] && binutils-config 1
+			source /etc/profile
+			mount -t proc none /proc
+			cd /dev
+			/sbin/MAKEDEV generic-i386
+			umount /proc
+			"""
+			script = open(self._chroot_dir + "/tmp/extrastuff.sh", "w")
+			script.write(chrootscript)
+			script.close()
+			GLIUtility.spawn("chmod 755 /tmp/extrastuff.sh && /tmp/extrastuff.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			GLIUtility.spawn("rm -rf /var/tmp/portage/* /usr/portage /tmp/*", chroot=self._chroot_dir)
+			self._logger.log("Stage3 was generated successfully")
+		else:
+			GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
+			self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
 
 	##
 	# Prepares the Chroot environment by copying /etc/resolv.conf and mounting proc and dev
