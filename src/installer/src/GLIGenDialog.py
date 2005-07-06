@@ -576,7 +576,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		#Change the Yes/No buttons to new labels for this question.
 		self._d.add_persistent_args(["--yes-label", _(u"Stable")])
 		self._d.add_persistent_args(["--no-label", _(u"Unstable")])
-		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs.")) == self._DLG_YES:
+		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs."), height=13, width=55) == self._DLG_YES:
 			#Stable
 			make_conf["ACCEPT_KEYWORDS"] = ""
 		else:  #Unstable
