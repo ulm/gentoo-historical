@@ -1,17 +1,19 @@
 #!/usr/bin/python
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.3 2005/06/16 04:20:38 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.4 2005/07/06 22:56:23 robbat2 Exp $
 
 import sys
 sys.path.append("../..")
 
-import GLIInstallProfile
-import GLIClientConfiguration
-import GLIClientController
-from GLILogger import Logger
 import time
 from optparse import OptionParser
+
+import GLIClientConfiguration
+import GLIClientController
+import GLIInstallProfile
+from GLILogger import Logger
+import GLIUtility
 
 clilog = None
 
@@ -40,13 +42,19 @@ def main():
 	cc = GLIClientController.GLIClientController(pretend=options.pretend_install)
 	
 	msg("Loading client profile: "+client_config_xml_file)
-	client_profile.parse(client_config_xml_file)
+	if not GLIUtility.get_uri( client_config_xml_file, "/var/tmp/clientconfiguration.xml" ):
+		msg("Couldn't open client profile: "+client_config_xml_file)
+		sys.exit(-1)
+	client_profile.parse("/var/tmp/clientconfiguration.xml")
 	client_profile.set_interactive(None, False, None)
 	cc.set_configuration(client_profile)
 	cc.start_pre_install()
 	
 	msg("Loading install profile: "+install_profile_xml_file)
-	install_profile.parse(install_profile_xml_file)
+	if not GLIUtility.get_uri( install_profile_xml_file, "/var/tmp/installprofile.xml" ):
+		msg("Couldn't open client profile: "+client_config_xml_file)
+		sys.exit(-1)
+	install_profile.parse("/var/tmp/installprofile.xml")
 	cc.set_install_profile(install_profile)
 	cc.start_install()
 	if options.pretend_install:
