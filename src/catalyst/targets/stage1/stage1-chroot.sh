@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.4 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.5 2005/07/06 19:05:29 wolf31o2 Exp $
 		
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -57,6 +57,10 @@ export FEATURES="${clst_myfeatures}"
 export ROOT=${1}
 install -d ${ROOT}
 
+## START BUILD
+export clst_buildpkgs="$(/tmp/build.py)"
+STAGE1_USE="$(portageq envvar STAGE1_USE)"
+
 ## Sanity check profile
 if [ -z ${clst_buildpkgs} ]
 then
@@ -65,13 +69,6 @@ then
 	echo "Double check your /etc/make.profile link and the 'packages' files."
 	exit 1
 fi
-
-## START BUILD
-export clst_buildpkgs="$(/tmp/build.py)"
-STAGE1_USE="$(portageq envvar STAGE1_USE)"
-
-# duplicate line to below - why is this here??
-#USE="-* build ${STAGE1_USE}" emerge ${clst_myemergeopts} --noreplace ${clst_buildpkgs} || exit 1
 
 if [ -n "${clst_VERBOSE}" ]
 then
