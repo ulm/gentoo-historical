@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.2 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.3 2005/07/07 16:59:50 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -41,18 +41,12 @@ then
 	export clst_myemergeopts="${clst_myemergeopts} -f"
 fi
 
-GRP_STAGE23_USE="$(portageq envvar GRP_STAGE23_USE)"
-
 # setup the build environment
 export FEATURES="${clst_myfeatures}"
-export USE="-* ${clst_HOSTUSE} ${GRP_STAGE23_USE}"
+export USE="-* ${clst_HOSTUSE}"
 export CONFIG_PROTECT="-*"
 
 ## START BUILD
-# portage needs to be merged manually with USE="build" set to avoid frying our
-# make.conf. emerge system could merge it otherwise.
-USE="build" emerge --oneshot --nodeps portage
-
 if [ -n "${clst_VERBOSE}" ]
 then
 	emerge -e ${clst_myemergeopts} -vp system || exit 1

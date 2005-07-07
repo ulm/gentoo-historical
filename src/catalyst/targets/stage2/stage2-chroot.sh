@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.3 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.4 2005/07/07 16:59:50 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -31,9 +31,6 @@ if [ -n "${clst_FETCH}" ]
 then
 	export bootstrap_opts="-f"
 fi
-
-GRP_STAGE23_USE="$(portageq envvar GRP_STAGE23_USE)"
-
 
 ## setup the environment
 export FEATURES="${clst_myfeatures}"
