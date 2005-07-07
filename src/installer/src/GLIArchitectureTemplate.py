@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.155 2005/07/06 19:34:23 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.156 2005/07/07 08:03:18 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -336,7 +336,7 @@ class ArchitectureTemplate:
 				self._logger.log("Emerged package: " + package)
 		# error checking is important!
 		if len(failed_list) > 0:
-			raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + failed_list + "!")
+			raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + str(failed_list) + "!")
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
@@ -390,6 +390,11 @@ class ArchitectureTemplate:
 			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
+			# double check in /proc/mounts
+			# This current code doesn't work and needs to be fixed, because there is a case that it is needed for - robbat2
+			#ret, output = GLIUtility.spawn('awk \'$2 == "%s" { print "Found" }\' /proc/mounts | head -n1' % (self._chroot_dir + mountpoint), display_on_tty8=True, return_output=True)
+			#if output.strip() != "Found":
+			#	raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition (failed in double-check)')
 			self._logger.log("Mounted mountpoint: " + mountpoint)
 
 	##
@@ -1059,7 +1064,10 @@ class ArchitectureTemplate:
 				# DHCP IP
 				#
 				else:
-					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp", "dhcpcd_" + interface: interfaces[interface][1]})
+					dhcpcd_options = interfaces[interface][1]
+					if dhcpcd_options is None:
+						dhcpcd_options = ""
+					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp", "dhcpcd_" + interface: dhcpcd_options})
 					emerge_dhcp = True
 		if emerge_dhcp:
 			exitstatus = self._emerge("dhcpcd")
