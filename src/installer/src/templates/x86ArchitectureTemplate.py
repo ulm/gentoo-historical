@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.52 2005/07/07 07:58:15 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.53 2005/07/07 08:00:04 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -344,8 +344,16 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						cmdname = 'mkfs.%s' % (newpart['type'])
 					else: # this should catch everything else
 						raise GLIException("PartitionFormatError", 'fatal', 'partition',"Unknown partition type "+newpart['type'])
-					#TEMP UGLY HACK!!!  Command executes before the filesystem has time to update to show the new device.  Must sleep
-					time.sleep(5)
+
+					# force a stat of the device so that it
+					# is created on demand. (At least if I
+					# recall how udev works... - robbat2).
+					while not GLIUtility.is_file(devnode):
+						self._logger.log("Waiting for device node "+devnode+" to exist...")
+						time.sleep(1)
+					# one bit of extra sleep is needed, as there is a blip still
+					time.sleep(1)
+
 					# now the actual command
 					cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
 					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
