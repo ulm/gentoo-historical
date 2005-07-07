@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.51 2005/07/06 19:51:58 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.52 2005/07/07 07:58:15 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -27,21 +27,29 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#
 		# THIS IS ARCHITECTURE DEPENDANT!!!
 		# This is the x86 way.. it uses grub
-		if self._install_profile.get_boot_loader_pkg():
-			exitstatus = self._emerge(self._install_profile.get_boot_loader_pkg())
+
+		bootloader_pkg = self._install_profile.get_boot_loader_pkg()
+
+		# first install bootloader
+		if bootloader_pkg and bootloader_pkg.lower() != "none":
+			exitstatus = self._emerge(bootloader_pkg)
 			if exitstatus != 0:
 				raise GLIException("BootLoaderEmergeError", 'fatal', 'install_bootloader', "Could not emerge bootloader!")
-		else:
-			self._logger.log("Emerged the selected bootloader.")
+			else:
+				self._logger.log("Emerged the selected bootloader.")
 		
-		if self._install_profile.get_boot_loader_pkg() == "none":
-			return	
-		elif self._install_profile.get_boot_loader_pkg() == "grub":
-			self._install_grub()
-		elif self._install_profile.get_boot_loader_pkg() == "lilo":
-			self._install_lilo()
+		# now configure said bootloader
+		# null boot-loader first
+		if bootloader_pkg.lower() == "none":
+			return
+		elif "grub" in bootloader_pkg: # this catches 'grub-static' as well as '=sys-boot/grub-0.95*'
+			self._configure_grub()
+		elif "lilo" in bootloader_pkg:
+			self._configure_lilo()
+		# probably should add in some more bootloaders
+		# dvhtool, raincoat, netboot, gnu-efi, cromwell, syslinux, psoload
 		else:
-			raise GLIException("BootLoaderError",'fatal','install_bootloader',"Invalid bootloader selected:"+self._install_profile.get_boot_loader_pkg())
+			raise GLIException("BootLoaderError",'fatal','install_bootloader',"Don't know how to configure this bootloader: "+bootloader_pkg)
 		
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
@@ -309,6 +317,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							parted_disk.get_partition(part).set_flag(flag)
 				# write to disk
 				parted_disk.commit()
+
+				# force rescan of partition table
+				# Should not be needed with current stuff
+				#ret = GLIUtility.spawn("partprobe "+device, logfile=self._compile_logfile, append_log=True)
+				
 				# now format the partition
 				# extended and 'free' partitions should never be formatted
 				if newpart['format'] and newpart['type'] not in ('extended', 'free'):
@@ -345,7 +358,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
 				start = end + 1
 
-	def _install_grub(self):
+	def _configure_grub(self):
 		build_mode = self._install_profile.get_kernel_build_method()
 		boot_device = ""
 		boot_minor = ""
@@ -386,7 +399,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			exitstatus3 = GLIUtility.spawn("touch "+file_name4)
 		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):
-			raise GLIException("BootloaderError", 'fatal', '_install_grub', "Error in one of THE THREE run commands")
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error in one of THE THREE run commands")
 		self._logger.log("Bootloader: the three information gathering commands have been run")
 		"""
 		read the device map.  sample looks like this:
@@ -407,7 +420,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			if file[i][6:-1] == root_device:
 				grub_root_drive = file[i][1:4]
 		if (not grub_root_drive) or (not grub_boot_drive):
-			raise GLIException("BootloaderError", 'fatal', '_install_grub',"Couldn't find the drive num in the list from the device.map")
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub',"Couldn't find the drive num in the list from the device.map")
 
 		g = open(file_name3)
 		h = open(file_name4)
@@ -416,7 +429,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		g.close()
 		h.close()
 		if not kernel_name[0]:
-			raise GLIException("BootloaderError", 'fatal', '_install_grub',"Error: We have no kernel in /boot to put in the grub.conf file!")
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub',"Error: We have no kernel in /boot to put in the grub.conf file!")
 		kernel_name = map(string.strip, kernel_name)
 		initrd_name = map(string.strip, initrd_name)
 		for i in range(len(kernel_name)):
@@ -465,7 +478,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#print grubinstallstring
 		exitstatus = GLIUtility.spawn(grubinstallstring)
 		if exitstatus != 0:
-			raise GLIException("GrubInstallError", 'fatal', '_install_grub', "Could not install grub!")
+			raise GLIException("GrubInstallError", 'fatal', '_configure_grub', "Could not install grub!")
 		self._logger.log("Bootloader: grub has been installed!")
 		#now make the grub.conf file
 		file_name = root + "/boot/grub/grub.conf"	
@@ -478,7 +491,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		f.close()
 		self._logger.log("Grub installed and configured.")
 
-	def _install_lilo(self):
+	def _configure_lilo(self):
 		boot_device = ""
 		boot_minor = ""
 		root_device = ""
@@ -504,12 +517,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
 		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
 		if (exitstatus0 != 0) or (exitstatus1 != 0):
-			raise GLIException("BootloaderError", 'fatal', '_install_lilo', "Error in one of THE TWO run commands")
+			raise GLIException("BootloaderError", 'fatal', '_configure_lilo', "Error in one of THE TWO run commands")
 		g = open(file_name3)
 		kernel_name = g.readlines()
 		g.close()
 		if not kernel_name[0]:
-			raise GLIException("BootloaderError", 'fatal', '_install_lilo',"Error: We have no kernel in /boot to put in the grub.conf file!")
+			raise GLIException("BootloaderError", 'fatal', '_configure_lilo',"Error: We have no kernel in /boot to put in the grub.conf file!")
 		kernel_name = map(string.strip, kernel_name)
 		kernel_name[0] = kernel_name[0].split(root)[1]
 		kernel_name[1] = kernel_name[1].split(root)[1]
@@ -547,7 +560,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#OK, now that the file is built.  Install lilo.
 		exitstatus = GLIUtility.spawn("/sbin/lilo",chroot=self._chroot_dir)
 		if exitstatus != 0:
-			raise GLIException("LiloInstallError", 'fatal', '_install_lilo', "Running lilo failed!")
+			raise GLIException("LiloInstallError", 'fatal', '_configure_lilo', "Running lilo failed!")
 		self._logger.log("Lilo installed, configured, and run.")
 		
 	def _lilo_add_windows(self, newliloconf):
