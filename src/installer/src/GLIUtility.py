@@ -552,9 +552,20 @@ def list_stage_tarballs_from_mirror(mirror, arch, subarch):
 def list_subarch_from_mirror(mirror, arch):
 	return spawn("wget -O - " + mirror + "/releases/" + arch + r"/current/stages/ 2> /dev/null | grep folder.gif | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].split("\n")
 
-def list_mirrors():
+def list_mirrors(http=True, ftp=True, rsync=True):
 	mirrors = []
-	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]\+<uri link=\"\(http\|ftp\|rsync\):\/\/[^\"]\+\">/{s/^[[:space:]]\+<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].split("\n")
+	mirrortypes = ""
+	if http:
+		mirrortypes += "http"
+	if ftp:
+		if mirrortypes:
+			mirrortypes += '\|'
+		mirrortypes += "ftp"
+	if rsync:
+		if mirrortypes:
+			mirrortypes += '\|'
+		mirrortypes += "rsync"
+	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]\+<uri link=\"\(" + mirrortypes + r"\):\/\/[^\"]\+\">/{s/^[[:space:]]\+<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].split("\n")
 	for mirror in mirrorlist:
 		mirror = mirror.strip()
 		mirrors.append(mirror.split("|"))
