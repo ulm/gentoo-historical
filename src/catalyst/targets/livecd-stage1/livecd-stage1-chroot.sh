@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/livecd-stage1/Attic/livecd-stage1-chroot.sh,v 1.15.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/livecd-stage1/Attic/livecd-stage1-chroot.sh,v 1.15.2.2 2005/07/07 21:23:11 rocket Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -38,11 +38,6 @@ else
 	export clst_emergeopts=""
 fi
 
-if [ -n "${clst_FETCH}" ]
-then
-	export clst_emergeopts="${clst_emergeopts} -f"
-fi
-
 ## setup the environment
 export FEATURES="${clst_myfeatures}"
 export CONFIG_PROTECT="-*"
@@ -62,6 +57,11 @@ then
 		echo "Press any key to continue..."
 		read -s -n 1
 	fi
+fi
+
+if [ -n "${clst_FETCH}" ]
+then
+	emerge ${clst_emergeopts} -f ${clst_packages}
 fi
 
 emerge ${clst_emergeopts} ${clst_packages}

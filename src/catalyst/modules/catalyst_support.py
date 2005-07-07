@@ -1,6 +1,6 @@
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.3 2005/07/06 18:49:56 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/catalyst_support.py,v 1.34.2.4 2005/07/07 21:23:10 rocket Exp $
 
 import sys,string,os,types,re,traceback
 
@@ -20,6 +20,7 @@ valid_config_file_values.append("CCACHE")
 valid_config_file_values.append("DISTCC")
 valid_config_file_values.append("ENVSCRIPT")
 valid_config_file_values.append("AUTORESUME")
+valid_config_file_values.append("FETCH")
 valid_config_file_values.append("options")
 valid_config_file_values.append("DEBUG")
 valid_config_file_values.append("VERBOSE")

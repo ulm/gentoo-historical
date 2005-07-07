@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.3 2005/07/07 16:59:50 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.4 2005/07/07 21:23:11 rocket Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -36,11 +36,6 @@ then
 	export clst_myemergeopts="${clst_myemergeopts} --usepkg --buildpkg --newuse"
 fi
 
-if [ -n "${clst_FETCH}" ]
-then
-	export clst_myemergeopts="${clst_myemergeopts} -f"
-fi
-
 # setup the build environment
 export FEATURES="${clst_myfeatures}"
 export USE="-* ${clst_HOSTUSE}"
@@ -57,6 +52,11 @@ then
 		echo "Press any key to continue..."
 		read -s -n 1
 	fi
+fi
+
+if [ -n "${clst_FETCH}" ]
+then
+	emerge -e ${clst_myemergeopts} -f system || exit 1
 fi
 
 emerge -e ${clst_myemergeopts} system || exit 1
