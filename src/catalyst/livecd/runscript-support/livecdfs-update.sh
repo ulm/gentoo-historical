@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.16 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.17 2005/07/07 14:25:58 rocket Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -41,7 +41,7 @@ then
 	then
 		for x in ${clst_livecd_rcadd}
 		do
-			rc-update add "${x%%:*}" "${x##*:}"
+			rc-update add "${x%%|*}" "${x##*|}"
 		done
 	fi
 	
@@ -49,7 +49,7 @@ then
 	then
 		for x in ${clst_livecd_rcdel}
 		do
-			rc-update del "${x%%:*}" "${x##*:}"
+			rc-update del "${x%%|*}" "${x##*|}"
 		done
 	fi
 fi
