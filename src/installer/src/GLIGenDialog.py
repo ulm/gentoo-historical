@@ -576,7 +576,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		#Change the Yes/No buttons to new labels for this question.
 		self._d.add_persistent_args(["--yes-label", _(u"Stable")])
 		self._d.add_persistent_args(["--no-label", _(u"Unstable")])
-		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs."), height=13, width=55) == self._DLG_YES:
+		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs."), height=12, width=55) == self._DLG_YES:
 			#Stable
 			make_conf["ACCEPT_KEYWORDS"] = ""
 		else:  #Unstable
@@ -599,7 +599,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 	def _set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
 		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")), ("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")), ("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")), ("grsec-sources",_(u"Vanilla sources with grsecurity patches")), ("livecd-kernel", _(u"Use the current running kernel for the new system (fastest)")), (_(u"Other"), _(u"Choose one of the other sources available."))]
-		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources)
+		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources, width=77, height=17)
 		if code != self._DLG_OK: 
 			return
 		if menuitem == _(u"Other"):
@@ -612,9 +612,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		if not menuitem == "livecd-kernel":
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Genkernel")])
-			self._d.add_persistent_args(["--no-label", _(u"Traditional (requires config file!)")])
+			self._d.add_persistent_args(["--no-label", _(u"Traditional (requires a config!)")])
 			string1 = _(u"There are currently two ways the installer can compile a kernel for your new system.  You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).  \n\n If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel.  Choose which method you want to use.")
-			if self._d.yesno(string1, width=70, height=13) == self._DLG_YES:   #Genkernel
+			if self._d.yesno(string1, width=76,height=13) == self._DLG_YES:   #Genkernel
 				self._install_profile.set_kernel_build_method(None,"genkernel", None)
 				if self.advanced_mode:
 					#Change the Yes/No buttons back.
@@ -627,7 +627,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else: 	#Custom
 				self._install_profile.set_kernel_build_method(None,"custom", None)
 			if self.advanced_mode:
-				code, custom_kernel_uri = self._d.inputbox(_(u"If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):"))
+				code, custom_kernel_uri = self._d.inputbox(_(u"If you have a custom kernel configuration, enter its location (otherwise just press Enter to continue):"), height=13, width=50)
 				if code == self._DLG_OK: 
 					if custom_kernel_uri: 
 						if not GLIUtility.is_uri(custom_kernel_uri, checklocal=self.local_install):
@@ -729,7 +729,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", _(u"Do not install a bootloader.  (System may be unbootable!)")))
 		string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
-		code, menuitem = self._d.menu(string1, choices=boot_loaders)
+		code, menuitem = self._d.menu(string1, choices=boot_loaders, height=16, width=74)
 		if code != self._DLG_OK: 
 			return
 		try:
@@ -740,12 +740,12 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#Reset the Yes/No labels.
 			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 			self._d.add_persistent_args(["--no-label",_(u"No")])
-			if self._d.yesno(_(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)")) == self._DLG_YES:
+			if self._d.yesno(_(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)"), height=13, width=55) == self._DLG_YES:
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
 				self._install_profile.set_boot_loader_mbr(None, False, None)
 		if self.advanced_mode:
-			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"))
+			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"), height=12, width=55)
 			if code == self._DLG_OK:
 				try:
 					self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
@@ -780,7 +780,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				else:
 					choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2]))
 			choice_list.append(("Add",_(u"Add a new network interface")))
-			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel=_(u"Save and Continue"), height=18, width=67)
+			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel=_(u"Save and Continue"), height=18, width=77)
 			if code != self._DLG_OK:
 				try:
 					self._install_profile.set_network_interfaces(interfaces)
@@ -863,7 +863,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else:
 				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2],0))
 		string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
-		code, gateway_iface = self._d.radiolist(string3, choices=choice_list, height=18, width=67)
+		code, gateway_iface = self._d.radiolist(string3, choices=choice_list, height=20, width=67)
 		if code == self._DLG_OK:  #They made a choice.  Ask the IP if not DHCP.
 			while interfaces[gateway_iface][0] != 'dhcp':
 				code, ip = self._d.inputbox(_(u"Enter the gateway IP address for ") + gateway_iface, init=interfaces[gateway_iface][0])
@@ -978,9 +978,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True
 
 	def _set_cron_daemon(self):
-		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A command scheduler with extended capabilities over cron and anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
+		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A scheduler with extended capabilities over cron & anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
-		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=68)
+		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=75)
 		if code == self._DLG_OK:
 			if menuitem == "None": 
 				menuitem = ""
@@ -995,7 +995,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_extra_packages(self):
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
-		install_packages = ""
+		install_packages = self._install_profile.get_install_packages()
 		while 1:
 			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")), (_(u"Servers"), _(u"Applications often found on servers.")), (_(u"X11"), _(u"Window managers and X selection.")), (_(u"Misc"), _(u"Miscellaneous Applications you may want.")), (_(u"Recommended"), _(u"Applications recommended by the Gentoo Linux Installer Team.")), (_(u"Manual"), _(u"Type your own space-separated list of packages to install."))]
 			string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
@@ -1004,7 +1004,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				try:
 					if install_packages[-1] == " ":
 						install_packages = install_packages[:-1]
-					self._install_profile.set_install_packages(None, install_packages, None)
+					if install_packages:
+						self._install_profile.set_install_packages(None, install_packages, None)
 				except:
 					self._d.msgbox(_(u"ERROR! Could not set the install packages! List of packages:")+install_packages)
 				return
@@ -1045,16 +1046,17 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		clock = ""
 		editor = ""
 		prots = ""
+		disp_manager = ""
 		xsession = ""
 		string1 = _(u"Additional configuration settings for Advanced users (rc.conf)\nHere are some other variables you can set in various configuration files on the new system.  If you don't know what a variable does, don't change it!")
 		menulist = [("KEYMAP",_(u"Use KEYMAP to specify the default console keymap.")), ("SET_WINDOWSKEYS", _(u"Decision to first load the 'windowkeys' console keymap")), ("EXTENDED_KEYMAPS", _(u"maps to load for extended keyboards.  Most users will leave this as is.")), ("CONSOLEFONT", _(u"Specifies the default font that you'd like Linux to use on the console.")), ("CONSOLETRANSLATION", _(u"The charset map file to use.")), ("CLOCK", _(u"Set the clock to either UTC or local")), ("EDITOR", _(u"Set EDITOR to your preferred editor.")), ("PROTOCOLS", _(u"Gentoo Linux will only enable module auto-loading for these protocols")), ("DISPLAYMANAGER", _(u"What display manager do you use ?  [ xdm | gdm | kdm | entrance ]")), ("XSESSION", _(u"a new variable to control what window manager to start default with X"))]
 		while 1:
-			code, variable = self._d.menu(string1, choices=menulist, cancel=_(u"Save and Continue"))
+			code, variable = self._d.menu(string1, choices=menulist, cancel=_(u"Save and Continue"), height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				break
 			if variable == "KEYMAP":
 				keymap_list = GLIUtility.generate_keymap_list()
-				code, keymap = self._d.menu(_(u"Choose your desired keymap:"), choices=self._dmenu_list_to_choices(keymap_list), height=23)
+				code, keymap = self._d.menu(_(u"Choose your desired keymap:"), choices=self._dmenu_list_to_choices(keymap_list), height=23, list_height=15)
 				if code != self._DLG_OK:
 					continue
 				keymap = keymap_list[int(keymap)-1]
@@ -1068,16 +1070,16 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				else:
 					windowkeys = "no"
 			elif variable == "EXTENDED_KEYMAPS":
-				code, ext_keymap = self._d.inputbox(_(u"This sets the maps to load for extended keyboards.  Most users will leave this as is.  Enter new value for EXTENDED_KEYMAPS"))
+				code, ext_keymap = self._d.inputbox(_(u"This sets the maps to load for extended keyboards.  Most users will leave this as is.  Enter new value for EXTENDED_KEYMAPS"), width=60)
 			elif variable == "CONSOLEFONT":
 				font_list = GLIUtility.generate_consolefont_list()
-				code, font = self._d.menu(_(u"Choose your desired console font:"), choices=self._dmenu_list_to_choices(font_list), height=23)
+				code, font = self._d.menu(_(u"Choose your desired console font:"), choices=self._dmenu_list_to_choices(font_list), height=23, list_height=15)
 				if code != self._DLG_OK:
 					continue
 				font = font_list[int(font)-1]
 			elif variable == "CONSOLETRANSLATION":
 				trans_list = GLIUtility.generate_consoletranslation_list()
-				code, trans = self._d.menu(_(u"Choose your desired console translation:"), choices=self._dmenu_list_to_choices(trans_list))
+				code, trans = self._d.menu(_(u"Choose your desired console translation:"), choices=self._dmenu_list_to_choices(trans_list), height=23, list_height=15)
 				if code != self._DLG_OK:
 					continue
 				trans = trans_list[int(trans)-1]
@@ -1095,7 +1097,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 			elif variable == "PROTOCOLS":
 				choice_list = [("1", "Unix",1),("2","IPv4",1), ("3","Amateur Radio AX.25",0), ("4","IPX",0), ("5","DDP / appletalk",0), ("6","Amateur Radio NET/ROM",0), ("9","X.25",0), ("10","IPv6",0), ("11","ROSE / Amateur Radio X.25 PLP",0), ("19","Acorn Econet",0)]
-				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list)
+				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list, height=19, list_height=10, width=60)
 				if code != self._DLG_OK:
 					continue
 				prots = ""
@@ -1103,13 +1105,22 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					prots += prot + " "
 			elif variable == "DISPLAYMANAGER":
 				choice_list = [("xdm", _(u"X Display Manager")), ("gdm", _(u"Gnome Display Manager")), ("kdm", _(u"KDE Display Manager")), ("entrance", _(u"Login Manager for Enlightenment"))]
+				code, disp_manager = self._d.menu(_(u"Choose your desired display manager to use when starting X (note you must make sure that package also gets installed for it to work):"), choices=choice_list, width=65)
 			elif variable == "XSESSION":
-				code, xsession = self._d.inputbox(_(u"Choose what window manager you want to start default with X if run with xdm, startx, or xinit. (common options are Gnome or Xsession:"))
+				code, xsession = self._d.inputbox(_(u"Choose what window manager you want to start default with X if run with xdm, startx, or xinit. (common options are Gnome or Xsession:"), width=65, height=12)
 			
-		if not "conf.d/keymaps" in etc_files: etc_files['conf.d/keymaps'] = {}
-		if not "conf.d/consolefont" in etc_files: etc_files['conf.d/consolefont'] = {}
-		if not "conf.d/clock" in etc_files: etc_files['conf.d/clock'] = {}
-		if not "rc.conf" in etc_files: etc_files['rc.conf'] = {}
+		if not "conf.d/keymaps" in etc_files: 
+			if keymap or windowkeys or ext_keymap:
+				etc_files['conf.d/keymaps'] = {}
+		if not "conf.d/consolefont" in etc_files: 
+			if font or trans:
+				etc_files['conf.d/consolefont'] = {}
+		if not "conf.d/clock" in etc_files: 
+			if clock:
+				etc_files['conf.d/clock'] = {}
+		if not "rc.conf" in etc_files: 
+			if editor or prots or disp_manager or xsession:
+				etc_files['rc.conf'] = {}
 		if keymap:
 			etc_files['conf.d/keymaps']['KEYMAP'] = keymap
 		if windowkeys:
@@ -1126,6 +1137,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			etc_files['rc.conf']['EDITOR'] = editor
 		if prots:
 			etc_files['rc.conf']['PROTOCOLS'] = prots
+		if disp_manager:
+			etc_files['rc.conf']['DISPLAYMANAGER'] = disp_manager
 		if xsession:
 			etc_files['rc.conf']['XSESSION'] = xsession
 		self._install_profile.set_etc_files(etc_files)
@@ -1161,7 +1174,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			menu_list.sort()
 			menu_list.append(_(u"Add user"))
 			string1 = _(u"Working as root on a Unix/Linux system is dangerous and should be avoided as much as possible. Therefore it is strongly recommended to add a user for day-to-day use.  Choose a user to edit:")
-			code, menuitem = self._d.menu(string1, choices=self._dmenu_list_to_choices(menu_list), cancel="Save and Continue")
+			code, menuitem = self._d.menu(string1, choices=self._dmenu_list_to_choices(menu_list), cancel="Save and Continue", height=19)
 			if code != self._DLG_OK:
 				#if self._d.yesno("Do you want to save changes?") == self._DLG_YES:
 				tmpusers = []
@@ -1210,7 +1223,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				elif menuitem2 == _(u"Group Membership"):
 					choice_list = [("users", _(u"The usual group for normal users."), 1), ("wheel", _(u"Allows users to attempt to su to root."), 0), ("audio", _(u"Allows access to audio devices."), 0), ("games", _(u"Allows access to games."), 0), ("apache", _(u"For users who know what they're doing only."), 0), ("cdrom", _(u"For users who know what they're doing only."), 0), ("ftp", _(u"For users who know what they're doing only."), 0), ("video", _(u"For users who know what they're doing only."), 0), (_(u"Other"), _(u"Manually specify your groups in a comma-separated list."), 0)]
 					string2 = _(u"Select which groups you would like the user %s to be in." % menuitem)
-					code, group_list = self._d.checklist(string2, choices=choice_list, height=19, list_height=10, width=68)
+					code, group_list = self._d.checklist(string2, choices=choice_list, height=19, list_height=10, width=77)
 					groups = ""
 					for group in group_list:
 						groups += group + ","
@@ -1230,7 +1243,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						continue
 					users[menuitem][4] = homedir
 				elif menuitem2 == _(u"UID"):
-					code, uid = self._d.inputbox(_(u"Enter the user's UID. If left blank the system will choose a default value (this is recommended)."), init=users[menuitem][5])
+					code, uid = self._d.inputbox(_(u"Enter the user's UID. If left blank the system will choose a default value (this is recommended)."), init=users[menuitem][5], height=11, width=55)
 					if code != self._DLG_OK: 
 						continue
 					if type(uid) != int: 
@@ -1242,6 +1255,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						continue
 					users[menuitem][6] = comment
 				elif menuitem2 == _(u"Delete"):
+					#Reset the Yes/No buttons
+					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+					self._d.add_persistent_args(["--no-label", _(u"No")])
 					if self._d.yesno(_(u"Are you sure you want to delete the user ") + menuitem + "?") == self._DLG_YES:
 						del users[menuitem]
 						break
@@ -1249,7 +1265,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 	def _set_services(self):
 		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),0), ("apache", _(u"Common web server (version 1.x)"),0), ("apache2", _(u"Common web server (version 2.x)"),0), ("distccd", _(u"Distributed Compiling System"),0), ("esound", _(u"ESD Sound Daemon"),0), ("hdparm", _(u"Hard Drive Tweaking Utility"),0), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),0), ("portmap", _(u"Port Mapping Service"),0), ("proftpd", _(u"Common FTP server"),0), ("sshd", _(u"SSH Daemon (allows remote logins)"),0), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
-		code, services_list = self._d.checklist(string, choices=choice_list, height=19, list_height=10, width=68)
+		code, services_list = self._d.checklist(string, choices=choice_list, height=21, list_height=12, width=77)
 		if code != self._DLG_OK:
 			return
 		services = ""
@@ -1261,7 +1277,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		if code != self._DLG_OK: 
 			return
 		try:
-			self._install_profile.set_services(None, services, None)
+			if services:
+				self._install_profile.set_services(None, services, None)
 		except:
 			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
 			
