@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.10 2005/06/27 21:48:34 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.11 2005/07/07 16:14:35 agriffis Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -389,6 +389,8 @@ livecd_fix_inittab() {
 			ln -s /dev/hvc/0 /dev/hvc0
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 hvc0 vt320" >> /etc/inittab
 		fi
+
+
 	# The rest...
 	else
 		if [ "${LIVECD_CONSOLE}" = "tty0" -o "${LIVECD_CONSOLE}" = "" ]
@@ -401,6 +403,22 @@ livecd_fix_inittab() {
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ${LIVECD_CONSOLE} vt100" >> /etc/inittab
 		fi
 	fi
+
+	# EFI-based machines should automatically hook up their console lines
+	if dmesg | grep -q '^Adding console on'
+	then
+		dmesg | grep '^Adding console on' | while read x; do
+			line=`echo "$x" | cut -d' ' -f4`
+			id=e`echo "$line" | grep -o '.\{1,3\}$'`
+			[ "${line}" = "${LIVECD_CONSOLE}" ] && continue  # already setup above
+			case "$x" in
+				*options\ \'[0-9]*) speed=`echo "$x" | sed "s/.*options '//; s/[^0-9].*//"` ;;
+				*) speed=9600 ;;  # choose a default, only matters if it is serial
+			esac
+			echo "$id:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${speed} ${line} vt100" >> /etc/inittab
+		done
+	fi
+
 	# force reread of inittab
 	kill -HUP 1
 	return 0
