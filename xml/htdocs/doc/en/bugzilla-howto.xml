@@ -1,0 +1,1047 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/bugzilla-howto.xml,v 1.1 2005/07/07 12:02:21 fox2mike Exp $ -->
+
+<guide link="/doc/en/bugzilla-howto.xml">
+<title>Gentoo Bug Reporting Guide</title>
+
+<author title="Author">
+  <mail link="chriswhite@gentoo.org">Chris White</mail>
+</author>
+<author title="Editor">
+  <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
+
+<abstract>
+This document shows the proper method of reporting bugs using Bugzilla.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2005-07-07</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<title>Preface</title>
+<body>
+
+<p>
+Often one of the factors that delay a bug being fixed is how it is reported. By
+creating this guide, I hope to help improve the communication between
+developers and users in bug resolution. Getting bugs fixed is an important, if
+not crucial part of the quality assurance of any project and hopefully this
+guide will help make that a success.
+</p>
+
+</body>
+</section>
+<section>
+<title>Initial Finding</title>
+<body>
+
+<p>
+You're emerge-ing a package or working with a program, then suddenly the worst
+happens -- you find a bug. Bugs come in many forms, whether it be emerge
+failures or segmentation faults. Whatever the cause, the fact still remains that
+such a bug must be fixed. Here is a few examples of such bugs.
+</p>
+
+<pre caption="A run time error">
+$ <i>./bad_code `perl -e 'print Ax100'`</i>
+Segmentation fault
+</pre>
+
+<pre caption="An emerge failure">
+/usr/lib/gcc-lib/i686-pc-linux-gnu/3.3.2/include/g++-v3/backward/backward_warning.h:32:2:
+warning: #warning This file includes at least one deprecated or antiquated
+header. Please consider using one of the 32 headers found in section 17.4.1.2 of
+the C++ standard. Examples include substituting the &lt;X&gt; header for the &lt;X.h&gt;
+header for C++ includes, or &lt;sstream&gt; instead of the deprecated header
+&lt;strstream.h&gt;. To disable this warning use -Wno-deprecated.
+In file included from main.cc:40:
+menudef.h:55: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:62: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:70: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:78: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+main.cc: In member function `void OXMain::DoOpen()':
+main.cc:323: warning: unused variable `FILE*fp'
+main.cc: In member function `void OXMain::DoSave(char*)':
+main.cc:337: warning: unused variable `FILE*fp'
+make[1]: *** [main.o] Error 1
+make[1]: Leaving directory
+`/var/tmp/portage/xclass-0.7.4/work/xclass-0.7.4/example-app'
+make: *** [shared] Error 2
+
+!!! ERROR: x11-libs/xclass-0.7.4 failed.
+!!! Function src_compile, Line 29, Exitcode 2
+!!! 'emake shared' failed
+</pre>
+
+<p>
+These errors can be quite troublesome. However, once you find them, what do
+you do? The following sections will look at 2 important tools for handling
+run time errors. After that, we'll take a look at compile errors, and how to
+handle them. Let's start out with the first tool for debugging run time 
+errors -- <c>gdb</c>
+</p>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>Debugging using GDB</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+GDB, or the (G)NU (D)e(B)ugger, is a program used to find run time errors that
+normally involve memory corruption. First off, let's take a look at what
+debugging entails. One of the main things you must do in order to debug a
+program is to <c>emerge</c> the program with FEATURES="nostrip". This prevents
+the stripping of debug symbols. Why are programs stripped by default? The reason
+is the same as that for having gzipped man pages -- saving space. Here's how the
+size of a program varies with and without debug symbol stripping.
+</p>
+
+<pre caption="Filesize Comparison">
+<comment>(debug symbols stripped)</comment>
+-rwxr-xr-x  1 chris users 3140  6/28 13:11 bad_code
+<comment>(debug symbols intact)</comment>
+-rwxr-xr-x  1 chris users 6374  6/28 13:10 bad_code
+</pre>
+
+<p>
+Just for reference, <e>bad_code</e> is the program we'll be debugging with
+<c>gdb</c> later on. As you can see, the program without debugging symbols is
+3140 bytes, while the program with them is 6374 bytes. That's close to double
+the size! Two more things can be done for debugging. The first is adding -g to
+your CFLAGS and CXXFLAGS. This flag adds more debugging information than is
+generally included. We'll see what that means later on. Lastly, you can also add
+debug to the package's USE flags. This can be done with the
+<path>package.use</path> file.
+</p> 
+
+<pre caption="Using package.use to add debug USE flag">
+# <i>echo "category/package debug" >> /etc/portage/package.use</i>
+</pre>
+
+<note>
+The directory <path>/etc/portage</path> does not exist by default and you may
+have to create it, if you have not already done so. If the package already has
+USE flags set in <path>package.use</path>, you will need to manually modify them
+in your favorite editor.
+</note>
+
+<p>
+Now that that's done, you will need to re-emerge your package to set the
+new debug settings into place. This can be done as follows:
+</p>
+
+<pre caption="Re-emergeing a package with debugging">
+# <i>FEATURES="nostrip" emerge package</i>
+</pre>
+
+<p>
+Now that debug symbols are setup, we can continue with debugging the program.
+</p>
+
+</body>
+</section>
+<section>
+<title>Running the program with GDB</title>
+<body>
+
+<p>
+Let's say we have a program here called "bad_code" (I know, it's sort of cheesy
+but..). Some person claims he can break the code and provides an example. You go
+ahead and test it out:
+</p>
+
+<pre caption="Breaking The Program">
+$ <i>./bad_code `perl -e 'print Ax100'`</i>
+Segmentation fault
+</pre>
+
+<p>
+It seems this person was right. Since the program is obviously broken, we have
+a bug at hand. Now, it's time to use <c>gdb</c> to help solve this matter. First
+we run <c>gdb</c> with <c>--args</c>, then give it the full program with
+arguments like shown:
+</p>
+
+<pre caption="Running Our Program Through GDB">
+$ <i>gdb --args ./bad_code `perl -e 'print Ax100'`</i>
+GNU gdb 6.3
+Copyright 2004 Free Software Foundation, Inc.
+GDB is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+Type "show copying" to see the conditions.
+There is absolutely no warranty for GDB. Type "show warranty" for details.
+This GDB was configured as "i686-pc-linux-gnu"...Using host libthread_db library "/lib/libthread_db.so.1".
+</pre>
+
+<p>
+You should see a small terminal like setup after that which says "(gdb)" and
+waits for input. First, we have to run the program. We type in <c>run</c> at the
+command and receive a notice like:
+</p>
+
+<pre caption="Running the program in GDB">
+(gdb) run
+Starting program: /home/chris/bad_code
+
+Program received signal SIGSEGV, Segmentation fault.
+0xb7ec6dc0 in strcpy () from /lib/libc.so.6
+</pre>
+
+<p>
+Here we see the program starting, as well as a notification of SIGSEGV, or
+Segmentation Fault. This is GDB telling us that our program has crashed. It
+also gives the last run function it could trace when the program crashes.
+However, this isn't too useful, as there could be multiple strcpy's in the
+program, making it hard for developers to find which one is causing the issue.
+In order to help them out, we do what's called a backtrace. A backtrace runs
+backwards through all the functions that occurred upon program execution, to the
+function at fault. Functions that return (without causing a crash) will not show
+up on the backtrace. To get a backtrace, at the (gdb) prompt, type in <c>bt</c>.
+You will get something like this:
+</p>
+
+<pre caption="Program backtrace">
+(gdb) bt
+#0  0xb7ec6dc0 in strcpy () from /lib/libc.so.6
+#1  0x0804838c in run_it ()
+#2  0x080483ba in main ()
+</pre>
+
+<p>
+So as we see here, first main() was run, then run_it(), and somewhere in run_it
+lies the strcpy() at fault. Things such as this help developers narrow things
+down. Now, there are a few exceptions to the output. First off is forgetting
+to disable debug symbols with FEATURES="nostrip". With debug symbols stripped,
+output looks something like this:
+</p>
+
+<pre caption="Program backtrace With debug symbols stripped">
+(gdb) bt
+#0  0xb7e2cdc0 in strcpy () from /lib/libc.so.6
+#1  0x0804838c in ?? ()
+#2  0xbfd19510 in ?? ()
+#3  0x00000000 in ?? ()
+#4  0x00000000 in ?? ()
+#5  0xb7eef148 in libgcc_s_personality () from /lib/libc.so.6
+#6  0x080482ed in ?? ()
+#7  0x080495b0 in ?? ()
+#8  0xbfd19528 in ?? ()
+#9  0xb7dd73b8 in __guard_setup () from /lib/libc.so.6
+#10 0xb7dd742d in __guard_setup () from /lib/libc.so.6
+#11 0x00000006 in ?? ()
+#12 0xbfd19548 in ?? ()
+#13 0x080483ba in ?? ()
+#14 0x00000000 in ?? ()
+#15 0x00000000 in ?? ()
+#16 0xb7deebcc in __new_exitfn () from /lib/libc.so.6
+#17 0x00000000 in ?? ()
+#18 0xbfd19560 in ?? ()
+#19 0xb7ef017c in nullserv () from /lib/libc.so.6
+#20 0xb7dd6f37 in __libc_start_main () from /lib/libc.so.6
+#21 0x00000001 in ?? ()
+#22 0xbfd195d4 in ?? ()
+#23 0xbfd195dc in ?? ()
+#24 0x08048201 in ?? ()
+</pre>
+
+<p>
+This backtrace contains a large number of ?? marks. This is because without
+debug symbols, <c>gdb</c> doesn't know how the program was ran. Hence, it is
+crucial that debug symbols are <e>not</e> stripped. Now remember a while ago I
+told you about the -g flag. Let's see what the output looks like with that:
+</p>
+
+<pre caption="Program backtrace with -g flag">
+(gdb) bt
+#0  0xb7e4bdc0 in strcpy () from /lib/libc.so.6
+#1  0x0804838c in run_it (input=0x0) at bad_code.c:7
+#2  0x080483ba in main (argc=1, argv=0xbfd3a434) at bad_code.c:12
+</pre>
+
+<p>
+Here we see that a lot more information is available for developers. Not only is
+variable information displayed, but even the exact line numbers of the source
+files. This method is the most preferred if you can spare the extra space.
+Here's how much the file size varies between debug, strip, and -g programs.
+</p>
+
+<pre caption="Filesize differences With -g flag">
+<comment>(debug symbols stripped)</comment>
+-rwxr-xr-x  1 chris users 3140  6/28 13:11 bad_code
+<comment>(debug symbols enabled)</comment>
+-rwxr-xr-x  1 chris users 6374  6/28 13:10 bad_code
+<comment>(-g flag enabled)</comment>
+-rwxr-xr-x  1 chris users 7366  6/28 13:11 bad_code
+</pre>
+
+<p>
+As you can see, -g adds about a 1000 more bytes to the file size over the one
+with debugging symbols. However, as shown above, this increase in file size can
+be worth it if presenting debug information to developers. Now that we have
+obtained the backtrace, we can save it to a file by copying and pasting from the
+terminal (if it's a non-x based terminal, you can use gpm. To keep this doc
+simple, I recommend you read up on the documentation for gpm to see how to copy
+and paste with it). Now that we're done with <c>gdb</c>, we can quit.
+</p>
+
+<pre caption="Quitting GDB">
+(gdb) quit
+The program is running. Exit anyway? (y or n) y
+$
+</pre>
+
+<p>
+This ends the walk-through of <c>gdb</c>. Using <c>gdb</c>, I hope that you will
+be able to use it to create better bug reports. However, there are other types
+of errors that can cause a program to fail during run time. One of the other
+ways is through improper file access. We can find those using a nifty little
+tool called <c>strace</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Finding file access errors using strace</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Programs often use files to get configuration information, get access 
+to hardware, or write logs. Often a program attempts to reach such files 
+incorrectly. A program called <c>strace</c> was created to help deal with 
+this. <c>strace</c> traces system calls (hence the name) which include 
+calls that use the memory and files. For our example, we're going to take a 
+program foobar2. This is an updated version of foobar. However, during the 
+changeover to foobar2, you notice all your configurations are missing!  In 
+foobar version 1, you had it setup to say "foo", but now it's using the default
+"bar".
+</p>
+
+<pre caption="Foobar2 With an invalid configuration">
+$ <i>./foobar2</i>
+Configuration says: bar
+</pre>
+
+<p>
+Our previous configuration specifically had it set to foo, so let's use
+<c>strace</c> to find out what's going on.
+</p>
+
+</body>
+</section>
+<section>
+<title>Using strace to track the issue</title>
+<body>
+
+<p>
+Let's have <c>strace</c> log the results of the system calls. To do this, we run
+<c>strace</c> with the -o[file] arguments. Let's use it on foobar2 like so:
+</p>
+
+<pre caption="Running foobar2 through strace">
+# <i>strace -ostrace.log ./foobar2</i>
+</pre>
+
+<p>
+This creates a file called strace.log in the current directory. We check the
+file, and shown below are the relevant parts from the file.
+</p>
+
+<pre caption="A Look At the strace Log">
+open(".foobar2/config", O_RDONLY)       = 3
+read(3, "bar", 3)                       = 3
+</pre>
+
+<p>
+Aha! So There's the problem. Someone moved the configuration directory to
+<path>.foobar2</path> instead of <path>.foobar</path>. We also see the program
+reading in "bar" as it should. In this case, we can recommend the ebuild
+maintainer to put a warning about it. For now though, we can copy over the
+config file from .foobar and modify it to produce the correct results. 
+</p>
+
+</body>
+</section>
+<section>
+<title>Conclusion</title>
+<body>
+
+<p>
+Now we've taken care of finding run time bugs. These bugs prove to be
+problematic when you try and run your programs. However, run time errors are
+the least of your concern if your program won't compile at all. Let's take a
+look at how to address <c>emerge</c> compile errors.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Handling emerge Errors</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+<c>emerge</c> errors, such as the one displayed earlier, can be a major cause
+of frustration for users. Reporting them is considered crucial for helping
+maintain the health of Gentoo. Let's take a look at a sample ebuild, foobar2,
+which contains some build errors.
+</p>
+
+</body>
+</section>
+<section id="emerge_error">
+<title>Evaluating emerge Errors</title>
+<body>
+
+<p>
+Let's take a look at this very simple <c>emerge</c> error:
+</p>
+
+<pre caption="emerge Error">
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-7.o foobar2-7.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-8.o foobar2-8.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-9.o foobar2-9.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2.o foobar2.c
+foobar2.c:1:17: ogg.h: No such file or directory
+make: *** [foobar2.o] Error 1
+
+!!! ERROR: sys-apps/foobar2-1.0 failed.
+!!! Function src_compile, Line 19, Exitcode 2
+!!! Make failed!
+!!! If you need support, post the topmost build error, NOT this status message
+</pre>
+
+<p>
+The compile is going smoothly, then it stops and presents an error message. This
+particular error can be split into 3 different sections, The compile, the build
+error, and the emerge error message as shown below.
+</p>
+
+<pre caption="Parts of the error">
+<comment>(Compile Error)</comment>
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-7.o foobar2-7.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-8.o foobar2-8.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2-9.o foobar2-9.c
+gcc -D__TEST__ -D__GNU__ -D__LINUX__ -L/usr/lib -I/usr/include -L/usr/lib/nspr/ -I/usr/include/fmod   -c -o foobar2.o foobar2.c
+
+<comment>(Build Error)</comment>
+foobar2.c:1:17: ogg.h: No such file or directory
+make: *** [foobar2.o] Error 1
+
+<comment>(Emerge Error)</comment>
+!!! ERROR: sys-apps/foobar2-1.0 failed.
+!!! Function src_compile, Line 19, Exitcode 2
+!!! Make failed!
+!!! If you need support, post the topmost build error, NOT this status message
+</pre>
+
+<p>
+The compile is what leads up to the error. Most often, it's good to at least
+include 10 lines of compile information so that the developer knows where the
+compile is at. Make errors are the actual error, and the information the
+developer needs. When you see "make: ***", this is often where the error has
+occurred. Normally, you can copy and paste 10 lines above it and the developer
+will be able to address the issue. However, this may not always work and we'll
+take a look at an alternative shortly. The emerge error is what <c>emerge</c>
+can address from the make error. Often people make the mistake of posting the
+emerge error and that's all. This is useless by itself, but with make error and
+compile information, a developer can get what application and what version of
+the package is failing. As a side note, make is commonly used as the build
+process for programs (<b>but not always</b>). If you can't find a "make: ***"
+error anywhere, then simply copy and paste 20 lines before the emerge error.
+This should take care of most all build system error messages. Now let's say the
+errors seem to be quite large. 10 lines won't be enough to catch everything.
+That's where PORT_LOGDIR comes into play. 
+</p>
+
+</body>
+</section>
+<section>
+<title>emerge and PORT_LOGDIR</title>
+<body>
+
+<p>
+PORT_LOGDIR is a portage variable that sets up a log directory for separate 
+emerge logs. Let's take a look and see what that entails. First, run your emerge
+with PORT_LOGDIR set to your favorite log location. Let's say we have a
+location /var/log/portage. We'll use that for our log directory:
+</p>
+
+<note>
+In the default setup, /var/log/portage does not exist, and you will most likely
+have to create it. If you do not, portage will fail to write the logs.
+</note>
+
+<pre caption="emerge-ing With PORT_LOGDIR">
+# <i>PORT_LOGDIR=/var/log/portage emerge foobar2</i>
+</pre>
+
+<p>
+Now the emerge fails again. However, this time we have a log we can work with,
+and attach to the bug later on. Let's take a quick look at our log directory.
+</p>
+
+<pre caption="PORT_LOGDIR Contents">
+# <i>ls -la /var/log/portage</i>
+total 16
+drwxrws---   2 root root 4096 Jun 30 10:08 .
+drwxr-xr-x  15 root root 4096 Jun 30 10:08 ..
+-rw-r--r--   1 root root 7390 Jun 30 10:09 2115-foobar2-1.0.log
+</pre>
+
+<p>
+The log files have the format [counter]-[package name]-[version].log. Counter
+is a special variable that is meant to state this package as the n-th package
+you've emerged. This prevents duplicate logs from appearing. A quick look at
+the log file will show the entire emerge process. This can be attached later
+on as we'll see in the bug reporting section. Now that we've safely obtained
+our information needed to report the bug we can continue to do so. However,
+before we get started on that, we need to make sure no one else has reported
+the issue. Let's take a look at searching for bugs.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Searching Using Bugzilla</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+<uri link="http://www.bugzilla.org">Bugzilla</uri> is what we at Gentoo use to
+handle bugs. Gentoo's Bugzilla is reachable by HTTPS and HTTP. HTTPS is
+available for those on insecure networks or simply paranoid :). For the sake of
+consistency, I will be using the HTTPS version in the examples to follow. Head
+over to <uri link="https://bugs.gentoo.org">Gentoo Bugs</uri> to see how it
+looks.
+</p>
+
+<p>
+One of the most frustrating thing for developers and bug-wranglers is finding
+duplicate bug reports. This causes them valuable time they could be using to
+find new and more important bugs. Often, this can be prevented by a few simple
+search methods. So we're going to see how to search for bugs and find out if
+you have one that's similar. For this example, we're going to use the xclass
+emerge error that was used earlier:
+</p>
+
+<pre caption="xclass emerge error">
+/usr/lib/gcc-lib/i686-pc-linux-gnu/3.3.2/include/g++-v3/backward/backward_warning.h:32:2:
+warning: #warning This file includes at least one deprecated or antiquated
+header. Please consider using one of the 32 headers found in section 17.4.1.2 of
+the C++ standard. Examples include substituting the &lt;X&gt; header for the &lt;X.h&gt;
+header for C++ includes, or &lt;sstream&gt; instead of the deprecated header
+&lt;strstream.h&gt;. To disable this warning use -Wno-deprecated.
+In file included from main.cc:40:
+menudef.h:55: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:62: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:70: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+menudef.h:78: error: brace-enclosed initializer used to initialize `
+OXPopupMenu*'
+main.cc: In member function `void OXMain::DoOpen()':
+main.cc:323: warning: unused variable `FILE*fp'
+main.cc: In member function `void OXMain::DoSave(char*)':
+main.cc:337: warning: unused variable `FILE*fp'
+make[1]: *** [main.o] Error 1
+make[1]: Leaving directory
+`/var/tmp/portage/xclass-0.7.4/work/xclass-0.7.4/example-app'
+make: *** [shared] Error 2
+
+!!! ERROR: x11-libs/xclass-0.7.4 failed.
+!!! Function src_compile, Line 29, Exitcode 2
+!!! 'emake shared' failed
+</pre>
+
+<p>
+So to begin searching, we head over to the <uri
+link="http://bugs.gentoo.org/">Bugzilla Homepage</uri>.
+</p>
+
+<figure link="/images/docs/bugzie-homepage.png" caption="Bugzilla Homepage"/>
+
+<p>
+In order to begin our search, we'll click on "Query Existing bug reports". The
+reason why we choose this versus the basic bug search is because the basic bug
+search tends to give vague results and often hinders users from looking
+through the results and finding the duplicate bug. Once we click on the query
+screen, we reach the next page:
+</p>
+
+<figure link="/images/docs/bugzie-search.png" caption="Bugzilla Search Page"/>
+
+<note>
+If you've used the Advanced Search before, you'll most likely see that screen
+instead.
+</note>
+
+<p>
+Proceed on clicking the "Advanced Search" link to bring up the Advanced
+Search page:
+</p>
+
+<figure link="/images/docs/bugzie-adv-search.png" caption="Advanced Search Page"/>
+
+<p>
+This is how the Advanced Search Page looks like. While it may seem overwhelming
+at first, we're going to look at a few simple areas to narrow down the rather
+vague searches bugzilla returns. 
+</p>
+
+<figure link="/images/docs/bugzie-content.png" caption="Content"/>
+
+<p>
+The first field is the summary of the bug. Here we're simply going to put the
+name of the package that's crashing. If you still don't get results, try
+removing the package name, just in case someone didn't put that in the summary
+(highly unlikely, but I've seen my fair share of strange bug reports).
+</p>
+
+<p>
+Product, Component, and Version should all be set to the default. This
+prevents us from being too specific and missing all the bugs.
+</p>
+
+<p>
+Comment is the important part. Use comment to list what appears to be a
+specific instance of the error. Basically, don't use anything like the
+beginning of the build error, find a line that's before it stating a true
+error. Also, you'll want to filter out any punctuation to prevent bugzilla
+from interpreting the results the comment the wrong way. Example from the xclass
+emerge error:
+</p>
+
+<pre caption="Comment Line Content">
+menudef.h:78: error: brace-enclosed initializer used to initialize `OXPopupMenu'
+<comment>(Remove the quotes ' ')</comment>
+menudef.h 78 error brace-enclosed initializer used to initialize OXPopupMenu
+</pre>
+
+<p>
+The above is specific enough to where we'll find the bug without wading through
+other xclass compile failure candidates.
+</p>
+
+<p>
+URI, Whiteboard, and Keywords can all be left alone. What we've entered so far
+should be enough to find our bug. Let's see what we have filled out:
+</p>
+
+<figure link="/images/docs/bugzie-comp-search.png" caption="Completed Search Form"/>
+
+<p>
+Now we click on the Search button and here come the results:
+</p>
+
+<figure link="/images/docs/bugzie-search-result.png" caption="Search Results"/>
+
+<p>
+Only 2 bugs! That's a lot easier to deal with. We click on the first one to
+check, and sure enough it's the one we're looking for:
+</p>
+
+<figure link="/images/docs/bugzie-located.png" caption="Bug Located"/>
+
+<p>
+Not only is it the one we want, but it has also been resolved. By checking the
+last comment we see the solution and know what to do in order to resolve it.
+Now, let's see what would have happened if we had not used the advanced search:
+</p>
+
+<figure link="/images/docs/bugzie-basic-search-result.png" caption="Basic Search Results"/>
+
+<p>
+4 more bugs to deal with! It gets even worse with larger packages. However,
+with these simple tools, we're able to significantly narrow down the search to
+try and locate a specific bug.
+</p>
+
+</body>
+</section>
+<section>
+<title>Conclusion</title>
+<body>
+
+<p>
+Let's say that you have searched and searched but still can't find a bug.
+You've found yourself a new bug. Let's take a look at the bug reporting process
+for submitting your new bug.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Reporting Bugs</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+In this chapter, we'll figure out how to use Bugzilla to file a shiny, new bug.
+Head over to <uri link="https://bugs.gentoo.org">Gentoo Bugs</uri> and...
+</p>
+
+<figure link="/images/docs/bugzie-homepage.png" caption="Bugzilla Homepage"/>
+
+<p>
+Go ahead and click on "Report a Bug - Using the Guided format".
+</p>
+
+<figure link="/images/docs/bugzie-prod-select.png" caption="Product Selection"/>
+
+<p>
+As you can see, <b>major</b> emphasis has been placed on putting your bug in the
+right place. Gentoo Linux is where a large majority of bugs go. Despite this,
+some people will file ebuild bugs in portage development (assumption that
+portage team handles the portage tree) or infra (assumption that infra has
+access to mirrors and rsync and can fix it directly). This is simply not how
+things work. Our bug goes in Gentoo Linux, as it's an ebuild bug. We head over
+there and are presented with the multi-step bug reporting process.
+</p>
+
+<note>
+We would rather see a non-Gentoo Linux bug filed in Gentoo Linux than a Gentoo
+Linux bug filed in non-Gentoo Linux projects! While neither is preferred, the
+former is more acceptable and understandable (except website bugs.. we might
+have an issue with that...)
+</note>
+
+<p>
+Let us now proceed with Step 1...
+</p>
+
+<figure link="/images/docs/bugzie-guide-step1.png" caption="Guided Format Step 1"/>
+
+<p>
+The first step here is really important (as the red text tells you). This is
+where you search to see that someone else hasn't hit the same bug you have, yet.
+If you do skip this step, and a bug like yours already exists, it will be marked
+as a DUPLICATE thus wasting a large amount of QA effort. To give you an idea,
+the numbers that are struck out above are duplicate bugs. Now comes step 2,
+where we give the information.
+</p>
+
+</body>
+</section>
+<section>
+<title>Required Information</title>
+<body>
+
+<p>
+Onto Step 2, let's see what we have here.
+</p>
+
+<figure link="/images/docs/bugzie-basic.png" caption="Basic Information"/>
+
+<p>
+First, there's the product. This is Gentoo Linux, which we selected earlier.
+Component is where the problem occurs. We use this to help us sort out the
+severity of the issue (i.e. baselayout and core systems will be more important
+than new ebuilds or application bugs). Here we select Application, as it is an
+application at fault. Hardware platform is what architecture you're running.
+If you were running SPARC, you would set it to SPARC. For this example, we know
+this error can occur on multiple architectures, so we'll select All. Operating
+System is what Operating System you're using. Because Gentoo is considered a
+"Meta-distribution", it can run on other operating systems beside Linux. 
+Examples are Gentoo on MacOS, Gentoo on FreeBSD, etc. For this example, 
+we'll select All, as this can occur on all types of systems. Build Identifier 
+is what is being used to report the bugs (for logging purposes). You can just 
+leave this as is. Let's see what we have so far:
+</p>
+
+<figure link="/images/docs/bugzie-basic-comp.png" caption="Completed Basic Information"/>
+
+<p>
+That does look good, so we'll begin with the actual report. In this instance,
+we'll use the foobar2 bug as our example. URL is used to point to errors on a
+site someplace (pastebin, etc.). However, doing it inside the bug allows the
+developers be able to reference to it at any time and is preferred. Then we have
+the summary. In the summary, you should put the package category, name, and
+number. Not including the category really isn't too bad, but it's recommended.
+If you don't include the package name, however, we won't know what you're
+filling a bug for, and will have to ask you about it later. The version number
+is important for people searching for bugs. If 20 people filed bugs and not one
+put a version number, how would people looking for similar bugs be able to tell
+if one was there's? They'd have to look through every single bug, which isn't
+too hard, but if there are say, 200 bugs.. it's not that easy. After all the
+package information, you'll want to include a small description of the incident.
+Here's an example:
+</p>
+
+<figure link="/images/docs/bugzie-summary.png" caption="Summary"/>
+
+<p>
+Just these simple rules can make handling bugs a lot easier. Next are the
+details. Here we put in the information about the bug. We'll demonstrate with an
+example:
+</p>
+
+<figure link="/images/docs/bugzie-details.png" caption="Details"/>
+
+<p>
+So now the developer knows why we're filing the bug. They can then try to
+reproduce it. Reproducibility tells us how often we were able to make the
+problem recur. In this example, we can reproduce it any time simply by running
+foobar2. Let's put that information in:
+</p>
+
+<figure link="/images/docs/bugzie-reprod.png" caption="Reproduction"/>
+
+<p>
+So now we have explained how we found the bug. Next we want to explain what
+the results were and what we think they should be:
+</p>
+
+<figure link="/images/docs/bugzie-results.png" caption="Results"/>
+
+<p>
+Next we put additional information. This can be things such as stack traces,
+<b>sections</b> of strace logs, but most importantly, your emerge --info output.
+Here's an example:
+</p>
+
+<figure link="/images/docs/bugzie-addl-info.png" caption="Additional Information"/>
+
+<p>
+Lastly we select the severity of the bug. Please look this over carefully. In
+most cases it's OK to leave it as is and someone will raise/lower it for you.
+However, if you raise the severity of the bug, please make sure you read it over
+carefully and make sure you're not making a mistake. Here we will set it to the
+default of normal:
+</p>
+
+<figure link="/images/docs/bugzie-sev.png" caption="Severity"/>
+
+<p>
+Now we can submit the bug report by clicking on the Submit Bug Report box. You
+will now see your new bug come up. See <uri
+link="https://bugs.gentoo.org/show_bug.cgi?id=97265">Bug 97561</uri> for what
+the result looks like. We've reported our bug! Now let's see how it's dealt
+with.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Working With Your Bug</title>
+<section>
+<body>
+
+<p>
+looking at the bug, we see the information we provided earlier:
+</p>
+
+<figure link="/images/docs/bugzie-new-basic.png" caption="New Bug Basic Information"/>
+
+<p>
+And our details are there too:
+</p>
+
+<figure link="/images/docs/bugzie-new-details.png" caption="New Bug Details"/>
+
+<p>
+Now as you can see, the bug has been assigned to bug-wranglers@gentoo.org. This
+is the default location for Application component bugs. However, bug-wranglers
+(usually) won't fix our bugs, so we'll reassign it to someone that can (you can
+let bug-wranglers re-assign it for you as well). For this we use the package's
+metadata.xml. You can normally find them in
+/usr/portage/category/package/metadata.xml. Here's one I've made up for foobar2:
+</p>
+
+<pre caption="metadata.xml">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd"&gt;
+&lt;pkgmetadata&gt;
+&lt;herd&gt;chriswhite&lt;/herd&gt;
+&lt;maintainer&gt;
+&lt;email&gt;chriswhite@gentoo.org&lt;/email&gt;
+&lt;name&gt;Chris White&lt;/name&gt;
+&lt;/maintainer&gt;
+&lt;longdescription lang="en"&gt;
+Foobar2 is a package that uses a configuration file to display a word.
+&lt;/longdescription&gt;
+&lt;/pkgmetadata&gt;
+</pre>
+
+<p>
+Notice the maintainer section.T his lists the maintainer of the package, which
+in this case is myself, Chris White. The email listed is chriswhite@gentoo.org.
+We will use this to re-assign the bug to the proper person. To do this, click
+the bubble next to Reassign bug to, then fill in the email:
+</p>
+
+<note>
+A package without a metadata.xml file should be re-assigned to
+maintainer-needed@gentoo.org.
+</note>
+
+<figure link="/images/docs/bugzie-reassign.png" caption="Bug Reassignment"/>
+
+<p>
+Then hit the Commit button for the changes to take place. The bug has been
+reassigned to me. Shortly afterward, you notice (by email usually) that I've
+responded to your bug. I've stated that I'd like to see an strace log to figure
+out how the program is trying to reach your configuration file. You follow the
+previous instructions on using strace and obtain an strace log. Now you need to
+attach it to the bug. In order to do this, click on "Create A New Attachment".
+</p>
+
+<figure link="/images/docs/bugzie-new-attach.png" caption="New Attachment"/>
+
+<p>
+Now we have to attach the log. We click on the "Browse..." button under "File"
+and select the strace log. For Description, we'll put "strace log". Content-Type
+is what kind of file we're attaching. A common mistake is to set it to
+auto. In most cases it's best to manually set it. Our log file is a
+plain text file, so we select "plain text (text/plain)". Obsoletes are for when
+you are attaching a revision to a previously attached file. You can simply click
+a check box next to the old file and Bugzilla will cross it out in the bug,
+indicating that the attachment has been obsoleted. Reassignment means you want
+to take the bug yourself. I rarely tend to use this.. and I don't think you will
+need to at some point (unless you create great patches and we don't care about
+you taking our bugs ;). Comments are for leaving comments about the file you're
+posting. We'll put "Here is the strace file you requested". Now we have
+something like this: 
+</p>
+
+<figure link="/images/docs/bugzie-new-attach-comp.png" caption="New Attachment Completed"/>
+
+<p>
+We Submit the patch and it is now reflected on the bug report.
+</p>
+
+<figure link="/images/docs/bugzie-strace.png" caption="Attached strace log"/>
+
+<p>
+Now, while we're waiting another person notices your bug during step 1 of the
+Guided Format. This person wants to see the status of the bug as well. He or
+she may do so by putting their email in the Add CC field like so:
+</p>
+
+<figure link="/images/docs/bugzie-add-email.png" caption="Adding Email To CC:"/>
+
+<note>
+Email addresses must be registered with bugzilla. In order to CC multiple
+addresses, simply separate them with commas or spaces.
+</note>
+
+<p>
+After all this work, the bug can undergo various status markings. Here's a few:
+</p>
+
+<ul>
+  <li>
+	UNCONFIRMED - You're generally not going to see this too often. This
+  means that a bug reporter has opened a bug using the advanced method and is
+  uncertain his or her bug is an actual bug.
+	</li>
+  <li>
+	NEW - Bugs that are first opened are considered new.
+	</li>
+  <li>
+	ASSIGNED - When the person you've assigned the bug too validates your
+  bug, it will often receive ASSIGNED status while they figure out the issue.
+  This let's you know that they've accepted your bug as a real bug.
+	</li>
+  <li>
+	REOPENED - Someone has resolved a bug and you think the solution is not
+  feasible or the problem still persists. At this point, you may re-open the
+  bug. However <b>please do not abuse this</b>. If a developer closes the bug a
+  second or even third time, chances are that your bug is closed.
+	</li>
+</ul>
+
+<p>
+Now shortly afterward, I find the error in the strace log. I resolve the bug
+as RESOLVED FIXED and say that there was a change in the location of
+configuration files, and that I will update the ebuild with a warning about it.
+The bug now becomes resolved, and you are displayed with this:
+</p>
+
+<figure link="/images/docs/bugzie-reso.png" caption="Resolved Bug"/>
+
+<p>
+Also note the section here:
+</p>
+
+<figure link="/images/docs/bugzie-options.png" caption="Bug Options"/>
+
+<p>
+This gives you the option of Reopening the bug if you wish to (i.e. the developer
+thinks it's resolved but it's really not to your standards). Now our bug is
+fixed! However, different resolutions can occur. Here's a small list:
+</p>
+
+<ul>
+  <li>
+	FIXED - The bug is fixed, follow the instructions to resolve your
+  issue.
+	</li>
+  <li>
+	INVALID - You did not do something specifically documented, causing the
+  bug
+	</li>
+  <li>
+	DUPLICATE - You didn't use this guide and reported a duplicate bug
+  :)
+	</li>
+  <li>
+	WORKSFORME - Developer/person assigned the bug cannot reproduce your
+  error
+	</li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Conclusion</title>
+<body>
+
+<p>
+This concludes the howto on working with Bugzilla. I hope you find this useful.
+If you have any questions, comments, or ideas regarding this document, please
+send them to me at <mail
+link="chriswhite@gentoo.org">chriswhite@gentoo.org</mail>. Special
+thanks go to moreon for his notes on -g flags and compile errors, the people at
+#gentoo-bugs for helping out with bug-wrangling, and Griffon26 for his notes on
+maintainer-needed.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
