@@ -474,7 +474,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				menulist.append(mount['host'] + ":" + mount['export'])
 			menulist.append(_(u"Add a new network mount"))
 			choices = self._dmenu_list_to_choices(menulist)
-			code, menuitemidx = self._d.menu(_(u"If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."), choices=choices, cancel=_(u"Save and Continue"))
+			code, menuitemidx = self._d.menu(_(u"If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."), choices=choices, cancel=_(u"Save and Continue"), height=18)
 			if code == self._DLG_CANCEL:
 				try:
 					self._install_profile.set_network_mounts(network_mounts)
@@ -483,7 +483,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				break
 			menuitem = menulist[int(menuitemidx)-1]
 			if menuitem == _(u"Add a new network mount"):
-				code, nfsmount = self._d.inputbox(_(u"Enter NFS mount or just enter the IP/hostname to search for available mounts"))
+				code, nfsmount = self._d.inputbox(_(u"Enter NFS mount or just enter the IP/hostname to search for available mounts"), height=13, width=50)
 				if code != self._DLG_OK: 
 					continue
 				if not GLIUtility.is_nfs(nfsmount):
@@ -548,7 +548,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		use_flags = []
 		use_local_flags = []
 		use_desc = GLIUtility.get_global_use_flags()
-
+		use_local_desc = GLIUtility.get_local_use_flags()
 		
 		#populate the choices list
 		sorted_use = use_desc.keys()
@@ -643,10 +643,13 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_install_stage(self):
 	# The install stage and stage tarball will be selected here
-		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap and build the entire system from scratch.")), ("2",_(u"Stage2 is used for building the entire system from a bootstrapped semi-compiled state.")), ("3",_(u"Stage3 installation is a basic Gentoo Linux system that has been built for you (no compiling).")), ("3 + GRP", _(u"A Stage3 install but using binary packages from the LiveCD whenever possible")))
-		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=77)
+		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap&build from scratch.")),
+						("2",_(u"Stage2 is used for building from a bootstrapped semi-compiled state.")),
+						("3",_(u"Stage3 is a basic system that has been built for you (no compiling).")), 
+						("3+GRP", _(u"A Stage3 install but using binaries from the LiveCD when able.")))
+		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=78)
 		if code == self._DLG_OK:
-			if install_stage == "3 + GRP":
+			if install_stage == "3+GRP":
 				install_stage = "3"
 			try:			
 				self._install_profile.set_grp_install(None, True, None)

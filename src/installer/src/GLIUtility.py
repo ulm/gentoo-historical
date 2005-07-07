@@ -636,6 +636,8 @@ def get_global_use_flags():
 	f = open("/usr/portage/profiles/use.desc", "r")
 	for line in f:
 		line = line.strip()
+		if line == "# The following flags are NOT to be set or unset by users":
+			break
 		if not line or line.startswith("#"): continue
 		dash_pos = line.find(" - ")
 		if dash_pos == -1: continue

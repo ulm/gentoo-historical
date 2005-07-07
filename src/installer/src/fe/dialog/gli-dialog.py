@@ -128,10 +128,14 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	client_profile.set_interactive(None, True, None)
 	cc.set_configuration(client_profile)
 
+	#This will execute all of the CC functions, and set up networking if there is networking to set up.
 	cc.start_pre_install()
-
+	
+	#Reset the Yes/No labels.
+	d.add_persistent_args(["--yes-label", "Yes"])
+	d.add_persistent_args(["--no-label","No"])
 	while 1:
-		if d.yesno(_(u"Do you have a previously generated InstallProfile XML file?")) == DLG_YES:
+		if d.yesno(_(u"All of the installation settings are stored in an XML file, which we call the InstallProfile.  If you have previously saved a profile and would like to load it for this install, say Yes.  Otherwise say No.  Do you have a previously generated InstallProfile XML file?"), width=55) == DLG_YES:
 			code, install_profile_xml_file = d.inputbox(_(u"Enter the filename of the XML file"))
 			if code != DLG_OK: 
 				break
@@ -154,7 +158,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	while 1:
 		cc.set_install_profile(install_profile)
 		cc.start_install()
-		d.gauge_start("Installation Started!", title="Installation progress")
+		d.gauge_start(_(u"Installation Started!"), title=_(u"Installation progress"))
 		num_steps_completed = 1
 		while 1:
 			notification = cc.getNotification()
@@ -179,7 +183,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 						cc.next_step()
 					continue
 				if data == GLIClientController.INSTALL_DONE:
-					d.gauge_update(100, "Install completed!", update_text=1)
+					d.gauge_update(100, _(u"Install completed!"), update_text=1)
 					d.gauge_stop()
-					print "Install done!"
+					print _(u"Install done!")
 					sys.exit(0)
