@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.4 2005/07/07 21:23:11 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage3/Attic/stage3-chroot.sh,v 1.17.2.5 2005/07/07 22:18:58 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -38,7 +38,7 @@ fi
 
 # setup the build environment
 export FEATURES="${clst_myfeatures}"
-export USE="-* ${clst_HOSTUSE}"
+export USE="${USE} ${clst_HOSTUSE}"
 export CONFIG_PROTECT="-*"
 
 ## START BUILD
