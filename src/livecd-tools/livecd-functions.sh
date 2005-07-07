@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.11 2005/07/07 16:14:35 agriffis Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.12 2005/07/07 19:52:42 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -384,9 +384,9 @@ livecd_fix_inittab() {
 			    done
 			fi
 		fi
-		if [ -c "/dev/hvc/0" ]
+		if [ -c "/dev/hvc0" ]
 		then
-			ln -s /dev/hvc/0 /dev/hvc0
+			einfo "Adding hvc console to inittab"
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 hvc0 vt320" >> /etc/inittab
 		fi
 
@@ -400,6 +400,7 @@ livecd_fix_inittab() {
 				echo "c${x}:12345:respawn:/sbin/agetty -nl /bin/bashlogin 38400 tty${x} linux" >> /etc/inittab
 			done
 		else
+			einfo "Adding ${LIVECD_CONSOLE} console to inittab"
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ${LIVECD_CONSOLE} vt100" >> /etc/inittab
 		fi
 	fi
