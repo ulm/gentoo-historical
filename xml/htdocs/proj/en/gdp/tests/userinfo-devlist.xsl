@@ -6,13 +6,13 @@
 <xsl:preserve-space elements="*"/>
 <xsl:param name="statusFilter"/>
 
-<xsl:variable name="devaway" select='document("http://dev.gentoo.org/~neysx/devaway/xml/")'/>
+<xsl:variable name="devaway" select='document("/dyn/devaway/devaway.xml")'/>
 
 <xsl:template match="/userlist">
   <mainpage id="about">
     <title>Gentoo Linux Developers</title>
     <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
-    
+
     <version>Current</version>
     <chapter>
       <section>
@@ -29,8 +29,7 @@
 	  <p>
 	    <xsl:choose>
 	      <xsl:when test="$statusFilter = ''">
-	        The following table contains a list of active Gentoo developers. Retired developers are listed on the <uri 
-                link="/proj/en/gdp/tests/userinfo.xml?statusFilter=Retired">Gentoo Developer Relations Former
+	        The following table contains a list of active Gentoo developers. Retired developers are listed on the <uri link="/proj/en/gdp/tests/userinfo.xml?statusFilter=Retired">Gentoo Developer Relations Former
 		Developers</uri> page.
 	      </xsl:when>
 	      <xsl:when test="$statusFilter = 'Retired'">
