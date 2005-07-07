@@ -547,10 +547,10 @@ def get_interface_realname(interface):
 		return "No Information Found"
 
 def list_stage_tarballs_from_mirror(mirror, arch, subarch):
-	return spawn("wget -O - " + mirror + "/releases/" + arch + "/current/stages/" + subarch + r"/ 2> /dev/null | grep 'bz2\"' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].split("\n")
+	return spawn("wget -O - " + mirror + "/releases/" + arch + "/current/stages/" + subarch + r"/ 2> /dev/null | grep 'bz2\"' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
 
 def list_subarch_from_mirror(mirror, arch):
-	return spawn("wget -O - " + mirror + "/releases/" + arch + r"/current/stages/ 2> /dev/null | grep folder.gif | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].split("\n")
+	return spawn("wget -O - " + mirror + "/releases/" + arch + r"/current/stages/ 2> /dev/null | grep folder.gif | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
 
 def list_mirrors(http=True, ftp=True, rsync=True):
 	mirrors = []
@@ -565,11 +565,10 @@ def list_mirrors(http=True, ftp=True, rsync=True):
 		if mirrortypes:
 			mirrortypes += '\|'
 		mirrortypes += "rsync"
-	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]\+<uri link=\"\(" + mirrortypes + r"\):\/\/[^\"]\+\">/{s/^[[:space:]]\+<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].split("\n")
+	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]\+<uri link=\"\(" + mirrortypes + r"\):\/\/[^\"]\+\">/{s/^[[:space:]]\+<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].strip().split("\n")
 	for mirror in mirrorlist:
 		mirror = mirror.strip()
 		mirrors.append(mirror.split("|"))
-	mirrors = mirrors[:-1]  #chop off an empty one at the end.
 	return mirrors
 	
 def generate_keymap_list():
