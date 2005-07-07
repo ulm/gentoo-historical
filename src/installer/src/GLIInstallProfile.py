@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.67 2005/06/29 01:08:02 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.68 2005/07/07 18:41:53 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -1386,7 +1386,8 @@ class InstallProfile:
 	#### Services
 	
 	##
-	# Set the services to be started on bootup.
+	# Set the services to be started on bootup. Services should be
+	# seperated by ','. WARNING: This used to be ' ' instead!
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param services 		space-separated list of services
 	# @param xml_attr Parameter description
@@ -1411,7 +1412,7 @@ class InstallProfile:
 	def serialize_services(self):
 		if self.get_services() != ():
 			self.xmldoc += "<services>"
-			self.xmldoc += string.join(self.get_services(), ' ')
+			self.xmldoc += string.join(self.get_services(), ',')
 			self.xmldoc += "</services>"
 
 	############################################################################
