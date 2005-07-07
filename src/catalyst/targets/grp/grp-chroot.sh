@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/grp/Attic/grp-chroot.sh,v 1.14.2.2 2005/07/07 18:49:32 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/grp/Attic/grp-chroot.sh,v 1.14.2.3 2005/07/07 18:58:44 wolf31o2 Exp $
 
 # check portage version in seed stage
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
@@ -44,7 +44,7 @@ export USE_ORDER="env:pkg:conf:defaults"
 unset DISTDIR
 
 #don't grab MS core fonts, etc.
-export USE="${USE} ${clst_grp_use}"
+export USE="${USE} ${clst_grp_use} bindist"
 
 if [ "${clst_grp_type}" = "pkgset" ]
 then
@@ -66,11 +66,8 @@ then
 			read -s -n 1
 		fi
 	fi
-	
 	emerge --usepkg --buildpkg --noreplace --newuse ${clst_myemergeopts} ${clst_grp_packages} || exit 1
 else
-	
-	export USE="${USE} bindist"
 	DISTDIR="/tmp/grp/${clst_grp_target}" emerge --fetchonly ${clst_grp_packages} || exit 1
 	unset PKGDIR
 fi
