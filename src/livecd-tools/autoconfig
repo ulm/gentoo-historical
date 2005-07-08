@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.32 2005/07/01 14:46:54 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.33 2005/07/08 18:38:46 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -86,7 +86,7 @@ start() {
 	if [ "${APM}" = "yes" ]
 	then
 		modprobe apm power_off=1 >/dev/null 2>&1 && ebegin ${GOOD}"APM BIOS found, power management functions enabled.${NORMAL}"
-		[ -x /etc/init.d/apmd ] && /etc/init.d/apmd start
+		[ -x /etc/init.d/apmd ] && schedule_service_startup apmd
 	else
 		ebegin ${GOOD}"Not Loading APM Bios support.${NORMAL}"
 		eend
@@ -99,19 +99,19 @@ start() {
 		modprobe button >/dev/null 2>&1
 		modprobe battery >/dev/null 2>&1
 		modprobe ac >/dev/null 2>&1
-		[ -x /etc/init.d/acpid ] && /etc/init.d/acpid start
+		[ -x /etc/init.d/acpid ] && schedule_service_startup acpid
 		eend
 	fi
 
 	if [ "${IDEDMA}" = "yes" ]
 	then
-		[ -x /etc/init.d/hdparm ] && /etc/init.d/hdparm start
+		[ -x /etc/init.d/hdparm ] && schedule_service_startup hdparm
 	fi
 
 	if [ "${PCMCIA}" = "yes" ]
 	then
 		ebegin ${HILITE} "PCMCIA enabled via cmdline"
-		/etc/init.d/pcmcia start
+		[ -x /etc/init.d/pcmcia ] && schedule_service_startup pcmcia
 	fi
 
 	if [ "${DHCP}" = "no" ]
@@ -148,7 +148,7 @@ start() {
 			fi
 			if [ "${GPM}" = "yes" ]
 			then
-				[ -x /etc/init.d/gpm ] && /etc/init.d/gpm start
+				[ -x /etc/init.d/gpm ] && schedule_service_startup gpm
 			fi
 		fi
 		eend
@@ -159,9 +159,10 @@ start() {
 		#Check whether we should be using hotplug or coldplug
 		if [ -x /etc/init.d/coldplug ]
 		then
-			/etc/init.d/coldplug start
-		else
-			[ -x /etc/init.d/hotplug ] && /etc/init.d/hotplug start
+			schedule_service_startup coldplug
+		elif [ -x /etc/init.d/hotplug ]
+		then
+			schedule_service_startup hotplug
 		fi
 	else
 		ebegin ${BAD}"Hotplug disabled via cmdline${NORMAL}"
