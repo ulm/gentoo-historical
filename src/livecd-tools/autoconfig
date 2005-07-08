@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.33 2005/07/08 18:38:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.34 2005/07/08 18:59:36 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -11,66 +11,75 @@ HOTPLUG="yes"
 APM="no"
 ACPI="no"
 IDEDMA="yes"
+ALSA="yes"
 
-echo "0" > /proc/sys/kernel/printk
-CMDLINE="$(cat /proc/cmdline)"
+get_config() {
+	echo "0" > /proc/sys/kernel/printk
+	CMDLINE="$(cat /proc/cmdline)"
 
-for x in ${CMDLINE} ; do
-	if [ "${x}" = "nodetect" ]
-	then
-		DETECT="no"
-		GPM="no"
-		HOTPLUG="no"
-		APM="no"
-		ACPI="no"
-	fi
+	for x in ${CMDLINE} ; do
+		if [ "${x}" = "nodetect" ]
+		then
+			DETECT="no"
+			GPM="no"
+			HOTPLUG="no"
+			APM="no"
+			ACPI="no"
+			ALSA="no"
+		fi
 
-	if [ "${x}" = "nodhcp" ]
-	then
-		DHCP="no"
-	fi
+		if [ "${x}" = "nodhcp" ]
+		then
+			DHCP="no"
+		fi
 
-	if [ "${x}" = "nogpm" ]
-	then
-		GPM="no"
-	fi
+		if [ "${x}" = "nogpm" ]
+		then
+			GPM="no"
+		fi
 
-	if [ "${x}" = "dopcmcia" ]
-	then
-		PCMCIA="yes"
-	fi
+		if [ "${x}" = "dopcmcia" ]
+		then
+			PCMCIA="yes"
+		fi
 	
-	if [ "${x}" = "doapm" ]
-	then
-		APM="yes"
-		ACPI="no"
-	fi
+		if [ "${x}" = "doapm" ]
+		then
+			APM="yes"
+			ACPI="no"
+		fi
 
-	if [ "${x}" = "acpi=on" -o "${x}" = "acpi=force" ]
-	then
-		APM="no"
-		ACPI="yes"
-	fi
+		if [ "${x}" = "acpi=on" -o "${x}" = "acpi=force" ]
+		then
+			APM="no"
+			ACPI="yes"
+		fi
 
-	if [ "${x}" = "ide=nodma" ]
-	then
-		IDEDMA="no"
-	fi
+		if [ "${x}" = "ide=nodma" ]
+		then
+			IDEDMA="no"
+		fi
 
-	if [ "${x}" = "nohotplug" ]
-	then
-		HOTPLUG="no"
-	fi
-done
+		if [ "${x}" = "nohotplug" ]
+		then
+			HOTPLUG="no"
+		fi
+
+		if [ "${x}" = "nosound" ]
+		then
+			ALSA="no"
+		fi
+	done
+}
 
 depend() {
 	need modules
-	use alsasound
 	before net
-#	provide gpm pcmcia apmd acpid coldplug hdparm
+#	provide gpm pcmcia apmd acpid coldplug hdparm alsasound
 }
 
 start() {
+	get_config
 	if [ "${DETECT}" = "yes" ]
 	then
 		ebegin ${WARN}"Hardware detection started"
@@ -191,41 +200,45 @@ start() {
 		ebegin ${BAD}"No Network device auto detected.${NORMAL}"
 	fi
 
-
-	if [ -n "${SOUND_FULLNAME}" -o -n "${SOUND_DRIVER}" ]
+	if [ "${ALSA}" = "yes" ]
 	then
-		ebegin ${GOOD}"Soundcard:"
-		eend
-		[ -n "${SOUND_FULLNAME}" ] 
-		ebegin "              ${WARN}${SOUND_FULLNAME}"
-		[ -n "${SOUND_DRIVER}" ] 
-		ebegin ${WARN}"              driver = ${SOUND_DRIVER}"${HILITE}
-		if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]
+		if [ -n "${SOUND_FULLNAME}" -o -n "${SOUND_DRIVER}" ]
 		then
-			amixer scontrols > /etc/amixer
-			if [ -n "$(grep Master /etc/amixer)" ]
+			ebegin ${GOOD}"Soundcard:"
+			eend
+			[ -n "${SOUND_FULLNAME}" ] 
+			ebegin "              ${WARN}${SOUND_FULLNAME}"
+			[ -n "${SOUND_DRIVER}" ] 
+			ebegin ${WARN}"              driver = ${SOUND_DRIVER}"${HILITE}
+			schedule_service_startup alsasound
+			if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]
 			then
-				amixer -q set Master 95% unmute >/dev/null 2>&1
-			fi
-			if [ -n "$(grep PCM /etc/amixer)" ]
-			then
-				amixer -q set PCM 95% unmute >/dev/null 2>&1
-			fi
-			if [ -n "$(grep Mic /etc/amixer)" ]
-			then
-				amixer -q set Mic 95% mute cap >/dev/null 2>&1
-			fi
-			if [ -n "$(grep Wave /etc/amixer)" ]
-			then
-				amixer -q set Wave 95% unmute >/dev/null 2>&1
-			fi
-			if [ -n "$(grep Capture /etc/amixer)" ]
-			then
-				amixer -q set Capture 95% unmute cap >/dev/null 2>&1
+				amixer scontrols > /etc/amixer
+				if [ -n "$(grep Master /etc/amixer)" ]
+				then
+					amixer -q set Master 95% unmute >/dev/null 2>&1
+				fi
+				if [ -n "$(grep PCM /etc/amixer)" ]
+				then
+					amixer -q set PCM 95% unmute >/dev/null 2>&1
+				fi
+				if [ -n "$(grep Mic /etc/amixer)" ]
+				then
+					amixer -q set Mic 95% mute cap >/dev/null 2>&1
+				fi
+				if [ -n "$(grep Wave /etc/amixer)" ]
+				then
+					amixer -q set Wave 95% unmute >/dev/null 2>&1
+				fi
+				if [ -n "$(grep Capture /etc/amixer)" ]
+				then
+					amixer -q set Capture 95% unmute cap >/dev/null 2>&1
+				fi
 			fi
 		fi
+	else
+		ebegin ${BAD}"Skipping ALSA detection as requested on boot commandline."
 	fi
-
 
 	if [ -n "${XDESC}" -o -n "${XDESC}" ]
 	then
