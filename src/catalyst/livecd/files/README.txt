@@ -63,6 +63,8 @@ nosata		This disables the loading of Serial ATA modules.  This is useful
 nosmp		This disables SMP, or Symmetric Multiprocessing, on SMP-enabled
 		kernels.  This is useful for debugging SMP-related issues with
 		certain drivers and motherboards.
+nosound		This disables sound support and volume setting.  This is useful
+		for systems where sound support causes problems.
 nousb		This disables the autoloading of USB modules.  This is useful
 		for debugging USB issues.
 
