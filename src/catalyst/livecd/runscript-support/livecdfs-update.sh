@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.17 2005/07/07 14:25:58 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.18 2005/07/08 18:58:09 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -80,7 +80,7 @@ fi
 if [ -n "${clst_livecd_users}" -a -e /etc/startx ]
 then
 	first_user=$(echo ${clst_livecd_users} | cut -d' ' -f1)
-	sed -i "s/startx/su - $first_user -c startx/" /root/.bashrc
+	sed -i "s/##STARTX/su - $first_user -c startx/" /root/.bashrc
 fi
 
 # setup dhcp on all detected ethernet devices
