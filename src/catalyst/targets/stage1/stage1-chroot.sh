@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.6 2005/07/07 21:23:11 rocket Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.7 2005/07/08 15:07:12 wolf31o2 Exp $
 		
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -57,7 +57,7 @@ export clst_buildpkgs="$(/tmp/build.py)"
 STAGE1_USE="$(portageq envvar STAGE1_USE)"
 
 ## Sanity check profile
-if [ -z ${clst_buildpkgs} ]
+if [ -z "${clst_buildpkgs}" ]
 then
 	echo "Your profile seems to be broken."
 	echo "Could not build a list of build packages."
