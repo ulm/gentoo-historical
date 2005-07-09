@@ -101,6 +101,8 @@ noload=X	This causes the initial ramdisk to skip the loading of a
 		specific driver that may be causing a problem.  Replace X with
 		the driver name.  Multiple drivers can be specified by a
 		comma-separated list.
+nox		This causes an X-enabled LiveCD to not automatically start X,
+		but rather, to drop to the command line instead.
 scandelay	This causes the CD to pause for 10 seconds during certain
 		portions the boot process to allow for devices that are slow to
 		initialize to be ready for use.
