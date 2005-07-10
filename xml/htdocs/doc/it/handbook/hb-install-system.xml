@@ -7,8 +7,8 @@
 
 <sections>
 
-<version>1.66</version>
-<date>2005-02-25</date>
+<version>2.8</version>
+<date>2005-06-28</date>
 
 <section>
 <title>Effettuare il chroot</title>
@@ -89,7 +89,7 @@ Montare il filesystem <path>/proc</path> su <path>/mnt/gentoo/proc</path> per pe
 <body>
 
 <p>
-Adesso che tutte le partizioni sono pronte e che l'ambiente di base è installato, è arrivato il momento di entrare nel nuovo ambiente di installazione effettuando il <e>chroot</e>. Significa che ci si sposta dall'attuale ambiente di installazione (LiveCD o altre modalità di installazione) al sistema di installazione nel proprio sistema (nelle partizioni create).
+Adesso che tutte le partizioni sono pronte e che l'ambiente di base è installato, è arrivato il momento di entrare nel nuovo ambiente di installazione effettuando il <e>chroot</e>. Significa che ci si sposta dall'attuale ambiente di installazione (CD di Installazione o altre modalità di installazione) al sistema di installazione nel proprio sistema (nelle partizioni create).
 </p>
 
 <p>
@@ -120,11 +120,87 @@ Si procede ora all'aggiornamento di Portage tramite il comando <c>emerge
 
 <pre caption="Aggiornare Portage">
 # <i>emerge --sync</i>
+<comment>(Se si sta usando un terminale lento come alcuni in framebuffer
+o la console seriale si può utilizzare l'opzione --quiet per ridurre l'output)</comment>
+# <i>emerge --sync --quiet</i>
 </pre>
+
+<p>
+Se si è dietro ad un firewall che blocca il traffico rsync è possibile usare
+<c>emerge-webrsync</c> che scarica ed installa una immagine completa di Portage.
+</p>
 
 <p>
 Se si riceve l'avviso che è disponibile una nuova versione di Portage e che si dovrebbe aggiornarlo, si può tranquillamente ignorare questo avviso. Portage viene aggiornato in seguito, durante l'installazione.
 </p>
+
+</body>
+</subsection>
+<subsection>
+<title>Scelta del profilo adatto</title>
+<body>
+
+<p>
+Innanzitutto qualche definizione.
+</p>
+
+<p>
+Il profilo è una parte integrante di ciascun sistema Gentoo. Non solo specifica i valori
+di default per CHOST, CFLAGS ed altre impostanti variabili, ma posiziona il sistema
+all'interno di un certo intervallo di versioni di pacchetti. Il profilo viene
+mantenuto dagli sviluppatori Gentoo.
+</p>
+
+<p>
+In precedenza il profilo non doveva essere modificato dall'utente. Tuttavia adesso
+gli utenti x86, hppa e alpha possono scegliere tra due profili, uno per il kernel
+24, e uno per il kernel 2.6. Questa richiesta è stata imposta per aumentare
+l'integrazione del kernel 2.6.
+</p>
+
+<p>
+E' possibile visualizzare l'attuale profilo in uso con il seguente comando:
+</p>
+
+<pre caption="Visualizzare il profilo del sistema">
+# <i>ls -FGg /etc/make.profile</i>
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2005.0/
+</pre>
+
+<p>
+Se si sta utilizzando una delle piattaforma citate il profilo di default
+implementa un sistema basato su kernel 2.6. Questa è l'impostazione raccomandata, ma
+è anche possibile modificare il profilo.
+</p>
+
+<p>
+Alcuni utenti potrebbero voler installare uun sistema basato sul vecchio profilo
+di Linux 2.4. Se c'è una buona ragione per farlo è possibile controllare
+l'esistenza di un profilo adatto. Su una macchina x86 è possibile farlo con
+il seguente comando:
+</p>
+
+<pre caption="Trovare un profilo alternativo">
+# <i>ls -d /usr/portage/profiles/default-linux/x86/2005.0/2.4</i>
+/usr/portage/profiles/default-linux/x86/2005.0/2.4
+</pre>
+
+<p>
+L'esempio evidenziato mostra l'esistenza di un profilo alternativo per Linux 2.4, cioè
+non sono stati mostrati errori di file o directory mancanti. Si raccomanda di utilizzare
+il profilo di default, ma per cambiaro è possibile seguirer questa procedura:
+</p>
+
+<pre caption="Passare al profilo 2.4">
+<comment>(Assicurarsi di utilizzare la architettura corretta, l'esempio si riferisce a x86)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+<comment>(Elenca i file nel profilo 2.4)</comment>
+# <i>ls -FGg /etc/make.profile/</i>
+total 12
+-rw-r--r--  1 939 Dec 10 14:06 packages
+-rw-r--r--  1 347 Dec  3  2004 parent
+-rw-r--r--  1 573 Dec  3  2004 virtuals
+</pre>
 
 </body>
 </subsection>
@@ -177,7 +253,8 @@ USE="-gtk -gnome qt kde dvd alsa cdr"
 
 <p>
 Di solito su un sistema vengono utilizzate le impostazioni per una o due lingue. Al momento
-la compilazione di <c>glibc</c> creerebbe un set di lingue completo, ma attivando la USE flag <c>userlocales</c> è possibile specificare solo le località di cui si ha bisogno nel file <path>/etc/locales.build</path>. Il passo è utile solo se si conosce queli impostazioni attivare:
+la compilazione di <c>glibc</c> creerebbe un set di lingue completo, ma attivando la USE flag <c>userlocales</c> è possibile specificare solo le località di cui si ha bisogno nel file <path>/etc/locales.build</path>. Il passo è utile solo se si conosce queli impostazioni attivare.
+Le modifiche non saranno attive subito ma da dopo la ricompilazione di glibc:
 </p>
 
 <pre caption="Attivare la flasg userlocales in glibc">
@@ -223,8 +300,12 @@ Si prendano ora un momento in considerazione i passi precedenti. E' stato chiest
 <li>
   Se si è scelto lo <e>stage2</e>, si può saltare la prima parte e iniziare con la seconda (<uri link="#doc_chap4">Passare dallo stage2 allo stage3</uri>)
 </li>
-<li>
+<!--<li>
   Se si è scelto lo <e>stage3</e> allora si possono saltare entrambe le parti e continuare con la prossima sezione: <uri link="?part=1&amp;chap=7">Configurazione del Kernel</uri>
+</li>-->
+<li>
+  Se si è scelto lo <e>stage3</e> allora è necessario
+  <uri link="#upgrade-baselayout">aggiornare il pacchetto baselayout</uri>.
 </li>
 </ul>
 
@@ -285,18 +366,6 @@ Inserire il prossimo comando per iniziare il bootstrap. Questa fase richiede mol
 </pre>
 
 <p>
-Se si è impostata la flag USE <c>nptl</c> eseguire nuovamente <c>bootstrap.sh</c>
-potrebbe dare un errore per cui <c>linux-headers</c> blocca <c>linux26-headers</c>.
-Se si riceve questo errore, rimuovere <c>linux-headers</c> e provare nuovamente:
-</p>
-
-<pre caption="Rimuovere linux-headers dal sistema">
-# <i>emerge -C linux-headers</i>
-# <i>emerge --oneshot --nodeps linux26-headers</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
 Continuare con il prossimo punto su come <uri link="#doc_chap4">Passare dallo stage2 allo stage3</uri>.
 </p>
 
@@ -323,12 +392,20 @@ Non proprio <e>tutti</e> in realtà, si compilano solo i pacchetti del sistema d
 <body>
 
 <p>
-Se si vuole sapere quali pacchetti stanno per essere installati, eseguire <c>emerge --pretend system</c>. Si ottiene una lista di tutti i pacchetti che si stanno per installare. Questa lista è molto lunga e si dovrebbe usare un pager come <c>less</c> o <c>more</c> per andare su o giù per lista.
+Se si vuole sapere quali pacchetti stanno per essere installati, eseguire <c>emerge --pretend --emptytree system</c>. Si ottiene una lista di tutti i pacchetti che si stanno per installare. Questa lista è molto lunga e si dovrebbe usare un pager come <c>less</c> o <c>more</c> per andare su o giù per lista.
 </p>
 
 <pre caption="Vedere l'effetto 'emerge system'">
-# <i>emerge --pretend system | less</i>
+# <i>emerge --pretend --emptytree system | less</i>
 </pre>
+
+<p>
+Da notare che se non sono state modifcate le variabili CFLAGS/CXXFLAGS
+è sufficiente eseguire <c>emerge --pretend --newuse system</c>:
+vengono ricompilate le applicazioni interessate dal cambio di flag USE
+(rispetto alle flag utilizzate per compilare lo stage2). Se non sono state
+modificate le flag USE non ha nemmeno senso utilizzare lo stage2.
+</p>
 
 </body>
 </subsection>
@@ -341,7 +418,7 @@ Se si vuole usare <c>emerge</c> per scaricare i sorgenti prima di continuare (pe
 </p>
 
 <pre caption="Scaricare i sorgenti">
-# <i>emerge --fetchonly system</i>
+# <i>emerge --fetchonly --emptytree system</i>
 </pre>
 
 </body>
@@ -351,12 +428,17 @@ Se si vuole usare <c>emerge</c> per scaricare i sorgenti prima di continuare (pe
 <body>
 
 <p>
-Per iniziare a compilare il sistema, eseguire <c>emerge system</c>. Questo processo richiede molto tempo prima di completarsi.
+Per iniziare a compilare il sistema, eseguire <c>emerge --emptytree system</c>. Questo processo richiede molto tempo prima di completarsi.
 </p>
 
 <pre caption="Compilare il sistema">
 # <i>emerge --emptytree system</i>
 </pre>
+
+<p>
+Di nuovo, se non sono state modificate le CFLAGS e CXXFLAGS di default,
+è sufficiente usare <c>--newuse</c>.
+</p>
 
 <p>
 Si può tranquillamente ignorare qualsiasi avviso riguardante l'aggiornamento dei file di
@@ -373,4 +455,30 @@ Quando emerge system ha terminato l'esecuzione, continuare con la <uri link="?pa
 </body>
 </subsection>
 </section>
+
+<section id="upgrade-baselayout">
+<title>Aggiornamento di baselayout</title>
+<subsection>
+<body>
+
+<p>
+Il pacchetto <c>baselayout</c> è stato aggiornato significativamente dal rilascio di
+Gentoo 2005.0. Alcuni file di configurazione sono stati spostati ed altri utilizzano
+una nuova sintassi. Questo manuale utilizza i file di configurazione nuovi. E' dunque
+raccomandato fortemente di aggiornare prima di passare alla prossima sezione.
+</p>
+
+<pre caption="Aggiornamento di baselayout">
+# <i>rm /etc/conf.d/net</i>
+# <i>CONFIG_PROTECT="-*" emerge baselayout</i>
+</pre>
+
+<p>
+Continuare con la <uri link="?part=1&amp;chap=7">Configurazione del kernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
 </sections>
