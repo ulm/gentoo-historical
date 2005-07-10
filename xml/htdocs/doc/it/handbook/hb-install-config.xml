@@ -2,14 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-config.xml,v 1.7 2005/05/29 16:17:14 mush Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-config.xml,v 1.8 2005/07/10 21:09:06 mush Exp $ -->
 
 <sections>
 
-<version>2.3</version>
-<date>2005-05-23</date>
+<version>2.10</version>
+<date>2005-06-28</date>
 
 <section>
 <title>Informazioni sul filesystem</title>
@@ -146,7 +146,10 @@ Nel prossimo esempio, si usano questi due nomi. Per prima cosa impostiamo l'host
 </p>
 
 <pre caption="Impostare l'hostname">
-# <i>echo tux &gt; /etc/hostname</i>
+# <i>nano -w /etc/conf.d/hostname</i>
+
+<comment>(Impostare la variabile HOSTNAME con il nome dell'host scelto)</comment>
+HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
@@ -154,7 +157,10 @@ Poi Impostiamo il nome di dominio:
 </p>
 
 <pre caption="Impostare il domainname">
-# <i>echo homenetwork &gt; /etc/dnsdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+
+<comment>(Impostare la variabile DNSDOMAIN con il nome di dominio scelto)</comment>
+DNSDOMAIN="<i>homenetwork</i>"
 </pre>
 
 <p>
@@ -162,7 +168,10 @@ Se si dispone di un dominio NIS (se non si sa cos'è, allora non lo si ha), si d
 </p>
 
 <pre caption="Settare NIS domainname">
-# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+
+<comment>(Impostare la variabile NISDOMAIN con il nome di dominio scelto)</comment>
+NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
 
 <p>
@@ -183,88 +192,70 @@ Ora aggiungere lo script <c>domainname</c> al runlevel di default:
 Si dovrebbe ricordare che la configurazione della rete fatta inizialmente era solo per l'installazione di Gentoo. Adesso è necessario configurare la rete per il sistema Gentoo in funzione.
 </p>
 
+<note>
+Ulteriori e più dettagliate informazioni sulle impostazioni di rete, tra cui argomenti
+avanzati come bonding, bridging, 802.11q VLAN o wireless vengono trattate nella sezione
+dedicata alla <uri link="?part=4">Configurazione di rete</uri> in Gentoo.
+</note>
+
 <p>
-Tutte le informazioni di rete sono raccolte in <path>/etc/conf.d/net</path>. Questo file usa una sintassi semplice ma non molto intuitiva per chi non sa installare la rete manualmente. Ma qui si spiega tutto.
+Tutte le informazioni di rete sono raccolte in <path>/etc/conf.d/net</path>. Questo file usa una sintassi semplice ma non molto intuitiva per chi non sa installare la rete manualmente. Ma qui si spiega tutto. Un esempio ampiamente commentato che copre i diversi tipi di configurazione
+è disponibile in <path>/etc/conf.d/net.example</path>.
 </p>
 
 <p>
-Per prima cosa aprire <path>/etc/conf.d/net</path> con l'editor preferito (in questo esempio si usa <c>nano</c>):
+Di default viene utilizzato DHCP senza bisogno di ulteriori configurazioni.
 </p>
 
-<pre caption="Aprire /etc/conf.d/net">
+<p>
+Se si necessita di configurare la rete, sia perchè si necessita di impostare il comportamento
+di DHCP, sia perchè non si utilizza affatto DHCP, aprire con il proprio editor preferito
+(in questo esempio si usa <c>nano</c>) <path>/etc/conf.d/net</path>.
+</p>
+
+<pre caption="Modificare /etc/conf.d/net">
 # <i>nano -w /etc/conf.d/net</i>
 </pre>
 
-<!-- Old baselayout - current stable -->
-
 <p>
-La prima variabile che si incontra è <c>iface_eth0</c>. Essa usa la seguente sintassi:
+Il file aperto è il seguente:
 </p>
 
-<pre caption="Sintassi di iface_eth0">
-iface_eth0="<i>&lt;indirizzo ip&gt;</i> broadcast <i>&lt;indirizzo di broadcast&gt;</i> netmask <i>&lt;netmask&gt;</i>"
+<pre caption="/etc/conf.d/net di default">
+# This blank configuration will automatically use DHCP for any net.*
+# scripts in /etc/init.d.  To create a more complete configuration,
+# please review /etc/conf.d/net.example and save your configuration
+# in /etc/conf.d/net (this file :]!).
 </pre>
 
 <p>
-Se si usa DHCP (che server per ottenere automaticamente un IP), si dovrebbe impostare <c>iface_eth0</c> a <c>dhcp</c>. Se si usa rp-pppoe (per esempio, per ADSL), impostarlo a <c>up</c>. Se si deve installare la rete manualmente e questi termini non sono familiari, è consigliata, se non è stata gia fatta, la lettura di <uri link="?part=1&amp;chap=3#network_term">Comprendere la Terminologia della Rete</uri>.
+Per impostare l'indirizzo IP, ma maschera di rete ed il gateway è necessario impostare
+le variabili <c>config_eth0</c> e <c>routes_eth0</c>:
 </p>
 
-<p>
-Seguono tre esempi: nel primo si usa DHCP; nel secondo un IP statico 192.168.0.2, netmask 255.255.255.0, broadcast 192.168.0.255 e gateway 192.168.0.1, mentre il terzo attiva una interfaccia per rp-pppoe:
-</p>
-
-<pre caption="Esempi per /etc/conf.d/net">
-<comment>(Per DHCP:)</comment>
-iface_eth0="dhcp"
-<comment># Alcuni amministratori di sistema richiedono che si utilizzi</comment>
-<comment># l'hostname e il domainname forniti dal server DHCP.</comment>
-<comment># In quiesto caso aggiungere l'istruzione seguente.</comment>
-<comment># Questo reimposterà le l'hostname e domainname definiti.</comment>
-dhcpcd_eth0="-HD"
-<comment># Se si desidera utilizzare NTP per mantenere l'orologio aggiornato</comment>
-<comment># utilizzare l'opzione -N per evitare la sovrascrittura di /etc/ntp.conf</comment>
-dhcpcd_eth0="-N"
-
-<comment>(Per IP statico:)</comment>
-iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
-gateway="eth0/192.168.0.1"
-
-<comment>(Per rp-pppoe:)</comment>
-iface_eth0="up"
-</pre>
-
-<p>
-Se si hanno molte interfacce di rete, si devono creare variabili extra di <c>iface_eth</c>, come <c>iface_eth1</c>, <c>iface_eth2</c> eccetera. La variabile <c>gateway</c> non deve essere riscritta, poichè si può settare un solo gateway per computer.
-</p>
-
-<!-- New baselayout - current testing
-
-<p>
-La prima variabile che si incontra è <c>config_eth0</c>. Come è facile immaginare
-questa variabile configura il comportamento della interfaccia eth0. Se l'interfaccia
-ha bisogno di ottenere automaticamente un indirizzo via DHCP deve essere impostata così:
-</p>
-
-<pre caption="Ottenere automaticamente un indirizzo per eth0">
-config_eth0=( "dhcp" )
-</pre>
-
-<p>
-Però, se si desidera inserire il proprio indirizzo IP a mano insieme a netmask e gateway,
-bisogna impostare sia <c>config_eth0</c> che <c>routes_eth0</c>:
-</p>
-
-<pre caption="Impostazione manuale di eth0">
+<pre caption="Impostare manualmente l'interfaccia eth0">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
 routes_eth0=( "default gw 192.168.0.1" )
 </pre>
 
 <p>
+Per utilizzare DHCP con opzioni particolari, definire <c>config_eth0</c> e
+<c>dhcp_eth0</c>:
+</p>
+
+<pre caption="Ottenere automaticamente un indirizzo IP per eth0">
+config_eth0=( "dhcp" )
+dhcp_eth0="nodns nontp nonis"
+</pre>
+
+<p>
+Leggere <path>/etc/conf.d/net.example</path> per una lista di tutte le opzioni disponibili.
+</p>
+
+<p>
 Se si dispone di diverse interfacce di rete, ripetere i passi precedenti per
 <c>config_eth1</c>, <c>config_eth2</c>, ecc.
 </p>
-
--->
 
 <p>
 Salvare la configurazione e uscire per continuare.
@@ -401,7 +392,25 @@ Gentoo usa <path>/etc/rc.conf</path> per la configurazione generale del sistema.
 </pre>
 
 <p>
-Come si può vedere, questo file contiene tutte le spiegazioni necessarie per impostare le variabili di configurazione. Si presti particolare attenzione a <c>KEYMAP</c>: impostare questo valore in maniera sbagliata significa avere problemi con l'uso della tastiera.
+Una volta terminata la configurazione di <path>/etc/rc.conf</path>, salvare e uscire. 
+</p>
+
+<p>
+Come si può vedere, questo file contiene tutte le spiegazioni necessarie per impostare le variabili di configurazione. E' possibile configurare il proprio sistema per utilizzare unicode e
+definire il proprio editor di default ed il proprio display manager (come gdm or kdm).
+</p>
+
+<p>
+Gentoo usa <path>/etc/conf.d/keymaps</path> anche per gestire la configurazione della tastiera.
+E' possibile modificarlo per cambiare le impostazioni della tastiera.
+</p>
+
+<pre caption="Modificare /etc/conf.d/keymaps">
+# <i>nano -w /etc/conf.d/keymaps</i>
+</pre>
+
+<p>
+Si presti particolare attenzione alla variabile <c>KEYMAP</c>: impostare questo valore in maniera sbagliata significa avere problemi con l'uso della tastiera.
 </p>
 
 <note>
@@ -411,18 +420,33 @@ Gli utenti di sistemi <b>SPARC</b> basati su USB e cloni <b>SPARC</b>, dovrebber
 <p>
 <b>PPC</b> usa le keymap x86 sulla maggior parte dei sistemi. Gli utenti che desiderano utilizzare
 le keymap ADB al boot devono abilitare i keycode ADB nel kernel ed impostare
-una keymap mac/ppc in <path>rc.conf</path>.
+una keymap mac/ppc in <path>/etc/conf.d/keymaps</path>.
 </p>
 
 <p>
-Se non si sta utilizzando il formato orario UTC, è necessario aggiungere <c>CLOCK="local"</c> al
-file. In caso contrario è possibile che si verifichino problemi di ora.
+Una volta terminata la configurazione di <path>/etc/conf.d/keymaps</path>,
+salvare e uscire.
 </p>
 
 <p>
-Una volta terminata la configurazione di <path>/etc/rc.conf</path>, salvare e uscire. 
+Gentoo usa <path>/etc/conf.d/clock</path> per impostare l'orologio.
+E' possibile modificarlo per personalizzare l'orologio.
 </p>
 
+<pre caption="Modificare /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+</pre>
+
+<p>
+Se il proprio orologio hardware non è impostato su UTC è necessario aggiungere
+l'impostazione <c>CLOCK="local"</c> al file. In caso contrario
+l'orologio non funziona correttamente.
+</p>
+
+<p>
+Una volta terminata la configurazione di <path>/etc/conf.d/clock</path>,
+salvare e uscire.
+</p>
 <p>
 Se non si sta installando Gentoo su un sistema IBM POWER5 o JS20, continuare con l'<uri link="?part=1&amp;chap=9">Installazione degli strumenti di sistema necessari</uri>.
 </p>
