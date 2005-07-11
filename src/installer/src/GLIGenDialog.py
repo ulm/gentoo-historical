@@ -89,7 +89,7 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
 	def set_client_networking(self):
-		if GLIUtility.ping("www.gentoo.org") and not self.advanced_mode:	#If an active connection exists, ignore this step if standard mode
+		if GLIUtility.ping("www.gentoo.org") and self.local_install:	#If an active connection exists, ignore this step if doing a local install.
 			return
 		if self.local_install:
 			device_list = GLIUtility.get_eth_devices()
