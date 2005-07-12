@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.53 2005/06/08 19:54:07 fox2mike Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.54 2005/07/12 19:17:38 fox2mike Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -15,11 +15,11 @@ This document helps a user setup ALSA on Gentoo Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.2</version>
-<date>2005-06-09</date>
+<version>2.3</version>
+<date>2005-07-12</date>
 
 <chapter>
 <title>Introduction</title>
@@ -70,13 +70,6 @@ system. We shall look at them in detail in the next chapter.
 The methods shown below are mutually exclusive. You cannot have ALSA compiled 
 in your kernel and use <c>media-sound/alsa-driver</c>. It <e>will</e> fail.
 </warn>
-
-<impo>
-<c>genkernel</c> users have their config built such a way that the ALSA 
-sub-system in the kernel is active. Therefore <c>genkernel</c> users can 
-proceed to the <uri link="#alsa-utilities">ALSA Utilities</uri> section 
-directly.
-</impo>
 
 <p>
 The two options are :
@@ -164,10 +157,37 @@ such, you are encouraged to use the ALSA provided by the kernel.
 
 <p>
 Whichever method of install you choose, you need to know what drivers your 
-sound card uses. <c>lspci</c> will help you in digging out the required 
-information. Please <c>emerge sys-apps/pciutils</c> to get <c>lspci</c>, if 
-you don't have it installed already. We now proceed to find out details about 
-the sound card.
+sound card uses. In most cases, sound cards (onboard and otherwise) are PCI
+based and <c>lspci</c> will help you in digging out the required  information.
+Please <c>emerge sys-apps/pciutils</c> to get <c>lspci</c>, if you don't have it
+installed already. In case you have a USB sound card, <c>lsusb</c> from
+<c>sys-apps/usbutils</c> <e>might</e> be of help. For ISA cards, try using
+<c>sys-apps/isapnptools</c>. Also, the following pages <e>may</e> help users
+with ISA based sound cards.
+</p>
+
+<ul>
+  <li>
+  <uri link="http://www.roestock.demon.co.uk/isapnptools/">The ISAPNPTOOLS
+  Page</uri>
+  </li>
+  <li>
+  <uri link="http://www2.linuxjournal.com/article/3269">LinuxJournal PnP
+  Article</uri>
+  </li>
+  <li>
+  <uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/x320.html">TLDP Sound
+  HowTo</uri>
+  </li>
+</ul>
+
+<note>
+For ease of use/explanation, we assume the user has a PCI based sound card for
+the remainder of this guide.
+</note>
+
+<p>
+We now proceed to find out details about the sound card.
 </p>
 
 <pre caption="Soundcard Details">
@@ -208,6 +228,11 @@ you are specifically using the 2.4 profile, <c>gentoo-sources</c> will be a
 Let us now configure the kernel to enable ALSA.
 </p>
 
+<impo>
+<c>genkernel</c> users should now run <c>genkernel --menuconfig</c> and then follow
+the instructions in <uri link="#doc_chap2_pre3">Kernel Options for ALSA</uri>.
+</impo>
+
 <pre caption="Heading over to the source">
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
@@ -223,13 +248,14 @@ Now we will look at some of the options we will have to enable in the 2.6
 kernel to ensure proper ALSA support for our sound card.
 </p>
 
-<note>
-Please note that for the sake of ease, all examples show a modular kernel. It 
-is advisable to follow the same. Please do <e>not</e> skip the 
-<uri link="#alsa-config">Configuration</uri> section of this document. If 
-you still like to have options built-in, ensure that you make changes to your 
-config accordingly.
-</note>
+<p>
+Please note that for the sake of ease, all examples show ALSA built as modules.
+It is advisable to follow the same as it then allows the use of <c>alsaconf</c>
+which is a boon when you want to configure your card. Please do <e>not</e> skip the <uri
+link="#alsa-config">Configuration</uri> section of this document. If you still
+like to have options built-in, ensure that you make changes to your config
+accordingly.
+</p>
 
 <pre caption="Kernel Options for ALSA">
 Device Drivers  ---&gt;
@@ -318,6 +344,12 @@ ensure the following before proceeding, else <c>alsa-driver</c> is likely to
 fail. The next code listing gives you one way of performing the checks.
 </p>
 
+<note>
+<c>genkernel</c> users can proceed with <uri link="#doc_chap2_pre6">Installing
+alsa-driver</uri> as their configuration is in sync with the one shown below by
+default.
+</note>
+
 <ol>
   <li>
   <c>CONFIG_SOUND</c> is set. (Basic Sound support enabled)
@@ -347,7 +379,7 @@ CONFIG_SND is not set
 </pre>
 
 <p>
-Now all you have to do is type the magic words...and no, its not abracadabra.
+Now all you have to do is type the magic words... and no, it's not abracadabra.
 </p>
 
 <pre caption="Installing alsa-driver">
@@ -412,10 +444,9 @@ You will now see a neat menu guided interface that will automatically probe
 your devices and try to find out your sound card. You will be asked to pick 
 your sound card from a list. Once that's done, it will ask you permission to 
 automatically make required changes to <path>/etc/modules.d/alsa</path>. 
-It will then adjust your volume settings to optimum levels and run 
-<c>modules-update</c> and starts the <path>/etc/init.d/alsasound</path> 
-service. Once <c>alsaconf</c> exits, you can proceed with setting up the ALSA
-initscript. 
+It will then adjust your volume settings to optimum levels, run
+<c>modules-update</c> and start the <path>/etc/init.d/alsasound</path> service.
+Once <c>alsaconf</c> exits, you can proceed with setting up the ALSA initscript. 
 </p>
 
 </body>
@@ -432,8 +463,8 @@ this for you and is called <c>alsasound</c>. Add it to the default run-level.
 </p>
 
 <pre caption="Adding ALSA to default">
-# <i>rc-update add alsasound default</i>
- * alsasound added to runlevel default
+# <i>rc-update add alsasound boot</i>
+ * alsasound added to runlevel boot
  * rc-update complete.
 </pre>
 
@@ -442,6 +473,29 @@ Next, just check the <path>/etc/conf.d/alsasound</path> file and ensure that
 SAVE_ON_STOP variable is set to yes. This saves your sound settings when you 
 shutdown your system.
 </p>
+
+</body>
+</section>
+<section>
+<title>Audio Group</title>
+<body>
+
+<p>
+Before we move on to testing, there's one last <e>important</e> thing that needs
+to be setup. Rule of thumb in a *nix OS : Do not run as root unless needed.
+This applies here as well ;) How? Well, most of the times you should be logged
+in as a user and would like to listen to music or access your soundcard. For
+that to happen, you need to be in	the "audio" group. At this point, we'll add
+users to the audio group, so that they won't have any issues when they want to
+access sound devices. We'll use <c>gpasswd</c> here and you need to be logged in
+as root for this to work.
+</p>
+
+<pre caption="Adding users to the audio group">
+<comment>(Substitute &lt;username&gt; with your user)</comment>
+# <i>gpasswd -a &lt;username&gt; audio </i>
+Adding user &lt;username&gt; to group audio
+</pre>
 
 </body>
 </section>
@@ -456,7 +510,7 @@ does this for you.
 </p>
 
 <pre caption="Start the service">
-<comment>(Modular Kernels)</comment>
+<comment>(ALSA as modules)</comment>
 # <i>/etc/init.d/alsasound start</i>
  * Loading ALSA modules ...
  * Loading: snd-card-0 ...        [ ok ]
@@ -472,14 +526,23 @@ does this for you.
 </pre>
 
 <p>
-Now that the required things have been take care of, we need to check up on 
-the volume as in certain cases, it is muted. We use <c>alsamixer</c> for this purpose.
+Now that the required things have been taken care of, we need to check up on 
+the volume as in certain cases, it is muted. We use <c>alsamixer</c> for this
+purpose.
 </p>
 
 <pre caption="Starting alsamixer">
 <comment>(Opens up a console program. Only required settings are shown)</comment>
 # <i>alsamixer</i>
 </pre>
+
+<impo>
+If you have issues starting up <c>alsamixer</c> and get errors such as
+alsamixer: function snd_ctl_open failed for default: No such file or directory,
+this is usually an issue with udev setting up the devices. Run <c>killall -9
+udevd; udevstart</c> to reload /dev entries and fire up <c>alsamixer</c>. It
+should solve the issue.
+</impo>
 
 <p>
 This is how the ALSA Mixer <e>might</e> look the first time you open it. Pay 
@@ -495,8 +558,8 @@ Now, we shall unmute the channels, and set volume levels as needed.
 </p>
 
 <warn>
-Both Master <e>and</e> PCM need to be unmuted and set to audible volume levels if 
-you want to hear some output on your speakers.
+Both Master <e>and</e> PCM need to be unmuted and set to audible volume levels
+if you want to hear some output on your speakers.
 </warn>
 
 <ul>
@@ -535,9 +598,32 @@ settings.
 <body>
 
 <p>
-Finally. Some music. If everything above is perfect, you should be able to now 
-listen to some good music. A quick way to test is to use a command line tool 
-like <c>media-sound/madplay</c>. You could also use something more well known 
+The irritating way to check your soundcard is to see if you can hear static on
+the speakers. This isn't exactly fun, but hey, it tells you the card is
+configured and working.
+</p>
+
+<pre caption="Bring on th static">
+# <i>cat /dev/urandom > /dev/dsp</i>
+</pre>
+
+<note>
+<path>/dev/dsp</path> is a symlink to <path>/dev/sound/dsp</path> and should be
+automatically created. Try re-directing the output to
+<path>/dev/sound/dsp</path> in case you don't get a "No such file or directory"
+error.
+</note>
+
+<p>
+You should hear static. Press <c>Ctrl + C</c> to stop. If you don't hear
+anything, now is a good time to go back and check/trace out the issue and
+rectify it.
+</p>
+
+<p>
+Finally. Some music. If everything above is perfect, you should now be able to
+listen to some good music. A quick way to test is to use a command line tool
+like <c>media-sound/madplay</c>. You could also use something more well known
 like <c>mpg123</c> or <c>xmms</c>. If you are an ogg fan, you could use
 <c>ogg123</c> provided by <c>media-sound/vorbis-tools</c>. Use any player you
 are comfortable with. As always, <c>emerge</c> what you need.
@@ -582,12 +668,24 @@ Time: 00:11.31 [04:28.75] of 04:40.06  (200.6 kbps)  Output Buffer  96.9%
 </body>
 </section>
 <section>
+<title> ALSA and USE</title>
+<body>
+
+<p>
+You can now add the <c>alsa</c> use flag to <path>/etc/make.conf</path> to
+ensure that your applications that support ALSA get built with it. Some
+architectures like x86 and amd64 have the flag enabled by default.
+</p>
+
+</body>
+</section>
+<section>
 <title>Issues?</title>
 <body>
 
 <p>
 If for some reason you're unable to hear sound, the first thing to do would 
-be to check your <uri link="#doc_chap3_pre5">alsamixer</uri> settings. 80% of 
+be to check your <uri link="#doc_chap3_pre6">alsamixer</uri> settings. 80% of 
 the issues lie with muted channels or low volume. Also check your Window 
 Manager's sound applet and verify that volumes are set to audible levels.
 </p>
