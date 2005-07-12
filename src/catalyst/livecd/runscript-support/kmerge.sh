@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.5 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/kmerge.sh,v 1.25.2.6 2005/07/12 21:34:20 wolf31o2 Exp $
 
 die() {
 	echo "$1"
@@ -33,14 +33,6 @@ build_kernel() {
 		GK_ARGS="${GK_ARGS} --kernel-cc=/usr/lib/ccache/bin/gcc --utils-cc=/usr/lib/ccache/bin/gcc"
 	fi
 	
-	if [ -e "/var/tmp/${clst_kname}.postconf" ]
-	then
-		for x in $( cat /var/tmp/${clst_kname}.postconf )
-		do
-			clst_kernel_postconf="${clst_kernel_postconf} ${x}"
-		done
-	fi
-
 	if [ -e "/var/tmp/${clst_kname}.packages" ]
 	then
 		for x in $( cat /var/tmp/${clst_kname}.packages )
@@ -63,20 +55,10 @@ build_kernel() {
 	fi
 	
 	# build with genkernel using the set options
-	# callback and postconf are put here to avoid escaping issues
-	if [ -e "/var/tmp/${clst_kname}.packages" -a \
-	-e "/var/tmp/${clst_kname}.postconf" ]
+	# callback is put here to avoid escaping issues
+	if [ -e "/var/tmp/${clst_kname}.packages" ]
 	then
 		genkernel --callback="emerge ${clst_kernel_merge}" \
-			--postconf="emerge ${clst_kernel_postconf}" \
-			${GK_ARGS} || exit 1
-	elif [ -e "/var/tmp/${clst_kname}.packages" ]
-	then
-		genkernel --callback="emerge ${clst_kernel_merge}" \
-			${GK_ARGS} || exit 1
-	elif [ -e "/var/tmp/${clst_kname}.postconf" ]
-	then
-		genkernel --postconf="emerge ${clst_kernel_postconf}" \
 			${GK_ARGS} || exit 1
 	else
 		genkernel ${GK_ARGS} || exit 1
