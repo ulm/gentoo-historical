@@ -100,20 +100,6 @@
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" bgcolor="#45347b">
-    <!--
-      <table cellspacing="0" cellpadding="0" border="0" width="193">
-        <tr>
-          <td class="logobg" valign="top" align="center" height="88">
-            <a href="/"><img border="0" src="/images/gtop-s.jpg" alt="Gentoo Logo"/></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="logobg" valign="top" align="center" height="36">
-            <a href="/"><img border="0" src="/images/gbot-s.gif" alt="Gentoo Logo Side"/></a>
-          </td>
-        </tr>
-      </table>
-    -->
     <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
     </td>
   </tr>
@@ -192,17 +178,6 @@
             <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a>
           </xsl:otherwise>
         </xsl:choose>
-        <!--
-        |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='contract'">
-            <a class="highlight" href="/main/en/philosophy.xml">Philosophy</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/philosophy.xml">Philosophy</a>
-          </xsl:otherwise>
-        </xsl:choose>
-        -->
         |
         <xsl:choose>
           <xsl:when test="/mainpage/@id='docs'">
@@ -378,121 +353,19 @@
                 To learn more, read our <b><a href="/main/en/about.xml">about
                 page</a></b>.</span>
               </p>
-
               <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;=$newsitemcount]/text()">
-                <div class="news">
-                  <p class="newshead" lang="en">
-                    <b><xsl:value-of select="document(.)/news/title"/></b>
-                    <br/>
-                    <font size="0.90em">
-                    Posted on <xsl:value-of select="func:format-date(document(.)/news/date)"/>
-                    by <xsl:value-of select="document(.)/news/poster"/>
-                    </font>
-                  </p>
-                  <xsl:choose>
-                    <xsl:when test="document(.)/news/@category='alpha'">
-                      <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='kde'">
-                      <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='gentoo'">
-                      <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='main'">
-                      <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='ibm'">
-                      <img class="newsicon" src="/images/icon-ibm.gif" alt="ibm"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='linux'">
-                      <img class="newsicon" src="/images/icon-penguin.png" alt="tux"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='moo'">
-                      <img class="newsicon" src="/images/icon-cow.png" alt="Larry the Cow"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='plans'">
-                      <img class="newsicon" src="/images/icon-clock.png" alt="Clock"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='nvidia'">
-                      <img class="newsicon" src="/images/icon-nvidia.png" alt="Nvidia"/>
-                    </xsl:when>
-                    <xsl:when test="document(.)/news/@category='freescale'">
-                      <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
-                    </xsl:when>
-                  </xsl:choose>
-                  
-                  <div class="newsitem">
-                  <xsl:choose>
-                    <xsl:when test="document(.)/news/summary">
-                      <xsl:apply-templates select="document(.)/news/summary"/>
-                      <br/>
-                      <a href="{.}"><b>(full story)</b></a>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <xsl:apply-templates select="document(.)/news/body"/>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                  </div>
-                </div>
+                <xsl:call-template name="newscontent">
+                  <xsl:with-param name="thenews" select="document(.)/news"/>
+                  <xsl:with-param name="summary" select="'yes'"/>
+                  <xsl:with-param name="link" select="."/>
+                </xsl:call-template>
               </xsl:for-each>
-              <!-- Add content after newsitems if any -->
-
-
               </xsl:when>
               <xsl:when test="/news">
-                <div class="news">
-                  <p class="newshead">
-                    <b><xsl:value-of select="title"/></b>
-                    <br/>
-                    <font size="0.90em">
-                    Posted on <xsl:value-of select="func:format-date(date)"/>
-                    by <xsl:value-of select="poster"/></font>
-                  </p>
-                      <xsl:choose>
-                        <xsl:when test="@category='alpha'">
-                          <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
-                        </xsl:when>
-                        <xsl:when test="@category='kde'">
-                          <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
-                        </xsl:when>
-                        <xsl:when test="@category='gentoo'">
-                          <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
-                        </xsl:when>
-                        <xsl:when test="@category='main'">
-                          <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
-                        </xsl:when>
-                        <xsl:when test="@category='ibm'">
-                          <img class="newsicon" src="/images/icon-ibm.gif" alt="IBM"/>
-                        </xsl:when>
-                        <xsl:when test="@category='linux'">
-                          <img class="newsicon" src="/images/icon-penguin.png" alt="Tux the Penguin"/>
-                        </xsl:when>
-                        <xsl:when test="@category='moo'">
-                          <img class="newsicon" src="/images/icon-cow.png" alt="Larry the Cow"/>
-                        </xsl:when>
-                        <xsl:when test="@category='nvidia'">
-                          <img class="newsicon" src="/images/icon-nvidia.png" alt="nvidia"/>
-                        </xsl:when>
-                        <xsl:when test="document(.)/news/@category='freescale'">
-                          <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
-                        </xsl:when>
-                      </xsl:choose>
-
-                    <span class="newsitem">
-                      <xsl:choose>
-                        <xsl:when test="body">
-                          <xsl:apply-templates select="body"/>
-                        </xsl:when>
-                        <xsl:when test="section">
-                          <xsl:apply-templates select="section"/>
-                        </xsl:when>
-                      </xsl:choose>
-                    </span>
-              </div>
-              </xsl:when>
-              <xsl:when test="/email">
-                <xsl:apply-templates select="/email/body"/>
+                <xsl:call-template name="newscontent">
+                  <xsl:with-param name="thenews" select="/news"/>
+                  <xsl:with-param name="summary" select="no"/>
+                </xsl:call-template>
               </xsl:when>
             </xsl:choose>
             <br/>
@@ -523,62 +396,6 @@
 
 </body>
 <xsl:text disable-output-escaping="yes">&lt;/html&gt;</xsl:text>
-</xsl:template>
-
-<!-- News items -->
-<xsl:template match="newsitems">
-  <xsl:apply-templates select="news"/>
-</xsl:template>
-
-<!-- News template, child of newsitems -->
-<xsl:template match="news">
-<table width="100%" border="0" cellspacing="5" cellpadding="0">
-  <tr>
-    <td colspan="2" class="ncontent" bgcolor="#bbffbb">
-      <p class="note">
-        <font color="#7a5ada">
-          <b><xsl:value-of select="title"/></b>
-        </font>
-      </p>
-    </td>
-  </tr>
-  <tr>
-    <xsl:choose>
-      <xsl:when test="@align='left'">
-        <td rowspan="2" valign="top" width="1">
-          <img src="{@graphic}"/>
-        </td>
-        <td class="alttext" lang="en">
-          <font color="#808080">
-            Posted by <xsl:value-of select="poster"/> on <xsl:value-of select="date"/>
-          </font>
-        </td>
-      </xsl:when>
-      <xsl:otherwise>
-        <td class="alttext" lang="en">
-          <font color="#808080">
-            Posted by <xsl:value-of select="poster"/> on <xsl:value-of select="date"/>
-          </font>
-        </td>
-        <td rowspan="2" valign="top" width="1">
-          <img src="{@graphic}"/>
-        </td>
-      </xsl:otherwise>
-    </xsl:choose>
-  </tr>
-  <tr>
-    <td class="content" valign="top">
-      <xsl:apply-templates select="body"/>
-    </td>
-  </tr>
-</table>
-<br/>
-<table width="100%">
-  <tr>
-    <td height="1" bgcolor="#c0c0c0"/>
-  </tr>
-</table>
-<br/>
 </xsl:template>
 
 <!-- Mail template -->
@@ -1371,5 +1188,69 @@
     &lt;link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"&gt;
  </xsl:text>
 </xsl:template>
+
+<xsl:template name="newscontent">
+<xsl:param name="thenews"/>
+<xsl:param name="summary"/>
+<xsl:param name="link"/>
+
+  <div class="news">
+    <p class="newshead" lang="en">
+      <b><xsl:value-of select="$thenews/title"/></b>
+      <br/>
+      <font size="0.90em">
+      Posted on <xsl:value-of select="func:format-date($thenews/date)"/>
+      by <xsl:value-of select="$thenews/poster"/>
+      </font>
+    </p>
+    
+    <xsl:choose>
+      <xsl:when test="$thenews/@category='alpha'">
+        <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='kde'">
+        <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='gentoo'">
+        <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='main'">
+        <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='ibm'">
+        <img class="newsicon" src="/images/icon-ibm.gif" alt="ibm"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='linux'">
+        <img class="newsicon" src="/images/icon-penguin.png" alt="tux"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='moo'">
+        <img class="newsicon" src="/images/icon-cow.png" alt="Larry the Cow"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='plans'">
+        <img class="newsicon" src="/images/icon-clock.png" alt="Clock"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='nvidia'">
+        <img class="newsicon" src="/images/icon-nvidia.png" alt="Nvidia"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='freescale'">
+        <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
+      </xsl:when>
+    </xsl:choose>
+                  
+    <div class="newsitem">
+    <xsl:choose>
+      <xsl:when test="$thenews/summary and $summary='yes'">
+        <xsl:apply-templates select="$thenews/summary"/>
+        <br/>
+        <a href="{$link}"><b>(full story)</b></a>
+      </xsl:when>
+      <xsl:when test="$thenews/body">
+        <xsl:apply-templates select="$thenews/body"/>
+      </xsl:when>
+    </xsl:choose>
+    </div>
+  </div>
+</xsl:template>
+
 
 </xsl:stylesheet>
