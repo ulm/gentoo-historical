@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mainpage SYSTEM "/dtd/guide.dtd">
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+                xmlns:exslt="http://exslt.org/common"
+                extension-element-prefixes="exslt" >
+
 
 <xsl:preserve-space elements="*"/>
 <xsl:param name="statusFilter"/>
@@ -66,11 +69,63 @@
 	    <xsl:for-each select="user">
 	      <xsl:sort select="@username"/>
 	      <tr>
-		<th>
       <xsl:variable name="username" select="@username"/>
-      <xsl:value-of select="$username"/>
-      <xsl:if test="$devaway//devaway/dev[@nick=$username]">&#160;&#8317;¹&#8318;</xsl:if>
-    </th>
+<!-- Just to sample different options, remove when going live -->
+      <xsl:choose>
+        <xsl:when test="$devaway/devaway/dev[@nick=$username]">
+          <xsl:variable name="reason" select="$devaway/devaway/dev[@nick=$username]/reason"/>
+          <xsl:choose>
+            <xsl:when test="$username = $devaway/devaway/dev[1]/@nick">
+              <th>
+              <xsl:value-of select="concat($username, ' (away)')"/>
+              </th>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[2]/@nick">
+              <th>
+              <xsl:value-of select="concat($username, ' (1)')"/>
+              </th>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[3]/@nick">
+              <th>
+              <xsl:value-of select="concat('( ', $username, ' )')"/>
+              </th>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[4]/@nick">
+              <th><brite>
+              <xsl:value-of select="$username"/>
+              </brite></th>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[5]/@nick">
+              <th>
+              <xsl:value-of select="$username"/>
+              <brite> (away)</brite>
+              </th>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[6]/@nick">
+              <ti>
+              <xsl:value-of select="$username"/>
+              <brite> (away)</brite>
+              </ti>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[7]/@nick">
+              <ti><brite>
+              <xsl:value-of select="$username"/>
+              </brite></ti>
+            </xsl:when>
+            <xsl:when test="$username = $devaway/devaway/dev[8]/@nick">
+              <th>
+              <xsl:value-of select="$username"/> (<e>away</e>)
+              </th>
+            </xsl:when>
+            <xsl:otherwise>
+              <th><xsl:value-of select="concat($username, '&#160;&#8317;¹&#8318;')"/></th>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <th><xsl:value-of select="$username"/></th>
+        </xsl:otherwise>
+      </xsl:choose>
 		<ti>
 		  <xsl:choose>
 		    <xsl:when test="realname/@fullname">
@@ -82,7 +137,7 @@
 		  </xsl:choose>
                   <xsl:if test="status">
 		    <xsl:if test="status != 'active'">
-		      [ <e><xsl:value-of select="concat(translate(substring(status, 1, 1 ),'&#160;&#8317;¹&#8318;abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" /></e> ]
+		      [<e><xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" /></e>]
 		    </xsl:if>
 		  </xsl:if>
 		</ti>
