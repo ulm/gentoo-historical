@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.18 2005/07/08 18:58:09 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.19 2005/07/12 17:02:51 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -32,7 +32,6 @@ rc-update add pwgen default
 [ -e /etc/init.d/sysklogd ] && rc-update add sysklogd default
 [ -e /etc/init.d/metalog ] && rc-update add metalog default
 [ -e /etc/init.d/syslog-ng ] && rc-update add syslog-ng default
-[ -e /etc/init.d/alsasound ] && rc-update add alsasound default
 
 # perform any rcadd then any rcdel
 if [ -n "${clst_livecd_rcadd}" ] || [ -n "${clst_livecd_rcdel}" ]
