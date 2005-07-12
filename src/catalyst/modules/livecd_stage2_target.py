@@ -1,6 +1,6 @@
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30.2.5 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/modules/Attic/livecd_stage2_target.py,v 1.30.2.6 2005/07/12 20:45:06 rocket Exp $
 
 """
 Builder class for a LiveCD stage2 build.
@@ -32,8 +32,20 @@ class livecd_stage2_target(generic_stage_target):
 			self.valid_values.append("boot/kernel/"+x+"/packages")
 			self.valid_values.append("boot/kernel/"+x+"/use")
 			self.valid_values.append("boot/kernel/"+x+"/gk_kernargs")
-			self.valid_values.append("boot/kernel/"+x+"/postconf")
-		
+                        if self.settings.has_key("boot/kernel/"+x+"/postconf"):
+                                print "boot/kernel/"+x+"/postconf is deprecated"
+                                print "\tInternally moving these ebuilds to boot/kernel/"+x+"/packages"
+                                print "\tPlease move them to boot/kernel/"+x+"/packages in your specfile"
+                                if type(self.settings["boot/kernel/"+x+"/postconf"]) == types.StringType:
+                                        loop2=[self.settings["boot/kernel/"+x+"/postconf"]]
+                                else:
+                                        loop2=self.settings["boot/kernel/"+x+"/postconf"]
+
+                                for y in loop2:
+                                        self.settings["boot/kernel/"+x+"/packages"].append(y)
+
+				del self.settings["boot/kernel/"+x+"/postconf"]
+
 		self.valid_values.extend(self.required_values)
 		self.valid_values.extend(["livecd/cdtar","livecd/empty","livecd/rm",\
 			"livecd/unmerge","livecd/iso","livecd/gk_mainargs","livecd/type",\
