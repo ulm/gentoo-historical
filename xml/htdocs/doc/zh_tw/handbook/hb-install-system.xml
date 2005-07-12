@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-system.xml,v 1.17 2005/04/05 00:57:30 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-system.xml,v 1.18 2005/07/12 01:58:24 ccpz Exp $ -->
 
-<!-- rev 1.74 by ccpz -->
+<!-- rev 1.80 by ccpz -->
 
 <sections>
 
-<version>2.2</version>
-<date>2005-03-29</date>
+<version>2.7</version>
+<date>2005-06-09</date>
 
 <section>
 <title>變換根目錄</title>
@@ -127,8 +127,18 @@ Portage 下載及安裝軟體所需的資訊)。雖然你可以手動輸入 SYNC
 
 <pre caption="更新 Portage tree">
 # <i>emerge --sync</i>
+<comment>(如果你的終端機很慢，例如一些 framebuffer 或是 serial console，你可以
+加入 --quiet 來加快速度：)
+</comment>
+# <i>emerge --sync --quiet</i>
+
 </pre>
 
+<p>
+如果你被防火牆阻擋 rsync 連線，你可以使用 <c>emerge-webrsync</c> 下載及安裝
+portage 快照。
+</p>
+  	 
 <p>
 如果您看到新的 Portage 已經可以下載而且您必須要更新的警告時，您應該要略過它，
  Portage 在之後安裝時會被更新。
@@ -151,9 +161,9 @@ profile 是任何 Gentoo 系統在建立時參考的地方。不只是設定 CHO
 </p>
   	 
 <p>
-在以前，這種 profile 很少會被使用者接觸到。但是最近 x86，hppa 及 alpha 使用者有
-兩個 profile 可以選擇，一個是適用 2.4 核心，另一個是 2.6 核心。這種做法是為了對
-2.6 核心有更好的整合性。
+在以前，這種 profile 很少會被使用者接觸到。但是 x86，hppa 及 alpha 使用者有兩個
+profile 可以選擇，一個是適用 2.4 核心，另一個是 2.6 核心。這種做法是為了對2.6
+核心有更好的整合性。
 </p>
   	 
 <p>
@@ -161,27 +171,39 @@ profile 是任何 Gentoo 系統在建立時參考的地方。不只是設定 CHO
 </p>
   	 
 <pre caption="查看系統 profile">
-# <i>ls -l /etc/make.profile</i>
-lrwxrwxrwx  1 root root 48 Mar  7 11:55 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2005.0
+# <i>ls -FGg /etc/make.profile</i>
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2005.0/
 </pre>
   	 
 <p>
-如果你是用上面提到三種架構之一，你可以在 <path>make.profile</path> 符號連結下看
-到額外的 profile：
+如果你是用上面提到三種架構之一，預設提供給你的 profile 是使用 Linux 2.6 基礎的
+系統。預設建議你這麼做，但是你也可以選擇使用別種 profile。
+</p>
+
+<p>
+一些使用者會想要安裝較舊的 Linux 2.4 profile。如果你有一個如此做的好理由，你首
+先要確認是否有額外的 profile 可以用。在 x86 系統，可以使用下面的指令來查詢：
 </p>
   	 
 <pre caption="查看是否有額外的 profile">
-# <i>ls -F /etc/make.profile/</i>
-2.4/  packages  parent  virtuals
+# <i>ls -d /usr/portage/profiles/default-linux/x86/2005.0/2.4</i>
+/usr/portage/profiles/default-linux/x86/2005.0/2.4
 </pre>
   	 
 <p>
-如你所見，在上面的範例中有一個 2.4 子目錄。這代表目前的 profile 使用 2.6 核心;
-如果你想要一個以 2.4 核心為主的系統，你需要重新連結 <path>make.profile</path>。
+上面的例子顯示有額外的 2.4 profile (也就是說，他沒有抱怨找不到檔案或目錄)。建議
+你使用預設值就好，和如果你想要換過去的話，你可依下面的步驟操作：
 </p>
   	 
-<pre caption="重新連結 profile">
+<pre caption="換到 2.4 profile">
+<comment>(確定你使用正確的架構，底下的例子是適用 x86 的)</comment>
 # <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.0/2.4 /etc/make.profile</i>
+<comment>(顯示 2.4 profile 中的檔案)</comment>
+# <i>ls -FGg /etc/make.profile/</i>
+total 12
+-rw-r--r--  1 939 Dec 10 14:06 packages
+-rw-r--r--  1 347 Dec  3  2004 parent
+-rw-r--r--  1 573 Dec  3  2004 virtuals
 </pre>
   	 
 </body>
@@ -412,8 +434,9 @@ bootstrap 或是您使用 <e>stage2</e>)。現在是編譯所有系統套件的�
 
 <p>
 要注意的是，如果你沒有改過預設的 CFLAGS/CXXFLAGS 設定，使用
-<c>emerge --pretend --newuse system</c> 就足夠了。如果你也沒改 USE 設定，那你為
-什麼要用 stage2 安裝？
+<c>emerge --pretend --newuse system</c> 就足夠了。他會重新編譯被 USE Flag 變動
+而影響到的套件(和我們建立 stage2 檔案時的 USE Flag 比對)。如果你也沒改 USE 設定
+，那你為什麼要用 stage2 安裝？
 </p>
 
 </body>

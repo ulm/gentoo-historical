@@ -1,18 +1,18 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+﻿<?xml version='2.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-config.xml,v 1.10 2005/04/02 00:35:26 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-config.xml,v 1.11 2005/07/12 01:58:24 ccpz Exp $ -->
 
-<!-- rev 1.56 by oai79 -->
+<!-- rev 1.66 by ccpz -->
 
 <sections>
 
-<version>2.00</version>
-<date>2005-03-28</date>
+<version>2.8</version>
+<date>2005-06-19</date>
 
 <section>
 <title>檔案系統資訊</title>
@@ -144,14 +144,6 @@ none        /proc/openprom  openpromfs    defaults      0 0
 </pre>
 
 <p>
-如果您要需要 <c>usbfs</c>，加入下面這一行：
-</p>
-
-<pre caption="在 /etc/fstab 加入 usbfs 檔案系統">
-none        /proc/bus/usb   usbfs         defaults      0 0
-</pre>
-
-<p>
 重新檢查一次 <path>/etc/fstab</path>，儲存離開後進行下面的步驟。
 </p>
 
@@ -175,7 +167,10 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 </p>
 
 <pre caption="設定主機名稱">
-# <i>echo tux &gt; /etc/hostname</i>
+# <i>nano -w /etc/conf.d/hostname</i>
+  	 
+<comment>(將 HOSTNAME 變數設為你的主機名稱)</comment>
+HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
@@ -183,7 +178,10 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 </p>
 
 <pre caption="設定領域名稱">
-# <i>echo homenetwork &gt; /etc/dnsdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+   	 
+<comment>(將 DNSDOMAIN 變數設為你的領域名稱)</comment>
+DNSDOMAIN="<i>homenetwork</i>"
 </pre>
 
 <p>
@@ -192,7 +190,10 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 </p>
 
 <pre caption="設定 NIS 領域名稱">
-# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+# <i>nano -w /etc/conf.d/domainname</i>
+  	 
+<comment>(將 NISDOMAIN 變數設為你的領域名稱)</comment>
+NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
 
 <p>
@@ -214,6 +215,11 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 只是在安裝過程中使用。現在您要為您的 Gentoo 系統設定網路。
 </p>
 
+<note>
+更詳細的網路資訊，包括進階的主題如頻寬合併，橋接， 802.11q VLAN 及無線網路等包
+含在 <uri link="?part=4">Gentoo 網路設定</uri> 部份。
+</note>
+
 <p>
 所有的網路設定都集合在 <path>/etc/conf.d/net</path>。如果您不知道如何設定的話，您
 會覺得這些語法相當不熟悉或是不了解，但不用擔心，我們會解釋每件您該需要的訊息 :)
@@ -229,50 +235,27 @@ none        /proc/bus/usb   usbfs         defaults      0 0
 </pre>
 
 <p>
-您會看到的第一個變數是 <c>iface_eth0</c>。他的語法如下：
+你首先會看到的變數是 <c>config_eth0</c>。可能如同你所想的，這個變數設定 eth0 網
+路介面。如果他需要透過 DHCP 取得 IP，你可以像這樣設定：
 </p>
 
-<pre caption="iface_eth0 語法">
-iface_eth0="<i>&lt;您的 IP&gt;</i> broadcast <i>&lt;您的廣播位址&gt;</i> netmask 
-<i>&lt;網路遮罩&gt;</i>"
+<pre caption="自動取得給 eth0 使用的 IP">
+config_eth0=( "dhcp" )
 </pre>
 
 <p>
-如果您使用 DHCP (自動取得 IP)，您只要設定 <c>iface_eth0</c> 為 <c>dhcp</c>。
-如果您使用 rp-pppoe (例如 ADSL)，則設定為 <c>up</c>。如果您要手動設定但是對上
-面的一些專有名詞不了解的話，請閱讀
-<uri link="?part=1&amp;chap=3#network_term">了解網路專有名詞</uri>這一部分。
+然而，如果你想要自己輸入 IP，子網路遮罩以及閘道器的話，你需要設定
+<c>config_eth0</c> 及 <c>routes_eth0</c>：
 </p>
 
-<p>
-接這我們給您三個例子；第一個使用 DHCP，第二個設定靜態 IP (192.168.0.2) 以及網路遮
-罩 255.255.255.0，廣播位址 192.168.0.255 還有閘道 192.168.1.1，第三個則是適合 
-rp-pppoe 的設定：
-</p>
-
-<pre caption="Examples for /etc/conf.d/net">
-<comment>(適用 DHCP)</comment>
-iface_eth0="dhcp"
-<comment>#一些網路管理員會要求你使用</comment>
-<comment>#DHCP 伺服器指定的主機名稱和領域名稱。</comment>
-<comment>#在這種情況下，加入底下的東西讓 dhcpcd 使用他們。</comment>
-<comment>#這會取代掉你遠本設定的主機名稱和領域名稱。</comment>
-dhcpcd_eth0="-HD"
-<comment>#如果你使用 NTP 來同步你的電腦時間，使用</comment>
-<comment>#-N 參數避免 dhcpcd 覆蓋你的 /etc/ntp.conf</comment>
-dhcpcd_eth0="-N"
-
-<comment>(適用靜態 IP)</comment>
-iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
-gateway="eth0/192.168.0.1"
-
-<comment>(適用 rp-pppoe)</comment> 
-iface_eth0="up" 
+<pre caption="手動設定 eth0 的 IP 資訊">
+config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
+routes_eth0=( "default gw 192.168.0.1" )
 </pre>
 
 <p>
-如果您有數個網路介面，新增額外的 <c>iface_eth</c> 變數，例如 <c>iface_eth1</c>，
-<c>iface_eth2</c> 等。而 <c>gateway</c> 變數在您只有一個閘道時並不用增加。
+如果您有數個網路介面，對 <c>iface_eth1</c>，<c>iface_eth2</c> 等變數重複上面的
+步驟。
 </p>
 
 <p>
@@ -433,8 +416,40 @@ mac/ppc keymap。
 </p>
 
 <p>
-設定好 <path>/etc/rc.conf</path> 以後，存檔然後離開。接下來繼續
-<uri link="?part=1&amp;chap=9">安裝必要的系統工具</uri>。
+如果你的硬體時鐘是使用 UTC，你需要在檔案中加入 <c>CLOCK="local"</c>，不然你會發
+現時間偏移了。
+</p>
+  	 
+<p>
+當你設定好 <path>/etc/rc.conf</path> 後，存檔然後離開。
+</p>
+  	 
+<p>
+如果你不是在 IBM POWER5 或 JS20 系統上安裝 Gentoo，接著繼續
+<uri link="?part=1&amp;chap=9">安裝必需的系統工具</uri>。
+</p>
+</body>
+</subsection>
+
+<subsection>
+<title>設定 Console</title>
+<body>
+  	 
+<note>
+下面這一部分適用 IBM POWER5 及 JS20 硬體平台。
+</note>
+  	 
+<p>
+如果你打算在 LPAR 或 JS20 blade 上安裝 Gentoo，你需要取消 /etc/inittab 中 hvc
+那幾行的注解，讓虛擬 Console 可以產生登入提示符號。
+</p>
+  	 
+<pre caption="在 /etc/inittab 中啟動 hvc 支援">
+hvc:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 hvc0 vt220
+</pre>
+  	 
+<p>
+接著繼續 <uri link="?part=1&amp;chap=9">安裝必需的系統工具</uri>。
 </p>
 
 </body>
