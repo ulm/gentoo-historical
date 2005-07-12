@@ -29,7 +29,7 @@
   <xsl:if test="intro">
   <chapter>
     <title><xsl:value-of select="title"/></title>
-    <xsl:apply-templates match="intro"/>
+    <xsl:apply-templates select="intro"/>
   </chapter>
   </xsl:if>
 
@@ -45,10 +45,10 @@
     </xsl:when>
     <xsl:when test="count(catid) = 1">
       <!-- Automatically select ID -->
-      <xsl:variable name="catid"><xsl:value-of select="catid"/></xsl:variable>
-      <xsl:apply-templates select="catid[text() = $catid]">
+      <xsl:apply-templates select="catid">
         <xsl:with-param name="metadoc" select="$metadoc"/>
         <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
         <xsl:with-param name="unfold">yes</xsl:with-param>
       </xsl:apply-templates>
     </xsl:when>
@@ -427,7 +427,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.22 2005/06/27 15:10:30 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.23 2005/07/12 10:37:35 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -449,7 +449,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.22 2005/06/27 15:10:30 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.23 2005/07/12 10:37:35 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
