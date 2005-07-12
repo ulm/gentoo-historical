@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.4 2005/07/06 22:56:23 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.5 2005/07/12 01:42:43 robbat2 Exp $
 
 import sys
 sys.path.append("../..")
@@ -59,6 +59,15 @@ def main():
 	cc.start_install()
 	if options.pretend_install:
 		msg("Pretending ")
+
+	msg("Serializing XML for test reasons.")
+	f = open("/var/tmp/clientconfiguration-serialized.xml","w")
+	f.write(install_profile.serialize())
+	f.close()
+	f = open("/var/tmp/installprofile-serialized.xml","w")
+	f.write(install_profile.serialize())
+	f.close()
+
 	msg("Installation Started!")
 	num_steps_completed = 1
 	while 1:
