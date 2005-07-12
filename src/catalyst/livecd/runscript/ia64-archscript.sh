@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.4 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.5 2005/07/12 15:21:29 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -34,16 +34,16 @@ case $1 in
 			/bin/tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
 			
 			# change kernel name from "kernel" to "gentoo", for example
-			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/${x}
+			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/efi/boot/${x}
 			
 			# change initrd name from "initrd" to "gentoo.igz", for example
 			if [ -e ${clst_cdroot_path}/boot/initrd* ]
 			then
-			    mv "${clst_cdroot_path}"/boot/initrd* "${clst_cdroot_path}"/boot/"${x}".igz
+			    mv "${clst_cdroot_path}"/boot/initrd* "${clst_cdroot_path}"/boot/efi/boot/"${x}".igz
 			fi
 			if [ -e ${clst_cdroot_path}/boot/initramfs* ]
 			then
-			    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/"${x}".igz
+			    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/efi/boot/"${x}".igz
 			fi
 			
 		done
@@ -76,12 +76,12 @@ case $1 in
 		do
 			echo "image=/efi/boot/${x}" >> ${iacfg}
 			echo "  label=${x}" >> ${iacfg}
-			echo '  append="initrd=${x}.igz root=/dev/ram0 init=/linuxrc acpi=off ${cmdline_opts} ${custom_kopts} cdroot"' >> ${iacfg}
+			echo "  append=\"initrd=${x}.igz root=/dev/ram0 init=/linuxrc acpi=off ${cmdline_opts} ${custom_kopts} cdroot\"" >> ${iacfg}
 			echo "  initrd=/efi/boot/${x}.igz" >> ${iacfg}
 			echo >> ${iacfg}
 			echo "image=/efi/boot/${x}" >> ${iacfg}
 			echo "  label=${x}-serial">> ${iacfg}
-			echo "  append='initrd=${x}.igz root=/dev/ram0 init=/linuxrc acpi=off ${cmdline_opts} ${custom_kopts} cdroot console=tty0 console=ttyS0,9600'" >> ${iacfg}
+			echo "  append=\"initrd=${x}.igz root=/dev/ram0 init=/linuxrc acpi=off ${cmdline_opts} ${custom_kopts} cdroot console=tty0 console=ttyS0,9600\"" >> ${iacfg}
 			echo "  initrd=/efi/boot/${x}.igz" >> ${iacfg}
 			echo >> ${iacfg}
 		done
