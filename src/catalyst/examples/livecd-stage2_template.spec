@@ -283,13 +283,6 @@ boot/kernel/gentoo/use:
 # boot/kernel/gentoo/extraversion:
 boot/kernel/gentoo/extraversion:
 
-# This option is a list of packages which genkernel will emerge after the kernel
-# has been configured, but before it is compiled.  This option is used for the
-# exclusive purpose of including our gensplash theme into the kernel bzImage.
-# example:
-# boot/kernel/gentoo/postconf: splashutils splash-themes-livecd
-boot/kernel/gentoo/postconf:
-
 # This option is for merging kernel-dependent packages and external modules that
 # are configured against this kernel label.
 # example:
