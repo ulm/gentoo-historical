@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.6 2005/06/28 22:28:14 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.7 2005/07/13 19:56:02 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -21,9 +21,6 @@ case ${clst_livecd_cdfstype} in
 		;;
 	squashfs)
 		cmdline_opts="looptype=squashfs loop=/livecd.squashfs"
-		;;
-	gcloop)
-		cmdline_opts="looptype=gcloop loop=/livecd.gcloop"
 		;;
 esac
 
@@ -73,14 +70,6 @@ create_noloop() {
 
 	echo "Copying files for image (no loop)..."
 	cp -a "${clst_chroot_path}"/* "${clst_cdroot_path}" || die "Could not copy files to image (no loop)"
-	
-}
-
-create_gcloop() {
-	create_normal_loop
-	compress_gcloop_ucl -b 131072 -c 10 "${clst_cdroot_path}/livecd.loop" "${clst_cdroot_path}/livecd.gcloop" || die "compress_gcloop_ucl failed, did you emerge gcloop?"
-	rm -f "${clst_cdroot_path}/livecd.loop"
-	# only a gcloop image should exist in cdroot path
 	
 }
 
@@ -213,10 +202,6 @@ case $1 in
 		elif [ "${clst_livecd_cdfstype}" = "noloop" ]
 		then
 			create_noloop
-			loopret=$?
-		elif [ "${clst_livecd_cdfstype}" = "gcloop" ]
-		then
-			create_gcloop
 			loopret=$?
 		elif [ "${clst_livecd_cdfstype}" = "squashfs" ]
 		then

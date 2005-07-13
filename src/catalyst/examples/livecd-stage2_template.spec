@@ -63,7 +63,6 @@ portage_confdir:
 # zisofs - This uses in-kernel compression and is supported on all platforms.
 # normal - This creates a loop without compression.
 # noloop - This copies the files to the CD directly, withuot using a loopback.
-# gcloop - This is deprecated and only provided for backwards compatibility.
 # example:
 # livecd/cdfstype: squashfs
 livecd/cdfstype:
