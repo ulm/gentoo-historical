@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.4 2005/07/07 16:59:50 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.5 2005/07/13 00:04:53 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -20,6 +20,8 @@ then
 	export DISTCC_HOSTS="${clst_distcc_hosts}"
 
 	USE="-gnome -gtk" emerge -b -k --oneshot --nodeps distcc || exit 1
+	mkdir -p /etc/distcc
+	echo "${clst_distcc_hosts}" > /etc/distcc/hosts
 fi
 										
 if [ -n "${clst_PKGCACHE}" ]

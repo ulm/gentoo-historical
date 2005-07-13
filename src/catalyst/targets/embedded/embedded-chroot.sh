@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/embedded-chroot.sh,v 1.13.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/embedded/Attic/embedded-chroot.sh,v 1.13.2.2 2005/07/13 00:04:53 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -29,6 +29,8 @@ then
 	export DISTCC_HOSTS="${clst_distcc_hosts}"
 
 	USE="-gtk -gnome" emerge --oneshot --nodeps -b -k distcc || exit 1
+	mkdir -p /etc/distcc
+	echo "${clst_distcc_hosts}" > /etc/distcc/hosts
 fi
 
 if [ -n "${clst_PKGCACHE}" ]
