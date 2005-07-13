@@ -294,6 +294,8 @@
                     <br/>
                     <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrents</a>
                     <br/>
+		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting Vendors</a>
+		    <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
                     <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
