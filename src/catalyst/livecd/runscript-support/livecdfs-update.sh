@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.20 2005/07/14 18:20:56 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.21 2005/07/14 19:54:13 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -79,7 +79,7 @@ fi
 if [ -n "${clst_livecd_users}" -a -e /etc/startx ]
 then
 	first_user=$(echo ${clst_livecd_users} | cut -d' ' -f1)
-	sed -i 's/##STARTX/su - ${first_user} -c "source /etc/profile && startx"/' \
+	sed -i "s:##STARTX:su - $first_user -c 'source /etc/profile \&\& startx':" \
 		/root/.bashrc
 fi
 
