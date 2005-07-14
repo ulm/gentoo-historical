@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-ppc-bootloader.xml,v 1.8 2005/04/04 10:06:32 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-ppc-bootloader.xml,v 1.9 2005/07/14 01:59:06 ccpz Exp $ -->
 
-<!-- rev 1.21 by oai79 -->
+<!-- rev 1.27 by ccpz -->
 
 <sections>
 
-<version>2.00</version>
-<date>2005-03-28</date>
+<version>2.4</version>
+<date>2005-05-12</date>
 
 <section>
 <title>決定您的選擇</title>
@@ -27,8 +27,9 @@
 
 <p>
 Linux/PPC 有多個開機程式。我們有 <uri link="#yaboot">yaboot</uri>（適用於 New
-World PPC 的機器）和 <uri link="#bootx">BootX</uri> （適用於 OldWord PPC 的機器
-和 IBM 的機器）。Pegasos 不需要一個開機程式，但是我們加入了 <uri link="#bootcreator">BootCreator</uri> 來建立 SmartFirmware bootmenu。
+World Apple 及 IBM 的機器）和 <uri link="#bootx">BootX</uri> （適用於 OldWord
+Apple 的機器）。Pegasos 不需要一個開機程式，但是我們加入了
+<uri link="#bootcreator">BootCreator</uri> 來建立 SmartFirmware bootmenu。
 </p>
 
 </body>
@@ -62,6 +63,26 @@ yaboot。如果因為某種原因您無法執行 <c>yabootconfig</c> 自動設�
 G5 （<c>yabootconfig</c> 常常無法正確設定），您可以依照已經安裝到系統上的範例檔
 直接設定。
 </p>
+
+<note>
+如果你使用 genkernel 的話，可能需要去編輯 yaboot.conf 檔案。genkernel ebuild 中
+提供的參數需要加到 kernel image 部份的選項中。yaboot.conf 中相關的部份如下：
+</note>
+  	 
+<pre caption="在 yaboot.conf 之中加入開機參數">
+<comment>#################
+## 如果你有多於一個核心或是不同的開機參數。你可以直接複製這個部份 -
+## 用你的核心版本取代 2.6.9
+#################</comment>
+image=/boot/kernel-2.6.9
+label=Linux
+root=/dev/ram0    <comment># 如果用 genkernel 的話這設成 /dev/ram0</comment>
+partition=3
+sysmap=/boot/System.map-2.6.9
+append="real_root=/dev/hda3 init=/linuxrc"  <comment># 在此加入參數</comment>
+read-only
+<comment>##################</comment>
+</pre>
 
 <ul>
   <li><uri link="#yabootconfig">預設：使用 yabootconfig</uri></li>
@@ -213,36 +234,59 @@ link="http://penguinppc.org/bootloaders/yaboot">yaboot 計畫</uri>。
 <body>
 
 <impo>
-BootX 只適用於 OldWorld 的 PPC 和 IBM 的系統架構！
+BootX 只適用於 OldWorld Apple 系統架構！
 </impo>
 
 <p>
-BootX 需要先重開機。所以我們接下來就重開機吧 :)
+因為 BootX 從 MacOS 之內啟動 Linux，核心需要從 Linux 的分割區複製到 MacOS 的分
+割區。首先，在 chroot 之外掛載 MacOS 分割區。使用 <c>mac-fdisk -l</c> 找出 MacOS
+分割區的編號，這裡用 sda6 做範例。在分割區掛載以後，我們把核心複製到系統資料夾讓
+BootX 可以找到。
 </p>
+
+<pre caption="複製核心到 MacOS 分割區">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels"</i>
+</pre>
 
 <p>
-離開 chrooted 的環境然後卸載所有掛載的分割區。接著輸入你已經等很久的神奇指令：
-<c>reboot</c>。
+如果你使用 genkernel 的話，kernel 會放在不同的地方，而且 initrd 也需要一起複製。
 </p>
 
-<pre caption="離開 chroot，卸載所有分割區然後重開機">
+<pre caption="複製 Genkernel 產生的核心及 initrd 到 MacOS 分割區">
 # <i>exit</i>
-livecd ~# <i>umount /mnt/gentoo/proc /mnt/gentoo/dev /mnt/gentoo</i>
-livecd ~# <i>reboot</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initrd-* "/mnt/mac/System Folder"</i>
 </pre>
   	 
 <p>
-當然，不要忘了移除可開機光碟，否則會從光碟開機而不是 MacOS。
+現在核心已經複製好了，卸載所有分割區然後輸入你等很久的神奇指令：<c>reboot</c>。
+</p>
+  	 
+<pre caption="卸載所有分割區然後重開機">
+cdimage ~# <i>cd /</i>
+cdimage ~# <i>umount /mnt/gentoo/proc /mnt/gentoo /mnt/mac</i>
+cdimage ~# <i>reboot</i>
+</pre>
+  	 
+<p>
+當然，不要忘了移除可開機媒體，我們需要用 MacOS 開機。
 </p>
   	 
 <p>
-現在你的電腦在 MacOS，開啟 BootX 控制台。選擇 <c>Options</c> 然後取消
-<c>Used specified RAM disk</c>。當你回到 BootX 主視窗後，你可以看到一個選項指定
-根磁碟機及分割區，填入適當的設定。
+現在你的電腦在 MacOS，開啟 BootX 控制台。如果你不是使用 genkernel，選擇
+<c>Options</c> 然後取消 <c>Used specified RAM disk</c>。如果你是用 genkernel，
+確定你是選 genkernel 的 initrd 而不是安裝光碟上的 initrd。當你回到 BootX 主視窗後
+，你可以看到一個選項指定根磁碟機及分割區，填入適當的設定。根據你的核心設定，你或
+許要加上一些額外的核心參數。
 </p>
   	 
 <p>
-BootX 可以設定開機時啟動 Linux，如果你這樣做的話，你會先看到你的電腦開機到
+BootX 可以設定開機時啟動 Linux，如果你選擇這樣做的話，電腦會開機到
 MacOS ，然後在啟動時，BootX 會載入並啟動 Linux。參閱
 <uri link="http://penguinppc.org/bootloaders/bootx/">BootX 首頁</uri> 取得更多資訊。
 </p>
