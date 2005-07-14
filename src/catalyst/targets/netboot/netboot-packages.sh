@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-packages.sh,v 1.6.2.1 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/netboot/Attic/netboot-packages.sh,v 1.6.2.2 2005/07/14 15:49:03 wolf31o2 Exp $
 
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
 	| cut -d/ -f2 | cut -d- -f2,3`
@@ -30,7 +30,7 @@ fi
 # START BUILD
 if [ "${clst_VERBOSE}" ]
 then
-	emerge ${clst_myemergeopts} -vp ${clst_packages}
+	emerge ${clst_myemergeopts} -vtp ${clst_packages}
 	echo "Press any key within 15 seconds to pause the build..."
 	read -s -t 15 -n 1
 	if [ $? -eq 0 ]

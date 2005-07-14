@@ -1,30 +1,10 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.8 2005/07/13 00:04:53 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage1/Attic/stage1-chroot.sh,v 1.29.2.9 2005/07/14 15:49:03 wolf31o2 Exp $
 		
-portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
-	| cut -d/ -f2 | cut -d- -f2,3`
-if [ `echo ${portage_version} | cut -d- -f1 | cut -d. -f3` -lt 51 ]
-then
-	echo "ERROR: Your portage version is too low in your seed stage.  Portage version"
-	echo "2.0.51 or greater is required."
-	exit 1
-fi
-
 /usr/sbin/env-update
 source /etc/profile
-
-#if [ -x /usr/bin/gcc-config ]
-#then
-#	gcc_current=`gcc-config -c`
-#	if [ -z "${gcc_current}" ]
-#	then
-#		gcc_current=1
-#	fi
-#	gcc-config 3 && source /etc/profile
-#	gcc-config ${gcc_current} && source /etc/profile
-#fi
 
 [ -f /tmp/envscript ] && source /tmp/envscript
 		
@@ -69,7 +49,7 @@ fi
 
 if [ -n "${clst_VERBOSE}" ]
 then
-	USE="-* build" emerge ${clst_myemergeopts} -vp --noreplace ${clst_buildpkgs} || exit 1
+	USE="-* build" emerge ${clst_myemergeopts} -vtp --noreplace ${clst_buildpkgs} || exit 1
 	echo "Press any key within 15 seconds to pause the build..."
 	read -s -t 15 -n 1
 	if [ $? -eq 0 ]

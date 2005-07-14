@@ -1,18 +1,18 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.5 2005/07/13 00:04:53 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.6 2005/07/14 15:49:03 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
 
 [ -f /tmp/envscript ] && source /tmp/envscript
 
-#if [ -n "${clst_CCACHE}" ]
-#then
-#	export clst_myfeatures="${clst_myfeatures} ccache"
-#	emerge -b -k --oneshot --nodeps ccache || exit 1
-#fi
+if [ -n "${clst_CCACHE}" ]
+then
+	export clst_myfeatures="${clst_myfeatures} ccache"
+	emerge -b -k --oneshot --nodeps ccache || exit 1
+fi
 
 if [ -n "${clst_DISTCC}" ]
 then
@@ -39,7 +39,7 @@ export FEATURES="${clst_myfeatures}"
 
 if [ "${clst_VERBOSE}" ]
 then
-	/usr/portage/scripts/bootstrap.sh -p ${bootstrap_opts}
+	/usr/portage/scripts/bootstrap.sh -t ${bootstrap_opts}
 	echo "Press any key within 15 seconds to pause the build..."
 	read -s -t 15 -n 1
 	if [ $? -eq 0 ]

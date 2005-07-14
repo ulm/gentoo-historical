@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/grp/Attic/grp-chroot.sh,v 1.14.2.5 2005/07/13 00:04:53 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/grp/Attic/grp-chroot.sh,v 1.14.2.6 2005/07/14 15:49:03 wolf31o2 Exp $
 
 # check portage version in seed stage
 portage_version=`/usr/lib/portage/bin/portageq best_version / sys-apps/portage \
@@ -59,7 +59,7 @@ then
 
 	if [ -n "${clst_VERBOSE}" ]
 	then
-		emerge --usepkg --buildpkg --noreplace --newuse -vp ${clst_myemergeopts} ${clst_grp_packages} || exit 1
+		emerge --usepkg --buildpkg --noreplace --newuse -vtp ${clst_myemergeopts} ${clst_grp_packages} || exit 1
 		echo "Press any key within 15 seconds to pause the build..."
 		read -s -t 15 -n 1
 		if [ $? -eq 0 ]
