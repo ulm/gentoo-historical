@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.5 2005/07/12 15:21:29 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ia64-archscript.sh,v 1.1.2.6 2005/07/15 20:53:07 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -140,6 +140,5 @@ case $1 in
 				mkisofs -J -R -l -V "${iso_volume_id}" -o ${2} -b gentoo.efimg -c boot.cat -no-emul-boot ${clst_cdroot_path} || die "Cannot make ISO image"
 			;;
 		esac
-		isomarkboot ${2} /boot/bootlx
 	;;
 esac
