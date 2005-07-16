@@ -8,6 +8,7 @@
 <xsl:include href="/xsl/inserts.xsl" />
 
 <xsl:variable name="devaway" select="document('/dyn/devaway/devaway.xml')"/>
+<xsl:param name="select"/>
 
 <xsl:template match="today">
   <!--<date><xsl:value-of select="exslt:node-set($devaway)/devaway/@date"/></date>-->
@@ -37,7 +38,16 @@ Last update: <xsl:value-of select="exslt:node-set($devaway)/devaway/@date"/>
   <xsl:sort select="@nick"/>
   <tr>
   <th><xsl:value-of select="@nick"/></th>
-  <ti><xsl:value-of select="reason"/></ti>
+  <ti>
+   <xsl:choose>
+    <xsl:when test="$select = @nick">
+     <brite><xsl:value-of select="reason"/></brite>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of select="reason"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ti>
   </tr>
 </xsl:for-each>
 </table>

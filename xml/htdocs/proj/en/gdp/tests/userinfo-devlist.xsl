@@ -53,7 +53,7 @@
               You might want to check the list of <uri
               link="devaway.xml">unavailable developers</uri> before trying to
               contact anyone. Unavailable Developers are marked
-              with&#160;&#8317;¹&#8318;&#160; in the following table.
+              "(<c>away</c>)" in the following table.
             </p>
 	  </xsl:if>
 	  <table>
@@ -70,63 +70,8 @@
 	      <xsl:sort select="@username"/>
 	      <tr>
       <xsl:variable name="username" select="@username"/>
-<!-- Just to sample different options, remove when going live -->
-      <xsl:choose>
-        <xsl:when test="$devaway/devaway/dev[@nick=$username]">
-          <xsl:variable name="reason" select="$devaway/devaway/dev[@nick=$username]/reason"/>
-          <xsl:choose>
-            <xsl:when test="$username = $devaway/devaway/dev[1]/@nick">
-              <th>
-              <xsl:value-of select="concat($username, ' (away)')"/>
-              </th>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[2]/@nick">
-              <th>
-              <xsl:value-of select="concat($username, ' (1)')"/>
-              </th>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[3]/@nick">
-              <th>
-              <xsl:value-of select="concat('( ', $username, ' )')"/>
-              </th>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[4]/@nick">
-              <th><brite>
-              <xsl:value-of select="$username"/>
-              </brite></th>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[5]/@nick">
-              <th>
-              <xsl:value-of select="$username"/>
-              <brite> (away)</brite>
-              </th>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[6]/@nick">
-              <ti>
-              <xsl:value-of select="$username"/>
-              <brite> (away)</brite>
-              </ti>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[7]/@nick">
-              <ti><brite>
-              <xsl:value-of select="$username"/>
-              </brite></ti>
-            </xsl:when>
-            <xsl:when test="$username = $devaway/devaway/dev[8]/@nick">
-              <th>
-              <xsl:value-of select="$username"/> (<e>away</e>)
-              </th>
-            </xsl:when>
-            <xsl:otherwise>
-              <th><xsl:value-of select="concat($username, '&#160;&#8317;¹&#8318;')"/></th>
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:when>
-        <xsl:otherwise>
-          <th><xsl:value-of select="$username"/></th>
-        </xsl:otherwise>
-      </xsl:choose>
-		<ti>
+      <th><xsl:value-of select="$username"/></th>
+      <ti>
 		  <xsl:choose>
 		    <xsl:when test="realname/@fullname">
 		      <xsl:value-of select="realname/@fullname"/>
@@ -135,11 +80,17 @@
 		      <xsl:value-of select="realname/firstname"/><xsl:text> </xsl:text><xsl:value-of select="realname/familyname"/>
 		    </xsl:otherwise>
 		  </xsl:choose>
-                  <xsl:if test="status">
-		    <xsl:if test="status != 'active'">
+      <xsl:choose>
+      <xsl:when test="status and status != 'active'">
 		      [<e><xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" /></e>]
-		    </xsl:if>
-		  </xsl:if>
+		    </xsl:when>
+		    <xsl:when test="$devaway/devaway/dev[@nick=$username]">
+        (<uri>
+          <xsl:attribute name="link">
+            <xsl:value-of select="concat('devaway.xml?select=', $username)"/>
+          </xsl:attribute>away</uri>)
+		    </xsl:when>
+		  </xsl:choose>
 		</ti>
 		<xsl:if test="$statusFilter != 'Retired'">
 		  <ti>
