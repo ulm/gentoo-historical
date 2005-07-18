@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.8 2005/07/14 15:49:03 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.9 2005/07/18 14:42:25 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -28,7 +28,7 @@ source ${clst_livecd_archscript}
 # Here is where we poke in our identifier
 touch ${clst_cdroot_path}/livecd
 # Here we copy our nifty README.txt
-cp ${clst_sharedir}/livecd/files/README.txt ${clst_cdroot_path}
+#cp ${clst_sharedir}/livecd/files/README.txt ${clst_cdroot_path}
 
 create_normal_loop() {
 	# We get genkernel-built kernels and initrds in place, create the loopback
@@ -141,6 +141,14 @@ case $1 in
 		if [ -n "${clst_livecd_xinitrc}" ]
 		then
 			cp -a ${clst_livecd_xinitrc} ${clst_chroot_path}/etc/X11/xinit/xinitrc
+		fi
+
+		# move over the readme (if applicable)
+		if [ -n "${clst_livecd_readme}" ]
+		then
+			cp -a ${clst_livecd_readme} ${clst_cdroot_path}/README.txt
+		else
+			cp ${clst_sharedir}/livecd/files/README.txt ${clst_cdroot_path}
 		fi
 
 		# move over the environment

@@ -149,6 +149,14 @@ livecd/linuxrc:
 # livecd/type: gentoo-release-minimal
 livecd/type:
 
+# This is for the README.txt on the root of the CD.  For Gentoo releases, we
+# use a default README.txt, and this will be used on your CD if you do not
+# provide one yourself.  Since we do not use this for the official releases, it
+# is left blank below.
+# example:
+# livecd/readme:
+livecd/readme:
+
 # This is for the CD's message of the day.  It is not required for official
 # release media, as catalyst builds a default motd when the livecd/type is set
 # to one of the gentoo-* options.  This setting overrides the default motd even
