@@ -5,7 +5,6 @@
                 xmlns:exslt="http://exslt.org/common"
                 extension-element-prefixes="exslt" >
 
-
 <xsl:preserve-space elements="*"/>
 <xsl:param name="statusFilter"/>
 
@@ -63,76 +62,69 @@
       <tr>
         <th>Username</th>
         <th>Name</th>
-        <xsl:if test="$statusFilter != 'Retired'">
-          <th>GPG key</th>
-        </xsl:if>
         <th>Status</th>
+        <xsl:if test="$statusFilter != 'Retired'"><th>GPG key</th></xsl:if>
         <th>Location</th>
         <th>Areas of responsibility</th>
       </tr>
       <xsl:for-each select="user">
         <xsl:sort select="@username"/>
         <tr>
-      <xsl:variable name="username" select="@username"/>
-      <th><xsl:value-of select="$username"/></th>
-      <ti>
-      <xsl:choose>
-        <xsl:when test="realname/@fullname">
-          <xsl:value-of select="realname/@fullname"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="realname/firstname"/><xsl:text> </xsl:text><xsl:value-of select="realname/familyname"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </ti>
-    <xsl:if test="$statusFilter != 'Retired'">
-      <ti>
-        <xsl:choose>
-          <xsl:when test="starts-with(pgpkey, '0x')">
-      <xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
-          </xsl:when>
-                      <xsl:when test="string-length(pgpkey) = 8">
-      0x<xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
-          </xsl:when>
-          <xsl:when test="string-length(pgpkey) &gt; 0">
-      Invalid key specification!
-          </xsl:when>
-          <xsl:otherwise></xsl:otherwise>
-        </xsl:choose>
-      </ti>
-    </xsl:if>
-    <ti>
-      <xsl:choose>
-      <xsl:when test="status and status != 'active'">
-          <xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" />
-        </xsl:when>
-        <xsl:when test="$devaway/devaway/dev[@nick=$username]">
-        <uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username)"/></xsl:attribute>away</uri>
-        </xsl:when>
-      </xsl:choose>
-    </ti>
-    <ti>
-      <xsl:choose>
-        <xsl:when test="location">
-          <xsl:value-of select="location"/>
-        </xsl:when>
-        <xsl:otherwise></xsl:otherwise>
-      </xsl:choose>
-    </ti>
-    <ti>
-      <xsl:choose>
-        <xsl:when test="roles">
-          <xsl:value-of select="roles"/>
-        </xsl:when>
-        <xsl:otherwise></xsl:otherwise>
-      </xsl:choose>
-    </ti>
+          <xsl:variable name="username" select="@username"/>
+          <th><xsl:value-of select="$username"/></th>
+          <ti>
+            <xsl:choose>
+              <xsl:when test="realname/@fullname">
+                <xsl:value-of select="realname/@fullname"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="realname/firstname"/><xsl:text> </xsl:text><xsl:value-of select="realname/familyname"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </ti>
+          <ti>
+            <xsl:choose>
+              <xsl:when test="status and status != 'active'">
+                <xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" />
+              </xsl:when>
+              <xsl:when test="$devaway/devaway/dev[@nick=$username]">
+                <uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username)"/></xsl:attribute>away</uri>
+              </xsl:when>
+            </xsl:choose>
+          </ti>
+          <xsl:if test="$statusFilter != 'Retired'">
+            <ti>
+              <xsl:choose>
+                <xsl:when test="starts-with(pgpkey, '0x')">
+                  <xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
+                </xsl:when>
+                <xsl:when test="string-length(pgpkey) = 8">
+                  0x<xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
+                </xsl:when>
+                <xsl:when test="string-length(pgpkey) &gt; 0">
+                  Invalid key specification!
+                </xsl:when>
+              </xsl:choose>
+            </ti>
+          </xsl:if>
+          <ti>
+            <xsl:if test="location"><xsl:value-of select="location"/></xsl:if>
+          </ti>
+          <ti>
+            <xsl:choose>
+              <xsl:when test="roles">
+                <xsl:value-of select="roles"/>
+              </xsl:when>
+              <xsl:otherwise></xsl:otherwise>
+            </xsl:choose>
+          </ti>
         </tr>
       </xsl:for-each>
     </table>
   </body>
-      </section>
-    </chapter>
-  </mainpage>
+
+</section>
+</chapter>
+</mainpage>
 </xsl:template>
 </xsl:stylesheet>
