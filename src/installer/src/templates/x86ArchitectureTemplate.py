@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.53 2005/07/07 08:00:04 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.54 2005/07/19 08:30:08 robbat2 Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -348,6 +348,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					# force a stat of the device so that it
 					# is created on demand. (At least if I
 					# recall how udev works... - robbat2).
+					# sleep a bit first
+					time.sleep(1)
+					# now sleep until it exists
 					while not GLIUtility.is_file(devnode):
 						self._logger.log("Waiting for device node "+devnode+" to exist...")
 						time.sleep(1)
