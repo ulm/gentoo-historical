@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS Version: 1.25 -->
+<!-- English CVS Version: 1.28 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gnupg-user.xml,v 1.5 2005/07/05 18:34:09 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gnupg-user.xml,v 1.6 2005/07/20 22:06:27 grahl Exp $ -->
 
 <guide link = "/doc/de/gnupg-user.xml">
 <title>GnuPG Gentoo user guide</title>
@@ -31,8 +31,8 @@ aufzeigen, ein Programm für sichere Kommunikation.
 
 <license/>
 
-<version>1.0.10</version>
-<date>2005-02-05</date>
+<version>1.0.13</version>
+<date>2005-05-04</date>
 
 
 <chapter>
@@ -68,8 +68,8 @@ ablegen können, um Menschen davon abzuhalten den Inhalt dieser zu lesen.
 <p>
 Als grundlegendste Ebene müssen Sie <c>emerge gnupg</c> ausführen. Viele
 Anwendungen heute  haben Unterstützung in irgendeiner Form für gpg, deswegen
-ist es auch ratsam gpg in Ihre USE Variable einzutragen. Wenn Sie einen
-Email Client mit gnupg Kapazitäten wünschen, dann können Sie pine
+ist es auch ratsam <e>crypt</e> in Ihre USE Variable einzutragen. Wenn Sie 
+einen Email Client mit gnupg Kapazitäten wünschen, dann können Sie pine
 (<c>emerge pinepgp</c>), mutt (<c>emerge mutt</c>),
 Mozilla/Netscape Mail, Evolution (Evolution ist ein GNOME Microsoft Outlook
 ähnliches Programm) und KDEs eigenes KMail (KMail ist Teil des kdepim
@@ -394,9 +394,10 @@ Schlüssel an den pgp.mit.edu Server schicken. Dieser verwendet HTTP, daher
 werden Sie, wenn Sie einen Proxy für HTTP Traffic benötigen, diesen nun
 setzen müssen (<c>export http_proxy=http://proxy_host:port/</c>). Der
 Befehl um den Schlüssel zu senden ist <c>gpg --keyserver pgp.mit.edu
---keyserver-options honor-http-proxy --send-key john@nowhere.someplace.flick</c>
-Wenn Sie keinen HTTP Proxy verwenden, dann können Sie das
-<e>--keyserver-options honor-http-proxy</e> entfernen.
+--keyserver-options honor-http-proxy --send-key 75447B14</c> wobei 
+<c>75447B14</c> die ID des Schlüssels ist. Wenn Sie keinen HTTP Proxy 
+verwenden, dann können Sie das <e>--keyserver-options honor-http-proxy</e> 
+entfernen.
 </p>
 
 <p>
@@ -444,6 +445,112 @@ gpg:               imported: 1
 Wie Sie sehen können habe ich mehrere Schlüssel an den Schlüsselserver 
 übertragen, aber momentan verwende ich nur <e>B9F2D52A</e>. John Doe kann ihn
 nun bekommen und signieren, wenn er ihm traut.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="gpg-agent">
+<title>Verwendung des GPG Agenten</title>
+<section>
+<title>Was ist ein GPG Agent?</title>
+<body>
+
+<p>
+In manchen Fällen, wenn bestimmte Anwendungen verwendet werden, bei denen 
+Sie Ihren GPG Schlüssel sehr häufig benötigen, müssen Sie Ihre Passphrase 
+viele Male eintippen. Zahlreiche Anwendungen boten die Option die Passphrase 
+zu cachen um dem Anwender das Leben leichter zu machen. Dies erlaubte jedoch 
+nicht, dass mehrere Programme auf den Cache zugreifen konnten (wie sicher wäre 
+das wohl?) und zwang Anwendungen dazu, das Rad immer wieder neu zu erfinden.
+</p>
+
+<p>
+Ein GPG Agent ist eine separate Anwendung, die GPG verwendet um die 
+Passphrase, auf eine standardisierte und sichere Art, im Cache zu haben. Es 
+erlaubt Anwendungen GPG gleichzeitig zu verwenden: Wenn Sie Ihre Passphrase 
+eingegeben haben, während Sie in einer Anwendung gearbeitet haben, dann kann 
+eine andere Anwendung mit GPG arbeiten, ohne dass eine erneute Anfrage für die 
+Passphrase zur Freischaltung des Schlüssels geschehen muss. Natürlich nur, 
+wenn der GPG Agent so konfiguriert wurde, dass dies erlaubt ist.
+</p>
+
+<p>
+Gentoo liefert einige GPG Agentenanwendungen. <c>app-crypt/gpg-agent</c> kann 
+dabei als Refernz angesehen werden und ist auch das, welches in diesem 
+Leitfaden verwendet wird.
+</p>
+
+</body>
+</section>
+<section>
+<title>Installation und Konfiguration von gpg-agent und pinentry</title>
+<body>
+
+<p>
+Offensichtlich sollten Sie <c>gpg-agent</c> installieren, aber auch 
+<c>pinentry</c>, welches das Hilfsprogramm ist, das gpg-agent verwendet um 
+in einem graphischen Fenster die Passphrase zu erfragen. Es kommt in drei 
+verschiedenen Varianten: es kann ein Popup-Fenster öffnen unter der Verwendung 
+der gtk+, Qt, oder curses Bibliothek (abhängig von den USE Flags die Sie 
+gesetzt hatten zum Zeitpunkt als Sie mit emerge installierten)
+</p>
+
+<pre caption="Installieren von gpg-agent und pinentry">
+# <i>emerge gpg-agent pinentry</i>
+</pre>
+
+<p>
+Erstellen Sie als nächstes eine Datei mit dem Namen 
+<path>~/.gnupg/gpg-agent.conf</path> und tippen Sie die folgenden Zeilen ein.
+Diese setzen den Standard Timeout der Passphrase (z.B. 30 Minuten) und 
+legen die Anwendung fest, welche aufgerufen wird, wenn die Passphrase zum 
+ersten Mal besorgt wird (z.B. die Qt Version von pinentry).
+</p>
+
+<pre caption="Editieren von ~/.gnupg/gpg-agent.conf">
+pinentry-program /usr/bin/pinentry-qt
+no-grab
+default-cache-ttl 1800
+</pre>
+
+<p>
+Konfigurieren Sie nun GnuPG so, dass es den Agenten verwendet, wenn es 
+angebracht ist. Editieren Sie <path>~/.gnupg/gpg.conf</path> und fügen Sie die 
+folgende Zeile hinzu:
+</p>
+
+<pre caption="GnuPG für die Verwendung von GPG Agent konfigurieren">
+use-agent
+</pre>
+
+<p>
+Nun ist Ihr System (fast) bereit den GPG Agenten zu verwenden.
+</p>
+
+</body>
+</section>
+<section>
+<title>Automatisches starten des GPG Agenten</title>
+<body>
+
+<p>
+Wenn sie KDE als graphische Benutzeroberfläche verwenden, editieren Sie 
+<path>/usr/kde/3.x/env/agent-startup.sh</path> (systemweit) oder 
+<path>~/.kde/env/gpgagent.sh</path> (lokaler Benutzer) und fügen Sie 
+folgenden Befehl hinzu um KDE automatisch den GPG Agenten starten zu lassen:
+</p>
+
+<pre caption="KDE automatisch den GPG Agenten starten lassen">
+eval "$(gpg-agent --daemon)"
+</pre>
+
+<p>
+Wenn Sie eine andere graphische Benutzeroberfläche verwenden, legen Sie die 
+Zeile (dieselbe wie oben) in <path>~/.xinitrc</path> (wenn Sie <c>startx</c> 
+verwenden) oder <path>~/.xsession</path> (wenn Sie XDM/GDM/KDM/... verwenden) 
+ab.
 </p>
 
 </body>
@@ -591,7 +698,7 @@ den Sie signieren oder verschlüsseln möchten. Sie können auch ASCII-armored
 Text einfügen, den Sie entschlüsseln möchten.
 </p>
 
-<figure link="/images/kgpg1.png" short="kgpg Hauptfenster"/>
+<figure link="http://www.gentoo.org/images/kgpg1.png" short="kgpg Hauptfenster"/>
 
 <p>
 In diesem Bild können Sie das Kgpg Hauptfenster mit ASCII-armored Text und
@@ -600,7 +707,7 @@ eingefügtem verschlüsselten Text sehen. Von hier aus können Sie ihn entschlü
 zum Signieren einfügen, ...
 </p>
 
-<figure link="/images/kgpg2.png" short="kgpg Schlüsselverwaltungsfenster"/>
+<figure link="http://www.gentoo.org/images/kgpg2.png" short="kgpg Schlüsselverwaltungsfenster"/>
 
 <p>
 Nun können Sie das Fenster fürs Schlüsselmanagement sehen. Von hier sehen wir
@@ -651,21 +758,25 @@ man die Kommdandozeile benutzt, nicht wahr?)
 <title>KMail</title>
 <body>
 
-<impo>
-Seit Kmail 1.7 müssen Sie eine gesamte <uri
-link="http://kmail.kde.org/kmail-pgpmime-howto.html">Routine</uri> absolvieren 
-um KmMail mit GnuPG einzurichten. Bitte folgen Sie diesen Anweisungen, wenn 
-Sie KMail 1.7 verwenden.
-</impo>
 <p>
-Kmail ist ebenfalls reicht einfach einzurichten. Ich zeige IHnen nur ein paar
-Bilder, die das einrichten zeigen. Im Grunde müssen Sie Kmail nur mitteilen,
-dass Sie GPG nutzen möchten und den Schlüssel welchen Sie nutzen wollen.
+Wenn Sie das <c>crypt</c> USE Flag gesetzt haben, dann wird KMail automatisch 
+mit Unterstützung für gpg kompiliert werden. Es wird daher in der Lage sein 
+automatisch Inline PGP Nachrichten zu verschlüsseln und zu entschlüsseln, 
+sowie auch OpenPGP/Mime Nachrichten zu verschlüsseln. Wenn Sie auch 
+OpenPGP/Mime Nachrichten entschlüsseln wollen (was wahrscheinlich der Fall 
+ist), dann brauchen Sie einen laufenden GPG Agenten (siehe <uri 
+link="#gpg-agent">Verwendung von GPG Agent</uri>).
 </p>
 
-<figure link="/images/kmail_identity.png" caption="kmail identity options OpenGPG key"/>
-<figure link="/images/kmail_security_openpgp.png" caption="kmail security options OpenPGP"/>
-<figure link="/images/kmail_security_plugins.png" caption="kmail security options Crypto Plugins"/>
+<p>
+Sie können kontrollieren ob KMail korrekt funktioniert, indem Sie in 
+<c>Einstellungen (engl. Settings)</c>, <c>KMail einrichten (engl. Configure 
+KMail)</c>, <c>Sicherheit (engl. Security)</c>, <c>Krypto-Module (engl. Crypto 
+Backends</c> gehen. Sie sollten ein GpgME-basierendes Modul aufgelistet sehen. 
+Wenn es grau unterlegt ist, klicken Sie auf <c>Neu einlesen (engl. Rescan)</c>.
+Wenn das GpgME-basierende Backend weiterhin grau unterlegt ist, funktioniert 
+KMail nicht einwandfrei.
+</p>
 
 </body>
 </section>
