@@ -1,12 +1,14 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.6 2005/07/14 15:49:03 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/targets/stage2/Attic/stage2-chroot.sh,v 1.10.2.7 2005/07/21 15:02:32 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
 
 [ -f /tmp/envscript ] && source /tmp/envscript
+
+export clst_myfeatures="${clst_myfeatures} nodoc noman noinfo"
 
 if [ -n "${clst_CCACHE}" ]
 then
