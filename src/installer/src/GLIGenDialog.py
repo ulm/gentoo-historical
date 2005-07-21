@@ -291,37 +291,9 @@ class GLIGenIP(GLIGen):
 		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=75, height=17, choices=menulist)
 		if code != self._DLG_OK: 
 			return
-		#portage_tree_sync = menulist[int(portage_tree_sync)-1]
-		#FIX ME when python 2.4 comes out.
-		#if portage_tree_sync == "Normal  'emerge sync'": 
-		#	self._install_profile.set_portage_tree_sync_type(None, "sync", None)
-		#if portage_tree_sync == "Webrsync  (rsync is firewalled)": 
-		#	self._install_profile.set_portage_tree_sync_type(None, "webrsync", None)
-		#if portage_tree_sync == "None  (NFS mount)": 
-		#	self._install_profile.set_portage_tree_sync_type(None, "none", None)
-		#if portage_tree_sync == "Snapshot  (using a portage snapshot)":
-		#	self._install_profile.set_portage_tree_sync_type(None, "snapshot", None)		
 		self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
-		if portage_tree_sync.lower() == "Snapshot":
-			snapshot_options = (_(u"Use Local"), _(u"Specify URI"))
-			code, snapshot_option = self._d.menu(_(u"Select a local portage snapshot or manually specify a location:"), choices=self._dmenu_list_to_choices(snapshot_options))
-			snapshot_option = snapshot_options[int(snapshot_option)-1]
-			if snapshot_option == _(u"Use Local"):
-				snapshot_dir = "/mnt/cdrom/snapshots"
-				if os.path.isdir(snapshot_dir) and os.listdir(snapshot_dir):
-					local_snapshots = glob.glob(snapshot_dir + "/portage*.bz2")
-					if len(local_snapshots) == 1:
-						snapshot = local_snapshots[0]
-					else:
-						local_snapshots.sort()
-						code, snapshot = self._d.menu(_(u"Select a local portage snapshot:"), choices=self._dmenu_list_to_choices(local_snapshots))
-						if code != self._DLG_OK: return
-						snapshot = local_snapshots[int(snapshot)-1]
-				else:
-					self._d.msgbox(_(u"There don't seem to be any local portage snapshots available.  Hit OK to manually specify a URI."))
-					snapshot_option = _(u"Specify URI")
-			if snapshot_option != _(u"Use Local"):
-				code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
+		if portage_tree_sync == "Snapshot":
+			code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
 			if code == self._DLG_OK:
 				if snapshot: 
 					if not GLIUtility.is_uri(snapshot, checklocal=self.local_install):
@@ -556,7 +528,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		for flagname in sorted_use:
 			use_flags.append((flagname, use_desc[flagname], int(flagname in system_use_flags)))
 		#present the menu
-		code, use_flags = self._d.checklist(_(u"Choose which *global* USE flags you want on the new system"), height=25, width=80,list_height=19, choices=use_flags)	
+		code, use_flags = self._d.checklist(_(u"Choose which *global* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_flags)	
 		
 		#populate the chocies list
 		sorted_use = use_local_desc.keys()
@@ -564,7 +536,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		for flagname in sorted_use:
 			use_local_flags.append((flagname, use_local_desc[flagname], int(flagname in system_use_flags)))
 		#present the menu
-		code, use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=19, choices=use_local_flags)	
+		code, use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_local_flags)	
 		temp_use = "-* "
 		for flag in use_flags:
 			temp_use += flag + " "
@@ -583,8 +555,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
 		while not self.advanced_mode:
-			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform. (ex. CPUs+1)")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
-			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"))
+			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform.")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
+			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"), width=77)
 			if code != self._DLG_OK: 
 				self._install_profile.set_make_conf(make_conf)
 				break
@@ -598,7 +570,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
-		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")), ("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")), ("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")), ("grsec-sources",_(u"Vanilla sources with grsecurity patches")), ("livecd-kernel", _(u"Use the current running kernel for the new system (fastest)")), (_(u"Other"), _(u"Choose one of the other sources available."))]
+		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")), ("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")), ("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")), ("grsec-sources",_(u"Vanilla sources with grsecurity patches")), ("livecd-kernel", _(u"Copy over the current running kernel (fastest)")), (_(u"Other"), _(u"Choose one of the other sources available."))]
 		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources, width=77, height=17)
 		if code != self._DLG_OK: 
 			return
@@ -656,27 +628,17 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._install_profile.set_install_stage(None, install_stage, None)
 			except:
 				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
-		#Change the Yes/No buttons to new labels for this question.
-		self._d.add_persistent_args(["--yes-label", _(u"Use Local")])
-		self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
-		if self._d.yesno(_(u"Do you want to use a local tarball on the LiveCD (or other local location) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
-			#Use Local				
-			stages_dir = "/mnt/cdrom/stages"
-			if os.path.isdir(stages_dir) and os.listdir(stages_dir):
-				local_tarballs = glob.glob(stages_dir + "/stage" + install_stage + "*.bz2")
-				local_tarballs.sort()
-				code, stage_tarball = self._d.menu(_(u"Select a local tarball:"), choices=self._dmenu_list_to_choices(local_tarballs))
-				if code != self._DLG_OK: 
-					return
-				stage_tarball = local_tarballs[int(stage_tarball)-1]
+		if install_stage == "3":
+			#Change the Yes/No buttons to new labels for this question.
+			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
+			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
+			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
+				#Generate on the FLY				
 				try:
-					self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+					self._install_profile.set_stage_tarball_uri(None, "networkless", None)
 				except:
 					self._d.msgbox(_(u"ERROR: Could not set the stage tarball URI!"))
 				return
-			else:
-				self._d.msgbox(_(u"There don't seem to be any local tarballs available.  Hit OK to manually specify a URI."))
-		
 		#Specify URI
 		#subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
 		type_it_in = False
@@ -980,7 +942,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 	def _set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A scheduler with extended capabilities over cron & anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
-		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=75)
+		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=77)
 		if code == self._DLG_OK:
 			if menuitem == "None": 
 				menuitem = ""
@@ -988,7 +950,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_logger(self):
 		loggers = (("syslog-ng", _(u"An advanced system logger.")), ("metalog", _(u"A Highly-configurable system logger.")), ("syslogkd", _(u"The traditional set of system logging daemons.")))
-		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  Choose a system logger:")
+		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  If doing networkless, choose syslog-ng.  Choose a system logger:")
 		code, menuitem = self._d.menu(string, choices=loggers, height=21, width=68)
 		if code == self._DLG_OK:
 			self._install_profile.set_logging_daemon_pkg(None, menuitem, None)
@@ -1012,19 +974,47 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#Popular Desktop Applications
 			choices_list = []
 			if submenu == _(u"Desktop"):
-				choices_list = [("gaim","GTK Instant Messenger client",0), ("gftp","Gnome based FTP Client",0), ("evolution","A GNOME groupware application, a Microsoft Outlook workalike",0), ("mozilla-firefox","The Mozilla Firefox Web Browser",0), ("mplayer","Media Player for Linux",0), ("openoffice","OpenOffice.org, a full office productivity suite.",0), ("openoffice-bin","Same as OpenOffice but a binary package (no compiling!)",0), ("realplayer","Real Media Player",0), ("xchat","Graphical IRC Client",0), ("xmms", "X MultiMedia System",0)]
+				choices_list = [("gaim",_(u"GTK Instant Messenger client"),int("gaim" in install_packages)),
+				("gftp",_(u"Gnome based FTP Client"),int("gftp" in install_packages)),
+				("evolution",_(u"A GNOME groupware application, a Microsoft Outlook workalike"),int("evolution" in install_packages)),
+				("mozilla-firefox",_(u"The Mozilla Firefox Web Browser"),int("mozilla-firefox" in install_packages)),
+				("mplayer",_(u"Media Player for Linux"),int("mplayer" in install_packages)),
+				("openoffice",_(u"OpenOffice.org, a full office productivity suite."),int("openoffice" in install_packages)),
+				("openoffice-bin",_(u"Same as OpenOffice but a binary package (no compiling!)"),int("openoffice-bin" in install_packages)),
+				("realplayer",_(u"Real Media Player"),int("realplayer" in install_packages)),
+				("xchat",_(u"Graphical IRC Client"),int("xchat" in install_packages)),
+				("xmms", _(u"X MultiMedia System"),int("xmms" in install_packages))]
 			#Applications often found on servers.
 			elif submenu == _(u"Servers"):
-				choices_list = [("apache","Apache Web Server",0), ("iptables","Linux kernel (2.4+) firewall, NAT and packet mangling tools",0), ("proftpd","ProFTP Server",0), ("samba","SAMBA client/server programs for UNIX",0), ("traceroute","Utility to trace the route of IP packets",0)]
+				choices_list = [("apache",_(u"Apache Web Server"),int("apache" in install_packages)),
+				("iptables",_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),int("iptables" in install_packages)),
+				("proftpd",_(u"ProFTP Server"),int("proftpd" in install_packages)),
+				("samba",_(u"SAMBA client/server programs for UNIX"),int("samba" in install_packages)),
+				("traceroute",_(u"Utility to trace the route of IP packets"),int("traceroute" in install_packages))]
 			#Window managers and X selection.
 			elif submenu == _(u"X11"):
-				choices_list = [("xorg-x11","An X11 implementation maintained by the X.Org Foundation.",0), ("gnome","The Gnome Desktop Environment",0), ("kde","The K Desktop Environment",0), ("blackbox","A small, fast, full-featured window manager for X",0), ("enlightenment","Enlightenment Window Manager",0), ("fluxbox","Fluxbox is an X11 window manager featuring tabs and an iconbar",0), ("xfce4","XFCE Desktop Environment",0)]
+				choices_list = [("xorg-x11",_(u"An X11 implementation maintained by the X.Org Foundation."),int("xorg-x11" in install_packages)),
+				("gnome",_(u"The Gnome Desktop Environment"),int("gnome" in install_packages)),
+				("kde",_(u"The K Desktop Environment"),int("kde" in install_packages)),
+				("blackbox",_(u"A small, fast, full-featured window manager for X"),int("blackbox" in install_packages)),
+				("enlightenment",_(u"Enlightenment Window Manager"),int("enlightenment" in install_packages)),
+				("fluxbox",_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),int("fluxbox" in install_packages)),
+				("xfce4",_(u"XFCE Desktop Environment"),int("xfce4" in install_packages))]
 			#Miscellaneous Applications you may want.
 			elif submenu == _(u"Misc"):
-				choices_list = [("gkrellm","Single process stack of various system monitors",0), ("logrotate","Rotates, compresses, and mails system logs",0), ("slocate","Secure way to index and quickly search for files on your system",0), ("ufed","Gentoo Linux USE flags editor",0)]
+				choices_list = [("gkrellm",_(u"Single process stack of various system monitors"),int("gkrellm" in install_packages)),
+				("logrotate",_(u"Rotates, compresses, and mails system logs"),int("logrotate" in install_packages)),
+				("slocate",_(u"Secure way to index and quickly search for files on your system"),int("slocate" in install_packages)),
+				("ufed",_(u"Gentoo Linux USE flags editor"),int("ufed" in install_packages))]
 			#Recommended by the Gentoo Linux Installer Team
 			elif submenu == _(u"Recommended"):
-				choices_list = [("anjuta","A versatile IDE for GNOME",0), ("chkrootkit","a tool to locally check for signs of a rootkit",0), ("crack-attack","Addictive OpenGL-based block game",0), ("enemy-territory","Return to Castle Wolfenstein: Enemy Territory",0), ("netcat","the network swiss army knife",0), ("nmap","A utility for network exploration or security auditing",0), ("screen","full-screen window manager that multiplexes between several processes",0)]
+				choices_list = [("anjuta",_(u"A versatile IDE for GNOME"),int("anjuta" in install_packages)),
+				("chkrootkit",_(u"a tool to locally check for signs of a rootkit"),int("chkrootkit" in install_packages)),
+				("crack-attack",_(u"Addictive OpenGL-based block game"),int("crack-attack" in install_packages)),
+				("enemy-territory",_(u"Return to Castle Wolfenstein: Enemy Territory"),int("enemy-territory" in install_packages)),
+				("netcat",_(u"the network swiss army knife"),int("netcat" in install_packages)),
+				("nmap",_(u"A utility for network exploration or security auditing"),int("nmap" in install_packages)),
+				("screen",_(u"full-screen window manager that multiplexes between several processes"),int("screen" in install_packages))]
 			elif submenu == _(u"Manual"):
 				code, install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=install_packages, width=70) 
 				continue
@@ -1263,7 +1253,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						break
 
 	def _set_services(self):
-		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),0), ("apache", _(u"Common web server (version 1.x)"),0), ("apache2", _(u"Common web server (version 2.x)"),0), ("distccd", _(u"Distributed Compiling System"),0), ("esound", _(u"ESD Sound Daemon"),0), ("hdparm", _(u"Hard Drive Tweaking Utility"),0), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),0), ("portmap", _(u"Port Mapping Service"),0), ("proftpd", _(u"Common FTP server"),0), ("sshd", _(u"SSH Daemon (allows remote logins)"),0), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
+		services = self._install_profile.get_services()
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)), ("apache", _(u"Common web server (version 1.x)"),int("apache" in services)), ("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)), ("distccd", _(u"Distributed Compiling System"),int("distccd" in services)), ("esound", _(u"ESD Sound Daemon"),int("esound" in services)), ("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)), ("portmap", _(u"Port Mapping Service"),int("portmap" in services)), ("proftpd", _(u"Common FTP server"),int("proftpd" in services)), ("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
 		code, services_list = self._d.checklist(string, choices=choice_list, height=21, list_height=12, width=77)
 		if code != self._DLG_OK:
@@ -1271,7 +1262,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		services = ""
 		for service in services_list:
 			services += service + ","
-		services = services[:-1]
+		if services:
+			services = services[:-1]
 		if _(u"Other") in services_list:
 			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
 		if code != self._DLG_OK: 
