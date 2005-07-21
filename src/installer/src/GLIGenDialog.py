@@ -258,53 +258,7 @@ class GLIGenIP(GLIGen):
 	#---------------------------------------
 	#Functions to generate a install profile
 	#---------------------------------------
-	def _set_timezone(self):
-	# This section will be for setting the timezone.
-		zonepath = "/usr/share/zoneinfo"
-		skiplist = ["zone.tab","iso3166.tab","posixrules"]
-		while 1:
-			tzlist = []
-			for entry in os.listdir(zonepath):
-				if entry not in skiplist:
-					if os.path.isdir(zonepath + "/" + entry): entry += "/"
-					tzlist.append(entry)
-			tzlist.sort()
-			string = _(u"Please select the timezone for the new installation.  Entries ending with a / can be selected to reveal a sub-list of more specific locations. For example, you can select America/ and then Chicago.")
-			code, tznum = self._d.menu(string, choices=self._dmenu_list_to_choices(tzlist), height=20, cancel="Back")
-			if code == self._DLG_OK:
-				zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
-				if tzlist[int(tznum)-1][-1:] != "/": 
-					break
-			else:
-				if zonepath == "/usr/share/zoneinfo": 
-					return
-				slashloc = zonepath[:-1].rfind("/")
-				zonepath = zonepath[:slashloc]
-		try:
-			self._install_profile.set_time_zone(None, zonepath[20:], None)
-		except:
-			self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
 	
-	def _set_portage_tree(self):
-	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
-		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")), ("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")), ("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")), ("None", _(u"Extra cases such as if /usr/portage is an NFS mount"))]
-		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=75, height=17, choices=menulist)
-		if code != self._DLG_OK: 
-			return
-		self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
-		if portage_tree_sync == "Snapshot":
-			code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
-			if code == self._DLG_OK:
-				if snapshot: 
-					if not GLIUtility.is_uri(snapshot, checklocal=self.local_install):
-						self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
-					else: 
-						self._install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
-			
-				else: 
-					self._d.msgbox(_(u"No URI was specified! Returning to default emerge sync."))
-			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-
 	def _set_partitions(self):
 		string1 = _("""The first thing on the new system to setup is the partitoning on the new system.
 You will first select a drive and then edit its partitions.
@@ -500,6 +454,100 @@ on partitioning and the various filesystem types available in Linux.""")
 					tmpmount['mountopts'] = mountopts
 				network_mounts[int(menuitemidx)-1] = tmpmount
 
+	def _set_install_stage(self):
+	# The install stage and stage tarball will be selected here
+		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap&build from scratch.")),
+						("2",_(u"Stage2 is used for building from a bootstrapped semi-compiled state.")),
+						("3",_(u"Stage3 is a basic system that has been built for you (no compiling).")), 
+						("3+GRP", _(u"A Stage3 install but using binaries from the LiveCD when able.")))
+		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=78)
+		if code == self._DLG_OK:
+			if install_stage == "3+GRP":
+				install_stage = "3"
+			try:			
+				self._install_profile.set_grp_install(None, True, None)
+				self._install_profile.set_install_stage(None, install_stage, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
+		if install_stage == "3":
+			#Change the Yes/No buttons to new labels for this question.
+			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
+			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
+			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
+				#Generate on the FLY				
+				try:
+					self._install_profile.set_stage_tarball_uri(None, "networkless", None)
+				except:
+					self._d.msgbox(_(u"ERROR: Could not set the stage tarball URI!"))
+				return
+		#Specify URI
+		#subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
+		type_it_in = False
+		stage_tarball = ""
+		if GLIUtility.ping("www.gentoo.org"):  #Test for network connectivity
+			mirrors = GLIUtility.list_mirrors()
+			mirrornames = []
+			mirrorurls = []
+			for item in mirrors:
+				mirrornames.append(item[1])
+				mirrorurls.append(item[0])
+			code, mirror = self._d.menu(_(u"Select a mirror to grab the tarball from or select Cancel to enter an URI manually."), choices=self._dmenu_list_to_choices(mirrornames), width=77, height=20)
+			if code != self._DLG_OK:
+				type_it_in = True
+			else:
+				mirror = mirrorurls[int(mirror)-1]
+				arch = self._client_profile.get_architecture_template()
+				subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
+				code, subarch = self._d.menu(_(u"Select the sub-architecture that most closely matches your system (this changes the amount of optimization):"), choices=self._dmenu_list_to_choices(subarches))
+				if code != self._DLG_OK:
+					type_it_in = True
+				else:
+					subarch = subarches[int(subarch)-1]	
+					tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
+					code, stage_tarball = self._d.menu(_(u"Select your desired stage tarball:"), choices=self._dmenu_list_to_choices(tarballs))
+					if (code != self._DLG_OK):
+						type_it_in = True
+					else:
+						stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + tarballs[int(stage_tarball)-1]
+		#get portageq envvar value of cflags and look for x86, i686,etc.
+			#URL SYNTAX
+			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
+		else:
+			type_it_in = True
+		if type_it_in:
+			code, stage_tarball = self._d.inputbox(_(u"Specify the stage tarball URI or local file:"), init=self._install_profile.get_stage_tarball_uri())
+			if code != self._DLG_OK:
+				return
+		#If Doing a local install, check for valid file:/// uri
+		if stage_tarball:
+			if not GLIUtility.is_uri(stage_tarball, checklocal=self.local_install):
+				self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."));
+			else: self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+		else: self._d.msgbox(_(u"No URI was specified!"))
+			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+	
+	def _set_portage_tree(self):
+	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
+		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")), ("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")), ("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")), ("None", _(u"Extra cases such as if /usr/portage is an NFS mount"))]
+		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=75, height=17, choices=menulist)
+		if code != self._DLG_OK: 
+			return
+		self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
+		if portage_tree_sync == "Snapshot":
+			code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
+			if code == self._DLG_OK:
+				if snapshot: 
+					if not GLIUtility.is_uri(snapshot, checklocal=self.local_install):
+						self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."))
+					else: 
+						self._install_profile.set_portage_tree_snapshot_uri(None, snapshot, None)
+			
+				else: 
+					self._d.msgbox(_(u"No URI was specified! Returning to default emerge sync."))
+			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
+
+
+
 	def _set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		make_conf = self._install_profile.get_make_conf()
@@ -611,80 +659,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 								self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
 				#else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
 				
-				
-
-	def _set_install_stage(self):
-	# The install stage and stage tarball will be selected here
-		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap&build from scratch.")),
-						("2",_(u"Stage2 is used for building from a bootstrapped semi-compiled state.")),
-						("3",_(u"Stage3 is a basic system that has been built for you (no compiling).")), 
-						("3+GRP", _(u"A Stage3 install but using binaries from the LiveCD when able.")))
-		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=78)
-		if code == self._DLG_OK:
-			if install_stage == "3+GRP":
-				install_stage = "3"
-			try:			
-				self._install_profile.set_grp_install(None, True, None)
-				self._install_profile.set_install_stage(None, install_stage, None)
-			except:
-				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
-		if install_stage == "3":
-			#Change the Yes/No buttons to new labels for this question.
-			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
-			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
-			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
-				#Generate on the FLY				
-				try:
-					self._install_profile.set_stage_tarball_uri(None, "networkless", None)
-				except:
-					self._d.msgbox(_(u"ERROR: Could not set the stage tarball URI!"))
-				return
-		#Specify URI
-		#subarches = { 'x86': ("x86", "i686", "pentium3", "pentium4", "athlon-xp"), 'hppa': ("hppa1.1", "hppa2.0"), 'ppc': ("g3", "g4", "g5", "ppc"), 'sparc': ("sparc32", "sparc64")}
-		type_it_in = False
-		stage_tarball = ""
-		if GLIUtility.ping("www.gentoo.org"):  #Test for network connectivity
-			mirrors = GLIUtility.list_mirrors()
-			mirrornames = []
-			mirrorurls = []
-			for item in mirrors:
-				mirrornames.append(item[1])
-				mirrorurls.append(item[0])
-			code, mirror = self._d.menu(_(u"Select a mirror to grab the tarball from or select Cancel to enter an URI manually."), choices=self._dmenu_list_to_choices(mirrornames), width=77, height=20)
-			if code != self._DLG_OK:
-				type_it_in = True
-			else:
-				mirror = mirrorurls[int(mirror)-1]
-				arch = self._client_profile.get_architecture_template()
-				subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
-				code, subarch = self._d.menu(_(u"Select the sub-architecture that most closely matches your system (this changes the amount of optimization):"), choices=self._dmenu_list_to_choices(subarches))
-				if code != self._DLG_OK:
-					type_it_in = True
-				else:
-					subarch = subarches[int(subarch)-1]	
-					tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
-					code, stage_tarball = self._d.menu(_(u"Select your desired stage tarball:"), choices=self._dmenu_list_to_choices(tarballs))
-					if (code != self._DLG_OK):
-						type_it_in = True
-					else:
-						stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + tarballs[int(stage_tarball)-1]
-		#get portageq envvar value of cflags and look for x86, i686,etc.
-			#URL SYNTAX
-			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
-		else:
-			type_it_in = True
-		if type_it_in:
-			code, stage_tarball = self._d.inputbox(_(u"Specify the stage tarball URI or local file:"), init=self._install_profile.get_stage_tarball_uri())
-			if code != self._DLG_OK:
-				return
-		#If Doing a local install, check for valid file:/// uri
-		if stage_tarball:
-			if not GLIUtility.is_uri(stage_tarball, checklocal=self.local_install):
-				self._d.msgbox(_(u"The specified URI is invalid.  It was not saved.  Please go back and try again."));
-			else: self._install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-		else: self._d.msgbox(_(u"No URI was specified!"))
-			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
-
 	def _set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
 		arch_loaders = { 'x86': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))], 'amd64': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
@@ -713,7 +687,35 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
 				except:
 					self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
-	
+				
+
+	def _set_timezone(self):
+	# This section will be for setting the timezone.
+		zonepath = "/usr/share/zoneinfo"
+		skiplist = ["zone.tab","iso3166.tab","posixrules"]
+		while 1:
+			tzlist = []
+			for entry in os.listdir(zonepath):
+				if entry not in skiplist:
+					if os.path.isdir(zonepath + "/" + entry): entry += "/"
+					tzlist.append(entry)
+			tzlist.sort()
+			string = _(u"Please select the timezone for the new installation.  Entries ending with a / can be selected to reveal a sub-list of more specific locations. For example, you can select America/ and then Chicago.")
+			code, tznum = self._d.menu(string, choices=self._dmenu_list_to_choices(tzlist), height=20, cancel="Back")
+			if code == self._DLG_OK:
+				zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
+				if tzlist[int(tznum)-1][-1:] != "/": 
+					break
+			else:
+				if zonepath == "/usr/share/zoneinfo": 
+					return
+				slashloc = zonepath[:-1].rfind("/")
+				zonepath = zonepath[:slashloc]
+		try:
+			self._install_profile.set_time_zone(None, zonepath[20:], None)
+		except:
+			self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
+
 	def _set_networking(self):
 	# This section will be for setting up network interfaces
 		interfaces = self._install_profile.get_network_interfaces()
@@ -939,6 +941,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						self._d.msgbox(_(u"ERROR! Could not set the RSYNC Proxy:")+rsync_proxy)
 						error = True
 
+
 	def _set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A scheduler with extended capabilities over cron & anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
@@ -1023,6 +1026,30 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				continue
 			for package in choices:
 				install_packages += package + " "	
+
+	def _set_services(self):
+		services = self._install_profile.get_services()
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)), ("apache", _(u"Common web server (version 1.x)"),int("apache" in services)), ("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)), ("distccd", _(u"Distributed Compiling System"),int("distccd" in services)), ("esound", _(u"ESD Sound Daemon"),int("esound" in services)), ("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)), ("portmap", _(u"Port Mapping Service"),int("portmap" in services)), ("proftpd", _(u"Common FTP server"),int("proftpd" in services)), ("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
+		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
+		code, services_list = self._d.checklist(string, choices=choice_list, height=21, list_height=12, width=77)
+		if code != self._DLG_OK:
+			return
+		services = ""
+		for service in services_list:
+			services += service + ","
+		if services:
+			services = services[:-1]
+		if _(u"Other") in services_list:
+			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
+		if code != self._DLG_OK: 
+			return
+		try:
+			if services:
+				self._install_profile.set_services(None, services, None)
+		except:
+			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
+
+
 	def _set_rc_conf(self):
 	# This section is for editing /etc/rc.conf
 		if not self.advanced_mode:
@@ -1252,27 +1279,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						del users[menuitem]
 						break
 
-	def _set_services(self):
-		services = self._install_profile.get_services()
-		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)), ("apache", _(u"Common web server (version 1.x)"),int("apache" in services)), ("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)), ("distccd", _(u"Distributed Compiling System"),int("distccd" in services)), ("esound", _(u"ESD Sound Daemon"),int("esound" in services)), ("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)), ("portmap", _(u"Port Mapping Service"),int("portmap" in services)), ("proftpd", _(u"Common FTP server"),int("proftpd" in services)), ("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
-		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
-		code, services_list = self._d.checklist(string, choices=choice_list, height=21, list_height=12, width=77)
-		if code != self._DLG_OK:
-			return
-		services = ""
-		for service in services_list:
-			services += service + ","
-		if services:
-			services = services[:-1]
-		if _(u"Other") in services_list:
-			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
-		if code != self._DLG_OK: 
-			return
-		try:
-			if services:
-				self._install_profile.set_services(None, services, None)
-		except:
-			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
 			
 	def _save_install_profile(self, xmlfilename="", askforfilename=True):
 		code = 0
