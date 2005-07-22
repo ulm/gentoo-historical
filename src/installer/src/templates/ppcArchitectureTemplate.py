@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: ppcArchitectureTemplate.py,v 1.2 2005/07/22 21:24:22 codeman Exp $
+$Id: ppcArchitectureTemplate.py,v 1.3 2005/07/22 21:58:36 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -49,6 +49,8 @@ class ppcArchitectureTemplate(x86ArchitectureTemplate):
 				if mountpoint == "/":
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					root_device = device
+		if self._install_profile.get_bootloader_kernel_args(): bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
+		else: bootloader_kernel_args = ""
 		#Assuming the config program works as specified, it should do the majority of the work.
 		#this is the white rabbit object.  antarus: it expects a full fstab, /proc mounted, and a kernel in /boot/vmlinux.  The manaul also says /dev must be bind-mounted.
 		exitstatus = GLIUtility.spawn("yabootconfig --chroot "+self._chroot_dir+" --quiet", display_on_tty8=True)
@@ -87,12 +89,13 @@ class ppcArchitectureTemplate(x86ArchitectureTemplate):
 		for i in range(0, len(contents)):
 			if contents[i] == "image=/boot/vmlinux":
 				contents[i] = "image=/boot/"+kernel_name[5:]
-				#if build_mode == "genkernel":
+				if build_mode == "genkernel":
 					#insert /dev/ram0 line
+					contents.insert("root=/dev/ram0",i+2)
 					#insert partition line.
+					contents.insert("partition="+root_minor,i+3)
 					#edit append line. use root_device and root_minor.
-				#else:
-					#i think we're good here.
+					contents.insert("append=\"real_root="+root_device+root_minor+ " init=/linuxrc "+bootloader_kernel_args + "\" \n", i+4)
 		f = open(self._chroot_dir+"/etc/yaboot.conf",'w')
 		f.writelines(contents)
 		f.close()
