@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.9 $"
+__revision__ = "$Revision: 1.10 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -294,12 +294,9 @@ def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
     c = db.cursor()
     extra = ''
     if arch:
-        stable_extra = ('ebuild.arch REGEXP "^%s| %s" '
-            ' AND ebuild.prevarch NOT REGEXP"^%s| %s"'
-            % (arch,arch,arch,arch))
-        testing_extra = ('ebuild.arch REGEXP "^~%s| ~%s" '
-            ' AND ebuild.prevarch NOT REGEXP "^~%s| ~%s"'
-            % (arch,arch,arch,arch))
+        stable_extra = ('ebuild.arch REGEXP "^%s[[:>:]]|[[:blank:]]%s[[:>:]]" '
+            % (arch,arch))
+        testing_extra = ('ebuild.arch REGEXP "[~]%s[[:>:]]" ' % arch)
         if branch == 'stable':
             extra = ' AND (%s) ' % stable_extra
         elif branch == 'testing':
