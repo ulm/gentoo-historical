@@ -402,7 +402,20 @@
 
 <!-- Mail template -->
 <xsl:template match="mail">
-<a href="mailto:{@link}"><xsl:value-of select="."/></a>
+<a>
+ <xsl:attribute name="href">
+   <xsl:choose>
+    <xsl:when test="@link">
+      <xsl:value-of select="concat('mailto:', @link)"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="concat('mailto:', .)"/>
+    </xsl:otherwise>
+   </xsl:choose>
+ </xsl:attribute>
+ <xsl:value-of select="."/>
+</a>
+
 </xsl:template>
 
 <!-- Mail inside <author>...</author> -->
