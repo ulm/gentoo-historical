@@ -473,7 +473,7 @@ on partitioning and the various filesystem types available in Linux.""")
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
 			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
-			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?")) == self._DLG_YES:
+			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?"), width=55) == self._DLG_YES:
 				#Generate on the FLY				
 				try:
 					self._install_profile.set_stage_tarball_uri(None, "networkless", None)
@@ -964,13 +964,12 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		while 1:
 			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")), (_(u"Servers"), _(u"Applications often found on servers.")), (_(u"X11"), _(u"Window managers and X selection.")), (_(u"Misc"), _(u"Miscellaneous Applications you may want.")), (_(u"Recommended"), _(u"Applications recommended by the Gentoo Linux Installer Team.")), (_(u"Manual"), _(u"Type your own space-separated list of packages to install."))]
 			string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
-			code, submenu = self._d.menu(string1+ _(u"\nYour current package list is: ")+install_packages, choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
+			code, submenu = self._d.menu(string1+ _(u"\nYour current package list is: ")+string.join(install_packages, ','), choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
 			if code != self._DLG_OK:  #Save and move on.
 				try:
-					if install_packages[-1] == " ":
-						install_packages = install_packages[:-1]
-					if install_packages:
-						self._install_profile.set_install_packages(None, install_packages, None)
+					packages = string.split(install_packages)
+					if packages:
+						self._install_profile.set_install_packages(None, packages, None)
 				except:
 					self._d.msgbox(_(u"ERROR! Could not set the install packages! List of packages:")+install_packages)
 				return
@@ -1019,13 +1018,13 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				("nmap",_(u"A utility for network exploration or security auditing"),int("nmap" in install_packages)),
 				("screen",_(u"full-screen window manager that multiplexes between several processes"),int("screen" in install_packages))]
 			elif submenu == _(u"Manual"):
-				code, install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=install_packages, width=70) 
+				code, install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
 				continue
 			code, choices = self._d.checklist(_(u"Choose from the listed packages"), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
 			for package in choices:
-				install_packages += package + " "	
+				install_packages.append(package)
 
 	def _set_services(self):
 		services = self._install_profile.get_services()
