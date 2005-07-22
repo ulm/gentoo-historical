@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.156 2005/07/07 08:03:18 robbat2 Exp $
+$Id: GLIArchitectureTemplate.py,v 1.157 2005/07/22 21:24:22 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -724,6 +724,11 @@ class ArchitectureTemplate:
 			#Ok now that it's built, copy it to /boot/kernel-* for bootloader code to find it
 			if self._client_configuration.get_architecture_template() == "x86":
 				kernel_compile_script += " && cp /usr/src/linux/arch/i386/boot/bzImage /boot/kernel-custom\n"
+			elif self._client_configuration.get_architecture_template() == "amd64":
+				kernel_compile_script += " && cp /usr/src/linux/arch/x86_64/boot/bzImage /boot/kernel-custom\n"
+			elif self._client_configuration.get_architecture_template() == "ppc":
+				kernel_compile_script += " && cp /usr/src/linux/vmlinux /boot/kernel-custom\n"
+				
 			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
 			f.writelines(kernel_compile_script)
 			f.close()

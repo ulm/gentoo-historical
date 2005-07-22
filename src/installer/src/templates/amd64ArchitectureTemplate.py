@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: amd64ArchitectureTemplate.py,v 1.3 2005/03/30 05:27:48 agaffney Exp $
+$Id: amd64ArchitectureTemplate.py,v 1.4 2005/07/22 21:24:22 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -18,7 +18,6 @@ class amd64ArchitectureTemplate(x86ArchitectureTemplate):
         def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		x86ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'amd64'
-	#	self._kernel_bzimage = "arch/i386/boot/bzImage"  I don't think this is used anywhere
 
 	"""
 	def install_bootloader(self):
@@ -40,5 +39,5 @@ class amd64ArchitectureTemplate(x86ArchitectureTemplate):
 			raise Exception("BootLoaderError",'fatal','install_bootloader',"Invalid bootloader selected:"+self._install_profile.get_boot_loader_pkg())
 	"""
 
-	def _install_lilo(self):
-		raise Exception("BootLoaderError", "fatal", "_install_lilo", "This function should *never* get called for amd64")
+	def _configure_lilo(self):
+		raise Exception("BootLoaderError", "fatal", "_configure_lilo", "This function should *never* get called for amd64")

@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.54 2005/07/19 08:30:08 robbat2 Exp $
+$Id: x86ArchitectureTemplate.py,v 1.55 2005/07/22 21:24:22 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -510,7 +510,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		minornum = 0
 		#Assign root to the root mount point to make lines more readable
 		root = self._chroot_dir
-		file_name3 = root + "/boot/grub/kernel_name"
+		file_name3 = root + "/boot/kernel_name"
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
@@ -526,7 +526,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					root_device = device
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
-		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initrd-* >> "+file_name3)
+		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initramfs-* >> "+file_name3)
 		if (exitstatus0 != 0) or (exitstatus1 != 0):
 			raise GLIException("BootloaderError", 'fatal', '_configure_lilo', "Error in one of THE TWO run commands")
 		g = open(file_name3)
