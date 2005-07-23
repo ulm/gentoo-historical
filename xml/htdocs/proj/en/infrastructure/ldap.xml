@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/infrastructure/ldap.xml,v 1.1 2005/07/23 11:50:53 lcars Exp $ -->
+
+<guide link="ldap-guide.xml">
+<title>Gentoo Infrastructure LDAP guide</title>
+
+<author title="Author">
+  <mail link="lcars@gentoo.org">Andrea Barisani</mail>
+</author>
+
+<author title="Editor">
+  <mail link="lmedinas@gmail.com">Luis Medinas</mail>
+</author>
+
+<abstract>
+This guide shows you how to handle users on Gentoo Linux LDAP servers.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2005-07-22</date>
+
+<chapter>
+<title>Useful informations about Gentoo Linux LDAP server</title>
+<section>
+<title>Description of Gentoo Linux LDAP servers</title>
+<body>
+
+<p>
+Currently we have two servers available. The <e>master</e> server and a
+<e>slave</e> server. The <e>master</e> LDAP server is reachable at
+<e>ldap1.gentoo.org</e>. The <e>slave</e> server is <e>ldap2.gentoo.org</e> and
+it connects every 60 seconds to the <e>master</e> looking up changes and
+resynching the database if necessary. 
+</p>
+
+<p>
+Every update operation must be done on <e>ldap1.gentoo.org</e>, if an update
+(which means writing some entry) is performed on the <e>slave</e> a referral to
+the <e>master</e> is issued. This is transparently handled and all attempts to
+update against the slave will be redirected to the <e>master</e>.
+</p>
+
+<warn>
+<e>dev.gentoo.org</e> is currently using <e>ldap2.gentoo.org</e> as its first 
+server so any update you do could take up to 60 seconds for being seen on 
+<e>dev.gentoo.org</e>.
+Also don't forget that <c>nscd</c> is running caching negative and positive
+lookups, so doing <c>/etc/init.d/nscd restart</c> is a good way to
+force things sometimes (ask infra about it). The <c>perl_ldap</c> is a
+</warn>
+
+<p>
+The <c>perl_ldap</c> is a perl script that uses <e>Net::LDAP</e> for accessing 
+and modifying the database, it obviously allows only a predefined set of actions 
+but it should cover 90% of the cases. In the next chapter we explaine how to use it.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Gentoo Linux LDAP management with perl_ldap</title>
+<section>
+<title>Key Concepts</title>
+<body>
+
+<p>
+These are the main concepts of the perl_ldap script used for user administration.
+Invoking <e>perl_ldap</e> without arguments shows a nice help.
+</p>
+
+<warn>
+The script is the infra supported method for managing entries, nothing prevents you
+from using any LDAP browser you like for modifying your attributes. If you like to use
+something else ask infra for connection details but keep in mind that we won't support
+and/or troubleshoot other browsers issues.
+</warn>
+
+<ul>
+  <li>When you access <c>LDAP</c> you bind as a specific user, that could be
+  anonymous, yourself or a different one. That is controlled with the <c>-b</c>
+  bind option. If it's not passed then anonymous is assumed. The command
+  <c>-b</c> allows anon (anonymous), user (running user), recruiters (if user
+  is a recruiter), infra (if user is a infra member). So recruiters are always
+  going to use <c>-b recruiters</c> when not in anonymous mode. Your own 
+  dev.gentoo.org password because is asked when binding.</li>
+  <li>All write operations performed by one user against a user other than
+  itself must be performed on ldap1.gentoo.org, so recruiters are allowed to
+  modify other entries only when logged on roadrunner.gentoo.org via ssh. On 
+  dev.gentoo.org every user is allowed to modify some of its own attributes, 
+  some examples are: userPassword and sshPublicKey.</li>
+  <li>Some users are special, all users belongs to ou=devs,dc=gentoo,dc=org
+  (that's a distinguished name, DN. ou is organizational unit) but recruiters
+  belongs to ou=recruiters,ou=devs,dc=gentoo,dc=org and infra to 
+  ou=infra,ou=devs,dc=gentoo,dc=org. When dealing with users that belongs to a 
+  sub-OU the <c>-o OU | -b OU</c> option must be used, this will be clarified 
+  in the examples. The command <c>-b OU</c> must be used if the <e>binding user</e> 
+  belongs to a sub-OU, the command <c>-o OU</c> must be used if <e>the target user</e> 
+  belongs to a sub-OU.</li>
+  <li>The attribute <c>gentooAccess</c> controls on which boxes a user is
+  allowed to login, only infra and a few selected recruiters are allowed to
+  create and modify this attribute. The FQDN must be used.</li>
+</ul>  
+
+<warn>
+Connection is validated via TLS + password. The password is your toucan's 
+one and it's going to be the same for all LDAP_aware boxes in the future. The
+certificates are specified via <e>.ldaprc</e> file in your home. Removing that
+file is a Bad Thing.
+</warn>
+
+</body>
+</section>
+
+<section>
+<title>Usage</title>
+<body>
+
+<p>
+The following examples shows of the script works.
+</p>
+
+<warn>
+<e>UID</e> must be substituted with your own username, not numeric uid.
+</warn>
+
+<pre caption="show anonymous attributes for some user entry">
+# perl_ldap -s UID
+# perl_ldap -H ldap2.gentoo.org -s UID
+</pre>
+
+<pre caption="show your own visible attributes for some user entry">
+# perl_ldap -b user -s UID
+</pre>
+
+<pre caption="show your own visible attributes if your binding user is recruiters or infra member">
+# perl_ldap -b recruiters -s UID
+# perl_ldap -b infra -s UID
+</pre>
+
+<pre caption="modify an existing attribute">
+# perl_ldap -b user -M gentooGPGkey "1AF343E" UID
+# perl_ldap -b recruiters -M gentooGPGkey "1AF343E" UID
+</pre>
+
+<pre caption="modify an existing attribute if the target user is recruiters or infra member">
+# perl_ldap -b recruiters -o infra -M gentooGPGkey "1AF343E" UID
+# perl_ldap -b recruiters -o recruiters -M gentooGPGkey "1AF343E" UID
+# perl_ldap -b infra -o infra -M gentooGPGkey "1AF343E" UID
+# perl_ldap -b infra -o recruiters -M gentooGPGkey "1AF343E" UID
+</pre>
+
+<pre caption="create a new attribute">
+# perl_ldap -b recruiters -C gentooAccess "roadrunner.gentoo.org" UID
+# perl_ldap -b recruiters -C gentooAccess "toucan.gentoo.org" UID
+</pre>
+
+<impo>
+If the attributes allows multi_values then <c>-C</c> can be used on existing
+attributes as well for adding a new entry, gentooAccess is an example of
+multi_valued attribute, using -M on a multi_value attribute deletes all
+existing values.
+</impo>
+
+<pre caption="delete an attribute">
+# perl_ldap -b recruiters -E gentooAccess "roadrunner.gentoo.org" UID
+# perl_ldap -b recruiters -E gentooGPGkey UID
+</pre>
+
+<impo>
+If value is specified then only the matching attribute is removed, this is
+useful for multi_valued attributes.
+</impo>
+
+<pre caption="add a public key">
+# perl_ldap -b recruiters -C sshPublicKey "$(cat pubkey)" UID
+</pre>
+
+<impo>
+The pubkey is a file with only one ssh public key, use multiple times if
+you need more than one key. At the moment adding more than one key in the same attribute 
+doesn't work.
+</impo>
+
+<pre caption="add a new user">
+# perl_ldap -b recruiters -A UID
+</pre>
+
+<impo>
+A UID will be prompted, please check on toucan and lark for a free one.
+<c>getent passwd|awk -F ":" '{print $3}'|sort -n</c> might help. Once all servers will be
+using LDAP uid will be automatically assigned.
+</impo>
+
+<pre caption="delete a user">
+# perl_ldap -b recruiters -D UID
+</pre>
+
+<pre caption="change user password">
+# perl_ldap -b recruiters -P UID
+</pre>
+
+<impo>
+User's own password can also be change with <c>passwd</c> command as usual.
+</impo>
+
+<pre caption="search for some attribute across all users">
+# perl_ldap -S gentooLocation
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Implementation Status</title>
+
+<section>
+<title>Available attributes</title>
+<body>
+
+<table>
+  <tr>
+    <th>Attribute Name</th>
+    <th>Access Level</th>
+    <th>Description</th>
+    <th>Type</th>
+  </tr>
+  <tr>
+    <ti>gentooLocation</ti>
+    <ti>infra, recruiters</ti>
+    <ti>developer location</ti>
+    <ti>single, required</ti>
+  </tr>  
+  <tr>
+    <ti>gentooJoin</ti>
+    <ti>infra, recruiters</ti>
+    <ti>developer join date</ti>
+    <ti>single, optional</ti>
+  </tr>  
+  <tr>
+    <ti>gentooAccess</ti>
+    <ti>infra, recruiters</ti>
+    <ti>developer access level</ti>
+    <ti>multiple, required</ti>
+  </tr>  
+  <tr>
+    <ti>gentooStatus</ti>
+    <ti>infra, recruiters</ti>
+    <ti>developer status</ti>
+    <ti>single, required</ti>
+  </tr>
+  <tr>
+    <ti>gentooGPGkey</ti>
+    <ti>user</ti>
+    <ti>gpg key uid</ti>
+    <ti>single, optional</ti>
+  </tr>
+  <tr>
+    <ti>gentooGPGFingerprint</ti>
+    <ti>user</ti>
+    <ti>gpg key fingerprint</ti>
+    <ti>single, optional</ti>
+  </tr>
+  <tr>
+    <ti>gentooRoles</ti>
+    <ti>infra,recruiters</ti>
+    <ti>developer projects</ti>
+    <ti>single, optional</ti>
+  </tr>
+  <tr>
+    <ti>gentooHerd</ti>
+    <ti>infra,recruiters</ti>
+    <ti>developer herd</ti>
+    <ti>single, optional</ti>
+  </tr>
+  <tr>
+    <ti>sshPublicKey</ti>
+    <ti>user</ti>
+    <ti>OpenSSH public key</ti>
+    <ti>multiple, optional</ti>
+  </tr>  
+  <tr>
+    <ti>birthday</ti>
+    <ti>user</ti>
+    <ti>developer birthday</ti>
+    <ti>single, optional</ti>
+  </tr>  
+
+</table>
+</body>
+</section>
+
+<section>
+<title>LDAP aware servers</title>
+<body>
+
+<table>
+  <tr>
+    <th>Server Name</th>
+    <th>Alias</th>
+    <th>Status</th>
+  </tr>
+  <tr>
+    <ti>roadrunner.gentoo.org</ti>
+    <ti>ldap1.gentoo.org</ti>
+    <ti>LDAP Master Server</ti>
+  </tr>  
+  <tr>
+    <ti>duck.gentoo.org</ti>
+    <ti>ldap2.gentoo.org</ti>
+    <ti>LDAP Slave Server</ti>
+  </tr>  
+  <tr>
+    <ti>toucan.gentoo.org</ti>
+    <ti>dev.gentoo.org</ti>
+    <ti>LDAP available: accounts, sudo, ssh</ti>
+  </tr>  
+</table>  
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Useful Information</title>
+<section>
+<title>Problems</title>
+<body>
+
+<p>
+If you have issues contact the <mail link="gentoo-infrastructure@gentoo.org">Gentoo Infrastructure Team</mail>
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
