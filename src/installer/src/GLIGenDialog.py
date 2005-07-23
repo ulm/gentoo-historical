@@ -563,8 +563,10 @@ The installer divides USE flag selection into two screens, one for
 global USE flags and one for local flags specific to each program.
 Please be patient while the screens load. It may take awhile."""), width=73, height=16)
 					
-		#Second set the USE flags, this is a biggie.
-		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
+		#First set the USE flags, this is a biggie.
+		system_use_flags = make_conf['USE']
+		if not system_use_flags:  #not a preloaded config.  this is the NORMAL case.
+			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
 		use_flags = []
 		use_local_flags = []
 		use_desc = GLIUtility.get_global_use_flags()
@@ -960,18 +962,21 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def _set_extra_packages(self):
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
-		install_packages = self._install_profile.get_install_packages()
+		if self._install_profile.get_install_packages():
+			install_packages = self._install_profile.get_install_packages()
+		else:
+			install_packages = []
 		while 1:
-			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")), (_(u"Servers"), _(u"Applications often found on servers.")), (_(u"X11"), _(u"Window managers and X selection.")), (_(u"Misc"), _(u"Miscellaneous Applications you may want.")), (_(u"Recommended"), _(u"Applications recommended by the Gentoo Linux Installer Team.")), (_(u"Manual"), _(u"Type your own space-separated list of packages to install."))]
+			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")), (_(u"Servers"), _(u"Applications often found on servers.")), (_(u"X11"), _(u"Window managers and X selection.")), (_(u"Misc"), _(u"Miscellaneous Applications you may want.")), (_(u"Recommended"), _(u"Applications recommended by the GLI Team.")), (_(u"Manual"), _(u"Type your own space-separated list of packages."))]
 			string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
 			code, submenu = self._d.menu(string1+ _(u"\nYour current package list is: ")+string.join(install_packages, ','), choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
 			if code != self._DLG_OK:  #Save and move on.
 				try:
-					packages = string.split(install_packages)
+					packages = string.join(install_packages, ' ')
 					if packages:
 						self._install_profile.set_install_packages(None, packages, None)
 				except:
-					self._d.msgbox(_(u"ERROR! Could not set the install packages! List of packages:")+install_packages)
+					self._d.msgbox(_(u"ERROR! Could not set the install packages! List of packages:"))
 				return
 			#Popular Desktop Applications
 			choices_list = []
@@ -1237,13 +1242,25 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
 					users[menuitem][1] = GLIUtility.hash_password(passwd1)
 				elif menuitem2 == _(u"Group Membership"):
-					choice_list = [("users", _(u"The usual group for normal users."), 1), ("wheel", _(u"Allows users to attempt to su to root."), 0), ("audio", _(u"Allows access to audio devices."), 0), ("games", _(u"Allows access to games."), 0), ("apache", _(u"For users who know what they're doing only."), 0), ("cdrom", _(u"For users who know what they're doing only."), 0), ("ftp", _(u"For users who know what they're doing only."), 0), ("video", _(u"For users who know what they're doing only."), 0), (_(u"Other"), _(u"Manually specify your groups in a comma-separated list."), 0)]
+					prechk = users[menuitem][2]
+					choice_list = [("users", _(u"The usual group for normal users."), int("users" in prechk)),
+					("wheel", _(u"Allows users to attempt to su to root."), int("wheel" in prechk)),
+					("audio", _(u"Allows access to audio devices."), int("audio" in prechk)),
+					("games", _(u"Allows access to games."), int("games" in prechk)),
+					("apache", _(u"For users who know what they're doing only."), int("apache" in prechk)),
+					("cdrom", _(u"For users who know what they're doing only."), int("cdrom" in prechk)),
+					("ftp", _(u"For users who know what they're doing only."), int("ftp" in prechk)),
+					("video", _(u"For users who know what they're doing only."), int("video" in prechk)),
+					(_(u"Other"), _(u"Manually specify your groups in a comma-separated list."), 0)]
 					string2 = _(u"Select which groups you would like the user %s to be in." % menuitem)
 					code, group_list = self._d.checklist(string2, choices=choice_list, height=19, list_height=10, width=77)
+					if code != self._DLG_OK:
+						break
 					groups = ""
 					for group in group_list:
 						groups += group + ","
-					groups = groups[:-1]
+					if groups:
+						groups = groups[:-1]
 					if _(u"Other") in group_list:
 						code, groups = self._d.inputbox(_(u"Enter a comma-separated list of groups the user is to be in"), init=",".join(users[menuitem][2]))
 						if code != self._DLG_OK: continue
