@@ -57,23 +57,45 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("Any extra packages installed (beyond the stage3) will be installed using binaries from the LiveCD that you are installing from")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=20)
+		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+
+		self.check_dynamic = gtk.CheckButton("Dynamic")
+		self.check_dynamic.set_sensitive(False)
+		self.check_dynamic.connect("toggled", self.dynamic_checked)
+		self.check_dynamic.set_size_request(100, -1)
+		hbox = gtk.HBox(False, 0)
+		hbox.pack_start(self.check_dynamic, expand=False, fill=False, padding=5)
+		tmplabel = gtk.Label("The stage3 will be generated from the packages on the LiveCD")
+		tmplabel.set_line_wrap(True)
+		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
+		vert.pack_start(hbox, expand=False, fill=False, padding=15)
 
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Stage tarball URI:"), expand=False, fill=False, padding=5)
 		self.entry_stage_tarball_uri = gtk.Entry()
 		self.entry_stage_tarball_uri.set_width_chars(50)
 		hbox.pack_start(self.entry_stage_tarball_uri, expand=False, fill=False, padding=10)
-		vert.pack_start(hbox, expand=False, fill=False, padding=30)
+		vert.pack_end(hbox, expand=False, fill=False, padding=10)
 
 		self.add_content(vert)
 
 	def stage_selected(self, widget, data=None):
 		self.active_selection = int(data)
+		self.entry_stage_tarball_uri.set_sensitive(True)
 		if int(data) == 3:
 			self.check_grp.set_sensitive(True)
+			self.check_dynamic.set_sensitive(True)
+			if self.check_dynamic.get_active():
+				self.entry_stage_tarball_uri.set_sensitive(False)
 		else:
 			self.check_grp.set_sensitive(False)
+			self.check_dynamic.set_sensitive(False)
+
+	def dynamic_checked(self, widget):
+		if widget.get_active() and self.active_selection == 3:
+			self.entry_stage_tarball_uri.set_sensitive(False)
+		else:
+			self.entry_stage_tarball_uri.set_sensitive(True)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
@@ -85,6 +107,7 @@ Each option has a brief description beside it.
 		self.radio_stages[self.active_selection].set_active(True)
 		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
 		self.check_grp.set_active(self.controller.install_profile.get_grp_install())
+		self.check_dynamic.set_active(self.controller.install_profile.get_dynamic_stage3())
 
 	def deactivate(self):
 		if not self.entry_stage_tarball_uri.get_text():
@@ -96,8 +119,9 @@ Each option has a brief description beside it.
 		self.controller.install_profile.set_install_stage(None, self.active_selection, None)
 		if self.active_selection == 3:
 			self.controller.install_profile.set_grp_install(None, self.check_grp.get_active(), None)
+			self.controller.install_profile.set_dynamic_stage3(None, self.check_dynamic.get_active(), None)
 		else:
 			self.controller.install_profile.set_grp_install(None, False, None)
 		try: self.controller.install_profile.set_stage_tarball_uri(None, self.entry_stage_tarball_uri.get_text(), None)
-		except: pass
+		except:	pass
 		return True

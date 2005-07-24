@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.157 2005/07/22 21:24:22 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.158 2005/07/24 20:35:37 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -247,7 +247,7 @@ class ArchitectureTemplate:
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
 			os.makedirs(self._chroot_dir)
-		if self._install_profile.get_install_stage() == 3 and self._install_profile.get_stage_tarball_uri() == "networkless":
+		if (self._install_profile.get_install_stage() == 3 and self._install_profile.get_stage_tarball_uri() == "networkless") or self._install_profile.get_dynamic_stage3():
 			# stage3 generation code here
 			if not GLIUtility.is_file("/usr/livecd/systempkgs.txt"):
 				raise("CreateStage3Error", "fatal", "unpack_stage_tarball", "Required file /usr/livecd/systempkgs.txt does not exist")

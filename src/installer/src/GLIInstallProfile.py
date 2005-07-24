@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.70 2005/07/24 19:46:55 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.71 2005/07/24 20:35:37 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -89,6 +89,7 @@ class InstallProfile:
 		self._post_install_script_uri = ""
 		self._etc_files = {}
 		self._temp_etc_file = {}
+		self._dynamic_stage3 = False
 		self.xmldoc = ""
 
 		# Parser handler calls.  For each XML attribute and children of that attribute, a handler is needed.
@@ -100,6 +101,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/default-gateway', self.set_default_gateway)
 		self._parser.addHandler('gli-profile/dns-servers', self.set_dns_servers)
 		self._parser.addHandler('gli-profile/domainname', self.set_domainname)
+		self._parser.addHandler('gli-profile/dynamic-stage3', self.set_dynamic_stage3)
 		self._parser.addHandler('gli-profile/etc-files/file', self.add_etc_files_file, call_on_null=True)
 		self._parser.addHandler('gli-profile/etc-files/file/entry', self.add_etc_files_file_entry, call_on_null=True)
 		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage_add_file, call_on_null=True)
@@ -152,6 +154,7 @@ class InstallProfile:
 					'bootloader-kernel-args':	self.get_bootloader_kernel_args,
 					'cron-daemon':				self.get_cron_daemon_pkg,
 					'domainname':				self.get_domainname,
+					'dynamic-stage3':			self.get_dynamic_stage3,
 					'ftp-proxy':				self.get_ftp_proxy,
 					'grp-install':				self.get_grp_install,
 					'hostname':					self.get_hostname,
@@ -371,6 +374,20 @@ class InstallProfile:
 	# Returns domainname
 	def get_domainname(self):
 		return self._domainname
+
+	##
+	# Set whether or not to build the stage3 from the LiveCD
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param dynamic_stage3	True/False 	
+	# @param xml_attr 		not used here
+	def set_dynamic_stage3(self, xml_path, dynamic_stage3, xml_attr):
+		# Check type
+		self._dynamic_stage3 = dynamic_stage3
+
+	##
+	# Returns whether or not to build the stage3 from the LiveCD
+	def get_dynamic_stage3(self):
+		return self._dynamic_stage3
 
 	##
 	# Used internally for XML parsing...adds an entry to a file
