@@ -20,7 +20,7 @@
 
 <!-- img tag -->
 <xsl:template match="img">
-  <img src="{@src}"/>
+  <img src="{@src}" alt=""/>
 </xsl:template>
 
 <!-- Content of /guide -->
