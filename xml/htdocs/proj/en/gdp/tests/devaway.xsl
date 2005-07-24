@@ -36,7 +36,7 @@ Last update: <xsl:value-of select="exslt:node-set($devaway)/devaway/@date"/>
 </tr>
 <xsl:for-each select='exslt:node-set($devaway)/devaway/dev'>
   <xsl:sort select="@nick"/>
-  <tr>
+  <tr id="{@nick}">
   <th><xsl:value-of select="@nick"/></th>
   <ti>
    <xsl:choose>

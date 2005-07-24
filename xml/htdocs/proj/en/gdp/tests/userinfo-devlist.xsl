@@ -62,8 +62,10 @@
       <tr>
         <th>Username</th>
         <th>Name</th>
-        <th>Status</th>
-        <xsl:if test="$statusFilter != 'Retired'"><th>GPG key</th></xsl:if>
+        <th>
+          <xsl:if test="$statusFilter != 'Retired'">GPG key</xsl:if>
+          <xsl:if test="$statusFilter = 'Retired'">Status</xsl:if>
+        </th>
         <th>Location</th>
         <th>Areas of responsibility</th>
       </tr>
@@ -83,17 +85,7 @@
             </xsl:choose>
           </ti>
           <ti>
-            <xsl:choose>
-              <xsl:when test="status and status != 'active'">
-                <xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" />
-              </xsl:when>
-              <xsl:when test="$devaway/devaway/dev[@nick=$username]">
-                <uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username)"/></xsl:attribute>away</uri>
-              </xsl:when>
-            </xsl:choose>
-          </ti>
-          <xsl:if test="$statusFilter != 'Retired'">
-            <ti>
+            <xsl:if test="$statusFilter != 'Retired'">
               <xsl:choose>
                 <xsl:when test="starts-with(pgpkey, '0x')">
                   <xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
@@ -105,10 +97,18 @@
                   Invalid key specification!
                 </xsl:when>
               </xsl:choose>
-            </ti>
-          </xsl:if>
+            </xsl:if>
+            <xsl:if test="$statusFilter = 'Retired'">
+              <xsl:if test="status and status != 'active'">
+                <xsl:value-of select="concat(translate(substring(status, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), substring(status, 2, string-length(status)))" />
+              </xsl:if>
+            </xsl:if>
+          </ti>
           <ti>
             <xsl:if test="location"><xsl:value-of select="location"/></xsl:if>
+            <xsl:if test="$devaway/devaway/dev[@nick=$username]">
+              (<uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username,'#',$username)"/></xsl:attribute>away</uri>)
+            </xsl:if>
           </ti>
           <ti>
             <xsl:choose>
