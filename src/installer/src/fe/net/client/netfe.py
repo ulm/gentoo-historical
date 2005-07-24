@@ -69,6 +69,37 @@ class IPDialog(GLIGenDialog.GLIGenIP):
 	def __init__(self):
 		if self._d.yesno("We are unable to find an Install Profile for you. Would you like to generate one instead?") == self._DLG_YES:
 			GLIGenIP.__init__(self)
+			self._fn = (
+				{ 'text': "Partitioning", 'fn': self.set_partitions },
+				{ 'text': "Network mounts", 'fn': self.set_network_mounts },
+				{ 'text': "Install Stage", 'fn': self.set_install_stage },
+				{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
+				{ 'text': "make.conf", 'fn': self.set_make_conf },
+				{ 'text': "Kernel", 'fn': self.set_kernel },
+				{ 'text': "Bootloader", 'fn': self.set_boot_loader },
+				{ 'text': "Timezone", 'fn': self.set_timezone },
+				{ 'text': "Networking", 'fn': self.set_networking },
+				{ 'text': "Cron daemon", 'fn': self.set_cron_daemon },
+				{ 'text': "Logging daemon", 'fn': self.set_logger },
+				{ 'text': "Extra packages", 'fn': self.set_extra_packages },
+				{ 'text': "Services", 'fn': self.set_services },
+				{ 'text': "rc.conf", 'fn': self.set_rc_conf },
+				{ 'text': "Root password", 'fn': self.set_root_password },
+				{ 'text': "Additional Users", 'fn': self.set_additional_users })
+			self._menu_list = []
+			for item in self._fn:
+				self._menu_list.append(item['text'])
+			current_item = 0
+			while 1:
+				code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
+				if code != self._DLG_OK:
+					break
+				current_item = int(menuitem)
+				menuitem = self._menu_list[int(menuitem)-1]
+				for item in self._fn:
+					if menuitem == item['text']:
+						item['fn']()
+						current_item += 1
 		else:
 			raise GLIException('NetFeError', 'fatal', 'UserGen.__init__', "Unable to find or generate a Install Profile.")
 

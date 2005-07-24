@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.69 2005/07/21 21:09:53 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.70 2005/07/24 19:46:55 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -44,8 +44,8 @@ class InstallProfile:
 		# Configuration information - profile data
 		# All variables must be declared here with a default value to ensure
 		# the XML will correctly serialize.
-		self._cron_daemon_pkg = ""
-		self._logging_daemon_pkg = ""
+		self._cron_daemon_pkg = "vixie-cron"
+		self._logging_daemon_pkg = "syslog-ng"
 		self._boot_loader_mbr = True
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []

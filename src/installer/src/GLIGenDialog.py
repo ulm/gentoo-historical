@@ -69,8 +69,7 @@ class GLIGenCF(GLIGen):
 	def set_logfile(self):
 		#If not advanced, the default will suffice.
 		if self.advanced_mode:
-			string = _(u"""
-The installer logs all important events during the install process to a logfile for debugging purposes.
+			string = _(u"""The installer logs all important events during the install process to a logfile for debugging purposes.
 The file gets copied to the new system once the install is complete.
 Enter the desired filename and path for the install log (the default is recommended):""")
 			initval = self._client_profile.get_log_file()
@@ -108,12 +107,6 @@ Enter the desired filename and path for the install log (the default is recommen
 			if code != self._DLG_OK: 
 				return
 		
-		#Not sure if I can get rid of these yet.
-		#network_type = ""
-		#ip_address = ""
-		#broadcast = ""
-		#netmask = ""
-		#gateway = ""
 		dhcp_options = ""
 		
 		#Change the Yes/No buttons to new labels for this question.
@@ -221,37 +214,7 @@ class GLIGenIP(GLIGen):
 		self._install_profile = install_profile
 		self.local_install = local_install
 		self.advanced_mode = advanced_mode
-		self._fn = (
-			{ 'text': "Partitioning", 'fn': self._set_partitions },
-			{ 'text': "Network mounts", 'fn': self._set_network_mounts },
-			{ 'text': "Install Stage", 'fn': self._set_install_stage },
-			{ 'text': "Portage Tree", 'fn': self._set_portage_tree },
-			{ 'text': "make.conf", 'fn': self._set_make_conf },
-			{ 'text': "Kernel", 'fn': self._set_kernel },
-			{ 'text': "Bootloader", 'fn': self._set_boot_loader },
-			{ 'text': "Timezone", 'fn': self._set_timezone },
-			{ 'text': "Networking", 'fn': self._set_networking },
-			{ 'text': "Cron daemon", 'fn': self._set_cron_daemon },
-			{ 'text': "Logging daemon", 'fn': self._set_logger },
-			{ 'text': "Extra packages", 'fn': self._set_extra_packages },
-			{ 'text': "Services", 'fn': self._set_services },
-			{ 'text': "rc.conf", 'fn': self._set_rc_conf },
-			{ 'text': "Root password", 'fn': self._set_root_password },
-			{ 'text': "Additional Users", 'fn': self._set_additional_users })
-		self._menu_list = []
-		for item in self._fn:
-			self._menu_list.append(item['text'])
-		current_item = 0
-		while 1:
-			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
-			if code != self._DLG_OK:
-				break
-			current_item = int(menuitem)
-			menuitem = self._menu_list[int(menuitem)-1]
-			for item in self._fn:
-				if menuitem == item['text']:
-					item['fn']()
-					current_item += 1
+
 	
 	def serialize(self):
 		return self._install_profile.serialize()
@@ -259,7 +222,7 @@ class GLIGenIP(GLIGen):
 	#Functions to generate a install profile
 	#---------------------------------------
 	
-	def _set_partitions(self):
+	def set_partitions(self):
 		string1 = _("""The first thing on the new system to setup is the partitoning on the new system.
 You will first select a drive and then edit its partitions.
 No changes will be saved until the end of the step.
@@ -391,7 +354,7 @@ on partitioning and the various filesystem types available in Linux.""")
 		except:
 			self._d.msgbox(_(u"ERROR:  The partition tables could not be set correctly!"))
 
-	def _set_network_mounts(self):
+	def set_network_mounts(self):
 	# This is where any NFS mounts will be specified
 		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())
 		while 1:
@@ -454,7 +417,7 @@ on partitioning and the various filesystem types available in Linux.""")
 					tmpmount['mountopts'] = mountopts
 				network_mounts[int(menuitemidx)-1] = tmpmount
 
-	def _set_install_stage(self):
+	def set_install_stage(self):
 	# The install stage and stage tarball will be selected here
 		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap&build from scratch.")),
 						("2",_(u"Stage2 is used for building from a bootstrapped semi-compiled state.")),
@@ -526,7 +489,7 @@ on partitioning and the various filesystem types available in Linux.""")
 		else: self._d.msgbox(_(u"No URI was specified!"))
 			#if d.yesno("The specified URI is invalid. Use it anyway?") == DLG_YES: install_profile.set_stage_tarball_uri(None, stage_tarball, None)
 	
-	def _set_portage_tree(self):
+	def set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
 		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")), ("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")), ("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")), ("None", _(u"Extra cases such as if /usr/portage is an NFS mount"))]
 		code, portage_tree_sync = self._d.menu(_(u"Which method do you want to use to sync the portage tree for the installation?  If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd."),width=75, height=17, choices=menulist)
@@ -548,7 +511,7 @@ on partitioning and the various filesystem types available in Linux.""")
 
 
 
-	def _set_make_conf(self):
+	def set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		make_conf = self._install_profile.get_make_conf()
 		
@@ -594,15 +557,16 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			temp_use += flag + " "
 		make_conf["USE"] = temp_use
 		
-		#Second, set the ACCEPT_KEYWORDS
-		#Change the Yes/No buttons to new labels for this question.
-		self._d.add_persistent_args(["--yes-label", _(u"Stable")])
-		self._d.add_persistent_args(["--no-label", _(u"Unstable")])
-		if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs."), height=12, width=55) == self._DLG_YES:
-			#Stable
-			make_conf["ACCEPT_KEYWORDS"] = ""
-		else:  #Unstable
-			make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
+		if self.advanced_mode:
+			#Second, set the ACCEPT_KEYWORDS
+			#Change the Yes/No buttons to new labels for this question.
+			self._d.add_persistent_args(["--yes-label", _(u"Stable")])
+			self._d.add_persistent_args(["--no-label", _(u"Unstable")])
+			if self._d.yesno(_(u"Do you want to run the normal stable portage tree, or the bleeding edge unstable (i.e. ACCEPT_KEYWORDS=arch)?  If unsure select stable.  Stable is required for GRP installs."), height=12, width=55) == self._DLG_YES:
+				#Stable
+				make_conf["ACCEPT_KEYWORDS"] = ""
+			else:  #Unstable
+				make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
 		while not self.advanced_mode:
 			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform.")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
@@ -618,7 +582,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				make_conf[menuitem] = newval
 				
 
-	def _set_kernel(self):
+	def set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
 		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")), ("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")), ("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")), ("grsec-sources",_(u"Vanilla sources with grsecurity patches")), ("livecd-kernel", _(u"Copy over the current running kernel (fastest)")), (_(u"Other"), _(u"Choose one of the other sources available."))]
 		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources, width=77, height=17)
@@ -661,7 +625,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 								self._d.msgbox(_(u"ERROR! Could not set the kernel config URI!"))
 				#else: self._d.msgbox(_(u"No URI was specified!  Reverting to using genkernel"))
 				
-	def _set_boot_loader(self):
+	def set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
 		arch_loaders = { 'x86': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))], 'amd64': [("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
 		boot_loaders = arch_loaders[arch]
@@ -691,7 +655,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
 				
 
-	def _set_timezone(self):
+	def set_timezone(self):
 	# This section will be for setting the timezone.
 		zonepath = "/usr/share/zoneinfo"
 		skiplist = ["zone.tab","iso3166.tab","posixrules"]
@@ -718,7 +682,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		except:
 			self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
 
-	def _set_networking(self):
+	def set_networking(self):
 	# This section will be for setting up network interfaces
 		interfaces = self._install_profile.get_network_interfaces()
 		CC_iface = self._client_profile.get_network_interface()
@@ -944,7 +908,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						error = True
 
 
-	def _set_cron_daemon(self):
+	def set_cron_daemon(self):
 		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")), ("dcron",_(u"A cute little cron from Matt Dillon.")), ("fcron", _(u"A scheduler with extended capabilities over cron & anacron")), ("None", _(u"Don't use a cron daemon. (NOT Recommended!)")))
 		string = _(u"A cron daemon executes scheduled commands. It is very handy if you need to execute some command regularly (for instance daily, weekly or monthly).  Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron. Installing one of them is similar to installing a system logger. However, dcron and fcron require an extra configuration command, namely crontab /etc/crontab. If you don't know what to choose, use vixie-cron.  If doing a networkless install, choose vixie-cron.  Choose your cron daemon:")
 		code, menuitem = self._d.menu(string, choices=cron_daemons, height=21, width=77)
@@ -953,14 +917,14 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				menuitem = ""
 			self._install_profile.set_cron_daemon_pkg(None, menuitem, None)
 
-	def _set_logger(self):
+	def set_logger(self):
 		loggers = (("syslog-ng", _(u"An advanced system logger.")), ("metalog", _(u"A Highly-configurable system logger.")), ("syslogkd", _(u"The traditional set of system logging daemons.")))
 		string = _(u"Linux has an excellent history of logging capabilities -- if you want you can log everything that happens on your system in logfiles. This happens through the system logger. Gentoo offers several system loggers to choose from.  If you plan on using sysklogd or syslog-ng you might want to install logrotate afterwards as those system loggers don't provide any rotation mechanism for the log files.  If doing networkless, choose syslog-ng.  Choose a system logger:")
 		code, menuitem = self._d.menu(string, choices=loggers, height=21, width=68)
 		if code == self._DLG_OK:
 			self._install_profile.set_logging_daemon_pkg(None, menuitem, None)
 
-	def _set_extra_packages(self):
+	def set_extra_packages(self):
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
 		if self._install_profile.get_install_packages():
 			install_packages = self._install_profile.get_install_packages()
@@ -1031,7 +995,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			for package in choices:
 				install_packages.append(package)
 
-	def _set_services(self):
+	def set_services(self):
 		services = self._install_profile.get_services()
 		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)), ("apache", _(u"Common web server (version 1.x)"),int("apache" in services)), ("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)), ("distccd", _(u"Distributed Compiling System"),int("distccd" in services)), ("esound", _(u"ESD Sound Daemon"),int("esound" in services)), ("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)), ("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)), ("portmap", _(u"Port Mapping Service"),int("portmap" in services)), ("proftpd", _(u"Common FTP server"),int("proftpd" in services)), ("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)), (_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
 		string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
@@ -1054,7 +1018,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
 
 
-	def _set_rc_conf(self):
+	def set_rc_conf(self):
 	# This section is for editing /etc/rc.conf
 		if not self.advanced_mode:
 			return
@@ -1164,7 +1128,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			etc_files['rc.conf']['XSESSION'] = xsession
 		self._install_profile.set_etc_files(etc_files)
 	
-	def _set_root_password(self):
+	def set_root_password(self):
 	# The root password will be set here
 		while 1:
 			code, passwd1 = self._d.passwordbox(_(u"Please enter your desired password for the root account.  (note it will not show the password.  Also do not try to use backspace.):"))
@@ -1183,7 +1147,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._d.msgbox(_(u"Password saved.  Press Enter to continue."))
 				return
 
-	def _set_additional_users(self):
+	def set_additional_users(self):
 	# This section will be for adding non-root users
 		users = {}
 		for user in self._install_profile.get_users():
@@ -1296,7 +1260,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						break
 
 			
-	def _save_install_profile(self, xmlfilename="", askforfilename=True):
+	def save_install_profile(self, xmlfilename="", askforfilename=True):
 		code = 0
 		filename = xmlfilename
 		if askforfilename:
