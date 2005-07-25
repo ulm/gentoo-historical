@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.35 2005/06/24 21:51:26 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.36 2005/07/25 01:45:08 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -92,7 +92,6 @@ class ClientConfiguration:
 	# Serializes the Client Configuration into an XML format that is returned.
 	def serialize(self):
 		fntable ={	'architecture-template': self.get_architecture_template,
-					'dns-servers': self.get_dns_servers,
 					'enable-ssh': self.get_enable_ssh,
 					'ftp-proxy': self.get_ftp_proxy,
 					'http-proxy': self.get_http_proxy,
@@ -116,7 +115,11 @@ class ClientConfiguration:
 			self.data += "<%s>%s</%s>" % (key, fntable[key](), key)
 
 		# Serialize the special cases.
+		self.serialize_dns_servers()
 		self.serialize_kernel_modules()
+
+		# Add closing tag
+		self.data += "</client-configuration>"
 		
 		#Finish by putting it all in nice XML.
 		dom = xml.dom.minidom.parseString(self.data)
@@ -162,6 +165,12 @@ class ClientConfiguration:
 	# @param self Parameter description
 	def get_dns_servers(self):
 		return self._dns_servers
+
+	##
+	# Serialization for the DNS servers
+	def serialize_dns_servers(self):
+		# Special Case the kernel modules
+		self.data += "<dns-servers>%s</dns-servers>" % " ".join(self.get_dns_servers())
 
 	# This variable has a simple serialize function.
 	
@@ -265,7 +274,6 @@ class ClientConfiguration:
 	def serialize_kernel_modules(self):
 		# Special Case the kernel modules
 		self.data += "<kernel-modules>%s</kernel-modules>" % string.join(self.get_kernel_modules())
-		self.data += "</client-configuration>"
 	
 	############################################################################
 	#### Log File Location

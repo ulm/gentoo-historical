@@ -84,7 +84,33 @@ class Panel(GLIScreen.GLIScreen):
 		tmptable.attach(self.dns_entry, 2, 3, 2, 3)
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
-		self.notebook.append_page(basicbox, gtk.Label("Basic"))
+		hbox = gtk.HBox(False, 0)
+		tmptable = gtk.Table(rows=5, columns=2)
+		tmptable.set_col_spacings(6)
+		tmptable.set_row_spacings(5)
+#		tmptable.attach(gtk.Label("   "), 0, 2, 0, 1)
+		tmplabel = gtk.Label()
+		tmplabel.set_markup("<b><u>Proxies:</u></b>")
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 0, 2, 1, 2)
+		tmplabel = gtk.Label("HTTP Proxy:")
+		tmplabel.set_alignment(0, 0.5)
+		tmptable.attach(tmplabel, 0, 1, 2, 3)
+		self.http_proxy_entry = gtk.Entry()
+		tmptable.attach(self.http_proxy_entry, 1, 2, 2, 3)
+		tmplabel = gtk.Label("FTP Proxy:")
+		tmplabel.set_alignment(0, 0.5)
+		tmptable.attach(tmplabel, 0, 1, 3, 4)
+		self.ftp_proxy_entry = gtk.Entry()
+		tmptable.attach(self.ftp_proxy_entry, 1, 2, 3, 4)
+		tmplabel = gtk.Label("Rsync Proxy:")
+		tmplabel.set_alignment(0, 0.5)
+		tmptable.attach(tmplabel, 0, 1, 4, 5)
+		self.rsync_proxy_entry = gtk.Entry()
+		tmptable.attach(self.rsync_proxy_entry, 1, 2, 4, 5)
+		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
+		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
+		self.notebook.append_page(basicbox, gtk.Label("Networking"))
 
 		advbox = gtk.VBox(False, 0)
 		advbox.set_border_width(10)
@@ -137,10 +163,22 @@ class Panel(GLIScreen.GLIScreen):
 		self.verify_root_password_entry.set_width_chars(25)
 		self.verify_root_password_entry.set_visibility(False)
 		tmptable.attach(self.verify_root_password_entry, 1, 2, 7, 8, xoptions=0)
+		tmplabel = gtk.Label("   ")
+		tmptable.attach(tmplabel, 0, 1, 8, 9)
+		tmplabel = gtk.Label()
+		tmplabel.set_markup("<b><u>Kernel modules:</u></b>")
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 0, 2, 9, 10)
+		tmplabel = gtk.Label("Modules:")
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 0, 1, 10, 11)
+		self.modules_entry = gtk.Entry()
+		self.modules_entry.set_width_chars(25)
+		tmptable.attach(self.modules_entry, 1, 2, 10, 11)
 
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
 		advbox.pack_start(hbox, expand=False, fill=False, padding=0)
-		self.notebook.append_page(advbox, gtk.Label("Advanced"))
+		self.notebook.append_page(advbox, gtk.Label("Misc."))
 
 		vert.pack_start(self.notebook, expand=True, fill=True, padding=0)
 
@@ -157,7 +195,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.ip_address_entry.set_text(ip_addr)
 		self.netmask_entry.set_text(mask)
 		self.broadcast_entry.set_text(bcast)
-		self.gateway_entry.set_text(gw)
+#		self.gateway_entry.set_text(gw)
 
 	def dhcp_static_toggled(self, radiobutton, data=None):
 		if radiobutton.get_active():
@@ -196,4 +234,39 @@ class Panel(GLIScreen.GLIScreen):
 			self.dhcp_static_toggled(self.basic_dhcp_radio, "dhcp")
 		else:
 			self.basic_static_radio.set_active(True)
-			
+		self.chroot_dir_entry.set_text(self.controller.client_profile.get_root_mount_point())
+		self.logfile_entry.set_text(self.controller.client_profile.get_log_file())
+		if self.controller.client_profile.get_enable_ssh():
+			self.sshd_yes_radio.set_active(True)
+		else:
+			self.sshd_no_radio.set_active(True)
+		dns_servers = GLIUtility.spawn(r"grep -e '^nameserver' /etc/resolv.conf | sed -e 's:^nameserver ::'", return_output=True)[1].strip().split('\n')
+		dns_servers = " ".join(dns_servers)
+		self.dns_entry.set_text(dns_servers)
+		self.gateway_entry.set_text(GLIUtility.spawn(r"/sbin/route -n | grep -e '^0\.0\.0\.0' | sed -e 's:^0\.0\.0\.0 \+::' -e 's: \+.\+$::'", return_output=True)[1].strip())
+		self.modules_entry.set_text(" ".join(self.controller.client_profile.get_kernel_modules()))
+
+	def deactivate(self):
+		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)
+		if self.basic_dhcp_radio.get_active():
+			self.controller.client_profile.set_network_type(None, "dhcp", None)
+		else:
+			self.controller.client_profile.set_network_type(None, "static", None)
+			self.controller.client_profile.set_network_ip(None, self.ip_address_entry.get_text(), None)
+			self.controller.client_profile.set_network_netmask(None, self.netmask_entry.get_text(), None)
+			self.controller.client_profile.set_network_broadcast(None, self.broadcast_entry.get_text(), None)
+			self.controller.client_profile.set_network_gateway(None, self.gateway_entry.get_text(), None)
+			self.controller.client_profile.set_dns_servers(None, self.dns_entry.get_text(), None)
+		self.controller.client_profile.set_http_proxy(None, self.http_proxy_entry.get_text(), None)
+		self.controller.client_profile.set_ftp_proxy(None, self.ftp_proxy_entry.get_text(), None)
+		self.controller.client_profile.set_rsync_proxy(None, self.rsync_proxy_entry.get_text(), None)
+		self.controller.client_profile.set_root_mount_point(None, self.chroot_dir_entry.get_text(), None)
+		self.controller.client_profile.set_log_file(None, self.logfile_entry.get_text(), None)
+		self.controller.client_profile.set_enable_ssh(None, self.sshd_yes_radio.get_active(), None)
+		if self.root_password_entry.get_text() == self.verify_root_password_entry.get_text():
+			self.controller.client_profile.set_root_passwd(None, GLIUtility.hash_password(self.root_password_entry.get_text()), None)
+		self.controller.client_profile.set_kernel_modules(None, self.modules_entry.get_text(), None)
+		self.controller.cc.set_configuration(self.controller.client_profile)
+		self.controller.cc.start_pre_install()
+				
+		return True

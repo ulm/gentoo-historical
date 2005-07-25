@@ -448,10 +448,7 @@ def get_eth_info(device):
 				up = True
 	else:
 		raise GLIException("GLIUtilityError", 'fatal', "get_eth_info", device_info)
-	status, route_info = spawn("netstat -nr", return_output=True)
-	for line in route_info[1].splitlines():
-		if line.startswith('0.0.0.0'):
-			gw = line.split('0.0.0.0')[1].strip()
+	gw = spawn(r"/sbin/route -n | grep -e '^0\.0\.0\.0' | sed -e 's:^0\.0\.0\.0 \+::' -e 's: \+.\+$::'", return_output=True)[1].strip()
 	
 	return (hw_addr, ip_addr, mask, bcast, gw, up)
 	

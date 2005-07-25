@@ -73,14 +73,13 @@ class Installer:
 		self.cc = GLIClientController.GLIClientController(pretend=self._pretend)
 
 		# I'm feeling lazy
-		self.client_profile.set_interactive(None, True, None)
-		self.client_profile.set_architecture_template(None, "x86", None)
-		self.client_profile.set_log_file(None, "/var/log/install.log", None)
-		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
-#		self.client_profile.set_root_passwd(None, GLIUtility.hash_password("blah"), None)
-		self.client_profile.set_enable_ssh(None, False, None)
-		self.cc.set_configuration(self.client_profile)
-		self.cc.start_pre_install()
+#		self.client_profile.set_interactive(None, True, None)
+#		self.client_profile.set_architecture_template(None, "x86", None)
+#		self.client_profile.set_log_file(None, "/var/log/install.log", None)
+#		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
+#		self.client_profile.set_enable_ssh(None, False, None)
+#		self.cc.set_configuration(self.client_profile)
+#		self.cc.start_pre_install()
 
 		self.window = None
 		self.panel = None
