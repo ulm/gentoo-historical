@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.21 2005/07/14 19:54:13 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript-support/Attic/livecdfs-update.sh,v 1.35.2.22 2005/07/26 13:29:07 wolf31o2 Exp $
 
 /usr/sbin/env-update
 source /etc/profile
@@ -218,3 +218,10 @@ then
 	rm -rf /usr/lib/hotplug/firmware
 	ln -sf /lib/firmware /usr/lib/hotplug/firmware
 fi
+
+# Clear out locales
+case ${clst_livecd_type} in
+	gentoo-*)
+		rm -rf /usr/lib/locale/{a,b,c,d,e{l,n_{A,B,C,D,G,H,I,N,P,S,US.,Z},s,t,u},f,g,h,i,j,k,l,m,n,o,p,r,s,t,u,v,w,x,y,z}*
+	;;
+esac
