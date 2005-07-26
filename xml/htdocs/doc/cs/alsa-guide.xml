@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/alsa-guide.xml,v 1.2 2005/07/20 17:37:02 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/alsa-guide.xml,v 1.3 2005/07/26 22:10:42 jkt Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -9,8 +9,11 @@
 <author title="Autor">
   <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
 </author>
-<author title="Překlad">
+<author title="Překladatel">
   <mail link="_einstein@centrum.cz">Mirek Kratochvíl</mail>
+</author>
+<author title="Překladatel">
+   <mail link="jkt@gentoo.org">Jan Kundrát</mail>
 </author>
 
 
@@ -19,11 +22,11 @@ Pomoc při&nbsp;instalaci a nastavení ALSA pro&nbsp;Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.2</version>
-<date>2005-07-06</date>
+<version>2.7</version>
+<date>2005-07-16</date>
 
 <chapter>
 <title>Úvod</title>
@@ -74,12 +77,6 @@ následující kapitole.
 ALSA nemůže být zkompilována do&nbsp;kernelu a zároveň běžet z
 <c>media-sound/alsa-driver</c>.
 </warn>
-
-<impo>
-<c>Uživatelé genkernelu</c> mají zapnutou a vyřešenou podporu ALSA
-přímo v kernelu, proto můžou postoupit rovnou k&nbsp;sekci
-<uri link="#alsa-utilities">Nástroje ALSA</uri>
-</impo>
 
 <p>
 Dvě možnosti jsou:
@@ -147,7 +144,10 @@ Obě metody mají klady a zápory, tady je jejich stručný přehled:
 Hlavní a nejdůležitější rozdíl mezi <c>alsa-driver</c> a ALSA v kernelu
 je ten, že <c>alsa-driver</c> je v zásadě aktuálnější. V dnešní době to
 už ale neznamená až tak obrovský rozdíl (rozuměj prakticky nepoznatelný),
-takže použít ALSA z&nbsp;kernelu se zdá jako nejlepší řešení.
+takže použít ALSA z&nbsp;kernelu se zdá jako nejlepší řešení. Před hlášením chyb
+do <uri link="https://bugs.gentoo.org">Gentoo Bugzilly</uri> se je prosím
+pokuste reprodukovat při použití <c>alsa-driver</c>u (chybu však nahlaste
+v&nbsp;každém případě).
 </p>
 
 </body>
@@ -158,8 +158,35 @@ takže použít ALSA z&nbsp;kernelu se zdá jako nejlepší řešení.
 
 <p>
 Ať zvolíte jakoukoliv metodu instalace ALSA, potřebujete vědět, jaké ovladače
-používá vaše zvuková karta. Pomocí <c>lspci</c> lze získat přesně tyto informace.
-Pokud <c>lspci</c> z&nbsp;nějakého důvodu nemáte, stačí <c>emerge sys-apps/pciutils</c>.
+používá vaše zvuková karta. Ve&nbsp;většině případů jsou zvukové karty typu PCI
+(ať už integrované na motherboardu či doplňkové), a proto vám pomůže příkaz
+<c>lspci</c>. Pokud jej ještě nemáte nainstalovaný, použijte prosím <c>emerge
+sys-apps/pciutils</c>. Pokud je vaše zvuková karta připojena přes USB,
+<e>může</e> vám pomoci <c>lsusb</c> z&nbsp;<c>sys-apps/usbutils</c>. Pro karty
+ISA zkuste <c>sys-apps/isapnptools</c>, event. zkuste projít následující odkazy:
+</p>
+
+<ul>
+  <li>
+  <uri link="http://www.roestock.demon.co.uk/isapnptools/">Stránka
+  o ISAPNPTOOLS</uri>
+  </li>
+  <li>
+  <uri link="http://www2.linuxjournal.com/article/3269">Článek o PnP na
+  LinuxJournal</uri>
+  </li>
+  <li>
+  <uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/x320.html">TLDP Sound
+  HowTo</uri>
+  </li>
+</ul>
+
+<note>
+Pro jednoduchost budeme dále předpokládat, že používáte zvukovou kartu typu PCI.
+</note>
+
+<p>
+Nyní o zvukové kartě zjistíme více informací.
 </p>
 
 <pre caption="Detaily o zvukové kartě">
@@ -197,7 +224,12 @@ na nižším kernelu (2.4) tato metoda <e>definitivně nepracuje</e>.
 Nastavíme kernel tak, aby používal ALSA.
 </p>
 
-<pre caption="Nastavování kernelu">
+<impo>
+Uživatelé <c>genkernel</c>u by nyní měli spustit <c>genkernel --menuconfig</c> a poté se řídit
+instrukcemi z&nbsp;<uri link="#doc_chap2_pre3">Nastavení kernelu pro ALSA</uri>.
+</impo>
+
+<pre caption="Nastavení kernelu">
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
 </pre>
@@ -211,12 +243,14 @@ Příklad nahoře předpokládá, že ke zdrojům použitého kernelu ukazuje sy
 Teď se podíváme na&nbsp;nastavení samotného 2.6 kernelu.
 </p>
 
-<note>
-Všimněte si, že všechny příklady ukazují modulární kernel, a je dobré
-tento příklad následovat. <e>Nevynechte</e> proto sekci
-<uri link="#Konfigurace ALSA">Konfigurace ALSA</uri>. Pokud i přesto chcete
-mít podporu přímo v kernelu, ujistěte se, že jste konfiguraci změnili správně.
-</note>
+<p>
+Všimněte si prosím, že pro jednoduchost uvádějí všechny příklady ALSA
+nakonfigurovanou jako jaderné moduly. Je doporučené se držet stejného schématu,
+neboť umožňuje použití <c>alsaconf</c>, jež vám usnadní konfiguraci karty.
+<e>Nepřeskočte</e> prosím sekci <uri link="#alsa-config">Configuration</uri>.
+Pokud stále chcete mít ALSA součástí kernelu, ujistěte se, že jste si
+odpovídajícím způsobem upravili svoji konfiguraci.
+</p>
 
 <pre caption="Nastavení kernelu pro ALSA">
 Device Drivers  ---&gt;
@@ -304,6 +338,12 @@ zkontrolujte ješťě následující nastavení v
 <path>/usr/src/linux/.config</path>:
 </p>
 
+<note>
+Uživatelé <c>genkernel</c>u mohou pokračovat <uri
+link="#doc_chap2_pre6">instalací alsa-driveru</uri>, neboť jejich konfigurace je
+podle výchozího nastavení v&nbsp;pořádku.
+</note>
+
 <ol>
   <li>
   <c>CONFIG_SOUND</c> je nastaven. (Základní podpora zvuku)
@@ -333,7 +373,8 @@ CONFIG_SND is not set
 </pre>
 
 <p>
-Všechno co potřebujete do&nbsp;dalšího kroku je napsat pár magických slovíček.
+Všechno co potřebujete do&nbsp;dalšího kroku je napsat pár magických slovíček
+(a nemluvíme zde o výrazu "abrakadabra").
 </p>
 
 <pre caption="Instalace alsa-driver">
@@ -413,12 +454,12 @@ můžete pokračovat k&nbsp;nastavení ALSA initskriptů.
 V tomto okamžiku je už skoro všechno nastavené. Ať jste si ale vybrali jakoukoliv
 metodu, potřebujete něco, co zajistí načtení modulů a načtení nastavení při&nbsp;bootování
 systému. To je práce initskriptu se jménem <c>alsasound</c>. Přidejte ho do
-runlevelu <c>default</c>.
+runlevelu <c>boot</c>.
 </p>
 
-<pre caption="Přidání ALSA do default">
-# <i>rc-update add alsasound default</i>
- * alsasound added to runlevel default
+<pre caption="Přidání ALSA do runlevelu boot">
+# <i>rc-update add alsasound boot</i>
+ * alsasound added to runlevel boot
  * rc-update complete.
 </pre>
 
@@ -427,6 +468,28 @@ Ještě zkontrolujte soubor <path>/etc/conf.d/alsasound</path> a ujistěte se,
 že proměnná SAVE_ON_STOP má hodnotu yes. To znamená, že vaše nastavení se
 bude automaticky ukládat při&nbsp;vypínání systému.
 </p>
+
+</body>
+</section>
+<section>
+<title>Skupina audio</title>
+<body>
+
+<p>
+Ještě než se vrhneme do testování je <e>důležité</e> zmínit jednu věc — na
+*nixových operačních systémech platí, že se pod rootem <e>nepracuje</e>. Jaký to
+má vztah ke&nbsp;zvuku? Aby mohl normální uživetel, pod kterým běžně pracujete,
+přehrávat hudbu a přistupovat ke&nbsp;zvukové kartě, musí být členem skupiny
+"audio". Nyní tedy uživatele do této skupiny přidáme, aby mohli ke&nbsp;zvukovým
+zařízením volně přistupovat. Použijeme příkaz <c>gpasswd</c> (je potřeba být
+přihlášen jako root):
+</p>
+
+<pre caption="Přidání uživatelů do skupiny audio">
+<comment>(Nahraďte &lt;uživatel&gt; odpovídajícím uživatelským jménem)</comment>
+# <i>gpasswd -a &lt;uživatel&gt; audio </i>
+Adding user &lt;uživatel&gt; to group audio
+</pre>
 
 </body>
 </section>
@@ -441,7 +504,7 @@ ho udělal za vás).
 </p>
 
 <pre caption="Nastartování služby ALSA">
-<comment>(Modulární kernely)</comment>
+<comment>(ALSA jako moduly)</comment>
 # <i>/etc/init.d/alsasound start</i>
  * Loading ALSA modules ...
  * Loading: snd-card-0 ...        [ ok ]
@@ -450,7 +513,7 @@ ho udělal za vás).
  * Loading: snd-emu10k1-synth ... [ ok ]
  * Loading: snd-seq-midi ...      [ ok ]
  * Restoring Mixer Levels ...     [ ok ]
-<comment>(ALSA v kernelu)</comment>
+<comment>(ALSA v&nbsp;kernelu)</comment>
 # <i>/etc/init.d/alsasound start</i>
  * Loading ALSA modules ...
  * Restoring Mixer Levels ...     [ ok ]
@@ -465,6 +528,14 @@ nastavená jako "muted" (čili ztišená až na&nbsp;nulu). Pro tento účel má
 <comment>(Otevře program pro&nbsp;konzoli, ukazujeme zde pouze potřebné nastavení)</comment>
 # <i>alsamixer</i>
 </pre>
+
+<impo>
+Máte-li se spouštěním <c>alsamixer</c>u problémy a dostáváte chyby jako
+alsamixer: function snd_ctl_open failed for default: No such file or directory,
+je pravděpodobně chyba ve&nbsp;vytváření souborů zařízení přes udev. Pro nové
+vytvoření souborů v&nbsp;<path>/dev</path> spusťte <c>killall udevd;
+udevstart</c>, pravděpodobně to odstraní problémy.
+</impo>
 
 <p>
 Takhle ALSA Mixer <e>může</e> vypadat po prvním spuštění. Všimněte si kanálů
@@ -504,7 +575,6 @@ podobné zatížení nebyly navrženy.
 <p>
 Po tomto kroku by měl ALSA Mixer vypadat asi jako ten dole. Všimněte si značek
 00 místo MM a nastavení hlasitostí.
-settings.
 </p>
 
 <figure link="/images/docs/alsa-mixerunmuted.png" short="AlsaMixer je nastaven" caption="nastavený Alsa Mixer"/>
@@ -514,6 +584,27 @@ settings.
 <section>
 <title>1 - 2 - 3 - Zkouška!</title>
 <body>
+
+<p>
+Rozčilující způsob, jak zkontrolovat, zda zvuková karta funguje, je kontrola,
+zda slyšíte šum. Není to sice příliš zábavné, avšak ověříte, zda je karta
+nastavená a funkční.
+</p>
+
+<pre caption="Ať šum zní...">
+# <i>cat /dev/urandom > /dev/dsp</i>
+</pre>
+
+<note>
+<path>/dev/dsp</path> je symbolický odkaz na <path>/dev/sound/dsp</path> a měl
+by být automaticky vytvořen. Jestliže uvidíte hlášku "No such file or
+directory", zkuste přesměrovat výstup do <path>/dev/sound/dsp</path>.
+</note>
+
+<p>
+Měli byste slyšet praskání; stiskem <c>Ctrl + C</c> jej ukončíte. Neslyšíte-li
+nic, je na čase se vrátit a vyřešit problém.
+</p>
 
 <p>
 Konečně trochu muziky. Pokud všechno doteď šlo dobře, měl by váš systém být schopný
@@ -563,12 +654,25 @@ Time: 00:11.31 [04:28.75] of 04:40.06  (200.6 kbps)  Output Buffer  96.9%
 </body>
 </section>
 <section>
+<title>ALSA a USE</title>
+<body>
+
+<p>
+Nyní můžete do <path>/etc/make.conf</path> přidat USE proměnnou <c>alsa</c>,
+abyste zajistili, že aplikace budou kompilovány s&nbsp;její podporou. Některé
+architektury, jako například x86 a amd64, mají tuto volbu aktivní
+ve&nbsp;výchozím nastavení.
+</p>
+
+</body>
+</section>
+<section>
 <title>Problémy?</title>
 <body>
 
 <p>
 Pokud z&nbsp;nějakého důvodu nic neslyšíte, jako první zkontrolujte
-<uri link="#doc_chap3_pre5">alsamixer</uri>. 80% takových problémů je pohřbeno
+<uri link="#doc_chap3_pre6">alsamixer</uri>. 80% takových problémů je pohřbeno
 pod ztišenými kanály nebo nízkou hlasitostí. Taky zkontrolujte zvukový applet
 svého Windowmanageru a jeho nastavení hlasitostí.
 </p>
