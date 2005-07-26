@@ -912,6 +912,11 @@
 <!-- Table Row -->
 <xsl:template match="tr">
 <tr>
+  <xsl:if test="@id">
+    <xsl:attribute name="id">
+      <xsl:value-of select="@id"/>
+    </xsl:attribute>
+  </xsl:if>
   <xsl:apply-templates/>
 </tr>
 </xsl:template>
