@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/alsa-guide.xml,v 1.9 2005/06/30 18:12:32 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/alsa-guide.xml,v 1.10 2005/07/26 17:21:55 vanquirius Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -18,11 +18,11 @@ Este documento ajuda um usuário a configurar a ALSA no Gentoo Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.2</version>
-<date>2005-06-09</date>
+<version>2.7</version>
+<date>2005-07-16</date>
 
 <chapter>
 <title>Introdução</title>
@@ -74,13 +74,6 @@ Os métodos mostrados abaixo são mutualmente exclusivos. Você não pode ter AL
 compilado no kernel e usar <c>media-sound/alsa-driver</c>. <e>Haverá</e>
 problemas.
 </warn>
-
-<impo>
-usuários de <c>genkernel</c> tem sua configuração construída de forma que o
-subsistema da ALSA já está ativado no kernel. Portanto, usuários de
-<c>genkernel</c> podem proceder diretamente à seção 
-<uri link="#alsa-utilities">Utilitários da ALSA</uri>.
-</impo>
 
 <p>
 As duas opções são:
@@ -159,7 +152,10 @@ E, se você for usar alsa-driver,
 A diferença principal entre usar <c>alsa-driver</c> e a ALSA que vem com
 o kernel é que <c>alsa-driver</c> é geralmente mais atual que a versão do
 kernel. Já que isso não faz nenhuma grande diferença, você é encorajado a usar
-a ALSA fornecida pelo kernel.
+a ALSA fornecida pelo kernel pela facilidade de uso. Antes de relatar problemas
+relacionados a som no <uri link="https://bugs.gentoo.org">Bugzilla do
+Gentoo</uri>, por favor, tente reproduzi-los usando <c>alsa-driver</c> e relate
+o bug independentemente do resultado.
 </p>
 
 </body>
@@ -170,10 +166,37 @@ a ALSA fornecida pelo kernel.
 
 <p>
 Qualquer método de instalação que você escolher, você precisa saber que drivers
-sua placa de som usa. <c>lspci</c> pode ajudar a descobrir a informação
+sua placa de som usa. Na maior parte dos casos, placas de som (onboard e outras)
+são baseadas em PCI e <c>lspci</c> irá ajudar a descobrir a informação
 necessária. Por favor faça <c>emerge sys-apps/pciutils</c> para obter
-<c>lspci</c>, se você já não fez isso. Nós agora iremos descobrir os detalhes
-sobre a placa de som.
+<c>lspci</c>, se você já não o tiver instalado. Caso você tenha uma placa de som
+USB, <c>lsusb</c> de <c>sys-apps/usbutils</c> <e>pode</e> ser útil. Para placas
+ISA, experimente usar <c>sys-apps/isapnptools</c>. Também, as seguintes páginas
+<e>podem</e> ajudar usuários com placas baseadas em ISA.
+</p>
+
+<ul>
+  <li>
+  <uri link="http://www.roestock.demon.co.uk/isapnptools/">A páginas de
+  ISAPNPTOOLS</uri>
+  </li>
+  <li>
+  <uri link="http://www2.linuxjournal.com/article/3269">Artigo de PnP do
+  LinuxJournal</uri>
+  </li>
+  <li>
+  <uri link="http://www.tldp.org/HOWTO/Sound-HOWTO/x320.html">Guia de som
+  TLDP</uri>
+  </li>
+</ul>
+
+<note>
+Para facilidade de uso/explicação, nós presumimos que o usuário tem uma placa de
+som baseada em PCI para o resto do guia.
+</note>
+
+<p>
+Nós agora procedemos para descobrir detalhes sobre a placa de som.
 </p>
 
 <pre caption="Detalhes da placa de som">
@@ -215,6 +238,12 @@ kernel 2.4.
 Vamos configurar o kernel para ativar a ALSA.
 </p>
 
+<impo>
+Usuários de <c>genkernel</c> devem agora rodar <c>genkernel --menuconfig</c> e
+seguir as instruções em <uri link="#doc_chap2_pre3">Opções de kernel para
+ALSA</uri>.
+</impo>
+
 <pre caption="Indo para a fonte">
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
@@ -231,13 +260,14 @@ Agora nós veremos algumas das opções que iremos ter de ativar no kernel 2.6
 para assegurar o suporte correto de ALSA para nossa placa de som.
 </p>
 
-<note>
-Por favor note que para facilitar, todos exemplos mostram um kernel modular. É
-aconselhável seguir o mesmo. Por favor <e>não</e> pule a seção 
-<uri link="#alsa-config">Configuração</uri> deste documento. Se você
-ainda gostar das opções dentro do kernel, certifique-se de fazer mudanças a 
-sua configuração de acordo.
-</note>
+<p>
+Por favor note que para facilitar, todos exemplos mostram ALSA construída como
+módulos. É aconselhável seguir o mesmo, já que permite o uso de <c>alsaconf</c>,
+que é uma mão na roda para configurar sua placa. Por favor <e>não</e> pule a
+seção <uri link="#alsa-config">Configuração</uri> deste documento. Se você ainda
+quiser ter as opções construídas no kernel, certifique-se de fazer as mudanças
+necessárias à sua configuração.
+</p>
 
 <pre caption="Opções de kernel para a ALSA">
 Device Drivers  ---&gt;
@@ -327,6 +357,12 @@ certifique-se do seguinte antes de proceder, caso contrário o <c>alsa-driver</c
 provavelmente irá falhar. A lista de código a seguir é um meio de fazer as
 verificações.
 </p>
+
+<note>
+Usuários de <c>genkernel</c> podem proceder com <uri
+link="#doc_chap2_pre6">Instalando alsa-driver</uri> já que sua configuração está
+em sincronia com a mostrada abaixo por padrão.
+</note>
 
 <ol>
   <li>
@@ -427,7 +463,7 @@ sua placa de som de uma lista. Uma vez feito, irá pedir permissão para
 fazer as mudanças necessárias automaticamente a
 <path>/etc/modules.d/alsa</path>. 
 Irá então ajustar suas configurações de volume para níveis otimizados, rodar
-<c>modules-update</c> e iniciar o serviço <path>/etc/init.d/alsasound</path> .
+<c>modules-update</c> e iniciar o serviço <path>/etc/init.d/alsasound</path>.
 Uma vez que o <c>alsaconf</c> terminar, você pode continuar com a configuração
 do script de init da ALSA.
 </p>
@@ -443,12 +479,12 @@ Estamos quase prontos. Com qualquer método que você usou para instalar a ALSA,
 você precisará ter algo para carregar seus módulos ou iniciar a ALSA e carregar
 suas configurações de volume quando o sistema carregar. O script de init da ALSA
 lida com tudo isto para você e é chamado <c>alsasound</c>. Adicione ao runlevel
-default.
+boot.
 </p>
 
-<pre caption="Adicionando ALSA ao default">
-# <i>rc-update add alsasound default</i>
- * alsasound added to runlevel default
+<pre caption="Adicionando ALSA ao runlevel boot">
+# <i>rc-update add alsasound boot</i>
+ * alsasound added to runlevel boot
  * rc-update complete.
 </pre>
 
@@ -457,6 +493,30 @@ A seguir, verifique o arquivo <path>/etc/conf.d/alsasound</path> e certifique-se
 que a variável SAVE_ON_STOP está marcada como yes. Isto salva seus ajustes de
 som quando você desliga seu sistema.
 </p>
+
+</body>
+</section>
+<section>
+<title>Grupo audio</title>
+<body>
+
+<p>
+Antes de continuarmos com os testes, existe uma última coisa <e>importante</e>
+que precisa ser configurada. Regra de dedo em um sistema operacional *nix: não
+rode como administrador (root) a menos que necessário. Isto se aplica aqui
+também ;) Como? Bem, na maior parte das vezes você deve estar logado como um
+usuário e quer ouvir música ou acessar sua placa de som. Para que isto aconteça,
+você precisa estar no grupo "audio". Neste ponto, nós iremos adicionar usuários
+ao grupo audio, para que não tenham problemas quando quiserem acessar
+dispositivos de som. Nós usaremos <c>gpasswd</c> aqui e você precisará estar
+logado como root para que isto funcione.
+</p>
+
+<pre caption="Adicionando usuários ao grupo audio">
+<comment>(Troque &lt;nomedeusuario&gt; com seu usuário)</comment>
+# <i>gpasswd -a &lt;nomedeusuario&gt; audio </i>
+Adding user &lt;nomedeusuario&gt; to group audio
+</pre>
 
 </body>
 </section>
@@ -471,7 +531,7 @@ Se você rodou <c>alsaconf</c>, você pode pular este passo, já que
 </p>
 
 <pre caption="Iniciar o serviço">
-<comment>(Kernéis modulares)</comment>
+<comment>(ALSA modular)</comment>
 # <i>/etc/init.d/alsasound start</i>
  * Loading ALSA modules ...
  * Loading: snd-card-0 ...        [ ok ]
@@ -496,6 +556,14 @@ propósito.
 <comment>(Abre um programa de console. Só os ajustes necessários são mostrados)</comment>
 # <i>alsamixer</i>
 </pre>
+
+<impo>
+Se você tiver problemas para iniciar o <c>alsamixer</c> e obtiver erros como
+alsamixer: function snd_ctl_open failed for default: No such file or directory,
+isto é normalmente um problema com a configuração de dispositivos do udev. Rode
+<c>killall udevd; udevstart</c> para recarregar entradas de <path>/dev</path> e
+abra o <c>alsamixer</c>. Isto deve resolver o problema.
+</impo>
 
 <p>
 Este é como o ALSA Mixer <e>pode</e> parecer-se a primeira vez que você abri-lo.
@@ -551,10 +619,33 @@ Note o 00 ao invés do MM e também os níveis de volume para ajustes otimizados
 <body>
 
 <p>
-Finalmente. Música. Se tudo acima estiver perfeito, você pode agora escutar
-boa música. Um bom jeito de testar é usar uma ferramenta de linha de comando
-como <c>media-sound/madplay</c>. Você também pode usar algo mais conhecido
-como <c>mpg123</c> ou <c>xmms</c>. Se você for um fã de ogg, você pode usar
+O modo irritante de verificar sua placa de som é ver se você pode ouvir estática
+em seus alto-falantes. Isto não é exatamente divertido, mas, permite dizer que
+a placa está configurada e funcionando.
+</p>
+
+<pre caption="Que haja estática">
+# <i>cat /dev/urandom > /dev/dsp</i>
+</pre>
+
+<note>
+<path>/dev/dsp</path> é um link simbólico para <path>/dev/sound/dsp</path> e
+deve ser criado automaticamente. Tente redirecionar a saída para
+<path>/dev/sound/dsp</path> caso você obtenha um erro de "No such file or
+directory".
+</note>
+
+<p>
+Você deve ouvir estática. Aperte <c>Ctrl + C</c> para parar. Se você não ouvir
+nada, agora é uma boa hora para voltar e verificar/buscar o problema e
+corrigi-lo.
+</p>
+
+<p>
+Finalmente. Música. Se tudo acima estiver perfeito, você pode agora ouvir boa
+música. Um jeito rápido de testar é uma ferramenta de linha de comando como
+<c>media-sound/madplay</c>. Você também pode usar algo mais conhecido como
+<c>mpg123</c> ou <c>xmms</c>. Se você for um fã de ogg, você pode usar
 <c>ogg123</c> fornecido pelo <c>media-sound/vorbis-tools</c>. Use qualquer 
 reprodutor com que você estiver confortável. Como sempre, faça <c>emerge</c> do
 que precisar.
@@ -599,12 +690,25 @@ Time: 00:11.31 [04:28.75] of 04:40.06  (200.6 kbps)  Output Buffer  96.9%
 </body>
 </section>
 <section>
+<title>ALSA e USE</title>
+<body>
+
+<p>
+Você pode agora adicionar a opção de use <c>alsa</c> ao
+<path>/etc/make.conf</path> para certificar que suas aplicações que tem suporte
+de ALSA são construídas com ele. Algumas arquiteturas como x86 e amd64 têm a
+opção ativada por padrão.
+</p>
+
+</body>
+</section>
+<section>
 <title>Problemas?</title>
 <body>
 
 <p>
 Se por algum motivo você não puder ouvir som, a primeira coisa a fazer
-é verificar seus ajustes de <uri link="#doc_chap3_pre5">alsamixer</uri>. 80% dos
+é verificar seus ajustes de <uri link="#doc_chap3_pre6">alsamixer</uri>. 80% dos
 problemas estão com canais mudos ou volumes baixos. Também verifique o
 aplicativo de som de seu gerenciador de janelas e verifique que os volumes estão
 em níveis audíveis.
