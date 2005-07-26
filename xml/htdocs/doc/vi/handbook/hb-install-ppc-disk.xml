@@ -2,14 +2,15 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-ppc-disk.xml,v 1.2 2005/04/28 09:36:58 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-ppc-disk.xml,v 1.3 2005/07/26 15:04:16 neysx Exp $ -->
+<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-disk.xml,v 1.29 2005/06/10 18:15:33 swift Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2004-12-12</date>
+<version>2.1</version>
+<date>2005-06-10</date>
 
 <section>
 <title>Giới thiệu Block Device</title>
@@ -18,7 +19,7 @@
 <body>
 
 <p>
-Hãy xem các quan niệm về đĩa của Gentoo Linux và Linux nói chung, bao
+Hãy tìm hiểu các quan niệm về đĩa của Gentoo Linux và Linux nói chung, bao
 gồm các loại hệ tập tin Linux, phân vùng và block device. Khi bạn đã
 quen với đĩa và hệ tập tin, bạn sẽ được hướng dẫn cách thiết lập phân
 vùng và hệ tập tin cho Gentoo Linux.
@@ -28,7 +29,7 @@ vùng và hệ tập tin cho Gentoo Linux.
 Để bắt đầu, chúng tôi sẽ giới thiệu <e>block device</e>. Block device
 nổi tiếng nhất có lẽ là những cái đại diện cho ổ đĩa IDE thứ nhất
 trong hệ thống, tên là <path>/dev/hda</path>. Nếu bạn dùng ổ đĩa SCSI
-thì ổ đĩa  đầu tiên là <path>/dev/sda</path>.
+hoặc SATA thì ổ đĩa  đầu tiên là <path>/dev/sda</path>.
 </p>
 
 <p>
@@ -58,7 +59,7 @@ tương tự, gọi là <e>slice</e>.
 </subsection>
 </section>
 <section>
-<title>Thiết kế bố cục phân vùng</title>
+<title>Thiết kế mô hình phân vùng</title>
 <subsection>
 <title>Mô hình phân vùng mặc định</title>
 <body>
@@ -74,13 +75,15 @@ này:
   <th>Phân vùng NewWorld</th>
   <th>Phân vùng OldWorld</th>
   <th>Phân vùng Pegasos</th>
+  <th>Phân vùng RS/6000</th>
   <th>Hệ tập tin</th>
   <th>Kích thước</th>
   <th>Mô tả</th>
 </tr>
 <tr>
   <ti><path>/dev/hda1</path></ti>
-  <ti>/dev/hda1</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Không áp dụng)</ti>
   <ti>(Không áp dụng)</ti>
   <ti>(Partition Map)</ti>
   <ti>32k</ti>
@@ -90,25 +93,46 @@ này:
   <ti><path>/dev/hda2</path></ti>
   <ti>(Không cần)</ti>
   <ti>(Không áp dụng)</ti>
+  <ti>(Không áp dụng)</ti>
   <ti>(bootstrap)</ti>
   <ti>800k</ti>
   <ti>Apple_Bootstrap</ti>
 </tr>
 <tr>
+  <ti>(Không áp dụng)</ti>
+  <ti>(Không áp dụng)</ti>
+  <ti>(Không áp dụng)</ti>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>(PReP Boot)</ti>
+  <ti>800k</ti>
+  <ti>Loại 0x41</ti>
+</tr>
+<tr>
+  <ti>(Không cần)</ti>
+  <ti>(Không cần)</ti>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>(Không cần)</ti>
+  <ti>ext2</ti>
+  <ti>32MB</ti>
+  <ti>Phân vùng khỏi động</ti>
+</tr>
+<tr>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/hda2</path></ti>
-  <ti><path>/dev/hda1</path></ti>
+  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/sda2</path></ti>
   <ti>(swap)</ti>
   <ti>512M</ti>
-  <ti>Phân vùng Swap</ti>
+  <ti>Phân vùng Swap, Loại 0x82</ti>
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
-  <ti>ext3</ti>
+  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3, xfs</ti>
   <ti>Phần đĩa còn lại</ti>
-  <ti>Phân vùng gốc</ti>
+  <ti>Phân vùng gốc, Loại 0x83</ti>
 </tr>
 </table>
 
@@ -119,6 +143,14 @@ Apple_Patches</path>. Nếu bạn không định dùng MacOS 9, bạn có thể 
 nó, vì MacOS X và Linux không cần chúng. Bạn có thể phải dùng
 <c>parted</c> để xóa chúng, vì mac-fdisk chưa thể xóa chúng.
 </note>
+
+<warn>
+<c>parted</c> còn có thể thay đổi kích thước phân vùng. Trên CD Cài
+đặt, có những patch để thay đổi kích thước hệ tập tin HFS+. Không may
+là không thể thay đổi kích thước hệ tập tin HFS+ kèm journal, ngay cả
+khi tắt journal trên Mac OS X. Mọi thứ bạn làm để thay đổi kích thước
+phân vùng bằng parted, bạn phải tự chịu rủi ro! Nhớ sao lưu dữ liệu!
+</warn>
 
 <p>
 Nếu bạn muốn biết một phân vùng to cỡ nào, hoặc thậm chí cần bao nhiêu
@@ -131,7 +163,7 @@ hoặc <uri link="#parted">Thay thế: Dùng parted (đặc biệt là Pegasos)
 </body>
 </subsection>
 <subsection>
-<title>Bao nhiêu và to cỡ nào?</title>
+<title>Bao nhiêu và bao lớn?</title>
 <body>
 
 <p>
@@ -143,7 +175,10 @@ bạn có rất nhiều người dùng, bạn sẽ muốn dùng một phân vùn
 chọn hệ tập tin đúng sẽ tăng cường hiệu năng của hệ thống. Game server
 thường dùng phân vùng riêng cho <path>/opt</path> vì hầu hết các game
 server được cài vào đây. Lý do tách riêng phân vùng cũng tương tự như
-với <path>/home</path>: an toàn và sao lưu.
+với <path>/home</path>: an toàn và sao lưu. Bạn chắc chắn sẽ cần một
+<path>/usr</path> to: nó không chỉ chứa một lượng lớn các ứng dụng,
+cây Portage chiếm gần 500 MB, không tính mà nguồn cũng được lưu trong
+đó.
 </p>
 
 <p>
@@ -182,7 +217,7 @@ SCSI và SATA.
 </subsection>
 </section>
 <section id="fdisk">
-<title>Mặc định: Dùng mac-fdisk (Apple/IBM) để phân vùng đĩa</title>
+<title>Mặc định: Dùng mac-fdisk (Apple) để phân vùng đĩa</title>
 <body>
 
 <p>
@@ -209,8 +244,8 @@ sau bởi <c>p</c>. Trong ví dụ là <c>2p</c>.
 <note>
 Phân vùng này <e>không</e> phải là phân vùng "khởi động". Nó không hề
 được dùng bởi Linux; bạn không cần đặt bất kỳ hệ tập tin nào vào đó và
-bạn không bao giờ mount nó. PPC không cần phân vùng bổ sung cho
-<path>/boot</path>.
+bạn không bao giờ mount nó. Người dùng Apple không cần phân vùng bổ
+sung cho <path>/boot</path>.
 </note>
 
 <p>
@@ -255,9 +290,9 @@ link="#filesystems">Tạo các hệ tập tin</uri>.
 
 <p>
 <c>parted</c>, Partition Editor, có thể xử lý các phân vùng HFS+ của
-Mac OS và Mac OS X. Với công cụ này, bạn có thể co phân vùng Mac của
-bạn và tạo khoảng trống cho các phân vùng Linux. Tuy nhiên, ví dụ bên
-dưới mô tả cách phân vùng chỉ cho Pegasos.
+Mac OS và Mac OS X. Với công cụ này, bạn có thể thay đổi kích thước
+phân vùng Mac của bạn và tạo khoảng trống cho các phân vùng Linux. Tuy
+nhiên, ví dụ bên dưới mô tả cách phân vùng chỉ cho Pegasos.
 </p>
 
 <p>
@@ -275,20 +310,19 @@ disklabel cho đĩa.
 
 <p>
 Bạn có thể gõ <c>print</c> mọi lúc trong parted để xem bảng phân vùng
-hiện tại. Những thay đổi không được lưu cho tới khi bạn thoát ứng
-dụng; nếu lúc nào đó bạn thay đổi ý định hoặc phạm sai lầm, bạn có thể
+hiện tại. Nếu lúc nào đó bạn thay đổi ý định hoặc phạm sai lầm, bạn có thể
 nhấn <c>Ctrl-c</c> để ngừng parted.
 </p>
 
 <p>
 Nếu bạn còn định cài đặt MorphOS trên Pegasos, hãy tạo hệ tập tin
-affs1 tên "BI0" (BI không) ở đầu đĩa. 50MB là quá đủ để chứa kernel
+affs1 tên "BI0" (BI không) ở đầu đĩa. 32MB là quá đủ để chứa kernel
 MorphOS. Nếu bạn có Pegasos I hoặc định dùng reiserfs hoặc xfs, bạn sẽ
 cần chứa Linux kernel trên phân vùng này (Pegasos II có thể khởi động
-từ ext2/ext3). Để tạo phân vùng, chạy <c>mkpart primary affs1 START
+từ ext2/ext3 hoặc affs1). Để tạo phân vùng, chạy <c>mkpart primary affs1 START
 END</c> trong đó <c>START</c> và <c>END</c> được thay bằng vùng
-megabyte (vd <c>5 55</c> tạo phân vùng 50 MB bắt đầu tại 5MB và kết
-thúc ở 55MB).
+megabyte (vd <c>0 32</c> tạo phân vùng 32 MB bắt đầu tại 0MB và kết
+thúc ở 325MB).
 </p>
 
 <p>
@@ -344,11 +378,12 @@ không hãy đọc tiếp để tìm hiểu về những loại phân vùng đư
 
 <p>
 Có nhiều hệ tập tin. Ext2, ext3 và XFS hoạt động ổn định trên PPC. JFS
-không được hỗ trợ, còn ReiserFS vẫn còn vài vấn đề trên PPC.
+không được hỗ trợ, còn ReiserFS vẫn còn vài vấn đề trên PPC và không
+được hỗ trợ.
 </p>
 
 <p>
-<b>ext2</b> là hệ điều hành cho Linux, nhưng nó không có metadata
+<b>ext2</b> là hệ tập tin cho Linux, nhưng nó không có metadata
 journaling, nghĩa là việc kiểm tra hệ tập tin lúc khởi động có thể tốn
 nhiều thời gian. Có nhiều hệ tập tin mới hơn với tính năng journal để
 chọn lựa, tốn ít thời gian kiểm tra hơn so với những loại không có
@@ -403,15 +438,15 @@ mỗi loại hệ tập tin:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext2 -j</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
-  <ti><c>mkreiserfs</c></ti>
+  <ti><c>mkfs.reiserfs</c></ti>
 </tr>
 <tr>
   <ti>xfs</ti>
@@ -425,7 +460,7 @@ này) dùng loại ext3 (như trong ví dụ), bạn dùng:
 </p>
 
 <pre caption="Cài hệ tập tin lên phân vùng">
-# <i>mke2fs -j /dev/hda4</i>
+# <i>mkfs.ext2 -j /dev/hda4</i>
 </pre>
 
 <p>
@@ -480,9 +515,16 @@ tạo vào. Như trong ví dụ, chúng tôi sẽ mount phân vùng gốc và ph
 vùng boot:
 </p>
 
+<warn>
+Do lỗi trong gói e2fsprogs, bạn phải dùng <c>mount -t ext3</c> nếu bạn
+dùng phân vùng ext3.
+</warn>
+
 <pre caption="Mount các phân vùng">
 # <i>mkdir /mnt/gentoo</i>
 # <i>mount /dev/hda4 /mnt/gentoo</i>
+<comment>(Với phân vùng ext3:)</comment>
+# <i>mount -t ext3 /dev/hda4 /mnt/gentoo</i>
 </pre>
 
 <note>

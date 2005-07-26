@@ -4,66 +4,372 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-mips-bootloader.xml,v 1.2 2005/04/28 09:36:58 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-mips-bootloader.xml,v 1.3 2005/07/26 15:04:16 neysx Exp $ -->
+<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/handbook/hb-install-mips-bootloader.xml,v 1.11 2005/03/30 07:56:14 swift Exp <comment>(Provide the location of the Volume Header)</comment>$ -->
 
 <sections>
 
-<version>1.5</version>
-<date>2004-10-23</date>
+<version>1.7</version>
+<date>2005-03-30</date>
 
-<section>
-<title>MIPS PROM</title>
+<section id="sgi">
+<title>Silicon Graphics Machine -- Cài đặt Arcboot</title>
 <subsection>
+<title>Cài đặt arcboot</title>
 <body>
 
 <p>
-MIPS không yêu cần bạn cài đặt bootloader. MIPS PROM sẽ thực hiện khởi
-động, nhưng bạn cần cài đặt kernel là một tùy chọn sống còn.
+Ở phần trước, chúng tôi đã hướng dẫn cách tạo kernel, sau đó chép nó
+vào volume header bằng <c>dvhtool</c>. Có hai vấn đề với hệ thống này:
 </p>
+
+<ul>
+  <li>Nót không được hỗ trợ trên mọi hệ thống SGI</li>
+  <li>Nó cần một volume header khá lớn</li>
+</ul>
 
 <p>
-Trước hết, hãy cài đặt <c>dvhtool</c>, cần dùng để chép kernel vào SGI
-Volume Header.
+Để khởi động máy, bootloader, <c>arcboot</c> được dùng cho mục đích
+này. Thay vì đặt kernel trực tiếp vào volume header, chúng ta sẽ để nó
+trong <path>/boot</path> (nằm trong một phân vùng EXT2/3), và cho
+<c>arcboot</c> (nằm trong volume header, thay cho kernel) biết nơi cần
+tìm. Vậy bước đầu tiên là emerge vài công cụ để có thể dùng lát nữa...
 </p>
 
-<pre caption="Cài đặt dvhtool">
-# <i>emerge dvhtool</i>
+<pre caption="Cài đặt các công cụ cần thiết">
+# <i>emerge dvhtool arcboot</i>
 </pre>
 
 <p>
-Giờ chép kernel vào SGI Volume Header. Mặc định <c>dvhtool</c> giả
-định rằng SGI Volume Header nằm ở <path>/dev/sda</path>. Nếu không
-đúng (ví dụ khi IRIX được cài đặt trên <path>/dev/sda</path> và
-Gentoo/MIPS nằm trên <path>/dev/sdb</path>) bạn cần thông báo cho
-<c>dvhtool</c> bằng cách dùng <c>-d &lt;device&gt;</c>.
+Nó sẽ cài đặt hai công cụ, <c>arcboot</c> nằm trong volume header để
+nạp kernel, và <c>dvhtool</c> để giúp đặt <c>arcboot</c> vào volume
+header.
 </p>
 
-<pre caption="Chép kernel vào SGI Volume Header">
-# <i>dvhtool --unix-to-vh &lt;tên kernel trong /boot&gt; &lt;tên bạn
-muốn dùng trong volume header&gt;</i>
+<p>
+Chương trình chúng ta cần, nằm trong <path>/usr/lib/arcboot</path> --
+trên hệ thống IP32 (Indy, Indigo 2, Challenge S), nó tên là
+<path>arcboot.ip22</path>. Các hệ thống khác cũng tương tự. Chúng ta
+sẽ chép tập tin này vào volume header.
+</p>
+
+<pre caption="Cài đặt arcboot vào volume header">
+# <i>dvhtool --unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
 </pre>
 
 <p>
-Nếu bạn muốn xem mọi mục trong volume, dùng
-<c>--print-volume-directory</c>:
+Sau đó chúng ta có thể kiểm tra sự tồn tại của tập tin đó trong volume
+header.
 </p>
 
-<pre caption="Xem mọi mục trong volume">
+<pre caption="Kiểm tra xem arcboot có trong volume header chưa">
 # <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "linux", start 4, bytes 3262570
+Entry #1, name "newlinux", start 6377, bytes 7619627
+Entry #3, name "arcboot", start 21260, bytes 51448
+#
+</pre>
+
+<note>
+Chú ý, trong trường hợp này, chúng ta có hai kernel cũ trogn volume
+header, <path>linux</path> và <path>newlinux</path>. Nó nằm đó từ
+trước khi cài đặt <c>arcboot</c>. Sự hiện diện của nó không gây ra vấn
+đề gì cả -- chừng nào còn có <c>arcboot</c>, mọi thứ vẫn ổn.
+</note>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Cấu hình arcboot</title>
+
+<body>
+
+<p>
+Nếu bạn từng thiết lập Linux Loader (<c>lilo</c>), bạn sẽ thấy rằng
+<c>arcboot</c> dùng cú pháp tương tự như thế trong tập tin cấu hình.
+Tuy nhiên cần nhớ rằng, <c>arcboot</c> cần tập tin cấu hình của nó nằm
+trong phân vùng EXT2/3 như <path>/etc/arcboot.conf</path>. Cách dễ
+nhất để làm là bảo đảm  <path>/boot</path>  là một phân vùng EXT2/3 và
+có một tập tin tên là <path>arcboot.conf</path> trong thư mục
+<path>/boot/etc</path>. Tập tin cấu hình ví dụ nằm ở
+<path>/etc/arcboot.conf.sample</path>.
+</p>
+
+<pre caption="Đặt arcboot.conf vào đúng chỗ">
+<comment>(Tạo thư mục /boot/etc)</comment>
+# <i>mkdir /boot/etc</i>
+
+<comment>(Đặt tập tin cấu hình vào)</comment>
+# <i>cp /etc/arcboot.conf.sample /boot/etc/arcboot.conf</i>
+
+<comment>(Tạo symlink về /etc)</comment>
+# <i>ln -s /boot/etc/arcboot.conf /etc/arcboot.conf</i>
+
+<comment>(... và một symlink trong /boot, trỏ đến chính nó)</comment>
+# <i>(cd /boot; ln -s . boot)</i>
 </pre>
 
 <p>
-Để thiết lập hệ thống khởi động Gentoo/MIPS, bạn cần tinh chỉnh vài
-thiết lập trong MIPS PROM.
+Bạn có thể sửa lại <path>/etc/arcboot.conf</path> theo ý thích. Theo ý
+kiến cá nhân thì có thể thiết lập hai kernel: <path>new</path>, kernel
+được cập nhật thường xuyên, có thể chạy, cũng có thể không chạy; và
+<path>working</path>, kernel ổn định. Tập tin
+<path>arcboot.conf</path> cho cấu hình trên sẽ giống như thế sau.
 </p>
 
+<pre caption="arcboot.conf ví dụ">
+<comment># arcboot.conf</comment>
+<comment>#</comment>
+<comment># copyright 2002 Guido Guenther &lt;agx@sigxcpu.org&gt;</comment>
+<comment>#</comment>
+label=working
+        image=/vmlinux
+        append="root=/dev/sda3"
+
+<comment># backup version</comment>
+label=new
+        image=/vmlinux-new
+        append="root=/dev/sda3"
+</pre>
+
 <p>
-Hãy tiếp tục với <uri link="#reboot">Khởi động lại hệ thống</uri>.
+Khi đã thiết lập xong, bạn cần tin chỉnh một chút trong SGI PROM để có
+thể hoạt động. Phần này được đề cập trong phần <uri
+link="#reboot">Khởi động lại hệ thống</uri>, không phải phần kế tiếp.
 </p>
 
 </body>
 </subsection>
 </section>
+
+<section id="cobalt">
+<title>Cobalt MicroServer -- Cài đặt CoLo</title>
+<subsection>
+<title>Cài đặt CoLo</title>
+<body>
+
+<p>
+Với Cobalt server, những máy này có ít firmware trên chip hơn. Cobalt
+BOOTROM đơn giản, so với SGI PROM, và có nhiều hạn chế nghiêm trọng.
+</p>
+
+<ul>
+  <li>
+    Chỉ cho phép kernel tối đa 675KB. Kích thước hiện tại của Linux
+    2.4 làm cho khó có thể tạo được một kernel với kích thước cho
+    phép. Linux 2.6 thì hoàn toàn không thể.
+  </li>
+  <li>
+    Kernel 64-bit không được hỗ trợ bởi stock firmware (mặc dù vẫn
+    đang được thử nghiệm trên Cobalt ở thời điểm này)
+  </li>
+  <li>
+    Shell cực kỳ đơn giản
+  </li>
+</ul>
+
+<p>
+Để vượt qua những hạn chế này, một firmware khác, tên là
+<uri link="http://www.colonel-panic.org/cobalt-mips/">CoLo</uri> (Cobalt
+Loader) được dùng.  Đây là BOOTROM image có thể dùng để ghi vào chip
+của Cobalt server, hoặc nạp từ firmware cũ.
+</p>
+
+<note>
+Tài liệu này sẽ hướng dẫn thiết lập CoLo để được nạp từ firmware cũ.
+Làm như vậy sẽ an toàn hơn, và bạn được khuyến khích dùng cách này để
+cài đặt CoLo.
+</note>
+
+<warn>
+Bạn có thể muốn ghi CoLo vào chip trên server, thay thế hoàn toàn
+firmware gốc -- tuy nhiên bạn sẽ phải tự làm hết. Nếu có gì đó sai,
+bạn sẽ phải gỡ (vật lý) BOOTROM cũ ra và tự lập trình lại BOOTROM bằng
+stock firmware. Nếu bạn không chắc mình biết làm điều này thì
+<e>ĐỪNG</e> làm theo cách này. Chúng tôi không chịu trách nhiệm nếu có
+gì xảy ra khi bạn bỏ qua lời khuyên này.
+</warn>
+
+<p>
+Giờ chúng ta sẽ cài đặt CoLo. Trước hết hảy emerge gói này.
+</p>
+
+<pre caption="Emerge colo">
+# <i>emerge colo</i>
+</pre>
+
+<p>
+Sau khi đã cài đặt, bạn có thể xem trogn thư mục
+<path>/usr/lib/colo</path>, tìm hai tập tin,
+<path>colo-chain.elf</path>: "kernel" để stock firmware nạp, và
+<path>colo-rom-image.bin</path>: ROM image để cài flash vào BOOTROM.
+Chúng ta sẽ mount /boot và dump bản sao nén của
+<path>colo-chain.elf</path> vào <path>/boot</path>.
+</p>
+
+<pre caption="Đặt CoLo vào đúng chỗ">
+# <i>gzip -9vc /usr/lib/colo/colo-chain.elf &gt; /boot/vmlinux.gz</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Cấu hình CoLo</title>
+
+<body>
+
+<p>
+Giờ, khi hệ thống khởi động lại, nó sẽ nạp CoLo, chia menu trên LCD.
+Tùy chọn đầu (và là tùy chọn mặc định sau khoảng 5 giây) là khởi động
+đĩa cứng. Hệ thống sau đó sẽ mount phân vùng Linux đầu tiên nó tìm
+thấy vào, và chạy script <path>default.colo</path>. Cú pháp script này
+được mô tả đầy đủ trong tài liệu CoLo (xem
+<path>/usr/share/doc/colo-X.YY/README.shell.gz</path> -- X.YY là phiên
+bản cài đặt). Nó rất đơn giản.
+</p>
+
+<note>
+Một mẹo nhỏ: khi cài đặt kernel, tốt nhất nên tạo hai kernel,
+<path>kernel.gz.working</path> -- kernel ổn định, dùng để làm việc, và
+<path>kernel.gz.new</path> --  kernel mới tạo xong. Bạn có thể symlink
+đến kernel "new" và "working", hoặc đổi tên kernel image.
+</note>
+
+<pre caption="default.colo cơ bản">
+<comment>#:CoLo:#</comment>
+mount hda1
+load /kernel.gz.working
+execute root=/dev/hda3 ro console=ttyS0,115200
+</pre>
+
+<note>
+CoLo sẽ từ chối nạp script không bắt đầu bằng dòng <c>#:CoLo:#</c>.
+Hãy nghĩ rằng nó giống như <c>#!/bin/sh</c> đối với shell script.
+</note>
+
+<p>
+Bạn có thể hỏi, cấu hình &amp; kernel nào sẽ được dùng để khởi động,
+khi thời gian mặc định trôi qua. Đây là cấu hình tôi dùng trên Cobalt
+server của tôi:
+</p>
+
+<impo>
+Chú ý, bạn cần dùng CoLo v1.12 hoặc 1.13 thì mới có thể dùng lệnh
+<c>menu</c>. Ví dụ sau không hoạt động với v1.11.
+</impo>
+
+<impo>
+Lệnh <c>menu</c> được thay bằng lệnh <c>select</c> trong CoLo v1.14.
+Nếu bạn cài đặt bằng tay, hãy xem <path>menu.colo</path> trong thư mục
+<path>examples</path> trong thư mục cài đặt CoLo.
+</impo>
+
+<pre caption="Cấu hình dựa trên menu">
+<comment>#:CoLo:#</comment>
+
+lcd "Mounting hda1"
+mount hda1
+menu "Which Kernel?" 50 Working working New new
+lcd "Loading Linux" {menu-option}
+load /kernel.gz.{menu-option}
+lcd "Booting..."
+execute root=/dev/hda5 ro console=ttyS0,115200
+boot
+</pre>
+
+<p>
+Script trên yêu cầu người dùng chọn kernel muốn dùng (hoặc New, hoặc
+Working), sau đó nạp <path>vmlinux.gz.new</path> hoặc
+<path>vmlinux.gz.working</path>, tùy vào quyết định của người dùng.
+Nếu không chọn sau 5 giây, tùy chọn đầu sẽ được dùng.
+</p>
+</body>
+
+</subsection>
+</section>
+
+<section>
+<title>Thiết lập Serial Console</title>
+
+<subsection>
+<body>
+
+<p>
+Bản cài đặt Linux, vào lúc này, có thể hoạt động tốt, nhưng ngầm định
+rằng bạn đăng nhập vào bằng terminal vật lý. Với máy Cobalt, đều này
+rất tệ -- vì không có cái gì gọi là terminal vật lý.
+</p>
+
+<note>
+Những ai có framebuffer có thể bỏ qua phần này nếu thích.
+</note>
+
+<p>
+Trước hết, hãy mở trình soạn thảo và sửa <path>/etc/inittab</path>.
+Trong tập tin này bạn sẽ thấy những dòng giống như sau:
+</p>
+
+<pre caption="Cấu hình inittab">
+<comment># SERIAL CONSOLE</comment>
+<comment>#c0:12345:respawn:/sbin/agetty 9600 ttyS0 vt102</comment>
+
+<comment># TERMINALS</comment>
+c1:12345:respawn:/sbin/agetty 38400 tty1 linux
+c2:12345:respawn:/sbin/agetty 38400 tty2 linux
+c3:12345:respawn:/sbin/agetty 38400 tty3 linux
+c4:12345:respawn:/sbin/agetty 38400 tty4 linux
+c5:12345:respawn:/sbin/agetty 38400 tty5 linux
+c6:12345:respawn:/sbin/agetty 38400 tty6 linux
+
+<comment># What to do at the "Three Finger Salute".</comment>
+ca:12345:ctrlaltdel:/sbin/shutdown -r now
+</pre>
+
+<p>
+Hãy uncomment dòng <c>c0</c>. Mặc định, nó được đặt dùng baud rate
+9600 bps. Với Cobalt server, bạn có thể muốn đổi sang 115200 để khớp
+với baud rate do BOOT ROM quy định. Đây là cấu hình trên máy tôi. Trên
+máy headless (như Cobalt), bạn nên comment những dòng dành cho local
+terminal (<c>c1</c> đến <c>c6</c>) vì nó có thể phản ứng kỳ lạ nếu
+không thể mở <path>/dev/ttyX</path>.
+</p>
+
+<pre caption="Mẫu ví dụ inittab">
+<comment># SERIAL CONSOLE</comment>
+c0:12345:respawn:/sbin/agetty 115200 ttyS0 vt102
+
+<comment># TERMINALS -- These are useless on a headless qube</comment>
+<comment>#c1:12345:respawn:/sbin/agetty 38400 tty1 linux</comment>
+<comment>#c2:12345:respawn:/sbin/agetty 38400 tty2 linux</comment>
+<comment>#c3:12345:respawn:/sbin/agetty 38400 tty3 linux</comment>
+<comment>#c4:12345:respawn:/sbin/agetty 38400 tty4 linux</comment>
+<comment>#c5:12345:respawn:/sbin/agetty 38400 tty5 linux</comment>
+<comment>#c6:12345:respawn:/sbin/agetty 38400 tty6 linux</comment>
+</pre>
+
+<p>
+Cuối cùng ... chúng ta cần cho hệ thống biết rằng local serial port có
+thể được tin cậy là một terminal an toàn. Tập tin cần chỉnh là
+<path>/etc/securetty</path>. Nó chứa danh sách các terminal hệ thống
+tin tưởng. Chúng ta chỉ cần thêm hai dòng, cho phép serial line được
+dùng với đăng nhập <c>root</c>.
+</p>
+
+<pre caption="Cho phép đăng nhập root từ serial console">
+<comment>(/dev/ttyS0 -- tên mặc định của serial port thứ nhất)</comment>
+# <i>echo 'ttyS0' >> /etc/securetty</i>
+
+<comment>(Sau này, Linux gọi nó là /dev/tts/0 -- vậy thì thêm luôn)</comment>
+# <i>echo 'tts/0' >> /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
 <section id="reboot">
 <title>Khởi động lại hệ thống</title>
 <subsection>
@@ -82,11 +388,19 @@ cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
 cdimage ~# <i>reboot</i>
 </pre>
 
+<note>
+<e>Người dùng Cobalt:</e> Phần còn lại của chương này để cập cách
+thiết lập cho SGI PROM để có thể khởi động <c>arcboot</c>. Nó không
+dành cho Cobalt server. Thật ra bạn đã làm xong hết rồi -- không cần
+cấu hình gì nữa, bạn có thể bỏ qua phần kế và tiếp tục với <uri
+link="?part=1&amp;chap=11">Hoàn tất Cài đặt Gentoo</uri>.
+</note>
+
 </body>
 </subsection>
 </section>
 <section>
-<title>Tinh chỉnh MIPS PROM</title>
+<title>Tinh chỉnh SGI PROM</title>
 <subsection>
 <body>
 
@@ -95,7 +409,7 @@ Khi bạn đã khởi động lại, hãy vào <e>System Maintenance Menu</e> v�
 chọn <e>Enter Command Monitor</e> (<c>5</c>). Nếu bạn muốn kiểm tra
 bản cài đặt Gentoo của mình, bạn có thể chỉ cần chạy <c>boot -f
 &lt;tên kernel&gt;</c>. Để luôn khởi động hệ thống với Gentoo, bạn cần
-đặt vài biến trong MIPS PROM:
+đặt vài biến trong SGI PROM:
 </p>
 
 <pre caption="Cấu hình PROM để khởi động Gentoo">
