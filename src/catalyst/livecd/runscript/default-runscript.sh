@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.9 2005/07/18 14:42:25 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/default-runscript.sh,v 1.25.2.10 2005/07/27 16:08:28 wolf31o2 Exp $
 
 #return codes to be used by archscript
 die() {
@@ -149,6 +149,13 @@ case $1 in
 			cp -a ${clst_livecd_readme} ${clst_cdroot_path}/README.txt
 		else
 			cp ${clst_sharedir}/livecd/files/README.txt ${clst_cdroot_path}
+		fi
+
+		# move over Getting_Online.txt for minimal/GameCD
+		if [ "${clst_livecd_type}" = "gentoo-gamecd" ] \
+		|| [ "${clst_livecd_type}" = "gentoo-release-minimal" ]
+		then
+			cp ${clst_sharedir}/livecd/files/Getting_Online.txt ${clst_cdroot_path}
 		fi
 
 		# move over the environment
