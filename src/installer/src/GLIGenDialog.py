@@ -1038,12 +1038,12 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		string1 = _(u"Additional configuration settings for Advanced users (rc.conf)\nHere are some other variables you can set in various configuration files on the new system.  If you don't know what a variable does, don't change it!")
 		menulist = [("KEYMAP",_(u"Use KEYMAP to specify the default console keymap.")), ("SET_WINDOWSKEYS", _(u"Decision to first load the 'windowkeys' console keymap")), ("EXTENDED_KEYMAPS", _(u"maps to load for extended keyboards.  Most users will leave this as is.")), ("CONSOLEFONT", _(u"Specifies the default font that you'd like Linux to use on the console.")), ("CONSOLETRANSLATION", _(u"The charset map file to use.")), ("CLOCK", _(u"Set the clock to either UTC or local")), ("EDITOR", _(u"Set EDITOR to your preferred editor.")), ("PROTOCOLS", _(u"Gentoo Linux will only enable module auto-loading for these protocols")), ("DISPLAYMANAGER", _(u"What display manager do you use ?  [ xdm | gdm | kdm | entrance ]")), ("XSESSION", _(u"a new variable to control what window manager to start default with X"))]
 		while 1:
-			code, variable = self._d.menu(string1, choices=menulist, cancel=_(u"Save and Continue"), height=19, list_height=10, width=77)
+			code, variable = self._d.menu(string1, choices=menulist, cancel=_(u"Save and Continue"), width=77, height=19)
 			if code != self._DLG_OK: 
 				break
 			if variable == "KEYMAP":
 				keymap_list = GLIUtility.generate_keymap_list()
-				code, keymap = self._d.menu(_(u"Choose your desired keymap:"), choices=self._dmenu_list_to_choices(keymap_list), height=23, list_height=15)
+				code, keymap = self._d.menu(_(u"Choose your desired keymap:"), choices=self._dmenu_list_to_choices(keymap_list), height=19)
 				if code != self._DLG_OK:
 					continue
 				keymap = keymap_list[int(keymap)-1]
@@ -1060,13 +1060,13 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				code, ext_keymap = self._d.inputbox(_(u"This sets the maps to load for extended keyboards.  Most users will leave this as is.  Enter new value for EXTENDED_KEYMAPS"), width=60)
 			elif variable == "CONSOLEFONT":
 				font_list = GLIUtility.generate_consolefont_list()
-				code, font = self._d.menu(_(u"Choose your desired console font:"), choices=self._dmenu_list_to_choices(font_list), height=23, list_height=15)
+				code, font = self._d.menu(_(u"Choose your desired console font:"), choices=self._dmenu_list_to_choices(font_list), height=19)
 				if code != self._DLG_OK:
 					continue
 				font = font_list[int(font)-1]
 			elif variable == "CONSOLETRANSLATION":
 				trans_list = GLIUtility.generate_consoletranslation_list()
-				code, trans = self._d.menu(_(u"Choose your desired console translation:"), choices=self._dmenu_list_to_choices(trans_list), height=23, list_height=15)
+				code, trans = self._d.menu(_(u"Choose your desired console translation:"), choices=self._dmenu_list_to_choices(trans_list), height=19)
 				if code != self._DLG_OK:
 					continue
 				trans = trans_list[int(trans)-1]
@@ -1084,7 +1084,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 			elif variable == "PROTOCOLS":
 				choice_list = [("1", "Unix",1),("2","IPv4",1), ("3","Amateur Radio AX.25",0), ("4","IPX",0), ("5","DDP / appletalk",0), ("6","Amateur Radio NET/ROM",0), ("9","X.25",0), ("10","IPv6",0), ("11","ROSE / Amateur Radio X.25 PLP",0), ("19","Acorn Econet",0)]
-				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list, height=19, list_height=10, width=60)
+				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list, height=19, width=60)
 				if code != self._DLG_OK:
 					continue
 				prots = ""
