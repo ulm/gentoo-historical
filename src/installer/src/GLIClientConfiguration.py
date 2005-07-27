@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.36 2005/07/25 01:45:08 agaffney Exp $
+$Id: GLIClientConfiguration.py,v 1.37 2005/07/27 00:49:39 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -430,7 +430,8 @@ class ClientConfiguration:
 	# @param network_type the network type, either static or dhcp
 	# @param xml_attr=None
 	def set_network_type(self, xml_path, network_type, xml_attr):
-
+		if network_type == "None":  # allow for None
+			return
 		if not (network_type == 'static' or network_type == 'dhcp'):
 			raise GLIException("NoSuchTypeError", 'fatal','set_network_type',"You can only have a static or dhcp network!")
 

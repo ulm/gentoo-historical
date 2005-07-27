@@ -28,40 +28,70 @@ class Setup_CConfig(GLIGenCF):
 class Setup_InstallProfile(GLIGenIP):
 	def __init__(self, client_profile, install_profile, local_install, advanced_mode):
 		GLIGenIP.__init__(self, client_profile, install_profile, local_install, advanced_mode)
-		self.set_partitions()
-		
-		self._fn = (
-			{ 'text': "Partitioning", 'fn': self.set_partitions },
-			{ 'text': "Network mounts", 'fn': self.set_network_mounts },
-			{ 'text': "Install Stage", 'fn': self.set_install_stage },
-			{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
-			{ 'text': "make.conf", 'fn': self.set_make_conf },
-			{ 'text': "Kernel", 'fn': self.set_kernel },
-			{ 'text': "Bootloader", 'fn': self.set_boot_loader },
-			{ 'text': "Timezone", 'fn': self.set_timezone },
-			{ 'text': "Networking", 'fn': self.set_networking },
-			{ 'text': "Cron daemon", 'fn': self.set_cron_daemon },
-			{ 'text': "Logging daemon", 'fn': self.set_logger },
-			{ 'text': "Extra packages", 'fn': self.set_extra_packages },
-			{ 'text': "Services", 'fn': self.set_services },
-			{ 'text': "rc.conf", 'fn': self.set_rc_conf },
-			{ 'text': "Root password", 'fn': self.set_root_password },
-			{ 'text': "Additional Users", 'fn': self.set_additional_users })
-		self._menu_list = []
-		for item in self._fn:
-			self._menu_list.append(item['text'])
-		current_item = 0
-		while 1:
-			code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
-			if code != self._DLG_OK:
-				break
-			current_item = int(menuitem)
-			menuitem = self._menu_list[int(menuitem)-1]
+		show_review_menu = True
+		#Change the Yes/No buttons to new labels for this question.
+		d.add_persistent_args(["--yes-label", _(u"Wizard Mode")])
+		d.add_persistent_args(["--no-label", _(u"Skip to Menu")])
+		if d.yesno(_(u"The Gentoo Linux Installer can either take you step by step through the installation settings (recommended), or you can instead go straight to the Revisions menu to set your settings before the installation begins."), width=66) == DLG_YES:
+			self.set_partitions()
+			self.set_network_mounts()
+			self.set_install_stage()
+			self.set_portage_tree()
+			self.set_make_conf()
+			self.set_kernel()
+			self.set_boot_loader()
+			self.set_timezone()
+			self.set_networking()
+			if advanced_mode:
+				self.set_cron_daemon()
+				self.set_logger()
+			self.set_extra_packages()
+			self.set_services()
+			self.set_rc_conf()
+			self.set_root_password()
+			self.set_additional_users()
+			self.show_settings()
+			#Reset the Yes/No labels.
+			d.add_persistent_args(["--yes-label", "Yes"])
+			d.add_persistent_args(["--no-label","No"])
+			if d.yesno(_(u"Do you want to change any of your settings before starting the actual installation?")) == DLG_NO:
+				show_review_menu = False
+		if show_review_menu:
+			self._fn = (
+				{ 'text': "Partitioning", 'fn': self.set_partitions },
+				{ 'text': "Network mounts", 'fn': self.set_network_mounts },
+				{ 'text': "Install Stage", 'fn': self.set_install_stage },
+				{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
+				{ 'text': "make.conf", 'fn': self.set_make_conf },
+				{ 'text': "Kernel", 'fn': self.set_kernel },
+				{ 'text': "Bootloader", 'fn': self.set_boot_loader },
+				{ 'text': "Timezone", 'fn': self.set_timezone },
+				{ 'text': "Networking", 'fn': self.set_networking },
+				{ 'text': "Cron daemon", 'fn': self.set_cron_daemon },
+				{ 'text': "Logging daemon", 'fn': self.set_logger },
+				{ 'text': "Extra packages", 'fn': self.set_extra_packages },
+				{ 'text': "Services", 'fn': self.set_services },
+				{ 'text': "Config Settings", 'fn': self.set_rc_conf },
+				{ 'text': "Root password", 'fn': self.set_root_password },
+				{ 'text': "Additional Users", 'fn': self.set_additional_users })
+			self._menu_list = []
 			for item in self._fn:
-				if menuitem == item['text']:
-					item['fn']()
-					current_item += 1
-		self.install_profile_xml_file = None
+				self._menu_list.append(item['text'])
+			current_item = 0
+			while 1:
+				code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
+				if code != DLG_OK:
+					break
+				current_item = int(menuitem)
+				menuitem = self._menu_list[int(menuitem)-1]
+				for item in self._fn:
+					if menuitem == item['text']:
+						item['fn']()
+						current_item += 1
+			self.install_profile_xml_file = None
+		#Reset the Yes/No labels.
+		d.add_persistent_args(["--yes-label", "Yes"])
+		d.add_persistent_args(["--no-label","No"])
 		if d.yesno(_(u"Do you want to save the InstallProfile XML file?")) == DLG_YES:
 			self.install_profile_xml_file = self.save_install_profile()
 
@@ -168,7 +198,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	d.add_persistent_args(["--yes-label", "Yes"])
 	d.add_persistent_args(["--no-label","No"])
 	while 1:
-		if d.yesno(_(u"All of the installation settings are stored in an XML file, which we call the InstallProfile.  If you have previously saved a profile and would like to load it for this install, say Yes.  Otherwise say No.  Do you have a previously generated InstallProfile XML file?"), width=55) == DLG_YES:
+		if d.yesno(_(u"All of the installation settings are stored in an XML file, which we call the InstallProfile.  If you have previously saved a profile and would like to load it for this install, say Yes.  Otherwise say No.  Do you have a previously generated InstallProfile XML file?"), width=55, defaultno=1) == DLG_YES:
 			code, install_profile_xml_file = d.inputbox(_(u"Enter the filename of the XML file"))
 			if code != DLG_OK: 
 				break

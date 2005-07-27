@@ -378,11 +378,11 @@ on partitioning and the various filesystem types available in Linux.""")
 				if not GLIUtility.is_nfs(nfsmount):
 					if GLIUtility.is_ip(nfsmount) or GLIUtility.is_hostname(nfsmount):
 						status, remotemounts = GLIUtility.spawn("/usr/sbin/showmount -e " + nfsmount + " 2>&1 | egrep '^/' | cut -d ' ' -f 1 && echo", return_output=True)
-						if not len(remotemounts):
+						if (not GLIUtility.exitsuccess(status)) or (not len(remotemounts)):
 							self._d.msgbox(_(u"No NFS exports were detected on ") + nfsmount)
 							continue
 						for i in range(0, len(remotemounts)):
-							remotemounts[i] = string.strip(remotemounts[i])
+							remotemounts[i] = remotemounts[i].strip()
 						code, nfsmount2 = self._d.menu(_(u"Select a NFS export"), choices=self._dmenu_list_to_choices(remotemounts), cancel=_(u"Back"))
 						if code != self._DLG_OK: 
 							continue
@@ -527,8 +527,9 @@ global USE flags and one for local flags specific to each program.
 Please be patient while the screens load. It may take awhile."""), width=73, height=16)
 					
 		#First set the USE flags, this is a biggie.
-		system_use_flags = make_conf['USE']
-		if not system_use_flags:  #not a preloaded config.  this is the NORMAL case.
+		if make_conf.has_key("USE"): 
+			system_use_flags = make_conf["USE"]
+		else:  #not a preloaded config.  this is the NORMAL case.
 			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
 		use_flags = []
 		use_local_flags = []
@@ -568,11 +569,10 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else:  #Unstable
 				make_conf["ACCEPT_KEYWORDS"] = "~" + self._client_profile.get_architecture_template()
 		#Third, misc. stuff.
-		while not self.advanced_mode:
+		while self.advanced_mode:
 			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")), ("CHOST", _(u"Change the Host Setting")), ("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform.")), ("FEATURES", _(u"Change portage functionality settings.")), ("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")), ("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
 			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"), width=77)
 			if code != self._DLG_OK: 
-				self._install_profile.set_make_conf(make_conf)
 				break
 			oldval = ""
 			if make_conf.has_key(menuitem): 
@@ -580,7 +580,10 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			code, newval = self._d.inputbox(_(u"Enter new value for ") + menuitem, init=oldval)
 			if code == self._DLG_OK:
 				make_conf[menuitem] = newval
-				
+		try:
+			self._install_profile.set_make_conf(make_conf)
+		except:
+			self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))		
 
 	def set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
@@ -708,7 +711,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				if interfaces[iface][0] == 'dhcp':
 					choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1]))
 				else:
-					choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2]))
+					choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+_(u" Netmask: ")+interfaces[iface][2]))
 			choice_list.append(("Add",_(u"Add a new network interface")))
 			code, iface_choice = self._d.menu(string1, choices=choice_list, cancel=_(u"Save and Continue"), height=18, width=77)
 			if code != self._DLG_OK:
@@ -791,7 +794,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			if interfaces[iface][0] == 'dhcp':
 				choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1],0))
 			else:
-				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+" Netmask: "+interfaces[iface][2],0))
+				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+_(u" Netmask: ")+interfaces[iface][2],0))
 		string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
 		code, gateway_iface = self._d.radiolist(string3, choices=choice_list, height=20, width=67)
 		if code == self._DLG_OK:  #They made a choice.  Ask the IP if not DHCP.
@@ -982,7 +985,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				choices_list = [("anjuta",_(u"A versatile IDE for GNOME"),int("anjuta" in install_packages)),
 				("chkrootkit",_(u"a tool to locally check for signs of a rootkit"),int("chkrootkit" in install_packages)),
 				("crack-attack",_(u"Addictive OpenGL-based block game"),int("crack-attack" in install_packages)),
-				("enemy-territory",_(u"Return to Castle Wolfenstein: Enemy Territory"),int("enemy-territory" in install_packages)),
 				("netcat",_(u"the network swiss army knife"),int("netcat" in install_packages)),
 				("nmap",_(u"A utility for network exploration or security auditing"),int("nmap" in install_packages)),
 				("screen",_(u"full-screen window manager that multiplexes between several processes"),int("screen" in install_packages))]
@@ -1274,3 +1276,159 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		configuration.write(self._install_profile.serialize())
 		configuration.close()
 		return filename
+	def show_settings(self):
+		settings = _(u"Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n")
+		#Partitioning
+		settings += "Partitioning:  \n  Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
+		devices = self._install_profile.get_partition_tables()
+		drives = devices.keys()
+		drives.sort()
+		for drive in drives:
+			settings += "  Drive: " + drive + devices[drive].get_model() + "\n"
+			partlist = devices[drive].get_ordered_partition_list()
+			tmpparts = devices[drive].get_partitions()
+			for part in partlist:
+				tmppart = tmpparts[part]
+				entry = "    "
+				if tmppart.get_type() == "free":
+					#partschoice = "New"
+					entry = _(u" - Unallocated space (")
+					if tmppart.is_logical():
+						entry += _(u"logical, ")
+					entry += str(tmppart.get_mb()) + "MB)"
+				elif tmppart.get_type() == "extended":
+					entry = str(int(tmppart.get_minor()))
+					entry += _(u" - Extended Partition (") + str(tmppart.get_mb()) + "MB)"
+				else:
+					entry = str(int(tmppart.get_minor())) + " - "
+					if tmppart.is_logical():
+						entry += _(u"Logical (")
+					else:
+						entry += _(u"Primary (")
+					entry += tmppart.get_type() + ", "
+					entry += (tmppart.get_mkfsopts() or "none") + ", "
+					entry += (tmppart.get_mountpoint() or "none") + ", "
+					entry += (tmppart.get_mountopts() or "none") + ", "
+					entry += str(tmppart.get_mb()) + "MB)"
+			settings += entry + "\n"
+			
+		#Network Mounts:
+		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())
+		settings += "\nNetwork Mounts: \n"
+		for mount in network_mounts:
+			settings += "  "+mount['host']+":"+mount['export']+"\n"
+			
+		#Install Stage:
+		settings += "\nInstall Stage: " + self._install_profile.get_install_stage() + "\n"
+		if self._install_profile.get_stage_tarball_uri() == "networkless":
+			settings += "  Tarball will be generated on the fly from the CD.\n"
+		else:
+			settings += "  Tarball URI: " + self._install_profile.get_stage_tarball_uri() + "\n"
+			
+		#Portage Tree Sync Type:
+		settings += "\nPortage Tree Sync Type: " + self._install_profile.get_portage_tree_sync_type() + "\n"
+		if self._install_profile.get_portage_tree_sync_type() == "snapshot":
+			settings += "  Portage snapshot URI: " + self._install_profile.get_portage_tree_snapshot_uri() + "\n"
+			
+		#Kernel Settings:
+		settings += "\nKernel Settings:\n"
+		settings += "  Kernel Sources: " + self._install_profile.get_kernel_source_pkg() + "\n"
+		if self._install_profile.get_kernel_source_pkg() != "livecd-kernel":
+			settings += "  Kernel Build Method: " + self._install_profile.get_kernel_build_method() + "\n"
+			if self._install_profile.get_kernel_build_method() == "genkernel":
+				settings += "  Kernel Bootsplash Option: " + self._install_profile.get_kernel_bootsplash() + "\n"
+		if self._install_profile.get_kernel_config_uri():
+			settings += "  Kernel Configuration URI: " + self._install_profile.get_kernel_config_uri() + "\n"
+				
+		#Bootloader Settings:
+		settings += "\nBootloader Settings:\n"
+		settings += "  Bootloader package: " + self._install_profile.get_boot_loader_pkg() + "\n"
+		if self._install_profile.get_boot_loader_pkg() != "none":
+			settings += "  Install bootloader to MBR: " + self._install_profile.get_boot_loader_mbr() + "\n"
+			settings += "  Bootloader kernel arguments: " +self._install_profile.get_bootloader_kernel_args() + "\n"
+			
+		#Timezone:
+		settings += "\nTimezone: " + self._install_profile.get_time_zone() + "\n"
+		
+		#Networking Settings:
+		settings += "\nNetworking Settings: \n"
+		interfaces = self._install_profile.get_network_interfaces()
+		for iface in interfaces:
+			if interfaces[iface][0] == 'dhcp':
+				settings += "  " + iface + _(u":  Settings: DHCP. Options: ") + interfaces[iface][1] + "\n"
+			else:
+				settings += "  " + iface + _(u"IP: ") + interfaces[iface][0] + _(u" Broadcast: ") + interfaces[iface][1] + _(u" Netmask: ") + interfaces[iface][2] + "\n"
+		default_gateway = self._install_profile.get_default_gateway()
+		if default_gateway:
+			settings += "  Default Gateway: " + default_gateway[0] + "/" + default_gateway[1] + "\n"
+		settings += "  Hostname: " + self._install_profile.get_hostname() + "\n"
+		if self._install_profile.get_domainname():
+			settings += "  Domainname: " +self._install_profile.get_domainname() + "\n"
+		if self._install_profile.get_nisdomainname():
+			settings += "  NIS Domainname: " +self._install_profile.get_nisdomainname() + "\n"
+		if self._install_profile.get_dns_servers():
+			for dns_server in dns_servers:
+				settings += "  DNS Server: " +dns_server + "\n"
+		if self._install_profile.get_http_proxy():
+			settings += "  HTTP Proxy: " +self._install_profile.get_http_proxy() + "\n"
+		if self._install_profile.get_ftp_proxy():
+			settings += "  FTP Proxy: " +self._install_profile.get_ftp_proxy() + "\n"
+		if self._install_profile.get_rsync_proxy():
+			settings += "  RSYNC Proxy: " +self._install_profile.get_rsync_proxy() + "\n"
+			
+		#Cron Daemon:
+		settings += "\nCron Daemon: " + self._install_profile.get_cron_daemon_pkg() + "\n"
+		
+		#Logger:
+		settings += "\nLogging Daemon: " + self._install_profile.get_logging_daemon_pkg() + "\n"
+		
+		#Extra packages:
+		if self._install_profile.get_install_packages():
+			install_packages = self._install_profile.get_install_packages()
+		else:
+			install_packages = []
+		settings += "\nExtra Packages: "
+		for package in install_packages:
+			settings += package + " "
+		settings += "\n"
+		#Services:
+		if self._install_profile.get_services():
+			services = self._install_profile.get_services()
+		else:
+			services = []
+		settings += "\nAdditional Services: "
+		for service in services:
+			settings += service + " "
+		settings += "\n"
+		
+		#Other Configuration Settings (rc.conf):
+		#Make.conf Settings:
+		settings += "\nConfiguration Files Settings:\n"
+		etc_files = self._install_profile.get_etc_files()
+		for etc_file in etc_files:
+			settings += "  File:" + etc_file + "\n"
+			if isinstance(etc_files[etc_file], dict):
+				for name in etc_files[etc_file]:
+					settings += "    Variable: " + name + "   Value: " + etc_files[etc_file][name] + "\n"
+			else:
+				for entry in etc_files[etc_file]:
+					settings += "    Value: "+ entry + "\n"
+		for key in make_conf.keys():
+			settings += "  Variable: " + key + "   Value: " + make_conf[key] + "\n"
+		
+		#Additional Users:
+		settings += "\nAdditional Users:\n"
+		users = {}
+		for user in self._install_profile.get_users():
+			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
+		for user in users:
+			settings += "  Username: " + user
+			settings += "\n    Group Membership: " + users[user][2]
+			settings += "\n    Shell: " + users[user][3]
+			settings += "\n    Home Directory: " + users[user][4]
+			if users[user][5]:
+				settings += "\n    User Id: " + users[user][5]
+			if users[user][6]:
+				settings += "\n    User Comment: " + users[user][6]
+
+		self._d.scrollbox(settings, height=20, width=77, title=_(u"A Review of your settings"))
