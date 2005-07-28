@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.37 2005/07/27 00:49:39 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.38 2005/07/28 00:34:14 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -32,7 +32,7 @@ class ClientConfiguration:
 	##
 	# Initializes the ClientConfiguration.
 	def __init__(self):
-		self._architecture_template = None
+		self._architecture_template = "x86"
 		self._profile_uri = ""
 	
 		# This is the full path to the logfile
