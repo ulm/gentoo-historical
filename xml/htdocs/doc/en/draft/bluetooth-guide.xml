@@ -248,7 +248,7 @@ system. We start up the required Bluetooth services first.
 
 # <i>hciconfig</i>
 hci0:   Type: USB
-        BD Address: 00:10:60:A2:DD:2A ACL MTU: 192:8  SCO MTU: 64:8
+        BD Address: 00:01:02:03:04:05 ACL MTU: 192:8  SCO MTU: 64:8
         DOWN
         RX bytes:131 acl:0 sco:0 events:18 errors:0
         TX bytes:565 acl:0 sco:0 commands:17 errors:0 
@@ -272,7 +272,7 @@ please refer to <c>man hcid.conf</c>.
         #   user - Always ask user for a PIN
         #
         security auto;
-				
+
 <comment>(Change pin_helper to use /etc/bluetooth/pin-helper)</comment>
         # PIN helper
         pin_helper /etc/bluetooth/pin-helper;
@@ -290,12 +290,6 @@ want)</comment>
         #encrypt enable;
 }
 </pre>
-
-<!--<warn>
-If you enable <c>auth</c> and <c>encrypt</c> you'll invoke security mode
-3. Do not enable this unless you know what you are doing. Most users do not
-need it.
-</warn>-->
 
 <p>
 After that, we have to configure the Bluetooth device PIN. That will help in
@@ -356,7 +350,7 @@ the configured options.
 
 # <i>hciconfig -a</i>
 hci0:   Type: USB
-        BD Address: 00:10:60:A3:CB:41 ACL MTU: 192:8 SCO MTU: 64:8
+        BD Address: 00:0A:0B:0C:0D:0E ACL MTU: 192:8 SCO MTU: 64:8
         UP RUNNING PSCAN ISCAN AUTH ENCRYPT
         RX bytes:125 acl:0 sco:0 events:17 errors:0
         TX bytes:565 acl:0 sco:0 commands:17 errors:0
@@ -392,19 +386,19 @@ the <c>hcitool</c> command for the same.
 <pre caption="Checking for local devices">
 # <i>hcitool dev</i>
 Devices:
-        hci0    00:10:60:A2:DD:2A
+        hci0    00:01:02:03:04:05
 </pre>
 
 <pre caption="Scanning for remote devices">
 # <i>hcitool scan</i>
 Scanning ...
-        00:10:60:A3:CB:41       Grayhat 
+        00:0A:0B:0C:0D:0E       Grayhat 
 </pre>
 
 <pre caption="Inquiring remote devices">
 # <i>hcitool inq</i>
 Inquiring ...
-        00:10:60:A3:CB:41       clock offset: 0x5579    class: 0x72010c 
+        00:0A:0B:0C:0D:0E       clock offset: 0x5579    class: 0x72010c 
 </pre>
 
 <p>
@@ -413,12 +407,12 @@ if we paired them correctly.
 </p>
 
 <pre caption="Running l2ping">
-# <i>l2ping 00:10:60:A3:CB:41</i>
-Ping: 00:10:60:A3:CB:41 from 00:10:60:A2:DD:2A (data size 20) ...
-20 bytes from 00:10:60:A3:CB:41 id 200 time 69.85ms
-20 bytes from 00:10:60:A3:CB:41 id 201 time 9.97ms
-20 bytes from 00:10:60:A3:CB:41 id 202 time 56.86ms
-20 bytes from 00:10:60:A3:CB:41 id 203 time 39.92ms
+# <i>l2ping 00:0A:0B:0C:0D:0E</i>
+Ping: 00:0A:0B:0C:0D:0E from 00:01:02:03:04:05 (data size 20) ...
+20 bytes from 00:0A:0B:0C:0D:0E id 200 time 69.85ms
+20 bytes from 00:0A:0B:0C:0D:0E id 201 time 9.97ms
+20 bytes from 00:0A:0B:0C:0D:0E id 202 time 56.86ms
+20 bytes from 00:0A:0B:0C:0D:0E id 203 time 39.92ms
 4 sent, 4 received, 0% loss 
 </pre>
 
@@ -433,42 +427,50 @@ Please note that setting up radio frequency communication is optional.
 </note>
 
 <p>
-We can establish a radio frequancy connection to another Bluetooth device. In
-order to do that we will have to configure it properly.
+We can establish a radio frequency connection to another Bluetooth device using
+the <c>rfcomm</c> command. To make things a little easier especially for users
+with multiple devices that support Bluetooth, it is advisable to make a few
+changes to the default rfcomm config at <path>/etc/bluetooth/rfcomm.conf</path>.
 </p>
 
-<pre caption="Configuring /etc/bluetooth/rfcomm.conf">
+<p>
+The whole segment of the config starting from <c>rfcomm0 {</c> and ending with
+<c>}</c> is the config for the device that will establish a connection at
+<path>/dev/rfcomm0</path>. In this case, we will only show one example, rfcomm0.
+You can add more devices as you see fit.
+</p>
+
+<pre caption="Editing /etc/bluetooth/rfcomm.conf">
+<comment>(Only changes that might be needed are shown)</comment>
 rfcomm0 {
-<comment>#</comment>
-<comment># RFCOMM configuration file.</comment>
-<comment>#</comment>
-<comment># $Id: bluetooth-guide.xml,v 1.2 2005/07/26 11:44:34 fox2mike Exp $</comment>
-<comment>#</comment>
-        <comment># Automatically bind the device at startup</comment>
+        # Automatically bind the device at startup
+				<comment>(Creates the device node, /dev/rfcomm0 at start up)</comment>
         bind yes;
 
-        <comment># Bluetooth address of the device</comment>
-        device 00:10:60:A3:CB:41;
+        # Bluetooth address of the device
+				<comment>(Enter the address of the device you want to connect to)</comment>
+        device 00:0A:0B:0C:0D:0E;
 
-        <comment># RFCOMM channel for the connection</comment>
-        channel 1;
-
-        <comment># Description of the connection</comment>
-        comment "Bluetooth at Bluehat";
 } 
 </pre>
 
 <p>
-After configuring RFCOMM, we can connect to any device.
+After configuring RFCOMM, we can connect to any device. Since we've made the
+required settings to the <path>/etc/bluetooth/rfcomm.conf</path> file, we just
+issue the command shown below. In case you've not made changes to the config
+file, an alternative method is also shown in the code listing that follows
 </p>
 
 <pre caption="Establishing an RFCOMM connection">
-<comment>(If we didn't inquire the target device before, we can do it now,
-before connecting)</comment>
-# <i>hcitool inq</i>
-Inquiring ...
-        00:10:60:A3:CB:41       clock offset: 0x5579    class: 0x72010c
-# <i>rfcomm connect 0 00:10:60:A3:CB:41 1</i>
+<comment>(The 0 refers to the rfcomm0 in the config file)</comment>
+# <i>rfcomm connect 0 </i>
+Connected /dev/rfcomm0 to 00:0A:0B:0C:0D:0E on channel 1
+Press CTRL-C for hangup
+
+<comment>(If you did not edit /etc/bluetooth/rfcomm.conf)</comment>
+# <i>rfcomm connect 0 00:0A:0B:0C:0D:0E 1</i>
+Connected /dev/rfcomm0 to 00:0F:DE:69:50:24 on channel 1
+Press CTRL-C for hangup
 </pre>
 
 <p>
@@ -476,12 +478,12 @@ The first parameter after the connect command is the RFCOMM TTY device node
 that will be used (usually 0). The second parameter is the MAC address of the
 remote device. The third parameter is optional and specifies the channel to be
 used. Please, note that in order to connect to a device, that device must be
-listening for incomming connections. To do that, we have to explicitly tell it
+listening for incoming connections. To do that, we have to explicitly tell it
 to listen. We can cancel the communication at any moment by just hitting
 CTRL+C.
 </p>
 
-<pre caption="Listenning for incomming RFCOMM connections">
+<pre caption="Listening for incoming RFCOMM connections">
 # <i>rfcomm listen 0 1</i>
 Waiting for connection on channel 1 
 </pre>
@@ -494,16 +496,16 @@ be used.
 </p>
 
 <p>
-Each time you call the <c>rfcomm</c> command, you can also specify the phisical
+Each time you call the <c>rfcomm</c> command, you can also specify the physical
 device you want to use. Below you can see a small example specifiying the
-phisical device on the above two commands.
+physical device on the above two commands.
 </p>
 
 <pre caption="RFCOMM connections specifying phisical device">
 # <i>rfcomm -i hci0 listen 0 1</i>
 Waiting for connection on channel 1
 <comment>(To listen to a determined device) </comment>
-# <i>rfcomm -i hci0 connect 0 00:10:60:A3:CB:41 1</i>
+# <i>rfcomm -i hci0 connect 0 00:0A:0B:0C:0D:0E 1</i>
 <comment>(To use a determined device when connecting to another one)</comment>
 </pre>
 
@@ -546,7 +548,7 @@ connect to that one.
 </p>
 
 <pre caption="Connecting to the Network Access Point">
-# <i>pand --connect 00:10:60:A3:CB:41 --service NAP --autozap</i>
+# <i>pand --connect 00:0A:0B:0C:0D:0E --service NAP --autozap</i>
 </pre>
 
 <p>
@@ -558,7 +560,7 @@ host0 #<i> ifconfig bnep0 192.168.2.1</i>
 host1 #<i> ifconfig bnep0 192.168.2.2</i>
 
 host0 #<i> ifconfig bnep0</i>
-bnep0     Link encap:Ethernet  HWaddr 00:10:60:A3:CB:41 
+bnep0     Link encap:Ethernet  HWaddr 00:0A:0B:0C:0D:0E 
           inet addr:192.168.2.1  Bcast:192.168.2.255  Mask:255.255.255.0
           inet6 addr: fe80::210:60ff:fea3:cb41/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
@@ -568,7 +570,7 @@ bnep0     Link encap:Ethernet  HWaddr 00:10:60:A3:CB:41
           RX bytes:208 (208.0 b)  TX bytes:188 (188.0 b)
 
 host1 #<i> ifconfig bnep0</i>
-bnep0     Link encap:Ethernet  HWaddr 00:10:60:A2:DD:2A 
+bnep0     Link encap:Ethernet  HWaddr 00:01:02:03:04:05 
           inet addr:192.168.2.2  Bcast:192.168.2.255  Mask:255.255.255.0
           inet6 addr: fe80::210:60ff:fea2:dd2a/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
