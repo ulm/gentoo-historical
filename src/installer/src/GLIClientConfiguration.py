@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.38 2005/07/28 00:34:14 agaffney Exp $
+$Id: GLIClientConfiguration.py,v 1.39 2005/07/28 19:28:23 samyron Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -304,9 +304,6 @@ class ClientConfiguration:
 	def set_network_broadcast(self, xml_path, broadcast, xml_attr=None):
 		if not GLIUtility.is_ip(broadcast):
 			raise GLIException("IPAddressError", 'fatal','set_network_broadcast', 'The specified broadcast is not a valid IP Address!')
-		else:
-			# FIXME: Need to guess the broadcast... just in case (probably need the gateway..)
-			pass
 		self._network_broadcast = broadcast
 	
 	##
