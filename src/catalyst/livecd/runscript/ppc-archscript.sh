@@ -1,6 +1,6 @@
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.7 2005/07/05 21:47:46 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.8 2005/07/28 15:29:38 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -32,37 +32,11 @@ case $1 in
 		[ -z "${clst_boot_kernel}" ] && die "Required key boot/kernel not defined, exiting."
 		
 		first=""
-		for x in ${clst_boot_kernel}
-		do
-			kbinary="${clst_chroot_path}/usr/portage/packages/gk_binaries/${x}-${clst_version_stamp}.tar.bz2"
-			if [ -z "${first}" ]
-			then
-				# grab name of first kernel
-				first="${x}"
-			fi
-			[ ! -e "${kbinary}" ] && die  "Can't find kernel tarball at ${kbinary}"
-			/bin/tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
-			
-			# change kernel name from "kernel" to "gentoo", for example
-			mv ${clst_cdroot_path}/boot/kernel* ${clst_cdroot_path}/boot/${x}
-			
-			# change initrd name from "initrd" to "gentoo.igz", for example
-			if [ -e ${clst_cdroot_path}/boot/initrd* ]
-			then
-			    mv "${clst_cdroot_path}"/boot/initrd* "${clst_cdroot_path}"/boot/"${x}".igz
-			fi
-    
-			if [ -e ${clst_cdroot_path}/boot/initramfs* ]
-			then
-			    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/"${x}".igz
-			fi
-		done
-
-		# the rest of this function sets up the config file for yaboot
+		# this sets up the config file for yaboot
 		icfg=${clst_cdroot_path}/boot/yaboot.conf
 		kmsg=${clst_cdroot_path}/boot/boot.msg
 		echo "default ${first}" > ${icfg}
-		echo "timeout 150" >> ${icfg}
+		echo "timeout 300" >> ${icfg}
 		echo "device=cd:" >> ${icfg}
 		echo "root=/dev/ram" >> ${icfg}
 		echo "fgcolor=white" >> ${icfg}
@@ -89,20 +63,56 @@ case $1 in
 
 		for x in ${clst_boot_kernel}
 		do
-			eval custom_kopts=\$${x}_kernelopts
-			echo "APPENDING CUSTOM KERNEL ARGS: ${custom_kopts}"
-			echo >> ${icfg}
-			echo "image=/boot/${x}" >> ${icfg}
-			echo "initrd=/boot/${x}.igz" >> ${icfg}
-			echo "label=${x}" >> ${icfg}
-			echo "read-write" >> ${icfg}
-
-			if [ "${clst_livecd_splash_type}" == "gensplash" -a -n "${clst_livecd_splash_theme}" ]
+			kbinary="${clst_chroot_path}/usr/portage/packages/gk_binaries/${x}-${clst_version_stamp}.tar.bz2"
+			if [ -z "${first}" ]
 			then
-				echo "append=\"init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent,theme:${clst_livecd_splash_theme}\"" >> ${icfg}
-			else
-				echo "append=\"initrd=${x}.igz init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent\"" >> ${icfg}
+				# grab name of first kernel
+				first="${x}"
 			fi
+			[ ! -e "${kbinary}" ] && die  "Can't find kernel tarball at ${kbinary}"
+			/bin/tar xjvf ${kbinary} -C ${clst_cdroot_path}/boot
+			
+			# change kernel name from "kernel" to "gentoo", for example
+			if [ -e ${clst_cdroot_path}/boot/kernelz-* ]
+			then
+				mv ${clst_cdroot_path}/boot/kernelz-* ${clst_cdroot_path}/boot/${x}
+			else
+				mv ${clst_cdroot_path}/boot/kernel-* ${clst_cdroot_path}/boot/${x}
+				# change initrd name from "initrd" to "gentoo.igz", for example
+				if [ -e ${clst_cdroot_path}/boot/initrd* ]
+				then
+				    mv "${clst_cdroot_path}"/boot/initrd* "${clst_cdroot_path}"/boot/"${x}".igz
+				fi
+
+				if [ -e ${clst_cdroot_path}/boot/initramfs* ]
+				then
+				    mv "${clst_cdroot_path}"/boot/initramfs* "${clst_cdroot_path}"/boot/"${x}".igz
+				fi
+				eval custom_kopts=\$${x}_kernelopts
+				echo "APPENDING CUSTOM KERNEL ARGS: ${custom_kopts}"
+				echo >> ${icfg}
+				echo "image=/boot/${x}" >> ${icfg}
+				echo "initrd=/boot/${x}.igz" >> ${icfg}
+				echo "label=${x}" >> ${icfg}
+				echo "read-write" >> ${icfg}
+
+				if [ "${clst_livecd_splash_type}" == "gensplash" -a -n "${clst_livecd_splash_theme}" ]
+				then
+					echo "append=\"init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent,theme:${clst_livecd_splash_theme}\"" >> ${icfg}
+				else
+					echo "append=\"initrd=${x}.igz init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent\"" >> ${icfg}
+				fi
+			fi
+		done
+
+
+
+
+
+
+		for x in ${clst_boot_kernel}
+		do
+
 		done
 	;;
 
