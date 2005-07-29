@@ -1,6 +1,6 @@
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.8 2005/07/28 15:29:38 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/catalyst/livecd/runscript/Attic/ppc-archscript.sh,v 1.10.2.9 2005/07/29 22:13:57 wolf31o2 Exp $
 
 case $1 in
 	kernel)
@@ -103,16 +103,6 @@ case $1 in
 					echo "append=\"initrd=${x}.igz init=/linuxrc ${cmdline_opts} ${custom_kopts} cdroot splash=silent\"" >> ${icfg}
 				fi
 			fi
-		done
-
-
-
-
-
-
-		for x in ${clst_boot_kernel}
-		do
-
 		done
 	;;
 
