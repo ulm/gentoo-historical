@@ -389,7 +389,6 @@ def get_uri(uri, path):
 		if uriparts[1]:
 			scpcmd += uriparts[1] + "@"
 		scpcmd += uriparts[3] + ":" + uriparts[5] + " " + path
-		print "scpcmd: " + scpcmd
 		pid, child_fd = pty.fork()
 		if not pid:
 			os.execvp("scp", scpcmd.split())
