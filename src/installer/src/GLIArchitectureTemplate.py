@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.160 2005/07/30 17:02:23 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.161 2005/07/30 19:31:44 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -1020,7 +1020,7 @@ class ArchitectureTemplate:
 			try:
 				os.stat(self._chroot_dir + "/etc/init.d/net." + interface)
 			except:
-				os.symlink(self._chroot_dir + "/etc/init.d/net." + interface_type +  "0", self._chroot_dir + "/etc/init.d/net." + interface)				
+				GLIUtility.spawn("ln -s net.eth0 " + self._chroot_dir + "/etc/init.d/net." + interface)
 		
 			# If we are going to load the network at boot...
 			#if interfaces[interface][2]:  #THIS FEATURE NO LONGER EXISTS
