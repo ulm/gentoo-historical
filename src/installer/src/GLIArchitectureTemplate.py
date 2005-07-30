@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.161 2005/07/30 19:31:44 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.162 2005/07/30 21:06:59 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -132,7 +132,10 @@ class ArchitectureTemplate:
 #		self._logger.log("packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
 			if not pkg: continue
-			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
+			self._logger.log("Trying to quickpkg '" + pkg + "'")
+			pkgparts = pkg.split('/')
+			if not len(pkgparts) == 2: continue
+			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkgparts[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
 				if not GLIUtility.exitsuccess(ret):
 					# This package couldn't be quickpkg'd. This may be an error in the future
