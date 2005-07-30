@@ -1336,7 +1336,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		if self._install_profile.get_kernel_source_pkg() != "livecd-kernel":
 			settings += "  Kernel Build Method: " + self._install_profile.get_kernel_build_method() + "\n"
 			if self._install_profile.get_kernel_build_method() == "genkernel":
-				settings += "  Kernel Bootsplash Option: " + self._install_profile.get_kernel_bootsplash() + "\n"
+				settings += "  Kernel Bootsplash Option: " + str(self._install_profile.get_kernel_bootsplash()) + "\n"
 		if self._install_profile.get_kernel_config_uri():
 			settings += "  Kernel Configuration URI: " + self._install_profile.get_kernel_config_uri() + "\n"
 				
@@ -1344,7 +1344,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		settings += "\nBootloader Settings:\n"
 		settings += "  Bootloader package: " + self._install_profile.get_boot_loader_pkg() + "\n"
 		if self._install_profile.get_boot_loader_pkg() != "none":
-			settings += "  Install bootloader to MBR: " + self._install_profile.get_boot_loader_mbr() + "\n"
+			settings += "  Install bootloader to MBR: " + str(self._install_profile.get_boot_loader_mbr()) + "\n"
 			settings += "  Bootloader kernel arguments: " +self._install_profile.get_bootloader_kernel_args() + "\n"
 			
 		#Timezone:
@@ -1413,8 +1413,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else:
 				for entry in etc_files[etc_file]:
 					settings += "    Value: "+ entry + "\n"
-		for key in make_conf.keys():
-			settings += "  Variable: " + key + "   Value: " + make_conf[key] + "\n"
 		
 		#Additional Users:
 		settings += "\nAdditional Users:\n"
