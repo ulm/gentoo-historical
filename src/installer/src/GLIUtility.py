@@ -172,7 +172,7 @@ def is_uri(uri, checklocal=True):
 		return False
 			
 	# Set the valid uri types
-	valid_uri_types = ('ftp', 'rsync', 'http', 'file', 'https')
+	valid_uri_types = ('ftp', 'rsync', 'http', 'file', 'https', 'scp')
 		
 	# Parse the URI
 	uriparts = parse_uri(uri)

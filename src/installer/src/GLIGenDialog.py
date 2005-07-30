@@ -1319,7 +1319,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			settings += "  "+mount['host']+":"+mount['export']+"\n"
 			
 		#Install Stage:
-		settings += "\nInstall Stage: " + self._install_profile.get_install_stage() + "\n"
+		settings += "\nInstall Stage: " + str(self._install_profile.get_install_stage()) + "\n"
 		if self._install_profile.get_stage_tarball_uri() == "networkless":
 			settings += "  Tarball will be generated on the fly from the CD.\n"
 		else:
