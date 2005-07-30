@@ -5,7 +5,7 @@ Copyright 2005 Gentoo Technologies Inc.
 The GLIUtility module contians all utility functions used throughout GLI.
 """
 
-import string, os, re, shutil, sys, random, commands, crypt
+import string, os, re, shutil, sys, random, commands, crypt, pty, select
 from GLIException import *
 
 ##
@@ -373,6 +373,46 @@ def get_uri(uri, path):
 		
 	elif re.match('^rsync://', uri):
 		status = spawn("rsync --quiet " + uri + " " + path)
+
+	elif uri.startswith("scp://"):
+		# Get tuple of matches
+		# 0 - Protocol
+		# 1 - Username
+		# 2 - Password
+		# 3 - Host
+		# 4 - Port
+		# 5 - Path
+		uriparts = parse_uri(uri)
+		scpcmd = "scp "
+		if uriparts[4]:
+			scpcmd += "-P " + uriparts[4] + " "
+		if uriparts[1]:
+			scpcmd += uriparts[1] + "@"
+		scpcmd += uriparts[3] + ":" + uriparts[5] + " " + path
+		print "scpcmd: " + scpcmd
+		pid, child_fd = pty.fork()
+		if not pid:
+			os.execvp("scp", scpcmd.split())
+		else:
+			while 1:
+				r, w, e = select.select([child_fd], [], [])
+				if child_fd in r:
+					try:
+						data = os.read(child_fd, 1024)
+					except:
+						pid2, status = os.waitpid(pid, 0)
+						break
+					if data.startswith("Password:"):
+						if uriparts[2]:
+							os.write(child_fd, uriparts[2] + "\n")
+						else:
+							os.write(child_fd, "\n")
+					elif data.endswith("Are you sure you want to continue connecting (yes/no)? "):
+						os.write(child_fd, "yes\n")
+				else:
+					pid2, status = os.waitpid(pid, os.WNOHANG)
+					if pid2:
+						break
 
 	elif re.match('^file://', uri):
 		r_file = uri[7:]
