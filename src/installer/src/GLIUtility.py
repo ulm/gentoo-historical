@@ -401,7 +401,7 @@ def get_uri(uri, path):
 					except:
 						pid2, status = os.waitpid(pid, 0)
 						break
-					if data.startswith("Password:"):
+					if data.endswith("assword: "):
 						if uriparts[2]:
 							os.write(child_fd, uriparts[2] + "\n")
 						else:
