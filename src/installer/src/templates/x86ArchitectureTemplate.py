@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.56 2005/07/30 19:44:28 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.57 2005/07/30 22:11:13 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -406,7 +406,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
 		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
-			exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/initramfs-* > "+file_name4)
+			exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/init* > "+file_name4)
 		else:
 			exitstatus3 = GLIUtility.spawn("touch "+file_name4)
 		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):

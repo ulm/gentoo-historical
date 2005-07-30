@@ -439,7 +439,7 @@ on partitioning and the various filesystem types available in Linux.""")
 			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?"), width=55) == self._DLG_YES:
 				#Generate on the FLY				
 				try:
-					self._install_profile.set_stage_tarball_uri(None, "networkless", None)
+					self._install_profile.set_dynamic_stage3(None, True, None)
 				except:
 					self._d.msgbox(_(u"ERROR: Could not set the stage tarball URI!"))
 				return
@@ -1320,7 +1320,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			
 		#Install Stage:
 		settings += "\nInstall Stage: " + str(self._install_profile.get_install_stage()) + "\n"
-		if self._install_profile.get_stage_tarball_uri() == "networkless":
+		if self._install_profile.get_dynamic_stage3():
 			settings += "  Tarball will be generated on the fly from the CD.\n"
 		else:
 			settings += "  Tarball URI: " + self._install_profile.get_stage_tarball_uri() + "\n"
