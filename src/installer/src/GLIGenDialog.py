@@ -426,9 +426,12 @@ on partitioning and the various filesystem types available in Linux.""")
 		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=78)
 		if code == self._DLG_OK:
 			if install_stage == "3+GRP":
+				try:
+					self._install_profile.set_grp_install(None, True, None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set install stage!"))
 				install_stage = "3"
 			try:			
-				self._install_profile.set_grp_install(None, True, None)
 				self._install_profile.set_install_stage(None, install_stage, None)
 			except:
 				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
@@ -1367,7 +1370,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		if self._install_profile.get_nisdomainname():
 			settings += "  NIS Domainname: " +self._install_profile.get_nisdomainname() + "\n"
 		if self._install_profile.get_dns_servers():
-			for dns_server in dns_servers:
+			for dns_server in self._install_profile.get_dns_servers():
 				settings += "  DNS Server: " +dns_server + "\n"
 		if self._install_profile.get_http_proxy():
 			settings += "  HTTP Proxy: " +self._install_profile.get_http_proxy() + "\n"
