@@ -26,7 +26,7 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("The entire system will be compiled from scratch with your CHOST and CFLAGS settings")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 		self.radio_stages[2] = gtk.RadioButton(self.radio_stages[1], "Stage 2")
 		self.radio_stages[2].set_name("2")
 		self.radio_stages[2].connect("toggled", self.stage_selected, "2")
@@ -36,7 +36,7 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("Most of the system will be compiled with your CHOST and CFLAGS settings. Don't use this option unless you have a good reason")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.radio_stages[3] = gtk.RadioButton(self.radio_stages[1], "Stage 3")
 		self.radio_stages[3].set_name("3")
@@ -47,7 +47,7 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("The base system will be installed using precompiled packages. You can recompile later with your custom settings if you choose. This is the fastest option")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.check_grp = gtk.CheckButton("GRP Install")
 		self.check_grp.set_sensitive(False)
@@ -57,7 +57,7 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("Any extra packages installed (beyond the stage3) will be installed using binaries from the LiveCD that you are installing from")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		self.check_dynamic = gtk.CheckButton("Dynamic")
 		self.check_dynamic.set_sensitive(False)
@@ -68,14 +68,14 @@ Each option has a brief description beside it.
 		tmplabel = gtk.Label("The stage3 will be generated from the packages on the LiveCD")
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+		vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Stage tarball URI:"), expand=False, fill=False, padding=5)
 		self.entry_stage_tarball_uri = gtk.Entry()
 		self.entry_stage_tarball_uri.set_width_chars(50)
 		hbox.pack_start(self.entry_stage_tarball_uri, expand=False, fill=False, padding=10)
-		vert.pack_end(hbox, expand=False, fill=False, padding=10)
+		vert.pack_end(hbox, expand=False, fill=False, padding=0)
 
 		self.add_content(vert)
 
@@ -110,7 +110,7 @@ Each option has a brief description beside it.
 		self.check_dynamic.set_active(self.controller.install_profile.get_dynamic_stage3())
 
 	def deactivate(self):
-		if not self.entry_stage_tarball_uri.get_text():
+		if not self.entry_stage_tarball_uri.get_text() and not self.check_dynamic.get_active():
 			msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a stage tarball URI. Continue?")
 			resp = msgdlg.run()
 			msgdlg.destroy()
