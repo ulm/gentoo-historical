@@ -236,6 +236,10 @@ class Panel(GLIScreen.GLIScreen):
 				self.chost_combo.set_active(i)
 				break
 			i += 1
+		if self.controller.install_profile.get_install_stage() > 1:
+			self.chost_combo.set_sensitive(False)
+		else:
+			self.chost_combo.set_sensitive(True)
 		# Parsing MAKEOPTS
 		if not self.make_conf_values.has_key('MAKEOPTS') or not self.make_conf_values['MAKEOPTS']:
 			self.make_conf_values['MAKEOPTS'] = self.system_makeopts
@@ -264,7 +268,11 @@ class Panel(GLIScreen.GLIScreen):
 		if self.use_ccache_check.get_active():
 			temp_features += "ccache "
 		self.make_conf_values['FEATURES'] = temp_features.strip()
-		self.make_conf_values['CHOST'] = self.arch_chosts['x86'][self.chost_combo.get_active()]
+		if self.controller.install_profile.get_install_stage() > 1:
+			if 'CHOST' in self.make_conf_values:
+				del self.make_conf_values['CHOST']
+		else:
+			self.make_conf_values['CHOST'] = self.arch_chosts['x86'][self.chost_combo.get_active()]
 		self.make_conf_values['MAKEOPTS'] = self.makeopts_entry.get_text()
 		self.controller.install_profile.set_make_conf(self.make_conf_values)
 		return True
