@@ -1292,15 +1292,15 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				entry = "    "
 				if tmppart.get_type() == "free":
 					#partschoice = "New"
-					entry = _(u" - Unallocated space (")
+					entry += _(u" - Unallocated space (")
 					if tmppart.is_logical():
 						entry += _(u"logical, ")
 					entry += str(tmppart.get_mb()) + "MB)"
 				elif tmppart.get_type() == "extended":
-					entry = str(int(tmppart.get_minor()))
+					entry += str(int(tmppart.get_minor()))
 					entry += _(u" - Extended Partition (") + str(tmppart.get_mb()) + "MB)"
 				else:
-					entry = str(int(tmppart.get_minor())) + " - "
+					entry += str(int(tmppart.get_minor())) + " - "
 					if tmppart.is_logical():
 						entry += _(u"Logical (")
 					else:
@@ -1310,7 +1310,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					entry += (tmppart.get_mountpoint() or "none") + ", "
 					entry += (tmppart.get_mountopts() or "none") + ", "
 					entry += str(tmppart.get_mb()) + "MB)"
-			settings += entry + "\n"
+				settings += entry + "\n"
 			
 		#Network Mounts:
 		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())
@@ -1421,7 +1421,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 		for user in users:
 			settings += "  Username: " + user
-			settings += "\n    Group Membership: " + users[user][2]
+			settings += "\n    Group Membership: " + string.join(users[user][2], ",")
 			settings += "\n    Shell: " + users[user][3]
 			settings += "\n    Home Directory: " + users[user][4]
 			if users[user][5]:

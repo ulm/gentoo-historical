@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.164 2005/07/30 21:41:16 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.165 2005/07/31 04:12:20 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -114,7 +114,7 @@ class ArchitectureTemplate:
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
 #		self._logger.log("_get_packages_to_emerge() called with '%s'" % cmd)
-		return GLIUtility.spawn(cmd + r" 2>/dev/null | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
+		return GLIUtility.spawn(cmd + r" | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 
 	##
 	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
@@ -132,10 +132,7 @@ class ArchitectureTemplate:
 #		self._logger.log("packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
 			if not pkg: continue
-			self._logger.log("Trying to quickpkg '" + pkg + "'")
-			pkgparts = pkg.split('/')
-			if not len(pkgparts) == 2: continue
-			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkgparts[1] + ".tbz2"):
+			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkg.split('/')[1] + ".tbz2"):
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
 				if not GLIUtility.exitsuccess(ret):
 					# This package couldn't be quickpkg'd. This may be an error in the future
@@ -383,6 +380,12 @@ class ArchitectureTemplate:
 		sorted_list = parts_to_mount.keys()
 		sorted_list.sort()
 		
+		if not GLIUtility.is_file(self._chroot_dir):
+			exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir)
+			if not GLIUtility.exitsuccess(exitstatus):
+				raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the ROOT mount point failed!")
+			else:
+				self._logger.log("Created root mount point")
 		for mountpoint in sorted_list:
 			mountopts = parts_to_mount[mountpoint][0]
 			partition_type = parts_to_mount[mountpoint][1]
@@ -391,6 +394,8 @@ class ArchitectureTemplate:
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
+				else:
+					self._logger.log("Created mountpoint" + mountpoint)
 			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
@@ -1023,7 +1028,7 @@ class ArchitectureTemplate:
 			try:
 				os.stat(self._chroot_dir + "/etc/init.d/net." + interface)
 			except:
-				GLIUtility.spawn("ln -s net.eth0 " + self._chroot_dir + "/etc/init.d/net." + interface)
+				os.symlink(self._chroot_dir + "/etc/init.d/net." + interface_type +  "0", self._chroot_dir + "/etc/init.d/net." + interface)				
 		
 			# If we are going to load the network at boot...
 			#if interfaces[interface][2]:  #THIS FEATURE NO LONGER EXISTS
