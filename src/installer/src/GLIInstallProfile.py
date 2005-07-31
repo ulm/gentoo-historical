@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.72 2005/07/31 00:50:09 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.73 2005/07/31 01:23:24 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -374,14 +374,21 @@ class InstallProfile:
 	# Returns domainname
 	def get_domainname(self):
 		return self._domainname
-
+		
+	###################################################################
 	##
 	# Set whether or not to build the stage3 from the LiveCD
 	# @param xml_path Used internally by the XML parser. Should be None when calling directly
 	# @param dynamic_stage3	True/False 	
 	# @param xml_attr 		not used here
 	def set_dynamic_stage3(self, xml_path, dynamic_stage3, xml_attr):
-		self._dynamic_stage3 = dynamic_stage3
+		if type(dynamic_stage3) != bool:
+			if type(dynamic_stage3) == str:
+				self._dynamic_stage3 = GLIUtility.strtobool(dynamic_stage3)
+			else:
+				raise GLIException("DynamicStage3", 'fatal', 'set_dynamic_stage3',  "Input must be type 'bool'!")
+		else:
+			self._dynamic_stage3 = dynamic_stage3
 
 	##
 	# Returns whether or not to build the stage3 from the LiveCD
