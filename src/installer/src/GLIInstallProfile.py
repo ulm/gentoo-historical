@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.71 2005/07/24 20:35:37 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.72 2005/07/31 00:50:09 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
@@ -381,7 +381,6 @@ class InstallProfile:
 	# @param dynamic_stage3	True/False 	
 	# @param xml_attr 		not used here
 	def set_dynamic_stage3(self, xml_path, dynamic_stage3, xml_attr):
-		# Check type
 		self._dynamic_stage3 = dynamic_stage3
 
 	##
