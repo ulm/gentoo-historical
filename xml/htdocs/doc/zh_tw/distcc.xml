@@ -1,7 +1,7 @@
 ﻿<?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/distcc.xml,v 1.7 2005/02/16 13:45:04 ccpz Exp $ -->
-<!-- rev 1.25 by ccpz -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/distcc.xml,v 1.8 2005/08/02 10:27:23 ccpz Exp $ -->
+<!-- rev 1.30 by ccpz -->
 
 <guide link="distcc.xml" lang="zh_tw">
 
@@ -40,8 +40,8 @@
 <!--  See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.10</version>
-<date>2005-01-16</date>
+<version>1.12</version>
+<date>2005-07-01</date>
 
 <chapter>
 <title>介紹</title>
@@ -53,7 +53,7 @@
 Distcc 是個設計讓您可以在不同的電腦上編譯程序的程式。它包含了伺服器端
 <c>distccd</c> 以及客服端 <c>distcc</c> 程式。經由一些小小的設定，
 Distcc 將可以配合著 <uri link="http://ccache.samba.org">ccache</uri> 
-以及 Portage 一起運作。
+以及 Portage 還有 Automake 一起運作。
 </p>
 
 </body>
@@ -79,8 +79,8 @@ Distcc 將可以配合著 <uri link="http://ccache.samba.org">ccache</uri>
 
 <p>
 在開始之前，所有在您網路裡使用 Distcc 的電腦必需有相同的 GCC 版本。若是混著
-3.3.x (x 為版本號) 不會有問題，但是若是混著 3.3.x 以及 3.2.x 會導致你的程式
-有錯誤。
+3.3.x (x 為版本號) 不會有問題，但是若是混著 3.3.x 以及 3.2.x <e>可能</e>會導致
+你的程式有錯誤。
 </p>
 
 </body>
@@ -139,19 +139,14 @@ FEATURES="distcc"
 @192.168.0.1         @192.168.0.2:/usr/bin/distccd     192.168.0.3
 <comment>這裡還有許多其他的方法設定主機。請查閱 distcc 的 manpage 來觀看
 更詳細的資訊。</comment>
+<comment>如果你想要用自己的機器編譯，要在主機列表中加入 'localhost'。相反的如果
+你不想用自己的機器編譯(這很常見)，在主機列表中略掉。緩慢的機器如果加上
+localhost 常常讓事情更慢。確定你的設定效能都很正常。</comment>
 </pre>
 
 <p>
 這看起來可能有點複雜，不過大部分的人只需要用第一或第二行的設定既可。
 </p>
-
-<ul>
-  <li>第一行是直接指定主機</li>
-  <li>
-    第二行則是指定主機外，另外還設定該主機最多的工作數 (放至於該主機
-    位置後的 <c>/N</c> 設定)
-  </li>
-</ul>
 
 <p>
 因為一般的人不會使用到第三和第四行的設定方式，我將 
@@ -173,6 +168,11 @@ FEATURES="distcc"
 聽哪個 IP。更多的資訊請參閱
 <uri link="http://distcc.samba.org/security.html">Distcc Security Design</uri>。
 </p>
+
+<impo>
+使用 --allow 及 --listen 相當重要。請閱讀 distccd 手冊頁及上面的安全文件取得更多
+資訊。
+</impo>
 
 <p>
 再來便是在所有有安裝 distcc 的電腦中，啟動 distcc 服務：
@@ -200,13 +200,13 @@ FEATURES="distcc"
 
 <pre caption="設定您的 path">
 # <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
+<comment>你可以把這放在 .bashrc 或類似的檔案讓他在每次你登入時自動設定</comment>
 </pre>
 
 <p>
-然後，在您平常時輸入 <c>make</c> 的地方，請改為使用 <c>make -jN</c> (N 是
-一個整數)。N 通常用來指的是您全部用來編譯程序的電腦。對我而言，我有一台
-雙處理器的 P3 以及一台 K6-2/400 的電腦來幫我的主電腦 (1200MHz Athlon 雷鳥)
-編譯所有的東西，所以我使用 -j5。建議您自行測試並找出一個最適合您的一個數值。
+然後，在您平常時輸入 <c>make</c> 的地方，請改為使用 <c>make -jN</c> (N 是一個整
+數)。N 通常用來指的是您全部用來編譯程序的電腦。建議您自行測試並找出一個最適合您
+的一個數值。
 </p>
 
 </body>
@@ -256,7 +256,7 @@ link="handbook/handbook-x86.xml?part=1">安裝說明</uri>
 # <i>nano -w /etc/make.conf</i>
 <comment>(加入 distcc 至 FEATURES 參數)</comment>
 FEATURES="distcc"
-<comment>(編輯 MAKEOPTS 使用 -jN 參數， N 為一個適當的整數)</comment>
+<comment>(編輯 MAKEOPTS 使用 -jN 參數， N CPU 數目*2+1)</comment>
 MAKEOPTS="-jN"
 </pre>
 
@@ -370,10 +370,13 @@ PaX/hardened-gcc</uri> 和沒有 hardened-gcc 的主機群間進行平行編譯�
 <p>
 最近 Portage 的更新讓 Portage 使用 <c>${CHOST}-gcc</c> 而不是 <c>gcc</c>。這代
 表說如果你把 i686 和其他類別的機器混合(i386，i586)你會碰到一些問題。一個解決方
-法是 <c>export CC='gcc' CXX='c++'</c> 或是把這放在 <path>/etc/make.conf</path>，
-但是這方法仍需要測試。如果這方法可以作用請告訴我，
-<mail link="lisa@gentoo.org ">Lisa Seelye</mail>。
+法是 <c>export CC='gcc' CXX='c++'</c> 或是把這放在 <path>/etc/make.conf</path>。
 </p>
+
+<impo>
+這樣做會重新定義 Portage 一些行為，可能會有一些問題或奇怪的結果。只有在你有混合
+的 CHOST 才用。
+</impo>
 
 </body>
 </section>
@@ -394,21 +397,22 @@ Distcc 包含兩個監視器。文字介面的是內建的，它叫作 <c>distcc
 
 <p>
 另一個監視器只有在您的 USE 參數中啟動 <c>gtk</c> 或 <c>gnome</c> 才會打開。
-它是建立於 GTK+ 並需執行於 X 的環境下。
+它是建立於 GTK+ 並需執行於 X 的環境下。在 Gentoo 裡為了減少誤解，他叫作
+<c>distccmon-gui</c>。其他地方可能稱為 <c>distccmon-gnome</c>。
 </p>
 
 <pre caption="啟動監視器">
 # <i>distccmon-text N</i>
 <comment>(或是)</comment>
-# <i>distccmon-gnome</i>
+# <i>distccmon-gui</i>
 <comment>要監測 Portage distcc 的執行，您可以使用：</comment>
-# <i>DISTCC_DIR=`portageq envvar DISTCC_DIR` distccmon-text N</i>
+# <i>DISTCC_DIR="/var/tmp/portage/.distcc/" distccmon-text N</i>
 <comment>(或是)</comment>
-# <i>DISTCC_DIR=`portageq envvar DISTCC_DIR` distccmon-gnome</i>
+# <i>DISTCC_DIR="/var/tmp/portage/.distcc/" distccmon-gui</i>
 </pre>
 
 <impo>
-請注意上面指令的反點（`），<c>portgeq</c> 包含在 Portage 內，它會傳回有關的資訊（在上面的例子是 DISTCC_DIR 的設定值）。為了簡單起見，大多數的使用者可以用 <c>DISTCC_DIR=/var/tmp/portage/.distcc distccmon-text N</c>
+如果你的 distcc 放在別的目錄，依你的狀況改變 DISTCC_DIR 變數。
 </impo>
 
 </body>
