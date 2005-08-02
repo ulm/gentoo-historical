@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.38 2005/08/01 23:40:30 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.39 2005/08/02 14:07:06 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -244,30 +244,33 @@ start() {
 				ebegin ${WARN}"/etc/init.d/alsasound not found, skipping."
 				einfo "You will need to set volume controls manually."
 			fi
-			if [ -d /proc/asound/card0 ] && [ -x /usr/bin/amixer ]
-			then
-				amixer scontrols > /etc/amixer
-				if [ -n "$(grep Master /etc/amixer)" ]
+			for i in $(cat /proc/asound/cards | cut -d" " -f1)
+			do
+				if [ -d /proc/asound/card$i ] && [ -x /usr/bin/amixer ]
 				then
-					amixer -q set Master 95% unmute >/dev/null 2>&1
+					amixer -c $i scontrols > /etc/amixer
+					if [ -n "$(grep Master /etc/amixer)" ]
+					then
+						amixer -c $i -q set Master 95% unmute >/dev/null 2>&1
+					fi
+					if [ -n "$(grep PCM /etc/amixer)" ]
+					then
+						amixer -c $i -q set PCM 95% unmute >/dev/null 2>&1
+					fi
+					if [ -n "$(grep Mic /etc/amixer)" ]
+					then
+						amixer -c $i -q set Mic 95% mute cap >/dev/null 2>&1
+					fi
+					if [ -n "$(grep Wave /etc/amixer)" ]
+					then
+						amixer -c $i -q set Wave 95% unmute >/dev/null 2>&1
+					fi
+					if [ -n "$(grep Capture /etc/amixer)" ]
+					then
+						amixer -c $i -q set Capture 95% unmute cap >/dev/null 2>&1
+					fi
 				fi
-				if [ -n "$(grep PCM /etc/amixer)" ]
-				then
-					amixer -q set PCM 95% unmute >/dev/null 2>&1
-				fi
-				if [ -n "$(grep Mic /etc/amixer)" ]
-				then
-					amixer -q set Mic 95% mute cap >/dev/null 2>&1
-				fi
-				if [ -n "$(grep Wave /etc/amixer)" ]
-				then
-					amixer -q set Wave 95% unmute >/dev/null 2>&1
-				fi
-				if [ -n "$(grep Capture /etc/amixer)" ]
-				then
-					amixer -q set Capture 95% unmute cap >/dev/null 2>&1
-				fi
-			fi
+			done
 		fi
 	else
 		ebegin ${BAD}"Skipping ALSA detection as requested on boot commandline."
