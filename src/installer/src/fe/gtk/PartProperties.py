@@ -157,11 +157,9 @@ class PartProperties(gtk.Window):
 		self.make_visible()
 
 	def run(self):
-		hpaned_width = self.resize_hpaned.get_allocation().width - 5
+		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		if self.fstype == "free":
 			hpaned_pos = hpaned_width
-#			if self.max_size > self.end:
-#				hpaned_pos = int(float(float(self.end) / float(self.max_size)) * hpaned_width) - 5
 			self.resize_hpaned.set_position(hpaned_pos)
 			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
 			self.info_partition.set_text(self.device + " (unallocated)")
@@ -227,7 +225,7 @@ class PartProperties(gtk.Window):
 				# Mount point but no mount options
 				self.part_mount_opts_entry.set_text("defaults")
 		if self.fstype == "free":
-			hpaned_width = self.resize_hpaned.get_allocation().width - 5
+			hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 			hpaned_pos = self.resize_hpaned.get_position()
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 			part_size = round(self.max_size * part_space)
@@ -256,7 +254,7 @@ class PartProperties(gtk.Window):
 		self.destroy()
 
 	def part_resized(self, widget, allocation):
-		hpaned_width = self.resize_hpaned.get_allocation().width - 5
+		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
 #		part_size_cyl = round(self.max_size * part_space)
@@ -277,7 +275,7 @@ class PartProperties(gtk.Window):
 
 	def update_slider_and_entries(self, widget, event, which_one):
 		print "Entry " + which_one + " has been updated"
-		hpaned_width = self.resize_hpaned.get_allocation().width - 5
+		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
 #			part_size_sec = round(long(self.resize_info_part_size.get_text()) * 1024 * 1024 / self.bytes_in_sector)
