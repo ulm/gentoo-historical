@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.9 2005/07/31 01:53:44 agaffney Exp $
+$Id: SimpleXMLParser.py,v 1.10 2005/08/05 01:51:56 agaffney Exp $
 Copyright 2005 Gentoo
 
 """
@@ -75,7 +75,11 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 #						self._xml_current_data = False
 #					if self._xml_current_data == "None":
 #						self._xml_current_data = None
-					fn[0](path, string.strip(self._xml_current_data), self._xml_attrs[-1])
+					if self._xml_current_data.startswith("<![CDATA["):
+						self._xml_current_data = self._xml_current_data[9:-5]
+					else:
+						self._xml_current_data = self._xml_current_data.strip()
+					fn[0](path, self._xml_current_data, self._xml_attrs[-1])
 		# Keep the XML state
 		self._xml_current_data = ""
 		self._xml_attrs.pop()

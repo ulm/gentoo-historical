@@ -698,3 +698,15 @@ def get_local_use_flags():
 		use_local_desc[flagname] = desc
 	f.close()
 	return use_local_desc
+
+def cdata(text):
+	if text.startswith("<![CDATA["):
+		return text
+	else:
+		return "<![CDATA[\n" + text + "\n]]>"
+
+def uncdata(text):
+	if text.startswith("<![CDATA["):
+		return text[9:-5]
+	else:
+		return text
