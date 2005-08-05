@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.168 2005/07/31 20:24:37 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.169 2005/08/05 01:49:11 robbat2 Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -811,7 +811,7 @@ class ArchitectureTemplate:
 			self._add_to_runlevel(initscript)
 		
 			# If the Cron Daemon is not vixie-cron, run crontab			
-			if cron_daemon_pkg != "vixie-cron":
+			if "vixie-cron" not in cron_daemon_pkg:
 				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
 				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
