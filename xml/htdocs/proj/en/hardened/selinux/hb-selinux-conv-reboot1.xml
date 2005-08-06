@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
  
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot1.xml,v 1.3 2005/05/11 02:46:10 pebenito Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot1.xml,v 1.4 2005/08/06 20:56:20 pebenito Exp $ -->
 
 <sections>
 <section><title>Merge a SELinux Kernel</title>
@@ -97,34 +97,40 @@ guide for futher kernel options.</p>
 <section><title>Update fstab</title>
 <subsection><body>
 <p>
-  Devpts and selinuxfs must also be enabled to mount at boot.
+  SElinuxfs must also be enabled to mount at boot.
   Add this to /etc/fstab:
 </p>
-<pre caption="Fstab settings for devpts and selinuxfs">
-none	/dev/pts	devpts		gid=5,mode=620	0	0
+<pre caption="Fstab settings for selinuxfs">
 none	/selinux	selinuxfs	defaults	0	0
 </pre>
 </body></subsection>
 </section>
 
-<section><title>Update Bootloader</title>
+<section><title>Configure Baselayout</title>
 <subsection><body>
 <p>
-The command line option <c>gentoo=nodevfs</c> must be added to the kernel
-command line so the init scripts do not attempt to mount devfs.
+SELinux does not support devfs.  You must configure baselayout to
+use either static device nodes or udev.  If using udev, the
+device tarball must be disabled.  Edit the /etc/conf.d/rc file.
+Set RC_DEVICES to static or udev, and RC_DEVICE_TARBALL to no.
+If you have several custom device nodes, static is suggested,
+otherwise udev is suggested.
 </p>
-<pre caption="Example bootloader entry">
-<comment>GRUB:</comment>
-title=linux
-root (hd0,0)
-kernel /bzImage root=/dev/hda3 <i>gentoo=nodevfs</i>
+<pre caption="Init script configuration">
+# Use this variable to control the /dev management behavior.
+#  auto   - let the scripts figure out what's best at boot
+#  devfs  - use devfs (requires sys-fs/devfsd)
+#  udev   - use udev (requires sys-fs/udev)
+#  static - let the user manage /dev
 
-<comment>LILO and similar bootloaders:</comment>
-image=/boot/bzImage
-	label=linux
-	read-only
-	root=/dev/hda3
-	<i>append="gentoo=nodevfs"</i>
+<i>RC_DEVICES="udev"</i>
+
+# UDEV OPTION:
+# Set to "yes" if you want to save /dev to a tarball on shutdown
+# and restore it on startup.  This is useful if you have a lot of
+# custom device nodes that udev does not handle/know about.
+
+<i>RC_DEVICE_TARBALL="no"</i>
 </pre>
 </body></subsection>
 </section>
