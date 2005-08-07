@@ -14,8 +14,7 @@ rm -f ${tar}
 
 mkdir -p tmp/patch
 cp -r *.patch tmp/patch/ || exit 1
-
-find tmp -type f | xargs bzip2
+cp ../README* tmp/patch/
 
 tar -jcf ${tar} \
 	-C tmp patch || exit 1
