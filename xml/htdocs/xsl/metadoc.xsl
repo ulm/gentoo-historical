@@ -272,14 +272,16 @@
   <section>
   <body>
 
-  <xsl:for-each select="list">
-    <xsl:call-template name="list">
-      <xsl:with-param name="metadoc"  select="$metadoc"/>
-      <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
-      <xsl:with-param name="lang"     select="$lang"/>
-      <xsl:with-param name="catid"    select="text()"/>
-    </xsl:call-template>
-  </xsl:for-each>
+  <ul>
+    <xsl:for-each select="list">
+      <xsl:call-template name="list">
+        <xsl:with-param name="metadoc"  select="$metadoc"/>
+        <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+        <xsl:with-param name="lang"     select="$lang"/>
+        <xsl:with-param name="catid"    select="text()"/>
+      </xsl:call-template>
+    </xsl:for-each>
+  </ul>
 
   <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
     <br/><p>¹ <xsl:value-of select="func:gettext('untranslated', $lang)"/></p>
@@ -295,7 +297,9 @@
   <xsl:param name="pmetadoc"/>
   <xsl:param name="lang"/>
   <xsl:param name="catid" select="text()"/>
-  <ul><b><xsl:value-of select="exslt:node-set($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
+    <li><b><xsl:value-of select="exslt:node-set($metadoc)/metadoc/categories/cat[@id = $catid]"/></b>
+    <xsl:if test="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $catid]">
+    <ul>
     <xsl:for-each select="exslt:node-set($metadoc)/metadoc/docs/doc[memberof = $catid]">
       <xsl:choose>
         <xsl:when test="bugs/bug[@stopper = 'yes']">
@@ -316,15 +320,19 @@
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
+    </ul>
+    </xsl:if>
     <xsl:for-each select="exslt:node-set($metadoc)/metadoc/categories/cat[@parent = $catid]">
+     <ul>
       <xsl:call-template name="list">
         <xsl:with-param name="metadoc"  select="$metadoc"/>
         <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
         <xsl:with-param name="lang"     select="$lang"/>
         <xsl:with-param name="catid"    select="@id"/>
       </xsl:call-template>
+     </ul>
     </xsl:for-each>
-  </ul>
+    </li>
 </xsl:template>
 
 <xsl:template match="overview">
@@ -427,7 +435,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.23 2005/07/12 10:37:35 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.24 2005/08/07 22:01:37 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -449,7 +457,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.23 2005/07/12 10:37:35 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.24 2005/08/07 22:01:37 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
