@@ -295,7 +295,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
-		wrapper.write("#!/bin/bash\n\nsource /etc/profile\n" + cmd + "\nexit $?\n")
+		wrapper.write("#!/bin/bash -l\n" + cmd + "\nexit $?\n")
 		wrapper.close()
 		cmd = "chmod a+x " + chroot + "/var/tmp/spawn.sh && chroot " + chroot + " /var/tmp/spawn.sh 2>&1"
 	else:
