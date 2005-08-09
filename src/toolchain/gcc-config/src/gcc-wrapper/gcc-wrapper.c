@@ -1,7 +1,7 @@
 /*
  * Copyright 1999-2005 Gentoo Foundation
  * Distributed under the terms of the GNU General Public License v2
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/Attic/wrapper.c,v 1.1 2005/08/09 08:32:15 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.1 2005/08/09 20:15:46 eradicator Exp $
  * Author: Martin Schlemmer <azarah@gentoo.org>
  * az's lackey: Mike Frysinger <vapier@gentoo.org>
  */

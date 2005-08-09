@@ -1,0 +1,1 @@
+SUBDIRS = libcommon gcc-wrapper
