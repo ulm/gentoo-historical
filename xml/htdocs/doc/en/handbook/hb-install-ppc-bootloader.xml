@@ -4,33 +4,31 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.27 2005/06/14 10:18:25 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.28 2005/08/09 09:43:58 swift Exp $ -->
 
 <sections>
 
-<version>2.4</version>
-<date>2005-05-12</date>
+<version>2.5</version>
+<date>2005-08-09</date>
 
 <section>
-<title>Making your Choice</title>
+<title>Choosing a Bootloader</title>
 <subsection>
 <title>Introduction</title>
 <body>
 
 <p>
-Now that your kernel is configured and compiled and the necessary system
-configuration files are filled in correctly, it is time to install a
-program that will fire up your kernel when you start the system. Such a
-program is called a <e>bootloader</e>. But before you start, consider
-your options...
+Now that the kernel is configured and compiled, you'll need a <e>bootloader</e>
+to start your new linux installation.  The <e>bootloader</e> that you use will 
+depend upon the type of PPC machine you have.
 </p>
 
 <p>
-Several bootloaders exist for Linux/PPC. We have <uri link="#yaboot">yaboot</uri>
-(for NewWorld Apple and IBM machines) and <uri link="#bootx">BootX</uri> (for 
-OldWorld Apple machines). The Pegasos does not require a bootloader, but
-we included the <uri link="#bootcreator">BootCreator</uri> for creating a
-SmartFirmware bootmenu.
+If you are using a NewWorld Apple or IBM machine, you need to use 
+<uri link="#yaboot">yaboot</uri>.  OldWorld Apple machines have two options,
+<uri link="#bootx">BootX</uri> (recommended) and <uri link="#quik">quik</uri>.
+The Pegasos does not require a bootloader, but you will need to emerge 
+<uri link="#bootcreator">BootCreator</uri> to create SmartFirmware bootmenus.
 </p>
 
 </body>
@@ -43,16 +41,16 @@ SmartFirmware bootmenu.
 <body>
 
 <impo>
-yaboot can only be used on NewWorld Apple and IBM systems!
+yaboot can only be used on NewWorld Apple or IBM machines!
 </impo>
 
 <p>
-First we have to create the <path>/dev</path> files in our new home, which is
-needed during the bootloader installation.  This could be done by "bind"-mapping
-the <path>/dev</path>-filesystem from the Installation CD:
+In order to find the boot devices, yaboot needs access to the <path>/dev</path>
+filesystem.  To do this, you will need to "bind-map" the <path>/dev</path> 
+filesystem from the Installation CD to <path>/dev</path> inside of the chroot.
 </p>
 
-<pre caption="Bind-mounting the /dev-filesystem">
+<pre caption="Bind-mounting the /dev filesystem">
 # <i>exit </i> # this will exit the chroot
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
 # <i>chroot /mnt/gentoo /bin/bash</i>
@@ -60,33 +58,33 @@ the <path>/dev</path>-filesystem from the Installation CD:
 </pre>
 
 <p>
-There are two ways to configure yaboot for your system. You can use the
-included <c>yabootconfig</c> to automatically set up yaboot. If
-for some reason you do not want to run <c>yabootconfig</c> to
-automatically set up <path>/etc/yaboot.conf</path> or you are installing Gentoo
-on a G5 (on which <c>yabootconfig</c> does not always work), you can just edit 
-the sample file already installed on your system.
+To set up yaboot, you can use <c>yabootconfig</c> to automatically create a
+configuration file for you. If you are installing Gentoo on a G5 (where 
+<c>yabootconfig</c> does not always work), or you plan to boot from firewire 
+or USB, you will need to manually configure yaboot.
 </p>
 
 <note>
-You may need to edit the yaboot.conf file if using genkernel.  The arguments
-provided by the genkernel ebuild need to be added as an option to the kernel
-image section.  The relevant section of yaboot.conf is given below:
+You will need to manually edit the yaboot.conf when using genkernel, even if
+yabootconfig is used.  The kernel image section of yaboot.conf should be
+modified as follows:
 </note>
 
-<pre caption="Adding boot arguments to yaboot.conf">
-<comment>#################
-## This section can be duplicated if you have more than one kernel or set of
-## boot options - replace 2.6.9 with your kernel-version
-#################</comment>
-image=/boot/kernel-2.6.9
+<pre caption="Adding genkernel boot arguments to yaboot.conf">
+<comment>###########################################################
+## This section can be duplicated if you have more than one
+## kernel or set of boot options - replace kernel-2.6.12
+## with the exact filename of your kernel.
+###########################################################</comment>
+image=/boot/kernel-2.6.12
   label=Linux
   root=/dev/ram0    <comment># If using genkernel this is /dev/ram0</comment>
   partition=3
-  sysmap=/boot/System.map-2.6.9
-  append="real_root=/dev/hda3 init=/linuxrc"  <comment># Add arguments to this line</comment>
+  append="real_root=/dev/hda3 init=/linuxrc"  
+  <comment># You can add additional kernel arguments to append such as 
+  # rootdelay=10 for a USB/Firewire Boot</comment>
   read-only
-<comment>##################</comment>
+<comment>##########################################################</comment>
 </pre>
 
 <ul>
@@ -110,8 +108,8 @@ set up dual and triple boot combinations with Linux, Mac OS, and Mac OS X.
 <p>
 To use <c>yabootconfig</c>, your drive must have an Apple_Bootstrap partition,
 and <path>/etc/fstab</path> must be configured with your Linux partitions. Both
-of these should have been done already in the steps above. To start, ensure that
-you have the latest <c>yaboot</c> installed.
+of these steps should have been completed already.  First, make sure that you 
+have the latest version of <c>yaboot</c> installed.
 </p>
 
 <pre caption = "Installing yaboot with GRP">
@@ -119,21 +117,23 @@ you have the latest <c>yaboot</c> installed.
 </pre>
 
 <p>
-Now exit the chroot and run <c>yabootconfig --chroot /mnt/gentoo</c>. The
-program will run and it will confirm the location of the bootstrap partition.
-Type <c>Y</c> if it is correct. If not, double check <path>/etc/fstab</path>.
-yabootconfig will then scan your system setup, create
-<path>/etc/yaboot.conf</path> and run <c>mkofboot</c> for you. <c>mkofboot</c>
-is used to format the Apple_Bootstrap partition, and install the yaboot
-configuration file into it.  After this enter the chroot again.
+Now, exit the chroot and run <c>yabootconfig --chroot /mnt/gentoo</c>.  It will
+ask you to confirm the location of the Apple_Bootstrap partition.  Type <c>Y</c>
+if it is correct. If not, check <path>/etc/fstab</path> and ensure that the 
+device paths are correct.  Once the bootstrap partition has been selected, 
+<c>yabootconfig</c> will scan your system setup, create 
+<path>/etc/yaboot.conf</path> and run <c>mkofboot</c>. <c>mkofboot</c>
+formats the Apple_Bootstrap partition, and installs the yaboot configuration 
+file onto it.  After this is complete, enter the chroot again.
 </p>
-<pre caption="enter chroot">
+
+<pre caption="Re-enter the chroot">
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile</i>
 </pre>
 
 <p>
-You might want to verify the contents of <path>/etc/yaboot.conf</path>. If you
+You may want to verify the contents of <path>/etc/yaboot.conf</path>. If you
 make changes to <path>/etc/yaboot.conf</path> (like setting the default/boot
 OS), make sure to rerun <c>ybin -v</c> to apply changes to the Apple_Bootstrap
 partition.
@@ -150,8 +150,7 @@ Now continue with <uri link="#reboot">Rebooting the System</uri>.
 <body>
 
 <p>
-First make sure you have the latest <c>yaboot</c> installed on your
-system:
+First, make sure you have the latest version of <c>yaboot</c> installed.
 </p>
 
 <pre caption = "Installing yaboot">
@@ -159,10 +158,10 @@ system:
 </pre>
 
 <p>
-Below you find a completed <path>yaboot.conf</path> file. Alter it at
-will. G5 users should be aware that their disks are Serial ATA disks which are
-seen as SCSI disks by the Linux kernel (so substitute <path>/dev/hda</path> with
-<path>/dev/sda</path>).
+An example <path>yaboot.conf</path> file is given below, but you will need to 
+alter it to fit your needs.  G5 users and users booting from firewire and USB
+should be aware that their disks are seen as SCSI disks by the Linux kernel, so 
+you will need to substitute <path>/dev/hda</path> with <path>/dev/sda</path>).
 </p>
 
 <pre caption = "/etc/yaboot.conf">
@@ -184,11 +183,22 @@ boot=/dev/hda2
 ## hd:X means /dev/sdaX (or /dev/hdaX).
 ## 
 ## G5 users should uncomment this line!!
-
 #ofboot=hd:2
 
-## hd: is open firmware speak for hda</comment>
+## Users booting from firewire should use something like this line:
+# ofboot=fw/node/sbp-2/disk@0:
+
+## Users booting from USB should use something like this line:
+# ofboot=usb/disk@0:
+
+## hd: is shorthand for the first hard drive OpenFirmware sees</comment>
 device=hd:
+
+<comment>## Firewire and USB users will need to specify the whole OF device name
+## This can be found using ofpath, which is included with yaboot.
+
+# device=fw/node@0001d200e00d0207/sbp-2@c000/disk@0:
+</comment>
 
 delay=5
 defaultos=macosx
@@ -204,7 +214,7 @@ image=/boot/kernel-2.6.9
   label=Linux
   root=/dev/hda3
   partition=3
-  sysmap=/boot/System.map-2.6.9
+<comment>#  append="rootdelay=10"  # Required for booting USB/Firewire</comment>
   read-only
 <comment>##################
 
@@ -219,17 +229,10 @@ enableofboot
 </pre>
 
 <p>
-Once <path>yaboot.conf</path> is set up the way you want it, you run
-<c>mkofboot -v</c> to install the settings in the bootstrap partition. <e>Don't
-forget this!</e> Confirm when <c>mkofboot</c> asks you to create a new
-filesystem.
-</p>
-
-<p>
-If all goes well, and you have the same options as the sample
-above, your next reboot will give you a simple, five-entry boot menu. If you
-update your yaboot config later on, you'll just need to run <c>ybin -v</c> to
-update the bootstrap partition - <c>mkofboot</c> is for initial setup only.
+Once <path>yaboot.conf</path> is configured, run <c>mkofboot -v</c> to format
+the Apple_bootstrap partition and install the settings. If you change 
+yaboot.conf after the Apple_bootstrap partition has been created, you can
+update the settings by running <c>ybin -v</c>
 </p>
 
 <p>
@@ -266,8 +269,8 @@ cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux
 </pre>
 
 <p>
-If genkernel is used, the kernel is located in a different place and the initrd
-will need to be copied as well.
+If genkernel is used, both the kernel and initrd will need to be copied to the
+MacOS partition.
 </p>
 
 <pre caption="Copying the Genkernel kernel and initrd to the MacOS partition">
@@ -279,8 +282,7 @@ cdimage ~# <i>cp /mnt/gentoo/boot/initrd-* "/mnt/mac/System Folder"</i>
 </pre>
 
 <p>
-Now that the kernel is copied over, unmount all mounted filesystems and enter 
-that one magical command that you have been waiting for: <c>reboot</c>.
+Now that the kernel is copied over, we'll need to reboot to set up BootX.
 </p>
 
 <pre caption="Unmounting all partitions and rebooting">
@@ -290,25 +292,25 @@ cdimage ~# <i>reboot</i>
 </pre>
 
 <p>
-Of course, don't forget to remove all bootable media, MacOS needs to boot this
-time.
+Of course, don't forget to remove all bootable media, since MacOS needs to boot
+this time.
 </p>
 
 <p>
-Now that the machine has booted into MacOS, open the BootX control panel and 
-Select <c>Options</c> and uncheck <c>Used specified RAM disk</c> if not using
-genkernel.  If using genkernel, ensure that the genkernel initrd is selected
-instead of the Installation CD initrd.  If not using genkernel, there is now 
-an option to specify the machine's Linux root disk and partition. Fill these 
-in with the appropriate values.  Depending upon the kernel configuration, some 
-boot arguments may need to be applied.
+Once the machine has booted into MacOS, open the BootX control panel.  If you're
+not using genkernel, select <c>Options</c> and uncheck <c>Used specified RAM 
+disk</c>.  If you are using genkernel, ensure that the genkernel initrd is 
+selected instead of the Installation CD initrd.  If not using genkernel, 
+there is now an option to specify the machine's Linux root disk and partition. 
+Fill these in with the appropriate values.  Depending upon the kernel 
+configuration, additional boot arguments may need to be applied.
 </p>
 
 <p>
 BootX can be configured to start Linux upon boot. If you chose to do this, the 
-computer will boot into MacOS and then during startup load BootX which in turn
+computer will boot into MacOS and then, during startup, load BootX which in turn
 starts Linux. See the <uri link="http://penguinppc.org/bootloaders/bootx/">
-Boot X home page</uri> for more information.
+BootX home page</uri> for more information.
 </p>
 
 <p>
@@ -318,27 +320,118 @@ link="?part=1&amp;chap=11">Finalizing your Gentoo Installation</uri>.
 
 </body>
 </section>
+<section id="quik">
+<title>Alternative: quik</title>
+<body>
+
+<p>
+quik allows OldWorld Macs to boot without MacOS.  However, it isn't well
+supported and has a number of quirks.  If you have the option, it is recommended
+that you use BootX instead since it is much more reliable and easier to set up
+than quik.
+</p>
+
+<p>
+First, we'll need to install quik:
+</p>
+
+<pre caption="Emerge quik">
+# <i>emerge quik</i>
+</pre>
+
+<p>
+Next, we'll need to set it up.  Edit /etc/quik.conf and set your image to the
+kernel that we copied to your boot partition.
+</p>
+
+<pre caption="Configuring quik.conf">
+# Example of quik.conf
+init-message = "Gentoo 2005.1\n"
+partition = 2		<comment># This is the boot partition</comment>
+root = /dev/hda4
+timeout = 30
+default = gentoo
+image = /vmlinux-2.6.12
+	label = gentoo
+</pre>
+
+<p>
+Your quik.conf file <e>must</e> be on the same disk as the quik boot images,
+however it can be on a different partition on the same disk, although it is
+recommended to move it to your boot partition.
+</p>
+
+<pre caption="Moving quik.conf to /boot">
+# <i>mv /etc/quik.conf /boot/quik.conf</i>
+</pre>
+
+<p>
+We will now set your boot variables so that quik loads on boot.  To do this,
+we'll use a program called <c>nvsetenv</c>.  The variables that you want to
+set vary from machine to machine, it's best to find your machine's 
+<uri link="http://penguinppc.org/bootloaders/quik/quirks.php">quirks</uri>
+before attempting this.
+</p>
+
+<pre caption="Setting the boot variables">
+# <i>nvsetenv auto-boot true</i> <comment># Set to false if you want to boot into OF, not all models can display the OF output</comment>
+# <i>nvsetenv output-device video</i> <comment># Check the quirks page, there are many variations here</comment>
+# <i>nvsetenv input-device kbd</i>
+# <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
+# <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
+</pre>
+
+<note>
+It is also possible to change your boot variables from MacOS.  Depending
+upon the model, either 
+<uri link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">bootvars</uri> or 
+<uri link="ftp://ftp.apple.com/developer/macosxserver/utilities/SystemDisk2.3.1.smi.bin">
+Apple System Disk</uri> should be used.  Please see the quik quirks page
+above for more information.
+</note>
+
+<p>
+Now that we've set up our machine to boot, we'll need to make sure the boot
+images are installed correctly.  Run <c>quik -v -C /boot/quik.conf</c>.  It 
+should tell you that it has installed the first stage QUIK boot block.
+</p>
+
+<note>
+If something has gone wrong, you can always reset your PRAM back to the default
+values by holding down <c>command + option + p + r</c> before powering on your
+machine.  This will clear the values you set with nvsetenv and should allow you
+to boot either a MacOS bootdisk or a Linux bootdisk.
+</note>
+
+<p>
+Now, continue the installation with 
+<uri link="#reboot">Rebooting the System</uri>.
+</p>
+
+</body>
+</section>
 <section id="bootcreator">
 <title>Alternative: BootCreator</title>
 <body>
 
 <impo>
-BootCreator will build a nice SmartFirmware bootmenu written in Forth for the
+BootCreator will build a SmartFirmware boot menu written in Forth for the 
 Pegasos.
 </impo>
 
 <p>
-First make sure you have the latest <c>bootcreator</c> installed on your
-system:
+First, ensure that you have <c>bootcreator</c> installed on your system:
 </p>
 
 <pre caption = "Installing bootcreator">
-# <i>emerge --usepkg --update bootcreator</i>
+# <i>emerge bootcreator</i>
 </pre>
 
 <p>
 Now copy the file <path>/etc/bootmenu.example</path> into
-<path>/etc/bootmenu</path> and edit it to your needs:
+<path>/etc/bootmenu</path> and edit it to suit your needs:
 </p>
 
 <pre caption = "Edit the bootcreator config file">
@@ -347,8 +440,7 @@ Now copy the file <path>/etc/bootmenu.example</path> into
 </pre>
 
 <p>
-Below you find a completed <path>/etc/bootmenu</path> config file. Alter it at
-will.
+An example <path>/etc/bootmenu</path> config file is included below.
 </p>
 
 <pre caption = "bootcreator config file">
@@ -372,15 +464,18 @@ Local HD -> Morphos      (Normal)
 ide:0 boot2.img ramdebug edebugflags="logkprintf"
 
 [SECTION]
-Local HD -> Linux 2.6.10 (Normal)
-ide:0 linux-2.6.10 video=radeonfb:1024x768@70 root=/dev/hda3
+Local HD -> Linux 2.6.12 (Normal)
+ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
 
+[SECTION]
+Local HD -> Genkernel (Normal)
+ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
 </pre>
 
 <p>
-Finally the <path>bootmenu</path> must be transfered into Forth and copied to
-your boot partition, so that the SmartFirmware can read it.  Therefore you have
-to call <c>bootcreator</c>:
+Finally, the <path>bootmenu</path> must be transformed into Forth and copied to
+your boot partition so the SmartFirmware can read it.  To do this, start 
+<c>bootcreator</c>:
 </p>
 
 <pre caption = "Install the bootmenu">
@@ -388,13 +483,13 @@ to call <c>bootcreator</c>:
 </pre>
 
 <note>
-Be sure to have a look into the SmartFirmware's settings when you reboot, that
+Be sure to check the SmartFirmware's settings when you reboot, and ensure that
 <path>menu</path> is the file that will be loaded by default.
 </note>
 
 <p>
-For now, continue the installation with <uri link="#reboot">Rebooting the
-System</uri>.
+Now, continue the installation with 
+<uri link="#reboot">Rebooting the System</uri>.
 </p>
 
 
@@ -406,8 +501,8 @@ System</uri>.
 <body>
 
 <p>
-Exit the chrooted environment and unmount all mounted partitions. Then type in
-that one magical command you have been waiting for: <c>reboot</c>.
+Exit the chrooted environment and unmount all mounted partitions so we can
+reboot cleanly, then <c>reboot</c>.
 </p>
 
 <pre caption="Exiting the chroot, unmounting all partitions and rebooting">
@@ -417,7 +512,7 @@ livecd ~# <i>reboot</i>
 </pre>
 
 <p>
-Once rebooted in your Gentoo installation, finish up with <uri
+Once your new Gentoo installation has booted, finish up with <uri
 link="?part=1&amp;chap=11">Finalizing your Gentoo Installation</uri>.
 </p>
 
