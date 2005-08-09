@@ -5,46 +5,91 @@ migration path has not been implemented yet.
 
 configuration directory: /etc/gcc-config
 All configuration information is stored in this directory.  The current config
-format is as follows, but this should change before release to allow for an
-easy upgrade path.  XML would be nice, but I believe that would be too strong
-a dependency for this package, but if someone wants to implement that, I would
-be happy with it.  This code should be abstract enough that it can be used for
-binutils (specifically ld and as) as well.
+format is as follows, but it is subject to change before release.
 
 The selection file (/etc/gcc-config/selection.conf) lists the currently selected
 profiles for each CHOST handled by gcc-config.  It is formatted as follows:
-<CHOST> <CONFIGURATION FILE (without leading /etc/gcc-config/)> <PROFILE NAME>
+<selections>
+	<default_chost>##DEFAULT CHOST##</default_chost>
+	<selection>
+		<chost>##CHOST##</chost>
+		<version>##gcc version being used##</version>
+		<profile>##profile name##</profile>
+	</selection>
+	<selection>
+...
+	</selection>
+...
+</selections>
 
-Configuration file (for each installed gcc package) is formatted as follows:
-<PROFILE NAME>
-<default CHOST for this profile>
-<gcc specs file>
-<LDPATH>
-<additional CFLAGS to prepend to the command line>
+Configuration file (for each installed gcc package) is named /etc/gcc-config/<version>.conf formatted as follows:
+<profiles>
+	<profile>
+		<name>##Profile Name##</name>
+		<chost>##Default CHOST for this profile##</name>
+		<spec>##GCC specs file to use##</spec>
+		<ldpath>##Path to add to ld.so.conf##</ldpath>
+		<binpath>##Path containing binaries to execute when using this profile##</binpath>
+		<cflags>##additional CFLAGS to prepend to the command line##</cflags>
+	</profile>
+	<profile>
+...
+	</profile>
+...
+</profiles>
+
+Note that the <chost> in <profile> is only used as a way to tell the user what this profile is used for.
+The <chost> set in the <selection> tag determines how the binaries act.  The <default_chost> in the <selections>
+tag determines how the binaries 'gcc', 'g++', etc (that is the ones without a prefix) behave.
 
 Example /etc/gcc-config/master.conf:
-x86_64-pc-linux-gnu x86_64-pc-linux-gnu-3.4.4.conf amd64-vanilla
-i686-pc-linux-gnu x86_64-pc-linux-gnu-3.4.4.conf x86-vanilla
-pentium4-pc-linux-gnu x86_64-pc-linux-gnu-3.4.4.conf p4-vanilla
+<selections>
+	<default_chost>x86_64-pc-linux-gnu</default_chost>
+	<selection>
+		<chost>x86_64-pc-linux-gnu</chost>
+		<version>x86_64-pc-linux-gnu-3.4.4</version>
+		<profile>amd64-vanilla</profile>
+	</selection>
+	<selection>
+		<chost>i686-pc-linux-gnu</chost>
+		<version>x86_64-pc-linux-gnu-3.4.4</version>
+		<profile>x86-vanilla</profile>
+	</selection>
+	<selection>
+		<chost>pentium4-pc-linux-gnu</chost>
+		<version>x86_64-pc-linux-gnu-3.4.4</version>
+		<profile>p4-vanilla</profile>
+	</selection>
+</selections>
 
 Example /etc/gcc-config/x86_64-pc-linux-gnu-3.4.4.conf:
-amd64-vanilla
-x86_64-pc-linux-gnu
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/
--m64
-amd64-hardened
-x86_64-pc-linux-gnu
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/hardened.specs
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/
--m64
-x86-vanilla
-i686-pc-linux-gnu
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32/
--m32
-p4-vanilla
-pentium4-pc-linux-gnu
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs
-/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32/
--m32 -march=pentium4
+<profiles>
+	<profile>
+		<name>amd64-vanilla</name>
+		<spec>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs</spec>
+		<ldpath>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4</ldpath>
+		<binpath>/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4</binpath>
+		<cflags>-m64</cflags>
+	</profile>
+	<profile>
+		<name>amd64-hardened</name>
+		<spec>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/hardened.specs</spec>
+		<ldpath>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4</ldpath>
+		<binpath>/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4</binpath>
+		<cflags>-m64</cflags>
+	</profile>
+	<profile>
+		<name>x86-vanilla</name>
+		<spec>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs</spec>
+		<ldpath>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32</ldpath>
+		<binpath>/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4</binpath>
+		<cflags>-m32</cflags>
+	</profile>
+	<profile>
+		<name>p4-vanilla</name>
+		<spec>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs</spec>
+		<ldpath>/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32</ldpath>
+		<binpath>/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4</binpath>
+		<cflags>-march=pentium4 -m32</cflags>
+	</profile>
+</profiles>
