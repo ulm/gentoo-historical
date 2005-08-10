@@ -3,81 +3,107 @@
 <guide link="/proj/en/base/embedded/gnap-userguide.xml">
 <title>Gentoo Network APpliance User Guide</title>
 <author title="Author">
-  <mail link="koon@gentoo.org">Koon</mail>
+  <mail link="koon@gentoo.org">Thierry Carrez</mail>
 </author>
 
 <abstract>
-This document describes what GNAP is, how to build it, and how
-to use it.
+This document describes how to use GNAP, a tool to produce Network
+Appliance systems based on Gentoo.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.7.1</version>
-<date>June 23, 2005</date>
+<version>1.8</version>
+<date>August 10, 2005</date>
 
 <chapter>
-<title>Why GNAP ?</title>
+<title>GNAP basics</title>
 <section>
-<title>The name</title>
+<title>Goal</title>
 <body>
 
 <p>
-The acronym GNAP stands for Gentoo Network APpliance.
+The goal is to use your current Gentoo system (called the <e>host</e>)
+to build a LiveCD or a disk with a bootable Network Appliance system, complete
+with customized configuration files, that you can use to boot another system
+(called the <e>target</e>).
 </p>
+
+<p>
+GNAP provides a prebuilt system image, called the <e>GNAP core</e>. You can
+modify the default configuration of this image by providing new configuration
+files that will be overlaid over the system image during the target boot.
+</p>
+
+<p>
+The <c>gnap_overlay</c> script takes a GNAP core tarball and one or more
+<e>overlay sources</e> and either produces a bootable LiveCD .iso file, or
+writes a bootable filesystem to a disk device (typically a CompactFlash card
+or DOM):
+</p>
+
+<figure link="gnap_overlay.png" short="gnap_overlay principle"
+        caption="How gnap_overlay works"/>
 
 </body>
 </section>
 <section>
-<title>The need</title>
+<title>The overlay sources</title>
 <body>
 
 <p>
-GNAP comes from the need to build old-PC based network
-appliances like internal routers or firewalls without the need for a complete
-installation. I have a bunch of old PCs with fragile components and want to be
-able to easily switch PCs in case of failure. Using removable media with a
-burned-on configuration is the most flexible way I found. When it fails,
-just put the media on another machine.
+There are two types of overlay sources you can use with
+<c>gnap_overlay</c>: directories and <e>conflet</e> files.
 </p>
 
 <p>
-I started by using 
-<uri link="http://leaf.sourceforge.net/mod.php?mod=userpage&amp;menu=910&amp;page_id=36">LEAF Bering-uClibc</uri>
-floppy-based firewalls but was quickly
-undermined by problems: media fragility, difficulty to automate creation of
-floppies and lack of easy extensibility.
-I switched to LEAF Bering-uClibc
-<uri link="http://leaf.sourceforge.net/doc/guide/bubooting.html#id2572755">CDROM-based configurations</uri>,
-with a web-based automated ISO generation. This solved most of the
-problems but the extensibility problems remain, and maintaining the web-app
-was becoming a nightmare.
+Overlay directories are just directories containing files that will be copied
+over the root filesystem during the target boot. The root of the directory
+corresponds to the root of the target filesystem, so it typically contains
+an <path>etc/</path> subdirectory containing files that will be copied over
+the <path>/etc</path> target directory.
 </p>
 
 <p>
-I finally chose to leverage 
-<uri link="http://www.gentoo.org/proj/en/releng/catalyst/">Gentoo Catalyst</uri>
-power to build custom LiveCDs,
-solving both the extensibility problem and the non-standard solution
-maintenance. The idea was to have a generic LiveCD core that I could build once
-and use everywhere, and burn on the CD a specific configuration overlay to
-customize the appliance role. This simplifies CD generation as you don't have
-to go through the whole Catalyst process to customize a specific LiveCD.
+<e>Conflet</e> files are just .tar.bz2 compressed tarballs containing an
+overlay directory. They usually contain typical reusable configuration changes,
+making it easier to maintain several configurations.
+</p>
+
+<impo>
+At the moment only the <path>/etc</path>, <path>/var</path>, <path>/tmp</path>,
+<path>/home</path>, <path>/root</path> and <path>/mnt</path> target directories
+are writable on the target at boot time, meaning your overlay sources cannot
+specify files outside these directories.
+</impo>
+
+</body>
+</section>
+<section>
+<title>The overlay.conf file</title>
+<body>
+
+<p>
+The <e>overlay.conf</e> file controls general target customization options,
+like localization options and which features should be enabled on your GNAP
+target. It must be present either in an overlay source (as
+<path>etc/overlay.conf</path>) or directly specified as a <c>-c</c> parameter
+to <c>gnap_overlay</c>.
 </p>
 
 </body>
 </section>
 </chapter>
 <chapter>
-<title>How to use GNAP to build a custom network appliance LiveCD</title>
+<title>Your first GNAP LiveCD</title>
 <section>
-<title>Installation</title>
+<title>Installing GNAP</title>
 <body>
 
 <p>
-GNAP is now available through Portage. Simply emerge it using:
+GNAP is available through Gentoo Portage. Simply emerge it using (as root):
 </p>
 
 <pre caption="GNAP installation">
@@ -95,261 +121,623 @@ can set the "minimal" USE flag if you don't want to download the GNAP core,
 but only install the GNAP tools.
 </note>
 
-</body>
-</section>
-
-<section>
-<title>How it works</title>
-<body>
-
-<p>
-The gnap_overlay script takes a GNAP core tarball and one or more overlay
-sources (directories or conflet files) and either produces a bootable LiveCD
-.iso file, or writes a bootable filesystem to a removable disk device:
-</p>
-
-<figure link="gnap_overlay.png" short="gnap_overlay principle"
-        caption="How gnap_overlay works"/>
-
-</body>
-</section>
-<section>
-<title>The overlay.conf file</title>
-<body>
-
-<p>
-The overlay.conf file controls general customization options. It must be
-present either in an overlay source (as etc/overlay.conf) or directly
-specified as a <c>-c</c> parameter. In this file you can decide localization
-options and which features should be enabled on your customized LiveCD:
-</p>
-
-<table>
-<tr>
- <th>Option</th>
- <th>Values</th>
- <th>Default</th>
-</tr>
-<tr>
- <ti>TIMEZONE</ti>
- <ti>The <uri link="http://leaf.sourceforge.net/doc/guide/buci-tz.html">uclibc-compliant timezone code</uri>.</ti> 
- <ti>empty (UTC)</ti>
-</tr>
-<tr>
- <ti>KEYMAP</ti>
- <ti>Console keymap value. Example: <c>fr</c></ti>
- <ti><c>us</c></ti>
-</tr>
-<tr>
- <ti>NBCARDS</ti>
- <ti>Number of connected network cards you want to start.</ti>
- <ti><c>1</c></ti>
-</tr>
-<tr>
- <ti>IP_RELAY</ti>
- <ti>Should IP relaying be active at startup ?</ti>
- <ti><c>no</c></ti>
-</tr>
-<tr>
- <ti>EMPTY_ROOTPASS</ti>
- <ti>If set to yes, the root password will be empty and everyone with
-     console access will be able to log as root. This should be used
-     mainly for testing purposes.</ti>
- <ti><c>no</c></ti>
-</tr>
-<tr>
- <ti>RW_OVERLAY</ti>
- <ti>Location of a partition to overlay files from at boot (typically a
-     floppy disk or a second CF partition). This partition can be later
-     remounted in order to backup modified configuration files.</ti>
- <ti><c>empty (do not use r/w overlay)</c></ti>
-</tr>
-<tr>
- <ti>USE_PPPOE</ti>
- <ti>Set to <c>yes</c> to have the rp-pppoe daemon run at startup.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>USE_SSH</ti>
- <ti>Set to <c>yes</c> to have the OpenSSH daemon run at startup. Note that
-     if keys are not generated they will be during the first startup.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>USE_FW</ti>
- <ti>Set to <c>yes</c> to have a firewall script run at startup.
-     See FW_TYPE option. Note that you should overlay files in the
-     <path>etc/shorewall</path> or <path>etc/firehol</path> directory to
-     configure non-default options.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>FW_TYPE</ti>
- <ti>Set to <c>shorewall</c> or <c>firehol</c> depending on the firewall
-     system you want to use.</ti>
- <ti><c>shorewall</c></ti>
-</tr>
-<tr>
- <ti>USE_TC</ti>
- <ti>Set to <c>yes</c> to have a traffic control script run at startup.
-     See the TC_TYPE option. Note that you should overlay files in the
-     <path>etc/cbqinit</path> or <path>etc/htbinit</path>
-     directory with the configuration files to use.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>TC_TYPE</ti>
- <ti>Set to <c>cbqinit</c> or <c>htbinit</c> depending on the traffic
-     control system you want to use.</ti>
- <ti><c>cbqinit</c></ti>
-</tr>
-<tr>
- <ti>USE_VPN</ti>
- <ti>Set to <c>yes</c> to have the OpenVPN daemon run at startup. Note that
-     you should overlay files in the <path>etc/openvpn</path> directory with
-     the OpenVPN configuration files to use.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>USE_DNSDHCP</ti>
- <ti>Set to <c>yes</c> to have the DNSMasq daemon run at startup. Note that
-     you should overlay a <path>etc/dnsmasq.conf</path> file with
-     the DNSMasq configuration file to use.</ti>
- <ti><c>no</c> (do not run)</ti>
-</tr>
-<tr>
- <ti>START_SERVICES</ti>
- <ti>List of the extra services you want to run as startup. This is
-     useful to start services from extensions (like boa).</ti>
- <ti>empty (no extra service)</ti>
-</tr>
-<tr>
- <ti>NTPSERVER</ti>
- <ti>The name of the NTP server to use as a time synchronisation source.</ti>
- <ti>empty (do not synchronise time using NTP)</ti>
-</tr>
-</table>
-</body>
-</section>
-<section>
-<title>Overlay sources</title>
-<body>
-
-<p>
-Starting with version 1.5, it's possible to specify multiple overlay sources
-(<c>-o</c> options). An overlay source can either be a directory or a tar.bz2 
-file containing a directory (called a conflet). Overlay directories and
-conflets contain files that will be used to replace default files on the
-LiveCD root filesystem just after startup.
-</p>
-
-<p>
-Files commonly replaced include <path>etc/conf.d/hostname</path> (to set a
-host name), <path>etc/shadow</path> (to set a root password) or
-<path>etc/conf.d/net</path> (to set network configuration).
-In the <path>/usr/lib/gnap/examples/</path> directory, you will find
-typical overlay directories for various roles and example conflets.
-</p>
-
 <note>
-The GNAP overlay script will ignore CVS/ subdirectories so you can easily
-use CVS to control versions of your overlay files without pulling unnecessary
-fat into tour GNAP system.
+Users of other flavors of Linux should refer to the
+<uri link="">Using GNAP on non-Gentoo hosts</uri> guide.
 </note>
 
 </body>
 </section>
 <section>
-<title>Generating and burning</title>
+<title>Preparing your overlays and overlay.conf</title>
 <body>
 
 <p>
-When your overlay is ready, you should use <c>gnap_overlay</c> to produce
-a bootable ISO file (no need to be root).
-For example, to build an <path>myfirewall.iso</path> LiveCD using the
-<path>overlays/myfirewall</path> overlay directory:
+For this tutorial, we'll use GNAP to produce a bootable Firewall LiveCD that
+will filter traffic and do NAT for a small LAN. We'll need to activate these
+features in <e>overlay.conf</e> and overlay files for the network and firewall
+configuration.
 </p>
 
-<pre caption="Example of gnap_overlay use">
-$ gnap_overlay -i myfirewall.iso -o overlays/myfirewall
+<note>
+You don't need root rights to produce a GNAP LiveCD.
+</note>
+
+<p>
+First of all, create a directory that will serve as the root for the overlay
+directory, and create the <path>etc/</path>, <path>etc/conf.d/</path> and
+<path>etc/firehol/</path> subdirectories:
+</p>
+
+<pre caption="Preparing overlay directories">
+$ mkdir myoverlay
+$ mkdir myoverlay/etc
+$ mkdir myoverlay/etc/conf.d
+$ mkdir myoverlay/etc/firehol
 </pre>
 
-<warn>
-In this example, the <path>overlays/myfirewall</path> directory should contain
-an <path>etc/overlay.conf</path> file, otherwise you should specify one using
-the <c>-c</c> option.
-</warn>
-
 <p>
-You should read the <c>gnap_overlay</c> man page for information on other
-options.
+Then we create the network configuration file (<path>etc/conf.d/net</path>),
+for an external address of 111.222.111.47 (gateway 111.222.111.254) and a LAN
+on 192.168.1.*. This file follows the Gentoo syntax described in the
+<path>/etc/conf.d/net.example</path> file on your host system:
 </p>
 
+<pre caption="myoverlay/etc/conf.d/net contents">
+# Use iproute2-style configuration
+modules=( "iproute2" )
+
+# The external interface
+ipaddr_eth0=( "111.222.111.47/24" )
+iproute_eth0=( "default via 111.222.111.254" )
+
+# The internal interface
+ipaddr_eth1=( "192.168.1.254/24" )
+</pre>
+
 <p>
-Then you should burn this ISO file and test. CD-RW is recommended :)
+Then we create the firehol configuration file that we'll use as a firewall,
+allowing all traffic out of the LAN but no traffic in:
 </p>
+
+<pre caption="myoverlay/etc/firehol/firehol.conf contents">
+version 5
+interface eth0 internet
+interface eth1 lan
+router lan2internet inface eth1 outface eth0
+  masquerade
+  route all accept
+</pre>
+
+<p>
+Finally, we need to write an <e>overlay.conf</e> file to tell GNAP that it
+will use two network cards, and start a firehol firewall script at startup:
+</p>
+
+<pre caption="myoverlay/etc/overlay.conf contents">
+# Use two network cards
+NBCARDS=2
+
+# Start the 'firehol' firewall script at startup
+USE_FW=yes
+FW_TYPE=firehol
+</pre>
 
 </body>
 </section>
 <section>
-<title>Generating and writing to hard disk, CF...</title>
+<title>Generating the .iso file, burning it to CD-R</title>
 <body>
 
-<impo>
-Using <c>gnap_overlay</c> in disk mode requires root rights and that your
-current Linux kernel supports loopback (CONFIG_BLK_DEV_LOOP) and MSDOS
-filesystems (CONFIG_MSDOS_FS) compiled-in or as modules.
-</impo>
-
 <p>
-<c>gnap_overlay</c> can also be used
-to create a bootable hard drive (hard disk, DiskOnModule, CF card...) with
-the GNAP configuration on it. First the target must be properly set up. You
-will need to install a Master Boot Record on it :
+The next step is to use <c>gnap_overlay</c> to combine the
+<path>myoverlay</path> overlay directory and the GNAP core to produce a
+myfirewall.iso file containing the target LiveCD image. This is done using
+the command:
 </p>
 
-<pre caption="Creation a MBR on device /dev/sda">
-# dd if=/usr/lib/gnap/mbr/mbr.bin of=/dev/sda bs=512 count=1
+<pre caption="Creating the .iso file">
+$ gnap_overlay -i myfirewall.iso -o myoverlay/
 </pre>
 
 <p>
-You must also create an active partition on the device, using fdisk. Then
-you should call (as root) gnap_overlay to write to the disk (<c>-d</c> option).
-You'll need to know the name of the partition to write to, as seen by the
-host you use to write to the device. You'll also need to know the name of
-the partition as it will be seen in the GNAP system as it boots on the device
-(<c>-r</c>). For example, a CF card can be seen on the host as /dev/sdb1
-and by a Soekris system as /dev/hda1:
+You should burn the resulting myfirewall.iso image onto a CD-R (or better, a
+CD-RW) using your favorite CD burning tool, for example:
 </p>
 
-<pre caption="Writing GNAP to the disk">
-# gnap_overlay -d /dev/sda1 -r hda1 -o overlays/myfirewall -s -m
+<pre caption="Burning the .iso file, YMMV">
+$ cdrecord -v -eject speed=4 dev=/dev/hdc myfirewall.iso
 </pre>
 
-<note>
-<c>-s</c> is an optional parameter you can use to tell GNAP to send the
-console to the serial port. This is especially useful for serial-port only
-devices like the Soekris boxes.
-</note>
+</body>
+</section>
+<section>
+<title>Testing the resulting GNAP system</title>
+<body>
+
+<p>
+Once the CD-R is ready, take it to the target system and use it to boot.
+Low-end systems are OK, GNAP should boot successfully on 486 systems with as
+low as 32 Mb RAM.
+</p>
 
 <note>
-<c>-m</c> is an optional parameter you can use to tell GNAP to cache the
-squashfs filesystem once at startup to avoid multiple read access that
-can wear the device.
+The BIOS of the target system should of course be configured to boot on CD-ROM.
 </note>
+
+<p>
+During boot, you can see the GNAP-specific messages, while the GNAP initscript
+(found as <path>/etc/init.d/overlay</path> on the target system) takes care of
+overlaying files and processing the <e>overlay.conf</e> options.
+If the configuration is not OK, you can change the contents of your
+<path>myoverlay/</path> directory, rebuild an .iso image, burn it again, and
+restart the target system with the new LiveCD.
+</p>
 
 </body>
 </section>
 </chapter>
 <chapter>
-<title>How to add extensions to a GNAP Core</title>
-
+<title>More customization</title>
 <section>
-<title>Installation</title>
+<title>Overlay maintenance</title>
 <body>
 
 <p>
-The GNAP extension package is available through Portage:
+In the previous section, we used a single overlay source (the
+<path>myoverlay/</path> directory), making it difficult to manage multiple
+system configurations which share common features. <c>gnap_overlay</c> accepts
+multiple <c>-o</c> options, so you can use multiple directories and
+<e>conflet</e> files to form a single configuration:
+</p>
+
+<pre caption="Using multiple overlay sources">
+$ gnap_overlay -i myfirewall.iso -o common/ -o specific/ -o mypublickey.tbz2
+</pre>
+
+<p>
+Rather than including an <path>etc/overlay.conf</path> file in one of your
+overlay sources, it is possible to specify the name of a file to use as
+<e>overlay.conf</e> in your GNAP system, using the <c>-c</c> option:
+</p>
+
+<pre caption="Using a separate overlay.conf file">
+$ gnap_overlay -i myfirewall.iso -c firewall.conf -o overlay2/
+</pre>
+
+<p>
+To keep track of configuration changes, it is possible to use CVS directly
+on the overlay directories. <c>gnap_overlay</c> will automatically ignore
+the CVS control directories and not copy them onto the target system.
+</p>
+
+</body>
+</section>
+<section>
+<title>Internationalization</title>
+<body>
+
+<p>
+Two options in <e>overlay.conf</e> control the timezone (default being
+UTC) and the keymap (default being 'us' keyboard layout) used on the target
+system:
+</p>
+
+<ul>
+<li>TIMEZONE: If you want to use another timezone than UTC, you should check
+  <uri link="http://leaf.sourceforge.net/doc/guide/buci-tz.html">this page</uri>
+  to determine the appropriate uclibc-compliant timezone code.</li>
+<li>KEYMAP: If you want to log on locally, you might need to change the default
+  keyboard layout ('us') to something more appropriate. There is a complete
+  tree of keymaps in /usr/share/keymaps to choose from.</li>
+</ul>
+
+<pre caption="overlay.conf internationalization options example">
+# Use Central European Time (UTC+1) with usual Summer Time rules
+TIMEZONE=CET-1CEST
+
+# Use a french keyboard layout
+KEYMAP=fr
+</pre>
+
+</body>
+</section>
+<section>
+<title>Network configuration</title>
+<body>
+
+<p>
+We already know about the NBCARDS option in <e>overlay.conf</e>, which
+specifies how many network cards should be started, and that we need to provide
+an <path>etc/conf.d/net</path> file in our overlays to give the static network
+configuration details. Here are the other options and typical overlay files
+that you can use in further detailing the network configuration:
+</p>
+
+<ul>
+<li>IP_RELAY: Should be set to yes if you want to relay IP between your network
+  interfaces. Useful if you want to run a gateway without a firewall
+  script.</li>
+<li>NTPSERVER: Allows to specify the name of an NTP server to use as a time
+  source to maintain correct time on the target system.</li>
+<li>USE_PPPOE: Indicates that the rp-pppoe should be started during boot.</li>
+<li><path>etc/resolv.conf</path>: This file should contain the DNS
+  configuration for the system.</li>
+<li><path>etc/hosts</path>: Complementary or alternatively to
+  <path>etc/resolv.conf</path>, this file will contain static hostnames
+  resolution information.</li>
+<li><path>etc/conf.d/hostname</path>: This file can be specified to give a
+  specific hostname to the target. The <path>etc/hosts</path> file should be
+  adapted accordingly.</li>
+</ul>
+
+<note>
+If you don't specify an <path>etc/conf.d/net</path> configuration, the system
+will use DHCP to get the network configuration for the missing interfaces.
+</note>
+
+</body>
+</section>
+<section>
+<title>Firewall, traffic control</title>
+<body>
+
+<p>
+Enabling a firewall script is controlled by the USE_FW=yes option. By default,
+GNAP will use <uri link="http://www.shorewall.net/">Shorewall</uri>, an
+excellent and very complete iptables helper. You can set the FW_TYPE=firehol
+option to switch to <uri link="http://firehol.sourceforge.net/">Firehol</uri>,
+a simpler yet efficient script.
+</p>
+
+<p>
+If you use Shorewall, you should overlay files in the <path>etc/shorewall</path>
+directory to customize its behavior, in particular you should have to change
+the <path>interfaces</path>, <path>zones</path>, <path>policy</path> and
+<path>shorewall.conf</path> files. If you decide to use Firehol, you'll have
+to customize the <path>etc/firehol/firehol.conf</path> file.
+</p>
+
+<p>
+You can enable a traffic control script using the USE_TC=yes option. By default,
+GNAP will use <uri link="http://sourceforge.net/projects/cbqinit">cbqinit</uri>,
+a simple but sometimes inefficient traffic control helper. You can set the
+TC_TYPE=htbinit option to switch to
+<uri link="http://sourceforge.net/projects/htbinit">htbinit</uri>,
+a more complex but more efficient script.
+</p>
+
+<p>
+If you use cbqinit, you should overlay files in the <path>etc/cbqinit</path>
+directory to customize its behavior, following the instructions given in
+<path>/usr/sbin/cbqinit</path>. If you decide to use htbinit, you'll have
+to create files in <path>etc/htbinit</path> following the instructions given
+in <path>/usr/sbin/htbinit</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>GNAP services</title>
+<body>
+
+<p>
+GNAP offers several standard services. The first is the
+<uri link="http://matt.ucc.asn.au/dropbear/dropbear.html">Dropbear</uri>
+SSH server, which allows remote control of the GNAP system.
+You enable it using the USE_SSH=yes option. Dropbear behaviour is
+controlled using the <path>etc/conf.d/dropbear</path> file. You might
+want to overlay prebuilt RSA/DSS keys for the server in
+<path>etc/dropbear</path> (so that they are not rebuilt after each boot).
+</p>
+
+<p>
+Another service is the
+<uri link="http://thekelleys.org.uk/dnsmasq/doc.html">DnsMasq</uri>
+DNS cache / DHCP server, which provides DNS resolution and DHCP
+capabilities to a LAN. You enable it using the USE_DNSDHCP=yes option, and
+you configure it through the <path>etc/dnsmasq.conf</path> file.
+</p>
+
+<p>
+Another service that GNAP provides by default is the
+<uri link="http://openvpn.net/">OpenVPN</uri> VPN solution. This is a simple
+but full-featured VPN solution that will help you securely bridge LANs over
+insecure networks. You enable it using the USE_VPN=yes option, in which case
+you should overlay files in the <path>etc/openvpn</path> directory
+with the desired OpenVPN configuration.
+</p>
+
+<p>
+Finally, you can specify extra services to start when GNAP is booted.
+There are two ways to do this: using the START_SERVICES option in
+<e>overlay.conf</e> or using the <path>etc/gnap/start_services</path>
+file:
+</p>
+
+<pre caption="Specifying the iptables and boa services using overlay.conf">
+# Start iptables and boa at startup
+START_SERVICES="iptables boa"
+</pre>
+
+<pre caption="etc/gnap/start_services contents, will start iptables and boa">
+iptables boa
+</pre>
+
+</body>
+</section>
+<section>
+<title>Accounts and passwords</title>
+<body>
+
+<p>
+GNAP runs happily as a blackbox appliance by default. However, you might want
+to be able to log onto it. By default, it doesn't define user accounts, and the
+root account has an impossible password, making it impossible to log in. There
+are several ways to change this behaviour:
+</p>
+
+<p>
+You can set an empty root password, useful in test configurations for example,
+using the EMPTY_ROOTPASS=yes option.
+</p>
+
+<p>
+The most secure way to access the GNAP box is to run the Dropbear SSH server
+in public key mode. You will need to configure Dropbear to disable password
+logins (in <path>etc/conf.d/dropbear</path>) and put your own public key
+to the <path>root/.ssh/authorized_keys</path> file:
+</p>
+
+<pre caption="etc/conf.d/dropbear contents to disable password auth">
+DROPBEAR_OPTS="-s"
+</pre>
+
+<note>
+The <path>/usr/lib/gnap/examples/conflets/dropbear_nopasswd.tbz2</path> file,
+installed during the GNAP installation, is a conflet file containing
+the necessary <path>etc/conf.d/dropbear</path> overlay file.
+</note>
+
+<p>
+If you still want to change passwords for system users, you can do it by
+overlaying a <path>etc/gnap/chpasswd</path> file containing
+username:cryptedpassword lines that will be fed to <c>chpasswd -e</c> during
+boot. See <c>man chpasswd</c> for details on the format of that file.
+</p>
+
+</body>
+</section>
+<section>
+<title>Support for saving live configuration changes</title>
+<body>
+
+<p>
+One problem you will have with GNAP systems using evolving configurations
+(like firewalls) is that all live config changes will be lost at the next
+reboot. One solution is to report all changes to the host system overlay
+directories and be sure to burn a new CD-R with the new configuration before
+the next reboot, but it's not very practical. Another solution is to use a
+read/write partition and use the RW_SYNC system to backup the changes and
+have them taken into account at next reboot automatically.
+</p>
+
+<p>
+To enable this system, you should add the RW_SYNC option to your
+<e>overlay.conf</e> file, pointing to the r/w partition you want to use.
+GNAP supports FAT and ext2 partitions:
+</p>
+
+<pre caption="RW_SYNC value to backup to floppy disk">
+RW_SYNC=/dev/fd0
+</pre>
+
+<p>
+During the first boot, when the option is activated but no backup file is
+present on the RW_SYNC partition yet, you'll get the following error during
+the target system boot, which you can safely ignore:
+</p>
+
+<pre caption="First-time RW_SYNC safe errors">
+* Sync rw-sync changes to /dev/fd0 ...
+* Missing gnap_sav.tgz or gnap_md5.sum file : aborting             [ !! ]
+</pre>
+
+<p>
+Once the RW_SYNC option is enabled, you can use the <c>rw-sync.sh</c> utility
+on the GNAP target system to specify which files to save. You only need to
+specify the files once so that they are added to the rw-sync.cfg file for
+subsequent backups.
+</p>
+
+<impo>
+Don't forget to add the <path>/etc/rw-sync.cfg</path> file to the backup list
+so that it is restored at next reboot !
+</impo>
+
+<pre caption="Specifying files and directories to backup">
+# rw-sync.sh -a /etc/rw-sync.cfg
+# rw-sync.sh -a /etc/shorewall/
+</pre>
+
+<p>
+Then you can backup the files anytime after a change using the following
+command:
+</p>
+
+<pre caption="Backup to the r/w partition">
+# rw-sync.sh -w
+</pre>
+
+<p>
+For more help on <c>rw-sync.sh</c>, just run it without any option to show
+the help contents.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Disk output</title>
+<section>
+<title>Objectives and requirements</title>
+<body>
+
+<p>
+In the previous chapters, we used GNAP to produce a bootable LiveCD with
+a customized network appliance system on it. We can also use GNAP to
+initialize a disk device with a customized network appliance filesystem,
+ready to be plugged in a target system and booted.
+</p>
+
+<p>
+This mode of operation can be used to initialize hard disks that can be
+plugged in low-end systems, but is especially useful for small device
+targets like <uri link="http://www.soekris.com/">Soekris boxes</uri>
+which can boot from a CompactFlash card, or other embedded systems
+that will boot from an IDE bus (Disk-On-Module, Disk-On-Chip...).
+</p>
+
+<p>
+For this mode of operation, you'll need to run <c>gnap_overlay</c> with
+root rights to be able to manipulate the disk device at low-level. It is
+also slightly more complicated and dangerous to run, so use at your own
+risk !
+</p>
+
+</body>
+</section>
+<section>
+<title>Media preparation</title>
+<body>
+
+<p>
+Before you run <c>gnap_overlay</c> for the first time on a device, you need
+to prepare the target media. You should plug the hard disk, CF card or other
+medium you want to use on the host system and determine what is the plugged
+device's name (system log might be useful here). You don't need to mount it !
+For the remaining examples we'll suppose the target disk is available on
+the host system as <path>/dev/sdb</path>.
+</p>
+
+<p>
+If not already done, you need to partition the device. The partition where
+GNAP will install the filesystem should be marked "active" and be large
+enough to handle GNAP. In doubt, create a single partition of 16Mb,
+and activate it.
+</p>
+
+<pre caption="Partitioning the /dev/sdb target disk">
+# fdisk /dev/sdb
+</pre>
+
+<p>
+The disk should also have a Master Boot Record installed, which will allow the
+system to boot on it. If you're unsure, you can install an MBR using the
+following command:
+</p>
+
+<pre caption="Installing MBR on /dev/sdb target disk">
+# dd if=/usr/lib/gnap/mbr/mbr.bin of=/dev/sdb bs=512 count=1
+</pre>
+
+<note>
+You only need to prepare the media once, you can run multiple
+<c>gnap_overlay</c> commands on it once it has been prepared.
+</note>
+
+</body>
+</section>
+<section>
+<title>Using gnap_overlay to write to disk</title>
+<body>
+
+<p>
+In disk mode, you need to pass two options to <c>gnap_overlay</c>. One is
+the complete name of the target disk partition <e>as seen on the host
+system</e> (option <c>-d</c>), the other is the short name of the
+target disk partition <e>as seen on the target system at boot</e> (option
+<c>-r</c>). The distinction being quite important, here is an example.
+</p>
+
+<p>
+Let's say you want to install a GNAP system on a CF card, to use to boot a
+Soekris box. You plug it in the host system (the one you will run
+<c>gnap_overlay</c> on), it is recognized as <path>/dev/sdb</path>.
+You create a single partition on it, <path>/dev/sdb1</path>. So in this
+example, the complete name of the target disk partition <e>as seen on the
+host system</e> is <c>/dev/sdb1</c>.
+</p>
+
+<p>
+On the other hand, you know, from testing or specs, that the Soekris box will
+recognize a CF card plugged in it as <path>/dev/hda</path>. So the short name
+of the target disk partition <e>as seen on the target system at boot</e>
+is "hda1".
+</p>
+
+<p>
+To initialize a disk with a GNAP configuration, you just have to replace the
+<c>-i</c> option (used to build a LiveCD iso file) by the correct <c>-d</c>
+and <c>-r</c> options:
+</p>
+
+<pre caption="Initializing the /dev/sdb1 partition">
+# gnap_overlay -d /dev/sdb1 -r hda1 -o myoverlay/
+</pre>
+
+<note>
+The target disk partition (<c>-d</c> option) should not be mounted.
+<c>gnap_overlay</c> will mount it when it needs it.
+</note>
+
+</body>
+</section>
+<section>
+<title>Specific options</title>
+<body>
+
+<p>
+Two options might be useful in an embedded target situation. One is the
+<c>-m</c> optional parameter you can use to tell GNAP to cache in memory the
+filesystem once at startup to avoid multiple read access that can wear the
+device (or be too slow).
+</p>
+
+<p>
+The other is the <c>-s</c> parameter you can use
+to tell GNAP to send the console to the serial port, at the specified baudrate.
+This is especially useful for serial-port only devices like the Soekris boxes.
+</p>
+
+<pre caption="Reduce read access and use a 19200 baud serial console">
+# gnap_overlay -d /dev/sdb1 -r hda1 -o myoverlay/ -m -s 19200
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Using extensions</title>
+<section>
+<title>Extensions and remastering</title>
+<body>
+
+<p>
+You might want to add features to your GNAP network appliance system. The
+simplest way to do it is to use <e>extensions</e>, which are small software
+packages adding functionality to a GNAP system.
+</p>
+
+<p>
+Extensions are <path>.tar.bz2</path> compressed files with standardized names.
+They are installed in standard in <path>/usr/lib/gnap/extensions</path> and
+are named <path>gnapext_[name].tbz2</path>.
+The <e>boa</e> extension, for example, is in fact
+the <path>/usr/lib/gnap/extensions/gnapext_boa.tbz2</path> file.
+</p>
+
+<p>
+The <c>gnap_remaster</c> tool combines a GNAP base filesystem file, an
+existing GNAP core file and extensions to create a new GNAP core file which
+will contain the extensions you choose. Then, you can use this extended GNAP
+core file with <c>gnap_overlay</c> to create specific systems making use of
+the extra functionality.
+</p>
+
+<figure link="gnap_remaster.png" short="gnap_remaster principle"
+        caption="How gnap_remaster works"/>
+
+</body>
+</section>
+<section>
+<title>Installing the GNAP extension package</title>
+<body>
+<p>
+The GNAP extension package, which installs the <c>gnap_remaster</c> tool,
+the GNAP basefs file and standard extensions (everything needed to play with
+extensions), is available through Portage. You should install the version
+corresponding to your GNAP package version.
 </p>
 
 <pre caption="GNAP extension package installation">
@@ -370,316 +758,205 @@ the standard extension pack, but only install the <c>gnap_remaster</c> tool.
 </body>
 </section>
 <section>
-<title>How it works</title>
-<body>
-
-<p>
-The gnap_remaster script takes a GNAP core tarball, a GNAP basefs tbz2 and one
-or more extensions names (found in an extension directory as
-<path>gnapext_[name].tbz2</path> files) and produces a new, extended, GNAP core
-file:
-</p>
-
-<figure link="gnap_remaster.png" short="gnap_remaster principle"
-        caption="How gnap_remaster works"/>
-
-</body>
-</section>
-<section>
 <title>Remastering a GNAP core with extensions</title>
 <body>
 
 <p>
-You should use <c>gnap_remaster</c> with the needed extensions names, as root:
+You should call <c>gnap_remaster</c> with the needed extensions names, as root.
+This will build a mynewcore.tar remastered core file with the requested
+extensions added:
 </p>
 
 <pre caption="Remastering the current GNAP core, adding the boa extension">
-# gnap_remaster -e boa
+# gnap_remaster -e boa -o mynewcore.tar
 </pre>
 
 <note>
-By default, it will use the current GNAP core, basefs and standard extensions.
-You can change this behaviour using the <c>-g</c>, <c>-b</c> and
-<c>-d</c> options.
+You must use the extensions <e>name</e>, not the filename. You can use multiple
+<c>-e</c> options at the same time.
 </note>
 
+</body>
+</section>
+<section>
+<title>Using gnap_overlay on a specific GNAP core</title>
+<body>
+
 <p>
-This will build a mygnap.tar remastered core file with the requested
-extensions added. You can then use this newly-built GNAP core file with
-<c>gnap_overlay</c>, using the <c>-g</c> parameter to point to the right file.
+It's easy to make <c>gnap_overlay</c> use your remastered core file instead
+of the standard one. Just use the <c>-g</c> option:
 </p>
+
+<pre caption="Make gnap_overlay use the remastered core file">
+$ gnap_overlay -g mynewcore.tar -i myfirewall.iso -o myoverlay/
+</pre>
+
+<note>
+<c>gnap_remaster</c> can also be used on modules you build yourself:
+extensions, minkernpackages and modulespackages. Please see the
+<uri link="gnap-advancedguide.xml">GNAP Advanced User Guide</uri>
+for more information about these features.
+</note>
 
 </body>
 </section>
 </chapter>
 <chapter>
-<title>How to build your own extensions</title>
+<title>GNAP Reference</title>
 <section>
+<title>overlay.conf</title>
 <body>
-
-<impo>
-Only advanced users that want to change the GNAP core contents 
-should read this chapter. You'll need root rights (needed by Catalyst)
-to build extensions.
-</impo>
-
-</body>
-</section>
-
-<section>
-<title>Installation</title>
-<body>
-
-<p>
-The GNAP development package is now available through Portage:
-</p>
-
-<pre caption="GNAP development package installation">
-# emerge gnap-dev
-</pre>
-
-<warn>
-gnap-dev might only be available in "~x86". Adjust your
-<path>/etc/portage/package.keywords</path> file if needed.
-</warn>
-
-<note>
-This will fetch a GNAP seed stage3 file, which is very large (~41Mb). You
-can set the "minimal" USE flag if you don't want to download the seed stage,
-but only install the GNAP development environment.
-</note>
-
-</body>
-</section>
-<section>
-<title>How it works</title>
-<body>
-
-<p>
-The gnap_make script takes a GNAP seed stage3 tarball and a specs directory
-(containing configuration files), and can produce new GNAP core files, GNAP
-basefs files and extensions:
-</p>
-
-<figure link="gnap_make.png" short="gnap_make principle"
-        caption="How gnap_make works"/>
-
-<p>
-In this chapter, we'll just use the extensions building feature of gnap_make.
-In the next chapter we'll see how to use gnap_make to rebuild all the other
-GNAP elements.
-</p>
-
-</body>
-</section>
-<section>
-<title>Writing your own extension specfile</title>
-<body>
-
-<p>
-To create your own extensions, you should use your own specs directory.
-To do that, make a copy of the specs directory from
-<path>/usr/lib/gnap/specs</path>. You can then edit the extensions.conf file
-to specify your own extensions:
-</p>
 
 <table>
 <tr>
- <th>Parameter</th>
- <th>Value</th>
- <th>Example</th>
+ <th>Option</th>
+ <th>Values</th>
+ <th>Default</th>
 </tr>
 <tr>
- <ti>extensions</ti>
- <ti>List of the extensions names to build.</ti> 
- <ti>extensions: boa myext</ti>
+ <ti>EMPTY_ROOTPASS</ti>
+ <ti>If set to yes, the root password will be empty and everyone with
+     console access will be able to log as root. This should be used
+     mainly for testing purposes.</ti>
+ <ti><c>no</c></ti>
 </tr>
 <tr>
- <ti>[name]/packlist</ti>
- <ti>List of the Gentoo packages to build in the extension. This will also
-     pull any needed dependency.</ti> 
- <ti>myext/packlist: squid</ti>
+ <ti>FW_TYPE</ti>
+ <ti>Set to <c>shorewall</c> or <c>firehol</c> depending on the firewall
+     system you want to use.</ti>
+ <ti><c>shorewall</c></ti>
 </tr>
 <tr>
- <ti>[name]/useflags</ti>
- <ti>Specific USE flags to enable while building the extension. This is an
-     optional parameter.</ti>
- <ti>myext/useflags: ipv6</ti>
+ <ti>IP_RELAY</ti>
+ <ti>Should IP relaying be active at startup ?</ti>
+ <ti><c>no</c></ti>
 </tr>
 <tr>
- <ti>[name]/cleanup</ti>
- <ti>List of the directories or files to remove from built extension. Keep
-     GNAP small, remove all unnecessary stuff !</ti> 
- <ti>myext/cleanup: /usr/share</ti>
+ <ti>KEYMAP</ti>
+ <ti>Console keymap value.</ti>
+ <ti><c>us</c></ti>
+</tr>
+<tr>
+ <ti>NBCARDS</ti>
+ <ti>Number of connected network cards you want to start.</ti>
+ <ti><c>1</c></ti>
+</tr>
+<tr>
+ <ti>NTPSERVER</ti>
+ <ti>The name of the NTP server to use as a time synchronisation source.</ti>
+ <ti>empty (do not synchronise time using NTP)</ti>
+</tr>
+<tr>
+ <ti>RW_SYNC</ti>
+ <ti>Location of a read/write partition to use to save the modified
+     configuration files using rw_sync.sh</ti>
+ <ti>empty (do not use the RW_SYNC backup system)</ti>
+</tr>
+<tr>
+ <ti>START_SERVICES</ti>
+ <ti>List of the extra services you want to run as startup. This is
+     useful to start services from extensions (like boa).</ti>
+ <ti>empty (no extra service)</ti>
+</tr>
+<tr>
+ <ti>TC_TYPE</ti>
+ <ti>Set to <c>cbqinit</c> or <c>htbinit</c> depending on the traffic
+     control system you want to use.</ti>
+ <ti><c>cbqinit</c></ti>
+</tr>
+<tr>
+ <ti>TIMEZONE</ti>
+ <ti>The <uri link="http://leaf.sourceforge.net/doc/guide/buci-tz.html">uclibc-compliant timezone code</uri>.</ti>
+ <ti>empty (UTC)</ti>
+</tr>
+<tr>
+ <ti>USE_DNSDHCP</ti>
+ <ti>Set to <c>yes</c> to have the DNSMasq daemon run at startup.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_FW</ti>
+ <ti>Set to <c>yes</c> to have a firewall script run at startup.
+     See FW_TYPE option.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_PPPOE</ti>
+ <ti>Set to <c>yes</c> to have the rp-pppoe daemon run at startup.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_SSH</ti>
+ <ti>Set to <c>yes</c> to have the Dropbear daemon run at startup.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_TC</ti>
+ <ti>Set to <c>yes</c> to have a traffic control script run at startup.
+     See the TC_TYPE option.</ti>
+ <ti><c>no</c> (do not run)</ti>
+</tr>
+<tr>
+ <ti>USE_VPN</ti>
+ <ti>Set to <c>yes</c> to have the OpenVPN daemon run at startup.</ti>
+ <ti><c>no</c> (do not run)</ti>
 </tr>
 </table>
 
 </body>
 </section>
 <section>
-<title>Building your extensions</title>
+<title>GNAP-specific files to overlay on target system</title>
 <body>
 
 <p>
-You should use <c>gnap_make</c> to call the <c>extensions</c> build stage on
-your modified specs directory:
+Other than <path>etc/overlay.conf</path>, GNAP uses several additional files
+on the target system, here is their list:
 </p>
 
-<pre caption="Building specified GNAP extensions">
-# gnap_make -t extensions -e /home/foo/myspecs
-</pre>
-
-<p>
-This should build gnapext_[extensionname].tbz2 files containing your
-extension.
-</p>
-
-<warn>
-Multiple extensions may conflict with each other. Testing of the resulting
-GNAP Core file is necessary to ensure everything is working properly.
-</warn>
-
-<p>
-Using the same portage snapshot to build extensions as the one used to build
-the original GNAP core helps reducing the conflicts. You can download a
-Portage snapshot, copy the portage-YYYYMMDD.tar.bz2 file to the
-<path>/var/tmp/catalyst/snapshots</path> subdirectory, then use the
-<c>-p</c> option:
-</p>
-
-<pre caption="Building GNAP extensions using a 20050529 Portage snapshot">
-# gnap_make -t extensions -e /home/myself/myspecs -p 20050529
-</pre>
-
-</body>
-</section>
-</chapter>
-<chapter>
-<title>How to rebuild a GNAP Core</title>
-
-<section>
-<body>
-
-<impo>
-Only advanced users that want to drastically change the GNAP core contents
-(or rebuild the standard core with a recent portage snapshot) should read
-this chapter.
-Rebuilding a core takes a lot of time and you may run into problems brought
-by recently added package versions.
-You'll need root rights (needed by Catalyst) to build a GNAP Core.
-The kernel on the building host must support loopback devices
-(CONFIG_BLK_DEV_LOOP) and ISO9660 filesystems (CONFIG_ISO9660_FS)
-compiled-in or as modules. You'll also need the gnap-dev package, see the
-previous chapter for installation procedure.
-</impo>
-
-</body>
-</section>
-
-<section>
-<title>Building a GNAP Core from scratch</title>
-<body>
-
-<p>
-You should use <c>gnap_make</c> to call all Catalyst stages and the tarball
-creation, using the standard specs directory:
-</p>
-
-<pre caption="Building a new GNAP Core tarball in one step">
-# gnap_make -t all
-</pre>
-
-<note>
-By default, it will use the seed stage at
-<path>/usr/lib/gnap/gnap-stage3seed.tar.bz2</path>, as installed by the ebuild.
-You can use the <c>-s</c> option to change that default location.
-</note>
-
-<p>
-This will take a <e>very</e> long time to complete, and should produce
-a nice GNAP Core tarball with a version stamp based on current date.
-</p>
-
-<p>
-If you want to reuse a previously built (or officially downloaded) Portage
-snapshot, you should copy the portage-YYYYMMDD.tar.bz2 file to the
-<path>/var/tmp/catalyst/snapshots</path> subdirectory, then use the
-<c>-p</c> option:
-</p>
-
-<pre caption="Building from a 20040401 snapshot">
-# gnap_make -t all -p 20040401
-</pre>
-
-<p>
-In case of failure, or if you just want to re-run some final stages, you might
-want to specify which Catalyst stages gnap_make should call. You can do this
-by providing the GNAP version timestamp to reuse (<c>-v</c>) and the stage
-names (<c>snapshot</c>, <c>stage3</c>, <c>livecd-stage1</c>,
-<c>livecd-stage2</c>, <c>extensions</c>) and/or the special <c>tarball</c>
-target (which builds the final GNAP Core tarball and basefs) as
-<c>-t</c> parameters:
-</p>
-
-<pre caption="Calling only two stages of a 20041012 GNAP build, using a prebuilt 20041008 Portage snapshot">
-# gnap_make -p 20041008 -v 20041012 -t livecd-stage2 -t tarball
-</pre>
-
-<p>
-You should read the <c>gnap_make</c> man page for information on other
-options.
-</p>
+<table>
+<tr>
+ <th>Overlay file</th>
+ <th>Purpose</th>
+ <th>Example contents</th>
+</tr>
+<tr>
+ <ti><path>etc/rw_sync.conf</path></ti>
+ <ti>This is the rw_sync.sh control file, listing the files and directories
+     that should be backed up. You should probably use rw_sync.sh to edit
+     its contents.</ti>
+ <ti></ti>
+</tr>
+<tr>
+ <ti><path>etc/gnap/start_services</path></ti>
+ <ti>Contains a list of (whitespace-separated) service names that the target
+     system should additionally start at boot. Those services must exist as
+     <path>/etc/init.d</path> scripts on the target system !</ti>
+ <ti><c>iptables</c></ti>
+</tr>
+<tr>
+ <ti><path>etc/gnap/chpasswd</path></ti>
+ <ti>Contains a file that will be fed to <c>chpasswd -e</c> at boot to
+     initialize passwords on the system. It should contain a list of
+     username:cryptedpassword lines.</ti>
+ <ti><c>root:$1$o0YB.OW/$llYLxHFYX5DQrZF7FZicJ0</c></ti>
+</tr>
+</table>
 
 </body>
 </section>
 <section>
-<title>Customizing your GNAP Core</title>
+<title>gnap_overlay and gnap_remaster options</title>
 <body>
 
 <p>
-To customize your GNAP core, you should use your own specs directory.
-To do that, make a copy of the specs directory from
-<path>/usr/lib/gnap/specs</path> and modify the files in it.
+Please refer to the man pages for information on all the options available
+in these commands:
 </p>
 
-<p>
-You may want to change the kernel sources used in the GNAP Core (you may even
-have to, if the configured sources are no longer in portage). You
-should modify the <path>specs/common.conf</path> file to point to the right
-sources name and change the <path>specs/kernel.config</path> kernel
-configuration file to use.
-</p>
-
-<p>
-You can also change the subarch and profile used to build the GNAP Core
-(by default, an <e>x86</e> subarch with <e>uclibc/x86/hardened</e> profile),
-by editing the <path>specs/common.conf</path> file.
-</p>
-
-<p>
-To add new software packages, you should add them to the
-<path>specs/packages.conf</path> file. To start new daemons by default,
-you should add them to the <c>livecd/rcadd</c> option of the
-<path>specs/livecd.conf</path> file.
-</p>
-
-<p>
-To add packages that depend on the kernel sources (like pcmcia-cs) you
-should not use <path>specs/packages.conf</path>, but rather add the
-following line to the <path>specs/livecd.conf</path> file :
-</p>
-
-<pre caption="Adding kernel-source depending packages">
-boot/kernel/gentoo/packages: pcmcia-cs
-</pre>
-
-<p>
-Finally, you call <c>gnap_make</c> with the <c>-e</c> option to specify the
-full path to the alternative specs directory:
-</p>
-
-<pre caption="Building from a /home/foo/myspecs specs directory">
-# gnap_make -t all -e /home/foo/myspecs
+<pre caption="getting more information about gnap_overlay or gnap_remaster">
+$ man gnap_overlay
+$ man gnap_remaster
 </pre>
 
 </body>
