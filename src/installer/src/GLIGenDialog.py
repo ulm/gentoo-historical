@@ -934,7 +934,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		#d.msgbox("This section is for selecting extra packages (pcmcia-cs, rp-pppoe, xorg-x11, etc.) and setting them up")
 		if self._install_profile.get_install_packages():
 			install_packages = self._install_profile.get_install_packages()
-			if isinstance(install_packages, (list, tuple)):
+			if isinstance(install_packages, str):
 				install_packages = install_packages.split()
 		else:
 			install_packages = []
