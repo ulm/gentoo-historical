@@ -994,7 +994,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				("nmap",_(u"A utility for network exploration or security auditing"),int("nmap" in install_packages)),
 				("screen",_(u"full-screen window manager that multiplexes between several processes"),int("screen" in install_packages))]
 			elif submenu == _(u"Manual"):
-				code, install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
+				code, tmp_install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70)
+				if code == self._DLG_OK:
+					install_packages = tmp_install_packages.split()
 				continue
 			code, choices = self._d.checklist(_(u"Choose from the listed packages"), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
