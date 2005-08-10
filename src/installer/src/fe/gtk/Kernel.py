@@ -67,4 +67,6 @@ a brief description beside it.
 
 	def deactivate(self):
 		self.controller.install_profile.set_kernel_source_pkg(None, self.active_selection, None)
+		# For now
+		self.controller.install_profile.set_kernel_build_method(None, "genkernel", None)
 		return True
