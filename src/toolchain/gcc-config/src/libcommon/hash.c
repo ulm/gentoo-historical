@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.7 2005/08/11 21:45:44 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.8 2005/08/11 21:55:46 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.8  2005/08/11 21:55:46  eradicator
+ * Added configure check for inline.
+ *
  * Revision 1.7  2005/08/11 21:45:44  eradicator
  * Added sortedKeys() and fixed a bug in hashDel where I forgot to decrepemet nEntries.
  *
@@ -42,6 +45,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #define MAX_STRLEN 1024
 
@@ -276,12 +283,10 @@ static char **quickSort(char **data, unsigned left, unsigned right) {
 }
 
 /** Return an array of all keys hash table sorted. The array is null
- *  terminated, and *length is set to the number of entries
- *  (which is the size of the array - 1) unless length is a null pointer.
- *  This memory is malloc()d, so do't forget to free it.  Additionally, 
- *  doing a hashDel() could leave this data invalid resulting in a segfault
- *  if you're not careful since the (const char*) are pointing to memory
- *  managed by hash.c
+ *  terminated. This memory is malloc()d, so do't forget to free it.
+ *  Additionally, doing a hashDel() could leave this data invalid resulting
+ *  in a segfault if you're not careful since the (const char*) are
+ *  pointing to memory managed by hash.c
  */
 const char **sortedKeys(Hash *hash) {
 	char **keys = (char **)malloc(sizeof(char *) * (hash->nEntries + 1));
