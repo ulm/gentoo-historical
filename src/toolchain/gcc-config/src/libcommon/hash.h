@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.3 2005/08/11 20:39:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.4 2005/08/11 21:45:44 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.4  2005/08/11 21:45:44  eradicator
+ * Added sortedKeys() and fixed a bug in hashDel where I forgot to decrepemet nEntries.
+ *
  * Revision 1.3  2005/08/11 20:39:38  eradicator
  * added hashDel().
  *
@@ -55,16 +58,12 @@ void *hashGet(Hash *hash, const char *key);
  */
 void *hashDel(Hash *hash, const char *key);
 
-typedef struct {
-	const char *key;
-	void *data;
-} HashPair;
-
-/** Return an array of all elements in the hash table sorted by the key.
- *  The array is null terminated, and *length is set to the number of entries
- *  (which is the size of the array - 1) unless a null pointer is passed.
- *  This memory is malloc()d, so do't forget to free it (just the HashPair *)
+/** Return an array of all keys hash table sorted. The array is null
+ *  terminated. This memory is malloc()d, so do't forget to free it.
+ *  Additionally, doing a hashDel() could leave this data invalid resulting
+ *  in a segfault if you're not careful since the (const char*) are
+ *  pointing to memory managed by hash.c
  */
-HashPair *sortedArrayOfHashValues(Hash *hash, int *length);
+const char **sortedKeys(Hash *hash);
 
 #endif

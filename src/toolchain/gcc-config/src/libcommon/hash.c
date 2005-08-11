@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.6 2005/08/11 20:39:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.7 2005/08/11 21:45:44 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.7  2005/08/11 21:45:44  eradicator
+ * Added sortedKeys() and fixed a bug in hashDel where I forgot to decrepemet nEntries.
+ *
  * Revision 1.6  2005/08/11 20:39:38  eradicator
  * added hashDel().
  *
@@ -38,6 +41,7 @@
 #include "hash.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define MAX_STRLEN 1024
 
@@ -213,6 +217,7 @@ void *hashDel(Hash *hash, const char *key) {
 				/* head */
 				hash->buckets[hc] = entry->next;
 			}
+			hash->nEntries--;
 
 			/* Free the memory */
 			retval = entry->data;
@@ -227,22 +232,97 @@ void *hashDel(Hash *hash, const char *key) {
 	return (void *)0;
 }
 
-/** Return an array of all elements in the hash table sorted by the key.
- *  The array is null terminated, and *length is set to the number of entries
- *  (which is the size of the array - 1) unless a null pointer is passed.
- *  This memory is malloc()d, so do't forget to free it (just the HashPair *)
+static inline void quickSortSwap(char **data, unsigned i, unsigned j) {
+	char *tmp = data[i];
+	data[i] = data[j];
+	data[j] = tmp;
+}
+
+static unsigned quickSortPartition(char **data, unsigned left, unsigned right, unsigned pivotIndex) {
+	char *pivotValue = data[pivotIndex];
+	unsigned newPivotIndex = left;
+	unsigned i;
+	
+	/* Move the pivot to the end to get it out of the way */
+	quickSortSwap(data, pivotIndex, right);
+	
+	for(i=left; i < right; i++) {
+		if(strncmp(data[i], pivotValue, MAX_STRLEN) <= 0) {
+			quickSortSwap(data, newPivotIndex, i);
+			newPivotIndex++;
+		}
+	}
+
+	/* Move pivot back */
+	quickSortSwap(data, newPivotIndex, right);
+
+	return newPivotIndex;
+}
+
+static char **quickSort(char **data, unsigned left, unsigned right) {
+	char *pivotValue;
+	unsigned oldPivotIndex, newPivotIndex;
+	
+	if(right > left) {
+		oldPivotIndex = left + (right - left)/2;
+		pivotValue = data[oldPivotIndex];
+
+		newPivotIndex = quickSortPartition(data, left, right, oldPivotIndex);
+
+		quickSort(data, left, newPivotIndex-1);
+		quickSort(data, newPivotIndex+1, right);
+	}
+	return data;
+}
+
+/** Return an array of all keys hash table sorted. The array is null
+ *  terminated, and *length is set to the number of entries
+ *  (which is the size of the array - 1) unless length is a null pointer.
+ *  This memory is malloc()d, so do't forget to free it.  Additionally, 
+ *  doing a hashDel() could leave this data invalid resulting in a segfault
+ *  if you're not careful since the (const char*) are pointing to memory
+ *  managed by hash.c
  */
-HashPair *sortedArrayOfHashValues(Hash *hash, int *length) {
-	/* TODO */
-	return (HashPair *)0;
+const char **sortedKeys(Hash *hash) {
+	char **keys = (char **)malloc(sizeof(char *) * (hash->nEntries + 1));
+	HashEntry *entry;
+	unsigned i, hc;
+
+	/* Make sure we've got our memory */
+	if(!keys) {
+		return (const char **)0;
+	}
+
+	for(i=0, hc=0; hc < hash->nBuckets; hc++) {
+		for(entry=hash->buckets[hc]; entry; entry = entry->next) {
+			if(i >= hash->nEntries) {
+				/* This should never happen. */
+				fprintf(stderr, "Data inconsistency. hash->nEntries is not correct.");
+				exit(1);
+			}
+
+			keys[i] = entry->key;
+			i++;
+		}
+	}
+
+	if(i != hash->nEntries) {
+		/* This should never happen. */
+		fprintf(stderr, "Data inconsistency. hash->nEntries is not correct.");
+		exit(1);
+	}
+
+	/* Null terminate */
+	keys[i] = (char *)0;
+
+	return (const char **)quickSort(keys, 0, hash->nEntries - 1);
 }
 
 #ifdef DEBUG_HASH
-#include <stdio.h>
 
 int main(int argc, char **argv) {
-	unsigned i, len;
-	HashPair *hp;
+	unsigned i;
+	const char **keys;
 	char *tmp;
 	Hash *myHash = hashNew(argc*2 + 1);
 	char key[2];
@@ -259,12 +339,12 @@ int main(int argc, char **argv) {
 	}
 
 	printf("Sorted:\n");
-	hp = sortedArrayOfHashValues(myHash, &len);
-	if(hp) {
-		for(i=0; i < len; i++) {
-			printf("%s = %s\n", hp->key, (char *)hp->data);
+	keys = sortedKeys(myHash);
+	if(keys) {
+		for(i=0; i < myHash->nEntries; i++) {
+			printf("%s = %s\n", keys[i], (char *)hashGet(myHash,keys[i]));
 		}
-		free(hp);
+		free(keys);
 	}
 
 	printf("Freeing: ");
@@ -282,16 +362,18 @@ int main(int argc, char **argv) {
 	}
 
 	printf("Sorted:\n");
-	hp = sortedArrayOfHashValues(myHash, &len);
-	if(hp) {
-		for(i=0; i < len; i++) {
-			printf("%s\n", hp->key);
+	keys = sortedKeys(myHash);
+	if(keys) {
+		for(i=0; i < myHash->nEntries; i++) {
+			printf("%s\n", keys[i]);
 		}
-		free(hp);
+		free(keys);
 	}
-	
+
 	printf("Freeing: ");
 	hashFree(myHash);
 	printf("ok\n");
+
+	return 0;
 }
 #endif
