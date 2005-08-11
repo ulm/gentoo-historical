@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.5 2005/08/11 20:12:06 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.6 2005/08/11 20:39:38 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.6  2005/08/11 20:39:38  eradicator
+ * added hashDel().
+ *
  * Revision 1.5  2005/08/11 20:12:06  eradicator
  * Added missing return statement to hashNew()
  *
@@ -179,6 +182,45 @@ void *hashGet(Hash *hash, const char *key) {
 	for(entry = hash->buckets[hc]; entry; entry = entry->next) {
 		if(keysAreEqual(key, entry->key)) {
 			return entry->data;
+		}
+	}
+
+	return (void *)0;
+}
+
+/** Delete a hashtable entry that matches the passed key and return the
+ *  data or null if there was none.
+ */
+void *hashDel(Hash *hash, const char *key) {
+	unsigned hc;
+	HashEntry *entry, *prev = (HashEntry *)0;
+	void *retval;
+
+	/* Sanity check */
+	if(!hash || !key)
+		return (void *)0;
+
+	hc = hashcode(key) % hash->nBuckets;
+
+	/* Look for the entry in the table */
+	for(entry = hash->buckets[hc]; entry; prev = entry, entry = entry->next) {
+		if(keysAreEqual(key, entry->key)) {
+			/* Remove it from the table */
+			if(prev) {
+				/* Not the head */
+				prev->next = entry->next;
+			} else {
+				/* head */
+				hash->buckets[hc] = entry->next;
+			}
+
+			/* Free the memory */
+			retval = entry->data;
+			if(entry->key)
+				free(entry->key);
+			free(entry);
+
+			return retval;
 		}
 	}
 

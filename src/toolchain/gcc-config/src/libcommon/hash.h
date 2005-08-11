@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.2 2005/08/11 19:11:25 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.3 2005/08/11 20:39:38 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.3  2005/08/11 20:39:38  eradicator
+ * added hashDel().
+ *
  * Revision 1.2  2005/08/11 19:11:25  eradicator
  * Added test code for hash.c.  Added initializer and destructor for hash.c
  *
@@ -46,6 +49,11 @@ void *hashInsert(Hash *hash, const char *key, void *data);
  *  not in the hash table, return null.
  */
 void *hashGet(Hash *hash, const char *key);
+
+/** Delete a hashtable entry that matches the passed key and return the
+ *  data or null if there was none.
+ */
+void *hashDel(Hash *hash, const char *key);
 
 typedef struct {
 	const char *key;
