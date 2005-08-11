@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.2 2005/08/11 19:11:25 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.3 2005/08/11 19:34:52 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.3  2005/08/11 19:34:52  eradicator
+ * Added more testing code.  Added hashcode().
+ *
  * Revision 1.2  2005/08/11 19:11:25  eradicator
  * Added test code for hash.c.  Added initializer and destructor for hash.c
  *
@@ -34,17 +37,24 @@ typedef struct {
 	void *data;
 } _HashPair;
 
-typedef struct {
+struct _Hash {
 	unsigned nBuckets; /* Number of buckets */
 	unsigned nEntries; /* Number of elements in the table */
 	_HashPair *buckets;
-} Hash;
+};
 
-static unsigned hashcode(const char *key) {
-	/* TODO */
-	return 0;
+/** Shamelessly taken from the mozilla foundation's PL_HashString.
+ *  http://lxr.mozilla.org/mozilla/source/ef/gc/hash/plhash.c#487
+ */
+static unsigned hcode(const char *key) {
+	unsigned h;
+	const char *s;
+	h = 0;
+	for (s = key; *s; s++)
+		h = (h >> 28) ^ (h << 4) ^ *s;
+	return h;
 }
-
+	
 static inline unsigned keysAreEqual(const char *a, const char *b) {
 	return !strncmp(a, b, MAX_STRLEN);
 }
@@ -57,7 +67,8 @@ Hash *hashNew(unsigned size) {
 	if(!retval)
 		return (Hash *)0;
 
-	retval->size = size;
+	retval->nBuckets = size;
+	retval->nEntries = 0;
 	retval->buckets = (_HashPair *)calloc(size, sizeof(_HashPair));
 
 	/* Sanity check again */
@@ -112,10 +123,11 @@ int main(int argc, char **argv) {
 	unsigned i, len;
 	HashPair *hp;
 	char *tmp;
-	Hash *myHash = hashNew(argc*2);
+	Hash *myHash = hashNew(argc*2 + 1);
 	char key[2];
 	key[1] = '\0';
 
+	printf("First letter keys:\n");
 	for(i=1; i < argc; i++) {
 		key[0] = argv[i][0];
 		tmp = (char *)hashInsert(myHash, key, (void *)(argv[i]));
@@ -124,11 +136,39 @@ int main(int argc, char **argv) {
 		}
 	}
 
-
-	printf("Sorted:");
+	printf("Sorted:\n");
 	hp = sortedArrayOfHashValues(myHash, &len);
-	for(i=0; i < len; i++) {
-		printf("%s = %s\n", hp->key, (char *)hp->data);
+	if(hp) {
+		for(i=0; i < len; i++) {
+			printf("%s = %s\n", hp->key, (char *)hp->data);
+		}
+		free(hp);
 	}
+
+	printf("Freeing: ");
+	hashFree(myHash);
+	printf("ok\n");
+
+	printf("String keys, null data:\n");
+	myHash = hashNew(argc*2 + 1);
+	for(i=1; i < argc; i++) {
+		tmp = (char *)hashInsert(myHash, argv[i], (void *)0);
+		if (tmp) {
+			printf("%s was overwritten by %s\n", tmp, argv[i]);
+		}
+	}
+
+	printf("Sorted:\n");
+	hp = sortedArrayOfHashValues(myHash, &len);
+	if(hp) {
+		for(i=0; i < len; i++) {
+			printf("%s\n", hp->key);
+		}
+		free(hp);
+	}
+	
+	printf("Freeing: ");
+	hashFree(myHash);
+	printf("ok\n");
 }
 #endif
