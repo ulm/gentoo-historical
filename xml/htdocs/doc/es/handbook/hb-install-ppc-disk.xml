@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-disk.xml,v 1.3 2005/06/14 22:20:33 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-disk.xml,v 1.4 2005/08/11 10:44:25 yoswink Exp $ -->
 
 <sections>
 
-<version>2.1</version>
-<date>2005-06-10</date>
+<version>2.3</version>
+<date>2005-08-09</date>
 
 <section>
 <title>Introducción a los dispositivos de bloque</title>
@@ -43,23 +43,22 @@ simplemente dirigirse al almacenamiento en el disco como a una serie
 de bloques de acceso aleatorio de 512-bytes situados de forma
 contigua.
 </p>
+
 </body>
 </subsection>
-
 <subsection>
-<title>Particiones y slices</title>
+<title>Particiones</title>
 <body>
 
 <p>
 Aunque teóricamente es posible utilizar el disco duro completo para
 albergar la instalación Linux, esto casi nunca se hace. En su lugar,
 los discos se dividen en dispositivos de bloque más pequeños y
-manejables. En muchos sistemas se llaman <e>particiones</e>. Otras
-arquitecturas usan una técnica similar llamada <e>slices</e>.
+manejables. En muchos sistemas se llaman <e>particiones</e>.
 </p>
+
 </body>
 </subsection>
-
 </section>
 <section>
 <title>Diseño de un esquema de particionamiento</title>
@@ -93,7 +92,7 @@ el sistema, podemos hacer uso del esquema utilizado en este manual:
 </tr>
 <tr>
   <ti><path>/dev/hda2</path></ti>
-  <ti>(No necesario)</ti>
+  <ti>(No aplicable)</ti>
   <ti>(No aplicable)</ti>
   <ti>(No aplicable)</ti>
   <ti>(bootstrap)</ti>
@@ -110,8 +109,8 @@ el sistema, podemos hacer uso del esquema utilizado en este manual:
   <ti>Tipo 0x41</ti>
 </tr>
 <tr>
-  <ti>(No necesario)</ti>
-  <ti>(No necesario)</ti>
+  <ti>(No aplicable)</ti>
+  <ti><path>/dev/hda2</path> (Si se usa quik)</ti>
   <ti><path>/dev/hda1</path></ti>
   <ti>(No necesario)</ti>
   <ti>ext2</ti>
@@ -120,7 +119,7 @@ el sistema, podemos hacer uso del esquema utilizado en este manual:
 </tr>
 <tr>
   <ti><path>/dev/hda3</path></ti>
-  <ti><path>/dev/hda2</path></ti>
+  <ti><path>/dev/hda2</path> (<path>/dev/hda3</path> usando quik)</ti>
   <ti><path>/dev/hda2</path></ti>
   <ti><path>/dev/sda2</path></ti>
   <ti>(swap)</ti>
@@ -129,7 +128,7 @@ el sistema, podemos hacer uso del esquema utilizado en este manual:
 </tr>
 <tr>
   <ti><path>/dev/hda4</path></ti>
-  <ti><path>/dev/hda3</path></ti>
+  <ti><path>/dev/hda3</path> (<path>/dev/hda4</path> usando quik)</ti>
   <ti><path>/dev/hda3</path></ti>
   <ti><path>/dev/sda3</path></ti>
   <ti>ext3, xfs</ti>
@@ -139,21 +138,22 @@ el sistema, podemos hacer uso del esquema utilizado en este manual:
 </table>
 
 <note>
-Puede haber algunas particiones llamadas tal que:
-<path>Apple_Driver43, Apple_Driver_ATA, Apple_FWDriver,
-Apple_Driver_IOKit, Apple_Patches</path>. Si no estamos pensando en
-usar MacOS 9 podemos borrarlas, puesto que MacOS X y Linux no las
-necesitan. Se puede utilizar <c>parted</c> para borrarlas, ya que
-mac-fdisk no puede hacerlo todavía.
+Puede haber algunas particiones llamadas: <path>Apple_Driver43, 
+Apple_Driver_ATA, Apple_FWDriver, Apple_Driver_IOKit, Apple_Patches</path>. 
+Si no estamos pensando en usar MacOS 9 podemos borrarlas, puesto que MacOS X 
+y Linux no las necesitan. Para borrarlas se puede utilizar <c>parted</c> o 
+borrar el disco entero inicializando el mapa de particiones.
 </note>
 
 <warn>
 <c>parted</c> es capaz de redimensionar particiones. En el CD de
 Instalación se incluyen parches para redimensionar sistemas de
-ficheros HFS+. Desafortunadamente no es posible redimensionar sistemas
-de ficheros HFS+ con transacciones (journaling), incluso si el
-journaling se ha desactivado en MacOS X. ¡Redimensionar con parted
-queda bajo el propio riesgo! ¡Hay que asegurarse de tener copia de
+ficheros HFS+. Desafortunadamente es arriesgado redimensionar sistemas
+de ficheros HFS+ con transacciones (journaling), nos aseguraremos de 
+desactivar la transaccionalidad en Mac OS X en primer lugar y también de 
+ejecutar una herramienta de comprobación del disco antes del 
+redimensionamiento. ¡Todo lo que se redimensione con parted queda bajo 
+la responsabilidad de uno mismo! ¡Hay que asegurarse de tener copia de 
 seguridad de los datos!
 </warn>
 
@@ -161,13 +161,13 @@ seguridad de los datos!
 Si queremos conocer el tamaño que debería tener una partición, o
 incluso cuantas particiones necesitamos, hay que continuar con la
 siguiente sección. En caso contrario, seguiremos con <uri
-link="#fdisk" >Por defecto: Uso de mac-fdisk (Apple/IBM) para
+link="#mac-fdisk" >Por defecto: Uso de mac-fdisk (Apple) para
 particionar el disco</uri> o <uri link="#parted" >Alternativa: Uso de
-parted (especialmente en Pegasos) para particionar el disco</uri>.
+parted (IBM/Pegasos) para particionar el disco</uri>.
 </p>
+
 </body>
 </subsection>
-
 <subsection>
 <title>¿Cuántas y de qué tamaño?</title>
 <body>
@@ -179,11 +179,17 @@ probable es que se quiera tener <path>/home</path> en una partición
 separada para facilitar las tareas de copia de respaldo y aumentar la
 seguridad. Si se está instalando Gentoo para funcionar como servidor
 de correo, deberemos tener <path>/var</path> sobre una partición
-separada ya que es allí dónde se almacena todo el correo. Asímismo,
+separada ya que es allí dónde se almacena todo el correo. Así mismo,
 una buena elección del sistema de ficheros optimizará el rendimiento
 del equipo. Los servidores de juegos deben disponer de una
 partición<path>/opt</path> ya que la mayoría de juegos se instalan en
-ese directorio. Las razones para todas estas recomendaciones son similares a aquellas que hemos mencionado para el caso de <path>/home</path>: seguridad y salvaguarda de datos. Definitvamente querremos tener un gran <path>/usr</path>: no sólo contendrá la mayor parte de aplicaciones, también el árbol de Portage que por si mismo ocupa alrededor de 500 MBytes sin incluir las fuentes que igualmente se almacenan en él.
+ese directorio. Las razones para todas estas recomendaciones son 
+similares a aquellas que hemos mencionado para el caso de 
+<path>/home</path>: seguridad y salvaguarda de datos. Definitivamente 
+querremos tener un gran <path>/usr</path>: no sólo contendrá la mayor 
+parte de aplicaciones, también el árbol de Portage que por si mismo 
+ocupa alrededor de 500 MB sin incluir las fuentes que igualmente se 
+almacenan en él.
 </p>
 
 <p>
@@ -223,8 +229,9 @@ otras. Además, existe un límite de 15 particiones para SCSI y SATA.
 </subsection>
 
 </section>
-<section id="fdisk" >
-<title>Por defecto: Uso de mac-fdisk (Apple/IBM) para particionar el disco</title>
+<section id="mac-fdisk" >
+<title>Por defecto: Uso de mac-fdisk (Apple/IBM) para particionar el 
+disco</title>
 <body>
 
 <p>
@@ -236,14 +243,15 @@ Ahora es el momento de crear las particiones con <c>mac-fdisk</c>:
 </pre>
 
 <p>
-Primero borraremos las particiones que no nos sirven para dejar espacio a las particiones Linux. Usamos <c>d</c> en <c>mac-fdisk</c> para borrarla(s).
-Nos preguntará por el número de partición a borrar. Generalmente, la
-primera partición de máquinas NewWorld (Apple_partition_map) no debe
-ser borrada.
+Primero borraremos las particiones que no nos sirven para dejar espacio 
+a las particiones Linux. Usamos <c>d</c> en <c>mac-fdisk</c> para 
+borrarla(s). Nos preguntará por el número de partición a borrar. La 
+primera partición de máquinas Apple (Apple_partition_map) no debe ser 
+borrada.
 </p>
 
 <p>
-Luego crearemos una partición <e>Apple_Bootstrap</e> usando
+En los Macs NewWorld crearemos una partición <e>Apple_Bootstrap</e> usando
 <c>b</c>. Nos preguntará cuál es el bloque inicial. Introduciremos el
 número de la primera partición libre seguido de una <c>p</c>. En este
 caso sería <c>2p</c>.
@@ -294,12 +302,14 @@ borrándolas todas.
 Ahora que las particiones ya están creadas continuaremos con <uri
 link="#filesystems" >Creación de los sistemas de ficheros</uri>.
 </p>
+
 </body>
 </section>
-
 <section id="parted" >
-<title>Alternativa: Uso de parted (especialmente en Pegasos) para
-particionar el disco</title>
+<title>
+Uso de parted (principalmente Pegasos) para particionar el disco
+</title>
+
 <body>
 
 <p>
@@ -367,7 +377,7 @@ intercambio ejecutaremos <c>mkpart primary linux-swap START END</c>.
 <p>
 Anotaremos los números (minor numbers) de las particiones puesto que
 los necesitaremos durante el proceso de instalación. <c>print</c>
-permite mostrarlos. Accederemos a los dicos mediante
+permite mostrarlos. Accederemos a los discos mediante
 <path>/dev/hdaX</path> donde X se reemplaza con el número de la
 partición.
 </p>
@@ -376,9 +386,9 @@ partición.
 Cuando esté todo listo en parted saldremos simplemente con
 <c>quit</c>.
 </p>
+
 </body>
 </section>
-
 <section id="filesystems" >
 <title>Creación de los sistemas de ficheros</title>
 <subsection>
@@ -393,18 +403,16 @@ en <uri link="#filesystems-apply" >Creación de un sistema de ficheros
 en una partición</uri>. En caso contrario, a continuación se describen
 los sistemas de ficheros que podemos utilizar ...
 </p>
+
 </body>
 </subsection>
-
 <subsection>
 <title>¿Sistemas de ficheros?</title>
 <body>
 
 <p>
-Disponemos de varios sistemas de ficheros. ext2, ext3 y XFS se
-consideran estables en la arquitectura PPC. jfs no se soporta,
-ReiserFS continua teniendo algunos problemas en ppc y no está
-soportado.
+Disponemos de varios sistemas de ficheros. ext2, ext3, ReiserFS y XFS se
+consideran estables en la arquitectura PPC.
 </p>
 
 <p>
@@ -425,8 +433,9 @@ soporte para una rápida recuperación además de otros modos mejorados
 de funcionamiento como registro completo y ordenado de datos. ext3 es
 un buen y fiable sistema de ficheros. Posee una opción adicional para
 indización basada en árboles B que proporciona un alto rendimiento en
-casi todas las situaciones. En resumen, ext3 es un excelente sistema
-de ficheros.
+casi todas las situaciones. Podemos habilitar esta indización añadiendo 
+<c>-O dir_index</c> al comando <c>mke2fs</c>. En resumen, ext3 es un 
+excelente sistema de ficheros.
 </p>
 
 <p>
@@ -440,8 +449,7 @@ estable para su uso en escenarios genéricos así como en casos extremos
 cuando es necesario trabajar por ejemplo con sistemas de ficheros
 grandes, utilizar múltiples ficheros pequeños o manejar archivos
 grandes y directorios con miles y miles de
-ficheros. Desafortunadamente, continuamos teniendo algunas pegas con
-ReiserFS en ppc: no aconsejamos a nadie que lo utilice.
+ficheros.
 </p>
 
 <p>
@@ -457,9 +465,9 @@ diseño (aquéllas que no toman las precauciones necesarias durante la
 escritura de datos al disco, y hay bastantes) pueden perderlos en caso
 de que el sistema se apague de forma inesperada.
 </p>
+
 </body>
 </subsection>
-
 <subsection id="filesystems-apply" >
 <title>Creación del sistema de ficheros en una partición</title>
 <body>
@@ -508,13 +516,15 @@ particiones o volúmenes lógicos recién creados.
 </p>
 
 <note>
-En máquinas OldWorld y Pegasos II la partición que contiene el kernel
-debe ser ext2 o ext3. Los sistemas NewWorld pueden arrancar desde
-sistemas de ficheros  ext2, ext3, XFS, ReiserFS e incluso HFS/HFS+.
+En máquinas Pegasos II la partición que contiene el kernel debe ser ext2 
+o ext3. Los sistemas NewWorld pueden arrancar desde sistemas de ficheros 
+ext2, ext3, XFS, ReiserFS e incluso HFS/HFS+. En las máquinas OldWorld 
+que arranquen mediante BootX, el núcleo debe ser ubicado en una partición 
+HFS, pero esto se completará al configurar el gestor de arranque.
 </note>
+
 </body>
 </subsection>
-
 <subsection>
 <title>Activando la partición de intercambio</title>
 <body>
@@ -539,10 +549,10 @@ Para activar la partición, se usa el comando <c>swapon</c>:
 <p>
 Ahora crearíamos y activaríamos la partición de intercambio.
 </p>
+
 </body>
 </subsection>
 </section>
-
 <section>
 <title>Montaje</title>
 <body>
@@ -576,7 +586,7 @@ hay que asegurarse de cambiar sus permisos después de haberla montado:
 
 <p>
 También hay que montar el sistema de ficheros proc (la interfaz
-virtual del nucleo) en <path>/proc</path>. Pero primero necesitaremos
+virtual del núcleo) en <path>/proc</path>. Pero primero necesitaremos
 situar nuestros ficheros en las particiones.
 </p>
 
@@ -584,6 +594,7 @@ situar nuestros ficheros en las particiones.
 Ahora continuaremos con <uri link="?part=1&amp;chap=5" >Instalación de
 los ficheros de instalación de Gentoo</uri>. 
 </p>
+
 </body>
 </section>
 </sections>
