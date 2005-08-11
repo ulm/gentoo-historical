@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.1 2005/08/09 20:15:46 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.2 2005/08/11 19:11:25 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.2  2005/08/11 19:11:25  eradicator
+ * Added test code for hash.c.  Added initializer and destructor for hash.c
+ *
  * Revision 1.1  2005/08/09 20:15:46  eradicator
  * Moving components into subdirs to make build environment more tidy.
  *
@@ -27,14 +30,26 @@
 typedef struct _Hash Hash;
 
 /** Create a new hash table of size size */
-Hash *newHash(unsigned size);
+Hash *hashNew(unsigned size);
 
 /** Free the hash table. */
-void freeHash(Hash *hash);
+void hashFree(Hash *hash);
+
+/** Insert data into the hash table.  If an entry is replaced, we
+ *  return the data that was there, so the user can free it if
+ *  neccessary.  Otherwise, we return null.  The key is copied to
+ *  memory managed by hash.c.
+ */
+void *hashInsert(Hash *hash, const char *key, void *data);
+
+/** Returns the data associated with the given key.  If that key is
+ *  not in the hash table, return null.
+ */
+void *hashGet(Hash *hash, const char *key);
 
 typedef struct {
 	const char *key;
-	const void *data;
+	void *data;
 } HashPair;
 
 /** Return an array of all elements in the hash table sorted by the key.
