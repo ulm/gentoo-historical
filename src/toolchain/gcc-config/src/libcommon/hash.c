@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.3 2005/08/11 19:34:52 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.4 2005/08/11 20:00:11 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.4  2005/08/11 20:00:11  eradicator
+ * Added hashGet and hashInsert.  Cleaned up some bugs elsewhere.
+ *
  * Revision 1.3  2005/08/11 19:34:52  eradicator
  * Added more testing code.  Added hashcode().
  *
@@ -32,21 +35,22 @@
 
 #define MAX_STRLEN 1024
 
-typedef struct {
+typedef struct _HashEntry {
 	char *key;
 	void *data;
-} _HashPair;
+	struct _HashEntry *next;
+} HashEntry;
 
 struct _Hash {
 	unsigned nBuckets; /* Number of buckets */
 	unsigned nEntries; /* Number of elements in the table */
-	_HashPair *buckets;
+	HashEntry **buckets;
 };
 
 /** Shamelessly taken from the mozilla foundation's PL_HashString.
  *  http://lxr.mozilla.org/mozilla/source/ef/gc/hash/plhash.c#487
  */
-static unsigned hcode(const char *key) {
+static unsigned hashcode(const char *key) {
 	unsigned h;
 	const char *s;
 	h = 0;
@@ -69,7 +73,7 @@ Hash *hashNew(unsigned size) {
 
 	retval->nBuckets = size;
 	retval->nEntries = 0;
-	retval->buckets = (_HashPair *)calloc(size, sizeof(_HashPair));
+	retval->buckets = (HashEntry **)calloc(size, sizeof(HashEntry *));
 
 	/* Sanity check again */
 	if(!retval->buckets) {
@@ -80,11 +84,26 @@ Hash *hashNew(unsigned size) {
 
 /** Free the hash table. */
 void hashFree(Hash *hash) {
+	unsigned i;
+	HashEntry *entry, *next;
+
 	if(!hash)
 		return;
 
-	if(hash->buckets)
+	if(hash->buckets) {
+		for(i=0; i < hash->nBuckets; i++) {
+			entry = hash->buckets[i];
+			for(entry = hash->buckets[i]; entry; entry = next) {
+				if(entry->key)
+					free(entry->key);
+
+				next = entry->next;
+				free(entry);
+			}
+		}
+
 		free(hash->buckets);
+	}
 
 	free(hash);
 }
@@ -94,15 +113,70 @@ void hashFree(Hash *hash) {
  *  neccessary.  Otherwise, we return null.
  */
 void *hashInsert(Hash *hash, const char *key, void *data) {
-	/* TODO: Try to maintain nBuckets >= 2* nEntries */
-	return (void *)0;
+	unsigned hc;
+	HashEntry *entry;
+	void *retval;
+
+	/* Sanity check */
+	if(!hash || !key)
+		return (void *)0;
+
+	hc = hashcode(key) % hash->nBuckets;
+
+	/* Look for the entry in the table */
+	for(entry = hash->buckets[hc]; entry; entry = entry->next) {
+		if(keysAreEqual(key, entry->key)) {
+			retval = entry->data;
+			entry->data = data;
+			return retval;
+		}
+	}
+
+	/* Create our entry */
+	entry = (HashEntry *)malloc(sizeof(HashEntry));
+
+	if(!entry) {
+		return (void *)0;
+	}
+
+	entry->key = (char *)malloc(sizeof(char)*(1 + strlen(key)));
+	if(!entry->key) {
+		free(entry);
+		return (void *)0;
+	}
+	
+	strcpy(entry->key, key);
+	entry->data = data;
+	entry->next = hash->buckets[hc];
+
+	/* Add it to the table */
+	hash->buckets[hc] = entry;
+	hash->nEntries++;
+
+	/* TODO: Try to keep nEntries < 2*nBuckets */
+	 return (void *)0;
 }
 
 /** Returns the data associated with the given key.  If that key is
  *  not in the hash table, return null.
  */
 void *hashGet(Hash *hash, const char *key) {
-	/* TODO */
+	unsigned hc;
+	HashEntry *entry;
+
+	/* Sanity check */
+	if(!hash || !key)
+		return (void *)0;
+
+	hc = hashcode(key) % hash->nBuckets;
+
+	/* Look for the entry in the table */
+	for(entry = hash->buckets[hc]; entry; entry = entry->next) {
+		if(keysAreEqual(key, entry->key)) {
+			return entry->data;
+		}
+	}
+
 	return (void *)0;
 }
 
@@ -130,6 +204,7 @@ int main(int argc, char **argv) {
 	printf("First letter keys:\n");
 	for(i=1; i < argc; i++) {
 		key[0] = argv[i][0];
+		printf("hashcode(%s) = %u\n", key, hashcode(key));
 		tmp = (char *)hashInsert(myHash, key, (void *)(argv[i]));
 		if (tmp) {
 			printf("%s was overwritten by %s\n", tmp, argv[i]);
@@ -152,6 +227,7 @@ int main(int argc, char **argv) {
 	printf("String keys, null data:\n");
 	myHash = hashNew(argc*2 + 1);
 	for(i=1; i < argc; i++) {
+		printf("hashcode(%s) = %u\n", argv[i], hashcode(argv[i]));
 		tmp = (char *)hashInsert(myHash, argv[i], (void *)0);
 		if (tmp) {
 			printf("%s was overwritten by %s\n", tmp, argv[i]);
