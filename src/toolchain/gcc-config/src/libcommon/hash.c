@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.4 2005/08/11 20:00:11 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.5 2005/08/11 20:12:06 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.5  2005/08/11 20:12:06  eradicator
+ * Added missing return statement to hashNew()
+ *
  * Revision 1.4  2005/08/11 20:00:11  eradicator
  * Added hashGet and hashInsert.  Cleaned up some bugs elsewhere.
  *
@@ -80,6 +83,8 @@ Hash *hashNew(unsigned size) {
 		free(retval);
 		return (Hash *)0;
 	}
+
+	return retval;
 }
 
 /** Free the hash table. */
