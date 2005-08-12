@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.8 2005/08/11 21:55:46 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.9 2005/08/12 09:46:30 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.9  2005/08/12 09:46:30  eradicator
+ * Style cleanup.
+ *
  * Revision 1.8  2005/08/11 21:55:46  eradicator
  * Added configure check for inline.
  *
@@ -85,17 +88,17 @@ Hash *hashNew(unsigned size) {
 	Hash *retval = (Hash *)malloc(sizeof(Hash));
 
 	/* Make sure we got memory */
-	if(!retval)
-		return (Hash *)0;
+	if(retval == NULL)
+		return NULL;
 
 	retval->nBuckets = size;
 	retval->nEntries = 0;
 	retval->buckets = (HashEntry **)calloc(size, sizeof(HashEntry *));
 
 	/* Sanity check again */
-	if(!retval->buckets) {
+	if(retval->buckets == NULL) {
 		free(retval);
-		return (Hash *)0;
+		return NULL;
 	}
 
 	return retval;
@@ -106,7 +109,7 @@ void hashFree(Hash *hash) {
 	unsigned i;
 	HashEntry *entry, *next;
 
-	if(!hash)
+	if(hash == NULL)
 		return;
 
 	if(hash->buckets) {
@@ -137,8 +140,8 @@ void *hashInsert(Hash *hash, const char *key, void *data) {
 	void *retval;
 
 	/* Sanity check */
-	if(!hash || !key)
-		return (void *)0;
+	if(hash == NULL || key == NULL)
+		return NULL;
 
 	hc = hashcode(key) % hash->nBuckets;
 
@@ -154,14 +157,14 @@ void *hashInsert(Hash *hash, const char *key, void *data) {
 	/* Create our entry */
 	entry = (HashEntry *)malloc(sizeof(HashEntry));
 
-	if(!entry) {
-		return (void *)0;
+	if(entry == NULL) {
+		return NULL;
 	}
 
 	entry->key = (char *)malloc(sizeof(char)*(1 + strlen(key)));
-	if(!entry->key) {
+	if(entry->key == NULL) {
 		free(entry);
-		return (void *)0;
+		return NULL;
 	}
 	
 	strcpy(entry->key, key);
@@ -173,7 +176,7 @@ void *hashInsert(Hash *hash, const char *key, void *data) {
 	hash->nEntries++;
 
 	/* TODO: Try to keep nEntries < 2*nBuckets */
-	 return (void *)0;
+	 return NULL;
 }
 
 /** Returns the data associated with the given key.  If that key is
@@ -184,8 +187,8 @@ void *hashGet(Hash *hash, const char *key) {
 	HashEntry *entry;
 
 	/* Sanity check */
-	if(!hash || !key)
-		return (void *)0;
+	if(hash == NULL || key == NULL)
+		return NULL;
 
 	hc = hashcode(key) % hash->nBuckets;
 
@@ -196,7 +199,7 @@ void *hashGet(Hash *hash, const char *key) {
 		}
 	}
 
-	return (void *)0;
+	return NULL;
 }
 
 /** Delete a hashtable entry that matches the passed key and return the
@@ -208,8 +211,8 @@ void *hashDel(Hash *hash, const char *key) {
 	void *retval;
 
 	/* Sanity check */
-	if(!hash || !key)
-		return (void *)0;
+	if(hash == NULL || key == NULL)
+		return NULL;
 
 	hc = hashcode(key) % hash->nBuckets;
 
@@ -236,7 +239,7 @@ void *hashDel(Hash *hash, const char *key) {
 		}
 	}
 
-	return (void *)0;
+	return NULL;
 }
 
 static inline void quickSortSwap(char **data, unsigned i, unsigned j) {
@@ -294,8 +297,8 @@ const char **sortedKeys(Hash *hash) {
 	unsigned i, hc;
 
 	/* Make sure we've got our memory */
-	if(!keys) {
-		return (const char **)0;
+	if(keys == NULL) {
+		return NULL;
 	}
 
 	for(i=0, hc=0; hc < hash->nBuckets; hc++) {
@@ -318,7 +321,7 @@ const char **sortedKeys(Hash *hash) {
 	}
 
 	/* Null terminate */
-	keys[i] = (char *)0;
+	keys[i] = NULL;
 
 	return (const char **)quickSort(keys, 0, hash->nEntries - 1);
 }
@@ -360,7 +363,7 @@ int main(int argc, char **argv) {
 	myHash = hashNew(argc*2 + 1);
 	for(i=1; i < argc; i++) {
 		printf("hashcode(%s) = %u\n", argv[i], hashcode(argv[i]));
-		tmp = (char *)hashInsert(myHash, argv[i], (void *)0);
+		tmp = (char *)hashInsert(myHash, argv[i], NULL);
 		if (tmp) {
 			printf("%s was overwritten by %s\n", tmp, argv[i]);
 		}
