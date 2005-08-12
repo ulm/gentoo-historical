@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.2 2005/08/12 00:48:18 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.3 2005/08/12 09:45:52 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.3  2005/08/12 09:45:52  eradicator
+ * Added defaultChost.
+ *
  * Revision 1.2  2005/08/12 00:48:18  eradicator
  * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
  *
@@ -30,6 +33,8 @@
 
 typedef struct {
 	char *fileName;
+
+	char *defaultChost;
 
 	/* Hash table of selected profiles.
 	 * Key: (char *) CHOST (such as "i686-pc-linux-gnu")
