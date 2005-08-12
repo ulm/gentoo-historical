@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.3 2005/08/12 10:07:59 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.4 2005/08/12 23:08:26 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.4  2005/08/12 23:08:26  eradicator
+ * Added code to determine the binary we need to execute including aliasing in the profile.  Set GCC_SPECS based on the profile.
+ *
  * Revision 1.3  2005/08/12 10:07:59  eradicator
  * setChost() also sets the profile.
  *
@@ -23,11 +26,6 @@
  * This initial version was written primarily by Martin Schlemmer <azarah@gentoo.org>,
  * Mike Frysinger <vapier@gentoo.org>, and Jeremy Huddleston <eradicator@gentoo.org>
  *
- * TODO:
- * Aliasing:
- *   gfortran = g77 = f77
- *   cc = gcc
- *   Include framework for icc to be used as well.
  */
 
 /* For strdup() */
@@ -39,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "selection_conf.h"
 #include "install_conf.h"
@@ -52,12 +51,6 @@ typedef struct {
 	*/
 	char chost[MAXPATHLEN + 1];
 
-	/* The basename of the executable we were called as without
-	* the CHOST.  So if we call i686-pc-linux-gnu-gcc, this
-	* would be gcc.
-	*/
-	char execBasename[MAXPATHLEN + 1];
-
 	/* The full path name to the binary we're going to exec */
 	char execBinary[MAXPATHLEN + 1];
 
@@ -66,6 +59,7 @@ typedef struct {
 
 	SelectionConf *selectionConf;
 	Profile *profile;
+	Hash *wrapperAliases;
 } WrapperData;
 
 static void wrapperExit(char *msg, ...) {
@@ -77,17 +71,19 @@ static void wrapperExit(char *msg, ...) {
 	exit(1);
 }
 
-static char *abiFlags[] = {
-	"-m32", "-m64", "-mabi", NULL
-};
-
 /** Prepend CFLAGS to the argv list */
 static char **buildNewArgv(char **argv, const char *newFlagsStr) {
 #define MAX_NEWFLAGS 32
 	char *newFlags[MAX_NEWFLAGS];
 	char **retargv;
-	unsigned int argc, i;
+	unsigned int argc;
+	size_t i;
 	char *state, *flagsTokenized;
+
+	/* Don't modify argv if we see any of these flags */
+	const char *abiFlags[] = {
+		"-m32", "-m64", "-mabi", NULL
+	};
 
 	retargv = argv;
 
@@ -121,12 +117,12 @@ static char **buildNewArgv(char **argv, const char *newFlagsStr) {
 }
 
 /** Set the chost and profile */
-static void setChost(WrapperData *data) {
+static void setChostAndProfile(WrapperData *data) {
 	char tmp[MAXPATHLEN + 1];
-	unsigned i;
+	size_t i;
 
 	/* Copy argv[0] to temp space, so we can modify it */
-	strncpy(tmp, data->argv[0], MAXPATHLEN);
+	strncpy(tmp, basename(data->argv[0]), MAXPATHLEN);
 
 	/* Start at the end and go back until we find a prefix that matches */
 	for(i = strlen(tmp); i > 0; i--) {
@@ -150,15 +146,53 @@ static void setChost(WrapperData *data) {
 	/* No match, use the default */
 	strncpy(data->chost, data->selectionConf->defaultChost, MAXPATHLEN);
 	if((data->profile = hashGet(data->selectionConf->selectionHash, data->chost)) == NULL) {
-		wrapperExit("No gcc profile selected.");
+		wrapperExit("%s wrapper: Could not determine CHOST or CHOST has no selected profile.", data->argv[0]);
 	}
 	return;
+}
+
+/** Determine what binary we will be executing. */
+static void setExecBinary(WrapperData *data) {
+	char execBasename[MAXPATHLEN + 1];
+	const char *tmp;
+	struct stat sbuf;
+
+	/* Figure out the basename of the compiler */
+	strncpy(execBasename, basename(data->argv[0]), MAXPATHLEN);
+
+	/* If it's prefixed by ${CHOST}, strip that off */
+	if(!strncmp(data->chost, execBasename, strlen(data->chost)) &&
+	   execBasename[strlen(data->chost)] == '-' ) {
+		strcpy(execBasename, execBasename + strlen(data->chost) + 1);
+	}
+
+	/* If it's an alias, replace it with the correct value */
+	tmp = hashGet(data->profile->installConf->wrapperAliases, execBasename);
+	if(tmp != NULL)
+	 strcpy(execBasename, (const char *)tmp);
+
+	/* Fisrt try without the CHOST prefix */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s", data->profile->installConf->binpath, execBasename);
+	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
+		return;
+
+	/* Now try with the CHOST prefix used */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->chost, execBasename);
+	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
+		return;
+
+	/* Now try with the CHOST prefix in the profile */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->profile->chost, execBasename);
+	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
+		return;
+
+	wrapperExit("%s wrapper: Unable to determine executable.\n\tCHOST=%s\n\texec=%s\n", data->argv[0], data->chost, execBasename);
 }
 
 int main(int argc, char *argv[]) {
 	WrapperData *data;
 	char *extraCflags = NULL;
-
+	
 	data = (WrapperData *)alloca(sizeof(WrapperData));
 	if(data == NULL)
 		wrapperExit("%s wrapper: out of memory\n", argv[0]);
@@ -171,11 +205,11 @@ int main(int argc, char *argv[]) {
 	/* The argv to pass to the forked process.  Defaults to be the same */
 	data->argv = argv;
 
-	/* Figure out out CHOST */
-	setChost(data);
+	/* Figure out out CHOST and our Profile */
+	setChostAndProfile(data);
 
-	/* TODO: Figure out the basename of the compiler */
-	/* TODO: Figure out the full path of the binary to execute */
+	/* Determine what binary we will be executing */
+	setExecBinary(data);
 
 	/* Do we need to set any additional CFLAGS? */
 	if(getenv("ABI")) {
@@ -193,11 +227,13 @@ int main(int argc, char *argv[]) {
 
 	if(extraCflags) {
 		data->argv = buildNewArgv(data->argv, extraCflags);
-		if(data->argv)
-			wrapperExit("%s wrapper: out of memory\n", data->execBinary);
+		if(data->argv == NULL)
+			wrapperExit("%s wrapper: out of memory\n", argv[0]);
 	}
 
-	/* TODO: Select the appropriate GCC specs file */
+	/* Select the appropriate GCC specs file */
+	if(data->profile->specs)
+		setenv("GCC_SPECS", data->profile->specs, 1);
 
 	/* Set argv[0] to the correct binary (the full path
 	 * of the binary we are executing), else gcc can't
