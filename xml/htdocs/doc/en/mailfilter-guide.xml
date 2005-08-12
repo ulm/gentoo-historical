@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/mailfilter-guide.xml,v 1.11 2005/08/12 08:15:33 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/mailfilter-guide.xml,v 1.12 2005/08/12 08:34:23 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/en/mailfilter-guide.xml">
@@ -23,7 +23,7 @@ SPF.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.7.10</version>
+<version>0.8.0</version>
 <date>2005-08-12</date>
 
 <chapter>
@@ -98,9 +98,12 @@ with no dependence between each chapter. These chapters describe how to:
     setup special IMAP folders for learning of the Bayesian
     filter and for delivery of false positives
   </li>
+<!--
   <li>setup log analyzers to create daily reports</li>
-  <li>setup greylisting with Postfix 2.1</li>
-  <li>setup amavisd-new to use a MySQL backend for user preferences</li>
+-->
+  <li>setup greylisting with Postfix</li>
+  <li>setup Amavisd-new to use a MySQL backend for user preferences</li>
+  <li>setup Spamassassin to use a MySQL backend for AWL and Bayes data</li>
 </ul>
 
 <note>
@@ -260,7 +263,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
   -o smtp_data_done_timeout=1200
   -o smtp_send_xforward_command=yes
 <comment>#Equivalently when using lmtp:
-#smtp-amavis unix -     -       n       -       2       lmtp
+#lmtp-amavis    unix -        -       n     -       2  lmtp
 #   -o lmtp_data_done_timeout=1200
 #   -o lmtp_send_xforward_command=yes</comment>
      
@@ -292,7 +295,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
 The <c>smtp-amavis</c> line specifies that a maximum of two of these
 processes may run at any time. If you need a greater degree of
 concurrency tune this number to fit your needs. Remember that to match
-the number with <c>$max_servers=</c> in <path>amavisd.conf</path>
+the number with <c>$max_servers</c> in <path>amavisd.conf</path>
 </note>
 
 <note>
@@ -422,6 +425,7 @@ amavis:x:1010:413:added by portage for amavisd-new:/var/amavis:/bin/bash
 </pre>
 -->
 
+<!--
 <p>
 Create the new home directory and set the proper permissions.
 </p>
@@ -431,7 +435,8 @@ Create the new home directory and set the proper permissions.
 # <i>chown amavis:amavis /var/amavis</i>
 # <i>chmod 750 /var/amavis</i>
 </pre>
-    
+-->
+
 <p>
 Edit the following lines in <path>/etc/amavisd.conf</path>
 </p>
@@ -480,6 +485,10 @@ delivered to our users.
 # <i>chown amavis:amavis /var/amavis/virusmails</i>
 # <i>chmod 750 /var/amavis/virusmails</i>
 </pre>
+
+<note>
+Amavisd-new offers finer policy tuning by using policy banks.
+</note>
 
 </body>
 </section>
@@ -702,7 +711,7 @@ to do it in <path>/etc/amavisd.conf</path>.
 </note>
 
 <note>
-In a future version of this guide I plan to implement per-user policies using 
+In a later chapter I will show how to implement per-user policies using 
 MySQL.
 </note>
 
@@ -744,7 +753,6 @@ Emporium</uri> you can easily add and update them using
 </p>
 
 <pre caption="Installing rulesdujour">
-# <i>echo "mail-filter/spamassassin-ruledujour  ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge "mail-filter/spamassassin-ruledujour"</i>
 </pre>
 
@@ -845,6 +853,8 @@ For some unknown reason you can not complete a manual mail injection to
 <note>
 If you want to see the complete output from amavisd-new start
 <c>amavisd debug-sa</c> as the <c>amavis</c> user and send a mail.
+For this to work you might have to change the default shell in
+<path>/etc/passwd</path>.
 </note>
 
 <p>
@@ -1447,15 +1457,6 @@ and install some Perl module ebuilds into your portage overlay.
 Postgrey is now in Portage, currently still unstable.
 </note>
 
-<note>
-Instead of trusting the IO-Multiplex ebuild you can simply
-emerge it using <c>g-cpan.pl</c>, a Perl script that automatically
-downloads the latest version of a Perl module, creates an ebuild for it
-and installs it on your system: <c>g-cpan.pl IO-Multiplex</c>. This does require
-that your CPAN environment is set up correctly.
-</note>
-
-
 <p>
 After installing <c>postgrey</c> we have to edit <path>main.cf</path>.
 Changes are almost exactly like the built in greylisting.
@@ -1530,10 +1531,15 @@ If you relay outgoing mail through your ISP you will have to add:
 </note>
 
 <p>
-The upcoming Spamassassin 3.0 has support for SPF, however it is only in
-the prerelease stage and the new policy daemon in Postfix supports SPF
-so let's install SPF support for Postfix.
+Spamassassin 3.0 has support for SPF, however it is not enabled by default
+and the new policy daemon in Postfix supports SPF so let's install SPF support 
+for Postfix.
 </p>
+
+<note>
+If you want to use SPF with Spamassassin instead simply
+<c>emerge&nbsp;dev-perl/Mail-SPF-Query</c> and restart Amavisd-new.
+</note>
 
 </body>
 </section>
@@ -1548,7 +1554,7 @@ source grab the <path>spf.pl</path> with:
 </p>
 
 <pre caption="Installing spf.pl">
-# <i>cp postfix-2.1.0/examples/smtpd-policy/spf.pl /usr/bin/</i>
+# <i>cp postfix-&lt;version&gt;/examples/smtpd-policy/spf.pl /usr/local/bin/</i>
 </pre>
 
 <note>
@@ -1566,15 +1572,8 @@ portage but it is still quite simple to install them:
 </p>
 
 <pre caption="Installing the needed Perl libraries">
-# <i>echo "dev-perl/Mail-SPF-Query ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Net-CIDR-Lite ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Sys-Hostname-Long ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge Mail-SPF-Query Net-CIDR-Lite Sys-Hostname-Long</i>
 </pre>
-
-<note>
-The above Perl libraries are now in Portage, currently still unstable.
-</note>
 
 <p>
 Now that we have everything in place all we need is to configure
@@ -1583,7 +1582,7 @@ Postfix to use this new policy.
 
 <pre caption="Modifying master.cf to use SPF">
 policy-spf  unix  -       n       n       -       -       spawn
-   user=nobody argv=/usr/bin/perl /usr/bin/spf.pl
+   user=nobody argv=/usr/bin/perl /usr/local/bin/spf.pl
 </pre>
 
 <p>
@@ -2023,6 +2022,10 @@ INSTALL</uri></li>
 <li><uri
 link="http://www.ijs.si/software/amavisd/README.postfix">Amavisd-new
 Postfix README</uri>
+</li>
+<li><uri
+link="http://www.ijs.si/software/amavisd/amavisd-new-docs.html#pbanks">Amavisd-new
+Policy bank documentation</uri>
 </li>
 <li><uri
 link="http://spamassassin.apache.org/full/3.0.x/dist/sql/README">Spamassassin
