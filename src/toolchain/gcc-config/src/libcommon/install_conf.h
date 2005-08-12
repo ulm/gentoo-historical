@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.2 2005/08/12 00:48:18 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.3 2005/08/12 23:10:24 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.3  2005/08/12 23:10:24  eradicator
+ * Added wrapperAliases.  Set missing installConf in hardcoded test configuration.
+ *
  * Revision 1.2  2005/08/12 00:48:18  eradicator
  * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
  *
@@ -38,10 +41,16 @@ typedef struct {
 	char *manpath;
 
 	/* Hash table of profiles provided by this install
-	* Key: (char *) name (such as "x86-vanilla")
-	* Value: (Profile *) Profile associated with this profile name
-	*/
+	 * Key: (char *) name (such as "x86-vanilla")
+	 * Value: (Profile *) Profile associated with this profile name
+	 */
 	Hash *profileHash;
+
+	/* Hash table of executable aliases.
+	 * Key: (char *) name (such as "cc" or "g77")
+	 * Value: (char *) binary to execute instead (such as "gcc" or "gfortran")
+	 */
+	Hash *wrapperAliases;
 } InstallConf;
 
 typedef struct {
