@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.1 2005/08/09 20:15:46 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.2 2005/08/12 00:48:18 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.2  2005/08/12 00:48:18  eradicator
+ * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
+ *
  * Revision 1.1  2005/08/09 20:15:46  eradicator
  * Moving components into subdirs to make build environment more tidy.
  *
@@ -23,7 +26,6 @@
 #ifndef _GCC_CONFIG_SELECTION_CONF_H_
 #define _GCC_CONFIG_SELECTION_CONF_H_
 
-#include "install_conf.h"
 #include "hash.h"
 
 typedef struct {
@@ -37,7 +39,7 @@ typedef struct {
 
 	/* Hash table of installed gcc packages
 	 * Key: (char *) name (such as "i686-pc-linux-gnu-3.4.4")
-	 * Value: (Install *) Profile associated with CHOST
+	 * Value: (InstallConf *) Profile associated with CHOST
 	 */
 	Hash *installHash;
 } SelectionConf;

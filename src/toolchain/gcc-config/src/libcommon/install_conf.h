@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.1 2005/08/09 20:15:46 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.2 2005/08/12 00:48:18 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.2  2005/08/12 00:48:18  eradicator
+ * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
+ *
  * Revision 1.1  2005/08/09 20:15:46  eradicator
  * Moving components into subdirs to make build environment more tidy.
  *
@@ -29,19 +32,32 @@ typedef struct {
 	/* This is the same as the filename for the configuration without the trailing .conf */
 	char *name;
 
+	/* Information shared by all profiles */
+	char *binpath;
+	char *infopath;
+	char *manpath;
+
 	/* Hash table of profiles provided by this install
-	 * Key: (char *) name (such as "x86-vanilla")
-	 * Value: (Profile *) Profile associated with this profile name
+	* Key: (char *) name (such as "x86-vanilla")
+	* Value: (Profile *) Profile associated with this profile name
 	*/
 	Hash *profileHash;
 } InstallConf;
 
+typedef struct {
+	InstallConf *installConf;
+
+	char *name;
+	char *chost;
+	char *specs;
+	char *libdir;
+	char *cflags;
+} Profile;
+
 /** Allocate memory and load the configuration file */
 InstallConf *loadInstallConf(const char *configFileName);
 
-/** Save the configuration file */
-void saveInstallConf(InstallConf *config);
-
-/** Free selectionConf and its contents */
+/** Free installConf and its contents */
 void freeInstallConf(InstallConf *installConf);
+
 #endif
