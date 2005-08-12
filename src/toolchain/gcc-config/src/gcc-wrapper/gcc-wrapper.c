@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.2 2005/08/12 09:57:12 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.3 2005/08/12 10:07:59 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.3  2005/08/12 10:07:59  eradicator
+ * setChost() also sets the profile.
+ *
  * Revision 1.2  2005/08/12 09:57:12  eradicator
  * Initial work on the new wrapper...
  *
@@ -38,6 +41,7 @@
 #include <sys/param.h>
 #include <unistd.h>
 #include "selection_conf.h"
+#include "install_conf.h"
 
 #define CONFIGURATION_FILE "/etc/gcc-config/selection.conf"
 
@@ -61,6 +65,7 @@ typedef struct {
 	char **argv;
 
 	SelectionConf *selectionConf;
+	Profile *profile;
 } WrapperData;
 
 static void wrapperExit(char *msg, ...) {
@@ -76,6 +81,7 @@ static char *abiFlags[] = {
 	"-m32", "-m64", "-mabi", NULL
 };
 
+/** Prepend CFLAGS to the argv list */
 static char **buildNewArgv(char **argv, const char *newFlagsStr) {
 #define MAX_NEWFLAGS 32
 	char *newFlags[MAX_NEWFLAGS];
@@ -114,6 +120,7 @@ static char **buildNewArgv(char **argv, const char *newFlagsStr) {
 	return retargv;
 }
 
+/** Set the chost and profile */
 static void setChost(WrapperData *data) {
 	char tmp[MAXPATHLEN + 1];
 	unsigned i;
@@ -125,22 +132,26 @@ static void setChost(WrapperData *data) {
 	for(i = strlen(tmp); i > 0; i--) {
 		if(tmp[i] == '-') {
 			tmp[i] = '\0';
-			if(getHash(data->selectionConf->selectionHash, tmp) != NULL) {
+			if((data->profile = hashGet(data->selectionConf->selectionHash, tmp)) != NULL) {
 				strcpy(data->chost, tmp);
+				return;
 			}
 		}
 	}
 
 	/* We didn't find a match, so see if we have ${CHOST} set. */
-	tmp = getenv("CHOST");
-	if(tmp != NULL) {
-		if(getHash(data->selectionConf->selectionHash, tmp) != NULL) {
-			strncpy(data->chost, tmp, MAXPATHLEN);
+	if(getenv("CHOST") != NULL) {
+		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CHOST"))) != NULL) {
+			strncpy(data->chost, getenv("CHOST"), MAXPATHLEN);
+			return;
 		}
 	}
 
 	/* No match, use the default */
-	strncpy(data->chost, data->selectionConf->, MAXPATHLEN);
+	strncpy(data->chost, data->selectionConf->defaultChost, MAXPATHLEN);
+	if((data->profile = hashGet(data->selectionConf->selectionHash, data->chost)) == NULL) {
+		wrapperExit("No gcc profile selected.");
+	}
 	return;
 }
 
@@ -148,7 +159,7 @@ int main(int argc, char *argv[]) {
 	WrapperData *data;
 	char *extraCflags = NULL;
 
-	data = (WrapperData *)alloca(sizeof(WrapperData);
+	data = (WrapperData *)alloca(sizeof(WrapperData));
 	if(data == NULL)
 		wrapperExit("%s wrapper: out of memory\n", argv[0]);
 
@@ -163,6 +174,9 @@ int main(int argc, char *argv[]) {
 	/* Figure out out CHOST */
 	setChost(data);
 
+	/* TODO: Figure out the basename of the compiler */
+	/* TODO: Figure out the full path of the binary to execute */
+
 	/* Do we need to set any additional CFLAGS? */
 	if(getenv("ABI")) {
 		/* This functionality is deprecated and subject to be removed
@@ -174,7 +188,7 @@ int main(int argc, char *argv[]) {
 		if (getenv(envvar))
 			extraCflags = getenv(envvar);
 	} else {
-		extraCflags = ((Profile *)hashGet(data->selectionHash, data->chost))->cflags;
+		extraCflags = ((Profile *)hashGet(data->selectionConf->selectionHash, data->chost))->cflags;
 	}
 
 	if(extraCflags) {
