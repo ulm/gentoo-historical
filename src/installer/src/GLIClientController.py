@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.65 2005/08/13 00:28:49 agaffney Exp $
+$Id: GLIClientController.py,v 1.66 2005/08/13 05:54:53 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -211,10 +211,10 @@ class GLIClientController(Thread):
 	# Sets proxy information from the environment
 	def set_proxys(self):
 		if self._configuration.get_ftp_proxy() != "":
-			os.environ['FTP_PROXY'] = self._configuration.get_ftp_proxy()
+			os.environ['ftp_proxy'] = self._configuration.get_ftp_proxy()
 
 		if self._configuration.get_http_proxy() != "":
-			os.environ['HTTP_PROXY'] = self._configuration.get_http_proxy()
+			os.environ['http_proxy'] = self._configuration.get_http_proxy()
 
 		if self._configuration.get_rsync_proxy() != "":
 			os.environ['RSYNC_PROXY'] = self._configuration.get_rsync_proxy()
