@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.57 2005/07/30 22:11:13 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.58 2005/08/13 03:10:32 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -314,7 +314,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if "flags" in newpart:
 					for flag in newpart['flags']:
 						if parted_disk.get_partition(part).is_flag_available(flag):
-							parted_disk.get_partition(part).set_flag(flag)
+							parted_disk.get_partition(part).set_flag(flag, True)
 				# write to disk
 				parted_disk.commit()
 
