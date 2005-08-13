@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.64 2005/06/29 01:41:04 codeman Exp $
+$Id: GLIClientController.py,v 1.65 2005/08/13 00:28:49 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -101,6 +101,7 @@ class GLIClientController(Thread):
 					self.output("Non-fatal error... continuing...")
 				else:
 					raise error
+		self._logger.log("Completed pre_install steps")
 
 		# Wait for the self._install_event to be set before starting the installation.
 		# start_install() is called to pass here
