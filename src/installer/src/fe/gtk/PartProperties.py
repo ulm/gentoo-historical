@@ -217,6 +217,11 @@ class PartProperties(gtk.Window):
 		self.hide_all()
 
 	def ok_clicked(self, button):
+		if not self.resize_hpaned.get_position():
+			msgdlg = gtk.MessageDialog(parent=self.controller.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="You cannot define a 0MB partition.")
+			resp = msgdlg.run()
+			msgdlg.destroy()
+			return
 		if self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()] == "linux-swap":
 			self.part_mount_point_entry.set_text("")
 			self.part_mount_opts_entry.set_text("")
