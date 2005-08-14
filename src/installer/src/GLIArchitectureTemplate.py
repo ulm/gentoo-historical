@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.171 2005/08/10 17:00:07 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.172 2005/08/14 18:03:50 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -31,6 +31,13 @@ class ArchitectureTemplate:
 		self._chroot_dir = self._client_configuration.get_root_mount_point()
 		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
 		self._compile_logfile = "/tmp/compile_output.log"
+		
+		# This will cleanup the logfile if it's a dead link (pointing
+		# to the chroot logfile when partitions aren't mounted, else
+		# no action needs to be taken
+
+		if os.path.islink(self._compile_logfile) and not os.path.exists(self._compile_logfile):
+			os.unlink(self._compile_logfile)
 
 		# cache the list of successfully mounted swap devices here
 		self._swap_devices = []
