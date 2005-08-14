@@ -721,8 +721,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#Reset the Yes/No labels.
 			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 			self._d.add_persistent_args(["--no-label",_(u"No")])
-			boot_string2 = _(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)"
-			if self._d.yesno(boot_string2), height=13, width=55) == self._DLG_YES:
+			boot_string2 = _(u"Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition.  Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead.  Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)")
+			if self._d.yesno(boot_string2, height=13, width=55) == self._DLG_YES:
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
 				self._install_profile.set_boot_loader_mbr(None, False, None)
@@ -879,20 +879,21 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else:
 				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+_(u" Netmask: ")+interfaces[iface][2],0))
 		net_string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
-		code, gateway_iface = self._d.radiolist(net_string3, choices=choice_list, height=20, width=67)
-		if code == self._DLG_OK:  #They made a choice.  Ask the IP if not DHCP.
-			while interfaces[gateway_iface][0] != 'dhcp':
-				code, ip = self._d.inputbox(_(u"Enter the gateway IP address for ") + gateway_iface, init=interfaces[gateway_iface][0])
-				if code != self._DLG_OK:
+		if choice_list:
+			code, gateway_iface = self._d.radiolist(net_string3, choices=choice_list, height=20, width=67)
+			if (code == self._DLG_OK) and gateway_iface:  #They made a choice.  Ask the IP if not DHCP.
+				while interfaces[gateway_iface][0] != 'dhcp':
+					code, ip = self._d.inputbox(_(u"Enter the gateway IP address for ") + gateway_iface, init=interfaces[gateway_iface][0])
+					if code != self._DLG_OK:
+						break
+					if not GLIUtility.is_ip(ip):
+						self._d.msgbox(_(u"Invalid IP Entered!  Please try again."))
+						continue
+					try:
+						self._install_profile.set_default_gateway(None, ip,{'interface': gateway_iface})
+					except:
+						self._d.msgbox(_(u"ERROR! Coult not set the default gateway with IP %s for interface %s") % (ip, gateway_iface))
 					break
-				if not GLIUtility.is_ip(ip):
-					self._d.msgbox(_(u"Invalid IP Entered!  Please try again."))
-					continue
-				try:
-					self._install_profile.set_default_gateway(None, ip,{'interface': gateway_iface})
-				except:
-					self._d.msgbox(_(u"ERROR! Coult not set the default gateway with IP %s for interface %s") % (ip, gateway_iface))
-				break
 		#Now ask for the other info in a large form.
 		error = True
 		hostname = ""
@@ -1406,7 +1407,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		filename = xmlfilename
 		if askforfilename:
 			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
-			if code != self._DLG_OK: 
+			if code != self._DLG_OK or not filename: 
 				return None
 		if GLIUtility.is_file(filename):
 			if not self._d.yesno(_(u"The file %s already exists. Do you want to overwrite it?") % filename) == self._DLG_YES:
