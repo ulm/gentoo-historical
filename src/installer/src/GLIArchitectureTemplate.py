@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.173 2005/08/15 01:27:35 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.174 2005/08/15 21:18:37 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -368,11 +368,13 @@ class ArchitectureTemplate:
 		parts_to_mount = {}
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_minor = -1
 			for minor in tmp_partitions:
 				if not tmp_partitions[minor]['type'] == "free":
 					tmp_minor = minor
 					break
 			time.sleep(1)
+			if tmp_minor == -1: continue
 			# now sleep until it exists
 			while not GLIUtility.is_file(parts[device].get_device() + str(tmp_minor)):
 				self._logger.log("Waiting for device node " + parts[device].get_device() + str(tmp_minor) + " to exist...")
