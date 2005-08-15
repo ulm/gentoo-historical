@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/home-router-howto.xml,v 1.8 2005/08/06 10:57:08 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/home-router-howto.xml,v 1.9 2005/08/15 07:19:26 alin Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ro/home-router-howto.xml" lang="ro">
@@ -17,8 +17,8 @@ Acest document detaliază cum să transformaţi un calculator vechi într-un rou
 care conectează reţeaua de acasă la internet.
 </abstract>
 
-<version>1.9</version>
-<date>2005-08-03</date>
+<version>1.10</version>
+<date>2005-08-14</date>
 
 <chapter>
 <title>Introducere</title>
@@ -206,7 +206,7 @@ USER=vla9h924
 # <i>nano /etc/conf.d/net</i>
 <comment>Adăugaţi o intrare ptr config_eth1 şi setaţi-o pentru adsl:</comment>
 config_eth1=( "adsl" )
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -247,7 +247,7 @@ routes_eth1=( "default gw 66.92.78.1" )
 nameserver 123.123.123.123
 
 <comment>Atât pentru adrese IP Dinamice cât şi pentru cele Statice:</comment>
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -413,24 +413,28 @@ este instalat atunci rulaţi <c>emerge iptables</c>.
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
+<comment>Copiaţi aceste exemple ...</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
+
 <comment>Apoi securizăm serviciile să funcţioneze numai pe reţeaua locală</comment>
-# <i>iptables -I INPUT 1 -i eth0 -j ACCEPT</i>
+# <i>iptables -I INPUT 1 -i ${LAN} -j ACCEPT</i>
 # <i>iptables -I INPUT 1 -i lo -j ACCEPT</i>
-# <i>iptables -A INPUT -p UDP --dport bootps -i ! eth0 -j REJECT</i>
-# <i>iptables -A INPUT -p UDP --dport domain -i ! eth0 -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport bootps -i ! ${LAN} -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport domain -i ! ${LAN} -j REJECT</i>
 
 <comment>(Opţional) Asigură acces la serverul ssh din WAN</comment>
-# <i>iptables -A INPUT -p TCP --dport ssh -i eth1 -j ACCEPT</i>
+# <i>iptables -A INPUT -p TCP --dport ssh -i ${WAN} -j ACCEPT</i>
 
 <comment>Nu acceptăm pachete TCP/UDP la porturile privilegiate</comment>
-# <i>iptables -A INPUT -p TCP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
-# <i>iptables -A INPUT -p UDP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p TCP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p UDP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
 
 <comment>În final adăugăm regulile pentru NAT</comment>
-# <i>iptables -I FORWARD -i eth0 -d 192.168.0.0/255.255.0.0 -j DROP</i>
-# <i>iptables -A FORWARD -i eth0 -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -A FORWARD -i eth1 -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+# <i>iptables -I FORWARD -i ${ALN} -d 192.168.0.0/255.255.0.0 -j DROP</i>
+# <i>iptables -A FORWARD -i ${LAN} -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -A FORWARD -i ${WAN} -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE</i>
 <comment>Comunicăm kernel-ului că operaţia de forward are loc</comment>
 # <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
 # <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
@@ -485,7 +489,7 @@ trebui să fie setate pe porturile 123 şi 567.
 
 <p>
 Toate regulile pentru trasnferul de porturi sunt de forma <c>iptables -t nat -A
-PREROUTING [-p protocol] --dport [port extern pe router] -i eth1 -j DNAT --to
+PREROUTING [-p protocol] --dport [port extern pe router] -i ${WAN} -j DNAT --to
 [ip/port care trebuie transferat]</c>. iptables nu acceptă nume de maşini gazdă
 când transferă porturile. Dacă transferaţi un port extern către acelaşi port
 folosit pe maşina curentă, puteţi omite portul destinaţie. Consultaţi pagina de
@@ -493,29 +497,33 @@ manual iptables(8) pentru mai multe informaţii.
 </p>
 
 <pre caption="Rularea comenzilor iptables">
+<comment>Copiaţi aceste exemple ...</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
+
 <comment>Transferă portul 2 către ssh pe un sistem gazdă intern</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i eth1 -j DNAT --to 192.168.0.2:22</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i ${WAN} -j DNAT --to 192.168.0.2:22</i>
 
 <comment>Transferă portul FTP la un sistem gazdă intern</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>Transferă portul HTTP la un sistem gazdă intern</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>Transferă portul VNC pentru sisteme gazdă interne</comment>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i eth1 -j DNAT --to 192.168.0.2</i>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i eth1 -j DNAT --to 192.168.0.3:5900</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i ${WAN} -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i ${WAN} -j DNAT --to 192.168.0.3:5900</i>
 <comment>Dacă doriţi ca să vă conectaţi prin VNC la 192.168.0.3, adăugaţi ':1' numelui router-ului</comment>
 
 <comment>Transferă porturile Bittorrent</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i eth1 -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
 
 <comment>Suport pentru Game Cube Warp Pipe</comment>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>Suport pentru Playstation2 Online</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 </pre>
 
 <note>
@@ -756,7 +764,7 @@ ataşamente mari, reducând încărcarea traficulului.
 # <i>emerge qmail</i>
 <comment>aveţi grijă `hostname` este setat corect</comment>
 # <i>ebuild /var/db/pkg/*-*/qmail-1.03-r*/*.ebuild config</i>
-# <i>iptables -I INPUT -p tcp --dport smtp -i ! eth0 -j REJECT</i>
+# <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
 <!--
@@ -806,10 +814,10 @@ TODO
 </chapter>
 
 <chapter>
-<title>Depanare</title>
+<title>Probleme</title>
 
 <section>
-<title>Intrumente Utile</title>
+<title>Instrumente Utile</title>
 <body>
 
 <p>
