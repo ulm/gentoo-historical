@@ -343,7 +343,7 @@ on partitioning and the various filesystem types available in Linux.""")
 								break
 						elif part_action == _(u"Mount Point"):
 							mountpoint_menu = ["/","/boot","/etc","/home","/lib","/mnt","/mnt/windows","/opt","/root","/usr","/usr/local","/usr/portage","/var",_(u"Other")]
-							code, mountpt = self._d.menu(_(u"Choose a mountpoint from the list or choose Other to type your own for partition ")+str(part_to_edit)+_(u".  It is currently set to:")+tmppart.getmountpoint(), choices=self._dmenu_list_to_choices(mountpoint_menu)) #may have to make that an integer
+							code, mountpt = self._d.menu(_(u"Choose a mountpoint from the list or choose Other to type your own for partition ")+str(part_to_edit)+_(u".  It is currently set to:")+tmppart.get_mountpoint(), choices=self._dmenu_list_to_choices(mountpoint_menu)) #may have to make that an integer
 							if code == self._DLG_OK:
 								mountpt = mountpoint_menu[int(mountpt)-1]
 								if mountpt == _(u"Other"):
