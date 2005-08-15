@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.58 2005/08/13 03:10:32 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.59 2005/08/15 01:24:01 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -514,7 +514,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device]
+			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
