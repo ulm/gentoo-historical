@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.9 2005/08/12 09:46:30 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.10 2005/08/15 21:14:29 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.10  2005/08/15 21:14:29  eradicator
+ * Changed sortedKeys to hashKeysSorted and added hashKeys which provides the data unsorted.  Fixed a bug in the quickSort when the new pivot was 0.
+ *
  * Revision 1.9  2005/08/12 09:46:30  eradicator
  * Style cleanup.
  *
@@ -279,19 +282,20 @@ static char **quickSort(char **data, unsigned left, unsigned right) {
 
 		newPivotIndex = quickSortPartition(data, left, right, oldPivotIndex);
 
-		quickSort(data, left, newPivotIndex-1);
+		if(newPivotIndex > left)
+			quickSort(data, left, newPivotIndex-1);
 		quickSort(data, newPivotIndex+1, right);
 	}
 	return data;
 }
 
-/** Return an array of all keys hash table sorted. The array is null
- *  terminated. This memory is malloc()d, so do't forget to free it.
+/** Return an array of all keys hash table. The array is null terminated
+ *  This memory is malloc()d, so do't forget to free it.
  *  Additionally, doing a hashDel() could leave this data invalid resulting
  *  in a segfault if you're not careful since the (const char*) are
  *  pointing to memory managed by hash.c
  */
-const char **sortedKeys(Hash *hash) {
+static char **_hashKeys(Hash *hash) {
 	char **keys = (char **)malloc(sizeof(char *) * (hash->nEntries + 1));
 	HashEntry *entry;
 	unsigned i, hc;
@@ -323,6 +327,22 @@ const char **sortedKeys(Hash *hash) {
 	/* Null terminate */
 	keys[i] = NULL;
 
+	return keys;
+}
+
+const inline char **hashKeys(Hash *hash) {
+	return (const char **)_hashKeys(hash);
+}
+
+/** Like hashKeys, but sorted */
+const char **hashKeysSorted(Hash *hash) {
+	char **keys = _hashKeys(hash);
+	
+	/* Make sure we've got our memory */
+	if(keys == NULL) {
+		return NULL;
+	}
+
 	return (const char **)quickSort(keys, 0, hash->nEntries - 1);
 }
 
@@ -347,7 +367,7 @@ int main(int argc, char **argv) {
 	}
 
 	printf("Sorted:\n");
-	keys = sortedKeys(myHash);
+	keys = hashKeysSorted(myHash);
 	if(keys) {
 		for(i=0; i < myHash->nEntries; i++) {
 			printf("%s = %s\n", keys[i], (char *)hashGet(myHash,keys[i]));
@@ -370,7 +390,7 @@ int main(int argc, char **argv) {
 	}
 
 	printf("Sorted:\n");
-	keys = sortedKeys(myHash);
+	keys = hashKeysSorted(myHash);
 	if(keys) {
 		for(i=0; i < myHash->nEntries; i++) {
 			printf("%s\n", keys[i]);
