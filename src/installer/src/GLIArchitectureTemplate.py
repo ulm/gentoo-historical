@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.172 2005/08/14 18:03:50 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.173 2005/08/15 01:27:35 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -810,23 +810,26 @@ class ArchitectureTemplate:
 		# Get cron daemon info
 		cron_daemon_pkg = self._install_profile.get_cron_daemon_pkg()
 		if cron_daemon_pkg:
-			# Emerge Cron Daemon
-			exitstatus = self._emerge(cron_daemon_pkg)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
-
-			# Add Cron Daemon to default runlevel
-			# After we find the name of it's initscript
-			# This current code is a hack, and should be better.
-			initscript = cron_daemon_pkg[(cron_daemon_pkg.find('/')+1):]
-			self._add_to_runlevel(initscript)
-		
-			# If the Cron Daemon is not vixie-cron, run crontab			
-			if "vixie-cron" not in cron_daemon_pkg:
-				exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
+			if cron_daemon_pkg == "none":
+				self._logger.log("Skipping installation of cron daemon")
+			else:
+				# Emerge Cron Daemon
+				exitstatus = self._emerge(cron_daemon_pkg)
 				if not GLIUtility.exitsuccess(exitstatus):
-					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
-			self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
+					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
+
+				# Add Cron Daemon to default runlevel
+				# After we find the name of it's initscript
+				# This current code is a hack, and should be better.
+				initscript = cron_daemon_pkg[(cron_daemon_pkg.find('/')+1):]
+				self._add_to_runlevel(initscript)
+
+				# If the Cron Daemon is not vixie-cron, run crontab			
+				if "vixie-cron" not in cron_daemon_pkg:
+					exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
+					if not GLIUtility.exitsuccess(exitstatus):
+						raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
+				self._logger.log("Cron daemon installed and configured: "+cron_daemon_pkg)
 	
 	##
 	# This will parse the partitions looking for types that require fstools and emerge them if found.
