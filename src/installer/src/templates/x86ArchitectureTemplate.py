@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.59 2005/08/15 01:24:01 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.60 2005/08/15 17:50:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -577,7 +577,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _lilo_add_windows(self, newliloconf):
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device]
+			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
 				if (tmp_partitions[partition]['type'] == "vfat") or (tmp_partitions[partition]['type'] == "ntfs"):
 					newliloconf += "other="+device+str(int(tmp_partitions[partition]['minor']))+"\n"
