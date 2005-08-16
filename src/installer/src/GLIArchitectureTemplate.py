@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.175 2005/08/16 16:00:12 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.176 2005/08/16 18:49:43 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -280,6 +280,7 @@ class ArchitectureTemplate:
 			del os.environ["PORTAGE_TMPDIR"]
 			GLIUtility.spawn("cp /etc/make.conf " + self._chroot_dir + "/etc/make.conf")
 			GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + self._chroot_dir + "/etc/make.profile")
+			GLIUtility.spawn("cp -f /etc/inittab.old " + self._chroot_dir + "/etc/inittab")
 			chrootscript = r"""
 			#!/bin/bash
 
