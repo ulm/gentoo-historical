@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.174 2005/08/15 21:18:37 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.175 2005/08/16 16:00:12 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -292,13 +292,12 @@ class ArchitectureTemplate:
 			source /etc/profile
 			modules-update
 			[ -f /usr/bin/binutils-config ] && binutils-config 1
+			source /etc/profile
+			mount -t proc none /proc
+			cd /dev
+			/sbin/MAKEDEV generic-i386
+			umount /proc
 			"""
-#			source /etc/profile
-#			mount -t proc none /proc
-#			cd /dev
-#			/sbin/MAKEDEV generic-i386
-#			umount /proc
-#			"""
 			script = open(self._chroot_dir + "/tmp/extrastuff.sh", "w")
 			script.write(chrootscript)
 			script.close()
