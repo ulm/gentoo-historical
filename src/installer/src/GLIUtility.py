@@ -698,6 +698,9 @@ def get_local_use_flags():
 		use_local_desc[flagname] = desc
 	f.close()
 	return use_local_desc
+	
+def get_cd_snapshot_uri():
+	return spawn("ls /mnt/cdrom/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
 
 def cdata(text):
 	if text.startswith("<![CDATA["):

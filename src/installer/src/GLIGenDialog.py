@@ -520,6 +520,16 @@ on partitioning and the various filesystem types available in Linux.""")
 	
 	def set_portage_tree(self):
 	# This section will ask whether to sync the tree, whether to use a snapshot, etc.
+		if self._install_profile.get_dynamic_stage3():  #special case
+			try:
+				self._install_profile.set_portage_tree_sync_type(None,"snapshot", None)
+				cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
+				self._install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set the portage cd snapshot URI!"))
+			return
+			
+		#Normal case
 		menulist = [("Sync", _(u"Normal. Use emerge sync RECOMMENDED!")),
 		("Webrsync", _(u"HTTP daily snapshot. Use when rsync is firewalled.")),
 		("Snapshot", _(u"Use a portage snapshot, either a local file or a URL")),
@@ -529,7 +539,11 @@ on partitioning and the various filesystem types available in Linux.""")
 			return
 		self._install_profile.set_portage_tree_sync_type(None, portage_tree_sync.lower(), None)
 		if portage_tree_sync == "Snapshot":
-			code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=self._install_profile.get_portage_tree_snapshot_uri())
+			if self._install_profile.get_portage_tree_snapshot_uri():
+				initval = self._install_profile.get_portage_tree_snapshot_uri()
+			else:
+				initval = GLIUtility.get_cd_snapshot_uri()
+			code, snapshot = self._d.inputbox(_(u"Enter portage tree snapshot URI"), init=initval)
 			if code == self._DLG_OK:
 				if snapshot: 
 					if not GLIUtility.is_uri(snapshot, checklocal=self.local_install):
@@ -545,6 +559,10 @@ on partitioning and the various filesystem types available in Linux.""")
 
 	def set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
+		#special case for dynamic stage3
+		if self._install_profile.get_dynamic_stage3():
+			return
+		
 		make_conf = self._install_profile.get_make_conf()
 		
 		self._d.msgbox(_(u"""The installer will now gather information regarding the contents of /etc/make.conf
@@ -1062,7 +1080,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				choices_list = [("gaim",_(u"GTK Instant Messenger client"),int("gaim" in install_packages)),
 				("gftp",_(u"Gnome based FTP Client"),int("gftp" in install_packages)),
 				("evolution",_(u"A GNOME groupware application, a Microsoft Outlook workalike"),int("evolution" in install_packages)),
+				("mozilla", _(u"The Mozilla Web Browser"),int("mozilla" in install_packages)),
 				("mozilla-firefox",_(u"The Mozilla Firefox Web Browser"),int("mozilla-firefox" in install_packages)),
+				("mozilla-thunderbird", _(u"Thunderbird Mail Client"),int("mozilla-thunderbird" in install_packages)),
 				("mplayer",_(u"Media Player for Linux"),int("mplayer" in install_packages)),
 				("openoffice",_(u"OpenOffice.org, a full office productivity suite."),int("openoffice" in install_packages)),
 				("openoffice-bin",_(u"Same as OpenOffice but a binary package (no compiling!)"),int("openoffice-bin" in install_packages)),
