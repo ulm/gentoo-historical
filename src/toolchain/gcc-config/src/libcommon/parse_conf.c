@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.1 2005/08/16 17:00:52 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.2 2005/08/16 17:34:57 sekretarz Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.2  2005/08/16 17:34:57  sekretarz
+ * Adding new config framework
+ *
  * Revision 1.1  2005/08/16 17:00:52  sekretarz
  * Adding working parser.
  *
@@ -145,7 +148,6 @@ void setParserCallback(configParser *parser, int (*section_cb)(char * /* Section
 	parser->key_cb = key_cb;
 }
 
-#define DEBUG_PARSE
 #ifdef DEBUG_PARSE
 
 int section_cb(char *section, void *data)

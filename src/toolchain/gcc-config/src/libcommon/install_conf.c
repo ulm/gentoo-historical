@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.3 2005/08/12 23:10:24 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.4 2005/08/16 17:34:57 sekretarz Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.4  2005/08/16 17:34:57  sekretarz
+ * Adding new config framework
+ *
  * Revision 1.3  2005/08/12 23:10:24  eradicator
  * Added wrapperAliases.  Set missing installConf in hardcoded test configuration.
  *
@@ -29,15 +32,24 @@
 #include "install_conf.h"
 #include <stdlib.h>
 
+int installConfSectionCB(char *section, void *data)
+{
+	return 0;
+}
+
+int installConfKeyCB(char *key, char *value, void *data)
+{
+	return 0;
+}
+
 /** Allocate memory and load the configuration file */
 InstallConf *loadInstallConf(const char *configFileName) {
-	InstallConf *retval;
+	InstallConf *retval =  (InstallConf *)malloc(sizeof(InstallConf));
 
 #ifdef USE_HARDCODED_CONF
 	Profile *profile;
 
 	/* Not production code... */
-	retval = (InstallConf *)malloc(sizeof(InstallConf));
 	retval->name = "x86_64-pc-linux-gnu-3.4.4";
 	retval->binpath = "/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4";
 	retval->infopath = "/usr/share/gcc-data/x86_64-pc-linux-gnu/3.4.4/info";
@@ -84,7 +96,13 @@ InstallConf *loadInstallConf(const char *configFileName) {
 	profile->cflags = "-m32";
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
-/* TODO: Read in config file */
+	configParser *config = newParser(configFileName);
+	setParserData(config, retval);
+	setParserCallback(config, installConfSectionCB, installConfKeyCB);
+
+	parseFile(config);
+	
+	freeParser(config);					
 #endif
 
 	return retval;

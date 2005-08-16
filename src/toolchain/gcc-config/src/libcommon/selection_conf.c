@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.3 2005/08/12 09:45:52 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.4 2005/08/16 17:34:57 sekretarz Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.4  2005/08/16 17:34:57  sekretarz
+ * Adding new config framework
+ *
  * Revision 1.3  2005/08/12 09:45:52  eradicator
  * Added defaultChost.
  *
@@ -28,18 +31,28 @@
 
 #include "selection_conf.h"
 #include "install_conf.h"
+#include "parse_conf.h"
 #include <stdlib.h>
 #include <string.h>
 
+int selectionConfSectionCB(char *section, void *data)
+{
+	return 0;
+}
+
+int selectionConfKeyCB(char *key, char *value, void *data)
+{
+	return 0;
+}
+
 /** Allocate memory and load the configuration file */
 SelectionConf *loadSelectionConf(const char *configFileName) {
-	SelectionConf *retval;
+	SelectionConf *retval = (SelectionConf *)malloc(sizeof(SelectionConf));
 
 #ifdef USE_HARDCODED_CONF
 	InstallConf *installConf;
 
 	/* Not production code... */
-	retval = (SelectionConf *)malloc(sizeof(SelectionConf));
 	retval->fileName = (char *)malloc(sizeof(char) * (strlen(configFileName) + 1));
 	strcpy(retval->fileName, configFileName);
 	retval->installHash = hashNew(10);
@@ -53,7 +66,13 @@ SelectionConf *loadSelectionConf(const char *configFileName) {
 	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-vanilla"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	/* TODO: Read in config file */
+	configParser *config = newParser(configFileName);
+	setParserData(config, retval);
+	setParserCallback(config, selectionConfSectionCB, selectionConfKeyCB);
+
+	parseFile(config);
+
+	freeParser(config);
 #endif
 
 	return retval;
