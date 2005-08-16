@@ -702,6 +702,21 @@ def get_local_use_flags():
 def get_cd_snapshot_uri():
 	return spawn("ls /mnt/cdrom/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
 
+def validate_uri(uri):
+	# Get tuple of matches
+	# 0 - Protocol
+	# 1 - Username
+	# 2 - Password
+	# 3 - Host
+	# 4 - Port
+	# 5 - Path
+	uriparts = parse_uri(uri)
+	if uriparts[0] in ('http', 'https', 'ftp'):
+		ret = GLIUtility.spawn("wget --spider " + uri)
+		if not GLIUtility.exitsuccess(ret):
+			return False
+	return True
+
 def cdata(text):
 	if text.startswith("<![CDATA["):
 		return text
