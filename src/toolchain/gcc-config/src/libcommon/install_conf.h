@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.4 2005/08/16 17:34:57 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.5 2005/08/16 17:44:46 sekretarz Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.5  2005/08/16 17:44:46  sekretarz
+ * *** empty log message ***
+ *
  * Revision 1.4  2005/08/16 17:34:57  sekretarz
  * Adding new config framework
  *
@@ -32,6 +35,7 @@
 #ifndef _GCC_CONFIG_INSTALL_CONF_H_
 #define _GCC_CONFIG_INSTALL_CONF_H_
 
+#include <stdio.h>
 #include "hash.h"
 #include "parse_conf.h"
 
