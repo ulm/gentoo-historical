@@ -713,7 +713,7 @@ def validate_uri(uri):
 	uriparts = parse_uri(uri)
 	if uriparts[0] in ('http', 'https', 'ftp'):
 		ret = spawn("wget --spider " + uri)
-		return exitsuccess(ret):
+		return exitsuccess(ret)
 	elif uriparts[0] == "file":
 		return is_file(uriparts[5])
 	return True
