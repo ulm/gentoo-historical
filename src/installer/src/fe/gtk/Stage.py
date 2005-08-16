@@ -1,5 +1,6 @@
 import gtk
 import GLIScreen
+import GLIUtility
 
 class Panel(GLIScreen.GLIScreen):
 

@@ -1,5 +1,6 @@
 import gtk
 import GLIScreen
+import GLIUtility
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -81,12 +82,22 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_BACK    = True
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
-		self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
-#		if self.active_selection == "sync": self.active_selection = "webrsync" # temporary
-		self.radio_syncs[self.active_selection].set_active(True)
-		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_tree_snapshot_uri())
-		if not self.entry_portage_snapshot_uri.get_text():
+		if self.controller.install_profile.get_dynamic_stage3():
 			self.entry_portage_snapshot_uri.set_text(GLIUtility.get_cd_snapshot_uri())
+			self.radio_syncs["snapshot"].set_active(True)
+			self.active_selection = "snapshot"
+			for radio in self.radio_syncs:
+				self.radio_syncs[radio].set_sensitive(False)
+			self.entry_portage_snapshot_uri.set_sensitive(False)
+		else:
+			self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
+			self.radio_syncs[self.active_selection].set_active(True)
+			self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_tree_snapshot_uri())
+			if not self.entry_portage_snapshot_uri.get_text():
+				self.entry_portage_snapshot_uri.set_text(GLIUtility.get_cd_snapshot_uri())
+			for radio in self.radio_syncs:
+				self.radio_syncs[radio].set_sensitive(True)
+			self.entry_portage_snapshot_uri.set_sensitive(True)
 
 	def deactivate(self):
 		if self.active_selection == "snapshot":
