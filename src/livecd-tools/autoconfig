@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.40 2005/08/15 20:53:23 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.41 2005/08/16 22:34:19 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -12,6 +12,7 @@ APM="no"
 ACPI="no"
 IDEDMA="yes"
 ALSA="yes"
+X11="yes"
 
 get_config() {
 	CMDLINE="$(cat /proc/cmdline)"
@@ -25,6 +26,7 @@ get_config() {
 			APM="no"
 			ACPI="no"
 			ALSA="no"
+			X11="no"
 		fi
 
 		if [ "${x}" = "nodhcp" ]
@@ -68,13 +70,18 @@ get_config() {
 		then
 			ALSA="no"
 		fi
+
+		if [ "${x}" = "nox" ]
+		then
+			X11="no"
+		fi
 	done
 }
 
 depend() {
 	need modules
 	before net
-#	provide gpm pcmcia apmd acpid coldplug hdparm alsasound
+#	provide gpm pcmcia apmd acpid coldplug hdparm alsasound x-setup
 }
 
 # Checks whether a service will be started by autoconfig.
@@ -278,10 +285,23 @@ start() {
 		ebegin ${BAD}"Skipping ALSA detection as requested on boot commandline."
 	fi
 
+	if [ "${DETECT}" = "yes" ]
+	then
+		if [ -x /etc/init.d/x-setup ]
+		then
+			schedule_service_startup x-setup
+		fi
+	fi
+
+	if [ "${X11}" = "no" ]
+	then
+		touch /etc/init.d/.noxdm
+	fi
+
 	if [ -n "${XDESC}" -o -n "${XDESC}" ]
 	then
-        ebegin ${GOOD}"VideoCard:   ${WARN} ${XDESC}"
-        eend
+		ebegin ${GOOD}"VideoCard:   ${WARN} ${XDESC}"
+		eend
 	fi
 
 	killall hwsetup 2>/dev/null
