@@ -85,6 +85,8 @@ a brief description beside it.
 #		if self.active_selection == "sync": self.active_selection = "webrsync" # temporary
 		self.radio_syncs[self.active_selection].set_active(True)
 		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_tree_snapshot_uri())
+		if not self.entry_portage_snapshot_uri.get_text():
+			self.entry_portage_snapshot_uri.set_text(GLIUtility.get_cd_snapshot_uri())
 
 	def deactivate(self):
 		if self.active_selection == "snapshot":
