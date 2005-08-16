@@ -251,6 +251,9 @@ on partitioning and the various filesystem types available in Linux.""")
 				devices[drive].set_partitions_from_disk()
 				drives.append(drive)
 				choice_list.append((drive, devices[drive].get_model()))
+		else:
+			for drive in drives:
+				choice_list.append((drive, devices[drive].get_model()))
 		#choice_list.append(("Other", "Type your own drive name))  # I DONT THINK GLISD CAN DO NONEXISTANT DRIVES
 		while 1:
 			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?\n Info provided: Type, mkfs Options, Mountpoint, Mountopts, Size in MB"), choices=choice_list, cancel=_(u"Save and Continue"))
