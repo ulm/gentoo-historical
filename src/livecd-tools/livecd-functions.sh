@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.12 2005/07/07 19:52:42 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.13 2005/08/16 19:02:33 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -135,26 +135,34 @@ livecd_write_wireless_conf() {
 	SSID="$(cat ${iface}.SSID)"
 	if [ -n "${SSID}" ]
 	then
-		WEP_TYPE="$(cat ${iface}.WEPTYPE)"
-		if [ -n "${WEP_TYPE}" ]
-		then
-			WEP_KEY="$(cat ${iface}.WEPKEY)"
-			if [ -n "${WEP_KEY}" ]
-			then
-				SSID_TRANS="$(echo ${SSID//[![:word:]]/_})"
-				echo "# This wireless configuration file was built by net-setup" > /etc/conf.d/wireless
-				case ${WEP_TYPE} in
-					1)
-						echo "key_${SSID_TRANS}=\"${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
-					;;
-					2)
-						echo "key_${SSID_TRANS}=\"s:${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
-					;;
-				esac
-				echo "preferred_aps=( \"${SSID}\" )" >> /etc/conf.d/wireless
-				echo "associate_order=\"forcepreferredonly\"" >> /etc/conf.d/wireless
-			fi
-		fi
+		echo "# This wireless configuration file was built by net-setup" > /etc/conf.d/wireless
+		WEP="$(cat ${iface}.WEPTYPE)"
+		case ${WEP} in
+			1)
+				WEP_TYPE="$(cat ${iface}.WEPTYPE)"
+				if [ -n "${WEP_TYPE}" ]
+				then
+					WEP_KEY="$(cat ${iface}.WEPKEY)"
+					if [ -n "${WEP_KEY}" ]
+					then
+						SSID_TRANS="$(echo ${SSID//[![:word:]]/_})"
+						case ${WEP_TYPE} in
+							1)
+								echo "key_${SSID_TRANS}=\"${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
+							;;
+							2)
+								echo "key_${SSID_TRANS}=\"s:${WEP_KEY} enc open\"" >> /etc/conf.d/wireless
+							;;
+						esac
+					fi
+				fi
+			;;
+			2)
+				:
+			;;
+		esac
+		echo "preferred_aps=( \"${SSID}\" )" >> /etc/conf.d/wireless
+		echo "associate_order=\"forcepreferredonly\"" >> /etc/conf.d/wireless
 	fi
 }
 
@@ -164,7 +172,7 @@ livecd_config_ip() {
 	DHCP="$(cat ${iface}.DHCP)"
 	case ${DHCP} in
 		1)
-			/sbin/dhcpcd -t 10 -h $(hostname) ${iface} &
+			/sbin/dhcpcd -n -t 10 -h $(hostname) ${iface} &
 		;;
 		2)
 			dialog --title "IP address" --inputbox "Please enter an IP address for ${iface}:" 20 50 "192.168.1.1" 2> ${iface}.IP
@@ -341,6 +349,9 @@ livecd_fix_inittab() {
 	then
 		return 1
 	fi
+
+	# Create a backup
+	cp -f /etc/inittab /etc/inittab.old
 
 	# Comment out current getty settings
 	sed -i -e '/^c[0-9]/ s/^/#/' /etc/inittab
