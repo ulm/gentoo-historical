@@ -87,6 +87,19 @@ a brief description beside it.
 		self.entry_portage_snapshot_uri.set_text(self.controller.install_profile.get_portage_tree_snapshot_uri())
 
 	def deactivate(self):
+		if self.active_selection == "snapshot":
+			if not self.entry_portage_snapshot_uri.get_text():
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a portage snapshot URI. Continue?")
+				resp = msgdlg.run()
+				msgdlg.destroy()
+				if resp == gtk.RESPONSE_NO:
+					return False
+			elif not GLIUtility.validate_uri(entry_portage_snapshot_uri.get_text()):
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="The portage snapshot URI you entered does not exist. Continue?")
+				resp = msgdlg.run()
+				msgdlg.destroy()
+				if resp == gtk.RESPONSE_NO:
+					return False
 		self.controller.install_profile.set_portage_tree_sync_type(None, self.active_selection, None)
 		try: self.controller.install_profile.set_portage_tree_snapshot_uri(None, self.entry_portage_snapshot_uri.get_text(), None)
 		except: pass

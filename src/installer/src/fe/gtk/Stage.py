@@ -110,12 +110,19 @@ Each option has a brief description beside it.
 		self.check_dynamic.set_active(self.controller.install_profile.get_dynamic_stage3())
 
 	def deactivate(self):
-		if not self.entry_stage_tarball_uri.get_text() and not self.check_dynamic.get_active():
-			msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a stage tarball URI. Continue?")
-			resp = msgdlg.run()
-			msgdlg.destroy()
-			if resp == gtk.RESPONSE_NO:
-				return False
+		if not self.check_dynamic.get_active():
+			if not self.entry_stage_tarball_uri.get_text():
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a stage tarball URI. Continue?")
+				resp = msgdlg.run()
+				msgdlg.destroy()
+				if resp == gtk.RESPONSE_NO:
+					return False
+			elif not GLIUtility.validate_uri(self.entry_stage_tarball_uri.get_text()):
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="The stage tarball URI you entered does not exist. Continue?")
+				resp = msgdlg.run()
+				msgdlg.destroy()
+				if resp == gtk.RESPONSE_NO:
+					return False
 		self.controller.install_profile.set_install_stage(None, self.active_selection, None)
 		if self.active_selection == 3:
 			self.controller.install_profile.set_grp_install(None, self.check_grp.get_active(), None)
@@ -123,5 +130,5 @@ Each option has a brief description beside it.
 		else:
 			self.controller.install_profile.set_grp_install(None, False, None)
 		try: self.controller.install_profile.set_stage_tarball_uri(None, self.entry_stage_tarball_uri.get_text(), None)
-		except:	pass
+		except: pass
 		return True
