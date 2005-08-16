@@ -712,8 +712,8 @@ def validate_uri(uri):
 	# 5 - Path
 	uriparts = parse_uri(uri)
 	if uriparts[0] in ('http', 'https', 'ftp'):
-		ret = GLIUtility.spawn("wget --spider " + uri)
-		if not GLIUtility.exitsuccess(ret):
+		ret = spawn("wget --spider " + uri)
+		if not exitsuccess(ret):
 			return False
 	return True
 
