@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.66 2005/08/13 05:54:53 agaffney Exp $
+$Id: GLIClientController.py,v 1.67 2005/08/17 04:19:28 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -241,7 +241,7 @@ class GLIClientController(Thread):
 		self._logger.log("Setting root password.")
 		if self._configuration.get_root_passwd() != "":
 			# The password specified in the configuration is encrypted.
-			status = GLIUtility.spawn('echo "root:' + self._configuration.get_root_passwd() + '" | chpasswd -e')
+			status = GLIUtility.spawn("echo 'root:" + self._configuration.get_root_passwd() + "' | chpasswd -e")
 	
 			if not GLIUtility.exitsuccess(status):
 				self._logger.log("ERROR! : Could not set the root password on the livecd environment!")
