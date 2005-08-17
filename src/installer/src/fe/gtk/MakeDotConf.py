@@ -181,6 +181,10 @@ class Panel(GLIScreen.GLIScreen):
 			else:
         	                self.treedata.append([False, flag, self.use_desc[flag]])
 		self.treeview.set_model(self.treedata)
+		if self.controller.install_profile.get_grp_install():
+			self.treeview.set_sensitive(False)
+		else:
+			self.treeview.set_sensitive(True)
 		# Parsing CFLAGS
 		if not self.make_conf_values.has_key('CFLAGS') or not self.make_conf_values['CFLAGS']:
 			self.make_conf_values['CFLAGS'] = self.system_cflags
