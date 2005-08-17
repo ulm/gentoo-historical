@@ -19,7 +19,7 @@ class Panel(GLIScreen.GLIScreen):
 	horiz   = gtk.HBox(False, 10)
 
         content_str = """
-If you click finish here, the installer will generate the xml profile.
+If you click Install here, the installer will generate the xml profile.
 """
 	# pack the description
 	vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
