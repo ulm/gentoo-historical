@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.60 2005/08/15 17:50:58 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.61 2005/08/18 19:59:11 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -402,15 +402,21 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					grub_root_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					root_device = device
 		if GLIUtility.is_file(root+file_name2):
-			exitstatus = GLIUtility.spawn("rm "+root+file_name2)		
+			exitstatus = GLIUtility.spawn("rm "+root+file_name2)
+			if not GLIUtility.exitsuccess(exitstatus):
+				raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Could not delete the old device map for grub.")			
 		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
+		if not GLIUtility.exitsuccess(exitstatus1):
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
 		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
+		if not GLIUtility.exitsuccess(exitstatus2):
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the kernels in /boot")
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
 			exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/init* > "+file_name4)
 		else:
 			exitstatus3 = GLIUtility.spawn("touch "+file_name4)
-		if (exitstatus1 != 0) or (exitstatus2 != 0) or (exitstatus3 != 0):
-			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error in one of THE THREE run commands")
+		if not GLIUtility.exitsuccess(exitstatus3):
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error either listing the initrds or touching "+file_name4)
 		self._logger.log("Bootloader: the three information gathering commands have been run")
 		"""
 		read the device map.  sample looks like this:
@@ -526,9 +532,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					root_device = device
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
-		exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/initramfs-* >> "+file_name3)
-		if (exitstatus0 != 0) or (exitstatus1 != 0):
-			raise GLIException("BootloaderError", 'fatal', '_configure_lilo', "Error in one of THE TWO run commands")
+		if (exitstatus0 != 0):
+			raise GLIException("BootloaderError", 'fatal', '_configure_lilo', "Could not list kernels in /boot or no kernels found.")
+		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
+			exitstatus1 = GLIUtility.spawn("ls "+root+"/boot/init* >> "+file_name3)
+			if (exitstatus1 != 0):
+				raise GLIException("BootloaderError", 'fatal', '_configure_lilo', "Could not list initrds in /boot")
 		g = open(file_name3)
 		kernel_name = g.readlines()
 		g.close()
@@ -554,9 +563,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			newliloconf += "#"
 		newliloconf += "vga=788                   # Framebuffer setting. Adjust to your own will\n"
 		newliloconf += "image=/boot"+kernel_name[0][5:]+" \n"
-		newliloconf += "  label=gentoo \n  read-only \n  root=/dev/ram0 \n"
-		newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + bootloader_kernel_args + "\" \n"
-  		newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
+		newliloconf += "  label=gentoo \n  read-only \n"
+		if build_mode != "genkernel" and self._install_profile.get_kernel_source_pkg() != "livecd-kernel": 
+			newliloconf += "  root="+root_device+root_minor+" \n"
+			if bootloader_kernel_args:
+				newliloconf += "  append=\""+bootloader_kernel_args+"\" \n"
+		else:
+			newliloconf += "  root=/dev/ram0 \n"
+			newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + bootloader_kernel_args + "\" \n"
+  			newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
 		newliloconf = self._lilo_add_windows(newliloconf)
 		#now make the lilo.conf file
 		file_name = root + "/etc/lilo.conf"	
