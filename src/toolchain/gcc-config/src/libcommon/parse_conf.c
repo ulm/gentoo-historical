@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.2 2005/08/16 17:34:57 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.3 2005/08/18 23:30:24 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.3  2005/08/18 23:30:24  eradicator
+ * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
+ *
  * Revision 1.2  2005/08/16 17:34:57  sekretarz
  * Adding new config framework
  *
@@ -21,17 +24,15 @@
  *
  */
 
-
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include "parse_conf.h"
 
 /* Trim spaces, tabs and comments */
-void trim(char *s)
-{
+static void trim(char *s) {
 	char *tmp;
-	
+
 	/* Trim spaces and tabs from beginning */
 	int i=0,j;
 	while((s[i]==' ')||(s[i]=='\t')) {
@@ -56,36 +57,34 @@ void trim(char *s)
 	}
 
 	if(i<(strlen(s)-1)) {
-    		s[i+1]='\0';
+		s[i+1]='\0';
 	}
 }
 
-void getLine(char *line, int n, FILE *fp)
-{
+static void getLine(char *line, int n, FILE *fp) {
 	line[0] = '\0';
 	while ( (line[0] == '\0') || (line[0] == '#') ) {
 		if ( fgets(line, n, fp) == NULL) {
-		    line[0]='\0';
-		    break;
+			line[0]='\0';
+			break;
 		}
-		
+
 		/* Remove \n on the end of string */
 		if (line[strlen(line)-1] == '\n') {
 			line[strlen(line)-1] = '\0';
 		}
-	
+
 		/* Clean that string */	
 		trim(line);
 	}
 }
 
-int _parseFile(configParser *parser)
-{
+static int _parseFile(ConfigParser *parser) {
 	char line[256];
 	char value[192];
 	char tag[64];
 	int ret;
-	
+
 	while (!feof(parser->fp)) {
 		getLine(line, 255, parser->fp);
 		if (line[0] == '\0') continue; /* last line */ 
@@ -101,83 +100,77 @@ int _parseFile(configParser *parser)
 			return 3;
 		}
 	}
-    return 0;
+	return 0;
 }
 
-int parseFile(configParser *parser)
-{
+int parseFile(ConfigParser *parser) {
 	int ret;
-	
+
 	parser->fp = fopen(parser->config_name, "r");
-	
+
 	if (parser->fp == NULL) {
 		printf("Can't open file");
 		return 1;
 	}
-	
+
 	ret = _parseFile(parser);
-	
+
 	fclose(parser->fp);
 	return ret;
 }
 
-configParser *newParser(char *config_name)
-{
-	configParser *tmp;
+ConfigParser *newParser(char *config_name) {
+	ConfigParser *tmp;
 
-	tmp = (configParser *)malloc(sizeof(configParser));
+	tmp = (ConfigParser *)malloc(sizeof(ConfigParser));
 	tmp->config_name = strdup(config_name);	
 	tmp->data = (void *)0;
 	return tmp;
 }
 
-void freeParser(configParser *parser)
-{
-	free(parser->config_name);
-	free(parser);
+void freeParser(ConfigParser *parser) {
+	if(parser) {
+		if(parser->config_name)
+			free(parser->config_name);
+		free(parser);
+	}
 }
 
-void setParserData(configParser *parser, void *data)
-{
+static inline void setParserData(ConfigParser *parser, void *data) {
 	parser->data = data;
 }
 
-void setParserCallback(configParser *parser, int (*section_cb)(char * /* Section name */, void * /* data*/), int (*key_cb)(char * /* key */, char * /* value */, void * /*data*/))
-{
+void setParserCallback(ConfigParser *parser, int (*section_cb)(char * /* Section name */, void * /* data*/), int (*key_cb)(char * /* key */, char * /* value */, void * /*data*/)) {
 	parser->section_cb = section_cb;
 	parser->key_cb = key_cb;
 }
 
 #ifdef DEBUG_PARSE
 
-int section_cb(char *section, void *data)
-{
+int section_cb(char *section, void *data) {
 	printf("Section_db:\n\t%s\nData_address:\n\t%p\n", section, data);
 	return 0;
 }
 
-int key_cb(char *key, char *value, void *data)
-{
+int key_cb(char *key, char *value, void *data) {
 	printf("key_cb:\nkey: %s\nvalue: %s\ndata_address: %p\n", key, value, data);
 	return 0;
 }
 
-int main(void)
-{
+int main(void) {
 	char *dup = (char *)malloc(sizeof(char)*50);
-	
-	configParser *config = newParser("i686-pc-linux-gnu-3.4.4.conf");
+
+	ConfigParser *config = newParser("i686-pc-linux-gnu-3.4.4.conf");
 	setParserData(config, dup);
 	setParserCallback(config, section_cb, key_cb);
-	
-	
+
+
 	printf("Start programu\n");
-    	parseFile(config);
-	
+	parseFile(config);
+
 	freeParser(config);
-	
+
 	return 0;
 }
 
 #endif /* DEBUG_PARSE */
-

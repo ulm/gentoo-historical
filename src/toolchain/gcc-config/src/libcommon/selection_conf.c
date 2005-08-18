@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.5 2005/08/18 23:19:28 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.6 2005/08/18 23:30:24 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.6  2005/08/18 23:30:24  eradicator
+ * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
+ *
  * Revision 1.5  2005/08/18 23:19:28  eradicator
  * Added layout to begin working on the profile manager.
  *
@@ -69,7 +72,7 @@ SelectionConf *loadSelectionConf(const char *configFileName) {
 	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	configParser *config = newParser(configFileName);
+	ConfigParser *config = newParser(configFileName);
 	setParserData(config, retval);
 	setParserCallback(config, selectionConfSectionCB, selectionConfKeyCB);
 

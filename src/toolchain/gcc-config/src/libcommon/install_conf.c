@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.4 2005/08/16 17:34:57 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.5 2005/08/18 23:30:24 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.5  2005/08/18 23:30:24  eradicator
+ * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
+ *
  * Revision 1.4  2005/08/16 17:34:57  sekretarz
  * Adding new config framework
  *
@@ -30,6 +33,7 @@
  */
 
 #include "install_conf.h"
+#include "parse_conf.h"
 #include <stdlib.h>
 
 int installConfSectionCB(char *section, void *data)
@@ -96,7 +100,7 @@ InstallConf *loadInstallConf(const char *configFileName) {
 	profile->cflags = "-m32";
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
-	configParser *config = newParser(configFileName);
+	ConfigParser *config = newParser(configFileName);
 	setParserData(config, retval);
 	setParserCallback(config, installConfSectionCB, installConfKeyCB);
 
