@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.4 2005/08/16 17:34:57 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.5 2005/08/18 23:19:28 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.5  2005/08/18 23:19:28  eradicator
+ * Added layout to begin working on the profile manager.
+ *
  * Revision 1.4  2005/08/16 17:34:57  sekretarz
  * Adding new config framework
  *
@@ -63,7 +66,7 @@ SelectionConf *loadSelectionConf(const char *configFileName) {
 
 	installConf = loadInstallConf("/etc/gcc-config/x86_64-pc-linux-gnu-3.4.4.conf");
 	hashInsert(retval->installHash, "x86_64-pc-linux-gnu-3.4.4", installConf);
-	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-vanilla"));
+	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
 	configParser *config = newParser(configFileName);

@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.4 2005/08/12 23:08:26 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.5 2005/08/18 23:19:28 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.5  2005/08/18 23:19:28  eradicator
+ * Added layout to begin working on the profile manager.
+ *
  * Revision 1.4  2005/08/12 23:08:26  eradicator
  * Added code to determine the binary we need to execute including aliasing in the profile.  Set GCC_SPECS based on the profile.
  *
@@ -42,6 +45,7 @@
 #include "selection_conf.h"
 #include "install_conf.h"
 
+/* TODO: User config to override global settings: ~/.gcc-config */
 #define CONFIGURATION_FILE "/etc/gcc-config/selection.conf"
 
 typedef struct {

@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.10 2005/08/15 21:14:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.11 2005/08/18 23:19:28 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.11  2005/08/18 23:19:28  eradicator
+ * Added layout to begin working on the profile manager.
+ *
  * Revision 1.10  2005/08/15 21:14:29  eradicator
  * Changed sortedKeys to hashKeysSorted and added hashKeys which provides the data unsorted.  Fixed a bug in the quickSort when the new pivot was 0.
  *
@@ -330,7 +333,7 @@ static char **_hashKeys(Hash *hash) {
 	return keys;
 }
 
-const inline char **hashKeys(Hash *hash) {
+inline const char **hashKeys(Hash *hash) {
 	return (const char **)_hashKeys(hash);
 }
 
