@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/mailfilter-guide.xml,v 1.1 2005/08/05 09:15:41 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/mailfilter-guide.xml,v 1.2 2005/08/18 00:18:26 rane Exp $ -->
 
 <!-- Orig revision: 1.10 -->
 <!-- Translator: Damian Kuras <damian@lezajsk.info> -->
@@ -29,8 +29,8 @@ ClamAV, greylistingu i SPF.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.7.10</version>
-<date>2005-08-04</date>
+<version>0.8.0</version>
+<date>2005-08-12</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -110,11 +110,21 @@ rozdziałami. W rozdziałach tych opisano w jaki sposób:
     Skonfigurować specjalne foldery IMAP do nauki filtru Bayesa i doręczania
     fałszywego spamu
   </li>
-  <li>Skonfigurować analizator logów, który będzie tworzył dzienne raporty</li>
-  <li>Skonfigurować greylisting z Postfixem 2.1</li>
+<!--
   <li>
-    Skonfigurować amavisd-new tak, aby używał interfejsu MySQL do zarządzania
+   Skonfigurować analizator logów, który będzie tworzył dzienne raporty
+  </li>
+-->
+  <li>
+   Skonfigurować greylisting z Postfixem
+  </li>
+  <li>
+    Skonfigurować Amavisd-new tak, aby używał interfejsu MySQL do zarządzania
     preferencjami użytkowników
+  </li>
+  <li>
+    Skonfigurować Spamassassina tak, aby używał interfejsu MySQL dla danych
+    Bayesa i AWL.
   </li>
 </ul>
 
@@ -283,7 +293,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
   -o smtp_data_done_timeout=1200
   -o smtp_send_xforward_command=yes
 <comment>#Jeśli używamy lmpt:
-#smtp-amavis unix -     -       n       -       2       lmtp
+#lmtp-amavis    unix -        -       n     -       2  lmtp
 #   -o lmtp_data_done_timeout=1200
 #   -o lmtp_send_xforward_command=yes</comment>
 
@@ -315,7 +325,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
 Linijka <c>smtp-amavis</c> określa maksymalną liczbę procesów, które mogą
 działać w tym samym czasie. Jeśli potrzebujemy większej rangi tego procesu, po
 prostu dostosowujemy liczbę do naszych potrzeb. Należy jednak pamiętać, aby ta
-liczba zgadzała się z liczbą wpisaną do zmiennej <c>$max_servers=</c> w pliku
+liczba zgadzała się z liczbą wpisaną do zmiennej <c>$max_servers</c> w pliku
 <path>amavisd.conf</path>.
 </note>
 
@@ -447,15 +457,18 @@ amavis:x:1010:413:added by portage for amavisd-new:/var/amavis:/bin/bash
 </pre>
 -->
 
+<!--
 <p>
 Należy stworzyć nowy katalog domowy i ustawić poprawne zezwolenia.
 </p>
 
-<pre caption="Należy stworzyć nowy katalog domowy i ustawić poprawne zezwolenia">
+<pre caption="Należy stworzyć nowy katalog domowy i ustawić odpowiednie 
+zezwolenia">
 # <i>mkdir /var/amavis</i>
 # <i>chown amavis:amavis /var/amavis</i>
 # <i>chmod 750 /var/amavis</i>
 </pre>
+-->
 
 <p>
 Należy wedytować następujące linie w pliku <path>/etc/amavisd.conf</path>
@@ -497,7 +510,7 @@ należy wpisać wartość <c>6.3</c>.
 </note>
 
 <p>
-Należy stworzyć katalog na kwarantanny dla pocztę elektroniczną zarażoą
+Należy stworzyć katalog na kwarantanny dla pocztę elektroniczną zarażoną
 wirusami, gdyż nie chcemy, aby takie wiadomości docierały do naszych
 użytkowników.
 </p>
@@ -507,6 +520,11 @@ użytkowników.
 # <i>chown amavis:amavis /var/amavis/virusmails</i>
 # <i>chmod 750 /var/amavis/virusmails</i>
 </pre>
+
+<note>
+Dzięki użyciu banku polityk, Amavisd-new oferuje szersze możliwości ich
+dostosowywania.
+</note>
 
 </body>
 </section>
@@ -737,8 +755,8 @@ robienie tego w pliku <path>/etc/amavisd.conf</path>.
 </note>
 
 <note>
-W przyszłych wersjach tego przewodnika zostanie zaimplementowana polityka
-użytkowników dotycząca MySQL.
+W następnych rozdziałach zostanie przdstawiona polityka użytkowników dotycząca
+MySQL.
 </note>
 
 <p>
@@ -757,7 +775,7 @@ map { $bypass_spam_checks{lc($_)}=1 } (qw(
 
 <impo>
 <e>Nigdy</e> nie należy ignorować poczty elektronicznej, która dociera na konta
-<c>postmaster</c> lub <c>abuse</c>. Więcej iformacji w dokumencie <uri
+<c>postmaster</c> lub <c>abuse</c>. Więcej informacji w dokumencie <uri
 link="http://www.ietf.org/rfc/rfc2142.txt">RFC 2142 MAILBOX NAMES FOR COMMON
 SERVICES, ROLES AND FUNCTIONS</uri>. W przeciwnym razie domeny mogą zostać
 dopisane do listy mieszczącej się na stronie <uri
@@ -781,7 +799,6 @@ link="http://www.rulesemporium.com/">SpamAssassin Rules Emporium</uri>. Można j
 </p>
 
 <pre caption="Instalacja rulesdujour">
-# <i>echo "mail-filter/spamassassin-ruledujour  ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge "mail-filter/spamassassin-ruledujour"</i>
 </pre>
 
@@ -806,7 +823,7 @@ SA_RESTART="/etc/init.d/amavisd restart"
 <body>
 
 <p>
-Przed uruchomieniem <c>freshclam</c> można ręcznie zferyfikować poprawność
+Przed uruchomieniem <c>freshclam</c> można ręcznie zweryfikować poprawność
 działania.
 </p>
 
@@ -876,7 +893,8 @@ Z pewnych nie do końca jasnych powodów nie można ręcznie połączyć się do
 programu <c>telnet</c>.
 </note>
 
-<pre caption="Sprawdzanie ręcznie czy amavisd i postfix nasłuchują na nowych portach">
+<pre caption="Sprawdzanie ręcznie czy amavisd i postfix nasłuchują na 
+nowych portach">
 # <i>nc localhost 10024</i>
 <comment>(Amavis się uruchamia)</comment>
 220 [127.0.0.1] ESMTP amavisd-new service ready
@@ -888,14 +906,17 @@ programu <c>telnet</c>.
 <note>
 Jeśli chcemy zobaczyć pełną informację z procesu uruchamiania programu
 amavisd-new należy wykonać polecenie <c>amavisd debug-sa</c> jako użytkownik
-<c>amavis</c> oraz wysłać jakąkolwiek wiadomość elektroniczną.
+<c>amavis</c> oraz wysłać jakąkolwiek wiadomość elektroniczną. Aby to 
+zadziałało najprawdopodobniej należało będzie zmienić domyślną powłokę w pliku
+<path>/etc/passwd</path>.
 </note>
 
 <p>
 Dodajemy <c>amavisd</c> i <c>clamd</c> do domyślnego poziomu uruchomieniowego.
 </p>
 
-<pre caption="Dodawanie amavisd i clamd do domyślnego poziomu uruchomieniowego">
+<pre caption="Dodawanie amavisd i clamd do domyślnego poziomu 
+uruchomieniowego">
 # <i>rc-update add clamd default</i>
 # <i>rc-update add amavisd default</i>
 </pre>
@@ -1083,7 +1104,7 @@ godzinę.
 </pre>
 
 <note>
-Użytkownik <c>amavis</c> powinnien być członkiem grupy <c>cron</c>, aby
+Użytkownik <c>amavis</c> powinien być członkiem grupy <c>cron</c>, aby
 uruchamiać programy przy pomocy crona.
 </note>
 
@@ -1314,13 +1335,13 @@ Aktualnie badamy inny analizator logów programu amavis,
 -->
 
 <chapter>
-<title>Graylisting</title>
+<title>Greylisting</title>
 <section>
 <title>Wprowadzenie</title>
 <body>
 
 <p>
-Graylisting jest jedną z najnowszych metod walki ze spamem. Jak sama nazwa
+Greylisting jest jedną z najnowszych metod walki ze spamem. Jak sama nazwa
 wskazuje, jest czymś więcej niż whitelistingiem i blacklistingiem. Za każdy
 razem kiedy nieznany serwer poczty próbuje dostarczyć wiadomość, ta wiadomość
 jest odrzucana z komunikatem <e>spróbuj ponownie później ("try again
@@ -1502,15 +1523,6 @@ Serwer Postgrey znajduje się już w Portage, jednak na chwilę obecną jest
 oznaczony jako niestabilny.
 </note>
 
-<note>
-Zamiast ufać ebuildowi IO-Multiplex, w prosty sposób możemy zemergować go
-używając skrytpu Perl <c>g-cpan.pl</c>, który automatycznie ściągnie ostatnią
-wersję modułu Perl, stworzy ebuilda dla niego i zainstaluje w systemie
-<c>g-cpan.pl IO-Multiplex</c>. Wymagane jest do tego prawidłowo ustawione
-środowisko CPAN.
-</note>
-
-
 <p>
 Po instalacji serwera <c>postgrey</c> należy wyedytować plik
 <path>main.cf</path>.  Zmiany są praktycznie identyczne jak przy wbudowanym
@@ -1587,10 +1599,16 @@ Jeśli przekazujemy wychodzącą pocztę przez naszego ISP należy dodać linijk
 </note>
 
 <p>
-Nadchodząca wersja 3.0 programu Spamassassin posiada wsparcie dla SPF, jednak
-jest w tej chwili na początkowym etapie i nowy demon w programie Postfix wspiera
-SPF. Dlatego też zainstalujemy teraz wsparcie SPF dla Postfix.
+Wersja 3.0 programu Spamassassin posiada wsparcie dla SPF, jednak domyślnie nie
+jest ono uaktywnione. Nowy demon w programie Postfix wspiera SPF, dlatego też 
+zainstalujemy teraz wsparcie SPF dla Postfix.
 </p>
+
+<note>
+Jeśli chcemy używać SPF razem ze Spamassassinem po prosty wydajemy polecenie
+<c>emerge&nbsp;dev-perl/Mail-SPF-Query</c> i restartujemy Amavisd-new.
+</note>
+
 
 </body>
 </section>
@@ -1605,7 +1623,7 @@ poniżej sposób:
 </p>
 
 <pre caption="Instalacja spf.pl">
-# <i>cp postfix-2.1.0/examples/smtpd-policy/spf.pl /usr/bin/</i>
+# <i>cp postfix-&lt;version&gt;/examples/smtpd-policy/spf.pl /usr/local/bin/</i>
 </pre>
 
 <note>
@@ -1623,16 +1641,8 @@ Portage, jednak ich instalacja nie powinna sprawić problemu:
 </p>
 
 <pre caption="Instalacja wymaganych bibliotek Perl">
-# <i>echo "dev-perl/Mail-SPF-Query ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Net-CIDR-Lite ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Sys-Hostname-Long ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge Mail-SPF-Query Net-CIDR-Lite Sys-Hostname-Long</i>
 </pre>
-
-<note>
-Powyższe biblioteki Perl znajdują się w Portage, jednak na chwile obecną
-oznaczone są jako unstable.
-</note>
 
 <p>
 Gdy mamy wszystko już na swoim miejscu należy jedynie skonfigurować Postfixa
@@ -1641,7 +1651,7 @@ zgodnie z nową polityką.
 
 <pre caption="Modyfikacja master.cf, aby zapewnić wsparcie SPF">
 policy-spf  unix  -       n       n       -       -       spawn
-   user=nobody argv=/usr/bin/perl /usr/bin/spf.pl
+   user=nobody argv=/usr/bin/perl /usr/local/bin/spf.pl
 </pre>
 
 <p>
@@ -1961,7 +1971,7 @@ Powyższe polecenia są również dostępne w źródłach w plikach
 </body>
 </section>
 <section>
-<title>Konifguracja Spamassassin, ze wsparciem backend MySQL</title>
+<title>Konfiguracja Spamassassin, ze wsparciem backend MySQL</title>
 <body>
 
 <p>
@@ -2059,7 +2069,7 @@ Amavisd-new. W tym celu należy użyć <c>amavisd debug-sa</c>.
 <p>
 Jeżeli potrzebujemy pomocy dobrym miejscem na szukanie jej, jest lista
 mailingowa użytkowników amavis. Przed wysłaniem postu należy przeszukać <uri
-link="http://marc.theaimsgroup.com/?l=amavis-user">arichwum list mailingowej
+link="http://marc.theaimsgroup.com/?l=amavis-user">archiwum listy mailingowej
 użytkowników programu Amavis</uri>. Jeżeli nie znajdziemy odpowiedzi na nasze
 pytanie, w tym miejscu możemy zapisać się na <uri
 link="https://lists.sourceforge.net/lists/listinfo/amavis-user">listę mailingową
@@ -2089,6 +2099,11 @@ należy udać się na ich strony domowe, których adresy znajdziemy poniżej.
   <li>
     <uri link="http://www.ijs.si/software/amavisd/README.postfix">Amavisd-new
     Postfix README</uri>
+  </li>
+  <li>
+    <uri 
+    link="http://www.ijs.si/software/amavisd/amavisd-new-docs.html#pbanks">Amavisd-new
+    Policy bank documentation</uri>
   </li>
   <li>
     <uri
