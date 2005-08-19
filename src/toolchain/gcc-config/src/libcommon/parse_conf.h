@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.h,v 1.4 2005/08/18 23:30:24 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.h,v 1.5 2005/08/19 06:08:55 eradicator Exp $
  * $Log: parse_conf.h,v $
+ * Revision 1.5  2005/08/19 06:08:55  eradicator
+ * Added headers to EXTRA_DIST.
+ *
  * Revision 1.4  2005/08/18 23:30:24  eradicator
  * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
  *
@@ -32,20 +35,16 @@
 
 #include <stdio.h>
 
-typedef struct {
-	char *config_name;
-	void *data;
-	
-	FILE *fp;
-	/* Return 0 is everything is ok */
-	int (*section_cb)(char * /* Section name */, void * /* data*/);
-	int (*key_cb)(char * /* key */, char * /* value */, void * /*data*/);
-	
-} ConfigParser;
+/* Handled internally */
+typedef struct _ConfigParser ConfigParser;
+
+typedef int (*SectionCB)(const char * /* Section name */, void * /* data*/);
+typedef int (*KeyCB)(const char * /* key */, const char * /* value */, void * /*data*/);
 
 int parseFile(ConfigParser *parser);
-ConfigParser *newParser(char *config_name);
-void freeParser(ConfigParser *parser);
-void setParserCallback(ConfigParser *parser, int (*section_cb)(char * /* Section name */, void * /* data*/), int (*key_cb)(char * /* key */, char * /* value */, void * /*data*/));
+ConfigParser *parserNew(const char *filename);
+void parserSetData(ConfigParser *parser, void *data);
+void parserFree(ConfigParser *parser);
+void parserSetCallback(ConfigParser *parser, SectionCB sectionCB, KeyCB keyCB);
 
 #endif /* _GCC_CONFIG_PARSE_CONF_H_ */

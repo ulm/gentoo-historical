@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.4 2005/08/19 03:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.5 2005/08/19 06:08:55 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.5  2005/08/19 06:08:55  eradicator
+ * Added headers to EXTRA_DIST.
+ *
  * Revision 1.4  2005/08/19 03:35:29  eradicator
  * Cleaned up #include lines and added #include config.h.
  *
@@ -39,6 +42,17 @@
 #include <malloc.h>
 
 #include "parse_conf.h"
+
+struct _ConfigParser {
+	char *filename;
+	void *data;
+	
+	FILE *fp;
+	/* Return 0 is everything is ok */
+	SectionCB sectionCB;
+	KeyCB keyCB;
+};
+
 
 /* Trim spaces, tabs and comments */
 static void trim(char *s) {
@@ -100,10 +114,10 @@ static int _parseFile(ConfigParser *parser) {
 		getLine(line, 255, parser->fp);
 		if (line[0] == '\0') continue; /* last line */ 
 		if (sscanf(line, "[%99[^]]]",value) == 1) {
-			if ( (ret = (parser->section_cb)(value, parser->data)) != 0) 
+			if ( (ret = (parser->sectionCB)(value, parser->data)) != 0) 
 				return ret;
 		} else if (sscanf(line, " %63[^= ] = %191[^\n]",tag, value) == 2) {
-			if ( (ret = (parser->key_cb)(tag,value, parser->data)) != 0) {
+			if ( (ret = (parser->keyCB)(tag,value, parser->data)) != 0) {
 				return ret;
 			}
 		} else {
@@ -117,7 +131,7 @@ static int _parseFile(ConfigParser *parser) {
 int parseFile(ConfigParser *parser) {
 	int ret;
 
-	parser->fp = fopen(parser->config_name, "r");
+	parser->fp = fopen(parser->filename, "r");
 
 	if (parser->fp == NULL) {
 		printf("Can't open file");
@@ -130,40 +144,42 @@ int parseFile(ConfigParser *parser) {
 	return ret;
 }
 
-ConfigParser *newParser(char *config_name) {
+ConfigParser *parserNew(const char *filename) {
 	ConfigParser *tmp;
 
 	tmp = (ConfigParser *)malloc(sizeof(ConfigParser));
-	tmp->config_name = strdup(config_name);	
+	tmp->filename = strdup(filename);	
 	tmp->data = (void *)0;
 	return tmp;
 }
 
-void freeParser(ConfigParser *parser) {
+void parserFree(ConfigParser *parser) {
 	if(parser) {
-		if(parser->config_name)
-			free(parser->config_name);
+		if(parser->filename)
+			free(parser->filename);
 		free(parser);
 	}
 }
 
-inline static void setParserData(ConfigParser *parser, void *data) {
+inline void parserSetData(ConfigParser *parser, void *data) {
 	parser->data = data;
 }
 
-void setParserCallback(ConfigParser *parser, int (*section_cb)(char * /* Section name */, void * /* data*/), int (*key_cb)(char * /* key */, char * /* value */, void * /*data*/)) {
-	parser->section_cb = section_cb;
-	parser->key_cb = key_cb;
+void parserSetCallback(ConfigParser *parser, SectionCB sectionCB, KeyCB keyCB) {
+	if(parser) {
+		parser->sectionCB = sectionCB;
+		parser->keyCB = keyCB;
+	}
 }
 
 #ifdef DEBUG_PARSE
 
-int section_cb(char *section, void *data) {
+int section_cb(const char *section, void *data) {
 	printf("Section_db:\n\t%s\nData_address:\n\t%p\n", section, data);
 	return 0;
 }
 
-int key_cb(char *key, char *value, void *data) {
+int key_cb(const char *key, const char *value, void *data) {
 	printf("key_cb:\nkey: %s\nvalue: %s\ndata_address: %p\n", key, value, data);
 	return 0;
 }
@@ -171,15 +187,15 @@ int key_cb(char *key, char *value, void *data) {
 int main(void) {
 	char *dup = (char *)malloc(sizeof(char)*50);
 
-	ConfigParser *config = newParser("i686-pc-linux-gnu-3.4.4.conf");
-	setParserData(config, dup);
-	setParserCallback(config, section_cb, key_cb);
+	ConfigParser *config = parserNew("i686-pc-linux-gnu-3.4.4.conf");
+	parserSetData(config, dup);
+	parserSetCallback(config, section_cb, key_cb);
 
 
 	printf("Start programu\n");
 	parseFile(config);
 
-	freeParser(config);
+	parserFree(config);
 
 	return 0;
 }

@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.6 2005/08/19 03:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.7 2005/08/19 06:08:55 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.7  2005/08/19 06:08:55  eradicator
+ * Added headers to EXTRA_DIST.
+ *
  * Revision 1.6  2005/08/19 03:35:29  eradicator
  * Cleaned up #include lines and added #include config.h.
  *
@@ -44,15 +47,17 @@
 #include "install_conf.h"
 #include "parse_conf.h"
 
-int installConfSectionCB(char *section, void *data)
+#ifndef USE_HARDCODED_CONF
+static int installConfSectionCB(const char *section, void *data)
 {
 	return 0;
 }
 
-int installConfKeyCB(char *key, char *value, void *data)
+static int installConfKeyCB(const char *key, const char *value, void *data)
 {
 	return 0;
 }
+#endif
 
 /** Allocate memory and load the configuration file */
 InstallConf *loadInstallConf(const char *configFileName) {
@@ -108,13 +113,13 @@ InstallConf *loadInstallConf(const char *configFileName) {
 	profile->cflags = "-m32";
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
-	ConfigParser *config = newParser(configFileName);
-	setParserData(config, retval);
-	setParserCallback(config, installConfSectionCB, installConfKeyCB);
+	ConfigParser *config = parserNew(configFileName);
+	parserSetData(config, retval);
+	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
 	parseFile(config);
 	
-	freeParser(config);					
+	parserFre(config);
 #endif
 
 	return retval;

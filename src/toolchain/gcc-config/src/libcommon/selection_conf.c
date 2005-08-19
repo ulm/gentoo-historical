@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.7 2005/08/19 03:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.8 2005/08/19 06:08:55 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.8  2005/08/19 06:08:55  eradicator
+ * Added headers to EXTRA_DIST.
+ *
  * Revision 1.7  2005/08/19 03:35:29  eradicator
  * Cleaned up #include lines and added #include config.h.
  *
@@ -49,15 +52,17 @@
 #include "install_conf.h"
 #include "parse_conf.h"
 
-int selectionConfSectionCB(char *section, void *data)
+#ifndef USE_HARDCODED_CONF
+static int selectionConfSectionCB(const char *section, void *data)
 {
 	return 0;
 }
 
-int selectionConfKeyCB(char *key, char *value, void *data)
+static int selectionConfKeyCB(const char *key, const char *value, void *data)
 {
 	return 0;
 }
+#endif
 
 /** Allocate memory and load the configuration file */
 SelectionConf *loadSelectionConf(const char *configFileName) {
@@ -80,13 +85,13 @@ SelectionConf *loadSelectionConf(const char *configFileName) {
 	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	ConfigParser *config = newParser(configFileName);
-	setParserData(config, retval);
-	setParserCallback(config, selectionConfSectionCB, selectionConfKeyCB);
+	ConfigParser *config = parserNew(configFileName);
+	parserSetData(config, retval);
+	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
 
 	parseFile(config);
 
-	freeParser(config);
+	parserFree(config);
 #endif
 
 	return retval;
