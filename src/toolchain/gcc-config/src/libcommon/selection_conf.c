@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.6 2005/08/18 23:30:24 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.7 2005/08/19 03:35:29 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.7  2005/08/19 03:35:29  eradicator
+ * Cleaned up #include lines and added #include config.h.
+ *
  * Revision 1.6  2005/08/18 23:30:24  eradicator
  * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
  *
@@ -35,11 +38,16 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "selection_conf.h"
 #include "install_conf.h"
 #include "parse_conf.h"
-#include <stdlib.h>
-#include <string.h>
 
 int selectionConfSectionCB(char *section, void *data)
 {

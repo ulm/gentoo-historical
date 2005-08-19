@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.11 2005/08/18 23:19:28 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.12 2005/08/19 03:35:29 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.12  2005/08/19 03:35:29  eradicator
+ * Cleaned up #include lines and added #include config.h.
+ *
  * Revision 1.11  2005/08/18 23:19:28  eradicator
  * Added layout to begin working on the profile manager.
  *
@@ -50,14 +53,15 @@
  *
  */
 
-#include "hash.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "hash.h"
 
 #define MAX_STRLEN 1024
 
@@ -85,7 +89,7 @@ static unsigned hashcode(const char *key) {
 	return h;
 }
 	
-static inline unsigned keysAreEqual(const char *a, const char *b) {
+inline static unsigned keysAreEqual(const char *a, const char *b) {
 	return !strncmp(a, b, MAX_STRLEN);
 }
 
@@ -248,7 +252,7 @@ void *hashDel(Hash *hash, const char *key) {
 	return NULL;
 }
 
-static inline void quickSortSwap(char **data, unsigned i, unsigned j) {
+inline static void quickSortSwap(char **data, unsigned i, unsigned j) {
 	char *tmp = data[i];
 	data[i] = data[j];
 	data[j] = tmp;

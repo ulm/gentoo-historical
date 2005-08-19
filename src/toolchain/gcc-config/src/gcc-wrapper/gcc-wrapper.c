@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.5 2005/08/18 23:19:28 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.6 2005/08/19 03:35:29 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.6  2005/08/19 03:35:29  eradicator
+ * Cleaned up #include lines and added #include config.h.
+ *
  * Revision 1.5  2005/08/18 23:19:28  eradicator
  * Added layout to begin working on the profile manager.
  *
@@ -34,6 +37,10 @@
 /* For strdup() */
 #define _GNU_SOURCE
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <alloca.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -42,6 +49,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include "selection_conf.h"
 #include "install_conf.h"
 
