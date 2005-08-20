@@ -34,9 +34,10 @@ class Panel(GLIScreen.GLIScreen):
 		# grab from the install profile, and if its not blank, create it
 		try:
 			loaded = self.controller.install_profile.get_time_zone()
-			if loaded != "":
-				# strip the path /usr/share/zoneinfo/
-				loaded = loaded[20:]
+			if loaded:
+				if loaded.beginswith("/usr/share/zoneinfo/"):
+					# strip the path /usr/share/zoneinfo/
+					loaded = loaded[20:]
 				zonetab_entry = self.zonetab2.findEntryByTZ(loaded)
 				self.map.setCurrent(zonetab_entry)
 		except:
