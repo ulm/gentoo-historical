@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.176 2005/08/16 18:49:43 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.177 2005/08/20 21:07:44 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -1264,3 +1264,20 @@ class ArchitectureTemplate:
 
 			self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
 			self._logger.log("Finished configuring /etc/portage/" + conf_file)
+
+	##
+	# This function should only be called in the event of an install failure. It performs
+	# general cleanup to prepare the system for another installer run.
+	def install_failed_cleanup(self):
+		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
+		for mount in mounts:
+			GLIUtility.spawn("umount -l " + mount)
+			
+		# now turn off all swap as well.
+		# we need to find the swap devices
+		for swap_device in self._swap_devices:
+			ret = GLIUtility.spawn("swapoff "+swap_device)
+			if not GLIUtility.exitsuccess(ret):
+				self._logger.log("ERROR! : Could not deactivate swap ("+swap_device+")!")
+		
+		GLIUtility.spawn("rm /tmp/compile_output.log")

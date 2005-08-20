@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.67 2005/08/17 04:19:28 agaffney Exp $
+$Id: GLIClientController.py,v 1.68 2005/08/20 21:07:44 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -348,6 +348,11 @@ class GLIClientController(Thread):
 	# Starts the secondary thread running. The thread will wait to continue until start_install() is called
 	def start_pre_install(self):
 		self.start()
+
+	##
+	# Cleans up after a failed install
+	def start_failure_cleanup(self):
+		self._arch_template.install_failed_cleanup()
 
 	##
 	# Displays specified output
