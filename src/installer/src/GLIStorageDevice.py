@@ -369,35 +369,34 @@ class Partition:
 			self._minor = int(self._minor)
 			self._orig_minor = int(self._orig_minor)
 		if existing:
-			parted_part = device._parted_disk.get_partition(self._orig_minor)
-			label_type = device._parted_disk.type.name
-			if label_type == "loop":
-				dev_node = device._device
-			else:
-				dev_node = device._device + str(self._orig_minor)
-#			print "dev_node = " + dev_node
-			if type == "ntfs":
-				min_bytes = long(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-				self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
-				self._resizeable = True
-			elif type == "ext2" or type == "ext3":
-				block_size = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
-				free_blocks = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
-				free_bytes = long(block_size * free_blocks)
-				# can't hurt to pad (the +50) it a bit since this is really just a guess
-				self._min_mb_for_resize = self._mb - long(free_bytes / MEGABYTE) + 50
-				self._resizeable = True
-			else:
-				parted_part = self._device._parted_disk.get_partition(int(self._orig_minor))
-				try:
+			try:
+				parted_part = device._parted_disk.get_partition(self._orig_minor)
+				label_type = device._parted_disk.type.name
+				if label_type == "loop":
+					dev_node = device._device
+				else:
+					dev_node = device._device + str(self._orig_minor)
+#				print "dev_node = " + dev_node
+				if type == "ntfs":
+					min_bytes = long(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
+					self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
+					self._resizeable = True
+				elif type == "ext2" or type == "ext3":
+					block_size = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
+					free_blocks = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
+					free_bytes = long(block_size * free_blocks)
+					# can't hurt to pad (the +50) it a bit since this is really just a guess
+					self._min_mb_for_resize = self._mb - long(free_bytes / MEGABYTE) + 50
+					self._resizeable = True
+				else:
+					parted_part = self._device._parted_disk.get_partition(int(self._orig_minor))
 					parted_fs = parted_part.geom.file_system_open()
-				except:
-					self._resizeable = False
-					return
-				resize_constraint = parted_fs.get_resize_constraint()
-				min_bytes = resize_constraint.min_size * self._device._sector_bytes
-				self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
-				self._resizeable = True
+					resize_constraint = parted_fs.get_resize_constraint()
+					min_bytes = resize_constraint.min_size * self._device._sector_bytes
+					self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
+					self._resizeable = True
+			except:
+				self._resizeable = False
 
 	##
 	# Returns whether or not the partition is extended
