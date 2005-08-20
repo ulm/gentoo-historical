@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.7 2005/08/20 22:03:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.8 2005/08/20 22:46:35 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.8  2005/08/20 22:46:35  eradicator
+ * Made the global configuration directory configurable.
+ *
  * Revision 1.7  2005/08/20 22:03:48  eradicator
  * Let users override settings in ~/.gcc-config.
  *
@@ -55,9 +58,6 @@
 
 #include "selection_conf.h"
 #include "install_conf.h"
-
-/* TODO: Make this a ./configure option */
-#define CONFIGURATION_DIR "/etc/gcc-config"
 
 typedef struct {
 	/* The CHOST being compiled for.  This is determined by $ABI (deprecated),

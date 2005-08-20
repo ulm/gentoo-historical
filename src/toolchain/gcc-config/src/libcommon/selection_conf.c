@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.9 2005/08/20 22:03:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.10 2005/08/20 22:46:35 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.10  2005/08/20 22:46:35  eradicator
+ * Made the global configuration directory configurable.
+ *
  * Revision 1.9  2005/08/20 22:03:48  eradicator
  * Let users override settings in ~/.gcc-config.
  *
@@ -75,13 +78,11 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	InstallConf *installConf;
 
 	/* Not production code... */
-	retval->fileName = (char *)malloc(sizeof(char) * (strlen(configFileName) + 1));
-	strcpy(retval->fileName, configFileName);
 	retval->installHash = hashNew(10);
 	retval->selectionHash = hashNew(10);
 
 	retval->defaultChost = (char *)malloc(sizeof(char) * 30);
-	strcpy(retval->fileName, "x86_64-pc-linux-gnu");
+	strcpy(retval->defaultChost, "x86_64-pc-linux-gnu");
 
 	installConf = loadInstallConf("/etc/gcc-config/x86_64-pc-linux-gnu-3.4.4.conf");
 	hashInsert(retval->installHash, "x86_64-pc-linux-gnu-3.4.4", installConf);
