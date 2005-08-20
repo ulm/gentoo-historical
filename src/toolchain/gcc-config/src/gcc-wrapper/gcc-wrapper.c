@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.6 2005/08/19 03:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.7 2005/08/20 22:03:48 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.7  2005/08/20 22:03:48  eradicator
+ * Let users override settings in ~/.gcc-config.
+ *
  * Revision 1.6  2005/08/19 03:35:29  eradicator
  * Cleaned up #include lines and added #include config.h.
  *
@@ -53,8 +56,8 @@
 #include "selection_conf.h"
 #include "install_conf.h"
 
-/* TODO: User config to override global settings: ~/.gcc-config */
-#define CONFIGURATION_FILE "/etc/gcc-config/selection.conf"
+/* TODO: Make this a ./configure option */
+#define CONFIGURATION_DIR "/etc/gcc-config"
 
 typedef struct {
 	/* The CHOST being compiled for.  This is determined by $ABI (deprecated),
@@ -210,7 +213,7 @@ int main(int argc, char *argv[]) {
 		wrapperExit("%s wrapper: out of memory\n", argv[0]);
 
 	/* Load the config file */
-	data->selectionConf = loadSelectionConf(CONFIGURATION_FILE);
+	data->selectionConf = loadSelectionConf(CONFIGURATION_DIR, 1);
 	if(data->selectionConf == NULL)
 		wrapperExit("%s wrapper: out of memory\n", argv[0]);
 

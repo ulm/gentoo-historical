@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.3 2005/08/12 09:45:52 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.4 2005/08/20 22:03:48 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.4  2005/08/20 22:03:48  eradicator
+ * Let users override settings in ~/.gcc-config.
+ *
  * Revision 1.3  2005/08/12 09:45:52  eradicator
  * Added defaultChost.
  *
@@ -32,8 +35,6 @@
 #include "hash.h"
 
 typedef struct {
-	char *fileName;
-
 	char *defaultChost;
 
 	/* Hash table of selected profiles.
@@ -49,8 +50,11 @@ typedef struct {
 	Hash *installHash;
 } SelectionConf;
 
-/** Allocate memory and load the configuration file */
-SelectionConf *loadSelectionConf(const char *configFileName);
+/** Allocate memory and load the configuration in the globalConfigDir.
+ *  If userOverride is non-zero, then we will let values in ~/.gcc-config
+ *  override those in the globalConfigDir
+ */
+SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride);
 
 /** Save the configuration file */
 void saveSelectionConf(SelectionConf *config);

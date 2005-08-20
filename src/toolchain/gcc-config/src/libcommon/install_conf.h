@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.6 2005/08/18 23:30:24 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.7 2005/08/20 22:03:48 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.7  2005/08/20 22:03:48  eradicator
+ * Let users override settings in ~/.gcc-config.
+ *
  * Revision 1.6  2005/08/18 23:30:24  eradicator
  * Coding style changes to make consistent with the rest of the codebase.  Whitespace cleanup.  Made some functions static.
  *
@@ -42,7 +45,9 @@
 #include "parse_conf.h"
 
 typedef struct {
-	/* This is the same as the filename for the configuration without the trailing .conf */
+	/* This is the same as the filename for the configuration.  It
+	 * should be the basename of the conf file without the trailing .conf
+	 */
 	char *name;
 
 	/* Information shared by all profiles */
@@ -74,7 +79,7 @@ typedef struct {
 } Profile;
 
 /** Allocate memory and load the configuration file */
-InstallConf *loadInstallConf(const char *configFileName);
+InstallConf *loadInstallConf(const char *filename);
 
 /** Free installConf and its contents */
 void freeInstallConf(InstallConf *installConf);

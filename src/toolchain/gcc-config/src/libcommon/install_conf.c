@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.7 2005/08/19 06:08:55 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.8 2005/08/20 22:03:48 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.8  2005/08/20 22:03:48  eradicator
+ * Let users override settings in ~/.gcc-config.
+ *
  * Revision 1.7  2005/08/19 06:08:55  eradicator
  * Added headers to EXTRA_DIST.
  *
@@ -60,7 +63,7 @@ static int installConfKeyCB(const char *key, const char *value, void *data)
 #endif
 
 /** Allocate memory and load the configuration file */
-InstallConf *loadInstallConf(const char *configFileName) {
+InstallConf *loadInstallConf(const char *filename) {
 	InstallConf *retval =  (InstallConf *)malloc(sizeof(InstallConf));
 
 #ifdef USE_HARDCODED_CONF
@@ -113,13 +116,13 @@ InstallConf *loadInstallConf(const char *configFileName) {
 	profile->cflags = "-m32";
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
-	ConfigParser *config = parserNew(configFileName);
+	ConfigParser *config = parserNew(filename);
 	parserSetData(config, retval);
 	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
 	parseFile(config);
-	
-	parserFre(config);
+
+	parserFree(config);
 #endif
 
 	return retval;

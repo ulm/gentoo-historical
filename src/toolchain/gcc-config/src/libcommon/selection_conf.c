@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.8 2005/08/19 06:08:55 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.9 2005/08/20 22:03:48 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.9  2005/08/20 22:03:48  eradicator
+ * Let users override settings in ~/.gcc-config.
+ *
  * Revision 1.8  2005/08/19 06:08:55  eradicator
  * Added headers to EXTRA_DIST.
  *
@@ -65,7 +68,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *data)
 #endif
 
 /** Allocate memory and load the configuration file */
-SelectionConf *loadSelectionConf(const char *configFileName) {
+SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride) {
 	SelectionConf *retval = (SelectionConf *)malloc(sizeof(SelectionConf));
 
 #ifdef USE_HARDCODED_CONF
@@ -85,13 +88,30 @@ SelectionConf *loadSelectionConf(const char *configFileName) {
 	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	ConfigParser *config = parserNew(configFileName);
+	char filename[MAXPATHLEN + 1];
+	ConfigParser *config;
+
+	/* Load all the installation configuration files from the directory given */
+
+	/* Now load the installation configurations from the user's directory */
+
+	/* Now determine what profiles are selected by the global configuration */
+	snprintf(filename, MAXPATHLEN, "%s/selection.conf");
+	parserNew(filename);
 	parserSetData(config, retval);
 	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
-
 	parseFile(config);
-
 	parserFree(config);
+
+	/* Now checkout the user override */
+	if(userOverride) {
+		snprintf(filename, MAXPATHLEN, "%s/.gcc-config/selection.conf", getenv("HOME"));
+		parserNew(filename);
+		parserSetData(config, retval);
+		parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
+		parseFile(config);
+		parserFree(config);
+	}
 #endif
 
 	return retval;
