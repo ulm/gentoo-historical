@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.6 2005/08/21 21:46:53 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.7 2005/08/21 22:01:02 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.7  2005/08/21 22:01:02  eradicator
+ * Added hashFreeAll() which frees the associated data as well.
+ *
  * Revision 1.6  2005/08/21 21:46:53  eradicator
  * Cleaning up some type declarations.
  *
@@ -46,6 +49,9 @@ Hash *hashNew(size_t size);
 
 /** Free the hash table. */
 void hashFree(Hash *hash);
+
+/** Free the hash table, and free() all the data. */
+void hashFreeAll(Hash *hash);
 
 /** Insert data into the hash table.  If an entry is replaced, we
  *  return the data that was there, so the user can free it if
