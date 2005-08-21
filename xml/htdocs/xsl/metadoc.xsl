@@ -143,15 +143,21 @@
             <xsl:with-param name="vchap"    select="fileid/@vchap"/>
             <xsl:with-param name="docid"    select="@id"/>
           </xsl:call-template>
-          </b><xsl:value-of select="func:gettext('SpaceBeforeColon', $lang)"/>: <xsl:call-template name="documentabstract">
-            <xsl:with-param name="metadoc"  select="$metadoc"/>
-            <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
-            <xsl:with-param name="lang"     select="$lang"/>
-            <xsl:with-param name="fileid"   select="fileid/text()"/>
-            <xsl:with-param name="vpart"    select="fileid/@vpart"/>
-            <xsl:with-param name="vchap"    select="fileid/@vchap"/>
-            <xsl:with-param name="docid"    select="@id"/>
-          </xsl:call-template>
+          </b>
+          <xsl:variable name="abstract">
+            <xsl:call-template name="documentabstract">
+              <xsl:with-param name="metadoc"  select="$metadoc"/>
+              <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+              <xsl:with-param name="lang"     select="$lang"/>
+              <xsl:with-param name="fileid"   select="fileid/text()"/>
+              <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+              <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+              <xsl:with-param name="docid"    select="@id"/>
+            </xsl:call-template>
+          </xsl:variable>
+          <xsl:if test="string-length($abstract)>0">
+            <xsl:value-of select="concat(func:gettext('SpaceBeforeColon', $lang),':',$abstract)"/>
+          </xsl:if>
           </p>
         </xsl:otherwise>
       </xsl:choose>
@@ -184,15 +190,21 @@
                 <xsl:with-param name="vchap"    select="fileid/@vchap"/>
                 <xsl:with-param name="docid"    select="@id"/>
               </xsl:call-template>
-              </b><xsl:value-of select="func:gettext('SpaceBeforeColon', $lang)"/>: <xsl:call-template name="documentabstract">
-                <xsl:with-param name="metadoc"  select="$metadoc"/>
-                <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
-                <xsl:with-param name="lang"     select="$lang"/>
-                <xsl:with-param name="fileid"   select="fileid/text()"/>
-                <xsl:with-param name="vpart"    select="fileid/@vpart"/>
-                <xsl:with-param name="vchap"    select="fileid/@vchap"/>
-                <xsl:with-param name="docid"    select="@id"/>
-              </xsl:call-template>
+              </b>
+              <xsl:variable name="abstract">
+                <xsl:call-template name="documentabstract">
+                  <xsl:with-param name="metadoc"  select="$metadoc"/>
+                  <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+                  <xsl:with-param name="lang"     select="$lang"/>
+                  <xsl:with-param name="fileid"   select="fileid/text()"/>
+                  <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+                  <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+                  <xsl:with-param name="docid"    select="@id"/>
+                </xsl:call-template>
+              </xsl:variable>
+              <xsl:if test="string-length($abstract)>0">
+                <xsl:value-of select="concat(func:gettext('SpaceBeforeColon', $lang),':',$abstract)"/>
+              </xsl:if>
               </p>
             </xsl:otherwise>
           </xsl:choose>
@@ -435,7 +447,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.24 2005/08/07 22:01:37 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.25 2005/08/21 17:21:37 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -457,7 +469,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.24 2005/08/07 22:01:37 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.25 2005/08/21 17:21:37 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
