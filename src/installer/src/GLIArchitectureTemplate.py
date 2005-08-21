@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.180 2005/08/21 18:52:35 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.181 2005/08/21 19:09:05 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -909,9 +909,7 @@ class ArchitectureTemplate:
 		if not GLIUtility.exitsuccess(exitstatus):
 			self._logger.log("ERROR! : Could not emerge xorg-x11!")
 		
-		#Add xdm to default runlevel
 		else:
-			self._add_to_runlevel('xdm')
 			#Now copy the XF86Config
 			exitstatus = GLIUtility.spawn("cp /etc/X11/xorg.conf " + self._chroot_dir + "/etc/X11/xorg.conf")
 			if not GLIUtility.exitsuccess(exitstatus):
