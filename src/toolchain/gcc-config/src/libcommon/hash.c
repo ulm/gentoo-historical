@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.12 2005/08/19 03:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.13 2005/08/21 21:25:39 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.13  2005/08/21 21:25:39  eradicator
+ * Moved sorting code to a separate file.
+ *
  * Revision 1.12  2005/08/19 03:35:29  eradicator
  * Cleaned up #include lines and added #include config.h.
  *
@@ -62,8 +65,11 @@
 #include <stdio.h>
 
 #include "hash.h"
+#include "sort.h"
 
-#define MAX_STRLEN 1024
+#ifndef MAX_STRLEN
+#define MAX_STRLEN 1023
+#endif
 
 typedef struct _HashEntry {
 	char *key;
@@ -252,50 +258,6 @@ void *hashDel(Hash *hash, const char *key) {
 	return NULL;
 }
 
-inline static void quickSortSwap(char **data, unsigned i, unsigned j) {
-	char *tmp = data[i];
-	data[i] = data[j];
-	data[j] = tmp;
-}
-
-static unsigned quickSortPartition(char **data, unsigned left, unsigned right, unsigned pivotIndex) {
-	char *pivotValue = data[pivotIndex];
-	unsigned newPivotIndex = left;
-	unsigned i;
-	
-	/* Move the pivot to the end to get it out of the way */
-	quickSortSwap(data, pivotIndex, right);
-	
-	for(i=left; i < right; i++) {
-		if(strncmp(data[i], pivotValue, MAX_STRLEN) <= 0) {
-			quickSortSwap(data, newPivotIndex, i);
-			newPivotIndex++;
-		}
-	}
-
-	/* Move pivot back */
-	quickSortSwap(data, newPivotIndex, right);
-
-	return newPivotIndex;
-}
-
-static char **quickSort(char **data, unsigned left, unsigned right) {
-	char *pivotValue;
-	unsigned oldPivotIndex, newPivotIndex;
-	
-	if(right > left) {
-		oldPivotIndex = left + (right - left)/2;
-		pivotValue = data[oldPivotIndex];
-
-		newPivotIndex = quickSortPartition(data, left, right, oldPivotIndex);
-
-		if(newPivotIndex > left)
-			quickSort(data, left, newPivotIndex-1);
-		quickSort(data, newPivotIndex+1, right);
-	}
-	return data;
-}
-
 /** Return an array of all keys hash table. The array is null terminated
  *  This memory is malloc()d, so do't forget to free it.
  *  Additionally, doing a hashDel() could leave this data invalid resulting
@@ -350,7 +312,7 @@ const char **hashKeysSorted(Hash *hash) {
 		return NULL;
 	}
 
-	return (const char **)quickSort(keys, 0, hash->nEntries - 1);
+	return (const char **)quickSortStr(keys, 0, hash->nEntries - 1);
 }
 
 #ifdef DEBUG_HASH
