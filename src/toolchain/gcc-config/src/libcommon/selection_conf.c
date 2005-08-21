@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.10 2005/08/20 22:46:35 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.11 2005/08/21 03:52:16 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.11  2005/08/21 03:52:16  eradicator
+ * A couple portability fixes...
+ *
  * Revision 1.10  2005/08/20 22:46:35  eradicator
  * Made the global configuration directory configurable.
  *
@@ -58,6 +61,10 @@
 #include "install_conf.h"
 #include "parse_conf.h"
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 1024
+#endif
+
 #ifndef USE_HARDCODED_CONF
 static int selectionConfSectionCB(const char *section, void *data)
 {
@@ -97,8 +104,8 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	/* Now load the installation configurations from the user's directory */
 
 	/* Now determine what profiles are selected by the global configuration */
-	snprintf(filename, MAXPATHLEN, "%s/selection.conf");
-	parserNew(filename);
+	snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
+	config = parserNew(filename);
 	parserSetData(config, retval);
 	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
 	parseFile(config);
@@ -107,7 +114,7 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	/* Now checkout the user override */
 	if(userOverride) {
 		snprintf(filename, MAXPATHLEN, "%s/.gcc-config/selection.conf", getenv("HOME"));
-		parserNew(filename);
+		config = parserNew(filename);
 		parserSetData(config, retval);
 		parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
 		parseFile(config);

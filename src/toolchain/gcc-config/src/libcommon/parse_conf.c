@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.5 2005/08/19 06:08:55 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.6 2005/08/21 03:52:16 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.6  2005/08/21 03:52:16  eradicator
+ * A couple portability fixes...
+ *
  * Revision 1.5  2005/08/19 06:08:55  eradicator
  * Added headers to EXTRA_DIST.
  *
@@ -39,7 +42,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "parse_conf.h"
 

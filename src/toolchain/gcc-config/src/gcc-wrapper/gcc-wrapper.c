@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.8 2005/08/20 22:46:35 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.9 2005/08/21 03:52:16 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.9  2005/08/21 03:52:16  eradicator
+ * A couple portability fixes...
+ *
  * Revision 1.8  2005/08/20 22:46:35  eradicator
  * Made the global configuration directory configurable.
  *
@@ -58,6 +61,10 @@
 
 #include "selection_conf.h"
 #include "install_conf.h"
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 1024
+#endif
 
 typedef struct {
 	/* The CHOST being compiled for.  This is determined by $ABI (deprecated),
