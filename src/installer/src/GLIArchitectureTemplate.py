@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.179 2005/08/21 06:26:21 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.180 2005/08/21 18:52:35 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -338,16 +338,22 @@ class ArchitectureTemplate:
 		installpackages = self._install_profile.get_install_packages()
 		failed_list = []
 		for package in installpackages:
-			self._logger.log("Starting emerge " + package)
-			status = self._emerge(package)
-			if not GLIUtility.exitsuccess(status):
-				self._logger.log("Could not emerge " + package + "!")
-				failed_list.append(package)
+			#look for special cases first:
+			if package == "pcmcia-cs":
+				install_pcmcia_cs()
+			elif package == "xorg-x11":
+				install_xorg_x11()
 			else:
-				self._logger.log("Emerged package: " + package)
+				self._logger.log("Starting emerge " + package)
+				status = self._emerge(package)
+				if not GLIUtility.exitsuccess(status):
+					self._logger.log("Could not emerge " + package + "!")
+					failed_list.append(package)
+				else:
+					self._logger.log("Emerged package: " + package)
 		# error checking is important!
 		if len(failed_list) > 0:
-			raise GLIException("InstallPackagesError", 'warning', 'install_packages', "Could not emerge " + str(failed_list) + "!")
+			self._logger.log("ERROR! Could not emerge " + str(failed_list) + "!")
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
@@ -457,22 +463,7 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("Netmount type " + netmount['type'] + " not supported...skipping " + netmount['mountpoint'])
 
-	##
-	# Gets sources from CD (required for non-network installation)
-	# WARNING: There will no longer be sources on the future livecds.  this will have to change!
-	def fetch_sources_from_cd(self):
-		"""
-		THIS FUNCTION IS NO LONGER VALID
-		if not GLIUtility.is_file(self._chroot_dir+"/usr/portage/distfiles"):
-			exitstatus = GLIUtility.spawn("mkdir -p /usr/portage/distfiles",chroot=self._chroot_dir)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("MkdirError", 'fatal','install_portage_tree',"Making the distfiles directory failed.")
-		exitstatus = GLIUtility.spawn("cp /mnt/cdrom/distfiles/* "+self._chroot_dir+"/usr/portage/distfiles/", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-		if not GLIUtility.exitsuccess(exitstatus):
-			raise GLIException("PortageError", 'fatal','install_portage_tree',"Failed to copy the distfiles to the new system")
-		"""
-		self._logger.log("Distfiles copied from cd. NOT!")
-		
+
 	##
 	# Configures the new /etc/make.conf
 	def configure_make_conf(self):
@@ -902,17 +893,32 @@ class ArchitectureTemplate:
 	##
 	# Installs and sets up pcmcia-cs if selected in the profile
 	def install_pcmcia_cs(self):
-		# If user wants us to install pcmcia-cs, then do so
-		if self._install_profile.get_install_pcmcia_cs():
-			exitstatus = self._emerge("pcmcia-cs")
+		exitstatus = self._emerge("pcmcia-cs")
+		if not GLIUtility.exitsuccess(exitstatus):
+			self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
+			
+		# Add pcmcia-cs to the default runlevel
+		else:
+			self._add_to_runlevel('pcmcia')
+			self._logger.log("PCMCIA_CS emerged and configured.")
+			
+	##
+	# Installs and sets up xorg-x11 by copying the XF86Config file found on the livecd.
+	def install_xorg_x11(self):
+		exitstatus = self._emerge("xorg-x11")
+		if not GLIUtility.exitsuccess(exitstatus):
+			self._logger.log("ERROR! : Could not emerge xorg-x11!")
+		
+		#Add xdm to default runlevel
+		else:
+			self._add_to_runlevel('xdm')
+			#Now copy the XF86Config
+			exitstatus = GLIUtility.spawn("cp /etc/X11/xorg.conf " + self._chroot_dir + "/etc/X11/xorg.conf")
 			if not GLIUtility.exitsuccess(exitstatus):
-				self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
-			#	raise GLIException("PCMCIA_CSError", 'warning', 'install_pcmcia_cs', "Could not emerge pcmcia-cs!")
-				
-			# Add pcmcia-cs to the default runlevel
+				self._logger.log("Could NOT copy the xorg configuration from the livecd to the new system!")
 			else:
-				self._add_to_runlevel('pcmcia')
-				self._logger.log("PCMCIA_CS emerged and configured.")
+				self._logger.log("xorg.conf copied to new system.  X should be ready to roll!")
+			
 
 	##
 	# This runs etc-update and then re-overwrites the files by running the configure_*'s to keep our values.
