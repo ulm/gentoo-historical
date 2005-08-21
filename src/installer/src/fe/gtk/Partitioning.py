@@ -4,6 +4,7 @@ import GLIStorageDevice
 import re
 import PartitionButton
 import PartProperties
+from gettext import gettext as _
 
 class Panel(GLIScreen.GLIScreen):
 

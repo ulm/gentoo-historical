@@ -1,5 +1,6 @@
 import gtk
 import PartitionButton
+from gettext import gettext as _
 
 # keep these in sync with GLIStorageDevice!
 # these are here so that we can change them easily in future

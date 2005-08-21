@@ -1,6 +1,7 @@
 import gtk
 import GLIScreen
 import GLIUtility
+from gettext import gettext as _
 
 class Panel(GLIScreen.GLIScreen):
 
