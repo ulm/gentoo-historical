@@ -144,7 +144,6 @@ class PartProperties(gtk.Window):
 		bottom_box = gtk.HBox(True, 0)
 		ok_button = gtk.Button(_(" OK "))
 		ok_button.set_flags(gtk.CAN_DEFAULT)
-		ok_button.grab_default()
 		ok_button.set_size_request(60, -1)
 		ok_button.connect("clicked", self.ok_clicked)
 		bottom_box.pack_start(ok_button, expand=False, fill=False, padding=0)
@@ -155,6 +154,7 @@ class PartProperties(gtk.Window):
 		self.globalbox.pack_end(bottom_box, expand=False, fill=False, padding=0)
 
 		self.add(self.globalbox)
+		ok_button.grab_default()
 		self.set_modal(True)
 		self.set_transient_for(self.controller.controller.window)
 		self.make_visible()
