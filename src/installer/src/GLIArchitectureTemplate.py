@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.178 2005/08/21 06:02:12 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.179 2005/08/21 06:26:21 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -518,8 +518,9 @@ class ArchitectureTemplate:
 		# This is a hack to copy the LiveCD's rsync into the chroot since it has the sigmask patch
 		GLIUtility.spawn("cp -a /usr/bin/rsync " + self._chroot_dir + "/usr/bin/rsync")
 		GLIUtility.spawn("cp -a /usr/lib/libpopt* " + self._chroot_dir + "/usr/lib")
-
-		if self._install_profile.get_portage_tree_sync_type() == "snapshot" or self._install_profile.get_portage_tree_sync_type() == "custom": # Until this is finalized
+		
+		sync_type = self._install_profile.get_portage_tree_sync_type()
+		if sync_type == "snapshot" or sync_type == "custom": # Until this is finalized
 		
 			# Get portage tree info
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
@@ -527,18 +528,22 @@ class ArchitectureTemplate:
 				# Fetch and unpack the tarball
 				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/")
 			self._logger.log("Portage tree install was custom.")
+		elif sync_type == "sync":
+				exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+				if not GLIUtility.exitsuccess(exitstatus):
+					self._logger.log("ERROR!  Could not sync the portage tree using emerge sync.  Falling back to emerge-webrsync as a backup.")
+					sync_type = "webrsync"
+				else:
+					self._logger.log("Portage tree sync'd")
 		# If the type is webrsync, then run emerge-webrsync
-		elif self._install_profile.get_portage_tree_sync_type() == "webrsync":
+		elif sync_type == "webrsync":
 			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
+				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree using webrsync!")
 			self._logger.log("Portage tree sync'd using webrsync")
-		# Otherwise, just run emerge sync
+		# Otherwise, spit out a message because its probably a bad thing.
 		else:
-			exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeSyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree!")
-			self._logger.log("Portage tree sync'd")
+			self._logger.log("NOTICE!  No valid portage tree sync method was selected.  This will most likely result in a failed installation unless the tree is mounted.")
 			
 	##
 	# Sets the timezone for the new environment
