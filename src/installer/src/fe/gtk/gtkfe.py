@@ -10,6 +10,7 @@ import GLIUtility
 import gtk
 import crypt
 import random
+from gettext import gettext as _
 
 import Welcome
 import ClientConfig
@@ -40,22 +41,22 @@ class Installer:
 	install_profile_xml_file = ""
 	install_window = None
 
-	menuItems = [ { 'text': 'Welcome', 'module': Welcome },
-                  { 'text': 'Client Config', 'module': ClientConfig },
-                  { 'text': 'Partitioning', 'module': Partitioning },
-                  { 'text': 'Network Mounts', 'module': NetworkMounts },
-                  { 'text': 'Stage', 'module': Stage },
-                  { 'text': 'Portage tree', 'module': PortageTree },
-                  { 'text': 'make.conf', 'module': MakeDotConf },
-                  { 'text': 'Kernel', 'module': Kernel },
-                  { 'text': 'Bootloader', 'module': Bootloader },
-                  { 'text': 'Timezone', 'module': Timezone },
-                  { 'text': 'Networking', 'module': Networking },
-                  { 'text': 'Daemons', 'module': Daemons },
-                  { 'text': 'Extra Packages', 'module': ExtraPackages },
-                  { 'text': 'rc.conf', 'module': RcDotConf },
-                  { 'text': 'Users', 'module': Users },
-                  { 'text': 'Review', 'module': InstallSummary }
+	menuItems = [ { 'text': _('Welcome'), 'module': Welcome },
+                  { 'text': _('Client Config'), 'module': ClientConfig },
+                  { 'text': _('Partitioning'), 'module': Partitioning },
+                  { 'text': _('Network Mounts'), 'module': NetworkMounts },
+                  { 'text': _('Stage'), 'module': Stage },
+                  { 'text': _('Portage tree'), 'module': PortageTree },
+                  { 'text': _('make.conf'), 'module': MakeDotConf },
+                  { 'text': _('Kernel'), 'module': Kernel },
+                  { 'text': _('Bootloader'), 'module': Bootloader },
+                  { 'text': _('Timezone'), 'module': Timezone },
+                  { 'text': _('Networking'), 'module': Networking },
+                  { 'text': _('Daemons'), 'module': Daemons },
+                  { 'text': _('Extra Packages'), 'module': ExtraPackages },
+                  { 'text': _('rc.conf'), 'module': RcDotConf },
+                  { 'text': _('Users'), 'module': Users },
+                  { 'text': _('Review'), 'module': InstallSummary }
                 ]
 
 	def __init__(self):
@@ -86,19 +87,19 @@ class Installer:
 		self._cur_panel = 0
 		self.__full_path = self.get_current_path()
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.title="Gentoo Linux Installer"
+		self.title = _("Gentoo Linux Installer")
 		self.window.realize()
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
 		self.window.set_border_width(0)
 		self.window.set_default_size(800,600)
 		self.window.set_geometry_hints(None, min_width=800, min_height=600, max_width=800, max_height=600)
-		self.window.set_title("Gentoo Linux Installer")
+		self.window.set_title(_("Gentoo Linux Installer"))
 		self.globalbox = gtk.VBox(False, 0)
 		self.window.add(self.globalbox)
 		self.headerbox = gtk.HBox(False, 0)
 		headerimg = gtk.Image()
-		headerimg.set_from_file(self.__full_path + '/installer-banner-800x64.png') # '/header.png')
+		headerimg.set_from_file(self.__full_path + '/installer-banner-800x64.png')
 		self.headerbox.add(headerimg)
 		self.topbox = gtk.HBox(False, 0)
 		self.bottombox = gtk.HBox(False, 0)
@@ -131,13 +132,13 @@ class Installer:
 		self.right_pane_box.set_show_border(False)
 		self.rightframe.add(self.right_pane_box)
 
-		buttons_info = [ ('exit', " _Exit ", '/button_images/stock_exit.png', self.exit_button, 'start'),
-                                 ('help', " _Help ", '/button_images/stock_help.png', self.help, 'start'),
-                                 ('load', " _Load ", '/button_images/stock_open.png', self.load_button, 'start'),
-                                 ('save', " _Save ", '/button_images/stock_save.png', self.save_button, 'start'),
-                                 ('finish', " _Install ", '/button_images/stock_exec.png', self.finish, 'end'),
-                                 ('forward', " _Forward ", '/button_images/stock_right.png', self.forward, 'end'),
-                                 ('back', " _Back ", '/button_images/stock_left.png', self.back, 'end')
+		buttons_info = [ ('exit', _(" _Exit "), '/button_images/stock_exit.png', self.exit_button, 'start'),
+                                 ('help', _(" _Help "), '/button_images/stock_help.png', self.help, 'start'),
+                                 ('load', _(" _Load "), '/button_images/stock_open.png', self.load_button, 'start'),
+                                 ('save', _(" _Save "), '/button_images/stock_save.png', self.save_button, 'start'),
+                                 ('finish', _(" _Install "), '/button_images/stock_exec.png', self.finish, 'end'),
+                                 ('forward', _(" _Forward "), '/button_images/stock_right.png', self.forward, 'end'),
+                                 ('back', _(" _Back "), '/button_images/stock_left.png', self.back, 'end')
                                ]
 		self.buttons = {}
 
@@ -163,7 +164,7 @@ class Installer:
 		if not firstrun: self.leftframe.remove(self.navlinks)
 		self.navlinks = gtk.VBox(False, 5)
 		self.navlinks.set_size_request(140, -1)
-		navlinkslabel = gtk.Label("    Installation Steps    ")
+		navlinkslabel = gtk.Label(_("    Installation Steps    "))
 		self.navlinks.pack_start( navlinkslabel, expand=False, fill=False, padding=10)
 		self.num_times = 0
 		for item_ in self.menuItems:
@@ -269,12 +270,11 @@ class Installer:
 			self.exit()
 
 	def finish(self, widget, data=None):
-		print "Finish was clicked"
 		self.make_invisible()
 		self.install_window = RunInstall.RunInstall(self)
 
 	def load_button(self, widget, data=None):
-		filesel = gtk.FileSelection("Select the install profile to load")
+		filesel = gtk.FileSelection(_("Select the install profile to load"))
 		if self.install_profile_xml_file == "":
 			filesel.set_filename("installprofile.xml")
 		else:
@@ -288,16 +288,16 @@ class Installer:
 				tmp_install_profile = GLIInstallProfile.InstallProfile()
 				tmp_install_profile.parse(self.install_profile_xml_file)
 				self.install_profile = tmp_install_profile
-				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install profile loaded successfully!")
+				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format=_("Install profile loaded successfully!"))
 				msgdlg.run()
 				msgdlg.destroy()
 			except:
-				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured loading the install profile")
+				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("An error occured loading the install profile"))
 				errdlg.run()
 				errdlg.destroy()
 
 	def save_button(self, widget, data=None):
-		filesel = gtk.FileSelection("Select the location to save the install profile")
+		filesel = gtk.FileSelection(_("Select the location to save the install profile"))
 		if self.install_profile_xml_file == "":
 			filesel.set_filename("installprofile.xml")
 		else:
@@ -311,28 +311,18 @@ class Installer:
 				configuration = open(filename, "w")
 				configuration.write(self.install_profile.serialize())
 				configuration.close()
-				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install profile saved successfully!")
+				msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format=_("Install profile saved successfully!"))
 				msgdlg.run()
 				msgdlg.destroy()
 			except:
-				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured saving the install profile")
+				errdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("An error occured saving the install profile"))
 				errdlg.run()
 				errdlg.destroy()
 
 	def delete_event(self, widget, event, data=None):
-		# If you return FALSE in the "delete_event" signal handler,
-		# GTK will emit the "destroy" signal. Returning TRUE means
-		# you don't want the window to be destroyed.
-		# This is useful for popping up 'are you sure you want to quit?'
-		# type dialogs.
-		print "delete event occurred"
-		# Change TRUE to FALSE and the main window will be destroyed with
-		# a "delete_event".
 		return False
 
-	# Destroy callback
 	def destroy(self, widget, data=None):
-		print "destroy function"
 		gtk.main_quit()
 		return True
 	

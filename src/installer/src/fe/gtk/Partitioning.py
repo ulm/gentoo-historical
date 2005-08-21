@@ -7,7 +7,7 @@ import PartProperties
 
 class Panel(GLIScreen.GLIScreen):
 
-	title = "Partitioning"
+	title = _("Partitioning")
 	part_buttons = {}
 	drives = []
 	devices = {}
@@ -29,15 +29,14 @@ class Panel(GLIScreen.GLIScreen):
 		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
-		content_str = """On this screen, you will be presented with a list of detected partitionable devices. Selecting
-a device will show you the current partitions on it (if any) and allow you to add, remove, and
-resize partitions.
-"""
+		content_str = _("""On this screen, you will be presented with a list of detected partitionable devices. Selecting
+		a device will show you the current partitions on it (if any) and allow you to add, remove, and
+		resize partitions.""")
  
 		content_label = gtk.Label(content_str)
 		vert.pack_start(content_label, expand=False, fill=False, padding=0) # This was removed for screen space
 		container = gtk.HBox(False, 0)
-		detected_dev_label = gtk.Label("Devices:")
+		detected_dev_label = gtk.Label(_("Devices:"))
 		container.pack_start(detected_dev_label, expand=False, fill=False, padding=10)
 		self.detected_dev_combo = gtk.combo_box_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
@@ -57,19 +56,19 @@ resize partitions.
 		self.part_info_box = gtk.HBox(False, 0)
 		part_info_table = gtk.Table(6, 2, False)
 		part_info_table.set_col_spacings(10)
-		info_partition_label = gtk.Label("Partition:")
+		info_partition_label = gtk.Label(_("Partition:"))
 		info_partition_label.set_alignment(0.0, 0.5)
 		self.info_partition = gtk.Label()
 		self.info_partition.set_alignment(0.0, 0.5)
-		info_type_label = gtk.Label("Type:")
+		info_type_label = gtk.Label(_("Type:"))
 		info_type_label.set_alignment(0.0, 0.5)
 		self.info_type = gtk.Label()
 		self.info_type.set_alignment(0.0, 0.5)
-		info_filesystem_label = gtk.Label("Filesystem:")
+		info_filesystem_label = gtk.Label(_("Filesystem:"))
 		info_filesystem_label.set_alignment(0.0, 0.5)
 		self.info_filesystem = gtk.Label()
 		self.info_filesystem.set_alignment(0.0, 0.5)
-		info_size_label = gtk.Label("Size:")
+		info_size_label = gtk.Label(_("Size:"))
 		info_size_label.set_alignment(0.0, 0.5)
 		self.info_size = gtk.Label()
 		self.info_size.set_alignment(0.0, 0.5)
@@ -86,13 +85,13 @@ resize partitions.
 
 		# This builds the row of buttons
 		self.part_button_box = gtk.HBox(False, 0)
-		self.part_button_delete = gtk.Button(" Delete ")
+		self.part_button_delete = gtk.Button(_(" Delete "))
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=False, fill=False, padding=0)
-		self.part_button_properties = gtk.Button(" Properties ")
+		self.part_button_properties = gtk.Button(_(" Properties "))
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
 		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=10)
-		part_button_dump_info = gtk.Button(" Dump to console (debug) ")
+		part_button_dump_info = gtk.Button(_(" Dump to console (debug) "))
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
 		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=0)
 		vert.pack_start(self.part_button_box, expand=False, fill=False, padding=10)
@@ -100,14 +99,14 @@ resize partitions.
 		# This builds the color key at the bottom
 		color_codes = [ { 'label': "Swap", 'color': '#12ff09' },
                                 { 'label': "Ext2/3", 'color': '#0af2fe' },
-                                { 'label': "ReiserFS", 'color': '#f0ff00' },
+                                { 'label': "Reiserfs", 'color': '#f0ff00' },
                                 { 'label': "JFS", 'color': '#ffb400' },
                                 { 'label': "XFS", 'color': '#006600' },
                                 { 'label': "FAT", 'color': '#3d07f9' },
                                 { 'label': "NTFS", 'color': '#f20600' },
-                                { 'label': "Other", 'color': '#ed03e0' },
+                                { 'label': _("Other"), 'color': '#ed03e0' },
 #                                { 'label': "Free space", 'color': '#ffffff' },
-                                { 'label': "Unallocated", 'color': '#a2a2a2' }
+                                { 'label': _("Unallocated"), 'color': '#a2a2a2' }
                               ]
 		color_codes_box = gtk.HBox(False, 0)
 		vert.pack_end(color_codes_box, expand=False, fill=False, padding=2)
@@ -160,14 +159,14 @@ resize partitions.
 		self.info_partition.set_text(dev + str(minor))
 		if int(minor) < 5:
 			if tmppart.get_type() == "extended":
-				self.info_type.set_text("Extended")
+				self.info_type.set_text(_("Extended"))
 			else:
-				self.info_type.set_text("Primary")
+				self.info_type.set_text(_("Primary"))
 		else:
-			self.info_type.set_text("Logical")
+			self.info_type.set_text(_("Logical"))
 		fstype = tmppart.get_type()
 		if fstype == "extended":
-			self.info_filesystem.set_text("N/A")
+			self.info_filesystem.set_text(_("N/A"))
 		else:
 			self.info_filesystem.set_text(fstype)
 		start = tmppart.get_start()
@@ -176,7 +175,7 @@ resize partitions.
 #		self.info_end.set_text(str(end))
 #		part_size = int(round(float(self.devices[dev].get_sector_size()) * (end - start + 1) / 1024 / 1024))
 		part_size = int(tmppart.get_mb())
-		self.info_size.set_text(str(part_size) + " MB")
+		self.info_size.set_text(str(part_size) + _(" MB"))
 		self.active_part_minor = int(tmppart.get_minor())
 		self.part_button_delete.set_sensitive(True)
 		self.part_info_box.show_all()
@@ -187,7 +186,7 @@ resize partitions.
 		props.run()
 
 	def part_button_delete_clicked(self, button, data=None):
-		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to delete " + self.active_device + str(self.active_part_minor))
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you want to delete ") + self.active_device + str(self.active_part_minor))
 		resp = msgdlg.run()
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
@@ -265,7 +264,7 @@ resize partitions.
 		self.part_table.show_all()
 
 	def show_no_more_primary_message(self, button, data=None):
-		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="You cannot create more than 4 primary partitions. If you need more partitions, delete one or more and create logical partitions.")
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("You cannot create more than 4 primary partitions. If you need more partitions, delete one or more and create logical partitions."))
 		msgdlg.run()
 		msgdlg.destroy()
 
@@ -298,7 +297,7 @@ resize partitions.
 					self.detected_dev_combo.append_text(drive)
 					self.drives.append(drive)
 				except:
-					print "Exception received while loading partitions"
+					print _("Exception received while loading partitions")
 					if self.devices.has_key(drive): del self.devices[drive]
 					part_load_error = 1
 			if part_load_error:
@@ -328,7 +327,7 @@ resize partitions.
 				if parts_tmp[device][part]['mountpoint'] == "/":
 					self.controller.install_profile.set_partition_tables(self.devices)
 					return True
-		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You have not specified a partition to mount as /. Do you want to continue?")
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("You have not specified a partition to mount as /. Do you want to continue?"))
 		resp = msgdlg.run()
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
