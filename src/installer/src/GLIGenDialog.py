@@ -1129,9 +1129,56 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				continue
 			for package in choices:
 				install_packages.append(package)
+				#special cases for desktop environments
+				if package in ["xorg-x11", "gnome","kde","blackbox","enlightenment","fluxbox","xfce4"]:  #ask about X
+					#Reset the Yes/No buttons
+					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+					self._d.add_persistent_args(["--no-label", _(u"No")])
+					if not self.advanced_mode or self._d.yesno(_(u"Do you want to start X on bootup?")) == self._DLG_YES:
+						services = self._install_profile.get_services() or 'xdm'
+						if isinstance(services, list):
+							services = string.join(services, ',')
+						if 'xdm' not in services:
+							services += ',xdm'
+						try:
+							self._install_profile.set_services(None, services, None)
+						except:
+							self._d.msgbox(_(u"ERROR! Could not set the services list."))
+					#rc.conf changes specific to packages.
+					if package == "gnome":
+						etc_files = self._install_profile.get_etc_files()
+						if not "rc.conf" in etc_files:
+							etc_files['rc.conf'] = {}
+						etc_files['rc.conf']['DISPLAYMANAGER'] = "gdm"
+						self._install_profile.set_etc_files(etc_files)
+					if package == "kde":
+						etc_files = self._install_profile.get_etc_files()
+						if not "rc.conf" in etc_files:
+							etc_files['rc.conf'] = {}
+						etc_files['rc.conf']['DISPLAYMANAGER'] = "kdm"
+						self._install_profile.set_etc_files(etc_files)
+					if package == "enlightenment":
+						etc_files = self._install_profile.get_etc_files()
+						if not "rc.conf" in etc_files:
+							etc_files['rc.conf'] = {}
+						etc_files['rc.conf']['DISPLAYMANAGER'] = "entrance"
+						self._install_profile.set_etc_files(etc_files)
+					if package == "fluxbox":
+						etc_files = self._install_profile.get_etc_files()
+						if not "rc.conf" in etc_files:
+							etc_files['rc.conf'] = {}
+						etc_files['rc.conf']['XSESSION'] = "fluxbox"
+						self._install_profile.set_etc_files(etc_files)	
+						
+						
 
 	def set_services(self):
-		services = self._install_profile.get_services()
+		if self._install_profile.get_services():
+			services = self._install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+		else:
+			services = []
 		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)),
 		("apache", _(u"Common web server (version 1.x)"),int("apache" in services)),
 		("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)),
@@ -1142,27 +1189,28 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		("portmap", _(u"Port Mapping Service"),int("portmap" in services)),
 		("proftpd", _(u"Common FTP server"),int("proftpd" in services)),
 		("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)),
+		("xfs", _(u"X Font Server"),int("xfs" in services)),
+		("xdm", _(u"X Daemon"),int("xdm" in services)),
 		(_(u"Other"),_(u"Manually specify your services in a comma-separated list."),0)]
 		services_string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
 		code, services_list = self._d.checklist(services_string, choices=choice_list, height=21, list_height=12, width=77)
 		if code != self._DLG_OK:
 			return
-		services = ""
+		services = []
 		for service in services_list:
-			services += service + ","
-		if services:
-			services = services[:-1]
+			services.append(service)
 		if _(u"Other") in services_list:
-			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"))
+			code, services = self._d.inputbox(_(u"Enter a comma-separated list of services to start on boot"), init=string.join(services, ','))
 		if code != self._DLG_OK: 
 			return
 		try:
+			services = string.join(services, ',')
 			if services:
 				self._install_profile.set_services(None, services, None)
 		except:
-			self._d.msgbox(_(u"ERROR! Could not set the services list: "+ services))
-
-
+			self._d.msgbox(_(u"ERROR! Could not set the services list."))
+			return
+		
 	def set_rc_conf(self):
 	# This section is for editing /etc/rc.conf
 		if not self.advanced_mode:
