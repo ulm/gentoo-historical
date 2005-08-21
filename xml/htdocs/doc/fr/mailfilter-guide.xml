@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mailfilter-guide.xml,v 1.7 2005/08/06 15:36:12 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mailfilter-guide.xml,v 1.8 2005/08/21 16:26:28 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/mailfilter-guide.xml" lang="fr">
@@ -26,8 +26,8 @@ ClamAV, un système de listes grises et SPF.
 <!-- Voir   http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.7.10</version>
-<date>2005-08-04</date>
+<version>0.8.0</version>
+<date>2005-08-12</date>
 
 <chapter>
 <title>Introduction</title>
@@ -108,14 +108,20 @@ entre les différents chapitres. Ils indiquent comment&nbsp;:
     Mettre en place des répertoires IMAP spéciaux pour l'apprentissage
     bayésien et pour soumettre les faux positifs et négatifs.
   </li>
+<!--
   <li>
     Mettre en place des analyseurs de fichiers de journalisation pour créer des
     rapports quotidiens.
   </li>
-  <li>Mettre en place un service de liste grise avec Postfix 2.1.</li>
+-->
+  <li>Mettre en place un service de liste grise à l'aide de Postfix.</li>
   <li>
-    Configurer amavisd-new pour conserver les préférences des utilisateurs dans
+    Configurer Amavisd-new pour conserver les préférences des utilisateurs dans
     une base MySQL.
+  </li>
+  <li>
+    Configurer Spamassassin pour utiliser MySQL pour AWL et les données
+    bayésiennes.
   </li>
 </ul>
 
@@ -288,7 +294,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
   -o smtp_data_done_timeout=1200
   -o smtp_send_xforward_command=yes
 <comment># Si vous utilisez lmtp :
-#smtp-amavis unix -     -       n       -       2       lmtp
+#lmtp-amavis unix -     -       n       -       2       lmtp
 #   -o lmtp_data_done_timeout=1200
 #   -o lmtp_send_xforward_command=yes</comment>
 
@@ -320,7 +326,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
 La première ligne avec <c>smtp-amavis</c> indique qu'au maximum deux processus
 pourront être exécutés en même temps. Vous pouvez modifier cette valeur pour
 l'adapter à vos besoins. Faites seulement bien attention de reporter cette
-modification dans la variable <c>$max_servers=</c> du fichier
+modification dans la variable <c>$max_servers</c> du fichier
 <path>amavisd.conf</path>.
 </note>
 
@@ -461,6 +467,7 @@ amavis:x:1010:413:added by portage for amavisd-new:/var/amavis:/bin/bash
 </pre>
 -->
 
+<!--
 <p>
 Créez un nouveau répertoire utilisateur et donnez-lui les bons droits.
 </p>
@@ -470,6 +477,7 @@ Créez un nouveau répertoire utilisateur et donnez-lui les bons droits.
 # <i>chown amavis:amavis /var/amavis</i>
 # <i>chmod 750 /var/amavis</i>
 </pre>
+-->
 
 <p>
 Éditez les lignes suivantes dans le fichier
@@ -522,6 +530,11 @@ nous ne souhaitons pas les délivrer à nos utilisateurs.
 # <i>chown amavis:amavis /var/amavis/virusmails</i>
 # <i>chmod 750 /var/amavis/virusmails</i>
 </pre>
+
+<note>
+Amavisd-new propose des politiques plus fines en utilisant les banques de
+politiques d'action.
+</note>
 
 </body>
 </section>
@@ -752,8 +765,9 @@ je pense que c'est plus propre de le faire dans <path>/etc/amavisd.conf</path>.
 </note>
 
 <note>
-Dans une prochaine version de ce guide, nous devrions proposer une politique
-de listes blanches et noires par utilisateur implémentée à l'aide de MySQL.
+Dans un chapitre ultérieur, nous vous montrerons comment implémenter une
+politique de listes blanches et noires par utilisateur implémentée à l'aide de
+MySQL.
 </note>
 
 <p>
@@ -796,8 +810,7 @@ vous pouvez facilement le faire en en ajoutant ou en les mettant à jour grâce 
 paquet <c>mail-filter/spamassassin-ruledujour</c>&nbsp;:
 </p>
 
-<pre caption="Installer rulesdujour">
-# <i>echo "mail-filter/spamassassin-ruledujour  ~x86" &gt;&gt; /etc/portage/package.keywords</i>
+<pre caption="Installer ruledujour">
 # <i>emerge "mail-filter/spamassassin-ruledujour"</i>
 </pre>
 
@@ -903,7 +916,8 @@ place.
 <note>
 Si vous souhaitez visualiser l'intégralité des messages de retour avec
 amavisd-new, lancez <c>amavisd debug-sa</c> avec le compte utilisateur
-<c>amavis</c> et envoyez un courrier.
+<c>amavis</c> et envoyez un courrier. Pour que cela fonctionne, vous devrez
+probablement changer le Shell par défaut dans <path>/etc/passwd</path>.
 </note>
 
 <p>
@@ -1536,14 +1550,6 @@ modules Perl à partir de votre OVERLAY de Portage.
 Postgrey est maintenant dans Portage, mais pas encore dans la branche stable.
 </note>
 
-<note>
-Si vous ne voulez pas faire confiance à l'ebuild IO-Multiplex, vous pouvez
-choisir de l'installer avec <c>g-cpan.pl</c>, un script Perl qui télécharge
-automatiquement la dernière version d'un module Perl, génère un ebuild
-automatiquement et l'installe&nbsp;: <c>g-cpan.pl IO-Multiplex</c>. Cela
-nécessite un environnement CPAN correctement configuré.
-</note>
-
 <p>
 Après avoir installé <c>postgrey</c>, vous devez éditer le fichier
 <path>main.cf</path>. Les modifications sont presque identiques à celles
@@ -1622,10 +1628,15 @@ faudra que vous ajoutiez&nbsp;: <c>include:votrefai.com</c>.
 </note>
 
 <p>
-Spamassassin 3.0 supporte le SPF, mais c'est encore en test pour le moment, et
+Spamassassin 3.0 supporte le SPF, mais l'option n'est pas activée par défaut, et
 le nouveau démon de Postfix gérant les politiques supporte le SPF, donc nous
 installerons le support SPF proposé par Postfix.
 </p>
+
+<note>
+Si vous souhaitez utiliser le SPF avec Spamassassin, il vous suffit d'installer
+<c>emerge&nbsp;dev-perl/Mail-SPF-Query</c> et de relancer Amavisd-new.
+</note>
 
 </body>
 </section>
@@ -1640,7 +1651,7 @@ Une fois que vous avez téléchargé les sources, récupérez le fichier
 </p>
 
 <pre caption="Installer spf.pl">
-# <i>cp postfix-2.1.0/examples/smtpd-policy/spf.pl /usr/bin/</i>
+# <i>cp postfix-&lt;version&gt;/examples/smtpd-policy/spf.pl /usr/local/bin/</i>
 </pre>
 
 <note>
@@ -1659,16 +1670,8 @@ sont pas fournies dans Portage, mais leur installation reste assez simple&nbsp;:
 </p>
 
 <pre caption="Installer les bibliothèques Perl nécessaires">
-# <i>echo "dev-perl/Mail-SPF-Query ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Net-CIDR-Lite ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Sys-Hostname-Long ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge Mail-SPF-Query Net-CIDR-Lite Sys-Hostname-Long</i>
 </pre>
-
-<note>
-Les bibliothèques installées ci-dessus sont maintenant dans Portage, mais pas
-encore dans la branche stable.
-</note>
 
 <p>
 Maintenant que tout est en place, il ne nous reste plus qu'à configurer Postfix
@@ -1677,7 +1680,7 @@ pour qu'il utilise cette nouvelle politique.
 
 <pre caption="Modifier master.cf pour utiliser le SPF">
 policy-spf  unix  -       n       n       -       -       spawn
-   user=nobody argv=/usr/bin/perl /usr/bin/spf.pl
+   user=nobody argv=/usr/bin/perl /usr/local/bin/spf.pl
 </pre>
 
 <p>
@@ -2168,6 +2171,10 @@ Postfix, référez-vous à leurs pages web respectives, indiquées plus bas.
   <li>
     <uri link="http://www.ijs.si/software/amavisd/amavisd-new-docs.html"
     >Documentation de Amavisd-new</uri>&nbsp;;
+  </li>
+  <li>
+    <uri link="http://www.ijs.si/software/amavisd/amavisd-new-docs.html#pbanks">Documentation
+    pour les banques de politiques pour Spamassassin</uri>&nbsp;;
   </li>
   <li>
     <uri link="http://razor.sourceforge.net/">Razor, de Vipul</uri>&nbsp;;
