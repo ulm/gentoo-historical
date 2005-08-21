@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.13 2005/08/21 21:25:39 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.14 2005/08/21 21:46:53 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.14  2005/08/21 21:46:53  eradicator
+ * Cleaning up some type declarations.
+ *
  * Revision 1.13  2005/08/21 21:25:39  eradicator
  * Moved sorting code to a separate file.
  *
@@ -78,8 +81,8 @@ typedef struct _HashEntry {
 } HashEntry;
 
 struct _Hash {
-	unsigned nBuckets; /* Number of buckets */
-	unsigned nEntries; /* Number of elements in the table */
+	size_t nBuckets; /* Number of buckets */
+	size_t nEntries; /* Number of elements in the table */
 	HashEntry **buckets;
 };
 
@@ -100,7 +103,7 @@ inline static unsigned keysAreEqual(const char *a, const char *b) {
 }
 
 /** Create a new hash table of size size */
-Hash *hashNew(unsigned size) {
+Hash *hashNew(size_t size) {
 	Hash *retval = (Hash *)malloc(sizeof(Hash));
 
 	/* Make sure we got memory */
@@ -122,7 +125,7 @@ Hash *hashNew(unsigned size) {
 
 /** Free the hash table. */
 void hashFree(Hash *hash) {
-	unsigned i;
+	size_t i;
 	HashEntry *entry, *next;
 
 	if(hash == NULL)
@@ -198,7 +201,7 @@ void *hashInsert(Hash *hash, const char *key, void *data) {
 /** Returns the data associated with the given key.  If that key is
  *  not in the hash table, return null.
  */
-void *hashGet(Hash *hash, const char *key) {
+void *hashGet(const Hash *hash, const char *key) {
 	unsigned hc;
 	HashEntry *entry;
 
@@ -264,7 +267,7 @@ void *hashDel(Hash *hash, const char *key) {
  *  in a segfault if you're not careful since the (const char*) are
  *  pointing to memory managed by hash.c
  */
-static char **_hashKeys(Hash *hash) {
+static char **_hashKeys(const Hash *hash) {
 	char **keys = (char **)malloc(sizeof(char *) * (hash->nEntries + 1));
 	HashEntry *entry;
 	unsigned i, hc;
@@ -299,12 +302,12 @@ static char **_hashKeys(Hash *hash) {
 	return keys;
 }
 
-inline const char **hashKeys(Hash *hash) {
+inline const char **hashKeys(const Hash *hash) {
 	return (const char **)_hashKeys(hash);
 }
 
 /** Like hashKeys, but sorted */
-const char **hashKeysSorted(Hash *hash) {
+const char **hashKeysSorted(const Hash *hash) {
 	char **keys = _hashKeys(hash);
 	
 	/* Make sure we've got our memory */

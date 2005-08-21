@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.5 2005/08/15 21:14:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.6 2005/08/21 21:46:53 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.6  2005/08/21 21:46:53  eradicator
+ * Cleaning up some type declarations.
+ *
  * Revision 1.5  2005/08/15 21:14:29  eradicator
  * Changed sortedKeys to hashKeysSorted and added hashKeys which provides the data unsorted.  Fixed a bug in the quickSort when the new pivot was 0.
  *
@@ -39,7 +42,7 @@
 typedef struct _Hash Hash;
 
 /** Create a new hash table of size size */
-Hash *hashNew(unsigned size);
+Hash *hashNew(size_t size);
 
 /** Free the hash table. */
 void hashFree(Hash *hash);
@@ -54,7 +57,7 @@ void *hashInsert(Hash *hash, const char *key, void *data);
 /** Returns the data associated with the given key.  If that key is
  *  not in the hash table, return null.
  */
-void *hashGet(Hash *hash, const char *key);
+void *hashGet(const Hash *hash, const char *key);
 
 /** Delete a hashtable entry that matches the passed key and return the
  *  data or null if there was none.
@@ -67,9 +70,9 @@ void *hashDel(Hash *hash, const char *key);
  *  in a segfault if you're not careful since the (const char*) are
  *  pointing to memory managed by hash.c
  */
-const char **hashKeys(Hash *hash);
+const char **hashKeys(const Hash *hash);
 
 /** Like hashKeys, but sorted */
-const char **hashKeysSorted(Hash *hash);
+const char **hashKeysSorted(const Hash *hash);
 
 #endif
