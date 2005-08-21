@@ -23,15 +23,16 @@
  *     GCC_CONFIG_DEFAULT_CHOST:
  *       The default CHOST
  *     GCC_CONFIG_ALL_CHOSTS:
- *       A list of all CHOSTS for which a profile is available
- *     GCC_CONFIG_INSTALLED_CHOSTS:
- *       All CHOSTS for which a profile is installed.  Note that there might
- *       be a CHOST here which is not in GCC_CONFIG_ALL_CHOSTS because the
- *       user has used the --chost option to choose a non-default CHOST.
+ *       A sorted list of all CHOSTS for which a profile is available.
+ *     GCC_CONFIG_SET_CHOSTS:
+ *       A sorted list of all CHOSTS for which a profile is set.  Note that
+ *       there might be a CHOST here which is not in GCC_CONFIG_ALL_CHOSTS
+ *       because the user has used the --chost option to choose a non-default
+ *       CHOST.
  *     GCC_CONFIG_PROFILES_<CHOST/-/_>:
- *       A list of available profiles for the given CHOST.  The list is space
- *       delimeted with a forward slash between the install and profile.
- *     GCC_CONFIG_SELECTED_<CHOST/-/_>:
+ *       A sorted list of available profiles for the given CHOST.  The list is
+ *       space delimeted with a forward slash between the install and profile.
+ *     GCC_CONFIG_SET_<CHOST/-/_>:
  *       The selected <install>/<profile> for the given CHOST.
  *
  *   get-profile <install>/<profile>
@@ -45,6 +46,7 @@
  *     GCC_CONFIG_CHOST
  *     GCC_CONFIG_GCC_SPECS
  *     GCC_CONFIG_CFLAGS
+ *     GCC_CONFIG_ALIASES
  *
  *   set <install>/<profile> [--chost=<CHOST>]
  *     activate a profile (and optionally assign it a CHOST other than its default)
@@ -55,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.3 2005/08/21 20:38:50 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.4 2005/08/21 22:33:17 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.4  2005/08/21 22:33:17  eradicator
+ * Added get-profiles action.
+ *
  * Revision 1.3  2005/08/21 20:38:50  eradicator
  * Command line parsing and added documantation of how the command will work.
  *
@@ -68,6 +73,9 @@
  *
  */
 
+/* For strdup() */
+#define _GNU_SOURCE
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -78,6 +86,7 @@
 #include <string.h>
 
 #include "selection_conf.h"
+#include "install_conf.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1023
@@ -97,16 +106,161 @@ static void die(const char *msg, ...) {
 	exit(1);
 }
 
-static void doGetProfiles() {
-	
+#define MAX_CHOSTS 128
+
+typedef struct _pnode {
+	const Profile *profile;
+	struct _pnode *prev;
+	struct _pnode *next;
+} PNode;
+
+static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
+	const char **installs;
+	const char **setChosts;
+	const char **allChosts;
+	Hash *profilesByChost;
+	const InstallConf *installConf;
+	size_t i;
+
+	if(selectionConf == NULL)
+		return;
+
+	setChosts = hashKeysSorted(selectionConf->selectionHash);
+	installs = hashKeysSorted(selectionConf->installHash);
+	profilesByChost = hashNew(20);
+
+	if(setChosts == NULL || installs == NULL || allChosts == NULL)
+		goto end_doGetProfiles;
+
+	/* We need to create our profilesByChost hash */
+	for(i=0; installs[i] != NULL; i++) {
+		const char **profiles;
+		size_t j;
+
+		installConf = hashGet(selectionConf->installHash, installs[i]);
+		if(!installConf)
+			continue;
+
+		profiles = hashKeysSorted(installConf->profileHash);
+		if(!profiles)
+			continue;
+
+		for(j=0; profiles[j] != NULL; j++) {
+			PNode *pn, *opn;
+			pn = (PNode *)calloc(1, sizeof(PNode));
+			if(!pn)
+				die("Memory allocation failure.");
+			pn->profile = hashGet(installConf->profileHash, profiles[j]);
+			opn = (PNode *)hashInsert(profilesByChost, pn->profile->chost, pn);
+			if(opn) {
+				opn->prev = pn;
+				pn->next = opn;
+			}
+		}
+
+		free(profiles);
+	}
+
+	allChosts = hashKeysSorted(profilesByChost);
+	if(allChosts == NULL)
+		goto end_doGetProfiles;
+
+	/*     GCC_CONFIG_DEFAULT_CHOST:
+	 *       The default CHOST
+	 */
+
+	fprintf(fd, "GCC_CONFIG_DEFAULT_CHOST=\"%s\"\n", selectionConf->defaultChost);
+
+	/*     GCC_CONFIG_ALL_CHOSTS:
+	 *       A sorted list of all CHOSTS for which a profile is available.
+	 */
+	fputs("GCC_CONFIG_ALL_CHOSTS=\"", fd);
+	for(i=0; allChosts[i] != NULL; i++) {
+		if(i != 0)
+			fputc(' ', fd);
+		fputs(allChosts[i], fd);
+	}
+	fputs("\"\n", fd);
+
+	/*     GCC_CONFIG_SET_CHOSTS:
+	 *       A sorted list of all CHOSTS for which a profile is set.  Note that
+	 *       there might be a CHOST here which is not in GCC_CONFIG_ALL_CHOSTS
+	 *       because the user has used the --chost option to choose a non-default
+	 *       CHOST.
+	 */
+	fputs("GCC_CONFIG_SET_CHOSTS=\"", fd);
+	for(i=0; setChosts[i] != NULL; i++) {
+		if(i != 0)
+			fputc(' ', fd);
+		fputs(setChosts[i], fd);
+	}
+	fputs("\"\n", fd);
+
+	/*     GCC_CONFIG_PROFILES_<CHOST/-/_>:
+	 *       A sorted list of available profiles for the given CHOST.  The list is
+	 *       space delimeted with a forward slash between the install and profile.
+	 */
+	for(i=0; allChosts[i] != NULL; i++) {
+		PNode *pn = hashGet(profilesByChost, allChosts[i]);
+		unsigned needSpace = 0;
+
+		char *chostul=strndup(setChosts[i], MAXPATHLEN);
+		char *s;
+		if(!chostul)
+			die("Memory allocation failure.");
+		for(s = chostul; *s; s++) {
+			if(*s == '-')
+				*s = '_';
+		}
+
+		fprintf(fd, "GCC_CONFIG_PROFILES_%s=\"", chostul);
+		free(chostul);
+
+		/* Our list is reversed, so start at the end */
+		for(; pn->next; pn = pn->next);
+
+		for(; pn; pn = pn->prev) {
+			const Profile *profile = pn->profile;
+			if(needSpace)
+				fputc(' ', fd);
+			else
+				needSpace = 1;
+
+			fprintf(fd, "%s/%s", profile->installConf->name, profile->name);
+		}
+		fputs("\"\n", fd);
+	}
+
+	/*     GCC_CONFIG_SET_<CHOST/-/_>:
+	 *       The selected <install>/<profile> for the given CHOST.
+	 */
+	for(i=0; setChosts[i] != NULL; i++) {
+		Profile *profile = hashGet(selectionConf->selectionHash, setChosts[i]);
+		char *chostul=strndup(setChosts[i], MAXPATHLEN);
+		char *s;
+		if(!chostul)
+			die("Memory allocation failure.");
+		for(s = chostul; *s; s++) {
+			if(*s == '-')
+				*s = '_';
+		}
+		fprintf(fd, "GCC_CONFIG_SET_%s=\"%s/%s\"\n", chostul, profile->installConf->name, profile->name);
+		free(chostul);
+	}
+
+end_doGetProfiles:
+	if(installs) free(installs);
+	if(setChosts) free(setChosts);
+	if(profilesByChost) hashFree(profilesByChost);
+	if(allChosts) free(allChosts);
 }
 
-static void doGetProfile(const char *install, const char *profile) {
+static void doGetProfile(const SelectionConf *selectionConf, const char *install, const char *profile, FILE *fd) {
 	
 }
 
 /* If CHOST is null, we use the default chost for the profile */
-static void doSet(const char *install, const char *profile, const char *chost) {
+static void doSet(SelectionConf *selectionConf, const char *install, const char *profile, const char *chost) {
 	
 }
 
@@ -149,7 +303,7 @@ int main(int argc, char **argv) {
 			/* No extra options */
 			if(i < argc)
 				die("get-profile does not take extra options.");
-			doGetProfiles();
+			doGetProfiles(selectionConf, stdout);
 			break;
 
 		case ACTION_GET_PROFILE:
@@ -164,7 +318,7 @@ int main(int argc, char **argv) {
 				die("There was no / in the profile given");
 			profile++;
 
-			doGetProfile(install, profile);
+			doGetProfile(selectionConf, install, profile, stdout);
 			break;
 
 		case ACTION_SET:
@@ -184,7 +338,8 @@ int main(int argc, char **argv) {
 			if(!install)
 				die("You did not give a profile to set.");
 
-			doSet(install, profile, chost);
+			doSet(selectionConf, install, profile, chost);
+			
 			break;
 
 		default:
