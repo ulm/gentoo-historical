@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.177 2005/08/20 21:07:44 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.178 2005/08/21 06:02:12 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -59,7 +59,7 @@ class ArchitectureTemplate:
                                  (self.configure_make_conf, "Configure /etc/make.conf"),
                                  (self.set_etc_portage, "Setting /etc/portage/"),
                                  (self.prepare_chroot, "Preparing chroot"),
-                                 (self.install_portage_tree, "Portage tree voodoo"),
+                                 (self.install_portage_tree, "Syncing the Portage tree"),
                                  (self.stage1, "Performing bootstrap"),
                                  (self.stage2, "Performing 'emerge system'"),
                                  (self.set_root_password, "Set the root password"),
