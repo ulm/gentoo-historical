@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.4 2005/08/21 22:33:17 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.5 2005/08/21 22:44:08 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.5  2005/08/21 22:44:08  eradicator
+ * Fixed a memleak
+ *
  * Revision 1.4  2005/08/21 22:33:17  eradicator
  * Added get-profiles action.
  *
@@ -251,7 +254,21 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 end_doGetProfiles:
 	if(installs) free(installs);
 	if(setChosts) free(setChosts);
-	if(profilesByChost) hashFree(profilesByChost);
+
+	if(profilesByChost) {
+		if(!allChosts)
+			allChosts = hashKeys(profilesByChost);
+		for(i=0; allChosts[i] != NULL; i++) {
+			PNode *pn;
+			PNode *next;
+			for(pn = (PNode *)hashGet(profilesByChost, allChosts[i]); pn; pn = next) {
+				next = pn->next;
+				free(pn);
+			}
+		}
+		hashFree(profilesByChost);
+	}
+
 	if(allChosts) free(allChosts);
 }
 
