@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.5 2005/08/21 22:44:08 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.6 2005/08/22 22:09:01 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.6  2005/08/22 22:09:01  eradicator
+ * Added get-profile action.  Made die() output a newline.
+ *
  * Revision 1.5  2005/08/21 22:44:08  eradicator
  * Fixed a memleak
  *
@@ -106,6 +109,7 @@ static void die(const char *msg, ...) {
 	va_start(args, msg);
 	vfprintf(stderr, msg, args);
 	va_end(args);
+	fputc('\n', stderr);
 	exit(1);
 }
 
@@ -272,13 +276,67 @@ end_doGetProfiles:
 	if(allChosts) free(allChosts);
 }
 
-static void doGetProfile(const SelectionConf *selectionConf, const char *install, const char *profile, FILE *fd) {
-	
+static void doGetProfile(const SelectionConf *selectionConf, const char *install, const char *profileStr, FILE *fd) {
+	InstallConf *installConf;
+	Profile *profile;
+	size_t i;
+	const char **aliases;
+
+	installConf = hashGet(selectionConf->installHash, install);
+	if(!installConf)
+		die("No such install: %s", install);
+
+	profile = hashGet(installConf->profileHash, profileStr);
+	if(!profile)
+		die("No such profile: %s/%s", install, profile);
+
+	/* GCC_CONFIG_BINPATH */
+	fprintf(fd, "GCC_CONFIG_BINPATH=\"%s\"\n", installConf->binpath);
+
+	/* GCC_CONFIG_MANPATH */
+	fprintf(fd, "GCC_CONFIG_MANPATH=\"%s\"\n", installConf->manpath ? installConf->manpath : "");
+
+	/* GCC_CONFIG_INFOPATH */
+	fprintf(fd, "GCC_CONFIG_INFOPATH=\"%s\"\n", installConf->infopath ? installConf->infopath : "");
+
+	/* GCC_CONFIG_LDPATH */
+	fprintf(fd, "GCC_CONFIG_LDPATH=\"%s\"\n", profile->libdir);
+
+	/* GCC_CONFIG_CHOST */
+	fprintf(fd, "GCC_CONFIG_CHOST=\"%s\"\n", profile->chost);
+
+	/* GCC_CONFIG_GCC_SPECS */
+	fprintf(fd, "GCC_CONFIG_GCC_SPECS=\"%s\"\n", profile->specs ? profile->specs : "");
+
+	/* GCC_CONFIG_CFLAGS */
+	fprintf(fd, "GCC_CONFIG_CFLAGS=\"%s\"\n", profile->cflags ? profile->cflags : "");
+
+	/* GCC_CONFIG_ALIASES */
+	aliases = hashKeysSorted(installConf->wrapperAliases);
+	if(!aliases)
+		die("Memory allocation error");
+	fputs("GCC_CONFIG_ALIASES=\"", fd);
+	for(i=0; aliases[i] != NULL; i++) {
+		if(i != 0)
+			fputc(' ', fd);
+		fputs(aliases[i], fd);
+	}
+	fputs("\"\n", fd);
 }
 
 /* If CHOST is null, we use the default chost for the profile */
-static void doSet(SelectionConf *selectionConf, const char *install, const char *profile, const char *chost) {
-	
+static void doSet(SelectionConf *selectionConf, const char *install, const char *profileStr, const char *chost) {
+	InstallConf *installConf;
+	Profile *profile;
+
+	installConf = hashGet(selectionConf->installHash, install);
+	if(!installConf)
+		die("No such install: %s", install);
+
+	profile = hashGet(installConf->profileHash, profileStr);
+	if(!profile)
+		die("No such profile: %s/%s", install, profile);
+
 }
 
 int main(int argc, char **argv) {
@@ -288,8 +346,8 @@ int main(int argc, char **argv) {
 	unsigned userProfile = 0;
 	const char *configDir = CONFIGURATION_DIR;
 	const char *chost = NULL;
-	const char *install = NULL;
-	const char *profile = NULL;
+	char *install = NULL;
+	char *profile = NULL;
 
 	for(i=1; i < argc; i++) {
 		if(strcmp(argv[i], "-u") == 0) {
@@ -333,6 +391,8 @@ int main(int argc, char **argv) {
 			for(profile = install; *profile != '\0' && *profile != '/' && profile - install < MAXPATHLEN; profile++);
 			if(*profile == '\0' || profile - install == MAXPATHLEN)
 				die("There was no / in the profile given");
+
+			*profile = '\0';
 			profile++;
 
 			doGetProfile(selectionConf, install, profile, stdout);
@@ -348,6 +408,8 @@ int main(int argc, char **argv) {
 					for(profile = install; *profile != '\0' && *profile != '/' && profile - install < MAXPATHLEN; profile++);
 					if(*profile == '\0' || profile - install == MAXPATHLEN)
 						die("There was no / in the profile given");
+
+					*profile = '\0';
 					profile++;
 				}
 			}
@@ -356,7 +418,7 @@ int main(int argc, char **argv) {
 				die("You did not give a profile to set.");
 
 			doSet(selectionConf, install, profile, chost);
-			
+			saveSelectionConf(selectionConf);
 			break;
 
 		default:
