@@ -1,6 +1,7 @@
 # timezone_map_gui.py: gui timezone map widget.
 #
 # Copyright 2001 - 2005 Red Hat, Inc.
+# Copyright 1999-2005 Gentoo Foundation
 #
 # This software may be freely redistributed under the terms of the GNU
 # library public license.

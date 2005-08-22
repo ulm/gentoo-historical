@@ -1,3 +1,8 @@
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
+
 import gtk
 import GLIScreen
 import GLIUtility
