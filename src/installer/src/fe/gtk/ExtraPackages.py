@@ -39,7 +39,7 @@ class Panel(GLIScreen.GLIScreen):
 		    }
 	
 	x11 = { "xorg-x11":"An X11 implementation maintained by the X.Org Foundation.",
-		"GNOME":"The Gnome Desktop Environment",
+		"gnome":"The Gnome Desktop Environment",
 		"kde":"The K Desktop Environment",
 		"blackbox":"A small, fast, full-featured window manager for X",
 		"enlightenment":"Enlightenment Window Manager",
