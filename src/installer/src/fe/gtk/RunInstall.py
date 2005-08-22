@@ -81,6 +81,8 @@ class RunInstall(gtk.Window):
 			self.textbuffer.insert(iter_end, error_msg, -1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
 			self.progress.set_fraction(1)
+			self.progress.set_text("Performing install failure cleanup")
+			self.controller.cc.start_failure_cleanup()
 			self.progress.set_text("Install failed!")
 			self.install_fail = True
 			return False
