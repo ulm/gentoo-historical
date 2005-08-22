@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.181 2005/08/21 19:09:05 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.182 2005/08/22 02:44:24 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -340,9 +340,9 @@ class ArchitectureTemplate:
 		for package in installpackages:
 			#look for special cases first:
 			if package == "pcmcia-cs":
-				install_pcmcia_cs()
+				self.install_pcmcia_cs()
 			elif package == "xorg-x11":
-				install_xorg_x11()
+				self.install_xorg_x11()
 			else:
 				self._logger.log("Starting emerge " + package)
 				status = self._emerge(package)
