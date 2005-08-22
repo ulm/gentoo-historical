@@ -1,7 +1,7 @@
 """
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.182 2005/08/22 02:44:24 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.183 2005/08/22 16:38:31 codeman Exp $
 Copyright 2005 Gentoo Technologies Inc.
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
@@ -341,8 +341,6 @@ class ArchitectureTemplate:
 			#look for special cases first:
 			if package == "pcmcia-cs":
 				self.install_pcmcia_cs()
-			elif package == "xorg-x11":
-				self.install_xorg_x11()
 			else:
 				self._logger.log("Starting emerge " + package)
 				status = self._emerge(package)
@@ -354,6 +352,14 @@ class ArchitectureTemplate:
 		# error checking is important!
 		if len(failed_list) > 0:
 			self._logger.log("ERROR! Could not emerge " + str(failed_list) + "!")
+			
+		if GLIUtility.is_file(self._chroot_dir+"/etc/X11")
+			#Now copy the XF86Config
+			exitstatus = GLIUtility.spawn("cp /etc/X11/xorg.conf " + self._chroot_dir + "/etc/X11/xorg.conf")
+			if not GLIUtility.exitsuccess(exitstatus):
+				self._logger.log("Could NOT copy the xorg configuration from the livecd to the new system!")
+			else:
+				self._logger.log("xorg.conf copied to new system.  X should be ready to roll!")
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
@@ -902,22 +908,6 @@ class ArchitectureTemplate:
 			self._add_to_runlevel('pcmcia')
 			self._logger.log("PCMCIA_CS emerged and configured.")
 			
-	##
-	# Installs and sets up xorg-x11 by copying the XF86Config file found on the livecd.
-	def install_xorg_x11(self):
-		exitstatus = self._emerge("xorg-x11")
-		if not GLIUtility.exitsuccess(exitstatus):
-			self._logger.log("ERROR! : Could not emerge xorg-x11!")
-		
-		else:
-			#Now copy the XF86Config
-			exitstatus = GLIUtility.spawn("cp /etc/X11/xorg.conf " + self._chroot_dir + "/etc/X11/xorg.conf")
-			if not GLIUtility.exitsuccess(exitstatus):
-				self._logger.log("Could NOT copy the xorg configuration from the livecd to the new system!")
-			else:
-				self._logger.log("xorg.conf copied to new system.  X should be ready to roll!")
-			
-
 	##
 	# This runs etc-update and then re-overwrites the files by running the configure_*'s to keep our values.
 	def update_config_files(self):
