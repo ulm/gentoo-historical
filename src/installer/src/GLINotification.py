@@ -1,9 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-Copyright 2004 Gentoo Technologies Inc.
-
-$Id: GLINotification.py,v 1.4 2005/04/16 03:12:27 agaffney Exp $
+$Id: GLINotification.py,v 1.5 2005/08/22 18:35:51 codeman Exp $
 """
 
 ##
@@ -38,4 +40,3 @@ class GLINotification:
 	# @param type Type (duh)
 	def set_type(self, type):
 		self._type = type
-

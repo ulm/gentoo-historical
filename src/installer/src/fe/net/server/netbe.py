@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 """
 This script will setup two servers and then run forever.
 The first is a udp discovery server. Its job it to tell any clients where

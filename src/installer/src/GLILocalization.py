@@ -1,9 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLILocalization.py,v 1.5 2005/06/14 05:17:07 robbat2 Exp $
-Copyright 2004 Gentoo Technologies Inc.
-
+$Id: GLILocalization.py,v 1.6 2005/08/22 18:35:51 codeman Exp $
 
 This module is used for reading and returning localized errors and informative
 messages.

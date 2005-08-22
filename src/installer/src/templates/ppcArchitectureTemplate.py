@@ -1,7 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: ppcArchitectureTemplate.py,v 1.3 2005/07/22 21:58:36 codeman Exp $
+$Id: ppcArchitectureTemplate.py,v 1.4 2005/08/22 18:35:52 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 

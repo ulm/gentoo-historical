@@ -1,7 +1,10 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer Test Suite
-Copyright 2004 Gentoo Technologies, Inc.
-$Header: /var/cvsroot/gentoo/src/installer/src/tests/test_GLI_InstallProfile.py,v 1.4 2004/04/09 02:46:59 esammer Exp $
+$Header: /var/cvsroot/gentoo/src/installer/src/tests/test_GLI_InstallProfile.py,v 1.5 2005/08/22 18:35:52 codeman Exp $
 """
 
 import unittest

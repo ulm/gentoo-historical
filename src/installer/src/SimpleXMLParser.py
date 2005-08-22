@@ -1,8 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.10 2005/08/05 01:51:56 agaffney Exp $
-Copyright 2005 Gentoo
+$Id: SimpleXMLParser.py,v 1.11 2005/08/22 18:35:51 codeman Exp $
 
 """
 

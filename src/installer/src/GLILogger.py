@@ -1,8 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLILogger.py,v 1.8 2005/05/12 15:18:08 agaffney Exp $
-Copyright 2004 Gentoo Technologies Inc.
+$Id: GLILogger.py,v 1.9 2005/08/22 18:35:51 codeman Exp $
 
 Logger is a singleton style generic logger object.
 """

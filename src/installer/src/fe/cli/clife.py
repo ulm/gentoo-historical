@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # Copyright 1999-2005 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.5 2005/07/12 01:42:43 robbat2 Exp $
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
+# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.6 2005/08/22 18:35:52 codeman Exp $
 
 import sys
 sys.path.append("../..")

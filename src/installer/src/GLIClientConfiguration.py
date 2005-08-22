@@ -1,7 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.39 2005/07/28 19:28:23 samyron Exp $
+$Id: GLIClientConfiguration.py,v 1.40 2005/08/22 18:35:51 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class

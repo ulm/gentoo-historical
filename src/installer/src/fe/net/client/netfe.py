@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 ##
 #The sole point of this script is to kick off a GLIInstall. This script requires the 'netbe.py' configured 
 #and setup on the local net in order to run. Also the network should up and running when this script is 

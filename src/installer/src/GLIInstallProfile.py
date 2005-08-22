@@ -1,8 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.73 2005/07/31 01:23:24 codeman Exp $
-Copyright 2005 Gentoo Technologies Inc.
+$Id: GLIInstallProfile.py,v 1.74 2005/08/22 18:35:51 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be

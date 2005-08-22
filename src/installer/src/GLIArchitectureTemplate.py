@@ -1,8 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.184 2005/08/22 16:45:28 codeman Exp $
-Copyright 2005 Gentoo Technologies Inc.
+$Id: GLIArchitectureTemplate.py,v 1.185 2005/08/22 18:35:51 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 

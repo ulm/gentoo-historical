@@ -1,7 +1,11 @@
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIException.py,v 1.8 2005/04/14 15:44:03 agaffney Exp $
+$Id: GLIException.py,v 1.9 2005/08/22 18:35:51 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 """
@@ -53,4 +57,3 @@ class GLIException(Exception):
 	# @param self Parameter description
 	def __str__(self):
 		return "%s :%s: %s: %s" % (self.args[0], upper(self.args[1]), self.args[2], self.args[3])
-
