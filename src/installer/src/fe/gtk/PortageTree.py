@@ -107,7 +107,7 @@ a brief description beside it.
 				msgdlg.destroy()
 				if resp == gtk.RESPONSE_NO:
 					return False
-			elif not GLIUtility.validate_uri(entry_portage_snapshot_uri.get_text()):
+			elif not GLIUtility.validate_uri(self.entry_portage_snapshot_uri.get_text()):
 				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="The portage snapshot URI you entered does not exist. Continue?")
 				resp = msgdlg.run()
 				msgdlg.destroy()
