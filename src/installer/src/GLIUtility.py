@@ -700,7 +700,11 @@ def get_local_use_flags():
 	return use_local_desc
 	
 def get_cd_snapshot_uri():
-	return spawn("ls /mnt/cdrom/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
+	snapuri = spawn("ls /mnt/cdrom/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
+	if not snapuri:
+		snapuri = spawn("ls /mnt/livecd/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
+	return snapuri
+
 
 def validate_uri(uri):
 	# Get tuple of matches
