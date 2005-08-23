@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.6 2005/08/23 02:00:39 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.7 2005/08/23 02:54:09 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.7  2005/08/23 02:54:09  eradicator
+ * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
+ *
  * Revision 1.6  2005/08/23 02:00:39  eradicator
  * Added code to save the selection config.
  *
@@ -35,8 +38,8 @@
  *
  */
 
-#ifndef _GCC_CONFIG_SELECTION_CONF_H_
-#define _GCC_CONFIG_SELECTION_CONF_H_
+#ifndef _COMPILER_CONFIG_SELECTION_CONF_H_
+#define _COMPILER_CONFIG_SELECTION_CONF_H_
 
 #include "hash.h"
 

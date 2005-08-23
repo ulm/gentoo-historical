@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.7 2005/08/20 22:03:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.8 2005/08/23 02:54:09 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.8  2005/08/23 02:54:09  eradicator
+ * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
+ *
  * Revision 1.7  2005/08/20 22:03:48  eradicator
  * Let users override settings in ~/.gcc-config.
  *
@@ -38,8 +41,8 @@
  *
  */
 
-#ifndef _GCC_CONFIG_INSTALL_CONF_H_
-#define _GCC_CONFIG_INSTALL_CONF_H_
+#ifndef _COMPILER_CONFIG_INSTALL_CONF_H_
+#define _COMPILER_CONFIG_INSTALL_CONF_H_
 
 #include "hash.h"
 #include "parse_conf.h"

@@ -20,33 +20,33 @@
  *     get a set of environment variables (to be eval'd) which describe the
  *     available and installed profiles
  *
- *     GCC_CONFIG_DEFAULT_CHOST:
+ *     COMPILER_CONFIG_DEFAULT_CHOST:
  *       The default CHOST
- *     GCC_CONFIG_ALL_CHOSTS:
+ *     COMPILER_CONFIG_ALL_CHOSTS:
  *       A sorted list of all CHOSTS for which a profile is available.
- *     GCC_CONFIG_SET_CHOSTS:
+ *     COMPILER_CONFIG_SET_CHOSTS:
  *       A sorted list of all CHOSTS for which a profile is set.  Note that
- *       there might be a CHOST here which is not in GCC_CONFIG_ALL_CHOSTS
+ *       there might be a CHOST here which is not in COMPILER_CONFIG_ALL_CHOSTS
  *       because the user has used the --chost option to choose a non-default
  *       CHOST.
- *     GCC_CONFIG_PROFILES_<CHOST/-/_>:
+ *     COMPILER_CONFIG_PROFILES_<CHOST/-/_>:
  *       A sorted list of available profiles for the given CHOST.  The list is
  *       space delimeted with a forward slash between the install and profile.
- *     GCC_CONFIG_SET_<CHOST/-/_>:
+ *     COMPILER_CONFIG_SET_<CHOST/-/_>:
  *       The selected <install>/<profile> for the given CHOST.
  *
  *   get-profile <install>/<profile>
  *     get a set of environment variables (to be eval'd) with the data for the
  *     given profile
  *
- *     GCC_CONFIG_BINPATH
- *     GCC_CONFIG_MANPATH
- *     GCC_CONFIG_INFOPATH
- *     GCC_CONFIG_LDPATH
- *     GCC_CONFIG_CHOST
- *     GCC_CONFIG_GCC_SPECS
- *     GCC_CONFIG_CFLAGS
- *     GCC_CONFIG_ALIASES
+ *     COMPILER_CONFIG_BINPATH
+ *     COMPILER_CONFIG_MANPATH
+ *     COMPILER_CONFIG_INFOPATH
+ *     COMPILER_CONFIG_LDPATH
+ *     COMPILER_CONFIG_CHOST
+ *     COMPILER_CONFIG_GCC_SPECS
+ *     COMPILER_CONFIG_CFLAGS
+ *     COMPILER_CONFIG_ALIASES
  *
  *   set <install>/<profile> [--chost=<CHOST>]
  *     activate a profile (and optionally assign it a CHOST other than its default)
@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.9 2005/08/23 02:39:30 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.10 2005/08/23 02:54:09 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.10  2005/08/23 02:54:09  eradicator
+ * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
+ *
  * Revision 1.9  2005/08/23 02:39:30  eradicator
  * Making error messages consistant.
  *
@@ -182,16 +185,16 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	if(allChosts == NULL)
 		goto end_doGetProfiles;
 
-	/*     GCC_CONFIG_DEFAULT_CHOST:
+	/*     COMPILER_CONFIG_DEFAULT_CHOST:
 	 *       The default CHOST
 	 */
 
-	fprintf(fd, "GCC_CONFIG_DEFAULT_CHOST=\"%s\"\n", selectionConf->defaultChost);
+	fprintf(fd, "COMPILER_CONFIG_DEFAULT_CHOST=\"%s\"\n", selectionConf->defaultChost);
 
-	/*     GCC_CONFIG_ALL_CHOSTS:
+	/*     COMPILER_CONFIG_ALL_CHOSTS:
 	 *       A sorted list of all CHOSTS for which a profile is available.
 	 */
-	fputs("GCC_CONFIG_ALL_CHOSTS=\"", fd);
+	fputs("COMPILER_CONFIG_ALL_CHOSTS=\"", fd);
 	for(i=0; allChosts[i] != NULL; i++) {
 		if(i != 0)
 			fputc(' ', fd);
@@ -199,13 +202,13 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	}
 	fputs("\"\n", fd);
 
-	/*     GCC_CONFIG_SET_CHOSTS:
+	/*     COMPILER_CONFIG_SET_CHOSTS:
 	 *       A sorted list of all CHOSTS for which a profile is set.  Note that
-	 *       there might be a CHOST here which is not in GCC_CONFIG_ALL_CHOSTS
+	 *       there might be a CHOST here which is not in COMPILER_CONFIG_ALL_CHOSTS
 	 *       because the user has used the --chost option to choose a non-default
 	 *       CHOST.
 	 */
-	fputs("GCC_CONFIG_SET_CHOSTS=\"", fd);
+	fputs("COMPILER_CONFIG_SET_CHOSTS=\"", fd);
 	for(i=0; setChosts[i] != NULL; i++) {
 		if(i != 0)
 			fputc(' ', fd);
@@ -213,7 +216,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	}
 	fputs("\"\n", fd);
 
-	/*     GCC_CONFIG_PROFILES_<CHOST/-/_>:
+	/*     COMPILER_CONFIG_PROFILES_<CHOST/-/_>:
 	 *       A sorted list of available profiles for the given CHOST.  The list is
 	 *       space delimeted with a forward slash between the install and profile.
 	 */
@@ -230,7 +233,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 				*s = '_';
 		}
 
-		fprintf(fd, "GCC_CONFIG_PROFILES_%s=\"", chostul);
+		fprintf(fd, "COMPILER_CONFIG_PROFILES_%s=\"", chostul);
 		free(chostul);
 
 		/* Our list is reversed, so start at the end */
@@ -248,7 +251,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		fputs("\"\n", fd);
 	}
 
-	/*     GCC_CONFIG_SET_<CHOST/-/_>:
+	/*     COMPILER_CONFIG_SET_<CHOST/-/_>:
 	 *       The selected <install>/<profile> for the given CHOST.
 	 */
 	for(i=0; setChosts[i] != NULL; i++) {
@@ -261,7 +264,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 			if(*s == '-')
 				*s = '_';
 		}
-		fprintf(fd, "GCC_CONFIG_SET_%s=\"%s/%s\"\n", chostul, profile->installConf->name, profile->name);
+		fprintf(fd, "COMPILER_CONFIG_SET_%s=\"%s/%s\"\n", chostul, profile->installConf->name, profile->name);
 		free(chostul);
 	}
 
@@ -300,32 +303,32 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 	if(!profile)
 		die("No such profile: %s/%s", install, profile);
 
-	/* GCC_CONFIG_BINPATH */
-	fprintf(fd, "GCC_CONFIG_BINPATH=\"%s\"\n", installConf->binpath);
+	/* COMPILER_CONFIG_BINPATH */
+	fprintf(fd, "COMPILER_CONFIG_BINPATH=\"%s\"\n", installConf->binpath);
 
-	/* GCC_CONFIG_MANPATH */
-	fprintf(fd, "GCC_CONFIG_MANPATH=\"%s\"\n", installConf->manpath ? installConf->manpath : "");
+	/* COMPILER_CONFIG_MANPATH */
+	fprintf(fd, "COMPILER_CONFIG_MANPATH=\"%s\"\n", installConf->manpath ? installConf->manpath : "");
 
-	/* GCC_CONFIG_INFOPATH */
-	fprintf(fd, "GCC_CONFIG_INFOPATH=\"%s\"\n", installConf->infopath ? installConf->infopath : "");
+	/* COMPILER_CONFIG_INFOPATH */
+	fprintf(fd, "COMPILER_CONFIG_INFOPATH=\"%s\"\n", installConf->infopath ? installConf->infopath : "");
 
-	/* GCC_CONFIG_LDPATH */
-	fprintf(fd, "GCC_CONFIG_LDPATH=\"%s\"\n", profile->libdir);
+	/* COMPILER_CONFIG_LDPATH */
+	fprintf(fd, "COMPILER_CONFIG_LDPATH=\"%s\"\n", profile->libdir);
 
-	/* GCC_CONFIG_CHOST */
-	fprintf(fd, "GCC_CONFIG_CHOST=\"%s\"\n", profile->chost);
+	/* COMPILER_CONFIG_CHOST */
+	fprintf(fd, "COMPILER_CONFIG_CHOST=\"%s\"\n", profile->chost);
 
-	/* GCC_CONFIG_GCC_SPECS */
-	fprintf(fd, "GCC_CONFIG_GCC_SPECS=\"%s\"\n", profile->specs ? profile->specs : "");
+	/* COMPILER_CONFIG_GCC_SPECS */
+	fprintf(fd, "COMPILER_CONFIG_GCC_SPECS=\"%s\"\n", profile->specs ? profile->specs : "");
 
-	/* GCC_CONFIG_CFLAGS */
-	fprintf(fd, "GCC_CONFIG_CFLAGS=\"%s\"\n", profile->cflags ? profile->cflags : "");
+	/* COMPILER_CONFIG_CFLAGS */
+	fprintf(fd, "COMPILER_CONFIG_CFLAGS=\"%s\"\n", profile->cflags ? profile->cflags : "");
 
-	/* GCC_CONFIG_ALIASES */
+	/* COMPILER_CONFIG_ALIASES */
 	aliases = hashKeysSorted(installConf->wrapperAliases);
 	if(!aliases)
 		die("Memory allocation failure.");
-	fputs("GCC_CONFIG_ALIASES=\"", fd);
+	fputs("COMPILER_CONFIG_ALIASES=\"", fd);
 	for(i=0; aliases[i] != NULL; i++) {
 		if(i != 0)
 			fputc(' ', fd);

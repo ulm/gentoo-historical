@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.7 2005/08/21 22:01:02 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.8 2005/08/23 02:54:09 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.8  2005/08/23 02:54:09  eradicator
+ * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
+ *
  * Revision 1.7  2005/08/21 22:01:02  eradicator
  * Added hashFreeAll() which frees the associated data as well.
  *
@@ -38,8 +41,8 @@
  *
  */
 
-#ifndef _GCC_CONFIG_HASH_H_
-#define _GCC_CONFIG_HASH_H_
+#ifndef _COMPILER_CONFIG_HASH_H_
+#define _COMPILER_CONFIG_HASH_H_
 
 /* Implementation is internal */
 typedef struct _Hash Hash;

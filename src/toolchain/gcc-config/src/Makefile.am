@@ -1,1 +1,1 @@
-SUBDIRS = libcommon gcc-wrapper profile-manager
+SUBDIRS = libcommon compiler-wrapper profile-manager
