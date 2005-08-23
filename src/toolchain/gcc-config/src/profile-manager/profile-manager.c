@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.12 2005/08/23 08:06:28 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.13 2005/08/23 08:28:14 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.13  2005/08/23 08:28:14  eradicator
+ * Changed -u to --user for consistency
+ *
  * Revision 1.12  2005/08/23 08:06:28  eradicator
  * Fixed typo which broke COMPILER_CONFIG_PROFILES_ output in some cases.
  *
@@ -380,7 +383,7 @@ int main(int argc, char **argv) {
 	char *profile = NULL;
 
 	for(i=1; i < argc; i++) {
-		if(strcmp(argv[i], "-u") == 0) {
+		if(strcmp(argv[i], "--user") == 0) {
 			userProfile = 1;
 		} else if(strncmp(argv[i], "--config-dir=", 13) == 0) {
 			configDir = argv[i] + 13;
