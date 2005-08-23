@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.10 2005/08/23 02:54:09 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.11 2005/08/23 07:32:26 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.11  2005/08/23 07:32:26  eradicator
+ * Added --default option to set action.
+ *
  * Revision 1.10  2005/08/23 02:54:09  eradicator
  * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
  *
@@ -338,7 +341,7 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 }
 
 /* If CHOST is null, we use the default chost for the profile */
-static void doSet(SelectionConf *selectionConf, const char *install, const char *profileStr, const char *chost) {
+static void doSet(SelectionConf *selectionConf, const char *install, const char *profileStr, const char *chost, unsigned makeDefault) {
 	InstallConf *installConf;
 	Profile *profile;
 
@@ -354,6 +357,12 @@ static void doSet(SelectionConf *selectionConf, const char *install, const char 
 		chost = profile->chost;
 
 	hashInsert(selectionConf->selectionHash, chost, profile);
+
+	if(makeDefault) {
+		if(selectionConf->defaultChost)
+			free(selectionConf->defaultChost);
+		selectionConf->defaultChost = strndup(chost, MAXPATHLEN);
+	}
 }
 
 int main(int argc, char **argv) {
@@ -361,6 +370,7 @@ int main(int argc, char **argv) {
 	unsigned action = ACTION_NONE;
 	size_t i;
 	unsigned userProfile = 0;
+	unsigned makeDefault = 0;
 	const char *configDir = CONFIGURATION_DIR;
 	const char *chost = NULL;
 	char *install = NULL;
@@ -419,6 +429,8 @@ int main(int argc, char **argv) {
 			for(; i < argc; i++) {
 				if(strncmp(argv[i], "--chost=", 8) == 0) {
 					chost = argv[i] + 8;
+				} else if(strcmp(argv[i], "--default") == 0) {
+					makeDefault = 1;
 				} else {
 					/* Find the split */
 					install = argv[i];
@@ -434,7 +446,7 @@ int main(int argc, char **argv) {
 			if(!install)
 				die("You did not give a profile to set.");
 
-			doSet(selectionConf, install, profile, chost);
+			doSet(selectionConf, install, profile, chost, makeDefault);
 			if(saveSelectionConf(selectionConf, configDir, userProfile) != 0)
 				die("Error saving config: %s", strerror(errno));
 			break;
