@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.11 2005/08/23 07:32:26 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.12 2005/08/23 08:06:28 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.12  2005/08/23 08:06:28  eradicator
+ * Fixed typo which broke COMPILER_CONFIG_PROFILES_ output in some cases.
+ *
  * Revision 1.11  2005/08/23 07:32:26  eradicator
  * Added --default option to set action.
  *
@@ -227,7 +230,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		PNode *pn = hashGet(profilesByChost, allChosts[i]);
 		unsigned needSpace = 0;
 
-		char *chostul=strndup(setChosts[i], MAXPATHLEN);
+		char *chostul=strndup(allChosts[i], MAXPATHLEN);
 		char *s;
 		if(!chostul)
 			die("Memory allocation failure.");
