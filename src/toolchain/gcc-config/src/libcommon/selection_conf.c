@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.11 2005/08/21 03:52:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.12 2005/08/23 00:57:36 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.12  2005/08/23 00:57:36  eradicator
+ * Let user config dir be configurable.
+ *
  * Revision 1.11  2005/08/21 03:52:16  eradicator
  * A couple portability fixes...
  *
@@ -50,19 +53,23 @@
  *
  */
 
+/* For snprintf() */
+#define _GNU_SOURCE
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "selection_conf.h"
 #include "install_conf.h"
 #include "parse_conf.h"
 
 #ifndef MAXPATHLEN
-#define MAXPATHLEN 1024
+#define MAXPATHLEN 1023
 #endif
 
 #ifndef USE_HARDCODED_CONF
@@ -113,7 +120,7 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 
 	/* Now checkout the user override */
 	if(userOverride) {
-		snprintf(filename, MAXPATHLEN, "%s/.gcc-config/selection.conf", getenv("HOME"));
+		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
 		config = parserNew(filename);
 		parserSetData(config, retval);
 		parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
@@ -126,8 +133,16 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 }
 
 /** Save the configuration file */
-void saveSelectionConf(SelectionConf *config) {
-	/* TODO: Save the configuration file */
+void saveSelectionConf(SelectionConf *config, const char *globalConfigDir, unsigned userOverride) {
+	char filename[MAXPATHLEN + 1];
+
+	/* Now checkout the user override */
+	if(userOverride) {
+		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
+	} else {
+		snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
+	}
+
 	return;
 }
 

@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.4 2005/08/20 22:03:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.5 2005/08/23 00:57:36 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.5  2005/08/23 00:57:36  eradicator
+ * Let user config dir be configurable.
+ *
  * Revision 1.4  2005/08/20 22:03:48  eradicator
  * Let users override settings in ~/.gcc-config.
  *
@@ -57,7 +60,7 @@ typedef struct {
 SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride);
 
 /** Save the configuration file */
-void saveSelectionConf(SelectionConf *config);
+void saveSelectionConf(SelectionConf *config, const char *globalConfigDir, unsigned userOverride);
 
 /** Free selectionConf and its contents */
 void freeSelectionConf(SelectionConf *selectionConf);
