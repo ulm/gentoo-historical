@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.6 2005/08/21 03:52:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.7 2005/08/23 11:48:16 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.7  2005/08/23 11:48:16  eradicator
+ * Addressed a few portability concerns.
+ *
  * Revision 1.6  2005/08/21 03:52:16  eradicator
  * A couple portability fixes...
  *
@@ -33,7 +36,7 @@
  *
  */
 
-/* Needed for strdup */
+/* For strdup() */
 #define _GNU_SOURCE
 
 #ifdef HAVE_CONFIG_H

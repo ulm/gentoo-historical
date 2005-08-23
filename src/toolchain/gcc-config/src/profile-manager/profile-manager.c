@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.13 2005/08/23 08:28:14 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.14 2005/08/23 11:48:16 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.14  2005/08/23 11:48:16  eradicator
+ * Addressed a few portability concerns.
+ *
  * Revision 1.13  2005/08/23 08:28:14  eradicator
  * Changed -u to --user for consistency
  *
@@ -100,7 +103,7 @@
  *
  */
 
-/* For strdup() */
+/* For strndup() */
 #define _GNU_SOURCE
 
 #ifdef HAVE_CONFIG_H
@@ -124,6 +127,18 @@
 #define ACTION_GET_PROFILES  1
 #define ACTION_GET_PROFILE   2
 #define ACTION_SET           3
+
+#if HAVE_MKDIR
+#  if MKDIR_TAKES_ONE_ARG
+#    define mkdir(a, b) mkdir(a)
+#  endif
+#else
+#  if HAVE__MKDIR
+#    define mkdir(a, b) _mkdir(a)
+#  else
+#    error "Don't know how to create a directory on this system."
+#  endif
+#endif
 
 static void die(const char *msg, ...) {
 	va_list args;

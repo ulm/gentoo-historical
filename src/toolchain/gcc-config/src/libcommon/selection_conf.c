@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.14 2005/08/23 02:33:09 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.15 2005/08/23 11:48:16 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.15  2005/08/23 11:48:16  eradicator
+ * Addressed a few portability concerns.
+ *
  * Revision 1.14  2005/08/23 02:33:09  eradicator
  * Create the directory when saving the profile.
  *
@@ -58,9 +61,6 @@
  * Added framework for handling configuration files.
  *
  */
-
-/* For snprintf() */
-#define _GNU_SOURCE
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -111,6 +111,7 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	hashInsert(retval->installHash, "x86_64-pc-linux-gnu-3.4.4", installConf);
 	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
+	hashInsert(retval->selectionHash, "i386-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
 	char filename[MAXPATHLEN + 1];
 	ConfigParser *config;
