@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.13 2005/08/23 02:00:39 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.14 2005/08/23 02:33:09 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.14  2005/08/23 02:33:09  eradicator
+ * Create the directory when saving the profile.
+ *
  * Revision 1.13  2005/08/23 02:00:39  eradicator
  * Added code to save the selection config.
  *
@@ -67,6 +70,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "selection_conf.h"
 #include "install_conf.h"
@@ -138,6 +143,7 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 
 /** Save the configuration file */
 int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir, unsigned userOverride) {
+	char dirname[MAXPATHLEN + 1];
 	char filename[MAXPATHLEN + 1];
 	const char **chosts;
 	FILE *fd;
@@ -145,21 +151,26 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 
 	/* What directory are we storing the file in */
 	if(userOverride) {
-		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
+		snprintf(dirname, MAXPATHLEN, "%s/%s", getenv("HOME"), USER_CONFIGURATION_DIR);
 	} else {
-		snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
+		strncpy(dirname, globalConfigDir, MAXPATHLEN);
 	}
 
-	/* TODO: Make the directory if it doesn't exist*/
+	/* Make the directory if it doesn't exist*/
+	if(mkdir(dirname, 0777) < 0) {
+		if(errno !=EEXIST)
+			return errno;
+	}
 
 	/* Open the file */
+	snprintf(filename, MAXPATHLEN, "%s/selection.conf", dirname);
 	fd = fopen(filename, "w");
 	if(!fd)
 		return errno;
 
 	/* [global] section */
 	fprintf(fd, "[global]\n");
-	fprintf(fd, "  chost=%s\n", selectionConf->defaultChost);
+	fprintf(fd, "\tchost=%s\n", selectionConf->defaultChost);
 
 	chosts = hashKeysSorted(selectionConf->selectionHash);
 	if(!chosts)
@@ -169,8 +180,8 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 	for(i=0; chosts[i] != NULL; i++) {
 		Profile *profile = hashGet(selectionConf->selectionHash, chosts[i]);
 		fprintf(fd, "\n[%s]\n", chosts[i]);
-		fprintf(fd, "  version=%s\n", profile->installConf->name);
-		fprintf(fd, "  profile=%s\n", profile->name);
+		fprintf(fd, "\tversion=%s\n", profile->installConf->name);
+		fprintf(fd, "\tprofile=%s\n", profile->name);
 	}
 
 	/* Close the file */
