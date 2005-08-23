@@ -1,7 +1,7 @@
 /*
  * C Implementation: profile-manager
  *
- * Description: 
+ * Description:
  * binary called by the eselect module to query and update the
  * configuration files in /etc/gcc-config and ~/.gcc-config
  *
@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.6 2005/08/22 22:09:01 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.7 2005/08/23 00:59:16 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.7  2005/08/23 00:59:16  eradicator
+ * Added set action.
+ *
  * Revision 1.6  2005/08/22 22:09:01  eradicator
  * Added get-profile action.  Made die() output a newline.
  *
@@ -337,6 +340,10 @@ static void doSet(SelectionConf *selectionConf, const char *install, const char 
 	if(!profile)
 		die("No such profile: %s/%s", install, profile);
 
+	if(chost == NULL)
+		chost = profile->chost;
+
+	hashInsert(selectionConf->selectionHash, chost, profile);
 }
 
 int main(int argc, char **argv) {
@@ -418,7 +425,7 @@ int main(int argc, char **argv) {
 				die("You did not give a profile to set.");
 
 			doSet(selectionConf, install, profile, chost);
-			saveSelectionConf(selectionConf);
+			saveSelectionConf(selectionConf, configDir, userProfile);
 			break;
 
 		default:
