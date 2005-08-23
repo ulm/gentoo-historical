@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.12 2005/08/23 00:57:36 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.13 2005/08/23 02:00:39 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.13  2005/08/23 02:00:39  eradicator
+ * Added code to save the selection config.
+ *
  * Revision 1.12  2005/08/23 00:57:36  eradicator
  * Let user config dir be configurable.
  *
@@ -63,6 +66,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "selection_conf.h"
 #include "install_conf.h"
@@ -133,17 +137,49 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 }
 
 /** Save the configuration file */
-void saveSelectionConf(SelectionConf *config, const char *globalConfigDir, unsigned userOverride) {
+int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir, unsigned userOverride) {
 	char filename[MAXPATHLEN + 1];
+	const char **chosts;
+	FILE *fd;
+	size_t i;
 
-	/* Now checkout the user override */
+	/* What directory are we storing the file in */
 	if(userOverride) {
 		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
 	} else {
 		snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
 	}
 
-	return;
+	/* TODO: Make the directory if it doesn't exist*/
+
+	/* Open the file */
+	fd = fopen(filename, "w");
+	if(!fd)
+		return errno;
+
+	/* [global] section */
+	fprintf(fd, "[global]\n");
+	fprintf(fd, "  chost=%s\n", selectionConf->defaultChost);
+
+	chosts = hashKeysSorted(selectionConf->selectionHash);
+	if(!chosts)
+		return errno;
+
+	/* Section for each CHOST */
+	for(i=0; chosts[i] != NULL; i++) {
+		Profile *profile = hashGet(selectionConf->selectionHash, chosts[i]);
+		fprintf(fd, "\n[%s]\n", chosts[i]);
+		fprintf(fd, "  version=%s\n", profile->installConf->name);
+		fprintf(fd, "  profile=%s\n", profile->name);
+	}
+
+	/* Close the file */
+	fclose(fd);
+
+	/* Cleanup */
+	free(chosts);
+
+	return 0;
 }
 
 /** Free selectionConf and its contents */
