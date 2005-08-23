@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.8 2005/08/23 02:01:07 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.9 2005/08/23 02:39:30 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.9  2005/08/23 02:39:30  eradicator
+ * Making error messages consistant.
+ *
  * Revision 1.8  2005/08/23 02:01:07  eradicator
  * Added error handling for set action.
  *
@@ -321,7 +324,7 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 	/* GCC_CONFIG_ALIASES */
 	aliases = hashKeysSorted(installConf->wrapperAliases);
 	if(!aliases)
-		die("Memory allocation error");
+		die("Memory allocation failure.");
 	fputs("GCC_CONFIG_ALIASES=\"", fd);
 	for(i=0; aliases[i] != NULL; i++) {
 		if(i != 0)

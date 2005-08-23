@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.9 2005/08/21 03:52:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/gcc-wrapper/Attic/gcc-wrapper.c,v 1.10 2005/08/23 02:39:30 eradicator Exp $
  * $Log: gcc-wrapper.c,v $
+ * Revision 1.10  2005/08/23 02:39:30  eradicator
+ * Making error messages consistant.
+ *
  * Revision 1.9  2005/08/21 03:52:16  eradicator
  * A couple portability fixes...
  *
@@ -43,7 +46,7 @@
  *
  */
 
-/* For strdup() */
+/* For strndup() */
 #define _GNU_SOURCE
 
 #ifdef HAVE_CONFIG_H
@@ -63,7 +66,7 @@
 #include "install_conf.h"
 
 #ifndef MAXPATHLEN
-#define MAXPATHLEN 1024
+#define MAXPATHLEN 1023
 #endif
 
 typedef struct {
@@ -84,12 +87,13 @@ typedef struct {
 	Hash *wrapperAliases;
 } WrapperData;
 
-static void wrapperExit(char *msg, ...) {
+static void die(char *msg, ...) {
 	va_list args;
 	fprintf(stderr, "gcc-config error: ");
 	va_start(args, msg);
 	vfprintf(stderr, msg, args);
 	va_end(args);
+	fputc('\n', stderr);
 	exit(1);
 }
 
@@ -168,7 +172,7 @@ static void setChostAndProfile(WrapperData *data) {
 	/* No match, use the default */
 	strncpy(data->chost, data->selectionConf->defaultChost, MAXPATHLEN);
 	if((data->profile = hashGet(data->selectionConf->selectionHash, data->chost)) == NULL) {
-		wrapperExit("%s wrapper: Could not determine CHOST or CHOST has no selected profile.", data->argv[0]);
+		die("%s wrapper: Could not determine CHOST or CHOST has no selected profile.", data->argv[0]);
 	}
 	return;
 }
@@ -208,7 +212,7 @@ static void setExecBinary(WrapperData *data) {
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
-	wrapperExit("%s wrapper: Unable to determine executable.\n\tCHOST=%s\n\texec=%s\n", data->argv[0], data->chost, execBasename);
+	die("%s wrapper: Unable to determine executable.\n\tCHOST=%s\n\texec=%s\n", data->argv[0], data->chost, execBasename);
 }
 
 int main(int argc, char *argv[]) {
@@ -217,12 +221,12 @@ int main(int argc, char *argv[]) {
 	
 	data = (WrapperData *)alloca(sizeof(WrapperData));
 	if(data == NULL)
-		wrapperExit("%s wrapper: out of memory\n", argv[0]);
+		die("Memory allocation failure.");
 
 	/* Load the config file */
 	data->selectionConf = loadSelectionConf(CONFIGURATION_DIR, 1);
 	if(data->selectionConf == NULL)
-		wrapperExit("%s wrapper: out of memory\n", argv[0]);
+		die("Memory allocation failure.");
 
 	/* The argv to pass to the forked process.  Defaults to be the same */
 	data->argv = argv;
@@ -250,7 +254,7 @@ int main(int argc, char *argv[]) {
 	if(extraCflags) {
 		data->argv = buildNewArgv(data->argv, extraCflags);
 		if(data->argv == NULL)
-			wrapperExit("%s wrapper: out of memory\n", argv[0]);
+			die("Memory allocation failure.");
 	}
 
 	/* Select the appropriate GCC specs file */
@@ -266,7 +270,7 @@ int main(int argc, char *argv[]) {
 
 	/* Ok, lets exec it. */
 	if (execv(data->execBinary, data->argv) < 0)
-		wrapperExit("Could not run/locate \"%s\"\n", data->execBinary);
+		die("Could not run/locate \"%s\"", data->execBinary);
 
 	return 0;
 }
