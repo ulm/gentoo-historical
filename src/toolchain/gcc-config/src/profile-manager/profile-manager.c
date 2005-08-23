@@ -57,8 +57,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.7 2005/08/23 00:59:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.8 2005/08/23 02:01:07 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.8  2005/08/23 02:01:07  eradicator
+ * Added error handling for set action.
+ *
  * Revision 1.7  2005/08/23 00:59:16  eradicator
  * Added set action.
  *
@@ -89,6 +92,7 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -425,7 +429,8 @@ int main(int argc, char **argv) {
 				die("You did not give a profile to set.");
 
 			doSet(selectionConf, install, profile, chost);
-			saveSelectionConf(selectionConf, configDir, userProfile);
+			if(saveSelectionConf(selectionConf, configDir, userProfile) != 0)
+				die("Error saving config: %s", strerror(errno));
 			break;
 
 		default:
