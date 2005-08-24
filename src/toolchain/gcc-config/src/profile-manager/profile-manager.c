@@ -47,6 +47,7 @@
  *     COMPILER_CONFIG_GCC_SPECS
  *     COMPILER_CONFIG_CFLAGS
  *     COMPILER_CONFIG_ALIASES
+ *     COMPILER_CONFIG_ALIASE_<alias>
  *
  *   set <install>/<profile> [--chost=<CHOST>]
  *     activate a profile (and optionally assign it a CHOST other than its default)
@@ -57,8 +58,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.14 2005/08/23 11:48:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.15 2005/08/24 04:25:30 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.15  2005/08/24 04:25:30  eradicator
+ * Added COMPILER_CONFIG_ALIAS_<alias>
+ *
  * Revision 1.14  2005/08/23 11:48:16  eradicator
  * Addressed a few portability concerns.
  *
@@ -325,7 +329,7 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 
 	profile = hashGet(installConf->profileHash, profileStr);
 	if(!profile)
-		die("No such profile: %s/%s", install, profile);
+		die("No such profile: %s/%s", install, profileStr);
 
 	/* COMPILER_CONFIG_BINPATH */
 	fprintf(fd, "COMPILER_CONFIG_BINPATH=\"%s\"\n", installConf->binpath);
@@ -359,6 +363,11 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 		fputs(aliases[i], fd);
 	}
 	fputs("\"\n", fd);
+
+	/* COMPILER_CONFIG_ALIASE_<alias> */
+	for(i=0; aliases[i] != NULL; i++) {
+		fprintf(fd, "COMPILER_CONFIG_ALIAS_%s=\"%s\"\n", aliases[i], (const char *)hashGet(installConf->wrapperAliases, aliases[i]));
+	}
 }
 
 /* If CHOST is null, we use the default chost for the profile */
