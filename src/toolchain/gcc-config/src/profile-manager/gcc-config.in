@@ -1,3 +1,88 @@
 #!/bin/bash
+# Copyright 1999-2005 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/gcc-config.in,v 1.2 2005/08/24 05:52:25 eradicator Exp $
+# Author: Jeremy Huddleston <eradicator@gentoo.org>
 
-exit 0
+. /etc/init.d/functions.sh
+
+hasq() {
+	local x
+
+	local me=${1}
+	shift
+
+for x in "${@}"; do
+		if [[ "${x}" == "${me}" ]]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+print_usage() {
+	cat << FOO
+Usage: ${0##*/} [<options>]
+WARNING: gcc-config is deprecated and is just a frontend to the compiler
+         eselect module.  In the future, gcc-config will be removed
+         from portage.  Please see 'eselect compiler help'
+FOO
+}
+
+parse_options() {
+	local opt
+	while [[ ${#} -gt 0 ]]; do
+		opt=${1}
+		shift
+		case ${opt} in
+			-l|--list-profiles)
+				if [[ -n "${ACTION}" ]]; then
+					ACTION="error"
+					eerror "Invalid usage."
+				else
+					ACTION="list-profiles"
+				fi
+			;;
+			--help|-h|--usage)
+				ACTION="usage"
+			;;
+			*)
+				if [[ -n "${ACTION}" ]]; then
+					ACTION="error"
+					eerror "Invalid usage."
+				else
+					ACTION="set"
+					NEW_PROFILE="${opt}"
+				fi
+			;;
+		esac
+	done
+}
+
+## START PROGRAM ##
+
+NEW_PROFILE=""
+ACTION=""
+
+parse_options ${@}
+
+case ${ACTION} in
+	list-profiles)
+		eselect compiler list
+	;;
+	set)
+		ewarn "gcc-config is deprecated and is just a frontend to the compiler"
+		ewarn "eselect module.  In the future, gcc-config will be removed"
+		ewarn "from portage.  Please see 'eselect compiler help'"
+
+		eselect compiler set ${NEW_PROFILE}
+	;;
+	usage)
+		print_usage
+		exit 0
+	;;
+	*)
+		print_usage
+		exit 1
+	;;
+esac
