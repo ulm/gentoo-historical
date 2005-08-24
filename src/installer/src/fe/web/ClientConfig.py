@@ -17,27 +17,27 @@ def show_client_config(data):
 	#checked=\"checked\" if arch=found_arch
 	data += '<input type="radio" '
 	if arch == "x86":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="x86">x86 (Pentium and Athlon Series)<br>\n'
 	data += '<input type="radio" '
 	if arch == "amd64":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="amd64">AMD Athlon 64 and Opteron<br>\n'
 	data += '<input type="radio" '
 	if arch == "ppc":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="ppc">PPC (New World) Macs<br>\n'
 	data += '<input type="radio" '
 	if arch == "sparc":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="sparc">Sparc<br>\n'
 	data += '<input type="radio" '
 	if arch == "alpha":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="alpha">Alpha<br>\n'
 	data += '<input type="radio" '
 	if arch == "hppa":
-		data += 'checked '
+		data += 'checked="checked" '
 	data += 'name="ArchType" value="hppa">HPPA<br>\n'
 	data += '</td><td width="15"></td><td>'
 	#Choose the logfile location
