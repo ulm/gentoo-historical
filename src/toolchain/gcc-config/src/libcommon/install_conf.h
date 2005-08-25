@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.8 2005/08/23 02:54:09 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.9 2005/08/25 21:04:13 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.9  2005/08/25 21:04:13  eradicator
+ * Added currentProfile for use in parsing the config file.
+ *
  * Revision 1.8  2005/08/23 02:54:09  eradicator
  * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
  *
@@ -69,9 +72,12 @@ typedef struct {
 	 * Value: (char *) binary to execute instead (such as "gcc" or "gfortran")
 	 */
 	Hash *wrapperAliases;
+
+	/* Pointer to current profile. Used only in config parser. */
+	struct _Profile *currentProfile;
 } InstallConf;
 
-typedef struct {
+typedef struct _Profile {
 	InstallConf *installConf;
 
 	char *name;
