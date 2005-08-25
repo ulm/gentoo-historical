@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.8 2005/08/20 22:03:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.9 2005/08/25 21:08:28 sekretarz Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.9  2005/08/25 21:08:28  sekretarz
+ * Coded callbacks function. Still untested.
+ *
  * Revision 1.8  2005/08/20 22:03:48  eradicator
  * Let users override settings in ~/.gcc-config.
  *
@@ -46,6 +49,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "install_conf.h"
 #include "parse_conf.h"
@@ -53,11 +57,57 @@
 #ifndef USE_HARDCODED_CONF
 static int installConfSectionCB(const char *section, void *data)
 {
+	InstallConf *conf = (InstallConf *)data;
+	
+	if (!strcmp(section, "global")) {
+		conf->currentProfile = NULL;
+		conf->profileHash = hashNew(10);
+		conf->wrapperAliases = hashNew(10);
+	} else {
+		Profile *tmp = (Profile *)malloc(sizeof(Profile));
+		tmp->installConf = conf;
+		tmp->name = strdup(section);
+		conf->currentProfile = tmp;
+		hashInsert(conf->profileHash, tmp->name, (void *)tmp);
+	}
+	
 	return 0;
 }
 
 static int installConfKeyCB(const char *key, const char *value, void *data)
 {
+	InstallConf *conf = (InstallConf *)data;
+
+	if (!conf->currentProfile) { /* on global section */
+		if (!strcmp(key, "version")) 
+			conf->name     = strdup(value);
+		else if (!strcmp(key, "bindir"))
+			conf->binpath  = strdup(value);
+		else if (!strcmp(key, "infopath"))
+			conf->infopath = strdup(value);
+		else if (!strcmp(key, "manpath"))
+			conf->manpath  = strdup(value);
+		/* check aliases */
+		else if (!strncmp(key, "alias", 5)) 
+			hashInsert(conf->wrapperAliases, key+5, (void *)value);
+		/* wrong key */
+		else 
+			return 10;
+	} else { /* on other sections */
+		if (!strcmp(key, "chost"))
+			conf->currentProfile->chost = strdup(value);
+		else if (!strcmp(key, "specs"))
+			conf->currentProfile->specs = strdup(value);
+		else if (!strcmp(key, "ldpath"))
+			conf->currentProfile->libdir = strdup(value);
+		else if (!strcmp(key, "cflags"))
+			conf->currentProfile->cflags = strdup(value);
+		/* wrong key */
+		else 
+			return 11;
+	}
+	
+		
 	return 0;
 }
 #endif
