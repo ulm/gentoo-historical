@@ -815,11 +815,14 @@
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <!-- Strip http://www.gentoo.org from links but leave links to viewcvs intact
-             Has no effect on actual www.g.o but helps when surfing on a local copy -->
+        <!-- Strip http://www.gentoo.org from links 
+             Has no effect on actual www.g.o but helps when surfing on a local copy
+             Rewrite http://www.gentoo.org/cgi-bin/viewcvs/ to use viewcvs.gentoo.org
+          -->
         <xsl:variable name="llink">
           <xsl:choose>
-            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/cgi-bin/')"><xsl:value-of select="@link" /></xsl:when>
+            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
+            <xsl:when test="starts-with(@link, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
             <xsl:when test="starts-with(@link, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')" /></xsl:when>
             <xsl:otherwise><xsl:value-of select="@link" /></xsl:otherwise>
           </xsl:choose>
