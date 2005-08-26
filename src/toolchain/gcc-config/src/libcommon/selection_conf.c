@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.15 2005/08/23 11:48:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.16 2005/08/26 19:55:06 sekretarz Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.16  2005/08/26 19:55:06  sekretarz
+ * Parsing global section code
+ *
  * Revision 1.15  2005/08/23 11:48:16  eradicator
  * Addressed a few portability concerns.
  *
@@ -84,11 +87,29 @@
 #ifndef USE_HARDCODED_CONF
 static int selectionConfSectionCB(const char *section, void *data)
 {
+	SelectionConf *selconf = (SelectionConf *)data;
+
+	if (!strcmp(section, "global")) {
+		selconf->currentInstall = NULL;
+	} else {
+		InstallConf *tmp;
+	}
 	return 0;
 }
 
 static int selectionConfKeyCB(const char *key, const char *value, void *data)
 {
+	SelectionConf *selconf = (SelectionConf *)data;
+	
+	if (!selconf->currentInstall) {
+		if(!strcmp(key, "default_chost"))
+			selconf->defaultChost = strdup(value);
+		/* show error */
+		else
+			return 11;
+	} else {
+		
+	}
 	return 0;
 }
 #endif
@@ -115,6 +136,10 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 #else
 	char filename[MAXPATHLEN + 1];
 	ConfigParser *config;
+
+	retval->installHash = hashNew(10);
+	retval->selectionHash = hashNew(10);
+	retval->currentInstall = NULL;
 
 	/* Load all the installation configuration files from the directory given */
 
