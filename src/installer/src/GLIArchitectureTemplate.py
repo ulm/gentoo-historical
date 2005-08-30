@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.187 2005/08/30 17:54:40 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.188 2005/08/30 18:27:22 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -356,7 +356,7 @@ class ArchitectureTemplate:
 				self._logger.log("Cannot determine best_version for package " + package + "...skipping")
 			else:
 				installpackages2.append(tmppkg)
-		all_packages = self.get_packages_to_emerge("emerge -p " + " ".join(installpackages2))
+		all_packages = self._get_packages_to_emerge("emerge -p " + " ".join(installpackages2))
 		for package in all_packages:
 			#look for special cases first:
 			if package == "pcmcia-cs":
