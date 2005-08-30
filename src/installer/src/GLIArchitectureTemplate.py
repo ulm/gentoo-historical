@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.185 2005/08/22 18:35:51 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.186 2005/08/30 16:46:16 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -176,6 +176,15 @@ class ArchitectureTemplate:
 		return GLIUtility.spawn(cmd, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 
 	##
+	# Returns the full version of a package to be emerged when given a short name
+	# @param package short name of package (i.e. xorg-x11)
+	def _portage_best_version(self, package, chroot=True)
+		chrootdir = None
+		if chroot:
+			chrootdir = self._chroot_dir
+		return GLIUtility.spawn("portageq best_version / " + package, chroot=chrootdir, return_output=True)[1].strip()
+
+	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
 	# (actually it only just comments out the old one)
 	# @param filename 			file to be edited
@@ -340,13 +349,24 @@ class ArchitectureTemplate:
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
 		failed_list = []
+		installpackages2 = []
 		for package in installpackages:
+			tmppkg = self._portage_best_version(package)
+			if not tmppkg:
+				self._logger.log("Cannot determine best_version for package " + package + "...skipping")
+			else:
+				installpackages2.append(tmppkg)
+		all_packages = self.get_packages_to_emerge("emerge -p " + " ".join(installpackages2))
+		for package in all_packages:
 			#look for special cases first:
 			if package == "pcmcia-cs":
 				self.install_pcmcia_cs()
 			else:
 				self._logger.log("Starting emerge " + package)
-				status = self._emerge(package)
+				if package in installpackages2:
+					status = self._emerge(package)
+				else:
+					status = self._emerge("-1 " + package)
 				if not GLIUtility.exitsuccess(status):
 					self._logger.log("Could not emerge " + package + "!")
 					failed_list.append(package)
