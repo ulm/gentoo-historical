@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.186 2005/08/30 16:46:16 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.187 2005/08/30 17:54:40 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -178,7 +178,7 @@ class ArchitectureTemplate:
 	##
 	# Returns the full version of a package to be emerged when given a short name
 	# @param package short name of package (i.e. xorg-x11)
-	def _portage_best_version(self, package, chroot=True)
+	def _portage_best_version(self, package, chroot=True):
 		chrootdir = None
 		if chroot:
 			chrootdir = self._chroot_dir
