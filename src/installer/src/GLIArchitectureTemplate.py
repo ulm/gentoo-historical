@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.188 2005/08/30 18:27:22 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.189 2005/08/30 19:23:39 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -178,11 +178,8 @@ class ArchitectureTemplate:
 	##
 	# Returns the full version of a package to be emerged when given a short name
 	# @param package short name of package (i.e. xorg-x11)
-	def _portage_best_version(self, package, chroot=True):
-		chrootdir = None
-		if chroot:
-			chrootdir = self._chroot_dir
-		return GLIUtility.spawn("portageq best_version / " + package, chroot=chrootdir, return_output=True)[1].strip()
+	def _portage_best_visible(self, package):
+		return GLIUtility.spawn("portageq best_visible / " + package, chroot=self._chroot_dir, return_output=True)[1].strip()
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
@@ -351,9 +348,9 @@ class ArchitectureTemplate:
 		failed_list = []
 		installpackages2 = []
 		for package in installpackages:
-			tmppkg = self._portage_best_version(package)
+			tmppkg = self._portage_best_visible(package)
 			if not tmppkg:
-				self._logger.log("Cannot determine best_version for package " + package + "...skipping")
+				self._logger.log("Cannot determine best_visible for package " + package + "...skipping")
 			else:
 				installpackages2.append(tmppkg)
 		all_packages = self._get_packages_to_emerge("emerge -p " + " ".join(installpackages2))
