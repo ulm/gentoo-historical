@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.189 2005/08/30 19:23:39 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.190 2005/08/31 00:26:28 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -348,11 +348,16 @@ class ArchitectureTemplate:
 		failed_list = []
 		installpackages2 = []
 		for package in installpackages:
+			self._logger.log("Determing best_visible for package " + package)
 			tmppkg = self._portage_best_visible(package)
 			if not tmppkg:
-				self._logger.log("Cannot determine best_visible for package " + package + "...skipping")
+				self._logger.log("Cannot determine best_visible for package '" + package + "'...skipping")
 			else:
+				self._logger.log("best_visible for package '" + package + "' is " + tmppkg)
 				installpackages2.append(tmppkg)
+		if not installpackages2:
+			self._logger.log("Nothing in installpackages2 to emerge")
+			return
 		all_packages = self._get_packages_to_emerge("emerge -p " + " ".join(installpackages2))
 		for package in all_packages:
 			#look for special cases first:
