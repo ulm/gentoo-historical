@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.193 2005/08/31 01:44:54 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.194 2005/08/31 02:02:20 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -124,12 +124,12 @@ class ArchitectureTemplate:
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
 #		self._logger.log("_get_packages_to_emerge() called with '%s'" % cmd)
-		return GLIUtility.spawn(cmd + r" 2>/dev/null | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
+		return GLIUtility.spawn(cmd + r" 2>/dev/null | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
 
 	##
 	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
 	# @param package package to be quickpkg'd.
-	def _quickpkg_deps(self, package):
+	def _quickpkg_deps(self, package, nodeps=False):
 #		self._logger.log("_quickpkg_deps() called with '%s'" % package)
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
@@ -138,7 +138,10 @@ class ArchitectureTemplate:
 		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
-		packages = self._get_packages_to_emerge("emerge -p " + package)
+		if nodeps:
+			packages = package.split()
+		else:
+			packages = self._get_packages_to_emerge("emerge -p " + package)
 #		self._logger.log("packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
 			if not pkg: continue
@@ -156,12 +159,13 @@ class ArchitectureTemplate:
 	# @param package package to be emerged
 	# @param binary=False defines whether to try a binary emerge (if GRP this gets ignored either way)
 	# @param binary_only=False defines whether to only allow binary emerges.
-	def _emerge(self, package, binary=True, binary_only=False):
+	def _emerge(self, package, binary=True, binary_only=False, quickpkg=True):
 		#Error checking of this function is to be handled by the parent function.
 #		self._logger.log("_emerge() called with: package='%s', binary='%s', binary_only='%s', grp_install='%s'" % (package, str(binary), str(binary_only), str(self._install_profile.get_grp_install())))
 		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
-			self._quickpkg_deps(package)
+			if quickpkg:
+				self._quickpkg_deps(package)
 			cmd="emerge -k " + package
 		# now normal installs
 		else:
@@ -359,7 +363,7 @@ class ArchitectureTemplate:
 #			self._logger.log("Nothing in installpackages2 to emerge")
 			return
 		all_packages = self._get_packages_to_emerge("emerge -p =" + " =".join(installpackages2))
-		self._quickpkg_deps("=" + " =".join(installpackages2))
+		self._quickpkg_deps("=" + " =".join(all_packages), nodeps=True)
 		for package in all_packages:
 			#look for special cases first:
 			if package == "pcmcia-cs":
@@ -367,9 +371,9 @@ class ArchitectureTemplate:
 			else:
 				self._logger.log("Starting emerge " + package)
 				if package in installpackages2:
-					status = self._emerge("=" + package)
+					status = self._emerge("=" + package, quickpkg=False)
 				else:
-					status = self._emerge("-1 =" + package)
+					status = self._emerge("-1 =" + package, quickpkg=False)
 				if not GLIUtility.exitsuccess(status):
 					self._logger.log("Could not emerge " + package + "!")
 					failed_list.append(package)
