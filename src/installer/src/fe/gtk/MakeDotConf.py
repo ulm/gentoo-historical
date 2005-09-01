@@ -166,7 +166,10 @@ class Panel(GLIScreen.GLIScreen):
 		self.controller.SHOW_BUTTON_BACK    = True
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
-		self.make_conf_values = self.controller.install_profile.get_make_conf()
+		self.etc_files = self.controller.install_profile.get_etc_files()
+		if not "make.conf" in self.etc_files:
+			self.etc_files['make.conf'] = {}	
+		self.make_conf_values = self.etc_files['make.conf']
 		# Parsing USE
 		self.use_flags = {}
 		if not self.make_conf_values.has_key('USE') or not self.make_conf_values['USE']:
@@ -283,5 +286,6 @@ class Panel(GLIScreen.GLIScreen):
 		else:
 			self.make_conf_values['CHOST'] = self.arch_chosts['x86'][self.chost_combo.get_active()]
 		self.make_conf_values['MAKEOPTS'] = self.makeopts_entry.get_text()
-		self.controller.install_profile.set_make_conf(self.make_conf_values)
+		self.etc_files['make.conf'] = self.make_conf_values
+		self.controller.install_profile.set_etc_files(self.etc_files)
 		return True
