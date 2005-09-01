@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.62 2005/08/22 18:35:52 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.63 2005/09/01 17:05:13 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -355,21 +355,29 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					# sleep a bit first
 					time.sleep(1)
 					# now sleep until it exists
-					while not GLIUtility.is_file(devnode):
-						self._logger.log("Waiting for device node "+devnode+" to exist...")
-						time.sleep(1)
+#					while not GLIUtility.is_file(devnode):
+#						self._logger.log("Waiting for device node "+devnode+" to exist...")
+#						time.sleep(1)
 					# one bit of extra sleep is needed, as there is a blip still
-					time.sleep(1)
+#					time.sleep(1)
 
-					# now the actual command
-					cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
-					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
-					# If logging is not done, then you get errors:
-					# PartitionFormatError :FATAL: partition: could't create ext2 filesystem on /dev/hda1
-					#if GLIUtility.spawn(cmd):
-					#if GLIUtility.spawn(cmd,append_log=True,logfile='/var/log/install-mkfs.log'):
-					ret = GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True)
-					if not GLIUtility.exitsuccess(ret):
+					tries = 0
+					while tries < 3:
+						# now the actual command
+						cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
+						self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
+						# If logging is not done, then you get errors:
+						# PartitionFormatError :FATAL: partition: could't create ext2 filesystem on /dev/hda1
+						#if GLIUtility.spawn(cmd):
+						#if GLIUtility.spawn(cmd,append_log=True,logfile='/var/log/install-mkfs.log'):
+						ret = GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True)
+						if not GLIUtility.exitsuccess(ret):
+							tries += 1
+							self._logger("Try %d failed formatting partition %s...waiting 2 seconds" % (tries, devnode))
+							time.sleep(2)
+						else:
+							break
+					if tries == 3:
 						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
 				start = end + 1
 
