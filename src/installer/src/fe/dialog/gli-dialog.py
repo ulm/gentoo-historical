@@ -50,7 +50,8 @@ class Setup_InstallProfile(GLIGenIP):
 				self.set_cron_daemon()
 				self.set_logger()
 			self.set_extra_packages()
-			self.set_services()
+			if advanced_mode:
+				self.set_services()
 			self.set_rc_conf()
 			self.set_root_password()
 			self.set_additional_users()
@@ -67,6 +68,7 @@ class Setup_InstallProfile(GLIGenIP):
 				{ 'text': "Install Stage", 'fn': self.set_install_stage },
 				{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
 				{ 'text': "make.conf", 'fn': self.set_make_conf },
+				{ 'text': "etc/portage/*", 'fn': self.set_etc_portage },
 				{ 'text': "Kernel", 'fn': self.set_kernel },
 				{ 'text': "Bootloader", 'fn': self.set_boot_loader },
 				{ 'text': "Timezone", 'fn': self.set_timezone },

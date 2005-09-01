@@ -646,34 +646,32 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def set_etc_portage(self):
 	#This section will be for editing the /etc/portage/* files and other /etc/* files.  This should be for advanced users only.
-		while 0: #self.advanced_mode:
-			etc_files = self._install_profile.get_etc_files()
+		while self.advanced_mode:
+			etc_portage = self._install_profile.get_etc_portage()
 			
-			menulist = [("portage/bashrc",""),
-			("portage/package.mask",""),
-			("portage/package.unmask",""),
-			("portage/package.keywords",""),
-			("portage/package.use",""),
-			("portage/mirrors",""),
-			("portage/categories",""),
-			("portage/virtuals",""),
-			("portage/mirrors",""),
-			("make.profile/deprecated",""),
-			("make.profile/make.defaults",""),
-			("make.profile/packages",""),
-			("make.profile/packages.build",""),
-			("make.profile/package.provided",""),
-			("make.profile/parent",""),
-			("make.profile/use.defaults",""),
-			("make.profile/use.mask",""),
-			("make.profile/virtuals",""),
-			("portage/profiles/arch.list",""),
-			("portage/profiles/categories",""),
-			("portage/profiles/package.mask",""),
-			("portage/profiles/thirdpartymirrors","")]
-			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/* variables can also be defined.  Choose a variable to edit or Done to continue."), choices=(menulist+("Other","Type your own filename of a file to edit in /etc")), cancel=_(u"Done"), width=77)
+			menulist = [("portage/package.mask",_(u"A list of DEPEND atoms to mask.")),
+			("portage/package.unmask",_(u"A list of packages to unmask.")),
+			("portage/package.keywords",_(u"Per-package KEYWORDS (like ACCEPT_KEYWORDS).")),
+			("portage/package.use",_(u"Per-package USE flags.")),
+			(_(u"Other"),_(u"Type your own name of a file to edit in /etc/"))]
+			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/* variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"), width=77)
 			if code != self._DLG_OK: 
-				break
+				break  #get out of the while loop. then save and continue
+			
+			if menuitem == _(u"Other"):
+				code, menuitem = self._d.inputbox(_(u"Enter the name of the /etc/ file you would like to edit (DO NOT type /etc/)"))
+				if code != self._DLG_OK:
+					return
+			oldval = ""
+			if etc_portage.has_key(menuitem): 
+				oldval = etc_portage[menuitem]
+			code, newval = self._d.inputbox(_(u"Enter new contents (use \\n for newline) of ") + menuitem, init=oldval)
+			if code == self._DLG_OK:
+				etc_portage[menuitem] = newval
+		try:
+			self._install_profile.set_etc_portage(etc_portage)
+		except:
+			self._d.msgbox(_(u"ERROR! Could not set etc/portage/* correctly!"))
 
 		
 

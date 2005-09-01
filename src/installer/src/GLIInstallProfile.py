@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.74 2005/08/22 18:35:51 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.75 2005/09/01 21:20:53 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -484,6 +484,12 @@ class InstallProfile:
 	# Returns a hash/array of /etc/portage files to configure.
 	def get_etc_portage(self):
 		return self._etc_portage
+		
+	##
+	# Replaces etc_files structure with one passed in
+	# @param etc_files new etc_files structure
+	def set_etc_portage(self, etc_portage):
+		self._etc_portage = etc_portage
 	
 	##
 	# Serializes /etc/portage stuff
