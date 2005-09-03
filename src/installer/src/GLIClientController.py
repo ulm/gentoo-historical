@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.69 2005/08/22 18:35:51 codeman Exp $
+$Id: GLIClientController.py,v 1.70 2005/09/03 07:08:35 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -133,7 +133,7 @@ class GLIClientController(Thread):
 
 		try:
 			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration.get_architecture_template()])
-			self._arch_template = getattr(template, templates[self._configuration.get_architecture_template()])(self._configuration, self._install_profile, self._pretend)
+			self._arch_template = getattr(template, templates[self._configuration.get_architecture_template()])(self._configuration, self._install_profile, self)
 		except ImportError:
 			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!')))
 		except AttributeError:
