@@ -20,6 +20,7 @@ class RunInstall(gtk.Window):
 	install_done = False
 	install_fail = False
 	output_log_is_link = False
+	pulsing = False
 
 	def __init__(self, controller):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -50,10 +51,17 @@ class RunInstall(gtk.Window):
 
 		self.globalbox.add(self.notebook)
 
+		# This one comes first because it needs to be at the bottom....yes, that confuses me too :P
 		self.progress = gtk.ProgressBar()
 		self.progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.progress.set_text("Preparing...")
 		self.globalbox.pack_end(self.progress, expand=False, fill=False, padding=10)
+
+		self.subprogress = gtk.ProgressBar()
+		self.subprogress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
+		self.subprogress.set_text("Working...")
+		self.subprogress.set_pulse_step(0.5)
+		self.globalbox.pack_end(self.subprogress, expand=False, fill=False, padding=10)
 
 		self.add(self.globalbox)
 		self.make_visible()
@@ -86,8 +94,6 @@ class RunInstall(gtk.Window):
 			self.progress.set_text("Install failed!")
 			self.install_fail = True
 			return False
-#			print "Exception received:"
-#			print ndata
 		elif ntype == "int" and not self.install_fail:
 			if ndata == GLIClientController.NEXT_STEP_READY:
 				num_steps = self.controller.cc.get_num_steps()
@@ -98,8 +104,9 @@ class RunInstall(gtk.Window):
 					self.progress.set_text(self.controller.cc.get_next_step_info())
 					self.which_step += 1
 					self.controller.cc.next_step()
+					self.pulsing = True
 				return True
-			if ndata == GLIClientController.INSTALL_DONE:
+			elif ndata == GLIClientController.INSTALL_DONE:
 				self.install_done = True
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
@@ -108,6 +115,14 @@ class RunInstall(gtk.Window):
 #				msgdlg.run()
 #				msgdlg.destroy()
 				return False
+		elif ntype == "progress":
+			self.pulsing = False
+			self.subprogress.set_fraction(ndata[0])
+			self.subprogress.set_text(ndata[1])
+			return True
+		else:
+			self.subprogress.pulse()
+		return True
 
 	def tail_logfile(self):
 		if self.install_done:
