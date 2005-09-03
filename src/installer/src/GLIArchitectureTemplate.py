@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.198 2005/09/03 05:14:17 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.199 2005/09/03 05:16:25 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -370,7 +370,7 @@ class ArchitectureTemplate:
 		self._quickpkg_deps(" ".join(more_packages), nodeps=True)
 
 		for i, package in enumerate(all_packages):
-			self.notify_frontend("progress", (float(i) / len(all_packages), "Emerging " + package)
+			self.notify_frontend("progress", (float(i) / len(all_packages), "Emerging " + package))
 			#look for special cases first:
 			if package == "pcmcia-cs":
 				self.install_pcmcia_cs()
