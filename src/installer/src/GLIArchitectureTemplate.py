@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.199 2005/09/03 05:16:25 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.200 2005/09/03 06:57:08 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -55,27 +55,27 @@ class ArchitectureTemplate:
 
 		self._architecture_name = "generic"
 		self._install_steps = [
-                                 (self.partition, "Partition"),
-                                 (self.mount_local_partitions, "Mount local partitions"),
-                                 (self.mount_network_shares, "Mount network (NFS) shares"),
-                                 (self.unpack_stage_tarball, "Unpack stage tarball"),
-                                 (self.configure_make_conf, "Configure /etc/make.conf"),
-                                 (self.set_etc_portage, "Setting /etc/portage/"),
-                                 (self.prepare_chroot, "Preparing chroot"),
-                                 (self.install_portage_tree, "Syncing the Portage tree"),
-                                 (self.stage1, "Performing bootstrap"),
-                                 (self.stage2, "Performing 'emerge system'"),
-                                 (self.set_root_password, "Set the root password"),
-                                 (self.set_timezone, "Setting timezone"),
-                                 (self.emerge_kernel_sources, "Emerge kernel sources"),
-                                 (self.build_kernel, "Building kernel"),
-                                 (self.install_mta, "Installing MTA"),
-                                 (self.install_logging_daemon, "Installing system logger"),
-                                 (self.install_cron_daemon, "Installing Cron daemon"),
-                                 (self.install_filesystem_tools, "Installing filesystem tools"),
-                                 (self.setup_network_post, "Configuring post-install networking"),
-                                 (self.install_bootloader, "Configuring and installing bootloader"),
-                                 (self.update_config_files, "Updating config files"),
+								 (self.partition, "Partition"),
+								 (self.mount_local_partitions, "Mount local partitions"),
+								 (self.mount_network_shares, "Mount network (NFS) shares"),
+								 (self.unpack_stage_tarball, "Unpack stage tarball"),
+								 (self.update_config_files, "Updating config files"),
+								 (self.configure_make_conf, "Configure /etc/make.conf"),
+								 (self.prepare_chroot, "Preparing chroot"),
+								 (self.install_portage_tree, "Syncing the Portage tree"),
+								 (self.stage1, "Performing bootstrap"),
+								 (self.stage2, "Performing 'emerge system'"),
+								 (self.set_root_password, "Set the root password"),
+								 (self.set_timezone, "Setting timezone"),
+								 (self.emerge_kernel_sources, "Emerge kernel sources"),
+								 (self.build_kernel, "Building kernel"),
+								 (self.install_mta, "Installing MTA"),
+								 (self.install_logging_daemon, "Installing system logger"),
+								 (self.install_cron_daemon, "Installing Cron daemon"),
+								 (self.install_filesystem_tools, "Installing filesystem tools"),
+								 (self.setup_network_post, "Configuring post-install networking"),
+								 (self.install_bootloader, "Configuring and installing bootloader"),
+								 (self.update_config_files, "Re-Updating config files"),
 #                                 (self.configure_rc_conf, "Updating /etc/rc.conf"),
                                  (self.set_users, "Add additional users."),
                                  (self.install_packages, "Installing additional packages."),
@@ -1275,30 +1275,6 @@ class ArchitectureTemplate:
 				GLIUtility.spawn("chmod a+x /var/tmp/post-install && /var/tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
-
-	## 
-	# This function adds user-defined entries to the files in /etc/portage
-	#
-	def set_etc_portage(self):
-		etc_portage = self._install_profile.get_etc_portage()
-
-		# Loop through the required files.
-		for conf_file in etc_portage:
-			contents = enumerate(etc_portage[conf_file])
-			filename = self._chroot_dir + "/etc/portage/" + conf_file
-			self._logger.log("Configuring /etc/portage/" + conf_file)
-			self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
-
-			# Set up the contents hash to pass to the config writer.
-			contents = {}
-			for key,value in enumerate(etc_portage[conf_file]):
-				contents[str(key)] = string.strip(value)
-
-			# Write out the contents in one go.
-			self._edit_config(filename, contents, "", False, True)
-
-			self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
-			self._logger.log("Finished configuring /etc/portage/" + conf_file)
 
 	##
 	# This function should only be called in the event of an install failure. It performs

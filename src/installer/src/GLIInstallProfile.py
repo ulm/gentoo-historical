@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.75 2005/09/01 21:20:53 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.76 2005/09/03 06:57:08 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -82,9 +82,6 @@ class InstallProfile:
 		self._install_pcmcia_cs = False
 		self._dns_servers = ()
 		self._default_gateway = ()
-		self._etc_portage = {}
-		self._etc_portage_current_file = None # temp
-		self._etc_portage_temp_contents = {} # temp
 		self._install_packages = ()
 		self._services = ()
 		self._mta_pkg = ""
@@ -107,8 +104,6 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/dynamic-stage3', self.set_dynamic_stage3)
 		self._parser.addHandler('gli-profile/etc-files/file', self.add_etc_files_file, call_on_null=True)
 		self._parser.addHandler('gli-profile/etc-files/file/entry', self.add_etc_files_file_entry, call_on_null=True)
-		self._parser.addHandler('gli-profile/etc-portage/file', self.set_etc_portage_add_file, call_on_null=True)
-		self._parser.addHandler('gli-profile/etc-portage/file/entry', self.set_etc_portage_add_file_entry, call_on_null=True)
 		self._parser.addHandler('gli-profile/ftp-proxy', self.set_ftp_proxy)
 		self._parser.addHandler('gli-profile/grp-install', self.set_grp_install)
 		self._parser.addHandler('gli-profile/hostname', self.set_hostname)
@@ -200,7 +195,6 @@ class InstallProfile:
 #		self.serialize_rc_conf()
 		self.serialize_services()
 		self.serialize_users()
-		self.serialize_etc_portage()
 		self.serialize_etc_files()
 
 		self.xmldoc += "</gli-profile>"
@@ -449,64 +443,6 @@ class InstallProfile:
 			self.xmldoc += "</file>"
 		self.xmldoc += "</etc-files>"
 
-	############################################################################
-	#### Etc/portage Setup
-
-	# Sets a list of files in /etc/portage to configure.
-	# @param xml_path         Used internally by the XML parser. Should be
-	#                         None when calling directly
-	# @param unused 	  Not used here.
-	# @param xml_attr         Parameter description
-	def set_etc_portage_add_file(self, xml_path, unused, attr):
-		if 'name' not in attr.getNames():
-			raise GLIException("SetEtcPortageError", 'fatal', 'set_etc_portage_add_file',  "Filename must be specified.")
-		filename = str(attr['name']).strip()
-		self._etc_portage_current_file = filename
-		# might already exist...
-		if filename in self._etc_portage.keys():
-			self._etc_portage[filename].update(self._etc_portage_temp_contents)
-		else:
-			self._etc_portage[filename] = self._etc_portage_temp_contents
-		self._etc_portage_temp_contents = {}
-
-	# Sets atoms for a files in /etc/portage to configure.
-	# @param xml_path         Used internally by the XML parser. Should be
-	#                         None when calling directly
-	# @param atom_content	  As per variabale name.
-	# @param xml_attr         Parameter description
-	def set_etc_portage_add_file_entry(self, xml_path, atom_content, attr):
-		if 'atom' not in attr.getNames():
-			raise GLIException("SetEtcPortageError", 'fatal', 'set_etc_portage_add_file_entry',  "Atom must be specified.")
-		atom = str(attr['atom']).strip()
-		self._etc_portage_temp_contents[atom] = str(atom_content).strip()
-
-	##
-	# Returns a hash/array of /etc/portage files to configure.
-	def get_etc_portage(self):
-		return self._etc_portage
-		
-	##
-	# Replaces etc_files structure with one passed in
-	# @param etc_files new etc_files structure
-	def set_etc_portage(self, etc_portage):
-		self._etc_portage = etc_portage
-	
-	##
-	# Serializes /etc/portage stuff
-	def serialize_etc_portage(self):
-		etc_portage = self.get_etc_portage()
-		all_filenames = etc_portage.keys()
-		# order is important!
-		all_filenames.sort()
-
-		self.xmldoc += '<etc-portage>'
-		for filename in all_filenames:
-			self.xmldoc += '<file name="'+filename+'">'
-			for atom in self._etc_portage[filename]:
-				atom_content = self._etc_portage[filename][atom]
-				self.xmldoc += '<entry atom="%s">%s</entry>' % (atom,atom_content)
-			self.xmldoc += '</file>'
-		self.xmldoc += '</etc-portage>'
 		
 	############################################################################
 	#### FTP Proxy
