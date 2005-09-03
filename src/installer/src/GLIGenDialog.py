@@ -567,7 +567,11 @@ on partitioning and the various filesystem types available in Linux.""")
 		if self._install_profile.get_dynamic_stage3():
 			return
 		
-		make_conf = self._install_profile.get_make_conf()
+		etc_files = self._install_profile.get_etc_files()
+		if etc_files.has_key("make.conf"):
+			make_conf = etc_files['make.conf']
+		else:
+			make_conf = {}
 		
 		self._d.msgbox(_(u"""The installer will now gather information regarding the contents of /etc/make.conf
 One of the unique (and best) features of Gentoo is the ability to
@@ -640,7 +644,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			if code == self._DLG_OK:
 				make_conf[menuitem] = newval
 		try:
-			self._install_profile.set_make_conf(make_conf)
+			if make_conf:
+				etc_files['make.conf'] = make_conf
+				self._install_profile.set_etc_files(etc_files)
 		except:
 			self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))
 
@@ -663,14 +669,14 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				if code != self._DLG_OK:
 					return
 			oldval = ""
-			if etc_portage.has_key(menuitem): 
-				oldval = etc_portage[menuitem]
+			if etc_files.has_key(menuitem): 
+				oldval = etc_files[menuitem]
 				
 			code, newval = self._d.inputbox(_(u"Enter new contents (use \\n for newline) of ") + menuitem, init=oldval)
 			if code == self._DLG_OK:
-				etc_portage[menuitem] = newval
+				etc_files[menuitem] = newval
 		try:
-			self._install_profile.set_etc_portage(etc_portage)
+			self._install_profile.set_etc_files(etc_files)
 		except:
 			self._d.msgbox(_(u"ERROR! Could not set etc/portage/* correctly!"))
 
