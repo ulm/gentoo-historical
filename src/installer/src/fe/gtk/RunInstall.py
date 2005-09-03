@@ -77,7 +77,8 @@ class RunInstall(gtk.Window):
 		if self.install_done: return False
 		notification = self.controller.cc.getNotification()
 		if notification == None:
-			self.subprogress.pulse()
+			if self.pulsing:
+				self.subprogress.pulse()
 			return True
 		ntype = notification.get_type()
 		ndata = notification.get_data()
