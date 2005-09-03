@@ -60,7 +60,7 @@ class RunInstall(gtk.Window):
 		self.subprogress = gtk.ProgressBar()
 		self.subprogress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.subprogress.set_text("Working...")
-		self.subprogress.set_pulse_step(0.05)
+		self.subprogress.set_pulse_step(0.03)
 		self.globalbox.pack_end(self.subprogress, expand=False, fill=False, padding=10)
 
 		self.add(self.globalbox)
@@ -70,8 +70,8 @@ class RunInstall(gtk.Window):
 		self.controller.cc.start_install()
 
 		self.output_log = None
-		gobject.timeout_add(1000, self.poll_notifications)
-		gobject.timeout_add(1000, self.tail_logfile)
+		gobject.timeout_add(500, self.poll_notifications)
+		gobject.timeout_add(500, self.tail_logfile)
 
 	def poll_notifications(self):
 		if self.install_done: return False
@@ -79,6 +79,7 @@ class RunInstall(gtk.Window):
 		if notification == None:
 			if self.pulsing:
 				self.subprogress.pulse()
+				self.subprogress.set_text("Working...")
 			return True
 		ntype = notification.get_type()
 		ndata = notification.get_data()
