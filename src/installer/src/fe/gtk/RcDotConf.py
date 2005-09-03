@@ -303,10 +303,10 @@ This is where you setup rc.conf."""
 		
 	def activate(self):
 		# FIXME: <codeman> this is a temp hack fix for rc.conf as it will not work with new baselayout.
-		etc_files = self.controller.install_profile.get_etc_files()
-		if not "rc.conf" in etc_files:
-			etc_files['rc.conf'] = {}
-		rc_conf = etc_files['rc.conf']
+		self.etc_files = self.controller.install_profile.get_etc_files()
+		if not "rc.conf" in self.etc_files:
+			self.etc_files['rc.conf'] = {}
+		rc_conf = self.etc_files['rc.conf']
 		self.load_rc_conf_dictionary(rc_conf)
 		#print "loaded: "+str(rc_conf)
 		
@@ -322,8 +322,8 @@ This is where you setup rc.conf."""
 		#print "saving:"+str(rc_conf)
 		
 		try:
-			etc_files['rc.conf'] = rc_conf
-			self.controller.install_profile.set_etc_files(etc_files)
+			self.etc_files['rc.conf'] = rc_conf
+			self.controller.install_profile.set_etc_files(self.etc_files)
 		except:
 			msgbox=Widgets().error_Box("Error","An internal error occurred!")
 			msgbox.run()
