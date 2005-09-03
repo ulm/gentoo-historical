@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.64 2005/09/02 21:35:48 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.65 2005/09/03 05:22:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -373,8 +373,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						ret = GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True)
 						if not GLIUtility.exitsuccess(ret):
 							tries += 1
-							self._logger.log("Try %d failed formatting partition %s...waiting 2 seconds" % (tries, devnode))
-							time.sleep(2)
+							self._logger.log("Try %d failed formatting partition %s...waiting 5 seconds" % (tries, devnode))
+							time.sleep(5)
 						else:
 							break
 					if tries == 3:

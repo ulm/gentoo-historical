@@ -77,6 +77,7 @@ class RunInstall(gtk.Window):
 		if self.install_done: return False
 		notification = self.controller.cc.getNotification()
 		if notification == None:
+			self.subprogress.pulse()
 			return True
 		ntype = notification.get_type()
 		ndata = notification.get_data()
@@ -120,8 +121,6 @@ class RunInstall(gtk.Window):
 			self.subprogress.set_fraction(ndata[0])
 			self.subprogress.set_text(ndata[1])
 			return True
-		else:
-			self.subprogress.pulse()
 		return True
 
 	def tail_logfile(self):
