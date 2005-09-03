@@ -60,7 +60,7 @@ class RunInstall(gtk.Window):
 		self.subprogress = gtk.ProgressBar()
 		self.subprogress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 		self.subprogress.set_text("Working...")
-		self.subprogress.set_pulse_step(0.5)
+		self.subprogress.set_pulse_step(0.05)
 		self.globalbox.pack_end(self.subprogress, expand=False, fill=False, padding=10)
 
 		self.add(self.globalbox)
