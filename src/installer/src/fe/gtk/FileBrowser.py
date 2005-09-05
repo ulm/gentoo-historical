@@ -226,15 +226,24 @@ class FileBrowser(gtk.Window):
 		host_combo = gtk.combo_box_new_text()
 		if self.uritype.get_active_text() == "http":
 			mirrors = GLIUtility.list_mirrors(http=True, ftp=False, rsync=False)
-			for mirror in mirrors:
-				host_combo.append_text(mirror[1])
-				host_combo.set_active(0)
+		elif self.uritype.get_active_text() == "ftp":
+			mirrors = GLIUtility.list_mirrors(http=False, ftp=True, rsync=False)
+		else:
+			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("There are no known mirrors for this URI type."))
+			msgdlg.run()
+			msgdlg.destroy()
+			return
+		for mirror in mirrors:
+			host_combo.append_text(mirror[1])
+			host_combo.set_active(0)
 		hbox.pack_start(host_combo, expand=False, fill=True, padding=15)
 		hbox.show_all()
 		hostdlg.vbox.pack_start(hbox)
 		resp = hostdlg.run()
 		if resp == gtk.RESPONSE_ACCEPT:
 			mirror = mirrors[host_combo.get_active()][0]
+			if not mirror.endswith("/"):
+				mirror += "/"
 			self.uri = mirror
 			self.update_from_uri()
 		hostdlg.destroy()
@@ -242,15 +251,20 @@ class FileBrowser(gtk.Window):
 	def ok_clicked(self, button):
 		treeselection = self.treeview.get_selection()
 		treemodel, treeiter = treeselection.get_selected()
-		row = treemodel.get(treeiter, 1)
-		self.controller.entry_stage_tarball_uri.set_text(self.uri + row[0])
-		self.destroy()
+		row = treemodel.get(treeiter, 0, 1)
+		stock_icon, name = row[0], row[1]
+		self.old_uri = self.uri
+		if stock_icon == "gtk-directory":
+			if name == "..":
+				self.uri = self.uri[:self.uri[:-1].rfind("/")+1]
+			else:
+				self.uri += name + "/"
+		else:
+			self.controller.entry_stage_tarball_uri.set_text(self.uri + name)
+			self.destroy()
 
 	def cancel_clicked(self, button):
 		self.destroy()
-
-#	def refresh_clicked(self, button):
-#		pass
 
 	def delete_event(self, widget, event, data=None):
 		return False

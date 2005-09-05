@@ -741,11 +741,29 @@ def get_directory_listing_from_uri(uri):
 			dirlist = []
 		dirlist += dirs + files
 	elif uriparts[0] == "http":
-		dirlist = spawn("wget -O - http://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | grep -v 'http://' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
+		dirlist = spawn("wget -O - http://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | grep -ev '^http://' | grep -ev '^ftp://' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
 		dirs = []
 		files = []
 		for entry in dirlist:
 			if not entry.startswith("/") and entry.find("?") == -1:
+				if entry.endswith("/"):
+					dirs.append(entry)
+				else:
+					files.append(entry)
+		dirs.sort()
+		files.sort()
+		if not uriparts[5] == "/":
+			dirlist = ["../"]
+		else:
+			dirlist = []
+		dirlist += dirs + files
+	elif uriparts[0] == "ftp":
+		dirlist = spawn("wget -O - ftp://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i' -e 's|^ftp://[^/]\+/|/|'", return_output=True)[1].strip().split("\n")
+		dirs = []
+		files = []
+		for entry in dirlist:
+			if entry.startswith(uriparts[5]):
+				entry = entry[len(uriparts[5]):]
 				if entry.endswith("/"):
 					dirs.append(entry)
 				else:
