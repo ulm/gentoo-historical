@@ -146,7 +146,7 @@ def is_file(file):
 # @param uri URI to be parsed
 def parse_uri(uri):
 	# Compile the regex
-	expr = re.compile('(\w+)://(?:(\w+)(?::(\w+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.+)')
+	expr = re.compile('(\w+)://(?:(\S+)(?::(\S+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.*)')
 
 	# Run it against the URI
 	res = expr.match(uri)
@@ -720,6 +720,46 @@ def validate_uri(uri):
 	elif uriparts[0] == "file":
 		return is_file(uriparts[5])
 	return True
+
+def get_directory_listing_from_uri(uri):
+	uriparts = parse_uri(uri)
+	if not uriparts:
+		return []
+	if uriparts[0] == "file":
+		dirlist = os.listdir(uriparts[5])
+		dirlist.sort()
+		dirs = []
+		files = []
+		for entry in dirlist:
+			if os.path.isdir(uriparts[5] + entry):
+				dirs.append(entry + "/")
+			else:
+				files.append(entry)
+		if not uriparts[5] == "/":
+			dirlist = ["../"]
+		else:
+			dirlist = []
+		dirlist += dirs + files
+	elif uriparts[0] == "http":
+		dirlist = spawn("wget -O - http://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | grep -v 'http://' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
+		dirs = []
+		files = []
+		for entry in dirlist:
+			if not entry.startswith("/") and entry.find("?") == -1:
+				if entry.endswith("/"):
+					dirs.append(entry)
+				else:
+					files.append(entry)
+		dirs.sort()
+		files.sort()
+		if not uriparts[5] == "/":
+			dirlist = ["../"]
+		else:
+			dirlist = []
+		dirlist += dirs + files
+	else:
+		dirlist = ["this/", "type/", "isn't/", "supported", "yet"]
+	return dirlist
 
 def cdata(text):
 	if text.startswith("<![CDATA["):
