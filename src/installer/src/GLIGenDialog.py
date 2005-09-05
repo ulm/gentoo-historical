@@ -652,8 +652,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def set_etc_portage(self):
 	#This section will be for editing the /etc/portage/* files and other /etc/* files.  This should be for advanced users only.
+		etc_files = self._install_profile.get_etc_files()
 		while self.advanced_mode:
-			etc_files = self._install_profile.get_etc_files()
 			
 			menulist = [("portage/package.mask",_(u"A list of DEPEND atoms to mask.")),
 			("portage/package.unmask",_(u"A list of packages to unmask.")),
