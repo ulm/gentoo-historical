@@ -35,11 +35,11 @@ class FileBrowser(gtk.Window):
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 0, 1)
 		self.uritype = gtk.combo_box_new_text()
+		self.uritype.connect("changed", self.uritype_changed)
 		for tmpuritype in self.uritypes:
 			self.uritype.append_text(tmpuritype)
-		self.uritype.set_active(0)
-		self.uritype.connect("changed", self.uritype_changed)
 		self.table.attach(self.uritype, 1, 3, 0, 1)
+
 		tmplabel = gtk.Label("Host:")
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 1, 2)
@@ -48,21 +48,25 @@ class FileBrowser(gtk.Window):
 		self.host_browse = gtk.Button(" ... ")
 		self.host_browse.connect("clicked", self.host_browse_clicked)
 		self.table.attach(self.host_browse, 2, 3, 1, 2)
+
 		tmplabel = gtk.Label("Username:")
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 2, 3)
 		self.username_entry = gtk.Entry()
 		self.table.attach(self.username_entry, 1, 3, 2, 3)
+
 		tmplabel = gtk.Label("Password:")
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 3, 4)
 		self.password_entry = gtk.Entry()
 		self.table.attach(self.password_entry, 1, 3, 3, 4)
+
 		tmplabel = gtk.Label("Port:")
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 4, 5)
 		self.port_entry = gtk.Entry()
 		self.table.attach(self.port_entry, 1, 3, 4, 5)
+
 		tmplabel = gtk.Label("Path:")
 		tmplabel.set_alignment(0.0, 0.5)
 		self.table.attach(tmplabel, 0, 1, 5, 6)
@@ -104,6 +108,7 @@ class FileBrowser(gtk.Window):
 		self.add(self.globalbox)
 		self.set_modal(True)
 		self.set_transient_for(self.controller.controller.window)
+		self.uritype.set_active(0)
 
 	def update_from_uri(self):
 		if self.uri:
@@ -181,29 +186,36 @@ class FileBrowser(gtk.Window):
 	def uritype_changed(self, combobox):
 		if self.uritype.get_active_text() == "file":
 			self.host_entry.set_sensitive(False)
+			self.host_browse.set_sensitive(False)
 			self.port_entry.set_sensitive(False)
 			self.username_entry.set_sensitive(False)
 			self.password_entry.set_sensitive(False)
-			if not self.uriparts[0] == "file":
-				self.uri = "file:///"
-				self.uriparts = GLIUtility.parse_uri(self.uri)
+		else:
+			self.host_entry.set_sensitive(True)
+			self.host_browse.set_sensitive(True)
+			self.port_entry.set_sensitive(True)
+			self.username_entry.set_sensitive(True)
+			self.password_entry.set_sensitive(True)
+
+	def refresh_clicked(self, button):
+		if self.uritype.get_active_text() == "file":
+			self.uri = "file://"
 		else:
 			self.host_entry.set_sensitive(True)
 			self.port_entry.set_sensitive(True)
 			self.username_entry.set_sensitive(True)
 			self.password_entry.set_sensitive(True)
-			if not self.uriparts[0] == self.uritype.get_active_text():
-				self.uri = self.uritype.get_active_text() + "://"
-				if self.username_entry.get_text():
-					self.uri += self.username_entry.get_text()
-					if self.password_entry.get_text():
-						self.uri += ":" + self.password_entry.get_text()
-					self.uri += "@"
-				self.uri += self.host_entry.get_text()
-				if self.port_entry.get_text():
-					self.uri += ":" + self.port_entry.get_text()
-				self.uri += "/"
-				self.uriparts = GLIUtility.parse_uri(self.uri)
+			self.uri = self.uritype.get_active_text() + "://"
+			if self.username_entry.get_text():
+				self.uri += self.username_entry.get_text()
+				if self.password_entry.get_text():
+					self.uri += ":" + self.password_entry.get_text()
+				self.uri += "@"
+			self.uri += self.host_entry.get_text()
+			if self.port_entry.get_text():
+				self.uri += ":" + self.port_entry.get_text()
+		self.uri += (self.path_entry.get_text() or "/")
+		self.uriparts = GLIUtility.parse_uri(self.uri)
 		self.refresh_file_list()
 
 	def host_browse_clicked(self, button):
@@ -237,8 +249,8 @@ class FileBrowser(gtk.Window):
 	def cancel_clicked(self, button):
 		self.destroy()
 
-	def refresh_clicked(self, button):
-		pass
+#	def refresh_clicked(self, button):
+#		pass
 
 	def delete_event(self, widget, event, data=None):
 		return False
