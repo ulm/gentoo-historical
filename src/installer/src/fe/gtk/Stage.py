@@ -6,6 +6,7 @@
 import gtk
 import GLIScreen
 import GLIUtility
+import FileBrowser
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -81,9 +82,16 @@ Each option has a brief description beside it.
 		self.entry_stage_tarball_uri = gtk.Entry()
 		self.entry_stage_tarball_uri.set_width_chars(50)
 		hbox.pack_start(self.entry_stage_tarball_uri, expand=False, fill=False, padding=10)
+		self.browse_uri = gtk.Button(" ... ")
+		self.browse_uri.connect("clicked", self.browse_uri_clicked)
+		hbox.pack_start(self.browse_uri, expand=False, fill=False, padding=5)
 		vert.pack_end(hbox, expand=False, fill=False, padding=0)
 
 		self.add_content(vert)
+
+	def browse_uri_clicked(self, widget):
+		uribrowser = FileBrowser.FileBrowser(self)
+		uribrowser.run(self.entry_stage_tarball_uri.get_text())
 
 	def stage_selected(self, widget, data=None):
 		self.active_selection = int(data)
