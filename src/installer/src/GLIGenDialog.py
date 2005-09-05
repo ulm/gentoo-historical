@@ -674,7 +674,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				
 			code, newval = self._d.inputbox(_(u"Enter new contents (use \\n for newline) of ") + menuitem, init=oldval)
 			if code == self._DLG_OK:
-				etc_files[menuitem] = newval
+				etc_files[menuitem] = []
+				etc_files[menuitem].append(newval)
 		try:
 			self._install_profile.set_etc_files(etc_files)
 		except:
