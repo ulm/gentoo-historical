@@ -146,7 +146,7 @@ def is_file(file):
 # @param uri URI to be parsed
 def parse_uri(uri):
 	# Compile the regex
-	expr = re.compile('(\w+)://(?:(\S+)(?::(\S+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.*)')
+	expr = re.compile('(\w+)://(?:([^:@]+)(?::([^@]+))?@)?(?:([a-zA-Z0-9.-]+)(?::(\d+))?)?(/.*)')
 
 	# Run it against the URI
 	res = expr.match(uri)
@@ -768,6 +768,63 @@ def get_directory_listing_from_uri(uri):
 					dirs.append(entry)
 				else:
 					files.append(entry)
+		dirs.sort()
+		files.sort()
+		if not uriparts[5] == "/":
+			dirlist = ["../"]
+		else:
+			dirlist = []
+		dirlist += dirs + files
+	elif uriparts[0] == "scp":
+		tmpdirlist = ""
+		dirlist = []
+		sshcmd = ["ssh"]
+		if uriparts[4]:
+			sshcmd.append("-P")
+			sshcmd.append(uriparts[4])
+		if uriparts[1]:
+			sshcmd.append(uriparts[1] + "@" + uriparts[3])
+		else:
+			sshcmd.append(uriparts[3])
+		sshcmd.append("ls --color=no -1F " + uriparts[5] + " 2>/dev/null")
+		print str(sshcmd)
+		pid, child_fd = pty.fork()
+		if not pid:
+			os.execvp("ssh", sshcmd)
+		else:
+			got_password_prompt = False
+			while 1:
+				r, w, e = select.select([child_fd], [], [])
+				if child_fd in r:
+					try:
+						data = os.read(child_fd, 1024)
+					except:
+						pid2, status = os.waitpid(pid, 0)
+						break
+					if data.endswith("assword: "):
+						if uriparts[2]:
+							os.write(child_fd, uriparts[2] + "\n")
+						else:
+							os.write(child_fd, "\n")
+						got_password_prompt = True
+					elif data.endswith("Are you sure you want to continue connecting (yes/no)? "):
+						os.write(child_fd, "yes\n")
+					else:
+						if got_password_prompt:
+							tmpdirlist += data
+				else:
+					pid2, status = os.waitpid(pid, os.WNOHANG)
+					if pid2:
+						break
+		for tmpentry in tmpdirlist.strip().split("\n"):
+			dirlist.append(tmpentry.strip())
+		dirs = []
+		files = []
+		for entry in dirlist:
+			if entry.endswith("/"):
+				dirs.append(entry)
+			else:
+				files.append(entry)
 		dirs.sort()
 		files.sort()
 		if not uriparts[5] == "/":
