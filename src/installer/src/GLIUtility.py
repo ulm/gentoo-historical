@@ -741,7 +741,7 @@ def get_directory_listing_from_uri(uri):
 			dirlist = []
 		dirlist += dirs + files
 	elif uriparts[0] == "http":
-		dirlist = spawn("wget -O - http://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | grep -ev '^http://' | grep -ev '^ftp://' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
+		dirlist = spawn("wget -O - http://" + uriparts[3] + uriparts[5] + r" 2> /dev/null | grep -i href | grep -v 'http://' | grep -v 'ftp://' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
 		dirs = []
 		files = []
 		for entry in dirlist:

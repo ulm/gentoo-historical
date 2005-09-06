@@ -84,6 +84,7 @@ class FileBrowser(gtk.Window):
 		column.pack_start(cell_renderer, True)
 		column.set_attributes(cell_renderer, text=1)
 		self.treeview.append_column(column)
+		self.treeview.set_headers_visible(False)
 		self.treewindow = gtk.ScrolledWindow()
 		self.treewindow.set_size_request(-1, 130)
 		self.treewindow.set_shadow_type(gtk.SHADOW_IN)
