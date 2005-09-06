@@ -631,18 +631,110 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")),
 			("CHOST", _(u"Change the Host Setting")),
 			("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform.")),
-			("FEATURES", _(u"Change portage functionality settings.")),
+			("FEATURES", _(u"Change portage functionality settings. (distcc/ccache)")),
 			("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")),
-			("SYNC", _(u"Specify server used by rsync to sync the portage tree."))]
+			("SYNC", _(u"Specify server used by rsync to sync the portage tree.")),
+			(_(u"Other"), _(u"Specify your own variable and value."))]
 			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"), width=77)
 			if code != self._DLG_OK: 
 				break
+			if menuitem == _(u"Other"):
+				code,menuitem = self._d.inputbox(_(u"Enter the variable name: "))
+				if code != self._DLG_OK:
+					continue
 			oldval = ""
 			if make_conf.has_key(menuitem): 
 				oldval = make_conf[menuitem]
-			code, newval = self._d.inputbox(_(u"Enter new value for ") + menuitem, init=oldval)
-			if code == self._DLG_OK:
-				make_conf[menuitem] = newval
+				if oldval:
+					code, newval = self._d.inputbox(_(u"Enter new value for ") + menuitem, init=oldval)
+					if code == self._DLG_OK:
+						make_conf[menuitem] = newval
+					continue
+			#SPECIAL CASES here with their own menus.
+			if menuitem == "CFLAGS":
+				if not make_conf.has_key("CFLAGS"):
+					try:
+						cflags = GLIUtility.get_value_from_config("/etc/make.conf","CFLAGS")
+					except:
+						cflags = ""
+				else:
+					cflags = make_conf['CFLAGS']
+				while 1:
+					choices_list = [("-mcpu",_(u"Add a CPU optimization (deprecated in GCC 3.4)")),
+					("-mtune",_(u"Add a CPU optimization (GCC 3.4+)")),
+					("-march",_(u"Add an Architecture optimization")),
+					("-O",_(u"Add optimization level (please do NOT go over 2)")),
+					("CLEAR",_(u"Erase the current value and start over."))
+					]
+					
+					code, choice = self._d.menu(_(u"Choose a flag to add to the CFLAGS variable or Done to go back.  The current value is: ")+ cflags, choices=choices_list, cancel=_(u"Done"), width=70)
+					if code != self._DLG_OK:
+						break
+					else:
+						code, newval = self._d.inputbox(_(u"Enter the new value for %s (value only):") % choice)
+						if code != self._DLG_OK or not newval:
+							continue
+						cflags += choice+"="+newval
+				if cflags:
+					make_conf['CFLAGS'] = cflags
+			elif menuitem == "CHOST":
+				choices_list = []
+				if self._client_profile.get_architecture_template() == "x86":
+					choices_list.append("i386-pc-linux-gnu")
+					choices_list.append("i486-pc-linux-gnu")
+					choices_list.append("i586-pc-linux-gnu")
+					choices_list.append("i686-pc-linux-gnu")
+				if self._client_profile.get_architecture_template() == "amd64":
+					choices_list.append("x86_64-pc-linux-gnu")
+				if self._client_profile.get_architecture_template() == "alpha":
+					choices_list.append("alpha-unknown-linux-gnu")
+				if self._client_profile.get_architecture_template() == "ppc":
+					choices_list.append("powerpc-unknown-linux-gnu")
+				if self._client_profile.get_architecture_template() == "ppc64":
+					choices_list.append("powerpc64-unknown-linux-gnu")
+				if self._client_profile.get_architecture_template() in ["sparc", "sparc64"]:
+					choices_list.append("sparc-unknown-linux-gnu")
+				if self._client_profile.get_architecture_template() == "hppa":
+					choices_list.append("hppa-unknown-linux-gnu")
+					choices_list.append("hppa1.1-unknown-linux-gnu")
+					choices_list.append("hppa2.0-unknown-linux-gnu")
+				if self._client_profile.get_architecture_template() == "mips":
+					choices_list.append("mips-unknown-linux-gnu")
+				code, chost = self._d.menu(_(u"Choose from the available CHOSTs for your architecture."), choices=self._dmenu_list_to_choices(choices_list), width=77)
+				if code != self._DLG_OK: 
+					continue
+				chost = choices_list[int(chost)-1]
+				make_conf['CHOST'] = chost
+			elif menuitem == "MAKEOPTS":
+				makeopt_string = _(u"Presently the only use is for specifying the number of parallel makes (-j) to perform. The suggested number for parallel makes is CPUs+1.  Enter the NUMBER ONLY:")
+				code, newval = self._d.inputbox(makeopt_string, width=60)
+				if code != self._DLG_OK:
+					continue
+				make_conf['MAKEOPTS'] = "-j "+str(newval)
+			elif menuitem == "FEATURES":
+				choices_list = [("sandbox",_(u"enables sandboxing when running emerge and ebuild."),0),
+				("ccache",_(u"enables ccache support via CC."),0),
+				("distcc",_(u"enables distcc support via CC."),0),
+				("distlocks",_(u"enables distfiles locking using fcntl or hardlinks."),0),
+				("buildpkg",_(u"create binaries of all packages emerged"),0),
+				(_(u"Other"),_(u"Input your list of FEATURES manually."),0)	]
+				features_string = _(u"FEATURES are settings that affect the functionality of portage. Most of these settings are for developer use, but some are available to non-developers as well.")
+				code, choices = self._d.checklist(features_string, choices=choices_list)
+				if code != self._DLG_OK:
+					continue
+				if _(u"Other") in choices:
+					code, features = self._d.inputbox(_(u"Enter the value of FEATURES: "))
+				elif choices:
+					features = string.join(choices, ' ')
+				else:
+					features = ""
+				if features:
+					make_conf['FEATURES'] = features
+			else:
+				code, newval = self._d.inputbox(_(u"Enter new value for ") + menuitem)
+				if code == self._DLG_OK and newval:
+					make_conf[menuitem] = newval
+
 		try:
 			if make_conf:
 				etc_files['make.conf'] = make_conf
