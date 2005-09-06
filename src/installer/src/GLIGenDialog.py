@@ -660,21 +660,34 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				else:
 					cflags = make_conf['CFLAGS']
 				while 1:
-					choices_list = [("-mcpu",_(u"Add a CPU optimization (deprecated in GCC 3.4)")),
+					choices_list = [
+					("CLEAR",_(u"Erase the current value and start over.")),
+					("-mcpu",_(u"Add a CPU optimization (deprecated in GCC 3.4)")),
 					("-mtune",_(u"Add a CPU optimization (GCC 3.4+)")),
 					("-march",_(u"Add an Architecture optimization")),
 					("-O",_(u"Add optimization level (please do NOT go over 2)")),
-					("CLEAR",_(u"Erase the current value and start over."))
+					("-fomit-frame-pointer",_(u"For advanced users only.")),
+					("-pipe",_(u"Common additional flag")),
+					(_(u"Manual"),_(u"Specify your CFLAGS manually"))
 					]
-					
 					code, choice = self._d.menu(_(u"Choose a flag to add to the CFLAGS variable or Done to go back.  The current value is: ")+ cflags, choices=choices_list, cancel=_(u"Done"), width=70)
 					if code != self._DLG_OK:
 						break
+					if choice == "CLEAR":
+						cflags = ""
+					elif choice == _(u"Manual"):
+						code, cflags = self._d.inputbox(_(u"Enter new value for ") + menuitem)
+						break
+					elif choice in ["-fomit-frame-pointer","-pipe"]:
+						cflags += " "+choice
 					else:
 						code, newval = self._d.inputbox(_(u"Enter the new value for %s (value only):") % choice)
 						if code != self._DLG_OK or not newval:
 							continue
-						cflags += choice+"="+newval
+						if choice == "-O":
+							cflags += " "+choice+newval
+						else:
+							cflags += " "+choice+"="+newval
 				if cflags:
 					make_conf['CFLAGS'] = cflags
 			elif menuitem == "CHOST":
