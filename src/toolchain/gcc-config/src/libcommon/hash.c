@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.15 2005/08/21 22:01:02 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.16 2005/09/09 08:46:14 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.16  2005/09/09 08:46:14  eradicator
+ * Added check on nEntries before sorting as this could result in a segfault if nEntries=0.
+ *
  * Revision 1.15  2005/08/21 22:01:02  eradicator
  * Added hashFreeAll() which frees the associated data as well.
  *
@@ -328,6 +331,10 @@ const char **hashKeysSorted(const Hash *hash) {
 	if(keys == NULL) {
 		return NULL;
 	}
+
+	/* No need to sort... */
+	if(hash->nEntries < 2)
+		return (const char **)keys;
 
 	return (const char **)quickSortStr(keys, 0, hash->nEntries - 1);
 }
