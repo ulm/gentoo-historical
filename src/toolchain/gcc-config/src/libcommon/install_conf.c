@@ -10,11 +10,13 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.14 2005/09/09 06:30:22 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.15 2005/09/09 06:36:00 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.15  2005/09/09 06:36:00  eradicator
+ * Added code to free memory used by an InstallConf object.
+ *
  * Revision 1.14  2005/09/09 06:30:22  eradicator
  * Fixed ambiguity in README.  Cleaned up some redundency in the code.
- *
  *
  * Revision 1.12  2005/09/09 04:23:46  eradicator
  * Readded explicit cast which I accidently removed...
@@ -229,10 +231,34 @@ void freeInstallConf(InstallConf *installConf) {
 	if(installConf->manpath)
 		free(installConf->manpath);
 
-	if(installConf->profileHash)
+	if(installConf->profileHash) {
+		char **keys = hashKeys(installConf->profileHash);
+
+		if(keys) {
+			size_t i;
+			for(i=0; keys[i]; i++) {
+				Profile *profile = (Profile *)hashGet(hash, keys[i]);
+				if(profile) {
+					if(profile->name)
+						free(profile->name);
+					if(profile->chost)
+						free(profile->chost);
+					if(profile->specs)
+						free(profile->specs);
+					if(profile->libdir)
+						free(profile->libdir);
+					if(profile->cflags)
+						free(profile->cflags);
+					free(profile);
+				}
+			}
+		}
+
 		hashFree(installConf->profileHash);
+	}
+
 	if(installConf->wrapperAliases)
-		hashFree(installConf->wrapperAliases);
+		hashFreeAll(installConf->wrapperAliases);
 
 	free(installConf);
 }
