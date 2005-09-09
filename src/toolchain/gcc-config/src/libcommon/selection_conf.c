@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.19 2005/09/09 06:54:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.20 2005/09/09 08:32:29 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.20  2005/09/09 08:32:29  eradicator
+ * Made selection config parsing callbacks.
+ *
  * Revision 1.19  2005/09/09 06:54:48  eradicator
  * Added in more error checking code.
  *
@@ -97,31 +100,67 @@
 #define MAXPATHLEN 1023
 #endif
 
-#ifndef USE_HARDCODED_CONF
-static int selectionConfSectionCB(const char *section, void *data)
-{
-	SelectionConf *selconf = (SelectionConf *)data;
+struct selectionParseData {
+	SelectionConf *selectionConf;
+	char chost[MAXPATHLEN + 1];
+};
 
-	if (!strcmp(section, "global")) {
-		selconf->currentInstall = NULL;
+#ifndef USE_HARDCODED_CONF
+static int selectionConfSectionCB(const char *section, void *_data) {
+	struct selectionParseData *data = (struct selectionParseData *)_data;
+
+	if (strcmp(section, "global") == 0) {
+		data->chost[0] = '\0';
 	} else {
-		InstallConf *tmp;
+		strncpy(data->chost, section, MAXPATHLEN);
 	}
 	return 0;
 }
 
-static int selectionConfKeyCB(const char *key, const char *value, void *data)
-{
-	SelectionConf *selconf = (SelectionConf *)data;
-	
-	if (!selconf->currentInstall) {
-		if(!strcmp(key, "default_chost"))
-			selconf->defaultChost = strdup(value);
-		/* show error */
-		else
-			return 11;
-	} else {
-		
+static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
+	struct selectionParseData *data = (struct selectionParseData *)_data;
+	SelectionConf *selconf = data->selectionConf;
+
+	if (data->chost[0] == '\0') { /* global */
+		if(strcmp(key, "default_chost") == 0) {
+			selconf->defaultChost = strndup(value, MAXPATHLEN);
+			if(!selconf->defaultChost)
+				return -1;
+		} else {
+			/* unknown key... ignore it */
+			return 0;
+		}
+	} else { /* selected profile */
+		 if(strcmp(key, "profile") == 0) {
+			char version[MAXPATHLEN + 1];
+			char *profile;
+			strncpy(version, value, MAXPATHLEN);
+			InstallConf *installConf;
+			Profile *prof;
+
+			/* First we need to split the profile given as <version>/<profile> */
+			for(profile=version; *profile && *profile != '/'; profile++);
+			if(*profile != '/')
+				return 0; /* -2 */
+
+			*profile = '\0';
+			profile++;
+
+			/* Now, find the installConf */
+			installConf = (InstallConf *)hashGet(selconf->installHash, version);
+			if(!installConf)
+				return 0; /* -2 */
+
+			/* Now find the profile */
+			prof = (Profile *)hashGet(installConf->profileHash, profile);
+			if(!prof)
+				return 0; /* -2 */
+
+			hashInsert(selconf->selectionHash, data->chost, (void *)prof);
+		 } else {
+			/* unknown key... ignore it */
+			return 0;
+		}
 	}
 	return 0;
 }
@@ -201,7 +240,6 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 
 	retval->installHash = hashNew(10);
 	retval->selectionHash = hashNew(10);
-	retval->currentInstall = NULL;
 
 	/* Load all the installation configuration files from the directory given */
 	loadInstallConfs(globalConfigDir, retval);

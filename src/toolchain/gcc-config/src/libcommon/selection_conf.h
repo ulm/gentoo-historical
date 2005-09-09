@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.8 2005/08/26 19:55:06 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.9 2005/09/09 08:32:29 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.9  2005/09/09 08:32:29  eradicator
+ * Made selection config parsing callbacks.
+ *
  * Revision 1.8  2005/08/26 19:55:06  sekretarz
  * Parsing global section code
  *
@@ -61,10 +64,6 @@ typedef struct {
 	 * Value: (InstallConf *) Profile associated with CHOST
 	 */
 	Hash *installHash;
-
-	/* Only for configs parsing
-	 * */
-	InstallConf *currentInstall;
 } SelectionConf;
 
 /** Allocate memory and load the configuration in the globalConfigDir.
