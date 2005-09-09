@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.10 2005/08/25 21:08:28 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.11 2005/09/09 07:59:08 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.11  2005/09/09 07:59:08  eradicator
+ * No longer exposing parsing internals in the InstallConf struct.
+ *
  * Revision 1.10  2005/08/25 21:08:28  sekretarz
  * Coded callbacks function. Still untested.
  *
@@ -75,12 +78,9 @@ typedef struct {
 	 * Value: (char *) binary to execute instead (such as "gcc" or "gfortran")
 	 */
 	Hash *wrapperAliases;
-	
-	/* Pointer to current profile. Used only in config parser. */
-	struct _Profile *currentProfile;
 } InstallConf;
 
-typedef struct _Profile {
+typedef struct {
 	InstallConf *installConf;
 
 	char *name;

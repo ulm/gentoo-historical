@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.18 2005/09/09 07:00:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.19 2005/09/09 07:59:08 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.19  2005/09/09 07:59:08  eradicator
+ * No longer exposing parsing internals in the InstallConf struct.
+ *
  * Revision 1.18  2005/09/09 07:00:38  eradicator
  * Fix possible memory leak.
  *
@@ -87,46 +90,52 @@
 
 static void freeProfile(Profile *profile);
 
+struct installParseData {
+	InstallConf *installConf;
+	Profile *profile;
+};
+
 #ifndef USE_HARDCODED_CONF
-static int installConfSectionCB(const char *section, void *data) {
-	InstallConf *conf = (InstallConf *)data;
+static int installConfSectionCB(const char *section, void *_data) {
+	struct installParseData *data = (struct installParseData *)_data;
+	InstallConf *conf = data->installConf;
 
 	if (strcmp(section, "global") == 0) {
-		conf->currentProfile = NULL;
+		data->profile = NULL;
 		conf->profileHash = hashNew(10);
 		conf->wrapperAliases = hashNew(10);
 	} else {
-		Profile *profile = (Profile *)calloc(1, sizeof(Profile));
+		data->profile = (Profile *)calloc(1, sizeof(Profile));
 		Profile *tmp;
 
-		if(!profile)
+		if(!data->profile)
 			return -1;
 
-		profile->installConf = conf;
-		profile->name = strndup(section, MAX_STRLEN);
+		data->profile->installConf = conf;
+		data->profile->name = strndup(section, MAX_STRLEN);
 
-		if(!profile->name) {
-			free(profile);
+		if(!data->profile->name) {
+			free(data->profile);
 			return -1;
 		}
 
-		conf->currentProfile = profile;
-		tmp = hashInsert(conf->profileHash, profile->name, profile);
+		tmp = hashInsert(conf->profileHash, data->profile->name, data->profile);
 		if(tmp)
 			freeProfile(tmp);
 	}
 	return 0;
 }
 
-static int installConfKeyCB(const char *key, const char *_value, void *data) {
-	InstallConf *conf = (InstallConf *)data;
+static int installConfKeyCB(const char *key, const char *_value, void *_data) {
+	struct installParseData *data = (struct installParseData *)_data;
+	InstallConf *conf = data->installConf;
 	char *value = strndup(_value, MAX_STRLEN);
 	char *tmp;
 
 	if(!value)
 		return -1;
 
-	if (!conf->currentProfile) { /* on global section */
+	if (!data->profile) { /* on global section */
 		if (strcmp(key, "version") == 0) {
 			conf->name = value;
 		} else if (strcmp(key, "binpath") == 0) {
@@ -146,13 +155,13 @@ static int installConfKeyCB(const char *key, const char *_value, void *data) {
 		}
 	} else { /* on other sections */
 		if (strcmp(key, "chost") == 0) {
-			conf->currentProfile->chost = value;
+			data->profile->chost = value;
 		} else if (strcmp(key, "specs") == 0) {
-			conf->currentProfile->specs = value;
+			data->profile->specs = value;
 		} else if (strcmp(key, "ldpath") == 0) {
-			conf->currentProfile->libdir = value;
+			data->profile->libdir = value;
 		} else if (strcmp(key, "cflags") == 0) {
-			conf->currentProfile->cflags = value;
+			data->profile->cflags = value;
 		} else {
 			/* unknown key... ignore it */
 			return 0;
