@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.17 2005/09/09 06:54:48 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.18 2005/09/09 07:00:38 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.18  2005/09/09 07:00:38  eradicator
+ * Fix possible memory leak.
+ *
  * Revision 1.17  2005/09/09 06:54:48  eradicator
  * Added in more error checking code.
  *
@@ -82,6 +85,8 @@
 #define MAX_STRLEN 1023
 #endif
 
+static void freeProfile(Profile *profile);
+
 #ifndef USE_HARDCODED_CONF
 static int installConfSectionCB(const char *section, void *data) {
 	InstallConf *conf = (InstallConf *)data;
@@ -91,21 +96,24 @@ static int installConfSectionCB(const char *section, void *data) {
 		conf->profileHash = hashNew(10);
 		conf->wrapperAliases = hashNew(10);
 	} else {
-		Profile *tmp = (Profile *)calloc(1, sizeof(Profile));
+		Profile *profile = (Profile *)calloc(1, sizeof(Profile));
+		Profile *tmp;
 
-		if(!tmp)
+		if(!profile)
 			return -1;
 
-		tmp->installConf = conf;
-		tmp->name = strndup(section, MAX_STRLEN);
+		profile->installConf = conf;
+		profile->name = strndup(section, MAX_STRLEN);
 
-		if(!tmp->name) {
-			free(tmp);
+		if(!profile->name) {
+			free(profile);
 			return -1;
 		}
 
-		conf->currentProfile = tmp;
-		hashInsert(conf->profileHash, tmp->name, tmp);
+		conf->currentProfile = profile;
+		tmp = hashInsert(conf->profileHash, profile->name, profile);
+		if(tmp)
+			freeProfile(tmp);
 	}
 	return 0;
 }
@@ -244,25 +252,9 @@ void freeInstallConf(InstallConf *installConf) {
 	if(installConf->profileHash) {
 		const char **keys = hashKeys(installConf->profileHash);
 
-		if(keys) {
-			size_t i;
-			for(i=0; keys[i]; i++) {
-				Profile *profile = (Profile *)hashGet(installConf->profileHash, keys[i]);
-				if(profile) {
-					if(profile->name)
-						free(profile->name);
-					if(profile->chost)
-						free(profile->chost);
-					if(profile->specs)
-						free(profile->specs);
-					if(profile->libdir)
-						free(profile->libdir);
-					if(profile->cflags)
-						free(profile->cflags);
-					free(profile);
-				}
-			}
-		}
+		if(keys)
+			for(size_t i=0; keys[i]; i++)
+				freeProfile((Profile *)hashGet(installConf->profileHash, keys[i]));
 
 		hashFree(installConf->profileHash);
 	}
@@ -271,4 +263,20 @@ void freeInstallConf(InstallConf *installConf) {
 		hashFreeAll(installConf->wrapperAliases);
 
 	free(installConf);
+}
+
+static void freeProfile(Profile *profile) {
+	if(!profile)
+		return;
+	if(profile->name)
+		free(profile->name);
+	if(profile->chost)
+		free(profile->chost);
+	if(profile->specs)
+		free(profile->specs);
+	if(profile->libdir)
+		free(profile->libdir);
+	if(profile->cflags)
+		free(profile->cflags);
+	free(profile);
 }
