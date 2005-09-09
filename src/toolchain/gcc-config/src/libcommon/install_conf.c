@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.19 2005/09/09 07:59:08 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.20 2005/09/09 08:46:44 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.20  2005/09/09 08:46:44  eradicator
+ * Set correct parsing data object.
+ *
  * Revision 1.19  2005/09/09 07:59:08  eradicator
  * No longer exposing parsing internals in the InstallConf struct.
  *
@@ -227,10 +230,15 @@ InstallConf *loadInstallConf(const char *filename) {
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
 	ConfigParser *config = parserNew(filename);
+	struct installParseData data;
+
 	if(!config)
 		return NULL;
 
-	parserSetData(config, retval);
+	data.installConf = retval;
+	data.profile = NULL;
+
+	parserSetData(config, &data);
 	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
 	if(parseFile(config) != 0) {

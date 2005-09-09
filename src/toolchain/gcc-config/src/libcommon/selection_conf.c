@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.20 2005/09/09 08:32:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.21 2005/09/09 08:46:44 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.21  2005/09/09 08:46:44  eradicator
+ * Set correct parsing data object.
+ *
  * Revision 1.20  2005/09/09 08:32:29  eradicator
  * Made selection config parsing callbacks.
  *
@@ -204,11 +207,15 @@ static void loadInstallConfs(const char *dirname, SelectionConf *selectionConf) 
 inline static int loadSelections(const char *filename, SelectionConf *selectionConf) {
 	int retval;
 	ConfigParser *config = parserNew(filename);
+	struct selectionParseData data;
 
 	if(!config)
 		return -1;
 
-	parserSetData(config, selectionConf);
+	data.selectionConf = selectionConf;
+	data.chost[0] = '\0';
+
+	parserSetData(config, &data);
 	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
 	retval = parseFile(config);
 	parserFree(config);
