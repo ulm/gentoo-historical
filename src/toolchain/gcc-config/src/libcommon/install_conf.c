@@ -10,10 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.13 2005/09/09 06:29:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.14 2005/09/09 06:30:22 eradicator Exp $
  * $Log: install_conf.c,v $
- * Revision 1.13  2005/09/09 06:29:16  eradicator
- * README
+ * Revision 1.14  2005/09/09 06:30:22  eradicator
+ * Fixed ambiguity in README.  Cleaned up some redundency in the code.
+ *
  *
  * Revision 1.12  2005/09/09 04:23:46  eradicator
  * Readded explicit cast which I accidently removed...
