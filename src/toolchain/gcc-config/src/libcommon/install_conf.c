@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.11 2005/09/09 04:20:32 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.12 2005/09/09 04:23:46 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.12  2005/09/09 04:23:46  eradicator
+ * Readded explicit cast which I accidently removed...
+ *
  * Revision 1.11  2005/09/09 04:20:32  eradicator
  * Added check for parseFile's return code.
  *
@@ -117,7 +120,7 @@ static int installConfKeyCB(const char *key, const char *value, void *data) {
 				return -1;
 			/* check aliases */
 		} else if (strncmp(key, "alias", 5) == 0) {
-			hashInsert(conf->wrapperAliases, key+5, value);
+			hashInsert(conf->wrapperAliases, key+5, (void *)value);
 		} else {
 			/* unknown key... ignore it */
 			return 0;
