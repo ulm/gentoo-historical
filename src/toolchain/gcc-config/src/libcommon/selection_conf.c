@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.17 2005/09/09 06:41:11 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.18 2005/09/09 06:46:53 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.18  2005/09/09 06:46:53  eradicator
+ * A few bugs which slipped through the cracks...
+ *
  * Revision 1.17  2005/09/09 06:41:11  eradicator
  * Added code to read in all the InstallConf files.
  *
@@ -72,6 +75,9 @@
 #include "config.h"
 #endif
 
+/* For strndup() */
+#define _GNU_SOURCE
+
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -118,21 +124,21 @@ static int selectionConfKeyCB(const char *key, const char *value, void *data)
 }
 #endif
 
-static void loadInstallConfs(const char *dir, SelectionConf *selectionConf) {
+static void loadInstallConfs(const char *dirname, SelectionConf *selectionConf) {
 	DIR *dir;
 	struct dirent *ent;
 	char filename[MAXPATHLEN + 1];
 
-	dir = opendir(globalConfigDir);
+	dir = opendir(dirname);
 	if (dir) {
 		while ((ent = readdir(dir)) != NULL) {
-			size_t len = strlen(dir->d_name);
+			size_t len = strlen(ent->d_name);
 			if(strcmp(ent->d_name + len - 5, ".conf") == 0 &&
 				 strcmp(ent->d_name, "selection.conf") != 0) {
 				/* This is a config file we need to load */
 				InstallConf *confNew, *confOld;
 
-				snprintf(filename, "%s/%s", globalConfigDir, ent->d_name);
+				snprintf(filename, MAXPATHLEN, "%s/%s", dirname, ent->d_name);
 				confNew = loadInstallConf(filename);
 
 				/* Ignore bogus files here */

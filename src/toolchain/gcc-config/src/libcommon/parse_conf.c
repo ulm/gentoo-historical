@@ -1,7 +1,7 @@
 /*
  * C Implementation: parse_conf
  *
- * Description: 
+ * Description:
  * C code for dealing with ini-like config files
  *
  * Author: Karol Wojtaszek <sekretarz@gentoo.org>
@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.7 2005/08/23 11:48:16 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.8 2005/09/09 06:46:53 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.8  2005/09/09 06:46:53  eradicator
+ * A few bugs which slipped through the cracks...
+ *
  * Revision 1.7  2005/08/23 11:48:16  eradicator
  * Addressed a few portability concerns.
  *

@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.15 2005/09/09 06:36:00 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.16 2005/09/09 06:46:53 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.16  2005/09/09 06:46:53  eradicator
+ * A few bugs which slipped through the cracks...
+ *
  * Revision 1.15  2005/09/09 06:36:00  eradicator
  * Added code to free memory used by an InstallConf object.
  *
@@ -232,12 +235,12 @@ void freeInstallConf(InstallConf *installConf) {
 		free(installConf->manpath);
 
 	if(installConf->profileHash) {
-		char **keys = hashKeys(installConf->profileHash);
+		const char **keys = hashKeys(installConf->profileHash);
 
 		if(keys) {
 			size_t i;
 			for(i=0; keys[i]; i++) {
-				Profile *profile = (Profile *)hashGet(hash, keys[i]);
+				Profile *profile = (Profile *)hashGet(installConf->profileHash, keys[i]);
 				if(profile) {
 					if(profile->name)
 						free(profile->name);
