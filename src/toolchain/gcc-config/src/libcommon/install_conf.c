@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.12 2005/09/09 04:23:46 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.13 2005/09/09 06:29:16 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.13  2005/09/09 06:29:16  eradicator
+ * README
+ *
  * Revision 1.12  2005/09/09 04:23:46  eradicator
  * Readded explicit cast which I accidently removed...
  *
@@ -98,50 +101,41 @@ static int installConfSectionCB(const char *section, void *data) {
 	return 0;
 }
 
-static int installConfKeyCB(const char *key, const char *value, void *data) {
+static int installConfKeyCB(const char *key, const char *_value, void *data) {
 	InstallConf *conf = (InstallConf *)data;
+	char *value = strndup(_value, MAX_STRLEN);
+	char *tmp;
+
+	if(!value)
+		return -1;
 
 	if (!conf->currentProfile) { /* on global section */
 		if (strcmp(key, "version") == 0) {
-			conf->name = strndup(value, MAX_STRLEN);
-			if(!conf->name)
-				return -1;
-		} else if (strcmp(key, "bindir") == 0) {
-			conf->binpath  = strndup(value, MAX_STRLEN);
-			if(!conf->binpath)
-				return -1;
+			conf->name = value;
+		} else if (strcmp(key, "binpath") == 0) {
+			conf->binpath = value;
 		} else if (strcmp(key, "infopath") == 0) {
-			conf->infopath = strndup(value, MAX_STRLEN);
-			if(!conf->infopath)
-				return -1;
+			conf->infopath = value;
 		} else if (strcmp(key, "manpath") == 0) {
-			conf->manpath  = strndup(value, MAX_STRLEN);
-			if(!conf->manpath)
-				return -1;
+			conf->manpath  = value;
 			/* check aliases */
 		} else if (strncmp(key, "alias", 5) == 0) {
-			hashInsert(conf->wrapperAliases, key+5, (void *)value);
+			tmp = hashInsert(conf->wrapperAliases, key+5, (void *)value);
+			if(tmp)
+				free(tmp);
 		} else {
 			/* unknown key... ignore it */
 			return 0;
 		}
 	} else { /* on other sections */
 		if (strcmp(key, "chost") == 0) {
-			conf->currentProfile->chost = strndup(value, MAX_STRLEN);
-			if(!conf->currentProfile->chost)
-				return -1;
+			conf->currentProfile->chost = value;
 		} else if (strcmp(key, "specs") == 0) {
-			conf->currentProfile->specs = strndup(value, MAX_STRLEN);
-			if(!conf->currentProfile->specs)
-				return -1;
+			conf->currentProfile->specs = value;
 		} else if (strcmp(key, "ldpath") == 0) {
-			conf->currentProfile->libdir = strndup(value, MAX_STRLEN);
-			if(!conf->currentProfile->libdir)
-				return -1;
+			conf->currentProfile->libdir = value;
 		} else if (strcmp(key, "cflags") == 0) {
-			conf->currentProfile->cflags = strndup(value, MAX_STRLEN);
-			if(!conf->currentProfile->cflags)
-				return -1;
+			conf->currentProfile->cflags = value;
 		} else {
 			/* unknown key... ignore it */
 			return 0;
@@ -222,9 +216,22 @@ InstallConf *loadInstallConf(const char *filename) {
 
 /** Free installConf and its contents */
 void freeInstallConf(InstallConf *installConf) {
-	/* TODO: Worry about this once/if we need it. */
 	if(!installConf)
 		return;
+
+	if(installConf->name)
+		free(installConf->name);
+	if(installConf->binpath)
+		free(installConf->binpath);
+	if(installConf->infopath)
+		free(installConf->infopath);
+	if(installConf->manpath)
+		free(installConf->manpath);
+
+	if(installConf->profileHash)
+		hashFree(installConf->profileHash);
+	if(installConf->wrapperAliases)
+		hashFree(installConf->wrapperAliases);
 
 	free(installConf);
 }
