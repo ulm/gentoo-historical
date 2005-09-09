@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.9 2005/08/25 21:08:28 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.10 2005/09/09 02:35:29 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.10  2005/09/09 02:35:29  eradicator
+ * Added checks to ensure sanity and security.
+ *
  * Revision 1.9  2005/08/25 21:08:28  sekretarz
  * Coded callbacks function. Still untested.
  *
@@ -48,66 +51,97 @@
 #include "config.h"
 #endif
 
+/* For strndup() */
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "install_conf.h"
 #include "parse_conf.h"
 
+#ifndef MAX_STRLEN
+#define MAX_STRLEN 1023
+#endif
+
 #ifndef USE_HARDCODED_CONF
-static int installConfSectionCB(const char *section, void *data)
-{
+static int installConfSectionCB(const char *section, void *data) {
 	InstallConf *conf = (InstallConf *)data;
-	
-	if (!strcmp(section, "global")) {
+
+	if (strcmp(section, "global") == 0) {
 		conf->currentProfile = NULL;
 		conf->profileHash = hashNew(10);
 		conf->wrapperAliases = hashNew(10);
 	} else {
-		Profile *tmp = (Profile *)malloc(sizeof(Profile));
+		Profile *tmp = (Profile *)calloc(1, sizeof(Profile));
+
+		if(!tmp)
+			return -1;
+
 		tmp->installConf = conf;
-		tmp->name = strdup(section);
+		tmp->name = strndup(section, MAX_STRLEN);
+
+		if(!tmp->name) {
+			free(tmp);
+			return -1;
+		}
+
 		conf->currentProfile = tmp;
-		hashInsert(conf->profileHash, tmp->name, (void *)tmp);
+		hashInsert(conf->profileHash, tmp->name, tmp);
 	}
-	
 	return 0;
 }
 
-static int installConfKeyCB(const char *key, const char *value, void *data)
-{
+static int installConfKeyCB(const char *key, const char *value, void *data) {
 	InstallConf *conf = (InstallConf *)data;
 
 	if (!conf->currentProfile) { /* on global section */
-		if (!strcmp(key, "version")) 
-			conf->name     = strdup(value);
-		else if (!strcmp(key, "bindir"))
-			conf->binpath  = strdup(value);
-		else if (!strcmp(key, "infopath"))
-			conf->infopath = strdup(value);
-		else if (!strcmp(key, "manpath"))
-			conf->manpath  = strdup(value);
-		/* check aliases */
-		else if (!strncmp(key, "alias", 5)) 
-			hashInsert(conf->wrapperAliases, key+5, (void *)value);
-		/* wrong key */
-		else 
-			return 10;
+		if (strcmp(key, "version") == 0) {
+			conf->name = strndup(value, MAX_STRLEN);
+			if(!conf->name)
+				return -1;
+		} else if (strcmp(key, "bindir") == 0) {
+			conf->binpath  = strndup(value, MAX_STRLEN);
+			if(!conf->binpath)
+				return -1;
+		} else if (strcmp(key, "infopath") == 0) {
+			conf->infopath = strndup(value, MAX_STRLEN);
+			if(!conf->infopath)
+				return -1;
+		} else if (strcmp(key, "manpath") == 0) {
+			conf->manpath  = strndup(value, MAX_STRLEN);
+			if(!conf->manpath)
+				return -1;
+			/* check aliases */
+		} else if (strncmp(key, "alias", 5) == 0) {
+			hashInsert(conf->wrapperAliases, key+5, value);
+		} else {
+			/* unknown key... ignore it */
+			return 0;
+		}
 	} else { /* on other sections */
-		if (!strcmp(key, "chost"))
-			conf->currentProfile->chost = strdup(value);
-		else if (!strcmp(key, "specs"))
-			conf->currentProfile->specs = strdup(value);
-		else if (!strcmp(key, "ldpath"))
-			conf->currentProfile->libdir = strdup(value);
-		else if (!strcmp(key, "cflags"))
-			conf->currentProfile->cflags = strdup(value);
-		/* wrong key */
-		else 
-			return 11;
+		if (strcmp(key, "chost") == 0) {
+			conf->currentProfile->chost = strndup(value, MAX_STRLEN);
+			if(!conf->currentProfile->chost)
+				return -1;
+		} else if (strcmp(key, "specs") == 0) {
+			conf->currentProfile->specs = strndup(value, MAX_STRLEN);
+			if(!conf->currentProfile->specs)
+				return -1;
+		} else if (strcmp(key, "ldpath") == 0) {
+			conf->currentProfile->libdir = strndup(value, MAX_STRLEN);
+			if(!conf->currentProfile->libdir)
+				return -1;
+		} else if (strcmp(key, "cflags") == 0) {
+			conf->currentProfile->cflags = strndup(value, MAX_STRLEN);
+			if(!conf->currentProfile->cflags)
+				return -1;
+		} else {
+			/* unknown key... ignore it */
+			return 0;
+		}
 	}
-	
-		
+
 	return 0;
 }
 #endif
