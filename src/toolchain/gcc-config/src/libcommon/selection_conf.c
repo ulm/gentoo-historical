@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.18 2005/09/09 06:46:53 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.19 2005/09/09 06:54:48 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.19  2005/09/09 06:54:48  eradicator
+ * Added in more error checking code.
+ *
  * Revision 1.18  2005/09/09 06:46:53  eradicator
  * A few bugs which slipped through the cracks...
  *
@@ -159,6 +162,21 @@ static void loadInstallConfs(const char *dirname, SelectionConf *selectionConf) 
 	}
 }
 
+inline static int loadSelections(const char *filename, SelectionConf *selectionConf) {
+	int retval;
+	ConfigParser *config = parserNew(filename);
+
+	if(!config)
+		return -1;
+
+	parserSetData(config, selectionConf);
+	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
+	retval = parseFile(config);
+	parserFree(config);
+
+	return retval;
+}
+
 /** Allocate memory and load the configuration file */
 SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride) {
 	SelectionConf *retval = (SelectionConf *)malloc(sizeof(SelectionConf));
@@ -179,7 +197,6 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 	hashInsert(retval->selectionHash, "i386-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	ConfigParser *config;
 	char filename[MAXPATHLEN + 1];
 
 	retval->installHash = hashNew(10);
@@ -197,20 +214,12 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 
 	/* Now determine what profiles are selected by the global configuration */
 	snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
-	config = parserNew(filename);
-	parserSetData(config, retval);
-	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
-	parseFile(config);
-	parserFree(config);
+	loadSelections(filename, retval);
 
 	/* Now checkout the user override */
 	if(userOverride) {
 		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
-		config = parserNew(filename);
-		parserSetData(config, retval);
-		parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
-		parseFile(config);
-		parserFree(config);
+		loadSelections(filename, retval);
 	}
 #endif
 

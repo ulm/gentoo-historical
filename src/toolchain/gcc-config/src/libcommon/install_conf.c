@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.16 2005/09/09 06:46:53 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.17 2005/09/09 06:54:48 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.17  2005/09/09 06:54:48  eradicator
+ * Added in more error checking code.
+ *
  * Revision 1.16  2005/09/09 06:46:53  eradicator
  * A few bugs which slipped through the cracks...
  *
@@ -207,10 +210,14 @@ InstallConf *loadInstallConf(const char *filename) {
 	hashInsert(retval->profileHash, profile->name, (void *)profile);
 #else
 	ConfigParser *config = parserNew(filename);
+	if(!config)
+		return NULL;
+
 	parserSetData(config, retval);
 	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
 	if(parseFile(config) != 0) {
+		parserFree(config);
 		return NULL;
 	}
 
