@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.10 2005/09/09 02:35:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.11 2005/09/09 04:20:32 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.11  2005/09/09 04:20:32  eradicator
+ * Added check for parseFile's return code.
+ *
  * Revision 1.10  2005/09/09 02:35:29  eradicator
  * Added checks to ensure sanity and security.
  *
@@ -204,7 +207,9 @@ InstallConf *loadInstallConf(const char *filename) {
 	parserSetData(config, retval);
 	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
-	parseFile(config);
+	if(parseFile(config) != 0) {
+		return NULL;
+	}
 
 	parserFree(config);
 #endif
