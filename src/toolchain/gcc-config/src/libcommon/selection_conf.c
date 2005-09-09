@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.16 2005/08/26 19:55:06 sekretarz Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.17 2005/09/09 06:41:11 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.17  2005/09/09 06:41:11  eradicator
+ * Added code to read in all the InstallConf files.
+ *
  * Revision 1.16  2005/08/26 19:55:06  sekretarz
  * Parsing global section code
  *
@@ -69,6 +72,7 @@
 #include "config.h"
 #endif
 
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -114,6 +118,41 @@ static int selectionConfKeyCB(const char *key, const char *value, void *data)
 }
 #endif
 
+static void loadInstallConfs(const char *dir, SelectionConf *selectionConf) {
+	DIR *dir;
+	struct dirent *ent;
+	char filename[MAXPATHLEN + 1];
+
+	dir = opendir(globalConfigDir);
+	if (dir) {
+		while ((ent = readdir(dir)) != NULL) {
+			size_t len = strlen(dir->d_name);
+			if(strcmp(ent->d_name + len - 5, ".conf") == 0 &&
+				 strcmp(ent->d_name, "selection.conf") != 0) {
+				/* This is a config file we need to load */
+				InstallConf *confNew, *confOld;
+
+				snprintf(filename, "%s/%s", globalConfigDir, ent->d_name);
+				confNew = loadInstallConf(filename);
+
+				/* Ignore bogus files here */
+				if(!confNew)
+					continue;
+
+				/* Insert to hash */
+				confOld = hashInsert(selectionConf->installHash, confNew->name, confNew);
+
+				/* Free any memory associated with an entry that was already there */
+				if(confOld) {
+					freeInstallConf(confOld);
+				}
+			}
+		}
+
+		closedir(dir);
+	}
+}
+
 /** Allocate memory and load the configuration file */
 SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride) {
 	SelectionConf *retval = (SelectionConf *)malloc(sizeof(SelectionConf));
@@ -134,16 +173,21 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 	hashInsert(retval->selectionHash, "i386-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
 #else
-	char filename[MAXPATHLEN + 1];
 	ConfigParser *config;
+	char filename[MAXPATHLEN + 1];
 
 	retval->installHash = hashNew(10);
 	retval->selectionHash = hashNew(10);
 	retval->currentInstall = NULL;
 
 	/* Load all the installation configuration files from the directory given */
+	loadInstallConfs(globalConfigDir, retval);
 
 	/* Now load the installation configurations from the user's directory */
+	if(userOverride) {
+		snprintf(filename, MAXPATHLEN, "%s/%s", getenv("HOME"), USER_CONFIGURATION_DIR);
+		loadInstallConfs(filename, retval);
+	}
 
 	/* Now determine what profiles are selected by the global configuration */
 	snprintf(filename, MAXPATHLEN, "%s/selection.conf", globalConfigDir);
