@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/alsa-guide.xml,v 1.11 2005/09/03 16:42:20 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/alsa-guide.xml,v 1.12 2005/09/10 00:07:14 vanquirius Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -21,8 +21,8 @@ Este documento ajuda um usuário a configurar a ALSA no Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.8</version>
-<date>2005-08-30</date>
+<version>2.9</version>
+<date>2005-09-09</date>
 
 <chapter>
 <title>Introdução</title>
@@ -759,6 +759,76 @@ Mixers:
 0: SigmaTel STAC9721/23
 </pre>
 
+<p>
+O problema mais comum que usuários encontram é o temido erro "Unknown symbol in
+module". Um exemplo dele é mostrado abaixo.
+</p>
+
+<pre caption="erro Unknown Symbol in module">
+# <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ *   Loading: snd-card-0 ...                                              [ ok ]
+ *   Loading: snd-pcm-oss ...
+WARNING: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg) FATAL: Error inserting
+snd_pcm_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-pcm-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)                             
+                                                                          [ !! ]
+ *   Loading: snd-mixer-oss ...
+FATAL: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)                             
+                                                                          [ !! ]
+ *   Loading: snd-seq ...                                                 [ ok ]
+ *   Loading: snd-emu10k1-synth ...                                       [ ok ]
+ *   Loading: snd-seq-midi ...                                            [ ok ]
+ * Restoring Mixer Levels ...                                             [ ok ]
+</pre>
+
+<p>
+E quando você olhar a saída de <c>dmesg</c> como sugerido, é provável que você
+veja:
+</p>
+
+<pre caption="saída de dmesg">
+<comment>(Só partes relevantes mostradas abaixo)</comment>
+# <i>dmesg | less</i>
+ACPI: PCI Interrupt 0000:02:06.0[A] -> Link [APC3] -> GSI 18 (level, low) -> IRQ 209
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+snd_pcm_oss: Unknown symbol snd_unregister_oss_device
+snd_pcm_oss: Unknown symbol snd_register_oss_device
+snd_pcm_oss: Unknown symbol snd_mixer_oss_ioctl_card
+snd_pcm_oss: Unknown symbol snd_oss_info_register
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+</pre>
+
+<p>
+O problema acima é causado quando você troca de <c>alsa-driver</c> para ALSA
+dentro de kernel porque quando você desinstala <c>alsa-driver</c> os arquivos de
+módulo são protegidos por configuração e são deixados no mesmo lugar. Então,
+quando você troca para módulos dentro do kernel, rodar <c>modprobe</c> fará uma
+mistura de drivers de <c>alsa-driver</c> e kernel que causam os erros acima.
+</p>
+
+<p>
+A solução é simples. Nós precisamos remover o diretório que está causando o
+problema manualmente após desinstalar <c>alsa-driver</c>. Certifique-se de
+remover a versão correta de kernel e não a atual!
+</p>
+
+<pre caption="Removendo os módulos de alsa-driver">
+<comment>(Troque KERNELVER com sua versão de kernel)</comment>
+# <i>rm -rf /lib/modules/KERNELVER/alsa-driver</i>
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -804,7 +874,9 @@ cuidadoso para mudar o caminho de acordo com sua máquina.
 
 <pre caption="Carregando fontes de som">
 <comment>(Primeiro, copie a fonte de som)</comment>
-# <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
+# <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i> 
+<comment>(Ou pegue-as de seu CD de SoundBlaster)</comment>
+# <i>cp /mnt/cdrom/AUDIO/ENGLISH/SFBANK/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
 <comment>(Agora nós carregamos a fonte de som específica)</comment>
 # <i>asfxload /usr/share/sounds/sf2/8MBGMSFX.SF2</i>
 </pre>
