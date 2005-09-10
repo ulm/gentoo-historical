@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/alsa-guide.xml,v 1.8 2005/08/31 17:43:03 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/alsa-guide.xml,v 1.9 2005/09/10 09:50:57 rane Exp $ -->
 
 <guide link="/doc/pl/alsa-guide.xml" lang="pl">
 <title>Konfiguracja sterowników ALSA w Gentoo</title>
@@ -20,8 +20,8 @@ Dokument opisuje proces konfiguracji sterowników dźwięku ALSA w Gentoo.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.8</version>
-<date>2005-08-30</date>
+<version>2.9</version>
+<date>2005-09-09</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -748,6 +748,75 @@ Mixers:
 0: SigmaTel STAC9721/23
 </pre>
 
+<p>
+Kolejnym bardzo częstym problemem jest pojawiająca się informacja o nieznanym
+symbolu w module - "Unknown symbol in module".
+</p>
+
+<pre caption="Nieznany symbol w module">
+# <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ *   Loading: snd-card-0 ...                                              [ ok ]
+ *   Loading: snd-pcm-oss ...
+WARNING: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg) FATAL: Error inserting
+snd_pcm_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-pcm-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-mixer-oss ...
+FATAL: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-seq ...                                                 [ ok ]
+ *   Loading: snd-emu10k1-synth ...                                       [ ok ]
+ *   Loading: snd-seq-midi ...                                            [ ok ]
+ * Restoring Mixer Levels ...                                             [ ok ]
+</pre>
+
+<p>
+Jeśli przyjrzymy się uważnie <c>dmesg</c>, zauważymy takie wpisy:
+</p>
+
+<pre caption="Wyjście dmesg">
+<comment>(Only relevant portions are shown below)</comment>
+# <i>dmesg | less</i>
+ACPI: PCI Interrupt 0000:02:06.0[A] -> Link [APC3] -> GSI 18 (level, low) -> IRQ 209
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+snd_pcm_oss: Unknown symbol snd_unregister_oss_device
+snd_pcm_oss: Unknown symbol snd_register_oss_device
+snd_pcm_oss: Unknown symbol snd_mixer_oss_ioctl_card
+snd_pcm_oss: Unknown symbol snd_oss_info_register
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+</pre>
+
+<p>
+Taki problem pojawia się po przejściu ze sterowników z pakietu
+<c>alsa-driver</c> na te wbudowane w jądro, ponieważ mimo usunięcia
+<c>alsa-driver</c>, moduły wciąż pozostają w systemie dzięki ochronie plików
+konfiguracyjnych. Zatem mimo przejścia na moduły wbudowane w jądro polecenie
+<c>modprobe</c> wciąż będzie ładowało mieszankę modułów z pakietu i z jądra.
+</p>
+
+<p>
+Rozwiązanie jest proste, należy usunąć cały katalog z modułami tuż po
+odinstalowaniu pakietu <c>alsa-driver</c>. Warto się upewnić, że wersja jądra z
+poniższego wpisu jest prawidłowa.
+</p>
+
+<pre caption="Usuwanie modułów alsa-driver">
+<comment>(Zastępujemy wpis KERNELVER wersją używanego jądra)</comment>
+# <i>rm -rf /lib/modules/KERNELVER/alsa-driver</i>
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -792,6 +861,8 @@ podajemy tu tylko przykład, wszystkie polecenia należy odpowiednio skorygować
 <pre caption="Przegrywanie plików soundfont">
 <comment>(Najpierw kopiujemy plik)</comment>
 # <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
+<comment>(Jest też na płycie SoundBlastera)</comment>
+# <i>cp /mnt/cdrom/AUDIO/ENGLISH/SFBANK/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
 <comment>(A następnie wczytujemy)</comment>
 # <i>asfxload /usr/share/sounds/sf2/8MBGMSFX.SF2</i>
 </pre>
