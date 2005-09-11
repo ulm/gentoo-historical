@@ -1,4 +1,4 @@
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.5 2005/07/06 21:23:34 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.6 2005/09/11 16:09:07 yoswink Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/mailfilter-guide.xml" lang="es">
@@ -30,12 +30,12 @@ ClamAV, listas grises y SPF.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <license/>
 
-<version>0.7.9</version>
-<date>2005-07-02</date>
+<version>0.8.0</version>
+<date>2005-08-12</date>
 
 <chapter>
 <title>Introducción</title>
@@ -116,9 +116,11 @@ dependencia entre ellos. Esos capítulos describen cómo:
     configurar carpetas especiales IMAP (siglas en inglés de Protocolo
     de Acceso Interactivo de Correo) para el aprendizaje del filtro
     Bayesiano y para el envío de falsos positivos </li> 
+<!--
   <li>
     configurar analizadores de bitácoras para crear registros
     diarios</li> 
+-->
   <li>
     configurar listas grises con Postfix 2.1</li> 
   <li>
@@ -171,10 +173,12 @@ problema Spam: Moviéndose más allá de los RBLs (en inglés)</uri>.
 <p>
 Antes de empezar, asegúrate que tienes una instalación de Postfix
 funcionando donde puedas enviar y recibir correos, también necesitas
-un servidor de correo. Si no tienes experiencia en configurar
-Postfix podría resultar rápidamente muy complicado si se ve todo de
-golpe. Si necesitas ayuda puedes encontrarla en la excelente Guía de
-Alojamiento de Correo Virtual con Postfix en la página de
+un servidor de correo. Si no tienes experiencia en configurar Postfix
+podría resultar rápidamente muy complicado si se ve todo de golpe. Si
+necesitas ayuda puedes encontrarla en la
+excelente <uri
+link="http://www.gentoo.org/doc/en/virt-mail-howto.xml">Guía de
+Alojamiento de Correo Virtual con Postfix</uri> en la página de
 Documentación Gentoo.
 </p>
 </body>
@@ -290,7 +294,7 @@ smtp-amavis     unix -        -       n     -       2  smtp
   -o smtp_data_done_timeout=1200
   -o smtp_send_xforward_command=yes
 <comment>#Equivalente usando lmtp:
-#smtp-amavis unix -     -       n       -       2       lmtp
+#lmtp-amavis unix -     -       n       -       2       lmtp
 #   -o lmtp_data_done_timeout=1200
 #   -o lmtp_send_xforward_command=yes</comment>
      
@@ -329,7 +333,7 @@ igual al número de <c>$max_servers=</c> en <path>amavisd.conf</path>
 Si quieres rechazar el correo no deseado temprano en el proceso,
 puedes usar el método Before-Queue (proxy) en vez del método de
 filtro. Si descomentas las tres lineas tendrás que configurar
-<c>content_filter=</c> en <path>main.cf</path>. Este no es un método
+<c>content_filter</c> en <path>main.cf</path>. Este no es un método
 recomendado en servidores con gran tráfico, ya que el número de
 conexiones concurrentes está limitado por el número de instancias de
 amavisd.
@@ -518,6 +522,11 @@ que no queremos que estos lleguen a los usuarios.
 # <i>chown amavis:amavis /var/amavis/virusmails</i>
 # <i>chmod 750 /var/amavis/virusmails</i>
 </pre>
+
+<note>
+Amavisd-new ofrece políticas de refinamiento más avanzadas utilizando
+un banco de políticas.
+</note>
 </body>
 </section>
 
@@ -742,7 +751,7 @@ que es más claro si lo haces en <path>/etc/amavisd.conf</path>.
 </note>
 
 <note>
-En una futura versión de esta guía planeo implementar políticas por
+En un capítulo más adelante mostraré como implementar políticas por
 usuario utilizando MySQL.
 </note>
 
@@ -785,7 +794,6 @@ utilizando <c>mail-filter/spamassassin-ruledujour</c>:
 </p>
 
 <pre caption="Instalando rulesdujour">
-# <i>echo "mail-filter/spamassassin-ruledujour  ~x86" &gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge "mail-filter/spamassassin-ruledujour"</i>
 </pre>
 
@@ -889,7 +897,9 @@ cambio.
 
 <note>
 Si quieres ver la salida completa de amavisd-new, ejecuta <c>amavisd
-debug-sa</c> como el usuario <c>amavis</c> y envía un correo.
+debug-sa</c> como el usuario <c>amavis</c> y envía un correo. Para que
+este método funcione tendrás que cambiar el shell por defecto
+en <path>/etc/passwd</path>
 </note>
 
 <p>
@@ -1502,14 +1512,6 @@ tienes de descargarte e instalar algunos ebuilds de módulos Perl en tu
  Postgrey está ahora en Portage, aunque aún como inestable.
 </note>
 
-<note>
-En ves de utilizar el IO-Multiplex ebuild puedes simplemente emergerlo
-utilizando <c>g-cpan.pl</c>, un guión en Perl que automáticamente
-descarga la última versión de un módulo de Perl, crea un ebuild para
-el y lo instala en tu sistema: <c>g-cpan.pl IO-Multiplex</c>. Esto
-requiere que tengas un ambiente CPAN correctamente configurado
-</note>
-
 <p>
 Luego de instalar <c>postgrey</c> tenemos que editar el
 archivo <path>main.cf</path>. Los cambios son casi exactamente los
@@ -1587,11 +1589,17 @@ Si envías tu correo saliente a través de tu ISP, entonces añade:
 </note>
 
 <p>
-El próximo Spamassassin 3.0 tiene soporte para SPF, sin embargo este
-todavía está en etapa de pre-lanzamiento y el nuevo demonio de
-políticas de Postfix soporta SPF, así que instalemos el soporte SPF de
-Postfix.
+Spamassassin 3.0 tiene soporte para SPF, sin embargo este no viene
+activado por defecto y el nuevo demonio de políticas de Postfix
+soporta SPF, así que instalemos el soporte SPF de Postfix.
 </p>
+
+<note>
+Si en cambio deseas utilizar el SPF de Spamassassin simplemente
+ejecuta <c>emerge&nbsp;dev-perl/Mail-SPF-Query</c> y reinicia
+Amavisd-new
+</note>
+
 </body>
 </section>
 
@@ -1606,7 +1614,7 @@ el <path>spf.pl</path> con:
 </p>
 
 <pre caption="Instalando spf.pl">
-# <i>cp postfix-2.1.0/examples/smtpd-policy/spf.pl /usr/bin/</i>
+# <i>cp postfix-&lt;version&gt;/examples/smtpd-policy/spf.pl /usr/local/bin/</i>
 </pre>
 
 <note>
@@ -1625,18 +1633,8 @@ Portage pero que son sencillas de instalar:
 </p>
 
 <pre caption="Instalando las librerias faltantes">
-# <i>echo "dev-perl/Mail-SPF-Query ~x86"
-&gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Net-CIDR-Lite ~x86"
-&gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "dev-perl/Sys-Hostname-Long ~x86"
-&gt;&gt; /etc/portage/package.keywords</i>
 # <i>emerge Mail-SPF-Query Net-CIDR-Lite Sys-Hostname-Long</i>
 </pre>
-
-<note>
-Las previas librerías están en Portage, aunque como inestables.
-</note>
 
 <p>
 Ahora que tenemos todo en su lugar, sólo necesitamos configurar
@@ -1645,7 +1643,7 @@ Postfix para que utilice esta nueva política.
 
 <pre caption="Modificando master.cf para que utilice SPF">
 policy-spf  unix  -       n       n       -       -       spawn
-   user=nobody argv=/usr/bin/perl /usr/bin/spf.pl
+   user=nobody argv=/usr/bin/perl /usr/local/bin/spf.pl
 </pre>
 
 <p>
@@ -2076,6 +2074,9 @@ de Amavisd-new</uri></li>
 link="http://www.ijs.si/software/amavisd/README.postfix">Amavisd-new
 Postfix LEEME</uri>
 </li>
+<li><uri
+link="http://www.ijs.si/software/amavisd/amavisd-new-docs.html#pbanks">Documentación
+del banco de políticas de Amavisd-new</uri></li>
 <li><uri
 link="http://spamassassin.apache.org/full/3.0.x/dist/sql/README">Spamassassin
 SQL LEEME</uri></li>
