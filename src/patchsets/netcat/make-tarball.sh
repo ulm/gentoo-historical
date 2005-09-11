@@ -13,7 +13,6 @@ rm -f ${tar}
 
 mkdir -p tmp/patch
 cp *.patch tmp/patch/ || exit 1
-find tmp -type f | xargs bzip2
 cp ../README* debian-* nc.1 tmp/
 
 tar -jcf ${tar} -C tmp . || exit 1
