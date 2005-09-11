@@ -1,0 +1,237 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/mysql-upgrading.xml,v 1.1 2005/09/11 20:41:05 rane Exp $ -->
+
+<guide link="/doc/en/mysql-upgrading.xml">
+<title>Upgrade guide to MySQL 4.1.x</title>
+
+<author title="Author">
+  <mail link="citizen428@gentoo.org">Michael Kohl</mail>
+</author>
+<author title="Author">
+  <mail link="vivo@gentoo.org">Francesco Riosa</mail>
+</author>
+
+<abstract>
+The MySQL herd is proud to announce that MySQL 4.1 can now be found in Gentoo's
+unstable tree (~arch). As the team hopes that it soon will be able to stabilize
+this ebuild, here's an upgrade path for all willing testers.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2005-09-11</date>
+
+<chapter>
+<title>Upgrading from old versions of MySQL</title>
+<section>
+<body>
+
+<p>
+Users upgrading from an old version (&lt;4.0.24) of MySQL will first have to
+install MySQL 4.0.25. If you are already running a current version, you can skip
+this section and continue with the next one.
+</p>
+
+<pre caption="Simple upgrade">
+# <i>emerge -av --buildpkg "&lt;mysql-4.1"</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Creating a backup of your current data</title>
+<section>
+<body>
+
+<p>
+One of the fundamental works of every database administrator is ...  to make
+backup of the data. So proceed with one.
+</p>
+
+<pre caption="Dump of all databases">
+# <i>mysqldump \</i>
+  <i>-uroot \</i>
+  <i>-p$PASSWORD \</i>
+  <i>-hlocalhost \</i>
+  <i>--all-databases \</i>
+  <i>--all \</i>
+  <i>--opt \</i>
+  <i>--allow-keywords \</i>
+  <i>--flush-logs \</i>
+  <i>--hex-blob \</i>
+  <i>--master-data \</i>
+  <i>--max_allowed_packet=16M \</i>
+  <i>--result-file=BACKUP_MYSQL_4.0.SQL</i>
+</pre>
+
+<p>
+Now a file named <path>BACKUP_MYSQL_4.0.SQL</path> should exist, this one can be
+used to recreate your data, the data is described in the MySQL dialect of SQL,
+the Structured Query Language.
+</p>
+
+<p>
+This would be a good time to see if the backup you have created is working.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Upgrading from recent versions of MySQL</title>
+<section>
+<body>
+
+<p>
+If you have skipped step #1, you now have to create a backup package (the
+database server, not the data) of the currently installed version:
+</p>
+
+<pre caption="Binary package backup">
+# <i>quickpkg dev-db/mysql</i>
+</pre>
+
+<p>
+Now it's time to clean out the current version and all it's data:
+</p>
+
+<pre caption="Uninstall MySQL">
+# <i>/etc/init.d/mysql stop</i>
+# <i>emerge -C mysql</i>
+# <i>tar -cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
+# <i>ls -l ~/mysql.*</i>
+# <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
+</pre>
+
+<note>
+At this time two backup should exist, one portable between various MySQL
+versions, the SQL one. <br />
+The other instead permit to restore quickly the system at this point. Later on
+this doc will be explain how to recover from this last one.
+</note>
+
+<p>
+After you got rid of your old MySQL installation, you can now install the new
+version. Note that <c>revdep-rebuild</c> is necessary for rebuilding packages
+linking against MySQL.
+</p>
+
+<pre caption="Upgrading the binaries">
+# <i>emerge -av "&gt;mysql-4.1"</i>
+# <i>dispatch-conf</i>
+# <i>revdep-rebuild</i>
+</pre>
+
+<p>
+Now configure the newly installed version of MySQL and restart the daemon:
+</p>
+
+<pre caption="Configure MySQL 4.1 base setup">
+# <i>ebuild /var/db/pkg/dev-db/mysql-4.1.&lt;micro_version&gt;/mysql-4.1.&lt;micro_version&gt;.ebuild config</i>
+# <i>/etc/init.d/mysql start</i>
+</pre>
+
+<p>
+Finally you can import the backup you have created during step #2:
+</p>
+
+<pre caption="Importing the SQL backup">
+# <i>cat BACKUP_MYSQL_4.0.SQL \</i>
+     <i>| mysql \</i>
+     <i>-uroot \</i>
+     <i>-p$PASSWORD \</i>
+     <i>-hlocalhost \</i>
+     <i>--max_allowed_packet=16M</i>
+
+# <i>mysql_fix_privilege_tables \</i>
+     <i>--defaults-file=/etc/mysql/my.cnf \</i>
+     <i>--user=root \</i>
+     <i>--password=$PASSWORD</i>
+</pre>
+
+<p>
+If you now restart your MySQL daemon and everything went as expected, you will
+have a fully working version of 4.1.x! :-)
+</p>
+
+<pre caption="Restart the MySQL instance">
+# <i>/etc/init.d/mysql restart</i>
+</pre>
+
+<p>
+If you encountered any problems during the upgrade process, please report them
+at our <uri link="https://bugs.gentoo.org">Bugzilla</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Recover the old installation of MySQL 4.0</title>
+<section>
+<body>
+
+<p>
+If the result is not fully satisfactory, it's possible to reinstall the old
+MySQL 4.0 version.
+</p>
+
+<pre caption="Back to the past">
+# <i>/etc/init.d/mysql stop</i>
+# <i>emerge -C mysql</i>
+# <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
+# <i>emerge --usepkgonly "&lt;mysql-4.1"</i>
+# <i>tar -xjpvf mysql.[tag] -C/tmp</i>
+# <i>/etc/init.d/mysql start</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Straight upgrade, not supported, dangerous</title>
+<section>
+<body>
+
+<p>
+Under particular conditions it's possible to upgrade directly to the next major
+version of MySQL.<br />
+If you know that this is your case, with a little trick it's possible to upgrade
+straight to MySQL 4.1.
+</p>
+
+<pre caption="Straight upgrade">
+# <i>quickpkg dev-db/mysql</i>
+# <i>/etc/init.d/mysql stop</i>
+# <i>tar -cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
+# <i>ls -l ~/mysql.*</i>
+# <i>export MYSQL_STRAIGHT_UPGRADE=1</i>
+# <i>emerge -av "&gt;mysql-4.1"</i>
+# <i>unset MYSQL_STRAIGHT_UPGRADE</i>
+# <i>dispatch-conf</i>
+# <i>revdep-rebuild</i>
+# <i>/etc/init.d/mysql start</i>
+# <i>mysql_fix_privilege_tables --defaults-file=/etc/mysql/my.cnf \</i>
+     <i>-uroot --password=$PASSWORD</i>
+# <i>mysql --database=mysql -uroot -p$PASSWORD &lt; /tmp/new_pieces.sql</i>
+# <i>/etc/init.d/mysql restart</i> # just to be sure
+</pre>
+
+<p>
+Good luck and don't ask.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
