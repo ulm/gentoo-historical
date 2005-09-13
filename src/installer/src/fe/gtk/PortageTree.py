@@ -6,6 +6,7 @@
 import gtk
 import GLIScreen
 import GLIUtility
+import URIBrowser
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -64,22 +65,33 @@ a brief description beside it.
 		tmplabel.set_line_wrap(True)
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 		vert.pack_start(hbox, expand=False, fill=False, padding=15)
+
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Portage snapshot URI:"), expand=False, fill=False, padding=5)
 		self.entry_portage_snapshot_uri = gtk.Entry()
 		self.entry_portage_snapshot_uri.set_width_chars(50)
 		self.entry_portage_snapshot_uri.set_sensitive(False)
 		hbox.pack_start(self.entry_portage_snapshot_uri, expand=False, fill=False, padding=10)
-		vert.pack_start(hbox, expand=False, fill=False, padding=30)
+		self.browse_uri = gtk.Button(" ... ")
+		self.browse_uri.connect("clicked", self.browse_uri_clicked)
+		self.browse_uri.set_sensitive(False)
+		hbox.pack_start(self.browse_uri, expand=False, fill=False, padding=5)
+		vert.pack_end(hbox, expand=False, fill=False, padding=0)
 
 		self.add_content(vert)
+
+	def browse_uri_clicked(self, widget):
+		uribrowser = URIBrowser.URIBrowser(self, self.entry_portage_snapshot_uri)
+		uribrowser.run(self.entry_portage_snapshot_uri.get_text())
 
 	def stage_selected(self, widget, data=None):
 		self.active_selection = data
 		if data == "snapshot":
 			self.entry_portage_snapshot_uri.set_sensitive(True)
+			self.browse_uri.set_sensitive(True)
 		else:
 			self.entry_portage_snapshot_uri.set_sensitive(False)
+			self.browse_uri.set_sensitive(False)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
@@ -94,6 +106,7 @@ a brief description beside it.
 			for radio in self.radio_syncs:
 				self.radio_syncs[radio].set_sensitive(False)
 			self.entry_portage_snapshot_uri.set_sensitive(False)
+			self.browse_uri.set_sensitive(False)
 		else:
 			self.active_selection = self.controller.install_profile.get_portage_tree_sync_type() or "sync"
 			self.radio_syncs[self.active_selection].set_active(True)
@@ -103,6 +116,7 @@ a brief description beside it.
 			for radio in self.radio_syncs:
 				self.radio_syncs[radio].set_sensitive(True)
 			self.entry_portage_snapshot_uri.set_sensitive(True)
+			self.browse_uri.set_sensitive(True)
 
 	def deactivate(self):
 		if self.active_selection == "snapshot":

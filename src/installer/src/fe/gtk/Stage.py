@@ -6,7 +6,7 @@
 import gtk
 import GLIScreen
 import GLIUtility
-import FileBrowser
+import URIBrowser
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -90,7 +90,7 @@ Each option has a brief description beside it.
 		self.add_content(vert)
 
 	def browse_uri_clicked(self, widget):
-		uribrowser = FileBrowser.FileBrowser(self)
+		uribrowser = URIBrowser.URIBrowser(self, self.entry_stage_tarball_uri)
 		uribrowser.run(self.entry_stage_tarball_uri.get_text())
 
 	def stage_selected(self, widget, data=None):
