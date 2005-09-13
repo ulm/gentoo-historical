@@ -7,14 +7,15 @@ import gtk, gobject
 import GLIUtility
 from gettext import gettext as _
 
-class FileBrowser(gtk.Window):
+class URIBrowser(gtk.Window):
 
 	uritypes = ("file", "http", "ftp", "scp")
 
-	def __init__(self, controller):
+	def __init__(self, controller, entry):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
 		self.controller = controller
+		self.entry = entry
 		self.uri = None
 		self.old_uri = None
 		self.uriparts = None
@@ -179,7 +180,7 @@ class FileBrowser(gtk.Window):
 			else:
 				self.uri += name + "/"
 		else:
-			self.controller.entry_stage_tarball_uri.set_text(self.uri + name)
+			self.entry.set_text(self.uri + name)
 			self.destroy()
 		print "New URI is '%s'" % self.uri
 		self.refresh_file_list()
@@ -261,7 +262,7 @@ class FileBrowser(gtk.Window):
 			else:
 				self.uri += name + "/"
 		else:
-			self.controller.entry_stage_tarball_uri.set_text(self.uri + name)
+			self.entry.set_text(self.uri + name)
 			self.destroy()
 
 	def cancel_clicked(self, button):
