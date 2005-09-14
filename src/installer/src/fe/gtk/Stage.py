@@ -101,6 +101,7 @@ Each option has a brief description beside it.
 			self.check_dynamic.set_sensitive(True)
 			if self.check_dynamic.get_active():
 				self.entry_stage_tarball_uri.set_sensitive(False)
+				self.browse_uri.set_sensitive(False)
 		else:
 			self.check_grp.set_sensitive(False)
 			self.check_dynamic.set_sensitive(False)
@@ -108,8 +109,10 @@ Each option has a brief description beside it.
 	def dynamic_checked(self, widget):
 		if widget.get_active() and self.active_selection == 3:
 			self.entry_stage_tarball_uri.set_sensitive(False)
+			self.browse_uri.set_sensitive(False)
 		else:
 			self.entry_stage_tarball_uri.set_sensitive(True)
+			self.browse_uri.set_sensitive(True)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True

@@ -703,7 +703,10 @@ def get_local_use_flags():
 	return use_local_desc
 	
 def get_cd_snapshot_uri():
-	return "file://" + spawn("ls /mnt/{cdrom,livecd,tmp}/snapshots/portage-* | head -n 1", return_output=True)[1].strip()
+	snapshot_loc = spawn("ls /mnt/{cdrom,livecd}/snapshots/portage-* 2>/dev/null | head -n 1", return_output=True)[1].strip()
+	if snapshot_loc:
+		snapshot_loc = "file://" + snapshot_loc
+	return snapshot_loc
 
 def validate_uri(uri):
 	# Get tuple of matches
