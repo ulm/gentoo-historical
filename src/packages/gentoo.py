@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.10 $"
+__revision__ = "$Revision: 1.11 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -25,7 +25,7 @@ endversion_keys = ["pre", "p", "alpha", "beta", "rc"]
 
 def is_new(db, ebuild):
     """Check for newness."""
-    
+
     c = db.cursor()
     query = ('SELECT new FROM package WHERE category="%s" AND name="%s"'
         % (ebuild['category'], ebuild['name']))
@@ -48,7 +48,7 @@ def changelog_to_html(changelog):
 
 def homepage_to_html(homepage):
     """convert HOMEPAGE entry to HTML"""
-    if not homepage.strip(): 
+    if not homepage.strip():
         return "?"
     homepage = homepage.replace('|',' ')
     pieces = homepage.split()
@@ -56,10 +56,10 @@ def homepage_to_html(homepage):
     if count == 1:
         return ('<a class="homepage" href="%s">'
             'Homepage</a>' % pieces[0])
-            
+
     html = ['[<a href="%s">%s</a>]' % (page, index + 1) for index,
         page in enumerate(pieces)]
-    return " ".join(['<span class="homepage">Homepages'] + html + 
+    return " ".join(['<span class="homepage">Homepages'] + html +
         ['</span>'])
 
 def license_to_html(license):
@@ -74,9 +74,9 @@ def license_to_html(license):
     return '<br>\n'.join(html)
 
 def package_to_html(pkginfo, db, full=False):
-    """This function needs a database (db) connection because it performs a 
+    """This function needs a database (db) connection because it performs a
     query_to_dict on the package"""
-    
+
     table_begin = '<table class="ebuild">'
     name = '<tr><td class="fields">%s</td></tr>' % pkginfo['name']
     if full:
@@ -86,15 +86,15 @@ def package_to_html(pkginfo, db, full=False):
     else:
         image = ''
     description = ('<tr><td class="item">'
-        '%s<b>Description: </b>%s</td></tr>' 
+        '%s<b>Description: </b>%s</td></tr>'
         % (image, escape(pkginfo['description']))
     )
     ebuilds = get_recent_releases(pkginfo, db)
     releases = '<tr><td>%s</td></tr>' % archs_to_html(ebuilds, 'Releases')
-    #bug_string = ('<br><h3>Related bugs:</h3>\n%s' 
+    #bug_string = ('<br><h3>Related bugs:</h3>\n%s'
     #    % bugs_to_html(pkginfo['name']))
     general = '<tr><td>%s</td></tr>' % general_info_to_html(pkginfo)
-    similar = '<tr><td>%s</td></tr>' % create_similar_pkgs_link(pkginfo)
+    #similar = '<tr><td>%s</td></tr>' % create_similar_pkgs_link(pkginfo)
     table_end = '</table>'
     rows = '\n\t'.join([name, description, releases, general])
     return '\n\t'.join([table_begin, rows, table_end])
@@ -113,8 +113,8 @@ def archs_to_html(ebuilds, heading = None):
     for ebuild in ebuilds:
         archs = ebuild['arch'].split()
         row_start = ('<tr>\n\t<th class="releases"><a href="%sebuilds/?%s-%s"'
-            ' title="%s">%s</a></th>\n' % (config.FEHOME, 
-                ebuild['name'], ebuild['version'], ebuild['time'], 
+            ' title="%s">%s</a></th>\n' % (config.FEHOME,
+                ebuild['name'], ebuild['version'], ebuild['time'],
                 ebuild['version']))
         row_data = []
         for arch in config.ARCHLIST:
@@ -132,7 +132,7 @@ def archs_to_html(ebuilds, heading = None):
         rows.append('\n\t'.join([row_start] + row_data + [row_end]))
     table_end = '</table>'
     return '\n\t'.join([table_begin] + [header_row] + rows + [table_end])
-    
+
 def ebuild_to_html(ebinfo, new=0, show_bugs=0, full = False):
     """Convert ebuild (dict) to html, if new, print out a "this is new" notice
     if show_bugs, show bugs for this particular ebuild (requires access to
@@ -141,7 +141,7 @@ def ebuild_to_html(ebinfo, new=0, show_bugs=0, full = False):
         new_string = """ &nbsp;&nbsp;<span class="new">new!</span> """
     else:
         new_string = ""
-        
+
     table_begin = '<table class="ebuild">'
     name_and_date = ('<tr><td class="fields">'
         '<a href="%spackages/?category=%s;name=%s">%s</a> %s%s<br>'
@@ -152,7 +152,7 @@ def ebuild_to_html(ebinfo, new=0, show_bugs=0, full = False):
         ebinfo['version'],
         new_string,
         ebinfo['time'].localtime().strftime("%c %Z")))
-        
+
     if full:
         image = ('<img class="pkgimg" alt="" src="%s/%s/%s.jpg" align="right">' %
                 (config.ICONS, ebinfo['category'], ebinfo['name'])
@@ -170,38 +170,38 @@ def ebuild_to_html(ebinfo, new=0, show_bugs=0, full = False):
     archs = '<tr><td>%s</td></tr>' % archs_to_html([ebinfo])
     general = '<tr><td>%s</td></tr>' % general_info_to_html(ebinfo)
     table_end = '</table>'
-    
+
     bug_string = ''
     if show_bugs:
         bug_string = bugs_to_html(ebinfo['name'])
         if bug_string:
             bug_string = '<br><h3 class="bugs">Related bugs:</h3>%s' \
             % bug_string
-            
-    return '\n\t'.join([table_begin, 
-        name_and_date, 
-        desc_and_changes, 
+
+    return '\n\t'.join([table_begin,
+        name_and_date,
+        desc_and_changes,
         archs,
-        general, 
-        table_end, 
+        general,
+        table_end,
         bug_string])
-      
+
 def general_info_to_html(pkg):
     """This actually will (should) take either a package or ebuild dict
     as an argument"""
-    
+
     import forums
-    
+
     changelogurl = ('http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
         '%s/%s/ChangeLog' % (pkg['category'],pkg['name']))
     cat_header = '<th class="category">Category</th>'
     license_header = '<th class="license">License</th>'
     category = ('<td class="category">'
-        '<a href="%spackages/?category=%s">%s</a></td>'  % (config.FEHOME, 
+        '<a href="%spackages/?category=%s">%s</a></td>'  % (config.FEHOME,
         pkg['category'], pkg['category']))
-    homepage = ('<td class="homepage" rowspan="2">%s</td>' 
+    homepage = ('<td class="homepage" rowspan="2">%s</td>'
         % homepage_to_html(pkg['homepage']))
-    license = ('<td class="license">%s</td>' 
+    license = ('<td class="license">%s</td>'
         % license_to_html(pkg['license']))
     changelog = ('<td class="changelog" rowspan="2">'
         '<a href="%s">ChangeLog</a></td>' % changelogurl)
@@ -211,7 +211,7 @@ def general_info_to_html(pkg):
         '%s</td>' % create_related_bugs_link(pkg))
     forums = ('<td class="forums" rowspan="2">'
         '%s</td>' % forums.create_forums_link(pkg))
-    
+
     return '\n\t'.join(['<table class="general_info">',
         '<tr>',
         cat_header,
@@ -227,10 +227,10 @@ def general_info_to_html(pkg):
         license,
         '</tr>',
         '</table>'])
-        
+
 def create_similar_pkgs_link(pkg):
     """Create a link to similar packages"""
-    
+
     def strip_chars(mystring):
         newstring = ''
         for char in mystring:
@@ -239,10 +239,10 @@ def create_similar_pkgs_link(pkg):
             else:
                 newstring = newstring + ' '
         return newstring
-        
+
     description = strip_chars(pkg['description'].lower())
-    
-    words = [word for word in description.split() 
+
+    words = [word for word in description.split()
         if word and len(word)>2 and word not in config.EXCLUDED_FROM_SIMILAR]
     words = words[:config.SIMILAR_MAX_WORDS] + [pkg['name']]
     #query = ['[[:<:]]%s[[:>:]].*' % word for word in words]
@@ -250,21 +250,21 @@ def create_similar_pkgs_link(pkg):
     query = '(%s){%s,}' % ('|'.join(query), config.SIMILAR_MIN_MATCHES)
     url = '%ssearch/?sstring=%s' % (config.FEHOME, escape(query))
     return '<a href="%s">Similar</a>' % url
-    
+
 def create_related_bugs_link(pkg):
     """Create a link to related bugs"""
-    
+
     url = ('http://bugs.gentoo.org/buglist.cgi?query_format='
             '&amp;short_desc_type=allwords'
             '&amp;short_desc=%s'
             '&amp;bug_status=UNCONFIRMED'
             '&amp;bug_status=NEW'
             '&amp;bug_status=ASSIGNED'
-            '&amp;bug_status=REOPENED' 
+            '&amp;bug_status=REOPENED'
             % escape(pkg['name']))
-    
+
     return '<a title="bugs.gentoo.org" href="%s">Bugs</a>' % url
-            
+
 def bugs_to_html(package):
     """Given package name (no version #s), return html text of bugs as
     reported by bugzilla"""
@@ -279,7 +279,7 @@ def bugs_to_html(package):
             '&amp;bug_status=NEW'
             '&amp;bug_status=ASSIGNED'
             '&amp;bug_status=REOPENED'
-            '&amp;ctype=csv' 
+            '&amp;ctype=csv'
             % package)
     fp = urllib2.urlopen(url)
     factory = bugs.BugFactory()
@@ -289,7 +289,7 @@ def bugs_to_html(package):
         return str(writer)
     else:
         return ""
-                
+
 def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
     c = db.cursor()
     extra = ''
@@ -303,10 +303,10 @@ def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
             extra = ' AND (%s) ' % testing_extra
         else:
             extra = ' AND ((%s) OR (%s)) ' % (stable_extra, testing_extra)
-    
+
     if new:
         extra = ('%s AND package.new=1 ' % extra)
-        
+
     query = """SELECT ebuild.category,ebuild.name,version,when_found,description,
     changelog,arch,homepage,license,is_masked FROM ebuild,package WHERE ebuild.name=\
     package.name AND ebuild.category=package.category %s ORDER by when_found DESC \
@@ -314,7 +314,7 @@ def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
     c.execute(query)
     results = c.fetchall()
     return results
-    
+
 def get_most_recent_bumps(db, max=config.MAXPERPAGE):
     """Return most recent version bumps (pkgs with no prevarch)"""
     c = db.cursor()
@@ -324,11 +324,11 @@ def get_most_recent_bumps(db, max=config.MAXPERPAGE):
         'AND prevarch="" AND version NOT LIKE "%%-r_" AND version NOT LIKE '
         '"%%-r__" AND NOT new ORDER by when_found '
         'DESC LIMIT %s' % max)
-        
+
     c.execute(query)
     results = c.fetchall()
     return results
-    
+
 def query_to_dict(d):
     """Convert a SQL query to a dict"""
     einfo = {}
@@ -389,7 +389,7 @@ def pkgsplit(mypkg,silent=1):
             revok=1
         except SystemExit, e:
             raise
-        except: 
+        except:
             pass
     if revok:
         if ververify(myparts[-2]):
@@ -528,7 +528,7 @@ def ververify(myorigval,silent=1):
                     raise
                 except:
                     #if no endversions work, *then* we return 0
-                    pass	
+                    pass
     if not silent:
         print "!!! Name error in",myorigval
     vercache[myorigval]=0
@@ -540,7 +540,7 @@ def relparse(myver):
     suffix=0
     endtype=0
     endnumber=0
-    
+
     mynewver=string.split(myver,"_")
     myver=mynewver[0]
 
@@ -551,19 +551,16 @@ def relparse(myver):
         suffix=ord(myver[divider:])
         number=string.atof(myver[0:divider])
     else:
-        number=string.atof(myver)  
+        number=string.atof(myver)
 
     if len(mynewver)==2:
         #an endversion
         for x in endversion_keys:
             elen=len(x)
             if mynewver[1][:elen] == x:
-                match=1
                 endtype=endversion[x]
                 try:
                     endnumber=string.atof(mynewver[1][elen:])
-                except SystemExit, e:
-                    raise
                 except:
                     endnumber=0
                 break
@@ -585,7 +582,7 @@ def vercmp(val1,val2):
             pass
     except KeyError:
         pass
-    
+
     # consider 1_p2 vc 1.1
     # after expansion will become (1_p2,0) vc (1,1)
     # then 1_p2 is compared with 1 before 0 is compared with 1
@@ -662,26 +659,41 @@ def pkgcmp(pkg1,pkg2):
 
 def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
     """write out ebuild info to RSS file (fp)"""
+
+    # web link for RSS feed
+    if subtitle:
+        link = '%s/%s' % (config.FEHOME, subtitle.replace(' ','/',1))
+    else:
+        link = config.FEHOME
+
+    pubDate = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
     fp.write("""<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="0.92">
+        <rss version="2.0">
         <channel>
         <title>packages.gentoo.org [ %s ]</title>
         <link>%s</link>
         <description>Latest ebuilds from the Gentoo Linux portage tree</description>
         <webMaster>www@gentoo.org</webMaster>
+
+        <image>
+            <title>Online Package Database</title>
+            <url>%s</url>
+            <link>%s</link>
+        </image>
+
         <managingEditor>marduk@gentoo.org</managingEditor>
-        <pubDate>%s</pubDate>""" % (subtitle,config.FEHOME, 
-            time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
+        <pubDate>%s</pubDate>""" % (subtitle, link, config.RSS_IMAGE,
+            config.FEHOME, pubDate))
 
     for ebuild in ebuilds:
         if simple:
             description = escape(ebuild['description'])
         else:
             description = ('\n'
-	    	'<![CDATA[\n'
-	    	'<link rel="stylesheet" type="text/css" href="%s"></link>\n'
-		'%s\n]]>' % (config.STYLESHEET, ebuild_to_html(ebuild, full=True))
-		)
+            '<![CDATA[\n'
+            '<link rel="stylesheet" type="text/css" href="%s"></link>\n'
+        '%s\n]]>' % (config.STYLESHEET, ebuild_to_html(ebuild, full=True))
+        )
 
         fp.write("""<item>
             <title>%s %s</title>
@@ -699,9 +711,17 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
                 description,
                 ebuild['time'].gmtime().strftime("%a, %d %b %Y %H:%M:%S +0000"))
         )
-        
-    fp.write("</channel>\n</rss>\n")
-    
+
+    fp.write("\n\
+        <textinput>\n\
+            <title>Search the Online Package Database</title>\n\
+            <link>%s/search/</link>\n\
+            <description>emerge -Ss</description>\n\
+            <name>sstring</name>\n\
+        </textinput>\n\
+        </channel>\n\
+        </rss>\n" % config.FEHOME)
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -710,28 +730,20 @@ def main(argv=None):
             ebuilddb.main()
     except IndexError:
         pass
-            
+
     db = ebuilddb.db_connect()
     branches = ('', 'stable', 'testing')
     for arch in [''] + config.ARCHLIST:
         for branch in branches:
-            fullpath = os.path.join(config.LOCALHOME, "archs", arch, branch, 
+            fullpath = os.path.join(config.LOCALHOME, "archs", arch, branch,
                 config.INDEX)
             index = open(fullpath,'w')
-            if arch:
-                sarch = arch
-            else:
-                sarch = 'all'
-            if branch:
-                sbranch = branch
-            else:
-                sbranch = 'all'
-            
-            index.write("""<table border="0" cellpadding="0" cellspacing="5" 
+
+            index.write("""<table border="0" cellpadding="0" cellspacing="5"
                 width="100%">\n""")
             index.write("""<tr><td valign="top">\n""")
             index.write('<!--#include file="archnav.html" -->\n\n</td></tr>\n'
-                '<tr><td>') 
+                '<tr><td>')
             results = get_most_recent(db, arch=arch, branch=branch)
             ebuilds = [ query_to_dict(i) for i in results ]
             for ebuild in ebuilds:
@@ -747,22 +759,22 @@ def main(argv=None):
                         % (ebuilddb.config.PORTAGE_DIR,
                         ebuild['category'],ebuild['name'],ebuild['name'],
                         ebuild['version'])
-                    os.system('touch -r %s %s || touch -d "today -1 year" %s' 
+                    os.system('touch -r %s %s || touch -d "today -1 year" %s'
                         % (ebuildfilename,pkgfilename,pkgfilename))
-        
+
                 try:
                     index.write('%s\n\n' % (ebuild_html))
                 except IOError:
                     continue
             index.write("""</table>\n""")
             index.close()
-            
+
             subtitle = ' %s %s' % (arch, branch)
             rss = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
                 config.RSS), 'w')
             ebuilds_to_rss(rss, ebuilds, simple=False, subtitle=subtitle)
             rss.close()
-        
+
             rss2 = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
                 config.RSS2), 'w')
             ebuilds_to_rss(rss2, ebuilds, simple=True, subtitle=subtitle)
