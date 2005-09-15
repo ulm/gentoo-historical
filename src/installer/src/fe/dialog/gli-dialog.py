@@ -167,7 +167,7 @@ Press OK to continue""")
 		#Ask 
 		while 1:
 			string = _(u"""
-The first profile needed for an advnaced install includes all the 
+The first profile needed for an advanced install includes all the 
 necessary information for getting the livecd environment set up.  
 This includes the livecd networking configuration, where the 
 logfile and new root mount point are to be located, etc.  

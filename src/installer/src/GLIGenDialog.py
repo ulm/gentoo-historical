@@ -732,7 +732,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				("buildpkg",_(u"create binaries of all packages emerged"),0),
 				(_(u"Other"),_(u"Input your list of FEATURES manually."),0)	]
 				features_string = _(u"FEATURES are settings that affect the functionality of portage. Most of these settings are for developer use, but some are available to non-developers as well.")
-				code, choices = self._d.checklist(features_string, choices=choices_list)
+				code, choices = self._d.checklist(features_string, choices=choices_list, width=75)
 				if code != self._DLG_OK:
 					continue
 				if _(u"Other") in choices:
