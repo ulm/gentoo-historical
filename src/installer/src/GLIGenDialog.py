@@ -1191,54 +1191,61 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				return
 			#Popular Desktop Applications
 			choices_list = []
+			pkgs = {}
 			if submenu == _(u"Desktop"):
-				choices_list = [("gaim",_(u"GTK Instant Messenger client"),int("gaim" in install_packages)),
-				("gftp",_(u"Gnome based FTP Client"),int("gftp" in install_packages)),
-				("evolution",_(u"A GNOME groupware application, a Microsoft Outlook workalike"),int("evolution" in install_packages)),
-				("mozilla", _(u"The Mozilla Web Browser"),int("mozilla" in install_packages)),
-				("mozilla-firefox",_(u"The Mozilla Firefox Web Browser"),int("mozilla-firefox" in install_packages)),
-				("mozilla-thunderbird", _(u"Thunderbird Mail Client"),int("mozilla-thunderbird" in install_packages)),
-				("mplayer",_(u"Media Player for Linux"),int("mplayer" in install_packages)),
-				("openoffice",_(u"OpenOffice.org, a full office productivity suite."),int("openoffice" in install_packages)),
-				("openoffice-bin",_(u"Same as OpenOffice but a binary package (no compiling!)"),int("openoffice-bin" in install_packages)),
-				("realplayer",_(u"Real Media Player"),int("realplayer" in install_packages)),
-				("xchat",_(u"Graphical IRC Client"),int("xchat" in install_packages)),
-				("xmms", _(u"X MultiMedia System"),int("xmms" in install_packages))]
+				pkgs = {"gaim": _(u"GTK Instant Messenger client"),
+				"gftp": _(u"Gnome based FTP Client"),
+				"evolution": _(u"A GNOME groupware application, a Microsoft Outlook workalike"),
+				"mozilla": _(u"The Mozilla Web Browser"),
+				"mozilla-firefox": _(u"The Mozilla Firefox Web Browser"),
+				"mozilla-thunderbird": _(u"Thunderbird Mail Client"),
+				"mplayer": _(u"Media Player for Linux"),
+				"openoffice": _(u"OpenOffice.org, a full office productivity suite."),
+				"openoffice-bin": _(u"Same as OpenOffice but a binary package (no compiling!)"),
+				"realplayer": _(u"Real Media Player"),
+				"xchat": _(u"Graphical IRC Client"),
+				"xmms": _(u"X MultiMedia System")  }
 			#Applications often found on servers.
 			elif submenu == _(u"Servers"):
-				choices_list = [("apache",_(u"Apache Web Server"),int("apache" in install_packages)),
-				("iptables",_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),int("iptables" in install_packages)),
-				("proftpd",_(u"ProFTP Server"),int("proftpd" in install_packages)),
-				("samba",_(u"SAMBA client/server programs for UNIX"),int("samba" in install_packages)),
-				("traceroute",_(u"Utility to trace the route of IP packets"),int("traceroute" in install_packages))]
+				pkgs = {"apache":_(u"Apache Web Server"),
+				"iptables":_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),
+				"proftpd":_(u"ProFTP Server"),
+				"samba":_(u"SAMBA client/server programs for UNIX"),
+				"traceroute":_(u"Utility to trace the route of IP packets")  }
 			#Window managers and X selection.
 			elif submenu == _(u"X11"):
-				choices_list = [("xorg-x11",_(u"An X11 implementation maintained by the X.Org Foundation."),int("xorg-x11" in install_packages)),
-				("gnome",_(u"The Gnome Desktop Environment"),int("gnome" in install_packages)),
-				("kde",_(u"The K Desktop Environment"),int("kde" in install_packages)),
-				("blackbox",_(u"A small, fast, full-featured window manager for X"),int("blackbox" in install_packages)),
-				("enlightenment",_(u"Enlightenment Window Manager"),int("enlightenment" in install_packages)),
-				("fluxbox",_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),int("fluxbox" in install_packages)),
-				("xfce4",_(u"XFCE Desktop Environment"),int("xfce4" in install_packages))]
+				pkgs = {"xorg-x11":_(u"An X11 implementation maintained by the X.Org Foundation."),
+				"gnome":_(u"The Gnome Desktop Environment"),
+				"kde":_(u"The K Desktop Environment"),
+				"blackbox":_(u"A small, fast, full-featured window manager for X"),
+				"enlightenment":_(u"Enlightenment Window Manager"),
+				"fluxbox":_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),
+				"xfce4":_(u"XFCE Desktop Environment")  }
 			#Miscellaneous Applications you may want.
 			elif submenu == _(u"Misc"):
-				choices_list = [("gkrellm",_(u"Single process stack of various system monitors"),int("gkrellm" in install_packages)),
-				("logrotate",_(u"Rotates, compresses, and mails system logs"),int("logrotate" in install_packages)),
-				("slocate",_(u"Secure way to index and quickly search for files on your system"),int("slocate" in install_packages)),
-				("ufed",_(u"Gentoo Linux USE flags editor"),int("ufed" in install_packages))]
+				pkgs = {"gkrellm":_(u"Single process stack of various system monitors"),
+				"logrotate":_(u"Rotates, compresses, and mails system logs"),
+				"slocate":_(u"Secure way to index and quickly search for files on your system"),
+				"ufed":_(u"Gentoo Linux USE flags editor")  }
 			#Recommended by the Gentoo Linux Installer Team
 			elif submenu == _(u"Recommended"):
-				choices_list = [("anjuta",_(u"A versatile IDE for GNOME"),int("anjuta" in install_packages)),
-				("chkrootkit",_(u"a tool to locally check for signs of a rootkit"),int("chkrootkit" in install_packages)),
-				("crack-attack",_(u"Addictive OpenGL-based block game"),int("crack-attack" in install_packages)),
-				("netcat",_(u"the network swiss army knife"),int("netcat" in install_packages)),
-				("nmap",_(u"A utility for network exploration or security auditing"),int("nmap" in install_packages)),
-				("screen",_(u"full-screen window manager that multiplexes between several processes"),int("screen" in install_packages))]
+				pkgs = {"anjuta":_(u"A versatile IDE for GNOME"),
+				"chkrootkit":_(u"a tool to locally check for signs of a rootkit"),
+				"crack-attack":_(u"Addictive OpenGL-based block game"),
+				"netcat":_(u"the network swiss army knife"),
+				"nmap":_(u"A utility for network exploration or security auditing"),
+				"screen":_(u"full-screen window manager that multiplexes between several processes")  }
 			elif submenu == _(u"Manual"):
 				code, tmp_install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
 				if code == self._DLG_OK:
 					install_packages = tmp_install_packages.split()
 				continue
+			grp_list = GLIUtility.get_grp_pkgs_from_cd()
+			for pkg in pkgs:
+				if pkg in grp_list:
+					choices_list.append((pkg, "(GRP) "+pkgs[pkg], int(pkg in install_packages)))
+				else:
+					choices_list.append((pkg, pkgs[pkg], int(pkg in install_packages)))
 			code, choices = self._d.checklist(_(u"Choose from the listed packages"), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
