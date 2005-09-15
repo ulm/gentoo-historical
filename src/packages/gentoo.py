@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.11 $"
+__revision__ = "$Revision: 1.12 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -696,14 +696,15 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
         )
 
         fp.write("""<item>
-            <title>%s %s</title>
+            <title>%s/%s %s</title>
             <link>%sebuilds/?%s-%s</link>
             <description>
                 %s
             </description>
             <pubDate>%s</pubDate>
         </item>
-        """ % (ebuild['name'],
+        """ % (ebuild['category'],
+                ebuild['name'],
                 ebuild['version'],
                 config.FEHOME,
                 ebuild['name'],
