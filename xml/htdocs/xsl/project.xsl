@@ -65,13 +65,13 @@
 			       	<xsl:sort select="text()"/>
 			       </xsl:apply-templates>
 			       <xsl:apply-templates select='dev[not(@role)]'/>
+			       <xsl:call-template name="inheritdev"/>
 			</table>
+                        <p>
+                               All developers can be reached by e-mail using <c>Nickname@gentoo.org</c>.
+                        </p>
       
-      <p>
-      All developers can be reached by e-mail using <c>Nickname@gentoo.org</c>.
-      </p>
-      
-      </body></section>
+                        </body></section>
 		</chapter>
 		</xsl:if>
 		<xsl:apply-templates select='extrachapter[@position="devs"]'/>
@@ -306,6 +306,24 @@
           <xsl:call-template name="inheritres"/>
         </ul>
       </li>
+    </xsl:for-each>
+  </xsl:for-each>
+</xsl:template>
+
+<xsl:template name="inheritdev">
+  <xsl:for-each select='/project/subproject[@inheritmembers="yes"]'>
+    <xsl:for-each select="document(@ref)">
+      <xsl:for-each select="/project[dev]">
+        <tr>
+          <th>Members from subproject
+            <xsl:value-of select="name"/>
+          </th><th></th><th></th>
+        </tr>
+        <xsl:apply-templates select='dev'>
+          <xsl:sort select="@role"/>
+          <xsl:sort select="text()"/>
+        </xsl:apply-templates>
+      </xsl:for-each>
     </xsl:for-each>
   </xsl:for-each>
 </xsl:template>
