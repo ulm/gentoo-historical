@@ -1,13 +1,12 @@
 #!/usr/bin/python -O
 
-__revision__ = '$Revision: 1.4 $'
+__revision__ = '$Revision: 1.5 $'
 # $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
 import sys
 import os
 import time
-import re
 import changelogs
 import MySQLdb
 
@@ -16,16 +15,15 @@ def db_connect():
         user = config.USER,
         passwd = config.PASSWD,
         db = config.DATABASE)
-    
+
 def find_ebuilds():
     #print "walking..."
-    ebuilds=[]
     # yeah, i know we can os.path.walk, but this runs faster ;-)
     pipe = os.popen("find %s -name '*.ebuild'" % config.PORTAGE_DIR)
     s = pipe.read()
     pipe.close()
     return s.split()
-    
+
 def parse_ebuild(s, pkgsplit):
     """Parse ebuild info based on path name"""
     parsed = {}
@@ -45,7 +43,7 @@ def parse_ebuild(s, pkgsplit):
 
 def get_ebuild_record(db,ebinfo):
     c = db.cursor()
-    query = ('SELECT * FROM ebuild WHERE category="%s" AND name="%s" '   
+    query = ('SELECT * FROM ebuild WHERE category="%s" AND name="%s" '
         'AND version="%s" LIMIT 1' % (ebinfo['category'], ebinfo['name'],
         ebinfo['version']))
     c.execute(query)
@@ -64,7 +62,7 @@ def create_ebuild_record(db,ebinfo):
         if type(y) is str:
             y = MySQLdb.escape_string(y)
         escaped[x] = y
-    
+
     query=('INSERT INTO package SET category="%(category)s",name="%(name)s",'
         'homepage="%(homepage)s",description="%(description)s",'
         'license="%(license)s"' % escaped)
@@ -78,10 +76,10 @@ def create_ebuild_record(db,ebinfo):
 
     # then add particular ebuild
     query = ('INSERT INTO ebuild VALUES ("%(category)s","%(name)s",'
-        '"%(version)s",%(time)s,"%(archs)s","%(changelog)s","",%(masked)d)' 
+        '"%(version)s",%(time)s,"%(archs)s","%(changelog)s","",%(masked)d)'
         % escaped)
     d.execute(query)
-    
+
 def update_ebuild_record(db,ebinfo):
     c = db.cursor()
     escaped = {}
@@ -90,11 +88,11 @@ def update_ebuild_record(db,ebinfo):
         if type(y) is str:
             y = MySQLdb.escape_string(y)
         escaped[x] = y
-    
+
     query="""REPLACE INTO package VALUES ("%(category)s","%(name)s",\
         "%(homepage)s","%(description)s","%(license)s",0);""" % escaped
     c.execute(query)
-    
+
     query = ('UPDATE ebuild '
         'SET when_found="%(time)s",'
         'arch="%(archs)s",'
@@ -110,7 +108,7 @@ def update_ebuild_record(db,ebinfo):
         print 'error occurred: '
         print 'query: %s' % query
         print 'error: %s' % data
-        
+
 
 def get_extended_info(ebuild):
     filename = os.path.join(config.PORTAGE_DIR,'metadata/cache',
@@ -118,7 +116,7 @@ def get_extended_info(ebuild):
     try:
         lines = open(filename,'r').readlines()
     except IOError:
-    	print 'Error opening %s' % filename
+        print 'Error opening %s' % filename
         lines = []
     lines = [ s.strip() for s in lines ]
     try:
@@ -143,7 +141,7 @@ def get_mtime(s):
     """Get mtime of file, return in format that MySQL would like"""
     try:
         t = os.path.getmtime(s)
-    except:
+    except OSError:
         return 'NULL'
     str = time.strftime("%Y%m%d%H%M%S",time.localtime(t))
     return str
@@ -152,31 +150,31 @@ def is_masked(tree, ebuild):
     """Return true if packages is masked in tree"""
     return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
 
-def main(): 
+def main():
     ebuilds = find_ebuilds()
     db = db_connect()
-    
+
     sys.path = ["/usr/lib/portage/pym"]+sys.path
     import portage
     # ... and then wait like a f**king hour
     sys.path = sys.path[1:]
 
     # We want to use the base profile, not any system-specific one
-    config = portage.config(config_profile_path = '/usr/portage/profiles/base')
-    
-    tree = portage.portdbapi('/usr/portage', config)
-    
+    p_config = portage.config(config_profile_path = '/usr/portage/profiles/base')
+
+    tree = portage.portdbapi('/usr/portage', p_config)
+
     for s in ebuilds:
         fields = parse_ebuild(s, portage.pkgsplit)
         if not fields:
             continue
         result = get_ebuild_record(db,fields)
         fields = get_extended_info(fields)
-        fields['changelog'] = changelogs.changelog('%s/ChangeLog' 
+        fields['changelog'] = changelogs.changelog('%s/ChangeLog'
             % os.path.dirname(s))
         fields['time'] = get_mtime(s)
         fields['masked'] = int(is_masked(tree, fields))
-        
+
         if not result:
             create_ebuild_record(db,fields)
         elif result[4] != fields['archs']:
@@ -191,7 +189,7 @@ def main():
             #print fields['masked']
             fields['prevarch'] = result[4]
             update_ebuild_record(db,fields)
-        
-	db.commit()
+
+    db.commit()
 if __name__ == '__main__':
     main()
