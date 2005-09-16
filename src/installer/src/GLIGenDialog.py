@@ -1249,6 +1249,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			code, choices = self._d.checklist(_(u"Choose from the listed packages.  If doing a networkless install, only choose (GRP) packages."), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
+			for pkg in pkgs:  #clear out packages from this list that are already in install_packages so that you can uncheck packages and they will be removed.  the ones that remain checked will be re-added.
+				for i, tmppkg in enumerate(install_packages):
+					if tmppkg == pkg:
+						del install_packages[i]
+					
 			for package in choices:
 				install_packages.append(package)
 				#special cases for desktop environments
