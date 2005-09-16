@@ -1246,7 +1246,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					choices_list.append((pkg, "(GRP) "+pkgs[pkg], int(pkg in install_packages)))
 				else:
 					choices_list.append((pkg, pkgs[pkg], int(pkg in install_packages)))
-			code, choices = self._d.checklist(_(u"Choose from the listed packages"), choices=choices_list, height=19, list_height=10, width=77)
+			code, choices = self._d.checklist(_(u"Choose from the listed packages.  If doing a networkless install, only choose (GRP) packages."), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
 			for package in choices:
