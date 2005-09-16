@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/Attic/technotes.xml,v 1.2 2005/09/16 08:51:59 chriswhite Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/Attic/technotes.xml,v 1.3 2005/09/16 16:41:27 chriswhite Exp $ -->
 
 <guide link="proj/en/gentoo-alt/bsd/technotes.xml" lang="en">
 <title>Gentoo/*BSD Technotes Guide</title>
@@ -22,8 +22,8 @@ on a Gentoo/*BSD environment.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.0</version>
-<date>2005-09-15</date>
+<version>2.0</version>
+<date>2005-09-16</date>
 
 <chapter>
 <title>General Structure</title>
@@ -340,6 +340,87 @@ The first way is preferred, as <path>malloc.h</path> is a deprecated header and
 should not be used, although some projects that have to deal with very very 
 very old systems would like to protect it with an additional check, even if this
 means having to deal with a longer configure stage.
+</p>
+
+</body>
+</section>
+<section>
+<title>Locale Libraries</title>
+<body>
+
+<p>
+One of the most used components in GNU software is <c>gettext</c>, a tool that 
+allows the creation of i18n-capable packages (library and programs) with 
+a relatively small amount of work and non-intrusive changes. Unfortunately, 
+during the past years, the way <c>gettext</c> was integrated into GNU/Linux 
+systems changed, creating a problem with Gentoo/FreeBSD now.  Originally, the 
+needed intl functions were always provided by <c>gettext</c> itself.  Howerver,
+recent versions of GNU <c>libc</c> provides them inside the standard library 
+itself, thus not requiring anymore the linking to <c>libintl</c> as is required 
+for system using other <c>libc</c>'s.
+</p>
+
+<p>
+Similarly, <c>libiconv</c> is a GNU library that provides ways to convert text 
+between different characters encodings. Its functions used to be always be 
+provided always by <c>libiconv</c>, but now they are also embedded inside GNU 
+<c>libc</c>. <c>gettext</c>, to provide its functionalities, uses <c>libiconv</c>;
+at the same time, <c>libiconv</c> can use <c>gettext</c> to proivde i18n support 
+for itself. This is not a problem for GNU <c>libc</c> users, as both <c>libintl</c>
+and <c>libiconv</c> are inside <c>libc</c>, but it's a problem for non-glibc 
+systems as this would add a circular depedency. To avoid this, nls support in 
+<c>libiconv</c> is forcefully disabled.
+</p>
+
+<p>
+Almost every package that depends on <c>libiconv/gettext</c> and uses 
+<c>autotools</c> has already support to link to the right libraries on non-glibc 
+systems. Unfortunately, this is not always enough: <c>gettext</c> guide states what 
+the packages must do to make NLS support optional, but this is not always followed 
+as intended, and intl functions are called also if NLS is disabled during configure 
+stage, causing failure in linking on non-glibc systems (this doesn't appear as a 
+problem on <c>glibc</c> systems, as the functions are always available on libc, and 
+it doesn't need to be linked against, while on systems where <c>libiconv</c> and 
+<c>libintl</c> are used it needs to be explicitely linked against that). This can be
+simply avoided protecting under <c>#ifdef ENABLE_NLS .. #endif</c> blocks the calls 
+to <c>setlocale()</c>, <c>testdomain()</c> and other intl functions. This way, they
+will be called only when gettext is requested and linked against.
+</p>
+
+<p>
+The way <c>gettext</c> and <c>libiconv</c> are used by some GNU software, with respect
+to generic software, actually adds a couple more problems to Gentoo/*BSD systems. 
+Packages like <c>tar</c>, <c>gettext</c>, <c>glib2</c> and <c>libiconv</c> themselves 
+create, for some reason, a <path>${libdir}/charset.alias</path>. This file is going to 
+have collisions with every package that creates one, so this will not be a good thing. 
+The solution is to let <c>libiconv</c> install the only instance of it, and remove it 
+from every other package, that's why some packages have one 
+<c>rm -f /usr/$(get_libdir)/charset.alias</c> line. Remember that the -f is needed, 
+as the file won't be created by Gentoo/Linux with <c>glibc</c>.
+</p>
+
+<p>
+Another problem can be defining the dependencies for packages. It's always a bit of a 
+problem knowing if <c>gettext</c> must be a runtime dependency or just a build time 
+dependency, and whether it is related to the <c>nls</c> USE flag or not. On a 
+glibc-based system <c>gettext</c> is a build-time dependency if <c>nls</c> USE flag is 
+enabled (and the package does not regenerate <c>autotools</c> support files), or an 
+unconditional build-time dependency when <c>autopoint</c> needs to be run. On a 
+non-glibc system, <c>gettext</c> is also a run-time dependency when building with 
+nls useflag enabled. While currently <c>gettext</c> and <c>libiconv</c> are in the list
+of system packages for Gentoo/*BSD ports, the complete dependency would be:
+</p>
+
+<pre caption="gettext dependancy sample">
+RDEPEND="!elibc_glibc? ( nls? ( sys-devel/gettext ) )"
+DEPEND="nls? ( sys-devel/gettext )"
+</pre>
+
+<p>
+Obviously this is true when nls USE flag is present and is honored by both the ebuild and
+the <path>configure</path> script.  However,  please remember that <c>--disable-nls</c> 
+presence on <c>configure --help</c> does not always mean that nls support can be disabled 
+or is even present.
 </p>
 
 </body>
