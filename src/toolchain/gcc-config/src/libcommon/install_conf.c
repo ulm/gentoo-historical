@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.20 2005/09/09 08:46:44 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.21 2005/09/16 17:44:23 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.21  2005/09/16 17:44:23  eradicator
+ * Some fixes to make the code C90 compliant.
+ *
  * Revision 1.20  2005/09/09 08:46:44  eradicator
  * Set correct parsing data object.
  *
@@ -108,8 +111,8 @@ static int installConfSectionCB(const char *section, void *_data) {
 		conf->profileHash = hashNew(10);
 		conf->wrapperAliases = hashNew(10);
 	} else {
-		data->profile = (Profile *)calloc(1, sizeof(Profile));
 		Profile *tmp;
+		data->profile = (Profile *)calloc(1, sizeof(Profile));
 
 		if(!data->profile)
 			return -1;
@@ -269,9 +272,11 @@ void freeInstallConf(InstallConf *installConf) {
 	if(installConf->profileHash) {
 		const char **keys = hashKeys(installConf->profileHash);
 
-		if(keys)
-			for(size_t i=0; keys[i]; i++)
+		if(keys) {
+			size_t i;
+			for(i=0; keys[i]; i++)
 				freeProfile((Profile *)hashGet(installConf->profileHash, keys[i]));
+		}
 
 		hashFree(installConf->profileHash);
 	}

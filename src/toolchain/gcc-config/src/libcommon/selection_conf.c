@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.21 2005/09/09 08:46:44 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.22 2005/09/16 17:44:23 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.22  2005/09/16 17:44:23  eradicator
+ * Some fixes to make the code C90 compliant.
+ *
  * Revision 1.21  2005/09/09 08:46:44  eradicator
  * Set correct parsing data object.
  *
@@ -137,9 +140,9 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 		 if(strcmp(key, "profile") == 0) {
 			char version[MAXPATHLEN + 1];
 			char *profile;
-			strncpy(version, value, MAXPATHLEN);
 			InstallConf *installConf;
 			Profile *prof;
+			strncpy(version, value, MAXPATHLEN);
 
 			/* First we need to split the profile given as <version>/<profile> */
 			for(profile=version; *profile && *profile != '/'; profile++);
