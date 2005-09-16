@@ -857,6 +857,7 @@ def get_grp_pkgs_from_cd():
 	status,output = spawn('cat /usr/livecd/grppkgs.txt',return_output=True)
 	output = output.split()
 	#remove the first part before a / for comparision
+	results = []
 	for pkg in output:
-		output[pkg] = pkg[(pkg.find('/')+1):]
-	return output
+		results.append(pkg[(pkg.find('/')+1):])
+	return results
