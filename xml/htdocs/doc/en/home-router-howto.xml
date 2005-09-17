@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.32 2005/09/06 03:03:19 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.33 2005/09/17 07:40:13 vapier Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/home-router-howto.xml">
@@ -15,8 +15,8 @@ This document details how to turn an old Gentoo machine into a router
 for connecting your home network to the internet.
 </abstract>
 
-<version>1.12</version>
-<date>2005-09-05</date>
+<version>1.20</version>
+<date>2005-09-17</date>
 
 <chapter>
 <title>Introduction</title>
@@ -299,32 +299,32 @@ Life would be grand eh?  Introducing the Dynamic Host Configuration Protocol
 <p>
 DHCP is exactly what its name implies.  It's a protocol that allows you 
 to dynamically configure other hosts automatically.  You run a DHCP server on
-the router (dhcpd), give it all the information about your network (valid IPs,
+the router, give it all the information about your network (valid IPs,
 DNS servers, gateways, etc...), and then when the other hosts start up, they
 run a DHCP client to automatically configure themselves.  No fuss, no muss!
 For more information about DHCP, you can always visit <uri
 link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>.
 </p>
 
-<pre caption="Setting up dhcpd">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>(Here is a sample configuration file:)</comment>
-authoritative;
-ddns-update-style interim;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-    range 192.168.0.100 192.168.0.250;
-    default-lease-time 259200;
-    max-lease-time 518400;
-    option subnet-mask 255.255.255.0;
-    option broadcast-address 192.168.0.255;
-    option routers 192.168.0.1;
-    option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>(Set IFACE="eth0")</comment>
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+<p>
+We'll use a package called dnsmasq which provides both DHCP and DNS services.
+For now lets just focus on the DHCP aspect.  Note that if you want to run a
+different DHCP server, you can find another example in the Fun Things chapter.
+Also, if you wish to tinker with the DHCP server settings, just read the 
+comments in <path>/etc/dnsmasq.conf</path>.  All the defaults should work fine 
+though.
+</p>
+
+<pre caption="Setting up a DHCP server">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>You should need to just add this one line:</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Add "-i eth0" to DNSMASQ_OPTS</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
@@ -346,7 +346,7 @@ favorite penguin.
 
 <p>
 When people want to visit a place on the internet, they remember names, not a
-string of useless numbers.  After all, what's easier to remember, ebay.com or
+string of funky numbers.  After all, what's easier to remember, ebay.com or
 66.135.192.87?  This is where the DNS steps in.  DNS servers run all over the
 internet, and whenever someone wants to visit 'ebay.com', these servers turn
 'ebay.com' (what we understand) into '66.135.192.87' (what our computers
@@ -355,28 +355,17 @@ link="http://en.wikipedia.org/wiki/DNS">Wikipedia</uri>.
 </p>
 
 <p>
-You may have noticed in the previous section that we told the DHCP clients we
-have a DNS server at 192.168.0.1.  You may also remember that 192.168.0.1 is
-our little router that we're making.  I don't remember setting up a DNS server
-... so let's do so now!
+Since we're using dnsmasq for our DHCP server, and it includes a DNS server,
+you've got nothing left to do here!  Your little router is already providing
+DNS to its DHCP clients.  Bet you wish everything was this easy ;).
 </p>
 
-<pre caption="Setting up dnsmasq">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>Add "-i eth0" to DNSMASQ_OPTS</comment>
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-Well that was quick, but what did we do?  The great thing is, we didn't have to
-do very much!  You're welcome to choose other DNS servers if you're more
-comfortable with them, but the reason dnsmasq is great is because it was
-designed to do exactly what we want and nothing more.  It's a little DNS
-caching/forwarding server for local networks.  We're not looking to provide DNS
-for our own domain here, just offer simple DNS services to everyone else on our
-LAN.
+You're welcome to choose other DNS servers if you're more comfortable with 
+them, but the reason dnsmasq is great is because it was designed to do exactly 
+what we want and nothing more.  It's a little DNS caching/forwarding server for 
+local networks.  We're not looking to provide DNS for our own domain here, just 
+offer simple DNS services to everyone else on our LAN.
 </p>
 
 </body>
@@ -394,12 +383,12 @@ too happy just yet.
 </p>
 
 <p>
-This is where NAT steps in.  NAT is a way of connecting multiple computers in a
-private LAN to the internet when you only have a smaller number of IP addresses
-availabe to you.  Typically you were given 1 IP by your ISP, but you want to
-let your whole house connect to the internet.  NAT is the magic that makes this
-possible.  For more information about NAT, you can always visit <uri
-link="http://en.wikipedia.org/wiki/NAT">Wikipedia</uri>.
+This is where Network Address Translation (NAT) steps in.  NAT is a way of 
+connecting multiple computers in a private LAN to the internet when you have a 
+smaller number of public IP addresses available to you.  Typically you are given 
+1 IP by your ISP, but you want to let your whole house connect to the internet.
+NAT is the magic that makes this possible.  For more information about NAT, you 
+can always visit <uri link="http://en.wikipedia.org/wiki/NAT">Wikipedia</uri>.
 </p>
 
 <note>
@@ -413,7 +402,7 @@ just run <c>emerge iptables</c>.
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
-<comment>Setup default policies to handle not matched by any rules</comment>
+<comment>Setup default policies to handle unmatched traffic</comment>
 # <i>iptables -P INPUT ACCEPT</i>
 # <i>iptables -P OUTPUT ACCEPT</i>
 # <i>iptables -P FORWARD DROP</i>
@@ -496,10 +485,10 @@ others would have to be on say port 123 and port 567.
 <p>
 All the port forwarding rules are of the form <c>iptables -t nat -A PREROUTING
 [-p protocol] --dport [external port on router] -i ${WAN} -j DNAT --to [ip/port
-to forward to]</c>.  iptables does not accept hostnames when port forwarding.
-If you are forwarding an external port to the same port on the internal
-machine, you can omit the destination port.  See the iptables(8) page for more
-information.
+to forward to]</c>.  Unfortunately, iptables does not accept hostnames when port
+forwarding.  If you are forwarding an external port to the same port on the 
+internal machine, you can omit the destination port.  See the iptables(8) man 
+page for more information.
 </p>
 
 <pre caption="Running the iptables commands">
@@ -524,10 +513,13 @@ information.
 <comment>Bittorrent forwarding</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
 
+<comment>eDonkey/eMule forwarding</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
+
 <comment>Game Cube Warp Pipe support</comment>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
-<comment>Playstation2 Online support</comment>
+<comment>Playstation 2 Online support</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 </pre>
@@ -820,6 +812,49 @@ TODO
 </body>
 </section>
 -->
+
+<section>
+<title>Full DHCP Server</title>
+<body>
+
+<p>
+Earlier we used dnsmasq to provide DHCP service to all our clients.  For most
+people with a simple small LAN, this is perfect.  But you may need something 
+with more features.  Thus we turn to a full-featured DHCP server as provided 
+by the <uri link="http://www.isc.org/products/DHCP">ISC</uri> folks.
+</p>
+
+<pre caption="Setting up dhcpd">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>(Here is a sample configuration file:)</comment>
+authoritative;
+ddns-update-style interim;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+    range 192.168.0.100 192.168.0.250;
+    default-lease-time 259200;
+    max-lease-time 518400;
+    option subnet-mask 255.255.255.0;
+    option broadcast-address 192.168.0.255;
+    option routers 192.168.0.1;
+    option domain-name-servers 192.168.0.1;
+}
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>(Set IFACE="eth0")</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+This is the minimal setup required to replace the dnsmasq DHCP functionality 
+that we used earlier.  Speaking of which, you did remember to disable the DHCP 
+features in dnsmasq didn't you?  If not, you should do so now (just comment 
+out the <c>dhcp-range</c> setting in <path>/etc/dnsmasq.conf</path> and restart
+the service).
+</p>
+
+</body>
+</section>
 
 </chapter>
 
