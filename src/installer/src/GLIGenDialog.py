@@ -760,8 +760,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#Add distcc to the services list.
 			if self._install_profile.get_services():
 				services = self._install_profile.get_services()
-			if isinstance(services, str):
-				services = services.split(',')
+				if isinstance(services, str):
+					services = services.split(',')
 			else:
 				services = []
 			if not "distccd" in services:
