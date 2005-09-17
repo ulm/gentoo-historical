@@ -42,6 +42,8 @@ class Setup_InstallProfile(GLIGenIP):
 			self.set_install_stage()
 			self.set_portage_tree()
 			self.set_make_conf()
+			if advanced_mode:
+				self.set_distcc()
 			self.set_kernel()
 			self.set_boot_loader()
 			self.set_timezone()
@@ -68,6 +70,7 @@ class Setup_InstallProfile(GLIGenIP):
 				{ 'text': "Install Stage", 'fn': self.set_install_stage },
 				{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
 				{ 'text': "make.conf", 'fn': self.set_make_conf },
+				{ 'text': "distcc", 'fn': self.set_distcc },
 				{ 'text': "etc/portage/*", 'fn': self.set_etc_portage },
 				{ 'text': "Kernel", 'fn': self.set_kernel },
 				{ 'text': "Bootloader", 'fn': self.set_boot_loader },
@@ -77,7 +80,7 @@ class Setup_InstallProfile(GLIGenIP):
 				{ 'text': "Logging daemon", 'fn': self.set_logger },
 				{ 'text': "Extra packages", 'fn': self.set_extra_packages },
 				{ 'text': "Services", 'fn': self.set_services },
-				{ 'text': "Config Settings", 'fn': self.set_rc_conf },
+				{ 'text': "Configuration Settings", 'fn': self.set_rc_conf },
 				{ 'text': "Root password", 'fn': self.set_root_password },
 				{ 'text': "Additional Users", 'fn': self.set_additional_users })
 			self._menu_list = []

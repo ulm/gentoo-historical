@@ -755,6 +755,60 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		except:
 			self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))
 
+	def set_distcc(self):
+		if self._d.yesno(_(u"Do you want to use distcc to compile your extra packages during the install and for future compilations as well?"), height=12, width=60) == self._DLG_YES:
+			#Add distcc to the services list.
+			if self._install_profile.get_services():
+			services = self._install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+			else:
+				services = []
+			if not "distccd" in services:
+				services.append("distccd")
+			try:
+				services = string.join(services, ',')
+				if services:
+					self._install_profile.set_services(None, services, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set the services list."))
+				return
+			#Set the distcc flag to emerge earlier than other packages.
+			try:
+				self._install_profile.set_install_distcc(None, True, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set the install distcc flag!"))
+				return
+
+			#Add distcc to the FEATURES in make.conf and add DISTCC_HOSTS too.
+			etc_files = self._install_profile.get_etc_files()
+			#load up the make.conf
+			if etc_files.has_key("make.conf"):
+				make_conf = etc_files['make.conf']
+			else:
+				make_conf = {}
+			#Check for FEATURES and add if not already there.
+			if make_conf.has_key("FEATURES"):
+				if not "distcc" in make_conf['FEATURES']:
+					make_conf['FEATURES'] += " distcc"
+			else:
+				make_conf['FEATURES'] = "distcc"
+			#Now while still working in make.conf, figure out what HOSTS to set.
+			if make_conf.has_key("DISTCC_HOSTS"):
+				initval = make_conf['DISTCC_HOSTS']
+			else:
+				initval = "localhost "
+			distcc_string = _(u"Enter the hosts to be used by distcc for compilation:\nExample: localhost    192.168.0.2     192.168.0.3:4000/10")
+			code, hosts = self._d.inputbox(distcc_string, width=75, init=initval)
+			if code != self._d.DLG_OK:
+				hosts = initval
+			make_conf['DISTCC_HOSTS'] = hosts
+			try:
+				etc_files['make.conf'] = make_conf
+				self._install_profile.set_etc_files(etc_files)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))	
+
 	def set_etc_portage(self):
 	#This section will be for editing the /etc/portage/* files and other /etc/* files.  This should be for advanced users only.
 		etc_files = self._install_profile.get_etc_files()

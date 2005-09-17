@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.202 2005/09/05 07:57:06 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.203 2005/09/17 21:15:59 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -69,6 +69,7 @@ class ArchitectureTemplate:
 								 (self.set_timezone, "Setting timezone"),
 								 (self.emerge_kernel_sources, "Emerge kernel sources"),
 								 (self.build_kernel, "Building kernel"),
+								 (self.install_distcc, "Install distcc"),
 								 (self.install_mta, "Installing MTA"),
 								 (self.install_logging_daemon, "Installing system logger"),
 								 (self.install_cron_daemon, "Installing Cron daemon"),
@@ -814,6 +815,16 @@ class ArchitectureTemplate:
 			#it's not important if this fails.
 			self._logger.log("Custom kernel complete")
 			
+	##
+	# Installs and starts up distccd if the user has it set, so that it will get used for the rest of the install
+	def install_distcc(self):
+		if self._install_profile.get_install_distcc():
+			exitstatus = self._emerge("distcc")
+			if not GLIUtility.exitsuccess(exitstatus):
+				self._logger.log("ERROR! : Could not emerge distcc!")
+			else:
+				self._logger.log("distcc emerged.")	
+	
 	##
 	# Installs mail MTA. Does not put into runlevel, as this is not simple with MTAs.
 	def install_mta(self):

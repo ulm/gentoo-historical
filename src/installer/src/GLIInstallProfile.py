@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.76 2005/09/03 06:57:08 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.77 2005/09/17 21:15:59 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -90,6 +90,7 @@ class InstallProfile:
 		self._etc_files = {}
 		self._temp_etc_file = {}
 		self._dynamic_stage3 = False
+		self._install_distcc = False
 		self.xmldoc = ""
 
 		# Parser handler calls.  For each XML attribute and children of that attribute, a handler is needed.
@@ -108,6 +109,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/grp-install', self.set_grp_install)
 		self._parser.addHandler('gli-profile/hostname', self.set_hostname)
 		self._parser.addHandler('gli-profile/http-proxy', self.set_http_proxy)
+		self._parser.addHandler('gli-profile/install-distcc', self.set_install_distcc)
 		self._parser.addHandler('gli-profile/install-packages', self.set_install_packages)
 		self._parser.addHandler('gli-profile/install-pcmcia-cs', self.set_install_pcmcia_cs)
 		self._parser.addHandler('gli-profile/install-rp-pppoe', self.set_install_rp_pppoe)
@@ -157,6 +159,7 @@ class InstallProfile:
 					'grp-install':				self.get_grp_install,
 					'hostname':					self.get_hostname,
 					'http-proxy':				self.get_http_proxy,
+					'install-distcc':			self.get_install_distcc,
 					'install-pcmcia-cs':		self.get_install_pcmcia_cs,
 					'install-rp-pppoe':			self.get_install_rp_pppoe,
 					'install-stage':			self.get_install_stage,
@@ -522,6 +525,28 @@ class InstallProfile:
 	# Returns HTTP proxy
 	def get_http_proxy(self):
 		return self._http_proxy
+
+	############################################################################
+	#### Install Distcc
+	
+	##
+	# This tells the installer whether or not to install the distcc package
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param install_distcc 	boolean
+	# @param xml_attr Parameter description
+	def set_install_distcc(self, xml_path, install_distcc, xml_attr):
+		if type(install_distcc) != bool:
+			if type(install_distcc) == str:
+				install_distcc = GLIUtility.strtobool(install_distcc)
+			else:
+				raise GLIException("InstallDistcc", 'fatal', 'set_install_distcc',  "Input must be type 'bool'!")
+
+		self._install_distcc = install_distcc
+
+	##
+	# Returns the boolean _install_distcc
+	def get_install_distcc(self):
+		return self._install_distcc
 
 	############################################################################
 	#### Install Packages
