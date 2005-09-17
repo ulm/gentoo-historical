@@ -800,7 +800,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				initval = "localhost "
 			distcc_string = _(u"Enter the hosts to be used by distcc for compilation:\nExample: localhost    192.168.0.2     192.168.0.3:4000/10")
 			code, hosts = self._d.inputbox(distcc_string, width=75, init=initval)
-			if code != self._d.DLG_OK:
+			if code != self._DLG_OK:
 				hosts = initval
 			make_conf['DISTCC_HOSTS'] = hosts
 			try:
