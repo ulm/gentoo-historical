@@ -6,6 +6,7 @@
 import gtk
 import GLIScreen
 import GLIStorageDevice
+from GLIException import *
 import re
 import PartitionButton
 import PartProperties
@@ -94,12 +95,15 @@ class Panel(GLIScreen.GLIScreen):
 		self.part_button_delete = gtk.Button(_(" Delete "))
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=False, fill=False, padding=0)
+		self.part_button_recommended = gtk.Button(_(" Recommended "))
+		self.part_button_recommended.connect("clicked", self.part_button_recommended_clicked)
+		self.part_button_box.pack_start(self.part_button_recommended, expand=False, fill=False, padding=10)
 		self.part_button_properties = gtk.Button(_(" Properties "))
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
-		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=10)
+		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=0)
 		part_button_dump_info = gtk.Button(_(" Dump to console (debug) "))
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=0)
+		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=10)
 		vert.pack_start(self.part_button_box, expand=False, fill=False, padding=10)
 
 		# This builds the color key at the bottom
@@ -202,6 +206,15 @@ class Panel(GLIScreen.GLIScreen):
 				if len(self.devices[self.active_device].get_partitions()[ext_part].get_logicals()) == 0:
 					self.devices[self.active_device].remove_partition(ext_part)
 			self.drive_changed(None)
+
+	def part_button_recommended_clicked(self, button):
+		try:
+			self.devices[self.active_device].do_recommended()
+		except GLIException, error:
+			msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=error.get_error_msg())
+			msgdlg.run()
+			msgdlg.destroy()
+		self.draw_part_box()
 
 	def draw_part_box(self):
 		partlist = self.devices[self.active_device].get_ordered_partition_list()

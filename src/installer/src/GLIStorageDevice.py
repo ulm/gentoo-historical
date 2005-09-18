@@ -15,7 +15,7 @@ FREE_MINOR_FRAC_PRI = 1.0/32.0
 FREE_MINOR_FRAC_LOG = 1.0/8.0
 
 archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
-             'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "boot" } ], 'disklabel': 'msdos', 'extended': False },
+             'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "palo" } ], 'disklabel': 'msdos', 'extended': True },
              'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
              'amd64': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
              'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
@@ -114,6 +114,24 @@ class Device:
 	# Returns name of device (e.g. /dev/hda) being represented
 	def get_device(self):
 		return self._device
+
+	##
+	# Uses magic to apply the recommended partition layout
+	def do_recommended(self):
+		free_minor = 0
+		parts = self._partitions.keys()
+		parts.sort()
+		for part in parts:
+			if self._partitions[part].get_type() == "free" and self._partitions[part].get_mb() >= 4096:
+				free_minor = part
+		if not free_minor:
+			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You do not have atleast 4GB of concurrent unallocated space. Please remove some partitions and try again.")
+		if not self._partitions[free_minor].is_logical() and archinfo[self._arch]['extended'] and free_minor > 2:
+			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You have more than 1 existing primary partition defined. Please create an extended partition in the remaining unallocated space and try again.")
+		self.add_partition(free_minor, 256, 0, 0, "ext2")
+		self.add_partition(free_minor+1, 1024, 0, 0, "linux-swap")
+		self.add_partition(free_minor+2, self._partitions[free_minor+2].get_mb(), 0, 0, "ext3")
+		return True
 
 	##
 	# Combines free space and closes gaps in minor numbers. This is used internally
