@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/alsa-guide.xml,v 1.29 2005/09/02 08:17:09 neysx Exp $ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/alsa-guide.xml,v 1.30 2005/09/18 22:34:53 cam Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -21,8 +21,8 @@ Ce document vous guidera pour configurer ALSA avec Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.8</version>
-<date>2005-08-30</date>
+<version>2.10</version>
+<date>2005-09-10</date>
 
 <chapter>
 <title>Introduction</title>
@@ -335,9 +335,10 @@ USB Devices   ---&gt;
 <p>
 Maintenant que vous avez choisi les options dont vous avez besoin, vous pouvez
 (re)compiler le noyau. Le support ALSA devrait être activé lorsque vous
-redémarrerez avec votre nouveau noyau. Poursuivez votre lecture avec la
-section <uri link="#alsa-utilities">Utilitaires ALSA</uri> et vérifiez que
-tout fonctionne correctement.
+redémarrerez avec votre nouveau noyau. N'oubliez pas de mettre à jour votre
+configuration de GRUB pour utiliser le noyau fraîchement compilé. Poursuivez
+votre lecture avec la section <uri link="#alsa-utilities">Utilitaires ALSA</uri>
+et vérifiez que tout fonctionne correctement.
 </p>
 
 </body>
@@ -791,6 +792,76 @@ Mixers:
 0: SigmaTel STAC9721/23
 </pre>
 
+<p>
+Un autre problème très souvent rencontré par les utilisateurs est la fameuse
+erreur «&nbsp;Unknown symbol in module&nbsp;». En voici un exemple&nbsp;:
+</p>
+
+<pre caption="Erreur « Unknown Symbol in module »">
+# <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ *   Loading: snd-card-0 ...                                              [ ok ]
+ *   Loading: snd-pcm-oss ...
+WARNING: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg) FATAL: Error inserting
+snd_pcm_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-pcm-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-mixer-oss ...
+FATAL: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-seq ...                                                 [ ok ]
+ *   Loading: snd-emu10k1-synth ...                                       [ ok ]
+ *   Loading: snd-seq-midi ...                                            [ ok ]
+ * Restoring Mixer Levels ...                                             [ ok ]
+</pre>
+
+<p>
+Et lorsque vous regardez dans le <c>dmesg</c> comme suggéré&nbsp;:
+</p>
+
+<pre caption="Sortie de dmesg">
+<comment>(Seules les lignes intéressantes ont été conservées.)</comment>
+# <i>dmesg | less</i>
+ACPI: PCI Interrupt 0000:02:06.0[A] -> Link [APC3] -> GSI 18 (level, low) -> IRQ 209
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+snd_pcm_oss: Unknown symbol snd_unregister_oss_device
+snd_pcm_oss: Unknown symbol snd_register_oss_device
+snd_pcm_oss: Unknown symbol snd_mixer_oss_ioctl_card
+snd_pcm_oss: Unknown symbol snd_oss_info_register
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+</pre>
+
+<p>
+Le problème ci-dessus apparaît lorsque vous passez des pilotes du paquet
+<c>alsa-driver</c> à ceux intégrés au noyau. Lorsque vous désinstallez le paquet
+<c>alsa-driver</c>, les fichiers des modules sont protégés et ne sont pas
+effacés, ce qui crée un mélange des deux versions des pilotes et ne fonctionne
+pas.
+</p>
+
+<p>
+La solution est très simple. Vous n'avez qu'à supprimer manuellement les
+fichiers qui causent problème, après avoir désinstallé le paquet
+<c>alsa-driver</c>. Assurez-vous de retirer la bonne version des pilotes et de
+ne pas effacer les pilotes actuels&nbsp;!
+</p>
+
+<pre caption="Effacer les modules du paquet alsa-driver">
+<comment>(Remplacez VERSION par la version de votre noyau.)</comment>
+# <i>rm -rf /lib/modules/VERSION/alsa-driver</i>
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -837,6 +908,8 @@ Assurez-vous de les changer pour refléter votre propre système.
 <pre caption="Activer SoundFont">
 <comment>(D'abord, copiez le fichier SoundFont :)</comment>
 # <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
+<comment>(Ou bien depuis le CD-ROM :)</comment>
+# <i>cp /mnt/cdrom/AUDIO/ENGLISH/SFBANK/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
 <comment>(Puis chargez le fichier Soundfont approprié :)</comment>
 # <i>asfxload /usr/share/sounds/sf2/8MBGMSFX.SF2</i>
 </pre>
