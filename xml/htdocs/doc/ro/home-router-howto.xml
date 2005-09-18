@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/home-router-howto.xml,v 1.11 2005/09/07 05:12:59 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/home-router-howto.xml,v 1.12 2005/09/18 13:03:05 alin Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ro/home-router-howto.xml" lang="ro">
@@ -17,8 +17,8 @@ Acest document detaliază cum să transformaţi un calculator vechi într-un rou
 care conectează reţeaua de acasă la internet.
 </abstract>
 
-<version>1.12</version>
-<date>2005-09-05</date>
+<version>1.20</version>
+<date>2005-09-17</date>
 
 <chapter>
 <title>Introducere</title>
@@ -299,42 +299,43 @@ Configuration Protocol în engleză).
 <p>
 DHCP este exact ce sugerează numele. Este un protocol care vă permite să
 configuraţi dinamic alte gazde automat. Rulaţi un server DHCP pe router
-(dhcpd), daţi-i toate informaţiile despre reţea (IP-uri valide, servere DNS,
-adrese de gateway, etc...), şi atunci când celelalte gazde vor porni, ei vor
-rula un client DHCP pentru care se configurează automat. Simplu, nu ? Pentru
-mai multe informaţii despre DHCP puteţi vizita <uri
+daţi-i toate informaţiile despre reţea (IP-uri valide, servere DNS, adrese
+de gateway, etc...), şi atunci când celelalte gazde vor porni, ei vor rula
+un client DHCP pentru care se configurează automat. Simplu, nu ? Pentru mai
+multe informaţii despre DHCP puteţi vizita <uri
 link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>
 </p>
 
-<pre caption="Configurarea dhcpd">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>Exemplu de fişier de configurare:</comment>
-authoritative;
-ddns-update-style interim;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-	range 192.168.0.100 192.168.0.250;
-	default-lease-time 259200;
-	max-lease-time 518400;
-	option subnet-mask 255.255.255.0;
-	option broadcast-address 192.168.0.255;
-	option routers 192.168.0.1;
-	option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>Setaţi IFACE="eth0"</comment>
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+<p>
+Vom utiliza un pachet denumit dnsmasq, ce oferă atât serviciul DHCP cât
+şi serviciul DNS. Pentru moment, sa ne concentrăm asupra aspectului despre
+DHCP. Aveţi în vedere faptul că, dacă rulaţi un server de DHCP diferit,
+puteţi găsi un alt exemplu, în capitolul despre lucruri amuzante. De
+asemenea, dacă doriţi să jonglaţi cu setările DHCP, trebuie să
+consultaţi comentariile din <path>/etc/dnsmasq.conf</path>. Toate setările
+implicite ar trebui să funcţioneze corect, totuşi.
+</p>
+
+<pre caption="Setarea unui server DHCP">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>Ar trebui să adăugaţi doar următoarea linie:</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Adăugaţi "-i eth0" la DNSMASQ_OPTS</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
 Acum, router-ul nostru este un server DHCP! Conectaţi acele sisteme şi
-urmăriţi-le cum lucrează! Pe sistemele Windows ar trebui să setaţi de la
-proprietăţi TCP/IP şi selectaţi 'Obtain an IP address automatically' şi
-opţiunea 'Obtain DNS server address automatically'. Câteodată schimbările nu
-sunt instantanee, aşa că ar trebui să deschideţi linia de comandă şi să rulaţi
-<c>ipconfig /release</c> şi <c>ipconfig /renew</c>. Am vorbit destul despre
-Windows, să ne întoarcem la pinguin.
+urmăriţi-le cum lucrează! Pe sistemele Windows ar trebui să setaţi de
+la proprietăţi TCP/IP şi selectaţi 'Obtain an IP address automatically'
+şi opţiunea 'Obtain DNS server address automatically'. Câteodată
+schimbările nu sunt instantanee, aşa că ar trebui să deschideţi linia
+de comandă şi să rulaţi <c>ipconfig /release</c> şi <c>ipconfig
+/renew</c>. Am vorbit destul despre Windows, să ne întoarcem la pinguin.
 </p>
 
 </body>
@@ -346,37 +347,28 @@ Windows, să ne întoarcem la pinguin.
 
 <p>
 Când oamenii doresc să viziteze o locaţie pe internet, ei îşi aduc aminte de
-nume, nu de un şir de numere inutile. Ce îi mai uşor de ţinut minte, ebay.com
+nume, nu de un şir de numere ciudate. Ce este mai uşor de ţinut minte, ebay.com
 sau 66.135.192.87? În această situaţie intervine DNS. Server-ele DNS rulează
 peste tot pe Internet, şi de fiecare dată când cineva doreşte să viziteze
 'ebay.com', aceste servere transformă 'ebay.com' (ce înţelegem noi) în
-'66.135.192.87'(ce înţeleg calculatoarele). Pentru mai multe informaţii despre
+'66.135.192.87' (ce înţeleg calculatoarele). Pentru mai multe informaţii despre
 DNS, puteţi vizita <uri
 link="http://en.wikipedia.org/wiki/DNS">Wikipedia</uri>.
 </p>
 
 <p>
-Aţi observat în secţiunea precedentă precizarea despre clienţii DHCP că vor
-accesa un server DNS la 192.168.0.1. Vă mai amintiţi că 192.168.0.1 este micul
-nostru router care îl construim. Nu îmi aduc aminte să fi setat vreun server
-DNS ... aşa că o vom face acuma!.
+Deoarece utilizăm dnsmasq ca server DHCP, şi acesta include un server DNS,
+nu mai aveţi nimic de făcut aici! Micul dvs. ruter oferă deja sevicii DNS
+clienţilor de DHCP. V-aţi fi dorit să fie totul aşa de uşor ;).
 </p>
 
-<pre caption="Configurarea dnsmasq">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>Adăugaţi "-i eth0" în DNSMASQ_OPTS</comment>
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-A fost rapid, dar ce-am făcut? Lucrul cel mai important, este că nu am avut de
-făcut mare lucru! Puteţi alege şi alte servere DNS dacă vă e mai uşor cu ele,
-motivul pentru care am folosit dnsmasq este că a fost realizat să facă exact ce
-dorim, nimic în plus. Este un mic server DNS cache/forwarding pentru reţele
-locale. Nu configurăm DNS pentru domeniul nostru, doar oferim serviciile DNS
-pentru cei din reţeaua locală.
+Sunteţi bineveniţi să alegeţi alte aplicaţii server DNS dacă sunteţi
+mai confortabil aşa, dar motivul pentru care dnsmasq este bun, este faptul
+că a fost proiectat să facă exact ce dorim, şi nu mai mult. Este un mic
+server de cache/forwarding pentru reţele locale. Nu căutăm să oferim DNS
+pentru propriul nostru domeniu, aici, ci doar să oferim servicii DNS pentru
+oricine altcineva din reţeaua noastră locală.
 </p>
 
 </body>
@@ -394,11 +386,12 @@ dumneavoastră.
 </p>
 
 <p>
-Aici intervine NAT. NAT este o modalitate de a conecta mai multe calculatoare
-dintr-o reţea locală la Internet şi când aveţi o listă mică de adrese IP. De
-obicei aveţi o singură adresă IP de la ISP, cu care puteţi conecta întreaga
-casă la Internet. NAT este magia care face acest lucru posibil. Pentru mai
-multe informaţii despre NAT consultaţi pagina <uri
+Aici intervine Translatarea Adreselor de Reţea (eng.: Network Address
+Translation - NAT). NAT este o modalitate de a conecta mai multe calculatoare
+dintr-o reţea locală la Internet şi când aveţi o listă mică de
+adrese IP. De obicei aveţi o singură adresă IP de la ISP, cu care puteţi
+conecta întreaga casă la Internet. NAT este magia care face acest lucru
+posibil. Pentru mai multe informaţii despre NAT consultaţi pagina <uri
 link="http://en.wikipedia.org/wiki/NAT">Wikipedia</uri>.
 </p>
 
@@ -413,7 +406,7 @@ este instalat atunci rulaţi <c>emerge iptables</c>.
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
-<comment>Setaţi politicile implicite pentru a manipula pachetele care nu se potrivesc nici unei reguli</comment>
+<comment>Setaţi politicile implicite pentru a manipula traficul care nu se potriveşte nici unei reguli</comment>
 # <i>iptables -P INPUT ACCEPT</i>
 # <i>iptables -P OUTPUT ACCEPT</i>
 # <i>iptables -P FORWARD DROP</i>
@@ -495,10 +488,11 @@ trebui să fie setate pe porturile 123 şi 567.
 <p>
 Toate regulile pentru trasnferul de porturi sunt de forma <c>iptables -t nat -A
 PREROUTING [-p protocol] --dport [port extern pe router] -i ${WAN} -j DNAT --to
-[ip/port care trebuie transferat]</c>. iptables nu acceptă nume de maşini gazdă
-când transferă porturile. Dacă transferaţi un port extern către acelaşi port
-folosit pe maşina curentă, puteţi omite portul destinaţie. Consultaţi pagina de
-manual iptables(8) pentru mai multe informaţii.
+[ip/port care trebuie transferat]</c>. Din păcate, iptables nu acceptă nume
+de maşini gazdă când transferă porturile. Dacă transferaţi un port
+extern către acelaşi port folosit pe maşina curentă, puteţi omite
+portul destinaţie. Consultaţi pagina de manual iptables(8) pentru mai multe
+informaţii.
 </p>
 
 <pre caption="Rularea comenzilor iptables">
@@ -523,10 +517,13 @@ manual iptables(8) pentru mai multe informaţii.
 <comment>Transferă porturile Bittorrent</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
 
+<comment>eDonkey/eMule forwarding</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
+
 <comment>Suport pentru Game Cube Warp Pipe</comment>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
-<comment>Suport pentru Playstation2 Online</comment>
+<comment>Suport pentru Playstation 2 Online</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 </pre>
@@ -815,6 +812,52 @@ TODO
 </body>
 </section>
 -->
+
+<section>
+<title>Server DHCP Complet</title>
+<body>
+
+<p>
+Mai devreme, am utilizat dnsmasq pentru a oferi servicii DHCP pentru toţi
+clienţii noştri. Pentru majoritatea utilizatorilor cu o reţea locală
+mică, acesta este binevenit. Dar, aţi putea avea nevoie de ceva cu mai multe
+funcţionalităţi. Astfel, ne transformăm într-un server DHCP cu toate
+funcţionalităţile, aşa cum este oferit de cei de la <uri
+link="http://www.isc.org/products/DHCP">ISC</uri>.
+</p>
+
+<pre caption="Setarea dhcpd">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>(Iată un fişier de configurare exemplu:)</comment>
+authoritative;
+ddns-update-style interim;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+    range 192.168.0.100 192.168.0.250;
+    default-lease-time 259200;
+    max-lease-time 518400;
+    option subnet-mask 255.255.255.0;
+    option broadcast-address 192.168.0.255;
+    option routers 192.168.0.1;
+    option domain-name-servers 192.168.0.1;
+}
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>(Setaţi IFACE="eth0")</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Aceasta este setarea minimală, necesară pentru a înlocui funcţionalitatea
+DHCP a dnsmasq utilizat anterior. Apropos, v-aţi amintit să dezactivaţi
+funcţionalităţile de DHCP din dnsmasq, nu-i aşa? Dacă nu, ar trebui
+să faceţi acest lucru (trebuie doar să comentaţi setarea
+<c>dhcp-range</c> din <path>/etc/dnsmasq.conf</path> şi să restartaţi
+serviciul).
+</p>
+
+</body>
+</section>
 
 </chapter>
 
