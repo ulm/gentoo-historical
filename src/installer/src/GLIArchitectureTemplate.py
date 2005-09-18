@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.203 2005/09/17 21:15:59 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.204 2005/09/18 01:13:21 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -819,7 +819,7 @@ class ArchitectureTemplate:
 	# Installs and starts up distccd if the user has it set, so that it will get used for the rest of the install
 	def install_distcc(self):
 		if self._install_profile.get_install_distcc():
-			exitstatus = self._emerge("distcc")
+			exitstatus = GLIUtility.spawn("USE='-*' emerge --nodeps sys-devel/distcc", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge distcc!")
 			else:
