@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/Attic/technotes.xml,v 1.4 2005/09/17 13:56:26 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/Attic/technotes.xml,v 1.5 2005/09/19 08:08:15 chriswhite Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/bsd/technotes.xml" lang="en">
 <title>Gentoo/*BSD Technotes Guide</title>
@@ -22,8 +22,8 @@ on a Gentoo/*BSD environment.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0</version>
-<date>2005-09-16</date>
+<version>3.0</version>
+<date>2005-09-19</date>
 
 <chapter>
 <title>General Structure</title>
@@ -111,6 +111,16 @@ upstream devs (trying to find who is the original author of that code) to
 see if it's possible to merge the behavior again.
 </p>
 
+<p>
+An exception can be done for packages such as <c>gcc</c> and <c>binutils</c> 
+that can have patches that are mandatory on the porting platform and that can 
+be difficult to split out. It's usually recommended that the patches get split
+out as soon as possible. In case there's no clean way to do so, the entire
+patchset should be applied over a vanilla gcc that is built with the same way 
+Gentoo's <c>GCC</c> is built.  This ensures that <c>gcc-config</c> can take it
+up.
+</p>
+
 </body>
 </section>
 <section>
@@ -158,8 +168,9 @@ breaks compatibility with Gentoo/BSD and Gentoo/Darwin, where
 functions provide a simple way to create a disabled user: just use <c>-1</c> as 
 the shell for the newly created user, this way the functions will take care of 
 selecting the right shell for the disabled user (it's 
-<path>/usr/sbin/nologin</path> on BSD-derived, and <path>/usr/bin/false</path> 
-for Darwin).
+<path>/usr/sbin/nologin</path> on FreeBSD derived systems, and 
+<path>/sbin/nologin</path> for NetBSD derived systems, and 
+<path>/usr/bin/false</path> for Darwin).
 </p>
 
 </body>
@@ -227,6 +238,17 @@ habit that need to be fixed:
   <li><c>cp -a</c>: this is a GNUism, as the <c>-a</c> option is not present 
   on POSIX <c>cp</c>. Its replacement is told to be <c>-dpPR</c>, but <c>-d</c>
   is not posix itself, so <c>-pPR</c> is what you should replace <c>-a</c>.</li>
+  <li><c>cp --parents</c>: this other GNUism is used to copy a series of files
+  from a tree maintaining their prefix. There's no equivalent option in BSD 
+  userland, so this should be avoided. If you need this, instead use the 
+  <c>treecopy</c> function in <c>portability</c> eclass, that works exactly as a
+  <c>cp --parents -pPR</c> call.</li>
+  <li><c>seq</c> doesn't exist on BSD userland, but there's a quick 
+  replacement: <c>jot</c>. Unfortunately its syntax is too variable, and poses 
+  a problem to manage. To avoid this, <c>portability</c> eclass has a 
+  <c>seq</c> function replacement that calls <c>jot</c> with the right 
+  parameters when called on a BSD userland. Still, make sure you're not trying
+  to use some extra options to <c>seq</c></li>
 </ol>
 
 <note>
@@ -298,6 +320,21 @@ This simple <c>AM_DL</c> macro added to <path>configure.ac</path> (or
 <path>configure.in</path>) takes care of looking for the right library to link to,
 and sets <c>DYNAMIC_LD_LIBS</c>. Add that to the <c>LIBADD</c> variable for the 
 target and it will work fine on both glibc-based and BSD-derived systems.
+</p>
+
+<p>
+For packages that do not have a build system that can be fixed to recognize 
+whether <path>libdl</path> is needed, it's possible to use the <c>dlopen_lib</c>
+function in the <c>portability</c> eclass. This function will return <c>-ldl</c>
+where present, and nothing where it is not present, so one could use:
+</p>
+
+<pre caption="using $(dlopen_lib)">
+append-ldflags $(dlopen_lib)
+</pre>
+
+<p>
+To make sure it gets linked where needed.
 </p>
 
 </body>
