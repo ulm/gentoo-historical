@@ -33,6 +33,13 @@ class Panel(GLIScreen.GLIScreen):
 		hbox.pack_start(tmplabel, expand=False, fill=False, padding=0)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=0)
 		hbox = gtk.HBox(False, 0)
+		self.already_setup_check = gtk.CheckButton()
+		self.already_setup_check.set_active(False)
+		self.already_setup_check.connect("toggled", self.already_setup_toggled)
+		hbox.pack_start(self.already_setup_check, expand=False, fill=False, padding=0)
+		hbox.pack_start(gtk.Label("My network is already setup and running"), expand=False, fill=False, padding=10)
+		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
+		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label(_("Interface:")), expand=False, fill=False, padding=0)
 		self.interface_combo = gtk.combo_box_entry_new_text()
 		self.interface_combo.get_child().set_width_chars(9)
@@ -219,6 +226,27 @@ class Panel(GLIScreen.GLIScreen):
 				self.gateway_entry.set_sensitive(True)
 				self.dns_entry.set_sensitive(True)
 
+	def already_setup_toggled(self, widget):
+		if self.already_setup_check.get_active():
+			self.interface_combo.set_sensitive(False)
+			self.basic_dhcp_radio.set_sensitive(False)
+			self.basic_static_radio.set_sensitive(False)
+			self.ip_address_entry.set_sensitive(False)
+			self.netmask_entry.set_sensitive(False)
+			self.broadcast_entry.set_sensitive(False)
+			self.gateway_entry.set_sensitive(False)
+			self.dns_entry.set_sensitive(False)
+		else:
+			self.interface_combo.set_sensitive(True)
+			self.basic_dhcp_radio.set_sensitive(True)
+			self.basic_static_radio.set_sensitive(True)
+			if self.basic_static_radio.get_active():
+				self.ip_address_entry.set_sensitive(True)
+				self.netmask_entry.set_sensitive(True)
+				self.broadcast_entry.set_sensitive(True)
+				self.gateway_entry.set_sensitive(True)
+				self.dns_entry.set_sensitive(True)
+
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
 		self.controller.SHOW_BUTTON_HELP    = True
@@ -254,15 +282,16 @@ class Panel(GLIScreen.GLIScreen):
 
 	def deactivate(self):
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)
-		if self.basic_dhcp_radio.get_active():
-			self.controller.client_profile.set_network_type(None, "dhcp", None)
-		else:
-			self.controller.client_profile.set_network_type(None, "static", None)
-			self.controller.client_profile.set_network_ip(None, self.ip_address_entry.get_text(), None)
-			self.controller.client_profile.set_network_netmask(None, self.netmask_entry.get_text(), None)
-			self.controller.client_profile.set_network_broadcast(None, self.broadcast_entry.get_text(), None)
-			self.controller.client_profile.set_network_gateway(None, self.gateway_entry.get_text(), None)
-			self.controller.client_profile.set_dns_servers(None, self.dns_entry.get_text(), None)
+		if not self.already_setup_check.get_active():
+			if self.basic_dhcp_radio.get_active():
+				self.controller.client_profile.set_network_type(None, "dhcp", None)
+			else:
+				self.controller.client_profile.set_network_type(None, "static", None)
+				self.controller.client_profile.set_network_ip(None, self.ip_address_entry.get_text(), None)
+				self.controller.client_profile.set_network_netmask(None, self.netmask_entry.get_text(), None)
+				self.controller.client_profile.set_network_broadcast(None, self.broadcast_entry.get_text(), None)
+				self.controller.client_profile.set_network_gateway(None, self.gateway_entry.get_text(), None)
+				self.controller.client_profile.set_dns_servers(None, self.dns_entry.get_text(), None)
 		self.controller.client_profile.set_http_proxy(None, self.http_proxy_entry.get_text(), None)
 		self.controller.client_profile.set_ftp_proxy(None, self.ftp_proxy_entry.get_text(), None)
 		self.controller.client_profile.set_rsync_proxy(None, self.rsync_proxy_entry.get_text(), None)
