@@ -39,6 +39,7 @@ class Device:
 	_total_mb = 0
 	_arch = None
 	_disklabel = None
+	_applied_recommended = False
 
 	##
 	# Initialization function for GLIStorageDevice class
@@ -119,6 +120,8 @@ class Device:
 	# Uses magic to apply the recommended partition layout
 	def do_recommended(self):
 		free_minor = 0
+		if self._applied_recommended:
+			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You have already applied the recommended partition layout.")
 		parts = self._partitions.keys()
 		parts.sort()
 		for part in parts:
@@ -131,6 +134,7 @@ class Device:
 		self.add_partition(free_minor, 256, 0, 0, "ext2")
 		self.add_partition(free_minor+1, 1024, 0, 0, "linux-swap")
 		self.add_partition(free_minor+2, self._partitions[free_minor+2].get_mb(), 0, 0, "ext3")
+		self._applied_recommended = True
 		return True
 
 	##
