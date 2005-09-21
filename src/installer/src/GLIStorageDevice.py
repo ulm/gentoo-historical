@@ -120,20 +120,40 @@ class Device:
 	# Uses magic to apply the recommended partition layout
 	def do_recommended(self):
 		free_minor = 0
+		recommended_parts = [ { 'type': "ext2", 'size': 256, 'mountpoint': "/boot" },
+                              { 'type': "linux-swap", 'size': 1024, 'mountpoint': "" },
+                              { 'type': "ext3", 'size': "*", 'mountpoint': "/" } ]
+		to_create = []
 		if self._applied_recommended:
 			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You have already applied the recommended partition layout.")
-		parts = self._partitions.keys()
-		parts.sort()
+		parts = self.get_ordered_partition_list()
 		for part in parts:
 			if self._partitions[part].get_type() == "free" and self._partitions[part].get_mb() >= 4096:
+#				if "1" in self._partitions and "2" in self._partitions and part < 4 and self.get_extended_partition():
+#					continue
 				free_minor = part
+				break
 		if not free_minor:
 			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You do not have atleast 4GB of concurrent unallocated space. Please remove some partitions and try again.")
-		if not self._partitions[free_minor].is_logical() and archinfo[self._arch]['extended'] and free_minor > 2:
-			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You have more than 1 existing primary partition defined. Please create an extended partition in the remaining unallocated space and try again.")
-		self.add_partition(free_minor, 256, 0, 0, "ext2")
-		self.add_partition(free_minor+1, 1024, 0, 0, "linux-swap")
-		self.add_partition(free_minor+2, self._partitions[free_minor+2].get_mb(), 0, 0, "ext3")
+#		if archinfo[self._arch]['extended']:
+#			if "1" in self._partitions and "2" in self._partitions and free_minor < 4 and self.get_extended_partition():
+#				raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "This code is not yet robust enough to handle automatic partitioning with your current layout.")
+		remaining_free = self._partitions[free_minor].get_mb()
+		for newpart in recommended_parts:
+			if archinfo[self._arch]['extended'] and free_minor == (3 + FREE_MINOR_FRAC_PRI):
+				if self.get_extended_partition():
+					raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "This code is not yet robust enough to handle automatic partitioning with your current layout.")
+				to_create.append({ 'type': "extended", 'size': remaining_free, 'mountpoint': "", 'free_minor': free_minor })
+				free_minor = 4 + FREE_MINOR_FRAC_LOG
+			newpart['free_minor'] = free_minor
+			to_create.append(newpart)
+			free_minor = free_minor + 1
+			if not newpart['size'] == "*":
+				remaining_free = remaining_free - newpart['size']
+		for newpart in to_create:
+			if newpart['size'] == "*":
+				newpart['size'] = self._partitions[newpart['free_minor']].get_mb()
+			self.add_partition(newpart['free_minor'], newpart['size'], 0, 0, newpart['type'], mountpoint=newpart['mountpoint'])
 		self._applied_recommended = True
 		return True
 
