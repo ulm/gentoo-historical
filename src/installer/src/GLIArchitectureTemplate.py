@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.204 2005/09/18 01:13:21 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.205 2005/09/21 03:32:46 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -209,31 +209,24 @@ class ArchitectureTemplate:
 			raise GLIException("NoSuchFileError", 'notice','_edit_config',filename + ' does not exist!')
 	
 		for key in newvalues.keys():
-			regexpr = '^\s*#?\s*' + key + '\s*' + delimeter + '.*$'
-			regexpr = re.compile(regexpr)
-	
-			for i in range(0, len(contents)):
-				if regexpr.match(contents[i]):
-					if not contents[i][0] == '#':
-						contents[i] = '#' + contents[i]
-	
-			##contents.append('\n# Added by GLI\n')
-			##commentprefix = "" ##unused
+			newline = ""
 			if key == "SPACER":
-				contents.append('\n')
+				newline = "\n"
 			elif key == "COMMENT":
-				contents.append('# ' + newvalues[key] + '\n')
+				newline = '# ' + newvalues[key] + "\n"
 			elif newvalues[key] == "##comment##" or newvalues[key] == "##commented##":
-				contents.append('#' + key + delimeter + '""' + "\n")
+				newline = '#' + key + delimeter + '""' + "\n"
 			else:
 				if quotes_around_value:
 					newvalues[key] = '"' + newvalues[key] + '"'
 				#Only the printing of values is required.
 				if only_value:
-					contents.append(newvalues[key] + '\n')
+					newline = newvalues[key] + "\n"
 				else:
-					contents.append(key + delimeter + newvalues[key]+'\n')
-	
+					newline = key + delimeter + newvalues[key] + "\n"
+			if newline in contents:
+				continue
+			contents.append(newline)
 		f = open(filename,'w')
 		f.writelines(contents)
 		f.flush()
