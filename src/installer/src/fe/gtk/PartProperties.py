@@ -169,7 +169,7 @@ class PartProperties(gtk.Window):
 		if self.fstype == "free":
 			hpaned_pos = hpaned_width
 			self.resize_hpaned.set_position(hpaned_pos)
-			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
+#			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
 			self.info_partition.set_text(self.device + _(" (unallocated)"))
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors['ext3'], self.controller.colors['ext3'])
@@ -199,7 +199,7 @@ class PartProperties(gtk.Window):
 					break
 			hpaned_pos = int(hpaned_width * (float(self.cur_size) / self.max_size))
 			self.resize_hpaned.set_position(hpaned_pos)
-			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
+#			print "min_size = %s, max_size = %s, hpaned_width = %s, hpaned_pos = %s" % (str(self.min_size), str(self.max_size), str(hpaned_width), str(hpaned_pos))
 			if self.max_size == self.cur_size and self.min_size == self.cur_size:
 				# Non-resizeable
 				self.resize_part_space.set_division(0)
@@ -282,7 +282,7 @@ class PartProperties(gtk.Window):
 			editable.stop_emission("insert-text")
 
 	def update_slider_and_entries(self, widget, event, which_one):
-		print "Entry " + which_one + " has been updated"
+#		print "Entry " + which_one + " has been updated"
 		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
