@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.205 2005/09/21 03:32:46 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.206 2005/09/22 16:26:31 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -197,6 +197,7 @@ class ArchitectureTemplate:
 	# @param create_file=True		Create the file if it does not exist.
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False,create_file=True):
 		# don't use 'file' as a normal variable as it conflicts with the __builtin__.file
+		dupline = False
 		newvalues = newvalues.copy()
 		self._logger.log("_edit_config() called with " + str(newvalues))
 		if GLIUtility.is_file(filename):
@@ -224,9 +225,15 @@ class ArchitectureTemplate:
 					newline = newvalues[key] + "\n"
 				else:
 					newline = key + delimeter + newvalues[key] + "\n"
-			if newline in contents:
-				continue
-			contents.append(newline)
+			for i in range(len(contents)):
+				if newline == contents[i]:
+					dupline = True
+					break
+				if contents[i].startswith(key + delimeter):
+					contents[i] = "#" + contents[i]
+			if not dupline:
+				contents.append(newline)
+			dupline = False
 		f = open(filename,'w')
 		f.writelines(contents)
 		f.flush()
