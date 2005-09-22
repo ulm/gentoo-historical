@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.206 2005/09/22 16:26:31 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.207 2005/09/22 16:38:09 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -225,14 +225,19 @@ class ArchitectureTemplate:
 					newline = newvalues[key] + "\n"
 				else:
 					newline = key + delimeter + newvalues[key] + "\n"
+			add_at_line = 0
 			for i in range(len(contents)):
 				if newline == contents[i]:
 					dupline = True
 					break
 				if contents[i].startswith(key + delimeter):
 					contents[i] = "#" + contents[i]
+					add_at_line = i + 1
 			if not dupline:
-				contents.append(newline)
+				if add_at_line:
+					contents.insert(newline, add_at_line)
+				else:
+					contents.append(newline)
 			dupline = False
 		f = open(filename,'w')
 		f.writelines(contents)
