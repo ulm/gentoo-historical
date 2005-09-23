@@ -119,8 +119,8 @@ class Device:
 	# Uses magic to apply the recommended partition layout
 	def do_recommended(self):
 		free_minor = 0
-		recommended_parts = [ { 'type': "ext2", 'size': 256, 'mountpoint': "/boot" },
-                              { 'type': "linux-swap", 'size': 1024, 'mountpoint': "" },
+		recommended_parts = [ { 'type': "ext2", 'size': 100, 'mountpoint': "/boot" },
+                              { 'type': "linux-swap", 'size': 512, 'mountpoint': "" },
                               { 'type': "ext3", 'size': "*", 'mountpoint': "/" } ]
 		to_create = []
 		parts = self.get_ordered_partition_list()
