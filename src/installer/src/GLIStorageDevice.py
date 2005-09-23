@@ -139,7 +139,7 @@ class Device:
 				to_create.append({ 'type': "extended", 'size': remaining_free, 'mountpoint': "", 'free_minor': free_minor })
 				free_minor = 4 + FREE_MINOR_FRAC_LOG
 			newpart['free_minor'] = free_minor
-			if newpart['type'] == "linux-swap" and physyical_memory and physical_memory < 1024:
+			if newpart['type'] == "linux-swap" and physical_memory and physical_memory < 1024:
 				newpart['size'] = physical_memory * 2
 			to_create.append(newpart)
 			free_minor = free_minor + 1
