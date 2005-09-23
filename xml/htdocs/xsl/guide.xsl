@@ -1052,18 +1052,23 @@
      <tr>
       <td class="topsep" align="center">
         <p class="altmenu">
-        <xsl:variable name="PrintTip"><xsl:value-of select="func:gettext('PrintTip')"/></xsl:variable>
-        <xsl:if test="/book">
-         <xsl:if test="$full=1">
-          <a title="{$PrintTip}" class="altlink" href="{/book/@link}?full=1&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-         </xsl:if>
-         <xsl:if test="$full=0">
-          <a title="{$PrintTip}" class="altlink" href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-         </xsl:if>
-        </xsl:if>
-        <xsl:if test="/guide">
-          <a title="{$PrintTip}" class="altlink" href="{/guide/@link}?style=printable"><xsl:value-of select="func:gettext('Print')"/></a>
-        </xsl:if>
+          <xsl:variable name="PrintTip"><xsl:value-of select="func:gettext('PrintTip')"/></xsl:variable>
+          <xsl:variable name="href">
+            <xsl:choose>
+              <xsl:when test="/book and $full != 0">
+                <xsl:value-of select="concat(@link, '?full=1&amp;style=printable')"/>
+              </xsl:when>
+              <xsl:when test="/book">
+                <xsl:value-of select="concat(@link, '?style=printable')"/>
+                <xsl:if test="$part != '0'">&amp;part=<xsl:value-of select="$part"/></xsl:if>
+                <xsl:if test="$chap != '0'">&amp;chap=<xsl:value-of select="$chap"/></xsl:if>
+              </xsl:when>
+              <xsl:when test="/guide">
+                <xsl:value-of select="concat(@link, '?style=printable')"/>
+              </xsl:when>
+            </xsl:choose>
+          </xsl:variable>
+          <a title="{$PrintTip}" class="altlink" href="{$href}"><xsl:value-of select="func:gettext('Print')"/></a>
         </p>
       </td>
      </tr>

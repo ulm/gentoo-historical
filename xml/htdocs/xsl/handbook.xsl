@@ -24,18 +24,6 @@
 <!-- <sections>, i.e. when user tries to access a book file directly -->
 <xsl:template match="/sections">
   <xsl:call-template name="doclayout"/>
-  <!--
-<html>
-<head>
-  <meta http-equiv="Content-Type" content="text/html"/>
-  <meta http-equiv="REFRESH" content="8; URL=/doc/en/"/>
-  <title>Please use main index</title>
-</head>
-<body>
-  Please use the <a href="/doc/en/">main index</a> to access handbook parts.
-</body>
-</html>
-  -->
 </xsl:template>
 
 <!-- Content of /book -->
@@ -56,10 +44,10 @@
           <xsl:when test="$full = 0">
             <xsl:choose>
               <xsl:when test="$style != 'printable'">
-                <b><a href="{/book/@link}?part={$curpart}&amp;chap=0"><xsl:value-of select="title" /></a></b>
+                <b><a href="{/book/@link}?part={$curpart}"><xsl:value-of select="title" /></a></b>
               </xsl:when>
               <xsl:otherwise>
-                <b><a href="{/book/@link}?part={$curpart}&amp;chap=0&amp;style=printable"><xsl:value-of select="title" /></a></b>
+                <b><a href="{/book/@link}?part={$curpart}&amp;style=printable"><xsl:value-of select="title" /></a></b>
               </xsl:otherwise>
             </xsl:choose>
           </xsl:when>
@@ -170,7 +158,7 @@
           [ &lt;&lt; ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="{/book/@link}?part={$prevpart}&amp;chap=0">&lt;&lt;</a> ]
+          [ <a href="{/book/@link}?part={$prevpart}">&lt;&lt;</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Previous Chapter -->
@@ -183,10 +171,7 @@
         </xsl:otherwise>
       </xsl:choose>
       <!-- Content -->
-      [ <a href="{/book/@link}?part=0&amp;chap=0"><xsl:value-of select="func:gettext('Home')"/></a> ]
-      <!-- Printable
-      [ <a href="{/book/@link}?part={$part}&amp;chap={$chap}&amp;style=printable">Print</a> ]
-      -->
+      [ <a href="{/book/@link}"><xsl:value-of select="func:gettext('Home')"/></a> ]
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
         [ <a href="{/book/@link}?part=1">&gt;</a> ]
@@ -214,7 +199,7 @@
             [ &gt;&gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">&gt;&gt;</a> ]
+            [ <a href="{/book/@link}?part={$nextpart}">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
@@ -224,7 +209,7 @@
             [ &gt;&gt; ] 
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="{/book/@link}?part={$nextpart}&amp;chap=0">&gt;&gt;</a> ]
+            [ <a href="{/book/@link}?part={$nextpart}">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
