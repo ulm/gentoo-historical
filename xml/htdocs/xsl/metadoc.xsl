@@ -270,7 +270,7 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:value-of select="document($link)/guide/abstract|document($link)/book/abstract"/>
+      <xsl:value-of select="document($link)/*[1]/abstract"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -447,7 +447,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.25 2005/08/21 17:21:37 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.26 2005/09/23 12:52:19 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -469,7 +469,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.25 2005/08/21 17:21:37 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.26 2005/09/23 12:52:19 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
