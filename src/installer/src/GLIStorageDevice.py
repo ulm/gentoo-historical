@@ -39,7 +39,6 @@ class Device:
 	_total_mb = 0
 	_arch = None
 	_disklabel = None
-	_applied_recommended = False
 
 	##
 	# Initialization function for GLIStorageDevice class
@@ -124,23 +123,16 @@ class Device:
                               { 'type': "linux-swap", 'size': 1024, 'mountpoint': "" },
                               { 'type': "ext3", 'size': "*", 'mountpoint': "/" } ]
 		to_create = []
-		if self._applied_recommended:
-			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You have already applied the recommended partition layout.")
 		parts = self.get_ordered_partition_list()
 		for part in parts:
 			if self._partitions[part].get_type() == "free" and self._partitions[part].get_mb() >= 4096:
-#				if "1" in self._partitions and "2" in self._partitions and part < 4 and self.get_extended_partition():
-#					continue
 				free_minor = part
 				break
 		if not free_minor:
 			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You do not have atleast 4GB of concurrent unallocated space. Please remove some partitions and try again.")
-#		if archinfo[self._arch]['extended']:
-#			if "1" in self._partitions and "2" in self._partitions and free_minor < 4 and self.get_extended_partition():
-#				raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "This code is not yet robust enough to handle automatic partitioning with your current layout.")
 		remaining_free = self._partitions[free_minor].get_mb()
 		for newpart in recommended_parts:
-			if archinfo[self._arch]['extended'] and free_minor == (3 + FREE_MINOR_FRAC_PRI):
+			if archinfo[self._arch]['extended'] and free_minor == (3 + FREE_MINOR_FRAC_PRI) and not newpart == recommended_parts[-1]:
 				if self.get_extended_partition():
 					raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "This code is not yet robust enough to handle automatic partitioning with your current layout.")
 				to_create.append({ 'type': "extended", 'size': remaining_free, 'mountpoint': "", 'free_minor': free_minor })
@@ -154,8 +146,6 @@ class Device:
 			if newpart['size'] == "*":
 				newpart['size'] = self._partitions[newpart['free_minor']].get_mb()
 			self.add_partition(newpart['free_minor'], newpart['size'], 0, 0, newpart['type'], mountpoint=newpart['mountpoint'])
-		self._applied_recommended = True
-		return True
 
 	##
 	# Combines free space and closes gaps in minor numbers. This is used internally
@@ -275,6 +265,17 @@ class Device:
 			self._partitions[free_minor] = Partition(self, free_minor, tmppart.get_mb(), 0, 0, "free", format=False, existing=False)
 		del self._partitions[int(minor)]
 		self.tidy_partitions()
+
+	##
+	# This function clears the partition table
+	def clear_partitions(self):
+#		parts = self._partitions.keys()
+#		parts.sort()
+#		parts.reverse()
+#		for part in parts:
+#			if not self._partitions[part].get_type() == "free":
+#				self.remove_partition(part)
+		self._partitions = { (0 + FREE_MINOR_FRAC_PRI): Partition(self, (0 + FREE_MINOR_FRAC_PRI), self.get_total_mb(), 0, 0, "free", format=False, existing=False) }
 
 	##
 	# Returns an ordered list (disk order) of partition minors
