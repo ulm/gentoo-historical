@@ -123,6 +123,7 @@ class Device:
                               { 'type': "linux-swap", 'size': 512, 'mountpoint': "" },
                               { 'type': "ext3", 'size': "*", 'mountpoint': "/" } ]
 		to_create = []
+		physical_memory = int(GLIUtility.spawn(r"free -m | egrep '^Mem:' | sed -e 's/^Mem: \+//' -e 's/ \+.\+$//'", return_output=True)[1].strip())
 		parts = self.get_ordered_partition_list()
 		for part in parts:
 			if self._partitions[part].get_type() == "free" and self._partitions[part].get_mb() >= 4096:
@@ -138,6 +139,8 @@ class Device:
 				to_create.append({ 'type': "extended", 'size': remaining_free, 'mountpoint': "", 'free_minor': free_minor })
 				free_minor = 4 + FREE_MINOR_FRAC_LOG
 			newpart['free_minor'] = free_minor
+			if newpart['type'] == "linux-swap" and physyical_memory and physical_memory < 1024:
+				newpart['size'] = physical_memory * 2
 			to_create.append(newpart)
 			free_minor = free_minor + 1
 			if not newpart['size'] == "*":
