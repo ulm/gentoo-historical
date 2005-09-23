@@ -31,7 +31,7 @@ class Panel(GLIScreen.GLIScreen):
 	supported_filesystems = ["ext2", "ext3", "linux-swap", "xfs", "jfs", "reiserfs", "fat16", "fat32", "ntfs"]
 
 	def __init__(self, controller):
-		GLIScreen.GLIScreen.__init__(self, controller, show_title=False)
+		GLIScreen.GLIScreen.__init__(self, controller, show_title=True)
 
 		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
@@ -44,10 +44,16 @@ class Panel(GLIScreen.GLIScreen):
 		vert.pack_start(content_label, expand=False, fill=False, padding=0) # This was removed for screen space
 		container = gtk.HBox(False, 0)
 		detected_dev_label = gtk.Label(_("Devices:"))
-		container.pack_start(detected_dev_label, expand=False, fill=False, padding=10)
+		container.pack_start(detected_dev_label, expand=False, fill=False, padding=0)
 		self.detected_dev_combo = gtk.combo_box_new_text()
 		self.detected_dev_combo.connect("changed", self.drive_changed)
-		container.pack_start(self.detected_dev_combo, expand=False, fill=False, padding=0)
+		container.pack_start(self.detected_dev_combo, expand=False, fill=False, padding=10)
+		self.part_button_recommended = gtk.Button(_(" Recommended layout "))
+		self.part_button_recommended.connect("clicked", self.part_button_recommended_clicked)
+		container.pack_end(self.part_button_recommended, expand=False, fill=False, padding=0)
+		self.part_button_clear = gtk.Button(_(" Clear partitions "))
+		self.part_button_clear.connect("clicked", self.part_button_clear_clicked)
+		container.pack_end(self.part_button_clear, expand=False, fill=False, padding=10)
 
 		vert.pack_start(container, expand=False, fill=False, padding=10)
 
@@ -95,15 +101,15 @@ class Panel(GLIScreen.GLIScreen):
 		self.part_button_delete = gtk.Button(_(" Delete "))
 		self.part_button_delete.connect("clicked", self.part_button_delete_clicked)
 		self.part_button_box.pack_start(self.part_button_delete, expand=False, fill=False, padding=0)
-		self.part_button_recommended = gtk.Button(_(" Recommended "))
-		self.part_button_recommended.connect("clicked", self.part_button_recommended_clicked)
-		self.part_button_box.pack_start(self.part_button_recommended, expand=False, fill=False, padding=10)
+#		self.part_button_recommended = gtk.Button(_(" Recommended "))
+#		self.part_button_recommended.connect("clicked", self.part_button_recommended_clicked)
+#		self.part_button_box.pack_start(self.part_button_recommended, expand=False, fill=False, padding=10)
 		self.part_button_properties = gtk.Button(_(" Properties "))
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
-		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=0)
+		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=10)
 		part_button_dump_info = gtk.Button(_(" Dump to console (debug) "))
 		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=10)
+		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=0)
 		vert.pack_start(self.part_button_box, expand=False, fill=False, padding=10)
 
 		# This builds the color key at the bottom
@@ -215,6 +221,15 @@ class Panel(GLIScreen.GLIScreen):
 			msgdlg.run()
 			msgdlg.destroy()
 		self.draw_part_box()
+
+	def part_button_clear_clicked(self, button):
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you wish to clear the partition table for " + self.active_device + "?"))
+		resp = msgdlg.run()
+		msgdlg.destroy()
+		if resp == gtk.RESPONSE_YES:
+			self.devices[self.active_device].clear_partitions()
+			self.drive_changed(self.detected_dev_combo)
+#			self.draw_part_box()
 
 	def draw_part_box(self):
 		partlist = self.devices[self.active_device].get_ordered_partition_list()
