@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.h,v 1.7 2005/09/09 02:34:21 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.h,v 1.8 2005/09/24 09:18:05 eradicator Exp $
  * $Log: parse_conf.h,v $
+ * Revision 1.8  2005/09/24 09:18:05  eradicator
+ * Cleaned up error handling in the config file parsing.
+ *
  * Revision 1.7  2005/09/09 02:34:21  eradicator
  * Added comment about return value of callbacks.
  *
@@ -44,8 +47,8 @@
 /* Handled internally */
 typedef struct _ConfigParser ConfigParser;
 
-/* The return value should be 0 on success, otherwise the return value is
- * propegated back as the return value of parseFile()
+/* The return value should be 0 on success.  If the return value is negative,
+ * it is propegated back as the return value of parseFile()
  */
 typedef int (*SectionCB)(const char * /* Section name */, void * /* data*/);
 typedef int (*KeyCB)(const char * /* key */, const char * /* value */, void * /*data*/);

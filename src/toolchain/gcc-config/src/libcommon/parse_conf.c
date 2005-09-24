@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.8 2005/09/09 06:46:53 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/parse_conf.c,v 1.9 2005/09/24 09:18:05 eradicator Exp $
  * $Log: parse_conf.c,v $
+ * Revision 1.9  2005/09/24 09:18:05  eradicator
+ * Cleaned up error handling in the config file parsing.
+ *
  * Revision 1.8  2005/09/09 06:46:53  eradicator
  * A few bugs which slipped through the cracks...
  *
@@ -123,14 +126,13 @@ static int _parseFile(ConfigParser *parser) {
 		getLine(line, 255, parser->fp);
 		if (line[0] == '\0') continue; /* last line */ 
 		if (sscanf(line, "[%99[^]]]",value) == 1) {
-			if ( (ret = (parser->sectionCB)(value, parser->data)) != 0) 
+			if ( (ret = (parser->sectionCB)(value, parser->data)) < 0) 
 				return ret;
 		} else if (sscanf(line, " %63[^= ] = %191[^\n]",tag, value) == 2) {
-			if ( (ret = (parser->keyCB)(tag,value, parser->data)) != 0) {
+			if ( (ret = (parser->keyCB)(tag,value, parser->data)) < 0) {
 				return ret;
 			}
 		} else {
-			printf("syntax error");
 			return 3;
 		}
 	}
@@ -143,7 +145,6 @@ int parseFile(ConfigParser *parser) {
 	parser->fp = fopen(parser->filename, "r");
 
 	if (parser->fp == NULL) {
-		printf("Can't open file");
 		return 1;
 	}
 

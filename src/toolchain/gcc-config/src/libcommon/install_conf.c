@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.22 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.23 2005/09/24 09:18:05 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.23  2005/09/24 09:18:05  eradicator
+ * Cleaned up error handling in the config file parsing.
+ *
  * Revision 1.22  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
@@ -160,7 +163,7 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 				free(tmp);
 		} else {
 			/* unknown key... ignore it */
-			return 0;
+			return 1;
 		}
 	} else { /* on other sections */
 		if (strcmp(key, "chost") == 0) {
@@ -173,7 +176,7 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 			data->profile->cflags = value;
 		} else {
 			/* unknown key... ignore it */
-			return 0;
+			return 1;
 		}
 	}
 

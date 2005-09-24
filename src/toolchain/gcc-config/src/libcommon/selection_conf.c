@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.23 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.24 2005/09/24 09:18:05 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.24  2005/09/24 09:18:05  eradicator
+ * Cleaned up error handling in the config file parsing.
+ *
  * Revision 1.23  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
@@ -139,7 +142,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			selconf->scanPath = atoi(value);
 		} else {
 			/* unknown key... ignore it */
-			return 0;
+			return 1;
 		}
 	} else { /* selected profile */
 		 if(strcmp(key, "profile") == 0) {
@@ -152,7 +155,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			/* First we need to split the profile given as <version>/<profile> */
 			for(profile=version; *profile && *profile != '/'; profile++);
 			if(*profile != '/')
-				return 0; /* -2 */
+				return 2;
 
 			*profile = '\0';
 			profile++;
@@ -160,17 +163,17 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			/* Now, find the installConf */
 			installConf = (InstallConf *)hashGet(selconf->installHash, version);
 			if(!installConf)
-				return 0; /* -2 */
+				return 2;
 
 			/* Now find the profile */
 			prof = (Profile *)hashGet(installConf->profileHash, profile);
 			if(!prof)
-				return 0; /* -2 */
+				return 2;
 
 			hashInsert(selconf->selectionHash, data->chost, (void *)prof);
 		 } else {
 			/* unknown key... ignore it */
-			return 0;
+			return 1;
 		}
 	}
 	return 0;
