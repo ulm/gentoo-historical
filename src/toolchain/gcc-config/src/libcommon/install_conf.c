@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.24 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.25 2005/09/24 22:32:41 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.25  2005/09/24 22:32:41  eradicator
+ * Changed key to be alias_<name> instead of alias<name>.
+ *
  * Revision 1.24  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -160,8 +163,8 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 		} else if (strcmp(key, "manpath") == 0) {
 			conf->manpath  = value;
 			/* check aliases */
-		} else if (strncmp(key, "alias", 5) == 0) {
-			tmp = hashInsert(conf->wrapperAliases, key+5, (void *)value);
+		} else if (strncmp(key, "alias_", 6) == 0) {
+			tmp = hashInsert(conf->wrapperAliases, key+6, (void *)value);
 			if(tmp)
 				free(tmp);
 		} else {
