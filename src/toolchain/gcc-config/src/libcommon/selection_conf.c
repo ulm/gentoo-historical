@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.25 2005/09/24 09:32:05 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.26 2005/09/24 18:17:19 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.26  2005/09/24 18:17:19  eradicator
+ * Fixed default setting in saved config.
+ *
  * Revision 1.25  2005/09/24 09:32:05  eradicator
  * Fixed a bug in saving the selection.conf file.
  *
@@ -318,7 +321,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 
 	/* [global] section */
 	fprintf(fd, "[global]\n");
-	fprintf(fd, "\tchost=%s\n", selectionConf->defaultChost);
+	fprintf(fd, "\tdefault_chost=%s\n", selectionConf->defaultChost);
 	fprintf(fd, "\tscan_path=%d\n", selectionConf->scanPath);
 
 	chosts = hashKeysSorted(selectionConf->selectionHash);
