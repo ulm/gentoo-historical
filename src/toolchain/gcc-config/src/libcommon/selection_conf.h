@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.9 2005/09/09 08:32:29 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.10 2005/09/24 05:47:13 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.10  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.9  2005/09/09 08:32:29  eradicator
  * Made selection config parsing callbacks.
  *
@@ -52,6 +55,12 @@
 
 typedef struct {
 	char *defaultChost;
+
+	/* Set to 1 if the exec location code should search through the
+	 * ${PATH} to find the executable before relying on the path in
+	 * the config file.
+	 */
+	int scanPath;
 
 	/* Hash table of selected profiles.
 	 * Key: (char *) CHOST (such as "i686-pc-linux-gnu")

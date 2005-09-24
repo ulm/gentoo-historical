@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.22 2005/09/16 17:44:23 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.23 2005/09/24 05:47:13 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.23  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.22  2005/09/16 17:44:23  eradicator
  * Some fixes to make the code C90 compliant.
  *
@@ -132,6 +135,8 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			selconf->defaultChost = strndup(value, MAXPATHLEN);
 			if(!selconf->defaultChost)
 				return -1;
+		} else if(strcmp(key, "scan_path") == 0) {
+			selconf->scanPath = atoi(value);
 		} else {
 			/* unknown key... ignore it */
 			return 0;
@@ -234,11 +239,13 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	InstallConf *installConf;
 
 	/* Not production code... */
-	retval->installHash = hashNew(10);
-	retval->selectionHash = hashNew(10);
+	retval->installHash = hashNew(16);
+	retval->selectionHash = hashNew(16);
 
 	retval->defaultChost = (char *)malloc(sizeof(char) * 30);
 	strcpy(retval->defaultChost, "x86_64-pc-linux-gnu");
+
+	retval->scanPath = 0;
 
 	installConf = loadInstallConf("/etc/gcc-config/x86_64-pc-linux-gnu-3.4.4.conf");
 	hashInsert(retval->installHash, "x86_64-pc-linux-gnu-3.4.4", installConf);
@@ -248,8 +255,10 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 #else
 	char filename[MAXPATHLEN + 1];
 
-	retval->installHash = hashNew(10);
-	retval->selectionHash = hashNew(10);
+	retval->installHash = hashNew(16);
+	retval->selectionHash = hashNew(16);
+
+	retval->scanPath = 0;
 
 	/* Load all the installation configuration files from the directory given */
 	loadInstallConfs(globalConfigDir, retval);

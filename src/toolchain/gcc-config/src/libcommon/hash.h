@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.8 2005/08/23 02:54:09 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.9 2005/09/24 05:47:13 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.9  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.8  2005/08/23 02:54:09  eradicator
  * Changed 'gcc' references to 'compiler' since this is not gcc-specific.
  *
@@ -83,5 +86,8 @@ const char **hashKeys(const Hash *hash);
 
 /** Like hashKeys, but sorted */
 const char **hashKeysSorted(const Hash *hash);
+
+/* Resize the hash table.  Returns 0 on success. */
+int hashResize(Hash *hash, size_t newsize);
 
 #endif

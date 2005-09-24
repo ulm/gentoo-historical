@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.16 2005/09/09 08:46:14 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.17 2005/09/24 05:47:13 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.17  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.16  2005/09/09 08:46:14  eradicator
  * Added check on nEntries before sorting as this could result in a segfault if nEntries=0.
  *
@@ -211,7 +214,18 @@ void *hashInsert(Hash *hash, const char *key, void *data) {
 	hash->buckets[hc] = entry;
 	hash->nEntries++;
 
-	/* TODO: Try to keep nEntries < 2*nBuckets */
+	/* Try to keep 2*n_entries < n_buckets */
+	if((hash->nEntries << 1) > hash->nBuckets) {
+		size_t newsize = hash->nBuckets << 1;
+
+		/* Set to the max if we're limited */
+		if(newsize < hash->nBuckets)
+			newsize = (size_t)-1;
+
+		if(newsize != hash->nBuckets)
+			hashResize(hash, newsize);
+	}
+
 	 return NULL;
 }
 
@@ -338,6 +352,45 @@ const char **hashKeysSorted(const Hash *hash) {
 
 	return (const char **)quickSortStr(keys, 0, hash->nEntries - 1);
 }
+
+/** Resize the hash (change the number of buckets */
+int hashResize(Hash *hash, size_t newsize) {
+	Hash *temphash;
+	const char **keys;
+	size_t i;
+
+	/* We do this by copying all our data to a new hash, then using those buckets */
+	temphash = hashNew(newsize);
+	if(temphash == NULL)
+		return -1;
+
+	/* Get an array of all our keys */
+	keys = hashKeys(hash);
+	if(keys == NULL)
+		return -1;
+
+	/* Copy data to the new hash */
+	for(i=0; keys[i] != NULL; i++) {
+		hashInsert(temphash, keys[i], hashGet(hash, keys[i]));
+	}
+
+	/* Now update our original and free the temp */
+	free(hash->buckets);
+	hash->buckets = temphash->buckets;
+	hash->nBuckets = newsize;
+	free(temphash);
+
+	/* Success */
+	return 0;
+}
+
+/** Return the number of elements in the hash */
+inline size_t hashGetSize(const Hash *hash) {
+	if(hash == NULL)
+		return 0;
+	return hash->nEntries;
+}
+
 
 #ifdef DEBUG_HASH
 

@@ -58,8 +58,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.15 2005/08/24 04:25:30 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.16 2005/09/24 05:47:13 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.16  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.15  2005/08/24 04:25:30  eradicator
  * Added COMPILER_CONFIG_ALIAS_<alias>
  *
@@ -175,7 +178,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 
 	setChosts = hashKeysSorted(selectionConf->selectionHash);
 	installs = hashKeysSorted(selectionConf->installHash);
-	profilesByChost = hashNew(20);
+	profilesByChost = hashNew(16);
 
 	if(setChosts == NULL || installs == NULL || allChosts == NULL)
 		goto end_doGetProfiles;

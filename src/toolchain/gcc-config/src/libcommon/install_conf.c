@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.21 2005/09/16 17:44:23 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.22 2005/09/24 05:47:13 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.22  2005/09/24 05:47:13  eradicator
+ * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
+ *
  * Revision 1.21  2005/09/16 17:44:23  eradicator
  * Some fixes to make the code C90 compliant.
  *
@@ -108,8 +111,8 @@ static int installConfSectionCB(const char *section, void *_data) {
 
 	if (strcmp(section, "global") == 0) {
 		data->profile = NULL;
-		conf->profileHash = hashNew(10);
-		conf->wrapperAliases = hashNew(10);
+		conf->profileHash = hashNew(16);
+		conf->wrapperAliases = hashNew(16);
 	} else {
 		Profile *tmp;
 		data->profile = (Profile *)calloc(1, sizeof(Profile));
@@ -190,8 +193,8 @@ InstallConf *loadInstallConf(const char *filename) {
 	retval->binpath = "/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4";
 	retval->infopath = "/usr/share/gcc-data/x86_64-pc-linux-gnu/3.4.4/info";
 	retval->manpath = "/usr/share/gcc-data/x86_64-pc-linux-gnu/3.4.4/man";
-	retval->profileHash = hashNew(10);
-	retval->wrapperAliases = hashNew(10);
+	retval->profileHash = hashNew(16);
+	retval->wrapperAliases = hashNew(16);
 	hashInsert(retval->wrapperAliases, "cc", "gcc");
 	hashInsert(retval->wrapperAliases, "gfortran", "g77");
 	hashInsert(retval->wrapperAliases, "f77", "g77");
