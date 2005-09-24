@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.10 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.11 2005/09/24 18:31:38 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.11  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.10  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
@@ -34,7 +37,7 @@
  * Let users override settings in ~/.gcc-config.
  *
  * Revision 1.3  2005/08/12 09:45:52  eradicator
- * Added defaultChost.
+ * Added defaultCtarget.
  *
  * Revision 1.2  2005/08/12 00:48:18  eradicator
  * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
@@ -54,7 +57,7 @@
 #include "install_conf.h"
 
 typedef struct {
-	char *defaultChost;
+	char *defaultCtarget;
 
 	/* Set to 1 if the exec location code should search through the
 	 * ${PATH} to find the executable before relying on the path in
@@ -63,14 +66,14 @@ typedef struct {
 	int scanPath;
 
 	/* Hash table of selected profiles.
-	 * Key: (char *) CHOST (such as "i686-pc-linux-gnu")
-	 * Value: (Profile *) Profile associated with CHOST
+	 * Key: (char *) CTARGET (such as "i686-pc-linux-gnu")
+	 * Value: (Profile *) Profile associated with CTARGET
 	 */
 	Hash *selectionHash;
 
 	/* Hash table of installed gcc packages
 	 * Key: (char *) name (such as "i686-pc-linux-gnu-3.4.4")
-	 * Value: (InstallConf *) Profile associated with CHOST
+	 * Value: (InstallConf *) Profile associated with CTARGET
 	 */
 	Hash *installHash;
 } SelectionConf;

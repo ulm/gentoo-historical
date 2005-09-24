@@ -3,7 +3,7 @@
  *
  * Description: 
  * A wrapper for gcc or any other compiler which executes a binary based on the profile
- * used for the set CHOST.
+ * used for the set CTARGET.
  *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
  *
@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.2 2005/09/24 06:07:59 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.3 2005/09/24 18:31:38 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.3  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.2  2005/09/24 06:07:59  eradicator
  * Honor GCC_SPECS envvar if it's already set.  Also, search through PATH first when locating the executable if scan_path is set in the config file.
  *
@@ -41,7 +44,7 @@
  * Added code to determine the binary we need to execute including aliasing in the profile.  Set GCC_SPECS based on the profile.
  *
  * Revision 1.3  2005/08/12 10:07:59  eradicator
- * setChost() also sets the profile.
+ * setCtarget() also sets the profile.
  *
  * Revision 1.2  2005/08/12 09:57:12  eradicator
  * Initial work on the new wrapper...
@@ -76,11 +79,11 @@
 #endif
 
 typedef struct {
-	/* The CHOST being compiled for.  This is determined by $ABI (deprecated),
-	 * the prefix of the executable, the environment ($CHOST), or the default
+	/* The CTARGET being compiled for.  This is determined by $ABI (deprecated),
+	 * the prefix of the executable, the environment ($CTARGET), or the default
 	 * set in the config file.
 	*/
-	char chost[MAXPATHLEN + 1];
+	char ctarget[MAXPATHLEN + 1];
 
 	/* The full path name to the binary we're going to exec */
 	char execBinary[MAXPATHLEN + 1];
@@ -148,8 +151,8 @@ static char **buildNewArgv(char **argv, const char *newFlagsStr) {
 	return retargv;
 }
 
-/** Set the chost and profile */
-static void setChostAndProfile(WrapperData *data) {
+/** Set the ctarget and profile */
+static void setCtargetAndProfile(WrapperData *data) {
 	char tmp[MAXPATHLEN + 1];
 	size_t i;
 
@@ -161,24 +164,24 @@ static void setChostAndProfile(WrapperData *data) {
 		if(tmp[i] == '-') {
 			tmp[i] = '\0';
 			if((data->profile = hashGet(data->selectionConf->selectionHash, tmp)) != NULL) {
-				strcpy(data->chost, tmp);
+				strcpy(data->ctarget, tmp);
 				return;
 			}
 		}
 	}
 
-	/* We didn't find a match, so see if we have ${CHOST} set. */
-	if(getenv("CHOST") != NULL) {
-		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CHOST"))) != NULL) {
-			strncpy(data->chost, getenv("CHOST"), MAXPATHLEN);
+	/* We didn't find a match, so see if we have ${CTARGET} set. */
+	if(getenv("CTARGET") != NULL) {
+		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CTARGET"))) != NULL) {
+			strncpy(data->ctarget, getenv("CTARGET"), MAXPATHLEN);
 			return;
 		}
 	}
 
 	/* No match, use the default */
-	strncpy(data->chost, data->selectionConf->defaultChost, MAXPATHLEN);
-	if((data->profile = hashGet(data->selectionConf->selectionHash, data->chost)) == NULL) {
-		die("%s wrapper: Could not determine CHOST or CHOST has no selected profile.", data->argv[0]);
+	strncpy(data->ctarget, data->selectionConf->defaultCtarget, MAXPATHLEN);
+	if((data->profile = hashGet(data->selectionConf->selectionHash, data->ctarget)) == NULL) {
+		die("%s wrapper: Could not determine CTARGET or CTARGET has no selected profile.", data->argv[0]);
 	}
 	return;
 }
@@ -192,10 +195,10 @@ static void setExecBinary(WrapperData *data) {
 	/* Figure out the basename of the compiler */
 	strncpy(execBasename, basename(data->argv[0]), MAXPATHLEN);
 
-	/* If it's prefixed by ${CHOST}, strip that off */
-	if(!strncmp(data->chost, execBasename, strlen(data->chost)) &&
-	   execBasename[strlen(data->chost)] == '-' ) {
-		strcpy(execBasename, execBasename + strlen(data->chost) + 1);
+	/* If it's prefixed by ${CTARGET}, strip that off */
+	if(!strncmp(data->ctarget, execBasename, strlen(data->ctarget)) &&
+	   execBasename[strlen(data->ctarget)] == '-' ) {
+		strcpy(execBasename, execBasename + strlen(data->ctarget) + 1);
 	}
 
 	/* If it's an alias, replace it with the correct value */
@@ -222,22 +225,22 @@ static void setExecBinary(WrapperData *data) {
 		}
 	}
 	
-	/* Fisrt try without the CHOST prefix */
+	/* Fisrt try without the CTARGET prefix */
 	snprintf(data->execBinary, MAXPATHLEN, "%s/%s", data->profile->installConf->binpath, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
-	/* Now try with the CHOST prefix used */
-	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->chost, execBasename);
+	/* Now try with the CTARGET prefix used */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->ctarget, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
-	/* Now try with the CHOST prefix in the profile */
-	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->profile->chost, execBasename);
+	/* Now try with the CTARGET prefix in the profile */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->profile->ctarget, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
-	die("%s wrapper: Unable to determine executable.\n\tCHOST=%s\n\texec=%s\n", data->argv[0], data->chost, execBasename);
+	die("%s wrapper: Unable to determine executable.\n\tCTARGET=%s\n\texec=%s\n", data->argv[0], data->ctarget, execBasename);
 }
 
 int main(int argc, char *argv[]) {
@@ -256,8 +259,8 @@ int main(int argc, char *argv[]) {
 	/* The argv to pass to the forked process.  Defaults to be the same */
 	data->argv = argv;
 
-	/* Figure out out CHOST and our Profile */
-	setChostAndProfile(data);
+	/* Figure out out CTARGET and our Profile */
+	setCtargetAndProfile(data);
 
 	/* Determine what binary we will be executing */
 	setExecBinary(data);
@@ -273,7 +276,7 @@ int main(int argc, char *argv[]) {
 		if (getenv(envvar))
 			extraCflags = getenv(envvar);
 	} else {
-		extraCflags = ((Profile *)hashGet(data->selectionConf->selectionHash, data->chost))->cflags;
+		extraCflags = ((Profile *)hashGet(data->selectionConf->selectionHash, data->ctarget))->cflags;
 	}
 
 	if(extraCflags) {

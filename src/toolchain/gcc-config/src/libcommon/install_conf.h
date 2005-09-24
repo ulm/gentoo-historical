@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.11 2005/09/09 07:59:08 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.12 2005/09/24 18:31:38 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.12  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.11  2005/09/09 07:59:08  eradicator
  * No longer exposing parsing internals in the InstallConf struct.
  *
@@ -84,7 +87,7 @@ typedef struct {
 	InstallConf *installConf;
 
 	char *name;
-	char *chost;
+	char *ctarget;
 	char *specs;
 	char *libdir;
 	char *cflags;

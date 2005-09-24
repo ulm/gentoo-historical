@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.26 2005/09/24 18:17:19 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.27 2005/09/24 18:31:38 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.27  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.26  2005/09/24 18:17:19  eradicator
  * Fixed default setting in saved config.
  *
@@ -82,7 +85,7 @@
  * Adding new config framework
  *
  * Revision 1.3  2005/08/12 09:45:52  eradicator
- * Added defaultChost.
+ * Added defaultCtarget.
  *
  * Revision 1.2  2005/08/12 00:48:18  eradicator
  * Added hardcoded configuration, so I can work on the wrapper while putting off the config file handling.
@@ -120,7 +123,7 @@
 
 struct selectionParseData {
 	SelectionConf *selectionConf;
-	char chost[MAXPATHLEN + 1];
+	char ctarget[MAXPATHLEN + 1];
 };
 
 #ifndef USE_HARDCODED_CONF
@@ -128,9 +131,9 @@ static int selectionConfSectionCB(const char *section, void *_data) {
 	struct selectionParseData *data = (struct selectionParseData *)_data;
 
 	if (strcmp(section, "global") == 0) {
-		data->chost[0] = '\0';
+		data->ctarget[0] = '\0';
 	} else {
-		strncpy(data->chost, section, MAXPATHLEN);
+		strncpy(data->ctarget, section, MAXPATHLEN);
 	}
 	return 0;
 }
@@ -139,10 +142,10 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 	struct selectionParseData *data = (struct selectionParseData *)_data;
 	SelectionConf *selconf = data->selectionConf;
 
-	if (data->chost[0] == '\0') { /* global */
-		if(strcmp(key, "default_chost") == 0) {
-			selconf->defaultChost = strndup(value, MAXPATHLEN);
-			if(!selconf->defaultChost)
+	if (data->ctarget[0] == '\0') { /* global */
+		if(strcmp(key, "default_ctarget") == 0) {
+			selconf->defaultCtarget = strndup(value, MAXPATHLEN);
+			if(!selconf->defaultCtarget)
 				return -1;
 		} else if(strcmp(key, "scan_path") == 0) {
 			selconf->scanPath = atoi(value);
@@ -176,7 +179,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			if(!prof)
 				return 2;
 
-			hashInsert(selconf->selectionHash, data->chost, (void *)prof);
+			hashInsert(selconf->selectionHash, data->ctarget, (void *)prof);
 		 } else {
 			/* unknown key... ignore it */
 			return 1;
@@ -230,7 +233,7 @@ inline static int loadSelections(const char *filename, SelectionConf *selectionC
 		return -1;
 
 	data.selectionConf = selectionConf;
-	data.chost[0] = '\0';
+	data.ctarget[0] = '\0';
 
 	parserSetData(config, &data);
 	parserSetCallback(config, selectionConfSectionCB, selectionConfKeyCB);
@@ -251,8 +254,8 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 	retval->installHash = hashNew(16);
 	retval->selectionHash = hashNew(16);
 
-	retval->defaultChost = (char *)malloc(sizeof(char) * 30);
-	strcpy(retval->defaultChost, "x86_64-pc-linux-gnu");
+	retval->defaultCtarget = (char *)malloc(sizeof(char) * 30);
+	strcpy(retval->defaultCtarget, "x86_64-pc-linux-gnu");
 
 	retval->scanPath = 0;
 
@@ -296,7 +299,7 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir, unsigned userOverride) {
 	char dirname[MAXPATHLEN + 1];
 	char filename[MAXPATHLEN + 1];
-	const char **chosts;
+	const char **ctargets;
 	FILE *fd;
 	size_t i;
 
@@ -321,17 +324,17 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 
 	/* [global] section */
 	fprintf(fd, "[global]\n");
-	fprintf(fd, "\tdefault_chost=%s\n", selectionConf->defaultChost);
+	fprintf(fd, "\tdefault_ctarget=%s\n", selectionConf->defaultCtarget);
 	fprintf(fd, "\tscan_path=%d\n", selectionConf->scanPath);
 
-	chosts = hashKeysSorted(selectionConf->selectionHash);
-	if(!chosts)
+	ctargets = hashKeysSorted(selectionConf->selectionHash);
+	if(!ctargets)
 		return errno;
 
-	/* Section for each CHOST */
-	for(i=0; chosts[i] != NULL; i++) {
-		Profile *profile = hashGet(selectionConf->selectionHash, chosts[i]);
-		fprintf(fd, "\n[%s]\n", chosts[i]);
+	/* Section for each CTARGET */
+	for(i=0; ctargets[i] != NULL; i++) {
+		Profile *profile = hashGet(selectionConf->selectionHash, ctargets[i]);
+		fprintf(fd, "\n[%s]\n", ctargets[i]);
 		fprintf(fd, "\tprofile=%s/%s\n", profile->installConf->name, profile->name);
 	}
 
@@ -339,7 +342,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 	fclose(fd);
 
 	/* Cleanup */
-	free(chosts);
+	free(ctargets);
 
 	return 0;
 }

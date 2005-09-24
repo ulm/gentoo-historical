@@ -13,27 +13,27 @@
  *   --config-dir=<config dir>: Use <config dir> instead of CONFIGURATION_DIR for the
  *                              global config dir.
  *
- *   Note below that <CHOST/-/_> means the CHOST with -s replaced with _s
+ *   Note below that <CTARGET/-/_> means the CTARGET with -s replaced with _s
  *   commands:
  *
  *   get-profiles
  *     get a set of environment variables (to be eval'd) which describe the
  *     available and installed profiles
  *
- *     COMPILER_CONFIG_DEFAULT_CHOST:
- *       The default CHOST
- *     COMPILER_CONFIG_ALL_CHOSTS:
- *       A sorted list of all CHOSTS for which a profile is available.
- *     COMPILER_CONFIG_SET_CHOSTS:
- *       A sorted list of all CHOSTS for which a profile is set.  Note that
- *       there might be a CHOST here which is not in COMPILER_CONFIG_ALL_CHOSTS
- *       because the user has used the --chost option to choose a non-default
- *       CHOST.
- *     COMPILER_CONFIG_PROFILES_<CHOST/-/_>:
- *       A sorted list of available profiles for the given CHOST.  The list is
+ *     COMPILER_CONFIG_DEFAULT_CTARGET:
+ *       The default CTARGET
+ *     COMPILER_CONFIG_ALL_CTARGETS:
+ *       A sorted list of all CTARGETS for which a profile is available.
+ *     COMPILER_CONFIG_SET_CTARGETS:
+ *       A sorted list of all CTARGETS for which a profile is set.  Note that
+ *       there might be a CTARGET here which is not in COMPILER_CONFIG_ALL_CTARGETS
+ *       because the user has used the --ctarget option to choose a non-default
+ *       CTARGET.
+ *     COMPILER_CONFIG_PROFILES_<CTARGET/-/_>:
+ *       A sorted list of available profiles for the given CTARGET.  The list is
  *       space delimeted with a forward slash between the install and profile.
- *     COMPILER_CONFIG_SET_<CHOST/-/_>:
- *       The selected <install>/<profile> for the given CHOST.
+ *     COMPILER_CONFIG_SET_<CTARGET/-/_>:
+ *       The selected <install>/<profile> for the given CTARGET.
  *
  *   get-profile <install>/<profile>
  *     get a set of environment variables (to be eval'd) with the data for the
@@ -43,14 +43,14 @@
  *     COMPILER_CONFIG_MANPATH
  *     COMPILER_CONFIG_INFOPATH
  *     COMPILER_CONFIG_LDPATH
- *     COMPILER_CONFIG_CHOST
+ *     COMPILER_CONFIG_CTARGET
  *     COMPILER_CONFIG_GCC_SPECS
  *     COMPILER_CONFIG_CFLAGS
  *     COMPILER_CONFIG_ALIASES
  *     COMPILER_CONFIG_ALIASE_<alias>
  *
- *   set <install>/<profile> [--chost=<CHOST>]
- *     activate a profile (and optionally assign it a CHOST other than its default)
+ *   set <install>/<profile> [--ctarget=<CTARGET>]
+ *     activate a profile (and optionally assign it a CTARGET other than its default)
  *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
  *
@@ -58,8 +58,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.16 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.17 2005/09/24 18:31:38 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.17  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.16  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
@@ -157,7 +160,7 @@ static void die(const char *msg, ...) {
 	exit(1);
 }
 
-#define MAX_CHOSTS 128
+#define MAX_CTARGETS 128
 
 typedef struct _pnode {
 	const Profile *profile;
@@ -167,23 +170,23 @@ typedef struct _pnode {
 
 static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	const char **installs;
-	const char **setChosts;
-	const char **allChosts;
-	Hash *profilesByChost;
+	const char **setCtargets;
+	const char **allCtargets;
+	Hash *profilesByCtarget;
 	const InstallConf *installConf;
 	size_t i;
 
 	if(selectionConf == NULL)
 		return;
 
-	setChosts = hashKeysSorted(selectionConf->selectionHash);
+	setCtargets = hashKeysSorted(selectionConf->selectionHash);
 	installs = hashKeysSorted(selectionConf->installHash);
-	profilesByChost = hashNew(16);
+	profilesByCtarget = hashNew(16);
 
-	if(setChosts == NULL || installs == NULL || allChosts == NULL)
+	if(setCtargets == NULL || installs == NULL || allCtargets == NULL)
 		goto end_doGetProfiles;
 
-	/* We need to create our profilesByChost hash */
+	/* We need to create our profilesByCtarget hash */
 	for(i=0; installs[i] != NULL; i++) {
 		const char **profiles;
 		size_t j;
@@ -202,7 +205,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 			if(!pn)
 				die("Memory allocation failure.");
 			pn->profile = hashGet(installConf->profileHash, profiles[j]);
-			opn = (PNode *)hashInsert(profilesByChost, pn->profile->chost, pn);
+			opn = (PNode *)hashInsert(profilesByCtarget, pn->profile->ctarget, pn);
 			if(opn) {
 				opn->prev = pn;
 				pn->next = opn;
@@ -212,60 +215,60 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		free(profiles);
 	}
 
-	allChosts = hashKeysSorted(profilesByChost);
-	if(allChosts == NULL)
+	allCtargets = hashKeysSorted(profilesByCtarget);
+	if(allCtargets == NULL)
 		goto end_doGetProfiles;
 
-	/*     COMPILER_CONFIG_DEFAULT_CHOST:
-	 *       The default CHOST
+	/*     COMPILER_CONFIG_DEFAULT_CTARGET:
+	 *       The default CTARGET
 	 */
 
-	fprintf(fd, "COMPILER_CONFIG_DEFAULT_CHOST=\"%s\"\n", selectionConf->defaultChost);
+	fprintf(fd, "COMPILER_CONFIG_DEFAULT_CTARGET=\"%s\"\n", selectionConf->defaultCtarget);
 
-	/*     COMPILER_CONFIG_ALL_CHOSTS:
-	 *       A sorted list of all CHOSTS for which a profile is available.
+	/*     COMPILER_CONFIG_ALL_CTARGETS:
+	 *       A sorted list of all CTARGETS for which a profile is available.
 	 */
-	fputs("COMPILER_CONFIG_ALL_CHOSTS=\"", fd);
-	for(i=0; allChosts[i] != NULL; i++) {
+	fputs("COMPILER_CONFIG_ALL_CTARGETS=\"", fd);
+	for(i=0; allCtargets[i] != NULL; i++) {
 		if(i != 0)
 			fputc(' ', fd);
-		fputs(allChosts[i], fd);
+		fputs(allCtargets[i], fd);
 	}
 	fputs("\"\n", fd);
 
-	/*     COMPILER_CONFIG_SET_CHOSTS:
-	 *       A sorted list of all CHOSTS for which a profile is set.  Note that
-	 *       there might be a CHOST here which is not in COMPILER_CONFIG_ALL_CHOSTS
-	 *       because the user has used the --chost option to choose a non-default
-	 *       CHOST.
+	/*     COMPILER_CONFIG_SET_CTARGETS:
+	 *       A sorted list of all CTARGETS for which a profile is set.  Note that
+	 *       there might be a CTARGET here which is not in COMPILER_CONFIG_ALL_CTARGETS
+	 *       because the user has used the --ctarget option to choose a non-default
+	 *       CTARGET.
 	 */
-	fputs("COMPILER_CONFIG_SET_CHOSTS=\"", fd);
-	for(i=0; setChosts[i] != NULL; i++) {
+	fputs("COMPILER_CONFIG_SET_CTARGETS=\"", fd);
+	for(i=0; setCtargets[i] != NULL; i++) {
 		if(i != 0)
 			fputc(' ', fd);
-		fputs(setChosts[i], fd);
+		fputs(setCtargets[i], fd);
 	}
 	fputs("\"\n", fd);
 
-	/*     COMPILER_CONFIG_PROFILES_<CHOST/-/_>:
-	 *       A sorted list of available profiles for the given CHOST.  The list is
+	/*     COMPILER_CONFIG_PROFILES_<CTARGET/-/_>:
+	 *       A sorted list of available profiles for the given CTARGET.  The list is
 	 *       space delimeted with a forward slash between the install and profile.
 	 */
-	for(i=0; allChosts[i] != NULL; i++) {
-		PNode *pn = hashGet(profilesByChost, allChosts[i]);
+	for(i=0; allCtargets[i] != NULL; i++) {
+		PNode *pn = hashGet(profilesByCtarget, allCtargets[i]);
 		unsigned needSpace = 0;
 
-		char *chostul=strndup(allChosts[i], MAXPATHLEN);
+		char *ctargetul=strndup(allCtargets[i], MAXPATHLEN);
 		char *s;
-		if(!chostul)
+		if(!ctargetul)
 			die("Memory allocation failure.");
-		for(s = chostul; *s; s++) {
+		for(s = ctargetul; *s; s++) {
 			if(*s == '-')
 				*s = '_';
 		}
 
-		fprintf(fd, "COMPILER_CONFIG_PROFILES_%s=\"", chostul);
-		free(chostul);
+		fprintf(fd, "COMPILER_CONFIG_PROFILES_%s=\"", ctargetul);
+		free(ctargetul);
 
 		/* Our list is reversed, so start at the end */
 		for(; pn->next; pn = pn->next);
@@ -282,42 +285,42 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		fputs("\"\n", fd);
 	}
 
-	/*     COMPILER_CONFIG_SET_<CHOST/-/_>:
-	 *       The selected <install>/<profile> for the given CHOST.
+	/*     COMPILER_CONFIG_SET_<CTARGET/-/_>:
+	 *       The selected <install>/<profile> for the given CTARGET.
 	 */
-	for(i=0; setChosts[i] != NULL; i++) {
-		Profile *profile = hashGet(selectionConf->selectionHash, setChosts[i]);
-		char *chostul=strndup(setChosts[i], MAXPATHLEN);
+	for(i=0; setCtargets[i] != NULL; i++) {
+		Profile *profile = hashGet(selectionConf->selectionHash, setCtargets[i]);
+		char *ctargetul=strndup(setCtargets[i], MAXPATHLEN);
 		char *s;
-		if(!chostul)
+		if(!ctargetul)
 			die("Memory allocation failure.");
-		for(s = chostul; *s; s++) {
+		for(s = ctargetul; *s; s++) {
 			if(*s == '-')
 				*s = '_';
 		}
-		fprintf(fd, "COMPILER_CONFIG_SET_%s=\"%s/%s\"\n", chostul, profile->installConf->name, profile->name);
-		free(chostul);
+		fprintf(fd, "COMPILER_CONFIG_SET_%s=\"%s/%s\"\n", ctargetul, profile->installConf->name, profile->name);
+		free(ctargetul);
 	}
 
 end_doGetProfiles:
 	if(installs) free(installs);
-	if(setChosts) free(setChosts);
+	if(setCtargets) free(setCtargets);
 
-	if(profilesByChost) {
-		if(!allChosts)
-			allChosts = hashKeys(profilesByChost);
-		for(i=0; allChosts[i] != NULL; i++) {
+	if(profilesByCtarget) {
+		if(!allCtargets)
+			allCtargets = hashKeys(profilesByCtarget);
+		for(i=0; allCtargets[i] != NULL; i++) {
 			PNode *pn;
 			PNode *next;
-			for(pn = (PNode *)hashGet(profilesByChost, allChosts[i]); pn; pn = next) {
+			for(pn = (PNode *)hashGet(profilesByCtarget, allCtargets[i]); pn; pn = next) {
 				next = pn->next;
 				free(pn);
 			}
 		}
-		hashFree(profilesByChost);
+		hashFree(profilesByCtarget);
 	}
 
-	if(allChosts) free(allChosts);
+	if(allCtargets) free(allCtargets);
 }
 
 static void doGetProfile(const SelectionConf *selectionConf, const char *install, const char *profileStr, FILE *fd) {
@@ -346,8 +349,8 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 	/* COMPILER_CONFIG_LDPATH */
 	fprintf(fd, "COMPILER_CONFIG_LDPATH=\"%s\"\n", profile->libdir);
 
-	/* COMPILER_CONFIG_CHOST */
-	fprintf(fd, "COMPILER_CONFIG_CHOST=\"%s\"\n", profile->chost);
+	/* COMPILER_CONFIG_CTARGET */
+	fprintf(fd, "COMPILER_CONFIG_CTARGET=\"%s\"\n", profile->ctarget);
 
 	/* COMPILER_CONFIG_GCC_SPECS */
 	fprintf(fd, "COMPILER_CONFIG_GCC_SPECS=\"%s\"\n", profile->specs ? profile->specs : "");
@@ -373,8 +376,8 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 	}
 }
 
-/* If CHOST is null, we use the default chost for the profile */
-static void doSet(SelectionConf *selectionConf, const char *install, const char *profileStr, const char *chost, unsigned makeDefault) {
+/* If CTARGET is null, we use the default ctarget for the profile */
+static void doSet(SelectionConf *selectionConf, const char *install, const char *profileStr, const char *ctarget, unsigned makeDefault) {
 	InstallConf *installConf;
 	Profile *profile;
 
@@ -386,15 +389,15 @@ static void doSet(SelectionConf *selectionConf, const char *install, const char 
 	if(!profile)
 		die("No such profile: %s/%s", install, profile);
 
-	if(chost == NULL)
-		chost = profile->chost;
+	if(ctarget == NULL)
+		ctarget = profile->ctarget;
 
-	hashInsert(selectionConf->selectionHash, chost, profile);
+	hashInsert(selectionConf->selectionHash, ctarget, profile);
 
 	if(makeDefault) {
-		if(selectionConf->defaultChost)
-			free(selectionConf->defaultChost);
-		selectionConf->defaultChost = strndup(chost, MAXPATHLEN);
+		if(selectionConf->defaultCtarget)
+			free(selectionConf->defaultCtarget);
+		selectionConf->defaultCtarget = strndup(ctarget, MAXPATHLEN);
 	}
 }
 
@@ -405,7 +408,7 @@ int main(int argc, char **argv) {
 	unsigned userProfile = 0;
 	unsigned makeDefault = 0;
 	const char *configDir = CONFIGURATION_DIR;
-	const char *chost = NULL;
+	const char *ctarget = NULL;
 	char *install = NULL;
 	char *profile = NULL;
 
@@ -460,9 +463,9 @@ int main(int argc, char **argv) {
 
 		case ACTION_SET:
 			for(; i < argc; i++) {
-				if(strncmp(argv[i], "--chost=", 8) == 0) {
-					chost = argv[i] + 8;
-				} else if(strcmp(argv[i], "--default") == 0) {
+				if(strncmp(argv[i], "--ctarget=", 10) == 0) {
+					ctarget = argv[i] + 10;
+				} else if(strcmp(argv[i], "--native") == 0) {
 					makeDefault = 1;
 				} else {
 					/* Find the split */
@@ -479,7 +482,7 @@ int main(int argc, char **argv) {
 			if(!install)
 				die("You did not give a profile to set.");
 
-			doSet(selectionConf, install, profile, chost, makeDefault);
+			doSet(selectionConf, install, profile, ctarget, makeDefault);
 			if(saveSelectionConf(selectionConf, configDir, userProfile) != 0)
 				die("Error saving config: %s", strerror(errno));
 			break;

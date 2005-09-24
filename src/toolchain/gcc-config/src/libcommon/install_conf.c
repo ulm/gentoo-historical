@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.23 2005/09/24 09:18:05 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.24 2005/09/24 18:31:38 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.24  2005/09/24 18:31:38  eradicator
+ * Changed references to choat->ctarget.  Changed --default to --native.
+ *
  * Revision 1.23  2005/09/24 09:18:05  eradicator
  * Cleaned up error handling in the config file parsing.
  *
@@ -166,8 +169,8 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 			return 1;
 		}
 	} else { /* on other sections */
-		if (strcmp(key, "chost") == 0) {
-			data->profile->chost = value;
+		if (strcmp(key, "ctarget") == 0) {
+			data->profile->ctarget = value;
 		} else if (strcmp(key, "specs") == 0) {
 			data->profile->specs = value;
 		} else if (strcmp(key, "ldpath") == 0) {
@@ -205,7 +208,7 @@ InstallConf *loadInstallConf(const char *filename) {
 	profile = (Profile *)malloc(sizeof(Profile));
 	profile->installConf = retval;
 	profile->name = "amd64-vanilla";
-	profile->chost = "x86_64-pc-linux-gnu";
+	profile->ctarget = "x86_64-pc-linux-gnu";
 	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
 	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4";
 	profile->cflags = (char *)0;
@@ -214,7 +217,7 @@ InstallConf *loadInstallConf(const char *filename) {
 	profile = (Profile *)malloc(sizeof(Profile));
 	profile->installConf = retval;
 	profile->name = "amd64-hardened";
-	profile->chost = "x86_64-pc-linux-gnu";
+	profile->ctarget = "x86_64-pc-linux-gnu";
 	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/hardened.specs";
 	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4";
 	profile->cflags = (char *)0;
@@ -223,7 +226,7 @@ InstallConf *loadInstallConf(const char *filename) {
 	profile = (Profile *)malloc(sizeof(Profile));
 	profile->installConf = retval;
 	profile->name = "x86-vanilla";
-	profile->chost = "i686-pc-linux-gnu";
+	profile->ctarget = "i686-pc-linux-gnu";
 	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
 	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32";
 	profile->cflags = "-m32";
@@ -232,7 +235,7 @@ InstallConf *loadInstallConf(const char *filename) {
 	profile = (Profile *)malloc(sizeof(Profile));
 	profile->installConf = retval;
 	profile->name = "x86-vanilla";
-	profile->chost = "i686-pc-linux-gnu";
+	profile->ctarget = "i686-pc-linux-gnu";
 	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
 	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32";
 	profile->cflags = "-m32";
@@ -298,8 +301,8 @@ static void freeProfile(Profile *profile) {
 		return;
 	if(profile->name)
 		free(profile->name);
-	if(profile->chost)
-		free(profile->chost);
+	if(profile->ctarget)
+		free(profile->ctarget);
 	if(profile->specs)
 		free(profile->specs);
 	if(profile->libdir)
