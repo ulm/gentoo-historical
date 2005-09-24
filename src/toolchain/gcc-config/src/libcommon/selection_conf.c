@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.24 2005/09/24 09:18:05 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.25 2005/09/24 09:32:05 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.25  2005/09/24 09:32:05  eradicator
+ * Fixed a bug in saving the selection.conf file.
+ *
  * Revision 1.24  2005/09/24 09:18:05  eradicator
  * Cleaned up error handling in the config file parsing.
  *
@@ -145,7 +148,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			return 1;
 		}
 	} else { /* selected profile */
-		 if(strcmp(key, "profile") == 0) {
+		if(strcmp(key, "profile") == 0) {
 			char version[MAXPATHLEN + 1];
 			char *profile;
 			InstallConf *installConf;
@@ -316,6 +319,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 	/* [global] section */
 	fprintf(fd, "[global]\n");
 	fprintf(fd, "\tchost=%s\n", selectionConf->defaultChost);
+	fprintf(fd, "\tscan_path=%d\n", selectionConf->scanPath);
 
 	chosts = hashKeysSorted(selectionConf->selectionHash);
 	if(!chosts)
@@ -325,8 +329,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 	for(i=0; chosts[i] != NULL; i++) {
 		Profile *profile = hashGet(selectionConf->selectionHash, chosts[i]);
 		fprintf(fd, "\n[%s]\n", chosts[i]);
-		fprintf(fd, "\tversion=%s\n", profile->installConf->name);
-		fprintf(fd, "\tprofile=%s\n", profile->name);
+		fprintf(fd, "\tprofile=%s/%s\n", profile->installConf->name, profile->name);
 	}
 
 	/* Close the file */
