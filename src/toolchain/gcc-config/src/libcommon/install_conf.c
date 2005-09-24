@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.25 2005/09/24 22:32:41 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.26 2005/09/24 23:59:10 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.26  2005/09/24 23:59:10  eradicator
+ * Check hashNew return value.
+ *
  * Revision 1.25  2005/09/24 22:32:41  eradicator
  * Changed key to be alias_<name> instead of alias<name>.
  *
@@ -121,7 +124,16 @@ static int installConfSectionCB(const char *section, void *_data) {
 	if (strcmp(section, "global") == 0) {
 		data->profile = NULL;
 		conf->profileHash = hashNew(16);
+
+		if(!conf->profileHash)
+			return -1;
+
 		conf->wrapperAliases = hashNew(16);
+
+		if(!conf->wrapperAliases) {
+			hashFree(conf->profileHash);
+			return -1;
+		}
 	} else {
 		Profile *tmp;
 		data->profile = (Profile *)calloc(1, sizeof(Profile));
