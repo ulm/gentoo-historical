@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.1 2005/08/23 02:55:04 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.2 2005/09/24 06:07:59 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.2  2005/09/24 06:07:59  eradicator
+ * Honor GCC_SPECS envvar if it's already set.  Also, search through PATH first when locating the executable if scan_path is set in the config file.
+ *
  * Revision 1.1  2005/08/23 02:55:04  eradicator
  * Moved compiler-wrapper from gcc-wrapper.
  *
@@ -198,8 +201,27 @@ static void setExecBinary(WrapperData *data) {
 	/* If it's an alias, replace it with the correct value */
 	tmp = hashGet(data->profile->installConf->wrapperAliases, execBasename);
 	if(tmp != NULL)
-	 strcpy(execBasename, (const char *)tmp);
+		strcpy(execBasename, (const char *)tmp);
 
+	/* First we try scanning out ${PATH} for a match */
+	if((data->selectionConf->scanPath != 0) && (getenv("PATH") != NULL)) {
+		char *token = NULL, *state;
+		char path[MAXPATHLEN + 1];
+
+		strncpy(path, getenv("PATH"), MAXPATHLEN);
+
+		token = strtok_r(path, ":", &state);
+		while ((token != NULL) && strlen(token)) {
+			snprintf(data->execBinary, MAXPATHLEN, "%s/%s", token, execBasename);
+			if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)) &&
+			   strcmp(data->execBinary, data->argv[0]) != 0 && strstr(data->execBinary, "/gcc-bin/") != 0 )
+				return;
+
+			/* Check the next one */
+			token = strtok_r(NULL, ":", &state);
+		}
+	}
+	
 	/* Fisrt try without the CHOST prefix */
 	snprintf(data->execBinary, MAXPATHLEN, "%s/%s", data->profile->installConf->binpath, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
@@ -261,7 +283,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Select the appropriate GCC specs file */
-	if(data->profile->specs)
+	if(data->profile->specs && getenv("GCC_SPECS") == NULL)
 		setenv("GCC_SPECS", data->profile->specs, 1);
 
 	/* Set argv[0] to the correct binary (the full path
