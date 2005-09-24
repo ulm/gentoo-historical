@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.27 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.28 2005/09/24 18:33:39 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.28  2005/09/24 18:33:39  eradicator
+ * Changed default_ctarget key in config file to native_ctarget.
+ *
  * Revision 1.27  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -143,7 +146,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 	SelectionConf *selconf = data->selectionConf;
 
 	if (data->ctarget[0] == '\0') { /* global */
-		if(strcmp(key, "default_ctarget") == 0) {
+		if(strcmp(key, "native_ctarget") == 0) {
 			selconf->defaultCtarget = strndup(value, MAXPATHLEN);
 			if(!selconf->defaultCtarget)
 				return -1;
@@ -324,7 +327,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 
 	/* [global] section */
 	fprintf(fd, "[global]\n");
-	fprintf(fd, "\tdefault_ctarget=%s\n", selectionConf->defaultCtarget);
+	fprintf(fd, "\tnative_ctarget=%s\n", selectionConf->defaultCtarget);
 	fprintf(fd, "\tscan_path=%d\n", selectionConf->scanPath);
 
 	ctargets = hashKeysSorted(selectionConf->selectionHash);
