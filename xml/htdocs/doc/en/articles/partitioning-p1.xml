@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/partitioning-p1.xml,v 1.2 2005/08/18 20:01:55 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/partitioning-p1.xml,v 1.3 2005/09/25 13:44:55 rane Exp $ -->
 
-<guide link="/doc/en/articles/partitioning-p1.xml" lang="en">
-<title>Partitioning in action, Part 1</title>
+<guide link="/doc/pl/articles/partitioning-p1.xml" lang="pl">
+<title>Dzielenie dysku na partycje, przenosiny /home</title>
 
-<author title="Author">
+<author title="Autor">
   <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
 </author>
-<author title="Editor">
+<author title="Redaktor">
   <mail link="jackdark@gmail.com">Joshua Saddler</mail>
+</author>
+<author title="Tumaczenie">
+  <mail link="edi15ta@gazeta.pl">Mateusz Kotyrba</mail>
 </author>
 
 <abstract>
-In this new series of tips, Daniel Robbins shows you how to change partition
-layout on a running system. He'll also cover several tricks of the trade to
-minimize downtime and avoid making costly mistakes. In this particular tip,
-he'll show you how to move /home to another partition.
+W tej nowej serii wskazówek Daniel Robbins pokazuje jak zmienić organizację
+partycji w systemie. Ten dokument zawiera również kilka sztuczek za pomocą
+których można zminimalizować przestoje i zapobiec popełnieniu kosztownych
+błędów. Powie również jak przenieść katalog /home na inną partycję.
 </abstract>
 
 <!-- The original version of this article was first published on IBM
@@ -28,66 +31,69 @@ various improvements made by the Gentoo Linux Documentation team -->
 <date>2005-08-18</date>
 
 <chapter>
-<title>Moving /home</title>
+<title>Przenoszenie /home</title>
 <section>
-<title>Introduction</title>
+<title>Wprowadzenie</title>
 <body>
 
 <note>
-The original version of this article was first published on IBM developerWorks,
-and is property of Westtech Information Services. This document is an updated
-version of the original article, and contains various improvements made by the
-Gentoo Linux Documentation team.
+Oryginalna wersja tego artykułu była najpierw opublikowana na IBM
+developerWorks i jest własnością Westtech Information Services. Ten dokument
+jest zaktualizowaną wersją oryginalnego artykułu i zawiera różne ulepszenia
+wykonane przez zespół dokumentacji Gentoo.
 </note>
 
 <p>
-The partition <path>/home</path> is one of the most-often-moved partitions.
-Sometimes, all the space in <path>/home</path> becomes exhausted, and an
-additional hard drive is required. Other times, <path>/home</path> is set up as
-part of the root partition, and it may need to be moved to improve performance
-or facilitate backup. Whatever the case, I'll show you how to move
-<path>/home</path> safely and efficiently.
+Partycja <path>/home</path> jest jedną z najczęściej przenoszonych partycji.
+Czasami cała przestrzeń w <path>/home</path> zostaje wykorzystana i wymagany
+jest dodatkowy dysk twardy. Innym razem <path>/home</path> jest ustawiony jako
+część partycji głównego systemu plików i może być konieczne przeniesienie go,
+aby zwiększyć wydajność lub ułatwić stworzenie kopii zapasowej. W którymkolwiek
+z tych przypadków pokażę jak przenieść <path>/home</path> bezpiecznie i
+wydajnie.
 </p>
 
 <warn>
-The following technique describes how to move a partition(s). Although this
-technique is designed so that you can "back out" of a failed partition move, it
-doesn't protect against user error. In other words, any time that you format
-partitions or copy large numbers of files, there's a possibility that you will
-type the wrong thing, causing lots of data to be destroyed. For this reason,
-it's highly recommended that you <e>take appropriate steps to back up all
-critical files before proceeding</e>.
+Omawiana technika opisuje sposób przeniesienia partycji. Jest ona tak
+zaprojektowana, aby użytkownik mógł wycofać się w każdym momencie, ale
+nie chroni ona przed błędem użytkownika. Innymi słowy w dowolnym momencie,
+kiedy formatujemy partycje lub kopiujemy duże ilości plików, istnieje
+możliwość, że wpiszemy złe polecenie, powodując tym samym zniszczenie
+dużej ilości danych. Z tego powodu gorąco się zaleca, aby <e>podjąć
+odpowiednie kroki i przed przejściem dalej stworzyć kopię zapasową wszystkich
+niezbędnych plików</e>.
 </warn>
 
 <p>
-Now that you're prepared, we're ready to start moving <path>/home</path>. The
-exact steps you will take depend on whether <path>/home</path> currently
-resides on its own separate partition, or whether it is located on the root
-partition. Keep this in mind as we go through the steps (I'll make notes where
-necessary). Right now, if you are moving <path>/home</path> to a new hard
-drive, it should be physically installed in your system.
+Teraz jesteśmy gotowi, aby zacząć przenosiny
+<path>/home</path>. Konkretne kroki zależą od tego czy obecnie
+<path>/home</path> znajduje się na osobnej partycji lub czy jest umieszczony
+na partycji głównego systemu plików. Należy mieć to na uwadze kiedy będziemy
+wykonywali odpowiednie kroki (zwrócę uwagę gdzie będzie trzeba). Teraz, jeśli
+przenosimy <path>/home</path> na nowy dysk twardy, to powinien on być
+zainstalowany w komputerze.
 </p>
 
 <p>
-If you are moving <path>/home</path> to an existing partition (it doesn't need
-to be ext2, as long as the target primary or extended partition exists), you
-can proceed to <uri link="#step2">step 2</uri>.
+Jeśli przenosimy <path>/home</path> na istniejącą partycję (nie musi to być
+ext2, pod warunkiem, że istnieje docelowa partycja główna lub rozszerzona), to
+możemy przejść do <uri link="#step2">kroku 2</uri>.
 </p>
 
 </body>
 </section>
 <section>
-<title>Create a new partition, if necessary</title>
+<title>Jeśli konieczne, tworzymy nową partycję</title>
 <body>
 
 <p>
-If the new partition doesn't exist yet, you'll need to create it using
-<c>cfdisk</c> (preferred) or <c>fdisk</c>. If the partition doesn't reside on
-your first drive, remember to specify the name of the device as the first
-argument to <c>cfdisk</c> or <c>fdisk</c>. After creating the appropriate
-primary or extended partition, you should reboot so that the partition table
-can be reread correctly. This is the only time you will need to reboot the
-system.
+Jeśli nowa partycja jeszcze ne istnieje, wtedy należy ją stworzyć za pomocą
+<c>cfdisk</c> (zalecane) lub <c>fdisk</c>. Jeśli partycja nie znajduje się
+na pierwszym dysku, należy pamiętać, aby podać nazwę odpowiedniego urządzenia
+jako pierwszy argument w poleceniu <c>cfdisk</c> lub <c>fdisk</c>. Po
+stworzeniu odpowiednich partycji, należy uruchomić ponownie komputer, aby
+tablica partycji mogła być poprawnie odczytana. To jest jedyny moment kiedy
+będziemy musieli uruchomić komputer ponownie.
 </p>
 
 </body>
@@ -95,25 +101,26 @@ system.
 </chapter>
 
 <chapter id="step2">
-<title>Create a filesystem on the new partition</title>
+<title>Tworzenie systemu plików na nowej partycji</title>
 <section>
 <body>
 
 <p>
-To create a filesystem on the new partition, first make sure you know the exact
-device name for the new partition (for example, <path>/dev/sda5</path>). If
-you're not sure of the exact device name, stop now and double-check! Then type
-the following, as root:
+Aby stworzyć system plików na nowej partycji, należy najpierw się upewnić,
+że znamy dokładną nazwę urządzenia na którym znajduje się ta partycja (na
+przykład, <path>/dev/sda5</path>). Jeśli nie jesteśmy pewni jak się ona
+nazywa, wtedy należy zatrzymać się w tym miejscu, aby to sprawdzić i to
+dwukrotnie! Po czym wpisujemy jako root:
 </p>
 
-<pre caption="Creating the filesystem">
+<pre caption="Tworzenie systemu plików">
 # <i>mkfs.ext2 /dev/???</i>
 </pre>
 
 <p>
-In the above and following code samples, <path>???</path> should be replaced
-with the target partition name. After executing this command, the target
-partition will contain an empty ext2 filesystem.
+W powyższym poleceniu, <path>???</path> powinno być zastąpione nazwą docelowej
+partycji. Po wykonaniu tego polecenia, partycja docelowa będzie zawierała
+pusty system plików ext2.
 </p>
 
 </body>
@@ -121,17 +128,17 @@ partition will contain an empty ext2 filesystem.
 </chapter>
 
 <chapter>
-<title>Mount the new filesystem in /mnt</title>
+<title>Montowanie nowego sysetmu plików w /mnt</title>
 <section>
 <body>
 
 <p>
-Create a directory called <path>/mnt/newpart</path>, and then mount the new
-partition there:
+Tworzymy katalog o nazwie <path>/mnt/nowapart</path>, a następnie montujemy
+tam naszą nową partycję:
 </p>
 
-<pre caption="Mounting the partition">
-# <i>mount /dev/??? /mnt/newpart</i>
+<pre caption="Montowanie partycji">
+# <i>mount /dev/??? /mnt/nowapart</i>
 </pre>
 
 </body>
@@ -139,24 +146,25 @@ partition there:
 </chapter>
 
 <chapter>
-<title>Drop to single-user mode</title>
+<title>Przejście do trybu single-user</title>
 <section>
 <body>
 
 <p>
-I delayed this step as long as possible to maximize system availability, but we
-now must drop into single-user mode, and copy files from <path>/home</path> to
-<path>/mnt/newpart</path>. You shouldn't have any files open in
-<path>/home</path>, and entering single-user mode eliminates this possibility:
+Opóźniałem wykonanie tego kroku tak długo jak to było możliwe, aby
+zmaksymalizować dostępność systemu. Teraz musimy przejść do trybu single-user
+i skopiować pliki z katalogu <path>/home</path> do <path>/mnt/nowapart</path>.
+Nie powinniśmy mieć żadnych otwartych plików w <path>/home</path>, wejście do
+trybu single-user eliminuje tę możliwość:
 </p>
 
-<pre caption="Entering single user mode">
+<pre caption="Wejście do trybu single-user">
 # <i>init 1</i>
 </pre>
 
 <p>
-If prompted, enter the root password to perform system maintenance. You should
-now have a root shell.
+Jeśli konieczne, wpisujemy hasło roota. Teraz powinniśmy znajdować się w
+powłoce roota.
 </p>
 
 </body>
@@ -164,28 +172,28 @@ now have a root shell.
 </chapter>
 
 <chapter>
-<title>Change directories to /home and copy files</title>
+<title>Zmieniamy katalog na /home i kopiujemy pliki</title>
 <section>
 <body>
 
 <p>
-Type the following:
+Wpisujemy:
 </p>
 
-<pre caption="Copying files">
+<pre caption="Kopiowanie plików">
 # <i>cd /home</i>
-# <i>cp -ax * /mnt/newpart</i>
+# <i>cp -ax * /mnt/nowapart</i>
 </pre>
 
 <p>
-The <c>cp -ax</c> command recursively copies the contents of <path>/home</path>
-to <path>/mnt/newpart</path>, preserving all file attributes, and not crossing
-any mount points. After this command finishes, <path>/mnt/newpart</path> will
-contain an exact copy of all the files and directories currently in
-<path>/home</path>. If the old <path>/home</path> was on its own separate
-partition (listed on a separate line in <path>/etc/fstab</path>), go to <uri
-link="#step6a">step 6a</uri>. Otherwise, proceed to <uri link="#step6b">step
-6b</uri>.
+Polecenie <c>cp -ax</c> kopiuje rekurencyjnie zawartość <path>/home</path> do
+<path>/mnt/nowapart</path>, zachowując wszytkie atrybuty plików i nie
+przecinając żadnych punktów montowania. Po czym polecenie kończy pracę,
+katalog <path>/mnt/nowapart</path> będzie zawierać dokładną kopię wszystkich
+plików i katalogów obecnych w <path>/home</path>. Jeśli stary
+<path>/home</path> znajdował się na osobnej partycji (wypisany w osobnej linii
+w <path>/etc/fstab</path>), to przechodzimy do <uri link="#step6a">kroku
+6a</uri>. W innym wypadku, przechdzimy do <uri link="#step6b">kroku 6b</uri>.
 </p>
 
 </body>
@@ -193,72 +201,72 @@ link="#step6a">step 6a</uri>. Otherwise, proceed to <uri link="#step6b">step
 </chapter>
 
 <chapter>
-<title>Use the new partition</title>
+<title>Użycie nowej partycji</title>
 <section id="step6a">
-<title>6a: /home on its own partition</title>
+<title>6a: /home na własnej partycji</title>
 <body>
 
 <note>
-These instructions are for systems where the old <path>/home</path> is already
-on its own dedicated partition. If this isn't the case, see <uri
-link="#step6b">step 6b</uri>.
+Te instrukcje są dla systemów gdzie stary katalog <path>/home</path> znajdował
+się już na osobnej partycji. W przeciwnym wypadku przechodzimy do <uri
+link="#step6b">kroku 6b</uri>.
 </note>
 
 <p>
-Unmount the old partition by typing:
+Odmontowujemy starą partycję wpisując:
 </p>
 
-<pre caption="Unmounting">
+<pre caption="Odmontowywanie">
 # <i>cd /</i>
 # <i>umount /home</i>
 </pre>
 
 <p>
-Then, unmount and remount the new partition:
+Następnie, odmontowywujemy i ponownie montujemy nową partycję:
 </p>
 
-<pre caption="Remounting the partition">
-# <i>umount /mnt/newpart</i>
+<pre caption="Ponowne montowanie partycji">
+# <i>umount /mnt/nowapart</i>
 # <i>mount /dev/??? /home</i>
 </pre>
 
 <p>
-Now, the new partition is available at /home and is ready to be used. We can
-perform the last few steps in multiuser mode. Exit single-user mode, so that
-the system is back up and running, by pressing <c>CTRL-D</c>.
+Teraz nowa partycja jest dostępna w /home i jest gotowa do użycia. Kilka
+ostatnich kroków wykonujemy trybie multiuser. Wychodzimy z trybu single-user,
+uruchamiając ponownie system, poprzez wciśnięcie <c>CTRL-D</c>.
 </p>
 
 <impo>
-After the system starts up normally, log in as root and edit
-<path>/etc/fstab</path> so that <path>/dev/???</path> is now mounted
-automatically at <path>/home</path> instead of your old partition. For example,
-change this line:
+Po uruchomieniu systemu, logujemy się jako root i edytujemy
+<path>/etc/fstab</path>, żeby <path>/dev/???</path> był montowany
+automatycznie w <path>/home</path> zamiast starej partycji. Na przykład,
+zmieniamy tę linię:
 </impo>
 
-<pre caption="Old fstab">
+<pre caption="Stary fstab">
 /dev/hda3   /home   ext2   defaults   1   2
 </pre>
 
 <p>
-to this line:
+na taką:
 </p>
 
-<pre caption="New fstab">
+<pre caption="Nowy fstab">
 /dev/???   /home   ext2   defaults   1   2
 </pre>
 
 </body>
 </section>
 <section id="step6b">
-<title>6b: /home on a shared partition</title>
+<title>6b: /home na wspólnej partycji</title>
 <body>
 
 <note>
-These instructions are for systems where the old <path>/home</path> is on a
-shared partition.
+Te instrukcje są dla systemów gdzie stary katalog <path>/home</path> znajduje
+się na wspólnej partycji.
 </note>
 
-<pre caption="Moving the directory">
+<pre caption="Przenoszenie katalogu">
 # <i>cd /</i>
 # <i>mv /home /home.old</i>
 # <i>mkdir /home</i>
@@ -266,18 +274,18 @@ shared partition.
 </pre>
 
 <impo>
-Now, leave single user mode by pressing <c>CTRL-D</c>. When the system is back
-up and running, edit <path>/etc/fstab</path> and add a line like the
-following:
+Opuszczamy tryb single user, poprzez wciśnięcie <c>CTRL-D</c>. Kiedy
+system się uruchomi, edytujemy <path>/etc/fstab</path> dodając
+nastepującą linię:
 </impo>
 
-<pre caption="Editing fstab">
+<pre caption="Edycja fstab">
 /dev/???   /home   ext2   defaults   1   2
 </pre>
 
 <p>
-That way, your new partition will get mounted correctly the next time the
-system is rebooted.
+Tym sposobem nowa partycja zostanie poprawnie zamontowana po ponownym
+uruchomieniu systemu.
 </p>
 
 </body>
@@ -285,58 +293,58 @@ system is rebooted.
 </chapter>
 
 <chapter>
-<title>Finishing up</title>
+<title>Zakończenie</title>
 <section>
 <body>
 
 <p>
-We deliberately left the old <path>/home</path> directory/partition behind,
-just in case there were problems copying files. After verifying that the system
-is running smoothly, you can either use your old <path>/home</path> partition
-for something else, or remove the <path>/home.old</path> directory.
+Celowo zostawiliśmy stary katalog/partycję <path>/home</path>, na wypadek
+gdyby kopiowanie plików się nie powiodło. Po sprawdzeniu, że system działa
+płynnie, możemy albo wykorzystać starą partycję <path>/home</path> w jakimś
+innym celu, albo usunąć katalog <path>/home.old</path>.
 </p>
 
 <p>
-Congratulations, you've just moved <path>/home</path>! In my next tip, we'll
-reconfigure a system so that <path>/tmp</path> and <path>/var</path> are on
-their own shared partition. See you then.
+Gratulacje, właśnie przenieśliśmy katalog <path>/home</path>! W mojej
+następnej wskazówce ponownie skonfigurujemy system tak, aby <path>/tmp</path>
+i <path>/var</path> znajdowały się na osobnej partycji. Do zobaczenia.
 </p>
 
 </body>
 </section>
 <section id="resources">
-<title>Resources</title>
+<title>Zasoby</title>
 <body>
 
 <ul>
   <li>
-    In <uri link="/doc/en/articles/partitioning-p2.xml">Partitioning in
-    action</uri>, I show you step-by-step how to move <path>/var</path> and
-    <path>/tmp</path> to a new partition.
+    W <uri link="/doc/pl/articles/partitioning-p2.xml">Dzielenie
+dysku na partycje, przenosiny /var i /tmp</uri>, pokażę jak krok po kroku
+przenieść <path>/var</path> i <path>/tmp</path> na nową partycję.
   </li>
   <li>
-    In my first tip, <uri link="/doc/en/articles/maximum-swappage.xml">Maximum
-    swappage</uri>, I show how to dramatically increase swap performance under
-    Linux.
+    W mojej pierwszej wskazówce, <uri
+link="/doc/pl/articles/maximum-swappage.xml">Maksymalna wydajność swapa</uri>,
+pokazuję jak drastycznie zwiększyć wydajność swapa pod Linuksem.
   </li>
   <li>
-    In my second tip, <uri
-    link="/doc/en/articles/partition-planning-tips.xml">Partition planning
-    tips</uri>, I share several ways of effectively organizing your partition
-    layout.
+    W mojej drugiej wskazówce, <uri
+    link="/doc/pl/articles/partition-planning-tips.xml">Wskazówki
+dotyczące podziału dysku na partycje</uri>, dzielę się kilkoma możliwościami
+wydajnego rozmieszczenia partycji na dysku.
   </li>
   <li>
-    I always recommend checking out the <uri
-    link="http://tldp.org/docs.html#howto">howtos</uri> at <uri
-    link="http://tldp.org/">The Linux Documentation Project</uri> -- they're
-    a valuable resource.
+    Zawsze polecam sprawdzenie <uri
+link="http://tldp.org/docs.html#howto">przewodników</uri> na <uri
+    link="http://tldp.org/">The Linux Documentation Project</uri> -- są
+one cennym źródłem.
   </li>
 </ul>
 
 </body>
 </section>
 <section>
-<title>About the author</title>
+<title>O autorze</title>
 <body>
 
 <p>
