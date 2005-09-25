@@ -1,25 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/partitioning-p2.xml,v 1.4 2005/09/25 13:44:55 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/partitioning-p2.xml,v 1.5 2005/09/25 19:23:24 rane Exp $ -->
 
-<guide link="/doc/pl/articles/partitioning-p2.xml" lang="pl">
-<title>Dzielenie dysku na partycje, przenosiny /tmp i /var</title>
+<guide link="/doc/en/articles/partitioning-p2.xml" lang="en">
+<title>Partitioning in action, Part 2</title>
 
-<author title="Autor">
+<author title="Author">
   <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
 </author>
-<author title="Redaktor">
+<author title="Editor">
   <mail link="jackdark@gmail.com">Joshua Saddler</mail>
-</author>
-<author title="Tłumaczenie">
-  <mail link="edi15ta@gazeta.pl">Mateusz Kotyrba</mail>
 </author>
 
 <abstract>
-W drugiej części wskazówek zmian organizacji partycji w systemie, Daniel
-Robbins pokazuje jak przenieść /tmp i /var na ich własną, wspólną partycję.
-Pokazuje on również kilka sztuczek za pomocą, których można zminimalizować
-przestoje i zapobiec popełnieniu kosztownych błędów.
+In this second tip on changing partition layout on a running system, Daniel
+Robbins shows you how to move /tmp and /var to their own shared partition. He
+also covers several tricks of the trade to minimize downtime and avoid making
+costly mistakes.
 </abstract>
 
 <!-- The original version of this article was first published on IBM
@@ -27,70 +24,68 @@ developerWorks, and is property of Westtech Information Services. This
 document is an updated version of the original article, and contains
 various improvements made by the Gentoo Linux Documentation team -->
 
-<version>1.1</version>
+<version>1.2</version>
 <date>2005-08-18</date>
 
 <chapter>
-<title>Łączenie danych</title>
+<title>Consolidating data</title>
 <section>
-<title>Wprowadzenie</title>
+<title>Introduction</title>
 <body>
 
 <note>
-Oryginalna wersja tego artykułu była najpierw opublikowana na IBM
-developerWorks i jest własnością Westtech Information Services. Ten dokument
-jest zaktualizowaną wersją oryginalnego artykułu i zawiera różne ulepszenia
-wykonane przez zespół dokumentacji Gentoo.
+The original version of this article was first published on IBM developerWorks,
+and is property of Westtech Information Services. This document is an updated
+version of the original article, and contains various improvements made by the
+Gentoo Linux Documentation team.
 </note>
 
 <p>
-W mojej <uri link="/doc/pl/articles/partitioning-p1.xml">ostatniej
-wskazówce</uri>, z powodzeniem przenieśliśmy katalog <path>/home</path> na
-nową partycję. Teraz nadszedł czas, aby się nauczyć jak przenieść często
-modyfikowane pliki na nową partycję. Często modyfikowane pliki znacznie się
-przyczyniają do fragmentacji. Jedną z najlepszych możliwości, aby temu
-zapobiec jest przechowywanie ich na osobnej partycji. W ten sposób
-fragmentacja wywołana przez często modyfikowane pliki nie ma wpływu na inne
-partycje. Jako sam pomysł, jest to łatwe do zrozumienia, ale jak to się ma do
-wykonania?
+In my <uri link="/doc/en/articles/partitioning-p1.xml">last tip</uri>, we
+successfully moved <path>/home</path> to a new partition. Now, it's time to
+learn how to consolidate often-modified files onto a new partition. Why would
+we want to do this? Here's an example. Often-modified files contribute heavily
+to fragmentation. One of the best ways to contain fragmentation is to store
+often-modified files on their own partition. That way, the other partitions are
+unaffected by the fragmentation caused by the heavily modified files. In
+concept, this is easy to understand, but how do you actually go about doing it?
 </p>
 
 <p>
-Po pierwsze należy stworzyć nową partycję dla naszego konkretnego celu --
-przechowywania często modyfikowanych plików. W celu zwiększenia wydajności
-można umieścić tę partycję na osobnym dysku. Następnie wykonamy kilka kroków
-wymaganych, aby przenieść <path>/tmp</path> i <path>/var</path> na tę nową
-partycję.
+First, you must create a new partition for the specific purpose of storing
+frequently modified files. You might want to locate this partition on a
+separate disk to enhance performance. Then, I'll walk you through the steps
+required to move both <path>/tmp</path> and <path>/var</path> to this new
+partition.
 </p>
 
 <warn>
-Omawiana technika opisuje sposób przeniesienia partycji. Jest ona tak
-zaprojektowana, aby użytkownik mógł wycofać się w każdym momencie, ale
-nie chroni ona przed błędem użytkownika. Innymi słowy w dowolnym momencie,
-kiedy formatujemy partycje lub kopiujemy duże ilości plików, istnieje
-możliwość, że wpiszemy złe polecenie, powodując tym samym zniszczenie
-dużej ilości danych. Z tego powodu gorąco się zaleca, aby <e>podjąć
-odpowiednie kroki i przed przejściem dalej stworzyć kopię zapasową wszystkich
-niezbędnych plików</e>.
+The following technique describes how to move a partition(s). Although this
+technique is designed so that you can "back out" of a failed partition move, it
+doesn't protect against user error. In other words, any time that you format
+partitions or copy large numbers of files, there's a possibility that you will
+type the wrong thing, causing lots of data to be destroyed. For this reason,
+it's highly recommended that you <e>take appropriate steps to back up all
+critical files before proceeding</e>.
 </warn>
 
 </body>
 </section>
 <section>
-<title>Tworzymy system plików na nowej partycji</title>
+<title>Create a filesystem on the new partition</title>
 <body>
 
 <p>
-W pierwszym kroku stworzymy nową partycję, która będzie dostatecznie duża,
-aby pomieścić <path>/var</path> i <path>/tmp</path>. Będziemy potrzebowali
-dodatkowy dysk lub wolną (nieużywaną) partycję, na której umieścimy często
-modyfikowane pliki. Jeśli stworzymy partycję za pomocą <c>fdisk</c> lub
-<c>cfdisk</c>, wtedy konieczne będzie ponowne uruchomienie systemu. Następnie
-formatujemy nową partycję (możemy to wykonywać w trybie multiuser; dam
-znać kiedy należy przejść do trybu single-user):
+The first step of this process is to create a new partition that's big enough
+to hold <path>/var</path> and <path>/tmp</path>, with a little extra space left
+over. You'll need either an additional drive, or a spare (unused) partition
+that will house the often-modified files. If you do need to use <c>fdisk</c> or
+<c>cfdisk</c> to create the partition, you'll need to reboot once. Then, it's
+time to format the new partition as follows (it's OK to be in multiuser mode
+while you do this; I'll let you know when to switch to single-user):
 </p>
 
-<pre caption="Tworzenie systemu plików">
+<pre caption="Creating the filesystem">
 # <i>mkfs.ext2 /dev/???</i>
 </pre>
 
@@ -99,30 +94,31 @@ znać kiedy należy przejść do trybu single-user):
 </chapter>
 
 <chapter>
-<title>Montujemy to do /mnt/rwstorage</title>
+<title>Mount it to /mnt/rwstorage</title>
 <section>
 <body>
 
 <p>
-Tak jak w mojej poprzedniej wskazówce <path>???</path> należy zastąpić nazwą
-urządzenia nowej, pustej partycji. Przypadkowo wpisując złą nazwę zniszczymy
-istniejące dane, więc należy być ostrożnym! Po wpisaniu tego polecenia,
-otrzymamy system plików ext2 na zupełnie nowej partycji. Jesteśmy prawie
-gotowi, aby go zamonotować, ale najpierw stwórzmy punkt montowania.
+As in my previous tip, <path>???</path> should be replaced with the device name
+for the new, empty partition that you are creating. Accidentally typing the
+wrong name will destroy data on an existing partition, so be careful! After
+typing this command, you'll have a brand-new ext2 filesystem on the new
+partition. We're almost ready to mount it, but first, let's make a new mount
+point.
 </p>
 
-<pre caption="Tworzenie punktu montowania">
-# <i>mkdir /mnt/odczytzapis</i>
+<pre caption="Creating the mount point">
+# <i>mkdir /mnt/rwstorage</i>
 </pre>
 
 <p>
-Wybrałem nazwę <path>odczytzapis</path>, aby przypomnieć, że ta partycja
-została stworzona szczególnie po to, aby przechowywać często modyfikowane
-pliki. Montujemy partycję wpisując:
+I chose the name <path>rwstorage</path> to remind us that this particular
+partition is going to be specifically used to house files that are read from
+and written to frequently. To mount the partition, type:
 </p>
 
-<pre caption="Montowanie partycji">
-# <i>mount /dev/??? /mnt/odczytzapis</i>
+<pre caption="Mounting the partition">
+# <i>mount /dev/??? /mnt/rwstorage</i>
 </pre>
 
 </body>
@@ -130,17 +126,17 @@ pliki. Montujemy partycję wpisując:
 </chapter>
 
 <chapter>
-<title>Tworzenie nowego /tmp</title>
+<title>Creating a new /tmp</title>
 <section>
 <body>
 
 <p>
-Partycja jest już zamontowana i jesteśmy gotowi, aby stworzyć nowy katalog
-<path>/tmp</path>:
+The partition is now mounted and we're ready to create our new
+<path>/tmp</path> directory:
 </p>
 
-<pre caption="Tworzenie nowego /tmp">
-# <i>cd /mnt/odczytzapis</i>
+<pre caption="Creating the new /tmp">
+# <i>cd /mnt/rwstorage</i>
 # <i>mkdir tmp</i>
 # <i>chmod 1777 tmp</i>
 </pre>
@@ -150,31 +146,31 @@ Partycja jest już zamontowana i jesteśmy gotowi, aby stworzyć nowy katalog
 </chapter>
 
 <chapter>
-<title>Przejście do trybu single-user</title>
+<title>Drop to single-user mode</title>
 <section>
 <body>
 
 <p>
-Nowy katalog w <path>/mnt/odczytzapis/tmp</path> posiada odpowiednie prawa
-dostępu dla katalogu tymczasowego. Teraz przechdzimy do trybu single-user,
-ponieważ musimy skopiować <path>/var</path>. Jak zwykle maksymalnie opóźniłem
-przejście do trybu single-user. Nie chcemy, aby żaden program odczytywał lub
-zapisywał pliki w <path>/var</path>, więc należy zatrzymać wszystkie demony,
-odłączyć wszystkich użytkowników i wpisać:
+Our new directory at <path>/mnt/rwstorage/tmp</path> has the right permissions
+for a temporary directory. Now, drop to single-user mode, since we must copy
+over <path>/var</path>. As usual, we've delayed our drop to single-user mode to
+the last possible moment. Right now, we don't want any programs reading or
+writing files in <path>/var</path>, so we have to stop all daemons, disconnect
+all users, and do some quick maintenance by typing:
 </p>
 
-<pre caption="Wejście w tryb single-user">
+<pre caption="Entering single-user mode">
 # <i>init 1</i>
 </pre>
 
 <p>
-W razie potrzeby wpisujemy hasło. Teraz powinniśmy znajdować się w
-powłoce roota i wszystkie niepotrzebne demony powinny być zatrzymane.
-Tworzymy nowy katalog dla naszych plików z <path>/var</path> poprzez wpisanie:
+If you're prompted to enter a password to perform system maintanance, do so.
+You should now have a root shell, and all unnecessary daemons will be stopped.
+Create a new location for our <path>/var</path> files by typing:
 </p>
 
-<pre caption="Tworzenie nowego katalogu">
-# <i>cd /mnt/odczytzapis</i>
+<pre caption="Creating the new directory">
+# <i>cd /mnt/rwstorage</i>
 # <i>mkdir var</i>
 </pre>
 
@@ -183,19 +179,19 @@ Tworzymy nowy katalog dla naszych plików z <path>/var</path> poprzez wpisanie:
 </chapter>
 
 <chapter>
-<title>Kopiujemy /var</title>
+<title>Copy /var</title>
 <section>
 <body>
 
 <p>
-Domyślne uprawnienia dla katalogu <path>/mnt/newstorage/var</path> powinny
-być poprawne, więc jesteśmy gotowi, aby skopiować wszystkie dane z
-<path>/var</path> na nową partycję:
+Default permissions on our new <path>/mnt/newstorage/var</path> directory
+should be correct, so now we're ready to copy all of our original
+<path>/var</path> data over to the new partition:
 </p>
 
-<pre caption="Kopiowanie danych">
+<pre caption="Copying the data">
 # <i>cd /var </i>
-# <i>cp -ax * /mnt/odczytzapis/var</i>
+# <i>cp -ax * /mnt/rwstorage/var</i>
 </pre>
 
 </body>
@@ -203,37 +199,37 @@ być poprawne, więc jesteśmy gotowi, aby skopiować wszystkie dane z
 </chapter>
 
 <chapter>
-<title>Kopia zapasowa i tworzenie dowiązań symbolicznych</title>
+<title>Back up and create symlinks</title>
 <section>
 <body>
 
 <p>
-Po wykonaniu tego polecenia, będziemy posiadali dokładną kopię katalogu
-<path>/var</path> w <path>/mnt/odczytzapis/var</path>. Pewnie jesteśmy ciekawi
-jak zmusić Gentoo, aby używało <path>/mnt/odczytzapis/var</path> i
-<path>/mnt/odczytzapis/tmp</path> zamiast domyślnych w katalogu systemowym.
-Wykonamy to bardzo łatwo poprzez stworzenie dowiązań symbolicznych --
-stworzymy nowe dowiązania symboliczne, <path>/tmp</path> i <path>/var</path>,
-które będą wskazywały na odpowiednie katalogi w <path>/mnt/odczytzapis</path>.
-Najpierw, stwórzmy kopię zapasową oryginalnych katalogów:
+After this command completes, you'll have an exact copy of <path>/var</path> at
+<path>/mnt/rwstorage/var</path>. Now, you may be asking how exactly we get
+Linux to use <path>/mnt/rwstorage/var</path> and
+<path>/mnt/rwstorage/tmp</path> instead of the defaults in the root directory.
+This is easily done by the use of symbolic links -- we'll create the new
+symbolic links, <path>/tmp</path> and <path>/var</path>, which point to the
+correct directories in <path>/mnt/rwstorage</path>. First, let's back up the
+original directories:
 </p>
 
-<pre caption="Kopia zapasowa katalogów">
+<pre caption="Backing up the directories">
 # <i>cd /</i>
 # <i>cp var var.old</i>
 # <i>cp tmp tmp.old</i>
 </pre>
 
 <p>
-Ostatnia linia prawdopodobnie nie jest konieczna, ponieważ jest bardzo
-prawdopodobne, że w <path>/tmp</path> nie znajduje się nic istotnego. Teraz
-tworzymy dowiązania symboliczne:
+The last line probably isn't necessary, since it's very likely that you don't
+have anything important in <path>/tmp</path>, but we're playing it safe. Now,
+let's create the symlinks:
 </p>
 
-<pre caption="Tworzenie dowiązań symbolicznych">
+<pre caption="Creating the symlinks">
 # <i>cd /</i>
-# <i>ln -s /mnt/odczytzapis/var /var</i>
-# <i>ln -s /mnt/odczytzapis/tmp /tmp</i>
+# <i>ln -s /mnt/rwstorage/var /var</i>
+# <i>ln -s /mnt/rwstorage/tmp /tmp</i>
 </pre>
 
 </body>
@@ -241,97 +237,95 @@ tworzymy dowiązania symboliczne:
 </chapter>
 
 <chapter>
-<title>Kończące zmiany w /etc/fstab</title>
+<title>Finishing touches to /etc/fstab</title>
 <section>
 <body>
 
 <p>
-Teraz kiedy którykolwiek z programów zechce skorzystać z katalogu
-<path>/var</path>, będzie automatycznie przeniesiony do
-<path>/mnt/odczytzapis/var</path>! Podobnie dla <path>/tmp</path>. Został nam
-ostatni krok. Jednakże może on być bezpiecznie wykonany w trybie multiuser.
-Nadszedł czas, aby uruchomić ponownie Apache i pozwolić wszystkim użytkownikom
-na zalogowanie się. Wychodzimy z poziomu uruchamiania 1 poprzez wciśnięcie
-<c>CTRL-D</c>. Po uruchomieniu systemu logujemy się jako root.
+Now, when any user or program uses <path>/var</path>, they'll automatically be
+transported to <path>/mnt/rwstorage/var</path>! Likewise for <path>/tmp</path>.
+We have one step left; however, it can be safely performed in multiuser mode.
+It's time to get Apache running again, and to allow all your users to log back
+in. Exit from runlevel 1 by pressing <c>CTRL-D</c>. The system should start up
+normally. Log in as root.
 </p>
 
 <p>
-W ostatnim kroku konfigurujemy <path>/etc/fstab</path>, żeby
-<path>/dev/???</path> był automatycznie montowany w
-<path>/mnt/odczytzapis</path>. Dodajemy następującą linię do
-<path>/etc/fstab</path>:
+The final thing we must do is configure <path>/etc/fstab</path> so that
+<path>/dev/???</path> is mounted at <path>/mnt/rwstorage</path>. You must add a
+line like the following to your <path>/etc/fstab</path>:
 </p>
 
-<pre caption="Konfiguracja fstab">
-/dev/???   /mnt/odczytzapis   ext2   defaults   1   2
+<pre caption="Configuring fstab">
+/dev/???   /mnt/rwstorage   ext2   defaults   1   2
 </pre>
 
 <impo>
-Jeśli używamy jądra w okolicach 2.3+, bardzo prawdopodobne, że w
-<path>/etc/fstab</path> będzie się znajdowała następująca linia:
+If you are using a kernel version in the 2.3+ range, it's very likely that you
+have a line in your <path>/etc/fstab</path> that looks like this:
 </impo>
 
-<pre caption="Pamięć współdzielona">
+<pre caption="Shared memory">
 none   /var/shm   shm   defaults   0   0
 </pre>
 
 <p>
-Ta linia włącza pamięć współdzieloną w systemie i domyślnie jest montowana w
-<path>/var</path>. W celu właściwego działania tej linii, należy ją umieścić
-pod dodaną przez nas linią. W ten sposób, podczas włączania Gentoo,
-<path>/mnt/odczytzapis</path> zostanie najpierw zamonotowane (włączając /var).
-Wtedy i tylko wtedy urządzenie shm zostanie zamontowane w katalogu
-<path>/var/shm</path>, którym jest tak naprawdę
-<path>/mnt/odczytzapis/var/shm</path>. Należy się upewnić, że obie linie są w
-następującym porządku:
+This line enables shared memory on your system, and by default it gets mounted
+in <path>/var</path>. In order for this line to work properly, it must appear
+after the line you just added. That way, when Linux starts up,
+<path>/mnt/rwstorage</path> will get mounted first (enabling /var). Then, and
+only then, will the shm device get mounted at <path>/var/shm</path>, which is
+really <path>/mnt/rwstorage/var/shm</path>. Make sure the lines are in this
+order:
 </p>
 
-<pre caption="Włączanie pamięci współdzielonej">
-/dev/???        /mnt/odczytzapis  ext2    defaults       1     2
+<pre caption="Enabling shared memory">
+/dev/???        /mnt/rwstorage  ext2    defaults       1     2
 none            /var/shm        shm     defaults       0     0
 </pre>
 
 <p>
-Po zapisaniu zmian w <path>/etc/fstab</path>, nasz system został pomyślnie
-rozbudowany! Po sprawdzeniu czy wszystko działa poprawnie, będziemy mogli
-bezpiecznie usunąć katalogi kopii zapasowych <path>/tmp.old</path> i
-<path>/var.old</path>. Gratulacje -- pomyślnie skonfigurowaliśmy partycje w
-systemie, uzyskując optymalną wydajność.
+After saving the changes to <path>/etc/fstab</path>, your system has been
+successfully upgraded! After verifying that everything is working properly,
+you'll want to remove the <path>/tmp.old</path> and <path>/var.old</path>
+backup directories. Congratulations -- you've successfully reconfigured your
+system's partitions for optimum performance.
 </p>
 
 </body>
 </section>
 <section id="resources">
-<title>Zasoby</title>
+<title>Resources</title>
 <body>
 
 <ul>
   <li>
-    W <uri link="/doc/pl/articles/partitioning-p1.xml">Dzielenie dysku na
-partycje, przenosiny /home</uri>, pokazuję krok po kroku jak przenieść
-katalog <path>/home</path> na nową partycję.
+    In <uri link="/doc/en/articles/partitioning-p1.xml">Partitioning in action:
+    Moving /home</uri>, I show you step-by-step how to move <path>/home</path>
+    to a new partition.
   </li>
   <li>
-    W <uri link="/doc/pl/articles/maximum-swappage.xml">Maksymalna wydajność
-swapa</uri>, pokazuję jak drastycznie zwiększyć wydajność swapa pod Linuksem.
+    In <uri link="/doc/en/articles/maximum-swappage.xml">Maximum
+    swappage</uri>, I show how to dramatically increase swap performance under
+    Linux.
   </li>
   <li>
-    W <uri link="/doc/pl/articles/partition-planning.xml">Wskazówki
-dotyczące podziału dysku na partycje</uri>, dzielę się kilkoma możliwościami
-wydajnego rozmieszczenia partycji na dysku.
+    In <uri link="/doc/en/articles/partition-planning-tips.xml">Partition planning
+    tips</uri>, I share several ways of effectively organizing your partition
+    layout.
   </li>
   <li>
-    Zawsze polecam sprawdzenie <uri
-link="http://tldp.org/docs.html#howto">przewodników</uri> na <uri
-    link="http://tldp.org/">The Linux Documentation Project</uri> -- są
-one cennym źródłem.
+    I always recommend checking out the <uri
+    link="http://tldp.org/docs.html#howto">howtos</uri> at <uri
+    link="http://tldp.org/">The Linux Documentation Project</uri> -- they're a
+    valuable resource.
   </li>
 </ul>
 
 </body>
 </section>
 <section>
-<title>O autorze</title>
+<title>About the author</title>
 <body>
 
 <p>
