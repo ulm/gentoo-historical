@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/Attic/maintnotes.xml,v 1.2 2005/09/26 09:45:56 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/Attic/maintnotes.xml,v 1.1 2005/09/26 23:47:17 flameeyes Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/bsd/technotes.xml" lang="en">
 <title>Gentoo/*BSD Technotes Guide</title>
@@ -15,15 +15,15 @@
 
 <abstract>
 This guide is meant to display some technical notes about working with packages
-on a Gentoo/*BSD environment.
+on a non-Linux environment.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.0</version>
-<date>2005-09-21</date>
+<version>2.0</version>
+<date>2005-09-27</date>
 
 <chapter>
 <title>General Structure</title>
@@ -33,17 +33,17 @@ on a Gentoo/*BSD environment.
 
 <p>
 There are differences between users in a Gentoo/Linux system and the ones in 
-Gentoo/BSD systems. These differences are usually a side problem that does not 
-invalidate most of the work. Still, it's better to pay attention.
+other Gentoo/ALT systems. These differences are usually a side problem that
+does not invalidate most of the work. Still, it's better to pay attention.
 </p>
 
 <p>
 The first thing to check is to <e>never</e> use the <c>root</c> group. The 
-group with id 0, called <c>root</c> on Linux is instead <c>wheel</c> on BSD
-(and probably other classical unices); while <c>wheel</c> group on Linux has
-GID 10. When you need to set the default permissions on a file (or a series 
-of files), you should then use the command <c>chown root:0 file</c> instead, 
-so that it takes the right permissions.
+group with id 0, called <c>root</c> on Linux is instead <c>wheel</c> on BSD and
+Darwin, (and probably other classical unices); while <c>wheel</c> group on
+Linux has GID 10. When you need to set the default permissions on a file (or a
+series of files), you should then use the command <c>chown root:0 file</c>
+instead, so that it takes the right permissions.
 </p>
 
 <impo>
@@ -103,14 +103,14 @@ homedir=$(egethome charlie)
 <body>
 
 <p>
-Gentoo/BSD projects, a part from Gentoo GNU/kFreeBSD, aims to have a complete 
+Gentoo/ALT projects, a part from Gentoo GNU/kFreeBSD, aims to have a complete 
 system that uses native versions of all the system's tools, of <c>libc</c>, 
 and so on. However, there are some part of Gentoo's base system that does not 
-work with BSD tools (not because they are broken, just because they are 
+work with BSD-like tools (not because they are broken, just because they are 
 strictly POSIX). To work around this problem, we install a series of GNU tools 
-g-prefixed. In a Gentoo/BSD system profile, you can always find these tools: 
+g-prefixed. In a Gentoo/ALT system profile, you can always find these tools: 
 GNU sed (as <c>gsed</c>), GNU make (as <c>gmake</c>), GNU awk (as <c>gawk</c>),
-GNU patch (as <c>gpatch</c>) GNU diff (as <c>gdiff</c>) and GNU cmp (as 
+GNU patch (as <c>gpatch</c>) GNU diff (as <c>gdiff</c>) and usually GNU cmp (as
 <c>cmp</c>, for compatibility with a couple other scripts). If you need 
 GNU-style <c>find</c> command, you can also install findutils package that 
 provides <c>gfind</c> and <c>gxargs</c>.
@@ -126,7 +126,7 @@ packages, that are always g-prefixed, and then links them inside
 
 <p>
 It's always preferred to use just the POSIX options, to be able to run the same
-script identical on Gentoo/Linux and Gentoo/FreeBSD. In case you cannot rewrite 
+script identical on Gentoo/Linux and Gentoo/ALT. In case you cannot rewrite 
 the code not to use the GNU extensions, just add a dependency over the right 
 package that provides the tool, and then do a simple test:
 </p>
@@ -147,6 +147,13 @@ Inside an ebuild there are a few aliases that are used to make sure that they
 doen't break apart, so calling <c>make</c>, <c>sed</c>, <c>patch</c> and 
 <c>awk</c> will call the GNU version of the tools.
 </impo>
+
+<warn>
+The GNU tools' aliases works only if the tools are called by themselves, they
+won't work inside scripts called by the ebuild, and they won't work if called
+by <c>find .. -exec</c> or by <c>xargs</c>. In those cases, it's usually better
+to check for the right tool to call.
+</warn>
 
 <p>
 To help with porting, there are a few constructs that are usually used out of 
@@ -184,30 +191,29 @@ as it counts only when you have symlinks directly on the command line argument.
 <p>
 There are a few packages that require the use of <c>pmake</c> (parallel make, 
 by NetBSD, the package we use is from Debian) to build on GNU userland, as 
-the makefiles are incompatible with GNU <c>make</c>. This is a problem as 
-we can't install <c>pmake</c> on FreeBSD, because it collides with the 
-<c>mkdep</c> installed by FreeBSD itself. Also the tests done to use 
-<c>pmake</c> as default <c>make</c> command on Gentoo/FreeBSD have shown 
-that FreeBSD's makefiles are not 100% compatible with <c>pmake</c> itself
-(the <c>make</c> command provided by FreeBSD is a fork of it, but seems to 
-have different behavior with some variables). To avoid this trouble, on 
-Gentoo/FreeBSD's overlay there is a <c>bsdmk</c> eclass, that carries a 
-<c>get_bmake</c> function to get a BSDish <c>make</c> command. The eclass also
-depends on the <c>pmake</c> package for non-BSD userland, so that it gets 
-installed on GNU and Darwin userlands.
+the makefiles are incompatible with GNU <c>make</c>. As the name of this
+flavor of make varies depending on the userland you're in (it's <c>pmake</c>
+on GNU userland, <c>bsdmake</c> in Darwin userland and simply <c>make</c>
+in BSD userland. To avoid this trouble, you can use <c>get_bmake</c> function
+from <c>portability</c> eclass.
 </p>
 
-<p>
-The command used on Gentoo/BSD is then <c>make</c>, while it's <c>pmake</c> on
-GNU userland and <c>bsdmake</c> on Darwin userland.
-</p>
+<pre caption="using get_bmake">
+DEPEND="!userland_BSD? ( sys-devel/pmake )"
+...
+
+src_compile() {
+    $(get_bmake) || die "make failed"
+}
+</pre>
 
 <p>
-Also if the package builds using <c>ports</c>-like interface, as done by FreeBSD
-system packages, <c>bsdmk</c> provides a simple way to handle the knobs: just 
-add to <c>${mymakeopts}</c> the list of knobs to pass during the 
-<c>pkg_setup()</c> function, and then call <c>mkmake</c> and <c>mkinstal</c> 
-to compile and install the packages as specified.
+If the package builds using <c>ports</c>-like interface, as done by FreeBSD
+system packages, <c>bsdmk</c> eclass (currently on Gentoo/ALT overlay)
+provides a simple way to handle the knobs: just add to <c>${mymakeopts}</c>
+the list of knobs to pass during the <c>pkg_setup()</c> function, and then
+call <c>mkmake</c> and <c>mkinstall</c> to compile and install the packages
+as specified.
 </p>
 
 </body>
@@ -229,7 +235,7 @@ explicitly in the program. On BSD systems instead those functions are provided b
 
 <p>
 Some software does not check if it needs to link to <c>libdl</c> and always linsk 
-to it. This breaks on Gentoo/FreeBSD systems. To avoid this, <c>autotool</c>-ed 
+to it. This breaks on Gentoo/*BSD systems. To avoid this, <c>autotool</c>-ed 
 projects can use a simple m4 macro that can be found in xine-lib's source package
 (it's in <path>m4/dl.m4</path> file).
 </p>
@@ -284,7 +290,8 @@ There are two simple ways to deal with this problem:
 
 <ul>
   <li>Remove the line that includes <path>malloc.h</path> and prepare a patch for 
-  upstream devs</li>
+  upstream devs (if needed, add <path>stdlib.h</path> to the includes, to have
+  <c>malloc</c>'s definition)</li>
   <li>Add a test for <path>malloc.h</path> in <path>configure.ac</path> (or 
   <path>configure.in</path>), and protect the inclusion with a 
   <c>#ifdef HAVE_MALLOC_H .. #endif</c> block, it works because the 
@@ -384,3 +391,5 @@ or is even present.
 </chapter>
 
 </guide>
+
+<!-- kate: space-indent on; indent-width 2; replace-tabs on; -->
