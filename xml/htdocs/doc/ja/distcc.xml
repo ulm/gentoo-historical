@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/distcc.xml,v 1.5 2005/04/27 15:38:29 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/distcc.xml,v 1.6 2005/09/27 17:50:21 idani Exp $ -->
 
 <guide link="/doc/ja/distcc.xml">
 
@@ -42,10 +42,10 @@
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 <license/>
 
-<version>1.11</version>
-<date>2005-03-25</date>
+<version>1.12</version>
+<date>2005-07-01</date>
 
-<!-- Original revision: 1.26 -->
+<!-- Original revision: 1.30 -->
 
 <chapter>
 <title>はじめに</title>
@@ -55,7 +55,7 @@
 
 <p>
 distccとはコンパイル作業をネットワークに参加しているホストに分散させるプログラムです。
-それはサーバである <c>distccd</c>と、クライアントの<c>distcc</c>から成ります。distccは<uri link="http://ccache.samba.org">ccache</uri>や Portageと透過的に動作することができます。
+それはサーバである <c>distccd</c>と、クライアントの<c>distcc</c>から成ります。distccは<uri link="http://ccache.samba.org">ccache</uri>、Portage、そしてAutomakeと透過的に動作することができます。
 </p>
 
 </body>
@@ -80,7 +80,7 @@ distccとはコンパイル作業をネットワークに参加しているホ�
 
 <p>
 distccを使うには、ネットワーク上の全てのコンピュータのGCCが同じバージョンで無ければなりません。
-3.3.xを混ぜるのは大丈夫ですが、3.3.xと3.2.xを混ぜると、あなたのプログラムは<b>エラーを起こす</b>でしょう。
+例えば、3.3.xを混ぜるのは大丈夫ですが、3.3.xと3.2.xを混ぜると、あなたのプログラムは<b>コンパイルエラーやランタイムエラーを起こす</b>でしょう。
 </p>
 
 </body>
@@ -117,9 +117,9 @@ Portageがdistccを使うように設定することは簡単です。
 # <i>emerge distcc</i>
 # <i>nano -w /etc/make.conf</i>
 <comment>(Nにはここの設定に適した数値を入力してください)</comment>
-<comment>(一般的にはCPUの合計数+1の二倍です)</comment>
+<comment>(一般的にはCPUの合計数+1の二倍をNに設定します)</comment>
 MAKEOPTS="-jN"
-<comment>(FEATURES変数にdistccを追加してください)</comment>
+<comment>(FEATURESにdistccを追加します)</comment>
 FEATURES="distcc"
 </pre>
 
@@ -140,19 +140,18 @@ FEATURES="distcc"
 192.168.0.1:4000/2   192.168.0.2/1                     192.168.0.3:3632/4
 @192.168.0.1         @192.168.0.2:/usr/bin/distccd     192.168.0.3
 <comment>(ホストの設定にはいくつもの他の方法があります。詳しくはdistccのmanpageをご覧ください。)</comment>
+<comment>ローカルマシンでコンパイルしたいのなら、ホストリストに'localhost'を追加します。
+逆に、ローカルマシンでコンパイルを行いたくないのであれば(こちらが良くある場合です)、ホストリストから省きます。
+遅いマシンでlocalhostを使用するととても遅くなります。
+パフォーマンスのため、設定をテストするようにしてください。</comment>
 </pre>
 
 <p>
 それはすべて複雑に見えるかもしれませんが、ほとんどの場合、1行目または2行目を元に修正すれば動作するでしょう。
 </p>
 
-<ul>
-  <li>1行目はスペース区切りのホストのリストです</li>
-  <li>2行目はホストに送信する最大ジョブ数を明記(<c>/N</c>設定で定義されています)したホストのリストです</li>
-</ul>
-
 <p>
-ほとんどの人は3、4行目を使わないので、詳しい情報が載っている<uri link="http://distcc.samba.org/man/distcc_1.html">distccドキュメント</uri>の場所を提示しておきます。
+ほとんどの人は3、4行目を使わないので、詳しい情報が載っている<uri link="http://distcc.samba.org/man/distcc_1.html">distccドキュメント</uri>(man distcc)の場所を提示しておきます。
 </p>
 
 <p>
@@ -168,6 +167,10 @@ FEATURES="distcc"
 (ルータ用)追加セキュリティのために、<c>--listen</c>指示を利用して、DistccデーモンにどのIPを受信待機するか指定するべきです。
 より多くの情報は<uri link="http://distcc.samba.org/security.html">Distcc Security Design</uri>を参照してください。
 </p>
+
+<impo>
+--allowと--listenを使うことが重要です。詳しくはdistccdのマニュアルか上記セキュリティドキュメントを参照してください。
+</impo>
 
 <p>
 では、全ての参加しているコンピュータでdistccデーモンを起動させましょう。
@@ -194,12 +197,13 @@ FEATURES="distcc"
 
 <pre caption="パスを設定する">
 # <i>export PATH="/usr/lib/ccache/bin:/usr/lib/distcc/bin:${PATH}"</i>
+<comment>ログイン時にPATHが設定されるように、.bashrcかそれと同等のファイルにこれを記述することが出来ます</comment>
 </pre>
 
 <p>
 そして、通常<c>make</c>と入力するのと同様に、<c>make -jN</c>(Nは整数)と入力することになります。
 Nの数値はあなたのネットワークとコンパイルに使うコンピュータのタイプに左右されます。
-私の場合は、P3デュアルプロセッサとK6-2/400が私のデスクトップ(Athlon Tunderbird 1200MHz)のあらゆる物をコンパイルし、-j5を使用しています。あなた自身の設定をテストして最高のパフォーマンスを得る数値を探してください。
+あなた自身の設定をテストして最高のパフォーマンスを得る数値を探してください。
 </p>
 
 </body>
@@ -238,14 +242,14 @@ Nの数値はあなたのネットワークとコンパイルに使うコンピ�
 <body>
 
 <p>
-新しいコンピュータをGentoo Linux LiveCDで起動し、<uri link="/doc/en/handbook/handbook-x86.xml?part=1">installation instructions</uri>(<uri link="/doc/ja/handbook/handbook-x86.xml?part=1">日本語訳</uri>)に従ってブートストラップの部分まで進めてください。その後distccを使うようにPortageを設定します。
+新しいコンピュータをGentoo Linux LiveCDで起動し、<uri link="/doc/en/handbook/handbook-x86.xml?part=1">installation instructions</uri><uri link="/doc/ja/handbook/handbook-x86.xml?part=1">(日本語訳)</uri>に従ってブートストラップの部分まで進めてください。その後distccを使うようにPortageを設定します。
 </p>
 
 <pre caption="予備設定">
 # <i>nano -w /etc/make.conf</i>
-<comment>(FEATURES変数にdistccを追加する)</comment>
+<comment>(FEATURESにdistccを追加する)</comment>
 FEATURES="distcc"
-<comment>(-jN(Nは適切な整数)を含むようにMAKEOPTSを修正する)</comment>
+<comment>(-jN(NはCPUの合計数+1の二倍)を含むようにMAKEOPTSを修正する)</comment>
 MAKEOPTS="-jN"
 </pre>
 
@@ -358,9 +362,13 @@ PaX/hardened-gccがあるホストで<c>hardened-gcc -R</c>を実行するか、
 <p>
 最近のPortageの更新で、<c>gcc</c>の代わりに<c>${CHOST}-gcc</c>を使用するようになりました。
 これは、i686マシンとその他(i386、i586)を混在させると問題が起こると言うことを意味しています。
-この回避策は、たぶん<c>export CC='gcc' CXX='c++'</c>を実行するか、それを<path>/etc/make.conf</path>に追加することですが、これはテストが必要です。
-もしこれが動作したのなら、<mail link="lisa@gentoo.org">Lisa Seelye</mail>までメールしてください。
+この回避策は、たぶん<c>export CC='gcc' CXX='c++'</c>を実行するか、それを<path>/etc/make.conf</path>に追加することです。
 </p>
+
+<impo>
+これを行うとPortageの振る舞いのいくつかを再定義し、将来おかしな事が起こるかもしれません。
+CHOSTを混合させるときのみ行ってください。
+</impo>
 
 </body>
 </section>
@@ -380,16 +388,18 @@ distccは２つのモニターを提供します。テキストベースのも�
 <p>
 他のモニターは<c>USE</c>フラグで<c>gtk</c>か<c>gnome</c>を有効にしているときにのみ現れます。
 これはGTK+ベースで、X環境で実行されとてもすばらしいです。
+GentooではGUIモニタは混乱を避けるために<c>distccmon-gui</c>と呼ばれています。
+<c>distccmon-gnome</c>と言われているかもしれません。
 </p>
 
 <pre caption="モニターを起動させる">
 # <i>distccmon-text N</i>
 <comment>(もしくは)</comment>
-# <i>distccmon-gnome</i>
+# <i>distccmon-gui</i>
 <comment>Portageのdistccの処理を監視するにはこうします:</comment>
 # <i>DISTCC_DIR="/var/tmp/portage/.distcc/" distccmon-text N</i>
 <comment>(もしくは)</comment>
-# <i>DISTCC_DIR="/var/tmp/portage/.distcc/" distccmon-gnome</i>
+# <i>DISTCC_DIR="/var/tmp/portage/.distcc/" distccmon-gui</i>
 </pre>
 
 <impo>
