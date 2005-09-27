@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/home-router-howto.xml,v 1.10 2005/09/07 08:43:17 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/home-router-howto.xml,v 1.11 2005/09/27 00:56:37 rane Exp $ -->
 
 <guide link="/doc/pl/home-router-howto.xml" lang="pl">
 
@@ -18,8 +18,8 @@ Krótki opis umożliwiający skonfigurowanie routera łączącego domową sieć 
 Internetem.
 </abstract>
 
-<version>1.12</version>
-<date>2005-09-05</date>
+<version>1.20</version>
+<date>2005-09-17</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -299,32 +299,31 @@ właśnie taki stan powszechnej szczęśliwości może nam zapewnić serwer DHCP
 
 <p>
 DHCP to protokół umożliwiający dynamiczną i w pełni automatyczną konfigurację
-innych komputerów. Wystarczy uruchomić na routerze serwer DHCP, podać mu
-wszystkie informacje o potencjalnych klientach (adresy IP, adresy serwerów DNS,
-bram sieciowych itp.), a komputer podłączony do serwera zostanie dobrze
-skonfigurowany już przy starcie systemu. Więcej informacji o DHCP znajduje się w
-<uri link="http://en.wikipedia.org/wiki/DHCP">Wikipedii</uri>.
+innych komputerów. Wystarczy uruchomić na routerze serwer DHCP (dhcpd), podać
+mu wszystkie informacje o potencjalnych klientach (adresy IP, adresy serwerów
+DNS, bram sieciowych itp.), a komputer podłączony do serwera zostanie dobrze
+skonfigurowany już przy starcie systemu. Więcej informacji o DHCP znajduje się
+w <uri link="http://en.wikipedia.org/wiki/DHCP">Wikipedii</uri>.
+</p>
+
+<p>
+Skorzystamy z pakietu o nazwie dnsmasq, który zawiera w sobie usługi DHCP i
+DNS. Teraz skupimy się na usłudze DHCP. Informacje o tym jak uruchomić inny
+serwer DHCP znajdują się w akapicie zatytułowanym "Zabawki". Lektura komentarzy
+z pliku <path>/etc/dnsmasq.conf</path> może pomóc w majstrowaniu przy serwerze
+DHCP, aby lepiej go dostosować do konkretnych potrzeb. Domyślna konfiguracja
+powinna zadowolić większość osób.
 </p>
 
 <pre caption="Konfiguracja dhcpd">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>Przykładowy plik konfiguracyjny:</comment>
-authoritative;
-ddns-update-style ad-hoc;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-  range 192.168.0.100 192.168.0.250;
-  default-lease-time 259200;
-  max-lease-time 518400;
-  option subnet-mask 255.255.255.0;
-  option broadcast-address 192.168.0.255;
-  option routers 192.168.0.1;
-  option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>Set IFACE="eth0"</comment>
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>Wystarczy dodanie jednej linii:</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Dodajemy "-i eth0" do zmiennej DNSMASQ_OPTS</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
@@ -354,25 +353,13 @@ link="http://en.wikipedia.org/wiki/DNS">Wikipedii</uri>.
 </p>
 
 <p>
-W poprzednim akapicie skonfigurowaliśmy klientom DHCP serwer o adresie
-192.168.0.1, który jest przypisany do naszego routera. Teraz pora skonfigurować
-serwer DNS.
+W związku z tym, że korzystamy z dnsmasq jako serwera DHCP i zawiera on w sobie
+również DNS, nic nie musimy tu ustawiać. Nasz router już zapewnia obie usługi
+wszystkim połączonym z nim komputerom.
 </p>
 
-<pre caption="Konfiguracja dnsmasq">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>Dodajemy "-i eth0" do DNSMASQ_OPTS</comment>
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-To było szybkie i bezbolesne i raczej nie musieliśmy zmieniać zbyt wiele.
-Oczywiście można wybrać inne serwery DNS niż dnsmasq, ale w naszej sytuacji jest
-on najbardziej odpowiedni, gdyż posiada tylko niezbędne dla nas funkcje. Jest to
-po prostu mały przekazujący informacje serwer zapewniający usługę DNS dla
-wszystkich osób z naszej sieci LAN.
+Oczywiście można wybrać inny serwer DNS jeśli ma się taką potrzebę. 
 </p>
 
 </body>
@@ -523,6 +510,9 @@ Więcej informacji na ten temat znajduje się w man iptables.
 
 <comment>Przekazywanie Bittorrent</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
+
+<comment>Przekazywanie eDonkey/eMule</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
 
 <comment>Wsparcie dla Warp Pipe z Game Cube</comment>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
@@ -821,6 +811,49 @@ TODO
 </section>
 -->
 
+<section>
+<title>Kompletny serwer DHCP</title>
+<body>
+
+<p>
+Wcześniej skorzystaliśmy z pakietu dnsmasq jako źródła usługi DHCP w naszej
+sieci. Dla ludzi, którzy opiekują się małymi LAN-ami jest to wystarczające
+rozwiązanie. Niektórzy jednak mogą być bardziej wymagający i zapragną bardziej
+wyszukanych możliwości. Takim osobom polecam serwer DHCP z krwi i kości,
+stworzony przez <uri link="http://www.isc.org/products/DHCP">ISC</uri>.
+</p>
+
+<pre caption="Konfiguracja dhcpd">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>(Przykładowy plik konfiguracyjny)</comment>
+authoritative;
+ddns-update-style interim;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+       range 192.168.0.100 192.168.0.250;
+       default-lease-time 259200;
+       max-lease-time 518400;
+       option subnet-mask 255.255.255.0;
+       option broadcast-address 192.168.0.255;
+       option routers 192.168.0.1;
+       option domain-name-servers 192.168.0.1;
+}
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>(Ustawiamy IFACE="eth0")</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+ 
+<p>
+Jest to minimalna konfiguracja spełniająca te same funkcje co przedstawiony
+wyżej dnsmasq. W związku z tym, że zmieniliśmy pakiet, który będzie spełniał
+funkcje serwera DHCP, musimy wyłączyć taką możliwość dla dnsmasq. W tym celu
+wystarczy zakomentować wpis <c>dhcp-range</c> w pliku
+<path>/etc/dnsmasq.conf</path> i ponownie uruchomić usługę.
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
