@@ -274,31 +274,32 @@
                     <br/>
                     <a class="altlink" href="http://bugs.gentoo.org">Bug Tracker</a>
                     <br/>
-                    <a class="altlink" href="http://forums.gentoo.org">Discussion Forums</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/lists.xml">Mailing Lists</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/irc.xml">IRC Channels</a>
-                    <br/>
-                    <a class="altlink" href="/security/en/index.xml">Security Announcements</a>
-                    <br/>
-                    <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
-                    <br/>
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
                     <br/>
-                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS</a>
-                    <br/>
-                    <a class="altlink" href="/proj/en/devrel/staffing-needs/">Staffing Needs</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/mirrors.xml">Mirrors</a>
+                    <a class="altlink" href="http://forums.gentoo.org">Discussion Forums</a>
                     <br/>
                     <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrents</a>
                     <br/>
-		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting Vendors</a>
-		    <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
+                    <a class="altlink" href="/main/en/irc.xml">IRC Channels</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/lists.xml">Mailing Lists</a>
+                    <br/>
+                    <a class="altlink" href="/main/en/mirrors.xml">Mirrors</a>
+                    <br/>
                     <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
+                    <br/>
+                    <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
+                    <br/>
+                    <a class="altlink" href="/security/en/index.xml">Security Announcements</a>
+                    <br/>
+                    <a class="altlink" href="/proj/en/devrel/staffing-needs/">Staffing Needs</a>
+                    <br/>
+             		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting Vendors</a>
+		    <br/>
+                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS</a>
+
                     <!--
                     <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
                     -->
