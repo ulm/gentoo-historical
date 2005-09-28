@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import sys
+sys.path.append("../..")
 import os
 import posixpath
 import BaseHTTPServer
@@ -11,8 +13,14 @@ from StringIO import StringIO
 from threading import *
 import socket
 import SocketServer
+import SimpleXMLRPCServer
 
-last_visitor = ""
+class SharedInfo(object):
+
+	__shared_state = { 'client_info': {}, 'last_visitor': "" }
+
+	def __init__(self):
+		self.__dict__ = self.__shared_state
 
 class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 
@@ -23,6 +31,10 @@ class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	server_version = "GLIHTTP/0.1"
+
+	def __init__(self, request, client_address, parent):
+		self.shared_info = SharedInfo()
+		BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, client_address, parent)
 
 	def about(self):
 		return "This is the about page"
@@ -39,10 +51,14 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return "This is just a prototype, fool. There isn't anything to report"
 
 	def lastvisitor(self):
-		global last_visitor
-		blah = "The last visitor was " + last_visitor
-		last_visitor = self.address_string()
+		blah = "The last visitor was " + self.shared_info.last_visitor
+		self.shared_info.last_visitor = self.address_string()
 		return blah
+
+	def showclients(self):
+		import pprint
+		pp = pprint.PrettyPrinter(indent=4)
+		return "Clients:<br><pre>" + pp.pformat(SharedInfo().client_info) + "</pre>"
 
 	def parse_path(self):
 		pathparts = self.path.split("?")
@@ -62,7 +78,12 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def do_GET(self, head_only=False):
 #		print "current thread: " + currentThread().getName()
-		paths = { '/about': self.about, '/aboot': self.aboot, '/showargs': self.showargs, '/status': self.status, '/lastvisitor': self.lastvisitor }
+		paths = { '/about': self.about,
+		          '/aboot': self.aboot,
+		          '/showargs': self.showargs,
+		          '/status': self.status,
+		          '/lastvisitor': self.lastvisitor,
+		          '/showclients': self.showclients }
 		return_content = ""
 		self.parse_path()
 		if self.path in paths:
@@ -130,6 +151,19 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def log_message(self, format, *args):
 		pass
 
+class GLINetBe:
+
+	def __init__(self, loc):
+		self._path = loc
+		self.shared_info = SharedInfo()
+		
+	def register_client(self, mac, ip, name):
+		self.shared_info.client_info[ip] = { 'mac': mac, 'ip': ip, 'name': name }
+		return True
+
+	def blah(self):
+		return "blah!"
+
 def register():
 	host = ''
 	port = 8001
@@ -167,8 +201,17 @@ def start_httpd():
 	httpd = GLIHTTPServer(server_address)
 	httpd.serve_forever()
 
+def start_xmlrpc():
+	server = SimpleXMLRPCServer.SimpleXMLRPCServer(('', 8002))
+	server.register_introspection_functions()
+	server.register_instance(GLINetBe("/tmp"))
+	server.serve_forever()
+
 if __name__ == '__main__':
 	httpd_thread = Thread(target=start_httpd)
 	httpd_thread.setDaemon(True)
 	httpd_thread.start()
+	xmlrpc_thread = Thread(target=start_xmlrpc)
+	xmlrpc_thread.setDaemon(True)
+	xmlrpc_thread.start()
 	register()
