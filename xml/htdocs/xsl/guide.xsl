@@ -18,6 +18,11 @@
 <xsl:param name="style">0</xsl:param>
 <xsl:param name="newsitemcount">6</xsl:param>
 
+<!-- Category from metadoc -->
+<xsl:param name="catid">0</xsl:param>
+
+
+
 <!-- img tag -->
 <xsl:template match="img">
   <img src="{@src}" alt=""/>
@@ -825,6 +830,10 @@
             <xsl:when test="starts-with(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
             <xsl:when test="starts-with(@link, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
             <xsl:when test="starts-with(@link, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')" /></xsl:when>
+            <!-- Add catid to links to /doc/LL/index.xml -->
+            <xsl:when test="$catid != '0' and starts-with(@link, '/doc/') and (substring-after(substring-after(@link, '/doc/'), '/')='' or substring-after(substring-after(@link, '/doc/'), '/')='index.xml')">
+              <xsl:value-of select="concat(@link, '?catid=', $catid)"/>
+            </xsl:when>
             <xsl:otherwise><xsl:value-of select="@link" /></xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
