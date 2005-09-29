@@ -1044,12 +1044,12 @@
             </xsl:for-each>   
           </xsl:variable>
           <!-- First date is the one we want -->
-          <xsl:value-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
+          <xsl:copy-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
         </xsl:if>
       </xsl:for-each>
     </xsl:when>
     <xsl:when test="/guide or /sections">
-      <xsl:value-of select="func:format-date(//date[1])"/>
+      <xsl:copy-of select="func:format-date(//date[1])"/>
     </xsl:when>
   </xsl:choose>
 </xsl:template>
@@ -1098,7 +1098,7 @@
           <td align="center" class="topsep">
             <p class="alttext">
             <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-            <xsl:value-of select="func:format-date(/mainpage/date)"/>
+            <xsl:copy-of select="func:format-date(/mainpage/date)"/>
             </p>
           </td>
         </tr>
@@ -1108,7 +1108,7 @@
           <td align="center" class="topsep">
             <p class="alttext">
             <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-            <xsl:value-of select="func:format-date(/news/date)"/>
+            <xsl:copy-of select="func:format-date(/news/date)"/>
             </p>
           </td>
         </tr>
@@ -1237,7 +1237,7 @@
       <b><xsl:value-of select="$thenews/title"/></b>
       <br/>
       <font size="0.90em">
-      Posted on <xsl:value-of select="func:format-date($thenews/date)"/>
+      Posted on <xsl:copy-of select="func:format-date($thenews/date)"/>
       by <xsl:value-of select="$thenews/poster"/>
       </font>
     </p>

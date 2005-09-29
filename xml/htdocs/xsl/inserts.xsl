@@ -193,7 +193,7 @@
   <xsl:param name="D" />
   <func:result>
     <xsl:value-of select="$D"/>
-    <xsl:if test="$D=1">er</xsl:if>
+    <xsl:if test="$D=1"><sup>er</sup></xsl:if>
     <xsl:value-of select="concat(' ', $mensis//months[@lang='fr']/month[position()=$M], ' ', $Y)"/>
   </func:result>
 </func:function>
