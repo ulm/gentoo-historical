@@ -36,24 +36,33 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.shared_info = SharedInfo()
 		BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, client_address, parent)
 
+	def wrap_in_template(self, content):
+		f = open("template.html", 'rb')
+		lines = f.readlines()
+		f.close()
+		for i in range(len(lines)):
+			if lines[i] == "Main content\n":
+				lines[i] = content
+		return "".join(lines)
+
 	def about(self):
-		return "This is the about page"
+		return self.wrap_in_template("This is the about page")
 
 	def aboot(self):
-		return "This is the Canadian about page"
+		return self.wrap_in_template("This is the Canadian about page")
 
 	def showargs(self):
 		text = "These are the CGI params you passed:<br><br><pre>"
 		text += str(self.args)
-		return text
+		return self.wrap_in_template(text)
 
 	def status(self):
-		return "This is just a prototype, fool. There isn't anything to report"
+		return self.wrap_in_template("This is just a prototype, fool. There isn't anything to report")
 
 	def lastvisitor(self):
 		blah = "The last visitor was " + self.shared_info.last_visitor
 		self.shared_info.last_visitor = self.address_string()
-		return blah
+		return self.wrap_in_template(blah)
 
 	def showclients(self):
 		import pprint
@@ -78,7 +87,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def do_GET(self, head_only=False):
 #		print "current thread: " + currentThread().getName()
-		paths = { '/about': self.about,
+		paths = { 
+                  '/about': self.about,
 		          '/aboot': self.aboot,
 		          '/showargs': self.showargs,
 		          '/status': self.status,
