@@ -104,7 +104,7 @@
         </xsl:when>
 
         <!-- Spanish -->
-        <xsl:when test="$lingua='es'">
+        <xsl:when test="$lingua='es' or $lingua='ca'">
           <func:result select="concat($D, ' de ', $mensis//months[@lang=$lingua]/month[position()=$M], ', ', $Y)"/>
         </xsl:when>
         
