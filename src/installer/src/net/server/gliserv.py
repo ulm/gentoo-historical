@@ -36,6 +36,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def __init__(self, request, client_address, parent):
 		self.shared_info = SharedInfo()
+		self.headers_out = []
 		BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, client_address, parent)
 
 	def get_exception(self):
@@ -148,6 +149,39 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.shared_info.profiles = cp.get_profiles()
 		content += "Profile loaded successfully"
 		return self.wrap_in_template(content)
+
+	def saveprofile(self):
+		content = """
+		<h2>Save Profile</h2>
+		<br>
+		<form action="/saveprofile2" method="POST" enctype="multipart/form-data">
+		Save to local (to server) file: <input type="text" name="localfile"> <input type="submit" value="Save"><br>
+		or<br>
+		Download the file: <input type="submit" name="download" value="Download">
+		</form>
+		"""
+		return self.wrap_in_template(content)
+
+	def saveprofile2(self):
+		content = "<h2>Save Profile</h2>"
+		cp = GLIClientsProfiles.ClientsProfiles()
+		cp.set_clients(None, self.shared_info.clients, None)
+		cp.set_profiles(None, self.shared_info.profiles, None)
+		if not 'download' in self.post_params and self.post_params['localfile'][0]:
+			try:
+				tmpfile = open(self.post_params['localfile'][0], "w")
+				tmpfile.write(cp.serialize())
+				tmpfile.close()
+			except:
+				content += "There was a problem writing the file" + self.get_exception()
+				return self.wrap_in_template(content)
+			return self.wrap_in_template(content + "Profile saved successfully")
+		elif 'download' in self.post_params:
+			self.headers_out.append(("Content-type", "text/xml"))
+			self.headers_out.append(('Content-disposition', "attatchment;filename=clientsprofiles.xml"))
+			return cp.serialize()
+		else:
+			return self.wrap_in_template(content + "You didn't specify a filename to save to")
 
 	def parse_path(self):
 		self.get_params = {}
@@ -296,14 +330,19 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		          '/lastvisitor': self.lastvisitor,
 		          '/showclients': self.showclients,
 		          '/loadprofile': self.loadprofile,
-		          '/loadprofile2': self.loadprofile2
+		          '/loadprofile2': self.loadprofile2,
+		          '/saveprofile': self.saveprofile,
+		          '/saveprofile2': self.saveprofile2
 		        }
 		return_content = ""
 		if self.path in paths:
 			return_content = paths[self.path]()
 			self.send_response(200)
-			self.send_header("Content-type", "text/html")
-			self.send_header("Content-Length", len(return_content))
+			if not self.headers_out:
+				self.headers_out.append(("Content-type", "text/html"))
+			self.headers_out.append(("Content-Length", len(return_content)))
+			for header in self.headers_out:
+				self.send_header(header[0], header[1])
 			self.end_headers()
 			self.wfile.write(return_content)
 		else:
