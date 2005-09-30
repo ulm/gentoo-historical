@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientsProfiles.py,v 1.1 2005/09/29 03:18:58 agaffney Exp $
+$Id: GLIServerProfile.py,v 1.1 2005/09/30 20:33:29 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 """
 
@@ -13,7 +13,7 @@ import string, re, GLIUtility, SimpleXMLParser, os.path
 import xml.dom.minidom
 from GLIException import *
 
-class ClientsProfiles:
+class ServerProfile:
 
 	##
 	# Initializes the ClientConfiguration.

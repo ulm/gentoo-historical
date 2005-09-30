@@ -14,7 +14,7 @@ import socket
 import SocketServer
 import SimpleXMLRPCServer
 import mimetools
-import GLIClientsProfiles
+import GLIServerProfile
 import traceback
 
 class SharedInfo(object):
@@ -129,17 +129,17 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			xmlfile = self.post_params['localfile'][0]
 		elif 'uploadfile' in self.post_params and self.post_params['uploadfile'][0]:
 			try:
-				tmpfile = open("/tmp/clientsprofiles.xml", "w")
+				tmpfile = open("/tmp/serverprofile.xml", "w")
 				tmpfile.write(self.post_params['uploadfile'][0])
 				tmpfile.close()
-				xmlfile = "/tmp/clientsprofiles.xml"
+				xmlfile = "/tmp/serverprofile.xml"
 			except:
 				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
 				return self.wrap_in_template(content)
 		else:
 			content += "You did not specify a file to load"
 			return self.wrap_in_template(content)
-		cp = GLIClientsProfiles.ClientsProfiles()
+		cp = GLIServerProfile.ServerProfile()
 		try:
 			cp.parse(xmlfile)
 		except:
@@ -164,7 +164,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def saveprofile2(self):
 		content = "<h2>Save Profile</h2>"
-		cp = GLIClientsProfiles.ClientsProfiles()
+		cp = GLIServerProfile.ServerProfile()
 		cp.set_clients(None, self.shared_info.clients, None)
 		cp.set_profiles(None, self.shared_info.profiles, None)
 		if not 'download' in self.post_params and self.post_params['localfile'][0]:
@@ -178,7 +178,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			return self.wrap_in_template(content + "Profile saved successfully")
 		elif 'download' in self.post_params:
 			self.headers_out.append(("Content-type", "text/xml"))
-			self.headers_out.append(('Content-disposition', "attatchment;filename=clientsprofiles.xml"))
+			self.headers_out.append(('Content-disposition', "attatchment;filename=serverprofile.xml"))
 			return cp.serialize()
 		else:
 			return self.wrap_in_template(content + "You didn't specify a filename to save to")
@@ -410,15 +410,44 @@ class GLINetBe:
 		self.shared_info = SharedInfo()
 		
 	def register_client(self, mac, ip):
-		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting" }
+		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting for server", 'start_install': False }
 		for client in self.shared_info.clients:
 			if client['mac'] == mac: break
 		else:
 			self.shared_info.clients.append({ 'name': "", 'ip': "", 'mac': mac, 'profile': "" })
 		return True
 
-	def blah(self):
-		return "blah!"
+	def get_client_config(self, mac):
+		if not self.shared_info.client_state[mac]['start_installing']:
+			return None
+		for client in self.shared_info.clients:
+			if client['mac'] == mac:
+				if not client['profile']:
+					return None
+				for profile in self.shared_info.profiles:
+					if profile['name'] == client['profile']:
+						tmpfile = open(profile['ccxmlfile'], "r")
+						xml = "".join(tmpfile.readlines())
+						tmpfile.close()
+						return xml
+		return None
+
+	def get_install_profile(self, mac):
+		if not self.shared_info.client_state[mac]['start_installing']:
+			return None
+		for client in self.shared_info.clients:
+			if client['mac'] == mac:
+				if not client['profile']:
+					return None
+				for profile in profiles:
+					if profile['name'] == client['profile']:
+						tmpfile = open(profile['ipxmlfile'], "r")
+						xml = "".join(tmpfile.readlines())
+						tmpfile.close()
+						return xml
+
+	def update_client_status(self, mac, status):
+		self.shared_info.client_state[mac]['install_status'] = status
 
 def register():
 	host = ''

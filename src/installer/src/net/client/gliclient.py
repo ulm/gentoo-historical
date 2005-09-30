@@ -86,8 +86,8 @@ if __name__ == '__main__':
 
 	print "Waiting for client config and install profile from server"
 	while 1:
-		client_config = server.get_client_config()
-		install_profile = server.get_install_profile()
+		client_config = server.get_client_config(local_mac)
+		install_profile = server.get_install_profile(local_mac)
 		if install_profile and client_config:
 			print "Received client config and install profile from server"
 			break
@@ -122,7 +122,7 @@ if __name__ == '__main__':
 		ntype = notification.get_type()
 		ndata = notification.get_data()
 		if ntype == "exception":
-			server.update_client_status("Exception: " + ndata)
+			server.update_client_status(local_mac, "Exception: " + ndata)
 			print ndata
 		elif ntype == "int":
 			if ndata == GLIClientController.NEXT_STEP_READY:
@@ -130,12 +130,12 @@ if __name__ == '__main__':
 				next_step = cc.get_next_step_info()
 				num_steps = cc.get_num_steps()
 				print "Step " + str(num_steps_completed) + " of " + str(num_steps) + ": " + next_step
-				server.update_client_status("On step " + num_steps_completed + " of " + num_steps + ". Current step: " + next_step)
+				server.update_client_status(local_mac, "On step " + num_steps_completed + " of " + num_steps + ". Current step: " + next_step)
 				num_steps_completed += 1
 				if cc.has_more_steps():
 					cc.next_step()
 				continue
 			if ndata == GLIClientController.INSTALL_DONE:
 				print "Install complete!"
-				server.update_client_status("Install completed!")
+				server.update_client_status(local_mac, "Install completed!")
 				sys.exit(0)
