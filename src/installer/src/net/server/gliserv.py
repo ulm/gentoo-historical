@@ -14,10 +14,12 @@ import socket
 import SocketServer
 import SimpleXMLRPCServer
 import mimetools
+import GLIClientsProfiles
+import traceback
 
 class SharedInfo(object):
 
-	__shared_state = { 'client_info': {}, 'last_visitor': "" }
+	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [] }
 
 	def __init__(self):
 		self.__dict__ = self.__shared_state
@@ -36,6 +38,15 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.shared_info = SharedInfo()
 		BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, client_address, parent)
 
+	def get_exception(self):
+		etype, value, tb = sys.exc_info()
+		s = traceback.format_exception(etype, value, tb)
+		content = "<pre>"
+		for line in s:
+			content += line
+		content += "</pre>"
+		return content
+
 	def wrap_in_template(self, content):
 		f = open("template.html", 'rb')
 		lines = f.readlines()
@@ -45,11 +56,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				lines[i] = content
 		return "".join(lines)
 
-	def about(self):
-		return self.wrap_in_template("This is the about page")
-
-	def aboot(self):
-		return self.wrap_in_template("This is the Canadian about page")
+	def welcome(self):
+		return self.wrap_in_template("Do some shit on the left")
 
 	def showargs(self):
 		text = "These are the GET params you passed:<br><br><pre>"
@@ -68,9 +76,78 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return self.wrap_in_template(blah)
 
 	def showclients(self):
-		import pprint
-		pp = pprint.PrettyPrinter(indent=4)
-		return "Clients:<br><pre>" + pp.pformat(SharedInfo().client_info) + "</pre>"
+		content = """
+		<h2>Clients</h2>
+		<table width="100%" cellpadding="0" cellpadding="0">
+		<tr>
+		  <td><u>Name</u></td>
+		  <td><u>MAC</u></td>
+		  <td><u>Current IP</u></td>
+		  <td><u>Post-install IP</u></td>
+		  <td><u>Profile</u></td>
+		  <td><u>Install progress</u></td>
+		</tr>
+		"""
+		for client in self.shared_info.clients:
+			client_info = [client['name'], client['mac'], 'N/A', client['ip'], client['profile'], 'N/A']
+			if client['mac'] in self.shared_info.client_state:
+				client_info[2] = self.shared_info.client_state[client['mac']]['ip']
+				client_info[5] = self.shared_info.client_state[client['mac']]['install_status']
+			content += """
+			<tr>
+			  <td>%s</td>
+			  <td>%s</td>
+			  <td>%s</td>
+			  <td>%s</td>
+			  <td>%s</td>
+			  <td>%s</td>
+			</tr>
+			""" % tuple(client_info)
+		content += """
+		</table>
+		"""
+		return self.wrap_in_template(content)
+
+	def loadprofile(self):
+		content = """
+		<h2>Load Profile</h2>
+		<br>
+		<form action="/loadprofile2" method="POST" enctype="multipart/form-data">
+		Use local (to server) file: <input type="text" name="localfile"><br>
+		or<br>
+		Upload file: <input type="file" name="uploadfile"><br>
+		<input type="submit" value="Load">
+		</form>
+		"""
+		return self.wrap_in_template(content)
+
+	def loadprofile2(self):
+		content = "<h2>Load Profile</h2>"
+		xmlfile = ""
+		if 'localfile' in self.post_params and self.post_params['localfile'][0]:
+			xmlfile = self.post_params['localfile'][0]
+		elif 'uploadfile' in self.post_params and self.post_params['uploadfile'][0]:
+			try:
+				tmpfile = open("/tmp/clientsprofiles.xml", "w")
+				tmpfile.write(self.post_params['uploadfile'][0])
+				tmpfile.close()
+				xmlfile = "/tmp/clientsprofiles.xml"
+			except:
+				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
+				return self.wrap_in_template(content)
+		else:
+			content += "You did not specify a file to load"
+			return self.wrap_in_template(content)
+		cp = GLIClientsProfiles.ClientsProfiles()
+		try:
+			cp.parse(xmlfile)
+		except:
+			content += "There was an error parsing the XML file" + self.get_exception()
+			return self.wrap_in_template(content)
+		self.shared_info.clients = cp.get_clients()
+		self.shared_info.profiles = cp.get_profiles()
+		content += "Profile loaded successfully"
+		return self.wrap_in_template(content)
 
 	def parse_path(self):
 		self.get_params = {}
@@ -211,13 +288,16 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.common_handler(head_only)
 
 	def common_handler(self, head_only):
-		paths = { 
-				  '/about': self.about,
-				  '/aboot': self.aboot,
-				  '/showargs': self.showargs,
-				  '/status': self.status,
-				  '/lastvisitor': self.lastvisitor,
-				  '/showclients': self.showclients }
+		paths = {
+		          '/': self.welcome,
+		          '/welcome': self.welcome,
+		          '/showargs': self.showargs,
+		          '/status': self.status,
+		          '/lastvisitor': self.lastvisitor,
+		          '/showclients': self.showclients,
+		          '/loadprofile': self.loadprofile,
+		          '/loadprofile2': self.loadprofile2
+		        }
 		return_content = ""
 		if self.path in paths:
 			return_content = paths[self.path]()
@@ -290,8 +370,12 @@ class GLINetBe:
 		self._path = loc
 		self.shared_info = SharedInfo()
 		
-	def register_client(self, mac, ip, name):
-		self.shared_info.client_info[ip] = { 'mac': mac, 'ip': ip, 'name': name }
+	def register_client(self, mac, ip):
+		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting" }
+		for client in self.shared_info.clients:
+			if client['mac'] == mac: break
+		else:
+			self.shared_info.clients.append({ 'name': "", 'ip': "", 'mac': mac, 'profile': "" })
 		return True
 
 	def blah(self):
