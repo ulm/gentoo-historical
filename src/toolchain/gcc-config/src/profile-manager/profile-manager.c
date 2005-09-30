@@ -58,8 +58,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.17 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.18 2005/09/30 19:46:38 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.18  2005/09/30 19:46:38  eradicator
+ * Added stdcxx_incdir output.
+ *
  * Revision 1.17  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -345,6 +348,9 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 
 	/* COMPILER_CONFIG_INFOPATH */
 	fprintf(fd, "COMPILER_CONFIG_INFOPATH=\"%s\"\n", installConf->infopath ? installConf->infopath : "");
+
+	/* COMPILER_CONFIG_STDCXX_INCDIR */
+	fprintf(fd, "COMPILER_CONFIG_STDCXX_INCDIR=\"%s\"\n", installConf->stdcxx_incdir);
 
 	/* COMPILER_CONFIG_LDPATH */
 	fprintf(fd, "COMPILER_CONFIG_LDPATH=\"%s\"\n", profile->libdir);
