@@ -6,7 +6,6 @@ import os
 import posixpath
 import BaseHTTPServer
 import urllib
-import cgi
 import shutil
 import mimetypes
 from StringIO import StringIO
@@ -14,6 +13,7 @@ from threading import *
 import socket
 import SocketServer
 import SimpleXMLRPCServer
+import mimetools
 
 class SharedInfo(object):
 
@@ -52,8 +52,11 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return self.wrap_in_template("This is the Canadian about page")
 
 	def showargs(self):
-		text = "These are the CGI params you passed:<br><br><pre>"
-		text += str(self.args)
+		text = "These are the GET params you passed:<br><br><pre>"
+		text += str(self.get_params)
+		text += "</pre><br><br>These are the POST params you passed:<br><br><pre>"
+		text += str(self.post_params)
+		text += "</pre>"
 		return self.wrap_in_template(text)
 
 	def status(self):
@@ -70,32 +73,152 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return "Clients:<br><pre>" + pp.pformat(SharedInfo().client_info) + "</pre>"
 
 	def parse_path(self):
+		self.get_params = {}
+		self.post_params = {}
 		pathparts = self.path.split("?")
 		self.path = pathparts[0]
 		if len(pathparts) > 1:
-			self.args = {}
-			for arg in pathparts[1].split("&"):
+			args = pathparts[1]
+			for arg in args.split("&"):
 				argparts = arg.split("=")
 				if len(argparts) > 1:
-					self.args[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
+					self.get_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
 				else:
-					self.args[urllib.unquote(argparts[0])] = None
+					self.get_params[urllib.unquote(argparts[0])] = None
+		else:
+			self.args = ""
+
+	def valid_boundary(self, s, _vb_pattern="^[ -~]{0,200}[!-~]$"):
+		import re
+		return re.match(_vb_pattern, s)
+
+	def parse_content_type(self, line):
+		plist = map(lambda x: x.strip(), line.split(';'))
+		key = plist.pop(0).lower()
+		pdict = {}
+		for p in plist:
+			i = p.find('=')
+			if i >= 0:
+				name = p[:i].strip().lower()
+				value = p[i+1:].strip()
+				if len(value) >= 2 and value[0] == value[-1] == '"':
+					value = value[1:-1]
+					value = value.replace('\\\\', '\\').replace('\\"', '"')
+				pdict[name] = value
+		return key, pdict
 
 	def do_HEAD(self):
 		"""Serve a HEAD request."""
 		self.do_GET(head_only=True)
 
-	def do_GET(self, head_only=False):
-#		print "current thread: " + currentThread().getName()
-		paths = { 
-                  '/about': self.about,
-		          '/aboot': self.aboot,
-		          '/showargs': self.showargs,
-		          '/status': self.status,
-		          '/lastvisitor': self.lastvisitor,
-		          '/showclients': self.showclients }
-		return_content = ""
+	def do_POST(self, head_only=False):
 		self.parse_path()
+		maxlen = 0
+		ctype = self.headers.getheader('content-type')
+		if ctype == 'application/x-www-form-urlencoded':
+			clength = self.headers.getheader('content-length')
+			if clength:
+				try:
+					bytes = int(clength)
+				except ValueError:
+					pass
+			if maxlen and clength > maxlen:
+				raise ValueError, 'Maximum content length exceeded'
+			self.args = self.rfile.read(bytes)
+			if self.args:
+				for arg in self.args.split("&"):
+					argparts = arg.split("=")
+					if len(argparts) > 1:
+						self.post_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
+					else:
+						self.post_params[urllib.unquote(argparts[0])] = None
+		else:
+			# parse_multipart in /usr/lib/python2.4/cgi.py
+			ctype, pdict = self.parse_content_type(self.headers.getheader('content-type'))
+			boundary = ""
+			if 'boundary' in pdict:
+				boundary = pdict['boundary']
+			if not self.valid_boundary(boundary):
+				raise ValueError,  ('Invalid boundary in multipart form: %r' % (boundary,))
+
+			nextpart = "--" + boundary
+			lastpart = "--" + boundary + "--"
+			partdict = {}
+			terminator = ""
+
+			while terminator != lastpart:
+				bytes = -1
+				data = None
+				if terminator:
+					# At start of next part.  Read headers first.
+					headers = mimetools.Message(self.rfile)
+					clength = headers.getheader('content-length')
+					if clength:
+						try:
+							bytes = int(clength)
+						except ValueError:
+							pass
+					if bytes > 0:
+						if maxlen and bytes > maxlen:
+							raise ValueError, 'Maximum content length exceeded'
+						data = self.rfile.read(bytes)
+					else:
+						data = ""
+				# Read lines until end of part.
+				lines = []
+				while 1:
+					line = self.rfile.readline()
+					if not line:
+						terminator = lastpart # End outer loop
+						break
+					if line[:2] == "--":
+						terminator = line.strip()
+						if terminator in (nextpart, lastpart):
+							break
+					lines.append(line)
+				# Done with part.
+				if data is None:
+					continue
+				if bytes < 0:
+					if lines:
+						# Strip final line terminator
+						line = lines[-1]
+						if line[-2:] == "\r\n":
+							line = line[:-2]
+						elif line[-1:] == "\n":
+							line = line[:-1]
+						lines[-1] = line
+						data = "".join(lines)
+				line = headers['content-disposition']
+				if not line:
+					continue
+				key, params = self.parse_content_type(line)
+				if key != 'form-data':
+					continue
+				if 'name' in params:
+					name = params['name']
+				else:
+					continue
+				if name in partdict:
+					partdict[name].append(data)
+				else:
+					partdict[name] = [data]
+			self.post_params = partdict
+		self.common_handler(head_only)
+
+	def do_GET(self, head_only=False):
+		self.parse_path()
+		self.common_handler(head_only)
+
+	def common_handler(self, head_only):
+		paths = { 
+				  '/about': self.about,
+				  '/aboot': self.aboot,
+				  '/showargs': self.showargs,
+				  '/status': self.status,
+				  '/lastvisitor': self.lastvisitor,
+				  '/showclients': self.showclients }
+		return_content = ""
 		if self.path in paths:
 			return_content = paths[self.path]()
 			self.send_response(200)
