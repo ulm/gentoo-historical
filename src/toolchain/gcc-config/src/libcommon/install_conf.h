@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.12 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.13 2005/09/30 19:35:54 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.13  2005/09/30 19:35:54  eradicator
+ * Added stdcxx_incdir.  Cleaned up some possible memory problems.
+ *
  * Revision 1.12  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -69,6 +72,7 @@ typedef struct {
 	char *binpath;
 	char *infopath;
 	char *manpath;
+	char *stdcxx_incdir;
 
 	/* Hash table of profiles provided by this install
 	 * Key: (char *) name (such as "x86-vanilla")

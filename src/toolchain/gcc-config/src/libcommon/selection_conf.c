@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.28 2005/09/24 18:33:39 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.29 2005/09/30 19:35:54 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.29  2005/09/30 19:35:54  eradicator
+ * Added stdcxx_incdir.  Cleaned up some possible memory problems.
+ *
  * Revision 1.28  2005/09/24 18:33:39  eradicator
  * Changed default_ctarget key in config file to native_ctarget.
  *
@@ -129,7 +132,6 @@ struct selectionParseData {
 	char ctarget[MAXPATHLEN + 1];
 };
 
-#ifndef USE_HARDCODED_CONF
 static int selectionConfSectionCB(const char *section, void *_data) {
 	struct selectionParseData *data = (struct selectionParseData *)_data;
 
@@ -190,7 +192,6 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 	}
 	return 0;
 }
-#endif
 
 static void loadInstallConfs(const char *dirname, SelectionConf *selectionConf) {
 	DIR *dir;
@@ -249,29 +250,23 @@ inline static int loadSelections(const char *filename, SelectionConf *selectionC
 /** Allocate memory and load the configuration file */
 SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverride) {
 	SelectionConf *retval = (SelectionConf *)malloc(sizeof(SelectionConf));
-
-#ifdef USE_HARDCODED_CONF
-	InstallConf *installConf;
-
-	/* Not production code... */
-	retval->installHash = hashNew(16);
-	retval->selectionHash = hashNew(16);
-
-	retval->defaultCtarget = (char *)malloc(sizeof(char) * 30);
-	strcpy(retval->defaultCtarget, "x86_64-pc-linux-gnu");
-
-	retval->scanPath = 0;
-
-	installConf = loadInstallConf("/etc/gcc-config/x86_64-pc-linux-gnu-3.4.4.conf");
-	hashInsert(retval->installHash, "x86_64-pc-linux-gnu-3.4.4", installConf);
-	hashInsert(retval->selectionHash, "x86_64-pc-linux-gnu", hashGet(installConf->profileHash, "amd64-hardened"));
-	hashInsert(retval->selectionHash, "i686-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
-	hashInsert(retval->selectionHash, "i386-pc-linux-gnu", hashGet(installConf->profileHash, "x86-vanilla"));
-#else
 	char filename[MAXPATHLEN + 1];
 
+	if(retval == NULL)
+		return NULL;
+
 	retval->installHash = hashNew(16);
+	if(retval->installHash == NULL) {
+		free(retval);
+		return NULL;
+	}
+
 	retval->selectionHash = hashNew(16);
+	if(retval->selectionHash == NULL) {
+		hashFree(retval->installHash);
+		free(retval);
+		return NULL;
+	}
 
 	retval->scanPath = 0;
 
@@ -293,7 +288,6 @@ SelectionConf *loadSelectionConf(const char *globalConfigDir, unsigned userOverr
 		snprintf(filename, MAXPATHLEN, "%s/%s/selection.conf", getenv("HOME"), USER_CONFIGURATION_DIR);
 		loadSelections(filename, retval);
 	}
-#endif
 
 	return retval;
 }

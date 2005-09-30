@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.26 2005/09/24 23:59:10 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.27 2005/09/30 19:35:54 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.27  2005/09/30 19:35:54  eradicator
+ * Added stdcxx_incdir.  Cleaned up some possible memory problems.
+ *
  * Revision 1.26  2005/09/24 23:59:10  eradicator
  * Check hashNew return value.
  *
@@ -116,7 +119,6 @@ struct installParseData {
 	Profile *profile;
 };
 
-#ifndef USE_HARDCODED_CONF
 static int installConfSectionCB(const char *section, void *_data) {
 	struct installParseData *data = (struct installParseData *)_data;
 	InstallConf *conf = data->installConf;
@@ -165,15 +167,19 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 	if(!value)
 		return -1;
 
+#define set_to_value(var) if(var != NULL) free(var); var = value;
+	
 	if (!data->profile) { /* on global section */
 		if (strcmp(key, "version") == 0) {
-			conf->name = value;
+			set_to_value(conf->name);
 		} else if (strcmp(key, "binpath") == 0) {
-			conf->binpath = value;
+			set_to_value(conf->binpath);
 		} else if (strcmp(key, "infopath") == 0) {
-			conf->infopath = value;
+			set_to_value(conf->infopath);
 		} else if (strcmp(key, "manpath") == 0) {
-			conf->manpath  = value;
+			set_to_value(conf->manpath);
+		} else if (strcmp(key, "stdcxx_incdir") == 0) {
+			set_to_value(conf->stdcxx_incdir);
 			/* check aliases */
 		} else if (strncmp(key, "alias_", 6) == 0) {
 			tmp = hashInsert(conf->wrapperAliases, key+6, (void *)value);
@@ -185,82 +191,47 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 		}
 	} else { /* on other sections */
 		if (strcmp(key, "ctarget") == 0) {
-			data->profile->ctarget = value;
+			set_to_value(data->profile->ctarget);
 		} else if (strcmp(key, "specs") == 0) {
-			data->profile->specs = value;
+			set_to_value(data->profile->specs);
 		} else if (strcmp(key, "ldpath") == 0) {
-			data->profile->libdir = value;
+			set_to_value(data->profile->libdir);
 		} else if (strcmp(key, "cflags") == 0) {
-			data->profile->cflags = value;
+			set_to_value(data->profile->cflags);
 		} else {
 			/* unknown key... ignore it */
 			return 1;
 		}
 	}
 
+#undef set_to_value
+
 	return 0;
 }
-#endif
 
 /** Allocate memory and load the configuration file */
 InstallConf *loadInstallConf(const char *filename) {
-	InstallConf *retval =  (InstallConf *)malloc(sizeof(InstallConf));
+	InstallConf *retval =  (InstallConf *)calloc(1, sizeof(InstallConf));
 
-#ifdef USE_HARDCODED_CONF
-	Profile *profile;
-
-	/* Not production code... */
-	retval->name = "x86_64-pc-linux-gnu-3.4.4";
-	retval->binpath = "/usr/x86_64-pc-linux-gnu/gcc-bin/3.4.4";
-	retval->infopath = "/usr/share/gcc-data/x86_64-pc-linux-gnu/3.4.4/info";
-	retval->manpath = "/usr/share/gcc-data/x86_64-pc-linux-gnu/3.4.4/man";
-	retval->profileHash = hashNew(16);
-	retval->wrapperAliases = hashNew(16);
-	hashInsert(retval->wrapperAliases, "cc", "gcc");
-	hashInsert(retval->wrapperAliases, "gfortran", "g77");
-	hashInsert(retval->wrapperAliases, "f77", "g77");
-
-	profile = (Profile *)malloc(sizeof(Profile));
-	profile->installConf = retval;
-	profile->name = "amd64-vanilla";
-	profile->ctarget = "x86_64-pc-linux-gnu";
-	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
-	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4";
-	profile->cflags = (char *)0;
-	hashInsert(retval->profileHash, profile->name, (void *)profile);
-
-	profile = (Profile *)malloc(sizeof(Profile));
-	profile->installConf = retval;
-	profile->name = "amd64-hardened";
-	profile->ctarget = "x86_64-pc-linux-gnu";
-	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/hardened.specs";
-	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4";
-	profile->cflags = (char *)0;
-	hashInsert(retval->profileHash, profile->name, (void *)profile);
-
-	profile = (Profile *)malloc(sizeof(Profile));
-	profile->installConf = retval;
-	profile->name = "x86-vanilla";
-	profile->ctarget = "i686-pc-linux-gnu";
-	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
-	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32";
-	profile->cflags = "-m32";
-	hashInsert(retval->profileHash, profile->name, (void *)profile);
-
-	profile = (Profile *)malloc(sizeof(Profile));
-	profile->installConf = retval;
-	profile->name = "x86-vanilla";
-	profile->ctarget = "i686-pc-linux-gnu";
-	profile->specs = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/vanilla.specs";
-	profile->libdir = "/usr/lib/gcc/x86_64-pc-linux-gnu/3.4.4/32";
-	profile->cflags = "-m32";
-	hashInsert(retval->profileHash, profile->name, (void *)profile);
-#else
-	ConfigParser *config = parserNew(filename);
+	ConfigParser *config;
 	struct installParseData data;
 
-	if(!config)
+	if(retval == NULL) {
 		return NULL;
+	}
+
+	retval->stdcxx_incdir=strdup("g++");
+	if(retval->stdcxx_incdir == NULL) {
+		free(retval);
+		return NULL;
+	}
+
+	config = parserNew(filename);
+	if(config == NULL) {
+		free(retval->stdcxx_incdir);
+		free(retval);
+		return NULL;
+	}
 
 	data.installConf = retval;
 	data.profile = NULL;
@@ -269,13 +240,13 @@ InstallConf *loadInstallConf(const char *filename) {
 	parserSetCallback(config, installConfSectionCB, installConfKeyCB);
 
 	if(parseFile(config) != 0) {
+		free(retval->stdcxx_incdir);
+		free(retval);
 		parserFree(config);
 		return NULL;
 	}
 
 	parserFree(config);
-#endif
-
 	return retval;
 }
 
