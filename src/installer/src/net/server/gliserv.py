@@ -125,12 +125,12 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def loadprofile2(self):
 		content = "<h2>Load Profile</h2>"
 		xmlfile = ""
-		if 'localfile' in self.post_params and self.post_params['localfile'][0]:
-			xmlfile = self.post_params['localfile'][0]
-		elif 'uploadfile' in self.post_params and self.post_params['uploadfile'][0]:
+		if 'localfile' in self.post_params and self.post_params['localfile']:
+			xmlfile = self.post_params['localfile']
+		elif 'uploadfile' in self.post_params and self.post_params['uploadfile']:
 			try:
 				tmpfile = open("/tmp/serverprofile.xml", "w")
-				tmpfile.write(self.post_params['uploadfile'][0])
+				tmpfile.write(self.post_params['uploadfile'])
 				tmpfile.close()
 				xmlfile = "/tmp/serverprofile.xml"
 			except:
@@ -167,9 +167,9 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		cp = GLIServerProfile.ServerProfile()
 		cp.set_clients(None, self.shared_info.clients, None)
 		cp.set_profiles(None, self.shared_info.profiles, None)
-		if not 'download' in self.post_params and self.post_params['localfile'][0]:
+		if not 'download' in self.post_params and self.post_params['localfile']:
 			try:
-				tmpfile = open(self.post_params['localfile'][0], "w")
+				tmpfile = open(self.post_params['localfile'], "w")
 				tmpfile.write(cp.serialize())
 				tmpfile.close()
 			except:
@@ -244,7 +244,12 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				for arg in self.args.split("&"):
 					argparts = arg.split("=")
 					if len(argparts) > 1:
-						self.post_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
+						if urllib.unquote(argparts[0]) in self.post_params:
+							if isinstance(self.post_params[urllib.unquote(argparts[0])], str):
+								self.post_params[urllib.unquote(argparts[0])] = [self.post_params[urllib.unquote(argparts[0])]]
+							self.post_params[urllib.unquote(argparts[0])].append(urllib.unquote(argparts[1]))
+						else:
+							self.post_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
 					else:
 						self.post_params[urllib.unquote(argparts[0])] = None
 		else:
@@ -315,9 +320,11 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				else:
 					continue
 				if name in partdict:
+					if isinstance(partdict[name], str):
+						partdict[name] = [partdict[name]]
 					partdict[name].append(data)
 				else:
-					partdict[name] = [data]
+					partdict[name] = data
 			self.post_params = partdict
 		self.common_handler(head_only)
 
