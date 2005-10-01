@@ -27,14 +27,6 @@ def find_macip():
 	return device[0], device[1]
 
 def find_server():
-	device = None
-	for dev in GLIUtility.get_eth_devices():
-		if dev.startswith("eth"):
-			device = GLIUtility.get_eth_info(dev)
-			break
-	else:
-		return False
-
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.bind(('', 0))
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -103,7 +95,7 @@ if __name__ == '__main__':
 	tmpfile.close()
 	
 	client_config = GLIClientConfiguration.ClientConfiguration()
-	client_config.parse("/tmp/client_config.conf")
+	client_config.parse("/tmp/client_config.xml")
 	install_profile = GLIInstallProfile.InstallProfile()
 	install_profile.parse("/tmp/install_profile.xml")
 	cc = GLIClientController.GLIClientController(client_config, install_profile)
@@ -113,7 +105,6 @@ if __name__ == '__main__':
 	
 	#Begin the main engine
 	cc.start_install()
-	d.gauge_start("Installation Started!", title="Installation progress")
 	num_steps_completed = 1
 	while 1:
 		notification = cc.getNotification()
@@ -123,15 +114,16 @@ if __name__ == '__main__':
 		ntype = notification.get_type()
 		ndata = notification.get_data()
 		if ntype == "exception":
-			server.update_client_status(local_mac, "Exception: " + ndata)
-			print ndata
+			print str(ndata)
+			server.update_client_status(local_mac, "Exception: " + str(ndata))
+			sys.exit(0)
 		elif ntype == "int":
 			if ndata == GLIClientController.NEXT_STEP_READY:
 				next_step_waiting = False
 				next_step = cc.get_next_step_info()
 				num_steps = cc.get_num_steps()
-				print "Step " + str(num_steps_completed) + " of " + str(num_steps) + ": " + next_step
-				server.update_client_status(local_mac, "On step " + num_steps_completed + " of " + num_steps + ". Current step: " + next_step)
+				print str(num_steps_completed) + " of " + str(num_steps) + ": " + next_step
+				server.update_client_status(local_mac, str(num_steps_completed) + " of " + str(num_steps) + ": " + next_step)
 				num_steps_completed += 1
 				if cc.has_more_steps():
 					cc.next_step()

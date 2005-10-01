@@ -414,7 +414,7 @@ class GLINetBe:
 		self.shared_info = SharedInfo()
 		
 	def register_client(self, mac, ip):
-		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting for server", 'start_install': False }
+		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting for server", 'start_install': True }
 		for client in self.shared_info.clients:
 			if client['mac'] == mac: break
 		else:
@@ -422,8 +422,8 @@ class GLINetBe:
 		return True
 
 	def get_client_config(self, mac):
-		if not self.shared_info.client_state[mac]['start_installing']:
-			return None
+		if not self.shared_info.client_state[mac]['start_install']:
+			return ""
 		for client in self.shared_info.clients:
 			if client['mac'] == mac:
 				if not client['profile']:
@@ -434,24 +434,26 @@ class GLINetBe:
 						xml = "".join(tmpfile.readlines())
 						tmpfile.close()
 						return xml
-		return None
+		return ""
 
 	def get_install_profile(self, mac):
-		if not self.shared_info.client_state[mac]['start_installing']:
-			return None
+		if not self.shared_info.client_state[mac]['start_install']:
+			return ""
 		for client in self.shared_info.clients:
 			if client['mac'] == mac:
 				if not client['profile']:
 					return None
-				for profile in profiles:
+				for profile in self.shared_info.profiles:
 					if profile['name'] == client['profile']:
 						tmpfile = open(profile['ipxmlfile'], "r")
 						xml = "".join(tmpfile.readlines())
 						tmpfile.close()
 						return xml
+		return ""
 
 	def update_client_status(self, mac, status):
 		self.shared_info.client_state[mac]['install_status'] = status
+		return True
 
 def register():
 	host = ''
