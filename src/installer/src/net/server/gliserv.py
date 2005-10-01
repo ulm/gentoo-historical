@@ -193,6 +193,10 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			for arg in args.split("&"):
 				argparts = arg.split("=")
 				if len(argparts) > 1:
+					if urllib.unquote(argparts[0]) in self.get_params:
+						if isinstance(self.get_params[urllib.unquote(argparts[0])], str):
+							self.get_params[urllib.unquote(argparts[0])] = [self.get_params[urllib.unquote(argparts[0])]]
+						self.get_params[urllib.unquote(argparts[0])].append(urllib.unquote(argparts[1]))
 					self.get_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
 				else:
 					self.get_params[urllib.unquote(argparts[0])] = None

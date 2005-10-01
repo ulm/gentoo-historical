@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 
 import sys, time, socket
-sys.path.append("../../..")
+sys.path.append("../..")
 import GLIException
 import GLIInstallProfile
 import GLIClientConfiguration
