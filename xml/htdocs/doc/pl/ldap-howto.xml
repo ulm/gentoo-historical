@@ -1,6 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/ldap-howto.xml,v 1.10 2005/10/01 23:22:02 rane Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/ldap-howto.xml,v 1.9 2005/10/01 23:10:44 rane Exp $ -->
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/license/by-sa/2.5 -->
 
 <guide link="/doc/pl/ldap-howto.xml" lang="pl">
 <title>Autoryzacja LDAP w Gentoo</title>
@@ -26,8 +29,6 @@ Ten przewodnik przedstawia podstawy LDAP i pokazuje w jaki sposób skonfigurowa�
 OpenLDAP w celu autoryzacji w grupach komputerów z Gentoo.
 </abstract>
 
-<!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/license/by-sa/2.5 -->
 <license/>
 
 <version>0.18.3</version>
@@ -98,7 +99,7 @@ uid: ..   john            <comment>(OU-specyficzne dane)</comment>
 
 <p>
 W związku z tym, że dane do bazy nie są wprowadzane kolejno jak na powyższym
-grafie każda jej część musi posiadać określoną nazwę. Większość dystrybucji LDAP
+grafie każda jej część musi posiadać określoną nazwę. Większość dystrubucji LDAP
 (wliczając w to OpenLDAP) posiada już sporą ilość zdefiniowanych (i ogólnie
 przyjętych) schematów, takich jak inetorgperson, powszechnie używany schemat
 definiowania użytkowników.
@@ -156,11 +157,277 @@ można dokonać jednak znacznie więcej.
 <body>
 
 <note>
-Zwykle mam ten plik pusty, a kiedy zachodzi potrzeba zmiany użytkownikowi hasła
-robię to zarówno w ldap jak i w pliku <path>/etc/passwd</path>. Zapisuje tam
-hasło na 10 sekund na czas kiedy dokonuję zmian i zaraz po ich wprowadzeniu je
-usuwam.
+W tym dokumencie będziemy używać przykładowego adresu genfic.com. Oczywiście w
+każdym przypadku użytkownik musi zmienić ten adres na swój własny. Należy się
+upewnić, czy najwyższy węzeł jest oficjalną domeną wysokiego poziomu (net, com,
+cc, be, ...).
 </note>
+
+<p>
+Wpierw należy zainstalować wszelkie potrzebne komponenty na serwerze:
+</p>
+
+<pre caption="Instalacja OpenLDAP">
+# <i>emerge openldap pam_ldap nss_ldap migrationtools</i>
+
+# <i>chown ldap:ldap /var/lib/openldap-ldbm /var/lib/openldap-data /var/lib/openldap-slurp</i>
+</pre>
+
+<p>
+Następnie edytujemy plik <path>/etc/openldap/slapd.conf</path> dodając
+następujące linijki po <c>core.schema</c>:
+</p>
+
+<pre caption="/etc/openldap/slapd.conf">
+<comment># Dołączenie potrzebnych schematów.</comment>
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+
+<comment># Użycie funkcji md5, aby ukryć hasło.</comment>
+password-hash {md5}
+
+<comment># Zdefiniowanie właściwości SSL i TLS (opcja).</comment>
+TLSCertificateFile /etc/ssl/ldap.pem
+TLSCertificateKeyFile /etc/openldap/ssl/ldap.pem
+TLSCACertificateFile /etc/ssl/ldap.pem
+
+<comment>(Następnie...)</comment>
+
+database        ldbm
+suffix          "dc=genfic,dc=com"
+rootdn          "cn=Manager,dc=genfic,dc=com"
+rootpw          <i>{MD5}Xr4ilOzQ4PCOq3aQ0qbuaQ==</i>
+directory       /var/lib/openldap-ldbm
+index           objectClass     eq
+
+<comment>(Hasła tworzy się przy pomocy polecenia slappasswd -h {Md5})</comment>
+</pre>
+
+<p>
+Następnie edytujemy plik konfiguracyjny LDAP:
+</p>
+
+<pre caption="/etc/openldap/ldap.conf">
+# <i>nano -w /etc/openldap/ldap.conf</i>
+<comment>Dodając następujące linijki...</comment>
+
+BASE         dc=genfic, dc=com
+URI          ldaps://auth.genfic.com:636/
+TLS_REQCERT  allow
+</pre>
+
+<p>
+Później, aby zabezpieczyć katalog należy wygenerować certyfikat SSL. Należy
+odpowiedzieć jak najlepiej na pytania, które zostaną nam zadane. Kiedy
+zostaniemy zapytani o <e>Common Name</e> wpisujemy nazwę za pomocą której
+klienci będą mogli łączyć się z serwerem. Z reguły będzie to pełna nazwa domeny
+(np. <path>auth.genfic.com</path>).
+</p>
+
+<pre caption="Generowanie certyfikatu SSL">
+# <i>cd /etc/ssl</i>
+# <i>openssl req -config /etc/ssl/openssl.cnf -new -x509 -nodes -out \
+ldap.pem -keyout /etc/openldap/ssl/ldap.pem -days 999999</i>
+</pre>
+
+<p>
+Edytujemy plik <path>/etc/conf.d/slapd</path> i dodajemy następującą linijkę,
+jednocześnie zakomentowując domyślną:
+</p>
+
+<pre caption="/etc/conf.d/slapd">
+OPTS="-h 'ldaps:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
+</pre>
+
+<p>
+Uruchamiamy slapd:
+</p>
+
+<pre caption = "Uruchamianie SLAPd.">
+# <i>/etc/init.d/slapd start</i>
+</pre>
+
+<p>
+Możemy przetestować program używając polecenia:
+</p>
+
+<pre caption = "Przetestuj demona SLAPd.">
+# <i>ldapsearch -D "cn=Manager,dc=genfic,dc=com" -W</i>
+</pre>
+
+<p>
+Jeśli otrzymamy błąd, należy uruchomić usługę dodając parametr <c>-d 255</c>.
+Spowoduje to dokładniejsze opisanie błędu i znacznie pomoże w rozwiązaniu
+zaistniałego problemu.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Eksportowanie istniejących danych</title>
+<section>
+<title>Eksportowanie kont użytkowników</title>
+<body>
+
+<p>
+Pora na wyeksportowanie kont użytkowników. Otwieramy plik
+<path>/usr/share/migrationtools/migrate_common.ph</path> i edytujemy go w
+następujący sposób:
+</p>
+
+<pre caption="/usr/share/migrationtools/migrate_common.ph">
+$DEFAULT_BASE = "dc=genfic,dc=com";
+$EXTENDED_SCHEMA = 1;
+<comment># Zakomentuj poniższe linie, chyba że posiadasz załadowany schemat
+pocztowy.</comment>
+<comment>#$DEFAULT_MAIL_DOMAIN = "genfic.com";</comment>
+<comment>#$DEFAULT_MAIL_HOST = "mail.genfic.com";</comment>
+</pre>
+
+<p>
+Teraz czas na uruchomienie skryptów eksportujących:
+</p>
+
+<pre caption="Uruchamianie skryptów eksportujących.">
+# <i>export ETC_SHADOW=/etc/shadow</i>
+# <i>cd /usr/share/migrationtools</i>
+# <i>./migrate_base.pl > /tmp/base.ldif</i>
+# <i>./migrate_group.pl /etc/group /tmp/group.ldif</i>
+# <i>./migrate_hosts.pl /etc/hosts /tmp/hosts.ldif</i>
+# <i>./migrate_passwd.pl /etc/passwd /tmp/passwd.ldif</i>
+</pre>
+
+<p>
+W tym kroku wyeksportowaliśmy pliki do formatu ldif obsługiwanego przez LDAP.
+Teraz dodajemy te pliki do naszego katalogu:
+</p>
+
+<pre caption="Import danych do naszego katalogu.">
+# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/base.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/group.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/passwd.ldif</i>
+# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/hosts.ldif</i>
+</pre>
+
+<p>
+Jeżeli natrafimy na błąd w plikach ldif, można wznowić proces od miejsca,
+w którym został przerwany, używając polecenia <c>ldapadd -c</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfiguracja klienta</title>
+<section>
+<title>Konfiguracja PAM</title>
+<body>
+
+<p>
+Następnie należy skonfigurować PAM tak, aby zezwolić na autoryzację LDAP. Po
+pierwsze należy zainstalować <c>net-libs/pam_ldap</c>, co umożliwi współpracę
+PAM z LDAP oraz <c>net-libs/nss_ldap</c>, dzięki czemu system może pobierać z
+innych komputerów informacje o LDAP (z czego korzysta
+<path>nsswitch.conf</path>).
+</p>
+
+<pre caption="/etc/pam.d/system-auth">
+auth    required    /lib/security/pam_env.so
+auth    sufficient  /lib/security/pam_unix.so likeauth nullok shadow
+auth    sufficient  /lib/security/pam_ldap.so use_first_pass
+auth    required    /lib/security/pam_deny.so
+
+account requisite  /lib/security/pam_unix.so
+account sufficient /lib/security/pam_localuser.so
+account required   /lib/security/pam_ldap.so
+
+password    required /lib/security/pam_cracklib.so retry=3
+password    sufficient /lib/security/pam_unix.so nullok use_authtok shadow md5
+password    sufficient /lib/security/pam_ldap.so use_authtok use_first_pass
+password    required /lib/security/pam_deny.so
+
+session required    /lib/security/pam_limits.so
+session required    /lib/security/pam_unix.so
+session required     /lib/security/pam_mkhomedir.so skel=/etc/skel/ umask=0066
+session optional    /lib/security/pam_ldap.so
+</pre>
+
+<p>
+Plik <path>/etc/ldap.conf</path> edytujemy, aby wyglądał następująco:
+</p>
+
+<pre caption="/etc/ldap.conf">
+<comment>#host 127.0.0.1</comment>
+<comment>#base dc=padl,dc=com</comment>
+
+ssl start_tls
+ssl on
+suffix          "dc=genfic,dc=com"
+<comment>#rootbinddn uid=root,ou=People,dc=genfic,dc=com</comment>
+
+uri ldaps://auth.genfic.com/
+pam_password exop
+
+ldap_version 3
+pam_filter objectclass=posixAccount
+pam_login_attribute uid
+pam_member_attribute memberuid
+nss_base_passwd ou=People,dc=genfic,dc=com
+nss_base_shadow ou=People,dc=genfic,dc=com
+nss_base_group  ou=Group,dc=genfic,dc=com
+nss_base_hosts  ou=Hosts,dc=genfic,dc=com
+
+scope one
+</pre>
+
+<p>
+Następnie kopiujemy plik <path>ldap.conf</path> z serwera do klientów tak, aby
+były w stanie dostrzec, że znajdują się w środowisku LDAP.
+</p>
+
+<pre caption="Kopiowanie ldap.conf dla OpanLDAP">
+<comment>(Należy zastąpić ldap-server nazwą serwera LDAP)</comment>
+# <i>scp ldap-server:/etc/openldap/ldap.conf /etc/openldap</i>
+</pre>
+
+<p>
+Na koniec konfigurujemy swoich klientów tak, aby sprawdzały LDAP dla kont
+systemowych:
+</p>
+
+<pre caption="/etc/nsswitch.conf">
+passwd:         files ldap
+group:          files ldap
+shadow:         files ldap
+</pre>
+
+<p>
+Aby przetestować zmiany należy wpisać:
+</p>
+
+<pre caption="Testowanie autoryzacji LDAP:">
+# <i>getent passwd|grep 0:0</i>
+
+<comment>Powinnieneś otrzymać w wyniku tego polecenia dwie linijki:</comment>
+root:x:0:0:root:/root:/bin/bash
+root:x:0:0:root:/root:/bin/bash
+</pre>
+
+<p>
+Jedna z linijek, które dodaliśmy do <path>/etc/ldap.conf</path> została
+zakomentowana (linia <c>rootbinddn</c>). Nie będziemy jej potrzebować, dopóki
+nie zechcemy zmienić hasła roota lub zwykłego użytkownika. W takim wypadku
+będziemy zmuszeni umieścić to hasło w pliku <path>/etc/ldap.secret</path>, w
+dodatku otwartym tekstem. Jest to <brite>NIEBEZPIECZNE</brite> i dlatego plik
+ten MUSI mieć prawa dostępu o wartości 600. Osobiście zwykle mam ten plik
+pusty, a kiedy zachodzi potrzeba zmiany użytkownikowi hasła robię to zarówno w
+ldap jak i w pliku <path>/etc/passwd</path>. Zapisuje tam hasło na 10 sekund na
+czas kiedy dokonuję zmian i zaraz po ich wprowadzeniu je usuwam.
+</p>
 
 </body>
 </section>
