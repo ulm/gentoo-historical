@@ -103,10 +103,10 @@ if __name__ == '__main__':
 	tmpfile.close()
 	
 	client_config = GLIClientConfiguration.ClientConfiguration()
-	client_conf.parse("/tmp/client_config.conf")
+	client_config.parse("/tmp/client_config.conf")
 	install_profile = GLIInstallProfile.InstallProfile()
 	install_profile.parse("/tmp/install_profile.xml")
-	cc = GLIClientController.GLIClientController(client_config,install_profile)
+	cc = GLIClientController.GLIClientController(client_config, install_profile)
 	
 	#Start the backend threads
 	cc.start_pre_install()
