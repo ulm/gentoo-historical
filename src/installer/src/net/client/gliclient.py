@@ -68,9 +68,10 @@ if __name__ == '__main__':
 		else:
 			print "Invalid option " + sys.argv[i] + ". Terminating."
 			sys.exit(0)
+		i += 1
 
 	local_mac, local_ip = find_macip()
-	if args['server_ip'] and args['server_port']:
+	if 'server_ip' in args and 'server_port' in args:
 		server_ip, server_port = args['server_ip'], args['server_port']
 	else:
 		server_ip, server_port = find_server()
