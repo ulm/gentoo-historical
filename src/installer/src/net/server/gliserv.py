@@ -192,14 +192,17 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			args = pathparts[1]
 			for arg in args.split("&"):
 				argparts = arg.split("=")
+				name = urllib.unquote(argparts[0])
 				if len(argparts) > 1:
-					if urllib.unquote(argparts[0]) in self.get_params:
-						if isinstance(self.get_params[urllib.unquote(argparts[0])], str):
-							self.get_params[urllib.unquote(argparts[0])] = [self.get_params[urllib.unquote(argparts[0])]]
-						self.get_params[urllib.unquote(argparts[0])].append(urllib.unquote(argparts[1]))
-					self.get_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
+					data = urllib.unquote(argparts[1])
+					if name in self.get_params:
+						if isinstance(self.get_params[name], str):
+							self.get_params[name] = [self.get_params[name]]
+						self.get_params[name].append(data)
+					else:
+						self.get_params[name] = data
 				else:
-					self.get_params[urllib.unquote(argparts[0])] = None
+					self.get_params[name] = ""
 		else:
 			self.args = ""
 
@@ -243,15 +246,17 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if self.args:
 				for arg in self.args.split("&"):
 					argparts = arg.split("=")
+					name = urllib.unquote(argparts[0])
 					if len(argparts) > 1:
-						if urllib.unquote(argparts[0]) in self.post_params:
-							if isinstance(self.post_params[urllib.unquote(argparts[0])], str):
-								self.post_params[urllib.unquote(argparts[0])] = [self.post_params[urllib.unquote(argparts[0])]]
-							self.post_params[urllib.unquote(argparts[0])].append(urllib.unquote(argparts[1]))
+						data = urllib.unquote(argparts[1])
+						if name in self.post_params:
+							if isinstance(self.post_params[name], str):
+								self.post_params[name] = [self.post_params[name]]
+							self.post_params[name].append(data)
 						else:
-							self.post_params[urllib.unquote(argparts[0])] = urllib.unquote(argparts[1])
+							self.post_params[name] = data
 					else:
-						self.post_params[urllib.unquote(argparts[0])] = None
+						self.post_params[name] = ""
 		else:
 			# parse_multipart in /usr/lib/python2.4/cgi.py
 			ctype, pdict = self.parse_content_type(self.headers.getheader('content-type'))
