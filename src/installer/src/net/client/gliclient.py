@@ -28,9 +28,9 @@ def find_macip():
 
 def find_server():
 	device = None
-	for device in GLIUtility.get_eth_devices():
-		if device.startswith("eth"):
-			device = GLIUtility.get_eth_info(num)
+	for dev in GLIUtility.get_eth_devices():
+		if dev.startswith("eth"):
+			device = GLIUtility.get_eth_info(dev)
 			break
 	else:
 		return False
@@ -50,7 +50,7 @@ def find_server():
 			print "Server found at " + str(fromaddr[0]) + " port " + str(fromaddr[1])
 			break
 		count = count + 1
-	return fromaddr[0], fromaddr[1]
+	return fromaddr[0], int(fromaddr[1]) + 1
 
 if __name__ == '__main__':
 	args = {}
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 		server_ip, server_port = args['server_ip'], args['server_port']
 	else:
 		server_ip, server_port = find_server()
-	server = xmlrpclib.ServerProxy("http://" + server_ip + ":" + server_port + 1)
+	server = xmlrpclib.ServerProxy("http://" + server_ip + ":" + str(server_port))
 	registered = False
 	try:
 		registered = server.register_client(local_mac, local_ip)
