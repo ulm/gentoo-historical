@@ -54,7 +54,7 @@ def find_server():
 
 if __name__ == '__main__':
 	args = {}
-	i = 0
+	i = 1
 	while i < len(sys.argv):
 		if sys.argv[i] == "-s" or sys.argv[i] == "--server":
 			i += 1
