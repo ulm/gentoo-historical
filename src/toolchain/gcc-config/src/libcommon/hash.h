@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.9 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.10 2005/10/02 20:45:56 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.10  2005/10/02 20:45:56  eradicator
+ * BSD related cleanup.
+ *
  * Revision 1.9  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
@@ -46,6 +49,14 @@
 
 #ifndef _COMPILER_CONFIG_HASH_H_
 #define _COMPILER_CONFIG_HASH_H_
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 /* Implementation is internal */
 typedef struct _Hash Hash;

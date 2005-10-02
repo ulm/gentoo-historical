@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.27 2005/09/30 19:35:54 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.28 2005/10/02 20:45:56 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.28  2005/10/02 20:45:56  eradicator
+ * BSD related cleanup.
+ *
  * Revision 1.27  2005/09/30 19:35:54  eradicator
  * Added stdcxx_incdir.  Cleaned up some possible memory problems.
  *
@@ -99,8 +102,10 @@
 #include "config.h"
 #endif
 
-/* For strndup() */
-#define _GNU_SOURCE
+#include "strndup.h"
+#include "selection_conf.h"
+#include "install_conf.h"
+#include "parse_conf.h"
 
 #include <stdlib.h>
 #include <string.h>

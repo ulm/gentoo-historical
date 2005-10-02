@@ -14,6 +14,7 @@
  *                              global config dir.
  *
  *   Note below that <CTARGET/-/_> means the CTARGET with -s replaced with _s
+ *   (and the .s also replaced with _ to work on versioned CTARGETs)
  *   commands:
  *
  *   get-profiles
@@ -61,8 +62,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.19 2005/10/02 03:10:11 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.20 2005/10/02 20:45:56 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.20  2005/10/02 20:45:56  eradicator
+ * BSD related cleanup.
+ *
  * Revision 1.19  2005/10/02 03:10:11  eradicator
  * Added unset action to profile-manager.
  *
@@ -122,21 +126,19 @@
  *
  */
 
-/* For strndup() */
-#define _GNU_SOURCE
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "strndup.h"
+#include "selection_conf.h"
+#include "install_conf.h"
 
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "selection_conf.h"
-#include "install_conf.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1023
@@ -181,7 +183,7 @@ typedef struct _pnode {
 static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	const char **installs;
 	const char **setCtargets;
-	const char **allCtargets;
+	const char **allCtargets = NULL;
 	Hash *profilesByCtarget;
 	const InstallConf *installConf;
 	size_t i;
@@ -193,7 +195,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 	installs = hashKeysSorted(selectionConf->installHash);
 	profilesByCtarget = hashNew(16);
 
-	if(setCtargets == NULL || installs == NULL || allCtargets == NULL)
+	if(setCtargets == NULL || installs == NULL)
 		goto end_doGetProfiles;
 
 	/* We need to create our profilesByCtarget hash */
@@ -273,7 +275,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		if(!ctargetul)
 			die("Memory allocation failure.");
 		for(s = ctargetul; *s; s++) {
-			if(*s == '-')
+			if(*s == '-' || *s == '.')
 				*s = '_';
 		}
 
@@ -305,7 +307,7 @@ static void doGetProfiles(const SelectionConf *selectionConf, FILE *fd) {
 		if(!ctargetul)
 			die("Memory allocation failure.");
 		for(s = ctargetul; *s; s++) {
-			if(*s == '-')
+			if(*s == '-' || *s == '.')
 				*s = '_';
 		}
 		fprintf(fd, "COMPILER_CONFIG_SET_%s=\"%s/%s\"\n", ctargetul, profile->installConf->name, profile->name);

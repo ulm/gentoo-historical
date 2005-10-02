@@ -1,7 +1,7 @@
 /*
  * C Implementation: compiler-wrapper
  *
- * Description: 
+ * Description:
  * A wrapper for gcc or any other compiler which executes a binary based on the profile
  * used for the set CTARGET.
  *
@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.3 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.4 2005/10/02 20:45:56 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.4  2005/10/02 20:45:56  eradicator
+ * BSD related cleanup.
+ *
  * Revision 1.3  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -55,14 +58,18 @@
  *
  */
 
-/* For strndup() */
-#define _GNU_SOURCE
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include "strndup.h"
+#include "selection_conf.h"
+#include "install_conf.h"
+
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,9 +77,6 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include "selection_conf.h"
-#include "install_conf.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1023
