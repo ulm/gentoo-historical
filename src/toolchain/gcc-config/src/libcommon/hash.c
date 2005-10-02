@@ -1,7 +1,7 @@
 /*
  * C Implementation: hash
  *
- * Description: 
+ * Description:
  * Simple hash table.  All keys are char *.  Data is void *.
  *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.17 2005/09/24 05:47:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.c,v 1.18 2005/10/02 03:28:47 eradicator Exp $
  * $Log: hash.c,v $
+ * Revision 1.18  2005/10/02 03:28:47  eradicator
+ * Added '-X' option to the gcc-config wrapper for backwards compatability.
+ *
  * Revision 1.17  2005/09/24 05:47:13  eradicator
  * Added scan_path option (not yet implemented).  When enabled, the PATH envvar will be searched for the executable like it was in gcc-config-1.x
  *
