@@ -52,14 +52,20 @@
  *   set <install>/<profile> [--ctarget=<CTARGET>]
  *     activate a profile (and optionally assign it a CTARGET other than its default)
  *
+ *   unset <CTARGET>
+ *     deactivate the profile for the given CTARGET
+ *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
  *
  * Copyright 1999-2005 Gentoo Foundation
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.18 2005/09/30 19:46:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.19 2005/10/02 03:10:11 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.19  2005/10/02 03:10:11  eradicator
+ * Added unset action to profile-manager.
+ *
  * Revision 1.18  2005/09/30 19:46:38  eradicator
  * Added stdcxx_incdir output.
  *
@@ -140,6 +146,7 @@
 #define ACTION_GET_PROFILES  1
 #define ACTION_GET_PROFILE   2
 #define ACTION_SET           3
+#define ACTION_UNSET         4
 
 #if HAVE_MKDIR
 #  if MKDIR_TAKES_ONE_ARG
@@ -407,6 +414,10 @@ static void doSet(SelectionConf *selectionConf, const char *install, const char 
 	}
 }
 
+inline static void doUnSet(SelectionConf *selectionConf, const char *ctarget) {
+	hashDel(selectionConf->selectionHash, ctarget);
+}
+
 int main(int argc, char **argv) {
 	SelectionConf *selectionConf;
 	unsigned action = ACTION_NONE;
@@ -433,6 +444,10 @@ int main(int argc, char **argv) {
 			break;
 		} else if(strcmp(argv[i], "set") == 0) {
 			action = ACTION_SET;
+			i++;
+			break;
+		} else if(strcmp(argv[i], "unset") == 0) {
+			action = ACTION_UNSET;
 			i++;
 			break;
 		} else {
@@ -493,6 +508,15 @@ int main(int argc, char **argv) {
 				die("Error saving config: %s", strerror(errno));
 			break;
 
+		case ACTION_UNSET:
+			if(i+1 != argc)
+				die("You did not provide a CTARGET to unset.");
+
+			ctarget=argv[i];
+			doUnSet(selectionConf, ctarget);
+			if(saveSelectionConf(selectionConf, configDir, userProfile) != 0)
+				die("Error saving config: %s", strerror(errno));
+			break;
 		default:
 			die("No action selected.");
 			break;
