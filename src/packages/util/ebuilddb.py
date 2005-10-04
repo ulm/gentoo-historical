@@ -101,8 +101,8 @@ def create_ebuild_record(db, ebinfo):
     # then add particular ebuild
     try:
         d.execute('INSERT INTO ebuild VALUES (%(category)s, %(name)s, %(version)s,'
-            '%(time)s, %(archs)s, %(changelog)s, "", %(masked)s, %(license)s),'
-            '%(iuse)s', ebinfo)
+            '%(time)s, %(archs)s, %(changelog)s, "", %(masked)s, %(license)s,'
+            '%(iuse)s)', ebinfo)
         d.execute('INSERT INTO deps VALUES (%(category)s, %(name)s, %(version)s,'
             '%(depend)s, %(rdepend)s, %(pdepend)s)', ebinfo)
     except MySQLdb.MySQLError, data:
