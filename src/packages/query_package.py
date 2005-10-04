@@ -1,4 +1,4 @@
-#!/usr/bin/python -OO
+#!/usr/bin/python -O
 
 import cgi
 from urllib import quote
@@ -43,10 +43,14 @@ query = ('SELECT category,name,homepage,description,license '
 if name:
     query = ('%s AND name="%s"' %(query,escape_string(name)))
 
-query = ('%s LIMIT %s,%s' % (query,offset,config.MAX_CATEGORIES))
-
+# first get row count
 db = ebuilddb.db_connect()
 c = db.cursor()
+c.execute(query)
+total_rows = c.rowcount
+
+query = ('%s LIMIT %s,%s' % (query,offset,config.MAX_CATEGORIES))
+
 c.execute(query)
 results = c.fetchall()
 
@@ -57,7 +61,7 @@ if results:
             #print result
             pkg = query_to_dict(result)
             sys.stdout.write('%s<br>\n<br>\n' 
-                % gentoo.package_to_html(pkg,db))
+                % gentoo.package_to_html(pkg,db, full=True))
     else:
         sys.stdout.write('<table class="centerpage">\n')
         sys.stdout.write('<tr><th class="category">'
@@ -70,7 +74,7 @@ if results:
         sys.stdout.write('<a href="?category=%s;name=%s'
             ';offset=%s">[Previous]</a> '
             % (category,name,int(offset) - config.MAX_CATEGORIES))
-    if len(results) == config.MAX_CATEGORIES:
+    if int(offset) + len(results) < total_rows:
         sys.stdout.write('<a href="?category=%s;name=%s;offset=%s">[Next]</a> '
         % (category,name,int(offset) + config.MAX_CATEGORIES))
 
