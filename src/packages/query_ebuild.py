@@ -22,7 +22,7 @@ if 0:
 else:
     # let's try the database
     # connect
-    pieces = gentoo.portage.pkgsplit(ebuild)
+    pieces = gentoo.pkgsplit(ebuild)
     name = pieces[0]
     if pieces[2] == 'r0':
         version = pieces[1]
@@ -31,7 +31,7 @@ else:
     db = ebuilddb.db_connect()
     # query
     query = ('SELECT ebuild.category,ebuild.name,version,when_found,'
-        'description,changelog,arch,homepage,license '
+        'description,changelog,arch,homepage,license,is_masked '
         'FROM ebuild,package WHERE ebuild.name="%s" AND '
         'version="%s" AND '
         'ebuild.name=package.name AND ebuild.category=package.category '
@@ -43,7 +43,7 @@ else:
     if result:
         #print result
         eb = gentoo.query_to_dict(result)
-        sys.stdout.write(gentoo.ebuild_to_html(eb,show_bugs=1))
+        sys.stdout.write(gentoo.ebuild_to_html(eb,show_bugs=0, full=True))
         sys.exit(0)
     # else 404
     else:
