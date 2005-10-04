@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.13 $"
+__revision__ = "$Revision: 1.14 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -151,7 +151,7 @@ def ebuild_to_html(ebinfo, new=0, show_bugs=0, full = False):
         ebinfo['name'],
         ebinfo['version'],
         new_string,
-        ebinfo['time'].localtime().strftime("%c %Z")))
+        ebinfo['time'].strftime("%c %Z")))
 
     if full:
         image = ('<img class="pkgimg" alt="" src="%s/%s/%s.jpg" align="right">' %
@@ -682,7 +682,7 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
         </image>
 
         <managingEditor>marduk@gentoo.org</managingEditor>
-        <pubDate>%s</pubDate>\n""" % (subtitle, link, config.RSS_IMAGE,
+        <pubDate>%s</pubDate>""" % (subtitle, link, config.RSS_IMAGE,
             config.FEHOME, pubDate))
 
     for ebuild in ebuilds:
@@ -710,7 +710,7 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
                 ebuild['name'],
                 ebuild['version'],
                 description,
-                ebuild['time'].gmtime().strftime("%a, %d %b %Y %H:%M:%S +0000"))
+                ebuild['time'].strftime("%a, %d %b %Y %H:%M:%S +0000"))
         )
 
     fp.write("\n\
