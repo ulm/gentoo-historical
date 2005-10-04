@@ -13,7 +13,6 @@
 
 
 _q_exports = (('opdlogo.png', 'opdlogo'),
-    ('pgoimage.png', 'pgoimage'),
     ('favicon.ico', 'favicon'),
     ('bgcolor.png', 'bgcolor'),
     ('purplebevel.png', 'purplebevel'),
@@ -31,13 +30,12 @@ curdir = os.path.dirname(__file__)
 from quixote.util import StaticFile
 
 opdlogo = StaticFile('%s/opd.png' % curdir)
-pgoimage = StaticFile('%s/pgo.png' % curdir)
 favicon = StaticFile('%s/favicon.ico' % curdir,
     mime_type='image/x-icon')
 bgcolor = StaticFile('%s/bgcolor.png' % curdir)
 purplebevel = StaticFile('%s/purplebevel.png' % curdir)
 
-# P.G.O. Icons contributed by Alexandre Rostovtsev <tetromino@gmail.com>
+# OPD icons contributed by Alexandre Rostovtsev <tetromino@gmail.com>
 bugs_png = StaticFile('%s/bugs.png' % curdir)
 forums_png = StaticFile('%s/forums.png' % curdir)
 homepage_png = StaticFile('%s/homepage.png' % curdir)
