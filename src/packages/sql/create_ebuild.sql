@@ -19,5 +19,6 @@ CREATE TABLE `ebuild` (
   `prevarch` varchar(160) NOT NULL default '',
   `is_masked` tinyint(4) default NULL,
   `license` varchar(30) default NULL,
+  `iuse` mediumtext NOT NULL,
   PRIMARY KEY  (`category`,`name`,`version`)
 )

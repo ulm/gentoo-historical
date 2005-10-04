@@ -37,7 +37,7 @@ import logging
 # We want to use the base profile, not any system-specific one
 pconfig = portage.config(config_profile_path = '%s/profiles/base'
     % config.PORTAGE_DIR, config_incrementals = ['BUGUS'])
-tree = portage.portdbapi(config.PORTAGE_DIR, pconfig)
+TREE = portage.portdbapi(config.PORTAGE_DIR, pconfig)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,10 +47,10 @@ desc_cache = {}
 def find_ebuilds():
     """Traverse the portage tree and return list of ebuilds"""
     logging.info("walking...")
-    for cat_pkg in tree.cp_all():
+    for cat_pkg in TREE.cp_all():
         if '/' not in cat_pkg:
             continue
-        for ebuild in tree.cp_list(cat_pkg):
+        for ebuild in TREE.cp_list(cat_pkg):
             yield ebuild
 
 def parse_ebuild(ebuild):
@@ -101,13 +101,13 @@ def create_ebuild_record(db, ebinfo):
     # then add particular ebuild
     try:
         d.execute('INSERT INTO ebuild VALUES (%(category)s, %(name)s, %(version)s,'
-            '%(time)s, %(archs)s, %(changelog)s, "", %(masked)s, %(license)s)',
-            ebinfo)
+            '%(time)s, %(archs)s, %(changelog)s, "", %(masked)s, %(license)s),'
+            '%(iuse)s', ebinfo)
         d.execute('INSERT INTO deps VALUES (%(category)s, %(name)s, %(version)s,'
             '%(depend)s, %(rdepend)s, %(pdepend)s)', ebinfo)
     except MySQLdb.MySQLError, data:
-        logging.error('error occorred: ')
-        loggine.error('error: %s' % data)
+        logging.error('error occorred: create_ebuild_record')
+        loggin.error('error: %s' % data)
 
 def update_ebuild_record(db, ebinfo):
     """Create a database record according to ebinfo dict.  Ebuild must already
@@ -120,22 +120,21 @@ def update_ebuild_record(db, ebinfo):
     try:
         c.execute('UPDATE ebuild SET when_found=%(time)s, arch=%(archs)s, '
             'changelog=%(changelog)s, prevarch=%(prevarch)s, '
-            'is_masked=%(masked)s, license=%(license)s '
+            'is_masked=%(masked)s, license=%(license)s, iuse=%(iuse)s '
             'WHERE category=%(category)s AND name=%(name)s AND '
             'version=%(version)s', ebinfo)
         c.execute('UPDATE deps SET depend=%(depend)s, rdepend=%(rdepend)s, '
             'pdepend=%(pdepend)s WHERE category=%(category)s AND name=%(name)s '
             'AND version=%(version)s', ebinfo)
     except MySQLdb.MySQLError, data:
-        logging.error('error occurred: ')
+        logging.error('error occurred: update_ebuild_record')
         logging.error('error: %s' % data)
-
 
 def get_extended_info(ebuild):
     """Return a dict with extended info about ebuild dict"""
     cpv = '%(category)s/%(name)s-%(version)s' % ebuild
-    archs, homepage, _license, description = tree.aux_get(cpv, ('KEYWORDS',
-        'HOMEPAGE', 'LICENSE', 'DESCRIPTION'))
+    archs, homepage, _license, description, iuse = TREE.aux_get(cpv, ('KEYWORDS',
+        'HOMEPAGE', 'LICENSE', 'DESCRIPTION', 'IUSE'))
 
     ebuild['archs'] = ','.join(archs.split())
     ebuild['homepage'] = homepage or 'http://www.gentoo.org/'
@@ -144,10 +143,11 @@ def get_extended_info(ebuild):
     ebuild['license'] = ebuild['license'].replace(')', '')
     ebuild['license'] = ebuild['license'].strip()
     ebuild['description'] = description #.encode('latin-1','replace')
+    ebuild['iuse'] = ','.join(iuse.strip().split())
 
     # dependencies
     (ebuild['depend'], ebuild['rdepend'], ebuild['pdepend']) = \
-        tree.aux_get(cpv, ('DEPEND', 'RDEPEND', 'PDEPEND'))
+        TREE.aux_get(cpv, ('DEPEND', 'RDEPEND', 'PDEPEND'))
     # check to see it description is in cache
     catname = '%(category)s/%(name)s' % ebuild
     if desc_cache.has_key(catname):
@@ -187,7 +187,7 @@ def get_extended_info(ebuild):
 
 def get_mtime(ebuild):
     """Get mtime of file, return in format that MySQL would like"""
-    pathname = tree.findname('%(category)s/%(name)s-%(version)s' % ebuild)
+    pathname = TREE.findname('%(category)s/%(name)s-%(version)s' % ebuild)
     if not pathname:
         return 'NULL'
     try:
@@ -199,7 +199,7 @@ def get_mtime(ebuild):
 
 def is_masked(ebuild):
     """Return true if packages is masked in tree"""
-    return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
+    return (not TREE.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
 
 def build():
     """Update/Create ebuild/packages in tree based on what's in portage"""
@@ -211,7 +211,7 @@ def build():
             continue
         result = get_ebuild_record(db, fields)
         fields = get_extended_info(fields)
-        ebuild_path = tree.findname('%(category)s/%(name)s-%(version)s' % fields)
+        ebuild_path = TREE.findname('%(category)s/%(name)s-%(version)s' % fields)
         fields['changelog'] = changelogs.changelog('%s/ChangeLog'
             % os.path.dirname(ebuild_path))
         fields['time'] = get_mtime(fields)
@@ -248,7 +248,7 @@ def purge():
             break
         #category, name, version = result
         cpv = '%s/%s-%s' % result
-        if not tree.cpv_exists(cpv):
+        if not TREE.cpv_exists(cpv):
             logging.info('REMOVING %s' % cpv)
             c2.execute('DELETE FROM ebuild WHERE category=%s AND name=%s '
                 'AND version=%s', result)
