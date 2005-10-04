@@ -107,7 +107,7 @@ def create_ebuild_record(db, ebinfo):
             '%(depend)s, %(rdepend)s, %(pdepend)s)', ebinfo)
     except MySQLdb.MySQLError, data:
         logging.error('error occorred: create_ebuild_record')
-        loggin.error('error: %s' % data)
+        logging.error('error: %s' % data)
 
 def update_ebuild_record(db, ebinfo):
     """Create a database record according to ebinfo dict.  Ebuild must already
@@ -201,8 +201,13 @@ def is_masked(ebuild):
     """Return true if packages is masked in tree"""
     return (not TREE.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
 
-def build():
-    """Update/Create ebuild/packages in tree based on what's in portage"""
+def build(rebuild = False):
+    """
+    Update/Create ebuild/packages in tree based on what's in portage
+
+    If rebuild is True, it will rebuild the database. i.e. it will update
+    all records and create no new ones.
+    """
     db = config.db
 
     for ebuild in find_ebuilds():
@@ -217,13 +222,17 @@ def build():
         fields['time'] = get_mtime(fields)
         fields['masked'] = int(is_masked(fields))
 
-        if not result:
+        if not (result or rebuild):
             try:
                 create_ebuild_record(db, fields)
             except MySQLdb.MySQLError:
                 print 'error creating record for %s/%s-%s' % (
                     fields['category'], fields['name'], fields['version'])
                 raise
+        elif result and rebuild:
+            fields['prevarch'] = result[6]
+            fields['arch'] = [4]
+            update_ebuild_record(db, fields)
         elif result[4].split(',') != fields['archs'].split(','):
             # keywords change, update db
             fields['prevarch'] = result[4]
@@ -273,6 +282,10 @@ def purge():
 
 
 if __name__ == '__main__':
-    build()
-    purge()
+    rebuild = False
+    if len(sys.argv) == 2 and sys.argv[1] == 'rebuild':
+        sys.stdout.write('Rebuilding...\n')
+        rebuild = True
+    build(rebuild = rebuild)
+    rebuild or purge()
     sys.exit(0)
