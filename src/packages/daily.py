@@ -1,4 +1,4 @@
-#!/usr/bin/python -OO
+#!/usr/bin/python -O
 
 import sys
 import config
@@ -94,7 +94,7 @@ query = ('SELECT ebuild.category,'
 	'changelog,'
 	'arch,'
 	'homepage,'
-	'license '
+	'license, is_masked '
 	'FROM ebuild,package '
 	'WHERE SUBSTRING(when_found FROM 1 FOR 8) = "%s%02d%02d" '
 	'AND ebuild.name = package.name '
