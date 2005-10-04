@@ -1,0 +1,99 @@
+"""Python Templates for Packages"""
+
+from quixote.html import htmltext
+import main
+from packages.portage import Ebuild, EbuildFactory
+from packages.ui.menu import do_menu
+
+def brief [html] (p):
+    """\
+<div class="summary">
+    <div class="categoryName"><a href="/portage/%s/">%s</a></div>
+    <div class="ebuild">
+        <div class="ebuildName"><a href="/portage/%s/%s/">%s</a></div>
+    </div>
+    <div class="description"
+        style="background-image: url(/portage/%s/%s/image.png)">
+        %s
+        %s
+    </div>
+</div>
+""" % (p.category,
+    p.category,
+    p.category,
+    p.name,
+    p.name,
+    p.category,
+    p.name,
+    p.description,
+    versions(p)
+    )
+
+
+def sidebox [html] (p):
+    title = p.name
+    body = do_menu((('Home Page', './homepage', None, None),
+        ('Changelog', './changelog', None, None),
+        ('Bugs', './bugs', None, None),
+        ('Forums', './forums', None, None)))
+    main.sidebox(title, body)
+
+def versions [html] (p):
+    if not p.ebuilds:
+        p.set_ebuilds()
+    p.ebuilds.sort(Ebuild.cmp)
+    p.ebuilds.reverse()
+
+    """
+    <table class="versionList">
+        <tr class="title"><td colspan="2">Ebuilds</td></tr>
+    """
+    count = 0
+    toggle = ['even','odd']
+    for ebuild in p.ebuilds:
+        count = count + 1
+        myName = ebuild.name
+        myVersion = ebuild.version
+        tmpArchs = ebuild.archs
+        tmpArchs.sort()
+        myArchs = []
+        if ebuild.masked:
+            myArchs = ['<span class="masked">[Hard Masked]</span>']
+        for arch in tmpArchs:
+            if arch[0] == '-':
+                # blocked, don't display
+                continue
+            elif arch[0] != '~':
+                # Lpad a space before stable so vertically it lines up with ~archs
+                myArchs.append('&nbsp;' + arch)
+            else:
+                myArchs.append(arch)
+        ('      <tr class="%s"><td class="version"><a title="%s" href="%s/">'
+            '%s&nbsp;%s</a></td><td class="archlist">%s</td></tr>\n' % (
+            toggle[count%2],
+            ebuild.when_found.ctime(),
+            myVersion,
+            myName,
+            myVersion,
+            '<br/>'.join(myArchs)))
+    '   </table>\n'
+
+
+def ebuilds [html] (p, db):
+    myEbuilds = EbuildFactory(db).get(p.category, p.name)
+    myEbuilds.sort(Ebuild.cmp)
+    myEbuilds.reverse()
+    myVersions =  [i.version for i in myEbuilds]
+    if myVersions:
+        title = 'Releases'
+        count = len(myEbuilds)
+        if count == 1:
+            language = ('is', 'ebuild')
+        else:
+            language = ('are', 'ebuilds')
+        summary = '<div class="summary">There %s %s %s for %s.</div>' \
+            % (language[0], count, language[1], p.name)
+        body = summary + do_menu([(i, i + '/', None, None) for i in myVersions])
+        main.sidebox(title, body)
+    else:
+        '\n'

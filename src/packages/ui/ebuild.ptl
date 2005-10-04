@@ -1,0 +1,104 @@
+"""Python Templates for Ebuilds"""
+
+import main
+from quixote.html import htmltext
+from packages.changelogs import bugs_to_html
+from packages import config
+from packages.portage import Ebuild, EbuildFactory
+from packages.ui.menu import do_menu
+import datetime
+
+def brief [html] (ebuild):
+    data = ebuild.to_dict()
+    data['stable'] = ' '.join(data['stable'])
+    data['testing'] = ' '.join(data['testing'])
+    data['changelog'] = htmltext(bugs_to_html(ebuild.changelog))
+    data['ebuildName'] = '<span class="ebuildName">' \
+        '<a href="/portage/%(category)s/%(name)s/">%(name)s</a></span>' % data
+    data['ebuildVersion'] = '<span class="ebuildVersion">' \
+        '<a href="/portage/%(category)s/%(name)s/%(version)s/">%(version)s</a>'\
+        '</span>' % data
+
+    if data['package_datetime'] and (datetime.datetime.now() -
+        data['package_datetime']).days <= config.DAYS_NEW :
+        data['ebuildName'] = '<span class="ebuildNew">%(ebuildName)s</span>' % data
+        data['ebuildVersion'] = '<span class="ebuildNew">%(ebuildVersion)s</span>' % data
+
+    if not ebuild.masked:
+        data['masked'] = ''
+    else:
+        data['masked'] = '<tr class="masked"><td colspan="2" class="masked">' \
+            'This ebuild is hard masked</td></tr>'
+
+    # I like the descriptions to end with punctuation
+    if data['description'] and data['description'][-1] not in str('.?!'):
+        data['description'] = data['description'] + '.'
+
+    data['when_found'] = data['when_found'].ctime()
+    """\
+<div class="summary">
+    <div class="categoryName"><a href="/portage/%(category)s/">%(category)s</a></div>
+    <div class="ebuild">
+        <span class="pv">%(ebuildName)s %(ebuildVersion)s</span>
+        <span class="ebuildDate">%(when_found)s UTC</span>
+        <span class="iconbar">
+            <a \
+                href="/portage/%(category)s/%(name)s/homepage">
+                <img src="/images/homepage.png" alt="*Home Page" />
+            </a>
+            <a \
+                href="/portage/%(category)s/%(name)s/changelog">
+                <img src="/images/changelog.png" alt="*Changelog" />
+            </a>
+            <a \
+                href="/portage/%(category)s/%(name)s/bugs">
+                <img src="/images/bugs.png" alt="*Bugs" />
+            </a>
+            <a \
+                href="/portage/%(category)s/%(name)s/forums">
+                <img src="/images/forums.png" alt="*Forums" />
+            </a>
+        </span>
+    </div>
+    <div class="description">%(description)s</div>
+    <div class="changelog">%(changelog)s</div>
+    <table class="archlist">
+        <tr class="title"><td colspan="2">Availability</td></tr>
+        <tr class="stable"><td \
+            class="stableHeader">stable</td><td class="archs">%(stable)s</td></tr>
+        <tr class="testing"><td \
+            class="testingHeader">testing</td><td class="archs">%(testing)s</td></tr>
+        %(masked)s
+    </table>
+</div>
+""" % data
+
+
+def sidebox [html] (ebuild):
+    title = ebuild.name
+    body = do_menu((('Home Page', '../homepage', None, None),
+        ('Changelog', '../changelog', None, None),
+        ('Bugs', '../bugs', None, None),
+        ('Forums', '../forums', None, None)))
+    main.sidebox(title, body)
+
+def licenses [html] (ebuild):
+    htmlLicenses = do_menu([(lic, '/licenses/%s' % lic, None, None)
+        for lic in ebuild.licenses])
+
+    main.sidebox('License', htmlLicenses)
+
+def others [html] (ebuild, db):
+    myEbuilds = EbuildFactory(db).get(ebuild.category, ebuild.name)
+    myEbuilds.sort(Ebuild.cmp)
+    myEbuilds.reverse()
+    myVersions =  [i.version for i in myEbuilds]
+    myVersions.remove(ebuild.version)
+    if myVersions:
+        title = 'Other Releases'
+        body = do_menu([(i, '../%s/' % i, None, None) for i in myVersions])
+        main.sidebox(title, body)
+    else:
+        '\n'
+
+
