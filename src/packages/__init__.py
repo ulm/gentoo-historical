@@ -1,17 +1,27 @@
+#
+# Copyright (C) 2005, marduk <marduk@python.net>
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions
+# of the GNU General Public License v.2.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 """
 
-Gentoo Online Package Database 
+Gentoo Online Package Database
 ==============================
 
 Dependencies
 ------------
 This package depends on:
-    * Quixote_        
+    * Quixote_
     * MySQL_
     * 'MySQL Python'_
     * ElementTree_
 
-.. _Gentoo Online Package Database: http://packages.gentoo.org/
 .. _Quixote: http://www.mems-exchange.org/software/quixote/
 .. _MySQL: http://www.mysql.com/
 .. _MySQL Python: http://sourceforge.net/projects/mysql-python/

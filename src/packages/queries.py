@@ -1,17 +1,14 @@
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
+# Copyright (C) 2005, marduk <marduk@python.net>
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions
+# of the GNU General Public License v.2.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 """
 The idea is to keep all the SQL queries here.  That way if the database
 schema changes we only need to edit one module.
@@ -22,7 +19,7 @@ of "formatted" objects, not the tuples returned by fetch[all]()
 REMEMBER: Return value is *ALWAYS* a list.
 """
 
-__revision__ = "$Revision: 1.1.2.1 $"
+__revision__ = "$Revision: 1.1.2.2 $"
 # $Source: /var/cvsroot/gentoo/src/packages/Attic/queries.py,v $
 
 from re import compile

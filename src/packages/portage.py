@@ -1,9 +1,17 @@
+#
+# Copyright (C) 2005, marduk <marduk@python.net>
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions
+# of the GNU General Public License v.2.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 """Portage Objects"""
 
-# Once tuned, this will hopefully be the interface used in the future for
-# packages.g.o
-
-__revision__ = "$Revision: 1.1.2.1 $"
+__revision__ = "$Revision: 1.1.2.2 $"
 # $Source: /var/cvsroot/gentoo/src/packages/Attic/portage.py,v $
 
 import sys
@@ -14,8 +22,6 @@ __name__ = 'portage'
 sys.path = sys.path[1:]
 
 PORTAGE_PATH = '/usr/portage'
-
-##tree = portage_api.portdbapi(PORTAGE_PATH)
 
 class Category:
     """Collection of packages"""
