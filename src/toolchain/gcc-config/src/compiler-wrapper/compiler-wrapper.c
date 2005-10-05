@@ -2,8 +2,8 @@
  * C Implementation: compiler-wrapper
  *
  * Description:
- * A wrapper for gcc or any other compiler which executes a binary based on the profile
- * used for the set CTARGET.
+ * A wrapper for gcc or any other compiler which executes a binary based on the
+ * profile used for the set CHOST.
  *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
  *
@@ -11,13 +11,16 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.4 2005/10/02 20:45:56 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.5 2005/10/05 21:03:03 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.5  2005/10/05 21:03:03  eradicator
+ * use getenv(CHOST).  not CTARGET.
+ *
  * Revision 1.4  2005/10/02 20:45:56  eradicator
  * BSD related cleanup.
  *
  * Revision 1.3  2005/09/24 18:31:38  eradicator
- * Changed references to choat->ctarget.  Changed --default to --native.
+ * Changed references to chost->ctarget.  Changed --default to --native.
  *
  * Revision 1.2  2005/09/24 06:07:59  eradicator
  * Honor GCC_SPECS envvar if it's already set.  Also, search through PATH first when locating the executable if scan_path is set in the config file.
@@ -83,8 +86,8 @@
 #endif
 
 typedef struct {
-	/* The CTARGET being compiled for.  This is determined by $ABI (deprecated),
-	 * the prefix of the executable, the environment ($CTARGET), or the default
+	/* The CHOST being compiled for.  This is determined by $ABI (deprecated),
+	 * the prefix of the executable, the environment ($CHOST), or the default
 	 * set in the config file.
 	*/
 	char ctarget[MAXPATHLEN + 1];
@@ -174,10 +177,10 @@ static void setCtargetAndProfile(WrapperData *data) {
 		}
 	}
 
-	/* We didn't find a match, so see if we have ${CTARGET} set. */
-	if(getenv("CTARGET") != NULL) {
+	/* We didn't find a match, so see if we have ${CHOST} set. */
+	if(getenv("CHOST") != NULL) {
 		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CTARGET"))) != NULL) {
-			strncpy(data->ctarget, getenv("CTARGET"), MAXPATHLEN);
+			strncpy(data->ctarget, getenv("CHOST"), MAXPATHLEN);
 			return;
 		}
 	}
@@ -185,7 +188,7 @@ static void setCtargetAndProfile(WrapperData *data) {
 	/* No match, use the default */
 	strncpy(data->ctarget, data->selectionConf->defaultCtarget, MAXPATHLEN);
 	if((data->profile = hashGet(data->selectionConf->selectionHash, data->ctarget)) == NULL) {
-		die("%s wrapper: Could not determine CTARGET or CTARGET has no selected profile.", data->argv[0]);
+		die("%s wrapper: Could not determine which compiler to use.  Invalid CTARGET or CTARGEThas no selected profile.", data->argv[0]);
 	}
 	return;
 }
