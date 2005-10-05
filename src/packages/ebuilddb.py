@@ -1,6 +1,6 @@
 #!/usr/bin/python -O
 
-__revision__ = '$Revision: 1.6 $'
+__revision__ = '$Revision: 1.7 $'
 # $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
@@ -140,17 +140,17 @@ def get_extended_info(ebuild):
 def get_mtime(s):
     """Get mtime of file, return in format that MySQL would like"""
     try:
-        t = os.path.getmtime(s)
+        mtime = os.path.getmtime(s)
     except OSError:
         return 'NULL'
-    str = time.strftime("%Y%m%d%H%M%S",time.localtime(t))
-    return str
+    strftime = time.strftime("%Y%m%d%H%M%S",time.localtime(mtime))
+    return strftime
 
 def is_masked(tree, ebuild):
     """Return true if packages is masked in tree"""
     return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
 
-def main():
+def main(argv = []):
     """Main program entry point"""
     # We need to "fake" as repoman so portage will ignore local system
     # settings
@@ -169,6 +169,8 @@ def main():
 
     tree = portage.portdbapi('/usr/portage', p_config)
 
+    # are we updating the db or just rebuilding it?
+    rebuild = len(argv) == 2 and argv[1] == 'rebuild'
     for s in ebuilds:
         fields = parse_ebuild(s, portage.pkgsplit)
         if not fields:
@@ -180,8 +182,12 @@ def main():
         fields['time'] = get_mtime(s)
         fields['masked'] = int(is_masked(tree, fields))
 
-        if not result:
+        if not (result or rebuild):
             create_ebuild_record(db,fields)
+        elif result and rebuild:
+            fields['prevarch'] = result[6]
+            fields['arch'] = [4]
+            update_ebuild_record(db, fields)
         elif result[4] != fields['archs']:
             #print 'ebuild archs=',fields['archs']
             #print 'db archs=',result[4]
@@ -197,4 +203,4 @@ def main():
 
     db.commit()
 if __name__ == '__main__':
-    main()
+    sys.exit(main(sys.argv))
