@@ -11,38 +11,26 @@
 #
 """Module to deal with Changelog files in the portage tree"""
 
-from packages import mstring
 import re
 from cgi import escape
 
-#BUG_REGEX = re.compile(r'\B#[0-9]+|\bbug [0-9]+', re.I)
 BUG_REGEX = re.compile(r'((\B#|\bbug )([0-9]+))', re.I)
-DATE_REGEX = re.compile(
-    r'[0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}[;:]',
-    re.M)
+DATE_REGEX = re.compile(r"""
+    (
+        [0-9]{2}\s # Day
+        (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s  # Month
+        [0-9]{4} # Year
+    )
+    [;:]""",
+    re.M|re.VERBOSE)
 GENTOO_DEV = re.compile(r'&lt;((.+))@gentoo.org&gt;', re.I)
 
 def bugs_to_html(string):
     """Convert bug #'s to html, escape other html text"""
     string = string.strip()
     string = escape(string)
-##    index = 1
-##    while 1:
-##        match = BUG_REGEX.search(string, index)
-##        if not match:
-##            break
-##        start = match.start()
-##        end = match.end()
-##        substring = string[start:end]
-##        if substring[0] == '#':  # this of the form "#1234"
-##            bugid = substring[1:]
-##        else: # this is of the form "bug 1234"
-##            bugid = substring[4:]
-##        url = '<a href="/bugs/%s">%s</a>' % (bugid, substring)
-##        (string, index) = mstring.replace_sub(string, url, start , end-1)
-    index = 0
     string = BUG_REGEX.sub(r'<a href="/bugs/\3">\1</a>', string)
-    match = DATE_REGEX.search(string, index)
+    match = DATE_REGEX.search(string)
     if match:
         start = match.start()
         next = DATE_REGEX.search(string, match.end() + 1)
@@ -50,14 +38,10 @@ def bugs_to_html(string):
             end = next.start() - 1
         else:
             end = len(string)
-        substring = string[start:end]
-        html = '<span class="change"><span class="date">%s</span>%s</span>' % \
-            (substring[:11], substring[11:])
-        (string, index) = mstring.replace_sub(string[:end+1], html, start, end)
-    #s = '<ul>' + s + '</ul>\n'
-    # convert email address to links to CIA stats
+        string = string[start:end]
+        string = DATE_REGEX.sub(r'<span class="date">\1</span>: ', string)
     string = GENTOO_DEV.sub(r'(<a href="/stats/\2">\1</a>)', string)
-    return string
+    return '<span class="change">%s</span>' % string
 
 def changelog(filename):
     """(Try to) Extract only the most recent bits from a changelog file"""
