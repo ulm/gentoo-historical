@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.14 $"
+__revision__ = "$Revision: 1.15 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -35,16 +35,7 @@ def is_new(db, ebuild):
         return 1
     return 0
 
-def changelog_to_html(changelog):
-    """HTML-ize a changelog entry"""
-    html = ""
-    for char in changelog:
-        if char == '\n':
-            html = "%s<br>" % html
-        else:
-            html = "%s%s" % (html, escape(char))
-    html = changelogs.bugs_to_html(html)
-    return html
+changelog_to_html = changelogs.bugs_to_html
 
 def homepage_to_html(homepage):
     """convert HOMEPAGE entry to HTML"""
