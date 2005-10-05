@@ -149,7 +149,14 @@ class URIBrowser(gtk.Window):
 	def refresh_file_list(self):
 		if not self.uri.endswith("/"):
 			self.uri = self.uri[:self.uri.rfind("/")+1]
-		filelist = GLIUtility.get_directory_listing_from_uri(self.uri)
+		try:
+			filelist = GLIUtility.get_directory_listing_from_uri(self.uri)
+		except GLIException, e:
+			if e.get_error_name() == "IncorrectPassword":
+				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("Your password is incorrect."))
+				msgdlg.run()
+				msgdlg.destroy()
+			return
 		if not filelist:
 			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("The information you entered is invalid."))
 			msgdlg.run()

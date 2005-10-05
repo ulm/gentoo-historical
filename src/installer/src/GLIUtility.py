@@ -814,6 +814,8 @@ def get_directory_listing_from_uri(uri):
 						os.write(child_fd, "yes\n")
 					else:
 						if got_password_prompt:
+							if not tmpdirlist and data.endswith("assword: "):
+								raise GLIException("IncorrectPassword", "notice", "get_directory_listing_from_uri", "Your SSH password was incorrect")
 							tmpdirlist += data
 				else:
 					pid2, status = os.waitpid(pid, os.WNOHANG)
