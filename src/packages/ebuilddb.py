@@ -1,6 +1,6 @@
 #!/usr/bin/python -O
 
-__revision__ = '$Revision: 1.5 $'
+__revision__ = '$Revision: 1.6 $'
 # $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
@@ -151,6 +151,11 @@ def is_masked(tree, ebuild):
     return (not tree.visible(['%(category)s/%(name)s-%(version)s' % ebuild]))
 
 def main():
+    """Main program entry point"""
+    # We need to "fake" as repoman so portage will ignore local system
+    # settings
+    os.environ['PORTAGE_CALLER'] = 'repoman'
+
     ebuilds = find_ebuilds()
     db = db_connect()
 
