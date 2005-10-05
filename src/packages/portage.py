@@ -11,11 +11,12 @@
 #
 """Portage Objects"""
 
-__revision__ = "$Revision: 1.1.2.3 $"
+__revision__ = "$Revision: 1.1.2.4 $"
 # $Source: /var/cvsroot/gentoo/src/packages/Attic/portage.py,v $
 
 import sys
 import os
+from weakref import WeakValueDictionary
 
 # We need to "fake" as repoman so portage will ignore local system settings
 os.environ['PORTAGE_CALLER'] = 'repoman'
@@ -168,7 +169,7 @@ class PackageFactory:
         self.cache[key] = packages
         return packages
 
-class Ebuild:
+class Ebuild(object):
     """Classic ebuild
 
     To create a Ebuild object, we expect:
@@ -184,6 +185,17 @@ class Ebuild:
         package_datetime (optional)
     """
 
+    __cache = WeakValueDictionary()
+    def __new__(cls, **kwargs):
+        # We want to share cpv's, so we cache them
+        cpv = '%(category)s/%(name)s-%(version)s' % kwargs
+        if cls.__cache.has_key(cpv):
+            return cls.__cache[cpv]
+        else:
+            new_Ebuild = object.__new__(cls, **kwargs)
+            cls.__cache[cpv] = new_Ebuild
+            return new_Ebuild
+    
     def __init__(self, **kwargs):
         self.category = kwargs['category']
         self.name = kwargs['name']
