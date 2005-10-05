@@ -22,6 +22,10 @@ import os
 # I want to ignore overlays
 os.environ['PORTDIR_OVERLAY'] = ''
 
+# We need to "fake" as repoman so portage will ignore local system settings
+os.environ['PORTAGE_CALLER'] = 'repoman'
+
+
 sys.path = ["/usr/lib/portage/pym"]+sys.path
 import portage
 # ... and then wait like a f**king hour

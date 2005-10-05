@@ -11,10 +11,15 @@
 #
 """Portage Objects"""
 
-__revision__ = "$Revision: 1.1.2.2 $"
+__revision__ = "$Revision: 1.1.2.3 $"
 # $Source: /var/cvsroot/gentoo/src/packages/Attic/portage.py,v $
 
 import sys
+import os
+
+# We need to "fake" as repoman so portage will ignore local system settings
+os.environ['PORTAGE_CALLER'] = 'repoman'
+
 __name__ = 'tmp'
 sys.path = ["/usr/lib/portage/pym"]+sys.path
 import portage as portage_api
