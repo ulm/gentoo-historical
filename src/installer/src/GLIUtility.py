@@ -783,7 +783,7 @@ def get_directory_listing_from_uri(uri):
 		dirlist = []
 		sshcmd = ["ssh"]
 		if uriparts[4]:
-			sshcmd.append("-P")
+			sshcmd.append("-p")
 			sshcmd.append(uriparts[4])
 		if uriparts[1]:
 			sshcmd.append(uriparts[1] + "@" + uriparts[3])

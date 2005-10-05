@@ -193,7 +193,7 @@ class URIBrowser(gtk.Window):
 		self.refresh_file_list()
 
 	def uritype_changed(self, combobox):
-		if self.uritype.get_active_text() == "file":
+		if self.uritype.get_active() == 0:
 			self.host_entry.set_sensitive(False)
 			self.host_browse.set_sensitive(False)
 			self.port_entry.set_sensitive(False)
@@ -207,14 +207,14 @@ class URIBrowser(gtk.Window):
 			self.password_entry.set_sensitive(True)
 
 	def refresh_clicked(self, button):
-		if self.uritype.get_active_text() == "file":
+		if self.uritype.get_active() == 0:
 			self.uri = "file://"
 		else:
 			self.host_entry.set_sensitive(True)
 			self.port_entry.set_sensitive(True)
 			self.username_entry.set_sensitive(True)
 			self.password_entry.set_sensitive(True)
-			self.uri = self.uritype.get_active_text() + "://"
+			self.uri = self.uritypes[self.uritype.get_active()] + "://"
 			if self.username_entry.get_text():
 				self.uri += self.username_entry.get_text()
 				if self.password_entry.get_text():
@@ -233,9 +233,9 @@ class URIBrowser(gtk.Window):
 		hbox.set_border_width(10)
 		hbox.pack_start(gtk.Label("Mirror:"), expand=False, fill=False, padding=0)
 		host_combo = gtk.combo_box_new_text()
-		if self.uritype.get_active_text() == "http":
+		if self.uritypes[self.uritype.get_active()] == "http":
 			mirrors = GLIUtility.list_mirrors(http=True, ftp=False, rsync=False)
-		elif self.uritype.get_active_text() == "ftp":
+		elif self.uritypes[self.uritype.get_active()] == "ftp":
 			mirrors = GLIUtility.list_mirrors(http=False, ftp=True, rsync=False)
 		else:
 			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format=_("There are no known mirrors for this URI type."))
