@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.5 2005/10/05 21:03:03 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.6 2005/10/06 00:25:13 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.6  2005/10/06 00:25:13  eradicator
+ * Missed one CHOST.
+ *
  * Revision 1.5  2005/10/05 21:03:03  eradicator
  * use getenv(CHOST).  not CTARGET.
  *
@@ -179,7 +182,7 @@ static void setCtargetAndProfile(WrapperData *data) {
 
 	/* We didn't find a match, so see if we have ${CHOST} set. */
 	if(getenv("CHOST") != NULL) {
-		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CTARGET"))) != NULL) {
+		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CHOST"))) != NULL) {
 			strncpy(data->ctarget, getenv("CHOST"), MAXPATHLEN);
 			return;
 		}
