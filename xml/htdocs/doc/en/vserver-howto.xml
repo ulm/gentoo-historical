@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vserver-howto.xml,v 1.2 2005/08/08 11:08:24 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vserver-howto.xml,v 1.3 2005/10/06 16:42:48 jkt Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/vserver-howto.xml">
@@ -21,8 +21,8 @@ Linux-VServer Technology
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.0</version>
-<date>2005-06-17</date>
+<version>1.1</version>
+<date>2005-10-06</date>
 
 <chapter>
 <title>Introduction</title>
@@ -83,7 +83,7 @@ contained within.
 </chapter>
 
 <chapter>
-<title>Creating a VServer template</title>
+<title>Host configuration</title>
 <section>
 <title>Install a VServer kernel</title>
 <body>
@@ -102,13 +102,12 @@ After the vserver-sources are installed it's time to configure them using
 # <i>make menuconfig</i>
 
 Linux VServer ---&gt;
-<comment>(Required by current utils)</comment>
-  [*] Enable Legacy Kernel API
+  [ ] Enable Legacy Kernel API
 <comment>(Do not set!)</comment>
   [ ] Disable Legacy Networking Kernel API
 <comment>(Highly recommended)</comment>
   [*] Enable Proc Security
-  [ ] Enable Hard CPU Limits
+  [*] Enable Hard CPU Limits
   Persistent Inode Context Tagging (UID24/GID24)  ---&gt;
   [ ] Tag NFSD User Auth and Files
   [ ] Compile Debugging Code
@@ -124,7 +123,7 @@ finally reboot to see if the kernel boots correctly.
 # <i>make</i>
 <comment>(Installing)</comment>
 # <i>make modules_install</i>
-# <i>cp arch/i386/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vs&lt;VSERVERVERSION&gt;</i>
+# <i>cp arch/i386/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vserver-&lt;VSERVERVERSION&gt;</i>
 <comment>(Edit bootloader config file as required and)</comment>
 # <i>reboot</i>
 </pre>
@@ -140,23 +139,25 @@ To maintain your virtual servers you need the util-vserver package which
 contains all necessary programs and many usefull features.
 </p>
 
+<note>
+The tools and features used in this HowTo require
+<c>&gt;=sys-apps/util-vserver-0.30.208-r3</c>. You may have to keyword it first.
+</note>
+
 <pre caption="Install vserver utils">
 # <i>emerge util-vserver</i>
 </pre>
 
 <p>
-If you use Proc Security you have to "unhide" certain files in your
-<path>/proc</path> directory in order to make them available in virtual
-servers.  There is a script called <c>vprocunhide</c> in
-<path>/usr/lib/util-vserver</path> which unhides files specified in
-<path>/usr/lib/util-vserver/defaults/vprocunhide-files</path>. The util-vserver
-ebuild installed a init-script which uses the <c>vprocunhide</c> command. Add
-it to your runlevel:
+You have to run the <c>vprocunhide</c> command after every reboot in order to
+setup <path>/proc</path> permissions correctly for vserver use. An init script has
+been installed by util-vserver. To use it you should add it to a
+runlevel:
 </p>
 
-<pre caption="vprocunhide init script">
-# <i>rc-update add vprocunhide default</i>
-# <i>/etc/init.d/vprocunhide start</i>
+<pre caption="vserver init script">
+# <i>rc-update add vservers default</i>
+# <i>/etc/init.d/vservers start</i>
 </pre>
 
 <p>
@@ -171,27 +172,19 @@ have to tell the kernel where the vshelper script is located:
 
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>Creating a guest template</title>
 <section>
-<title>Basic Skeleton configuration</title>
+<title>Install a vserver stage3</title>
 <body>
 
 <p>
-You have to create some configuration files and directories to get your virtual
-server up and running. We use the skeleton build mode from the util-vserver
-package to setup our basic configuration.
-</p>
-
-<p>
-The util-vserver package uses <path>/vservers</path> to store all virtual
-servers by default. You can put your servers somewhere else by specifying
-<c>--rootdir=/path/to/vserver/root</c> to the build command below.
-</p>
-
-<p>
-There is a new baselayout-vserver ebuild in portage which supports the plain
-init-style, i.e.; you don't have to use the gentoo init style anymore. The
-plain init-style uses <c>init</c> and <path>/etc/inittab</path> to manage
-runlevels and init scripts (considered more stable and is the default now).
+We will use <c>vserver-new</c> to create the initial guest. You have to download
+a vserver prepared stage3 from
+<uri>http://dev.gentoo.org/~hollow/vserver/stages</uri> and the script will
+guide you through the creation process.
 </p>
 
 <p>
@@ -201,117 +194,62 @@ example eth0 is configured with 192.168.1.254/24 and the context ID is
 equivalent to the last two parts of the virtual servers IP).
 </p>
 
-<pre caption="Basic configuration">
-# <i>vserver gentoo build -m skeleton \</i>
+<pre caption="Start stage3 installation">
+# <i>vserver-new gentoo-template \</i>
   <i>--hostname gentoo \</i>
-  <i>--initstyle plain \</i>
-  <i>--context 1253</i>
-  <i>--interface gentoo=eth0:192.168.1.253/24</i>
+  <i>--context 1253 \</i>
+  <i>--interface eth0:192.168.1.253/24 \</i>
+  <i>stage3 /path/to/stage3-tarball.tar.bz2</i>
 </pre>
-
-<impo>
-Per default the virtual server is allowed to set the hostname itself. Be sure
-to change <path>/etc/conf.d/hostname</path> in your virtual server later to
-match the hostname above.
-</impo>
-
-</body>
-</section>
-<section>
-<title>Installing Gentoo installation files</title>
-<body>
-
-<p>
-We are creating a Gentoo template which we can copy later to get multiple
-virtual servers easily. The vserver build-script created some basic directories
-in <path>/vservers/gentoo</path> which are installed by a stage anyway, so we
-remove them first.
-</p>
-
-<pre caption="Remove skeleton files">
-# <i>rm -rf /vservers/gentoo/*</i>
-</pre>
-
-<p>
-You have to install a regular Gentoo system now. You can follow most of the
-Gentoo Handbook with some limitations and additions:
-</p>
-
-<ul>
-  <li>Replace <path>/mnt/gentoo</path> with <path>/vservers/gentoo</path></li>
-  <li>
-    Choose the <path>vserver/x86</path> profile in <uri
-    link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=6#doc_chap1_sect6">chapter
-    6.a</uri>
-  </li>
-  <li>
-    Use the vserver stages available <uri
-    link="http://dev.gentoo.org/~hollow/vserver/stages/">here</uri>.
-  </li>
-</ul>
-
-<p>
-Now, follow the Gentoo Handbook from <uri
-link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=5#doc_chap2"> chapter
-5.b</uri> to chapter 7.a and <uri
-link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap3"> chapter
-8.c</uri> to chapter 9.c
-</p>
 
 <note>
 To reflect your network settings you should change
 <path>/etc/conf.d/hostname</path>, <path>/etc/conf.d/domainname</path> and
-<path>/etc/hosts</path> to your needs. See <uri
-link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect1">
-chapter 8.b.1</uri> and <uri
-link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect4">
-chapter 8.b.4</uri>. The rest of your virtual servers network setup will be
+<path>/etc/hosts</path> inside the guest to your needs. See <uri
+link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect1">chapter
+8.b.1</uri> and <uri
+link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect4">chapter
+8.b.4</uri>. The rest of your virtual servers network setup will be
 done on the host.
 </note>
 
 </body>
 </section>
 <section>
-<title>Necessary configuration-file changes</title>
+<title>Create the template tarball</title>
 <body>
 
 <p>
-Change the source entry in <path>/etc/syslog-ng/syslog-ng.conf</path> because
-we have no permission to read <path>/proc/kmsg</path> for security reasons and
-remove the console destination:
+You don't have to build a stage3 tarball for every guest. The <c>vserver-new</c>
+script supports templates. In order to use them you have to create a tarball of
+your vserver installation:
 </p>
 
-<pre caption="Edit /etc/syslog-ng/syslog-ng.conf">
-<comment>(Change this)</comment>
-source src { unix-stream("/dev/log"); internal(); pipe("/proc/kmsg"); };
-<comment>(To this)</comment>
-source src { unix-stream("/dev/log"); internal(); };
-
-<comment>(Remove these lines)</comment>
-# By default messages are logged to tty12...
-destination console_all { file("/dev/tty12"); };
-# ...if you intend to use /dev/console for programs like xconsole
-# you can comment out the destination line above that references /dev/tty12
-# and uncomment the line below.
-#destination console_all { file("/dev/console"); };
-
-log { source(src); destination(console_all); };
+<pre caption="Create template tarball">
+# <i>cd /vservers/gentoo-template</i>
+# <i>tar cjvpf ../gentoo-template.tar.bz2 ./</i>
 </pre>
-
-</body>
-</section>
-<section>
-<title>Leave the chroot environment</title>
-<body>
 
 <p>
-Your system should be ready. Leave the chroot and umount the proc filesystem.
+To create a new guest using this tarball just use <c>vserver-new</c>:
 </p>
 
-<pre caption="Leave the chroot environment">
-# <i>exit</i>
-# <i>umount /vservers/gentoo/proc/</i>
+<pre caption="Use template tarball">
+# <i>cd /vservers</i>
+# <i>vserver-new myguest \</i>
+  <i>--hostname myguest \</i>
+  <i>--context 1252 \</i>
+  <i>--interface eth0:192.168.1.252/24 \</i>
+  <i>template ./gentoo-template.tar.bz2</i>
 </pre>
+
+<note>
+You should use a shared portage tree for your guests to keep guests small in
+size. Edit <path>/etc/vservers/myguest/fstab</path> and uncomment the entries
+for <path>/usr/portage</path> and <path>/usr/portage/distfiles</path>. Guests
+will have read-only access to <path>/usr/portage</path> and read-write access
+to <path>/usr/portage/distfiles</path>.
+</note>
 
 </body>
 </section>
@@ -327,20 +265,19 @@ this package by default.
 </p>
 
 <pre caption="Test the virtual server">
-# <i>vserver gentoo start</i>
+# <i>vserver myguest start</i>
 # <i>vserver-stat</i>
 CTX   PROC    VSZ    RSS  userTIME   sysTIME    UPTIME NAME
 0       90   1.4G 153.4K  14m00s11   6m45s17   2h59m59 root server
-1253     2     3M   286    0m00s45   0m00s42   0m02s91 gentoo
-# <i>vserver gentoo enter</i>
+1252     2     3M   286    0m00s45   0m00s42   0m02s91 myguest
+# <i>vserver myguest enter</i>
 # <i>ps ax</i>
 PID   TTY      STAT   TIME COMMAND
     1 ?        S      0:00 init [3]
 22887 ?        Ss     0:00 /usr/sbin/syslog-ng
 20496 pts/0    S      0:00 /bin/bash -login
 20508 pts/0    R+     0:00 ps ax
-# <i>halt</i>
-Killed
+# <i>logout</i>
 </pre>
 
 </body>
