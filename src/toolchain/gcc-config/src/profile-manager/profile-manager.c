@@ -62,8 +62,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.20 2005/10/02 20:45:56 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/profile-manager/Attic/profile-manager.c,v 1.21 2005/10/06 20:23:41 eradicator Exp $
  * $Log: profile-manager.c,v $
+ * Revision 1.21  2005/10/06 20:23:41  eradicator
+ * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
+ *
  * Revision 1.20  2005/10/02 20:45:56  eradicator
  * BSD related cleanup.
  *
@@ -360,6 +363,9 @@ static void doGetProfile(const SelectionConf *selectionConf, const char *install
 
 	/* COMPILER_CONFIG_STDCXX_INCDIR */
 	fprintf(fd, "COMPILER_CONFIG_STDCXX_INCDIR=\"%s\"\n", installConf->stdcxx_incdir);
+
+	/* COMPILER_COMPILER_CONFIG_BIN_PREFIX */
+	fprintf(fd, "COMPILER_CONFIG_BIN_PREFIX=\"%s\"\n", installConf->bin_prefix);
 
 	/* COMPILER_CONFIG_LDPATH */
 	fprintf(fd, "COMPILER_CONFIG_LDPATH=\"%s\"\n", profile->libdir);

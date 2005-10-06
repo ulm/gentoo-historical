@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.28 2005/10/02 20:45:56 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.c,v 1.29 2005/10/06 20:23:41 eradicator Exp $
  * $Log: install_conf.c,v $
+ * Revision 1.29  2005/10/06 20:23:41  eradicator
+ * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
+ *
  * Revision 1.28  2005/10/02 20:45:56  eradicator
  * BSD related cleanup.
  *
@@ -117,6 +120,10 @@
 #define MAX_STRLEN 1023
 #endif
 
+#define EPARSE_NOMEM      -1
+#define EPARSE_MOREGLOBAL -2
+#define EPARSE_UNKNOWNKEY  3
+
 static void freeProfile(Profile *profile);
 
 struct installParseData {
@@ -129,31 +136,35 @@ static int installConfSectionCB(const char *section, void *_data) {
 	InstallConf *conf = data->installConf;
 
 	if (strcmp(section, "global") == 0) {
-		data->profile = NULL;
+		if(conf->profileHash != NULL) {
+			/* Multiple [global] sections */
+			return EPARSE_MOREGLOBAL;
+		}
+
 		conf->profileHash = hashNew(16);
 
-		if(!conf->profileHash)
-			return -1;
+		if(conf->profileHash == NULL)
+			return EPARSE_NOMEM;
 
 		conf->wrapperAliases = hashNew(16);
 
-		if(!conf->wrapperAliases) {
+		if(conf->wrapperAliases == NULL) {
 			hashFree(conf->profileHash);
-			return -1;
+			return EPARSE_NOMEM;
 		}
 	} else {
 		Profile *tmp;
 		data->profile = (Profile *)calloc(1, sizeof(Profile));
 
 		if(!data->profile)
-			return -1;
+			return EPARSE_NOMEM;
 
 		data->profile->installConf = conf;
 		data->profile->name = strndup(section, MAX_STRLEN);
 
 		if(!data->profile->name) {
 			free(data->profile);
-			return -1;
+			return EPARSE_NOMEM;
 		}
 
 		tmp = hashInsert(conf->profileHash, data->profile->name, data->profile);
@@ -169,8 +180,8 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 	char *value = strndup(_value, MAX_STRLEN);
 	char *tmp;
 
-	if(!value)
-		return -1;
+	if(value == NULL)
+		return EPARSE_NOMEM;
 
 #define set_to_value(var) if(var != NULL) free(var); var = value;
 	
@@ -185,6 +196,8 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 			set_to_value(conf->manpath);
 		} else if (strcmp(key, "stdcxx_incdir") == 0) {
 			set_to_value(conf->stdcxx_incdir);
+		} else if (strcmp(key, "bin_prefix") == 0) {
+			set_to_value(conf->bin_prefix);
 			/* check aliases */
 		} else if (strncmp(key, "alias_", 6) == 0) {
 			tmp = hashInsert(conf->wrapperAliases, key+6, (void *)value);
@@ -192,10 +205,12 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 				free(tmp);
 		} else {
 			/* unknown key... ignore it */
-			return 1;
+			return EPARSE_UNKNOWNKEY;
 		}
 	} else { /* on other sections */
 		if (strcmp(key, "ctarget") == 0) {
+			if(conf->bin_prefix == NULL)
+				set_to_value(conf->bin_prefix);
 			set_to_value(data->profile->ctarget);
 		} else if (strcmp(key, "specs") == 0) {
 			set_to_value(data->profile->specs);
@@ -205,7 +220,7 @@ static int installConfKeyCB(const char *key, const char *_value, void *_data) {
 			set_to_value(data->profile->cflags);
 		} else {
 			/* unknown key... ignore it */
-			return 1;
+			return EPARSE_UNKNOWNKEY;
 		}
 	}
 

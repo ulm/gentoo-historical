@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.30 2005/10/02 20:45:56 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.31 2005/10/06 20:23:41 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.31  2005/10/06 20:23:41  eradicator
+ * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
+ *
  * Revision 1.30  2005/10/02 20:45:56  eradicator
  * BSD related cleanup.
  *
@@ -128,6 +131,11 @@
 #define MAXPATHLEN 1023
 #endif
 
+#define EPARSE_NOMEM      -1
+#define EPARSE_MOREGLOBAL -2
+#define EPARSE_UNKNOWNKEY  3
+#define EPARSE_BADPROFILE  4
+
 struct selectionParseData {
 	SelectionConf *selectionConf;
 	char ctarget[MAXPATHLEN + 1];
@@ -152,12 +160,12 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 		if(strcmp(key, "native_ctarget") == 0) {
 			selconf->defaultCtarget = strndup(value, MAXPATHLEN);
 			if(!selconf->defaultCtarget)
-				return -1;
+				return EPARSE_NOMEM;
 		} else if(strcmp(key, "scan_path") == 0) {
 			selconf->scanPath = atoi(value);
 		} else {
 			/* unknown key... ignore it */
-			return 1;
+			return EPARSE_UNKNOWNKEY;
 		}
 	} else { /* selected profile */
 		if(strcmp(key, "profile") == 0) {
@@ -170,7 +178,7 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			/* First we need to split the profile given as <version>/<profile> */
 			for(profile=version; *profile && *profile != '/'; profile++);
 			if(*profile != '/')
-				return 2;
+				return EPARSE_BADPROFILE;
 
 			*profile = '\0';
 			profile++;
@@ -178,17 +186,17 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 			/* Now, find the installConf */
 			installConf = (InstallConf *)hashGet(selconf->installHash, version);
 			if(!installConf)
-				return 2;
+				return EPARSE_BADPROFILE;
 
 			/* Now find the profile */
 			prof = (Profile *)hashGet(installConf->profileHash, profile);
-			if(!prof)
-				return 2;
+			if(prof == NULL)
+				return EPARSE_BADPROFILE;
 
 			hashInsert(selconf->selectionHash, data->ctarget, (void *)prof);
 		 } else {
 			/* unknown key... ignore it */
-			return 1;
+			 return EPARSE_UNKNOWNKEY;
 		}
 	}
 	return 0;

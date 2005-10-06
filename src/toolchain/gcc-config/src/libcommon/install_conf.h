@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.13 2005/09/30 19:35:54 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/install_conf.h,v 1.14 2005/10/06 20:23:41 eradicator Exp $
  * $Log: install_conf.h,v $
+ * Revision 1.14  2005/10/06 20:23:41  eradicator
+ * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
+ *
  * Revision 1.13  2005/09/30 19:35:54  eradicator
  * Added stdcxx_incdir.  Cleaned up some possible memory problems.
  *
@@ -73,6 +76,7 @@ typedef struct {
 	char *infopath;
 	char *manpath;
 	char *stdcxx_incdir;
+	char *bin_prefix;
 
 	/* Hash table of profiles provided by this install
 	 * Key: (char *) name (such as "x86-vanilla")

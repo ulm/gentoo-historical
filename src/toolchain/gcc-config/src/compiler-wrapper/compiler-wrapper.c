@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.6 2005/10/06 00:25:13 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.7 2005/10/06 20:23:41 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.7  2005/10/06 20:23:41  eradicator
+ * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
+ *
  * Revision 1.6  2005/10/06 00:25:13  eradicator
  * Missed one CHOST.
  *
@@ -191,7 +194,7 @@ static void setCtargetAndProfile(WrapperData *data) {
 	/* No match, use the default */
 	strncpy(data->ctarget, data->selectionConf->defaultCtarget, MAXPATHLEN);
 	if((data->profile = hashGet(data->selectionConf->selectionHash, data->ctarget)) == NULL) {
-		die("%s wrapper: Could not determine which compiler to use.  Invalid CTARGET or CTARGEThas no selected profile.", data->argv[0]);
+		die("%s wrapper: Could not determine which compiler to use.  Invalid CTARGET or CTARGET has no selected profile.", data->argv[0]);
 	}
 	return;
 }
@@ -234,19 +237,24 @@ static void setExecBinary(WrapperData *data) {
 			token = strtok_r(NULL, ":", &state);
 		}
 	}
-	
-	/* Fisrt try without the CTARGET prefix */
-	snprintf(data->execBinary, MAXPATHLEN, "%s/%s", data->profile->installConf->binpath, execBasename);
+
+	/* Try with the bin_prefix in the profile */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->profile->installConf->bin_prefix, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
-	/* Now try with the CTARGET prefix used */
+	/* Try with the CTARGET prefix used */
 	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->ctarget, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
 	/* Now try with the CTARGET prefix in the profile */
 	snprintf(data->execBinary, MAXPATHLEN, "%s/%s-%s", data->profile->installConf->binpath, data->profile->ctarget, execBasename);
+	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
+		return;
+
+	/* Fisrt try without the CTARGET prefix */
+	snprintf(data->execBinary, MAXPATHLEN, "%s/%s", data->profile->installConf->binpath, execBasename);
 	if(stat(data->execBinary, &sbuf) == 0 && ((sbuf.st_mode & S_IFREG) || (sbuf.st_mode & S_IFLNK)))
 		return;
 
