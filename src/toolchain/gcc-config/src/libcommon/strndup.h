@@ -24,5 +24,10 @@
 #define _GNU_SOURCE
 #include <string.h>
 #else
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 char *strndup(const char *s, size_t n);
 #endif
