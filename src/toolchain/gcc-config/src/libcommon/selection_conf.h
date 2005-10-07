@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.11 2005/09/24 18:31:38 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.h,v 1.12 2005/10/07 01:24:19 eradicator Exp $
  * $Log: selection_conf.h,v $
+ * Revision 1.12  2005/10/07 01:24:19  eradicator
+ * Ignore ABI environment variable by default.  Give option in selection.conf to not ignore it.
+ *
  * Revision 1.11  2005/09/24 18:31:38  eradicator
  * Changed references to choat->ctarget.  Changed --default to --native.
  *
@@ -64,6 +67,11 @@ typedef struct {
 	 * the config file.
 	 */
 	int scanPath;
+
+	/* Set to 1 if you want to use ${ABI} and ${CFLAGS_${ABI}} if set
+	 * rather than what is declared in the profile.
+	 */
+	int useABI;
 
 	/* Hash table of selected profiles.
 	 * Key: (char *) CTARGET (such as "i686-pc-linux-gnu")

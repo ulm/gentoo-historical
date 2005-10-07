@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.7 2005/10/06 20:23:41 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.8 2005/10/07 01:24:19 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.8  2005/10/07 01:24:19  eradicator
+ * Ignore ABI environment variable by default.  Give option in selection.conf to not ignore it.
+ *
  * Revision 1.7  2005/10/06 20:23:41  eradicator
  * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
  *
@@ -284,7 +287,7 @@ int main(int argc, char *argv[]) {
 	setExecBinary(data);
 
 	/* Do we need to set any additional CFLAGS? */
-	if(getenv("ABI")) {
+	if(data->selectionConf->useABI && getenv("ABI")) {
 		/* This functionality is deprecated and subject to be removed
 		 * once all profiles in portage nolonger depend on it.
 		 */

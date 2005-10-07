@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.31 2005/10/06 20:23:41 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/selection_conf.c,v 1.32 2005/10/07 01:24:19 eradicator Exp $
  * $Log: selection_conf.c,v $
+ * Revision 1.32  2005/10/07 01:24:19  eradicator
+ * Ignore ABI environment variable by default.  Give option in selection.conf to not ignore it.
+ *
  * Revision 1.31  2005/10/06 20:23:41  eradicator
  * Added bin_prefix, so alternate targets of multilib crosscompilers will work correctly.  Fixed bug whereby the native gcc could disappear after a set.
  *
@@ -163,6 +166,8 @@ static int selectionConfKeyCB(const char *key, const char *value, void *_data) {
 				return EPARSE_NOMEM;
 		} else if(strcmp(key, "scan_path") == 0) {
 			selconf->scanPath = atoi(value);
+		} else if(strcmp(key, "use_abi") == 0) {
+			selconf->useABI = atoi(value);
 		} else {
 			/* unknown key... ignore it */
 			return EPARSE_UNKNOWNKEY;
@@ -242,8 +247,8 @@ inline static int loadSelections(const char *filename, SelectionConf *selectionC
 	ConfigParser *config = parserNew(filename);
 	struct selectionParseData data;
 
-	if(!config)
-		return -1;
+	if(config == NULL)
+		return errno;
 
 	data.selectionConf = selectionConf;
 	data.ctarget[0] = '\0';
@@ -332,6 +337,7 @@ int saveSelectionConf(SelectionConf *selectionConf, const char *globalConfigDir,
 	fprintf(fd, "[global]\n");
 	fprintf(fd, "\tnative_ctarget=%s\n", selectionConf->defaultCtarget);
 	fprintf(fd, "\tscan_path=%d\n", selectionConf->scanPath);
+	fprintf(fd, "\tuse_abi=%d\n", selectionConf->useABI);
 
 	ctargets = hashKeysSorted(selectionConf->selectionHash);
 	if(!ctargets)
