@@ -34,6 +34,12 @@
     <xsl:apply-templates select="author" />
     <br/>
     <i><xsl:call-template name="contentdate"/></i>
+    <xsl:variable name="outdated">
+      <xsl:call-template name="outdated-translation"/>
+    </xsl:variable>
+    <xsl:if test="string-length($outdated) &gt; 1">
+      <br/><i><xsl:copy-of select="$outdated"/></i>
+    </xsl:if>
   </xsl:if>
   <p><xsl:value-of select="func:gettext('Content')"/>:</p>
   <ul>

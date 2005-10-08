@@ -28,11 +28,36 @@
   <img src="{@src}" alt=""/>
 </xsl:template>
 
+<xsl:template name="show-disclaimer">
+  <!-- Disclaimer stuff -->
+  <xsl:if test="/*[1][@disclaimer] or /*[1][@redirect]">
+    <table class="ncontent" align="center" width="90%" border="1px" cellspacing="0" cellpadding="4px">
+      <tr>
+        <td bgcolor="#ddddff">
+          <p class="note">
+            <xsl:if test="/*[1][@disclaimer]">
+              <b><xsl:value-of select="func:gettext('disclaimer')"/>: </b>
+              <xsl:apply-templates select="func:gettext(/*[1]/@disclaimer)"/>
+            </xsl:if>
+            <xsl:if test="/*[1][@redirect]">
+              <xsl:apply-templates select="func:gettext('redirect')">
+                <xsl:with-param name="paramlink" select="/*[1]/@redirect"/>
+              </xsl:apply-templates>
+            </xsl:if>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </xsl:if>
+</xsl:template>
+
+
 <!-- Content of /guide -->
 <xsl:template name="guidecontent">
   <xsl:if test="$style != 'printable'">
     <br />
   </xsl:if>
+
   <h1>
     <xsl:choose>
       <xsl:when test="/guide/subtitle"><xsl:value-of select="/guide/title"/>: <xsl:value-of select="/guide/subtitle"/></xsl:when>
@@ -45,6 +70,12 @@
       <xsl:apply-templates select="author" />
       <br/>
       <i><xsl:call-template name="contentdate"/></i>
+      <xsl:variable name="outdated">
+        <xsl:call-template name="outdated-translation"/>
+      </xsl:variable>
+      <xsl:if test="string-length($outdated) &gt; 1">
+        <br/><i><xsl:copy-of select="$outdated"/></i>
+      </xsl:if>
     </xsl:when>
     <xsl:otherwise>
      <xsl:if test="count(/guide/chapter)&gt;1">
@@ -77,7 +108,21 @@
 
 <!-- Layout for documentation -->
 <xsl:template name="doclayout">
-<xsl:call-template name="commonHTMLheader" />
+<html>
+  <xsl:if test="string-length($glang)>1">
+    <xsl:attribute name="lang"><xsl:value-of select="translate($glang,'_','-')"/></xsl:attribute>
+  </xsl:if>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"/>
+  <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+    <!-- Just remove this bit if http refresh is too annoying -->
+      <xsl:if test="/*[1][@redirect]">
+        <meta http-equiv="Refresh">
+          <xsl:attribute name="content"><xsl:value-of select="concat('15; URL=', /*[1]/@redirect)"/></xsl:attribute>
+        </meta>
+      </xsl:if>    
+
 <title>
   <xsl:choose>
     <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
@@ -92,11 +137,12 @@
   </xsl:choose>
 </title>
 
-<xsl:text disable-output-escaping="yes">&lt;/head&gt;</xsl:text>
+</head>
 <xsl:choose>
   <xsl:when test="$style = 'printable'">
     <!-- Insert the node-specific content -->
 <body bgcolor="#ffffff">
+    <xsl:call-template name="show-disclaimer"/>
     <xsl:call-template name="content"/>
 </body>
   </xsl:when>
@@ -114,6 +160,7 @@
         <tr>
           <td width="99%" class="content" valign="top" align="left">
             <!-- Insert the node-specific content -->
+            <xsl:call-template name="show-disclaimer"/>
             <xsl:call-template name="content"/>
           </td>
           <td width="1%" bgcolor="#dddaec" valign="top">
@@ -133,7 +180,7 @@
 </body>
   </xsl:otherwise>
   </xsl:choose>
-<xsl:text disable-output-escaping="yes">&lt;/html&gt;</xsl:text>
+</html>
 </xsl:template>
 
 <!-- Guide template -->
@@ -143,7 +190,15 @@
 
 <!-- {Mainpage, News, Email} template -->
 <xsl:template match="/mainpage | /news | /email">
-<xsl:call-template name="commonHTMLheader" />
+<html>
+  <xsl:if test="string-length($glang)>1">
+    <xsl:attribute name="lang"><xsl:value-of select="translate($glang,'_','-')"/></xsl:attribute>
+  </xsl:if>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"/>
+  <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+  
   <xsl:if test="/mainpage/@id='news'">
     <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
   </xsl:if>
@@ -155,7 +210,7 @@
       <title><xsl:value-of select="subject"/></title>
     </xsl:when>
   </xsl:choose>
-<xsl:text disable-output-escaping="yes">&lt;/head&gt;</xsl:text>
+</head>
 <body style="margin:0px;" bgcolor="#000000">
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
@@ -403,7 +458,7 @@
 </table>
 
 </body>
-<xsl:text disable-output-escaping="yes">&lt;/html&gt;</xsl:text>
+</html>
 </xsl:template>
 
 <!-- Mail template -->
@@ -746,6 +801,7 @@
 
 <!-- Url -->
 <xsl:template match="uri">
+<xsl:param name="paramlink"/>
 <!-- expand templates to handle things like <uri link="http://bar"><c>foo</c></uri> -->
 <xsl:choose>
   <xsl:when test="@link">
@@ -821,20 +877,51 @@
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
+        <xsl:variable name="theurl">
+          <xsl:choose>
+            <xsl:when test="@link"><xsl:value-of select="@link" /></xsl:when>
+            <xsl:otherwise><xsl:value-of select="text()" /></xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+
+        <xsl:variable name="thelink">
+          <xsl:choose>
+            <xsl:when test="name(..)='insert' and $theurl='$redirect' and $paramlink"><xsl:value-of select="$paramlink" /></xsl:when>
+            <xsl:when test="name(..)='insert' and $theurl='$originalversion' and $paramlink">
+              <xsl:variable name="temp">
+                <xsl:value-of select="$paramlink"/>
+                <xsl:if test="$style = 'printable'">&amp;style=printable</xsl:if>
+                <xsl:if test="$full != '0'">&amp;full=1</xsl:if>
+                <xsl:if test="$part != '0'">&amp;part=<xsl:value-of select="$part"/></xsl:if>
+                <xsl:if test="$chap != '0'">&amp;chap=<xsl:value-of select="$chap"/></xsl:if>
+              </xsl:variable>
+              <xsl:choose>
+                <xsl:when test="contains($temp, '&amp;')">
+                  <xsl:value-of select="concat(substring-before($temp,'&amp;'), '?', substring-after($temp,'&amp;'))"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="$temp"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise><xsl:value-of select="$theurl" /></xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+
         <!-- Strip http://www.gentoo.org from links 
              Has no effect on actual www.g.o but helps when surfing on a local copy
              Rewrite http://www.gentoo.org/cgi-bin/viewcvs/ to use viewcvs.gentoo.org
           -->
         <xsl:variable name="llink">
           <xsl:choose>
-            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
-            <xsl:when test="starts-with(@link, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after(@link, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
-            <xsl:when test="starts-with(@link, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')" /></xsl:when>
+            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
+            <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
+            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after($thelink, 'http://www.gentoo.org')" /></xsl:when>
             <!-- Add catid to links to /doc/LL/index.xml -->
-            <xsl:when test="$catid != '0' and starts-with(@link, '/doc/') and (substring-after(substring-after(@link, '/doc/'), '/')='' or substring-after(substring-after(@link, '/doc/'), '/')='index.xml')">
-              <xsl:value-of select="concat(@link, '?catid=', $catid)"/>
+            <xsl:when test="$catid != '0' and starts-with($thelink, '/doc/') and (substring-after(substring-after($thelink, '/doc/'), '/')='' or substring-after(substring-after($thelink, '/doc/'), '/')='index.xml')">
+              <xsl:value-of select="concat($thelink, '?catid=', $catid)"/>
             </xsl:when>
-            <xsl:otherwise><xsl:value-of select="@link" /></xsl:otherwise>
+            <xsl:otherwise><xsl:value-of select="$thelink" /></xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
 
@@ -1016,13 +1103,57 @@
 </xsl:template>
 
 
-<xsl:template name="contentdate">
-  <!-- Update datestamp -->
-  <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
+<!-- Compare versions between two documents, scan handbooks if need be -->
+<xsl:template name="compare-versions">
+<xsl:param name="original"/>
+<xsl:param name="translation"/>
   <xsl:choose>
-    <xsl:when test="/book">
+    <xsl:when test="$original/book and $translation/book">
+    <!-- /book == /book -->
+      <xsl:choose>
+        <xsl:when test="$full != 0">
+        <!-- if full != 0, then compare all files -->
+          <!-- Compare versions in master files -->
+          <xsl:if test="$original/book/version != $translation/book/version">X</xsl:if>
+          <!-- Compare versions in original chapters vs. translated chapters that have the same position -->
+          <xsl:for-each select="$original/book/part">
+            <xsl:variable name="part" select="position()"/>
+            <xsl:for-each select="chapter">
+              <xsl:variable name="chap" select="position()"/>
+              <xsl:variable name="ov" select="document($original/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
+              <xsl:variable name="tv" select="document($translation/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
+              <xsl:if test="$ov != $tv">X</xsl:if>
+            </xsl:for-each>
+          </xsl:for-each>
+        </xsl:when>
+        <xsl:when test="$part = '0' or $chap = '0'">
+        <!-- Table of contents, check master file -->
+          <xsl:if test="$original/book/version != $translation/book/version">X</xsl:if>
+        </xsl:when>
+        <xsl:otherwise>
+        <!-- Compare chapters at same position (/$part/$chap/) in English handbook and in translated one -->
+          <xsl:variable name="ov" select="document($original/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
+          <xsl:variable name="tv" select="document($translation/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
+          <xsl:if test="$ov != $tv">X</xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:when test="$original/guide and $translation/guide">
+    <!-- /guide == /guide -->
+      <xsl:if test="$original/guide/version != $translation/guide/version">X</xsl:if>
+    </xsl:when>
+    <!-- If we did not compare book==book or guide==guide, then consider versions are different -->
+    <xsl:otherwise>X</xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Return the date of a document, for handbooks, it is the max(main file date, all included parts dates) -->
+<xsl:template name="maxdate">
+  <xsl:param name="thedoc"/>
+  <xsl:choose>
+    <xsl:when test="$thedoc/book">
       <!-- In a book: look for max(/date, include_files/sections/date) -->
-      <xsl:for-each select="/book/part/chapter/include">
+      <xsl:for-each select="$thedoc/book/part/chapter/include">
         <xsl:sort select="document(@href)/sections/date" order="descending" />
         <xsl:if test="position() = 1">
           <!-- Compare the max(date) from included files with the date in the master file
@@ -1031,7 +1162,7 @@
             -->
           <xsl:variable name="theDates">
             <xsl:element name="bookDate">
-              <xsl:value-of select="/book/date"/>
+              <xsl:value-of select="$thedoc/book/date"/>
             </xsl:element>
             <xsl:element name="maxChapterDate">
               <xsl:value-of select="document(@href)/sections/date"/>
@@ -1044,15 +1175,91 @@
             </xsl:for-each>   
           </xsl:variable>
           <!-- First date is the one we want -->
-          <xsl:copy-of select="func:format-date(exslt:node-set($sortedDates)/*[position()=1])"/>
+          <xsl:value-of select="exslt:node-set($sortedDates)/*[position()=1]"/>
         </xsl:if>
       </xsl:for-each>
     </xsl:when>
-    <xsl:when test="/guide or /sections">
-      <xsl:copy-of select="func:format-date(//date[1])"/>
+    <xsl:when test="$thedoc/guide or $thedoc/sections or $thedoc/mainpage">
+      <xsl:value-of select="$thedoc/*[1]/date"/>
     </xsl:when>
   </xsl:choose>
 </xsl:template>
+
+<xsl:template name="contentdate">
+  <xsl:variable name="docdate">
+    <xsl:call-template name="maxdate">
+      <xsl:with-param name="thedoc" select="/"/>
+    </xsl:call-template>
+  </xsl:variable>
+  
+  <xsl:choose>
+    <xsl:when test="func:gettext('Updated')/docdate">
+      <xsl:apply-templates select="func:gettext('Updated')">
+        <xsl:with-param name="docdate" select="$docdate"/>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="concat(func:gettext('Updated'),' ')"/> <xsl:copy-of select="func:format-date($docdate)"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="outdated-translation">
+  <!-- Add mention that translation is outdated whenever possible -->
+  <xsl:variable name="link">
+    <xsl:value-of select="/*[1]/@link"/>
+  </xsl:variable>
+  <xsl:if test="starts-with($link, '/doc/') and not(starts-with($link, '/doc/en/')) and $glang != ''">
+    <!-- We have a translation, is it up-to-date? -->
+    <xsl:variable name="metadoc" select="document(concat('/doc/', $glang, '/metadoc.xml'))"/>
+    <xsl:variable name="fileid" select="$metadoc/metadoc/files/file[text()=$link]/@id"/>
+    <xsl:choose>
+      <xsl:when test="not($fileid)">
+        <!-- File is not even listed in local metadoc.xml -->
+        <xsl:value-of select="func:gettext('NoIndex')"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="pmetadoc" select="document($metadoc/metadoc/@parent)"/>
+        <xsl:choose>
+          <xsl:when test="not($pmetadoc/metadoc/files/file[@id=$fileid])">
+            <!-- File is not listed in original metadoc.xml -->
+            <xsl:value-of select="func:gettext('NoOriginal')"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <!-- Document is listed in both local metadoc.xml and English one, compare version numbers -->
+            <xsl:variable name="pfile" select="$pmetadoc/metadoc/files/file[@id=$fileid]"/>
+            <xsl:variable name="versions">
+              <xsl:call-template name="compare-versions">
+                <xsl:with-param name="original" select ="document($pfile)"/>
+                <xsl:with-param name="translation" select ="/"/>
+              </xsl:call-template>
+            </xsl:variable>
+            <xsl:if test="string-length($versions) > 0">
+              <xsl:variable name="pdocdate">
+                <xsl:call-template name="maxdate">
+                  <xsl:with-param name="thedoc" select="document($pfile)"/>
+                </xsl:call-template>
+              </xsl:variable>
+              <xsl:variable name="res">
+                <xsl:apply-templates select="func:gettext('Outdated')">
+                  <xsl:with-param name="docdate" select="$pdocdate"/>
+                  <xsl:with-param name="paramlink" select="$pfile"/>
+                </xsl:apply-templates>
+              </xsl:variable>
+              <xsl:copy-of select="$res"/>
+            </xsl:if>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:if>
+</xsl:template>
+
+<xsl:template match="docdate">
+<xsl:param name="docdate"/>
+  <xsl:copy-of select="func:format-date($docdate)"/>
+</xsl:template>
+
 
 <xsl:template name="rhcol">
 <!-- Right-hand column with date/authors/ads -->
@@ -1092,6 +1299,18 @@
             </p>
           </td>
         </tr>
+        <xsl:variable name="outdated">
+          <xsl:call-template name="outdated-translation"/>
+        </xsl:variable>
+        <xsl:if test="string-length($outdated) &gt; 1">
+          <tr>
+            <td align="left" class="topsep">
+              <p class="alttext">
+                <xsl:copy-of select="$outdated"/>
+              </p>
+            </td>
+          </tr>
+        </xsl:if>
       </xsl:when>
       <xsl:when test="/mainpage/date">
         <tr>
@@ -1200,31 +1419,6 @@
     <td align="center" class="topsep"/>
     </tr>
   </table>
-</xsl:template>
-
-<xsl:template name="commonHTMLheader">
-  <xsl:choose>
-    <xsl:when test="string-length($glang)>1">
-      <!-- Output html="$LANG" if possible -->
-      <!-- Do not output default "en" because many non-English pages have no lang attribute
-           and I'd rather not output any lang at all than send "en" for German pages e.g. -->
-      <!-- Language code and sub-code are case-insensitive and should be separated by a hyphen -->
-      <xsl:text disable-output-escaping="yes">
-        &lt;HTML lang="</xsl:text><xsl:value-of select="translate($glang,'_','-')"/><xsl:text disable-output-escaping="yes">"&gt;
-      </xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text disable-output-escaping="yes">
-        &lt;HTML&gt;
-      </xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:text disable-output-escaping="yes">
-    &lt;head&gt;
-    &lt;meta http-equiv="Content-Type" content="text/html; charset=UTF-8"&gt;
-    &lt;link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"&gt;
-    &lt;link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"&gt;
- </xsl:text>
 </xsl:template>
 
 <xsl:template name="newscontent">
