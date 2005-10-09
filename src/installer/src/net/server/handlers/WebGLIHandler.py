@@ -9,7 +9,7 @@ class WebGLIHandler(handler.Handler):
 		import platform
 		data = ""
 		data += "<h2>Client Config</h2>\n"
-		data += '<form name="CConfig" action="/showargs" method="POST" enctype="multipart/form-data">\n'
+		data += '<form name="CConfig" action="/webgli/saveclientconfig" method="POST" enctype="multipart/form-data">\n'
 		
 		data += '<table border="2"><tr><td>\n'
 		#Choose the architecture for the Install.
@@ -56,9 +56,11 @@ class WebGLIHandler(handler.Handler):
 		if 1:#not GLIUtility.ping("www.gentoo.org"): # and local_install:
 			data += '<hr><table><tr><td>'
 			data += "LiveCD Network Configuration string here. <br>"
-			#device_list = GLIUtility.get_eth_devices()
+			device_list = GLIUtility.get_eth_devices()
+			for device in device_list:
+				data += device + "<BR>\n"
 			data += "DEVICE SELECTION OR DETECTION HERE!! <br>"
-			data += '<select name="Network Type" size="3">'
+			data += '<select name="Network_Type" size="3">'
 			data += '<option value="dhcp">DHCP</option>'
 			data += '<option value="static">Manual Config</option>'
 			data += '<option value="None">None (Networkless)</option>'
@@ -83,12 +85,12 @@ class WebGLIHandler(handler.Handler):
 		#Modules to load now.
 		#status, output = GLIUtility.spawn("lsmod", return_output=True)
 		data += "<hr>Loaded modules list here. <br>"
-		data += 'Additional Modules to Load (space-separated list): <input type="text" length="80" maxlength="80" value=""><br>'
+		data += 'Additional Modules to Load (space-separated list): <input name="Modules" type="text" length="80" maxlength="80" value=""><br>'
 		
 		#Save Client Configuration File.  THIS SHOULD BE A POPUP
-	#	data += "<hr><br>Save Client Configuration File string here. <br>";
-	#	data += 'Filename: <input name="SaveCCFile" type="text" value="clientconfig.xml">';
-	#	data += '<input name="SaveCC" type="button" value="Save Client Configuration">'; #Javascript for on_click
+		data += "<hr><br>Save Client Configuration File string here. <br>";
+		data += 'Filename: <input name="SaveCCFile" type="text" value="clientconfig.xml">';
+		data += '<input name="SaveCC" type="submit" value="Save Client Configuration">'; #Javascript for on_click
 		
 		#Print buttons for Next/Previous/Help/Save
 		data += "<hr><table><tr>"
@@ -100,7 +102,97 @@ class WebGLIHandler(handler.Handler):
 		data += '</form>'
 		return self.wrap_in_webgli_template(data)
 		
-	
+	def saveclientconfig(self):
+		import GLIClientConfiguration
+		data = ""
+		client_profile = GLIClientConfiguration.ClientConfiguration()
+		
+		if 'ArchType' in self.post_params:
+			data += "Found an architecture:  you submitted " + self.post_params['ArchType']+ "<BR>\n"
+			try:
+				client_profile.set_architecture_template(None, self.post_params['ArchType'], None)
+			except:
+				data += "ERROR: Could not set the Architecture Template<br>\n"
+		if 'Logfile' in self.post_params:
+			data += "Found a logfile: you submitted " + self.post_params['Logfile'] + "<BR>\n"
+			try:
+				client_profile.set_log_file(None, self.post_params['Logfile'], None)
+			except:
+				data += "ERROR: Could not set the Logfile <BR>\n"
+		if 'RootMountPoint' in self.post_params:
+			data += "Found a root mount point: you submitted " + self.post_params['RootMountPoint'] + "<BR>\n"
+			try:
+				client_profile.set_root_mount_point(None, self.post_params['RootMountPoint'], None)
+			except:
+				data += "ERROR: Could not set the Root Mount Point<BR>\n"
+		if 'Network_Type' in self.post_params:
+			data += "Found a Network Type: you submitted " + self.post_params['Network_Type'] + "<BR>\n"
+			try:
+				client_profile.set_network_type(None, self.post_params['Network_Type'], None)
+			except:
+				data += "ERROR: Could not set the Network Type<BR>\n"
+		if 'ip' in self.post_params:
+			data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
+			try:
+				client_profile.set_network_ip(None, self.post_params['ip'], None)
+			except:
+				data += "ERROR: Could not set the IP<BR>\n"
+		if 'broadcast' in self.post_params:
+			data += "Found an broadcast IP: you submitted " + self.post_params['broadcast'] + "<BR>\n"
+			try:
+				client_profile.set_network_broadcast(None, self.post_params['broadcast'], None)
+			except:
+				data += "ERROR: Could not set the broadcast IP<BR>\n"
+		if 'netmask' in self.post_params:
+			data += "Found an netmask IP: you submitted " + self.post_params['netmask'] + "<BR>\n"
+			try:
+				client_profile.set_network_netmask(None, self.post_params['netmask'], None)
+			except:
+				data += "ERROR: Could not set the netmask IP<BR>\n"
+		if 'gateway' in self.post_params:
+			data += "Found an gateway IP: you submitted " + self.post_params['gateway'] + "<BR>\n"
+			try:
+				client_profile.set_network_gateway(None, self.post_params['gateway'], None)
+			except:
+				data += "ERROR: Could not set the gateway IP<BR>\n"
+		if 'dnsserver' in self.post_params:
+			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
+			try:
+				client_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
+			except:
+				data += "ERROR: Could not set the DNS Server<BR>\n"
+		if 'EnableSSH' in self.post_params:
+			data += "Found an Enable SSH Flag: you set it to " + self.post_params['EnableSSH'] + "<BR>\n"
+			try:
+				client_profile.set_enable_ssh(None, self.post_params['EnableSSH'], None)
+			except:
+				data += "ERROR: Could not set the SSH flag<BR>\n"
+		if ('RootPass1' in self.post_params) and ('RootPass2' in self.post_params):
+			data += "Found a root password1: you submitted " + self.post_params['RootPass1'] + "<BR>\n"
+			data += "Found a root password2: you submitted " + self.post_params['RootPass2'] + "<BR>\n"
+			if self.post_params['RootPass1'] == self.post_params['RootPass2']:
+				try:
+					client_profile.set_root_passwd(None, self.post_params['RootPass1'], None)
+				except:
+					data += "ERROR: Could not set the root password<BR>\n"
+			else:
+				data += "ERROR: Passwords DO NOT MATCH!<BR>\n"
+		if 'Modules' in self.post_params:
+			data += "Found an Additional Module: you submitted " + self.post_params['Modules'] + "<BR>\n"
+			try:
+				client_profile.set_kernel_modules(None, self.post_params['Modules'], None)
+			except:
+				data += "ERROR: Could not set the Kernel Modules<BR>\n"
+		if 'SaveCCFile' in self.post_params:
+			data += "Found a filename to save the Client Profile:" + self.post_params['SaveCCFile'] + "<BR>\n"
+			try:
+				configuration = open(self.post_params['SaveCCFile'] ,"w")
+				configuration.write(client_profile.serialize())
+				configuration.close()
+				data += "Profile saved successfully.  Here it is <BR><pre>" + client_profile.serialize() + "</pre><br>\n"
+			except:
+				data += "ERROR: Could not save the profile!<BR>\n"
+		return self.wrap_in_webgli_template(data)
 	def loadprofile2(self):
 		content = "<h2>Load Profile</h2>"
 		xmlfile = ""
@@ -161,9 +253,13 @@ class WebGLIHandler(handler.Handler):
 			return cp.serialize()
 		else:
 			return self.wrap_in_template(content + "You didn't specify a filename to save to")
-
+	def showwelcome(self):
+		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
+		return self.wrap_in_webgli_template(data)
 	def handle(self, path):
-		paths = { '/webgli/ClientConfig': self.clientconfig,
+		paths = { '/webgli': self.showwelcome,
+				  '/webgli/ClientConfig': self.clientconfig,
+				  '/webgli/saveclientconfig': self.saveclientconfig,
 		          '/loadprofile2': self.loadprofile2,
 		          '/saveprofile': self.saveprofile,
 		          '/saveprofile2': self.saveprofile2

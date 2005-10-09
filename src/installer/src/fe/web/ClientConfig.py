@@ -83,9 +83,9 @@ def show_client_config():
 	data += 'Additional Modules to Load (space-separated list): <input type="text" length="80" maxlength="80" value=""><br>'
 	
 	#Save Client Configuration File.  THIS SHOULD BE A POPUP
-#	data += "<hr><br>Save Client Configuration File string here. <br>";
-#	data += 'Filename: <input name="SaveCCFile" type="text" value="clientconfig.xml">';
-#	data += '<input name="SaveCC" type="button" value="Save Client Configuration">'; #Javascript for on_click
+	data += "<hr><br>Save Client Configuration File string here. <br>";
+	data += 'Filename: <input name="SaveCCFile" type="text" value="clientconfig.xml">';
+	data += '<input name="SaveCC" type="submit" value="Save Client Configuration">'; #Javascript for on_click
 	
 	#Print buttons for Next/Previous/Help/Save
 	data += "<hr><table><tr>"
