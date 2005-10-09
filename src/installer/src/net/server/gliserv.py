@@ -295,7 +295,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				# Horrible hack until I figure out a better way to skip to sending the content
 				while 1:
 					try:
-						content_module = __import__(module)
+						content_module = __import__("handlers/" + module)
 						module_obj = getattr(content_module, module)(self.get_params, self.post_params, self.headers_out, self.shared_info)
 					except AttributeError:
 						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
