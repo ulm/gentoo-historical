@@ -98,7 +98,7 @@ class WebGLIHandler(handler.Handler):
 		data += '<td><input name="Previous" type="button" value="Previous"></td>'
 		data += '<td><input name="Next" type="button" value="Next"></td></tr></table>'
 		data += '</form>'
-		return self.wrap_in_template(data)
+		return self.wrap_in_webgli_template(data)
 		
 	
 	def loadprofile2(self):
