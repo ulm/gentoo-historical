@@ -117,80 +117,6 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		"""
 		return self.wrap_in_template(content)
 
-	def loadprofile(self):
-		content = """
-		<h2>Load Profile</h2>
-		<br>
-		<form action="/loadprofile2" method="POST" enctype="multipart/form-data">
-		Use local (to server) file: <input type="text" name="localfile"><br>
-		or<br>
-		Upload file: <input type="file" name="uploadfile"><br>
-		<input type="submit" value="Load">
-		</form>
-		"""
-		return self.wrap_in_template(content)
-
-	def loadprofile2(self):
-		content = "<h2>Load Profile</h2>"
-		xmlfile = ""
-		if 'localfile' in self.post_params and self.post_params['localfile']:
-			xmlfile = self.post_params['localfile']
-		elif 'uploadfile' in self.post_params and self.post_params['uploadfile']:
-			try:
-				tmpfile = open("/tmp/serverprofile.xml", "w")
-				tmpfile.write(self.post_params['uploadfile'])
-				tmpfile.close()
-				xmlfile = "/tmp/serverprofile.xml"
-			except:
-				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
-				return self.wrap_in_template(content)
-		else:
-			content += "You did not specify a file to load"
-			return self.wrap_in_template(content)
-		cp = GLIServerProfile.ServerProfile()
-		try:
-			cp.parse(xmlfile)
-		except:
-			content += "There was an error parsing the XML file" + self.get_exception()
-			return self.wrap_in_template(content)
-		self.shared_info.clients = cp.get_clients()
-		self.shared_info.profiles = cp.get_profiles()
-		content += "Profile loaded successfully"
-		return self.wrap_in_template(content)
-
-	def saveprofile(self):
-		content = """
-		<h2>Save Profile</h2>
-		<br>
-		<form action="/saveprofile2" method="POST" enctype="multipart/form-data">
-		Save to local (to server) file: <input type="text" name="localfile"> <input type="submit" value="Save"><br>
-		or<br>
-		Download the file: <input type="submit" name="download" value="Download">
-		</form>
-		"""
-		return self.wrap_in_template(content)
-
-	def saveprofile2(self):
-		content = "<h2>Save Profile</h2>"
-		cp = GLIServerProfile.ServerProfile()
-		cp.set_clients(None, self.shared_info.clients, None)
-		cp.set_profiles(None, self.shared_info.profiles, None)
-		if not 'download' in self.post_params and self.post_params['localfile']:
-			try:
-				tmpfile = open(self.post_params['localfile'], "w")
-				tmpfile.write(cp.serialize())
-				tmpfile.close()
-			except:
-				content += "There was a problem writing the file" + self.get_exception()
-				return self.wrap_in_template(content)
-			return self.wrap_in_template(content + "Profile saved successfully")
-		elif 'download' in self.post_params:
-			self.headers_out.append(("Content-type", "text/xml"))
-			self.headers_out.append(('Content-disposition', "attatchment;filename=serverprofile.xml"))
-			return cp.serialize()
-		else:
-			return self.wrap_in_template(content + "You didn't specify a filename to save to")
-
 	def parse_path(self):
 		self.get_params = Params()
 		self.post_params = Params()
@@ -346,43 +272,70 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.common_handler(head_only)
 
 	def common_handler(self, head_only):
+#		paths = {
+#		          '/': self.welcome,
+#		          '/welcome': self.welcome,
+#		          '/showargs': self.showargs,
+#		          '/status': self.status,
+#		          '/lastvisitor': self.lastvisitor,
+#		          '/showclients': self.showclients,
+#		          '/loadprofile': self.loadprofile,
+#		          '/loadprofile2': self.loadprofile2,
+#		          '/saveprofile': self.saveprofile,
+#		          '/saveprofile2': self.saveprofile2
+#		        }
 		paths = {
-		          '/': self.welcome,
-		          '/welcome': self.welcome,
-		          '/showargs': self.showargs,
-		          '/status': self.status,
-		          '/lastvisitor': self.lastvisitor,
-		          '/showclients': self.showclients,
-		          '/loadprofile': self.loadprofile,
-		          '/loadprofile2': self.loadprofile2,
-		          '/saveprofile': self.saveprofile,
-		          '/saveprofile2': self.saveprofile2
+		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
+		          'welcome': [ '/welcome' ]
 		        }
 		return_content = ""
-		if self.path in paths:
-			return_content = paths[self.path]()
-			self.send_response(200)
-			if not self.headers_out:
-				self.headers_out.append(("Content-type", "text/html"))
-			self.headers_out.append(("Content-Length", len(return_content)))
-			for header in self.headers_out:
-				self.send_header(header[0], header[1])
-			self.end_headers()
-			self.wfile.write(return_content)
-		else:
-			path = self.translate_path(self.path)
-			ctype = self.guess_type(path)
-			try:
-				f = open(path, 'rb')
-			except IOError:
-				self.send_error(404, "File not found")
-				return None
-			self.send_response(200)
-			self.send_header("Content-type", ctype)
-			self.send_header("Content-Length", str(os.fstat(f.fileno())[6]))
-			self.end_headers()
-			shutil.copyfileobj(f, self.wfile)
-			f.close()
+		for path in paths:
+			if self.path in paths[path]:
+				module = path
+				# Horrible hack until I figure out a better way to skip to sending the content
+				while 1:
+					try:
+						content_module = __import__(module)
+						module_obj = getattr(content_module, module)(self.get_params, self.post_params, self.headers_out, self.shared_info)
+					except AttributeError:
+						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
+#						return_content = "Unable to load module '%s'" % module
+						break
+					try:
+						function_obj = getattr(module_obj, 'handle')
+					except AttributeError:
+						return_content = "Cannot find function handle() in module '%s'" % module
+						break
+					try:
+						self.headers_out, return_content = function_obj(self.path)
+					except:
+						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
+						break
+					break
+#				return_content = self.wrap_in_template(return_content)
+				self.send_response(200)
+				if not self.headers_out:
+					self.headers_out.append(("Content-type", "text/html"))
+				self.headers_out.append(("Content-Length", len(return_content)))
+				for header in self.headers_out:
+					self.send_header(header[0], header[1])
+				self.end_headers()
+				self.wfile.write(return_content)
+				return
+		# No code handler...look for actual file
+		path = self.translate_path(self.path)
+		ctype = self.guess_type(path)
+		try:
+			f = open(path, 'rb')
+		except IOError:
+			self.send_error(404, "File not found")
+			return None
+		self.send_response(200)
+		self.send_header("Content-type", ctype)
+		self.send_header("Content-Length", str(os.fstat(f.fileno())[6]))
+		self.end_headers()
+		shutil.copyfileobj(f, self.wfile)
+		f.close()
 
 	def translate_path(self, path):
 		"""Translate a /-separated PATH to the local filename syntax.
