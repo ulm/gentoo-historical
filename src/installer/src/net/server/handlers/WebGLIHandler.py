@@ -127,7 +127,7 @@ class WebGLIHandler(handler.Handler):
 		self.shared_info.clients = cp.get_clients()
 		self.shared_info.profiles = cp.get_profiles()
 		content += "Profile loaded successfully"
-		return self.wrap_in_template(content)
+		return self.wrap_in_webgli_template(content)
 
 	def saveprofile(self):
 		content = """

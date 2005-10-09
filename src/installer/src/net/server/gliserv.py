@@ -64,6 +64,15 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if lines[i] == "Main content\n":
 				lines[i] = content
 		return "".join(lines)
+		
+	def wrap_in_webgli_template(self, content):
+		f = open("webgli_template.html", 'rb')
+		lines = f.readlines()
+		f.close()
+		for i in range(len(lines)):
+			if lines[i] == "Main content\n":
+				lines[i] = content
+		return "".join(lines)
 
 	def welcome(self):
 		return self.wrap_in_template("Do some shit on the left")
