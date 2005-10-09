@@ -296,7 +296,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		paths = {
 		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
 				  'WebGLIHandler': ['/webgli/ClientConfig' ],
-		          'welcome': [ '/welcome' ]
+		          'Welcome': [ '/welcome' ],
+		          'Clients': [ '/showclients' ]
 		        }
 		return_content = ""
 		for path in paths:
