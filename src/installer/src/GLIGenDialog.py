@@ -231,7 +231,7 @@ class GLIGenIP(GLIGen):
 	#---------------------------------------
 	
 	def set_partitions(self):
-		partitions_string1 = _("""The first thing on the new system to setup is the partitoning on the new system.
+		partitions_string1 = _("""The first thing on the new system to setup is the partitoning.
 You will first select a drive and then edit its partitions.
 No changes will be saved until the end of the step.
 No changes to your disk will be made until the installation.
@@ -756,6 +756,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))
 
 	def set_distcc(self):
+		#Change the Yes/No buttons for this question.
+		self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+		self._d.add_persistent_args(["--no-label", _(u"No")])
 		if self._d.yesno(_(u"Do you want to use distcc to compile your extra packages during the install and for future compilations as well?"), height=12, width=60) == self._DLG_YES:
 			#Add distcc to the services list.
 			if self._install_profile.get_services():

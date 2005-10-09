@@ -1,8 +1,9 @@
 #<?
-def show_client_config(data):
+def show_client_config():
 
 	import GLIUtility
 	import platform
+	data = ""
 	data += "<h2>Client Config</h2>\n"
 	data += '<form name="CConfig" action="webgli.php?page=Partitioning" method="post">\n'
 	
@@ -49,7 +50,7 @@ def show_client_config(data):
 	data += '<input name="RootMountPoint" type="text" length="80" maxlength="80" value="/mnt/gentoo">'
 	data += " </td></tr></table>\n"
 	
-	if not GLIUtility.ping("www.gentoo.org"): # and local_install:
+	if 1:#not GLIUtility.ping("www.gentoo.org"): # and local_install:
 		data += '<hr><table><tr><td>'
 		data += "LiveCD Network Configuration string here. <br>"
 		#device_list = GLIUtility.get_eth_devices()

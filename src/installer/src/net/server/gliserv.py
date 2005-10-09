@@ -286,6 +286,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 #		        }
 		paths = {
 		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
+				  'WebGLIHandler': ['/webgli/ClientConfig' ],
 		          'welcome': [ '/welcome' ]
 		        }
 		return_content = ""

@@ -16,6 +16,8 @@
 
 
 def index():
+	import sys
+	sys.path.append("/home/codeman/installer/src")
 	import ClientConfig
 #import Partitioning
 #import NetworkMounts
@@ -29,25 +31,25 @@ def index():
 	data += "<td><img src=\"banner-800x64.png\"></td></tr>\n"
 	#Lefthand column of steps.
 	data += "<tr><td valign=\"top\">"
-	data += "<p><a href=\"webgli.php\">Welcome</a></p>\n"
-	data += "<p><a href=\"webgli.php?page=ClientConfig\">Client Config</a></p>\n"
-	data += "<p><a href=\"webgli.php?page=Partitioning\">Partitioning</a></p>\n"
-	data += "<p><a href=\"webgli.php?page=NetworkMounts\">Network Mounts</a></p>\n"
-	data += "<p><a href=\"webgli.php?page=Stage\">Stage Selection</a></p>\n"
-	data += "<p><a href=\"webgli.php?page=PortageTree\">Portage Tree</a></p>"
-	data += "<p><a href=\"webgli.php?page=ConfigFiles\">Config Files</a></p>"
-	data += "<p><a href=\"webgli.php?page=Kernel\">Kernel</a></p>"
-	data += "<p><a href=\"webgli.php?page=Bootloader\">Bootloader</a></p>"
-	data += "<p><a href=\"webgli.php?page=Timezone\">Timezone</a></p>"
-	data += "<p><a href=\"webgli.php?page=Networking\">Networking</a></p>"
-	data += "<p><a href=\"webgli.php?page=Daemons\">Daemons</a></p>"
-	data += "<p><a href=\"webgli.php?page=ExtraPackages\">Extra Packages</a></p>"
-	data += "<p><a href=\"webgli.php?page=Users\">Users</a></p>"
-	data += "<p><a href=\"webgli.php?page=Review\">Review</a></p>\n"
+	data += "<p><a href=\"webgli.py\">Welcome</a></p>\n"
+	data += "<p><a href=\"webgli.py?page=ClientConfig\">Client Config</a></p>\n"
+	data += "<p><a href=\"webgli.py?page=Partitioning\">Partitioning</a></p>\n"
+	data += "<p><a href=\"webgli.py?page=NetworkMounts\">Network Mounts</a></p>\n"
+	data += "<p><a href=\"webgli.py?page=Stage\">Stage Selection</a></p>\n"
+	data += "<p><a href=\"webgli.py?page=PortageTree\">Portage Tree</a></p>"
+	data += "<p><a href=\"webgli.py?page=ConfigFiles\">Config Files</a></p>"
+	data += "<p><a href=\"webgli.py?page=Kernel\">Kernel</a></p>"
+	data += "<p><a href=\"webgli.py?page=Bootloader\">Bootloader</a></p>"
+	data += "<p><a href=\"webgli.py?page=Timezone\">Timezone</a></p>"
+	data += "<p><a href=\"webgli.py?page=Networking\">Networking</a></p>"
+	data += "<p><a href=\"webgli.py?page=Daemons\">Daemons</a></p>"
+	data += "<p><a href=\"webgli.py?page=ExtraPackages\">Extra Packages</a></p>"
+	data += "<p><a href=\"webgli.py?page=Users\">Users</a></p>"
+	data += "<p><a href=\"webgli.py?page=Review\">Review</a></p>\n"
 	data += "</td>"
 	#Now for the main content
 	data += "<td>\n"
-	data = show_main_content(data)
+	data += show_main_content()
 	data += "</td></tr></table></body></html>"
 	return data
 
@@ -56,56 +58,42 @@ def show_welcome():
 	print "LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>"
 
 
-def show_main_content(data):
-	#$page = $_GET["page"];  How does python do HTTP vars?
+def show_main_content():
+
+	page = ""
+#	if 'page' in self.post_params and self.post_params['page']:
+#		page = self.post_params['page']
+	if page == "ClientConfig":
+		data = ClientConfig.show_client_config(data)
+	elif page == "Partitioning":
+		data = Partitioning.show_partitioning()
+	elif page == "NetworkMounts":
+		data = NetworkMounts.show_networkmounts()
+	elif page == "Stage":
+		data = Stage.show_stage()
+	elif page == "PortageTree":
+		data = PortageTree.show_portage_tree()
+	elif page == "ConfigFiles":
+		data = ConfigFiles.show_config_files()
+	elif page == "Kernel":
+		data = Kernel.show_kernel()
+	elif page == "Bootloader":
+		data = Bootloader.show_bootloader()
+	elif page == "Timezone":
+		data = Timezone.show_timezone()
+	elif page == "Networking":
+		data = Networking.show_networking()
+	elif page == "Daemons":
+		data = Daemons.show_daemons()
+	elif page == "ExtraPackages":
+		data = ExtraPackages.show_extra_packages()
+	elif page == "Users":
+		data = Users.show_users()
+	elif page == "Review":
+		data = Review.show_review()
+	else:
+		data = show_welcome()	
+
 	import ClientConfig
-	data = ClientConfig.show_client_config(data)
+	data = ClientConfig.show_client_config()
 	return data
-	crap = """	switch($page)
-	{
-		case "ClientConfig":
-			show_client_config();
-			break;
-		case "Partitioning":
-			show_partitioning();
-			break;
-		case "NetworkMounts":
-			show_networkmounts();
-			break;
-		case "Stage":
-			show_stage();
-			break;
-		case "PortageTree":
-			show_portage_tree();
-			break;
-		case "ConfigFiles":
-			show_config_files();
-			break;
-		case "Kernel":
-			show_kernel();
-			break;
-		case "Bootloader":
-			show_bootloader();
-			break;
-		case "Timezone":
-			show_timezone();
-			break;
-		case "Networking":
-			show_networking();
-			break;
-		case "Daemons":
-			show_daemons();
-			break;
-		case "ExtraPackages":
-			show_extra_packages();
-			break;
-		case "Users":
-			show_users();
-			break;
-		case "Review":
-			show_review();
-			break;
-			
-		default:
-			show_welcome();
-"""
