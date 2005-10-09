@@ -57,13 +57,19 @@ class WebGLIHandler(handler.Handler):
 			data += '<hr><table><tr><td>'
 			data += "LiveCD Network Configuration string here. <br>"
 			device_list = GLIUtility.get_eth_devices()
+			data += '<select name="Network_Iface" size="4">'
 			for device in device_list:
-				data += device + "<BR>\n"
-			data += "DEVICE SELECTION OR DETECTION HERE!! <br>"
+				data += '<option value="'+device+'">' 
+				data += device + ": " + GLIUtility.get_interface_realname(device)
+				data += '</option>\n'
+			data += '</select>'
+			
+			data += "<br>DEVICE SELECTION OR DETECTION HERE!! <br>"
 			data += '<select name="Network_Type" size="3">'
 			data += '<option value="dhcp">DHCP</option>'
 			data += '<option value="static">Manual Config</option>'
 			data += '<option value="None">None (Networkless)</option>'
+			data += '</select>'
 			data += '</td><td>'
 			data += 'Networking Info for Manual Configurations:<br>'
 			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="192.168."><br>'
@@ -125,6 +131,12 @@ class WebGLIHandler(handler.Handler):
 				client_profile.set_root_mount_point(None, self.post_params['RootMountPoint'], None)
 			except:
 				data += "ERROR: Could not set the Root Mount Point<BR>\n"
+		if 'Network_Iface' in self.post_params:
+			data += "Found a network interface: you submitted " + self.post_params['Network_Iface'] + "<BR>\n"
+			try:
+				client_profile.set_network_interface(None, self.post_params['Network_Iface'], None)
+			except:
+				data += "ERROR: Could not set the Network Interface<BR>\n"
 		if 'Network_Type' in self.post_params:
 			data += "Found a Network Type: you submitted " + self.post_params['Network_Type'] + "<BR>\n"
 			try:

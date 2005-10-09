@@ -855,7 +855,8 @@ def uncdata(text):
 		
 def get_grp_pkgs_from_cd():
 	if not is_file("/usr/livecd/grppkgs.txt"):
-		raise GLIException("GLIUtilityError", "fatal", "get_grp_pkgs_from_cd", "Required file /usr/livecd/grppkgs.txt does not exist")
+		return ""
+		#raise GLIException("GLIUtilityError", "fatal", "get_grp_pkgs_from_cd", "Required file /usr/livecd/grppkgs.txt does not exist")
 	status,output = spawn('cat /usr/livecd/grppkgs.txt',return_output=True)
 	output = output.split()
 	#remove the first part before a / for comparision
