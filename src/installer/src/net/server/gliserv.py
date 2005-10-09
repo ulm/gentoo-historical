@@ -24,6 +24,14 @@ class SharedInfo(object):
 	def __init__(self):
 		self.__dict__ = self.__shared_state
 
+class Params(dict):
+
+	def __getitem__(self, item):
+		try:
+			return dict.__getitem__(self, item)
+		except KeyError:
+			return ""
+
 class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 
 	def __init__(self, server_address):
@@ -184,8 +192,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			return self.wrap_in_template(content + "You didn't specify a filename to save to")
 
 	def parse_path(self):
-		self.get_params = {}
-		self.post_params = {}
+		self.get_params = Params()
+		self.post_params = Params()
 		pathparts = self.path.split("?")
 		self.path = pathparts[0]
 		if len(pathparts) > 1:
