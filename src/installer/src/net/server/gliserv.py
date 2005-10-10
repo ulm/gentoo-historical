@@ -16,10 +16,11 @@ import SimpleXMLRPCServer
 import mimetools
 import GLIServerProfile
 import traceback
+import GLIInstallProfile
 
 class SharedInfo(object):
 
-	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [] }
+	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None}
 
 	def __init__(self):
 		self.__dict__ = self.__shared_state
@@ -295,7 +296,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 #		        }
 		paths = {
 		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
-				  'WebGLIHandler': ['/webgli', '/webgli/ClientConfig', '/webgli/saveclientconfig' ],
+				  'WebGLIHandler': ['/webgli', '/webgli/ClientConfig', '/webgli/saveclientconfig',
+				  		'/webgli/NetworkMounts'  ],
 		          'Welcome': [ '/welcome' ],
 		          'Clients': [ '/showclients' ]
 		        }

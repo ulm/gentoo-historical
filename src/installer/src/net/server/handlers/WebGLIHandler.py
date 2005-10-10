@@ -1,6 +1,7 @@
 import GLIServerProfile
 import handler
 import sys
+import copy
 sys.path.append("../..")
 class WebGLIHandler(handler.Handler):
 
@@ -184,7 +185,7 @@ class WebGLIHandler(handler.Handler):
 			data += "Found a root password2: you submitted " + self.post_params['RootPass2'] + "<BR>\n"
 			if self.post_params['RootPass1'] == self.post_params['RootPass2']:
 				try:
-					client_profile.set_root_passwd(None, self.post_params['RootPass1'], None)
+					client_profile.set_root_passwd(None, GLIUtility.hash_password(self.post_params['RootPass1']), None)
 				except:
 					data += "ERROR: Could not set the root password<BR>\n"
 			else:
@@ -268,10 +269,26 @@ class WebGLIHandler(handler.Handler):
 	def showwelcome(self):
 		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
 		return self.wrap_in_webgli_template(data)
+	def networkmounts(self):
+		data = "Network Mounts page."
+		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
+		for netmount in network_mounts:
+			data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
+		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."
+		data += """
+		<form name="netmount" action="/webgli/savenetmounts" method="POST" enctype="multipart/form-data">
+		
+		"""
+		
+		return self.wrap_in_webgli_template(data)
+		
 	def handle(self, path):
+		if not self.shared_info.install_profile:
+			self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
 		paths = { '/webgli': self.showwelcome,
 				  '/webgli/ClientConfig': self.clientconfig,
 				  '/webgli/saveclientconfig': self.saveclientconfig,
+				  '/webgli/NetworkMounts': self.networkmounts,
 		          '/loadprofile2': self.loadprofile2,
 		          '/saveprofile': self.saveprofile,
 		          '/saveprofile2': self.saveprofile2
