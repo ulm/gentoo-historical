@@ -49,7 +49,7 @@ def _q_index(dummy):
 
     # We basically return a flat file for the main content
     body = open('%s/index.html' % curdir).read()
-    sb1 = sidebox('motd', open('%s/motd' % curdir).read())
+    sb1 = sidebox('motd', htmltext('<span id="motd">%s</span>' % open('%s/motd' % curdir).read()))
 ##    sb2 = sidebox('search', htmltext('<input type="text" name="search">'))
     return page("Welcome to packages.gentoo.org", [htmltext(body), sb1],
             noparent = True)
