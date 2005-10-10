@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/devnotes.xml,v 1.4 2005/10/10 01:45:20 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/bsd/devnotes.xml,v 1.5 2005/10/10 02:10:56 flameeyes Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/bsd/devnotes.xml" lang="en">
 <title>Gentoo/*BSD Devnotes Guide</title>
@@ -22,8 +22,8 @@ with packages on a Gentoo/*BSD environment.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.1</version>
-<date>2005-09-21</date>
+<version>1.2</version>
+<date>2005-10-10</date>
 
 <chapter> <!-- System structure -->
 <title>System Structure</title>
@@ -208,6 +208,111 @@ everything else).
 
 </body>
 </section>
+</chapter>
+
+<chapter> <!-- Eclasses guide -->
+<title>Eclasses guide</title>
+
+<section> <!-- Introduction -->
+<title>Introduction</title>
+
+<body>
+
+<p>
+To make simple the work for developers working with BSD-packaged source code,
+the Gentoo/FreeBSD ebuilds make use of two main eclasses designed just for
+supporting the "ebuildification" of ports-like packages.
+</p>
+
+<p>
+The two eclasses are <path>bsdmk.eclass</path> and <path>freebsd.class</path>.
+Their use is not limited to Gentoo/FreeBSD itself, as many packages uses ports
+interfaces directly in their sources, and can then be built with those eclasses
+on other systems (take for example <c>net-fs/smbfs</c> that should work on
+Darwin, too).
+</p>
+
+</body>
+</section>
+
+<section> <!-- bsdmk eclass -->
+<title>bsdmk eclass</title>
+
+<body>
+
+<p>
+Starting from the most generic eclass, we have <c>bsdmk</c>. This eclass is
+used to simplify the handling of packages with a build system based on "mk"
+files, in ports style. The mk files are files that contains predefined rules,
+variables and that can be included to avoid writing every time a complete
+makefile.
+</p>
+
+<p>
+A makefile that uses a mk-like interface is much similar to a Makefile.am,
+as it only defines the targets, the sources, and the extra non-standard rules.
+It also can specify subdirs, to use recursive make.
+</p>
+
+<p>
+It's not possible to build a mk-based package using GNU make, as it uses
+syntaxes that are extensions used by BSD-ish makes. You can find on
+<uri link="/proj/en/gentoo-alt/maintnotes.xml">Gentoo/ALT maintainers notes</uri>
+an explaination on how to handle BSD-style make and GNU make in ebuilds.
+</p>
+
+<p>
+mk-based packages support passing extra options to enable/disable features,
+alike to <c>configure</c> options. This kind of options are often called
+"knobs", and are simply extra variables passed on the command line.
+</p>
+
+<pre caption="example of make call with knobs">
+  make NO_WERROR= INET6= OTHER_KNOB=
+</pre>
+
+<p>
+While using autotooled packages you need to pass the options to <c>configure</c>
+only inside <c>src_compile</c> function, using mk-based packages you need to
+pass the same knobs to both build and install commands. To simplify this, the
+eclass provides two functions (<c>mkmake</c> and <c>mkinstall</c>) that passes
+to the make command the knobs set in <c>${mymakeopts}</c> variable, that should
+be filled during <c>pkg_setup</c> referring to the useflag the user set (or the
+features that must/must not be enabled for the build).
+</p>
+
+<p>
+As many packages - like the source packages for FreeBSd and probably other
+BSD source packages - just needs to call <c>mkmake</c> to build and
+<c>mkinstall</c> to install the files built, bsdmk eclass also exports
+<c>bsdmk_src_compile</c> and <c>bsdmk_src_install</c> functions that are a quick
+way to prepare an ebuild for a mk-based package.
+</p>
+
+<p>
+Sometimes you want to exclude, from a bigger source tree, a single directory or
+a set of directories. This is the case of Gentoo/FreeBSD sources, where the main
+source tarballs contains also libraries and programs that are built outside the
+system ebuilds directly by portage.
+</p>
+
+<p>
+To make simpler avoiding building an entire subdirectory tree, while not
+removing the sources (that might be included or used directly by other targets
+in other directories), the simplest way is to create a fake Makefile that just
+includes a dummy mk file. This is what <c>dummy_mk</c> function does.
+</p>
+
+<p>
+The <c>dummy_mk</c> function replace the Makefile of the given subdirectory with
+a Makefile that incldues <path>bsd.lib.mk</path> mk file (that defines shared
+and static libraries) but does not declare any target. This way, when
+<c>make</c> will enter the directory, it will pass on without building anything.
+</p>
+
+</body>
+</section>
+
 </chapter>
 
 </guide>
