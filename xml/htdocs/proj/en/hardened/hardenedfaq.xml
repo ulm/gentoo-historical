@@ -68,6 +68,9 @@ IRC channel and the gentoo-hardened mailing list.
   <li>
     <uri link="#hardenedprofile">How do I switch to the hardened profile?</uri>
   </li>
+  <li>
+    <uri link="#hardeneddebug">How do I debug with gdb?</uri>
+  </li>
 </ul>
 
 </body>
@@ -327,6 +330,40 @@ emerge -e world
 
 </body>
 </section>
+
+<section id="hardeneddebug">
+<title>How do I debug with gdb?</title>
+<body>
+<p>
+First gotcha is that GDB can't resolve symbols in PIEs; it doesn't realise
+that the addresses are relative in PIEs not absolute. This shows up when
+you try to get a backtrace for example, and see a stream of lines with '??'
+where the symbol should be.
+</p>
+<p>
+To get around this, do the final link stage with '-nopie' - all the preceding
+object compilations can still be with '-fPIE' as normal (i.e. the default with
+the hardened compiler) so that your executable is as close as possible to the
+real thing, but the final link must create a regular executable. Try adding
+<c>-nopie</c> to <c>LDFLAGS</c> if you're building with emerge.
+</p>
+<p>
+The second gotcha is that PaX may prevent GDB from setting breakpoints,
+depending on how the kernel is configured. This includes the breakpoint
+at main which you need to get started. To stop PaX doing this, the executable
+being debugged needs the 'm' and 'x' flags. The 'x' flag is set by default,
+so it is enough to do:
+</p>
+<pre caption="Relax PaX for debug">
+/sbin/paxctl -m foo
+</pre>
+<p>
+At this point, you should be good to go! Fire up gdb in the usual way.
+Good luck!
+</p>
+</body>
+</section>
+		
 </chapter>
 
 <chapter>
