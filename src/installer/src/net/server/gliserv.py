@@ -297,7 +297,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		paths = {
 		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
 				  'WebGLIHandler': ['/webgli', '/webgli/ClientConfig', '/webgli/saveclientconfig',
-				  		'/webgli/NetworkMounts'  ],
+				  		'/webgli/NetworkMounts', '/webgli/savenetmounts'  ],
 		          'Welcome': [ '/welcome' ],
 		          'Clients': [ '/showclients' ]
 		        }

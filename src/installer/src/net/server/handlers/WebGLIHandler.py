@@ -1,4 +1,5 @@
 import GLIServerProfile
+import GLIInstallProfile
 import handler
 import sys
 import copy
@@ -272,16 +273,85 @@ class WebGLIHandler(handler.Handler):
 	def networkmounts(self):
 		data = "Network Mounts page."
 		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
-		for netmount in network_mounts:
-			data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
+		
+		#	data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
 		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."
 		data += """
 		<form name="netmount" action="/webgli/savenetmounts" method="POST" enctype="multipart/form-data">
-		
+		<p>If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount. Currently GLI only supports NFS mounts.</p>
+	  <table width="511" border="1">
+		<tr>
+		  <td width="31">Edit</td>
+		  <td width="31">Type</td>
+		  <td width="79">Hostname/IP</td>
+		  <td width="79">Export</td>
+		  <td width="70">Mountpoint</td>
+		  <td width="103">Mount Options </td>
+		</tr>"""
+		for i,netmount in enumerate(network_mounts):
+			data += '<tr><td><input name="edit_nfs" type="radio" id="edit_nfs" value="'+str(i)+"\">Edit</td>\n"
+			data += '<td>'+network_mounts[i]['type']+"</td>\n"
+			data += '<td>'+network_mounts[i]['host']+"</td>\n"
+			data += '<td>'+network_mounts[i]['export']+"</td>\n"
+			data += '<td>'+network_mounts[i]['mountpoint']+"</td>\n"
+			data += '<td>'+network_mounts[i]['mountopts']+"</td></tr>\n"
+		data += """
+	  </table>
+	
+	<hr>
+	  <p>&nbsp;  </p>
+	  <table width="100%"  border="1">
+		<tr>
+		  <td><p>Enter the IP/hostname:
+				<input name="hostname" type="text" id="hostname">
+				<input type="Submit" name="Search" value="Search">
+		  </p>
+			<p>Enter the export name:
+				<input name="export" type="text" id="export">
+			</p>
+			<p>OR</p>
+			<p>Choose the export from the list of found exports:
+				<select name="exports" size="1" id="exports">
+				</select>
+			</p></td>
+		  <td><p>Enter the mountpoint:
+			  <input name="mountpoint" type="text" id="mountpoint">
+		  </p>
+		  <p>Enter any special mount options: 
+			<input name="mountopts" type="text" id="mountopts">
+		  </p></td>
+		</tr>
+		<tr>
+		  <td>&nbsp;</td>
+		  <td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
+		</tr>
+	  </table>
+	  <p>&nbsp;</p>
+	  <p>&nbsp;</p>
+	  <p>&nbsp;  </p>
+	</form>
 		"""
 		
 		return self.wrap_in_webgli_template(data)
 		
+	def savenetmounts(self):
+		data = ""
+		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
+		if 'addnfs' in self.post_params:
+			if not 'hostname' in self.post_params or not self.post_params['hostname']:
+				data += "ERROR: Hostname not found.<br>\n"
+			elif not 'export' in self.post_params or not self.post_params['export']:
+				data += "ERROR: Export not found.<br>\n"
+			elif not 'mountpoint' in self.post_params or not self.post_params['mountpoint']:
+				data += "ERROR: Mountpoint not found.<br>\n"
+			else:	
+				network_mounts.append({'export': self.post_params['export'], 'host': self.post_params['hostname'], 'mountopts': self.post_params['mountopts'], 'mountpoint': self.post_params['mountpoint'], 'type': 'nfs'})
+				try:
+					self.shared_info.install_profile.set_network_mounts(network_mounts)
+					data += "Network mount added successfully.<br>\n"
+				except:
+					data += "ERROR: Could not add network mount.<br>\n"
+		return self.wrap_in_webgli_template(data)
 	def handle(self, path):
 		if not self.shared_info.install_profile:
 			self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
@@ -289,6 +359,7 @@ class WebGLIHandler(handler.Handler):
 				  '/webgli/ClientConfig': self.clientconfig,
 				  '/webgli/saveclientconfig': self.saveclientconfig,
 				  '/webgli/NetworkMounts': self.networkmounts,
+				  '/webgli/savenetmounts': self.savenetmounts,
 		          '/loadprofile2': self.loadprofile2,
 		          '/saveprofile': self.saveprofile,
 		          '/saveprofile2': self.saveprofile2
