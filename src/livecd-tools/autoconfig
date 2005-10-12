@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.44 2005/10/12 17:42:25 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.45 2005/10/12 18:32:00 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -98,15 +98,12 @@ list_services() {
 }
 
 # Only used on SGI CDs, this determines:
-# A) Number of CPUs
-# B) CPU Type
-# C) System
+# A) CPU Type
+# B) System
 DetectMips() {
-	local numcpu="$(awk -F: '/^processor/{printf $2"\n"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | wc -l)"
-	local cpuinfo="$(awk -F: '/^cpu model/{printf $2"\n"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1 | cut -d" " -f2,3)"
-	local machinfo="$(awk -F: '/^system type/{printf $2"\n"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | cut -d" " -f2-)"
+	local cpuinfo="$(awk -F: '/^cpu model/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1 | cut -d" " -f2,3)"
+	local machinfo="$(awk -F: '/^system type/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | cut -d" " -f2-)"
 	local machtype=""
-	local bit=""
 
 	case "${machinfo}" in
 		"SGI Indy")
@@ -139,8 +136,6 @@ DetectMips() {
 		;;
 	esac
 
-	[ "${numcpu}" -gt '1' ] && bit="CPUs" || bit="CPU"
-
 	PC="Detected an ${machtype} w/ ${numcpu} ${cpuinfo} ${bit}"
 }
 
@@ -151,14 +146,20 @@ start() {
 	if [ "${DETECT}" = "yes" ]
 	then
 		ebegin "Hardware detection started"
-			local mach="$(uname -m)"
+			local numcpu="$(awk -F: '/^processor/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | wc -l)"
+			local arch="$(uname -m)"
 			local ismips="no"
-			if [ "${mach}" = "mips" -o "${mach}" = "mips64" ]
+			[ "${numcpu}" -gt '1' ] && bit="CPUs" || bit="CPU"
+			if [ "${arch}" = "mips" -o "${arch}" = "mips64" ]
 			then
 				DetectMips
 				ismips="yes"
 			else
 				PC="$(awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null)"
+				# This is probably where we're going with this in the future
+				# cpuinfo="$(awk -F: '/^model name/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+				# mhz="$(awk -F: '/^cpu MHz/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+				# PC="Detected ${numcpu} ${cpuinfo} ${mhz} ${bit}"
 			fi
 			einfo "${PC}"
 			[ -x /usr/sbin/hwsetup ] && hwsetup -p >/dev/null
