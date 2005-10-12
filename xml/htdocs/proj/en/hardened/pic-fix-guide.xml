@@ -261,7 +261,8 @@ $ <i>scanelf -qT /usr/lib/libSDL-1.2.so.0.7.2</i>
 Doesn't seem to be anything new here.  Poor memory usage in functions like 
 <e>_ConvertMMXpII32_24RGB888</e> and no symbol name which means it's probably 
 pure hand written assembler.  The <e>SDL_SoftStretch</e> function misuses the 
-symbol <e>_copy_row</e> which means it's probably inline assembly code.
+symbol <e>_copy_row</e> and since the symbol name has been retained, it's 
+probably inline assembly code.
 </p>
 
 </body>
@@ -344,9 +345,9 @@ cpu_flags.L1:
 </pre>
 
 <p>
-Since registers are prefixed with a <e>%</e> and constants are prefixed with a 
-<e>$</e>, that <e>flags</e> looks suspicious.  It also lines up well with the 
-<c>objdump</c> output from earlier.  So what is <e>flags</e>?
+In GNU assembler, registers are prefixed with a <e>%</e> and constants are 
+prefixed with a <e>$</e>, that <e>flags</e> looks suspicious.  It also lines 
+up well with the <c>objdump</c> output from earlier.  So what is <e>flags</e>?
 </p>
 
 <pre caption="What is 'flags'?">
@@ -360,11 +361,12 @@ flags: .long 0
 </pre>
 
 <p>
-So <e>flags</e> is a local variable which other code uses absolute memory 
-references rather than relative.  That's all there is to it.  We started with 
-the library <path>libsmpeg.so</path> and tracked it back to the function 
-<e>cpu_flags</e> and the variable <e>flags</e> in the 
-<path>video/mmxflags_asm.S</path> file.  That wasn't so hard now was it? :)
+Seems <e>flags</e> is a local variable which functions access with absolute 
+memory references rather than relative.  Now we are pretty much done.  That's 
+all there is to it.  We started with the library <path>libsmpeg.so</path> and 
+tracked it back to the function <e>cpu_flags</e> and the variable 
+<e>flags</e> in the <path>video/mmxflags_asm.S</path> file.  That wasn't so 
+hard now was it? :)
 </p>
 
 <p>
@@ -412,7 +414,7 @@ scratch1:
 </section>
 
 <section>
-<title>libsdl source dive</title>
+<title>libSDL source dive</title>
 <body>
 
 <p>
@@ -477,10 +479,10 @@ reference instead though ...
 <body>
 
 <p>
-So now we know what broken code looks like.  We can point out issues in code 
-and confidently declare "that crap is broken".  While this is a good thing, it 
-doesn't help much if no one knows how it's supposed to be written.  Let's 
-start with some rules of thumb.
+Now we know what broken code looks like.  We can point out issues in code and 
+confidently declare "that crap is broken".  While this is a good thing, it 
+certainly doesn't help much if no one knows how it's supposed to be written.  
+Let's start with some rules of thumb.
 </p>
 
 <p>General rules</p>
@@ -523,21 +525,22 @@ start with some rules of thumb.
 <body>
 
 <p>
-If you find come across code which uses the PIC register in some inline 
-assembly, one fix may be to simply use a different register.  For example, the 
-x86 architecture has 6 general purpose registers (<e>eax</e>, <e>ebx</e>, 
+If you come across code which uses the PIC register in some inline assembly, 
+one fix may be to simply use a different register.  For example, the x86 
+architecture has 6 general purpose registers (<e>eax</e>, <e>ebx</e>, 
 <e>ecx</e>, <e>edx</e>, <e>esi</e>, <e>edi</e>).  If the code uses just 
 <e>eax</e> and <e>ebx</e>, just change all references to <e>ebx</e> to 
 <e>ecx</e> and you're done!
 </p>
 
 <p>
-Or, if the assembly uses an instruction which always clobbers <e>ebx</e> (like 
+Or, if the assembly uses an instruction which always clobbers <e>ebx</e> (e.g. 
 <e>cpuid</e>), simply hide the value in another register (like <e>esi</e>).
 </p>
 
 <p>
-If all else fails, you can push/pop <e>ebx</e> on the stack.
+If all else fails, you can fall back to the slow push/pop <e>ebx</e> on the 
+stack method.
 </p>
 
 <pre caption="Just don't use the PIC register">
@@ -630,11 +633,11 @@ memory constraint ("m") and gcc will handle all the rest.
 unsigned long long a_mmx_mask = 0xf8007c00ffea0059ULL;
 void somefunction()
 {
-	<comment>/* Common method for loading masks (but incorrect) */</comment>
-	asm("pmullw a_mmx_mask, %%mm0\n" : : );
+	<comment>/* Common (but incorrect) method for loading masks */</comment>
+	asm("pmullw a_mmx_mask, %%mm0" : : );
 
 	<comment>/* The correct way is to let gcc do it */</comment>
-	asm("pmullw %0, %%mm0\n" : : "m"(a_mmx_mask));
+	asm("pmullw %0, %%mm0" : : "m"(a_mmx_mask));
 }
 </pre>
 
@@ -647,12 +650,12 @@ void somefunction()
 
 <p>
 Hand written assembly sometimes need to access variables (whether they be 
-local or global).  None of the previous tricks will work and now you just need 
+local or global).  Since none of the previous tricks will work, you just need 
 to grind your teeth and dig in to write real PIC references yourself using 
 the GOT.  Make sure you keep in mind the first rule of thumb: Do not mix PIC 
-and non-PIC object code.  This requires the hand written assembly be 
-preprocessed before it is assembled, so an assembly source file with a 
-<e>.s</e> suffix will not work.  It needs to be <e>.S</e>.
+and non-PIC object code.  This probably will require the hand written 
+assembly be preprocessed before it is assembled, so an assembly source file 
+with a <e>.s</e> suffix will not work.  It needs to be <e>.S</e>.
 </p>
 
 <pre caption="How to refer to variables via the GOT">
@@ -703,8 +706,8 @@ by using <e>ecx</e> or <e>edx</e>.
 
 <p>
 Since we hide the PIC details behind the preprocessor define <e>__PIC__</e>, 
-we know that the correct code will be generated for both PIC and non-PIC 
-objects.
+we know that the correct code will be generated for both the PIC and non-PIC 
+cases.
 </p>
 
 <p>
@@ -717,7 +720,7 @@ assembler where to find the variables in memory.  The <e>.section
 instance of this function in the final object code.  So if you have multiple 
 files which declare this same function which are compiled and linked into the 
 same final library, the linker will discard all duplicate instances of the 
-function thus saving space.
+function thus saving space (which is always a good thing).
 </p>
 
 </body>
@@ -791,10 +794,10 @@ __i686.get_pc_thunk.bx:
 </section>
 
 <section>
-<title>Fix libsdl</title>
+<title>Fix libSDL</title>
 <body>
 
-<pre caption="Fixing _ConvertMMXpII32_24RGB888 in libsdl">
+<pre caption="Fixing _ConvertMMXpII32_24RGB888 in libSDL">
 <comment>[Non-PIC Version]</comment>
 mmx32_rgb888_mask dd 00ffffffh,00ffffffh
 ...
@@ -816,7 +819,7 @@ mmx32_rgb888_mask dd 00ffffffh,00ffffffh
 	CLEANUP_IMMQ_LOADS(1)
 </pre>
 
-<pre caption="Fixing SDL_SoftStretch in libsdl">
+<pre caption="Fixing SDL_SoftStretch in libSDL">
 <comment>[Non-PIC Version]</comment>
 	__asm__ __volatile__ (
 		"call _copy_row"
