@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.8 2005/10/12 15:39:00 wolf31o2 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.9 2005/10/12 19:27:05 wolf31o2 Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -20,7 +20,7 @@ This guide outlines the best practices for creating ebuilds for games on Gentoo.
 
 <license/>
 
-<version>0.3</version>
+<version>1.9</version>
 <date>12 October 2005</date>
 
 <chapter>
@@ -619,12 +619,14 @@ src_install() {
 				<tr>
 					<ti>GAMES_DATADIR</ti>
 					<ti>/usr/share/games</ti>
-					<ti>This is the location into which games should install their data</ti>
+					<ti>This is the location into which games should installi
+					their data</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_DATADIR_BASE</ti>
 					<ti>/usr/share</ti>
-					<ti>This is the same as ${GAMES_DATADIR}, but some packages append "games" to the directory</ti>
+					<ti>This is the same as ${GAMES_DATADIR}, but some packages
+					append "games" to the directory</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_SYSCONFDIR</ti>
@@ -634,17 +636,20 @@ src_install() {
 				<tr>
 					<ti>GAMES_STATEDIR</ti>
 					<ti>/var/games</ti>
-					<ti>This location is where games store writable state data, such as score files</ti>
+					<ti>This location is where games store writable state data,
+					such as score files</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_LOGDIR</ti>
 					<ti>/var/log/games</ti>
-					<ti>This is the default location for log files, such as that created by a dedicated server</ti>
+					<ti>This is the default location for log files, such as
+					that created by a dedicated server</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_LIBDIR</ti>
 					<ti>/usr/games/lib</ti>
-					<ti>This is the location into which games should install any libraries</ti>
+					<ti>This is the location into which games should install
+					any libraries</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_BINDIR</ti>
@@ -654,7 +659,8 @@ src_install() {
 				<tr>
 					<ti>GAMES_ENVD</ti>
 					<ti>90games</ti>
-					<ti>File that holds environment settings for games, such as the binary path</ti>
+					<ti>File that holds environment settings for games, such as
+					the binary path</ti>
 				</tr>
 				<tr>
 					<ti>GAMES_USER</ti>
@@ -669,7 +675,15 @@ src_install() {
 				<tr>
 					<ti>GAMES_GROUP</ti>
 					<ti>games</ti>
-					<ti>Group which owns all games and group in which game players should be members</ti>
+					<ti>Group which owns all games and group in which game
+					players should be members</ti>
+				</tr>
+				<tr>
+					<ti>GAMES_USE_SDL</ti>
+					<ti>NULL</ti>
+					<ti>This should only be used in an ebuild for a
+					libSDL-based game that requires that libSDL was built with
+					a specific USE flag, for example, alsa.</ti>
 				</tr>
 			</table>
 			<p>
@@ -691,7 +705,7 @@ src_install() {
 			<table>
 				<tr>
 					<th>Function</th>
-					<th>description</th>
+					<th>Description</th>
 				</tr>
 				<tr>
 					<ti>egamesconf</ti>
@@ -774,6 +788,94 @@ src_install() {
 					into ${GAMES_PREFIX_OPT}.  You should avoid using a wrapper
 					for any source-based game.  It is best to patch the sources
 					to resolve any issues, instead.</ti>
+				</tr>
+				<tr>
+					<ti>gamesowners</ti>
+					<ti>This function is used internally by prepgamesdirs to
+					setup the owner of the files installed by the ebuild to
+					${GAMES_USER}:${GAMES_GROUP}.  You should never call this
+					function yourself.</ti>
+				</tr>
+				<tr>
+					<ti>gamesperms</ti>
+					<ti>This function does not appear to be used.</ti>
+				</tr>
+				<tr>
+					<ti>prepgamesdirs</ti>
+					<ti>This function is used to ensure that all files that are
+					installed by a games ebuild has the proper permissions.
+					This function should be called last in src_install, as it
+					potentially touches every file and directory installed by
+					the ebuild.  The purpose of this function is to ensure that
+					the files and directories are writable by ${GAMES_USER},
+					readable by ${GAMES_GROUP}, and not readable or executable
+					by anyone else.</ti>
+				</tr>
+				<tr>
+					<ti>gamesenv</ti>
+					<ti>This function sets up the default PATH and LDPATH for
+					games ebuilds.  It is called automatically by the
+					games_pkg_postinst function and should not be run
+					manually.</ti>
+				</tr>
+				<tr>
+					<ti>games_pkg_setup</ti>
+					<ti>This is the default games.eclass pkg_setup function.
+					It does several things to ensure that games will run
+					correctly under Gentoo.  First, it runs enewgroup to setup
+					the ${GAMES_GROUP} group.  Then, it checks if ${GAMES_USER}
+					is different from root, and runs enewuser if it has been
+					changed.  Next, it checks if ${GAMES_USER_DED} is
+					different from root, and runs enewuser if it is different.
+					If ${GAMES_USE_SDL} is defined, it will check if
+					media-libs/libsdl has been built with the correct USE flag,
+					otherwise it dies with an error.  Finally, it checks if the
+					${GAMES_USER_DED} user has /bin/false as their shell and
+					changes it to /bin/bash to allow for dedicated servers to
+					run as the ${GAMES_USER_DED} user.  If your ebuild requires
+					its own pkg_setup function, then be sure to call this
+					function from within yours.</ti>
+				</tr>
+				<tr>
+					<ti>games_src_compile</ti>
+					<ti>This is the default games.eclass src_compile function.
+					It is actually quite simple as it only runs the following
+					commands.  First, it checks if configure is executable,
+					then it runs egamesconf.  Then, if checks for the existence
+					of a Makefile, and runs emake.</ti>
+				</tr>
+				<tr>
+					<ti>games_pkg_preinst</ti>
+					<ti>This is the default games.eclass pkg_preinst function.
+					It is used to copy files from ${GAMES_STATEDIR} to the
+					temporary location used by portage prior to merging.  This
+					ensures that any state information files are not unmerged
+					with the old package during an upgrade.  If your ebuild
+					requires its own pkg_preinst function, then be sure to call
+					this function from within yours.</ti>
+				</tr>
+				<tr>
+					<ti>games_pkg_postinst</ti>
+					<ti>This is the default games.eclass pkg_postinst function.
+					First, it runs gamesenv to setup the environment.  This is
+					also the function that warns the user about the games group
+					requirement for playing games on Gentoo.</ti>
+				</tr>
+				<tr>
+					<ti>games_ut_unpack</ti>
+					<ti>This function is used to unpack .uz and .uz2 files that
+					are typically associated with the Unreal Tournament series
+					of games.  It can take either a file name or a directory
+					name as an argument.  Use of this function requries that
+					your ebuild has games-util/uz2unpack in DEPEND.</ti>
+				</tr>
+				<tr>
+					<ti>games_umod_unpack</ti>
+					<ti>This function is used to unpack .umod, .ut2mod, and
+					.ut4mod files that are typically associated with the
+					Unreal Tournament series of games.  This function requires
+					an installation of one of these games, and is generally
+					only used for modifications to these games.</ti>
 				</tr>
 			</table>
 		</body>
