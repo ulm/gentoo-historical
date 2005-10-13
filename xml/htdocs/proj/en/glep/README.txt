@@ -36,7 +36,7 @@ the GLEP header is reasonable.  This README lacks that header,
 so to convert this file to html using docutils you need to 
 use the more generic transformation program::
 
-	# docutils-html.py --stylesheet-path=tools/glep.css README.txt README.html
+	# rst2html.py --stylesheet-path=tools/glep.css README.txt README.html
 
 to convert README.txt to README.html.)
 
