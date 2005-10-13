@@ -114,7 +114,7 @@
   </xsl:if>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"/>
+  <link title="new" rel="stylesheet" href="/css/main.css?d=20051010" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
     <!-- Just remove this bit if http refresh is too annoying -->
       <xsl:if test="/*[1][@redirect]">
@@ -688,6 +688,16 @@
 <b><xsl:apply-templates/></b>
 </xsl:template>
 
+<!-- Superscript -->
+<xsl:template match="sup">
+  <sup><xsl:apply-templates/></sup>
+</xsl:template>
+
+<!-- Subscript -->
+<xsl:template match="sub">
+  <sub><xsl:apply-templates/></sub>
+</xsl:template>
+
 <!-- Brite -->
 <xsl:template match="brite">
 <font color="#ff0000">
@@ -979,22 +989,24 @@
 <!-- Paragraph -->
 <xsl:template match="p">
 <xsl:param name="chid"/>
-<xsl:choose>
-  <xsl:when test="@class">
-    <p class="{@class}">
-      <xsl:apply-templates>
-        <xsl:with-param name="chid" select="$chid"/>
-      </xsl:apply-templates>
-    </p>
-  </xsl:when>
-  <xsl:otherwise>
-    <p>
-      <xsl:apply-templates>
-        <xsl:with-param name="chid" select="$chid"/>
-      </xsl:apply-templates>
-    </p>
-  </xsl:otherwise>
-</xsl:choose>
+  <p>
+    <!-- Keep this for old files with <p class="secthead"> -->
+    <xsl:if test="@class">
+      <xsl:attribute name="class"><xsl:value-of select="@class"/></xsl:attribute>
+    </xsl:if>
+
+    <xsl:if test="@by">
+      <xsl:attribute name="class">epigraph</xsl:attribute>
+    </xsl:if>
+
+    <xsl:apply-templates>
+      <xsl:with-param name="chid" select="$chid"/>
+    </xsl:apply-templates>
+
+    <xsl:if test="@by">
+      <br/><br/><span class="episig">—<xsl:value-of select="@by"/></span><br/><br/>
+    </xsl:if>
+  </p>
 </xsl:template>
 
 <!-- Emphasize -->
@@ -1028,9 +1040,21 @@
 </td>
 </xsl:template>
 
-<!-- Table Heading -->
+<!-- Table Heading, no idea why <th> hasn't been used -->
 <xsl:template match="th">
 <td class="infohead">
+  <xsl:if test="@colspan">
+    <xsl:attribute name="colspan"><xsl:value-of select="@colspan"/></xsl:attribute>
+    <!-- Center only when item spans several columns as
+         centering all <th> might disrupt some pages.
+         We might want to use a plain html <th> tag later.
+         Tip: to center a single-cell title, use <th colspan="1">
+       -->
+    <xsl:attribute name="style">text-align:center</xsl:attribute>
+  </xsl:if>
+  <xsl:if test="@rowspan">
+    <xsl:attribute name="rowspan"><xsl:value-of select="@rowspan"/></xsl:attribute>
+  </xsl:if>
   <b>
     <xsl:apply-templates/>
   </b>
@@ -1056,6 +1080,19 @@
 <li>
   <xsl:apply-templates/>
 </li>
+</xsl:template>
+
+<!-- Definition Lists -->
+<xsl:template match="dl">
+<dl><xsl:apply-templates/></dl>
+</xsl:template>
+
+<xsl:template match="dt">
+<dt><xsl:apply-templates/></dt>
+</xsl:template>
+
+<xsl:template match="dd">
+<dd><xsl:apply-templates/></dd>
 </xsl:template>
 
 <!-- NOP -->
@@ -1335,7 +1372,7 @@
     </xsl:choose>
     <xsl:if test="/book/abstract[normalize-space(.)] or /guide/abstract[normalize-space(.)]">
       <tr>
-        <td class="topsep">
+        <td align="left" class="topsep">
           <p class="alttext">
             <!-- Abstract (summary) of the document -->
             <b><xsl:value-of select="func:gettext('Summary')"/>: </b>
@@ -1346,7 +1383,7 @@
     </xsl:if>
     <xsl:if test="/book/author or /guide/author">
     <tr>
-      <td class="topsep">
+      <td align="left" class="topsep">
         <p class="alttext">
           <!-- Authors -->
           <xsl:apply-templates select="/guide/author|/book/author"/>
