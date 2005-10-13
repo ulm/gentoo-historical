@@ -2,7 +2,7 @@
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/en/hardened/pic-guide.xml" lang="en">
-<title>The GNU Stack Handbook</title>
+<title>The GNU Stack Quickstart</title>
 
 <author title="Author">
  <mail link="vapier@gentoo.org">Mike Frysinger</mail>
@@ -30,23 +30,24 @@
 With the rise of mainstream consumer machines with hardware stack protection 
 (e.g. the <uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri> on 
 amd64), we developers have to be doubly sure that our packages build with the 
-correct stack settings.  Remember, stack protection is an issue for all 
+correct stack settings.  Keep in mind that stack protection is an issue for all 
 architectures, not just x86 or amd64.
 </p>
 
 <p>
-Before getting started, you should read through the Wikipedia entry on the 
-<uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri>.  You should be 
-familiar with the concept of executable versus readonly stacks.
+The purpose of this document is to help package maintainers fix their packages 
+when they break.  We will be focusing our attention on the GNU_STACK ELF 
+marking.  ELF is simply a file format which all modern linux distros use.  An 
+ELF can be an executable (say <path>/bin/ls</path>) or a library (say 
+<path>/lib/libncurses.so</path>).  GNU_STACK is just an ELF label which tells 
+the system how to control the stack when the ELF is loaded into memory.
 </p>
 
 <p>
-The purpose of this document is to help package maintainers fix their packages 
-when they break.  We will be focusing our attention on the GNU_STACK and 
-GNU_RELRO ELF markings.  ELF is simply a file format which all modern linux 
-distros use.  An ELF can be an executable (say <path>/bin/ls</path>) or a 
-library (say <path>/lib/libncurses.so</path>).  The GNU_STACK and GNU_RELRO 
-are just ELF labels which tell the system how to restrict the ELF at runtime.
+Before getting started, you should read through the Wikipedia entry on the 
+<uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri>.  You can skip it 
+of course if you're already familiar with the concept of executable versus 
+readonly stacks.
 </p>
 
 </body>
@@ -136,8 +137,8 @@ $ <i>cd /var/tmp/portage/smpeg-0.4.4-r6/work/smpeg-0.4.4/</i>
 <p>
 Now we need to look at each object file and see if it has a 
 <e>.note.GNU-stack</e> ELF section.  Chances are, the object which is causing 
-us trouble lacks this section completely which implies the object should be 
-marked as <e>RWX</e>.
+us trouble lacks this section completely.  In that case, the compiler will 
+assume that the ELF should not be restricted at all and mark it as <e>RWX</e>.
 </p>
 
 <pre caption="Grep for the section header">
@@ -165,11 +166,12 @@ everything would be peachy.
 
 <p>
 If the <c>grep</c> does not work correctly, you can analyze the output of 
-<c>readelf</c> which is part of the <e>binutils</e> package.
+<c>readelf</c> (which is part of the <e>binutils</e> package).
 </p>
 
 <pre caption="Using readelf">
-<comment>This is what the output should look like, note the .note.GNU-stack</comment>
+<comment>This is what the output should look like, notice the .note.GNU-stack line</comment>
+
 $ <i>readelf -S plaympeg.o</i>
 There are 12 section headers, starting at offset 0x256c:
 
@@ -192,7 +194,9 @@ Key to Flags:
   I (info), L (link order), G (group), x (unknown)
   O (extra OS processing required) o (OS specific), p (processor specific)
 
+
 <comment>Notice how there is no .note.GNU-stack section here</comment>
+
 $ <i>readelf -S video/mmxidct_asm.o</i>
 There are 8 section headers, starting at offset 0x738:
 
@@ -232,7 +236,7 @@ written in pure assembler.
 </p>
 
 <p>
-We can either patch each source file written assembler and send the fix 
+We can either patch each source file written in assembler and send the fixes 
 upstream, or we can be lazy and simply force the package build system to 
 assemble the source files with the GNU as option <e>--noexecstack</e>.
 </p>
@@ -249,8 +253,8 @@ The advantage to just using <e>--noexecstack</e> is that you can simply add it
 to your ebuild and be done.  The disadvantage is that the option isn't 
 very portable (it won't work with non-GNU systems, and it probably won't even 
 work with all GNU systems), and we can't really convince upstream to make this 
-change so the only people who see the benefit here is Gentoo users.  You gotta 
-think big baby!
+change.  Thus, the only people who see the benefit here is Gentoo users.  You 
+gotta think big baby!
 </p>
 
 </body>
@@ -291,7 +295,7 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 <body>
 
 <p>
-Often times you need only to use the following code in your ebuild.
+Often times you only need to add the following code in your ebuild.
 </p>
 
 <pre caption="Using --noexecstack">
@@ -314,8 +318,7 @@ If all else fails, ask around on #gentoo-dev on the irc server
 irc.freenode.net.  Or send an e-mail to the <uri 
 link="http://www.gentoo.org/main/en/lists.xml">gentoo-dev mailing list</uri>.  
 If no one can seem to answer your question, give me a poke either on irc 
-(nickname SpanKY/vapier) or via <uri 
-link="mailto:vapier@gentoo.org">e-mail</uri>.
+(nickname SpanKY/vapier) or via <mail link="vapier@gentoo.org">e-mail</mail>.
 </p>
 
 </body>
@@ -330,7 +333,7 @@ link="mailto:vapier@gentoo.org">e-mail</uri>.
 
 <ul>
  <li>thanks to the <uri link="http://pax.grsecurity.net/">PaX team</uri> for holding my hand</li>
- <li><uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri></li>
+ <li><uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri> Wikipedia entry</li>
 </ul>
 
 </body>
