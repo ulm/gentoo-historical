@@ -13,13 +13,16 @@
 <author title="Contributor">
  <mail link="pageexec@freemail.hu">The PaX team</mail>
 </author>
+<author title="Contributor">
+ <mail link="kevquinn@gentoo.org">Kevin F. Quinn</mail>
+</author>
 
 <abstract>Handbook for proper GNU Stack management in ELF systems</abstract>
 
 <!-- The content of this document is placed into the public domain, have fun -->
 
-<version>1.0</version>
-<date>2005-10-12</date>
+<version>1.1</version>
+<date>2005-10-13</date>
 
 <chapter>
 <title>Introduction</title>
@@ -55,12 +58,65 @@ readonly stacks.
 </chapter>
 
 <chapter>
-<title>Detecting Broken ELFs</title>
+<title>Causes of executable stack markings</title>
 <section>
 <body>
 
 <p>
-Before you can start fixing something, you got to make sure it's broken first, 
+ELF files end up with executable stack markings in one of three ways:
+</p>
+
+<ol>
+ <li>GCC generates code that uses executable stack</li>
+ <li>an object built from assembler source includes a marking indicating to
+     the linker that it needs an executable stack (the GNU-stack note set for
+     executable stack)</li>
+ <li>an object built from assembler source is missing the GNU-stack note;
+     a very common occurrence especially for code expected to work on
+     many platforms</li>
+</ol>
+
+<p>
+GCC generates code to be executed on the stack when it implements a 
+<e>trampoline</e> for <e>nested functions</e>.  To remove the need for an 
+executable stack in this case, it is necessary to rewrite the code another 
+way.  Sometimes this is relatively easy, other times not.
+</p>
+
+<p>
+If an assembler source file includes a GNU-stack note that indicates it needs
+an executable stack, presumably this is by design.  Again, in order to remove 
+the need for an executable stack, the code probably needs to be rewritten.
+</p>
+
+<p>
+If an assembler source contains no GNU-stack note, the system by default 
+assumes that an executable stack may be required.  However, usually if there's 
+no GNU-stack note, this is simply because the author didn't include one, 
+rather than the codes actually needing an executable stack.
+</p>
+
+<p>
+In the first two cases above, the executable stack marking is correct, and 
+should only be removed by rewriting the code to eliminate the executable 
+stack requirement.  Such rewriting has to be considered on a case-by-case 
+basis and is outside the scope of this document, at least for now.  Here we 
+focus on the third case, where the upstream author has not indicated whether 
+the assembler object needs an executable stack; fixing this means adding the 
+GNU-stack note to the source to indicate an executable stack is not necessary.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Finding ELFs that ask for an executable stack</title>
+<section>
+<body>
+
+<p>
+Before you can start fixing something, you have to make sure it's broken first, 
 right?  For this reason, we've developed a suite of tools named <uri 
 link="doc/en/draft/pax-utils.xml">PaX Utilities</uri>.  If you are not 
 familiar with these utilities, you should read the <uri 
@@ -73,7 +129,7 @@ Utilities setup on your system, we can start playing around with
 </p>
 
 <p>
-Let's see if your system has any broken ELFs.
+Let's see if your system has any ELFs that want an executable stack.
 </p>
 
 <pre caption="Scan your system">
@@ -228,11 +284,11 @@ Key to Flags:
 <p>
 When you compile source code normally, gcc takes care of adding the GNU_STACK 
 markings so that the final object code is not labeled with an executable 
-stack.  However, if you compile assembly code, gcc will not automatically add 
-GNU_STACK markings.  So, the most common source of executable stacks in ELF 
-binaries are packages which include raw assembly code.  Note that we're not 
-talking about inline assembly code, but rather files like <e>.S</e> which are 
-written in pure assembler.
+stack unless it actually needs it.  However, if you compile assembly code,
+gcc will not automatically add GNU_STACK markings.  So, the most common source
+of executable stacks in ELF binaries are packages which include raw assembly
+code.  Note that we're not talking about inline assembly code, but rather
+files like <e>.S</e> which are written in pure assembler.
 </p>
 
 <p>
@@ -295,7 +351,9 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 <body>
 
 <p>
-Often times you only need to add the following code in your ebuild.
+Often times you only need to add the following code in your ebuild.  You must 
+first be sure that the code does not actually require an executable stack as 
+forcing this flag will break the package otherwise.
 </p>
 
 <pre caption="Using --noexecstack">
