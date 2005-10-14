@@ -42,15 +42,16 @@ The purpose of this document is to help package maintainers fix their packages
 when they break.  We will be focusing our attention on the GNU_STACK ELF 
 marking.  ELF is simply a file format which all modern linux distros use.  An 
 ELF can be an executable (say <path>/bin/ls</path>) or a library (say 
-<path>/lib/libncurses.so</path>).  GNU_STACK is just an ELF label which tells 
-the system how to control the stack when the ELF is loaded into memory.
+<path>/lib/libncurses.so</path>).  GNU_STACK is just an ELF program header 
+which tells the system how to control the stack when the ELF is loaded into 
+memory.
 </p>
 
 <p>
 Before getting started, you should read through the Wikipedia entry on the 
 <uri link="http://en.wikipedia.org/wiki/NX_bit">NX bit</uri>.  You can skip it 
 of course if you're already familiar with the concept of executable versus 
-readonly stacks.
+non-executable stacks.
 </p>
 
 </body>
@@ -152,7 +153,7 @@ RWX --- ---  /usr/bin/mplayer
 We really only need to look at the first column (which corresponds to the ELF 
 GNU_STACK markings).  Most of the time, if we fix that field, all the others 
 fall into place.  As we can see above, many files are marked with an 
-executable stack (<e>RWX</e>).  We want to make sure all files are labeled 
+executable stack (<e>RWX</e>).  We want to make sure all files are marked 
 with <e>RW-</e>.  The large majority of the time this means the package was 
 compiled incorrectly, so not much will have to be done with patching up the 
 source code.
@@ -283,7 +284,7 @@ Key to Flags:
 
 <p>
 When you compile source code normally, gcc takes care of adding the GNU_STACK 
-markings so that the final object code is not labeled with an executable 
+markings so that the final object code is not marked with an executable 
 stack unless it actually needs it.  However, if you compile assembly code,
 gcc will not automatically add GNU_STACK markings.  So, the most common source
 of executable stacks in ELF binaries are packages which include raw assembly
@@ -294,7 +295,8 @@ files like <e>.S</e> which are written in pure assembler.
 <p>
 We can either patch each source file written in assembler and send the fixes 
 upstream, or we can be lazy and simply force the package build system to 
-assemble the source files with the GNU as option <e>--noexecstack</e>.
+assemble the source files with the GNU as option <e>--noexecstack</e> (but 
+this is highly discouraged).
 </p>
 
 <p>
@@ -306,8 +308,8 @@ files.
 
 <p>
 The advantage to just using <e>--noexecstack</e> is that you can simply add it 
-to your ebuild and be done.  The disadvantage is that the option isn't 
-very portable (it won't work with non-GNU systems, and it probably won't even 
+to your ebuild and be done.  The disadvantage is that the option isn't very 
+portable (it won't work with non-GNU systems, and it probably won't even 
 work with all GNU systems), and we can't really convince upstream to make this 
 change.  Thus, the only people who see the benefit here is Gentoo users.  You 
 gotta think big baby!
@@ -363,6 +365,11 @@ inherit flag-o-matic
 <comment># This line goes before CFLAGS is used (either by the ebuild or by econf/emake)</comment>
 append-flags -Wa,--noexecstack
 </pre>
+
+<impo>
+Please rethink patching before using this option.  Patching source code 
+benefits a lot more people which is the goal of OSS.
+</impo>
 
 </body>
 </section>
