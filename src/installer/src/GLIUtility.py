@@ -76,7 +76,7 @@ def format_mac(mac):
 # trim_ip('192.168.01.002') => '192.168.1.2'
 # @param ip  IP address to be trimmed
 def trim_ip(ip):
-    # Remove leading zero's on the first octet
+	# Remove leading zero's on the first octet
 	ip = re.sub('^0{1,2}','',ip)
 
 	# Remove leading zero's from the other octets
@@ -567,7 +567,7 @@ def get_value_from_config(filename, value):
 # @param password 		the password to be hashed
 def hash_password(password):
 	salt = "$1$"
-        chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	chars = "./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	for i in range(0, 8):
 		salt += chars[random.randint(0, len(chars)-1)]
 	salt += "$"
