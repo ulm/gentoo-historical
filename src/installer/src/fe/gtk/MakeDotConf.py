@@ -70,25 +70,25 @@ class Panel(GLIScreen.GLIScreen):
 
 		sorted_use = self.use_desc.keys()
 		sorted_use.sort()
-                self.treedata = gtk.ListStore(gobject.TYPE_BOOLEAN, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		self.treedata = gtk.ListStore(gobject.TYPE_BOOLEAN, gobject.TYPE_STRING, gobject.TYPE_STRING)
 		for flag in sorted_use:
-                        self.treedata.append([(flag in self.use_flags and self.use_flags[flag] == 1), flag, self.use_desc[flag]])
-                self.treeview = gtk.TreeView(self.treedata)
+			self.treedata.append([(flag in self.use_flags and self.use_flags[flag] == 1), flag, self.use_desc[flag]])
+		self.treeview = gtk.TreeView(self.treedata)
 		self.toggle_renderer = gtk.CellRendererToggle()
 		self.toggle_renderer.set_property("activatable", True)
 		self.toggle_renderer.connect("toggled", self.flag_toggled)
 		self.columns.append(gtk.TreeViewColumn("Active", self.toggle_renderer, active=0))
-                self.columns.append(gtk.TreeViewColumn("Flag", gtk.CellRendererText(), text=1))
-                self.columns.append(gtk.TreeViewColumn("Description", gtk.CellRendererText(), text=2))
-                for column in self.columns:
-                        column.set_resizable(True)
-                        self.treeview.append_column(column)
-                self.treewindow = gtk.ScrolledWindow()
-                self.treewindow.set_size_request(-1, 180)
-                self.treewindow.set_shadow_type(gtk.SHADOW_IN)
-                self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-                self.treewindow.add(self.treeview)
-                vert.pack_start(self.treewindow, expand=False, fill=False, padding=10)
+		self.columns.append(gtk.TreeViewColumn("Flag", gtk.CellRendererText(), text=1))
+		self.columns.append(gtk.TreeViewColumn("Description", gtk.CellRendererText(), text=2))
+		for column in self.columns:
+			column.set_resizable(True)
+			self.treeview.append_column(column)
+		self.treewindow = gtk.ScrolledWindow()
+		self.treewindow.set_size_request(-1, 180)
+		self.treewindow.set_shadow_type(gtk.SHADOW_IN)
+		self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+		self.treewindow.add(self.treeview)
+		vert.pack_start(self.treewindow, expand=False, fill=False, padding=10)
 
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label()
@@ -182,12 +182,12 @@ class Panel(GLIScreen.GLIScreen):
 				self.use_flags[flag] = 1
 		sorted_use = self.use_desc.keys()
 		sorted_use.sort()
-                self.treedata = gtk.ListStore(gobject.TYPE_BOOLEAN, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		self.treedata = gtk.ListStore(gobject.TYPE_BOOLEAN, gobject.TYPE_STRING, gobject.TYPE_STRING)
 		for flag in sorted_use:
 			if flag in self.use_flags and self.use_flags[flag] == 1:
-	                        self.treedata.append([True, flag, self.use_desc[flag]])
+				self.treedata.append([True, flag, self.use_desc[flag]])
 			else:
-        	                self.treedata.append([False, flag, self.use_desc[flag]])
+				self.treedata.append([False, flag, self.use_desc[flag]])
 		self.treeview.set_model(self.treedata)
 		if self.controller.install_profile.get_grp_install():
 			self.treeview.set_sensitive(False)

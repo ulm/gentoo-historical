@@ -23,14 +23,14 @@ class Panel(GLIScreen.GLIScreen):
 		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
-                content_str = """Here, you will be able to define any network mounts that you want to use during
+		content_str = """Here, you will be able to define any network mounts that you want to use during
 and after the installation. For example, you can mount /usr/portage from another box
 on your network so you don't have to 'emerge sync' and store the tree locally. Currently, 
 only NFS is supported.
-"""
+		"""
 
-                content_label = gtk.Label(content_str)
-                vert.pack_start(content_label, expand=False, fill=False, padding=0)
+		content_label = gtk.Label(content_str)
+		vert.pack_start(content_label, expand=False, fill=False, padding=0)
 
 		self.treedata = gtk.ListStore(gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
 		for i in range(0, len(self.netmounts)):

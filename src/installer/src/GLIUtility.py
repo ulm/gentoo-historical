@@ -54,9 +54,9 @@ def is_ip(ip):
 # before using this function. Returns bool.
 # @param mac   mac address to be checked.
 def is_mac(mac):
-        expr = re.compile('([0-9A-F]{2}:){5}[0-9A-F]{2}')
-        res = expr.match(mac)
-        return(res != None)
+	expr = re.compile('([0-9A-F]{2}:){5}[0-9A-F]{2}')
+	res = expr.match(mac)
+	return(res != None)
 
 ##
 # Format's a mac address properly. Returns the correctly formatted MAC. (a string)
