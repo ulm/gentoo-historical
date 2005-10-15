@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.66 2005/09/21 19:58:20 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.67 2005/10/15 17:24:46 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -585,7 +585,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			newliloconf += "  root=/dev/ram0 \n"
 			newliloconf += "  append=\"init=/linuxrc ramdisk=8192 real_root="+root_device+root_minor + " " + bootloader_kernel_args + "\" \n"
-  			newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
+			newliloconf += "  initrd=/boot"+kernel_name[1][5:] + "\n\n"
 		newliloconf = self._lilo_add_windows(newliloconf)
 		#now make the lilo.conf file
 		file_name = root + "/etc/lilo.conf"	

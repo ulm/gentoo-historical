@@ -694,7 +694,7 @@ def set_client_networking():
 
 def set_livecd_password():
 # The root password will be set here
-        passwd1 = ''
+	passwd1 = ''
 	passwd2 = ' '
 	while (passwd1 != passwd2):
 		while (code != DLG_OK):

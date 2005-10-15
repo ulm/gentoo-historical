@@ -3,7 +3,7 @@
 # This source code is distributed under the terms of version 2 of the GNU
 # General Public License as published by the Free Software Foundation, a copy
 # of which can be found in the main directory of this project.
-# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.6 2005/08/22 18:35:52 codeman Exp $
+# $Header: /var/cvsroot/gentoo/src/installer/src/fe/cli/clife.py,v 1.7 2005/10/15 17:24:46 agaffney Exp $
 
 import sys
 sys.path.append("../..")
@@ -98,4 +98,4 @@ def main():
 				sys.exit(0)
 
 if __name__ == "__main__":
-    main()
+	main()

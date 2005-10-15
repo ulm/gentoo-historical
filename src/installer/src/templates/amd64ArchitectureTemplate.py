@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: amd64ArchitectureTemplate.py,v 1.5 2005/08/22 18:35:52 codeman Exp $
+$Id: amd64ArchitectureTemplate.py,v 1.6 2005/10/15 17:24:46 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -19,7 +19,7 @@ from GLIException import *
 import parted
 
 class amd64ArchitectureTemplate(x86ArchitectureTemplate):
-        def __init__(self,configuration=None, install_profile=None, client_controller=None):
+	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		x86ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'amd64'
 

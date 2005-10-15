@@ -176,10 +176,10 @@ class XMLParser(xml.sax.ContentHandler, XMLTag):
 	def characters(self, data):
 		"""
 		XML SAX character data handler
-        
+
 		Called when the SAX parser encounters character data.
 		"""
-                                        
+
 		self._xml_current_data += data.strip()
 
 	def _xml_element_path(self):

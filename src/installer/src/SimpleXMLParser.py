@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.11 2005/08/22 18:35:51 codeman Exp $
+$Id: SimpleXMLParser.py,v 1.12 2005/10/15 17:24:46 agaffney Exp $
 
 """
 
@@ -95,10 +95,10 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 	def characters(self, data):
 		"""
 		XML SAX character data handler
-        
+
 		Called when the SAX parser encounters character data.
 		"""
-                                        
+
 		# This converts data to a string instead of being Unicode
 		# Maybe we should use Unicode strings instead of normal strings?
 		self._xml_current_data += str(data)

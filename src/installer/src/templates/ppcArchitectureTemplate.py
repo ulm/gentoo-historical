@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: ppcArchitectureTemplate.py,v 1.4 2005/08/22 18:35:52 codeman Exp $
+$Id: ppcArchitectureTemplate.py,v 1.5 2005/10/15 17:24:46 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -18,7 +18,7 @@ from GLIException import *
 import parted
 
 class ppcArchitectureTemplate(x86ArchitectureTemplate):
-        def __init__(self,configuration=None, install_profile=None, client_controller=None):
+	def __init__(self,configuration=None, install_profile=None, client_controller=None):
 		ppcArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'ppc'
 
