@@ -397,7 +397,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 			data += 'value="'+tarball+'"> '
 		data += """
     or 
-    <input name="browseuri" type="submit" id="browseuri" value="Browse the mirrors for the URL">
+    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&uri=' + document.stage.tarballuri.value)">
 (requires net connectivity)</p>
 <p> <input type="submit" name="savestage" value="Save Stage Selection">
 </form> """
@@ -667,7 +667,83 @@ Please be patient while the screens load. It may take awhile."""
 	def savereview(self):
 		data = ""
 		return self.wrap_in_webgli_template(data)
-	
+
+	def uribrowser(self):
+		formfields = { 'portage': "opener.document.portage.snapshoturi", 'stage': "opener.document.stage.tarballuri" }
+		try:
+			formfield = formfields[self.get_params['screen']]
+		except:
+			return "Parameter 'screen' was not passed"
+		uri = self.get_params['baseuri']
+		if not uri:
+			uri = "file:///"
+		uriparts = list(GLIUtility.parse_uri(uri))
+		for i in range(len(uriparts)):
+			if not uriparts[i]:
+				uriparts[i] = ""
+		uritypes = { 'file': "", 'http': "", 'ftp': "", 'scp': "" }
+		uritypes[uriparts[0]] = " selected"
+		content = """
+		<script>
+		function select_uri(uri) {
+		  %s.value = document.uri.baseuri.value + uri;
+		}
+		</script>
+		<h3>URI Browser</h3>
+		<form name="uri" action="/webgli/URIBrowser" method="GET">
+		<input type="hidden" name="baseuri" value="%s">
+		<table>
+		  <tr>
+		    <td width="90">URI type:</td>
+		    <td><select name="uritype"><option%s>file</option><option%s>http</option><option%s>ftp</option><option%s>scp</option></select></td>
+		  </tr>
+		  <tr>
+		    <td>Host:</td>
+		    <td><input type="text" name="host" value="%s"> <input type="button" value="..."></td>
+		  </tr>
+		  <tr>
+		    <td>Username:</td>
+		    <td><input type="text" name="username" size="15" value="%s"></td>
+		  </tr>
+		  <tr>
+		    <td>Password:</td>
+		    <td><input type="text" name="password" size="15" value="%s"></td>
+		  </tr>
+		  <tr>
+		    <td>Port:</td>
+		    <td><input type="text" name="port" size="5" value="%s"></td>
+		  </tr>
+		  <tr>
+		    <td>Path:</td>
+		    <td><input type="text" name="path" size="30" value="%s"></td>
+		  </tr>
+		  <tr>
+		    <td>&nbsp;</td>
+		    <td>&nbsp;</td>
+		  </tr>
+		</table>
+		<table>
+		""" % (formfield, uri, uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], uriparts[1], uriparts[2], uriparts[4], uriparts[5])
+		if not uri.endswith("/"):
+			uri = uri[:uri.rfind("/")+1]
+		try:
+			filelist = GLIUtility.get_directory_listing_from_uri(uri)
+		except:
+			filelist = ["There was an error loading the directory list"]
+		for listing in filelist:
+			content += "  <tr>\n    <td>"
+			if listing.endswith('/'):
+				content += '<img src="../folder.gif">'
+			else:
+				content += '&nbsp;'
+			content += '</td>\n    <td><a href="#" onclick="'
+			if listing.endswith('/'):
+				content += "browse_uri('%s')" % listing[:-1]
+			else:
+				content += "select_uri('%s')" % listing
+			content += "; return false\">%s</a></td>\n  </tr>" % listing
+
+		return content
 	
 	def handle(self, path):
 		if not self.shared_info.install_profile:
@@ -704,7 +780,7 @@ Please be patient while the screens load. It may take awhile."""
 				  '/webgli/saveusers': self.saveusers,
 				  '/webgli/Review': self.review,
 				  '/webgli/savereview': self.savereview,
-				  
+				  '/webgli/URIBrowser': self.uribrowser,
 				  
 		          '/loadprofile2': self.loadprofile2,
 		          '/saveprofile': self.saveprofile,

@@ -297,7 +297,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						'/webgli/Daemons', '/webgli/savedaemons',
 						'/webgli/ExtraPackages', '/webgli/savepackages',
 						'/webgli/Users', '/webgli/saveusers',
-						'/webgli/Review', '/webgli/savereview'		],
+						'/webgli/Review', '/webgli/savereview', '/webgli/URIBrowser' ],
 		          'Welcome': [ '/welcome' , '/showargs'],
 		          'Clients': [ '/showclients' ]
 		        }
