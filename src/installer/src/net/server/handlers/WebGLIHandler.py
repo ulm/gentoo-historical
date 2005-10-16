@@ -1,5 +1,7 @@
 import GLIServerProfile
 import GLIInstallProfile
+import GLIClientConfiguration
+import GLIUtility
 import handler
 import sys
 import copy
@@ -7,7 +9,6 @@ sys.path.append("../..")
 class WebGLIHandler(handler.Handler):
 
 	def clientconfig(self):
-		import GLIUtility
 		import platform
 		data = ""
 		data += "<h2>Client Config</h2>\n"
@@ -111,74 +112,72 @@ class WebGLIHandler(handler.Handler):
 		return self.wrap_in_webgli_template(data)
 		
 	def saveclientconfig(self):
-		import GLIClientConfiguration
 		data = ""
-		client_profile = GLIClientConfiguration.ClientConfiguration()
-		
+				
 		if 'ArchType' in self.post_params:
 			data += "Found an architecture:  you submitted " + self.post_params['ArchType']+ "<BR>\n"
 			try:
-				client_profile.set_architecture_template(None, self.post_params['ArchType'], None)
+				self.shared_info.client_profile.set_architecture_template(None, self.post_params['ArchType'], None)
 			except:
 				data += "ERROR: Could not set the Architecture Template<br>\n"
 		if 'Logfile' in self.post_params:
 			data += "Found a logfile: you submitted " + self.post_params['Logfile'] + "<BR>\n"
 			try:
-				client_profile.set_log_file(None, self.post_params['Logfile'], None)
+				self.shared_info.client_profile.set_log_file(None, self.post_params['Logfile'], None)
 			except:
 				data += "ERROR: Could not set the Logfile <BR>\n"
 		if 'RootMountPoint' in self.post_params:
 			data += "Found a root mount point: you submitted " + self.post_params['RootMountPoint'] + "<BR>\n"
 			try:
-				client_profile.set_root_mount_point(None, self.post_params['RootMountPoint'], None)
+				self.shared_info.client_profile.set_root_mount_point(None, self.post_params['RootMountPoint'], None)
 			except:
 				data += "ERROR: Could not set the Root Mount Point<BR>\n"
 		if 'Network_Iface' in self.post_params:
 			data += "Found a network interface: you submitted " + self.post_params['Network_Iface'] + "<BR>\n"
 			try:
-				client_profile.set_network_interface(None, self.post_params['Network_Iface'], None)
+				self.shared_info.client_profile.set_network_interface(None, self.post_params['Network_Iface'], None)
 			except:
 				data += "ERROR: Could not set the Network Interface<BR>\n"
 		if 'Network_Type' in self.post_params:
 			data += "Found a Network Type: you submitted " + self.post_params['Network_Type'] + "<BR>\n"
 			try:
-				client_profile.set_network_type(None, self.post_params['Network_Type'], None)
+				self.shared_info.client_profile.set_network_type(None, self.post_params['Network_Type'], None)
 			except:
 				data += "ERROR: Could not set the Network Type<BR>\n"
 		if 'ip' in self.post_params:
 			data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
 			try:
-				client_profile.set_network_ip(None, self.post_params['ip'], None)
+				self.shared_info.client_profile.set_network_ip(None, self.post_params['ip'], None)
 			except:
 				data += "ERROR: Could not set the IP<BR>\n"
 		if 'broadcast' in self.post_params:
 			data += "Found an broadcast IP: you submitted " + self.post_params['broadcast'] + "<BR>\n"
 			try:
-				client_profile.set_network_broadcast(None, self.post_params['broadcast'], None)
+				self.shared_info.client_profile.set_network_broadcast(None, self.post_params['broadcast'], None)
 			except:
 				data += "ERROR: Could not set the broadcast IP<BR>\n"
 		if 'netmask' in self.post_params:
 			data += "Found an netmask IP: you submitted " + self.post_params['netmask'] + "<BR>\n"
 			try:
-				client_profile.set_network_netmask(None, self.post_params['netmask'], None)
+				self.shared_info.client_profile.set_network_netmask(None, self.post_params['netmask'], None)
 			except:
 				data += "ERROR: Could not set the netmask IP<BR>\n"
 		if 'gateway' in self.post_params:
 			data += "Found an gateway IP: you submitted " + self.post_params['gateway'] + "<BR>\n"
 			try:
-				client_profile.set_network_gateway(None, self.post_params['gateway'], None)
+				self.shared_info.client_profile.set_network_gateway(None, self.post_params['gateway'], None)
 			except:
 				data += "ERROR: Could not set the gateway IP<BR>\n"
 		if 'dnsserver' in self.post_params:
 			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
 			try:
-				client_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
+				self.shared_info.client_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
 			except:
 				data += "ERROR: Could not set the DNS Server<BR>\n"
 		if 'EnableSSH' in self.post_params:
 			data += "Found an Enable SSH Flag: you set it to " + self.post_params['EnableSSH'] + "<BR>\n"
 			try:
-				client_profile.set_enable_ssh(None, self.post_params['EnableSSH'], None)
+				self.shared_info.client_profile.set_enable_ssh(None, self.post_params['EnableSSH'], None)
 			except:
 				data += "ERROR: Could not set the SSH flag<BR>\n"
 		if ('RootPass1' in self.post_params) and ('RootPass2' in self.post_params):
@@ -186,7 +185,7 @@ class WebGLIHandler(handler.Handler):
 			data += "Found a root password2: you submitted " + self.post_params['RootPass2'] + "<BR>\n"
 			if self.post_params['RootPass1'] == self.post_params['RootPass2']:
 				try:
-					client_profile.set_root_passwd(None, GLIUtility.hash_password(self.post_params['RootPass1']), None)
+					self.shared_info.client_profile.set_root_passwd(None, GLIUtility.hash_password(self.post_params['RootPass1']), None)
 				except:
 					data += "ERROR: Could not set the root password<BR>\n"
 			else:
@@ -194,16 +193,16 @@ class WebGLIHandler(handler.Handler):
 		if 'Modules' in self.post_params:
 			data += "Found an Additional Module: you submitted " + self.post_params['Modules'] + "<BR>\n"
 			try:
-				client_profile.set_kernel_modules(None, self.post_params['Modules'], None)
+				self.shared_info.client_profile.set_kernel_modules(None, self.post_params['Modules'], None)
 			except:
 				data += "ERROR: Could not set the Kernel Modules<BR>\n"
 		if 'SaveCCFile' in self.post_params:
 			data += "Found a filename to save the Client Profile:" + self.post_params['SaveCCFile'] + "<BR>\n"
 			try:
 				configuration = open(self.post_params['SaveCCFile'] ,"w")
-				configuration.write(client_profile.serialize())
+				configuration.write(self.shared_info.client_profile.serialize())
 				configuration.close()
-				data += "Profile saved successfully.  Here it is <BR><pre>" + client_profile.serialize() + "</pre><br>\n"
+				data += "Profile saved successfully.  Here it is <BR><pre>" + self.shared_info.client_profile.serialize() + "</pre><br>\n"
 			except:
 				data += "ERROR: Could not save the profile!<BR>\n"
 		return self.wrap_in_webgli_template(data)
@@ -487,10 +486,138 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		return self.wrap_in_webgli_template(data)
 
 	def configfiles(self):
-		data = ""
+		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
+		arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if etc_files.has_key("make.conf"):
+			make_conf = etc_files['make.conf']
+		else:
+			make_conf = {}
+		data += """The installer will now gather information regarding the contents of /etc/make.conf
+One of the unique (and best) features of Gentoo is the ability to
+define flags (called USE flags) that define what components are 
+compiled into applications.  For example, you can enable the alsa
+flag and programs that have alsa capability will use it.  
+The result is a finely tuned OS with no unnecessary components to
+slow you down.
+The installer divides USE flag selection into two screens, one for
+global USE flags and one for local flags specific to each program.
+Please be patient while the screens load. It may take awhile."""
+		#First set the USE flags, this is a biggie.
+		if make_conf.has_key("USE"): 
+			system_use_flags = make_conf["USE"]
+		else:  #not a preloaded config.  this is the NORMAL case.
+			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
+		use_flags = []
+		use_local_flags = []
+		use_desc = GLIUtility.get_global_use_flags()
+		use_local_desc = GLIUtility.get_local_use_flags()
+		#populate the choices list
+		sorted_use = use_desc.keys()
+		sorted_use.sort()
+		#present the GLOBAL checkbox list
+		data += '<b>Global</b> USE Flags:<table width="100%"  border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
+		for flagname in sorted_use:
+			data += '<tr><td><input name="flags" type="checkbox" id="flags" value="'+flagname+'" '
+			if flagname in system_use_flags:
+				data += "checked"
+			data += "></td><td>"+flagname+"</td><td>"+use_desc[flagname]+"</td></tr>\n"
+		data += "</table><br>\n"
+		
+		#re-populate the chocies list
+		sorted_use = use_local_desc.keys()
+		sorted_use.sort()
+		#present the LOCALcheckbox list
+		data += '<b>Local</b> USE Flags:<table width="100%"  border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
+		for flagname in sorted_use:
+			data += '<tr><td><input name="flags" type="checkbox" id="flags" value="'+flagname+'" '
+			if flagname in system_use_flags:
+				data += "checked"
+			data += "></td><td>"+flagname+"</td><td>"+use_local_desc[flagname]+"</td></tr>\n"
+		data += "</table><br>\n"
+		data += '<h3>CFLAGS Settings: </h3>(only show these if not dynamic):<table width="100%"  border="1"><tr><td scope="col"><div align="left">Processor:<select name="proc" id="proc">'
+		procs = arch_procs[self.shared_info.client_profile.get_architecture_template()]
+		for proc in procs:
+			data += "<option value=\""+proc+"\">"+proc+"</option>\n"
+		data += """
+          </select>
+      </div></td>
+      <td scope="col">Optimizations: 
+        <select name="optim1" id="optim1">
+          <option value="-O1">-O1</option>
+          <option value="-O2" selected>-O2 (Recommended)</option>
+          <option value="-O3">-O3</option>
+          <option value="-O4">-O4</option>
+          <option value="-O5">-O5</option>
+          <option value="-O6">-O6</option>
+          <option value="-O7">-O7</option>
+          <option value="-O8">-O8</option>
+          <option value="-O9">-O9 (You crazy fool!)</option>
+            </select> </td>
+    </tr>
+    <tr>
+      <td>Common CFLAGS: 
+        <input name="optim2" type="checkbox" id="optim2" value="-pipe">
+-pipe
+<input name="optim2" type="checkbox" id="optim2" value="-fomit-frame-pointer">
+-fomit-frame-pointer</td>
+      <td>Additional CFLAGS:
+      <input name="optim3" type="text" id="optim3" size="60"></td>
+    </tr>
+  </table><hr>
+  <h3>CHOST Setting:</h3>
+    <select name="chost" size="4" id="chost">"""
+
+		if self.shared_info.client_profile.get_architecture_template() == "x86":
+			data += "<option value=\"i386-pc-linux-gnu\">i386-pc-linux-gnu</option>\n"
+			data += "<option value=\"i486-pc-linux-gnu\">i486-pc-linux-gnu</option>\n"
+			data += "<option value=\"i586-pc-linux-gnu\">i586-pc-linux-gnu</option>\n"
+			data += "<option value=\"i686-pc-linux-gnu\">i686-pc-linux-gnu</option>\n"
+		if self.shared_info.client_profile.get_architecture_template() == "amd64":
+			data += "<option value=\"x86_64-pc-linux-gnu\">x86_64-pc-linux-gnu</option>\n"
+		if self.shared_info.client_profile.get_architecture_template() == "alpha":
+			data += "<option value=\"alpha-unknown-linux-gnu\">alpha-unknown-linux-gnu</option>\n"
+		if self.shared_info.client_profile.get_architecture_template() == "ppc":
+			data += "<option value=\"powerpc-unknown-linux-gnu\">powerpc-unknown-linux-gnu</option>\n"		
+		#if self._client_profile.get_architecture_template() == "ppc64":
+			data += "<option value=\"powerpc64-unknown-linux-gnu\">powerpc64-unknown-linux-gnu</option>\n"		
+		#if self._client_profile.get_architecture_template() in ["sparc", "sparc64"]:
+			data += "<option value=\"sparc-unknown-linux-gnu\">sparc-unknown-linux-gnu</option>\n"		
+		#if self._client_profile.get_architecture_template() == "hppa":
+			data += "<option value=\"hppa-unknown-linux-gnu\">hppa-unknown-linux-gnu</option>\n"
+			data += "<option value=\"hppa1.1-unknown-linux-gnu\">hppa1.1-unknown-linux-gnu</option>\n"
+			data += "<option value=\"hppa2.0-unknown-linux-gnu\">hppa2.0-unknown-linux-gnu</option>\n"
+		#if self._client_profile.get_architecture_template() == "mips":
+			data += "<option value=\"mips-unknown-linux-gnu\">mips-unknown-linux-gnu</option>\n"
+		data += """</select>
+<hr>
+  <table width="100%"  border="1">
+    <tr>
+      <td scope="col"><input name="unstable" type="checkbox" id="unstable" value="~arch">
+      Use unstable (~arch) </td>
+      <td scope="col"><input name="binary" type="checkbox" id="binary" value="binary">
+      Build binary packages </td>
+      <td scope="col"><input name="distcc" type="checkbox" id="distcc" value="distcc">
+      Distcc</td>
+      <td scope="col"><input name="ccache" type="checkbox" id="ccache" value="ccache">
+      ccache</td>
+      <td scope="col">MAKEOPTS:      
+      <input name="makeopts" type="text" id="makeopts" value="-j2" size="10" maxlength="5"></td>
+    </tr>
+  </table>
+  <p>
+    <input name="savemakeconf" type="submit" id="savemakeconf" value="Save Make.Conf Settings">
+</p>
+</form>"""
 		return self.wrap_in_webgli_template(data)
 	def saveconfigfiles(self):
 		data = ""
+		temp_use = "-* "
+		#for flag in use_flags:
+		#	temp_use += flag + " "
+		#for flag in use_local_flags:
+		#	temp_use += flag + " "
+		#make_conf["USE"] = temp_use
 		return self.wrap_in_webgli_template(data)
 	def kernel(self):
 		data = ""
@@ -545,6 +672,8 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 	def handle(self, path):
 		if not self.shared_info.install_profile:
 			self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
+		if not self.shared_info.client_profile:
+			self.shared_info.client_profile = GLIClientConfiguration.ClientConfiguration()
 		paths = { '/webgli': self.showwelcome,
 				  '/webgli/': self.showwelcome,
 				  '/webgli/ClientConfig': self.clientconfig,
