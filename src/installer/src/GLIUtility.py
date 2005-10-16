@@ -789,8 +789,8 @@ def get_directory_listing_from_uri(uri):
 			sshcmd.append(uriparts[1] + "@" + uriparts[3])
 		else:
 			sshcmd.append(uriparts[3])
-		sshcmd.append("ls --color=no -1F " + uriparts[5] + " 2>/dev/null")
-		print str(sshcmd)
+		sshcmd.append("ls --color=no -1F " + uriparts[5] + r" 2>/dev/null | sed -e 's:\*$::'")
+#		print str(sshcmd)
 		pid, child_fd = pty.fork()
 		if not pid:
 			os.execvp("ssh", sshcmd)

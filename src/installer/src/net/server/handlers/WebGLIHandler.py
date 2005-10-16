@@ -397,7 +397,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 			data += 'value="'+tarball+'"> '
 		data += """
     or 
-    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&uri=' + document.stage.tarballuri.value)">
+    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value)">
 (requires net connectivity)</p>
 <p> <input type="submit" name="savestage" value="Save Stage Selection">
 </form> """
@@ -674,9 +674,26 @@ Please be patient while the screens load. It may take awhile."""
 			formfield = formfields[self.get_params['screen']]
 		except:
 			return "Parameter 'screen' was not passed"
-		uri = self.get_params['baseuri']
+		if self.get_params['uritype']:
+			if self.get_params['uritype'] == "file":
+				uri = "file://"
+			else:
+				uri = self.get_params['uritype'] + "://"
+				if self.get_params['username']:
+					uri += self.get_params['username']
+					if self.get_params['password']:
+						uri += ":" + self.get_params['password']
+					uri += "@"
+				uri += self.get_params['host']
+				if self.get_params['port']:
+					uri += ":" + self.get_params['port']
+			uri += (self.get_params['path'] or "/")
+		else:
+			uri = self.get_params['baseuri']
 		if not uri:
 			uri = "file:///"
+		if not uri.endswith('/'):
+			uri = uri[:uri.rfind('/')+1]
 		uriparts = list(GLIUtility.parse_uri(uri))
 		for i in range(len(uriparts)):
 			if not uriparts[i]:
@@ -687,6 +704,15 @@ Please be patient while the screens load. It may take awhile."""
 		<script>
 		function select_uri(uri) {
 		  %s.value = document.uri.baseuri.value + uri;
+		  window.close();
+		}
+
+		function browse_uri(uri) {
+		  location.replace('/webgli/URIBrowser?screen=%s&baseuri=' + uri);
+		}
+
+		function refresh_uri() {
+			location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value + '&host=' + document.uri.host.value + '&username=' + document.uri.username.value + '&password=' + document.uri.password.value + '&port=' + document.uri.port.value + '&path=' + document.uri.path.value);
 		}
 		</script>
 		<h3>URI Browser</h3>
@@ -721,9 +747,15 @@ Please be patient while the screens load. It may take awhile."""
 		    <td>&nbsp;</td>
 		    <td>&nbsp;</td>
 		  </tr>
+		  <tr>
+		    <td colspan="2"><input type="button" value="Cancel" onclick="window.close();"> &nbsp; <input type="button" value="Refresh" onclick="refresh_uri()"></td>
+		  </tr>
+		  <tr>
+		    <td>&nbsp;</td>
+		    <td>&nbsp;</td>
+		  </tr>
 		</table>
-		<table>
-		""" % (formfield, uri, uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], uriparts[1], uriparts[2], uriparts[4], uriparts[5])
+		<table>""" % (formfield, self.get_params['screen'], self.get_params['screen'], uri, uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], uriparts[1], uriparts[2], uriparts[4], uriparts[5])
 		if not uri.endswith("/"):
 			uri = uri[:uri.rfind("/")+1]
 		try:
@@ -738,10 +770,15 @@ Please be patient while the screens load. It may take awhile."""
 				content += '&nbsp;'
 			content += '</td>\n    <td><a href="#" onclick="'
 			if listing.endswith('/'):
-				content += "browse_uri('%s')" % listing[:-1]
+				listing = listing[:-1]
+				if listing == "..":
+					tmpuri = uri[:uri[:-1].rfind("/")+1]
+				else:
+					tmpuri = uri + listing + "/"
+				content += "browse_uri('%s')" % tmpuri
 			else:
 				content += "select_uri('%s')" % listing
-			content += "; return false\">%s</a></td>\n  </tr>" % listing
+			content += "; return false\">%s</a></td>\n  </tr>\n" % listing
 
 		return content
 	
