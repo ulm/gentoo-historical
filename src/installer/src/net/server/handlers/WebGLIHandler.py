@@ -675,19 +675,24 @@ Please be patient while the screens load. It may take awhile."""
 		except:
 			return "Parameter 'screen' was not passed"
 		if self.get_params['uritype']:
-			if self.get_params['uritype'] == "file":
-				uri = "file://"
+			if self.get_params['mirror']:
+				uri = self.get_params['mirror']
+				if not uri.endswith('/'):
+					uri += "/"
 			else:
-				uri = self.get_params['uritype'] + "://"
-				if self.get_params['username']:
-					uri += self.get_params['username']
-					if self.get_params['password']:
-						uri += ":" + self.get_params['password']
-					uri += "@"
-				uri += self.get_params['host']
-				if self.get_params['port']:
-					uri += ":" + self.get_params['port']
-			uri += (self.get_params['path'] or "/")
+				if self.get_params['uritype'] == "file":
+					uri = "file://"
+				else:
+					uri = self.get_params['uritype'] + "://"
+					if self.get_params['username']:
+						uri += self.get_params['username']
+						if self.get_params['password']:
+							uri += ":" + self.get_params['password']
+						uri += "@"
+					uri += self.get_params['host']
+					if self.get_params['port']:
+						uri += ":" + self.get_params['port']
+				uri += (self.get_params['path'] or "/")
 		else:
 			uri = self.get_params['baseuri']
 		if not uri:
@@ -700,6 +705,15 @@ Please be patient while the screens load. It may take awhile."""
 				uriparts[i] = ""
 		uritypes = { 'file': "", 'http': "", 'ftp': "", 'scp': "" }
 		uritypes[uriparts[0]] = " selected"
+		if uriparts[0] == "http":
+			mirrors = GLIUtility.list_mirrors(http=True, ftp=False, rsync=False)
+		elif uriparts[0] == "ftp":
+			mirrors = GLIUtility.list_mirrors(http=False, ftp=True, rsync=False)
+		else:
+			mirrors = []
+		mirrorlist = ""
+		for mirror in mirrors:
+			mirrorlist += '<option value="%s">%s</option>' % (mirror[0], mirror[1])
 		content = """
 		<script>
 		function select_uri(uri) {
@@ -712,20 +726,26 @@ Please be patient while the screens load. It may take awhile."""
 		}
 
 		function refresh_uri() {
-			location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value + '&host=' + document.uri.host.value + '&username=' + document.uri.username.value + '&password=' + document.uri.password.value + '&port=' + document.uri.port.value + '&path=' + document.uri.path.value);
+		  //location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value + '&host=' + document.uri.host.value + '&username=' + document.uri.username.value + '&password=' + document.uri.password.value + '&port=' + document.uri.port.value + '&path=' + document.uri.path.value + '&mirror=' + document.uri.mirror.value);
+		  document.uri.submit();
+		}
+
+		function change_uritype() {
+		  location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value);
 		}
 		</script>
 		<h3>URI Browser</h3>
 		<form name="uri" action="/webgli/URIBrowser" method="GET">
 		<input type="hidden" name="baseuri" value="%s">
+		<input type="hidden" name="screen" value="%s">
 		<table>
 		  <tr>
 		    <td width="90">URI type:</td>
-		    <td><select name="uritype"><option%s>file</option><option%s>http</option><option%s>ftp</option><option%s>scp</option></select></td>
+		    <td><select name="uritype" onchange="change_uritype()"><option%s>file</option><option%s>http</option><option%s>ftp</option><option%s>scp</option></select></td>
 		  </tr>
 		  <tr>
-		    <td>Host:</td>
-		    <td><input type="text" name="host" value="%s"> <input type="button" value="..."></td>
+		    <td valign="top">Host:</td>
+		    <td><input type="text" name="host" size="30" value="%s"><br>or choose a mirror:<br><select name="mirror" onchange="document.uri.submit()"><option value=""> - </option>%s</select></td>
 		  </tr>
 		  <tr>
 		    <td>Username:</td>
@@ -755,7 +775,7 @@ Please be patient while the screens load. It may take awhile."""
 		    <td>&nbsp;</td>
 		  </tr>
 		</table>
-		<table>""" % (formfield, self.get_params['screen'], self.get_params['screen'], uri, uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], uriparts[1], uriparts[2], uriparts[4], uriparts[5])
+		<table>""" % (formfield, self.get_params['screen'], self.get_params['screen'], self.get_params['screen'], uri, self.get_params['screen'], uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], mirrorlist, uriparts[1], uriparts[2], uriparts[4], uriparts[5])
 		if not uri.endswith("/"):
 			uri = uri[:uri.rfind("/")+1]
 		try:
