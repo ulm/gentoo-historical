@@ -438,10 +438,52 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		return self.wrap_in_webgli_template(data)
 		
 	def portagetree(self):
-		data = ""
+		data = "<p>Portage Tree Sync Type:</p>"
+		synctype = self.shared_info.install_profile.get_portage_tree_sync_type()
+		snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
+		
+		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
+		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
+  <table width="100%"  border="1">
+    <tr>
+      <td><input name="portagetype" type="radio" value="sync" """
+	  	if synctype == "sync":
+			data += "checked"
+		data += '>Sync</td><td>Normal. Use emerge sync RECOMMENDED!</td></tr><tr><td><input name="portagetype" type="radio" value="webrsync"'
+		if synctype == "webrsync":
+			data += "checked"
+		data += '>Webrsync</td><td>HTTP daily snapshot. Use when rsync is firewalled.</td></tr><tr>     <td><input name="portagetype" type="radio" value="snapshot"'
+		if synctype == "snapshot":
+			data += "checked"
+		data += '>Snapshot</td><td>Use a portage snapshot, either a local file or a URL</td></tr><tr>      <td><input name="portagetype" type="radio" value="none"'
+		if synctype == "none" or not synctype:
+			data += "checked"
+		data += """>
+      None</td>
+      <td>Extra cases such as if /usr/portage is an NFS mount</td>
+    </tr>
+  </table>
+  <p>Snapshot URI (if doing shapshot): 
+    <input name="snapshoturi" type="text" id="snapshoturi" size="90" """
+		if snapshoturi:
+			data += ' value="'+snapshoturi+'">'
+		data += 'or <input name="browsesnap" type="submit" id="browsesnap" value="Browse for it again."></p><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>'
 		return self.wrap_in_webgli_template(data)
 	def saveportage(self):
 		data = ""
+		if 'saveportage' in self.post_params:
+			if 'portagetype' in self.post_params:
+				try:
+					self.shared_info.install_profile.set_portage_tree_sync_type(None,self.post_params['portagetype'],None)
+				except:
+					data += "ERROR: Could not set the portage tree sync type<br>\n"
+			if 'snapshoturi' in self.post_params and self.post_params['snapshoturi']:
+				try:
+					self.shared_info.install_profile.set_portage_tree_snapshot_uri(None,self.post_params['snapshoturi'],None)
+				except:
+					data += "ERROR: Could not set the portage snapshot URI"
+		elif 'browsesnap' in self.post_params:
+			data += "REDIRECT OR POP UP THINGI"		
 		return self.wrap_in_webgli_template(data)
 
 	def configfiles(self):
@@ -504,6 +546,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		if not self.shared_info.install_profile:
 			self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
 		paths = { '/webgli': self.showwelcome,
+				  '/webgli/': self.showwelcome,
 				  '/webgli/ClientConfig': self.clientconfig,
 				  '/webgli/saveclientconfig': self.saveclientconfig,
 				  '/webgli/NetworkMounts': self.networkmounts,
