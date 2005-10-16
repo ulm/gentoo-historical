@@ -270,6 +270,12 @@ class WebGLIHandler(handler.Handler):
 	def showwelcome(self):
 		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
 		return self.wrap_in_webgli_template(data)
+	def partitioning(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savepartitions(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
 	def networkmounts(self):
 		data = "Network Mounts page."
 		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
@@ -352,6 +358,148 @@ class WebGLIHandler(handler.Handler):
 				except:
 					data += "ERROR: Could not add network mount.<br>\n"
 		return self.wrap_in_webgli_template(data)
+		
+	def stageselection(self):
+		data = "<h4>Stage selection:</h4>"
+		stage = self.shared_info.install_profile.get_install_stage()
+		if stage:
+			data += "FOUND A STAGE" + str(stage)
+		grp_install = self.shared_info.install_profile.get_grp_install()
+		dynamic = self.shared_info.install_profile.get_dynamic_stage3()
+		tarball = self.shared_info.install_profile.get_stage_tarball_uri()
+		
+		data += '<form name="stage" action="/webgli/savestage" method="POST" enctype="multipart/form-data">'
+		data += '<p>Which stage do you want to start at?</p><table width="100%"  border="1"><tr><td><input name="stage" type="radio" value="1"'
+		if stage == 1:
+			data += ' checked'
+		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>      <td><input name="stage" type="radio" value="2"'
+		if stage == 2:
+			data += ' checked'
+		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>      <td><input name="stage" type="radio" value="3"'
+		if (stage == 3) and not grp_install:
+			data += ' checked'
+		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>      <td><input name="stage" type="radio" value="3+GRP"'
+		if (stage == 3) and grp_install:
+			data += ' checked'
+		data += """>
+      3 + GRP </td>
+      <td>A Stage3 install but using binaries from the LiveCD when able.</td>
+    </tr>
+  </table>
+  <p>  
+    <input name="dynamic" type="checkbox" id="dynamic" value="true" """
+		if dynamic:
+			data += " checked"
+		data += """>
+Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for slow Internet connections, slower for fast connections and slow drives) </p>
+  <p>Stage Tarball URI : 
+    <input name="tarballuri" type="text" id="tarballuri" size="90" """
+		if tarball:
+			data += 'value="'+tarball+'"> '
+		data += """
+    or 
+    <input name="browseuri" type="submit" id="browseuri" value="Browse the mirrors for the URL">
+(requires net connectivity)</p>
+<p> <input type="submit" name="savestage" value="Save Stage Selection">
+</form> """
+		return self.wrap_in_webgli_template(data)
+	def savestage(self):
+		data = ""
+		if 'savestage' in self.post_params:
+			data += "YES I CLICKED SAVE<br>"
+			if 'stage' in self.post_params:
+				data += "YES THERE IS A STAGE<br>"
+				if self.post_params['stage'] == "3+GRP":
+					self.post_params['stage'] = "3"
+					try:
+						self.shared_info.install_profile.set_grp_install(None, True,None)
+					except:
+						data += "ERROR COULD NOT SET GRP INSTALL"
+				try:
+					self.shared_info.install_profile.set_install_stage(None, self.post_params['stage'], None)
+					data += "Stage set<br>"
+				except:
+					data += "ERROR: could not set the install stage<br>\n"
+			if 'tarballuri' in self.post_params and self.post_params['tarballuri']:
+				try:
+					self.shared_info.install_profile.set_stage_tarball_uri(None, self.post_params['tarballuri'], None)
+					data += "Set the tarball uri<br>"
+				except:
+					data += "ERROR: Could not set the tarball URI<br>\n"
+			if 'dynamic' in self.post_params:
+				try:
+					self.shared_info.install_profile.set_dynamic_stage3(None, True, None)
+				except:
+					data += "ERROR: Could not set dynamic stage 3.<br>\n"
+		elif 'browseuri' in self.post_params:
+			data = "REDIRECT OR POP UP THINGI"
+			
+			
+		return self.wrap_in_webgli_template(data)
+		
+	def portagetree(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def saveportage(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+
+	def configfiles(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def saveconfigfiles(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def kernel(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savekernel(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def bootloader(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savebootloader(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def timezone(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savetimezone(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def networking(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savenetworking(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def daemons(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savedaemons(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def extrapackages(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savepackages(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def users(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def saveusers(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def review(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def savereview(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	
+	
 	def handle(self, path):
 		if not self.shared_info.install_profile:
 			self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
@@ -360,6 +508,32 @@ class WebGLIHandler(handler.Handler):
 				  '/webgli/saveclientconfig': self.saveclientconfig,
 				  '/webgli/NetworkMounts': self.networkmounts,
 				  '/webgli/savenetmounts': self.savenetmounts,
+				  '/webgli/StageSelection': self.stageselection,
+				  '/webgli/savestage': self.savestage,
+				  '/webgli/PortageTree': self.portagetree,
+				  '/webgli/Partitioning': self.partitioning,
+				  '/webgli/savepartitions': self.savepartitions,
+				  '/webgli/saveportage': self.saveportage,
+				  '/webgli/ConfigFiles': self.configfiles,
+				  '/webgli/saveconfigfiles': self.saveconfigfiles,
+				  '/webgli/Kernel': self.kernel,
+				  '/webgli/savekernel': self.savekernel,
+				  '/webgli/Bootloader': self.bootloader,
+				  '/webgli/savebootloader': self.savebootloader,
+				  '/webgli/Timezone': self.timezone,
+				  '/webgli/savetimezone': self.savetimezone,
+				  '/webgli/Networking': self.networking,
+				  '/webgli/savenetworking': self.savenetworking,
+				  '/webgli/Daemons': self.daemons,
+				  '/webgli/savedaemons': self.savedaemons,
+				  '/webgli/ExtraPackages': self.extrapackages,
+				  '/webgli/savepackages': self.savepackages,
+				  '/webgli/Users': self.users,
+				  '/webgli/saveusers': self.saveusers,
+				  '/webgli/Review': self.review,
+				  '/webgli/savereview': self.savereview,
+				  
+				  
 		          '/loadprofile2': self.loadprofile2,
 		          '/saveprofile': self.saveprofile,
 		          '/saveprofile2': self.saveprofile2

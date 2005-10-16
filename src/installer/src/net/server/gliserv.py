@@ -16,7 +16,6 @@ import SimpleXMLRPCServer
 import mimetools
 import GLIServerProfile
 import traceback
-import GLIInstallProfile
 
 class SharedInfo(object):
 
@@ -74,17 +73,6 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if lines[i] == "Main content\n":
 				lines[i] = content
 		return "".join(lines)
-
-	def welcome(self):
-		return self.wrap_in_template("Do some shit on the left")
-
-	def showargs(self):
-		text = "These are the GET params you passed:<br><br><pre>"
-		text += str(self.get_params)
-		text += "</pre><br><br>These are the POST params you passed:<br><br><pre>"
-		text += str(self.post_params)
-		text += "</pre>"
-		return self.wrap_in_template(text)
 
 	def status(self):
 		return self.wrap_in_template("This is just a prototype, fool. There isn't anything to report")
@@ -297,8 +285,20 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		paths = {
 		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
 				  'WebGLIHandler': ['/webgli', '/webgli/ClientConfig', '/webgli/saveclientconfig',
-				  		'/webgli/NetworkMounts', '/webgli/savenetmounts'  ],
-		          'Welcome': [ '/welcome' ],
+				  		'/webgli/NetworkMounts', '/webgli/savenetmounts',
+						'/webgli/Partitioning', '/webgli/savepartitions',
+						'/webgli/StageSelection', '/webgli/savestage',
+						'/webgli/PortageTree', '/webgli/saveportage',
+						'/webgli/ConfigFiles', '/webgli/saveconfigfiles',
+						'/webgli/Kernel', '/webgli/savekernel',
+						'/webgli/Bootloader', '/webgli/savebootloader',
+						'/webgli/Timezone', '/webgli/savetimezone',
+						'/webgli/Networking', '/webgli/savenetworking',
+						'/webgli/Daemons', '/webgli/savedaemons',
+						'/webgli/ExtraPackages', '/webgli/savepackages',
+						'/webgli/Users', '/webgli/saveusers',
+						'/webgli/Review', '/webgli/savereview'		],
+		          'Welcome': [ '/welcome' , '/showargs'],
 		          'Clients': [ '/showclients' ]
 		        }
 		return_content = ""
