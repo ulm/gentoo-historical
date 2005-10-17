@@ -1,6 +1,6 @@
 #!/usr/bin/python -O
 
-__revision__ = '$Revision: 1.7 $'
+__revision__ = '$Revision: 1.8 $'
 # $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
@@ -120,7 +120,7 @@ def get_extended_info(ebuild):
         lines = []
     lines = [ s.strip() for s in lines ]
     try:
-        ebuild['archs'] = lines[8]
+        ebuild['archs'] = ','.join(lines[8].split())
     except IndexError:
         ebuild['archs'] = ''
     try:
@@ -186,9 +186,14 @@ def main(argv = []):
             create_ebuild_record(db,fields)
         elif result and rebuild:
             fields['prevarch'] = result[6]
+            if ' ' in fields['prevarch']:
+                # old db layout
+                fields['prevarch'] = ','.join(fields['prevarch'].split())
             fields['arch'] = [4]
             update_ebuild_record(db, fields)
-        elif result[4] != fields['archs']:
+        elif rebuild:
+            pass
+        elif result[4].split(',') != fields['archs'].split(','):
             #print 'ebuild archs=',fields['archs']
             #print 'db archs=',result[4]
             #print

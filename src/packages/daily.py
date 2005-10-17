@@ -73,12 +73,10 @@ c = db.cursor()
 
 extra = ''
 if arch:
-    stable_extra = ('ebuild.arch REGEXP "^%s| %s" '
-        ' AND ebuild.prevarch NOT REGEXP"^%s| %s"'
-        % (arch,arch,arch,arch))
-    testing_extra = ('ebuild.arch REGEXP "^~%s| ~%s" '
-        ' AND ebuild.prevarch NOT REGEXP "^~%s| ~%s"'
-        % (arch,arch,arch,arch))
+    stable_extra = ('FIND_IN_SET("%s", ebuild.arch) > 0 AND '
+        'FIND_IN_SET("%s", ebuild.prevarch) = 0 ' % (arch, arch))
+    testing_extra = ('FIND_IN_SET("~%s", ebuild.arch) > 0 AND '
+        'FIND_IN_SET("%s", ebuild.prevarch) = 0 ' % (arch, arch))
     if branch == 'stable':
         extra = ' AND (%s) ' % stable_extra
     elif branch == 'testing':

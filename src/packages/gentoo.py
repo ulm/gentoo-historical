@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.15 $"
+__revision__ = "$Revision: 1.16 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -102,7 +102,7 @@ def archs_to_html(ebuilds, heading = None):
     ebuilds.sort(cmp_ebuilds)
     ebuilds.reverse()
     for ebuild in ebuilds:
-        archs = ebuild['arch'].split()
+        archs = ebuild['arch'].split(',')
         row_start = ('<tr>\n\t<th class="releases"><a href="%sebuilds/?%s-%s"'
             ' title="%s">%s</a></th>\n' % (config.FEHOME,
                 ebuild['name'], ebuild['version'], ebuild['time'],
@@ -285,9 +285,10 @@ def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
     c = db.cursor()
     extra = ''
     if arch:
-        stable_extra = ('ebuild.arch REGEXP "^%s[[:>:]]|[[:blank:]]%s[[:>:]]" '
-            % (arch,arch))
-        testing_extra = ('ebuild.arch REGEXP "[~]%s[[:>:]]" ' % arch)
+        stable_extra = ('FIND_IN_SET("%s", ebuild.arch) > 0 AND '
+            'FIND_IN_SET("%s", ebuild.prevarch) = 0 ' % (arch, arch))
+        testing_extra = ('FIND_IN_SET("~%s", ebuild.arch) > 0 AND '
+            'FIND_IN_SET("~%s", ebuild.prevarch) = 0 ' % (arch, arch))
         if branch == 'stable':
             extra = ' AND (%s) ' % stable_extra
         elif branch == 'testing':
