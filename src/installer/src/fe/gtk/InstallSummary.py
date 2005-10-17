@@ -23,9 +23,9 @@ class Panel(GLIScreen.GLIScreen):
 		vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
 		horiz   = gtk.HBox(False, 10)
 
-	content_str = """
+		content_str = """
 If you click Install here, the installer will generate the xml profile.
-		"""
+"""
 		# pack the description
 		vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=10)
 
