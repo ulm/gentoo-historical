@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.45 2005/10/12 18:32:00 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.46 2005/10/17 15:08:59 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -100,7 +100,7 @@ list_services() {
 # Only used on SGI CDs, this determines:
 # A) CPU Type
 # B) System
-DetectMips() {
+detect_mips() {
 	local cpuinfo="$(awk -F: '/^cpu model/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1 | cut -d" " -f2,3)"
 	local machinfo="$(awk -F: '/^system type/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | cut -d" " -f2-)"
 	local machtype=""
@@ -139,6 +139,12 @@ DetectMips() {
 	PC="Detected an ${machtype} w/ ${numcpu} ${cpuinfo} ${bit}"
 }
 
+detect_x86_amd64() {
+	local cpuinfo="$(awk -F: '/^model name/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+	local mhz="$(awk -F: '/^cpu MHz/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+
+	PC="Detected ${numcpu} ${cpuinfo} ${mhz} ${bit}"
+}
 
 start() {
 	echo "0" > /proc/sys/kernel/printk
@@ -150,17 +156,18 @@ start() {
 			local arch="$(uname -m)"
 			local ismips="no"
 			[ "${numcpu}" -gt '1' ] && bit="CPUs" || bit="CPU"
-			if [ "${arch}" = "mips" -o "${arch}" = "mips64" ]
-			then
-				DetectMips
-				ismips="yes"
-			else
-				PC="$(awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null)"
-				# This is probably where we're going with this in the future
-				# cpuinfo="$(awk -F: '/^model name/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-				# mhz="$(awk -F: '/^cpu MHz/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-				# PC="Detected ${numcpu} ${cpuinfo} ${mhz} ${bit}"
-			fi
+			case ${arch} in
+				mips|mips64)
+					detect_mips
+					ismips="yes"
+				;;
+				i386|i486|i586|i686|x86_64)
+					detect_x86_amd64
+				;;
+				*)
+					PC="$(awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null)"
+				;;
+			esac
 			einfo "${PC}"
 			[ -x /usr/sbin/hwsetup ] && hwsetup -p >/dev/null
 		eend
