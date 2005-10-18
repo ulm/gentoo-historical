@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.67 2005/10/15 17:24:46 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.68 2005/10/18 03:09:40 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -364,7 +364,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #					time.sleep(1)
 
 					tries = 0
-					while tries < 3:
+					while tries < 4:
 						# now the actual command
 						cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
 						self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
@@ -415,12 +415,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					grub_root_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					root_device = device
-		if GLIUtility.is_file(root+file_name2):
-			exitstatus = GLIUtility.spawn("rm "+root+file_name2)
+		if GLIUtility.is_file(file_name2):
+			exitstatus = GLIUtility.spawn("rm "+file_name2)
 			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Could not delete the old device map for grub.")			
+				raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Could not delete the old device map for grub.")
 		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
-		if not GLIUtility.exitsuccess(exitstatus1):
+#		if not GLIUtility.exitsuccess(exitstatus1):
+		if not GLIUtility.is_file(file_name2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
 		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
 		if not GLIUtility.exitsuccess(exitstatus2):
