@@ -397,7 +397,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 			data += 'value="'+tarball+'"> '
 		data += """
     or 
-    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value)">
+    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
 (requires net connectivity)</p>
 <p> <input type="submit" name="savestage" value="Save Stage Selection">
 </form> """
