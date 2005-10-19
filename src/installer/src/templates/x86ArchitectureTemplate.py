@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.68 2005/10/18 03:09:40 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.69 2005/10/19 20:24:02 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -507,9 +507,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		else:
 			grubinstallstring +="setup ("+grub_boot_drive+")\n"
 		grubinstallstring += "quit\n' | "+root+"/sbin/grub"
-		#print grubinstallstring
+		self._logger.log("Grub install string: " + grubinstallstring)
 		exitstatus = GLIUtility.spawn(grubinstallstring)
-		if exitstatus != 0:
+		if not GLIUtility.exitsuccess(exitstatus):
 			raise GLIException("GrubInstallError", 'fatal', '_configure_grub', "Could not install grub!")
 		self._logger.log("Bootloader: grub has been installed!")
 		#now make the grub.conf file
