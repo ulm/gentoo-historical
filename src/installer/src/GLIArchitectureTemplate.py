@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.208 2005/09/22 17:56:53 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.209 2005/10/20 00:21:54 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -366,8 +366,8 @@ class ArchitectureTemplate:
 		self._quickpkg_deps(" ".join(all_packages), nodeps=True)
 
 		# This is here until I figure out why some packages are missed during quickpkg'ing
-		more_packages = self._get_packages_to_emerge("emerge -pk =" + " =".join(installpackages2))
-		self._quickpkg_deps(" ".join(more_packages), nodeps=True)
+#		more_packages = self._get_packages_to_emerge("emerge -pk =" + " =".join(installpackages2))
+#		self._quickpkg_deps(" ".join(more_packages), nodeps=True)
 
 		for i, package in enumerate(all_packages):
 			self.notify_frontend("progress", (float(i) / len(all_packages), "Emerging " + package))

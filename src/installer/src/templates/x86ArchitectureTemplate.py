@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.69 2005/10/19 20:24:02 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.70 2005/10/20 00:21:54 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -524,6 +524,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		self._logger.log("Grub installed and configured.")
 
 	def _configure_lilo(self):
+		build_mode = self._install_profile.get_kernel_build_method()
 		boot_device = ""
 		boot_minor = ""
 		root_device = ""
