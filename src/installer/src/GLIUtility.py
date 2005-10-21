@@ -320,27 +320,37 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 
 	# read a line from the pipe and loop until
 	# pipe is empty
-	data = ro_pipe.readline()
+#	data = ro_pipe.readline()
 	seenlines = 0
+	last_percent = 0
 
-	while data:
+	while 1:
+		data = ro_pipe.read(2048)
+		if not data: break
+
 		if logfile:
 			fd_logfile.write(data)
 #			fd_logfile.flush()
 
 		if display_on_tty8:
 			fd_tty.write(data)
-#			fd_tty.flush()
+			fd_tty.flush()
 
 		if return_output:
-			output = output + data
+			output += data
 
 		if linecount and cc:
-			seenlines += 1
-			if not seenlines % 20:
-				cc.addNotification("progress", (float(seenlines) / linecount, status_message))
+			lastpos = -1
+			while 1:
+				lastpos = data.find("\n", lastpos + 1)
+				if lastpos == -1: break
+				seenlines += 1
+			percent = float(seenlines) / linecount
+			if int(percent * 100) > last_percent:
+				last_percent = int(percent * 100)
+				cc.addNotification("progress", (percent, status_message))
 
-		data = ro_pipe.readline()
+#		data = ro_pipe.readline()
 
 	# close the file descriptors
 	if logfile: fd_logfile.close()
