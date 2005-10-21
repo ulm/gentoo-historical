@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.211 2005/10/21 01:50:00 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.212 2005/10/21 01:52:49 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -559,7 +559,7 @@ class ArchitectureTemplate:
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
 			if portage_tree_snapshot_uri:
 				# Fetch and unpack the tarball
-				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/")
+				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/", cc=self._cc)
 			self._logger.log("Portage tree install was custom.")
 		elif sync_type == "sync":
 				exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
