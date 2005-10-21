@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.210 2005/10/20 02:06:32 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.211 2005/10/21 01:50:00 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -319,7 +319,7 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("rm -rf /var/tmp/portage/* /usr/portage /tmp/*", chroot=self._chroot_dir)
 			self._logger.log("Stage3 was generated successfully")
 		else:
-			GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True)
+			GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True, cc=self._cc)
 			self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
 
 	##

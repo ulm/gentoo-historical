@@ -294,7 +294,7 @@ def set_default_route(route):
 # @param chroot=None 			will run the command inside the new chroot env.
 # @param append_log=False 		whether to start over on the logfile or append.
 # @param return_output=False 	Returns the output along with the exit status
-def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False):
+def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False, linecount=0, match=None, cc=None, status_message=None):
 	# quiet and return_output really do the same thing. One of them need to be removed.
 	if chroot != None:
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
@@ -321,6 +321,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	# read a line from the pipe and loop until
 	# pipe is empty
 	data = ro_pipe.readline()
+	seenlines = 0
 
 	while data:
 		if logfile:
@@ -333,6 +334,11 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 
 		if return_output:
 			output = output + data
+
+		if linecount and cc:
+			seenlines += 1
+			if not seenlines % 20:
+				cc.addNotification("progress", (float(seenlines) / linecount, status_message))
 
 		data = ro_pipe.readline()
 
@@ -501,7 +507,7 @@ def get_eth_info(device):
 # @param temp_directory="/tmp" 	a temporary location (used for dealing with the 
 #								ramdisk size limitations of the livecd env.
 # @param keep_permissions=False Whether or not to keep permissions (-p)
-def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False):
+def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp", keep_permissions=False, cc=None):
 	"Fetches a tarball from tarball_uri and extracts it into target_directory"
 
 	# Get tarball info
@@ -516,18 +522,25 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 
 	# If the tarball is bzip'd
 	if tarball_filename.split(".")[-1] == "tbz" or  tarball_filename.split(".")[-1] == "bz2":
-		tar_options = tar_options + "j"
+		format_option = "j"
 
 	# If the tarball is gzip'd
 	elif tarball_filename.split(".")[-1] == "tgz" or  tarball_filename.split(".")[-1] == "gz":
-		tar_options = tar_options + "z"
+		format_option = "z"
+
+	tar_options += format_option
 
 	# If we want to keep permissions
 	if keep_permissions:
 		tar_options = tar_options + "p"
 
+	# Get number of files in tarball
+	tarfiles = 0
+	if cc:
+		tarfiles = int(spawn("tar -t" + format_option + "f " + temp_directory + "/" + tarball_filename + " 2>/dev/null | wc -l", return_output=True)[1].strip())
+
 	# Unpack the tarball
-	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log", append_log=True) # change this to the logfile variable
+	exitstatus = spawn("tar -" + tar_options + " -f " + temp_directory + "/" + tarball_filename + " -C " + target_directory, display_on_tty8=True, logfile="/tmp/compile_output.log", append_log=True, linecount=tarfiles, cc=cc, status_message="Unpacking " + tarball_filename) # change this to the logfile variable
 
 	if not exitsuccess(exitstatus):
 		raise GLIException("GLIUtilityError", 'fatal', 'fetch_and_unpack_tarball',"Could not unpack " + tarball_uri + " to " + target_directory)
