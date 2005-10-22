@@ -289,6 +289,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						'/webgli/Partitioning', '/webgli/savepartitions',
 						'/webgli/StageSelection', '/webgli/savestage',
 						'/webgli/PortageTree', '/webgli/saveportage',
+						'/webgli/GlobalUSE', '/webgli/saveglobaluse',
+						'/webgli/LocalUSE', '/webgli/savelocaluse',
 						'/webgli/ConfigFiles', '/webgli/saveconfigfiles',
 						'/webgli/Kernel', '/webgli/savekernel',
 						'/webgli/Bootloader', '/webgli/savebootloader',
