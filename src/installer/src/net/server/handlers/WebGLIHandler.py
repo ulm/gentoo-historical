@@ -522,11 +522,17 @@ Please be patient while the screens load. It may take awhile.
 				data += "checked"
 			data += "></td><td>"+flagname+"</td><td>"+use_desc[flagname]+"</td></tr>\n"
 		data += "</table><br>"
-		data += '<input name="saveglobaluse" type="submit" id="saveglobaluse" value="Save Local USE Settings">'
+		data += '<input name="saveglobaluse" type="submit" id="saveglobaluse" value="Save Global USE Settings">'
 		data += "</form>\n"
 		return self.wrap_in_webgli_template(data)
 	def saveglobaluse(self):
 		data = ""
+		temp_use = "-* "
+		if self.post_params['flags']:
+			use_flags = self.post_params['flags'];
+			for flag in use_flags:
+				temp_use += flag + " "
+			self.shared_info.temp_use = temp_use
 		return self.wrap_in_webgli_template(data)
 	def localuse(self):
 		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
@@ -548,6 +554,7 @@ Please be patient while the screens load. It may take awhile.
 <form action="/webgli/savelocaluse" method="POST" enctype="multipart/form-data">
 """
 #First set the USE flags, this is a biggie.
+
 		if make_conf.has_key("USE"): 
 			system_use_flags = make_conf["USE"]
 		else:  #not a preloaded config.  this is the NORMAL case.
@@ -570,6 +577,20 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def savelocaluse(self):
 		data = ""
+		temp_use = " "
+		if self.post_params['flags']:
+			use_local_flags = self.post_params['flags']
+			for flag in use_local_flags:
+				temp_use += flag + " "
+		#get the make.conf
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if etc_files.has_key("make.conf"):
+			make_conf = etc_files['make.conf']
+		else:
+			make_conf = {}
+		make_conf["USE"] = self.shared_info.temp_use + temp_use
+		etc_files['make.conf'] = make_conf
+		self.shared_info.install_profile.set_etc_files(etc_files)
 		return self.wrap_in_webgli_template(data)
 	def configfiles(self):
 		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"

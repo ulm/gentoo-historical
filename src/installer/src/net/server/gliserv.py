@@ -19,7 +19,7 @@ import traceback
 
 class SharedInfo(object):
 
-	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None, 'client_profile':None}
+	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None, 'client_profile':None, 'temp_use': ""}
 
 	def __init__(self):
 		self.__dict__ = self.__shared_state
