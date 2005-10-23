@@ -887,3 +887,20 @@ def get_grp_pkgs_from_cd():
 	for pkg in output:
 		results.append(pkg[(pkg.find('/')+1):])
 	return results
+
+def parse_vdb_contents(file):
+	entries = []
+	try:
+		vdbfile = open(file, "r")
+	except:
+		return entries
+	for line in vdbfile.readlines():
+		parts = line.strip().split(" ")
+		if parts[0] == "obj":
+			entries.append(parts[1])
+		elif parts[0] == "dir":
+			entries.append(parts[1] + "/")
+		elif parts[0] == "sym":
+			entries.append(" ".join(parts[1:4]))
+	entries.sort()
+	return entries

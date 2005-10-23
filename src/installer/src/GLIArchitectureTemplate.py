@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.215 2005/10/23 22:31:15 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.216 2005/10/23 23:51:52 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -154,7 +154,7 @@ class ArchitectureTemplate:
 			if self._debug: self._logger.log("DEBUG: packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
 			if not pkg: continue
-			self._logger.log("DEBUG: Trying to quickpkg '" + pkg + "'")
+			if self._debug: self._logger.log("DEBUG: Trying to quickpkg '" + pkg + "'")
 			pkgparts = pkg.split('/')
 			if not len(pkgparts) == 2: continue
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkgparts[1] + ".tbz2"):
@@ -164,6 +164,34 @@ class ArchitectureTemplate:
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
 
+	def copy_pkg_to_chroot(self, package):
+		error = False
+		package = self._portage_best_visible(package)
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): best_visible is " + package)
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy vdb entry for " + package)
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("ebuild /var/db/pkg/" + package + "/*.ebuild preinst", chroot=self._chroot_dir)):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
+		entries = GLIUtility.parse_vdb_contents("/var/db/pkg/" + package + "/CONTENTS")
+		for entry in entries:
+			parts = entry.split(" ")
+			if len(parts) == 3 and parts[1] == "->":
+				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating link from " + parts[0] + " to " + parts[2])
+				if not GLIUtility.exitsuccess(GLIUtility.spawn("ln -s " + self._chroot_dir + parts[0] + " " + parts[2])):
+					raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create a link from " + parts[0] + " to " + parts[2])
+			elif parts[0].endswith("/"):
+				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating directory " + parts[0])
+				GLIUtility.spawn("mkdir -p " + self._chroot_dir + parts[0])
+			else:
+				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying file " + parts[0])
+				if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + parts[0] + " " + self._chroot_dir + parts[0])):
+					raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy " + parts[0])
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running postinst for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("ebuild /var/db/pkg/" + package + "/*.ebuild postinst", chroot=self._chroot_dir)):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute postinst for " + package)
+			
 	##
 	# Private Function.  Will emerge a given package in the chroot environment.
 	# @param package package to be emerged
