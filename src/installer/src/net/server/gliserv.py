@@ -339,6 +339,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return
 		# No code handler...look for actual file
 		path = self.translate_path(self.path)
+		if path.endswith("/"):
+			path += "index.html"
 		ctype = self.guess_type(path)
 		try:
 			f = open(path, 'rb')
@@ -363,7 +365,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		path = posixpath.normpath(urllib.unquote(path))
 		words = path.split('/')
 		words = filter(None, words)
-		path = os.getcwd()
+		path = os.getcwd() + "/html/"
 		for word in words:
 			drive, word = os.path.splitdrive(word)
 			head, word = os.path.split(word)
