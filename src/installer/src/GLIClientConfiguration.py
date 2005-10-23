@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.40 2005/08/22 18:35:51 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.41 2005/10/23 22:20:14 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -61,7 +61,7 @@ class ClientConfiguration:
 		self._ftp_proxy = ""
 		self._http_proxy = ""
 		self._rsync_proxy = ""
-		self._verbose = True
+		self._verbose = False
 		self.data = ""  # used for serialization
 
 		self._parser = SimpleXMLParser.SimpleXMLParser()
@@ -85,7 +85,7 @@ class ClientConfiguration:
 		self._parser.addHandler('client-configuration/root-mount-point', self.set_root_mount_point)
 		self._parser.addHandler('client-configuration/root-passwd', self.set_root_passwd)
 		self._parser.addHandler('client-configuration/rsync-proxy', self.set_rsync_proxy)
-		
+		self._parser.addHandler('client-configuration/verbose', self.set_verbose)
 	##
 	# Parses the given filename populating the client_configuration.
 	# @param filename the file to be parsed.  This should be a URI actually.
@@ -112,6 +112,7 @@ class ClientConfiguration:
 					'root-mount-point': self.get_root_mount_point,
 					'root-passwd': self.get_root_passwd,
 					'rsync-proxy': self.get_rsync_proxy,
+					'verbose': self.get_verbose,
 				}
 		self.data = "<client-configuration>"
 
@@ -516,3 +517,18 @@ class ClientConfiguration:
 	# Returns the RSYNC proxy
 	def get_rsync_proxy(self):
 		return self._rsync_proxy
+
+	##
+	# Sets the Verbose mode (DEBUG mode)
+	# @param xml_path not used here.
+	# @param verbose flag. boolean.
+	# @param xml_attr not used here.
+	def set_verbose(self, xml_path, verbose, xml_attr):
+		if type(verbose) == str:
+			verbose = GLIUtility.strtobool(verbose)
+		self._verbose = verbose
+
+	##
+	# Returns the verbose (DEBUG) flag
+	def get_verbose(self):
+		return self._verbose

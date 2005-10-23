@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.212 2005/10/21 01:52:49 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.213 2005/10/23 22:20:14 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -34,7 +34,7 @@ class ArchitectureTemplate:
 		self._chroot_dir = self._client_configuration.get_root_mount_point()
 		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
 		self._compile_logfile = "/tmp/compile_output.log"
-		
+		self._debug = self._client_configuration.get_verbose()
 		# This will cleanup the logfile if it's a dead link (pointing
 		# to the chroot logfile when partitions aren't mounted, else
 		# no action needs to be taken
@@ -52,7 +52,7 @@ class ArchitectureTemplate:
 		# For example, self._steps might be: [preinstall, stage1, stage2, stage3, postinstall],
 		# where each entry is a function (with no arguments) that carries out the desired actions.
 		# Of course, steps will be different depending on the install_profile
-
+		
 		self._architecture_name = "generic"
 		self._install_steps = [
 								 (self.partition, "Partition"),
@@ -112,6 +112,7 @@ class ArchitectureTemplate:
 			#raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 			#This is not a fatal error.  If the init script is important it will exist.
 			self._logger.log("ERROR! Failure adding" + script_name + " to runlevel " + runlevel + " because it was not found!")
+			if self._debug:	self._logger.log("DEBUG: running rc-update add " + script_name + " " + runlevel + " in chroot.")
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(status):
 			#raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
@@ -124,36 +125,44 @@ class ArchitectureTemplate:
 	# Private Function.  Will return a list of packages to be emerged for a given command.  Not yet used.
 	# @param cmd full command to run ('/usr/portage/scripts/bootstrap.sh --pretend' or 'emerge -p system')
 	def _get_packages_to_emerge(self, cmd):
-#		self._logger.log("_get_packages_to_emerge() called with '%s'" % cmd)
+		if self._debug:	self._logger.log("DEBUG: _get_packages_to_emerge() called with '%s'" % cmd)
 		return GLIUtility.spawn(cmd + r" 2>/dev/null | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
 
 	##
 	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
 	# @param package package to be quickpkg'd.
 	def _quickpkg_deps(self, package, nodeps=False):
-#		self._logger.log("_quickpkg_deps() called with '%s'" % package)
+		if self._debug:
+			self._logger.log("DEBUG: _quickpkg_deps() called with '%s'" % package)
 		PKGDIR = "/usr/portage/packages"
 		PORTAGE_TMPDIR = "/var/tmp"
 		make_conf = self._install_profile.get_make_conf()
-		if "PKGDIR" in make_conf and make_conf['PKGDIR']: PKGDIR = make_conf['PKGDIR']
-		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+		if "PKGDIR" in make_conf and make_conf['PKGDIR']: 
+			if self._debug: self._logger.log("DEBUG: overwriting PKGDIR with make_conf value." + make_conf['PKGDIR'])
+			PKGDIR = make_conf['PKGDIR']
+		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: 
+			if self._debug: self._logger.log("DEBUG: overwriting PORTAGE_TMPDIR with make_conf value." + make_conf['PORTAGE_TMPDIR']
+			PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+		if self._debug: self._logger.log("DEBUG: creating PKGDIR if necessary")
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
+		if self._debug: self._logger.log("DEBUG: creating PORTAGE_TMPDIR if necessary")
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
 		if nodeps:
 			packages = package.split()
 		else:
 			packages = self._get_packages_to_emerge("emerge -p " + package)
-#		self._logger.log("packages obtained from _get_packages_to_emerge(): %s" % str(packages))
+			if self._debug: self._logger.log("DEBUG: packages obtained from _get_packages_to_emerge(): %s" % str(packages))
 		for pkg in packages:
 			if not pkg: continue
-			self._logger.log("Trying to quickpkg '" + pkg + "'")
+			self._logger.log("DEBUG: Trying to quickpkg '" + pkg + "'")
 			pkgparts = pkg.split('/')
 			if not len(pkgparts) == 2: continue
 			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkgparts[1] + ".tbz2"):
+				if self._debug: self._logger.log("DEBUG: running quickpkg on pkg: "+pkg)
 				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
 				if not GLIUtility.exitsuccess(ret):
 					# This package couldn't be quickpkg'd. This may be an error in the future
-					pass
+					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
 
 	##
 	# Private Function.  Will emerge a given package in the chroot environment.
@@ -198,7 +207,7 @@ class ArchitectureTemplate:
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False,create_file=True):
 		# don't use 'file' as a normal variable as it conflicts with the __builtin__.file
 		newvalues = newvalues.copy()
-		self._logger.log("_edit_config() called with " + str(newvalues))
+		if self._debug: self._logger.log("DEBUG: _edit_config() called with " + str(newvalues)+" and flags: "+delimeter + "quotes: "+quotes_around_value+" value: "+only_value)
 		if GLIUtility.is_file(filename):
 			f = open(filename)
 			contents = f.readlines()
@@ -233,6 +242,7 @@ class ArchitectureTemplate:
 					add_at_line = i + 1
 			else:
 				contents.insert(add_at_line, newline)
+		if self._debug: self._logger.log("DEBUG: Contents of file "+filename+": "+contents)
 		f = open(filename,'w')
 		f.writelines(contents)
 		f.flush()
@@ -247,6 +257,7 @@ class ArchitectureTemplate:
 			self._logger.mark()
 			self._logger.log("Starting bootstrap.")
 			pkgs = self._get_packages_to_emerge("/usr/portage/scripts/bootstrap.sh --pretend")
+			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+pkgs+". Now running bootstrap.sh")
 			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
@@ -260,6 +271,7 @@ class ArchitectureTemplate:
 			self._logger.mark()
 			self._logger.log("Starting emerge system.")
 			pkgs = self._get_packages_to_emerge("emerge -p system")  #currently quite the useless
+			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+pkgs+"/ Now running emerge --emptytree system")
 			exitstatus = self._emerge("--emptytree system")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
@@ -269,6 +281,7 @@ class ArchitectureTemplate:
 	# Unpacks the stage tarball that has been specified in the profile (it better be there!)
 	def unpack_stage_tarball(self):
 		if not os.path.isdir(self._chroot_dir):
+			if self._debug: self._logger.log("DEBUG: making the chroot dir:"+self._chroot_dir)
 			os.makedirs(self._chroot_dir)
 		if self._install_profile.get_install_stage() == 3 and self._install_profile.get_dynamic_stage3():
 			# stage3 generation code here
@@ -319,6 +332,7 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("rm -rf /var/tmp/portage/* /usr/portage /tmp/*", chroot=self._chroot_dir)
 			self._logger.log("Stage3 was generated successfully")
 		else:
+			self._logger.log("Unpacking tarball: "+self._install_profile.get_stage_tarball_uri())
 			GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True, cc=self._cc)
 			self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
 
@@ -327,9 +341,11 @@ class ArchitectureTemplate:
 	def prepare_chroot(self):
 		# Copy resolv.conf to new env
 		try:
+			if self._debug: self._logger.log("DEBUG: copying /etc/resolv.conf over.")
 			shutil.copy("/etc/resolv.conf", self._chroot_dir + "/etc/resolv.conf")
 		except:
 			pass
+		if self._debug: self._logger.log("DEBUG: mounting proc")
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
@@ -337,10 +353,12 @@ class ArchitectureTemplate:
 		uname = os.uname()
 		if uname[0] == 'Linux' and uname[2].split('.')[1] == '6':
 			bind_mounts.append('/sys')
+		if self._debug: self._logger.log("DEBUG: mounting /dev, /dev/shm, /dev/pts")
 		for mount in bind_mounts:
 			ret = GLIUtility.spawn('mount -o bind %s %s%s' % (mount,self._chroot_dir,mount))
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount '+mount)
+		if self._debug: self._logger.log("DEBUG: copying logfile to new system!")
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
 		self._logger.log("Chroot environment ready.")
 
@@ -352,15 +370,15 @@ class ArchitectureTemplate:
 		failed_list = []
 		installpackages2 = []
 		for package in installpackages:
-#			self._logger.log("Determing best_visible for package " + package)
+			if self._debug: self._logger.log("Determing best_visible for package " + package)
 			tmppkg = self._portage_best_visible(package)
 			if not tmppkg:
-				self._logger.log("Cannot determine best_visible for package '" + package + "'...skipping")
+				if self._debug: self._logger.log("DEBUG: Cannot determine best_visible for package '" + package + "'...skipping")
 			else:
-#				self._logger.log("best_visible for package '" + package + "' is " + tmppkg)
+				if self._debug: self._logger.log("DEBUG: best_visible for package '" + package + "' is " + tmppkg)
 				installpackages2.append(tmppkg)
 		if not installpackages2:
-#			self._logger.log("Nothing in installpackages2 to emerge")
+			if self._debug: self._logger.log("DEBUG: Nothing in installpackages2 to emerge")
 			return
 		all_packages = self._get_packages_to_emerge("emerge -p =" + " =".join(installpackages2))
 		self._quickpkg_deps(" ".join(all_packages), nodeps=True)
@@ -425,7 +443,7 @@ class ArchitectureTemplate:
 			if tmp_minor == -1: continue
 			# now sleep until it exists
 			while not GLIUtility.is_file(parts[device].get_device() + str(tmp_minor)):
-				self._logger.log("Waiting for device node " + parts[device].get_device() + str(tmp_minor) + " to exist...")
+				if self._debug: self._logger.log("DEBUG: Waiting for device node " + parts[device].get_device() + str(tmp_minor) + " to exist...")
 				time.sleep(1)
 			# one bit of extra sleep is needed, as there is a blip still
 			time.sleep(1)
@@ -445,13 +463,13 @@ class ArchitectureTemplate:
 					ret = GLIUtility.spawn("swapon " + device + minor)
 					if not GLIUtility.exitsuccess(ret):
 						self._logger.log("ERROR! : Could not activate swap (" + device + minor + ")!")
-					#	raise GLIException("MountError", 'warning','mount_local_partitions','Could not activate swap')
 					else:
 						self._swap_devices.append(device + minor)
 		sorted_list = parts_to_mount.keys()
 		sorted_list.sort()
 		
 		if not GLIUtility.is_file(self._chroot_dir):
+			if self._debug: self._logger.log("DEBUG: making the chroot dir")
 			exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the ROOT mount point failed!")
@@ -462,6 +480,7 @@ class ArchitectureTemplate:
 			partition_type = parts_to_mount[mountpoint][1]
 			partition = parts_to_mount[mountpoint][2]
 			if not GLIUtility.is_file(self._chroot_dir + mountpoint):
+				if self._debug: self._logger.log("DEBUG: making mountpoint: "+mountpoint)
 				exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
@@ -498,6 +517,8 @@ class ArchitectureTemplate:
 					exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 					if not GLIUtility.exitsuccess(exitstatus):
 						raise GLIException("MkdirError", 'fatal','mount_network_shares', "Making the mount point failed!")
+					else:
+						if self._debug: self._logger.log("DEBUG: mounting nfs mount")
 				ret = GLIUtility.spawn("mount -t nfs " + mountopts + " " + host + ":" + export + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
@@ -535,11 +556,15 @@ class ArchitectureTemplate:
 		if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 		if 'PORT_LOGDIR' in make_conf: PORT_LOGDIR = make_conf['PORT_LOGDIR']
 		if 'PORTDIR_OVERLAY' in make_conf: PORTDIR_OVERLAY = make_conf['PORTDIR_OVERLAY']
+		if self._debug: self._logger.log("DEBUG: making PKGDIR if necessary: "+PKGDIR)
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
+		if self._debug: self._logger.log("DEBUG: making PORTAGE_TMPDIR if necessary: "+PORTAGE_TMPDIR)
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
 		if PORT_LOGDIR != None: 
+			if self._debug: self._logger.log("DEBUG: making PORT_LOGDIR if necessary: "+PORT_LOGDIR)
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORT_LOGDIR, logfile=self._compile_logfile, append_log=True)
 		if PORTDIR_OVERLAY != None: 
+			if self._debug: self._logger.log("DEBUG: making PORTDIR_OVERLAY if necessary "+PORTDIR_OVERLAY)
 			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTDIR_OVERLAY, logfile=self._compile_logfile, append_log=True)
 
 	##
@@ -549,6 +574,7 @@ class ArchitectureTemplate:
 		# If it is custom, follow the path to the custom tarball and unpack it
 
 		# This is a hack to copy the LiveCD's rsync into the chroot since it has the sigmask patch
+		if self._debug: self._logger.log("DEBUG: Doing the hack where we copy the LiveCD's rsync into the chroot since it has the sigmask patch")
 		GLIUtility.spawn("cp -a /usr/bin/rsync " + self._chroot_dir + "/usr/bin/rsync")
 		GLIUtility.spawn("cp -a /usr/lib/libpopt* " + self._chroot_dir + "/usr/lib")
 		
@@ -559,17 +585,20 @@ class ArchitectureTemplate:
 			portage_tree_snapshot_uri = self._install_profile.get_portage_tree_snapshot_uri()
 			if portage_tree_snapshot_uri:
 				# Fetch and unpack the tarball
+				if self._debug: self._logger.log("DEBUG: grabbing custom snapshot uri: "+portage_tree_snapshot_uri)
 				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/", cc=self._cc)
 			self._logger.log("Portage tree install was custom.")
 		elif sync_type == "sync":
-				exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-				if not GLIUtility.exitsuccess(exitstatus):
-					self._logger.log("ERROR!  Could not sync the portage tree using emerge sync.  Falling back to emerge-webrsync as a backup.")
-					sync_type = "webrsync"
-				else:
-					self._logger.log("Portage tree sync'd")
+			if self._debug: self._logger.log("DEBUG: starting emerge sync")
+			exitstatus = GLIUtility.spawn("emerge sync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			if not GLIUtility.exitsuccess(exitstatus):
+				self._logger.log("ERROR!  Could not sync the portage tree using emerge sync.  Falling back to emerge-webrsync as a backup.")
+				sync_type = "webrsync"
+			else:
+				self._logger.log("Portage tree sync'd")
 		# If the type is webrsync, then run emerge-webrsync
 		elif sync_type == "webrsync":
+			if self._debug: self._logger.log("DEBUG: starting emerge webrsync")
 			exitstatus = GLIUtility.spawn("emerge-webrsync", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeWebRsyncError", 'fatal','install_portage_tree', "Failed to retrieve portage tree using webrsync!")
@@ -584,9 +613,12 @@ class ArchitectureTemplate:
 		
 		# Set symlink
 		if os.access(self._chroot_dir + "/etc/localtime", os.W_OK):
+			if self._debug: self._logger.log("DEBUG: /etc/localtime already exists, removing it so it can be symlinked")
 			GLIUtility.spawn("rm "+self._chroot_dir + "/etc/localtime")
+		if self._debug: self._logger.log("DEBUG: running ln -s ../usr/share/zoneinfo/" + self._install_profile.get_time_zone() + " /etc/localtime")
 		GLIUtility.spawn("ln -s ../usr/share/zoneinfo/" + self._install_profile.get_time_zone() + " /etc/localtime", chroot=self._chroot_dir)
 		if not (self._install_profile.get_time_zone() == "UTC"):
+			if self._debug: self._logger.log("DEBUG: timezone was not UTC, setting CLOCK to local.  This may be overwritten later.")
 			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
 		self._logger.log("Timezone set.")
 		
@@ -605,6 +637,7 @@ class ArchitectureTemplate:
 				if not mountopts.strip(): mountopts = "defaults"
 				if mountpoint:
 					if not GLIUtility.is_file(self._chroot_dir+mountpoint):
+						if self._debug: self._logger.log("DEBUG: making mountpoint: "+mountpoint)
 						exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 						if not GLIUtility.exitsuccess(exitstatus):
 							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
@@ -628,9 +661,11 @@ class ArchitectureTemplate:
 			
 		file_name = self._chroot_dir + "/etc/fstab"	
 		try:
+			if self._debug: self._logger.log("DEBUG: backing up original fstab")
 			shutil.move(file_name, file_name + ".OLDdefault")
 		except:
-			pass
+			self._logger.log("ERROR: could not backup original fstab.")
+		if self._debug: self._logger.log("DEBUG: Contents of new fstab: "+newfstab)
 		f = open(file_name, 'w')
 		f.writelines(newfstab)
 		f.close()
@@ -647,13 +682,16 @@ class ArchitectureTemplate:
 			return
 		# Special case, livecd kernel
 		elif kernel_pkg == "livecd-kernel":
+			if self._debug: self._logger.log("DEBUG: starting livecd-kernel setup")
 			PKGDIR = "/usr/portage/packages"
 			PORTAGE_TMPDIR = "/var/tmp"
 			make_conf = self._install_profile.get_make_conf()
 			if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
 			if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 			# directories are created previously
+			if self._debug: self._logger.log("DEBUG: running: env PKGDIR="+ self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
+			if self._debug: self._logger.log("DEBUG: running: env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 			# these should really be error-checked...
 			
@@ -678,10 +716,12 @@ class ArchitectureTemplate:
 				os.stat(self._chroot_dir + "/usr/src/linux")
 			except:
 				kernels = os.listdir(self._chroot_dir+"/usr/src")
+				if self._debug: self._logger.log("DEBUG: no /usr/src/linux found.  found kernels: "+kernels)
 				found_a_kernel = False
 				counter = 0
 				while not found_a_kernel:
 					if kernels[counter][0:6]=="linux-":
+						if self._debug: self._logger.log("DEBUG: found one.  linking it. running: ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux in the chroot.")
 						exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",chroot=self._chroot_dir)
 						if not GLIUtility.exitsuccess(exitstatus):
 							raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not make a /usr/src/linux symlink")
@@ -700,19 +740,22 @@ class ArchitectureTemplate:
 
 		# No building necessary if using the LiveCD's kernel/initrd
 		# or using the 'none' kernel bypass
-		if self._install_profile.get_kernel_source_pkg() in ["livecd-kernel","none"]: 
+		if self._install_profile.get_kernel_source_pkg() in ["livecd-kernel","none"]:
+			if self._debug: self._logger.log("DEBUG: using "+self._install_profile.get_kernel_source_pkg()+ " so skipping this function.")		
 			return
 		# Get the uri to the kernel config
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 
 		# is there an easier way to do this?
+		if self._debug: self._logger.log("DEBUG: running command: awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile in chroot."
 		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile",chroot=self._chroot_dir,return_output=True)
 		# 6 == 2.6 kernel, 4 == 2.4 kernel
 		kernel_major = int(kernel_major)
-			
+		if self._debug: self._logger.log("DEBUG: kernel major version is: "+kernel_major)
 		#Copy the kernel .config to the proper location in /usr/src/linux
 		if kernel_config_uri != '':
 			try:
+				if self._debug: self._logger.log("DEBUG: grabbing kernel config from "+kernel_config_uri+" and putting it in "+self._chroot_dir + "/var/tmp/kernel_config")
 				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
 			except:
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not copy kernel config!")
@@ -736,22 +779,27 @@ class ArchitectureTemplate:
 		# situations when you have packages that require kernel sources
 		# to build.
 		elif build_mode == "prepare-only":
+			if self._debug: self._logger.log("DEBUG: writing kernel script with contents: "+kernel_compile_script)
 			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
 			f.writelines(kernel_compile_script)
 			f.close()
 			#Build the kernel
+			if self._debug: self._logger.log("DEBUG: running: chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
 			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
+			if self._debug: self._logger.log("DEBUG: running: /var/tmp/kernel_script in chroot.")
 			exitstatus2 = GLIUtility.spawn("/var/tmp/kernel_script", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if (exitstatus1 != 0) or (exitstatus2 != 0):
-				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not handle prepare-only build!")
-						
+			if not GLIUtility.exitsuccess(exitstatus1):
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not handle prepare-only build! died on chmod.")
+			if not GLIUtility.exitsuccess(exitstatus2):
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not handle prepare-only build! died on running of kernel script.")
 			#i'm sure i'm forgetting something here.
 			#cleanup
 			exitstatus = GLIUtility.spawn("rm -f "+self._chroot_dir+"/var/tmp/kernel_script "+self._chroot_dir+"/var/tmp/kernel_config")
 			#it's not important if this fails.
 			self._logger.log("prepare-only build complete")
 		# Genkernel mode, including custom kernel_config. Initrd always on.
-		elif build_mode == "genkernel":  
+		elif build_mode == "genkernel":
+			if self._debug: self._logger.log("DEBUG: build_kernel(): starting emerge genkernel")		
 			exitstatus = self._emerge("genkernel")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
@@ -761,6 +809,7 @@ class ArchitectureTemplate:
 	
 			# If the uri for the kernel config is not null, then
 			if kernel_config_uri != "":
+				if self._debug: self._logger.log("DEBUG: build_kernel(): getting kernel config "+kernel_config_uri)
 				GLIUtility.get_uri(kernel_config_uri, self._chroot_dir + "/var/tmp/kernel_config")
 				genkernel_options = genkernel_options + " --kernel-config=/var/tmp/kernel_config"
 				
@@ -771,6 +820,7 @@ class ArchitectureTemplate:
 				genkernel_options = genkernel_options + " --no-bootsplash"
 			# Run genkernel in chroot
 			#print "genkernel all " + genkernel_options
+			if self._debug: self._logger.log("DEBUG: build_kernel(): running: genkernel all " + genkernel_options + " in chroot.")
 			exitstatus = GLIUtility.spawn("genkernel all " + genkernel_options, chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build kernel!")
@@ -798,15 +848,19 @@ class ArchitectureTemplate:
 				kernel_compile_script += " && cp /usr/src/linux/arch/x86_64/boot/bzImage /boot/kernel-custom\n"
 			elif self._client_configuration.get_architecture_template() == "ppc":
 				kernel_compile_script += " && cp /usr/src/linux/vmlinux /boot/kernel-custom\n"
-				
+			if self._debug: self._logger.log("DEBUG: build_kernel(): writing custom kernel script: "+kernel_compile_script)
 			f = open(self._chroot_dir+"/var/tmp/kernel_script", 'w')
 			f.writelines(kernel_compile_script)
 			f.close()
 			#Build the kernel
+			if self._debug: self._logger.log("DEBUG: build_kernel(): running: chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
 			exitstatus1 = GLIUtility.spawn("chmod u+x "+self._chroot_dir+"/var/tmp/kernel_script")
+			if self._debug: self._logger.log("DEBUG: build_kernel(): running: /var/tmp/kernel_script in chroot")
 			exitstatus2 = GLIUtility.spawn("/var/tmp/kernel_script", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if (exitstatus1 != 0) or (exitstatus2 != 0):
-				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel!")
+			if not GLIUtility.exitsuccess(exitstatus1):
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel! died on chmod.")
+			if not GLIUtility.exitsuccess(exitstatus2):
+				raise GLIException("KernelBuildError", 'fatal', 'build_kernel', "Could not build custom kernel! died on running of kernel script.")
 						
 			#i'm sure i'm forgetting something here.
 			#cleanup
@@ -818,6 +872,8 @@ class ArchitectureTemplate:
 	# Installs and starts up distccd if the user has it set, so that it will get used for the rest of the install
 	def install_distcc(self):
 		if self._install_profile.get_install_distcc():
+			if self._debug: self._logger.log("DEBUG: install_distcc(): we ARE installing distcc")
+			if self._debug: self._logger.log("DEBUG: install_distcc(): running: USE='-*' emerge --nodeps sys-devel/distcc in chroot.")
 			exitstatus = GLIUtility.spawn("USE='-*' emerge --nodeps sys-devel/distcc", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge distcc!")
@@ -831,6 +887,7 @@ class ArchitectureTemplate:
 		mta_pkg = self._install_profile.get_mta_pkg()
 		if mta_pkg:
 			# Emerge MTA
+			if self._debug: self._logger.log("DEBUG: install_mta(): installing mta: "+mta_pkg)
 			exitstatus = self._emerge(mta_pkg)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("MTAError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
@@ -839,11 +896,11 @@ class ArchitectureTemplate:
 	##
 	# Installs and sets up logging daemon on the new system.  adds to runlevel too.
 	def install_logging_daemon(self):
-		
 		# Get loggin daemon info
 		logging_daemon_pkg = self._install_profile.get_logging_daemon_pkg()
 		if logging_daemon_pkg:
 			# Emerge Logging Daemon
+			if self._debug: self._logger.log("DEBUG: install_logging_daemon: emerging "+logging_daemon_pkg)
 			exitstatus = self._emerge(logging_daemon_pkg)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
@@ -852,6 +909,7 @@ class ArchitectureTemplate:
 			# After we find the name of it's initscript
 			# This current code is a hack, and should be better.
 			initscript = logging_daemon_pkg[(logging_daemon_pkg.find('/')+1):]
+			if self._debug: self._logger.log("DEBUG: install_logging_daemon: adding "+initscript+" to runlevel")
 			self._add_to_runlevel(initscript)
 			self._logger.log("Logging daemon installed: "+logging_daemon_pkg)
 	##
@@ -864,6 +922,7 @@ class ArchitectureTemplate:
 				self._logger.log("Skipping installation of cron daemon")
 			else:
 				# Emerge Cron Daemon
+				if self._debug: self._logger.log("DEBUG: install_cron_daemon: emerging "+cron_daemon_pkg)
 				exitstatus = self._emerge(cron_daemon_pkg)
 				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
@@ -872,10 +931,12 @@ class ArchitectureTemplate:
 				# After we find the name of it's initscript
 				# This current code is a hack, and should be better.
 				initscript = cron_daemon_pkg[(cron_daemon_pkg.find('/')+1):]
+				if self._debug: self._logger.log("DEBUG: install_cron_daemon: adding "+initscript+" to runlevel")
 				self._add_to_runlevel(initscript)
 
 				# If the Cron Daemon is not vixie-cron, run crontab			
 				if "vixie-cron" not in cron_daemon_pkg:
+					if self._debug: self._logger.log("DEBUG: install_cron_daemon: running: crontab /etc/crontab in chroot.")
 					exitstatus = GLIUtility.spawn("crontab /etc/crontab", chroot=self._chroot_dir, display_on_tty8=True)
 					if not GLIUtility.exitsuccess(exitstatus):
 						raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Failure making crontab!")
@@ -914,9 +975,9 @@ class ArchitectureTemplate:
 				package_list.append('sys-fs/hfsplusutils')
 			#else:
 			# should be code here for every FS type!
-
 		failed_list = []
 		for package in package_list:
+			if self._debug: self._logger.log("DEBUG: install_filesystem_tools(): emerging "+package)
 			exitstatus = self._emerge(package)
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge "+package+"!")
@@ -932,6 +993,7 @@ class ArchitectureTemplate:
 	def install_rp_pppoe(self):
 		# If user wants us to install rp-pppoe, then do so
 		if self._install_profile.get_install_rp_pppoe():
+			if self._debug: self._logger.log("DEBUG: install_rp_pppoe: emerging rp-pppoe")
 			exitstatus = self._emerge("rp-pppoe")
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge rp-pppoe!")
@@ -945,6 +1007,7 @@ class ArchitectureTemplate:
 	##
 	# Installs and sets up pcmcia-cs if selected in the profile
 	def install_pcmcia_cs(self):
+		if self._debug: self._logger.log("DEBUG: install_pcmcia_cs(): emerging pcmcia-cs")
 		exitstatus = self._emerge("pcmcia-cs")
 		if not GLIUtility.exitsuccess(exitstatus):
 			self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
@@ -959,16 +1022,17 @@ class ArchitectureTemplate:
 	def update_config_files(self):
 		"Runs etc-update (overwriting all config files), then re-configures the modified ones"
 		# Run etc-update overwriting all config files
-		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=True)
+		if self._debug: self._logger.log("DEBUG: update_config_files(): running: "+'echo "-5" | chroot '+self._chroot_dir+' etc-update')
+		status = GLIUtility.spawn('echo "-5" | chroot '+self._chroot_dir+' etc-update', display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(status):
 			self._logger.log("ERROR! : Could not update the config files!")
-		#	raise GLIException("EtcUpdateError", 'warning', 'update_config_files', "Could not update config files!")
 		else:	
 #			self.configure_make_conf()
 			self.configure_fstab()
 #			self.configure_rc_conf()
 			etc_files = self._install_profile.get_etc_files()
 			for etc_file in etc_files:
+				if self._debug: self._logger.log("DEBUG: update_config_files(): updating config file: "+etc_file)
 				if isinstance(etc_files[etc_file], dict):
 					self._edit_config(self._chroot_dir + "/etc/" + etc_file, etc_files[etc_file])
 				else:
@@ -995,7 +1059,7 @@ class ArchitectureTemplate:
 	##
 	# Sets up the network for the first boot
 	def setup_network_post(self):
-		
+		if self._debug: self._logger.log("DEBUG: setup_network_post(): starting network configuration")
 		# Get hostname, domainname and nisdomainname
 		hostname = self._install_profile.get_hostname()
 		domainname = self._install_profile.get_domainname()
@@ -1052,6 +1116,7 @@ class ArchitectureTemplate:
 		# If the default gateway exists, add it
 		if default_gateway:
 			default_gateway_string = default_gateway[0] + "/" + default_gateway[1]
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): found gateway. adding to confing. "+default_gateway_string)
 			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"gateway": default_gateway_string})
 			
 		#
@@ -1078,6 +1143,7 @@ class ArchitectureTemplate:
 				resolv_output.append("search " + domainname + "\n")
 				
 			# Output to file
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): writing resolv.conf with contents: "+resolv_output)
 			resolve_conf = open(self._chroot_dir + "/etc/resolv.conf", "w")
 			resolve_conf.writelines(resolv_output)
 			resolve_conf.close()
@@ -1091,7 +1157,7 @@ class ArchitectureTemplate:
 		emerge_dhcp = False
 		# Parse each interface
 		for interface in interfaces.keys():
-		
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): configuring interface: "+ interface)
 			# Set what kind of interface it is
 			interface_type = interface[:3]
 		
@@ -1099,12 +1165,14 @@ class ArchitectureTemplate:
 			try:
 				os.stat(self._chroot_dir + "/etc/init.d/net." + interface)
 			except:
+				if self._debug: self._logger.log("DEBUG: setup_network_post(): /etc/init.d/net." + interface + " didn't exist, symlinking it.")
 				os.symlink("net." + interface_type +  "0", self._chroot_dir + "/etc/init.d/net." + interface)
 		
 			# If we are going to load the network at boot...
 			#if interfaces[interface][2]:  #THIS FEATURE NO LONGER EXISTS
 				
 			# Add it to the default runlevel
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): adding net."+interface+" to runlevel.")
 			self._add_to_runlevel("net."+interface)	# moved a bit <-- for indentation
 
 			#
@@ -1155,6 +1223,7 @@ class ArchitectureTemplate:
 					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp", "dhcpcd_" + interface: dhcpcd_options})
 					emerge_dhcp = True
 		if emerge_dhcp:
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): emerging dhcpcd.")
 			exitstatus = self._emerge("dhcpcd")
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Could not emerge dhcpcd!")
@@ -1164,6 +1233,7 @@ class ArchitectureTemplate:
 	##
 	# Sets the root password
 	def set_root_password(self):
+		if self._debug: self._logger.log("DEBUG: set_root_password(): running: "+ 'echo \'root:' + self._install_profile.get_root_pass_hash() + '\' | chroot '+self._chroot_dir+' chpasswd -e')
 		status = GLIUtility.spawn('echo \'root:' + self._install_profile.get_root_pass_hash() + '\' | chroot '+self._chroot_dir+' chpasswd -e')
 		if not GLIUtility.exitsuccess(status):
 			raise GLIException("SetRootPasswordError", 'fatal', 'set_root_password', "Failure to set root password!")
@@ -1204,6 +1274,7 @@ class ArchitectureTemplate:
 				# Attempt to add the group (will return success when group exists)
 				for group in groups:
 					# Add the user
+					if self._debug: self._logger.log("DEBUG: set_users(): adding user to groups with (in chroot): "+'groupadd -f ' + group)
 					exitstatus = GLIUtility.spawn('groupadd -f ' + group, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True, display_on_tty8=True)
 					if not GLIUtility.exitsuccess(exitstatus):
 						self._logger.log("ERROR! : Failure to add group " + group+" and it wasn't that the group already exists!")
@@ -1226,6 +1297,7 @@ class ArchitectureTemplate:
 				options.append('-c "' + comment + '"')
 				
 			# Add the user
+			if self._debug: self._logger.log("DEBUG: set_users(): adding user with (in chroot): "+'useradd ' + string.join(options) + ' ' + username)
 			exitstatus = GLIUtility.spawn('useradd ' + string.join(options) + ' ' + username, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True, display_on_tty8=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("ERROR! : Failure to add user " + username)
@@ -1242,9 +1314,10 @@ class ArchitectureTemplate:
 		#we copy the log over to the new system.
 		install_logfile = self._client_configuration.get_log_file()
 		try:
+			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): copying logfile over to new system's root.")
 			shutil.copy(install_logfile, self._chroot_dir + install_logfile)
 		except:
-			pass
+			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): ERROR! could not copy logfile over to /root.")
 		#Now we're done logging as far as the new system is concerned.
 		GLIUtility.spawn("cp /tmp/installprofile.xml " + self._chroot_dir + "/root/installprofile.xml")
 		GLIUtility.spawn("cp /tmp/clientconfiguration.xml " + self._chroot_dir + "/root/clientconfiguration.xml")
@@ -1281,7 +1354,9 @@ class ArchitectureTemplate:
 	def run_post_install_script(self):
 		if self._install_profile.get_post_install_script_uri():
 			try:
+				if self._debug: self._logger.log("DEBUG: run_post_install_script(): getting script: "+self._install_profile.get_post_install_script_uri())
 				GLIUtility.get_uri(self._install_profile.get_post_install_script_uri(), self._chroot_dir + "/var/tmp/post-install")
+				if self._debug: self._logger.log("DEBUG: run_post_install_script(): running: chmod a+x /var/tmp/post-install && /var/tmp/post-install in chroot")
 				GLIUtility.spawn("chmod a+x /var/tmp/post-install && /var/tmp/post-install", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			except:
 				raise GLIException("RunPostInstallScriptError", 'fatal', 'run_post_install_script', "Failed to retrieve and/or execute post-install script")
@@ -1290,15 +1365,20 @@ class ArchitectureTemplate:
 	# This function should only be called in the event of an install failure. It performs
 	# general cleanup to prepare the system for another installer run.
 	def install_failed_cleanup(self):
+		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): gathering mounts to unmount")
 		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
 		for mount in mounts:
+			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: umount -l " + mount)
 			GLIUtility.spawn("umount -l " + mount)
 			
 		# now turn off all swap as well.
 		# we need to find the swap devices
 		for swap_device in self._swap_devices:
+			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: swapoff "+swap_device)
 			ret = GLIUtility.spawn("swapoff "+swap_device)
 			if not GLIUtility.exitsuccess(ret):
 				self._logger.log("ERROR! : Could not deactivate swap ("+swap_device+")!")
 		
+		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: cp /tmp/compile_output.log /tmp/compile_output.log.failed then removing /tmp/compile_output.log")
+		GLIUtility.spawn("cp /tmp/compile_output.log /tmp/compile_output.log.failed")
 		GLIUtility.spawn("rm /tmp/compile_output.log")
