@@ -687,7 +687,57 @@ Please be patient while the screens load. It may take awhile.
 		#make_conf["USE"] = temp_use
 		return self.wrap_in_webgli_template(data)
 	def kernel(self):
-		data = ""
+		data = "<p>Kernel Settings:</p>\n";
+		sources = self.shared_info.install_profile.get_kernel_source_pkg()
+		build_method = self.shared_info.install_profile.get_kernel_build_method()
+		bootsplash = self.shared_info.install_profile.get_kernel_bootsplash()
+		configuri= self.shared_info.install_profile.get_kernel_config_uri()
+		data += '<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">'
+		data += """  <p>Choose which kernel sources to use for your system. If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration.</p>
+<table width="100%"  border="1">
+<tr><td><input name="sources" type="radio" value="livecd-kernel" """
+		if sources == "livecd-kernel":
+			data += "checked"
+		data += '>Livecd Kernel </td><td>Use the running kernel (fastest)</td></tr><tr><td>'+"\n"+'<input name="sources" type="radio" value="vanilla-sources" '
+		if sources == "vanilla-sources":
+			data += "checked"
+		data += '>Vanilla (normal) </td><td>Normal. The Unaltered Linux Kernel ver 2.6+ (safest) (recommended) </td></tr>'+"\n"+'<tr><td><input name="sources" type="radio" value="gentoo-sources" '
+		if sources == "gentoo-sources":
+			data += "checked"
+		data += ">Gentoo</td><td>Gentoo's optimized 2.6+ kernel. (less safe) </td>    </tr>\n"+'<tr><td><input name="sources" type="radio" value="hardened-sources" '
+		if sources == "hardened-sources":
+			data += "checked"
+		data += ">Hardened</td><td>Hardened sources for the 2.6 kernel tree</td></tr>\n"+'<tr><td><input name="sources" type="radio" value="grsec-sources" '
+		if sources == "grsec-sources":
+			data += "checked"
+		data += ">grsec</td><td>Vanilla sources with grsecurity patches </td></tr>\n"
+		if sources not in ["livecd-kernel", "vanilla-sources", "gentoo-sources", "hardened-sources", "grsec-sources"]:
+			data += '<tr><td><input name="sources" type="radio" value="Other" checked>Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value="'+sources+'"></td></tr></table>'+"\n"
+		else:
+			data += '<tr><td><input name="sources" type="radio" value="Other">Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value=""></td></tr></table>'+"\n"
+		data += """<hr>
+<table width="507"  border="1">
+	<tr>
+		<td colspan="2" scope="col"><p>There are currently two ways the installer can compile a kernel for your new system. You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).</p>
+		<p>If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel. Choose which method you want to use:</p></td>
+	</tr>
+	<tr>
+		<td width="143" scope="col"><input name="build_method" type="radio" value="genkernel" """
+		if build_method == "genkernel":
+			data += "checked"
+		data += '>Genkernel</td><td width="348" scope="col"><input name="build_method" type="radio" value="custom" '
+		if build_method == "custom":
+			data += "checked"
+		data += ">Traditional (requires a config!)</td></tr></table>\n"
+		data += '<p><input name="bootsplash" type="checkbox" id="bootsplash" value="True" '
+		if bootsplash:
+			data += "checked"
+		data += ">Display the bootsplash screen on startup </p><p>If you have a custom kernel configuration, enter its location (otherwise just leave blank):\n"
+		data += '<input name="configuri" type="text" id="configuri" '
+		if configuri:
+			data += 'value="'+configuri+'">or <input name="browseuri" type="submit" id="browseuri" value="Browse">'+"\n" 
+		data += '</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p></form>'
+		
 		return self.wrap_in_webgli_template(data)
 	def savekernel(self):
 		data = ""

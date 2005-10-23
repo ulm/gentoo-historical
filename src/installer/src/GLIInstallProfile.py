@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.77 2005/09/17 21:15:59 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.78 2005/10/23 02:49:54 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -53,16 +53,16 @@ class InstallProfile:
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []
 		self._kernel_config_uri = ""
-		self._kernel_build_method = ""
+		self._kernel_build_method = "genkernel"
 		self._bootloader_kernel_args = ""
 		self._kernel_initrd = True
 		self._kernel_bootsplash = False
-		self._kernel_source_pkg = ""
+		self._kernel_source_pkg = "livecd-kernel"
 		self._users = []
 		self._root_pass_hash = ""
 		self._time_zone = "UTC"
 		self._stage_tarball_uri = ""
-		self._install_stage = 1
+		self._install_stage = 3
 		self._portage_tree_sync_type = "sync"
 		self._portage_tree_snapshot_uri = ""
 		self._domainname = "localdomain"
