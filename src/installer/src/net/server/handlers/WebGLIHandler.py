@@ -692,7 +692,7 @@ Please be patient while the screens load. It may take awhile.
 		build_method = self.shared_info.install_profile.get_kernel_build_method()
 		bootsplash = self.shared_info.install_profile.get_kernel_bootsplash()
 		configuri= self.shared_info.install_profile.get_kernel_config_uri()
-		data += '<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">'
+		data += '<form name="kernel" method="post" action="/webgli/savekernel" enctype="multipart/form-data">'
 		data += """  <p>Choose which kernel sources to use for your system. If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration.</p>
 <table width="100%"  border="1">
 <tr><td><input name="sources" type="radio" value="livecd-kernel" """
@@ -735,12 +735,40 @@ Please be patient while the screens load. It may take awhile.
 		data += ">Display the bootsplash screen on startup </p><p>If you have a custom kernel configuration, enter its location (otherwise just leave blank):\n"
 		data += '<input name="configuri" type="text" id="configuri" '
 		if configuri:
-			data += 'value="'+configuri+'">or <input name="browseuri" type="submit" id="browseuri" value="Browse">'+"\n" 
-		data += '</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p></form>'
+			data += 'value="'+configuri+'">'
+		data += """<input name="browseuri" type="button" id="browseuri" value="Browse" onClick="window.open('/webgli/URIBrowser?screen=kernel&baseuri=' + document.kernel.configuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"> 
+		</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p></form>"""
 		
 		return self.wrap_in_webgli_template(data)
 	def savekernel(self):
 		data = ""
+		if self.post_params['setkernel']:
+			if self.post_params['manualsouces']:
+				try:
+					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['manualsouces'],None)
+				except:
+					data += "ERROR: Could not set the kernel sources!" + self.post_params['manualsouces']
+			elif self.post_params['sources']:
+				try:
+					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['sources'],None)
+				except:
+					data += "ERROR: Could not set the kernel sources!" + self.post_params['sources']
+			if self.post_params['build_method']:
+				try:
+					self.shared_info.install_profile.set_kernel_build_method(None,self.post_params['build_method'],None)
+				except:
+					data += "ERROR: Could not set the kernel build method!"
+				if self.post_params['configuri']:
+					try:
+						self.shared_info.install_profile.set_kernel_config_uri(None,self.post_params['configuri'],None)
+					except:
+						data += "ERROR: Could not set the kernel config URI!"
+			if self.post_params['bootsplash']:
+				try:
+					self.shared_info.install_profile.set_kernel_bootsplash(None,self.post_params['bootsplash'],None)
+				except:
+					data += "ERROR: Could not set the kernel bootsplash!" + self.post_params['bootsplash']
+		
 		return self.wrap_in_webgli_template(data)
 	def bootloader(self):
 		arch = self.shared_info.client_profile.get_architecture_template()
@@ -821,7 +849,9 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 
 	def uribrowser(self):
-		formfields = { 'portage': "opener.document.portage.snapshoturi", 'stage': "opener.document.stage.tarballuri" }
+		formfields = {  'portage': "opener.document.portage.snapshoturi", 
+						'stage': "opener.document.stage.tarballuri",
+						'kernel': "opener.document.stage.configuri" }
 		try:
 			formfield = formfields[self.get_params['screen']]
 		except:
