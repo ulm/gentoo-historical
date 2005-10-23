@@ -200,7 +200,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 			nextpart = "--" + boundary
 			lastpart = "--" + boundary + "--"
-			partdict = {}
+			partdict = Params()
 			terminator = ""
 
 			while terminator != lastpart:

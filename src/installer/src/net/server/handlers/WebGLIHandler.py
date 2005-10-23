@@ -772,6 +772,7 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def bootloader(self):
 		arch = self.shared_info.client_profile.get_architecture_template()
+		bootloader = self.shared_info.install_profile.get_boot_loader_pkg()
 		arch_loaders = { 'x86': [
 				("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED")),
 				("lilo",(u"LInux LOader, older, traditional.(detects windows partitions)"))],
@@ -784,7 +785,10 @@ Please be patient while the screens load. It may take awhile.
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", (u"Do not install a bootloader.  (System may be unbootable!)")))
 		for i,bloader in enumerate(boot_loaders):
-			data += '<tr><td><input name="bootloader" type="radio" value="'+boot_loaders[i][0]+'" >'+boot_loaders[i][0]+'</td><td>'+boot_loaders[i][1]+"</td></tr>\n"
+			data += '<tr><td><input name="bootloader" type="radio" value="'+boot_loaders[i][0]+'" '
+			if bootloader == boot_loaders[i][0]:
+				data += "checked"
+			data += '>'+boot_loaders[i][0]+'</td><td>'+boot_loaders[i][1]+"</td></tr>\n"
 		data += """
 	  </table>
 	  <hr>
@@ -810,6 +814,27 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def savebootloader(self):
 		data = ""
+		if self.post_params['setbootloader']:
+			if self.post_params['bootloader']:
+				try:
+					self.shared_info.install_profile.set_boot_loader_pkg(None,self.post_params['bootloader'],None)
+				except:
+					data += "ERROR: Could not set the bootloader pkg!"
+			if self.post_params['bootmbr']:
+				try:
+					self.shared_info.install_profile.set_boot_loader_mbr(None,self.post_params['bootmbr'],None)
+				except:
+					data += "ERROR: Could not set the bootloader MBR flag!"
+			else:
+				try:
+					self.shared_info.install_profile.set_boot_loader_mbr(None,False,None)
+				except:
+					data += "ERROR: Could not set the bootloader MBR flag!"
+			if self.post_params['bootargs']:
+				try:
+					self.shared_info.install_profile.set_bootloader_kernel_args(None,self.post_params['bootargs'],None)
+				except:
+					data += "ERROR: Could not set the bootloader kernel arguments!"
 		return self.wrap_in_webgli_template(data)
 	def timezone(self):
 		data = ""
@@ -851,7 +876,7 @@ Please be patient while the screens load. It may take awhile.
 	def uribrowser(self):
 		formfields = {  'portage': "opener.document.portage.snapshoturi", 
 						'stage': "opener.document.stage.tarballuri",
-						'kernel': "opener.document.stage.configuri" }
+						'kernel': "opener.document.kernel.configuri" }
 		try:
 			formfield = formfields[self.get_params['screen']]
 		except:
