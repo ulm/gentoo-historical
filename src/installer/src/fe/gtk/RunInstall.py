@@ -37,6 +37,14 @@ class RunInstall(gtk.Window):
 
 		self.notebook = gtk.Notebook()
 
+		self.logpage = gtk.VBox(False, 0)
+		self.logtextbuff = gtk.TextBuffer()
+		self.logtextbuff.set_text("")
+		self.logtextview = gtk.TextView(self.logtextbuff)
+		self.logtextview.set_editable(False)
+		self.logpage.pack_start(self.logtextview, expand=True, fill=True)
+		self.notebook.append_page(self.logpage, tab_label=gtk.Label("Log"))
+
 		self.tailpage = gtk.VBox(False, 0)
 		self.textbuffer = gtk.TextBuffer()
 		self.textbuffer.set_text("")
@@ -70,7 +78,9 @@ class RunInstall(gtk.Window):
 		self.controller.cc.start_install()
 
 		self.output_log = None
+		self.install_log = None
 		gobject.timeout_add(500, self.poll_notifications)
+		gobject.timeout_add(500, self.tail_outputfile)
 		gobject.timeout_add(500, self.tail_logfile)
 
 	def poll_notifications(self):
@@ -125,7 +135,7 @@ class RunInstall(gtk.Window):
 			return True
 		return True
 
-	def tail_logfile(self):
+	def tail_outputfile(self):
 		if self.install_done:
 			self.output_log.close()
 			return False
@@ -134,7 +144,6 @@ class RunInstall(gtk.Window):
 				self.output_log = open("/tmp/compile_output.log")
 			except:
 				return True
-#		if select.select([self.output_log], [], [], 0)[0]:
 		while 1:
 			line = self.output_log.readline()
 			if not line:
@@ -149,7 +158,23 @@ class RunInstall(gtk.Window):
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
+		return True
 
+	def tail_logfile(self):
+		if self.install_done:
+			self.install_log.close()
+			return False
+		if not self.install_log:
+			try:
+				self.install_log = open(self.controller.client_profile.get_log_file())
+			except:
+				return True
+		while 1:
+			line = self.install_log.readline()
+			if not line: break
+			iter_end = self.logtextbuff.get_iter_at_offset(-1)
+			self.logtextbuff.insert(iter_end, line, -1)
+			self.logtextview.scroll_to_iter(iter_end, 0.0)
 		return True
 
 	def make_visible(self):
