@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.213 2005/10/23 22:20:14 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.214 2005/10/23 22:25:14 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -141,7 +141,7 @@ class ArchitectureTemplate:
 			if self._debug: self._logger.log("DEBUG: overwriting PKGDIR with make_conf value." + make_conf['PKGDIR'])
 			PKGDIR = make_conf['PKGDIR']
 		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: 
-			if self._debug: self._logger.log("DEBUG: overwriting PORTAGE_TMPDIR with make_conf value." + make_conf['PORTAGE_TMPDIR']
+			if self._debug: self._logger.log("DEBUG: overwriting PORTAGE_TMPDIR with make_conf value." + make_conf['PORTAGE_TMPDIR'])
 			PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
 		if self._debug: self._logger.log("DEBUG: creating PKGDIR if necessary")
 		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
@@ -703,7 +703,7 @@ class ArchitectureTemplate:
 			exitstatus = self._emerge("coldplug")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
-			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
+			self._logger.log("Coldplug emerged.  Now they should be added to the boot runlevel.")
 			
 #			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
@@ -747,7 +747,7 @@ class ArchitectureTemplate:
 		kernel_config_uri = self._install_profile.get_kernel_config_uri()
 
 		# is there an easier way to do this?
-		if self._debug: self._logger.log("DEBUG: running command: awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile in chroot."
+		if self._debug: self._logger.log("DEBUG: running command: awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile in chroot.")
 		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile",chroot=self._chroot_dir,return_output=True)
 		# 6 == 2.6 kernel, 4 == 2.4 kernel
 		kernel_major = int(kernel_major)
