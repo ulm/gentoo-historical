@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.214 2005/10/23 22:25:14 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.215 2005/10/23 22:31:15 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1218,7 +1218,7 @@ class ArchitectureTemplate:
 				#
 				else:
 					dhcpcd_options = interfaces[interface][1]
-					if dhcpcd_options is None:
+					if not dhcpcd_options:
 						dhcpcd_options = ""
 					self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"iface_" + interface: "dhcp", "dhcpcd_" + interface: dhcpcd_options})
 					emerge_dhcp = True
