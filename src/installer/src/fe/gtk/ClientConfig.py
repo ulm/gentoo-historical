@@ -188,7 +188,21 @@ class Panel(GLIScreen.GLIScreen):
 		self.modules_entry = gtk.Entry()
 		self.modules_entry.set_width_chars(25)
 		tmptable.attach(self.modules_entry, 1, 2, 10, 11)
-
+		tmplabel = gtk.Label("   ")
+		tmptable.attach(tmplabel, 0, 1, 11, 12)
+		tmplabel = gtk.Label()
+		tmplabel.set_markup("<b><u>" + _("Debug:") + "</u></b>")
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 0, 2, 12, 13)
+		tmplabel = gtk.Label(_("Verbose logging:"))
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 0, 1, 13, 14)
+		tmphbox = gtk.HBox(False, 0)
+		self.verbose_no_radio = gtk.RadioButton(label=_("No"))
+		tmphbox.pack_start(self.verbose_no_radio, expand=False, fill=False, padding=0)
+		self.verbose_yes_radio = gtk.RadioButton(group=self.verbose_no_radio, label=_("Yes"))
+		tmphbox.pack_start(self.verbose_yes_radio, expand=False, fill=False, padding=15)
+		tmptable.attach(tmphbox, 1, 2, 13, 14)
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
 		advbox.pack_start(hbox, expand=False, fill=False, padding=0)
 		self.notebook.append_page(advbox, gtk.Label(_("Misc.")))
@@ -279,9 +293,12 @@ class Panel(GLIScreen.GLIScreen):
 		self.dns_entry.set_text(dns_servers)
 		self.gateway_entry.set_text(GLIUtility.spawn(r"/sbin/route -n | grep -e '^0\.0\.0\.0' | sed -e 's:^0\.0\.0\.0 \+::' -e 's: \+.\+$::'", return_output=True)[1].strip())
 		self.modules_entry.set_text(" ".join(self.controller.client_profile.get_kernel_modules()))
+		if self.controller.client_profile.get_verbose():
+			self.verbose_yes_radio.set_active(True)
+		else:
+			self.verbose_no_radio.set_active(True)
 
 	def deactivate(self):
-		self.controller.client_profile.set_verbose(None, True, None)
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)
 		if not self.already_setup_check.get_active():
 			if self.basic_dhcp_radio.get_active():
@@ -302,6 +319,7 @@ class Panel(GLIScreen.GLIScreen):
 		if self.root_password_entry.get_text() == self.verify_root_password_entry.get_text():
 			self.controller.client_profile.set_root_passwd(None, GLIUtility.hash_password(self.root_password_entry.get_text()), None)
 		self.controller.client_profile.set_kernel_modules(None, self.modules_entry.get_text(), None)
+		self.controller.client_profile.set_verbose(None, self.verbose_yes_radio.get_active(), None)
 		self.controller.cc.set_configuration(self.controller.client_profile)
 		self.controller.cc.start_pre_install()
 				
