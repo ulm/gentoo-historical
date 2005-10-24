@@ -281,6 +281,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.modules_entry.set_text(" ".join(self.controller.client_profile.get_kernel_modules()))
 
 	def deactivate(self):
+		self.controller.client_profile.set_verbose(None, True, None)
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)
 		if not self.already_setup_check.get_active():
 			if self.basic_dhcp_radio.get_active():

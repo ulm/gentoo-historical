@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.216 2005/10/23 23:51:52 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.217 2005/10/24 04:34:43 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -166,30 +166,30 @@ class ArchitectureTemplate:
 
 	def copy_pkg_to_chroot(self, package):
 		error = False
-		package = self._portage_best_visible(package)
-		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): best_visible is " + package)
+#		package = self._portage_best_visible(package, chroot=False)
+#		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): best_visible is " + package)
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + "/var/db/pkg/" + package + " && cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy vdb entry for " + package)
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("ebuild /var/db/pkg/" + package + "/*.ebuild preinst", chroot=self._chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " ebuild " + self._chroot_dir + "/var/db/pkg/" + package + "/*.ebuild preinst")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
 		entries = GLIUtility.parse_vdb_contents("/var/db/pkg/" + package + "/CONTENTS")
 		for entry in entries:
 			parts = entry.split(" ")
 			if len(parts) == 3 and parts[1] == "->":
-				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating link from " + parts[0] + " to " + parts[2])
-				if not GLIUtility.exitsuccess(GLIUtility.spawn("ln -s " + self._chroot_dir + parts[0] + " " + parts[2])):
+#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'ln -s " + parts[2] + " " + self._chroot_dir + parts[0] + "'")
+				if not GLIUtility.exitsuccess(GLIUtility.spawn("ln -s " + parts[2] + " " + self._chroot_dir + parts[0])):
 					raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create a link from " + parts[0] + " to " + parts[2])
 			elif parts[0].endswith("/"):
-				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating directory " + parts[0])
+#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating directory " + parts[0])
 				GLIUtility.spawn("mkdir -p " + self._chroot_dir + parts[0])
 			else:
-				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying file " + parts[0])
+#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying file " + parts[0])
 				if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + parts[0] + " " + self._chroot_dir + parts[0])):
-					raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy " + parts[0])
+					self._logger.log("DEBUG: copy_pkg_to_chroot(): Could not copy " + parts[0] + "...continuing")
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running postinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("ebuild /var/db/pkg/" + package + "/*.ebuild postinst", chroot=self._chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " ebuild " + "/var/db/pkg/" + package + "/*.ebuild postinst")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute postinst for " + package)
 			
 	##
@@ -220,8 +220,11 @@ class ArchitectureTemplate:
 	##
 	# Returns the full version of a package to be emerged when given a short name
 	# @param package short name of package (i.e. xorg-x11)
-	def _portage_best_visible(self, package):
-		return GLIUtility.spawn("portageq best_visible / " + package, chroot=self._chroot_dir, return_output=True)[1].strip()
+	def _portage_best_visible(self, package, chroot=True):
+		chroot_dir = None
+		if chroot:
+			chroot_dir = self._chroot_dir
+		return GLIUtility.spawn("portageq best_visible / " + package, chroot=chroot_dir, return_output=True)[1].strip()
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
@@ -235,7 +238,7 @@ class ArchitectureTemplate:
 	def _edit_config(self, filename, newvalues, delimeter='=', quotes_around_value=True, only_value=False,create_file=True):
 		# don't use 'file' as a normal variable as it conflicts with the __builtin__.file
 		newvalues = newvalues.copy()
-		if self._debug: self._logger.log("DEBUG: _edit_config() called with " + str(newvalues)+" and flags: "+delimeter + "quotes: "+quotes_around_value+" value: "+only_value)
+		if self._debug: self._logger.log("DEBUG: _edit_config() called with " + str(newvalues)+" and flags: "+delimeter + "quotes: "+str(quotes_around_value)+" value: "+str(only_value))
 		if GLIUtility.is_file(filename):
 			f = open(filename)
 			contents = f.readlines()
@@ -270,7 +273,7 @@ class ArchitectureTemplate:
 					add_at_line = i + 1
 			else:
 				contents.insert(add_at_line, newline)
-		if self._debug: self._logger.log("DEBUG: Contents of file "+filename+": "+contents)
+		if self._debug: self._logger.log("DEBUG: Contents of file "+filename+": "+str(contents))
 		f = open(filename,'w')
 		f.writelines(contents)
 		f.flush()
@@ -315,23 +318,35 @@ class ArchitectureTemplate:
 			# stage3 generation code here
 			if not GLIUtility.is_file("/usr/livecd/systempkgs.txt"):
 				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Required file /usr/livecd/systempkgs.txt does not exist")
-			make_conf = self._install_profile.get_make_conf()
-			PKGDIR = '/usr/portage/packages'
-			PORTAGE_TMPDIR = '/var/tmp'
-			if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
-			if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR)
-			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR)
-			os.environ["PKGDIR"] = self._chroot_dir + PKGDIR
-			os.environ["PORTAGE_TMPDIR"] = self._chroot_dir + PORTAGE_TMPDIR
-			ret = GLIUtility.spawn("quickpkg $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if not GLIUtility.exitsuccess(ret):
-				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not quickpkg necessary packages for generating stage3")
-			ret = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " emerge -KO $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-			if not GLIUtility.exitsuccess(ret):
-				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not emerge necessary packages in chroot for generating stage3")
-			del os.environ["PKGDIR"]
-			del os.environ["PORTAGE_TMPDIR"]
+			try:
+				syspkgs = open("/usr/livecd/systempkgs.txt", "r")
+				systempkgs = syspkgs.readlines()
+				syspkgs.close()
+			except:
+				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not open /usr/livecd/systempkgs.txt")
+#			make_conf = self._install_profile.get_make_conf()
+#			PKGDIR = '/usr/portage/packages'
+#			PORTAGE_TMPDIR = '/var/tmp'
+#			if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
+#			if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
+#			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR)
+#			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR)
+#			os.environ["PKGDIR"] = self._chroot_dir + PKGDIR
+#			os.environ["PORTAGE_TMPDIR"] = self._chroot_dir + PORTAGE_TMPDIR
+#			ret = GLIUtility.spawn("quickpkg $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+#			if not GLIUtility.exitsuccess(ret):
+#				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not quickpkg necessary packages for generating stage3")
+#			ret = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " emerge -KO $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+#			if not GLIUtility.exitsuccess(ret):
+#				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not emerge necessary packages in chroot for generating stage3")
+#			del os.environ["PKGDIR"]
+#			del os.environ["PORTAGE_TMPDIR"]
+			syspkglen = len(systempkgs)
+			for i, pkg in enumerate(systempkgs):
+				pkg = pkg.strip()
+				self.notify_frontend("progress", (float(i) / (syspkglen+1), "Copying " + pkg + " (" + str(i+1) + "/" + str(syspkglen) + ")"))
+				self.copy_pkg_to_chroot(pkg)
+			self.notify_frontend("progress", (float(syspkglen) / (syspkglen+1), "Finishing"))
 			GLIUtility.spawn("cp /etc/make.conf " + self._chroot_dir + "/etc/make.conf")
 			GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + self._chroot_dir + "/etc/make.profile")
 			GLIUtility.spawn("cp -f /etc/inittab.old " + self._chroot_dir + "/etc/inittab")
@@ -358,6 +373,7 @@ class ArchitectureTemplate:
 			script.close()
 			GLIUtility.spawn("chmod 755 /tmp/extrastuff.sh && /tmp/extrastuff.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			GLIUtility.spawn("rm -rf /var/tmp/portage/* /usr/portage /tmp/*", chroot=self._chroot_dir)
+			self.notify_frontend("progress", (1, "Done"))
 			self._logger.log("Stage3 was generated successfully")
 		else:
 			self._logger.log("Unpacking tarball: "+self._install_profile.get_stage_tarball_uri())
@@ -719,7 +735,7 @@ class ArchitectureTemplate:
 			# directories are created previously
 			if self._debug: self._logger.log("DEBUG: running: env PKGDIR="+ self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
-			if self._debug: self._logger.log("DEBUG: running: env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
+			if self._debug: self._logger.log("DEBUG: running: env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel")
 			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
 			# these should really be error-checked...
 			
