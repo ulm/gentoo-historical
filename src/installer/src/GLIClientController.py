@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.70 2005/09/03 07:08:35 agaffney Exp $
+$Id: GLIClientController.py,v 1.71 2005/10/25 19:16:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -129,15 +129,15 @@ class GLIClientController(Thread):
 			}
 				
 		if self._configuration.get_architecture_template() not in templates.keys():
-			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration.get_architecture_template() + ' is not supported by the Gentoo Linux Installer!')))
+			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration.get_architecture_template() + ' is not supported by the Gentoo Linux Installer!'))
 
 		try:
 			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration.get_architecture_template()])
 			self._arch_template = getattr(template, templates[self._configuration.get_architecture_template()])(self._configuration, self._install_profile, self)
 		except ImportError:
-			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!')))
+			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!'))
 		except AttributeError:
-			self.addNotification(GLINotification("exception", UnsupportedArchitectureError('fatal', 'run', 'This architecture template was not defined properly!')))
+			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', 'This architecture template was not defined properly!'))
 
 		self._install_steps = self._arch_template.get_install_steps()
 		self.addNotification("int", NEXT_STEP_READY)
@@ -149,7 +149,9 @@ class GLIClientController(Thread):
 		configuration.close()
 
 		while 1:
+			if self._configuration.get_verbose(): self._logger.log("DEBUG: waiting at top of 'while' loop in CC in secondary thread...waiting to start step " + str(self._install_step+1) + ", " + self._install_steps[(self._install_step+1)][1])
 			self._install_event.wait()
+			if self._configuration.get_verbose(): self._logger.log("DEBUG: Event() cleared at top of 'while' loop in CC in secondary thread...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)][1])
 			if self._install_step <= (len(self._install_steps) - 1):
 				try:
 					if not self._pretend:
@@ -199,6 +201,7 @@ class GLIClientController(Thread):
 	# Performs the next install step
 	def next_step(self):
 		self._install_step = self._install_step + 1
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: next_step(): setting Event() flag...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)][1])
 		self._install_event.set()
 
 	##
