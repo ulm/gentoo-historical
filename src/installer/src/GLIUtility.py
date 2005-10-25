@@ -325,7 +325,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	last_percent = 0
 
 	while 1:
-		data = ro_pipe.read(2048)
+		data = ro_pipe.read(4096)
 		if not data: break
 
 		if logfile:
