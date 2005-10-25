@@ -325,8 +325,10 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	last_percent = 0
 
 	while 1:
-		data = ro_pipe.read(4096)
+		data = ro_pipe.read(16384)
 		if not data: break
+
+#		print "DEBUG: spawn(): data is " + str(len(data)) + " bytes long"
 
 		if logfile:
 			fd_logfile.write(data)
@@ -346,9 +348,11 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 				if lastpos == -1: break
 				seenlines += 1
 			percent = float(seenlines) / linecount
-			if int(percent * 100) > last_percent:
+#			print "DEBUG: spawn(): seenlines=" + str(seenlines) + ", linecount=" + str(linecount) + ", percent=" + str(percent)
+			if int(percent * 100) >= (last_percent + 5):
 				last_percent = int(percent * 100)
 				cc.addNotification("progress", (percent, status_message))
+#				print "DEBUG: spawn(): send notification " + str((percent, status_message))
 
 #		data = ro_pipe.readline()
 
