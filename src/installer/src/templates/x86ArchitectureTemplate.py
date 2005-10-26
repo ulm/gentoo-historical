@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.70 2005/10/20 00:21:54 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.71 2005/10/26 15:20:15 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -37,7 +37,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		# first install bootloader
 		if bootloader_pkg and bootloader_pkg.lower() != "none":
 			exitstatus = self._emerge(bootloader_pkg)
-			if exitstatus != 0:
+			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("BootLoaderEmergeError", 'fatal', 'install_bootloader', "Could not emerge bootloader!")
 			else:
 				self._logger.log("Emerged the selected bootloader.")
