@@ -16,6 +16,9 @@ class Panel(GLIScreen.GLIScreen):
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
+
+		self.has_systempkgs = GLIUtility.is_file("/usr/livecd/systempkgs.txt")
+
 		vert = gtk.VBox(False, 0)
 		vert.set_border_width(10)
 
@@ -70,6 +73,8 @@ Each option has a brief description beside it.
 		self.check_dynamic.set_sensitive(False)
 		self.check_dynamic.connect("toggled", self.dynamic_checked)
 		self.check_dynamic.set_size_request(100, -1)
+		if not self.has_systempkgs:
+			self.check_dynamic.set_sensitive(False)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(self.check_dynamic, expand=False, fill=False, padding=5)
 		tmplabel = gtk.Label("The stage3 will be generated from the packages on the LiveCD")
@@ -98,7 +103,8 @@ Each option has a brief description beside it.
 		self.entry_stage_tarball_uri.set_sensitive(True)
 		if int(data) == 3:
 			self.check_grp.set_sensitive(True)
-			self.check_dynamic.set_sensitive(True)
+			if self.has_systempkgs:
+				self.check_dynamic.set_sensitive(True)
 			if self.check_dynamic.get_active():
 				self.entry_stage_tarball_uri.set_sensitive(False)
 				self.browse_uri.set_sensitive(False)
