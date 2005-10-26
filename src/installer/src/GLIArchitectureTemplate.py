@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.218 2005/10/24 21:31:18 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.219 2005/10/26 00:53:23 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -164,10 +164,11 @@ class ArchitectureTemplate:
 					# This package couldn't be quickpkg'd. This may be an error in the future
 					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
 
+	def add_pkg_to_world(self, package):
+		GLIUtility.spawn("echo '" + package + "' >> " + self._chroot_dir + "/var/lib/portage/world")
+
 	def copy_pkg_to_chroot(self, package):
 		error = False
-#		package = self._portage_best_visible(package, chroot=False)
-#		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): best_visible is " + package)
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
 		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + "/var/db/pkg/" + package + " && cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy vdb entry for " + package)
@@ -184,17 +185,6 @@ class ArchitectureTemplate:
 			tarfiles.close()
 		except:
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create filelist for " + package)
-#			if len(parts) == 3 and parts[1] == "->":
-#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'ln -s " + parts[2] + " " + self._chroot_dir + parts[0] + "'")
-#				if not GLIUtility.exitsuccess(GLIUtility.spawn("ln -s " + parts[2] + " " + self._chroot_dir + parts[0])):
-#					raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create a link from " + parts[0] + " to " + parts[2])
-#			elif parts[0].endswith("/"):
-#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): creating directory " + parts[0])
-#				GLIUtility.spawn("mkdir -p " + self._chroot_dir + parts[0])
-#			else:
-#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying file " + parts[0])
-#				if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + parts[0] + " " + self._chroot_dir + parts[0])):
-#					self._logger.log("DEBUG: copy_pkg_to_chroot(): Could not copy " + parts[0] + "...continuing")
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x'")
 		if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
@@ -762,6 +752,21 @@ class ArchitectureTemplate:
 			
 #			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
+
+			# Extra modules from kernelpkgs.txt
+			try:
+				kernpkgs = open("/usr/livecd/kernelpkgs.txt", "r")
+				pkgs = ""
+				for line in kernpkgs.readlines():
+					pkgs += line.strip() + " "
+				kernpkgs.close()
+			except:
+				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not read kernelpkgs.txt")
+			exitstatus = self._emerge(pkgs)
+			if not GLIUtility.exitsuccess(exitstatus):
+				raise GLIException("EmergeExtraKernelModulesError", 'fatal','build_kernel', "Could not emerge extra kernel packages")
+			self._logger.log("Extra kernel packages emerged.")
+
 		# normal case
 		else:
 			exitstatus = self._emerge(kernel_pkg)
