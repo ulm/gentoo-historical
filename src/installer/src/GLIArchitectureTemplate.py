@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.219 2005/10/26 00:53:23 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.220 2005/10/26 01:42:49 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -165,7 +165,10 @@ class ArchitectureTemplate:
 					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
 
 	def add_pkg_to_world(self, package):
-		GLIUtility.spawn("echo '" + package + "' >> " + self._chroot_dir + "/var/lib/portage/world")
+		expr = re.compile('^(.+?)-\d.+$')
+		res = expr.match(package)
+		if res:
+			GLIUtility.spawn("echo " + res.groups(0) + " >> " + self._chroot_dir + "/var/lib/portage/world")
 
 	def copy_pkg_to_chroot(self, package):
 		error = False
@@ -753,19 +756,19 @@ class ArchitectureTemplate:
 #			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 
-			# Extra modules from kernelpkgs.txt
-			try:
-				kernpkgs = open("/usr/livecd/kernelpkgs.txt", "r")
-				pkgs = ""
-				for line in kernpkgs.readlines():
-					pkgs += line.strip() + " "
-				kernpkgs.close()
-			except:
-				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not read kernelpkgs.txt")
-			exitstatus = self._emerge(pkgs)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeExtraKernelModulesError", 'fatal','build_kernel', "Could not emerge extra kernel packages")
-			self._logger.log("Extra kernel packages emerged.")
+			# Extra modules from kernelpkgs.txt...disabled until I can figure out why it sucks
+#			try:
+#				kernpkgs = open("/usr/livecd/kernelpkgs.txt", "r")
+#				pkgs = ""
+#				for line in kernpkgs.readlines():
+#					pkgs += line.strip() + " "
+#				kernpkgs.close()
+#			except:
+#				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not read kernelpkgs.txt")
+#			exitstatus = self._emerge(pkgs)
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeExtraKernelModulesError", 'fatal','build_kernel', "Could not emerge extra kernel packages")
+#			self._logger.log("Extra kernel packages emerged.")
 
 		# normal case
 		else:
