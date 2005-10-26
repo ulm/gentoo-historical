@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.220 2005/10/26 01:42:49 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.221 2005/10/26 03:00:23 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -165,10 +165,13 @@ class ArchitectureTemplate:
 					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
 
 	def add_pkg_to_world(self, package):
-		expr = re.compile('^(.+?)-\d.+$')
+		if package.find("/") == -1:
+			package = GLIUtility.spawn("portageq best_version / " + package, chroot=self._chroot_dir, return_output=True)[1].strip()
+		if not package: return False
+		expr = re.compile('^(.+?)(-\d.+)?$')
 		res = expr.match(package)
 		if res:
-			GLIUtility.spawn("echo " + res.groups(0) + " >> " + self._chroot_dir + "/var/lib/portage/world")
+			GLIUtility.spawn("echo " + res.group(1) + " >> " + self._chroot_dir + "/var/lib/portage/world")
 
 	def copy_pkg_to_chroot(self, package):
 		error = False
