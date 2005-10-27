@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.72 2005/10/26 21:44:30 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.73 2005/10/27 01:25:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -506,7 +506,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			grubinstallstring +="setup ("+grub_boot_drive + "," + grub_boot_minor + ")\n"
 		else:
 			grubinstallstring +="setup ("+grub_boot_drive+")\n"
-		grubinstallstring += "quit\n' | "+root+"/sbin/grub"
+		grubinstallstring += "quit\n' | "+root+"/sbin/grub --batch --no-floppy"
 		self._logger.log("Grub install string: " + grubinstallstring)
 		exitstatus = GLIUtility.spawn(grubinstallstring, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(exitstatus):

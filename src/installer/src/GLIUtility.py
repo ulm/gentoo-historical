@@ -374,6 +374,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 def exitsuccess(status):
 	if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
 		return True
+	print "exit status = " + str(os.WEXITSTATUS(status))
 	return False
 
 ##
