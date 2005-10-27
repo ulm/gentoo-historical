@@ -326,7 +326,10 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 
 	while 1:
 		data = ro_pipe.read(16384)
-		if not data: break
+		if not data:
+			if linecount and cc:
+				cc.addNotification("progress", (1, status_message))
+			break
 
 #		print "DEBUG: spawn(): data is " + str(len(data)) + " bytes long"
 
